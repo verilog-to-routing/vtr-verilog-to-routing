@@ -147,6 +147,11 @@ static vtr::NdMatrix<float, 4> compute_delta_delay_model(
     int longest_length,
     bool is_flat);
 
+/**
+ * @brief Use the information in the router lookahead to fill the delay matrix instead of running the router
+ * @param route_profiler
+ * @return The delay matrix that contain the minimum cost between two locations
+ */
 static vtr::NdMatrix<float, 5> compute_simple_delay_model(RouterDelayProfiler& route_profiler);
 
 static bool find_direct_connect_sample_locations(const t_direct_inf* direct,
@@ -176,7 +181,6 @@ static float find_neightboring_average(vtr::NdMatrix<float, 4>& matrix,
 std::unique_ptr<PlaceDelayModel> compute_place_delay_model(const t_placer_opts& placer_opts,
                                                            const t_router_opts& router_opts,
                                                            const Netlist<>& net_list,
-                                                           const std::vector<t_arch_switch_inf>& arch_switch_inf,
                                                            t_det_routing_arch* det_routing_arch,
                                                            std::vector<t_segment_inf>& segment_inf,
                                                            t_chan_width_dist chan_width_dist,
@@ -204,12 +208,11 @@ std::unique_ptr<PlaceDelayModel> compute_place_delay_model(const t_placer_opts& 
 
     /*now setup and compute the actual arrays */
     std::unique_ptr<PlaceDelayModel> place_delay_model;
-    float min_cross_layer_delay = get_min_cross_layer_delay(arch_switch_inf,
-                                                            segment_inf,
-                                                            det_routing_arch->wire_to_arch_ipin_switch_between_dice);
+    float min_cross_layer_delay = get_min_cross_layer_delay();
+
     if (placer_opts.delay_model_type == PlaceDelayModelType::SIMPLE) {
-        place_delay_model = std::make_unique<SimpleDelayModel>(min_cross_layer_delay, is_flat);
-    } else if(placer_opts.delay_model_type == PlaceDelayModelType::DELTA) {
+        place_delay_model = std::make_unique<SimpleDelayModel>();
+    } else if (placer_opts.delay_model_type == PlaceDelayModelType::DELTA) {
         place_delay_model = std::make_unique<DeltaDelayModel>(min_cross_layer_delay, is_flat);
     } else if (placer_opts.delay_model_type == PlaceDelayModelType::DELTA_OVERRIDE) {
         place_delay_model = std::make_unique<OverrideDelayModel>(min_cross_layer_delay, is_flat);
@@ -1054,6 +1057,8 @@ static vtr::NdMatrix<float, 4> compute_delta_delay_model(
 static vtr::NdMatrix<float, 5> compute_simple_delay_model(RouterDelayProfiler& route_profiler) {
     const auto& grid = g_vpr_ctx.device().grid;
     int num_physical_tile_types = static_cast<int>(g_vpr_ctx.device().physical_tile_types.size());
+    // Initializing the delay matrix to [num_physical_types][num_layers][num_layers][width][height]
+    // The second index related to the layer that the source location is on and the third index is for the sink layer
     vtr::NdMatrix<float, 5> delta_delays({static_cast<unsigned long>(num_physical_tile_types),
                                           static_cast<unsigned long>(grid.get_num_layers()),
                                           static_cast<unsigned long>(grid.get_num_layers()),

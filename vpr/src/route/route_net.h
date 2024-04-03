@@ -61,23 +61,22 @@ constexpr bool is_high_fanout(int fanout, int fanout_threshold) {
     return true;
 }
 
-/** Build a partial route tree in global context for \p net_id from the legal
- * connections from last iteration.
- * Along the way do:
- * - update pathfinder costs to be accurate to the partial route tree
- * - mark the rr_node sinks as targets to be reached. */
-void setup_routing_resources(int itry,
-                             ParentNetId net_id,
-                             const Netlist<>& net_list,
-                             unsigned num_sinks,
-                             int min_incremental_reroute_fanout,
-                             CBRR& connections_inf,
-                             const t_router_opts& router_opts,
-                             bool ripup_high_fanout_nets);
+/** Setup the current route tree for this net.
+ * Depending on # of fanouts, this fn either resets or prunes the route tree
+ * and updates other global data structures to match its state. */
+void setup_net(int itry,
+               ParentNetId net_id,
+               const Netlist<>& net_list,
+               CBRR& connections_inf,
+               const t_router_opts& router_opts,
+               float worst_neg_slack);
 
-/** Detect if net should be routed or not */
-bool should_route_net(ParentNetId net_id,
+/** Detect if \p net_id should be routed or not */
+bool should_route_net(const Netlist<>& net_list,
+                      ParentNetId net_id,
                       CBRR& connections_inf,
+                      route_budgets& budgeting_inf,
+                      float worst_negative_slack,
                       bool if_force_reroute);
 
 /** Update net_delay value for a single sink in a RouteTree. */
@@ -115,5 +114,15 @@ void update_rr_base_costs(int fanout);
 /** Traverses down a route tree and updates rr_node_inf for all nodes
  * to reflect that these nodes have already been routed to */
 void update_rr_route_inf_from_tree(const RouteTreeNode& rt_node);
+
+/** Convert sink mask to a vector of net pin indices
+ * (return a vector with indices of set bits) */
+inline std::vector<size_t> sink_mask_to_vector(const vtr::dynamic_bitset<>& mask, size_t num_sinks) {
+    std::vector<size_t> out;
+    for (size_t i = 1; i < num_sinks + 1; i++)
+        if (mask.get(i))
+            out.push_back(i);
+    return out;
+}
 
 #include "route_net.tpp"

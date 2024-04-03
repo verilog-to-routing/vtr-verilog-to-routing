@@ -3838,6 +3838,11 @@ static void load_uniform_connection_block_pattern(vtr::NdMatrix<int, 6>& tracks_
         /* Bi-directional treats each track separately, uni-directional works with pairs of tracks */
         for (int j = 0; j < (Fc / group_size); ++j) {
             int max_chan_width = (((side == TOP) || (side == BOTTOM)) ? x_chan_width : y_chan_width);
+
+            // if the number of tracks we can assign is zero break from the loop
+            if (max_chan_width == 0) {
+                break;
+            }
             float step_size = (float)max_chan_width / (float)(Fc * num_phys_pins);
 
             VTR_ASSERT(Fc > 0);

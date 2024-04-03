@@ -155,6 +155,8 @@ TEST_CASE("test_add_link", "[vpr_noc]") {
 
     // allocate the size for outgoing link vector for each router
     test_noc.make_room_for_noc_router_link_list();
+    // incremental counter used as NocLinkId
+    int noc_link_id_counter = 0;
 
     for (int source_router_id = 0; source_router_id < NUM_OF_ROUTERS; source_router_id++) {
         source = (NocRouterId)source_router_id;
@@ -164,8 +166,12 @@ TEST_CASE("test_add_link", "[vpr_noc]") {
 
             // makes sure we do not create a link for a router who acts as a sink and source
             if (source_router_id != sink_router_id) {
+                // converting the counter to link index
+                link_id = (NocLinkId)noc_link_id_counter;
+                noc_link_id_counter++;
+
                 // add link to the golden reference
-                golden_set.emplace_back(source, sink);
+                golden_set.emplace_back(link_id, source, sink, 0.0);
 
                 // add the link to the NoC
                 test_noc.add_link(source, sink);
@@ -432,7 +438,7 @@ TEST_CASE("test_generate_router_key_from_grid_location", "[vpr_noc]") {
     // the grid locations go from 0 to the total number of routers in the NoC
     for (int grid_location = 0; grid_location < NUM_OF_ROUTERS; grid_location++) {
         // contains the grid location of a router block seen during placement
-        // we dont care about the subtile so give it a arbritary value
+        // we don't care about the subtile so give it an arbitrary value
         t_pl_loc placement_router_grid_location = t_pl_loc(grid_location,
                                                            grid_location,
                                                            -1,

@@ -40,7 +40,9 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
                                   std::shared_ptr<RoutingDelayCalculator> delay_calc,
                                   bool is_flat);
 
-t_chan_width init_chan(int cfactor, t_chan_width_dist chan_width_dist, t_graph_type graph_directionality);
+t_chan_width init_chan(int cfactor,
+                       const t_chan_width_dist& chan_width_dist,
+                       t_graph_type graph_directionality);
 
 void post_place_sync();
 

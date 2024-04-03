@@ -559,6 +559,9 @@ bool route(const Netlist<>& net_list,
         // profiling::time_on_criticality_analysis();
     }
 
+    /* Write out partition tree logs (no-op if debug option not set) */
+    PartitionTreeDebug::write("partition_tree.log");
+
     if (success) {
         VTR_LOG("Restoring best routing\n");
 
