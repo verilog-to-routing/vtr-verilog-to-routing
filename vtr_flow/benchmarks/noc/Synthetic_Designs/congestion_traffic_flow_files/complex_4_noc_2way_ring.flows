@@ -1,0 +1,22 @@
+<traffic_flows>
+
+    <!--
+        In this benchmark, each NoC routers sends traffic flows to two
+        NoC routers after itself. These two traffic flows cannot share the
+        same NoC link without causing congestion. Therefore, they should be
+        routed without using any shared links. This benchmark is a simple
+        sanity check for congestion-aware NoC placement and traffic flow routing
+        algorithms.
+    -->
+
+    <single_flow src=".*noc_router_adapter_block_1.*" dst=".*noc_router_adapter_block_2.*" bandwidth="7e5" />
+    <single_flow src=".*noc_router_adapter_block_2.*" dst=".*noc_router_adapter_block_3.*" bandwidth="7e5" />
+    <single_flow src=".*noc_router_adapter_block_3.*" dst=".*noc_router_adapter_block_4.*" bandwidth="7e5" />
+    <single_flow src=".*noc_router_adapter_block_4.*" dst=".*noc_router_adapter_block_1.*" bandwidth="7e5" />
+
+    <single_flow src=".*noc_router_adapter_block_1.*" dst=".*noc_router_adapter_block_3.*" bandwidth="4e5" />
+    <single_flow src=".*noc_router_adapter_block_2.*" dst=".*noc_router_adapter_block_4.*" bandwidth="4e5" />
+    <single_flow src=".*noc_router_adapter_block_3.*" dst=".*noc_router_adapter_block_1.*" bandwidth="4e5" />
+    <single_flow src=".*noc_router_adapter_block_4.*" dst=".*noc_router_adapter_block_2.*" bandwidth="4e5" />
+
+</traffic_flows>
