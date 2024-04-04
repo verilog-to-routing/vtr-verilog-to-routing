@@ -36,6 +36,9 @@ vtr::Matrix<float> calculate_routing_usage(t_rr_type rr_type, bool is_flat, bool
             if (!draw_state->draw_layer_display[layer_num].visible)
                 continue; // don't count usage if layer is not visible
         }
+#else
+        // Cast to void to avoid warning.
+        (void)is_print;
 #endif
 
         if (rr_type == CHANX) {

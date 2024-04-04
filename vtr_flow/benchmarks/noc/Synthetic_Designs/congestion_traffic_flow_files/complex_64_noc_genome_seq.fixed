@@ -1,0 +1,2 @@
+noc_router_adapter_block:noc_router_adapter_block_1|slave_tready~reg0	119 4	0	0
+noc_router_adapter_block:noc_router_adapter_block_64|slave_tready~reg0	96	157	0	0

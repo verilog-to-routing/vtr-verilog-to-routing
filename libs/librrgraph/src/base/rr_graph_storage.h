@@ -336,6 +336,11 @@ class t_rr_graph_storage {
         return ret;
     }
 
+    /** @brief Get the source node for the specified edge. */
+    RRNodeId edge_src_node(const RREdgeId& edge) const {
+        return edge_src_node_[edge];
+    }
+
     /** @brief Get the destination node for the specified edge. */
     RRNodeId edge_sink_node(const RREdgeId& edge) const {
         return edge_dest_node_[edge];

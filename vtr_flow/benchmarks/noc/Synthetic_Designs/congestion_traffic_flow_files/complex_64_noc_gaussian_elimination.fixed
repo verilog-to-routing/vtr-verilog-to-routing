@@ -1,0 +1,5 @@
+noc_router_adapter_block:noc_router_adapter_block_64|slave_tready~reg0	188	4	0	0
+noc_router_adapter_block:noc_router_adapter_block_59|slave_tready~reg0	211	4	0	0
+noc_router_adapter_block:noc_router_adapter_block_58|slave_tready~reg0	188	157	0	0
+noc_router_adapter_block:noc_router_adapter_block_57|slave_tready~reg0	211	157	0	0
+noc_router_adapter_block:noc_router_adapter_block_1|slave_tready~reg0	4	4	0	0

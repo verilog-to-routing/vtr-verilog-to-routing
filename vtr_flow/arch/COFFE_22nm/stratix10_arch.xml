@@ -1,5 +1,7 @@
 <!--
-    This is the architecture file for a Stratix-10-like Architecture discussed in [1].
+    This is the architecture file for a Stratix-10-like *arithmetic* Architecture discussed in [1].
+    The routing architecture is not Stratix-10-like (it is a single wire type of length 4) but 
+    the arithmetic inside the logic block is modeled after Stratix 10.
     Delays for routing and logic blocks come from COFFE runs for a 20 nm technology node.
     Delays for DSP blocks come from Arria 10 (22 nm) delays while BRAM delays come from
     Straitx IV (40 nm) delays. In addition, tile grid area comes from COFFE (20 nm) while
