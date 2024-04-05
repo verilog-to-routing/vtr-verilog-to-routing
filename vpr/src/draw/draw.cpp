@@ -63,9 +63,6 @@
 #include "ui_setup.h"
 #include "buttons.h"
 
-#include "gateio.h"
-#include "serverupdate.h"
-
 #ifdef VTR_ENABLE_DEBUG_LOGGING
 #    include "move_utils.h"
 #endif
@@ -81,6 +78,9 @@
 #endif
 
 #ifndef NO_GRAPHICS
+
+#include "gateio.h"
+#include "serverupdate.h"
 
 //To process key presses we need the X11 keysym definitions,
 //which are unavailable when building with MINGW
