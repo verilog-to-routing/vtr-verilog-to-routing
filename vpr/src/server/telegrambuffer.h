@@ -77,4 +77,4 @@ private:
 
 } // namespace comm
 
-#endif // TELEGRAMBUFFER_H
+#endif /* TELEGRAMBUFFER_H */

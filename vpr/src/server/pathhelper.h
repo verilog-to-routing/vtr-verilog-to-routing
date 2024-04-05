@@ -28,4 +28,4 @@ CritPathsResult calcCriticalPath(const std::string& type, int critPathNum, e_tim
 
 } // namespace server
 
-#endif // PATHHELPER_H
+#endif /* PATHHELPER_H */

@@ -70,4 +70,4 @@ using TaskPtr = std::unique_ptr<Task>;
 
 } // namespace server
 
-#endif // TASK_H
+#endif /* TASK_H */

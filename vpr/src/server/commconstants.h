@@ -35,4 +35,4 @@ enum CMD {
 
 } // namespace comm
 
-#endif 
+#endif /* COMMCONSTS_H */

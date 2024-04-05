@@ -16,4 +16,4 @@ using TelegramFramePtr = std::shared_ptr<TelegramFrame>;
 
 } // namespace comm
 
-#endif // TELEGRAMFRAME_H
+#endif /* TELEGRAMFRAME_H */

@@ -79,4 +79,4 @@ public:
 
 } // namespace comm
 
-#endif // BYTEARRAY_H
+#endif /* BYTEARRAY_H */

@@ -18,6 +18,6 @@ gboolean update(gpointer);
 
 } // namespace server
 
-#endif // NO_GRAPHICS
+#endif /* NO_GRAPHICS */
 
-#endif // SERVERUPDATE_H
+#endif /* SERVERUPDATE_H */

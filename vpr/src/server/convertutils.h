@@ -12,4 +12,4 @@ std::string getPrettyDurationStrFromMs(int64_t durationMs);
 std::string getPrettySizeStrFromBytesNum(int64_t bytesNum);
 std::string getTruncatedMiddleStr(const std::string& src, std::size_t num = DEFAULT_PRINT_STRING_MAX_NUM);
 
-#endif // CONVERTUTILS_H
+#endif /* CONVERTUTILS_H */

@@ -197,5 +197,5 @@ private:
 
 } // namespace server
 
-#endif // GATEIO_H
+#endif /* GATEIO_H */
 

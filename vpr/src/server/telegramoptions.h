@@ -57,4 +57,4 @@ private:
 
 } // namespace server
 
-#endif // TELEGRAMOPTIONS_H
+#endif /* TELEGRAMOPTIONS_H */

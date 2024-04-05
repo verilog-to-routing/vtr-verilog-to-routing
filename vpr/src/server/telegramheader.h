@@ -58,4 +58,4 @@ private:
 
 } // namespace comm
 
-#endif // TELEGRAMHEADER_H
+#endif /* TELEGRAMHEADER_H */

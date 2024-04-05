@@ -26,4 +26,4 @@ private:
 
 } // namespace comm
 
-#endif // TELEGRAMPARSER_H
+#endif /* TELEGRAMPARSER_H */
