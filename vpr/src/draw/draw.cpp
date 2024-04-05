@@ -217,6 +217,9 @@ void init_graphics_state(bool show_graphics_val,
     (void)route_type;
     (void)save_graphics;
     (void)graphics_commands;
+    (void)is_flat;
+    (void)enable_server;
+    (void)port_num;
 #endif // NO_GRAPHICS
 }
 

@@ -1,3 +1,5 @@
+#ifndef NO_GRAPHICS
+
 #ifndef TASKRESOLVER_H
 #define TASKRESOLVER_H
 
@@ -48,4 +50,6 @@ private:
 
 } // namespace server
 
-#endif // TASKRESOLVER_H
+#endif /* TASKRESOLVER_H */
+
+#endif /* NO_GRAPHICS */

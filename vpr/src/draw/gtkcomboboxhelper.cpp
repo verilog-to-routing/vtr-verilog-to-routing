@@ -1,3 +1,5 @@
+#ifndef NO_GRAPHICS
+
 #include "gtkcomboboxhelper.h"
 #include <gtk/gtk.h>
 
@@ -55,3 +57,5 @@ gint get_item_index_by_text(gpointer combo_box, const gchar* target_item) {
     g_free(current_item_text);
     return result_index;
 }
+
+#endif // NO_GRAPHICS

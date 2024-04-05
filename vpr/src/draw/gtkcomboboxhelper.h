@@ -1,6 +1,8 @@
 #ifndef GTKCOMBOBOXHELPER_H
 #define GTKCOMBOBOXHELPER_H
 
+#ifndef NO_GRAPHICS
+
 #include <glib.h>
 
 /**
@@ -14,5 +16,7 @@
  * @return The index of the item if found, or -1 if not found.
  */
 gint get_item_index_by_text(gpointer combo_box, const gchar* target_item);
+
+#endif // NO_GRAPHICS
 
 #endif // GTKCOMBOBOXHELPER_H

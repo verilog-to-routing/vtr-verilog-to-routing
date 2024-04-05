@@ -1,9 +1,9 @@
 #ifndef SERVERUPDATE_H
 #define SERVERUPDATE_H
 
-#include <glib.h>
-
 #ifndef NO_GRAPHICS
+
+#include <glib.h>
 
 namespace server {
 

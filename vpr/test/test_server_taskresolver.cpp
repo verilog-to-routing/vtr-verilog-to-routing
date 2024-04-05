@@ -4,6 +4,8 @@
 #include "taskresolver.h"
 #include <memory>
 
+#ifndef NO_GRAPHICS
+
 namespace {
 
 TEST_CASE("test_server_taskresolver_cmdSpamFilter", "[vpr]") {
@@ -110,3 +112,5 @@ TEST_CASE("test_server_taskresolver_cmdSpamAndOverrideOptions", "[vpr]") {
 }
 
 } // namespace
+
+#endif /* NO_GRAPHICS */

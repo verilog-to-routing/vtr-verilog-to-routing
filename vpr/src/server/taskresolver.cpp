@@ -1,3 +1,5 @@
+#ifndef NO_GRAPHICS
+
 #include "taskresolver.h"
 
 #include "commconstants.h"
@@ -163,3 +165,5 @@ void TaskResolver::processDrawCriticalPathTask(ezgl::application* app, const Tas
 }
 
 } // namespace server
+
+#endif /* NO_GRAPHICS */

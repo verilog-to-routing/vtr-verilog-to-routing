@@ -1,10 +1,10 @@
+#ifndef NO_GRAPHICS
+
 #include "serverupdate.h"
 #include "gateio.h"
 #include "taskresolver.h"
 #include "globals.h"
 #include "ezgl/application.hpp"
-
-#ifndef NO_GRAPHICS
 
 namespace server {
 
