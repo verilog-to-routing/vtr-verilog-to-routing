@@ -374,8 +374,8 @@ void ConnectionRouter<Heap>::timing_driven_expand_cheapest(t_heap* cheapest,
         VTR_LOGV_DEBUG(router_debug_, "    New back cost: %g\n", new_back_cost);
         VTR_LOGV_DEBUG(router_debug_, "      Setting path costs for associated node %d (from %d edge %zu)\n",
                        cheapest->index,
-                       cheapest->prev_node(),
-                       size_t(cheapest->prev_edge()));
+                       static_cast<size_t>(rr_graph_->edge_src_node(cheapest->prev_edge())),
+                       static_cast<size_t>(cheapest->prev_edge()));
 
         update_cheapest(cheapest, route_inf);
 
@@ -601,7 +601,6 @@ void ConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_params&
         next_ptr->backward_path_cost = next.backward_path_cost;
         next_ptr->index = to_node;
         next_ptr->set_prev_edge(from_edge);
-        next_ptr->set_prev_node(from_node);
 
         if (rcv_path_manager.is_enabled() && current->path_data) {
             next_ptr->path_data->path_rr = current->path_data->path_rr;
@@ -924,7 +923,7 @@ void ConnectionRouter<Heap>::add_route_tree_node_to_heap(
                        describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, inode, is_flat_).c_str());
 
         push_back_node(&heap_, rr_node_route_inf_,
-                       inode, tot_cost, RRNodeId::INVALID(), RREdgeId::INVALID(),
+                       inode, tot_cost, RREdgeId::INVALID(),
                        backward_path_cost, R_upstream);
     } else {
         float expected_total_cost = compute_node_cost_using_rcv(cost_params, inode, target_node, rt_node.Tdel, 0, R_upstream);

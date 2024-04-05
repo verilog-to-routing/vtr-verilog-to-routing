@@ -171,21 +171,21 @@ void ClusteredNetlistStats::write(OutputFormat fmt, std::ostream& output) const 
     }
 }
 
-void writeClusteredNetlistStats(std::string block_usage_filename) {
+void writeClusteredNetlistStats(const std::string& block_usage_filename) {
     const auto stats = ClusteredNetlistStats();
 
     // Print out the human readable version to stdout
 
     stats.write(ClusteredNetlistStats::OutputFormat::HumanReadable, std::cout);
 
-    if (block_usage_filename.size() > 0) {
+    if (!block_usage_filename.empty()) {
         ClusteredNetlistStats::OutputFormat fmt;
 
-        if (vtr::check_file_name_extension(block_usage_filename.c_str(), ".json")) {
+        if (vtr::check_file_name_extension(block_usage_filename, ".json")) {
             fmt = ClusteredNetlistStats::OutputFormat::JSON;
-        } else if (vtr::check_file_name_extension(block_usage_filename.c_str(), ".xml")) {
+        } else if (vtr::check_file_name_extension(block_usage_filename, ".xml")) {
             fmt = ClusteredNetlistStats::OutputFormat::XML;
-        } else if (vtr::check_file_name_extension(block_usage_filename.c_str(), ".txt")) {
+        } else if (vtr::check_file_name_extension(block_usage_filename, ".txt")) {
             fmt = ClusteredNetlistStats::OutputFormat::HumanReadable;
         } else {
             VPR_FATAL_ERROR(VPR_ERROR_PACK, "Unknown extension on output %s", block_usage_filename.c_str());
@@ -608,7 +608,7 @@ static void ShowPlacerOpts(const t_placer_opts& PlacerOpts,
         }
 
         VTR_LOG("PlacerOpts.constraints_file: ");
-        if (PlacerOpts.constraints_file == "") {
+        if (PlacerOpts.constraints_file.empty()) {
             VTR_LOG("No constraints file given\n");
         } else {
             VTR_LOG("Using constraints file '%s'\n", PlacerOpts.constraints_file.c_str());
@@ -795,6 +795,7 @@ static void ShowNocOpts(const t_noc_opts& NocOpts) {
     VTR_LOG("NocOpts.noc_flows_file: %s\n", NocOpts.noc_flows_file.c_str());
     VTR_LOG("NocOpts.noc_routing_algorithm: %s\n", NocOpts.noc_routing_algorithm.c_str());
     VTR_LOG("NocOpts.noc_placement_weighting: %f\n", NocOpts.noc_placement_weighting);
+    VTR_LOG("NocOpts.noc_aggregate_bandwidth_weighting: %f\n", NocOpts.noc_aggregate_bandwidth_weighting);
     VTR_LOG("NocOpts.noc_latency_constraints_weighting: %f\n", NocOpts.noc_latency_constraints_weighting);
     VTR_LOG("NocOpts.noc_latency_weighting: %f\n", NocOpts.noc_latency_weighting);
     VTR_LOG("NocOpts.noc_congestion_weighting: %f\n", NocOpts.noc_congestion_weighting);

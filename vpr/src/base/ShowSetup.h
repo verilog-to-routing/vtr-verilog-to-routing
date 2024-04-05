@@ -27,6 +27,6 @@ struct ClusteredNetlistStats {
 };
 
 void ShowSetup(const t_vpr_setup& vpr_setup);
-void writeClusteredNetlistStats(std::string block_usage_filename);
+void writeClusteredNetlistStats(const std::string& block_usage_filename);
 
 #endif
