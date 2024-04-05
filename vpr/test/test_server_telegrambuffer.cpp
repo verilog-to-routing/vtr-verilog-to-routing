@@ -3,8 +3,6 @@
 
 #include "telegrambuffer.h"
 
-namespace {
-
 TEST_CASE("test_server_bytearray", "[vpr]") {
     comm::ByteArray array1{"111"};
     comm::ByteArray array2{"222"};
@@ -142,5 +140,3 @@ TEST_CASE("test_server_telegrambuffer_clear", "[vpr]")
 
     REQUIRE(comm::ByteArray{} == tBuff.data());
 }
-
-} // namespace

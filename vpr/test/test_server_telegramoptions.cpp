@@ -3,8 +3,6 @@
 
 #include "telegramoptions.h"
 
-namespace {
-
 TEST_CASE("test_server_telegramoptions", "[vpr]") {
     server::TelegramOptions options{"int:path_num:11;string:path_type:debug;int:details_level:3;bool:is_flat_routing:0", {"path_num", "path_type", "details_level", "is_flat_routing"}};
 
@@ -26,5 +24,3 @@ TEST_CASE("test_server_telegramoptions_get_wrong_keys", "[vpr]") {
     REQUIRE(options.getInt("_details_level", -1) == -1);
     REQUIRE(options.getBool("_is_flat_routing", true) == true);
 }
-
-} // namespace

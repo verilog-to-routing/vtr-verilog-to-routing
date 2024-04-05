@@ -6,8 +6,6 @@
 
 #ifndef NO_GRAPHICS
 
-namespace {
-
 TEST_CASE("test_server_taskresolver_cmdSpamFilter", "[vpr]") {
     server::TaskResolver resolver;
     const int cmd = 10;
@@ -110,7 +108,5 @@ TEST_CASE("test_server_taskresolver_cmdSpamAndOverrideOptions", "[vpr]") {
     REQUIRE(task1->cmd() == 1);
     REQUIRE(task1->options() == "");
 }
-
-} // namespace
 
 #endif /* NO_GRAPHICS */
