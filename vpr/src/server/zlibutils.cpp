@@ -12,7 +12,7 @@ std::string tryCompress(const std::string& decompressed)
         return "";
     }
 
-    zs.next_in = (Bytef*)decompressed.data();
+    zs.next_in = reinterpret_cast<Bytef*>(const_cast<char*>(decompressed.data()));
     zs.avail_in = decompressed.size();
 
     int retCode;
@@ -48,7 +48,7 @@ std::string tryDecompress(const std::string& compressed)
         return "";
     }
 
-    zs.next_in = (Bytef*)compressed.data();
+    zs.next_in = reinterpret_cast<Bytef*>(const_cast<char*>(compressed.data()));
     zs.avail_in = compressed.size();
 
     int retCode;
