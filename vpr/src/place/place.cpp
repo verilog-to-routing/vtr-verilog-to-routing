@@ -4161,8 +4161,11 @@ static void alloc_and_load_for_fast_vertical_cost_update (float place_cost_exp) 
                                     }
                                 }
                             }
+                            int num_seen_tiles = (x_high - x_low + 1) * (y_high - y_low + 1);
+                            float avg_num_seen_inter_die_conn = static_cast<float>(num_inter_die_conn) / num_seen_tiles;
                             chanz_place_cost_fac[layer_high_num][x_high][y_high][layer_low_num][x_low][y_low] =
-                                (avg_num_inter_die_conn_per_tile  / num_inter_die_conn);
+                                (layer_high_num - layer_low_num + 1)
+                                / (avg_num_seen_inter_die_conn);
 
                             chanz_place_cost_fac[layer_high_num][x_high][y_high][layer_low_num][x_low][y_low] = pow(
                                 (double)chanz_place_cost_fac[layer_high_num][x_high][y_high][layer_low_num][x_low][y_low],
