@@ -102,7 +102,7 @@ These designs use many precisions including binary, different fixed point types 
     proxy               Proxy/synthetic benchmarks
     =================   ======================================
 
-The VTR benchmarks are provided as Verilog (enabling full flexibility to modify and change how the designs are implemented) under: ::
+The Koios benchmarks are provided as Verilog (enabling full flexibility to modify and change how the designs are implemented) under: ::
 
     $VTR_ROOT/vtr_flow/benchmarks/verilog/koios
 
