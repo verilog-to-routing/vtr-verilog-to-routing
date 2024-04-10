@@ -43,10 +43,6 @@ file(GLOB_RECURSE LIB_SOURCES src/*/*.cpp)
 file(GLOB_RECURSE LIB_HEADERS src/*/*.h)
 files_to_dirs(LIB_HEADERS LIB_INCLUDE_DIRS)
 
-if(${VTR_ENABLE_CAPNPROTO})
-    add_definitions("-DVTR_ENABLE_CAPNPROTO")
-endif()
-
 if(${VPR_DEBUG_PARTITION_TREE})
     message(STATUS "VPR: Partition tree debug logs: enabled")
     add_definitions("-DVPR_DEBUG_PARTITION_TREE")
@@ -61,7 +57,7 @@ add_library(libvpr STATIC
 
 target_include_directories(libvpr PUBLIC ${LIB_INCLUDE_DIRS})
 
-#VPR_ANALYTIC_PLACE is inisitalized in the root CMakeLists
+#VPR_ANALYTIC_PLACE is initialized in the root CMakeLists
 #Check Eigen dependency
 if(${VPR_ANALYTIC_PLACE})
 	message(STATUS "VPR Analytic Placement: Requested")
@@ -79,7 +75,7 @@ endif()
 
 set_target_properties(libvpr PROPERTIES PREFIX "") #Avoid extra 'lib' prefix
 
-#Specify link-time dependancies
+#Specify link-time dependencies
 target_link_libraries(libvpr
                         libvtrutil
                         libarchfpga
@@ -131,6 +127,7 @@ target_compile_definitions(libvpr PUBLIC ${GRAPHICS_DEFINES})
 
 if(${VTR_ENABLE_CAPNPROTO})
     target_link_libraries(libvpr libvtrcapnproto)
+    target_compile_definitions(libvpr PRIVATE VTR_ENABLE_CAPNPROTO)
 endif()
 
 add_executable(vpr ${EXEC_SOURCES})
@@ -249,7 +246,7 @@ endif()
 # Signal handler configuration
 #
 if (VPR_USE_SIGNAL_HANDLER)
-    #Check wheter VPR can use sigaction to handle signals (only supported by POSIX)
+    #Check whether VPR can use sigaction to handle signals (only supported by POSIX)
     CHECK_CXX_SYMBOL_EXISTS(sigaction csignal HAVE_SIGACTION)
     if(HAVE_SIGACTION)
         target_compile_definitions(libvpr PRIVATE VPR_USE_SIGACTION)
