@@ -3152,17 +3152,15 @@ static double get_net_cost(ClusterNetId net_id,
              * chany_place_cost_fac[bbptr.xmax][bbptr.xmin - 1];
 
     if (is_multi_layer) {
+//        int num_cross_layer_sink = OPEN;
+//        if (num_sink_per_layer[size_t(net_id)][0] > num_sink_per_layer[size_t(net_id)][1]) {
+//            num_cross_layer_sink = num_sink_per_layer[size_t(net_id)][1];
+//        } else {
+//            num_cross_layer_sink = num_sink_per_layer[size_t(net_id)][0];
+//        }
+//        VTR_ASSERT_DEBUG(num_cross_layer_sink >= 0);
 
-
-        int num_cross_layer_sink = OPEN;
-        if (num_sink_per_layer[size_t(net_id)][0] > num_sink_per_layer[size_t(net_id)][1]) {
-            num_cross_layer_sink = num_sink_per_layer[size_t(net_id)][1];
-        } else {
-            num_cross_layer_sink = num_sink_per_layer[size_t(net_id)][0];
-        }
-        VTR_ASSERT_DEBUG(num_cross_layer_sink >= 0);
-
-        ncost += (bbptr.layer_max - bbptr.layer_min) * num_cross_layer_sink
+        ncost += (bbptr.layer_max - bbptr.layer_min) * crossing
                  * chanz_place_cost_fac[bbptr.layer_max][bbptr.xmax][bbptr.ymax][bbptr.layer_min][bbptr.xmin][bbptr.ymin];
     }
 
