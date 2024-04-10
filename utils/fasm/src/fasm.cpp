@@ -413,7 +413,7 @@ static LogicVec lut_outputs(const t_pb* atom_pb, size_t num_inputs, const t_pb_r
     return lut.table();
 }
 
-const t_metadata_dict *FasmWriterVisitor::get_fasm_type(const t_pb_graph_node* pb_graph_node, const std::string& target_type) const {
+const t_metadata_dict *FasmWriterVisitor::get_fasm_type(const t_pb_graph_node* pb_graph_node, std::string_view target_type) const {
   if(pb_graph_node == nullptr) {
     return nullptr;
   }
@@ -659,7 +659,7 @@ void FasmWriterVisitor::find_clb_prefix(const t_pb_graph_node *node,
     }
 }
 
-void FasmWriterVisitor::output_fasm_mux(const std::string& fasm_mux_str,
+void FasmWriterVisitor::output_fasm_mux(std::string_view fasm_mux_str,
                                         t_interconnect *interconnect,
                                         const t_pb_graph_pin *mux_input_pin) {
     auto *pb_name = mux_input_pin->parent_node->pb_type->name;
@@ -741,15 +741,15 @@ void FasmWriterVisitor::output_fasm_mux(const std::string& fasm_mux_str,
 
     vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
         "fasm_mux %s[%d].%s[%d] found no matches in:\n%s\n",
-        pb_name, pb_index, port_name, pin_index, fasm_mux_str.c_str());
+        pb_name, pb_index, port_name, pin_index, fasm_mux_str.data());
 }
 
 void FasmWriterVisitor::output_fasm_features(const std::string& features) const {
   output_fasm_features(features, clb_prefix_, blk_prefix_);
 }
 
-void FasmWriterVisitor::output_fasm_features(const std::string& features, const std::string& clb_prefix, const std::string& blk_prefix) const {
-  std::stringstream os(features);
+void FasmWriterVisitor::output_fasm_features(const std::string& features, std::string_view clb_prefix, std::string_view blk_prefix) const {
+  std::istringstream os(features);
 
   while(os) {
     std::string feature;

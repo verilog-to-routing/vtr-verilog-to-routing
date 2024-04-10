@@ -26,7 +26,7 @@ static int cont;                 /* line continued? (used by strtok)*/
  *
  * The split strings (excluding the delimiters) are returned
  */
-std::vector<std::string> split(const char* text, const std::string& delims) {
+std::vector<std::string> split(const char* text, std::string_view delims) {
     if (text) {
         std::string text_str(text);
         return split(text_str, delims);
@@ -39,13 +39,13 @@ std::vector<std::string> split(const char* text, const std::string& delims) {
  *
  * The split strings (excluding the delimiters) are returned
  */
-std::vector<std::string> split(const std::string& text, const std::string& delims) {
+std::vector<std::string> split(std::string_view text, std::string_view delims) {
     std::vector<std::string> tokens;
 
     std::string curr_tok;
     for (char c : text) {
         if (delims.find(c) != std::string::npos) {
-            //Delimeter character
+            //Delimiter character
             if (!curr_tok.empty()) {
                 //At the end of the token
 
@@ -58,7 +58,7 @@ std::vector<std::string> split(const std::string& text, const std::string& delim
                 //Pass
             }
         } else {
-            //Non-delimeter append to token
+            //Non-delimiter append to token
             curr_tok += c;
         }
     }

@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <vector>
 #include <string>
+#include <string_view>
 #include <cstdarg>
 #include <array>
 
@@ -14,8 +15,8 @@ namespace vtr {
  *
  * The split strings (excluding the delimiters) are returned
  */
-std::vector<std::string> split(const char* text, const std::string& delims = " \t\n");
-std::vector<std::string> split(const std::string& text, const std::string& delims = " \t\n");
+std::vector<std::string> split(const char* text, std::string_view string_view = " \t\n");
+std::vector<std::string> split(std::string_view text, std::string_view delims = " \t\n");
 
 ///@brief Returns 'input' with the first instance of 'search' replaced with 'replace'
 std::string replace_first(const std::string& input, const std::string& search, const std::string& replace);
