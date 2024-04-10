@@ -345,7 +345,7 @@ struct ClusteringHelperContext : public Context {
     t_ext_pin_util_targets target_external_pin_util;
 
     // During clustering, a block is related to un-clustered primitives with nets.
-    // This relation has three types: low fanout, high fanout, and trasitive
+    // This relation has three types: low fanout, high fanout, and transitive
     // high_fanout_thresholds stores the threshold for nets to a block type to be considered high fanout
     t_pack_high_fanout_thresholds high_fanout_thresholds;
 
@@ -386,9 +386,10 @@ struct PlacementContext : public Context {
     ///@brief The pl_macros array stores all the placement macros (usually carry chains).
     std::vector<t_pl_macro> pl_macros;
 
-    ///@brief Stores ClusterBlockId of all movable clustered blocks.
+    ///@brief Stores ClusterBlockId of all movable clustered blocks (blocks that are not locked down to a single location)
     std::vector<ClusterBlockId> movable_blocks;
 
+    ///@brief Stores ClusterBlockId of all movable clustered of each block type
     std::unordered_map<int, std::vector<ClusterBlockId>> movable_blocks_per_type;
 
     /**

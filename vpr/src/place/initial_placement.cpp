@@ -225,7 +225,7 @@ static void check_initial_placement_legality();
 /**
  * @brief Fills movable_blocks in global PlacementContext
  */
-static void fill_movable_blocks();
+static void alloc_and_load_movable_blocks();
 
 static void check_initial_placement_legality() {
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -1154,7 +1154,7 @@ bool place_one_block(const ClusterBlockId& blk_id,
     return placed_macro;
 }
 
-static void fill_movable_blocks() {
+static void alloc_and_load_movable_blocks() {
     auto& place_ctx = g_vpr_ctx.mutable_placement();
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.device();
@@ -1225,7 +1225,7 @@ void initial_placement(const t_placer_opts& placer_opts,
     //Place all blocks
     place_all_blocks(placer_opts, block_scores, placer_opts.pad_loc_type, constraints_file);
 
-    fill_movable_blocks();
+    alloc_and_load_movable_blocks();
 
     // ensure all blocks are placed and that NoC routing has no cycles
     check_initial_placement_legality();
