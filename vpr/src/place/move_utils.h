@@ -126,6 +126,8 @@ ClusterBlockId propose_block_to_move(const t_placer_opts& placer_opts,
                                      ClusterNetId* net_from,
                                      int* pin_from);
 
+const std::vector<ClusterBlockId>& movable_blocks_per_type(const t_logical_block_type& blk_type);
+
 /**
  * @brief Select a random block to be swapped with another block
  * 

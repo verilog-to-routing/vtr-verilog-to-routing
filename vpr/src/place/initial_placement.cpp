@@ -1162,20 +1162,6 @@ static void alloc_and_load_movable_blocks() {
     place_ctx.movable_blocks.clear();
     place_ctx.movable_blocks_per_type.clear();
 
-    std::vector<int> available_logical_blk_types;
-
-    for (const auto& logical_blk_type : device_ctx.logical_block_types) {
-        //ignore empty type
-        if (logical_blk_type.index == 0) {
-            continue;
-        }
-
-        const auto& blk_per_type = cluster_ctx.clb_nlist.blocks_per_type(logical_blk_type);
-
-        if (!blk_per_type.empty()) {
-            available_logical_blk_types.push_back(logical_blk_type.index);
-        }
-    }
 
     // iterate over all clustered blocks and store block ids of movable ones
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {

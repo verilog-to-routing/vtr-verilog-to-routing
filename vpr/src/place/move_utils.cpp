@@ -590,6 +590,22 @@ ClusterBlockId propose_block_to_move(const t_placer_opts& /* placer_opts */,
     return b_from;
 }
 
+const std::vector<ClusterBlockId>& movable_blocks_per_type(const t_logical_block_type& blk_type) {
+    // empty vector is declared static to avoid re-allocation every time the function is called
+    static std::vector<ClusterBlockId> empty_vector;
+
+    const auto& place_ctx = g_vpr_ctx.placement();
+
+    if (place_ctx.movable_blocks_per_type.count(blk_type.index) == 0) {
+        return empty_vector;
+    }
+
+    // the vector is returned as const reference to avoid unnecessary copies,
+    // especially that returned vectors may be very large as they contain
+    // all clustered blocks with a specific block type
+    return place_ctx.movable_blocks_per_type.at(blk_type.index);
+}
+
 //Pick a random movable block to be swapped with another random block.
 //If none is found return ClusterBlockId::INVALID()
 ClusterBlockId pick_from_block() {

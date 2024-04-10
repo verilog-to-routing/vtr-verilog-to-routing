@@ -79,8 +79,7 @@ int KArmedBanditAgent::action_to_blk_type_(const size_t action_idx) {
 }
 
 std::vector<int> KArmedBanditAgent::get_available_logical_blk_types_() {
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& device_ctx = g_vpr_ctx.device();
 
     std::vector<int> available_blk_types;
 
@@ -89,7 +88,7 @@ std::vector<int> KArmedBanditAgent::get_available_logical_blk_types_() {
             continue;
         }
 
-        const auto& blk_per_type = cluster_ctx.clb_nlist.blocks_per_type(logical_blk_type);
+        const auto& blk_per_type = movable_blocks_per_type(logical_blk_type);
 
         if (!blk_per_type.empty()) {
             available_blk_types.push_back(logical_blk_type.index);
@@ -304,7 +303,10 @@ t_propose_action SoftmaxAgent::propose_action() {
 
 void SoftmaxAgent::set_block_ratio_() {
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    size_t num_total_blocks = cluster_ctx.clb_nlist.blocks().size();
+    const auto& place_ctx = g_vpr_ctx.placement();
+    size_t num_movable_total_blocks = place_ctx.movable_blocks.size();
+
+    num_movable_total_blocks = std::max<size_t>(num_movable_total_blocks, 1);
 
     // allocate enough space for available block types in the netlist
     block_type_ratio_.resize(num_available_types_);
@@ -316,8 +318,8 @@ void SoftmaxAgent::set_block_ratio_() {
     for (size_t itype = 0; itype < num_available_types_; itype++) {
         t_logical_block_type blk_type;
         blk_type.index = agent_to_phy_blk_type(itype);
-        auto num_blocks = cluster_ctx.clb_nlist.blocks_per_type(blk_type).size();
-        block_type_ratio_[itype] = (float)num_blocks / num_total_blocks;
+        auto num_blocks = movable_blocks_per_type(blk_type).size();
+        block_type_ratio_[itype] = (float)num_blocks / num_movable_total_blocks;
         block_type_ratio_[itype] /= num_available_moves_;
     }
 }
