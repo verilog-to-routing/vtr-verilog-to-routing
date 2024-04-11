@@ -4369,14 +4369,13 @@ static void print_placement_move_types_stats(
     }
 
     auto& device_ctx = g_vpr_ctx.device();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
     int count = 0;
     int num_of_avail_moves = move_type_stat.blk_type_moves.size() / device_ctx.logical_block_types.size();
 
     //Print placement information for each block type
     for (const auto& itype : device_ctx.logical_block_types) {
         //Skip non-existing block types in the netlist
-        if (itype.index == 0 || cluster_ctx.clb_nlist.blocks_per_type(itype).empty()) {
+        if (itype.index == 0 || movable_blocks_per_type(itype).empty()) {
             continue;
         }
 

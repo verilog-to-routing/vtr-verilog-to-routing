@@ -302,7 +302,6 @@ t_propose_action SoftmaxAgent::propose_action() {
 }
 
 void SoftmaxAgent::set_block_ratio_() {
-    auto& cluster_ctx = g_vpr_ctx.clustering();
     const auto& place_ctx = g_vpr_ctx.placement();
     size_t num_movable_total_blocks = place_ctx.movable_blocks.size();
 

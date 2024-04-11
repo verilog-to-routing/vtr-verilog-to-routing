@@ -1157,7 +1157,6 @@ bool place_one_block(const ClusterBlockId& blk_id,
 static void alloc_and_load_movable_blocks() {
     auto& place_ctx = g_vpr_ctx.mutable_placement();
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& device_ctx = g_vpr_ctx.device();
 
     place_ctx.movable_blocks.clear();
     place_ctx.movable_blocks_per_type.clear();
