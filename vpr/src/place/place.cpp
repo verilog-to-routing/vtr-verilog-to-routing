@@ -648,9 +648,6 @@ void try_place(const Netlist<>& net_list,
     move_lim = (int)(annealing_sched.inner_num
                      * pow(net_list.blocks().size(), 1.3333));
 
-    //create the move generator based on the chosen strategy
-    create_move_generators(move_generator, move_generator2, placer_opts, move_lim);
-
     alloc_and_load_placement_structs(placer_opts.place_cost_exp, placer_opts, noc_opts, directs, num_directs);
 
     vtr::ScopedStartFinishTimer timer("Placement");
@@ -662,6 +659,9 @@ void try_place(const Netlist<>& net_list,
     initial_placement(placer_opts,
                       placer_opts.constraints_file.c_str(),
                       noc_opts);
+
+    //create the move generator based on the chosen strategy
+    create_move_generators(move_generator, move_generator2, placer_opts, move_lim);
 
     if (!placer_opts.write_initial_place_file.empty()) {
         print_place(nullptr,
