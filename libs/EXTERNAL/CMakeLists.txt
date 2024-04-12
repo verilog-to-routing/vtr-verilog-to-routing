@@ -137,3 +137,10 @@ target_include_directories(Catch2
         $<INSTALL_INTERFACE:include>
         )
 
+# Some sockpp headers generate warnings, so treat them as system headers to suppress warnings
+target_include_directories(sockpp-static
+        SYSTEM
+        PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/sockpp/include>
+        $<INSTALL_INTERFACE:include>
+        )
