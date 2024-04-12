@@ -1,3 +1,6 @@
 [submodule "libs/EXTERNAL/libcatch2"]
 	path = libs/EXTERNAL/libcatch2
 	url = https://github.com/catchorg/Catch2.git
+[submodule "libs/EXTERNAL/sockpp"]
+	path = libs/EXTERNAL/sockpp
+	url = git@github.com:fpagliughi/sockpp.git

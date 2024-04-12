@@ -64,4 +64,9 @@
         internal_path="parmys"
         external_url="https://github.com/CAS-Atlantic/parmys-plugin.git"
         default_external_ref="v3.0"/>
+    <subtree
+        name="sockpp"
+        internal_path="libs/EXTERNAL/sockpp"
+        external_url="https://github.com/fpagliughi/sockpp.git"
+        default_external_ref="v1.0.0"/>
 </subtrees>
