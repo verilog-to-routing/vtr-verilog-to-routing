@@ -1325,16 +1325,6 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .action(argparse::Action::STORE_TRUE)
         .default_value("off");
 
-    stage_grp.add_argument<bool, ParseOnOff>(args.is_server_mode_enabled, "--server")
-        .help("Run in server mode")
-        .action(argparse::Action::STORE_TRUE)
-        .default_value("off");
-
-    stage_grp.add_argument<int>(args.server_port_num, "--port")
-        .help("Server port number")
-        .default_value("60555")
-        .show_in(argparse::ShowIn::HELP_ONLY);
-
     stage_grp.epilog(
         "If none of the stage options are specified, all stages are run.\n"
         "Analysis is always run after routing, unless the implementation\n"
@@ -2888,6 +2878,19 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             "Name of the output file that contains the NoC placement information."
             "The default name is 'vpr_noc_placement_output.txt'")
         .default_value("vpr_noc_placement_output.txt")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    auto& server_grp = parser.add_argument_group("server options");
+
+    server_grp.add_argument<bool, ParseOnOff>(args.is_server_mode_enabled, "--server")
+        .help("Run in server mode."
+              "Accept client application connection and respond to requests." )
+        .action(argparse::Action::STORE_TRUE)
+        .default_value("off");
+
+    server_grp.add_argument<int>(args.server_port_num, "--port")
+        .help("Server port number.")
+        .default_value("60555")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     return parser;
