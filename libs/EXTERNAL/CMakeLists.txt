@@ -15,7 +15,6 @@ add_subdirectory(libcatch2)
 set(SOCKPP_BUILD_SHARED OFF CACHE BOOL "Override default value" FORCE)
 set(SOCKPP_BUILD_STATIC ON CACHE BOOL "Override default value" FORCE)
 add_subdirectory(sockpp)
-set(THIRDPARTY_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/sockpp/include)
 
 #VPR_USE_EZGL is initialized in the root CMakeLists.
 #compile libezgl only if the user asks for or has its dependencies installed.

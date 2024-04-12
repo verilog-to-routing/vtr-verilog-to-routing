@@ -55,7 +55,7 @@ add_library(libvpr STATIC
 )
 
 
-target_include_directories(libvpr PUBLIC ${LIB_INCLUDE_DIRS} ${THIRDPARTY_INCLUDE_DIRS})
+target_include_directories(libvpr PUBLIC ${LIB_INCLUDE_DIRS})
 
 #VPR_ANALYTIC_PLACE is initialized in the root CMakeLists
 #Check Eigen dependency
