@@ -101,7 +101,7 @@ void TaskResolver::processGetPathListTask(ezgl::application*, const TaskPtr& tas
     if (!options.hasErrors()) {
         ServerContext& server_ctx = g_vpr_ctx.mutable_server(); // shortcut
 
-        server_ctx.set_crit_path_elements(std::map<std::size_t, std::set<std::size_t>>{}); // reset selection if path list options has changed
+        server_ctx.clear_crit_path_elements(); // reset selection if path list options has changed
 
         // read options
         const int nCriticalPathNum = options.getInt(comm::OPTION_PATH_NUM, 1);

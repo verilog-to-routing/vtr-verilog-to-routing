@@ -577,7 +577,8 @@ class ServerContext : public Context {
     void set_path_type(const std::string& path_type) { path_type_ = path_type; }
     const std::string& path_type() const { return path_type_; }
 
-    void set_crit_path_elements(std::map<std::size_t, std::set<std::size_t>> crit_path_element_indexes) { crit_path_element_indexes_ = crit_path_element_indexes; }
+    void clear_crit_path_elements() { crit_path_element_indexes_.clear(); }
+    void set_crit_path_elements(const std::map<std::size_t, std::set<std::size_t>>& crit_path_element_indexes) { crit_path_element_indexes_ = crit_path_element_indexes; }
     std::map<std::size_t, std::set<std::size_t>> crit_path_element_indexes() const { return crit_path_element_indexes_; }
 
     void set_draw_crit_path_contour(bool draw_crit_path_contour) { draw_crit_path_contour_ = draw_crit_path_contour; }
