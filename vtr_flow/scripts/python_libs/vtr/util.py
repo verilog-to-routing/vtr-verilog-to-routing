@@ -8,6 +8,7 @@ import time
 import subprocess
 import argparse
 import csv
+import os
 
 from collections import OrderedDict
 from pathlib import PurePath
@@ -145,12 +146,23 @@ class CommandRunner:
         try:
             # Call the command
             stderr = None if self._valgrind else subprocess.STDOUT
+
+            # capnproto accesses PWD environment variable to learn about
+            # the current working directory. However, subprocess.Popen()
+            # changes the working directory without updating this variable.
+            # This can cause issues when a VTR task passes router lookahead
+            # or RR graph files to VPR. PWD environment variable is updated
+            # manually to prevent capnproto from throwing exceptions.
+            modified_environ = os.environ.copy()
+            modified_environ['PWD'] = str(temp_dir)
+
             proc = subprocess.Popen(
                 cmd,
                 stdout=subprocess.PIPE,  # We grab stdout
                 stderr=stderr,  # stderr redirected to stderr
                 universal_newlines=True,  # Lines always end in \n
                 cwd=str(temp_dir),  # Where to run the command
+                env=modified_environ
             )
 
             # Read the output line-by-line and log it
@@ -442,6 +454,7 @@ REUSABLE_FILES = {
     "route": ["route", "--route_file"],
     "rr_graph": ["rr_graph.xml", "--read_rr_graph"],
     "lookahead": ["lookahead.bin", "--read_router_lookahead"],
+    "blif": ["pre-vpr.blif", "REPLACE_BLIF"],
 }
 
 
@@ -456,11 +469,12 @@ def argparse_use_previous(inp: str) -> List[Tuple[str, List]]:
     for w in tokens:
         r = re.fullmatch(r"(\w+):(\w+)", w)
         if not r:
-            raise argparse.ArgumentTypeError("Invalid input to -use_previous: %s" % w)
+            raise argparse.ArgumentError(None, "Invalid input to -use_previous: %s" % w)
         if not REUSABLE_FILES.get(r.group(2)):
-            raise argparse.ArgumentTypeError(
+            raise argparse.ArgumentError(
+                None,
                 "Unknown file type to use_previous: %s, available types: %s"
-                % (r.group(2), ",".join(REUSABLE_FILES.keys()))
+                % (r.group(2), ",".join(REUSABLE_FILES.keys())),
             )
         out.append((r.group(1), REUSABLE_FILES[r.group(2)]))
 

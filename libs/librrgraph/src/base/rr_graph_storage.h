@@ -338,6 +338,11 @@ class t_rr_graph_storage {
         return ret;
     }
 
+    /** @brief Get the source node for the specified edge. */
+    RRNodeId edge_src_node(const RREdgeId& edge) const {
+        return edge_src_node_[edge];
+    }
+
     /** @brief Get the destination node for the specified edge. */
     RRNodeId edge_sink_node(const RREdgeId& edge) const {
         return edge_dest_node_[edge];
@@ -679,11 +684,6 @@ class t_rr_graph_storage {
     static inline Direction get_node_direction(
         vtr::array_view_id<RRNodeId, const t_rr_node_data> node_storage,
         RRNodeId id) {
-        auto& node_data = node_storage[id];
-        if (node_data.type_ != CHANX && node_data.type_ != CHANY) {
-            VTR_LOG_ERROR("Attempted to access RR node 'direction' for non-channel type '%s'",
-                          rr_node_typename[node_data.type_]);
-        }
         return node_storage[id].dir_side_.direction;
     }
 

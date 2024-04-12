@@ -22,6 +22,12 @@ yosys_exe_path = yosys_path / "yosys"
 yosys_tcl_path = vtr_flow_path / "misc" / "yosys"
 yosys_script_path = yosys_tcl_path / "synthesis.tcl"
 
+# PARMYS paths
+parmys_path = root_path / "parmys"
+parmys_verify_path = parmys_path / "verify_parmys.sh"
+parmys_benchmark_path = parmys_path / "regression_test" / "benchmark"
+parmys_output_on_error_path = parmys_path / "regression_test" / ".library" / "output_on_error.conf"
+
 # ABC paths
 abc_path = root_path / "abc"
 abc_exe_path = abc_path / "abc"

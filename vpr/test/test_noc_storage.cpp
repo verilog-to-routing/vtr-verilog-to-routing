@@ -155,6 +155,8 @@ TEST_CASE("test_add_link", "[vpr_noc]") {
 
     // allocate the size for outgoing link vector for each router
     test_noc.make_room_for_noc_router_link_list();
+    // incremental counter used as NocLinkId
+    int noc_link_id_counter = 0;
 
     for (int source_router_id = 0; source_router_id < NUM_OF_ROUTERS; source_router_id++) {
         source = (NocRouterId)source_router_id;
@@ -164,8 +166,12 @@ TEST_CASE("test_add_link", "[vpr_noc]") {
 
             // makes sure we do not create a link for a router who acts as a sink and source
             if (source_router_id != sink_router_id) {
+                // converting the counter to link index
+                link_id = (NocLinkId)noc_link_id_counter;
+                noc_link_id_counter++;
+
                 // add link to the golden reference
-                golden_set.emplace_back(source, sink);
+                golden_set.emplace_back(link_id, source, sink, 0.0);
 
                 // add the link to the NoC
                 test_noc.add_link(source, sink);
@@ -204,8 +210,6 @@ TEST_CASE("test_router_link_list", "[vpr_noc]") {
     // temp variables that hold the routers involved within a link
     NocRouterId source;
     NocRouterId sink;
-
-    NocLinkId link_id;
 
     // testing datastructure
     NocStorage test_noc;
@@ -279,7 +283,7 @@ TEST_CASE("test_remove_link", "[vpr_noc]") {
     std::mt19937 rand_num_gen(device());
 
     // random number generation to determine routers of the link to remove
-    std::uniform_int_distribution<std::mt19937::result_type> src_router(0, NUM_OF_ROUTERS);
+    std::uniform_int_distribution<std::mt19937::result_type> src_router(0, NUM_OF_ROUTERS - 1);
     std::uniform_int_distribution<std::mt19937::result_type> sink_router(1, NOC_CONNECTIVITY - 1);
 
     // create the NoC
@@ -349,9 +353,9 @@ TEST_CASE("test_remove_link", "[vpr_noc]") {
 
         auto& outgoing_links = test_noc.get_noc_router_connections(link_to_remove_src_router);
         // go through all the outgoing links  of the source router in the link we removed and check that the link does not exist there as well.
-        for (auto outgoing_link_id = outgoing_links.begin(); outgoing_link_id != outgoing_links.end(); outgoing_link_id++) {
+        for (auto outgoing_link : outgoing_links) {
             // get the current outgoing link
-            const NocLink& curr_outgoing_link = test_noc.get_single_noc_link(*outgoing_link_id);
+            const NocLink& curr_outgoing_link = test_noc.get_single_noc_link(outgoing_link);
 
             if ((curr_outgoing_link.get_source_router() == link_to_remove_src_router) && (curr_outgoing_link.get_sink_router() == link_to_remove_sink_router)) {
                 link_removed_from_outgoing_vector = false;
@@ -363,9 +367,9 @@ TEST_CASE("test_remove_link", "[vpr_noc]") {
         const auto& links_in_noc = test_noc.get_noc_links();
         // go through the links and make sure that none of them have the source and sink router of the link
         // that we removed. THe removed link should have the source and sink routers set to invalid values.
-        for (auto single_link = links_in_noc.begin(); single_link != links_in_noc.end(); single_link++) {
+        for (auto single_link : links_in_noc) {
             // check whether the source and sink router of the current link matches the routers in the link to remove
-            if ((single_link->get_source_router() == link_to_remove_src_router) && (single_link->get_sink_router() == link_to_remove_sink_router)) {
+            if ((single_link.get_source_router() == link_to_remove_src_router) && (single_link.get_sink_router() == link_to_remove_sink_router)) {
                 // this indicates that the link was not set to an invalid state and not removed properly
                 link_removed_from_outgoing_vector = false;
                 break;
@@ -412,8 +416,6 @@ TEST_CASE("test_generate_router_key_from_grid_location", "[vpr_noc]") {
     // this will be set to the total number of routers (and should be set before adding routers)
     test_noc.set_device_grid_spec((int)NUM_OF_ROUTERS, 0);
 
-    NocRouterId converted_id;
-
     // add all the routers to noc_storage and populate the golden router set
     for (int router_number = 0; router_number < NUM_OF_ROUTERS; router_number++) {
         // determine the current router parameters
@@ -436,7 +438,7 @@ TEST_CASE("test_generate_router_key_from_grid_location", "[vpr_noc]") {
     // the grid locations go from 0 to the total number of routers in the NoC
     for (int grid_location = 0; grid_location < NUM_OF_ROUTERS; grid_location++) {
         // contains the grid location of a router block seen during placement
-        // we dont care about the subtile so give it a arbritary value
+        // we don't care about the subtile so give it an arbitrary value
         t_pl_loc placement_router_grid_location = t_pl_loc(grid_location,
                                                            grid_location,
                                                            -1,

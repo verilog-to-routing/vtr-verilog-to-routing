@@ -88,60 +88,58 @@ class StrongIdIterator {
         return StrongId(size_t(id_) + offset);
     }
 
-    ///@brief + operator
-    template<typename IdType>
-    friend StrongIdIterator<IdType> operator+(
-        const StrongIdIterator<IdType>& lhs,
-        ssize_t n) {
-        StrongIdIterator ret = lhs;
-        ret += n;
-        return ret;
-    }
-
-    ///@brief - operator
-    template<typename IdType>
-    friend StrongIdIterator<IdType> operator-(
-        const StrongIdIterator<IdType>& lhs,
-        ssize_t n) {
-        StrongIdIterator ret = lhs;
-        ret -= n;
-        return ret;
-    }
-
     ///@brief ~ operator
     template<typename IdType>
-    friend ssize_t operator-(
-        const StrongIdIterator<IdType>& lhs,
-        const StrongIdIterator<IdType>& rhs) {
-        VTR_ASSERT_SAFE(bool(lhs.id_));
-        VTR_ASSERT_SAFE(bool(rhs.id_));
+    ssize_t operator-(const StrongIdIterator<IdType>& other) const {
+        VTR_ASSERT_SAFE(bool(id_));
+        VTR_ASSERT_SAFE(bool(other.id_));
 
-        ssize_t ret = size_t(lhs.id_);
-        ret -= size_t(rhs.id_);
+        ssize_t ret = size_t(id_);
+        ret -= size_t(other.id_);
         return ret;
     }
 
     ///@brief == operator
     template<typename IdType>
-    friend bool operator==(const StrongIdIterator<IdType>& lhs, const StrongIdIterator<IdType>& rhs) {
-        return lhs.id_ == rhs.id_;
+    bool operator==(const StrongIdIterator<IdType>& other) const {
+        return id_ == other.id_;
     }
 
     ///@brief != operator
     template<typename IdType>
-    friend bool operator!=(const StrongIdIterator<IdType>& lhs, const StrongIdIterator<IdType>& rhs) {
-        return lhs.id_ != rhs.id_;
+    bool operator!=(const StrongIdIterator<IdType>& other) const {
+        return id_ != other.id_;
     }
 
     ///@brief < operator
     template<typename IdType>
-    friend bool operator<(const StrongIdIterator<IdType>& lhs, const StrongIdIterator<IdType>& rhs) {
-        return lhs.id_ < rhs.id_;
+    bool operator<(const StrongIdIterator<IdType>& other) const {
+        return id_ < other.id_;
     }
 
   private:
     StrongId id_;
 };
+
+///@brief + operator
+template<typename IdType>
+inline StrongIdIterator<IdType> operator+(
+    const StrongIdIterator<IdType>& lhs,
+    ssize_t n) {
+    StrongIdIterator ret = lhs;
+    ret += n;
+    return ret;
+}
+
+///@brief - operator
+template<typename IdType>
+inline StrongIdIterator<IdType> operator-(
+    const StrongIdIterator<IdType>& lhs,
+    ssize_t n) {
+    StrongIdIterator ret = lhs;
+    ret -= n;
+    return ret;
+}
 
 /**
  * @brief StrongIdRange class

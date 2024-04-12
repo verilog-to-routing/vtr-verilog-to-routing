@@ -1,0 +1,334 @@
+["adder"]
+    regex = "adder (\d+)"
+    default = 0
+    hide-if = 0
+
+["addition_fp_16"]
+    regex = "addition_fp_16 (\d+)"
+    default = 0
+    hide-if = 0
+
+["addition_fp_32"]
+    regex = "addition_fp_32 (\d+)"
+    default = 0
+    hide-if = 0
+
+["addition_fp_clk_16"]
+    regex = "addition_fp_clk_16 (\d+)"
+    default = 0
+    hide-if = 0
+
+["addition_fp_clk_32"]
+    regex = "addition_fp_clk_32 (\d+)"
+    default = 0
+    hide-if = 0
+
+["BUFGCE"]
+    regex = "BUFGCE (\d+)"
+    default = 0
+    hide-if = 0
+
+["bufgctrl"]
+    regex = "bufgctrl (\d+)"
+    default = 0
+    hide-if = 0
+
+["CARRY"]
+    regex = "CARRY (\d+)"
+    default = 0
+    hide-if = 0
+
+["CARRY0"]
+    regex = "CARRY0 (\d+)"
+    default = 0
+    hide-if = 0
+
+["CARRY8"]
+    regex = "CARRY8 (\d+)"
+    default = 0
+    hide-if = 0
+
+["carry_follower"]
+    regex = "carry_follower (\d+)"
+    default = 0
+    hide-if = 0
+
+["DFF"]
+    regex = "DFF (\d+)"
+    default = 0
+    hide-if = 0
+
+["DFFE"]
+    regex = "DFFE (\d+)"
+    default = 0
+    hide-if = 0
+
+["dffeas"]
+    regex = "dffeas (\d+)"
+    default = 0
+    hide-if = 0
+
+["DFFN"]
+    regex = "DFFN (\d+)"
+    default = 0
+    hide-if = 0
+
+["DFFNE"]
+    regex = "DFFNE (\d+)"
+    default = 0
+    hide-if = 0
+
+["DRAM_2_OUTPUT_STUB"]
+    regex = "DRAM_2_OUTPUT_STUB (\d+)"
+    default = 0
+    hide-if = 0
+
+["DRAM_4_OUTPUT_STUB"]
+    regex = "DRAM_4_OUTPUT_STUB (\d+)"
+    default = 0
+    hide-if = 0
+
+["DSP48E2"]
+    regex = "DSP48E2 (\d+)"
+    default = 0
+    hide-if = 0
+
+["dual_port_ram"]
+    regex = "dual_port_ram (\d+)"
+    default = 0
+    hide-if = 0
+
+["FDRE"]
+    regex = "FDRE (\d+)"
+    default = 0
+    hide-if = 0
+
+["fp16_mult_add"]
+    regex = "fp16_mult_add (\d+)"
+    default = 0
+    hide-if = 0
+
+["fp16_mult_fp32_accum"]
+    regex = "fp16_mult_fp32_accum (\d+)"
+    default = 0
+    hide-if = 0
+
+["fp16_mult_fp32_add"]
+    regex = "fp16_mult_fp32_add (\d+)"
+    default = 0
+    hide-if = 0
+
+["fp16_sop2_accum"]
+    regex = "fp16_sop2_accum (\d+)"
+    default = 0
+    hide-if = 0
+
+["fp16_sop2_mult"]
+    regex = "fp16_sop2_mult (\d+)"
+    default = 0
+    hide-if = 0
+
+["fp32_mult_add"]
+    regex = "fp32_mult_add (\d+)"
+    default = 0
+    hide-if = 0
+
+["fp32_mult_then_add"]
+    regex = "fp32_mult_then_add (\d+)"
+    default = 0
+    hide-if = 0
+
+["fpu_add"]
+    regex = "fpu_add (\d+)"
+    default = 0
+    hide-if = 0
+
+["fpu_mul"]
+    regex = "fpu_mul (\d+)"
+    default = 0
+    hide-if = 0
+
+["frac_lut4"]
+    regex = "frac_lut4 (\d+)"
+    default = 0
+    hide-if = 0
+
+["IBUF"]
+    regex = "IBUF (\d+)"
+    default = 0
+    hide-if = 0
+
+["int_sop_2"]
+    regex = "int_sop_2 (\d+)"
+    default = 0
+    hide-if = 0
+
+["int_sop_4"]
+    regex = "int_sop_4 (\d+)"
+    default = 0
+    hide-if = 0
+
+["int_sop_accum_4"]
+    regex = "int_sop_accum_4 (\d+)"
+    default = 0
+    hide-if = 0
+
+["io"]
+    regex = "io (\d+)"
+    default = 0
+    hide-if = 0
+
+["IO_0"]
+    regex = "IO_0 (\d+)"
+    default = 0
+    hide-if = 0
+
+["IO_1"]
+    regex = "IO_1 (\d+)"
+    default = 0
+    hide-if = 0
+
+["IO_2"]
+    regex = "IO_2 (\d+)"
+    default = 0
+    hide-if = 0
+
+["IO_3"]
+    regex = "IO_3 (\d+)"
+    default = 0
+    hide-if = 0
+
+["LUT1"]
+    regex = "LUT1 (\d+)"
+    default = 0
+    hide-if = 0
+
+["LUT2"]
+    regex = "LUT2 (\d+)"
+    default = 0
+    hide-if = 0
+
+["LUT3"]
+    regex = "LUT3 (\d+)"
+    default = 0
+    hide-if = 0
+
+["LUT4"]
+    regex = "LUT4 (\d+)"
+    default = 0
+    hide-if = 0
+
+["LUT5"]
+    regex = "LUT5 (\d+)"
+    default = 0
+    hide-if = 0
+
+["LUT6"]
+    regex = "LUT6 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mac_fp_16"]
+    regex = "mac_fp_16 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mac_fp_32"]
+    regex = "mac_fp_32 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mac_int_18x19"]
+    regex = "mac_int_18x19 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mac_int_27x27"]
+    regex = "mac_int_27x27 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mac_int_9x9"]
+    regex = "mac_int_9x9 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_add_int_18x19"]
+    regex = "mult_add_int_18x19 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_add_int_27x27"]
+    regex = "mult_add_int_27x27 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_fp_16"]
+    regex = "mult_fp_16 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_fp_32"]
+    regex = "mult_fp_32 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_fp_clk_16"]
+    regex = "mult_fp_clk_16 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_fp_clk_32"]
+    regex = "mult_fp_clk_32 (\d+)"
+    default = 0
+    hide-if = 0
+
+["multiply"]
+    regex = "multiply (\d+)"
+    default = 0
+    hide-if = 0
+
+["noc_router_adapter_block"]
+    regex = "noc_router_adapter_block (\d+)"
+    default = 0
+    hide-if = 0
+
+["OBUF"]
+    regex = "OBUF (\d+)"
+    default = 0
+    hide-if = 0
+
+["pcie"]
+    regex = "pcie (\d+)"
+    default = 0
+    hide-if = 0
+
+["PRIMITIVE"]
+    regex = "PRIMITIVE (\d+)"
+    default = 0
+    hide-if = 0
+
+["RAMB36E2"]
+    regex = "RAMB36E2 (\d+)"
+    default = 0
+    hide-if = 0
+
+["router"]
+    regex = "router (\d+)"
+    default = 0
+    hide-if = 0
+
+["scff"]
+    regex = "scff (\d+)"
+    default = 0
+    hide-if = 0
+
+["single_port_ram"]
+    regex = "single_port_ram (\d+)"
+    default = 0
+    hide-if = 0
+
+["xadder"]
+    regex = "xadder (\d+)"
+    default = 0
+    hide-if = 0

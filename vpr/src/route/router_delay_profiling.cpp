@@ -1,7 +1,7 @@
 #include "router_delay_profiling.h"
 #include "globals.h"
 #include "route_common.h"
-#include "route_timing.h"
+#include "route_net.h"
 #include "route_export.h"
 #include "route_tree.h"
 #include "rr_graph.h"
@@ -21,7 +21,32 @@ RouterDelayProfiler::RouterDelayProfiler(const Netlist<>& net_list,
           g_vpr_ctx.device().rr_graph.rr_switch(),
           g_vpr_ctx.mutable_routing().rr_node_route_inf,
           is_flat)
-    , is_flat_(is_flat) {}
+    , is_flat_(is_flat) {
+    const auto& grid = g_vpr_ctx.device().grid;
+    int num_layers = grid.get_num_layers();
+
+    min_delays_.resize({g_vpr_ctx.device().physical_tile_types.size(),
+                        static_cast<unsigned long>(num_layers),
+                        static_cast<unsigned long>(num_layers),
+                        grid.width(),
+                        grid.height()});
+
+    for (int physical_tile_type_idx = 0; physical_tile_type_idx < static_cast<int>(g_vpr_ctx.device().physical_tile_types.size()); ++physical_tile_type_idx) {
+        for (int from_layer = 0; from_layer < num_layers; ++from_layer) {
+            for (int to_layer = 0; to_layer < num_layers; ++to_layer) {
+                for (int dx = 0; dx < static_cast<int>(grid.width()); ++dx) {
+                    for (int dy = 0; dy < static_cast<int>(grid.height()); ++dy) {
+                        // For the current distance that is under consideration, get the minimum cost from router lookahead. Also,
+                        // since the cost is used for placement, the source would be on OPINs; thus, we need to get the minimum distance on OPINs
+                        // not on channels.
+                        float min_delay = lookahead->get_opin_distance_min_delay(physical_tile_type_idx, from_layer, to_layer, dx, dy);
+                        min_delays_[physical_tile_type_idx][from_layer][to_layer][dx][dy] = min_delay;
+                    }
+                }
+            }
+        }
+    }
+}
 
 bool RouterDelayProfiler::calculate_delay(RRNodeId source_node,
                                           RRNodeId sink_node,
@@ -89,8 +114,7 @@ bool RouterDelayProfiler::calculate_delay(RRNodeId source_node,
         cost_params,
         bounding_box,
         router_stats,
-        conn_params,
-        true);
+        conn_params);
 
     if (found_path) {
         VTR_ASSERT(cheapest.index == sink_node);
@@ -112,6 +136,10 @@ bool RouterDelayProfiler::calculate_delay(RRNodeId source_node,
     router_.reset_path_costs();
 
     return found_path;
+}
+
+float RouterDelayProfiler::get_min_delay(int physical_tile_type_idx, int from_layer, int to_layer, int dx, int dy) const {
+    return min_delays_[physical_tile_type_idx][from_layer][to_layer][dx][dy];
 }
 
 //Returns the shortest path delay from src_node to all RR nodes in the RR graph, or NaN if no path exists

@@ -28,7 +28,7 @@ class ExtractionError(Exception):
     pass
 
 
-TITAN_URL_MIRRORS = {"eecg": "http://www.eecg.utoronto.ca/~vaughn/titan/"}
+TITAN_URL_MIRRORS = {"eecg": "https://www.eecg.utoronto.ca/~vaughn/titan/"}
 
 
 def parse_args():
@@ -41,7 +41,8 @@ def parse_args():
                     does nothing (unless --force is specified).
                   """
     )
-    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+                                     description=description)
 
     parser.add_argument(
         "--titan_version", default="2.0.0", help="Titan release version to download"
