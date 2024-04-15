@@ -165,7 +165,7 @@ void GateIO::startListening()
             try {
                 bytesActuallyReceived = client.read_n(&receivedMessage[0], chunkMaxBytesNum);
             } catch(...) {
-                m_logger.queue(LogLevel::Error, "fail to recieving");
+                m_logger.queue(LogLevel::Error, "fail to receiving");
                 isCommunicationProblemDetected = true;
             }
 
@@ -240,7 +240,7 @@ void GateIO::startListening()
             /// handle client alive
             if (clientAliveTrackerPtr) {
                 if (clientAliveTrackerPtr->isClientTimeout()) {
-                    m_logger.queue(LogLevel::Error, "client didn't repond too long");
+                    m_logger.queue(LogLevel::Error, "client didn't respond too long");
                     isCommunicationProblemDetected = true;
                 }
             }
