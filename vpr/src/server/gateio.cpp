@@ -27,7 +27,7 @@ void GateIO::start(int portNum)
 {
     if (!m_isRunning.load()) {
         m_portNum = portNum;
-        std::cout << "starting server" << std::endl;
+        VTR_LOG("starting server");
         m_isRunning.store(true);
         m_thread = std::thread(&GateIO::startListening, this);
     }

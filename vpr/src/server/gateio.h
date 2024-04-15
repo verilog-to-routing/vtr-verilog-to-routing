@@ -5,6 +5,8 @@
 
 #include "task.h"
 
+#include "vtr_log.h"
+
 #include <chrono>
 #include <sstream>
 #include <iostream>
@@ -105,7 +107,7 @@ class GateIO
         void flush() {
             std::unique_lock<std::mutex> lock(m_logStreamMutex);
             if (!m_logStream.str().empty()) {
-                std::cout << m_logStream.str();
+                VTR_LOG(m_logStream.str().c_str());
                 m_logStream.str("");
             }
         }
