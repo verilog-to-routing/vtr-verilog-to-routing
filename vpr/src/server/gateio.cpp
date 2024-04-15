@@ -91,6 +91,8 @@ void GateIO::startListening()
 
     std::optional<sockpp::tcp6_socket> clientOpt;
 
+    std::string receivedMessage;
+
     /// comm event loop
     while(m_isRunning.load()) {
         bool isCommunicationProblemDetected = false;
@@ -156,8 +158,9 @@ void GateIO::startListening()
             } // release lock
 
             /// handle receiving
-            std::string receivedMessage;
-            receivedMessage.resize(chunkMaxBytesNum);
+            if (receivedMessage.size() != chunkMaxBytesNum) {
+                receivedMessage.resize(chunkMaxBytesNum);
+            }
             std::size_t bytesActuallyReceived{0};
             try {
                 bytesActuallyReceived = client.read_n(&receivedMessage[0], chunkMaxBytesNum);
