@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <vector>
 #include <string>
+#include <string_view>
 #include <cstdarg>
 #include <array>
 
@@ -14,17 +15,17 @@ namespace vtr {
  *
  * The split strings (excluding the delimiters) are returned
  */
-std::vector<std::string> split(const char* text, const std::string& delims = " \t\n");
-std::vector<std::string> split(const std::string& text, const std::string& delims = " \t\n");
+std::vector<std::string> split(const char* text, std::string_view string_view = " \t\n");
+std::vector<std::string> split(std::string_view text, std::string_view delims = " \t\n");
 
 ///@brief Returns 'input' with the first instance of 'search' replaced with 'replace'
-std::string replace_first(const std::string& input, const std::string& search, const std::string& replace);
+std::string replace_first(std::string_view input, std::string_view search, std::string_view replace);
 
 ///@brief Returns 'input' with all instances of 'search' replaced with 'replace'
-std::string replace_all(const std::string& input, const std::string& search, const std::string& replace);
+std::string replace_all(std::string_view input, std::string_view search, std::string_view replace);
 
 ///@brief Retruns true if str starts with prefix
-bool starts_with(const std::string& str, const std::string& prefix);
+bool starts_with(const std::string& str, std::string_view prefix);
 
 ///@brief Returns a std::string formatted using a printf-style format string
 std::string string_fmt(const char* fmt, ...);
@@ -39,13 +40,13 @@ std::string vstring_fmt(const char* fmt, va_list args);
  *  would return "home/user/my_files/test.blif"
  */
 template<typename Iter>
-std::string join(Iter begin, Iter end, std::string delim);
+std::string join(Iter begin, Iter end, std::string_view delim);
 
 template<typename Container>
-std::string join(Container container, std::string delim);
+std::string join(Container container, std::string_view delim);
 
 template<typename T>
-std::string join(std::initializer_list<T> list, std::string delim);
+std::string join(std::initializer_list<T> list, std::string_view delim);
 
 template<typename Container>
 void uniquify(Container container);
@@ -69,7 +70,7 @@ double atod(const std::string& value);
  */
 int get_file_line_number_of_last_opened_file();
 bool file_exists(const char* filename);
-bool check_file_name_extension(const std::string& file_name, const std::string& file_extension);
+bool check_file_name_extension(std::string_view file_name, std::string_view file_extension);
 
 extern std::string out_file_prefix;
 
@@ -82,7 +83,7 @@ std::vector<std::string> ReadLineTokens(FILE* InFile, int* LineNum);
  * @brief Template join function implementation
  */
 template<typename Iter>
-std::string join(Iter begin, Iter end, std::string delim) {
+std::string join(Iter begin, Iter end, std::string_view delim) {
     std::string joined_str;
     for (auto iter = begin; iter != end; ++iter) {
         joined_str += *iter;
@@ -94,12 +95,12 @@ std::string join(Iter begin, Iter end, std::string delim) {
 }
 
 template<typename Container>
-std::string join(Container container, std::string delim) {
+std::string join(Container container, std::string_view delim) {
     return join(std::begin(container), std::end(container), delim);
 }
 
 template<typename T>
-std::string join(std::initializer_list<T> list, std::string delim) {
+std::string join(std::initializer_list<T> list, std::string_view delim) {
     return join(list.begin(), list.end(), delim);
 }
 
