@@ -13,8 +13,7 @@
 
 namespace server {
 
-void TaskResolver::ownTask(TaskPtr&& newTask)
-{
+void TaskResolver::ownTask(TaskPtr&& newTask) {
     // pre-process task before adding, where we could quickly detect failure scenarios
     for (const auto& task: m_tasks) {
         if (task->cmd() == newTask->cmd()) {
@@ -35,8 +34,7 @@ void TaskResolver::ownTask(TaskPtr&& newTask)
     m_tasks.emplace_back(std::move(newTask));
 }
 
-void TaskResolver::takeFinished(std::vector<TaskPtr>& result)
-{
+void TaskResolver::takeFinished(std::vector<TaskPtr>& result) {
     for (auto it=m_tasks.begin(); it != m_tasks.end();) {
         TaskPtr& task = *it;
         if (task->isFinished()) {
@@ -62,8 +60,7 @@ std::optional<e_timing_report_detail> TaskResolver::tryGetDetailsLevelEnum(const
     return std::nullopt;
 }
 
-bool TaskResolver::update(ezgl::application* app)
-{
+bool TaskResolver::update(ezgl::application* app) {
     bool has_processed_task = false;
     for (auto& task: m_tasks) {
         if (!task->isFinished()) {
@@ -86,8 +83,7 @@ bool TaskResolver::update(ezgl::application* app)
     return has_processed_task;
 }
 
-void TaskResolver::processGetPathListTask(ezgl::application*, const TaskPtr& task)
-{
+void TaskResolver::processGetPathListTask(ezgl::application*, const TaskPtr& task) {
     TelegramOptions options{task->options(), {comm::OPTION_PATH_NUM, comm::OPTION_PATH_TYPE, comm::OPTION_DETAILS_LEVEL, comm::OPTION_IS_FLAT_ROUTING}};
     if (!options.hasErrors()) {
         ServerContext& server_ctx = g_vpr_ctx.mutable_server(); // shortcut
@@ -130,8 +126,7 @@ void TaskResolver::processGetPathListTask(ezgl::application*, const TaskPtr& tas
     }
 }
 
-void TaskResolver::processDrawCriticalPathTask(ezgl::application* app, const TaskPtr& task)
-{
+void TaskResolver::processDrawCriticalPathTask(ezgl::application* app, const TaskPtr& task) {
     TelegramOptions options{task->options(), {comm::OPTION_PATH_ELEMENTS, comm::OPTION_HIGHLIGHT_MODE, comm::OPTION_DRAW_PATH_CONTOUR}};
     if (!options.hasErrors()) {
         ServerContext& server_ctx = g_vpr_ctx.mutable_server(); // shortcut
