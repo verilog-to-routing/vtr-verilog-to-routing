@@ -41,7 +41,7 @@ gint get_item_index_by_text(gpointer combo_box, const gchar* target_item) {
 
     gchar* current_item_text = nullptr;
 
-    for (gint index=0; index<get_items_count(combo_box); ++index) {
+    for (gint index = 0; index < get_items_count(combo_box); ++index) {
         GtkTreeIter iter;
 
         // Check if the index is within bounds
