@@ -49,7 +49,7 @@ void TaskResolver::takeFinished(std::vector<TaskPtr>& result)
 }
 
 e_timing_report_detail TaskResolver::getDetailsLevelEnum(const std::string& pathDetailsLevelStr) const {
-    e_timing_report_detail detailesLevel = e_timing_report_detail::NETLIST;
+    e_timing_report_detail detailesLevel = e_timing_report_detail::INVALID;
     if (pathDetailsLevelStr == "netlist") {
         detailesLevel = e_timing_report_detail::NETLIST;
     } else if (pathDetailsLevelStr == "aggregated") {
@@ -59,7 +59,7 @@ e_timing_report_detail TaskResolver::getDetailsLevelEnum(const std::string& path
     } else if (pathDetailsLevelStr == "debug") {
         detailesLevel = e_timing_report_detail::DEBUG;
     } else {
-        std::cerr << "unhandled option" << pathDetailsLevelStr << std::endl;
+        VTR_LOG_ERROR("unhandled option", pathDetailsLevelStr);
     }
     return detailesLevel;
 }
@@ -115,12 +115,12 @@ void TaskResolver::processGetPathListTask(ezgl::application*, const TaskPtr& tas
             task->success(msg);
         } else {
             std::string msg{"Critical paths report is empty"};
-            std::cerr << msg << std::endl;
+            VTR_LOG_ERROR(msg.c_str());
             task->fail(msg);
         }
     } else {
         std::string msg{"options errors in get crit path list telegram: " + options.errorsStr()};
-        std::cerr << msg << std::endl;
+        VTR_LOG_ERROR(msg.c_str());
         task->fail(msg);
     }
 }
@@ -147,12 +147,12 @@ void TaskResolver::processDrawCriticalPathTask(ezgl::application* app, const Tas
             task->success();
         } else {
             std::string msg{"cannot find ToggleCritPath qcombobox index for item " + highLightMode};
-            std::cerr << msg << std::endl;
+            VTR_LOG_ERROR(msg.c_str());
             task->fail(msg);
         }
     } else {
         std::string msg{"options errors in highlight crit path telegram: " + options.errorsStr()};
-        std::cerr << msg << std::endl;
+        VTR_LOG_ERROR(msg.c_str());
         task->fail(msg);
     }
 }
