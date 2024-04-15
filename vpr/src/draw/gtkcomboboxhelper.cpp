@@ -18,7 +18,7 @@ static gint get_items_count(gpointer combo_box) {
     GtkTreeModel* model = gtk_combo_box_get_model(GTK_COMBO_BOX(combo));
 
     // Get the number of items (indexes) in the combo box
-    gint count = gtk_tree_model_iter_n_children(model, NULL);
+    gint count = gtk_tree_model_iter_n_children(model, nullptr);
     return count;
 }
 
@@ -45,7 +45,7 @@ gint get_item_index_by_text(gpointer combo_box, const gchar* target_item) {
         GtkTreeIter iter;
 
         // Check if the index is within bounds
-        if (gtk_tree_model_iter_nth_child(model, &iter, NULL, index)) {
+        if (gtk_tree_model_iter_nth_child(model, &iter, nullptr, index)) {
             gtk_tree_model_get(model, &iter, 0, &current_item_text, -1);
             if (g_ascii_strcasecmp(target_item, current_item_text) == 0) {
                 result_index = index;
