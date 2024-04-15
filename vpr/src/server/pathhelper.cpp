@@ -88,8 +88,7 @@ CritPathsResult calcCriticalPath(const std::string& type, int critPathNum, e_tim
     auto& atom_ctx = g_vpr_ctx.atom();
 
     //Load the net delays
-    const Netlist<>& router_net_list = is_flat_routing ? (const Netlist<>&)g_vpr_ctx.atom().nlist : (const Netlist<>&)g_vpr_ctx.clustering().clb_nlist;
-    const Netlist<>& net_list = router_net_list;
+    const Netlist<>& net_list = is_flat_routing ? (const Netlist<>&)g_vpr_ctx.atom().nlist : (const Netlist<>&)g_vpr_ctx.clustering().clb_nlist;
 
     NetPinsMatrix<float> net_delay = make_net_pins_matrix<float>(net_list);
     load_net_delay_from_routing(net_list,
