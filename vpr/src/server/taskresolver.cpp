@@ -24,7 +24,7 @@ void TaskResolver::addTask(TaskPtr& newTask)
             } else {
                 // handle case when task has same cmd but different options
                 if (newTask->jobId() > task->jobId()) {
-                    std::string msg = "old " + task->info() + " is overriden by a new " + newTask->info();
+                    std::string msg = "old " + task->info() + " is overridden by a new " + newTask->info();
                     task->fail(msg);
                 }
             }
