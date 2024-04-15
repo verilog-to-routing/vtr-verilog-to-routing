@@ -7,6 +7,7 @@
 #include "vpr_types.h"
 
 #include <vector>
+#include <optional>
 
 namespace ezgl {
     class application;
@@ -44,7 +45,7 @@ private:
     void processGetPathListTask(ezgl::application*, const TaskPtr&);
     void processDrawCriticalPathTask(ezgl::application*, const TaskPtr&);
 
-    e_timing_report_detail getDetailsLevelEnum(const std::string& pathDetailsLevelStr) const;
+    std::optional<e_timing_report_detail> tryGetDetailsLevelEnum(const std::string& pathDetailsLevelStr) const;
 };
 
 } // namespace server

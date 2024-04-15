@@ -48,20 +48,18 @@ void TaskResolver::takeFinished(std::vector<TaskPtr>& result)
     }
 }
 
-e_timing_report_detail TaskResolver::getDetailsLevelEnum(const std::string& pathDetailsLevelStr) const {
-    e_timing_report_detail detailesLevel = e_timing_report_detail::INVALID;
+std::optional<e_timing_report_detail> TaskResolver::tryGetDetailsLevelEnum(const std::string& pathDetailsLevelStr) const {
     if (pathDetailsLevelStr == "netlist") {
-        detailesLevel = e_timing_report_detail::NETLIST;
+        return e_timing_report_detail::NETLIST;
     } else if (pathDetailsLevelStr == "aggregated") {
-        detailesLevel = e_timing_report_detail::AGGREGATED;
+        return e_timing_report_detail::AGGREGATED;
     } else if (pathDetailsLevelStr == "detailed") {
-        detailesLevel = e_timing_report_detail::DETAILED_ROUTING;
+        return e_timing_report_detail::DETAILED_ROUTING;
     } else if (pathDetailsLevelStr == "debug") {
-        detailesLevel = e_timing_report_detail::DEBUG;
-    } else {
-        VTR_LOG_ERROR("unhandled option", pathDetailsLevelStr);
+        return e_timing_report_detail::DEBUG;
     }
-    return detailesLevel;
+
+    return std::nullopt;
 }
 
 bool TaskResolver::update(ezgl::application* app)
@@ -99,22 +97,29 @@ void TaskResolver::processGetPathListTask(ezgl::application*, const TaskPtr& tas
         // read options
         const int nCriticalPathNum = options.getInt(comm::OPTION_PATH_NUM, 1);
         const std::string pathType = options.getString(comm::OPTION_PATH_TYPE);
-        const std::string detailsLevel = options.getString(comm::OPTION_DETAILS_LEVEL);
+        const std::string details_level_str = options.getString(comm::OPTION_DETAILS_LEVEL);
         const bool isFlat = options.getBool(comm::OPTION_IS_FLAT_ROUTING, false);
 
         // calculate critical path depending on options and store result in server context
-        CritPathsResult crit_paths_result = calcCriticalPath(pathType, nCriticalPathNum, getDetailsLevelEnum(detailsLevel), isFlat);
+        std::optional<e_timing_report_detail> details_level_opt = tryGetDetailsLevelEnum(details_level_str);
+        if (details_level_opt) {
+            CritPathsResult crit_paths_result = calcCriticalPath(pathType, nCriticalPathNum, details_level_opt.value(), isFlat);
 
-        // setup context
-        server_ctx.set_path_type(pathType);
-        server_ctx.set_critical_path_num(nCriticalPathNum);
-        server_ctx.set_crit_paths(crit_paths_result.paths);
+            // setup context
+            server_ctx.set_path_type(pathType);
+            server_ctx.set_critical_path_num(nCriticalPathNum);
+            server_ctx.set_crit_paths(crit_paths_result.paths);
 
-        if (crit_paths_result.isValid()) {
-            std::string msg{crit_paths_result.report};
-            task->success(msg);
+            if (crit_paths_result.isValid()) {
+                std::string msg{crit_paths_result.report};
+                task->success(msg);
+            } else {
+                std::string msg{"Critical paths report is empty"};
+                VTR_LOG_ERROR(msg.c_str());
+                task->fail(msg);
+            }
         } else {
-            std::string msg{"Critical paths report is empty"};
+            std::string msg{"unsupported report details level " + details_level_str};
             VTR_LOG_ERROR(msg.c_str());
             task->fail(msg);
         }
