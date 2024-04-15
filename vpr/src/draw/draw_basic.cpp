@@ -1111,6 +1111,7 @@ void draw_crit_path(ezgl::renderer* g) {
  */
 void draw_crit_path_elements(const std::vector<tatum::TimingPath>& paths, const std::map<std::size_t, std::set<std::size_t>>& indexes, ezgl::renderer* g)
 {
+#ifndef NO_SERVER
     t_draw_state* draw_state = get_draw_state_vars();
     static ezgl::color contour_color{0,0,0,40};
     const bool draw_crit_path_contour = g_vpr_ctx.server().draw_crit_path_contour();
@@ -1182,6 +1183,7 @@ void draw_crit_path_elements(const std::vector<tatum::TimingPath>& paths, const 
             }
         }
     }
+#endif /* NO_SERVER */
 }
 
 int get_timing_path_node_layer_num(tatum::NodeId node) {

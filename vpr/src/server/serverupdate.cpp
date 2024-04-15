@@ -1,4 +1,4 @@
-#ifndef NO_GRAPHICS
+#ifndef NO_SERVER
 
 #include "serverupdate.h"
 #include "gateio.h"
@@ -41,4 +41,4 @@ gboolean update(gpointer data) {
 
 } // namespace server
 
-#endif // NO_GRAPHICS
+#endif // NO_SERVER

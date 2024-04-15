@@ -102,6 +102,11 @@
 #    include <tbb/global_control.h>
 #endif
 
+#ifndef NO_SERVER
+#include "gateio.h"
+#include "serverupdate.h"
+#endif /* NO_SERVER */
+
 /* Local subroutines */
 static void free_complex_block_types();
 
@@ -388,6 +393,7 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
 
     // TODO: Placer still assumes that cluster net list is used - graphics can not work with flat routing yet
     vpr_init_graphics(vpr_setup, arch, false);
+    vpr_init_server(vpr_setup);
     { //Place
         const auto& placement_net_list = (const Netlist<>&)g_vpr_ctx.clustering().clb_nlist;
         bool place_success = vpr_place_flow(placement_net_list, vpr_setup, arch);
@@ -1046,9 +1052,23 @@ void vpr_init_graphics(const t_vpr_setup& vpr_setup, const t_arch& arch, bool is
     /* Startup X graphics */
     init_graphics_state(vpr_setup.ShowGraphics, vpr_setup.GraphPause,
                         vpr_setup.RouterOpts.route_type, vpr_setup.SaveGraphics,
-                        vpr_setup.GraphicsCommands, is_flat, vpr_setup.ServerOpts.is_server_mode_enabled, vpr_setup.ServerOpts.port_num);
+                        vpr_setup.GraphicsCommands, is_flat);
     if (vpr_setup.ShowGraphics || vpr_setup.SaveGraphics || !vpr_setup.GraphicsCommands.empty())
         alloc_draw_structs(&arch);
+}
+
+void vpr_init_server(const t_vpr_setup& vpr_setup)
+{
+#ifndef NO_SERVER
+    if (vpr_setup.ServerOpts.is_server_mode_enabled) {
+        /* Set up a server and its callback to be triggered at 100ms intervals by the timer's timeout event. */
+        server::GateIO& gate_io = g_vpr_ctx.mutable_server().mutable_gateIO();
+        if (!gate_io.isRunning()) {
+            gate_io.start(vpr_setup.ServerOpts.port_num);
+            g_timeout_add(/*interval_ms*/ 100, server::update, &application);
+        }
+    }
+#endif /* NO_SERVER */
 }
 
 void vpr_close_graphics(const t_vpr_setup& /*vpr_setup*/) {

@@ -2880,6 +2880,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("vpr_noc_placement_output.txt")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+#ifndef NO_SERVER
     auto& server_grp = parser.add_argument_group("server options");
 
     server_grp.add_argument<bool, ParseOnOff>(args.is_server_mode_enabled, "--server")
@@ -2892,6 +2893,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .help("Server port number.")
         .default_value("60555")
         .show_in(argparse::ShowIn::HELP_ONLY);
+#endif /* NO_SERVER */
 
     return parser;
 }

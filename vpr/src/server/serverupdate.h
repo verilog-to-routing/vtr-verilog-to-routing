@@ -1,7 +1,7 @@
 #ifndef SERVERUPDATE_H
 #define SERVERUPDATE_H
 
-#ifndef NO_GRAPHICS
+#ifndef NO_SERVER
 
 #include <glib.h>
 
@@ -18,6 +18,6 @@ gboolean update(gpointer);
 
 } // namespace server
 
-#endif /* NO_GRAPHICS */
+#endif /* NO_SERVER */
 
 #endif /* SERVERUPDATE_H */

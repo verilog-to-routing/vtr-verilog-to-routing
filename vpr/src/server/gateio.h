@@ -1,6 +1,8 @@
 #ifndef GATEIO_H
 #define GATEIO_H
 
+#ifndef NO_SERVER
+
 #include "task.h"
 
 #include <chrono>
@@ -196,6 +198,8 @@ private:
 };
 
 } // namespace server
+
+#endif /* NO_SERVER */
 
 #endif /* GATEIO_H */
 

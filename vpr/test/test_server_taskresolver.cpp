@@ -4,7 +4,7 @@
 #include "taskresolver.h"
 #include <memory>
 
-#ifndef NO_GRAPHICS
+#ifndef NO_SERVER
 
 TEST_CASE("test_server_taskresolver_cmdSpamFilter", "[vpr]") {
     server::TaskResolver resolver;
@@ -109,4 +109,4 @@ TEST_CASE("test_server_taskresolver_cmdSpamAndOverrideOptions", "[vpr]") {
     REQUIRE(task1->options() == "");
 }
 
-#endif /* NO_GRAPHICS */
+#endif /* NO_SERVER */

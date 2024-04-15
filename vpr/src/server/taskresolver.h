@@ -1,4 +1,4 @@
-#ifndef NO_GRAPHICS
+#ifndef NO_SERVER
 
 #ifndef TASKRESOLVER_H
 #define TASKRESOLVER_H
@@ -52,4 +52,4 @@ private:
 
 #endif /* TASKRESOLVER_H */
 
-#endif /* NO_GRAPHICS */
+#endif /* NO_SERVER */

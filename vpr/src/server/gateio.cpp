@@ -1,4 +1,7 @@
 #include "gateio.h"
+
+#ifndef NO_SERVER
+
 #include "telegramparser.h"
 #include "telegrambuffer.h"
 #include "commconstants.h"
@@ -259,3 +262,5 @@ void GateIO::printLogs()
 }
 
 } // namespace server
+
+#endif /* NO_SERVER */

@@ -79,9 +79,6 @@
 
 #ifndef NO_GRAPHICS
 
-#include "gateio.h"
-#include "serverupdate.h"
-
 //To process key presses we need the X11 keysym definitions,
 //which are unavailable when building with MINGW
 #    if defined(X11) && !defined(__MINGW32__)
@@ -184,9 +181,7 @@ void init_graphics_state(bool show_graphics_val,
                          enum e_route_type route_type,
                          bool save_graphics,
                          std::string graphics_commands,
-                         bool is_flat,
-                         bool enable_server,
-                         int port_num) {
+                         bool is_flat) {
 #ifndef NO_GRAPHICS
     /* Call accessor functions to retrieve global variables. */
     t_draw_state* draw_state = get_draw_state_vars();
@@ -201,15 +196,6 @@ void init_graphics_state(bool show_graphics_val,
     draw_state->save_graphics = save_graphics;
     draw_state->graphics_commands = graphics_commands;
     draw_state->is_flat = is_flat;
-
-    if (enable_server) {
-        /* Set up a server and its callback to be triggered at 100ms intervals by the timer's timeout event. */
-        server::GateIO& gate_io = g_vpr_ctx.mutable_server().mutable_gateIO();
-        if (!gate_io.isRunning()) {
-            gate_io.start(port_num);
-            g_timeout_add(/*interval_ms*/ 100, server::update, &application);
-        }
-    }
 #else
     //Suppress unused parameter warnings
     (void)show_graphics_val;
@@ -218,8 +204,6 @@ void init_graphics_state(bool show_graphics_val,
     (void)save_graphics;
     (void)graphics_commands;
     (void)is_flat;
-    (void)enable_server;
-    (void)port_num;
 #endif // NO_GRAPHICS
 }
 
@@ -269,12 +253,16 @@ static void draw_main_canvas(ezgl::renderer* g) {
 
     draw_placement_macros(g);
 
+#ifndef NO_SERVER
     if (g_vpr_ctx.server().gateIO().isRunning()) {
         const ServerContext& server_ctx = g_vpr_ctx.server(); // shortcut
         draw_crit_path_elements(server_ctx.crit_paths(), server_ctx.crit_path_element_indexes(), g);
     } else {
         draw_crit_path(g);
     }
+#else
+    draw_crit_path(g);
+#endif /* NO_SERVER */
 
     draw_logical_connections(g);
 

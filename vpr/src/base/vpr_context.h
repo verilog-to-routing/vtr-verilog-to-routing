@@ -553,7 +553,7 @@ struct NocContext : public Context {
     std::unique_ptr<NocRouting> noc_flows_router;
 };
 
-#ifndef NO_GRAPHICS
+#ifndef NO_SERVER
 /**
  * @brief State relating to server mode
  *
@@ -623,7 +623,7 @@ class ServerContext : public Context {
 
     bool draw_crit_path_contour_ = false;
 };
-#endif /* NO_GRAPHICS */
+#endif /* NO_SERVER */
 
 /**
  * @brief This object encapsulates VPR's state.
@@ -708,10 +708,10 @@ class VprContext : public Context {
     const PackingMultithreadingContext& packing_multithreading() const { return packing_multithreading_; }
     PackingMultithreadingContext& mutable_packing_multithreading() { return packing_multithreading_; }
 
-#ifndef NO_GRAPHICS
+#ifndef NO_SERVER
     const ServerContext& server() const { return server_; }
     ServerContext& mutable_server() { return server_; }
-#endif /* NO_GRAPHICS */
+#endif /* NO_SERVER */
 
   private:
     DeviceContext device_;
@@ -729,9 +729,9 @@ class VprContext : public Context {
     FloorplanningContext constraints_;
     NocContext noc_;
 
-#ifndef NO_GRAPHICS
+#ifndef NO_SERVER
     ServerContext server_;
-#endif /* NO_GRAPHICS */
+#endif /* NO_SERVER */
 
     PackingMultithreadingContext packing_multithreading_;
 };

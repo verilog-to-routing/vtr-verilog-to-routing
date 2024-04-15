@@ -139,6 +139,8 @@ void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch);
 void vpr_create_rr_graph(t_vpr_setup& vpr_setup, const t_arch& arch, int chan_width, bool is_flat);
 
 void vpr_init_graphics(const t_vpr_setup& vpr_setup, const t_arch& arch, bool is_flat);
+void vpr_init_server(const t_vpr_setup& vpr_setup);
+
 void vpr_close_graphics(const t_vpr_setup& vpr_setup);
 
 void vpr_setup_clock_networks(t_vpr_setup& vpr_setup, const t_arch& Arch);

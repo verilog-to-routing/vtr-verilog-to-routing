@@ -56,9 +56,7 @@ void init_graphics_state(bool show_graphics_val,
                          enum e_route_type route_type,
                          bool save_graphics,
                          std::string graphics_commands,
-                         bool is_flat,
-                         bool server,
-                         int port_num);
+                         bool is_flat);
 
 /* Allocates the structures needed to draw the placement and routing.*/
 void alloc_draw_structs(const t_arch* arch);

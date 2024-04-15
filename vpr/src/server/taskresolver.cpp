@@ -1,4 +1,4 @@
-#ifndef NO_GRAPHICS
+#ifndef NO_SERVER
 
 #include "taskresolver.h"
 
@@ -166,4 +166,4 @@ void TaskResolver::processDrawCriticalPathTask(ezgl::application* app, const Tas
 
 } // namespace server
 
-#endif /* NO_GRAPHICS */
+#endif /* NO_SERVER */
