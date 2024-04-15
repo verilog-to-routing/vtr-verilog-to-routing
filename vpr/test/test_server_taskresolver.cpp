@@ -17,11 +17,11 @@ TEST_CASE("test_server_taskresolver_cmdSpamFilter", "[vpr]") {
         server::TaskPtr task3 = std::make_unique<server::Task>(4,cmd);
         server::TaskPtr task4 = std::make_unique<server::Task>(5,cmd);
 
-        resolver.addTask(task0);
-        resolver.addTask(task1);
-        resolver.addTask(task2);
-        resolver.addTask(task3);
-        resolver.addTask(task4);
+        resolver.ownTask(std::move(task0));
+        resolver.ownTask(std::move(task1));
+        resolver.ownTask(std::move(task2));
+        resolver.ownTask(std::move(task3));
+        resolver.ownTask(std::move(task4));
     }
 
     std::vector<server::TaskPtr> finished;
@@ -50,9 +50,9 @@ TEST_CASE("test_server_taskresolver_cmdOverrideFilter", "[vpr]") {
         server::TaskPtr task1 = std::make_unique<server::Task>(2,cmd,"11");
         server::TaskPtr task2 = std::make_unique<server::Task>(3,cmd,"222");
 
-        resolver.addTask(task0);
-        resolver.addTask(task1);
-        resolver.addTask(task2);
+        resolver.ownTask(std::move(task0));
+        resolver.ownTask(std::move(task1));
+        resolver.ownTask(std::move(task2));
     }
 
     std::vector<server::TaskPtr> finished;
@@ -84,13 +84,13 @@ TEST_CASE("test_server_taskresolver_cmdSpamAndOverrideOptions", "[vpr]") {
         server::TaskPtr task5 = std::make_unique<server::Task>(6,1);
         server::TaskPtr task6 = std::make_unique<server::Task>(7,1);
 
-        resolver.addTask(task0);
-        resolver.addTask(task1);
-        resolver.addTask(task2);
-        resolver.addTask(task3);
-        resolver.addTask(task4);
-        resolver.addTask(task5);
-        resolver.addTask(task6);
+        resolver.ownTask(std::move(task0));
+        resolver.ownTask(std::move(task1));
+        resolver.ownTask(std::move(task2));
+        resolver.ownTask(std::move(task3));
+        resolver.ownTask(std::move(task4));
+        resolver.ownTask(std::move(task5));
+        resolver.ownTask(std::move(task6));
     }
 
     std::vector<server::TaskPtr> finished;

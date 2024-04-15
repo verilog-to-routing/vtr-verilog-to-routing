@@ -13,7 +13,7 @@
 
 namespace server {
 
-void TaskResolver::addTask(TaskPtr& newTask)
+void TaskResolver::ownTask(TaskPtr&& newTask)
 {
     // pre-process task before adding, where we could quickly detect failure scenarios
     for (const auto& task: m_tasks) {
@@ -31,15 +31,8 @@ void TaskResolver::addTask(TaskPtr& newTask)
         }
     }
 
-    // add task
-    m_tasks.push_back(std::move(newTask));
-}
-
-void TaskResolver::addTasks(std::vector<TaskPtr>& tasks)
-{
-    for (TaskPtr& task: tasks) {
-        addTask(task);
-    }
+    // own task
+    m_tasks.emplace_back(std::move(newTask));
 }
 
 void TaskResolver::takeFinished(std::vector<TaskPtr>& result)

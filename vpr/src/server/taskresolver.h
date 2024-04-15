@@ -27,9 +27,8 @@ public:
 
     int tasksNum() const { return m_tasks.size(); }
 
-    /* add tasks to process */
-    void addTask(TaskPtr&);
-    void addTasks(std::vector<TaskPtr>&);
+    /* own task to process */
+    void ownTask(TaskPtr&&);
 
     /* process tasks */
     bool update(ezgl::application*);
