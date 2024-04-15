@@ -1134,7 +1134,6 @@ void draw_crit_path_elements(const std::vector<tatum::TimingPath>& paths, const 
             //Walk through the timing path drawing each edge
             tatum::NodeId prev_node;
             float prev_arr_time = std::numeric_limits<float>::quiet_NaN();
-            int i = 0;
             int elementCounter = 0;
             for (const tatum::TimingPathElem& elem : path.data_arrival_path().elements()) {
                 bool drawCurrentElement = elementIndexes.empty() ? true : elementIndexes.find(elementCounter) != elementIndexes.end();
@@ -1147,8 +1146,7 @@ void draw_crit_path_elements(const std::vector<tatum::TimingPath>& paths, const 
                 //any routing which corresponds to the edge
                 //
                 //We pick colors from the kelly max-contrast list, for long paths there may be repeats
-                ezgl::color color = kelly_max_contrast_colors[i++
-                                                            % kelly_max_contrast_colors.size()];
+                ezgl::color color = kelly_max_contrast_colors[elementCounter % kelly_max_contrast_colors.size()];
 
                 if (prev_node) {
                     float delay = arr_time - prev_arr_time;
