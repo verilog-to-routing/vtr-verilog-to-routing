@@ -49,7 +49,16 @@ class GateIO
 
     const std::size_t CHUNK_MAX_BYTES_NUM = 2*1024*1024; // 2Mb
 
-        class ClientAliveTracker {
+    /**
+     * @brief Helper class aimed to help detecting a client offline.
+     *
+     * The ClientAliveTracker is pinged each time there is some activity from the client side.
+     * When the client doesn't show activity for a certain amount of time, the ClientAliveTracker generates 
+     * an event for sending an ECHO telegram to the client.
+     * If, after sending the ECHO telegram, the client does not respond with an ECHO, it means the client is absent, 
+     * and it's time to start accepting new client connections in GateIO.
+     */
+    class ClientAliveTracker {
     public:
         ClientAliveTracker(const std::chrono::milliseconds& echoIntervalMs, const std::chrono::milliseconds& clientTimeoutMs)
             : m_echoIntervalMs(echoIntervalMs), m_clientTimeoutMs(clientTimeoutMs) {
