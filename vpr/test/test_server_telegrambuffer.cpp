@@ -48,17 +48,17 @@ TEST_CASE("test_server_telegrambuffer_notFilledTelegramButWithPrependedRubish", 
 {
     comm::TelegramBuffer tBuff;
 
-    const comm::ByteArray rubish{"#@!"};
+    const comm::ByteArray rubbish{"#@!"};
     const comm::ByteArray msgBody{"some message"};
     const comm::TelegramHeader msgHeader{comm::TelegramHeader::constructFromData(msgBody)};
 
-    tBuff.append(rubish);
+    tBuff.append(rubbish);
     tBuff.append(msgHeader.buffer());
 
     auto frames = tBuff.takeTelegramFrames();
     REQUIRE(0 == frames.size());
 
-    REQUIRE(msgHeader.buffer() == tBuff.data()); // the rubish prefix fragment will be absent here
+    REQUIRE(msgHeader.buffer() == tBuff.data()); // the rubbish prefix fragment will be absent here
 }
 
 TEST_CASE("test_server_telegrambuffer__oneFinishedOneOpened", "[vpr]")
