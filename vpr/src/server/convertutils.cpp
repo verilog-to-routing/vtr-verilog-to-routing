@@ -58,8 +58,8 @@ std::string getTruncatedMiddleStr(const std::string& src, std::size_t num) {
     static std::string middlePlaceHolder("...");
     const std::size_t srcSize = src.size();
     if (srcSize > num) {
-        int prefixNum = num/2;
-        int suffixNum = num/2 - middlePlaceHolder.size();
+        int prefixNum = num / 2;
+        int suffixNum = num / 2 - middlePlaceHolder.size();
         result.append(src.substr(0, prefixNum));
         result.append(middlePlaceHolder);
         result.append(src.substr(srcSize - suffixNum));
