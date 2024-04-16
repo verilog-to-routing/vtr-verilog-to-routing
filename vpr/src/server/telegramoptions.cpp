@@ -16,7 +16,7 @@ TelegramOptions::TelegramOptions(const std::string& data, const std::vector<std:
         std::vector<std::string> fragments = vtr::split(optionStr, ":");
         if (fragments.size() == TOTAL_INDEXES_NUM) {
             const std::string& name = fragments[INDEX_NAME];
-            Option option{fragments[INDEX_TYPE], fragments[INDEX_VALUE]};
+            Option option{std::move(fragments[INDEX_TYPE]), std::move(fragments[INDEX_VALUE])};
             if (isDataTypeSupported(option.type)) {
                 m_options[name] = option;
             } else {
