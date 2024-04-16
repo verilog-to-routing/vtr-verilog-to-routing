@@ -1150,9 +1150,7 @@ void draw_crit_path_elements(const std::vector<tatum::TimingPath>& paths, const 
 
                 if (prev_node) {
                     float delay = arr_time - prev_arr_time;
-                    if (draw_state->show_crit_path == DRAW_CRIT_PATH_FLYLINES
-                        || draw_state->show_crit_path
-                            == DRAW_CRIT_PATH_FLYLINES_DELAYS) {
+                    if ((draw_state->show_crit_path == DRAW_CRIT_PATH_FLYLINES) || (draw_state->show_crit_path == DRAW_CRIT_PATH_FLYLINES_DELAYS)) {
                         if (draw_current_element) {
                             draw_flyline_timing_edge_helper_fn(g, color, ezgl::line_dash::none, /*line_width*/4, delay, prev_node, node);
                         } else if (draw_crit_path_contour) {
