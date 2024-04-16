@@ -10,7 +10,7 @@ constexpr const char* KEY_CMD = "CMD";
 constexpr const char* KEY_OPTIONS = "OPTIONS";
 constexpr const char* KEY_DATA = "DATA";
 constexpr const char* KEY_STATUS = "STATUS";
-constexpr std::string_view ECHO_DATA{"ECHO"};
+constexpr const std::string_view ECHO_DATA{"ECHO"};
 
 const unsigned char ZLIB_COMPRESSOR_ID = 'z';
 const unsigned char NONE_COMPRESSOR_ID = '\x0';
@@ -22,8 +22,6 @@ constexpr const char* OPTION_IS_FLAT_ROUTING = "is_flat_routing";
 constexpr const char* OPTION_PATH_ELEMENTS = "path_elements";
 constexpr const char* OPTION_HIGHLIGHT_MODE = "high_light_mode";
 constexpr const char* OPTION_DRAW_PATH_CONTOUR = "draw_path_contour";
-
-constexpr const char* CRITICAL_PATH_ITEMS_SELECTION_NONE = "none";
 
 // please don't change values as they are involved in socket communication
 constexpr const char* KEY_SETUP_PATH_LIST = "setup";
