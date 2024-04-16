@@ -211,7 +211,7 @@ private:
     void startListening(); // thread worker function
 
     /// helper functions to be executed inside startListening
-    ActivityStatus checkClientConnection(sockpp::tcp6_acceptor& tcpServer, std::unique_ptr<ClientAliveTracker>& clientAliveTrackerPtr, std::optional<sockpp::tcp6_socket>& clientOpt);
+    ActivityStatus checkClientConnection(sockpp::tcp6_acceptor& tcpServer, std::optional<sockpp::tcp6_socket>& clientOpt);
     ActivityStatus handleSendingData(sockpp::tcp6_socket& client);
     ActivityStatus handleReceivingData(sockpp::tcp6_socket& client, comm::TelegramBuffer& telegramBuff, std::string& receivedMessage);
     ActivityStatus handleTelegrams(std::vector<comm::TelegramFramePtr>& telegramFrames, comm::TelegramBuffer& telegramBuff);

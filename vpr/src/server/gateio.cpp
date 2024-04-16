@@ -60,7 +60,7 @@ void GateIO::moveTasksToSendQueue(std::vector<TaskPtr>& tasks)
     tasks.clear();
 }
 
-GateIO::ActivityStatus GateIO::checkClientConnection(sockpp::tcp6_acceptor& tcpServer, std::unique_ptr<ClientAliveTracker>& clientAliveTrackerPtr, std::optional<sockpp::tcp6_socket>& clientOpt) {
+GateIO::ActivityStatus GateIO::checkClientConnection(sockpp::tcp6_acceptor& tcpServer, std::optional<sockpp::tcp6_socket>& clientOpt) {
     ActivityStatus status = ActivityStatus::WAITING_ACTIVITY;
 
     sockpp::inet6_address peer;
@@ -246,7 +246,7 @@ void GateIO::startListening()
         bool isCommunicationProblemDetected = false;
 
         if (!clientOpt) {
-            ActivityStatus status = checkClientConnection(tcpServer, clientAliveTrackerPtr, clientOpt);
+            ActivityStatus status = checkClientConnection(tcpServer, clientOpt);
             if (status == ActivityStatus::CLIENT_ACTIVITY) {
                 if (clientAliveTrackerPtr) {
                     clientAliveTrackerPtr->reset();
