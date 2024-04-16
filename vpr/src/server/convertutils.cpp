@@ -37,11 +37,11 @@ std::string getPrettySizeStrFromBytesNum(int64_t bytesNum)
 {
     std::string result;
     if (bytesNum >= 1024*1024*1024) {
-        result = getPrettyStrFromFloat(bytesNum/float(1024*1024*1024)) + "Gb";
+        result = getPrettyStrFromFloat(bytesNum / float(1024*1024*1024)) + "Gb";
     } else if (bytesNum >= 1024*1024) {
-        result = getPrettyStrFromFloat(bytesNum/float(1024*1024)) + "Mb";
+        result = getPrettyStrFromFloat(bytesNum / float(1024*1024)) + "Mb";
     } else if (bytesNum >= 1024) {
-        result = getPrettyStrFromFloat(bytesNum/float(1024)) + "Kb";
+        result = getPrettyStrFromFloat(bytesNum / float(1024)) + "Kb";
     } else {
         result = std::to_string(bytesNum) + "bytes";
     }
