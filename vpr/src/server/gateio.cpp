@@ -119,9 +119,6 @@ GateIO::ActivityStatus GateIO::handleSendingData(sockpp::tcp6_socket& client) {
 
 GateIO::ActivityStatus GateIO::handleReceivingData(sockpp::tcp6_socket& client, comm::TelegramBuffer& telegramBuff, std::string& receivedMessage) {
     ActivityStatus status = ActivityStatus::WAITING_ACTIVITY;
-    if (receivedMessage.size() != CHUNK_MAX_BYTES_NUM) {
-        receivedMessage.resize(CHUNK_MAX_BYTES_NUM);
-    }
     std::size_t bytesActuallyReceived{0};
     try {
         bytesActuallyReceived = client.read_n(&receivedMessage[0], CHUNK_MAX_BYTES_NUM);
@@ -240,6 +237,7 @@ void GateIO::startListening()
     std::optional<sockpp::tcp6_socket> clientOpt;
 
     std::string receivedMessage;
+    receivedMessage.resize(CHUNK_MAX_BYTES_NUM);
 
     /// comm event loop
     while(m_isRunning.load()) {
