@@ -16,12 +16,12 @@ class TelegramParser {
 public:
     static std::optional<int> tryExtractFieldJobId(const std::string& message);
     static std::optional<int> tryExtractFieldCmd(const std::string& message);
-    static bool tryExtractFieldOptions(const std::string& message, std::optional<std::string>& result);
-    static bool tryExtractFieldData(const std::string& message, std::optional<std::string>& result);
+    static std::optional<std::string> tryExtractFieldOptions(const std::string& message);
+    static std::optional<std::string> tryExtractFieldData(const std::string& message);
     static std::optional<int> tryExtractFieldStatus(const std::string& message);
 
 private:
-    static bool tryExtractJsonValueStr(const std::string& jsonString, const std::string& key, std::optional<std::string>& result);
+    static std::optional<std::string> tryExtractJsonValueStr(const std::string& jsonString, const std::string& key);
 };
 
 } // namespace comm

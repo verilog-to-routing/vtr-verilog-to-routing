@@ -9,12 +9,8 @@ TEST_CASE("test_server_telegram_parser_base", "[vpr]")
 
     REQUIRE(std::optional<int>{7} == comm::TelegramParser::tryExtractFieldJobId(tdata));
     REQUIRE(std::optional<int>{2} == comm::TelegramParser::tryExtractFieldCmd(tdata));
-    std::optional<std::string> optionsOpt;
-    REQUIRE(comm::TelegramParser::tryExtractFieldOptions(tdata, optionsOpt) == true);
-    REQUIRE(std::optional<std::string>{"type1:name1:value1;type2:name2:v a l u e 2;t3:n3:v3"} == optionsOpt);
-    std::optional<std::string> dataOpt;
-    REQUIRE(comm::TelegramParser::tryExtractFieldData(tdata, dataOpt) == true);
-    REQUIRE(std::optional<std::string>{"some_data..."} == dataOpt);
+    REQUIRE(std::optional<std::string>{"type1:name1:value1;type2:name2:v a l u e 2;t3:n3:v3"} == comm::TelegramParser::tryExtractFieldOptions(tdata));
+    REQUIRE(std::optional<std::string>{"some_data..."} == comm::TelegramParser::tryExtractFieldData(tdata));
     REQUIRE(std::optional<int>{1} == comm::TelegramParser::tryExtractFieldStatus(tdata));
 }
 
@@ -24,12 +20,8 @@ TEST_CASE("test_server_telegram_parser_invalid_keys", "[vpr]")
     
     REQUIRE(std::nullopt == comm::TelegramParser::tryExtractFieldJobId(tBadData));
     REQUIRE(std::nullopt == comm::TelegramParser::tryExtractFieldCmd(tBadData));
-    std::optional<std::string> optionsOpt;
-    REQUIRE_FALSE(comm::TelegramParser::tryExtractFieldOptions(tBadData, optionsOpt));
-    REQUIRE(std::nullopt == optionsOpt);
-    std::optional<std::string> dataOpt;
-    REQUIRE_FALSE(comm::TelegramParser::tryExtractFieldData(tBadData, dataOpt));
-    REQUIRE(std::nullopt == dataOpt);
+    REQUIRE(std::nullopt == comm::TelegramParser::tryExtractFieldOptions(tBadData));
+    REQUIRE(std::nullopt == comm::TelegramParser::tryExtractFieldData(tBadData));
     REQUIRE(std::nullopt == comm::TelegramParser::tryExtractFieldStatus(tBadData));
 }
 
