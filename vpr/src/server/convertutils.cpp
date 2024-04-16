@@ -25,7 +25,7 @@ std::string getPrettyDurationStrFromMs(int64_t durationMs)
 {
     std::string result;
     if (durationMs >= 1000) {
-        result = getPrettyStrFromFloat(durationMs/1000.0f) + " sec";
+        result = getPrettyStrFromFloat(durationMs / 1000.0f) + " sec";
     } else {
         result = std::to_string(durationMs);
         result += " ms";
