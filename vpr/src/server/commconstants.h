@@ -1,6 +1,8 @@
 #ifndef COMMCONSTS_H
 #define COMMCONSTS_H
 
+#include <string_view>
+
 namespace comm {
 
 constexpr const char* KEY_JOB_ID = "JOB_ID";
@@ -8,7 +10,7 @@ constexpr const char* KEY_CMD = "CMD";
 constexpr const char* KEY_OPTIONS = "OPTIONS";
 constexpr const char* KEY_DATA = "DATA";
 constexpr const char* KEY_STATUS = "STATUS";
-constexpr const char* ECHO_DATA = "ECHO";
+constexpr std::string_view ECHO_DATA{"ECHO"};
 
 const unsigned char ZLIB_COMPRESSOR_ID = 'z';
 const unsigned char NONE_COMPRESSOR_ID = '\x0';

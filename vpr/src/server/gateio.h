@@ -4,6 +4,7 @@
 #ifndef NO_SERVER
 
 #include "task.h"
+#include "telegrambuffer.h"
 
 #include "vtr_log.h"
 
@@ -15,6 +16,9 @@
 #include <mutex>
 #include <vector>
 #include <utility>
+#include <optional>
+
+#include "sockpp/tcp6_acceptor.h"
 
 namespace server {
 
@@ -37,7 +41,15 @@ namespace server {
 */
 class GateIO
 {
-    class ClientAliveTracker {
+    enum class ActivityStatus : int {
+        WAITING_ACTIVITY,
+        CLIENT_ACTIVITY,
+        COMMUNICATION_PROBLEM
+    };
+
+    const std::size_t CHUNK_MAX_BYTES_NUM = 2*1024*1024; // 2Mb
+
+        class ClientAliveTracker {
     public:
         ClientAliveTracker(const std::chrono::milliseconds& echoIntervalMs, const std::chrono::milliseconds& clientTimeoutMs)
             : m_echoIntervalMs(echoIntervalMs), m_clientTimeoutMs(clientTimeoutMs) {
@@ -197,6 +209,15 @@ private:
     TLogger m_logger;
 
     void startListening(); // thread worker function
+
+    /// helper functions to be executed inside startListening
+    ActivityStatus checkClientConnection(sockpp::tcp6_acceptor& tcpServer, std::unique_ptr<ClientAliveTracker>& clientAliveTrackerPtr, std::optional<sockpp::tcp6_socket>& clientOpt);
+    ActivityStatus handleSendingData(sockpp::tcp6_socket& client, std::unique_ptr<ClientAliveTracker>& clientAliveTrackerPtr);
+    ActivityStatus handleReceivingData(sockpp::tcp6_socket& client, comm::TelegramBuffer& telegramBuff, std::string& receivedMessage);
+    ActivityStatus handleTelegrams(std::vector<comm::TelegramFramePtr>& telegramFrames, comm::TelegramBuffer& telegramBuff);
+    ActivityStatus handleClientAliveTracker(sockpp::tcp6_socket& client, std::unique_ptr<ClientAliveTracker>& clientAliveTrackerPtr);
+    void handleActivityStatus(ActivityStatus status, std::unique_ptr<ClientAliveTracker>& clientAliveTrackerPtr, bool& isCommunicationProblemDetected);
+    ///
 };
 
 } // namespace server
