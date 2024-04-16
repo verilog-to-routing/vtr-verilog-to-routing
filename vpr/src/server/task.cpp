@@ -22,6 +22,7 @@ void Task::chopNumSentBytesFromResponseBuffer(std::size_t bytesSentNum) {
     } else {
         m_responseBuffer.clear();
     }
+
     if (m_responseBuffer.empty()) {
         m_isResponseFullySent = true;
     }
