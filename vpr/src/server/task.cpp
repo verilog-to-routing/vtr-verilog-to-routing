@@ -16,8 +16,7 @@ Task::Task(int jobId, int cmd, const std::string& options)
     m_creationTime = std::chrono::high_resolution_clock::now();
 }
 
-void Task::chopNumSentBytesFromResponseBuffer(std::size_t bytesSentNum)
-{
+void Task::chopNumSentBytesFromResponseBuffer(std::size_t bytesSentNum) {
     if (m_responseBuffer.size() >= bytesSentNum) {
         m_responseBuffer.erase(0, bytesSentNum);
     } else {
@@ -28,8 +27,7 @@ void Task::chopNumSentBytesFromResponseBuffer(std::size_t bytesSentNum)
     }
 }
 
-bool Task::optionsMatch(const class std::unique_ptr<Task>& other)
-{
+bool Task::optionsMatch(const class std::unique_ptr<Task>& other) {
     if (other->options().size() != m_options.size()) {
         return false;
     }
@@ -37,36 +35,35 @@ bool Task::optionsMatch(const class std::unique_ptr<Task>& other)
 }
 
 void Task::fail(const std::string& error) {
-        m_isFinished = true;
-        m_error = error;
-        bakeResponse();
-    }
+    m_isFinished = true;
+    m_error = error;
+    bakeResponse();
+}
+
 void Task::success(const std::string& result) {
-        m_result = result;
-        m_isFinished = true;
-        bakeResponse();
-    }
+    m_result = result;
+    m_isFinished = true;
+    bakeResponse();
+}
 
 std::string Task::info(bool skipDuration) const {
-        std::stringstream ss;
-        ss << "task["
-           << "id=" << std::to_string(m_jobId)
-           << ",cmd=" << std::to_string(m_cmd);
-        if (!skipDuration) {
-            ss << ",exists=" << getPrettyDurationStrFromMs(timeMsElapsed());
-        }
-        ss << "]";
-        return ss.str();
+    std::stringstream ss;
+    ss << "task["
+        << "id=" << std::to_string(m_jobId)
+        << ",cmd=" << std::to_string(m_cmd);
+    if (!skipDuration) {
+        ss << ",exists=" << getPrettyDurationStrFromMs(timeMsElapsed());
     }
+    ss << "]";
+    return ss.str();
+}
 
-int64_t Task::timeMsElapsed() const
-    {
+int64_t Task::timeMsElapsed() const {
     auto now = std::chrono::high_resolution_clock::now();
     return std::chrono::duration_cast<std::chrono::milliseconds>(now - m_creationTime).count();
 }
 
-void Task::bakeResponse()
-{
+void Task::bakeResponse() {
     std::stringstream ss;
     ss << "{";
 
