@@ -27,7 +27,7 @@ void TelegramBuffer::takeTelegramFrames(std::vector<comm::TelegramFramePtr>& res
     }
 
     bool mayContainFullTelegram = true; 
-    while(mayContainFullTelegram) { 
+    while (mayContainFullTelegram) {
         mayContainFullTelegram = false;
         // attempt to extract telegram header
         if (!m_headerOpt) {
