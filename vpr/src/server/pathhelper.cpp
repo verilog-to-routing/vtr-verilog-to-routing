@@ -8,6 +8,7 @@
 #include "draw_global.h"
 #include "net_delay.h"
 #include "concrete_timing_info.h"
+#include "commconstants.h"
 
 #include "timing_info_fwd.h"
 #include "AnalysisDelayCalculator.h"
@@ -105,9 +106,9 @@ CritPathsResult calcCriticalPath(const std::string& type, int critPathNum, e_tim
     analysis_opt.timing_report_detail = detailsLevel;
     analysis_opt.timing_report_npaths = critPathNum;
 
-    if (type == "setup") {
+    if (type == comm::KEY_SETUP_PATH_LIST) {
         return generate_setup_timing_report(*timing_info, *analysis_delay_calc, analysis_opt, is_flat_routing);
-    } else if (type == "hold") {
+    } else if (type == comm::KEY_HOLD_PATH_LIST) {
         return generate_hold_timing_report(*timing_info, *analysis_delay_calc, analysis_opt, is_flat_routing);
     }
     return CritPathsResult{std::vector<tatum::TimingPath>(), ""};
