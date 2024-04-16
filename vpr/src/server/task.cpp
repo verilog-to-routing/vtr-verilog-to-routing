@@ -91,14 +91,14 @@ void Task::bakeResponse() {
     if (!bodyOpt) {
         // fail to compress, use raw
         compressorId = comm::NONE_COMPRESSOR_ID;
-        bodyOpt = std::move(ss.str());
+        bodyOpt = ss.str();
     }
 
     std::string body = bodyOpt.value();
     m_telegramHeader = comm::TelegramHeader::constructFromData(body, compressorId);
 
     m_responseBuffer.append(m_telegramHeader.buffer().begin(), m_telegramHeader.buffer().end());
-    m_responseBuffer.append(std::move(body));
+    m_responseBuffer.append(body);
     body.clear();
     m_origReponseBytesNum = m_responseBuffer.size();
 }
