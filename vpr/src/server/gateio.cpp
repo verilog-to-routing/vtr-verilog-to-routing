@@ -76,7 +76,7 @@ GateIO::ActivityStatus GateIO::checkClientConnection(sockpp::tcp6_acceptor& tcpS
     return status;
 }
 
-GateIO::ActivityStatus GateIO::handleSendingData(sockpp::tcp6_socket& client, std::unique_ptr<ClientAliveTracker>& clientAliveTrackerPtr) {
+GateIO::ActivityStatus GateIO::handleSendingData(sockpp::tcp6_socket& client) {
     ActivityStatus status = ActivityStatus::WAITING_ACTIVITY;
     std::unique_lock<std::mutex> lock(m_tasksMutex);
 
@@ -258,7 +258,7 @@ void GateIO::startListening()
             sockpp::tcp6_socket& client = clientOpt.value(); // shortcut
 
             /// handle sending
-            ActivityStatus status = handleSendingData(client, clientAliveTrackerPtr);
+            ActivityStatus status = handleSendingData(client);
             handleActivityStatus(status, clientAliveTrackerPtr, isCommunicationProblemDetected);
 
             /// handle receiving
