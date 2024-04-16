@@ -95,6 +95,12 @@ std::vector<int> KArmedBanditAgent::get_available_logical_blk_types_() {
         }
     }
 
+    // when there is no movable blocks, RL agent always selects the empty logical block
+    // since there are no empty blocks in the netlist, the move is always aborted
+    if (available_blk_types.empty()) {
+        available_blk_types.push_back(device_ctx.EMPTY_LOGICAL_BLOCK_TYPE->index);
+    }
+
     return available_blk_types;
 }
 
