@@ -8,7 +8,7 @@
 
 namespace server {
     
-TelegramOptions::TelegramOptions(const std::string& data, const std::vector<std::string>& expectedKeys) 
+TelegramOptions::TelegramOptions(const std::string& data, const std::vector<std::string_view>& expectedKeys)
 {
     // parse data string
     std::vector<std::string> options = vtr::split(data, ";");
@@ -31,7 +31,7 @@ TelegramOptions::TelegramOptions(const std::string& data, const std::vector<std:
     checkKeysPresence(expectedKeys);
 }
 
-std::map<std::size_t, std::set<std::size_t>> TelegramOptions::getMapOfSets(const std::string& name) 
+std::map<std::size_t, std::set<std::size_t>> TelegramOptions::getMapOfSets(const std::string_view& name)
 {
     std::map<std::size_t, std::set<std::size_t>> result;
     std::string dataStr = getString(name);
@@ -64,7 +64,7 @@ std::map<std::size_t, std::set<std::size_t>> TelegramOptions::getMapOfSets(const
     return result;
 }
 
-std::string TelegramOptions::getString(const std::string& name) 
+std::string TelegramOptions::getString(const std::string_view& name)
 {
     std::string result;
     if (auto it = m_options.find(name); it != m_options.end()) {
@@ -73,27 +73,27 @@ std::string TelegramOptions::getString(const std::string& name)
     return result;
 }
 
-int TelegramOptions::getInt(const std::string& name, int failValue) 
+int TelegramOptions::getInt(const std::string_view& name, int failValue)
 {
     if (std::optional<int> opt = tryConvertToInt(m_options[name].value)) {
         return opt.value();
     } else {
-        m_errors.emplace_back("cannot get int value for option " + name);
+        m_errors.emplace_back("cannot get int value for option " + std::string(name));
         return failValue;
     }
 }
 
-bool TelegramOptions::getBool(const std::string& name, bool failValue) 
+bool TelegramOptions::getBool(const std::string_view& name, bool failValue)
 {
     if (std::optional<int> opt = tryConvertToInt(m_options[name].value)) {
         return opt.value();
     } else {
-        m_errors.emplace_back("cannot get bool value for option " + name);
+        m_errors.emplace_back("cannot get bool value for option " + std::string(name));
         return failValue;
     }
 }
 
-std::string TelegramOptions::errorsStr() const 
+std::string TelegramOptions::errorsStr() const
 { 
     std::string result;
     for (const std::string& error: m_errors) {
@@ -102,18 +102,18 @@ std::string TelegramOptions::errorsStr() const
     return result; 
 }
 
-bool TelegramOptions::isDataTypeSupported(const std::string& type) const 
+bool TelegramOptions::isDataTypeSupported(const std::string& type) const
 {
     static const std::set<std::string> supportedTypes{"int", "string", "bool"};
     return supportedTypes.count(type) != 0;
 }
 
-bool TelegramOptions::checkKeysPresence(const std::vector<std::string>& keys) 
+bool TelegramOptions::checkKeysPresence(const std::vector<std::string_view>& keys)
 {
     bool result = true;
-    for (const std::string& key: keys) {
+    for (const std::string_view& key: keys) {
         if (m_options.find(key) == m_options.end()) {
-            m_errors.emplace_back("cannot find required option " + key);
+            m_errors.emplace_back("cannot find required option " + std::string(key));
             result = false;
         }
     }
