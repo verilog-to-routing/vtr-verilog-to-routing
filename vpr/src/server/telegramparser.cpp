@@ -32,7 +32,7 @@ bool TelegramParser::tryExtractJsonValueStr(const std::string& jsonString, const
     }
 
     // Extract the value substring
-    result = std::move(jsonString.substr(valuePosStart + 1, (valueEnd - valuePosStart) - 1));
+    result = jsonString.substr(valuePosStart + 1, (valueEnd - valuePosStart) - 1);
     return true;
 }
 
