@@ -13,7 +13,7 @@ bool TelegramBuffer::checkTelegramHeaderPresence()
     if (signatureStartIndex != std::size_t(-1)) {
         if (signatureStartIndex != 0) {
             // discard bytes preceding the header start position.
-            m_rawBuffer.erase(m_rawBuffer.begin(), m_rawBuffer.begin()+signatureStartIndex);
+            m_rawBuffer.erase(m_rawBuffer.begin(), m_rawBuffer.begin() + signatureStartIndex);
         }
         return true;
     }
