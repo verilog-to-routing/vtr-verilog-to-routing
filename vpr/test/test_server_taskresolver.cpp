@@ -11,11 +11,11 @@ TEST_CASE("test_server_taskresolver_cmdSpamFilter", "[vpr]") {
     const int cmd = 10;
 
     {
-        server::TaskPtr task0 = std::make_unique<server::Task>(1,cmd);
-        server::TaskPtr task1 = std::make_unique<server::Task>(2,cmd);
-        server::TaskPtr task2 = std::make_unique<server::Task>(3,cmd);
-        server::TaskPtr task3 = std::make_unique<server::Task>(4,cmd);
-        server::TaskPtr task4 = std::make_unique<server::Task>(5,cmd);
+        server::TaskPtr task0 = std::make_unique<server::Task>(1, cmd);
+        server::TaskPtr task1 = std::make_unique<server::Task>(2, cmd);
+        server::TaskPtr task2 = std::make_unique<server::Task>(3, cmd);
+        server::TaskPtr task3 = std::make_unique<server::Task>(4, cmd);
+        server::TaskPtr task4 = std::make_unique<server::Task>(5, cmd);
 
         resolver.ownTask(std::move(task0));
         resolver.ownTask(std::move(task1));
@@ -46,9 +46,9 @@ TEST_CASE("test_server_taskresolver_cmdOverrideFilter", "[vpr]") {
     const int cmd = 10;
 
     {
-        server::TaskPtr task0 = std::make_unique<server::Task>(1,cmd,"1");
-        server::TaskPtr task1 = std::make_unique<server::Task>(2,cmd,"11");
-        server::TaskPtr task2 = std::make_unique<server::Task>(3,cmd,"222");
+        server::TaskPtr task0 = std::make_unique<server::Task>(1, cmd, "1");
+        server::TaskPtr task1 = std::make_unique<server::Task>(2, cmd, "11");
+        server::TaskPtr task2 = std::make_unique<server::Task>(3, cmd, "222");
 
         resolver.ownTask(std::move(task0));
         resolver.ownTask(std::move(task1));
@@ -76,13 +76,13 @@ TEST_CASE("test_server_taskresolver_cmdSpamAndOverrideOptions", "[vpr]") {
     server::TaskResolver resolver;
 
     {
-        server::TaskPtr task0 = std::make_unique<server::Task>(1,2,"1");
-        server::TaskPtr task1 = std::make_unique<server::Task>(2,2,"11");
-        server::TaskPtr task2 = std::make_unique<server::Task>(3,2,"222");
-        server::TaskPtr task3 = std::make_unique<server::Task>(4,2,"222");
-        server::TaskPtr task4 = std::make_unique<server::Task>(5,1);
-        server::TaskPtr task5 = std::make_unique<server::Task>(6,1);
-        server::TaskPtr task6 = std::make_unique<server::Task>(7,1);
+        server::TaskPtr task0 = std::make_unique<server::Task>(1, 2, "1");
+        server::TaskPtr task1 = std::make_unique<server::Task>(2, 2, "11");
+        server::TaskPtr task2 = std::make_unique<server::Task>(3, 2, "222");
+        server::TaskPtr task3 = std::make_unique<server::Task>(4, 2, "222");
+        server::TaskPtr task4 = std::make_unique<server::Task>(5, 1);
+        server::TaskPtr task5 = std::make_unique<server::Task>(6, 1);
+        server::TaskPtr task6 = std::make_unique<server::Task>(7, 1);
 
         resolver.ownTask(std::move(task0));
         resolver.ownTask(std::move(task1));
