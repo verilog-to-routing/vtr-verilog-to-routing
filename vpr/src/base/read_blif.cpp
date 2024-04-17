@@ -582,7 +582,7 @@ struct BlifAllocCallback : public blifparse::Callback {
             } else {
                 VTR_ASSERT(blif_model.block_type(blk_id) == AtomBlockType::OUTPAD);
 
-                auto raw_output_name = blif_model.block_name(blk_id);
+                const auto& raw_output_name = blif_model.block_name(blk_id);
 
                 std::string output_name = vtr::replace_first(raw_output_name, OUTPAD_NAME_PREFIX, "");
 

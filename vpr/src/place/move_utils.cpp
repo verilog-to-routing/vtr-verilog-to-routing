@@ -28,7 +28,7 @@ void report_aborted_moves() {
     if (f_move_abort_reasons.empty()) {
         VTR_LOG("  No moves aborted\n");
     }
-    for (auto kv : f_move_abort_reasons) {
+    for (const auto& kv : f_move_abort_reasons) {
         VTR_LOG("  %s: %zu\n", kv.first.c_str(), kv.second);
     }
 }
@@ -1008,7 +1008,7 @@ void compressed_grid_to_loc(t_logical_block_type_ptr blk_type,
     auto& grid = g_vpr_ctx.device().grid;
     auto to_type = grid.get_physical_type({grid_loc.x, grid_loc.y, grid_loc.layer_num});
 
-    //Each x/y location contains only a single type, so we can pick a random z (capcity) location
+    //Each x/y location contains only a single type, so we can pick a random z (capacity) location
     auto& compatible_sub_tiles = compressed_block_grid.compatible_sub_tile_num(to_type->index);
     int sub_tile = compatible_sub_tiles[vtr::irand((int)compatible_sub_tiles.size() - 1)];
 

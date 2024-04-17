@@ -157,7 +157,7 @@ static void ProcessEquivalentSiteCustomConnection(pugi::xml_node Parent,
                                                   t_sub_tile* SubTile,
                                                   t_physical_tile_type* PhysicalTileType,
                                                   t_logical_block_type* LogicalBlockType,
-                                                  std::string site_name,
+                                                  const std::string& site_name,
                                                   const pugiutil::loc_data& loc_data);
 static void ProcessPinLocations(pugi::xml_node Locations,
                                 t_physical_tile_type* PhysicalTileType,
@@ -280,20 +280,30 @@ std::string inst_port_to_port_name(std::string inst_port);
 static bool attribute_to_bool(const pugi::xml_node node,
                               const pugi::xml_attribute attr,
                               const pugiutil::loc_data& loc_data);
-int find_switch_by_name(const t_arch& arch, std::string switch_name);
 
-e_side string_to_side(std::string side_str);
+static int find_switch_by_name(const t_arch& arch, const std::string& switch_name);
+
+static e_side string_to_side(const std::string& side_str);
 
 template<typename T>
 static T* get_type_by_name(const char* type_name, std::vector<T>& types);
 
-static void generate_noc_mesh(pugi::xml_node mesh_topology_tag, const pugiutil::loc_data& loc_data, t_noc_inf* noc_ref, double mesh_region_start_x, double mesh_region_end_x, double mesh_region_start_y, double mesh_region_end_y, int mesh_size);
+static void generate_noc_mesh(pugi::xml_node mesh_topology_tag,
+                              const pugiutil::loc_data& loc_data,
+                              t_noc_inf* noc_ref,
+                              double mesh_region_start_x, double mesh_region_end_x,
+                              double mesh_region_start_y, double mesh_region_end_y,
+                              int mesh_size);
 
-static bool parse_noc_router_connection_list(pugi::xml_node router_tag, const pugiutil::loc_data& loc_data, int router_id, std::vector<int>& connection_list, std::string connection_list_attribute_value, std::map<int, std::pair<int, int>>& routers_in_arch_info);
+static bool parse_noc_router_connection_list(pugi::xml_node router_tag,
+                                             const pugiutil::loc_data& loc_data,
+                                             int router_id, std::vector<int>& connection_list,
+                                             const std::string& connection_list_attribute_value,
+                                             std::map<int, std::pair<int, int>>& routers_in_arch_info);
 
 static void update_router_info_in_arch(int router_id, bool router_updated_as_a_connection, std::map<int, std::pair<int, int>>& routers_in_arch_info);
 
-static void verify_noc_topology(std::map<int, std::pair<int, int>>& routers_in_arch_info);
+static void verify_noc_topology(const std::map<int, std::pair<int, int>>& routers_in_arch_info);
 
 /*
  *
@@ -312,7 +322,7 @@ void XmlReadArch(const char* ArchFile,
     pugi::xml_node Next;
     ReqOpt POWER_REQD, SWITCHBLOCKLIST_REQD;
 
-    if (vtr::check_file_name_extension(ArchFile, ".xml") == false) {
+    if (!vtr::check_file_name_extension(ArchFile, ".xml")) {
         VTR_LOG_WARN(
             "Architecture file '%s' may be in incorrect format. "
             "Expecting .xml format for architecture files.\n",
@@ -622,7 +632,7 @@ static void LoadPinLoc(pugi::xml_node Locations,
                 for (int width = 0; width < type->width; ++width) {
                     for (int height = 0; height < type->height; ++height) {
                         for (e_side side : {TOP, RIGHT, BOTTOM, LEFT}) {
-                            for (auto token : pin_locs->assignments[sub_tile_index][width][height][layer][side]) {
+                            for (const auto& token : pin_locs->assignments[sub_tile_index][width][height][layer][side]) {
                                 auto pin_range = ProcessPinString<t_sub_tile*>(Locations,
                                                                                &sub_tile,
                                                                                token.c_str(),
@@ -1135,27 +1145,27 @@ static void ProcessPb_Type(vtr::string_internment* strings,
     std::vector<std::string> children_to_expect = {"input", "output", "clock", "mode", "power", "metadata"};
     if (!is_leaf_pb_type) {
         //Non-leafs may have a model/pb_type children
-        children_to_expect.push_back("model");
-        children_to_expect.push_back("pb_type");
-        children_to_expect.push_back("interconnect");
+        children_to_expect.emplace_back("model");
+        children_to_expect.emplace_back("pb_type");
+        children_to_expect.emplace_back("interconnect");
 
         if (is_root_pb_type) {
             VTR_ASSERT(!is_leaf_pb_type);
             //Top level pb_type's may also have the following tag types
-            children_to_expect.push_back("fc");
-            children_to_expect.push_back("pinlocations");
-            children_to_expect.push_back("switchblock_locations");
+            children_to_expect.emplace_back("fc");
+            children_to_expect.emplace_back("pinlocations");
+            children_to_expect.emplace_back("switchblock_locations");
         }
     } else {
         VTR_ASSERT(is_leaf_pb_type);
         VTR_ASSERT(!is_root_pb_type);
 
         //Leaf pb_type's may also have the following tag types
-        children_to_expect.push_back("T_setup");
-        children_to_expect.push_back("T_hold");
-        children_to_expect.push_back("T_clock_to_Q");
-        children_to_expect.push_back("delay_constant");
-        children_to_expect.push_back("delay_matrix");
+        children_to_expect.emplace_back("T_setup");
+        children_to_expect.emplace_back("T_hold");
+        children_to_expect.emplace_back("T_clock_to_Q");
+        children_to_expect.emplace_back("delay_constant");
+        children_to_expect.emplace_back("delay_matrix");
     }
 
     //Sanity check contained tags
@@ -1513,10 +1523,10 @@ static void ProcessPb_TypePort_Power(pugi::xml_node Parent, t_port* port, e_powe
 static void ProcessPb_TypePort(pugi::xml_node Parent, t_port* port, e_power_estimation_method power_method, const bool is_root_pb_type, const pugiutil::loc_data& loc_data) {
     std::vector<std::string> expected_attributes = {"name", "num_pins", "port_class"};
     if (is_root_pb_type) {
-        expected_attributes.push_back("equivalent");
+        expected_attributes.emplace_back("equivalent");
 
         if (Parent.name() == "input"s || Parent.name() == "clock"s) {
-            expected_attributes.push_back("is_non_clock_global");
+            expected_attributes.emplace_back("is_non_clock_global");
         }
     }
 
@@ -2803,7 +2813,7 @@ static void ProcessDevice(pugi::xml_node Node, t_arch* arch, t_default_fc_spec& 
     //<connection_block> tag
     Cur = get_single_child(Node, "connection_block", loc_data);
     expect_only_attributes(Cur, {"input_switch_name", "input_inter_die_switch_name"}, loc_data);
-    arch->ipin_cblock_switch_name.push_back(get_attribute(Cur, "input_switch_name", loc_data).as_string());
+    arch->ipin_cblock_switch_name.emplace_back(get_attribute(Cur, "input_switch_name", loc_data).as_string());
     std::string inter_die_conn = get_attribute(Cur, "input_inter_die_switch_name", loc_data, ReqOpt::OPTIONAL).as_string("");
     if (inter_die_conn != "") {
         arch->ipin_cblock_switch_name.push_back(inter_die_conn);
@@ -3217,7 +3227,7 @@ static void ProcessEquivalentSiteCustomConnection(pugi::xml_node Parent,
                                                   t_sub_tile* SubTile,
                                                   t_physical_tile_type* PhysicalTileType,
                                                   t_logical_block_type* LogicalBlockType,
-                                                  std::string site_name,
+                                                  const std::string& site_name,
                                                   const pugiutil::loc_data& loc_data) {
     pugi::xml_node CurDirect;
 
@@ -3384,7 +3394,7 @@ static void ProcessPinLocations(pugi::xml_node Locations,
             if (Count > 0) {
                 for (int pin = 0; pin < Count; ++pin) {
                     /* Store location assignment */
-                    pin_locs->assignments[sub_tile_index][x_offset][y_offset][std::abs(layer_offset)][side].push_back(std::string(Tokens[pin].c_str()));
+                    pin_locs->assignments[sub_tile_index][x_offset][y_offset][std::abs(layer_offset)][side].emplace_back(Tokens[pin].c_str());
                     /* Advance through list of pins in this location */
                 }
             }
@@ -3399,8 +3409,8 @@ static void ProcessPinLocations(pugi::xml_node Locations,
             for (int w = 0; w < PhysicalTileType->width; ++w) {
                 for (int h = 0; h < PhysicalTileType->height; ++h) {
                     for (e_side side : {TOP, RIGHT, BOTTOM, LEFT}) {
-                        for (auto token : pin_locs->assignments[sub_tile_index][w][h][l][side]) {
-                            InstPort inst_port(token.c_str());
+                        for (const auto& token : pin_locs->assignments[sub_tile_index][w][h][l][side]) {
+                            InstPort inst_port(token);
 
                             //A pin specification should contain only the block name, and not any instance count information
                             if (inst_port.instance_low_index() != InstPort::UNSPECIFIED || inst_port.instance_high_index() != InstPort::UNSPECIFIED) {
@@ -3732,8 +3742,8 @@ static void ProcessSegments(pugi::xml_node Parent,
 
         if (!Segs[i].longline) {
             //Long line doesn't accpet <sb> or <cb> since it assumes full population
-            expected_subtags.push_back("sb");
-            expected_subtags.push_back("cb");
+            expected_subtags.emplace_back("sb");
+            expected_subtags.emplace_back("cb");
         }
 
         /* Get the type */
@@ -3742,16 +3752,16 @@ static void ProcessSegments(pugi::xml_node Parent,
             Segs[i].directionality = BI_DIRECTIONAL;
 
             //Bidir requires the following tags
-            expected_subtags.push_back("wire_switch");
-            expected_subtags.push_back("opin_switch");
+            expected_subtags.emplace_back("wire_switch");
+            expected_subtags.emplace_back("opin_switch");
         }
 
         else if (0 == strcmp(tmp, "unidir")) {
             Segs[i].directionality = UNI_DIRECTIONAL;
 
             //Unidir requires the following tags
-            expected_subtags.push_back("mux");
-            expected_subtags.push_back("mux_inter_die");
+            expected_subtags.emplace_back("mux");
+            expected_subtags.emplace_back("mux_inter_die");
         }
 
         else {
@@ -3937,8 +3947,6 @@ static void ProcessSwitchblocks(pugi::xml_node Parent, t_arch* arch, const pugiu
 
         Node = Node.next_sibling(Node.name());
     }
-
-    return;
 }
 
 static void ProcessCB_SB(pugi::xml_node Node, std::vector<bool>& list, const pugiutil::loc_data& loc_data) {
@@ -4737,8 +4745,6 @@ static void ProcessNoc(pugi::xml_node noc_tag, t_arch* arch, const pugiutil::loc
 
         processTopology(noc_topology, loc_data, noc_ref);
     }
-
-    return;
 }
 
 /*
@@ -4779,10 +4785,8 @@ static void processMeshTopology(pugi::xml_node mesh_topology_tag, const pugiutil
     }
 
     // now create the mesh topology for the noc
-    // create routers, make connections and detertmine positions
+    // create routers, make connections and determine positions
     generate_noc_mesh(mesh_topology_tag, loc_data, noc_ref, mesh_region_start_x, mesh_region_end_x, mesh_region_start_y, mesh_region_end_y, mesh_size);
-
-    return;
 }
 
 /*
@@ -4807,21 +4811,19 @@ static void processTopology(pugi::xml_node topology_tag, const pugiutil::loc_dat
         if (router.name() != std::string("router")) {
             bad_tag(router, loc_data, topology_tag, {"router"});
         } else {
-            // curent tag is a valid router, so process it
+            // current tag is a valid router, so process it
             processRouter(router, loc_data, noc_ref, routers_in_arch_info);
         }
     }
 
     // check whether any routers were supplied
-    if (noc_ref->router_list.size() == 0) {
+    if (noc_ref->router_list.empty()) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(topology_tag),
                        "No routers were supplied for the NoC.");
     }
 
     // check that the topology of the noc was correctly described in the arch file
     verify_noc_topology(routers_in_arch_info);
-
-    return;
 }
 
 /*
@@ -4862,9 +4864,9 @@ static void processRouter(pugi::xml_node router_tag, const pugiutil::loc_data& l
     // get the current router connection list
     router_connection_list_attribute_value.assign(pugiutil::get_attribute(router_tag, "connections", loc_data, pugiutil::REQUIRED).as_string());
 
-    // if the connections attrbiute was not provided or it was empty, then we don't process it and throw a warning
+    // if the connections attribute was not provided or it was empty, then we don't process it and throw a warning
 
-    if (router_connection_list_attribute_value.compare("") != 0) {
+    if (router_connection_list_attribute_value != "") {
         // process the router connection list
         router_connection_list_result = parse_noc_router_connection_list(router_tag, loc_data, router_info.id, router_info.connection_list, router_connection_list_attribute_value, routers_in_arch_info);
 
@@ -4876,7 +4878,7 @@ static void processRouter(pugi::xml_node router_tag, const pugiutil::loc_data& l
 
     } else {
         VTR_LOGF_WARN(loc_data.filename_c_str(), loc_data.line(router_tag),
-                      "The router with id:%d either has an empty 'connections' attrtibute or does not have any associated connections to other routers in the NoC.\n", router_info.id);
+                      "The router with id:%d either has an empty 'connections' attribute or does not have any associated connections to other routers in the NoC.\n", router_info.id);
     }
 
     // at this point the current router information was completely legal, so we store the newly created router within the noc
@@ -4884,8 +4886,6 @@ static void processRouter(pugi::xml_node router_tag, const pugiutil::loc_data& l
 
     // update the number of declarations info for the current router (since we just finished processing one <router> tag)
     update_router_info_in_arch(router_info.id, false, routers_in_arch_info);
-
-    return;
 }
 
 std::string inst_port_to_port_name(std::string inst_port) {
@@ -4910,7 +4910,7 @@ static bool attribute_to_bool(const pugi::xml_node node,
     return false;
 }
 
-int find_switch_by_name(const t_arch& arch, std::string switch_name) {
+static int find_switch_by_name(const t_arch& arch, const std::string& switch_name) {
     for (int iswitch = 0; iswitch < arch.num_switches; ++iswitch) {
         const t_arch_switch_inf& arch_switch = arch.Switches[iswitch];
         if (arch_switch.name == switch_name) {
@@ -4921,7 +4921,7 @@ int find_switch_by_name(const t_arch& arch, std::string switch_name) {
     return OPEN;
 }
 
-e_side string_to_side(std::string side_str) {
+static e_side string_to_side(const std::string& side_str) {
     e_side side = NUM_SIDES;
     if (side_str.empty()) {
         side = NUM_SIDES;
@@ -4955,7 +4955,12 @@ static T* get_type_by_name(const char* type_name, std::vector<T>& types) {
 /*
  * Create routers and set their properties so that a mesh grid of routers is created. Then connect the routers together so that a mesh topology is created.
  */
-static void generate_noc_mesh(pugi::xml_node mesh_topology_tag, const pugiutil::loc_data& loc_data, t_noc_inf* noc_ref, double mesh_region_start_x, double mesh_region_end_x, double mesh_region_start_y, double mesh_region_end_y, int mesh_size) {
+static void generate_noc_mesh(pugi::xml_node mesh_topology_tag,
+                              const pugiutil::loc_data& loc_data,
+                              t_noc_inf* noc_ref,
+                              double mesh_region_start_x, double mesh_region_end_x,
+                              double mesh_region_start_y, double mesh_region_end_y,
+                              int mesh_size) {
     // check that the mesh size of the router is not 0
     if (mesh_size == 0) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(mesh_topology_tag),
@@ -4966,7 +4971,7 @@ static void generate_noc_mesh(pugi::xml_node mesh_topology_tag, const pugiutil::
     // we decrease the mesh size by 1 when calculating the spacing so that the first and last routers of each row or column are positioned on the mesh boundary
     /*
      * For example:
-     * - If we had a mesh size of 3, then using 3 would result in a spacing that would result in one router positions being placed in either the start of the reigion or end of the region. This is because the distance calculation resulted in having 3 spaces between the ends of the region 
+     * - If we had a mesh size of 3, then using 3 would result in a spacing that would result in one router positions being placed in either the start of the region or end of the region. This is because the distance calculation resulted in having 3 spaces between the ends of the region
      *
      * start              end
      ***   ***   ***   ***
@@ -5034,8 +5039,6 @@ static void generate_noc_mesh(pugi::xml_node mesh_topology_tag, const pugiutil::
             temp_router.connection_list.clear();
         }
     }
-
-    return;
 }
 
 /*
@@ -5045,9 +5048,13 @@ static void generate_noc_mesh(pugi::xml_node mesh_topology_tag, const pugiutil::
  *
  * Go through the connections here and store them. Also make sure the list is legal.
  */
-static bool parse_noc_router_connection_list(pugi::xml_node router_tag, const pugiutil::loc_data& loc_data, int router_id, std::vector<int>& connection_list, std::string connection_list_attribute_value, std::map<int, std::pair<int, int>>& routers_in_arch_info) {
+static bool parse_noc_router_connection_list(pugi::xml_node router_tag,
+                                             const pugiutil::loc_data& loc_data,
+                                             int router_id, std::vector<int>& connection_list,
+                                             const std::string& connection_list_attribute_value,
+                                             std::map<int, std::pair<int, int>>& routers_in_arch_info) {
     // we wil be modifying the string so store it in a temporary variable
-    // additinally, we peocess substrings seperated by spaces, so we add a space at the end of the string to be able to process the last sub-string
+    // additionally, we process substrings seperated by spaces, so we add a space at the end of the string to be able to process the last sub-string
     std::string modified_attribute_value = connection_list_attribute_value + " ";
     std::string delimiter = " ";
     std::stringstream single_connection;
@@ -5109,11 +5116,11 @@ static bool parse_noc_router_connection_list(pugi::xml_node router_tag, const pu
  */
 static void update_router_info_in_arch(int router_id, bool router_updated_as_a_connection, std::map<int, std::pair<int, int>>& routers_in_arch_info) {
     // get the corresponding router info for the given router id
-    std::map<int, std::pair<int, int>>::iterator curr_router_info = routers_in_arch_info.find(router_id);
+    auto curr_router_info = routers_in_arch_info.find(router_id);
 
     // check if the router previously existed in the router indo database
     if (curr_router_info == routers_in_arch_info.end()) {
-        // case where the router did not exist previosuly, so we add it here and also get a reference to it
+        // case where the router did not exist previously, so we add it here and also get a reference to it
         // initially a router has no declarations or connections
         curr_router_info = routers_in_arch_info.insert(std::pair<int, std::pair<int, int>>(router_id, std::pair<int, int>(0, 0))).first;
     }
@@ -5127,34 +5134,30 @@ static void update_router_info_in_arch(int router_id, bool router_updated_as_a_c
         // since we are within the case where the current router is processed from a <router> tag, we just increment its number of declarations
         (curr_router_info->second.first)++;
     }
-
-    return;
 }
 
 /*
  * Verify each router in the noc by checking whether they satisfy the following conditions:
  * - The router has only one declaration in the arch file
- * - The router has atleast one connection to another router
+ * - The router has at least one connection to another router
  * If any of the conditions above are not met, then an error is thrown. 
  */
-static void verify_noc_topology(std::map<int, std::pair<int, int>>& routers_in_arch_info) {
-    for (auto router_info = routers_in_arch_info.begin(); router_info != routers_in_arch_info.end(); router_info++) {
+static void verify_noc_topology(const std::map<int, std::pair<int, int>>& routers_in_arch_info) {
+    for (const auto& router_info : routers_in_arch_info) {
         // case where the router was included in the architecture and had no connections to other routers
-        if ((router_info->second.first == 1) && (router_info->second.second == 0)) {
+        if ((router_info.second.first == 1) && (router_info.second.second == 0)) {
             archfpga_throw("", -1,
-                           "The router with id:'%d' is not connected to any other router in the NoC.", router_info->first);
+                           "The router with id:'%d' is not connected to any other router in the NoC.", router_info.first);
 
-        } // case where a router was found to be connected to another router but not declared using the <router> tag in the arch file (ie. missing)
-        else if ((router_info->second.first == 0) && (router_info->second.second > 0)) {
+        } // case where a router was found to be connected to another router but not declared using the <router> tag in the arch file (i.e. missing)
+        else if ((router_info.second.first == 0) && (router_info.second.second > 0)) {
             archfpga_throw("", -1,
-                           "The router with id:'%d' was found to be connected to another router but missing in the architecture file. Add the router using the <router> tag.", router_info->first);
+                           "The router with id:'%d' was found to be connected to another router but missing in the architecture file. Add the router using the <router> tag.", router_info.first);
 
-        } // case where the router was delcared multiple times in the architecture file (multiple <router> tags for the same router)
-        else if (router_info->second.first > 1) {
+        } // case where the router was declared multiple times in the architecture file (multiple <router> tags for the same router)
+        else if (router_info.second.first > 1) {
             archfpga_throw("", -1,
-                           "The router with id:'%d' was included more than once in the architecture file. Routers should only be declared once.", router_info->first);
+                           "The router with id:'%d' was included more than once in the architecture file. Routers should only be declared once.", router_info.first);
         }
     }
-
-    return;
 }
