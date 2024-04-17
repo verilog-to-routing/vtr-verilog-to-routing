@@ -30,13 +30,13 @@ std::string tryCompress(const std::string& decompressed)
         }
     } while (retCode == Z_OK);
 
+    delete[] resultBuffer;
+
     deflateEnd(&zs);
 
     if (retCode != Z_STREAM_END) {
         return "";
     }
-
-    delete[] resultBuffer;
 
     return result;
 }
@@ -69,13 +69,13 @@ std::string tryDecompress(const std::string& compressed)
 
     } while (retCode == Z_OK);
 
+    delete[] resultBuffer;
+
     inflateEnd(&zs);
 
     if (retCode != Z_STREAM_END) {
         return "";
     }
-
-    delete[] resultBuffer;
 
     return result;
 }
