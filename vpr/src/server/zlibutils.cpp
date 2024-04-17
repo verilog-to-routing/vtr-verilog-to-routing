@@ -3,13 +3,13 @@
 #include <cstring> // Include cstring for memset
 #include <zlib.h>
 
-std::string tryCompress(const std::string& decompressed) 
+std::optional<std::string> tryCompress(const std::string& decompressed)
 {
     z_stream zs;
     memset(&zs, 0, sizeof(zs));
 
     if (deflateInit(&zs, Z_BEST_COMPRESSION) != Z_OK) {
-        return "";
+        return std::nullopt;
     }
 
     zs.next_in = reinterpret_cast<Bytef*>(const_cast<char*>(decompressed.data()));
@@ -35,19 +35,19 @@ std::string tryCompress(const std::string& decompressed)
     deflateEnd(&zs);
 
     if (retCode != Z_STREAM_END) {
-        return "";
+        return std::nullopt;
     }
 
     return result;
 }
 
-std::string tryDecompress(const std::string& compressed) 
+std::optional<std::string> tryDecompress(const std::string& compressed)
 {
     z_stream zs;
     memset(&zs, 0, sizeof(zs));
 
     if (inflateInit(&zs) != Z_OK) {
-        return "";
+        return std::nullopt;
     }
 
     zs.next_in = reinterpret_cast<Bytef*>(const_cast<char*>(compressed.data()));
@@ -74,7 +74,7 @@ std::string tryDecompress(const std::string& compressed)
     inflateEnd(&zs);
 
     if (retCode != Z_STREAM_END) {
-        return "";
+        return std::nullopt;
     }
 
     return result;

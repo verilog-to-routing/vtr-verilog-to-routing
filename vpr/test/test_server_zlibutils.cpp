@@ -7,11 +7,14 @@ TEST_CASE("test_server_zlib_utils", "[vpr]")
 {
     const std::string orig{"This string is going to be compressed now"};
 
-    std::string compressed = tryCompress(orig);
-    std::string decompressed = tryDecompress(compressed);
+    std::optional<std::string> compressedOpt = tryCompress(orig);
+    REQUIRE(compressedOpt);
+    REQUIRE(orig != compressedOpt.value());
 
-    REQUIRE(orig != compressed);
-    REQUIRE(orig == decompressed);
+    std::optional<std::string> decompressedOpt = tryDecompress(compressedOpt.value());
+    REQUIRE(decompressedOpt);
+
+    REQUIRE(orig == decompressedOpt.value());
 }
 
 
