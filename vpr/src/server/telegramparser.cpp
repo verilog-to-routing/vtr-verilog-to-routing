@@ -5,10 +5,10 @@
 
 namespace comm {
 
-std::optional<std::string> TelegramParser::tryExtractJsonValueStr(const std::string& jsonString, const std::string_view& key)
+std::optional<std::string> TelegramParser::tryExtractJsonValueStr(const std::string& jsonString, const std::string& key)
 {
     // Find the position of the key
-    size_t keyPos = jsonString.find("\"" + std::string(key) + "\":");
+    size_t keyPos = jsonString.find("\"" + key + "\":");
 
     if (keyPos == std::string::npos) {
         // Key not found

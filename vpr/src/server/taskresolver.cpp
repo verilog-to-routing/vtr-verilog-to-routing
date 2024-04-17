@@ -84,7 +84,7 @@ bool TaskResolver::update(ezgl::application* app) {
 }
 
 void TaskResolver::processGetPathListTask(ezgl::application*, const TaskPtr& task) {
-    static const std::vector<std::string_view> keys{comm::OPTION_PATH_NUM, comm::OPTION_PATH_TYPE, comm::OPTION_DETAILS_LEVEL, comm::OPTION_IS_FLAT_ROUTING};
+    static const std::vector<std::string> keys{comm::OPTION_PATH_NUM, comm::OPTION_PATH_TYPE, comm::OPTION_DETAILS_LEVEL, comm::OPTION_IS_FLAT_ROUTING};
     TelegramOptions options{task->options(), keys};
     if (!options.hasErrors()) {
         ServerContext& server_ctx = g_vpr_ctx.mutable_server(); // shortcut

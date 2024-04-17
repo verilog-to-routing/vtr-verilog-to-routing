@@ -2,7 +2,6 @@
 #define TELEGRAMPARSER_H
 
 #include <string>
-#include <string_view>
 #include <optional>
 
 namespace comm {
@@ -22,7 +21,7 @@ public:
     static std::optional<int> tryExtractFieldStatus(const std::string& message);
 
 private:
-    static std::optional<std::string> tryExtractJsonValueStr(const std::string& jsonString, const std::string_view& key);
+    static std::optional<std::string> tryExtractJsonValueStr(const std::string& jsonString, const std::string& key);
 };
 
 } // namespace comm

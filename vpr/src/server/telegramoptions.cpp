@@ -8,17 +8,17 @@
 
 namespace server {
     
-TelegramOptions::TelegramOptions(const std::string& data, const std::vector<std::string_view>& expectedKeys)
+TelegramOptions::TelegramOptions(const std::string& data, const std::vector<std::string>& expectedKeys)
 {
     // parse data string
     std::vector<std::string> options = vtr::split(data, ";");
     for (const std::string& optionStr: options) {
         std::vector<std::string> fragments = vtr::split(optionStr, ":");
         if (fragments.size() == TOTAL_INDEXES_NUM) {
-            const std::string& name = fragments[INDEX_NAME];
+            std::string name{std::move(fragments[INDEX_NAME])};
             Option option{std::move(fragments[INDEX_TYPE]), std::move(fragments[INDEX_VALUE])};
             if (isDataTypeSupported(option.type)) {
-                m_options[name] = option;
+                m_options.emplace(name, std::move(option));
             } else {
                 m_errors.emplace_back("bad type for option [" + optionStr + "]");
             }
@@ -31,7 +31,7 @@ TelegramOptions::TelegramOptions(const std::string& data, const std::vector<std:
     checkKeysPresence(expectedKeys);
 }
 
-std::map<std::size_t, std::set<std::size_t>> TelegramOptions::getMapOfSets(const std::string_view& name)
+std::map<std::size_t, std::set<std::size_t>> TelegramOptions::getMapOfSets(const std::string& name)
 {
     std::map<std::size_t, std::set<std::size_t>> result;
     std::string dataStr = getString(name);
@@ -64,7 +64,7 @@ std::map<std::size_t, std::set<std::size_t>> TelegramOptions::getMapOfSets(const
     return result;
 }
 
-std::string TelegramOptions::getString(const std::string_view& name)
+std::string TelegramOptions::getString(const std::string& name)
 {
     std::string result;
     if (auto it = m_options.find(name); it != m_options.end()) {
@@ -73,7 +73,7 @@ std::string TelegramOptions::getString(const std::string_view& name)
     return result;
 }
 
-int TelegramOptions::getInt(const std::string_view& name, int failValue)
+int TelegramOptions::getInt(const std::string& name, int failValue)
 {
     if (std::optional<int> opt = tryConvertToInt(m_options[name].value)) {
         return opt.value();
@@ -83,7 +83,7 @@ int TelegramOptions::getInt(const std::string_view& name, int failValue)
     }
 }
 
-bool TelegramOptions::getBool(const std::string_view& name, bool failValue)
+bool TelegramOptions::getBool(const std::string& name, bool failValue)
 {
     if (std::optional<int> opt = tryConvertToInt(m_options[name].value)) {
         return opt.value();
@@ -108,10 +108,10 @@ bool TelegramOptions::isDataTypeSupported(const std::string& type) const
     return supportedTypes.count(type) != 0;
 }
 
-bool TelegramOptions::checkKeysPresence(const std::vector<std::string_view>& keys)
+bool TelegramOptions::checkKeysPresence(const std::vector<std::string>& keys)
 {
     bool result = true;
-    for (const std::string_view& key: keys) {
+    for (const std::string& key: keys) {
         if (m_options.find(key) == m_options.end()) {
             m_errors.emplace_back("cannot find required option " + std::string(key));
             result = false;

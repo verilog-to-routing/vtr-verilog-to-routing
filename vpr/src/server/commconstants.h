@@ -1,32 +1,30 @@
 #ifndef COMMCONSTS_H
 #define COMMCONSTS_H
 
-#include <string_view>
+#include <string>
 
 namespace comm {
 
-constexpr const std::string_view KEY_JOB_ID = "JOB_ID";
-constexpr const std::string_view KEY_CMD = "CMD";
-constexpr const std::string_view KEY_OPTIONS = "OPTIONS";
-constexpr const std::string_view KEY_DATA = "DATA";
-constexpr const std::string_view KEY_STATUS = "STATUS";
-constexpr const std::string_view ECHO_DATA{"ECHO"};
+extern const std::string KEY_JOB_ID;
+extern const std::string KEY_CMD;
+extern const std::string KEY_OPTIONS;
+extern const std::string KEY_DATA;
+extern const std::string KEY_STATUS;
+extern const std::string ECHO_DATA;
 
 const unsigned char ZLIB_COMPRESSOR_ID = 'z';
 const unsigned char NONE_COMPRESSOR_ID = '\x0';
 
-constexpr const std::string_view OPTION_PATH_NUM = "path_num";
-constexpr const std::string_view OPTION_PATH_TYPE = "path_type";
-constexpr const std::string_view OPTION_DETAILS_LEVEL = "details_level";
-constexpr const std::string_view OPTION_IS_FLAT_ROUTING = "is_flat_routing";
-constexpr const std::string_view OPTION_PATH_ELEMENTS = "path_elements";
-constexpr const std::string_view OPTION_HIGHLIGHT_MODE = "high_light_mode";
-constexpr const std::string_view OPTION_DRAW_PATH_CONTOUR = "draw_path_contour";
+extern const std::string OPTION_PATH_NUM;
+extern const std::string OPTION_PATH_TYPE;
+extern const std::string OPTION_DETAILS_LEVEL;
+extern const std::string OPTION_IS_FLAT_ROUTING;
+extern const std::string OPTION_PATH_ELEMENTS;
+extern const std::string OPTION_HIGHLIGHT_MODE;
+extern const std::string OPTION_DRAW_PATH_CONTOUR;
 
-// please don't change values as they are involved in socket communication
-constexpr const std::string_view KEY_SETUP_PATH_LIST = "setup";
-constexpr const std::string_view KEY_HOLD_PATH_LIST = "hold";
-//
+extern const std::string KEY_SETUP_PATH_LIST;
+extern const std::string KEY_HOLD_PATH_LIST;
 
 enum CMD {
     CMD_GET_PATH_LIST_ID=0,
