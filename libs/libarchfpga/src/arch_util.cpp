@@ -35,7 +35,7 @@ const char* get_arch_file_name() {
     return arch_file_name;
 }
 
-InstPort::InstPort(std::string str) {
+InstPort::InstPort(const std::string& str) {
     std::vector<std::string> inst_port = vtr::split(str, ".");
 
     if (inst_port.size() == 1) {
