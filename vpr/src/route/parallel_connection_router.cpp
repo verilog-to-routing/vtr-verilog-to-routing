@@ -264,9 +264,9 @@ void ParallelConnectionRouter::timing_driven_route_connection_from_heap(RRNodeId
     this->cost_params_ = const_cast<t_conn_cost_params*>(&cost_params);
     this->bounding_box_ = const_cast<t_bb*>(&bounding_box);
 
-    thread_barrier_head_.wait();
+    thread_barrier_.wait();
     this->timing_driven_route_connection_from_heap_thread_func(*this->sink_node_, *this->cost_params_, *this->bounding_box_, 0);
-    thread_barrier_tail_.wait();
+    thread_barrier_.wait();
 
     // Collect the number of heap pushes and pops
     router_stats_->heap_pushes += heap_.getNumPushes();
@@ -278,6 +278,18 @@ void ParallelConnectionRouter::timing_driven_route_connection_from_heap(RRNodeId
     //     //Update known path costs for nodes pushed but not popped, useful for debugging
     //     empty_heap_annotating_node_route_inf();
     // }
+}
+
+void ParallelConnectionRouter::timing_driven_route_connection_from_heap_sub_thread_wrapper(const size_t thread_idx) {
+    while (true) {
+        this->thread_barrier_.wait();
+        if (this->is_router_destroying_ == true) {
+            return;
+        } else {
+            this->timing_driven_route_connection_from_heap_thread_func(*this->sink_node_, *this->cost_params_, *this->bounding_box_, thread_idx);
+        }
+        this->thread_barrier_.wait();
+    }
 }
 
 void ParallelConnectionRouter::timing_driven_route_connection_from_heap_thread_func(RRNodeId sink_node,
