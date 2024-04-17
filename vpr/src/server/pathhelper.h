@@ -22,7 +22,7 @@ struct CritPathsResult {
 };
 
 /** 
- * @brief Unified helper function to calculate the critical path with specified parameters.
+ * @brief Helper function to calculate critical path timing report with specified parameters.
  */
 CritPathsResult calcCriticalPath(const std::string& type, int critPathNum, e_timing_report_detail detailsLevel, bool is_flat_routing);
 

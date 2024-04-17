@@ -15,7 +15,6 @@
 #include "vpr_types.h"
 
 #include <sstream>
-#include <cassert>
 
 namespace server {
 
@@ -37,12 +36,13 @@ static void collect_crit_path_metadata(std::stringstream& ss, const std::vector<
 }
 
 /** 
- * @brief helper function to calculate the setup critical path with specified parameters.
+ * @brief helper function to generate critical path timing report with specified parameters.
  */
-static CritPathsResult generate_setup_timing_report(const SetupTimingInfo& timing_info, 
-                                                    const AnalysisDelayCalculator& delay_calc, 
-                                                    const t_analysis_opts& analysis_opts, 
-                                                    bool is_flat) {
+static CritPathsResult generate_timing_report(const SetupHoldTimingInfo& timing_info,
+                                              const AnalysisDelayCalculator& delay_calc,
+                                              const t_analysis_opts& analysis_opts,
+                                              const std::string& report_type,
+                                              bool is_flat) {
     auto& timing_ctx = g_vpr_ctx.timing();
     auto& atom_ctx = g_vpr_ctx.atom();
 
@@ -53,37 +53,24 @@ static CritPathsResult generate_setup_timing_report(const SetupTimingInfo& timin
 
     std::vector<tatum::TimingPath> paths;
     std::stringstream ss;
-    timing_reporter.report_timing_setup(paths, ss, *timing_info.setup_analyzer(), analysis_opts.timing_report_npaths);
-    collect_crit_path_metadata(ss, paths);
-    return CritPathsResult{paths, ss.str()};
+    if (report_type == comm::KEY_SETUP_PATH_LIST) {
+        timing_reporter.report_timing_setup(paths, ss, *timing_info.setup_analyzer(), analysis_opts.timing_report_npaths);
+    } else if (report_type == comm::KEY_HOLD_PATH_LIST) {
+        timing_reporter.report_timing_hold(paths, ss, *timing_info.hold_analyzer(), analysis_opts.timing_report_npaths);
+    }
+
+    if (!paths.empty()) {
+        collect_crit_path_metadata(ss, paths);
+        return CritPathsResult{paths, ss.str()};
+    } else {
+        return CritPathsResult{std::vector<tatum::TimingPath>(), ""};
+    }
 }
 
 /** 
- * @brief helper function to calculate the hold critical path with specified parameters.
+ * @brief Helper function to calculate critical path timing report with specified parameters.
  */
-static CritPathsResult generate_hold_timing_report(const HoldTimingInfo& timing_info, 
-                                                   const AnalysisDelayCalculator& delay_calc, 
-                                                   const t_analysis_opts& analysis_opts, 
-                                                   bool is_flat) {
-    auto& timing_ctx = g_vpr_ctx.timing();
-    auto& atom_ctx = g_vpr_ctx.atom();
-
-    VprTimingGraphResolver resolver(atom_ctx.nlist, atom_ctx.lookup, *timing_ctx.graph, delay_calc, is_flat);
-    resolver.set_detail_level(analysis_opts.timing_report_detail);
-
-    tatum::TimingReporter timing_reporter(resolver, *timing_ctx.graph, *timing_ctx.constraints);
-
-    std::vector<tatum::TimingPath> paths;
-    std::stringstream ss;
-    timing_reporter.report_timing_hold(paths, ss, *timing_info.hold_analyzer(), analysis_opts.timing_report_npaths);
-    collect_crit_path_metadata(ss, paths);
-    return CritPathsResult{paths, ss.str()};
-}
-
-/** 
- * @brief Unified helper function to calculate the critical path with specified parameters.
- */
-CritPathsResult calcCriticalPath(const std::string& type, int critPathNum, e_timing_report_detail detailsLevel, bool is_flat_routing) 
+CritPathsResult calcCriticalPath(const std::string& report_type, int critPathNum, e_timing_report_detail detailsLevel, bool is_flat_routing) 
 {
     // shortcuts
     auto& atom_ctx = g_vpr_ctx.atom();
@@ -99,19 +86,14 @@ CritPathsResult calcCriticalPath(const std::string& type, int critPathNum, e_tim
     auto analysis_delay_calc = std::make_shared<AnalysisDelayCalculator>(atom_ctx.nlist, atom_ctx.lookup, net_delay, is_flat_routing);
     
     e_timing_update_type timing_update_type = e_timing_update_type::AUTO;     // FULL, INCREMENTAL, AUTO
-    auto timing_info = make_setup_hold_timing_info(analysis_delay_calc, timing_update_type);
+    std::unique_ptr<SetupHoldTimingInfo> timing_info = make_setup_hold_timing_info(analysis_delay_calc, timing_update_type);
     timing_info->update();
 
     t_analysis_opts analysis_opt;
     analysis_opt.timing_report_detail = detailsLevel;
     analysis_opt.timing_report_npaths = critPathNum;
 
-    if (type == comm::KEY_SETUP_PATH_LIST) {
-        return generate_setup_timing_report(*timing_info, *analysis_delay_calc, analysis_opt, is_flat_routing);
-    } else if (type == comm::KEY_HOLD_PATH_LIST) {
-        return generate_hold_timing_report(*timing_info, *analysis_delay_calc, analysis_opt, is_flat_routing);
-    }
-    return CritPathsResult{std::vector<tatum::TimingPath>(), ""};
+    return generate_timing_report(*timing_info, *analysis_delay_calc, analysis_opt, report_type, is_flat_routing);
 }
 
 } // namespace server
