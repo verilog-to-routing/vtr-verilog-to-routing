@@ -16,7 +16,7 @@ std::string tryCompress(const std::string& decompressed)
     zs.avail_in = decompressed.size();
 
     int retCode;
-    char resultBuffer[32768];
+    char* resultBuffer = new char[32768];
     std::string result;
 
     do {
@@ -36,6 +36,8 @@ std::string tryCompress(const std::string& decompressed)
         return "";
     }
 
+    delete[] resultBuffer;
+
     return result;
 }
 
@@ -52,7 +54,7 @@ std::string tryDecompress(const std::string& compressed)
     zs.avail_in = compressed.size();
 
     int retCode;
-    char resultBuffer[32768];
+    char* resultBuffer = new char[32768];
     std::string result;
 
     do {
@@ -72,6 +74,8 @@ std::string tryDecompress(const std::string& compressed)
     if (retCode != Z_STREAM_END) {
         return "";
     }
+
+    delete[] resultBuffer;
 
     return result;
 }
