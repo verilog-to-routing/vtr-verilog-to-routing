@@ -7,8 +7,10 @@ namespace comm {
 
 std::optional<std::string> TelegramParser::tryExtractJsonValueStr(const std::string& jsonString, const std::string& key)
 {
+    static const std::string end_key_pattern{"\":\""};
+
     // Find the position of the key
-    size_t keyPos = jsonString.find("\"" + key + "\":");
+    size_t keyPos = jsonString.find('\"' + key + end_key_pattern);
 
     if (keyPos == std::string::npos) {
         // Key not found
@@ -16,7 +18,7 @@ std::optional<std::string> TelegramParser::tryExtractJsonValueStr(const std::str
     }
 
     // Find the position of the value after the key
-    size_t valuePosStart = jsonString.find("\"", keyPos + key.length() + std::string("\":\"").size());
+    size_t valuePosStart = jsonString.find('\"', keyPos + key.length() + end_key_pattern.size());
 
     if (valuePosStart == std::string::npos) {
         // Value not found
@@ -24,7 +26,7 @@ std::optional<std::string> TelegramParser::tryExtractJsonValueStr(const std::str
     }
 
     // Find the position of the closing quote for the value
-    size_t valueEnd = jsonString.find("\"", valuePosStart + std::string("\"").size());
+    size_t valueEnd = jsonString.find('\"', valuePosStart + sizeof('\"'));
 
     if (valueEnd == std::string::npos) {
         // Closing quote not found
