@@ -10,8 +10,19 @@
 #include "router_stats.h"
 #include "spatial_route_tree_lookup.h"
 
-// #include "binary_heap.h"
+#define VPR_PARALLEL_CONNECTION_ROUTER_USE_MULTI_QUEUE
+// #define VPR_PARALLEL_CONNECTION_ROUTER_USE_ONE_TBB
+
+#if defined(VPR_PARALLEL_CONNECTION_ROUTER_USE_MULTI_QUEUE)
 #include "multi_queue_priority_queue.h"
+using ParallelPriorityQueue = MultiQueuePriorityQueue;
+#elif defined(VPR_PARALLEL_CONNECTION_ROUTER_USE_ONE_TBB)
+#include "onetbb_priority_queue.h"
+using ParallelPriorityQueue = OneTBBConcurrentPriorityQueue;
+#else
+#error Please define VPR_PARALLEL_CONNECTION_ROUTER_USE_MULTI_QUEUE or \
+       VPR_PARALLEL_CONNECTION_ROUTER_USE_ONE_TBB
+#endif
 
 #include <atomic>
 #include <thread>
@@ -70,7 +81,7 @@ public:
 
     void wait() {
         static std::atomic<bool> sense_ = false; // global sense shared by multiple threads
-        static thread_local bool thread_local_sense_ = false;
+        static thread_local bool thread_local_sense_ = sense_;
         bool s = !thread_local_sense_;
         thread_local_sense_ = s;
         size_t num_arrivals = count_.fetch_add(1) + 1;
@@ -126,7 +137,7 @@ class ParallelConnectionRouter : public ConnectionRouterInterface {
         , router_debug_(false) {
         heap_.init_heap(grid);
         only_opin_inter_layer = (grid.get_num_layers() > 1) && inter_layer_connections_limited_to_opin(*rr_graph);
-        std::cout << "MQ #T=" << mq_num_threads << " #Q=" << mq_num_queues << std::endl << std::flush;
+        std::cout << "#T=" << mq_num_threads << " #Q=" << mq_num_queues << std::endl << std::flush;
         sub_threads_.resize(mq_num_threads-1);
         for (size_t i = 0 ; i < mq_num_threads - 1; ++i) {
             sub_threads_[i] = std::thread(&ParallelConnectionRouter::timing_driven_route_connection_from_heap_sub_thread_wrapper, this, i + 1 /*0: main thread*/);
@@ -376,8 +387,7 @@ class ParallelConnectionRouter : public ConnectionRouterInterface {
     std::vector<std::vector<RRNodeId>> modified_rr_node_inf_;
     RouterStats* router_stats_;
     const ConnectionParameters* conn_params_;
-    // BinaryHeap heap_;
-    MultiQueuePriorityQueue heap_;
+    ParallelPriorityQueue heap_;
     std::vector<std::thread> sub_threads_;
     barrier_t thread_barrier_;
     std::atomic<bool> is_router_destroying_;

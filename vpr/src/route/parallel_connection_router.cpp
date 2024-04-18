@@ -762,7 +762,7 @@ void ParallelConnectionRouter::add_route_tree_to_heap(
  * bottom up with build_heap    */
 template<typename RouteInf>
 void parallel_connection_router_push_back_node(
-    MultiQueuePriorityQueue* heap,
+    ParallelPriorityQueue* heap,
     const RouteInf& rr_node_route_inf,
     RRNodeId inode,
     float total_cost,
