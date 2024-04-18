@@ -73,17 +73,21 @@ public:
 };
 
 class barrier_spin_t {
-    size_t num_threads_;
-    std::atomic<size_t> count_;
+    size_t num_threads_ = 1;
+    std::atomic<size_t> count_ = 0;
+    std::atomic<bool> sense_ = false; // global sense shared by multiple threads
+    inline static thread_local bool local_sense_ = false;
 
 public:
-    explicit barrier_spin_t(size_t num_threads) : num_threads_(num_threads), count_(0) { }
+    explicit barrier_spin_t(size_t num_threads) { num_threads_ = num_threads; }
+
+    void init() {
+        local_sense_ = false;
+    }
 
     void wait() {
-        static std::atomic<bool> sense_ = false; // global sense shared by multiple threads
-        static thread_local bool thread_local_sense_ = sense_;
-        bool s = !thread_local_sense_;
-        thread_local_sense_ = s;
+        bool s = !local_sense_;
+        local_sense_ = s;
         size_t num_arrivals = count_.fetch_add(1) + 1;
         if (num_arrivals == num_threads_) {
             count_.store(0);
@@ -139,6 +143,7 @@ class ParallelConnectionRouter : public ConnectionRouterInterface {
         only_opin_inter_layer = (grid.get_num_layers() > 1) && inter_layer_connections_limited_to_opin(*rr_graph);
         std::cout << "#T=" << mq_num_threads << " #Q=" << mq_num_queues << std::endl << std::flush;
         sub_threads_.resize(mq_num_threads-1);
+        thread_barrier_.init();
         for (size_t i = 0 ; i < mq_num_threads - 1; ++i) {
             sub_threads_[i] = std::thread(&ParallelConnectionRouter::timing_driven_route_connection_from_heap_sub_thread_wrapper, this, i + 1 /*0: main thread*/);
             sub_threads_[i].detach();

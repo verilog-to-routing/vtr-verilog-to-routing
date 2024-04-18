@@ -281,14 +281,15 @@ void ParallelConnectionRouter::timing_driven_route_connection_from_heap(RRNodeId
 }
 
 void ParallelConnectionRouter::timing_driven_route_connection_from_heap_sub_thread_wrapper(const size_t thread_idx) {
+    thread_barrier_.init();
     while (true) {
-        this->thread_barrier_.wait();
-        if (this->is_router_destroying_ == true) {
+        thread_barrier_.wait();
+        if (is_router_destroying_ == true) {
             return;
         } else {
-            this->timing_driven_route_connection_from_heap_thread_func(*this->sink_node_, *this->cost_params_, *this->bounding_box_, thread_idx);
+            timing_driven_route_connection_from_heap_thread_func(*this->sink_node_, *this->cost_params_, *this->bounding_box_, thread_idx);
         }
-        this->thread_barrier_.wait();
+        thread_barrier_.wait();
     }
 }
 
