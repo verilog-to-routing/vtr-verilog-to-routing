@@ -61,7 +61,7 @@ void verify_hard_block_type_name(string curr_hard_block_type_name){
     // Condition 1: the first charatcer must be a lowercase/uppercase alphabetical character. Or the first character can be a underscore.
     // Condition 2: The remaning characters must be a lowercase/uppercase alphabetical character, or a underscore, or a single digit number or the '$' character
     // the rules above are checked with the identifier below 
-    std::regex verilog_VHDL_naming_rules_one ("^[a-zA-Z_][a-zA-Z_\$0-9]*[a-zA-Z_\$0-9]$");
+    std::regex verilog_VHDL_naming_rules_one ("^[a-zA-Z_][a-zA-Z_\\$0-9]*[a-zA-Z_\\$0-9]$");
 
     // verilog names can also contain any characters, as long as they are escaped with a '\' at the start of the identifer. For example, \reset-
     // we check this using the identifier below

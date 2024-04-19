@@ -1735,7 +1735,7 @@ static std::string construct_hard_block_name(std::vector<std::string>*node_name_
 static void identify_hard_block_port_name_and_index (t_parsed_hard_block_port_info* curr_hard_block_port, std::string curr_node_name_component)
 {   
     // identifer to check whether the port defined in the current node name is a bus (ex. payload[1]~QIC_DANGLING_PORT_I)
-    std::regex port_is_a_bus ("(.*)[[]([0-9]*)\]~(?:.*)");
+    std::regex port_is_a_bus ("(.*)[[]([0-9]*)\\]~(?:.*)");
 
     // identifier to check whether the current port defined in the current node name isn't a bus (ex. value~9490_I)
     std::regex port_is_not_a_bus ("(.*)~(?:.*)");
