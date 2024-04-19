@@ -1273,13 +1273,14 @@ static void build_rr_graph(const t_graph_type graph_type,
      */
     vtr::NdMatrix<t_inter_die_switchblock_edge, 5> multi_layer_track_conn;
     auto& grid_ctx = device_ctx.grid;
-    multi_layer_track_conn.resize(std::array<size_t, 5>{(size_t)grid_ctx.get_num_layers(), grid.width(), grid.height(), (size_t)max_chan_width, 2});
 
     /* check whether RR graph need to allocate new nodes for 3D custom switch blocks.
      * To avoid wasting memory, the data structures are only allocated if a custom switch block
      * is described in the architecture file and we have more than one die in device grid.
      */
     if (grid.get_num_layers() > 1 && sb_type == CUSTOM) {
+        //initialize the multi_layer_track_conn
+        multi_layer_track_conn.resize(std::array<size_t, 5>{(size_t)grid_ctx.get_num_layers(), grid.width(), grid.height(), (size_t)max_chan_width, 2});
         //keep how many nodes each switchblock requires
         auto extra_nodes_per_switchblock = get_number_track_to_track_inter_die_conn(multi_layer_track_conn, sb_conn_map, device_ctx.rr_graph_builder);
         //allocate new nodes in each switchblocks
