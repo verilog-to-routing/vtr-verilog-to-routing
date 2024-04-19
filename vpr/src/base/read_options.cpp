@@ -1889,7 +1889,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             "What algorithm should be used to compute the place delta matrix.\n"
             "\n"
             " * astar : Find delta delays between OPIN's and IPIN's using\n"
-            "           the router with the current --astar_fac.\n"
+            "           the router with the current --router_profiler_astar_fac.\n"
             " * dijkstra : Use Dijkstra's algorithm to find all shortest paths \n"
             "              from sampled OPIN's to all IPIN's.\n")
         .default_value("astar")
