@@ -89,11 +89,9 @@ enum class ScreenUpdatePriority {
 /* Values large enough to be way out of range for any data, but small enough
  * to allow a small number to be added to them without going out of range. */
 #define HUGE_POSITIVE_FLOAT 1.e30
-#define HUGE_NEGATIVE_FLOAT -1.e30
 
 /* Used to avoid floating-point errors when comparing values close to 0 */
 #define EPSILON 1.e-15
-#define NEGATIVE_EPSILON -1.e-15
 
 #define FIRST_ITER_WIRELENTH_LIMIT 0.85 /* If used wirelength exceeds this value in first iteration of routing, do not route */
 
@@ -110,12 +108,10 @@ constexpr auto INVALID_BLOCK_ID = ClusterBlockId(-2);
  * and maps it to the complex logic blocks found in the architecture
  ******************************************************************************/
 
-#define NO_CLUSTER -1
-#define NEVER_CLUSTER -2
-#define NOT_VALID -10000 /* Marks gains that aren't valid */
+#define NOT_VALID (-10000) /* Marks gains that aren't valid */
 /* Ensure no gain can ever be this negative! */
 #ifndef UNDEFINED
-#    define UNDEFINED -1
+#    define UNDEFINED (-1)
 #endif
 
 enum class e_router_lookahead {
@@ -552,7 +548,6 @@ enum class e_timing_update_type {
 /* Values of number of placement available move types */
 constexpr int NUM_PL_MOVE_TYPES = 7;
 constexpr int NUM_PL_NONTIMING_MOVE_TYPES = 3;
-constexpr int NUM_PL_1ST_STATE_MOVE_TYPES = 4;
 
 /* Timing data structures end */
 enum sched_type {
