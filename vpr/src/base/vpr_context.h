@@ -32,10 +32,17 @@
 #include "noc_storage.h"
 #include "noc_traffic_flows.h"
 #include "noc_routing.h"
-#include "gateio.h"
-#include "taskresolver.h"
 #include "tatum/report/TimingPath.hpp"
 
+#ifndef NO_SERVER
+
+#include "gateio.h"
+#include "taskresolver.h"
+
+class SetupHoldTimingInfo;
+class PostClusterDelayCalculator;
+
+#endif /* NO_SERVER */
 
 /**
  * @brief A Context is collection of state relating to a particular part of VPR
@@ -584,6 +591,12 @@ class ServerContext : public Context {
     void set_draw_crit_path_contour(bool draw_crit_path_contour) { draw_crit_path_contour_ = draw_crit_path_contour; }
     bool draw_crit_path_contour() const { return draw_crit_path_contour_; }
 
+    void set_timing_info(const std::shared_ptr<SetupHoldTimingInfo>& timing_info) { timing_info_ = timing_info; }
+    const std::shared_ptr<SetupHoldTimingInfo>& timing_info() const { return timing_info_; }
+
+    void set_routing_delay_calc(const std::shared_ptr<PostClusterDelayCalculator>& routing_delay_calc) { routing_delay_calc_ = routing_delay_calc; }
+    const std::shared_ptr<PostClusterDelayCalculator>& routing_delay_calc() const { return routing_delay_calc_; }
+
   private:
     server::GateIO gate_io_;
     server::TaskResolver task_resolver_;
@@ -621,7 +634,22 @@ class ServerContext : public Context {
      */
     std::map<std::size_t, std::set<std::size_t>> crit_path_element_indexes_;
 
+    /**
+     * @brief Stores the flag indicating whether to draw the critical path contour.
+     *
+     * If the flag is set to true, the non-selected critical path elements will be drawn as a contour, while selected elements will be drawn as usual.
+     */
     bool draw_crit_path_contour_ = false;
+
+    /**
+     * @brief Reference to the SetupHoldTimingInfo calculated during the routing stage.
+     */
+    std::shared_ptr<SetupHoldTimingInfo> timing_info_;
+
+    /**
+     * @brief Reference to the PostClusterDelayCalculator calculated during the routing stage.
+     */
+    std::shared_ptr<PostClusterDelayCalculator> routing_delay_calc_;
 };
 #endif /* NO_SERVER */
 

@@ -9,7 +9,7 @@
 namespace server {
 
 gboolean update(gpointer data) {
-    bool is_running = g_vpr_ctx.server().gateIO().isRunning();
+    const bool is_running = g_vpr_ctx.server().gateIO().isRunning();
     if (is_running) {
         // shortcuts
         ezgl::application* app = static_cast<ezgl::application*>(data);
@@ -24,17 +24,20 @@ gboolean update(gpointer data) {
         }
         tasks_buff.clear();
 
-        bool has_finished_tasks = task_resolver.update(app);
+        const bool is_server_context_initialized = g_vpr_ctx.server().timing_info() && g_vpr_ctx.server().routing_delay_calc();
+        if (is_server_context_initialized){
+            bool has_finished_tasks = task_resolver.update(app);
 
-        task_resolver.takeFinished(tasks_buff);
+            task_resolver.takeFinished(tasks_buff);
 
-        gate_io.moveTasksToSendQueue(tasks_buff);
-        gate_io.printLogs();
+            gate_io.moveTasksToSendQueue(tasks_buff);
 
-        // Call the redraw method of the application if any of task was processed
-        if (has_finished_tasks) {
-            app->refresh_drawing();
+            // Call the redraw method of the application if any of task was processed
+            if (has_finished_tasks) {
+                app->refresh_drawing();
+            }
         }
+        gate_io.printLogs();
     }
     
     // Return TRUE to keep the timer running, or FALSE to stop it

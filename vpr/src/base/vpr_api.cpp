@@ -393,7 +393,9 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
 
     // TODO: Placer still assumes that cluster net list is used - graphics can not work with flat routing yet
     vpr_init_graphics(vpr_setup, arch, false);
+
     vpr_init_server(vpr_setup);
+
     { //Place
         const auto& placement_net_list = (const Netlist<>&)g_vpr_ctx.clustering().clb_nlist;
         bool place_success = vpr_place_flow(placement_net_list, vpr_setup, arch);
@@ -814,6 +816,12 @@ RouteStatus vpr_route_flow(const Netlist<>& net_list,
             auto& atom_ctx = g_vpr_ctx.atom();
             routing_delay_calc = std::make_shared<RoutingDelayCalculator>(atom_ctx.nlist, atom_ctx.lookup, net_delay, is_flat);
             timing_info = make_setup_hold_timing_info(routing_delay_calc, router_opts.timing_update_type);
+#ifndef NO_SERVER
+            if (g_vpr_ctx.server().gateIO().isRunning()) {
+                g_vpr_ctx.mutable_server().set_timing_info(timing_info);
+                g_vpr_ctx.mutable_server().set_routing_delay_calc(routing_delay_calc);
+            }
+#endif /* NO_SERVER */
         } else {
             /* No delay calculator (segfault if the code calls into it) and wirelength driven routing */
             timing_info = make_constant_timing_info(0);
@@ -1068,6 +1076,8 @@ void vpr_init_server(const t_vpr_setup& vpr_setup)
             g_timeout_add(/*interval_ms*/ 100, server::update, &application);
         }
     }
+#else
+    (void)(vpr_setup);
 #endif /* NO_SERVER */
 }
 

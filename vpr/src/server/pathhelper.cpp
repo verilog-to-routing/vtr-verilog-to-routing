@@ -1,18 +1,11 @@
 #include "pathhelper.h"
-#include "globals.h"
-#include "vpr_net_pins_matrix.h"
-#include "VprTimingGraphResolver.h"
-#include "tatum/TimingReporter.hpp"
-
-#include "draw_types.h"
-#include "draw_global.h"
-#include "net_delay.h"
-#include "concrete_timing_info.h"
 #include "commconstants.h"
 
-#include "timing_info_fwd.h"
-#include "AnalysisDelayCalculator.h"
-#include "vpr_types.h"
+#include "globals.h"
+#include "VprTimingGraphResolver.h"
+#include "tatum/TimingReporter.hpp"
+#include "RoutingDelayCalculator.h"
+#include "timing_info.h"
 
 #include <sstream>
 
@@ -36,17 +29,23 @@ static void collect_crit_path_metadata(std::stringstream& ss, const std::vector<
 }
 
 /** 
- * @brief helper function to generate critical path timing report with specified parameters.
+ * @brief Helper function to calculate critical path timing report with specified parameters.
  */
-static CritPathsResult generate_timing_report(const SetupHoldTimingInfo& timing_info,
-                                              const AnalysisDelayCalculator& delay_calc,
-                                              const t_analysis_opts& analysis_opts,
-                                              const std::string& report_type,
-                                              bool is_flat) {
+CritPathsResult calcCriticalPath(const std::string& report_type, int critPathNum, e_timing_report_detail detailsLevel, bool is_flat_routing)
+{
+    // shortcuts
+    const std::shared_ptr<SetupHoldTimingInfo>& timing_info = g_vpr_ctx.server().timing_info();
+    const std::shared_ptr<RoutingDelayCalculator>& routing_delay_calc = g_vpr_ctx.server().routing_delay_calc();
+
     auto& timing_ctx = g_vpr_ctx.timing();
     auto& atom_ctx = g_vpr_ctx.atom();
+    //
 
-    VprTimingGraphResolver resolver(atom_ctx.nlist, atom_ctx.lookup, *timing_ctx.graph, delay_calc, is_flat);
+    t_analysis_opts analysis_opts;
+    analysis_opts.timing_report_detail = detailsLevel;
+    analysis_opts.timing_report_npaths = critPathNum;
+
+    VprTimingGraphResolver resolver(atom_ctx.nlist, atom_ctx.lookup, *timing_ctx.graph, *routing_delay_calc, is_flat_routing);
     resolver.set_detail_level(analysis_opts.timing_report_detail);
 
     tatum::TimingReporter timing_reporter(resolver, *timing_ctx.graph, *timing_ctx.constraints);
@@ -54,9 +53,9 @@ static CritPathsResult generate_timing_report(const SetupHoldTimingInfo& timing_
     std::vector<tatum::TimingPath> paths;
     std::stringstream ss;
     if (report_type == comm::KEY_SETUP_PATH_LIST) {
-        timing_reporter.report_timing_setup(paths, ss, *timing_info.setup_analyzer(), analysis_opts.timing_report_npaths);
+        timing_reporter.report_timing_setup(paths, ss, *timing_info->setup_analyzer(), analysis_opts.timing_report_npaths);
     } else if (report_type == comm::KEY_HOLD_PATH_LIST) {
-        timing_reporter.report_timing_hold(paths, ss, *timing_info.hold_analyzer(), analysis_opts.timing_report_npaths);
+        timing_reporter.report_timing_hold(paths, ss, *timing_info->hold_analyzer(), analysis_opts.timing_report_npaths);
     }
 
     if (!paths.empty()) {
@@ -65,35 +64,6 @@ static CritPathsResult generate_timing_report(const SetupHoldTimingInfo& timing_
     } else {
         return CritPathsResult{std::vector<tatum::TimingPath>(), ""};
     }
-}
-
-/** 
- * @brief Helper function to calculate critical path timing report with specified parameters.
- */
-CritPathsResult calcCriticalPath(const std::string& report_type, int critPathNum, e_timing_report_detail detailsLevel, bool is_flat_routing) 
-{
-    // shortcuts
-    auto& atom_ctx = g_vpr_ctx.atom();
-
-    //Load the net delays
-    const Netlist<>& net_list = is_flat_routing ? (const Netlist<>&)g_vpr_ctx.atom().nlist : (const Netlist<>&)g_vpr_ctx.clustering().clb_nlist;
-
-    NetPinsMatrix<float> net_delay = make_net_pins_matrix<float>(net_list);
-    load_net_delay_from_routing(net_list,
-                                net_delay);
-
-    //Do final timing analysis
-    auto analysis_delay_calc = std::make_shared<AnalysisDelayCalculator>(atom_ctx.nlist, atom_ctx.lookup, net_delay, is_flat_routing);
-    
-    e_timing_update_type timing_update_type = e_timing_update_type::AUTO;     // FULL, INCREMENTAL, AUTO
-    std::unique_ptr<SetupHoldTimingInfo> timing_info = make_setup_hold_timing_info(analysis_delay_calc, timing_update_type);
-    timing_info->update();
-
-    t_analysis_opts analysis_opt;
-    analysis_opt.timing_report_detail = detailsLevel;
-    analysis_opt.timing_report_npaths = critPathNum;
-
-    return generate_timing_report(*timing_info, *analysis_delay_calc, analysis_opt, report_type, is_flat_routing);
 }
 
 } // namespace server
