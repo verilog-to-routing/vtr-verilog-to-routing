@@ -45,13 +45,13 @@ std::map<std::size_t, std::set<std::size_t>> TelegramOptions::getMapOfSets(const
                 std::vector<std::string> pathElementIndexes = vtr::split(pathElementIndexesStr, ",");
                 std::set<std::size_t> elements;
                 for (const std::string& pathElementIndexStr: pathElementIndexes) {
-                    if (std::optional<int> optValue = tryConvertToInt(pathElementIndexStr)) {
+                    if (std::optional<int> optValue = try_convert_to_int(pathElementIndexStr)) {
                         elements.insert(optValue.value());
                     } else {
                         m_errors.emplace_back("cannot extract path element index from " + pathElementIndexStr);
                     }
                 }
-                if (std::optional<int> optPathIndex = tryConvertToInt(pathIndexStr)) {
+                if (std::optional<int> optPathIndex = try_convert_to_int(pathIndexStr)) {
                     result[optPathIndex.value()] = elements;
                 } else {
                     m_errors.emplace_back("cannot extract path index from " + pathIndexStr);
@@ -75,7 +75,7 @@ std::string TelegramOptions::getString(const std::string& name)
 
 int TelegramOptions::getInt(const std::string& name, int failValue)
 {
-    if (std::optional<int> opt = tryConvertToInt(m_options[name].value)) {
+    if (std::optional<int> opt = try_convert_to_int(m_options[name].value)) {
         return opt.value();
     } else {
         m_errors.emplace_back("cannot get int value for option " + std::string(name));
@@ -85,7 +85,7 @@ int TelegramOptions::getInt(const std::string& name, int failValue)
 
 bool TelegramOptions::getBool(const std::string& name, bool failValue)
 {
-    if (std::optional<int> opt = tryConvertToInt(m_options[name].value)) {
+    if (std::optional<int> opt = try_convert_to_int(m_options[name].value)) {
         return opt.value();
     } else {
         m_errors.emplace_back("cannot get bool value for option " + std::string(name));

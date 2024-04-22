@@ -152,9 +152,9 @@ GateIO::ActivityStatus GateIO::handleTelegrams(std::vector<comm::TelegramFramePt
 
         if (!isEchoTelegram) {
             m_logger.queue(LogLevel::Detail, "received composed", getPrettySizeStrFromBytesNum(message.size()), ":", getTruncatedMiddleStr(message));
-            std::optional<int> jobIdOpt = comm::TelegramParser::tryExtractFieldJobId(message);
-            std::optional<int> cmdOpt = comm::TelegramParser::tryExtractFieldCmd(message);
-            std::optional<std::string> optionsOpt = comm::TelegramParser::tryExtractFieldOptions(message);
+            std::optional<int> jobIdOpt = comm::TelegramParser::try_extract_field_job_id(message);
+            std::optional<int> cmdOpt = comm::TelegramParser::try_extract_field_cmd(message);
+            std::optional<std::string> optionsOpt = comm::TelegramParser::try_extract_field_options(message);
             if (jobIdOpt && cmdOpt && optionsOpt) {
                 TaskPtr task = std::make_unique<Task>(jobIdOpt.value(), cmdOpt.value(), optionsOpt.value());
                 const comm::TelegramHeader& header = telegramFrame->header;

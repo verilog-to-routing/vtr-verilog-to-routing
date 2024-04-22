@@ -5,7 +5,7 @@
 #include "vtr_util.h"
 #include "vtr_error.h"
 
-std::optional<int> tryConvertToInt(const std::string& str)
+std::optional<int> try_convert_to_int(const std::string& str)
 {
     try {
         return vtr::atoi(str);
