@@ -41,34 +41,34 @@ public:
     ~TelegramHeader()=default;
 
     template<typename T>
-    static comm::TelegramHeader constructFromData(const T& body, uint8_t compressorId = 0) {
-        uint32_t bodyCheckSum = ByteArray::calcCheckSum(body);
-        return comm::TelegramHeader{static_cast<uint32_t>(body.size()), bodyCheckSum, compressorId};
+    static comm::TelegramHeader construct_from_data(const T& body, uint8_t compressor_id = 0) {
+        uint32_t body_check_sum = ByteArray::calcCheckSum(body);
+        return comm::TelegramHeader{static_cast<uint32_t>(body.size()), body_check_sum, compressor_id};
     }
 
     static constexpr size_t size() {
         return SIGNATURE_SIZE + LENGTH_SIZE + CHECKSUM_SIZE + COMPRESSORID_SIZE;
     }
 
-    bool isValid() const { return m_isValid; }
+    bool is_valid() const { return m_is_valid; }
 
     const ByteArray& buffer() const { return m_buffer; }
 
-    uint32_t bodyBytesNum() const { return m_bodyBytesNum; }
-    uint32_t bodyCheckSum() const { return m_bodyCheckSum; }
-    uint8_t compressorId() const { return m_compressorId; }
+    uint32_t body_bytes_num() const { return m_body_bytes_num; }
+    uint32_t body_check_sum() const { return m_body_check_sum; }
+    uint8_t compressor_id() const { return m_compressor_id; }
 
-    bool isBodyCompressed() const { return m_compressorId != 0; }
+    bool is_body_compressed() const { return m_compressor_id != 0; }
 
     std::string info() const;
 
 private:
-    bool m_isValid = false;
+    bool m_is_valid = false;
     ByteArray m_buffer;
 
-    uint32_t m_bodyBytesNum = 0;
-    uint32_t m_bodyCheckSum = 0;
-    uint8_t m_compressorId = 0;
+    uint32_t m_body_bytes_num = 0;
+    uint32_t m_body_check_sum = 0;
+    uint8_t m_compressor_id = 0;
 };
 
 } // namespace comm

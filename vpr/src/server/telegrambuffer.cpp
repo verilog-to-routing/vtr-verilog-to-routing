@@ -33,7 +33,7 @@ void TelegramBuffer::takeTelegramFrames(std::vector<comm::TelegramFramePtr>& res
         if (!m_headerOpt) {
             if (checkTelegramHeaderPresence()) {
                 TelegramHeader header(m_rawBuffer);
-                if (header.isValid()) {
+                if (header.is_valid()) {
                     m_headerOpt = std::move(header);
                 }
             }
@@ -42,12 +42,12 @@ void TelegramBuffer::takeTelegramFrames(std::vector<comm::TelegramFramePtr>& res
         // attempt to extract telegram frame based on the telegram header
         if (m_headerOpt) {
             const TelegramHeader& header = m_headerOpt.value();
-            std::size_t wholeTelegramSize = TelegramHeader::size() + header.bodyBytesNum();
+            std::size_t wholeTelegramSize = TelegramHeader::size() + header.body_bytes_num();
             if (m_rawBuffer.size() >= wholeTelegramSize) {
                 // checksum validation
                 ByteArray data(m_rawBuffer.begin() + TelegramHeader::size(), m_rawBuffer.begin() + wholeTelegramSize);
                 uint32_t actualCheckSum = data.calcCheckSum();
-                if (actualCheckSum == header.bodyCheckSum()) {
+                if (actualCheckSum == header.body_check_sum()) {
                     // construct telegram frame if checksum matches
                     TelegramFramePtr telegramFramePtr = std::make_shared<TelegramFrame>(TelegramFrame{header, std::move(data)});
                     data.clear(); // post std::move safety step
