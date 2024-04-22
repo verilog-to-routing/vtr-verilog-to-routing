@@ -44,7 +44,7 @@ public:
 
     template<typename T>
     static comm::TelegramHeader construct_from_data(const T& body, uint8_t compressor_id = 0) {
-        uint32_t body_check_sum = ByteArray::calcCheckSum(body);
+        uint32_t body_check_sum = ByteArray::calc_check_sum(body);
         return comm::TelegramHeader{static_cast<uint32_t>(body.size()), body_check_sum, compressor_id};
     }
 

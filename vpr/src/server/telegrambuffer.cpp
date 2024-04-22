@@ -9,7 +9,7 @@ void TelegramBuffer::append(const ByteArray& bytes) {
 }
 
 bool TelegramBuffer::check_telegram_header_presence() {
-    std::size_t signature_start_index = m_raw_buffer.findSequence(TelegramHeader::SIGNATURE, TelegramHeader::SIGNATURE_SIZE);
+    std::size_t signature_start_index = m_raw_buffer.find_sequence(TelegramHeader::SIGNATURE, TelegramHeader::SIGNATURE_SIZE);
     if (signature_start_index != std::size_t(-1)) {
         if (signature_start_index != 0) {
             // discard bytes preceding the header start position.
@@ -45,7 +45,7 @@ void TelegramBuffer::take_telegram_frames(std::vector<comm::TelegramFramePtr>& r
             if (m_raw_buffer.size() >= expected_telegram_size) {
                 // checksum validation
                 ByteArray data(m_raw_buffer.begin() + TelegramHeader::size(), m_raw_buffer.begin() + expected_telegram_size);
-                uint32_t actual_check_sum = data.calcCheckSum();
+                uint32_t actual_check_sum = data.calc_check_sum();
                 if (actual_check_sum == header.body_check_sum()) {
                     // construct telegram frame if checksum matches
                     TelegramFramePtr telegram_frame_ptr = std::make_shared<TelegramFrame>(TelegramFrame{header, std::move(data)});

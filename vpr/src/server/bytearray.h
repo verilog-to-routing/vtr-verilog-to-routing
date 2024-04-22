@@ -27,8 +27,8 @@ public:
                                reinterpret_cast<const uint8_t*>(data + size))
     {}
 
-    ByteArray(std::size_t sizeHint = DEFAULT_SIZE_HINT) {
-        reserve(sizeHint);
+    ByteArray(std::size_t size_hint = DEFAULT_SIZE_HINT) {
+        reserve(size_hint);
     }
 
     template<typename Iterator>
@@ -42,12 +42,12 @@ public:
         push_back(b);
     }
 
-    std::size_t findSequence(const char* sequence, std::size_t sequenceSize) {
-        const std::size_t mSize = size();
-        if (mSize >= sequenceSize) {
-            for (std::size_t i = 0; i <= mSize - sequenceSize; ++i) {
+    std::size_t find_sequence(const char* sequence, std::size_t sequence_size) {
+        const std::size_t ssize = size();
+        if (ssize >= sequence_size) {
+            for (std::size_t i = 0; i <= ssize - sequence_size; ++i) {
                 bool found = true;
-                for (std::size_t j = 0; j < sequenceSize; ++j) {
+                for (std::size_t j = 0; j < sequence_size; ++j) {
                     if (at(i + j) != sequence[j]) {
                         found = false;
                         break;
@@ -65,12 +65,12 @@ public:
         return std::string(reinterpret_cast<const char*>(this->data()), this->size());
     }
 
-    uint32_t calcCheckSum() {
-        return calcCheckSum<ByteArray>(*this);
+    uint32_t calc_check_sum() {
+        return calc_check_sum<ByteArray>(*this);
     }
 
     template<typename T>
-    static uint32_t calcCheckSum(const T& iterable) {
+    static uint32_t calc_check_sum(const T& iterable) {
         uint32_t sum = 0;
         for (uint8_t c : iterable) {
             sum += static_cast<unsigned int>(c);
