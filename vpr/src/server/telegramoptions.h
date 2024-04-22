@@ -32,27 +32,27 @@ private:
     };
 
 public:
-    TelegramOptions(const std::string& data, const std::vector<std::string>& expectedKeys);
+    TelegramOptions(const std::string& data, const std::vector<std::string>& expected_keys);
     ~TelegramOptions()=default;
 
-    bool hasErrors() const { return !m_errors.empty(); }
+    bool has_errors() const { return !m_errors.empty(); }
 
-    std::map<std::size_t, std::set<std::size_t>> getMapOfSets(const std::string& name);
+    std::map<std::size_t, std::set<std::size_t>> get_map_of_sets(const std::string& name);
 
-    std::string getString(const std::string& name);
+    std::string get_string(const std::string& name);
 
-    int getInt(const std::string& name, int failValue);
+    int get_int(const std::string& name, int fail_value);
 
-    bool getBool(const std::string& name, bool failValue);
+    bool get_bool(const std::string& name, bool fail_value);
 
-    std::string errorsStr() const;
+    std::string errors_str() const;
 
 private:
     std::unordered_map<std::string, Option> m_options;
     std::vector<std::string> m_errors;
 
-    bool isDataTypeSupported(const std::string& type) const;
-    bool checkKeysPresence(const std::vector<std::string>& keys);
+    bool is_data_type_supported(const std::string& type) const;
+    bool check_keys_presence(const std::vector<std::string>& keys);
 };
 
 } // namespace server

@@ -86,16 +86,16 @@ bool TaskResolver::update(ezgl::application* app) {
 void TaskResolver::processGetPathListTask(ezgl::application*, const TaskPtr& task) {
     static const std::vector<std::string> keys{comm::OPTION_PATH_NUM, comm::OPTION_PATH_TYPE, comm::OPTION_DETAILS_LEVEL, comm::OPTION_IS_FLAT_ROUTING};
     TelegramOptions options{task->options(), keys};
-    if (!options.hasErrors()) {
+    if (!options.has_errors()) {
         ServerContext& server_ctx = g_vpr_ctx.mutable_server(); // shortcut
 
         server_ctx.clear_crit_path_elements(); // reset selection if path list options has changed
 
         // read options
-        const int nCriticalPathNum = options.getInt(comm::OPTION_PATH_NUM, 1);
-        const std::string pathType = options.getString(comm::OPTION_PATH_TYPE);
-        const std::string details_level_str = options.getString(comm::OPTION_DETAILS_LEVEL);
-        const bool isFlat = options.getBool(comm::OPTION_IS_FLAT_ROUTING, false);
+        const int nCriticalPathNum = options.get_int(comm::OPTION_PATH_NUM, 1);
+        const std::string pathType = options.get_string(comm::OPTION_PATH_TYPE);
+        const std::string details_level_str = options.get_string(comm::OPTION_DETAILS_LEVEL);
+        const bool isFlat = options.get_bool(comm::OPTION_IS_FLAT_ROUTING, false);
 
         // calculate critical path depending on options and store result in server context
         std::optional<e_timing_report_detail> details_level_opt = tryGetDetailsLevelEnum(details_level_str);
@@ -121,7 +121,7 @@ void TaskResolver::processGetPathListTask(ezgl::application*, const TaskPtr& tas
             task->fail(msg);
         }
     } else {
-        std::string msg{"options errors in get crit path list telegram: " + options.errorsStr()};
+        std::string msg{"options errors in get crit path list telegram: " + options.errors_str()};
         VTR_LOG_ERROR(msg.c_str());
         task->fail(msg);
     }
@@ -129,12 +129,12 @@ void TaskResolver::processGetPathListTask(ezgl::application*, const TaskPtr& tas
 
 void TaskResolver::processDrawCriticalPathTask(ezgl::application* app, const TaskPtr& task) {
     TelegramOptions options{task->options(), {comm::OPTION_PATH_ELEMENTS, comm::OPTION_HIGHLIGHT_MODE, comm::OPTION_DRAW_PATH_CONTOUR}};
-    if (!options.hasErrors()) {
+    if (!options.has_errors()) {
         ServerContext& server_ctx = g_vpr_ctx.mutable_server(); // shortcut
 
-        const std::map<std::size_t, std::set<std::size_t>> path_elements = options.getMapOfSets(comm::OPTION_PATH_ELEMENTS);
-        const std::string highLightMode = options.getString(comm::OPTION_HIGHLIGHT_MODE);
-        const bool drawPathContour = options.getBool(comm::OPTION_DRAW_PATH_CONTOUR, false);
+        const std::map<std::size_t, std::set<std::size_t>> path_elements = options.get_map_of_sets(comm::OPTION_PATH_ELEMENTS);
+        const std::string highLightMode = options.get_string(comm::OPTION_HIGHLIGHT_MODE);
+        const bool drawPathContour = options.get_bool(comm::OPTION_DRAW_PATH_CONTOUR, false);
 
         // set critical path elements to render
         server_ctx.set_crit_path_elements(path_elements);
@@ -152,7 +152,7 @@ void TaskResolver::processDrawCriticalPathTask(ezgl::application* app, const Tas
             task->fail(msg);
         }
     } else {
-        std::string msg{"options errors in highlight crit path telegram: " + options.errorsStr()};
+        std::string msg{"options errors in highlight crit path telegram: " + options.errors_str()};
         VTR_LOG_ERROR(msg.c_str());
         task->fail(msg);
     }
