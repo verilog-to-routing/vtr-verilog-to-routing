@@ -54,7 +54,7 @@ void GateIO::moveTasksToSendQueue(std::vector<TaskPtr>& tasks)
 {
     std::unique_lock<std::mutex> lock(m_tasksMutex);
     for (TaskPtr& task: tasks) {
-        m_logger.queue(LogLevel::Debug, "move task id=", task->job_id(), "finished", (task->hasError()? "with error": "successfully"), task->error(), "to send queue");
+        m_logger.queue(LogLevel::Debug, "move task id=", task->job_id(), "finished", (task->has_error()? "with error": "successfully"), task->error(), "to send queue");
         m_sendTasks.push_back(std::move(task));
     }
     tasks.clear();
@@ -83,14 +83,14 @@ GateIO::ActivityStatus GateIO::handleSendingData(sockpp::tcp6_socket& client) {
     if (!m_sendTasks.empty()) {
         const TaskPtr& task = m_sendTasks.at(0);
         try {
-            std::size_t bytesToSend = std::min(CHUNK_MAX_BYTES_NUM, task->responseBuffer().size());
-            std::size_t bytesActuallyWritten = client.write_n(task->responseBuffer().data(), bytesToSend);
-            if (bytesActuallyWritten <= task->origReponseBytesNum()) {
-                task->chopNumSentBytesFromResponseBuffer(bytesActuallyWritten);
+            std::size_t bytesToSend = std::min(CHUNK_MAX_BYTES_NUM, task->response_buffer().size());
+            std::size_t bytesActuallyWritten = client.write_n(task->response_buffer().data(), bytesToSend);
+            if (bytesActuallyWritten <= task->orig_reponse_bytes_num()) {
+                task->chop_num_sent_bytes_from_response_buffer(bytesActuallyWritten);
                 m_logger.queue(LogLevel::Detail,
                             "sent chunk:", getPrettySizeStrFromBytesNum(bytesActuallyWritten),
-                            "from", getPrettySizeStrFromBytesNum(task->origReponseBytesNum()),
-                            "left:", getPrettySizeStrFromBytesNum(task->responseBuffer().size()));
+                            "from", getPrettySizeStrFromBytesNum(task->orig_reponse_bytes_num()),
+                            "left:", getPrettySizeStrFromBytesNum(task->response_buffer().size()));
                 status = ActivityStatus::CLIENT_ACTIVITY;
             }
         } catch(...) {
@@ -98,8 +98,8 @@ GateIO::ActivityStatus GateIO::handleSendingData(sockpp::tcp6_socket& client) {
             status = ActivityStatus::COMMUNICATION_PROBLEM;
         }
 
-        if (task->isResponseFullySent()) {
-            m_logger.queue(LogLevel::Info, "sent:", task->telegramHeader().info(), task->info());
+        if (task->is_response_fully_sent()) {
+            m_logger.queue(LogLevel::Info, "sent:", task->telegram_header().info(), task->info());
         }
     }
 
@@ -107,7 +107,7 @@ GateIO::ActivityStatus GateIO::handleSendingData(sockpp::tcp6_socket& client) {
     std::size_t tasksBeforeRemoving = m_sendTasks.size();
 
     auto partitionIter = std::partition(m_sendTasks.begin(), m_sendTasks.end(),
-                                        [](const TaskPtr& task) { return !task->isResponseFullySent(); });
+                                        [](const TaskPtr& task) { return !task->is_response_fully_sent(); });
     m_sendTasks.erase(partitionIter, m_sendTasks.end());
     bool removingTookPlace = tasksBeforeRemoving != m_sendTasks.size();
     if (!m_sendTasks.empty() && removingTookPlace) {

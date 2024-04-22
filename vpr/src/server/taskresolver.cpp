@@ -36,7 +36,7 @@ void TaskResolver::own_task(TaskPtr&& new_task) {
 void TaskResolver::take_finished_tasks(std::vector<TaskPtr>& result) {
     for (auto it=m_tasks.begin(); it != m_tasks.end();) {
         TaskPtr& task = *it;
-        if (task->isFinished()) {
+        if (task->is_finished()) {
             result.push_back(std::move(task));
             it = m_tasks.erase(it);
         } else {
@@ -62,7 +62,7 @@ std::optional<e_timing_report_detail> TaskResolver::try_get_details_level_enum(c
 bool TaskResolver::update(ezgl::application* app) {
     bool has_processed_task = false;
     for (auto& task: m_tasks) {
-        if (!task->isFinished()) {
+        if (!task->is_finished()) {
             switch(task->cmd()) {
                 case comm::CMD_GET_PATH_LIST_ID: {
                     process_get_path_list_task(app, task);

@@ -30,8 +30,8 @@ TEST_CASE("test_server_taskresolver_cmdSpamFilter", "[vpr]") {
     REQUIRE(finished.size() == 4);
 
     for (const auto& task: finished) {
-        REQUIRE(task->isFinished());
-        REQUIRE(task->hasError());
+        REQUIRE(task->is_finished());
+        REQUIRE(task->has_error());
         REQUIRE(task->job_id() != 1);
         REQUIRE(task->cmd() == cmd);
     }
@@ -61,8 +61,8 @@ TEST_CASE("test_server_taskresolver_cmdOverrideFilter", "[vpr]") {
     REQUIRE(finished.size() == 2);
 
     for (const server::TaskPtr& task: finished) {
-        REQUIRE(task->isFinished());
-        REQUIRE(task->hasError());
+        REQUIRE(task->is_finished());
+        REQUIRE(task->has_error());
         REQUIRE(task->job_id() != 3);
     }
     REQUIRE(resolver.tasks_num() == 1);
