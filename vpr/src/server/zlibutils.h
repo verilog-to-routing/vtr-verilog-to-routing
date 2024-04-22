@@ -1,6 +1,8 @@
 #ifndef ZLIBUTILS_H
 #define ZLIBUTILS_H
 
+#ifndef NO_SERVER
+
 #include <string>
 #include <optional>
 
@@ -31,5 +33,7 @@ std::optional<std::string> try_compress(const std::string& decompressed);
 *         or an empty optional if decompression fails.
 */
 std::optional<std::string> try_decompress(const std::string& compressed);
+
+#endif /* NO_SERVER */
 
 #endif /* ZLIBUTILS_H */

@@ -1,6 +1,8 @@
 #ifndef TELEGRAMPARSER_H
 #define TELEGRAMPARSER_H
 
+#ifndef NO_SERVER
+
 #include <string>
 #include <optional>
 
@@ -25,5 +27,7 @@ private:
 };
 
 } // namespace comm
+
+#endif /* NO_SERVER */
 
 #endif /* TELEGRAMPARSER_H */

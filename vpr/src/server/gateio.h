@@ -10,7 +10,6 @@
 
 #include <chrono>
 #include <sstream>
-#include <iostream>
 #include <thread>
 #include <atomic>
 #include <mutex>

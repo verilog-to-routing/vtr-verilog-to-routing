@@ -1,7 +1,8 @@
+#ifndef NO_SERVER
+
 #include "telegramparser.h"
 #include "convertutils.h"
 #include "commconstants.h"
-
 
 namespace comm {
 
@@ -66,3 +67,5 @@ std::optional<int> TelegramParser::try_extract_field_status(const std::string& m
 }
 
 } // namespace comm
+
+#endif /* NO_SERVER */

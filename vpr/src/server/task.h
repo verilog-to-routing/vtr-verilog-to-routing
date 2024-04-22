@@ -1,6 +1,8 @@
 #ifndef TASK_H
 #define TASK_H
 
+#ifndef NO_SERVER
+
 #include <string>
 #include <memory>
 #include <chrono>
@@ -69,5 +71,7 @@ private:
 using TaskPtr = std::unique_ptr<Task>;
 
 } // namespace server
+
+#endif /* NO_SERVER */
 
 #endif /* TASK_H */

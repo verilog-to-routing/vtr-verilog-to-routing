@@ -1,6 +1,8 @@
 #ifndef TELEGRAMBUFFER_H
 #define TELEGRAMBUFFER_H
 
+#ifndef NO_SERVER
+
 #include "bytearray.h"
 #include "telegramframe.h"
 
@@ -86,5 +88,7 @@ private:
 };
 
 } // namespace comm
+
+#endif /* NO_SERVER */
 
 #endif /* TELEGRAMBUFFER_H */

@@ -1,6 +1,8 @@
 #ifndef BYTEARRAY_H
 #define BYTEARRAY_H
 
+#ifndef NO_SERVER
+
 #include <cstdint>
 #include <vector>
 #include <string>
@@ -78,5 +80,7 @@ public:
 };
 
 } // namespace comm
+
+#endif /* NO_SERVER */
 
 #endif /* BYTEARRAY_H */

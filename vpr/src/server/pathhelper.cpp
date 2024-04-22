@@ -1,3 +1,5 @@
+#ifndef NO_SERVER
+
 #include "pathhelper.h"
 #include "commconstants.h"
 
@@ -65,3 +67,5 @@ CritPathsResult calc_critical_path(const std::string& report_type, int crit_path
 }
 
 } // namespace server
+
+#endif /* NO_SERVER */

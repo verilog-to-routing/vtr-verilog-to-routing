@@ -1,6 +1,8 @@
 #ifndef TELEGRAMOPTIONS_H
 #define TELEGRAMOPTIONS_H
 
+#ifndef NO_SERVER
+
 #include <set>
 #include <vector>
 #include <unordered_map>
@@ -56,5 +58,7 @@ private:
 };
 
 } // namespace server
+
+#endif /* NO_SERVER */
 
 #endif /* TELEGRAMOPTIONS_H */

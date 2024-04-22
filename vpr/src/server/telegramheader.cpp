@@ -1,3 +1,5 @@
+#ifndef NO_SERVER
+
 #include "telegramheader.h"
 #include "convertutils.h"
 
@@ -72,3 +74,5 @@ std::string TelegramHeader::info() const {
 }
 
 } // namespace comm
+
+#endif /* NO_SERVER */

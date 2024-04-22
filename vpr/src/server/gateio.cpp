@@ -1,6 +1,6 @@
-#include "gateio.h"
-
 #ifndef NO_SERVER
+
+#include "gateio.h"
 
 #include "telegramparser.h"
 #include "commconstants.h"

@@ -1,6 +1,8 @@
 #ifndef COMMCONSTS_H
 #define COMMCONSTS_H
 
+#ifndef NO_SERVER
+
 #include <string>
 
 namespace comm {
@@ -32,5 +34,7 @@ enum CMD {
 };
 
 } // namespace comm
+
+#endif /* NO_SERVER */
 
 #endif /* COMMCONSTS_H */

@@ -1,3 +1,5 @@
+#ifndef NO_SERVER
+
 #include "zlibutils.h"
 
 #include <cstring> // Include cstring for memset
@@ -78,4 +80,4 @@ std::optional<std::string> try_decompress(const std::string& compressed) {
     return result;
 }
 
-
+#endif /* NO_SERVER */

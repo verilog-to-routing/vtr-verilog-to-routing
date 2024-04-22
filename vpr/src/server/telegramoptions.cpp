@@ -1,3 +1,5 @@
+#ifndef NO_SERVER
+
 #include "telegramoptions.h"
 #include "convertutils.h"
 
@@ -113,3 +115,4 @@ bool TelegramOptions::check_keys_presence(const std::vector<std::string>& keys) 
 
 } // namespace server
 
+#endif /* NO_SERVER */

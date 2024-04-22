@@ -21,3 +21,4 @@ gboolean update(gpointer);
 #endif /* NO_SERVER */
 
 #endif /* SERVERUPDATE_H */
+

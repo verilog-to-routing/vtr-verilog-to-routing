@@ -1,6 +1,8 @@
 #ifndef TELEGRAMHEADER_H
 #define TELEGRAMHEADER_H
 
+#ifndef NO_SERVER
+
 #include "bytearray.h"
 
 #include <string>
@@ -72,5 +74,7 @@ private:
 };
 
 } // namespace comm
+
+#endif /* NO_SERVER */
 
 #endif /* TELEGRAMHEADER_H */

@@ -1,3 +1,5 @@
+#ifndef NO_SERVER
+
 #include "convertutils.h"
 #include <sstream>
 #include <iomanip>
@@ -64,3 +66,5 @@ std::string get_truncated_middle_str(const std::string& src, std::size_t num) {
 
     return result;
 }
+
+#endif /* NO_SERVER */

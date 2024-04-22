@@ -1,6 +1,8 @@
 #ifndef PATHHELPER_H
 #define PATHHELPER_H
 
+#ifndef NO_SERVER
+
 #include <vector>
 #include <string>
 
@@ -26,5 +28,7 @@ struct CritPathsResult {
 CritPathsResult calc_critical_path(const std::string& type, int crit_path_num, e_timing_report_detail details_level, bool is_flat_routing);
 
 } // namespace server
+
+#endif /* NO_SERVER */
 
 #endif /* PATHHELPER_H */

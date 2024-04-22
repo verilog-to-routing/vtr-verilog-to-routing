@@ -1,3 +1,5 @@
+#ifndef NO_SERVER
+
 #include "telegrambuffer.h"
 
 namespace comm {
@@ -73,3 +75,5 @@ void TelegramBuffer::take_errors(std::vector<std::string>& errors) {
 }
 
 } // namespace comm
+
+#endif /* NO_SERVER */

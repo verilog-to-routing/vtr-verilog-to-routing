@@ -1,7 +1,7 @@
-#ifndef NO_SERVER
-
 #ifndef TASKRESOLVER_H
 #define TASKRESOLVER_H
+
+#ifndef NO_SERVER
 
 #include "task.h"
 #include "vpr_types.h"
@@ -50,6 +50,7 @@ private:
 
 } // namespace server
 
+#endif /* NO_SERVER */
+
 #endif /* TASKRESOLVER_H */
 
-#endif /* NO_SERVER */

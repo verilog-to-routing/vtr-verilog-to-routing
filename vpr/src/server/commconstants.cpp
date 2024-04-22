@@ -1,3 +1,5 @@
+#ifndef NO_SERVER
+
 #include "commconstants.h"
 
 namespace comm {
@@ -22,3 +24,4 @@ const std::string KEY_HOLD_PATH_LIST{"hold"};
 
 } // namespace comm
 
+#endif /* NO_SERVER */

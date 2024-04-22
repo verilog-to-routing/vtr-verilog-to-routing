@@ -1,6 +1,8 @@
 #ifndef TELEGRAMFRAME_H
 #define TELEGRAMFRAME_H
 
+#ifndef NO_SERVER
+
 #include "telegramheader.h"
 #include "bytearray.h"
 
@@ -24,5 +26,7 @@ struct TelegramFrame {
 using TelegramFramePtr = std::shared_ptr<TelegramFrame>;
 
 } // namespace comm
+
+#endif /* NO_SERVER */
 
 #endif /* TELEGRAMFRAME_H */

@@ -1,3 +1,5 @@
+#ifndef NO_SERVER
+
 #include "task.h"
 
 #include <sstream>
@@ -101,6 +103,6 @@ void Task::bake_response() {
     m_orig_reponse_bytes_num = m_response_buffer.size();
 }
 
-
 } // namespace server
 
+#endif /* NO_SERVER */
