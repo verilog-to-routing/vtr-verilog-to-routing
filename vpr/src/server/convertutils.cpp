@@ -33,7 +33,7 @@ std::string getPrettyDurationStrFromMs(int64_t durationMs)
     return result;
 }
 
-std::string getPrettySizeStrFromBytesNum(int64_t bytesNum)
+std::string get_pretty_size_str_from_bytes_num(int64_t bytesNum)
 {
     std::string result;
     if (bytesNum >= 1024*1024*1024) {
@@ -49,7 +49,7 @@ std::string getPrettySizeStrFromBytesNum(int64_t bytesNum)
 }
 
 
-std::string getTruncatedMiddleStr(const std::string& src, std::size_t num) {
+std::string get_truncated_middle_str(const std::string& src, std::size_t num) {
     std::string result;
     static std::size_t minimalStringSizeToTruncate = 20;
     if (num < minimalStringSizeToTruncate) {

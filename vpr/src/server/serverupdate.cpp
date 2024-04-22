@@ -9,7 +9,7 @@
 namespace server {
 
 gboolean update(gpointer data) {
-    const bool is_running = g_vpr_ctx.server().gateIO().isRunning();
+    const bool is_running = g_vpr_ctx.server().gateIO().is_running();
     if (is_running) {
         // shortcuts
         ezgl::application* app = static_cast<ezgl::application*>(data);

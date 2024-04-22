@@ -61,41 +61,41 @@ class GateIO
     class ClientAliveTracker {
     public:
         ClientAliveTracker(const std::chrono::milliseconds& echoIntervalMs, const std::chrono::milliseconds& clientTimeoutMs)
-            : m_echoIntervalMs(echoIntervalMs), m_clientTimeoutMs(clientTimeoutMs) {
+            : m_echo_interval_ms(echoIntervalMs), m_client_timeout_ms(clientTimeoutMs) {
             reset();
         }
         ClientAliveTracker()=default;
 
-        void onClientActivity() {
-            m_lastClientActivityTime = std::chrono::high_resolution_clock::now();
+        void on_client_activity() {
+            m_last_client_activity_time = std::chrono::high_resolution_clock::now();
         }
 
-        void onEchoSent() {
-            m_lastEchoSentTime = std::chrono::high_resolution_clock::now();
+        void on_echo_sent() {
+            m_last_echo_sent_time = std::chrono::high_resolution_clock::now();
         }
 
-        bool isTimeToSentEcho() const {
-            return (durationSinceLastClientActivityMs() > m_echoIntervalMs) && (durationSinceLastEchoSentMs() > m_echoIntervalMs);
+        bool is_time_to_sent_echo() const {
+            return (duration_since_last_client_activity_ms() > m_echo_interval_ms) && (durationSinceLastEchoSentMs() > m_echo_interval_ms);
         }
-        bool isClientTimeout() const  { return durationSinceLastClientActivityMs() > m_clientTimeoutMs; }
+        bool is_client_timeout() const  { return duration_since_last_client_activity_ms() > m_client_timeout_ms; }
 
         void reset() {
-            onClientActivity();
+            on_client_activity();
         }
 
     private:
-        std::chrono::high_resolution_clock::time_point m_lastClientActivityTime;
-        std::chrono::high_resolution_clock::time_point m_lastEchoSentTime;
-        std::chrono::milliseconds m_echoIntervalMs;
-        std::chrono::milliseconds m_clientTimeoutMs;
+        std::chrono::high_resolution_clock::time_point m_last_client_activity_time;
+        std::chrono::high_resolution_clock::time_point m_last_echo_sent_time;
+        std::chrono::milliseconds m_echo_interval_ms;
+        std::chrono::milliseconds m_client_timeout_ms;
 
-        std::chrono::milliseconds durationSinceLastClientActivityMs() const {
+        std::chrono::milliseconds duration_since_last_client_activity_ms() const {
             auto now = std::chrono::high_resolution_clock::now();
-            return std::chrono::duration_cast<std::chrono::milliseconds>(now - m_lastClientActivityTime);
+            return std::chrono::duration_cast<std::chrono::milliseconds>(now - m_last_client_activity_time);
         }
         std::chrono::milliseconds durationSinceLastEchoSentMs() const {
             auto now = std::chrono::high_resolution_clock::now();
-            return std::chrono::duration_cast<std::chrono::milliseconds>(now - m_lastEchoSentTime);
+            return std::chrono::duration_cast<std::chrono::milliseconds>(now - m_last_echo_sent_time);
         }
     };
 
@@ -109,34 +109,34 @@ class GateIO
     class TLogger {
     public:
         TLogger() {
-            m_logLevel = static_cast<int>(LogLevel::Info);
+            m_log_level = static_cast<int>(LogLevel::Info);
         }
         ~TLogger() {}
 
         template<typename... Args>
         void queue(LogLevel logLevel, Args&&... args) {
-            if (static_cast<int>(logLevel) <= m_logLevel) {
-                std::unique_lock<std::mutex> lock(m_logStreamMutex);
+            if (static_cast<int>(logLevel) <= m_log_level) {
+                std::unique_lock<std::mutex> lock(m_log_stream_mutex);
                 if (logLevel == LogLevel::Error) {
-                    m_logStream << "ERROR:";
+                    m_log_stream << "ERROR:";
                 }
-                ((m_logStream << ' ' << std::forward<Args>(args)), ...);
-                m_logStream << "\n";
+                ((m_log_stream << ' ' << std::forward<Args>(args)), ...);
+                m_log_stream << "\n";
             }
         }
 
         void flush() {
-            std::unique_lock<std::mutex> lock(m_logStreamMutex);
-            if (!m_logStream.str().empty()) {
-                VTR_LOG(m_logStream.str().c_str());
-                m_logStream.str("");
+            std::unique_lock<std::mutex> lock(m_log_stream_mutex);
+            if (!m_log_stream.str().empty()) {
+                VTR_LOG(m_log_stream.str().c_str());
+                m_log_stream.str("");
             }
         }
 
     private:
-        std::stringstream m_logStream;
-        std::mutex m_logStreamMutex;
-        std::atomic<int> m_logLevel;
+        std::stringstream m_log_stream;
+        std::mutex m_log_stream_mutex;
+        std::atomic<int> m_log_level;
     };
 
     const int LOOP_INTERVAL_MS = 100;
@@ -152,7 +152,7 @@ public:
     GateIO& operator=(GateIO&&) = delete;
 
     // Check if the port listening process is currently running
-    bool isRunning() const { return m_isRunning.load(); }
+    bool is_running() const { return m_is_running.load(); }
 
     /**
      * @brief Transfers ownership of received tasks to the caller.
@@ -205,27 +205,27 @@ public:
     void stop();
 
 private:
-    int m_portNum = -1;
+    int m_port_num = -1;
 
-    std::atomic<bool> m_isRunning; // is true when started
+    std::atomic<bool> m_is_running; // is true when started
 
     std::thread m_thread; // thread to execute socket IO work
 
-    std::mutex m_tasksMutex; // we used single mutex to guard both vectors m_receivedTasks and m_sendTasks
-    std::vector<TaskPtr> m_receivedTasks; // tasks from client (requests)
-    std::vector<TaskPtr> m_sendTasks; // tasks to client (responses)
+    std::mutex m_tasks_mutex; // we used single mutex to guard both vectors m_received_tasks and m_sendTasks
+    std::vector<TaskPtr> m_received_tasks; // tasks from client (requests)
+    std::vector<TaskPtr> m_send_tasks; // tasks to client (responses)
 
     TLogger m_logger;
 
-    void startListening(); // thread worker function
+    void start_listening(); // thread worker function
 
     /// helper functions to be executed inside startListening
-    ActivityStatus checkClientConnection(sockpp::tcp6_acceptor& tcpServer, std::optional<sockpp::tcp6_socket>& clientOpt);
-    ActivityStatus handleSendingData(sockpp::tcp6_socket& client);
-    ActivityStatus handleReceivingData(sockpp::tcp6_socket& client, comm::TelegramBuffer& telegramBuff, std::string& receivedMessage);
-    ActivityStatus handleTelegrams(std::vector<comm::TelegramFramePtr>& telegramFrames, comm::TelegramBuffer& telegramBuff);
-    ActivityStatus handleClientAliveTracker(sockpp::tcp6_socket& client, std::unique_ptr<ClientAliveTracker>& clientAliveTrackerPtr);
-    void handleActivityStatus(ActivityStatus status, std::unique_ptr<ClientAliveTracker>& clientAliveTrackerPtr, bool& isCommunicationProblemDetected);
+    ActivityStatus check_client_connection(sockpp::tcp6_acceptor& tcp_server, std::optional<sockpp::tcp6_socket>& client_opt);
+    ActivityStatus handle_sending_data(sockpp::tcp6_socket& client);
+    ActivityStatus handle_receiving_data(sockpp::tcp6_socket& client, comm::TelegramBuffer& telegram_buff, std::string& received_message);
+    ActivityStatus handle_telegrams(std::vector<comm::TelegramFramePtr>& telegram_frames, comm::TelegramBuffer& telegram_buff);
+    ActivityStatus handle_client_alive_tracker(sockpp::tcp6_socket& client, std::unique_ptr<ClientAliveTracker>& client_alive_tracker_ptr);
+    void handle_activity_status(ActivityStatus status, std::unique_ptr<ClientAliveTracker>& client_alive_tracker_ptr, bool& is_communication_problem_detected);
     ///
 };
 

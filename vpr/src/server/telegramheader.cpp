@@ -62,7 +62,7 @@ TelegramHeader::TelegramHeader(const ByteArray& buffer) {
 std::string TelegramHeader::info() const {
     std::stringstream ss;
     ss << "header" << (m_is_valid ? "" : "(INVALID)") << "["
-       << "l=" << getPrettySizeStrFromBytesNum(m_body_bytes_num)
+       << "l=" << get_pretty_size_str_from_bytes_num(m_body_bytes_num)
        << "/s=" << m_body_check_sum;
     if (m_compressor_id) {
         ss << "/c=" << m_compressor_id;

@@ -254,7 +254,7 @@ static void draw_main_canvas(ezgl::renderer* g) {
     draw_placement_macros(g);
 
 #ifndef NO_SERVER
-    if (g_vpr_ctx.server().gateIO().isRunning()) {
+    if (g_vpr_ctx.server().gateIO().is_running()) {
         const ServerContext& server_ctx = g_vpr_ctx.server(); // shortcut
         draw_crit_path_elements(server_ctx.crit_paths(), server_ctx.crit_path_element_indexes(), g);
     } else {
