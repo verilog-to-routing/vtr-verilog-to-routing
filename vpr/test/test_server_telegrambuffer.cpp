@@ -38,7 +38,7 @@ TEST_CASE("test_server_telegrambuffer_oneOpened", "[vpr]") {
     buff.append(comm::ByteArray{"111"});
     buff.append(comm::ByteArray{"222"});
 
-    auto frames = buff.takeTelegramFrames();
+    auto frames = buff.take_telegram_frames();
     REQUIRE(frames.size() == 0);
 
     REQUIRE(buff.data().to_string() == "111222");
@@ -55,7 +55,7 @@ TEST_CASE("test_server_telegrambuffer_notFilledTelegramButWithPrependedRubish", 
     tBuff.append(rubbish);
     tBuff.append(msgHeader.buffer());
 
-    auto frames = tBuff.takeTelegramFrames();
+    auto frames = tBuff.take_telegram_frames();
     REQUIRE(0 == frames.size());
 
     REQUIRE(msgHeader.buffer() == tBuff.data()); // the rubbish prefix fragment will be absent here
@@ -81,7 +81,7 @@ TEST_CASE("test_server_telegrambuffer__oneFinishedOneOpened", "[vpr]")
     tBuff.append(t1);
     tBuff.append(t2);
 
-    auto frames = tBuff.takeTelegramFrames();
+    auto frames = tBuff.take_telegram_frames();
     REQUIRE(1 == frames.size());
 
     REQUIRE(msgBody1 == frames[0]->data);
@@ -108,7 +108,7 @@ TEST_CASE("test_server_telegrambuffer_twoFinished", "[vpr]")
     tBuff.append(t1);
     tBuff.append(t2);
 
-    auto frames = tBuff.takeTelegramFrames();
+    auto frames = tBuff.take_telegram_frames();
     REQUIRE(2 == frames.size());
 
     REQUIRE(msgBody1 == frames[0]->data);
@@ -135,7 +135,7 @@ TEST_CASE("test_server_telegrambuffer_clear", "[vpr]")
 
     tBuff.clear();
 
-    auto frames = tBuff.takeTelegramFrames();
+    auto frames = tBuff.take_telegram_frames();
     REQUIRE(0 == frames.size());
 
     REQUIRE(comm::ByteArray{} == tBuff.data());

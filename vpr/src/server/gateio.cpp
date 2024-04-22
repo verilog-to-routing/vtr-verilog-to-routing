@@ -139,7 +139,7 @@ GateIO::ActivityStatus GateIO::handleReceivingData(sockpp::tcp6_socket& client, 
 GateIO::ActivityStatus GateIO::handleTelegrams(std::vector<comm::TelegramFramePtr>& telegramFrames, comm::TelegramBuffer& telegramBuff) {
     ActivityStatus status = ActivityStatus::WAITING_ACTIVITY;
     telegramFrames.clear();
-    telegramBuff.takeTelegramFrames(telegramFrames);
+    telegramBuff.take_telegram_frames(telegramFrames);
     for (const comm::TelegramFramePtr& telegramFrame: telegramFrames) {
         // process received data
         std::string message{telegramFrame->data.to_string()};
@@ -269,7 +269,7 @@ void GateIO::startListening()
 
             // forward telegramBuffer errors
             std::vector<std::string> telegramBufferErrors;
-            telegramBuff.takeErrors(telegramBufferErrors);
+            telegramBuff.take_errors(telegramBufferErrors);
             for (const std::string& error: telegramBufferErrors) {
                 m_logger.queue(LogLevel::Info, error);
             }

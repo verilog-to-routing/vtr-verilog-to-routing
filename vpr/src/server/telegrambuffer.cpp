@@ -2,78 +2,74 @@
 
 namespace comm {
 
-void TelegramBuffer::append(const ByteArray& bytes)
-{
-    m_rawBuffer.append(bytes);
+void TelegramBuffer::append(const ByteArray& bytes) {
+    m_raw_buffer.append(bytes);
 }
 
-bool TelegramBuffer::checkTelegramHeaderPresence()
-{
-    std::size_t signatureStartIndex = m_rawBuffer.findSequence(TelegramHeader::SIGNATURE, TelegramHeader::SIGNATURE_SIZE);
-    if (signatureStartIndex != std::size_t(-1)) {
-        if (signatureStartIndex != 0) {
+bool TelegramBuffer::check_telegram_header_presence() {
+    std::size_t signature_start_index = m_raw_buffer.findSequence(TelegramHeader::SIGNATURE, TelegramHeader::SIGNATURE_SIZE);
+    if (signature_start_index != std::size_t(-1)) {
+        if (signature_start_index != 0) {
             // discard bytes preceding the header start position.
-            m_rawBuffer.erase(m_rawBuffer.begin(), m_rawBuffer.begin() + signatureStartIndex);
+            m_raw_buffer.erase(m_raw_buffer.begin(), m_raw_buffer.begin() + signature_start_index);
         }
         return true;
     }
     return false;
 }
 
-void TelegramBuffer::takeTelegramFrames(std::vector<comm::TelegramFramePtr>& result)
-{
-    if (m_rawBuffer.size() <= TelegramHeader::size()) {
+void TelegramBuffer::take_telegram_frames(std::vector<comm::TelegramFramePtr>& result) {
+    if (m_raw_buffer.size() <= TelegramHeader::size()) {
         return;
     }
 
-    bool mayContainFullTelegram = true; 
-    while (mayContainFullTelegram) {
-        mayContainFullTelegram = false;
+    bool may_contain_full_telegram = true;
+    while (may_contain_full_telegram) {
+        may_contain_full_telegram = false;
         // attempt to extract telegram header
-        if (!m_headerOpt) {
-            if (checkTelegramHeaderPresence()) {
-                TelegramHeader header(m_rawBuffer);
+        if (!m_header_opt) {
+            if (check_telegram_header_presence()) {
+                TelegramHeader header(m_raw_buffer);
                 if (header.is_valid()) {
-                    m_headerOpt = std::move(header);
+                    m_header_opt = std::move(header);
                 }
             }
         }
 
         // attempt to extract telegram frame based on the telegram header
-        if (m_headerOpt) {
-            const TelegramHeader& header = m_headerOpt.value();
-            std::size_t wholeTelegramSize = TelegramHeader::size() + header.body_bytes_num();
-            if (m_rawBuffer.size() >= wholeTelegramSize) {
+        if (m_header_opt) {
+            const TelegramHeader& header = m_header_opt.value();
+            std::size_t expected_telegram_size = TelegramHeader::size() + header.body_bytes_num();
+            if (m_raw_buffer.size() >= expected_telegram_size) {
                 // checksum validation
-                ByteArray data(m_rawBuffer.begin() + TelegramHeader::size(), m_rawBuffer.begin() + wholeTelegramSize);
-                uint32_t actualCheckSum = data.calcCheckSum();
-                if (actualCheckSum == header.body_check_sum()) {
+                ByteArray data(m_raw_buffer.begin() + TelegramHeader::size(), m_raw_buffer.begin() + expected_telegram_size);
+                uint32_t actual_check_sum = data.calcCheckSum();
+                if (actual_check_sum == header.body_check_sum()) {
                     // construct telegram frame if checksum matches
-                    TelegramFramePtr telegramFramePtr = std::make_shared<TelegramFrame>(TelegramFrame{header, std::move(data)});
+                    TelegramFramePtr telegram_frame_ptr = std::make_shared<TelegramFrame>(TelegramFrame{header, std::move(data)});
                     data.clear(); // post std::move safety step
-                    result.push_back(telegramFramePtr);                    
+                    result.push_back(telegram_frame_ptr);
                 } else {
-                    m_errors.push_back("wrong checkSums " + std::to_string(actualCheckSum) +" for " + header.info() + " , drop this chunk");
+                    m_errors.push_back("wrong checkSums " + std::to_string(actual_check_sum) +" for " + header.info() + " , drop this chunk");
                 }
-                m_rawBuffer.erase(m_rawBuffer.begin(), m_rawBuffer.begin() + wholeTelegramSize);
-                m_headerOpt.reset();
-                mayContainFullTelegram = true;
+                m_raw_buffer.erase(m_raw_buffer.begin(), m_raw_buffer.begin() + expected_telegram_size);
+                m_header_opt.reset();
+                may_contain_full_telegram = true;
             }
         }
     }
 }
 
-std::vector<comm::TelegramFramePtr> TelegramBuffer::takeTelegramFrames()
-{
+std::vector<comm::TelegramFramePtr> TelegramBuffer::take_telegram_frames() {
     std::vector<comm::TelegramFramePtr> result;
-    takeTelegramFrames(result);
+    take_telegram_frames(result);
     return result;
 }
 
-void TelegramBuffer::takeErrors(std::vector<std::string>& errors)
-{
-    errors.clear();
-    std::swap(errors, m_errors);
+void TelegramBuffer::take_errors(std::vector<std::string>& errors) {
+    errors.reserve(errors.size() + m_errors.size());
+    std::move(std::begin(m_errors), std::end(m_errors), std::back_inserter(errors));
+    m_errors.clear();
 }
 
 } // namespace comm
