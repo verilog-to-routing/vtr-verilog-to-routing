@@ -14,26 +14,26 @@ std::optional<std::string> try_compress(const std::string& decompressed) {
     zs.next_in = reinterpret_cast<Bytef*>(const_cast<char*>(decompressed.data()));
     zs.avail_in = decompressed.size();
 
-    int retCode;
-    char* resultBuffer = new char[32768];
+    int ret_code;
+    char* result_buffer = new char[32768];
     std::string result;
 
     do {
-        zs.next_out = reinterpret_cast<Bytef*>(resultBuffer);
-        zs.avail_out = sizeof(resultBuffer);
+        zs.next_out = reinterpret_cast<Bytef*>(result_buffer);
+        zs.avail_out = sizeof(result_buffer);
 
-        retCode = deflate(&zs, Z_FINISH);
+        ret_code = deflate(&zs, Z_FINISH);
 
         if (result.size() < zs.total_out) {
-            result.append(resultBuffer, zs.total_out - result.size());
+            result.append(result_buffer, zs.total_out - result.size());
         }
-    } while (retCode == Z_OK);
+    } while (ret_code == Z_OK);
 
-    delete[] resultBuffer;
+    delete[] result_buffer;
 
     deflateEnd(&zs);
 
-    if (retCode != Z_STREAM_END) {
+    if (ret_code != Z_STREAM_END) {
         return std::nullopt;
     }
 
@@ -51,27 +51,27 @@ std::optional<std::string> try_decompress(const std::string& compressed) {
     zs.next_in = reinterpret_cast<Bytef*>(const_cast<char*>(compressed.data()));
     zs.avail_in = compressed.size();
 
-    int retCode;
-    char* resultBuffer = new char[32768];
+    int ret_code;
+    char* result_buffer = new char[32768];
     std::string result;
 
     do {
-        zs.next_out = reinterpret_cast<Bytef*>(resultBuffer);
-        zs.avail_out = sizeof(resultBuffer);
+        zs.next_out = reinterpret_cast<Bytef*>(result_buffer);
+        zs.avail_out = sizeof(result_buffer);
 
-        retCode = inflate(&zs, 0);
+        ret_code = inflate(&zs, 0);
 
         if (result.size() < zs.total_out) {
-            result.append(resultBuffer, zs.total_out - result.size());
+            result.append(result_buffer, zs.total_out - result.size());
         }
 
-    } while (retCode == Z_OK);
+    } while (ret_code == Z_OK);
 
-    delete[] resultBuffer;
+    delete[] result_buffer;
 
     inflateEnd(&zs);
 
-    if (retCode != Z_STREAM_END) {
+    if (ret_code != Z_STREAM_END) {
         return std::nullopt;
     }
 
