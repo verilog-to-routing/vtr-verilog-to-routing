@@ -26,26 +26,26 @@ public:
     TaskResolver()=default;
     ~TaskResolver()=default;
 
-    int tasksNum() const { return m_tasks.size(); }
+    int tasks_num() const { return m_tasks.size(); }
 
     /* own task to process */
-    void ownTask(TaskPtr&&);
+    void own_task(TaskPtr&&);
 
     /* process tasks */
     bool update(ezgl::application*);
 
     /* extract finished tasks */
-    void takeFinished(std::vector<TaskPtr>&);
+    void take_finished_tasks(std::vector<TaskPtr>&);
 
     const std::vector<TaskPtr>& tasks() const { return m_tasks; }
 
 private:
     std::vector<TaskPtr> m_tasks;
 
-    void processGetPathListTask(ezgl::application*, const TaskPtr&);
-    void processDrawCriticalPathTask(ezgl::application*, const TaskPtr&);
+    void process_get_path_list_task(ezgl::application*, const TaskPtr&);
+    void process_draw_critical_path_task(ezgl::application*, const TaskPtr&);
 
-    std::optional<e_timing_report_detail> tryGetDetailsLevelEnum(const std::string& pathDetailsLevelStr) const;
+    std::optional<e_timing_report_detail> try_get_details_level_enum(const std::string& path_details_level_str) const;
 };
 
 } // namespace server

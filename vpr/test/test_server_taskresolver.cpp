@@ -17,27 +17,27 @@ TEST_CASE("test_server_taskresolver_cmdSpamFilter", "[vpr]") {
         server::TaskPtr task3 = std::make_unique<server::Task>(4, cmd);
         server::TaskPtr task4 = std::make_unique<server::Task>(5, cmd);
 
-        resolver.ownTask(std::move(task0));
-        resolver.ownTask(std::move(task1));
-        resolver.ownTask(std::move(task2));
-        resolver.ownTask(std::move(task3));
-        resolver.ownTask(std::move(task4));
+        resolver.own_task(std::move(task0));
+        resolver.own_task(std::move(task1));
+        resolver.own_task(std::move(task2));
+        resolver.own_task(std::move(task3));
+        resolver.own_task(std::move(task4));
     }
 
     std::vector<server::TaskPtr> finished;
-    resolver.takeFinished(finished);
+    resolver.take_finished_tasks(finished);
 
     REQUIRE(finished.size() == 4);
 
     for (const auto& task: finished) {
         REQUIRE(task->isFinished());
         REQUIRE(task->hasError());
-        REQUIRE(task->jobId() != 1);
+        REQUIRE(task->job_id() != 1);
         REQUIRE(task->cmd() == cmd);
     }
-    REQUIRE(resolver.tasksNum() == 1);
+    REQUIRE(resolver.tasks_num() == 1);
     const server::TaskPtr& task = resolver.tasks().at(0);
-    REQUIRE(task->jobId() == 1);
+    REQUIRE(task->job_id() == 1);
     REQUIRE(task->cmd() == cmd);
 }
 
@@ -50,24 +50,24 @@ TEST_CASE("test_server_taskresolver_cmdOverrideFilter", "[vpr]") {
         server::TaskPtr task1 = std::make_unique<server::Task>(2, cmd, "11");
         server::TaskPtr task2 = std::make_unique<server::Task>(3, cmd, "222");
 
-        resolver.ownTask(std::move(task0));
-        resolver.ownTask(std::move(task1));
-        resolver.ownTask(std::move(task2));
+        resolver.own_task(std::move(task0));
+        resolver.own_task(std::move(task1));
+        resolver.own_task(std::move(task2));
     }
 
     std::vector<server::TaskPtr> finished;
-    resolver.takeFinished(finished);
+    resolver.take_finished_tasks(finished);
 
     REQUIRE(finished.size() == 2);
 
     for (const server::TaskPtr& task: finished) {
         REQUIRE(task->isFinished());
         REQUIRE(task->hasError());
-        REQUIRE(task->jobId() != 3);
+        REQUIRE(task->job_id() != 3);
     }
-    REQUIRE(resolver.tasksNum() == 1);
+    REQUIRE(resolver.tasks_num() == 1);
     const server::TaskPtr& task = resolver.tasks().at(0);
-    REQUIRE(task->jobId() == 3);
+    REQUIRE(task->job_id() == 3);
     REQUIRE(task->cmd() == cmd);
     REQUIRE(task->options() == "222");
 }
@@ -84,27 +84,27 @@ TEST_CASE("test_server_taskresolver_cmdSpamAndOverrideOptions", "[vpr]") {
         server::TaskPtr task5 = std::make_unique<server::Task>(6, 1);
         server::TaskPtr task6 = std::make_unique<server::Task>(7, 1);
 
-        resolver.ownTask(std::move(task0));
-        resolver.ownTask(std::move(task1));
-        resolver.ownTask(std::move(task2));
-        resolver.ownTask(std::move(task3));
-        resolver.ownTask(std::move(task4));
-        resolver.ownTask(std::move(task5));
-        resolver.ownTask(std::move(task6));
+        resolver.own_task(std::move(task0));
+        resolver.own_task(std::move(task1));
+        resolver.own_task(std::move(task2));
+        resolver.own_task(std::move(task3));
+        resolver.own_task(std::move(task4));
+        resolver.own_task(std::move(task5));
+        resolver.own_task(std::move(task6));
     }
 
     std::vector<server::TaskPtr> finished;
-    resolver.takeFinished(finished);
+    resolver.take_finished_tasks(finished);
 
-    REQUIRE(resolver.tasksNum() == 2);
+    REQUIRE(resolver.tasks_num() == 2);
     const server::TaskPtr& task0 = resolver.tasks().at(0);
     const server::TaskPtr& task1 = resolver.tasks().at(1);
 
-    REQUIRE(task0->jobId() == 3);
+    REQUIRE(task0->job_id() == 3);
     REQUIRE(task0->cmd() == 2);
     REQUIRE(task0->options() == "222");
 
-    REQUIRE(task1->jobId() == 5);
+    REQUIRE(task1->job_id() == 5);
     REQUIRE(task1->cmd() == 1);
     REQUIRE(task1->options() == "");
 }

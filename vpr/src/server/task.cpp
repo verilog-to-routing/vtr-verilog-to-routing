@@ -28,7 +28,7 @@ void Task::chopNumSentBytesFromResponseBuffer(std::size_t bytesSentNum) {
     }
 }
 
-bool Task::optionsMatch(const class std::unique_ptr<Task>& other) {
+bool Task::options_match(const class std::unique_ptr<Task>& other) {
     if (other->options().size() != m_options.size()) {
         return false;
     }

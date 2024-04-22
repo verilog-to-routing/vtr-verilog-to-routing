@@ -6,24 +6,23 @@
 #include "globals.h"
 #include "pathhelper.h"
 #include "telegramoptions.h"
-#include "telegramparser.h"
 #include "gtkcomboboxhelper.h"
 
 #include <ezgl/application.hpp>
 
 namespace server {
 
-void TaskResolver::ownTask(TaskPtr&& newTask) {
+void TaskResolver::own_task(TaskPtr&& new_task) {
     // pre-process task before adding, where we could quickly detect failure scenarios
     for (const auto& task: m_tasks) {
-        if (task->cmd() == newTask->cmd()) {
-            if (task->optionsMatch(newTask)) {
-                std::string msg = "similar task is already in execution, reject new " + newTask->info() + " and waiting for old " + task->info() + " execution";
-                newTask->fail(msg);
+        if (task->cmd() == new_task->cmd()) {
+            if (task->options_match(new_task)) {
+                std::string msg = "similar task is already in execution, reject new " + new_task->info() + " and waiting for old " + task->info() + " execution";
+                new_task->fail(msg);
             } else {
                 // handle case when task has same cmd but different options
-                if (newTask->jobId() > task->jobId()) {
-                    std::string msg = "old " + task->info() + " is overridden by a new " + newTask->info();
+                if (new_task->job_id() > task->job_id()) {
+                    std::string msg = "old " + task->info() + " is overridden by a new " + new_task->info();
                     task->fail(msg);
                 }
             }
@@ -31,10 +30,10 @@ void TaskResolver::ownTask(TaskPtr&& newTask) {
     }
 
     // own task
-    m_tasks.emplace_back(std::move(newTask));
+    m_tasks.emplace_back(std::move(new_task));
 }
 
-void TaskResolver::takeFinished(std::vector<TaskPtr>& result) {
+void TaskResolver::take_finished_tasks(std::vector<TaskPtr>& result) {
     for (auto it=m_tasks.begin(); it != m_tasks.end();) {
         TaskPtr& task = *it;
         if (task->isFinished()) {
@@ -46,14 +45,14 @@ void TaskResolver::takeFinished(std::vector<TaskPtr>& result) {
     }
 }
 
-std::optional<e_timing_report_detail> TaskResolver::tryGetDetailsLevelEnum(const std::string& pathDetailsLevelStr) const {
-    if (pathDetailsLevelStr == "netlist") {
+std::optional<e_timing_report_detail> TaskResolver::try_get_details_level_enum(const std::string& path_details_level_str) const {
+    if (path_details_level_str == "netlist") {
         return e_timing_report_detail::NETLIST;
-    } else if (pathDetailsLevelStr == "aggregated") {
+    } else if (path_details_level_str == "aggregated") {
         return e_timing_report_detail::AGGREGATED;
-    } else if (pathDetailsLevelStr == "detailed") {
+    } else if (path_details_level_str == "detailed") {
         return e_timing_report_detail::DETAILED_ROUTING;
-    } else if (pathDetailsLevelStr == "debug") {
+    } else if (path_details_level_str == "debug") {
         return e_timing_report_detail::DEBUG;
     }
 
@@ -66,12 +65,12 @@ bool TaskResolver::update(ezgl::application* app) {
         if (!task->isFinished()) {
             switch(task->cmd()) {
                 case comm::CMD_GET_PATH_LIST_ID: {
-                    processGetPathListTask(app, task);
+                    process_get_path_list_task(app, task);
                     has_processed_task = true;
                     break;
                 } 
                 case comm::CMD_DRAW_PATH_ID: {
-                    processDrawCriticalPathTask(app, task);
+                    process_draw_critical_path_task(app, task);
                     has_processed_task = true;
                     break;
                 }
@@ -83,7 +82,7 @@ bool TaskResolver::update(ezgl::application* app) {
     return has_processed_task;
 }
 
-void TaskResolver::processGetPathListTask(ezgl::application*, const TaskPtr& task) {
+void TaskResolver::process_get_path_list_task(ezgl::application*, const TaskPtr& task) {
     static const std::vector<std::string> keys{comm::OPTION_PATH_NUM, comm::OPTION_PATH_TYPE, comm::OPTION_DETAILS_LEVEL, comm::OPTION_IS_FLAT_ROUTING};
     TelegramOptions options{task->options(), keys};
     if (!options.has_errors()) {
@@ -92,19 +91,19 @@ void TaskResolver::processGetPathListTask(ezgl::application*, const TaskPtr& tas
         server_ctx.clear_crit_path_elements(); // reset selection if path list options has changed
 
         // read options
-        const int nCriticalPathNum = options.get_int(comm::OPTION_PATH_NUM, 1);
-        const std::string pathType = options.get_string(comm::OPTION_PATH_TYPE);
+        const int n_critical_path_num = options.get_int(comm::OPTION_PATH_NUM, 1);
+        const std::string path_type = options.get_string(comm::OPTION_PATH_TYPE);
         const std::string details_level_str = options.get_string(comm::OPTION_DETAILS_LEVEL);
-        const bool isFlat = options.get_bool(comm::OPTION_IS_FLAT_ROUTING, false);
+        const bool is_flat = options.get_bool(comm::OPTION_IS_FLAT_ROUTING, false);
 
         // calculate critical path depending on options and store result in server context
-        std::optional<e_timing_report_detail> details_level_opt = tryGetDetailsLevelEnum(details_level_str);
+        std::optional<e_timing_report_detail> details_level_opt = try_get_details_level_enum(details_level_str);
         if (details_level_opt) {
-            CritPathsResult crit_paths_result = calcCriticalPath(pathType, nCriticalPathNum, details_level_opt.value(), isFlat);
+            CritPathsResult crit_paths_result = calcCriticalPath(path_type, n_critical_path_num, details_level_opt.value(), is_flat);
 
             // setup context
-            server_ctx.set_path_type(pathType);
-            server_ctx.set_critical_path_num(nCriticalPathNum);
+            server_ctx.set_path_type(path_type);
+            server_ctx.set_critical_path_num(n_critical_path_num);
             server_ctx.set_crit_paths(crit_paths_result.paths);
 
             if (crit_paths_result.isValid()) {
@@ -127,27 +126,27 @@ void TaskResolver::processGetPathListTask(ezgl::application*, const TaskPtr& tas
     }
 }
 
-void TaskResolver::processDrawCriticalPathTask(ezgl::application* app, const TaskPtr& task) {
+void TaskResolver::process_draw_critical_path_task(ezgl::application* app, const TaskPtr& task) {
     TelegramOptions options{task->options(), {comm::OPTION_PATH_ELEMENTS, comm::OPTION_HIGHLIGHT_MODE, comm::OPTION_DRAW_PATH_CONTOUR}};
     if (!options.has_errors()) {
         ServerContext& server_ctx = g_vpr_ctx.mutable_server(); // shortcut
 
         const std::map<std::size_t, std::set<std::size_t>> path_elements = options.get_map_of_sets(comm::OPTION_PATH_ELEMENTS);
-        const std::string highLightMode = options.get_string(comm::OPTION_HIGHLIGHT_MODE);
-        const bool drawPathContour = options.get_bool(comm::OPTION_DRAW_PATH_CONTOUR, false);
+        const std::string high_light_mode = options.get_string(comm::OPTION_HIGHLIGHT_MODE);
+        const bool draw_path_contour = options.get_bool(comm::OPTION_DRAW_PATH_CONTOUR, false);
 
         // set critical path elements to render
         server_ctx.set_crit_path_elements(path_elements);
-        server_ctx.set_draw_crit_path_contour(drawPathContour);
+        server_ctx.set_draw_crit_path_contour(draw_path_contour);
 
         // update gtk UI
         GtkComboBox* toggle_crit_path = GTK_COMBO_BOX(app->get_object("ToggleCritPath"));
-        gint highLightModeIndex = get_item_index_by_text(toggle_crit_path, highLightMode.c_str());
-        if (highLightModeIndex != -1) {
-            gtk_combo_box_set_active(toggle_crit_path, highLightModeIndex);
+        gint high_light_mode_index = get_item_index_by_text(toggle_crit_path, high_light_mode.c_str());
+        if (high_light_mode_index != -1) {
+            gtk_combo_box_set_active(toggle_crit_path, high_light_mode_index);
             task->success();
         } else {
-            std::string msg{"cannot find ToggleCritPath qcombobox index for item " + highLightMode};
+            std::string msg{"cannot find ToggleCritPath qcombobox index for item " + high_light_mode};
             VTR_LOG_ERROR(msg.c_str());
             task->fail(msg);
         }

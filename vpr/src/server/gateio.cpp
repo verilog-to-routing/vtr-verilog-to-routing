@@ -44,7 +44,7 @@ void GateIO::takeReceivedTasks(std::vector<TaskPtr>& tasks)
 {
     std::unique_lock<std::mutex> lock(m_tasksMutex);
     for (TaskPtr& task: m_receivedTasks) {
-        m_logger.queue(LogLevel::Debug, "move task id=", task->jobId(), "for processing");
+        m_logger.queue(LogLevel::Debug, "move task id=", task->job_id(), "for processing");
         tasks.push_back(std::move(task));
     }
     m_receivedTasks.clear();
@@ -54,7 +54,7 @@ void GateIO::moveTasksToSendQueue(std::vector<TaskPtr>& tasks)
 {
     std::unique_lock<std::mutex> lock(m_tasksMutex);
     for (TaskPtr& task: tasks) {
-        m_logger.queue(LogLevel::Debug, "move task id=", task->jobId(), "finished", (task->hasError()? "with error": "successfully"), task->error(), "to send queue");
+        m_logger.queue(LogLevel::Debug, "move task id=", task->job_id(), "finished", (task->hasError()? "with error": "successfully"), task->error(), "to send queue");
         m_sendTasks.push_back(std::move(task));
     }
     tasks.clear();

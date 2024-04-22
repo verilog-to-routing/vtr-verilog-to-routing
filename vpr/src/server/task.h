@@ -22,12 +22,12 @@ public:
     Task(const Task&) = delete;
     Task& operator=(const Task&) = delete;
 
-    int jobId() const { return m_jobId; }
+    int job_id() const { return m_jobId; }
     int cmd() const { return m_cmd; }
 
     void chopNumSentBytesFromResponseBuffer(std::size_t bytesSentNum);
 
-    bool optionsMatch(const class std::unique_ptr<Task>& other);
+    bool options_match(const class std::unique_ptr<Task>& other);
 
     const std::string& responseBuffer() const { return m_responseBuffer; }
 
