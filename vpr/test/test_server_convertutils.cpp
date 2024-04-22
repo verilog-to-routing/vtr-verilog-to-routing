@@ -1,7 +1,9 @@
-#include "convertutils.h"
+#ifndef NO_SERVER
 
 #include "catch2/catch_test_macros.hpp"
 #include "catch2/matchers/catch_matchers_all.hpp"
+
+#include "convertutils.h"
 
 TEST_CASE("test_server_convert_utils_to_int", "[vpr]")
 {
@@ -15,4 +17,5 @@ TEST_CASE("test_server_convert_utils_to_int", "[vpr]")
     REQUIRE(std::nullopt == try_convert_to_int("k2"));
 }
 
+#endif /* NO_SERVER */
 

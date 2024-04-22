@@ -1,3 +1,5 @@
+#ifndef NO_SERVER
+
 #include "catch2/catch_test_macros.hpp"
 #include "catch2/matchers/catch_matchers_all.hpp"
 
@@ -24,3 +26,5 @@ TEST_CASE("test_server_telegramoptions_get_wrong_keys", "[vpr]") {
     REQUIRE(options.get_int("_details_level", -1) == -1);
     REQUIRE(options.get_bool("_is_flat_routing", true) == true);
 }
+
+#endif /* NO_SERVER */

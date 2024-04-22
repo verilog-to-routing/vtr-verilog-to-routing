@@ -1,10 +1,10 @@
+#ifndef NO_SERVER
+
 #include "catch2/catch_test_macros.hpp"
 #include "catch2/matchers/catch_matchers_all.hpp"
 
 #include "taskresolver.h"
 #include <memory>
-
-#ifndef NO_SERVER
 
 TEST_CASE("test_server_taskresolver_cmdSpamFilter", "[vpr]") {
     server::TaskResolver resolver;

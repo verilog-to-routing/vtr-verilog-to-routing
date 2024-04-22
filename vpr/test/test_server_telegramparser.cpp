@@ -1,3 +1,5 @@
+#ifndef NO_SERVER
+
 #include "telegramparser.h"
 
 #include "catch2/catch_test_macros.hpp"
@@ -33,3 +35,5 @@ TEST_CASE("test_server_telegram_parser_invalid_types", "[vpr]")
     REQUIRE(std::nullopt == comm::TelegramParser::try_extract_field_cmd(tBadData));
     REQUIRE(std::nullopt == comm::TelegramParser::try_extract_field_status(tBadData));
 }
+
+#endif /* NO_SERVER */

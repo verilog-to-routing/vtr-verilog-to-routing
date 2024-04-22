@@ -1,3 +1,5 @@
+#ifndef NO_SERVER
+
 #include "zlibutils.h"
 
 #include "catch2/catch_test_macros.hpp"
@@ -16,6 +18,8 @@ TEST_CASE("test_server_zlib_utils", "[vpr]")
 
     REQUIRE(orig == decompressedOpt.value());
 }
+
+#endif /* NO_SERVER */
 
 
 
