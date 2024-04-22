@@ -196,6 +196,7 @@ void init_graphics_state(bool show_graphics_val,
     draw_state->save_graphics = save_graphics;
     draw_state->graphics_commands = graphics_commands;
     draw_state->is_flat = is_flat;
+
 #else
     //Suppress unused parameter warnings
     (void)show_graphics_val;
