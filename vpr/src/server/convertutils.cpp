@@ -5,8 +5,7 @@
 #include "vtr_util.h"
 #include "vtr_error.h"
 
-std::optional<int> try_convert_to_int(const std::string& str)
-{
+std::optional<int> try_convert_to_int(const std::string& str) {
     try {
         return vtr::atoi(str);
     } catch (const vtr::VtrError&) {
@@ -14,55 +13,51 @@ std::optional<int> try_convert_to_int(const std::string& str)
     }
 }
 
-static std::string getPrettyStrFromFloat(float value)
-{
+static std::string get_pretty_str_from_float(float value) {
     std::ostringstream ss;
     ss << std::fixed << std::setprecision(2) << value;  // Set precision to 2 digit after the decimal point
     return ss.str();
 }
 
-std::string getPrettyDurationStrFromMs(int64_t durationMs)
-{
+std::string get_pretty_duration_str_from_ms(int64_t duration_ms) {
     std::string result;
-    if (durationMs >= 1000) {
-        result = getPrettyStrFromFloat(durationMs / 1000.0f) + " sec";
+    if (duration_ms >= 1000) {
+        result = get_pretty_str_from_float(duration_ms / 1000.0f) + " sec";
     } else {
-        result = std::to_string(durationMs);
+        result = std::to_string(duration_ms);
         result += " ms";
     }
     return result;
 }
 
-std::string get_pretty_size_str_from_bytes_num(int64_t bytesNum)
-{
+std::string get_pretty_size_str_from_bytes_num(int64_t bytes_num) {
     std::string result;
-    if (bytesNum >= 1024*1024*1024) {
-        result = getPrettyStrFromFloat(bytesNum / float(1024*1024*1024)) + "Gb";
-    } else if (bytesNum >= 1024*1024) {
-        result = getPrettyStrFromFloat(bytesNum / float(1024*1024)) + "Mb";
-    } else if (bytesNum >= 1024) {
-        result = getPrettyStrFromFloat(bytesNum / float(1024)) + "Kb";
+    if (bytes_num >= 1024*1024*1024) {
+        result = get_pretty_str_from_float(bytes_num / float(1024*1024*1024)) + "Gb";
+    } else if (bytes_num >= 1024*1024) {
+        result = get_pretty_str_from_float(bytes_num / float(1024*1024)) + "Mb";
+    } else if (bytes_num >= 1024) {
+        result = get_pretty_str_from_float(bytes_num / float(1024)) + "Kb";
     } else {
-        result = std::to_string(bytesNum) + "bytes";
+        result = std::to_string(bytes_num) + "bytes";
     }
     return result;
 }
 
-
 std::string get_truncated_middle_str(const std::string& src, std::size_t num) {
     std::string result;
-    static std::size_t minimalStringSizeToTruncate = 20;
-    if (num < minimalStringSizeToTruncate) {
-        num = minimalStringSizeToTruncate;
+    static std::size_t minimal_string_size_to_truncate = 20;
+    if (num < minimal_string_size_to_truncate) {
+        num = minimal_string_size_to_truncate;
     }
-    static std::string middlePlaceHolder("...");
-    const std::size_t srcSize = src.size();
-    if (srcSize > num) {
-        int prefixNum = num / 2;
-        int suffixNum = num / 2 - middlePlaceHolder.size();
-        result.append(src.substr(0, prefixNum));
-        result.append(middlePlaceHolder);
-        result.append(src.substr(srcSize - suffixNum));
+    static std::string middle_place_holder("...");
+    const std::size_t src_size = src.size();
+    if (src_size > num) {
+        int prefix_num = num / 2;
+        int suffix_num = num / 2 - middle_place_holder.size();
+        result.append(src.substr(0, prefix_num));
+        result.append(middle_place_holder);
+        result.append(src.substr(src_size - suffix_num));
     } else {
         result = src;
     }

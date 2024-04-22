@@ -282,8 +282,7 @@ void GateIO::start_listening()
     }
 }
 
-void GateIO::print_logs()
-{
+void GateIO::print_logs() {
     m_logger.flush();
 }
 

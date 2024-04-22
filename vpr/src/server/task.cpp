@@ -50,7 +50,7 @@ std::string Task::info(bool skip_duration) const {
         << "id=" << std::to_string(m_job_id)
         << ",cmd=" << std::to_string(m_cmd);
     if (!skip_duration) {
-        ss << ",exists=" << getPrettyDurationStrFromMs(time_ms_elapsed());
+        ss << ",exists=" << get_pretty_duration_str_from_ms(time_ms_elapsed());
     }
     ss << "]";
     return ss.str();
