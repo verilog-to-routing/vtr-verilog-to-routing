@@ -3,8 +3,7 @@
 #include <cstring> // Include cstring for memset
 #include <zlib.h>
 
-std::optional<std::string> tryCompress(const std::string& decompressed)
-{
+std::optional<std::string> try_compress(const std::string& decompressed) {
     z_stream zs;
     memset(&zs, 0, sizeof(zs));
 
@@ -41,8 +40,7 @@ std::optional<std::string> tryCompress(const std::string& decompressed)
     return result;
 }
 
-std::optional<std::string> tryDecompress(const std::string& compressed)
-{
+std::optional<std::string> try_decompress(const std::string& compressed) {
     z_stream zs;
     memset(&zs, 0, sizeof(zs));
 

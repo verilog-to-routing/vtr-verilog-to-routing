@@ -16,7 +16,7 @@
 * @return An optional string containing the compressed data if compression is successful,
 *         or an empty optional if compression fails.
 */
-std::optional<std::string> tryCompress(const std::string& decompressed);
+std::optional<std::string> try_compress(const std::string& decompressed);
 
 /**
 * @brief Decompresses the compressed sequence using zlib.
@@ -30,6 +30,6 @@ std::optional<std::string> tryCompress(const std::string& decompressed);
 * @return An optional string containing the decompressed data if decompression is successful,
 *         or an empty optional if decompression fails.
 */
-std::optional<std::string> tryDecompress(const std::string& compressed);
+std::optional<std::string> try_decompress(const std::string& compressed);
 
 #endif /* ZLIBUTILS_H */
