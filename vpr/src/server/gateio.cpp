@@ -40,7 +40,7 @@ void GateIO::stop()
     }
 }
 
-void GateIO::takeReceivedTasks(std::vector<TaskPtr>& tasks)
+void GateIO::take_received_tasks(std::vector<TaskPtr>& tasks)
 {
     std::unique_lock<std::mutex> lock(m_tasksMutex);
     for (TaskPtr& task: m_receivedTasks) {
@@ -50,7 +50,7 @@ void GateIO::takeReceivedTasks(std::vector<TaskPtr>& tasks)
     m_receivedTasks.clear();
 }
 
-void GateIO::moveTasksToSendQueue(std::vector<TaskPtr>& tasks)
+void GateIO::move_tasks_to_send_queue(std::vector<TaskPtr>& tasks)
 {
     std::unique_lock<std::mutex> lock(m_tasksMutex);
     for (TaskPtr& task: tasks) {
@@ -292,7 +292,7 @@ void GateIO::startListening()
     }
 }
 
-void GateIO::printLogs()
+void GateIO::print_logs()
 {
     m_logger.flush();
 }

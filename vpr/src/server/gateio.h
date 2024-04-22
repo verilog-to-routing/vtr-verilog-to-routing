@@ -162,7 +162,7 @@ public:
      * 
      * @param tasks A reference to a vector where the received tasks will be moved.
      */
-    void takeReceivedTasks(std::vector<TaskPtr>&);
+    void take_received_tasks(std::vector<TaskPtr>&);
 
     /**
      * @brief Moves tasks to the send queue.
@@ -173,7 +173,7 @@ public:
      * 
      * @param tasks A reference to a vector containing the tasks to be moved to the send queue.
     */
-    void moveTasksToSendQueue(std::vector<TaskPtr>&);
+    void move_tasks_to_send_queue(std::vector<TaskPtr>&);
 
     /**
      * @brief Prints log messages for the GateIO.
@@ -181,7 +181,7 @@ public:
      * @note Must be called from main thread since it's invoke std::cout.
      * Calling this method from other threads may result in unexpected behavior.
      */
-    void printLogs(); 
+    void print_logs(); 
 
     /**
      * @brief Starts the server on the specified port number.

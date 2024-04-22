@@ -18,7 +18,7 @@ gboolean update(gpointer data) {
 
         std::vector<TaskPtr> tasks_buff;
 
-        gate_io.takeReceivedTasks(tasks_buff);
+        gate_io.take_received_tasks(tasks_buff);
         for (TaskPtr& task: tasks_buff) {
             task_resolver.own_task(std::move(task));
         }
@@ -30,14 +30,14 @@ gboolean update(gpointer data) {
 
             task_resolver.take_finished_tasks(tasks_buff);
 
-            gate_io.moveTasksToSendQueue(tasks_buff);
+            gate_io.move_tasks_to_send_queue(tasks_buff);
 
             // Call the redraw method of the application if any of task was processed
             if (has_finished_tasks) {
                 app->refresh_drawing();
             }
         }
-        gate_io.printLogs();
+        gate_io.print_logs();
     }
     
     // Return TRUE to keep the timer running, or FALSE to stop it
