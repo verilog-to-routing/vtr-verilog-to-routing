@@ -25,7 +25,7 @@ gboolean update(gpointer data) {
         tasks_buff.clear();
 
         const bool is_server_context_initialized = g_vpr_ctx.server().timing_info() && g_vpr_ctx.server().routing_delay_calc();
-        if (is_server_context_initialized){
+        if (is_server_context_initialized) {
             bool has_finished_tasks = task_resolver.update(app);
 
             task_resolver.take_finished_tasks(tasks_buff);

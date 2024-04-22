@@ -15,8 +15,7 @@ namespace server {
  * @brief helper function to collect crit parser metadata.
  * This data is used on parser side to properly extract arrival path elements from the timing report.
  */
-static void collect_crit_path_metadata(std::stringstream& ss, const std::vector<tatum::TimingPath>& paths)
-{
+static void collect_crit_path_metadata(std::stringstream& ss, const std::vector<tatum::TimingPath>& paths) {
     ss << "#RPT METADATA:\n";
     ss << "path_index/clock_launch_path_elements_num/arrival_path_elements_num\n";
     std::size_t counter = 0;
@@ -31,7 +30,7 @@ static void collect_crit_path_metadata(std::stringstream& ss, const std::vector<
 /** 
  * @brief Helper function to calculate critical path timing report with specified parameters.
  */
-CritPathsResult calcCriticalPath(const std::string& report_type, int critPathNum, e_timing_report_detail detailsLevel, bool is_flat_routing)
+CritPathsResult calc_critical_path(const std::string& report_type, int crit_path_num, e_timing_report_detail details_level, bool is_flat_routing)
 {
     // shortcuts
     const std::shared_ptr<SetupHoldTimingInfo>& timing_info = g_vpr_ctx.server().timing_info();
@@ -42,8 +41,8 @@ CritPathsResult calcCriticalPath(const std::string& report_type, int critPathNum
     //
 
     t_analysis_opts analysis_opts;
-    analysis_opts.timing_report_detail = detailsLevel;
-    analysis_opts.timing_report_npaths = critPathNum;
+    analysis_opts.timing_report_detail = details_level;
+    analysis_opts.timing_report_npaths = crit_path_num;
 
     VprTimingGraphResolver resolver(atom_ctx.nlist, atom_ctx.lookup, *timing_ctx.graph, *routing_delay_calc, is_flat_routing);
     resolver.set_detail_level(analysis_opts.timing_report_detail);

@@ -3,7 +3,6 @@
 
 #include <vector>
 #include <string>
-#include <memory>
 
 #include "tatum/report/TimingPath.hpp"
 #include "vpr_types.h"
@@ -16,7 +15,7 @@ namespace server {
  * It contains the critical path list and the generated report as a string.
 */
 struct CritPathsResult {
-    bool isValid() const { return !report.empty(); }
+    bool is_valid() const { return !report.empty(); }
     std::vector<tatum::TimingPath> paths;
     std::string report;
 };
@@ -24,7 +23,7 @@ struct CritPathsResult {
 /** 
  * @brief Helper function to calculate critical path timing report with specified parameters.
  */
-CritPathsResult calcCriticalPath(const std::string& type, int critPathNum, e_timing_report_detail detailsLevel, bool is_flat_routing);
+CritPathsResult calc_critical_path(const std::string& type, int crit_path_num, e_timing_report_detail details_level, bool is_flat_routing);
 
 } // namespace server
 

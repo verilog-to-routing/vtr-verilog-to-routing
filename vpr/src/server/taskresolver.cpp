@@ -99,14 +99,14 @@ void TaskResolver::process_get_path_list_task(ezgl::application*, const TaskPtr&
         // calculate critical path depending on options and store result in server context
         std::optional<e_timing_report_detail> details_level_opt = try_get_details_level_enum(details_level_str);
         if (details_level_opt) {
-            CritPathsResult crit_paths_result = calcCriticalPath(path_type, n_critical_path_num, details_level_opt.value(), is_flat);
+            CritPathsResult crit_paths_result = calc_critical_path(path_type, n_critical_path_num, details_level_opt.value(), is_flat);
 
             // setup context
             server_ctx.set_path_type(path_type);
             server_ctx.set_critical_path_num(n_critical_path_num);
             server_ctx.set_crit_paths(crit_paths_result.paths);
 
-            if (crit_paths_result.isValid()) {
+            if (crit_paths_result.is_valid()) {
                 std::string msg{crit_paths_result.report};
                 task->success(msg);
             } else {
