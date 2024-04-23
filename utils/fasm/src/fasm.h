@@ -15,6 +15,7 @@
 #include <set>
 #include <sstream>
 #include <string>
+#include <string_view>
 #include <unordered_map>
 #include <vector>
 
@@ -66,12 +67,12 @@ class FasmWriterVisitor : public NetlistVisitor {
       void finish_impl() override;
 
   private:
-      void output_fasm_features(const std::string features) const;
-      void output_fasm_features(const std::string features, const std::string clb_prefix, const std::string blk_prefix) const;
+      void output_fasm_features(const std::string& features) const;
+      void output_fasm_features(const std::string& features, std::string_view clb_prefix, std::string_view blk_prefix) const;
       void check_features(const t_metadata_dict *meta) const;
       void check_interconnect(const t_pb_routes &pb_route, int inode);
       void check_for_lut(const t_pb* atom);
-      void output_fasm_mux(std::string fasm_mux, t_interconnect *interconnect, const t_pb_graph_pin *mux_input_pin);
+      void output_fasm_mux(std::string_view fasm_mux, t_interconnect *interconnect, const t_pb_graph_pin *mux_input_pin);
       void walk_routing();
       void walk_route_tree(const RRGraphBuilder& rr_graph_builder, const RouteTreeNode& root);
       std::string build_clb_prefix(const t_pb *pb, const t_pb_graph_node* pb_graph_node, bool* is_parent_pb_null) const;
@@ -83,7 +84,7 @@ class FasmWriterVisitor : public NetlistVisitor {
         bool *have_prefix, std::string *clb_prefix) const;
       std::string handle_fasm_prefix(const t_metadata_dict *meta,
         const t_pb_graph_node *pb_graph_node, const t_pb_type *pb_type) const;
-      const t_metadata_dict *get_fasm_type(const t_pb_graph_node* pb_graph_node, std::string target_type) const;
+      const t_metadata_dict *get_fasm_type(const t_pb_graph_node* pb_graph_node, std::string_view target_type) const;
 
       vtr::string_internment *strings_;
       std::ostream& os_;
