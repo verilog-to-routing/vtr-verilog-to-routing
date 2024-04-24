@@ -3,7 +3,20 @@
 /** @file Templated implementations for SerialNetlistRouter */
 
 #include "SerialNetlistRouter.h"
+#include "connection_router_interface.h"
 #include "route_net.h"
+
+template<typename HeapType>
+inline bool SerialNetlistRouter<HeapType>::should_use_parallel_connection_router(const ParentNetId &net_id, int itry, float pres_fac, float worst_neg_slack) {
+    (void)net_id;
+    (void)itry;
+    (void)pres_fac;
+    (void)worst_neg_slack;
+    // This is where the predictor will go.
+    // Predict if the given net_id will parallelize well or not.
+    // For now always return true.
+    return true;
+}
 
 template<typename HeapType>
 inline RouteIterResults SerialNetlistRouter<HeapType>::route_netlist(int itry, float pres_fac, float worst_neg_slack) {
@@ -18,8 +31,13 @@ inline RouteIterResults SerialNetlistRouter<HeapType>::route_netlist(int itry, f
 
     for (size_t inet = 0; inet < sorted_nets.size(); inet++) {
         ParentNetId net_id = sorted_nets[inet];
+
+        // Choose which router to use
+        bool use_parallel_router = should_use_parallel_connection_router(net_id, itry, pres_fac, worst_neg_slack);
+        ConnectionRouterInterface *router = use_parallel_router ? _parallel_router : _serial_router;
+
         NetResultFlags flags = route_net(
-            _router,
+            router,
             _net_list,
             net_id,
             itry,
@@ -64,7 +82,8 @@ inline RouteIterResults SerialNetlistRouter<HeapType>::route_netlist(int itry, f
 
 template<typename HeapType>
 void SerialNetlistRouter<HeapType>::set_rcv_enabled(bool x) {
-    _router->set_rcv_enabled(x);
+    _serial_router->set_rcv_enabled(x);
+    _parallel_router->set_rcv_enabled(x);
 }
 
 template<typename HeapType>
