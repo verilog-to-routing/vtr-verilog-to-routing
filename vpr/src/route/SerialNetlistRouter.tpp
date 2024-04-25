@@ -4,7 +4,18 @@
 
 #include "SerialNetlistRouter.h"
 #include "connection_router_interface.h"
+#include "globals.h"
+#include "netlist_fwd.h"
 #include "route_net.h"
+#include "vpr_context.h"
+
+// ENUM for the different net-level predictor types
+// TODO: Make this a router option so it can be selected from the command line
+#define ALWAYS_PARALLEL_PRED_TY 0
+#define ALWAYS_SERIAL_PRED_TY 1
+#define HARD_CODED_PRED_TY 2
+// Which predictor should the hybrid router use.
+#define HYBRID_ROUTER_PRED ALWAYS_PARALLEL_PRED_TY
 
 template<typename HeapType>
 inline bool SerialNetlistRouter<HeapType>::should_use_parallel_connection_router(const ParentNetId &net_id, int itry, float pres_fac, float worst_neg_slack) {
@@ -12,10 +23,42 @@ inline bool SerialNetlistRouter<HeapType>::should_use_parallel_connection_router
     (void)itry;
     (void)pres_fac;
     (void)worst_neg_slack;
-    // This is where the predictor will go.
-    // Predict if the given net_id will parallelize well or not.
-    // For now always return true.
+    // This method predicts whether the given net will parallelize well or not.
+    // TODO: Maybe decide whether to route in parallel or not during the previous
+    //       routing iteration. That way we do not need to store information.
+
+#if HYBRID_ROUTER_PRED == ALWAYS_PARALLEL_PRED_TY
+    // Always run the nets in parallel
     return true;
+#elif HYBRID_ROUTER_PRED == ALWAYS_SERIAL_PRED_TY
+    // Always run the nets serially
+    return false;
+#elif HYBRID_ROUTER_PRED == HARD_CODED_PRED_TY
+    // Basic (ideal) predictor
+    // If the net has a sink in a block that we know is problematic, route
+    // in parallel.
+    // NOTE: This is currently hard coded for the bwave-like circuit on the
+    //       VTR Flagship Architecture.
+    const AtomContext &atom_ctx = g_vpr_ctx.atom();
+    for (ParentPinId sink_pin_id : _net_list.net_sinks(net_id)) {
+        // Get the name of the block from the netlist
+        ParentBlockId target_block_id = _net_list.pin_block(sink_pin_id);
+        const std::string &block_name = _net_list.block_name(target_block_id);
+        // Use the name to lookup the block in the atom netlist to get the model
+        // name.
+        // TODO: Find a more efficient way to lookup the atom block ID from the
+        //       sink pin ID.
+        AtomBlockId target_atom_block_id = atom_ctx.nlist.find_block(block_name);
+        const t_model* block_model = atom_ctx.nlist.block_model(target_atom_block_id);
+        // See if the model name matches the block types we know cause problems.
+        if (std::strcmp(block_model->name, "dual_port_ram") == 0) {
+            return true;
+        } else if (std::strcmp(block_model->name, "multiply") == 0) {
+            return true;
+        }
+    }
+    return false;
+#endif
 }
 
 template<typename HeapType>
