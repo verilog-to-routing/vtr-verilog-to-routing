@@ -127,6 +127,7 @@ odin_ii/usefull_tools/**/track_completed
 Session.vim
 .netrwhist
 *~
+.cache
 
 #
 # LibreOffice
