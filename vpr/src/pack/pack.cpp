@@ -330,15 +330,6 @@ std::unordered_set<AtomNetId> alloc_and_load_is_clock(bool global_clocks) {
         }
     }
 
-    /* If we have multiple clocks and we're supposed to declare them global, *
-     * print a warning message, since it looks like this circuit may have    *
-     * locally generated clocks.                                             */
-
-    if (num_clocks > 1 && global_clocks) {
-        VTR_LOG_WARN(
-            "All %d clocks will be treated as global.\n", num_clocks);
-    }
-
     return (is_clock);
 }
 
