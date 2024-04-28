@@ -100,6 +100,7 @@
 
 // FIXME: TESTING ONLY
 #include "analytical_initial_placer.h"
+#include "analytical_placement_flow.h"
 
 /* Local subroutines */
 static void free_complex_block_types();
@@ -406,7 +407,8 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
         }
     }
     // Placed here for now; however, ideally this should come before pack and place since we do not want these to be performed.
-    analytical_placement::initial_place();
+    // analytical_placement::initial_place();
+    run_analytical_placement_flow();
 
     bool is_flat = vpr_setup.RouterOpts.flat_routing;
     const Netlist<>& router_net_list = is_flat ? (const Netlist<>&)g_vpr_ctx.atom().nlist : (const Netlist<>&)g_vpr_ctx.clustering().clb_nlist;

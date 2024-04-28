@@ -677,12 +677,13 @@ bool initial_place() {
         // printf("(%d, %d)\n", node_locs[i].x, node_locs[i].y);
     }
 
-    QP_clique_formulation(netlist, block_id_to_node_id, moveable_blocks.size(), node_locs);
-    QP_star_formulation(netlist, block_id_to_node_id, moveable_blocks.size(), node_locs);
+    // QP_clique_formulation(netlist, block_id_to_node_id, moveable_blocks.size(), node_locs);
+    // QP_star_formulation(netlist, block_id_to_node_id, moveable_blocks.size(), node_locs);
     QP_hybrid_formulation(netlist, block_id_to_node_id, moveable_blocks.size(), node_locs);
-    QP_b2b_formulation(netlist, block_id_to_node_id, moveable_blocks.size(), node_locs);
+    // QP_b2b_formulation(netlist, block_id_to_node_id, moveable_blocks.size(), node_locs);
 
     return true;
 }
 
 } // analytical_placement
+
