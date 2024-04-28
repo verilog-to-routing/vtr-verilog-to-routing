@@ -170,7 +170,7 @@ enum class e_cluster_seed {
     BLEND2
 };
 
-enum e_block_pack_status {
+enum class e_block_pack_status {
     BLK_PASSED,
     BLK_FAILED_FEASIBLE,
     BLK_FAILED_ROUTE,

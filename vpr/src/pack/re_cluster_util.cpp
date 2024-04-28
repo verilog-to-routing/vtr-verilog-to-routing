@@ -1,6 +1,5 @@
 #include "re_cluster_util.h"
 
-#include "vpr_context.h"
 #include "clustered_netlist_utils.h"
 #include "cluster_util.h"
 #include "cluster_router.h"
@@ -8,7 +7,6 @@
 #include "place_macro.h"
 #include "initial_placement.h"
 #include "read_netlist.h"
-#include <cstring>
 
 //The name suffix of the new block (if exists)
 const char* name_suffix = "_m";
@@ -94,7 +92,7 @@ void commit_mol_move(const ClusterBlockId& old_clb,
         g_vpr_ctx.mutable_placement().block_locs.resize(g_vpr_ctx.placement().block_locs.size() + 1);
         get_imacro_from_iblk(&imacro, old_clb, g_vpr_ctx.placement().pl_macros);
         set_imacro_for_iblk(&imacro, new_clb);
-        place_one_block(new_clb, device_ctx.pad_loc_type, NULL, NULL);
+        place_one_block(new_clb, device_ctx.pad_loc_type, nullptr, nullptr);
     }
 }
 
@@ -146,7 +144,7 @@ bool start_new_cluster_for_mol(t_pack_molecule* molecule,
 
     *router_data = alloc_and_load_router_data(&(helper_ctx.lb_type_rr_graphs[type->index]), type);
 
-    e_block_pack_status pack_result = BLK_STATUS_UNDEFINED;
+    e_block_pack_status pack_result = e_block_pack_status::BLK_STATUS_UNDEFINED;
     pb->mode = mode;
     reset_cluster_placement_stats(&(helper_ctx.cluster_placement_stats[type->index]));
     set_mode_cluster_placement_stats(pb->pb_graph_node, mode);
@@ -167,7 +165,7 @@ bool start_new_cluster_for_mol(t_pack_molecule* molecule,
                                     temp_cluster_pr);
 
     // If clustering succeeds, add it to the clb netlist
-    if (pack_result == BLK_PASSED) {
+    if (pack_result == e_block_pack_status::BLK_PASSED) {
         VTR_LOGV(verbosity > 4, "\tPASSED_SEED: Block Type %s\n", type->name);
         //Once clustering succeeds, add it to the clb netlist
         if (pb->name != nullptr) {
@@ -194,7 +192,7 @@ bool start_new_cluster_for_mol(t_pack_molecule* molecule,
     free_router_data(*router_data);
     *router_data = nullptr;
 
-    return (pack_result == BLK_PASSED);
+    return (pack_result == e_block_pack_status::BLK_PASSED);
 }
 
 bool pack_mol_in_existing_cluster(t_pack_molecule* molecule,
@@ -209,7 +207,7 @@ bool pack_mol_in_existing_cluster(t_pack_molecule* molecule,
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
 
     PartitionRegion temp_cluster_pr;
-    e_block_pack_status pack_result = BLK_STATUS_UNDEFINED;
+    e_block_pack_status pack_result = e_block_pack_status::BLK_STATUS_UNDEFINED;
     t_ext_pin_util target_ext_pin_util = helper_ctx.target_external_pin_util.get_pin_util(cluster_ctx.clb_nlist.block_type(new_clb)->name);
     t_logical_block_type_ptr block_type = cluster_ctx.clb_nlist.block_type(new_clb);
     t_pb* temp_pb = cluster_ctx.clb_nlist.block_pb(new_clb);
@@ -240,7 +238,7 @@ bool pack_mol_in_existing_cluster(t_pack_molecule* molecule,
                                     temp_cluster_pr);
 
     // If clustering succeeds, add it to the clb netlist
-    if (pack_result == BLK_PASSED) {
+    if (pack_result == e_block_pack_status::BLK_PASSED) {
         //If you are still in packing, update the clustering data. Otherwise, update the clustered netlist.
         if (during_packing) {
             free_intra_lb_nets(clustering_data.intra_lb_routing[new_clb]);
@@ -265,7 +263,7 @@ bool pack_mol_in_existing_cluster(t_pack_molecule* molecule,
         router_data = nullptr;
     }
 
-    return (pack_result == BLK_PASSED);
+    return (pack_result == e_block_pack_status::BLK_PASSED);
 }
 
 void fix_clustered_netlist(t_pack_molecule* molecule,
@@ -300,7 +298,7 @@ void revert_mol_move(const ClusterBlockId& old_clb,
                                                         helper_ctx.target_external_pin_util.get_pin_util(cluster_ctx.clb_nlist.block_type(old_clb)->name),
                                                         temp_cluster_pr_original);
 
-    VTR_ASSERT(pack_result == BLK_PASSED);
+    VTR_ASSERT(pack_result == e_block_pack_status::BLK_PASSED);
     //If you are still in packing, update the clustering data. Otherwise, update the clustered netlist.
     if (during_packing) {
         free_intra_lb_nets(clustering_data.intra_lb_routing[old_clb]);

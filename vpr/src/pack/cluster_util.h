@@ -19,8 +19,8 @@
  * @brief This file includes useful structs and functions for building and modifying clustering
  */
 
-#define AAPACK_MAX_HIGH_FANOUT_EXPLORE 10 /* For high-fanout nets that are ignored, consider a maximum of this many sinks, must be less than packer_opts.feasible_block_array_size */
-#define AAPACK_MAX_TRANSITIVE_EXPLORE 40  /* When investigating transitive fanout connections in packing, consider a maximum of this many molecules, must be less than packer_opts.feasible_block_array_size */
+constexpr int AAPACK_MAX_HIGH_FANOUT_EXPLORE = 10; /* For high-fanout nets that are ignored, consider a maximum of this many sinks, must be less than packer_opts.feasible_block_array_size */
+constexpr int AAPACK_MAX_TRANSITIVE_EXPLORE = 40;  /* When investigating transitive fanout connections in packing, consider a maximum of this many molecules, must be less than packer_opts.feasible_block_array_size */
 
 //Constant allowing all cluster pins to be used
 const t_ext_pin_util FULL_EXTERNAL_PIN_UTIL(1., 1.);
@@ -200,20 +200,20 @@ void rebuild_attraction_groups(AttractionInfo& attraction_groups);
 
 void record_molecule_failure(t_pack_molecule* molecule, t_pb* pb);
 
-enum e_block_pack_status try_pack_molecule(t_cluster_placement_stats* cluster_placement_stats_ptr,
-                                           t_pack_molecule* molecule,
-                                           t_pb_graph_node** primitives_list,
-                                           t_pb* pb,
-                                           const int max_models,
-                                           const int max_cluster_size,
-                                           const ClusterBlockId clb_index,
-                                           const int detailed_routing_stage,
-                                           t_lb_router_data* router_data,
-                                           int verbosity,
-                                           bool enable_pin_feasibility_filter,
-                                           const int feasible_block_array_size,
-                                           t_ext_pin_util max_external_pin_util,
-                                           PartitionRegion& temp_cluster_pr);
+e_block_pack_status try_pack_molecule(t_cluster_placement_stats* cluster_placement_stats_ptr,
+                                      t_pack_molecule* molecule,
+                                      t_pb_graph_node** primitives_list,
+                                      t_pb* pb,
+                                      int max_models,
+                                      int max_cluster_size,
+                                      ClusterBlockId clb_index,
+                                      int detailed_routing_stage,
+                                      t_lb_router_data* router_data,
+                                      int verbosity,
+                                      bool enable_pin_feasibility_filter,
+                                      int feasible_block_array_size,
+                                      t_ext_pin_util max_external_pin_util,
+                                      PartitionRegion& temp_cluster_pr);
 
 void try_fill_cluster(const t_packer_opts& packer_opts,
                       t_cluster_placement_stats* cur_cluster_placement_stats_ptr,
@@ -278,11 +278,11 @@ enum e_block_pack_status try_place_atom_block_rec(const t_pb_graph_node* pb_grap
                                                   int verbosity,
                                                   const int feasible_block_array_size);
 
-enum e_block_pack_status atom_cluster_floorplanning_check(const AtomBlockId blk_id,
-                                                          const ClusterBlockId clb_index,
-                                                          const int verbosity,
-                                                          PartitionRegion& temp_cluster_pr,
-                                                          bool& cluster_pr_needs_update);
+bool atom_cluster_floorplanning_check(AtomBlockId blk_id,
+                                      ClusterBlockId clb_index,
+                                      int verbosity,
+                                      PartitionRegion& temp_cluster_pr,
+                                      bool& cluster_pr_needs_update);
 
 void revert_place_atom_block(const AtomBlockId blk_id, t_lb_router_data* router_data);
 
