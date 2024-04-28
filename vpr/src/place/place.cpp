@@ -5,7 +5,6 @@
 #include <iostream>
 #include <numeric>
 #include <chrono>
-#include <vtr_ndmatrix.h>
 #include <optional>
 
 #include "NetPinTimingInvalidator.h"
@@ -16,6 +15,7 @@
 #include "vtr_geometry.h"
 #include "vtr_time.h"
 #include "vtr_math.h"
+#include "vtr_ndmatrix.h"
 
 #include "vpr_types.h"
 #include "vpr_error.h"
@@ -70,14 +70,12 @@
 
 #include "noc_place_utils.h"
 
-#include "noc_group_move_generator.h"
-
 /*  define the RL agent's reward function factor constant. This factor controls the weight of bb cost *
  *  compared to the timing cost in the agent's reward function. The reward is calculated as           *
  * -1*(1.5-REWARD_BB_TIMING_RELATIVE_WEIGHT)*timing_cost + (1+REWARD_BB_TIMING_RELATIVE_WEIGHT)*bb_cost)
  */
 
-#define REWARD_BB_TIMING_RELATIVE_WEIGHT 0.4
+static constexpr float REWARD_BB_TIMING_RELATIVE_WEIGHT = 0.4;
 
 #ifdef VTR_ENABLE_DEBUG_LOGGING
 #    include "draw_types.h"
@@ -92,12 +90,12 @@ using std::min;
 
 /* This defines the error tolerance for floating points variables used in *
  * cost computation. 0.01 means that there is a 1% error tolerance.       */
-#define ERROR_TOL .01
+static constexpr double ERROR_TOL = .01;
 
 /* This defines the maximum number of swap attempts before invoking the   *
  * once-in-a-while placement legality check as well as floating point     *
  * variables round-offs check.                                            */
-#define MAX_MOVES_BEFORE_RECOMPUTE 500000
+static constexpr int MAX_MOVES_BEFORE_RECOMPUTE = 500000;
 
 /* Flags for the states of the bounding box.                              *
  * Stored as char for memory efficiency.                                  */
@@ -105,7 +103,7 @@ using std::min;
 #define UPDATED_ONCE 'U'
 #define GOT_FROM_SCRATCH 'S'
 
-/* For comp_cost.  NORMAL means use the method that generates updateable  *
+/* For comp_cost.  NORMAL means use the method that generates updatable   *
  * bounding boxes for speed.  CHECK means compute all bounding boxes from *
  * scratch using a very simple routine to allow checks of the other       *
  * costs.                                   
@@ -1719,9 +1717,7 @@ static e_move_result try_swap(const t_annealing_state* state,
 #endif //NO_GRAPHICS
     } else if (router_block_move) {
         // generate a move where two random router blocks are swapped
-//        create_move_outcome = propose_router_swap(blocks_affected, rlim);
-        NocGroupMoveGenerator noc_group_move_gen;
-        create_move_outcome = noc_group_move_gen.propose_move(blocks_affected, proposed_action, 20, placer_opts, criticalities);
+        create_move_outcome = propose_router_swap(blocks_affected, rlim);
         proposed_action.move_type = e_move_type::UNIFORM;
     } else {
         //Generate a new move (perturbation) used to explore the space of possible placements

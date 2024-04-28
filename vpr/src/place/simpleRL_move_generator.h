@@ -216,7 +216,7 @@ class SimpleRLMoveGenerator : public MoveGenerator {
      */
     template<class T,
              class = typename std::enable_if<std::is_same<T, EpsilonGreedyAgent>::value || std::is_same<T, SoftmaxAgent>::value>::type>
-    explicit SimpleRLMoveGenerator(std::unique_ptr<T>& agent, float noc_attraction_weight);
+    explicit SimpleRLMoveGenerator(std::unique_ptr<T>& agent, float noc_attraction_weight, size_t high_fanout_thresh);
 
     // Updates affected_blocks with the proposed move, while respecting the current rlim
     e_create_move propose_move(t_pl_blocks_to_be_moved& blocks_affected,
@@ -230,7 +230,7 @@ class SimpleRLMoveGenerator : public MoveGenerator {
 };
 
 template<class T, class>
-SimpleRLMoveGenerator::SimpleRLMoveGenerator(std::unique_ptr<T>& agent, float noc_attraction_weight) {
+SimpleRLMoveGenerator::SimpleRLMoveGenerator(std::unique_ptr<T>& agent, float noc_attraction_weight, size_t high_fanout_thresh) {
     if (noc_attraction_weight > 0.0f) {
         avail_moves.resize((int)e_move_type::NUMBER_OF_AUTO_MOVES);
     } else {
@@ -245,7 +245,7 @@ SimpleRLMoveGenerator::SimpleRLMoveGenerator(std::unique_ptr<T>& agent, float no
     avail_moves[e_move_type::CRIT_UNIFORM] = std::make_unique<CriticalUniformMoveGenerator>();
     avail_moves[e_move_type::FEASIBLE_REGION] = std::make_unique<FeasibleRegionMoveGenerator>();
     if (noc_attraction_weight > 0.0f) {
-        avail_moves[e_move_type::NOC_ATTRACTION_CENTROID] = std::make_unique<CentroidMoveGenerator>(noc_attraction_weight);
+        avail_moves[e_move_type::NOC_ATTRACTION_CENTROID] = std::make_unique<CentroidMoveGenerator>(noc_attraction_weight, high_fanout_thresh);
     }
 
     karmed_bandit_agent = std::move(agent);

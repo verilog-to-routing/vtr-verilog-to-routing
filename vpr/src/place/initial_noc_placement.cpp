@@ -255,11 +255,9 @@ static void noc_routers_anneal(const t_noc_opts& noc_opts) {
 
 void initial_noc_placement(const t_noc_opts& noc_opts, const t_placer_opts& placer_opts) {
     auto& noc_ctx = g_vpr_ctx.noc();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
 
     // Get all the router clusters
     const std::vector<ClusterBlockId>& router_blk_ids = noc_ctx.noc_traffic_flows_storage.get_router_clusters_in_netlist();
-    const auto router_block_type = cluster_ctx.clb_nlist.block_type(router_blk_ids[0]);
 
     // Holds all the routers that are not fixed into a specific location by constraints
     std::vector<ClusterBlockId> unfixed_routers;
@@ -293,73 +291,5 @@ void initial_noc_placement(const t_noc_opts& noc_opts, const t_placer_opts& plac
         VPR_FATAL_ERROR(VPR_ERROR_PLACE,
                         "At least one cycle was found in NoC channel dependency graph. This may cause a deadlock "
                         "when packets wait on each other in a cycle.\n");
-    }
-
-    vtr::vector<ClusterBlockId, bool> block_visited(cluster_ctx.clb_nlist.blocks().size(), false);
-    auto& place_ctx = g_vpr_ctx.mutable_placement();
-    int noc_group_cnt = 0;
-    place_ctx.cluster_to_noc_grp.resize(cluster_ctx.clb_nlist.blocks().size(), NocGroupId ::INVALID());
-
-    for (auto router_blk_id : router_blk_ids) {
-
-        if (block_visited[router_blk_id]) {
-            continue;
-        }
-
-        NocGroupId noc_group_id(noc_group_cnt);
-        noc_group_cnt++;
-        place_ctx.noc_group_routers.emplace_back();
-        place_ctx.noc_group_clusters.emplace_back();
-
-        std::queue<ClusterBlockId> q;
-        q.push(router_blk_id);
-        block_visited[router_blk_id] = true;
-
-        while (!q.empty()) {
-            ClusterBlockId current_block_id = q.front();
-            q.pop();
-
-            auto block_type = cluster_ctx.clb_nlist.block_type(current_block_id);
-            if (block_type->index == router_block_type->index) {
-                place_ctx.noc_group_routers[noc_group_id].push_back(current_block_id);
-                place_ctx.noc_router_to_noc_group[current_block_id] = noc_group_id;
-            } else {
-                place_ctx.noc_group_clusters[noc_group_id].push_back(current_block_id);
-                place_ctx.cluster_to_noc_grp[current_block_id] = noc_group_id;
-            }
-
-
-            for (ClusterPinId pin_id : cluster_ctx.clb_nlist.block_pins(current_block_id)) {
-                ClusterNetId net_id = cluster_ctx.clb_nlist.pin_net(pin_id);
-
-                if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
-                    continue;
-                }
-
-                if (cluster_ctx.clb_nlist.net_sinks(net_id).size() >= placer_opts.place_high_fanout_net) {
-                    continue;
-                }
-
-                if (cluster_ctx.clb_nlist.pin_type(pin_id) == PinType::DRIVER) {
-                    //ignore nets that are globally routed
-
-                    for (auto sink_pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
-                        auto sink_block_id = cluster_ctx.clb_nlist.pin_block(sink_pin_id);
-                        if (!block_visited[sink_block_id]) {
-                            block_visited[sink_block_id] = true;
-                            q.push(sink_block_id);
-                        }
-                    }
-                } else { //else the pin is sink --> only care about its driver
-                    ClusterPinId source_pin = cluster_ctx.clb_nlist.net_driver(net_id);
-                    auto source_blk_id = cluster_ctx.clb_nlist.pin_block(source_pin);
-                    if (!block_visited[source_blk_id]) {
-                        block_visited[source_blk_id] = true;
-                        q.push(source_blk_id);
-                    }
-                }
-            }
-        }
-
     }
 }

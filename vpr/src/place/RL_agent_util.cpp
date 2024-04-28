@@ -77,13 +77,17 @@ void create_move_generators(std::unique_ptr<MoveGenerator>& move_generator,
                                                                             placer_opts.place_agent_epsilon);
             }
             karmed_bandit_agent1->set_step(placer_opts.place_agent_gamma, move_lim);
-            move_generator = std::make_unique<SimpleRLMoveGenerator>(karmed_bandit_agent1, noc_attraction_weight);
+            move_generator = std::make_unique<SimpleRLMoveGenerator>(karmed_bandit_agent1,
+                                                                     noc_attraction_weight,
+                                                                     placer_opts.place_high_fanout_net);
             //agent's 2nd state
             karmed_bandit_agent2 = std::make_unique<EpsilonGreedyAgent>(second_state_avail_moves,
                                                                         e_agent_space::MOVE_TYPE,
                                                                         placer_opts.place_agent_epsilon);
             karmed_bandit_agent2->set_step(placer_opts.place_agent_gamma, move_lim);
-            move_generator2 = std::make_unique<SimpleRLMoveGenerator>(karmed_bandit_agent2, noc_attraction_weight);
+            move_generator2 = std::make_unique<SimpleRLMoveGenerator>(karmed_bandit_agent2,
+                                                                      noc_attraction_weight,
+                                                                      placer_opts.place_high_fanout_net);
         } else {
             std::unique_ptr<SoftmaxAgent> karmed_bandit_agent1, karmed_bandit_agent2;
             //agent's 1st state
@@ -97,12 +101,16 @@ void create_move_generators(std::unique_ptr<MoveGenerator>& move_generator,
                                                                       e_agent_space::MOVE_TYPE);
             }
             karmed_bandit_agent1->set_step(placer_opts.place_agent_gamma, move_lim);
-            move_generator = std::make_unique<SimpleRLMoveGenerator>(karmed_bandit_agent1, noc_attraction_weight);
+            move_generator = std::make_unique<SimpleRLMoveGenerator>(karmed_bandit_agent1,
+                                                                     noc_attraction_weight,
+                                                                     placer_opts.place_high_fanout_net);
             //agent's 2nd state
             karmed_bandit_agent2 = std::make_unique<SoftmaxAgent>(second_state_avail_moves,
                                                                   e_agent_space::MOVE_TYPE);
             karmed_bandit_agent2->set_step(placer_opts.place_agent_gamma, move_lim);
-            move_generator2 = std::make_unique<SimpleRLMoveGenerator>(karmed_bandit_agent2, noc_attraction_weight);
+            move_generator2 = std::make_unique<SimpleRLMoveGenerator>(karmed_bandit_agent2,
+                                                                      noc_attraction_weight,
+                                                                      placer_opts.place_high_fanout_net);
         }
     }
 }

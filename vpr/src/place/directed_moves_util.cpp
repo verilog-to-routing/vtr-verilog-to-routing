@@ -1,4 +1,6 @@
+
 #include "directed_moves_util.h"
+#include "centroid_move_generator.h"
 
 void get_coordinate_of_pin(ClusterPinId pin, t_physical_tile_loc& tile_loc) {
     auto& device_ctx = g_vpr_ctx.device();
@@ -98,16 +100,19 @@ void calculate_centroid_loc(ClusterBlockId b_from,
     }
 
     if (noc_attraction_enabled) {
-        if (place_ctx.cluster_to_noc_grp[b_from] != NocGroupId::INVALID()) {
+        NocGroupId noc_grp_id = CentroidMoveGenerator::get_cluster_noc_group(b_from);
 
-            NocGroupId noc_grp_id = place_ctx.cluster_to_noc_grp[b_from];
-            float single_noc_weight = (acc_weight * noc_attraction_weight) / place_ctx.noc_group_routers[noc_grp_id].size();
+        // check if the block belongs to a NoC group
+        if (noc_grp_id != NocGroupId::INVALID()) {
+            // get the routers in the associated NoC group
+            const auto& noc_routers = CentroidMoveGenerator::get_noc_group_routers(noc_grp_id);
+            float single_noc_weight = (acc_weight * noc_attraction_weight) / (float)noc_routers.size();
 
             acc_x *= (1.0f - noc_attraction_weight);
             acc_y *= (1.0f - noc_attraction_weight);
             acc_weight *= (1.0f - noc_attraction_weight);
 
-            for (ClusterBlockId router_blk_id : place_ctx.noc_group_routers[noc_grp_id]) {
+            for (ClusterBlockId router_blk_id : noc_routers) {
                 t_block_loc router_loc = place_ctx.block_locs[router_blk_id];
                 acc_x += router_loc.loc.x * single_noc_weight;
                 acc_y += router_loc.loc.y * single_noc_weight;
