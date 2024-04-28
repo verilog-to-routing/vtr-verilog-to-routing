@@ -1,5 +1,27 @@
 <traffic_flows>
 
+    <!--
+        Inspired by the triangular topology
+        introduced in [1], we lock down NoC routers at opposite
+        corners of the device, while NoC-attached PEs transmit
+        traffic flows in a triangular pattern. When the triangle’s
+        dimensions are smaller than the NoC, a congestion-free
+        mapping can be easily found. However, in our benchmarks,
+        perpendicular sides of the triangle have 11 NoC routers
+        while the FPGA being targeted contains a 10x10 mesh of
+        physical NoC routers, making a congestion-free solution
+        challenging. Fixed NoC routers are specified in
+        complex_64_noc_gaussian_elimination.fixed file, which is to be passed
+        to VPR by --fix_clusters command line option. Fixed clusters file
+        assume that the stratixiv_arch.timing_with_a_embedded_10X10_mesh_noc_topology.xml
+        architecture with EP4SE820 is selected.
+
+        [1] J. Wang, L. Guo, and J. Cong, “AutoSA: A polyhedral compiler for
+        high-performance systolic arrays on FPGA,” in The 2021 ACM/SIGDA
+        International Symposium on Field-Programmable Gate Arrays, pp. 93–
+        104, 2021.
+    -->
+
     <single_flow src=".*noc_router_adapter_block_1[^\d].*" dst=".*noc_router_adapter_block_2[^\d].*" bandwidth="1e6" latency_cons="7e-9" />
     <single_flow src=".*noc_router_adapter_block_2[^\d].*" dst=".*noc_router_adapter_block_3[^\d].*" bandwidth="1e6" latency_cons="7e-9" />
     <single_flow src=".*noc_router_adapter_block_3[^\d].*" dst=".*noc_router_adapter_block_4[^\d].*" bandwidth="1e6" latency_cons="7e-9" />

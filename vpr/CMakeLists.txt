@@ -43,10 +43,6 @@ file(GLOB_RECURSE LIB_SOURCES src/*/*.cpp)
 file(GLOB_RECURSE LIB_HEADERS src/*/*.h)
 files_to_dirs(LIB_HEADERS LIB_INCLUDE_DIRS)
 
-if(${VTR_ENABLE_CAPNPROTO})
-    add_definitions("-DVTR_ENABLE_CAPNPROTO")
-endif()
-
 if(${VPR_DEBUG_PARTITION_TREE})
     message(STATUS "VPR: Partition tree debug logs: enabled")
     add_definitions("-DVPR_DEBUG_PARTITION_TREE")
@@ -131,6 +127,7 @@ target_compile_definitions(libvpr PUBLIC ${GRAPHICS_DEFINES})
 
 if(${VTR_ENABLE_CAPNPROTO})
     target_link_libraries(libvpr libvtrcapnproto)
+    target_compile_definitions(libvpr PRIVATE VTR_ENABLE_CAPNPROTO)
 endif()
 
 add_executable(vpr ${EXEC_SOURCES})

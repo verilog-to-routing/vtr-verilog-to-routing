@@ -1,5 +1,29 @@
 <traffic_flows>
 
+    <!--
+
+          Inspired by the architecture proposed
+          in [1], we lock down two logical NoC routers on opposite
+          sides of an FPGA device to emulate hardened memory
+          controllers. This benchmark consists of nine processing
+          element (PE) lines where multiple NoC-attached PEs are
+          connected in a chain. The first fixed NoC router transmits
+          traffic flows to the first PE in each line, while the last PE
+          in each line transmits a traffic flow to the other fixed NoC
+          router. Fixed NoC routers are specified in
+          complex_64_noc_genome_seq.fixed file, which is to be passed
+          to VPR by --fix_clusters command line option. Fixed clusters file
+          assume that the stratixiv_arch.timing_with_a_embedded_10X10_mesh_noc_topology.xml
+          architecture with EP4SE820 is selected.
+
+          [1] L. Guo, J. Lau, Z. Ruan, P. Wei, and J. Cong, “Hardware acceleration of
+          long read pairwise overlapping in genome sequencing: A race between
+          FPGA and GPU,” in 2019 IEEE 27th Annual International Symposium on
+          Field-Programmable Custom Computing Machines (FCCM),
+          pp. 127–135, IEEE, 2019
+    -->
+
+
     <single_flow src=".*noc_router_adapter_block_1[^\d].*" dst=".*noc_router_adapter_block_2[^\d].*" bandwidth="3.33e5" />
     <single_flow src=".*noc_router_adapter_block_2[^\d].*" dst=".*noc_router_adapter_block_3[^\d].*" bandwidth="1e6" />
     <single_flow src=".*noc_router_adapter_block_3[^\d].*" dst=".*noc_router_adapter_block_4[^\d].*" bandwidth="1e6" />
