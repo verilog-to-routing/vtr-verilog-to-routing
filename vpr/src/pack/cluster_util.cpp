@@ -1372,7 +1372,7 @@ bool atom_cluster_floorplanning_check(AtomBlockId blk_id,
             if (verbosity > 3) {
                 VTR_LOG("\t\t\t Intersect: Atom block %d passed cluster %d, cluster PR was updated with intersection result \n", blk_id, clb_index);
             }
-            return false;
+            return true;
         }
     }
 }
