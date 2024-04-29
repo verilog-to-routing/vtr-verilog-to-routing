@@ -1,3 +1,10 @@
+
+
+#include "read_fpga_interchange_arch.h"
+#include "vtr_error.h"
+
+#ifdef VTR_ENABLE_CAPNPROTO
+
 #include <algorithm>
 #include <kj/std/iostream.h>
 #include <limits>
@@ -21,7 +28,6 @@
 #include "arch_util.h"
 #include "arch_types.h"
 
-#include "read_fpga_interchange_arch.h"
 
 /*
  * FPGA Interchange Device frontend
@@ -2497,11 +2503,14 @@ struct ArchReader {
     }
 };
 
+#endif  // VTR_ENABLE_CAPNPROTO
+
 void FPGAInterchangeReadArch(const char* FPGAInterchangeDeviceFile,
                              const bool /*timing_enabled*/,
                              t_arch* arch,
                              std::vector<t_physical_tile_type>& PhysicalTileTypes,
                              std::vector<t_logical_block_type>& LogicalBlockTypes) {
+#ifdef VTR_ENABLE_CAPNPROTO
     // Decompress GZipped capnproto device file
     gzFile file = gzopen(FPGAInterchangeDeviceFile, "r");
     VTR_ASSERT(file != Z_NULL);
@@ -2542,4 +2551,12 @@ void FPGAInterchangeReadArch(const char* FPGAInterchangeDeviceFile,
 
     ArchReader reader(arch, device_reader, FPGAInterchangeDeviceFile, PhysicalTileTypes, LogicalBlockTypes);
     reader.read_arch();
+#else   // VTR_ENABLE_CAPNPROTO
+    // If CAPNPROTO is disabled, throw an error.
+    (void)FPGAInterchangeDeviceFile;
+    (void)arch;
+    (void)PhysicalTileTypes;
+    (void)LogicalBlockTypes;
+    throw vtr::VtrError("Unable to read FPGA interchange if CAPNPROTO is not enabled", __FILE__, __LINE__);
+#endif  // VTR_ENABLE_CAPNPROTO
 }

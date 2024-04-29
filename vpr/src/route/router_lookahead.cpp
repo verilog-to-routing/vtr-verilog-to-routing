@@ -2,6 +2,7 @@
 
 #include "connection_router_interface.h"
 #include "router_lookahead_map.h"
+#include "router_lookahead_compressed_map.h"
 #include "router_lookahead_extended_map.h"
 #include "vpr_error.h"
 #include "globals.h"
@@ -16,6 +17,8 @@ static std::unique_ptr<RouterLookahead> make_router_lookahead_object(const t_det
         return std::make_unique<ClassicLookahead>();
     } else if (router_lookahead_type == e_router_lookahead::MAP) {
         return std::make_unique<MapLookahead>(det_routing_arch, is_flat);
+    } else if (router_lookahead_type == e_router_lookahead::COMPRESSED_MAP) {
+        return std::make_unique<CompressedMapLookahead>(det_routing_arch, is_flat);
     } else if (router_lookahead_type == e_router_lookahead::EXTENDED_MAP) {
         return std::make_unique<ExtendedMapLookahead>(is_flat);
     } else if (router_lookahead_type == e_router_lookahead::NO_OP) {

@@ -6,101 +6,126 @@
 
 # Tools
 ABC:
- - abc_with_bb_support/*
- - abc_with_bb_support/**/*
- - abc/*
- - abc/**/*
+- changed-files:
+  - any-glob-to-any-file: abc_with_bb_support/*
+  - any-glob-to-any-file: abc_with_bb_support/**/*
+  - any-glob-to-any-file: abc/*
+  - any-glob-to-any-file: abc/**/*
 ACE2:
- - ace2/*
- - ace2/**/*
+- changed-files:
+  - any-glob-to-any-file: ace2/*
+  - any-glob-to-any-file: ace2/**/*
 blifexplorer:
- - blifexplorer/*
- - blifexplorer/**/*
+- changed-files:
+  - any-glob-to-any-file: blifexplorer/*
+  - any-glob-to-any-file: blifexplorer/**/*
 Odin:
- - odin_ii/*
- - odin_ii/**/*
- - odin2_helper/*
- - odin2_helper/**/*
+- changed-files:
+  - any-glob-to-any-file: odin_ii/*
+  - any-glob-to-any-file: odin_ii/**/*
+  - any-glob-to-any-file: odin2_helper/*
+  - any-glob-to-any-file: odin2_helper/**/*
 Parmys:
- - parmys/*
- - parmys/**/*
- - yosys/*
- - yosys/**/*
+- changed-files:
+  - any-glob-to-any-file: parmys/*
+  - any-glob-to-any-file: parmys/**/*
+  - any-glob-to-any-file: yosys/*
+  - any-glob-to-any-file: yosys/**/*
 VPR:
- - vpr/*
- - vpr/**/*
+- changed-files:
+  - any-glob-to-any-file: vpr/*
+  - any-glob-to-any-file: vpr/**/*
 
 # Libraries
 libarchfpga:
- - libs/libarchfpga/*
- - libs/libarchfpga/**/*
+- changed-files:
+  - any-glob-to-any-file: libs/libarchfpga/*
+  - any-glob-to-any-file: libs/libarchfpga/**/*
 libeasygl:
- - libs/libeasygl/*
- - libs/libeasygl/**/*
+- changed-files:
+  - any-glob-to-any-file: libs/libeasygl/*
+  - any-glob-to-any-file: libs/libeasygl/**/*
 liblog:
- - libs/liblog/*
- - libs/liblog/**/*
+- changed-files:
+  - any-glob-to-any-file: libs/liblog/*
+  - any-glob-to-any-file: libs/liblog/**/*
 libpugiutil:
- - libs/libpugiutil/*
- - libs/libpugiutil/**/*
+- changed-files:
+  - any-glob-to-any-file: libs/libpugiutil/*
+  - any-glob-to-any-file: libs/libpugiutil/**/*
 libvtrutil:
- - libs/libvtrutil/*
- - libs/libvtrutil/**/*
+- changed-files:
+  - any-glob-to-any-file: libs/libvtrutil/*
+  - any-glob-to-any-file: libs/libvtrutil/**/*
 external_libs:
- - libs/EXTERNAL/*
- - libs/EXTERNAL/**/*
+- changed-files:
+  - any-glob-to-any-file: libs/EXTERNAL/*
+  - any-glob-to-any-file: libs/EXTERNAL/**/*
 
 # General areas
 docs:
- - docs/*
- - docs/**/*
- - "*README*"
- - "*.md"
- - tutorial
- - "*.rst"
+- changed-files:
+  - any-glob-to-any-file: doc/*
+  - any-glob-to-any-file: doc/**/*
+  - any-glob-to-any-file: "*README*"
+  - any-glob-to-any-file: "*.md"
+  - any-glob-to-any-file: "*.rst"
 infra:
- - .github/*
- - .github/**/*
- - Dockerfile
- - "*docker*"
+- changed-files:
+  - any-glob-to-any-file: .github/*
+  - any-glob-to-any-file: .github/**/*
+  - any-glob-to-any-file: Dockerfile
+  - any-glob-to-any-file: "*docker*"
 build:
- - Makefile
- - "*.make"
- - CMakeLists.txt
- - cmake
+- changed-files:
+  - any-glob-to-any-file: Makefile
+  - any-glob-to-any-file: "*.make"
+  - any-glob-to-any-file: CMakeLists.txt
+  - any-glob-to-any-file: cmake/*
+  - any-glob-to-any-file: cmake/**/*
 tests:
- - "*_test.py"
- - "*test*"
- - "*TESTS*"
+- changed-files:
+  - any-glob-to-any-file: "*_test.py"
+  - any-glob-to-any-file: "*test*"
+  - any-glob-to-any-file: "*TESTS*"
 scripts:
- - scripts
- - "*.pl"
- - "*.py"
- - "*.sh"
+- changed-files:
+  - any-glob-to-any-file: scripts
+  - any-glob-to-any-file: "*.pl"
+  - any-glob-to-any-file: "*.py"
+  - any-glob-to-any-file: "*.sh"
 VTR Flow:
- - vtr_flow
+- changed-files:
+  - any-glob-to-any-file: vtr_flow
 
 # Tag pull requests with the languages used to make it easy to see what is
 # being used.
 lang-hdl:
- - "*.v"
- - "*.sv"
+- changed-files:
+  - any-glob-to-any-file: "**/*.v"
+  - any-glob-to-any-file: "**/*.sv"
 lang-cpp:
- - "*.c*"
- - "*.h"
+- changed-files:
+  - any-glob-to-any-file: "**/*.c*"
+  - any-glob-to-any-file: "**/*.h"
 lang-perl:
- - "*.pl"
- - "*perl*"
+- changed-files:
+  - any-glob-to-any-file: "**/*.pl"
+  - any-glob-to-any-file: "**/*perl*"
 lang-python:
- - "*.py"
+- changed-files:
+  - any-glob-to-any-file: "**/*.py"
 lang-shell:
- - "*.sh"
+- changed-files:
+  - any-glob-to-any-file: "**/*.sh"
 lang-netlist:
- - "*.blif"
- - "*.eblif"
- - "*.edif"
- - "*.vqm"
+- changed-files:
+  - any-glob-to-any-file: "**/*.blif"
+  - any-glob-to-any-file: "**/*.eblif"
+  - any-glob-to-any-file: "**/*.edif"
+  - any-glob-to-any-file: "**/*.vqm"
 lang-make:
- - "*.make"
- - Makefile
- - CMakeLists.txt
+- changed-files:
+  - any-glob-to-any-file: "**/*.make"
+  - any-glob-to-any-file: "**/*Makefile"
+  - any-glob-to-any-file: "**/CMakeLists.txt"

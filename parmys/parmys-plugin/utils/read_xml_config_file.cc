@@ -81,7 +81,7 @@ void read_config_file(const char *file_name)
         read_debug_switches(next, &configuration, loc_data);
 
     } catch (XmlError &e) {
-        log("error: could not parse xml configuration file '%s': %s\n", file_name, e.what());
+        log("ERROR: could not parse xml configuration file '%s': %s\n", file_name, e.what());
         return;
     }
 

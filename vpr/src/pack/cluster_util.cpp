@@ -1500,6 +1500,7 @@ void try_fill_cluster(const t_packer_opts& packer_opts,
                       bool allow_unrelated_clustering,
                       const int& high_fanout_threshold,
                       const std::unordered_set<AtomNetId>& is_clock,
+                      const std::unordered_set<AtomNetId>& is_global,
                       const std::shared_ptr<SetupTimingInfo>& timing_info,
                       t_lb_router_data* router_data,
                       t_ext_pin_util target_ext_pin_util,
@@ -1594,8 +1595,8 @@ void try_fill_cluster(const t_packer_opts& packer_opts,
                       attraction_groups);
 
     update_cluster_stats(next_molecule, clb_index,
-                         is_clock, //Set of all clocks
-                         is_clock, //Set of all global signals (currently clocks)
+                         is_clock,  //Set of all clocks
+                         is_global, //Set of all global signals (currently clocks)
                          packer_opts.global_clocks, packer_opts.alpha, packer_opts.beta, packer_opts.timing_driven,
                          packer_opts.connection_driven,
                          high_fanout_threshold,
@@ -1642,7 +1643,7 @@ t_pack_molecule* save_cluster_routing_and_pick_new_seed(const t_packer_opts& pac
     router_data->saved_lb_nets = nullptr;
 
     //Pick a new seed
-    next_seed = get_highest_gain_seed_molecule(&seedindex, seed_atoms);
+    next_seed = get_highest_gain_seed_molecule(seedindex, seed_atoms);
 
     if (packer_opts.timing_driven) {
         if (num_blocks_hill_added > 0) {
@@ -2101,9 +2102,7 @@ void start_new_cluster(t_cluster_placement_stats* cluster_placement_stats,
 
     //Try packing into each candidate type
     bool success = false;
-    for (size_t i = 0; i < candidate_types.size(); i++) {
-        auto type = candidate_types[i];
-
+    for (auto type : candidate_types) {
         t_pb* pb = new t_pb;
         pb->pb_graph_node = type->pb_graph_head;
         alloc_and_load_pb_stats(pb, feasible_block_array_size);
@@ -2670,13 +2669,10 @@ t_molecule_stats calc_max_molecules_stats(const t_pack_molecule* molecule_head) 
 std::vector<AtomBlockId> initialize_seed_atoms(const e_cluster_seed seed_type,
                                                const t_molecule_stats& max_molecule_stats,
                                                const vtr::vector<AtomBlockId, float>& atom_criticality) {
-    std::vector<AtomBlockId> seed_atoms;
+    auto& atom_ctx = g_vpr_ctx.atom();
 
     //Put all atoms in seed list
-    auto& atom_ctx = g_vpr_ctx.atom();
-    for (auto blk : atom_ctx.nlist.blocks()) {
-        seed_atoms.emplace_back(blk);
-    }
+    std::vector<AtomBlockId> seed_atoms(atom_ctx.nlist.blocks().begin(), atom_ctx.nlist.blocks().end());
 
     //Initially all gains are zero
     vtr::vector<AtomBlockId, float> atom_gains(atom_ctx.nlist.blocks().size(), 0.);
@@ -2826,15 +2822,18 @@ std::vector<AtomBlockId> initialize_seed_atoms(const e_cluster_seed seed_type,
     return seed_atoms;
 }
 
-t_pack_molecule* get_highest_gain_seed_molecule(int* seedindex, const std::vector<AtomBlockId> seed_atoms) {
+t_pack_molecule* get_highest_gain_seed_molecule(int& seed_index, const std::vector<AtomBlockId>& seed_atoms) {
     auto& atom_ctx = g_vpr_ctx.atom();
 
-    while (*seedindex < static_cast<int>(seed_atoms.size())) {
-        AtomBlockId blk_id = seed_atoms[(*seedindex)++];
+    while (seed_index < static_cast<int>(seed_atoms.size())) {
+        AtomBlockId blk_id = seed_atoms[seed_index++];
 
+        // Check if the atom has already been assigned to a cluster
         if (atom_ctx.lookup.atom_clb(blk_id) == ClusterBlockId::INVALID()) {
             t_pack_molecule* best = nullptr;
 
+            // Iterate over all the molecules associated with the selected atom
+            // and select the one with the highest gain
             auto rng = atom_ctx.atom_molecules.equal_range(blk_id);
             for (const auto& kv : vtr::make_range(rng.first, rng.second)) {
                 t_pack_molecule* molecule = kv.second;
@@ -3346,11 +3345,15 @@ std::map<const t_model*, std::vector<t_logical_block_type_ptr>> identify_primiti
     auto& device_ctx = g_vpr_ctx.device();
 
     std::set<const t_model*> unique_models;
+    // Find all logic models used in the netlist
     for (auto blk : atom_nlist.blocks()) {
         auto model = atom_nlist.block_model(blk);
         unique_models.insert(model);
     }
 
+    /* For each technology-mapped logic model, find logical block types
+     * that can accommodate that logic model
+     */
     for (auto model : unique_models) {
         model_candidates[model] = {};
 
@@ -3689,6 +3692,11 @@ void init_clb_atoms_lookup(vtr::vector<ClusterBlockId, std::unordered_set<AtomBl
     for (auto atom_blk_id : atom_ctx.nlist.blocks()) {
         ClusterBlockId clb_index = atom_ctx.lookup.atom_clb(atom_blk_id);
 
-        atoms_lookup[clb_index].insert(atom_blk_id);
+        /* if this data structure is being built alongside the clustered netlist    */
+        /* e.g. when ingesting and legalizing a flat placement solution, some atoms */
+        /* may not yet be mapped to a valid clb_index                               */
+        if (clb_index != ClusterBlockId::INVALID()) {
+            atoms_lookup[clb_index].insert(atom_blk_id);
+        }
     }
 }

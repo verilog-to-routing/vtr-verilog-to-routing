@@ -57,7 +57,7 @@ class ParallelNetlistRouter : public NetlistRouter {
 
   private:
     /** A single task to route nets inside a PartitionTree node and add tasks for its child nodes to task group \p g. */
-    void route_partition_tree_node(tbb::task_group& g, PartitionTreeNode& node, int itry, float pres_fac, float worst_neg_slack);
+    void route_partition_tree_node(tbb::task_group& g, PartitionTreeNode& node);
 
     ConnectionRouter<HeapType> _make_router(const RouterLookahead* router_lookahead, bool is_flat) {
         auto& device_ctx = g_vpr_ctx.device();
@@ -74,11 +74,13 @@ class ParallelNetlistRouter : public NetlistRouter {
             is_flat);
     }
 
-    /* Context fields */
+    /* Context fields. Most of them will be forwarded to route_net (see route_net.tpp) */
+    /** Per-thread storage for ConnectionRouters. */
     tbb::enumerable_thread_specific<ConnectionRouter<HeapType>> _routers_th;
     const Netlist<>& _net_list;
     const t_router_opts& _router_opts;
     CBRR& _connections_inf;
+    /** Per-thread storage for RouteIterResults. */
     tbb::enumerable_thread_specific<RouteIterResults> _results_th;
     NetPinsMatrix<float>& _net_delay;
     const ClusteredPinAtomPinsLookup& _netlist_pin_lookup;
@@ -88,6 +90,11 @@ class ParallelNetlistRouter : public NetlistRouter {
     const RoutingPredictor& _routing_predictor;
     const vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>>& _choking_spots;
     bool _is_flat;
+
+    /** Cached routing parameters for current iteration (inputs to \see route_netlist()) */
+    int _itry;
+    float _pres_fac;
+    float _worst_neg_slack;
 };
 
 #include "ParallelNetlistRouter.tpp"

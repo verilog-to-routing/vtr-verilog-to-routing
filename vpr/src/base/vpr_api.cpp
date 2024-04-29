@@ -251,7 +251,7 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
      * Initialize the functions names for which VPR_ERRORs
      * are demoted to VTR_LOG_WARNs
      */
-    for (std::string func_name : vtr::split(options->disable_errors, std::string(":"))) {
+    for (const std::string& func_name : vtr::split(options->disable_errors.value(), ":")) {
         map_error_activation_status(func_name);
     }
 
@@ -259,7 +259,7 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
      * Initialize the functions names for which
      * warnings are being suppressed
      */
-    std::vector<std::string> split_warning_option = vtr::split(options->suppress_warnings, std::string(","));
+    std::vector<std::string> split_warning_option = vtr::split(options->suppress_warnings.value(), ",");
     std::string warn_log_file;
     std::string warn_functions;
     // If no log file name is provided, the specified warning
@@ -272,7 +272,7 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
     }
 
     set_noisy_warn_log_file(warn_log_file);
-    for (std::string func_name : vtr::split(warn_functions, std::string(":"))) {
+    for (const std::string& func_name : vtr::split(warn_functions, std::string(":"))) {
         add_warnings_to_suppress(func_name);
     }
 
@@ -507,7 +507,7 @@ void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
     if (!device_ctx.grid.limiting_resources().empty()) {
         std::vector<std::string> limiting_block_names;
         for (auto blk_type : device_ctx.grid.limiting_resources()) {
-            limiting_block_names.push_back(blk_type->name);
+            limiting_block_names.emplace_back(blk_type->name);
         }
         VTR_LOG("FPGA size limited by block type(s): %s\n", vtr::join(limiting_block_names, " ").c_str());
         VTR_LOG("\n");
@@ -559,13 +559,12 @@ void vpr_setup_noc(const t_vpr_setup& vpr_setup, const t_arch& arch) {
  * @param noc_routing_algorithm_name A user provided string that identifies a
  * NoC routing algorithm
  */
-void vpr_setup_noc_routing_algorithm(std::string noc_routing_algorithm_name) {
+void vpr_setup_noc_routing_algorithm(const std::string& noc_routing_algorithm_name) {
     // Need to be abke to modify the NoC context, since we will be adding the
     // newly created routing algorithm to it
     auto& noc_ctx = g_vpr_ctx.mutable_noc();
 
-    noc_ctx.noc_flows_router = NocRoutingAlgorithmCreator().create_routing_algorithm(noc_routing_algorithm_name);
-    return;
+    noc_ctx.noc_flows_router = NocRoutingAlgorithmCreator::create_routing_algorithm(noc_routing_algorithm_name);
 }
 
 bool vpr_pack_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
@@ -598,7 +597,7 @@ bool vpr_pack_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
         check_netlist(packer_opts.pack_verbosity);
 
         /* Output the netlist stats to console and optionally to file. */
-        writeClusteredNetlistStats(vpr_setup.FileNameOpts.write_block_usage.c_str());
+        writeClusteredNetlistStats(vpr_setup.FileNameOpts.write_block_usage);
 
         // print the total number of used physical blocks for each
         // physical block type after finishing the packing stage
@@ -1085,7 +1084,7 @@ static void get_intercluster_switch_fanin_estimates(const t_vpr_setup& vpr_setup
 
     auto type = find_most_common_tile_type(grid);
     /* get Fc_in/out for most common block (e.g. logic blocks) */
-    VTR_ASSERT(type->fc_specs.size() > 0);
+    VTR_ASSERT(!type->fc_specs.empty());
 
     //Estimate the maximum Fc_in/Fc_out
 
@@ -1208,10 +1207,7 @@ static void free_routing() {
 /**
  * @brief handles the deletion of NoC related datastructures.
  */
-static void free_noc() {
-    auto& noc_ctx = g_vpr_ctx.mutable_noc();
-    delete noc_ctx.noc_flows_router;
-}
+static void free_noc() {}
 
 void vpr_free_vpr_data_structures(t_arch& Arch,
                                   t_vpr_setup& vpr_setup) {

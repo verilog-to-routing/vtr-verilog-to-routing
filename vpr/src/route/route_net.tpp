@@ -2,8 +2,9 @@
 
 /** @file Header implementations for templated net routing fns. */
 
-#include <tuple>
 #include "route_net.h"
+
+#include <tuple>
 
 #include "connection_router_interface.h"
 #include "describe_rr_node.h"
@@ -12,6 +13,7 @@
 #include "route_debug.h"
 #include "route_profiling.h"
 #include "rr_graph_fwd.h"
+#include "vtr_dynamic_bitset.h"
 
 /** Attempt to route a single net.
  *
@@ -34,6 +36,9 @@
  * @param routing_predictor
  * @param choking_spots
  * @param is_flat
+ * @param net_bb Bounding box for the net (Routing resources outside net_bb will not be used)
+ * @param should_setup Should we reset/prune the existing route tree first?
+ * @param sink_mask Which sinks to route? Assumed all sinks if nullopt, otherwise a mask of [1..num_sinks+1] where set bits request the sink to be routed
  * @return NetResultFlags for this net */
 template<typename ConnectionRouter>
 inline NetResultFlags route_net(ConnectionRouter& router,
@@ -52,26 +57,17 @@ inline NetResultFlags route_net(ConnectionRouter& router,
                                 float worst_negative_slack,
                                 const RoutingPredictor& routing_predictor,
                                 const std::vector<std::unordered_map<RRNodeId, int>>& choking_spots,
-                                bool is_flat) {
+                                bool is_flat,
+                                const t_bb& net_bb,
+                                bool should_setup = true,
+                                vtr::optional<const vtr::dynamic_bitset<>&> sink_mask = vtr::nullopt) {
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
     NetResultFlags flags;
-
-    bool reroute_for_hold = false;
-    if (budgeting_inf.if_set()) {
-        reroute_for_hold = (budgeting_inf.get_should_reroute(net_id));
-        reroute_for_hold &= worst_negative_slack != 0;
-    }
-
     flags.success = true;
 
-    if (route_ctx.net_status.is_fixed(net_id)) { /* Skip pre-routed nets. */
+    if (!should_route_net(net_list, net_id, connections_inf, budgeting_inf, worst_negative_slack, true))
         return flags;
-    } else if (net_list.net_is_ignored(net_id)) { /* Skip ignored nets. */
-        return flags;
-    } else if (!(reroute_for_hold) && !should_route_net(net_id, connections_inf, true)) {
-        return flags;
-    }
 
     // track time spent vs fanout
     profiling::net_fanout_start();
@@ -85,15 +81,16 @@ inline NetResultFlags route_net(ConnectionRouter& router,
 
     VTR_LOGV_DEBUG(f_router_debug, "Routing Net %zu (%zu sinks)\n", size_t(net_id), num_sinks);
 
-    setup_routing_resources(
-        itry,
-        net_id,
-        net_list,
-        num_sinks,
-        router_opts.min_incremental_reroute_fanout,
-        connections_inf,
-        router_opts,
-        check_hold(router_opts, worst_negative_slack));
+    /* Prune or rip-up existing routing for the net */
+    if (should_setup) {
+        setup_net(
+            itry,
+            net_id,
+            net_list,
+            connections_inf,
+            router_opts,
+            worst_negative_slack);
+    }
 
     VTR_ASSERT(route_ctx.route_trees[net_id]);
     RouteTree& tree = route_ctx.route_trees[net_id].value();
@@ -113,7 +110,11 @@ inline NetResultFlags route_net(ConnectionRouter& router,
 
     // after this point the route tree is correct
     // remaining_targets from this point on are the **pin indices** that have yet to be routed
-    std::vector<int> remaining_targets(tree.get_remaining_isinks().begin(), tree.get_remaining_isinks().end());
+    auto remaining_targets_mask = ~tree.get_is_isink_reached();
+    if (sink_mask)
+        remaining_targets_mask &= sink_mask.value();
+
+    auto remaining_targets = sink_mask_to_vector(remaining_targets_mask, num_sinks);
 
     // calculate criticality of remaining target pins
     for (int ipin : remaining_targets) {
@@ -205,13 +206,14 @@ inline NetResultFlags route_net(ConnectionRouter& router,
                                      budgeting_inf,
                                      routing_predictor,
                                      choking_spots,
-                                     is_flat);
+                                     is_flat,
+                                     net_bb);
 
         flags.retry_with_full_bb |= sink_flags.retry_with_full_bb;
 
         if (!sink_flags.success) {
             flags.success = false;
-            VTR_LOG("Routing failed for net %d\n", net_id);
+            VTR_LOG("Routing failed for sink %d of net %d\n", target_pin, net_id);
             return flags;
         }
 
@@ -366,6 +368,7 @@ inline NetResultFlags pre_route_to_clock_root(ConnectionRouter& router,
  * @param routing_predictor
  * @param choking_spots
  * @param is_flat
+ * @param net_bb Bounding box for the net (Routing resources outside net_bb will not be used)
  * @return NetResultFlags for this sink to be bubbled up through route_net */
 template<typename ConnectionRouter>
 inline NetResultFlags route_sink(ConnectionRouter& router,
@@ -381,7 +384,8 @@ inline NetResultFlags route_sink(ConnectionRouter& router,
                                  route_budgets& budgeting_inf,
                                  const RoutingPredictor& routing_predictor,
                                  const std::vector<std::unordered_map<RRNodeId, int>>& choking_spots,
-                                 bool is_flat) {
+                                 bool is_flat,
+                                 const t_bb& net_bb) {
     const auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
@@ -396,7 +400,6 @@ inline NetResultFlags route_sink(ConnectionRouter& router,
 
     bool found_path;
     t_heap cheapest;
-    t_bb bounding_box = route_ctx.route_bb[net_id];
 
     bool net_is_global = net_list.net_is_global(net_id);
     bool high_fanout = is_high_fanout(net_list.net_sinks(net_id).size(), router_opts.high_fanout_threshold);
@@ -414,7 +417,7 @@ inline NetResultFlags route_sink(ConnectionRouter& router,
         std::tie(found_path, flags.retry_with_full_bb, cheapest) = router.timing_driven_route_connection_from_route_tree_high_fanout(tree.root(),
                                                                                                                                      sink_node,
                                                                                                                                      cost_params,
-                                                                                                                                     bounding_box,
+                                                                                                                                     net_bb,
                                                                                                                                      spatial_rt_lookup,
                                                                                                                                      router_stats,
                                                                                                                                      conn_params);
@@ -422,7 +425,7 @@ inline NetResultFlags route_sink(ConnectionRouter& router,
         std::tie(found_path, flags.retry_with_full_bb, cheapest) = router.timing_driven_route_connection_from_route_tree(tree.root(),
                                                                                                                          sink_node,
                                                                                                                          cost_params,
-                                                                                                                         bounding_box,
+                                                                                                                         net_bb,
                                                                                                                          router_stats,
                                                                                                                          conn_params);
     }
@@ -444,9 +447,6 @@ inline NetResultFlags route_sink(ConnectionRouter& router,
     }
 
     profiling::sink_criticality_end(cost_params.criticality);
-
-    RRNodeId inode(cheapest.index);
-    route_ctx.rr_node_route_inf[inode].target_flag--; /* Connected to this SINK. */
 
     vtr::optional<const RouteTreeNode&> new_branch, new_sink;
     std::tie(new_branch, new_sink) = tree.update_from_heap(&cheapest, target_pin, ((high_fanout) ? &spatial_rt_lookup : nullptr), is_flat);
