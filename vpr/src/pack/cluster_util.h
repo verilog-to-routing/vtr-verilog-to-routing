@@ -213,7 +213,8 @@ e_block_pack_status try_pack_molecule(t_cluster_placement_stats* cluster_placeme
                                       bool enable_pin_feasibility_filter,
                                       int feasible_block_array_size,
                                       t_ext_pin_util max_external_pin_util,
-                                      PartitionRegion& temp_cluster_pr);
+                                      PartitionRegion& temp_cluster_pr,
+                                      NocGroupId& temp_noc_grp_id);
 
 void try_fill_cluster(const t_packer_opts& packer_opts,
                       t_cluster_placement_stats* cur_cluster_placement_stats_ptr,
@@ -237,6 +238,7 @@ void try_fill_cluster(const t_packer_opts& packer_opts,
                       t_lb_router_data* router_data,
                       t_ext_pin_util target_ext_pin_util,
                       PartitionRegion& temp_cluster_pr,
+                      NocGroupId& temp_noc_grp_id,
                       e_block_pack_status& block_pack_status,
                       t_molecule_link* unclustered_list_head,
                       const int& unclustered_list_head_size,
@@ -283,6 +285,10 @@ bool atom_cluster_floorplanning_check(AtomBlockId blk_id,
                                       int verbosity,
                                       PartitionRegion& temp_cluster_pr,
                                       bool& cluster_pr_needs_update);
+
+bool atom_cluster_noc_group_check(AtomBlockId blk_id,
+                                  int verbosity,
+                                  NocGroupId& temp_cluster_noc_grp_id);
 
 void revert_place_atom_block(const AtomBlockId blk_id, t_lb_router_data* router_data);
 
@@ -341,7 +347,8 @@ void start_new_cluster(t_cluster_placement_stats* cluster_placement_stats,
                        bool enable_pin_feasibility_filter,
                        bool balance_block_type_utilization,
                        const int feasible_block_array_size,
-                       PartitionRegion& temp_cluster_pr);
+                       PartitionRegion& temp_cluster_pr,
+                       NocGroupId& temp_noc_grp_id);
 
 t_pack_molecule* get_highest_gain_molecule(t_pb* cur_pb,
                                            AttractionInfo& attraction_groups,

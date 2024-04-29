@@ -352,6 +352,9 @@ struct ClusteringHelperContext : public Context {
     // A vector of unordered_sets of AtomBlockIds that are inside each clustered block [0 .. num_clustered_blocks-1]
     // unordered_set for faster insertion/deletion during the iterative improvement process of packing
     vtr::vector<ClusterBlockId, std::unordered_set<AtomBlockId>> atoms_lookup;
+
+    vtr::vector<AtomBlockId, NocGroupId> atom_noc_grp_id;
+
     ~ClusteringHelperContext() {
         delete[] primitives_list;
     }
@@ -512,7 +515,7 @@ struct FloorplanningContext : public Context {
 /**
  * @brief State of the Network on Chip (NoC)
  *
- * This should only contain data structures related to descrbing the
+ * This should only contain data structures related to describing the
  * NoC within the device.
  */
 struct NocContext : public Context {

@@ -931,7 +931,8 @@ e_block_pack_status try_pack_molecule(t_cluster_placement_stats* cluster_placeme
                                       bool enable_pin_feasibility_filter,
                                       int feasible_block_array_size,
                                       t_ext_pin_util max_external_pin_util,
-                                      PartitionRegion& temp_cluster_pr) {
+                                      PartitionRegion& temp_cluster_pr,
+                                      NocGroupId& temp_noc_grp_id) {
     t_pb* parent;
     t_pb* cur_pb;
 
@@ -985,6 +986,20 @@ e_block_pack_status try_pack_molecule(t_cluster_placement_stats* cluster_placeme
 
             if (cluster_pr_needs_update) {
                 cluster_pr_update_check = true;
+            }
+        }
+    }
+
+    // check if all atoms in the molecule can be added to the cluster without NoC group conflicts
+    for (int i_mol = 0; i_mol < molecule_size; i_mol++) {
+        if (molecule->atom_block_ids[i_mol]) {
+            bool block_pack_noc_grp_status = atom_cluster_noc_group_check(molecule->atom_block_ids[i_mol],
+                                                                          verbosity, temp_noc_grp_id);
+
+            if (!block_pack_noc_grp_status) {
+                //Record the failure of this molecule in the current pb stats
+                record_molecule_failure(molecule, pb);
+                return e_block_pack_status::BLK_FAILED_NOC_GROUP;
             }
         }
     }
@@ -1362,6 +1377,28 @@ bool atom_cluster_floorplanning_check(AtomBlockId blk_id,
     }
 }
 
+bool atom_cluster_noc_group_check(AtomBlockId blk_id,
+                                  int verbosity,
+                                  NocGroupId& temp_cluster_noc_grp_id) {
+    const NocGroupId atom_noc_grp_id = g_vpr_ctx.cl_helper().atom_noc_grp_id[blk_id];
+
+
+    if (temp_cluster_noc_grp_id == NocGroupId::INVALID()) {
+        // the cluster does not have a NoC group
+        // assign the atom's NoC group to cluster
+        temp_cluster_noc_grp_id = atom_noc_grp_id;
+        return true;
+    } else if (temp_cluster_noc_grp_id == atom_noc_grp_id) {
+        // the cluster has the same NoC group ID as the atom,
+        // so they are compatible
+        return true;
+    } else {
+        // the cluster belongs to a different NoC group than the atom's group,
+        // so they are incompatible
+        return false;
+    }
+}
+
 /* Revert trial atom block iblock and free up memory space accordingly
  */
 void revert_place_atom_block(const AtomBlockId blk_id, t_lb_router_data* router_data) {
@@ -1497,6 +1534,7 @@ void try_fill_cluster(const t_packer_opts& packer_opts,
                       t_lb_router_data* router_data,
                       t_ext_pin_util target_ext_pin_util,
                       PartitionRegion& temp_cluster_pr,
+                      NocGroupId& temp_noc_grp_id,
                       e_block_pack_status& block_pack_status,
                       t_molecule_link* unclustered_list_head,
                       const int& unclustered_list_head_size,
@@ -1519,7 +1557,8 @@ void try_fill_cluster(const t_packer_opts& packer_opts,
                                           packer_opts.enable_pin_feasibility_filter,
                                           packer_opts.feasible_block_array_size,
                                           target_ext_pin_util,
-                                          temp_cluster_pr);
+                                          temp_cluster_pr,
+                                          temp_noc_grp_id);
 
     auto blk_id = next_molecule->atom_block_ids[next_molecule->root];
     VTR_ASSERT(blk_id);
@@ -2041,7 +2080,8 @@ void start_new_cluster(t_cluster_placement_stats* cluster_placement_stats,
                        bool enable_pin_feasibility_filter,
                        bool balance_block_type_utilization,
                        const int feasible_block_array_size,
-                       PartitionRegion& temp_cluster_pr) {
+                       PartitionRegion& temp_cluster_pr,
+                       NocGroupId& temp_noc_grp_id) {
     /* Given a starting seed block, start_new_cluster determines the next cluster type to use
      * It expands the FPGA if it cannot find a legal cluster for the atom block
      */
@@ -2123,7 +2163,8 @@ void start_new_cluster(t_cluster_placement_stats* cluster_placement_stats,
                                             enable_pin_feasibility_filter,
                                             feasible_block_array_size,
                                             FULL_EXTERNAL_PIN_UTIL,
-                                            temp_cluster_pr);
+                                            temp_cluster_pr,
+                                            temp_noc_grp_id);
 
             success = (pack_result == e_block_pack_status::BLK_PASSED);
         }

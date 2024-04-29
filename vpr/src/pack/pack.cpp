@@ -272,21 +272,6 @@ bool try_pack(t_packer_opts* packer_opts,
     //check clustering and output it
     check_and_output_clustering(*packer_opts, is_clock, arch, helper_ctx.total_clb_num, clustering_data.intra_lb_routing);
 
-
-    g_vpr_ctx.mutable_floorplanning().constraints = constraints_backup;
-    const int max_y = (int)g_vpr_ctx.device().grid.height();
-    const int max_x = (int)g_vpr_ctx.device().grid.width();
-    for (auto& cluster_partition_region : g_vpr_ctx.mutable_floorplanning().cluster_constraints) {
-        const auto& regions = cluster_partition_region.get_regions();
-        if (regions.size() == 1) {
-            const auto rect = regions[0].get_region_rect();
-
-            if (rect.xmin <= 0 && rect.ymin <= 0 && rect.xmax >= max_x && rect.ymax >= max_y) {
-                cluster_partition_region = PartitionRegion();
-            }
-        }
-    }
-
     // Free Data Structures
     free_clustering_data(*packer_opts, clustering_data);
 

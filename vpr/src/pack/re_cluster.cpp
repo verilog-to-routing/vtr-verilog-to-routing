@@ -16,6 +16,7 @@ bool move_mol_to_new_cluster(t_pack_molecule* molecule,
     ClusterBlockId old_clb = atom_to_cluster(molecule->atom_block_ids[molecule->root]);
     int molecule_size = get_array_size_of_molecule(molecule);
 
+    NocGroupId temp_noc_grp_id = NocGroupId::INVALID();
     PartitionRegion temp_cluster_pr;
     t_lb_router_data* old_router_data = nullptr;
     t_lb_router_data* router_data = nullptr;
@@ -66,7 +67,8 @@ bool move_mol_to_new_cluster(t_pack_molecule* molecule,
                                            verbosity,
                                            clustering_data,
                                            &router_data,
-                                           temp_cluster_pr);
+                                           temp_cluster_pr,
+                                           temp_noc_grp_id);
 
     //Commit or revert the move
     if (is_created) {

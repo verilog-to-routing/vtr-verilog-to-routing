@@ -243,6 +243,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
              * Since some of the primitives might fail legality, this structure temporarily
              * stores PartitionRegion information while the cluster is packed*/
             PartitionRegion temp_cluster_pr;
+            NocGroupId temp_cluster_noc_grp_id = NocGroupId::INVALID();
 
             start_new_cluster(helper_ctx.cluster_placement_stats, helper_ctx.primitives_list,
                               clb_index, istart,
@@ -257,7 +258,8 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                               packer_opts.enable_pin_feasibility_filter,
                               balance_block_type_utilization,
                               packer_opts.feasible_block_array_size,
-                              temp_cluster_pr);
+                              temp_cluster_pr,
+                              temp_cluster_noc_grp_id);
 
             //initial molecule in cluster has been processed
             cluster_stats.num_molecules_processed++;
@@ -356,6 +358,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                                  router_data,
                                  target_ext_pin_util,
                                  temp_cluster_pr,
+                                 temp_cluster_noc_grp_id,
                                  block_pack_status,
                                  clustering_data.unclustered_list_head,
                                  unclustered_list_head_size,

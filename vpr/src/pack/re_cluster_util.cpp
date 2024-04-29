@@ -8,6 +8,7 @@
 #include "initial_placement.h"
 #include "read_netlist.h"
 
+
 //The name suffix of the new block (if exists)
 const char* name_suffix = "_m";
 
@@ -122,7 +123,8 @@ bool start_new_cluster_for_mol(t_pack_molecule* molecule,
                                int verbosity,
                                t_clustering_data& clustering_data,
                                t_lb_router_data** router_data,
-                               PartitionRegion& temp_cluster_pr) {
+                               PartitionRegion& temp_cluster_pr,
+                               NocGroupId& temp_cluster_noc_grp_id) {
     auto& atom_ctx = g_vpr_ctx.atom();
     auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
     auto& helper_ctx = g_vpr_ctx.mutable_cl_helper();
@@ -162,7 +164,8 @@ bool start_new_cluster_for_mol(t_pack_molecule* molecule,
                                     enable_pin_feasibility_filter,
                                     0,
                                     FULL_EXTERNAL_PIN_UTIL,
-                                    temp_cluster_pr);
+                                    temp_cluster_pr,
+                                    temp_cluster_noc_grp_id);
 
     // If clustering succeeds, add it to the clb netlist
     if (pack_result == e_block_pack_status::BLK_PASSED) {
@@ -206,6 +209,7 @@ bool pack_mol_in_existing_cluster(t_pack_molecule* molecule,
     auto& helper_ctx = g_vpr_ctx.mutable_cl_helper();
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
 
+    NocGroupId temp_cluster_noc_grp_id;
     PartitionRegion temp_cluster_pr;
     e_block_pack_status pack_result = e_block_pack_status::BLK_STATUS_UNDEFINED;
     t_ext_pin_util target_ext_pin_util = helper_ctx.target_external_pin_util.get_pin_util(cluster_ctx.clb_nlist.block_type(new_clb)->name);
@@ -235,7 +239,8 @@ bool pack_mol_in_existing_cluster(t_pack_molecule* molecule,
                                     //false,
                                     helper_ctx.feasible_block_array_size,
                                     target_ext_pin_util,
-                                    temp_cluster_pr);
+                                    temp_cluster_pr,
+                                    temp_cluster_noc_grp_id);
 
     // If clustering succeeds, add it to the clb netlist
     if (pack_result == e_block_pack_status::BLK_PASSED) {
@@ -282,6 +287,7 @@ void revert_mol_move(const ClusterBlockId& old_clb,
     auto& helper_ctx = g_vpr_ctx.mutable_cl_helper();
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
 
+    NocGroupId temp_cluster_noc_grp_id_original;
     PartitionRegion temp_cluster_pr_original;
     e_block_pack_status pack_result = try_pack_molecule(&(helper_ctx.cluster_placement_stats[cluster_ctx.clb_nlist.block_type(old_clb)->index]),
                                                         molecule,
@@ -296,7 +302,8 @@ void revert_mol_move(const ClusterBlockId& old_clb,
                                                         helper_ctx.enable_pin_feasibility_filter,
                                                         helper_ctx.feasible_block_array_size,
                                                         helper_ctx.target_external_pin_util.get_pin_util(cluster_ctx.clb_nlist.block_type(old_clb)->name),
-                                                        temp_cluster_pr_original);
+                                                        temp_cluster_pr_original,
+                                                        temp_cluster_noc_grp_id_original);
 
     VTR_ASSERT(pack_result == e_block_pack_status::BLK_PASSED);
     //If you are still in packing, update the clustering data. Otherwise, update the clustered netlist.
