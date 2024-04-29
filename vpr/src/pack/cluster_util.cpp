@@ -994,7 +994,8 @@ e_block_pack_status try_pack_molecule(t_cluster_placement_stats* cluster_placeme
     for (int i_mol = 0; i_mol < molecule_size; i_mol++) {
         if (molecule->atom_block_ids[i_mol]) {
             bool block_pack_noc_grp_status = atom_cluster_noc_group_check(molecule->atom_block_ids[i_mol],
-                                                                          verbosity, temp_noc_grp_id);
+                                                                          clb_index, verbosity,
+                                                                          temp_noc_grp_id);
 
             if (!block_pack_noc_grp_status) {
                 //Record the failure of this molecule in the current pb stats
@@ -1111,9 +1112,7 @@ e_block_pack_status try_pack_molecule(t_cluster_placement_stats* cluster_placeme
                     //update cluster PartitionRegion if atom with floorplanning constraints was added
                     if (cluster_pr_update_check) {
                         floorplanning_ctx.cluster_constraints[clb_index] = temp_cluster_pr;
-                        if (verbosity > 2) {
-                            VTR_LOG("\nUpdated PartitionRegion of cluster %d\n", clb_index);
-                        }
+                        VTR_LOGV(verbosity > 2, "\nUpdated PartitionRegion of cluster %d\n", clb_index);
                     }
 
                     for (int i = 0; i < molecule_size; i++) {
@@ -1333,9 +1332,9 @@ bool atom_cluster_floorplanning_check(AtomBlockId blk_id,
     //if the atom does not belong to a partition, it can be put in the cluster
     //regardless of what the cluster's PartitionRegion is because it has no constraints
     if (partid == PartitionId::INVALID()) {
-        if (verbosity > 3) {
-            VTR_LOG("\t\t\t Intersect: Atom block %d has no floorplanning constraints, passed for cluster %d \n", blk_id, clb_index);
-        }
+        VTR_LOGV(verbosity > 3,
+                 "\t\t\t Intersect: Atom block %d has no floorplanning constraints, passed for cluster %d \n",
+                 blk_id, clb_index);
         cluster_pr_needs_update = false;
         return true;
     } else {
@@ -1348,9 +1347,9 @@ bool atom_cluster_floorplanning_check(AtomBlockId blk_id,
         if (cluster_pr.empty()) {
             temp_cluster_pr = atom_pr;
             cluster_pr_needs_update = true;
-            if (verbosity > 3) {
-                VTR_LOG("\t\t\t Intersect: Atom block %d has floorplanning constraints, passed cluster %d which has empty PR\n", blk_id, clb_index);
-            }
+            VTR_LOGV(verbosity > 3,
+                     "\t\t\t Intersect: Atom block %d has floorplanning constraints, passed cluster %d which has empty PR\n",
+                     blk_id, clb_index);
             return true;
         } else {
             //update cluster_pr with the intersection of the cluster's PartitionRegion
@@ -1360,24 +1359,25 @@ bool atom_cluster_floorplanning_check(AtomBlockId blk_id,
 
         // At this point, cluster_pr is the intersection of atom_pr and the clusters current pr
         if (cluster_pr.empty()) {
-            if (verbosity > 3) {
-                VTR_LOG("\t\t\t Intersect: Atom block %d failed floorplanning check for cluster %d \n", blk_id, clb_index);
-            }
+            VTR_LOGV(verbosity > 3,
+                     "\t\t\t Intersect: Atom block %d failed floorplanning check for cluster %d \n",
+                     blk_id, clb_index);
             cluster_pr_needs_update = false;
             return false;
         } else {
             //update the cluster's PartitionRegion with the intersecting PartitionRegion
             temp_cluster_pr = cluster_pr;
             cluster_pr_needs_update = true;
-            if (verbosity > 3) {
-                VTR_LOG("\t\t\t Intersect: Atom block %d passed cluster %d, cluster PR was updated with intersection result \n", blk_id, clb_index);
-            }
+            VTR_LOGV(verbosity > 3,
+                    "\t\t\t Intersect: Atom block %d passed cluster %d, cluster PR was updated with intersection result \n",
+                    blk_id, clb_index);
             return true;
         }
     }
 }
 
 bool atom_cluster_noc_group_check(AtomBlockId blk_id,
+                                  ClusterBlockId clb_index,
                                   int verbosity,
                                   NocGroupId& temp_cluster_noc_grp_id) {
     const NocGroupId atom_noc_grp_id = g_vpr_ctx.cl_helper().atom_noc_grp_id[blk_id];
@@ -1385,15 +1385,24 @@ bool atom_cluster_noc_group_check(AtomBlockId blk_id,
     if (temp_cluster_noc_grp_id == NocGroupId::INVALID()) {
         // the cluster does not have a NoC group
         // assign the atom's NoC group to cluster
+        VTR_LOGV(verbosity > 3,
+                 "\t\t\t NoC Group: Atom block %d passed cluster %d, cluster's NoC group was updated with the atom's group %d\n",
+                 blk_id, clb_index, (size_t)atom_noc_grp_id);
         temp_cluster_noc_grp_id = atom_noc_grp_id;
         return true;
     } else if (temp_cluster_noc_grp_id == atom_noc_grp_id) {
         // the cluster has the same NoC group ID as the atom,
         // so they are compatible
+        VTR_LOGV(verbosity > 3,
+                 "\t\t\t NoC Group: Atom block %d passed cluster %d, cluster's NoC group was compatible with the atom's group %d\n",
+                 blk_id, clb_index, (size_t)atom_noc_grp_id);
         return true;
     } else {
         // the cluster belongs to a different NoC group than the atom's group,
         // so they are incompatible
+        VTR_LOGV(verbosity > 3,
+                 "\t\t\t NoC Group: Atom block %d failed NoC group check for cluster %d. Cluster's NoC group: %d, atom's NoC group: %d\n",
+                 blk_id, clb_index, (size_t)temp_cluster_noc_grp_id, size_t(atom_noc_grp_id));
         return false;
     }
 }

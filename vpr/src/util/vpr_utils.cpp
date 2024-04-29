@@ -1,14 +1,12 @@
-#include <cstring>
 #include <unordered_set>
 #include <regex>
 #include <algorithm>
 #include <sstream>
-#include <string.h>
+#include <cstring>
 
 #include "vtr_assert.h"
 #include "vtr_log.h"
 #include "vtr_memory.h"
-#include "vtr_random.h"
 
 #include "vpr_types.h"
 #include "vpr_error.h"
@@ -17,10 +15,7 @@
 #include "globals.h"
 #include "vpr_utils.h"
 #include "cluster_placement.h"
-#include "place_macro.h"
-#include "pack_types.h"
 #include "device_grid.h"
-#include "timing_fail_error.h"
 #include "re_cluster_util.h"
 
 /* This module contains subroutines that are used in several unrelated parts *
@@ -28,7 +23,7 @@
 
 /* This defines the maximum string length that could be parsed by functions  *
  * in vpr_utils.                                                             */
-#define MAX_STRING_LEN 128
+static constexpr size_t MAX_STRING_LEN = 128;
 
 /******************** File-scope variables declarations **********************/
 

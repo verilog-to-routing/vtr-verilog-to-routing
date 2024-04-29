@@ -52,7 +52,6 @@ void update_noc_reachability_partitions(const std::vector<AtomBlockId>& noc_atom
         auto noc_grp_id = (NocGroupId)noc_grp_id_cnt;
         noc_grp_id_cnt++;
 
-
         std::queue<AtomBlockId> q;
         q.push(noc_atom_id);
         atom_visited[noc_atom_id] = true;

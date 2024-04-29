@@ -287,6 +287,7 @@ bool atom_cluster_floorplanning_check(AtomBlockId blk_id,
                                       bool& cluster_pr_needs_update);
 
 bool atom_cluster_noc_group_check(AtomBlockId blk_id,
+                                  ClusterBlockId clb_index,
                                   int verbosity,
                                   NocGroupId& temp_cluster_noc_grp_id);
 
