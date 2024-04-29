@@ -1382,7 +1382,6 @@ bool atom_cluster_noc_group_check(AtomBlockId blk_id,
                                   NocGroupId& temp_cluster_noc_grp_id) {
     const NocGroupId atom_noc_grp_id = g_vpr_ctx.cl_helper().atom_noc_grp_id[blk_id];
 
-
     if (temp_cluster_noc_grp_id == NocGroupId::INVALID()) {
         // the cluster does not have a NoC group
         // assign the atom's NoC group to cluster

@@ -126,7 +126,6 @@ bool try_pack(t_packer_opts* packer_opts,
     int pack_iteration = 1;
     bool floorplan_regions_overfull = false;
 
-    auto constraints_backup = g_vpr_ctx.floorplanning().constraints;
     // find all NoC router atoms
     auto noc_atoms = find_noc_router_atoms();
     update_noc_reachability_partitions(noc_atoms);

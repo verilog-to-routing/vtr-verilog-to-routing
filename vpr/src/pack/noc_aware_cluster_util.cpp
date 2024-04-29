@@ -31,7 +31,8 @@ void update_noc_reachability_partitions(const std::vector<AtomBlockId>& noc_atom
     const auto& grid = g_vpr_ctx.device().grid;
 
     t_logical_block_type_ptr logic_block_type = infer_logic_block_type(grid);
-    const size_t high_fanout_threshold = high_fanout_thresholds.get_threshold(logic_block_type->name);
+    const char* logical_block_name = logic_block_type != nullptr ? logic_block_type->name : "";
+    const size_t high_fanout_threshold = high_fanout_thresholds.get_threshold(logical_block_name);
 
     // get the total number of atoms
     const size_t n_atoms = atom_ctx.nlist.blocks().size();
