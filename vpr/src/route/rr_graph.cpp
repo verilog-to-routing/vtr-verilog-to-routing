@@ -628,7 +628,7 @@ static void build_rr_graph(const t_graph_type graph_type,
                            t_chan_width nodes_per_chan,
                            const enum e_switch_block_type sb_type,
                            const int Fs,
-                           const std::vector<t_switchblock_inf> switchblocks,
+                           const std::vector<t_switchblock_inf>& switchblocks,
                            const std::vector<t_segment_inf>& segment_inf,
                            const int global_route_switch,
                            const int wire_to_arch_ipin_switch,
@@ -660,7 +660,7 @@ static void build_intra_cluster_rr_graph(const t_graph_type graph_type,
 void create_rr_graph(const t_graph_type graph_type,
                      const std::vector<t_physical_tile_type>& block_types,
                      const DeviceGrid& grid,
-                     const t_chan_width nodes_per_chan,
+                     const t_chan_width& nodes_per_chan,
                      t_det_routing_arch* det_routing_arch,
                      const std::vector<t_segment_inf>& segment_inf,
                      const t_router_opts& router_opts,
@@ -944,7 +944,7 @@ static void build_rr_graph(const t_graph_type graph_type,
                            t_chan_width nodes_per_chan,
                            const enum e_switch_block_type sb_type,
                            const int Fs,
-                           const std::vector<t_switchblock_inf> switchblocks,
+                           const std::vector<t_switchblock_inf>& switchblocks,
                            const std::vector<t_segment_inf>& segment_inf,
                            const int global_route_switch,
                            const int wire_to_arch_ipin_switch,
@@ -1011,16 +1011,16 @@ static void build_rr_graph(const t_graph_type graph_type,
         seg_details_y = alloc_and_load_global_route_seg_details(global_route_switch, &num_seg_details_y);
 
     } else {
-        /* Setup segments including distrubuting tracks and staggering.
+        /* Setup segments including distributing tracks and staggering.
          * If use_full_seg_groups is specified, max_chan_width may be
          * changed. Warning should be singled to caller if this happens. */
 
-        /* Need to setup segments along x & y axis seperately, due to different 
+        /* Need to setup segments along x & y axes separately, due to different
          * max_channel_widths and segment specifications. */
 
         size_t max_dim = std::max(grid.width(), grid.height()) - 2; //-2 for no perim channels
 
-        /*Get x & y segments seperately*/
+        /*Get x & y segments separately*/
         seg_details_x = alloc_and_load_seg_details(&max_chan_width_x,
                                                    max_dim, segment_inf_x,
                                                    use_full_seg_groups, directionality,
@@ -1086,7 +1086,7 @@ static void build_rr_graph(const t_graph_type graph_type,
         }
     }
 
-    /* get the number of 'sets' for each segment type -- unidirectial architectures have two tracks in a set, bidirectional have one */
+    /* get the number of 'sets' for each segment type -- unidirectional architectures have two tracks in a set, bidirectional have one */
     int total_sets = max_chan_width;
     int total_sets_x = max_chan_width_x;
     int total_sets_y = max_chan_width_y;

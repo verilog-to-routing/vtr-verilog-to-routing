@@ -17,14 +17,12 @@
  * which are reachable from each physical tile type's SOURCEs/OPINs (f_src_opin_delays). This is used for
  * SRC/OPIN -> CHANX/CHANY estimates.
  *
- * In the case of SRC/OPIN -> SINK estimates the resuls from the two look-ups are added together (and the minimum taken
- * if there are multiple possiblities).
+ * In the case of SRC/OPIN -> SINK estimates the results from the two look-ups are added together (and the minimum taken
+ * if there are multiple possibilities).
  */
 
 #include <cmath>
 #include <vector>
-#include <queue>
-#include <ctime>
 #include "connection_router_interface.h"
 #include "vpr_types.h"
 #include "vpr_error.h"
@@ -50,7 +48,7 @@
 #    include "serdes_utils.h"
 #endif /* VTR_ENABLE_CAPNPROTO */
 
-const int VALID_NEIGHBOR_NUMBER = 3;
+static constexpr int VALID_NEIGHBOR_NUMBER = 3;
 
 /* when a list of delay/congestion entries at a coordinate in Cost_Entry is boiled down to a single
  * representative entry, this enum is passed-in to specify how that representative entry should be
@@ -176,15 +174,12 @@ float MapLookahead::get_expected_cost(RRNodeId current_node, RRNodeId target_nod
 
     VTR_ASSERT_SAFE(rr_graph.node_type(target_node) == t_rr_type::SINK);
 
-    float delay_cost = 0.;
-    float cong_cost = 0.;
-
     if (is_flat_) {
         return get_expected_cost_flat_router(current_node, target_node, params, R_upstream);
     } else {
         if (from_rr_type == CHANX || from_rr_type == CHANY || from_rr_type == SOURCE || from_rr_type == OPIN) {
             // Get the total cost using the combined delay and congestion costs
-            std::tie(delay_cost, cong_cost) = get_expected_delay_and_cong(current_node, target_node, params, R_upstream);
+            auto [delay_cost, cong_cost] = get_expected_delay_and_cong(current_node, target_node, params, R_upstream);
             return delay_cost + cong_cost;
         } else if (from_rr_type == IPIN) { /* Change if you're allowing route-throughs */
             return (device_ctx.rr_indexed_data[RRIndexedDataId(SINK_COST_INDEX)].base_cost);
