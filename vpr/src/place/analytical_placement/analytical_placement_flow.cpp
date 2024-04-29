@@ -7,6 +7,7 @@
 #include "clustered_netlist.h"
 #include "clustered_netlist_utils.h"
 #include "AnalyticalSolver.h"
+#include "PlacementLegalizer.h"
 #include "globals.h"
 #include "vpr_context.h"
 #include "vtr_time.h"
@@ -44,9 +45,13 @@ void run_analytical_placement_flow() {
         }
     }
 
+    // Set up the partial placement object
     PartialPlacement p_placement = PartialPlacement(atom_netlist, fixed_blocks, fixed_blocks_x, fixed_blocks_y);
+    // Solve the QP problem
     QPHybridSolver().solve(p_placement);
     p_placement.print_stats();
     VTR_LOG("HPWL: %f\n", p_placement.get_HPWL());
+    // Partial legalization using cut spreading algorithm
+    CutSpreadingLegalizer().legalize(p_placement);
 }
 
