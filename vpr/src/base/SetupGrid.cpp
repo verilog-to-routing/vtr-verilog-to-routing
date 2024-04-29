@@ -318,7 +318,7 @@ static std::vector<t_logical_block_type_ptr> grid_overused_resources(const Devic
 }
 
 static bool grid_satisfies_instance_counts(const DeviceGrid& grid, const std::map<t_logical_block_type_ptr, size_t>& instance_counts, float maximum_utilization) {
-    //Are the resources satisified?
+    //Are the resources satisfied?
     auto overused_resources = grid_overused_resources(grid, instance_counts);
 
     if (!overused_resources.empty()) {

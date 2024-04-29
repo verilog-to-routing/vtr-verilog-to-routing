@@ -38,7 +38,7 @@ void CheckSetup(const t_packer_opts& PackerOpts,
                         "Timing analysis must be enabled for timing-driven placement.\n");
     }
 
-    if (!PlacerOpts.doPlacement && ("" != PlacerOpts.constraints_file)) {
+    if (!PlacerOpts.doPlacement && (!PlacerOpts.constraints_file.empty())) {
         VPR_FATAL_ERROR(VPR_ERROR_OTHER,
                         "A block location file requires that placement is enabled.\n");
     }

@@ -23,15 +23,15 @@ struct MoveOutcomeStats {
 /**
  * @brief A Struct to hold statistics about the different move types
  *
- * blk_type_moves: the block type index of each proposed move (e.g. [0..NUM_PL_MOVE_TYPES * (agent_available_types.size()-1)])
- * accepted_moves: the number of accepted moves of each move and block type (e.g. [0..NUM_PL_MOVE_TYPES * (agent_available_types.size()-1)] )
- * rejected_moves: the number of rejected moves of each move and block type (e.g. [0..NUM_PL_MOVE_TYPES * (agent_available_types.size()-1)] )
+ * blk_type_moves: the block type index of each proposed move (e.g. [0..NUM_PL_MOVE_TYPES][agent_available_types.size()-1)])
+ * accepted_moves: the number of accepted moves of each move and block type (e.g. [0..NUM_PL_MOVE_TYPES][agent_available_types.size()-1)] )
+ * rejected_moves: the number of rejected moves of each move and block type (e.g. [0..NUM_PL_MOVE_TYPES][agent_available_types.size()-1)] )
  *
  */
 struct MoveTypeStat {
-    std::vector<int> blk_type_moves;
-    std::vector<int> accepted_moves;
-    std::vector<int> rejected_moves;
+    vtr::NdMatrix<int, 2> blk_type_moves;
+    vtr::NdMatrix<int, 2> accepted_moves;
+    vtr::NdMatrix<int, 2> rejected_moves;
 };
 
 /**
