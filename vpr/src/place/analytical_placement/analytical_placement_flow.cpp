@@ -54,5 +54,6 @@ void run_analytical_placement_flow() {
     // Partial legalization using cut spreading algorithm
     FlowBasedLegalizer().legalize(p_placement);
     VTR_LOG("Post-Legalized HPWL: %f\n", p_placement.get_HPWL());
+    FullLegalizer().legalize(p_placement);
 }
 

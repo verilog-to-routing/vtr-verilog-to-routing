@@ -19,3 +19,8 @@ public:
     void legalize(PartialPlacement &p_placement) final;
 };
 
+class FullLegalizer : public PlacementLegalizer {
+public:
+    void legalize(PartialPlacement &p_placement) final;
+};
+

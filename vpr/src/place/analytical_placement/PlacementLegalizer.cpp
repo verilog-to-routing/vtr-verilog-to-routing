@@ -345,3 +345,8 @@ void FlowBasedLegalizer::legalize(PartialPlacement &p_placement) {
     }
 }
 
+void FullLegalizer::legalize(PartialPlacement& p_placement) {
+    (void)p_placement;
+    VTR_LOG("Running Full Legalizer\n");
+}
+
