@@ -230,6 +230,7 @@ static void alloc_and_load_movable_blocks();
 static void check_initial_placement_legality() {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
+    auto& device_ctx = g_vpr_ctx.device();
 
     int unplaced_blocks = 0;
 
@@ -256,19 +257,19 @@ static void check_initial_placement_legality() {
             VPR_FATAL_ERROR(VPR_ERROR_PLACE, "Fixed block was mistakenly marked as movable during initial placement.\n");
         }
     }
-
-    for (const auto& blk_type : place_ctx.movable_blocks_per_type) {
-        int logical_block_type = blk_type.first;
-        const auto& movable_blocks = blk_type.second;
-        for (auto movable_blk_id : movable_blocks) {
+    
+    for (const auto& logical_block_type : device_ctx.logical_block_types) {
+        const auto& movable_blocks_of_type = place_ctx.movable_blocks_per_type[logical_block_type.index];
+        for (const auto& movable_blk_id : movable_blocks_of_type) {
             if (place_ctx.block_locs[movable_blk_id].is_fixed) {
-                VPR_FATAL_ERROR(VPR_ERROR_PLACE, "Fixed block of logical type %d was mistakenly marked as movable during initial placement.\n",
-                                logical_block_type);
+                VPR_FATAL_ERROR(VPR_ERROR_PLACE, "Fixed block %d of logical type %s was mistakenly marked as movable during initial placement.\n",
+                                (size_t)movable_blk_id, logical_block_type.name);
             }
-            if (cluster_ctx.clb_nlist.block_type(movable_blk_id)->index != logical_block_type) {
-                VPR_FATAL_ERROR(VPR_ERROR_PLACE, "Clustered block of logical type %d was mistakenly marked as logical type %d.\n",
-                                cluster_ctx.clb_nlist.block_type(movable_blk_id)->index,
-                                logical_block_type);
+            if (cluster_ctx.clb_nlist.block_type(movable_blk_id)->index != logical_block_type.index) {
+                VPR_FATAL_ERROR(VPR_ERROR_PLACE, "Clustered block %d of logical type %s was mistakenly marked as logical type %s.\n",
+                                (size_t)movable_blk_id,
+                                cluster_ctx.clb_nlist.block_type(movable_blk_id)->name,
+                                logical_block_type.name);
             }
         }
     }
@@ -1156,10 +1157,14 @@ bool place_one_block(const ClusterBlockId& blk_id,
 
 static void alloc_and_load_movable_blocks() {
     auto& place_ctx = g_vpr_ctx.mutable_placement();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& device_ctx = g_vpr_ctx.device();
 
     place_ctx.movable_blocks.clear();
     place_ctx.movable_blocks_per_type.clear();
+
+    size_t n_logical_blocks = device_ctx.logical_block_types.size();
+    place_ctx.movable_blocks_per_type.resize(n_logical_blocks);
 
 
     // iterate over all clustered blocks and store block ids of movable ones

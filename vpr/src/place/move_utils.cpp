@@ -221,7 +221,7 @@ e_block_move_result record_macro_swaps(t_pl_blocks_to_be_moved& blocks_affected,
 //to a new position offset from its current position by swap_offset. The new location must be where
 //blk_to is located and blk_to must be part of imacro_to.
 e_block_move_result record_macro_macro_swaps(t_pl_blocks_to_be_moved& blocks_affected, const int imacro_from, int& imember_from, const int imacro_to, ClusterBlockId blk_to, t_pl_offset swap_offset) {
-    //Adds the macro imacro_to to the set of affected block caused by swapping 'blk_to' to it's
+    //Adds the macro imacro_to to the set of affected block caused by swapping 'blk_to' to its
     //new position.
     //
     //This function is only called when both the main swap's from/to blocks are placement macros.
@@ -484,7 +484,7 @@ std::set<t_pl_loc> determine_locations_emptied_by_move(t_pl_blocks_to_be_moved& 
     std::set<t_pl_loc> moved_to;
 
     for (int iblk = 0; iblk < blocks_affected.num_moved_blocks; ++iblk) {
-        //When a block is moved it's old location becomes free
+        //When a block is moved its old location becomes free
         moved_from.emplace(blocks_affected.moved_blocks[iblk].old_loc);
 
         //But any block later moved to a position fills it
@@ -591,19 +591,12 @@ ClusterBlockId propose_block_to_move(const t_placer_opts& /* placer_opts */,
 }
 
 const std::vector<ClusterBlockId>& movable_blocks_per_type(const t_logical_block_type& blk_type) {
-    // empty vector is declared static to avoid re-allocation every time the function is called
-    static std::vector<ClusterBlockId> empty_vector;
-
     const auto& place_ctx = g_vpr_ctx.placement();
-
-    if (place_ctx.movable_blocks_per_type.count(blk_type.index) == 0) {
-        return empty_vector;
-    }
 
     // the vector is returned as const reference to avoid unnecessary copies,
     // especially that returned vectors may be very large as they contain
     // all clustered blocks with a specific block type
-    return place_ctx.movable_blocks_per_type.at(blk_type.index);
+    return place_ctx.movable_blocks_per_type[blk_type.index];
 }
 
 //Pick a random movable block to be swapped with another random block.
@@ -629,22 +622,15 @@ ClusterBlockId pick_from_block() {
 ClusterBlockId pick_from_block(const int logical_blk_type_index) {
     auto& place_ctx = g_vpr_ctx.mutable_placement();
 
-    auto found_blocks = place_ctx.movable_blocks_per_type.find(logical_blk_type_index);
-    if (found_blocks != place_ctx.movable_blocks_per_type.end()) {
-        const auto& blocks_per_type = found_blocks->second;
-        //no blocks with this type is movable
-        if (blocks_per_type.empty()) {
-            return ClusterBlockId::INVALID();
-        }
+    const auto& movable_blocks_of_type = place_ctx.movable_blocks_per_type[logical_blk_type_index];
 
-        //Pick a block at random
-        auto b_from = ClusterBlockId(blocks_per_type[vtr::irand((int)blocks_per_type.size() - 1)]);
-
-        // return the movable block of the given type
-        return b_from;
+    if (movable_blocks_of_type.empty()) {
+        return ClusterBlockId::INVALID();
     }
 
-    return ClusterBlockId::INVALID();
+    auto b_from = ClusterBlockId(movable_blocks_of_type[vtr::irand((int)movable_blocks_of_type.size() - 1)]);
+
+    return b_from;
 }
 
 //Pick a random highly critical block to be swapped with another random block.

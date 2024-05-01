@@ -390,7 +390,7 @@ struct PlacementContext : public Context {
     std::vector<ClusterBlockId> movable_blocks;
 
     ///@brief Stores ClusterBlockId of all movable clustered of each block type
-    std::unordered_map<int, std::vector<ClusterBlockId>> movable_blocks_per_type;
+    std::vector<std::vector<ClusterBlockId>> movable_blocks_per_type;
 
     /**
      * @brief Compressed grid space for each block type
