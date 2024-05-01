@@ -14,7 +14,7 @@ public:
     virtual void legalize(PartialPlacement &p_placement) = 0;
 };
 
-class CutSpreadingLegalizer : public PlacementLegalizer {
+class FlowBasedLegalizer : public PlacementLegalizer {
 public:
     void legalize(PartialPlacement &p_placement) final;
 };
