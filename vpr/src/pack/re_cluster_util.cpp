@@ -87,7 +87,7 @@ void commit_mol_move(const ClusterBlockId& old_clb,
                      bool new_clb_created) {
     auto& device_ctx = g_vpr_ctx.device();
 
-    //Place the new cluster if this function called during placement (after the initial placement is done)
+    //place the new cluster if this function called during placement (after the initial placement is done)
     if (!during_packing && new_clb_created) {
         int imacro;
         g_vpr_ctx.mutable_placement().block_locs.resize(g_vpr_ctx.placement().block_locs.size() + 1);
