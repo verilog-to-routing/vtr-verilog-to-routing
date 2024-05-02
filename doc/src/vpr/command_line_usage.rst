@@ -1298,6 +1298,14 @@ The following options are only valid when the router is in timing-driven mode (t
 
     **Default:** ``1.2``
 
+.. option:: --router_profiler_astar_fac <float>
+    
+    Controls the directedness of the timing-driven router's exploration when doing router delay profiling of an architecture.
+    The router delay profiling step is currently used to calculate the place delay matrix lookup.
+    Values between 1 and 2 are resonable; higher values trade some quality for reduced run-time.
+
+    **Default:** ``1.2``
+
 .. option:: --max_criticality <float>
 
     Sets the maximum fraction of routing cost that can come from delay (vs. coming from routability) for any net.
