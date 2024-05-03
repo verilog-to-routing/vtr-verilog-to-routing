@@ -1,4 +1,3 @@
-regression_tests/vtr_reg_strong/koios
 regression_tests/vtr_reg_strong/strong_absorb_buffers
 regression_tests/vtr_reg_strong/strong_analysis_only
 regression_tests/vtr_reg_strong/strong_analytic_placer
