@@ -6,7 +6,7 @@
 # Input file: /home/xifan/github/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
 # md5sum of input file: f935bdbc0ff49d1ba93705b68f1db6dc
 
-@0xbd5af3032a028420;
+@0xd574e99855680699;
 using Cxx = import "/capnp/c++.capnp";
 $Cxx.namespace("ucap");
 

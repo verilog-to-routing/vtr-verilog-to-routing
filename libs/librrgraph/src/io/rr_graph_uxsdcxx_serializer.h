@@ -692,15 +692,13 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
      * </xs:complexType>
      */
 
-    inline int init_node_loc(int& inode, std::string ptc, int xhigh, int xlow, int yhigh, int ylow) final {
+    inline int init_node_loc(int& inode, int xhigh, int xlow, int yhigh, int ylow) final {
         auto node = (*rr_nodes_)[inode];
         RRNodeId node_id = node.id();
 
         rr_graph_builder_->set_node_coordinates(node_id, xlow, ylow, xhigh, yhigh);
         // We set the layer num 0 - If it is specified in the XML, it will be overwritten
         rr_graph_builder_->set_node_layer(node_id, 0);
-        /* Split the ptc with delima ',' if there is only one ptc, use regular method, otherwise, use node track num */
-        rr_graph_builder_->set_node_ptc_nums(node_id, ptc);
        
         return inode;
     }
@@ -708,9 +706,14 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     inline const t_rr_node get_node_loc(const t_rr_node& node) final {
         return node;
     }
+    inline void set_node_loc_ptc(const char* ptc, int& inode) final {
+        auto node = (*rr_nodes_)[inode];
+        RRNodeId node_id = node.id();
+        return rr_graph_builder_->set_node_ptc_nums(node_id, std::string(ptc));
+    }
 
-    inline std::string get_node_loc_ptc(const t_rr_node& node) final {
-        return rr_graph_builder_->node_ptc_nums_to_string(node.id());
+    inline const char* get_node_loc_ptc(const t_rr_node& node) final {
+        return rr_graph_builder_->node_ptc_nums_to_string(node.id()).c_str();
     }
     inline int get_node_loc_layer(const t_rr_node& node) final {
         return rr_graph_->node_layer(node.id());
