@@ -2,6 +2,7 @@
 #include "vtr_log.h"
 #include "rr_graph_builder.h"
 #include "vtr_time.h"
+#include "vtr_tokenizer.h"
 #include <queue>
 #include <random>
 //#include <algorithm>
@@ -229,6 +230,30 @@ std::vector<RREdgeId> RRGraphBuilder::node_in_edges(RRNodeId node) const {
     }
     return node_in_edges_[node];
 }
+
+void RRGraphBuilder::set_node_ptc_nums(RRNodeId node, const std::string& ptc_str) {
+    VTR_ASSERT(size_t(node) < node_storage_.size());
+    VTR_ASSERT(size_t(node) < node_ptc_nums_.size());
+    std::vector<std::string> ptc_tokens = vtr::StringToken(ptc_str).split(",");
+    VTR_ASSERT(ptc_tokens.size() >= 1);
+    set_node_ptc_num(node, std::stoi(ptc_tokens[0]));
+    node_ptc_nums_[node].resize(ptc_tokens.size());
+    for (size_t iptc = 0; iptc < ptc_tokens.size(); iptc++) {
+      node_ptc_nums_[node].push_back(std::stoi(ptc_tokens[iptc]));
+    }
+}
+
+std::string RRGraphBuilder::node_ptc_nums_to_string(RRNodeId node) const {
+    VTR_ASSERT(size_t(node) < node_ptc_nums_.size());
+    std::string ret;
+    for (size_t iptc = 0; iptc < node_ptc_nums_[node].size(); iptc++) {
+      ret += std::to_string(node_ptc_nums_[node][iptc]) + ",";
+    }
+    /* Remove the last comma */
+    ret.pop_back();
+    return ret;
+}
+    
 
 void RRGraphBuilder::add_node_track_num(RRNodeId node, vtr::Point<size_t> node_offset, short track_id) {
     VTR_ASSERT(size_t(node) < node_storage_.size());

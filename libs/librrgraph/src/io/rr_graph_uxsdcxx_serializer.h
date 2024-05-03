@@ -687,18 +687,20 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
      *   <xs:attribute name="xhigh" type="xs:int" use="required" />
      *   <xs:attribute name="yhigh" type="xs:int" use="required" />
      *   <xs:attribute name="side" type="loc_side" />
-     *   <xs:attribute name="ptc" type="xs:int" use="required" />
+     *   <xs:attribute name="ptc" type="xs:string" use="required" />
      * </xs:complexType>
      */
 
-    inline int init_node_loc(int& inode, int ptc, int xhigh, int xlow, int yhigh, int ylow) final {
+    inline int init_node_loc(int& inode, std::string ptc, int xhigh, int xlow, int yhigh, int ylow) final {
         auto node = (*rr_nodes_)[inode];
         RRNodeId node_id = node.id();
 
         rr_graph_builder_->set_node_coordinates(node_id, xlow, ylow, xhigh, yhigh);
         // We set the layer num 0 - If it is specified in the XML, it will be overwritten
         rr_graph_builder_->set_node_layer(node_id, 0);
-        rr_graph_builder_->set_node_ptc_num(node_id, ptc);
+        /* Split the ptc with delima ',' if there is only one ptc, use regular method, otherwise, use node track num */
+        rr_graph_builder_->set_node_ptc_nums(node_id, ptc);
+       
         return inode;
     }
     inline void finish_node_loc(int& /*inode*/) final {}
@@ -706,8 +708,8 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         return node;
     }
 
-    inline int get_node_loc_ptc(const t_rr_node& node) final {
-        return rr_graph_->node_ptc_num(node.id());
+    inline std::string get_node_loc_ptc(const t_rr_node& node) final {
+        return rr_graph_builder_->node_ptc_nums_to_string(node.id());
     }
     inline int get_node_loc_layer(const t_rr_node& node) final {
         return rr_graph_->node_layer(node.id());
