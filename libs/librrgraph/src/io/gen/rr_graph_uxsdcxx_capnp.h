@@ -763,6 +763,7 @@ inline void load_node_loc_capnp_type(const ucap::NodeLoc::Reader &root, T &out, 
 	(void)stack;
 
 	out.set_node_loc_layer(root.getLayer(), context);
+	out.set_node_loc_ptc(root.getPtc().cStr(), context);
 	out.set_node_loc_side(conv_enum_loc_side(root.getSide(), report_error), context);
 	out.set_node_loc_twist(root.getTwist(), context);
 }
@@ -837,7 +838,7 @@ inline void load_node_capnp_type(const ucap::Node::Reader &root, T &out, Context
 	stack->push_back(std::make_pair("getLoc", 0));
 	if (root.hasLoc()) {
 		auto child_el = root.getLoc();
-		auto child_context = out.init_node_loc(context, child_el.getPtc(), child_el.getXhigh(), child_el.getXlow(), child_el.getYhigh(), child_el.getYlow());
+		auto child_context = out.init_node_loc(context, child_el.getXhigh(), child_el.getXlow(), child_el.getYhigh(), child_el.getYlow());
 		load_node_loc_capnp_type(child_el, out, child_context, report_error, stack);
 		out.finish_node_loc(child_context);
 	}
