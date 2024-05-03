@@ -4,9 +4,9 @@
  * https://github.com/duck2/uxsdcxx
  * Modify only if your build process doesn't involve regenerating this file.
  *
- * Cmdline: uxsdcxx/uxsdcap.py /home/smahmoudi/Desktop/vtr/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
- * Input file: /home/smahmoudi/Desktop/vtr/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
- * md5sum of input file: bf49388f038e0d0e4a12403ebb964b42
+ * Cmdline: uxsdcxx/uxsdcap.py /home/xifan/github/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
+ * Input file: /home/xifan/github/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
+ * md5sum of input file: f935bdbc0ff49d1ba93705b68f1db6dc
  */
 
 #include <functional>
@@ -706,6 +706,7 @@ inline void load_node_loc_capnp_type(const ucap::NodeLoc::Reader &root, T &out, 
 	(void)stack;
 
 	out.set_node_loc_layer(root.getLayer(), context);
+	out.set_node_loc_ptc(root.getPtc().cStr(), context);
 	out.set_node_loc_side(conv_enum_loc_side(root.getSide(), report_error), context);
 	out.set_node_loc_twist(root.getTwist(), context);
 }
@@ -778,7 +779,7 @@ inline void load_node_capnp_type(const ucap::Node::Reader &root, T &out, Context
 	stack->push_back(std::make_pair("getLoc", 0));
 	if (root.hasLoc()) {
 		auto child_el = root.getLoc();
-		auto child_context = out.init_node_loc(context, child_el.getPtc(), child_el.getXhigh(), child_el.getXlow(), child_el.getYhigh(), child_el.getYlow());
+		auto child_context = out.init_node_loc(context, child_el.getXhigh(), child_el.getXlow(), child_el.getYhigh(), child_el.getYlow());
 		load_node_loc_capnp_type(child_el, out, child_context, report_error, stack);
 		out.finish_node_loc(child_context);
 	}

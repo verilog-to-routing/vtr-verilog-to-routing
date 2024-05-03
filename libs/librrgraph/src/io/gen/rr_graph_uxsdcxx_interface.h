@@ -4,9 +4,9 @@
  * https://github.com/duck2/uxsdcxx
  * Modify only if your build process doesn't involve regenerating this file.
  *
- * Cmdline: uxsdcxx/uxsdcxx.py /home/smahmoudi/Desktop/vtr/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
- * Input file: /home/smahmoudi/Desktop/vtr/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
- * md5sum of input file: bf49388f038e0d0e4a12403ebb964b42
+ * Cmdline: uxsdcxx/uxsdcxx.py /home/xifan/github/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
+ * Input file: /home/xifan/github/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
+ * md5sum of input file: f935bdbc0ff49d1ba93705b68f1db6dc
  */
 
 #include <functional>
@@ -367,13 +367,14 @@ public:
 	 *   <xs:attribute name="xhigh" type="xs:int" use="required" />
 	 *   <xs:attribute name="yhigh" type="xs:int" use="required" />
 	 *   <xs:attribute name="side" type="loc_side" />
-	 *   <xs:attribute name="ptc" type="xs:int" use="required" />
+	 *   <xs:attribute name="ptc" type="xs:string" use="required" />
 	 *   <xs:attribute name="twist" type="xs:int" />
 	 * </xs:complexType>
 	*/
 	virtual inline int get_node_loc_layer(typename ContextTypes::NodeLocReadContext &ctx) = 0;
 	virtual inline void set_node_loc_layer(int layer, typename ContextTypes::NodeLocWriteContext &ctx) = 0;
-	virtual inline int get_node_loc_ptc(typename ContextTypes::NodeLocReadContext &ctx) = 0;
+	virtual inline const char * get_node_loc_ptc(typename ContextTypes::NodeLocReadContext &ctx) = 0;
+	virtual inline void set_node_loc_ptc(const char * ptc, typename ContextTypes::NodeLocWriteContext &ctx) = 0;
 	virtual inline enum_loc_side get_node_loc_side(typename ContextTypes::NodeLocReadContext &ctx) = 0;
 	virtual inline void set_node_loc_side(enum_loc_side side, typename ContextTypes::NodeLocWriteContext &ctx) = 0;
 	virtual inline int get_node_loc_twist(typename ContextTypes::NodeLocReadContext &ctx) = 0;
@@ -445,7 +446,7 @@ public:
 	virtual inline void set_node_direction(enum_node_direction direction, typename ContextTypes::NodeWriteContext &ctx) = 0;
 	virtual inline unsigned int get_node_id(typename ContextTypes::NodeReadContext &ctx) = 0;
 	virtual inline enum_node_type get_node_type(typename ContextTypes::NodeReadContext &ctx) = 0;
-	virtual inline typename ContextTypes::NodeLocWriteContext init_node_loc(typename ContextTypes::NodeWriteContext &ctx, int ptc, int xhigh, int xlow, int yhigh, int ylow) = 0;
+	virtual inline typename ContextTypes::NodeLocWriteContext init_node_loc(typename ContextTypes::NodeWriteContext &ctx, int xhigh, int xlow, int yhigh, int ylow) = 0;
 	virtual inline void finish_node_loc(typename ContextTypes::NodeLocWriteContext &ctx) = 0;
 	virtual inline typename ContextTypes::NodeLocReadContext get_node_loc(typename ContextTypes::NodeReadContext &ctx) = 0;
 	virtual inline typename ContextTypes::NodeTimingWriteContext init_node_timing(typename ContextTypes::NodeWriteContext &ctx, float C, float R) = 0;

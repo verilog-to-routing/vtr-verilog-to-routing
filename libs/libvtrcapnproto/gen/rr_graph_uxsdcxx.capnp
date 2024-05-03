@@ -2,11 +2,11 @@
 # https://github.com/duck2/uxsdcxx
 # Modify only if your build process doesn't involve regenerating this file.
 #
-# Cmdline: uxsdcxx/uxsdcap.py /home/smahmoudi/Desktop/vtr/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
-# Input file: /home/smahmoudi/Desktop/vtr/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
-# md5sum of input file: bf49388f038e0d0e4a12403ebb964b42
+# Cmdline: uxsdcxx/uxsdcap.py /home/xifan/github/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
+# Input file: /home/xifan/github/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
+# md5sum of input file: f935bdbc0ff49d1ba93705b68f1db6dc
 
-@0xf7009c96d0510b05;
+@0xbd5af3032a028420;
 using Cxx = import "/capnp/c++.capnp";
 $Cxx.namespace("ucap");
 
@@ -163,7 +163,7 @@ struct GridLocs {
 
 struct NodeLoc {
 	layer @0 :Int32 = 0;
-	ptc @1 :Int32;
+	ptc @1 :Text;
 	side @2 :LocSide;
 	twist @3 :Int32;
 	xhigh @4 :Int32;
