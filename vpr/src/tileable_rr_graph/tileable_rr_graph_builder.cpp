@@ -275,7 +275,7 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
         clb2clb_directs.push_back(clb_to_clb_directs[idirect]);
     }
 
-    build_rr_graph_direct_connections(device_ctx.rr_graph, device_ctx.rr_graph_builder, device_ctx.grid, 0, delayless_rr_switch,
+    build_rr_graph_direct_connections(device_ctx.rr_graph, device_ctx.rr_graph_builder, device_ctx.grid, 0,
                                       arch_directs, clb2clb_directs);
 
     /* Allocate and load routing resource switches, which are derived from the switches from the architecture file,

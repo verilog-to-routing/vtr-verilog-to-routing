@@ -168,7 +168,6 @@ void build_rr_graph_direct_connections(const RRGraphView& rr_graph,
                                        RRGraphBuilder& rr_graph_builder,
                                        const DeviceGrid& grids,
                                        const size_t& layer,
-                                       const RRSwitchId& delayless_switch,
                                        const std::vector<t_direct_inf>& directs,
                                        const std::vector<t_clb_to_clb_directs>& clb_to_clb_directs) {
     for (size_t ix = 0; ix < grids.width(); ++ix) {
@@ -188,7 +187,6 @@ void build_rr_graph_direct_connections(const RRGraphView& rr_graph,
                                                  rr_graph_builder,
                                                  grids, layer,
                                                  from_grid_coordinate,
-                                                 delayless_switch,
                                                  directs, clb_to_clb_directs);
         }
     }

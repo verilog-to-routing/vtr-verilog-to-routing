@@ -75,7 +75,6 @@ void build_direct_connections_for_one_gsb(const RRGraphView& rr_graph,
                                           const DeviceGrid& grids,
                                           const size_t& layer,
                                           const vtr::Point<size_t>& from_grid_coordinate,
-                                          const RRSwitchId& delayless_switch,
                                           const std::vector<t_direct_inf>& directs,
                                           const std::vector<t_clb_to_clb_directs>& clb_to_clb_directs);
 

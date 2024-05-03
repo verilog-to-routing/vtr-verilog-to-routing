@@ -1361,7 +1361,6 @@ void build_direct_connections_for_one_gsb(const RRGraphView& rr_graph,
                                           const DeviceGrid& grids,
                                           const size_t& layer,
                                           const vtr::Point<size_t>& from_grid_coordinate,
-                                          const RRSwitchId& delayless_switch,
                                           const std::vector<t_direct_inf>& directs,
                                           const std::vector<t_clb_to_clb_directs>& clb_to_clb_directs) {
     VTR_ASSERT(directs.size() == clb_to_clb_directs.size());
@@ -1452,7 +1451,7 @@ void build_direct_connections_for_one_gsb(const RRGraphView& rr_graph,
 
                 /* add edges to the opin_node */
                 VTR_ASSERT(opin_node_id && ipin_node_id);
-                rr_graph_builder.create_edge(opin_node_id, ipin_node_id, delayless_switch, false);
+                rr_graph_builder.create_edge(opin_node_id, ipin_node_id, clb_to_clb_directs[i].switch_index, false);
             }
         }
     }
