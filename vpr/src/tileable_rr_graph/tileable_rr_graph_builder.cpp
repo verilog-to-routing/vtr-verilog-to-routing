@@ -272,6 +272,8 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
     std::vector<t_clb_to_clb_directs> clb2clb_directs;
     for (int idirect = 0; idirect < num_directs; ++idirect) {
         arch_directs.push_back(directs[idirect]);
+        /* Sanity checks on rr switch id */
+        VTR_ASSERT(true == device_ctx.rr_graph.valid_switch(RRSwitchId(clb_to_clb_directs[idirect].switch_index)));
         clb2clb_directs.push_back(clb_to_clb_directs[idirect]);
     }
 
