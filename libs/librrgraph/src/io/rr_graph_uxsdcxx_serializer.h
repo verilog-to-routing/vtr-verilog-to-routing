@@ -1865,8 +1865,10 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
             auto node = (*rr_nodes_)[inode];
             rr_graph_builder.add_node_to_all_locs(node.id());
             /* Set track numbers as a node may have multiple ptc */
-            if (CHANX == rr_graph_->node_type(node.id()) || CHANY == rr_graph_->node_type(node.id())) {
-                rr_graph_builder.add_track_node_to_lookup(node.id());
+            if (rr_graph_builder.node_contain_multiple_ptc(node.id())) {
+                if (CHANX == rr_graph_->node_type(node.id()) || CHANY == rr_graph_->node_type(node.id())) {
+                    rr_graph_builder.add_track_node_to_lookup(node.id());
+                }
             }
         }
     }
