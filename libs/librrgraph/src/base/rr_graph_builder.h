@@ -226,6 +226,12 @@ class RRGraphBuilder {
         node_storage_.set_node_class_num(id, new_class_num);
     }
 
+    /** @brief Add a list of ptc number in string (split by comma) to a given node. This function is used by rr graph reader only. Not suggested for internal builder!!! */
+    void set_node_ptc_nums(RRNodeId node, const std::string& ptc_str);
+
+    /** @brief With a given node, output ptc numbers into a string (use comma as delima). This function is used by rr graph writer only. Not suggested for internal builder!!! */
+    std::string node_ptc_nums_to_string(RRNodeId node) const;
+
     /** @brief Set the node direction; The node direction is only available of routing channel nodes, such as x-direction routing tracks (CHANX) and y-direction routing tracks (CHANY). For other nodes types, this value is not meaningful and should be set to NONE. */
     inline void set_node_direction(RRNodeId id, Direction new_direction) {
         node_storage_.set_node_direction(id, new_direction);
