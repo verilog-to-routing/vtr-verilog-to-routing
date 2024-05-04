@@ -343,6 +343,11 @@ class RRGraphBuilder {
     inline void resize_nodes(size_t size) {
         node_storage_.resize(size);
     }
+    /** @brief This function resize node ptc nums. Only used by RR graph I/O reader and writers. Do not use for internal builder */
+    inline void resize_node_ptc_nums(size_t size) {
+        node_ptc_nums_.resize(size);
+    }
+
 
     /** @brief This function resize node ptc twist increment; Since it is only used for tileable rr-graph, we don't put it in general resize function*/
     inline void resize_ptc_twist_incr(size_t size){

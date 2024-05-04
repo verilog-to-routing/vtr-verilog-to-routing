@@ -253,17 +253,17 @@ void RRGraphBuilder::set_node_ptc_nums(RRNodeId node, const std::string& ptc_str
 }
 
 std::string RRGraphBuilder::node_ptc_nums_to_string(RRNodeId node) const {
-    std::string ret;
     if (node_ptc_nums_.empty()) {
-        return std::to_string(node_storage_.node_ptc_num(node));
+        return std::to_string(size_t(node_storage_.node_ptc_num(node)));
 //        VTR_LOG("Node ptc single: %d -> string %s\n", node_storage_.node_ptc_num(node), ret.c_str()); 
     }
     VTR_ASSERT(size_t(node) < node_ptc_nums_.size());
     if (node_ptc_nums_[node].empty()) {
-        return std::to_string(node_storage_.node_ptc_num(node));
+        return std::to_string(size_t(node_storage_.node_ptc_num(node)));
     }
+    std::string ret;
     for (size_t iptc = 0; iptc < node_ptc_nums_[node].size(); iptc++) {
-        ret += std::to_string(node_ptc_nums_[node][iptc]) + ",";
+        ret += std::to_string(size_t(node_ptc_nums_[node][iptc])) + ",";
     }
     /* Remove the last comma */
     ret.pop_back();
