@@ -4021,6 +4021,7 @@ inline void write_node(T &in, std::ostream &os, Context &context){
 		os << "<loc";
 		os << " layer=\"" << in.get_node_loc_layer(child_context) << "\"";
 		os << " ptc=\"" << in.get_node_loc_ptc(child_context) << "\"";
+        VTR_LOG("RR graph writer io ptc: %s\n", in.get_node_loc_ptc(child_context));
 		if((bool)in.get_node_loc_side(child_context))
 			os << " side=\"" << lookup_loc_side[(int)in.get_node_loc_side(child_context)] << "\"";
 		if((bool)in.get_node_loc_twist(child_context))
