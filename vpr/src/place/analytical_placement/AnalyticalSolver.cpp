@@ -2,6 +2,8 @@
 #include <Eigen/Sparse>
 #include <Eigen/IterativeLinearSolvers>
 #include "atom_netlist.h"
+#include "globals.h"
+#include "vpr_context.h"
 #include "vtr_assert.h"
 
 static inline void populate_hybrid_matrix(Eigen::SparseMatrix<double> &A_sparse,
@@ -9,6 +11,8 @@ static inline void populate_hybrid_matrix(Eigen::SparseMatrix<double> &A_sparse,
                                           Eigen::VectorXd &b_y,
                                           const AtomNetlist& netlist, 
                                           PartialPlacement& p_placement) {
+    const AtomContext& atom_ctx = g_vpr_ctx.atom();
+
     std::vector<Eigen::Triplet<double>> tripletList;
     size_t num_moveable_nodes = p_placement.num_moveable_nodes;
     tripletList.reserve(num_moveable_nodes * netlist.nets().size());
@@ -29,7 +33,7 @@ static inline void populate_hybrid_matrix(Eigen::SparseMatrix<double> &A_sparse,
             size_t star_node_id = num_moveable_nodes + star_node_offset;
             for (AtomPinId pin_id : netlist.net_pins(net_id)) {
                 AtomBlockId blk_id = netlist.pin_block(pin_id);
-                size_t node_id = p_placement.block_id_to_node_id[blk_id];
+                size_t node_id = p_placement.get_node_id_from_blk(blk_id, atom_ctx.atom_molecules);
                 // Note: the star node is always moveable
                 if (p_placement.is_moveable_node(node_id)) {
                     tripletList.emplace_back(star_node_id, star_node_id, w);
@@ -55,8 +59,8 @@ static inline void populate_hybrid_matrix(Eigen::SparseMatrix<double> &A_sparse,
                 for (int jpin = ipin + 1; jpin < num_pins; jpin++) {
                     AtomBlockId first_block_id = netlist.net_pin_block(net_id, ipin);
                     AtomBlockId second_block_id = netlist.net_pin_block(net_id, jpin);
-                    size_t first_node_id = p_placement.block_id_to_node_id[first_block_id];
-                    size_t second_node_id = p_placement.block_id_to_node_id[second_block_id];
+                    size_t first_node_id = p_placement.get_node_id_from_blk(first_block_id, atom_ctx.atom_molecules);
+                    size_t second_node_id = p_placement.get_node_id_from_blk(second_block_id, atom_ctx.atom_molecules);
                     // Make sure that the first node is moveable. This makes creating the connection easier.
                     if (!p_placement.is_moveable_node(first_node_id)) {
                         if (!p_placement.is_moveable_node(second_node_id)) {
@@ -83,6 +87,7 @@ static inline void populate_hybrid_matrix(Eigen::SparseMatrix<double> &A_sparse,
 }
 
 void QPHybridSolver::solve(PartialPlacement &p_placement) {
+    VTR_LOG("Running Quadratic Solver\n");
     const AtomNetlist& netlist = p_placement.atom_netlist;
 
     size_t num_star_nodes = 0;

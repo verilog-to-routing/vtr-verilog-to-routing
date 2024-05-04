@@ -8,14 +8,12 @@
 #include <unordered_set>
 #include <vector>
 #include "PartialPlacement.h"
-#include "clustered_netlist.h"
 #include "device_grid.h"
 #include "globals.h"
 #include "vpr_context.h"
 #include "vpr_types.h"
 #include "vtr_assert.h"
 #include "vtr_log.h"
-#include "vtr_range.h"
 
 namespace {
 
@@ -358,67 +356,54 @@ void FullLegalizer::legalize(PartialPlacement& p_placement) {
     // Since we are currently assuming that clustering has already occured,
     // this legalizer should use the reclustering API to handle creating legal
     // clusters.
-    // FIXME: PACKING MUST HAVE OCCURED. Therefore loading the netlist is not
-    //        sufficient. This is a bit annoying, there should be a way to
-    //        load the molecule structure without having to run all of packing.
-    // const AtomContext& atom_ctx = g_vpr_ctx.atom();
-    // for (size_t i = 0; i < p_placement.num_moveable_nodes; i++) {
-    //     // VTR_LOG("Moveable Node ID: %zu\n", i);
-    //     AtomBlockId blk_id = p_placement.node_id_to_block_id[i];
-    //     t_pack_molecule* mol = nullptr;
-    //     auto mol_range = atom_ctx.atom_molecules.equal_range(blk_id);
-    //     for (const auto& kv : vtr::make_range(mol_range.first, mol_range.second)) {
-    //         t_pack_molecule* cur_mol = kv.second;
-    //         // if (!cur_mol->valid)
-    //         //     continue;
-    //         VTR_ASSERT(mol == nullptr && "Multiple matching molecules for a Atom Block.");
-    //         mol = cur_mol;
-    //     }
-    //     VTR_ASSERT(mol != nullptr && "Molecule not found for Atom Block.");
-    //     VTR_ASSERT(mol->atom_block_ids.size() == 1 && "Molecule expected to have one Atom.");
-    // }
-    
-    // There are too many issues with using the reclustering API, namely:
-    //  1) Requires packing to run first, which we hope not to do.
-    //  2) Requires the use of molecules, which we will likely not use the same
-    //     molecules as the packer.
-    // Instead, I will recreate the Clustered netlist from scratch. To make this
-    // easier, I plan to replicate the process done when loading a .net file.
-    ClusteringContext& cluster_ctx = g_vpr_ctx.mutable_clustering();
-
-    // TODO: Maybe put this in a method to prevent duplicate code.
-    // See /base/vpr_api.cpp:vpr_load_packing
-    /* Ensure we have a clean start with void net remapping information */
-    cluster_ctx.post_routing_clb_pin_nets.clear();
-    cluster_ctx.pre_routing_net_pin_mapping.clear();
-
-    // See /base/vpr_api.cpp:free_circuit
-    // Free new net structures
-    for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks())
-        cluster_ctx.clb_nlist.remove_block(blk_id);
-    cluster_ctx.clb_nlist = ClusteredNetlist();
-
-    // See /base/read_netlist.cpp:read_netlist
-    // NOTE: Not reloading the atom/pb mapping. Assuming that it is accurate.
-    // See /base/read_netlist.cpp:processComplexBlock
-    const DeviceContext& device_ctx = g_vpr_ctx.device();
-    const DeviceGrid& device_grid = device_ctx.grid;
-    size_t device_width = device_grid.width();
-    size_t device_height = device_grid.height();
-    for (size_t i = 0; i < device_width; i++) {
-        for (size_t j = 0; j < device_height; j++) {
-            std::vector<size_t> contained_nodes;
-            // FIXME: This is very inneficient. Precompute which tiles have
-            //        which block.
-            for (size_t node_id = 0; node_id < p_placement.num_nodes; node_id++) {
-                size_t tile_x = static_cast<size_t>(p_placement.node_loc_x[node_id]);
-                size_t tile_y = static_cast<size_t>(p_placement.node_loc_y[node_id]);
-                if (tile_x == i && tile_y == j)
-                    contained_nodes.push_back(node_id);
-            }
-            VTR_LOG("%zu ", contained_nodes.size());
-        }
-        VTR_LOG("\n");
+    // NOTE: Pre-packing must have been performed before this.
+    for (size_t i = 0; i < p_placement.num_moveable_nodes; i++) {
+        // VTR_LOG("Moveable Node ID: %zu\n", i);
+        t_pack_molecule* mol = p_placement.node_id_to_mol[i];
+        VTR_ASSERT(mol->atom_block_ids.size() == 1 && "Molecule expected to have one Atom.");
     }
+
+    // // There are too many issues with using the reclustering API, namely:
+    // //  1) Requires packing to run first, which we hope not to do.
+    // //  2) Requires the use of molecules, which we will likely not use the same
+    // //     molecules as the packer.
+    // // Instead, I will recreate the Clustered netlist from scratch. To make this
+    // // easier, I plan to replicate the process done when loading a .net file.
+    // ClusteringContext& cluster_ctx = g_vpr_ctx.mutable_clustering();
+
+    // // TODO: Maybe put this in a method to prevent duplicate code.
+    // // See /base/vpr_api.cpp:vpr_load_packing
+    // /* Ensure we have a clean start with void net remapping information */
+    // cluster_ctx.post_routing_clb_pin_nets.clear();
+    // cluster_ctx.pre_routing_net_pin_mapping.clear();
+
+    // // See /base/vpr_api.cpp:free_circuit
+    // // Free new net structures
+    // for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks())
+    //     cluster_ctx.clb_nlist.remove_block(blk_id);
+    // cluster_ctx.clb_nlist = ClusteredNetlist();
+
+    // // See /base/read_netlist.cpp:read_netlist
+    // // NOTE: Not reloading the atom/pb mapping. Assuming that it is accurate.
+    // // See /base/read_netlist.cpp:processComplexBlock
+    // const DeviceContext& device_ctx = g_vpr_ctx.device();
+    // const DeviceGrid& device_grid = device_ctx.grid;
+    // size_t device_width = device_grid.width();
+    // size_t device_height = device_grid.height();
+    // for (size_t i = 0; i < device_width; i++) {
+    //     for (size_t j = 0; j < device_height; j++) {
+    //         std::vector<size_t> contained_nodes;
+    //         // FIXME: This is very inneficient. Precompute which tiles have
+    //         //        which block.
+    //         for (size_t node_id = 0; node_id < p_placement.num_nodes; node_id++) {
+    //             size_t tile_x = static_cast<size_t>(p_placement.node_loc_x[node_id]);
+    //             size_t tile_y = static_cast<size_t>(p_placement.node_loc_y[node_id]);
+    //             if (tile_x == i && tile_y == j)
+    //                 contained_nodes.push_back(node_id);
+    //         }
+    //         VTR_LOG("%zu ", contained_nodes.size());
+    //     }
+    //     VTR_LOG("\n");
+    // }
 }
 

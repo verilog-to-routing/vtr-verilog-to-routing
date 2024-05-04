@@ -2,18 +2,47 @@
 #include "analytical_placement_flow.h"
 #include <map>
 #include <set>
+#include <vector>
 #include "PartialPlacement.h"
 #include "atom_netlist.h"
+#include "cad_types.h"
 #include "clustered_netlist.h"
 #include "clustered_netlist_utils.h"
 #include "AnalyticalSolver.h"
 #include "PlacementLegalizer.h"
 #include "globals.h"
+#include "prepack.h"
 #include "vpr_context.h"
 #include "vtr_time.h"
 
+// Pre-pack the atoms into molecules
+// This will create "forced" packs (LUT+FF) and carry chains.
+// The molecules can be looked up in the atom_molecules member of the atom
+// context.
+// See /pack/prepack.h
+// Also see /pack/pack.cpp:try_pack
+static void prepack_atom_netlist() {
+    VTR_LOG("Pre-Packing Atom Netlist\n");
+    AtomContext& atom_mutable_ctx = g_vpr_ctx.mutable_atom();
+    std::vector<t_pack_patterns> list_of_pack_patterns = alloc_and_load_pack_patterns();
+    // This is a map from the AtomBlock to its expected lowest cost primitive.
+    std::unordered_map<AtomBlockId, t_pb_graph_node*> expected_lowest_cost_pb_gnode;
+    atom_mutable_ctx.list_of_pack_molecules.reset(alloc_and_load_pack_molecules(list_of_pack_patterns.data(), expected_lowest_cost_pb_gnode, list_of_pack_patterns.size()));
+    // Not entirely sure if this free can be put here. I do not like how the
+    // packer did it.
+    free_list_of_pack_patterns(list_of_pack_patterns);
+}
+
 void run_analytical_placement_flow() {
     vtr::ScopedStartFinishTimer timer("Analytical Placement Flow");
+
+    // Prepack the atom netlist into molecules.
+    // This will initialize a data structure in the Atom context which will
+    // dictate which atom goes into which molecule.
+    // TODO: This creates internal state which is hard to understand. Consider
+    //       having this method return the atom_to_molecule structure.
+    //       This can then be stored in the Partial Placement class.
+    prepack_atom_netlist();
 
     const AtomNetlist& atom_netlist = g_vpr_ctx.atom().nlist;
 
