@@ -249,6 +249,7 @@ std::string RRGraphBuilder::node_ptc_nums_to_string(RRNodeId node) const {
     std::string ret;
     if (node_ptc_nums_.empty()) {
         ret = std::to_string(node_storage_.node_ptc_num(node));
+//        VTR_LOG("Node ptc single: %d -> string %s\n", node_storage_.node_ptc_num(node), ret.c_str()); 
     } else {
         VTR_ASSERT(size_t(node) < node_ptc_nums_.size());
         for (size_t iptc = 0; iptc < node_ptc_nums_[node].size(); iptc++) {
