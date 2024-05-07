@@ -1815,6 +1815,24 @@ The following options are used to enable power estimation in VPR.
 
     Instructions on generating this file are provided in :ref:`power_estimation`.
 
+Server Mode Options
+^^^^^^^^^^^^^^^^^^^^^^^^
+The following options are used to enable server mode in VPR.
+
+.. seealso:: :ref:`server_mode` for more details.
+
+.. option:: --server
+
+    Run in server mode. Accept single client application connection and respond to client requests
+
+    **Default:** ``off``
+
+.. option:: --port PORT
+
+    Server port number.
+
+    **Default:** ``60555``
+
 Command-line Auto Completion
 ----------------------------
 
