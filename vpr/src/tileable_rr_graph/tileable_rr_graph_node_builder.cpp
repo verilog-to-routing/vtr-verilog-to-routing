@@ -818,8 +818,10 @@ static void load_one_chan_rr_nodes_basic_info(const RRGraphView& rr_graph,
             }
             /* Finish node RC attributes */
             size_t seg_id = chan_details.get_track_segment_id(itrack);
-            float node_R = rr_graph.node_length(rr_node_id) * segment_infs[seg_id].Rmetal;
-            float node_C = rr_graph.node_length(rr_node_id) * segment_infs[seg_id].Cmetal;
+            e_parallel_axis wanted_axis = chan_type == CHANX ? X_AXIS : Y_AXIS;
+            size_t parallel_seg_id = find_parallel_seg_index(seg_id, seg_index_map, wanted_axis);
+            float node_R = rr_graph.node_length(rr_node_id) * segment_infs[parallel_seg_id].Rmetal;
+            float node_C = rr_graph.node_length(rr_node_id) * segment_infs[parallel_seg_id].Cmetal;
             rr_graph_builder.set_node_rc_index(rr_node_id, NodeRCIndex(find_create_rr_rc_data(node_R, node_C, rr_rc_data)));
             /* Finish here, go to next */
         }
