@@ -31,7 +31,7 @@ void CheckSetup(const t_packer_opts& PackerOpts,
             "This is allowed, but strange, and circuit speed will suffer.\n");
     }
 
-    if ((false == Timing.timing_analysis_enabled)
+    if (!Timing.timing_analysis_enabled
         && (PlacerOpts.place_algorithm.is_timing_driven())) {
         /* May work, not tested */
         VPR_FATAL_ERROR(VPR_ERROR_OTHER,
@@ -43,14 +43,20 @@ void CheckSetup(const t_packer_opts& PackerOpts,
                         "A block location file requires that placement is enabled.\n");
     }
 
-    if (PlacerOpts.place_static_move_prob.size() != NUM_PL_MOVE_TYPES) {
+    if (PlacerOpts.place_algorithm.is_timing_driven() &&
+        PlacerOpts.place_static_move_prob.size() > NUM_PL_MOVE_TYPES) {
         VPR_FATAL_ERROR(VPR_ERROR_OTHER,
-                        "The number of placer move probabilities should equal to the total number of supported moves. %d\n", PlacerOpts.place_static_move_prob.size());
+                        "The number of provided placer move probabilities (%d) should equal or less than the total number of supported moves (%d).\n",
+                        PlacerOpts.place_static_move_prob.size(),
+                        NUM_PL_MOVE_TYPES);
     }
 
-    if (PlacerOpts.place_static_notiming_move_prob.size() != NUM_PL_NONTIMING_MOVE_TYPES) {
+    if (!PlacerOpts.place_algorithm.is_timing_driven() &&
+        PlacerOpts.place_static_move_prob.size() > NUM_PL_NONTIMING_MOVE_TYPES) {
         VPR_FATAL_ERROR(VPR_ERROR_OTHER,
-                        "The number of placer non timing move probabilities should equal to the total number of supported moves. %d\n", PlacerOpts.place_static_notiming_move_prob.size());
+                        "The number of placer non timing move probabilities (%d) should equal to or less than the total number of supported moves (%d).\n",
+                        PlacerOpts.place_static_move_prob.size(),
+                        NUM_PL_MOVE_TYPES);
     }
 
     if (RouterOpts.doRouting) {

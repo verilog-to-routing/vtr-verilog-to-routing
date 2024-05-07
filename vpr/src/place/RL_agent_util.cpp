@@ -1,4 +1,5 @@
 #include "RL_agent_util.h"
+#include "static_move_generator.h"
 #include "manual_move_generator.h"
 
 void create_move_generators(std::unique_ptr<MoveGenerator>& move_generator,
@@ -6,25 +7,19 @@ void create_move_generators(std::unique_ptr<MoveGenerator>& move_generator,
                             const t_placer_opts& placer_opts,
                             int move_lim) {
     if (!placer_opts.RL_agent_placement) { // RL agent is disabled
-        if (placer_opts.place_algorithm.is_timing_driven()) {
-            VTR_LOG("Using static probabilities for choosing each move type\n");
-            VTR_LOG("Probability of Uniform_move : %f \n", placer_opts.place_static_move_prob[(int)e_move_type::UNIFORM]);
-            VTR_LOG("Probability of Median_move : %f \n", placer_opts.place_static_move_prob[(int)e_move_type::MEDIAN]);
-            VTR_LOG("Probability of Centroid_move : %f \n", placer_opts.place_static_move_prob[(int)e_move_type::CENTROID]);
-            VTR_LOG("Probability of Weighted_centroid_move : %f \n", placer_opts.place_static_move_prob[(int)e_move_type::W_CENTROID]);
-            VTR_LOG("Probability of Weighted_median_move : %f \n", placer_opts.place_static_move_prob[(int)e_move_type::W_MEDIAN]);
-            VTR_LOG("Probability of Critical_uniform_move : %f \n", placer_opts.place_static_move_prob[(int)e_move_type::CRIT_UNIFORM]);
-            VTR_LOG("Probability of Timing_feasible_region_move : %f \n", placer_opts.place_static_move_prob[(int)e_move_type::FEASIBLE_REGION]);
-            move_generator = std::make_unique<StaticMoveGenerator>(placer_opts.place_static_move_prob);
-            move_generator2 = std::make_unique<StaticMoveGenerator>(placer_opts.place_static_move_prob);
-        } else { //Non-timing driven placement
-            VTR_LOG("Using static probabilities for choosing each move type\n");
-            VTR_LOG("Probability of Uniform_move : %f \n", placer_opts.place_static_notiming_move_prob[(int)e_move_type::UNIFORM]);
-            VTR_LOG("Probability of Median_move : %f \n", placer_opts.place_static_notiming_move_prob[(int)e_move_type::MEDIAN]);
-            VTR_LOG("Probability of Centroid_move : %f \n", placer_opts.place_static_notiming_move_prob[(int)e_move_type::CENTROID]);
-            move_generator = std::make_unique<StaticMoveGenerator>(placer_opts.place_static_notiming_move_prob);
-            move_generator2 = std::make_unique<StaticMoveGenerator>(placer_opts.place_static_notiming_move_prob);
+        auto move_types = placer_opts.place_static_move_prob;
+        move_types.resize((int)e_move_type::NUMBER_OF_AUTO_MOVES, 0.0f);
+
+        VTR_LOG("Using static probabilities for choosing each move type\n");
+        for (const auto move_type : placer_opts.place_static_move_prob.keys()) {
+            const std::string& move_name =  move_type_to_string(move_type);
+            VTR_LOG("Probability of %s : %f \n",
+                    move_name.c_str(),
+                    placer_opts.place_static_move_prob[move_type]);
         }
+
+        move_generator = std::make_unique<StaticMoveGenerator>(placer_opts.place_static_move_prob);
+        move_generator2 = std::make_unique<StaticMoveGenerator>(placer_opts.place_static_move_prob);
     } else { //RL based placement
         /* For the non timing driven placement: the agent has a single state   *
          *     - Available moves are (Uniform / Median / Centroid)             *
@@ -113,7 +108,7 @@ void assign_current_move_generator(std::unique_ptr<MoveGenerator>& move_generato
         else
             current_move_generator = std::move(move_generator);
     } else {
-        if (agent_state == EARLY_IN_THE_ANNEAL || !placer_opts.place_agent_multistate)
+        if (agent_state == e_agent_state::EARLY_IN_THE_ANNEAL || !placer_opts.place_agent_multistate)
             current_move_generator = std::move(move_generator);
         else
             current_move_generator = std::move(move_generator2);
@@ -132,7 +127,7 @@ void update_move_generator(std::unique_ptr<MoveGenerator>& move_generator,
         else
             move_generator = std::move(current_move_generator);
     } else {
-        if (agent_state == EARLY_IN_THE_ANNEAL || !placer_opts.place_agent_multistate)
+        if (agent_state == e_agent_state::EARLY_IN_THE_ANNEAL || !placer_opts.place_agent_multistate)
             move_generator = std::move(current_move_generator);
         else
             move_generator2 = std::move(current_move_generator);
