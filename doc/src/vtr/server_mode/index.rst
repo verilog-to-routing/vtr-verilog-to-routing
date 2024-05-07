@@ -34,8 +34,8 @@ Telegram is a byte sequence consist from the two parts: fixed size **telegram he
 
     **CMD** could have following values:
 
-    - 0 - **get critical path** 
-    - 1 - **highlight selected path elements**
+    - 0 - command id for **get critical path**
+    - 1 - command id for **highlight selected path elements**
 
     JOB_ID - is unique id for a task.
 
