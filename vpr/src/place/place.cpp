@@ -676,8 +676,8 @@ void try_place(const Netlist<>& net_list,
      *  both the clb_netlist and the gird.
      *  Most of anneal is disabled later by setting initial temperature to 0 and only further optimizes in quench
      */
-    if (placer_opts.enable_analytic_placer) {
-        AnalyticPlacer{}.ap_place();
+    if (placer_opts.enable_analytic_placer || placer_opts.enable_cascade_placer) {
+        AnalyticPlacer{}.ap_place(net_list, place_delay_model, placer_opts, analysis_opts, is_flat);
     }
 
 #endif /* ENABLE_ANALYTIC_PLACE */
@@ -977,7 +977,9 @@ void try_place(const Netlist<>& net_list,
 #ifdef ENABLE_ANALYTIC_PLACE
     // Analytic placer: When enabled, skip most of the annealing and go straight to quench
     // TODO: refactor goto label.
-    if (placer_opts.enable_analytic_placer)
+    if ((placer_opts.enable_cascade_placer) || (!placer_opts.enable_analytic_placer))
+        skip_anneal = false;
+    else
         skip_anneal = true;
 #endif /* ENABLE_ANALYTIC_PLACE */
 

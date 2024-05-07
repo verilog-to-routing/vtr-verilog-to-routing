@@ -1293,6 +1293,8 @@ struct t_placer_opts {
      * of the annealing placer for local improvement
      */
     bool enable_analytic_placer;
+    // Cascade Placer
+    bool enable_cascade_placer;
 };
 
 /* All the parameters controlling the router's operation are in this        *
