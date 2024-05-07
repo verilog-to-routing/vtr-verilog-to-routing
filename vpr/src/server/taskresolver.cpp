@@ -88,7 +88,7 @@ void TaskResolver::process_get_path_list_task(ezgl::application*, const TaskPtr&
     if (!options.has_errors()) {
         ServerContext& server_ctx = g_vpr_ctx.mutable_server(); // shortcut
 
-        server_ctx.clear_crit_path_elements(); // reset selection if path list options has changed
+        server_ctx.crit_path_element_indexes.clear(); // reset selection if path list options has changed
 
         // read options
         const int n_critical_path_num = options.get_int(comm::OPTION_PATH_NUM, 1);
@@ -102,9 +102,9 @@ void TaskResolver::process_get_path_list_task(ezgl::application*, const TaskPtr&
             CritPathsResult crit_paths_result = calc_critical_path(path_type, n_critical_path_num, details_level_opt.value(), is_flat);
 
             // setup context
-            server_ctx.set_path_type(path_type);
-            server_ctx.set_critical_path_num(n_critical_path_num);
-            server_ctx.set_crit_paths(crit_paths_result.paths);
+            server_ctx.path_type = path_type;
+            server_ctx.critical_path_num = n_critical_path_num;
+            server_ctx.crit_paths = crit_paths_result.paths;
 
             if (crit_paths_result.is_valid()) {
                 std::string msg{crit_paths_result.report};
@@ -136,8 +136,8 @@ void TaskResolver::process_draw_critical_path_task(ezgl::application* app, const
         const bool draw_path_contour = options.get_bool(comm::OPTION_DRAW_PATH_CONTOUR, false);
 
         // set critical path elements to render
-        server_ctx.set_crit_path_elements(path_elements);
-        server_ctx.set_draw_crit_path_contour(draw_path_contour);
+        server_ctx.crit_path_element_indexes = path_elements;
+        server_ctx.draw_crit_path_contour = draw_path_contour;
 
         // update gtk UI
         GtkComboBox* toggle_crit_path = GTK_COMBO_BOX(app->get_object("ToggleCritPath"));

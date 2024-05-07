@@ -161,7 +161,7 @@ public:
      * 
      * @param tasks A reference to a vector where the received tasks will be moved.
      */
-    void take_received_tasks(std::vector<TaskPtr>&);
+    void take_received_tasks(std::vector<TaskPtr>& tasks);
 
     /**
      * @brief Moves tasks to the send queue.
@@ -172,7 +172,7 @@ public:
      * 
      * @param tasks A reference to a vector containing the tasks to be moved to the send queue.
     */
-    void move_tasks_to_send_queue(std::vector<TaskPtr>&);
+    void move_tasks_to_send_queue(std::vector<TaskPtr>& tasks);
 
     /**
      * @brief Prints log messages for the GateIO.

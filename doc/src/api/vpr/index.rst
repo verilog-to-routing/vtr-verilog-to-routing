@@ -11,3 +11,4 @@ VPR API
    netlist
    route_tree
    rr_graph
+   server

@@ -816,9 +816,9 @@ RouteStatus vpr_route_flow(const Netlist<>& net_list,
             routing_delay_calc = std::make_shared<RoutingDelayCalculator>(atom_ctx.nlist, atom_ctx.lookup, net_delay, is_flat);
             timing_info = make_setup_hold_timing_info(routing_delay_calc, router_opts.timing_update_type);
 #ifndef NO_SERVER
-            if (g_vpr_ctx.server().gateIO().is_running()) {
-                g_vpr_ctx.mutable_server().set_timing_info(timing_info);
-                g_vpr_ctx.mutable_server().set_routing_delay_calc(routing_delay_calc);
+            if (g_vpr_ctx.server().gate_io.is_running()) {
+                g_vpr_ctx.mutable_server().timing_info = timing_info;
+                g_vpr_ctx.mutable_server().routing_delay_calc = routing_delay_calc;
             }
 #endif /* NO_SERVER */
         } else {
@@ -1069,7 +1069,7 @@ void vpr_init_server(const t_vpr_setup& vpr_setup)
 #ifndef NO_SERVER
     if (vpr_setup.ServerOpts.is_server_mode_enabled) {
         /* Set up a server and its callback to be triggered at 100ms intervals by the timer's timeout event. */
-        server::GateIO& gate_io = g_vpr_ctx.mutable_server().mutable_gateIO();
+        server::GateIO& gate_io = g_vpr_ctx.mutable_server().gate_io;
         if (!gate_io.is_running()) {
             gate_io.start(vpr_setup.ServerOpts.port_num);
             g_timeout_add(/*interval_ms*/ 100, server::update, &application);

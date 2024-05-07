@@ -11,19 +11,14 @@
 namespace comm {
 
 /**
- * @brief The fixed size bytes sequence where the metadata of a telegram message is stored.
+ * @brief The fixed size byte sequence where the metadata of a telegram message is stored.
  *
  * This structure is used to describe the message frame sequence in order to successfully extract it.
  * The TelegramHeader structure follows this format:
- * ------------------------------------------------------
- * [ 4 bytes ][  4 bytes  ][   4 bytes   ][    1 byte   ]
- * [SIGNATURE][DATA_LENGTH][DATA_CHECKSUM][COMPRESSOR_ID]
- * ------------------------------------------------------
- *
- * The SIGNATURE is a 4-byte constant sequence "I", "P", "A", "\0" which indicates the valid start of a TelegramHeader.
- * The DATA_LENGTH is a 4-byte field where the data length is stored, allowing for proper identification of the start and end of the TelegramFrame sequence.
- * The DATA_CHECKSUM is a 4-byte field where the data checksum is stored to validate the attached data.
- * The COMPRESSOR_ID is a 1-byte field where the compressor id is stored. If it's NULL, it means the data is not compressed (in text/json format).
+ * - [ 4 bytes ]: SIGNATURE - A 4-byte constant sequence "I", "P", "A", "\0" which indicates the valid start of a TelegramHeader.
+ * - [ 4 bytes ]: DATA_LENGTH - A 4-byte field where the data length is stored, allowing for proper identification of the start and end of the TelegramFrame sequence.
+ * - [ 4 bytes ]: DATA_CHECKSUM - A 4-byte field where the data checksum is stored to validate the attached data.
+ * - [ 1 byte ]: COMPRESSOR_ID - A 1-byte field where the compressor id is stored. If it's \0, it means the data is not compressed (in text/json format).
  */
 class TelegramHeader {
 public:

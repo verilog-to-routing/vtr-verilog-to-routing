@@ -1113,7 +1113,7 @@ void draw_crit_path_elements(const std::vector<tatum::TimingPath>& paths, const 
 #ifndef NO_SERVER
     t_draw_state* draw_state = get_draw_state_vars();
     const ezgl::color contour_color{0, 0, 0, 40};
-    const bool draw_crit_path_contour = g_vpr_ctx.server().draw_crit_path_contour();
+    const bool draw_crit_path_contour = g_vpr_ctx.server().draw_crit_path_contour;
 
     auto draw_flyline_timing_edge_helper_fn = [](ezgl::renderer* renderer, const ezgl::color& color, ezgl::line_dash line_style, int line_width, float delay, 
                                             const tatum::NodeId& prev_node, const tatum::NodeId& node, bool skip_draw_delays=false) {

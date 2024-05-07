@@ -44,14 +44,14 @@ public:
      * 
      * @param data The byte array whose contents will be appended to internal byte buffer.
      */
-    void append(const ByteArray&);
+    void append(const ByteArray& data);
 
     /**
      * @brief Extracts well-formed telegram frames from the internal byte buffer.
      * 
      * @param frames A reference to a vector where the extracted telegram frames will be stored.
      */
-    void take_telegram_frames(std::vector<TelegramFramePtr>&);
+    void take_telegram_frames(std::vector<TelegramFramePtr>& frames);
 
     /**
      * @brief Extracts well-formed telegram frames from the internal byte buffer.
@@ -70,7 +70,7 @@ public:
      *
      * @note After calling this function, the internal error storage will be cleared.
      */
-    void take_errors(std::vector<std::string>&);
+    void take_errors(std::vector<std::string>& errors);
 
     /**
      * @brief Retrieves a constant reference to the internal byte buffer.
