@@ -2,22 +2,30 @@
 Server
 ========
 
+server::update
+--------------
+
 .. doxygenfunction:: server::update
    :project: vpr
+
+server::GateIO
+--------------
 
 .. doxygenclass:: server::GateIO
    :project: vpr
    :members:
 
+server::Task
+------------
+
 .. doxygenclass:: server::Task
    :project: vpr
    :members:
 
-.. doxygenclass:: server::TaskResolver
-   :project: vpr
-   :members:
+server::TaskResolver
+--------------------
 
-.. doxygenclass:: server::TelegramOptions
+.. doxygenclass:: server::TaskResolver
    :project: vpr
    :members:
 
@@ -28,7 +36,14 @@ Server
 .. doxygenfunction:: server::calc_critical_path
    :project: vpr
 
-.. doxygenclass:: comm::ByteArray
+comm::Telegram
+--------------
+
+.. doxygenclass:: comm::TelegramHeader
+   :project: vpr
+   :members:
+
+.. doxygenstruct:: comm::TelegramFrame
    :project: vpr
    :members:
 
@@ -36,7 +51,14 @@ Server
    :project: vpr
    :members:
 
-.. doxygenclass:: comm::TelegramHeader
+.. doxygenclass:: comm::ByteArray
+   :project: vpr
+   :members:
+
+Parsers
+-------
+
+.. doxygenclass:: server::TelegramOptions
    :project: vpr
    :members:
 
@@ -44,9 +66,9 @@ Server
    :project: vpr
    :members:
 
-.. doxygenstruct:: comm::TelegramFrame
-   :project: vpr
-   :members:
+
+Compression utils
+-----------------
 
 .. doxygenfunction:: try_compress
    :project: vpr

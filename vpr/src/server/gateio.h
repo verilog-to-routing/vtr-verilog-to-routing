@@ -26,15 +26,16 @@ namespace server {
  * 
  * Operable only with a single client. As soon as client connection is detected
  * it begins listening on the specified port number for incoming client requests,
- * collects and encapsulates them into tasks @ref Task.
- * The incoming tasks are extracted and handled by the top-level logic @ref TaskResolver.
- * Once the tasks are resolved by the @ref TaskResolver, they are returned to be sent back to the client as a response.
+ * collects and encapsulates them into tasks (see @ref Task).
+ * The incoming tasks are extracted and handled by the top-level logic @ref TaskResolver in main thread.
+ * Once the tasks are resolved by the @ref TaskResolver, they are returned to be sent back to the client app as a response.
+ * Extraction and puting @ref Task is taken from main thread inside @ref server::update.
  * 
  * @note
  * - The GateIO instance should be created and managed from the main thread, while its internal processing 
  *   and IO operations are performed asynchronously in a separate thread.  This separation ensures smooth IO behavior 
  *   and responsiveness of the application.
- * - Gateio is not started automatically upon creation, you have to use the 'start' method with the port number.
+ * - GateIO is not started automatically upon creation, you have to use the 'start' method with the port number.
  * - The socket is initialized in a non-blocking mode to function properly in a multithreaded environment.
 */
 class GateIO
