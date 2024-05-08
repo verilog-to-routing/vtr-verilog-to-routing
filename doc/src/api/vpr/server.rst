@@ -5,9 +5,6 @@ Server
 Classes
 -------
 
-.. doxygenfunction:: try_compress
-   :project: vpr
- 
 .. doxygenclass:: server::GateIO
    :project: vpr
    :members:
@@ -26,7 +23,6 @@ Classes
 
 .. doxygenfunction:: server::update
    :project: vpr
-   :members:
 
 .. doxygenstruct:: server::CritPathsResult 
    :project: vpr
