@@ -8,12 +8,19 @@
 #include <unordered_set>
 #include <vector>
 #include "PartialPlacement.h"
+#include "atom_netlist_fwd.h"
+#include "cluster_util.h"
+#include "clustered_netlist_utils.h"
 #include "device_grid.h"
 #include "globals.h"
+#include "physical_types.h"
+#include "place_util.h"
+#include "re_cluster.h"
 #include "vpr_context.h"
 #include "vpr_types.h"
 #include "vtr_assert.h"
 #include "vtr_log.h"
+#include "vtr_vector.h"
 
 namespace {
 
@@ -350,6 +357,37 @@ void FlowBasedLegalizer::legalize(PartialPlacement &p_placement) {
     }
 }
 
+// Helper function that removes the placement information of a cluster located
+// at a given sub_tile.
+// This was taken from place/cut_spreader.cpp
+// NOTE: This may be useless since we can use place/place_util.cpp:load_grid_blocks_from_block_locs
+static inline void unbind_subtile(t_pl_loc sub_tile) {
+    PlacementContext& place_ctx = g_vpr_ctx.mutable_placement();
+    ClusterBlockId blk = place_ctx.grid_blocks.block_at_location(sub_tile);
+    VTR_ASSERT(blk != EMPTY_BLOCK_ID);
+    VTR_ASSERT(place_ctx.block_locs[blk].is_fixed == false);
+    // Clear the block locs.
+    place_ctx.block_locs[blk].loc = t_pl_loc{};
+    // Clear the grid blocks.
+    place_ctx.grid_blocks.set_block_at_location(sub_tile, EMPTY_BLOCK_ID);
+    place_ctx.grid_blocks.set_usage({sub_tile.x, sub_tile.y, sub_tile.layer}, place_ctx.grid_blocks.get_usage({sub_tile.x, sub_tile.y, sub_tile.layer}) - 1);
+}
+
+// Helper function that binds the given cluster to a subtile.
+// This was taken from place/cut_spreader.cpp
+// NOTE: This is very similar to place/place_util.cpp:set_block_location...
+static inline void bind_subtile(ClusterBlockId blk, t_pl_loc sub_tile) {
+    PlacementContext& place_ctx = g_vpr_ctx.mutable_placement();
+    VTR_ASSERT(place_ctx.grid_blocks.block_at_location(sub_tile) == EMPTY_BLOCK_ID);
+    VTR_ASSERT(place_ctx.block_locs[blk].is_fixed == false);
+    // Set the block locs.
+    place_ctx.block_locs[blk].loc = sub_tile;
+    // Set the grid blocks.
+    place_ctx.grid_blocks.set_block_at_location(sub_tile, blk);
+    place_ctx.grid_blocks.set_usage({sub_tile.x, sub_tile.y, sub_tile.layer}, place_ctx.grid_blocks.get_usage({sub_tile.x, sub_tile.y, sub_tile.layer}) + 1);
+}
+
+// TODO: Move this into its own file.
 void FullLegalizer::legalize(PartialPlacement& p_placement) {
     (void)p_placement;
     VTR_LOG("Running Full Legalizer\n");
@@ -357,11 +395,260 @@ void FullLegalizer::legalize(PartialPlacement& p_placement) {
     // this legalizer should use the reclustering API to handle creating legal
     // clusters.
     // NOTE: Pre-packing must have been performed before this.
-    for (size_t i = 0; i < p_placement.num_moveable_nodes; i++) {
-        // VTR_LOG("Moveable Node ID: %zu\n", i);
-        t_pack_molecule* mol = p_placement.node_id_to_mol[i];
-        VTR_ASSERT(mol->atom_block_ids.size() == 1 && "Molecule expected to have one Atom.");
+
+    // NOTE: The reclustering API changes who goes in which ClusterBlockId.
+    //       The placement of the ClusterBlockId is controlled by the placer.
+    // Goal: Make sure each cluster has a ClusterBlockId and a placement.
+    //  - Re-clustering API can create new ClusterBlockIds
+    //  - I do not think it can remove a ClusterBlockId (double check)
+    //      - This may be an issue if the number of clusters is reduced by us.
+    // From inspection, I do not think clustering_data is used when during
+    // packing is set to false.
+
+    // Strategy:
+    //  - For each tile that has nodes within it:
+    //      - Get the first block's ClusterBlockId (this will be the cluster
+    //        for this tile.
+    //      - Swap / move all other molecules out of this block that do not
+    //        belong; while getting the molecules that do belong in.
+    //          - If there is nowhere to put a block, create an orphan cluster
+    //      - Set the location of this cluster in the placement.
+    
+    // FIXME: This was stolen from above. Make common. Perhaps make its own custom data structure since the bins may not match the clusters.
+    // Initialize the bins with the node positions.
+    // FIXME: THIS SHOULD USE GRID BLOCKS FROM THE PLACEMENT CONTEXT.
+    // TODO: Encapsulate this into a class.
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    size_t grid_width = device_ctx.grid.width();
+    size_t grid_height = device_ctx.grid.height();
+    VTR_LOG("\tGrid size = (%zu, %zu)\n", grid_width, grid_height);
+    std::vector<Bin> bins(grid_width * grid_height);
+    for (size_t i = 0; i < grid_width; i++) {
+        for (size_t j = 0; j < grid_height; j++) {
+            size_t bin_id = getBinId(i, j);
+            bins[bin_id].x_pos = i;
+            bins[bin_id].y_pos = j;
+        }
     }
+    // FIXME: What about the fixed blocks? Shouldnt they be put into the bins?
+    for (size_t node_id = 0; node_id < p_placement.num_moveable_nodes; node_id++) {
+        double node_x = p_placement.node_loc_x[node_id];
+        double node_y = p_placement.node_loc_y[node_id];
+        // FIXME: This conversion is not necessarily correct. The bin position
+        //        should be the center of the tile, not the corner.
+        size_t bin_id = getBinId(node_x, node_y);
+        bins[bin_id].contained_node_ids.insert(node_id);
+    }
+
+    // See place/place_util.cpp:alloc_and_load_legal_placement_locations
+    // Shows how to iterate over the device grid to create locations
+    
+    // A list of legal locations
+    // (tile_type_index, sub_tile_index) -> legal locations at that index
+    // NOTE: This is tile TYPE not tile index.
+    // TODO: look into equivalent tiles / sites
+    //  see: place/cut_spreader.cpp:CutSpreader
+    std::vector<std::vector<std::vector<t_pl_loc>>> legal_locs;
+    alloc_and_load_legal_placement_locations(legal_locs);
+
+    // A lookup table to get the valid locations at a given tile.
+    // (tile_pos_x, tile_pos_y) -> legal locations at that tile
+    // FIXME: This is a terrible and inneficient process. Should be fixed.
+    //        It is also not very generalizable. Assumes that each tile has
+    //        a single sub-tile.
+    //  - Should replicate the code in alloc_and_load_legal_placement_locations
+    std::vector<std::vector<std::vector<t_pl_loc>>> tile_locs;
+    tile_locs.resize(grid_width);
+    for (size_t i = 0; i < grid_width; i++)
+        tile_locs[i].resize(grid_height);
+    for (const auto& tile_type_locs : legal_locs) {
+        for (const auto& sub_tile_locs : tile_type_locs) {
+            for (const t_pl_loc& loc : sub_tile_locs) {
+                tile_locs[loc.x][loc.y].push_back(loc);
+            }
+        }
+    }
+
+    // Initialize the placement context.
+    // This resets the locations of the clusters and the grid blocks (reverse lookup).
+    // Use set_block_location to set the location fo a cluster.
+    init_placement_context();
+
+    // For each bin with moveable blocks in it, assign a cluster to it.
+    // FIXME: This will not generalize well.
+    std::vector<ClusterBlockId> bin_cluster(bins.size(), ClusterBlockId::INVALID());
+    std::vector<ClusterBlockId> moveable_clusters;
+
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
+    const AtomContext& atom_ctx = g_vpr_ctx.atom();
+    ClusterAtomsLookup clusterBlockToAtomBlockLookup;
+    clusterBlockToAtomBlockLookup.init_lookup();
+    for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks()) {
+        // Crude assumption, if the cluster contains any IO blocks, it cannot be used.
+        bool has_io_blocks = false;
+        for (AtomBlockId atom_blk_id : clusterBlockToAtomBlockLookup.atoms_in_cluster(blk_id)) {
+            AtomBlockType atom_blk_ty = atom_ctx.nlist.block_type(atom_blk_id);
+            if (atom_blk_ty == AtomBlockType::INPAD || atom_blk_ty == AtomBlockType::OUTPAD)
+                has_io_blocks = true;
+        }
+        if (has_io_blocks)
+            continue;
+        moveable_clusters.push_back(blk_id);
+    }
+
+    VTR_ASSERT(device_ctx.grid.get_num_layers() == 1 && "3D FPGA not supported for AP");
+    for (size_t i = 0; i < grid_width; i++) {
+        for (size_t j = 0; j < grid_height; j++) {
+            size_t bin_id = getBinId(i, j);
+            const Bin& bin = bins[bin_id];
+            // Does this bin have any moveable nodes?
+            std::vector<size_t> moveable_nodes;
+            moveable_nodes.reserve(bin.contained_node_ids.size());
+            for (size_t node_id : bin.contained_node_ids) {
+                if (p_placement.is_moveable_node(node_id))
+                    moveable_nodes.push_back(node_id);
+            }
+            if (moveable_nodes.empty())
+                continue;
+            
+            VTR_ASSERT(moveable_clusters.size() > 0);
+            ClusterBlockId new_cluster_id = moveable_clusters.back();
+            bin_cluster[bin_id] = new_cluster_id;
+            moveable_clusters.pop_back();
+
+            VTR_ASSERT(tile_locs[i][j].size() == 1 && "Only support single-location tiles for now");
+            set_block_location(new_cluster_id, tile_locs[i][j][0]);
+        }
+    }
+    VTR_LOG("NUM LEFT: %zu\n", moveable_clusters.size());
+    // FIXME: This is awful and hard coded.
+    std::vector<size_t> empty_bins;
+    for (size_t i = 1; i < grid_width - 1; i++) {
+        for (size_t j = 1; j < grid_width - 1; j++) {
+            size_t bin_id = getBinId(i, j);
+            if (bins[bin_id].contained_node_ids.empty())
+                continue;
+            empty_bins.push_back(bin_id);
+        }
+    }
+    VTR_ASSERT(empty_bins.size() >= moveable_clusters.size());
+    for (size_t i = 0; i < moveable_clusters.size(); i++) {
+        // Just shove them in some random empty block
+        size_t bin_id = empty_bins.back();
+        empty_bins.pop_back();
+        bin_cluster[bin_id] = moveable_clusters[i];
+
+        size_t x = bins[bin_id].x_pos;
+        size_t y = bins[bin_id].y_pos;
+        VTR_ASSERT(tile_locs[x][y].size() == 1 && "Only support single-location tiles for now");
+        set_block_location(moveable_clusters[i], tile_locs[x][y][0]);
+    }
+
+    // reverse lookup for cluster to bin_id
+    // std::map<ClusterBlockId, size_t> cluster_to_bin_id;
+    // for (size_t i = 0; i < bin_cluster.size(); i++) {
+    //     cluster_to_bin_id[bin_cluster[i]] = i;
+    // }
+
+    // Recluster.
+    size_t num_immovable = 0;
+    for (size_t i = 0; i < p_placement.num_moveable_nodes; i++) {
+        VTR_LOG("%zu\n", i);
+        // Which cluster do I want to be in?
+        size_t target_bin_id = getBinId(p_placement.node_loc_x[i], p_placement.node_loc_y[i]);
+        ClusterBlockId target_cluster = bin_cluster[target_bin_id];
+        VTR_ASSERT(target_cluster != ClusterBlockId::INVALID());
+        // Which cluster am I in?
+        t_pack_molecule* mol = p_placement.node_id_to_mol[i];
+        ClusterBlockId src_cluster = atom_ctx.lookup.atom_clb(mol->atom_block_ids[0]);
+        if (src_cluster == target_cluster)
+            continue;
+        VTR_LOG("I GOT HERE1\n");
+        // Try to move into the target cluster
+        t_clustering_data temp_data;
+        bool success = false;
+        success = move_mol_to_existing_cluster(mol, target_cluster, false, 3, temp_data);
+        if (success)
+            continue;
+        VTR_LOG("I GOT HERE2\n");
+        // If that doesnt work try swapping with a block in the target cluster
+        const Bin& target_bin = bins[target_bin_id];
+        std::vector<t_pack_molecule*> potential_partners;
+        for (size_t node_id : target_bin.contained_node_ids) {
+            t_pack_molecule* partner_mol = p_placement.node_id_to_mol[node_id];
+            ClusterBlockId partner_src = atom_ctx.lookup.atom_clb(partner_mol->atom_block_ids[0]);
+            if (partner_src != target_cluster)
+                potential_partners.push_back(partner_mol);
+        }
+        for (t_pack_molecule* partner_mol : potential_partners) {
+            success = swap_two_molecules(mol, partner_mol, false, 3, temp_data);
+            if (success)
+                continue;
+        }
+        if (!success)
+            num_immovable++;
+    }
+    VTR_LOG("NUM IMMOVABLE: %zu\n", num_immovable);
+
+    // for (size_t i = 0; i < grid_width; i++) {
+    //     for (size_t j = 0; j < grid_height; j++) {
+    //         size_t bin_id = getBinId(i, j);
+    //         const Bin& bin = bins[bin_id];
+    //         // Does this bin have any moveable nodes?
+    //         std::vector<size_t> moveable_nodes;
+    //         moveable_nodes.reserve(bin.contained_node_ids.size());
+    //         for (size_t node_id : bin.contained_node_ids) {
+    //             if (p_placement.is_moveable_node(node_id))
+    //                 moveable_nodes.push_back(node_id);
+    //         }
+    //         if (moveable_nodes.empty())
+    //             continue;
+    //         VTR_ASSERT(tile_locs[i][j].size() == 1 && "Only support single-location tiles for now");
+    //         VTR_LOG("%zu ", tile_locs[i][j].size());
+    //         // t_physical_tile_type_ptr tile = device_ctx.grid.get_physical_type({(int)i, (int)j, 0});
+    //         // VTR_ASSERT(tile->sub_tiles.size() == 1 && "Right now assuming that each tile only contains one sub-tile");
+    //         // t_sub_tile sub_tile = tile->sub_tiles[0];
+    //         // size_t num = 0;
+    //         // for (auto loc : legal_locs[tile->index][sub_tile.index])
+    //         //     num++;
+    //         // VTR_LOG("%zu ", num);
+    //         // // VTR_LOG("%zu ", legal_locs[tile->index][sub_tile.index].size());
+
+    //         // For each of the moveable nodes, get them into the same ClusterBlockId
+    //         size_t first_node_id = moveable_nodes[0];
+    //         t_pack_molecule* first_mol = p_placement.node_id_to_mol[first_node_id];
+    //         ClusterBlockId new_cluster_id = atom_ctx.lookup.atom_clb(first_mol->atom_block_ids[0]);
+    //     }
+    //     VTR_LOG("\n");
+    // }
+
+    // PlacementContext& place_ctx = g_vpr_ctx.mutable_placement();
+    // for (size_t i = 0; i < grid_width; i++) {
+    //     for (size_t j = 0; j < grid_height; j++) {
+    //         size_t bin_id = getBinId(i, j);
+    //         const Bin& bin = bins[bin_id];
+    //         // Does this bin have any moveable nodes?
+    //         std::vector<size_t> moveable_nodes;
+    //         moveable_nodes.reserve(bin.contained_node_ids.size());
+    //         for (size_t node_id : bin.contained_node_ids) {
+    //             if (p_placement.is_moveable_node(node_id))
+    //                 moveable_nodes.push_back(node_id);
+    //         }
+    //         if (moveable_nodes.empty())
+    //             continue;
+    //         // For each of the moveable nodes, get them into the same ClusterBlockId
+    //         size_t first_node_id = moveable_nodes[0];
+    //         t_pack_molecule* first_mol = p_placement.node_id_to_mol[first_node_id];
+    //         ClusterBlockId new_cluster_id = atom_ctx.lookup.atom_clb(first_mol->atom_block_ids[0]);
+    //         // Set the position of this ClusterBlockId to be this tile.
+    //     }
+    // }
+
+    // for (size_t i = 0; i < p_placement.num_moveable_nodes; i++) {
+    //     // VTR_LOG("Moveable Node ID: %zu\n", i);
+    //     t_pack_molecule* mol = p_placement.node_id_to_mol[i];
+    //     VTR_ASSERT(mol->atom_block_ids.size() == 1 && "Molecule expected to have one Atom.");
+    // }
 
     // // There are too many issues with using the reclustering API, namely:
     // //  1) Requires packing to run first, which we hope not to do.
