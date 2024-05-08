@@ -30,7 +30,7 @@ Telegram is a byte sequence consist from the two parts: fixed size **telegram he
 
     Communication telegram body structure.
 
-    **telegram body** is flat json structure. 
+    **telegram body** is flat **JSON** structure.
 
     **CMD** could have following values:
 
@@ -42,13 +42,18 @@ Telegram is a byte sequence consist from the two parts: fixed size **telegram he
     .. note:: telegram body itself could be compressed with zlib, to minimize amount of data transfered over socket.
       This is done for **get critical path** response. The compressor id byte in header sinalize if the telegram body is compressed.
 
-Telegram body examples
-----------------------
+Get critical path timing report example
+---------------------------------------
 
-.. option:: Get critical path timing report
+  Let's take a look at an example of a request timing report telegram body with the following options:
+
+  - path_num = 1
+  - path_type = "setup"
+  - details_level = "netlist"
+  - is_flat_routing = false
 
   .. code-block:: json
-      :caption: **request** example of JSON telegram body
+      :caption: telegram body **REQUEST** example
       :linenos:
 
       {
@@ -57,20 +62,20 @@ Telegram body examples
         "OPTIONS": "int:path_num:1;string:path_type:setup;string:details_level:netlist;bool:is_flat_routing:0"
       }
 
-  **path_type** could have following values:
+  **path_type** could have following string values:
 
-  - setup
-  - hold
+  - "setup"
+  - "hold"
 
-  **details_level** could have following values:
+  **details_level** could have following string values:
 
-  - netlist
-  - aggregated
-  - detailed
-  - debug
+  - "netlist"
+  - "aggregated"
+  - "detailed"
+  - "debug"
 
   .. code-block:: json
-      :caption: **response** example of JSON telegram body
+      :caption: telegram body **RESPONSE** example
       :linenos:
 
       {
@@ -147,11 +152,17 @@ Telegram body examples
         "STATUS": "1"
       }
 
-.. option:: Highlight selected critical path elements
+Draw selected critical path elements example
 --------------------------------------------
 
+  Let's take a look at an example of a request timing report telegram body with the following options:
+
+  - path_elements = path 0 and it's sub-elements 10,11,12,13,14,15,20,21,22,23,24,25
+  - high_light_mode = "crit path flylines delays"
+  - draw_path_contour = 1
+
   .. code-block:: json
-      :caption: **request** example of JSON telegram body
+      :caption: telegram body **REQUEST** example
       :linenos:
 
       {
@@ -160,15 +171,15 @@ Telegram body examples
         "OPTIONS": "string:path_elements:0#10,11,12,13,14,15,20,21,22,23,24,25;string:high_light_mode:crit path flylines delays;bool:draw_path_contour:1"
       }
 
-  **high_light_mode** could have following values:
+  **high_light_mode** could have following string values:
 
-  - crit path flylines
-  - crit path flylines delays
-  - crit path routing
-  - crit path routing delays
+  - "crit path flylines"
+  - "crit path flylines delays"
+  - "crit path routing"
+  - "crit path routing delays"
 
   .. code-block:: json
-      :caption: **response** exampler of JSON telegram body
+      :caption: telegram body **RESPONSE** example
       :linenos:
 
       {
