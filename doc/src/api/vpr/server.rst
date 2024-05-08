@@ -30,7 +30,6 @@ Classes
 
 .. doxygenfunction:: server::calc_critical_path
    :project: vpr
-   :members:
 
 .. doxygenclass:: comm::ByteArray
    :project: vpr
