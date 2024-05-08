@@ -25,6 +25,10 @@ Classes
    :project: vpr
    :members:
 
+.. doxygenclass:: comm::TelegramParser
+   :project: vpr
+   :members:
+
 .. doxygenfunction:: try_compress
    :project: vpr
 
