@@ -33,30 +33,101 @@ public:
     static constexpr size_t COMPRESSORID_OFFSET = CHECKSUM_OFFSET + CHECKSUM_SIZE;
 
     TelegramHeader()=default;
-    explicit TelegramHeader(uint32_t length, uint32_t checkSum, uint8_t compressorId = 0);
+
+    /**
+     * @brief Constructs a TelegramHeader object with the specified length, checksum, and optional compressor ID.
+     *
+     * @param length The length of the telegram body.
+     * @param check_sum The checksum of the telegram body.
+     * @param compressor_id The compressor ID used for compressing the telegram body (default is 0).
+     */
+    explicit TelegramHeader(uint32_t length, uint32_t check_sum, uint8_t compressor_id = 0);
+
+    /**
+     * @brief Constructs a TelegramHeader object from the provided byte buffer.
+     *
+     * This constructor initializes a TelegramHeader object using the length and checksum information taken from the provided byte buffer.
+     *
+     * @param body The ByteArray containing the header data of the telegram.
+     */
     explicit TelegramHeader(const ByteArray& body);
+
     ~TelegramHeader()=default;
 
+    /**
+     * @brief Constructs a TelegramHeader based on the provided body data.
+     *
+     * @tparam T The type of the body data.
+     * @param body The body data used to calculate the size and checksum.
+     * @param compressor_id The ID of the compressor used for compression (default is 0, means no compressor is used).
+     * @return A TelegramHeader object constructed from the provided body data.
+     */
     template<typename T>
     static comm::TelegramHeader construct_from_data(const T& body, uint8_t compressor_id = 0) {
         uint32_t body_check_sum = ByteArray::calc_check_sum(body);
         return comm::TelegramHeader{static_cast<uint32_t>(body.size()), body_check_sum, compressor_id};
     }
 
+    /**
+     * @brief Returns the total size of the TelegramHeader.
+     *
+     * This static constexpr method returns the total size of the TelegramHeader, including all its components.
+     *
+     * @return The total size of the TelegramHeader.
+     */
     static constexpr size_t size() {
         return SIGNATURE_SIZE + LENGTH_SIZE + CHECKSUM_SIZE + COMPRESSORID_SIZE;
     }
 
+    /**
+     * @brief To checks if the TelegramHeader is valid.
+     *
+     * @return True if the TelegramHeader is valid, false otherwise.
+     */
     bool is_valid() const { return m_is_valid; }
 
+    /**
+     * @brief Retrieves the buffer associated with the TelegramHeader.
+     *
+     * This method returns a constant reference to the buffer associated with the TelegramHeader.
+     *
+     * @return A constant reference to the buffer.
+     */
     const ByteArray& buffer() const { return m_buffer; }
 
+    /**
+     * @brief Retrieves the number of bytes in the telegram body.
+     *
+     * @return The number of bytes in the telegram body.
+     */
     uint32_t body_bytes_num() const { return m_body_bytes_num; }
+
+    /**
+     * @brief Retrieves the checksum of telegram body.
+     *
+     * @return The checksum of telegram body.
+     */
     uint32_t body_check_sum() const { return m_body_check_sum; }
+
+    /**
+     * @brief Retrieves the compressor ID used for compressing telegram body.
+     *
+     * @return The compressor ID of the telegram body. 0 if the telegram body is not compressed.
+     */
     uint8_t compressor_id() const { return m_compressor_id; }
 
+    /**
+     * @brief Checks if the telegram body is compressed.
+     *
+     * @return True if the telegram body is compressed; otherwise, false.
+     */
     bool is_body_compressed() const { return m_compressor_id != 0; }
 
+    /**
+     * @brief Retrieves information about the telegram header.
+     *
+     * @return A string containing information about the telegram header.
+     */
     std::string info() const;
 
 private:
