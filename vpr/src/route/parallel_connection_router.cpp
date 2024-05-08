@@ -202,39 +202,40 @@ static inline bool prune_node(RRNodeId inode, float new_total_cost, float new_ba
     t_rr_node_route_inf* target_route_inf = &rr_node_route_inf_[target_node];
     float best_back_cost_to_target = target_route_inf->backward_path_cost;
     float best_total_cost_to_target = target_route_inf->path_cost;
-    RREdgeId best_prev_edge_to_target = target_route_inf->prev_edge;
 #ifdef IS_DETERMINISTIC
     // Deterministic version prefers a given EdgeID, so a unique path is returned since,
     // in the case of a tie, a determinstic path wins.
+    // Is first preferred over second?
     auto is_preferred_edge = [](RREdgeId first, RREdgeId second) {
+        // Since we cannot compare an invalid edge ID, always prefer the node
+        // coming from the invalid edge ID (implies the start node).
+        // TODO: Verify this
+        if (!first.is_valid())
+            return true;
+        if (!second.is_valid())
+            return false;
         return first < second;
     };
-    // TODO: Double check the best_total_cost_to_target, this may break determinism
-    // TODO: In truth, pruning based on both the total cost and the back cost yields a
-    //       race condition... This may be non-determinstic. May only be able to prune
-    //       based on back cost.
     if (inode != target_node) {
         if (best_total_cost_to_target < new_total_cost)
             return true;
         if (best_back_cost_to_target < new_back_cost)
             return true;
-        if (((best_total_cost_to_target == new_total_cost) ||
-             (best_back_cost_to_target == new_back_cost)) &&
-            (!is_preferred_edge(new_prev_edge, best_prev_edge_to_target)))
-            return true;
+        // NOTE: we do NOT check for equality here. Equality does not matter for
+        //       determinism when draining the queues (may just lead to a bit more work).
     }
     if (best_total_cost < new_total_cost)
         return true;
+    // TODO: Check if this back cost pruning is actually needed. Seems a bit silly since the total cost is the sum of the back cost and heuristic.
     if (best_back_cost < new_back_cost)
         return true;
-    if (((best_total_cost == new_total_cost) ||
-         (best_back_cost == new_back_cost)) &&
-        (!is_preferred_edge(new_prev_edge, best_prev_edge)))
+    if ((best_total_cost == new_total_cost) && (!is_preferred_edge(new_prev_edge, best_prev_edge)))
+        return true;
+    if ((best_back_cost == new_back_cost) && (!is_preferred_edge(new_prev_edge, best_prev_edge)))
         return true;
 #else   // IS_DETERMINISTIC
     (void)new_prev_edge;
     (void)best_prev_edge;
-    (void)best_prev_edge_to_target;
     // Non-deterministic version does not prefer a given EdgeID, therefore there
     // is a race-condition on which path wins in the case of a tie.
     // TODO: Confirm if best_total_cost_to_target should be included here.
