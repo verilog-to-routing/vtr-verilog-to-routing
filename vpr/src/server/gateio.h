@@ -26,10 +26,9 @@ namespace server {
  * 
  * Operable only with a single client. As soon as client connection is detected
  * it begins listening on the specified port number for incoming client requests,
- * collects and encapsulates them into tasks.
- * The incoming tasks are extracted and handled by the top-level logic (TaskResolver). 
- * Once the tasks are resolved by the TaskResolver, they are returned 
- * to be sent back to the client as a response.
+ * collects and encapsulates them into tasks @ref Task.
+ * The incoming tasks are extracted and handled by the top-level logic @ref TaskResolver.
+ * Once the tasks are resolved by the @ref TaskResolver, they are returned to be sent back to the client as a response.
  * 
  * @note
  * - The GateIO instance should be created and managed from the main thread, while its internal processing 

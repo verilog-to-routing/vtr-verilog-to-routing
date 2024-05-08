@@ -3,19 +3,19 @@
 Server Mode
 ================
 
-VTR provides ability to run server mode using following command line arguments 
+VTR provides the ability to run in server mode using the following command-line arguments.
 
 .. code-block:: none
 
   --server --port_num 60555
 
-Server mode may accept only single client application connection and response with two kind of requests: **get critical path list** and **highlight selected critical path elements**
+Server mode may only accept a single client application connection and respond to two types of requests: **get critical path report** and **highlight selected critical path elements**.
 
 Communication telegram
 -------------------------
 
-Telegram is a byte sequence consist from the two parts: fixed size **telegram header** and **telegram body** which could have vary size.
-**telegram header** is set of helper infomation to properly extract telegram body sequence from the data flow.
+Telegram consists of two parts: a fixed-size **telegram header** and a variable-size **telegram body**.
+The telegram header contains helper information required to properly extract the telegram body sequence from the data flow.
 
 .. _fig_comm_telegram_structure:
 
@@ -32,15 +32,16 @@ Telegram is a byte sequence consist from the two parts: fixed size **telegram he
 
     **telegram body** is flat **JSON** structure.
 
-    **CMD** could have following values:
+    **CMD** could have following integer values:
 
     - 0 - command id for **get critical path**
     - 1 - command id for **highlight selected path elements**
 
     JOB_ID - is unique id for a task.
 
-    .. note:: telegram body itself could be compressed with zlib, to minimize amount of data transfered over socket.
-      This is done for **get critical path** response. The compressor id byte in header sinalize if the telegram body is compressed.
+    .. note:: The telegram body itself could be compressed with zlib to minimize the amount of data transferred over the socket.
+      This compression is applied to the response of the 'get critical path report' request.
+      The compressor ID byte in the telegram header signals whether the telegram body is compressed.
 
 Get critical path timing report example
 ---------------------------------------
@@ -73,6 +74,8 @@ Get critical path timing report example
   - "aggregated"
   - "detailed"
   - "debug"
+
+  Response will look like:
 
   .. code-block:: json
       :caption: telegram body **RESPONSE** example
@@ -177,6 +180,8 @@ Draw selected critical path elements example
   - "crit path flylines delays"
   - "crit path routing"
   - "crit path routing delays"
+
+  Response will look like:
 
   .. code-block:: json
       :caption: telegram body **RESPONSE** example
