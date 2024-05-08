@@ -31,7 +31,7 @@ namespace server {
  * Once the tasks are resolved by the TaskResolver, they are returned 
  * to be sent back to the client as a response.
  * 
- * @note: 
+ * @note
  * - The GateIO instance should be created and managed from the main thread, while its internal processing 
  *   and IO operations are performed asynchronously in a separate thread.  This separation ensures smooth IO behavior 
  *   and responsiveness of the application.

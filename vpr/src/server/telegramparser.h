@@ -11,7 +11,7 @@ namespace comm {
 /**
  * @brief Dummy JSON parser.
  *
- * This module provides helper methods to extract values for a keys as "JOB_ID", "CMD", "OPTIONS", "DATA", or "STATUS
+ * This class provides helper methods to extract values for a keys as "JOB_ID", "CMD", "OPTIONS", "DATA", or "STATUS
  * from a JSON schema structured as follows: {JOB_ID:num, CMD:enum, OPTIONS:string, DATA:string, STATUS:num}.
  */
 class TelegramParser {
