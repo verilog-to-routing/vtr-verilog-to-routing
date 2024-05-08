@@ -52,6 +52,7 @@ int yylex(void);
 %define parse.error verbose
 
 %locations
+%expect 2
 
 %union{
 	char *id_name;
@@ -207,6 +208,8 @@ int yylex(void);
 %type <node> initial_block list_of_blocking_assignment
 %type <node> list_of_generate_block_items generate_item generate_block_item generate loop_generate_construct if_generate_construct 
 %type <node> case_generate_construct case_generate_item_list case_generate_items generate_block generate_localparam_declaration generate_defparam_declaration
+
+
 
 /* capture wether an operation is signed or not */
 %type <op> var_signedness
