@@ -23,8 +23,20 @@ class TelegramBuffer
     static const std::size_t DEFAULT_SIZE_HINT = 1024;
 
 public:
+    /**
+     * @brief Constructs a TelegramBuffer object with a default size hint.
+     *
+     * This constructor initializes a TelegramBuffer object with a default size hint for the raw buffer.
+     */
     TelegramBuffer(): m_raw_buffer(DEFAULT_SIZE_HINT) {}
+
+    /**
+     * @brief Constructs a TelegramBuffer object with a specified size hint.
+     *
+     * This constructor initializes a TelegramBuffer object with a specified size hint for the raw buffer.
+     */
     explicit TelegramBuffer(std::size_t sizeHint): m_raw_buffer(sizeHint) {}
+
     ~TelegramBuffer()=default;
 
     /**

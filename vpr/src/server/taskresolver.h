@@ -20,29 +20,32 @@ namespace server {
  * 
  * Process and resolve server task, store result and status for processed task.
 */
-
 class TaskResolver {
 public:
+    /**
+     * @brief Default constructor for TaskResolver.
+     */
     TaskResolver()=default;
+
     ~TaskResolver()=default;
 
     int tasks_num() const { return m_tasks.size(); }
 
     /**
     * @brief Takes ownership of a task.
-    * 
+    *
     * This method takes ownership of a task by moving it into the TaskResolver's internal task queue.
     * After calling this method, the task will be owned and managed by the TaskResolver.
-    * 
+    *
     * @param task The task to take ownership of. After calling this method, the task object will be in a valid but unspecified state.
-    * 
+    *
     * @note After calling this method, the caller should avoid accessing or modifying the task object.
     */ 
     void own_task(TaskPtr&& task);
 
     /**
     * @brief Resolve queued tasks.
-    * 
+    *
     * @param app A pointer to the ezgl::application object representing the application instance.
     */
     bool update(ezgl::application* app);

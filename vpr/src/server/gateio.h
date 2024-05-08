@@ -141,6 +141,9 @@ class GateIO
     const int LOOP_INTERVAL_MS = 100;
 
 public:
+    /**
+     * @brief Default constructor for GateIO.
+     */
     GateIO();
     ~GateIO();
 
