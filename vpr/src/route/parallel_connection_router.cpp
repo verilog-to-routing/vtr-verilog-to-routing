@@ -203,6 +203,7 @@ static inline bool prune_node(RRNodeId inode, float new_total_cost, float new_ba
     float best_back_cost_to_target = target_route_inf->backward_path_cost;
     float best_total_cost_to_target = target_route_inf->path_cost;
 #ifdef IS_DETERMINISTIC
+    (void)best_total_cost;
     // Deterministic version prefers a given EdgeID, so a unique path is returned since,
     // in the case of a tie, a determinstic path wins.
     // Is first preferred over second?
@@ -216,6 +217,8 @@ static inline bool prune_node(RRNodeId inode, float new_total_cost, float new_ba
             return false;
         return first < second;
     };
+    // Post-target pruning: After the target is reached the first time, should
+    // use the heuristic to help drain the queues.
     if (inode != target_node) {
         if (best_total_cost_to_target < new_total_cost)
             return true;
@@ -224,15 +227,12 @@ static inline bool prune_node(RRNodeId inode, float new_total_cost, float new_ba
         // NOTE: we do NOT check for equality here. Equality does not matter for
         //       determinism when draining the queues (may just lead to a bit more work).
     }
-
-    if (best_total_cost < new_total_cost)
-        return true;
-    // TODO: Check if this back cost pruning is actually needed. Seems a bit silly since the total cost is the sum of the back cost and heuristic.
+    // NOTE: When going to the target, we only want to prune on the truth.
+    //       The queues handle using the heuristic to explore nodes faster.
     if (best_back_cost < new_back_cost)
         return true;
-    // NOTE: If the backward cost is equal, but the total cost is lower (or vice-versa) we do not want to prune.
-    //       Therefore, we want to prune if BOTH the total cost and backwards costs are equal (and the edge is not preferred).
-    if ((best_total_cost == new_total_cost) && (best_back_cost == new_back_cost) && (!is_preferred_edge(new_prev_edge, best_prev_edge)))
+    // If there is a tie, pick the node with the preferred edge.
+    if ((best_back_cost == new_back_cost) && (!is_preferred_edge(new_prev_edge, best_prev_edge)))
         return true;
 #else   // IS_DETERMINISTIC
     (void)new_prev_edge;
