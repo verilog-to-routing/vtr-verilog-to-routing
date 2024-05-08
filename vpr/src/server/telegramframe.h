@@ -10,17 +10,20 @@
 
 namespace comm {
 
-
 /**
 * @brief Structure representing a TelegramFrame.
 *
 * A TelegramFrame consists of a TelegramHeader followed by data.
-*
-* @var header The TelegramHeader containing metadata about the telegram message. @see TelegramHeader
-* @var data The actual data of the telegram message.
 */
 struct TelegramFrame {
+    /**
+    * @brief header The TelegramHeader containing metadata about the telegram message.
+    */
     TelegramHeader header;
+
+    /**
+    * @brief data The actual data of the telegram message.
+    */
     ByteArray data;
 };
 using TelegramFramePtr = std::shared_ptr<TelegramFrame>;

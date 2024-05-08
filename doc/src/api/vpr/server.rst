@@ -2,8 +2,8 @@
 Server
 ========
 
-Classes
--------
+.. doxygenfunction:: server::update
+   :project: vpr
 
 .. doxygenclass:: server::GateIO
    :project: vpr
@@ -20,9 +20,6 @@ Classes
 .. doxygenclass:: server::TelegramOptions
    :project: vpr
    :members:
-
-.. doxygenfunction:: server::update
-   :project: vpr
 
 .. doxygenstruct:: server::CritPathsResult 
    :project: vpr

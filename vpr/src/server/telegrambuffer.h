@@ -35,7 +35,7 @@ public:
      *
      * This constructor initializes a TelegramBuffer object with a specified size hint for the raw buffer.
      */
-    explicit TelegramBuffer(std::size_t sizeHint): m_raw_buffer(sizeHint) {}
+    explicit TelegramBuffer(std::size_t size_hint): m_raw_buffer(size_hint) {}
 
     ~TelegramBuffer()=default;
 

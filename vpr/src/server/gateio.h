@@ -198,9 +198,9 @@ public:
      * Once started,the server will continue running in a separate thread and will accept connection only from a single client
      * attempting to connect to the specified port.
      * 
-     * @param portNum The port number on which the server will listen for incoming connection.
+     * @param port_num The port number on which the server will listen for incoming connection.
      */
-    void start(int portNum);
+    void start(int port_num);
 
     /**
      * @brief Stops the server and terminates the listening thread.
