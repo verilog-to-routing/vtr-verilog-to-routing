@@ -224,14 +224,15 @@ static inline bool prune_node(RRNodeId inode, float new_total_cost, float new_ba
         // NOTE: we do NOT check for equality here. Equality does not matter for
         //       determinism when draining the queues (may just lead to a bit more work).
     }
+
     if (best_total_cost < new_total_cost)
         return true;
     // TODO: Check if this back cost pruning is actually needed. Seems a bit silly since the total cost is the sum of the back cost and heuristic.
     if (best_back_cost < new_back_cost)
         return true;
-    if ((best_total_cost == new_total_cost) && (!is_preferred_edge(new_prev_edge, best_prev_edge)))
-        return true;
-    if ((best_back_cost == new_back_cost) && (!is_preferred_edge(new_prev_edge, best_prev_edge)))
+    // NOTE: If the backward cost is equal, but the total cost is lower (or vice-versa) we do not want to prune.
+    //       Therefore, we want to prune if BOTH the total cost and backwards costs are equal (and the edge is not preferred).
+    if ((best_total_cost == new_total_cost) && (best_back_cost == new_back_cost) && (!is_preferred_edge(new_prev_edge, best_prev_edge)))
         return true;
 #else   // IS_DETERMINISTIC
     (void)new_prev_edge;
