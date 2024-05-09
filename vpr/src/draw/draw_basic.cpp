@@ -1109,11 +1109,9 @@ void draw_crit_path(ezgl::renderer* g) {
  * This function draws critical path elements based on the provided timing paths
  * and indexes map. It is primarily used in server mode, where items are drawn upon request.
  */
-void draw_crit_path_elements(const std::vector<tatum::TimingPath>& paths, const std::map<std::size_t, std::set<std::size_t>>& indexes, ezgl::renderer* g) {
-#ifndef NO_SERVER
+void draw_crit_path_elements(const std::vector<tatum::TimingPath>& paths, const std::map<std::size_t, std::set<std::size_t>>& indexes, bool draw_crit_path_contour, ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
     const ezgl::color contour_color{0, 0, 0, 40};
-    const bool draw_crit_path_contour = g_vpr_ctx.server().draw_crit_path_contour();
 
     auto draw_flyline_timing_edge_helper_fn = [](ezgl::renderer* renderer, const ezgl::color& color, ezgl::line_dash line_style, int line_width, float delay, 
                                             const tatum::NodeId& prev_node, const tatum::NodeId& node, bool skip_draw_delays=false) {
@@ -1178,7 +1176,6 @@ void draw_crit_path_elements(const std::vector<tatum::TimingPath>& paths, const 
             }
         }
     }
-#endif /* NO_SERVER */
 }
 
 int get_timing_path_node_layer_num(tatum::NodeId node) {
