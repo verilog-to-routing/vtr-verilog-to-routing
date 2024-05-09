@@ -34,7 +34,7 @@
 %define api.namespace {sdcparse}
 
 /* Name the parser class */
-%define parser_class_name {Parser}
+%define api.parser.class {Parser}
 
 /* Match the flex prefix */
 %define api.prefix {sdcparse_}
