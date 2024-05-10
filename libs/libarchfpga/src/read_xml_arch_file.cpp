@@ -36,7 +36,7 @@
  *
  */
 
-#include <string.h>
+#include <cstring>
 #include <map>
 #include <set>
 #include <string>
@@ -172,6 +172,7 @@ static void ProcessSubTiles(pugi::xml_node Node,
                             const t_default_fc_spec& arch_def_fc,
                             const pugiutil::loc_data& loc_data,
                             const int num_of_avail_layer);
+
 static void ProcessPb_Type(vtr::string_internment* strings,
                            pugi::xml_node Parent,
                            t_pb_type* pb_type,
@@ -180,6 +181,7 @@ static void ProcessPb_Type(vtr::string_internment* strings,
                            const t_arch& arch,
                            const pugiutil::loc_data& loc_data,
                            int& pb_idx);
+
 static void ProcessPb_TypePort(pugi::xml_node Parent,
                                t_port* port,
                                e_power_estimation_method power_method,
@@ -223,7 +225,14 @@ static t_grid_def ProcessGridLayout(vtr::string_internment* strings, pugi::xml_n
 static void ProcessBlockTypeLocs(t_grid_def& grid_def, int die_number, vtr::string_internment* strings, pugi::xml_node layout_block_type_tag, const pugiutil::loc_data& loc_data);
 static int get_number_of_layers(pugi::xml_node layout_type_tag, const pugiutil::loc_data& loc_data);
 static void ProcessDevice(pugi::xml_node Node, t_arch* arch, t_default_fc_spec& arch_def_fc, const pugiutil::loc_data& loc_data);
-static void ProcessComplexBlocks(vtr::string_internment* strings, pugi::xml_node Node, std::vector<t_logical_block_type>& LogicalBlockTypes, t_arch& arch, const bool timing_enabled, const pugiutil::loc_data& loc_data);
+
+static void ProcessComplexBlocks(vtr::string_internment* strings,
+                                 pugi::xml_node Node,
+                                 std::vector<t_logical_block_type>& LogicalBlockTypes,
+                                 t_arch& arch,
+                                 const bool timing_enabled,
+                                 const pugiutil::loc_data& loc_data);
+
 static void ProcessSwitches(pugi::xml_node Node,
                             t_arch_switch_inf** Switches,
                             int* NumSwitches,
@@ -1125,51 +1134,44 @@ static void ProcessPb_Type(vtr::string_internment* strings,
                            const t_arch& arch,
                            const pugiutil::loc_data& loc_data,
                            int& pb_idx) {
-    int num_ports, i, j, k, num_annotations;
     const char* Prop;
     pugi::xml_node Cur;
 
-    bool is_root_pb_type = !(mode != nullptr && mode->parent_pb_type != nullptr);
+    bool is_root_pb_type = (mode == nullptr || mode->parent_pb_type == nullptr);
     bool is_leaf_pb_type = bool(get_attribute(Parent, "blif_model", loc_data, ReqOpt::OPTIONAL));
 
     std::vector<std::string> children_to_expect = {"input", "output", "clock", "mode", "power", "metadata"};
     if (!is_leaf_pb_type) {
         //Non-leafs may have a model/pb_type children
-        children_to_expect.push_back("model");
-        children_to_expect.push_back("pb_type");
-        children_to_expect.push_back("interconnect");
+        children_to_expect.emplace_back("model");
+        children_to_expect.emplace_back("pb_type");
+        children_to_expect.emplace_back("interconnect");
 
         if (is_root_pb_type) {
             VTR_ASSERT(!is_leaf_pb_type);
             //Top level pb_type's may also have the following tag types
-            children_to_expect.push_back("fc");
-            children_to_expect.push_back("pinlocations");
-            children_to_expect.push_back("switchblock_locations");
+            children_to_expect.emplace_back("fc");
+            children_to_expect.emplace_back("pinlocations");
+            children_to_expect.emplace_back("switchblock_locations");
         }
     } else {
         VTR_ASSERT(is_leaf_pb_type);
         VTR_ASSERT(!is_root_pb_type);
 
         //Leaf pb_type's may also have the following tag types
-        children_to_expect.push_back("T_setup");
-        children_to_expect.push_back("T_hold");
-        children_to_expect.push_back("T_clock_to_Q");
-        children_to_expect.push_back("delay_constant");
-        children_to_expect.push_back("delay_matrix");
+        children_to_expect.emplace_back("T_setup");
+        children_to_expect.emplace_back("T_hold");
+        children_to_expect.emplace_back("T_clock_to_Q");
+        children_to_expect.emplace_back("delay_constant");
+        children_to_expect.emplace_back("delay_matrix");
     }
 
     //Sanity check contained tags
     expect_only_children(Parent, children_to_expect, loc_data);
 
-    char* class_name;
-    /* STL maps for checking various duplicate names */
-    std::map<std::string, int> pb_port_names;
-    std::map<std::string, int> mode_names;
-    std::pair<std::map<std::string, int>::iterator, bool> ret_pb_ports;
-    std::pair<std::map<std::string, int>::iterator, bool> ret_mode_names;
-    int num_in_ports, num_out_ports, num_clock_ports;
-    int num_delay_constant, num_delay_matrix, num_C_constant, num_C_matrix,
-        num_T_setup, num_T_cq, num_T_hold;
+    /* STL sets for checking various duplicate names */
+    std::set<std::string> pb_port_names;
+    std::set<std::string> mode_names;
 
     pb_type->parent_mode = mode;
     pb_type->index_in_logical_block = pb_idx;
@@ -1187,7 +1189,7 @@ static void ProcessPb_Type(vtr::string_internment* strings,
 
     pb_type->class_type = UNKNOWN_CLASS;
     Prop = get_attribute(Parent, "class", loc_data, ReqOpt::OPTIONAL).as_string(nullptr);
-    class_name = vtr::strdup(Prop);
+    char* class_name = vtr::strdup(Prop);
 
     if (class_name) {
         if (0 == strcmp(class_name, PB_TYPE_CLASS_STRING[LUT_CLASS])) {
@@ -1211,17 +1213,16 @@ static void ProcessPb_Type(vtr::string_internment* strings,
     }
 
     VTR_ASSERT(pb_type->num_pb > 0);
-    num_ports = num_in_ports = num_out_ports = num_clock_ports = 0;
-    num_in_ports = count_children(Parent, "input", loc_data, ReqOpt::OPTIONAL);
-    num_out_ports = count_children(Parent, "output", loc_data, ReqOpt::OPTIONAL);
-    num_clock_ports = count_children(Parent, "clock", loc_data, ReqOpt::OPTIONAL);
-    num_ports = num_in_ports + num_out_ports + num_clock_ports;
+
+    const int num_in_ports = count_children(Parent, "input", loc_data, ReqOpt::OPTIONAL);
+    const int num_out_ports = count_children(Parent, "output", loc_data, ReqOpt::OPTIONAL);
+    const int num_clock_ports = count_children(Parent, "clock", loc_data, ReqOpt::OPTIONAL);
+    const int num_ports = num_in_ports + num_out_ports + num_clock_ports;
     pb_type->ports = (t_port*)vtr::calloc(num_ports, sizeof(t_port));
     pb_type->num_ports = num_ports;
 
     /* Enforce VPR's definition of LUT/FF by checking number of ports */
-    if (pb_type->class_type == LUT_CLASS
-        || pb_type->class_type == LATCH_CLASS) {
+    if (pb_type->class_type == LUT_CLASS || pb_type->class_type == LATCH_CLASS) {
         if (num_in_ports != 1 || num_out_ports != 1) {
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(Parent),
                            "%s primitives must contain exactly one input port and one output port."
@@ -1232,64 +1233,54 @@ static void ProcessPb_Type(vtr::string_internment* strings,
     }
 
     /* Initialize Power Structure */
-    pb_type->pb_type_power = (t_pb_type_power*)vtr::calloc(1,
-                                                           sizeof(t_pb_type_power));
+    pb_type->pb_type_power = (t_pb_type_power*)vtr::calloc(1, sizeof(t_pb_type_power));
     ProcessPb_TypePowerEstMethod(Parent, pb_type, loc_data);
 
     /* process ports */
-    j = 0;
     int absolute_port_first_pin_index = 0;
+    int port_idx = 0;
 
-    for (i = 0; i < 3; i++) {
-        if (i == 0) {
-            k = 0;
-            Cur = get_first_child(Parent, "input", loc_data, ReqOpt::OPTIONAL);
-        } else if (i == 1) {
-            k = 0;
-            Cur = get_first_child(Parent, "output", loc_data, ReqOpt::OPTIONAL);
-        } else {
-            k = 0;
-            Cur = get_first_child(Parent, "clock", loc_data, ReqOpt::OPTIONAL);
-        }
+    for (const char* child_name : {"input", "output", "clock"}) {
+        Cur = get_first_child(Parent, child_name, loc_data, ReqOpt::OPTIONAL);
+        int port_index_by_type = 0;
+
         while (Cur) {
-            pb_type->ports[j].parent_pb_type = pb_type;
-            pb_type->ports[j].index = j;
-            pb_type->ports[j].port_index_by_type = k;
-            ProcessPb_TypePort(Cur, &pb_type->ports[j],
+            pb_type->ports[port_idx].parent_pb_type = pb_type;
+            pb_type->ports[port_idx].index = port_idx;
+            pb_type->ports[port_idx].port_index_by_type = port_index_by_type;
+            ProcessPb_TypePort(Cur, &pb_type->ports[port_idx],
                                pb_type->pb_type_power->estimation_method, is_root_pb_type, loc_data);
 
-            pb_type->ports[j].absolute_first_pin_index = absolute_port_first_pin_index;
-            absolute_port_first_pin_index += pb_type->ports[j].num_pins;
+            pb_type->ports[port_idx].absolute_first_pin_index = absolute_port_first_pin_index;
+            absolute_port_first_pin_index += pb_type->ports[port_idx].num_pins;
 
             //Check port name duplicates
-            ret_pb_ports = pb_port_names.insert(std::pair<std::string, int>(pb_type->ports[j].name, 0));
-            if (!ret_pb_ports.second) {
+            auto [_, success] = pb_port_names.insert(pb_type->ports[port_idx].name);
+            if (!success) {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
                                "Duplicate port names in pb_type '%s': port '%s'\n",
-                               pb_type->name, pb_type->ports[j].name);
+                               pb_type->name, pb_type->ports[port_idx].name);
             }
 
             /* get next iteration */
-            j++;
-            k++;
+            port_idx++;
+            port_index_by_type++;
             Cur = Cur.next_sibling(Cur.name());
         }
     }
 
-    VTR_ASSERT(j == num_ports);
+    VTR_ASSERT(port_idx == num_ports);
 
     /* Count stats on the number of each type of pin */
     pb_type->num_clock_pins = pb_type->num_input_pins = pb_type->num_output_pins = 0;
-    for (i = 0; i < pb_type->num_ports; i++) {
-        if (pb_type->ports[i].type == IN_PORT
-            && pb_type->ports[i].is_clock == false) {
-            pb_type->num_input_pins += pb_type->ports[i].num_pins;
-        } else if (pb_type->ports[i].type == OUT_PORT) {
-            pb_type->num_output_pins += pb_type->ports[i].num_pins;
+    for (int port_i = 0; port_i < pb_type->num_ports; port_i++) {
+        if (pb_type->ports[port_i].type == IN_PORT && !pb_type->ports[port_i].is_clock) {
+            pb_type->num_input_pins += pb_type->ports[port_i].num_pins;
+        } else if (pb_type->ports[port_i].type == OUT_PORT) {
+            pb_type->num_output_pins += pb_type->ports[port_i].num_pins;
         } else {
-            VTR_ASSERT(pb_type->ports[i].is_clock
-                       && pb_type->ports[i].type == IN_PORT);
-            pb_type->num_clock_pins += pb_type->ports[i].num_pins;
+            VTR_ASSERT(pb_type->ports[port_i].is_clock && pb_type->ports[port_i].type == IN_PORT);
+            pb_type->num_clock_pins += pb_type->ports[port_i].num_pins;
         }
     }
 
@@ -1308,51 +1299,30 @@ static void ProcessPb_Type(vtr::string_internment* strings,
 
     pb_type->annotations = nullptr;
     pb_type->num_annotations = 0;
-    i = 0;
     /* Determine if this is a leaf or container pb_type */
     if (pb_type->blif_model != nullptr) {
         /* Process delay and capacitance annotations */
-        num_annotations = 0;
-        num_delay_constant = count_children(Parent, "delay_constant", loc_data, ReqOpt::OPTIONAL);
-        num_delay_matrix = count_children(Parent, "delay_matrix", loc_data, ReqOpt::OPTIONAL);
-        num_C_constant = count_children(Parent, "C_constant", loc_data, ReqOpt::OPTIONAL);
-        num_C_matrix = count_children(Parent, "C_matrix", loc_data, ReqOpt::OPTIONAL);
-        num_T_setup = count_children(Parent, "T_setup", loc_data, ReqOpt::OPTIONAL);
-        num_T_cq = count_children(Parent, "T_clock_to_Q", loc_data, ReqOpt::OPTIONAL);
-        num_T_hold = count_children(Parent, "T_hold", loc_data, ReqOpt::OPTIONAL);
-        num_annotations = num_delay_constant + num_delay_matrix + num_C_constant
-                          + num_C_matrix + num_T_setup + num_T_cq + num_T_hold;
+        int num_annotations = 0;
+        for (auto child_name : {"delay_constant", "delay_matrix", "C_constant", "C_matrix", "T_setup", "T_clock_to_Q", "T_hold"}) {
+            num_annotations += count_children(Parent, child_name, loc_data, ReqOpt::OPTIONAL);
+        }
 
         pb_type->annotations = (t_pin_to_pin_annotation*)vtr::calloc(num_annotations, sizeof(t_pin_to_pin_annotation));
         pb_type->num_annotations = num_annotations;
 
-        j = 0;
-        for (i = 0; i < 7; i++) {
-            if (i == 0) {
-                Cur = get_first_child(Parent, "delay_constant", loc_data, ReqOpt::OPTIONAL);
-            } else if (i == 1) {
-                Cur = get_first_child(Parent, "delay_matrix", loc_data, ReqOpt::OPTIONAL);
-            } else if (i == 2) {
-                Cur = get_first_child(Parent, "C_constant", loc_data, ReqOpt::OPTIONAL);
-            } else if (i == 3) {
-                Cur = get_first_child(Parent, "C_matrix", loc_data, ReqOpt::OPTIONAL);
-            } else if (i == 4) {
-                Cur = get_first_child(Parent, "T_setup", loc_data, ReqOpt::OPTIONAL);
-            } else if (i == 5) {
-                Cur = get_first_child(Parent, "T_clock_to_Q", loc_data, ReqOpt::OPTIONAL);
-            } else if (i == 6) {
-                Cur = get_first_child(Parent, "T_hold", loc_data, ReqOpt::OPTIONAL);
-            }
+        int annotation_idx = 0;
+        for (auto child_name : {"delay_constant", "delay_matrix", "C_constant", "C_matrix", "T_setup", "T_clock_to_Q", "T_hold"}) {
+            Cur = get_first_child(Parent, child_name, loc_data, ReqOpt::OPTIONAL);
+
             while (Cur) {
-                ProcessPinToPinAnnotations(Cur, &pb_type->annotations[j],
-                                           pb_type, loc_data);
+                ProcessPinToPinAnnotations(Cur, &pb_type->annotations[annotation_idx], pb_type, loc_data);
 
                 /* get next iteration */
-                j++;
+                annotation_idx++;
                 Cur = Cur.next_sibling(Cur.name());
             }
         }
-        VTR_ASSERT(j == num_annotations);
+        VTR_ASSERT(annotation_idx == num_annotations);
 
         if (timing_enabled) {
             check_leaf_pb_model_timing_consistency(pb_type, arch);
@@ -1373,43 +1343,41 @@ static void ProcessPb_Type(vtr::string_internment* strings,
         VTR_ASSERT(pb_type->class_type == UNKNOWN_CLASS);
         pb_type->num_modes = count_children(Parent, "mode", loc_data, ReqOpt::OPTIONAL);
         pb_type->pb_type_power->leakage_default_mode = 0;
+        int mode_idx = 0;
 
         if (pb_type->num_modes == 0) {
             /* The pb_type operates in an implied one mode */
             pb_type->num_modes = 1;
             pb_type->modes = new t_mode[pb_type->num_modes];
-            pb_type->modes[i].parent_pb_type = pb_type;
-            pb_type->modes[i].index = i;
-            ProcessMode(strings, Parent, &pb_type->modes[i], timing_enabled, arch, loc_data, pb_idx);
-            i++;
+            pb_type->modes[mode_idx].parent_pb_type = pb_type;
+            pb_type->modes[mode_idx].index = mode_idx;
+            ProcessMode(strings, Parent, &pb_type->modes[mode_idx], timing_enabled, arch, loc_data, pb_idx);
+            mode_idx++;
         } else {
             pb_type->modes = new t_mode[pb_type->num_modes];
 
             Cur = get_first_child(Parent, "mode", loc_data);
             while (Cur != nullptr) {
                 if (0 == strcmp(Cur.name(), "mode")) {
-                    pb_type->modes[i].parent_pb_type = pb_type;
-                    pb_type->modes[i].index = i;
-                    ProcessMode(strings, Cur, &pb_type->modes[i], timing_enabled, arch, loc_data, pb_idx);
+                    pb_type->modes[mode_idx].parent_pb_type = pb_type;
+                    pb_type->modes[mode_idx].index = mode_idx;
+                    ProcessMode(strings, Cur, &pb_type->modes[mode_idx], timing_enabled, arch, loc_data, pb_idx);
 
-                    ret_mode_names = mode_names.insert(std::pair<std::string, int>(pb_type->modes[i].name, 0));
-                    if (!ret_mode_names.second) {
+                    auto [_, success] = mode_names.insert(pb_type->modes[mode_idx].name);
+                    if (!success) {
                         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
                                        "Duplicate mode name: '%s' in pb_type '%s'.\n",
-                                       pb_type->modes[i].name, pb_type->name);
+                                       pb_type->modes[mode_idx].name, pb_type->name);
                     }
 
                     /* get next iteration */
-                    i++;
+                    mode_idx++;
                     Cur = Cur.next_sibling(Cur.name());
                 }
             }
         }
-        VTR_ASSERT(i == pb_type->num_modes);
+        VTR_ASSERT(mode_idx == pb_type->num_modes);
     }
-
-    pb_port_names.clear();
-    mode_names.clear();
 
     pb_type->meta = ProcessMetadata(strings, Parent, loc_data);
     ProcessPb_TypePower(Parent, pb_type, loc_data);
@@ -3577,13 +3545,19 @@ static void ProcessSubTiles(pugi::xml_node Node,
 
 /* Takes in node pointing to <typelist> and loads all the
  * child type objects. */
-static void ProcessComplexBlocks(vtr::string_internment* strings, pugi::xml_node Node, std::vector<t_logical_block_type>& LogicalBlockTypes, t_arch& arch, const bool timing_enabled, const pugiutil::loc_data& loc_data) {
+static void ProcessComplexBlocks(vtr::string_internment* strings,
+                                 pugi::xml_node Node,
+                                 std::vector<t_logical_block_type>& LogicalBlockTypes,
+                                 t_arch& arch, const bool timing_enabled,
+                                 const pugiutil::loc_data& loc_data) {
     pugi::xml_node CurBlockType;
     pugi::xml_node Cur;
-    std::map<std::string, int> pb_type_descriptors;
 
-    /* Alloc the type list. Need one additional t_type_desctiptors:
-     * 1: empty psuedo-type
+    // used to find duplicate pb_types names
+    std::set<std::string> pb_type_descriptors;
+
+    /* Alloc the type list. Need one additional t_type_descriptors:
+     * 1: empty pseudo-type
      */
     t_logical_block_type EMPTY_LOGICAL_BLOCK_TYPE = get_empty_logical_type();
     EMPTY_LOGICAL_BLOCK_TYPE.index = 0;
@@ -3606,8 +3580,8 @@ static void ProcessComplexBlocks(vtr::string_internment* strings, pugi::xml_node
         auto Prop = get_attribute(CurBlockType, "name", loc_data).value();
         LogicalBlockType.name = vtr::strdup(Prop);
 
-        auto result = pb_type_descriptors.insert(std::pair<std::string, int>(LogicalBlockType.name, 0));
-        if (!result.second) {
+        auto [_, success] = pb_type_descriptors.insert(LogicalBlockType.name);
+        if (!success) {
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(CurBlockType),
                            "Duplicate pb_type descriptor name: '%s'.\n", LogicalBlockType.name);
         }
@@ -3628,7 +3602,6 @@ static void ProcessComplexBlocks(vtr::string_internment* strings, pugi::xml_node
         /* Free this node and get its next sibling node */
         CurBlockType = CurBlockType.next_sibling(CurBlockType.name());
     }
-    pb_type_descriptors.clear();
 }
 
 static void ProcessSegments(pugi::xml_node Parent,

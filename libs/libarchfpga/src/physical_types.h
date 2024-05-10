@@ -28,6 +28,7 @@
 #define PHYSICAL_TYPES_H
 
 #include <functional>
+#include <utility>
 #include <vector>
 #include <unordered_map>
 #include <string>
@@ -146,7 +147,7 @@ struct t_metadata_dict : vtr::flat_map<
     void add(vtr::interned_string key, vtr::interned_string value) {
         // Get the iterator to the key, which may already have elements if
         // add was called with this key in the past.
-        (*this)[key].emplace_back(t_metadata_value(value));
+        (*this)[key].emplace_back(value);
     }
 };
 
@@ -263,10 +264,10 @@ enum e_sb_location {
  */
 struct t_grid_loc_spec {
     t_grid_loc_spec(std::string start, std::string end, std::string repeat, std::string incr)
-        : start_expr(start)
-        , end_expr(end)
-        , repeat_expr(repeat)
-        , incr_expr(incr) {}
+        : start_expr(std::move(start))
+        , end_expr(std::move(end))
+        , repeat_expr(std::move(repeat))
+        , incr_expr(std::move(incr)) {}
 
     std::string start_expr; //Starting position (inclusive)
     std::string end_expr;   //Ending position (inclusive)
@@ -280,7 +281,7 @@ struct t_grid_loc_spec {
 
 /* Definition of how to place physical logic block in the grid.
  *  This defines a region of the grid to be set to a specific type
- *  (provided it's priority is high enough to override other blocks).
+ *  (provided its priority is high enough to override other blocks).
  *
  *  The diagram below illustrates the layout specification.
  *
@@ -345,7 +346,7 @@ struct t_grid_loc_spec {
  */
 struct t_grid_loc_def {
     t_grid_loc_def(std::string block_type_val, int priority_val)
-        : block_type(block_type_val)
+        : block_type(std::move(block_type_val))
         , priority(priority_val)
         , x("0", "W-1", "max(w+1,W)", "w") //Fill in x direction, no repeat, incr by block width
         , y("0", "H-1", "max(h+1,H)", "h") //Fill in y direction, no repeat, incr by block height
@@ -358,7 +359,7 @@ struct t_grid_loc_def {
                       // the largest priority wins.
 
     t_grid_loc_spec x; //Horizontal location specification
-    t_grid_loc_spec y; //Veritcal location specification
+    t_grid_loc_spec y; //Vertical location specification
 
     // When 1 metadata tag is split among multiple t_grid_loc_def, one
     // t_grid_loc_def is arbitrarily chosen to own the metadata, and the other
@@ -1601,7 +1602,7 @@ struct t_hash_segment_inf {
 enum class SwitchType {
     MUX = 0,   //A configurable (buffered) mux (single-driver)
     TRISTATE,  //A configurable tristate-able buffer (multi-driver)
-    PASS_GATE, //A configurable pass transitor switch (multi-driver)
+    PASS_GATE, //A configurable pass transistor switch (multi-driver)
     SHORT,     //A non-configurable electrically shorted connection (multi-driver)
     BUFFER,    //A non-configurable non-tristate-able buffer (uni-driver)
     INVALID,   //Unspecified, usually an error
@@ -1992,7 +1993,7 @@ struct t_arch {
     // nets from the circuit netlist are belonging to the constant network,
     // and assigned to it accordingly.
     //
-    // NOTE: At the moment, the constant cells and nets are primarly used
+    // NOTE: At the moment, the constant cells and nets are primarily used
     // for the interchange netlist format, to determine which are the constants
     // net names and which virtual cell is responsible to generate them.
     // The information is present in the device database.

@@ -138,7 +138,7 @@ void expect_child_node_count(const pugi::xml_node node,
 //  child_names - expected attribute names
 //  loc_data - XML file location data
 void expect_only_children(const pugi::xml_node node,
-                          std::vector<std::string> child_names,
+                          const std::vector<std::string>& child_names,
                           const loc_data& loc_data);
 
 //Throws a well formatted error if any attribute other than those named in 'attribute_names' are found on 'node'.

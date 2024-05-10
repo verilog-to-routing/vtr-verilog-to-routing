@@ -18,6 +18,8 @@
 /* Value for UNDEFINED data */
 constexpr int UNDEFINED = -1;
 
+constexpr int NUM_MODELS_IN_LIBRARY = 4;
+
 /* Maximum value for mininum channel width to avoid overflows of short data type.               */
 constexpr int MAX_CHANNEL_WIDTH = 8000;
 

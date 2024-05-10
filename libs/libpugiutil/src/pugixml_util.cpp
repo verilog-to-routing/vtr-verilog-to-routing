@@ -150,7 +150,7 @@ void expect_child_node_count(const pugi::xml_node node,
 //  child_names - expected attribute names
 //  loc_data - XML file location data
 void expect_only_children(const pugi::xml_node node,
-                          std::vector<std::string> child_names,
+                          const std::vector<std::string>& child_names,
                           const loc_data& loc_data) {
     for (auto child : node.children()) {
         std::string child_name = child.name();
@@ -161,7 +161,7 @@ void expect_only_children(const pugi::xml_node node,
             std::string msg = "Unexpected child '" + child_name + "'"
                               + " of node '" + node.name() + "'.";
 
-            if (child_names.size() > 0) {
+            if (!child_names.empty()) {
                 msg += " Expected (possibly) one of: ";
                 for (size_t i = 0; i < child_names.size(); i++) {
                     if (i != 0) {
