@@ -191,7 +191,12 @@ static void ProcessPinToPinAnnotations(pugi::xml_node parent,
                                        t_pin_to_pin_annotation* annotation,
                                        t_pb_type* parent_pb_type,
                                        const pugiutil::loc_data& loc_data);
-static void ProcessInterconnect(vtr::string_internment* strings, pugi::xml_node Parent, t_mode* mode, const pugiutil::loc_data& loc_data);
+
+static void ProcessInterconnect(vtr::string_internment* strings,
+                                pugi::xml_node Parent,
+                                t_mode* mode,
+                                const pugiutil::loc_data& loc_data);
+
 static void ProcessMode(vtr::string_internment* strings,
                         pugi::xml_node Parent,
                         t_mode* mode,
@@ -199,6 +204,7 @@ static void ProcessMode(vtr::string_internment* strings,
                         const t_arch& arch,
                         const pugiutil::loc_data& loc_data,
                         int& parent_pb_idx);
+
 static t_metadata_dict ProcessMetadata(vtr::string_internment* strings, pugi::xml_node Parent, const pugiutil::loc_data& loc_data);
 static void Process_Fc_Values(pugi::xml_node Node, t_default_fc_spec& spec, const pugiutil::loc_data& loc_data);
 static void Process_Fc(pugi::xml_node Node,
@@ -1614,120 +1620,98 @@ static void ProcessPb_TypePort(pugi::xml_node Parent, t_port* port, e_power_esti
     ProcessPb_TypePort_Power(Parent, port, power_method, loc_data);
 }
 
-static void ProcessInterconnect(vtr::string_internment* strings, pugi::xml_node Parent, t_mode* mode, const pugiutil::loc_data& loc_data) {
-    int num_interconnect = 0;
-    int num_complete, num_direct, num_mux;
-    int i, j, k, L_index, num_annotations;
-    int num_delay_constant, num_delay_matrix, num_C_constant, num_C_matrix,
-        num_pack_pattern;
+static void ProcessInterconnect(vtr::string_internment* strings,
+                                pugi::xml_node Parent,
+                                t_mode* mode,
+                                const pugiutil::loc_data& loc_data) {
     const char* Prop;
-    pugi::xml_node Cur;
-    pugi::xml_node Cur2;
 
-    std::map<std::string, int> interc_names;
-    std::pair<std::map<std::string, int>::iterator, bool> ret_interc_names;
+    // use to find duplicate names
+    std::set<std::string> interconnect_names;
 
-    num_complete = num_direct = num_mux = 0;
-    num_complete = count_children(Parent, "complete", loc_data, ReqOpt::OPTIONAL);
-    num_direct = count_children(Parent, "direct", loc_data, ReqOpt::OPTIONAL);
-    num_mux = count_children(Parent, "mux", loc_data, ReqOpt::OPTIONAL);
-    num_interconnect = num_complete + num_direct + num_mux;
+    int num_interconnect = 0;
+    // count the total number of interconnect tags
+    for (auto child_name : {"complete", "direct", "mux"}) {
+        num_interconnect += count_children(Parent, child_name, loc_data, ReqOpt::OPTIONAL);
+    }
 
     mode->num_interconnect = num_interconnect;
     mode->interconnect = new t_interconnect[num_interconnect];
 
-    i = 0;
-    for (L_index = 0; L_index < 3; L_index++) {
-        if (L_index == 0) {
-            Cur = get_first_child(Parent, "complete", loc_data, ReqOpt::OPTIONAL);
-        } else if (L_index == 1) {
-            Cur = get_first_child(Parent, "direct", loc_data, ReqOpt::OPTIONAL);
-        } else {
-            Cur = get_first_child(Parent, "mux", loc_data, ReqOpt::OPTIONAL);
-        }
+    int interconnect_idx = 0;
+    for (auto child_name : {"complete", "direct", "mux"}) {
+        pugi::xml_node Cur = get_first_child(Parent, child_name, loc_data, ReqOpt::OPTIONAL);
+
         while (Cur != nullptr) {
             if (0 == strcmp(Cur.name(), "complete")) {
-                mode->interconnect[i].type = COMPLETE_INTERC;
+                mode->interconnect[interconnect_idx].type = COMPLETE_INTERC;
             } else if (0 == strcmp(Cur.name(), "direct")) {
-                mode->interconnect[i].type = DIRECT_INTERC;
+                mode->interconnect[interconnect_idx].type = DIRECT_INTERC;
             } else {
                 VTR_ASSERT(0 == strcmp(Cur.name(), "mux"));
-                mode->interconnect[i].type = MUX_INTERC;
+                mode->interconnect[interconnect_idx].type = MUX_INTERC;
             }
 
-            mode->interconnect[i].line_num = loc_data.line(Cur);
+            mode->interconnect[interconnect_idx].line_num = loc_data.line(Cur);
 
-            mode->interconnect[i].parent_mode_index = mode->index;
-            mode->interconnect[i].parent_mode = mode;
+            mode->interconnect[interconnect_idx].parent_mode_index = mode->index;
+            mode->interconnect[interconnect_idx].parent_mode = mode;
 
             Prop = get_attribute(Cur, "input", loc_data).value();
-            mode->interconnect[i].input_string = vtr::strdup(Prop);
+            mode->interconnect[interconnect_idx].input_string = vtr::strdup(Prop);
 
             Prop = get_attribute(Cur, "output", loc_data).value();
-            mode->interconnect[i].output_string = vtr::strdup(Prop);
+            mode->interconnect[interconnect_idx].output_string = vtr::strdup(Prop);
 
             Prop = get_attribute(Cur, "name", loc_data).value();
-            mode->interconnect[i].name = vtr::strdup(Prop);
-            mode->interconnect[i].meta = ProcessMetadata(strings, Cur, loc_data);
+            mode->interconnect[interconnect_idx].name = vtr::strdup(Prop);
+            mode->interconnect[interconnect_idx].meta = ProcessMetadata(strings, Cur, loc_data);
 
-            ret_interc_names = interc_names.insert(std::pair<std::string, int>(mode->interconnect[i].name, 0));
-            if (!ret_interc_names.second) {
+            auto [_, success] = interconnect_names.insert(mode->interconnect[interconnect_idx].name);
+            if (!success) {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
                                "Duplicate interconnect name: '%s' in mode: '%s'.\n",
-                               mode->interconnect[i].name, mode->name);
+                               mode->interconnect[interconnect_idx].name, mode->name);
             }
 
             /* Process delay and capacitance annotations */
-            num_annotations = 0;
-            num_delay_constant = count_children(Cur, "delay_constant", loc_data, ReqOpt::OPTIONAL);
-            num_delay_matrix = count_children(Cur, "delay_matrix", loc_data, ReqOpt::OPTIONAL);
-            num_C_constant = count_children(Cur, "C_constant", loc_data, ReqOpt::OPTIONAL);
-            num_C_matrix = count_children(Cur, "C_matrix", loc_data, ReqOpt::OPTIONAL);
-            num_pack_pattern = count_children(Cur, "pack_pattern", loc_data, ReqOpt::OPTIONAL);
-            num_annotations = num_delay_constant + num_delay_matrix
-                              + num_C_constant + num_C_matrix + num_pack_pattern;
+            int num_annotations = 0;
+            for (auto annot_child_name : {"delay_constant", "delay_matrix", "C_constant", "C_matrix", "pack_pattern"}) {
+                num_annotations += count_children(Cur, annot_child_name, loc_data, ReqOpt::OPTIONAL);
+            }
 
-            mode->interconnect[i].annotations = (t_pin_to_pin_annotation*)vtr::calloc(num_annotations,
+            mode->interconnect[interconnect_idx].annotations = (t_pin_to_pin_annotation*)vtr::calloc(num_annotations,
                                                                                       sizeof(t_pin_to_pin_annotation));
-            mode->interconnect[i].num_annotations = num_annotations;
+            mode->interconnect[interconnect_idx].num_annotations = num_annotations;
 
-            k = 0;
-            for (j = 0; j < 5; j++) {
-                if (j == 0) {
-                    Cur2 = get_first_child(Cur, "delay_constant", loc_data, ReqOpt::OPTIONAL);
-                } else if (j == 1) {
-                    Cur2 = get_first_child(Cur, "delay_matrix", loc_data, ReqOpt::OPTIONAL);
-                } else if (j == 2) {
-                    Cur2 = get_first_child(Cur, "C_constant", loc_data, ReqOpt::OPTIONAL);
-                } else if (j == 3) {
-                    Cur2 = get_first_child(Cur, "C_matrix", loc_data, ReqOpt::OPTIONAL);
-                } else if (j == 4) {
-                    Cur2 = get_first_child(Cur, "pack_pattern", loc_data, ReqOpt::OPTIONAL);
-                }
+
+            int annotation_idx = 0;
+            for (auto annot_child_name : {"delay_constant", "delay_matrix", "C_constant", "C_matrix", "pack_pattern"}) {
+                pugi::xml_node Cur2 = get_first_child(Cur, annot_child_name, loc_data, ReqOpt::OPTIONAL);
+
                 while (Cur2 != nullptr) {
                     ProcessPinToPinAnnotations(Cur2,
-                                               &(mode->interconnect[i].annotations[k]), nullptr, loc_data);
+                                               &(mode->interconnect[interconnect_idx].annotations[annotation_idx]), nullptr, loc_data);
 
                     /* get next iteration */
-                    k++;
+                    annotation_idx++;
                     Cur2 = Cur2.next_sibling(Cur2.name());
                 }
             }
-            VTR_ASSERT(k == num_annotations);
+            VTR_ASSERT(annotation_idx == num_annotations);
 
             /* Power */
-            mode->interconnect[i].interconnect_power = (t_interconnect_power*)vtr::calloc(1,
+            mode->interconnect[interconnect_idx].interconnect_power = (t_interconnect_power*)vtr::calloc(1,
                                                                                           sizeof(t_interconnect_power));
-            mode->interconnect[i].interconnect_power->port_info_initialized = false;
+            mode->interconnect[interconnect_idx].interconnect_power->port_info_initialized = false;
 
             /* get next iteration */
             Cur = Cur.next_sibling(Cur.name());
-            i++;
+            interconnect_idx++;
         }
     }
 
-    interc_names.clear();
-    VTR_ASSERT(i == num_interconnect);
+    VTR_ASSERT(interconnect_idx == num_interconnect);
 }
 
 static void ProcessMode(vtr::string_internment* strings,
@@ -1737,13 +1721,13 @@ static void ProcessMode(vtr::string_internment* strings,
                         const t_arch& arch,
                         const pugiutil::loc_data& loc_data,
                         int& parent_pb_idx) {
-    int i;
     const char* Prop;
     pugi::xml_node Cur;
-    std::map<std::string, int> pb_type_names;
-    std::pair<std::map<std::string, int>::iterator, bool> ret_pb_types;
 
-    bool implied_mode = 0 == strcmp(Parent.name(), "pb_type");
+    // used to find duplicate pb_type names
+    std::set<std::string> pb_type_names;
+
+    bool implied_mode = (0 == strcmp(Parent.name(), "pb_type"));
     if (implied_mode) {
         mode->name = vtr::strdup("default");
     } else {
@@ -1751,7 +1735,7 @@ static void ProcessMode(vtr::string_internment* strings,
         mode->name = vtr::strdup(Prop);
     }
 
-    /* Parse XML about if this mode is disable for packing or not
+    /* Parse XML about if this mode is disabled for packing or not
      * By default, all the mode will be visible to packer 
      */
     mode->disable_packing = false;
@@ -1765,7 +1749,7 @@ static void ProcessMode(vtr::string_internment* strings,
 
     /* Override if user specify */
     mode->disable_packing = get_attribute(Parent, "disable_packing", loc_data, ReqOpt::OPTIONAL).as_bool(mode->disable_packing);
-    if (true == mode->disable_packing) {
+    if (mode->disable_packing) {
         VTR_LOG("mode '%s[%s]' is defined by user to be disabled in packing\n",
                 mode->parent_pb_type->name,
                 mode->name);
@@ -1775,23 +1759,22 @@ static void ProcessMode(vtr::string_internment* strings,
     if (mode->num_pb_type_children > 0) {
         mode->pb_type_children = new t_pb_type[mode->num_pb_type_children];
 
-        i = 0;
+        int pb_type_child_idx = 0;
         Cur = get_first_child(Parent, "pb_type", loc_data);
         while (Cur != nullptr) {
             if (0 == strcmp(Cur.name(), "pb_type")) {
                 parent_pb_idx++;
-                ProcessPb_Type(strings, Cur, &mode->pb_type_children[i], mode, timing_enabled, arch, loc_data, parent_pb_idx);
+                ProcessPb_Type(strings, Cur, &mode->pb_type_children[pb_type_child_idx], mode, timing_enabled, arch, loc_data, parent_pb_idx);
 
-                ret_pb_types = pb_type_names.insert(
-                    std::pair<std::string, int>(mode->pb_type_children[i].name, 0));
-                if (!ret_pb_types.second) {
+                auto [_, success] = pb_type_names.insert(mode->pb_type_children[pb_type_child_idx].name);
+                if (success) {
                     archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
                                    "Duplicate pb_type name: '%s' in mode: '%s'.\n",
-                                   mode->pb_type_children[i].name, mode->name);
+                                   mode->pb_type_children[pb_type_child_idx].name, mode->name);
                 }
 
                 /* get next iteration */
-                i++;
+                pb_type_child_idx++;
                 Cur = Cur.next_sibling(Cur.name());
             }
         }
@@ -1807,9 +1790,6 @@ static void ProcessMode(vtr::string_internment* strings,
         // the t_mode object.
         mode->meta = ProcessMetadata(strings, Parent, loc_data);
     }
-
-    /* Clear STL map used for duplicate checks */
-    pb_type_names.clear();
 
     Cur = get_single_child(Parent, "interconnect", loc_data);
     ProcessInterconnect(strings, Cur, mode, loc_data);
