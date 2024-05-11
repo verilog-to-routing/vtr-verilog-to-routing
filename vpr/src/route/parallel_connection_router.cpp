@@ -230,7 +230,11 @@ static inline bool prune_node(RRNodeId inode,
         //       the nodes in the queue and then post-target pruning based on the
         //       under-estimating heuristic has better runtime.
         float expected_cost = new_total_cost - new_back_cost;
-        float new_expected_cost = (expected_cost / params.astar_fac) * params.post_target_prune_fac;
+        float new_expected_cost = expected_cost;
+        // Protection for division by zero
+        if (params.astar_fac > 0.001)
+            new_expected_cost /= params.astar_fac;
+        new_expected_cost *= params.post_target_prune_fac;
         if (best_back_cost_to_target < (new_back_cost + new_expected_cost))
             return true;
         // NOTE: we do NOT check for equality here. Equality does not matter for
