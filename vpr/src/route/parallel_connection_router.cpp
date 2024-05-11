@@ -1,4 +1,5 @@
 #include "parallel_connection_router.h"
+#include "router_lookahead.h"
 #include "rr_graph.h"
 
 #include "binary_heap.h"
@@ -193,7 +194,13 @@ std::tuple<bool, bool, t_heap> ParallelConnectionRouter::timing_driven_route_con
 }
 
 // TODO: Once we have a heap node struct, clean this up!
-static inline bool prune_node(RRNodeId inode, float new_total_cost, float new_back_cost, RREdgeId new_prev_edge, RRNodeId target_node, vtr::vector<RRNodeId, t_rr_node_route_inf>& rr_node_route_inf_) {
+static inline bool prune_node(RRNodeId inode,
+                              float new_total_cost,
+                              float new_back_cost,
+                              RREdgeId new_prev_edge,
+                              RRNodeId target_node,
+                              vtr::vector<RRNodeId, t_rr_node_route_inf>& rr_node_route_inf_,
+                              const t_conn_cost_params& params) {
     // Get the global information INSIDE this function.
     t_rr_node_route_inf* route_inf = &rr_node_route_inf_[inode];
     float best_total_cost = route_inf->path_cost;
@@ -204,25 +211,27 @@ static inline bool prune_node(RRNodeId inode, float new_total_cost, float new_ba
     float best_total_cost_to_target = target_route_inf->path_cost;
 #ifdef IS_DETERMINISTIC
     (void)best_total_cost;
+    (void)best_total_cost_to_target;
     // Deterministic version prefers a given EdgeID, so a unique path is returned since,
     // in the case of a tie, a determinstic path wins.
     // Is first preferred over second?
     auto is_preferred_edge = [](RREdgeId first, RREdgeId second) {
-        // Since we cannot compare an invalid edge ID, always prefer the node
-        // coming from the invalid edge ID (implies the start node).
-        // TODO: Verify this
-        if (!first.is_valid())
-            return true;
-        if (!second.is_valid())
-            return false;
         return first < second;
     };
     // Post-target pruning: After the target is reached the first time, should
     // use the heuristic to help drain the queues.
     if (inode != target_node) {
-        if (best_total_cost_to_target < new_total_cost)
-            return true;
-        if (best_back_cost_to_target < new_back_cost)
+        // Divide out the astar_fac, then multiply to get determinism
+        // This is a correction factor to the forward cost to make the total
+        // cost an under-estimate.
+        // TODO: Should investigate creating a heuristic function that is
+        //       gaurenteed to be an under-estimate.
+        // NOTE: Found experimentally that using the original heuristic to order
+        //       the nodes in the queue and then post-target pruning based on the
+        //       under-estimating heuristic has better runtime.
+        float expected_cost = new_total_cost - new_back_cost;
+        float new_expected_cost = (expected_cost / params.astar_fac) * 0.6;
+        if (best_back_cost_to_target < (new_back_cost + new_expected_cost))
             return true;
         // NOTE: we do NOT check for equality here. Equality does not matter for
         //       determinism when draining the queues (may just lead to a bit more work).
@@ -231,9 +240,25 @@ static inline bool prune_node(RRNodeId inode, float new_total_cost, float new_ba
     //       The queues handle using the heuristic to explore nodes faster.
     if (best_back_cost < new_back_cost)
         return true;
-    // If there is a tie, pick the node with the preferred edge.
-    if ((best_back_cost == new_back_cost) && (!is_preferred_edge(new_prev_edge, best_prev_edge)))
-        return true;
+    // In the case of a tie, need to be picky about whether to prune or not in
+    // order to get determinism.
+    if (best_back_cost == new_back_cost) {
+        // In the case of a true tie, just prune, no need to explore neightbors
+        if (new_prev_edge == best_prev_edge)
+            return true;
+        // When it comes to invalid edge IDs, in the case of a tied back cost,
+        // always try to keep the invalid edge ID (likely the start node).
+        // TODO: Verify this.
+        // If the best previous edge is invalid, prune
+        if (!best_prev_edge.is_valid())
+            return true;
+        // If the new previous edge is invalid (assuming the best is not), accept
+        if (!new_prev_edge.is_valid())
+            return false;
+        // Finally, if this node is not coming from a preferred edge, prune
+        if (!is_preferred_edge(new_prev_edge, best_prev_edge))
+            return true;
+    }
 #else   // IS_DETERMINISTIC
     (void)new_prev_edge;
     (void)best_prev_edge;
@@ -322,7 +347,7 @@ void ParallelConnectionRouter::timing_driven_route_connection_from_heap_thread_f
         // Pruning
         // NOTE: This is thread-safe since, even though the values may change during operation, that is ok,
         //       since if any of the arguments need to be pruned it will.
-        if (prune_node(inode, new_total_cost, new_back_cost, new_prev_edge, sink_node, rr_node_route_inf_)) {
+        if (prune_node(inode, new_total_cost, new_back_cost, new_prev_edge, sink_node, rr_node_route_inf_, cost_params)) {
             continue;
         }
 
@@ -330,7 +355,7 @@ void ParallelConnectionRouter::timing_driven_route_connection_from_heap_thread_f
         obtainSpinLock(inode);
 
         // Need to double check pruning since things may have changed since obtaining the lock.
-        if (prune_node(inode, new_total_cost, new_back_cost, new_prev_edge, sink_node, rr_node_route_inf_)) {
+        if (prune_node(inode, new_total_cost, new_back_cost, new_prev_edge, sink_node, rr_node_route_inf_, cost_params)) {
             releaseLock(inode);
             continue;
         }
@@ -523,7 +548,7 @@ void ParallelConnectionRouter::timing_driven_add_to_heap(const t_conn_cost_param
 
     float new_total_cost = next.cost;
     float new_back_cost = next.backward_path_cost;
-    if (prune_node(to_node, new_total_cost, new_back_cost, from_edge, target_node, rr_node_route_inf_))
+    if (prune_node(to_node, new_total_cost, new_back_cost, from_edge, target_node, rr_node_route_inf_, cost_params))
         return;
 
     //Record how we reached this node
