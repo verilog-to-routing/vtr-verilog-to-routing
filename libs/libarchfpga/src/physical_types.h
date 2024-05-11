@@ -130,7 +130,7 @@ struct t_metadata_dict : vtr::flat_map<
 
     // Get metadata values matching key.
     //
-    // Returns nullptr if key is not found or if multiple values are prsent
+    // Returns nullptr if key is not found or if multiple values are present
     // per key.
     inline const t_metadata_value* one(vtr::interned_string key) const {
         auto values = get(key);
@@ -1954,6 +1954,7 @@ struct t_noc_inf {
 
 /*   Detailed routing architecture */
 struct t_arch {
+    /** Stores unique strings used as key and values in <metadata> tags*/
     mutable vtr::string_internment strings;
     std::vector<vtr::interned_string> interned_strings;
 

@@ -128,7 +128,8 @@ static void ProcessTiles(pugi::xml_node Node,
                          const t_default_fc_spec& arch_def_fc,
                          t_arch& arch,
                          const pugiutil::loc_data& loc_data,
-                         const int num_of_avail_layer);
+                         int num_of_avail_layer);
+
 // TODO: Remove block_type_contains_blif_model / pb_type_contains_blif_model
 // as part of
 // https://github.com/verilog-to-routing/vtr-verilog-to-routing/issues/1193
@@ -173,11 +174,25 @@ static void ProcessSubTiles(pugi::xml_node Node,
                             const pugiutil::loc_data& loc_data,
                             const int num_of_avail_layer);
 
-static void ProcessPb_Type(vtr::string_internment* strings,
-                           pugi::xml_node Parent,
+/**
+ * @brief Parses a <pb_type> tag and all <mode> and <pb_type> tags under it.
+ *
+ * @param Parent An XML node pointing to <pb_type> tag to be processed
+ * @param pb_type To be filled by this function with parsed information
+ * about the given pb_type
+ * @param mode The parent mode of the pb_type to be processed. If the given
+ * pb_type is the root, nullptr should be passed.
+ * @param timing_enabled Determines whether timing-aware optimizations are enabled.
+ * @param arch Contains high-level architecture information like models and
+ * string interment storage.
+ * @param loc_data Points to the location in the architecture file where the parser is reading.
+ * @param pb_idx Used to assign unique values to index_in_logical_block field in
+* t_pb_type for all pb_types under a logical block type.
+ */
+static void ProcessPb_Type(pugi::xml_node Parent,
                            t_pb_type* pb_type,
                            t_mode* mode,
-                           const bool timing_enabled,
+                           bool timing_enabled,
                            const t_arch& arch,
                            const pugiutil::loc_data& loc_data,
                            int& pb_idx);
@@ -192,20 +207,55 @@ static void ProcessPinToPinAnnotations(pugi::xml_node parent,
                                        t_pb_type* parent_pb_type,
                                        const pugiutil::loc_data& loc_data);
 
-static void ProcessInterconnect(vtr::string_internment* strings,
+/**
+ * @brief Parses <interconnect> tags under a <mode> or <pb_type> tag.
+ *
+ * @param strings String internment storage used to store strings used
+ * as keys and values in <metadata> tags under the given <interconnect> tag.
+ * @param Parent An XML node pointing to <interconnect> tag to be processed
+ * @param mode To be filled with interconnect-related information.
+ * @param loc_data Points to the location in the architecture file where
+ * the parser is reading.
+ */
+static void ProcessInterconnect(vtr::string_internment& strings,
                                 pugi::xml_node Parent,
                                 t_mode* mode,
                                 const pugiutil::loc_data& loc_data);
 
-static void ProcessMode(vtr::string_internment* strings,
-                        pugi::xml_node Parent,
+/**
+ * @brief Processes a <mode> tag under <pb_type> tag in the architecture file.
+ * If a <pb_type> tag does not have any <mode> tags, a default mode is implied.
+ *
+ * @param Parent An XML node referring to either <mode> tag or <pb_type> tag.
+ * It the XML node refers to <pb_type> tag, the mode is implied.
+ * @param mode Mode information to be filled by this function.
+ * @param timing_enabled Determines whether timing-aware optimizations are enabled.
+ * @param arch Contains high-level architecture information like models and
+ * string interment storage.
+ * @param loc_data Points to the location in the architecture file where the parser is reading.
+ * @param parent_pb_idx Used to assign unique values to index_in_logical_block field in
+ * t_pb_type for all pb_types under a logical block type.
+ */
+static void ProcessMode(pugi::xml_node Parent,
                         t_mode* mode,
-                        const bool timing_enabled,
+                        bool timing_enabled,
                         const t_arch& arch,
                         const pugiutil::loc_data& loc_data,
                         int& parent_pb_idx);
+/**
+ * @brief Processes <metadata> tags.
+ *
+ * @param strings String internment storage used to store strings used
+* as keys and values in <metadata> tags.
+ * @param Parent An XML node pointing to the parent tag whose <metadata> children
+ * are to be parsed.
+ * @param loc_data Points to the location in the architecture file where the parser is reading.
+ * @return A t_metadata_dict that stored parsed (key, value) pairs.
+ */
+static t_metadata_dict ProcessMetadata(vtr::string_internment& strings,
+                                       pugi::xml_node Parent,
+                                       const pugiutil::loc_data& loc_data);
 
-static t_metadata_dict ProcessMetadata(vtr::string_internment* strings, pugi::xml_node Parent, const pugiutil::loc_data& loc_data);
 static void Process_Fc_Values(pugi::xml_node Node, t_default_fc_spec& spec, const pugiutil::loc_data& loc_data);
 static void Process_Fc(pugi::xml_node Node,
                        t_physical_tile_type* PhysicalTileType,
@@ -227,16 +277,25 @@ static void ProcessChanWidthDistrDir(pugi::xml_node Node, t_chan* chan, const pu
 static void ProcessModels(pugi::xml_node Node, t_arch* arch, const pugiutil::loc_data& loc_data);
 static void ProcessModelPorts(pugi::xml_node port_group, t_model* model, std::set<std::string>& port_names, const pugiutil::loc_data& loc_data);
 static void ProcessLayout(pugi::xml_node Node, t_arch* arch, const pugiutil::loc_data& loc_data, int& num_of_avail_layer);
-static t_grid_def ProcessGridLayout(vtr::string_internment* strings, pugi::xml_node layout_type_tag, const pugiutil::loc_data& loc_data, t_arch* arch, int& num_of_avail_layer);
-static void ProcessBlockTypeLocs(t_grid_def& grid_def, int die_number, vtr::string_internment* strings, pugi::xml_node layout_block_type_tag, const pugiutil::loc_data& loc_data);
+static t_grid_def ProcessGridLayout(vtr::string_internment& strings, pugi::xml_node layout_type_tag, const pugiutil::loc_data& loc_data, t_arch* arch, int& num_of_avail_layer);
+static void ProcessBlockTypeLocs(t_grid_def& grid_def, int die_number, vtr::string_internment& strings, pugi::xml_node layout_block_type_tag, const pugiutil::loc_data& loc_data);
 static int get_number_of_layers(pugi::xml_node layout_type_tag, const pugiutil::loc_data& loc_data);
 static void ProcessDevice(pugi::xml_node Node, t_arch* arch, t_default_fc_spec& arch_def_fc, const pugiutil::loc_data& loc_data);
 
-static void ProcessComplexBlocks(vtr::string_internment* strings,
-                                 pugi::xml_node Node,
+/**
+ * @brief Parses <complexblocklist> tag in the architecture file.
+ *
+ * @param Node The xml node referring to <complexblocklist> tag
+ * @param LogicalBlockTypes This function fills this vector with all available
+ * logical block types.
+ * @param arch Used to access models and string internment storage.
+ * @param timing_enabled Determines whether timing-aware optimizations are enabled.
+ * @param loc_data Points to the location in the xml file where the parser is reading.
+ */
+static void ProcessComplexBlocks(pugi::xml_node Node,
                                  std::vector<t_logical_block_type>& LogicalBlockTypes,
-                                 t_arch& arch,
-                                 const bool timing_enabled,
+                                 const t_arch& arch,
+                                 bool timing_enabled,
                                  const pugiutil::loc_data& loc_data);
 
 static void ProcessSwitches(pugi::xml_node Node,
@@ -395,7 +454,7 @@ void XmlReadArch(const char* ArchFile,
 
         /* Process logical block types */
         Next = get_single_child(architecture, "complexblocklist", loc_data);
-        ProcessComplexBlocks(&arch->strings, Next, LogicalBlockTypes, *arch, timing_enabled, loc_data);
+        ProcessComplexBlocks(Next, LogicalBlockTypes, *arch, timing_enabled, loc_data);
 
         /* Process logical block types */
         Next = get_single_child(architecture, "tiles", loc_data);
@@ -1132,8 +1191,7 @@ static void ProcessPb_TypePowerEstMethod(pugi::xml_node Parent, t_pb_type* pb_ty
 }
 
 /* Takes in a pb_type, allocates and loads data for it and recurses downwards */
-static void ProcessPb_Type(vtr::string_internment* strings,
-                           pugi::xml_node Parent,
+static void ProcessPb_Type(pugi::xml_node Parent,
                            t_pb_type* pb_type,
                            t_mode* mode,
                            const bool timing_enabled,
@@ -1174,10 +1232,6 @@ static void ProcessPb_Type(vtr::string_internment* strings,
 
     //Sanity check contained tags
     expect_only_children(Parent, children_to_expect, loc_data);
-
-    /* STL sets for checking various duplicate names */
-    std::set<std::string> pb_port_names;
-    std::set<std::string> mode_names;
 
     pb_type->parent_mode = mode;
     pb_type->index_in_logical_block = pb_idx;
@@ -1245,6 +1299,9 @@ static void ProcessPb_Type(vtr::string_internment* strings,
     /* process ports */
     int absolute_port_first_pin_index = 0;
     int port_idx = 0;
+
+    // STL sets for checking duplicate port names
+    std::set<std::string> pb_port_names;
 
     for (const char* child_name : {"input", "output", "clock"}) {
         Cur = get_first_child(Parent, child_name, loc_data, ReqOpt::OPTIONAL);
@@ -1357,17 +1414,20 @@ static void ProcessPb_Type(vtr::string_internment* strings,
             pb_type->modes = new t_mode[pb_type->num_modes];
             pb_type->modes[mode_idx].parent_pb_type = pb_type;
             pb_type->modes[mode_idx].index = mode_idx;
-            ProcessMode(strings, Parent, &pb_type->modes[mode_idx], timing_enabled, arch, loc_data, pb_idx);
+            ProcessMode(Parent, &pb_type->modes[mode_idx], timing_enabled, arch, loc_data, pb_idx);
             mode_idx++;
         } else {
             pb_type->modes = new t_mode[pb_type->num_modes];
+
+            // STL set for checking duplicate mode names
+            std::set<std::string> mode_names;
 
             Cur = get_first_child(Parent, "mode", loc_data);
             while (Cur != nullptr) {
                 if (0 == strcmp(Cur.name(), "mode")) {
                     pb_type->modes[mode_idx].parent_pb_type = pb_type;
                     pb_type->modes[mode_idx].index = mode_idx;
-                    ProcessMode(strings, Cur, &pb_type->modes[mode_idx], timing_enabled, arch, loc_data, pb_idx);
+                    ProcessMode(Cur, &pb_type->modes[mode_idx], timing_enabled, arch, loc_data, pb_idx);
 
                     auto [_, success] = mode_names.insert(pb_type->modes[mode_idx].name);
                     if (!success) {
@@ -1385,7 +1445,7 @@ static void ProcessPb_Type(vtr::string_internment* strings,
         VTR_ASSERT(mode_idx == pb_type->num_modes);
     }
 
-    pb_type->meta = ProcessMetadata(strings, Parent, loc_data);
+    pb_type->meta = ProcessMetadata(arch.strings, Parent, loc_data);
     ProcessPb_TypePower(Parent, pb_type, loc_data);
 }
 
@@ -1620,13 +1680,13 @@ static void ProcessPb_TypePort(pugi::xml_node Parent, t_port* port, e_power_esti
     ProcessPb_TypePort_Power(Parent, port, power_method, loc_data);
 }
 
-static void ProcessInterconnect(vtr::string_internment* strings,
+static void ProcessInterconnect(vtr::string_internment& strings,
                                 pugi::xml_node Parent,
                                 t_mode* mode,
                                 const pugiutil::loc_data& loc_data) {
     const char* Prop;
 
-    // use to find duplicate names
+    // used to find duplicate names
     std::set<std::string> interconnect_names;
 
     int num_interconnect = 0;
@@ -1714,8 +1774,7 @@ static void ProcessInterconnect(vtr::string_internment* strings,
     VTR_ASSERT(interconnect_idx == num_interconnect);
 }
 
-static void ProcessMode(vtr::string_internment* strings,
-                        pugi::xml_node Parent,
+static void ProcessMode(pugi::xml_node Parent,
                         t_mode* mode,
                         const bool timing_enabled,
                         const t_arch& arch,
@@ -1723,9 +1782,6 @@ static void ProcessMode(vtr::string_internment* strings,
                         int& parent_pb_idx) {
     const char* Prop;
     pugi::xml_node Cur;
-
-    // used to find duplicate pb_type names
-    std::set<std::string> pb_type_names;
 
     bool implied_mode = (0 == strcmp(Parent.name(), "pb_type"));
     if (implied_mode) {
@@ -1759,12 +1815,15 @@ static void ProcessMode(vtr::string_internment* strings,
     if (mode->num_pb_type_children > 0) {
         mode->pb_type_children = new t_pb_type[mode->num_pb_type_children];
 
+        // used to find duplicate pb_type names
+        std::set<std::string> pb_type_names;
+
         int pb_type_child_idx = 0;
         Cur = get_first_child(Parent, "pb_type", loc_data);
         while (Cur != nullptr) {
             if (0 == strcmp(Cur.name(), "pb_type")) {
                 parent_pb_idx++;
-                ProcessPb_Type(strings, Cur, &mode->pb_type_children[pb_type_child_idx], mode, timing_enabled, arch, loc_data, parent_pb_idx);
+                ProcessPb_Type(Cur, &mode->pb_type_children[pb_type_child_idx], mode, timing_enabled, arch, loc_data, parent_pb_idx);
 
                 auto [_, success] = pb_type_names.insert(mode->pb_type_children[pb_type_child_idx].name);
                 if (success) {
@@ -1788,14 +1847,16 @@ static void ProcessMode(vtr::string_internment* strings,
     if (!implied_mode) {
         // Implied mode metadata is attached to the pb_type, rather than
         // the t_mode object.
-        mode->meta = ProcessMetadata(strings, Parent, loc_data);
+        mode->meta = ProcessMetadata(arch.strings, Parent, loc_data);
     }
 
     Cur = get_single_child(Parent, "interconnect", loc_data);
-    ProcessInterconnect(strings, Cur, mode, loc_data);
+    ProcessInterconnect(arch.strings, Cur, mode, loc_data);
 }
 
-static t_metadata_dict ProcessMetadata(vtr::string_internment* strings, pugi::xml_node Parent, const pugiutil::loc_data& loc_data) {
+static t_metadata_dict ProcessMetadata(vtr::string_internment& strings,
+                                       pugi::xml_node Parent,
+                                       const pugiutil::loc_data& loc_data) {
     //	<metadata>
     //	  <meta>CLBLL_L_</meta>
     //	</metadata>
@@ -1807,8 +1868,8 @@ static t_metadata_dict ProcessMetadata(vtr::string_internment* strings, pugi::xm
             auto key = get_attribute(meta_tag, "name", loc_data).as_string();
 
             auto value = meta_tag.child_value();
-            data.add(strings->intern_string(vtr::string_view(key)),
-                     strings->intern_string(vtr::string_view(value)));
+            data.add(strings.intern_string(vtr::string_view(key)),
+                     strings.intern_string(vtr::string_view(value)));
             meta_tag = meta_tag.next_sibling(meta_tag.name());
         }
     }
@@ -2378,13 +2439,13 @@ static void ProcessLayout(pugi::xml_node layout_tag, t_arch* arch, const pugiuti
     VTR_ASSERT_MSG(auto_layout_cnt == 0 || auto_layout_cnt == 1, "<auto_layout> may appear at most once");
 
     for (auto layout_type_tag : layout_tag.children()) {
-        t_grid_def grid_def = ProcessGridLayout(&arch->strings, layout_type_tag, loc_data, arch, num_of_avail_layer);
+        t_grid_def grid_def = ProcessGridLayout(arch->strings, layout_type_tag, loc_data, arch, num_of_avail_layer);
 
         arch->grid_layouts.emplace_back(std::move(grid_def));
     }
 }
 
-static t_grid_def ProcessGridLayout(vtr::string_internment* strings,
+static t_grid_def ProcessGridLayout(vtr::string_internment& strings,
                                     pugi::xml_node layout_type_tag,
                                     const pugiutil::loc_data& loc_data,
                                     t_arch* arch,
@@ -2455,7 +2516,7 @@ static t_grid_def ProcessGridLayout(vtr::string_internment* strings,
 
 static void ProcessBlockTypeLocs(t_grid_def& grid_def,
                                  int die_number,
-                                 vtr::string_internment* strings,
+                                 vtr::string_internment& strings,
                                  pugi::xml_node layout_block_type_tag,
                                  const pugiutil::loc_data& loc_data) {
     //Process all the block location specifications
@@ -3525,10 +3586,10 @@ static void ProcessSubTiles(pugi::xml_node Node,
 
 /* Takes in node pointing to <typelist> and loads all the
  * child type objects. */
-static void ProcessComplexBlocks(vtr::string_internment* strings,
-                                 pugi::xml_node Node,
+static void ProcessComplexBlocks(pugi::xml_node Node,
                                  std::vector<t_logical_block_type>& LogicalBlockTypes,
-                                 t_arch& arch, const bool timing_enabled,
+                                 const t_arch& arch,
+                                 const bool timing_enabled,
                                  const pugiutil::loc_data& loc_data) {
     pugi::xml_node CurBlockType;
     pugi::xml_node Cur;
@@ -3569,7 +3630,7 @@ static void ProcessComplexBlocks(vtr::string_internment* strings,
         /* Load pb_type info to assign to the Logical Block Type */
         LogicalBlockType.pb_type = new t_pb_type;
         LogicalBlockType.pb_type->name = vtr::strdup(LogicalBlockType.name);
-        ProcessPb_Type(strings, CurBlockType, LogicalBlockType.pb_type, nullptr, timing_enabled, arch, loc_data, pb_type_idx);
+        ProcessPb_Type(CurBlockType, LogicalBlockType.pb_type, nullptr, timing_enabled, arch, loc_data, pb_type_idx);
 
         LogicalBlockType.index = index;
 
@@ -5000,7 +5061,7 @@ static void generate_noc_mesh(pugi::xml_node mesh_topology_tag, const pugiutil::
  */
 static bool parse_noc_router_connection_list(pugi::xml_node router_tag, const pugiutil::loc_data& loc_data, int router_id, std::vector<int>& connection_list, std::string connection_list_attribute_value, std::map<int, std::pair<int, int>>& routers_in_arch_info) {
     // we wil be modifying the string so store it in a temporary variable
-    // additinally, we peocess substrings seperated by spaces, so we add a space at the end of the string to be able to process the last sub-string
+    // additionally, we process substrings seperated by spaces, so we add a space at the end of the string to be able to process the last sub-string
     std::string modified_attribute_value = connection_list_attribute_value + " ";
     std::string delimiter = " ";
     std::stringstream single_connection;
