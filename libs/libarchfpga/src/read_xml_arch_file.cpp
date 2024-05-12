@@ -80,7 +80,7 @@ struct t_pin_counts {
     int output = 0;
     int clock = 0;
 
-    int total() {
+    int total() const {
         return input + output + clock;
     }
 };
@@ -92,12 +92,12 @@ struct t_pin_locs {
     bool distribution_set = false;
 
   public:
-    enum e_pin_location_distr distribution = E_SPREAD_PIN_DISTR;
+    e_pin_location_distr distribution = e_pin_location_distr::SPREAD;
 
     /* [0..num_sub_tiles-1][0..width-1][0..height-1][0..num_of_layer-1][0..3][0..num_tokens-1] */
     vtr::NdMatrix<std::vector<std::string>, 5> assignments;
 
-    bool is_distribution_set() {
+    bool is_distribution_set() const {
         return distribution_set;
     }
 
@@ -134,16 +134,20 @@ static void ProcessTiles(pugi::xml_node Node,
 // as part of
 // https://github.com/verilog-to-routing/vtr-verilog-to-routing/issues/1193
 static void MarkIoTypes(std::vector<t_physical_tile_type>& PhysicalTileTypes);
+
 static void ProcessTileProps(pugi::xml_node Node,
                              t_physical_tile_type* PhysicalTileType,
                              const pugiutil::loc_data& loc_data);
+
 static t_pin_counts ProcessSubTilePorts(pugi::xml_node Parent,
                                         t_sub_tile* SubTile,
                                         std::unordered_map<std::string, t_physical_tile_port>& tile_port_names,
                                         const pugiutil::loc_data& loc_data);
+
 static void ProcessTilePort(pugi::xml_node Node,
                             t_physical_tile_port* port,
                             const pugiutil::loc_data& loc_data);
+
 static void ProcessTileEquivalentSites(pugi::xml_node Parent,
                                        t_sub_tile* SubTile,
                                        t_physical_tile_type* PhysicalTileType,
@@ -166,13 +170,14 @@ static void ProcessPinLocations(pugi::xml_node Locations,
                                 t_pin_locs* pin_locs,
                                 const pugiutil::loc_data& loc_data,
                                 const int num_of_avail_layer);
+
 static void ProcessSubTiles(pugi::xml_node Node,
                             t_physical_tile_type* PhysicalTileType,
                             std::vector<t_logical_block_type>& LogicalBlockTypes,
                             std::vector<t_segment_inf>& segments,
                             const t_default_fc_spec& arch_def_fc,
                             const pugiutil::loc_data& loc_data,
-                            const int num_of_avail_layer);
+                            int num_of_avail_layer);
 
 /**
  * @brief Parses a <pb_type> tag and all <mode> and <pb_type> tags under it.
@@ -265,10 +270,23 @@ static void Process_Fc(pugi::xml_node Node,
                        const t_default_fc_spec& arch_def_fc,
                        const pugiutil::loc_data& loc_data);
 static t_fc_override Process_Fc_override(pugi::xml_node node, const pugiutil::loc_data& loc_data);
+
+/**
+ * @brief Processes optional <switchblock_locations> tag under a <tile> tag//
+ *
+ * @param switchblock_locations An XML node pointing to <switchblock_locations> tag
+ * if it exists.
+ * @param type To be filled with information extracted from the given
+ * <switchblock_locations> tag. This function fills switchblock_locations and
+ * switchblock_switch_overrides fields.
+ * @param arch Used to find switchblock by name
+ * @param loc_data Points to the location in the xml file where the parser is reading.
+ */
 static void ProcessSwitchblockLocations(pugi::xml_node switchblock_locations,
                                         t_physical_tile_type* type,
                                         const t_arch& arch,
                                         const pugiutil::loc_data& loc_data);
+
 static e_fc_value_type string_to_fc_value_type(const std::string& str, pugi::xml_node node, const pugiutil::loc_data& loc_data);
 static void ProcessChanWidthDistr(pugi::xml_node Node,
                                   t_arch* arch,
@@ -354,7 +372,8 @@ std::string inst_port_to_port_name(std::string inst_port);
 static bool attribute_to_bool(const pugi::xml_node node,
                               const pugi::xml_attribute attr,
                               const pugiutil::loc_data& loc_data);
-int find_switch_by_name(const t_arch& arch, std::string switch_name);
+
+static int find_switch_by_name(const t_arch& arch, const std::string& switch_name);
 
 e_side string_to_side(std::string side_str);
 
@@ -386,7 +405,7 @@ void XmlReadArch(const char* ArchFile,
     pugi::xml_node Next;
     ReqOpt POWER_REQD, SWITCHBLOCKLIST_REQD;
 
-    if (vtr::check_file_name_extension(ArchFile, ".xml") == false) {
+    if (!vtr::check_file_name_extension(ArchFile, ".xml")) {
         VTR_LOG_WARN(
             "Architecture file '%s' may be in incorrect format. "
             "Expecting .xml format for architecture files.\n",
@@ -569,7 +588,7 @@ static void LoadPinLoc(pugi::xml_node Locations,
     type->pin_layer_offset.resize(type->num_pins, 0);
 
     std::vector<int> physical_pin_counts(type->num_pins, 0);
-    if (pin_locs->distribution == E_SPREAD_PIN_DISTR) {
+    if (pin_locs->distribution == e_pin_location_distr::SPREAD) {
         /* evenly distribute pins starting at bottom left corner */
 
         int num_sides = 4 * (type->width * type->height);
@@ -594,7 +613,7 @@ static void LoadPinLoc(pugi::xml_node Locations,
         }
         VTR_ASSERT(side_index == num_sides);
         VTR_ASSERT(count == type->num_pins);
-    } else if (pin_locs->distribution == E_PERIMETER_PIN_DISTR) {
+    } else if (pin_locs->distribution == e_pin_location_distr::PERIMETER) {
         //Add one pin at-a-time to perimeter sides in round-robin order
         int ipin = 0;
         while (ipin < type->num_pins) {
@@ -620,7 +639,7 @@ static void LoadPinLoc(pugi::xml_node Locations,
         }
         VTR_ASSERT(ipin == type->num_pins);
 
-    } else if (pin_locs->distribution == E_SPREAD_INPUTS_PERIMETER_OUTPUTS_PIN_DISTR) {
+    } else if (pin_locs->distribution == e_pin_location_distr::SPREAD_INPUTS_PERIMETER_OUTPUTS) {
         //Collect the sets of block input/output pins
         std::vector<int> input_pins;
         std::vector<int> output_pins;
@@ -687,7 +706,7 @@ static void LoadPinLoc(pugi::xml_node Locations,
         VTR_ASSERT(ipin == output_pins.size());
 
     } else {
-        VTR_ASSERT(pin_locs->distribution == E_CUSTOM_PIN_DISTR);
+        VTR_ASSERT(pin_locs->distribution == e_pin_location_distr::CUSTOM);
         for (auto& sub_tile : type->sub_tiles) {
             int sub_tile_index = sub_tile.index;
             int sub_tile_capacity = sub_tile.capacity.total();
@@ -696,7 +715,7 @@ static void LoadPinLoc(pugi::xml_node Locations,
                 for (int width = 0; width < type->width; ++width) {
                     for (int height = 0; height < type->height; ++height) {
                         for (e_side side : {TOP, RIGHT, BOTTOM, LEFT}) {
-                            for (auto token : pin_locs->assignments[sub_tile_index][width][height][layer][side]) {
+                            for (const auto& token : pin_locs->assignments[sub_tile_index][width][height][layer][side]) {
                                 auto pin_range = ProcessPinString<t_sub_tile*>(Locations,
                                                                                &sub_tile,
                                                                                token.c_str(),
@@ -2071,12 +2090,11 @@ static e_fc_value_type string_to_fc_value_type(const std::string& str, pugi::xml
     return fc_value_type;
 }
 
-//Process any custom switchblock locations
 static void ProcessSwitchblockLocations(pugi::xml_node switchblock_locations,
                                         t_physical_tile_type* type,
                                         const t_arch& arch,
                                         const pugiutil::loc_data& loc_data) {
-    VTR_ASSERT(type);
+    VTR_ASSERT(type != nullptr);
 
     expect_only_attributes(switchblock_locations, {"pattern", "internal_switch"}, loc_data);
 
@@ -2903,12 +2921,12 @@ static void ProcessTiles(pugi::xml_node Node,
                          t_arch& arch,
                          const pugiutil::loc_data& loc_data,
                          const int num_of_avail_layer) {
-    pugi::xml_node CurTileType;
-    pugi::xml_node Cur;
-    std::map<std::string, int> tile_type_descriptors;
 
-    /* Alloc the type list. Need one additional t_type_desctiptors:
-     * 1: empty psuedo-type
+    // used to find duplicate tile names
+    std::set<std::string> tile_type_descriptors;
+
+    /* Alloc the type list. Need one additional t_type_descriptors:
+     * 1: empty pseudo-type
      */
     t_physical_tile_type EMPTY_PHYSICAL_TILE_TYPE = get_empty_physical_type();
     EMPTY_PHYSICAL_TILE_TYPE.index = 0;
@@ -2917,7 +2935,7 @@ static void ProcessTiles(pugi::xml_node Node,
     /* Process the types */
     int index = 1; /* Skip over 'empty' type */
 
-    CurTileType = Node.first_child();
+    pugi::xml_node CurTileType = Node.first_child();
     while (CurTileType) {
         check_node(CurTileType, "tile", loc_data);
 
@@ -2928,8 +2946,8 @@ static void ProcessTiles(pugi::xml_node Node,
         /* Parses the properties fields of the type */
         ProcessTileProps(CurTileType, &PhysicalTileType, loc_data);
 
-        auto result = tile_type_descriptors.insert(std::pair<std::string, int>(PhysicalTileType.name, 0));
-        if (!result.second) {
+        auto [_, success] = tile_type_descriptors.insert(PhysicalTileType.name);
+        if (!success) {
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(CurTileType),
                            "Duplicate tile descriptor name: '%s'.\n", PhysicalTileType.name);
         }
@@ -2946,7 +2964,7 @@ static void ProcessTiles(pugi::xml_node Node,
         }
 
         //Load switchblock type and location overrides
-        Cur = get_single_child(CurTileType, "switchblock_locations", loc_data, ReqOpt::OPTIONAL);
+        pugi::xml_node Cur = get_single_child(CurTileType, "switchblock_locations", loc_data, ReqOpt::OPTIONAL);
         ProcessSwitchblockLocations(Cur, &PhysicalTileType, arch, loc_data);
 
         ProcessSubTiles(CurTileType, &PhysicalTileType, LogicalBlockTypes, arch.Segments, arch_def_fc, loc_data, num_of_avail_layer);
@@ -2960,7 +2978,6 @@ static void ProcessTiles(pugi::xml_node Node,
         /* Free this node and get its next sibling node */
         CurTileType = CurTileType.next_sibling(CurTileType.name());
     }
-    tile_type_descriptors.clear();
 }
 
 static void MarkIoTypes(std::vector<t_physical_tile_type>& PhysicalTileTypes) {
@@ -3012,23 +3029,19 @@ static t_pin_counts ProcessSubTilePorts(pugi::xml_node Parent,
                                         const pugiutil::loc_data& loc_data) {
     pugi::xml_node Cur;
 
-    std::map<std::string, int> sub_tile_port_names;
+    int num_ports = 0;
+    for (auto port_type : {"input", "output", "clock"}) {
+        num_ports += count_children(Parent, port_type, loc_data, ReqOpt::OPTIONAL);
+    }
 
-    int num_ports, num_in_ports, num_out_ports, num_clock_ports;
-
-    num_ports = num_in_ports = num_out_ports = num_clock_ports = 0;
-    num_in_ports = count_children(Parent, "input", loc_data, ReqOpt::OPTIONAL);
-    num_out_ports = count_children(Parent, "output", loc_data, ReqOpt::OPTIONAL);
-    num_clock_ports = count_children(Parent, "clock", loc_data, ReqOpt::OPTIONAL);
-    num_ports = num_in_ports + num_out_ports + num_clock_ports;
-
-    int port_index_by_type;
     int port_index = 0;
     int absolute_first_pin_index = 0;
 
-    std::vector<const char*> port_types = {"input", "output", "clock"};
-    for (auto port_type : port_types) {
-        port_index_by_type = 0;
+    // used to find duplicate port names
+    std::set<std::string> sub_tile_port_names;
+
+    for (auto port_type : {"input", "output", "clock"}) {
+        int port_index_by_type = 0;
         Cur = get_first_child(Parent, port_type, loc_data, ReqOpt::OPTIONAL);
         while (Cur) {
             t_physical_tile_port port;
@@ -3039,17 +3052,17 @@ static t_pin_counts ProcessSubTilePorts(pugi::xml_node Parent,
             ProcessTilePort(Cur, &port, loc_data);
 
             //Check port name duplicates
-            auto sub_tile_port_result = sub_tile_port_names.insert(std::pair<std::string, int>(port.name, 0));
-            if (!sub_tile_port_result.second) {
+            auto [_, subtile_success] = sub_tile_port_names.insert(port.name);
+            if (!subtile_success) {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
-                               "Duplicate port names in tile '%s': port '%s'\n",
+                               "Duplicate port names in subtile '%s': port '%s'\n",
                                SubTile->name, port.name);
             }
 
             //Check port name duplicates
-            auto tile_port_result = tile_port_names.insert(std::pair<std::string, t_physical_tile_port>(port.name, port));
-            if (!tile_port_result.second) {
-                if (tile_port_result.first->second.num_pins != port.num_pins || tile_port_result.first->second.equivalent != port.equivalent) {
+            auto [added_entry, tile_success] = tile_port_names.insert({port.name, port});
+            if (!tile_success) {
+                if (added_entry->second.num_pins != port.num_pins || added_entry->second.equivalent != port.equivalent) {
                     archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
                                    "Another port found with the same name in other sub tiles "
                                    "that did not match the current port settings. '%s': port '%s'\n",
@@ -3075,7 +3088,7 @@ static t_pin_counts ProcessSubTilePorts(pugi::xml_node Parent,
 
     /* Count stats on the number of each type of pin */
     for (const auto& port : SubTile->ports) {
-        if (port.type == IN_PORT && port.is_clock == false) {
+        if (port.type == IN_PORT && !port.is_clock) {
             pin_counts.input += port.num_pins;
         } else if (port.type == OUT_PORT) {
             pin_counts.output += port.num_pins;
@@ -3094,7 +3107,7 @@ static void ProcessTilePort(pugi::xml_node Node,
     std::vector<std::string> expected_attributes = {"name", "num_pins", "equivalent"};
 
     if (Node.name() == "input"s || Node.name() == "clock"s) {
-        expected_attributes.push_back("is_non_clock_global");
+        expected_attributes.emplace_back("is_non_clock_global");
     }
 
     expect_only_attributes(Node, expected_attributes, loc_data);
@@ -3143,7 +3156,7 @@ static void ProcessTilePort(pugi::xml_node Node,
         port->type = IN_PORT;
         port->is_clock = true;
 
-        if (port->is_non_clock_global == true) {
+        if (port->is_non_clock_global) {
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
                            "Port %s cannot be both a clock and a non-clock simultaneously\n",
                            Node.name());
@@ -3299,19 +3312,19 @@ static void ProcessPinLocations(pugi::xml_node Locations,
 
         Prop = get_attribute(Locations, "pattern", loc_data).value();
         if (strcmp(Prop, "spread") == 0) {
-            distribution = E_SPREAD_PIN_DISTR;
+            distribution = e_pin_location_distr::SPREAD;
         } else if (strcmp(Prop, "perimeter") == 0) {
-            distribution = E_PERIMETER_PIN_DISTR;
+            distribution = e_pin_location_distr::PERIMETER;
         } else if (strcmp(Prop, "spread_inputs_perimeter_outputs") == 0) {
-            distribution = E_SPREAD_INPUTS_PERIMETER_OUTPUTS_PIN_DISTR;
+            distribution = e_pin_location_distr::SPREAD_INPUTS_PERIMETER_OUTPUTS;
         } else if (strcmp(Prop, "custom") == 0) {
-            distribution = E_CUSTOM_PIN_DISTR;
+            distribution = e_pin_location_distr::CUSTOM;
         } else {
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
                            "%s is an invalid pin location pattern.\n", Prop);
         }
     } else {
-        distribution = E_SPREAD_PIN_DISTR;
+        distribution = e_pin_location_distr::SPREAD;
         Prop = "spread";
     }
 
@@ -3327,10 +3340,10 @@ static void ProcessPinLocations(pugi::xml_node Locations,
         pin_locs->set_distribution();
     }
 
-    int sub_tile_index = SubTile->index;
+    const int sub_tile_index = SubTile->index;
 
     /* Load the pin locations */
-    if (distribution == E_CUSTOM_PIN_DISTR) {
+    if (distribution == e_pin_location_distr::CUSTOM) {
         expect_only_children(Locations, {"loc"}, loc_data);
         Cur = Locations.first_child();
         //check for duplications ([0..3][0..type->width-1][0..type->height-1][0..num_of_avail_layer-1])
@@ -3393,7 +3406,7 @@ static void ProcessPinLocations(pugi::xml_node Locations,
             if (Count > 0) {
                 for (int pin = 0; pin < Count; ++pin) {
                     /* Store location assignment */
-                    pin_locs->assignments[sub_tile_index][x_offset][y_offset][std::abs(layer_offset)][side].push_back(std::string(Tokens[pin].c_str()));
+                    pin_locs->assignments[sub_tile_index][x_offset][y_offset][std::abs(layer_offset)][side].emplace_back(Tokens[pin].c_str());
                     /* Advance through list of pins in this location */
                 }
             }
@@ -3408,7 +3421,7 @@ static void ProcessPinLocations(pugi::xml_node Locations,
             for (int w = 0; w < PhysicalTileType->width; ++w) {
                 for (int h = 0; h < PhysicalTileType->height; ++h) {
                     for (e_side side : {TOP, RIGHT, BOTTOM, LEFT}) {
-                        for (auto token : pin_locs->assignments[sub_tile_index][w][h][l][side]) {
+                        for (const auto& token : pin_locs->assignments[sub_tile_index][w][h][l][side]) {
                             InstPort inst_port(token.c_str());
 
                             //A pin specification should contain only the block name, and not any instance count information
@@ -3453,7 +3466,7 @@ static void ProcessPinLocations(pugi::xml_node Locations,
                             VTR_ASSERT(pin_high_idx >= 0);
 
                             for (int ipin = pin_low_idx; ipin <= pin_high_idx; ++ipin) {
-                                //Record that the pin has it's location specified
+                                //Record that the pin has its location specified
                                 port_pins_with_specified_locations[inst_port.port_name()].insert(ipin);
                             }
                         }
@@ -3488,14 +3501,11 @@ static void ProcessSubTiles(pugi::xml_node Node,
                             const int num_of_avail_layer) {
     pugi::xml_node CurSubTile;
     pugi::xml_node Cur;
-    int index = 0;
 
     unsigned long int num_sub_tiles = count_children(Node, "sub_tile", loc_data);
     unsigned long int width = PhysicalTileType->width;
     unsigned long int height = PhysicalTileType->height;
     unsigned long int num_sides = 4;
-
-    std::map<std::string, int> sub_tile_names;
 
     t_pin_locs pin_locs;
     pin_locs.assignments.resize({num_sub_tiles, width, height, (unsigned long int)num_of_avail_layer, num_sides});
@@ -3507,12 +3517,21 @@ static void ProcessSubTiles(pugi::xml_node Node,
                        PhysicalTileType->name);
     }
 
+    // used to find duplicate subtile names
+    std::set<std::string> sub_tile_names;
+
+    // used to assign indices to subtiles
+    int subtile_index = 0;
+
+    // used to find duplicate port names
+    std::unordered_map<std::string, t_physical_tile_port> tile_port_names;
+
     CurSubTile = get_first_child(Node, "sub_tile", loc_data);
 
     while (CurSubTile) {
         t_sub_tile SubTile;
 
-        SubTile.index = index;
+        SubTile.index = subtile_index;
 
         expect_only_attributes(CurSubTile, {"name", "capacity"}, loc_data);
 
@@ -3520,8 +3539,8 @@ static void ProcessSubTiles(pugi::xml_node Node,
         auto name = vtr::strdup(get_attribute(CurSubTile, "name", loc_data).value());
 
         //Check Sub Tile name duplicates
-        auto result = sub_tile_names.insert(std::pair<std::string, int>(std::string(name), 0));
-        if (!result.second) {
+        auto [_, success] = sub_tile_names.insert(name);
+        if (!success) {
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
                            "Duplicate Sub Tile names in tile '%s': Sub Tile'%s'\n",
                            PhysicalTileType->name, name);
@@ -3535,8 +3554,7 @@ static void ProcessSubTiles(pugi::xml_node Node,
         PhysicalTileType->capacity += capacity;
 
         /* Process sub tile port definitions */
-        std::unordered_map<std::string, t_physical_tile_port> tile_port_names;
-        auto pin_counts = ProcessSubTilePorts(CurSubTile, &SubTile, tile_port_names, loc_data);
+        const auto pin_counts = ProcessSubTilePorts(CurSubTile, &SubTile, tile_port_names, loc_data);
 
         /* Map Sub Tile physical pins with the Physical Tile Type physical pins.
          * This takes into account the capacity of each sub tiles to add the correct offset.
@@ -3565,13 +3583,13 @@ static void ProcessSubTiles(pugi::xml_node Node,
         Cur = get_single_child(CurSubTile, "fc", loc_data, ReqOpt::OPTIONAL);
         Process_Fc(Cur, PhysicalTileType, &SubTile, pin_counts, segments, arch_def_fc, loc_data);
 
-        //Load equivalent sites infromation
+        //Load equivalent sites information
         Cur = get_single_child(CurSubTile, "equivalent_sites", loc_data, ReqOpt::REQUIRED);
         ProcessTileEquivalentSites(Cur, &SubTile, PhysicalTileType, LogicalBlockTypes, loc_data);
 
         PhysicalTileType->sub_tiles.push_back(SubTile);
 
-        index++;
+        subtile_index++;
 
         CurSubTile = CurSubTile.next_sibling(CurSubTile.name());
     }
@@ -4924,7 +4942,7 @@ static bool attribute_to_bool(const pugi::xml_node node,
     return false;
 }
 
-int find_switch_by_name(const t_arch& arch, std::string switch_name) {
+static int find_switch_by_name(const t_arch& arch, const std::string& switch_name) {
     for (int iswitch = 0; iswitch < arch.num_switches; ++iswitch) {
         const t_arch_switch_inf& arch_switch = arch.Switches[iswitch];
         if (arch_switch.name == switch_name) {

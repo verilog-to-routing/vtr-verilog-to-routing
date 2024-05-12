@@ -182,11 +182,11 @@ constexpr std::array<e_side, NUM_SIDES> SIDES = {{TOP, RIGHT, BOTTOM, LEFT}};   
 constexpr std::array<const char*, NUM_SIDES> SIDE_STRING = {{"TOP", "RIGHT", "BOTTOM", "LEFT"}}; //String versions of side orientations
 
 /* pin location distributions */
-enum e_pin_location_distr {
-    E_SPREAD_PIN_DISTR,
-    E_PERIMETER_PIN_DISTR,
-    E_SPREAD_INPUTS_PERIMETER_OUTPUTS_PIN_DISTR,
-    E_CUSTOM_PIN_DISTR
+enum class e_pin_location_distr {
+    SPREAD,
+    PERIMETER,
+    SPREAD_INPUTS_PERIMETER_OUTPUTS,
+    CUSTOM
 };
 
 /* pb_type class */
@@ -649,7 +649,7 @@ struct t_physical_tile_type {
 
     std::vector<t_class> class_inf; /* [0..num_class-1] */
 
-    // Primitive class is refered to a classes that are in the primitive blocks. These classes are
+    // Primitive class is referred to a classes that are in the primitive blocks. These classes are
     // used during flat-routing to route the nets.
     // The starting number of primitive classes
     int primitive_class_starting_idx = -1;
@@ -756,7 +756,7 @@ struct t_capacity_range {
 struct t_sub_tile {
     char* name = nullptr;
 
-    // Mapping between the sub tile's pins and the physical pins corresponding
+    // Mapping between the subtile's pins and the physical pins corresponding
     // to the physical tile type.
     std::vector<int> sub_tile_to_tile_pin_indices;
 
