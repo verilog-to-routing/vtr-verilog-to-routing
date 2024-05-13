@@ -1,4 +1,5 @@
 #include "parallel_connection_router.h"
+#include <algorithm>
 #include "router_lookahead.h"
 #include "rr_graph.h"
 
@@ -231,9 +232,15 @@ static inline bool prune_node(RRNodeId inode,
         //       under-estimating heuristic has better runtime.
         float expected_cost = new_total_cost - new_back_cost;
         float new_expected_cost = expected_cost;
+        // h1 = (h - offset) * fac
         // Protection for division by zero
         if (params.astar_fac > 0.001)
+            // To save time, does not recompute the heuristic, just divideds out
+            // the astar_fac.
             new_expected_cost /= params.astar_fac;
+        new_expected_cost = new_expected_cost - params.post_target_prune_offset;
+        // Max function to prevent the heuristic from going negative
+        new_expected_cost = std::max(0.f, new_expected_cost);
         new_expected_cost *= params.post_target_prune_fac;
         if (best_back_cost_to_target < (new_back_cost + new_expected_cost))
             return true;
@@ -246,6 +253,10 @@ static inline bool prune_node(RRNodeId inode,
         return true;
     // In the case of a tie, need to be picky about whether to prune or not in
     // order to get determinism.
+    // FIXME: This may not be thread safe. If the best node changes while this
+    //        function is being called, we may have the new_back_cost and best
+    //        prev_edge's being from different heap nodes!
+    // TODO: Move this to within the lock (the rest can stay for performance).
     if (best_back_cost == new_back_cost) {
         // In the case of a true tie, just prune, no need to explore neightbors
         if (new_prev_edge == best_prev_edge)
@@ -1081,3 +1092,4 @@ static inline void update_router_stats(RouterStats* router_stats,
     }
 #endif
 }
+

@@ -207,6 +207,7 @@ struct t_options {
     argparse::ArgValue<float> astar_fac;
     argparse::ArgValue<float> router_profiler_astar_fac;
     argparse::ArgValue<float> post_target_prune_fac;
+    argparse::ArgValue<float> post_target_prune_offset;
     argparse::ArgValue<float> max_criticality;
     argparse::ArgValue<float> criticality_exp;
     argparse::ArgValue<float> router_init_wirelength_abort_threshold;

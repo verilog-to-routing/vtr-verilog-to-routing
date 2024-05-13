@@ -1421,6 +1421,7 @@ struct t_router_opts {
     float astar_fac;
     float router_profiler_astar_fac;
     float post_target_prune_fac;
+    float post_target_prune_offset;
     float max_criticality;
     float criticality_exp;
     float init_wirelength_abort_threshold;

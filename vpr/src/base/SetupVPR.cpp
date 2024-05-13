@@ -412,6 +412,7 @@ static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts)
     RouterOpts->astar_fac = Options.astar_fac;
     RouterOpts->router_profiler_astar_fac = Options.router_profiler_astar_fac;
     RouterOpts->post_target_prune_fac = Options.post_target_prune_fac;
+    RouterOpts->post_target_prune_offset = Options.post_target_prune_offset;
     RouterOpts->bb_factor = Options.bb_factor;
     RouterOpts->criticality_exp = Options.criticality_exp;
     RouterOpts->max_criticality = Options.max_criticality;

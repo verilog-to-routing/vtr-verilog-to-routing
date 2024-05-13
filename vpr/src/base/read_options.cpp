@@ -2491,6 +2491,11 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .default_value("1.2")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    route_timing_grp.add_argument(args.post_target_prune_offset, "--post_target_prune_offset")
+        .help("TODO")
+        .default_value("0.0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     route_timing_grp.add_argument(args.max_criticality, "--max_criticality")
         .help(
             "Sets the maximum fraction of routing cost derived from delay (vs routability) for any net."
