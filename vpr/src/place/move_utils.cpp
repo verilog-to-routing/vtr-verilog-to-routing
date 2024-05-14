@@ -16,10 +16,15 @@
 bool f_placer_breakpoint_reached = false;
 
 //Records counts of reasons for aborted moves
-static std::map<std::string, size_t> f_move_abort_reasons;
+static std::map<std::string, size_t, std::less<>> f_move_abort_reasons;
 
-void log_move_abort(const std::string& reason) {
-    ++f_move_abort_reasons[reason];
+void log_move_abort(std::string_view reason) {
+    auto it = f_move_abort_reasons.find(reason);
+    if (it != f_move_abort_reasons.end()) {
+        it->second++;
+    } else {
+        f_move_abort_reasons.emplace(reason, 1);
+    }
 }
 
 void report_aborted_moves() {
