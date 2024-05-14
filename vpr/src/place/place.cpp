@@ -981,7 +981,7 @@ void try_place(const Netlist<>& net_list,
 #endif /* ENABLE_ANALYTIC_PLACE */
 
     //RL agent state definition
-    e_agent_state agent_state = EARLY_IN_THE_ANNEAL;
+    e_agent_state agent_state = e_agent_state::EARLY_IN_THE_ANNEAL;
 
     std::unique_ptr<MoveGenerator> current_move_generator;
 
@@ -1011,7 +1011,7 @@ void try_place(const Netlist<>& net_list,
                 //see if we should save the current placement solution as a checkpoint
 
                 if (placer_opts.place_checkpointing
-                    && agent_state == LATE_IN_THE_ANNEAL) {
+                    && agent_state == e_agent_state::LATE_IN_THE_ANNEAL) {
                     save_placement_checkpoint_if_needed(placement_checkpoint,
                                                         timing_info, costs, critical_path.delay());
                 }
@@ -1045,9 +1045,9 @@ void try_place(const Netlist<>& net_list,
 
             if (placer_opts.place_algorithm.is_timing_driven()
                 && placer_opts.place_agent_multistate
-                && agent_state == EARLY_IN_THE_ANNEAL) {
+                && agent_state == e_agent_state::EARLY_IN_THE_ANNEAL) {
                 if (state.alpha < 0.85 && state.alpha > 0.6) {
-                    agent_state = LATE_IN_THE_ANNEAL;
+                    agent_state = e_agent_state::LATE_IN_THE_ANNEAL;
                     VTR_LOG("Agent's 2nd state: \n");
                 }
             }

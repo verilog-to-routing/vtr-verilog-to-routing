@@ -1152,6 +1152,8 @@ enum class e_place_delta_delay_algorithm {
     DIJKSTRA_EXPANSION,
 };
 
+enum class e_move_type;
+
 /**
  * @brief Various options for the placer.
  *
@@ -1250,8 +1252,7 @@ struct t_placer_opts {
 
     std::string write_placement_delay_lookup;
     std::string read_placement_delay_lookup;
-    std::vector<float> place_static_move_prob;
-    std::vector<float> place_static_notiming_move_prob;
+    vtr::vector<e_move_type, float> place_static_move_prob;
     bool RL_agent_placement;
     bool place_agent_multistate;
     bool place_checkpointing;

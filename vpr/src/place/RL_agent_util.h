@@ -1,12 +1,11 @@
 #ifndef RL_AGENT_UTIL_H
 #define RL_AGENT_UTIL_H
 
-#include "static_move_generator.h"
-#include "simpleRL_move_generator.h"
-#include "manual_move_generator.h"
+#include "move_generator.h"
+
 
 //enum represents the available agent states
-enum e_agent_state {
+enum class e_agent_state {
     EARLY_IN_THE_ANNEAL,
     LATE_IN_THE_ANNEAL
 };
