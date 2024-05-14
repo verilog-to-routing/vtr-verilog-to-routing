@@ -277,6 +277,7 @@ static inline bool prune_node(RRNodeId inode,
 #else   // IS_DETERMINISTIC
     (void)new_prev_edge;
     (void)best_prev_edge;
+    (void)params;
     // Non-deterministic version does not prefer a given EdgeID, therefore there
     // is a race-condition on which path wins in the case of a tie.
     // TODO: Confirm if best_total_cost_to_target should be included here.
