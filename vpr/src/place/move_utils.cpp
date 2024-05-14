@@ -254,13 +254,13 @@ e_block_move_result record_macro_macro_swaps(t_pl_blocks_to_be_moved& blocks_aff
     //Continue walking along the overlapping parts of the from and to macros, recording
     //each block swap.
     //
-    //At the momemnt we only support swapping the two macros if they have the same shape.
+    //At the moment we only support swapping the two macros if they have the same shape.
     //This will be the case with the common cases we care about (i.e. carry-chains), so
     //we just abort in any other cases (if these types of macros become more common in
     //the future this could be updated).
     //
-    //Unless the two macros have thier root blocks aligned (i.e. the mutual overlap starts
-    //at imember_from == 0), then theree will be a fixed offset between the macros' relative
+    //Unless the two macros have their root blocks aligned (i.e. the mutual overlap starts
+    //at imember_from == 0), then there will be a fixed offset between the macros' relative
     //position. We record this as from_to_macro_*_offset which is used to verify the shape
     //of the macros is consistent.
     //
@@ -1036,7 +1036,8 @@ void compressed_grid_to_loc(t_logical_block_type_ptr blk_type,
     to_loc = t_pl_loc(grid_loc.x, grid_loc.y, sub_tile, grid_loc.layer_num);
 }
 
-int has_empty_compatible_subtile(t_logical_block_type_ptr type, const t_physical_tile_loc& to_loc) {
+int find_empty_compatible_subtile(t_logical_block_type_ptr type,
+                                  const t_physical_tile_loc& to_loc) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& place_ctx = g_vpr_ctx.placement();
 
@@ -1148,7 +1149,7 @@ bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
             if (from_loc.x == to_loc.x && from_loc.y == to_loc.y && from_loc.layer_num == to_layer_num) {
                 continue;                  //Same from/to location -- try again for new y-position
             } else if (search_for_empty) { // Check if the location has at least one empty sub-tile
-                legal = has_empty_compatible_subtile(type, to_loc) >= 0;
+                legal = find_empty_compatible_subtile(type, to_loc) >= 0;
             } else {
                 legal = true;
             }

@@ -23,7 +23,7 @@
 
 /* This defines the maximum string length that could be parsed by functions  *
  * in vpr_utils.                                                             */
-static constexpr size_t MAX_STRING_LEN = 128;
+static constexpr size_t MAX_STRING_LEN = 512;
 
 /******************** File-scope variables declarations **********************/
 

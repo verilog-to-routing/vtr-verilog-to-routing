@@ -225,16 +225,19 @@ void compressed_grid_to_loc(t_logical_block_type_ptr blk_type,
                             t_pl_loc& to_loc);
 
 /**
- * @brief Checks whether the given location has a compatible empty subtile with
- * the given type.
+ * @brief Tries to find an compatible empty subtile with the given type at
+ * the given location. If such a subtile could be found, the subtile number
+ * is returned. Otherwise, -1 is returned to indicate that there are no
+ * compatible subtiles at the given location.
  *
  * @param type logical block type
  * @param to_loc The location to be checked
  *
- * @return bool True if the given location has at least one empty compatible subtile.
+ * @return int The subtile number if there is an empty compatible subtile, otherwise -1
+ * is returned to indicate that there are no empty subtiles compatible with the given type..
  */
-int has_empty_compatible_subtile(t_logical_block_type_ptr type,
-                                 const t_physical_tile_loc& to_loc);
+int find_empty_compatible_subtile(t_logical_block_type_ptr type,
+                                  const t_physical_tile_loc& to_loc);
 
 /**
  * @brief find compressed location in a compressed range for a specific type in the given layer (to_layer_num)

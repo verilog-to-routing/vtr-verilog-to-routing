@@ -280,12 +280,44 @@ enum e_block_pack_status try_place_atom_block_rec(const t_pb_graph_node* pb_grap
                                                   int verbosity,
                                                   const int feasible_block_array_size);
 
+
+/**
+ * @brief Checks whether an atom block can be added to a clustered block
+ * without violating floorplanning constraints. It also updates the
+ * clustered block's floorplanning region by taking the intersection of
+ * its current region and the floorplanning region of the given atom block.
+ *
+ * @param blk_id A unique ID for the candidate atom block to be added to the growing cluster.
+ * @param clb_index A unique ID for the clustered block that the atom block wants to be added to.
+ * @param verbosity Controls the detail level of log information printed by this function.
+ * @param temp_cluster_pr The floorplanning regions of the clustered block. This function may
+ * update the given region.
+ * @param cluster_pr_needs_update Indicates whether the floorplanning region of the clustered block
+ * have updated.
+ * @return True if adding the given atom block to the clustered block does not violated any
+ * floorplanning constraints.
+ */
 bool atom_cluster_floorplanning_check(AtomBlockId blk_id,
                                       ClusterBlockId clb_index,
                                       int verbosity,
                                       PartitionRegion& temp_cluster_pr,
                                       bool& cluster_pr_needs_update);
-
+/**
+ * @brief Checks if an atom block can be added to a clustered block without
+ * violating NoC group constraints. For passing this check, either both clustered
+ * and atom blocks must belong to the same NoC group, or at least one of them should
+ * not belong to any NoC group. If the atom block is associated with a NoC group while
+ * the clustered block does not belong to any NoC groups, the NoC group ID of the atom block
+ * is assigned to the clustered block when the atom is added to it.
+ * block
+ *
+ * @param blk_id A unique ID for the candidate atom block to be added to the growing cluster.
+ * @param clb_index A unique ID for the clustered block that the atom block wants to be added to.
+ * @param verbosity Controls the detail level of log information printed by this function.
+ * @param temp_cluster_noc_grp_id The NoC group ID of the clustered block. This function may update
+ * this ID.
+ * @return True if adding the atom block the cluster does not violate NoC group constraints.
+ */
 bool atom_cluster_noc_group_check(AtomBlockId blk_id,
                                   ClusterBlockId clb_index,
                                   int verbosity,

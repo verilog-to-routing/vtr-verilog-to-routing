@@ -20,12 +20,41 @@
  */
 class CentroidMoveGenerator : public MoveGenerator {
   public:
+    /**
+     * The move generator created by calling this constructor only consider
+     * netlist connectivity for computing the centroid location.
+     */
     CentroidMoveGenerator();
+
+    /**
+     * The move generator created by calling this constructor considers both
+     * netlist connectivity and NoC reachability for computing the centroid.
+     * The constructor also forms NoC groups by finding connected components
+     * in the graph representing the clustered netlist. When finding connected
+     * components, none of the nets whose fanout is larger than high_fanout_net
+     * are traversed.
+     * @param noc_attraction_weight Specifies how much the computed centroid
+     * is adjusted towards the location of NoC routers in the same NoC group as
+     * the clustered block to be moved.
+     * @param high_fanout_net All nets with a fanout larger than this number are
+     * ignored when forming NoC groups.
+     */
     CentroidMoveGenerator(float noc_attraction_weight, size_t high_fanout_net);
 
 
+    /**
+     * Returns all NoC routers that are in the NoC group with a given ID.
+     * @param noc_grp_id The NoC group ID whose NoC routers are requested.
+     * @return The clustered block ID of all NoC routers in the given NoC group.
+     */
     static const std::vector<ClusterBlockId>& get_noc_group_routers(NocGroupId noc_grp_id);
 
+    /**
+     * Returns the NoC group ID of clustered block.
+     * @param blk_id The clustered block whose NoC group ID is requested.
+     * @return The NoC group ID of the given clustered block or INVALID if
+     * the given clustered block does not belong to any NoC groups.
+     */
     static NocGroupId get_cluster_noc_group(ClusterBlockId blk_id);
 
   private:
@@ -43,7 +72,7 @@ class CentroidMoveGenerator : public MoveGenerator {
     /** Indicates whether the centroid calculation is NoC-biased.*/
     bool noc_attraction_enabled_;
 
-    /** Stores all non-router blocks for each NoC group*/
+    /** Stores the ids of all non-router clustered blocks for each NoC group*/
     static vtr::vector<NocGroupId, std::vector<ClusterBlockId>> noc_group_clusters_;
 
     /** Stores NoC routers in each NoC group*/
