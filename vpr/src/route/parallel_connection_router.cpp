@@ -340,7 +340,6 @@ void ParallelConnectionRouter::timing_driven_route_connection_from_heap_thread_f
                                                                          const t_conn_cost_params& cost_params,
                                                                          const t_bb& bounding_box,
                                                                          const size_t thread_idx) {
-    VTR_ASSERT(thread_idx == 0); // single thread
     // cheapest t_heap in current route tree to be expanded on
     pq_prio_t new_total_cost;
     pq_index_t inode;
@@ -355,11 +354,13 @@ void ParallelConnectionRouter::timing_driven_route_connection_from_heap_thread_f
         if (inode == sink_node) {
             continue;
         }
+
+        obtainSpinLock(inode);
+
         if (new_total_cost > rr_node_route_inf_[inode].path_cost) {
+            releaseLock(inode);
             continue; // same idea as Gil's ISCA'22 paper
         }
-
-        VTR_ASSERT(new_total_cost == rr_node_route_inf_[inode].path_cost);
 
         pq_node_t cheapest;
         cheapest.index = inode;
@@ -368,8 +369,10 @@ void ParallelConnectionRouter::timing_driven_route_connection_from_heap_thread_f
         cheapest.R_upstream = rr_node_R_upstream_[inode];
         cheapest.set_prev_edge(rr_node_route_inf_[inode].prev_edge);
 
+        releaseLock(inode);
+
         // Adding nodes to heap
-        timing_driven_expand_neighbours(&cheapest, cost_params, bounding_box, sink_node);
+        timing_driven_expand_neighbours(&cheapest, cost_params, bounding_box, sink_node, thread_idx);
 
     }
 }
@@ -393,7 +396,8 @@ vtr::vector<RRNodeId, t_heap> ParallelConnectionRouter::timing_driven_find_all_s
 void ParallelConnectionRouter::timing_driven_expand_neighbours(pq_node_t* current,
                                                              const t_conn_cost_params& cost_params,
                                                              const t_bb& bounding_box,
-                                                             RRNodeId target_node) {
+                                                             RRNodeId target_node,
+                                                             size_t thread_idx) {
     /* Puts all the rr_nodes adjacent to current on the heap. */
 
     t_bb target_bb;
@@ -444,7 +448,8 @@ void ParallelConnectionRouter::timing_driven_expand_neighbours(pq_node_t* curren
                                        cost_params,
                                        bounding_box,
                                        target_node,
-                                       target_bb);
+                                       target_bb,
+                                       thread_idx);
     }
 }
 
@@ -458,7 +463,8 @@ void ParallelConnectionRouter::timing_driven_expand_neighbour(pq_node_t* current
                                                             const t_conn_cost_params& cost_params,
                                                             const t_bb& bounding_box,
                                                             RRNodeId target_node,
-                                                            const t_bb& target_bb) {
+                                                            const t_bb& target_bb,
+                                                            size_t thread_idx) {
     // VTR_ASSERT(bounding_box.layer_max < g_vpr_ctx.device().grid.get_num_layers());
 
     // BB-pruning
@@ -519,7 +525,8 @@ void ParallelConnectionRouter::timing_driven_expand_neighbour(pq_node_t* current
                               from_node,
                               to_node,
                               from_edge,
-                              target_node);
+                              target_node,
+                              thread_idx);
 }
 
 // Add to_node to the heap, and also add any nodes which are connected by non-configurable edges
@@ -528,7 +535,8 @@ void ParallelConnectionRouter::timing_driven_add_to_heap(const t_conn_cost_param
                                                        RRNodeId from_node,
                                                        RRNodeId to_node,
                                                        const RREdgeId from_edge,
-                                                       RRNodeId target_node) {
+                                                       RRNodeId target_node,
+                                                       size_t thread_idx) {
     // const auto& device_ctx = g_vpr_ctx.device();
     pq_node_t next;
 
@@ -545,18 +553,26 @@ void ParallelConnectionRouter::timing_driven_add_to_heap(const t_conn_cost_param
                                       from_edge,
                                       target_node);
 
-    float new_total_cost = next.cost;
-    float new_back_cost = next.backward_path_cost;
-    if (prune_node(to_node, new_total_cost, new_back_cost, from_edge, target_node, rr_node_route_inf_, cost_params))
-        return;
-    // if (to_node == target_node) VTR_LOG("[Hit Target] ");
-    // VTR_LOG("%d->%d~~%d: %.6f %.6f\n", from_node, to_node, target_node, new_total_cost, new_back_cost);
     //Record how we reached this node
     next.index = to_node;
     next.set_prev_edge(from_edge);
 
-    update_cheapest(&next, &rr_node_route_inf_[next.index], 0/*single thread*/);
+    float new_total_cost = next.cost;
+    float new_back_cost = next.backward_path_cost;
+
+    if (prune_node(to_node, new_total_cost, new_back_cost, from_edge, target_node, rr_node_route_inf_, cost_params))
+        return;
+
+    obtainSpinLock(to_node);
+    if (prune_node(to_node, new_total_cost, new_back_cost, from_edge, target_node, rr_node_route_inf_, cost_params)) {
+        releaseLock(to_node);
+        return;
+    }
+
+    update_cheapest(&next, &rr_node_route_inf_[next.index], thread_idx);
     rr_node_R_upstream_[to_node] = next.R_upstream;
+
+    releaseLock(to_node);
 
     heap_.add_to_heap(next.cost, next.index);
 
@@ -828,7 +844,7 @@ void ParallelConnectionRouter::add_route_tree_node_to_heap(
 
         if (tot_cost >= rr_node_route_inf_[inode].path_cost)
             return ;
-        add_to_mod_list(inode, 0/*single thread*/);
+        add_to_mod_list(inode, 0/*main thread*/);
         rr_node_route_inf_[inode].path_cost = tot_cost;
         rr_node_route_inf_[inode].prev_edge = RREdgeId::INVALID();
         rr_node_route_inf_[inode].backward_path_cost = backward_path_cost;

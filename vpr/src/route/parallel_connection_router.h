@@ -318,7 +318,8 @@ class ParallelConnectionRouter : public ConnectionRouterInterface {
         pq_node_t* current,
         const t_conn_cost_params& cost_params,
         const t_bb& bounding_box,
-        RRNodeId target_node);
+        RRNodeId target_node,
+        size_t thread_idx);
 
     // Conditionally adds to_node to the router heap (via path from from_node
     // via from_edge).
@@ -333,7 +334,8 @@ class ParallelConnectionRouter : public ConnectionRouterInterface {
         const t_conn_cost_params& cost_params,
         const t_bb& bounding_box,
         RRNodeId target_node,
-        const t_bb& target_bb);
+        const t_bb& target_bb,
+        size_t thread_idx);
 
     // Add to_node to the heap, and also add any nodes which are connected by
     // non-configurable edges
@@ -343,7 +345,8 @@ class ParallelConnectionRouter : public ConnectionRouterInterface {
         RRNodeId from_node,
         RRNodeId to_node,
         RREdgeId from_edge,
-        RRNodeId target_node);
+        RRNodeId target_node,
+        size_t thread_idx);
 
     // Calculates the cost of reaching to_node
     void evaluate_timing_driven_node_costs(
