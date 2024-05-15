@@ -241,7 +241,7 @@ void PrintArchInfo(FILE* Echo, const t_arch* arch) {
     for(const auto& layout : arch->grid_layouts){
         int num_layers = (int)layout.layers.size();
         if(num_layers > 1){
-            fprintf(Echo, "\tInput Connect Block Switch Name Between Two Dice: %s\n", arch->ipin_cblock_switch_name[[ipin_cblock_switch_index_between_dice].c_str());
+            fprintf(Echo, "\tInput Connect Block Switch Name Between Two Dice: %s\n", arch->ipin_cblock_switch_name[ipin_cblock_switch_index_between_dice].c_str());
         }
     }
 
