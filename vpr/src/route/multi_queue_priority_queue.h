@@ -7,32 +7,16 @@
 
 #include "rr_graph_fwd.h"
 
-struct pq_node_t {
-    float cost = 0.;
-    float backward_path_cost = 0.;
-    float R_upstream = 0.;
-
-    RRNodeId index = RRNodeId::INVALID(); // TODO: to be optimized
-
-    uint32_t prev_edge_id;
-
-    pq_node_t() {}
-    pq_node_t(size_t dont_care) { (void)dont_care; } // for MQ compatibility
-
-    constexpr RREdgeId prev_edge() const {
-        static_assert(sizeof(uint32_t) == sizeof(RREdgeId));
-        return RREdgeId(prev_edge_id);
-    }
-
-    inline void set_prev_edge(RREdgeId edge) {
-        static_assert(sizeof(uint32_t) == sizeof(RREdgeId));
-        prev_edge_id = size_t(edge);
-    }
+struct node_t {
+    float total_cost;
+    float backward_path_cost;
+    float R_upstream;
+    RREdgeId prev_edge;
 };
 
 
 using pq_prio_t = float;
-using pq_index_t = RRNodeId;
+using pq_index_t = size_t;
 
 class MultiQueuePriorityQueue {
   public:

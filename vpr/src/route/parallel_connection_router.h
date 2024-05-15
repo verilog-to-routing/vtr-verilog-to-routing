@@ -254,17 +254,17 @@ class ParallelConnectionRouter : public ConnectionRouterInterface {
     }
 
     // Update the route path to the node pointed to by cheapest.
-    inline void update_cheapest(pq_node_t* cheapest, size_t thread_idx) {
-        update_cheapest(cheapest, &rr_node_route_inf_[cheapest->index], thread_idx);
+    inline void update_cheapest(const node_t& cheapest, RRNodeId inode, size_t thread_idx) {
+        update_cheapest(cheapest, inode, &rr_node_route_inf_[inode], thread_idx);
     }
 
-    inline void update_cheapest(pq_node_t* cheapest, t_rr_node_route_inf* route_inf, size_t thread_idx) {
+    inline void update_cheapest(const node_t& cheapest, RRNodeId inode, t_rr_node_route_inf* route_inf, size_t thread_idx) {
         //Record final link to target
-        add_to_mod_list(cheapest->index, thread_idx);
+        add_to_mod_list(inode, thread_idx);
 
-        route_inf->prev_edge = cheapest->prev_edge();
-        route_inf->path_cost = cheapest->cost;
-        route_inf->backward_path_cost = cheapest->backward_path_cost;
+        route_inf->prev_edge = cheapest.prev_edge;
+        route_inf->path_cost = cheapest.total_cost;
+        route_inf->backward_path_cost = cheapest.backward_path_cost;
     }
 
     inline void obtainSpinLock(RRNodeId inode) {
@@ -315,7 +315,8 @@ class ParallelConnectionRouter : public ConnectionRouterInterface {
 
     // Expand each neighbor of the current node.
     void timing_driven_expand_neighbours(
-        pq_node_t* current,
+        const node_t& current,
+        RRNodeId from_node,
         const t_conn_cost_params& cost_params,
         const t_bb& bounding_box,
         RRNodeId target_node,
@@ -327,7 +328,7 @@ class ParallelConnectionRouter : public ConnectionRouterInterface {
     // RR nodes outside bounding box specified in bounding_box are not added
     // to the heap.
     void timing_driven_expand_neighbour(
-        pq_node_t* current,
+        const node_t& current,
         RRNodeId from_node,
         RREdgeId from_edge,
         RRNodeId to_node,
@@ -341,7 +342,7 @@ class ParallelConnectionRouter : public ConnectionRouterInterface {
     // non-configurable edges
     void timing_driven_add_to_heap(
         const t_conn_cost_params& cost_params,
-        const pq_node_t* current,
+        const node_t& current,
         RRNodeId from_node,
         RRNodeId to_node,
         RREdgeId from_edge,
@@ -350,7 +351,7 @@ class ParallelConnectionRouter : public ConnectionRouterInterface {
 
     // Calculates the cost of reaching to_node
     void evaluate_timing_driven_node_costs(
-        pq_node_t* to,
+        node_t* to,
         const t_conn_cost_params& cost_params,
         RRNodeId from_node,
         RRNodeId to_node,
