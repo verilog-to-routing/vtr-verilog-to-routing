@@ -1947,6 +1947,10 @@ struct t_noc_inf {
     /** A list of all routers in the NoC*/
     std::vector<t_router> router_list;
 
+    std::map<int, double> router_latency_overrides;
+    std::map<std::pair<int, int>, double> link_latency_overrides;
+    std::map<std::pair<int, int>, double> link_bandwidth_overrides;
+
     /** Represents the name of a router tile on the FPGA device. This should match the name used in the arch file when
      * describing a NoC router tile within the FPGA device*/
     std::string noc_router_tile_name;
