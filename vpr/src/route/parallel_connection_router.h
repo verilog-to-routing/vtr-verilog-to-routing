@@ -140,6 +140,7 @@ class ParallelConnectionRouter : public ConnectionRouterInterface {
         , locks_(rr_node_route_inf.size())
         , router_debug_(false) {
         heap_.init_heap(grid);
+        rr_node_R_upstream_.resize(rr_node_route_inf.size(), 0.);
         only_opin_inter_layer = (grid.get_num_layers() > 1) && inter_layer_connections_limited_to_opin(*rr_graph);
         std::cout << "#T=" << mq_num_threads << " #Q=" << mq_num_queues << std::endl << std::flush;
         sub_threads_.resize(mq_num_threads-1);
@@ -388,6 +389,7 @@ class ParallelConnectionRouter : public ConnectionRouterInterface {
     const vtr::vector<ParentNetId, std::vector<std::vector<int>>>& net_terminal_groups;
     const vtr::vector<ParentNetId, std::vector<int>>& net_terminal_group_num;
     vtr::vector<RRNodeId, t_rr_node_route_inf>& rr_node_route_inf_;
+    vtr::vector<RRNodeId, float> rr_node_R_upstream_;
     bool is_flat_;
     std::vector<std::vector<RRNodeId>> modified_rr_node_inf_;
     RouterStats* router_stats_;

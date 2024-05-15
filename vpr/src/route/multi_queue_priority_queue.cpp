@@ -19,23 +19,23 @@ void MultiQueuePriorityQueue::init_heap(const DeviceGrid& grid) {
     // TODO: Reserve storage for MQ_IO
 }
 
-bool MultiQueuePriorityQueue::try_pop(pq_node_t &pq_top) {
+bool MultiQueuePriorityQueue::try_pop(pq_prio_t &prio, pq_index_t &node) {
     auto tmp = pq_->tryPop();
     if (!tmp) {
         return false;
     } else {
-        pq_top = std::get<1>(tmp.get());
+        std::tie(prio, node) = tmp.get();
         return true;
     }
 }
 
-void MultiQueuePriorityQueue::add_to_heap(const pq_node_t& hptr) {
-    pq_->push({hptr.cost, hptr});
+void MultiQueuePriorityQueue::add_to_heap(const pq_prio_t& prio, const pq_index_t& node) {
+    pq_->push({prio, node});
 }
 
-void MultiQueuePriorityQueue::push_back(const pq_node_t& hptr) {
-    // push_batch_buffer_.push_back({hptr.cost, hptr});
-    pq_->push({hptr.cost, hptr});
+void MultiQueuePriorityQueue::push_back(const pq_prio_t& prio, const pq_index_t& node) {
+    // push_batch_buffer_.push_back({hptr.cost, hptr}); // TODO: heap memory reservation
+    pq_->push({prio, node});
 }
 
 bool MultiQueuePriorityQueue::is_empty_heap() const {

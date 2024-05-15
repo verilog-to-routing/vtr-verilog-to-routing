@@ -30,24 +30,28 @@ struct pq_node_t {
     }
 };
 
+
+using pq_prio_t = float;
+using pq_index_t = RRNodeId;
+
 class MultiQueuePriorityQueue {
   public:
-    using pq_pair_t = std::tuple<float /*priority*/, pq_node_t>;
+    using pq_pair_t = std::tuple<pq_prio_t /*priority*/, pq_index_t>;
     struct pq_compare {
         bool operator()(const pq_pair_t& u, const pq_pair_t& v) {
             return std::get<0>(u) > std::get<0>(v);
         }
     };
-    using MQ_IO = MultiQueueIO<pq_compare, float, pq_node_t>;
+    using MQ_IO = MultiQueueIO<pq_compare, pq_prio_t, pq_index_t>;
 
     MultiQueuePriorityQueue();
     MultiQueuePriorityQueue(size_t num_threads, size_t num_queues);
     ~MultiQueuePriorityQueue();
 
     void init_heap(const DeviceGrid& grid);
-    bool try_pop(pq_node_t &pq_top);
-    void add_to_heap(const pq_node_t& hptr);
-    void push_back(const pq_node_t& hptr);
+    bool try_pop(pq_prio_t &prio, pq_index_t &node);
+    void add_to_heap(const pq_prio_t& prio, const pq_index_t& node);
+    void push_back(const pq_prio_t& prio, const pq_index_t& node);
     bool is_empty_heap() const;
     bool is_valid() const;
     void empty_heap();
@@ -58,7 +62,7 @@ class MultiQueuePriorityQueue {
 
   private:
     MQ_IO* pq_;
-    // std::vector<pq_node_t> push_batch_buffer_;
+    // std::vector<pq_node_t> push_batch_buffer_; // TODO: heap memory reservation
 };
 
 #endif /* _MULTI_QUEUE_PRIORITY_QUEUE_H */

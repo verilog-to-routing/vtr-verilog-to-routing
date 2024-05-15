@@ -340,50 +340,33 @@ void ParallelConnectionRouter::timing_driven_route_connection_from_heap_thread_f
                                                                          const t_conn_cost_params& cost_params,
                                                                          const t_bb& bounding_box,
                                                                          const size_t thread_idx) {
+    VTR_ASSERT(thread_idx == 0); // single thread
     // cheapest t_heap in current route tree to be expanded on
-    pq_node_t cheapest;
+    pq_prio_t new_total_cost;
+    pq_index_t inode;
     // While the heap is not empty do
-    while (heap_.try_pop(cheapest)) {
+    while (heap_.try_pop(new_total_cost, inode)) {
         // update_router_stats(router_stats_,
         //                     false,
         //                     cheapest->index,
         //                     rr_graph_);
 
-        RRNodeId inode = cheapest.index;
-
-        // Exit Condition
-        // if (inode == sink_node) {
-        //     update_cheapest(&cheapest, &rr_node_route_inf_[inode]);
-        //     break;
-        // }
-
-        float new_total_cost = cheapest.cost;
-        float new_back_cost = cheapest.backward_path_cost;
-        RREdgeId new_prev_edge = cheapest.prev_edge();
         // Pruning
-        // NOTE: This is thread-safe since, even though the values may change during operation, that is ok,
-        //       since if any of the arguments need to be pruned it will.
-        if (prune_node(inode, new_total_cost, new_back_cost, new_prev_edge, sink_node, rr_node_route_inf_, cost_params)) {
-            continue;
-        }
-
-        // Synchronization Point
-        obtainSpinLock(inode);
-
-        // Need to double check pruning since things may have changed since obtaining the lock.
-        if (prune_node(inode, new_total_cost, new_back_cost, new_prev_edge, sink_node, rr_node_route_inf_, cost_params)) {
-            releaseLock(inode);
-            continue;
-        }
-
-        // Update the global values now that we are in the critical section.
-        update_cheapest(&cheapest, &rr_node_route_inf_[inode], thread_idx);
-
-        releaseLock(inode);
-
         if (inode == sink_node) {
             continue;
         }
+        if (new_total_cost > rr_node_route_inf_[inode].path_cost) {
+            continue; // same idea as Gil's ISCA'22 paper
+        }
+
+        VTR_ASSERT(new_total_cost == rr_node_route_inf_[inode].path_cost);
+
+        pq_node_t cheapest;
+        cheapest.index = inode;
+        cheapest.cost = new_total_cost;
+        cheapest.backward_path_cost = rr_node_route_inf_[inode].backward_path_cost;
+        cheapest.R_upstream = rr_node_R_upstream_[inode];
+        cheapest.set_prev_edge(rr_node_route_inf_[inode].prev_edge);
 
         // Adding nodes to heap
         timing_driven_expand_neighbours(&cheapest, cost_params, bounding_box, sink_node);
@@ -571,7 +554,10 @@ void ParallelConnectionRouter::timing_driven_add_to_heap(const t_conn_cost_param
     next.index = to_node;
     next.set_prev_edge(from_edge);
 
-    heap_.add_to_heap(next);
+    update_cheapest(&next, &rr_node_route_inf_[next.index], 0/*single thread*/);
+    rr_node_R_upstream_[to_node] = next.R_upstream;
+
+    heap_.add_to_heap(next.cost, next.index);
 
     // update_router_stats(router_stats_,
     //                     true,
@@ -750,13 +736,13 @@ void ParallelConnectionRouter::empty_heap_annotating_node_route_inf() {
     //the cost of all nodes considered by the router (e.g. nodes never
     //expanded, such as parts of the initial route tree far from the
     //target).
-    pq_node_t tmp;
-    while (heap_.try_pop(tmp)) {
-        rr_node_route_inf_[tmp.index].path_cost = tmp.cost;
-        rr_node_route_inf_[tmp.index].backward_path_cost = tmp.backward_path_cost;
-        // Push back serially at this point
-        modified_rr_node_inf_[modified_rr_node_inf_.size()-1].push_back(tmp.index);
-    }
+    // pq_node_t tmp;
+    // while (heap_.try_pop(tmp)) {
+    //     rr_node_route_inf_[tmp.index].path_cost = tmp.cost;
+    //     rr_node_route_inf_[tmp.index].backward_path_cost = tmp.backward_path_cost;
+    //     // Push back serially at this point
+    //     modified_rr_node_inf_[modified_rr_node_inf_.size()-1].push_back(tmp.index);
+    // }
 }
 
 //Adds the route tree rooted at rt_node to the heap, preparing it to be
@@ -804,10 +790,10 @@ void ParallelConnectionRouter::add_route_tree_to_heap(
 /* Puts an rr_node on the heap with the same condition as add_node_to_heap,
  * but do not fix heap property yet as that is more efficiently done from
  * bottom up with build_heap    */
-template<typename RouteInf>
-void parallel_connection_router_push_back_node(
+static inline void parallel_connection_router_push_back_node(
     ParallelPriorityQueue* heap,
-    const RouteInf& rr_node_route_inf,
+    vtr::vector<RRNodeId, t_rr_node_route_inf>& rr_node_route_inf,
+    vtr::vector<RRNodeId, float>& rr_node_R_upstream,
     RRNodeId inode,
     float total_cost,
     RREdgeId prev_edge,
@@ -815,13 +801,11 @@ void parallel_connection_router_push_back_node(
     float R_upstream) {
     if (total_cost >= rr_node_route_inf[inode].path_cost)
         return ;
-    pq_node_t hptr;
-    hptr.index = inode;
-    hptr.cost = total_cost;
-    hptr.set_prev_edge(prev_edge);
-    hptr.backward_path_cost = backward_path_cost;
-    hptr.R_upstream = R_upstream;
-    heap->push_back(hptr);
+    rr_node_route_inf[inode].path_cost = total_cost;
+    rr_node_route_inf[inode].prev_edge = prev_edge;
+    rr_node_route_inf[inode].backward_path_cost = backward_path_cost;
+    rr_node_R_upstream[inode] = R_upstream;
+    heap->push_back(total_cost, inode);
 }
 
 //Unconditionally adds rt_node to the heap
@@ -861,7 +845,7 @@ void ParallelConnectionRouter::add_route_tree_node_to_heap(
                        tot_cost,
                        describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, inode, is_flat_).c_str());
 
-        parallel_connection_router_push_back_node(&heap_, rr_node_route_inf_,
+        parallel_connection_router_push_back_node(&heap_, rr_node_route_inf_, rr_node_R_upstream_,
                        inode, tot_cost, RREdgeId::INVALID(),
                        backward_path_cost, R_upstream);
     // } else {
