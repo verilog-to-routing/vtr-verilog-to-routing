@@ -1845,7 +1845,7 @@ static void ProcessMode(pugi::xml_node Parent,
                 ProcessPb_Type(Cur, &mode->pb_type_children[pb_type_child_idx], mode, timing_enabled, arch, loc_data, parent_pb_idx);
 
                 auto [_, success] = pb_type_names.insert(mode->pb_type_children[pb_type_child_idx].name);
-                if (success) {
+                if (!success) {
                     archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
                                    "Duplicate pb_type name: '%s' in mode: '%s'.\n",
                                    mode->pb_type_children[pb_type_child_idx].name, mode->name);
