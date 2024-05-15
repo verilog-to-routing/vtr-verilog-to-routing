@@ -549,7 +549,8 @@ void ParallelConnectionRouter::timing_driven_add_to_heap(const t_conn_cost_param
     float new_back_cost = next.backward_path_cost;
     if (prune_node(to_node, new_total_cost, new_back_cost, from_edge, target_node, rr_node_route_inf_, cost_params))
         return;
-
+    // if (to_node == target_node) VTR_LOG("[Hit Target] ");
+    // VTR_LOG("%d->%d~~%d: %.6f %.6f\n", from_node, to_node, target_node, new_total_cost, new_back_cost);
     //Record how we reached this node
     next.index = to_node;
     next.set_prev_edge(from_edge);
@@ -787,27 +788,6 @@ void ParallelConnectionRouter::add_route_tree_to_heap(
     }
 }
 
-/* Puts an rr_node on the heap with the same condition as add_node_to_heap,
- * but do not fix heap property yet as that is more efficiently done from
- * bottom up with build_heap    */
-static inline void parallel_connection_router_push_back_node(
-    ParallelPriorityQueue* heap,
-    vtr::vector<RRNodeId, t_rr_node_route_inf>& rr_node_route_inf,
-    vtr::vector<RRNodeId, float>& rr_node_R_upstream,
-    RRNodeId inode,
-    float total_cost,
-    RREdgeId prev_edge,
-    float backward_path_cost,
-    float R_upstream) {
-    if (total_cost >= rr_node_route_inf[inode].path_cost)
-        return ;
-    rr_node_route_inf[inode].path_cost = total_cost;
-    rr_node_route_inf[inode].prev_edge = prev_edge;
-    rr_node_route_inf[inode].backward_path_cost = backward_path_cost;
-    rr_node_R_upstream[inode] = R_upstream;
-    heap->push_back(total_cost, inode);
-}
-
 //Unconditionally adds rt_node to the heap
 //
 //Note that if you want to respect rt_node.re_expand that is the caller's
@@ -845,9 +825,16 @@ void ParallelConnectionRouter::add_route_tree_node_to_heap(
                        tot_cost,
                        describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, inode, is_flat_).c_str());
 
-        parallel_connection_router_push_back_node(&heap_, rr_node_route_inf_, rr_node_R_upstream_,
-                       inode, tot_cost, RREdgeId::INVALID(),
-                       backward_path_cost, R_upstream);
+
+        if (tot_cost >= rr_node_route_inf_[inode].path_cost)
+            return ;
+        add_to_mod_list(inode, 0/*single thread*/);
+        rr_node_route_inf_[inode].path_cost = tot_cost;
+        rr_node_route_inf_[inode].prev_edge = RREdgeId::INVALID();
+        rr_node_route_inf_[inode].backward_path_cost = backward_path_cost;
+        rr_node_R_upstream_[inode] = R_upstream;
+        heap_.push_back(tot_cost, inode);
+
     // } else {
     //     float expected_total_cost = compute_node_cost_using_rcv(cost_params, inode, target_node, rt_node.Tdel, 0, R_upstream);
 
