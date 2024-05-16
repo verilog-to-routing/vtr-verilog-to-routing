@@ -1889,7 +1889,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             "What algorithm should be used to compute the place delta matrix.\n"
             "\n"
             " * astar : Find delta delays between OPIN's and IPIN's using\n"
-            "           the router with the current --astar_fac.\n"
+            "           the router with the current --router_profiler_astar_fac.\n"
             " * dijkstra : Use Dijkstra's algorithm to find all shortest paths \n"
             "              from sampled OPIN's to all IPIN's.\n")
         .default_value("astar")
@@ -2032,23 +2032,17 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
 
     place_grp.add_argument(args.place_static_move_prob, "--place_static_move_prob")
         .help(
-            "The percentage probabilities of different moves in Simulated Annealing placement."
-            "This option is only effective for timing-driven placement."
-            "The numbers listed are interpreted as the percentage probabilities of {uniformMove, MedianMove, CentroidMove, WeightedCentroid, WeightedMedian, Timing feasible Region(TFR), Critical UniformMove}, in that order.")
+            "The percentage probabilities of different moves in Simulated Annealing placement. "
+            "For non-timing-driven placement, only the first 3 probabilities should be provided. "
+            "For timing-driven placement, all probabilities should be provided. "
+            "When the number of provided probabilities is less then the number of move types, zero probability "
+            "is assumed."
+            "The numbers listed are interpreted as the percentage probabilities of {UniformMove, MedianMove, CentroidMove, "
+            "WeightedCentroid, WeightedMedian, Critical UniformMove, Timing feasible Region(TFR)}, in that order.")
         .nargs('+')
-        .default_value({"100", "0", "0", "0", "0", "0", "0"})
-
+        .default_value({"100"})
         .show_in(argparse::ShowIn::HELP_ONLY);
 
-    place_grp.add_argument(args.place_static_notiming_move_prob, "--place_static_notiming_move_prob")
-        .help(
-            "The Probability of different non timing move in Simulated Annealing."
-            "This option is only effective for nontiming driven placement."
-            " The numbers listed are interpreted as the percentage probabilities of {uniformMove, MedianMove, CentroidMove}, in that order.")
-        .nargs('+')
-        .default_value({"100", "0", "0"})
-
-        .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.place_high_fanout_net, "--place_high_fanout_net")
         .help(
@@ -2479,7 +2473,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
     route_timing_grp.add_argument(args.router_profiler_astar_fac, "--router_profiler_astar_fac")
         .help(
             "Controls the directedness of the timing-driven router's exploration"
-            " when doing router delay profiling."
+            " when doing router delay profiling of an architecture."
             " The router delay profiling step is currently used to calculate the place delay matrix lookup."
             " Values between 1 and 2 are resonable; higher values trade some quality for reduced run-time")
         .default_value("1.2")
