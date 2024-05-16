@@ -9,11 +9,9 @@
 // The goal of this class is to contain all of the information about the blocks
 // that gets passed around during analytical placement.
 
-// FIXME: Vaughn recommends using molecules instead of AtomBlocks
-//        We could then use the re-clustering API for the full legalizer.
-
 // FIXME: Should also store the graph in node space (nets and such). Iterating
 //        over the atom netlist is not very stable (nor efficient).
+//        This may require making our own Netlist.
 
 class PartialPlacement {
 public:

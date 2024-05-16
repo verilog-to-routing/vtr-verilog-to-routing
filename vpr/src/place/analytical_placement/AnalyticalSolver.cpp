@@ -1,10 +1,19 @@
 #include "AnalyticalSolver.h"
 #include <Eigen/Sparse>
 #include <Eigen/IterativeLinearSolvers>
+#include <memory>
 #include "atom_netlist.h"
 #include "globals.h"
 #include "vpr_context.h"
+#include "vpr_error.h"
 #include "vtr_assert.h"
+
+std::unique_ptr<AnalyticalSolver> make_analytical_solver(e_analytical_solver solver_type) {
+    if (solver_type == e_analytical_solver::QP_HYBRID)
+        return std::make_unique<QPHybridSolver>();
+    VPR_FATAL_ERROR(VPR_ERROR_PLACE, "Unrecognized analytical solver type");
+    return nullptr;
+}
 
 static inline void populate_hybrid_matrix(Eigen::SparseMatrix<double> &A_sparse,
                                           Eigen::VectorXd &b_x,
