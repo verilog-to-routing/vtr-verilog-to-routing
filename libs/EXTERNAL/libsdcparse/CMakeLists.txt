@@ -27,7 +27,9 @@ file(GLOB_RECURSE PARSER_SOURCES src/sdc*.y)
 #Make the flex and bison targets
 flex_target(SdcLexer ${LEXER_SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/sdc_lexer.gen.cpp
         COMPILE_FLAGS --header-file=${CMAKE_CURRENT_BINARY_DIR}/sdc_lexer.gen.hpp)
-bison_target(SdcParser ${PARSER_SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/sdc_parser.gen.cpp)
+# Suppress deprecation warnings. See PR #2529
+bison_target(SdcParser ${PARSER_SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/sdc_parser.gen.cpp
+        COMPILE_FLAGS -Wno-deprecated)
 add_flex_bison_dependency(SdcLexer SdcParser)
 
 

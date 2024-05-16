@@ -27,7 +27,9 @@ file(GLOB_RECURSE PARSER_SOURCES src/blif*.y)
 #Make the flex and bison targets
 flex_target(BlifLexer ${LEXER_SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/blif_lexer.gen.cpp
         COMPILE_FLAGS --header-file=${CMAKE_CURRENT_BINARY_DIR}/blif_lexer.gen.hpp)
-bison_target(BlifParser ${PARSER_SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/blif_parser.gen.cpp)
+# Suppress deprecation warnings. See PR #2529
+bison_target(BlifParser ${PARSER_SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/blif_parser.gen.cpp
+        COMPILE_FLAGS -Wno-deprecated)
 add_flex_bison_dependency(BlifLexer BlifParser)
 
 #Suppress warnings in Flex/Bison generated files
