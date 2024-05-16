@@ -89,11 +89,9 @@ enum class ScreenUpdatePriority {
 /* Values large enough to be way out of range for any data, but small enough
  * to allow a small number to be added to them without going out of range. */
 #define HUGE_POSITIVE_FLOAT 1.e30
-#define HUGE_NEGATIVE_FLOAT -1.e30
 
 /* Used to avoid floating-point errors when comparing values close to 0 */
 #define EPSILON 1.e-15
-#define NEGATIVE_EPSILON -1.e-15
 
 #define FIRST_ITER_WIRELENTH_LIMIT 0.85 /* If used wirelength exceeds this value in first iteration of routing, do not route */
 
@@ -110,12 +108,10 @@ constexpr auto INVALID_BLOCK_ID = ClusterBlockId(-2);
  * and maps it to the complex logic blocks found in the architecture
  ******************************************************************************/
 
-#define NO_CLUSTER -1
-#define NEVER_CLUSTER -2
-#define NOT_VALID -10000 /* Marks gains that aren't valid */
+#define NOT_VALID (-10000) /* Marks gains that aren't valid */
 /* Ensure no gain can ever be this negative! */
 #ifndef UNDEFINED
-#    define UNDEFINED -1
+#    define UNDEFINED (-1)
 #endif
 
 enum class e_router_lookahead {
@@ -550,9 +546,8 @@ enum class e_timing_update_type {
  ****************************************************************************/
 
 /* Values of number of placement available move types */
-#define NUM_PL_MOVE_TYPES 7
-#define NUM_PL_NONTIMING_MOVE_TYPES 3
-#define NUM_PL_1ST_STATE_MOVE_TYPES 4
+constexpr int NUM_PL_MOVE_TYPES = 7;
+constexpr int NUM_PL_NONTIMING_MOVE_TYPES = 3;
 
 /* Timing data structures end */
 enum sched_type {
@@ -1155,6 +1150,8 @@ enum class e_place_delta_delay_algorithm {
     DIJKSTRA_EXPANSION,
 };
 
+enum class e_move_type;
+
 /**
  * @brief Various options for the placer.
  *
@@ -1253,8 +1250,7 @@ struct t_placer_opts {
 
     std::string write_placement_delay_lookup;
     std::string read_placement_delay_lookup;
-    std::vector<float> place_static_move_prob;
-    std::vector<float> place_static_notiming_move_prob;
+    vtr::vector<e_move_type, float> place_static_move_prob;
     bool RL_agent_placement;
     bool place_agent_multistate;
     bool place_checkpointing;
@@ -1717,10 +1713,7 @@ constexpr bool is_src_sink(e_rr_type type) { return (type == SOURCE || type == S
  * @brief Extra information about each rr_node needed only during routing
  *        (i.e. during the maze expansion).
  *
- *   @param prev_node  Index of the previous node (on the lowest cost path known
- *                     to reach this node); used to generate the traceback.
- *                     If there is no predecessor, prev_node = NO_PREVIOUS.
- *   @param prev_edge  Index of the edge (from 0 to num_edges-1 of prev_node)
+ *   @param prev_edge  ID of the edge (globally unique edge ID in the RR Graph)
  *                     that was used to reach this node from the previous node.
  *                     If there is no predecessor, prev_edge = NO_PREVIOUS.
  *   @param acc_cost   Accumulated cost term from previous Pathfinder iterations.
@@ -1729,19 +1722,14 @@ constexpr bool is_src_sink(e_rr_type type) { return (type == SOURCE || type == S
  *                     is being used.
  *   @param backward_path_cost  Total cost of the path up to and including this
  *                     node.
- *   @param target_flag  Is this node a target (sink) for the current routing?
- *                     Number of times this node must be reached to fully route.
  *   @param occ        The current occupancy of the associated rr node
  */
 struct t_rr_node_route_inf {
-    RRNodeId prev_node;
     RREdgeId prev_edge;
 
     float acc_cost;
     float path_cost;
     float backward_path_cost;
-
-    short target_flag;
 
   public: //Accessors
     short occ() const { return occ_; }

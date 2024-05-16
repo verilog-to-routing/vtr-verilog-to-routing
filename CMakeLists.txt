@@ -23,7 +23,7 @@ set(VTR_IPO_BUILD "auto" CACHE STRING "Should VTR be compiled with interprocedur
 set_property(CACHE VTR_IPO_BUILD PROPERTY STRINGS auto on off)
 
 #Allow the user to configure how much assertion checking should occur
-set(VTR_ASSERT_LEVEL "2" CACHE STRING "VTR assertion checking level. 0: no assertions, 1: fast assertions, 2: regular assertions, 3: additional assertions with noticable run-time overhead, 4: all assertions (including those with significant run-time cost)")
+set(VTR_ASSERT_LEVEL "2" CACHE STRING "VTR assertion checking level. 0: no assertions, 1: fast assertions, 2: regular assertions, 3: additional assertions with noticeable run-time overhead, 4: all assertions (including those with significant run-time cost)")
 set_property(CACHE VTR_ASSERT_LEVEL PROPERTY STRINGS 0 1 2 3 4)
 
 option(VTR_ENABLE_STRICT_COMPILE "Specifies whether compiler warnings should be treated as errors (e.g. -Werror)" OFF)
@@ -418,11 +418,13 @@ if(${WITH_PARMYS}) # define cmake params to compile Yosys
         set(MAKE_PROGRAM "make")
     endif()
 
-    if(NOT DEFINED "${CMAKE_BUILD_PARALLEL_LEVEL}")
-        set(CUSTOM_BUILD_PARALLEL_LEVEL 16)
-    else()
-        set(CUSTOM_BUILD_PARALLEL_LEVEL "${CMAKE_BUILD_PARALLEL_LEVEL}")
-    endif()
+    # Commented out since a make file should not call another make command with
+    # threads. It should pass this information from the parent automatically.
+    # if(NOT DEFINED "${CMAKE_BUILD_PARALLEL_LEVEL}")
+    #     set(CUSTOM_BUILD_PARALLEL_LEVEL 16)
+    # else()
+    #     set(CUSTOM_BUILD_PARALLEL_LEVEL "${CMAKE_BUILD_PARALLEL_LEVEL}")
+    # endif()
     add_subdirectory(yosys)
 endif()
 

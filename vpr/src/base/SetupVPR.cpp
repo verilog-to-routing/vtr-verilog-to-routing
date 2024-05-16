@@ -661,8 +661,8 @@ static void SetupPlacerOpts(const t_options& Options, t_placer_opts* PlacerOpts)
     PlacerOpts->effort_scaling = Options.place_effort_scaling;
     PlacerOpts->timing_update_type = Options.timing_update_type;
     PlacerOpts->enable_analytic_placer = Options.enable_analytic_placer;
-    PlacerOpts->place_static_move_prob = Options.place_static_move_prob;
-    PlacerOpts->place_static_notiming_move_prob = Options.place_static_notiming_move_prob;
+    PlacerOpts->place_static_move_prob = vtr::vector<e_move_type, float>(Options.place_static_move_prob.value().begin(),
+                                                                         Options.place_static_move_prob.value().end());
     PlacerOpts->place_high_fanout_net = Options.place_high_fanout_net;
     PlacerOpts->place_bounding_box_mode = Options.place_bounding_box_mode;
     PlacerOpts->RL_agent_placement = Options.RL_agent_placement;
@@ -735,13 +735,12 @@ static void SetupNocOpts(const t_options& Options, t_noc_opts* NocOpts) {
     NocOpts->noc_flows_file = Options.noc_flows_file;
     NocOpts->noc_routing_algorithm = Options.noc_routing_algorithm;
     NocOpts->noc_placement_weighting = Options.noc_placement_weighting;
+    NocOpts->noc_aggregate_bandwidth_weighting = Options.noc_agg_bandwidth_weighting;
     NocOpts->noc_latency_constraints_weighting = Options.noc_latency_constraints_weighting;
     NocOpts->noc_latency_weighting = Options.noc_latency_weighting;
     NocOpts->noc_congestion_weighting = Options.noc_congestion_weighting;
     NocOpts->noc_swap_percentage = Options.noc_swap_percentage;
     NocOpts->noc_placement_file_name = Options.noc_placement_file_name;
-
-    return;
 }
 
 static void find_ipin_cblock_switch_index(const t_arch& Arch, int& wire_to_arch_ipin_switch, int& wire_to_arch_ipin_switch_between_dice) {

@@ -21,7 +21,7 @@ target_include_directories(librrgraph PUBLIC ${LIB_INCLUDE_DIRS})
 
 set_target_properties(librrgraph PROPERTIES PREFIX "") #Avoid extra 'lib' prefix
 
-#Specify link-time dependancies
+#Specify link-time dependencies
 target_link_libraries(librrgraph
                       libvtrutil
                       libarchfpga

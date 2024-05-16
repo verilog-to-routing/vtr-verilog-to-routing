@@ -126,7 +126,6 @@ struct t_options {
     argparse::ArgValue<e_place_delta_delay_algorithm> place_delta_delay_matrix_calculation_method;
     argparse::ArgValue<bool> enable_analytic_placer;
     argparse::ArgValue<std::vector<float>> place_static_move_prob;
-    argparse::ArgValue<std::vector<float>> place_static_notiming_move_prob;
     argparse::ArgValue<int> place_high_fanout_net;
     argparse::ArgValue<e_place_bounding_box_mode> place_bounding_box_mode;
 
@@ -153,6 +152,7 @@ struct t_options {
     argparse::ArgValue<std::string> noc_flows_file;
     argparse::ArgValue<std::string> noc_routing_algorithm;
     argparse::ArgValue<double> noc_placement_weighting;
+    argparse::ArgValue<double> noc_agg_bandwidth_weighting;
     argparse::ArgValue<double> noc_latency_constraints_weighting;
     argparse::ArgValue<double> noc_latency_weighting;
     argparse::ArgValue<double> noc_congestion_weighting;
@@ -241,7 +241,7 @@ struct t_options {
     argparse::ArgValue<std::string> write_timing_summary;
 };
 
-argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& args);
+argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_options& args);
 t_options read_options(int argc, const char** argv);
 void set_conditional_defaults(t_options& args);
 bool verify_args(const t_options& args);
