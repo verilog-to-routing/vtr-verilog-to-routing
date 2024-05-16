@@ -1,0 +1,2456 @@
+<!-- This architecture is the closest aproximation to 7-series up to this point using the
+avialable tools. 
+Contains aproximate BRAM, DSP, and CLB. -->
+
+<!-- This is the most up to date routing arch includes diagonals, a proper chanel width, proper
+fc
+it also includes limited implementation of multipliers (DSPs) and BRAMs.
+and fan out/in 
+-->
+
+<!--
+  This architecture file is an approximation of the xilinx 7 series chip set. It's main purpose is to
+verify VPR's ability to
+  accommodate xilinx specific routing (i.e. differing wire lengths and frequencies in the
+horizontal/vertical directions, differing chanel widths,
+  and diagonal wire segments). Given that this architectures primary function is to test xilinx
+specific routing, the architecture includes only
+  a simplified version of the Xilinx internal logic, memory, and arithmatic resources.
+f4pga/symbiflow's arch.timing.xml
+and VTR's k6_N10_40nm.xml were pulled from to create
+  this architecture description. Area and timing models are not accurate.
+
+  - 40 nm technology
+  - General purpose logic block including carry. LUT has 5/6/7/8 input modes.
+  - Routing architecture: fc_in = 0.15, Fc_out = 0.1
+;
+  Authors: Joshua Fife, Jeff Goeders
+-->
+<architecture>
+  <!-- ODIN II specific config begins -->
+  <models>
+    <model name="multiply">
+      <input_ports>
+        <port name="A" combinational_sink_ports="P" />
+        <port name="B" combinational_sink_ports="P" />
+      </input_ports>
+      <output_ports>
+        <port name="P" />
+      </output_ports>
+    </model>
+    <model name="adder">
+      <input_ports>
+        <port name="a" combinational_sink_ports="sumout cout" />
+        <port name="b" combinational_sink_ports="sumout cout" />
+        <port name="cin" combinational_sink_ports="sumout cout" />
+      </input_ports>
+      <output_ports>
+        <port name="cout" />
+        <port name="sumout" />
+      </output_ports>
+    </model>
+
+    <!-- Dual port Models -->
+    <model name="dual_port_ram">
+      <input_ports>
+        <port name="we1" clock="clk" />
+        <!-- write enable -->
+        <port name="we2" clock="clk" />
+        <!-- write enable -->
+        <port name="addr1" clock="clk" />
+        <!-- address lines -->
+        <port name="addr2" clock="clk" />
+        <!-- address lines -->
+        <port name="data1" clock="clk" />
+        <!-- data lines can be broken down into smaller bit widths minimum size 1 -->
+        <port name="data2" clock="clk" />
+        <!-- data lines can be broken down into smaller bit widths minimum size 1 -->
+
+        <port name="clk" is_clock="1" />
+      </input_ports>
+      <output_ports>
+        <port name="out1" clock="clk" />
+        <!-- output can be broken down into smaller bit widths minimum size 1 -->
+        <port name="out2" clock="clk" />
+        <!-- output can be broken down into smaller bit widths minimum size 1 -->
+      </output_ports>
+    </model>
+
+    <!-- Single port Models. We do not implement data IO parity bits for this Arch-->
+    <model name="single_port_ram">
+      <input_ports>
+        <port name="we" clock="clk" />
+        <port name="addr" clock="clk" />
+        <port name="data" clock="clk" />
+        <!-- data lines can be broken down into smaller bit widths minimum size 1 -->
+        <port name="clk" is_clock="1" />
+      </input_ports>
+      <output_ports>
+        <port name="out" clock="clk" />
+        <!-- output can be broken down into smaller bit widths minimum size 1 -->
+      </output_ports>
+    </model>
+
+
+  </models>
+  <tiles>
+    <tile name="io" area="0">
+      <sub_tile name="io" capacity="8">
+        <equivalent_sites>
+          <site pb_type="io" pin_mapping="direct" />
+        </equivalent_sites>
+        <input name="outpad" num_pins="1" />
+        <output name="inpad" num_pins="1" />
+        <clock name="clock" num_pins="1" />
+        <fc in_type="frac" in_val="0.20" out_type="frac" out_val="0.15" />
+        <pinlocations pattern="custom">
+          <loc side="left">io.outpad io.inpad io.clock</loc>
+          <loc side="top">io.outpad io.inpad io.clock</loc>
+          <loc side="right">io.outpad io.inpad io.clock</loc>
+          <loc side="bottom">io.outpad io.inpad io.clock</loc>
+        </pinlocations>
+      </sub_tile>
+    </tile>
+    <tile name="clb" area="53894">
+      <sub_tile capacity="1" name="clb">
+        <!-- Sub Tile Inputs -->
+        <clock name="CLK" num_pins="1" />
+        <input name="I" num_pins="56" equivalent="full" />
+        <input name="cin" num_pins="2" />
+        <output name="O" num_pins="24" equivalent="full" />
+        <output name="cout" num_pins="2" />
+
+        <!-- ~1/5 wires connect to global routing for clb inputs. exactly 1/4 connect to global
+        routing for outputs. This information comes from the tables in netcracker. Note that this is on a
+        channel basis on the xilinx parts.
+        because the seven series architecture has a large verity of channel segments, an absolute fc value
+        is needed to allow interconnect at lower channel widths given that some segment types only
+        take up a small percentage of the channels in the architecture. For example, the cardinal length 2
+        vertical wires (len2_y) only take up 6% of routing segments. Since we are working with a
+        unidirectional architecture, an fc value of 20% and any channel width <170 will have no
+        connections to the clb ports. -->
+        <fc in_type="abs" in_val="2" out_type="abs" out_val="2">
+          <!--!
+          <fc_override port_name="cout" fc_type="frac" fc_val="0" /> -->
+          <!-- len4 wires only occur for outputs -->
+          <fc_override port_name="clb.I" segment_name="len4_x" fc_type="frac" fc_val="0" />
+          <fc_override port_name="clb.I" segment_name="len2x_stub" fc_type="frac" fc_val="0" />
+
+          <!-- all len6 diagonals only occur for clb.O -->
+          <fc_override port_name="clb.I" segment_name="1len4D_y" fc_type="frac" fc_val="0" />
+          <fc_override port_name="clb.I" segment_name="2len4D_y" fc_type="frac" fc_val="0" />
+          <fc_override port_name="clb.I" segment_name="3len4D_y" fc_type="frac" fc_val="0" />
+          <fc_override port_name="clb.I" segment_name="4len4D_y" fc_type="frac" fc_val="0" />
+
+          <fc_override port_name="clb.I" segment_name="1len2D_x" fc_type="frac" fc_val="0" />
+          <fc_override port_name="clb.I" segment_name="2len2D_x" fc_type="frac" fc_val="0" />
+          <fc_override port_name="clb.I" segment_name="3len2D_x" fc_type="frac" fc_val="0" />
+          <fc_override port_name="clb.I" segment_name="4len2D_x" fc_type="frac" fc_val="0" />
+          <fc_override port_name="clb.cin" fc_type="frac" fc_val="0" />
+          <fc_override port_name="clb.cout" fc_type="frac" fc_val="0" />
+
+          <!-- CLB ports never connect to len18, len12, or cardinal len6 wires -->
+          <fc_override segment_name="len6_y" fc_type="frac" fc_val="0" />
+          <fc_override segment_name="len6y_stub" fc_type="frac" fc_val="0" />
+
+          <fc_override segment_name="len12_x" fc_type="frac" fc_val="0" />
+          <fc_override segment_name="len12_y" fc_type="frac" fc_val="0" />
+
+          <fc_override segment_name="len18_y" fc_type="frac" fc_val="0" />
+
+        </fc>
+        <pinlocations pattern="custom">
+          <loc side="left">clb.CLK clb.I clb.O</loc>
+          <loc side="top">clb.CLK clb.I clb.O clb.cout</loc>
+          <loc side="bottom">clb.CLK clb.I clb.O clb.cin</loc>
+          <loc side="right">clb.CLK clb.I clb.O</loc>
+        </pinlocations>
+        <equivalent_sites>
+          <site pb_type="clb" pin_mapping="direct" />
+        </equivalent_sites>
+      </sub_tile>
+      <!-- <switchblock_locations pattern="all" /> -->
+    </tile>
+    <!-- DSP and BRAM are same hight 4 -->
+    <tile name="BRAM" height="4" area="396000">
+      <sub_tile name="BRAM">
+        <equivalent_sites>
+          <site pb_type="memory" pin_mapping="direct" />
+        </equivalent_sites>
+        <input name="addr1" num_pins="16" />
+        <input name="addr2" num_pins="16" />
+        <input name="di" num_pins="72" />
+        <input name="we1" num_pins="4" />
+        <input name="we2" num_pins="4" />
+        <output name="do" num_pins="72" />
+        <clock name="clk" num_pins="1" />
+        <!-- TODO THIS FC NEEDS TO BE VERIFIED for now we assume the same thing as the CLB-->
+        <fc in_type="abs" in_val="2" out_type="abs" out_val="2">
+          <!-- len4 wires only occur for outputs -->
+          <fc_override port_name="BRAM.di BRAM.we BRAM.addr" segment_name="len4_x"
+            fc_type="frac" fc_val="0" />
+          <fc_override port_name="BRAM.diS BRAM.we BRAM.addr" segment_name="len2x_stub"
+            fc_type="frac" fc_val="0" />
+
+          <!-- all len6 diagonals only occur for outputs -->
+          <fc_override port_name="BRAM.di BRAM.we BRAM.addr" segment_name="1len4D_y"
+            fc_type="frac" fc_val="0" />
+          <fc_override port_name="BRAM.di BRAM.we BRAM.addr" segment_name="2len4D_y"
+            fc_type="frac" fc_val="0" />
+          <fc_override port_name="BRAM.di BRAM.we BRAM.addr" segment_name="3len4D_y"
+            fc_type="frac" fc_val="0" />
+          <fc_override port_name="BRAM.di BRAM.we BRAM.addr" segment_name="4len4D_y"
+            fc_type="frac" fc_val="0" />
+
+          <fc_override port_name="BRAM.di BRAM.we BRAM.addr" segment_name="1len2D_x"
+            fc_type="frac" fc_val="0" />
+          <fc_override port_name="BRAM.di BRAM.we BRAM.addr" segment_name="2len2D_x"
+            fc_type="frac" fc_val="0" />
+          <fc_override port_name="BRAM.di BRAM.we BRAM.addr" segment_name="3len2D_x"
+            fc_type="frac" fc_val="0" />
+          <fc_override port_name="BRAM.di BRAM.we BRAM.addr" segment_name="4len2D_x"
+            fc_type="frac" fc_val="0" />
+
+          <!-- ports never connect to len18, len12, or cardinal len6 wires -->
+          <fc_override segment_name="len6_y" fc_type="frac" fc_val="0" />
+          <fc_override segment_name="len6y_stub" fc_type="frac" fc_val="0" />
+
+          <fc_override segment_name="len12_x" fc_type="frac" fc_val="0" />
+          <fc_override segment_name="len12_y" fc_type="frac" fc_val="0" />
+
+          <fc_override segment_name="len18_y" fc_type="frac" fc_val="0" />
+
+        </fc>
+        <!-- <pinlocations pattern="custom">
+          <loc side="left">BRAM.clk BRAM.clkB BRAM.di BRAM.dip BRAM.we BRAM.addr BRAM.do BRAM.dop</loc>
+          <loc side="top">BRAM.clk BRAM.clkB BRAM.di BRAM.dip BRAM.we BRAM.addr BRAM.do BRAM.dop</loc>
+        </pinlocations> -->
+        <pinlocations pattern="spread" />
+      </sub_tile>
+    </tile>
+
+    <!-- ! AREA IS NOT ACCURATE -->
+    <tile name="DSP" height="4" area="396000">
+      <sub_tile name="DSP">
+        <equivalent_sites>
+          <site pb_type="DSP" pin_mapping="direct" />
+        </equivalent_sites>
+        <clock name="clk" num_pins="1" />
+        <input name="A" num_pins="50" />
+        <input name="B" num_pins="36" />
+        <output name="P" num_pins="86" />
+        <!-- ! THIS FC NEEDS TO BE VERIFIED for now we assume the same thing as the CLB-->
+        <fc in_type="abs" in_val="2" out_type="abs" out_val="2">
+          <!-- !! fc_in -->
+          <!-- len4 wires only occur for outputs -->
+          <fc_override port_name="DSP.A DSP.B" segment_name="len4_x" fc_type="frac" fc_val="0" />
+          <fc_override port_name="DSP.A DSP.B" segment_name="len2x_stub" fc_type="frac" fc_val="0" />
+
+          <!-- all len6 diagonals only occur for clb.O -->
+          <fc_override port_name="DSP.A DSP.B" segment_name="1len4D_y" fc_type="frac" fc_val="0" />
+          <fc_override port_name="DSP.A DSP.B" segment_name="2len4D_y" fc_type="frac" fc_val="0" />
+          <fc_override port_name="DSP.A DSP.B" segment_name="3len4D_y" fc_type="frac" fc_val="0" />
+          <fc_override port_name="DSP.A DSP.B" segment_name="4len4D_y" fc_type="frac" fc_val="0" />
+
+          <fc_override port_name="DSP.A DSP.B" segment_name="1len2D_x" fc_type="frac" fc_val="0" />
+          <fc_override port_name="DSP.A DSP.B" segment_name="2len2D_x" fc_type="frac" fc_val="0" />
+          <fc_override port_name="DSP.A DSP.B" segment_name="3len2D_x" fc_type="frac" fc_val="0" />
+          <fc_override port_name="DSP.A DSP.B" segment_name="4len2D_x" fc_type="frac" fc_val="0" />
+
+          <!-- CLB ports never connect to len18, len12, or cardinal len6 wires -->
+          <fc_override segment_name="len6_y" fc_type="frac" fc_val="0" />
+          <fc_override segment_name="len6y_stub" fc_type="frac" fc_val="0" />
+
+          <fc_override segment_name="len12_x" fc_type="frac" fc_val="0" />
+          <fc_override segment_name="len12_y" fc_type="frac" fc_val="0" />
+
+          <fc_override segment_name="len18_y" fc_type="frac" fc_val="0" />
+
+        </fc>
+        <pinlocations pattern="custom">
+          <loc side="left">DSP.clk DSP.A DSP.B DSP.P</loc>
+          <loc side="top">DSP.clk DSP.A DSP.B DSP.P</loc>
+        </pinlocations>
+        <!-- <pinlocations pattern="spread"/> -->
+      </sub_tile>
+    </tile>
+
+  </tiles>
+  <!-- ODIN II specific config ends -->
+
+  <!-- Physical descriptions begin -->
+  <layout>
+    <auto_layout aspect_ratio="1.0000">
+      <!-- <fixed_layout name="correct_xilinx" width="23" height="49"> -->
+      <!-- <fixed_layout name="test_layout" width="8" height="8"> -->
+      <!--Perimeter
+      of 'io' blocks with 'EMPTY' blocks at corners-->
+      <!-- <col type="io" startx="1" priority="100" />
+      <col type="io" startx="21" priority="100" /> -->
+
+      <perimeter type="io" priority="100" />
+      <corners type="EMPTY" priority="101" />
+      <!--Fill
+      with 'clb'-->
+      <fill type="clb" priority="10" />
+
+      <col type="BRAM" startx="6" repeatx="8" priority="20" />
+      <col type="EMPTY" startx="6" repeatx="8" starty="1" priority="19" />
+      <!-- Correct values are startx 19 repeatx 56 -->
+      <col type="DSP" startx="10" repeatx="8" priority="20" />
+      <col type="EMPTY" startx="10" repeatx="8" starty="1" priority="19" />
+      <!-- Correct values are startx 28 repeatex 58 -->
+      <!-- </fixed_layout> -->
+    </auto_layout>
+    <!-- </fixed_layout> -->
+  </layout>
+  <device>
+    <!-- The  values bellow (sizing and area) are pulled from the k6_N10_40nm arch. -->
+    <sizing R_minW_nmos="8926" R_minW_pmos="16067" />
+    <area grid_logic_tile_area="0" />
+
+    <chan_width_distr>
+      <!-- <x distr="uniform" peak="0.652632" /> -->
+      <x distr="uniform" peak="0.652631579" />
+      <y distr="uniform" peak="1.000000" />
+    </chan_width_distr>
+    <switch_block type="custom" />
+    <connection_block input_switch_name="ipin_cblock" />
+  </device>
+
+  <switchlist>
+
+    <switch type="short" name="electrical_short2" R="0" Cin="0" Tdel="0" />
+    <!--the
+    following muxes for unidirectional wires are pulled from k6_N10_40nm -->
+    <switch type="mux" name="0" R="551" Cin=".77e-15" Cout="4e-15" Tdel="58e-12"
+      mux_trans_size="2.630740" buf_size="27.645901" />
+    <switch type="mux" name="ipin_cblock" R="2231.5" Cout="0." Cin="1.47e-15" Tdel="7.247000e-11"
+      mux_trans_size="1.222260" buf_size="auto" />
+  </switchlist>
+
+  <segmentlist>
+    <!---
+    The following segment data is pulled from Table 1 of the NetCraker paper by Morten B. Petersen,
+    Stefan Nikolić and Mirjana Stojilović: see https://dl.acm.org/doi/10.1145/3431920.3439285.
+    Frequencies
+    are calculated by dividing each wire segments count in the horizontal/vertical direction
+    by the total width/hight of the architecture -->
+
+    <!-- TODO: To more accurately approximate the seven series, support for both unidirectional and
+    bidirectional segments within the same segmentlist is needed. For now we declare all segments as
+    unidirectional -->
+
+    <!-- TODO: For proper timing, Xilinx specific values for Rmetal and Cmetal are required.
+    For now we approximate using the values given in the k6_N10_40nm arch -->
+
+    <segment axis="x" name="len1_x" freq="11.29032258" length="1" type="unidir" Rmetal="101"
+      Cmetal="22.5e-15">
+      <mux name="0" />
+      <sb type="pattern">1 1</sb>
+      <cb type="pattern">1</cb>
+    </segment>
+    <segment axis="y" name="len1_y" freq="7.368421053" length="1" type="unidir" Rmetal="101"
+      Cmetal="22.5e-15">
+      <mux name="0" />
+      <sb type="pattern">1 1</sb>
+      <cb type="pattern">1</cb>
+    </segment>
+
+    <segment axis="x" name="len2_x" freq="9.677419355" length="2" type="unidir" Rmetal="101"
+      Cmetal="22.5e-15">
+      <mux name="0" />
+      <sb type="pattern">1 1 1</sb>
+      <cb type="pattern">1 1</cb>
+    </segment>
+
+    <segment axis="y" name="len2_y" freq="6.315789474" length="2" type="unidir" Rmetal="101"
+      Cmetal="22.5e-15">
+      <mux name="0" />
+      <sb type="pattern">1 1 1</sb>
+      <cb type="pattern">1 1</cb>
+    </segment>
+
+    <segment axis="x" name="len4_x" freq="19.35483871" length="4" type="unidir" Rmetal="101"
+      Cmetal="22.5e-15">
+      <mux name="0" />
+      <sb type="pattern">1 1 0 1 1</sb>
+      <cb type="pattern">1 1 1 1</cb>
+    </segment>
+
+
+    <!-- No length 6 horizontal chanels -->
+    <segment axis="y" name="len6_y" freq="18.94736842" length="6" type="unidir" Rmetal="101"
+      Cmetal="22.5e-15">
+      <mux name="0" />
+      <sb type="pattern">1 1 0 0 0 1 1</sb>
+      <cb type="pattern">1 1 0 0 1 1</cb>
+    </segment>
+
+    <!-- TODO: In xilinx length 12 and 18 wires are bidirectional -->
+
+    <segment axis="x" name="len12_x" freq="9.677419355" length="12" type="unidir" Rmetal="101"
+      Cmetal="22.5e-15">
+      <mux name="0" />
+      <sb type="pattern">1 0 0 0 0 0 0 0 0 0 0 0 1</sb>
+      <cb type="pattern">1 0 0 0 0 0 0 0 0 0 0 1</cb>
+    </segment>
+    <segment axis="y" name="len12_y" freq="6.315789474" length="12" type="unidir" Rmetal="101"
+      Cmetal="22.5e-15">
+      <mux name="0" />
+      <sb type="pattern">1 0 0 0 0 0 0 0 0 0 0 0 1</sb>
+      <cb type="pattern">1 0 0 0 0 0 0 0 0 0 0 1</cb>
+    </segment>
+
+    <!-- No length 18 horizontal segments -->
+
+    <segment axis="y" name="len18_y" freq="9.473684211" length="18" type="unidir" Rmetal="101"
+      Cmetal="22.5e-15">
+      <mux name="0" />
+      <sb type="pattern">1 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 1</sb>
+      <cb type="pattern">1 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 1</cb>
+    </segment>
+
+
+    <!-- all length 4 vertical wires are part of diagonal components. We split the vertical
+    contribution of length 4 
+  wires into four separate parts so that all intercardinal directions may be specified without
+    conflict when SB unions occur. 
+  The same thing is done to length 2 wires-->
+
+    <!-- 
+    All diagonal wires are named as follows:
+    1) a number representing the type of segment as shown bellow
+    2) the length of the wire (len2,len1,len4)
+    3) if the wire  is an x or y component
+
+    The following is a data1gram showing how each number correlates to each wire direction:
+
+             Type 1                           Type 2                        Type 3                            Type 4
+     NE |===========>                SE |       <=========|            ^       ==========| SE           SW |=========     ^             
+        |                 |             |                 |            |                 |                 |              | 
+        |                 |             |                 |            |                 |                 |              |  
+        |                 |             |                 |            |                 |                 |              |   
+        |     <===========|          SW |============>    | NW      NW |============     v                 v     =========|  NE
+        
+        
+   -->
+
+
+    <segment axis="y" name="1len4D_y" freq="8.421052632" length="4" type="unidir" Rmetal="101"
+      Cmetal="22.5e-15">
+      <mux name="0" />
+      <sb type="pattern">1 0 0 0 1</sb>
+      <cb type="pattern">1 0 0 0</cb>
+    </segment>
+    <segment axis="y" name="2len4D_y" freq="8.421052632" length="4" type="unidir" Rmetal="101"
+      Cmetal="22.5e-15">
+      <mux name="0" />
+      <sb type="pattern">1 0 0 0 1</sb>
+      <cb type="pattern">1 0 0 0</cb>
+    </segment>
+
+    <segment axis="y" name="3len4D_y" freq="8.421052632" length="4" type="unidir" Rmetal="101"
+      Cmetal="22.5e-15">
+      <mux name="0" />
+      <sb type="pattern">1 0 0 0 1</sb>
+      <cb type="pattern">1 0 0 0</cb>
+    </segment>
+    <segment axis="y" name="4len4D_y" freq="8.421052632" length="4" type="unidir" Rmetal="101"
+      Cmetal="22.5e-15">
+      <mux name="0" />
+      <sb type="pattern">1 0 0 0 1</sb>
+      <cb type="pattern">1 0 0 0</cb>
+    </segment>
+
+    <!-- length 2 horizontal wires that contribute to diagonal interconnect -->
+    <segment axis="x" name="1len2D_x" freq="6.451612903" length="2" type="unidir" Rmetal="101"
+      Cmetal="22.5e-15">
+      <mux name="0" />
+      <sb type="pattern">1 0 1</sb>
+      <cb type="pattern">0 1</cb>
+    </segment>
+    <segment axis="x" name="2len2D_x" freq="6.451612903" length="2" type="unidir" Rmetal="101"
+      Cmetal="22.5e-15">
+      <mux name="0" />
+      <sb type="pattern">1 0 1</sb>
+      <cb type="pattern">0 1</cb>
+    </segment>
+
+    <segment axis="x" name="3len2D_x" freq="6.451612903" length="2" type="unidir" Rmetal="101"
+      Cmetal="22.5e-15">
+      <mux name="0" />
+      <sb type="pattern">1 0 1</sb>
+      <cb type="pattern">1 0</cb>
+    </segment>
+    <segment axis="x" name="4len2D_x" freq="6.451612903" length="2" type="unidir" Rmetal="101"
+      Cmetal="22.5e-15">
+      <mux name="0" />
+      <sb type="pattern">1 0 1</sb>
+      <cb type="pattern">1 0</cb>
+    </segment>
+
+    <!-- L1->L1 diagonals -->
+    <segment axis="y" name="len1D_y" freq="3.157894737" length="1" type="unidir" Rmetal="101"
+      Cmetal="22.5e-15">
+      <mux name="0" />
+      <sb type="pattern">1 1</sb>
+      <cb type="pattern">1</cb>
+    </segment>
+    <segment axis="y" name="2len1D_y" freq="2.105263158" length="1" type="unidir" Rmetal="101"
+      Cmetal="22.5e-15">
+      <mux name="0" />
+      <sb type="pattern">1 1</sb>
+      <cb type="pattern">1</cb>
+    </segment>
+    <segment axis="y" name="3len1D_y" freq="2.105263158" length="1" type="unidir" Rmetal="101"
+      Cmetal="22.5e-15">
+      <mux name="0" />
+      <sb type="pattern">1 1</sb>
+      <cb type="pattern">1</cb>
+    </segment>
+    <segment axis="y" name="4len1D_y" freq="2.105263158" length="1" type="unidir" Rmetal="101"
+      Cmetal="22.5e-15">
+      <mux name="0" />
+      <sb type="pattern">1 1</sb>
+      <cb type="pattern">1</cb>
+    </segment>
+
+    <segment axis="x" name="len1D_x" freq="4.838709677" length="1" type="unidir" Rmetal="101"
+      Cmetal="22.5e-15">
+      <mux name="0" />
+      <sb type="pattern">1 1</sb>
+      <cb type="pattern">1 </cb>
+    </segment>
+    <segment axis="x" name="2len1D_x" freq="3.225806452" length="1" type="unidir" Rmetal="101"
+      Cmetal="22.5e-15">
+      <mux name="0" />
+      <sb type="pattern">1 1</sb>
+      <cb type="pattern">1</cb>
+    </segment>
+    <segment axis="x" name="3len1D_x" freq="3.225806452" length="1" type="unidir" Rmetal="101"
+      Cmetal="22.5e-15">
+      <mux name="0" />
+      <sb type="pattern">1 1</sb>
+      <cb type="pattern">1</cb>
+    </segment>
+    <segment axis="x" name="4len1D_x" freq="3.225806452" length="1" type="unidir" Rmetal="101"
+      Cmetal="22.5e-15">
+      <mux name="0" />
+      <sb type="pattern">1 1</sb>
+      <cb type="pattern">1</cb>
+    </segment>
+
+    <!-- Stubs -->
+
+    <!-- In xilinx there are a few wires that branch into two adjacent SBs. The following is used to
+    approximate that
+    behavior. -->
+
+    <!-- 25% of len6 vertical wires have a unique sb pattern 
+    note that these should never be driven at the middle switches-->
+    <segment axis="y" name="len6y_stub" freq="6.315789474" length="6" type="unidir" Rmetal="101"
+      Cmetal="22.5e-15">
+      <mux name="0" />
+      <sb type="pattern">1 0 0 0 0 1 1</sb>
+      <cb type="pattern">1 0 0 0 1 1</cb>
+    </segment>
+
+    <!-- 25% of horizontal len2 wires have the following unique sb pattern 
+    note that these should never be driven at the middle switch-->
+    <segment axis="y" name="len2y_stub" freq="2.105263158" length="2" type="unidir" Rmetal="101"
+      Cmetal="22.5e-15">
+      <mux name="0" />
+      <sb type="pattern">1 1 1</sb>
+      <cb type="pattern">1 1</cb>    
+    </segment>
+
+    <segment axis="x" name="len4x_stub" freq="6.451612903" length="4" type="unidir" Rmetal="101"
+      Cmetal="22.5e-15">
+      <mux name="0" />
+      <sb type="pattern">1 0 0 0 1</sb>
+      <cb type="pattern">1 0 0 1</cb>
+    </segment>
+
+    <segment axis="x" name="len2x_stub" freq="3.225806452" length="2" type="unidir" Rmetal="101"
+      Cmetal="22.5e-15">
+      <mux name="0" />
+      <sb type="pattern">1 0 1</sb>
+      <cb type="pattern">1 1</cb>
+    </segment>
+
+  </segmentlist>
+  <directlist>
+    <direct name="adder_carry1" from_pin="clb.cout" to_pin="clb.cin" x_offset="0" y_offset="-1"
+      z_offset="0" />
+  </directlist>
+  <complexblocklist>
+    <!-- Define I/O pads begin -->
+    <!-- The structure of the IO from the k6_N10_40nm arch is
+    used here to approximate the seven series IO. Timing values
+    are changed to match the seven series.-->
+    <pb_type name="io">
+      <input name="outpad" num_pins="1" />
+      <output name="inpad" num_pins="1" />
+      <clock name="clock" num_pins="1" />
+      <!-- IOs can operate as either inputs or outputs.
+           Delays below are pulled from the IOBUF description
+       in f4pga/symbiflow's arch.timing.xml
+           -->
+      <mode name="inpad">
+        <pb_type name="inpad" blif_model=".input" num_pb="1">
+          <output name="inpad" num_pins="1" />
+        </pb_type>
+        <interconnect>
+          <direct name="inpad" input="inpad.inpad" output="io.inpad">
+            <!-- delay bellow is pulled from f4pga/symbiflow's arch.timing architecture -->
+            <delay_constant max="10e-12" in_port="inpad.inpad" out_port="io.inpad" />
+          </direct>
+        </interconnect>
+      </mode>
+      <mode name="outpad">
+        <pb_type name="outpad" blif_model=".output" num_pb="1">
+          <input name="outpad" num_pins="1" />
+        </pb_type>
+        <interconnect>
+          <direct name="outpad" input="io.outpad" output="outpad.outpad">
+            <!-- delay bellow is pulled from f4pga/symbiflow's arch.timing architecture -->
+            <delay_constant max="10e-12" in_port="io.outpad" out_port="outpad.outpad" />
+          </direct>
+        </interconnect>
+      </mode>
+      <!-- Every input pin is driven by 15% of the tracks in a channel, every output pin is driven
+      by 10% of the tracks in a channel -->
+      <!-- IOs go on the periphery of the FPGA, for consistency,
+            make it physically equivalent on all sides so that only one definition of I/Os is needed.
+          -->
+      <!-- Place I/Os on the sides of the FPGA -->
+      <power method="ignore" />
+    </pb_type>
+    <!-- Define I/O pads ends -->
+
+    <pb_type name="clb">
+      <clock name="CLK" num_pins="1" />
+      <!-- The pins of the luts are logicaly equivelent because any of the 4 luts may be used to
+      perform the same
+      logic functions. -->
+      <input name="I" num_pins="56" equivalent="full" />
+      <input name="cin" num_pins="2" />
+      <output name="O" num_pins="24" equivalent="full" />
+      <output name="cout" num_pins="2" />
+      <!-- note that there are 81 ports and
+      81 internal cb connections.-->
+      <pb_type name="slice" num_pb="2">
+        <clock name="CLK" num_pins="1" />
+        <input name="I" num_pins="28" />
+        <input name="cin" num_pins="1" />
+        <output name="O" num_pins="12" />
+        <output name="cout" num_pins="1" />
+        <mode name="independent_LUTs">
+          <pb_type name="fle" num_pb="4">
+            <input name="in" num_pins="6" />
+            <input name="cin" num_pins="1" />
+            <input name="inX" num_pins="1" />
+            <output name="out" num_pins="1" />
+            <output name="outMUX" num_pins="1" />
+            <output name="outQ" num_pins="1" />
+            <output name="cout" num_pins="1" />
+            <clock name="clk" num_pins="1" />
+            <pb_type name="ALUT" num_pb="1">
+              <input name="A" num_pins="6" />
+              <output name="O5" num_pins="1" />
+              <output name="O6" num_pins="1" />
+              <mode name="n2_lut5">
+                <pb_type name="lut5_mode" num_pb="1">
+                  <input name="in" num_pins="5" />
+                  <output name="out" num_pins="2" />
+                  <pb_type name="lut5" blif_model=".names" num_pb="2" class="lut">
+                    <input name="in" num_pins="5" port_class="lut_in" />
+                    <output name="out" num_pins="1" port_class="lut_out" />
+                    <!-- LUT timing using delay matrix -->
+                    <!-- These are the physical delay inputs on a seven series LUT. These
+                                values are
+                    pulled from f4pga/symbiflow's arch file-->
+                    <delay_matrix in_port="lut5.in" out_port="lut5.out" type="max">
+                      1.5200000000000002e-10
+                      1.5200000000000002e-10
+                      1.5e-10
+                      1.5e-10
+                      1.18e-10
+                    </delay_matrix>
+                    <delay_matrix in_port="lut5.in" out_port="lut5.out" type="min">
+                      4.4e-11
+                      4.4e-11
+                      4.2000000000000004e-11
+                      4.6e-11
+                      4.8e-11
+                    </delay_matrix>
+                  </pb_type>
+                  <interconnect>
+                    <direct name="direct1" input="lut5_mode.in" output="lut5[0:0].in" />
+                    <direct name="direct2" input="lut5_mode.in" output="lut5[1:1].in" />
+                    <direct name="direct_out1" input="lut5[0:0].out" output="lut5_mode.out[0]" />
+                    <direct name="direct_out2" input="lut5[1:1].out" output="lut5_mode.out[1]" />
+                  </interconnect>
+                </pb_type>
+                <interconnect>
+                  <direct name="direct1" input="ALUT.A[5:1]" output="lut5_mode.in" />
+                  <direct name="direct2" input="lut5_mode.out[0]" output="ALUT.O5" />
+                  <direct name="direct3" input="lut5_mode.out[1]" output="ALUT.O6" />
+                </interconnect>
+              </mode>
+              <mode name="n1_lut6">
+                <pb_type name="lut6_mode" num_pb="1">
+                  <input name="in" num_pins="6" />
+                  <output name="out" num_pins="1" />
+                  <pb_type name="lut6" blif_model=".names" num_pb="1" class="lut">
+                    <input name="in" num_pins="6" port_class="lut_in" />
+                    <output name="out" num_pins="1" port_class="lut_out" />
+                    <!-- LUT timing using delay matrix -->
+                    <!-- These are the physical delay inputs on a seven series LUT. These
+                            values are
+                pulled from f4pga/symbiflow's arch file-->
+                    <delay_matrix in_port="lut6.in" out_port="lut6.out" type="max">
+                      1.6200000000000002e-10
+                      1.6200000000000002e-10
+                      1.6e-10
+                      1.6e-10
+                      1.6e-10
+                      1.28e-10
+                    </delay_matrix>
+                    <delay_matrix in_port="lut6.in" out_port="lut6.out" type="min">
+                      4.4e-11
+                      4.4e-11
+                      4.2000000000000004e-11
+                      4.6e-11
+                      4.5e-11
+                      4.8e-11
+                    </delay_matrix>
+                  </pb_type>
+                  <interconnect>
+                    <direct name="direct1" input="lut6_mode.in" output="lut6.in" />
+                    <direct name="direct2" input="lut6.out" output="lut6_mode.out" />
+                  </interconnect>
+                </pb_type>
+                <interconnect>
+                  <direct name="direct1" input="ALUT.A" output="lut6_mode.in" />
+                  <direct name="direct2" input="lut6_mode.out" output="ALUT.O6" />
+                </interconnect>
+              </mode>
+            </pb_type>
+
+            <pb_type blif_model=".subckt adder" name="adder" num_pb="1">
+              <input name="a" num_pins="1" />
+              <input name="b" num_pins="1" />
+              <input name="cin" num_pins="1" />
+              <output name="cout" num_pins="1" />
+              <output name="sumout" num_pins="1" />
+              <!-- ! NONE OF THE FOLLOWING DELLAYS ARE ACURATE -->
+              <delay_constant max="0.3e-9" min="0.2043e-9" in_port="adder.a"
+                out_port="adder.sumout" />
+              <delay_constant max="0.3e-9" min="0.2043e-9" in_port="adder.b"
+                out_port="adder.sumout" />
+              <delay_constant max="0.3e-9" min="0.2043e-9" in_port="adder.cin"
+                out_port="adder.sumout" />
+              <delay_constant max="0.3e-9" min="0.2043e-9" in_port="adder.a" out_port="adder.cout" />
+              <delay_constant max="0.3e-9" min="0.2043e-9" in_port="adder.b" out_port="adder.cout" />
+              <delay_constant max="0.01e-9" min="6.9797e-12" in_port="adder.cin"
+                out_port="adder.cout" />
+            </pb_type>
+
+            <pb_type blif_model=".latch" name="FDSE" num_pb="2" class="flipflop">
+              <clock name="clk" num_pins="1" port_class="clock" />
+              <input name="D" num_pins="1" port_class="D" />
+              <output name="Q" num_pins="1" port_class="Q" />
+              <T_setup clock="clk" port="FDSE.D" value="-4.6e-11" />
+              <T_hold clock="clk" port="FDSE.D" value="1.81e-10" />
+              <T_clock_to_Q clock="clk" max="3.03e-10" port="FDSE.Q" min="9.900000000000001e-11" />
+            </pb_type>
+            <!-- The following interconnect matches that of the seven series.
+            Delays are pulled from the f4pga/symbiflow arch -->
+            <interconnect>
+
+              <direct name="cin" input="fle.cin" output="adder.cin">
+                <pack_pattern name="chain" in_port="fle.cin" out_port="adder.cin" />
+              </direct>
+              <direct name="cout" input="adder.cout" output="fle.cout">
+                <pack_pattern name="chain" in_port="adder.cout" out_port="fle.cout" />
+              </direct>
+              <direct name="a" input="ALUT.O6" output="adder.a" />
+              <!-- 
+                    Here is how the b input works: it is the output of a mux that can choose either O5 or AX. 
+                Becuase of this we need to check if O5 and O6 are independent. -->
+              <mux name="adderBin" input="fle.inX ALUT.O5" output="adder.b">
+                <delay_constant in_port="fle.inX" max="2.0200000000000003e-10"
+                  out_port="adder.b" />
+                <delay_constant in_port="ALUT.O5" max="1.07e-10" out_port="adder.b" />
+              </mux>
+              <mux name="AOUTMUX" input="ALUT.O5 ALUT.O6 FDSE[0].Q adder.sumout"
+                output="fle.outMUX">
+                <delay_constant in_port="FDSE[0].Q" max="1.73e-10" out_port="fle.outMUX" />
+                <delay_constant in_port="ALUT[0].O6" max="2.05e-10" out_port="fle.outMUX" />
+                <delay_constant in_port="ALUT[0].O5" max="2.0300000000000002e-10"
+                  out_port="fle.outMUX" />
+                <!-- TODO add delay for adder -->
+              </mux>
+              <!-- mux for the input to the inner FF of each slice -->
+              <mux name="FFMUX" input="ALUT.O5 fle.inX" output="FDSE[0].D">
+                <delay_constant in_port="fle.inX" max="2.0200000000000003e-10"
+                  out_port="FDSE[0].D" />
+                <delay_constant in_port="ALUT.O5" max="1.07e-10" out_port="FDSE[0].D" />
+              </mux>
+              <mux name="A5FFMUX" input="ALUT.O5 ALUT.O6 fle.inX adder.sumout adder.cout"
+                output="FDSE[1].D">
+                <delay_constant in_port="fle.inX" max="2.14e-10" out_port="FDSE[1].D" />
+                <delay_constant in_port="ALUT.O5" max="9.6e-11" out_port="FDSE[1].D" />
+                <delay_constant in_port="ALUT.O6" max="1.07e-10" out_port="FDSE[1].D" />
+                <!-- TODO add delay for adder -->
+              </mux>
+              <direct name="inputs" input="fle.in" output="ALUT.A" />
+              <direct name="outA" input="ALUT.O6" output="fle.out" />
+              <direct name="outQ" input="FDSE[1].Q" output="fle.outQ" />
+              <complete name="clocks" input="fle.clk" output="FDSE[1:0].clk" />
+            </interconnect>
+
+          </pb_type>
+
+          <interconnect>
+            <!-- Adder chain -->
+            <direct name="cin" input="slice.cin" output="fle[0].cin">
+              <pack_pattern name="chain" in_port="slice.cin" out_port="fle[0].cin" />
+            </direct>
+            <direct name="Acarry" input="fle[0].cout" output="fle[1].cin">
+              <pack_pattern name="chain" in_port="fle[0].cout" out_port="fle[1].cin" />
+            </direct>
+            <direct name="Bcarry" input="fle[1].cout" output="fle[2].cin">
+              <pack_pattern name="chain" in_port="fle[1].cout" out_port="fle[2].cin" />
+            </direct>
+            <direct name="Ccarry" input="fle[2].cout" output="fle[3].cin">
+              <pack_pattern name="chain" in_port="fle[2].cout" out_port="fle[3].cin" />
+            </direct>
+            <direct name="cout" input="fle[3].cout" output="slice.cout">
+              <pack_pattern name="chain" in_port="fle[3].cout" out_port="slice.cout" />
+            </direct>
+
+            <complete input="slice.CLK" name="CK" output="fle.clk" />
+            <direct name="AMUX" input="fle[0].outMUX" output="slice.O[0]" />
+            <direct name="A" input="fle[0].out" output="slice.O[1]" />
+            <direct name="AQ" input="fle[0].outQ" output="slice.O[2]" />
+            <direct name="BMUX" input="fle[1].outMUX" output="slice.O[3]" />
+            <direct name="B" input="fle[1].out" output="slice.O[4]" />
+            <direct name="BQ" input="fle[1].outQ" output="slice.O[5]" />
+            <direct name="CMUX" input="fle[2].outMUX" output="slice.O[6]" />
+            <direct name="C" input="fle[2].out" output="slice.O[7]" />
+            <direct name="CQ" input="fle[2].outQ" output="slice.O[8]" />
+            <direct name="DMUX" input="fle[3].outMUX" output="slice.O[9]" />
+            <direct name="D" input="fle[3].out" output="slice.O[10]" />
+            <direct name="DQ" input="fle[3].outQ" output="slice.O[11]" />
+            <direct name="inA" input="slice.I[5:0]" output="fle[0].in" />
+            <direct name="AX" input="slice.I[6]" output="fle[0].inX" />
+            <direct name="inB" input="slice.I[12:7]" output="fle[1].in" />
+            <direct name="BX" input="slice.I[13]" output="fle[1].inX" />
+            <direct name="inC" input="slice.I[19:14]" output="fle[2].in" />
+            <direct name="CX" input="slice.I[20]" output="fle[2].inX" />
+            <direct name="inD" input="slice.I[26:21]" output="fle[3].in" />
+            <direct name="DX" input="slice.I[27]" output="fle[3].inX" />
+          </interconnect>
+        </mode>
+
+        <!-- Begin 2xLUT7 mode -->
+        <mode name="paired_LUTs">
+          <pb_type name="fle" num_pb="2">
+            <input name="in" num_pins="12" />
+            <input name="inX" num_pins="1" />
+            <output name="outMUX" num_pins="1" />
+            <output name="outQ" num_pins="1" />
+            <clock name="clk" num_pins="1" />
+            <!-- ! No cin/cout or out (i.e. A/B/C/D). No out since the only way to get the LUT7 and
+            8 is through the MUX -->
+            <pb_type name="LUT7" num_pb="1" blif_model=".names">
+              <input name="in" num_pins="7" port_class="lut_in" />
+              <output name="out" num_pins="1" port_class="lut_out" />
+              <!-- LUT timing using delay matrix -->
+              <!-- These are the physical delay inputs on a seven series LUT. These
+                    values are
+        pulled from f4pga/symbiflow's arch file-->
+              <delay_matrix in_port="LUT7.in" out_port="LUT7.out" type="max">
+                1.5200000000000002e-10
+                1.5200000000000002e-10
+                1.5e-10
+                1.5e-10
+                1.5e-10
+                1.18e-10
+                1.18e-10
+              </delay_matrix>
+              <delay_matrix in_port="LUT7.in" out_port="LUT7.out" type="min">
+                4.4e-11
+                4.4e-11
+                4.2000000000000004e-11
+                4.6e-11
+                4.8e-11
+                4.8e-11
+                4.8e-11
+              </delay_matrix>
+            </pb_type>
+            <pb_type blif_model=".latch" name="FDSE" num_pb="1" class="flipflop">
+              <clock name="clk" num_pins="1" port_class="clock" />
+              <input name="D" num_pins="1" port_class="D" />
+              <output name="Q" num_pins="1" port_class="Q" />
+              <T_setup clock="clk" port="FDSE.D" value="-4.6e-11" />
+              <T_hold clock="clk" port="FDSE.D" value="1.81e-10" />
+              <T_clock_to_Q clock="clk" max="3.03e-10" port="FDSE.Q" min="9.900000000000001e-11" />
+            </pb_type>
+            <!-- The following interconnect matches that of the seven series.
+    Delays are pulled from the f4pga/symbiflow arch -->
+
+
+            <!-- THIS IS HOW THE INTERCON FOR LUT7 and LUT8 works: output for
+    LUT7 is AMUX and CMUX, LUT8 just uses BMUX. Inputs should be logicaly equivalent -->
+
+            <!-- TODO might also need to do 13->1 and 27->1 mux -->
+
+
+            <interconnect>
+              <complete name="clock" input="fle.clk" output="FDSE.clk" />
+              <complete name="6_inputs" input="fle.in" output="LUT7.in[5:0]" />
+              <direct name="inX" input="fle.inX" output="LUT7.in[6]" />
+              <direct name="outMUX" input="LUT7.out" output="fle.outMUX" />
+              <direct name="inD" input="LUT7.out" output="FDSE.D" />
+              <direct name="outQ" input="FDSE.Q" output="fle.outQ" />
+            </interconnect>
+
+          </pb_type>
+
+          <interconnect>
+            <complete input="slice.CLK" name="CK" output="fle.clk" />
+            <direct name="AMUX" input="fle[0].outMUX" output="slice.O[0]" />
+            <direct name="AQ" input="fle[0].outQ" output="slice.O[2]" />
+            <direct name="CMUX" input="fle[1].outMUX" output="slice.O[6]" />
+            <direct name="CQ" input="fle[1].outQ" output="slice.O[8]" />
+            <direct name="inA" input="slice.I[5:0]" output="fle[0].in[5:0]" />
+            <direct name="AX" input="slice.I[6]" output="fle[0].inX" />
+            <direct name="inB" input="slice.I[12:7]" output="fle[0].in[11:6]" />
+            <direct name="inC" input="slice.I[19:14]" output="fle[1].in[5:0]" />
+            <direct name="CX" input="slice.I[20]" output="fle[1].inX" />
+            <direct name="inD" input="slice.I[26:21]" output="fle[1].in[11:6]" />
+          </interconnect>
+        </mode>
+
+        <!-- Begin 1xLUT8 mode -->
+        <mode name="single_LUT8">
+          <pb_type name="fle" num_pb="1">
+            <input name="in" num_pins="24" />
+            <input name="inX" num_pins="1" />
+            <output name="outMUX" num_pins="1" />
+            <output name="outQ" num_pins="1" />
+            <clock name="clk" num_pins="1" />
+
+            <pb_type name="LUT8" num_pb="1" blif_model=".names">
+              <input name="in" num_pins="8" port_class="lut_in" />
+              <output name="out" num_pins="1" port_class="lut_out" />
+              <!-- LUT timing using delay matrix -->
+              <!-- These are the physical delay inputs on a seven series LUT. These
+                    values are
+        pulled from f4pga/symbiflow's arch file-->
+              <delay_matrix in_port="LUT8.in" out_port="LUT8.out" type="max">
+                1.5200000000000002e-10
+                1.5200000000000002e-10
+                1.5e-10
+                1.5e-10
+                1.5e-10
+                1.18e-10
+                1.18e-10
+                1.18e-10
+              </delay_matrix>
+              <delay_matrix in_port="LUT8.in" out_port="LUT8.out" type="min">
+                4.4e-11
+                4.4e-11
+                4.2000000000000004e-11
+                4.6e-11
+                4.8e-11
+                4.8e-11
+                4.8e-11
+                4.8e-11
+              </delay_matrix>
+            </pb_type>
+            <pb_type blif_model=".latch" name="FDSE" num_pb="1" class="flipflop">
+              <clock name="clk" num_pins="1" port_class="clock" />
+              <input name="D" num_pins="1" port_class="D" />
+              <output name="Q" num_pins="1" port_class="Q" />
+              <T_setup clock="clk" port="FDSE.D" value="-4.6e-11" />
+              <T_hold clock="clk" port="FDSE.D" value="1.81e-10" />
+              <T_clock_to_Q clock="clk" max="3.03e-10" port="FDSE.Q" min="9.900000000000001e-11" />
+            </pb_type>
+            <!-- The following interconnect matches that of the seven series.
+    Delays are pulled from the f4pga/symbiflow arch -->
+
+            <interconnect>
+              <complete name="clock" input="fle.clk" output="FDSE.clk" />
+              <complete name="6_inputs" input="fle.in" output="LUT8.in[6:0]" />
+              <direct name="inX" input="fle.inX" output="LUT8.in[7]" />
+              <direct name="outMUX" input="LUT8.out" output="fle.outMUX" />
+              <direct name="inD" input="LUT8.out" output="FDSE.D" />
+              <direct name="outQ" input="FDSE.Q" output="fle.outQ" />
+            </interconnect>
+
+          </pb_type>
+
+          <interconnect>
+
+            <complete input="slice.CLK" name="CK" output="fle.clk" />
+            <direct name="BX" input="slice.I[13]" output="fle.inX" />
+            <direct name="BMUX" input="fle.outMUX" output="slice.O[3]" />
+            <direct name="inA" input="slice.I[5:0]" output="fle.in[5:0]" />
+            <direct name="inB" input="slice.I[12:7]" output="fle.in[11:6]" />
+            <direct name="inC" input="slice.I[19:14]" output="fle.in[17:12]" />
+            <direct name="inD" input="slice.I[26:21]" output="fle.in[23:18]" />
+          </interconnect>
+        </mode>
+      </pb_type>
+      <!-- Partial Crossbar with each input to the slice connected to 3 outputs from the same slice.
+      Values are taken from prjxray-db/artix7/tile_int_l -->
+      <interconnect>
+        <complete name="top_slice" input="clb.I" output="slice[0:1].I" />
+        <!-- The follwing Cin/Cout pattern matches xilinx -->
+        <direct name="cin1" input="clb.cin[0]" output="slice[0:0].cin">
+          <pack_pattern name="chain" in_port="clb.cin[0]" out_port="slice[0:0].cin" />
+        </direct>
+        <direct name="cin2" input="clb.cin[1]" output="slice[1:1].cin">
+          <pack_pattern name="chain" in_port="clb.cin[1]" out_port="slice[1:1].cin" />
+        </direct>
+        <direct name="cout1" input="slice[0:0].cout" output="clb.cout[0]">
+          <pack_pattern name="chain" in_port="slice[0:0].cout" out_port="clb.cout[0]" />
+        </direct>
+        <direct name="cout2" input="slice[1:1].cout" output="clb.cout[1]">
+          <pack_pattern name="chain" in_port="slice[1:1].cout" out_port="clb.cout[1]" />
+        </direct>
+        <!-- the above is correct because:
+        1) in xilinx one wire may connect to multiple lut inputs in either slice.
+        2) Every slice input has access to the same wire types -->
+        <!-- A complete here is a brawd aproximation but we leave it hear untill a better capture can
+        be created. -->
+        <complete name="top_slice_O" input="slice[0:1].O" output="clb.O" />
+
+        <complete name="CLK" input="clb.CLK" output="slice.CLK" />
+
+        <!-- Internal partial crossbar -->
+        <complete name="cross0" input="slice[0].O[6] slice[0].O[1] slice[1].O[2]"
+          output="slice[1].I[2]" />
+        <complete name="cross1" input="slice[1].O[6] slice[1].O[1] slice[0].O[2]"
+          output="slice[0].I[2]" />
+        <complete name="cross2" input="slice[1].O[9] slice[1].O[4] slice[0].O[5]"
+          output="slice[0].I[1]" />
+        <complete name="cross3" input="slice[0].O[9] slice[0].O[4] slice[1].O[5]"
+          output="slice[1].I[1]" />
+        <complete name="cross4" input="slice[0].O[0] slice[0].O[7] slice[1].O[8]"
+          output="slice[0].I[5]" />
+        <complete name="cross5" input="slice[1].O[0] slice[1].O[7] slice[0].O[8]"
+          output="slice[1].I[5]" />
+        <complete name="cross6" input="slice[1].O[3] slice[1].O[10] slice[0].O[11]"
+          output="slice[1].I[0]" />
+        <complete name="cross7" input="slice[0].O[3] slice[0].O[10] slice[1].O[11]"
+          output="slice[0].I[1]" />
+        <complete name="cross8" input="slice[0].O[6] slice[1].O[2] slice[0].O[1]"
+          output="slice[0].I[4]" />
+        <complete name="cross9" input="slice[1].O[6] slice[0].O[2] slice[1].O[1]"
+          output="slice[1].I[4]" />
+        <complete name="cross10" input="slice[1].O[9] slice[0].O[5] slice[1].O[4]"
+          output="slice[1].I[3]" />
+        <complete name="cross11" input="slice[0].O[9] slice[1].O[5] slice[0].O[4]"
+          output="slice[0].I[3]" />
+        <complete name="cross12" input="slice[0].O[0] slice[1].O[8] slice[0].O[7]"
+          output="slice[0].I[12]" />
+        <complete name="cross13" input="slice[1].O[0] slice[0].O[8] slice[1].O[7]"
+          output="slice[0].I[12]" />
+        <complete name="cross14" input="slice[1].O[3] slice[0].O[11] slice[1].O[10]"
+          output="slice[1].I[7]" />
+        <complete name="cross15" input="slice[0].O[3] slice[1].O[11] slice[0].O[10]"
+          output="slice[0].I[7]" />
+        <complete name="cross16" input="slice[0].O[6] slice[0].O[1] slice[1].O[2]"
+          output="slice[1].I[9]" />
+        <complete name="cross17" input="slice[1].O[6] slice[1].O[1] slice[0].O[2]"
+          output="slice[0].I[9]" />
+        <complete name="cross18" input="slice[1].O[9] slice[1].O[4] slice[0].O[5]"
+          output="slice[0].I[8]" />
+        <complete name="cross19" input="slice[0].O[9] slice[0].O[4] slice[1].O[5]"
+          output="slice[1].I[8]" />
+        <complete name="cross20" input="slice[0].O[0] slice[0].O[7] slice[1].O[8]"
+          output="slice[1].I[15]" />
+        <complete name="cross21" input="slice[1].O[0] slice[1].O[7] slice[0].O[8]"
+          output="slice[1].I[17]" />
+        <complete name="cross22" input="slice[1].O[3] slice[1].O[10] slice[0].O[11]"
+          output="slice[0].I[16]" />
+        <complete name="cross23" input="slice[0].O[3] slice[0].O[10] slice[1].O[11]"
+          output="slice[1].I[16]" />
+        <complete name="cross24" input="slice[0].O[6] slice[1].O[2] slice[0].O[1]"
+          output="slice[0].I[11]" />
+        <complete name="cross25" input="slice[1].O[6] slice[0].O[2] slice[1].O[1]"
+          output="slice[1].I[11]" />
+        <complete name="cross26" input="slice[1].O[9] slice[0].O[5] slice[1].O[4]"
+          output="slice[1].I[10]" />
+        <complete name="cross27" input="slice[0].O[9] slice[1].O[5] slice[0].O[4]"
+          output="slice[0].I[10]" />
+        <complete name="cross28" input="slice[0].O[0] slice[1].O[8] slice[0].O[7]"
+          output="slice[0].I[17]" />
+        <complete name="cross29" input="slice[1].O[0] slice[0].O[8] slice[1].O[7]"
+          output="slice[0].I[15]" />
+        <complete name="cross30" input="slice[1].O[3] slice[0].O[11] slice[1].O[10]"
+          output="slice[1].I[18]" />
+        <complete name="cross31" input="slice[0].O[3] slice[1].O[11] slice[0].O[10]"
+          output="slice[0].I[18]" />
+        <complete name="cross32" input="slice[0].O[6] slice[0].O[1] slice[1].O[2]"
+          output="slice[0].I[14]" />
+        <complete name="cross33" input="slice[1].O[6] slice[1].O[1] slice[0].O[2]"
+          output="slice[1].I[14]" />
+        <complete name="cross34" input="slice[1].O[9] slice[1].O[4] slice[0].O[5]"
+          output="slice[1].I[19]" />
+        <complete name="cross35" input="slice[0].O[9] slice[0].O[4] slice[1].O[5]"
+          output="slice[0].I[19]" />
+        <complete name="cross36" input="slice[0].O[0] slice[0].O[7] slice[1].O[8]"
+          output="slice[1].I[22]" />
+        <complete name="cross37" input="slice[1].O[0] slice[1].O[7] slice[0].O[8]"
+          output="slice[1].I[24]" />
+        <complete name="cross38" input="slice[1].O[3] slice[1].O[10] slice[0].O[11]"
+          output="slice[0].I[23]" />
+        <complete name="cross39" input="slice[0].O[3] slice[0].O[10] slice[1].O[11]"
+          output="slice[1].I[23]" />
+        <complete name="cross40" input="slice[0].O[6] slice[1].O[2] slice[0].O[1]"
+          output="slice[0].I[21]" />
+        <complete name="cross41" input="slice[1].O[6] slice[0].O[2] slice[1].O[1]"
+          output="slice[1].I[21]" />
+        <complete name="cross42" input="slice[1].O[9] slice[0].O[5] slice[1].O[4]"
+          output="slice[1].I[26]" />
+        <complete name="cross43" input="slice[0].O[9] slice[1].O[5] slice[0].O[4]"
+          output="slice[0].I[26]" />
+        <complete name="cross44" input="slice[0].O[0] slice[1].O[8] slice[0].O[7]"
+          output="slice[0].I[24]" />
+        <complete name="cross45" input="slice[1].O[0] slice[0].O[8] slice[1].O[7]"
+          output="slice[0].I[22]" />
+        <complete name="cross46" input="slice[1].O[3] slice[0].O[11] slice[1].O[10]"
+          output="slice[1].I[25]" />
+        <complete name="cross47" input="slice[0].O[3] slice[1].O[11] slice[0].O[10]"
+          output="slice[0].I[25]" />
+      </interconnect>
+    </pb_type>
+    <!-- Define general purpose logic block (CLB) ends -->
+    <!-- !!! NOTE: NONE OF THE TIMING HERE IS CORRECT -->
+    <!-- Define BRAM -->
+    <pb_type name="memory">
+      <!-- TODO add cascade feature -->
+      <input name="addr1" num_pins="16" />
+      <input name="addr2" num_pins="16" />
+      <input name="di" num_pins="72" />
+      <input name="we1" num_pins="4" />
+      <input name="we2" num_pins="4" />
+      <output name="do" num_pins="72" />
+      <clock name="clk" num_pins="1" />
+
+      <!-- One RAMB36_TDP modes -->
+      <!-- In TDP mode, the Read or Write port width is x1, x2, x4,
+      x9, x18, x36 See Table 1-13 and 1-14 in Xilinx-UG473 for mode port widths.-->
+      <mode name="mem_36Kx1_dp">
+        <pb_type name="mem32Kx1_dp" blif_model=".subckt dual_port_ram" class="memory" num_pb="1">
+          <!-- ADDR ports are 16 bits wide but in xilinx ADDR[15] should never be used and should be
+          locked high except with cascade. -->
+          <!-- Data paritiy are inside data -->
+          <!-- No parity for widths < 8 
+          Note that in 7-series parity is not optional -->
+
+          <!-- See Libraries Guide chapter 3 for WE port widths -->
+          <input name="addr1" num_pins="15" port_class="address1" />
+          <input name="addr2" num_pins="15" port_class="address2" />
+          <input name="data1" num_pins="1" port_class="data_in1" />
+          <input name="data2" num_pins="1" port_class="data_in2" />
+          <input name="we1" num_pins="1" port_class="write_en1" />
+          <input name="we2" num_pins="1" port_class="write_en2" />
+
+          <output name="out1" num_pins="1" port_class="data_out1" />
+          <output name="out2" num_pins="1" port_class="data_out2" />
+
+          <clock name="clk" num_pins="1" port_class="clock" />
+
+          <!-- ! NOTE: missing RSTRAMA/B, ENA/B, RESTREGA/B, REGCEA/B -->
+          <T_setup value="509e-12" port="mem32Kx1_dp.addr1" clock="clk" />
+          <T_setup value="509e-12" port="mem32Kx1_dp.data1" clock="clk" />
+          <T_setup value="509e-12" port="mem32Kx1_dp.we1" clock="clk" />
+          <T_setup value="509e-12" port="mem32Kx1_dp.addr2" clock="clk" />
+          <T_setup value="509e-12" port="mem32Kx1_dp.data2" clock="clk" />
+          <T_setup value="509e-12" port="mem32Kx1_dp.we2" clock="clk" />
+
+          <T_clock_to_Q max="1.234e-9" port="mem32Kx1_dp.out1" clock="clk" />
+          <T_clock_to_Q max="1.234e-9" port="mem32Kx1_dp.out2" clock="clk" />
+          <power method="pin-toggle">
+            <port name="clk" energy_per_toggle="17.9e-12" />
+            <static_power power_per_instance="0.0" />
+          </power>
+
+        </pb_type>
+        <interconnect>
+          <direct name="address1" input="memory.addr1[14:0]" output="mem32Kx1_dp.addr1">
+            <delay_constant max="132e-12" in_port="memory.addr1[14:0]" out_port="mem32Kx1_dp.addr1" />
+          </direct>
+          <direct name="address2" input="memory.addr2[14:0]" output="mem32Kx1_dp.addr2">
+            <delay_constant max="132e-12" in_port="memory.addr2[14:0]" out_port="mem32Kx1_dp.addr2" />
+          </direct>
+          <direct name="data1" input="memory.di[0]" output="mem32Kx1_dp.data1">
+            <delay_constant max="132e-12" in_port="memory.di[0]" out_port="mem32Kx1_dp.data1" />
+          </direct>
+          <direct name="data2" input="memory.di[32]" output="mem32Kx1_dp.data2">
+            <delay_constant max="132e-12" in_port="memory.di[32]" out_port="mem32Kx1_dp.data2" />
+          </direct>
+          <direct name="writeen1" input="memory.we1[0]" output="mem32Kx1_dp.we1">
+            <delay_constant max="132e-12" in_port="memory.we1[0]" out_port="mem32Kx1_dp.we1" />
+          </direct>
+          <direct name="writeen2" input="memory.we2[0]" output="mem32Kx1_dp.we2">
+            <delay_constant max="132e-12" in_port="memory.we2[0]" out_port="mem32Kx1_dp.we2" />
+          </direct>
+
+          <direct name="dataout1" input="mem32Kx1_dp.out1" output="memory.do[0]">
+            <delay_constant max="40e-12" in_port="mem32Kx1_dp.out1" out_port="memory.do[0]" />
+          </direct>
+          <direct name="dataout2" input="mem32Kx1_dp.out2" output="memory.do[32]">
+            <delay_constant max="40e-12" in_port="mem32Kx1_dp.out2" out_port="memory.do[32]" />
+          </direct>
+
+          <direct name="clk" input="memory.clk" output="mem32Kx1_dp.clk" />
+
+
+        </interconnect>
+      </mode>
+
+      <mode name="mem_16Kx2_dp">
+        <pb_type name="mem16Kx2_dp" blif_model=".subckt dual_port_ram" class="memory" num_pb="1">
+          <!-- ADDR ports are 16 bits wide but in xilinx ADDR[15] should never be used and should be
+          locked high except with cascade. -->
+          <!-- Data paritiy are inside data -->
+          <!-- No parity for widths < 8 
+          Note that in 7-series parity is not optional -->
+          <input name="addr1" num_pins="14" port_class="address1" />
+          <input name="addr2" num_pins="14" port_class="address2" />
+          <input name="data1" num_pins="2" port_class="data_in1" />
+          <input name="data2" num_pins="2" port_class="data_in2" />
+          <input name="we1" num_pins="1" port_class="write_en1" />
+          <input name="we2" num_pins="1" port_class="write_en2" />
+
+          <output name="out1" num_pins="2" port_class="data_out1" />
+          <output name="out2" num_pins="2" port_class="data_out2" />
+
+          <clock name="clk" num_pins="1" port_class="clock" />
+          <!-- <clock name="clkB" num_pins="1" port_class="clock" /> -->
+
+          <!-- ! NOTE: missing RSTRAMA/B, ENA/B, RESTREGA/B, REGCEA/B -->
+          <T_setup value="509e-12" port="mem16Kx2_dp.addr1" clock="clk" />
+          <T_setup value="509e-12" port="mem16Kx2_dp.data1" clock="clk" />
+          <T_setup value="509e-12" port="mem16Kx2_dp.we1" clock="clk" />
+          <T_setup value="509e-12" port="mem16Kx2_dp.addr2" clock="clk" />
+          <T_setup value="509e-12" port="mem16Kx2_dp.data2" clock="clk" />
+          <T_setup value="509e-12" port="mem16Kx2_dp.we2" clock="clk" />
+
+          <T_clock_to_Q max="1.234e-9" port="mem16Kx2_dp.out1" clock="clk" />
+          <T_clock_to_Q max="1.234e-9" port="mem16Kx2_dp.out2" clock="clk" />
+
+          <power method="pin-toggle">
+            <port name="clk" energy_per_toggle="17.9e-12" />
+            <static_power power_per_instance="0.0" />
+          </power>
+
+        </pb_type>
+        <interconnect>
+          <direct name="address1" input="memory.addr1[14:1]" output="mem16Kx2_dp.addr1">
+            <delay_constant max="132e-12" in_port="memory.addr1[14:1]" out_port="mem16Kx2_dp.addr1" />
+          </direct>
+          <direct name="address2" input="memory.addr2[14:1]" output="mem16Kx2_dp.addr2">
+            <delay_constant max="132e-12" in_port="memory.addr2[14:1]" out_port="mem16Kx2_dp.addr2" />
+          </direct>
+          <direct name="data1" input="memory.di[1:0]" output="mem16Kx2_dp.data1">
+            <delay_constant max="132e-12" in_port="memory.di[1:0]" out_port="mem16Kx2_dp.data1" />
+          </direct>
+          <direct name="data2" input="memory.di[33:32]" output="mem16Kx2_dp.data2">
+            <delay_constant max="132e-12" in_port="memory.di[33:32]" out_port="mem16Kx2_dp.data2" />
+          </direct>
+          <direct name="writeen1" input="memory.we1[0]" output="mem16Kx2_dp.we1">
+            <delay_constant max="132e-12" in_port="memory.we1[0]" out_port="mem16Kx2_dp.we1" />
+          </direct>
+          <direct name="writeen2" input="memory.we2[0]" output="mem16Kx2_dp.we2">
+            <delay_constant max="132e-12" in_port="memory.we2[0]" out_port="mem16Kx2_dp.we2" />
+          </direct>
+
+          <direct name="dataout1" input="mem16Kx2_dp.out1" output="memory.do[1:0]">
+            <delay_constant max="40e-12" in_port="mem16Kx2_dp.out1" out_port="memory.do[1:0]" />
+          </direct>
+          <direct name="dataout2" input="mem16Kx2_dp.out2" output="memory.do[33:32]">
+            <delay_constant max="40e-12" in_port="mem16Kx2_dp.out2" out_port="memory.do[33:32]" />
+          </direct>
+
+          <direct name="clk" input="memory.clk" output="mem16Kx2_dp.clk" />
+
+        </interconnect>
+      </mode>
+
+      <mode name="mem_8Kx4_dp">
+        <pb_type name="mem8kx4_dp" blif_model=".subckt dual_port_ram" class="memory" num_pb="1">
+          <!-- ADDR ports are 16 bits wide but in xilinx ADDR[15] should never be used and should be
+          locked high except with cascade. -->
+          <!-- Data paritiy are inside data -->
+          <!-- No parity for widths < 8 
+          Note that in 7-series parity is not optional -->
+          <input name="addr1" num_pins="13" port_class="address1" />
+          <input name="addr2" num_pins="13" port_class="address2" />
+          <input name="data1" num_pins="4" port_class="data_in1" />
+          <input name="data2" num_pins="4" port_class="data_in2" />
+          <input name="we1" num_pins="1" port_class="write_en1" />
+          <input name="we2" num_pins="1" port_class="write_en2" />
+
+          <output name="out1" num_pins="4" port_class="data_out1" />
+          <output name="out2" num_pins="4" port_class="data_out2" />
+
+          <clock name="clk" num_pins="1" port_class="clock" />
+          <!-- <clock name="clkB" num_pins="1" port_class="clock" /> -->
+
+          <!-- ! NOTE: missing RSTRAMA/B, ENA/B, RESTREGA/B, REGCEA/B -->
+          <T_setup value="509e-12" port="mem8kx4_dp.addr1" clock="clk" />
+          <T_setup value="509e-12" port="mem8kx4_dp.data1" clock="clk" />
+          <T_setup value="509e-12" port="mem8kx4_dp.we1" clock="clk" />
+          <T_setup value="509e-12" port="mem8kx4_dp.addr2" clock="clk" />
+          <T_setup value="509e-12" port="mem8kx4_dp.data2" clock="clk" />
+          <T_setup value="509e-12" port="mem8kx4_dp.we2" clock="clk" />
+
+          <T_clock_to_Q max="1.234e-9" port="mem8kx4_dp.out1" clock="clk" />
+          <T_clock_to_Q max="1.234e-9" port="mem8kx4_dp.out2" clock="clk" />
+
+          <power method="pin-toggle">
+            <port name="clk" energy_per_toggle="17.9e-12" />
+            <static_power power_per_instance="0.0" />
+          </power>
+
+        </pb_type>
+        <interconnect>
+          <direct name="address1" input="memory.addr1[14:2]" output="mem8kx4_dp.addr1">
+            <delay_constant max="132e-12" in_port="memory.addr1[14:2]" out_port="mem8kx4_dp.addr1" />
+          </direct>
+          <direct name="address2" input="memory.addr2[14:2]" output="mem8kx4_dp.addr2">
+            <delay_constant max="132e-12" in_port="memory.addr2[14:2]" out_port="mem8kx4_dp.addr2" />
+          </direct>
+          <direct name="data1" input="memory.di[3:0]" output="mem8kx4_dp.data1">
+            <delay_constant max="132e-12" in_port="memory.di[3:0]" out_port="mem8kx4_dp.data1" />
+          </direct>
+          <direct name="data2" input="memory.di[35:32]" output="mem8kx4_dp.data2">
+            <delay_constant max="132e-12" in_port="memory.di[35:32]" out_port="mem8kx4_dp.data2" />
+          </direct>
+          <direct name="writeen1" input="memory.we1[0]" output="mem8kx4_dp.we1">
+            <delay_constant max="132e-12" in_port="memory.we1[0]" out_port="mem8kx4_dp.we1" />
+          </direct>
+          <direct name="writeen2" input="memory.we2[0]" output="mem8kx4_dp.we2">
+            <delay_constant max="132e-12" in_port="memory.we2[0]" out_port="mem8kx4_dp.we2" />
+          </direct>
+
+          <direct name="dataout1" input="mem8kx4_dp.out1" output="memory.do[3:0]">
+            <delay_constant max="40e-12" in_port="mem8kx4_dp.out1" out_port="memory.do[3:0]" />
+          </direct>
+          <direct name="dataout2" input="mem8kx4_dp.out2" output="memory.do[35:32]">
+            <delay_constant max="40e-12" in_port="mem8kx4_dp.out2" out_port="memory.do[35:32]" />
+          </direct>
+
+          <direct name="clk" input="memory.clk" output="mem8kx4_dp.clk" />
+
+        </interconnect>
+      </mode>
+
+      <mode name="mem_4Kx9_dp">
+        <pb_type name="mem4kx9_dp" blif_model=".subckt dual_port_ram" class="memory" num_pb="1">
+          <!-- ADDR ports are 16 bits wide but in xilinx ADDR[15] should never be used and should be
+          locked high except with cascade. -->
+          <!-- Data paritiy are inside data -->
+          <!-- No parity for widths < 8 
+          Note that in 7-series parity is not optional -->
+          <input name="addr1" num_pins="12" port_class="address1" />
+          <input name="addr2" num_pins="12" port_class="address2" />
+          <!-- Although this mode is 9 wide the efective width is 8 -->
+          <input name="data1" num_pins="9" port_class="data_in1" />
+          <input name="data2" num_pins="9" port_class="data_in2" />
+          <input name="we1" num_pins="1" port_class="write_en1" />
+          <input name="we2" num_pins="1" port_class="write_en2" />
+
+          <output name="out1" num_pins="9" port_class="data_out1" />
+          <output name="out2" num_pins="9" port_class="data_out2" />
+
+          <clock name="clk" num_pins="1" port_class="clock" />
+
+          <T_setup value="509e-12" port="mem4kx9_dp.addr1" clock="clk" />
+          <T_setup value="509e-12" port="mem4kx9_dp.data1" clock="clk" />
+          <T_setup value="509e-12" port="mem4kx9_dp.we1" clock="clk" />
+
+          <T_setup value="509e-12" port="mem4kx9_dp.addr2" clock="clk" />
+          <T_setup value="509e-12" port="mem4kx9_dp.data2" clock="clk" />
+          <T_setup value="509e-12" port="mem4kx9_dp.we2" clock="clk" />
+
+          <T_clock_to_Q max="1.234e-9" port="mem4kx9_dp.out1" clock="clk" />
+          <T_clock_to_Q max="1.234e-9" port="mem4kx9_dp.out2" clock="clk" />
+
+          <power method="pin-toggle">
+            <port name="clk" energy_per_toggle="17.9e-12" />
+            <static_power power_per_instance="0.0" />
+          </power>
+
+        </pb_type>
+        <interconnect>
+          <direct name="address1" input="memory.addr1[14:3]" output="mem4kx9_dp.addr1">
+            <delay_constant max="132e-12" in_port="memory.addr1[14:3]" out_port="mem4kx9_dp.addr1" />
+          </direct>
+          <direct name="address2" input="memory.addr2[14:3]" output="mem4kx9_dp.addr2">
+            <delay_constant max="132e-12" in_port="memory.addr2[14:3]" out_port="mem4kx9_dp.addr2" />
+          </direct>
+          <direct name="data1" input="memory.di[8:0]" output="mem4kx9_dp.data1">
+            <delay_constant max="132e-12" in_port="memory.di[8:0]" out_port="mem4kx9_dp.data1" />
+          </direct>
+          <direct name="data2" input="memory.di[44:36]" output="mem4kx9_dp.data2">
+            <delay_constant max="132e-12" in_port="memory.di[44:36]" out_port="mem4kx9_dp.data2" />
+          </direct>
+
+          <direct name="writeen1" input="memory.we1[0]" output="mem4kx9_dp.we1">
+            <delay_constant max="132e-12" in_port="memory.we1[0]" out_port="mem4kx9_dp.we1" />
+          </direct>
+          <direct name="writeen2" input="memory.we2[0]" output="mem4kx9_dp.we2">
+            <delay_constant max="132e-12" in_port="memory.we2[0]" out_port="mem4kx9_dp.we2" />
+          </direct>
+
+          <direct name="dataout1" input="mem4kx9_dp.out1" output="memory.do[8:0]">
+            <delay_constant max="40e-12" in_port="mem4kx9_dp.out1" out_port="memory.do[8:0]" />
+          </direct>
+          <direct name="dataout2" input="mem4kx9_dp.out2" output="memory.do[44:36]">
+            <delay_constant max="40e-12" in_port="mem4kx9_dp.out2" out_port="memory.do[44:36]" />
+          </direct>
+
+          <direct name="clk" input="memory.clk" output="mem4kx9_dp.clk" />
+
+        </interconnect>
+      </mode>
+
+      <mode name="mem_2Kx18_dp">
+        <pb_type name="mem2kx18_dp" blif_model=".subckt dual_port_ram" class="memory" num_pb="1">
+          <!-- ADDR ports are 16 bits wide but in xilinx ADDR[15] should never be used and should be
+          locked high except with cascade. -->
+          <!-- Data paritiy are inside data -->
+          <!-- No parity for widths < 8 
+          Note that in 7-series parity is not optional -->
+          <input name="addr1" num_pins="11" port_class="address1" />
+          <input name="addr2" num_pins="11" port_class="address2" />
+          <!-- Although this mode is 18 wide the efective width is 16 -->
+          <input name="data1" num_pins="18" port_class="data_in1" />
+          <input name="data2" num_pins="18" port_class="data_in2" />
+          <input name="we1" num_pins="2" port_class="write_en1" />
+          <input name="we2" num_pins="2" port_class="write_en2" />
+
+          <output name="out1" num_pins="18" port_class="data_out1" />
+          <output name="out2" num_pins="18" port_class="data_out2" />
+
+          <clock name="clk" num_pins="1" port_class="clock" />
+
+          <!-- ! NOTE: missing RSTRAMA/B, ENA/B, RESTREGA/B, REGCEA/B -->
+          <T_setup value="509e-12" port="mem2kx18_dp.addr1" clock="clk" />
+          <T_setup value="509e-12" port="mem2kx18_dp.data1" clock="clk" />
+          <T_setup value="509e-12" port="mem2kx18_dp.we1" clock="clk" />
+
+          <T_setup value="509e-12" port="mem2kx18_dp.addr2" clock="clk" />
+          <T_setup value="509e-12" port="mem2kx18_dp.data2" clock="clk" />
+          <T_setup value="509e-12" port="mem2kx18_dp.we2" clock="clk" />
+
+          <T_clock_to_Q max="1.234e-9" port="mem2kx18_dp.out1" clock="clk" />
+          <T_clock_to_Q max="1.234e-9" port="mem2kx18_dp.out2" clock="clk" />
+
+          <power method="pin-toggle">
+            <port name="clk" energy_per_toggle="17.9e-12" />
+            <static_power power_per_instance="0.0" />
+          </power>
+
+        </pb_type>
+        <interconnect>
+          <direct name="address1" input="memory.addr1[14:4]" output="mem2kx18_dp.addr1">
+            <delay_constant max="132e-12" in_port="memory.addr1[14:4]" out_port="mem2kx18_dp.addr1" />
+          </direct>
+          <direct name="address2" input="memory.addr2[14:4]" output="mem2kx18_dp.addr2">
+            <delay_constant max="132e-12" in_port="memory.addr2[14:4]" out_port="mem2kx18_dp.addr2" />
+          </direct>
+          <direct name="data1" input="memory.di[17:0]" output="mem2kx18_dp.data1">
+            <delay_constant max="132e-12" in_port="memory.di[17:0]" out_port="mem2kx18_dp.data1" />
+          </direct>
+          <direct name="data2" input="memory.di[53:36]" output="mem2kx18_dp.data2">
+            <delay_constant max="132e-12" in_port="memory.di[53:36]" out_port="mem2kx18_dp.data2" />
+          </direct>
+
+          <direct name="writeen1" input="memory.we1[1:0]" output="mem2kx18_dp.we1">
+            <delay_constant max="132e-12" in_port="memory.we1[1:0]" out_port="mem2kx18_dp.we1" />
+          </direct>
+          <direct name="writeen2" input="memory.we2[1:0]" output="mem2kx18_dp.we2">
+            <delay_constant max="132e-12" in_port="memory.we2[1:0]" out_port="mem2kx18_dp.we2" />
+          </direct>
+
+          <direct name="dataout1" input="mem2kx18_dp.out1" output="memory.do[17:0]">
+            <delay_constant max="40e-12" in_port="mem2kx18_dp.out1" out_port="memory.do[17:0]" />
+          </direct>
+          <direct name="dataout2" input="mem2kx18_dp.out2" output="memory.do[53:36]">
+            <delay_constant max="40e-12" in_port="mem2kx18_dp.out2" out_port="memory.do[53:36]" />
+          </direct>
+
+          <direct name="clk" input="memory.clk" output="mem2kx18_dp.clk" />
+        </interconnect>
+      </mode>
+
+      <mode name="mem_1Kx36_dp">
+        <pb_type name="mem1kx36_dp" blif_model=".subckt dual_port_ram" class="memory" num_pb="1">
+          <!-- ADDR ports are 16 bits wide but in xilinx ADDR[15] should never be used and should be
+          locked high except with cascade. -->
+          <!-- Data paritiy are inside data -->
+          <!-- No parity for widths < 8 
+          Note that in 7-series parity is not optional -->
+          <input name="addr1" num_pins="10" port_class="address1" />
+          <input name="addr2" num_pins="10" port_class="address2" />
+          <!-- Although this mode is 36 wide the efective width is 32 -->
+          <input name="data1" num_pins="36" port_class="data_in1" />
+          <input name="data2" num_pins="36" port_class="data_in2" />
+          <input name="we1" num_pins="4" port_class="write_en1" />
+          <input name="we2" num_pins="4" port_class="write_en2" />
+
+          <output name="out1" num_pins="36" port_class="data_out1" />
+          <output name="out2" num_pins="36" port_class="data_out2" />
+
+          <clock name="clk" num_pins="1" port_class="clock" />
+
+          <!-- ! NOTE: missing RSTRAMA/B, ENA/B, RESTREGA/B, REGCEA/B -->
+          <T_setup value="509e-12" port="mem1kx36_dp.addr1" clock="clk" />
+          <T_setup value="509e-12" port="mem1kx36_dp.data1" clock="clk" />
+          <T_setup value="509e-12" port="mem1kx36_dp.we1" clock="clk" />
+
+          <T_setup value="509e-12" port="mem1kx36_dp.addr2" clock="clk" />
+          <T_setup value="509e-12" port="mem1kx36_dp.data2" clock="clk" />
+          <T_setup value="509e-12" port="mem1kx36_dp.we2" clock="clk" />
+
+          <T_clock_to_Q max="1.234e-9" port="mem1kx36_dp.out1" clock="clk" />
+          <T_clock_to_Q max="1.234e-9" port="mem1kx36_dp.out2" clock="clk" />
+
+
+          <power method="pin-toggle">
+            <port name="clk" energy_per_toggle="17.9e-12" />
+            <static_power power_per_instance="0.0" />
+          </power>
+        </pb_type>
+        <interconnect>
+          <direct name="address1" input="memory.addr1[14:5]" output="mem1kx36_dp.addr1">
+            <delay_constant max="132e-12" in_port="memory.addr1[14:5]" out_port="mem1kx36_dp.addr1" />
+          </direct>
+          <direct name="address2" input="memory.addr2[14:5]" output="mem1kx36_dp.addr2">
+            <delay_constant max="132e-12" in_port="memory.addr2[14:5]" out_port="mem1kx36_dp.addr2" />
+          </direct>
+          <direct name="data1" input="memory.di[35:0]" output="mem1kx36_dp.data1">
+            <delay_constant max="132e-12" in_port="memory.di[35:0]" out_port="mem1kx36_dp.data1" />
+          </direct>
+          <direct name="data2" input="memory.di[71:36]" output="mem1kx36_dp.data2">
+            <delay_constant max="132e-12" in_port="memory.di[71:36]" out_port="mem1kx36_dp.data2" />
+          </direct>
+
+          <direct name="writeen1" input="memory.we1[3:0]" output="mem1kx36_dp.we1">
+            <delay_constant max="132e-12" in_port="memory.we1[3:0]" out_port="mem1kx36_dp.we1" />
+          </direct>
+          <direct name="writeen2" input="memory.we2[3:0]" output="mem1kx36_dp.we2">
+            <delay_constant max="132e-12" in_port="memory.we2[3:0]" out_port="mem1kx36_dp.we2" />
+          </direct>
+
+          <direct name="dataout1" input="mem1kx36_dp.out1" output="memory.do[35:0]">
+            <delay_constant max="40e-12" in_port="mem1kx36_dp.out1" out_port="memory.do[35:0]" />
+          </direct>
+          <direct name="dataout2" input="mem1kx36_dp.out2" output="memory.do[71:36]">
+            <delay_constant max="40e-12" in_port="mem1kx36_dp.out2" out_port="memory.do[71:36]" />
+          </direct>
+
+          <direct name="clk" input="memory.clk" output="mem1kx36_dp.clk" />
+          <!-- <direct name="clkB" input="memory.clkB" output="mem1kx36_dp.clkB" /> -->
+        </interconnect>
+      </mode>
+      <!-- TODO: add cascade RAM. 65536x1_dp addr=16 -->
+
+      <!-- One RAMB36_SP modes -->
+      <!-- In SDP mode, the Read or Write port width is x64 or x72. Alternate port is x1, x2, x4,
+      x9, x18, x36, x72. See Table 1-13 and 1-14 in Xilinx-UG473 for mode port widths. Also se summary of Block Ram Resources.-->
+
+      <!-- Remove alternate modes with larger widths. -->
+      <mode name="mem_32Kx1_sp">
+        <pb_type name="mem32kx1_sp" blif_model=".subckt single_port_ram" class="memory" num_pb="1">
+          <!-- ADDR ports are 16 bits wide but in xilinx ADDR[15] should never be used and should be
+          locked high except with cascade. -->
+          <!-- Data paritiy are inside data -->
+          <!-- No parity for widths < 8 
+          Note that in 7-series parity is not optional -->
+
+          <!-- See Libraries Guide chapter 3 for WE port widths -->
+          <input name="we" num_pins="1" port_class="write_en" />
+          <input name="addr" num_pins="15" port_class="address" />
+          <input name="data" num_pins="1" port_class="data_in" />
+
+          <output name="out" num_pins="1" port_class="data_out" />
+
+          <clock name="clk" num_pins="1" port_class="clock" />
+
+          <!-- ! NOTE: missing RSTRAMA/B, ENA/B, RESTREGA/B, REGCEA/B -->
+          <T_setup value="509e-12" port="mem32kx1_sp.addr" clock="clk" />
+          <T_setup value="509e-12" port="mem32kx1_sp.data" clock="clk" />
+          <T_setup value="509e-12" port="mem32kx1_sp.we" clock="clk" />
+
+          <T_clock_to_Q max="1.234e-9" port="mem32kx1_sp.out" clock="clk" />
+
+          <power method="pin-toggle">
+            <port name="clk" energy_per_toggle="17.9e-12" />
+            <static_power power_per_instance="0.0" />
+          </power>
+        </pb_type>
+
+        <interconnect>
+          <direct name="address" input="memory.addr1[14:0]" output="mem32kx1_sp.addr">
+            <delay_constant max="132e-12" in_port="memory.addr1[14:0]" out_port="mem32kx1_sp.addr" />
+          </direct>
+          <direct name="data" input="memory.di[0]" output="mem32kx1_sp.data">
+            <delay_constant max="132e-12" in_port="memory.di[0]" out_port="mem32kx1_sp.data" />
+          </direct>
+          <direct name="write_en" input="memory.we1[0]" output="mem32kx1_sp.we">
+            <delay_constant max="132e-12" in_port="memory.we1[0]" out_port="mem32kx1_sp.we" />
+          </direct>
+
+          <direct name="dataout1" input="mem32kx1_sp.out" output="memory.do[0]">
+            <delay_constant max="40e-12" in_port="mem32kx1_sp.out" out_port="memory.do[0]" />
+          </direct>
+
+          <direct name="clk" input="memory.clk" output="mem32kx1_sp.clk" />
+        </interconnect>
+      </mode>
+
+      <mode name="mem_16Kx2_sp">
+        <pb_type name="mem16Kx2_sp" blif_model=".subckt single_port_ram" class="memory" num_pb="1">
+          <!-- ADDR ports are 16 bits wide but in xilinx ADDR[15] should never be used and should be
+          locked high except with cascade. -->
+          <!-- Data paritiy are inside data -->
+          <!-- No parity for widths < 8 
+          Note that in 7-series parity is not optional -->
+          <input name="we" num_pins="1" port_class="write_en" />
+          <input name="addr" num_pins="14" port_class="address" />
+          <input name="data" num_pins="2" port_class="data_in" />
+
+          <output name="out" num_pins="2" port_class="data_out" />
+
+          <clock name="clk" num_pins="1" port_class="clock" />
+
+          <!-- ! NOTE: missing RSTRAMA/B, ENA/B, RESTREGA/B, REGCEA/B -->
+          <T_setup value="509e-12" port="mem16Kx2_sp.addr" clock="clk" />
+          <T_setup value="509e-12" port="mem16Kx2_sp.data" clock="clk" />
+          <T_setup value="509e-12" port="mem16Kx2_sp.we" clock="clk" />
+
+          <T_clock_to_Q max="1.234e-9" port="mem16Kx2_sp.out" clock="clk" />
+          <power method="pin-toggle">
+            <port name="clk" energy_per_toggle="17.9e-12" />
+            <static_power power_per_instance="0.0" />
+          </power>
+        </pb_type>
+
+        <interconnect>
+          <direct name="address" input="memory.addr1[14:1]" output="mem16Kx2_sp.addr">
+            <delay_constant max="132e-12" in_port="memory.addr1[14:1]" out_port="mem16Kx2_sp.addr" />
+          </direct>
+          <direct name="data" input="memory.di[1:0]" output="mem16Kx2_sp.data">
+            <delay_constant max="132e-12" in_port="memory.di[1:0]" out_port="mem16Kx2_sp.data" />
+          </direct>
+          <direct name="write_en" input="memory.we1[0]" output="mem16Kx2_sp.we">
+            <delay_constant max="132e-12" in_port="memory.we1[0]" out_port="mem16Kx2_sp.we" />
+          </direct>
+
+          <direct name="dataout" input="mem16Kx2_sp.out" output="memory.do[1:0]">
+            <delay_constant max="40e-12" in_port="mem16Kx2_sp.out" out_port="memory.do[1:0]" />
+          </direct>
+
+          <direct name="clk" input="memory.clk" output="mem16Kx2_sp.clk" />
+        </interconnect>
+      </mode>
+
+      <mode name="mem_8Kx4_sp">
+        <pb_type name="mem8Kx4_sp" blif_model=".subckt single_port_ram" class="memory" num_pb="1">
+          <!-- ADDR ports are 16 bits wide but in xilinx ADDR[15] should never be used and should be
+          locked high except with cascade. -->
+          <!-- Data paritiy are inside data -->
+          <!-- No parity for widths < 8 
+          Note that in 7-series parity is not optional -->
+          <input name="we" num_pins="1" port_class="write_en" />
+          <input name="addr" num_pins="13" port_class="address" />
+          <input name="data" num_pins="4" port_class="data_in" />
+
+          <output name="out" num_pins="4" port_class="data_out" />
+
+          <clock name="clk" num_pins="1" port_class="clock" />
+
+          <!-- ! NOTE: missing RSTRAMA/B, ENA/B, RESTREGA/B, REGCEA/B -->
+          <T_setup value="509e-12" port="mem8Kx4_sp.addr" clock="clk" />
+          <T_setup value="509e-12" port="mem8Kx4_sp.data" clock="clk" />
+          <T_setup value="509e-12" port="mem8Kx4_sp.we" clock="clk" />
+
+          <T_clock_to_Q max="1.234e-9" port="mem8Kx4_sp.out" clock="clk" />
+          <power method="pin-toggle">
+            <port name="clk" energy_per_toggle="17.9e-12" />
+            <static_power power_per_instance="0.0" />
+          </power>
+        </pb_type>
+
+        <interconnect>
+          <direct name="address" input="memory.addr1[14:2]" output="mem8Kx4_sp.addr">
+            <delay_constant max="132e-12" in_port="memory.addr1[14:2]" out_port="mem8Kx4_sp.addr" />
+          </direct>
+          <direct name="data" input="memory.di[3:0]" output="mem8Kx4_sp.data">
+            <delay_constant max="132e-12" in_port="memory.di[3:0]" out_port="mem8Kx4_sp.data" />
+          </direct>
+
+          <direct name="writeen" input="memory.we1[0]" output="mem8Kx4_sp.we">
+            <delay_constant max="132e-12" in_port="memory.we1[0]" out_port="mem8Kx4_sp.we" />
+          </direct>
+
+          <direct name="dataout" input="mem8Kx4_sp.out" output="memory.do[3:0]">
+            <delay_constant max="40e-12" in_port="mem8Kx4_sp.out" out_port="memory.do[3:0]" />
+          </direct>
+
+          <direct name="" input="memory.clk" output="mem8Kx4_sp.clk" />
+
+
+        </interconnect>
+      </mode>
+
+      <mode name="mem_4Kx9_sp">
+        <pb_type name="mem4kx9_sp" blif_model=".subckt single_port_ram" class="memory" num_pb="1">
+          <!-- ADDR ports are 16 bits wide but in xilinx ADDR[15] should never be used and should be
+          locked high except with cascade. -->
+          <!-- Data paritiy are inside data -->
+          <!-- No parity for widths < 8 
+          Note that in 7-series parity is not optional -->
+          <input name="we" num_pins="1" port_class="write_en" />
+          <input name="addr" num_pins="12" port_class="address" />
+          <!-- Although this mode is 9 wide the efective width is 8 -->
+          <input name="data" num_pins="9" port_class="data_in" />
+
+          <output name="out" num_pins="9" port_class="data_out" />
+
+          <clock name="clk" num_pins="1" port_class="clock" />
+
+          <!-- ! NOTE: missing RSTRAMA/B, ENA/B, RESTREGA/B, REGCEA/B -->
+          <T_setup value="509e-12" port="mem4kx9_sp.addr" clock="clk" />
+          <T_setup value="509e-12" port="mem4kx9_sp.data" clock="clk" />
+          <T_setup value="509e-12" port="mem4kx9_sp.we" clock="clk" />
+
+          <T_clock_to_Q max="1.234e-9" port="mem4kx9_sp.out" clock="clk" />
+          <power method="pin-toggle">
+            <port name="clk" energy_per_toggle="17.9e-12" />
+            <static_power power_per_instance="0.0" />
+          </power>
+        </pb_type>
+
+        <interconnect>
+          <direct name="address" input="memory.addr1[14:3]" output="mem4kx9_sp.addr">
+            <delay_constant max="132e-12" in_port="memory.addr1[14:3]" out_port="mem4kx9_sp.addr" />
+          </direct>
+          <direct name="data" input="memory.di[8:0]" output="mem4kx9_sp.data">
+            <delay_constant max="132e-12" in_port="memory.di[8:0]" out_port="mem4kx9_sp.data" />
+          </direct>
+
+          <direct name="writeen" input="memory.we1[0]" output="mem4kx9_sp.we">
+            <delay_constant max="132e-12" in_port="memory.we1[0]" out_port="mem4kx9_sp.we" />
+          </direct>
+
+          <direct name="dataout" input="mem4kx9_sp.out" output="memory.do[8:0]">
+            <delay_constant max="40e-12" in_port="mem4kx9_sp.out" out_port="memory.do[8:0]" />
+          </direct>
+
+          <direct name="clk" input="memory.clk" output="mem4kx9_sp.clk" />
+        </interconnect>
+      </mode>
+
+      <mode name="mem_2Kx18_sp">
+        <pb_type name="mem2kx18_sp" blif_model=".subckt single_port_ram" class="memory" num_pb="1">
+          <!-- ADDR ports are 16 bits wide but in xilinx ADDR[15] should never be used and should be
+          locked high except with cascade. -->
+          <!-- Data paritiy are inside data -->
+          <!-- No parity for widths < 8 
+          Note that in 7-series parity is not optional -->
+          <input name="we" num_pins="2" port_class="write_en" />
+          <input name="addr" num_pins="11" port_class="address" />
+          <!-- Although this mode is 18 wide the efective width is 16 -->
+          <input name="data" num_pins="18" port_class="data_in" />
+
+          <output name="out" num_pins="18" port_class="data_out" />
+
+          <clock name="clk" num_pins="1" port_class="clock" />
+
+          <!-- ! NOTE: missing RSTRAMA/B, ENA/B, RESTREGA/B, REGCEA/B -->
+          <T_setup value="509e-12" port="mem2kx18_sp.addr" clock="clk" />
+          <T_setup value="509e-12" port="mem2kx18_sp.data" clock="clk" />
+          <T_setup value="509e-12" port="mem2kx18_sp.we" clock="clk" />
+
+          <T_clock_to_Q max="1.234e-9" port="mem2kx18_sp.out" clock="clk" />
+          <power method="pin-toggle">
+            <port name="clk" energy_per_toggle="17.9e-12" />
+            <static_power power_per_instance="0.0" />
+          </power>
+        </pb_type>
+
+        <interconnect>
+          <direct name="address1" input="memory.addr1[14:4]" output="mem2kx18_sp.addr">
+            <delay_constant max="132e-12" in_port="memory.addr1[14:4]" out_port="mem2kx18_sp.addr" />
+          </direct>
+          <direct name="data1" input="memory.di[17:0]" output="mem2kx18_sp.data">
+            <delay_constant max="132e-12" in_port="memory.di[17:0]" out_port="mem2kx18_sp.data" />
+          </direct>
+
+          <direct name="writeen" input="memory.we1[1:0]" output="mem2kx18_sp.we">
+            <delay_constant max="132e-12" in_port="memory.we1[1:0]" out_port="mem2kx18_sp.we" />
+          </direct>
+
+          <direct name="dataout" input="mem2kx18_sp.out" output="memory.do[17:0]">
+            <delay_constant max="40e-12" in_port="mem2kx18_sp.out" out_port="memory.do[17:0]" />
+          </direct>
+
+          <direct name="clk" input="memory.clk" output="mem2kx18_sp.clk" />
+        </interconnect>
+      </mode>
+
+      <mode name="mem_1Kx36_sp">
+        <pb_type name="mem1kx36_sp" blif_model=".subckt single_port_ram" class="memory" num_pb="1">
+          <!-- ADDR ports are 16 bits wide but in xilinx ADDR[15] should never be used and should be
+          locked high except with cascade. -->
+          <!-- Data paritiy are inside data -->
+          <!-- No parity for widths < 8 
+          Note that in 7-series parity is not optional -->
+          <input name="we" num_pins="4" port_class="write_en" />
+          <input name="addr" num_pins="10" port_class="address" />
+          <!-- Although this mode is 36 wide the efective width is 32 -->
+          <input name="data" num_pins="36" port_class="data_in" />
+
+          <output name="out" num_pins="36" port_class="data_out" />
+
+          <clock name="clk" num_pins="1" port_class="clock" />
+
+          <!-- ! NOTE: missing RSTRAMA/B, ENA/B, RESTREGA/B, REGCEA/B -->
+          <T_setup value="509e-12" port="mem1kx36_sp.addr" clock="clk" />
+          <T_setup value="509e-12" port="mem1kx36_sp.data" clock="clk" />
+          <T_setup value="509e-12" port="mem1kx36_sp.we" clock="clk" />
+
+          <T_clock_to_Q max="1.234e-9" port="mem1kx36_sp.out" clock="clk" />
+          <power method="pin-toggle">
+            <port name="clk" energy_per_toggle="17.9e-12" />
+            <static_power power_per_instance="0.0" />
+          </power>
+        </pb_type>
+
+        <interconnect>
+          <direct name="address" input="memory.addr1[14:5]" output="mem1kx36_sp.addr">
+            <delay_constant max="132e-12" in_port="memory.addr1[14:5]" out_port="mem1kx36_sp.addr" />
+          </direct>
+          <direct name="data" input="memory.di[35:0]" output="mem1kx36_sp.data">
+            <delay_constant max="132e-12" in_port="memory.di[35:0]" out_port="mem1kx36_sp.data" />
+          </direct>
+
+          <direct name="writeen" input="memory.we1[3:0]" output="mem1kx36_sp.we">
+            <delay_constant max="132e-12" in_port="memory.we1[3:0]" out_port="mem1kx36_sp.we" />
+          </direct>
+
+          <direct name="dataout1" input="mem1kx36_sp.out" output="memory.do[35:0]">
+            <delay_constant max="40e-12" in_port="mem1kx36_sp.out" out_port="memory.do[35:0]" />
+          </direct>
+
+          <direct name="clk" input="memory.clk" output="mem1kx36_sp.clk" />
+        </interconnect>
+      </mode>
+
+      <mode name="mem_512x72_sp">
+        <pb_type name="mem512x72_sp" blif_model=".subckt single_port_ram" class="memory" num_pb="1">
+          <!-- ADDR ports are 16 bits wide but in xilinx ADDR[15] should never be used and should be
+          locked high except with cascade. -->
+          <!-- Data paritiy are inside data -->
+          <!-- No parity for widths < 8 
+          Note that in 7-series parity is not optional -->
+          <input name="we" num_pins="4" port_class="write_en" />
+          <input name="addr" num_pins="9" port_class="address" />
+          <!-- Although this mode is 36 wide the efective width is 32 -->
+          <input name="data" num_pins="72" port_class="data_in" />
+
+          <output name="out" num_pins="72" port_class="data_out" />
+
+          <clock name="clk" num_pins="1" port_class="clock" />
+
+          <!-- ! NOTE: missing RSTRAMA/B, ENA/B, RESTREGA/B, REGCEA/B -->
+          <T_setup value="509e-12" port="mem512x72_sp.addr" clock="clk" />
+          <T_setup value="509e-12" port="mem512x72_sp.data" clock="clk" />
+          <T_setup value="509e-12" port="mem512x72_sp.we" clock="clk" />
+
+          <T_clock_to_Q max="1.234e-9" port="mem512x72_sp.out" clock="clk" />
+          <power method="pin-toggle">
+            <port name="clk" energy_per_toggle="17.9e-12" />
+            <static_power power_per_instance="0.0" />
+          </power>
+        </pb_type>
+
+        <interconnect>
+          <direct name="address" input="memory.addr1[14:6]" output="mem512x72_sp.addr">
+            <delay_constant max="132e-12" in_port="memory.addr1[14:6]" out_port="mem512x72_sp.addr" />
+          </direct>
+          <direct name="data" input="memory.di" output="mem512x72_sp.data">
+            <delay_constant max="132e-12" in_port="memory.di" out_port="mem512x72_sp.data" />
+          </direct>
+
+          <direct name="writeen" input="memory.we1[3:0]" output="mem512x72_sp.we">
+            <delay_constant max="132e-12" in_port="memory.we1[3:0]" out_port="mem512x72_sp.we" />
+          </direct>
+
+          <direct name="dataout1" input="mem512x72_sp.out" output="memory.do">
+            <delay_constant max="40e-12" in_port="mem512x72_sp.out" out_port="memory.do" />
+          </direct>
+
+          <direct name="clk" input="memory.clk" output="mem512x72_sp.clk" />
+        </interconnect>
+      </mode>
+      <power method="sum-of-children" />
+    </pb_type>
+
+    <pb_type name="DSP">
+      <clock name="clk" num_pins="1" />
+      <input name="A" num_pins="50" />
+      <input name="B" num_pins="36" />
+      <output name="P" num_pins="86" />
+      <!-- 50, 36, 96 is the actual port widths-->
+      <!-- 
+    PORTS FOR MULT:
+    in: A (30->lower 25x2), B (18x2), clk (only if you include the ffs)
+    out: P (48x2)
+
+    Ports for pre-add:
+    All the above plus
+    in: D(25)
+    out: technicly the ACOUT
+   -->
+
+      <pb_type name="dsp_slice" num_pb="2">
+        <clock name="clk" num_pins="1" />
+        <input name="A" num_pins="25" />
+        <input name="B" num_pins="18" />
+        <output name="P" num_pins="43" />
+
+        <mode name="multiply_25x18">
+          <pb_type name="mult_25x18" blif_model=".subckt multiply" num_pb="1">
+            <input name="A" num_pins="25" />
+            <input name="B" num_pins="18" />
+            <output name="P" num_pins="43" />
+
+            <!-- !! THE FOLLOWING DELAYS ARE NOT ACCURATE -->
+            <delay_constant max="1.523e-9" min="0.776e-9" in_port="mult_25x18.A"
+              out_port="mult_25x18.P" />
+            <delay_constant max="1.523e-9" min="0.776e-9" in_port="mult_25x18.B"
+              out_port="mult_25x18.P" />
+          </pb_type>
+          <interconnect>
+            <direct name="A_direct" input="dsp_slice.A" output="mult_25x18.A" />
+            <direct name="B_direct" input="dsp_slice.B" output="mult_25x18.B" />
+            <direct name="P_direct" input="mult_25x18.P" output="dsp_slice.P" />
+          </interconnect>
+        </mode>
+
+      </pb_type>
+      <interconnect>
+        <complete name="A_direct" input="DSP.A" output="dsp_slice[0].A" />
+        <complete name="B_direct" input="DSP.B" output="dsp_slice[0].B" />
+
+        <complete name="P_direct" input="dsp_slice[0].P" output="DSP.P" />
+
+        <complete name="A_direct2" input="DSP.A" output="dsp_slice[1].A" />
+        <complete name="B_direct2" input="DSP.B" output="dsp_slice[1].B" />
+
+        <complete name="P_direct2" input="dsp_slice[1].P" output="DSP.P" />
+
+      </interconnect>
+    </pb_type>    
+    <!--  DSP -->
+  </complexblocklist>
+  <!-- TODO: Custom SB's and independent wire distributions in the x/y direction are not fully
+  supported yet. 
+    After this full support becomes available, a better capture of the xilinx wire interconnect can be
+  achieved.   -->
+
+  <switchblocklist>
+    <!-- custom SBs used to create diagonal wires -->
+    <switchblock name="diagonal_cw_turns" type="unidir">
+      <switchblock_location type="CORE" />
+      <switchfuncs>
+        <!-- Clock-wise turns -->
+        <func type="tl" formula="W-t" />
+        <!-- top to left -->
+        <func type="rt" formula="t+1" />
+        <!-- right to top -->
+        <func type="br" formula="2*W-2-t" />
+        <!-- bottom to right -->
+        <func type="lb" formula="t+1" />
+        <!-- left to bottom -->
+      </switchfuncs>
+
+      <!-- technichly
+      we could do diagonal wires by just creating a switch override in side wireconn -->
+      <wireconn num_conns="min(from,to)" from_type="3len2D_x" from_switchpoint="0"
+        to_type="3len4D_y" to_switchpoint="0" switch_override="electrical_short2" />
+
+      <wireconn num_conns="min(from,to)" from_type="len1D_y" from_switchpoint="0"
+        to_type="len1D_x"
+        to_switchpoint="0" switch_override="electrical_short2" />
+
+      <wireconn num_conns="min(from,to)" from_type="3len1D_x" from_switchpoint="0"
+        to_type="3len1D_y" to_switchpoint="0" switch_override="electrical_short2" />
+    </switchblock>
+
+    <switchblock name="diagonal_ccw_turns" type="unidir">
+      <switchblock_location type="CORE" />
+      <switchfuncs>
+        <func type="lt" formula="W-t" />
+        <func type="tr" formula="t+1" />
+        <func type="rb" formula="2*W-2-t" />
+        <func type="bl" formula="t+1" />
+      </switchfuncs>
+
+      <wireconn num_conns="min(from,to)" from_type="4len2D_x" from_switchpoint="0"
+        to_type="4len4D_y" to_switchpoint="0" switch_override="electrical_short2" />
+
+      <wireconn num_conns="min(from,to)" from_type="2len1D_y" from_switchpoint="0"
+        to_type="2len1D_x"
+        to_switchpoint="0" switch_override="electrical_short2" />
+
+      <wireconn num_conns="min(from,to)" from_type="4len1D_x" from_switchpoint="0"
+        to_type="4len1D_y" to_switchpoint="0" switch_override="electrical_short2" />
+    </switchblock>
+    <!-- End custom SBs used to create diagonal wires -->
+
+
+    <!-- Start normal connections between diagonal wires and the rest of the arch -->
+    <switchblock name="NE_NW_y" type="unidir">
+      <switchblock_location type="CORE" />
+      <switchfuncs>
+        <!-- bottom->top/left/right -->
+        <func type="bt" formula="W-t" />
+        <!-- !!! need to change these EQs to match actual 7-series. For now follow willton. -->
+        <func type="bl" formula="t+1" />
+        <func type="br" formula="2*W-2-t" />
+      </switchfuncs>
+
+      <!-- SW 2,6 from T -->
+      <!-- technichly WW2, SS2, SS6 is not alowed but we leave it here, N1 also has 8 cons but we
+      leave it becaus it is the one and only outlier. we also cant do one type of NE turn in the
+      same direction-->
+
+      <!-- 4/3D cannot connect to 3Dy,4Dy,2Dx or 1Dx or else the connections will interfear with
+      single connections on diagonal -->
+      <wireconn num_conns="from*17" from_type="4len1D_y" from_switchpoint="0"
+        to_type="len1_x,len2_x,len2x_stub,len4_x,len4x_stub,len1_y,len2_y,len2y_stub,len6_y,len6y_stub,4len1D_x,4len2D_x,3len2D_x,3len1D_x,len1D_y,2len4D_y,2len1D_y"
+        to_switchpoint="0" />
+
+      <wireconn num_conns="from*17" from_type="4len4D_y" from_switchpoint="0"
+        to_type="len1_x,len2_x,len2x_stub,len4_x,len4x_stub,len1_y,len2_y,len2y_stub,len6_y,len6y_stub,4len1D_x,4len2D_x,3len2D_x,3len1D_x,len1D_y,2len4D_y,2len1D_y"
+        to_switchpoint="0" />
+
+      <!-- NW 2,6 from T. the fact this is bottom two garenties this is NW and not SE -->
+      <wireconn num_conns="from*18" from_type="3len1D_y" from_switchpoint="0"
+        to_type="len1_x,len2_x,len2x_stub,len4_x,len4x_stub,len1_y,len2_y,len2y_stub,len6_y,len6y_stub,len1D_y,1len4D_y,4len1D_x,4len2D_x,3len2D_x,3len1D_x,2len4D_y,2len1D_y"
+        to_switchpoint="0" />
+      <wireconn num_conns="from*18" from_type="3len4D_y" from_switchpoint="0"
+        to_type="len1_x,len2_x,len2x_stub,len4_x,len4x_stub,len1_y,len2_y,len2y_stub,len6_y,len6y_stub,len1D_y,1len4D_y,4len1D_x,4len2D_x,3len2D_x,3len1D_x,2len4D_y,2len1D_y"
+        to_switchpoint="0" />
+
+      <wireconn num_conns="to" from_type="3len4D_y,3len1D_y" from_switchpoint="0" to_type="len12_y"
+        to_switchpoint="0" />
+
+      <!-- NN2 and 6 connection -->
+      <!-- for current distributions each SB has exactly 2 L2/L6 stub in it. Calculating for this
+      there should be 2*num_cons_to*from_set connections -->
+      <wireconn num_conns="36*from" from_type="len2y_stub,len6y_stub"
+        from_switchpoint="0"
+        to_type="len1_x,len1_y,len2_x,len2x_stub,len4_x,len4x_stub,len2_y,len2y_stub,len6_y,len6y_stub,len1D_y,1len4D_y,2len4D_y,4len1D_x,4len2D_x,2len1D_y,3len1D_x,3len2D_x"
+        to_switchpoint="0" />
+      <!-- There should be 6 len2/6 wires per SB meaning there should be 2/3*num_cons_to*from_set -->
+      <wireconn num_conns="12*from" from_type="len2_y,len6_y"
+        from_switchpoint="0"
+        to_type="len1_x,len1_y,len2_x,len2x_stub,len4_x,len4x_stub,len2_y,len2y_stub,len6_y,len6y_stub,len1D_y,1len4D_y,2len4D_y,4len1D_x,4len2D_x,2len1D_y,3len1D_x,3len2D_x"
+        to_switchpoint="0" />
+
+      <!-- For connection 1 things are a little diffrent and should be 1/2 of previus. -->
+      <wireconn num_conns="18*from" from_type="len2y_stub,len6y_stub"
+        from_switchpoint="1"
+        to_type="len1_x,len1_y,len2_x,len2x_stub,len4_x,len4x_stub,len2_y,len2y_stub,len6_y,len6y_stub,len1D_y,1len4D_y,2len4D_y,4len1D_x,4len2D_x,2len1D_y,3len1D_x,3len2D_x"
+        to_switchpoint="0" />
+
+      <wireconn num_conns="18*from" from_type="len6y_stub" from_switchpoint="5"
+        to_type="len1_x,len1_y,len2_x,len2x_stub,len4_x,len4x_stub,len2_y,len2y_stub,len6_y,len6y_stub,len1D_y,1len4D_y,2len4D_y,4len1D_x,4len2D_x,2len1D_y,3len1D_x,3len2D_x,len18_y,len12_y"
+        to_switchpoint="0" />
+      <wireconn num_conns="to" from_type="len6_y,len6y_stub" from_switchpoint="0,5"
+        to_type="len18_y,len12_y" to_switchpoint="0" />
+
+      <!-- NL1 -->
+      <!-- 2 diffrent L1 wires will connect to a single L1 wire heading in the same direction-->
+      <!-- 14 wires terminate at each SB. 8/14=4/7 we round up to 2 for NS->>NS because of int
+      division -->
+      <wireconn num_conns="4*from" from_type="len1_y" from_switchpoint="0"
+        to_type="len1_x,len2_x,len2x_stub,len2_y,len2y_stub,len1D_y,1len4D_y,4len1D_x,2len1D_y,3len1D_x,len18_y,len12_y"
+        to_switchpoint="0" />
+      <wireconn num_conns="2*from" from_type="len1_y" from_switchpoint="0" to_type="len1_y"
+        to_switchpoint="0" />
+
+      <!-- L18 L12 -->
+      <wireconn num_conns="13" from_type="len18_y" from_switchpoint="0"
+        to_type="len12_x,len12_y,len18_y,len6_y,len6y_stub,4len2D_x,3len2D_x,2len4D_y,len4_x,len4x_stub"
+        to_switchpoint="0" />
+
+      <wireconn num_conns="10" from_type="len12_y" from_switchpoint="0"
+        to_type="len12_y,len6_y,len6y_stub,4len2D_x,3len2D_x,2len4D_y,len4_x" to_switchpoint="0" />
+    </switchblock>
+
+    <switchblock name="NE_NW_y2" type="unidir">
+      <switchblock_location type="CORE" />
+
+      <switchfuncs>
+        <!-- top->botom/left/right -->
+        <func type="tb" formula="W-t" />
+        <func type="tl" formula="t+1" />
+        <func type="tr" formula="2*W-2-t" />
+      </switchfuncs>
+
+      <!-- SW 2,6 from T -->
+      <!-- technichly WW2, SS2, SS6 is not alowed but we leave it here, N1 also has 8 cons but we
+      leave it becaus it is the one and only outlier. we also cant do one type of NE turn in the
+      same direction-->
+
+      <!-- 4/3D cannot connect to 3Dy,4Dy,2Dx or 1Dx or else the connections will interfear with
+      single connections on diagonal -->
+      <wireconn num_conns="17*from" from_type="4len4D_y" from_switchpoint="0"
+        to_type="len1_x,len2_x,len2x_stub,len4_x,len4x_stub,len1_y,len2_y,len2y_stub,len6_y,len6y_stub,4len1D_x,4len2D_x,3len2D_x,3len1D_x,len1D_y,2len4D_y,2len1D_y"
+        to_switchpoint="0" />
+      <wireconn num_conns="17*from" from_type="4len1D_y" from_switchpoint="0"
+        to_type="len1_x,len2_x,len2x_stub,len4_x,len4x_stub,len1_y,len2_y,len2y_stub,len6_y,len6y_stub,4len1D_x,4len2D_x,3len2D_x,3len1D_x,len1D_y,2len4D_y,2len1D_y"
+        to_switchpoint="0" />
+
+      <!-- SE 2,6 from T -->
+      <wireconn num_conns="17*from" from_type="3len1D_y" from_switchpoint="0"
+        to_type="len1_x,len2_x,len2x_stub,len4_x,len4x_stub,len1_y,len2_y,len2y_stub,len6_y,len6y_stub,4len1D_x,4len2D_x,3len2D_x,3len1D_x,len1D_y,2len4D_y,2len1D_y"
+        to_switchpoint="0" />
+      <wireconn num_conns="17*from" from_type="3len4D_y" from_switchpoint="0"
+        to_type="len1_x,len2_x,len2x_stub,len4_x,len4x_stub,len1_y,len2_y,len2y_stub,len6_y,len6y_stub,4len1D_x,4len2D_x,3len2D_x,3len1D_x,len1D_y,2len4D_y,2len1D_y"
+        to_switchpoint="0" />
+
+      <!-- !!! -->
+      <wireconn num_conns="to" from_type="3len4D_y,3len1D_y" from_switchpoint="0" to_type="len12_y"
+        to_switchpoint="0" />
+
+      <!-- South bound connections (from top only) -->
+      <!-- SS2, SS6 -->
+      <!-- 8 len2_y+len2y_stub so 1/2*18 -->
+      <wireconn num_conns="9*from" from_type="len2_y,len2y_stub"
+        from_switchpoint="0"
+        to_type="len1_x,len1_y,len6_y,len6y_stub,len2_y,len2y_stub,len2_x,len2x_stub,len4_x,len4x_stub,3len2D_x,2len4D_y,2len1D_y,3len1D_x,4len2D_x,len1D_y,4len1D_x,len12_x"
+        to_switchpoint="0" />
+      <!-- 2 L2 stub per SB so 2*18 -->
+      <wireconn num_conns="36*from" from_type="len2x_stub"
+        from_switchpoint="0"
+        to_type="len1_x,len1_y,len6_y,len6y_stub,len2_y,len2y_stub,len2_x,len2x_stub,len4_x,len4x_stub,3len2D_x,2len4D_y,2len1D_y,3len1D_x,4len2D_x,len1D_y,4len1D_x,len12_x"
+        to_switchpoint="0" />
+      <wireconn num_conns="9*from" from_type="len6_y,len6y_stub"
+        from_switchpoint="0"
+        to_type="len1_x,len1_y,len6_y,len6y_stub,len2_y,len2y_stub,len2_x,len2x_stub,len4_x,len4x_stub,3len2D_x,2len4D_y,2len1D_y,3len1D_x,4len2D_x,len1D_y,4len1D_x,len12_x"
+        to_switchpoint="0" />
+
+      <wireconn num_conns="36*from" from_type="len6y_stub" from_switchpoint="5"
+        to_type="len1_x,len1_y,len6_y,len6y_stub,len2_y,len2y_stub,len2_x,len2x_stub,len4_x,len4x_stub,3len2D_x,2len4D_y,2len1D_y,3len1D_x,4len2D_x,len1D_y,4len1D_x,len12_x"
+        to_switchpoint="0" />
+      <!-- len12 should only conn from ss6 not 2-->
+      <!-- I think 28from is the best option -->
+      <!-- <wireconn num_conns="2*from" from_type="len6_stub" from_switchpoint="0,1,2,5"
+      to_type="len1_x,len1_y,len6_y,len6_stub,len2_y,len2_x,len2x_stub,len4_x,len4x_stub,len2_stub,3len2D_x,2len4D_y,2len1D_y,3len1D_x,4len2D_x,len1D_y,4len1D_x,len12_x"
+      to_switchpoint="0" /> -->
+      <!-- ^^ stright conns are ok in the middle because in xilinx these cons would happen anyway. -->
+
+      <!-- S1 note that this is the most iregular  -->
+      <wireconn num_conns="4*from" from_type="len1_y" from_switchpoint="0"
+        to_type="len1_x,len2_x,len2x_stub,len2_y,len2y_stub,len1D_y,1len4D_y,4len1D_x,2len1D_y,3len1D_x,len18_y,len12_x"
+        to_switchpoint="0" />
+      <wireconn num_conns="2*from" from_type="len1_y" from_switchpoint="0" to_type="len1_y"
+        to_switchpoint="0" />
+
+
+      <!-- L18 and L12 -->
+      <wireconn num_conns="10" from_type="len18_y" from_switchpoint="9"
+        to_type="len12_x,len6_y,len6y_stub,4len2D_x,3len2D_x,2len4D_y,len4_x,len4x_stub"
+        to_switchpoint="0" />
+      <wireconn num_conns="13" from_type="len18_y" from_switchpoint="0"
+        to_type="len12_x,len12_y,len18_y,len6_y,len6y_stub,4len2D_x,3len2D_x,2len4D_y,len4_x,len4x_stub"
+        to_switchpoint="0" />
+
+      <wireconn num_conns="10" from_type="len12_y" from_switchpoint="0"
+        to_type="len12_y,len6_y,len6y_stub,4len2D_x,3len2D_x,2len4D_y,len4_x,len4x_stub"
+        to_switchpoint="0" />
+    </switchblock>
+
+    <switchblock name="SW_NW_x" type="unidir">
+      <switchblock_location type="CORE" />
+      <switchfuncs>
+        <!-- Right->left/top/bottom -->
+        <func type="rl" formula="W-t" />
+        <func type="rt" formula="t+1" />
+        <func type="rb" formula="2*W-2-t" />
+
+      </switchfuncs>
+      <!-- NE 2,6 from L -->
+      <!-- technichly WW2, SS2, SS6 is not alowed but we leave it here, N1 also has 8 cons but we
+      leave it becaus it is the one and only outlier. we alwo cant do one type of NE turn in the
+      same direction-->
+      <!-- 6 of these wires in a channel 4/6=2/3 -->
+      <wireconn num_conns="12*from" from_type="len1D_x"
+        from_switchpoint="0"
+        to_type="len1_x,len2_x,len2x_stub,len4_x,len4x_stub,len1_y,len2_y,len2y_stub,len6_y,len6y_stub,4len1D_x,4len2D_x,3len2D_x,3len1D_x,len1D_y,1len4D_y,2len4D_y,2len1D_y"
+        to_switchpoint="0" />
+
+      <wireconn num_conns="18*from" from_type="1len2D_x"
+        from_switchpoint="0"
+        to_type="len1_x,len2_x,len2x_stub,len4_x,len4x_stub,len1_y,len2_y,len2y_stub,len6_y,len6y_stub,4len1D_x,4len2D_x,3len2D_x,3len1D_x,len1D_y,1len4D_y,2len4D_y,2len1D_y"
+        to_switchpoint="0" />
+
+      <!-- SE 2,6 from L -->
+      <wireconn num_conns="18*from" from_type="2len1D_x"
+        from_switchpoint="0"
+        to_type="len1_x,len2_x,len2x_stub,len4_x,len4x_stub,len1_y,len2_y,len2y_stub,len6_y,len6y_stub,4len1D_x,4len2D_x,3len2D_x,3len1D_x,len1D_y,1len4D_y,2len4D_y,2len1D_y"
+        to_switchpoint="0" />
+      <wireconn num_conns="18*from" from_type="2len2D_x"
+        from_switchpoint="0"
+        to_type="len1_x,len2_x,len2x_stub,len4_x,len4x_stub,len1_y,len2_y,len2y_stub,len6_y,len6y_stub,4len1D_x,4len2D_x,3len2D_x,3len1D_x,len1D_y,1len4D_y,2len4D_y,2len1D_y"
+        to_switchpoint="0" />
+
+      <!-- WW4 WW2 interconn -->
+      <!-- 6 cons per SB 2/3*to_set rounded up -->
+      <wireconn num_conns="11*from" from_type="len2_x,len2x_stub" from_switchpoint="0"
+        to_type="len1_x,len1_y,len2_x,len2x_stub,len4_x,len4x_stub,len2_y,len2y_stub,len6_y,len6y_stub,len1D_y,1len4D_y,4len1D_x,4len2D_x,2len4D_y,3len2D_x"
+        to_switchpoint="0" />
+      <wireconn num_conns="11*from" from_type="len4_x,len4x_stub" from_switchpoint="0"
+        to_type="len1_x,len1_y,len2_x,len2x_stub,len4_x,len4x_stub,len2_y,len2y_stub,len6_y,len6y_stub,len1D_y,1len4D_y,4len1D_x,4len2D_x,2len4D_y,3len2D_x"
+        to_switchpoint="0" />
+
+      <wireconn num_conns="to" from_type="len4_x,len4x_stub,len2_x,len2x_stub" from_switchpoint="0"
+        to_type="len18_y,len12_y"
+        to_switchpoint="0" />
+      <!-- Technichly len18 and 12 should only be connected to ww4
+      not 2-->
+
+      <!-- WL1 -->
+      <wireconn num_conns="4*from" from_type="len1_x" from_switchpoint="0"
+        to_type="len1_y,len2_x,len2x_stub,len2_y,len2y_stub,len1D_y,1len4D_y,4len1D_x,2len1D_y,3len1D_x,len18_y,len12_y"
+        to_switchpoint="0" />
+      <wireconn num_conns="2*from" from_type="len1_x" from_switchpoint="0" to_type="len1_x"
+        to_switchpoint="0" />
+
+      <!-- L12 -->
+      <wireconn num_conns="14" from_type="len12_x" from_switchpoint="0"
+        to_type="len12_x,len12_y,len18_y,len6_y,len6y_stub,4len2D_x,3len2D_x,2len4D_y,len4_x,len4x_stub"
+        to_switchpoint="0" />
+    </switchblock>
+
+    <switchblock name="NE_SE_x" type="unidir">
+      <switchblock_location type="CORE" />
+      <switchfuncs>
+        <!-- left->right/top/bottom -->
+        <func type="lt" formula="W-t" />
+        <func type="lb" formula="t+1" />
+        <func type="lr" formula="2*W-2-t" />
+      </switchfuncs>
+      <!-- NE 2,6 from L -->
+      <!-- technichly WW2, SS2, SS6 is not alowed but we leave it here, N1 also has 8 cons but we
+      leave it becaus it is the one and only outlier. we alwo cant do one type of NE turn in the
+      same direction -->
+      <wireconn num_conns="12*from" from_type="len1D_x"
+        from_switchpoint="0"
+        to_type="len1_x,len2_x,len2x_stub,len4_x,len4x_stub,len1_y,len2_y,len2y_stub,len6_y,len6y_stub,4len1D_x,4len2D_x,3len2D_x,3len1D_x,len1D_y,1len4D_y,2len4D_y,2len1D_y"
+        to_switchpoint="0" />
+      <wireconn num_conns="18*from" from_type="1len2D_x" from_switchpoint="0"
+        to_type="len1_x,len2_x,len2x_stub,len4_x,len4x_stub,len1_y,len2_y,len2y_stub,len6_y,len6y_stub,4len1D_x,4len2D_x,3len2D_x,3len1D_x,len1D_y,1len4D_y,2len4D_y,2len1D_y"
+        to_switchpoint="0" />
+
+      <wireconn num_conns="to" from_type="1len2D_x" from_switchpoint="0"
+        to_type="len12_x" to_switchpoint="0" />
+
+      <!-- SE 2,6 from L -->
+      <wireconn num_conns="18*from" from_type="2len1D_x" from_switchpoint="0"
+        to_type="len1_x,len2_x,len2x_stub,len4_x,len4x_stub,len1_y,len2_y,len2y_stub,len6_y,len6y_stub,4len1D_x,4len2D_x,3len2D_x,3len1D_x,len1D_y,1len4D_y,2len4D_y,2len1D_y"
+        to_switchpoint="0" />
+      <wireconn num_conns="18*from" from_type="2len2D_x" from_switchpoint="0"
+        to_type="len1_x,len2_x,len2x_stub,len4_x,len4x_stub,len1_y,len2_y,len2y_stub,len6_y,len6y_stub,4len1D_x,4len2D_x,3len2D_x,3len1D_x,len1D_y,1len4D_y,2len4D_y,2len1D_y"
+        to_switchpoint="0" />
+
+      <!-- EE4 and EE2 -->
+      <wireconn num_conns="11*from" from_type="len2_x,len2x_stub" from_switchpoint="0"
+        to_type="len1_x,len1_y,len2_x,len2x_stub,len4_x,len4x_stub,len2_y,len2y_stub,len6_y,len6y_stub,len1D_y,1len4D_y,4len1D_x,2len4D_y,3len2D_x,2len1D_y,3len1D_x,4len2D_x"
+        to_switchpoint="0" />
+      <wireconn num_conns="11*from" from_type="len4_x,len4x_stub" from_switchpoint="0"
+        to_type="len1_x,len1_y,len2_x,len2x_stub,len4_x,len4x_stub,len2_y,len2y_stub,len6_y,len6y_stub,len1D_y,1len4D_y,4len1D_x,2len4D_y,3len2D_x,2len1D_y,3len1D_x,4len2D_x"
+        to_switchpoint="0" />
+
+      <wireconn num_conns="to" from_type="len2y_stub" from_switchpoint="0,1"
+        to_type="len1_x,len1_y,len2_x,len2x_stub,len4_x,len4x_stub,len2_y,len2y_stub,len6_y,len6y_stub,len1D_y,1len4D_y,4len1D_x,4len2D_x,2len4D_y,3len2D_x,2len1D_y,3len1D_x,len12_x"
+        to_switchpoint="0" />
+      <wireconn num_conns="to" from_type="len4_x,len4x_stub" from_switchpoint="0" to_type="len12_x"
+        to_switchpoint="0" />
+
+      <!-- EL1 -->
+      <wireconn num_conns="4*from" from_type="len1_x" from_switchpoint="0"
+        to_type="len1_y,len2_x,len2x_stub,len2_y,len2y_stub,len1D_y,1len4D_y,4len1D_x,2len1D_y,3len1D_x,len18_y,len12_x"
+        to_switchpoint="0" />
+      <wireconn num_conns="2*from" from_type="len1_x" from_switchpoint="0" to_type="len1_x"
+        to_switchpoint="0" />
+
+      <!-- L12 -->
+      <wireconn num_conns="14" from_type="len12_x" from_switchpoint="0"
+        to_type="len12_x,len12_y,len18_y,len6_y,len6y_stub,4len2D_x,3len2D_x,2len4D_y,len4_x,len4x_stub"
+        to_switchpoint="0" />
+    </switchblock>
+    <!-- End connection from wires->stubs -->
+
+    <!-- Start Perimiter connections -->
+    <switchblock name="wilton_straight" type="unidir">
+      <switchblock_location type="PERIMETER" />
+      <switchfuncs>
+        <!-- Straight -->
+        <func type="lr" formula="t" />
+        <!-- left to right -->
+        <func type="tb" formula="t" />
+        <!-- top to bottom -->
+        <func type="rl" formula="t" />
+        <!-- right to left -->
+        <func type="bt" formula="t" />
+        <!-- bottom to top -->
+      </switchfuncs>
+      <wireconn num_conns="3*to"
+        from_type="1len4D_y,2len4D_y,3len4D_y,4len4D_y,len1D_y,2len1D_y,3len1D_y,4len1D_y"
+        from_switchpoint="0"
+        to_type="1len4D_y,2len4D_y,3len4D_y,4len4D_y,len1D_y,2len1D_y,3len1D_y,4len1D_y"
+        to_switchpoint="0" />
+      <wireconn num_conns="3*to"
+        from_type="len1_y,len2_y,len6_y,len12_y,len18_y,len6y_stub,len2y_stub"
+        from_switchpoint="0"
+        to_type="len1_y,len2_y,len6_y,len12_y,len18_y,len6y_stub,len2y_stub" to_switchpoint="0" />
+
+      <wireconn num_conns="3*to"
+        from_type="len1D_x,2len1D_x,3len1D_x,4len1D_x,1len2D_x,2len2D_x,3len2D_x,4len2D_x"
+        from_switchpoint="0"
+        to_type="len1D_x,2len1D_x,3len1D_x,4len1D_x,1len2D_x,2len2D_x,3len2D_x,4len2D_x"
+        to_switchpoint="0" />
+      <wireconn num_conns="3*to" from_type="len1_x,len2_x,len4_x,len12_x,len4x_stub,len2x_stub"
+        from_switchpoint="0" to_type="len1_x,len2_x,len4_x,len12_x,len4x_stub,len2x_stub"
+        to_switchpoint="0" />
+    </switchblock>
+
+    <switchblock name="wilton_straight_corner" type="unidir">
+      <!-- Same as wilton straight, but turning around a corner -->
+      <switchblock_location type="CORNER" />
+      <switchfuncs>
+        <!-- Counter-clock-wise turns -->
+        <func type="lt" formula="t" />
+        <!-- left to top -->
+        <func type="tr" formula="t" />
+        <!-- top to right -->
+        <func type="rb" formula="t" />
+        <!-- right to bottom -->
+        <func type="bl" formula="t" />
+        <!-- bottom to left -->
+        <!-- Clock-wise turns -->
+        <func type="tl" formula="t" />
+        <!-- top to left -->
+        <func type="rt" formula="t" />
+        <!-- right to top -->
+        <func type="br" formula="t" />
+        <!-- bottom to right -->
+        <func type="lb" formula="t" />
+        <!-- left to bottom -->
+      </switchfuncs>
+      <wireconn num_conns="3*to"
+        from_type="1len4D_y,2len4D_y,3len4D_y,4len4D_y,len1D_y,2len1D_y,3len1D_y,4len1D_y"
+        from_switchpoint="0"
+        to_type="1len2D_x,2len2D_x,3len2D_x,4len2D_x"
+        to_switchpoint="0" />
+      <wireconn num_conns="3*to"
+        from_type="1len4D_y,2len4D_y,3len4D_y,4len4D_y,len1D_y,2len1D_y,3len1D_y,4len1D_y"
+        from_switchpoint="0" to_type="len1D_x,2len1D_x,3len1D_x,4len1D_x"
+        to_switchpoint="0" />
+      <wireconn num_conns="3*to"
+        from_type="len1_y,len2_y,len6_y,len12_y,len18_y,len6y_stub,len2y_stub"
+        from_switchpoint="0" to_type="len1_x,len2_x,len4_x,len12_x,len4x_stub,len2x_stub"
+        to_switchpoint="0" />
+
+      <wireconn num_conns="3*to"
+        from_type="1len2D_x,2len2D_x,3len2D_x,4len2D_x"
+        from_switchpoint="0"
+        to_type="1len4D_y,2len4D_y,3len4D_y,4len4D_y,len1D_y,2len1D_y,3len1D_y,4len1D_y"
+        to_switchpoint="0" />
+      <wireconn num_conns="3*to"
+        from_type="len1D_x,2len1D_x,3len1D_x,4len1D_x" from_switchpoint="0"
+        to_type="1len4D_y,2len4D_y,3len4D_y,4len4D_y,len1D_y,2len1D_y,3len1D_y,4len1D_y"
+        to_switchpoint="0" />
+      <wireconn num_conns="3*to" from_type="len1_x,len2_x,len4_x,len12_x,len4x_stub,len2x_stub"
+        from_switchpoint="0"
+        to_type="len1_y,len2_y,len6_y,len12_y,len18_y,len6y_stub,len2y_stub" to_switchpoint="0" />
+    </switchblock>
+
+    <switchblock name="wilton_turn_fringe" type="unidir">
+      <!-- Non-corner perimeter SBs -->
+      <switchblock_location type="FRINGE" />
+      <switchfuncs>
+        <!-- Counter-clock-wise turns -->
+        <func type="lt" formula="W-t" />
+        <!-- left to top -->
+        <func type="tr" formula="t+1" />
+        <!-- top to right -->
+        <func type="rb" formula="2*W-2-t" />
+        <!-- right to bottom -->
+        <func type="bl" formula="t+1" />
+        <!-- bottom to left -->
+        <!-- Clock-wise turns -->
+        <func type="tl" formula="W-t" />
+        <!-- top to left -->
+        <func type="rt" formula="t+1" />
+        <!-- right to top -->
+        <func type="br" formula="2*W-2-t" />
+        <!-- bottom to right -->
+        <func type="lb" formula="t+1" />
+        <!-- left to bottom -->
+      </switchfuncs>
+      <!-- We use 'max' style connections here to ensure there are no dangling wires, otherwise like
+      core turns -->
+      <!-- L16 drivers -->
+      <wireconn num_conns="3*max(from,to)"
+        from_type="1len4D_y,2len4D_y,3len4D_y,4len4D_y,len1D_y,2len1D_y,3len1D_y,4len1D_y"
+        from_switchpoint="0"
+        to_type="len1D_x,2len1D_x,3len1D_x,4len1D_x,1len2D_x,2len2D_x,3len2D_x,4len2D_x"
+        to_switchpoint="0" />
+
+      <wireconn num_conns="3*max(from,to)"
+        from_type="len1D_x,2len1D_x,3len1D_x,4len1D_x,1len2D_x,2len2D_x,3len2D_x,4len2D_x"
+        from_switchpoint="0"
+        to_type="1len4D_y,2len4D_y,3len4D_y,4len4D_y,len1D_y,2len1D_y,3len1D_y,4len1D_y"
+        to_switchpoint="0" />
+
+      <wireconn num_conns="3*max(from,to)"
+        from_type="len1_y,len2_y,len6_y,len12_y,len18_y,len6y_stub,len2y_stub"
+        from_switchpoint="0" to_type="len1_x,len2_x,len4_x,len12_x,len4x_stub,len2x_stub"
+        to_switchpoint="0" />
+      <wireconn num_conns="3*max(from,to)"
+        from_type="len1_x,len2_x,len4_x,len12_x,len4x_stub,len2x_stub" from_switchpoint="0"
+        to_type="len1_y,len2_y,len6_y,len12_y,len18_y,len6y_stub,len2y_stub" to_switchpoint="0" />
+    </switchblock>
+    <!-- End Perimiter connections -->
+  </switchblocklist>
+  <power>
+    <local_interconnect C_wire="2.5e-10" />
+    <mux_transistor_size mux_transistor_size="3" />
+    <FF_size FF_size="4" />
+    <LUT_transistor_size LUT_transistor_size="4" />
+  </power>
+  <clocks>
+    <clock buffer_size="auto" C_wire="2.5e-10" />
+  </clocks>
+</architecture>
