@@ -507,15 +507,13 @@ void try_graph(int width_fac,
                     is_flat);
 }
 
-float update_draw_pres_fac(float new_pres_fac) {
+void update_draw_pres_fac(const float new_pres_fac) {
 #ifndef NO_GRAPHICS
 
     // Only updates the drawing pres_fac if graphics is enabled
     get_draw_state_vars()->pres_fac = new_pres_fac;
 
 #endif // NO_GRAPHICS
-
-    return new_pres_fac;
 }
 
 #ifndef NO_GRAPHICS
