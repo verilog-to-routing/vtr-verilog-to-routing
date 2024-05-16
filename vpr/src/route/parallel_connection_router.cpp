@@ -295,6 +295,35 @@ static inline bool prune_node(RRNodeId inode,
     return false;
 }
 
+static inline bool should_not_explore_neighbors(RRNodeId inode,
+                                float new_total_cost,
+                                RRNodeId target_node,
+                                vtr::vector<RRNodeId, t_rr_node_route_inf>& rr_node_route_inf_) {
+    if (new_total_cost > rr_node_route_inf_[inode].path_cost)
+        return true;
+    if (inode != target_node && new_total_cost > rr_node_route_inf_[target_node].path_cost)
+        return true;
+    return false;
+}
+
+static inline bool should_not_explore_neighbors(RRNodeId inode,
+                                float new_total_cost,
+                                float new_back_cost,
+                                RRNodeId target_node,
+                                vtr::vector<RRNodeId, t_rr_node_route_inf>& rr_node_route_inf_) {
+    if (new_total_cost > rr_node_route_inf_[inode].path_cost)
+        return true;
+    if (new_back_cost > rr_node_route_inf_[inode].backward_path_cost)
+        return true;
+    if (inode != target_node) {
+        if (new_total_cost > rr_node_route_inf_[target_node].path_cost)
+            return true;
+        if (new_back_cost > rr_node_route_inf_[target_node].backward_path_cost)
+            return true;
+    }
+    return false;
+}
+
 //Finds a path to sink_node, starting from the elements currently in the heap.
 //
 // This is the core maze routing routine.
@@ -341,35 +370,36 @@ void ParallelConnectionRouter::timing_driven_route_connection_from_heap_thread_f
                                                                          const t_bb& bounding_box,
                                                                          const size_t thread_idx) {
     // cheapest t_heap in current route tree to be expanded on
-    pq_prio_t new_total_cost;
-    pq_index_t node_id;
+    float new_total_cost;
+    RRNodeId inode;
     // While the heap is not empty do
-    while (heap_.try_pop(new_total_cost, node_id)) {
+    while (heap_.try_pop(new_total_cost, inode)) {
         // update_router_stats(router_stats_,
         //                     false,
         //                     cheapest->index,
         //                     rr_graph_);
-
-        RRNodeId inode(node_id);
 
         // Pruning
         if (inode == sink_node) {
             continue;
         }
 
-        obtainSpinLock(inode);
-
-        if (new_total_cost > rr_node_route_inf_[inode].path_cost) {
-            releaseLock(inode);
-            continue; // same idea as Gil's ISCA'22 paper
+        if (should_not_explore_neighbors(inode, new_total_cost, sink_node, rr_node_route_inf_)) {
+            continue;
         }
+
+        obtainSpinLock(inode);
 
         node_t cheapest;
         cheapest.backward_path_cost = rr_node_route_inf_[inode].backward_path_cost;
-        cheapest.R_upstream = rr_node_R_upstream_[inode];
+        cheapest.R_upstream = rr_node_route_inf_[inode].R_upstream;
         cheapest.prev_edge = rr_node_route_inf_[inode].prev_edge;
 
         releaseLock(inode);
+
+        if (should_not_explore_neighbors(inode, new_total_cost, cheapest.backward_path_cost, sink_node, rr_node_route_inf_)) {
+            continue;
+        }
 
         // Adding nodes to heap
         timing_driven_expand_neighbours(cheapest, inode, cost_params, bounding_box, sink_node, thread_idx);
@@ -566,11 +596,10 @@ void ParallelConnectionRouter::timing_driven_add_to_heap(const t_conn_cost_param
     }
 
     update_cheapest(next, to_node, thread_idx);
-    rr_node_R_upstream_[to_node] = next.R_upstream;
 
     releaseLock(to_node);
 
-    heap_.add_to_heap(next.total_cost, size_t(to_node));
+    heap_.add_to_heap(next.total_cost, to_node);
 
     // update_router_stats(router_stats_,
     //                     true,
@@ -844,8 +873,8 @@ void ParallelConnectionRouter::add_route_tree_node_to_heap(
         rr_node_route_inf_[inode].path_cost = tot_cost;
         rr_node_route_inf_[inode].prev_edge = RREdgeId::INVALID();
         rr_node_route_inf_[inode].backward_path_cost = backward_path_cost;
-        rr_node_R_upstream_[inode] = R_upstream;
-        heap_.push_back(tot_cost, size_t(inode));
+        rr_node_route_inf_[inode].R_upstream = R_upstream;
+        heap_.push_back(tot_cost, inode);
 
     // } else {
     //     float expected_total_cost = compute_node_cost_using_rcv(cost_params, inode, target_node, rt_node.Tdel, 0, R_upstream);

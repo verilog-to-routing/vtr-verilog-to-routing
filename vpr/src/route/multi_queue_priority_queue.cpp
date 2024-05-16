@@ -19,23 +19,29 @@ void MultiQueuePriorityQueue::init_heap(const DeviceGrid& grid) {
     // TODO: Reserve storage for MQ_IO
 }
 
-bool MultiQueuePriorityQueue::try_pop(pq_prio_t &prio, pq_index_t &node) {
+bool MultiQueuePriorityQueue::try_pop(pq_prio_t &prio, RRNodeId &node) {
     auto tmp = pq_->tryPop();
     if (!tmp) {
         return false;
     } else {
-        std::tie(prio, node) = tmp.get();
+        pq_index_t node_id;
+        std::tie(prio, node_id) = tmp.get();
+        node = RRNodeId(node_id);
         return true;
     }
 }
 
-void MultiQueuePriorityQueue::add_to_heap(const pq_prio_t& prio, const pq_index_t& node) {
-    pq_->push({prio, node});
+inline pq_index_t cast_RRNodeId_to_pq_index_t(RRNodeId node) {
+    return static_cast<pq_index_t>(std::size_t(node));
 }
 
-void MultiQueuePriorityQueue::push_back(const pq_prio_t& prio, const pq_index_t& node) {
+void MultiQueuePriorityQueue::add_to_heap(const pq_prio_t& prio, const RRNodeId& node) {
+    pq_->push({prio, cast_RRNodeId_to_pq_index_t(node)});
+}
+
+void MultiQueuePriorityQueue::push_back(const pq_prio_t& prio, const RRNodeId& node) {
     // push_batch_buffer_.push_back({hptr.cost, hptr}); // TODO: heap memory reservation
-    pq_->push({prio, node});
+    pq_->push({prio, cast_RRNodeId_to_pq_index_t(node)});
 }
 
 bool MultiQueuePriorityQueue::is_empty_heap() const {

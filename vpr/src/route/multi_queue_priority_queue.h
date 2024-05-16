@@ -16,7 +16,7 @@ struct node_t {
 
 
 using pq_prio_t = float;
-using pq_index_t = size_t;
+using pq_index_t = uint32_t;
 
 class MultiQueuePriorityQueue {
   public:
@@ -33,9 +33,9 @@ class MultiQueuePriorityQueue {
     ~MultiQueuePriorityQueue();
 
     void init_heap(const DeviceGrid& grid);
-    bool try_pop(pq_prio_t &prio, pq_index_t &node);
-    void add_to_heap(const pq_prio_t& prio, const pq_index_t& node);
-    void push_back(const pq_prio_t& prio, const pq_index_t& node);
+    bool try_pop(pq_prio_t &prio, RRNodeId &node);
+    void add_to_heap(const pq_prio_t& prio, const RRNodeId& node);
+    void push_back(const pq_prio_t& prio, const RRNodeId& node);
     bool is_empty_heap() const;
     bool is_valid() const;
     void empty_heap();
