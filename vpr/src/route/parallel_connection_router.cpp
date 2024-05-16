@@ -194,6 +194,42 @@ std::tuple<bool, bool, t_heap> ParallelConnectionRouter::timing_driven_route_con
     return std::make_tuple(true, retry_with_full_bb, out);
 }
 
+
+#ifdef IS_DETERMINISTIC
+
+static inline bool deterministic_post_target_prune_node(float new_total_cost,
+                                                        float new_back_cost,
+                                                        float best_back_cost_to_target,
+                                                        const t_conn_cost_params& params) {
+    // Divide out the astar_fac, then multiply to get determinism
+    // This is a correction factor to the forward cost to make the total
+    // cost an under-estimate.
+    // TODO: Should investigate creating a heuristic function that is
+    //       gaurenteed to be an under-estimate.
+    // NOTE: Found experimentally that using the original heuristic to order
+    //       the nodes in the queue and then post-target pruning based on the
+    //       under-estimating heuristic has better runtime.
+    float expected_cost = new_total_cost - new_back_cost;
+    float new_expected_cost = expected_cost;
+    // h1 = (h - offset) * fac
+    // Protection for division by zero
+    if (params.astar_fac > 0.001)
+        // To save time, does not recompute the heuristic, just divideds out
+        // the astar_fac.
+        new_expected_cost /= params.astar_fac;
+    new_expected_cost = new_expected_cost - params.post_target_prune_offset;
+    // Max function to prevent the heuristic from going negative
+    new_expected_cost = std::max(0.f, new_expected_cost);
+    new_expected_cost *= params.post_target_prune_fac;
+    if (best_back_cost_to_target < (new_back_cost + new_expected_cost))
+        return true;
+    // NOTE: we do NOT check for equality here. Equality does not matter for
+    //       determinism when draining the queues (may just lead to a bit more work).
+    return false;
+}
+
+#endif // IS_DETERMINISTIC
+
 // TODO: Once we have a heap node struct, clean this up!
 static inline bool prune_node(RRNodeId inode,
                               float new_total_cost,
@@ -222,30 +258,8 @@ static inline bool prune_node(RRNodeId inode,
     // Post-target pruning: After the target is reached the first time, should
     // use the heuristic to help drain the queues.
     if (inode != target_node) {
-        // Divide out the astar_fac, then multiply to get determinism
-        // This is a correction factor to the forward cost to make the total
-        // cost an under-estimate.
-        // TODO: Should investigate creating a heuristic function that is
-        //       gaurenteed to be an under-estimate.
-        // NOTE: Found experimentally that using the original heuristic to order
-        //       the nodes in the queue and then post-target pruning based on the
-        //       under-estimating heuristic has better runtime.
-        float expected_cost = new_total_cost - new_back_cost;
-        float new_expected_cost = expected_cost;
-        // h1 = (h - offset) * fac
-        // Protection for division by zero
-        if (params.astar_fac > 0.001)
-            // To save time, does not recompute the heuristic, just divideds out
-            // the astar_fac.
-            new_expected_cost /= params.astar_fac;
-        new_expected_cost = new_expected_cost - params.post_target_prune_offset;
-        // Max function to prevent the heuristic from going negative
-        new_expected_cost = std::max(0.f, new_expected_cost);
-        new_expected_cost *= params.post_target_prune_fac;
-        if (best_back_cost_to_target < (new_back_cost + new_expected_cost))
+        if (deterministic_post_target_prune_node(new_total_cost, new_back_cost, best_back_cost_to_target, params))
             return true;
-        // NOTE: we do NOT check for equality here. Equality does not matter for
-        //       determinism when draining the queues (may just lead to a bit more work).
     }
     // NOTE: When going to the target, we only want to prune on the truth.
     //       The queues handle using the heuristic to explore nodes faster.
@@ -298,11 +312,36 @@ static inline bool prune_node(RRNodeId inode,
 static inline bool should_not_explore_neighbors(RRNodeId inode,
                                 float new_total_cost,
                                 RRNodeId target_node,
-                                vtr::vector<RRNodeId, t_rr_node_route_inf>& rr_node_route_inf_) {
+                                vtr::vector<RRNodeId, t_rr_node_route_inf>& rr_node_route_inf_,
+                                const t_conn_cost_params& params) {
+#ifdef IS_DETERMINISTIC
+    (void)target_node;
+    // For deterministic pruning, cannot enforce anything on the total cost since
+    // traversal order is not gaurenteed. However, since total cost is used as a
+    // "key" to signify that this node is the last node that was pushed, we can
+    // just check for equality. There is a chance this may cause some duplicates
+    // for the deterministic case, but thats ok they will be handled.
+    // TODO: Maybe consider having the non-deterministic version do this too.
+    if (new_total_cost != rr_node_route_inf_[inode].path_cost)
+        return true;
+    // Perform post-target pruning. If this is not done, there is a chance that
+    // several duplicates of a node is in the queue that will never reach the
+    // target better than what we found and they will explore all of their
+    // neighbors which is not good. This is done before obtaining the lock to
+    // prevent lock contention where possible.
+    if (inode != target_node) {
+        float new_back_cost = rr_node_route_inf_[inode].backward_path_cost;
+        float best_back_cost_to_target = rr_node_route_inf_[target_node].backward_path_cost;
+        if (deterministic_post_target_prune_node(new_total_cost, new_back_cost, best_back_cost_to_target, params))
+            return true;
+    }
+#else // IS_DETERMINISTIC
+    (void)params;
     if (new_total_cost > rr_node_route_inf_[inode].path_cost)
         return true;
     if (inode != target_node && new_total_cost > rr_node_route_inf_[target_node].path_cost)
         return true;
+#endif // IS_DETERMINISTIC
     return false;
 }
 
@@ -310,7 +349,22 @@ static inline bool should_not_explore_neighbors(RRNodeId inode,
                                 float new_total_cost,
                                 float new_back_cost,
                                 RRNodeId target_node,
-                                vtr::vector<RRNodeId, t_rr_node_route_inf>& rr_node_route_inf_) {
+                                vtr::vector<RRNodeId, t_rr_node_route_inf>& rr_node_route_inf_,
+                                const t_conn_cost_params& params) {
+#ifdef IS_DETERMINISTIC
+    (void)new_back_cost;
+    // Double check now just to be sure that we should still explore neighbors
+    // NOTE: A good question is what hapened to the uniqueness pruning. The idea
+    //       is that at this point it does not matter. Basically any duplicates
+    //       will act like they were the last one pushed in. This may create some
+    //       duplicates, but it is a simple way of handling this sitation.
+    //       It may be worth investigating a better way to do this in the future.
+    // TODO: This is still doing post-target pruning. May want to investigate
+    //       if this is worth doing.
+    if (should_not_explore_neighbors(inode, new_total_cost, target_node, rr_node_route_inf_, params))
+        return true;
+#else // IS_DETERMINISTIC
+    (void)params;
     if (new_total_cost > rr_node_route_inf_[inode].path_cost)
         return true;
     if (new_back_cost > rr_node_route_inf_[inode].backward_path_cost)
@@ -321,6 +375,7 @@ static inline bool should_not_explore_neighbors(RRNodeId inode,
         if (new_back_cost > rr_node_route_inf_[target_node].backward_path_cost)
             return true;
     }
+#endif // IS_DETERMINISTIC
     return false;
 }
 
@@ -384,7 +439,7 @@ void ParallelConnectionRouter::timing_driven_route_connection_from_heap_thread_f
             continue;
         }
 
-        if (should_not_explore_neighbors(inode, new_total_cost, sink_node, rr_node_route_inf_)) {
+        if (should_not_explore_neighbors(inode, new_total_cost, sink_node, rr_node_route_inf_, cost_params)) {
             continue;
         }
 
@@ -397,7 +452,7 @@ void ParallelConnectionRouter::timing_driven_route_connection_from_heap_thread_f
 
         releaseLock(inode);
 
-        if (should_not_explore_neighbors(inode, new_total_cost, cheapest.backward_path_cost, sink_node, rr_node_route_inf_)) {
+        if (should_not_explore_neighbors(inode, new_total_cost, cheapest.backward_path_cost, sink_node, rr_node_route_inf_, cost_params)) {
             continue;
         }
 
