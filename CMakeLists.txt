@@ -418,11 +418,13 @@ if(${WITH_PARMYS}) # define cmake params to compile Yosys
         set(MAKE_PROGRAM "make")
     endif()
 
-    if(NOT DEFINED "${CMAKE_BUILD_PARALLEL_LEVEL}")
-        set(CUSTOM_BUILD_PARALLEL_LEVEL 16)
-    else()
-        set(CUSTOM_BUILD_PARALLEL_LEVEL "${CMAKE_BUILD_PARALLEL_LEVEL}")
-    endif()
+    # Commented out since a make file should not call another make command with
+    # threads. It should pass this information from the parent automatically.
+    # if(NOT DEFINED "${CMAKE_BUILD_PARALLEL_LEVEL}")
+    #     set(CUSTOM_BUILD_PARALLEL_LEVEL 16)
+    # else()
+    #     set(CUSTOM_BUILD_PARALLEL_LEVEL "${CMAKE_BUILD_PARALLEL_LEVEL}")
+    # endif()
     add_subdirectory(yosys)
 endif()
 
