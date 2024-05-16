@@ -111,6 +111,8 @@ struct PlacerMoveContext : public Context {
 
     // Scratch vectors that are used by different directed moves for temporary calculations (allocated here to save runtime)
     // These vectors will grow up with the net size as it is mostly used to save coords of the net pins or net bb edges
+    // Given that placement moves involve operations on each coordinate independently, we chose to 
+    // utilize a Struct of Arrays (SoA) rather than an Array of Struct (AoS).
     std::vector<int> X_coord;
     std::vector<int> Y_coord;
     std::vector<int> layer_coord;
