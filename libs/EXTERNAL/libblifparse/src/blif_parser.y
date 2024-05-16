@@ -34,7 +34,7 @@
 %define api.namespace {blifparse}
 
 /* Name the parser class */
-%define api.parser.class {Parser}
+%define parser_class_name {Parser}
 
 /* Match the flex prefix */
 %define api.prefix {blifparse_}
