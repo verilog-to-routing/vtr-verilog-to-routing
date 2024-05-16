@@ -7,6 +7,7 @@ VPR API
    :maxdepth: 1
 
    contexts
-   netlist
    mapping
+   netlist
+   route_tree
    rr_graph

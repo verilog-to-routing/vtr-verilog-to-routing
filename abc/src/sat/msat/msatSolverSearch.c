@@ -52,7 +52,7 @@ int  Msat_SolverAssume( Msat_Solver_t * p, Msat_Lit_t Lit )
 {
     assert( Msat_QueueReadSize(p->pQueue) == 0 );
     if ( p->fVerbose )
-        printf(L_IND"assume("L_LIT")\n", L_ind, L_lit(Lit));
+        printf(L_IND "assume(" L_LIT ")\n", L_ind, L_lit(Lit));
     Msat_IntVecPush( p->vTrailLim, Msat_IntVecReadSize(p->vTrail) );
 //    assert( Msat_IntVecReadSize(p->vTrailLim) <= Msat_IntVecReadSize(p->vTrail) + 1 );
 //    assert( Msat_IntVecReadSize( p->vTrailLim ) < p->nVars );
@@ -83,7 +83,7 @@ void Msat_SolverUndoOne( Msat_Solver_t * p )
     Msat_OrderVarUnassigned( p->pOrder, Var );
 
     if ( p->fVerbose )
-        printf(L_IND"unbind("L_LIT")\n", L_ind, L_lit(Lit)); 
+        printf(L_IND "unbind(" L_LIT")\n", L_ind, L_lit(Lit)); 
 }
 
 /**Function*************************************************************
@@ -107,7 +107,7 @@ void Msat_SolverCancel( Msat_Solver_t * p )
         {
             Msat_Lit_t Lit;
             Lit = Msat_IntVecReadEntry( p->vTrail, Msat_IntVecReadEntryLast(p->vTrailLim) ); 
-            printf(L_IND"cancel("L_LIT")\n", L_ind, L_lit(Lit));
+            printf(L_IND "cancel(" L_LIT ")\n", L_ind, L_lit(Lit));
         }
     }
     for ( c = Msat_IntVecReadSize(p->vTrail) - Msat_IntVecPop( p->vTrailLim ); c != 0; c-- )
@@ -188,7 +188,7 @@ int  Msat_SolverEnqueue( Msat_Solver_t * p, Msat_Lit_t Lit, Msat_Clause_t * pC )
     if ( p->fVerbose )
     {
 //        printf(L_IND"bind("L_LIT")\n", L_ind, L_lit(Lit));
-        printf(L_IND"bind("L_LIT")  ", L_ind, L_lit(Lit));
+        printf(L_IND "bind(" L_LIT ")  ", L_ind, L_lit(Lit));
         Msat_ClausePrintSymbols( pC );
     }
     p->pAssigns[Var] = Lit;
@@ -513,7 +513,7 @@ void Msat_SolverAnalyze( Msat_Solver_t * p, Msat_Clause_t * pC, Msat_IntVec_t * 
         nReasonSize  = Msat_IntVecReadSize( vLits_out );
         pReasonArray = Msat_IntVecReadArray( vLits_out );
         for ( j = 0; j < nReasonSize; j++ ) 
-            printf(" "L_LIT, L_lit(pReasonArray[j]));
+            printf(" " L_LIT, L_lit(pReasonArray[j]));
         printf(" } at level %d\n", *pLevel_out); 
     }
 }

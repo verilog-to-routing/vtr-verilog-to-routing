@@ -4,6 +4,7 @@
 #include <queue>
 #include <mutex>
 
+#include "connection_router_interface.h"
 #include "rr_node.h"
 #include "router_lookahead_map_utils.h"
 #include "router_lookahead_sampling.h"
@@ -14,8 +15,8 @@
 #include "echo_files.h"
 #include "rr_graph.h"
 
-#include "route_timing.h"
 #include "route_common.h"
+#include "route_debug.h"
 
 #ifdef VTR_ENABLE_CAPNPROTO
 #    include "capnp/serialize.h"
@@ -64,7 +65,7 @@ static std::pair<float, int> run_dijkstra(RRNodeId start_node,
                                           std::vector<util::Search_Path>* paths,
                                           util::RoutingCosts* routing_costs);
 
-std::pair<float, float> ExtendedMapLookahead::get_src_opin_cost(RRNodeId from_node, int delta_x, int delta_y, const t_conn_cost_params& params) const {
+std::pair<float, float> ExtendedMapLookahead::get_src_opin_cost(RRNodeId from_node, int delta_x, int delta_y, int to_layer_num, const t_conn_cost_params& params) const {
     auto& device_ctx = g_vpr_ctx.device();
     auto& rr_graph = device_ctx.rr_graph;
 
@@ -73,12 +74,15 @@ std::pair<float, float> ExtendedMapLookahead::get_src_opin_cost(RRNodeId from_no
     //reachable, we query the f_wire_cost_map (i.e. the wire lookahead) to get the final
     //delay to reach the sink.
 
-    t_physical_tile_type_ptr tile_type = device_ctx.grid.get_physical_type(rr_graph.node_xlow(from_node), rr_graph.node_ylow(from_node));
+    t_physical_tile_type_ptr tile_type = device_ctx.grid.get_physical_type({rr_graph.node_xlow(from_node),
+                                                                            rr_graph.node_ylow(from_node),
+                                                                            rr_graph.node_layer(from_node)});
     auto tile_index = tile_type->index;
 
     auto from_ptc = rr_graph.node_ptc_num(from_node);
+    int from_layer_num = rr_graph.node_layer(from_node);
 
-    if (this->src_opin_delays[tile_index][from_ptc].empty()) {
+    if (this->src_opin_delays[from_layer_num][tile_index][from_ptc].empty()) {
         //During lookahead profiling we were unable to find any wires which connected
         //to this PTC.
         //
@@ -105,7 +109,7 @@ std::pair<float, float> ExtendedMapLookahead::get_src_opin_cost(RRNodeId from_no
         float expected_delay_cost = std::numeric_limits<float>::infinity();
         float expected_cong_cost = std::numeric_limits<float>::infinity();
 
-        for (const auto& kv : this->src_opin_delays[tile_index][from_ptc]) {
+        for (const auto& kv : this->src_opin_delays[from_layer_num][tile_index][from_ptc][to_layer_num]) {
             const util::t_reachable_wire_inf& reachable_wire_inf = kv.second;
 
             util::Cost_Entry cost_entry;
@@ -134,11 +138,11 @@ std::pair<float, float> ExtendedMapLookahead::get_src_opin_cost(RRNodeId from_no
 
     VTR_ASSERT_SAFE_MSG(false,
                         vtr::string_fmt("Lookahead failed to estimate cost from %s: %s",
-                                        rr_node_arch_name(size_t(from_node), is_flat_).c_str(),
+                                        rr_node_arch_name(from_node, is_flat_).c_str(),
                                         describe_rr_node(device_ctx.rr_graph,
                                                          device_ctx.grid,
                                                          device_ctx.rr_indexed_data,
-                                                         size_t(from_node),
+                                                         from_node,
                                                          is_flat_)
                                             .c_str())
                             .c_str());
@@ -151,14 +155,17 @@ float ExtendedMapLookahead::get_chan_ipin_delays(RRNodeId to_node) const {
     e_rr_type to_type = rr_graph.node_type(to_node);
     VTR_ASSERT(to_type == SINK || to_type == IPIN);
 
-    auto to_tile_type = device_ctx.grid.get_physical_type(rr_graph.node_xlow(to_node), rr_graph.node_ylow(to_node));
+    auto to_tile_type = device_ctx.grid.get_physical_type({rr_graph.node_xlow(to_node),
+                                                           rr_graph.node_ylow(to_node),
+                                                           rr_graph.node_layer(to_node)});
     auto to_tile_index = to_tile_type->index;
 
     auto to_ptc = rr_graph.node_ptc_num(to_node);
+    int to_layer_num = rr_graph.node_layer(to_node);
 
     float site_pin_delay = 0.f;
-    if (this->chan_ipins_delays[to_tile_index].size() != 0) {
-        auto reachable_wire_inf = this->chan_ipins_delays[to_tile_index][to_ptc];
+    if (this->chan_ipins_delays[to_layer_num][to_tile_index].size() != 0) {
+        auto reachable_wire_inf = this->chan_ipins_delays[to_layer_num][to_tile_index][to_ptc];
 
         site_pin_delay = reachable_wire_inf.delay;
     }
@@ -188,13 +195,15 @@ std::pair<float, float> ExtendedMapLookahead::get_expected_delay_and_cong(RRNode
     int to_x = rr_graph.node_xlow(to_node);
     int to_y = rr_graph.node_ylow(to_node);
 
+    int to_layer_num = rr_graph.node_layer(to_node);
+
     int dx, dy;
     dx = to_x - from_x;
     dy = to_y - from_y;
 
     e_rr_type from_type = rr_graph.node_type(from_node);
     if (from_type == SOURCE || from_type == OPIN) {
-        return this->get_src_opin_cost(from_node, dx, dy, params);
+        return this->get_src_opin_cost(from_node, dx, dy, to_layer_num, params);
     } else if (from_type == IPIN) {
         return std::make_pair(0., 0.);
     }
@@ -414,6 +423,7 @@ std::pair<float, int> ExtendedMapLookahead::run_dijkstra(RRNodeId start_node,
 // compute the cost maps for lookahead
 void ExtendedMapLookahead::compute(const std::vector<t_segment_inf>& segment_inf) {
     this->src_opin_delays = util::compute_router_src_opin_lookahead(is_flat_);
+
     this->chan_ipins_delays = util::compute_router_chan_ipin_lookahead();
 
     vtr::ScopedStartFinishTimer timer("Computing connection box lookahead map");
@@ -433,7 +443,7 @@ void ExtendedMapLookahead::compute(const std::vector<t_segment_inf>& segment_inf
     util::RoutingCosts all_base_costs;
 
     /* run Dijkstra's algorithm for each segment type & channel type combination */
-#if defined(VPR_USE_TBB) // Run parallely
+#if defined(VPR_USE_TBB) // Run in parallel
     std::mutex all_costs_mutex;
     tbb::parallel_for_each(sample_regions, [&](const SampleRegion& region) {
 #else // Run serially
@@ -594,25 +604,25 @@ float ExtendedMapLookahead::get_expected_cost(
     }
 }
 
+void ExtendedMapLookahead::read(const std::string& file) {
 #ifndef VTR_ENABLE_CAPNPROTO
-
-void ExtendedMapLookahead::read(const std::string& file) {
-    VPR_THROW(VPR_ERROR_ROUTE, "MapLookahead::read not implemented");
-}
-void ExtendedMapLookahead::write(const std::string& file) const {
-    VPR_THROW(VPR_ERROR_ROUTE, "MapLookahead::write not implemented");
-}
-
-#else
-
-void ExtendedMapLookahead::read(const std::string& file) {
     cost_map_.read(file);
 
     this->src_opin_delays = util::compute_router_src_opin_lookahead(is_flat_);
+
     this->chan_ipins_delays = util::compute_router_chan_ipin_lookahead();
-}
-void ExtendedMapLookahead::write(const std::string& file) const {
-    cost_map_.write(file);
+#else   // VTR_ENABLE_CAPNPROTO
+    (void)file;
+    VPR_THROW(VPR_ERROR_ROUTE, "MapLookahead::read not implemented");
+#endif  // VTR_ENABLE_CAPNPROTO
 }
 
-#endif
+void ExtendedMapLookahead::write(const std::string& file) const {
+#ifndef VTR_ENABLE_CAPNPROTO
+    cost_map_.write(file);
+#else   // VTR_ENABLE_CAPNPROTO
+    (void)file;
+    VPR_THROW(VPR_ERROR_ROUTE, "MapLookahead::write not implemented");
+#endif  // VTR_ENABLE_CAPNPROTO
+}
+

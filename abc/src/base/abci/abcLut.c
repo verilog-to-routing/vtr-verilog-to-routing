@@ -678,7 +678,7 @@ int Abc_NodeDecomposeStep( Abc_ManScl_t * p )
 /*
     for ( v = 0; v < nVars; v++ )
         p->pBSet[v] = v;
-    qsort( (void *)p->pBSet, nVars, sizeof(int), 
+    qsort( (void *)p->pBSet, (size_t)nVars, sizeof(int), 
             (int (*)(const void *, const void *)) Abc_NodeCompareLevelsInc );
 */
     Abc_NodeDecomposeSort( (Abc_Obj_t **)Vec_PtrArray(p->vLeaves), Vec_PtrSize(p->vLeaves), p->pBSet, p->nLutSize );
@@ -781,6 +781,166 @@ int Abc_NodeDecomposeStep( Abc_ManScl_t * p )
     Extra_TruthCopy( p->uTruth, p->uCofs[0], nVars );
     assert( !Extra_TruthVarInSupport( p->uTruth, nVars, nVars - p->nLutSize + nVarsNew ) );
     return 1;
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Performs specialized mapping.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+static word s__Truths6[6] = {
+    ABC_CONST(0xAAAAAAAAAAAAAAAA),
+    ABC_CONST(0xCCCCCCCCCCCCCCCC),
+    ABC_CONST(0xF0F0F0F0F0F0F0F0),
+    ABC_CONST(0xFF00FF00FF00FF00),
+    ABC_CONST(0xFFFF0000FFFF0000),
+    ABC_CONST(0xFFFFFFFF00000000)
+};
+word Abc_ObjComputeTruth( Abc_Obj_t * pObj, Vec_Int_t * vSupp )
+{
+    int Index; word t0, t1, tc;
+    assert( Vec_IntSize(vSupp) <= 6 );
+    if ( (Index = Vec_IntFind(vSupp, Abc_ObjId(pObj))) >= 0 )
+        return s__Truths6[Index];
+    assert( Abc_ObjIsNode(pObj) );
+    if ( Abc_ObjFaninNum(pObj) == 0 )
+        return Abc_NodeIsConst0(pObj) ? (word)0 : ~(word)0;
+    assert( Abc_ObjFaninNum(pObj) == 3 );
+    t0 = Abc_ObjComputeTruth( Abc_ObjFanin(pObj, 2), vSupp );
+    t1 = Abc_ObjComputeTruth( Abc_ObjFanin(pObj, 1), vSupp );
+    tc = Abc_ObjComputeTruth( Abc_ObjFanin(pObj, 0), vSupp );
+    return (tc & t1) | (~tc & t0);
+}
+Abc_Obj_t * Abc_NtkSpecialMap_rec( Abc_Ntk_t * pNew, Abc_Obj_t * pObj, Vec_Wec_t * vSupps, Vec_Int_t * vCover )
+{
+    if ( pObj->pCopy )
+        return pObj->pCopy;
+    if ( Abc_ObjFaninNum(pObj) == 0 )
+        return NULL;
+    assert( Abc_ObjFaninNum(pObj) == 3 );
+    if ( pObj->fMarkA || pObj->fMarkB )
+    {
+        Abc_Obj_t * pFan0 = Abc_NtkSpecialMap_rec( pNew, Abc_ObjFanin(pObj, 2), vSupps, vCover );
+        Abc_Obj_t * pFan1 = Abc_NtkSpecialMap_rec( pNew, Abc_ObjFanin(pObj, 1), vSupps, vCover );
+        Abc_Obj_t * pFanC = Abc_NtkSpecialMap_rec( pNew, Abc_ObjFanin(pObj, 0), vSupps, vCover );
+        if ( pFan0 == NULL )
+            pFan0 = Abc_NodeIsConst0(Abc_ObjFanin(pObj, 2)) ? Abc_NtkCreateNodeConst0(pNew) : Abc_NtkCreateNodeConst1(pNew);
+        if ( pFan1 == NULL )
+            pFan1 = Abc_NodeIsConst0(Abc_ObjFanin(pObj, 1)) ? Abc_NtkCreateNodeConst0(pNew) : Abc_NtkCreateNodeConst1(pNew);
+        pObj->pCopy = Abc_NtkCreateNodeMux( pNew, pFanC, pFan1, pFan0 );
+        pObj->pCopy->fMarkA = pObj->fMarkA;
+        pObj->pCopy->fMarkB = pObj->fMarkB;
+    }
+    else
+    {
+        Abc_Obj_t * pTemp; int i; word Truth;
+        Vec_Int_t * vSupp = Vec_WecEntry( vSupps, Abc_ObjId(pObj) );
+        Abc_NtkForEachObjVec( vSupp, pObj->pNtk, pTemp, i )
+            Abc_NtkSpecialMap_rec( pNew, pTemp, vSupps, vCover );
+        pObj->pCopy = Abc_NtkCreateNode( pNew );   
+        Abc_NtkForEachObjVec( vSupp, pObj->pNtk, pTemp, i )
+            Abc_ObjAddFanin( pObj->pCopy, pTemp->pCopy );
+        Truth = Abc_ObjComputeTruth( pObj, vSupp );
+        pObj->pCopy->pData = Abc_SopCreateFromTruthIsop( (Mem_Flex_t *)pNew->pManFunc, Vec_IntSize(vSupp), &Truth, vCover );
+        assert( Abc_SopGetVarNum((char *)pObj->pCopy->pData) == Vec_IntSize(vSupp) );
+    }
+    return pObj->pCopy;
+}
+Abc_Ntk_t * Abc_NtkSpecialMapping( Abc_Ntk_t * pNtk, int fVerbose )
+{
+    Abc_Ntk_t * pNtkNew;
+    Vec_Int_t * vCover = Vec_IntAlloc( 1 << 16 );
+    Vec_Wec_t * vSupps = Vec_WecStart( Abc_NtkObjNumMax(pNtk) );
+    Abc_Obj_t * pObj, * pFan0, * pFan1, * pFanC; int i, Count[2] = {0};
+    Abc_NtkForEachCi( pNtk, pObj, i )
+        Vec_IntPush( Vec_WecEntry(vSupps, i), i );
+    Abc_NtkForEachNode( pNtk, pObj, i )
+    {
+        Vec_Int_t * vSupp = Vec_WecEntry(vSupps, i);
+        if ( Abc_ObjFaninNum(pObj) == 0 )
+            continue;
+        assert( Abc_ObjFaninNum(pObj) == 3 );
+        pFan0 = Abc_ObjFanin( pObj, 2 );
+        pFan1 = Abc_ObjFanin( pObj, 1 );
+        pFanC = Abc_ObjFanin0( pObj );
+        assert( Abc_ObjIsCi(pFanC) );
+        if ( pFan0->fMarkA && pFan1->fMarkA )
+        {
+            pObj->fMarkB = 1;
+            Vec_IntPush( vSupp, Abc_ObjId(pObj) );
+            continue;
+        }
+        Vec_IntTwoMerge2( Vec_WecEntry(vSupps, Abc_ObjId(pFan0)), Vec_WecEntry(vSupps, Abc_ObjId(pFan1)), vSupp );
+        assert( Vec_IntFind(vSupp, Abc_ObjId(pFanC)) == -1 );
+        Vec_IntPushOrder( vSupp, Abc_ObjId(pFanC) );
+        if ( Vec_IntSize(vSupp) <= 6 )
+            continue;
+        Vec_IntClear( vSupp );
+        if ( !pFan0->fMarkA && !pFan1->fMarkA )
+        {
+            pObj->fMarkA = 1;
+            Vec_IntPush( vSupp, Abc_ObjId(pObj) );
+        }
+        else
+        {
+            Vec_IntPushOrder( vSupp, Abc_ObjId(pFan0) );
+            Vec_IntPushOrder( vSupp, Abc_ObjId(pFan1) );
+            Vec_IntPushOrder( vSupp, Abc_ObjId(pFanC) );
+        }
+    }
+
+    if ( fVerbose )
+    {
+    Abc_NtkForEachNode( pNtk, pObj, i )
+    {
+        printf( "Node %4d : ", i );
+        if ( pObj->fMarkA )
+            printf( " MarkA  " );
+        else
+            printf( "        " );
+        if ( pObj->fMarkB )
+            printf( " MarkB  " );
+        else
+            printf( "        " );
+        Vec_IntPrint( Vec_WecEntry(vSupps, i) );
+    }
+    }
+
+    Abc_NtkCleanCopy( pNtk );
+    pNtkNew = Abc_NtkStartFrom( pNtk, ABC_NTK_LOGIC, ABC_FUNC_SOP );
+    Abc_NtkForEachCo( pNtk, pObj, i )
+        if ( Abc_ObjFaninNum(Abc_ObjFanin0(pObj)) == 0 )
+            Abc_ObjFanin0(pObj)->pCopy = Abc_NodeIsConst0(Abc_ObjFanin0(pObj)) ? Abc_NtkCreateNodeConst0(pNtkNew) : Abc_NtkCreateNodeConst1(pNtkNew);
+        else
+            Abc_NtkSpecialMap_rec( pNtkNew, Abc_ObjFanin0(pObj), vSupps, vCover );
+    Abc_NtkFinalize( pNtk, pNtkNew );
+    Abc_NtkCleanMarkAB( pNtk );
+    Vec_WecFree( vSupps );
+    Vec_IntFree( vCover );
+
+    Abc_NtkForEachNode( pNtkNew, pObj, i )
+    {
+        Count[0] += pObj->fMarkA,
+        Count[1] += pObj->fMarkB;
+        pObj->fPersist = pObj->fMarkA | pObj->fMarkB;
+        pObj->fMarkA = pObj->fMarkB = 0;
+    }
+    //printf( "Total = %3d.  Nodes = %3d. MarkA = %3d. MarkB = %3d.\n", Abc_NtkNodeNum(pNtkNew), 
+    //    Abc_NtkNodeNum(pNtkNew) - Count[0] - Count[1], Count[0], Count[1] );
+
+    if ( !Abc_NtkCheck( pNtkNew ) )
+    {
+        printf( "Abc_NtkSpecialMapping: The network check has failed.\n" );
+        Abc_NtkDelete( pNtkNew );
+        return NULL;
+    }
+    return pNtkNew;
 }
 
 ////////////////////////////////////////////////////////////////////////

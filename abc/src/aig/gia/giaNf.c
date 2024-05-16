@@ -2407,11 +2407,13 @@ Gia_Man_t * Nf_ManPerformMapping( Gia_Man_t * pGia, Jf_Par_t * pPars )
     }
     Nf_ManFixPoDrivers( p );
     pNew = Nf_ManDeriveMapping( p );
+/*
     if ( pPars->fAreaOnly )
     {
         int Sbm_ManTestSat( void * pMan );
         Sbm_ManTestSat( p );
     }
+*/
     Nf_StoDelete( p );
     return pNew;
 }

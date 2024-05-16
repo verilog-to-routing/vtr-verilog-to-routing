@@ -1,4 +1,4 @@
-/*This function loads in a routing resource graph written in xml format
+/* This function loads in a routing resource graph written in xml format
  * into vpr when the option --read_rr_graph <file name> is specified.
  * When it is not specified the build_rr_graph function is then called.
  * This is done using the libpugixml library. This is useful
@@ -11,7 +11,7 @@
  * to ensure it matches. An error will through if any feature does not match.
  * Other elements such as edges, nodes, and switches
  * are overwritten by the rr graph file if one is specified. If an optional
- * identifier such as capacitance is not specified, it is set to 0*/
+ * identifier such as capacitance is not specified, it is set to 0 */
 
 #include "rr_graph_reader.h"
 
@@ -52,6 +52,7 @@ void load_rr_file(RRGraphBuilder* rr_graph_builder,
                   const enum e_base_cost_type base_cost_type,
                   const int virtual_clock_network_root_idx,
                   int* wire_to_rr_ipin_switch,
+                  int* wire_to_rr_ipin_switch_between_dice,
                   const char* read_rr_graph_name,
                   std::string* read_rr_graph_filename,
                   bool read_edge_metadata,
@@ -71,6 +72,7 @@ void load_rr_file(RRGraphBuilder* rr_graph_builder,
         graph_type,
         base_cost_type,
         wire_to_rr_ipin_switch,
+        wire_to_rr_ipin_switch_between_dice,
         do_check_rr_graph,
         read_rr_graph_name,
         read_rr_graph_filename,

@@ -1,0 +1,774 @@
+["mult_1_1_2"]
+    regex = "mult_1_1_2 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_1_2_3"]
+    regex = "mult_1_2_3 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_1_3_4"]
+    regex = "mult_1_3_4 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_2_1_3"]
+    regex = "mult_2_1_3 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_2_2_4"]
+    regex = "mult_2_2_4 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_2_3_5"]
+    regex = "mult_2_3_5 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_2_4_6"]
+    regex = "mult_2_4_6 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_3_1_4"]
+    regex = "mult_3_1_4 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_3_2_5"]
+    regex = "mult_3_2_5 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_3_3_6"]
+    regex = "mult_3_3_6 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_3_4_7"]
+    regex = "mult_3_4_7 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_3_5_8"]
+    regex = "mult_3_5_8 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_4_2_6"]
+    regex = "mult_4_2_6 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_4_3_7"]
+    regex = "mult_4_3_7 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_4_4_8"]
+    regex = "mult_4_4_8 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_4_5_9"]
+    regex = "mult_4_5_9 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_4_6_10"]
+    regex = "mult_4_6_10 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_5_3_8"]
+    regex = "mult_5_3_8 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_5_4_9"]
+    regex = "mult_5_4_9 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_5_5_10"]
+    regex = "mult_5_5_10 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_5_6_11"]
+    regex = "mult_5_6_11 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_5_7_12"]
+    regex = "mult_5_7_12 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_6_4_10"]
+    regex = "mult_6_4_10 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_6_5_11"]
+    regex = "mult_6_5_11 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_6_6_12"]
+    regex = "mult_6_6_12 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_6_7_13"]
+    regex = "mult_6_7_13 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_6_8_14"]
+    regex = "mult_6_8_14 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_7_5_12"]
+    regex = "mult_7_5_12 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_7_6_13"]
+    regex = "mult_7_6_13 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_7_7_14"]
+    regex = "mult_7_7_14 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_7_8_15"]
+    regex = "mult_7_8_15 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_7_9_16"]
+    regex = "mult_7_9_16 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_8_6_14"]
+    regex = "mult_8_6_14 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_8_7_15"]
+    regex = "mult_8_7_15 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_8_8_16"]
+    regex = "mult_8_8_16 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_8_9_17"]
+    regex = "mult_8_9_17 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_8_10_18"]
+    regex = "mult_8_10_18 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_9_7_16"]
+    regex = "mult_9_7_16 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_9_8_17"]
+    regex = "mult_9_8_17 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_9_9_18"]
+    regex = "mult_9_9_18 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_9_10_19"]
+    regex = "mult_9_10_19 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_9_11_20"]
+    regex = "mult_9_11_20 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_10_8_18"]
+    regex = "mult_10_8_18 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_10_9_19"]
+    regex = "mult_10_9_19 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_10_10_20"]
+    regex = "mult_10_10_20 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_10_11_21"]
+    regex = "mult_10_11_21 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_10_12_22"]
+    regex = "mult_10_12_22 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_11_9_20"]
+    regex = "mult_11_9_20 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_11_10_21"]
+    regex = "mult_11_10_21 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_11_11_22"]
+    regex = "mult_11_11_22 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_11_12_23"]
+    regex = "mult_11_12_23 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_11_13_24"]
+    regex = "mult_11_13_24 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_12_10_22"]
+    regex = "mult_12_10_22 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_12_11_23"]
+    regex = "mult_12_11_23 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_12_12_24"]
+    regex = "mult_12_12_24 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_12_13_25"]
+    regex = "mult_12_13_25 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_12_14_26"]
+    regex = "mult_12_14_26 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_13_11_24"]
+    regex = "mult_13_11_24 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_13_12_25"]
+    regex = "mult_13_12_25 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_13_13_26"]
+    regex = "mult_13_13_26 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_13_14_27"]
+    regex = "mult_13_14_27 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_13_15_28"]
+    regex = "mult_13_15_28 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_14_12_26"]
+    regex = "mult_14_12_26 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_14_13_27"]
+    regex = "mult_14_13_27 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_14_14_28"]
+    regex = "mult_14_14_28 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_14_15_29"]
+    regex = "mult_14_15_29 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_14_16_30"]
+    regex = "mult_14_16_30 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_15_13_28"]
+    regex = "mult_15_13_28 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_15_14_29"]
+    regex = "mult_15_14_29 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_15_15_30"]
+    regex = "mult_15_15_30 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_15_16_31"]
+    regex = "mult_15_16_31 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_15_17_32"]
+    regex = "mult_15_17_32 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_16_14_30"]
+    regex = "mult_16_14_30 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_16_15_31"]
+    regex = "mult_16_15_31 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_16_16_32"]
+    regex = "mult_16_16_32 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_16_17_33"]
+    regex = "mult_16_17_33 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_16_18_34"]
+    regex = "mult_16_18_34 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_17_15_32"]
+    regex = "mult_17_15_32 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_17_16_33"]
+    regex = "mult_17_16_33 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_17_17_34"]
+    regex = "mult_17_17_34 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_17_18_35"]
+    regex = "mult_17_18_35 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_17_19_36"]
+    regex = "mult_17_19_36 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_18_16_34"]
+    regex = "mult_18_16_34 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_18_17_35"]
+    regex = "mult_18_17_35 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_18_18_36"]
+    regex = "mult_18_18_36 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_18_19_37"]
+    regex = "mult_18_19_37 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_18_20_38"]
+    regex = "mult_18_20_38 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_19_17_36"]
+    regex = "mult_19_17_36 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_19_18_37"]
+    regex = "mult_19_18_37 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_19_19_38"]
+    regex = "mult_19_19_38 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_19_20_39"]
+    regex = "mult_19_20_39 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_19_21_40"]
+    regex = "mult_19_21_40 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_20_18_38"]
+    regex = "mult_20_18_38 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_20_19_39"]
+    regex = "mult_20_19_39 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_20_20_40"]
+    regex = "mult_20_20_40 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_20_21_41"]
+    regex = "mult_20_21_41 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_20_22_42"]
+    regex = "mult_20_22_42 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_21_19_40"]
+    regex = "mult_21_19_40 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_21_20_41"]
+    regex = "mult_21_20_41 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_21_21_42"]
+    regex = "mult_21_21_42 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_21_22_43"]
+    regex = "mult_21_22_43 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_21_23_44"]
+    regex = "mult_21_23_44 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_22_20_42"]
+    regex = "mult_22_20_42 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_22_21_43"]
+    regex = "mult_22_21_43 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_22_22_44"]
+    regex = "mult_22_22_44 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_22_23_45"]
+    regex = "mult_22_23_45 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_22_24_46"]
+    regex = "mult_22_24_46 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_23_21_44"]
+    regex = "mult_23_21_44 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_23_22_45"]
+    regex = "mult_23_22_45 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_23_23_46"]
+    regex = "mult_23_23_46 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_23_24_47"]
+    regex = "mult_23_24_47 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_23_25_48"]
+    regex = "mult_23_25_48 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_24_22_46"]
+    regex = "mult_24_22_46 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_24_23_47"]
+    regex = "mult_24_23_47 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_24_24_48"]
+    regex = "mult_24_24_48 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_24_25_49"]
+    regex = "mult_24_25_49 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_24_26_50"]
+    regex = "mult_24_26_50 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_25_23_48"]
+    regex = "mult_25_23_48 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_25_24_49"]
+    regex = "mult_25_24_49 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_25_25_50"]
+    regex = "mult_25_25_50 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_25_26_51"]
+    regex = "mult_25_26_51 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_25_27_52"]
+    regex = "mult_25_27_52 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_26_24_50"]
+    regex = "mult_26_24_50 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_26_25_51"]
+    regex = "mult_26_25_51 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_26_26_52"]
+    regex = "mult_26_26_52 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_26_27_53"]
+    regex = "mult_26_27_53 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_26_28_54"]
+    regex = "mult_26_28_54 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_27_25_52"]
+    regex = "mult_27_25_52 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_27_26_53"]
+    regex = "mult_27_26_53 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_27_27_54"]
+    regex = "mult_27_27_54 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_27_28_55"]
+    regex = "mult_27_28_55 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_27_29_56"]
+    regex = "mult_27_29_56 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_28_26_54"]
+    regex = "mult_28_26_54 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_28_27_55"]
+    regex = "mult_28_27_55 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_28_28_56"]
+    regex = "mult_28_28_56 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_28_29_57"]
+    regex = "mult_28_29_57 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_28_30_58"]
+    regex = "mult_28_30_58 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_29_27_56"]
+    regex = "mult_29_27_56 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_29_28_57"]
+    regex = "mult_29_28_57 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_29_29_58"]
+    regex = "mult_29_29_58 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_29_30_59"]
+    regex = "mult_29_30_59 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_29_31_60"]
+    regex = "mult_29_31_60 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_30_28_58"]
+    regex = "mult_30_28_58 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_30_29_59"]
+    regex = "mult_30_29_59 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_30_30_60"]
+    regex = "mult_30_30_60 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_30_31_61"]
+    regex = "mult_30_31_61 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_30_32_62"]
+    regex = "mult_30_32_62 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_31_29_60"]
+    regex = "mult_31_29_60 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_31_30_61"]
+    regex = "mult_31_30_61 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_31_31_62"]
+    regex = "mult_31_31_62 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_31_32_63"]
+    regex = "mult_31_32_63 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_31_33_64"]
+    regex = "mult_31_33_64 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_32_30_62"]
+    regex = "mult_32_30_62 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_32_31_63"]
+    regex = "mult_32_31_63 (\d+)"
+    default = 0
+    hide-if = 0
+
+["mult_32_32_64"]
+    regex = "mult_32_32_64 (\d+)"
+    default = 0
+    hide-if = 0

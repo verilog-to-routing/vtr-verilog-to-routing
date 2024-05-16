@@ -445,7 +445,7 @@ void Cba_NtkObjOrder( Cba_Ntk_t * p, Vec_Int_t * vObjs, Vec_Int_t * vNameIds )
 //        printf( "%s \n", pName );
 //    printf( "\n" );
     // do the sorting
-    Vec_PtrSort( vNames, (int (*)(void))Cba_StrCmp );
+    Vec_PtrSort( vNames, (int (*)(const void *, const void *))Cba_StrCmp );
     // print after
 //    Vec_PtrForEachEntry( char *, vNames, pName, i )
 //        printf( "%s \n", pName );

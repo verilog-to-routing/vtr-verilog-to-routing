@@ -23,6 +23,7 @@ The architecture tag contains the following tags:
 * ``<segmentlist>``
 * ``<directlist>``
 * ``<complexblocklist>``
+* ``<noc>``
 
 .. _arch_models:
 
@@ -114,6 +115,10 @@ Global FPGA Information
 
     .. seealso:: :ref:`arch_grid_layout`
 
+.. arch:tag:: <layer die='int'>content</layer>
+    
+    Content inside this tag specifies the layout of a single (2D) die; using multiple layer tags one can describe multi-die FPGAs (e.g. 3D stacked FPGAs).
+
 .. arch:tag:: <device>content</device>
 
     Content inside this tag specifies device information.
@@ -131,6 +136,10 @@ Global FPGA Information
 .. arch:tag:: <complexblocklist>content</complexblocklist>
 
     Content inside this tag contains a group of ``<pb_type>`` tags that specify the types of functional blocks and their properties.
+
+.. arch:tag:: <noc link_bandwidth="float" link_latency="float" router_latency="float" noc_router_tile_name="string">content</noc>
+    
+    Content inside this tag specifies the Network-on-Chip (NoC) architecture on the FPGA device and its properties.
 
 .. _arch_grid_layout:
 
@@ -165,6 +174,37 @@ The valid tags within the ``<layout>`` tag are:
     .. note:: Multiple ``<fixed_layout>`` tags can be specified.
 
 Each ``<auto_layout>`` or ``<fixed_layout>`` tag should contain a set of grid location tags.
+
+FPGA Layer Information
+----------------
+The layer tag is an optional tag to specify multi-die FPGAs. If not specified, a single-die FPGA with a single die (with index 0) is assumed.
+
+.. arch:tag:: <layer die="int">
+    
+    :opt_param die:
+        Specifies the index of the die; index 0 is assumed to be at the bottom of a stack. 
+
+        **Default**: ``0``
+
+    .. note:: If die number left unspecified, a single-die FPGA (die number = 0) is assumed.
+    
+    .. code-block:: xml
+
+        <!-- Describe 3D FPGA using layer tag -->
+        <fixed_layout name="3D-FPGA" width="device_width" height="device_height">
+            <!-- First die (base die) -->
+            <layer die="0"/>
+                <!-- Specifiy base die Grid layout (e.g., fill with Network-on-Chips) -->
+                <fill type="NoC">
+            </layer>
+            <!-- Second die (upper die) -->
+            <layer die="1">
+                <!-- Specifiy upper die Grid layout (e.g., fill with logic blocks) -->
+                <fill type="LAB">
+            </layer>
+        </fixed_layout>
+
+    .. note:: Note that all dice have the same width and height. Since we can always fill unused parts of a die with EMPTY blocks this does not restrict us to have the same usable area on each die.
 
 Grid Location Priorities
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1819,6 +1859,95 @@ Power
     :req_param energy_per_toggle: Energy consumed by a toggle on the port specified in ``name``.
     :opt_param scaled_by_static_prob: Port name by which to scale ``energy_per_toggle`` based on its logic high probability.
     :opt_param scaled_by_static_prob_n: Port name by which to scale ``energy_per_toggle`` based on its logic low probability.
+
+NoC Description
+---------------
+
+The ``<noc>`` tag is an optional tag and its contents allows designers to describe a NoC on an FPGA device.
+The ``<noc>`` tag is the top level tag for the NoC description and its attributes define the overall properties
+of the NoC; refer below for its contents.
+
+.. arch:tag:: <noc link_bandwidth="float" link_latency="float" router_latency="float" noc_router_tile_name="string">
+
+    :req_param link_bandwidth:
+        Specifies the maximum bandwidth in bits-per-second (bps) that a link in the NoC can support
+
+    :req_param link_latency:
+        Specifies the delay in seconds seen by a flit as it travels from one physical NoC router to another using a NoC link.
+
+    :req_param router_latency:
+        Specifies the un-loaded delays in seconds as it travels through a physical router.
+    
+    :req_param noc_router_tile_name:
+        Specifies a string which represents the name used to identify a NoC router tile (physical hard block) in the 
+        corresponding FPGA architecture. This information is needed to create a model of the NoC.
+
+The ``<noc>`` tag contains a single ``<topology>`` tag which describes the topology of the NoC.
+
+NoC topology
+~~~~~~~~~~~~
+
+As mentioned above the ``<topology>`` tag can be used to specify the topology or how the routers in the NoC
+are connected to each other. The ``<topology>`` tag consists of a group ``<router>``tags.
+
+Below is an example of how the ``<topology>`` tag is used.
+
+.. code-block:: xml
+
+    <topology>
+        <!--A number of <router> tags go here-->
+    </topology>
+
+The ``<router>`` tag and its contents are described below.
+
+.. arch:tag:: <router id="int" positionx="float" positiony="float" connections="int int int int ...">
+
+    This tag represents a single physical NoC router on the FPGA device and specifies how it is connected within the NoC.
+
+    :req_param  id:
+        Specifies a user identification (ID) number which is associate to the physical
+        router that this tag is identifying. This ID is used to report errors and
+        warnings to the user.
+    
+    :req_param positionx:
+        Specifies the horizontal position of the physical router block that this
+        tag is identifying. This position does not have to be exact, it can
+        be an approximate value.
+
+    :req_param positiony:
+        Specifies the vertical position of the physical router block that this
+        tag is identifying. This position does not have to be exact, it can
+        be an approximate value.
+
+    :req_param connections:
+        Specifies a list of numbers seperated by spaces which are the user IDs supplied to other
+        ``<router>`` tags. This describes how the current physical Noc router
+        that this tag is identifying is connected to the other physical NoC routers on the device.
+    
+    Below is an example of the ``<router>`` tag which identifies a physical router located near (0,0) with ID 0. This router
+    is also connected to two other routers identified by IDs 1 and 2.
+
+    .. code-block:: xml
+
+        <router id="0" positionx="0" positiony="0" connections="1 2"/>
+
+NoC Description Example
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Below is an example which describes a NoC architecture which has 4 physical routers that are connected to each other to form a 
+2x2 mesh topology.
+
+.. code-block:: xml
+    
+    <!-- Description of a 2x2 mesh NoC-->
+    <noc link_bandwidth="1.2e9" router_latency="1e-9" link_latency="1e-9" noc_router_tile_name="noc_router_adapter">
+        <topology>
+                <router id="0" positionx="0" positiony="0" connections="1 2"/>
+                <router id="1" positionx="5" positiony="0" connections="0 3"/>
+                <router id="2" positionx="0" positiony="5" connections="0 3"/>
+                <router id="3" positionx="5" positiony="5" connections="1 2"/>
+        </topology>
+    </noc>
 
 Wire Segments
 -------------

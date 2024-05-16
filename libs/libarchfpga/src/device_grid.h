@@ -50,7 +50,7 @@ class DeviceGrid {
      * @brief Return the number of instances of the specified tile type on the specified layer. If the layer_num is -1, return the total number of instances of the specified tile type on all layers.
      * @note This function should be used if count_instances() is called in the constructor.
      */
-    size_t num_instances(t_physical_tile_type_ptr type, int layer_num = 0) const;
+    size_t num_instances(t_physical_tile_type_ptr type, int layer_num) const;
 
     /**
      * @brief Returns the block types which limits the device size (may be empty if
@@ -59,23 +59,23 @@ class DeviceGrid {
     std::vector<t_logical_block_type_ptr> limiting_resources() const { return limiting_resources_; }
 
     ///@brief Return the t_physical_tile_type_ptr at the specified location
-    inline t_physical_tile_type_ptr get_physical_type(size_t x, size_t y, int layer_num = 0) const {
-        return grid_[layer_num][x][y].type;
+    inline t_physical_tile_type_ptr get_physical_type(const t_physical_tile_loc& tile_loc) const {
+        return grid_[tile_loc.layer_num][tile_loc.x][tile_loc.y].type;
     }
 
     ///@brief Return the width offset of the tile at the specified location. The root location of the tile is where width_offset and height_offset are 0.
-    inline int get_width_offset(size_t x, size_t y, int layer_num = 0) const {
-        return grid_[layer_num][x][y].width_offset;
+    inline int get_width_offset(const t_physical_tile_loc& tile_loc) const {
+        return grid_[tile_loc.layer_num][tile_loc.x][tile_loc.y].width_offset;
     }
 
     ///@brief Return the height offset of the tile at the specified location. The root location of the tile is where width_offset and height_offset are 0
-    inline int get_height_offset(size_t x, size_t y, int layer_num = 0) const {
-        return grid_[layer_num][x][y].height_offset;
+    inline int get_height_offset(const t_physical_tile_loc& tile_loc) const {
+        return grid_[tile_loc.layer_num][tile_loc.x][tile_loc.y].height_offset;
     }
 
     ///@brief Return the metadata of the tile at the specified location
-    inline const t_metadata_dict* get_metadata(size_t x, size_t y, int layer_num = 0) const {
-        return grid_[layer_num][x][y].meta;
+    inline const t_metadata_dict* get_metadata(const t_physical_tile_loc& tile_loc) const {
+        return grid_[tile_loc.layer_num][tile_loc.x][tile_loc.y].meta;
     }
 
     ///@brief Given t_grid_tile, return the x coordinate of the tile on the given layer - Used by serializer functions
@@ -92,6 +92,12 @@ class DeviceGrid {
         auto diff = grid_loc - &grid_.get(layer_num * height() * width());
 
         return diff % grid_.dim_size(2);
+    }
+
+    ///@brief Given t_grid_tile, return the layer number of the tile - Used by serializer functions
+    inline int get_grid_loc_layer(const t_grid_tile*& grid_loc) const {
+        int layer_num = std::floor(static_cast<int>(grid_loc - &grid_.get(0)) / (width() * height()));
+        return layer_num;
     }
 
     ///@brief Return the nth t_grid_tile on the given layer of the flattened grid - Used by serializer functions

@@ -117,6 +117,13 @@ _The following are changes which have been implemented in the VTR master branch 
 ### Deprecated
  * VPR's breadth-first router (use the timing-driven router, which provides supperiour QoR and Run-time)
 
+### Docker Image
+ * A docker image is available for VTR 8.0 release on mohamedelgammal/vtr8:latest. You can run it using the following commands:
+```
+$ sudo docker pull mohamedelgammal/vtr8:latest
+$ sudo docker run -it mohamedelgammal/vtr8:latest
+```
+ 
 ## v8.0.0-rc2 - 2019-08-01
 
 ### Changed

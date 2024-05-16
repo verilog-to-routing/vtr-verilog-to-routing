@@ -165,7 +165,7 @@ void Gia_SortTest()
     printf( "Sorting %d integers\n", nSize );
     pArray = Gia_SortGetTest( nSize );
 clk = Abc_Clock();
-    qsort( pArray, nSize, 4, (int (*)(const void *, const void *)) num_cmp1 );
+    qsort( pArray, (size_t)nSize, 4, (int (*)(const void *, const void *)) num_cmp1 );
 ABC_PRT( "qsort  ", Abc_Clock() - clk );
     Gia_SortVerifySorted( pArray, nSize );
     ABC_FREE( pArray );

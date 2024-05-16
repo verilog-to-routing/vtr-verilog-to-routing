@@ -173,7 +173,7 @@ Vec_Int_t * Gia_PolynFindOrder( Gia_Man_t * pGia, Vec_Int_t * vFadds, Vec_Int_t 
     {        
         Gia_Man_t * pNew;
         pNew = Gia_ManDupAndCones( pGia, Vec_IntArray(vLeft), Vec_IntSize(vLeft), 0 );
-        Gia_AigerWrite( pNew, "leftover.aig", 0, 0 );
+        Gia_AigerWrite( pNew, "leftover.aig", 0, 0, 0 );
         printf( "Leftover AIG with %d nodes is dumped into file \"%s\".\n", Gia_ManAndNum(pNew), "leftover.aig" );
         Gia_ManStop( pNew );
     }

@@ -117,6 +117,9 @@
 ///@brief Returns true if the absolute physical pin index is an output of the given physical tile type
 bool is_opin(int ipin, t_physical_tile_type_ptr type);
 
+///@brief Returns true if the specified pin is located at "from_layer" and it is connected to "to_layer"
+bool is_pin_conencted_to_layer(t_physical_tile_type_ptr type, int ipin, int from_layer, int to_layer, int num_of_avail_layer);
+
 ///@brief Returns true if the given physical tile type can implement a .input block type
 bool is_input_type(t_physical_tile_type_ptr type);
 ///@brief Returns true if the given physical tile type can implement a .output block type
@@ -168,7 +171,7 @@ std::vector<std::string> block_type_class_index_to_pin_names(t_physical_tile_typ
                                                              bool is_flat);
 
 ///@brief Returns the physical tile type matching a given physical tile type name, or nullptr (if not found)
-t_physical_tile_type_ptr find_tile_type_by_name(std::string name, const std::vector<t_physical_tile_type>& types);
+t_physical_tile_type_ptr find_tile_type_by_name(const std::string& name, const std::vector<t_physical_tile_type>& types);
 
 int find_pin_class(t_physical_tile_type_ptr type, std::string port_name, int pin_index_in_port, e_pin_type pin_type);
 

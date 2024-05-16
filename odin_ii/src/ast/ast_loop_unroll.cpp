@@ -312,19 +312,18 @@ bool is_unsupported_post(ast_node_t* node, ast_node_t* symbol) {
 
 post_condition_function resolve_binary_operation(ast_node_t* node) {
     if (node->type == NUMBERS) {
-        return [=](long value) {
-            /* 
-             * this lambda triggers a warning for unused variable unless
-             * we use value to generate a 0
-             */
-            return node->types.vnumber->get_value() + (value - value);
+        return [=](long value) noexcept {
+            (void)value; // Indicate that value is unused
+            return node->types.vnumber->get_value();
         };
     } else if (node->type == IDENTIFIERS) {
-        return [=](long value) {
+        return [=](long value) noexcept {
+            (void)value; // Indicate that value is unused
             return value;
         };
     } else {
-        return [=](long value) {
+        return [=](long value) noexcept {
+            (void)value; // Indicate that value is unused
             post_condition_function left_func = resolve_binary_operation(node->children[0]);
             post_condition_function right_func = resolve_binary_operation(node->children[1]);
             switch (node->types.operation.op) {
@@ -342,6 +341,7 @@ post_condition_function resolve_binary_operation(ast_node_t* node) {
         };
     }
 }
+
 
 /*
  *  (function: resolve_post_condition)

@@ -8,7 +8,7 @@
 #include "vpr_utils.h"
 #include "constraints_report.h"
 
-#include "timing_info.h"
+#include "concrete_timing_info.h"
 #include "PreClusterDelayCalculator.h"
 #include "PreClusterTimingGraphResolver.h"
 #include "tatum/echo_writer.hpp"
@@ -232,6 +232,7 @@ void try_fill_cluster(const t_packer_opts& packer_opts,
                       bool allow_unrelated_clustering,
                       const int& high_fanout_threshold,
                       const std::unordered_set<AtomNetId>& is_clock,
+                      const std::unordered_set<AtomNetId>& is_global,
                       const std::shared_ptr<SetupTimingInfo>& timing_info,
                       t_lb_router_data* router_data,
                       t_ext_pin_util target_ext_pin_util,
@@ -407,7 +408,7 @@ std::vector<AtomBlockId> initialize_seed_atoms(const e_cluster_seed seed_type,
                                                const t_molecule_stats& max_molecule_stats,
                                                const vtr::vector<AtomBlockId, float>& atom_criticality);
 
-t_pack_molecule* get_highest_gain_seed_molecule(int* seedindex, const std::vector<AtomBlockId> seed_atoms);
+t_pack_molecule* get_highest_gain_seed_molecule(int& seed_index, const std::vector<AtomBlockId>& seed_atoms);
 
 float get_molecule_gain(t_pack_molecule* molecule, std::map<AtomBlockId, float>& blk_gain, AttractGroupId cluster_attraction_group_id, AttractionInfo& attraction_groups, int num_molecule_failures);
 

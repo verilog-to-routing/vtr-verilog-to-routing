@@ -149,7 +149,7 @@ int Abc_NodeConeIsConst1( word * pTruth, int nVars )
   SeeAlso     []
 
 ***********************************************************************/
-Dec_Graph_t * Abc_NodeRefactor( Abc_ManRef_t * p, Abc_Obj_t * pNode, Vec_Ptr_t * vFanins, int fUpdateLevel, int fUseZeros, int fUseDcs, int fVerbose )
+Dec_Graph_t * Abc_NodeRefactor( Abc_ManRef_t * p, Abc_Obj_t * pNode, Vec_Ptr_t * vFanins, int nMinSaved, int fUpdateLevel, int fUseZeros, int fUseDcs, int fVerbose )
 {
     extern int    Dec_GraphToNetworkCount( Abc_Obj_t * pRoot, Dec_Graph_t * pGraph, int NodeMax, int LevelMax );
     int fVeryVerbose = 0;
@@ -160,6 +160,8 @@ Dec_Graph_t * Abc_NodeRefactor( Abc_ManRef_t * p, Abc_Obj_t * pNode, Vec_Ptr_t *
     word * pTruth;
     abctime clk;
     int i, nNodesSaved, nNodesAdded, Required;
+    if ( fUseZeros )
+        nMinSaved = 0;
 
     p->nNodesConsidered++;
 
@@ -205,7 +207,8 @@ clk = Abc_Clock();
     nNodesAdded = Dec_GraphToNetworkCount( pNode, pFForm, nNodesSaved, Required );
 p->timeEval += Abc_Clock() - clk;
     // quit if there is no improvement
-    if ( nNodesAdded == -1 || (nNodesAdded == nNodesSaved && !fUseZeros) )
+    //if ( nNodesAdded == -1 || (nNodesAdded == nNodesSaved && !fUseZeros) )
+    if ( nNodesAdded == -1 || nNodesSaved - nNodesAdded < nMinSaved )
     {
         Dec_GraphFree( pFForm );
         return NULL;
@@ -323,9 +326,9 @@ void Abc_NtkManRefPrintStats( Abc_ManRef_t * p )
   SeeAlso     []
 
 ***********************************************************************/
-int Abc_NtkRefactor( Abc_Ntk_t * pNtk, int nNodeSizeMax, int nConeSizeMax, int fUpdateLevel, int fUseZeros, int fUseDcs, int fVerbose )
+int Abc_NtkRefactor( Abc_Ntk_t * pNtk, int nNodeSizeMax, int nMinSaved, int nConeSizeMax, int fUpdateLevel, int fUseZeros, int fUseDcs, int fVerbose )
 {
-    extern void           Dec_GraphUpdateNetwork( Abc_Obj_t * pRoot, Dec_Graph_t * pGraph, int fUpdateLevel, int nGain );
+    extern int           Dec_GraphUpdateNetwork( Abc_Obj_t * pRoot, Dec_Graph_t * pGraph, int fUpdateLevel, int nGain );
     ProgressBar * pProgress;
     Abc_ManRef_t * pManRef;
     Abc_ManCut_t * pManCut;
@@ -333,7 +336,7 @@ int Abc_NtkRefactor( Abc_Ntk_t * pNtk, int nNodeSizeMax, int nConeSizeMax, int f
     Vec_Ptr_t * vFanins;
     Abc_Obj_t * pNode;
     abctime clk, clkStart = Abc_Clock();
-    int i, nNodes;
+    int i, nNodes, RetValue = 1;
 
     assert( Abc_NtkIsStrash(pNtk) );
     // cleanup the AIG
@@ -371,13 +374,18 @@ clk = Abc_Clock();
 pManRef->timeCut += Abc_Clock() - clk;
         // evaluate this cut
 clk = Abc_Clock();
-        pFForm = Abc_NodeRefactor( pManRef, pNode, vFanins, fUpdateLevel, fUseZeros, fUseDcs, fVerbose );
+        pFForm = Abc_NodeRefactor( pManRef, pNode, vFanins, nMinSaved, fUpdateLevel, fUseZeros, fUseDcs, fVerbose );
 pManRef->timeRes += Abc_Clock() - clk;
         if ( pFForm == NULL )
             continue;
         // acceptable replacement found, update the graph
 clk = Abc_Clock();
-        Dec_GraphUpdateNetwork( pNode, pFForm, fUpdateLevel, pManRef->nLastGain );
+        if ( !Dec_GraphUpdateNetwork( pNode, pFForm, fUpdateLevel, pManRef->nLastGain ) )
+        {
+            Dec_GraphFree( pFForm );
+            RetValue = -1;
+            break;
+        }
 pManRef->timeNtk += Abc_Clock() - clk;
         Dec_GraphFree( pFForm );
     }
@@ -394,18 +402,21 @@ pManRef->timeTotal = Abc_Clock() - clkStart;
     // put the nodes into the DFS order and reassign their IDs
     Abc_NtkReassignIds( pNtk );
 //    Abc_AigCheckFaninOrder( pNtk->pManFunc );
-    // fix the levels
-    if ( fUpdateLevel )
-        Abc_NtkStopReverseLevels( pNtk );
-    else
-        Abc_NtkLevel( pNtk );
-    // check
-    if ( !Abc_NtkCheck( pNtk ) )
+    if ( RetValue != -1 )
     {
-        printf( "Abc_NtkRefactor: The network check has failed.\n" );
-        return 0;
+        // fix the levels
+        if ( fUpdateLevel )
+            Abc_NtkStopReverseLevels( pNtk );
+        else
+            Abc_NtkLevel( pNtk );
+        // check
+        if ( !Abc_NtkCheck( pNtk ) )
+        {
+            printf( "Abc_NtkRefactor: The network check has failed.\n" );
+            return 0;
+        }
     }
-    return 1;
+    return RetValue;
 }
 
 

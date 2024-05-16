@@ -609,34 +609,36 @@ static void power_usage_blocks(t_power_usage* power_usage) {
     t_logical_block_type_ptr logical_block;
 
     /* Loop through all grid locations */
-    for (size_t x = 0; x < device_ctx.grid.width(); x++) {
-        for (size_t y = 0; y < device_ctx.grid.height(); y++) {
-            auto physical_tile = device_ctx.grid.get_physical_type(x, y);
-            int width_offset = device_ctx.grid.get_width_offset(x, y);
-            int height_offset = device_ctx.grid.get_height_offset(x, y);
+    for (int layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); layer_num++) {
+        for (int x = 0; x < (int)device_ctx.grid.width(); x++) {
+            for (int y = 0; y < (int)device_ctx.grid.height(); y++) {
+                auto physical_tile = device_ctx.grid.get_physical_type({x, y, layer_num});
+                int width_offset = device_ctx.grid.get_width_offset({x, y, layer_num});
+                int height_offset = device_ctx.grid.get_height_offset({x, y, layer_num});
 
-            if ((width_offset != 0)
-                || (height_offset != 0)
-                || is_empty_type(physical_tile)) {
-                continue;
-            }
-
-            for (int z = 0; z < physical_tile->capacity; z++) {
-                t_pb* pb = nullptr;
-                t_power_usage pb_power;
-
-                ClusterBlockId iblk = place_ctx.grid_blocks[x][y].blocks[z];
-
-                if (iblk != EMPTY_BLOCK_ID && iblk != INVALID_BLOCK_ID) {
-                    pb = cluster_ctx.clb_nlist.block_pb(iblk);
-                    logical_block = cluster_ctx.clb_nlist.block_type(iblk);
-                } else {
-                    logical_block = pick_logical_type(physical_tile);
+                if ((width_offset != 0)
+                    || (height_offset != 0)
+                    || is_empty_type(physical_tile)) {
+                    continue;
                 }
 
-                /* Calculate power of this CLB */
-                power_usage_pb(&pb_power, pb, logical_block->pb_graph_head, iblk);
-                power_add_usage(power_usage, &pb_power);
+                for (int z = 0; z < physical_tile->capacity; z++) {
+                    t_pb* pb = nullptr;
+                    t_power_usage pb_power;
+
+                    ClusterBlockId iblk = place_ctx.grid_blocks.block_at_location({x, y, z, layer_num});
+
+                    if (iblk != EMPTY_BLOCK_ID && iblk != INVALID_BLOCK_ID) {
+                        pb = cluster_ctx.clb_nlist.block_pb(iblk);
+                        logical_block = cluster_ctx.clb_nlist.block_type(iblk);
+                    } else {
+                        logical_block = pick_logical_type(physical_tile);
+                    }
+
+                    /* Calculate power of this CLB */
+                    power_usage_pb(&pb_power, pb, logical_block->pb_graph_head, iblk);
+                    power_add_usage(power_usage, &pb_power);
+                }
             }
         }
     }
@@ -810,28 +812,29 @@ static void power_usage_routing(t_power_usage* power_usage,
 
     /* Populate net indices into rr graph */
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-        t_trace* trace;
-
-        for (trace = route_ctx.trace[get_cluster_net_parent_id(g_vpr_ctx.atom().lookup, net_id, is_flat)].head;
-             trace != nullptr; trace = trace->next) {
-            rr_node_power[trace->index].visited = false;
-            rr_node_power[trace->index].net_num = net_id;
+        ParentNetId parent_id = get_cluster_net_parent_id(g_vpr_ctx.atom().lookup, net_id, is_flat);
+        if (!route_ctx.route_trees[parent_id])
+            continue;
+        for (auto& rt_node : route_ctx.route_trees[parent_id].value().all_nodes()) {
+            rr_node_power[size_t(rt_node.inode)].visited = false;
+            rr_node_power[size_t(rt_node.inode)].net_num = net_id;
         }
     }
 
     /* Populate net indices into rr graph */
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-        t_trace* trace;
-
-        for (trace = route_ctx.trace[ParentNetId(size_t(net_id))].head; trace != nullptr; trace = trace->next) {
-            t_rr_node_power* node_power = &rr_node_power[trace->index];
+        ParentNetId parent_id = get_cluster_net_parent_id(g_vpr_ctx.atom().lookup, net_id, is_flat);
+        if (!route_ctx.route_trees[parent_id])
+            continue;
+        for (auto& rt_node : route_ctx.route_trees[parent_id].value().all_nodes()) {
+            t_rr_node_power* node_power = &rr_node_power[size_t(rt_node.inode)];
 
             if (node_power->visited) {
                 continue;
             }
 
-            for (t_edge_size edge_idx = 0; edge_idx < rr_graph.num_edges(RRNodeId(trace->index)); edge_idx++) {
-                const auto& next_node_id = size_t(rr_graph.edge_sink_node(RRNodeId(trace->index), edge_idx));
+            for (t_edge_size edge_idx = 0; edge_idx < rr_graph.num_edges(rt_node.inode); edge_idx++) {
+                const auto& next_node_id = size_t(rr_graph.edge_sink_node(rt_node.inode, edge_idx));
                 if (next_node_id != size_t(OPEN)) {
                     t_rr_node_power* next_node_power = &rr_node_power[next_node_id];
 

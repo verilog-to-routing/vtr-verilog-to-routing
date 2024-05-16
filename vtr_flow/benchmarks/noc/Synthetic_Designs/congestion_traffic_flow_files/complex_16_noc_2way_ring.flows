@@ -1,0 +1,44 @@
+<traffic_flows>
+
+    <!--
+        In this benchmark, each NoC routers sends traffic flows to two
+        NoC routers after itself. These two traffic flows cannot share the
+        same NoC link without causing congestion. Therefore, they should be
+        routed without using any shared links. This benchmark is a simple
+        sanity check for congestion-aware NoC placement and traffic flow routing
+        algorithms.
+    -->
+
+	<single_flow src=".*noc_router_adapter_block_1[^\d].*" dst=".*noc_router_adapter_block_2.*" bandwidth="7e5" />
+    <single_flow src=".*noc_router_adapter_block_2.*" dst=".*noc_router_adapter_block_3.*" bandwidth="7e5" />
+    <single_flow src=".*noc_router_adapter_block_3.*" dst=".*noc_router_adapter_block_4.*" bandwidth="7e5" />
+    <single_flow src=".*noc_router_adapter_block_4.*" dst=".*noc_router_adapter_block_5.*" bandwidth="7e5" />
+    <single_flow src=".*noc_router_adapter_block_5.*" dst=".*noc_router_adapter_block_6.*" bandwidth="7e5" />
+    <single_flow src=".*noc_router_adapter_block_6.*" dst=".*noc_router_adapter_block_7.*" bandwidth="7e5" />
+    <single_flow src=".*noc_router_adapter_block_7.*" dst=".*noc_router_adapter_block_8.*" bandwidth="7e5" />
+    <single_flow src=".*noc_router_adapter_block_8.*" dst=".*noc_router_adapter_block_9.*" bandwidth="7e5" />
+    <single_flow src=".*noc_router_adapter_block_9.*" dst=".*noc_router_adapter_block_10.*" bandwidth="7e5" />
+    <single_flow src=".*noc_router_adapter_block_10.*" dst=".*noc_router_adapter_block_11.*" bandwidth="7e5" />
+    <single_flow src=".*noc_router_adapter_block_11.*" dst=".*noc_router_adapter_block_12.*" bandwidth="7e5" />
+    <single_flow src=".*noc_router_adapter_block_12.*" dst=".*noc_router_adapter_block_13.*" bandwidth="7e5" />
+    <single_flow src=".*noc_router_adapter_block_13.*" dst=".*noc_router_adapter_block_14.*" bandwidth="7e5" />
+    <single_flow src=".*noc_router_adapter_block_14.*" dst=".*noc_router_adapter_block_15.*" bandwidth="7e5" />
+    <single_flow src=".*noc_router_adapter_block_15.*" dst=".*noc_router_adapter_block_16.*" bandwidth="7e5" />
+
+    <single_flow src=".*noc_router_adapter_block_1[^\d].*" dst=".*noc_router_adapter_block_3.*" bandwidth="4e5" />
+    <single_flow src=".*noc_router_adapter_block_2.*" dst=".*noc_router_adapter_block_4.*" bandwidth="4e5" />
+    <single_flow src=".*noc_router_adapter_block_3.*" dst=".*noc_router_adapter_block_5.*" bandwidth="4e5" />
+    <single_flow src=".*noc_router_adapter_block_4.*" dst=".*noc_router_adapter_block_6.*" bandwidth="4e5" />
+    <single_flow src=".*noc_router_adapter_block_5.*" dst=".*noc_router_adapter_block_7.*" bandwidth="4e5" />
+    <single_flow src=".*noc_router_adapter_block_6.*" dst=".*noc_router_adapter_block_8.*" bandwidth="4e5" />
+    <single_flow src=".*noc_router_adapter_block_7.*" dst=".*noc_router_adapter_block_9.*" bandwidth="4e5" />
+    <single_flow src=".*noc_router_adapter_block_8.*" dst=".*noc_router_adapter_block_10.*" bandwidth="4e5" />
+    <single_flow src=".*noc_router_adapter_block_9.*" dst=".*noc_router_adapter_block_11.*" bandwidth="4e5" />
+    <single_flow src=".*noc_router_adapter_block_10.*" dst=".*noc_router_adapter_block_12.*" bandwidth="4e5" />
+    <single_flow src=".*noc_router_adapter_block_11.*" dst=".*noc_router_adapter_block_13.*" bandwidth="4e5" />
+    <single_flow src=".*noc_router_adapter_block_12.*" dst=".*noc_router_adapter_block_14.*" bandwidth="4e5" />
+    <single_flow src=".*noc_router_adapter_block_13.*" dst=".*noc_router_adapter_block_15.*" bandwidth="4e5" />
+    <single_flow src=".*noc_router_adapter_block_14.*" dst=".*noc_router_adapter_block_16.*" bandwidth="4e5" />
+    <single_flow src=".*noc_router_adapter_block_15.*" dst=".*noc_router_adapter_block_1[^\d].*" bandwidth="4e5" />
+
+</traffic_flows>

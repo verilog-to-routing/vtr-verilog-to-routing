@@ -1,0 +1,24 @@
+`define WIDTH 4
+
+module top_module (rst, x, y, q);
+	input 	rst;
+    input  	[`WIDTH-1:0] x; 
+    input   [`WIDTH-1:0] y;
+    output	[2*`WIDTH-1:0] q;
+
+
+    //range of function xor_them returns a wire
+    function [7:0] my_func;
+	input [3:0] a;
+	input [3:0] b;
+
+ 	begin
+		my_func = a + b;
+	end
+    endfunction
+
+    assign q = my_func(.a({{2{x[1]}}, y[3]}), 
+					   .b({rst, x[2]|~y[2], (rst ? 2'b00 : {x[1], y[1]})})
+ 					  );
+
+endmodule

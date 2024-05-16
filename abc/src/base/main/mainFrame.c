@@ -22,6 +22,7 @@
 #include "mainInt.h"
 #include "bool/dec/dec.h"
 #include "map/if/if.h"
+#include "aig/miniaig/ndr.h"
 
 #ifdef ABC_USE_CUDD
 #include "bdd/extrab/extraBdd.h"
@@ -66,6 +67,8 @@ void *      Abc_FrameReadManDec()                            { if ( s_GlobalFram
 void *      Abc_FrameReadManDsd()                            { return s_GlobalFrame->pManDsd;      } 
 void *      Abc_FrameReadManDsd2()                           { return s_GlobalFrame->pManDsd2;     }
 char *      Abc_FrameReadFlag( char * pFlag )                { return Cmd_FlagReadByName( s_GlobalFrame, pFlag );   }
+Vec_Ptr_t * Abc_FrameReadSignalNames()                       { return s_GlobalFrame->vSignalNames; }
+char *      Abc_FrameReadSpecName()                          { return s_GlobalFrame->pSpecName;    }
 
 int         Abc_FrameReadBmcFrames( Abc_Frame_t * p )        { return s_GlobalFrame->nFrames;      }               
 int         Abc_FrameReadProbStatus( Abc_Frame_t * p )       { return s_GlobalFrame->Status;       }               
@@ -83,6 +86,10 @@ int         Abc_FrameReadCexRegNum( Abc_Frame_t * p )        { return s_GlobalFr
 int         Abc_FrameReadCexPo( Abc_Frame_t * p )            { return s_GlobalFrame->pCex->iPo;    }               
 int         Abc_FrameReadCexFrame( Abc_Frame_t * p )         { return s_GlobalFrame->pCex->iFrame; }               
 
+void        Abc_FrameInputNdr( Abc_Frame_t * pAbc, void * pData ) { Ndr_Delete(s_GlobalFrame->pNdr); s_GlobalFrame->pNdr = pData;                        }
+void *      Abc_FrameOutputNdr( Abc_Frame_t * pAbc )         { void * pData = s_GlobalFrame->pNdr; s_GlobalFrame->pNdr = NULL; return pData;             }  
+int *       Abc_FrameOutputNdrArray( Abc_Frame_t * pAbc )    { int * pArray = s_GlobalFrame->pNdrArray; s_GlobalFrame->pNdrArray = NULL; return pArray;  }
+
 void        Abc_FrameSetLibLut( void * pLib )                { s_GlobalFrame->pLibLut   = pLib;    } 
 void        Abc_FrameSetLibBox( void * pLib )                { s_GlobalFrame->pLibBox   = pLib;    } 
 void        Abc_FrameSetLibGen( void * pLib )                { s_GlobalFrame->pLibGen   = pLib;    } 
@@ -97,8 +104,11 @@ void        Abc_FrameSetManDsd2( void * pMan )               { if (s_GlobalFrame
 void        Abc_FrameSetInv( Vec_Int_t * vInv )              { Vec_IntFreeP(&s_GlobalFrame->pAbcWlcInv); s_GlobalFrame->pAbcWlcInv = vInv; }
 void        Abc_FrameSetJsonStrs( Abc_Nam_t * pStrs )        { Abc_NamDeref( s_GlobalFrame->pJsonStrs ); s_GlobalFrame->pJsonStrs = pStrs; }
 void        Abc_FrameSetJsonObjs( Vec_Wec_t * vObjs )        { Vec_WecFreeP(&s_GlobalFrame->vJsonObjs ); s_GlobalFrame->vJsonObjs = vObjs; }
+void        Abc_FrameSetSignalNames( Vec_Ptr_t * vNames )    { if ( s_GlobalFrame->vSignalNames ) Vec_PtrFreeFree( s_GlobalFrame->vSignalNames ); s_GlobalFrame->vSignalNames = vNames; }
+void        Abc_FrameSetSpecName( char * pFileName )         { ABC_FREE( s_GlobalFrame->pSpecName ); s_GlobalFrame->pSpecName = pFileName; }
 
 int         Abc_FrameIsBatchMode()                           { return s_GlobalFrame ? s_GlobalFrame->fBatchMode : 0;              } 
+void        Abc_FrameSetBatchMode( int Mode )                { if ( s_GlobalFrame ) s_GlobalFrame->fBatchMode = Mode;             } 
 
 int         Abc_FrameIsBridgeMode()                          { return s_GlobalFrame ? s_GlobalFrame->fBridgeMode : 0;             } 
 void        Abc_FrameSetBridgeMode()                         { if ( s_GlobalFrame ) s_GlobalFrame->fBridgeMode = 1;               } 
@@ -226,13 +236,18 @@ void Abc_FrameDeallocate( Abc_Frame_t * p )
     }
     Vec_IntFreeP( &p->vIndFlops );
     Vec_PtrFreeP( &p->vLTLProperties_global );
+    if ( p->vSignalNames )
+    Vec_PtrFreeFree( p->vSignalNames );
+    ABC_FREE( p->pSpecName );
     Abc_FrameDeleteAllNetworks( p );
     ABC_FREE( p->pDrivingCell );
     ABC_FREE( p->pCex2 );
     ABC_FREE( p->pCex );
     Vec_IntFreeP( &p->pAbcWlcInv );
     Abc_NamDeref( s_GlobalFrame->pJsonStrs );
-    Vec_WecFreeP(&s_GlobalFrame->vJsonObjs );    
+    Vec_WecFreeP( &s_GlobalFrame->vJsonObjs );  
+    Ndr_Delete( s_GlobalFrame->pNdr );
+    ABC_FREE( s_GlobalFrame->pNdrArray );
 
     Gia_ManStopP( &p->pGiaMiniAig );
     Gia_ManStopP( &p->pGiaMiniLut );
@@ -240,6 +255,7 @@ void Abc_FrameDeallocate( Abc_Frame_t * p )
     Vec_IntFreeP( &p->vCopyMiniLut );
     ABC_FREE( p->pArray );
     ABC_FREE( p->pBoxes );
+    
 
     ABC_FREE( p );
     s_GlobalFrame = NULL;

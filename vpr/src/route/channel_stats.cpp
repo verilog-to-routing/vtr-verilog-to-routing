@@ -1,5 +1,5 @@
 #include "channel_stats.h"
-#include "route_util.h"
+#include "route_utilization.h"
 #include "histogram.h"
 #include "globals.h"
 
@@ -20,8 +20,8 @@ void print_channel_stats(bool is_flat) {
     histogram.emplace_back(0.9, 1.0);
     histogram.emplace_back(1.0, std::numeric_limits<float>::infinity());
 
-    auto chanx_usage = calculate_routing_usage(CHANX, is_flat);
-    auto chany_usage = calculate_routing_usage(CHANY, is_flat);
+    auto chanx_usage = calculate_routing_usage(CHANX, is_flat, true);
+    auto chany_usage = calculate_routing_usage(CHANY, is_flat, true);
 
     auto chanx_avail = calculate_routing_avail(CHANX);
     auto chany_avail = calculate_routing_avail(CHANY);

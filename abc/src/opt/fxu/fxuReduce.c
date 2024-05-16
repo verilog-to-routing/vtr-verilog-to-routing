@@ -86,8 +86,7 @@ int Fxu_PreprocessCubePairs( Fxu_Matrix * p, Vec_Ptr_t * vCovers, int nPairsTota
     assert( iPair == nPairsTotal );
 
     // allocate storage for counters of cube pairs by difference
-    pnPairCounters = ABC_FALLOC( int, 2 * nBitsMax );
-    memset( pnPairCounters, 0, sizeof(int) * 2 * nBitsMax );
+    pnPairCounters = ABC_CALLOC( int, 2 * nBitsMax );
     // count the number of different pairs
     for ( k = 0; k < nPairsTotal; k++ )
         pnPairCounters[ pnLitsDiff[k] ]++;

@@ -15,7 +15,4 @@ struct VprIntraClusterLookahead {
     pinNumSinks @1 :List(Int64);
     pinSinks @2 :List(Int64);
     pinSinkCosts @3 :List(VprMapCostEntry);
-    tileNumSinks @4 :List(Int64);
-    tileSinks @5 :List(Int64);
-    tileMinCosts @6 :List(VprMapCostEntry);
 }

@@ -17,6 +17,13 @@ The first step is to `download VTR <https://verilogtorouting.org/download/>`_ an
 
 Environment Setup
 -----------------
+If you cloned the repository you will need to set up the git submodules (if you downloaded and extracted a release, you can skip this step):
+
+.. code-block:: bash
+
+    > git submodule init
+    > git submodule update
+    
 VTR requires several system packages and Python packages to build and run the flow.  You can install the required system packages using the following command (this works on Ubuntu 18.04, 20.04 and 22.04, but you may require different packages on other Linux distributions). Our CI testing is on Ubuntu 22.04, so that is the best tested platform and recommended for development.
 
 .. code-block:: bash
@@ -41,6 +48,12 @@ On most unix-like systems you can run:
 
     > make
 
+The default front-end for VTR is :ref:`Parmys<parmys>`, but you can build with ODIN II instead using the command below. This is required to run :ref:`Synthesizing with ODIN II<synthesizing_with_odin_ii>`.
+
+.. code-block:: bash
+
+    > make CMAKE_PARAMS="-DWITH_ODIN=on"
+
 from the VTR root directory (hereafter referred to as :term:`$VTR_ROOT`) to build VTR.
 
 .. note:: 
@@ -55,6 +68,8 @@ from the VTR root directory (hereafter referred to as :term:`$VTR_ROOT`) to buil
 
     * define VTR_ROOT as a variable in your shell (e.g. if ``~/trees/vtr`` is the path to the VTR source tree on your machine, run the equivalent of ``VTR_ROOT=~/trees/vtr`` in BASH) which will allow you to run the commands as written in this guide, or
     * manually replace `$VTR_ROOT` in the example commands below with your path to the VTR source tree.
+
+
 
 For more details on building VTR on various operating systems/platforms see :doc:`Building VTR</BUILDING>`.
 
@@ -228,6 +243,7 @@ Next we need to run the three main sets of tools:
 * :ref:`ABC` performs 'logic optimization' which simplifies the circuit logic, and 'technology mapping' which converts logic equations into the Look-Up-Tables (LUTs) available on an FPGA, and
 * :ref:`VPR` which performs packing, placement and routing of the circuit to implement it on the targetted FPGA architecture.
 
+.. _synthesizing_with_odin_ii:
 Synthesizing with ODIN II
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 

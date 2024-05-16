@@ -1,0 +1,38 @@
+##############################################
+# Configuration file for running experiments
+##############################################
+
+# Path to directory of circuits to use
+circuits_dir=benchmarks/noc/Synthetic_Designs/complex_64_noc_star/
+
+# Path to directory of architectures to use
+archs_dir=arch/multi_die/stratixiv_3d/
+
+# Path to directory of NoC Traffic Patterns to use
+noc_traffics_dir=benchmarks/noc/Synthetic_Designs/complex_64_noc_star/
+
+# Add circuits to list to sweep
+circuit_list_add=complex_64_noc_star.blif
+
+
+# Add architectures to list to sweep
+arch_list_add=3d_10x10_noc_base_stratixiv_up.xml
+
+# Add NoC Traffic Patterns to list to sweep
+noc_traffic_list_add=complex_64_noc_star_no_constraints.flows
+noc_traffic_list_add=complex_64_noc_star_2_bandwidths.flows
+noc_traffic_list_add=complex_64_noc_star_6_bandwidths.flows
+noc_traffic_list_add=complex_64_noc_star_24_latency_constraints.flows
+noc_traffic_list_add=complex_64_noc_star_63_latency_constraints.flows
+
+# Parse info and how to parse
+parse_file=vpr_noc.txt
+
+# How to parse QoR info
+qor_parse_file=qor_noc_spec.txt
+
+# Pass requirements
+pass_requirements_file=pass_requirements.txt
+
+# Script parameters
+script_params_common =-starting_stage vpr --noc on --noc_routing_algorithm xy_routing --device "EP4SE820" --pack --place

@@ -399,10 +399,11 @@ int main(
             .show_in(argparse::ShowIn::HELP_ONLY);
     route_grp.add_argument(args.router_algorithm, "--router_algorithm")
             .help("Specifies the router algorithm to use.\n"
-                  " * breadth_first: focuses solely on routability\n"
-                  " * timing driven: focuses on routability and circuit speed\n")
+                  " * timing driven: focuses on routability and circuit speed [default]\n"
+                  " * parallel: timing_driven with nets in different regions of the chip routed in parallel\n"
+                  " * parallel_decomp: timing_driven with additional parallelism obtained by decomposing high-fanout nets, possibly reducing quality\n")
             .default_value("timing_driven")
-            .choices({"breadth_first", "timing_driven"})
+            .choices({"parallel", "parallel_decomp", "timing_driven"})
             .show_in(argparse::ShowIn::HELP_ONLY);
     route_grp.add_argument(args.min_incremental_reroute_fanout, "--min_incremental_reroute_fanout")
             .help("The net fanout thershold above which nets will be re-routed incrementally.")

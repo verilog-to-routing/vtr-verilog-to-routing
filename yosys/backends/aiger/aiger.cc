@@ -119,14 +119,14 @@ struct AigerWriter
 			if (wire->name.isPublic())
 				sigmap.add(wire);
 
-		// promote input wires
-		for (auto wire : module->wires())
-			if (wire->port_input)
-				sigmap.add(wire);
-
 		// promote output wires
 		for (auto wire : module->wires())
 			if (wire->port_output)
+				sigmap.add(wire);
+
+		// promote input wires
+		for (auto wire : module->wires())
+			if (wire->port_input)
 				sigmap.add(wire);
 
 		for (auto wire : module->wires())
@@ -706,6 +706,9 @@ struct AigerWriter
 		for (auto &it : latch_lines)
 			f << it.second;
 
+		if (initstate_ff)
+			f << stringf("ninitff %d\n", ((initstate_ff >> 1)-1-aig_i));
+
 		wire_lines.sort();
 		for (auto &it : wire_lines)
 			f << it.second;
@@ -732,6 +735,9 @@ struct AigerWriter
 				// Use sig_q to get the FF output name, but sig to lookup aiger bits
 				auto sig_qy = cell->getPort(cell->type.in(ID($anyconst), ID($anyseq)) ? ID::Y : ID::Q);
 				SigSpec sig = sigmap(sig_qy);
+
+				if (cell->get_bool_attribute(ID(clk2fflogic)))
+					sig_qy = cell->getPort(ID::D); // For a clk2fflogic $_FF_ the named signal is the D input not the Q output
 
 				for (int i = 0; i < GetSize(sig_qy); i++) {
 					if (sig_qy[i].wire == nullptr || sig[i].wire == nullptr)

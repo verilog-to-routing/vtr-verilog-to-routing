@@ -30,6 +30,7 @@
 
 static const unsigned int traversal_id = 0;
 static const uintptr_t mult_optimization_traverse_value = (uintptr_t)&traversal_id;
+static const uintptr_t adder_optimization_traverse_value = (uintptr_t)&traversal_id;
 
 stat_t* get_stats(signal_list_t* input_signals, signal_list_t* output_signals, netlist_t* netlist, uintptr_t traverse_mark_number);
 stat_t* get_stats(nnode_t** node_list, long long node_count, netlist_t* netlist, uintptr_t traverse_mark_number);

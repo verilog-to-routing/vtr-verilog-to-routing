@@ -88,7 +88,8 @@ static inline void      Sat_MemWriteLimit( int * p, int nInts )      { p[0] = nI
 static inline int       Sat_MemHandPage( Sat_Mem_t * p, cla h )      { return h >> p->nPageSize;                    }
 static inline int       Sat_MemHandShift( Sat_Mem_t * p, cla h )     { return h & p->uPageMask;                     }
 
-static inline int       Sat_MemIntSize( int size, int lrn )          { return (size + 2 + lrn) & ~01;               }
+//static inline int       Sat_MemIntSize( int size, int lrn )          { return (size + 2 + lrn) & ~01;               }
+static inline int       Sat_MemIntSize( int size, int lrn )          { return 2*((size + 2 + lrn)/2);               }
 static inline int       Sat_MemClauseSize( clause * p )              { return Sat_MemIntSize(p->size, p->lrn);      }
 static inline int       Sat_MemClauseSize2( clause * p )             { return Sat_MemIntSize(p->size, 1);           }
 

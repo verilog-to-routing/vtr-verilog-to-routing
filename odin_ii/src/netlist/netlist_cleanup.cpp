@@ -218,7 +218,7 @@ void calculate_addsub_statistics(node_list_t* addsub) {
 
             /* Carry out is always output pin 0 */
             nnet_t* carry_out_net = node->output_pins[0]->net;
-            if (carry_out_net == NULL || carry_out_net->fanout_pins[0] == NULL)
+            if (carry_out_net == NULL || carry_out_net->fanout_pins[0] == NULL || (node->type != ADD && node->type != MINUS))
                 found_tail = true;
             else
                 node = carry_out_net->fanout_pins[0]->node;

@@ -3,6 +3,7 @@
 #include <regex>
 #include <algorithm>
 #include <sstream>
+#include <string.h>
 
 #include "vtr_assert.h"
 #include "vtr_log.h"
@@ -17,7 +18,6 @@
 #include "vpr_utils.h"
 #include "cluster_placement.h"
 #include "place_macro.h"
-#include "string.h"
 #include "pack_types.h"
 #include "device_grid.h"
 #include "timing_fail_error.h"
@@ -128,17 +128,19 @@ void sync_grid_to_blocks() {
     auto& device_ctx = g_vpr_ctx.device();
     auto& device_grid = device_ctx.grid;
 
-    /* Reset usage and allocate blocks list if needed */
-    auto& grid_blocks = place_ctx.grid_blocks;
-    grid_blocks.resize({device_grid.width(), device_grid.height()});
-    for (size_t x = 0; x < device_grid.width(); ++x) {
-        for (size_t y = 0; y < device_grid.height(); ++y) {
-            auto& grid_block = grid_blocks[x][y];
-            const auto& type = device_ctx.grid.get_physical_type(x, y);
-            grid_block.blocks.resize(type->capacity);
+    int num_layers = device_ctx.grid.get_num_layers();
 
-            for (int z = 0; z < type->capacity; ++z) {
-                grid_block.blocks[z] = EMPTY_BLOCK_ID;
+    /* Reset usage and allocate blocks list if needed */
+    place_ctx.grid_blocks = GridBlock(device_grid.width(),
+                                      device_grid.height(),
+                                      device_ctx.grid.get_num_layers());
+    auto& grid_blocks = place_ctx.grid_blocks;
+
+    for (int layer_num = 0; layer_num < num_layers; layer_num++) {
+        for (int x = 0; x < (int)device_grid.width(); ++x) {
+            for (int y = 0; y < (int)device_grid.height(); ++y) {
+                const auto& type = device_ctx.grid.get_physical_type({x, y, layer_num});
+                grid_blocks.initialized_grid_block_at_location({x, y, layer_num}, type->capacity);
             }
         }
     }
@@ -146,9 +148,11 @@ void sync_grid_to_blocks() {
     /* Go through each block */
     auto& cluster_ctx = g_vpr_ctx.clustering();
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+        const auto& blk_loc = place_ctx.block_locs[blk_id].loc;
         int blk_x = place_ctx.block_locs[blk_id].loc.x;
         int blk_y = place_ctx.block_locs[blk_id].loc.y;
         int blk_z = place_ctx.block_locs[blk_id].loc.sub_tile;
+        int blk_layer = place_ctx.block_locs[blk_id].loc.layer;
 
         auto type = physical_tile_type(blk_id);
 
@@ -162,54 +166,68 @@ void sync_grid_to_blocks() {
         }
 
         /* Check types match */
-        if (type != device_ctx.grid.get_physical_type(blk_x, blk_y)) {
-            VPR_FATAL_ERROR(VPR_ERROR_PLACE, "A block is in a grid location (%d x %d) with a conflicting types '%s' and '%s' .\n",
-                            blk_x, blk_y,
+        if (type != device_ctx.grid.get_physical_type({blk_x, blk_y, blk_layer})) {
+            VPR_FATAL_ERROR(VPR_ERROR_PLACE, "A block is in a grid location (%d x %d) layer (%d) with a conflicting types '%s' and '%s' .\n",
+                            blk_x, blk_y, blk_layer,
                             type->name,
-                            device_ctx.grid.get_physical_type(blk_x, blk_y)->name);
+                            device_ctx.grid.get_physical_type({blk_x, blk_y, blk_layer})->name);
         }
 
         /* Check already in use */
-        if ((EMPTY_BLOCK_ID != place_ctx.grid_blocks[blk_x][blk_y].blocks[blk_z])
-            && (INVALID_BLOCK_ID != place_ctx.grid_blocks[blk_x][blk_y].blocks[blk_z])) {
-            VPR_FATAL_ERROR(VPR_ERROR_PLACE, "Location (%d, %d, %d) is used more than once.\n",
-                            blk_x, blk_y, blk_z);
+        if ((EMPTY_BLOCK_ID != place_ctx.grid_blocks.block_at_location(blk_loc))
+            && (INVALID_BLOCK_ID != place_ctx.grid_blocks.block_at_location(blk_loc))) {
+            VPR_FATAL_ERROR(VPR_ERROR_PLACE, "Location (%d, %d, %d, %d) is used more than once.\n",
+                            blk_x, blk_y, blk_z, blk_layer);
         }
 
-        if (device_ctx.grid.get_width_offset(blk_x, blk_y) != 0 || device_ctx.grid.get_height_offset(blk_x, blk_y) != 0) {
-            VPR_FATAL_ERROR(VPR_ERROR_PLACE, "Large block not aligned in placment for cluster_ctx.blocks %lu at (%d, %d, %d).",
-                            size_t(blk_id), blk_x, blk_y, blk_z);
+        if (device_ctx.grid.get_width_offset({blk_x, blk_y, blk_layer}) != 0 || device_ctx.grid.get_height_offset({blk_x, blk_y, blk_layer}) != 0) {
+            VPR_FATAL_ERROR(VPR_ERROR_PLACE, "Large block not aligned in placement for cluster_ctx.blocks %lu at (%d, %d, %d, %d).",
+                            size_t(blk_id), blk_x, blk_y, blk_z, blk_layer);
         }
 
         /* Set the block */
         for (int width = 0; width < type->width; ++width) {
             for (int height = 0; height < type->height; ++height) {
-                place_ctx.grid_blocks[blk_x + width][blk_y + height].blocks[blk_z] = blk_id;
-                place_ctx.grid_blocks[blk_x + width][blk_y + height].usage++;
-                VTR_ASSERT(device_ctx.grid.get_width_offset(blk_x + width, blk_y + height) == width);
-                VTR_ASSERT(device_ctx.grid.get_height_offset(blk_x + width, blk_y + height) == height);
+                place_ctx.grid_blocks.set_block_at_location({blk_x + width,
+                                                             blk_y + height,
+                                                             blk_z,
+                                                             blk_layer},
+                                                            blk_id);
+                place_ctx.grid_blocks.set_usage({blk_x + width,
+                                                 blk_y + height,
+                                                 blk_layer},
+                                                place_ctx.grid_blocks.get_usage({blk_x + width,
+                                                                                 blk_y + height,
+                                                                                 blk_layer})
+                                                    + 1);
+                VTR_ASSERT(device_ctx.grid.get_width_offset({blk_x + width, blk_y + height, blk_layer}) == width);
+                VTR_ASSERT(device_ctx.grid.get_height_offset({blk_x + width, blk_y + height, blk_layer}) == height);
             }
         }
     }
 }
 
-std::string rr_node_arch_name(int inode, bool is_flat) {
+std::string rr_node_arch_name(RRNodeId inode, bool is_flat) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
-    auto rr_node = RRNodeId(inode);
+    auto rr_node = inode;
 
     std::string rr_node_arch_name;
-    if (rr_graph.node_type(RRNodeId(inode)) == OPIN || rr_graph.node_type(RRNodeId(inode)) == IPIN) {
+    if (rr_graph.node_type(inode) == OPIN || rr_graph.node_type(inode) == IPIN) {
         //Pin names
-        auto type = device_ctx.grid.get_physical_type(rr_graph.node_xlow(rr_node), rr_graph.node_ylow(rr_node));
+        auto type = device_ctx.grid.get_physical_type({rr_graph.node_xlow(rr_node),
+                                                       rr_graph.node_ylow(rr_node),
+                                                       rr_graph.node_layer(rr_node)});
         rr_node_arch_name += block_type_pin_index_to_name(type, rr_graph.node_pin_num(rr_node), is_flat);
-    } else if (rr_graph.node_type(RRNodeId(inode)) == SOURCE || rr_graph.node_type(RRNodeId(inode)) == SINK) {
+    } else if (rr_graph.node_type(inode) == SOURCE || rr_graph.node_type(inode) == SINK) {
         //Set of pins associated with SOURCE/SINK
-        auto type = device_ctx.grid.get_physical_type(rr_graph.node_xlow(rr_node), rr_graph.node_ylow(rr_node));
+        auto type = device_ctx.grid.get_physical_type({rr_graph.node_xlow(rr_node),
+                                                       rr_graph.node_ylow(rr_node),
+                                                       rr_graph.node_layer(rr_node)});
         auto pin_names = block_type_class_index_to_pin_names(type, rr_graph.node_class_num(rr_node), is_flat);
         if (pin_names.size() > 1) {
-            rr_node_arch_name += rr_graph.node_type_string(RRNodeId(inode));
+            rr_node_arch_name += rr_graph.node_type_string(inode);
             rr_node_arch_name += " connected to ";
             rr_node_arch_name += "{";
             rr_node_arch_name += vtr::join(pin_names, ", ");
@@ -218,9 +236,9 @@ std::string rr_node_arch_name(int inode, bool is_flat) {
             rr_node_arch_name += pin_names[0];
         }
     } else {
-        VTR_ASSERT(rr_graph.node_type(RRNodeId(inode)) == CHANX || rr_graph.node_type(RRNodeId(inode)) == CHANY);
+        VTR_ASSERT(rr_graph.node_type(inode) == CHANX || rr_graph.node_type(inode) == CHANY);
         //Wire segment name
-        auto cost_index = rr_graph.node_cost_index(RRNodeId(inode));
+        auto cost_index = rr_graph.node_cost_index(inode);
         int seg_index = device_ctx.rr_indexed_data[cost_index].seg_index;
 
         rr_node_arch_name += rr_graph.rr_segments(RRSegmentId(seg_index)).name;
@@ -516,7 +534,7 @@ t_physical_tile_type_ptr physical_tile_type(ClusterBlockId blk) {
     auto block_loc = place_ctx.block_locs[blk];
     auto loc = block_loc.loc;
 
-    return device_ctx.grid.get_physical_type(loc.x, loc.y);
+    return device_ctx.grid.get_physical_type({loc.x, loc.y, loc.layer});
 }
 
 t_physical_tile_type_ptr physical_tile_type(AtomBlockId atom_blk) {
@@ -546,7 +564,7 @@ int get_sub_tile_index(ClusterBlockId blk) {
     auto loc = block_loc.loc;
     int sub_tile_coordinate = loc.sub_tile;
 
-    auto type = device_ctx.grid.get_physical_type(loc.x, loc.y);
+    auto type = device_ctx.grid.get_physical_type({loc.x, loc.y, loc.layer});
 
     for (const auto& sub_tile : type->sub_tiles) {
         if (sub_tile.capacity.is_in_range(sub_tile_coordinate)) {
@@ -657,7 +675,7 @@ void get_pin_range_for_block(const ClusterBlockId blk_id,
     *pin_high = sub_tile.sub_tile_to_tile_pin_indices[rel_pin_high];
 }
 
-t_physical_tile_type_ptr find_tile_type_by_name(std::string name, const std::vector<t_physical_tile_type>& types) {
+t_physical_tile_type_ptr find_tile_type_by_name(const std::string& name, const std::vector<t_physical_tile_type>& types) {
     for (auto const& type : types) {
         if (type.name == name) {
             return &type;
@@ -732,9 +750,9 @@ t_logical_block_type_ptr infer_logic_block_type(const DeviceGrid& grid) {
         int rhs_num_instances = 0;
         // Count number of instances for each type
         for (auto type : lhs->equivalent_tiles)
-            lhs_num_instances += grid.num_instances(type);
+            lhs_num_instances += grid.num_instances(type, -1);
         for (auto type : rhs->equivalent_tiles)
-            rhs_num_instances += grid.num_instances(type);
+            rhs_num_instances += grid.num_instances(type, -1);
         return lhs_num_instances > rhs_num_instances;
     };
     std::stable_sort(logic_block_candidates.begin(), logic_block_candidates.end(), by_desc_grid_count);
@@ -759,7 +777,7 @@ t_logical_block_type_ptr find_most_common_block_type(const DeviceGrid& grid) {
     for (const auto& logical_block : device_ctx.logical_block_types) {
         size_t inst_cnt = 0;
         for (const auto& equivalent_tile : logical_block.equivalent_tiles) {
-            inst_cnt += grid.num_instances(equivalent_tile);
+            inst_cnt += grid.num_instances(equivalent_tile, -1);
         }
 
         if (max_count < inst_cnt) {
@@ -781,7 +799,7 @@ t_physical_tile_type_ptr find_most_common_tile_type(const DeviceGrid& grid) {
     t_physical_tile_type_ptr max_type = nullptr;
     size_t max_count = 0;
     for (const auto& physical_tile : device_ctx.physical_tile_types) {
-        size_t inst_cnt = grid.num_instances(&physical_tile);
+        size_t inst_cnt = grid.num_instances(&physical_tile, -1);
 
         if (max_count < inst_cnt) {
             max_count = inst_cnt;
@@ -796,7 +814,7 @@ t_physical_tile_type_ptr find_most_common_tile_type(const DeviceGrid& grid) {
     return max_type;
 }
 
-InstPort parse_inst_port(std::string str) {
+InstPort parse_inst_port(const std::string& str) {
     InstPort inst_port(str);
 
     auto& device_ctx = g_vpr_ctx.device();
@@ -1154,7 +1172,7 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_block_pin(ClusterBlockId iblock, int 
     return nullptr;
 }
 
-const t_port* find_pb_graph_port(const t_pb_graph_node* pb_gnode, std::string port_name) {
+const t_port* find_pb_graph_port(const t_pb_graph_node* pb_gnode, const std::string& port_name) {
     const t_pb_graph_pin* gpin = find_pb_graph_pin(pb_gnode, port_name, 0);
 
     if (gpin != nullptr) {
@@ -1163,7 +1181,7 @@ const t_port* find_pb_graph_port(const t_pb_graph_node* pb_gnode, std::string po
     return nullptr;
 }
 
-const t_pb_graph_pin* find_pb_graph_pin(const t_pb_graph_node* pb_gnode, std::string port_name, int index) {
+const t_pb_graph_pin* find_pb_graph_pin(const t_pb_graph_node* pb_gnode, const std::string& port_name, int index) {
     for (int iport = 0; iport < pb_gnode->num_input_ports; iport++) {
         if (pb_gnode->num_input_pins[iport] < index) continue;
 
@@ -1332,11 +1350,9 @@ std::tuple<t_physical_tile_type_ptr, const t_sub_tile*, int, t_logical_block_typ
     auto& grid = g_vpr_ctx.device().grid;
     auto& place_ctx = g_vpr_ctx.placement();
     auto& loc = place_ctx.block_locs[cluster_blk_id].loc;
-    int i = loc.x;
-    int j = loc.y;
     int cap = loc.sub_tile;
-    const auto& physical_type = grid.get_physical_type(i, j);
-    VTR_ASSERT(grid.get_width_offset(i, j) == 0 && grid.get_height_offset(i, j) == 0);
+    const auto& physical_type = grid.get_physical_type({loc.x, loc.y, loc.layer});
+    VTR_ASSERT(grid.get_width_offset({loc.x, loc.y, loc.layer}) == 0 && grid.get_height_offset(t_physical_tile_loc(loc.x, loc.y, loc.layer)) == 0);
     VTR_ASSERT(cap < physical_type->capacity);
 
     auto& cluster_net_list = g_vpr_ctx.clustering().clb_nlist;
@@ -2148,7 +2164,7 @@ t_physical_tile_type_ptr get_physical_tile_type(const ClusterBlockId blk) {
 
         t_pl_loc loc = place_ctx.block_locs[blk].loc;
 
-        return device_ctx.grid.get_physical_type(loc.x, loc.y);
+        return device_ctx.grid.get_physical_type({loc.x, loc.y, loc.layer});
     }
 }
 
@@ -2224,7 +2240,7 @@ void pretty_print_float(const char* prefix, double value, int num_digits, int sc
     }
 }
 
-void print_timing_stats(std::string name,
+void print_timing_stats(const std::string& name,
                         const t_timing_analysis_profile_info& current,
                         const t_timing_analysis_profile_info& past) {
     VTR_LOG("%s timing analysis took %g seconds (%g STA, %g slack) (%zu full updates: %zu setup, %zu hold, %zu combined).\n",
@@ -2283,7 +2299,9 @@ int get_rr_node_max_ptc(const RRGraphView& rr_graph_view,
     VTR_ASSERT(node_type == IPIN || node_type == OPIN || node_type == SINK || node_type == SOURCE);
 
     const DeviceContext& device_ctx = g_vpr_ctx.device();
-    auto physical_type = device_ctx.grid.get_physical_type(rr_graph_view.node_xlow(node_id), rr_graph_view.node_ylow(node_id));
+    auto physical_type = device_ctx.grid.get_physical_type({rr_graph_view.node_xlow(node_id),
+                                                            rr_graph_view.node_ylow(node_id),
+                                                            rr_graph_view.node_layer(node_id)});
 
     if (node_type == SINK || node_type == SOURCE) {
         return get_tile_class_max_ptc(physical_type, is_flat);
@@ -2294,6 +2312,7 @@ int get_rr_node_max_ptc(const RRGraphView& rr_graph_view,
 
 RRNodeId get_pin_rr_node_id(const RRSpatialLookup& rr_spatial_lookup,
                             t_physical_tile_type_ptr physical_tile,
+                            const int layer,
                             const int root_i,
                             const int root_j,
                             int pin_physical_num) {
@@ -2306,7 +2325,8 @@ RRNodeId get_pin_rr_node_id(const RRSpatialLookup& rr_spatial_lookup,
     VTR_ASSERT(!x_offset.empty());
     RRNodeId node_id = RRNodeId::INVALID();
     for (int coord_idx = 0; coord_idx < (int)pin_sides.size(); coord_idx++) {
-        node_id = rr_spatial_lookup.find_node(root_i + x_offset[coord_idx],
+        node_id = rr_spatial_lookup.find_node(layer,
+                                              root_i + x_offset[coord_idx],
                                               root_j + y_offset[coord_idx],
                                               node_type,
                                               pin_physical_num,
@@ -2319,13 +2339,14 @@ RRNodeId get_pin_rr_node_id(const RRSpatialLookup& rr_spatial_lookup,
 
 RRNodeId get_class_rr_node_id(const RRSpatialLookup& rr_spatial_lookup,
                               t_physical_tile_type_ptr physical_tile,
+                              const int layer,
                               const int i,
                               const int j,
                               int class_physical_num) {
     auto class_type = get_class_type_from_class_physical_num(physical_tile, class_physical_num);
     VTR_ASSERT(class_type == DRIVER || class_type == RECEIVER);
     t_rr_type node_type = (class_type == e_pin_type::DRIVER) ? t_rr_type::SOURCE : t_rr_type::SINK;
-    return rr_spatial_lookup.find_node(i, j, node_type, class_physical_num);
+    return rr_spatial_lookup.find_node(layer, i, j, node_type, class_physical_num);
 }
 
 bool node_in_same_physical_tile(RRNodeId node_first, RRNodeId node_second) {
@@ -2340,17 +2361,19 @@ bool node_in_same_physical_tile(RRNodeId node_first, RRNodeId node_second) {
     } else {
         VTR_ASSERT(first_rr_type == t_rr_type::IPIN || first_rr_type == t_rr_type::OPIN || first_rr_type == t_rr_type::SINK || first_rr_type == t_rr_type::SOURCE);
         VTR_ASSERT(second_rr_type == t_rr_type::IPIN || second_rr_type == t_rr_type::OPIN || second_rr_type == t_rr_type::SINK || second_rr_type == t_rr_type::SOURCE);
+        int first_layer = rr_graph.node_layer(node_first);
         int first_x = rr_graph.node_xlow(node_first);
         int first_y = rr_graph.node_ylow(node_first);
+        int sec_layer = rr_graph.node_layer(node_second);
         int sec_x = rr_graph.node_xlow(node_second);
         int sec_y = rr_graph.node_ylow(node_second);
 
         // Get the root-location of the pin's block
-        int first_root_x = first_x - device_ctx.grid.get_width_offset(first_x, first_y);
-        int first_root_y = first_y - device_ctx.grid.get_height_offset(first_x, first_y);
+        int first_root_x = first_x - device_ctx.grid.get_width_offset({first_x, first_y, first_layer});
+        int first_root_y = first_y - device_ctx.grid.get_height_offset({first_x, first_y, first_layer});
 
-        int sec_root_x = sec_x - device_ctx.grid.get_width_offset(sec_x, sec_y);
-        int sec_root_y = sec_y - device_ctx.grid.get_height_offset(sec_x, sec_y);
+        int sec_root_x = sec_x - device_ctx.grid.get_width_offset({sec_x, sec_y, sec_layer});
+        int sec_root_y = sec_y - device_ctx.grid.get_height_offset({sec_x, sec_y, sec_layer});
 
         // If the root-location of the nodes are similar, they should be located in the same tile
         if (first_root_x == sec_root_x && first_root_y == sec_root_y)
@@ -2360,23 +2383,24 @@ bool node_in_same_physical_tile(RRNodeId node_first, RRNodeId node_second) {
     }
 }
 
-std::vector<int> get_cluster_netlist_intra_tile_classes_at_loc(const int i,
-                                                               const int j,
+std::vector<int> get_cluster_netlist_intra_tile_classes_at_loc(int layer,
+                                                               int i,
+                                                               int j,
                                                                t_physical_tile_type_ptr physical_type) {
     std::vector<int> class_num_vec;
 
     const auto& place_ctx = g_vpr_ctx.placement();
     const auto& atom_lookup = g_vpr_ctx.atom().lookup;
-    const auto& grid_block = place_ctx.grid_blocks[i][j];
+    const auto& grid_block = place_ctx.grid_blocks;
 
     class_num_vec.reserve(physical_type->primitive_class_inf.size());
 
     //iterate over different sub tiles inside a tile
     for (int abs_cap = 0; abs_cap < physical_type->capacity; abs_cap++) {
-        if (grid_block.subtile_empty(abs_cap)) {
+        if (grid_block.is_sub_tile_empty({i, j, layer}, abs_cap)) {
             continue;
         }
-        auto cluster_blk_id = grid_block.blocks[abs_cap];
+        auto cluster_blk_id = grid_block.block_at_location({i, j, abs_cap, layer});
         VTR_ASSERT(cluster_blk_id != ClusterBlockId::INVALID() || cluster_blk_id != EMPTY_BLOCK_ID);
 
         auto primitive_classes = get_cluster_internal_class_pairs(atom_lookup,
@@ -2391,13 +2415,14 @@ std::vector<int> get_cluster_netlist_intra_tile_classes_at_loc(const int i,
     return class_num_vec;
 }
 
-std::vector<int> get_cluster_netlist_intra_tile_pins_at_loc(const int i,
+std::vector<int> get_cluster_netlist_intra_tile_pins_at_loc(const int layer,
+                                                            const int i,
                                                             const int j,
                                                             const vtr::vector<ClusterBlockId, t_cluster_pin_chain>& pin_chains,
                                                             const vtr::vector<ClusterBlockId, std::unordered_set<int>>& pin_chains_num,
                                                             t_physical_tile_type_ptr physical_type) {
     auto& place_ctx = g_vpr_ctx.placement();
-    auto grid_block = place_ctx.grid_blocks[i][j];
+    auto grid_block = place_ctx.grid_blocks;
 
     std::vector<int> pin_num_vec;
     pin_num_vec.reserve(get_tile_num_internal_pin(physical_type));
@@ -2405,10 +2430,10 @@ std::vector<int> get_cluster_netlist_intra_tile_pins_at_loc(const int i,
     for (int abs_cap = 0; abs_cap < physical_type->capacity; abs_cap++) {
         std::vector<int> cluster_internal_pins;
 
-        if (grid_block.subtile_empty(abs_cap)) {
+        if (grid_block.is_sub_tile_empty({i, j, layer}, abs_cap)) {
             continue;
         }
-        auto cluster_blk_id = grid_block.blocks[abs_cap];
+        auto cluster_blk_id = grid_block.block_at_location({i, j, abs_cap, layer});
         VTR_ASSERT(cluster_blk_id != ClusterBlockId::INVALID() && cluster_blk_id != EMPTY_BLOCK_ID);
 
         cluster_internal_pins = get_cluster_internal_pins(cluster_blk_id);
@@ -2482,4 +2507,22 @@ void add_pb_child_to_list(std::list<const t_pb*>& pb_list, const t_pb* parent_pb
             }
         }
     }
+}
+
+float get_min_cross_layer_delay() {
+    const auto& rr_graph = g_vpr_ctx.device().rr_graph;
+    float min_delay = std::numeric_limits<float>::max();
+
+    for (const auto& driver_node : rr_graph.nodes()) {
+        for (size_t edge_id = 0; edge_id < rr_graph.num_edges(driver_node); edge_id++) {
+            const auto& sink_node = rr_graph.edge_sink_node(driver_node, edge_id);
+            if (rr_graph.node_layer(driver_node) != rr_graph.node_layer(sink_node)) {
+                int i_switch = rr_graph.edge_switch(driver_node, edge_id);
+                float edge_delay = rr_graph.rr_switch_inf(RRSwitchId(i_switch)).Tdel;
+                min_delay = std::min(min_delay, edge_delay);
+            }
+        }
+    }
+
+    return min_delay;
 }

@@ -4,9 +4,9 @@
  * https://github.com/duck2/uxsdcxx
  * Modify only if your build process doesn't involve regenerating this file.
  *
- * Cmdline: uxsdcxx/uxsdcap.py /home/oscar/Desktop/vtr-new/libs/librrgraph/src/base/rr_graph.xsd
- * Input file: /home/oscar/Desktop/vtr-new/libs/librrgraph/src/base/rr_graph.xsd
- * md5sum of input file: 41df83ecf127a53590711ddec605742a
+ * Cmdline: uxsdcxx/uxsdcap.py /home/smahmoudi/Desktop/vtr/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
+ * Input file: /home/smahmoudi/Desktop/vtr/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
+ * md5sum of input file: bf49388f038e0d0e4a12403ebb964b42
  */
 
 #include <functional>
@@ -672,6 +672,7 @@ inline void load_grid_loc_capnp_type(const ucap::GridLoc::Reader &root, T &out, 
 	(void)report_error;
 	(void)stack;
 
+	out.set_grid_loc_layer(root.getLayer(), context);
 }
 
 template<class T, typename Context>
@@ -704,7 +705,9 @@ inline void load_node_loc_capnp_type(const ucap::NodeLoc::Reader &root, T &out, 
 	(void)report_error;
 	(void)stack;
 
+	out.set_node_loc_layer(root.getLayer(), context);
 	out.set_node_loc_side(conv_enum_loc_side(root.getSide(), report_error), context);
+	out.set_node_loc_twist(root.getTwist(), context);
 }
 
 template<class T, typename Context>
@@ -1117,6 +1120,7 @@ inline void write_grid_locs_capnp_type(T &in, ucap::GridLocs::Builder &root, Con
 		auto child_context = in.get_grid_locs_grid_loc(i, context);
 		grid_locs_grid_loc.setBlockTypeId(in.get_grid_loc_block_type_id(child_context));
 		grid_locs_grid_loc.setHeightOffset(in.get_grid_loc_height_offset(child_context));
+		grid_locs_grid_loc.setLayer(in.get_grid_loc_layer(child_context));
 		grid_locs_grid_loc.setWidthOffset(in.get_grid_loc_width_offset(child_context));
 		grid_locs_grid_loc.setX(in.get_grid_loc_x(child_context));
 		grid_locs_grid_loc.setY(in.get_grid_loc_y(child_context));
@@ -1153,9 +1157,12 @@ inline void write_node_capnp_type(T &in, ucap::Node::Builder &root, Context &con
 	{
 		auto child_context = in.get_node_loc(context);
 		auto node_loc = root.initLoc();
+		node_loc.setLayer(in.get_node_loc_layer(child_context));
 		node_loc.setPtc(in.get_node_loc_ptc(child_context));
 		if((bool)in.get_node_loc_side(child_context))
 			node_loc.setSide(conv_to_enum_loc_side(in.get_node_loc_side(child_context)));
+		if((bool)in.get_node_loc_twist(child_context))
+			node_loc.setTwist(in.get_node_loc_twist(child_context));
 		node_loc.setXhigh(in.get_node_loc_xhigh(child_context));
 		node_loc.setXlow(in.get_node_loc_xlow(child_context));
 		node_loc.setYhigh(in.get_node_loc_yhigh(child_context));
