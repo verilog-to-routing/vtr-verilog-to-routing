@@ -81,7 +81,7 @@ size_t count_children(const pugi::xml_node node,
         child = child.next_sibling(child_name.c_str());
     }
 
-    //Note that we don't do any error checking here since get_first_child does the existance check
+    //Note that we don't do any error checking here since get_first_child does the existence check
 
     return count;
 }
@@ -188,7 +188,7 @@ void expect_only_children(const pugi::xml_node node,
 //  loc_data - XML file location data
 void expect_only_attributes(const pugi::xml_node node,
                             std::vector<std::string> attribute_names,
-                            const std::string& explanation,
+                            std::string_view explanation,
                             const loc_data& loc_data) {
     for (auto attrib : node.attributes()) {
         std::string attrib_name = attrib.name();
@@ -254,7 +254,7 @@ size_t count_attributes(const pugi::xml_node node,
     return count;
 }
 
-//Gets a named property on an node and returns it.
+//Gets a named property on a node and returns it.
 //
 //  node - The xml node
 //  attr_name - The attribute name

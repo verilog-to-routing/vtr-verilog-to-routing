@@ -16,6 +16,7 @@
 #include <vector>
 #include <stdexcept>
 #include <cstdio>
+#include <string_view>
 
 #include "pugixml.hpp"
 
@@ -159,7 +160,7 @@ void expect_only_attributes(const pugi::xml_node node,
 //  loc_data - XML file location data
 void expect_only_attributes(const pugi::xml_node node,
                             std::vector<std::string> attribute_names,
-                            const std::string& explanation,
+                            std::string_view explanation,
                             const loc_data& loc_data);
 
 //Counts the number of attributes on the specified node

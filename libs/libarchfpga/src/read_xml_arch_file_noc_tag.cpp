@@ -82,13 +82,18 @@ static void update_router_info_in_arch(int router_id,
                                        std::map<int, std::pair<int, int>>& routers_in_arch_info);
 
 
+static void process_noc_overrides(pugi::xml_node noc_overrides_tag,
+                                  const pugiutil::loc_data& loc_data,
+                                  t_noc_inf& noc_ref);
+
+
 void process_noc_tag(pugi::xml_node noc_tag,
                      t_arch* arch,
                      const pugiutil::loc_data& loc_data) {
     // a vector representing all the possible attributes within the noc tag
-    std::vector<std::string> expected_noc_attributes = {"link_bandwidth", "link_latency", "router_latency", "noc_router_tile_name"};
+    const std::vector<std::string> expected_noc_attributes = {"link_bandwidth", "link_latency", "router_latency", "noc_router_tile_name"};
 
-    std::vector<std::string> expected_noc_children_tags = {"mesh", "topology"};
+    const std::vector<std::string> expected_noc_children_tags = {"mesh", "topology"};
 
 
     // identifier that lets us know when we could not properly convert a string conversion value
@@ -149,10 +154,10 @@ void process_noc_tag(pugi::xml_node noc_tag,
         process_topology(noc_topology, loc_data, noc_ref);
     }
 
-    //    pugi::xml_node noc_overrides = pugiutil::get_single_child(noc_tag, "overrides", loc_data, pugiutil::OPTIONAL);
-    //    if (noc_overrides) {
-    //
-    //    }
+    pugi::xml_node noc_overrides = pugiutil::get_single_child(noc_tag, "overrides", loc_data, pugiutil::OPTIONAL);
+    if (noc_overrides) {
+        process_noc_overrides(noc_overrides, loc_data, *noc_ref);
+    }
 }
 
 /*
@@ -504,4 +509,114 @@ static void update_router_info_in_arch(int router_id,
         // we just increment its number of declarations
         n_declarations++;
     }
+}
+
+static void process_noc_overrides(pugi::xml_node noc_overrides_tag,
+                                  const pugiutil::loc_data& loc_data,
+                                  t_noc_inf& noc_ref) {
+    // an accepted list of attributes for the router tag
+    const std::vector<std::string> expected_router_attributes{"id", "latency"};
+    // the list of expected values for link tag
+    const std::vector<std::string> expected_link_override_attributes{"src", "dst", "latency", "bandwidth"};
+
+    for (pugi::xml_node override_tag : noc_overrides_tag.children()) {
+        std::string_view override_name = override_tag.name();
+
+        if (override_name == "router") {
+            // check that only the accepted router attributes are found in the tag
+            pugiutil::expect_only_attributes(override_tag, expected_router_attributes, loc_data);
+
+            // store the router information from the attributes
+            int id = pugiutil::get_attribute(noc_overrides_tag, "id", loc_data, pugiutil::REQUIRED).as_int(-1);
+
+            auto router_latency_override = pugiutil::get_attribute(override_tag, "latency", loc_data, pugiutil::REQUIRED).as_string();
+            double latency = std::atof(router_latency_override);
+
+            if (id < 0 || latency <= 0.0) {
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(override_tag),
+                               "The latency override value (%g) for router with id:%d is not legal. "
+                               "The router id must be non-negative and the latency must be positive.",
+                               latency, id);
+            }
+
+            auto it = std::find_if(noc_ref.router_list.begin(), noc_ref.router_list.end(), [id](const t_router& router) {
+                return router.id == id;
+            });
+
+            if (it == noc_ref.router_list.end()) {
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(override_tag),
+                               "The router with id:%d could not be found in the topology.",
+                               id);
+            }
+
+            auto [_, success] = noc_ref.router_latency_overrides.insert({id, latency});
+            if (!success) {
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(override_tag),
+                               "The latency of the router with id:%d wad overridden once before.",
+                               id);
+            }
+
+        } else if (override_name == "link") {
+            // check that only the accepted link attributes are found in the tag
+            pugiutil::expect_only_attributes(override_tag, expected_link_override_attributes, loc_data);
+
+            // store the router information from the attributes
+            int src = pugiutil::get_attribute(noc_overrides_tag, "src", loc_data, pugiutil::REQUIRED).as_int(-1);
+            int dst = pugiutil::get_attribute(noc_overrides_tag, "dst", loc_data, pugiutil::REQUIRED).as_int(-1);
+
+            if (src < 0 || dst < 0) {
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(override_tag),
+                               "The source and destination router ids (%d, %d) must be non-negative.",
+                               src, dst);
+            }
+
+            auto it = std::find_if(noc_ref.router_list.begin(), noc_ref.router_list.end(), [src, dst](const t_router& router) {
+                return router.id == src &&
+                       std::find(router.connection_list.begin(), router.connection_list.end(), dst) != router.connection_list.end();
+            });
+
+            if (it == noc_ref.router_list.end()) {
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(override_tag),
+                               "There is no links from the router with id:%d to the router with id:%d.",
+                               src, dst);
+            }
+
+            auto link_latency_override = pugiutil::get_attribute(override_tag, "latency", loc_data, pugiutil::REQUIRED).as_string(nullptr);
+            if (link_latency_override != nullptr) {
+                double latency = std::atof(link_latency_override);
+                if (latency <= 0.0) {
+                    archfpga_throw(loc_data.filename_c_str(), loc_data.line(override_tag),
+                                   "The override link latency value for link (%d, %d) must be positive:%g." ,
+                                   src, dst, latency);
+                }
+
+                auto [_, success] = noc_ref.link_latency_overrides.insert({{src, dst}, latency});
+                if (!success) {
+                    archfpga_throw(loc_data.filename_c_str(), loc_data.line(override_tag),
+                                   "The latency for link (%d, %d) was overridden once before." ,
+                                   src, dst);
+                }
+            }
+
+            auto link_bandwidth_override = pugiutil::get_attribute(override_tag, "bandwidth", loc_data, pugiutil::REQUIRED).as_string(nullptr);
+            if (link_bandwidth_override != nullptr) {
+                double bandwidth = std::atof(link_latency_override);
+                if (bandwidth <= 0.0) {
+                    archfpga_throw(loc_data.filename_c_str(), loc_data.line(override_tag),
+                                   "The override link bandwidth value for link (%d, %d) must be positive:%g." ,
+                                   src, dst, bandwidth);
+                }
+
+                auto [_, success] = noc_ref.link_bandwidth_overrides.insert({{src, dst}, bandwidth});
+                if (!success) {
+                    archfpga_throw(loc_data.filename_c_str(), loc_data.line(override_tag),
+                                   "The bandwidth for link (%d, %d) was overridden once before." ,
+                                   src, dst);
+                }
+            }
+        } else {
+            bad_tag(override_tag, loc_data, noc_overrides_tag, {"router", "link"});
+        }
+    }
+
 }
