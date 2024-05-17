@@ -311,10 +311,12 @@ static inline bool prune_node(RRNodeId inode,
 
 static inline bool should_not_explore_neighbors(RRNodeId inode,
                                 float new_total_cost,
+                                float new_back_cost,
                                 RRNodeId target_node,
                                 vtr::vector<RRNodeId, t_rr_node_route_inf>& rr_node_route_inf_,
                                 const t_conn_cost_params& params) {
 #ifdef IS_DETERMINISTIC
+    (void)new_back_cost;
     (void)target_node;
     // For deterministic pruning, cannot enforce anything on the total cost since
     // traversal order is not gaurenteed. However, since total cost is used as a
@@ -338,36 +340,6 @@ static inline bool should_not_explore_neighbors(RRNodeId inode,
 #else // IS_DETERMINISTIC
     (void)params;
     if (new_total_cost > rr_node_route_inf_[inode].path_cost)
-        return true;
-    if (inode != target_node && new_total_cost > rr_node_route_inf_[target_node].path_cost)
-        return true;
-#endif // IS_DETERMINISTIC
-    return false;
-}
-
-static inline bool should_not_explore_neighbors(RRNodeId inode,
-                                float new_total_cost,
-                                float new_back_cost,
-                                RRNodeId target_node,
-                                vtr::vector<RRNodeId, t_rr_node_route_inf>& rr_node_route_inf_,
-                                const t_conn_cost_params& params) {
-#ifdef IS_DETERMINISTIC
-    (void)new_back_cost;
-    // Double check now just to be sure that we should still explore neighbors
-    // NOTE: A good question is what hapened to the uniqueness pruning. The idea
-    //       is that at this point it does not matter. Basically any duplicates
-    //       will act like they were the last one pushed in. This may create some
-    //       duplicates, but it is a simple way of handling this sitation.
-    //       It may be worth investigating a better way to do this in the future.
-    // TODO: This is still doing post-target pruning. May want to investigate
-    //       if this is worth doing.
-    if (should_not_explore_neighbors(inode, new_total_cost, target_node, rr_node_route_inf_, params))
-        return true;
-#else // IS_DETERMINISTIC
-    (void)params;
-    if (new_total_cost > rr_node_route_inf_[inode].path_cost)
-        return true;
-    if (new_back_cost > rr_node_route_inf_[inode].backward_path_cost)
         return true;
     if (inode != target_node) {
         if (new_total_cost > rr_node_route_inf_[target_node].path_cost)
@@ -439,7 +411,7 @@ void ParallelConnectionRouter::timing_driven_route_connection_from_heap_thread_f
             continue;
         }
 
-        if (should_not_explore_neighbors(inode, new_total_cost, sink_node, rr_node_route_inf_, cost_params)) {
+        if (should_not_explore_neighbors(inode, new_total_cost, rr_node_route_inf_[inode].backward_path_cost, sink_node, rr_node_route_inf_, cost_params)) {
             continue;
         }
 
@@ -452,6 +424,15 @@ void ParallelConnectionRouter::timing_driven_route_connection_from_heap_thread_f
 
         releaseLock(inode);
 
+        // Double check now just to be sure that we should still explore neighbors
+        // NOTE: A good question is what happened to the uniqueness pruning. The idea
+        //       is that at this point it does not matter. Basically any duplicates
+        //       will act like they were the last one pushed in. This may create some
+        //       duplicates, but it is a simple way of handling this situation.
+        //       It may be worth investigating a better way to do this in the future.
+        // TODO: This is still doing post-target pruning. May want to investigate
+        //       if this is worth doing.
+        // TODO: should try testing without the pruning below and see if anything changes.
         if (should_not_explore_neighbors(inode, new_total_cost, cheapest.backward_path_cost, sink_node, rr_node_route_inf_, cost_params)) {
             continue;
         }
@@ -827,6 +808,8 @@ void ParallelConnectionRouter::evaluate_timing_driven_node_costs(node_t* to,
 }
 
 void ParallelConnectionRouter::empty_heap_annotating_node_route_inf() {
+    VTR_LOG_ERROR("ParallelConnectionRouter::empty_heap_annotating_node_route_inf is not supported");
+    VTR_ASSERT(0);
     //Pop any remaining nodes in the heap and annotate their costs
     //
     //Useful for visualizing router expansion in graphics, as it shows

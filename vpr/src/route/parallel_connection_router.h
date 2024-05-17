@@ -72,6 +72,15 @@ public:
     }
 };
 
+// `node_t` is a simplified version of `t_heap`, and is used as a bundle of node
+// information in the functions inside the routing loop.
+struct node_t {
+    float total_cost;
+    float backward_path_cost;
+    float R_upstream;
+    RREdgeId prev_edge;
+};
+
 class barrier_spin_t {
     size_t num_threads_ = 1;
     std::atomic<size_t> count_ = 0;

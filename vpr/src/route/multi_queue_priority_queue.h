@@ -7,14 +7,6 @@
 
 #include "rr_graph_fwd.h"
 
-struct node_t {
-    float total_cost;
-    float backward_path_cost;
-    float R_upstream;
-    RREdgeId prev_edge;
-};
-
-
 using pq_prio_t = float;
 using pq_index_t = uint32_t;
 

@@ -26,12 +26,14 @@ bool MultiQueuePriorityQueue::try_pop(pq_prio_t &prio, RRNodeId &node) {
     } else {
         pq_index_t node_id;
         std::tie(prio, node_id) = tmp.get();
+        static_assert(sizeof(RRNodeId) == sizeof(pq_index_t));
         node = RRNodeId(node_id);
         return true;
     }
 }
 
-inline pq_index_t cast_RRNodeId_to_pq_index_t(RRNodeId node) {
+static inline pq_index_t cast_RRNodeId_to_pq_index_t(RRNodeId node) {
+    static_assert(sizeof(RRNodeId) == sizeof(pq_index_t));
     return static_cast<pq_index_t>(std::size_t(node));
 }
 

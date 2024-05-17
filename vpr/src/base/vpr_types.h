@@ -1736,7 +1736,13 @@ struct t_rr_node_route_inf {
     float acc_cost;
     float path_cost;
     float backward_path_cost;
-    float R_upstream;
+    float R_upstream; // TODO: Investigate the effect of adding the R_upstream field in
+                      //       this struct. It is put in for the fine-grained parallel
+                      //       router's benefits. It is increasing the working set, which
+                      //       can have some performance implications. This could affect
+                      //       the performance of the serial connection router, which will
+                      //       make the Hybrid Connection Router less efficient (but that
+                      //       needs to be investigated).
 
   public: //Accessors
     short occ() const { return occ_; }
