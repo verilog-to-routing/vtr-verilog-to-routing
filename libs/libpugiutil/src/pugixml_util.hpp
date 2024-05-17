@@ -148,7 +148,7 @@ void expect_only_children(const pugi::xml_node node,
 //  attribute_names - expected attribute names
 //  loc_data - XML file location data
 void expect_only_attributes(const pugi::xml_node node,
-                            std::vector<std::string> attribute_names,
+                            const std::vector<std::string>& attribute_names,
                             const loc_data& loc_data);
 
 //Throws a well formatted error if any attribute other than those named in 'attribute_names' are found on 'node' with an additional explanation.
@@ -159,7 +159,7 @@ void expect_only_attributes(const pugi::xml_node node,
 //  loc_data - XML file location data
 void expect_only_attributes(const pugi::xml_node node,
                             std::vector<std::string> attribute_names,
-                            std::string explanation,
+                            const std::string& explanation,
                             const loc_data& loc_data);
 
 //Counts the number of attributes on the specified node
@@ -171,7 +171,7 @@ size_t count_attributes(const pugi::xml_node node,
                         const loc_data& loc_data,
                         const ReqOpt req_opt = REQUIRED);
 
-//Gets a named property on an node and returns it.
+//Gets a named property on a node and returns it.
 //
 //  node - The xml node
 //  attr_name - The attribute name
