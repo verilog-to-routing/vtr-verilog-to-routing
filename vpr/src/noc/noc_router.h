@@ -53,12 +53,16 @@ class NocRouter {
      * that the physical router is located*/
     int router_layer_position;
 
+    double router_latency;
+
     /** A unique identifier that represents a router block in the 
      * clustered netlist that is placed on the physical router*/
     ClusterBlockId router_block_ref;
 
   public:
-    NocRouter(int id, int grid_position_x, int grid_position_y, int layer_position);
+    NocRouter(int id,
+              int grid_position_x, int grid_position_y, int layer_position,
+              double latency);
 
     // getters
 

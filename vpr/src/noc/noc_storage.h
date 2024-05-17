@@ -322,7 +322,9 @@ class NocStorage {
      * @param grid_position_y The vertical position on the FPGA of the physical
      * tile that this router represents.
      */
-    void add_router(int id, int grid_position_x, int grid_position_y, int layer_poisition);
+    void add_router(int id,
+                    int grid_position_x, int grid_position_y, int layer_poisition,
+                    double latency);
 
     /**
      * @brief Creates a new link and adds it to the NoC. The newly created
@@ -336,7 +338,7 @@ class NocStorage {
      * @param sink A unique identifier for the router that the new link enters
      * into (incoming to the router) 
      */
-    void add_link(NocRouterId source, NocRouterId sink);
+    void add_link(NocRouterId source, NocRouterId sink, double bandwidth, double latency);
 
     /**
      * @brief Set the maximum allowable bandwidth for a link

@@ -618,5 +618,4 @@ static void process_noc_overrides(pugi::xml_node noc_overrides_tag,
             bad_tag(override_tag, loc_data, noc_overrides_tag, {"router", "link"});
         }
     }
-
 }

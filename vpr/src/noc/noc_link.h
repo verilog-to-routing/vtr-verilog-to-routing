@@ -51,9 +51,11 @@ class NocLink {
 
     double bandwidth_usage; /*!< Represents the bandwidth of the data being transmitted on the link. Units in bits-per-second(bps)*/
     double bandwidth; /*!< Represents the maximum bits per second that can be transmitted over the link without causing congestion*/
+    double latency;
 
   public:
-    NocLink(NocLinkId link_id, NocRouterId source_router, NocRouterId sink_router, double bw);
+    NocLink(NocLinkId link_id, NocRouterId source_router, NocRouterId sink_router,
+            double bw, double lat);
 
     // getters
 

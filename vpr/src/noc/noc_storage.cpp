@@ -89,10 +89,12 @@ NocRouterId NocStorage::get_router_at_grid_location(const t_pl_loc& hard_router_
 
 // setters for the NoC
 
-void NocStorage::add_router(int id, int grid_position_x, int grid_posistion_y, int layer_position) {
+void NocStorage::add_router(int id,
+                            int grid_position_x, int grid_posistion_y, int layer_position,
+                            double latency) {
     VTR_ASSERT_MSG(!built_noc, "NoC already built, cannot modify further.");
 
-    router_storage.emplace_back(id, grid_position_x, grid_posistion_y, layer_position);
+    router_storage.emplace_back(id, grid_position_x, grid_posistion_y, layer_position, latency);
 
     /* Get the corresponding NocRouterId for the newly added router and
      * add it to the conversion table.
@@ -107,23 +109,18 @@ void NocStorage::add_router(int id, int grid_position_x, int grid_posistion_y, i
     // get the key to identify the current router
     int router_key = generate_router_key_from_grid_location(grid_position_x, grid_posistion_y, layer_position);
     grid_location_to_router_id.insert(std::pair<int, NocRouterId>(router_key, converted_id));
-
-    return;
 }
 
-void NocStorage::add_link(NocRouterId source, NocRouterId sink) {
+void NocStorage::add_link(NocRouterId source, NocRouterId sink, double bandwidth, double latency) {
     VTR_ASSERT_MSG(!built_noc, "NoC already built, cannot modify further.");
 
     // the new link will be added to the back of the list,
     // so we can use the total number of links added so far as id
     NocLinkId added_link_id((int)link_storage.size());
 
-    double link_bandwidth = get_noc_link_bandwidth();
-    link_storage.emplace_back(added_link_id, source, sink, link_bandwidth);
+    link_storage.emplace_back(added_link_id, source, sink, bandwidth, latency);
 
     router_link_list[source].push_back(added_link_id);
-
-    return;
 }
 
 void NocStorage::set_noc_link_bandwidth(double link_bandwidth) {
