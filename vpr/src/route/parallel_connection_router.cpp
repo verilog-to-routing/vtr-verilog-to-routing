@@ -316,8 +316,6 @@ static inline bool should_not_explore_neighbors(RRNodeId inode,
                                 vtr::vector<RRNodeId, t_rr_node_route_inf>& rr_node_route_inf_,
                                 const t_conn_cost_params& params) {
 #ifdef IS_DETERMINISTIC
-    (void)new_back_cost;
-    (void)target_node;
     // For deterministic pruning, cannot enforce anything on the total cost since
     // traversal order is not gaurenteed. However, since total cost is used as a
     // "key" to signify that this node is the last node that was pushed, we can
@@ -332,7 +330,6 @@ static inline bool should_not_explore_neighbors(RRNodeId inode,
     // neighbors which is not good. This is done before obtaining the lock to
     // prevent lock contention where possible.
     if (inode != target_node) {
-        float new_back_cost = rr_node_route_inf_[inode].backward_path_cost;
         float best_back_cost_to_target = rr_node_route_inf_[target_node].backward_path_cost;
         if (deterministic_post_target_prune_node(new_total_cost, new_back_cost, best_back_cost_to_target, params))
             return true;
@@ -406,7 +403,8 @@ void ParallelConnectionRouter::timing_driven_route_connection_from_heap_thread_f
         //                     cheapest->index,
         //                     rr_graph_);
 
-        // Pruning
+        // Should we explore the neighbors of this node?
+
         if (inode == sink_node) {
             continue;
         }
