@@ -113,7 +113,7 @@ class RRGSB {
     size_t get_num_cb_opin_nodes(const t_rr_type& cb_type, const e_side& side) const;
 
     /* get a rr_node at a given side and track_id */
-    RRNodeId get_opin_node(const t_rr_type& cb_type, const e_side& side, const size_t& node_id) const;
+    RRNodeId get_opin_node(const e_side& side, const size_t& node_id) const;
     /* get a rr_node at a given side and track_id for a connection block */
     RRNodeId get_cb_opin_node(const t_rr_type& cb_type, const e_side& side, const size_t& node_id) const;
 

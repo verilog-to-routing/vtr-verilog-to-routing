@@ -27,7 +27,11 @@ RRGSB::RRGSB() {
     ipin_node_.clear();
 
     opin_node_.clear();
-    cb_opin_node_.clear();
+    for (size_t icb_type = 0; icb_type < 2; icb_type++) {
+        for (size_t iside = 0; iside < NUM_SIDES; iside++) { 
+            cb_opin_node_[icb_type][iside].clear();
+        }
+    }
 }
 
 /************************************************************************
@@ -973,10 +977,10 @@ void RRGSB::sort_ipin_node_in_edges(const RRGraphView& rr_graph) {
 void RRGSB::build_cb_opin_nodes(const RRGraphView& rr_graph) {
   for (t_rr_type cb_type : {CHANX, CHANY}) {
     size_t icb_type = cb_type == CHANX ? 0 : 1;
-    std::vector<enum e_side> cb_opin_sides = rr_gsb.get_cb_ipin_sides(cb_type);
+    std::vector<enum e_side> cb_ipin_sides = get_cb_ipin_sides(cb_type);
     for (size_t iside = 0; iside < cb_ipin_sides.size(); ++iside) {
       enum e_side cb_ipin_side = cb_ipin_sides[iside];
-      for (size_t inode = 0; inode < rr_gsb.get_num_ipin_nodes(cb_ipin_side);
+      for (size_t inode = 0; inode < get_num_ipin_nodes(cb_ipin_side);
            ++inode) {
         std::vector<RREdgeId> driver_rr_edges =
           get_ipin_node_in_edges(rr_graph, cb_ipin_side, inode);
@@ -987,13 +991,13 @@ void RRGSB::build_cb_opin_nodes(const RRGraphView& rr_graph) {
           }
           enum e_side cb_opin_side = NUM_SIDES;
           int cb_opin_index = -1;
-          rr_gsb.get_node_side_and_index(rr_graph, cand_node, IN_PORT, cb_opin_side,
-                                         cb_opin_index);
+          get_node_side_and_index(rr_graph, cand_node, IN_PORT, cb_opin_side,
+                                  cb_opin_index);
           VTR_ASSERT((-1 != cb_opin_index) && (NUM_SIDES != cb_opin_side));
 
           if (cb_opin_node_[icb_type][size_t(cb_opin_side)].end() ==
               std::find(cb_opin_node_[icb_type][size_t(cb_opin_side)].begin(), cb_opin_node_[icb_type][size_t(cb_opin_side)].end(), cand_node)) {
-            cb_opin_node_[icb_type][size_t(cb_opin_side)] = cand_node;
+            cb_opin_node_[icb_type][size_t(cb_opin_side)].push_back(cand_node);
           }
         }
       }
