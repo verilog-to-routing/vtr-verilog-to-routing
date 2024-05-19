@@ -27,6 +27,7 @@ RRGSB::RRGSB() {
     ipin_node_.clear();
 
     opin_node_.clear();
+    cb_opin_node_.clear();
 }
 
 /************************************************************************
@@ -95,6 +96,31 @@ std::vector<enum e_side> RRGSB::get_cb_ipin_sides(const t_rr_type& cb_type) cons
     }
 
     return ipin_sides;
+}
+
+/* Get the sides of ipin_nodes belong to the cb */
+std::vector<enum e_side> RRGSB::get_cb_opin_sides(const t_rr_type& cb_type) const {
+    VTR_ASSERT(validate_cb_type(cb_type));
+
+    std::vector<enum e_side> opin_sides;
+
+    /* Make sure a clean start */
+    opin_sides.clear();
+
+    switch (cb_type) {
+        case CHANX:
+        case CHANY:
+            opin_sides.push_back(TOP);
+            opin_sides.push_back(RIGHT);
+            opin_sides.push_back(BOTTOM);
+            opin_sides.push_back(LEFT);
+            break;
+        default:
+            VTR_LOG("Invalid type of connection block!\n");
+            exit(1);
+    }
+
+    return opin_sides;
 }
 
 /* Get the direction of a rr_node at a given side and track_id */
@@ -255,6 +281,29 @@ RRNodeId RRGSB::get_opin_node(const e_side& side, const size_t& node_id) const {
     VTR_ASSERT(validate_opin_node_id(side, node_id));
 
     return opin_node_[side_manager.to_size_t()][node_id];
+}
+
+/* Get the number of OPIN rr_nodes on a side */
+size_t RRGSB::get_num_cb_opin_nodes(const t_rr_type& cb_type, const e_side& side) const {
+    SideManager side_manager(side);
+    VTR_ASSERT(side_manager.validate());
+    size_t icb_type = get_cb_opin_type_id(cb_type);
+    return cb_opin_node_[icb_type][side_manager.to_size_t()].size();
+}
+
+/* get a opin_node at a given side and track_id */
+RRNodeId RRGSB::get_cb_opin_node(const t_rr_type& cb_type, const e_side& side, const size_t& node_id) const {
+    SideManager side_manager(side);
+    VTR_ASSERT(side_manager.validate());
+
+    /* Ensure the side is valid in the context of this switch block */
+    VTR_ASSERT(validate_side(side));
+
+    /* Ensure the track is valid in the context of this switch block at a specific side */
+    VTR_ASSERT(validate_cb_opin_node_id(cb_type, side, node_id));
+
+    size_t icb_type = get_cb_opin_type_id(cb_type);
+    return cb_opin_node_[icb_type][side_manager.to_size_t()][node_id];
 }
 
 /* Get the node index of a routing track of a connection block, return -1 if not found */
@@ -921,6 +970,37 @@ void RRGSB::sort_ipin_node_in_edges(const RRGraphView& rr_graph) {
     }
 }
 
+void RRGSB::build_cb_opin_nodes(const RRGraphView& rr_graph) {
+  for (t_rr_type cb_type : {CHANX, CHANY}) {
+    size_t icb_type = cb_type == CHANX ? 0 : 1;
+    std::vector<enum e_side> cb_opin_sides = rr_gsb.get_cb_ipin_sides(cb_type);
+    for (size_t iside = 0; iside < cb_ipin_sides.size(); ++iside) {
+      enum e_side cb_ipin_side = cb_ipin_sides[iside];
+      for (size_t inode = 0; inode < rr_gsb.get_num_ipin_nodes(cb_ipin_side);
+           ++inode) {
+        std::vector<RREdgeId> driver_rr_edges =
+          get_ipin_node_in_edges(rr_graph, cb_ipin_side, inode);
+        for (const RREdgeId curr_edge : driver_rr_edges) {
+          RRNodeId cand_node = rr_graph.edge_src_node(curr_edge);
+          if (OPIN != rr_graph.node_type(cand_node)) {
+            continue;
+          }
+          enum e_side cb_opin_side = NUM_SIDES;
+          int cb_opin_index = -1;
+          rr_gsb.get_node_side_and_index(rr_graph, cand_node, IN_PORT, cb_opin_side,
+                                         cb_opin_index);
+          VTR_ASSERT((-1 != cb_opin_index) && (NUM_SIDES != cb_opin_side));
+
+          if (cb_opin_node_[icb_type][size_t(cb_opin_side)].end() ==
+              std::find(cb_opin_node_[icb_type][size_t(cb_opin_side)].begin(), cb_opin_node_[icb_type][size_t(cb_opin_side)].end(), cand_node)) {
+            cb_opin_node_[icb_type][size_t(cb_opin_side)] = cand_node;
+          }
+        }
+      }
+    }
+  }
+}
+
 /************************************************************************
  * Public Mutators: clean-up functions
  ***********************************************************************/
@@ -1031,6 +1111,15 @@ bool RRGSB::validate_opin_node_id(const e_side& side, const size_t& node_id) con
     return (node_id < opin_node_[size_t(side)].size());
 }
 
+/* Check the opin_node_id is valid for opin_node_ and opin_node_grid_side_ */
+bool RRGSB::validate_cb_opin_node_id(const t_rr_type& cb_type, const e_side& side, const size_t& node_id) const {
+    if (false == validate_side(side)) {
+        return false;
+    }
+    size_t icb_type = get_cb_opin_type_id(cb_type);
+    return (node_id < cb_opin_node_[icb_type][size_t(side)].size());
+}
+
 /* Check the ipin_node_id is valid for opin_node_ and opin_node_grid_side_ */
 bool RRGSB::validate_ipin_node_id(const e_side& side, const size_t& node_id) const {
     if (false == validate_side(side)) {
@@ -1042,3 +1131,9 @@ bool RRGSB::validate_ipin_node_id(const e_side& side, const size_t& node_id) con
 bool RRGSB::validate_cb_type(const t_rr_type& cb_type) const {
     return ((CHANX == cb_type) || (CHANY == cb_type));
 }
+
+size_t RRGSB::get_cb_opin_type_id(const t_rr_type& cb_type) const {
+    VTR_ASSERT(validate_cb_type(cb_type));
+    return cb_type == CHANX ? 0 : 1;
+}
+
