@@ -63,6 +63,10 @@ double NocLink::get_congested_bandwidth_ratio() const {
     return congested_bw_ratio;
 }
 
+double NocLink::get_latency() const {
+    return latency;
+}
+
 NocLinkId NocLink::get_link_id() const {
     return id;
 }
@@ -70,3 +74,4 @@ NocLinkId NocLink::get_link_id() const {
 NocLink::operator NocLinkId() const {
     return get_link_id();
 }
+

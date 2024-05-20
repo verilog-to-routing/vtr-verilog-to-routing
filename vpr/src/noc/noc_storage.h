@@ -133,6 +133,10 @@ class NocStorage {
      */
     double noc_router_latency;
 
+    bool detailed_router_latency_;
+    bool detailed_link_latency_;
+    bool detailed_link_bandwidth_;
+
     /**
      * @brief Internal reference to the device grid width. This is necessary
      * to compute a unique key for a given grid location which we can then use
@@ -234,6 +238,12 @@ class NocStorage {
      */
 
     double get_noc_router_latency(void) const;
+
+    bool get_detailed_router_latency() const;
+
+    bool get_detailed_link_latency() const;
+
+    bool get_detailed_link_bandwidth() const;
 
     // getters for  routers
 
@@ -342,34 +352,26 @@ class NocStorage {
 
     /**
      * @brief Set the maximum allowable bandwidth for a link
-     * within the NoC.
-     * 
+     * within the NoC
      */
-
     void set_noc_link_bandwidth(double link_bandwidth);
 
     /**
      * @brief Set the latency of traversing through a link in
      * the NoC.
-     * 
      */
-
     void set_noc_link_latency(double link_latency);
 
     /**
      * @brief Set the latency of traversing through a router in
      * the NoC.
-     * 
      */
-
     void set_noc_router_latency(double router_latency);
 
     /**
      * @brief Set the internal reference to the device
      * grid width.
-     * 
      */
-
     void set_device_grid_width(int grid_width);
 
     void set_device_grid_spec(int grid_width, int grid_height);
@@ -404,7 +406,7 @@ class NocStorage {
      * no future changes can be made.
      * 
      */
-    void finished_building_noc(void);
+    void finished_building_noc();
 
     /**
      * @brief Resets the NoC by clearing all internal datastructures.
@@ -413,7 +415,7 @@ class NocStorage {
      * recommended to run this function before building the NoC.
      * 
      */
-    void clear_noc(void);
+    void clear_noc();
 
     /**
      * @brief Given a user id of a router, this function converts

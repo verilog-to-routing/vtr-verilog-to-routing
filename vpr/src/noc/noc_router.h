@@ -96,6 +96,8 @@ class NocRouter {
      */
     t_physical_tile_loc get_router_physical_location(void) const;
 
+    double get_latency() const;
+
     /**
      * @brief Gets the unique id of the router block that is current placed on the physical router
      * @return A ClusterBlockId that identifies a router block in the clustered netlist

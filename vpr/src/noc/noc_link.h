@@ -99,6 +99,12 @@ class NocLink {
     double get_congested_bandwidth_ratio() const;
 
     /**
+     * @brief Returns the zero-load latency of the link.
+     * @return double Zero-load latency of the link.
+     */
+    double get_latency() const;
+
+    /**
      * @brief Returns the unique link ID. The ID can be used to index
      * vtr::vector<NoCLinkId, ...> instances.
      * @return The unique ID for the link

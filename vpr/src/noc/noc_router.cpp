@@ -39,6 +39,10 @@ t_physical_tile_loc NocRouter::get_router_physical_location(void) const {
     return phy_loc;
 }
 
+double NocRouter::get_latency() const {
+    return router_latency;
+}
+
 ClusterBlockId NocRouter::get_router_block_ref(void) const {
     return router_block_ref;
 }

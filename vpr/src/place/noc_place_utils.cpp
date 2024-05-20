@@ -552,19 +552,49 @@ double calculate_traffic_flow_aggregate_bandwidth_cost(const std::vector<NocLink
 std::pair<double, double> calculate_traffic_flow_latency_cost(const std::vector<NocLinkId>& traffic_flow_route,
                                                               const NocStorage& noc_model,
                                                               const t_noc_traffic_flow& traffic_flow_info) {
-    // there will always be one more router than links in a traffic flow
-    int num_of_links_in_traffic_flow = traffic_flow_route.size();
-    int num_of_routers_in_traffic_flow = num_of_links_in_traffic_flow + 1;
-    double max_latency = traffic_flow_info.max_traffic_flow_latency;
 
-    // latencies of the noc
-    double noc_link_latency = noc_model.get_noc_link_latency();
-    double noc_router_latency = noc_model.get_noc_router_latency();
+    double noc_link_latency_component = 0.0;
+    if (noc_model.get_detailed_link_latency()) {
+        for (auto noc_link_id : traffic_flow_route) {
+            const NocLink& noc_link = noc_model.get_single_noc_link(noc_link_id);
+            double noc_link_latency = noc_link.get_latency();
+            noc_link_latency_component += noc_link_latency;
+        }
+    } else {
+        auto num_of_links_in_traffic_flow = (double)traffic_flow_route.size();
+        double noc_link_latency = noc_model.get_noc_link_latency();
+        noc_link_latency_component = noc_link_latency * num_of_links_in_traffic_flow;
+    }
 
-    // calculate the traffic flow latency
-    double latency = (noc_link_latency * num_of_links_in_traffic_flow) + (noc_router_latency * num_of_routers_in_traffic_flow);
+    double noc_router_latency_component = 0.0;
+
+    if (noc_model.get_detailed_router_latency()) {
+        NocLinkId first_noc_link_id = traffic_flow_route[0];
+        const NocLink& first_noc_link = noc_model.get_single_noc_link(first_noc_link_id);
+        NocRouterId source_noc_router_id = first_noc_link.get_source_router();
+        const NocRouter& source_noc_router = noc_model.get_single_noc_router(source_noc_router_id);
+        noc_router_latency_component = source_noc_router.get_latency();
+
+        for (auto noc_link_id : traffic_flow_route) {
+            const NocLink& noc_link = noc_model.get_single_noc_link(noc_link_id);
+            const NocRouterId sink_router_id = noc_link.get_sink_router();
+            const NocRouter& sink_router = noc_model.get_single_noc_router(sink_router_id);
+            double noc_router_latency = sink_router.get_latency();
+            noc_router_latency_component += noc_router_latency;
+        }
+    } else {
+        // there will always be one more router than links in a traffic flow
+        auto num_of_routers_in_traffic_flow = (double)traffic_flow_route.size() + 1;
+        double noc_router_latency = noc_model.get_noc_router_latency();
+        noc_router_latency_component = noc_router_latency * num_of_routers_in_traffic_flow;
+    }
+
+
+    // calculate the total traffic flow latency
+    double latency = noc_router_latency_component + noc_link_latency_component;
 
     // calculate the traffic flow latency overrun
+    double max_latency = traffic_flow_info.max_traffic_flow_latency;
     double latency_overrun = std::max(latency - max_latency, 0.);
 
     // scale the latency cost by its priority to indicate its importance
