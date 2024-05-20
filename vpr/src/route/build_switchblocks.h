@@ -92,20 +92,6 @@ struct t_switchblock_edge {
     short to_wire_layer;
 };
 
-/**
- * @brief contains the required information to create extra length-0 RR nodes to model 3D custom switch blocks connections within the RR graph
- *
- *  @from_tracks a vector containing source tracks ptc_num indices that are connected to the same destination track in above or below layer in multi-die FPGAs
- *  @offset_to_extra_chanx_node index (max_chan_width + "offset_to_extra_chanx_node") to the correct length-0 RR node that all tracks in "from_tracks" should be connected to in RR graph.
- *  @connected_to_dest this flag is used to avoid edge duplications while adding edges for all "from_tracks" RR nodes to the same node (length-0 RR node) in the destination layer
- *
- */
-struct t_inter_die_switchblock_edge {
-    std::vector<short> from_tracks;
-    short offset_to_extra_chanx_node = -1;
-    bool connected_to_dest = false;
-};
-
 /* Switchblock connections are made as [x][y][from_side][to_side][from_wire_ind].
  * The Switchblock_Lookup class specifies these dimensions.
  * Furthermore, a source_wire at a given 5-d coordinate may connect to multiple destination wires so the value

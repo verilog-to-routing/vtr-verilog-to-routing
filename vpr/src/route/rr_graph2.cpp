@@ -126,6 +126,7 @@ static void get_switchblocks_edges(RRGraphBuilder& rr_graph_builder,
                                    const int to_y,
                                    const t_rr_type to_chan_type,
                                    const int switch_override,
+                                   const int custom_3d_sb_fanin_fanout,
                                    const int delayless_switch,
                                    t_sb_connection_map* sb_conn_map,
                                    vtr::NdMatrix<int, 2>& num_of_3d_conns_custom_SB,
@@ -163,6 +164,7 @@ static int get_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
                                  const e_side from_side,
                                  const e_side to_side,
                                  const int swtich_override,
+                                 const int custom_3d_sb_fanin_fanout,
                                  const int delayless_switch,
                                  t_sb_connection_map* sb_conn_map,
                                  vtr::NdMatrix<int, 2>& num_of_3d_conns_custom_SB,
@@ -1245,6 +1247,7 @@ static bool check_3d_SB_RRnodes(RRGraphBuilder& rr_graph_builder, int x, int y, 
 }
 
 vtr::NdMatrix<int, 2> get_number_track_to_track_inter_die_conn(t_sb_connection_map* sb_conn_map,
+                                                               const int custom_3d_sb_fanin_fanout,
                                                                RRGraphBuilder& rr_graph_builder) {
     auto& grid_ctx = g_vpr_ctx.device().grid;
     vtr::NdMatrix<int, 2> extra_nodes_per_switchblocks;
@@ -1283,7 +1286,7 @@ vtr::NdMatrix<int, 2> get_number_track_to_track_inter_die_conn(t_sb_connection_m
                         }
                     }
                 }
-                extra_nodes_per_switchblocks[x][y] += ((num_of_3d_conn + 39)/ 40);
+                extra_nodes_per_switchblocks[x][y] += ((num_of_3d_conn + custom_3d_sb_fanin_fanout - 1)/ custom_3d_sb_fanin_fanout);
             }
         }
     }
@@ -1924,6 +1927,7 @@ int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
                         const t_chan_seg_details* to_seg_details,
                         const t_chan_details& to_chan_details,
                         const enum e_directionality directionality,
+                        const int custom_3d_sb_fanin_fanout,
                         const int delayless_switch,
                         const vtr::NdMatrix<std::vector<int>, 3>& switch_block_conn,
                         t_sb_connection_map* sb_conn_map) {
@@ -2056,7 +2060,7 @@ int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
                 if (Direction::DEC == from_seg_details[from_track].direction() || BI_DIRECTIONAL == directionality) {
                     num_conn += get_track_to_chan_seg(rr_graph_builder, layer, max_chan_width, from_track, to_chan, to_seg,
                                                       to_type, from_side_a, to_side,
-                                                      switch_override, delayless_switch,
+                                                      switch_override, custom_3d_sb_fanin_fanout, delayless_switch,
                                                       sb_conn_map, num_of_3d_conns_custom_SB, from_rr_node, rr_edges_to_create, des_3d_rr_edges_to_create);
                 }
             } else {
@@ -2094,7 +2098,7 @@ int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
                 if (Direction::INC == from_seg_details[from_track].direction() || BI_DIRECTIONAL == directionality) {
                     num_conn += get_track_to_chan_seg(rr_graph_builder, layer, max_chan_width, from_track, to_chan, to_seg,
                                                       to_type, from_side_b, to_side,
-                                                      switch_override,delayless_switch,
+                                                      switch_override,custom_3d_sb_fanin_fanout, delayless_switch,
                                                       sb_conn_map, num_of_3d_conns_custom_SB, from_rr_node, rr_edges_to_create, des_3d_rr_edges_to_create);
                 }
             } else {
@@ -2240,6 +2244,7 @@ static void get_switchblocks_edges(RRGraphBuilder& rr_graph_builder,
                                    const int to_y,
                                    const t_rr_type to_chan_type,
                                    const int switch_override,
+                                   const int custom_3d_sb_fanin_fanout,
                                    const int delayless_switch,
                                    t_sb_connection_map* sb_conn_map,
                                    vtr::NdMatrix<int, 2>& num_of_3d_conns_custom_SB,
@@ -2309,7 +2314,7 @@ static void get_switchblocks_edges(RRGraphBuilder& rr_graph_builder,
                  *  +-------------+        +-------------+         +--------------+         +--------------+
                  *
                  * */
-                int offset = num_of_3d_conns_custom_SB[tile_x][tile_y] / 40;
+                int offset = num_of_3d_conns_custom_SB[tile_x][tile_y] / custom_3d_sb_fanin_fanout;
                 RRNodeId track_to_chanx_node = rr_graph_builder.node_lookup().find_node(layer, tile_x, tile_y, CHANX, max_chan_width + offset);
                 RRNodeId diff_layer_chanx_node = rr_graph_builder.node_lookup().find_node(to_layer, tile_x, tile_y, CHANX, max_chan_width + offset);
                 RRNodeId chanx_to_track_node = rr_graph_builder.node_lookup().find_node(to_layer, to_x, to_y, to_chan_type, to_wire);
@@ -2333,7 +2338,7 @@ static void get_switchblocks_edges(RRGraphBuilder& rr_graph_builder,
                 ++edge_count;
 
                 //we only add the following edge between intermediate nodes once for the first 3D connection for each pair of intermediate nodes
-                if (num_of_3d_conns_custom_SB[tile_x][tile_y] % 40 == 0) {
+                if (num_of_3d_conns_custom_SB[tile_x][tile_y] % custom_3d_sb_fanin_fanout == 0) {
                     rr_edges_to_create.emplace_back(track_to_chanx_node, diff_layer_chanx_node, delayless_switch, false);
                     ++edge_count;
                 }
@@ -2354,6 +2359,7 @@ static int get_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
                                  const e_side from_side,
                                  const e_side to_side,
                                  const int switch_override,
+                                 const int custom_3d_sb_fanin_fanout,
                                  const int delayless_switch,
                                  t_sb_connection_map* sb_conn_map,
                                  vtr::NdMatrix<int, 2>& num_of_3d_conns_custom_SB,
@@ -2393,6 +2399,7 @@ static int get_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
                            to_y,
                            to_chan_type,
                            switch_override,
+                           custom_3d_sb_fanin_fanout,
                            delayless_switch,
                            sb_conn_map,
                            num_of_3d_conns_custom_SB,
@@ -2415,6 +2422,7 @@ static int get_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
                                to_y,
                                to_chan_type,
                                switch_override,
+                               custom_3d_sb_fanin_fanout,
                                delayless_switch,
                                sb_conn_map,
                                num_of_3d_conns_custom_SB,

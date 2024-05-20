@@ -87,6 +87,7 @@ int get_rr_node_index(const t_rr_node_indices& L_rr_node_indices,
  * @return number of die-crossing connection for each unique (x, y) location within the grid ([0..grid.width-1][0..grid.height-1])
  */
 vtr::NdMatrix<int, 2> get_number_track_to_track_inter_die_conn(t_sb_connection_map* sb_conn_map,
+                                                               const int custom_3d_sb_fanin_fanout,
                                                                RRGraphBuilder& rr_graph_builder);
 
 int find_average_rr_node_index(int device_width,
@@ -216,6 +217,7 @@ int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
                         const t_chan_seg_details* to_seg_details,
                         const t_chan_details& to_chan_details,
                         const enum e_directionality directionality,
+                        const int custom_3d_sb_fanin_fanout,
                         const int delayless_switch,
                         const vtr::NdMatrix<std::vector<int>, 3>& switch_block_conn,
                         t_sb_connection_map* sb_conn_map);
