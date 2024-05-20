@@ -893,6 +893,7 @@ void RRGSB::sort_ipin_node_in_edges(const RRGraphView& rr_graph,
                                     const e_side& ipin_side,
                                     const size_t& ipin_id) {
     std::map<size_t, RREdgeId> from_track_edge_map;
+    std::array<std::map<size_t, RREdgeId>, NUM_SIDES> from_opin_edge_map;
 
     e_side chan_side = get_cb_chan_side(ipin_side);
 
@@ -905,14 +906,21 @@ void RRGSB::sort_ipin_node_in_edges(const RRGraphView& rr_graph,
      * and cache these. Then we will use the data to sort the edge in the
      * following sequence:
      *  0----------------------------------------------------------------> num_in_edges()
+     *  |<---------------------------1st part routing tracks ------------->
+     *  |<--TOP side-->|<--RIGHT side-->|<--BOTTOM side-->|<--LEFT side-->|
+     *  |<---------------------------2nd part IPINs ------------->
      *  |<--TOP side-->|<--RIGHT side-->|<--BOTTOM side-->|<--LEFT side-->|
      *  For each side, the edge will be sorted by the node index starting from 0
-     *  For each side, the edge from grid pins will be the 1st part
-     *  while the edge from routing tracks will be the 2nd part
+     *  For each side, the edge from grid pins will be the 2nd part (sorted by ptc number)
+     *  while the edge from routing tracks will be the 1st part
      */
     for (const RREdgeId& edge : rr_graph.node_in_edges(ipin_node)) {
         /* We care the source node of this edge, and it should be an input of the GSB!!! */
         const RRNodeId& src_node = rr_graph.edge_src_node(edge);
+        /* In this part, we only sort routing track nodes. IPIN nodes will be handled later */
+        if (CHANX != rr_graph.node_type(src_node) && CHANY != rr_graph.node_type(src_node)) {
+          continue;
+        }
         /* The driver routing channel node can be either an input or an output to the GSB.
          * Just try to find a qualified one. */
         int index = OPEN;
@@ -949,10 +957,54 @@ void RRGSB::sort_ipin_node_in_edges(const RRGraphView& rr_graph,
         edge_counter++;
     }
 
+    for (const RREdgeId& edge : rr_graph.node_in_edges(ipin_node)) {
+        /* We care the source node of this edge, and it should be an input of the GSB!!! */
+        const RRNodeId& src_node = rr_graph.edge_src_node(edge);
+        /* In this part, we only sort routing track nodes. IPIN nodes will be handled later */
+        if (OPIN != rr_graph.node_type(src_node)) {
+          continue;
+        }
+        enum e_side cb_opin_side = NUM_SIDES;
+        int cb_opin_index = -1;
+        get_node_side_and_index(rr_graph, src_node, IN_PORT, cb_opin_side,
+                                cb_opin_index);
+        VTR_ASSERT((-1 != cb_opin_index) && (NUM_SIDES != cb_opin_side));
+        /* Must have valid side and index */
+        if (OPEN == cb_opin_index || NUM_SIDES == cb_opin_side) {
+            VTR_LOG("GSB[%lu][%lu]:\n", get_x(), get_y());
+            VTR_LOG("----------------------------------\n");
+            VTR_LOG("SRC node:\n");
+            VTR_LOG("Node info: %s\n", rr_graph.node_coordinate_to_string(src_node).c_str());
+            VTR_LOG("Node ptc: %d\n", rr_graph.node_ptc_num(src_node));
+            VTR_LOG("Fan-out nodes:\n");
+            for (const auto& temp_edge : rr_graph.edge_range(src_node)) {
+                VTR_LOG("\t%s\n", rr_graph.node_coordinate_to_string(rr_graph.edge_sink_node(temp_edge)).c_str());
+            }
+            VTR_LOG("\n----------------------------------\n");
+            VTR_LOG("IPIN node:\n");
+            VTR_LOG("Node info: %s\n", rr_graph.node_coordinate_to_string(ipin_node).c_str());
+            VTR_LOG("Node ptc: %d\n", rr_graph.node_ptc_num(ipin_node));
+            VTR_LOG("Fan-in nodes:\n");
+            for (const auto& temp_edge : rr_graph.node_in_edges(ipin_node)) {
+                VTR_LOG("\t%s\n", rr_graph.node_coordinate_to_string(rr_graph.edge_src_node(temp_edge)).c_str());
+            }
+        }
+        from_opin_edge_map[size_t(cb_opin_side)][cb_opin_index] = edge;
+        edge_counter++;
+    }
+
     /* Store the sorted edge */
     for (size_t itrack = 0; itrack < chan_node_[size_t(chan_side)].get_chan_width(); ++itrack) {
         if (0 < from_track_edge_map.count(itrack)) {
             ipin_node_in_edges_[size_t(ipin_side)][ipin_id].push_back(from_track_edge_map[itrack]);
+        }
+    }
+
+    for (e_side iside : {TOP, RIGHT, BOTTOM, LEFT}) {
+        for (size_t ipin = 0; ipin < get_num_opin_nodes(iside); ++ipin) {
+            if (0 < from_opin_edge_map[size_t(iside)].count(ipin)) {
+                ipin_node_in_edges_[size_t(ipin_side)][ipin_id].push_back(from_opin_edge_map[size_t(iside)][ipin]);
+            }
         }
     }
 
