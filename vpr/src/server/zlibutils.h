@@ -6,6 +6,8 @@
 #include <string>
 #include <optional>
 
+constexpr const int BYTES_NUM_IN_32KB = 32768;
+
 /**
 * @brief Compresses the input sequence using zlib.
 *
