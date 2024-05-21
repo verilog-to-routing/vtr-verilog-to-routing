@@ -49,8 +49,8 @@ void Task::success(const std::string& result) {
 std::string Task::info(bool skip_duration) const {
     std::stringstream ss;
     ss << "task["
-        << "id=" << std::to_string(m_job_id)
-        << ",cmd=" << std::to_string(m_cmd);
+       << "id="   << std::to_string(m_job_id)
+       << ",cmd=" << std::to_string(m_cmd);
     if (!skip_duration) {
         ss << ",exists=" << get_pretty_duration_str_from_ms(time_ms_elapsed());
     }
