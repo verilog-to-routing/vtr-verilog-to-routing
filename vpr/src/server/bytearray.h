@@ -42,7 +42,7 @@ public:
         push_back(b);
     }
 
-    std::size_t find_sequence(const char* sequence, std::size_t sequence_size) {
+    std::pair<bool, std::size_t> find_sequence(const char* sequence, std::size_t sequence_size) {
         const std::size_t ssize = size();
         if (ssize >= sequence_size) {
             for (std::size_t i = 0; i <= ssize - sequence_size; ++i) {
@@ -54,11 +54,11 @@ public:
                     }
                 }
                 if (found) {
-                    return i;
+                    return std::make_pair(true, i);
                 }
             }
         }
-        return std::size_t(-1);
+        return std::make_pair(false, 0);
     }
 
     std::string to_string() const {

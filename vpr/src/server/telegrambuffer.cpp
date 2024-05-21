@@ -9,8 +9,8 @@ void TelegramBuffer::append(const ByteArray& bytes) {
 }
 
 bool TelegramBuffer::check_telegram_header_presence() {
-    std::size_t signature_start_index = m_raw_buffer.find_sequence(TelegramHeader::SIGNATURE, TelegramHeader::SIGNATURE_SIZE);
-    if (signature_start_index != std::size_t(-1)) {
+    auto [found, signature_start_index] = m_raw_buffer.find_sequence(TelegramHeader::SIGNATURE, TelegramHeader::SIGNATURE_SIZE);
+    if (found) {
         if (signature_start_index != 0) {
             // discard bytes preceding the header start position.
             m_raw_buffer.erase(m_raw_buffer.begin(), m_raw_buffer.begin() + signature_start_index);
