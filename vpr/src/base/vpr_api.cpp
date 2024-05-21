@@ -1065,8 +1065,7 @@ void vpr_init_graphics(const t_vpr_setup& vpr_setup, const t_arch& arch, bool is
         alloc_draw_structs(&arch);
 }
 
-void vpr_init_server(const t_vpr_setup& vpr_setup)
-{
+void vpr_init_server(const t_vpr_setup& vpr_setup) {
 #ifndef NO_SERVER
     if (vpr_setup.ServerOpts.is_server_mode_enabled) {
         /* Set up a server and its callback to be triggered at 100ms intervals by the timer's timeout event. */
