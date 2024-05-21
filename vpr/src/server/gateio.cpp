@@ -202,8 +202,7 @@ void GateIO::handle_activity_status(ActivityStatus status, std::unique_ptr<Clien
     }
 }
 
-void GateIO::start_listening()
-{
+void GateIO::start_listening() {
 #ifdef ENABLE_CLIENT_ALIVE_TRACKER
     std::unique_ptr<ClientAliveTracker> client_alive_tracker_ptr =
          std::make_unique<ClientAliveTracker>(std::chrono::milliseconds{5000}, std::chrono::milliseconds{20000});
