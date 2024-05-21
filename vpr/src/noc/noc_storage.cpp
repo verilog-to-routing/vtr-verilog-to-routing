@@ -64,11 +64,11 @@ NocRouter& NocStorage::get_single_mutable_noc_router(NocRouterId id) {
 }
 
 // get link properties
-const NocLink& NocStorage::get_single_noc_link(NocLinkId id) const {
+    const NocLink& NocStorage::get_single_noc_link(NocLinkId id) const {
     return link_storage[id];
 }
 
-NocLinkId  NocStorage::get_single_noc_link_id(NocRouterId src_router, NocRouterId dst_router) const {
+NocLinkId NocStorage::get_single_noc_link_id(NocRouterId src_router, NocRouterId dst_router) const {
     NocLinkId link_id = NocLinkId::INVALID();
 
     for (const auto& link : link_storage) {
@@ -208,6 +208,8 @@ bool NocStorage::remove_link(NocRouterId src_router_id, NocRouterId sink_router_
 void NocStorage::finished_building_noc() {
     VTR_ASSERT_MSG(!built_noc, "NoC already built, cannot modify further.");
     built_noc = true;
+
+    returnable_noc_link_const_refs_.reserve(link_storage.size());
 
     /* We go through all NoC routers in the router_storage and check if there are any
      * two consecutive NoC routers whose latency is different. If such two routers are

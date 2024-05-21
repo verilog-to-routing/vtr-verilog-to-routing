@@ -146,10 +146,7 @@ void find_affected_noc_routers_and_update_noc_costs(const t_pl_blocks_to_be_move
     }
 
     // Iterate over all affected links and calculate their new congestion cost and store it
-    for (const auto& link_id : affected_noc_links) {
-        // get the affected link
-        const auto& link = noc_ctx.noc_model.get_single_noc_link(link_id);
-
+    for (const NocLink& link : noc_ctx.noc_model.get_noc_links(affected_noc_links)) {
         // calculate the new congestion cost for the link and store it
         proposed_link_congestion_costs[link] = calculate_link_congestion_cost(link);
 
@@ -174,10 +171,7 @@ void commit_noc_costs() {
     }
 
     // Iterate over all the NoC links whose bandwidth utilization was affected by the proposed move
-    for(auto link_id : affected_noc_links) {
-        // get the affected link
-        const auto& link = noc_ctx.noc_model.get_single_noc_link(link_id);
-
+    for (const NocLink& link : noc_ctx.noc_model.get_noc_links(affected_noc_links)) {
         // commit the new link congestion cost
         link_congestion_costs[link] = proposed_link_congestion_costs[link];
 
@@ -494,7 +488,7 @@ int check_noc_placement_costs(const t_placer_costs& costs, double error_toleranc
     }
 
     // Iterate over all NoC links and accumulate congestion cost
-    for(const auto& link : temp_noc_link_storage) {
+    for (const auto& link : temp_noc_link_storage) {
         cost_check.congestion += calculate_link_congestion_cost(link);
     }
 
@@ -555,10 +549,9 @@ std::pair<double, double> calculate_traffic_flow_latency_cost(const std::vector<
 
     double noc_link_latency_component = 0.0;
     if (noc_model.get_detailed_link_latency()) {
-        for (auto noc_link_id : traffic_flow_route) {
-            const NocLink& noc_link = noc_model.get_single_noc_link(noc_link_id);
-            double noc_link_latency = noc_link.get_latency();
-            noc_link_latency_component += noc_link_latency;
+        for (const NocLink& link : noc_model.get_noc_links(traffic_flow_route)) {
+            double link_latency = link.get_latency();
+            noc_link_latency_component += link_latency;
         }
     } else {
         auto num_of_links_in_traffic_flow = (double)traffic_flow_route.size();
@@ -575,9 +568,8 @@ std::pair<double, double> calculate_traffic_flow_latency_cost(const std::vector<
         const NocRouter& source_noc_router = noc_model.get_single_noc_router(source_noc_router_id);
         noc_router_latency_component = source_noc_router.get_latency();
 
-        for (auto noc_link_id : traffic_flow_route) {
-            const NocLink& noc_link = noc_model.get_single_noc_link(noc_link_id);
-            const NocRouterId sink_router_id = noc_link.get_sink_router();
+        for (const NocLink& link : noc_model.get_noc_links(traffic_flow_route)) {
+            const NocRouterId sink_router_id = link.get_sink_router();
             const NocRouter& sink_router = noc_model.get_single_noc_router(sink_router_id);
             double noc_router_latency = sink_router.get_latency();
             noc_router_latency_component += noc_router_latency;

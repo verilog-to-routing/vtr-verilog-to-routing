@@ -133,9 +133,34 @@ class NocStorage {
      */
     double noc_router_latency;
 
+    /**
+     * @brief When set true, specifies that some NoC routers have different
+     * latencies than others. When set false, all the NoC routers have the same
+     * latency.
+     */
     bool detailed_router_latency_;
+
+    /**
+     * @brief When set true, specifies that some NoC links have different
+     * latencies than others. When set false, all the NoC link have the same
+     * latency.
+     */
     bool detailed_link_latency_;
+
+    /**
+     * @brief When set true, specifies that some NoC links have different
+     * bandwidth than others. When set false, all the NoC link have the same
+     * bandwidth.
+     */
     bool detailed_link_bandwidth_;
+
+    /**
+     * @brief A constant reference to this vector is returned by get_noc_links(...).
+     * This is used to avoid memory allocation whenever get_noc_links(...) is called.
+     * The vector is mutable so that get_noc_links(...), which is a const method, can
+     * modify it.
+     */
+    mutable std::vector<std::reference_wrapper<const NocLink>> returnable_noc_link_const_refs_;
 
     /**
      * @brief Internal reference to the device grid width. This is necessary
@@ -204,13 +229,13 @@ class NocStorage {
      *
      * @return A vector of links.
      */
-    vtr::vector<NocLinkId, NocLink>& get_mutable_noc_links(void);
+    vtr::vector<NocLinkId, NocLink>& get_mutable_noc_links();
 
     /**
      * @return An integer representing the total number of links within the
      * NoC.
      */
-    int get_number_of_noc_links(void) const;
+    int get_number_of_noc_links() const;
 
     /**
      * @brief Get the maximum allowable bandwidth for a link
@@ -218,8 +243,7 @@ class NocStorage {
      * 
      * @return a numeric value that represents the link bandwidth in bps
      */
-
-    double get_noc_link_bandwidth(void) const;
+    double get_noc_link_bandwidth() const;
 
     /**
      * @brief Get the latency of traversing through a link in
@@ -227,8 +251,7 @@ class NocStorage {
      * 
      * @return a numeric value that represents the link latency in seconds
      */
-
-    double get_noc_link_latency(void) const;
+    double get_noc_link_latency() const;
 
     /**
      * @brief Get the latency of traversing through a router in
@@ -236,13 +259,24 @@ class NocStorage {
      * 
      * @return a numeric value that represents the router latency in seconds
      */
+    double get_noc_router_latency() const;
 
-    double get_noc_router_latency(void) const;
-
+    /**
+     * @return True if some NoC routers have different latencies than others.
+     * False if all NoC routers have the same latency.
+     */
     bool get_detailed_router_latency() const;
 
+    /**
+     * @return True if some NoC links have different latencies than others.
+     * False if all NoC links have the same latency.
+     */
     bool get_detailed_link_latency() const;
 
+    /**
+     * @return True if some NoC links have different bandwidths than others.
+     * False if all NoC links have the same bandwidth.
+     */
     bool get_detailed_link_bandwidth() const;
 
     // getters for  routers
@@ -280,6 +314,18 @@ class NocStorage {
     const NocLink& get_single_noc_link(NocLinkId id) const;
 
     /**
+     *
+     * @tparam Container The type of standard library container used to carry
+     * NoCLinkIds. This container type must be iterable in a range-based loop.
+     * @param noc_link_ids A standard container that contains NoCLinkIds of the
+     * requested NoC links
+     * @return A const
+     */
+    template <template<typename> class Container>
+    const std::vector<std::reference_wrapper<const NocLink>>& get_noc_links(const Container<NocLinkId>& noc_link_ids) const;
+
+
+    /**
      * @brief Given source and sink router identifiers, this function
      * finds a link connecting these routers and returns its identifier.
      * If such a link does not exist, an invalid id is returned.
@@ -292,7 +338,7 @@ class NocStorage {
      * to the destination router. NocLinkId::INVALID() is such a link is not
      * found.
      */
-    NocLinkId  get_single_noc_link_id(NocRouterId src_router, NocRouterId dst_router) const;
+    NocLinkId get_single_noc_link_id(NocRouterId src_router, NocRouterId dst_router) const;
 
     /**
      * @brief Given a unique link identifier, get the corresponding link
@@ -376,7 +422,7 @@ class NocStorage {
 
     void set_device_grid_spec(int grid_width, int grid_height);
 
-    // general utiliy functions
+    // general utility functions
     /**
      * @brief The link is removed from the outgoing vector of links for
      * the source router. The link is not removed from the vector of all
@@ -404,6 +450,14 @@ class NocStorage {
      * NoC (routers and links cannot be added or removed). This function
      * should be called after building the NoC. Guarantees that
      * no future changes can be made.
+     *
+     * When the NoC building is finished, this function checks whether
+     * all links and routers have the same bandwidth and latency.
+     * If some NoC elements have different latencies or bandwidths than
+     * others, a flag is set to indicate that the detailed NoC model should be
+     * used. In the detailed model, instead of associating a single latency or
+     * bandwidth value with all NoC routers or links, each NoC router or link
+     * has its specific value.
      * 
      */
     void finished_building_noc();
@@ -495,4 +549,18 @@ class NocStorage {
     void echo_noc(char* file_name) const;
 };
 
+
+template <template<typename> class Container>
+const std::vector<std::reference_wrapper<const NocLink>>& NocStorage::get_noc_links(const Container<NocLinkId>& noc_link_ids) const {
+    returnable_noc_link_const_refs_.clear();
+
+    std::transform(noc_link_ids.begin(), noc_link_ids.end(), std::back_inserter(returnable_noc_link_const_refs_),
+                   [this](const NocLinkId lid) {
+                       return std::reference_wrapper<const NocLink>(this->get_single_noc_link(lid));
+                   });
+
+    return returnable_noc_link_const_refs_;
+}
+
 #endif
+
