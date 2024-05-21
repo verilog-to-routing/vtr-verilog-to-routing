@@ -98,8 +98,8 @@ std::string TelegramOptions::errors_str() const {
 }
 
 bool TelegramOptions::is_data_type_supported(const std::string& type) const {
-    static const std::set<std::string> supported_types{"int", "string", "bool"};
-    return supported_types.count(type) != 0;
+    constexpr std::array<std::string_view, 3> supported_types{"int", "string", "bool"};
+    return std::find(supported_types.begin(), supported_types.end(), type) != supported_types.end();
 }
 
 bool TelegramOptions::check_keys_presence(const std::vector<std::string>& keys) {
