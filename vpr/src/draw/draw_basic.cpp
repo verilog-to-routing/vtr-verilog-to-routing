@@ -1134,7 +1134,7 @@ void draw_crit_path_elements(const std::vector<tatum::TimingPath>& paths, const 
             float prev_arr_time = std::numeric_limits<float>::quiet_NaN();
             int element_counter = 0;
             for (const tatum::TimingPathElem& elem : path.data_arrival_path().elements()) {
-                bool draw_current_element = element_indexes.empty() ? true : element_indexes.find(element_counter) != element_indexes.end();
+                bool draw_current_element = element_indexes.empty() || element_indexes.find(element_counter) != element_indexes.end();
    
                 // draw element
                 tatum::NodeId node = elem.node();
