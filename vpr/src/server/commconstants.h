@@ -23,7 +23,7 @@ inline const std::string OPTION_DETAILS_LEVEL{"details_level"};
 inline const std::string OPTION_IS_FLAT_ROUTING{"is_flat_routing"};
 inline const std::string OPTION_PATH_ELEMENTS{"path_elements"};
 inline const std::string OPTION_HIGHLIGHT_MODE{"high_light_mode"};
-inline const std::string OPTION_DRAW_PATH_CONTOUR{"draw_path_contour"};;
+inline const std::string OPTION_DRAW_PATH_CONTOUR{"draw_path_contour"};
 
 inline const std::string KEY_SETUP_PATH_LIST{"setup"};
 inline const std::string KEY_HOLD_PATH_LIST{"hold"};
