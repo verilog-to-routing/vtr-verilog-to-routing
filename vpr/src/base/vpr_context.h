@@ -578,12 +578,6 @@ class ServerContext : public Context {
     void set_crit_paths(const std::vector<tatum::TimingPath>& crit_paths) { crit_paths_ = crit_paths; }
     const std::vector<tatum::TimingPath>& crit_paths() const { return crit_paths_; }
 
-    void set_critical_path_num(int critical_path_num) { critical_path_num_ = critical_path_num; }
-    int critical_path_num() const { return critical_path_num_; }
-
-    void set_path_type(const std::string& path_type) { path_type_ = path_type; }
-    const std::string& path_type() const { return path_type_; }
-
     void clear_crit_path_elements() { crit_path_element_indexes_.clear(); }
     void set_crit_path_elements(const std::map<std::size_t, std::set<std::size_t>>& crit_path_element_indexes) { crit_path_element_indexes_ = crit_path_element_indexes; }
     std::map<std::size_t, std::set<std::size_t>> crit_path_element_indexes() const { return crit_path_element_indexes_; }
@@ -609,22 +603,6 @@ class ServerContext : public Context {
      * to be rendered upon user request.
      */
     std::vector<tatum::TimingPath> crit_paths_;
-
-    /**
-     * @brief Stores the number of critical paths items.
-     *
-     * This value is used to generate a critical path report with a certain number of items,
-     * which will be sent back to the client upon request.
-     */
-    int critical_path_num_ = 1;
-
-    /**
-     * @brief Stores the critical path type.
-     *
-     * This value is used to generate a specific type of critical path report and send
-     * it back to the client upon request.
-     */
-    std::string path_type_ = "setup";
 
     /**
      * @brief Stores the selected critical path elements.
