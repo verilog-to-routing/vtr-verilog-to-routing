@@ -43,7 +43,11 @@ TEST_CASE("test_initial_noc_placement", "[noc_place_utils]") {
     // dist_2 is used to generate traffic flow bandwidths.
     // Setting the NoC link bandwidth to max() / 5 makes link congestion more likely to happen
     const double noc_link_bandwidth = dist_2.max() / 5;
+    constexpr double noc_link_latency = 1.0;
+    constexpr double noc_router_latency = 1.0;
     noc_ctx.noc_model.set_noc_link_bandwidth(noc_link_bandwidth);
+    noc_ctx.noc_model.set_noc_link_latency(noc_link_latency);
+    noc_ctx.noc_model.set_noc_router_latency(noc_router_latency);
 
     // individual router parameters
     int curr_router_id;
@@ -66,7 +70,8 @@ TEST_CASE("test_initial_noc_placement", "[noc_place_utils]") {
         noc_ctx.noc_model.add_router(curr_router_id,
                                      router_grid_position_x,
                                      router_grid_position_y,
-                                     0);
+                                     0,
+                                     noc_router_latency);
     }
 
     noc_ctx.noc_model.make_room_for_noc_router_link_list();
@@ -76,19 +81,19 @@ TEST_CASE("test_initial_noc_placement", "[noc_place_utils]") {
         for (int j = 0; j < MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST; j++) {
             // add a link to the left of the router if there exists another router there
             if ((j - 1) >= 0) {
-                noc_ctx.noc_model.add_link((NocRouterId)((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j), (NocRouterId)(((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j) - 1));
+                noc_ctx.noc_model.add_link((NocRouterId)((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j), (NocRouterId)(((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j) - 1), noc_link_bandwidth, noc_router_latency);
             }
             // add a link to the top of the router if there exists another router there
             if ((i + 1) <= MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST - 1) {
-                noc_ctx.noc_model.add_link((NocRouterId)((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j), (NocRouterId)(((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j) + MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST));
+                noc_ctx.noc_model.add_link((NocRouterId)((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j), (NocRouterId)(((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j) + MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST), noc_link_bandwidth, noc_router_latency);
             }
             // add a link to the right of the router if there exists another router there
             if ((j + 1) <= MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST - 1) {
-                noc_ctx.noc_model.add_link((NocRouterId)((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j), (NocRouterId)(((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j) + 1));
+                noc_ctx.noc_model.add_link((NocRouterId)((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j), (NocRouterId)(((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j) + 1), noc_link_bandwidth, noc_router_latency);
             }
             // add a link to the bottom of the router if there exists another router there
             if ((i - 1) >= 0) {
-                noc_ctx.noc_model.add_link((NocRouterId)((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j), (NocRouterId)(((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j) - MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST));
+                noc_ctx.noc_model.add_link((NocRouterId)((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j), (NocRouterId)(((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j) - MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST), noc_link_bandwidth, noc_router_latency);
             }
         }
     }
@@ -235,7 +240,11 @@ TEST_CASE("test_initial_comp_cost_functions", "[noc_place_utils]") {
     // dist_2 is used to generate traffic flow bandwidths.
     // Setting the NoC link bandwidth to max() / 5 makes link congestion more likely to happen
     const double noc_link_bandwidth = dist_2.max() / 5;
+    constexpr double noc_link_latency = 1.0;
+    constexpr double noc_router_latency = 1.0;
     noc_ctx.noc_model.set_noc_link_bandwidth(noc_link_bandwidth);
+    noc_ctx.noc_model.set_noc_link_latency(noc_link_latency);
+    noc_ctx.noc_model.set_noc_router_latency(noc_router_latency);
 
     // individual router parameters
     int curr_router_id;
@@ -258,7 +267,8 @@ TEST_CASE("test_initial_comp_cost_functions", "[noc_place_utils]") {
         noc_ctx.noc_model.add_router(curr_router_id,
                                      router_grid_position_x,
                                      router_grid_position_y,
-                                     0);
+                                     0,
+                                     noc_router_latency);
     }
 
     noc_ctx.noc_model.make_room_for_noc_router_link_list();
@@ -268,19 +278,19 @@ TEST_CASE("test_initial_comp_cost_functions", "[noc_place_utils]") {
         for (int j = 0; j < MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST; j++) {
             // add a link to the left of the router if there exists another router there
             if ((j - 1) >= 0) {
-                noc_ctx.noc_model.add_link((NocRouterId)((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j), (NocRouterId)(((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j) - 1));
+                noc_ctx.noc_model.add_link((NocRouterId)((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j), (NocRouterId)(((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j) - 1), noc_link_bandwidth, noc_link_latency);
             }
             // add a link to the top of the router if there exists another router there
             if ((i + 1) <= MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST - 1) {
-                noc_ctx.noc_model.add_link((NocRouterId)((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j), (NocRouterId)(((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j) + MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST));
+                noc_ctx.noc_model.add_link((NocRouterId)((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j), (NocRouterId)(((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j) + MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST), noc_link_bandwidth, noc_link_latency);
             }
             // add a link to the right of the router if there exists another router there
             if ((j + 1) <= MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST - 1) {
-                noc_ctx.noc_model.add_link((NocRouterId)((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j), (NocRouterId)(((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j) + 1));
+                noc_ctx.noc_model.add_link((NocRouterId)((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j), (NocRouterId)(((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j) + 1), noc_link_bandwidth, noc_link_latency);
             }
             // add a link to the bottom of the router if there exists another router there
             if ((i - 1) >= 0) {
-                noc_ctx.noc_model.add_link((NocRouterId)((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j), (NocRouterId)(((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j) - MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST));
+                noc_ctx.noc_model.add_link((NocRouterId)((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j), (NocRouterId)(((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j) - MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST), noc_link_bandwidth, noc_link_latency);
             }
         }
     }
@@ -518,9 +528,9 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
     noc_ctx.noc_model.set_noc_link_bandwidth(1);
 
     // needs to be the same as above
-    double router_latency = noc_ctx.noc_model.get_noc_router_latency();
-    double link_latency = noc_ctx.noc_model.get_noc_link_latency();
-    double link_bandwidth = noc_ctx.noc_model.get_noc_link_bandwidth();
+    const double router_latency = noc_ctx.noc_model.get_noc_router_latency();
+    const double link_latency = noc_ctx.noc_model.get_noc_link_latency();
+    const double link_bandwidth = noc_ctx.noc_model.get_noc_link_bandwidth();
 
     // keeps track of which hard router each cluster block is placed
     vtr::vector<ClusterBlockId, NocRouterId> router_where_cluster_is_placed;
@@ -537,7 +547,8 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
         noc_ctx.noc_model.add_router(curr_router_id,
                                      router_grid_position_x,
                                      router_grid_position_y,
-                                     0);
+                                     0,
+                                     router_latency);
     }
 
     noc_ctx.noc_model.make_room_for_noc_router_link_list();
@@ -547,19 +558,19 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
         for (int j = 0; j < MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST; j++) {
             // add a link to the left of the router if there exists another router there
             if ((j - 1) >= 0) {
-                noc_ctx.noc_model.add_link((NocRouterId)((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j), (NocRouterId)(((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j) - 1));
+                noc_ctx.noc_model.add_link((NocRouterId)((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j), (NocRouterId)(((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j) - 1), link_bandwidth, link_latency);
             }
             // add a link to the top of the router if there exists another router there
             if ((i + 1) <= MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST - 1) {
-                noc_ctx.noc_model.add_link((NocRouterId)((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j), (NocRouterId)(((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j) + MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST));
+                noc_ctx.noc_model.add_link((NocRouterId)((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j), (NocRouterId)(((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j) + MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST), link_bandwidth, link_latency);
             }
             // add a link to the right of the router if there exists another router there
             if ((j + 1) <= MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST - 1) {
-                noc_ctx.noc_model.add_link((NocRouterId)((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j), (NocRouterId)(((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j) + 1));
+                noc_ctx.noc_model.add_link((NocRouterId)((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j), (NocRouterId)(((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j) + 1), link_bandwidth, link_latency);
             }
             // add a link to the bottom of the router if there exists another router there
             if ((i - 1) >= 0) {
-                noc_ctx.noc_model.add_link((NocRouterId)((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j), (NocRouterId)(((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j) - MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST));
+                noc_ctx.noc_model.add_link((NocRouterId)((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j), (NocRouterId)(((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j) - MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST), link_bandwidth, link_latency);
             }
         }
     }
@@ -1387,10 +1398,14 @@ TEST_CASE("test_revert_noc_traffic_flow_routes", "[noc_place_utils]") {
     noc_opts.noc_latency_weighting = dist_3(double_engine);
     noc_opts.noc_congestion_weighting = dist_3(double_engine);
 
+    constexpr double LINK_LATENCY = 1;
+    constexpr double LINK_BANDWIDTH = 1;
+    constexpr double ROUTER_LATENCY = 1;
+
     // setting the NoC parameters
-    noc_ctx.noc_model.set_noc_link_latency(1);
-    noc_ctx.noc_model.set_noc_router_latency(1);
-    noc_ctx.noc_model.set_noc_link_bandwidth(1);
+    noc_ctx.noc_model.set_noc_link_latency(LINK_BANDWIDTH);
+    noc_ctx.noc_model.set_noc_router_latency(ROUTER_LATENCY);
+    noc_ctx.noc_model.set_noc_link_bandwidth(LINK_BANDWIDTH);
 
     // keeps track of which hard router each cluster block is placed
     vtr::vector<ClusterBlockId, NocRouterId> router_where_cluster_is_placed;
@@ -1407,7 +1422,8 @@ TEST_CASE("test_revert_noc_traffic_flow_routes", "[noc_place_utils]") {
         noc_ctx.noc_model.add_router(curr_router_id,
                                      router_grid_position_x,
                                      router_grid_position_y,
-                                     0);
+                                     0,
+                                     ROUTER_LATENCY);
     }
 
     noc_ctx.noc_model.make_room_for_noc_router_link_list();
@@ -1417,19 +1433,19 @@ TEST_CASE("test_revert_noc_traffic_flow_routes", "[noc_place_utils]") {
         for (int j = 0; j < MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST; j++) {
             // add a link to the left of the router if there exists another router there
             if ((j - 1) >= 0) {
-                noc_ctx.noc_model.add_link((NocRouterId)((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j), (NocRouterId)(((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j) - 1));
+                noc_ctx.noc_model.add_link((NocRouterId)((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j), (NocRouterId)(((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j) - 1), LINK_BANDWIDTH, LINK_LATENCY);
             }
             // add a link to the top of the router if there exists another router there
             if ((i + 1) <= MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST - 1) {
-                noc_ctx.noc_model.add_link((NocRouterId)((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j), (NocRouterId)(((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j) + MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST));
+                noc_ctx.noc_model.add_link((NocRouterId)((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j), (NocRouterId)(((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j) + MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST), LINK_BANDWIDTH, LINK_LATENCY);
             }
             // add a link to the right of the router if there exists another router there
             if ((j + 1) <= MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST - 1) {
-                noc_ctx.noc_model.add_link((NocRouterId)((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j), (NocRouterId)(((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j) + 1));
+                noc_ctx.noc_model.add_link((NocRouterId)((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j), (NocRouterId)(((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j) + 1), LINK_BANDWIDTH, LINK_LATENCY);
             }
             // add a link to the bottom of the router if there exists another router there
             if ((i - 1) >= 0) {
-                noc_ctx.noc_model.add_link((NocRouterId)((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j), (NocRouterId)(((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j) - MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST));
+                noc_ctx.noc_model.add_link((NocRouterId)((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j), (NocRouterId)(((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j) - MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST), LINK_BANDWIDTH, LINK_LATENCY);
             }
         }
     }
@@ -1758,7 +1774,8 @@ TEST_CASE("test_check_noc_placement_costs", "[noc_place_utils]") {
         noc_ctx.noc_model.add_router(curr_router_id,
                                      router_grid_position_x,
                                      router_grid_position_y,
-                                     0);
+                                     0,
+                                     router_latency);
     }
 
     noc_ctx.noc_model.make_room_for_noc_router_link_list();
@@ -1768,19 +1785,19 @@ TEST_CASE("test_check_noc_placement_costs", "[noc_place_utils]") {
         for (int j = 0; j < MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST; j++) {
             // add a link to the left of the router if there exists another router there
             if ((j - 1) >= 0) {
-                noc_ctx.noc_model.add_link((NocRouterId)((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j), (NocRouterId)(((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j) - 1));
+                noc_ctx.noc_model.add_link((NocRouterId)((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j), (NocRouterId)(((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j) - 1), link_bandwidth, link_latency);
             }
             // add a link to the top of the router if there exists another router there
             if ((i + 1) <= MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST - 1) {
-                noc_ctx.noc_model.add_link((NocRouterId)((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j), (NocRouterId)(((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j) + MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST));
+                noc_ctx.noc_model.add_link((NocRouterId)((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j), (NocRouterId)(((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j) + MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST), link_bandwidth, link_latency);
             }
             // add a link to the right of the router if there exists another router there
             if ((j + 1) <= MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST - 1) {
-                noc_ctx.noc_model.add_link((NocRouterId)((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j), (NocRouterId)(((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j) + 1));
+                noc_ctx.noc_model.add_link((NocRouterId)((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j), (NocRouterId)(((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j) + 1), link_bandwidth, link_latency);
             }
             // add a link to the bottom of the router if there exists another router there
             if ((i - 1) >= 0) {
-                noc_ctx.noc_model.add_link((NocRouterId)((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j), (NocRouterId)(((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j) - MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST));
+                noc_ctx.noc_model.add_link((NocRouterId)((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j), (NocRouterId)(((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j) - MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST), link_bandwidth, link_latency);
             }
         }
     }

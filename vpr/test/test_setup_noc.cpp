@@ -45,7 +45,7 @@ TEST_CASE("test_identify_and_store_noc_router_tile_positions", "[vpr_setup_noc]"
     std::vector<t_noc_router_tile_position> list_of_routers;
 
     // make sure the test result is not corrupted
-    REQUIRE(list_of_routers.size() == 0);
+    REQUIRE(list_of_routers.empty());
 
     SECTION("All routers are seperated by one or more grid spaces") {
         // in this test, the routers will be on the 4 corners of the FPGA
@@ -120,7 +120,7 @@ TEST_CASE("test_identify_and_store_noc_router_tile_positions", "[vpr_setup_noc]"
 
         for (int i = 0; i < test_grid_width; i++) {
             for (int j = 0; j < test_grid_height; j++) {
-                // make sure the current tyle is not a router
+                // make sure the current tile is not a router
                 if (test_grid[0][i][j].type == nullptr) {
                     // assign the non-router tile as empty
                     test_grid[0][i][j].type = &empty_tile;
@@ -134,9 +134,9 @@ TEST_CASE("test_identify_and_store_noc_router_tile_positions", "[vpr_setup_noc]"
         DeviceGrid test_device = DeviceGrid(device_grid_name, test_grid);
 
         // call the test function
-        identify_and_store_noc_router_tile_positions(test_device, list_of_routers, std::string(router_tile_name));
+        list_of_routers = identify_and_store_noc_router_tile_positions(test_device, router_tile_name);
 
-        // check that the physocal router tile positions were correctly determined
+        // check that the physical router tile positions were correctly determined
         // make sure that only 4 router tiles were found
         REQUIRE(list_of_routers.size() == 4);
 
@@ -251,9 +251,9 @@ TEST_CASE("test_identify_and_store_noc_router_tile_positions", "[vpr_setup_noc]"
         DeviceGrid test_device = DeviceGrid(device_grid_name, test_grid);
 
         // call the test function
-        identify_and_store_noc_router_tile_positions(test_device, list_of_routers, std::string(router_tile_name));
+        list_of_routers = identify_and_store_noc_router_tile_positions(test_device, router_tile_name);
 
-        // check that the physocal router tile positions were correctly determined
+        // check that the physical router tile positions were correctly determined
         // make sure that only 4 router tiles were found
         REQUIRE(list_of_routers.size() == 4);
 
@@ -354,7 +354,7 @@ TEST_CASE("test_identify_and_store_noc_router_tile_positions", "[vpr_setup_noc]"
 
         for (int i = 0; i < test_grid_width; i++) {
             for (int j = 0; j < test_grid_height; j++) {
-                // make sure the current tyle is not a router
+                // make sure the current tile is not a router
                 if (test_grid[0][i][j].type == nullptr) {
                     // assign the non-router tile as empty
                     test_grid[0][i][j].type = &empty_tile;
@@ -368,9 +368,9 @@ TEST_CASE("test_identify_and_store_noc_router_tile_positions", "[vpr_setup_noc]"
         DeviceGrid test_device = DeviceGrid(device_grid_name, test_grid);
 
         // call the test function
-        identify_and_store_noc_router_tile_positions(test_device, list_of_routers, std::string(router_tile_name));
+        list_of_routers = identify_and_store_noc_router_tile_positions(test_device, router_tile_name);
 
-        // check that the physocal router tile positions were correctly determined
+        // check that the physical router tile positions were correctly determined
         // make sure that only 4 router tiles were found
         REQUIRE(list_of_routers.size() == 4);
 
@@ -418,17 +418,17 @@ TEST_CASE("test_create_noc_routers", "[vpr_setup_noc]") {
      * - router 8: (4,8)
      * - router 9: (8,8)
      */
-    list_of_routers.push_back({0, 0, 0, 0.5, 1});
-    list_of_routers.push_back({4, 0, 0, 4.5, 1});
-    list_of_routers.push_back({8, 0, 0, 8.5, 1});
+    list_of_routers.emplace_back(0, 0, 0, 0.5, 1);
+    list_of_routers.emplace_back(4, 0, 0, 4.5, 1);
+    list_of_routers.emplace_back(8, 0, 0, 8.5, 1);
 
-    list_of_routers.push_back({0, 4, 0, 0.5, 5});
-    list_of_routers.push_back({4, 4, 0, 4.5, 5});
-    list_of_routers.push_back({8, 4, 0, 8.5, 5});
+    list_of_routers.emplace_back(0, 4, 0, 0.5, 5);
+    list_of_routers.emplace_back(4, 4, 0, 4.5, 5);
+    list_of_routers.emplace_back(8, 4, 0, 8.5, 5);
 
-    list_of_routers.push_back({0, 8, 0, 0.5, 9});
-    list_of_routers.push_back({4, 8, 0, 4.5, 9});
-    list_of_routers.push_back({8, 8, 0, 8.5, 9});
+    list_of_routers.emplace_back(0, 8, 0, 0.5, 9);
+    list_of_routers.emplace_back(4, 8, 0, 4.5, 9);
+    list_of_routers.emplace_back(8, 8, 0, 8.5, 9);
 
     // create the noc model (to store the routers)
     NocStorage noc_model;
@@ -437,13 +437,13 @@ TEST_CASE("test_create_noc_routers", "[vpr_setup_noc]") {
     t_noc_inf noc_info;
 
     // pointer to each logical router
-    t_router* temp_router = NULL;
+    t_router* temp_router = nullptr;
 
-    const vtr::vector<NocRouterId, NocRouter>* noc_routers = NULL;
+    const vtr::vector<NocRouterId, NocRouter>* noc_routers = nullptr;
 
     SECTION("Test create routers when logical routers match to exactly one physical router. The number of routers is less than whats on the FPGA.") {
         // start by creating all the logical routers
-        // this is similiar to the user provided a config file
+        // this is similar to the user provided a config file
         temp_router = new t_router;
 
         NocRouterId noc_router_id;
@@ -481,9 +481,9 @@ TEST_CASE("test_create_noc_routers", "[vpr_setup_noc]") {
             REQUIRE(test_router.get_router_grid_position_y() == list_of_routers[router_id - 1].grid_height_position);
         }
     }
-    SECTION("Test create routers when logical routers match to exactly one physical router. The number of routers is exacrly the same as on the FPGA.") {
+    SECTION("Test create routers when logical routers match to exactly one physical router. The number of routers is exactly the same as on the FPGA.") {
         // start by creating all the logical routers
-        // this is similiar to the user provided a config file
+        // this is similar to the user provided a config file
         temp_router = new t_router;
 
         NocRouterId noc_router_id;
@@ -523,7 +523,7 @@ TEST_CASE("test_create_noc_routers", "[vpr_setup_noc]") {
     }
     SECTION("Test create routers when a logical router can be matched to two physical routers. The number of routers is exactly the same as on the FPGA.") {
         // start by creating all the logical routers
-        // this is similiar to the user provided a config file
+        // this is similar to the user provided a config file
         temp_router = new t_router;
 
         NocRouterId noc_router_id;
@@ -595,17 +595,17 @@ TEST_CASE("test_create_noc_links", "[vpr_setup_noc]") {
      * - router 8: (4,8)
      * - router 9: (8,8)
      */
-    list_of_routers.push_back({0, 0, 0, 0.5, 1});
-    list_of_routers.push_back({4, 0, 0, 4.5, 1});
-    list_of_routers.push_back({8, 0, 0, 8.5, 1});
+    list_of_routers.emplace_back(0, 0, 0, 0.5, 1);
+    list_of_routers.emplace_back(4, 0, 0, 4.5, 1);
+    list_of_routers.emplace_back(8, 0, 0, 8.5, 1);
 
-    list_of_routers.push_back({0, 4, 0, 0.5, 5});
-    list_of_routers.push_back({4, 4, 0, 4.5, 5});
-    list_of_routers.push_back({8, 4, 0, 8.5, 5});
+    list_of_routers.emplace_back(0, 4, 0, 0.5, 5);
+    list_of_routers.emplace_back(4, 4, 0, 4.5, 5);
+    list_of_routers.emplace_back(8, 4, 0, 8.5, 5);
 
-    list_of_routers.push_back({0, 8, 0, 0.5, 9});
-    list_of_routers.push_back({4, 8, 0, 4.5, 9});
-    list_of_routers.push_back({8, 8, 0, 8.5, 9});
+    list_of_routers.emplace_back(0, 8, 0, 0.5, 9);
+    list_of_routers.emplace_back(4, 8, 0, 4.5, 9);
+    list_of_routers.emplace_back(8, 8, 0, 8.5, 9);
 
     // create the noc model (to store the routers)
     NocStorage noc_model;
@@ -618,10 +618,10 @@ TEST_CASE("test_create_noc_links", "[vpr_setup_noc]") {
     t_noc_inf noc_info;
 
     // pointer to each logical router
-    t_router* temp_router = NULL;
+    t_router* temp_router = nullptr;
 
     // start by creating all the logical routers
-    // this is similiar to the user provided a config file
+    // this is similar to the user provided a config file
     temp_router = new t_router;
 
     for (int router_id = 1; router_id < 10; router_id++) {
@@ -635,7 +635,8 @@ TEST_CASE("test_create_noc_links", "[vpr_setup_noc]") {
         noc_model.add_router(router_id,
                              list_of_routers[router_id - 1].grid_width_position,
                              list_of_routers[router_id - 1].grid_height_position,
-                             list_of_routers[router_id - 1].layer_position);
+                             list_of_routers[router_id - 1].layer_position,
+                             1.0);
     }
 
     delete temp_router;
@@ -676,7 +677,7 @@ TEST_CASE("test_create_noc_links", "[vpr_setup_noc]") {
     noc_info.router_list[8].connection_list.push_back(8);
 
     // call the function to test
-    create_noc_links(&noc_info, &noc_model);
+    create_noc_links(noc_info, &noc_model);
 
     NocRouterId current_source_router_id;
     NocRouterId current_destination_router_id;
@@ -711,10 +712,10 @@ TEST_CASE("test_setup_noc", "[vpr_setup_noc]") {
     t_noc_inf noc_info;
 
     // pointer to each logical router
-    t_router* temp_router = NULL;
+    t_router* temp_router = nullptr;
 
     // start by creating all the logical routers
-    // this is similiar to the user provided a config file
+    // this is similar to the user provided a config file
     temp_router = new t_router;
 
     // datastructure to hold the list of physical tiles
@@ -741,17 +742,17 @@ TEST_CASE("test_setup_noc", "[vpr_setup_noc]") {
      * - router 8: (4,8)
      * - router 9: (8,8)
      */
-    list_of_routers.push_back({0, 0, 0, 0.5, 1});
-    list_of_routers.push_back({4, 0, 0, 4.5, 1});
-    list_of_routers.push_back({8, 0, 0, 8.5, 1});
+    list_of_routers.emplace_back(0, 0, 0, 0.5, 1);
+    list_of_routers.emplace_back(4, 0, 0, 4.5, 1);
+    list_of_routers.emplace_back(8, 0, 0, 8.5, 1);
 
-    list_of_routers.push_back({0, 4, 0, 0.5, 5});
-    list_of_routers.push_back({4, 4, 0, 4.5, 5});
-    list_of_routers.push_back({8, 4, 0, 8.5, 5});
+    list_of_routers.emplace_back(0, 4, 0, 0.5, 5);
+    list_of_routers.emplace_back(4, 4, 0, 4.5, 5);
+    list_of_routers.emplace_back(8, 4, 0, 8.5, 5);
 
-    list_of_routers.push_back({0, 8, 0, 0.5, 9});
-    list_of_routers.push_back({4, 8, 0, 4.5, 9});
-    list_of_routers.push_back({8, 8, 0, 8.5, 9});
+    list_of_routers.emplace_back(0, 8, 0, 0.5, 9);
+    list_of_routers.emplace_back(4, 8, 0, 4.5, 9);
+    list_of_routers.emplace_back(8, 8, 0, 8.5, 9);
 
     for (int router_id = 1; router_id < 10; router_id++) {
         // we will have 9 logical routers that will take up all physical routers
@@ -958,7 +959,7 @@ TEST_CASE("test_setup_noc", "[vpr_setup_noc]") {
 
         for (int i = 0; i < test_grid_width; i++) {
             for (int j = 0; j < test_grid_height; j++) {
-                // make sure the current tyle is not a router
+                // make sure the current tile is not a router
                 if (test_grid[0][i][j].type == nullptr) {
                     // assign the non-router tile as empty
                     test_grid[0][i][j].type = &empty_tile;
