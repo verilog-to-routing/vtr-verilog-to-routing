@@ -3,6 +3,7 @@
 #include "convertutils.h"
 #include <sstream>
 #include <iomanip>
+#include <cstring>
 
 #include "vtr_util.h"
 #include "vtr_error.h"
@@ -52,11 +53,11 @@ std::string get_truncated_middle_str(const std::string& src, std::size_t num) {
     if (num < minimal_string_size_to_truncate) {
         num = minimal_string_size_to_truncate;
     }
-    static std::string middle_place_holder("...");
+    constexpr char middle_place_holder[] = "...";
     const std::size_t src_size = src.size();
     if (src_size > num) {
         int prefix_num = num / 2;
-        int suffix_num = num / 2 - middle_place_holder.size();
+        int suffix_num = num / 2 - std::strlen(middle_place_holder);/*middle_place_holder.size();*/
         result.append(src.substr(0, prefix_num));
         result.append(middle_place_holder);
         result.append(src.substr(src_size - suffix_num));
