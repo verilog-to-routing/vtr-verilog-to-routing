@@ -1202,7 +1202,7 @@ bool is_flyline_valid_to_draw(int src_layer, int sink_layer) {
 }
 
 //Draws critical path shown as flylines.
-void draw_flyline_timing_edge(ezgl::point2d start, ezgl::point2d end, float incr_delay, ezgl::renderer* g, bool skip_draw_delays) {
+void draw_flyline_timing_edge(ezgl::point2d start, ezgl::point2d end, float incr_delay, ezgl::renderer* g, bool skip_draw_delays/*=false*/) {
     g->draw_line(start, end);
     draw_triangle_along_line(g, start, end, 0.95, 40 * DEFAULT_ARROW_SIZE);
     draw_triangle_along_line(g, start, end, 0.05, 40 * DEFAULT_ARROW_SIZE);
