@@ -53,7 +53,7 @@ std::string get_truncated_middle_str(const std::string& src, std::size_t num) {
     if (num < minimal_string_size_to_truncate) {
         num = minimal_string_size_to_truncate;
     }
-    constexpr char middle_place_holder[] = "...";
+    constexpr const char middle_place_holder[] = "...";
     const std::size_t src_size = src.size();
     if (src_size > num) {
         int prefix_num = num / 2;
