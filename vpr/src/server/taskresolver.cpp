@@ -102,7 +102,6 @@ void TaskResolver::process_get_path_list_task(ezgl::application*, const TaskPtr&
             CritPathsResult crit_paths_result = calc_critical_path(path_type, n_critical_path_num, details_level_opt.value(), is_flat);
 
             // setup context
-            server_ctx.set_path_type(path_type);
             server_ctx.set_crit_paths(crit_paths_result.paths);
 
             if (crit_paths_result.is_valid()) {
