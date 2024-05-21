@@ -94,12 +94,12 @@ void Task::bake_response() {
         body_opt = ss.str();
     }
 
-    std::string body = body_opt.value();
+    std::string body{std::move(body_opt.value())};
     m_telegram_header = comm::TelegramHeader::construct_from_data(body, compressor_id);
 
     m_response_buffer.append(m_telegram_header.buffer().begin(), m_telegram_header.buffer().end());
     m_response_buffer.append(body);
-    body.clear();
+
     m_orig_reponse_bytes_num = m_response_buffer.size();
 }
 
