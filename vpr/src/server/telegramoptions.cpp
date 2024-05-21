@@ -75,7 +75,7 @@ int TelegramOptions::get_int(const std::string& name, int fail_value) {
     if (std::optional<int> opt = try_convert_to_int(m_options[name].value)) {
         return opt.value();
     } else {
-        m_errors.emplace_back("cannot get int value for option " + std::string(name));
+        m_errors.emplace_back("cannot get int value for option " + name);
         return fail_value;
     }
 }
@@ -84,7 +84,7 @@ bool TelegramOptions::get_bool(const std::string& name, bool fail_value) {
     if (std::optional<int> opt = try_convert_to_int(m_options[name].value)) {
         return opt.value();
     } else {
-        m_errors.emplace_back("cannot get bool value for option " + std::string(name));
+        m_errors.emplace_back("cannot get bool value for option " + name);
         return fail_value;
     }
 }
