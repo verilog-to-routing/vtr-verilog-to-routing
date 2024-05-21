@@ -1045,6 +1045,17 @@ void RRGSB::build_cb_opin_nodes(const RRGraphView& rr_graph) {
           int cb_opin_index = -1;
           get_node_side_and_index(rr_graph, cand_node, IN_PORT, cb_opin_side,
                                   cb_opin_index);
+          if ((-1 == cb_opin_index) || (NUM_SIDES == cb_opin_side)) {
+              VTR_LOG("GSB[%lu][%lu]:\n", get_x(), get_y());
+              VTR_LOG("----------------------------------\n");
+              VTR_LOG("SRC node:\n");
+              VTR_LOG("Node info: %s\n", rr_graph.node_coordinate_to_string(cand_node).c_str());
+              VTR_LOG("Node ptc: %d\n", rr_graph.node_ptc_num(cand_node));
+              VTR_LOG("Fan-out nodes:\n");
+              for (const auto& temp_edge : rr_graph.edge_range(cand_node)) {
+                  VTR_LOG("\t%s\n", rr_graph.node_coordinate_to_string(rr_graph.edge_sink_node(temp_edge)).c_str());
+              }
+          }
           VTR_ASSERT((-1 != cb_opin_index) && (NUM_SIDES != cb_opin_side));
 
           if (cb_opin_node_[icb_type][size_t(cb_opin_side)].end() ==
