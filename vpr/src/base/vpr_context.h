@@ -353,6 +353,9 @@ struct ClusteringHelperContext : public Context {
     // unordered_set for faster insertion/deletion during the iterative improvement process of packing
     vtr::vector<ClusterBlockId, std::unordered_set<AtomBlockId>> atoms_lookup;
 
+    /** Stores the NoC group ID of each atom block. Atom blocks that belong
+     * to different NoC groups can't be clustered with each other into the
+     * same clustered block.*/
     vtr::vector<AtomBlockId, NocGroupId> atom_noc_grp_id;
 
     ~ClusteringHelperContext() {

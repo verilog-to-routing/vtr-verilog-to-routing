@@ -87,6 +87,16 @@ class CentroidMoveGenerator : public MoveGenerator {
 
     /** Specifies the NoC group for each NoC router*/
     static std::map<ClusterBlockId, NocGroupId> noc_router_to_noc_group_;
+
+    /**
+     * @brief This function forms NoC groups by finding connected components
+     * in the graph representing the clustered netlist. When finding connected
+     * components, none of the nets whose fanout is larger than high_fanout_net
+     * are traversed.
+     * @param high_fanout_net All nets with a fanout larger than this number are
+     * ignored when forming NoC groups.
+     */
+    static void initialize_noc_groups(size_t high_fanout_net);
 };
 
 #endif

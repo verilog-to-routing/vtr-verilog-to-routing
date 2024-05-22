@@ -43,6 +43,14 @@ void update_noc_reachability_partitions(const std::vector<AtomBlockId>& noc_atom
 
     int noc_grp_id_cnt = 0;
 
+    /*
+     * Assume that the atom netlist is represented as an undirected graph
+     * with all high fanout nets removed. In this graph, we want to find all
+     * connected components that include at least one NoC router. We start a
+     * BFS from each NoC router and traverse all nets below the high_fanout_threshold,
+     * and mark each atom block with a NoC group ID.
+     */
+
     for (auto noc_atom_id : noc_atoms) {
         // check if this NoC router has already been visited
         if (atom_visited[noc_atom_id]) {
