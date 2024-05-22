@@ -40,8 +40,13 @@ void Task::fail(const std::string& error) {
     bake_response();
 }
 
-void Task::success(const std::string& result) {
-    m_result = result;
+void Task::success() {
+    m_is_finished = true;
+    bake_response();
+}
+
+void Task::success(std::string&& result) {
+    m_result = std::move(result);
     m_is_finished = true;
     bake_response();
 }

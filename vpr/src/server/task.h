@@ -42,7 +42,8 @@ public:
     bool is_response_fully_sent() const { return m_is_response_fully_sent; }
 
     void fail(const std::string& error);
-    void success(const std::string& result = "");
+    void success();
+    void success(std::string&& result);
 
     std::string info(bool skip_duration = false) const;
 

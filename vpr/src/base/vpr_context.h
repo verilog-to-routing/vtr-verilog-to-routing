@@ -575,7 +575,7 @@ class ServerContext : public Context {
     const server::TaskResolver& task_resolver() const { return task_resolver_; }
     server::TaskResolver& mutable_task_resolver() { return task_resolver_; }
 
-    void set_crit_paths(const std::vector<tatum::TimingPath>& crit_paths) { crit_paths_ = crit_paths; }
+    void set_crit_paths(std::vector<tatum::TimingPath>&& crit_paths) { crit_paths_ = std::move(crit_paths); }
     const std::vector<tatum::TimingPath>& crit_paths() const { return crit_paths_; }
 
     void clear_crit_path_elements() { crit_path_element_indexes_.clear(); }
