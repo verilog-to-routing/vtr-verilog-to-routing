@@ -34,10 +34,10 @@ namespace argparse {
     class ArgumentParser {
         public:
             //Initializes an argument parser
-            ArgumentParser(std::string prog_name, std::string description_str=std::string(), std::ostream& os=std::cout);
+            ArgumentParser(const std::string& prog_name, std::string description_str=std::string(), std::ostream& os=std::cout);
 
             //Overrides the program name
-            ArgumentParser& prog(std::string prog, bool basename_only=true);
+            ArgumentParser& prog(const std::string& prog, bool basename_only=true);
 
             //Sets the program version
             ArgumentParser& version(std::string version);

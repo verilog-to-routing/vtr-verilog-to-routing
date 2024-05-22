@@ -26,7 +26,7 @@ static int cont;                 /* line continued? (used by strtok)*/
  *
  * The split strings (excluding the delimiters) are returned
  */
-std::vector<std::string> split(const char* text, const std::string& delims) {
+std::vector<std::string> split(const char* text, std::string_view delims) {
     if (text) {
         std::string text_str(text);
         return split(text_str, delims);
@@ -39,13 +39,13 @@ std::vector<std::string> split(const char* text, const std::string& delims) {
  *
  * The split strings (excluding the delimiters) are returned
  */
-std::vector<std::string> split(const std::string& text, const std::string& delims) {
+std::vector<std::string> split(std::string_view text, std::string_view delims) {
     std::vector<std::string> tokens;
 
     std::string curr_tok;
     for (char c : text) {
         if (delims.find(c) != std::string::npos) {
-            //Delimeter character
+            //Delimiter character
             if (!curr_tok.empty()) {
                 //At the end of the token
 
@@ -58,7 +58,7 @@ std::vector<std::string> split(const std::string& text, const std::string& delim
                 //Pass
             }
         } else {
-            //Non-delimeter append to token
+            //Non-delimiter append to token
             curr_tok += c;
         }
     }
@@ -72,18 +72,18 @@ std::vector<std::string> split(const std::string& text, const std::string& delim
 }
 
 ///@brief Returns 'input' with the first instance of 'search' replaced with 'replace'
-std::string replace_first(const std::string& input, const std::string& search, const std::string& replace) {
+std::string replace_first(std::string_view input, std::string_view search, std::string_view replace) {
     auto pos = input.find(search);
 
     std::string output(input, 0, pos);
     output += replace;
-    output += std::string(input, pos + search.size());
+    output += input.substr(pos + search.size());
 
     return output;
 }
 
 ///@brief Returns 'input' with all instances of 'search' replaced with 'replace'
-std::string replace_all(const std::string& input, const std::string& search, const std::string& replace) {
+std::string replace_all(std::string_view input, std::string_view search, std::string_view replace) {
     std::string output;
 
     size_t last = 0;
@@ -101,8 +101,8 @@ std::string replace_all(const std::string& input, const std::string& search, con
     return output;
 }
 
-///@brief Retruns true if str starts with prefix
-bool starts_with(const std::string& str, const std::string& prefix) {
+///@brief Returns true if str starts with prefix
+bool starts_with(const std::string& str, std::string_view prefix) {
     return str.find(prefix) == 0;
 }
 
@@ -125,7 +125,7 @@ std::string string_fmt(const char* fmt, ...) {
 
 ///@brief Returns a std::string formatted using a printf-style format string taking an explicit va_list
 std::string vstring_fmt(const char* fmt, va_list args) {
-    // We need to copy the args so we don't change them before the true formating
+    // We need to copy the args so we don't change them before the true formatting
     va_list va_args_copy;
     va_copy(va_args_copy, args);
 
@@ -195,7 +195,7 @@ char* strdup(const char* str) {
  * and/or correct 'unexpected' behaviour of the standard c-functions
  */
 template<class T>
-T atoT(const std::string& value, const std::string& type_name) {
+T atoT(const std::string& value, std::string_view type_name) {
     //The c version of atof doesn't catch errors.
     //
     //This version uses stringstream to detect conversion errors
@@ -461,8 +461,8 @@ bool file_exists(const char* filename) {
  *
  * Returns true if the extension is correct, and false otherwise.
  */
-bool check_file_name_extension(const std::string& file_name,
-                               const std::string& file_extension) {
+bool check_file_name_extension(std::string_view file_name,
+                               std::string_view file_extension) {
     auto ext = std::filesystem::path(file_name).extension();
     return ext == file_extension;
 }
