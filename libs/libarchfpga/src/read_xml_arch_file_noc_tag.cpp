@@ -15,8 +15,8 @@ static void process_mesh_topology(pugi::xml_node mesh_topology_tag,
 
 static void process_router(pugi::xml_node router_tag,
                            const pugiutil::loc_data& loc_data,
-                            t_noc_inf* noc_ref,
-                            std::map<int, std::pair<int, int>>& routers_info_in_arch);
+                           t_noc_inf* noc_ref,
+                           std::map<int, std::pair<int, int>>& routers_info_in_arch);
 
 static void generate_noc_mesh(pugi::xml_node mesh_topology_tag,
                               const pugiutil::loc_data& loc_data,

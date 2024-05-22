@@ -143,7 +143,6 @@ static void ProcessTileProps(pugi::xml_node Node,
 
 static t_pin_counts ProcessSubTilePorts(pugi::xml_node Parent,
                                         t_sub_tile* SubTile,
-                                        std::unordered_map<std::string, t_physical_tile_port>& tile_port_names,
                                         const pugiutil::loc_data& loc_data);
 
 static void ProcessTilePort(pugi::xml_node Node,
@@ -3011,7 +3010,6 @@ static void ProcessTileProps(pugi::xml_node Node,
 
 static t_pin_counts ProcessSubTilePorts(pugi::xml_node Parent,
                                         t_sub_tile* SubTile,
-                                        std::unordered_map<std::string, t_physical_tile_port>& tile_port_names,
                                         const pugiutil::loc_data& loc_data) {
     pugi::xml_node Cur;
 
@@ -3043,17 +3041,6 @@ static t_pin_counts ProcessSubTilePorts(pugi::xml_node Parent,
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
                                "Duplicate port names in subtile '%s': port '%s'\n",
                                SubTile->name, port.name);
-            }
-
-            //Check port name duplicates
-            auto [added_entry, tile_success] = tile_port_names.insert({port.name, port});
-            if (!tile_success) {
-                if (added_entry->second.num_pins != port.num_pins || added_entry->second.equivalent != port.equivalent) {
-                    archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
-                                   "Another port found with the same name in other sub tiles "
-                                   "that did not match the current port settings. '%s': port '%s'\n",
-                                   SubTile->name, port.name);
-                }
             }
 
             //Push port
@@ -3540,7 +3527,7 @@ static void ProcessSubTiles(pugi::xml_node Node,
         PhysicalTileType->capacity += capacity;
 
         /* Process sub tile port definitions */
-        const auto pin_counts = ProcessSubTilePorts(CurSubTile, &SubTile, tile_port_names, loc_data);
+        const auto pin_counts = ProcessSubTilePorts(CurSubTile, &SubTile, loc_data);
 
         /* Map Sub Tile physical pins with the Physical Tile Type physical pins.
          * This takes into account the capacity of each sub tiles to add the correct offset.
