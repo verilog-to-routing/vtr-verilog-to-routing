@@ -48,6 +48,12 @@ On most unix-like systems you can run:
 
     > make
 
+The default front-end for VTR is :ref:`Parmys<parmys>`, but you can build with ODIN II instead using the command below. This is required to run :ref:`Synthesizing with ODIN II<synthesizing_with_odin_ii>`.
+
+.. code-block:: bash
+
+    > make CMAKE_PARAMS="-DWITH_ODIN=on"
+
 from the VTR root directory (hereafter referred to as :term:`$VTR_ROOT`) to build VTR.
 
 .. note:: 
@@ -62,6 +68,8 @@ from the VTR root directory (hereafter referred to as :term:`$VTR_ROOT`) to buil
 
     * define VTR_ROOT as a variable in your shell (e.g. if ``~/trees/vtr`` is the path to the VTR source tree on your machine, run the equivalent of ``VTR_ROOT=~/trees/vtr`` in BASH) which will allow you to run the commands as written in this guide, or
     * manually replace `$VTR_ROOT` in the example commands below with your path to the VTR source tree.
+
+
 
 For more details on building VTR on various operating systems/platforms see :doc:`Building VTR</BUILDING>`.
 
@@ -235,6 +243,7 @@ Next we need to run the three main sets of tools:
 * :ref:`ABC` performs 'logic optimization' which simplifies the circuit logic, and 'technology mapping' which converts logic equations into the Look-Up-Tables (LUTs) available on an FPGA, and
 * :ref:`VPR` which performs packing, placement and routing of the circuit to implement it on the targetted FPGA architecture.
 
+.. _synthesizing_with_odin_ii:
 Synthesizing with ODIN II
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 

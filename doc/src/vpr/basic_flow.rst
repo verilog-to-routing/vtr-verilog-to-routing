@@ -4,7 +4,7 @@ Basic flow
 The Place and Route process in VPR consists of several steps:
 
 - Packing (combinines primitives into complex blocks)
-- Placment (places complex blocks within the FPGA grid)
+- Placement (places complex blocks within the FPGA grid)
 - Routing (determines interconnections between blocks)
 - Analysis (analyzes the implementation)
 

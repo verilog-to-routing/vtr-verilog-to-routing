@@ -288,7 +288,7 @@ class NdMatrixBase {
         data_ = std::make_unique<T[]>(size());
     }
 
-    ///@brief Returns the size of the matrix (number of elements) calucated from the current dimensions
+    ///@brief Returns the size of the matrix (number of elements) calculated from the current dimensions
     size_t calc_size() const {
         ///@brief Size is the product of all dimension sizes
         size_t cnt = dim_size(0);
@@ -310,7 +310,7 @@ class NdMatrixBase {
  * 
  * Examples:
  * 
- *       //A 2-dimensional matrix with indicies [0..4][0..9]
+ *       //A 2-dimensional matrix with indices [0..4][0..9]
  *       NdMatrix<int,2> m1({5,10});
  * 
  *       //Accessing an element
@@ -319,17 +319,17 @@ class NdMatrixBase {
  *       //Setting an element
  *       m1[2][8] = 0;
  * 
- *       //A 3-dimensional matrix with indicies [0..4][0..9][0..19]
+ *       //A 3-dimensional matrix with indices [0..4][0..9][0..19]
  *       NdMatrix<int,3> m2({5,10,20});
  * 
- *       //A 2-dimensional matrix with indicies [0..4][0..9], with all entries
+ *       //A 2-dimensional matrix with indices [0..4][0..9], with all entries
  *       //initialized to 42
  *       NdMatrix<int,2> m3({5,10}, 42);
  * 
  *       //Filling all entries with value 101
  *       m3.fill(101);
  * 
- *       //Resizing an existing matrix (all values reset to default constucted value)
+ *       //Resizing an existing matrix (all values reset to default constructed value)
  *       m3.resize({5,5})
  * 
  *       //Resizing an existing matrix (all elements set to value 88)
