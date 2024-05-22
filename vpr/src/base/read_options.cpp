@@ -2333,6 +2333,11 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("1.3")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    route_grp.add_argument(args.max_pres_fac, "-max_pres_fac")
+        .help("Sets the maximum present overuse penalty factor")
+        .default_value("1000.0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     route_grp.add_argument(args.acc_fac, "--acc_fac")
         .help("Specifies the accumulated overuse factor (historical congestion cost factor)")
         .default_value("1.0")

@@ -50,7 +50,7 @@ class NocLink {
     NocRouterId sink_router;   /*!< The router which uses this link as an incoming edge*/
 
     double bandwidth_usage; /*!< Represents the bandwidth of the data being transmitted on the link. Units in bits-per-second(bps)*/
-    double bandwidth; /*!< Represents the maximum bits per second that can be transmitted over the link without causing congestion*/
+    double bandwidth;       /*!< Represents the maximum bits per second that can be transmitted over the link without causing congestion*/
 
   public:
     NocLink(NocLinkId link_id, NocRouterId source_router, NocRouterId sink_router, double bw);
@@ -135,7 +135,6 @@ class NocLink {
      */
     void set_bandwidth(double new_bandwidth);
 
-    
     /**
      * @brief Returns the unique link ID. The ID can be used to index
      * vtr::vector<NoCLinkId, ...> instances.

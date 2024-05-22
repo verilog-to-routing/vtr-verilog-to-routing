@@ -188,7 +188,6 @@ static void noc_routers_anneal(const t_noc_opts& noc_opts) {
     const double starting_prob = 0.5;
     const double prob_step = starting_prob / N_MOVES;
 
-
     // The checkpoint stored the placement with the lowest cost.
     NoCPlacementCheckpoint checkpoint;
 
