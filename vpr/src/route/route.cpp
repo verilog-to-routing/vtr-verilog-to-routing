@@ -155,7 +155,8 @@ bool route(const Netlist<>& net_list,
     VTR_ASSERT(router_lookahead != nullptr);
 
     /* Routing parameters */
-    float pres_fac = update_draw_pres_fac(router_opts.first_iter_pres_fac); /* Typically 0 -> ignore cong. */
+    float pres_fac = router_opts.first_iter_pres_fac;
+    update_draw_pres_fac(pres_fac); /* Typically 0 -> ignore cong. */
     int bb_fac = router_opts.bb_factor;
 
     /* When routing conflicts are detected the bounding boxes are scaled
@@ -375,7 +376,7 @@ bool route(const Netlist<>& net_list,
             //after the first routing convergence. Since that is often zero,
             //we want to set pres_fac to a reasonable (i.e. typically non-zero)
             //value afterwards -- so it grows when multiplied by pres_fac_mult
-            pres_fac = router_opts.initial_pres_fac
+            pres_fac = router_opts.initial_pres_fac;
             update_draw_pres_fac(pres_fac);
         }
 
@@ -445,7 +446,7 @@ bool route(const Netlist<>& net_list,
             pres_fac *= router_opts.pres_fac_mult;
             pres_fac = std::min(pres_fac, router_opts.max_pres_fac);
             /* Set the maximum pres_fac to the value passed by the command line argument */
-            update_draw_pres_fac(pres_fac));
+            update_draw_pres_fac(pres_fac);
 
             // Increase short path criticality if it's having a hard time resolving hold violations due to congestion
             if (budgeting_inf.if_set()) {
