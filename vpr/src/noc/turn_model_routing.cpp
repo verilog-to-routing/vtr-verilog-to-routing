@@ -8,7 +8,7 @@ size_t TurnModelRouting::get_hash_value(NocRouterId src_router_id,
                                         NocRouterId curr_router_id,
                                         NocTrafficFlowId traffic_flow_id) {
     // clear inputs from the last time this function was called
-    inputs_to_murmur3_hahser.clear();
+    inputs_to_murmur3_hasher.clear();
 
     // used to cast vtr::StrongId types to uint32_t
     auto cast_to_uint32 = [](const auto& input) {
@@ -16,12 +16,12 @@ size_t TurnModelRouting::get_hash_value(NocRouterId src_router_id,
     };
 
     // insert IDs into the vector
-    inputs_to_murmur3_hahser.push_back(cast_to_uint32(src_router_id));
-    inputs_to_murmur3_hahser.push_back(cast_to_uint32(dst_router_id));
-    inputs_to_murmur3_hahser.push_back(cast_to_uint32(curr_router_id));
-    inputs_to_murmur3_hahser.push_back(cast_to_uint32(traffic_flow_id));
+    inputs_to_murmur3_hasher.push_back(cast_to_uint32(src_router_id));
+    inputs_to_murmur3_hasher.push_back(cast_to_uint32(dst_router_id));
+    inputs_to_murmur3_hasher.push_back(cast_to_uint32(curr_router_id));
+    inputs_to_murmur3_hasher.push_back(cast_to_uint32(traffic_flow_id));
 
-    uint32_t hash_val = murmur3_32(inputs_to_murmur3_hahser, 0);
+    uint32_t hash_val = murmur3_32(inputs_to_murmur3_hasher, 0);
 
     return hash_val;
 }

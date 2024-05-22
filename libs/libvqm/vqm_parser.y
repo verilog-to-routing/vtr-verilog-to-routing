@@ -38,11 +38,11 @@ extern int yylex(void);
 
 %union
 {
-	uintptr_t value;
-	char *string;
+    uintptr_t value;
+    char *string;
 }
 %parse-param {t_parse_info* parse_info}
-%error-verbose
+%define parse.error verbose
 /********************************************************/
 /**** DEFINE TOKENS *************************************/
 /********************************************************/

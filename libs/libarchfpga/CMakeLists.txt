@@ -22,8 +22,12 @@ target_link_libraries(libarchfpga
                         libvtrutil
                         libpugixml
                         libpugiutil
-                        libvtrcapnproto
 )
+
+if(${VTR_ENABLE_CAPNPROTO})
+    target_link_libraries(libarchfpga libvtrcapnproto)
+    target_compile_definitions(libarchfpga PRIVATE VTR_ENABLE_CAPNPROTO)
+endif()
 
 # Using filesystem library requires additional compiler/linker options for GNU implementation prior to 9.1
 # and LLVM implementation prior to LLVM 9.0;

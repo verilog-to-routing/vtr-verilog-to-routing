@@ -35,8 +35,8 @@ class ChannelDependencyGraph {
      * @brief Constructor
      *
      * @param n_links The total number of NoC links.
-     * @param traffic_flow_routes Generated traffic flow routes by the routing
-     * algorithm.
+     * @param traffic_flow_routes The route of each traffic flow generated
+     * by a routing algorithm.
      */
     ChannelDependencyGraph(const NocStorage& noc_model,
                            const NocTrafficFlows& traffic_flow_storage,
@@ -44,7 +44,9 @@ class ChannelDependencyGraph {
                            const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
 
     /**
-     * @brief Checks whether CDG has any cycles.
+     * @brief Checks whether CDG has any cycles. A cycle implies that
+     * deadlocks are possible. If CDG has no cycles, deadlock freedom
+     * is guaranteed.
      *
      * @return True if the CDG has any cycles, otherwise false is returned.
      */

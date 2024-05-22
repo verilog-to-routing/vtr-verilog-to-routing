@@ -10,25 +10,42 @@
  *
  * Overview
  * ========
- * The TurnModelRouting class abstract Turn Model routing algorithms.
+ * The TurnModelRouting class abstracts Turn Model routing algorithms.
+ * The route_flow() method implemented in this class, routes a traffic flow
+ * by adding a NoC link at a time to form a route between two NoC routers.
+ * The destination router of the last added NoC link is called the current
+ * NoC router.
  * The main idea in Turn Model algorithm is to forbid specific turns
- * for traffic flows based on the source, destination, and current NoC
+ * for traffic flows to avoid deadlock. If at least one clockwise turn
+ * and one anticlockwise turn are forbidden, no cyclic dependency can
+ * happen, making deadlock impossible. Turn model algorithms forbid
+ * specific turns based on the source, destination, and current NoC
  * router locations in a mesh or torus topology. TurnModelRouting class
  * exposes a shared interface for all Turn Model routing algorithms.
- * Derived class can implement specific routing algorithms by implementing
+ * Derived classes can implement specific routing algorithms by implementing
  * their override of the exposed interface. More specifically,
- * get_legal_directions() method returns legal directions that a
- * traffic flow can follow based on the source, destination, and current
+ * the get_legal_directions() method returns legal directions that a
+ * traffic flow can follow based on where the source, destination, and current
  * NoC routers are located. select_next_direction() selects one of these
- * legal directions. TurnModelRouting() method does not implement these
+ * legal directions. The TurnModelRouting() class does not implement these
  * methods, but calls them in route_flow(). For example, XYRouting can be
- * implemented by override these two methods. get_legal_directions()
+ * implemented by overriding these two methods. get_legal_directions()
  * should return horizontal directions when the current router and the
  * destination are not in the same column. When the traffic flow arrives
  * a router located in the same column as the destination,
  * get_legal_directions() should return vertical directions.
  * select_next_direction() selects one of two available directions to get
  * closer to the destination.
+ *
+ * When the routing algorithm presents two possible direction choices
+ * at a router, we use a biased coin flip to randomly select one of them.
+ * This random decision is biased towards choosing the direction in which
+ * the distance to the destination is longer. For example, if the last router
+ * added to a partial route is located at (3, 5) while the route is destined
+ * for (7, 7), the random decision favors the X-direction twice as much as
+ * the Y-direction. This approach distributes the chance of selecting
+ * a shortest path more evenly among all possible paths between two
+ * NoC routers.
  *
  * TurnModelRouting also provides multiple helper methods that can be used
  * by derived classes.
@@ -145,7 +162,8 @@ class TurnModelRouting : public NocRouting {
      * sure that the link chosen points in the intended direction.
      *
      * @param curr_router_id The physical router on the FPGA that the routing
-     * algorithm is currently visiting.
+     * algorithm is currently visiting. This argument is updated in this method
+     * returned by reference.
      * @param curr_router_position The grid position of the router that is
      * currently being visited on the FPGA
      * @param next_step_direction The direction to travel next
@@ -167,7 +185,13 @@ class TurnModelRouting : public NocRouting {
 
     /**
      * @brief Computes MurmurHash3 for an array of 32-bit words initialized
-     * with seed.
+     * with seed. As discussed in the comment at the top of this file,
+     * when two possible directions are presented by get_legal_directions(),
+     * we flip a biased coin by favoring the direction along which the distance
+     * to the destination is longer. This hash function is used to generate
+     * a hash value, which is treated as random value. The generated
+     * hash value is compared with a threshold to determine the next
+     * direction to be taken
      * @param key Contains elements to be hashed
      * @param seed The initialization value.
      * @return uint32_t Computed hash value.
@@ -224,7 +248,7 @@ class TurnModelRouting : public NocRouting {
     std::vector<TurnModelRouting::Direction> returned_legal_direction{4};
 
   private:
-    std::vector<uint32_t> inputs_to_murmur3_hahser{4};
+    std::vector<uint32_t> inputs_to_murmur3_hasher{4};
 
 };
 
