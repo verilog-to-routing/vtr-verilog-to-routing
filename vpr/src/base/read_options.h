@@ -130,7 +130,6 @@ struct t_options {
     argparse::ArgValue<e_place_delta_delay_algorithm> place_delta_delay_matrix_calculation_method;
     argparse::ArgValue<bool> enable_analytic_placer;
     argparse::ArgValue<std::vector<float>> place_static_move_prob;
-    argparse::ArgValue<std::vector<float>> place_static_notiming_move_prob;
     argparse::ArgValue<int> place_high_fanout_net;
     argparse::ArgValue<e_place_bounding_box_mode> place_bounding_box_mode;
 

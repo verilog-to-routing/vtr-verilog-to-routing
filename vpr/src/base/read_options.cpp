@@ -2032,23 +2032,17 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
 
     place_grp.add_argument(args.place_static_move_prob, "--place_static_move_prob")
         .help(
-            "The percentage probabilities of different moves in Simulated Annealing placement."
-            "This option is only effective for timing-driven placement."
-            "The numbers listed are interpreted as the percentage probabilities of {uniformMove, MedianMove, CentroidMove, WeightedCentroid, WeightedMedian, Timing feasible Region(TFR), Critical UniformMove}, in that order.")
+            "The percentage probabilities of different moves in Simulated Annealing placement. "
+            "For non-timing-driven placement, only the first 3 probabilities should be provided. "
+            "For timing-driven placement, all probabilities should be provided. "
+            "When the number of provided probabilities is less then the number of move types, zero probability "
+            "is assumed."
+            "The numbers listed are interpreted as the percentage probabilities of {UniformMove, MedianMove, CentroidMove, "
+            "WeightedCentroid, WeightedMedian, Critical UniformMove, Timing feasible Region(TFR)}, in that order.")
         .nargs('+')
-        .default_value({"100", "0", "0", "0", "0", "0", "0"})
-
+        .default_value({"100"})
         .show_in(argparse::ShowIn::HELP_ONLY);
 
-    place_grp.add_argument(args.place_static_notiming_move_prob, "--place_static_notiming_move_prob")
-        .help(
-            "The Probability of different non timing move in Simulated Annealing."
-            "This option is only effective for nontiming driven placement."
-            " The numbers listed are interpreted as the percentage probabilities of {uniformMove, MedianMove, CentroidMove}, in that order.")
-        .nargs('+')
-        .default_value({"100", "0", "0"})
-
-        .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.place_high_fanout_net, "--place_high_fanout_net")
         .help(
