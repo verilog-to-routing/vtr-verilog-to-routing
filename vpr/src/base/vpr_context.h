@@ -7,6 +7,7 @@
 
 #include "vpr_types.h"
 #include "vtr_ndmatrix.h"
+#include "vtr_optional.h"
 #include "vtr_vector.h"
 #include "atom_netlist.h"
 #include "clustered_netlist.h"
@@ -22,7 +23,7 @@
 #include "device_grid.h"
 #include "clock_network_builders.h"
 #include "clock_connection_builders.h"
-#include "route_traceback.h"
+#include "route_tree.h"
 #include "router_lookahead.h"
 #include "place_macro.h"
 #include "compressed_grid.h"
@@ -61,7 +62,7 @@ struct AtomContext : public Context {
      ********************************************************************/
     /**
      * @brief constructor
-     * 
+     *
      * In the constructor initialize the list of pack molecules to nullptr and defines a custom deletor for it
      */
     AtomContext()
@@ -75,7 +76,7 @@ struct AtomContext : public Context {
 
     /**
      * @brief The molecules associated with each atom block.
-     * 
+     *
      * This map is loaded in the pre-packing stage and freed at the very end of vpr flow run.
      * The pointers in this multimap is shared with list_of_pack_molecules.
      */
@@ -83,7 +84,7 @@ struct AtomContext : public Context {
 
     /**
      * @brief A linked list of all the packing molecules that are loaded in pre-packing stage.
-     * 
+     *
      * Is is useful in freeing the pack molecules at the destructor of the Atom context using free_pack_molecules.
      */
     std::unique_ptr<t_pack_molecule, decltype(&free_pack_molecules)> list_of_pack_molecules;
@@ -164,6 +165,13 @@ struct DeviceContext : public Context {
     std::vector<t_physical_tile_type> physical_tile_types;
     std::vector<t_logical_block_type> logical_block_types;
 
+    /*
+     * Keep which layer in multi-die FPGA require inter-cluster programmable routing resources [0..number_of_layers-1]
+     * If a layer doesn't require inter-cluster programmable routing resources,
+     * RRGraph generation will ignore building SBs and CBs for that specific layer.
+     */
+    std::vector<bool> inter_cluster_prog_routing_resources;
+
     /**
      * @brief Boolean that indicates whether the architecture implements an N:M
      *        physical tiles to logical blocks mapping
@@ -187,17 +195,17 @@ struct DeviceContext : public Context {
     std::vector<t_rr_rc_data> rr_rc_data;
 
     ///@brief Sets of non-configurably connected nodes
-    std::vector<std::vector<int>> rr_non_config_node_sets;
+    std::vector<std::vector<RRNodeId>> rr_non_config_node_sets;
 
-    ///@brief Reverse look-up from RR node to non-configurably connected node set (index into rr_nonconf_node_sets)
-    std::unordered_map<int, int> rr_node_to_non_config_node_set;
+    ///@brief Reverse look-up from RR node to non-configurably connected node set (index into rr_non_config_node_sets)
+    std::unordered_map<RRNodeId, int> rr_node_to_non_config_node_set;
 
-    /* A writeable view of routing resource graph to be the ONLY database 
+    /* A writeable view of routing resource graph to be the ONLY database
      * for routing resource graph builder functions.
      */
     RRGraphBuilder rr_graph_builder{};
 
-    /* A read-only view of routing resource graph to be the ONLY database 
+    /* A read-only view of routing resource graph to be the ONLY database
      * for client functions: GUI, placer, router, timing analyzer etc.
      */
     RRGraphView rr_graph{rr_graph_builder.rr_nodes(), rr_graph_builder.node_lookup(), rr_graph_builder.rr_node_metadata(), rr_graph_builder.rr_edge_metadata(), rr_indexed_data, rr_rc_data, rr_graph_builder.rr_segments(), rr_graph_builder.rr_switch()};
@@ -306,7 +314,7 @@ struct ClusteringContext : public Context {
 
 /**
  * @brief State relating to helper data structure using in the clustering stage
- * 
+ *
  * This should contain helper data structures that are useful in the clustering/packing stage.
  * They are encapsulated here as they are useful in clustering and reclustering algorithms that may be used
  * in packing or placement stages.
@@ -335,6 +343,11 @@ struct ClusteringHelperContext : public Context {
 
     // the utilization of external input/output pins during packing (between 0 and 1)
     t_ext_pin_util_targets target_external_pin_util;
+
+    // During clustering, a block is related to un-clustered primitives with nets.
+    // This relation has three types: low fanout, high fanout, and trasitive
+    // high_fanout_thresholds stores the threshold for nets to a block type to be considered high fanout
+    t_pack_high_fanout_thresholds high_fanout_thresholds;
 
     // A vector of unordered_sets of AtomBlockIds that are inside each clustered block [0 .. num_clustered_blocks-1]
     // unordered_set for faster insertion/deletion during the iterative improvement process of packing
@@ -368,7 +381,7 @@ struct PlacementContext : public Context {
     vtr::vector_map<ClusterPinId, int> physical_pins;
 
     ///@brief Clustered block associated with each grid location (i.e. inverse of block_locs)
-    vtr::Matrix<t_grid_blocks> grid_blocks; //[0..device_ctx.grid.width()-1][0..device_ctx.grid.width()-1]
+    GridBlock grid_blocks;
 
     ///@brief The pl_macros array stores all the placement macros (usually carry chains).
     std::vector<t_pl_macro> pl_macros;
@@ -378,6 +391,7 @@ struct PlacementContext : public Context {
      *
      * Used to efficiently find logically 'adjacent' blocks of the same
      * block type even though the may be physically far apart
+     * Indexed with logical block type index: [0...num_logical_block_types-1] -> logical block compressed grid
      */
     t_compressed_block_grids compressed_block_grids;
 
@@ -389,17 +403,16 @@ struct PlacementContext : public Context {
     std::string placement_id;
 
     /**
-     * @brief Map physical block type to RL-agent block type
-     *
-     * RL-agent block types are the physical block types that are used in the netlist (at least one logical block in the netlist maps to).
-     * As an example:
-     *      Having physical block types (EMPTY, LAB, DSP, IO),
-     *      agent block types would be (LAB,IO) if netlist doesn't contain DSP blocks.
-     * Key   : physical (agent) block type index
-     * Value : agent (physical) block type index
+     * Use during placement to print extra debug information. It is set to true based on the number assigned to
+     * placer_debug_net or placer_debug_block parameters in the command line.
      */
-    std::unordered_map<int, int> phys_blk_type_to_agent_blk_type_map;
-    std::unordered_map<int, int> agent_blk_type_to_phys_blk_type_map;
+    bool f_placer_debug = false;
+
+    /**
+     * Set this variable to ture if the type of the bounding box used in placement is of the type cube. If it is false,
+     * it would mean that per-layer bounding box is used. For the 2D architecture, the cube bounding box would be used.
+     */
+    bool cube_bb = false;
 };
 
 /**
@@ -410,17 +423,17 @@ struct PlacementContext : public Context {
  */
 struct RoutingContext : public Context {
     /* [0..num_nets-1] of linked list start pointers.  Defines the routing.  */
-    vtr::vector<ParentNetId, t_traceback> trace;
+    vtr::vector<ParentNetId, vtr::optional<RouteTree>> route_trees;
 
     vtr::vector<ParentNetId, std::unordered_set<int>> trace_nodes;
 
-    vtr::vector<ParentNetId, std::vector<int>> net_rr_terminals; /* [0..num_nets-1][0..num_pins-1] */
+    vtr::vector<ParentNetId, std::vector<RRNodeId>> net_rr_terminals; /* [0..num_nets-1][0..num_pins-1] */
 
     vtr::vector<ParentNetId, uint8_t> is_clock_net; /* [0..num_nets-1] */
 
-    vtr::vector<ParentBlockId, std::vector<int>> rr_blk_source; /* [0..num_blocks-1][0..num_class-1] */
+    vtr::vector<ParentBlockId, std::vector<RRNodeId>> rr_blk_source; /* [0..num_blocks-1][0..num_class-1] */
 
-    std::vector<t_rr_node_route_inf> rr_node_route_inf; /* [0..device_ctx.num_rr_nodes-1] */
+    vtr::vector<RRNodeId, t_rr_node_route_inf> rr_node_route_inf; /* [0..device_ctx.num_rr_nodes-1] */
 
     vtr::vector<ParentNetId, std::vector<std::vector<int>>> net_terminal_groups;
 
@@ -435,7 +448,7 @@ struct RoutingContext : public Context {
      * bit value 1: node is part of a non-configurable set
      * Initialized once when RoutingContext is initialized, static throughout invocation of router
      */
-    vtr::dynamic_bitset<> non_configurable_bitset; /*[0...device_ctx.num_rr_nodes] */
+    vtr::dynamic_bitset<RRNodeId> non_configurable_bitset; /*[0...device_ctx.num_rr_nodes] */
 
     ///@brief Information about current routing status of each net
     t_net_routing_status net_status;
@@ -504,20 +517,20 @@ struct FloorplanningContext : public Context {
  */
 struct NocContext : public Context {
     /**
-     * @brief A model of the NoC  
+     * @brief A model of the NoC
      *
      * Contains all the routers and links that make up the NoC. The routers contain
      * information regarding the physical tile positions they represent. The links
      * define the connections between every router (topology) and also metrics that describe its
-     * "usage". 
-     * 
+     * "usage".
      *
-     * The NoC model is created once from the architecture file description. 
+     *
+     * The NoC model is created once from the architecture file description.
      */
     NocStorage noc_model;
 
     /**
-     * @brief Stores all the communication happening between routers in the NoC 
+     * @brief Stores all the communication happening between routers in the NoC
      *
      * Contains all of the traffic flows that describe which pairs of logical routers are communicating and also some metrics and constraints on the data transfer between the two routers.
      * 
@@ -528,12 +541,12 @@ struct NocContext : public Context {
 
     /**
      * @brief Contains the packet routing algorithm used by the NoC.
-     * 
+     *
      * This should be used to route traffic flows within the NoC.
-     * 
+     *
      * This is created from a user supplied command line option "--noc_routing_algorithm"
      */
-    NocRouting* noc_flows_router;
+    std::unique_ptr<NocRouting> noc_flows_router;
 };
 
 /**

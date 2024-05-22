@@ -186,7 +186,7 @@ Gia_Man_t * Abs_RpmPerformOld( Gia_Man_t * p, int fVerbose )
     Gia_ManStop( pTmp );
     if ( fVerbose )
     {
-        printf( "After FF-2-PI tranformation:\n" );
+        printf( "After FF-2-PI transformation:\n" );
         Gia_ManPrintStats( pNew, NULL );
     }
     return pNew;

@@ -177,7 +177,10 @@ int Abc_NtkDoCheck( Abc_Ntk_t * pNtk )
 
     // check the nodes
     if ( Abc_NtkIsStrash(pNtk) )
-        Abc_AigCheck( (Abc_Aig_t *)pNtk->pManFunc );
+    {
+        if ( !Abc_AigCheck( (Abc_Aig_t *)pNtk->pManFunc ) )
+            return 0;
+    }
     else
     {
         Abc_NtkForEachNode( pNtk, pNode, i )
@@ -865,7 +868,7 @@ int Abc_NtkCheckUniqueCiNames( Abc_Ntk_t * pNtk )
     vNames = Vec_PtrAlloc( Abc_NtkCiNum(pNtk) );
     Abc_NtkForEachCi( pNtk, pObj, i )
         Vec_PtrPush( vNames, Abc_ObjName(pObj) );
-    Vec_PtrSort( vNames, (int (*)())Abc_NtkNamesCompare );
+    Vec_PtrSort( vNames, (int (*)(const void *, const void *))Abc_NtkNamesCompare );
     for ( i = 1; i < Abc_NtkCiNum(pNtk); i++ )
         if ( !strcmp( (const char *)Vec_PtrEntry(vNames,i-1), (const char *)Vec_PtrEntry(vNames,i) ) )
         {
@@ -896,7 +899,7 @@ int Abc_NtkCheckUniqueCoNames( Abc_Ntk_t * pNtk )
     vNames = Vec_PtrAlloc( Abc_NtkCoNum(pNtk) );
     Abc_NtkForEachCo( pNtk, pObj, i )
         Vec_PtrPush( vNames, Abc_ObjName(pObj) );
-    Vec_PtrSort( vNames, (int (*)())Abc_NtkNamesCompare );
+    Vec_PtrSort( vNames, (int (*)(const void *, const void *))Abc_NtkNamesCompare );
     for ( i = 1; i < Abc_NtkCoNum(pNtk); i++ )
     {
 //        printf( "%s\n", Vec_PtrEntry(vNames,i) );

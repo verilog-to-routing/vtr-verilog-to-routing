@@ -5,7 +5,6 @@
 #include "atom_netlist_fwd.h"
 #include "atom_lookup.h"
 #include "AnalysisDelayCalculator.h"
-#include "route_tree_timing.h"
 
 class VprTimingGraphResolver : public tatum::TimingGraphNameResolver {
   public:
@@ -27,7 +26,7 @@ class VprTimingGraphResolver : public tatum::TimingGraphNameResolver {
     std::vector<tatum::DelayComponent> interconnect_delay_breakdown(tatum::EdgeId edge, DelayType) const;
 
     void get_detailed_interconnect_components(std::vector<tatum::DelayComponent>& components, ParentNetId net_id, ParentPinId sink_pin) const;
-    void get_detailed_interconnect_components_helper(std::vector<tatum::DelayComponent>& components, t_rt_node* node) const;
+    void get_detailed_interconnect_components_helper(std::vector<tatum::DelayComponent>& components, const RouteTreeNode& node) const;
 
     const AtomNetlist& netlist_;
     const AtomLookup& netlist_lookup_;

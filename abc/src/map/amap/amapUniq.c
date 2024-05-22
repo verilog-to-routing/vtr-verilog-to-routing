@@ -278,15 +278,14 @@ Abc_Lit2Var(iFan2), (Abc_LitIsCompl(iFan2)?'-':'+') );
 int ** Amap_LibLookupTableAlloc( Vec_Ptr_t * vVec, int fVerbose )
 {
     Vec_Int_t * vOne;
-    int ** pRes, * pBuffer;
+    int ** pRes;
     int i, k, nTotal, nSize, nEntries, Value;
     // count the total size
     nEntries = nSize = Vec_PtrSize( vVec );
     Vec_PtrForEachEntry( Vec_Int_t *, vVec, vOne, i )
         nEntries += Vec_IntSize(vOne);
-    pBuffer = ABC_ALLOC( int, nSize * sizeof(void *) + nEntries );
-    pRes = (int **)pBuffer;
-    pRes[0] = pBuffer + nSize * sizeof(void *);
+    pRes = (int **)ABC_ALLOC( char, nSize * sizeof(void *) + nEntries * sizeof(int) );
+    pRes[0] = (int *)((char *)pRes + nSize * sizeof(void *));
     nTotal = 0;
     Vec_PtrForEachEntry( Vec_Int_t *, vVec, vOne, i )
     {

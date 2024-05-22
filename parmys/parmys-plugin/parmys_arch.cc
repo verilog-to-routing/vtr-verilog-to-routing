@@ -92,44 +92,50 @@ struct ParmysArchPass : public Pass {
 
     void execute(std::vector<std::string> args, RTLIL::Design *design) override
     {
+        bool flag_arch_file = false;
         size_t argidx = 1;
         std::string arch_file_path;
         if (args[argidx] == "-a" && argidx + 1 < args.size()) {
             arch_file_path = args[++argidx];
             argidx++;
+            if (arch_file_path != "no_arch") {
+                flag_arch_file = true;
+            }
         }
         extra_args(args, argidx, design);
 
-        t_arch arch;
+        if (flag_arch_file) {
+            t_arch arch;
 
-        std::vector<t_physical_tile_type> physical_tile_types;
-        std::vector<t_logical_block_type> logical_block_types;
+            std::vector<t_physical_tile_type> physical_tile_types;
+            std::vector<t_logical_block_type> logical_block_types;
 
-        try {
-            XmlReadArch(arch_file_path.c_str(), false, &arch, physical_tile_types, logical_block_types);
-        } catch (vtr::VtrError &vtr_error) {
-            log_error("Odin Failed to load architecture file: %s with exit code %s at line: %ld\n", vtr_error.what(), "ERROR_PARSE_ARCH",
-                      vtr_error.line());
-        }
-
-        const char *arch_info_file = "arch.info";
-        EchoArch(arch_info_file, physical_tile_types, logical_block_types, &arch);
-
-        t_model *hb = arch.models;
-        while (hb) {
-            if (strcmp(hb->name, SINGLE_PORT_RAM_string) && strcmp(hb->name, DUAL_PORT_RAM_string) && strcmp(hb->name, "multiply") &&
-                strcmp(hb->name, "adder")) {
-                add_hb_to_design(hb, design);
-                log("Hard block added to the Design ---> `%s`\n", hb->name);
+            try {
+                XmlReadArch(arch_file_path.c_str(), false, &arch, physical_tile_types, logical_block_types);
+            } catch (vtr::VtrError &vtr_error) {
+                log_error("Parmys Failed to load architecture file: %s with exit code %s at line: %ld\n", vtr_error.what(), "ERROR_PARSE_ARCH",
+                        vtr_error.line());
             }
 
-            hb = hb->next;
-        }
+            const char *arch_info_file = "arch.info";
+            EchoArch(arch_info_file, physical_tile_types, logical_block_types, &arch);
 
-        // CLEAN UP
-        free_arch(&arch);
-        free_type_descriptors(physical_tile_types);
-        free_type_descriptors(logical_block_types);
+            t_model *hb = arch.models;
+            while (hb) {
+                if (strcmp(hb->name, SINGLE_PORT_RAM_string) && strcmp(hb->name, DUAL_PORT_RAM_string) && strcmp(hb->name, "multiply") &&
+                    strcmp(hb->name, "adder")) {
+                    add_hb_to_design(hb, design);
+                    log("Hard block added to the Design ---> `%s`\n", hb->name);
+                }
+
+                hb = hb->next;
+            }
+
+            // CLEAN UP
+            free_arch(&arch);
+            free_type_descriptors(physical_tile_types);
+            free_type_descriptors(logical_block_types);
+        }
 
         log("parmys_arch pass finished.\n");
     }

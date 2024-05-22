@@ -58,8 +58,8 @@ int CmdCommandLoad( Abc_Frame_t * pAbc, int argc, char ** argv )
     // check if there is the binary
     if ( (pFile = fopen( Vec_StrArray(vCommand), "r" )) == NULL )
     {
-        Vec_StrFree( vCommand );
         Abc_Print( -1, "Cannot run the binary \"%s\".\n\n", Vec_StrArray(vCommand) );
+        Vec_StrFree( vCommand );
         return 1;
     }
     fclose( pFile );
@@ -74,9 +74,9 @@ int CmdCommandLoad( Abc_Frame_t * pAbc, int argc, char ** argv )
     // run the command line
     if ( Util_SignalSystem( Vec_StrArray(vCommand) ) )
     {
-        Vec_StrFree( vCommand );
         Abc_Print( -1, "The following command has returned non-zero exit status:\n" );
         Abc_Print( -1, "\"%s\"\n", Vec_StrArray(vCommand) );
+        Vec_StrFree( vCommand );
         return 1;
     }
     Vec_StrFree( vCommand );
@@ -114,7 +114,8 @@ Vec_Ptr_t * CmdCollectFileNames()
 {
     Vec_Ptr_t * vFileNames;
     struct _finddata_t c_file;
-    long   hFile;
+    //long   hFile;
+    ABC_PTRINT_T hFile;
     if( (hFile = _findfirst( "*.exe", &c_file )) == -1L )
     {
 //        Abc_Print( 0, "No files with extention \"%s\" in the current directory.\n", "exe" );

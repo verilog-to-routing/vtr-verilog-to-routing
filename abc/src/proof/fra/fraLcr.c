@@ -604,7 +604,7 @@ p->timePart += Abc_Clock() - clk2;
     p->nNodesBeg = Aig_ManNodeNum(p->pAig);
     p->nRegsBeg  = Aig_ManRegNum(p->pAig);
 
-    // perforn interative reduction of the partitions
+    // perform iterative reduction of the partitions
     p->fRefining = 1;
     for ( nIter = 0; p->fRefining; nIter++ )
     {

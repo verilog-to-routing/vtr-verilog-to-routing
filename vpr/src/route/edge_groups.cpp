@@ -1,11 +1,12 @@
 #include "edge_groups.h"
 
 #include <stack>
+#include "rr_graph_fwd.h"
 
 // Adds non-configurable (undirected) edge to be grouped.
 //
 // Returns true if this is a new edge.
-bool EdgeGroups::add_non_config_edge(int from_node, int to_node) {
+bool EdgeGroups::add_non_config_edge(RRNodeId from_node, RRNodeId to_node) {
     return graph_[from_node].edges.insert(to_node).second && graph_[to_node].edges.insert(from_node).second;
 }
 
@@ -49,7 +50,7 @@ t_non_configurable_rr_sets EdgeGroups::output_sets() {
     t_non_configurable_rr_sets sets;
     for (const auto& nodes : rr_non_config_node_sets_) {
         std::set<t_node_edge> edge_set;
-        std::set<int> node_set(nodes.begin(), nodes.end());
+        std::set<RRNodeId> node_set(nodes.begin(), nodes.end());
 
         for (const auto& src : node_set) {
             for (const auto& dest : graph_[src].edges) {
@@ -66,12 +67,12 @@ t_non_configurable_rr_sets EdgeGroups::output_sets() {
 
 // Set device context structures for non-configurable node sets.
 void EdgeGroups::set_device_context(DeviceContext& device_ctx) {
-    std::vector<std::vector<int>> rr_non_config_node_sets;
+    std::vector<std::vector<RRNodeId>> rr_non_config_node_sets;
     for (const auto& item : rr_non_config_node_sets_) {
         rr_non_config_node_sets.emplace_back(std::move(item));
     }
 
-    std::unordered_map<int, int> rr_node_to_non_config_node_set;
+    std::unordered_map<RRNodeId, int> rr_node_to_non_config_node_set;
     for (size_t set = 0; set < rr_non_config_node_sets.size(); ++set) {
         for (const auto inode : rr_non_config_node_sets[set]) {
             rr_node_to_non_config_node_set.insert(

@@ -45,8 +45,8 @@ enum e_draw_crit_path {
 
 enum e_draw_nets {
     DRAW_NO_NETS = 0,
-    DRAW_NETS,
-    DRAW_LOGICAL_CONNECTIONS
+    DRAW_CLUSTER_NETS,
+    DRAW_PRIMITIVE_NETS
 };
 
 /* Draw rr_graph from less detailed to more detailed
@@ -144,6 +144,20 @@ typedef struct {
 } t_draw_rr_node;
 
 /**
+ * @brief Structure used to store visibility and transparency state information for a specific layer (die) in the FPGA.
+ *        This structure is also used to store the state information of the cross-layer connections option in the UI.
+ */
+struct t_draw_layer_display {
+    ///@brief Whether the current layer should be visible.
+    bool visible = false;
+
+    ///@brief Transparency value ( 0 - transparent, 255 - Opaque)
+    ///@note The UI has the opposite definition to make it more intuitive for the user,
+    /// where increasing the value increases transparency. (255 - transparent, 0 - Opaque)
+    int alpha = 255;
+};
+
+/**
  * @brief Structure used to store variables related to highlighting/drawing
  * 
  * Stores a lot of different variables to reflect current draw state. Most callback functions/UI elements
@@ -233,7 +247,7 @@ struct t_draw_state {
      * ROUTING is on screen.
      * [0..device_ctx.rr_nodes.size()-1]
      */
-    std::vector<t_draw_rr_node> draw_rr_node;
+    vtr::vector<RRNodeId, t_draw_rr_node> draw_rr_node;
 
     std::shared_ptr<const SetupTimingInfo> setup_timing_info;
 
@@ -271,6 +285,12 @@ struct t_draw_state {
     bool justEnabled = false;
 
     std::vector<Breakpoint> list_of_breakpoints;
+
+    ///@brief Stores visibility and transparency drawing controls for each layer [0 ... grid.num_layers -1]
+    std::vector<t_draw_layer_display> draw_layer_display;
+
+    ///@brief Visibility and transparency for elements that cross die layers
+    t_draw_layer_display cross_layer_display;
 
     ///@brief base of save graphics file name (i.e before extension)
     std::string save_graphics_file_base = "vpr";
@@ -349,10 +369,10 @@ struct t_draw_coords {
     ezgl::rectangle get_pb_bbox(ClusterBlockId clb_index, const t_pb_graph_node& pb_gnode);
 
     ///@brief returns bounding box of sub block at given location of given type w. given pb
-    ezgl::rectangle get_pb_bbox(int grid_x, int grid_y, int sub_block_index, const t_logical_block_type_ptr type, const t_pb_graph_node& pb_gnode);
+    ezgl::rectangle get_pb_bbox(int grid_layer, int grid_x, int grid_y, int sub_block_index, const t_logical_block_type_ptr type, const t_pb_graph_node& pb_gnode);
 
     ///@brief returns pb of sub block of given idx/given type at location
-    ezgl::rectangle get_pb_bbox(int grid_x, int grid_y, int sub_block_index, const t_logical_block_type_ptr type);
+    ezgl::rectangle get_pb_bbox(int grid_layer, int grid_x, int grid_y, int sub_block_index, const t_logical_block_type_ptr type);
 
     /**
      * @brief returns a bounding box for the given pb in the given
@@ -367,13 +387,13 @@ struct t_draw_coords {
      * @brief Returns a bounding box for the clb at device_ctx.grid[grid_x][grid_y].blocks[sub_block_index],
      * even if it is empty.
      */
-    ezgl::rectangle get_absolute_clb_bbox(int grid_x, int grid_y, int sub_block_index);
+    ezgl::rectangle get_absolute_clb_bbox(int grid_layer, int grid_x, int grid_y, int sub_block_index);
 
     /**
      * @brief Returns a bounding box for the clb at device_ctx.grid[grid_x][grid_y].blocks[sub_block_index],
      * of given type even if it is empty.
      */
-    ezgl::rectangle get_absolute_clb_bbox(int grid_x, int grid_y, int sub_block_index, const t_logical_block_type_ptr block_type);
+    ezgl::rectangle get_absolute_clb_bbox(int grid_layer, int grid_x, int grid_y, int sub_block_index, const t_logical_block_type_ptr block_type);
 
   private:
     float tile_width;

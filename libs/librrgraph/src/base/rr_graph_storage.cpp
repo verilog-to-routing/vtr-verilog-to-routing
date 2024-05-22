@@ -11,13 +11,13 @@ void t_rr_graph_storage::reserve_edges(size_t num_edges) {
     edge_remapped_.reserve(num_edges);
 }
 
-void t_rr_graph_storage::emplace_back_edge(RRNodeId src, RRNodeId dest, short edge_switch) {
+void t_rr_graph_storage::emplace_back_edge(RRNodeId src, RRNodeId dest, short edge_switch, bool remapped) {
     // Cannot mutate edges once edges have been read!
     VTR_ASSERT(!edges_read_);
     edge_src_node_.emplace_back(src);
     edge_dest_node_.emplace_back(dest);
     edge_switch_.emplace_back(edge_switch);
-    edge_remapped_.emplace_back(false);
+    edge_remapped_.emplace_back(remapped);
 }
 
 // Typical node to edge ratio.  This allows a preallocation guess for the edges
@@ -48,7 +48,8 @@ void t_rr_graph_storage::alloc_and_load_edges(const t_rr_edge_info_set* rr_edges
         emplace_back_edge(
             new_edge.from_node,
             new_edge.to_node,
-            new_edge.switch_type);
+            new_edge.switch_type,
+            new_edge.remapped);
     }
 }
 
@@ -154,6 +155,13 @@ class edge_sort_iterator {
     using pointer = edge_swapper*;
     using difference_type = ssize_t;
 
+    // In order for this class to be used as an iterator within the std library,
+    // it needs to "act" like a pointer. One thing that it should do is that a
+    // const variable of this type should be de-referenceable. Therefore, this
+    // method should be const method; however, this requires modifying the class
+    // and may yield worst performance. For now the std::stable_sort allows this
+    // but in the future it may not. If this breaks, this is why.
+    // See issue #2517 and PR #2522
     edge_swapper& operator*() {
         return this->swapper_;
     }
@@ -398,17 +406,10 @@ void t_rr_graph_storage::init_fan_in() {
     //Reset all fan-ins to zero
     edges_read_ = true;
     node_fan_in_.resize(node_storage_.size(), 0);
-    // This array is used to avoid initializing fan-in of the nodes which are already seen.
-    // This would reduce the run-time of flat rr graph generation since this function is called twice.
-    seen_edge_.resize(edge_dest_node_.size(), false);
     node_fan_in_.shrink_to_fit();
-    seen_edge_.shrink_to_fit();
     //Walk the graph and increment fanin on all downstream nodes
     for(const auto& edge_id : edge_dest_node_.keys()) {
-        if(!seen_edge_[edge_id]) {
-            node_fan_in_[edge_dest_node_[edge_id]] += 1;
-            seen_edge_[edge_id] = true;
-        }
+        node_fan_in_[edge_dest_node_[edge_id]] += 1;
     }
 }
 
@@ -425,7 +426,7 @@ size_t t_rr_graph_storage::count_rr_switches(
     // values.
     //
     // This sort is safe to do because partition_edges() has not been invoked yet.
-    std::sort(
+    std::stable_sort(
         edge_sort_iterator(this, 0),
         edge_sort_iterator(this, edge_dest_node_.size()),
         edge_compare_dest_node());
@@ -533,7 +534,7 @@ void t_rr_graph_storage::partition_edges(const vtr::vector<RRSwitchId, t_rr_swit
     //    by assign_first_edges()
     //  - Edges within a source node have the configurable edges before the
     //    non-configurable edges.
-    std::sort(
+    std::stable_sort(
         edge_sort_iterator(this, 0),
         edge_sort_iterator(this, edge_src_node_.size()),
         edge_compare_src_node_and_configurable_first(rr_switches));
@@ -622,6 +623,15 @@ const char* t_rr_graph_storage::node_side_string(RRNodeId id) const {
     }
     /* Not found, return an invalid string*/
     return SIDE_STRING[NUM_SIDES];
+}
+
+void t_rr_graph_storage::set_node_layer(RRNodeId id, short layer) {
+    node_layer_[id] = layer;
+}
+
+void t_rr_graph_storage::set_node_ptc_twist_incr(RRNodeId id, short twist_incr){
+    VTR_ASSERT(!node_ptc_twist_incr_.empty());
+    node_ptc_twist_incr_[id] = twist_incr;
 }
 
 void t_rr_graph_storage::set_node_ptc_num(RRNodeId id, int new_ptc_num) {
@@ -777,6 +787,7 @@ int t_rr_graph_view::node_class_num(RRNodeId id) const {
     return get_node_class_num(node_storage_, node_ptc_, id);
 }
 
+
 t_rr_graph_view t_rr_graph_storage::view() const {
     VTR_ASSERT(partitioned_);
     VTR_ASSERT(node_storage_.size() == node_fan_in_.size());
@@ -785,6 +796,8 @@ t_rr_graph_view t_rr_graph_storage::view() const {
         vtr::make_const_array_view_id(node_ptc_),
         vtr::make_const_array_view_id(node_first_edge_),
         vtr::make_const_array_view_id(node_fan_in_),
+        vtr::make_const_array_view_id(node_layer_),
+        vtr::make_const_array_view_id(node_ptc_twist_incr_),
         vtr::make_const_array_view_id(edge_src_node_),
         vtr::make_const_array_view_id(edge_dest_node_),
         vtr::make_const_array_view_id(edge_switch_));
@@ -823,7 +836,6 @@ void t_rr_graph_storage::reorder(const vtr::vector<RRNodeId, RRNodeId>& order,
         auto old_edge_dest_node = edge_dest_node_;
         auto old_edge_switch = edge_switch_;
         auto old_edge_remapped = edge_remapped_;
-        auto old_seen_edge = seen_edge_;
         RREdgeId cur_edge(0);
 
         // Reorder edges by source node
@@ -837,7 +849,6 @@ void t_rr_graph_storage::reorder(const vtr::vector<RRNodeId, RRNodeId>& order,
                 edge_dest_node_[cur_edge] = order[old_edge_dest_node[e]];
                 edge_switch_[cur_edge] = old_edge_switch[e];
                 edge_remapped_[cur_edge] = old_edge_remapped[e];
-                seen_edge_[cur_edge] = old_seen_edge[e];
                 cur_edge = RREdgeId(size_t(cur_edge) + 1);
             }
         }

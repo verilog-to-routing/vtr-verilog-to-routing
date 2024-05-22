@@ -125,6 +125,8 @@ extern void               Io_WriteDotNtk( Abc_Ntk_t * pNtk, Vec_Ptr_t * vNodes, 
 extern void               Io_WriteDotSeq( Abc_Ntk_t * pNtk, Vec_Ptr_t * vNodes, Vec_Ptr_t * vNodesShow, char * pFileName, int fGateNames, int fUseReverse );
 /*=== abcWriteEqn.c ===========================================================*/
 extern void               Io_WriteEqn( Abc_Ntk_t * pNtk, char * pFileName );
+/*=== abcWriteEdgelist.c ===========================================================*/
+extern void               Io_WriteEdgelist( Abc_Ntk_t * pNtk, char * pFileName, int fWriteLatches, int fBb2Wb, int fSeq , int fName);
 /*=== abcWriteGml.c ===========================================================*/
 extern void               Io_WriteGml( Abc_Ntk_t * pNtk, char * pFileName );
 /*=== abcWriteList.c ==========================================================*/

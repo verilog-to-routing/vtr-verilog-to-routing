@@ -16,7 +16,7 @@
 
 #ifndef NO_GRAPHICS
 
-void draw_manual_moves_window(std::string block_id) {
+void draw_manual_moves_window(const std::string& block_id) {
     t_draw_state* draw_state = get_draw_state_vars();
 
     if (!draw_state->manual_moves_state.manual_move_window_is_open) {
@@ -115,7 +115,8 @@ void calculate_cost_callback(GtkWidget* /*widget*/, GtkWidget* grid) {
         valid_input = false;
     }
 
-    t_pl_loc to = t_pl_loc(x_location, y_location, subtile_location);
+    // TODO: When graphic is updated to support 3D, this will need to be updated
+    t_pl_loc to = t_pl_loc(x_location, y_location, subtile_location, 0);
     valid_input = is_manual_move_legal(ClusterBlockId(block_id), to);
 
     if (valid_input) {
@@ -160,7 +161,7 @@ bool is_manual_move_legal(ClusterBlockId block_id, t_pl_loc to) {
     }
 
     //If the block s not compatible
-    auto physical_tile = device_ctx.grid.get_physical_type(to.x, to.y);
+    auto physical_tile = device_ctx.grid.get_physical_type({to.x, to.y, to.layer});
     auto logical_block = cluster_ctx.clb_nlist.block_type(block_id);
     if (to.sub_tile < 0 || to.sub_tile >= physical_tile->capacity || !is_sub_tile_compatible(physical_tile, logical_block, to.sub_tile)) {
         invalid_breakpoint_entry_window("Blocks are not compatible");
@@ -168,7 +169,7 @@ bool is_manual_move_legal(ClusterBlockId block_id, t_pl_loc to) {
     }
 
     //If the destination block is user constrained, abort this swap
-    auto b_to = place_ctx.grid_blocks[to.x][to.y].blocks[to.sub_tile];
+    auto b_to = place_ctx.grid_blocks.block_at_location(to);
     if (b_to != INVALID_BLOCK_ID && b_to != EMPTY_BLOCK_ID) {
         if (place_ctx.block_locs[b_to].is_fixed) {
             invalid_breakpoint_entry_window("Block is fixed");
@@ -248,7 +249,7 @@ void manual_move_cost_summary_dialog() {
         //If the user accepts the manual move
         case GTK_RESPONSE_ACCEPT:
             draw_state->manual_moves_state.manual_move_info.user_move_outcome = ACCEPTED;
-            application.update_message(msg.c_str());
+            application.update_message(msg);
             break;
         //If the user rejects the manual move
         case GTK_RESPONSE_REJECT:
@@ -281,14 +282,8 @@ void close_manual_moves_window() {
     draw_state->manual_moves_state.manual_move_window_is_open = false;
 }
 
-bool string_is_a_number(std::string block_id) {
-    for (size_t i = 0; i < block_id.size(); i++) {
-        //Returns 0 if the string does not have characters from 0-9
-        if (isdigit(block_id[i]) == 0) {
-            return false;
-        }
-    }
-    return true;
+bool string_is_a_number(const std::string& block_id) {
+    return std::all_of(block_id.begin(), block_id.end(), isdigit);
 }
 
 //Updates ManualMovesInfo cost and placer move outcome variables. User_move_outcome is also updated.
@@ -310,8 +305,8 @@ e_create_move manual_move_display_and_propose(ManualMoveGenerator& manual_move_g
     draw_manual_moves_window("");
     update_screen(ScreenUpdatePriority::MAJOR, " ", PLACEMENT, nullptr);
     move_type = e_move_type::MANUAL_MOVE;
-    t_logical_block_type blk_type; //no need to specify block type in manual move "propose_move" function
-    return manual_move_generator.propose_move(blocks_affected, move_type, blk_type, rlim, placer_opts, criticalities);
+    t_propose_action proposed_action{move_type, -1}; //no need to specify block type in manual move "propose_move" function
+    return manual_move_generator.propose_move(blocks_affected, proposed_action, rlim, placer_opts, criticalities);
 }
 
 #endif /*NO_GRAPHICS*/

@@ -5,6 +5,50 @@
 #include "vpr_types.h"
 
 /**
+ * @brief This class stores the data for each constraint region on a layer
+ * @param xmin The minimum x coordinate of the region
+ * @param ymin The minimum y coordinate of the region
+ * @param xmax The maximum x coordinate of the region
+ * @param ymax The maximum y coordinate of the region
+ * @param layer_num The layer number of the region
+ */
+struct RegionRectCoord {
+    RegionRectCoord() = default;
+    RegionRectCoord(int _xmin, int _ymin, int _xmax, int _ymax, int _layer_num)
+        : xmin(_xmin)
+        , ymin(_ymin)
+        , xmax(_xmax)
+        , ymax(_ymax)
+        , layer_num(_layer_num) {}
+
+    RegionRectCoord(const vtr::Rect<int>& rect, int _layer_num)
+        : xmin(rect.xmin())
+        , ymin(rect.ymin())
+        , xmax(rect.xmax())
+        , ymax(rect.ymax())
+        , layer_num(_layer_num) {}
+
+    int xmin;
+    int ymin;
+    int xmax;
+    int ymax;
+    int layer_num;
+
+    /// @brief Convert to a vtr::Rect
+    vtr::Rect<int> get_rect() const {
+        return vtr::Rect<int>(xmin, ymin, xmax, ymax);
+    }
+
+    /// @brief Equality operator
+    bool operator==(const RegionRectCoord& rhs) const {
+        vtr::Rect<int> lhs_rect(xmin, ymin, xmax, ymax);
+        vtr::Rect<int> rhs_rect(rhs.xmin, rhs.ymin, rhs.xmax, rhs.ymax);
+        return lhs_rect == rhs_rect
+               && layer_num == rhs.layer_num;
+    }
+};
+
+/**
  * @file
  * @brief This file defines the Region class. The Region class stores the data for each constraint region.
  *
@@ -26,12 +70,17 @@ class Region {
     /**
      * @brief Accessor for the region's rectangle
      */
-    vtr::Rect<int> get_region_rect() const;
+    RegionRectCoord get_region_rect() const;
 
     /**
      * @brief Mutator for the region's rectangle
      */
-    void set_region_rect(int _xmin, int _ymin, int _xmax, int _ymax);
+    void set_region_rect(const RegionRectCoord& rect_coord);
+
+    /**
+     * @brief Accessor for the region's layer number
+     */
+    int get_layer_num() const;
 
     /**
      * @brief Accessor for the region's subtile
@@ -59,12 +108,15 @@ class Region {
     bool is_loc_in_reg(t_pl_loc loc);
 
     bool operator==(const Region& reg) const {
-        return (reg.get_region_rect() == this->get_region_rect() && reg.get_sub_tile() == this->get_sub_tile());
+        return (reg.get_region_rect() == this->get_region_rect()
+                && reg.get_sub_tile() == this->get_sub_tile()
+                && reg.layer_num == this->layer_num);
     }
 
   private:
     //may need to include zmin, zmax for future use in 3D FPGA designs
     vtr::Rect<int> region_bounds; ///< xmin, ymin, xmax, ymax inclusive
+    int layer_num;                ///< layer number of the region
     int sub_tile;                 ///< users will optionally select a subtile
 };
 
@@ -96,11 +148,12 @@ namespace std {
 template<>
 struct hash<Region> {
     std::size_t operator()(const Region& reg) const noexcept {
-        vtr::Rect<int> rect = reg.get_region_rect();
-        std::size_t seed = std::hash<int>{}(rect.xmin());
-        vtr::hash_combine(seed, rect.ymin());
-        vtr::hash_combine(seed, rect.xmax());
-        vtr::hash_combine(seed, rect.ymax());
+        const auto region_coord = reg.get_region_rect();
+        std::size_t seed = std::hash<int>{}(region_coord.xmin);
+        vtr::hash_combine(seed, region_coord.ymin);
+        vtr::hash_combine(seed, region_coord.xmax);
+        vtr::hash_combine(seed, region_coord.ymax);
+        vtr::hash_combine(seed, region_coord.layer_num);
         vtr::hash_combine(seed, reg.get_sub_tile());
         return seed;
     }

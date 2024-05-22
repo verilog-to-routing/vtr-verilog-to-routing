@@ -24,13 +24,13 @@
  * 
  * Link
  * ----
- * A link is a component of the NoC ans is defined by the
+ * A link is a component of the NoC and is defined by the
  * NocLink class. Links are connections between two routers.
  * Links are used by routers to communicate with other routers
  * in the NoC. They can be thought of as edges in a graph. Links
  * have a source router where they exit from and sink router where
  * they enter. It is important to note that the links are not
- * unidirectional, the legal way to traverse a link is from the
+ * bi-directional; the legal way to traverse a link is from the
  * source router of the link to the sink router.
  * 
  */
@@ -46,13 +46,15 @@
 #include "vtr_assert.h"
 #include "vpr_error.h"
 #include "echo_files.h"
-
+// \cond
 // represents the id of a link that does not exist in the NoC
 constexpr NocLinkId INVALID_LINK_ID(-1);
+// \endcond
 
 class NocStorage {
   private:
-    vtr::vector<NocRouterId, NocRouter> router_storage; /*<! Contains all the routers in the NoC*/
+    /** Contains all the routers in the NoC*/
+    vtr::vector<NocRouterId, NocRouter> router_storage;
 
     // list of outgoing links for each router
     /**
@@ -63,7 +65,8 @@ class NocStorage {
      */
     vtr::vector<NocRouterId, std::vector<NocLinkId>> router_link_list;
 
-    vtr::vector<NocLinkId, NocLink> link_storage; /*<! Contains all the links in the NoC*/
+    /** Contains all the links in the NoC*/
+    vtr::vector<NocLinkId, NocLink> link_storage;
 
     /**
      * @brief The user provides an ID for the router when describing the NoC
@@ -138,6 +141,13 @@ class NocStorage {
      * 
      */
     int device_grid_width;
+    /**
+     * @brief Internal reference to the number of blocks at each layer (width * height). This is necessary
+     * to compute a unique key for a given grid location which we can then use
+     * to get the corresponding physical (hard) router at the given grid
+     * location using 'grid_location_to_router_id'.
+     */
+    int layer_num_grid_locs;
 
     // prevent "copying" of this object
     NocStorage(const NocStorage&) = delete;
@@ -182,6 +192,15 @@ class NocStorage {
      * @return A vector of links. 
      */
     const vtr::vector<NocLinkId, NocLink>& get_noc_links(void) const;
+
+    /**
+     * @brief Get all the links in the NoC. The links themselves can
+     * be modified. This function should be used when information on
+     * every link needs to be modified.
+     *
+     * @return A vector of links.
+     */
+    vtr::vector<NocLinkId, NocLink>& get_mutable_noc_links(void);
 
     /**
      * @return An integer representing the total number of links within the
@@ -251,6 +270,21 @@ class NocStorage {
     const NocLink& get_single_noc_link(NocLinkId id) const;
 
     /**
+     * @brief Given source and sink router identifiers, this function
+     * finds a link connecting these routers and returns its identifier.
+     * If such a link does not exist, an invalid id is returned.
+     * The function is not optimized for performance as it has a complexity
+     * of O(N_links).
+     *
+     * @param src_router The unique router identifier for the source router.
+     * @param dst_router The unique router identifier for the destination router.
+     * @return A link identifier (NocLinkId) that connects the source router
+     * to the destination router. NocLinkId::INVALID() is such a link is not
+     * found.
+     */
+    NocLinkId  get_single_noc_link_id(NocRouterId src_router, NocRouterId dst_router) const;
+
+    /**
      * @brief Given a unique link identifier, get the corresponding link
      * within the NoC. The link can be modified, so the intended use
      * of this function is tis to retrieve a link to modify it.
@@ -288,7 +322,7 @@ class NocStorage {
      * @param grid_position_y The vertical position on the FPGA of the physical
      * tile that this router represents.
      */
-    void add_router(int id, int grid_position_x, int grid_position_y);
+    void add_router(int id, int grid_position_x, int grid_position_y, int layer_poisition);
 
     /**
      * @brief Creates a new link and adds it to the NoC. The newly created
@@ -336,7 +370,9 @@ class NocStorage {
 
     void set_device_grid_width(int grid_width);
 
-    // general utility functions
+    void set_device_grid_spec(int grid_width, int grid_height);
+
+    // general utiliy functions
     /**
      * @brief The link is removed from the outgoing vector of links for
      * the source router. The link is not removed from the vector of all
@@ -406,14 +442,14 @@ class NocStorage {
      * link is returned.
      * 
      * Example:
-     * 
+     * ```
      *  ----------                       ----------
      *  /        /        link 1         /        /
      *  / router / --------------------->/ router /
      *  /   a    / <---------------------/   b    /
      *  /        /        link 2         /        /
      *  /--------/                       /--------/
-     * 
+     * ```
      * In the example above, link 1 and link 2 are parallel.
      * 
      * @param current_link A unique identifier that represents a link
@@ -433,12 +469,17 @@ class NocStorage {
      * 
      * @param grid_position_x The horizontal position on the FPGA of the physical
      * tile that this router represents.
-     * @param grid_position_y The vertical position on the FPGA of the physical
-     * tile that this router represents. 
+     * 
+     * @param grid_position_y The vertical position on the FPGA of the phyical
+     * tile that this router represents.
+     * 
+     * @param layer_position The layer number of the phyical
+     * tile that this router represents.
+     *  
      * @return int Represents a unique key that can be used to identify a
      * hard router block.
      */
-    int generate_router_key_from_grid_location(int grid_position_x, int grid_position_y) const;
+    int generate_router_key_from_grid_location(int grid_position_x, int grid_position_y, int layer_position) const;
 
     /**
      * @brief Writes out the NocStorage class information to a file.

@@ -91,7 +91,7 @@ void Abc_CollectTopOr( Abc_Obj_t * pObj, Vec_Ptr_t * vSuper )
     if ( Abc_ObjIsComplement(pObj) )
     {
         Abc_CollectTopOr_rec( Abc_ObjNot(pObj), vSuper );
-        Vec_PtrUniqify( vSuper, (int (*)())Abc_ObjCompareById );
+        Vec_PtrUniqify( vSuper, (int (*)(const void *, const void *))Abc_ObjCompareById );
     }
     else
         Vec_PtrPush( vSuper, Abc_ObjNot(pObj) );
@@ -658,6 +658,33 @@ Abc_Ntk_t * Abc_NtkFromAigPhase( Aig_Man_t * pMan )
 }
 
 
+/**Function*************************************************************
+
+  Synopsis    []
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+int Abc_NtkFromGiaCollapse( Gia_Man_t * pGia )
+{
+    Aig_Man_t * pMan = Gia_ManToAig( pGia, 0 ); int Res;
+    Abc_Ntk_t * pNtk = Abc_NtkFromAigPhase( pMan ), * pTemp;
+    //pNtk->pName      = Extra_UtilStrsav(pGia->pName);
+    Aig_ManStop( pMan );
+    // collapse the network 
+    pNtk = Abc_NtkCollapse( pTemp = pNtk, 10000, 0, 1, 0, 0, 0 );
+    Abc_NtkDelete( pTemp );
+    if ( pNtk == NULL )
+        return 0;
+    Res = Abc_NtkGetBddNodeNum( pNtk );
+    Abc_NtkDelete( pNtk );
+    return Res == 0;
+}
+
 
 /**Function*************************************************************
 
@@ -712,7 +739,29 @@ Hop_Obj_t * Abc_ObjHopFromGia( Hop_Man_t * pHopMan, Gia_Man_t * p, int GiaId, Ve
   SeeAlso     []
 
 ***********************************************************************/
-Abc_Ntk_t * Abc_NtkFromMappedGia( Gia_Man_t * p )
+Abc_Obj_t * Abc_NtkFromMappedGia_rec( Abc_Ntk_t * pNtkNew, Gia_Man_t * p, int iObj, int fAddInv )
+{
+    Abc_Obj_t * pObjNew;
+    Gia_Obj_t * pObj = Gia_ManObj(p, iObj);
+    if ( Gia_ObjValue(pObj) >= 0 )
+        pObjNew = Abc_NtkObj( pNtkNew, Gia_ObjValue(pObj) );
+    else
+    {
+        Abc_NtkFromMappedGia_rec( pNtkNew, p, Gia_ObjFaninId0(pObj, iObj), 0 );
+        Abc_NtkFromMappedGia_rec( pNtkNew, p, Gia_ObjFaninId1(pObj, iObj), 0 );
+        pObjNew = Abc_NtkCreateNode( pNtkNew );
+        Abc_ObjAddFanin( pObjNew, Abc_NtkObj(pNtkNew, Gia_ObjValue(Gia_ObjFanin0(pObj))) );
+        Abc_ObjAddFanin( pObjNew, Abc_NtkObj(pNtkNew, Gia_ObjValue(Gia_ObjFanin1(pObj))) );
+        pObjNew->pData = Abc_SopCreateAnd( (Mem_Flex_t *)pNtkNew->pManFunc, 2, NULL );
+        if ( Gia_ObjFaninC0(pObj) )  Abc_SopComplementVar( (char *)pObjNew->pData, 0 );
+        if ( Gia_ObjFaninC1(pObj) )  Abc_SopComplementVar( (char *)pObjNew->pData, 1 );
+        pObj->Value = Abc_ObjId( pObjNew );
+    }
+    if ( fAddInv )
+        pObjNew = Abc_NtkCreateNodeInv(pNtkNew, pObjNew);
+    return pObjNew;
+}
+Abc_Ntk_t * Abc_NtkFromMappedGia( Gia_Man_t * p, int fFindEnables, int fUseBuffs )
 {
     int fVerbose = 0;
     int fDuplicate = 0;
@@ -720,8 +769,9 @@ Abc_Ntk_t * Abc_NtkFromMappedGia( Gia_Man_t * p )
     Abc_Obj_t * pObjNew, * pObjNewLi, * pObjNewLo, * pConst0 = NULL;
     Gia_Obj_t * pObj, * pObjLi, * pObjLo;
     Vec_Ptr_t * vReflect;
-    int i, k, iFan, nDupGates; 
-    assert( Gia_ManHasMapping(p) || p->pMuxes );
+    int i, k, iFan, nDupGates, nCountMux = 0; 
+    assert( Gia_ManHasMapping(p) || p->pMuxes || fFindEnables );
+    assert( !fFindEnables || !p->pMuxes );
     pNtkNew = Abc_NtkAlloc( ABC_NTK_LOGIC, Gia_ManHasMapping(p) ? ABC_FUNC_AIG : ABC_FUNC_SOP, 1 );
     // duplicate the name and the spec
     pNtkNew->pName = Extra_UtilStrsav(p->pName);
@@ -749,7 +799,43 @@ Abc_Ntk_t * Abc_NtkFromMappedGia( Gia_Man_t * p )
         Abc_LatchSetInit0( pObjNew );
     }
     // rebuild the AIG
-    if ( p->pMuxes )
+    if ( fFindEnables )
+    {
+        Gia_ManForEachCo( p, pObj, i )
+        {
+            pObjNew = NULL;
+            if ( Gia_ObjIsRi(p, pObj) && Gia_ObjIsMuxType(Gia_ObjFanin0(pObj)) )
+            {
+                int iObjRo = Gia_ObjRiToRoId( p, Gia_ObjId(p, pObj) );
+                int iLitE, iLitT, iCtrl = Gia_ObjRecognizeMuxLits( p, Gia_ObjFanin0(pObj), &iLitT, &iLitE );
+                iLitE = Abc_LitNotCond( iLitE, Gia_ObjFaninC0(pObj) );
+                iLitT = Abc_LitNotCond( iLitT, Gia_ObjFaninC0(pObj) );
+                if ( Abc_Lit2Var(iLitT) == iObjRo )
+                {
+                    int iTemp = iLitE;
+                    iLitE = iLitT;
+                    iLitT = iTemp;
+                    iCtrl = Abc_LitNot( iCtrl );
+                }
+                if ( Abc_Lit2Var(iLitE) == iObjRo )
+                {
+                    Abc_Obj_t * pObjCtrl  = Abc_NtkFromMappedGia_rec( pNtkNew, p, Abc_Lit2Var(iCtrl), Abc_LitIsCompl(iCtrl) );
+                    Abc_Obj_t * pObjNodeT = Abc_NtkFromMappedGia_rec( pNtkNew, p, Abc_Lit2Var(iLitT), Abc_LitIsCompl(iLitT) );
+                    Abc_Obj_t * pObjNodeE = Abc_NtkFromMappedGia_rec( pNtkNew, p, Abc_Lit2Var(iLitE), Abc_LitIsCompl(iLitE) );
+                    pObjNew = Abc_NtkCreateNode( pNtkNew );
+                    Abc_ObjAddFanin( pObjNew, pObjCtrl );
+                    Abc_ObjAddFanin( pObjNew, pObjNodeT );
+                    Abc_ObjAddFanin( pObjNew, pObjNodeE );
+                    pObjNew->pData = Abc_SopCreateMux( (Mem_Flex_t *)pNtkNew->pManFunc );
+                    nCountMux++;
+                }
+            }
+            if ( pObjNew == NULL )
+                pObjNew = Abc_NtkFromMappedGia_rec( pNtkNew, p, Gia_ObjFaninId0p(p, pObj), Gia_ObjFaninC0(pObj) );
+            Abc_ObjAddFanin( Abc_NtkCo(pNtkNew, i), pObjNew );
+        }
+    }
+    else if ( p->pMuxes )
     {
         Gia_ManForEachAnd( p, pObj, i )
         {
@@ -799,11 +885,15 @@ Abc_Ntk_t * Abc_NtkFromMappedGia( Gia_Man_t * p )
             Gia_LutForEachFanin( p, i, iFan, k )
                 Abc_ObjAddFanin( pObjNew, Abc_NtkObj(pNtkNew, Gia_ObjValue(Gia_ManObj(p, iFan))) );
             pObjNew->pData = Abc_ObjHopFromGia( (Hop_Man_t *)pNtkNew->pManFunc, p, i, vReflect );
+            pObjNew->fPersist = Gia_ObjLutIsMux(p, i) && Gia_ObjLutSize(p, i) == 3;
             pObj->Value = Abc_ObjId( pObjNew );
         }
         Vec_PtrFree( vReflect );
     }
+    //if ( fFindEnables )
+    //    printf( "Extracted %d flop enable signals.\n", nCountMux );
     // connect the PO nodes
+    if ( !fFindEnables )
     Gia_ManForEachCo( p, pObj, i )
     {
         pObjNew = Abc_NtkObj( pNtkNew, Gia_ObjValue(Gia_ObjFanin0(pObj)) );
@@ -815,7 +905,7 @@ Abc_Ntk_t * Abc_NtkFromMappedGia( Gia_Man_t * p )
     Abc_NtkAddDummyBoxNames( pNtkNew );
 
     // decouple the PO driver nodes to reduce the number of levels
-    nDupGates = Abc_NtkLogicMakeSimpleCos( pNtkNew, fDuplicate );
+    nDupGates = Abc_NtkLogicMakeSimpleCos( pNtkNew, !fUseBuffs );
     if ( fVerbose && nDupGates && !Abc_FrameReadFlag("silentmode") )
     {
         if ( !fDuplicate )
@@ -870,10 +960,9 @@ static inline Abc_Obj_t * Abc_NtkFromCellRead( Abc_Ntk_t * p, Vec_Int_t * vCopyL
     Abc_NtkFromCellWrite( vCopyLits, i, c, Abc_ObjId(pObjNew) );
     return pObjNew;
 }
-Abc_Ntk_t * Abc_NtkFromCellMappedGia( Gia_Man_t * p )
+Abc_Ntk_t * Abc_NtkFromCellMappedGia( Gia_Man_t * p, int fUseBuffs )
 {
     int fFixDrivers = 1;
-    int fDuplicate = 1;
     int fVerbose = 0;
     Abc_Ntk_t * pNtkNew;
     Vec_Int_t * vCopyLits;
@@ -989,10 +1078,10 @@ Abc_Ntk_t * Abc_NtkFromCellMappedGia( Gia_Man_t * p )
     // decouple the PO driver nodes to reduce the number of levels
     if ( fFixDrivers )
     {
-        int nDupGates = Abc_NtkLogicMakeSimpleCos( pNtkNew, fDuplicate );
+        int nDupGates = Abc_NtkLogicMakeSimpleCos( pNtkNew, !fUseBuffs );
         if ( fVerbose && nDupGates && !Abc_FrameReadFlag("silentmode") )
         {
-            if ( !fDuplicate )
+            if ( fUseBuffs )
                 printf( "Added %d buffers/inverters to decouple the CO drivers.\n", nDupGates );
             else
                 printf( "Duplicated %d gates to decouple the CO drivers.\n", nDupGates );
@@ -1142,7 +1231,11 @@ Abc_Ntk_t * Abc_NtkFromDarChoices( Abc_Ntk_t * pNtkOld, Aig_Man_t * pMan )
     Aig_ManForEachCo( pMan, pObj, i )
         Abc_ObjAddFanin( Abc_NtkCo(pNtkNew, i), (Abc_Obj_t *)Aig_ObjChild0Copy(pObj) );
     if ( !Abc_NtkCheck( pNtkNew ) )
-        Abc_Print( 1, "Abc_NtkFromDar(): Network check has failed.\n" );
+    {
+        Abc_Print( 1, "Abc_NtkFromDar(): Network check has failed. Returning original network.\n" );
+        Abc_NtkDelete( pNtkNew );
+        pNtkNew = Abc_NtkDup( pNtkOld );
+    }
 
     // verify topological order
     if ( 0 )
@@ -1589,6 +1682,7 @@ Abc_Ntk_t * Abc_NtkDChoice( Abc_Ntk_t * pNtk, int fBalance, int fUpdateLevel, in
 ***********************************************************************/
 Abc_Ntk_t * Abc_NtkDch( Abc_Ntk_t * pNtk, Dch_Pars_t * pPars )
 {
+    extern Aig_Man_t * Dar_ManChoiceNew( Aig_Man_t * pAig, Dch_Pars_t * pPars );
     extern Gia_Man_t * Dar_NewChoiceSynthesis( Aig_Man_t * pAig, int fBalance, int fUpdateLevel, int fPower, int fLightSynth, int fVerbose );
     extern Aig_Man_t * Cec_ComputeChoices( Gia_Man_t * pGia, Dch_Pars_t * pPars );
 
@@ -1600,23 +1694,28 @@ Abc_Ntk_t * Abc_NtkDch( Abc_Ntk_t * pNtk, Dch_Pars_t * pPars )
     pMan = Abc_NtkToDar( pNtk, 0, 0 );
     if ( pMan == NULL )
         return NULL;
+    if ( pPars->fUseNew )
+        pMan = Dar_ManChoiceNew( pMan, pPars );
+    else 
+    {
 clk = Abc_Clock();
-    if ( pPars->fSynthesis )
-        pGia = Dar_NewChoiceSynthesis( pMan, 1, 1, pPars->fPower, pPars->fLightSynth, pPars->fVerbose );
-    else
-    {
-        pGia = Gia_ManFromAig( pMan );
-        Aig_ManStop( pMan );
-    }
+        if ( pPars->fSynthesis )
+            pGia = Dar_NewChoiceSynthesis( pMan, 1, 1, pPars->fPower, pPars->fLightSynth, pPars->fVerbose );
+        else
+        {
+            pGia = Gia_ManFromAig( pMan );
+            Aig_ManStop( pMan );
+        }
 pPars->timeSynth = Abc_Clock() - clk;
-    if ( pPars->fUseGia )
-        pMan = Cec_ComputeChoices( pGia, pPars );
-    else
-    {
-        pMan = Gia_ManToAigSkip( pGia, 3 );
-        Gia_ManStop( pGia );
-        pMan = Dch_ComputeChoices( pTemp = pMan, pPars );
-        Aig_ManStop( pTemp );
+        if ( pPars->fUseGia )
+            pMan = Cec_ComputeChoices( pGia, pPars );
+        else
+        {
+            pMan = Gia_ManToAigSkip( pGia, 3 );
+            Gia_ManStop( pGia );
+            pMan = Dch_ComputeChoices( pTemp = pMan, pPars );
+            Aig_ManStop( pTemp );
+        }
     }
     pNtkAig = Abc_NtkFromDarChoices( pNtk, pMan );
     Aig_ManStop( pMan );
@@ -2203,7 +2302,7 @@ Abc_Ntk_t * Abc_NtkDarLcorr( Abc_Ntk_t * pNtk, int nFramesP, int nConfMax, int f
   SeeAlso     []
  
 ***********************************************************************/
-Abc_Ntk_t * Abc_NtkDarLcorrNew( Abc_Ntk_t * pNtk, int nVarsMax, int nConfMax, int fVerbose )
+Abc_Ntk_t * Abc_NtkDarLcorrNew( Abc_Ntk_t * pNtk, int nVarsMax, int nConfMax, int nLimitMax, int fVerbose )
 {
     Ssw_Pars_t Pars, * pPars = &Pars;
     Aig_Man_t * pMan, * pTemp;
@@ -2215,6 +2314,7 @@ Abc_Ntk_t * Abc_NtkDarLcorrNew( Abc_Ntk_t * pNtk, int nVarsMax, int nConfMax, in
     pPars->fLatchCorrOpt = 1;
     pPars->nBTLimit      = nConfMax;
     pPars->nSatVarMax    = nVarsMax;
+    pPars->nLimitMax     = nLimitMax;
     pPars->fVerbose      = fVerbose;
     pMan = Ssw_SignalCorrespondence( pTemp = pMan, pPars );
     Aig_ManStop( pTemp );
@@ -2780,7 +2880,6 @@ int Abc_NtkDarProve( Abc_Ntk_t * pNtk, Fra_Sec_t * pSecPar, int nBmcFramesMax, i
         Prove_Params_t Params, * pParams = &Params;
         Abc_Ntk_t * pNtkComb;
         int RetValue;
-        abctime clk = Abc_Clock();
         if ( Abc_NtkLatchNum(pNtk) == 0 )
             Abc_Print( 1, "The network has no latches. Running CEC.\n" );
         // create combinational network
@@ -2795,26 +2894,29 @@ int Abc_NtkDarProve( Abc_Ntk_t * pNtk, Fra_Sec_t * pSecPar, int nBmcFramesMax, i
         if ( RetValue == 0  && (Abc_NtkLatchNum(pNtk) == 0) )
         {
             pNtk->pModel = pNtkComb->pModel; pNtkComb->pModel = NULL;
-            Abc_Print( 1, "Networks are not equivalent.\n" );
-            ABC_PRT( "Time", Abc_Clock() - clk );
             if ( pSecPar->fReportSolution )
-            {
                 Abc_Print( 1, "SOLUTION: FAIL       " );
-                ABC_PRT( "Time", Abc_Clock() - clkTotal );
-            }
+            else
+                Abc_Print( 1, "SATISFIABLE    " );
+            ABC_PRT( "Time", Abc_Clock() - clkTotal );
             return RetValue;
         }
         Abc_NtkDelete( pNtkComb );
         // return the result, if solved
         if ( RetValue == 1 )
         {
-            Abc_Print( 1, "Networks are equivalent after CEC.   " );
-            ABC_PRT( "Time", Abc_Clock() - clk );
             if ( pSecPar->fReportSolution )
-            {
-            Abc_Print( 1, "SOLUTION: PASS       " );
+                Abc_Print( 1, "SOLUTION: PASS       " );
+            else
+                Abc_Print( 1, "UNSATISFIABLE  " );
             ABC_PRT( "Time", Abc_Clock() - clkTotal );
-            }
+            return RetValue;
+        }
+        // return undecided, if the miter is combinational
+        if ( Abc_NtkLatchNum(pNtk) == 0 )
+        {
+            Abc_Print( 1, "UNDECIDED      " );
+            ABC_PRT( "Time", Abc_Clock() - clkTotal );
             return RetValue;
         }
     }
@@ -2892,7 +2994,7 @@ int Abc_NtkDarSec( Abc_Ntk_t * pNtk1, Abc_Ntk_t * pNtk2, Fra_Sec_t * pSecPar )
     if ( pMiter == NULL )
     {
         Abc_Print( 1, "Miter computation has failed.\n" );
-        return 0;
+        return -1;
     }
     RetValue = Abc_NtkMiterIsConstant( pMiter );
     if ( RetValue == 0 )

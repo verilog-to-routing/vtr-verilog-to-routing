@@ -350,7 +350,7 @@ Use the options below to override this default naming behaviour.
 
 .. option:: --read_rr_graph <file>
 
-    Reads in the routing resource graph named <file> loads it for use during the placement and routing stages. Expects a file extension of either ``.xml`` and ``.bin``.
+    Reads in the routing resource graph named <file> loads it for use during the placement and routing stages. Expects a file extension of either ``.xml`` or ``.bin``.
 
     The routing resource graph overthrows all the architecture definitions regarding switches, nodes, and edges. Other information such as grid information, block types, and segment information are matched with the architecture file to ensure accuracy.
 
@@ -368,19 +368,22 @@ Use the options below to override this default naming behaviour.
 
 .. option:: --read_router_lookahead <file>
 
-    Reads the lookahead data from the specified file instead of computing it.
+    Reads the lookahead data from the specified file instead of computing it. Expects a file extension of either ``.capnp`` or ``.bin``.
 
 .. option:: --write_router_lookahead <file>
 
-    Writes the lookahead data to the specified file.
+    Writes the lookahead data to the specified file. Accepted file extensions are ``.capnp``, ``.bin``, and ``.csv``.
 
 .. option:: --read_placement_delay_lookup <file>
 
-    Reads the placement delay lookup from the specified file instead of computing it.
+    Reads the placement delay lookup from the specified file instead of computing it. Expects a file extension of either ``.capnp`` or ``.bin``.
 
 .. option:: --write_placement_delay_lookup <file>
 
-    Writes the placement delay lookup to the specified file.
+    Writes the placement delay lookup to the specified file. Expects a file extension of either ``.capnp`` or ``.bin``.
+.. option:: --write_initial_place_file <file>
+
+    Writes out the the placement chosen by the initial placement algorithm to the specified file.
 
 .. option:: --outfile_prefix <string>
 
@@ -769,6 +772,19 @@ If any of init_t, exit_t or alpha_t is specified, the user schedule, with a fixe
 
     **Default:**  ``criticality_timing``
 
+.. option:: --place_bounding_box_mode {auto_bb | cube_bb | per_layer_bb}
+
+    Specifies the type of the wirelength estimator used during placement. For single layer architectures, cube_bb (a 3D bounding box) is always used (and is the same as per_layer_bb).
+    For 3D architectures, cube_bb is appropriate if you can cross between layers at switch blocks, while if you can only cross between layers at output pins per_layer_bb (one bouding box per layer) is more accurate and appropriate.
+
+    ``auto_bb``: The bounding box type is determined automatically based on the cross-layer connections.
+
+    ``cube_bb``: ``cube_bb`` bounding box is used to estimate the wirelength.
+
+    ``per_layer_bb``: ``per_layer_bb`` bounding box is used to estimate the wirelength
+
+    **Default:** ``auto_bb``
+
 .. option:: --place_chan_width <int>
 
     Tells VPR how many tracks a channel of relative width 1 is expected to need to complete routing of this circuit.
@@ -784,7 +800,7 @@ If any of init_t, exit_t or alpha_t is specified, the user schedule, with a fixe
     **Default:** ``0.0``
 
 .. _dusty_sa_options:
-Setting any of the following options selects `Dusty's annealing schedule <dusty_sa.rst>`_.
+Setting any of the following 5 options selects :ref:`Dusty's annealing schedule <dusty_sa>` .
 
 .. option:: --alpha_min <float>
 
@@ -821,6 +837,97 @@ Setting any of the following options selects `Dusty's annealing schedule <dusty_
 
     **Default:** ``0.25``
 
+.. option:: --place_cost_exp <float>
+
+    Wiring cost is divided by the average channel width over a net's bounding box
+    taken to this exponent. Only impacts devices with different channel widths in 
+    different directions or regions. 
+
+    **Default:** ``1``
+
+.. option:: --RL_agent_placement {on | off}
+
+    Uses a Reinforcement Learning (RL) agent in choosing the appropiate move type in placement.
+    It activates the RL agent placement instead of using a fixed probability for each move type.
+
+    **Default:** ``on``
+
+.. option:: --place_agent_multistate {on | off}
+
+    Enable a multistate agent in the placement. A second state will be activated late in
+    the annealing and in the Quench that includes all the timing driven directed moves.
+
+    **Default:** ``on``
+
+.. option:: --place_agent_algorithm {e_greedy | softmax}
+
+    Controls which placement RL agent is used. 
+
+    **Default:** ``softmax``
+
+.. option:: --place_agent_epsilon <float>
+
+    Placement RL agent's epsilon for the epsilon-greedy agent. Epsilon represents
+    the percentage of exploration actions taken vs the exploitation ones.
+
+    **Default:** ``0.3``
+
+.. option:: --place_agent_gamma <float>
+
+    Controls how quickly the agent's memory decays. Values between [0., 1.] specify
+    the fraction of weight in the exponentially weighted reward average applied to moves
+    which occured greater than moves_per_temp moves ago. Values < 0 cause the
+    unweighted reward sample average to be used (all samples are weighted equally)
+
+    **Default:** ``0.05``
+
+.. option:: --place_reward_fun {basic | nonPenalizing_basic | runtime_aware | WLbiased_runtime_aware}
+
+    The reward function used by the placement RL agent to learn the best action at each anneal stage. 
+
+    .. note:: The latter two are only available for timing-driven placement. 
+    
+    **Default:** ``WLbiased_runtime_aware``
+
+.. option:: --place_agent_space {move_type | move_block_type}
+
+    The RL Agent exploration space can be either based on only move types or also consider different block types moved.
+
+    **Default:** ``move_block_type``
+
+.. option:: --placer_debug_block <int>
+    
+    .. note:: This option is likely only of interest to developers debugging the placement algorithm
+
+    Controls which block the placer produces detailed debug information for. 
+    
+    If the block being moved has the same ID as the number assigned to this parameter, the placer will print debugging information about it.
+
+    * For values >= 0, the value is the block ID for which detailed placer debug information should be produced.
+    * For value == -1, detailed placer debug information is produced for all blocks.
+    * For values < -1, no placer debug output is produced.
+
+    .. warning:: VPR must have been compiled with `VTR_ENABLE_DEBUG_LOGGING` on to get any debug output from this option.
+
+    **Default:** ``-2``
+
+.. option:: --placer_debug_net <int>
+    
+    .. note:: This option is likely only of interest to developers debugging the placement algorithm
+
+    Controls which net the placer produces detailed debug information for.
+
+    If a net with the same ID assigned to this parameter is connected to the block that is being moved, the placer will print debugging information about it.
+
+    * For values >= 0, the value is the net ID for which detailed placer debug information should be produced.
+    * For value == -1, detailed placer debug information is produced for all nets.
+    * For values < -1, no placer debug output is produced.
+
+    .. warning:: VPR must have been compiled with `VTR_ENABLE_DEBUG_LOGGING` on to get any debug output from this option.
+
+    **Default:** ``-2``
+
+
 .. _timing_driven_placer_options:
 
 Timing-Driven Placer Options
@@ -844,6 +951,13 @@ The following options are only valid when the placement engine is in timing-driv
 .. option:: --inner_loop_recompute_divider <int>
 
     Controls how many times the placer performs a timing analysis to update its criticality estimates while at a single temperature.
+
+    **Default:** ``0``
+
+.. option:: --quench_recompute_divider <int>
+
+    Controls how many times the placer performs a timing analysis to update its criticality estimates during a quench. 
+    If unspecified, uses the value from --inner_loop_recompute_divider.
 
     **Default:** ``0``
 
@@ -920,6 +1034,82 @@ The following options are only valid when the placement engine is in timing-driv
 
     Name of the post-placement timing report file to generate (not generated if unspecfied).
 
+
+.. _noc_placement_options:
+
+NoC Options
+^^^^^^^^^^^^^^
+The following options are only used when FPGA device and netlist contain a NoC router.  
+
+.. option:: --noc {on | off}
+
+    Enables a NoC-driven placer that optimizes the placement of routers on the NoC. Also, it enables an option in the graphical display that can be used to
+    display the NoC on the FPGA.
+
+    **Default:** ``off``
+
+.. option:: --noc_flows_file <file>
+    
+    XML file containing the list of traffic flows within the NoC (communication between routers).
+
+    .. note:: noc_flows_file are required to specify if NoC optimization is turned on (--noc on).
+
+.. option:: --noc_routing_algorithm {xy_routing | bfs_routing}
+
+    Controls the algorithm used by the NoC to route packets.
+    
+    * ``xy_routing`` Uses the direction oriented routing algorithm. This is recommended to be used with mesh NoC topologies.
+    * ``bfs_routing`` Uses the breadth first search algorithm. The objective is to find a route that uses a minimum number of links. This can be used with any NoC topology.
+
+    **Default:** ``bfs_routing``
+
+.. option:: --noc_placement_weighting <float>
+
+    Controls the importance of the NoC placement parameters relative to timing and wirelength of the design.
+    
+    * ``noc_placement_weighting = 0`` means the placement is based solely on timing and wirelength.
+    * ``noc_placement_weighting = 1`` means noc placement is considered equal to timing and wirelength.
+    * ``noc_placement_weighting > 1`` means the placement is increasingly dominated by NoC parameters.
+    
+    **Default:** ``0.6``
+
+.. option:: --noc_latency_constraints_weighting <float>
+
+    Controls the importance of meeting all the NoC traffic flow latency constraints.
+    
+    * ``latency_constraints = 0`` means the latency constraints have no relevance to placement.
+    * ``0 < latency_constraints < 1`` means the latency constraints are weighted equally to the sum of other placement cost components. 
+    * ``latency_constraints > 1`` means the placement is increasingly dominated by reducing the latency constraints of the traffic flows.
+    
+    **Default:** ``1``
+
+.. option:: --noc_latency_weighting <float>
+
+    Controls the importance of reducing the latencies of the NoC traffic flows.
+    This value can be >=0, 
+    
+    * ``latency = 0`` means the latencies have no relevance to placement.
+    * ``0 < latency < 1`` means the latencies are weighted equally to the sum of other placement cost components. 
+    * ``latency > 1`` means the placement is increasingly dominated by reducing the latencies of the traffic flows.
+    
+    **Default:** ``0.05``
+
+.. option:: --noc_swap_percentage <float>
+
+    Sets the minimum fraction of swaps attempted by the placer that are NoC blocks.
+    This value is an integer ranging from [0-100]. 
+    
+    * ``0`` means NoC blocks will be moved at the same rate as other blocks. 
+    * ``100`` means all swaps attempted by the placer are NoC router blocks.
+    
+    **Default:** ``40``    
+
+.. option:: --noc_placement_file_name <file>
+
+    Name of the output file that contains the NoC placement information.
+
+    **Default:** ``vpr_noc_placement_output.txt``
+
 .. _router_options:
 
 Router Options
@@ -929,6 +1119,14 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
 .. note:: By default the router performs a binary search to find the minimum routable channel width.  To route at a fixed channel width use :option:`--route_chan_width`.
 
 .. seealso:: :ref:`timing_driven_router_options`
+
+.. option:: --flat_routing {on | off}
+
+    If this option is enabled, the *run-flat* router is used instead of the *two-stage* router.
+    This means that during the routing stage, all nets, both intra- and inter-cluster, are routed directly from one primitive pin to another primitive pin.
+    This increases routing time but can improve routing quality by re-arranging LUT inputs and exposing additional optimization opportunities in architectures with local intra-cluster routing that is not a full crossbar.
+
+    **Default:** ``OFF`
 
 .. option:: --max_router_iterations <int>
 
@@ -992,7 +1190,7 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
 
     * ``delay_normalized_length_frequency`` like ``delay_normalized``, but scaled by routing resource length and scaled inversely by routing resource frequency.
 
-    **Default:** ``delay_normalized_length`` for the timing-driven router and ``demand_only`` for the breadth-first router
+    **Default:** ``delay_normalized_length``
 
 .. option:: --bend_cost <float>
 
@@ -1037,22 +1235,13 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
 
     This option attempts to verify the minimum by routing at successively lower channel widths until two consecutive routing failures are observed.
 
-.. option:: --router_algorithm {breadth_first | timing_driven}
+.. option:: --router_algorithm {parallel | timing_driven}
 
     Selects which router algorithm to use.
 
     .. warning::
 
-        The ``breadth_first`` router **should NOT be used to compare the run-time/quality** of alternate routing algorithms.
-
-        It is inferrior to the ``timing_driven`` router from a circuit speed (2x - 10x slower) and run-time perspective (takes 10-100x longer on the large benchmarks).
-        The ``breadth_first`` router is deprecated and may be removed in a future release.
-
-    The ``breadth_first`` router :cite:`betz_arch_cad` focuses solely on routing a design successfully, while the ``timing_driven`` router :cite:`betz_arch_cad,murray_air` focuses both on achieving a successful route and achieving good circuit speed.
-
-    The breadth-first router is capable of routing a design using slightly fewer tracks than the timing-driving router (typically 5% if the timing-driven router uses its default parameters.
-    This can be reduced to about 2% if the router parameters are set so the timing-driven router pays more attention to routability and less to area).
-    The designs produced by the timing-driven router are much faster, however, (2x - 10x) and it uses less CPU time to route.
+        The ``parallel`` router is experimental. (TODO: more explanation)
 
     **Default:** ``timing_driven``
 
@@ -1106,6 +1295,14 @@ The following options are only valid when the router is in timing-driven mode (t
     Sets how aggressive the directed search used by the timing-driven router is.
 
     Values between 1 and 2 are reasonable, with higher values trading some quality for reduced CPU time.
+
+    **Default:** ``1.2``
+
+.. option:: --router_profiler_astar_fac <float>
+    
+    Controls the directedness of the timing-driven router's exploration when doing router delay profiling of an architecture.
+    The router delay profiling step is currently used to calculate the place delay matrix lookup.
+    Values between 1 and 2 are resonable; higher values trade some quality for reduced run-time.
 
     **Default:** ``1.2``
 
@@ -1206,7 +1403,7 @@ The following options are only valid when the router is in timing-driven mode (t
      * ``classic``: The classic VPR lookahead
      * ``map``: A more advanced lookahead which accounts for diverse wire types and their connectivity
 
-     **Default:** ``classic``
+     **Default:** ``map``
 
 .. option:: --router_max_convergence_count <float>
 
@@ -1546,7 +1743,7 @@ Analysis Options
 
             It is possible that by opening a switch between (1,2) to (1,1), CHANY:2113 actually only extends from (1,3) to (1,2).
 
-            2. The preceding channel's ending coordinates have no relation to the following channel's starting coordinates.
+            1. The preceding channel's ending coordinates have no relation to the following channel's starting coordinates.
                There is no logical contradiction, but for clarification, it is best to see an explanation of the VPR coordinate system.
                The path can also be visualized by VPR graphics, as an illustration of this point:
 

@@ -16,9 +16,12 @@
 
 ***********************************************************************/
 
-#define _BSD_SOURCE
+//#define _BSD_SOURCE
 
 #ifndef WIN32
+#ifndef _DEFAULT_SOURCE
+#define _DEFAULT_SOURCE
+#endif
 #include <unistd.h>
 #endif
 
@@ -408,6 +411,7 @@ int Mio_CommandWriteGenlib( Abc_Frame_t * pAbc, int argc, char **argv )
     FILE * pOut, * pErr, * pFile;
     char * pFileName;
     int fSelected = 0;
+    int fVerilog = 0;
     int fVerbose = 0;
     int c;
 
@@ -415,15 +419,18 @@ int Mio_CommandWriteGenlib( Abc_Frame_t * pAbc, int argc, char **argv )
     pErr = Abc_FrameReadErr(pAbc);
 
     Extra_UtilGetoptReset();
-    while ( (c = Extra_UtilGetopt(argc, argv, "vah")) != EOF ) 
+    while ( (c = Extra_UtilGetopt(argc, argv, "agvh")) != EOF ) 
     {
         switch (c) 
         {
-            case 'v':
-                fVerbose ^= 1;
-                break;
             case 'a':
                 fSelected ^= 1;
+                break;
+            case 'g':
+                fVerilog ^= 1;
+                break;
+            case 'v':
+                fVerbose ^= 1;
                 break;
             case 'h':
                 goto usage;
@@ -450,16 +457,20 @@ int Mio_CommandWriteGenlib( Abc_Frame_t * pAbc, int argc, char **argv )
         printf( "Error! Cannot open file \"%s\" for writing the library.\n", pFileName );
         return 1;
     }
-    Mio_WriteLibrary( pFile, (Mio_Library_t *)Abc_FrameReadLibGen(), 0, 0, fSelected );
+    if ( fVerilog )
+        Mio_WriteLibraryVerilog( pFile, (Mio_Library_t *)Abc_FrameReadLibGen(), 0, 0, fSelected );
+    else
+        Mio_WriteLibrary( pFile, (Mio_Library_t *)Abc_FrameReadLibGen(), 0, 0, fSelected );
     fclose( pFile );
     printf( "The current genlib library is written into file \"%s\".\n", pFileName );
     return 0;
 
 usage:
-    fprintf( pErr, "\nusage: write_genlib [-vah] <file>\n");
+    fprintf( pErr, "\nusage: write_genlib [-agvh] <file>\n");
     fprintf( pErr, "\t          writes the current genlib library into a file\n" );  
-    fprintf( pErr, "\t-v      : toggles enabling of verbose output [default = %s]\n", fVerbose? "yes" : "no" );
     fprintf( pErr, "\t-a      : toggles writing min-area gates [default = %s]\n", fSelected? "yes" : "no" );
+    fprintf( pErr, "\t-g      : toggles writing the library in Verilog [default = %s]\n", fVerilog? "yes" : "no" );
+    fprintf( pErr, "\t-v      : toggles enabling of verbose output [default = %s]\n", fVerbose? "yes" : "no" );
     fprintf( pErr, "\t-h      : print the command usage\n");
     fprintf( pErr, "\t<file>  : optional file name to write the library\n");
     return 1;       

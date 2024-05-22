@@ -114,7 +114,7 @@ void instantiate_simple_soft_multiplier(nnode_t* node, short mark, netlist_t* ne
     width = node->output_port_sizes[0];
     multiplicand_width = width_b;
     multiplier_width = width_a;
-    /* offset is related to which multport is chosen as the multiplicand */
+    /* offset is related to which multiport is chosen as the multiplicand */
     multiplicand_offset_index = width_a;
     multiplier_offset_index = 0;
 
@@ -354,7 +354,7 @@ void declare_hard_multiplier(nnode_t* node) {
  *-------------------------------------------------------------------------*/
 void instantiate_hard_multiplier(nnode_t* node, short mark, netlist_t* /*netlist*/) {
     oassert(node
-            && "node is NULL to instanciate hard multiplier");
+            && "node is NULL to instantiate hard multiplier");
 
     declare_hard_multiplier(node);
 
@@ -1323,7 +1323,7 @@ void clean_multipliers() {
  * (function: cleanup_mult_old_node)
  *
  * @brief <clean up nodeo, a high level MULT node> 
- * In split_soft_multplier function, nodeo is splitted to small multipliers, 
+ * In split_soft_multiplier function, nodeo is splitted to small multipliers, 
  * while because of the complexity of input pin connections they have not been 
  * remapped to new nodes, they just copied and added to new nodes. This function 
  * will detach input pins from the nodeo. Moreover, it will connect the net of 

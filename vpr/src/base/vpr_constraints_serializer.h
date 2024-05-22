@@ -163,6 +163,11 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
      *   <xs:attribute name="subtile" type="xs:int" />
      * </xs:complexType>
      */
+
+    virtual inline int get_add_region_layer_num(Region& r) final {
+        return r.get_layer_num();
+    }
+
     virtual inline int get_add_region_subtile(Region& r) final {
         return r.get_sub_tile();
     }
@@ -172,23 +177,23 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
     }
 
     virtual inline int get_add_region_x_high(Region& r) final {
-        vtr::Rect<int> rect = r.get_region_rect();
-        return rect.xmax();
+        const auto reg_coord = r.get_region_rect();
+        return reg_coord.xmax;
     }
 
     virtual inline int get_add_region_x_low(Region& r) final {
-        vtr::Rect<int> rect = r.get_region_rect();
-        return rect.xmin();
+        const auto reg_coord = r.get_region_rect();
+        return reg_coord.xmin;
     }
 
     virtual inline int get_add_region_y_high(Region& r) final {
-        vtr::Rect<int> rect = r.get_region_rect();
-        return rect.ymax();
+        const auto reg_coord = r.get_region_rect();
+        return reg_coord.ymax;
     }
 
     virtual inline int get_add_region_y_low(Region& r) final {
-        vtr::Rect<int> rect = r.get_region_rect();
-        return rect.ymin();
+        const auto reg_coord = r.get_region_rect();
+        return reg_coord.ymin;
     }
 
     /** Generated for complex type "partition":
@@ -232,7 +237,7 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
     virtual inline void preallocate_partition_add_region(void*& /*ctx*/, size_t /*size*/) final {}
 
     virtual inline void* add_partition_add_region(void*& /*ctx*/, int x_high, int x_low, int y_high, int y_low) final {
-        loaded_region.set_region_rect(x_low, y_low, x_high, y_high);
+        loaded_region.set_region_rect({x_low, y_low, x_high, y_high, 0});
 
         return nullptr;
     }

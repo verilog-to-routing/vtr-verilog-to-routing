@@ -124,12 +124,12 @@ std::vector<tatum::DelayComponent> VprTimingGraphResolver::interconnect_delay_br
 
     std::vector<tatum::DelayComponent> components;
 
-    //We assume that the delay calculator has already cached all of the relevant delays,
-    //we just retrieve the cached values. This assumption greatly simplifies the calculation
-    //process and avoids us duplicating the complex delay calculation logic from the delay
-    //calcualtor.
+    // We assume that the delay calculator has already cached all of the relevant delays,
+    // we just retrieve the cached values. This assumption greatly simplifies the calculation
+    // process and avoids us duplicating the complex delay calculation logic from the delay
+    // calculator.
     //
-    //However note that this does couple this code tightly with the delay calculator implementation.
+    // However note that this does couple this code tightly with the delay calculator implementation.
 
     //Force delay calculation to ensure results are cached (redundant if already up-to-date)
     delay_calc_.atom_net_delay(timing_graph_, edge, delay_type);
@@ -237,23 +237,23 @@ std::vector<tatum::DelayComponent> VprTimingGraphResolver::interconnect_delay_br
         interblock_component.delay = net_delay;
 
         if ((detail_level() == e_timing_report_detail::DETAILED_ROUTING || detail_level() == e_timing_report_detail::DEBUG)
-            && !route_ctx.trace.empty()) {
-            //check if detailed timing report has been selected and that the vector of tracebacks
-            //is not empty.
-            if (route_ctx.trace[src_net].head != nullptr) {
-                //the traceback is not a nullptr, so we find the path of the net from source to sink.
-                //Note that the previously declared interblock_component will not be added to the
-                //vector of net components.
+            && !route_ctx.route_trees.empty()) {
+            // check if detailed timing report has been selected and that the routing
+            // is not empty.
+            if (route_ctx.route_trees[src_net]) {
+                // the route tree exists, so we find the path of the net from source to sink.
+                // Note that the previously declared interblock_component will not be added to the
+                // vector of net components.
                 get_detailed_interconnect_components(components, src_net, sink_pin);
             } else {
-                //the traceback is a nullptr which means this is an unrouted net as part of global routing.
-                //We add the tag global net, and push the interblock into the vector of net components.
+                // this is an unrouted net as part of global routing.
+                // We add the tag global net, and push the interblock into the vector of net components.
                 interblock_component.type_name += ":global net";
                 components.push_back(interblock_component);
             }
         } else {
-            //for aggregated and netlist modes, we simply add the previously declared interblock_component
-            //to the vector.
+            // for aggregated and netlist modes, we simply add the previously declared interblock_component
+            // to the vector.
             components.push_back(interblock_component);
         }
         tatum::DelayComponent sink_component;
@@ -284,39 +284,40 @@ void VprTimingGraphResolver::get_detailed_interconnect_components(std::vector<ta
      * two intra-block clusters in two parts. In part one, we construct the route tree 
      * from the traceback and computes its value for R, C, and Tdel. Next, we find the pointer to
      * the route tree sink which corresponds to the sink_pin. In part two, we call the helper function,
-     * which walks the route tree from the sink to the source. Along the way, we process each node 
+     * which walks the route tree from the sink to the source. Along the way, we process each node
      * and construct net_components that are added to the vector of components. */
 
-    t_rt_node* rt_root = traceback_to_route_tree(net_id, is_flat_); //obtain the route tree from the traceback
-    load_new_subtree_R_upstream(rt_root);                           //load in the resistance values for the route
-    load_new_subtree_C_downstream(rt_root);                         //load in the capacitance values for the route tree
-    load_route_tree_Tdel(rt_root, 0.);                              //load the time delay values for the route tree
-    t_rt_node* rt_sink;
-    if (is_flat_) {
-        rt_sink = find_sink_rt_node((const Netlist<>&)g_vpr_ctx.atom().nlist, rt_root, net_id, (ParentPinId&)sink_pin); //find the sink matching sink_pin
-    } else {
-        rt_sink = find_sink_rt_node((const Netlist<>&)g_vpr_ctx.clustering().clb_nlist, rt_root, net_id, (ParentPinId&)sink_pin); //find the sink matching sink_pin
-    }
-    get_detailed_interconnect_components_helper(components, rt_sink); //from sink, walk up to source and add net components
-    free_route_tree(rt_root);
+    auto& route_ctx = g_vpr_ctx.mutable_routing();
+
+    if (!route_ctx.route_trees[net_id])
+        return;
+
+    auto& netlist = is_flat_ ? (const Netlist<>&)g_vpr_ctx.atom().nlist : (const Netlist<>&)g_vpr_ctx.clustering().clb_nlist;
+
+    int ipin = netlist.pin_net_index(sink_pin);
+    RRNodeId sink_rr_inode = RRNodeId(route_ctx.net_rr_terminals[net_id][ipin]); //obtain the value of the routing resource sink
+
+    auto rt_sink = route_ctx.route_trees[net_id].value().find_by_rr_id(sink_rr_inode);
+
+    get_detailed_interconnect_components_helper(components, rt_sink.value()); //from sink, walk up to source and add net components
 }
 
-void VprTimingGraphResolver::get_detailed_interconnect_components_helper(std::vector<tatum::DelayComponent>& components, t_rt_node* node) const {
-    /* This routine comprieses the second part of obtaining the interconnect components.
-     * We begin at the sink node and travel up the tree towards the source. For each node, we would 
-     * like to retreive information such as the routing resource type, index, and incremental delay.
+void VprTimingGraphResolver::get_detailed_interconnect_components_helper(std::vector<tatum::DelayComponent>& components, const RouteTreeNode& node) const {
+    /* This routine comprises the second part of obtaining the interconnect components.
+     * We begin at the sink node and travel up the tree towards the source. For each node, we would
+     * like to retrieve information such as the routing resource type, index, and incremental delay.
      * If the type is a channel, then we retrieve the name of the segment as well as the coordinates
-     * of its start and endpoint. All of this information is stored in the object DelayComponent,
+     * of its start and end point. All of this information is stored in the object DelayComponent,
      * which belong to the vector "components".
      */
 
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
-    //Declare a separate vector "interconnect_components" to hold the interconnect components. We need
-    //this because we walk from the sink to the source, we will need to add elements to the front of
-    //interconnect_components so that we maintain the correct order of net components.
-    //Illustration:
+    // Declare a separate vector "interconnect_components" to hold the interconnect components. We need
+    // this because we walk from the sink to the source, we will need to add elements to the front of
+    // interconnect_components so that we maintain the correct order of net components.
+    // Illustration:
     //    INTRA
     //      |
     //     IPIN <-end
@@ -326,34 +327,36 @@ void VprTimingGraphResolver::get_detailed_interconnect_components_helper(std::ve
     //     OPIN <-start
     //      |
     //    INTRA - not seen yet
-    //Pushing a stack steps:
-    //1. OPIN, 2. CHANX, OPIN 3. IPIN, CHANX, OPIN (order is preserved)
-    //At this point of the code, the vector "components" contains intrablock components.
-    //At the end of the module, we will append "interconnect_components" to the end of vector "components".
+    // Pushing a stack steps:
+    // 1. OPIN, 2. CHANX, OPIN 3. IPIN, CHANX, OPIN (order is preserved)
+    // At this point of the code, the vector "components" contains intrablock components.
+    // At the end of the module, we will append "interconnect_components" to the end of vector "components".
 
     std::vector<tatum::DelayComponent> interconnect_components;
 
-    while (node != nullptr) {
-        //Process the current interconnect component if it is of type OPIN, CHANX, CHANY, IPIN
-        //Only process SOURCE, SINK in debug report mode
-        auto rr_type = rr_graph.node_type(RRNodeId(node->inode));
+    vtr::optional<const RouteTreeNode&> current_node = node;
+    while (current_node) {
+        // Process the current interconnect component if it is of type OPIN, CHANX, CHANY, IPIN
+        // Only process SOURCE, SINK in debug report mode
+        auto rr_type = rr_graph.node_type(RRNodeId(current_node->inode));
         if (rr_type == OPIN
             || rr_type == IPIN
             || rr_type == CHANX
             || rr_type == CHANY
             || ((rr_type == SOURCE || rr_type == SINK) && (detail_level() == e_timing_report_detail::DEBUG))) {
-            tatum::DelayComponent net_component; //declare a new instance of DelayComponent
+            tatum::DelayComponent net_component; // declare a new instance of DelayComponent
 
-            net_component.type_name = rr_graph.node_coordinate_to_string(RRNodeId(node->inode));
+            net_component.type_name = rr_graph.node_coordinate_to_string(RRNodeId(current_node->inode));
 
-            if (node->parent_node) {
-                net_component.delay = tatum::Time(node->Tdel - node->parent_node->Tdel); // add the incremental delay
+            if (current_node->parent()) {
+                net_component.delay = tatum::Time(current_node->Tdel - current_node->parent()->Tdel); // add the incremental delay
             } else {
-                net_component.delay = tatum::Time(0.); //No delay on SOURCE
+                net_component.delay = tatum::Time(0.); // No delay on SOURCE
             }
-            interconnect_components.push_back(net_component); //insert net_component into the front of vector interconnect_component
+            interconnect_components.push_back(net_component); // insert net_component into the front of vector interconnect_component
         }
-        node = node->parent_node; //travel up the tree through the parent
+        current_node = current_node->parent();
     }
-    components.insert(components.end(), interconnect_components.rbegin(), interconnect_components.rend()); //append the completed "interconnect_component" to "component_vector"
+
+    components.insert(components.end(), interconnect_components.rbegin(), interconnect_components.rend()); // append the completed "interconnect_component" to "component_vector"
 }

@@ -44,10 +44,9 @@
 
 #include "vtr_assert.h"
 #include "vtr_log.h"
-#include "route_timing.h"
 #include "tatum/report/TimingPathFwd.hpp"
 #include "tatum/base/TimingType.hpp"
-#include "timing_info.h"
+#include "concrete_timing_info.h"
 #include "tatum/echo_writer.hpp"
 #include "net_delay.h"
 #include "route_budgets.h"

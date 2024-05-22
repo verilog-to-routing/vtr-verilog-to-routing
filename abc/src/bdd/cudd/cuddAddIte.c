@@ -359,6 +359,22 @@ Cudd_addCmpl(
 } /* end of Cudd_addCmpl */
 
 
+#ifdef USE_CASH_DUMMY
+/**Function********************************************************************
+
+  Synopsis    We need to declare a function passed to cuddCacheLookup2 as a key
+              that can be casted to DD_CTFP.
+
+******************************************************************************/
+static DdNode *
+Cudd_addLeq_dummy(DdManager * dd, DdNode * f, DdNode * g)
+{
+  assert(0);
+  return 0;
+}
+#endif
+
+
 /**Function********************************************************************
 
   Synopsis    [Determines whether f is less than or equal to g.]
@@ -394,7 +410,11 @@ Cudd_addLeq(
     if (g == DD_MINUS_INFINITY(dd)) return(0); /* since f != g */
 
     /* Check cache. */
+#ifdef USE_CASH_DUMMY
+    tmp = cuddCacheLookup2(dd,(DD_CTFP)Cudd_addLeq_dummy,f,g);
+#else
     tmp = cuddCacheLookup2(dd,(DD_CTFP)Cudd_addLeq,f,g);
+#endif
     if (tmp != NULL) {
         return(tmp == DD_ONE(dd));
     }
@@ -416,8 +436,13 @@ Cudd_addLeq(
     res = Cudd_addLeq(dd,fvn,gvn) && Cudd_addLeq(dd,fv,gv);
 
     /* Store result in cache and return. */
+#ifdef USE_CASH_DUMMY
+    cuddCacheInsert2(dd,(DD_CTFP) Cudd_addLeq_dummy,f,g,
+                     Cudd_NotCond(DD_ONE(dd),res==0));
+#else
     cuddCacheInsert2(dd,(DD_CTFP) Cudd_addLeq,f,g,
                      Cudd_NotCond(DD_ONE(dd),res==0));
+#endif
     return(res);
 
 } /* end of Cudd_addLeq */

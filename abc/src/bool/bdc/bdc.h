@@ -79,6 +79,8 @@ extern void *      Bdc_FuncCopy( Bdc_Fun_t * p );
 extern int         Bdc_FuncCopyInt( Bdc_Fun_t * p );
 extern void        Bdc_FuncSetCopy( Bdc_Fun_t * p, void * pCopy );
 extern void        Bdc_FuncSetCopyInt( Bdc_Fun_t * p, int iCopy );
+extern int         Bdc_ManBidecNodeNum( word * pFunc, word * pCare, int nVars, int fVerbose );
+extern Vec_Int_t * Bdc_ManBidecResub( word * pFunc, word * pCare, int nVars );
 
 /*=== working with saved copies ==========================================*/
 static inline int  Bdc_FunObjCopy( Bdc_Fun_t * pObj )     { return Abc_LitNotCond( Bdc_FuncCopyInt(Bdc_Regular(pObj)), Bdc_IsComplement(pObj) );  }

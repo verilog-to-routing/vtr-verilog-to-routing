@@ -705,8 +705,8 @@ Abc_Cex_t * Vta_ManRefineAbstraction( Vta_Man_t * p, int f )
     // objects with equal distance should receive priority based on number
     // those objects whose prototypes have been added in other timeframes
     // should have higher priority than the current object
-    Vec_PtrSort( vTermsUsed,   (int (*)(void))Vta_ManComputeDepthIncrease );
-    Vec_PtrSort( vTermsUnused, (int (*)(void))Vta_ManComputeDepthIncrease );
+    Vec_PtrSort( vTermsUsed,   (int (*)(const void *, const void *))Vta_ManComputeDepthIncrease );
+    Vec_PtrSort( vTermsUnused, (int (*)(const void *, const void *))Vta_ManComputeDepthIncrease );
     if ( Vec_PtrSize(vTermsUsed) > 1 )
     {
         pThis0 = (Vta_Obj_t *)Vec_PtrEntry(vTermsUsed, 0);
@@ -1439,7 +1439,7 @@ void Gia_VtaDumpAbsracted( Vta_Man_t * p, int fVerbose )
     pAbs = Gia_ManDupAbsGates( p->pGia, p->pGia->vGateClasses );
     Vec_IntFreeP( &p->pGia->vGateClasses );
     // send it out
-    Gia_AigerWrite( pAbs, pFileName, 0, 0 );
+    Gia_AigerWrite( pAbs, pFileName, 0, 0, 0 );
     Gia_ManStop( pAbs );
 }
 

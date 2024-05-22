@@ -46,6 +46,7 @@
 ////////////////////////////////////////////////////////////////////////
 
 #include "exor.h"
+#include "base/abc/abc.h"
 
 ABC_NAMESPACE_IMPL_START
 
@@ -947,6 +948,69 @@ int Abc_ExorcismMain( Vec_Wec_t * vEsop, int nIns, int nOuts, char * pFileNameOu
     return 1;
 }
 
+Vec_Wec_t * Abc_ExorcismNtk2Esop( Abc_Ntk_t * pNtk )
+{
+    Vec_Wec_t * vEsop = NULL;
+    Abc_Obj_t * pNode, * pFanin, * pDriver;
+    char * pCube;
+    int nIns, nOuts, nProducts, nFanins, i, k;
+
+    nIns = Abc_NtkCiNum( pNtk );
+    nOuts = Abc_NtkCoNum( pNtk );
+
+    nProducts = 0;
+    Abc_NtkForEachCo( pNtk, pNode, i )
+    {
+        pDriver = Abc_ObjFanin0Ntk( Abc_ObjFanin0(pNode) );
+        if ( !Abc_ObjIsNode(pDriver) )
+        {
+            nProducts++;
+            continue;
+        }
+        if ( Abc_NodeIsConst(pDriver) )
+        {
+            if ( Abc_NodeIsConst1(pDriver) )
+                nProducts++;
+            continue;
+        }
+        nProducts += Abc_SopGetCubeNum((char *)pDriver->pData);
+    }
+
+    Abc_NtkForEachCi( pNtk, pNode, i )
+        pNode->pCopy = (Abc_Obj_t *)(ABC_PTRUINT_T)i;
+
+    vEsop = Vec_WecAlloc( nProducts+1 );
+
+    Abc_NtkForEachCo( pNtk, pNode, i )
+    {
+        pDriver = Abc_ObjFanin0Ntk( Abc_ObjFanin0(pNode) );
+        if ( Abc_NodeIsConst(pDriver) ) continue;
+
+        nFanins = Abc_ObjFaninNum(pDriver);
+        Abc_SopForEachCube( (char *)pDriver->pData, nFanins, pCube )
+        {
+            Vec_Int_t *vCubeIn = Vec_WecPushLevel( vEsop );
+            Vec_IntGrow( vCubeIn, nIns+2 );
+
+            Abc_ObjForEachFanin( pDriver, pFanin, k )
+            {
+                pFanin = Abc_ObjFanin0Ntk(pFanin);
+                assert( (int)(ABC_PTRUINT_T)pFanin->pCopy < nIns );
+                if ( pCube[k] == '0' )
+                {
+                    Vec_IntPush( vCubeIn, 2*k + 1 );
+                }
+                else if ( pCube[k] == '1' )
+                {
+                    Vec_IntPush( vCubeIn, 2*k );
+                }
+            }
+            Vec_IntPush( vCubeIn, -( i + 1 ) );
+        }
+    }
+
+    return vEsop;
+}
 
 
 ///////////////////////////////////////////////////////////////////

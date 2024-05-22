@@ -46,7 +46,15 @@ static void SetupSwitches(const t_arch& Arch,
                           int NumArchSwitches);
 static void SetupAnalysisOpts(const t_options& Options, t_analysis_opts& analysis_opts);
 static void SetupPowerOpts(const t_options& Options, t_power_opts* power_opts, t_arch* Arch);
-static int find_ipin_cblock_switch_index(const t_arch& Arch);
+
+/**
+ * @brief Identify which switch must be used for *track* to *IPIN* connections based on architecture file specification.
+ * @param Arch Architecture file specification
+ * @param wire_to_arch_ipin_switch Switch id that must be used when *track* and *IPIN* are located at the same die
+ * @param wire_to_arch_ipin_switch_between_dice Switch id that must be used when *track* and *IPIN* are located at different dice.
+ */
+static void find_ipin_cblock_switch_index(const t_arch& Arch, int& wire_to_arch_ipin_switch, int& wire_to_arch_ipin_switch_between_dice);
+
 // Fill the data structures used when flat_routing is enabled to speed-up routing
 static void alloc_and_load_intra_cluster_resources(bool reachability_analysis);
 static void set_root_pin_to_pb_pin_map(t_physical_tile_type* physical_type);
@@ -220,6 +228,10 @@ void SetupVPR(const t_options* Options,
     RoutingArch->write_rr_graph_filename = Options->write_rr_graph_file;
     RoutingArch->read_rr_graph_filename = Options->read_rr_graph_file;
 
+    for (auto has_global_routing : Arch->layer_global_routing) {
+        device_ctx.inter_cluster_prog_routing_resources.emplace_back(has_global_routing);
+    }
+
     //Setup the default flow, if no specific stages specified
     //do all
     if (!Options->do_packing
@@ -267,7 +279,6 @@ void SetupVPR(const t_options* Options,
     vtr::out_file_prefix = Options->out_file_prefix;
 
     /* Set seed for pseudo-random placement, default seed to 1 */
-    PlacerOpts->seed = Options->Seed;
     vtr::srandom(PlacerOpts->seed);
 
     {
@@ -332,7 +343,7 @@ static void SetupSwitches(const t_arch& Arch,
     int switches_to_copy = NumArchSwitches;
     int num_arch_switches = NumArchSwitches;
 
-    RoutingArch->wire_to_arch_ipin_switch = find_ipin_cblock_switch_index(Arch);
+    find_ipin_cblock_switch_index(Arch, RoutingArch->wire_to_arch_ipin_switch, RoutingArch->wire_to_arch_ipin_switch_between_dice);
 
     /* Depends on device_ctx.num_arch_switches */
     RoutingArch->delayless_switch = num_arch_switches++;
@@ -372,7 +383,7 @@ static void SetupSwitches(const t_arch& Arch,
     //Note that we don't warn about the R value as it may be used to size the buffer (if buf_size_type is AUTO)
     if (device_ctx.arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].Cout != 0.) {
         VTR_LOG_WARN("Non-zero switch output capacitance (%g) has no effect when switch '%s' is used for connection block inputs\n",
-                     device_ctx.arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].Cout, Arch.ipin_cblock_switch_name.c_str());
+                     device_ctx.arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].Cout, Arch.ipin_cblock_switch_name[0].c_str());
     }
 }
 
@@ -470,6 +481,7 @@ static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts)
     RouterOpts->generate_rr_node_overuse_report = Options.generate_rr_node_overuse_report;
     RouterOpts->flat_routing = Options.flat_routing;
     RouterOpts->has_choking_spot = Options.has_choking_spot;
+    RouterOpts->with_timing_analysis = Options.timing_analysis;
 }
 
 static void SetupAnnealSched(const t_options& Options,
@@ -600,7 +612,6 @@ static void SetupPlacerOpts(const t_options& Options, t_placer_opts* PlacerOpts)
     PlacerOpts->inner_loop_recompute_divider = Options.inner_loop_recompute_divider;
     PlacerOpts->quench_recompute_divider = Options.quench_recompute_divider;
 
-    //TODO: document?
     PlacerOpts->place_cost_exp = 1;
 
     PlacerOpts->td_place_exp_first = Options.place_exp_first;
@@ -611,6 +622,8 @@ static void SetupPlacerOpts(const t_options& Options, t_placer_opts* PlacerOpts)
     PlacerOpts->place_quench_algorithm = Options.PlaceQuenchAlgorithm;
 
     PlacerOpts->constraints_file = Options.constraints_file;
+
+    PlacerOpts->write_initial_place_file = Options.write_initial_place_file;
 
     PlacerOpts->pad_loc_type = Options.pad_loc_type;
 
@@ -629,7 +642,6 @@ static void SetupPlacerOpts(const t_options& Options, t_placer_opts* PlacerOpts)
     PlacerOpts->delay_model_type = Options.place_delay_model;
     PlacerOpts->delay_model_reducer = Options.place_delay_model_reducer;
 
-    //TODO: document?
     PlacerOpts->place_freq = PLACE_ONCE; /* DEFAULT */
 
     PlacerOpts->post_place_timing_report_file = Options.post_place_timing_report_file;
@@ -649,9 +661,10 @@ static void SetupPlacerOpts(const t_options& Options, t_placer_opts* PlacerOpts)
     PlacerOpts->effort_scaling = Options.place_effort_scaling;
     PlacerOpts->timing_update_type = Options.timing_update_type;
     PlacerOpts->enable_analytic_placer = Options.enable_analytic_placer;
-    PlacerOpts->place_static_move_prob = Options.place_static_move_prob;
-    PlacerOpts->place_static_notiming_move_prob = Options.place_static_notiming_move_prob;
+    PlacerOpts->place_static_move_prob = vtr::vector<e_move_type, float>(Options.place_static_move_prob.value().begin(),
+                                                                         Options.place_static_move_prob.value().end());
     PlacerOpts->place_high_fanout_net = Options.place_high_fanout_net;
+    PlacerOpts->place_bounding_box_mode = Options.place_bounding_box_mode;
     PlacerOpts->RL_agent_placement = Options.RL_agent_placement;
     PlacerOpts->place_agent_multistate = Options.place_agent_multistate;
     PlacerOpts->place_checkpointing = Options.place_checkpointing;
@@ -666,6 +679,11 @@ static void SetupPlacerOpts(const t_options& Options, t_placer_opts* PlacerOpts)
     PlacerOpts->place_constraint_subtile = Options.place_constraint_subtile;
     PlacerOpts->floorplan_num_horizontal_partitions = Options.floorplan_num_horizontal_partitions;
     PlacerOpts->floorplan_num_vertical_partitions = Options.floorplan_num_vertical_partitions;
+
+    PlacerOpts->seed = Options.Seed;
+
+    PlacerOpts->placer_debug_block = Options.placer_debug_block;
+    PlacerOpts->placer_debug_net = Options.placer_debug_net;
 }
 
 static void SetupAnalysisOpts(const t_options& Options, t_analysis_opts& analysis_opts) {
@@ -717,30 +735,38 @@ static void SetupNocOpts(const t_options& Options, t_noc_opts* NocOpts) {
     NocOpts->noc_flows_file = Options.noc_flows_file;
     NocOpts->noc_routing_algorithm = Options.noc_routing_algorithm;
     NocOpts->noc_placement_weighting = Options.noc_placement_weighting;
+    NocOpts->noc_aggregate_bandwidth_weighting = Options.noc_agg_bandwidth_weighting;
     NocOpts->noc_latency_constraints_weighting = Options.noc_latency_constraints_weighting;
     NocOpts->noc_latency_weighting = Options.noc_latency_weighting;
+    NocOpts->noc_congestion_weighting = Options.noc_congestion_weighting;
     NocOpts->noc_swap_percentage = Options.noc_swap_percentage;
     NocOpts->noc_placement_file_name = Options.noc_placement_file_name;
-
-    return;
 }
 
-static int find_ipin_cblock_switch_index(const t_arch& Arch) {
-    int ipin_cblock_switch_index = UNDEFINED;
-    for (int i = 0; i < Arch.num_switches; ++i) {
-        if (Arch.Switches[i].name == Arch.ipin_cblock_switch_name) {
-            if (ipin_cblock_switch_index != UNDEFINED) {
-                VPR_FATAL_ERROR(VPR_ERROR_ARCH, "Found duplicate switches named '%s'\n", Arch.ipin_cblock_switch_name.c_str());
-            } else {
-                ipin_cblock_switch_index = i;
+static void find_ipin_cblock_switch_index(const t_arch& Arch, int& wire_to_arch_ipin_switch, int& wire_to_arch_ipin_switch_between_dice) {
+    for (auto cb_switch_name_index = 0; cb_switch_name_index < (int)Arch.ipin_cblock_switch_name.size(); cb_switch_name_index++) {
+        int ipin_cblock_switch_index = UNDEFINED;
+        for (int iswitch = 0; iswitch < Arch.num_switches; ++iswitch) {
+            if (Arch.Switches[iswitch].name == Arch.ipin_cblock_switch_name[cb_switch_name_index]) {
+                if (ipin_cblock_switch_index != UNDEFINED) {
+                    VPR_FATAL_ERROR(VPR_ERROR_ARCH, "Found duplicate switches named '%s'\n",
+                                    Arch.ipin_cblock_switch_name[cb_switch_name_index].c_str());
+                } else {
+                    ipin_cblock_switch_index = iswitch;
+                }
             }
         }
-    }
+        if (ipin_cblock_switch_index == UNDEFINED) {
+            VPR_FATAL_ERROR(VPR_ERROR_ARCH, "Failed to find connection block input pin switch named '%s'\n", Arch.ipin_cblock_switch_name[0].c_str());
+        }
 
-    if (ipin_cblock_switch_index == UNDEFINED) {
-        VPR_FATAL_ERROR(VPR_ERROR_ARCH, "Failed to find connection block input pin switch named '%s'\n", Arch.ipin_cblock_switch_name.c_str());
+        //first index in Arch.ipin_cblock_switch_name is related to same die connections
+        if (cb_switch_name_index == 0) {
+            wire_to_arch_ipin_switch = ipin_cblock_switch_index;
+        } else {
+            wire_to_arch_ipin_switch_between_dice = ipin_cblock_switch_index;
+        }
     }
-    return ipin_cblock_switch_index;
 }
 
 static void alloc_and_load_intra_cluster_resources(bool reachability_analysis) {

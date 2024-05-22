@@ -1778,6 +1778,7 @@ void Tas_ManSolveMiterNc2( Gia_Man_t * pAig, int nConfs, Gia_Man_t * pAigOld, Ve
         Tas_ManSatPrintStats( p );
     Tas_ManStop( p );
     Vec_PtrFree( vPres );
+    Vec_StrFree( vStatus );
 }
 
 

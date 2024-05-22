@@ -23,6 +23,10 @@ const vtr::vector<NocLinkId, NocLink>& NocStorage::get_noc_links(void) const {
     return link_storage;
 }
 
+vtr::vector<NocLinkId, NocLink>& NocStorage::get_mutable_noc_links(void) {
+    return link_storage;
+}
+
 int NocStorage::get_number_of_noc_links(void) const {
     return link_storage.size();
 }
@@ -52,13 +56,28 @@ const NocLink& NocStorage::get_single_noc_link(NocLinkId id) const {
     return link_storage[id];
 }
 
+NocLinkId  NocStorage::get_single_noc_link_id(NocRouterId src_router, NocRouterId dst_router) const {
+    NocLinkId link_id = NocLinkId::INVALID();
+
+    for (const auto& link : link_storage) {
+        if (link.get_source_router() == src_router && link.get_sink_router() == dst_router) {
+            link_id = link.get_link_id();
+            break;
+        }
+    }
+
+    return link_id;
+}
+
 NocLink& NocStorage::get_single_mutable_noc_link(NocLinkId id) {
     return link_storage[id];
 }
 
 NocRouterId NocStorage::get_router_at_grid_location(const t_pl_loc& hard_router_location) const {
     // get the key to identify the corresponding hard router block at the provided grid location
-    int router_key = generate_router_key_from_grid_location(hard_router_location.x, hard_router_location.y);
+    int router_key = generate_router_key_from_grid_location(hard_router_location.x,
+                                                            hard_router_location.y,
+                                                            hard_router_location.layer);
 
     // get the hard router block id at the given grid location
     auto hard_router_block = grid_location_to_router_id.find(router_key);
@@ -70,10 +89,10 @@ NocRouterId NocStorage::get_router_at_grid_location(const t_pl_loc& hard_router_
 
 // setters for the NoC
 
-void NocStorage::add_router(int id, int grid_position_x, int grid_position_y) {
+void NocStorage::add_router(int id, int grid_position_x, int grid_posistion_y, int layer_position) {
     VTR_ASSERT_MSG(!built_noc, "NoC already built, cannot modify further.");
 
-    router_storage.emplace_back(id, grid_position_x, grid_position_y);
+    router_storage.emplace_back(id, grid_position_x, grid_posistion_y, layer_position);
 
     /* Get the corresponding NocRouterId for the newly added router and
      * add it to the conversion table.
@@ -86,7 +105,7 @@ void NocStorage::add_router(int id, int grid_position_x, int grid_position_y) {
 
     /* need to associate the current router with its grid position */
     // get the key to identify the current router
-    int router_key = generate_router_key_from_grid_location(grid_position_x, grid_position_y);
+    int router_key = generate_router_key_from_grid_location(grid_position_x, grid_posistion_y, layer_position);
     grid_location_to_router_id.insert(std::pair<int, NocRouterId>(router_key, converted_id));
 
     return;
@@ -94,10 +113,14 @@ void NocStorage::add_router(int id, int grid_position_x, int grid_position_y) {
 
 void NocStorage::add_link(NocRouterId source, NocRouterId sink) {
     VTR_ASSERT_MSG(!built_noc, "NoC already built, cannot modify further.");
-    link_storage.emplace_back(source, sink);
 
-    // the newly added link was added to the back of the list, so we can get the id as the last element in the list
-    NocLinkId added_link_id((int)link_storage.size() - 1);
+    // the new link will be added to the back of the list,
+    // so we can use the total number of links added so far as id
+    NocLinkId added_link_id((int)link_storage.size());
+
+    double link_bandwidth = get_noc_link_bandwidth();
+    link_storage.emplace_back(added_link_id, source, sink, link_bandwidth);
+
     router_link_list[source].push_back(added_link_id);
 
     return;
@@ -105,6 +128,12 @@ void NocStorage::add_link(NocRouterId source, NocRouterId sink) {
 
 void NocStorage::set_noc_link_bandwidth(double link_bandwidth) {
     noc_link_bandwidth = link_bandwidth;
+
+    // Iterate over all links and set their bandwidth
+    for (auto& link : link_storage) {
+        link.set_bandwidth(noc_link_bandwidth);
+    }
+
     return;
 }
 
@@ -120,6 +149,12 @@ void NocStorage::set_noc_router_latency(double router_latency) {
 
 void NocStorage::set_device_grid_width(int grid_width) {
     device_grid_width = grid_width;
+    return;
+}
+
+void NocStorage::set_device_grid_spec(int grid_width, int grid_height) {
+    device_grid_width = grid_width;
+    layer_num_grid_locs = grid_width * grid_height;
     return;
 }
 
@@ -211,9 +246,9 @@ NocLinkId NocStorage::get_parallel_link(NocLinkId current_link) const {
     NocLinkId parallel_link = INVALID_LINK_ID;
 
     // go through the links of the sink router and the link that has the current source router as the sink router of the link is the parallel link we are looking for
-    for (auto link = sink_router_links->begin(); link != sink_router_links->end(); link++) {
-        if (link_storage[*link].get_sink_router() == curr_source_router) {
-            parallel_link = *link;
+    for (auto sink_router_link : *sink_router_links) {
+        if (link_storage[sink_router_link].get_sink_router() == curr_source_router) {
+            parallel_link = sink_router_link;
             break;
         }
     }
@@ -221,9 +256,9 @@ NocLinkId NocStorage::get_parallel_link(NocLinkId current_link) const {
     return parallel_link;
 }
 
-int NocStorage::generate_router_key_from_grid_location(int grid_position_x, int grid_position_y) const {
+int NocStorage::generate_router_key_from_grid_location(int grid_position_x, int grid_position_y, int layer_position) const {
     // calculate the key value
-    return (device_grid_width * grid_position_y + grid_position_x);
+    return (layer_num_grid_locs * layer_position + device_grid_width * grid_position_y + grid_position_x);
 }
 
 void NocStorage::echo_noc(char* file_name) const {
@@ -252,17 +287,17 @@ void NocStorage::echo_noc(char* file_name) const {
     fprintf(fp, "\n");
 
     // go through each router and print its information
-    for (auto router = router_storage.begin(); router != router_storage.end(); router++) {
-        fprintf(fp, "Router %d:\n", router->get_router_user_id());
+    for (const auto& router : router_storage) {
+        fprintf(fp, "Router %d:\n", router.get_router_user_id());
         // if the router tile is larger than a single grid, the position represents the bottom left corner of the tile
-        fprintf(fp, "Equivalent Physical Tile Grid Position -> (%d,%d)\n", router->get_router_grid_position_x(), router->get_router_grid_position_y());
+        fprintf(fp, "Equivalent Physical Tile Grid Position -> (%d,%d)\n", router.get_router_grid_position_x(), router.get_router_grid_position_y());
         fprintf(fp, "Router Connections ->");
 
-        auto& router_connections = this->get_noc_router_connections(this->convert_router_id(router->get_router_user_id()));
+        auto& router_connections = this->get_noc_router_connections(this->convert_router_id(router.get_router_user_id()));
 
         // go through the outgoing links of the current router and print the connecting router
-        for (auto link_id = router_connections.begin(); link_id != router_connections.end(); link_id++) {
-            const NocRouterId connecting_router_id = get_single_noc_link(*link_id).get_sink_router();
+        for (auto router_connection : router_connections) {
+            const NocRouterId connecting_router_id = get_single_noc_link(router_connection).get_sink_router();
 
             fprintf(fp, " %d", get_single_noc_router(connecting_router_id).get_router_user_id());
         }

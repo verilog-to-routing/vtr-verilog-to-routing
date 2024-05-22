@@ -3,9 +3,8 @@
 
 #include "rr_graph_fwd.h"
 
-/* TODO: MUST change the node id to RRNodeId before refactoring is finished! */
 struct t_rr_edge_info {
-    t_rr_edge_info(RRNodeId from, RRNodeId to, short type, bool is_remapped = false) noexcept
+    t_rr_edge_info(RRNodeId from, RRNodeId to, short type, bool is_remapped) noexcept
         : from_node(from)
         , to_node(to)
         , switch_type(type)

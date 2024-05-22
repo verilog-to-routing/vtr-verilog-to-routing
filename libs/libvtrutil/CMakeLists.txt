@@ -100,9 +100,29 @@ set_target_properties(libvtrutil PROPERTIES PREFIX "") #Avoid extra 'lib' prefix
 #Ensure version is always up to date by requiring version to be run first
 add_dependencies(libvtrutil version)
 
-#Specify link-time dependancies
+#Specify link-time dependencies
 target_link_libraries(libvtrutil
                         liblog)
+
+# Using filesystem library requires additional compiler/linker options for GNU implementation prior to 9.1
+# and LLVM implementation prior to LLVM 9.0;
+if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
+    # Get the compiler version string
+    execute_process(COMMAND ${CMAKE_C_COMPILER} --version OUTPUT_VARIABLE _gcc_output)
+    string(REGEX MATCH "[0-9]+\\.[0-9]+(\\.[0-9]+)?" _gcc_version ${_gcc_output})
+
+    if(_gcc_version VERSION_LESS "9.1")
+        target_link_libraries(libvtrutil stdc++fs)
+    endif()
+elseif(CMAKE_C_COMPILER_ID STREQUAL "Clang")
+    # Get the compiler version string
+    execute_process(COMMAND ${CMAKE_C_COMPILER} --version OUTPUT_VARIABLE _clang_output)
+    string(REGEX MATCH "[0-9]+\\.[0-9]+(\\.[0-9]+)?" _clang_version ${_clang_output})
+
+    if(_clang_version VERSION_LESS "9.0")
+        target_link_libraries(libvtrutil c++fs)
+    endif()
+endif()
 
 install(TARGETS libvtrutil DESTINATION bin)
 install(FILES ${LIB_HEADERS} DESTINATION include/libvtrutil)
@@ -116,5 +136,5 @@ target_link_libraries(test_vtrutil
                         libvtrutil
                         Catch2::Catch2WithMain)
 
-add_test(NAME test_vtrutil COMMAND test_vtrutil --use-colour=yes)
+add_test(NAME test_vtrutil COMMAND test_vtrutil --colour-mode ansi)
             

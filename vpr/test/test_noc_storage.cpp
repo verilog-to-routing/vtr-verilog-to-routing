@@ -32,7 +32,7 @@ TEST_CASE("test_adding_routers_to_noc_storage", "[vpr_noc]") {
 
     // store the reference to device grid with
     // this will be set to the total number of routers (and should be set before adding routers)
-    test_noc.set_device_grid_width((int)NUM_OF_ROUTERS);
+    test_noc.set_device_grid_spec((int)NUM_OF_ROUTERS, 0);
 
     NocRouterId converted_id;
 
@@ -44,10 +44,10 @@ TEST_CASE("test_adding_routers_to_noc_storage", "[vpr_noc]") {
         router_grid_position_y = router_number + dist(rand_num_gen);
 
         // add router to the golden vector
-        golden_set.emplace_back(router_number, router_grid_position_x, router_grid_position_y);
+        golden_set.emplace_back(router_number, router_grid_position_x, router_grid_position_y, 0);
 
         // add tje router to the noc
-        test_noc.add_router(curr_router_id, router_grid_position_x, router_grid_position_y);
+        test_noc.add_router(curr_router_id, router_grid_position_x, router_grid_position_y, 0);
     }
 
     // now verify that the routers were added properly by reading the routers back from the noc and comparing them to the golden set
@@ -84,7 +84,7 @@ TEST_CASE("test_router_id_conversion", "[vpr_noc]") {
 
     // store the reference to device grid with
     // this will be set to the total number of routers (and should be set before adding routers)
-    test_noc.set_device_grid_width((int)NUM_OF_ROUTERS);
+    test_noc.set_device_grid_spec((int)NUM_OF_ROUTERS, 0);
 
     NocRouterId converted_id;
 
@@ -96,10 +96,10 @@ TEST_CASE("test_router_id_conversion", "[vpr_noc]") {
         router_grid_position_y = router_number + dist(rand_num_gen);
 
         // add router to the golden vector
-        golden_set.emplace_back(router_number, router_grid_position_x, router_grid_position_y);
+        golden_set.emplace_back(router_number, router_grid_position_x, router_grid_position_y, 0);
 
         // add tje router to the noc
-        test_noc.add_router(curr_router_id, router_grid_position_x, router_grid_position_y);
+        test_noc.add_router(curr_router_id, router_grid_position_x, router_grid_position_y, 0);
     }
 
     // now verify that the routers were added properly by reading the routers back from the noc and comparing them to the golden set
@@ -131,7 +131,7 @@ TEST_CASE("test_add_link", "[vpr_noc]") {
 
     // store the reference to device grid with
     // this will be set to the total number of routers (and should be set before adding routers)
-    test_noc.set_device_grid_width((int)NUM_OF_ROUTERS);
+    test_noc.set_device_grid_spec((int)NUM_OF_ROUTERS, 0);
 
     // keeps track of the number of links created
     int total_num_of_links = 0;
@@ -147,11 +147,16 @@ TEST_CASE("test_add_link", "[vpr_noc]") {
         router_id = router_number;
 
         // add tje router to the noc
-        test_noc.add_router(router_id, curr_router_x_pos, curr_router_y_pos);
+        test_noc.add_router(router_id,
+                            curr_router_x_pos,
+                            curr_router_y_pos,
+                            0);
     }
 
     // allocate the size for outgoing link vector for each router
     test_noc.make_room_for_noc_router_link_list();
+    // incremental counter used as NocLinkId
+    int noc_link_id_counter = 0;
 
     for (int source_router_id = 0; source_router_id < NUM_OF_ROUTERS; source_router_id++) {
         source = (NocRouterId)source_router_id;
@@ -161,8 +166,12 @@ TEST_CASE("test_add_link", "[vpr_noc]") {
 
             // makes sure we do not create a link for a router who acts as a sink and source
             if (source_router_id != sink_router_id) {
+                // converting the counter to link index
+                link_id = (NocLinkId)noc_link_id_counter;
+                noc_link_id_counter++;
+
                 // add link to the golden reference
-                golden_set.emplace_back(source, sink);
+                golden_set.emplace_back(link_id, source, sink, 0.0);
 
                 // add the link to the NoC
                 test_noc.add_link(source, sink);
@@ -202,14 +211,12 @@ TEST_CASE("test_router_link_list", "[vpr_noc]") {
     NocRouterId source;
     NocRouterId sink;
 
-    NocLinkId link_id;
-
     // testing datastructure
     NocStorage test_noc;
 
     // store the reference to device grid with
     // this will be set to the total number of routers (and should be set before adding routers)
-    test_noc.set_device_grid_width((int)NUM_OF_ROUTERS);
+    test_noc.set_device_grid_spec((int)NUM_OF_ROUTERS, 0);
 
     // need to assign
 
@@ -228,7 +235,7 @@ TEST_CASE("test_router_link_list", "[vpr_noc]") {
         router_id = router_number;
 
         // add tje router to the noc
-        test_noc.add_router(router_id, curr_router_x_pos, curr_router_y_pos);
+        test_noc.add_router(router_id, curr_router_x_pos, curr_router_y_pos, 0);
     }
 
     // allocate the size for outgoing link vector for each router
@@ -276,7 +283,7 @@ TEST_CASE("test_remove_link", "[vpr_noc]") {
     std::mt19937 rand_num_gen(device());
 
     // random number generation to determine routers of the link to remove
-    std::uniform_int_distribution<std::mt19937::result_type> src_router(0, NUM_OF_ROUTERS);
+    std::uniform_int_distribution<std::mt19937::result_type> src_router(0, NUM_OF_ROUTERS - 1);
     std::uniform_int_distribution<std::mt19937::result_type> sink_router(1, NOC_CONNECTIVITY - 1);
 
     // create the NoC
@@ -284,7 +291,7 @@ TEST_CASE("test_remove_link", "[vpr_noc]") {
 
     // store the reference to device grid with
     // this will be set to the total number of routers (and should be set before adding routers)
-    test_noc.set_device_grid_width((int)NUM_OF_ROUTERS);
+    test_noc.set_device_grid_spec((int)NUM_OF_ROUTERS, 0);
 
     // temp variables that hold the routers involved within a link
     NocRouterId source;
@@ -302,7 +309,10 @@ TEST_CASE("test_remove_link", "[vpr_noc]") {
         router_id = router_number;
 
         // add tje router to the noc
-        test_noc.add_router(router_id, curr_router_x_pos, curr_router_y_pos);
+        test_noc.add_router(router_id,
+                            curr_router_x_pos,
+                            curr_router_y_pos,
+                            0);
     }
 
     // now go through and add the links to the NoC
@@ -343,9 +353,9 @@ TEST_CASE("test_remove_link", "[vpr_noc]") {
 
         auto& outgoing_links = test_noc.get_noc_router_connections(link_to_remove_src_router);
         // go through all the outgoing links  of the source router in the link we removed and check that the link does not exist there as well.
-        for (auto outgoing_link_id = outgoing_links.begin(); outgoing_link_id != outgoing_links.end(); outgoing_link_id++) {
+        for (auto outgoing_link : outgoing_links) {
             // get the current outgoing link
-            const NocLink& curr_outgoing_link = test_noc.get_single_noc_link(*outgoing_link_id);
+            const NocLink& curr_outgoing_link = test_noc.get_single_noc_link(outgoing_link);
 
             if ((curr_outgoing_link.get_source_router() == link_to_remove_src_router) && (curr_outgoing_link.get_sink_router() == link_to_remove_sink_router)) {
                 link_removed_from_outgoing_vector = false;
@@ -357,9 +367,9 @@ TEST_CASE("test_remove_link", "[vpr_noc]") {
         const auto& links_in_noc = test_noc.get_noc_links();
         // go through the links and make sure that none of them have the source and sink router of the link
         // that we removed. THe removed link should have the source and sink routers set to invalid values.
-        for (auto single_link = links_in_noc.begin(); single_link != links_in_noc.end(); single_link++) {
+        for (auto single_link : links_in_noc) {
             // check whether the source and sink router of the current link matches the routers in the link to remove
-            if ((single_link->get_source_router() == link_to_remove_src_router) && (single_link->get_sink_router() == link_to_remove_sink_router)) {
+            if ((single_link.get_source_router() == link_to_remove_src_router) && (single_link.get_sink_router() == link_to_remove_sink_router)) {
                 // this indicates that the link was not set to an invalid state and not removed properly
                 link_removed_from_outgoing_vector = false;
                 break;
@@ -404,9 +414,7 @@ TEST_CASE("test_generate_router_key_from_grid_location", "[vpr_noc]") {
 
     // store the reference to device grid with
     // this will be set to the total number of routers (and should be set before adding routers)
-    test_noc.set_device_grid_width((int)NUM_OF_ROUTERS);
-
-    NocRouterId converted_id;
+    test_noc.set_device_grid_spec((int)NUM_OF_ROUTERS, 0);
 
     // add all the routers to noc_storage and populate the golden router set
     for (int router_number = 0; router_number < NUM_OF_ROUTERS; router_number++) {
@@ -420,7 +428,10 @@ TEST_CASE("test_generate_router_key_from_grid_location", "[vpr_noc]") {
         golden_set.emplace_back((NocRouterId)router_number);
 
         // add the router to the noc
-        test_noc.add_router(curr_router_id, router_grid_position_x, router_grid_position_y);
+        test_noc.add_router(curr_router_id,
+                            router_grid_position_x,
+                            router_grid_position_y,
+                            0);
     }
 
     // now verify the test function by identifying all the routers using their grid locations
@@ -428,7 +439,10 @@ TEST_CASE("test_generate_router_key_from_grid_location", "[vpr_noc]") {
     for (int grid_location = 0; grid_location < NUM_OF_ROUTERS; grid_location++) {
         // contains the grid location of a router block seen during placement
         // we don't care about the subtile so give it an arbitrary value
-        t_pl_loc placement_router_grid_location = t_pl_loc(grid_location, grid_location, -1);
+        t_pl_loc placement_router_grid_location = t_pl_loc(grid_location,
+                                                           grid_location,
+                                                           -1,
+                                                           0);
 
         NocRouterId found_router_at_grid_location = test_noc.get_router_at_grid_location(placement_router_grid_location);
 

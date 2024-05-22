@@ -178,7 +178,7 @@ Ivy_Obj_t * Ivy_NodeBalanceBuildSuper( Ivy_Man_t * p, Vec_Ptr_t * vSuper, Ivy_Ty
     int LeftBound;
     assert( vSuper->nSize > 1 );
     // sort the new nodes by level in the decreasing order
-    Vec_PtrSort( vSuper, (int (*)(void))Ivy_NodeCompareLevelsDecrease );
+    Vec_PtrSort( vSuper, (int (*)(const void *, const void *))Ivy_NodeCompareLevelsDecrease );
     // balance the nodes
     while ( vSuper->nSize > 1 )
     {

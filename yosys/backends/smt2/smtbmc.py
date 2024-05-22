@@ -59,8 +59,11 @@ detect_loops = False
 so = SmtOpts()
 
 
-def usage():
+def help():
     print(os.path.basename(sys.argv[0]) + """ [options] <yosys_smt2_output>
+
+    -h, --help
+    	show this message
 
     -t <num_steps>
     -t <skip_steps>:<num_steps>
@@ -171,6 +174,8 @@ def usage():
         further failed assertions. To output multiple traces
         covering all found failed assertions, the character '%' is
         replaced in all dump filenames with an increasing number.
+        In cover mode, don't stop when a cover trace contains a failed
+        assertion.
 
     --check-witness
         check that the used witness file contains sufficient
@@ -181,19 +186,25 @@ def usage():
         (this feature is experimental and incomplete)
 
 """ + so.helpmsg())
+
+def usage():
+    help()
     sys.exit(1)
 
 
 try:
-    opts, args = getopt.getopt(sys.argv[1:], so.shortopts + "t:igcm:", so.longopts +
-            ["final-only", "assume-skipped=", "smtc=", "cex=", "aig=", "aig-noheader", "yw=", "btorwit=", "presat",
+    opts, args = getopt.getopt(sys.argv[1:], so.shortopts + "t:higcm:", so.longopts +
+            ["help", "final-only", "assume-skipped=", "smtc=", "cex=", "aig=", "aig-noheader", "yw=", "btorwit=", "presat",
              "dump-vcd=", "dump-yw=", "dump-vlogtb=", "vlogtb-top=", "dump-smtc=", "dump-all", "noinfo", "append=",
              "smtc-init", "smtc-top=", "noinit", "binary", "keep-going", "check-witness", "detect-loops"])
 except:
     usage()
 
 for o, a in opts:
-    if o == "-t":
+    if o in ("-h", "--help"):
+        help()
+        sys.exit(0)
+    elif o == "-t":
         got_topt = True
         a = a.split(":")
         if len(a) == 1:
@@ -1730,7 +1741,7 @@ elif covermode:
             smt_pop()
             smt.write("(define-fun covers_%d ((state |%s_s|)) (_ BitVec %d) (bvand (covers_%d state) #b%s))" % (coveridx, topmod, len(cover_desc), coveridx-1, cover_mask))
 
-        if found_failed_assert:
+        if found_failed_assert and not keep_going:
             break
 
         if "1" not in cover_mask:

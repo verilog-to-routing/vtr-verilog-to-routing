@@ -227,10 +227,10 @@ static inline int vec_sdbl_desc_compare(const void* p1, const void* p2)
 static inline void vec_sdbl_sort(vec_sdbl_t* p, int ascending)
 {
     if (ascending)
-        qsort((void *) p->data, p->size, sizeof(sdbl_t),
+        qsort((void *) p->data, (size_t)p->size, sizeof(sdbl_t),
               (int (*)(const void*, const void*)) vec_sdbl_asc_compare);
     else
-        qsort((void *) p->data, p->size, sizeof(sdbl_t),
+        qsort((void *) p->data, (size_t)p->size, sizeof(sdbl_t),
               (int (*)(const void*, const void*)) vec_sdbl_desc_compare);
 }
 

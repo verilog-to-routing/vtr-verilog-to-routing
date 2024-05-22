@@ -27,26 +27,39 @@
 #endif /* VTR_ENABLE_CAPNPROTO */
 
 ///@brief DeltaDelayModel methods.
-float DeltaDelayModel::delay(int from_x, int from_y, int /*from_pin*/, int to_x, int to_y, int /*to_pin*/) const {
-    int delta_x = std::abs(from_x - to_x);
-    int delta_y = std::abs(from_y - to_y);
+float DeltaDelayModel::delay(const t_physical_tile_loc& from_loc, int /*from_pin*/, const t_physical_tile_loc& to_loc, int /*to_pin*/) const {
+    int delta_x = std::abs(from_loc.x - to_loc.x);
+    int delta_y = std::abs(from_loc.y - to_loc.y);
 
-    return delays_[delta_x][delta_y];
+    // TODO: This is compatible with the case that only OPINs are connected to other layers.
+    // Ideally, I should check whether OPINs are conneced or IPINs and use the correct layer.
+    // If both are connected, minimum should be taken. In the case that channels are also connected,
+    // I haven't thought about what to do.
+    float cross_layer_td = 0;
+    if (from_loc.layer_num != to_loc.layer_num) {
+        VTR_ASSERT(std::isfinite(cross_layer_delay_));
+        cross_layer_td = cross_layer_delay_;
+    }
+    return delays_[to_loc.layer_num][delta_x][delta_y] + cross_layer_td;
 }
 
 void DeltaDelayModel::dump_echo(std::string filepath) const {
     FILE* f = vtr::fopen(filepath.c_str(), "w");
     fprintf(f, "         ");
-    for (size_t dx = 0; dx < delays_.dim_size(0); ++dx) {
-        fprintf(f, " %9zu", dx);
-    }
-    fprintf(f, "\n");
-    for (size_t dy = 0; dy < delays_.dim_size(1); ++dy) {
-        fprintf(f, "%9zu", dy);
-        for (size_t dx = 0; dx < delays_.dim_size(0); ++dx) {
-            fprintf(f, " %9.2e", delays_[dx][dy]);
+    for (size_t layer_num = 0; layer_num < delays_.dim_size(0); ++layer_num) {
+        fprintf(f, " %9zu", layer_num);
+        fprintf(f, "\n");
+        for (size_t dx = 0; dx < delays_.dim_size(1); ++dx) {
+            fprintf(f, " %9zu", dx);
         }
         fprintf(f, "\n");
+        for (size_t dy = 0; dy < delays_.dim_size(2); ++dy) {
+            fprintf(f, "%9zu", dy);
+            for (size_t dx = 0; dx < delays_.dim_size(1); ++dx) {
+                fprintf(f, " %9.2e", delays_[layer_num][dx][dy]);
+            }
+            fprintf(f, "\n");
+        }
     }
     vtr::fclose(f);
 }
@@ -56,13 +69,13 @@ const DeltaDelayModel* OverrideDelayModel::base_delay_model() const {
 }
 
 ///@brief OverrideDelayModel methods.
-float OverrideDelayModel::delay(int from_x, int from_y, int from_pin, int to_x, int to_y, int to_pin) const {
+float OverrideDelayModel::delay(const t_physical_tile_loc& from_loc, int from_pin, const t_physical_tile_loc& to_loc, int to_pin) const {
     //First check to if there is an override delay value
     auto& device_ctx = g_vpr_ctx.device();
     auto& grid = device_ctx.grid;
 
-    t_physical_tile_type_ptr from_type_ptr = grid.get_physical_type(from_x, from_y);
-    t_physical_tile_type_ptr to_type_ptr = grid.get_physical_type(to_x, to_y);
+    t_physical_tile_type_ptr from_type_ptr = grid.get_physical_type(from_loc);
+    t_physical_tile_type_ptr to_type_ptr = grid.get_physical_type(to_loc);
 
     t_override override_key;
     override_key.from_type = from_type_ptr->index;
@@ -72,8 +85,8 @@ float OverrideDelayModel::delay(int from_x, int from_y, int from_pin, int to_x, 
 
     //Delay overrides may be different for +/- delta so do not use
     //an absolute delta for the look-up
-    override_key.delta_x = to_x - from_x;
-    override_key.delta_y = to_y - from_y;
+    override_key.delta_x = to_loc.x - from_loc.x;
+    override_key.delta_y = to_loc.y - from_loc.y;
 
     float delay_val = std::numeric_limits<float>::quiet_NaN();
     auto override_iter = delay_overrides_.find(override_key);
@@ -82,7 +95,7 @@ float OverrideDelayModel::delay(int from_x, int from_y, int from_pin, int to_x, 
         delay_val = override_iter->second;
     } else {
         //Fall back to the base delay model if no override was found
-        delay_val = base_delay_model_->delay(from_x, from_y, from_pin, to_x, to_y, to_pin);
+        delay_val = base_delay_model_->delay(from_loc, from_pin, to_loc, to_pin);
     }
 
     return delay_val;
@@ -145,6 +158,14 @@ float OverrideDelayModel::get_delay_override(int from_type, int from_class, int 
 
 void OverrideDelayModel::set_base_delay_model(std::unique_ptr<DeltaDelayModel> base_delay_model_obj) {
     base_delay_model_ = std::move(base_delay_model_obj);
+}
+
+float SimpleDelayModel::delay(const t_physical_tile_loc& from_loc, int /*from_pin*/, const t_physical_tile_loc& to_loc, int /*to_pin*/) const {
+    int delta_x = std::abs(from_loc.x - to_loc.x);
+    int delta_y = std::abs(from_loc.y - to_loc.y);
+
+    int from_tile_idx = g_vpr_ctx.device().grid.get_physical_type(from_loc)->index;
+    return delays_[from_tile_idx][from_loc.layer_num][to_loc.layer_num][delta_x][delta_y];
 }
 
 /**
@@ -221,7 +242,7 @@ void DeltaDelayModel::read(const std::string& file) {
     //
     // The second argument should be of type Matrix<X>::Reader where X is the
     // capnproto element type.
-    ToNdMatrix<2, VprFloatEntry, float>(&delays_, model.getDelays(), ToFloat);
+    ToNdMatrix<3, VprFloatEntry, float>(&delays_, model.getDelays(), ToFloat);
 }
 
 void DeltaDelayModel::write(const std::string& file) const {
@@ -237,7 +258,7 @@ void DeltaDelayModel::write(const std::string& file) const {
     // Matrix message.  It is the mirror function of ToNdMatrix described in
     // read above.
     auto delay_values = model.getDelays();
-    FromNdMatrix<2, VprFloatEntry, float>(&delay_values, delays_, FromFloat);
+    FromNdMatrix<3, VprFloatEntry, float>(&delay_values, delays_, FromFloat);
 
     // writeMessageToFile writes message to the specified file.
     writeMessageToFile(file, &builder);
@@ -250,11 +271,11 @@ void OverrideDelayModel::read(const std::string& file) {
     ::capnp::ReaderOptions opts = default_large_capnp_opts();
     ::capnp::FlatArrayMessageReader reader(f.getData(), opts);
 
-    vtr::Matrix<float> delays;
+    vtr::NdMatrix<float, 3> delays;
     auto model = reader.getRoot<VprOverrideDelayModel>();
-    ToNdMatrix<2, VprFloatEntry, float>(&delays, model.getDelays(), ToFloat);
+    ToNdMatrix<3, VprFloatEntry, float>(&delays, model.getDelays(), ToFloat);
 
-    base_delay_model_ = std::make_unique<DeltaDelayModel>(delays, is_flat_);
+    base_delay_model_ = std::make_unique<DeltaDelayModel>(cross_layer_delay_, delays, is_flat_);
 
     // Reading non-scalar capnproto fields is roughly equivilant to using
     // a std::vector of the field type.  Actual type is capnp::List<X>::Reader.
@@ -280,7 +301,7 @@ void OverrideDelayModel::write(const std::string& file) const {
     auto model = builder.initRoot<VprOverrideDelayModel>();
 
     auto delays = model.getDelays();
-    FromNdMatrix<2, VprFloatEntry, float>(&delays, base_delay_model_->delays(), FromFloat);
+    FromNdMatrix<3, VprFloatEntry, float>(&delays, base_delay_model_->delays(), FromFloat);
 
     // Non-scalar capnproto fields should be first initialized with
     // init<field  name>(count), and then accessed from the returned
@@ -314,8 +335,15 @@ std::unique_ptr<PlaceDelayModel> alloc_lookups_and_delay_model(const Netlist<>& 
                                                                const t_direct_inf* directs,
                                                                const int num_directs,
                                                                bool is_flat) {
-    return compute_place_delay_model(placer_opts, router_opts, net_list, det_routing_arch, segment_inf,
-                                     chan_width_dist, directs, num_directs, is_flat);
+    return compute_place_delay_model(placer_opts,
+                                     router_opts,
+                                     net_list,
+                                     det_routing_arch,
+                                     segment_inf,
+                                     chan_width_dist,
+                                     directs,
+                                     num_directs,
+                                     is_flat);
 }
 
 /**
@@ -342,8 +370,10 @@ float comp_td_single_connection_delay(const PlaceDelayModel* delay_model, Cluste
 
         int source_x = place_ctx.block_locs[source_block].loc.x;
         int source_y = place_ctx.block_locs[source_block].loc.y;
+        int source_layer = place_ctx.block_locs[source_block].loc.layer;
         int sink_x = place_ctx.block_locs[sink_block].loc.x;
         int sink_y = place_ctx.block_locs[sink_block].loc.y;
+        int sink_layer = place_ctx.block_locs[sink_block].loc.layer;
 
         /**
          * This heuristic only considers delta_x and delta_y, a much better
@@ -352,11 +382,9 @@ float comp_td_single_connection_delay(const PlaceDelayModel* delay_model, Cluste
          * In particular this approach does not accurately capture the effect
          * of fast carry-chain connections.
          */
-        delay_source_to_sink = delay_model->delay(source_x,
-                                                  source_y,
+        delay_source_to_sink = delay_model->delay({source_x, source_y, source_layer},
                                                   source_block_ipin,
-                                                  sink_x,
-                                                  sink_y,
+                                                  {sink_x, sink_y, sink_layer},
                                                   sink_block_ipin);
         if (delay_source_to_sink < 0) {
             VPR_ERROR(VPR_ERROR_PLACE,

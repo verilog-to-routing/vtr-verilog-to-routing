@@ -1,5 +1,10 @@
 #pragma once
 
+#include "netlist_fwd.h"
+#include "rr_graph_fwd.h"
+#include "rr_node_types.h"
+#include "vtr_assert.h"
+
 // This struct instructs the router on how to route the given connection
 struct ConnectionParameters {
     ConnectionParameters(ParentNetId net_id,
@@ -23,6 +28,7 @@ struct ConnectionParameters {
 
     const std::unordered_map<RRNodeId, int>& connection_choking_spots_;
 };
+
 struct RouterStats {
     size_t connections_routed = 0;
     size_t nets_routed = 0;
@@ -32,19 +38,32 @@ struct RouterStats {
     size_t inter_cluster_node_pops = 0;
     size_t intra_cluster_node_pushes = 0;
     size_t intra_cluster_node_pops = 0;
-    size_t inter_cluster_node_type_cnt_pushes[t_rr_type::NUM_RR_TYPES];
-    size_t inter_cluster_node_type_cnt_pops[t_rr_type::NUM_RR_TYPES];
-    size_t intra_cluster_node_type_cnt_pushes[t_rr_type::NUM_RR_TYPES];
-    size_t intra_cluster_node_type_cnt_pops[t_rr_type::NUM_RR_TYPES];
+    size_t inter_cluster_node_type_cnt_pushes[t_rr_type::NUM_RR_TYPES] = {0};
+    size_t inter_cluster_node_type_cnt_pops[t_rr_type::NUM_RR_TYPES] = {0};
+    size_t intra_cluster_node_type_cnt_pushes[t_rr_type::NUM_RR_TYPES] = {0};
+    size_t intra_cluster_node_type_cnt_pops[t_rr_type::NUM_RR_TYPES] = {0};
 
     // For debugging purposes
-    size_t rt_node_pushes[t_rr_type::NUM_RR_TYPES];
-    size_t rt_node_high_fanout_pushes[t_rr_type::NUM_RR_TYPES];
-    size_t rt_node_entire_tree_pushes[t_rr_type::NUM_RR_TYPES];
+    size_t rt_node_pushes[t_rr_type::NUM_RR_TYPES] = {0};
 
-    size_t add_all_rt_from_high_fanout;
-    size_t add_high_fanout_rt;
-    size_t add_all_rt;
+    /** Add rhs's stats to mine */
+    void combine(RouterStats& rhs) {
+        connections_routed += rhs.connections_routed;
+        nets_routed += rhs.nets_routed;
+        heap_pushes += rhs.heap_pushes;
+        inter_cluster_node_pushes += rhs.inter_cluster_node_pushes;
+        intra_cluster_node_pushes += rhs.intra_cluster_node_pushes;
+        heap_pops += rhs.heap_pops;
+        inter_cluster_node_pops += rhs.inter_cluster_node_pops;
+        intra_cluster_node_pops += rhs.intra_cluster_node_pops;
+        for (int node_type_idx = 0; node_type_idx < t_rr_type::NUM_RR_TYPES; node_type_idx++) {
+            inter_cluster_node_type_cnt_pushes[node_type_idx] += rhs.inter_cluster_node_type_cnt_pushes[node_type_idx];
+            inter_cluster_node_type_cnt_pops[node_type_idx] += rhs.inter_cluster_node_type_cnt_pops[node_type_idx];
+            intra_cluster_node_type_cnt_pushes[node_type_idx] += rhs.intra_cluster_node_type_cnt_pushes[node_type_idx];
+            intra_cluster_node_type_cnt_pops[node_type_idx] += rhs.intra_cluster_node_type_cnt_pops[node_type_idx];
+            rt_node_pushes[node_type_idx] += rhs.rt_node_pushes[node_type_idx];
+        }
+    }
 };
 
 class WirelengthInfo {

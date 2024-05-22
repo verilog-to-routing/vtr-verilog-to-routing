@@ -89,7 +89,7 @@ void Rwr_Temp()
     for ( i = 0; i < 13719; i++ )
         pPerm[i] = i;
 
-    qsort( (void *)pPerm, 13719, sizeof(int), 
+    qsort( (void *)pPerm, (size_t)13719, sizeof(int), 
             (int (*)(const void *, const void *)) Rwr_TempCompare );
 
 

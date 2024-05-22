@@ -3,6 +3,7 @@
 #include <cmath>
 #include <set>
 
+#include "route_tree.h"
 #include "vtr_assert.h"
 #include "vtr_log.h"
 #include "vtr_math.h"
@@ -69,19 +70,21 @@ void routing_stats(const Netlist<>& net_list,
     VTR_LOG("Logic area (in minimum width transistor areas, excludes I/Os and empty grid tiles)...\n");
 
     area = 0;
-    for (size_t i = 0; i < device_ctx.grid.width(); i++) {
-        for (size_t j = 0; j < device_ctx.grid.height(); j++) {
-            auto type = device_ctx.grid.get_physical_type(i, j);
-            int width_offset = device_ctx.grid.get_width_offset(i, j);
-            int height_offset = device_ctx.grid.get_height_offset(i, j);
-            if (width_offset == 0
-                && height_offset == 0
-                && !is_io_type(type)
-                && type != device_ctx.EMPTY_PHYSICAL_TILE_TYPE) {
-                if (type->area == UNDEFINED) {
-                    area += grid_logic_tile_area * type->width * type->height;
-                } else {
-                    area += type->area;
+    for (int layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); layer_num++) {
+        for (int i = 0; i < (int)device_ctx.grid.width(); i++) {
+            for (int j = 0; j < (int)device_ctx.grid.height(); j++) {
+                auto type = device_ctx.grid.get_physical_type({i, j, layer_num});
+                int width_offset = device_ctx.grid.get_width_offset({i, j, layer_num});
+                int height_offset = device_ctx.grid.get_height_offset({i, j, layer_num});
+                if (width_offset == 0
+                    && height_offset == 0
+                    && !is_io_type(type)
+                    && type != device_ctx.EMPTY_PHYSICAL_TILE_TYPE) {
+                    if (type->area == UNDEFINED) {
+                        area += grid_logic_tile_area * type->width * type->height;
+                    } else {
+                        area += type->area;
+                    }
                 }
             }
         }
@@ -245,10 +248,6 @@ static void get_channel_occupancy_stats(const Netlist<>& net_list, bool /***/) {
 static void load_channel_occupancies(const Netlist<>& net_list,
                                      vtr::Matrix<int>& chanx_occ,
                                      vtr::Matrix<int>& chany_occ) {
-    int i, j, inode;
-    t_trace* tptr;
-    t_rr_type rr_type;
-
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     auto& route_ctx = g_vpr_ctx.routing();
@@ -263,30 +262,23 @@ static void load_channel_occupancies(const Netlist<>& net_list,
         if (net_list.net_is_ignored(net_id) && net_list.net_sinks(net_id).size() != 0)
             continue;
 
-        tptr = route_ctx.trace[net_id].head;
-        while (tptr != nullptr) {
-            inode = tptr->index;
-            rr_type = rr_graph.node_type(RRNodeId(inode));
+        auto& tree = route_ctx.route_trees[net_id];
+        if (!tree)
+            continue;
 
-            if (rr_type == SINK) {
-                tptr = tptr->next; /* Skip next segment. */
-                if (tptr == nullptr)
-                    break;
-            }
+        for (auto& rt_node : tree.value().all_nodes()) {
+            RRNodeId inode = rt_node.inode;
+            t_rr_type rr_type = rr_graph.node_type(inode);
 
-            else if (rr_type == CHANX) {
-                j = rr_graph.node_ylow(RRNodeId(inode));
-                for (i = rr_graph.node_xlow(RRNodeId(inode)); i <= rr_graph.node_xhigh(RRNodeId(inode)); i++)
+            if (rr_type == CHANX) {
+                int j = rr_graph.node_ylow(inode);
+                for (int i = rr_graph.node_xlow(inode); i <= rr_graph.node_xhigh(inode); i++)
                     chanx_occ[i][j]++;
-            }
-
-            else if (rr_type == CHANY) {
-                i = rr_graph.node_xlow(RRNodeId(inode));
-                for (j = rr_graph.node_ylow(RRNodeId(inode)); j <= rr_graph.node_yhigh(RRNodeId(inode)); j++)
+            } else if (rr_type == CHANY) {
+                int i = rr_graph.node_xlow(inode);
+                for (int j = rr_graph.node_ylow(inode); j <= rr_graph.node_yhigh(inode); j++)
                     chany_occ[i][j]++;
             }
-
-            tptr = tptr->next;
         }
     }
 }
@@ -300,56 +292,44 @@ void get_num_bends_and_length(ParentNetId inet, int* bends_ptr, int* len_ptr, in
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
-    t_trace *tptr, *prevptr;
-    int inode;
-    t_rr_type curr_type, prev_type;
     int bends, length, segments;
-
-    bool is_absorbed = true;
 
     bends = 0;
     length = 0;
     segments = 0;
 
-    prevptr = route_ctx.trace[inet].head; /* Should always be SOURCE. */
-    if (prevptr == nullptr) {
+    const vtr::optional<RouteTree>& tree = route_ctx.route_trees[inet];
+    if (!tree) {
         VPR_FATAL_ERROR(VPR_ERROR_OTHER,
-                        "in get_num_bends_and_length: net #%lu has no traceback.\n", size_t(inet));
+                        "in get_num_bends_and_length: net #%lu has no routing.\n", size_t(inet));
     }
-    inode = prevptr->index;
-    prev_type = rr_graph.node_type(RRNodeId(inode));
 
-    tptr = prevptr->next;
+    t_rr_type prev_type = rr_graph.node_type(tree->root().inode);
+    RouteTree::iterator it = tree->all_nodes().begin();
+    RouteTree::iterator end = tree->all_nodes().end();
+    ++it; /* start from the next node after source */
 
-    while (tptr != nullptr) {
-        inode = tptr->index;
-        curr_type = rr_graph.node_type(RRNodeId(inode));
+    for (; it != end; ++it) {
+        const RouteTreeNode& rt_node = *it;
+        RRNodeId inode = rt_node.inode;
+        t_rr_type curr_type = rr_graph.node_type(inode);
 
-        if (curr_type == SINK) { /* Starting a new segment */
-            tptr = tptr->next;   /* Link to existing path - don't add to len. */
-            if (tptr == nullptr)
-                break;
-
-            curr_type = rr_graph.node_type(RRNodeId(tptr->index));
-        }
-
-        else if (curr_type == CHANX || curr_type == CHANY) {
-            is_absorbed = false;
+        if (curr_type == CHANX || curr_type == CHANY) {
             segments++;
-            length += rr_graph.node_length(RRNodeId(inode));
+            length += rr_graph.node_length(inode);
 
             if (curr_type != prev_type && (prev_type == CHANX || prev_type == CHANY))
                 bends++;
         }
 
-        prev_type = curr_type;
-        tptr = tptr->next;
+        /* The all_nodes iterator walks all nodes in the tree. If we are at a leaf and going back to the top, prev_type is invalid: just set it to SINK */
+        prev_type = rt_node.is_leaf() ? SINK : curr_type;
     }
 
     *bends_ptr = bends;
     *len_ptr = length;
     *segments_ptr = segments;
-    *is_absorbed_ptr = is_absorbed;
+    *is_absorbed_ptr = (segments == 0);
 }
 
 /**

@@ -236,7 +236,7 @@ Aig_Man_t * Ssw_SignalCorrespondenceRefine( Ssw_Man_t * p )
 {
     int nSatProof, nSatCallsSat, nRecycles, nSatFailsReal, nUniques;
     Aig_Man_t * pAigNew;
-    int RetValue, nIter = -1;
+    int RetValue, nIter = -1, nPrev[4] = {0};
     abctime clk, clkTotal = Abc_Clock();
     // get the starting stats
     p->nLitsBeg  = Ssw_ClassesLitNum( p->ppClasses );
@@ -352,7 +352,7 @@ clk = Abc_Clock();
             {
                 printf( "Iterative refinement is stopped after iteration %d\n", nIter );
                 printf( "because the property output is no longer a candidate constant.\n" );
-                // prepare to quite
+                // prepare to quit
                 p->nLitsEnd  = p->nLitsBeg;
                 p->nNodesEnd = p->nNodesBeg;
                 p->nRegsEnd  = p->nRegsBeg;
@@ -381,6 +381,27 @@ clk = Abc_Clock();
             break;
         if ( p->pPars->pFunc )
             ((int (*)(void *))p->pPars->pFunc)( p->pPars->pData );
+        if ( p->pPars->nLimitMax )
+        {
+            int nCur = Ssw_ClassesCand1Num(p->ppClasses);
+            if ( nIter > 4 && nPrev[0] - nCur <= 4*p->pPars->nLimitMax )
+            {
+                printf( "Iterative refinement is stopped after iteration %d\n", nIter );
+                printf( "because the refinment is very slow.\n" );
+                // prepare to quit
+                p->nLitsEnd  = p->nLitsBeg;
+                p->nNodesEnd = p->nNodesBeg;
+                p->nRegsEnd  = p->nRegsBeg;
+                // cleanup
+                Aig_ManSetPhase( p->pAig );
+                Aig_ManCleanMarkB( p->pAig );
+                return Aig_ManDupSimple( p->pAig );
+            }
+            nPrev[0] = nPrev[1];
+            nPrev[1] = nPrev[2];
+            nPrev[2] = nPrev[3];
+            nPrev[3] = nCur;
+        }
     }
 
 finalize:
@@ -423,6 +444,7 @@ Aig_Man_t * Ssw_SignalCorrespondence( Aig_Man_t * pAig, Ssw_Pars_t * pPars )
     // if parameters are not given, create them
     if ( pPars == NULL )
         Ssw_ManSetDefaultParams( pPars = &Pars );
+/*
     // consider the case of empty AIG
     if ( Aig_ManNodeNum(pAig) == 0 )
     {
@@ -431,6 +453,7 @@ Aig_Man_t * Ssw_SignalCorrespondence( Aig_Man_t * pAig, Ssw_Pars_t * pPars )
         Aig_ManReprStart( pAig,Aig_ManObjNumMax(pAig) );
         return Aig_ManDupOrdered(pAig);
     }
+*/
     // check and update parameters
     if ( pPars->fLatchCorrOpt )
     {
@@ -496,7 +519,7 @@ Aig_Man_t * Ssw_SignalCorrespondence( Aig_Man_t * pAig, Ssw_Pars_t * pPars )
         Ssw_ClassesSetData( p->ppClasses, p->pSml, (unsigned(*)(void *,Aig_Obj_t *))Ssw_SmlObjHashWord, (int(*)(void *,Aig_Obj_t *))Ssw_SmlObjIsConstWord, (int(*)(void *,Aig_Obj_t *,Aig_Obj_t *))Ssw_SmlObjsAreEqualWord );
     }
     // allocate storage
-    if ( p->pPars->fLocalSim )
+    if ( p->pPars->fLocalSim && p->pSml )
         p->pVisited = ABC_CALLOC( int, Ssw_SmlNumFrames( p->pSml ) * Aig_ManObjNumMax(p->pAig) );
     // perform refinement of classes
     pAigNew = Ssw_SignalCorrespondenceRefine( p );
