@@ -3,7 +3,6 @@
 
 #ifndef NO_SERVER
 
-#include <cstdint>
 #include <vector>
 #include <string>
 #include <cstring>
@@ -11,20 +10,18 @@
 namespace comm {
 
 /**
- * @brief ByteArray as a simple wrapper over std::vector<uint8_t>
+ * @brief ByteArray as a simple wrapper over std::vector<char>
 */
-class ByteArray : public std::vector<uint8_t> {
+class ByteArray : public std::vector<char> {
 public:
     static const std::size_t DEFAULT_SIZE_HINT = 1024;
 
     ByteArray(const char* data)
-        : std::vector<uint8_t>(reinterpret_cast<const uint8_t*>(data),
-                               reinterpret_cast<const uint8_t*>(data + std::strlen(data)))
+        : std::vector<char>(data, data + std::strlen(data))
     {}
 
     ByteArray(const char* data, std::size_t size)
-        : std::vector<uint8_t>(reinterpret_cast<const uint8_t*>(data),
-                               reinterpret_cast<const uint8_t*>(data + size))
+        : std::vector<char>(data, data + size)
     {}
 
     ByteArray(std::size_t size_hint = DEFAULT_SIZE_HINT) {
@@ -32,13 +29,13 @@ public:
     }
 
     template<typename Iterator>
-    ByteArray(Iterator first, Iterator last): std::vector<uint8_t>(first, last) {}
+    ByteArray(Iterator first, Iterator last): std::vector<char>(first, last) {}
 
     void append(const ByteArray& appendix) {
         insert(end(), appendix.begin(), appendix.end());
     }
 
-    void append(uint8_t b) {
+    void append(char b) {
         push_back(b);
     }
 
@@ -72,8 +69,8 @@ public:
     template<typename T>
     static uint32_t calc_check_sum(const T& iterable) {
         uint32_t sum = 0;
-        for (uint8_t c : iterable) {
-            sum += static_cast<unsigned int>(c);
+        for (char c : iterable) {
+            sum += static_cast<unsigned int>(static_cast<unsigned char>(c));
         }
         return sum;
     }
