@@ -134,7 +134,7 @@ GateIO::ActivityStatus GateIO::handle_telegrams(std::vector<comm::TelegramFrameP
     telegram_buff.take_telegram_frames(telegram_frames);
     for (const comm::TelegramFramePtr& telegram_frame: telegram_frames) {
         // process received data
-        std::string message{telegram_frame->data.to_string()};
+        std::string message{telegram_frame->data};
         bool is_echo_telegram = false;
         if ((message.size() == comm::ECHO_DATA.size()) && (message == comm::ECHO_DATA)) {
             m_logger.queue(LogLevel::Detail, "received", comm::ECHO_DATA);
@@ -168,7 +168,7 @@ GateIO::ActivityStatus GateIO::handle_client_alive_tracker(sockpp::tcp6_socket& 
         /// handle sending echo to client
         if (client_alive_tracker_ptr->is_time_to_sent_echo()) {
             comm::TelegramHeader echo_header = comm::TelegramHeader::construct_from_data(comm::ECHO_DATA);
-            std::string message = echo_header.buffer().to_string();
+            std::string message{echo_header.buffer()};
             message.append(comm::ECHO_DATA);
             try {
                 std::size_t bytes_sent = client.write(message);

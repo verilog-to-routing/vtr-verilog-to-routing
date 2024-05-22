@@ -58,8 +58,8 @@ public:
         return std::make_pair(false, 0);
     }
 
-    std::string to_string() const {
-        return std::string(reinterpret_cast<const char*>(this->data()), this->size());
+    operator std::string_view() const {
+        return std::string_view(this->data(), this->size());
     }
 
     uint32_t calc_check_sum() {
