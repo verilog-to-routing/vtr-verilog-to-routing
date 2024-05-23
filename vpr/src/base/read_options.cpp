@@ -2867,6 +2867,14 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("0")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    noc_grp.add_argument<int>(args.noc_sat_routing_bandwidth_resolution, "--noc_sat_routing_bandwidth_resolution")
+        .help(
+            "Specifies the resolution by which traffic flow bandwidths are converted into integers in SAT routing algorithm.\n"
+            "The higher this number is, the more accurate the congestion estimation and aggregate bandwidth minimization is.\n"
+            "Higher resolution for bandwidth conversion increases the number of variables in the SAT formulation.")
+        .default_value("128")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     noc_grp.add_argument<std::string>(args.noc_placement_file_name, "--noc_placement_file_name")
         .help(
             "Name of the output file that contains the NoC placement information."
