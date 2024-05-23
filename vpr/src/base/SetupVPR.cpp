@@ -741,6 +741,8 @@ static void SetupNocOpts(const t_options& Options, t_noc_opts* NocOpts) {
     NocOpts->noc_congestion_weighting = Options.noc_congestion_weighting;
     NocOpts->noc_swap_percentage = Options.noc_swap_percentage;
     NocOpts->noc_sat_routing_bandwidth_resolution = Options.noc_sat_routing_bandwidth_resolution;
+    NocOpts->noc_sat_routing_latency_overrun_weighting = Options.noc_sat_routing_latency_overrun_weighting_factor;
+    NocOpts->noc_sat_routing_congestion_weighting = Options.noc_sat_routing_congestion_weighting_factor;
     NocOpts->noc_placement_file_name = Options.noc_placement_file_name;
 }
 

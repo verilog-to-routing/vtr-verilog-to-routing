@@ -158,6 +158,8 @@ struct t_options {
     argparse::ArgValue<double> noc_congestion_weighting;
     argparse::ArgValue<double> noc_swap_percentage;
     argparse::ArgValue<int> noc_sat_routing_bandwidth_resolution;
+    argparse::ArgValue<int> noc_sat_routing_latency_overrun_weighting_factor;
+    argparse::ArgValue<int> noc_sat_routing_congestion_weighting_factor;
     argparse::ArgValue<std::string> noc_placement_file_name;
 
     /* Timing-driven placement options only */

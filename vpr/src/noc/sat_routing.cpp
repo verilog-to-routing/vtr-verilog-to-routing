@@ -141,20 +141,6 @@ static vtr::vector<NocTrafficFlowId, int> quantize_traffic_flow_bandwidths(int b
 static void add_continuity_constraints(t_flow_link_var_map& flow_link_vars,
                                        orsat::CpModelBuilder& cp_model);
 
-/**
- * @brief Group NoC links into four groups based on their direction in
- * a mesh topology.
- *
- * @param up To be filled with vertical NoC links going upward.
- * @param down To be filled with vertical NoC links going downward.
- * @param right To be filled with horizontal NoC links moving towards right.
- * @param left To be filled with horizontal NoC links moving towards left.
- */
-static void group_noc_links_based_on_direction(std::vector<NocLinkId>& up,
-                                               std::vector<NocLinkId>& down,
-                                               std::vector<NocLinkId>& right,
-                                               std::vector<NocLinkId>& left);
-
 
 static std::vector<orsat::BoolVar> get_flow_link_vars(const t_flow_link_var_map& map,
                                                       const std::vector<NocTrafficFlowId>& traffic_flow_ids,
@@ -326,67 +312,6 @@ static void add_continuity_constraints(t_flow_link_var_map& flow_link_vars,
              * goes through this NoC router.*/
             cp_model.AddEquality(incoming_vars_sum, outgoing_vars_sum);
         }
-    }
-}
-
-static void add_distance_constraints(t_flow_link_var_map& flow_link_vars,
-                                     orsat::CpModelBuilder& cp_model,
-                                     const std::vector<NocLinkId>& up,
-                                     const std::vector<NocLinkId>& down,
-                                     const std::vector<NocLinkId>& right,
-                                     const std::vector<NocLinkId>& left) {
-    const auto& noc_ctx = g_vpr_ctx.noc();
-    const auto& traffic_flow_storage = noc_ctx.noc_traffic_flows_storage;
-    const auto& place_ctx = g_vpr_ctx.placement();
-    const auto& cluster_ctx = g_vpr_ctx.clustering();
-
-    const int num_layers = g_vpr_ctx.device().grid.get_num_layers();
-
-    // Get the logical block type for router
-    const auto router_block_type = cluster_ctx.clb_nlist.block_type(traffic_flow_storage.get_router_clusters_in_netlist()[0]);
-
-    // Get the compressed grid for NoC
-    const auto& compressed_noc_grid = place_ctx.compressed_block_grids[router_block_type->index];
-
-    for (auto traffic_flow_id : traffic_flow_storage.get_all_traffic_flow_id()) {
-        const auto& traffic_flow = traffic_flow_storage.get_single_noc_traffic_flow(traffic_flow_id);
-
-        // get the source and destination logical router blocks in the current traffic flow
-        ClusterBlockId logical_src_router_block_id = traffic_flow.source_router_cluster_id;
-        ClusterBlockId logical_dst_router_block_id = traffic_flow.sink_router_cluster_id;
-
-        // get the ids of the hard router blocks where the logical router cluster blocks have been placed
-        NocRouterId src_router_id = noc_ctx.noc_model.get_router_at_grid_location(place_ctx.block_locs[logical_src_router_block_id].loc);
-        NocRouterId dst_router_id = noc_ctx.noc_model.get_router_at_grid_location(place_ctx.block_locs[logical_dst_router_block_id].loc);
-
-        // get source, current, and destination NoC routers
-        const auto& src_router = noc_ctx.noc_model.get_single_noc_router(src_router_id);
-        const auto& dst_router = noc_ctx.noc_model.get_single_noc_router(dst_router_id);
-
-        // get the position of source, current, and destination NoC routers
-        const auto src_router_pos = src_router.get_router_physical_location();
-        const auto dst_router_pos = dst_router.get_router_physical_location();
-
-        // get the compressed location for source, current, and destination NoC routers
-        auto compressed_src_loc = get_compressed_loc(compressed_noc_grid, t_pl_loc{src_router_pos, 0}, num_layers)[src_router_pos.layer_num];
-        auto compressed_dst_loc = get_compressed_loc(compressed_noc_grid, t_pl_loc{dst_router_pos, 0}, num_layers)[dst_router_pos.layer_num];
-
-        // calculate the distance between the current router and the destination
-        const int delta_x = compressed_dst_loc.x - compressed_src_loc.x;
-        const int delta_y = compressed_dst_loc.y - compressed_src_loc.y;
-
-        auto right_vars = get_flow_link_vars(flow_link_vars, {traffic_flow_id}, right);
-        auto left_vars = get_flow_link_vars(flow_link_vars, {traffic_flow_id}, left);
-        auto up_vars = get_flow_link_vars(flow_link_vars, {traffic_flow_id}, up);
-        auto down_vars = get_flow_link_vars(flow_link_vars, {traffic_flow_id}, down);
-
-        orsat::LinearExpr horizontal_expr;
-        horizontal_expr += (orsat::LinearExpr::Sum(right_vars) - orsat::LinearExpr::Sum(left_vars));
-        cp_model.AddEquality(horizontal_expr, delta_x);
-
-        orsat::LinearExpr vertical_expr;
-        vertical_expr += (orsat::LinearExpr::Sum(up_vars) - orsat::LinearExpr::Sum(down_vars));
-        cp_model.AddEquality(vertical_expr, delta_y);
     }
 }
 
@@ -882,6 +807,8 @@ static void constrain_latency_overrun_vars(orsat::CpModelBuilder& cp_model,
 
 vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> noc_sat_route(bool minimize_aggregate_bandwidth,
                                                                     int bandwidth_resolution,
+                                                                    int latency_overrun_weight,
+                                                                    int congestion_weight,
                                                                     int seed) {
     vtr::ScopedStartFinishTimer timer("NoC SAT Routing");
 
@@ -915,14 +842,11 @@ vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> noc_sat_route(bool minimiz
 
     add_continuity_constraints(flow_link_vars, cp_model);
 
-    std::vector<NocLinkId> up, down, right, left;
-    group_noc_links_based_on_direction(up, down, right, left);
-
-    add_distance_constraints(flow_link_vars, cp_model, up, down, right, left);
-
     const auto& noc_ctx = g_vpr_ctx.noc();
     const auto& traffic_flow_storage = noc_ctx.noc_traffic_flows_storage;
 
+    // use the current routing solution as a hint for the SAT solver
+    // This will help the solver by giving a good starting point and tighter initial lower bound on the objective function
     for (auto traffic_flow_id : traffic_flow_storage.get_all_traffic_flow_id()) {
         for (auto route_link_id : traffic_flow_storage.get_traffic_flow_route(traffic_flow_id)) {
             cp_model.AddHint(flow_link_vars[{traffic_flow_id, route_link_id}], true);
@@ -933,8 +857,7 @@ vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> noc_sat_route(bool minimiz
     for (auto& [traffic_flow_id, latency_overrun_var] : latency_overrun_vars) {
         latency_overrun_sum += latency_overrun_var;
     }
-
-    latency_overrun_sum *= 1024;
+    latency_overrun_sum *= latency_overrun_weight;
 
     auto rescaled_traffic_flow_bandwidths = quantize_traffic_flow_bandwidths(bandwidth_resolution);
     orsat::LinearExpr agg_bw_expr;
@@ -944,7 +867,7 @@ vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> noc_sat_route(bool minimiz
     }
 
     orsat::LinearExpr congested_link_sum = orsat::LinearExpr::Sum(link_congested_vars);
-    congested_link_sum *= (1024 * 16);
+    congested_link_sum *= congestion_weight;
 
     cp_model.Minimize(latency_overrun_sum + agg_bw_expr + congested_link_sum);
 

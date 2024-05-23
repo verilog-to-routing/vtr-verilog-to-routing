@@ -1203,7 +1203,11 @@ void try_place(const Netlist<>& net_list,
 
         if (costs.noc_cost_terms.congestion > 0.0) {
             VTR_LOG("NoC routing configuration is congested. Invoking the SAT NoC router.\n");
-            auto traffic_flow_routes = noc_sat_route(true, noc_opts.noc_sat_routing_bandwidth_resolution, placer_opts.seed);
+            auto traffic_flow_routes = noc_sat_route(true,
+                                                     noc_opts.noc_sat_routing_bandwidth_resolution,
+                                                     noc_opts.noc_sat_routing_latency_overrun_weighting,
+                                                     noc_opts.noc_sat_routing_congestion_weighting,
+                                                     placer_opts.seed);
 
             if (!traffic_flow_routes.empty()) {
                 bool has_cycle = noc_routing_has_cycle(traffic_flow_routes);

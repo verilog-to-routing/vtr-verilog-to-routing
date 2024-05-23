@@ -2783,8 +2783,8 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
 
     noc_grp.add_argument<bool, ParseOnOff>(args.noc, "--noc")
         .help(
-            "Enables a NoC-driven placer that optimizes the placement of routers on the NoC."
-            "Also enables an option in the graphical display that can be used to display the NoC on the FPGA."
+            "Enables a NoC-driven placer that optimizes the placement of routers on the NoC. "
+            "Also enables an option in the graphical display that can be used to display the NoC on the FPGA. "
             "This should be on only when the FPGA device contains a NoC and the provided netlist connects to the NoC.")
         .default_value("off")
         .show_in(argparse::ShowIn::HELP_ONLY);
@@ -2800,7 +2800,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .help(
             "Controls the algorithm used by the NoC to route packets.\n"
             "* xy_routing: Uses the direction oriented routing algorithm. This is recommended to be used with mesh NoC topologies.\n"
-            "* bfs_routing: Uses the breadth first search algorithm. The objective is to find a route that uses a minimum number of links."
+            "* bfs_routing: Uses the breadth first search algorithm. The objective is to find a route that uses a minimum number of links. "
             " This algorithm is not guaranteed to generate deadlock-free traffic flow routes, but can be used with any NoC topology\n"
             "* west_first_routing: Uses the west-first routing algorithm. This is recommended to be used with mesh NoC topologies.\n"
             "* north_last_routing: Uses the north-last routing algorithm. This is recommended to be used with mesh NoC topologies.\n"
@@ -2813,9 +2813,9 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
 
     noc_grp.add_argument<double>(args.noc_placement_weighting, "--noc_placement_weighting")
         .help(
-            "Controls the importance of the NoC placement parameters relative to timing and wirelength of the design."
-            "This value can be >=0, where 0 would mean the placement is based solely on timing and wirelength."
-            "A value of 1 would mean noc placement is considered equal to timing and wirelength"
+            "Controls the importance of the NoC placement parameters relative to timing and wirelength of the design. "
+            "This value can be >=0, where 0 would mean the placement is based solely on timing and wirelength. "
+            "A value of 1 would mean noc placement is considered equal to timing and wirelength "
             "A value greater than 1 would mean the placement is increasingly dominated by NoC parameters.")
         .default_value("5.0")
         .show_in(argparse::ShowIn::HELP_ONLY);
@@ -2825,7 +2825,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             "Controls the importance of minimizing the NoC aggregate bandwidth.\n"
             "This value can be >=0, where 0 would mean the aggregate bandwidth has no relevance to placement.\n"
             "Other positive numbers specify the importance of minimizing the NoC aggregate bandwidth to other NoC-related cost terms.\n"
-            "Weighting factors for NoC-related cost terms are normalized internally. Therefore, their absolute values are not important, and"
+            "Weighting factors for NoC-related cost terms are normalized internally. Therefore, their absolute values are not important, and "
             "only their relative ratios determine the importance of each cost term.")
         .default_value("0.38")
         .show_in(argparse::ShowIn::HELP_ONLY);
@@ -2835,7 +2835,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             "Controls the importance of meeting all the NoC traffic flow latency constraints.\n"
             "This value can be >=0, where 0 would mean the latency constraints have no relevance to placement.\n"
             "Other positive numbers specify the importance of meeting latency constraints to other NoC-related cost terms.\n"
-            "Weighting factors for NoC-related cost terms are normalized internally. Therefore, their absolute values are not important, and"
+            "Weighting factors for NoC-related cost terms are normalized internally. Therefore, their absolute values are not important, and "
             "only their relative ratios determine the importance of each cost term.")
         .default_value("0.6")
         .show_in(argparse::ShowIn::HELP_ONLY);
@@ -2845,7 +2845,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             "Controls the importance of reducing the latencies of the NoC traffic flows.\n"
             "This value can be >=0, where 0 would mean the latencies have no relevance to placement.\n"
             "Other positive numbers specify the importance of minimizing aggregate latency to other NoC-related cost terms.\n"
-            "Weighting factors for NoC-related cost terms are normalized internally. Therefore, their absolute values are not important, and"
+            "Weighting factors for NoC-related cost terms are normalized internally. Therefore, their absolute values are not important, and "
             "only their relative ratios determine the importance of each cost term.")
         .default_value("0.02")
         .show_in(argparse::ShowIn::HELP_ONLY);
@@ -2855,14 +2855,14 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             "Controls the importance of reducing the congestion of the NoC links.\n"
             "This value can be >=0, where 0 would mean the congestion has no relevance to placement.\n"
             "Other positive numbers specify the importance of minimizing congestion to other NoC-related cost terms.\n"
-            "Weighting factors for NoC-related cost terms are normalized internally. Therefore, their absolute values are not important, and"
+            "Weighting factors for NoC-related cost terms are normalized internally. Therefore, their absolute values are not important, and "
             "only their relative ratios determine the importance of each cost term.")
         .default_value("0.25")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     noc_grp.add_argument<double>(args.noc_swap_percentage, "--noc_swap_percentage")
         .help(
-            "Sets the minimum fraction of swaps attempted by the placer that are NoC blocks."
+            "Sets the minimum fraction of swaps attempted by the placer that are NoC blocks. "
             "This value is an integer ranging from 0-100. 0 means NoC blocks will be moved at the same rate as other blocks. 100 means all swaps attempted by the placer are NoC router blocks.")
         .default_value("0")
         .show_in(argparse::ShowIn::HELP_ONLY);
@@ -2873,6 +2873,18 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             "The higher this number is, the more accurate the congestion estimation and aggregate bandwidth minimization is.\n"
             "Higher resolution for bandwidth conversion increases the number of variables in the SAT formulation.")
         .default_value("128")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    noc_grp.add_argument<int>(args.noc_sat_routing_latency_overrun_weighting_factor, "--noc_sat_routing_latency_overrun_weighting_factor")
+        .help(
+            "Controls the importance of reducing traffic flow latency overrun in SAT routing.")
+        .default_value("1024")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    noc_grp.add_argument<int>(args.noc_sat_routing_congestion_weighting_factor, "--noc_sat_routing_congestion_weighting_factor")
+        .help(
+            "Controls the importance of reducing the number of congested NoC links in SAT routing.")
+        .default_value("16384")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     noc_grp.add_argument<std::string>(args.noc_placement_file_name, "--noc_placement_file_name")
