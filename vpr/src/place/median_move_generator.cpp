@@ -131,8 +131,8 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
     }
 
     //calculate the median region
-    std::sort(place_move_ctx.X_coord.begin(), place_move_ctx.X_coord.end());
-    std::sort(place_move_ctx.Y_coord.begin(), place_move_ctx.Y_coord.end());
+    std::stable_sort(place_move_ctx.X_coord.begin(), place_move_ctx.X_coord.end());
+    std::stable_sort(place_move_ctx.Y_coord.begin(), place_move_ctx.Y_coord.end());
 
     limit_coords.xmin = place_move_ctx.X_coord[floor((place_move_ctx.X_coord.size() - 1) / 2)];
     limit_coords.xmax = place_move_ctx.X_coord[floor((place_move_ctx.X_coord.size() - 1) / 2) + 1];
