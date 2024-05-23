@@ -10,12 +10,25 @@
 #include "vtr_vector.h"
 #include "clustered_netlist_fwd.h"
 
+/**
+ * @brief Assuming that logical NoC routers are fixed,
+ * this function formulates routing traffic flows as a SAT
+ * problem and tries to find a deadlock-free and congestion-free
+ * routing with the minimum aggregate bandwidth while meeting
+ * traffic flow latency constraints.
+ *
+ * @param minimize_aggregate_bandwidth Indicates whether the SAT solver
+ * should minimize the aggregate bandwidth or not. A congestion-free
+ * and deadlock-free solution can be found faster if the solver does not
+ * need to minimize the aggregate bandwidth.
+ * @param seed An integer seed to initialize the SAT solver.
+ * @return The generated routes for all traffic flows.
+ */
 vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> noc_sat_route(bool minimize_aggregate_bandwidth,
                                                                     int seed);
 
 void noc_sat_place_and_route(vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>>& traffic_flow_routes,
                              std::map<ClusterBlockId, t_pl_loc>& noc_router_locs,
-
                              int seed);
 
 namespace std {
