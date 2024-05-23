@@ -46,7 +46,7 @@ static void set_grid_block_type(int priority,
                                 const t_metadata_dict* meta);
 
 ///@brief Create the device grid based on resource requirements
-DeviceGrid create_device_grid(std::string layout_name, const std::vector<t_grid_def>& grid_layouts, const std::map<t_logical_block_type_ptr, size_t>& minimum_instance_counts, float target_device_utilization) {
+DeviceGrid create_device_grid(const std::string& layout_name, const std::vector<t_grid_def>& grid_layouts, const std::map<t_logical_block_type_ptr, size_t>& minimum_instance_counts, float target_device_utilization) {
     if (layout_name == "auto") {
         //Auto-size the device
         //
@@ -78,9 +78,9 @@ DeviceGrid create_device_grid(std::string layout_name, const std::vector<t_grid_
 }
 
 ///@brief Create the device grid based on dimensions
-DeviceGrid create_device_grid(std::string layout_name, const std::vector<t_grid_def>& grid_layouts, size_t width, size_t height) {
+DeviceGrid create_device_grid(const std::string& layout_name, const std::vector<t_grid_def>& grid_layouts, size_t width, size_t height) {
     if (layout_name == "auto") {
-        VTR_ASSERT(grid_layouts.size() > 0);
+        VTR_ASSERT(!grid_layouts.empty());
         //Auto-size
         if (grid_layouts[0].grid_type == GridDefType::AUTO) {
             //Auto layout of the specified dimensions
@@ -145,7 +145,7 @@ DeviceGrid create_device_grid(std::string layout_name, const std::vector<t_grid_
  * If an auto grid layouts are specified, the smallest dynamicly sized grid is picked
  */
 static DeviceGrid auto_size_device_grid(const std::vector<t_grid_def>& grid_layouts, const std::map<t_logical_block_type_ptr, size_t>& minimum_instance_counts, float maximum_device_utilization) {
-    VTR_ASSERT(grid_layouts.size() > 0);
+    VTR_ASSERT(!grid_layouts.empty());
 
     DeviceGrid grid;
 
@@ -281,6 +281,7 @@ static std::vector<t_logical_block_type_ptr> grid_overused_resources(const Devic
 
     //Sort so we allocate logical blocks with the fewest equivalent sites first (least flexible)
     std::vector<const t_logical_block_type*> logical_block_types;
+    logical_block_types.reserve(device_ctx.logical_block_types.size());
     for (auto& block_type : device_ctx.logical_block_types) {
         logical_block_types.push_back(&block_type);
     }

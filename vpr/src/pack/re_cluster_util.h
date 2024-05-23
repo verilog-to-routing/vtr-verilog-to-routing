@@ -87,7 +87,8 @@ bool start_new_cluster_for_mol(t_pack_molecule* molecule,
                                int verbosity,
                                t_clustering_data& clustering_data,
                                t_lb_router_data** router_data,
-                               PartitionRegion& temp_cluster_pr);
+                               PartitionRegion& temp_cluster_pr,
+                               NocGroupId& temp_cluster_noc_grp_id);
 
 /**
  * @brief A function that packs a molecule into an existing cluster

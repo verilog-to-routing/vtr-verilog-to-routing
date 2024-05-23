@@ -222,8 +222,8 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
     virtual inline void finish_partition_add_atom(void*& /*ctx*/) final {
         PartitionId part_id(num_partitions_);
 
-        for (unsigned int i = 0; i < atoms_.size(); i++) {
-            constraints_.add_constrained_atom(atoms_[i], part_id);
+        for (auto atom : atoms_) {
+            constraints_.add_constrained_atom(atom, part_id);
         }
     }
 
@@ -250,13 +250,13 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
     }
 
     virtual inline size_t num_partition_add_region(partition_info& part_info) final {
-        PartitionRegion pr = part_info.part.get_part_region();
-        std::vector<Region> regions = pr.get_partition_region();
+        const PartitionRegion& pr = part_info.part.get_part_region();
+        const std::vector<Region>& regions = pr.get_regions();
         return regions.size();
     }
     virtual inline Region get_partition_add_region(int n, partition_info& part_info) final {
-        PartitionRegion pr = part_info.part.get_part_region();
-        std::vector<Region> regions = pr.get_partition_region();
+        const PartitionRegion& pr = part_info.part.get_part_region();
+        const std::vector<Region>& regions = pr.get_regions();
         return regions[n];
     }
 
