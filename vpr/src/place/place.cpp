@@ -825,7 +825,8 @@ void try_place(const Netlist<>& net_list,
     VTR_LOG("Initial placement cost: %g bb_cost: %g td_cost: %g\n", costs.cost,
             costs.bb_cost, costs.timing_cost);
     if (noc_opts.noc) {
-        VTR_LOG("NoC Placement Costs. "
+        VTR_LOG(
+            "NoC Placement Costs. "
             "cost: %g, "
             "aggregate_bandwidth_cost: %g, "
             "latency_cost: %g, "
@@ -892,9 +893,6 @@ void try_place(const Netlist<>& net_list,
                 costs.noc_cost_terms.congestion,
                 get_total_congestion_bandwidth_ratio(),
                 get_number_of_congested_noc_links());
-
-
-
     }
     //Draw the initial placement
     update_screen(ScreenUpdatePriority::MAJOR, msg, PLACEMENT, timing_info);
@@ -1223,7 +1221,8 @@ void try_place(const Netlist<>& net_list,
                 get_total_congestion_bandwidth_ratio(),
                 get_number_of_congested_noc_links());
 
-        VTR_LOG("\nNoC Placement Costs. "
+        VTR_LOG(
+            "\nNoC Placement Costs. "
             "cost: %g, "
             "aggregate_bandwidth_cost: %g, "
             "latency_cost: %g, "
@@ -1480,7 +1479,6 @@ static void recompute_costs_from_scratch(const t_placer_opts& placer_opts,
                                  "noc_congestion_cost");
         }
         costs->noc_cost_terms.congestion = new_noc_cost.congestion;
-
     }
 }
 
@@ -1819,7 +1817,6 @@ static e_move_result try_swap(const t_annealing_state* state,
                            costs->bb_cost_norm);
             delta_c = bb_delta_c * costs->bb_cost_norm;
         }
-
 
         NocCostTerms noc_delta_c; // change in NoC cost
         /* Update the NoC datastructure and costs*/
@@ -4250,7 +4247,6 @@ static void print_place_status_header(bool noc_enabled) {
         VTR_LOG(
             "---- ------ ------- ------- ---------- ---------- ------- ---------- -------- ------- ------- ------ -------- --------- ------ -------- -------- --------- ---------\n");
     }
-
 }
 
 static void print_place_status(const t_annealing_state& state,

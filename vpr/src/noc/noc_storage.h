@@ -282,7 +282,7 @@ class NocStorage {
      * to the destination router. NocLinkId::INVALID() is such a link is not
      * found.
      */
-    NocLinkId  get_single_noc_link_id(NocRouterId src_router, NocRouterId dst_router) const;
+    NocLinkId get_single_noc_link_id(NocRouterId src_router, NocRouterId dst_router) const;
 
     /**
      * @brief Given a unique link identifier, get the corresponding link
