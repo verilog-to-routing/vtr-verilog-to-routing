@@ -1832,6 +1832,12 @@ struct t_TokenPair {
 
 struct t_lb_type_rr_node; /* Defined in pack_types.h */
 
+/// @brief Stores settings for VPR server mode
+struct t_server_opts {
+    bool is_server_mode_enabled = false;
+    int port_num = -1;
+};
+
 ///@brief Store settings for VPR
 struct t_vpr_setup {
     bool TimingEnabled;             ///<Is VPR timing enabled
@@ -1845,6 +1851,7 @@ struct t_vpr_setup {
     t_router_opts RouterOpts;       ///<router options
     t_analysis_opts AnalysisOpts;   ///<Analysis options
     t_noc_opts NocOpts;             ///<Options for the NoC
+    t_server_opts ServerOpts;       ///<Server options
     t_det_routing_arch RoutingArch; ///<routing architecture
     std::vector<t_lb_type_rr_node>* PackerRRGraph;
     std::vector<t_segment_inf> Segments; ///<wires in routing architecture

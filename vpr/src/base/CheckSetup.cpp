@@ -10,6 +10,7 @@
 void CheckSetup(const t_packer_opts& PackerOpts,
                 const t_placer_opts& PlacerOpts,
                 const t_router_opts& RouterOpts,
+                const t_server_opts& ServerOpts,
                 const t_det_routing_arch& RoutingArch,
                 const std::vector<t_segment_inf>& Segments,
                 const t_timing_inf Timing,
@@ -103,6 +104,14 @@ void CheckSetup(const t_packer_opts& PackerOpts,
             && (PlacerOpts.place_chan_width % 2 > 0)) {
             VPR_FATAL_ERROR(VPR_ERROR_OTHER,
                             "Place channel width must be even for unidirectional.\n");
+        }
+    }
+
+    if (ServerOpts.is_server_mode_enabled) {
+        if (ServerOpts.port_num < DYMANIC_PORT_RANGE_MIN || ServerOpts.port_num > DYNAMIC_PORT_RANGE_MAX) {
+                VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                                "Specified server port number `--port %d` is out of range [%d-%d]. Please specify a port number within that range.\n",
+                                ServerOpts.port_num, DYMANIC_PORT_RANGE_MIN, DYNAMIC_PORT_RANGE_MAX);
         }
     }
 }

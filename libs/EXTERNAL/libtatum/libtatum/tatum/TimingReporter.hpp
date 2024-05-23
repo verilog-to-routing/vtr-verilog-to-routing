@@ -64,9 +64,11 @@ class TimingReporter {
     public:
         void report_timing_setup(std::string filename, const tatum::SetupTimingAnalyzer& setup_analyzer, size_t npaths=REPORT_TIMING_DEFAULT_NPATHS) const;
         void report_timing_setup(std::ostream& os, const tatum::SetupTimingAnalyzer& setup_analyzer, size_t npaths=REPORT_TIMING_DEFAULT_NPATHS) const;
+        void report_timing_setup(std::vector<tatum::TimingPath>& paths, std::ostream& os, const tatum::SetupTimingAnalyzer& setup_analyzer, size_t npaths=REPORT_TIMING_DEFAULT_NPATHS) const;
 
         void report_timing_hold(std::string filename, const tatum::HoldTimingAnalyzer& hold_analyzer, size_t npaths=REPORT_TIMING_DEFAULT_NPATHS) const;
         void report_timing_hold(std::ostream& os, const tatum::HoldTimingAnalyzer& hold_analyzer, size_t npaths=REPORT_TIMING_DEFAULT_NPATHS) const;
+        void report_timing_hold(std::vector<tatum::TimingPath>& paths, std::ostream& os, const tatum::HoldTimingAnalyzer& hold_analyzer, size_t npaths=REPORT_TIMING_DEFAULT_NPATHS) const;
 
         void report_skew_setup(std::string filename, const tatum::SetupTimingAnalyzer& setup_analyzer, size_t nworst=REPORT_TIMING_DEFAULT_NPATHS) const;
         void report_skew_setup(std::ostream& os, const tatum::SetupTimingAnalyzer& setup_analyzer, size_t nworst=REPORT_TIMING_DEFAULT_NPATHS) const;
