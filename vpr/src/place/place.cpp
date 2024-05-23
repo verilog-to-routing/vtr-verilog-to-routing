@@ -1708,8 +1708,8 @@ static e_move_result try_swap(const t_annealing_state* state,
     if (manual_move_enabled) {
 #ifndef NO_GRAPHICS
         create_move_outcome = manual_move_display_and_propose(manual_move_generator, blocks_affected, proposed_action.move_type, rlim, placer_opts, criticalities);
-#else  //NO_GRAPHICS \
-       // Cast to void to explicitly avoid warning.
+#else  //NO_GRAPHICS 
+        //Cast to void to explicitly avoid warning.
         (void)manual_move_generator;
 #endif //NO_GRAPHICS
     } else if (router_block_move) {
