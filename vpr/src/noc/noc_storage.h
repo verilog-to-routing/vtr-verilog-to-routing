@@ -317,12 +317,14 @@ class NocStorage {
      *
      * @tparam Container The type of standard library container used to carry
      * NoCLinkIds. This container type must be iterable in a range-based loop.
+     * @tparam Ts Used to help clang infer correct template types. GCC can compile
+     * without this extra template argument.
      * @param noc_link_ids A standard container that contains NoCLinkIds of the
      * requested NoC links
      * @return A const
      */
-    template <template<typename> class Container>
-    const std::vector<std::reference_wrapper<const NocLink>>& get_noc_links(const Container<NocLinkId>& noc_link_ids) const;
+    template <template<typename...> class Container, typename... Ts>
+    const std::vector<std::reference_wrapper<const NocLink>>& get_noc_links(const Container<NocLinkId, Ts...>& noc_link_ids) const;
 
 
     /**
@@ -550,8 +552,8 @@ class NocStorage {
 };
 
 
-template <template<typename> class Container>
-const std::vector<std::reference_wrapper<const NocLink>>& NocStorage::get_noc_links(const Container<NocLinkId>& noc_link_ids) const {
+template <template<typename...> class Container, typename... Ts>
+const std::vector<std::reference_wrapper<const NocLink>>& NocStorage::get_noc_links(const Container<NocLinkId, Ts...>& noc_link_ids) const {
     returnable_noc_link_const_refs_.clear();
 
     std::transform(noc_link_ids.begin(), noc_link_ids.end(), std::back_inserter(returnable_noc_link_const_refs_),
