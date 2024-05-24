@@ -101,7 +101,7 @@ void TaskResolver::process_get_path_list_task(ezgl::application*, const TaskPtr&
         if (details_level_opt) {
             CritPathsResultPtr crit_paths_result = calc_critical_path(path_type, n_critical_path_num, details_level_opt.value(), is_flat);
             if (crit_paths_result->is_valid()) {
-                server_ctx.set_crit_paths(std::move(crit_paths_result->paths));
+                server_ctx.crit_paths = std::move(crit_paths_result->paths);
                 task->success(std::move(crit_paths_result->report));
             } else {
                 std::string msg{"Critical paths report is empty"};
