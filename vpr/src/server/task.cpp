@@ -40,8 +40,13 @@ void Task::fail(const std::string& error) {
     bake_response();
 }
 
-void Task::success(const std::string& result) {
-    m_result = result;
+void Task::success() {
+    m_is_finished = true;
+    bake_response();
+}
+
+void Task::success(std::string&& result) {
+    m_result = std::move(result);
     m_is_finished = true;
     bake_response();
 }
@@ -49,8 +54,8 @@ void Task::success(const std::string& result) {
 std::string Task::info(bool skip_duration) const {
     std::stringstream ss;
     ss << "task["
-        << "id=" << std::to_string(m_job_id)
-        << ",cmd=" << std::to_string(m_cmd);
+       << "id="   << std::to_string(m_job_id)
+       << ",cmd=" << std::to_string(m_cmd);
     if (!skip_duration) {
         ss << ",exists=" << get_pretty_duration_str_from_ms(time_ms_elapsed());
     }
@@ -94,12 +99,12 @@ void Task::bake_response() {
         body_opt = ss.str();
     }
 
-    std::string body = body_opt.value();
+    std::string body{std::move(body_opt.value())};
     m_telegram_header = comm::TelegramHeader::construct_from_data(body, compressor_id);
 
     m_response_buffer.append(m_telegram_header.buffer().begin(), m_telegram_header.buffer().end());
     m_response_buffer.append(body);
-    body.clear();
+
     m_orig_reponse_bytes_num = m_response_buffer.size();
 }
 

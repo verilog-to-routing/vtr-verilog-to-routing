@@ -315,6 +315,7 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
     CheckSetup(vpr_setup->PackerOpts,
                vpr_setup->PlacerOpts,
                vpr_setup->RouterOpts,
+               vpr_setup->ServerOpts,
                vpr_setup->RoutingArch, vpr_setup->Segments, vpr_setup->Timing, arch->Chans);
 
     /* flush any messages to user still in stdout that hasn't gotten displayed */
@@ -1064,8 +1065,7 @@ void vpr_init_graphics(const t_vpr_setup& vpr_setup, const t_arch& arch, bool is
         alloc_draw_structs(&arch);
 }
 
-void vpr_init_server(const t_vpr_setup& vpr_setup)
-{
+void vpr_init_server(const t_vpr_setup& vpr_setup) {
 #ifndef NO_SERVER
     if (vpr_setup.ServerOpts.is_server_mode_enabled) {
         /* Set up a server and its callback to be triggered at 100ms intervals by the timer's timeout event. */
@@ -1333,11 +1333,12 @@ void vpr_check_arch(const t_arch& Arch) {
 void vpr_check_setup(const t_packer_opts& PackerOpts,
                      const t_placer_opts& PlacerOpts,
                      const t_router_opts& RouterOpts,
+                     const t_server_opts& ServerOpts,
                      const t_det_routing_arch& RoutingArch,
                      const std::vector<t_segment_inf>& Segments,
                      const t_timing_inf& Timing,
                      const t_chan_width_dist& Chans) {
-    CheckSetup(PackerOpts, PlacerOpts, RouterOpts, RoutingArch,
+    CheckSetup(PackerOpts, PlacerOpts, RouterOpts, ServerOpts, RoutingArch,
                Segments, Timing, Chans);
 }
 

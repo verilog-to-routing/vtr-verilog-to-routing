@@ -3,7 +3,6 @@
 
 #ifndef NO_SERVER
 
-#include <cstdint>
 #include <vector>
 #include <string>
 #include <cstring>
@@ -11,9 +10,9 @@
 namespace comm {
 
 /**
- * @brief ByteArray as a simple wrapper over std::vector<uint8_t>
+ * @brief ByteArray as a simple wrapper over std::vector<char>
 */
-class ByteArray : public std::vector<uint8_t> {
+class ByteArray : public std::vector<char> {
 public:
     static const std::size_t DEFAULT_SIZE_HINT = 1024;
 
@@ -27,8 +26,7 @@ public:
      * @param data A pointer to the null-terminated C string from which to construct the ByteArray.
      */
     explicit ByteArray(const char* data)
-        : std::vector<uint8_t>(reinterpret_cast<const uint8_t*>(data),
-                               reinterpret_cast<const uint8_t*>(data + std::strlen(data)))
+        : std::vector<char>(data, data + std::strlen(data))
     {}
 
     /**
@@ -42,8 +40,7 @@ public:
      * @param size The size of the raw character array, in bytes.
      */
     ByteArray(const char* data, std::size_t size)
-        : std::vector<uint8_t>(reinterpret_cast<const uint8_t*>(data),
-                               reinterpret_cast<const uint8_t*>(data + size))
+        : std::vector<char>(data, data + size)
     {}
 
     /**
@@ -68,7 +65,7 @@ public:
      * @param last An iterator to the last element in the range.
      */
     template<typename Iterator>
-    ByteArray(Iterator first, Iterator last): std::vector<uint8_t>(first, last) {}
+    ByteArray(Iterator first, Iterator last): std::vector<char>(first, last) {}
 
     /**
      * @brief Appends the content of another byte array to the end of this byte array.
@@ -89,7 +86,7 @@ public:
      *
      * @param b The byte to append to the byte array.
      */
-    void append(uint8_t b) {
+    void append(char b) {
         push_back(b);
     }
 
@@ -104,7 +101,7 @@ public:
      * @param sequence_size The size of the sequence to search for.
      * @return The position of the first occurrence of the sequence, or `std::size_t(-1)` if not found.
      */
-    std::size_t find_sequence(const char* sequence, std::size_t sequence_size) {
+    std::pair<bool, std::size_t> find_sequence(const char* sequence, std::size_t sequence_size) {
         const std::size_t ssize = size();
         if (ssize >= sequence_size) {
             for (std::size_t i = 0; i <= ssize - sequence_size; ++i) {
@@ -116,11 +113,11 @@ public:
                     }
                 }
                 if (found) {
-                    return i;
+                    return std::make_pair(true, i);
                 }
             }
         }
-        return std::size_t(-1);
+        return std::make_pair(false, 0);
     }
 
     /**
@@ -131,8 +128,8 @@ public:
      *
      * @return A string representation of the byte array.
      */
-    std::string to_string() const {
-        return std::string(reinterpret_cast<const char*>(this->data()), this->size());
+    operator std::string_view() const {
+        return std::string_view(this->data(), this->size());
     }
 
     /**
@@ -161,8 +158,8 @@ public:
     template<typename T>
     static uint32_t calc_check_sum(const T& iterable) {
         uint32_t sum = 0;
-        for (uint8_t c : iterable) {
-            sum += static_cast<unsigned int>(c);
+        for (char c : iterable) {
+            sum += static_cast<unsigned int>(static_cast<unsigned char>(c));
         }
         return sum;
     }

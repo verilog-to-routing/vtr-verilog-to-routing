@@ -198,6 +198,11 @@ jobs:
             suite: 'vtr_reg_basic'
           },
           {
+            name: 'Basic with NO_SERVER',
+            params: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVPR_USE_EZGL=on -DVPR_USE_SERVER=off',
+            suite: 'vtr_reg_basic'
+          },
+          {
             name: 'Basic with CAPNPROTO disabled',
             params: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVTR_ENABLE_CAPNPROTO=off',
             suite: 'vtr_reg_basic'

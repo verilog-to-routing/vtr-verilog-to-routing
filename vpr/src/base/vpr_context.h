@@ -587,21 +587,6 @@ struct ServerContext : public Context {
      */
     std::vector<tatum::TimingPath> crit_paths;
 
-    /**
-     * @brief Stores the number of critical paths items.
-     *
-     * This value is used to generate a critical path report with a certain number of items,
-     * which will be sent back to the client upon request.
-     */
-    int critical_path_num = 1;
-
-    /**
-     * @brief Stores the critical path type.
-     *
-     * This value is used to generate a specific type of critical path report and send
-     * it back to the client upon request.
-     */
-    std::string path_type = "setup";
 
     /**
      * @brief Stores the selected critical path elements.

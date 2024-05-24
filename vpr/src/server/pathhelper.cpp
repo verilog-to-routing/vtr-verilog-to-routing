@@ -32,7 +32,7 @@ static void collect_crit_path_metadata(std::stringstream& ss, const std::vector<
 /** 
  * @brief Helper function to calculate critical path timing report with specified parameters.
  */
-CritPathsResult calc_critical_path(const std::string& report_type, int crit_path_num, e_timing_report_detail details_level, bool is_flat_routing) {
+CritPathsResultPtr calc_critical_path(const std::string& report_type, int crit_path_num, e_timing_report_detail details_level, bool is_flat_routing) {
     // shortcuts
     const std::shared_ptr<SetupHoldTimingInfo>& timing_info = g_vpr_ctx.server().timing_info;
     const std::shared_ptr<RoutingDelayCalculator>& routing_delay_calc = g_vpr_ctx.server().routing_delay_calc;
@@ -50,20 +50,21 @@ CritPathsResult calc_critical_path(const std::string& report_type, int crit_path
 
     tatum::TimingReporter timing_reporter(resolver, *timing_ctx.graph, *timing_ctx.constraints);
 
-    std::vector<tatum::TimingPath> paths;
+    CritPathsResultPtr result = std::make_shared<CritPathsResult>();
+
     std::stringstream ss;
     if (report_type == comm::KEY_SETUP_PATH_LIST) {
-        timing_reporter.report_timing_setup(paths, ss, *timing_info->setup_analyzer(), analysis_opts.timing_report_npaths);
+        timing_reporter.report_timing_setup(result->paths, ss, *timing_info->setup_analyzer(), analysis_opts.timing_report_npaths);
     } else if (report_type == comm::KEY_HOLD_PATH_LIST) {
-        timing_reporter.report_timing_hold(paths, ss, *timing_info->hold_analyzer(), analysis_opts.timing_report_npaths);
+        timing_reporter.report_timing_hold(result->paths, ss, *timing_info->hold_analyzer(), analysis_opts.timing_report_npaths);
     }
 
-    if (!paths.empty()) {
-        collect_crit_path_metadata(ss, paths);
-        return CritPathsResult{paths, ss.str()};
-    } else {
-        return CritPathsResult{std::vector<tatum::TimingPath>(), ""};
+    if (!result->paths.empty()) {
+        collect_crit_path_metadata(ss, result->paths);
+        result->report = ss.str();
     }
+
+    return result;
 }
 
 } // namespace server

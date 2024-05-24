@@ -73,6 +73,11 @@ std::string TelegramHeader::info() const {
     return ss.str();
 }
 
+comm::TelegramHeader TelegramHeader::construct_from_data(const std::string_view& body, uint8_t compressor_id) {
+    uint32_t body_check_sum = ByteArray::calc_check_sum(body);
+    return comm::TelegramHeader{static_cast<uint32_t>(body.size()), body_check_sum, compressor_id};
+}
+
 } // namespace comm
 
 #endif /* NO_SERVER */

@@ -18,21 +18,21 @@ TEST_CASE("test_server_bytearray", "[vpr]") {
     REQUIRE(array.at(4) == '2');
     REQUIRE(array.at(5) == '2');
 
-    REQUIRE(array.to_string() == "111222");
+    REQUIRE(std::string_view{array} == "111222");
 
     REQUIRE(array.size() == 6);
 
     array.append('3');
 
     REQUIRE(array.size() == 7);
-    REQUIRE(array.to_string() == "1112223");
+    REQUIRE(std::string_view{array} == "1112223");
 
     REQUIRE(array.at(6) == '3');
 
     array.clear();
 
     REQUIRE(array.size() == 0);
-    REQUIRE(array.to_string() == "");
+    REQUIRE(std::string_view{array} == "");
 }
 
 TEST_CASE("test_server_telegrambuffer_oneOpened", "[vpr]") {
@@ -43,7 +43,7 @@ TEST_CASE("test_server_telegrambuffer_oneOpened", "[vpr]") {
     auto frames = buff.take_telegram_frames();
     REQUIRE(frames.size() == 0);
 
-    REQUIRE(buff.data().to_string() == "111222");
+    REQUIRE(std::string_view{buff.data()} == "111222");
 }
 
 TEST_CASE("test_server_telegrambuffer_notFilledTelegramButWithPrependedRubish", "[vpr]")

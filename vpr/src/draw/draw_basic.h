@@ -116,7 +116,7 @@ void draw_crit_path(ezgl::renderer* g);
  * @param indexes The map of sets containing indexes of critical path elements to draw.
  * @param g Pointer to the ezgl::renderer object on which the elements will be drawn.
  */
-void draw_crit_path_elements(const std::vector<tatum::TimingPath>& paths, const std::map<std::size_t, std::set<std::size_t>>& indexes, ezgl::renderer* g);
+void draw_crit_path_elements(const std::vector<tatum::TimingPath>& paths, const std::map<std::size_t, std::set<std::size_t>>& indexes, bool draw_crit_path_contour, ezgl::renderer* g);
 
 /**
  * @brief  Checks whether a flyline should be drawn or not based on the layer control settings in the UI

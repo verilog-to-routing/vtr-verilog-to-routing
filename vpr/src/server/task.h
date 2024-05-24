@@ -130,7 +130,7 @@ public:
      * @param error The error message describing the reason for the task's failure.
      */
     void fail(const std::string& error);
-
+    void success();
     /**
      * @brief Marks the task as successfully completed with the specified result.
      * 
@@ -139,7 +139,7 @@ public:
      * 
      * @param result An optional string describing the result of the task execution.
      */
-    void success(const std::string& result = "");
+    void success(std::string&& result);
 
     /**
      * @brief Generates a string containing information about the task.

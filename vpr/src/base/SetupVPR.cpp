@@ -665,8 +665,8 @@ static void SetupPlacerOpts(const t_options& Options, t_placer_opts* PlacerOpts)
     PlacerOpts->effort_scaling = Options.place_effort_scaling;
     PlacerOpts->timing_update_type = Options.timing_update_type;
     PlacerOpts->enable_analytic_placer = Options.enable_analytic_placer;
-    PlacerOpts->place_static_move_prob = Options.place_static_move_prob;
-    PlacerOpts->place_static_notiming_move_prob = Options.place_static_notiming_move_prob;
+    PlacerOpts->place_static_move_prob = vtr::vector<e_move_type, float>(Options.place_static_move_prob.value().begin(),
+                                                                         Options.place_static_move_prob.value().end());
     PlacerOpts->place_high_fanout_net = Options.place_high_fanout_net;
     PlacerOpts->place_bounding_box_mode = Options.place_bounding_box_mode;
     PlacerOpts->RL_agent_placement = Options.RL_agent_placement;

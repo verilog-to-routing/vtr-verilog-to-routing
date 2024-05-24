@@ -17,7 +17,7 @@ std::optional<std::string> try_compress(const std::string& decompressed) {
     zs.avail_in = decompressed.size();
 
     int ret_code;
-    char* result_buffer = new char[32768];
+    char* result_buffer = new char[BYTES_NUM_IN_32KB];
     std::string result;
 
     do {
@@ -54,7 +54,7 @@ std::optional<std::string> try_decompress(const std::string& compressed) {
     zs.avail_in = compressed.size();
 
     int ret_code;
-    char* result_buffer = new char[32768];
+    char* result_buffer = new char[BYTES_NUM_IN_32KB];
     std::string result;
 
     do {

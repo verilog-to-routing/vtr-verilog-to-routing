@@ -4,10 +4,12 @@
 #include "convertutils.h"
 #include "commconstants.h"
 
+#include <cstring>
+
 namespace comm {
 
 std::optional<std::string> TelegramParser::try_extract_json_value_str(const std::string& json_string, const std::string& key) {
-    static const std::string end_key_pattern{"\":\""};
+    constexpr const char end_key_pattern[] = {"\":\""};
 
     // Find the position of the key
     size_t key_pos = json_string.find('\"' + key + end_key_pattern);
@@ -18,7 +20,7 @@ std::optional<std::string> TelegramParser::try_extract_json_value_str(const std:
     }
 
     // Find the position of the value after the key
-    size_t value_pos_start = json_string.find('\"', key_pos + key.length() + end_key_pattern.size());
+    size_t value_pos_start = json_string.find('\"', key_pos + key.length() + std::strlen(end_key_pattern));
 
     if (value_pos_start == std::string::npos) {
         // Value not found

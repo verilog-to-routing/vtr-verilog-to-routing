@@ -5,6 +5,7 @@
 
 #include <vector>
 #include <string>
+#include <memory>
 
 #include "tatum/report/TimingPath.hpp"
 #include "vpr_types.h"
@@ -13,6 +14,8 @@ namespace server {
 
 /** 
  * @brief Structure to retain the calculation result of the critical path.
+ * 
+ * It contains the critical path list and the generated report as a string.
 */
 struct CritPathsResult {
     /**
@@ -31,6 +34,7 @@ struct CritPathsResult {
     */
     std::string report;
 };
+using CritPathsResultPtr = std::shared_ptr<CritPathsResult>;
 
 /**
 * @brief Calculates the critical path.
@@ -42,7 +46,7 @@ struct CritPathsResult {
 * @param is_flat_routing Indicates whether flat routing should be used.
 * @return The result of the critical path calculation. @see CritPathsResult
 */
-CritPathsResult calc_critical_path(const std::string& type, int crit_path_num, e_timing_report_detail details_level, bool is_flat_routing);
+CritPathsResultPtr calc_critical_path(const std::string& type, int crit_path_num, e_timing_report_detail details_level, bool is_flat_routing);
 
 } // namespace server
 

@@ -99,16 +99,10 @@ void TaskResolver::process_get_path_list_task(ezgl::application*, const TaskPtr&
         // calculate critical path depending on options and store result in server context
         std::optional<e_timing_report_detail> details_level_opt = try_get_details_level_enum(details_level_str);
         if (details_level_opt) {
-            CritPathsResult crit_paths_result = calc_critical_path(path_type, n_critical_path_num, details_level_opt.value(), is_flat);
-
-            // setup context
-            server_ctx.path_type = path_type;
-            server_ctx.critical_path_num = n_critical_path_num;
-            server_ctx.crit_paths = crit_paths_result.paths;
-
-            if (crit_paths_result.is_valid()) {
-                std::string msg{crit_paths_result.report};
-                task->success(msg);
+            CritPathsResultPtr crit_paths_result = calc_critical_path(path_type, n_critical_path_num, details_level_opt.value(), is_flat);
+            if (crit_paths_result->is_valid()) {
+                server_ctx.set_crit_paths(std::move(crit_paths_result->paths));
+                task->success(std::move(crit_paths_result->report));
             } else {
                 std::string msg{"Critical paths report is empty"};
                 VTR_LOG_ERROR(msg.c_str());
@@ -136,7 +130,7 @@ void TaskResolver::process_draw_critical_path_task(ezgl::application* app, const
         const bool draw_path_contour = options.get_bool(comm::OPTION_DRAW_PATH_CONTOUR, false);
 
         // set critical path elements to render
-        server_ctx.crit_path_element_indexes = path_elements;
+        server_ctx.crit_path_element_indexes = std::move(path_elements);
         server_ctx.draw_crit_path_contour = draw_path_contour;
 
         // update gtk UI
