@@ -94,12 +94,14 @@ public:
      * @brief Finds the position of the specified sequence in the byte array.
      *
      * This function searches for the specified sequence of characters within the byte array.
-     * If the sequence is found, the function returns the position of its first occurrence.
-     * If the sequence is not found, it returns `std::size_t(-1)`.
+     * If the sequence is found, it returns a pair containing `true` and the starting index of the sequence.
+     * If the sequence is not found, it returns a pair containing `false` and `0`.
      *
      * @param sequence A pointer to the sequence of characters to search for.
      * @param sequence_size The size of the sequence to search for.
-     * @return The position of the first occurrence of the sequence, or `std::size_t(-1)` if not found.
+     * @return A `std::pair` where the first element is a boolean indicating whether the sequence was
+     * found (`true`) or not (`false`), and the second element is the starting index of the sequence if
+     * found.
      */
     std::pair<bool, std::size_t> find_sequence(const char* sequence, std::size_t sequence_size) {
         const std::size_t ssize = size();
