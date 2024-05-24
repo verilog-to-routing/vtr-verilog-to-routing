@@ -28,6 +28,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <set>
+#include <string_view>
 #include "arch_types.h"
 #include "atom_netlist_fwd.h"
 #include "clustered_netlist_fwd.h"
@@ -166,11 +167,12 @@ enum class e_cluster_seed {
     BLEND2
 };
 
-enum e_block_pack_status {
+enum class e_block_pack_status {
     BLK_PASSED,
     BLK_FAILED_FEASIBLE,
     BLK_FAILED_ROUTE,
     BLK_FAILED_FLOORPLANNING,
+    BLK_FAILED_NOC_GROUP,
     BLK_STATUS_UNDEFINED
 };
 
@@ -195,7 +197,7 @@ class t_ext_pin_util_targets {
     t_ext_pin_util_targets& operator=(t_ext_pin_util_targets&& other) noexcept;
 
     ///@brief Returns the input pin util of the specified block (or default if unspecified)
-    t_ext_pin_util get_pin_util(const std::string& block_type_name) const;
+    t_ext_pin_util get_pin_util(std::string_view block_type_name) const;
 
     ///@brief Returns a string describing input/output pin utilization targets
     std::string to_string() const;
@@ -215,7 +217,7 @@ class t_ext_pin_util_targets {
 
   private:
     t_ext_pin_util defaults_;
-    std::map<std::string, t_ext_pin_util> overrides_;
+    std::map<std::string, t_ext_pin_util, std::less<>> overrides_;
 };
 
 class t_pack_high_fanout_thresholds {
@@ -226,7 +228,7 @@ class t_pack_high_fanout_thresholds {
     t_pack_high_fanout_thresholds& operator=(t_pack_high_fanout_thresholds&& other) noexcept;
 
     ///@brief Returns the high fanout threshold of the specifi  ed block
-    int get_threshold(const std::string& block_type_name) const;
+    int get_threshold(std::string_view block_type_name) const;
 
     ///@brief Returns a string describing high fanout thresholds for different block types
     std::string to_string() const;
@@ -246,7 +248,7 @@ class t_pack_high_fanout_thresholds {
 
   private:
     int default_;
-    std::map<std::string, int> overrides_;
+    std::map<std::string, int, std::less<>> overrides_;
 };
 
 /* these are defined later, but need to declare here because it is used */
@@ -1499,6 +1501,7 @@ struct t_noc_opts {
     double noc_latency_constraints_weighting; ///<controls the significance of meeting the traffic flow constraints range:[0-inf)
     double noc_latency_weighting;             ///<controls the significance of the traffic flow latencies relative to the other NoC placement costs range:[0-inf)
     double noc_congestion_weighting;          ///<controls the significance of the link congestions relative to the other NoC placement costs range:[0-inf)
+    double noc_centroid_weight;               ///<controls how much the centroid location is adjusted towards NoC routers in NoC-biased centroid move:[0, 1]
     int noc_swap_percentage;                  ///<controls the number of NoC router block swap attempts relative to the total number of swaps attempted by the placer range:[0-100]
     std::string noc_placement_file_name;      ///<is the name of the output file that contains the NoC placement information
 };

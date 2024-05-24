@@ -27,6 +27,7 @@ enum class e_move_type {
     W_MEDIAN,
     CRIT_UNIFORM,
     FEASIBLE_REGION,
+    NOC_ATTRACTION_CENTROID,
     NUMBER_OF_AUTO_MOVES,
     MANUAL_MOVE = NUMBER_OF_AUTO_MOVES,
     INVALID_MOVE
@@ -85,7 +86,7 @@ struct t_range_limiters {
 };
 
 //Records a reasons for an aborted move
-void log_move_abort(const std::string& reason);
+void log_move_abort(std::string_view reason);
 
 //Prints a breif report about aborted move reasons and counts
 void report_aborted_moves();
@@ -224,15 +225,18 @@ void compressed_grid_to_loc(t_logical_block_type_ptr blk_type,
                             t_pl_loc& to_loc);
 
 /**
- * @brief Checks whether the given location has a compatible empty subtile with
- * the given type.
+ * @brief Tries to find an compatible empty subtile with the given type at
+ * the given location. If such a subtile could be found, the subtile number
+ * is returned. Otherwise, -1 is returned to indicate that there are no
+ * compatible subtiles at the given location.
  *
  * @param type logical block type
  * @param to_loc The location to be checked
  *
- * @return bool True if the given location has at least one empty compatible subtile.
+ * @return int The subtile number if there is an empty compatible subtile, otherwise -1
+ * is returned to indicate that there are no empty subtiles compatible with the given type..
  */
-bool has_empty_compatible_subtile(t_logical_block_type_ptr type,
+int find_empty_compatible_subtile(t_logical_block_type_ptr type,
                                   const t_physical_tile_loc& to_loc);
 
 /**
@@ -247,7 +251,7 @@ bool has_empty_compatible_subtile(t_logical_block_type_ptr type,
  * search_for_empty: indicates that the returned location must be empty
  */
 bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
-                                             const int delta_cx,
+                                             int delta_cx,
                                              const t_physical_tile_loc& from_loc,
                                              t_bb search_range,
                                              t_physical_tile_loc& to_loc,

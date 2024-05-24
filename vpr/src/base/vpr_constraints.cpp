@@ -1,7 +1,7 @@
 #include "vpr_constraints.h"
 #include "partition.h"
 
-void VprConstraints::add_constrained_atom(const AtomBlockId blk_id, const PartitionId part_id) {
+void VprConstraints::add_constrained_atom(AtomBlockId blk_id, PartitionId part_id) {
     auto got = constrained_atoms.find(blk_id);
 
     /**
@@ -16,30 +16,32 @@ void VprConstraints::add_constrained_atom(const AtomBlockId blk_id, const Partit
     }
 }
 
-PartitionId VprConstraints::get_atom_partition(AtomBlockId blk_id) {
-    PartitionId part_id;
-
+PartitionId VprConstraints::get_atom_partition(AtomBlockId blk_id) const {
     auto got = constrained_atoms.find(blk_id);
 
     if (got == constrained_atoms.end()) {
-        return part_id = PartitionId::INVALID(); ///< atom is not in a partition, i.e. unconstrained
+        return PartitionId::INVALID(); ///< atom is not in a partition, i.e. unconstrained
     } else {
         return got->second;
     }
 }
 
-void VprConstraints::add_partition(Partition part) {
+void VprConstraints::add_partition(const Partition& part) {
     partitions.push_back(part);
 }
 
-Partition VprConstraints::get_partition(PartitionId part_id) {
+const Partition& VprConstraints::get_partition(PartitionId part_id) const {
     return partitions[part_id];
 }
 
-std::vector<AtomBlockId> VprConstraints::get_part_atoms(PartitionId part_id) {
+Partition& VprConstraints::get_mutable_partition(PartitionId part_id) {
+    return partitions[part_id];
+}
+
+std::vector<AtomBlockId> VprConstraints::get_part_atoms(PartitionId part_id) const {
     std::vector<AtomBlockId> part_atoms;
 
-    for (auto& it : constrained_atoms) {
+    for (const auto& it : constrained_atoms) {
         if (it.second == part_id) {
             part_atoms.push_back(it.first);
         }
@@ -48,18 +50,19 @@ std::vector<AtomBlockId> VprConstraints::get_part_atoms(PartitionId part_id) {
     return part_atoms;
 }
 
-int VprConstraints::get_num_partitions() {
+int VprConstraints::get_num_partitions() const {
     return partitions.size();
 }
 
-PartitionRegion VprConstraints::get_partition_pr(PartitionId part_id) {
-    PartitionRegion pr;
-    pr = partitions[part_id].get_part_region();
-    return pr;
+const PartitionRegion& VprConstraints::get_partition_pr(PartitionId part_id) const {
+    return partitions[part_id].get_part_region();
 }
 
-void print_constraints(FILE* fp, VprConstraints constraints) {
-    Partition temp_part;
+PartitionRegion& VprConstraints::get_mutable_partition_pr(PartitionId part_id) {
+    return partitions[part_id].get_mutable_part_region();
+}
+
+void print_constraints(FILE* fp, const VprConstraints& constraints) {
     std::vector<AtomBlockId> atoms;
 
     int num_parts = constraints.get_num_partitions();
@@ -69,7 +72,7 @@ void print_constraints(FILE* fp, VprConstraints constraints) {
     for (int i = 0; i < num_parts; i++) {
         PartitionId part_id(i);
 
-        temp_part = constraints.get_partition(part_id);
+        const Partition& temp_part = constraints.get_partition(part_id);
 
         fprintf(fp, "\npartition_id: %zu\n", size_t(part_id));
         print_partition(fp, temp_part);
@@ -80,8 +83,7 @@ void print_constraints(FILE* fp, VprConstraints constraints) {
 
         fprintf(fp, "\tAtom vector size is %d\n", atoms_size);
         fprintf(fp, "\tIds of atoms in partition: \n");
-        for (unsigned int j = 0; j < atoms.size(); j++) {
-            AtomBlockId atom_id = atoms[j];
+        for (auto atom_id : atoms) {
             fprintf(fp, "\t#%zu\n", size_t(atom_id));
         }
     }

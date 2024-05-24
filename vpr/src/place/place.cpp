@@ -5,7 +5,6 @@
 #include <iostream>
 #include <numeric>
 #include <chrono>
-#include <vtr_ndmatrix.h>
 #include <optional>
 
 #include "NetPinTimingInvalidator.h"
@@ -16,6 +15,7 @@
 #include "vtr_geometry.h"
 #include "vtr_time.h"
 #include "vtr_math.h"
+#include "vtr_ndmatrix.h"
 
 #include "vpr_types.h"
 #include "vpr_error.h"
@@ -75,7 +75,7 @@
  * -1*(1.5-REWARD_BB_TIMING_RELATIVE_WEIGHT)*timing_cost + (1+REWARD_BB_TIMING_RELATIVE_WEIGHT)*bb_cost)
  */
 
-#define REWARD_BB_TIMING_RELATIVE_WEIGHT 0.4
+static constexpr float REWARD_BB_TIMING_RELATIVE_WEIGHT = 0.4;
 
 #ifdef VTR_ENABLE_DEBUG_LOGGING
 #    include "draw_types.h"
@@ -90,12 +90,12 @@ using std::min;
 
 /* This defines the error tolerance for floating points variables used in *
  * cost computation. 0.01 means that there is a 1% error tolerance.       */
-#define ERROR_TOL .01
+static constexpr double ERROR_TOL = .01;
 
 /* This defines the maximum number of swap attempts before invoking the   *
  * once-in-a-while placement legality check as well as floating point     *
  * variables round-offs check.                                            */
-#define MAX_MOVES_BEFORE_RECOMPUTE 500000
+static constexpr int MAX_MOVES_BEFORE_RECOMPUTE = 500000;
 
 /* Flags for the states of the bounding box.                              *
  * Stored as char for memory efficiency.                                  */
@@ -103,7 +103,7 @@ using std::min;
 #define UPDATED_ONCE 'U'
 #define GOT_FROM_SCRATCH 'S'
 
-/* For comp_cost.  NORMAL means use the method that generates updateable  *
+/* For comp_cost.  NORMAL means use the method that generates updatable   *
  * bounding boxes for speed.  CHECK means compute all bounding boxes from *
  * scratch using a very simple routine to allow checks of the other       *
  * costs.                                   
@@ -648,7 +648,7 @@ void try_place(const Netlist<>& net_list,
                      * pow(net_list.blocks().size(), 1.3333));
 
     //create the move generator based on the chosen strategy
-    create_move_generators(move_generator, move_generator2, placer_opts, move_lim);
+    create_move_generators(move_generator, move_generator2, placer_opts, move_lim, noc_opts.noc_centroid_weight);
 
     alloc_and_load_placement_structs(placer_opts.place_cost_exp, placer_opts, noc_opts, directs, num_directs);
 
@@ -1062,7 +1062,7 @@ void try_place(const Netlist<>& net_list,
             //#endif
         } while (state.outer_loop_update(stats.success_rate, costs, placer_opts,
                                          annealing_sched));
-        /* Outer loop of the simmulated annealing ends */
+        /* Outer loop of the simulated annealing ends */
     } //skip_anneal ends
 
     /* Start Quench */
@@ -1080,7 +1080,7 @@ void try_place(const Netlist<>& net_list,
                                       placer_setup_slacks.get(), pin_timing_invalidator.get(),
                                       timing_info.get());
 
-        //move the appropoiate move_generator to be the current used move generator
+        //move the appropriate move_generator to be the current used move generator
         assign_current_move_generator(move_generator, move_generator2,
                                       agent_state, placer_opts, true, current_move_generator);
 
@@ -1952,6 +1952,8 @@ static e_move_result try_swap(const t_annealing_state* state,
     if (!router_block_move) {
         calculate_reward_and_process_outcome(placer_opts, move_outcome_stats,
                                              delta_c, timing_bb_factor, move_generator);
+    } else {
+//        std::cout << "Group move delta cost: " << delta_c << std::endl;
     }
 
 #ifdef VTR_ENABLE_DEBUG_LOGGING
