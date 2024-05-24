@@ -1,7 +1,6 @@
 
 #include "sat_routing.h"
 #include "turn_model_routing.h"
-#include "move_utils.h"
 
 #include "globals.h"
 #include "vtr_time.h"
@@ -140,6 +139,38 @@ static vtr::vector<NocTrafficFlowId, int> quantize_traffic_flow_bandwidths(int b
  */
 static void add_continuity_constraints(t_flow_link_var_map& flow_link_vars,
                                        orsat::CpModelBuilder& cp_model);
+
+/**
+ * @brief Creates a linear expression to be minimized by the SAT solver.
+ * This objective function is a linear combination of latency overrun,
+ * the number of congested links, and the quantized aggregate bandwidth.
+ *
+ * @param cp_model
+ * @param flow_link_vars
+ * @param latency_overrun_vars Integer variables for latency-constrained
+ * traffic flows. Each integer variable shows how many extra links a constrained
+ * traffic flow has traversed beyond what its latency constraint allows.
+ * @param congested_link_vars Boolean variables indicating whether a link is
+ * congested or not.
+ * @param bandwidth_resolution The resolution by which traffic flow bandwidths
+ * are quantized.
+ * @param latency_overrun_weight Specifies the importance of minimizing latency overrun
+ * for latency-constrained traffic flows.
+ * @param congestion_weight Specifies the importance of avoiding congestion in links.
+ * @param minimize_aggregate_bandwidth Specifies whether the objective includes an
+ * aggregate bandwidth term.
+ *
+ * @return A linear expression including latency overrun, the number of congested links,
+ * and the aggregate bandwidth;
+ */
+static orsat::LinearExpr create_objective(orsat::CpModelBuilder& cp_model,
+                                          t_flow_link_var_map& flow_link_vars,
+                                          std::map<NocTrafficFlowId , orsat::IntVar>& latency_overrun_vars,
+                                          vtr::vector<NocLinkId , orsat::BoolVar>& congested_link_vars,
+                                          int bandwidth_resolution,
+                                          int latency_overrun_weight,
+                                          int congestion_weight,
+                                          bool minimize_aggregate_bandwidth);
 
 
 static std::vector<orsat::BoolVar> get_flow_link_vars(const t_flow_link_var_map& map,
@@ -802,7 +833,49 @@ static void constrain_latency_overrun_vars(orsat::CpModelBuilder& cp_model,
 //    }
 //}
 
+static orsat::LinearExpr create_objective(orsat::CpModelBuilder& cp_model,
+                                          t_flow_link_var_map& flow_link_vars,
+                                          std::map<NocTrafficFlowId , orsat::IntVar>& latency_overrun_vars,
+                                          vtr::vector<NocLinkId , orsat::BoolVar>& congested_link_vars,
+                                          int bandwidth_resolution,
+                                          int latency_overrun_weight,
+                                          int congestion_weight,
+                                          bool minimize_aggregate_bandwidth) {
+    const auto& noc_ctx = g_vpr_ctx.noc();
+    const auto& traffic_flow_storage = noc_ctx.noc_traffic_flows_storage;
 
+    // use the current routing solution as a hint for the SAT solver
+    // This will help the solver by giving a good starting point and tighter initial lower bound on the objective function
+    for (auto traffic_flow_id : traffic_flow_storage.get_all_traffic_flow_id()) {
+        for (auto route_link_id : traffic_flow_storage.get_traffic_flow_route(traffic_flow_id)) {
+            cp_model.AddHint(flow_link_vars[{traffic_flow_id, route_link_id}], true);
+        }
+    }
+
+    orsat::LinearExpr latency_overrun_sum;
+    for (auto& [traffic_flow_id, latency_overrun_var] : latency_overrun_vars) {
+        latency_overrun_sum += latency_overrun_var;
+    }
+    latency_overrun_sum *= latency_overrun_weight;
+
+    auto rescaled_traffic_flow_bandwidths = quantize_traffic_flow_bandwidths(bandwidth_resolution);
+    orsat::LinearExpr agg_bw_expr;
+    if (minimize_aggregate_bandwidth) {
+        for (auto& [key, var] : flow_link_vars) {
+            auto [traffic_flow_id, noc_link_id] = key;
+            agg_bw_expr += orsat::LinearExpr::Term(var, rescaled_traffic_flow_bandwidths[traffic_flow_id]);
+        }
+    } else {
+        agg_bw_expr = 0;
+    }
+
+
+    orsat::LinearExpr congested_link_sum = orsat::LinearExpr::Sum(congested_link_vars);
+    congested_link_sum *= congestion_weight;
+
+    orsat::LinearExpr objective = latency_overrun_sum + agg_bw_expr + congested_link_sum;
+    return objective;
+}
 
 
 vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> noc_sat_route(bool minimize_aggregate_bandwidth,
@@ -837,77 +910,30 @@ vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> noc_sat_route(bool minimiz
 
     forbid_illegal_turns(flow_link_vars, cp_model);
 
-    //    add_congestion_constraints(flow_link_vars, cp_model);
     create_congested_link_vars(link_congested_vars, flow_link_vars, cp_model, bandwidth_resolution);
 
     add_continuity_constraints(flow_link_vars, cp_model);
 
-    const auto& noc_ctx = g_vpr_ctx.noc();
-    const auto& traffic_flow_storage = noc_ctx.noc_traffic_flows_storage;
+    auto objective = create_objective(cp_model, flow_link_vars, latency_overrun_vars, link_congested_vars,
+                                      bandwidth_resolution, latency_overrun_weight, congestion_weight,
+                                      minimize_aggregate_bandwidth);
 
-    // use the current routing solution as a hint for the SAT solver
-    // This will help the solver by giving a good starting point and tighter initial lower bound on the objective function
-    for (auto traffic_flow_id : traffic_flow_storage.get_all_traffic_flow_id()) {
-        for (auto route_link_id : traffic_flow_storage.get_traffic_flow_route(traffic_flow_id)) {
-            cp_model.AddHint(flow_link_vars[{traffic_flow_id, route_link_id}], true);
-        }
-    }
-
-    orsat::LinearExpr latency_overrun_sum;
-    for (auto& [traffic_flow_id, latency_overrun_var] : latency_overrun_vars) {
-        latency_overrun_sum += latency_overrun_var;
-    }
-    latency_overrun_sum *= latency_overrun_weight;
-
-    auto rescaled_traffic_flow_bandwidths = quantize_traffic_flow_bandwidths(bandwidth_resolution);
-    orsat::LinearExpr agg_bw_expr;
-    for (auto& [key, var] : flow_link_vars) {
-        auto [traffic_flow_id, noc_link_id] = key;
-        agg_bw_expr += orsat::LinearExpr::Term(var, rescaled_traffic_flow_bandwidths[traffic_flow_id]);
-    }
-
-    orsat::LinearExpr congested_link_sum = orsat::LinearExpr::Sum(link_congested_vars);
-    congested_link_sum *= congestion_weight;
-
-    cp_model.Minimize(latency_overrun_sum + agg_bw_expr + congested_link_sum);
-
-    orsat::Model model;
+    cp_model.Minimize(objective);
 
     orsat::SatParameters sat_params;
     //    sat_params.set_num_workers(1);
     sat_params.set_random_seed(seed);
     sat_params.set_log_search_progress(true);
 
+    orsat::Model model;
     model.Add(NewSatParameters(sat_params));
 
     orsat::CpSolverResponse response = orsat::SolveCpModel(cp_model.Build(), &model);
 
     if (response.status() == orsat::CpSolverStatus::FEASIBLE ||
         response.status() == orsat::CpSolverStatus::OPTIMAL) {
-
-        //        if (!minimize_aggregate_bandwidth) {
         auto routes = convert_vars_to_routes(flow_link_vars, response);
         return routes;
-        //        } else {
-        //            int latency_overrun_value = (int)orsat::SolutionIntegerValue(response, latency_overrun_sum);
-        //            cp_model.AddEquality(latency_overrun_sum, latency_overrun_value);
-
-        //            auto rescaled_traffic_flow_bandwidths = rescale_traffic_flow_bandwidths();
-        //            orsat::LinearExpr agg_bw_expr;
-        //            for (auto& [key, var] : flow_link_vars) {
-        //                auto [traffic_flow_id, noc_link_id] = key;
-        //                agg_bw_expr += orsat::LinearExpr::Term(var, rescaled_traffic_flow_bandwidths[traffic_flow_id]);
-        //            }
-
-        cp_model.Minimize(agg_bw_expr);
-        response = orsat::Solve(cp_model.Build());
-
-        //            if (response.status() == orsat::CpSolverStatus::FEASIBLE ||
-        //                response.status() == orsat::CpSolverStatus::OPTIMAL) {
-        //                auto routes = convert_vars_to_routes(flow_link_vars, response);
-        //                return routes;
-        //            }
-        //        }
     }
 
     return {};
