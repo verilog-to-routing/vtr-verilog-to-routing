@@ -167,7 +167,7 @@ GateIO::ActivityStatus GateIO::handle_client_alive_tracker(sockpp::tcp6_socket& 
     if (client_alive_tracker_ptr) {
         /// handle sending echo to client
         if (client_alive_tracker_ptr->is_time_to_sent_echo()) {
-            comm::TelegramHeader echo_header = comm::TelegramHeader::construct_from_data(comm::ECHO_TELEGRAM_BODY);
+            comm::TelegramHeader echo_header = comm::TelegramHeader::construct_from_body(comm::ECHO_TELEGRAM_BODY);
             std::string message{echo_header.buffer()};
             message.append(comm::ECHO_TELEGRAM_BODY);
             try {

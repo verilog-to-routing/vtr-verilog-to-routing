@@ -62,7 +62,7 @@ public:
      * @param compressor_id The ID of the compressor used for compression (default is 0, means no compressor is used).
      * @return A TelegramHeader object constructed from the provided body data.
      */
-    static comm::TelegramHeader construct_from_data(const std::string_view& body, uint8_t compressor_id = 0);
+    static comm::TelegramHeader construct_from_body(const std::string_view& body, uint8_t compressor_id = 0);
 
     /**
      * @brief Returns the total size of the TelegramHeader.

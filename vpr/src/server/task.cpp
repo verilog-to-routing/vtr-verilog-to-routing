@@ -100,7 +100,7 @@ void Task::bake_response() {
     }
 
     std::string body{std::move(body_opt.value())};
-    m_telegram_header = comm::TelegramHeader::construct_from_data(body, compressor_id);
+    m_telegram_header = comm::TelegramHeader::construct_from_body(body, compressor_id);
 
     m_response_buffer.append(m_telegram_header.buffer().begin(), m_telegram_header.buffer().end());
     m_response_buffer.append(body);

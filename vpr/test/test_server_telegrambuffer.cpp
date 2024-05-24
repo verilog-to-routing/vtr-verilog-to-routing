@@ -52,7 +52,7 @@ TEST_CASE("test_server_telegrambuffer_notFilledTelegramButWithPrependedRubish", 
 
     const comm::ByteArray rubbish{"#@!"};
     const comm::ByteArray msgBody{"some message"};
-    const comm::TelegramHeader msgHeader{comm::TelegramHeader::construct_from_data(msgBody)};
+    const comm::TelegramHeader msgHeader{comm::TelegramHeader::construct_from_body(msgBody)};
 
     tBuff.append(rubbish);
     tBuff.append(msgHeader.buffer());
@@ -70,8 +70,8 @@ TEST_CASE("test_server_telegrambuffer__oneFinishedOneOpened", "[vpr]")
     const comm::ByteArray msgBody1{"message1"};
     const comm::ByteArray msgBody2{"message2"};
 
-    const comm::TelegramHeader msgHeader1{comm::TelegramHeader::construct_from_data(msgBody1)};
-    const comm::TelegramHeader msgHeader2{comm::TelegramHeader::construct_from_data(msgBody2)};
+    const comm::TelegramHeader msgHeader1{comm::TelegramHeader::construct_from_body(msgBody1)};
+    const comm::TelegramHeader msgHeader2{comm::TelegramHeader::construct_from_body(msgBody2)};
 
     comm::ByteArray t1(msgHeader1.buffer());
     t1.append(msgBody1);
@@ -98,8 +98,8 @@ TEST_CASE("test_server_telegrambuffer_twoFinished", "[vpr]")
     const comm::ByteArray msgBody1{"message1"};
     const comm::ByteArray msgBody2{"message2"};
 
-    const comm::TelegramHeader msgHeader1{comm::TelegramHeader::construct_from_data(msgBody1)};
-    const comm::TelegramHeader msgHeader2{comm::TelegramHeader::construct_from_data(msgBody2)};
+    const comm::TelegramHeader msgHeader1{comm::TelegramHeader::construct_from_body(msgBody1)};
+    const comm::TelegramHeader msgHeader2{comm::TelegramHeader::construct_from_body(msgBody2)};
 
     comm::ByteArray t1(msgHeader1.buffer());
     t1.append(msgBody1);
@@ -126,8 +126,8 @@ TEST_CASE("test_server_telegrambuffer_clear", "[vpr]")
     const comm::ByteArray msgBody1{"message1"};
     const comm::ByteArray msgBody2{"message2"};
 
-    const comm::TelegramHeader msgHeader1{comm::TelegramHeader::construct_from_data(msgBody1)};
-    const comm::TelegramHeader msgHeader2{comm::TelegramHeader::construct_from_data(msgBody2)};
+    const comm::TelegramHeader msgHeader1{comm::TelegramHeader::construct_from_body(msgBody1)};
+    const comm::TelegramHeader msgHeader2{comm::TelegramHeader::construct_from_body(msgBody2)};
 
     comm::ByteArray t1(msgHeader1.buffer());
     t1.append(msgBody1);
