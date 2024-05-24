@@ -12,7 +12,7 @@ inline const std::string KEY_CMD{"CMD"};
 inline const std::string KEY_OPTIONS{"OPTIONS"};
 inline const std::string KEY_DATA{"DATA"};
 inline const std::string KEY_STATUS{"STATUS"};
-inline const std::string ECHO_DATA{"ECHO"};
+inline const std::string ECHO_TELEGRAM_BODY{"ECHO"};
 
 const unsigned char ZLIB_COMPRESSOR_ID = 'z';
 const unsigned char NONE_COMPRESSOR_ID = '\x0';

@@ -22,9 +22,9 @@ struct TelegramFrame {
     TelegramHeader header;
 
     /**
-    * @brief data The actual data of the telegram message.
+    * @brief body The actual data of the telegram message.
     */
-    ByteArray data;
+    ByteArray body;
 };
 using TelegramFramePtr = std::shared_ptr<TelegramFrame>;
 

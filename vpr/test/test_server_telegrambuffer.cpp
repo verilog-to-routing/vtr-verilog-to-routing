@@ -86,7 +86,7 @@ TEST_CASE("test_server_telegrambuffer__oneFinishedOneOpened", "[vpr]")
     auto frames = tBuff.take_telegram_frames();
     REQUIRE(1 == frames.size());
 
-    REQUIRE(msgBody1 == frames[0]->data);
+    REQUIRE(msgBody1 == frames[0]->body);
 
     REQUIRE(t2 == tBuff.data());
 }
@@ -113,8 +113,8 @@ TEST_CASE("test_server_telegrambuffer_twoFinished", "[vpr]")
     auto frames = tBuff.take_telegram_frames();
     REQUIRE(2 == frames.size());
 
-    REQUIRE(msgBody1 == frames[0]->data);
-    REQUIRE(msgBody2 == frames[1]->data);
+    REQUIRE(msgBody1 == frames[0]->body);
+    REQUIRE(msgBody2 == frames[1]->body);
 
     REQUIRE(comm::ByteArray{} == tBuff.data());
 }

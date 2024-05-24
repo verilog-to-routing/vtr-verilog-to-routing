@@ -44,14 +44,14 @@ void TelegramBuffer::take_telegram_frames(std::vector<comm::TelegramFramePtr>& r
             std::size_t expected_telegram_size = TelegramHeader::size() + header.body_bytes_num();
             if (m_raw_buffer.size() >= expected_telegram_size) {
                 // checksum validation
-                ByteArray data(m_raw_buffer.begin() + TelegramHeader::size(), m_raw_buffer.begin() + expected_telegram_size);
-                uint32_t actual_check_sum = data.calc_check_sum();
+                ByteArray body(m_raw_buffer.begin() + TelegramHeader::size(), m_raw_buffer.begin() + expected_telegram_size);
+                uint32_t actual_check_sum = body.calc_check_sum();
                 if (actual_check_sum == header.body_check_sum()) {
                     // construct telegram frame if checksum matches
                     TelegramFramePtr telegram_frame_ptr = std::make_shared<TelegramFrame>();
                     telegram_frame_ptr->header = header;
-                    telegram_frame_ptr->data = std::move(data);
-                    data.clear(); // post std::move safety step
+                    telegram_frame_ptr->body = std::move(body);
+                    body.clear(); // post std::move safety step
 
                     result.push_back(telegram_frame_ptr);
                 } else {
