@@ -130,14 +130,20 @@ public:
      * @param error The error message describing the reason for the task's failure.
      */
     void fail(const std::string& error);
+
+    /**
+     * @brief Marks the task as successfully completed.
+     */
     void success();
+
     /**
      * @brief Marks the task as successfully completed with the specified result.
      * 
-     * This method marks the task as successfully completed. Optionally, it can 
-     * include a result string to describe the outcome of the task execution.
+     * This method marks the task as successfully completed and stores the result.
+     * It takes an rvalue reference to a string, allowing for efficient move semantics.
      * 
-     * @param result An optional string describing the result of the task execution.
+     * @param result An rvalue reference to a string describing the result of the task execution.
+     *               The content of this string will be moved into the task's result storage.
      */
     void success(std::string&& result);
 
