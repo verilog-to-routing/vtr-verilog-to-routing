@@ -123,12 +123,12 @@ public:
     }
 
     /**
-     * @brief Converts the byte array to a string.
+     * @brief Converts the container to a std::string_view.
      *
-     * This function creates a string by interpreting the byte array as a sequence of characters.
-     * It returns the resulting string.
+     * This operator allows the container to be implicitly converted to a `std::string_view`,
+     * providing a non-owning view into the container's data.
      *
-     * @return A string representation of the byte array.
+     * @return A `std::string_view` representing the container's data.
      */
     operator std::string_view() const {
         return std::string_view(this->data(), this->size());
