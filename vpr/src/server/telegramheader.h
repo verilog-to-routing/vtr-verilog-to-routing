@@ -57,7 +57,6 @@ public:
     /**
      * @brief Constructs a TelegramHeader based on the provided body data.
      *
-     * @tparam T The type of the body data.
      * @param body The body data used to calculate the size and checksum.
      * @param compressor_id The ID of the compressor used for compression (default is 0, means no compressor is used).
      * @return A TelegramHeader object constructed from the provided body data.
