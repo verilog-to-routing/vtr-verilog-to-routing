@@ -2887,6 +2887,19 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("16384")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    noc_grp.add_argument<int>(args.noc_sat_routing_num_workers, "--noc_sat_routing_num_workers")
+        .help(
+            "The maximum number of parallel threads that the SAT solver can use to explore the solution space.\n"
+            "When set to 0, the number of parallel workers is set automatically to maximize parallelism.")
+        .default_value("0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    noc_grp.add_argument<bool>(args.noc_sat_routing_log_search_progress, "--noc_sat_routing_log_search_progress")
+        .help(
+            "Print the detailed log of the SAT solver's search progress.")
+        .default_value("off")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     noc_grp.add_argument<std::string>(args.noc_placement_file_name, "--noc_placement_file_name")
         .help(
             "Name of the output file that contains the NoC placement information."

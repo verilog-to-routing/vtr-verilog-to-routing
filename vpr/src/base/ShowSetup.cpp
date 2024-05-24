@@ -803,6 +803,7 @@ static void ShowNocOpts(const t_noc_opts& NocOpts) {
     VTR_LOG("NocOpts.noc_sat_routing_bandwidth_resolution: %d\n", NocOpts.noc_sat_routing_bandwidth_resolution);
     VTR_LOG("NocOpts.noc_sat_routing_latency_overrun_weighting: %d\n", NocOpts.noc_sat_routing_latency_overrun_weighting);
     VTR_LOG("NocOpts.noc_sat_routing_congestion_weighting: %d\n", NocOpts.noc_sat_routing_congestion_weighting);
+    VTR_LOG("NocOpts.noc_sat_routing_num_workers: %d\n", NocOpts.noc_sat_routing_num_workers);
     VTR_LOG("NocOpts.noc_routing_algorithm: %s\n", NocOpts.noc_placement_file_name.c_str());
     VTR_LOG("\n");
 }

@@ -25,9 +25,7 @@
  * @return The generated routes for all traffic flows.
  */
 vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> noc_sat_route(bool minimize_aggregate_bandwidth,
-                                                                    int bandwidth_resolution,
-                                                                    int latency_overrun_weight,
-                                                                    int congestion_weight,
+                                                                    const t_noc_opts& noc_opts,
                                                                     int seed);
 
 //void noc_sat_place_and_route(vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>>& traffic_flow_routes,

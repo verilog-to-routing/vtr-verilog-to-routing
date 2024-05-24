@@ -231,27 +231,27 @@ static vtr::vector<NocTrafficFlowId, int> quantize_traffic_flow_bandwidths(int b
     return  rescaled_traffic_flow_bandwidths;
 }
 
-static void add_congestion_constraints(t_flow_link_var_map& flow_link_vars,
-                                       orsat::CpModelBuilder& cp_model,
-                                       int bandwidth_resolution) {
-    const auto& noc_ctx = g_vpr_ctx.noc();
-    const auto& traffic_flow_storage = noc_ctx.noc_traffic_flows_storage;
-
-    vtr::vector<NocTrafficFlowId, int> rescaled_traffic_flow_bandwidths = quantize_traffic_flow_bandwidths(bandwidth_resolution);
-
-    // add NoC link congestion constraints
-    for (const auto& noc_link : noc_ctx.noc_model.get_noc_links()) {
-        const NocLinkId noc_link_id = noc_link.get_link_id();
-        orsat::LinearExpr lhs;
-
-        for (auto traffic_flow_id : traffic_flow_storage.get_all_traffic_flow_id()) {
-            orsat::BoolVar binary_var = flow_link_vars[{traffic_flow_id, noc_link_id}];
-            lhs += orsat::LinearExpr::Term(binary_var, rescaled_traffic_flow_bandwidths[traffic_flow_id]);
-        }
-
-        cp_model.AddLessOrEqual(lhs, bandwidth_resolution);
-    }
-}
+//static void add_congestion_constraints(t_flow_link_var_map& flow_link_vars,
+//                                       orsat::CpModelBuilder& cp_model,
+//                                       int bandwidth_resolution) {
+//    const auto& noc_ctx = g_vpr_ctx.noc();
+//    const auto& traffic_flow_storage = noc_ctx.noc_traffic_flows_storage;
+//
+//    vtr::vector<NocTrafficFlowId, int> rescaled_traffic_flow_bandwidths = quantize_traffic_flow_bandwidths(bandwidth_resolution);
+//
+//    // add NoC link congestion constraints
+//    for (const auto& noc_link : noc_ctx.noc_model.get_noc_links()) {
+//        const NocLinkId noc_link_id = noc_link.get_link_id();
+//        orsat::LinearExpr lhs;
+//
+//        for (auto traffic_flow_id : traffic_flow_storage.get_all_traffic_flow_id()) {
+//            orsat::BoolVar binary_var = flow_link_vars[{traffic_flow_id, noc_link_id}];
+//            lhs += orsat::LinearExpr::Term(binary_var, rescaled_traffic_flow_bandwidths[traffic_flow_id]);
+//        }
+//
+//        cp_model.AddLessOrEqual(lhs, bandwidth_resolution);
+//    }
+//}
 
 static void create_congested_link_vars(vtr::vector<NocLinkId , orsat::BoolVar>& congested_link_vars,
                                        t_flow_link_var_map& flow_link_vars,
@@ -346,39 +346,39 @@ static void add_continuity_constraints(t_flow_link_var_map& flow_link_vars,
     }
 }
 
-static void group_noc_links_based_on_direction(std::vector<NocLinkId>& up,
-                                               std::vector<NocLinkId>& down,
-                                               std::vector<NocLinkId>& right,
-                                               std::vector<NocLinkId>& left) {
-    const auto& noc_ctx = g_vpr_ctx.noc();
-    const auto& noc_model = noc_ctx.noc_model;
-
-    for (const auto& noc_link : noc_model.get_noc_links()) {
-        const NocLinkId noc_link_id = noc_link.get_link_id();
-        const NocRouterId src_noc_router_id = noc_link.get_source_router();
-        const NocRouterId dst_noc_router_id = noc_link.get_sink_router();
-        const NocRouter& src_noc_router = noc_model.get_single_noc_router(src_noc_router_id);
-        const NocRouter& dst_noc_router = noc_model.get_single_noc_router(dst_noc_router_id);
-        auto src_loc = src_noc_router.get_router_physical_location();
-        auto dst_loc = dst_noc_router.get_router_physical_location();
-
-        VTR_ASSERT(src_loc.x == dst_loc.x || src_loc.y == dst_loc.y);
-
-        if (src_loc.x == dst_loc.x) { // vertical link
-            if (dst_loc.y > src_loc.y) {
-                up.push_back(noc_link_id);
-            } else {
-                down.push_back(noc_link_id);
-            }
-        } else { // horizontal link
-            if (dst_loc.x > src_loc.x) {
-                right.push_back(noc_link_id);
-            } else {
-                left.push_back(noc_link_id);
-            }
-        }
-    }
-}
+//static void group_noc_links_based_on_direction(std::vector<NocLinkId>& up,
+//                                               std::vector<NocLinkId>& down,
+//                                               std::vector<NocLinkId>& right,
+//                                               std::vector<NocLinkId>& left) {
+//    const auto& noc_ctx = g_vpr_ctx.noc();
+//    const auto& noc_model = noc_ctx.noc_model;
+//
+//    for (const auto& noc_link : noc_model.get_noc_links()) {
+//        const NocLinkId noc_link_id = noc_link.get_link_id();
+//        const NocRouterId src_noc_router_id = noc_link.get_source_router();
+//        const NocRouterId dst_noc_router_id = noc_link.get_sink_router();
+//        const NocRouter& src_noc_router = noc_model.get_single_noc_router(src_noc_router_id);
+//        const NocRouter& dst_noc_router = noc_model.get_single_noc_router(dst_noc_router_id);
+//        auto src_loc = src_noc_router.get_router_physical_location();
+//        auto dst_loc = dst_noc_router.get_router_physical_location();
+//
+//        VTR_ASSERT(src_loc.x == dst_loc.x || src_loc.y == dst_loc.y);
+//
+//        if (src_loc.x == dst_loc.x) { // vertical link
+//            if (dst_loc.y > src_loc.y) {
+//                up.push_back(noc_link_id);
+//            } else {
+//                down.push_back(noc_link_id);
+//            }
+//        } else { // horizontal link
+//            if (dst_loc.x > src_loc.x) {
+//                right.push_back(noc_link_id);
+//            } else {
+//                left.push_back(noc_link_id);
+//            }
+//        }
+//    }
+//}
 
 static std::vector<NocLinkId> sort_noc_links_in_chain_order(const std::vector<NocLinkId>& links) {
     std::vector<NocLinkId> route;
@@ -879,9 +879,7 @@ static orsat::LinearExpr create_objective(orsat::CpModelBuilder& cp_model,
 
 
 vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> noc_sat_route(bool minimize_aggregate_bandwidth,
-                                                                    int bandwidth_resolution,
-                                                                    int latency_overrun_weight,
-                                                                    int congestion_weight,
+                                                                    const t_noc_opts& noc_opts,
                                                                     int seed) {
     vtr::ScopedStartFinishTimer timer("NoC SAT Routing");
 
@@ -910,20 +908,24 @@ vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> noc_sat_route(bool minimiz
 
     forbid_illegal_turns(flow_link_vars, cp_model);
 
-    create_congested_link_vars(link_congested_vars, flow_link_vars, cp_model, bandwidth_resolution);
+    create_congested_link_vars(link_congested_vars, flow_link_vars, cp_model, noc_opts.noc_sat_routing_bandwidth_resolution);
 
     add_continuity_constraints(flow_link_vars, cp_model);
 
     auto objective = create_objective(cp_model, flow_link_vars, latency_overrun_vars, link_congested_vars,
-                                      bandwidth_resolution, latency_overrun_weight, congestion_weight,
+                                      noc_opts.noc_sat_routing_bandwidth_resolution,
+                                      noc_opts.noc_sat_routing_latency_overrun_weighting,
+                                      noc_opts.noc_sat_routing_congestion_weighting,
                                       minimize_aggregate_bandwidth);
 
     cp_model.Minimize(objective);
 
     orsat::SatParameters sat_params;
-    //    sat_params.set_num_workers(1);
+    if (noc_opts.noc_sat_routing_num_workers > 0) {
+        sat_params.set_num_workers(noc_opts.noc_sat_routing_num_workers);
+    }
     sat_params.set_random_seed(seed);
-    sat_params.set_log_search_progress(true);
+    sat_params.set_log_search_progress(noc_opts.noc_sat_routing_log_search_progress);
 
     orsat::Model model;
     model.Add(NewSatParameters(sat_params));
@@ -936,5 +938,6 @@ vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> noc_sat_route(bool minimiz
         return routes;
     }
 
+    // when no feasible solution was found, return an empty vector
     return {};
 }

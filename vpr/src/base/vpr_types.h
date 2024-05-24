@@ -1503,6 +1503,8 @@ struct t_noc_opts {
     int noc_sat_routing_bandwidth_resolution;         ///<the resolution by which traffic flow and link bandwidths are converted to integers in SAT routing algorithm
     int noc_sat_routing_latency_overrun_weighting;    ///<controls the importance of reducing traffic flow latency overrun in SAT routing [0-inf)
     int noc_sat_routing_congestion_weighting;         ///<controls the importance of reducing the number of congested NoC links in SAT routing [0-inf)
+    int noc_sat_routing_num_workers;                  ///<the number of parallel worker threads that the SAT solver can use to explore the solution space
+    bool noc_sat_routing_log_search_progress;         ///<indicates whether the detailed log of the SAT solver's search progress in printed
     std::string noc_placement_file_name;              ///<is the name of the output file that contains the NoC placement information
 };
 
