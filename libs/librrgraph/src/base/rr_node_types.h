@@ -1,6 +1,8 @@
 #ifndef RR_NODE_TYPES_H
 #define RR_NODE_TYPES_H
 
+#include <cstddef>
+#include <iterator>
 #include <string>
 #include <vector>
 #include <array>
@@ -64,23 +66,29 @@ typedef uint16_t t_edge_size;
  *
  * Used inconjunction with vtr::Range to return ranges of edge indices
  */
-class edge_idx_iterator : public std::iterator<std::bidirectional_iterator_tag, t_edge_size> {
+class edge_idx_iterator {
   public:
+    using iterator_category = std::bidirectional_iterator_tag;
+    using difference_type = std::ptrdiff_t;
+    using value_type = t_edge_size;
+    using pointer = t_edge_size*;
+    using reference = t_edge_size&;
+
     edge_idx_iterator(value_type init)
         : value_(init) {}
-    iterator operator++() {
+    edge_idx_iterator& operator++() {
         value_ += 1;
         return *this;
     }
-    iterator operator--() {
+    edge_idx_iterator& operator--() {
         value_ -= 1;
         return *this;
     }
     reference operator*() { return value_; }
     pointer operator->() { return &value_; }
 
-    friend bool operator==(const edge_idx_iterator lhs, const edge_idx_iterator rhs) { return lhs.value_ == rhs.value_; }
-    friend bool operator!=(const edge_idx_iterator lhs, const edge_idx_iterator rhs) { return !(lhs == rhs); }
+    friend bool operator==(const edge_idx_iterator& lhs, const edge_idx_iterator& rhs) { return lhs.value_ == rhs.value_; }
+    friend bool operator!=(const edge_idx_iterator& lhs, const edge_idx_iterator& rhs) { return !(lhs == rhs); }
 
   private:
     value_type value_;
