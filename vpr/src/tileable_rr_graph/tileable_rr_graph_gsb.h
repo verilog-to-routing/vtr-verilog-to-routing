@@ -52,6 +52,7 @@ RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
 
 void build_edges_for_one_tileable_rr_gsb(RRGraphBuilder& rr_graph_builder,
                                          const RRGSB& rr_gsb,
+                                         const t_bend_track2track_map& sb_bend_conn,
                                          const t_track2pin_map& track2ipin_map,
                                          const t_pin2track_map& opin2track_map,
                                          const t_track2track_map& track2track_map,
