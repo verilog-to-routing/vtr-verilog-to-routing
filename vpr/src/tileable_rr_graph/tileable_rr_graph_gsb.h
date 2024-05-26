@@ -24,6 +24,7 @@
 /************************************************************************
  * Data stuctures related to the functions
  ***********************************************************************/
+typedef std::map<RRNodeId, RRNodeId> t_bend_track2track_map;
 typedef std::vector<std::vector<std::vector<RRNodeId>>> t_track2track_map;
 typedef std::vector<std::vector<std::vector<RRNodeId>>> t_track2pin_map;
 typedef std::vector<std::vector<std::vector<std::vector<RRNodeId>>>> t_pin2track_map;
