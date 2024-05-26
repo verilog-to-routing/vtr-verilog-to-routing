@@ -42,6 +42,16 @@ t_track2track_map build_gsb_track_to_track_map(const RRGraphView& rr_graph,
                                                const bool& wire_opposite_side,
                                                const std::vector<t_segment_inf>& segment_inf);
 
+t_bend_track2track_map build_bend_track_to_track_map(const DeviceGrid& grids,
+						                             RRGraphBuilder& rr_graph_builder,
+                                                     const RRGraphView& rr_graph,
+                                                     const vtr::Point<size_t>& device_chan_width,
+                                                     const std::vector<t_segment_inf>& segment_inf,
+                                                     const size_t& layer,
+                                                     const vtr::Point<size_t>& gsb_coordinate,
+                                                     const RRSwitchId& delayless_switch,
+                                                     vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches);
+
 RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
                                 const RRGraphView& rr_graph,
                                 const vtr::Point<size_t>& device_chan_width,
