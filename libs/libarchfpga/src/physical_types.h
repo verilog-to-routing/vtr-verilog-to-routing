@@ -1580,6 +1580,9 @@ struct t_segment_inf {
     enum e_parallel_axis parallel_axis;
     std::vector<bool> cb;
     std::vector<bool> sb;
+    bool isbend;
+    std::vector<int> bend;
+    std::vector<int> part_len;
     int seg_index;
     //float Cmetal_per_m; /* Wire capacitance (per meter) */
 };
