@@ -191,9 +191,12 @@ class RRGraphBuilder {
         node_storage_.set_node_coordinates(id, x1, y1, x2, y2);
     }
 
-    /** @brief Set the node layer (specifies which die the node is located at) */
-    inline void set_node_layer(RRNodeId id, short layer){
-        node_storage_.set_node_layer(id,layer);
+    inline void set_node_bend_start(RRNodeId id, size_t bend_start) {
+        node_storage_.set_node_bend_start(id, bend_start);
+    }
+    
+    inline void set_node_bend_end(RRNodeId id, size_t bend_end) {
+        node_storage_.set_node_bend_end(id, bend_end);
     }
 
     /** @brief The ptc_num carries different meanings for different node types
