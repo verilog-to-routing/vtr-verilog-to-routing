@@ -178,6 +178,14 @@ class RRGraphBuilder {
         node_storage_.set_node_coordinates(id, x1, y1, x2, y2);
     }
 
+    inline void set_node_bend_start(RRNodeId id, size_t bend_start) {
+        node_storage_.set_node_bend_start(id, bend_start);
+    }
+    
+    inline void set_node_bend_end(RRNodeId id, size_t bend_end) {
+        node_storage_.set_node_bend_end(id, bend_end);
+    }
+
     /** @brief The ptc_num carries different meanings for different node types
      * (true in VPR RRG that is currently supported, may not be true in customized RRG)
      * CHANX or CHANY: the track id in routing channels
