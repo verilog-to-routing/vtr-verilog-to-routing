@@ -179,6 +179,7 @@ ChanNodeDetails build_unidir_chan_node_details(const size_t& chan_width,
 
     /* Add node to ChanNodeDetails */
     size_t cur_track = 0;
+    size_t bend_num = 0;
     for (size_t iseg = 0; iseg < segment_inf.size(); ++iseg) {
         if (!segment_inf[iseg].isbend){
             /* segment length will be set to maxium segment length if this is a longwire */
