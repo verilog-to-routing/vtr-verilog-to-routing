@@ -1698,6 +1698,12 @@ struct t_segment_inf {
      */
     std::vector<bool> sb;
 
+    bool isbend;
+
+    std::vector<int> bend;
+
+    std::vector<int> part_len;
+
     /**
      *  @brief The index of the segment as stored in the appropriate Segs list.
      * Upon loading the architecture, we use this field to keep track of the 
