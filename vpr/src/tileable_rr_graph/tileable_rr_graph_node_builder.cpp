@@ -787,6 +787,13 @@ static void load_one_chan_rr_nodes_basic_info(const RRGraphView& rr_graph,
 
             /* cost index depends on the segment index */
             rr_graph_builder.set_node_cost_index(node, RRIndexedDataId(cost_index_offset + parallel_seg_id));
+
+            if (chan_details.is_track_start(itrack)) {
+                rr_graph_builder.set_node_bend_start(node, chan_details.get_track_bend_start(itrack));
+            }
+            if (chan_details.is_track_end(itrack)) {
+                rr_graph_builder.set_node_bend_end(node, chan_details.get_track_bend_end(itrack));
+            }
             /* Finish here, go to next */
         }
 
@@ -823,6 +830,13 @@ static void load_one_chan_rr_nodes_basic_info(const RRGraphView& rr_graph,
             float node_R = rr_graph.node_length(rr_node_id) * segment_infs[parallel_seg_id].Rmetal;
             float node_C = rr_graph.node_length(rr_node_id) * segment_infs[parallel_seg_id].Cmetal;
             rr_graph_builder.set_node_rc_index(rr_node_id, NodeRCIndex(find_create_rr_rc_data(node_R, node_C, rr_rc_data)));
+
+            if (chan_details.is_track_start(itrack)) {
+                rr_graph_builder.set_node_bend_start(rr_node_id, chan_details.get_track_bend_start(itrack));
+            }
+            if (chan_details.is_track_end(itrack)) {
+                rr_graph_builder.set_node_bend_end(rr_node_id, chan_details.get_track_bend_end(itrack));
+            }
             /* Finish here, go to next */
         }
 
