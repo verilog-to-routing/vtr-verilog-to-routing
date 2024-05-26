@@ -180,31 +180,96 @@ ChanNodeDetails build_unidir_chan_node_details(const size_t& chan_width,
     /* Add node to ChanNodeDetails */
     size_t cur_track = 0;
     for (size_t iseg = 0; iseg < segment_inf.size(); ++iseg) {
-        /* segment length will be set to maxium segment length if this is a longwire */
-        size_t seg_len = segment_inf[iseg].length;
-        if (true == segment_inf[iseg].longline) {
-            seg_len = max_seg_length;
+        if (!segment_inf[iseg].isbend){
+            /* segment length will be set to maxium segment length if this is a longwire */
+            size_t seg_len = segment_inf[iseg].length;
+            if (true == segment_inf[iseg].longline) {
+                seg_len = max_seg_length;
+            }
+            for (size_t itrack = 0; itrack < num_tracks[iseg]; ++itrack) {
+                bool seg_start = false;
+                bool seg_end = false;
+                /* Every first track of a group of Length-N wires, we set a starting point */
+                if (0 == itrack % seg_len) {
+                    seg_start = true;
+                }
+                /* Every last track of a group of Length-N wires or this is the last track in this group, we set an ending point */
+                if ((seg_len - 1 == itrack % seg_len)
+                    || (itrack == num_tracks[iseg] - 1)) {
+                    seg_end = true;
+                }
+                /* Since this is a unidirectional routing architecture,
+                 * Add a pair of tracks, 1 INC track and 1 DEC track
+                 */
+                int seg_index = segment_inf[iseg].seg_index;
+                chan_node_details.add_track(cur_track, Direction::INC, seg_index, seg_len, seg_start, seg_end);
+                cur_track++;
+                chan_node_details.add_track(cur_track, Direction::DEC, seg_index, seg_len, seg_start, seg_end);
+                cur_track++;
+            }
         }
-        for (size_t itrack = 0; itrack < num_tracks[iseg]; ++itrack) {
-            bool seg_start = false;
-            bool seg_end = false;
-            /* Every first track of a group of Length-N wires, we set a starting point */
-            if (0 == itrack % seg_len) {
-                seg_start = true;
+        else{
+            bend_num++;
+            VTR_ASSERT(segment_inf[iseg].isbend);
+            std::vector<int> seg_len = segment_inf[iseg].part_len;
+            std::vector<int> bend = segment_inf[iseg].bend;
+            VTR_ASSERT(seg_len.size() == 2);
+            
+            std::vector<size_t> num_tracks_bend;
+            for(size_t i = 0; i < seg_len.size(); i++)
+            	num_tracks_bend.push_back(num_tracks[iseg] * seg_len[i] / segment_inf[iseg].length);
+            	
+            VTR_ASSERT(num_tracks_bend[0] + num_tracks_bend[1] == num_tracks[iseg]);
+            
+            for (size_t itrack = 0; itrack < num_tracks_bend[0]; ++itrack) {
+                
+                bool seg_start = false;
+                bool seg_end = false;
+                size_t seg_bend_start = 0;
+                size_t seg_bend_end = 0;
+                
+                if (0 == itrack % seg_len[0]) {
+                    seg_start = true;  
+                }
+                    
+                if ((seg_len[0] - 1 == itrack % seg_len[0])
+                    || (itrack == num_tracks_bend[0] - 1)) {
+                    seg_end = true;
+                    seg_bend_end = bend_num;
+                }
+                int seg_index = segment_inf[iseg].seg_index;
+                
+                chan_node_details.add_track(cur_track, Direction::INC, seg_index, seg_len[0], seg_start, seg_end, seg_bend_start, seg_bend_end);
+                cur_track++;
+                chan_node_details.add_track(cur_track, Direction::DEC, seg_index, seg_len[0], seg_start, seg_end, seg_bend_start, seg_bend_end);
+                cur_track++;
+                
             }
-            /* Every last track of a group of Length-N wires or this is the last track in this group, we set an ending point */
-            if ((seg_len - 1 == itrack % seg_len)
-                || (itrack == num_tracks[iseg] - 1)) {
-                seg_end = true;
+            for (size_t itrack = 0; itrack < num_tracks_bend[1]; ++itrack) {
+                
+                bool seg_start = false;
+                bool seg_end = false;
+                size_t seg_bend_start = 0;
+                size_t seg_bend_end = 0;
+                
+                if (0 == itrack % seg_len[1]) {
+                    seg_start = true;  
+                    seg_bend_start = bend_num;
+                }
+                    
+                if ((seg_len[1] - 1 == itrack % seg_len[1])
+                    || (itrack == num_tracks_bend[1] - 1)) {
+                    seg_end = true;
+                }
+                int seg_index = segment_inf[iseg].seg_index;
+                
+                chan_node_details.add_track(cur_track, Direction::INC, seg_index, seg_len[1], seg_start, seg_end, seg_bend_start, seg_bend_end);
+                cur_track++;
+                
+                chan_node_details.add_track(cur_track, Direction::DEC, seg_index, seg_len[1], seg_start, seg_end, seg_bend_start, seg_bend_end);
+                cur_track++;
+                
             }
-            /* Since this is a unidirectional routing architecture,
-             * Add a pair of tracks, 1 INC track and 1 DEC track
-             */
-            int seg_index = segment_inf[iseg].seg_index;
-            chan_node_details.add_track(cur_track, Direction::INC, seg_index, seg_len, seg_start, seg_end);
-            cur_track++;
-            chan_node_details.add_track(cur_track, Direction::DEC, seg_index, seg_len, seg_start, seg_end);
-            cur_track++;
         }
     }
     /* Check if all the tracks have been satisified */
