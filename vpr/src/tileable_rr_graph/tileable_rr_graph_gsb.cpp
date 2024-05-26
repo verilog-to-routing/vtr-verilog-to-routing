@@ -534,6 +534,257 @@ t_track2track_map build_gsb_track_to_track_map(const RRGraphView& rr_graph,
     return track2track_map;
 }
 
+t_bend_track2track_map build_bend_track_to_track_map(const DeviceGrid& grids,
+						                             RRGraphBuilder& rr_graph_builder,
+                                                     const RRGraphView& rr_graph,
+                                                     const vtr::Point<size_t>& device_chan_width,
+                                                     const std::vector<t_segment_inf>& segment_inf,
+                                                     const size_t& layer,
+                                                     const vtr::Point<size_t>& gsb_coordinate,
+                                                     const RRSwitchId& delayless_switch,
+                                                     vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches) {
+    
+    std::vector<std::vector<std::vector<std::vector<RRNodeId>>>> chan_rr_nodes_all_sides; //[side][bend_num][start/end][node]
+    chan_rr_nodes_all_sides.resize(4);
+
+    int bend_seg_num = 0;
+    std::vector<int> bend_seg_type;  //bend type:  1: U; 2: D
+    for (size_t iseg = 0; iseg < segment_inf.size(); iseg++) {
+        if (segment_inf[iseg].isbend) {
+            bend_seg_num++;
+
+            for (size_t i = 0; i < segment_inf[iseg].bend.size(); i++) {
+                if (segment_inf[iseg].bend[i] != 0) {
+                    bend_seg_type.push_back(segment_inf[iseg].bend[i]);
+                    break;
+                }
+            }
+        }
+    }
+    VTR_ASSERT(bend_seg_num == int(bend_seg_type.size()));
+    for (size_t side = 0; side < 4; ++side) {
+    	std::vector<RRNodeId> rr_nodes;
+        switch (side) {
+            case TOP: /* TOP = 0 */
+                /* For the bording, we should take special care */
+                if (gsb_coordinate.y() == grids.height() - 2) {
+                    
+                    break;
+                }
+
+                chan_rr_nodes_all_sides[0].resize(bend_seg_num);
+                for (int i = 0; i < bend_seg_num; i++){
+                    chan_rr_nodes_all_sides[0][i].resize(2); //start/end track for bend
+                }
+                
+                rr_nodes = find_rr_graph_chan_nodes(rr_graph,
+                                                    layer, gsb_coordinate.x(), gsb_coordinate.y() + 1,
+                                                    CHANY);
+                
+                for (auto inode : rr_nodes) {
+                    VTR_ASSERT(rr_graph.node_type(inode) ==CHANY);
+                    Direction direction = rr_graph.node_direction(inode);
+                    size_t xlow = rr_graph.node_xlow(inode);
+                    size_t xhigh = rr_graph.node_xhigh(inode);
+                    size_t ylow = rr_graph.node_ylow(inode);
+                    size_t yhigh = rr_graph.node_yhigh(inode);
+                    int bend_start = rr_graph.node_bend_start(inode);
+                    int bend_end = rr_graph.node_bend_end(inode);
+
+                    VTR_ASSERT((bend_start <= bend_seg_num) && (bend_end <= bend_seg_num));
+                    if (direction == Direction::INC && bend_start != 0 && xlow == gsb_coordinate.x() && (ylow == gsb_coordinate.y() + 1)) {
+                        VTR_ASSERT(bend_end == 0);
+                        chan_rr_nodes_all_sides[0][bend_start - 1][0].push_back(inode);
+                    }
+                    if (direction == Direction::DEC && bend_end != 0 && xlow == gsb_coordinate.x() && (ylow == gsb_coordinate.y() + 1)) {
+                        VTR_ASSERT(bend_start == 0);
+                        chan_rr_nodes_all_sides[0][bend_end - 1][1].push_back(inode);
+                    }
+
+                }
+                
+                break;
+            case RIGHT: /* RIGHT = 1 */
+                /* For the bording, we should take special care */
+                if (gsb_coordinate.x() == grids.width() - 2) {
+                    
+                    break;
+                }
+                
+                chan_rr_nodes_all_sides[1].resize(bend_seg_num);
+                for (int i = 0; i < bend_seg_num; i++){
+                    chan_rr_nodes_all_sides[1][i].resize(2); //start/end track for bend
+                }
+                
+                rr_nodes = find_rr_graph_chan_nodes(rr_graph,
+                                                    layer, gsb_coordinate.x() + 1, gsb_coordinate.y(),
+                                                    CHANX);
+                
+                for (auto inode : rr_nodes) {
+                    VTR_ASSERT(rr_graph.node_type(inode) == CHANX);
+                    Direction direction = rr_graph.node_direction(inode);
+                    size_t xlow = rr_graph.node_xlow(inode);
+                    size_t xhigh = rr_graph.node_xhigh(inode);
+                    size_t ylow = rr_graph.node_ylow(inode);
+                    size_t yhigh = rr_graph.node_yhigh(inode);
+                    int bend_start = rr_graph.node_bend_start(inode);
+                    int bend_end = rr_graph.node_bend_end(inode);
+
+                    VTR_ASSERT((bend_start <= bend_seg_num) && (bend_end <= bend_seg_num));
+                    if (direction == Direction::INC && bend_start != 0 && (xlow == gsb_coordinate.x() + 1) && ylow == gsb_coordinate.y()) {
+                        VTR_ASSERT(bend_end == 0);
+                        chan_rr_nodes_all_sides[1][bend_start - 1][0].push_back(inode);
+                    }
+                    if (direction == Direction::DEC && bend_end != 0 && (xlow == gsb_coordinate.x() + 1) && ylow == gsb_coordinate.y()) {
+                        VTR_ASSERT(bend_start == 0);
+                        chan_rr_nodes_all_sides[1][bend_end - 1][1].push_back(inode);
+                    }
+
+                }
+                break;
+            case BOTTOM: /* BOTTOM = 2 */
+                /* For the bording, we should take special care */
+                if (gsb_coordinate.y() == 0) {
+                    
+                    break;
+                }
+                
+                chan_rr_nodes_all_sides[2].resize(bend_seg_num);
+                for (int i = 0; i < bend_seg_num; i++){
+                    chan_rr_nodes_all_sides[2][i].resize(2); //start/end track for bend
+                }
+                
+                rr_nodes = find_rr_graph_chan_nodes(rr_graph,
+                                                    layer, gsb_coordinate.x(), gsb_coordinate.y(),
+                                                    CHANY);
+                
+                for (auto inode : rr_nodes) {
+                    VTR_ASSERT(rr_graph.node_type(inode) == CHANY);
+                    Direction direction = rr_graph.node_direction(inode);
+                    size_t xlow = rr_graph.node_xlow(inode);
+                    size_t xhigh = rr_graph.node_xhigh(inode);
+                    size_t ylow = rr_graph.node_ylow(inode);
+                    size_t yhigh = rr_graph.node_yhigh(inode);
+                    int bend_start = rr_graph.node_bend_start(inode);
+                    int bend_end = rr_graph.node_bend_end(inode);
+
+                    VTR_ASSERT((bend_start <= bend_seg_num) && (bend_end <= bend_seg_num));
+                    if (direction == Direction::INC && bend_end != 0 && xhigh == gsb_coordinate.x() && yhigh == gsb_coordinate.y()) {
+                        VTR_ASSERT(bend_start == 0);
+                        chan_rr_nodes_all_sides[2][bend_end - 1][1].push_back(inode);
+                    }
+                    if (direction == Direction::DEC && bend_start != 0 && xhigh == gsb_coordinate.x() && yhigh == gsb_coordinate.y()) {
+                        VTR_ASSERT(bend_end == 0);
+                        chan_rr_nodes_all_sides[2][bend_start - 1][0].push_back(inode);
+                    }
+
+                }
+                break;
+            case LEFT: /* BOTTOM = 2 */
+                /* For the bording, we should take special care */
+                if (gsb_coordinate.x() == 0) {
+                    
+                    break;
+                }
+                
+                chan_rr_nodes_all_sides[3].resize(bend_seg_num);
+                for (int i = 0; i < bend_seg_num; i++){
+                    chan_rr_nodes_all_sides[3][i].resize(2); //start/end track for bend
+                }
+                
+                rr_nodes = find_rr_graph_chan_nodes(rr_graph,
+                                                    layer, gsb_coordinate.x(), gsb_coordinate.y(),
+                                                    CHANX);
+                
+                for (auto inode : rr_nodes) {
+                    VTR_ASSERT(rr_graph.node_type(inode) == CHANX);
+                    Direction direction = rr_graph.node_direction(inode);
+                    size_t xlow = rr_graph.node_xlow(inode);
+                    size_t xhigh = rr_graph.node_xhigh(inode);
+                    size_t ylow = rr_graph.node_ylow(inode);
+                    size_t yhigh = rr_graph.node_yhigh(inode);
+                    int bend_start = rr_graph.node_bend_start(inode);
+                    int bend_end = rr_graph.node_bend_end(inode);
+
+                    VTR_ASSERT((bend_start <= bend_seg_num) && (bend_end <= bend_seg_num));
+                    if (direction == Direction::INC && bend_end != 0 && xhigh == gsb_coordinate.x() && yhigh == gsb_coordinate.y()) {
+                        VTR_ASSERT(bend_start == 0);
+                        chan_rr_nodes_all_sides[3][bend_end - 1][1].push_back(inode);
+                    }
+                    if (direction == Direction::DEC && bend_start != 0 && xhigh == gsb_coordinate.x() && yhigh == gsb_coordinate.y()) {
+                        VTR_ASSERT(bend_end == 0);
+                        chan_rr_nodes_all_sides[3][bend_start - 1][0].push_back(inode);
+                    }
+
+                }
+                break;
+            default:
+                VTR_LOGF_ERROR(__FILE__, __LINE__,
+                               "Invalid side index!\n");
+                exit(1);
+        
+        }
+    }
+    std::map<RRNodeId, RRNodeId> bend_seg_head2bend_seg_end_map;
+    for (size_t ibend_seg = 0; ibend_seg < bend_seg_num; ibend_seg++) {
+        int bend_type = bend_seg_type[ibend_seg];  //bend_type  1:U  2:D
+        VTR_ASSERT(bend_type == 1 || bend_type == 2);
+
+        if (bend_type == 1) {  //bend type U
+            for (size_t side = 0; side < 4; side++){
+                size_t to_side = (side + 1) % 4;
+                if (chan_rr_nodes_all_sides[side].size() > 0)
+                    for (size_t inode = 0; inode < chan_rr_nodes_all_sides[side][ibend_seg][1].size(); inode++) {
+                        
+                        if (chan_rr_nodes_all_sides[to_side].size() > 0) {
+                            VTR_ASSERT(chan_rr_nodes_all_sides[side][ibend_seg][1].size() == chan_rr_nodes_all_sides[to_side][ibend_seg][0].size());
+                            bend_seg_head2bend_seg_end_map.emplace(std::make_pair(chan_rr_nodes_all_sides[side][ibend_seg][1][inode], chan_rr_nodes_all_sides[to_side][ibend_seg][0][inode]));
+                            rr_node_driver_switches[chan_rr_nodes_all_sides[to_side][ibend_seg][0][inode]] = delayless_switch;
+                        }
+                        else {
+                            rr_graph_builder.set_node_bend_end(chan_rr_nodes_all_sides[side][ibend_seg][1][inode], 0);
+                        }                
+                    }
+                else {
+                    if (chan_rr_nodes_all_sides[to_side].size() > 0) {
+                        for (size_t inode = 0; inode < chan_rr_nodes_all_sides[to_side][ibend_seg][0].size(); inode++) {
+                            rr_graph_builder.set_node_bend_start(chan_rr_nodes_all_sides[to_side][ibend_seg][0][inode], 0);                           
+                        }
+                    }
+                }
+            }
+            
+        }
+        else if (bend_type == 2) { //bend type D
+            for (size_t side = 0; side < 4; side++){
+                size_t to_side = (side + 3) % 4;
+                if (chan_rr_nodes_all_sides[side].size() > 0)
+                    for (size_t inode = 0; inode < chan_rr_nodes_all_sides[side][ibend_seg][1].size(); inode++) {
+                        
+                        if (chan_rr_nodes_all_sides[to_side].size() > 0) {
+                            VTR_ASSERT(chan_rr_nodes_all_sides[side][ibend_seg][1].size() == chan_rr_nodes_all_sides[to_side][ibend_seg][0].size());
+                            bend_seg_head2bend_seg_end_map.emplace(std::make_pair(chan_rr_nodes_all_sides[side][ibend_seg][1][inode], chan_rr_nodes_all_sides[to_side][ibend_seg][0][inode]));
+                            rr_node_driver_switches[chan_rr_nodes_all_sides[to_side][ibend_seg][0][inode]] = delayless_switch;
+                        }  
+                        else {
+                            rr_graph_builder.set_node_bend_end(chan_rr_nodes_all_sides[side][ibend_seg][1][inode], 0);
+                        }                    
+                    }
+                else {
+                    if (chan_rr_nodes_all_sides[to_side].size() > 0) {
+                        for (size_t inode = 0; inode < chan_rr_nodes_all_sides[to_side][ibend_seg][0].size(); inode++) {
+                            rr_graph_builder.set_node_bend_start(chan_rr_nodes_all_sides[to_side][ibend_seg][0][inode], 0);                           
+                        }
+                    }
+                }
+            }
+        }
+
+    }
+
+    return bend_seg_head2bend_seg_end_map;
+}
+
 /* Build a RRChan Object with the given channel type and coorindators */
 static RRChan build_one_tileable_rr_chan(const size_t& layer,
                                          const vtr::Point<size_t>& chan_coordinate,
@@ -923,6 +1174,7 @@ RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
  ***********************************************************************/
 void build_edges_for_one_tileable_rr_gsb(RRGraphBuilder& rr_graph_builder,
                                          const RRGSB& rr_gsb,
+                                         const t_bend_track2track_map& sb_bend_conn,
                                          const t_track2pin_map& track2ipin_map,
                                          const t_pin2track_map& opin2track_map,
                                          const t_track2track_map& track2track_map,
@@ -972,6 +1224,11 @@ void build_edges_for_one_tileable_rr_gsb(RRGraphBuilder& rr_graph_builder,
                 edge_count++;
             }
         }
+    }
+    /* Create edges between bend nodes */
+    for (auto iter = sb_bend_conn.begin(); iter != sb_bend_conn.end(); ++iter) {
+        rr_graph_builder.create_edge(iter->first, iter->second, rr_node_driver_switches[iter->second], false);
+        edge_count++;
     }
     num_edges_to_create += edge_count;
 }
