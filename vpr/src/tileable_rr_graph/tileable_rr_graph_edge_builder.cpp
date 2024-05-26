@@ -103,7 +103,7 @@ void build_rr_graph_edges_for_sink_nodes(const RRGraphView& rr_graph,
  ***********************************************************************/
 void build_rr_graph_edges(const RRGraphView& rr_graph,
                           RRGraphBuilder& rr_graph_builder,
-                          const vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
+                          vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
                           const DeviceGrid& grids,
                           const size_t& layer,
                           const vtr::Point<size_t>& device_chan_width,
