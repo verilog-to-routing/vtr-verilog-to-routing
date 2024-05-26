@@ -166,6 +166,13 @@ class RRGraphView {
     inline short node_layer(RRNodeId node) const {
         return node_storage_.node_layer(node);
     }
+
+    inline short node_bend_start(RRNodeId node) const {
+        return node_storage_.node_bend_start(node);
+    }
+    inline short node_bend_end(RRNodeId node) const {
+        return node_storage_.node_bend_end(node);
+    }
     
      /** @brief Get the ptc number twist of a routing resource node. This function is inlined for runtime optimization. */
     inline short node_ptc_twist(RRNodeId node) const{
