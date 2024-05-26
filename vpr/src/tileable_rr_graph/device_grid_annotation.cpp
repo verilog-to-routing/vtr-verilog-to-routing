@@ -2,7 +2,7 @@
 #include "vtr_log.h"
 #include "vpr_utils.h"
 
-DeviceGridAnnotation::DeviceGridAnnotation(const DeviceGrid& grid) {
+DeviceGridAnnotation::DeviceGridAnnotation(const DeviceGrid& grid) { 
     alloc(grid);
     init(grid);
 }
