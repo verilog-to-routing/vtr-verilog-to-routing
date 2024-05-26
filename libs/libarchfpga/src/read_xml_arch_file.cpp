@@ -357,6 +357,7 @@ static std::vector<t_segment_inf> ProcessSegments(pugi::xml_node Parent,
 
 static void ProcessSwitchblocks(pugi::xml_node Parent, t_arch* arch, const pugiutil::loc_data& loc_data);
 static void ProcessCB_SB(pugi::xml_node Node, std::vector<bool>& list, const pugiutil::loc_data& loc_data);
+static void ProcessBend(pugi::xml_node Node, std::vector<int>& list, std::vector<int>& part_len, bool& isbend, const int len, const pugiutil::loc_data& loc_data);
 static void ProcessPower(pugi::xml_node parent,
                          t_power_arch* power_arch,
                          const pugiutil::loc_data& loc_data);
@@ -4055,6 +4056,15 @@ static std::vector<t_segment_inf> ProcessSegments(pugi::xml_node Parent,
             ProcessCB_SB(SubElem, Segs[i].sb, loc_data);
         }
 
+        /* Setup the bend list if they give one, otherwise use default */
+        if (length > 1) {
+            Segs[i].isbend = false;
+            SubElem = get_single_child(Node, "bend", loc_data, ReqOpt::OPTIONAL);
+            if (SubElem) {
+                ProcessBend(SubElem, Segs[i].bend, Segs[i].part_len, Segs[i].isbend, (length - 1), loc_data);
+            }
+        }
+
         /*Store the index of this segment in Segs vector*/
         Segs[i].seg_index = i;
         /* Get next Node */
@@ -4101,6 +4111,79 @@ static void calculate_custom_SB_locations(const pugiutil::loc_data& loc_data, co
 
     sb.reg_x.incr = incrx_attr.empty() ? 1 : p.parse_formula(incrx_attr.value(), vars);
     sb.reg_y.incr = incry_attr.empty() ? 1 : p.parse_formula(incry_attr.value(), vars);
+}
+
+static void ProcessBend(pugi::xml_node Node, std::vector<int>& list, std::vector<int>& part_len, bool& isbend, const int len, const pugiutil::loc_data& loc_data) {
+    const char* tmp = nullptr;
+    int i;
+
+    tmp = get_attribute(Node, "type", loc_data).value();
+    if (0 == strcmp(tmp, "pattern")) {
+        i = 0;
+
+        /* Get the content string */
+        tmp = Node.child_value();
+        while (*tmp) {
+            switch (*tmp) {
+                case ' ':
+                case '\t':
+                case '\n':
+                    break;
+                case '-':
+                    list.push_back(0);
+                    break;
+                case 'U':
+                    list.push_back(1);
+                    isbend = true;
+                    break;
+                case 'D':
+                    list.push_back(2);
+                    isbend = true;
+                    break;
+                case 'B':
+                    archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
+                                   "B pattern is not supported in current version\n",
+                                   *tmp);
+                    //                    list.push_back(3);
+                    //                    isbend = true;
+                    break;
+                default:
+                    archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
+                                   "Invalid character %c in CB or SB depopulation list.\n",
+                                   *tmp);
+            }
+            ++tmp;
+        }
+
+        if (list.size() != size_t(len)) {
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
+                           "Wrong length of bend list (%d). Expect %d symbols.\n",
+                           i, len);
+        }
+    }
+
+    else {
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
+                       "'%s' is not a valid type for specifying bend list.\n",
+                       tmp);
+    }
+
+    int tmp_len = 1;
+    int sum_len = 0;
+    for(size_t i_len = 0; i_len < list.size(); i_len++){
+        if (list[i_len] == 0) {
+            tmp_len++;
+        } else if (list[i_len] != 0) {
+            VTR_ASSERT(tmp_len < (int) list.size()+1);
+            part_len.push_back(tmp_len);
+            sum_len += tmp_len;
+            tmp_len = 1;
+        }
+    }
+
+    // add the last clip of segment
+    if (sum_len < (int) list.size()+1)
+        part_len.push_back(list.size() + 1 - sum_len);
 }
 
 /* Processes the switchblocklist section from the xml architecture file.
