@@ -3915,6 +3915,7 @@ static void ProcessSegments(pugi::xml_node Parent,
 
             //Unidir requires the following tags
             expected_subtags.push_back("mux");
+            expected_subtags.push_back("bend");
             expected_subtags.push_back("mux_inter_die");
         }
 
