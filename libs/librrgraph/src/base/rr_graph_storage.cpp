@@ -750,6 +750,16 @@ void t_rr_graph_storage::set_node_coordinates(RRNodeId id, short x1, short y1, s
     }
 }
 
+void t_rr_graph_storage::set_node_bend_start(RRNodeId id, size_t bend_start) {
+    auto& node = node_storage_[id];
+    node.node_bend_start_ = bend_start;
+}
+
+void t_rr_graph_storage::set_node_bend_end(RRNodeId id, size_t bend_end) {
+    auto& node = node_storage_[id];
+    node.node_bend_end_ = bend_end;
+}
+
 void t_rr_graph_storage::set_node_cost_index(RRNodeId id, RRIndexedDataId new_cost_index) {
     auto& node = node_storage_[id];
     if ((size_t)new_cost_index >= std::numeric_limits<decltype(node.cost_index_)>::max()) {
