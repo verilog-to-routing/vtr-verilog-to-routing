@@ -257,7 +257,8 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
                          Fc_in, Fc_out,
                          sb_type, Fs, sb_subtype, subFs,
                          opin2all_sides, concat_wire,
-                         wire_opposite_side);
+                         wire_opposite_side,
+                         delayless_rr_switch);
 
     /************************************************************************
      * Build direction connection lists
