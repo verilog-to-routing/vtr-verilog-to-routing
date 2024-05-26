@@ -118,7 +118,8 @@ void build_rr_graph_edges(const RRGraphView& rr_graph,
                           const int& subFs,
                           const bool& opin2all_sides,
                           const bool& concat_wire,
-                          const bool& wire_opposite_side) {
+                          const bool& wire_opposite_side,
+                          const RRSwitchId& delayless_switch) {
     size_t num_edges_to_create = 0;
     /* Create edges for SOURCE and SINK nodes for a tileable rr_graph */
     build_rr_graph_edges_for_source_nodes(rr_graph, rr_graph_builder, rr_node_driver_switches, grids, layer, num_edges_to_create);
@@ -132,6 +133,13 @@ void build_rr_graph_edges(const RRGraphView& rr_graph,
             //vpr_printf(TIO_MESSAGE_INFO, "Building edges for GSB[%lu][%lu]\n", ix, iy);
 
             vtr::Point<size_t> gsb_coord(ix, iy);
+
+            /* adapt the bend_conn */
+            t_bend_track2track_map sb_bend_conn; /* [0..from_gsb_side][0..chan_width-1][track_indices] */
+            sb_bend_conn = build_bend_track_to_track_map(grids, rr_graph_builder, rr_graph,
+                                                         device_chan_width, segment_inf,
+                                                         layer, gsb_coord, delayless_switch, rr_node_driver_switches);
+
             /* Create a GSB object */
             const RRGSB& rr_gsb = build_one_tileable_rr_gsb(grids, rr_graph,
                                                             device_chan_width, segment_inf_x, segment_inf_y,
@@ -153,7 +161,7 @@ void build_rr_graph_edges(const RRGraphView& rr_graph,
 
             /* Build edges for a GSB */
             build_edges_for_one_tileable_rr_gsb(rr_graph_builder, rr_gsb,
-                                                track2ipin_map, opin2track_map,
+                                                sb_bend_conn, track2ipin_map, opin2track_map,
                                                 sb_conn, rr_node_driver_switches, num_edges_to_create);
             /* Finish this GSB, go to the next*/
             rr_graph_builder.build_edges(true);
