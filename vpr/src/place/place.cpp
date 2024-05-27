@@ -1201,6 +1201,7 @@ void try_place(const Netlist<>& net_list,
             get_total_congestion_bandwidth_ratio(),
             get_number_of_congested_noc_links());
 
+#ifdef ENABLE_NOC_SAT_ROUTING
         if (costs.noc_cost_terms.congestion > 0.0) {
             VTR_LOG("NoC routing configuration is congested. Invoking the SAT NoC router.\n");
             auto traffic_flow_routes = noc_sat_route(true,
@@ -1236,7 +1237,9 @@ void try_place(const Netlist<>& net_list,
                 VTR_LOG("SAT routing failed.\n");
             }
         }
+#endif //ENABLE_NOC_SAT_ROUTING
     }
+
     update_screen(ScreenUpdatePriority::MAJOR, msg, PLACEMENT, timing_info);
     // Print out swap statistics
     print_resources_utilization();

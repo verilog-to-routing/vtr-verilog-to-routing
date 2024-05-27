@@ -1,6 +1,8 @@
 #ifndef VTR_SATROUTING_H
 #define VTR_SATROUTING_H
 
+#ifdef ENABLE_NOC_SAT_ROUTING
+
 #include <utility>
 #include <map>
 
@@ -54,4 +56,5 @@ struct hash<std::pair<ClusterBlockId, NocRouterId>> {
 } // namespace std
 
 
+#endif
 #endif

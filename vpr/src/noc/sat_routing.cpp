@@ -1,3 +1,5 @@
+#ifdef ENABLE_NOC_SAT_ROUTING
+
 
 #include "sat_routing.h"
 #include "turn_model_routing.h"
@@ -941,3 +943,5 @@ vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> noc_sat_route(bool minimiz
     // when no feasible solution was found, return an empty vector
     return {};
 }
+
+#endif //ENABLE_NOC_SAT_ROUTING

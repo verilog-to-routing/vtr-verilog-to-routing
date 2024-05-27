@@ -73,6 +73,20 @@ if(${VPR_ANALYTIC_PLACE})
 	endif(TARGET Eigen3::Eigen)
 endif()
 
+if (${VPR_ENABLE_NOC_SAT_ROUTING})
+    message(STATUS "VPR NoC SAT Routing: Requested")
+    find_package(ortools CONFIG REQUIRED)
+    if (TARGET ortools::ortools)
+        message(STATUS "VPR NoC SAT Routing dependency (or-tools): Found")
+        message(STATUS "VPR NoC SAT Routing: Enabled")
+        target_link_libraries(libvpr ortools::ortools)
+        target_compile_definitions(libvpr PUBLIC -DENABLE_NOC_SAT_ROUTING)
+    else ()
+        message(STATUS "VPR NoC SAT Routing dependency (or-tools): Not Found (You may need to set CMAKE_PREFIX_PATH in order for CMake to find your OR-Tools installation)")
+        message(STATUS "VPR NoC SAT Routing: Disabled")
+    endif (TARGET ortools::ortools)
+endif ()
+
 set_target_properties(libvpr PROPERTIES PREFIX "") #Avoid extra 'lib' prefix
 
 #Specify link-time dependencies
@@ -86,9 +100,6 @@ target_link_libraries(libvpr
                         libpugixml
                         librrgraph
 )
-
-find_package(ortools CONFIG REQUIRED)
-target_link_libraries(libvpr ortools::ortools)
 
 #link graphics library only when graphics set to on
 if (VPR_USE_EZGL STREQUAL "on")
