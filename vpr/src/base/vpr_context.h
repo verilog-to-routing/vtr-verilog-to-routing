@@ -593,7 +593,6 @@ struct ServerContext : public Context {
      */
     std::vector<tatum::TimingPath> crit_paths;
 
-
     /**
      * @brief Stores the selected critical path elements.
      *
