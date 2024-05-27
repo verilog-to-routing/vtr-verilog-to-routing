@@ -48,9 +48,9 @@ public:
      *
      * This constructor initializes a TelegramHeader object using the length and checksum information taken from the provided byte buffer.
      *
-     * @param body The ByteArray containing the header data of the telegram.
+     * @param buffer The ByteArray containing the header data of the telegram.
      */
-    explicit TelegramHeader(const ByteArray& body);
+    explicit TelegramHeader(const ByteArray& buffer);
 
     ~TelegramHeader()=default;
 
