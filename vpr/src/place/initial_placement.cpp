@@ -258,7 +258,7 @@ static bool is_loc_legal(t_pl_loc& loc, PartitionRegion& pr, t_logical_block_typ
     bool legal = false;
 
     //Check if the location is within its constraint region
-    for (auto reg : pr.get_partition_region()) {
+    for (const auto& reg : pr.get_regions()) {
         const auto reg_coord = reg.get_region_rect();
         vtr::Rect<int> reg_rect(reg_coord.xmin, reg_coord.ymin, reg_coord.xmax, reg_coord.ymax);
         if (reg_coord.layer_num != loc.layer) continue;
@@ -606,7 +606,7 @@ bool try_place_macro_randomly(const t_pl_macro& pl_macro, const PartitionRegion&
 
     //If the block has more than one floorplan region, pick a random region to get the min/max x and y values
     int region_index;
-    std::vector<Region> regions = pr.get_partition_region();
+    const std::vector<Region>& regions = pr.get_regions();
     if (regions.size() > 1) {
         region_index = vtr::irand(regions.size() - 1);
     } else {
@@ -663,7 +663,7 @@ bool try_place_macro_exhaustively(const t_pl_macro& pl_macro, const PartitionReg
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[block_type->index];
     auto& place_ctx = g_vpr_ctx.mutable_placement();
 
-    std::vector<Region> regions = pr.get_partition_region();
+    const std::vector<Region>& regions = pr.get_regions();
 
     bool placed = false;
 
@@ -1154,7 +1154,8 @@ void initial_placement(const t_placer_opts& placer_opts,
 
     if (noc_opts.noc) {
         // NoC routers are placed before other blocks
-        initial_noc_placement(noc_opts, placer_opts.seed);
+        initial_noc_placement(noc_opts, placer_opts);
+        propagate_place_constraints();
     }
 
     //Assign scores to blocks and placement macros according to how difficult they are to place

@@ -219,10 +219,8 @@ static void report_overused_ipin_opin(std::ostream& os,
         grid_x == rr_graph.node_xhigh(node_id) && grid_y == rr_graph.node_yhigh(node_id),
         "Non-track RR node should not span across multiple grid blocks.");
 
-    t_physical_tile_type_ptr physical_tile = device_ctx.grid.get_physical_type({grid_x, grid_y, grid_layer});
-
     os << "Pin physical number = " << rr_graph.node_pin_num(node_id) << '\n';
-    if (is_inter_cluster_node(physical_tile, rr_graph.node_type(node_id), rr_graph.node_ptc_num(node_id))) {
+    if (is_inter_cluster_node(rr_graph, node_id)) {
         os << "On Tile Pin"
            << "\n";
     } else {

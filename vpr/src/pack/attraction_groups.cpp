@@ -1,7 +1,7 @@
 #include "attraction_groups.h"
 
 AttractionInfo::AttractionInfo(bool attraction_groups_on) {
-    auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
+    const auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
     auto& atom_ctx = g_vpr_ctx.atom();
     int num_parts = floorplanning_ctx.constraints.get_num_partitions();
 
@@ -33,7 +33,7 @@ AttractionInfo::AttractionInfo(bool attraction_groups_on) {
 }
 
 void AttractionInfo::create_att_groups_for_overfull_regions() {
-    auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
+    const auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
     auto& atom_ctx = g_vpr_ctx.atom();
     int num_parts = floorplanning_ctx.constraints.get_num_partitions();
 
@@ -47,10 +47,10 @@ void AttractionInfo::create_att_groups_for_overfull_regions() {
     atom_attraction_group.resize(num_atoms);
     fill(atom_attraction_group.begin(), atom_attraction_group.end(), AttractGroupId::INVALID());
 
-    auto& overfull_regions = floorplanning_ctx.overfull_regions;
+    const auto& overfull_regions = floorplanning_ctx.overfull_regions;
     PartitionRegion overfull_regions_pr;
-    for (unsigned int i = 0; i < overfull_regions.size(); i++) {
-        overfull_regions_pr.add_to_part_region(overfull_regions[i]);
+    for (const auto& overfull_region : overfull_regions) {
+        overfull_regions_pr.add_to_part_region(overfull_region);
     }
     /*
      * Create a PartitionRegion that contains all the overfull regions so that you can
@@ -64,8 +64,8 @@ void AttractionInfo::create_att_groups_for_overfull_regions() {
     for (int ipart = 0; ipart < num_parts; ipart++) {
         PartitionId partid(ipart);
 
-        Partition part = floorplanning_ctx.constraints.get_partition(partid);
-        auto& pr_regions = part.get_part_region();
+        const Partition& part = floorplanning_ctx.constraints.get_partition(partid);
+        const auto& pr_regions = part.get_part_region();
 
         PartitionRegion intersect_pr;
 
@@ -88,7 +88,7 @@ void AttractionInfo::create_att_groups_for_overfull_regions() {
 }
 
 void AttractionInfo::create_att_groups_for_all_regions() {
-    auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
+    const auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
     auto& atom_ctx = g_vpr_ctx.atom();
     int num_parts = floorplanning_ctx.constraints.get_num_partitions();
 
@@ -137,8 +137,8 @@ void AttractionInfo::assign_atom_attraction_ids() {
 
         AttractionGroup att_group = attraction_groups[group_id];
 
-        for (unsigned int iatom = 0; iatom < att_group.group_atoms.size(); iatom++) {
-            atom_attraction_group[att_group.group_atoms[iatom]] = group_id;
+        for (auto group_atom : att_group.group_atoms) {
+            atom_attraction_group[group_atom] = group_id;
         }
     }
 }

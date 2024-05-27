@@ -344,9 +344,68 @@ and should be used when making changes to Odin.
 ## Unit Tests
 
 VTR also has a limited set of unit tests, which can be run with:
+
 ```shell
 #From the VTR root directory
 $ make && make test
+```
+
+This will run `test_vtrutil`, `test_vpr`, `test_fasm`, and `test_archfpga`. Each test suite is added in their CMake
+files.
+
+### Running Individual Testers
+
+To run one of the four testers listed above on its own, navigate to the appropriate folder:
+
+| Test            | Directory                          |
+|-----------------|------------------------------------|
+| `test_archfpga` | `$VTR_ROOT/build/libs/libarchfpga` |
+| `test_vtrutil`  | `$VTR_ROOT/build/libs/libvtrutil`  |
+| `test_fasm`     | `$VTR_ROOT/build/utils/fasm`       |
+| `test_vpr`      | `$VTR_ROOT/build/vpr`              |
+
+To see tester options, run it with `-h`:
+
+```shell
+# Using test_vpr as an example
+# From $VTR_ROOT/build/vpr
+$ ./test_vpr -h
+```
+
+To see the names of each unit test, use `--list-tests`:
+
+```shell
+# From $VTR_ROOT/build/vpr
+$ ./test_vpr --list-tests
+```
+
+The output should look similar to this:
+
+```shell
+All available test cases:
+  test_route_flow
+      [vpr_noc_bfs_routing]
+  test_find_block_with_matching_name
+      [vpr_clustered_netlist]
+  connection_router
+      [vpr]
+  binary_heap
+      [vpr]
+  edge_groups_create_sets
+      [vpr]
+  read_interchange_models
+      [vpr]
+      
+... # many more test cases
+
+52 test cases
+```
+
+To run specific unit tests, pass them as arguments. For example:
+
+```shell
+# From $VTR_ROOT/build/vpr
+$ ./test_vpr test_route_flow connection_router
 ```
 
 # Evaluating Quality of Result (QoR) Changes
@@ -972,6 +1031,64 @@ This describes adding a test to `vtr_reg_strong`, but the process is similar for
     $ git commit
     ```
 
+## Creating Unit Tests
+
+You can find the source code for the unit tests in their respective directories. New unit tests must also be created in
+these directories.
+
+| Test            | Directory                         |
+|-----------------|-----------------------------------|
+| `test_archfpga` | `$VTR_ROOT/libs/libarchfpga/test` |
+| `test_vtrutil`  | `$VTR_ROOT/libs/libvtrutil/test`  |
+| `test_fasm`     | `$VTR_ROOT/utils/fasm/test`       |
+| `test_vpr`      | `$VTR_ROOT/vpr/test`              |
+
+VTR uses [Catch2](https://github.com/catchorg/Catch2) for its unit testing framework. For a full tutorial of how to use
+the framework, see `$VTR_ROOT/libs/EXTERNAL/libcatch2/docs/Readme.md`.
+
+### Example: Creating and Running a VPR Test Case
+
+Navigate to `$VTR_ROOT/vpr/test`.
+
+```shell
+$ cd $VTR_ROOT/vpr/test
+```
+
+From here, let's create and open a new file `test_new_vpr.cpp` (begin the file name with `test_`). Be sure to `#include "catch2/catch_test_macros.hpp"`.
+Introduce a test case using the `TEST_CASE` macro, and include a name and a tag. For boolean assertions, use `REQUIRE`.
+
+```shell
+#include "catch2/catch_test_macros.hpp"
+
+// To choose a tag (written with square brackets "[tag]"), see examples from when you run ./test_vpr
+// --list-tests in the tester exectuable directory, as shown earlier. A good default tag name is the name
+// of the tester: in this case, [vpr].
+TEST_CASE("a_vpr_test_name", "[vpr]") {
+  int x = 0;
+  REQUIRE(x == 0);
+}
+```
+
+To run our test case, we must navigate back to `$VTR_ROOT/build/vpr` (from the table
+under [Running Individual Testers](#running-individual-testers)). Since we created a test, we need to rebuild the
+tester. Then, we can run our test.
+
+```shell
+$ cd $VTR_ROOT/build/vpr
+$ make                         // rebuild tester
+$ ./test_vpr a_vpr_test_name   // run new unit test
+```
+
+Output:
+
+```shell
+Filters: "a_vpr_test_name"
+Randomness seeded to: 2089861684
+===============================================================================
+All tests passed (1 assertion in 1 test case)
+```
+
+
 # Debugging Aids
 VTR has support for several additional tools/features to aid debugging.
 
@@ -1353,4 +1470,3 @@ The following outlines the procedure to following when making an official VTR re
  * Add the new change log entry to the [GitHub release description](https://github.com/verilog-to-routing/vtr-verilog-to-routing/releases)
  * Update the [ReadTheDocs configuration](https://readthedocs.org/projects/vtr/versions/) to build and serve documentation for the relevant tag (e.g. `v8.0.0`)
  * Send a release announcement email to the [vtr-announce](mailto:vtr-announce@googlegroups.com) mailing list (make sure to thank all contributors!)
-
