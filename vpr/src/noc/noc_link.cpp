@@ -6,7 +6,7 @@ NocLink::NocLink(NocLinkId link_id, NocRouterId source, NocRouterId sink, double
     , source_router(source)
     , sink_router(sink)
     , bandwidth_usage(0.0)
-    , bandwidth(bw) { }
+    , bandwidth(bw) {}
 
 // getters
 NocRouterId NocLink::get_source_router(void) const {

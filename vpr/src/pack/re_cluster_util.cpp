@@ -1,6 +1,5 @@
 #include "re_cluster_util.h"
 
-#include "vpr_context.h"
 #include "clustered_netlist_utils.h"
 #include "cluster_util.h"
 #include "cluster_router.h"
@@ -8,16 +7,15 @@
 #include "place_macro.h"
 #include "initial_placement.h"
 #include "read_netlist.h"
-#include <cstring>
 
-//The name suffix of the new block (if exists)
+
+// The name suffix of the new block (if exists)
+// This suffex is useful in preventing duplicate high-level cluster block names
 const char* name_suffix = "_m";
 
 /******************* Static Functions ********************/
-//static void set_atom_pin_mapping(const ClusteredNetlist& clb_nlist, const AtomBlockId atom_blk, const AtomPortId atom_port, const t_pb_graph_pin* gpin);
 static void load_atom_index_for_pb_pin(t_pb_routes& pb_route, int ipin);
 static void load_internal_to_block_net_nums(const t_logical_block_type_ptr type, t_pb_routes& pb_route);
-//static bool count_children_pbs(const t_pb* pb);
 static void fix_atom_pin_mapping(const AtomBlockId blk);
 
 static void fix_cluster_pins_after_moving(const ClusterBlockId clb_index);
@@ -42,6 +40,7 @@ static void update_cluster_pb_stats(const t_pack_molecule* molecule,
                                     int molecule_size,
                                     ClusterBlockId clb_index,
                                     bool is_added);
+
 /*****************  API functions ***********************/
 ClusterBlockId atom_to_cluster(const AtomBlockId& atom) {
     auto& atom_ctx = g_vpr_ctx.atom();
@@ -66,19 +65,18 @@ void remove_mol_from_cluster(const t_pack_molecule* molecule,
                              t_lb_router_data*& router_data) {
     auto& helper_ctx = g_vpr_ctx.mutable_cl_helper();
 
-    //re-build router_data structure for this cluster
-    if (!router_data_ready)
-        router_data = lb_load_router_data(helper_ctx.lb_type_rr_graphs, old_clb, old_clb_atoms);
-
-    //remove atom from router_data
     for (int i_atom = 0; i_atom < molecule_size; i_atom++) {
         if (molecule->atom_block_ids[i_atom]) {
-            remove_atom_from_target(router_data, molecule->atom_block_ids[i_atom]);
             auto it = old_clb_atoms->find(molecule->atom_block_ids[i_atom]);
             if (it != old_clb_atoms->end())
                 old_clb_atoms->erase(molecule->atom_block_ids[i_atom]);
         }
     }
+
+    //re-build router_data structure for this cluster
+    if (!router_data_ready)
+        router_data = lb_load_router_data(helper_ctx.lb_type_rr_graphs, old_clb, old_clb_atoms);
+
     update_cluster_pb_stats(molecule, molecule_size, old_clb, false);
 }
 
@@ -88,19 +86,20 @@ void commit_mol_move(const ClusterBlockId& old_clb,
                      bool new_clb_created) {
     auto& device_ctx = g_vpr_ctx.device();
 
-    //Place the new cluster if this function called during placement (after the initial placement is done)
+    //place the new cluster if this function called during placement (after the initial placement is done)
     if (!during_packing && new_clb_created) {
         int imacro;
         g_vpr_ctx.mutable_placement().block_locs.resize(g_vpr_ctx.placement().block_locs.size() + 1);
         get_imacro_from_iblk(&imacro, old_clb, g_vpr_ctx.placement().pl_macros);
         set_imacro_for_iblk(&imacro, new_clb);
-        place_one_block(new_clb, device_ctx.pad_loc_type, NULL, NULL);
+        place_one_block(new_clb, device_ctx.pad_loc_type, nullptr, nullptr);
     }
 }
 
 t_lb_router_data* lb_load_router_data(std::vector<t_lb_type_rr_node>* lb_type_rr_graphs, const ClusterBlockId& clb_index, const std::unordered_set<AtomBlockId>* clb_atoms) {
     //build data structures used by intra-logic block router
     auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& atom_ctx = g_vpr_ctx.atom();
     auto block_type = cluster_ctx.clb_nlist.block_type(clb_index);
     t_lb_router_data* router_data = alloc_and_load_router_data(&lb_type_rr_graphs[block_type->index], block_type);
 
@@ -110,21 +109,27 @@ t_lb_router_data* lb_load_router_data(std::vector<t_lb_type_rr_node>* lb_type_rr
 
     for (auto atom_id : *clb_atoms) {
         add_atom_as_target(router_data, atom_id);
+        const t_pb* pb = atom_ctx.lookup.atom_pb(atom_id);
+        while (pb) {
+            set_reset_pb_modes(router_data, pb, true);
+            pb = pb->parent_pb;
+        }
     }
     return (router_data);
 }
 
 bool start_new_cluster_for_mol(t_pack_molecule* molecule,
                                const t_logical_block_type_ptr& type,
-                               const int mode,
-                               const int feasible_block_array_size,
+                               const int& mode,
+                               const int& feasible_block_array_size,
                                bool enable_pin_feasibility_filter,
                                ClusterBlockId clb_index,
                                bool during_packing,
                                int verbosity,
                                t_clustering_data& clustering_data,
                                t_lb_router_data** router_data,
-                               PartitionRegion& temp_cluster_pr) {
+                               PartitionRegion& temp_cluster_pr,
+                               NocGroupId& temp_cluster_noc_grp_id) {
     auto& atom_ctx = g_vpr_ctx.atom();
     auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
     auto& helper_ctx = g_vpr_ctx.mutable_cl_helper();
@@ -146,12 +151,13 @@ bool start_new_cluster_for_mol(t_pack_molecule* molecule,
 
     *router_data = alloc_and_load_router_data(&(helper_ctx.lb_type_rr_graphs[type->index]), type);
 
-    e_block_pack_status pack_result = BLK_STATUS_UNDEFINED;
+    e_block_pack_status pack_result = e_block_pack_status::BLK_STATUS_UNDEFINED;
     pb->mode = mode;
-    reset_cluster_placement_stats(&(helper_ctx.cluster_placement_stats[type->index]));
+    t_cluster_placement_stats* cluster_placement_stats = &(helper_ctx.cluster_placement_stats[type->index]);
+    reset_cluster_placement_stats(cluster_placement_stats);
     set_mode_cluster_placement_stats(pb->pb_graph_node, mode);
 
-    pack_result = try_pack_molecule(&(helper_ctx.cluster_placement_stats[type->index]),
+    pack_result = try_pack_molecule(cluster_placement_stats,
                                     molecule,
                                     helper_ctx.primitives_list,
                                     pb,
@@ -164,10 +170,11 @@ bool start_new_cluster_for_mol(t_pack_molecule* molecule,
                                     enable_pin_feasibility_filter,
                                     0,
                                     FULL_EXTERNAL_PIN_UTIL,
-                                    temp_cluster_pr);
+                                    temp_cluster_pr,
+                                    temp_cluster_noc_grp_id);
 
     // If clustering succeeds, add it to the clb netlist
-    if (pack_result == BLK_PASSED) {
+    if (pack_result == e_block_pack_status::BLK_PASSED) {
         VTR_LOGV(verbosity > 4, "\tPASSED_SEED: Block Type %s\n", type->name);
         //Once clustering succeeds, add it to the clb netlist
         if (pb->name != nullptr) {
@@ -177,6 +184,8 @@ bool start_new_cluster_for_mol(t_pack_molecule* molecule,
         pb->name = vtr::strdup(new_name.c_str());
         clb_index = cluster_ctx.clb_nlist.create_block(new_name.c_str(), pb, type);
         helper_ctx.total_clb_num++;
+        int molecule_size = get_array_size_of_molecule(molecule);
+        update_cluster_pb_stats(molecule, molecule_size, clb_index, true);
 
         //If you are still in packing, update the clustering data. Otherwise, update the clustered netlist.
         if (during_packing) {
@@ -194,22 +203,22 @@ bool start_new_cluster_for_mol(t_pack_molecule* molecule,
     free_router_data(*router_data);
     *router_data = nullptr;
 
-    return (pack_result == BLK_PASSED);
+    return (pack_result == e_block_pack_status::BLK_PASSED);
 }
 
 bool pack_mol_in_existing_cluster(t_pack_molecule* molecule,
                                   int molecule_size,
-                                  const ClusterBlockId new_clb,
+                                  const ClusterBlockId& new_clb,
                                   std::unordered_set<AtomBlockId>* new_clb_atoms,
                                   bool during_packing,
-                                  bool is_swap,
                                   t_clustering_data& clustering_data,
                                   t_lb_router_data*& router_data) {
     auto& helper_ctx = g_vpr_ctx.mutable_cl_helper();
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
 
+    NocGroupId temp_cluster_noc_grp_id;
     PartitionRegion temp_cluster_pr;
-    e_block_pack_status pack_result = BLK_STATUS_UNDEFINED;
+    e_block_pack_status pack_result = e_block_pack_status::BLK_STATUS_UNDEFINED;
     t_ext_pin_util target_ext_pin_util = helper_ctx.target_external_pin_util.get_pin_util(cluster_ctx.clb_nlist.block_type(new_clb)->name);
     t_logical_block_type_ptr block_type = cluster_ctx.clb_nlist.block_type(new_clb);
     t_pb* temp_pb = cluster_ctx.clb_nlist.block_pb(new_clb);
@@ -220,8 +229,7 @@ bool pack_mol_in_existing_cluster(t_pack_molecule* molecule,
         return false;
 
     //re-build router_data structure for this cluster
-    if (!is_swap)
-        router_data = lb_load_router_data(helper_ctx.lb_type_rr_graphs, new_clb, new_clb_atoms);
+    router_data = lb_load_router_data(helper_ctx.lb_type_rr_graphs, new_clb, new_clb_atoms);
 
     pack_result = try_pack_molecule(&(helper_ctx.cluster_placement_stats[block_type->index]),
                                     molecule,
@@ -237,10 +245,11 @@ bool pack_mol_in_existing_cluster(t_pack_molecule* molecule,
                                     //false,
                                     helper_ctx.feasible_block_array_size,
                                     target_ext_pin_util,
-                                    temp_cluster_pr);
+                                    temp_cluster_pr,
+                                    temp_cluster_noc_grp_id);
 
     // If clustering succeeds, add it to the clb netlist
-    if (pack_result == BLK_PASSED) {
+    if (pack_result == e_block_pack_status::BLK_PASSED) {
         //If you are still in packing, update the clustering data. Otherwise, update the clustered netlist.
         if (during_packing) {
             free_intra_lb_nets(clustering_data.intra_lb_routing[new_clb]);
@@ -259,13 +268,11 @@ bool pack_mol_in_existing_cluster(t_pack_molecule* molecule,
         update_cluster_pb_stats(molecule, molecule_size, new_clb, true);
     }
 
-    if (!is_swap) {
-        //Free clustering router data
-        free_router_data(router_data);
-        router_data = nullptr;
-    }
+    //Free clustering router data
+    free_router_data(router_data);
+    router_data = nullptr;
 
-    return (pack_result == BLK_PASSED);
+    return (pack_result == e_block_pack_status::BLK_PASSED);
 }
 
 void fix_clustered_netlist(t_pack_molecule* molecule,
@@ -284,6 +291,7 @@ void revert_mol_move(const ClusterBlockId& old_clb,
     auto& helper_ctx = g_vpr_ctx.mutable_cl_helper();
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
 
+    NocGroupId temp_cluster_noc_grp_id_original;
     PartitionRegion temp_cluster_pr_original;
     e_block_pack_status pack_result = try_pack_molecule(&(helper_ctx.cluster_placement_stats[cluster_ctx.clb_nlist.block_type(old_clb)->index]),
                                                         molecule,
@@ -298,9 +306,10 @@ void revert_mol_move(const ClusterBlockId& old_clb,
                                                         helper_ctx.enable_pin_feasibility_filter,
                                                         helper_ctx.feasible_block_array_size,
                                                         helper_ctx.target_external_pin_util.get_pin_util(cluster_ctx.clb_nlist.block_type(old_clb)->name),
-                                                        temp_cluster_pr_original);
+                                                        temp_cluster_pr_original,
+                                                        temp_cluster_noc_grp_id_original);
 
-    VTR_ASSERT(pack_result == BLK_PASSED);
+    VTR_ASSERT(pack_result == e_block_pack_status::BLK_PASSED);
     //If you are still in packing, update the clustering data. Otherwise, update the clustered netlist.
     if (during_packing) {
         free_intra_lb_nets(clustering_data.intra_lb_routing[old_clb]);

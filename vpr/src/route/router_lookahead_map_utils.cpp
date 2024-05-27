@@ -385,9 +385,7 @@ t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat) {
                     for (RRNodeId node_id : rr_nodes_at_loc) {
                         int ptc = rr_graph.node_ptc_num(node_id);
                         // For the time being, we decide to not let the lookahead explore the node inside the clusters
-                        if (!is_inter_cluster_node(&device_ctx.physical_tile_types[itile],
-                                                   rr_type,
-                                                   ptc)) {
+                        if (!is_inter_cluster_node(rr_graph, node_id)) {
                             continue;
                         }
 
@@ -670,7 +668,7 @@ t_routing_cost_map get_routing_cost_map(int longest_seg_length,
 
     //Uniquify the increments (avoid sampling the same locations repeatedly if they happen to
     //overlap)
-    std::sort(ref_increments.begin(), ref_increments.end());
+    std::stable_sort(ref_increments.begin(), ref_increments.end());
     ref_increments.erase(std::unique(ref_increments.begin(), ref_increments.end()), ref_increments.end());
 
     //Upper right non-corner
@@ -990,12 +988,8 @@ static void dijkstra_flood_to_wires(int itile,
 
                 RRNodeId next_node = rr_graph.rr_nodes().edge_sink_node(edge);
                 // For the time being, we decide to not let the lookahead explore the node inside the clusters
-                t_physical_tile_type_ptr physical_type = device_ctx.grid.get_physical_type({rr_graph.node_xlow(next_node),
-                                                                                            rr_graph.node_ylow(next_node),
-                                                                                            rr_graph.node_layer(next_node)});
-                if (!is_inter_cluster_node(physical_type,
-                                           rr_graph.node_type(next_node),
-                                           rr_graph.node_ptc_num(next_node))) {
+
+                if (!is_inter_cluster_node(rr_graph, next_node)) {
                     // Don't go inside the clusters
                     continue;
                 }
@@ -1122,7 +1116,7 @@ static int get_tile_src_opin_max_ptc(int itile) {
     int max_ptc = 0;
 
     // Output pin
-    for (const auto& class_inf: physical_tile.class_inf) {
+    for (const auto& class_inf : physical_tile.class_inf) {
         if (class_inf.type != e_pin_type::DRIVER) {
             continue;
         }
@@ -1352,13 +1346,8 @@ static void expand_dijkstra_neighbours(util::PQ_Entry parent_entry,
     for (t_edge_size edge : rr_graph.edges(parent)) {
         RRNodeId child_node = rr_graph.edge_sink_node(parent, edge);
         // For the time being, we decide to not let the lookahead explore the node inside the clusters
-        t_physical_tile_type_ptr physical_type = device_ctx.grid.get_physical_type({rr_graph.node_xlow(child_node),
-                                                                                    rr_graph.node_ylow(child_node),
-                                                                                    rr_graph.node_layer(child_node)});
 
-        if (!is_inter_cluster_node(physical_type,
-                                   rr_graph.node_type(child_node),
-                                   rr_graph.node_ptc_num(child_node))) {
+        if (!is_inter_cluster_node(rr_graph, child_node)) {
             continue;
         }
         int switch_ind = size_t(rr_graph.edge_switch(parent, edge));

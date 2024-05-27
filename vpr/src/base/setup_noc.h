@@ -89,7 +89,7 @@ void setup_noc(const t_arch& arch);
  *                             tile in the FPGA architecture description
  *                             file.
  */
-void identify_and_store_noc_router_tile_positions(const DeviceGrid& device_grid, std::vector<t_noc_router_tile_position>& list_of_noc_router_tiles, std::string noc_router_tile_name);
+void identify_and_store_noc_router_tile_positions(const DeviceGrid& device_grid, std::vector<t_noc_router_tile_position>& list_of_noc_router_tiles, const std::string& noc_router_tile_name);
 
 /**
  * @brief Creates NoC routers and adds them to the NoC model based
