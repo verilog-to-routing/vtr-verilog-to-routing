@@ -184,17 +184,17 @@ jobs:
         include: [
           {
             name: 'Basic',
-            params: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on',
+            params: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on',
             suite: 'vtr_reg_basic'
           },
           {
             name: 'Basic_odin',
-            params: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DWITH_PARMYS=OFF -DWITH_ODIN=on',
+            params: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DWITH_PARMYS=OFF -DWITH_ODIN=on',
             suite: 'vtr_reg_basic_odin'
           },
           {
             name: 'Basic with NO_GRAPHICS',
-            params: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVPR_USE_EZGL=off',
+            params: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVPR_USE_EZGL=off',
             suite: 'vtr_reg_basic'
           },
           {
@@ -204,32 +204,32 @@ jobs:
           },
           {
             name: 'Basic with CAPNPROTO disabled',
-            params: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVTR_ENABLE_CAPNPROTO=off',
+            params: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVTR_ENABLE_CAPNPROTO=off',
             suite: 'vtr_reg_basic'
           },
           {
             name: 'Basic with VTR_ENABLE_DEBUG_LOGGING',
-            params: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVTR_ENABLE_DEBUG_LOGGING=on',
+            params: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVTR_ENABLE_DEBUG_LOGGING=on',
             suite: 'vtr_reg_basic'
           },
           {
             name: 'Basic_odin with VTR_ENABLE_DEBUG_LOGGING',
-            params: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVTR_ENABLE_DEBUG_LOGGING=on -DWITH_PARMYS=OFF -DWITH_ODIN=on',
+            params: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVTR_ENABLE_DEBUG_LOGGING=on -DWITH_PARMYS=OFF -DWITH_ODIN=on',
             suite: 'vtr_reg_basic_odin'
           },
           {
             name: 'Strong',
-            params: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on',
+            params: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on',
             suite: 'vtr_reg_strong'
           },
           {
             name: 'Strong_odin',
-            params: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DWITH_PARMYS=OFF -DWITH_ODIN=on',
+            params: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DWITH_PARMYS=OFF -DWITH_ODIN=on',
             suite: 'vtr_reg_strong_odin'
           },
           {
             name: 'Valgrind Memory',
-            params: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DWITH_ODIN=on',
+            params: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DWITH_ODIN=on',
             suite: 'vtr_reg_valgrind_small'
           }
         ]
