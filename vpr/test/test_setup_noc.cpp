@@ -689,7 +689,7 @@ TEST_CASE("test_create_noc_links", "[vpr_setup_noc]") {
 
         router_connection = noc_info.router_list[router_id - 1].connection_list.begin();
 
-        for (auto noc_link = noc_model.get_noc_router_outgoing_links(current_source_router_id).begin(); noc_link != noc_model.get_noc_router_connections(current_source_router_id).end(); noc_link++) {
+        for (auto noc_link = noc_model.get_noc_router_outgoing_links(current_source_router_id).begin(); noc_link != noc_model.get_noc_router_outgoing_links(current_source_router_id).end(); noc_link++) {
             // get the connecting link
             const NocLink& connecting_link = noc_model.get_single_noc_link(*noc_link);
 
@@ -711,7 +711,7 @@ TEST_CASE("test_setup_noc", "[vpr_setup_noc]") {
     t_noc_inf noc_info;
 
     // pointer to each logical router
-    t_router* temp_router = NULL;
+    t_router* temp_router = nullptr;
 
     // start by creating all the logical routers
     // this is similiar to the user provided a config file
