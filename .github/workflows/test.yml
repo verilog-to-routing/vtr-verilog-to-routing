@@ -421,9 +421,9 @@ jobs:
       matrix:
         include:
         - { name: 'GCC 9 (Ubuntu Jammy - 22.04)',     eval: 'CC=gcc-9 && CXX=g++-9',           }
-        - { name: 'GCC 10 (Ubuntu Jammy - 22.04)',  eval: 'CC=gcc-10 && CXX=g++-10',         }
-        - { name: 'GCC 11 (Ubuntu Jammy - 22.04)',                  eval: 'CC=gcc-11 && CXX=g++-11',         }
-        - { name: 'GCC 12 (Ubuntu Jammy - 22.04)',                  eval: 'CC=gcc-12 && CXX=g++-12',         }
+        - { name: 'GCC 10 (Ubuntu Jammy - 22.04)',    eval: 'CC=gcc-10 && CXX=g++-10',         }
+        - { name: 'GCC 11 (Ubuntu Jammy - 22.04)',    eval: 'CC=gcc-11 && CXX=g++-11',         }
+        - { name: 'GCC 12 (Ubuntu Jammy - 22.04)',    eval: 'CC=gcc-12 && CXX=g++-12',         }
         - { name: 'Clang 11 (Ubuntu Jammy - 22.04)',  eval: 'CC=clang-11 && CXX=clang++-11',   }
         - { name: 'Clang 12 (Ubuntu Jammy - 22.04)',  eval: 'CC=clang-12 && CXX=clang++-12',   }
         - { name: 'Clang 13 (Ubuntu Jammy - 22.04)',  eval: 'CC=clang-13 && CXX=clang++-13',   }
@@ -449,7 +449,6 @@ jobs:
       run: |
         export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
         ./.github/scripts/build.sh
-
 
   Coverity:
     name: 'Coverity Scan'
