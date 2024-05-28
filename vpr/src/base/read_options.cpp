@@ -2461,6 +2461,13 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("false")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    route_grp.add_argument(args.custom_3d_sb_fanin_fanout, "--custom_3d_sb_fanin_fanout")
+            .help(
+                    "Specifies the number of tracks that can drive a 3D switch block connection"
+                    "and the number of tracks that can be driven by a 3D switch block connection")
+            .default_value("1")
+            .show_in(argparse::ShowIn::HELP_ONLY);
+
     auto& route_timing_grp = parser.add_argument_group("timing-driven routing options");
 
     route_timing_grp.add_argument(args.astar_fac, "--astar_fac")

@@ -1441,14 +1441,14 @@ static void adjust_rr_pin_position(const RRNodeId rr, int& x, int& y) {
      * However, current test show that the simple strategy provides
      * a good trade-off between runtime and quality of results
      */
-    e_side rr_side = NUM_SIDES;
-    for (const e_side& candidate_side : SIDES) {
+    e_side rr_side = NUM_2D_SIDES;
+    for (const e_side& candidate_side : TOTAL_2D_SIDES) {
         if (rr_graph.is_node_on_specific_side(rr, candidate_side)) {
             rr_side = candidate_side;
             break;
         }
     }
-    VTR_ASSERT_SAFE(NUM_SIDES != rr_side);
+    VTR_ASSERT_SAFE(NUM_2D_SIDES != rr_side);
 
     if (rr_side == LEFT) {
         x -= 1;

@@ -4,9 +4,9 @@
  * https://github.com/duck2/uxsdcxx
  * Modify only if your build process doesn't involve regenerating this file.
  *
- * Cmdline: uxsdcxx/uxsdcxx.py /home/smahmoudi/Desktop/vtr/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
- * Input file: /home/smahmoudi/Desktop/vtr/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
- * md5sum of input file: bf49388f038e0d0e4a12403ebb964b42
+ * Cmdline: uxsdcxx/uxsdcxx.py /home/sara/Desktop/rr_3d/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
+ * Input file: /home/sara/Desktop/rr_3d/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
+ * md5sum of input file: aad09e42e426be6012c2f65ddb636cd0
  */
 
 #include <functional>
@@ -27,7 +27,7 @@ enum class enum_pin_type {UXSD_INVALID = 0, OPEN, OUTPUT, INPUT};
 
 enum class enum_node_type {UXSD_INVALID = 0, CHANX, CHANY, SOURCE, SINK, OPIN, IPIN};
 
-enum class enum_node_direction {UXSD_INVALID = 0, INC_DIR, DEC_DIR, BI_DIR};
+enum class enum_node_direction {UXSD_INVALID = 0, INC_DIR, DEC_DIR, BI_DIR, NONE};
 
 enum class enum_loc_side {UXSD_INVALID = 0, LEFT, RIGHT, TOP, BOTTOM, RIGHT_LEFT, RIGHT_BOTTOM, RIGHT_BOTTOM_LEFT, TOP_RIGHT, TOP_BOTTOM, TOP_LEFT, TOP_RIGHT_BOTTOM, TOP_RIGHT_LEFT, TOP_BOTTOM_LEFT, TOP_RIGHT_BOTTOM_LEFT, BOTTOM_LEFT};
 

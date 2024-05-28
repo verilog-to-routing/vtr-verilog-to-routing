@@ -146,6 +146,7 @@ static vtr::vector<ClusterNetId, char> bb_updated_before;
  */
 static vtr::NdMatrix<float, 2> chanx_place_cost_fac({0, 0}); //[0...device_ctx.grid.width()-2]
 static vtr::NdMatrix<float, 2> chany_place_cost_fac({0, 0}); //[0...device_ctx.grid.height()-2]
+static vtr::NdMatrix<float, 6> chanz_place_cost_fac({0, 0, 0, 0, 0, 0}); //[0...device_ctx.grid.height()-2]
 
 /* The following arrays are used by the try_swap function for speed.   */
 /* [0...cluster_ctx.clb_nlist.nets().size()-1] */
@@ -276,6 +277,8 @@ static void free_try_swap_structs();
 static void free_placement_structs(const t_placer_opts& placer_opts, const t_noc_opts& noc_opts);
 
 static void alloc_and_load_for_fast_cost_update(float place_cost_exp);
+
+static void alloc_and_load_for_fast_vertical_cost_update (float place_cost_exp);
 
 static void free_fast_cost_update();
 
@@ -452,7 +455,9 @@ static void update_placement_cost_normalization_factors(t_placer_costs* costs, c
 
 static double get_total_cost(t_placer_costs* costs, const t_placer_opts& placer_opts, const t_noc_opts& noc_opts);
 
-static double get_net_cost(ClusterNetId net_id, const t_bb& bbptr);
+static double get_net_cost(ClusterNetId net_id,
+                           const t_bb& bbptr,
+                           const vtr::Matrix<int>& num_sink_per_layer);
 
 static double get_net_layer_cost(ClusterNetId /* net_id */,
                                  const std::vector<t_2D_bb>& bbptr,
@@ -1980,27 +1985,21 @@ static bool is_cube_bb(const e_place_bounding_box_mode place_bb_mode,
     bool cube_bb;
     const int number_layers = g_vpr_ctx.device().grid.get_num_layers();
 
-    // If the FPGA has only layer, then we can only use cube bounding box
-    if (number_layers == 1) {
+    if (place_bb_mode == AUTO_BB) {
+        // If the auto_bb is used, we analyze the RR graph to see whether is there any inter-layer connection that is not
+        // originated from OPIN. If there is any, cube BB is chosen, otherwise, per-layer bb is chosen.
+        if (number_layers > 1 && inter_layer_connections_limited_to_opin(rr_graph)) {
+            cube_bb = false;
+        } else {
+            cube_bb = true;
+        }
+    } else if (place_bb_mode == CUBE_BB) {
+        // The user has specifically asked for CUBE_BB
         cube_bb = true;
     } else {
-        VTR_ASSERT(number_layers > 1);
-        if (place_bb_mode == AUTO_BB) {
-            // If the auto_bb is used, we analyze the RR graph to see whether is there any inter-layer connection that is not
-            // originated from OPIN. If there is any, cube BB is chosen, otherwise, per-layer bb is chosen.
-            if (inter_layer_connections_limited_to_opin(rr_graph)) {
-                cube_bb = false;
-            } else {
-                cube_bb = true;
-            }
-        } else if (place_bb_mode == CUBE_BB) {
-            // The user has specifically asked for CUBE_BB
-            cube_bb = true;
-        } else {
-            // The user has specifically asked for PER_LAYER_BB
-            VTR_ASSERT_SAFE(place_bb_mode == PER_LAYER_BB);
-            cube_bb = false;
-        }
+        // The user has specifically asked for PER_LAYER_BB
+        VTR_ASSERT_SAFE(place_bb_mode == PER_LAYER_BB);
+        cube_bb = false;
     }
 
     return cube_bb;
@@ -2081,10 +2080,10 @@ static int find_affected_nets_and_update_costs(
     for (int inet_affected = 0; inet_affected < num_affected_nets;
          inet_affected++) {
         ClusterNetId net_id = ts_nets_to_update[inet_affected];
-
         if (cube_bb) {
             proposed_net_cost[net_id] = get_net_cost(net_id,
-                                                     ts_bb_coord_new[net_id]);
+                                                     ts_bb_coord_new[net_id],
+                                                     ts_layer_sink_pin_count);
         } else {
             proposed_net_cost[net_id] = get_net_layer_cost(net_id,
                                                            layer_ts_bb_coord_new[net_id],
@@ -2574,7 +2573,9 @@ static double comp_bb_cost(e_cost_methods method) {
                                       place_move_ctx.num_sink_pin_layer[size_t(net_id)]);
             }
 
-            net_cost[net_id] = get_net_cost(net_id, place_move_ctx.bb_coords[net_id]);
+            net_cost[net_id] = get_net_cost(net_id,
+                                            place_move_ctx.bb_coords[net_id],
+                                            place_move_ctx.num_sink_pin_layer);
             cost += net_cost[net_id];
             if (method == CHECK)
                 expected_wirelength += get_net_wirelength_estimate(net_id, place_move_ctx.bb_coords[net_id]);
@@ -2817,8 +2818,8 @@ static void get_bb_from_scratch(ClusterNetId net_id,
                                 t_bb& coords,
                                 t_bb& num_on_edges,
                                 vtr::NdMatrixProxy<int, 1> num_sink_pin_layer) {
-    int pnum, x, y, pin_layer, xmin, xmax, ymin, ymax;
-    int xmin_edge, xmax_edge, ymin_edge, ymax_edge;
+    int pnum, x, y, pin_layer, xmin, xmax, ymin, ymax, layer_min, layer_max;
+    int xmin_edge, xmax_edge, ymin_edge, ymax_edge, layer_min_edge, layer_max_edge;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
@@ -2832,9 +2833,11 @@ static void get_bb_from_scratch(ClusterNetId net_id,
         + physical_tile_type(bnum)->pin_width_offset[pnum];
     y = place_ctx.block_locs[bnum].loc.y
         + physical_tile_type(bnum)->pin_height_offset[pnum];
+    pin_layer = place_ctx.block_locs[bnum].loc.layer;
 
     x = max(min<int>(x, grid.width() - 2), 1);
     y = max(min<int>(y, grid.height() - 2), 1);
+    pin_layer = max(min<int>(pin_layer, grid.get_num_layers()), 0);
 
     xmin = x;
     ymin = y;
@@ -2844,6 +2847,11 @@ static void get_bb_from_scratch(ClusterNetId net_id,
     ymin_edge = 1;
     xmax_edge = 1;
     ymax_edge = 1;
+
+    layer_min = pin_layer;
+    layer_max = pin_layer;
+    layer_min_edge = 1;
+    layer_max_edge = 1;
 
     for (int layer_num = 0; layer_num < grid.get_num_layers(); layer_num++) {
         num_sink_pin_layer[layer_num] = 0;
@@ -2867,6 +2875,7 @@ static void get_bb_from_scratch(ClusterNetId net_id,
 
         x = max(min<int>(x, grid.width() - 2), 1);  //-2 for no perim channels
         y = max(min<int>(y, grid.height() - 2), 1); //-2 for no perim channels
+        pin_layer = max(min<int>(pin_layer, grid.get_num_layers()), 0);
 
         if (x == xmin) {
             xmin_edge++;
@@ -2894,6 +2903,19 @@ static void get_bb_from_scratch(ClusterNetId net_id,
             ymax_edge = 1;
         }
 
+        if (pin_layer == layer_min) {
+            layer_min_edge++;
+        }
+        if (pin_layer == layer_max) {
+            layer_max_edge++;
+        } else if (pin_layer < layer_min) {
+            layer_min = pin_layer;
+            layer_min_edge = 1;
+        } else if (pin_layer > layer_max) {
+            layer_max = pin_layer;
+            layer_max_edge++;
+        }
+
         num_sink_pin_layer[pin_layer]++;
     }
 
@@ -2903,11 +2925,15 @@ static void get_bb_from_scratch(ClusterNetId net_id,
     coords.xmax = xmax;
     coords.ymin = ymin;
     coords.ymax = ymax;
+    coords.layer_min = layer_min;
+    coords.layer_max = layer_max;
 
     num_on_edges.xmin = xmin_edge;
     num_on_edges.xmax = xmax_edge;
     num_on_edges.ymin = ymin_edge;
     num_on_edges.ymax = ymax_edge;
+    num_on_edges.layer_min = layer_min_edge;
+    num_on_edges.layer_max = layer_max_edge;
 }
 
 /* This routine finds the bounding box of each net from scratch when the bounding box is of type per-layer (i.e.   *
@@ -2943,19 +2969,19 @@ static void get_layer_bb_from_scratch(ClusterNetId net_id,
     int y_src = place_ctx.block_locs[bnum].loc.y
                 + physical_tile_type(bnum)->pin_height_offset[pnum_src];
 
+    int layer_src = place_ctx.block_locs[bnum].loc.layer;
+
     x_src = max(min<int>(x_src, grid.width() - 2), 1);
     y_src = max(min<int>(y_src, grid.height() - 2), 1);
 
-    for (int layer_num = 0; layer_num < num_layers; layer_num++) {
-        xmin[layer_num] = x_src;
-        ymin[layer_num] = y_src;
-        xmax[layer_num] = x_src;
-        ymax[layer_num] = y_src;
-        xmin_edge[layer_num] = 1;
-        ymin_edge[layer_num] = 1;
-        xmax_edge[layer_num] = 1;
-        ymax_edge[layer_num] = 1;
-    }
+    xmin[layer_src] = x_src;
+    ymin[layer_src] = y_src;
+    xmax[layer_src] = x_src;
+    ymax[layer_src] = y_src;
+    xmin_edge[layer_src] = 1;
+    ymin_edge[layer_src] = 1;
+    xmax_edge[layer_src] = 1;
+    ymax_edge[layer_src] = 1;
 
     for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
         bnum = cluster_ctx.clb_nlist.pin_block(pin_id);
@@ -2978,30 +3004,42 @@ static void get_layer_bb_from_scratch(ClusterNetId net_id,
         x = max(min<int>(x, grid.width() - 2), 1);  //-2 for no perim channels
         y = max(min<int>(y, grid.height() - 2), 1); //-2 for no perim channels
 
-        if (x == xmin[layer]) {
-            xmin_edge[layer]++;
-        }
-        if (x == xmax[layer]) { /* Recall that xmin could equal xmax -- don't use else */
-            xmax_edge[layer]++;
-        } else if (x < xmin[layer]) {
+        if (xmin[layer] == OPEN) {
+            VTR_ASSERT_DEBUG(xmax[layer] == OPEN && ymin[layer] == OPEN && ymax[layer] == OPEN);
             xmin[layer] = x;
-            xmin_edge[layer] = 1;
-        } else if (x > xmax[layer]) {
-            xmax[layer] = x;
-            xmax_edge[layer] = 1;
-        }
-
-        if (y == ymin[layer]) {
-            ymin_edge[layer]++;
-        }
-        if (y == ymax[layer]) {
-            ymax_edge[layer]++;
-        } else if (y < ymin[layer]) {
             ymin[layer] = y;
-            ymin_edge[layer] = 1;
-        } else if (y > ymax[layer]) {
+            xmax[layer] = x;
             ymax[layer] = y;
+            xmin_edge[layer] = 1;
+            ymin_edge[layer] = 1;
+            xmax_edge[layer] = 1;
             ymax_edge[layer] = 1;
+        } else {
+            if (x == xmin[layer]) {
+                xmin_edge[layer]++;
+            }
+            if (x == xmax[layer]) { /* Recall that xmin could equal xmax -- don't use else */
+                xmax_edge[layer]++;
+            } else if (x < xmin[layer]) {
+                xmin[layer] = x;
+                xmin_edge[layer] = 1;
+            } else if (x > xmax[layer]) {
+                xmax[layer] = x;
+                xmax_edge[layer] = 1;
+            }
+
+            if (y == ymin[layer]) {
+                ymin_edge[layer]++;
+            }
+            if (y == ymax[layer]) {
+                ymax_edge[layer]++;
+            } else if (y < ymin[layer]) {
+                ymin[layer] = y;
+                ymin_edge[layer] = 1;
+            } else if (y > ymax[layer]) {
+                ymax[layer] = y;
+                ymax_edge[layer] = 1;
+            }
         }
     }
 
@@ -3090,12 +3128,16 @@ static double get_net_layer_wirelength_estimate(ClusterNetId /* net_id */,
     return (ncost);
 }
 
-static double get_net_cost(ClusterNetId net_id, const t_bb& bbptr) {
+static double get_net_cost(ClusterNetId net_id,
+                           const t_bb& bbptr,
+                           const vtr::Matrix<int>& num_sink_per_layer) {
     /* Finds the cost due to one net by looking at its coordinate bounding  *
      * box.                                                                 */
 
     double ncost, crossing;
     auto& cluster_ctx = g_vpr_ctx.clustering();
+    const int num_layers = g_vpr_ctx.device().grid.get_num_layers();
+    const bool is_multi_layer = (num_layers > 1);
 
     crossing = wirelength_crossing_count(
         cluster_ctx.clb_nlist.net_pins(net_id).size());
@@ -3112,6 +3154,21 @@ static double get_net_cost(ClusterNetId net_id, const t_bb& bbptr) {
 
     ncost += (bbptr.ymax - bbptr.ymin + 1) * crossing
              * chany_place_cost_fac[bbptr.xmax][bbptr.xmin - 1];
+
+    if (is_multi_layer) {
+
+
+        int num_cross_layer_sink = OPEN;
+        if (num_sink_per_layer[size_t(net_id)][0] > num_sink_per_layer[size_t(net_id)][1]) {
+            num_cross_layer_sink = num_sink_per_layer[size_t(net_id)][1];
+        } else {
+            num_cross_layer_sink = num_sink_per_layer[size_t(net_id)][0];
+        }
+        VTR_ASSERT_DEBUG(num_cross_layer_sink >= 0);
+
+        ncost += (bbptr.layer_max - bbptr.layer_min) * num_cross_layer_sink
+                 * chanz_place_cost_fac[bbptr.layer_max][bbptr.xmax][bbptr.ymax][bbptr.layer_min][bbptr.xmin][bbptr.ymin];
+    }
 
     return (ncost);
 }
@@ -3162,7 +3219,7 @@ static void get_non_updateable_bb(ClusterNetId net_id,
                                   vtr::NdMatrixProxy<int, 1> num_sink_pin_layer) {
     //TODO: account for multiple physical pin instances per logical pin
 
-    int xmax, ymax, xmin, ymin, x, y, layer;
+    int xmax, ymax, xmin, ymin, layer_max, layer_min, x, y, layer;
     int pnum;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -3176,11 +3233,14 @@ static void get_non_updateable_bb(ClusterNetId net_id,
         + physical_tile_type(bnum)->pin_width_offset[pnum];
     y = place_ctx.block_locs[bnum].loc.y
         + physical_tile_type(bnum)->pin_height_offset[pnum];
+    layer = place_ctx.block_locs[bnum].loc.layer;
 
     xmin = x;
     ymin = y;
     xmax = x;
     ymax = y;
+    layer_min = layer;
+    layer_max = layer;
 
     for (int layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); layer_num++) {
         num_sink_pin_layer[layer_num] = 0;
@@ -3207,6 +3267,12 @@ static void get_non_updateable_bb(ClusterNetId net_id,
             ymax = y;
         }
 
+        if (layer < layer_min) {
+            layer_min = layer;
+        } else if (layer > layer_max) {
+            layer_max = layer;
+        }
+
         num_sink_pin_layer[layer]++;
     }
 
@@ -3222,6 +3288,8 @@ static void get_non_updateable_bb(ClusterNetId net_id,
     bb_coord_new.ymin = max(min<int>(ymin, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
     bb_coord_new.xmax = max(min<int>(xmax, device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
     bb_coord_new.ymax = max(min<int>(ymax, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
+    bb_coord_new.layer_min = max(min<int>(layer_min, device_ctx.grid.get_num_layers()), 0);
+    bb_coord_new.layer_max = max(min<int>(layer_max, device_ctx.grid.get_num_layers()), 0);
 }
 
 static void get_non_updateable_layer_bb(ClusterNetId net_id,
@@ -3248,10 +3316,17 @@ static void get_non_updateable_layer_bb(ClusterNetId net_id,
     int src_y = place_ctx.block_locs[bnum].loc.y
                 + physical_tile_type(bnum)->pin_height_offset[pnum];
 
-    std::vector<int> xmin(num_layers, src_x);
-    std::vector<int> ymin(num_layers, src_y);
-    std::vector<int> xmax(num_layers, src_x);
-    std::vector<int> ymax(num_layers, src_y);
+    int src_layer = place_ctx.block_locs[bnum].loc.layer;
+
+    std::vector<int> xmin(num_layers, OPEN);
+    std::vector<int> ymin(num_layers, OPEN);
+    std::vector<int> xmax(num_layers, OPEN);
+    std::vector<int> ymax(num_layers, OPEN);
+
+    xmin[src_layer] = src_x;
+    ymin[src_layer] = src_y;
+    xmax[src_layer] = src_x;
+    ymax[src_layer] = src_y;
 
     for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
         bnum = cluster_ctx.clb_nlist.pin_block(pin_id);
@@ -3263,16 +3338,25 @@ static void get_non_updateable_layer_bb(ClusterNetId net_id,
 
         int layer_num = place_ctx.block_locs[bnum].loc.layer;
         num_sink_layer[layer_num]++;
-        if (x < xmin[layer_num]) {
-            xmin[layer_num] = x;
-        } else if (x > xmax[layer_num]) {
-            xmax[layer_num] = x;
-        }
 
-        if (y < ymin[layer_num]) {
+        if (xmin[layer_num] == OPEN) {
+            VTR_ASSERT_DEBUG(ymin[layer_num] == OPEN && xmax[layer_num] == OPEN && ymax[layer_num] == OPEN);
+            xmin[layer_num] = x;
             ymin[layer_num] = y;
-        } else if (y > ymax[layer_num]) {
+            xmax[layer_num] = x;
             ymax[layer_num] = y;
+        } else {
+            if (x < xmin[layer_num]) {
+                xmin[layer_num] = x;
+            } else if (x > xmax[layer_num]) {
+                xmax[layer_num] = x;
+            }
+
+            if (y < ymin[layer_num]) {
+                ymin[layer_num] = y;
+            } else if (y > ymax[layer_num]) {
+                ymax[layer_num] = y;
+            }
         }
     }
 
@@ -3284,6 +3368,9 @@ static void get_non_updateable_layer_bb(ClusterNetId net_id,
      * clip to 1 in both directions as well (since minimum channel index *
      * is 0).  See route_common.cpp for a channel diagram.               */
     for (int layer_num = 0; layer_num < num_layers; layer_num++) {
+        if (num_sink_layer[layer_num] == 0) {
+            continue;
+        }
         bb_coord_new[layer_num].layer_num = layer_num;
         bb_coord_new[layer_num].xmin = max(min<int>(xmin[layer_num], device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
         bb_coord_new[layer_num].ymin = max(min<int>(ymin[layer_num], device_ctx.grid.height() - 2), 1); //-2 for no perim channels
@@ -3321,8 +3408,11 @@ static void update_bb(ClusterNetId net_id,
 
     pin_new_loc.x = max(min<int>(pin_new_loc.x, device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
     pin_new_loc.y = max(min<int>(pin_new_loc.y, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
+    pin_new_loc.layer_num = max(min<int>(pin_new_loc.layer_num, device_ctx.grid.get_num_layers()), 0);
+
     pin_old_loc.x = max(min<int>(pin_old_loc.x, device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
     pin_old_loc.y = max(min<int>(pin_old_loc.y, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
+    pin_old_loc.layer_num = max(min<int>(pin_old_loc.layer_num, device_ctx.grid.get_num_layers()), 0);
 
     /* Check if the net had been updated before. */
     if (bb_updated_before[net_id] == GOT_FROM_SCRATCH) {
@@ -3491,6 +3581,66 @@ static void update_bb(ClusterNetId net_id,
 
     /* Now account for the layer motion. */
     if (num_layers > 1) {
+
+        if (pin_new_loc.layer_num < pin_old_loc.layer_num) {
+            if(pin_new_loc.layer_num == curr_bb_coord->layer_max) {
+                if (curr_bb_edge->layer_max == 1) {
+                    bb_edge_new.layer_max = 0;
+                    bb_coord_new.layer_max = 0;
+                } else {
+                    bb_edge_new.layer_max = curr_bb_edge->layer_max - 1;
+                    bb_coord_new.layer_max = curr_bb_coord->layer_max;
+                }
+            } else {
+                bb_edge_new.layer_max = curr_bb_edge->layer_max;
+                bb_coord_new.layer_max = curr_bb_coord->layer_max;
+            }
+
+            if (pin_new_loc.layer_num < curr_bb_coord->layer_min) { /* Moved past xmin */
+                bb_coord_new.layer_min = pin_new_loc.layer_num;
+                bb_edge_new.layer_min = 1;
+            } else if (pin_new_loc.layer_num == curr_bb_coord->layer_min) { /* Moved to xmin */
+                bb_coord_new.layer_min = pin_new_loc.layer_num;
+                bb_edge_new.layer_min = curr_bb_edge->layer_min + 1;
+            } else { /* Xmin unchanged. */
+                bb_coord_new.layer_min = curr_bb_coord->layer_min;
+                bb_edge_new.layer_min = curr_bb_edge->layer_min;
+            }
+
+        } else if (pin_new_loc.layer_num > pin_old_loc.layer_num) {
+            if (pin_old_loc.layer_num == curr_bb_coord->layer_min) {
+                if (curr_bb_edge->layer_min == 1) {
+                    bb_edge_new.layer_min = 0;
+                    bb_coord_new.layer_min = 0;
+                } else {
+                    bb_edge_new.layer_min = curr_bb_edge->layer_min - 1;
+                    bb_coord_new.layer_min = curr_bb_coord->layer_min;
+                }
+            } else {
+                bb_edge_new.layer_min = curr_bb_edge->layer_min;
+                bb_coord_new.layer_min = curr_bb_coord->layer_min;
+            }
+
+            if (pin_new_loc.layer_num > curr_bb_coord->layer_max) { /* Moved past xmax. */
+                bb_coord_new.layer_max = pin_new_loc.layer_num;
+                bb_edge_new.layer_max = 1;
+            } else if (pin_new_loc.layer_num == curr_bb_coord->layer_max) { /* Moved to xmax */
+                bb_coord_new.layer_max = pin_new_loc.layer_num;
+                bb_edge_new.layer_max = curr_bb_edge->layer_max + 1;
+            } else { /* Xmax unchanged. */
+                bb_coord_new.layer_max = curr_bb_coord->layer_max;
+                bb_edge_new.layer_max = curr_bb_edge->layer_max;
+            }
+
+        } else {
+            bb_coord_new.layer_min = curr_bb_coord->layer_min;
+            bb_coord_new.layer_max = curr_bb_coord->layer_max;
+            bb_edge_new.layer_min = curr_bb_coord->layer_min;
+            bb_edge_new.layer_max = curr_bb_coord->layer_max;
+        }
+
+        VTR_ASSERT(bb_coord_new.layer_min >= 0 && bb_coord_new.layer_max >= 0);
+
         /* We need to update it only if multiple layers are available */
         for (int layer_num = 0; layer_num < num_layers; layer_num++) {
             num_sink_pin_layer_new[layer_num] = curr_num_sink_pin_layer[layer_num];
@@ -3894,6 +4044,12 @@ static void alloc_and_load_for_fast_cost_update(float place_cost_exp) {
 
     chanx_place_cost_fac.resize({device_ctx.grid.height(), device_ctx.grid.height() + 1});
     chany_place_cost_fac.resize({device_ctx.grid.width(), device_ctx.grid.width() + 1});
+    chanz_place_cost_fac.resize({static_cast<size_t>(device_ctx.grid.get_num_layers()),
+                                 device_ctx.grid.width(),
+                                 device_ctx.grid.height(),
+                                 static_cast<size_t>(device_ctx.grid.get_num_layers()),
+                                 device_ctx.grid.width(),
+                                 device_ctx.grid.height()});
 
     /* First compute the number of tracks between channel high and channel *
      * low, inclusive, in an efficient manner.                             */
@@ -3969,6 +4125,77 @@ static void alloc_and_load_for_fast_cost_update(float place_cost_exp) {
                 (double)chany_place_cost_fac[high][low],
                 (double)place_cost_exp);
         }
+
+    alloc_and_load_for_fast_vertical_cost_update(place_cost_exp);
+
+}
+
+static void alloc_and_load_for_fast_vertical_cost_update (float place_cost_exp) {
+    const auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
+    const int num_tiles = device_ctx.grid.height() * device_ctx.grid.width();
+    vtr::NdMatrix<float, 3> tile_num_inter_die_conn({static_cast<size_t>(device_ctx.grid.get_num_layers()),
+                                                     device_ctx.grid.width(),
+                                                     device_ctx.grid.height()}, 0);
+    int total_number_inter_die_conn = 0;
+
+    for (const auto& src_rr_node : rr_graph.nodes()) {
+        for (const auto& rr_edge_idx : rr_graph.configurable_edges(src_rr_node)) {
+            const auto& sink_rr_node = rr_graph.edge_sink_node(src_rr_node, rr_edge_idx);
+            if (rr_graph.node_layer(src_rr_node) != rr_graph.node_layer(sink_rr_node)) {
+                int src_x = rr_graph.node_xhigh(src_rr_node);
+                int src_y = rr_graph.node_yhigh(src_rr_node);
+                VTR_ASSERT(rr_graph.node_xlow(src_rr_node) == src_x && rr_graph.node_ylow(src_rr_node) == src_y);
+
+                int src_layer = rr_graph.node_layer(src_rr_node);
+                tile_num_inter_die_conn[src_layer][src_x][src_y]++;
+                total_number_inter_die_conn++;
+            }
+        }
+
+        for (const auto& rr_edge_idx : rr_graph.non_configurable_edges(src_rr_node)) {
+            const auto& sink_rr_node = rr_graph.edge_sink_node(src_rr_node, rr_edge_idx);
+            if (rr_graph.node_layer(src_rr_node) != rr_graph.node_layer(sink_rr_node)) {
+                int src_x = rr_graph.node_xhigh(src_rr_node);
+                VTR_ASSERT(rr_graph.node_xlow(src_rr_node) == src_x && rr_graph.node_xlow(src_rr_node) == src_x);
+                int src_y = rr_graph.node_yhigh(src_rr_node);
+                VTR_ASSERT(rr_graph.node_ylow(src_rr_node) == src_y && rr_graph.node_ylow(src_rr_node) == src_y);
+                int src_layer = rr_graph.node_layer(src_rr_node);
+                tile_num_inter_die_conn[src_layer][src_x][src_y]++;
+                total_number_inter_die_conn++;
+            }
+        }
+    }
+
+    chanz_place_cost_fac[0][0][0][0][0][0] = tile_num_inter_die_conn[0][0][0];
+    float avg_num_inter_die_conn_per_tile = static_cast<float>(total_number_inter_die_conn) / num_tiles;
+
+    for (int layer_high_num = 1; layer_high_num < device_ctx.grid.get_num_layers(); layer_high_num++) {
+        for (int x_high = 1; x_high < (int)device_ctx.grid.width(); x_high++) {
+            for (int y_high = 1; y_high < (int)device_ctx.grid.height(); y_high++) {
+                for (int layer_low_num = 0; layer_low_num < layer_high_num; layer_low_num++) {
+                    for (int x_low = 0; x_low < x_high; x_low++) {
+                        for (int y_low = 0; y_low < y_high; y_low++) {
+                            int num_inter_die_conn = 0;
+                            for (int layer_num = layer_low_num; layer_num <= layer_high_num; layer_num++) {
+                                for (int x = x_low; x <= x_high; x++) {
+                                    for (int y = y_low; y <= y_high; y++) {
+                                        num_inter_die_conn += tile_num_inter_die_conn[layer_num][x][y];
+                                    }
+                                }
+                            }
+                            chanz_place_cost_fac[layer_high_num][x_high][y_high][layer_low_num][x_low][y_low] =
+                                (avg_num_inter_die_conn_per_tile  / num_inter_die_conn);
+
+                            chanz_place_cost_fac[layer_high_num][x_high][y_high][layer_low_num][x_low][y_low] = pow(
+                                (double)chanz_place_cost_fac[layer_high_num][x_high][y_high][layer_low_num][x_low][y_low],
+                                (double)place_cost_exp);
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 static void check_place(const t_placer_costs& costs,

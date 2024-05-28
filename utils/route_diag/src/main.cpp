@@ -208,8 +208,7 @@ static void profile_source(const Netlist<>& net_list,
                     successfully_routed = profiler.calculate_delay(RRNodeId(source_rr_node),
                                                                    RRNodeId(sink_rr_node),
                                                                    router_opts,
-                                                                   &delays[sink_x][sink_y],
-                                                                   layer_num);
+                                                                   &delays[sink_x][sink_y]);
                 }
 
                 if (successfully_routed) {

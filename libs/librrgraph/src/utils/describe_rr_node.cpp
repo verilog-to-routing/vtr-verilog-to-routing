@@ -11,7 +11,6 @@ std::string describe_rr_node(const RRGraphView& rr_graph,
                              bool is_flat) {
 
     std::string msg = vtr::string_fmt("RR node: %d", inode);
-
     if (rr_graph.node_type(inode) == CHANX || rr_graph.node_type(inode) == CHANY) {
         auto cost_index = rr_graph.node_cost_index(inode);
 

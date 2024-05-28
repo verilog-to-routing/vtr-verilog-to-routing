@@ -17,7 +17,7 @@ short find_create_rr_rc_data(const float R, const float C, std::vector<t_rr_rc_d
                             match);
 
     if (itr == rr_rc_data.end()) {
-        //Note found -> create it
+        //Not found -> create it
         rr_rc_data.emplace_back(R, C);
 
         itr = --rr_rc_data.end(); //Iterator to inserted value
