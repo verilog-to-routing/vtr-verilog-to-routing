@@ -2,14 +2,19 @@
 #define _BINARY_HEAP_H
 
 // Only use one of these two DARITYs at a time
-#define HEAP_DARITY_2
-//#define HEAP_DARITY_4
+//#define HEAP_DARITY_2
+#define HEAP_DARITY_4
 
 #define HEAP_USE_HEAP_ELEM
-//#define HEAP_USE_MEMORY_ALIGNMENT
+#define HEAP_USE_MEMORY_ALIGNMENT
 
 #if defined(HEAP_USE_MEMORY_ALIGNMENT)
+
+#if defined(HEAP_USE_HEAP_ELEM)
+#define MEMORY_ALIGNMENT_FACTOR 16
+#else
 #define MEMORY_ALIGNMENT_FACTOR 8
+#endif
 
 #include <boost/align/aligned_allocator.hpp>
 
