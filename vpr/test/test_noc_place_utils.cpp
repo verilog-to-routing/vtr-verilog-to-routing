@@ -522,15 +522,16 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
     noc_opts.noc_latency_weighting = dist_3(double_engine);
     noc_opts.noc_congestion_weighting = dist_3(double_engine);
 
+    constexpr double link_bandwidth = 1.0;
+
     // setting the NoC parameters
     noc_ctx.noc_model.set_noc_link_latency(1);
     noc_ctx.noc_model.set_noc_router_latency(1);
-    noc_ctx.noc_model.set_noc_link_bandwidth(1);
+    noc_ctx.noc_model.set_noc_link_bandwidth(link_bandwidth);
 
     // needs to be the same as above
     const double router_latency = noc_ctx.noc_model.get_noc_router_latency();
     const double link_latency = noc_ctx.noc_model.get_noc_link_latency();
-    const double link_bandwidth = noc_ctx.noc_model.get_noc_link_bandwidth();
 
     // keeps track of which hard router each cluster block is placed
     vtr::vector<ClusterBlockId, NocRouterId> router_where_cluster_is_placed;

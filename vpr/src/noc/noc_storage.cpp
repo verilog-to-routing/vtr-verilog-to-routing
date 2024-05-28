@@ -31,10 +31,6 @@ int NocStorage::get_number_of_noc_links(void) const {
     return link_storage.size();
 }
 
-double NocStorage::get_noc_link_bandwidth(void) const {
-    return noc_link_bandwidth;
-}
-
 double NocStorage::get_noc_link_latency(void) const {
     return noc_link_latency;
 }
@@ -136,11 +132,10 @@ void NocStorage::add_link(NocRouterId source, NocRouterId sink, double bandwidth
 }
 
 void NocStorage::set_noc_link_bandwidth(double link_bandwidth) {
-    noc_link_bandwidth = link_bandwidth;
 
     // Iterate over all links and set their bandwidth
     for (auto& link : link_storage) {
-        link.set_bandwidth(noc_link_bandwidth);
+        link.set_bandwidth(link_bandwidth);
     }
 }
 
@@ -301,8 +296,6 @@ void NocStorage::echo_noc(char* file_name) const {
     fprintf(fp, "NoC Constraints:\n");
     fprintf(fp, "--------------------------------------------------------------\n");
     fprintf(fp, "\n");
-    fprintf(fp, "Maximum NoC Link Bandwidth: %f\n", noc_link_bandwidth);
-    fprintf(fp, "\n");
     fprintf(fp, "NoC Link Latency: %f\n", noc_link_latency);
     fprintf(fp, "\n");
     fprintf(fp, "NoC Router Latency: %f\n", noc_router_latency);
@@ -318,21 +311,23 @@ void NocStorage::echo_noc(char* file_name) const {
         fprintf(fp, "Router %d:\n", router.get_router_user_id());
         // if the router tile is larger than a single grid, the position represents the bottom left corner of the tile
         fprintf(fp, "Equivalent Physical Tile Grid Position -> (%d,%d)\n", router.get_router_grid_position_x(), router.get_router_grid_position_y());
-        fprintf(fp, "Router Connections ->");
+        fprintf(fp, "Router Connections (destination router id, link bandwidth, link latency) ->");
 
         auto& router_connections = this->get_noc_router_connections(this->convert_router_id(router.get_router_user_id()));
 
         // go through the outgoing links of the current router and print the connecting router
         for (auto router_connection : router_connections) {
-            const NocRouterId connecting_router_id = get_single_noc_link(router_connection).get_sink_router();
+            const auto& link = get_single_noc_link(router_connection);
+            const NocRouterId connecting_router_id = link.get_sink_router();
 
-            fprintf(fp, " %d", get_single_noc_router(connecting_router_id).get_router_user_id());
+            fprintf(fp, " (%d, %g, %g)",
+                    get_single_noc_router(connecting_router_id).get_router_user_id(),
+                    link.get_bandwidth(),
+                    link.get_latency());
         }
 
         fprintf(fp, "\n\n");
     }
 
     fclose(fp);
-
-    return;
 }

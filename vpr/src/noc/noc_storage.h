@@ -117,11 +117,6 @@ class NocStorage {
     bool built_noc;
 
     /**
-     * @brief Represents the maximum allowed bandwidth for the links in the NoC (in bps)
-     */
-    double noc_link_bandwidth;
-
-    /**
      * @brief Represents the delay expected when going through a link (in
      * seconds)
      */
@@ -236,14 +231,6 @@ class NocStorage {
      * NoC.
      */
     int get_number_of_noc_links() const;
-
-    /**
-     * @brief Get the maximum allowable bandwidth for a link
-     * within the NoC.
-     * 
-     * @return a numeric value that represents the link bandwidth in bps
-     */
-    double get_noc_link_bandwidth() const;
 
     /**
      * @brief Get the latency of traversing through a link in
@@ -460,7 +447,6 @@ class NocStorage {
      * used. In the detailed model, instead of associating a single latency or
      * bandwidth value with all NoC routers or links, each NoC router or link
      * has its specific value.
-     * 
      */
     void finished_building_noc();
 
@@ -469,7 +455,6 @@ class NocStorage {
      * This includes deleting all routers and links. Also all internal
      * IDs are removed (the is conversion table is cleared). It is
      * recommended to run this function before building the NoC.
-     * 
      */
     void clear_noc();
 
@@ -530,10 +515,10 @@ class NocStorage {
      * @param grid_position_x The horizontal position on the FPGA of the physical
      * tile that this router represents.
      * 
-     * @param grid_position_y The vertical position on the FPGA of the phyical
+     * @param grid_position_y The vertical position on the FPGA of the physical
      * tile that this router represents.
      * 
-     * @param layer_position The layer number of the phyical
+     * @param layer_position The layer number of the physical
      * tile that this router represents.
      *  
      * @return int Represents a unique key that can be used to identify a
