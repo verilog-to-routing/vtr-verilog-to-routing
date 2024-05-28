@@ -336,14 +336,14 @@ static void add_intra_tile_edges_rr_graph(RRGraphBuilder& rr_graph_builder,
  * @brief Add the intra-cluster edges
  * @param rr_graph_builder
  * @param num_collapsed_nodes Return the number of nodes that are removed due to collapsing
- * @param cluster_blk_id Cluser block id of the cluster that its edges are being added
+ * @param cluster_blk_id Cluster block id of the cluster that its edges are being added
  * @param i
  * @param j
  * @param cap Capacity number of the location that cluster is being mapped to
  * @param R_minW_nmos
  * @param R_minW_pmos
  * @param rr_edges_to_create
- * @param nodes_to_collapse Sotre the nodes in the cluster that needs to be collapsed
+ * @param nodes_to_collapse Store the nodes in the cluster that needs to be collapsed
  * @param grid
  * @param is_flat
  * @param load_rr_graph
@@ -407,7 +407,7 @@ static int add_edges_for_collapsed_nodes(RRGraphBuilder& rr_graph_builder,
                                          int j,
                                          bool load_rr_graph);
 /**
- * @note This funtion is used to add the fan-in edges of the given chain node to the chain's sink with the modified delay
+ * @note This function is used to add the fan-in edges of the given chain node to the chain's sink with the modified delay
  * @param rr_graph_builder
  * @param rr_edges_to_create
  * @param num_collapsed_pins
@@ -773,7 +773,7 @@ void create_rr_graph(const t_graph_type graph_type,
 
     // Write out rr graph file if needed - Currently, writing the flat rr-graph is not supported since loading from a flat rr-graph is not supported.
     // When this function is called in any stage other than routing, the is_flat flag passed to this function is false, regardless of the flag passed
-    // through command line. So, the graph conrresponding to global resources will be created and written down to file if needed. During routing, if flat-routing
+    // through command line. So, the graph corresponding to global resources will be created and written down to file if needed. During routing, if flat-routing
     // is enabled, intra-cluster resources will be added to the graph, but this new bigger graph will not be written down.
     if (!det_routing_arch->write_rr_graph_filename.empty() && !is_flat) {
         write_rr_graph(&mutable_device_ctx.rr_graph_builder,
@@ -4465,7 +4465,7 @@ static std::vector<bool> alloc_and_load_perturb_opins(const t_physical_tile_type
         }
 
         n = step_size / prime_factors[i];
-        n = n - (float)vtr::nint(n); /* fractinal part */
+        n = n - (float)vtr::nint(n); /* fractional part */
         if (fabs(n) < threshold) {
             perturb_opins[0] = true;
             break;
@@ -4512,7 +4512,7 @@ static RRNodeId pick_best_direct_connect_target_rr_node(const RRGraphView& rr_gr
                 }
 
                 //Include a partial unit of distance based on side alignment to ensure
-                //we preferr facing sides
+                //we prefer facing sides
                 if ((from_side == RIGHT && to_side == LEFT)
                     || (from_side == LEFT && to_side == RIGHT)
                     || (from_side == TOP && to_side == BOTTOM)

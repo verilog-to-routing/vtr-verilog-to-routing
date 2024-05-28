@@ -25,9 +25,6 @@
 #include "rr_node.h"
 #include "rr_graph_view.h"
 
-/* we will profile delay/congestion using this many tracks for each wire type */
-static constexpr int MAX_TRACK_OFFSET = 16;
-
 namespace util {
 
 class Cost_Entry;
@@ -330,6 +327,14 @@ t_ipin_primitive_sink_delays compute_intra_tile_dijkstra(const RRGraphView& rr_g
 /* returns index of a node from which to start routing */
 RRNodeId get_start_node(int layer, int start_x, int start_y, int target_x, int target_y, t_rr_type rr_type, int seg_index, int track_offset);
 
+/**
+ * @brief Computes the absolute delta_x and delta_y offset
+ * required to reach to_node from from_node
+ * @param from_node The starting node
+ * @param to_node The destination node
+ * @return (delta_x, delta_y) offset required to reach to
+ * to_node from from_node.
+ */
 std::pair<int, int> get_xy_deltas(RRNodeId from_node, RRNodeId to_node);
 
 t_routing_cost_map get_routing_cost_map(int longest_seg_length,

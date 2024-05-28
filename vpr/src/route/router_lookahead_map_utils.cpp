@@ -18,6 +18,13 @@
 #include "route_common.h"
 #include "route_debug.h"
 
+/**
+ * We will profile delay/congestion using this many tracks for each wire type.
+ * Larger values increase the time to compute the lookahead, but may give
+ * more accurate lookahead estimates during routing.
+ */
+static constexpr int MAX_TRACK_OFFSET = 16;
+
 static void dijkstra_flood_to_wires(int itile, RRNodeId inode, util::t_src_opin_delays& src_opin_delays);
 
 static void dijkstra_flood_to_ipins(RRNodeId node, util::t_chan_ipins_delays& chan_ipins_delays);
@@ -51,13 +58,42 @@ static void expand_dijkstra_neighbours(util::PQ_Entry parent_entry,
                                        vtr::vector<RRNodeId, bool>& node_expanded,
                                        std::priority_queue<util::PQ_Entry>& pq);
 
-static std::pair<int, int> adjust_rr_position(const RRNodeId rr);
 
-static std::pair<int, int> adjust_rr_pin_position(const RRNodeId rr);
+/**
+ * @brief Computes the adjusted position of an RR graph node.
+ * This function does not modify the position of the given node.
+ * It only returns the computed adjusted position.
+ * @param rr The ID of the node whose adjusted position is desired.
+ * @return The adjusted position (x, y).
+ */
+static std::pair<int, int> get_adjusted_rr_position(RRNodeId rr);
 
-static std::pair<int, int> adjust_rr_wire_position(const RRNodeId rr);
+/**
+ * @brief Computes the adjusted location of a pin to match the position of
+ * the channel it can reach based on which side of the block it is at.
+ * @param rr The corresponding node of a pin whose adjusted positions
+ * is desired.
+ * @return The adjusted position (x, y).
+ */
+static std::pair<int, int> get_adjusted_rr_pin_position(RRNodeId rr);
 
-static std::pair<int, int> adjust_rr_src_sink_position(const RRNodeId rr);
+/**
+ * @brief Computed the adjusted position of a node of type
+ * CHANX or CHANY. For uni-directional wires, return the position
+ * of the driver, and for bi-directional wires, compute the middle point.
+ * @param rr The ID of the node whose adjusted position is desired.
+ * @return The adjusted position (x, y).
+ */
+static std::pair<int, int> get_adjusted_rr_wire_position(RRNodeId rr);
+
+/**
+ * @brief Computes the adjusted position and source and sink nodes.
+ * SOURCE/SINK nodes assume the full dimensions of their associated block/
+ * This function computes the average position for the given node.
+ * @param rr SOURCE or SINK node whose adjusted position is needed.
+ * @return The adjusted position (x, y).
+ */
+static std::pair<int, int> get_adjusted_rr_src_sink_position(RRNodeId rr);
 
 // Constants needed to reduce the bounding box when expanding CHAN wires to reach the IPINs.
 // These are used when finding all the delays to get to the IPINs of all the different tile types
@@ -549,7 +585,6 @@ RRNodeId get_start_node(int layer, int start_x, int start_y, int target_x, int t
     return result;
 }
 
-/* returns the absolute delta_x and delta_y offset required to reach to_node from from_node */
 std::pair<int, int> get_xy_deltas(RRNodeId from_node, RRNodeId to_node) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
@@ -561,8 +596,8 @@ std::pair<int, int> get_xy_deltas(RRNodeId from_node, RRNodeId to_node) {
 
     if (!is_chan(from_type) && !is_chan(to_type)) {
         //Alternate formulation for non-channel types
-        auto [from_x, from_y] = adjust_rr_position(from_node);
-        auto [to_x, to_y] = adjust_rr_position(to_node);
+        auto [from_x, from_y] = get_adjusted_rr_position(from_node);
+        auto [to_x, to_y] = get_adjusted_rr_position(to_node);
 
         delta_x = to_x - from_x;
         delta_y = to_y - from_y;
@@ -757,7 +792,7 @@ t_routing_cost_map get_routing_cost_map(int longest_seg_length,
         routing_cost_map.fill(Expansion_Cost_Entry());
 
         // to avoid multiple memory allocation and de-allocations in run_dijkstra()
-        // dijkstra_data is created outside the for loop as passed by reference to dijkstra_data()
+        // dijkstra_data is created outside the for loop and passed by reference to dijkstra_data()
         t_dijkstra_data dijkstra_data;
 
         for (RRNodeId sample_node : sample_nodes) {
@@ -1375,23 +1410,23 @@ static void expand_dijkstra_neighbours(util::PQ_Entry parent_entry,
     }
 }
 
-static std::pair<int, int> adjust_rr_position(const RRNodeId rr) {
+static std::pair<int, int> get_adjusted_rr_position(const RRNodeId rr) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
     e_rr_type rr_type = rr_graph.node_type(rr);
 
     if (is_chan(rr_type)) {
-        return adjust_rr_wire_position(rr);
+        return get_adjusted_rr_wire_position(rr);
     } else if (is_pin(rr_type)) {
-        return adjust_rr_pin_position(rr);
+        return get_adjusted_rr_pin_position(rr);
     } else {
         VTR_ASSERT_SAFE(is_src_sink(rr_type));
-        return adjust_rr_src_sink_position(rr);
+        return get_adjusted_rr_src_sink_position(rr);
     }
 }
 
-static std::pair<int, int> adjust_rr_pin_position(const RRNodeId rr) {
+static std::pair<int, int> get_adjusted_rr_pin_position(const RRNodeId rr) {
     /*
      * VPR uses a co-ordinate system where wires above and to the right of a block
      * are at the same location as the block:
@@ -1458,7 +1493,7 @@ static std::pair<int, int> adjust_rr_pin_position(const RRNodeId rr) {
     return {x, y};
 }
 
-static std::pair<int, int> adjust_rr_wire_position(const RRNodeId rr) {
+static std::pair<int, int> get_adjusted_rr_wire_position(const RRNodeId rr) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
@@ -1481,7 +1516,7 @@ static std::pair<int, int> adjust_rr_wire_position(const RRNodeId rr) {
     }
 }
 
-static std::pair<int, int> adjust_rr_src_sink_position(const RRNodeId rr) {
+static std::pair<int, int> get_adjusted_rr_src_sink_position(const RRNodeId rr) {
     //SOURCE/SINK nodes assume the full dimensions of their
     //associated block
 

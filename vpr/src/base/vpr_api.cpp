@@ -462,7 +462,9 @@ void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
     float target_device_utilization = vpr_setup.PackerOpts.target_device_utilization;
     device_ctx.grid = create_device_grid(vpr_setup.device_layout, Arch.grid_layouts, num_type_instances, target_device_utilization);
 
-    VTR_ASSERT_MSG(device_ctx.grid.get_num_layers() <= MAX_NUM_LAYERS, "Number of layers should be less than MAX_NUM_LAYERS. If you need more layers, please increase the value of MAX_NUM_LAYERS in vpr_types.h");
+    VTR_ASSERT_MSG(device_ctx.grid.get_num_layers() <= MAX_NUM_LAYERS,
+                   "Number of layers should be less than MAX_NUM_LAYERS. "
+                   "If you need more layers, please increase the value of MAX_NUM_LAYERS in vpr_types.h");
 
     /*
      *Report on the device
@@ -1455,7 +1457,7 @@ void vpr_analysis(const Netlist<>& net_list,
         generate_setup_timing_stats(/*prefix=*/"", *timing_info,
                                     *analysis_delay_calc, vpr_setup.AnalysisOpts, vpr_setup.RouterOpts.flat_routing);
 
-        //Write the post-syntesis netlist
+        //Write the post-synthesis netlist
         if (vpr_setup.AnalysisOpts.gen_post_synthesis_netlist) {
             netlist_writer(atom_ctx.nlist.netlist_name().c_str(), analysis_delay_calc,
                            vpr_setup.AnalysisOpts);
