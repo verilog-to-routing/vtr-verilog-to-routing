@@ -14,23 +14,23 @@ NocRouter::NocRouter(int id,
 }
 
 // getters
-int NocRouter::get_router_user_id(void) const {
+int NocRouter::get_router_user_id() const {
     return router_user_id;
 }
 
-int NocRouter::get_router_grid_position_x(void) const {
+int NocRouter::get_router_grid_position_x() const {
     return router_grid_position_x;
 }
 
-int NocRouter::get_router_grid_position_y(void) const {
+int NocRouter::get_router_grid_position_y() const {
     return router_grid_position_y;
 }
 
-int NocRouter::get_router_layer_position(void) const {
+int NocRouter::get_router_layer_position() const {
     return router_layer_position;
 }
 
-t_physical_tile_loc NocRouter::get_router_physical_location(void) const {
+t_physical_tile_loc NocRouter::get_router_physical_location() const {
     const int x = get_router_grid_position_x();
     const int y = get_router_grid_position_y();
     const int layer = get_router_layer_position();
@@ -43,7 +43,7 @@ double NocRouter::get_latency() const {
     return router_latency;
 }
 
-ClusterBlockId NocRouter::get_router_block_ref(void) const {
+ClusterBlockId NocRouter::get_router_block_ref() const {
     return router_block_ref;
 }
 

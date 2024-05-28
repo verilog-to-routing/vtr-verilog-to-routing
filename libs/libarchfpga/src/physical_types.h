@@ -1947,8 +1947,14 @@ struct t_noc_inf {
     /** A list of all routers in the NoC*/
     std::vector<t_router> router_list;
 
+    /** Stores NoC routers that have a different latency than the NoC-wide router latency.
+     * (router_user_id, overridden router latency)*/
     std::map<int, double> router_latency_overrides;
+    /** Stores NoC links that have a different latency than the NoC-wide link latency.
+     * ((source router id, destination router id), overridden link latency)*/
     std::map<std::pair<int, int>, double> link_latency_overrides;
+    /** Stores NoC links that have a different bandwidth than the NoC-wide link bandwidth.
+     * ((source router id, destination router id), overridden link bandwidth)*/
     std::map<std::pair<int, int>, double> link_bandwidth_overrides;
 
     /** Represents the name of a router tile on the FPGA device. This should match the name used in the arch file when
@@ -1958,7 +1964,8 @@ struct t_noc_inf {
 
 /*   Detailed routing architecture */
 struct t_arch {
-    /** Stores unique strings used as key and values in <metadata> tags*/
+    /** Stores unique strings used as key and values in <metadata> tags,
+     * i.e. implements a flyweight pattern to save memory.*/
     mutable vtr::string_internment strings;
     std::vector<vtr::interned_string> interned_strings;
 

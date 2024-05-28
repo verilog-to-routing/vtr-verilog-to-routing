@@ -246,10 +246,14 @@ void create_noc_links(const t_noc_inf& noc_info, NocStorage* noc_model) {
             // get the converted id of the currently connected sink router
             sink_router = noc_model->convert_router_id(conn_router_id);
 
+            // check if this link has an overridden latency
             auto lat_it = noc_info.link_latency_overrides.find({router.id, conn_router_id});
+            // use the link-specific latency if it has an overridden latency, otherwise use the NoC-wide link latency
             double link_lat = (lat_it == noc_info.link_latency_overrides.end()) ? noc_info.link_latency : lat_it->second;
 
+            // check if this link has an overridden bandwidth
             auto bw_it = noc_info.link_bandwidth_overrides.find({router.id, conn_router_id});
+            // use the link-specific bandwidth if it has an overridden bandwidth, otherwise use the NoC-wide link bandwidth
             double link_bw = (bw_it == noc_info.link_bandwidth_overrides.end()) ? noc_info.link_bandwidth : bw_it->second;
 
             // add the link to the Noc

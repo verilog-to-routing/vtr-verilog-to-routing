@@ -6,18 +6,65 @@
 #include "vtr_log.h"
 #include "arch_error.h"
 
+/**
+ * @brief Process the <topology> tag under <noc> tag.
+ *
+ * Using <topology> tag, the user can specify a custom
+ * topology.
+ *
+ * @param topology_tag  An XML node pointing to a <topology> tag.
+ * @param loc_data Points to the location in the xml file where the parser is reading.
+ * @param noc_ref To be filled with NoC router locations and their connectivity.
+ */
 static void process_topology(pugi::xml_node topology_tag,
                             const pugiutil::loc_data& loc_data,
                             t_noc_inf* noc_ref);
 
-static void process_mesh_topology(pugi::xml_node mesh_topology_tag,
-                                  const pugiutil::loc_data& loc_data, t_noc_inf* noc_ref);
-
+/**
+ * @brief Process a <router> tag under a <topology> tag.
+ *
+ * A <topology> tag contains multiple <router> tags. Each <router> tag has
+ * attributes that specify its location and connectivity to other NoC routers.
+ *
+ * @param router_tag An XML node pointing to a <router> tag.
+ * @param loc_data Points to the location in the xml file where the parser is reading.
+ * @param noc_ref To be filled with the given router's location and connectivity information.
+ * @param routers_in_arch_info Stores router information that includes the number of connections
+ * a router has within a given topology and also the number of times a router was declared
+ * in the arch file using the <router> tag. [router_id, [n_declarations, n_connections]]
+ */
 static void process_router(pugi::xml_node router_tag,
                            const pugiutil::loc_data& loc_data,
                            t_noc_inf* noc_ref,
-                           std::map<int, std::pair<int, int>>& routers_info_in_arch);
+                           std::map<int, std::pair<int, int>>& routers_in_arch_info);
 
+/**
+ * @brief Processes the <mesh> tag under <noc> tag.
+ *
+ * Using the <mesh> tag, the user can describe a NoC with
+ * mesh topology.
+ *
+ * @param mesh_topology_tag An XML tag pointing to a <mesh> tag.
+ * @param loc_data Points to the location in the xml file where the parser is reading.
+ * @param noc_ref To be filled with NoC router locations and their connectivity.
+ */
+static void process_mesh_topology(pugi::xml_node mesh_topology_tag,
+                                  const pugiutil::loc_data& loc_data, t_noc_inf* noc_ref);
+
+
+/**
+ * Create routers and set their properties so that a mesh grid of routers is created.
+ * Then connect the routers together so that a mesh topology is created.
+ *
+ * @param mesh_topology_tag An XML tag pointing to a <mesh> tag.
+ * @param loc_data Points to the location in the xml file where the parser is reading.
+ * @param noc_ref To be filled with NoC router locations and their connectivity.
+ * @param mesh_region_start_x The location the bottom left NoC router on the X-axis.
+ * @param mesh_region_end_x The location the top right NoC router on the X-axis.
+ * @param mesh_region_start_y The location the bottom left NoC router on the Y-axis.
+ * @param mesh_region_end_y The location the top right NoC router on the Y-axis.
+ * @param mesh_size The number of NoC routers in each row or column.
+ */
 static void generate_noc_mesh(pugi::xml_node mesh_topology_tag,
                               const pugiutil::loc_data& loc_data,
                               t_noc_inf* noc_ref,
@@ -81,11 +128,20 @@ static void update_router_info_in_arch(int router_id,
                                        bool router_updated_as_a_connection,
                                        std::map<int, std::pair<int, int>>& routers_in_arch_info);
 
-
+/**
+ * @brief Process <overrides> tag under <noc> tag.
+ *
+ * The user can override the default latency and bandwidth values
+ * for specific NoC routers and links using <router> and <link>
+ * tags under <overrides> tag.
+ *
+ * @param noc_overrides_tag An XML node pointing to a <overrides> tag.
+ * @param loc_data Points to the location in the xml file where the parser is reading.
+ * @param noc_ref To be filled with parsed overridden latencies and bandwidths.
+ */
 static void process_noc_overrides(pugi::xml_node noc_overrides_tag,
                                   const pugiutil::loc_data& loc_data,
                                   t_noc_inf& noc_ref);
-
 
 void process_noc_tag(pugi::xml_node noc_tag,
                      t_arch* arch,
@@ -195,10 +251,6 @@ static void process_mesh_topology(pugi::xml_node mesh_topology_tag,
     generate_noc_mesh(mesh_topology_tag, loc_data, noc_ref, mesh_region_start_x, mesh_region_end_x, mesh_region_start_y, mesh_region_end_y, mesh_size);
 }
 
-/*
- * Create routers and set their properties so that a mesh grid of routers is created.
- * Then connect the routers together so that a mesh topology is created.
- */
 static void generate_noc_mesh(pugi::xml_node mesh_topology_tag,
                               const pugiutil::loc_data& loc_data,
                               t_noc_inf* noc_ref,
