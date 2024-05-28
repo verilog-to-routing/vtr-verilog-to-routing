@@ -123,7 +123,7 @@ t_ext_pin_util_targets& t_ext_pin_util_targets::operator=(t_ext_pin_util_targets
     return *this;
 }
 
-t_ext_pin_util t_ext_pin_util_targets::get_pin_util(const std::string& block_type_name) const {
+t_ext_pin_util t_ext_pin_util_targets::get_pin_util(std::string_view block_type_name) const {
     auto itr = overrides_.find(block_type_name);
     if (itr != overrides_.end()) {
         return itr->second;
@@ -248,7 +248,7 @@ void t_pack_high_fanout_thresholds::set(const std::string& block_type_name, int 
     overrides_[block_type_name] = threshold;
 }
 
-int t_pack_high_fanout_thresholds::get_threshold(const std::string& block_type_name) const {
+int t_pack_high_fanout_thresholds::get_threshold(std::string_view block_type_name) const {
     auto itr = overrides_.find(block_type_name);
     if (itr != overrides_.end()) {
         return itr->second;

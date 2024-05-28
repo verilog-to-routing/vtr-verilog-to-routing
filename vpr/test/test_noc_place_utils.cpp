@@ -1214,7 +1214,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
     // now check whether the expected noc costs that we manually calculated above match the noc costs found through the test function (we allow for a tolerance of difference)
     REQUIRE(vtr::isclose(golden_total_noc_aggr_bandwidth_cost, test_noc_costs.aggregate_bandwidth));
     REQUIRE(vtr::isclose(golden_total_noc_latency_cost, test_noc_costs.latency));
-    std::cout << golden_total_noc_latency_overrun_cost << " " <<  test_noc_costs.latency_overrun << std::endl;
+    std::cout << golden_total_noc_latency_overrun_cost << " " << test_noc_costs.latency_overrun << std::endl;
     REQUIRE(vtr::isclose(golden_total_noc_latency_overrun_cost, test_noc_costs.latency_overrun));
     REQUIRE(vtr::isclose(golden_total_noc_congestion_cost, test_noc_costs.congestion));
 
@@ -1686,7 +1686,6 @@ TEST_CASE("test_revert_noc_traffic_flow_routes", "[noc_place_utils]") {
         const NocLink& current_link = noc_ctx.noc_model.get_single_noc_link(current_link_id);
 
         REQUIRE(golden_link_bandwidths[current_link_id] == current_link.get_bandwidth_usage());
-
     }
 
     for (int traffic_flow_number = 0; traffic_flow_number < NUM_OF_TRAFFIC_FLOWS_NOC_PLACE_UTILS_TEST; traffic_flow_number++) {

@@ -2860,6 +2860,13 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("0.25")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+	noc_grp.add_argument<double>(args.noc_centroid_weight, "--noc_centroid_weight")
+        .help(
+            "Sets the minimum fraction of swaps attempted by the placer that are NoC blocks."
+            "This value is an integer ranging from 0-100. 0 means NoC blocks will be moved at the same rate as other blocks. 100 means all swaps attempted by the placer are NoC router blocks.")
+        .default_value("0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+        
     noc_grp.add_argument<double>(args.noc_swap_percentage, "--noc_swap_percentage")
         .help(
             "Sets the minimum fraction of swaps attempted by the placer that are NoC blocks. "
@@ -2906,6 +2913,21 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             "The default name is 'vpr_noc_placement_output.txt'")
         .default_value("vpr_noc_placement_output.txt")
         .show_in(argparse::ShowIn::HELP_ONLY);
+
+#ifndef NO_SERVER
+    auto& server_grp = parser.add_argument_group("server options");
+
+    server_grp.add_argument<bool, ParseOnOff>(args.is_server_mode_enabled, "--server")
+        .help("Run in server mode."
+              "Accept client application connection and respond to requests." )
+        .action(argparse::Action::STORE_TRUE)
+        .default_value("off");
+
+    server_grp.add_argument<int>(args.server_port_num, "--port")
+        .help("Server port number.")
+        .default_value("60555")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+#endif /* NO_SERVER */
 
     return parser;
 }

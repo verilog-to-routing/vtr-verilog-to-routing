@@ -84,9 +84,9 @@ static void highlight_partition(ezgl::renderer* g, int partitionID, int alpha) {
     auto constraints = floorplanning_ctx.constraints;
     t_draw_coords* draw_coords = get_draw_coords_vars();
 
-    auto partition = constraints.get_partition((PartitionId)partitionID);
-    auto& partition_region = partition.get_part_region();
-    auto regions = partition_region.get_partition_region();
+    const auto& partition = constraints.get_partition((PartitionId)partitionID);
+    const auto& partition_region = partition.get_part_region();
+    const auto& regions = partition_region.get_regions();
 
     bool name_drawn = false;
     ezgl::color partition_color = kelly_max_contrast_colors_no_black[partitionID % (kelly_max_contrast_colors_no_black.size())];
@@ -116,13 +116,13 @@ static void highlight_partition(ezgl::renderer* g, int partitionID, int alpha) {
 
         if (!name_drawn) {
             g->set_font_size(10);
-            std::string partition_name = partition.get_name();
+            const std::string& partition_name = partition.get_name();
 
             g->set_color(partition_color, 230);
 
             g->draw_text(
                 on_screen_rect.center(),
-                partition_name.c_str(),
+                partition_name,
                 on_screen_rect.width() - 10,
                 on_screen_rect.height() - 10);
 
@@ -165,12 +165,11 @@ void draw_constrained_atoms(ezgl::renderer* g) {
     for (int partitionID = 0; partitionID < num_partitions; partitionID++) {
         auto atoms = constraints.get_part_atoms((PartitionId)partitionID);
 
-        for (size_t j = 0; j < atoms.size(); j++) {
-            AtomBlockId const& const_atom = atoms[j];
-            if (atom_ctx.lookup.atom_pb(const_atom) != nullptr) {
-                const t_pb* pb = atom_ctx.lookup.atom_pb(const_atom);
+        for (const auto atom_id : atoms) {
+            if (atom_ctx.lookup.atom_pb(atom_id) != nullptr) {
+                const t_pb* pb = atom_ctx.lookup.atom_pb(atom_id);
                 auto color = kelly_max_contrast_colors_no_black[partitionID % (kelly_max_contrast_colors_no_black.size())];
-                ClusterBlockId clb_index = atom_ctx.lookup.atom_clb(atoms[j]);
+                ClusterBlockId clb_index = atom_ctx.lookup.atom_clb(atom_id);
                 auto type = cluster_ctx.clb_nlist.block_type(clb_index);
 
                 draw_internal_pb(clb_index, cluster_ctx.clb_nlist.block_pb(clb_index), pb, ezgl::rectangle({0, 0}, 0, 0), type, color, g);
@@ -232,7 +231,7 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* current_pb, c
 
             g->draw_text(
                 abs_bbox.center(),
-                blk_tag.c_str(),
+                blk_tag,
                 abs_bbox.width() + 10,
                 abs_bbox.height() + 10);
 
@@ -307,7 +306,7 @@ static GtkTreeModel* create_and_fill_model(void) {
 
     for (int partitionID = 0; partitionID < num_partitions; partitionID++) {
         auto atoms = constraints.get_part_atoms((PartitionId)partitionID);
-        auto partition = constraints.get_partition((PartitionId)partitionID);
+        const auto& partition = constraints.get_partition((PartitionId)partitionID);
 
         std::string partition_name(partition.get_name()
                                    + " (" + std::to_string(atoms.size()) + " primitives)");
@@ -318,8 +317,7 @@ static GtkTreeModel* create_and_fill_model(void) {
                            COL_NAME, partition_name.c_str(),
                            -1);
 
-        for (size_t j = 0; j < atoms.size(); j++) {
-            AtomBlockId const& const_atom = atoms[j];
+        for (auto const_atom : atoms) {
             std::string atom_name = (atom_ctx.lookup.atom_pb(const_atom))->name;
             gtk_tree_store_append(store, &child_iter, &iter);
             gtk_tree_store_set(store, &child_iter,
