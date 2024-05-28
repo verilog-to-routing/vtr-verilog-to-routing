@@ -3213,7 +3213,7 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
 }
 
 void uniquify_edges(t_rr_edge_info_set& rr_edges_to_create) {
-    std::sort(rr_edges_to_create.begin(), rr_edges_to_create.end());
+    std::stable_sort(rr_edges_to_create.begin(), rr_edges_to_create.end());
     rr_edges_to_create.erase(std::unique(rr_edges_to_create.begin(), rr_edges_to_create.end()), rr_edges_to_create.end());
 }
 

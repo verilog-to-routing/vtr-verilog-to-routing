@@ -75,6 +75,10 @@ struct t_options {
     argparse::ArgValue<bool> allow_dangling_combinational_nodes;
     argparse::ArgValue<bool> terminate_if_timing_fails;
 
+    /* Server options */
+    argparse::ArgValue<bool> is_server_mode_enabled;
+    argparse::ArgValue<int> server_port_num;
+
     /* Atom netlist options */
     argparse::ArgValue<bool> absorb_buffer_luts;
     argparse::ArgValue<e_const_gen_inference> const_gen_inference;
@@ -157,6 +161,7 @@ struct t_options {
     argparse::ArgValue<double> noc_latency_weighting;
     argparse::ArgValue<double> noc_congestion_weighting;
     argparse::ArgValue<double> noc_swap_percentage;
+    argparse::ArgValue<double> noc_centroid_weight;
     argparse::ArgValue<std::string> noc_placement_file_name;
 
     /* Timing-driven placement options only */

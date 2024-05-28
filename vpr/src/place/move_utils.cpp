@@ -16,10 +16,15 @@
 bool f_placer_breakpoint_reached = false;
 
 //Records counts of reasons for aborted moves
-static std::map<std::string, size_t> f_move_abort_reasons;
+static std::map<std::string, size_t, std::less<>> f_move_abort_reasons;
 
-void log_move_abort(const std::string& reason) {
-    ++f_move_abort_reasons[reason];
+void log_move_abort(std::string_view reason) {
+    auto it = f_move_abort_reasons.find(reason);
+    if (it != f_move_abort_reasons.end()) {
+        it->second++;
+    } else {
+        f_move_abort_reasons.emplace(reason, 1);
+    }
 }
 
 void report_aborted_moves() {
@@ -254,13 +259,13 @@ e_block_move_result record_macro_macro_swaps(t_pl_blocks_to_be_moved& blocks_aff
     //Continue walking along the overlapping parts of the from and to macros, recording
     //each block swap.
     //
-    //At the momemnt we only support swapping the two macros if they have the same shape.
+    //At the moment we only support swapping the two macros if they have the same shape.
     //This will be the case with the common cases we care about (i.e. carry-chains), so
     //we just abort in any other cases (if these types of macros become more common in
     //the future this could be updated).
     //
-    //Unless the two macros have thier root blocks aligned (i.e. the mutual overlap starts
-    //at imember_from == 0), then theree will be a fixed offset between the macros' relative
+    //Unless the two macros have their root blocks aligned (i.e. the mutual overlap starts
+    //at imember_from == 0), then there will be a fixed offset between the macros' relative
     //position. We record this as from_to_macro_*_offset which is used to verify the shape
     //of the macros is consistent.
     //
@@ -1003,7 +1008,7 @@ bool find_to_loc_centroid(t_logical_block_type_ptr blk_type,
 }
 
 //Array of move type strings
-static const std::array<std::string, NUM_PL_MOVE_TYPES + 1> move_type_strings = {
+static const std::array<std::string, NUM_PL_MOVE_TYPES + 2> move_type_strings = {
     "Uniform",
     "Median",
     "Centroid",
@@ -1011,6 +1016,7 @@ static const std::array<std::string, NUM_PL_MOVE_TYPES + 1> move_type_strings = 
     "W. Median",
     "Crit. Uniform",
     "Feasible Region",
+    "NoC Centroid",
     "Manual Move"};
 
 //To convert enum move type to string
@@ -1035,12 +1041,13 @@ void compressed_grid_to_loc(t_logical_block_type_ptr blk_type,
     to_loc = t_pl_loc(grid_loc.x, grid_loc.y, sub_tile, grid_loc.layer_num);
 }
 
-bool has_empty_compatible_subtile(t_logical_block_type_ptr type, const t_physical_tile_loc& to_loc) {
+int find_empty_compatible_subtile(t_logical_block_type_ptr type,
+                                  const t_physical_tile_loc& to_loc) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& place_ctx = g_vpr_ctx.placement();
 
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[type->index];
-    bool legal = false;
+    int return_sub_tile = -1;
 
     t_pl_loc to_uncompressed_loc;
     compressed_grid_to_loc(type, to_loc, to_uncompressed_loc);
@@ -1049,12 +1056,12 @@ bool has_empty_compatible_subtile(t_logical_block_type_ptr type, const t_physica
     const auto& compatible_sub_tiles = compressed_block_grid.compatible_sub_tiles_for_tile.at(phy_type->index);
     for (const auto& sub_tile : compatible_sub_tiles) {
         if (place_ctx.grid_blocks.is_sub_tile_empty(to_phy_uncompressed_loc, sub_tile)) {
-            legal = true;
+            return_sub_tile = sub_tile;
             break;
         }
     }
 
-    return legal;
+    return return_sub_tile;
 }
 
 bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
@@ -1147,7 +1154,7 @@ bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
             if (from_loc.x == to_loc.x && from_loc.y == to_loc.y && from_loc.layer_num == to_layer_num) {
                 continue;                  //Same from/to location -- try again for new y-position
             } else if (search_for_empty) { // Check if the location has at least one empty sub-tile
-                legal = has_empty_compatible_subtile(type, to_loc);
+                legal = find_empty_compatible_subtile(type, to_loc) >= 0;
             } else {
                 legal = true;
             }
@@ -1276,13 +1283,10 @@ bool intersect_range_limit_with_floorplan_constraints(t_logical_block_type_ptr t
                                max_grid_loc.y,
                                layer_num});
 
-    auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
+    const auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
 
-    PartitionRegion pr = floorplanning_ctx.cluster_constraints[b_from];
-    std::vector<Region> regions;
-    if (!pr.empty()) {
-        regions = pr.get_partition_region();
-    }
+    const PartitionRegion& pr = floorplanning_ctx.cluster_constraints[b_from];
+    const std::vector<Region>& regions = pr.get_regions();
     Region intersect_reg;
     /*
      * If region size is greater than 1, the block is constrained to more than one rectangular region.

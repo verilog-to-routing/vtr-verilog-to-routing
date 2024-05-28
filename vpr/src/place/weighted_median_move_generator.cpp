@@ -87,9 +87,9 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
     }
 
     //calculate the weighted median region
-    std::sort(place_move_ctx.X_coord.begin(), place_move_ctx.X_coord.end());
-    std::sort(place_move_ctx.Y_coord.begin(), place_move_ctx.Y_coord.end());
-    std::sort(place_move_ctx.layer_coord.begin(), place_move_ctx.layer_coord.end());
+    std::stable_sort(place_move_ctx.X_coord.begin(), place_move_ctx.X_coord.end());
+    std::stable_sort(place_move_ctx.Y_coord.begin(), place_move_ctx.Y_coord.end());
+    std::stable_sort(place_move_ctx.layer_coord.begin(), place_move_ctx.layer_coord.end());
 
     if (place_move_ctx.X_coord.size() == 1) {
         limit_coords.xmin = place_move_ctx.X_coord[0];

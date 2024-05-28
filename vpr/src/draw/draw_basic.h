@@ -107,6 +107,14 @@ void draw_routing_util(ezgl::renderer* g);
 void draw_crit_path(ezgl::renderer* g);
 
 /**
+ * @brief Draw critical path elements.
+ * 
+ * This function draws critical path elements based on the provided timing paths
+ * and indexes map. It is primarily used in server mode, where items are drawn upon request.
+ */
+void draw_crit_path_elements(const std::vector<tatum::TimingPath>& paths, const std::map<std::size_t, std::set<std::size_t>>& indexes, bool draw_crit_path_contour, ezgl::renderer* g);
+
+/**
  * @brief  Checks whether a flyline should be drawn or not based on the layer control settings in the UI
  * @param src_layer
  * @param sink_layer
@@ -118,7 +126,7 @@ void draw_crit_path(ezgl::renderer* g);
 bool is_flyline_valid_to_draw(int src_layer, int sink_layer);
 
 /* Draws critical path shown as flylines. Takes in start and end coordinates, time delay, & renderer.*/
-void draw_flyline_timing_edge(ezgl::point2d start, ezgl::point2d end, float incr_delay, ezgl::renderer* g);
+void draw_flyline_timing_edge(ezgl::point2d start, ezgl::point2d end, float incr_delay, ezgl::renderer* g, bool skip_draw_delays=false);
 
 /* Collects all the drawing locations associated with the timing edge between start and end.
  * Only traces interconnect edges in detail, and treats all others as flylines.

@@ -871,7 +871,7 @@ float delay_reduce(std::vector<float>& delays, e_reducer reducer) {
         auto itr = std::max_element(delays.begin(), delays.end());
         delay = *itr;
     } else if (reducer == e_reducer::MEDIAN) {
-        std::sort(delays.begin(), delays.end());
+        std::stable_sort(delays.begin(), delays.end());
         delay = vtr::median(delays.begin(), delays.end());
     } else if (reducer == e_reducer::ARITHMEAN) {
         delay = vtr::arithmean(delays.begin(), delays.end());
