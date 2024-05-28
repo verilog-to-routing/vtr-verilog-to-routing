@@ -2545,7 +2545,7 @@ static void ProcessBlockTypeLocs(t_grid_def& grid_def,
             right_edge.y.start_expr = "0";
             right_edge.y.end_expr = "H - 1";
 
-            t_grid_loc_def bottom_edge(type_name, priority); //Exclucing corners
+            t_grid_loc_def bottom_edge(type_name, priority); //Excluding corners
             bottom_edge.x.start_expr = "1";
             bottom_edge.x.end_expr = "W - 2";
             bottom_edge.y.start_expr = "0";
@@ -3495,9 +3495,6 @@ static void ProcessSubTiles(pugi::xml_node Node,
 
     // used to assign indices to subtiles
     int subtile_index = 0;
-
-    // used to find duplicate port names
-    std::unordered_map<std::string, t_physical_tile_port> tile_port_names;
 
     CurSubTile = get_first_child(Node, "sub_tile", loc_data);
 

@@ -11,7 +11,7 @@ const std::vector<NocLinkId>& NocStorage::get_noc_router_connections(NocRouterId
     return router_link_list[id];
 }
 
-const vtr::vector<NocRouterId, NocRouter>& NocStorage::get_noc_routers(void) const {
+const vtr::vector<NocRouterId, NocRouter>& NocStorage::get_noc_routers() const {
     return router_storage;
 }
 
@@ -19,23 +19,23 @@ int NocStorage::get_number_of_noc_routers(void) const {
     return router_storage.size();
 }
 
-const vtr::vector<NocLinkId, NocLink>& NocStorage::get_noc_links(void) const {
+const vtr::vector<NocLinkId, NocLink>& NocStorage::get_noc_links() const {
     return link_storage;
 }
 
-vtr::vector<NocLinkId, NocLink>& NocStorage::get_mutable_noc_links(void) {
+vtr::vector<NocLinkId, NocLink>& NocStorage::get_mutable_noc_links() {
     return link_storage;
 }
 
-int NocStorage::get_number_of_noc_links(void) const {
+int NocStorage::get_number_of_noc_links() const {
     return link_storage.size();
 }
 
-double NocStorage::get_noc_link_latency(void) const {
+double NocStorage::get_noc_link_latency() const {
     return noc_link_latency;
 }
 
-double NocStorage::get_noc_router_latency(void) const {
+double NocStorage::get_noc_router_latency() const {
     return noc_router_latency;
 }
 
@@ -45,10 +45,6 @@ bool NocStorage::get_detailed_router_latency() const {
 
 bool NocStorage::get_detailed_link_latency() const {
     return detailed_link_latency_;
-}
-
-bool NocStorage::get_detailed_link_bandwidth() const {
-    return detailed_link_bandwidth_;
 }
 
 const NocRouter& NocStorage::get_single_noc_router(NocRouterId id) const {
@@ -225,12 +221,6 @@ void NocStorage::finished_building_noc() {
                                                   return a.get_latency() != b.get_latency();
                                               });
     detailed_link_latency_ = (link_latency_it != link_storage.end());
-
-    auto link_bandwidth_it = std::adjacent_find(link_storage.begin(), link_storage.end(),
-                                                [](const NocLink& a, const NocLink& b) {
-                                                    return a.get_bandwidth() != b.get_bandwidth();
-                                                });
-    detailed_link_bandwidth_ = (link_bandwidth_it != link_storage.end());
 }
 
 void NocStorage::clear_noc() {
@@ -252,7 +242,7 @@ NocRouterId NocStorage::convert_router_id(int id) const {
     return result->second;
 }
 
-void NocStorage::make_room_for_noc_router_link_list(void) {
+void NocStorage::make_room_for_noc_router_link_list() {
     VTR_ASSERT_MSG(!built_noc, "NoC already built, cannot modify further.");
     router_link_list.resize(router_storage.size());
 }

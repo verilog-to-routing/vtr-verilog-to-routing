@@ -143,13 +143,6 @@ class NocStorage {
     bool detailed_link_latency_;
 
     /**
-     * @brief When set true, specifies that some NoC links have different
-     * bandwidth than others. When set false, all the NoC link have the same
-     * bandwidth.
-     */
-    bool detailed_link_bandwidth_;
-
-    /**
      * @brief A constant reference to this vector is returned by get_noc_links(...).
      * This is used to avoid memory allocation whenever get_noc_links(...) is called.
      * The vector is mutable so that get_noc_links(...), which is a const method, can
@@ -200,13 +193,13 @@ class NocStorage {
      * 
      * @return A vector of routers.
      */
-    const vtr::vector<NocRouterId, NocRouter>& get_noc_routers(void) const;
+    const vtr::vector<NocRouterId, NocRouter>& get_noc_routers() const;
 
     /**
      * @return An integer representing the total number of routers within the
      * NoC.
      */
-    int get_number_of_noc_routers(void) const;
+    int get_number_of_noc_routers() const;
 
     /**
      * @brief Get all the links in the NoC. The links themselves cannot
@@ -215,7 +208,7 @@ class NocStorage {
      * 
      * @return A vector of links. 
      */
-    const vtr::vector<NocLinkId, NocLink>& get_noc_links(void) const;
+    const vtr::vector<NocLinkId, NocLink>& get_noc_links() const;
 
     /**
      * @brief Get all the links in the NoC. The links themselves can
@@ -368,7 +361,7 @@ class NocStorage {
      * tile that this router represents.
      */
     void add_router(int id,
-                    int grid_position_x, int grid_position_y, int layer_poisition,
+                    int grid_position_x, int grid_position_y, int layer_position,
                     double latency);
 
     /**
@@ -477,7 +470,7 @@ class NocStorage {
      * number of routers in the NoC. 
      * 
      */
-    void make_room_for_noc_router_link_list(void);
+    void make_room_for_noc_router_link_list();
 
     /**
      * @brief Two links are considered parallel when the source router of one
