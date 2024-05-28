@@ -12,7 +12,9 @@
 #include "AnalyticalSolver.h"
 #include "PlacementLegalizer.h"
 #include "globals.h"
+#include "partition_region.h"
 #include "prepack.h"
+#include "vpr_constraints.h"
 #include "vpr_context.h"
 #include "vtr_time.h"
 
@@ -51,26 +53,19 @@ void run_analytical_placement_flow() {
     // Using the placement from the SA to get the fixed block locations
     std::set<AtomBlockId> fixed_blocks;
     std::map<AtomBlockId, double> fixed_blocks_x, fixed_blocks_y;
+    const VprConstraints constraints = g_vpr_ctx.mutable_floorplanning().constraints;
     for (const AtomNetId& net_id : atom_netlist.nets()) {
         if (PartialPlacement::net_is_ignored_for_placement(atom_netlist, net_id))
             continue;
         for (AtomPinId pin_id : atom_netlist.net_pins(net_id)) {
             AtomBlockId blk_id = atom_netlist.pin_block(pin_id);
-            AtomBlockType blk_type = atom_netlist.block_type(blk_id);
-            if (blk_type == AtomBlockType::INPAD || blk_type == AtomBlockType::OUTPAD)
+            if (constraints.get_atom_partition(blk_id) != PartitionId::INVALID() && 
+                fixed_blocks.find(blk_id) == fixed_blocks.end()) {
                 fixed_blocks.insert(blk_id);
-        }
-    }
-    const PlacementContext& SA_placement_ctx = g_vpr_ctx.placement();
-    const ClusteredNetlist& clustered_netlist = g_vpr_ctx.clustering().clb_nlist;
-    ClusterAtomsLookup clusterBlockToAtomBlockLookup;
-    clusterBlockToAtomBlockLookup.init_lookup();
-    for (ClusterBlockId cluster_blk_id : clustered_netlist.blocks()) {
-        for (AtomBlockId atom_blk_id : clusterBlockToAtomBlockLookup.atoms_in_cluster(cluster_blk_id)) {
-            // Only transfer the fixed block locations
-            if (fixed_blocks.find(atom_blk_id) != fixed_blocks.end()) {
-                fixed_blocks_x[atom_blk_id] = SA_placement_ctx.block_locs[cluster_blk_id].loc.x;
-                fixed_blocks_y[atom_blk_id] = SA_placement_ctx.block_locs[cluster_blk_id].loc.y;
+                PartitionRegion pr = constraints.get_partition_pr(constraints.get_atom_partition(blk_id));
+                VTR_ASSERT(pr.get_regions().size() == 1);
+                fixed_blocks_x[blk_id] = pr.get_regions()[0].get_region_rect().xmin;
+                fixed_blocks_y[blk_id] = pr.get_regions()[0].get_region_rect().ymin;
             }
         }
     }
