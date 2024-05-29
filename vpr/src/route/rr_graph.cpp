@@ -2565,7 +2565,7 @@ static void build_bidir_rr_opins(RRGraphBuilder& rr_graph_builder,
     if ((i == 0 && side != RIGHT)
         || (i == int(grid.width() - 1) && side != LEFT)
         || (j == 0 && side != TOP)
-        || (j == int(grid.width() - 1) && side != BOTTOM)) {
+        || (j == int(grid.height() - 1) && side != BOTTOM)) {
         return;
     }
 
