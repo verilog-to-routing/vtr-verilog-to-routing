@@ -459,8 +459,9 @@ static void process_global_blocks(const Netlist<>& net_list, std::ifstream& fp, 
 
             if (block_loc.loc.x != x || block_loc.loc.y != y) {
                 vpr_throw(VPR_ERROR_ROUTE, filename, lineno,
-                          "The placement coordinates (%d, %d) of %d block does not match given (%d, %d)",
-                          x, y, block_loc.loc.x, block_loc.loc.y);
+                          "The placement coordinates (%d,%d,%d) of %d block does not match given (%d,%d,%d)",
+                          layer_num, x, y, 
+                          block_loc.loc.layer, block_loc.loc.x, block_loc.loc.y);
             }
 
             auto pin_class = get_class_range_for_block(bnum, is_flat);
@@ -601,7 +602,7 @@ void print_route(const Netlist<>& net_list,
 
                     if ((ilow != rr_graph.node_xhigh(inode))
                         || (jlow != rr_graph.node_yhigh(inode)))
-                        fprintf(fp, "to (%d,%d) ", rr_graph.node_xhigh(inode),
+                        fprintf(fp, "to (%d,%d,%d) ", layer_num, rr_graph.node_xhigh(inode),
                                 rr_graph.node_yhigh(inode));
 
                     switch (rr_type) {
@@ -685,9 +686,10 @@ void print_route(const Netlist<>& net_list,
                 int iclass = get_block_pin_class_num(block_id, pin_id, is_flat);
                 t_block_loc blk_loc;
                 blk_loc = get_block_loc(block_id, is_flat);
-                fprintf(fp, "Block %s (#%zu) at (%d,%d), Pin class %d.\n",
+                fprintf(fp, "Block %s (#%zu) at (%d,%d,%d), Pin class %d.\n",
                         net_list.block_name(block_id).c_str(),
                         size_t(block_id),
+                        blk_loc.loc.layer,
                         blk_loc.loc.x,
                         blk_loc.loc.y,
                         iclass);
