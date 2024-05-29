@@ -1330,7 +1330,7 @@ Instead changes should be made in the relevant up-stream repository, and then sy
 
     For example to update the `libtatum` subtree:
     ```shell
-    ./dev/external_subtrees.py --update libtatum
+    ./dev/external_subtrees.py --update libtatum -m "commit message describing why component is being updated"
     ```
 
 ## Adding a new Subtree
@@ -1372,8 +1372,66 @@ To add a new external subtree to VTR do the following:
     This will create two commits to the repository.
     The first will squash all the upstream changes, the second will merge those changes into the current branch.
 
+## Pushing VTR Changes Back to Upstream Subtree
 
-## Subtree Rational
+If there are changes in the VTR repo in a subtree that should be merged back
+into the source repo of the subtree, the changes can be pushed back manually.
+
+The instructions above used a Python script to simplify updating subtrees in
+VTR. This is fine for pulling in changes from a remote repo; however, it is not
+good for pushing changes back. This is because these changes need to be pushed
+somewhere, and it is not a good idea to just push it back to the master branch
+directly. Instead, it should be pushed to a temporary branch. Then a PR can be
+made to bring the changes into the target repo.
+
+To push changes VTR made to a subtree do the following:
+
+1. Create a fork of the target repo. Optionally you can create a branch to be
+   the target of the push, or you can just use master.
+
+2. Run:
+   ```shell
+   cd $VTR_ROOT
+   git subtree push --prefix=<subtree_path> <forked_repo_url> <branch_name>
+   ```
+   The prefix is the internal path to the subtree, as written in
+   `dev/subtree_config.xml`.
+
+3. Create a PR from your forked repo to the main repo, sharing the amazing
+   changes with the world.
+
+## Tutorial: Syncing Tatum with VTR
+
+This tutorial will show you how to synchronize `libtatum` in VTR and
+[Tatum](https://github.com/verilog-to-routing/tatum); however, similar steps
+can be done to synchronize any subtree in VTR.
+
+First, we will pull in (update) any changes in Tatum that are not in VTR yet.
+On a clean branch (based off master), execute the following:
+```shell
+cd $VTR_ROOT
+./dev/external_subtrees.py --update libtatum -m "Pulling in changes from Tatum."
+```
+If the output in the terminal says `Subtree is already at commit <commit_hash>`,
+then there is nothing to pull in. If it says changes were pulled in, a commit
+would have already been made for you. Push these changes to your branch and
+raise a PR on VTR to merge these changes in.
+
+After pulling in all the changes from Tatum, without changing branches, we will
+push our VTR changes to Tatum. This is a bit more complicated since, as stated
+in the section on pushing to subtrees, the changes cannot just be pushed to
+master.
+
+Create a fork of Tatum and make sure the master branch of that fork is
+synchronized with Tatum's master branch. Then execute the following:
+```shell
+cd $VTR_ROOT
+git subtree push --prefix=libs/EXTERNAL/libtatum <forked_repo_url> master
+```
+After that command finishes, raise a PR from your forked repo onto the Tatum
+repo for the changes to be reviewed and merged in.
+
+## Subtree Rationale
 
 VTR uses subtrees to allow easy tracking of upstream dependencies.
 
@@ -1470,3 +1528,4 @@ The following outlines the procedure to following when making an official VTR re
  * Add the new change log entry to the [GitHub release description](https://github.com/verilog-to-routing/vtr-verilog-to-routing/releases)
  * Update the [ReadTheDocs configuration](https://readthedocs.org/projects/vtr/versions/) to build and serve documentation for the relevant tag (e.g. `v8.0.0`)
  * Send a release announcement email to the [vtr-announce](mailto:vtr-announce@googlegroups.com) mailing list (make sure to thank all contributors!)
+
