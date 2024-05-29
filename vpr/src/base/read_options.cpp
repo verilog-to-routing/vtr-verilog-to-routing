@@ -2901,7 +2901,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("0")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
-    noc_grp.add_argument<bool>(args.noc_sat_routing_log_search_progress, "--noc_sat_routing_log_search_progress")
+    noc_grp.add_argument<bool, ParseOnOff>(args.noc_sat_routing_log_search_progress, "--noc_sat_routing_log_search_progress")
         .help(
             "Print the detailed log of the SAT solver's search progress.")
         .default_value("off")
