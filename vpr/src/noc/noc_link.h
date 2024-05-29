@@ -143,7 +143,6 @@ class NocLink {
      */
     void set_bandwidth(double new_bandwidth);
 
-    
     /**
      * @brief Returns the unique link ID. The ID can be used to index
      * vtr::vector<NoCLinkId, ...> instances.

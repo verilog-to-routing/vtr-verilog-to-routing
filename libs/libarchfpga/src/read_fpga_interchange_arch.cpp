@@ -5,29 +5,28 @@
 
 #ifdef VTR_ENABLE_CAPNPROTO
 
-#include <algorithm>
-#include <kj/std/iostream.h>
-#include <limits>
-#include <map>
-#include <regex>
-#include <set>
-#include <stdlib.h>
-#include <string>
-#include <string.h>
-#include <zlib.h>
-#include <sstream>
+#    include <algorithm>
+#    include <kj/std/iostream.h>
+#    include <limits>
+#    include <map>
+#    include <regex>
+#    include <set>
+#    include <stdlib.h>
+#    include <string>
+#    include <string.h>
+#    include <zlib.h>
+#    include <sstream>
 
-#include "vtr_assert.h"
-#include "vtr_digest.h"
-#include "vtr_log.h"
-#include "vtr_memory.h"
-#include "vtr_util.h"
+#    include "vtr_assert.h"
+#    include "vtr_digest.h"
+#    include "vtr_log.h"
+#    include "vtr_memory.h"
+#    include "vtr_util.h"
 
-#include "arch_check.h"
-#include "arch_error.h"
-#include "arch_util.h"
-#include "arch_types.h"
-
+#    include "arch_check.h"
+#    include "arch_error.h"
+#    include "arch_util.h"
+#    include "arch_types.h"
 
 /*
  * FPGA Interchange Device frontend
@@ -2503,7 +2502,7 @@ struct ArchReader {
     }
 };
 
-#endif  // VTR_ENABLE_CAPNPROTO
+#endif // VTR_ENABLE_CAPNPROTO
 
 void FPGAInterchangeReadArch(const char* FPGAInterchangeDeviceFile,
                              const bool /*timing_enabled*/,
@@ -2551,12 +2550,12 @@ void FPGAInterchangeReadArch(const char* FPGAInterchangeDeviceFile,
 
     ArchReader reader(arch, device_reader, FPGAInterchangeDeviceFile, PhysicalTileTypes, LogicalBlockTypes);
     reader.read_arch();
-#else   // VTR_ENABLE_CAPNPROTO
+#else  // VTR_ENABLE_CAPNPROTO
     // If CAPNPROTO is disabled, throw an error.
     (void)FPGAInterchangeDeviceFile;
     (void)arch;
     (void)PhysicalTileTypes;
     (void)LogicalBlockTypes;
     throw vtr::VtrError("Unable to read FPGA interchange if CAPNPROTO is not enabled", __FILE__, __LINE__);
-#endif  // VTR_ENABLE_CAPNPROTO
+#endif // VTR_ENABLE_CAPNPROTO
 }

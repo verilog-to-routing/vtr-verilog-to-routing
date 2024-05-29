@@ -6,6 +6,9 @@
 #include "place_constraints.h"
 #include "vtr_math.h"
 
+#include <limits>
+#include <queue>
+
 /**
  * @brief Evaluates whether a NoC router swap should be accepted or not.
  * If delta cost is non-positive, the move is always accepted. If the cost
@@ -104,6 +107,11 @@ static void place_noc_routers_randomly(std::vector<ClusterBlockId>& unfixed_rout
      * only once.
      */
 
+    // check if all NoC routers have already been placed
+    if (unfixed_routers.empty()) {
+        return;
+    }
+
     // Make a copy of NoC physical routers because we want to change its order
     vtr::vector<NocRouterId, NocRouter> noc_phy_routers = noc_ctx.noc_model.get_noc_routers();
 
@@ -188,7 +196,6 @@ static void noc_routers_anneal(const t_noc_opts& noc_opts) {
     const double starting_prob = 0.5;
     const double prob_step = starting_prob / N_MOVES;
 
-
     // The checkpoint stored the placement with the lowest cost.
     NoCPlacementCheckpoint checkpoint;
 
@@ -245,7 +252,7 @@ static void noc_routers_anneal(const t_noc_opts& noc_opts) {
     }
 }
 
-void initial_noc_placement(const t_noc_opts& noc_opts, int seed) {
+void initial_noc_placement(const t_noc_opts& noc_opts, const t_placer_opts& placer_opts) {
     auto& noc_ctx = g_vpr_ctx.noc();
 
     // Get all the router clusters
@@ -269,7 +276,7 @@ void initial_noc_placement(const t_noc_opts& noc_opts, int seed) {
     }
 
     // Place unconstrained NoC routers randomly
-    place_noc_routers_randomly(unfixed_routers, seed);
+    place_noc_routers_randomly(unfixed_routers, placer_opts.seed);
 
     // populate internal data structures to maintain route, bandwidth usage, and latencies
     initial_noc_routing();

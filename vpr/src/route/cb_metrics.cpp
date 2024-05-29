@@ -611,7 +611,7 @@ static void get_pin_locations(const t_physical_tile_type_ptr block_type, const e
                 }
             }
             /* sort the vector at the current side in increasing order, for good measure */
-            sort(pin_locations->at(iside).begin(), pin_locations->at(iside).end());
+	    std::stable_sort(pin_locations->at(iside).begin(), pin_locations->at(iside).end());
         }
     }
     /* now we have a vector of vectors [0..3][0..num_pins_on_this_side] specifying which pins are on which side */

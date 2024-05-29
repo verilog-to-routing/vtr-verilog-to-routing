@@ -5,7 +5,6 @@
 #include <iostream>
 #include <numeric>
 #include <chrono>
-#include <vtr_ndmatrix.h>
 #include <optional>
 
 #include "NetPinTimingInvalidator.h"
@@ -16,6 +15,7 @@
 #include "vtr_geometry.h"
 #include "vtr_time.h"
 #include "vtr_math.h"
+#include "vtr_ndmatrix.h"
 
 #include "vpr_types.h"
 #include "vpr_error.h"
@@ -75,7 +75,7 @@
  * -1*(1.5-REWARD_BB_TIMING_RELATIVE_WEIGHT)*timing_cost + (1+REWARD_BB_TIMING_RELATIVE_WEIGHT)*bb_cost)
  */
 
-#define REWARD_BB_TIMING_RELATIVE_WEIGHT 0.4
+static constexpr float REWARD_BB_TIMING_RELATIVE_WEIGHT = 0.4;
 
 #ifdef VTR_ENABLE_DEBUG_LOGGING
 #    include "draw_types.h"
@@ -90,12 +90,12 @@ using std::min;
 
 /* This defines the error tolerance for floating points variables used in *
  * cost computation. 0.01 means that there is a 1% error tolerance.       */
-#define ERROR_TOL .01
+static constexpr double ERROR_TOL = .01;
 
 /* This defines the maximum number of swap attempts before invoking the   *
  * once-in-a-while placement legality check as well as floating point     *
  * variables round-offs check.                                            */
-#define MAX_MOVES_BEFORE_RECOMPUTE 500000
+static constexpr int MAX_MOVES_BEFORE_RECOMPUTE = 500000;
 
 /* Flags for the states of the bounding box.                              *
  * Stored as char for memory efficiency.                                  */
@@ -103,7 +103,7 @@ using std::min;
 #define UPDATED_ONCE 'U'
 #define GOT_FROM_SCRATCH 'S'
 
-/* For comp_cost.  NORMAL means use the method that generates updateable  *
+/* For comp_cost.  NORMAL means use the method that generates updatable   *
  * bounding boxes for speed.  CHECK means compute all bounding boxes from *
  * scratch using a very simple routine to allow checks of the other       *
  * costs.                                   
@@ -543,8 +543,7 @@ static void print_resources_utilization();
 
 static void print_placement_swaps_stats(const t_annealing_state& state);
 
-static void print_placement_move_types_stats(
-    const MoveTypeStat& move_type_stat);
+static void print_placement_move_types_stats(const MoveTypeStat& move_type_stat);
 
 /*****************************************************************************/
 void try_place(const Netlist<>& net_list,
@@ -649,7 +648,7 @@ void try_place(const Netlist<>& net_list,
                      * pow(net_list.blocks().size(), 1.3333));
 
     //create the move generator based on the chosen strategy
-    create_move_generators(move_generator, move_generator2, placer_opts, move_lim);
+    create_move_generators(move_generator, move_generator2, placer_opts, move_lim, noc_opts.noc_centroid_weight);
 
     alloc_and_load_placement_structs(placer_opts.place_cost_exp, placer_opts, noc_opts, directs, num_directs);
 
@@ -826,7 +825,8 @@ void try_place(const Netlist<>& net_list,
     VTR_LOG("Initial placement cost: %g bb_cost: %g td_cost: %g\n", costs.cost,
             costs.bb_cost, costs.timing_cost);
     if (noc_opts.noc) {
-        VTR_LOG("NoC Placement Costs. "
+        VTR_LOG(
+            "NoC Placement Costs. "
             "cost: %g, "
             "aggregate_bandwidth_cost: %g, "
             "latency_cost: %g, "
@@ -893,9 +893,6 @@ void try_place(const Netlist<>& net_list,
                 costs.noc_cost_terms.congestion,
                 get_total_congestion_bandwidth_ratio(),
                 get_number_of_congested_noc_links());
-
-
-
     }
     //Draw the initial placement
     update_screen(ScreenUpdatePriority::MAJOR, msg, PLACEMENT, timing_info);
@@ -936,9 +933,9 @@ void try_place(const Netlist<>& net_list,
 
     //allocate move type statistics vectors
     MoveTypeStat move_type_stat;
-    move_type_stat.blk_type_moves.resize(device_ctx.logical_block_types.size() * placer_opts.place_static_move_prob.size(), 0);
-    move_type_stat.accepted_moves.resize(device_ctx.logical_block_types.size() * placer_opts.place_static_move_prob.size(), 0);
-    move_type_stat.rejected_moves.resize(device_ctx.logical_block_types.size() * placer_opts.place_static_move_prob.size(), 0);
+    move_type_stat.blk_type_moves.resize({device_ctx.logical_block_types.size(), (int)e_move_type::NUMBER_OF_AUTO_MOVES}, 0);
+    move_type_stat.accepted_moves.resize({device_ctx.logical_block_types.size(), (int)e_move_type::NUMBER_OF_AUTO_MOVES}, 0);
+    move_type_stat.rejected_moves.resize({device_ctx.logical_block_types.size(), (int)e_move_type::NUMBER_OF_AUTO_MOVES}, 0);
 
     /* Get the first range limiter */
     first_rlim = (float)max(device_ctx.grid.width() - 1,
@@ -982,7 +979,7 @@ void try_place(const Netlist<>& net_list,
 #endif /* ENABLE_ANALYTIC_PLACE */
 
     //RL agent state definition
-    e_agent_state agent_state = EARLY_IN_THE_ANNEAL;
+    e_agent_state agent_state = e_agent_state::EARLY_IN_THE_ANNEAL;
 
     std::unique_ptr<MoveGenerator> current_move_generator;
 
@@ -1012,7 +1009,7 @@ void try_place(const Netlist<>& net_list,
                 //see if we should save the current placement solution as a checkpoint
 
                 if (placer_opts.place_checkpointing
-                    && agent_state == LATE_IN_THE_ANNEAL) {
+                    && agent_state == e_agent_state::LATE_IN_THE_ANNEAL) {
                     save_placement_checkpoint_if_needed(placement_checkpoint,
                                                         timing_info, costs, critical_path.delay());
                 }
@@ -1046,9 +1043,9 @@ void try_place(const Netlist<>& net_list,
 
             if (placer_opts.place_algorithm.is_timing_driven()
                 && placer_opts.place_agent_multistate
-                && agent_state == EARLY_IN_THE_ANNEAL) {
+                && agent_state == e_agent_state::EARLY_IN_THE_ANNEAL) {
                 if (state.alpha < 0.85 && state.alpha > 0.6) {
-                    agent_state = LATE_IN_THE_ANNEAL;
+                    agent_state = e_agent_state::LATE_IN_THE_ANNEAL;
                     VTR_LOG("Agent's 2nd state: \n");
                 }
             }
@@ -1065,7 +1062,7 @@ void try_place(const Netlist<>& net_list,
             //#endif
         } while (state.outer_loop_update(stats.success_rate, costs, placer_opts,
                                          annealing_sched));
-        /* Outer loop of the simmulated annealing ends */
+        /* Outer loop of the simulated annealing ends */
     } //skip_anneal ends
 
     /* Start Quench */
@@ -1083,7 +1080,7 @@ void try_place(const Netlist<>& net_list,
                                       placer_setup_slacks.get(), pin_timing_invalidator.get(),
                                       timing_info.get());
 
-        //move the appropoiate move_generator to be the current used move generator
+        //move the appropriate move_generator to be the current used move generator
         assign_current_move_generator(move_generator, move_generator2,
                                       agent_state, placer_opts, true, current_move_generator);
 
@@ -1224,7 +1221,8 @@ void try_place(const Netlist<>& net_list,
                 get_total_congestion_bandwidth_ratio(),
                 get_number_of_congested_noc_links());
 
-        VTR_LOG("\nNoC Placement Costs. "
+        VTR_LOG(
+            "\nNoC Placement Costs. "
             "cost: %g, "
             "aggregate_bandwidth_cost: %g, "
             "latency_cost: %g, "
@@ -1481,7 +1479,6 @@ static void recompute_costs_from_scratch(const t_placer_opts& placer_opts,
                                  "noc_congestion_cost");
         }
         costs->noc_cost_terms.congestion = new_noc_cost.congestion;
-
     }
 }
 
@@ -1725,7 +1722,7 @@ static e_move_result try_swap(const t_annealing_state* state,
     }
 
     if (proposed_action.logical_blk_type_index != -1) { //if the agent proposed the block type, then collect the block type stat
-        ++move_type_stat.blk_type_moves[(proposed_action.logical_blk_type_index * (placer_opts.place_static_move_prob.size())) + (int)proposed_action.move_type];
+        ++move_type_stat.blk_type_moves[proposed_action.logical_blk_type_index][(int)proposed_action.move_type];
     }
     LOG_MOVE_STATS_PROPOSED(t, blocks_affected);
 
@@ -1821,7 +1818,6 @@ static e_move_result try_swap(const t_annealing_state* state,
             delta_c = bb_delta_c * costs->bb_cost_norm;
         }
 
-
         NocCostTerms noc_delta_c; // change in NoC cost
         /* Update the NoC datastructure and costs*/
         if (noc_opts.noc) {
@@ -1876,7 +1872,7 @@ static e_move_result try_swap(const t_annealing_state* state,
             commit_move_blocks(blocks_affected);
 
             if (proposed_action.logical_blk_type_index != -1) { //if the agent proposed the block type, then collect the block type stat
-                ++move_type_stat.accepted_moves[(proposed_action.logical_blk_type_index * (placer_opts.place_static_move_prob.size())) + (int)proposed_action.move_type];
+                ++move_type_stat.accepted_moves[proposed_action.logical_blk_type_index][(int)proposed_action.move_type];
             }
             if (noc_opts.noc) {
                 commit_noc_costs();
@@ -1927,7 +1923,7 @@ static e_move_result try_swap(const t_annealing_state* state,
             }
 
             if (proposed_action.logical_blk_type_index != -1) { //if the agent proposed the block type, then collect the block type stat
-                ++move_type_stat.rejected_moves[(proposed_action.logical_blk_type_index * (placer_opts.place_static_move_prob.size())) + (int)proposed_action.move_type];
+                ++move_type_stat.rejected_moves[proposed_action.logical_blk_type_index][(int)proposed_action.move_type];
             }
             /* Revert the traffic flow routes within the NoC*/
             if (noc_opts.noc) {
@@ -1956,6 +1952,8 @@ static e_move_result try_swap(const t_annealing_state* state,
     if (!router_block_move) {
         calculate_reward_and_process_outcome(placer_opts, move_outcome_stats,
                                              delta_c, timing_bb_factor, move_generator);
+    } else {
+//        std::cout << "Group move delta cost: " << delta_c << std::endl;
     }
 
 #ifdef VTR_ENABLE_DEBUG_LOGGING
@@ -2394,8 +2392,8 @@ static float analyze_setup_slack_cost(const PlacerSetupSlacks* setup_slacks) {
     }
 
     //Sort in ascending order, from the worse slack value to the best
-    std::sort(original_setup_slacks.begin(), original_setup_slacks.end());
-    std::sort(proposed_setup_slacks.begin(), proposed_setup_slacks.end());
+    std::stable_sort(original_setup_slacks.begin(), original_setup_slacks.end());
+    std::stable_sort(proposed_setup_slacks.begin(), proposed_setup_slacks.end());
 
     //Check the first pair of slack values that are different
     //If found, return their difference
@@ -4251,7 +4249,6 @@ static void print_place_status_header(bool noc_enabled) {
         VTR_LOG(
             "---- ------ ------- ------- ---------- ---------- ------- ---------- -------- ------- ------- ------ -------- --------- ------ -------- -------- --------- ---------\n");
     }
-
 }
 
 static void print_place_status(const t_annealing_state& state,
@@ -4350,10 +4347,7 @@ static void print_placement_swaps_stats(const t_annealing_state& state) {
             num_swap_aborted, 100 * abort_rate);
 }
 
-static void print_placement_move_types_stats(
-    const MoveTypeStat& move_type_stat) {
-    float moves, accepted, rejected, aborted;
-
+static void print_placement_move_types_stats(const MoveTypeStat& move_type_stat) {
     VTR_LOG("\n\nPlacement perturbation distribution by block and move type: \n");
 
     VTR_LOG(
@@ -4363,10 +4357,11 @@ static void print_placement_move_types_stats(
     VTR_LOG(
         "------------------ ----------------- ---------------- ---------------- --------------- ------------ \n");
 
-    float total_moves = 0;
-    for (int blk_type_move : move_type_stat.blk_type_moves) {
-        total_moves += blk_type_move;
+    int total_moves = 0;
+    for (size_t i = 0; i < move_type_stat.blk_type_moves.size(); ++i) {
+        total_moves +=  move_type_stat.blk_type_moves.get(i);
     }
+
 
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -4381,14 +4376,13 @@ static void print_placement_move_types_stats(
         }
 
         count = 0;
-
         for (int imove = 0; imove < num_of_avail_moves; imove++) {
             const auto& move_name = move_type_to_string(e_move_type(imove));
-            moves = move_type_stat.blk_type_moves[itype.index * num_of_avail_moves + imove];
+            int moves = move_type_stat.blk_type_moves[itype.index][imove];
             if (moves != 0) {
-                accepted = move_type_stat.accepted_moves[itype.index * num_of_avail_moves + imove];
-                rejected = move_type_stat.rejected_moves[itype.index * num_of_avail_moves + imove];
-                aborted = moves - (accepted + rejected);
+                int accepted = move_type_stat.accepted_moves[itype.index][imove];
+                int rejected = move_type_stat.rejected_moves[itype.index][imove];
+                int aborted = moves - (accepted + rejected);
                 if (count == 0) {
                     VTR_LOG("%-18.20s", itype.name);
                 } else {
@@ -4396,9 +4390,9 @@ static void print_placement_move_types_stats(
                 }
                 VTR_LOG(
                     " %-22.20s %-16.2f %-15.2f %-14.2f %-13.2f\n",
-                    move_name.c_str(), 100 * moves / total_moves,
-                    100 * accepted / moves, 100 * rejected / moves,
-                    100 * aborted / moves);
+                    move_name.c_str(), 100.0f * (float)moves / (float)total_moves,
+                    100.0f * (float)accepted / (float)moves, 100.0f * (float)rejected / (float)moves,
+                    100.0f * (float)aborted / (float)moves);
             }
             count++;
         }

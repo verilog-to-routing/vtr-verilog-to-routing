@@ -112,13 +112,13 @@ VQM_DLL_API t_module *vqm_parse_file(char *filename)
 
 VQM_DLL_API int vqm_get_error_message(char *message_buffer, int length)
 {
-	int result = -1;
-	int temp = strlen(most_recent_error);
+    int result = -1;
+    int temp = strlen(most_recent_error);
 
-	if (temp <= length)
-	{
-		strcpy(message_buffer, message_buffer);
-		result = temp;
-	}
-	return result;
+    if (temp < length) // Note: Changed to '<' to avoid buffer overflow
+    {
+        strcpy(message_buffer, most_recent_error); // Copy 'most_recent_error' to 'message_buffer'
+        result = temp;
+    }
+    return result;
 }

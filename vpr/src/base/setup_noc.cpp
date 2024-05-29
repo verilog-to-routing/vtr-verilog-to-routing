@@ -155,7 +155,6 @@ void create_noc_routers(const t_noc_inf& noc_info,
     for (const auto& logical_router : noc_info.router_list) {
         // assign the shortest distance to a large value (this is done so that the first distance calculated, and we can replace this)
         shortest_distance = std::numeric_limits<double>::max();
-
         // get position of the current logical router
         double curr_logical_router_position_x = logical_router.device_x_position;
         double curr_logical_router_position_y = logical_router.device_y_position;

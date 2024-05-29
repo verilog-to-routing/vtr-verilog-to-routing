@@ -204,7 +204,8 @@ void update_traffic_flow_link_usage(const std::vector<NocLinkId>& traffic_flow_r
  */
 void re_route_associated_traffic_flows(ClusterBlockId moved_router_block_id,
                                        NocTrafficFlows& noc_traffic_flows_storage,
-                                       NocStorage& noc_model, NocRouting& noc_flows_router,
+                                       NocStorage& noc_model,
+                                       NocRouting& noc_flows_router,
                                        std::unordered_set<NocTrafficFlowId>& updated_traffic_flows);
 
 /**
@@ -456,7 +457,6 @@ double get_total_congestion_bandwidth_ratio();
  * @return n links with highest congestion ratio
  */
 std::vector<NocLink> get_top_n_congested_links(int n);
-
 
 /**
  * @brief Goes through all NoC links and determines whether they

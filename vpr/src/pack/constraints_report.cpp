@@ -18,12 +18,10 @@ bool floorplan_constraints_regions_overfull() {
         }
         t_logical_block_type_ptr bt = cluster_ctx.clb_nlist.block_type(blk_id);
 
-        PartitionRegion pr = floorplanning_ctx.cluster_constraints[blk_id];
-        std::vector<Region> regions = pr.get_partition_region();
+        const PartitionRegion& pr = floorplanning_ctx.cluster_constraints[blk_id];
+        const std::vector<Region>& regions = pr.get_regions();
 
-        for (unsigned int i_reg = 0; i_reg < regions.size(); i_reg++) {
-            Region current_reg = regions[i_reg];
-
+        for (const auto& current_reg : regions) {
             auto got = regions_count_info.find(current_reg);
 
             if (got == regions_count_info.end()) {

@@ -1041,7 +1041,7 @@ void RRGraph::set_node_segment(const RRNodeId& node, const RRSegmentId& segment_
  */
 void RRGraph::partition_node_in_edges(const RRNodeId& node) {
     //Partition the edges so the first set of edges are all configurable, and the later are not
-    auto first_non_config_edge = std::partition(node_in_edges_[node].begin(), node_in_edges_[node].end(),
+    auto first_non_config_edge = std::stable_partition(node_in_edges_[node].begin(), node_in_edges_[node].end(),
                                                 [&](const RREdgeId edge) { return edge_is_configurable(edge); }); /* Condition to partition edges */
 
     size_t num_conf_edges = std::distance(node_in_edges_[node].begin(), first_non_config_edge);
@@ -1060,7 +1060,7 @@ void RRGraph::partition_node_in_edges(const RRNodeId& node) {
  */
 void RRGraph::partition_node_out_edges(const RRNodeId& node) {
     //Partition the edges so the first set of edges are all configurable, and the later are not
-    auto first_non_config_edge = std::partition(node_out_edges_[node].begin(), node_out_edges_[node].end(),
+    auto first_non_config_edge = std::stable_partition(node_out_edges_[node].begin(), node_out_edges_[node].end(),
                                                 [&](const RREdgeId edge) { return edge_is_configurable(edge); }); /* Condition to partition edges */
 
     size_t num_conf_edges = std::distance(node_out_edges_[node].begin(), first_non_config_edge);
