@@ -241,6 +241,16 @@ NocRouterId NocStorage::convert_router_id(int id) const {
     return result->second;
 }
 
+int NocStorage::convert_router_id(NocRouterId id) const {
+    for (auto [user_id, router_id] : router_id_conversion_table) {
+        if (router_id == id) {
+            return user_id;
+        }
+    }
+
+    VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Cannot convert router with id:%d. The router was not found within the NoC.", id);
+}
+
 void NocStorage::make_room_for_noc_router_link_list() {
     VTR_ASSERT_MSG(!built_noc, "NoC already built, cannot modify further.");
     router_link_list.resize(router_storage.size());

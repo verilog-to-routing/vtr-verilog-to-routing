@@ -921,7 +921,7 @@ TEST_CASE("test_setup_noc", "[vpr_setup_noc]") {
 
         REQUIRE_THROWS_WITH(setup_noc(arch), "The Provided NoC topology information in the architecture file has more number of routers than what is available in the FPGA device.");
     }
-    SECTION("Test setup_noc when there are no  physical NoC routers on the FPGA.") {
+    SECTION("Test setup_noc when there are no physical NoC routers on the FPGA.") {
         // test device grid name
         std::string device_grid_name = "test";
 
@@ -971,6 +971,270 @@ TEST_CASE("test_setup_noc", "[vpr_setup_noc]") {
         device_ctx.grid = DeviceGrid(device_grid_name, test_grid);
 
         REQUIRE_THROWS_WITH(setup_noc(arch), "No physical NoC routers were found on the FPGA device. Either the provided name for the physical router tile was incorrect or the FPGA device has no routers.");
+    }
+    SECTION("Test setup_noc when there are overrides for NoC-wide latency and bandwidth values.") {
+        // test device grid name
+        std::string device_grid_name = "test";
+
+        // creating a reference for the empty tile name and router name
+        char empty_tile_name[6] = "empty";
+        char router_tile_name[7] = "router";
+
+        // assign the name used when describing a router tile in the FPGA architecture description file
+        arch.noc->noc_router_tile_name.assign(router_tile_name);
+
+        // device grid parameters
+        int test_grid_width = 10;
+        int test_grid_height = 10;
+
+        // create the test device grid (10x10)
+        auto test_grid = vtr::NdMatrix<t_grid_tile, 3>({1, 10, 10});
+
+        // create an empty physical tile and assign its parameters
+        t_physical_tile_type empty_tile;
+        empty_tile.name = empty_tile_name;
+        empty_tile.height = 1;
+        empty_tile.width = 1;
+
+        // create a router tile and assign its parameters
+        // the router will take up 4 grid spaces and be named "router"
+        t_physical_tile_type router_tile;
+        router_tile.name = router_tile_name;
+        router_tile.height = 2;
+        router_tile.width = 2;
+
+        // (0, 0)
+        test_grid[0][0][0].type = &router_tile;
+        test_grid[0][0][0].height_offset = 0;
+        test_grid[0][0][0].width_offset = 0;
+
+        test_grid[0][1][0].type = &router_tile;
+        test_grid[0][1][0].height_offset = 0;
+        test_grid[0][1][0].width_offset = 1;
+
+        test_grid[0][0][1].type = &router_tile;
+        test_grid[0][0][1].height_offset = 1;
+        test_grid[0][0][1].width_offset = 0;
+
+        test_grid[0][1][1].type = &router_tile;
+        test_grid[0][1][1].height_offset = 1;
+        test_grid[0][1][1].width_offset = 1;
+
+        // (0, 4)
+        test_grid[0][0][4].type = &router_tile;
+        test_grid[0][0][4].height_offset = 0;
+        test_grid[0][0][4].width_offset = 0;
+
+        test_grid[0][1][4].type = &router_tile;
+        test_grid[0][1][4].height_offset = 0;
+        test_grid[0][1][4].width_offset = 1;
+
+        test_grid[0][0][5].type = &router_tile;
+        test_grid[0][0][5].height_offset = 1;
+        test_grid[0][0][5].width_offset = 0;
+
+        test_grid[0][1][5].type = &router_tile;
+        test_grid[0][1][5].height_offset = 1;
+        test_grid[0][1][5].width_offset = 1;
+
+        // (0, 8)
+        test_grid[0][0][8].type = &router_tile;
+        test_grid[0][0][8].height_offset = 0;
+        test_grid[0][0][8].width_offset = 0;
+
+        test_grid[0][1][8].type = &router_tile;
+        test_grid[0][1][8].height_offset = 0;
+        test_grid[0][1][8].width_offset = 1;
+
+        test_grid[0][0][9].type = &router_tile;
+        test_grid[0][0][9].height_offset = 1;
+        test_grid[0][0][9].width_offset = 0;
+
+        test_grid[0][1][9].type = &router_tile;
+        test_grid[0][1][9].height_offset = 1;
+        test_grid[0][1][9].width_offset = 1;
+
+        // (4, 0)
+        test_grid[0][4][0].type = &router_tile;
+        test_grid[0][4][0].height_offset = 0;
+        test_grid[0][4][0].width_offset = 0;
+
+        test_grid[0][5][0].type = &router_tile;
+        test_grid[0][5][0].height_offset = 0;
+        test_grid[0][5][0].width_offset = 1;
+
+        test_grid[0][4][1].type = &router_tile;
+        test_grid[0][4][1].height_offset = 1;
+        test_grid[0][4][1].width_offset = 0;
+
+        test_grid[0][5][1].type = &router_tile;
+        test_grid[0][5][1].height_offset = 1;
+        test_grid[0][5][1].width_offset = 1;
+
+        // (4, 4)
+        test_grid[0][4][4].type = &router_tile;
+        test_grid[0][4][4].height_offset = 0;
+        test_grid[0][4][4].width_offset = 0;
+
+        test_grid[0][5][4].type = &router_tile;
+        test_grid[0][5][4].height_offset = 0;
+        test_grid[0][5][4].width_offset = 1;
+
+        test_grid[0][4][5].type = &router_tile;
+        test_grid[0][4][5].height_offset = 1;
+        test_grid[0][4][5].width_offset = 0;
+
+        test_grid[0][5][5].type = &router_tile;
+        test_grid[0][5][5].height_offset = 1;
+        test_grid[0][5][5].width_offset = 1;
+
+        // (4, 8)
+        test_grid[0][4][8].type = &router_tile;
+        test_grid[0][4][8].height_offset = 0;
+        test_grid[0][4][8].width_offset = 0;
+
+        test_grid[0][5][8].type = &router_tile;
+        test_grid[0][5][8].height_offset = 0;
+        test_grid[0][5][8].width_offset = 1;
+
+        test_grid[0][4][9].type = &router_tile;
+        test_grid[0][4][9].height_offset = 1;
+        test_grid[0][4][9].width_offset = 0;
+
+        test_grid[0][5][9].type = &router_tile;
+        test_grid[0][5][9].height_offset = 1;
+        test_grid[0][5][9].width_offset = 1;
+
+        // (8, 0)
+        test_grid[0][8][0].type = &router_tile;
+        test_grid[0][8][0].height_offset = 0;
+        test_grid[0][8][0].width_offset = 0;
+
+        test_grid[0][9][0].type = &router_tile;
+        test_grid[0][9][0].height_offset = 0;
+        test_grid[0][9][0].width_offset = 1;
+
+        test_grid[0][8][1].type = &router_tile;
+        test_grid[0][8][1].height_offset = 1;
+        test_grid[0][8][1].width_offset = 0;
+
+        test_grid[0][9][1].type = &router_tile;
+        test_grid[0][9][1].height_offset = 1;
+        test_grid[0][9][1].width_offset = 1;
+
+        // (8, 4)
+        test_grid[0][8][4].type = &router_tile;
+        test_grid[0][8][4].height_offset = 0;
+        test_grid[0][8][4].width_offset = 0;
+
+        test_grid[0][9][4].type = &router_tile;
+        test_grid[0][9][4].height_offset = 0;
+        test_grid[0][9][4].width_offset = 1;
+
+        test_grid[0][8][5].type = &router_tile;
+        test_grid[0][8][5].height_offset = 1;
+        test_grid[0][8][5].width_offset = 0;
+
+        test_grid[0][9][5].type = &router_tile;
+        test_grid[0][9][5].height_offset = 1;
+        test_grid[0][9][5].width_offset = 1;
+
+        // (8, 8)
+        test_grid[0][8][8].type = &router_tile;
+        test_grid[0][8][8].height_offset = 0;
+        test_grid[0][8][8].width_offset = 0;
+
+        test_grid[0][9][8].type = &router_tile;
+        test_grid[0][9][8].height_offset = 0;
+        test_grid[0][9][8].width_offset = 1;
+
+        test_grid[0][8][9].type = &router_tile;
+        test_grid[0][8][9].height_offset = 1;
+        test_grid[0][8][9].width_offset = 0;
+
+        test_grid[0][9][9].type = &router_tile;
+        test_grid[0][9][9].height_offset = 1;
+        test_grid[0][9][9].width_offset = 1;
+
+        for (int i = 0; i < test_grid_width; i++) {
+            for (int j = 0; j < test_grid_height; j++) {
+                // make sure the current tyle is not a router
+                if (test_grid[0][i][j].type == nullptr) {
+                    // assign the non-router tile as empty
+                    test_grid[0][i][j].type = &empty_tile;
+                    test_grid[0][i][j].width_offset = 0;
+                    test_grid[0][i][j].height_offset = 0;
+                }
+            }
+        }
+
+        std::random_device device;
+        std::mt19937 rand_num_gen(device());
+        std::uniform_int_distribution<std::mt19937::result_type> dist(1, 9);
+
+        constexpr double LINK_LATENCY_OVERRIDE = 142.2;
+        constexpr double LINK_BANDWIDTH_OVERRIDE = 727.4;
+        constexpr double ROUTER_LATENCY_OVERRIDE = 151.6;
+        REQUIRE(LINK_LATENCY_OVERRIDE != noc_info.link_latency);
+        REQUIRE(LINK_BANDWIDTH_OVERRIDE != noc_info.link_bandwidth);
+        REQUIRE(ROUTER_LATENCY_OVERRIDE != noc_info.router_latency);
+
+        // add router latency overrides
+        for (int i = 0; i < 3; i++) {
+            int noc_router_user_id = dist(rand_num_gen);
+            noc_info.router_latency_overrides.insert({noc_router_user_id, ROUTER_LATENCY_OVERRIDE});
+        }
+
+        // add link latency overrides
+        for (int i = 0; i < 3; i++) {
+            int noc_router_user_id = dist(rand_num_gen);
+            size_t n_connections = noc_info.router_list[noc_router_user_id - 1].connection_list.size();
+            int selected_connection = dist(rand_num_gen) % n_connections;
+            int neighbor_router_user_id = noc_info.router_list[noc_router_user_id - 1].connection_list[selected_connection];
+            noc_info.link_latency_overrides.insert({{noc_router_user_id, neighbor_router_user_id}, LINK_LATENCY_OVERRIDE});
+        }
+
+        // add link bandwidth overrides
+        for (int i = 0; i < 3; i++) {
+            int noc_router_user_id = dist(rand_num_gen);
+            size_t n_connections = noc_info.router_list[noc_router_user_id - 1].connection_list.size();
+            int selected_connection = dist(rand_num_gen) % n_connections;
+            int neighbor_router_user_id = noc_info.router_list[noc_router_user_id - 1].connection_list[selected_connection];
+            noc_info.link_bandwidth_overrides.insert({{noc_router_user_id, neighbor_router_user_id}, LINK_BANDWIDTH_OVERRIDE});
+        }
+
+        device_ctx.grid = DeviceGrid(device_grid_name, test_grid);
+
+        REQUIRE_NOTHROW(setup_noc(arch));
+
+        const auto& noc_model = g_vpr_ctx.noc().noc_model;
+
+        // check NoC router latencies
+        for (const auto& noc_router : noc_model.get_noc_routers()) {
+            int router_user_id = noc_router.get_router_user_id();
+            auto it = noc_info.router_latency_overrides.find(router_user_id);
+            double expected_latency = (it != noc_info.router_latency_overrides.end()) ? it->second : noc_info.router_latency;
+            REQUIRE(expected_latency == noc_router.get_latency());
+        }
+
+        // check NoC link latencies and bandwidth
+        for (const auto& noc_link : noc_model.get_noc_links()) {
+            NocRouterId src_router_id = noc_link.get_source_router();
+            NocRouterId dst_router_id = noc_link.get_sink_router();
+            int src_user_id = noc_model.convert_router_id(src_router_id);
+            int dst_user_id = noc_model.convert_router_id(dst_router_id);
+
+            auto lat_it = noc_info.link_latency_overrides.find({src_user_id, dst_user_id});
+            double expected_latency = (lat_it != noc_info.link_latency_overrides.end()) ? lat_it->second : noc_info.link_latency;
+            REQUIRE(expected_latency == noc_link.get_latency());
+
+            auto bw_it = noc_info.link_bandwidth_overrides.find({src_user_id, dst_user_id});
+            double expected_bandwidth = (bw_it != noc_info.link_bandwidth_overrides.end()) ? bw_it->second : noc_info.link_bandwidth;
+            REQUIRE(expected_bandwidth == noc_link.get_bandwidth());
+        }
+
+        // remove noc storage
+        g_vpr_ctx.mutable_noc().noc_model.clear_noc();
     }
 }
 

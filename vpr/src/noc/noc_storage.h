@@ -462,6 +462,13 @@ class NocStorage {
     NocRouterId convert_router_id(int id) const;
 
     /**
+     * @brief Converts a NoCRouterID to the user router id.
+     * @param id The internal NoCRouterId
+     * @return The user provided router id;
+     */
+    int convert_router_id(NocRouterId id) const;
+
+    /**
      * @brief The datastructure that stores the outgoing links to each
      * router is an 2-D Vector. When processing the links, they can be
      * outgoing from any router in the NoC. Therefore the column size
