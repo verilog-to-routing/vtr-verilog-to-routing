@@ -54,7 +54,7 @@ vtr::vector<RRNodeId, float> calculate_all_path_delays_from_rr_node(RRNodeId src
                                                                     const t_router_opts& router_opts,
                                                                     bool is_flat);
 
-void alloc_routing_structs(t_chan_width chan_width,
+void alloc_routing_structs(const t_chan_width& chan_width,
                            const t_router_opts& router_opts,
                            t_det_routing_arch* det_routing_arch,
                            std::vector<t_segment_inf>& segment_inf,

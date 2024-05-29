@@ -1558,8 +1558,8 @@ enum e_Fc_type {
  * seg_index: The index of the segment as stored in the appropriate Segs list*
  *            Upon loading the architecture, we use this field to keep track *
  *            the segment's index in the unified segment_inf vector. This is *
- *            usefull when building the rr_graph for different Y & X channels*
- *            interms of track distribution and segment type.                *
+ *            useful when building the rr_graph for different Y & X channels *
+ *            in terms of track distribution and segment type.                *
  * meta: Table storing extra arbitrary metadata attributes.                  */
 struct t_segment_inf {
     std::string name;
