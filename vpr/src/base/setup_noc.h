@@ -100,7 +100,7 @@ void generate_noc(const t_arch& arch,
                   const std::vector<t_noc_router_tile_position>& list_of_noc_router_tiles);
 
 /**
- * @brief Go through the outers described by the user
+ * @brief Go through the routers described by the user
  *        in the architecture description file and assigns it a corresponding
  *        physical router tile in the FPGA. Each logical router has a grid
  *        location, so the closest physical router to the grid location is then

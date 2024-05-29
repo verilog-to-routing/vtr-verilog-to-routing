@@ -38,9 +38,6 @@ TEST_CASE("test_identify_and_store_noc_router_tile_positions", "[vpr_setup_noc]"
     router_tile.height = 2;
     router_tile.width = 2;
 
-    // name of the router physical tile
-    //std::string router_tile_name_string("router");
-
     // results from the test function
     std::vector<t_noc_router_tile_position> list_of_routers;
 
@@ -802,7 +799,7 @@ TEST_CASE("test_setup_noc", "[vpr_setup_noc]") {
     //assign the noc_info to the arch
     arch.noc = &noc_info;
 
-    // the architecture file has been setup to include the noc topology and we set the parameters below
+    // the architecture file has been setup to include the noc topology, and we set the parameters below
     noc_info.link_bandwidth = 67.8;
     noc_info.link_latency = 56.7;
     noc_info.router_latency = 2.3;

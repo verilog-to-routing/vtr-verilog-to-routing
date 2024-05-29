@@ -51,8 +51,10 @@ void setup_noc(const t_arch& arch) {
     // generate noc model
     generate_noc(arch, noc_ctx, noc_router_tiles);
 
-    // store the general noc properties
-    noc_ctx.noc_model.set_noc_link_bandwidth(arch.noc->link_bandwidth);
+    /* store the general noc properties
+     * noc_ctx.noc_model.set_noc_link_bandwidth(...) is not called because all
+     * link bandwidths were set when create_noc_links(...) was called.
+     */
     noc_ctx.noc_model.set_noc_link_latency(arch.noc->link_latency);
     noc_ctx.noc_model.set_noc_router_latency(arch.noc->router_latency);
 
@@ -131,7 +133,6 @@ void create_noc_routers(const t_noc_inf& noc_info,
                         const std::vector<t_noc_router_tile_position>& noc_router_tiles) {
     // keep track of the shortest distance between a user described router (noc description in the arch file) and a physical router on the FPGA
     double shortest_distance;
-//    double curr_calculated_distance;
     // stores the index of a physical router within the noc_router_tiles that is closest to a given user described router
     int closest_physical_router;
 

@@ -379,7 +379,7 @@ class NocStorage {
     void add_link(NocRouterId source, NocRouterId sink, double bandwidth, double latency);
 
     /**
-     * @brief Set the maximum allowable bandwidth for a link
+     * @brief Set the maximum allowable bandwidth for all links
      * within the NoC
      */
     void set_noc_link_bandwidth(double link_bandwidth);
