@@ -16,11 +16,8 @@
 #include "vpr_utils.h"
 #include "cluster_placement.h"
 #include "device_grid.h"
-<<<<<<< HEAD
 #include "timing_fail_error.h"
 #include "route_constraint.h"
-=======
->>>>>>> efe7cc0e8b17b7120d7d27707e4909ee64795cf8
 #include "re_cluster_util.h"
 
 /* This module contains subroutines that are used in several unrelated parts *
