@@ -13,13 +13,16 @@
 #include "physical_types.h"
 
 ///@brief Find the device satisfying the specified minimum resources
-DeviceGrid create_device_grid(std::string layout_name,
+DeviceGrid create_device_grid(const std::string& layout_name,
                               const std::vector<t_grid_def>& grid_layouts,
                               const std::map<t_logical_block_type_ptr, size_t>& minimum_instance_counts,
                               float target_device_utilization);
 
 ///@brief Find the device close in size to the specified dimensions
-DeviceGrid create_device_grid(std::string layout_name, const std::vector<t_grid_def>& grid_layouts, size_t min_width, size_t min_height);
+DeviceGrid create_device_grid(const std::string& layout_name,
+                              const std::vector<t_grid_def>& grid_layouts,
+                              size_t min_width,
+                              size_t min_height);
 
 /**
  * @brief Calculate the device utilization

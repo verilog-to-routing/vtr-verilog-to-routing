@@ -428,10 +428,9 @@ std::pair<float, float> CompressedMapLookahead::get_expected_delay_and_cong(RRNo
     auto& device_ctx = g_vpr_ctx.device();
     auto& rr_graph = device_ctx.rr_graph;
 
-    int delta_x, delta_y;
     int from_layer_num = rr_graph.node_layer(from_node);
     int to_layer_num = rr_graph.node_layer(to_node);
-    util::get_xy_deltas(from_node, to_node, &delta_x, &delta_y);
+    auto [delta_x, delta_y] = util::get_xy_deltas(from_node, to_node);
     delta_x = abs(delta_x);
     delta_y = abs(delta_y);
 

@@ -79,15 +79,16 @@ void remove_mol_from_cluster(const t_pack_molecule* molecule,
  */
 bool start_new_cluster_for_mol(t_pack_molecule* molecule,
                                const t_logical_block_type_ptr& type,
-                               const int mode,
-                               const int feasible_block_array_size,
+                               const int& mode,
+                               const int& feasible_block_array_size,
                                bool enable_pin_feasibility_filter,
                                ClusterBlockId clb_index,
                                bool during_packing,
                                int verbosity,
                                t_clustering_data& clustering_data,
                                t_lb_router_data** router_data,
-                               PartitionRegion& temp_cluster_pr);
+                               PartitionRegion& temp_cluster_pr,
+                               NocGroupId& temp_cluster_noc_grp_id);
 
 /**
  * @brief A function that packs a molecule into an existing cluster
@@ -102,10 +103,9 @@ bool start_new_cluster_for_mol(t_pack_molecule* molecule,
  */
 bool pack_mol_in_existing_cluster(t_pack_molecule* molecule,
                                   int molecule_size,
-                                  const ClusterBlockId clb_index,
-                                  std::unordered_set<AtomBlockId>* clb_atoms,
+                                  const ClusterBlockId& new_clb,
+                                  std::unordered_set<AtomBlockId>* new_clb_atoms,
                                   bool during_packing,
-                                  bool is_swap,
                                   t_clustering_data& clustering_data,
                                   t_lb_router_data*& router_data);
 
@@ -125,22 +125,39 @@ void fix_clustered_netlist(t_pack_molecule* molecule,
 /**
  * @brief A function that commits the molecule move if it is legal
  *
- * @during_packing: true if this function is called during packing, false if it is called during placement
- * @new_clb_created: true if the move is creating a new cluster (e.g. move_mol_to_new_cluster)
+ * @params during_packing: true if this function is called during packing, false if it is called during placement
+ * @params new_clb_created: true if the move is creating a new cluster (e.g. move_mol_to_new_cluster)
  */
 void commit_mol_move(const ClusterBlockId& old_clb,
                      const ClusterBlockId& new_clb,
                      bool during_packing,
                      bool new_clb_created);
 
+/**
+ * @brief A function that reverts the molecule move if it is illegal
+ *
+ * @params during_packing: true if this function is called during packing, false if it is called during placement
+ * @params new_clb_created: true if the move is creating a new cluster (e.g. move_mol_to_new_cluster)
+ * @params
+ */
 void revert_mol_move(const ClusterBlockId& old_clb,
                      t_pack_molecule* molecule,
                      t_lb_router_data*& old_router_data,
                      bool during_packing,
                      t_clustering_data& clustering_data);
 
+/**
+ *
+ * @brief A function that checks the legality of a cluster by running the intra-cluster routing
+ */
 bool is_cluster_legal(t_lb_router_data*& router_data);
 
+/**
+ * @brief A function that commits the molecule removal if it is legal
+ *
+ * @params during_packing: true if this function is called during packing, false if it is called during placement
+ * @params new_clb_created: true if the move is creating a new cluster (e.g. move_mol_to_new_cluster)
+ */
 void commit_mol_removal(const t_pack_molecule* molecule,
                         const int& molecule_size,
                         const ClusterBlockId& old_clb,
@@ -148,6 +165,11 @@ void commit_mol_removal(const t_pack_molecule* molecule,
                         t_lb_router_data*& router_data,
                         t_clustering_data& clustering_data);
 
+/**
+ *
+ * @brief A function that check that two clusters are of the same type and in the same mode of operation
+ *
+ */
 bool check_type_and_mode_compitability(const ClusterBlockId& old_clb,
                                        const ClusterBlockId& new_clb,
                                        int verbosity);

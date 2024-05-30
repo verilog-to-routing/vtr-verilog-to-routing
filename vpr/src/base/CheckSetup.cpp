@@ -10,9 +10,10 @@
 void CheckSetup(const t_packer_opts& PackerOpts,
                 const t_placer_opts& PlacerOpts,
                 const t_router_opts& RouterOpts,
+                const t_server_opts& ServerOpts,
                 const t_det_routing_arch& RoutingArch,
                 const std::vector<t_segment_inf>& Segments,
-                const t_timing_inf Timing,
+                const t_timing_inf& Timing,
                 const t_chan_width_dist Chans) {
     int i;
     int Tmp;
@@ -78,7 +79,7 @@ void CheckSetup(const t_packer_opts& PackerOpts,
     for (i = 0; i < (int)Segments.size(); ++i) {
         Tmp = Segments[i].arch_opin_switch;
         auto& device_ctx = g_vpr_ctx.device();
-        if (false == device_ctx.arch_switch_inf[Tmp].buffered()) {
+        if (!device_ctx.arch_switch_inf[Tmp].buffered()) {
             VPR_FATAL_ERROR(VPR_ERROR_OTHER,
                             "arch_opin_switch (#%d) of segment type #%d is not buffered.\n", Tmp, i);
         }
@@ -103,6 +104,14 @@ void CheckSetup(const t_packer_opts& PackerOpts,
             && (PlacerOpts.place_chan_width % 2 > 0)) {
             VPR_FATAL_ERROR(VPR_ERROR_OTHER,
                             "Place channel width must be even for unidirectional.\n");
+        }
+    }
+
+    if (ServerOpts.is_server_mode_enabled) {
+        if (ServerOpts.port_num < DYMANIC_PORT_RANGE_MIN || ServerOpts.port_num > DYNAMIC_PORT_RANGE_MAX) {
+                VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                                "Specified server port number `--port %d` is out of range [%d-%d]. Please specify a port number within that range.\n",
+                                ServerOpts.port_num, DYMANIC_PORT_RANGE_MIN, DYNAMIC_PORT_RANGE_MAX);
         }
     }
 }

@@ -1,14 +1,12 @@
-#include <cstring>
 #include <unordered_set>
 #include <regex>
 #include <algorithm>
 #include <sstream>
-#include <string.h>
+#include <cstring>
 
 #include "vtr_assert.h"
 #include "vtr_log.h"
 #include "vtr_memory.h"
-#include "vtr_random.h"
 
 #include "vpr_types.h"
 #include "vpr_error.h"
@@ -17,11 +15,12 @@
 #include "globals.h"
 #include "vpr_utils.h"
 #include "cluster_placement.h"
-#include "place_macro.h"
-#include "pack_types.h"
 #include "device_grid.h"
+<<<<<<< HEAD
 #include "timing_fail_error.h"
 #include "route_constraint.h"
+=======
+>>>>>>> efe7cc0e8b17b7120d7d27707e4909ee64795cf8
 #include "re_cluster_util.h"
 
 /* This module contains subroutines that are used in several unrelated parts *
@@ -29,7 +28,7 @@
 
 /* This defines the maximum string length that could be parsed by functions  *
  * in vpr_utils.                                                             */
-#define MAX_STRING_LEN 128
+static constexpr size_t MAX_STRING_LEN = 512;
 
 /******************** File-scope variables declarations **********************/
 
@@ -2274,17 +2273,21 @@ std::vector<const t_pb_graph_node*> get_all_pb_graph_node_primitives(const t_pb_
     return primitives;
 }
 
-bool is_inter_cluster_node(t_physical_tile_type_ptr physical_tile,
-                           t_rr_type node_type,
-                           int node_ptc) {
+bool is_inter_cluster_node(const RRGraphView& rr_graph_view,
+                           RRNodeId node_id) {
+    auto node_type = rr_graph_view.node_type(node_id);
     if (node_type == CHANX || node_type == CHANY) {
         return true;
     } else {
-        VTR_ASSERT(node_type == IPIN || node_type == SINK || node_type == OPIN || node_type == SOURCE);
+        int x_low = rr_graph_view.node_xlow(node_id);
+        int y_low = rr_graph_view.node_ylow(node_id);
+        int layer = rr_graph_view.node_layer(node_id);
+        int node_ptc = rr_graph_view.node_ptc_num(node_id);
+        const t_physical_tile_type_ptr physical_tile = g_vpr_ctx.device().grid.get_physical_type({x_low, y_low, layer});
         if (node_type == IPIN || node_type == OPIN) {
             return is_pin_on_tile(physical_tile, node_ptc);
         } else {
-            VTR_ASSERT(node_type == SINK || node_type == SOURCE);
+            VTR_ASSERT_DEBUG(node_type == SINK || node_type == SOURCE);
             return is_class_on_tile(physical_tile, node_ptc);
         }
     }

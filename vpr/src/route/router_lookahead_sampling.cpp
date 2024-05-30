@@ -59,7 +59,7 @@ static std::vector<SamplePoint> choose_points(const vtr::Matrix<int>& counts,
     vtr::Point<int> center = sample(window, 1, 1, 2);
 
     // sort by distance from center
-    std::sort(points.begin(), points.end(),
+    std::stable_sort(points.begin(), points.end(),
               [&](const SamplePoint& a, const SamplePoint& b) {
                   return manhattan_distance(a.location, center) < manhattan_distance(b.location, center);
               });
@@ -232,7 +232,7 @@ std::vector<SampleRegion> find_sample_regions(int num_segments) {
     compute_sample_regions(sample_regions, segment_counts, bounding_box_for_segment, num_segments);
 
     // sort regions
-    std::sort(sample_regions.begin(), sample_regions.end(),
+    std::stable_sort(sample_regions.begin(), sample_regions.end(),
               [](const SampleRegion& a, const SampleRegion& b) {
                   return a.order < b.order;
               });

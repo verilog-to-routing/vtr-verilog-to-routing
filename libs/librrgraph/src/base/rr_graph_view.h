@@ -395,7 +395,7 @@ class RRGraphView {
     /** @brief Get outgoing edges for a node.
      * This API is designed to enable range-based loop to walk through the outgoing edges of a node
      * Example:
-     *   RRGraphView rr_graph; // A dummny rr_graph for a short example
+     *   RRGraphView rr_graph; // A dummy rr_graph for a short example
      *   RRNodeId node; // A dummy node for a short example
      *   for (RREdgeId edge : rr_graph.edges(node)) {
      *     // Do something with the edge
@@ -479,7 +479,7 @@ class RRGraphView {
     }
 
     /** @brief  Return the switch information that is categorized in the rr_switch_inf with a given id
-     * rr_switch_inf is created to minimize memory footprint of RRGraph classs
+     * rr_switch_inf is created to minimize memory footprint of RRGraph class
      * While the RRG could contain millions (even much larger) of edges, there are only
      * a limited number of types of switches.
      * Hence, we use a flyweight pattern to store switch-related information that differs

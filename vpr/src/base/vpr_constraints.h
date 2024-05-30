@@ -44,7 +44,7 @@ class VprConstraints {
      *   @param blk_id      The atom being stored
      *   @param part_id     The partition the atom is being constrained to
      */
-    void add_constrained_atom(const AtomBlockId blk_id, const PartitionId part_id);
+    void add_constrained_atom(AtomBlockId blk_id, PartitionId part_id);
 
     /**
      * @brief Return id of the partition the atom belongs to
@@ -53,40 +53,54 @@ class VprConstraints {
      *
      *   @param blk_id      The atom for which the partition id is needed
      */
-    PartitionId get_atom_partition(AtomBlockId blk_id);
+    PartitionId get_atom_partition(AtomBlockId blk_id) const;
 
     /**
      * @brief Store a partition
      *
      *   @param part     The partition being stored
      */
-    void add_partition(Partition part);
+    void add_partition(const Partition& part);
 
     /**
      * @brief Return a partition
      *
      *   @param part_id    The id of the partition that is wanted
      */
-    Partition get_partition(PartitionId part_id);
+    const Partition& get_partition(PartitionId part_id) const;
+
+    /**
+     * @brief Returns a mutable partition
+     *
+     *   @param part_id    The id of the partition that is wanted
+     */
+    Partition& get_mutable_partition(PartitionId part_id);
 
     /**
      * @brief Return all the atoms that belong to a partition
      *
      *   @param part_id   The id of the partition whose atoms are needed
      */
-    std::vector<AtomBlockId> get_part_atoms(PartitionId part_id);
+    std::vector<AtomBlockId> get_part_atoms(PartitionId part_id) const;
 
     /**
      * @brief Returns the number of partitions in the object
      */
-    int get_num_partitions();
+    int get_num_partitions() const;
 
     /**
      * @brief Returns the PartitionRegion belonging to the specified Partition
      *
      *   @param part_id The id of the partition whose PartitionRegion is needed
      */
-    PartitionRegion get_partition_pr(PartitionId part_id);
+    const PartitionRegion& get_partition_pr(PartitionId part_id) const;
+
+    /**
+     * @brief Returns the mutable PartitionRegion belonging to the specified Partition
+     *
+     *   @param part_id The id of the partition whose PartitionRegion is needed
+     */
+    PartitionRegion& get_mutable_partition_pr(PartitionId part_id);
 
     /**
      * @brief add route constraint
@@ -134,6 +148,6 @@ class VprConstraints {
 };
 
 ///@brief used to print floorplanning constraints data from a VprConstraints object
-void print_constraints(FILE* fp, VprConstraints constraints);
+void print_constraints(FILE* fp, const VprConstraints& constraints);
 
 #endif /* VPR_CONSTRAINTS_H */
