@@ -174,7 +174,10 @@ std::vector<NocLinkId>& route_traffic_flow(NocTrafficFlowId traffic_flow_id,
  * @param traffic_flow_bandwidth The bandwidth of a traffic flow. This will
  * be used to update bandwidth usage of the links.
  */
-void update_traffic_flow_link_usage(const std::vector<NocLinkId>& traffic_flow_route, NocStorage& noc_model, int inc_or_dec, double traffic_flow_bandwidth);
+void update_traffic_flow_link_usage(const std::vector<NocLinkId>& traffic_flow_route,
+                                    NocStorage& noc_model,
+                                    int inc_or_dec,
+                                    double traffic_flow_bandwidth);
 
 /**
  * @brief Goes through all the traffic flows associated to a moved
@@ -357,7 +360,8 @@ int check_noc_placement_costs(const t_placer_costs& costs, double error_toleranc
  * its priority.
  * @return The computed aggregate bandwidth for the provided traffic flow
  */
-double calculate_traffic_flow_aggregate_bandwidth_cost(const std::vector<NocLinkId>& traffic_flow_route, const t_noc_traffic_flow& traffic_flow_info);
+double calculate_traffic_flow_aggregate_bandwidth_cost(const std::vector<NocLinkId>& traffic_flow_route,
+                                                       const t_noc_traffic_flow& traffic_flow_info);
 
 /**
  * @brief Determines the latency cost of a routed traffic flow.

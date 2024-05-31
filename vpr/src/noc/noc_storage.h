@@ -119,11 +119,6 @@ class NocStorage {
     bool built_noc;
 
     /**
-     * @brief Represents the maximum allowed bandwidth for the links in the NoC (in bps)
-     */
-    double noc_link_bandwidth;
-
-    /**
      * @brief Represents the delay expected when going through a link (in
      * seconds)
      */
@@ -134,6 +129,28 @@ class NocStorage {
      * seconds))
      */
     double noc_router_latency;
+
+    /**
+     * @brief When set true, specifies that some NoC routers have different
+     * latencies than others. When set false, all the NoC routers have the same
+     * latency.
+     */
+    bool detailed_router_latency_;
+
+    /**
+     * @brief When set true, specifies that some NoC links have different
+     * latencies than others. When set false, all the NoC link have the same
+     * latency.
+     */
+    bool detailed_link_latency_;
+
+    /**
+     * @brief A constant reference to this vector is returned by get_noc_links(...).
+     * This is used to avoid memory allocation whenever get_noc_links(...) is called.
+     * The vector is mutable so that get_noc_links(...), which is a const method, can
+     * modify it.
+     */
+    mutable std::vector<std::reference_wrapper<const NocLink>> returnable_noc_link_const_refs_;
 
     /**
      * @brief Internal reference to the device grid width. This is necessary
@@ -180,13 +197,13 @@ class NocStorage {
      * 
      * @return A vector of routers.
      */
-    const vtr::vector<NocRouterId, NocRouter>& get_noc_routers(void) const;
+    const vtr::vector<NocRouterId, NocRouter>& get_noc_routers() const;
 
     /**
      * @return An integer representing the total number of routers within the
      * NoC.
      */
-    int get_number_of_noc_routers(void) const;
+    int get_number_of_noc_routers() const;
 
     /**
      * @brief Get all the links in the NoC. The links themselves cannot
@@ -195,7 +212,7 @@ class NocStorage {
      * 
      * @return A vector of links. 
      */
-    const vtr::vector<NocLinkId, NocLink>& get_noc_links(void) const;
+    const vtr::vector<NocLinkId, NocLink>& get_noc_links() const;
 
     /**
      * @brief Get all the links in the NoC. The links themselves can
@@ -204,22 +221,13 @@ class NocStorage {
      *
      * @return A vector of links.
      */
-    vtr::vector<NocLinkId, NocLink>& get_mutable_noc_links(void);
+    vtr::vector<NocLinkId, NocLink>& get_mutable_noc_links();
 
     /**
      * @return An integer representing the total number of links within the
      * NoC.
      */
-    int get_number_of_noc_links(void) const;
-
-    /**
-     * @brief Get the maximum allowable bandwidth for a link
-     * within the NoC.
-     * 
-     * @return a numeric value that represents the link bandwidth in bps
-     */
-
-    double get_noc_link_bandwidth(void) const;
+    int get_number_of_noc_links() const;
 
     /**
      * @brief Get the latency of traversing through a link in
@@ -227,8 +235,7 @@ class NocStorage {
      * 
      * @return a numeric value that represents the link latency in seconds
      */
-
-    double get_noc_link_latency(void) const;
+    double get_noc_link_latency() const;
 
     /**
      * @brief Get the latency of traversing through a router in
@@ -236,8 +243,25 @@ class NocStorage {
      * 
      * @return a numeric value that represents the router latency in seconds
      */
+    double get_noc_router_latency() const;
 
-    double get_noc_router_latency(void) const;
+    /**
+     * @return True if some NoC routers have different latencies than others.
+     * False if all NoC routers have the same latency.
+     */
+    bool get_detailed_router_latency() const;
+
+    /**
+     * @return True if some NoC links have different latencies than others.
+     * False if all NoC links have the same latency.
+     */
+    bool get_detailed_link_latency() const;
+
+    /**
+     * @return True if some NoC links have different bandwidths than others.
+     * False if all NoC links have the same bandwidth.
+     */
+    bool get_detailed_link_bandwidth() const;
 
     // getters for  routers
 
@@ -272,6 +296,20 @@ class NocStorage {
      * @return A link (NocLink) that is identified by the given id.
      */
     const NocLink& get_single_noc_link(NocLinkId id) const;
+
+    /**
+     *
+     * @tparam Container The type of standard library container used to carry
+     * NoCLinkIds. This container type must be iterable in a range-based loop.
+     * @tparam Ts Used to help clang infer correct template types. GCC can compile
+     * without this extra template argument.
+     * @param noc_link_ids A standard container that contains NoCLinkIds of the
+     * requested NoC links
+     * @return A const
+     */
+    template <template<typename...> class Container, typename... Ts>
+    const std::vector<std::reference_wrapper<const NocLink>>& get_noc_links(const Container<NocLinkId, Ts...>& noc_link_ids) const;
+
 
     /**
      * @brief Given source and sink router identifiers, this function
@@ -326,7 +364,9 @@ class NocStorage {
      * @param grid_position_y The vertical position on the FPGA of the physical
      * tile that this router represents.
      */
-    void add_router(int id, int grid_position_x, int grid_position_y, int layer_poisition);
+    void add_router(int id,
+                    int grid_position_x, int grid_position_y, int layer_position,
+                    double latency);
 
     /**
      * @brief Creates a new link and adds it to the NoC. The newly created
@@ -340,38 +380,30 @@ class NocStorage {
      * @param sink A unique identifier for the router that the new link enters
      * into (incoming to the router) 
      */
-    void add_link(NocRouterId source, NocRouterId sink);
+    void add_link(NocRouterId source, NocRouterId sink, double bandwidth, double latency);
 
     /**
-     * @brief Set the maximum allowable bandwidth for a link
-     * within the NoC.
-     * 
+     * @brief Set the maximum allowable bandwidth for all links
+     * within the NoC
      */
-
     void set_noc_link_bandwidth(double link_bandwidth);
 
     /**
      * @brief Set the latency of traversing through a link in
      * the NoC.
-     * 
      */
-
     void set_noc_link_latency(double link_latency);
 
     /**
      * @brief Set the latency of traversing through a router in
      * the NoC.
-     * 
      */
-
     void set_noc_router_latency(double router_latency);
 
     /**
      * @brief Set the internal reference to the device
      * grid width.
-     * 
      */
-
     void set_device_grid_width(int grid_width);
 
     void set_device_grid_spec(int grid_width, int grid_height);
@@ -404,18 +436,24 @@ class NocStorage {
      * NoC (routers and links cannot be added or removed). This function
      * should be called after building the NoC. Guarantees that
      * no future changes can be made.
-     * 
+     *
+     * When the NoC building is finished, this function checks whether
+     * all links and routers have the same bandwidth and latency.
+     * If some NoC elements have different latencies or bandwidths than
+     * others, a flag is set to indicate that the detailed NoC model should be
+     * used. In the detailed model, instead of associating a single latency or
+     * bandwidth value with all NoC routers or links, each NoC router or link
+     * has its specific value.
      */
-    void finished_building_noc(void);
+    void finished_building_noc();
 
     /**
      * @brief Resets the NoC by clearing all internal datastructures.
      * This includes deleting all routers and links. Also all internal
      * IDs are removed (the is conversion table is cleared). It is
      * recommended to run this function before building the NoC.
-     * 
      */
-    void clear_noc(void);
+    void clear_noc();
 
     /**
      * @brief Given a user id of a router, this function converts
@@ -428,6 +466,13 @@ class NocStorage {
     NocRouterId convert_router_id(int id) const;
 
     /**
+     * @brief Converts a NoCRouterID to the user router id.
+     * @param id The internal NoCRouterId
+     * @return The user provided router id;
+     */
+    int convert_router_id(NocRouterId id) const;
+
+    /**
      * @brief The datastructure that stores the outgoing links to each
      * router is an 2-D Vector. When processing the links, they can be
      * outgoing from any router in the NoC. Therefore the column size
@@ -436,7 +481,7 @@ class NocStorage {
      * number of routers in the NoC. 
      * 
      */
-    void make_room_for_noc_router_link_list(void);
+    void make_room_for_noc_router_link_list();
 
     /**
      * @brief Two links are considered parallel when the source router of one
@@ -474,10 +519,10 @@ class NocStorage {
      * @param grid_position_x The horizontal position on the FPGA of the physical
      * tile that this router represents.
      * 
-     * @param grid_position_y The vertical position on the FPGA of the phyical
+     * @param grid_position_y The vertical position on the FPGA of the physical
      * tile that this router represents.
      * 
-     * @param layer_position The layer number of the phyical
+     * @param layer_position The layer number of the physical
      * tile that this router represents.
      *  
      * @return int Represents a unique key that can be used to identify a
@@ -495,4 +540,18 @@ class NocStorage {
     void echo_noc(char* file_name) const;
 };
 
+
+template <template<typename...> class Container, typename... Ts>
+const std::vector<std::reference_wrapper<const NocLink>>& NocStorage::get_noc_links(const Container<NocLinkId, Ts...>& noc_link_ids) const {
+    returnable_noc_link_const_refs_.clear();
+
+    std::transform(noc_link_ids.begin(), noc_link_ids.end(), std::back_inserter(returnable_noc_link_const_refs_),
+                   [this](const NocLinkId lid) {
+                       return std::reference_wrapper<const NocLink>(this->get_single_noc_link(lid));
+                   });
+
+    return returnable_noc_link_const_refs_;
+}
+
 #endif
+

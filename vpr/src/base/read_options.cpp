@@ -2333,6 +2333,11 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("1.3")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    route_grp.add_argument(args.max_pres_fac, "-max_pres_fac")
+        .help("Sets the maximum present overuse penalty factor")
+        .default_value("1000.0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     route_grp.add_argument(args.acc_fac, "--acc_fac")
         .help("Specifies the accumulated overuse factor (historical congestion cost factor)")
         .default_value("1.0")
@@ -2572,7 +2577,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             " * classic: The classic VPR lookahead (may perform better on un-buffered routing\n"
             "            architectures)\n"
             " * map: An advanced lookahead which accounts for diverse wire type\n"
-            " * compressed_map: The algorithm is similar to map lookahead with the exception of saprse sampling of the chip"
+            " * compressed_map: The algorithm is similar to map lookahead with the exception of sparse sampling of the chip"
             " to reduce the run-time to build the router lookahead and also its memory footprint\n"
             " * extended_map: A more advanced and extended lookahead which accounts for a more\n"
             "                 exhaustive node sampling method\n"

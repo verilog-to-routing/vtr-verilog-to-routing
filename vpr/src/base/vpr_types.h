@@ -1405,6 +1405,7 @@ struct t_router_opts {
     float first_iter_pres_fac;
     float initial_pres_fac;
     float pres_fac_mult;
+    float max_pres_fac;
     float acc_fac;
     float bend_cost;
     int max_router_iterations;
@@ -1686,7 +1687,7 @@ class t_chan_seg_details {
 
   private:
     //The only unique information about a channel segment is it's start/end
-    //and length.  All other information is shared accross segment types,
+    //and length.  All other information is shared across segment types,
     //so we use a flyweight to the t_seg_details which defines that info.
     //
     //To preserve the illusion of uniqueness we wrap all t_seg_details members

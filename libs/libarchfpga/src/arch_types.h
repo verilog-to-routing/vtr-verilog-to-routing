@@ -18,7 +18,10 @@
 /* Value for UNDEFINED data */
 constexpr int UNDEFINED = -1;
 
-/* Maximum value for mininum channel width to avoid overflows of short data type.               */
+/** The total number of predefined blif models */
+constexpr int NUM_MODELS_IN_LIBRARY = 4;
+
+/* Maximum value for minimum channel width to avoid overflows of short data type.               */
 constexpr int MAX_CHANNEL_WIDTH = 8000;
 
 /* Built-in library models */

@@ -70,6 +70,8 @@ struct t_bb_cost {
     t_edge_cost xmax = {0, 0.0};
     t_edge_cost ymin = {0, 0.0};
     t_edge_cost ymax = {0, 0.0};
+    t_edge_cost layer_min = {0, 0.};
+    t_edge_cost layer_max = {0, 0.};
 };
 
 /**

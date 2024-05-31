@@ -67,8 +67,6 @@ void draw_noc(ezgl::renderer* g) {
     draw_noc_links(g, noc_router_logical_type, noc_link_colors, noc_connection_marker_bbox, list_of_noc_link_shift_directions);
 
     draw_noc_connection_marker(g, router_list, noc_connection_marker_bbox);
-
-    return;
 }
 
 /*
@@ -78,55 +76,42 @@ void draw_noc_usage(vtr::vector<NocLinkId, ezgl::color>& noc_link_colors) {
     t_draw_state* draw_state = get_draw_state_vars();
     auto& noc_ctx = g_vpr_ctx.noc();
 
-    // get the maximum badnwidth per link
-    double max_noc_link_bandwidth = noc_ctx.noc_model.get_noc_link_bandwidth();
-
     // check to see if a color map was already created previously
     if (draw_state->noc_usage_color_map == nullptr) {
-        // we havent created a color map yet for the noc link usage, so create it here
+        // we haven't created a color map yet for the noc link usage, so create it here
         // the color map creates a color spectrum that gradually changes from a dark to light color. Where a dark color represents low noc link usage (low bandwidth) and a light color represents high noc link usage (high bandwidth)
         // The color map needs a min and max value to generate the color range.
         // The noc usage is calculated by taking the ratio of the links current bandwidth over the maximum allowable bandwidth
-        // for the NoC, the min value is 0, since you cannot go lower than 0 badnwidth.
+        // for the NoC, the min value is 0, since you cannot go lower than 0 bandwidth.
         // The max value is going to be 1 and represents the case where the link is used to full capacity on the noc link (as provided by the user)
         draw_state->noc_usage_color_map = std::make_shared<vtr::PlasmaColorMap>(0.0, 1.0);
     }
 
-    // get the list of links in the NoC
-    const vtr::vector<NocLinkId, NocLink>& noc_link_list = noc_ctx.noc_model.get_noc_links();
-
-    // store each links bandwidth usage
-    double link_bandwidth_usage;
-
     // represents the color to draw each noc link
     ezgl::color current_noc_link_color;
 
-    // now we need to determine the colors for each link
-    for (int link = 0; link < (int)noc_link_list.size(); link++) {
-        // get the current link id
-        NocLinkId link_id(link);
+    for (const auto& noc_link : noc_ctx.noc_model.get_noc_links()) {
+        NocLinkId link_id = noc_link.get_link_id();
 
-        // only update the color of the link if it wasnt updated previously
+        // only update the color of the link if it wasn't updated previously
         if (noc_link_colors[link_id] == ezgl::BLACK) {
             // if we are here then the link was not updated previously, so assign the color here
 
             //get the current link bandwidth usage (ratio calculation)
-            link_bandwidth_usage = (noc_link_list[link_id].get_bandwidth_usage()) / max_noc_link_bandwidth;
+            double link_bandwidth_usage_ratio = (noc_link.get_bandwidth_usage()) / noc_link.get_bandwidth();
 
             // check if the link is being overused and if it is then cap it at 1.0
-            if (link_bandwidth_usage > 1.0) {
-                link_bandwidth_usage = 1.0;
+            if (link_bandwidth_usage_ratio > 1.0) {
+                link_bandwidth_usage_ratio = 1.0;
             }
 
-            // get the corresponding color that represents the link bandwidth usgae
-            current_noc_link_color = to_ezgl_color(draw_state->noc_usage_color_map->color(link_bandwidth_usage));
+            // get the corresponding color that represents the link bandwidth usage
+            current_noc_link_color = to_ezgl_color(draw_state->noc_usage_color_map->color(link_bandwidth_usage_ratio));
 
             // set the colors of the link
             noc_link_colors[link_id] = current_noc_link_color;
         }
     }
-
-    return;
 }
 
 /*
@@ -158,7 +143,7 @@ ezgl::rectangle get_noc_connection_marker_bbox(const t_logical_block_type_ptr no
      * We do the following to calculate the position of the marker:
      * 1. Get the area of the larger router tile
      * 2. Calculate the area of the marker (based on a predefined percentage of the area of the larger noc tile)
-     * 3. The marker is a square, so we can can calculate the lengths 
+     * 3. The marker is a square, so we can calculate the lengths
      * of the sides of the marker
      * 4. Divide the side length by 2 and subtract this from the x & y coordinates of the center of the larger noc router tile. This is the bottom left corner of the rectangle.
      * 5. Then add the side length to the x & y coordinate of the center of the larger noc router tile. THis is the top right corner of the rectangle.    
@@ -188,15 +173,11 @@ void draw_noc_connection_marker(ezgl::renderer* g, const vtr::vector<NocRouterId
     t_draw_coords* draw_coords = get_draw_coords_vars();
     t_draw_state* draw_state = get_draw_state_vars();
 
-    int router_grid_position_x = 0;
-    int router_grid_position_y = 0;
-    int router_grid_position_layer = 0;
-
     ezgl::rectangle updated_connection_marker_bbox;
 
     // go through the routers and create the connection marker
-    for (auto router = router_list.begin(); router != router_list.end(); router++) {
-        router_grid_position_layer = router->get_router_layer_position();
+    for (const auto & router : router_list) {
+        int router_grid_position_layer = router.get_router_layer_position();
 
         t_draw_layer_display marker_box_visibility = draw_state->draw_layer_display[router_grid_position_layer];
         if (!marker_box_visibility.visible) {
@@ -206,8 +187,8 @@ void draw_noc_connection_marker(ezgl::renderer* g, const vtr::vector<NocRouterId
         //set the color of the marker with the layer transparency
         g->set_color(ezgl::BLACK, marker_box_visibility.alpha);
 
-        router_grid_position_x = router->get_router_grid_position_x();
-        router_grid_position_y = router->get_router_grid_position_y();
+        int router_grid_position_x = router.get_router_grid_position_x();
+        int router_grid_position_y = router.get_router_grid_position_y();
 
         // get the coordinates to draw the marker given the current routers tile position
         updated_connection_marker_bbox = connection_marker_bbox + ezgl::point2d(draw_coords->tile_x[router_grid_position_x], draw_coords->tile_y[router_grid_position_y]);
@@ -215,8 +196,6 @@ void draw_noc_connection_marker(ezgl::renderer* g, const vtr::vector<NocRouterId
         // draw the marker
         g->fill_rectangle(updated_connection_marker_bbox);
     }
-
-    return;
 }
 
 /*
@@ -307,8 +286,6 @@ void draw_noc_links(ezgl::renderer* g, t_logical_block_type_ptr noc_router_logic
         //draw a line between the center of the two routers this link connects
         g->draw_line(link_coords.start, link_coords.end);
     }
-
-    return;
 }
 
 void determine_direction_to_shift_noc_links(vtr::vector<NocLinkId, NocLinkShift>& list_of_noc_link_shift_directions) {
@@ -343,8 +320,6 @@ void determine_direction_to_shift_noc_links(vtr::vector<NocLinkId, NocLinkShift>
             list_of_noc_link_shift_directions[parallel_link] = NocLinkShift::BOTTOM_SHIFT;
         }
     }
-
-    return;
 }
 
 NocLinkType determine_noc_link_type(ezgl::point2d link_start_point, ezgl::point2d link_end_point) {
@@ -488,13 +463,11 @@ void shift_noc_link(noc_link_draw_coords& link_coords, NocLinkShift link_shift_d
                 link_coords.start.y += noc_connection_marker_quarter_height;
                 link_coords.end.y += noc_connection_marker_quarter_height;
             }
-            // dont change anything if we arent shifting at all
+            // don't change anything if we aren't shifting at all
             break;
         default:
             break;
     }
-
-    return;
 }
 
 #endif
