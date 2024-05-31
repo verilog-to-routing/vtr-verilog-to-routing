@@ -51,6 +51,8 @@ jobs:
 
     steps:
 
+      # TODO: This runnner is running on a self-hosted CPU. In order to upgrade
+      #       to v4, need to upgrade the machine to support node20.
     - uses: actions/checkout@v3
       with:
         submodules: 'true'
@@ -71,9 +73,12 @@ jobs:
         VTR_CMAKE_PARAMS: ${{ matrix.cmake }}
         NUM_CORES: ${{ matrix.cores }}
 
-    - uses: actions/upload-artifact@v3
-      if: ${{ always() }}
+    - name: Upload test results
+      # TODO: This runnner is running on a self-hosted CPU. In order to upgrade
+      #       to v4, need to upgrade the machine to support node20.
+      uses: actions/upload-artifact@v3
       with:
+        name: ${{matrix.test}}_test_results
         path: |
           **/results*.gz
           **/plot_*.svg
@@ -92,10 +97,10 @@ jobs:
         - { build_type: 'debug',   verbose: '1' }
     steps:
 
-    - uses: actions/setup-python@v4
+    - uses: actions/setup-python@v5
       with:
         python-version: 3.10.10
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         submodules: 'true'
     - run: ./.github/scripts/install_dependencies.sh
@@ -122,10 +127,10 @@ jobs:
     name: 'F: ${{ matrix.name }}'
     steps:
 
-    - uses: actions/setup-python@v4
+    - uses: actions/setup-python@v5
       with:
         python-version: 3.10.10
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - run: ./.github/scripts/install_dependencies.sh
 
     - name: Test
@@ -137,10 +142,10 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
 
-    - uses: actions/setup-python@v4
+    - uses: actions/setup-python@v5
       with:
         python-version: 3.10.10
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         submodules: 'true'
     - run: ./.github/scripts/install_dependencies.sh
@@ -156,10 +161,10 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
 
-    - uses: actions/setup-python@v4
+    - uses: actions/setup-python@v5
       with:
         python-version: 3.10.10
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         submodules: 'true'
     - run: ./.github/scripts/install_dependencies.sh
@@ -236,10 +241,10 @@ jobs:
     name: 'R: ${{ matrix.name }}'
     steps:
 
-    - uses: actions/setup-python@v4
+    - uses: actions/setup-python@v5
       with:
         python-version: 3.10.10
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         submodules: 'true'
     - run: ./.github/scripts/install_dependencies.sh
@@ -255,7 +260,7 @@ jobs:
         ./run_reg_test.py ${{ matrix.suite }} -show_failures -j2
 
     - name: Upload regression run files
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: ${{matrix.name}}_run_files
         path: |
@@ -266,7 +271,7 @@ jobs:
           vtr_flow/**/*.r
 
     - name: Upload regression results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: ${{matrix.name}}_results
         path: |
@@ -291,10 +296,10 @@ jobs:
     name: 'S: ${{ matrix.name }}'
     steps:
 
-    - uses: actions/setup-python@v4
+    - uses: actions/setup-python@v5
       with:
         python-version: 3.10.10
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         submodules: 'true'
 
@@ -325,10 +330,10 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
 
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: 3.10.10
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: 'true'
       - run: ./.github/scripts/install_dependencies.sh
@@ -350,10 +355,10 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
 
-    - uses: actions/setup-python@v4
+    - uses: actions/setup-python@v5
       with:
         python-version: 3.10.10
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         submodules: 'true'
     - run: ./.github/scripts/install_dependencies.sh
@@ -376,10 +381,10 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
 
-    - uses: actions/setup-python@v4
+    - uses: actions/setup-python@v5
       with:
         python-version: 3.10.10
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         submodules: 'true'
     - run: ./.github/scripts/install_dependencies.sh
@@ -411,10 +416,10 @@ jobs:
     name: 'B: ${{ matrix.name }}'
     steps:
 
-    - uses: actions/setup-python@v4
+    - uses: actions/setup-python@v5
       with:
         python-version: 3.10.10
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         submodules: 'true'
     - run: ./.github/scripts/install_dependencies.sh
@@ -447,10 +452,10 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
 
-    - uses: actions/setup-python@v4
+    - uses: actions/setup-python@v5
       with:
         python-version: 3.10.10
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         submodules: 'true'
     - run: ./.github/scripts/install_dependencies.sh
