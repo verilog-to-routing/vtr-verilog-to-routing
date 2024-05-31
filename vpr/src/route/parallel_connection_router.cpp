@@ -1,5 +1,6 @@
 #include "parallel_connection_router.h"
 #include <algorithm>
+#include <tuple>
 #include "router_lookahead.h"
 #include "rr_graph.h"
 
@@ -7,7 +8,7 @@
 #include "bucket.h"
 #include "rr_graph_fwd.h"
 
-// #define IS_DETERMINISTIC
+// #define NON_DETERMINISTIC_PRUNING
 
 /**
  * @brief This function is relevant when the architecture is 3D. If inter-layer connections are only from OPINs (determine by is_inter_layer_opin_connection),
@@ -194,13 +195,10 @@ std::tuple<bool, bool, t_heap> ParallelConnectionRouter::timing_driven_route_con
     return std::make_tuple(true, retry_with_full_bb, out);
 }
 
-
-#ifdef IS_DETERMINISTIC
-
-static inline bool deterministic_post_target_prune_node(float new_total_cost,
-                                                        float new_back_cost,
-                                                        float best_back_cost_to_target,
-                                                        const t_conn_cost_params& params) {
+static inline bool post_target_prune_node(float new_total_cost,
+                                          float new_back_cost,
+                                          float best_back_cost_to_target,
+                                          const t_conn_cost_params& params) {
     // Divide out the astar_fac, then multiply to get determinism
     // This is a correction factor to the forward cost to make the total
     // cost an under-estimate.
@@ -221,14 +219,12 @@ static inline bool deterministic_post_target_prune_node(float new_total_cost,
     // Max function to prevent the heuristic from going negative
     new_expected_cost = std::max(0.f, new_expected_cost);
     new_expected_cost *= params.post_target_prune_fac;
-    if (best_back_cost_to_target < (new_back_cost + new_expected_cost))
+    if ((new_back_cost + new_expected_cost) > best_back_cost_to_target)
         return true;
     // NOTE: we do NOT check for equality here. Equality does not matter for
     //       determinism when draining the queues (may just lead to a bit more work).
     return false;
 }
-
-#endif // IS_DETERMINISTIC
 
 // TODO: Once we have a heap node struct, clean this up!
 static inline bool prune_node(RRNodeId inode,
@@ -238,32 +234,21 @@ static inline bool prune_node(RRNodeId inode,
                               RRNodeId target_node,
                               vtr::vector<RRNodeId, t_rr_node_route_inf>& rr_node_route_inf_,
                               const t_conn_cost_params& params) {
-    // Get the global information INSIDE this function.
-    t_rr_node_route_inf* route_inf = &rr_node_route_inf_[inode];
-    float best_total_cost = route_inf->path_cost;
-    float best_back_cost = route_inf->backward_path_cost;
-    RREdgeId best_prev_edge = route_inf->prev_edge;
-    t_rr_node_route_inf* target_route_inf = &rr_node_route_inf_[target_node];
-    float best_back_cost_to_target = target_route_inf->backward_path_cost;
-    float best_total_cost_to_target = target_route_inf->path_cost;
-#ifdef IS_DETERMINISTIC
-    (void)best_total_cost;
-    (void)best_total_cost_to_target;
-    // Deterministic version prefers a given EdgeID, so a unique path is returned since,
-    // in the case of a tie, a determinstic path wins.
-    // Is first preferred over second?
-    auto is_preferred_edge = [](RREdgeId first, RREdgeId second) {
-        return first < second;
-    };
     // Post-target pruning: After the target is reached the first time, should
     // use the heuristic to help drain the queues.
     if (inode != target_node) {
-        if (deterministic_post_target_prune_node(new_total_cost, new_back_cost, best_back_cost_to_target, params))
+        t_rr_node_route_inf* target_route_inf = &rr_node_route_inf_[target_node];
+        float best_back_cost_to_target = target_route_inf->backward_path_cost;
+        if (post_target_prune_node(new_total_cost, new_back_cost, best_back_cost_to_target, params))
             return true;
     }
+
+    // Backwards Pruning
     // NOTE: When going to the target, we only want to prune on the truth.
     //       The queues handle using the heuristic to explore nodes faster.
-    if (best_back_cost < new_back_cost)
+    t_rr_node_route_inf* route_inf = &rr_node_route_inf_[inode];
+    float best_back_cost = route_inf->backward_path_cost;
+    if (new_back_cost > best_back_cost)
         return true;
     // In the case of a tie, need to be picky about whether to prune or not in
     // order to get determinism.
@@ -271,8 +256,11 @@ static inline bool prune_node(RRNodeId inode,
     //        function is being called, we may have the new_back_cost and best
     //        prev_edge's being from different heap nodes!
     // TODO: Move this to within the lock (the rest can stay for performance).
-    if (best_back_cost == new_back_cost) {
+    if (new_back_cost == best_back_cost) {
+#ifndef NON_DETERMINISTIC_PRUNING
+        // With deterministic pruning, cannot always prune on ties.
         // In the case of a true tie, just prune, no need to explore neightbors
+        RREdgeId best_prev_edge = route_inf->prev_edge;
         if (new_prev_edge == best_prev_edge)
             return true;
         // When it comes to invalid edge IDs, in the case of a tied back cost,
@@ -285,27 +273,22 @@ static inline bool prune_node(RRNodeId inode,
         if (!new_prev_edge.is_valid())
             return false;
         // Finally, if this node is not coming from a preferred edge, prune
+        // Deterministic version prefers a given EdgeID, so a unique path is returned since,
+        // in the case of a tie, a determinstic path wins.
+        // Is first preferred over second?
+        auto is_preferred_edge = [](RREdgeId first, RREdgeId second) {
+            return first < second;
+        };
         if (!is_preferred_edge(new_prev_edge, best_prev_edge))
             return true;
-    }
-#else   // IS_DETERMINISTIC
-    (void)new_prev_edge;
-    (void)best_prev_edge;
-    (void)params;
-    // Non-deterministic version does not prefer a given EdgeID, therefore there
-    // is a race-condition on which path wins in the case of a tie.
-    // TODO: Confirm if best_total_cost_to_target should be included here.
-    if (inode != target_node) {
-        if (best_total_cost_to_target <= new_total_cost)
-            return true;
-        if (best_back_cost_to_target <= new_back_cost)
-            return true;
-    }
-    if (best_total_cost <= new_total_cost)
+#else
+        std::ignore = new_prev_edge;
+        // When we do not care about determinism, always prune on equality.
         return true;
-    if (best_back_cost <= new_back_cost)
-        return true;
-#endif  // IS_DETERMINISTIC
+#endif
+    }
+
+    // If all above passes, do not prune.
     return false;
 }
 
@@ -315,7 +298,7 @@ static inline bool should_not_explore_neighbors(RRNodeId inode,
                                 RRNodeId target_node,
                                 vtr::vector<RRNodeId, t_rr_node_route_inf>& rr_node_route_inf_,
                                 const t_conn_cost_params& params) {
-#ifdef IS_DETERMINISTIC
+#ifndef NON_DETERMINISTIC_PRUNING
     // For deterministic pruning, cannot enforce anything on the total cost since
     // traversal order is not gaurenteed. However, since total cost is used as a
     // "key" to signify that this node is the last node that was pushed, we can
@@ -324,6 +307,12 @@ static inline bool should_not_explore_neighbors(RRNodeId inode,
     // TODO: Maybe consider having the non-deterministic version do this too.
     if (new_total_cost != rr_node_route_inf_[inode].path_cost)
         return true;
+#else
+    // For non-deterministic pruning, can greadily just ignore nodes with higher
+    // total cost.
+    if (new_total_cost > rr_node_route_inf_[inode].path_cost)
+        return true;
+#endif
     // Perform post-target pruning. If this is not done, there is a chance that
     // several duplicates of a node is in the queue that will never reach the
     // target better than what we found and they will explore all of their
@@ -331,20 +320,9 @@ static inline bool should_not_explore_neighbors(RRNodeId inode,
     // prevent lock contention where possible.
     if (inode != target_node) {
         float best_back_cost_to_target = rr_node_route_inf_[target_node].backward_path_cost;
-        if (deterministic_post_target_prune_node(new_total_cost, new_back_cost, best_back_cost_to_target, params))
+        if (post_target_prune_node(new_total_cost, new_back_cost, best_back_cost_to_target, params))
             return true;
     }
-#else // IS_DETERMINISTIC
-    (void)params;
-    if (new_total_cost > rr_node_route_inf_[inode].path_cost)
-        return true;
-    if (inode != target_node) {
-        if (new_total_cost > rr_node_route_inf_[target_node].path_cost)
-            return true;
-        if (new_back_cost > rr_node_route_inf_[target_node].backward_path_cost)
-            return true;
-    }
-#endif // IS_DETERMINISTIC
     return false;
 }
 
