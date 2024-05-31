@@ -51,6 +51,8 @@ jobs:
 
     steps:
 
+      # TODO: This runnner is running on a self-hosted CPU. In order to upgrade
+      #       to v4, need to upgrade the machine to support node20.
     - uses: actions/checkout@v3
       with:
         submodules: 'true'
@@ -71,9 +73,12 @@ jobs:
         VTR_CMAKE_PARAMS: ${{ matrix.cmake }}
         NUM_CORES: ${{ matrix.cores }}
 
-    - uses: actions/upload-artifact@v3
-      if: ${{ always() }}
+    - name: Upload test results
+      # TODO: This runnner is running on a self-hosted CPU. In order to upgrade
+      #       to v4, need to upgrade the machine to support node20.
+      uses: actions/upload-artifact@v3
       with:
+        name: ${{matrix.test}}_test_results
         path: |
           **/results*.gz
           **/plot_*.svg
@@ -92,10 +97,10 @@ jobs:
         - { build_type: 'debug',   verbose: '1' }
     steps:
 
-    - uses: actions/setup-python@v4
+    - uses: actions/setup-python@v5
       with:
         python-version: 3.10.10
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         submodules: 'true'
     - run: ./.github/scripts/install_dependencies.sh
@@ -122,10 +127,10 @@ jobs:
     name: 'F: ${{ matrix.name }}'
     steps:
 
-    - uses: actions/setup-python@v4
+    - uses: actions/setup-python@v5
       with:
         python-version: 3.10.10
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - run: ./.github/scripts/install_dependencies.sh
 
     - name: Test
@@ -137,10 +142,10 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
 
-    - uses: actions/setup-python@v4
+    - uses: actions/setup-python@v5
       with:
         python-version: 3.10.10
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         submodules: 'true'
     - run: ./.github/scripts/install_dependencies.sh
@@ -156,10 +161,10 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
 
-    - uses: actions/setup-python@v4
+    - uses: actions/setup-python@v5
       with:
         python-version: 3.10.10
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         submodules: 'true'
     - run: ./.github/scripts/install_dependencies.sh
@@ -184,57 +189,62 @@ jobs:
         include: [
           {
             name: 'Basic',
-            params: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on',
+            params: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on',
             suite: 'vtr_reg_basic'
           },
           {
             name: 'Basic_odin',
-            params: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DWITH_PARMYS=OFF -DWITH_ODIN=on',
+            params: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DWITH_PARMYS=OFF -DWITH_ODIN=on',
             suite: 'vtr_reg_basic_odin'
           },
           {
             name: 'Basic with NO_GRAPHICS',
-            params: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVPR_USE_EZGL=off',
+            params: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVPR_USE_EZGL=off',
+            suite: 'vtr_reg_basic'
+          },
+          {
+            name: 'Basic with NO_SERVER',
+            params: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVPR_USE_EZGL=on -DVPR_USE_SERVER=off',
             suite: 'vtr_reg_basic'
           },
           {
             name: 'Basic with CAPNPROTO disabled',
-            params: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVTR_ENABLE_CAPNPROTO=off',
+            params: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVTR_ENABLE_CAPNPROTO=off',
             suite: 'vtr_reg_basic'
           },
           {
             name: 'Basic with VTR_ENABLE_DEBUG_LOGGING',
-            params: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVTR_ENABLE_DEBUG_LOGGING=on',
+            params: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVTR_ENABLE_DEBUG_LOGGING=on',
             suite: 'vtr_reg_basic'
           },
           {
             name: 'Basic_odin with VTR_ENABLE_DEBUG_LOGGING',
-            params: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVTR_ENABLE_DEBUG_LOGGING=on -DWITH_PARMYS=OFF -DWITH_ODIN=on',
+            params: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVTR_ENABLE_DEBUG_LOGGING=on -DWITH_PARMYS=OFF -DWITH_ODIN=on',
             suite: 'vtr_reg_basic_odin'
           },
           {
             name: 'Strong',
-            params: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on',
+            params: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on',
             suite: 'vtr_reg_strong'
           },
           {
             name: 'Strong_odin',
-            params: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DWITH_PARMYS=OFF -DWITH_ODIN=on',
+            params: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DWITH_PARMYS=OFF -DWITH_ODIN=on',
             suite: 'vtr_reg_strong_odin'
           },
           {
             name: 'Valgrind Memory',
-            params: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DWITH_ODIN=on',
+            params: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DWITH_ODIN=on',
             suite: 'vtr_reg_valgrind_small'
           }
         ]
     name: 'R: ${{ matrix.name }}'
     steps:
 
-    - uses: actions/setup-python@v4
+    - uses: actions/setup-python@v5
       with:
         python-version: 3.10.10
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         submodules: 'true'
     - run: ./.github/scripts/install_dependencies.sh
@@ -250,7 +260,7 @@ jobs:
         ./run_reg_test.py ${{ matrix.suite }} -show_failures -j2
 
     - name: Upload regression run files
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: ${{matrix.name}}_run_files
         path: |
@@ -261,7 +271,7 @@ jobs:
           vtr_flow/**/*.r
 
     - name: Upload regression results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: ${{matrix.name}}_results
         path: |
@@ -286,10 +296,10 @@ jobs:
     name: 'S: ${{ matrix.name }}'
     steps:
 
-    - uses: actions/setup-python@v4
+    - uses: actions/setup-python@v5
       with:
         python-version: 3.10.10
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         submodules: 'true'
 
@@ -320,10 +330,10 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
 
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: 3.10.10
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: 'true'
       - run: ./.github/scripts/install_dependencies.sh
@@ -345,10 +355,10 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
 
-    - uses: actions/setup-python@v4
+    - uses: actions/setup-python@v5
       with:
         python-version: 3.10.10
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         submodules: 'true'
     - run: ./.github/scripts/install_dependencies.sh
@@ -371,10 +381,10 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
 
-    - uses: actions/setup-python@v4
+    - uses: actions/setup-python@v5
       with:
         python-version: 3.10.10
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         submodules: 'true'
     - run: ./.github/scripts/install_dependencies.sh
@@ -406,10 +416,10 @@ jobs:
     name: 'B: ${{ matrix.name }}'
     steps:
 
-    - uses: actions/setup-python@v4
+    - uses: actions/setup-python@v5
       with:
         python-version: 3.10.10
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         submodules: 'true'
     - run: ./.github/scripts/install_dependencies.sh
@@ -442,10 +452,10 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
 
-    - uses: actions/setup-python@v4
+    - uses: actions/setup-python@v5
       with:
         python-version: 3.10.10
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         submodules: 'true'
     - run: ./.github/scripts/install_dependencies.sh

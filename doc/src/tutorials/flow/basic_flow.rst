@@ -17,16 +17,9 @@ The following steps show you to run the VTR design flow to map a sample circuit 
 
         $VTR_ROOT/vtr_flow/scripts/run_vtr_task.py basic_no_timing 
         
-    The subdirectory ``regression_tests/vtr_reg_basic`` contains tests that are to be run before each commit. They check for basic functionallity to make sure nothing was           extremely out of order. This command runs the VTR flow on a set of circuits and a single architecture. 
+    The subdirectory ``regression_tests/vtr_reg_basic`` contains tests that are to be run before each commit. They check for basic functionality to make sure nothing was extremely out of order. This command runs the VTR flow on a set of circuits and a single architecture. 
     The files generated from the run are stored in ``basic_no_timing/run[#]`` where ``[#]`` is the number of runs you have done.
-    If this is your first time running the flow, the results will be stored in basic_no_timing/run001.
-    When the script completes, enter the following command:
-
-    .. code-block:: shell
-
-         ../../../scripts/python_libs/vtr/parse_vtr_task.py basic_no_timing/
-
-    This parses out the information of the VTR run and outputs the results in a text file called ``run[#]/parse_results.txt``.
+    If this is your first time running the flow, the results will be stored in basic_no_timing/run001. The command parses out the information of the VTR run and outputs the results in a text file called ``run[#]/parse_results.txt``.
 
     More info on how to run the flow on multiple circuits and architectures along with different options later.
     Before that, we need to ensure that the run that you have done works.

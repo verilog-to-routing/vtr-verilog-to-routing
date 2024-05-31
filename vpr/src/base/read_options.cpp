@@ -2032,23 +2032,17 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
 
     place_grp.add_argument(args.place_static_move_prob, "--place_static_move_prob")
         .help(
-            "The percentage probabilities of different moves in Simulated Annealing placement."
-            "This option is only effective for timing-driven placement."
-            "The numbers listed are interpreted as the percentage probabilities of {uniformMove, MedianMove, CentroidMove, WeightedCentroid, WeightedMedian, Timing feasible Region(TFR), Critical UniformMove}, in that order.")
+            "The percentage probabilities of different moves in Simulated Annealing placement. "
+            "For non-timing-driven placement, only the first 3 probabilities should be provided. "
+            "For timing-driven placement, all probabilities should be provided. "
+            "When the number of provided probabilities is less then the number of move types, zero probability "
+            "is assumed."
+            "The numbers listed are interpreted as the percentage probabilities of {UniformMove, MedianMove, CentroidMove, "
+            "WeightedCentroid, WeightedMedian, Critical UniformMove, Timing feasible Region(TFR)}, in that order.")
         .nargs('+')
-        .default_value({"100", "0", "0", "0", "0", "0", "0"})
-
+        .default_value({"100"})
         .show_in(argparse::ShowIn::HELP_ONLY);
 
-    place_grp.add_argument(args.place_static_notiming_move_prob, "--place_static_notiming_move_prob")
-        .help(
-            "The Probability of different non timing move in Simulated Annealing."
-            "This option is only effective for nontiming driven placement."
-            " The numbers listed are interpreted as the percentage probabilities of {uniformMove, MedianMove, CentroidMove}, in that order.")
-        .nargs('+')
-        .default_value({"100", "0", "0"})
-
-        .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.place_high_fanout_net, "--place_high_fanout_net")
         .help(
@@ -2339,6 +2333,11 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("1.3")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    route_grp.add_argument(args.max_pres_fac, "-max_pres_fac")
+        .help("Sets the maximum present overuse penalty factor")
+        .default_value("1000.0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     route_grp.add_argument(args.acc_fac, "--acc_fac")
         .help("Specifies the accumulated overuse factor (historical congestion cost factor)")
         .default_value("1.0")
@@ -2578,7 +2577,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             " * classic: The classic VPR lookahead (may perform better on un-buffered routing\n"
             "            architectures)\n"
             " * map: An advanced lookahead which accounts for diverse wire type\n"
-            " * compressed_map: The algorithm is similar to map lookahead with the exception of saprse sampling of the chip"
+            " * compressed_map: The algorithm is similar to map lookahead with the exception of sparse sampling of the chip"
             " to reduce the run-time to build the router lookahead and also its memory footprint\n"
             " * extended_map: A more advanced and extended lookahead which accounts for a more\n"
             "                 exhaustive node sampling method\n"
@@ -2873,12 +2872,34 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("0")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    noc_grp.add_argument<double>(args.noc_centroid_weight, "--noc_centroid_weight")
+        .help(
+            "Sets the minimum fraction of swaps attempted by the placer that are NoC blocks."
+            "This value is an integer ranging from 0-100. 0 means NoC blocks will be moved at the same rate as other blocks. 100 means all swaps attempted by the placer are NoC router blocks.")
+        .default_value("0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     noc_grp.add_argument<std::string>(args.noc_placement_file_name, "--noc_placement_file_name")
         .help(
             "Name of the output file that contains the NoC placement information."
             "The default name is 'vpr_noc_placement_output.txt'")
         .default_value("vpr_noc_placement_output.txt")
         .show_in(argparse::ShowIn::HELP_ONLY);
+
+#ifndef NO_SERVER
+    auto& server_grp = parser.add_argument_group("server options");
+
+    server_grp.add_argument<bool, ParseOnOff>(args.is_server_mode_enabled, "--server")
+        .help("Run in server mode."
+              "Accept client application connection and respond to requests." )
+        .action(argparse::Action::STORE_TRUE)
+        .default_value("off");
+
+    server_grp.add_argument<int>(args.server_port_num, "--port")
+        .help("Server port number.")
+        .default_value("60555")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+#endif /* NO_SERVER */
 
     return parser;
 }

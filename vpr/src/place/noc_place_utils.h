@@ -173,7 +173,10 @@ std::vector<NocLinkId>& route_traffic_flow(NocTrafficFlowId traffic_flow_id,
  * @param traffic_flow_bandwidth The bandwidth of a traffic flow. This will
  * be used to update bandwidth usage of the links.
  */
-void update_traffic_flow_link_usage(const std::vector<NocLinkId>& traffic_flow_route, NocStorage& noc_model, int inc_or_dec, double traffic_flow_bandwidth);
+void update_traffic_flow_link_usage(const std::vector<NocLinkId>& traffic_flow_route,
+                                    NocStorage& noc_model,
+                                    int inc_or_dec,
+                                    double traffic_flow_bandwidth);
 
 /**
  * @brief Goes through all the traffic flows associated to a moved
@@ -201,7 +204,8 @@ void update_traffic_flow_link_usage(const std::vector<NocLinkId>& traffic_flow_r
  */
 void re_route_associated_traffic_flows(ClusterBlockId moved_router_block_id,
                                        NocTrafficFlows& noc_traffic_flows_storage,
-                                       NocStorage& noc_model, NocRouting& noc_flows_router,
+                                       NocStorage& noc_model,
+                                       NocRouting& noc_flows_router,
                                        std::unordered_set<NocTrafficFlowId>& updated_traffic_flows);
 
 /**
@@ -355,7 +359,8 @@ int check_noc_placement_costs(const t_placer_costs& costs, double error_toleranc
  * its priority.
  * @return The computed aggregate bandwidth for the provided traffic flow
  */
-double calculate_traffic_flow_aggregate_bandwidth_cost(const std::vector<NocLinkId>& traffic_flow_route, const t_noc_traffic_flow& traffic_flow_info);
+double calculate_traffic_flow_aggregate_bandwidth_cost(const std::vector<NocLinkId>& traffic_flow_route,
+                                                       const t_noc_traffic_flow& traffic_flow_info);
 
 /**
  * @brief Determines the latency cost of a routed traffic flow.
@@ -452,7 +457,6 @@ double get_total_congestion_bandwidth_ratio();
  * @return n links with highest congestion ratio
  */
 std::vector<NocLink> get_top_n_congested_links(int n);
-
 
 /**
  * @brief Goes through all NoC links and determines whether they
