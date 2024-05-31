@@ -13,6 +13,9 @@
 
 namespace {
 
+constexpr double DUMMY_LATENCY = 1e-9;
+constexpr double DUMMY_BANDWIDTH = 1e12;
+
 TEST_CASE("test_adding_routers_to_noc_storage", "[vpr_noc]") {
     // setup random number generation
     std::random_device device;
@@ -44,10 +47,10 @@ TEST_CASE("test_adding_routers_to_noc_storage", "[vpr_noc]") {
         router_grid_position_y = router_number + dist(rand_num_gen);
 
         // add router to the golden vector
-        golden_set.emplace_back(router_number, router_grid_position_x, router_grid_position_y, 0);
+        golden_set.emplace_back(router_number, router_grid_position_x, router_grid_position_y, 0, DUMMY_LATENCY);
 
         // add tje router to the noc
-        test_noc.add_router(curr_router_id, router_grid_position_x, router_grid_position_y, 0);
+        test_noc.add_router(curr_router_id, router_grid_position_x, router_grid_position_y, 0, DUMMY_LATENCY);
     }
 
     // now verify that the routers were added properly by reading the routers back from the noc and comparing them to the golden set
@@ -96,10 +99,10 @@ TEST_CASE("test_router_id_conversion", "[vpr_noc]") {
         router_grid_position_y = router_number + dist(rand_num_gen);
 
         // add router to the golden vector
-        golden_set.emplace_back(router_number, router_grid_position_x, router_grid_position_y, 0);
+        golden_set.emplace_back(router_number, router_grid_position_x, router_grid_position_y, 0, DUMMY_LATENCY);
 
         // add tje router to the noc
-        test_noc.add_router(curr_router_id, router_grid_position_x, router_grid_position_y, 0);
+        test_noc.add_router(curr_router_id, router_grid_position_x, router_grid_position_y, 0, DUMMY_LATENCY);
     }
 
     // now verify that the routers were added properly by reading the routers back from the noc and comparing them to the golden set
@@ -150,7 +153,8 @@ TEST_CASE("test_add_link", "[vpr_noc]") {
         test_noc.add_router(router_id,
                             curr_router_x_pos,
                             curr_router_y_pos,
-                            0);
+                            0,
+                            DUMMY_LATENCY);
     }
 
     // allocate the size for outgoing link vector for each router
@@ -171,10 +175,10 @@ TEST_CASE("test_add_link", "[vpr_noc]") {
                 noc_link_id_counter++;
 
                 // add link to the golden reference
-                golden_set.emplace_back(link_id, source, sink, 0.0);
+                golden_set.emplace_back(link_id, source, sink, DUMMY_BANDWIDTH, DUMMY_LATENCY);
 
                 // add the link to the NoC
-                test_noc.add_link(source, sink);
+                test_noc.add_link(source, sink, DUMMY_BANDWIDTH, DUMMY_LATENCY);
 
                 total_num_of_links++;
             }
@@ -235,7 +239,7 @@ TEST_CASE("test_router_link_list", "[vpr_noc]") {
         router_id = router_number;
 
         // add tje router to the noc
-        test_noc.add_router(router_id, curr_router_x_pos, curr_router_y_pos, 0);
+        test_noc.add_router(router_id, curr_router_x_pos, curr_router_y_pos, 0, DUMMY_LATENCY);
     }
 
     // allocate the size for outgoing link vector for each router
@@ -250,7 +254,7 @@ TEST_CASE("test_router_link_list", "[vpr_noc]") {
             // makes sure we do not create a link for a router who acts as a sink and source
             if (source_router_id != sink_router_id) {
                 // add the link to the NoC
-                test_noc.add_link(source, sink);
+                test_noc.add_link(source, sink, DUMMY_BANDWIDTH, DUMMY_LATENCY);
 
                 // add the link id to the golden set
                 golden_set[source].push_back((NocLinkId)curr_link_number);
@@ -312,7 +316,8 @@ TEST_CASE("test_remove_link", "[vpr_noc]") {
         test_noc.add_router(router_id,
                             curr_router_x_pos,
                             curr_router_y_pos,
-                            0);
+                            0,
+                            DUMMY_LATENCY);
     }
 
     // now go through and add the links to the NoC
@@ -329,7 +334,7 @@ TEST_CASE("test_remove_link", "[vpr_noc]") {
             // makes sure we do not create a link for a router who acts as a sink and source
             if (source_router_id != sink_router_id) {
                 // add the link to the NoC
-                test_noc.add_link(source, sink);
+                test_noc.add_link(source, sink, DUMMY_BANDWIDTH, DUMMY_LATENCY);
             }
         }
     }
@@ -431,7 +436,8 @@ TEST_CASE("test_generate_router_key_from_grid_location", "[vpr_noc]") {
         test_noc.add_router(curr_router_id,
                             router_grid_position_x,
                             router_grid_position_y,
-                            0);
+                            0,
+                            DUMMY_LATENCY);
     }
 
     // now verify the test function by identifying all the routers using their grid locations

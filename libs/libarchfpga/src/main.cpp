@@ -5,12 +5,11 @@
  * Author: Jason Luu
  */
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 #include <vector>
 
 #include "vtr_error.h"
-#include "vtr_memory.h"
 
 #include "arch_util.h"
 #include "read_xml_arch_file.h"
