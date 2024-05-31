@@ -217,7 +217,21 @@ static vtr::vector<NocTrafficFlowId, int> quantize_traffic_flow_bandwidths(int b
     const auto& traffic_flow_storage = noc_ctx.noc_traffic_flows_storage;
 
     //TODO: support heterogeneous bandwidth
-    const double link_bandwidth = noc_ctx.noc_model.get_noc_link_bandwidth();
+    const auto& noc_links = noc_ctx.noc_model.get_noc_links();
+    const double link_bandwidth = noc_links.front().get_bandwidth();
+    auto it = std::adjacent_find(noc_links.begin(), noc_links.end(), [](const NocLink& a, const NocLink& b){
+        return a.get_bandwidth() != b.get_bandwidth();
+    });
+
+    if (it != noc_links.end()) {
+        const NocLink& first_link = *it;
+        const NocLink& second_link = *(it + 1);
+        VTR_LOG_ERROR(
+            "SAT router assumes all NoC links have the same bandwidth. "
+            "NoC links %d and %d have different bandwidth: %g and %g",
+            (size_t)first_link.get_link_id(), (size_t)second_link.get_link_id(),
+            first_link.get_bandwidth(), second_link.get_bandwidth());
+    }
 
     vtr::vector<NocTrafficFlowId, int> rescaled_traffic_flow_bandwidths;
     rescaled_traffic_flow_bandwidths.resize(traffic_flow_storage.get_number_of_traffic_flows());
