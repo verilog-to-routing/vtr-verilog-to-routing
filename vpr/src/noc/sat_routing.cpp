@@ -501,8 +501,33 @@ static int comp_max_number_of_traversed_links(NocTrafficFlowId traffic_flow_id) 
 
     const auto& traffic_flow = traffic_flow_storage.get_single_noc_traffic_flow(traffic_flow_id);
 
+    const auto& noc_links = noc_model.get_noc_links();
+    const auto& noc_routers = noc_model.get_noc_routers();
     const double noc_link_latency = noc_model.get_noc_link_latency();
     const double noc_router_latency = noc_model.get_noc_router_latency();
+
+    auto router_it = std::find_if(noc_routers.begin(), noc_routers.end(), [noc_router_latency](const NocRouter& r) {
+        return (noc_router_latency != r.get_latency());
+    });
+
+    if (router_it != noc_routers.end()) {
+        VTR_LOG_ERROR(
+            "SAT router assumes all NoC routers have the same latency. "
+            "NoC router with the user if %d has a different latency (%g) than the NoC-wide router latency (%g).\n",
+            router_it->get_router_user_id(), router_it->get_latency());
+    }
+
+    auto link_it = std::find_if(noc_links.begin(), noc_links.end(), [noc_link_latency](const NocLink& l) {
+       return (noc_link_latency != l.get_latency());
+    });
+
+    if (link_it != noc_links.end()) {
+        VTR_LOG_ERROR(
+            "SAT router assumes all NoC links have the same latency. "
+            "NoC link %d has a different latency (%g) than the NoC-wide link latency (%g).\n",
+            (size_t)link_it->get_link_id(), link_it->get_latency());
+    }
+
     const double traffic_flow_latency_constraint = traffic_flow.max_traffic_flow_latency;
 
     VTR_ASSERT(traffic_flow_latency_constraint < 0.1);
