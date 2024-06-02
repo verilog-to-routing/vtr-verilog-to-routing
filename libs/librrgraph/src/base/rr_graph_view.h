@@ -349,6 +349,12 @@ class RRGraphView {
     inline short edge_switch(RRNodeId id, t_edge_size iedge) const {
         return node_storage_.edge_switch(id, iedge);
     }
+
+    /** @brief Get the source node for the specified edge. */
+    inline RRNodeId edge_src_node(const RREdgeId edge_id) const {
+        return node_storage_.edge_src_node(edge_id);
+    }
+
     /** @brief Get the destination node for the iedge'th edge from specified RRNodeId.
      *  This method should generally not be used, and instead first_edge and
      *  last_edge should be used.*/
@@ -391,7 +397,7 @@ class RRGraphView {
     /** @brief Get outgoing edges for a node.
      * This API is designed to enable range-based loop to walk through the outgoing edges of a node
      * Example:
-     *   RRGraphView rr_graph; // A dummny rr_graph for a short example
+     *   RRGraphView rr_graph; // A dummy rr_graph for a short example
      *   RRNodeId node; // A dummy node for a short example
      *   for (RREdgeId edge : rr_graph.edges(node)) {
      *     // Do something with the edge
@@ -458,7 +464,7 @@ class RRGraphView {
     }
 
     /** @brief  Return the switch information that is categorized in the rr_switch_inf with a given id
-     * rr_switch_inf is created to minimize memory footprint of RRGraph classs
+     * rr_switch_inf is created to minimize memory footprint of RRGraph class
      * While the RRG could contain millions (even much larger) of edges, there are only
      * a limited number of types of switches.
      * Hence, we use a flyweight pattern to store switch-related information that differs

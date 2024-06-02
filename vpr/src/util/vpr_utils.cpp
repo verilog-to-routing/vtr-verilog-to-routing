@@ -1,13 +1,12 @@
-#include <cstring>
 #include <unordered_set>
 #include <regex>
 #include <algorithm>
 #include <sstream>
+#include <cstring>
 
 #include "vtr_assert.h"
 #include "vtr_log.h"
 #include "vtr_memory.h"
-#include "vtr_random.h"
 
 #include "vpr_types.h"
 #include "vpr_error.h"
@@ -16,11 +15,7 @@
 #include "globals.h"
 #include "vpr_utils.h"
 #include "cluster_placement.h"
-#include "place_macro.h"
-#include "string.h"
-#include "pack_types.h"
 #include "device_grid.h"
-#include "timing_fail_error.h"
 #include "user_route_constraints.h"
 #include "re_cluster_util.h"
 
@@ -29,7 +24,7 @@
 
 /* This defines the maximum string length that could be parsed by functions  *
  * in vpr_utils.                                                             */
-#define MAX_STRING_LEN 128
+static constexpr size_t MAX_STRING_LEN = 512;
 
 /******************** File-scope variables declarations **********************/
 
@@ -182,7 +177,7 @@ void sync_grid_to_blocks() {
         }
 
         if (device_ctx.grid.get_width_offset({blk_x, blk_y, blk_layer}) != 0 || device_ctx.grid.get_height_offset({blk_x, blk_y, blk_layer}) != 0) {
-            VPR_FATAL_ERROR(VPR_ERROR_PLACE, "Large block not aligned in placment for cluster_ctx.blocks %lu at (%d, %d, %d, %d).",
+            VPR_FATAL_ERROR(VPR_ERROR_PLACE, "Large block not aligned in placement for cluster_ctx.blocks %lu at (%d, %d, %d, %d).",
                             size_t(blk_id), blk_x, blk_y, blk_z, blk_layer);
         }
 
@@ -676,7 +671,7 @@ void get_pin_range_for_block(const ClusterBlockId blk_id,
     *pin_high = sub_tile.sub_tile_to_tile_pin_indices[rel_pin_high];
 }
 
-t_physical_tile_type_ptr find_tile_type_by_name(std::string name, const std::vector<t_physical_tile_type>& types) {
+t_physical_tile_type_ptr find_tile_type_by_name(const std::string& name, const std::vector<t_physical_tile_type>& types) {
     for (auto const& type : types) {
         if (type.name == name) {
             return &type;
@@ -815,7 +810,7 @@ t_physical_tile_type_ptr find_most_common_tile_type(const DeviceGrid& grid) {
     return max_type;
 }
 
-InstPort parse_inst_port(std::string str) {
+InstPort parse_inst_port(const std::string& str) {
     InstPort inst_port(str);
 
     auto& device_ctx = g_vpr_ctx.device();
@@ -1173,7 +1168,7 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_block_pin(ClusterBlockId iblock, int 
     return nullptr;
 }
 
-const t_port* find_pb_graph_port(const t_pb_graph_node* pb_gnode, std::string port_name) {
+const t_port* find_pb_graph_port(const t_pb_graph_node* pb_gnode, const std::string& port_name) {
     const t_pb_graph_pin* gpin = find_pb_graph_pin(pb_gnode, port_name, 0);
 
     if (gpin != nullptr) {
@@ -1182,7 +1177,7 @@ const t_port* find_pb_graph_port(const t_pb_graph_node* pb_gnode, std::string po
     return nullptr;
 }
 
-const t_pb_graph_pin* find_pb_graph_pin(const t_pb_graph_node* pb_gnode, std::string port_name, int index) {
+const t_pb_graph_pin* find_pb_graph_pin(const t_pb_graph_node* pb_gnode, const std::string& port_name, int index) {
     for (int iport = 0; iport < pb_gnode->num_input_ports; iport++) {
         if (pb_gnode->num_input_pins[iport] < index) continue;
 
@@ -2241,7 +2236,7 @@ void pretty_print_float(const char* prefix, double value, int num_digits, int sc
     }
 }
 
-void print_timing_stats(std::string name,
+void print_timing_stats(const std::string& name,
                         const t_timing_analysis_profile_info& current,
                         const t_timing_analysis_profile_info& past) {
     VTR_LOG("%s timing analysis took %g seconds (%g STA, %g slack) (%zu full updates: %zu setup, %zu hold, %zu combined).\n",
@@ -2276,17 +2271,21 @@ std::vector<const t_pb_graph_node*> get_all_pb_graph_node_primitives(const t_pb_
     return primitives;
 }
 
-bool is_inter_cluster_node(t_physical_tile_type_ptr physical_tile,
-                           t_rr_type node_type,
-                           int node_ptc) {
+bool is_inter_cluster_node(const RRGraphView& rr_graph_view,
+                           RRNodeId node_id) {
+    auto node_type = rr_graph_view.node_type(node_id);
     if (node_type == CHANX || node_type == CHANY) {
         return true;
     } else {
-        VTR_ASSERT(node_type == IPIN || node_type == SINK || node_type == OPIN || node_type == SOURCE);
+        int x_low = rr_graph_view.node_xlow(node_id);
+        int y_low = rr_graph_view.node_ylow(node_id);
+        int layer = rr_graph_view.node_layer(node_id);
+        int node_ptc = rr_graph_view.node_ptc_num(node_id);
+        const t_physical_tile_type_ptr physical_tile = g_vpr_ctx.device().grid.get_physical_type({x_low, y_low, layer});
         if (node_type == IPIN || node_type == OPIN) {
             return is_pin_on_tile(physical_tile, node_ptc);
         } else {
-            VTR_ASSERT(node_type == SINK || node_type == SOURCE);
+            VTR_ASSERT_DEBUG(node_type == SINK || node_type == SOURCE);
             return is_class_on_tile(physical_tile, node_ptc);
         }
     }
@@ -2536,22 +2535,18 @@ void apply_route_constraints(const UserRouteConstraints& route_constraints) {
     }
 }
 
-float get_min_cross_layer_delay(const std::vector<t_arch_switch_inf>& arch_switch_inf,
-                                const std::vector<t_segment_inf>& segment_inf,
-                                const int wire_to_ipin_arch_sw_id) {
+float get_min_cross_layer_delay() {
+    const auto& rr_graph = g_vpr_ctx.device().rr_graph;
     float min_delay = std::numeric_limits<float>::max();
 
-    // Check whether the inter-layer switch type for connection block is defined. If it is,
-    // get the delay of it.
-    if (wire_to_ipin_arch_sw_id != OPEN) {
-        min_delay = arch_switch_inf[wire_to_ipin_arch_sw_id].Tdel();
-    }
-
-    // Iterate over inter-layer switch types of segments to find the minimum delay
-    for (const auto& seg_inf : segment_inf) {
-        int cross_layer_sw_arch_id = seg_inf.arch_opin_between_dice_switch;
-        if (cross_layer_sw_arch_id != OPEN) {
-            min_delay = std::min(min_delay, arch_switch_inf[cross_layer_sw_arch_id].Tdel());
+    for (const auto& driver_node : rr_graph.nodes()) {
+        for (size_t edge_id = 0; edge_id < rr_graph.num_edges(driver_node); edge_id++) {
+            const auto& sink_node = rr_graph.edge_sink_node(driver_node, edge_id);
+            if (rr_graph.node_layer(driver_node) != rr_graph.node_layer(sink_node)) {
+                int i_switch = rr_graph.edge_switch(driver_node, edge_id);
+                float edge_delay = rr_graph.rr_switch_inf(RRSwitchId(i_switch)).Tdel;
+                min_delay = std::min(min_delay, edge_delay);
+            }
         }
     }
 

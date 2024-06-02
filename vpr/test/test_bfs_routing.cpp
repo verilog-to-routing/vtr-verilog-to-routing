@@ -5,6 +5,9 @@
 
 namespace {
 
+constexpr double DUMMY_LATENCY = 1e-9;
+constexpr double DUMMY_BANDWIDTH = 1e12;
+
 TEST_CASE("test_route_flow", "[vpr_noc_bfs_routing]") {
     /*
      * Creating a test FPGA device below. The NoC itself will be
@@ -29,7 +32,7 @@ TEST_CASE("test_route_flow", "[vpr_noc_bfs_routing]") {
     // add all the routers
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 4; j++) {
-            noc_model.add_router((i * 4) + j, j, i, 0);
+            noc_model.add_router((i * 4) + j, j, i, 0, DUMMY_LATENCY);
         }
     }
 
@@ -40,19 +43,19 @@ TEST_CASE("test_route_flow", "[vpr_noc_bfs_routing]") {
         for (int j = 0; j < 4; j++) {
             // add a link to the left of the router if there exists another router there
             if ((j - 1) >= 0) {
-                noc_model.add_link((NocRouterId)((i * 4) + j), (NocRouterId)(((i * 4) + j) - 1));
+                noc_model.add_link((NocRouterId)((i * 4) + j), (NocRouterId)(((i * 4) + j) - 1), DUMMY_BANDWIDTH, DUMMY_LATENCY);
             }
             // add a link to the top of the router if there exists another router there
             if ((i + 1) <= 3) {
-                noc_model.add_link((NocRouterId)((i * 4) + j), (NocRouterId)(((i * 4) + j) + 4));
+                noc_model.add_link((NocRouterId)((i * 4) + j), (NocRouterId)(((i * 4) + j) + 4), DUMMY_BANDWIDTH, DUMMY_LATENCY);
             }
             // add a link to the right of the router if there exists another router there
             if ((j + 1) <= 3) {
-                noc_model.add_link((NocRouterId)((i * 4) + j), (NocRouterId)(((i * 4) + j) + 1));
+                noc_model.add_link((NocRouterId)((i * 4) + j), (NocRouterId)(((i * 4) + j) + 1), DUMMY_BANDWIDTH, DUMMY_LATENCY);
             }
             // add a link to the bottom of the router if there exists another router there
             if ((i - 1) >= 0) {
-                noc_model.add_link((NocRouterId)((i * 4) + j), (NocRouterId)(((i * 4) + j) - 4));
+                noc_model.add_link((NocRouterId)((i * 4) + j), (NocRouterId)(((i * 4) + j) - 4), DUMMY_BANDWIDTH, DUMMY_LATENCY);
             }
         }
     }
@@ -62,23 +65,25 @@ TEST_CASE("test_route_flow", "[vpr_noc_bfs_routing]") {
 
     SECTION("Test case where the destination router and the starting routers are the same") {
         // choosing the start eand end routers as router 10
-        NocRouterId start_router_id = NocRouterId(10);
-        NocRouterId sink_router_id = NocRouterId(10);
+        auto start_router_id = NocRouterId(10);
+        auto sink_router_id = NocRouterId(10);
+        auto traffic_flow_id = NocTrafficFlowId(33);
 
         // store the route found by the algorithm
         std::vector<NocLinkId> found_path;
 
         // make sure that a legal route was found (no error should be thrown)
-        REQUIRE_NOTHROW(routing_algorithm.route_flow(start_router_id, sink_router_id, found_path, noc_model));
+        REQUIRE_NOTHROW(routing_algorithm.route_flow(start_router_id, sink_router_id, traffic_flow_id, found_path, noc_model));
 
         // now make sure that the found route is empty, we shouldn't be moving anywhere as the start and end routers are the same
         REQUIRE(found_path.empty() == true);
     }
     SECTION("Test case where there is a single shortest path between the source and destination routers in the NoC.") {
         // choosing the starting router (source) as the top left corner of the mesh
-        NocRouterId start_router_id = NocRouterId(12);
+        auto start_router_id = NocRouterId(12);
         // choosing the destination router as the bottom right corner of the mesh
-        NocRouterId sink_router_id = NocRouterId(3);
+        auto sink_router_id = NocRouterId(3);
+        auto traffic_flow_id = NocTrafficFlowId(33);
 
         // store the route to be found by the algorithm
         std::vector<NocLinkId> found_path;
@@ -95,16 +100,16 @@ TEST_CASE("test_route_flow", "[vpr_noc_bfs_routing]") {
         int number_of_links = noc_model.get_noc_links().size();
 
         // add the diagonal links and also add them to the golden path
-        noc_model.add_link(NocRouterId(12), NocRouterId(9));
-        golden_path.push_back(NocLinkId(number_of_links++));
-        noc_model.add_link(NocRouterId(9), NocRouterId(6));
-        golden_path.push_back(NocLinkId(number_of_links++));
-        noc_model.add_link(NocRouterId(6), NocRouterId(3));
-        golden_path.push_back(NocLinkId(number_of_links++));
+        noc_model.add_link(NocRouterId(12), NocRouterId(9), DUMMY_BANDWIDTH, DUMMY_LATENCY);
+        golden_path.emplace_back(number_of_links++);
+        noc_model.add_link(NocRouterId(9), NocRouterId(6), DUMMY_BANDWIDTH, DUMMY_LATENCY);
+        golden_path.emplace_back(number_of_links++);
+        noc_model.add_link(NocRouterId(6), NocRouterId(3), DUMMY_BANDWIDTH, DUMMY_LATENCY);
+        golden_path.emplace_back(number_of_links++);
 
         // now run the routinjg algorithm
         // make sure that a legal route was found (no error should be thrown)
-        REQUIRE_NOTHROW(routing_algorithm.route_flow(start_router_id, sink_router_id, found_path, noc_model));
+        REQUIRE_NOTHROW(routing_algorithm.route_flow(start_router_id, sink_router_id, traffic_flow_id, found_path, noc_model));
 
         // check that the found route has the exact same number of links as the expected path
         REQUIRE(golden_path.size() == found_path.size());
@@ -116,9 +121,10 @@ TEST_CASE("test_route_flow", "[vpr_noc_bfs_routing]") {
     }
     SECTION("Test case where no path could be found") {
         // choosing the starting router (source) as the top left corner of the mesh
-        NocRouterId start_router_id = NocRouterId(12);
+        auto start_router_id = NocRouterId(12);
         // choosing the destination router as the bottom right corner of the mesh
-        NocRouterId sink_router_id = NocRouterId(3);
+        auto sink_router_id = NocRouterId(3);
+        auto traffic_flow_id = NocTrafficFlowId(33);
 
         // Remove any direct links to router 3
         noc_model.remove_link(NocRouterId(2), NocRouterId(3));
@@ -128,7 +134,8 @@ TEST_CASE("test_route_flow", "[vpr_noc_bfs_routing]") {
         std::vector<NocLinkId> found_path;
 
         // run the routing algorithm and we expect ir ro fail
-        REQUIRE_THROWS_WITH(routing_algorithm.route_flow(start_router_id, sink_router_id, found_path, noc_model), "No route could be found from starting router with id:'12' and the destination router with id:'3' using the breadth-first search routing algorithm.");
+        REQUIRE_THROWS_WITH(routing_algorithm.route_flow(start_router_id, sink_router_id, traffic_flow_id, found_path, noc_model),
+                            "No route could be found from starting router with id:'12' and the destination router with id:'3' using the breadth-first search routing algorithm.");
     }
 }
 

@@ -344,9 +344,68 @@ and should be used when making changes to Odin.
 ## Unit Tests
 
 VTR also has a limited set of unit tests, which can be run with:
+
 ```shell
 #From the VTR root directory
 $ make && make test
+```
+
+This will run `test_vtrutil`, `test_vpr`, `test_fasm`, and `test_archfpga`. Each test suite is added in their CMake
+files.
+
+### Running Individual Testers
+
+To run one of the four testers listed above on its own, navigate to the appropriate folder:
+
+| Test            | Directory                          |
+|-----------------|------------------------------------|
+| `test_archfpga` | `$VTR_ROOT/build/libs/libarchfpga` |
+| `test_vtrutil`  | `$VTR_ROOT/build/libs/libvtrutil`  |
+| `test_fasm`     | `$VTR_ROOT/build/utils/fasm`       |
+| `test_vpr`      | `$VTR_ROOT/build/vpr`              |
+
+To see tester options, run it with `-h`:
+
+```shell
+# Using test_vpr as an example
+# From $VTR_ROOT/build/vpr
+$ ./test_vpr -h
+```
+
+To see the names of each unit test, use `--list-tests`:
+
+```shell
+# From $VTR_ROOT/build/vpr
+$ ./test_vpr --list-tests
+```
+
+The output should look similar to this:
+
+```shell
+All available test cases:
+  test_route_flow
+      [vpr_noc_bfs_routing]
+  test_find_block_with_matching_name
+      [vpr_clustered_netlist]
+  connection_router
+      [vpr]
+  binary_heap
+      [vpr]
+  edge_groups_create_sets
+      [vpr]
+  read_interchange_models
+      [vpr]
+      
+... # many more test cases
+
+52 test cases
+```
+
+To run specific unit tests, pass them as arguments. For example:
+
+```shell
+# From $VTR_ROOT/build/vpr
+$ ./test_vpr test_route_flow connection_router
 ```
 
 # Evaluating Quality of Result (QoR) Changes
@@ -386,16 +445,20 @@ The following are key QoR metrics which should be used to evaluate the impact of
 
 Implementation Quality Metrics:
 
-| Metric                      | Meaning                                                                  | Sensitivity |
-|-----------------------------|--------------------------------------------------------------------------|-------------|
-| num_pre_packed_blocks       | Number of primitive netlist blocks (after tech. mapping, before packing) | Low         |
-| num_post_packed_blocks      | Number of Clustered Blocks (after packing)                               | Medium      |
-| device_grid_tiles           | FPGA size in grid tiles                                                  | Low-Medium  |
-| min_chan_width              | The minimum routable channel width                                       | Medium\*    |
-| crit_path_routed_wirelength | The routed wirelength at the relaxed channel width                       | Medium      |
-| critical_path_delay         | The critical path delay at the relaxed channel width                     | Medium-High |
+| Metric                          | Meaning                                                                      | Sensitivity |
+|---------------------------------|------------------------------------------------------------------------------|-------------|
+| num_pre_packed_blocks           | Number of primitive netlist blocks (after tech. mapping, before packing)     | Low         |
+| num_post_packed_blocks          | Number of Clustered Blocks (after packing)                                   | Medium      |
+| device_grid_tiles               | FPGA size in grid tiles                                                      | Low-Medium  |
+| min_chan_width                  | The minimum routable channel width                                           | Medium\*    |
+| crit_path_routed_wirelength     | The routed wirelength at the relaxed channel width                           | Medium      |
+| NoC_agg_bandwidth\**            | The total link bandwidth utilized by all traffic flows                       | Low         |
+| NoC_latency\**                  | The total time of traffic flow data transfer (summed over all traffic flows) | Low         |
+| NoC_latency_constraints_cost\** | Total number of traffic flows that meet their latency constraints            | Low         |
 
 \* By default, VPR attempts to find the minimum routable channel width; it then performs routing at a relaxed (e.g. 1.3x minimum) channel width. At minimum channel width routing congestion can distort the true timing/wirelength characteristics. Combined with the fact that most FPGA architectures are built with an abundance of routing, post-routing metrics are usually only evaluated at the relaxed channel width.
+
+\** NoC-related metrics are only reported when --noc option is enabled.
 
 Run-time/Memory Usage Metrics:
 
@@ -493,7 +556,7 @@ k6_frac_N10_frac_chain_mem32K_40nm.xml	boundtop.v        	common       	9f591f6-
 k6_frac_N10_frac_chain_mem32K_40nm.xml	ch_intrinsics.v   	common       	9f591f6-dirty	success   	     	363                	493                  	270                 	247                   	10          	10           	17     	99    	130        	1           0       	1792                 	1.86527       	-194.602            	-1.86527            	46            	1562             	13                                    	1438                       	20                               	2.4542             	-226.033 	-2.4542  	0       	0       	3.92691e+06           	1.4642e+06           	259806.                          	2598.06                             	333135.                     	3331.35                        	0.03           	0.01          	-1          	-1          	-1      	0.46     	0.31      	0.94                     	0.09                	2.59                 	62684      	8672        	32940
 ```
 
-### Example: Titan Benchmarks QoR Measurements
+### Example: Titan Benchmarks QoR Measurement
 
 The [Titan benchmarks](https://docs.verilogtorouting.org/en/latest/vtr/benchmarks/#titan-benchmarks) are a group of large benchmark circuits from a wide range of applications, which are compatible with the VTR project.
 The are typically used as post-technology mapped netlists which have been pre-synthesized with Quartus.
@@ -511,7 +574,7 @@ $ make get_titan_benchmarks
 #Move to the task directory
 $ cd vtr_flow/tasks
 
-#Run the VTR benchmarks
+#Run the Titan benchmarks
 $ ../scripts/run_vtr_task.py regression_tests/vtr_reg_nightly_test2/titan_quick_qor
 
 #Several days later... they complete
@@ -526,6 +589,44 @@ stratixiv_arch.timing.xml	neuron_stratixiv_arch_timing.blif       	0208312     	
 stratixiv_arch.timing.xml	sparcT1_core_stratixiv_arch_timing.blif 	0208312     	success   	     	92813              	91974                	54564               	4170                  	77          	57           	-1     	173   	137        	-1          -1      	3213593              	7.87734       	-534295             	-7.87734            	1527941          	43                               	0                     	0                    	9.64428e+07       	21973.8              	9.06977            	-625483     -9.06977 	0       	0       	327.38   	338.65    	364.46              	3690032    	-1          	-1
 stratixiv_arch.timing.xml	stereo_vision_stratixiv_arch_timing.blif	0208312     	success   	     	127088             	94088                	62912               	3776                  	128         	95           	-1     	326   	681        	-1          -1      	4875541              	8.77339       	-166097             	-8.77339            	998408           	16                               	0                     	0                    	2.66512e+08       	21917.1              	9.36528            	-187552     -9.36528 	0       	0       	110.03   	214.16    	189.83              	5048580    	-1          	-1
 stratixiv_arch.timing.xml	cholesky_mc_stratixiv_arch_timing.blif  	0208312     	success   	     	140214             	108592               	67410               	5444                  	121         	90           	-1     	111   	151        	-1          -1      	5221059              	8.16972       	-454610             	-8.16972            	1518597          	15                               	0                     	0                    	2.38657e+08       	21915.3              	9.34704            	-531231     -9.34704 	0       	0       	211.12   	364.32    	490.24              	6356252    	-1          	-1
+```
+
+### Example: NoC Benchmarks QoR Measurements
+NoC benchmarks currently include synthetic and MLP benchmarks. Synthetic benchmarks have various NoC traffic patters,
+bandwidth utilization, and latency requirements. High-quality NoC router placement solutions for these benchmarks are
+known. By comparing the known solutions with NoC router placement results, the developer can evaluate the sanity of 
+the NoC router placement algorithm. MLP benchmarks are the only realistic netlists included in this benchmark set.
+
+Based on the number of NoC routers in a synthetic benchmark, it is run on one of two different architectures. All MLP
+benchmarks are run on an FPGA architecture with 16 NoC routers. Post-technology mapped netlists (blif files)
+for synthetic benchmarks are added to the VTR project. However, MLP blif files are very large and should be downloaded
+separately.
+
+Since NoC benchmarks target different FPGA architectures, they are run as different circuits. A typical way to run all
+NoC benchmarks is to run a task list and gather QoR data form different tasks:
+
+#### Running and Integrating the NoC Benchmarks with VTR
+```shell
+#From the VTR root
+
+#Download and integrate NoC MLP benchmarks into the VTR source tree
+$ make get_noc_mlp_benchmarks
+
+#Move to the task directory
+$ cd vtr_flow
+
+#Run the VTR benchmarks
+$ scripts/run_vtr_task.py -l tasks/noc_qor/task_list.txt
+
+#Several days later... they complete
+
+#NoC benchmarks are run as several different tasks. Therefore, QoR results should be gathered from multiple directories,
+#one for each task.
+$ head -5 tasks/noc_qor/large_complex_synthetic/latest/parse_results.txt
+$ head -5 tasks/noc_qor/large_simple_synthetic/latest/parse_results.txt
+$ head -5 tasks/noc_qor/small_complex_synthetic/latest/parse_results.txt
+$ head -5 tasks/noc_qor/small_simple_synthetic/latest/parse_results.txt
+$ head -5 tasks/noc_qor/MLP/latest/parse_results.txt
 ```
 
 ### Example: Koios Benchmarks QoR Measurement
@@ -930,6 +1031,64 @@ This describes adding a test to `vtr_reg_strong`, but the process is similar for
     $ git commit
     ```
 
+## Creating Unit Tests
+
+You can find the source code for the unit tests in their respective directories. New unit tests must also be created in
+these directories.
+
+| Test            | Directory                         |
+|-----------------|-----------------------------------|
+| `test_archfpga` | `$VTR_ROOT/libs/libarchfpga/test` |
+| `test_vtrutil`  | `$VTR_ROOT/libs/libvtrutil/test`  |
+| `test_fasm`     | `$VTR_ROOT/utils/fasm/test`       |
+| `test_vpr`      | `$VTR_ROOT/vpr/test`              |
+
+VTR uses [Catch2](https://github.com/catchorg/Catch2) for its unit testing framework. For a full tutorial of how to use
+the framework, see `$VTR_ROOT/libs/EXTERNAL/libcatch2/docs/Readme.md`.
+
+### Example: Creating and Running a VPR Test Case
+
+Navigate to `$VTR_ROOT/vpr/test`.
+
+```shell
+$ cd $VTR_ROOT/vpr/test
+```
+
+From here, let's create and open a new file `test_new_vpr.cpp` (begin the file name with `test_`). Be sure to `#include "catch2/catch_test_macros.hpp"`.
+Introduce a test case using the `TEST_CASE` macro, and include a name and a tag. For boolean assertions, use `REQUIRE`.
+
+```shell
+#include "catch2/catch_test_macros.hpp"
+
+// To choose a tag (written with square brackets "[tag]"), see examples from when you run ./test_vpr
+// --list-tests in the tester exectuable directory, as shown earlier. A good default tag name is the name
+// of the tester: in this case, [vpr].
+TEST_CASE("a_vpr_test_name", "[vpr]") {
+  int x = 0;
+  REQUIRE(x == 0);
+}
+```
+
+To run our test case, we must navigate back to `$VTR_ROOT/build/vpr` (from the table
+under [Running Individual Testers](#running-individual-testers)). Since we created a test, we need to rebuild the
+tester. Then, we can run our test.
+
+```shell
+$ cd $VTR_ROOT/build/vpr
+$ make                         // rebuild tester
+$ ./test_vpr a_vpr_test_name   // run new unit test
+```
+
+Output:
+
+```shell
+Filters: "a_vpr_test_name"
+Randomness seeded to: 2089861684
+===============================================================================
+All tests passed (1 assertion in 1 test case)
+```
+
+
 # Debugging Aids
 VTR has support for several additional tools/features to aid debugging.
 
@@ -1171,7 +1330,7 @@ Instead changes should be made in the relevant up-stream repository, and then sy
 
     For example to update the `libtatum` subtree:
     ```shell
-    ./dev/external_subtrees.py --update libtatum
+    ./dev/external_subtrees.py --update libtatum -m "commit message describing why component is being updated"
     ```
 
 ## Adding a new Subtree
@@ -1213,8 +1372,66 @@ To add a new external subtree to VTR do the following:
     This will create two commits to the repository.
     The first will squash all the upstream changes, the second will merge those changes into the current branch.
 
+## Pushing VTR Changes Back to Upstream Subtree
 
-## Subtree Rational
+If there are changes in the VTR repo in a subtree that should be merged back
+into the source repo of the subtree, the changes can be pushed back manually.
+
+The instructions above used a Python script to simplify updating subtrees in
+VTR. This is fine for pulling in changes from a remote repo; however, it is not
+good for pushing changes back. This is because these changes need to be pushed
+somewhere, and it is not a good idea to just push it back to the master branch
+directly. Instead, it should be pushed to a temporary branch. Then a PR can be
+made to bring the changes into the target repo.
+
+To push changes VTR made to a subtree do the following:
+
+1. Create a fork of the target repo. Optionally you can create a branch to be
+   the target of the push, or you can just use master.
+
+2. Run:
+   ```shell
+   cd $VTR_ROOT
+   git subtree push --prefix=<subtree_path> <forked_repo_url> <branch_name>
+   ```
+   The prefix is the internal path to the subtree, as written in
+   `dev/subtree_config.xml`.
+
+3. Create a PR from your forked repo to the main repo, sharing the amazing
+   changes with the world.
+
+## Tutorial: Syncing Tatum with VTR
+
+This tutorial will show you how to synchronize `libtatum` in VTR and
+[Tatum](https://github.com/verilog-to-routing/tatum); however, similar steps
+can be done to synchronize any subtree in VTR.
+
+First, we will pull in (update) any changes in Tatum that are not in VTR yet.
+On a clean branch (based off master), execute the following:
+```shell
+cd $VTR_ROOT
+./dev/external_subtrees.py --update libtatum -m "Pulling in changes from Tatum."
+```
+If the output in the terminal says `Subtree is already at commit <commit_hash>`,
+then there is nothing to pull in. If it says changes were pulled in, a commit
+would have already been made for you. Push these changes to your branch and
+raise a PR on VTR to merge these changes in.
+
+After pulling in all the changes from Tatum, without changing branches, we will
+push our VTR changes to Tatum. This is a bit more complicated since, as stated
+in the section on pushing to subtrees, the changes cannot just be pushed to
+master.
+
+Create a fork of Tatum and make sure the master branch of that fork is
+synchronized with Tatum's master branch. Then execute the following:
+```shell
+cd $VTR_ROOT
+git subtree push --prefix=libs/EXTERNAL/libtatum <forked_repo_url> master
+```
+After that command finishes, raise a PR from your forked repo onto the Tatum
+repo for the changes to be reviewed and merged in.
+
+## Subtree Rationale
 
 VTR uses subtrees to allow easy tracking of upstream dependencies.
 

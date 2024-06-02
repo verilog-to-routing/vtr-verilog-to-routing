@@ -13,13 +13,18 @@ inline RouteIterResults ParallelNetlistRouter<HeapType>::route_netlist(int itry,
         results = RouteIterResults();
     }
 
+    /* Set the routing parameters: they won't change until the next call and that saves us the trouble of passing them around */
+    _itry = itry;
+    _pres_fac = pres_fac;
+    _worst_neg_slack = worst_neg_slack;
+
     /* Organize netlist into a PartitionTree.
      * Nets in a given level of nodes are guaranteed to not have any overlapping bounding boxes, so they can be routed in parallel. */
     PartitionTree tree(_net_list);
 
     /* Put the root node on the task queue, which will add its child nodes when it's finished. Wait until the entire tree gets routed. */
     tbb::task_group g;
-    route_partition_tree_node(g, tree.root(), itry, pres_fac, worst_neg_slack);
+    route_partition_tree_node(g, tree.root());
     g.wait();
 
     /* Combine results from threads */
@@ -33,11 +38,11 @@ inline RouteIterResults ParallelNetlistRouter<HeapType>::route_netlist(int itry,
 }
 
 template<typename HeapType>
-void ParallelNetlistRouter<HeapType>::route_partition_tree_node(tbb::task_group& g, PartitionTreeNode& node, int itry, float pres_fac, float worst_neg_slack) {
+void ParallelNetlistRouter<HeapType>::route_partition_tree_node(tbb::task_group& g, PartitionTreeNode& node) {
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
     /* Sort so net with most sinks is routed first. */
-    std::sort(node.nets.begin(), node.nets.end(), [&](ParentNetId id1, ParentNetId id2) -> bool {
+    std::stable_sort(node.nets.begin(), node.nets.end(), [&](ParentNetId id1, ParentNetId id2) -> bool {
         return _net_list.net_sinks(id1).size() > _net_list.net_sinks(id2).size();
     });
 
@@ -47,8 +52,8 @@ void ParallelNetlistRouter<HeapType>::route_partition_tree_node(tbb::task_group&
             _routers_th.local(),
             _net_list,
             net_id,
-            itry,
-            pres_fac,
+            _itry,
+            _pres_fac,
             _router_opts,
             _connections_inf,
             _results_th.local().stats,
@@ -57,10 +62,11 @@ void ParallelNetlistRouter<HeapType>::route_partition_tree_node(tbb::task_group&
             _timing_info.get(),
             _pin_timing_invalidator,
             _budgeting_inf,
-            worst_neg_slack,
+            _worst_neg_slack,
             _routing_predictor,
             _choking_spots[net_id],
-            _is_flat);
+            _is_flat,
+            route_ctx.route_bb[net_id]);
 
         if (!flags.success && !flags.retry_with_full_bb) {
             /* Disconnected RRG and ConnectionRouter doesn't think growing the BB will work */
@@ -81,10 +87,10 @@ void ParallelNetlistRouter<HeapType>::route_partition_tree_node(tbb::task_group&
     /* This node is finished: add left & right branches to the task queue */
     if (node.left && node.right) {
         g.run([&]() {
-            route_partition_tree_node(g, *node.left, itry, pres_fac, worst_neg_slack);
+            route_partition_tree_node(g, *node.left);
         });
         g.run([&]() {
-            route_partition_tree_node(g, *node.right, itry, pres_fac, worst_neg_slack);
+            route_partition_tree_node(g, *node.right);
         });
     } else {
         VTR_ASSERT(!node.left && !node.right); // there shouldn't be a node with a single branch

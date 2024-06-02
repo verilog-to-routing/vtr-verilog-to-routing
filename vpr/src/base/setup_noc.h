@@ -16,14 +16,14 @@
  * 
  * Router Creation
  * ---------------
- * Each router described in the archietcture file is created and
+ * Each router described in the architecture file is created and
  * added to the NoC. Since the routers represents physical tiles on
  * the FPGA, when the router is created, it is also assigned to a
  * corresponding physical router tile. 
  * 
  * Link Creation
  * -------------
- * The user describes a "connection list", which rerpesents an intended
+ * The user describes a "connection list", which represents an intended
  * connection between two routers in the NoC. Each link connects two
  * routers together. For each router, a number
  * of Links are created to connect it to another router in its "connection
@@ -31,21 +31,11 @@
  * 
  */
 
-#include <iostream>
-#include <string>
+#include <string_view>
 #include <vector>
 
-#include "physical_types.h"
 #include "device_grid.h"
-#include "globals.h"
-#include "noc_storage.h"
-#include "vpr_error.h"
-
-// a default condition that helps keep track of whether a physical router has been assigned to a logical router or not
-#define PHYSICAL_ROUTER_NOT_ASSIGNED -1
-
-// a deafult index used for initiailization purposes. No router will have a negative index
-#define INVALID_PHYSICAL_ROUTER_INDEX -1
+#include "vpr_context.h"
 
 // a data structure to store the position information of a noc router in the FPGA device
 struct t_noc_router_tile_position {
@@ -83,13 +73,14 @@ void setup_noc(const t_arch& arch);
  *        stored in a list.
  * 
  * @param device_grid The FPGA device description.
- * @param list_of_noc_router_tiles Stores the grid position information
- *                                 for all NoC router tiles in the FPGA.
  * @param noc_router_tile_name The name used when describing the NoC router
  *                             tile in the FPGA architecture description
  *                             file.
+ *
+ * @return The grid position information for all NoC router tiles in the FPGA.
  */
-void identify_and_store_noc_router_tile_positions(const DeviceGrid& device_grid, std::vector<t_noc_router_tile_position>& list_of_noc_router_tiles, std::string noc_router_tile_name);
+std::vector<t_noc_router_tile_position> identify_and_store_noc_router_tile_positions(const DeviceGrid& device_grid,
+                                                                                     std::string_view noc_router_tile_name);
 
 /**
  * @brief Creates NoC routers and adds them to the NoC model based
@@ -104,10 +95,12 @@ void identify_and_store_noc_router_tile_positions(const DeviceGrid& device_grid,
  * @param list_of_noc_router_tiles Stores the grid position information
  *                                 for all NoC router tiles in the FPGA.
  */
-void generate_noc(const t_arch& arch, NocContext& noc_ctx, std::vector<t_noc_router_tile_position>& list_of_noc_router_tiles);
+void generate_noc(const t_arch& arch,
+                  NocContext& noc_ctx,
+                  const std::vector<t_noc_router_tile_position>& list_of_noc_router_tiles);
 
 /**
- * @brief Go through the outers described by the user
+ * @brief Go through the routers described by the user
  *        in the architecture description file and assigns it a corresponding
  *        physical router tile in the FPGA. Each logical router has a grid
  *        location, so the closest physical router to the grid location is then
@@ -121,7 +114,9 @@ void generate_noc(const t_arch& arch, NocContext& noc_ctx, std::vector<t_noc_rou
  * @param list_of_noc_router_tiles Stores the grid position information
  *                                 for all NoC router tiles in the FPGA.
  */
-void create_noc_routers(const t_noc_inf& noc_info, NocStorage* noc_model, std::vector<t_noc_router_tile_position>& list_of_noc_router_tiles);
+void create_noc_routers(const t_noc_inf& noc_info,
+                        NocStorage* noc_model,
+                        const std::vector<t_noc_router_tile_position>& list_of_noc_router_tiles);
 
 /**
  * @brief Goes through the topology information as described in the FPGA
@@ -134,6 +129,6 @@ void create_noc_routers(const t_noc_inf& noc_info, NocStorage* noc_model, std::v
  * @param noc_model An internal model that describes the NoC. Contains a list of
  *                  routers and links that connect the routers together.
  */
-void create_noc_links(const t_noc_inf* noc_info, NocStorage* noc_model);
+void create_noc_links(const t_noc_inf& noc_info, NocStorage* noc_model);
 
 #endif

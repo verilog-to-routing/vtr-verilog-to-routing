@@ -1,6 +1,6 @@
 #include "constraints_load.h"
 
-void echo_constraints(char* filename, UserPlaceConstraints constraints) {
+void echo_constraints(char* filename, const UserPlaceConstraints& constraints) {
     FILE* fp;
     fp = vtr::fopen(filename, "w");
 

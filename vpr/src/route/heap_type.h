@@ -45,15 +45,6 @@ struct t_heap {
     // Managed by PathManager class
     t_heap_path* path_data;
 
-    /** Previous node and edge IDs. These are not StrongIds for performance & brevity
-     * reasons: StrongIds can't be trivially placed into an anonymous union (see below) */
-    struct t_prev {
-        uint32_t node;
-        uint32_t edge;
-        static_assert(sizeof(uint32_t) == sizeof(RRNodeId));
-        static_assert(sizeof(uint32_t) == sizeof(RREdgeId));
-    };
-
     t_heap* next_heap_item() const {
         return u.next;
     }
@@ -62,30 +53,25 @@ struct t_heap {
         u.next = next;
     }
 
-    /** Get prev_node.
-     * Be careful: will return 0 (a valid id!) if uninitialized. */
-    constexpr RRNodeId prev_node() const {
-        return RRNodeId(u.prev.node);
-    }
-
-    inline void set_prev_node(RRNodeId node) {
-        u.prev.node = size_t(node);
-    }
-
     /** Get prev_edge.
      * Be careful: will return 0 (a valid id!) if uninitialized. */
     constexpr RREdgeId prev_edge() const {
-        return RREdgeId(u.prev.edge);
+        static_assert(sizeof(uint32_t) == sizeof(RREdgeId));
+        return RREdgeId(u.prev_edge);
     }
 
     inline void set_prev_edge(RREdgeId edge) {
-        u.prev.edge = size_t(edge);
+        static_assert(sizeof(uint32_t) == sizeof(RREdgeId));
+        u.prev_edge = size_t(edge);
     }
 
   private:
     union {
         t_heap* next = nullptr;
-        t_prev prev;
+        // The previous edge is not a StrongId for performance & brevity
+        // reasons: StrongIds can't be trivially placed into an anonymous
+        // union.
+        uint32_t prev_edge;
     } u;
 };
 

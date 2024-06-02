@@ -154,10 +154,10 @@ std::vector<AtomPinId> find_clb_pin_sink_atom_pins(ClusterBlockId clb, int logic
 std::tuple<ClusterNetId, int, int> find_pb_route_clb_input_net_pin(ClusterBlockId clb, int sink_pb_route_id);
 
 //Returns the port matching name within pb_gnode
-const t_port* find_pb_graph_port(const t_pb_graph_node* pb_gnode, std::string port_name);
+const t_port* find_pb_graph_port(const t_pb_graph_node* pb_gnode, const std::string& port_name);
 
 //Returns the graph pin matching name at pin index
-const t_pb_graph_pin* find_pb_graph_pin(const t_pb_graph_node* pb_gnode, std::string port_name, int index);
+const t_pb_graph_pin* find_pb_graph_pin(const t_pb_graph_node* pb_gnode, const std::string& port_name, int index);
 
 AtomPinId find_atom_pin(ClusterBlockId blk_id, const t_pb_graph_pin* pb_gpin);
 
@@ -169,7 +169,7 @@ t_physical_tile_type_ptr find_most_common_tile_type(const DeviceGrid& grid);
 
 //Parses a block_name.port[x:y] (e.g. LAB.data_in[3:10]) pin range specification, if no pin range is specified
 //looks-up the block port and fills in the full range
-InstPort parse_inst_port(std::string str);
+InstPort parse_inst_port(const std::string& str);
 
 //Returns the block type which is most likely the logic block
 t_logical_block_type_ptr infer_logic_block_type(const DeviceGrid& grid);
@@ -251,15 +251,14 @@ int max_pins_per_grid_tile();
 void pretty_print_uint(const char* prefix, size_t value, int num_digits, int scientific_precision);
 void pretty_print_float(const char* prefix, double value, int num_digits, int scientific_precision);
 
-void print_timing_stats(std::string name,
+void print_timing_stats(const std::string& name,
                         const t_timing_analysis_profile_info& current,
                         const t_timing_analysis_profile_info& past = t_timing_analysis_profile_info());
 
 std::vector<const t_pb_graph_node*> get_all_pb_graph_node_primitives(const t_pb_graph_node* pb_graph_node);
 
-bool is_inter_cluster_node(t_physical_tile_type_ptr physical_tile,
-                           t_rr_type node_type,
-                           int node_ptc);
+bool is_inter_cluster_node(const RRGraphView& rr_graph_view,
+                           RRNodeId node_id);
 
 int get_rr_node_max_ptc(const RRGraphView& rr_graph_view,
                         RRNodeId node_id,
@@ -330,8 +329,6 @@ void apply_route_constraints(const UserRouteConstraints& constraint);
  * @param wire_to_ipin_arch_sw_id
  * @return
  */
-float get_min_cross_layer_delay(const std::vector<t_arch_switch_inf>& arch_switch_inf,
-                                const std::vector<t_segment_inf>& segment_inf,
-                                const int wire_to_ipin_arch_sw_id);
+float get_min_cross_layer_delay();
 
 #endif
