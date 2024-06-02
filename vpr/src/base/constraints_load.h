@@ -4,7 +4,7 @@
 #include "region.h"
 #include "partition.h"
 #include "partition_region.h"
-#include "vpr_constraints.h"
+#include "user_place_constraints.h"
 #include "vtr_vector.h"
 
 ///@brief Used to print vpr's floorplanning constraints to an echo file "vpr_constraints.echo"
