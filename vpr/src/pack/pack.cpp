@@ -56,7 +56,7 @@ bool try_pack(t_packer_opts* packer_opts,
     helper_ctx.num_models = count_models(user_models);
     helper_ctx.num_models += count_models(library_models);
 
-    is_clock = alloc_and_load_is_clock(packer_opts->global_clocks);
+    is_clock = alloc_and_load_is_clock();
     is_global.insert(is_clock.begin(), is_clock.end());
 
     size_t num_p_inputs = 0;
@@ -299,10 +299,9 @@ float get_arch_switch_info(short switch_index, int switch_fanin, float& Tdel_swi
     return Tdel_switch + R_switch * Cout_switch;
 }
 
-std::unordered_set<AtomNetId> alloc_and_load_is_clock(bool global_clocks) {
+std::unordered_set<AtomNetId> alloc_and_load_is_clock() {
     /* Looks through all the atom blocks to find and mark all the clocks, by setting
      * the corresponding entry by adding the clock to is_clock.
-     * global_clocks is used
      * only for an error check.                                                */
 
     int num_clocks = 0;
