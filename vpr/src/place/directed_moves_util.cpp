@@ -1,4 +1,6 @@
+
 #include "directed_moves_util.h"
+#include "centroid_move_generator.h"
 
 void get_coordinate_of_pin(ClusterPinId pin, t_physical_tile_loc& tile_loc) {
     auto& device_ctx = g_vpr_ctx.device();
@@ -17,8 +19,14 @@ void get_coordinate_of_pin(ClusterPinId pin, t_physical_tile_loc& tile_loc) {
     tile_loc.y = std::max(std::min(tile_loc.y, (int)grid.height() - 2), 1); //-2 for no perim channels
 }
 
-void calculate_centroid_loc(ClusterBlockId b_from, bool timing_weights, t_pl_loc& centroid, const PlacerCriticalities* criticalities) {
+void calculate_centroid_loc(ClusterBlockId b_from,
+                            bool timing_weights,
+                            t_pl_loc& centroid,
+                            const PlacerCriticalities* criticalities,
+                            bool noc_attraction_enabled,
+                            float noc_attraction_weight) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& place_ctx = g_vpr_ctx.placement();
 
     t_physical_tile_loc tile_loc;
     int ipin;
@@ -93,6 +101,28 @@ void calculate_centroid_loc(ClusterBlockId b_from, bool timing_weights, t_pl_loc
             acc_y += tile_loc.y * weight;
             acc_layer += tile_loc.layer_num * weight;
             acc_weight += weight;
+        }
+    }
+
+    if (noc_attraction_enabled) {
+        NocGroupId noc_grp_id = CentroidMoveGenerator::get_cluster_noc_group(b_from);
+
+        // check if the block belongs to a NoC group
+        if (noc_grp_id != NocGroupId::INVALID()) {
+            // get the routers in the associated NoC group
+            const auto& noc_routers = CentroidMoveGenerator::get_noc_group_routers(noc_grp_id);
+            float single_noc_weight = (acc_weight * noc_attraction_weight) / (float)noc_routers.size();
+
+            acc_x *= (1.0f - noc_attraction_weight);
+            acc_y *= (1.0f - noc_attraction_weight);
+            acc_weight *= (1.0f - noc_attraction_weight);
+
+            for (ClusterBlockId router_blk_id : noc_routers) {
+                t_block_loc router_loc = place_ctx.block_locs[router_blk_id];
+                acc_x += router_loc.loc.x * single_noc_weight;
+                acc_y += router_loc.loc.y * single_noc_weight;
+                acc_weight += single_noc_weight;
+            }
         }
     }
 

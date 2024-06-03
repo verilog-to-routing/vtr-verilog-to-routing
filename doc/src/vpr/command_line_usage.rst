@@ -1163,6 +1163,14 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
 
     **Default:** ``1.3``
 
+.. option:: --max_pres_fac <float>
+
+    Sets the maximum present overuse penalty factor that can ever result during routing. Should always be less than 1e25 or so to prevent overflow. 
+    Smaller values may help prevent circuitous routing in difficult routing problems, but may increase 
+    the number of routing iterations needed and hence runtime.
+
+    **Default:** ``1000.0``
+
 .. option:: --acc_fac <float>
 
     Specifies the accumulated overuse factor (historical congestion cost factor).
@@ -1295,6 +1303,14 @@ The following options are only valid when the router is in timing-driven mode (t
     Sets how aggressive the directed search used by the timing-driven router is.
 
     Values between 1 and 2 are reasonable, with higher values trading some quality for reduced CPU time.
+
+    **Default:** ``1.2``
+
+.. option:: --router_profiler_astar_fac <float>
+    
+    Controls the directedness of the timing-driven router's exploration when doing router delay profiling of an architecture.
+    The router delay profiling step is currently used to calculate the place delay matrix lookup.
+    Values between 1 and 2 are resonable; higher values trade some quality for reduced run-time.
 
     **Default:** ``1.2``
 

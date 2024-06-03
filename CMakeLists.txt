@@ -39,6 +39,9 @@ set(VPR_USE_EZGL "auto" CACHE STRING "Specify whether vpr uses the graphics libr
 set_property(CACHE VPR_USE_EZGL PROPERTY STRINGS auto off on)
 option(VTR_ENABLE_CAPNPROTO "Enable capnproto binary serialization support in VPR." ON)
 
+#Allow the user to decide whether to compile the server module
+option(VPR_USE_SERVER "Specify whether vpr enables the server mode" ON)
+
 #Allow the user to enable/disable VPR analytic placement
 #VPR option --enable_analytic_placer is also required for Analytic Placement
 option(VPR_ANALYTIC_PLACE "Enable analytic placement in VPR." ON)
@@ -418,11 +421,13 @@ if(${WITH_PARMYS}) # define cmake params to compile Yosys
         set(MAKE_PROGRAM "make")
     endif()
 
-    if(NOT DEFINED "${CMAKE_BUILD_PARALLEL_LEVEL}")
-        set(CUSTOM_BUILD_PARALLEL_LEVEL 16)
-    else()
-        set(CUSTOM_BUILD_PARALLEL_LEVEL "${CMAKE_BUILD_PARALLEL_LEVEL}")
-    endif()
+    # Commented out since a make file should not call another make command with
+    # threads. It should pass this information from the parent automatically.
+    # if(NOT DEFINED "${CMAKE_BUILD_PARALLEL_LEVEL}")
+    #     set(CUSTOM_BUILD_PARALLEL_LEVEL 16)
+    # else()
+    #     set(CUSTOM_BUILD_PARALLEL_LEVEL "${CMAKE_BUILD_PARALLEL_LEVEL}")
+    # endif()
     add_subdirectory(yosys)
 endif()
 
