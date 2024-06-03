@@ -12,8 +12,10 @@
 #include "AnalyticalSolver.h"
 #include "PlacementLegalizer.h"
 #include "globals.h"
+#include "partition.h"
 #include "partition_region.h"
 #include "prepack.h"
+#include "region.h"
 #include "vpr_constraints.h"
 #include "vpr_context.h"
 #include "vtr_time.h"
@@ -53,7 +55,7 @@ void run_analytical_placement_flow() {
     // Using the placement from the SA to get the fixed block locations
     std::set<AtomBlockId> fixed_blocks;
     std::map<AtomBlockId, double> fixed_blocks_x, fixed_blocks_y;
-    const VprConstraints constraints = g_vpr_ctx.mutable_floorplanning().constraints;
+    const VprConstraints& constraints = g_vpr_ctx.floorplanning().constraints;
     for (const AtomNetId& net_id : atom_netlist.nets()) {
         if (PartialPlacement::net_is_ignored_for_placement(atom_netlist, net_id))
             continue;
@@ -62,10 +64,14 @@ void run_analytical_placement_flow() {
             if (constraints.get_atom_partition(blk_id) != PartitionId::INVALID() && 
                 fixed_blocks.find(blk_id) == fixed_blocks.end()) {
                 fixed_blocks.insert(blk_id);
-                PartitionRegion pr = constraints.get_partition_pr(constraints.get_atom_partition(blk_id));
-                VTR_ASSERT(pr.get_regions().size() == 1);
-                fixed_blocks_x[blk_id] = pr.get_regions()[0].get_region_rect().xmin;
-                fixed_blocks_y[blk_id] = pr.get_regions()[0].get_region_rect().ymin;
+                PartitionId pi = constraints.get_atom_partition(blk_id);
+                PartitionRegion pr = constraints.get_partition_pr(pi);
+                VTR_ASSERT(pr.get_regions().size() == 1 && "Expects each partition contains only one region!");
+                RegionRectCoord region_rect = pr.get_regions()[0].get_region_rect();
+                VTR_ASSERT(region_rect.xmin == region_rect.xmax && "Expect each region to be a single point in x!");
+                VTR_ASSERT(region_rect.ymin == region_rect.ymax && "Expect each region to be a single point in y!");
+                fixed_blocks_x[blk_id] = region_rect.xmin;
+                fixed_blocks_y[blk_id] = region_rect.ymin;
             }
         }
     }
