@@ -1342,9 +1342,10 @@ static void build_rr_graph(const t_graph_type graph_type,
         is_flat);
 
     // Verify no incremental node allocation.
-    /* AA: Note that in the case of dedicated networks, we are currently underestimating the additional node count due to the clock networks. 
-     * Thus, this below error is logged; it's not actually an error, the node estimation needs to get fixed for dedicated clock networks. */
-    if (rr_graph.num_nodes() > expected_node_count) {
+    // AA: Note that in the case of dedicated networks, we are currently underestimating the additional node count due to the clock networks. 
+    /* For now, the node count comparison is being skipped in the presence of clock networks.
+    * TODO: The node estimation needs to be fixed for dedicated clock networks. */
+    if (rr_graph.num_nodes() > expected_node_count && clock_modeling != DEDICATED_NETWORK) {
         VTR_LOG_ERROR("Expected no more than %zu nodes, have %zu nodes\n",
                       expected_node_count, rr_graph.num_nodes());
     }
@@ -1483,8 +1484,6 @@ static void build_intra_cluster_rr_graph(const t_graph_type graph_type,
                                           is_flat,
                                           load_rr_graph);
 
-    /* AA: Note that in the case of dedicated networks, we are currently underestimating the additional node count due to the clock networks.
-     * Thus this below error is logged; it's not actually an error, the node estimation needs to get fixed for dedicated clock networks. */
     if (rr_graph.num_nodes() > expected_node_count) {
         VTR_LOG_ERROR("Expected no more than %zu nodes, have %zu nodes\n",
                       expected_node_count, rr_graph.num_nodes());
