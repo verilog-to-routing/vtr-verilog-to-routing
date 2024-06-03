@@ -1977,7 +1977,7 @@ The ``<segment>`` tag and its contents are described below.
 
     :opt_param res_type:
         Specifies whether the segment belongs to the general or a clock routing network. If this tag is not specified, the resource type for
-        the segment is considered to be GENERAL.
+        the segment is considered to be GENERAL (i.e. regular routing).
   
     :req_param freq:
         The supply of routing tracks composed of this type of segment.

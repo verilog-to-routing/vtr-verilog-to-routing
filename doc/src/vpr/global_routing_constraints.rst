@@ -55,7 +55,7 @@ To indicate that a node represents a clock network virtual sink, users can utili
 
 Distinguishing Between Clock Networks
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Given the support for multiple clock networks, VPR needs a way to distinguish between different virtual sinks belonging to various clock networks. This is achieved through the optional ``"name"`` attribute for the rr_node, accepting a string used as the clock network name. Therefore, when the ``"clk_res_type"`` is set to  ``"VIRTUAL_SINK"``, the attribute ``"name"`` becomes a requried parameter to enable VPR to determine which clock netwrok the virtual sink belongs to. 
+Given the support for multiple clock networks, VPR needs a way to distinguish between different virtual sinks belonging to various clock networks. This is achieved through the optional ``"name"`` attribute for the rr_node, accepting a string used as the clock network name. Therefore, when the ``"clk_res_type"`` is set to  ``"VIRTUAL_SINK"``, the attribute ``"name"`` becomes a requried parameter to enable VPR to determine which clock network the virtual sink belongs to. 
 
 When specifying the network_name in a global routing constraints file for routing a global net through a desired clock network, as described in the :ref:`above <global_routing_constraints_file_format>` section, the name defined as an attribute in the virtual sink of the clock network should be used to reference that clock network.
 
