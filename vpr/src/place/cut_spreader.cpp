@@ -446,7 +446,7 @@ std::pair<int, int> CutSpreader::cut_region(SpreaderRegion& r, bool dir) {
     }
 
     // sort blks based on raw location
-    std::sort(cut_blks.begin(), cut_blks.end(), [&](const ClusterBlockId a, const ClusterBlockId b) {
+    std::stable_sort(cut_blks.begin(), cut_blks.end(), [&](const ClusterBlockId a, const ClusterBlockId b) {
         return dir ? (ap->blk_locs[a].rawy < ap->blk_locs[b].rawy) : (ap->blk_locs[a].rawx < ap->blk_locs[b].rawx);
     });
 

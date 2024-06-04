@@ -195,6 +195,7 @@ std::unique_ptr<PlaceDelayModel> compute_place_delay_model(const t_placer_opts& 
                                                                           router_opts.read_router_lookahead,
                                                                           segment_inf,
                                                                           is_flat);
+
     RouterDelayProfiler route_profiler(net_list, router_lookahead, is_flat);
 
     int longest_length = get_longest_segment_length(segment_inf);
@@ -871,7 +872,7 @@ float delay_reduce(std::vector<float>& delays, e_reducer reducer) {
         auto itr = std::max_element(delays.begin(), delays.end());
         delay = *itr;
     } else if (reducer == e_reducer::MEDIAN) {
-        std::sort(delays.begin(), delays.end());
+        std::stable_sort(delays.begin(), delays.end());
         delay = vtr::median(delays.begin(), delays.end());
     } else if (reducer == e_reducer::ARITHMEAN) {
         delay = vtr::arithmean(delays.begin(), delays.end());

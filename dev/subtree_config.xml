@@ -33,7 +33,7 @@
         name="capnproto"
         internal_path="libs/EXTERNAL/capnproto"
         external_url="https://github.com/capnproto/capnproto.git"
-        default_external_ref="v0.9.1"/>
+        default_external_ref="v1.0.2"/>
     <subtree
         name="libinterchange"
         internal_path="libs/EXTERNAL/libinterchange"

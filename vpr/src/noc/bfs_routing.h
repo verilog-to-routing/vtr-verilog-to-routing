@@ -42,7 +42,7 @@ class BFSRouting : public NocRouting {
      * Identifies the ending point of the route within the NoC.This represents a 
      * physical router on the FPGA.
      * @param traffic_flow_id The unique ID for the traffic flow being routed.
-     * @param flow_route Stores the path returned by this fuction
+     * @param flow_route Stores the path returned by this function
      * as a series of NoC links found by 
      * a NoC routing algorithm between two routers in a traffic flow.
      * The function will clear any

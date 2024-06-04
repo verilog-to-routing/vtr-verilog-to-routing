@@ -21,7 +21,7 @@
 
 #pragma once
 
-#include "capability.h"
+#include <capnp/capability.h>
 #include "rpc-prelude.h"
 
 CAPNP_BEGIN_HEADER
@@ -35,6 +35,8 @@ template <typename VatId, typename ProvisionId, typename RecipientId,
 class VatNetwork;
 template <typename SturdyRefObjectId>
 class SturdyRefRestorer;
+
+class MessageReader;
 
 template <typename VatId>
 class BootstrapFactory: public _::BootstrapFactoryBase {
@@ -293,6 +295,16 @@ public:
   // Get the total size of the message, for flow control purposes. Although the caller could
   // also call getBody().targetSize(), doing that would walk the message tree, whereas typical
   // implementations can compute the size more cheaply by summing segment sizes.
+
+  static bool isShortLivedRpcMessage(AnyPointer::Reader body);
+  // Helper function which computes whether the standard RpcSystem implementation would consider
+  // the given message body to be short-lived, meaning it will be dropped before the next message
+  // is read. This is useful to implement BufferedMessageStream::IsShortLivedCallback.
+
+  static kj::Function<bool(MessageReader&)> getShortLivedCallback();
+  // Returns a function that wraps isShortLivedRpcMessage(). The returned function type matches
+  // `BufferedMessageStream::IsShortLivedCallback` (defined in serialize-async.h), but we don't
+  // include that header here.
 };
 
 class RpcFlowController {
