@@ -12,7 +12,7 @@ inline RouteIterResults SerialNetlistRouter<HeapType>::route_netlist(int itry, f
 
     /* Sort so net with most sinks is routed first */
     auto sorted_nets = std::vector<ParentNetId>(_net_list.nets().begin(), _net_list.nets().end());
-    std::sort(sorted_nets.begin(), sorted_nets.end(), [&](ParentNetId id1, ParentNetId id2) -> bool {
+    std::stable_sort(sorted_nets.begin(), sorted_nets.end(), [&](ParentNetId id1, ParentNetId id2) -> bool {
         return _net_list.net_sinks(id1).size() > _net_list.net_sinks(id2).size();
     });
 
@@ -35,7 +35,8 @@ inline RouteIterResults SerialNetlistRouter<HeapType>::route_netlist(int itry, f
             worst_neg_slack,
             _routing_predictor,
             _choking_spots[net_id],
-            _is_flat);
+            _is_flat,
+            route_ctx.route_bb[net_id]);
 
         if (!flags.success && !flags.retry_with_full_bb) {
             /* Disconnected RRG and ConnectionRouter doesn't think growing the BB will work */

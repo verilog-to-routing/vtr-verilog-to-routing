@@ -42,7 +42,7 @@ bool Region::empty() {
             || layer_num < 0);
 }
 
-bool Region::is_loc_in_reg(t_pl_loc loc) {
+bool Region::is_loc_in_reg(t_pl_loc loc) const {
     bool is_loc_in_reg = false;
     int loc_layer_num = loc.layer;
 
@@ -149,7 +149,7 @@ Region intersection(const Region& r1, const Region& r2) {
     return intersect;
 }
 
-void print_region(FILE* fp, Region region) {
+void print_region(FILE* fp, const Region& region) {
     const auto region_coord = region.get_region_rect();
     const auto region_rect = vtr::Rect<int>(region_coord.xmin, region_coord.ymin, region_coord.xmax, region_coord.ymax);
     fprintf(fp, "\tRegion: \n");

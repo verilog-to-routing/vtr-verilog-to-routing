@@ -43,10 +43,9 @@ class NoCPlacementCheckpoint {
     /**
      * @brief Loads the save checkpoint into global placement data structues.
      *
-     *  @param noc_opts: Contains weighting factors for different NoC cost terms
      *  @param costs: Used to load NoC related costs for the checkpoint
      */
-    void restore_checkpoint(const t_noc_opts& noc_opts, t_placer_costs& costs);
+    void restore_checkpoint(t_placer_costs& costs);
 
     /**
      * @brief Indicates whether the object is empty or it has already stored a

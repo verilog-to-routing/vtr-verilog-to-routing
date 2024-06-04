@@ -51,19 +51,33 @@ namespace kj {
 
 namespace {
 
-KJ_NORETURN(void throwOpensslError());
-void throwOpensslError() {
-  // Call when an OpenSSL function returns an error code to convert that into an exception and
-  // throw it.
+kj::Exception getOpensslError() {
+  // Call when an OpenSSL function returns an error code to convert that into an exception.
 
   kj::Vector<kj::String> lines;
   while (unsigned long long error = ERR_get_error()) {
+#ifdef SSL_R_UNEXPECTED_EOF_WHILE_READING
+    // OpenSSL 3.0+ reports unexpected disconnects this way.
+    if (ERR_GET_REASON(error) == SSL_R_UNEXPECTED_EOF_WHILE_READING) {
+      return KJ_EXCEPTION(DISCONNECTED,
+          "peer disconnected without gracefully ending TLS session");
+    }
+#endif
+
     char message[1024];
     ERR_error_string_n(error, message, sizeof(message));
     lines.add(kj::heapString(message));
   }
   kj::String message = kj::strArray(lines, "\n");
-  KJ_FAIL_ASSERT("OpenSSL error", message);
+  return KJ_EXCEPTION(FAILED, "OpenSSL error", message);
+}
+
+KJ_NORETURN(void throwOpensslError());
+void throwOpensslError() {
+  // Call when an OpenSSL function returns an error code to convert that into an exception and
+  // throw it.
+
+  kj::throwFatalException(getOpensslError());
 }
 
 #if OPENSSL_VERSION_NUMBER < 0x10100000L && !defined(OPENSSL_IS_BORINGSSL)
@@ -99,6 +113,37 @@ inline void ensureOpenSslInitialized() {
   // As of 1.1.0, no initialization is needed.
 }
 #endif
+
+bool isIpAddress(kj::StringPtr addr) {
+  bool isPossiblyIp6 = true;
+  bool isPossiblyIp4 = true;
+  uint colonCount = 0;
+  uint dotCount = 0;
+  for (auto c: addr) {
+    if (c == ':') {
+      isPossiblyIp4 = false;
+      ++colonCount;
+    } else if (c == '.') {
+      isPossiblyIp6 = false;
+      ++dotCount;
+    } else if ('0' <= c && c <= '9') {
+      // Digit is valid for ipv4 or ipv6.
+    } else if (('a' <= c && c <= 'f') || ('A' <= c && c <= 'F')) {
+      // Hex digit could be ipv6 but not ipv4.
+      isPossiblyIp4 = false;
+    } else {
+      // Nope.
+      return false;
+    }
+  }
+
+  // An IPv4 address has 3 dots. (Yes, I'm aware that technically IPv4 addresses can be formatted
+  // with fewer dots, but it's not clear that we actually want to support TLS authentication of
+  // non-canonical address formats, so for now I'm not. File a bug if you care.) An IPv6 address
+  // has at least 2 and as many as 7 colons.
+  return (isPossiblyIp4 && dotCount == 3)
+      || (isPossiblyIp6 && colonCount >= 2 && colonCount <= 7);
+}
 
 }  // namespace
 
@@ -138,28 +183,42 @@ public:
 
   kj::Promise<void> connect(kj::StringPtr expectedServerHostname) {
     if (!SSL_set_tlsext_host_name(ssl, expectedServerHostname.cStr())) {
-      throwOpensslError();
+      return getOpensslError();
     }
 
     X509_VERIFY_PARAM* verify = SSL_get0_param(ssl);
     if (verify == nullptr) {
-      throwOpensslError();
+      return getOpensslError();
     }
 
-    if (X509_VERIFY_PARAM_set1_host(
-        verify, expectedServerHostname.cStr(), expectedServerHostname.size()) <= 0) {
-      throwOpensslError();
+    if (isIpAddress(expectedServerHostname)) {
+      if (X509_VERIFY_PARAM_set1_ip_asc(verify, expectedServerHostname.cStr()) <= 0) {
+        return getOpensslError();
+      }
+    } else {
+      if (X509_VERIFY_PARAM_set1_host(
+          verify, expectedServerHostname.cStr(), expectedServerHostname.size()) <= 0) {
+        return getOpensslError();
+      }
     }
+
+    // As of OpenSSL 1.1.0, X509_V_FLAG_TRUSTED_FIRST is on by default. Turning it on for older
+    // versions -- as well as certain OpenSSL-compatible libraries -- fixes the problem described
+    // here: https://community.letsencrypt.org/t/openssl-client-compatibility-changes-for-let-s-encrypt-certificates/143816
+    //
+    // Otherwise, certificates issued by Let's Encrypt won't work as of September 30, 2021:
+    // https://letsencrypt.org/docs/dst-root-ca-x3-expiration-september-2021/
+    X509_VERIFY_PARAM_set_flags(verify, X509_V_FLAG_TRUSTED_FIRST);
 
     return sslCall([this]() { return SSL_connect(ssl); }).then([this](size_t) {
       X509* cert = SSL_get_peer_certificate(ssl);
-      KJ_REQUIRE(cert != nullptr, "TLS peer provided no certificate");
+      KJ_REQUIRE(cert != nullptr, "TLS peer provided no certificate") { return; }
       X509_free(cert);
 
       auto result = SSL_get_verify_result(ssl);
       if (result != X509_V_OK) {
         const char* reason = X509_verify_cert_error_string(result);
-        KJ_FAIL_REQUIRE("TLS peer's certificate is not trusted", reason);
+        KJ_FAIL_REQUIRE("TLS peer's certificate is not trusted", reason) { break; }
       }
     });
   }
@@ -208,7 +267,7 @@ public:
   void shutdownWrite() override {
     KJ_REQUIRE(shutdownTask == nullptr, "already called shutdownWrite()");
 
-    // TODO(0.10): shutdownWrite() is problematic because it doesn't return a promise. It was
+    // TODO(2.0): shutdownWrite() is problematic because it doesn't return a promise. It was
     //   designed to assume that it would only be called after all writes are finished and that
     //   there was no reason to block at that point, but SSL sessions don't fit this since they
     //   actually have to send a shutdown message.
@@ -248,7 +307,6 @@ private:
   kj::AsyncIoStream& inner;
   kj::Own<kj::AsyncIoStream> ownInner;
 
-  bool disconnected = false;
   kj::Maybe<kj::Promise<void>> shutdownTask;
 
   ReadyInputStreamWrapper readBuffer;
@@ -256,8 +314,6 @@ private:
 
   kj::Promise<size_t> tryReadInternal(
       void* buffer, size_t minBytes, size_t maxBytes, size_t alreadyDone) {
-    if (disconnected) return alreadyDone;
-
     return sslCall([this,buffer,maxBytes]() { return SSL_read(ssl, buffer, maxBytes); })
         .then([this,buffer,minBytes,maxBytes,alreadyDone](size_t n) -> kj::Promise<size_t> {
       if (n >= minBytes || n == 0) {
@@ -299,8 +355,6 @@ private:
 
   template <typename Func>
   kj::Promise<size_t> sslCall(Func&& func) {
-    if (disconnected) return size_t(0);
-
     auto result = func();
 
     if (result > 0) {
@@ -309,20 +363,22 @@ private:
       int error = SSL_get_error(ssl, result);
       switch (error) {
         case SSL_ERROR_ZERO_RETURN:
-          disconnected = true;
-          return size_t(0);
+          return constPromise<size_t, 0>();
         case SSL_ERROR_WANT_READ:
-          return readBuffer.whenReady().then(kj::mvCapture(func,
-              [this](Func&& func) mutable { return sslCall(kj::fwd<Func>(func)); }));
+          return readBuffer.whenReady().then(
+              [this,func=kj::mv(func)]() mutable { return sslCall(kj::fwd<Func>(func)); });
         case SSL_ERROR_WANT_WRITE:
-          return writeBuffer.whenReady().then(kj::mvCapture(func,
-              [this](Func&& func) mutable { return sslCall(kj::fwd<Func>(func)); }));
+          return writeBuffer.whenReady().then(
+              [this,func=kj::mv(func)]() mutable { return sslCall(kj::fwd<Func>(func)); });
         case SSL_ERROR_SSL:
-          throwOpensslError();
+          return getOpensslError();
         case SSL_ERROR_SYSCALL:
           if (result == 0) {
-            disconnected = true;
-            return size_t(0);
+            // OpenSSL pre-3.0 reports unexpected disconnects this way. Note that 3.0+ report it
+            // as SSL_ERROR_SSL with the reason SSL_R_UNEXPECTED_EOF_WHILE_READING, which is
+            // handled in throwOpensslError().
+            return KJ_EXCEPTION(DISCONNECTED,
+                "peer disconnected without gracefully ending TLS session");
           } else {
             // According to documentation we shouldn't get here, because our BIO never returns an
             // "error". But in practice we do get here sometimes when the peer disconnects
@@ -359,12 +415,20 @@ private:
 
   static long bioCtrl(BIO* b, int cmd, long num, void* ptr) {
     switch (cmd) {
+      case BIO_CTRL_EOF:
+        return reinterpret_cast<TlsConnection*>(BIO_get_data(b))->readBuffer.isAtEnd();
       case BIO_CTRL_FLUSH:
         return 1;
       case BIO_CTRL_PUSH:
       case BIO_CTRL_POP:
         // Informational?
         return 0;
+#ifdef BIO_CTRL_GET_KTLS_SEND
+      case BIO_CTRL_GET_KTLS_SEND:
+      case BIO_CTRL_GET_KTLS_RECV:
+        // TODO(someday): Support kTLS if the underlying stream is a raw socket.
+        return 0;
+#endif
       default:
         KJ_LOG(WARNING, "unimplemented bio_ctrl", cmd);
         return 0;
@@ -419,18 +483,20 @@ private:
 
 class TlsConnectionReceiver final: public ConnectionReceiver, public TaskSet::ErrorHandler {
 public:
-  TlsConnectionReceiver(TlsContext &tls, Own<ConnectionReceiver> inner)
+  TlsConnectionReceiver(
+      TlsContext &tls, Own<ConnectionReceiver> inner,
+      kj::Maybe<TlsErrorHandler> acceptErrorHandler)
       : tls(tls), inner(kj::mv(inner)),
         acceptLoopTask(acceptLoop().eagerlyEvaluate([this](Exception &&e) {
           onAcceptFailure(kj::mv(e));
         })),
+        acceptErrorHandler(kj::mv(acceptErrorHandler)),
         tasks(*this) {}
 
   void taskFailed(Exception&& e) override {
-    // TODO(someday): SSL connection failures may be a fact of normal operation but they may also
-    // be important diagnostic information. We should allow for an error handler to be passed in so
-    // that network issues that affect TLS can be more discoverable from the server side.
-    if (e.getType() != Exception::Type::DISCONNECTED) {
+    KJ_IF_MAYBE(handler, acceptErrorHandler){
+      handler->operator()(kj::mv(e));
+    } else if (e.getType() != Exception::Type::DISCONNECTED) {
       KJ_LOG(ERROR, "error accepting tls connection", kj::mv(e));
     }
   };
@@ -504,6 +570,7 @@ private:
 
   Promise<void> acceptLoopTask;
   ProducerConsumerQueue<AuthenticatedStream> queue;
+  kj::Maybe<TlsErrorHandler> acceptErrorHandler;
   TaskSet tasks;
 
   Maybe<Exception> maybeInnerException;
@@ -520,10 +587,10 @@ public:
     //   So, we make some copies here.
     auto& tlsRef = tls;
     auto hostnameCopy = kj::str(hostname);
-    return inner->connect().then(kj::mvCapture(hostnameCopy,
-        [&tlsRef](kj::String&& hostname, Own<AsyncIoStream>&& stream) {
+    return inner->connect().then(
+        [&tlsRef,hostname=kj::mv(hostnameCopy)](Own<AsyncIoStream>&& stream) {
       return tlsRef.wrapClient(kj::mv(stream), hostname);
-    }));
+    });
   }
 
   Promise<kj::AuthenticatedStream> connectAuthenticated() override {
@@ -563,18 +630,58 @@ public:
       : tls(tls), inner(*inner), ownInner(kj::mv(inner)) {}
 
   Promise<Own<NetworkAddress>> parseAddress(StringPtr addr, uint portHint) override {
+    // We want to parse the hostname or IP address out of `addr`. This is a bit complicated as
+    // KJ's default network implementation has a fairly featureful grammar for these things.
+    // In particular, we cannot just split on ':' because the address might be IPv6.
+
     kj::String hostname;
-    KJ_IF_MAYBE(pos, addr.findFirst(':')) {
-      hostname = kj::heapString(addr.slice(0, *pos));
+
+    if (addr.startsWith("[")) {
+      // IPv6, like "[1234:5678::abcd]:123". Take the part between the brackets.
+      KJ_IF_MAYBE(pos, addr.findFirst(']')) {
+        hostname = kj::str(addr.slice(1, *pos));
+      } else {
+        // Uhh??? Just take the whole thing, cert will fail later.
+        hostname = kj::heapString(addr);
+      }
+    } else if (addr.startsWith("unix:") || addr.startsWith("unix-abstract:")) {
+      // Unfortunately, `unix:123` is ambiguous (maybe there is a host named "unix"?), but the
+      // default KJ network implementation will interpret it as a Unix domain socket address.
+      // We don't want TLS to then try to authenticate that as a host named "unix".
+      KJ_FAIL_REQUIRE("can't authenticate Unix domain socket with TLS", addr);
     } else {
-      hostname = kj::heapString(addr);
+      uint colons = 0;
+      for (auto c: addr) {
+        if (c == ':') {
+          ++colons;
+        }
+      }
+
+      if (colons >= 2) {
+        // Must be an IPv6 address. If it had a port, it would have been wrapped in []. So don't
+        // strip the port.
+        hostname = kj::heapString(addr);
+      } else {
+        // Assume host:port or ipv4:port. This is a shaky assumption, as the above hacks
+        // demonstrate.
+        //
+        // In theory it might make sense to extend the NetworkAddress interface so that it can tell
+        // us what the actual parser decided the hostname is. However, when I tried this it proved
+        // rather cumbersome and actually broke code in the Workers Runtime that does complicated
+        // stacking of kj::Network implementations.
+        KJ_IF_MAYBE(pos, addr.findFirst(':')) {
+          hostname = kj::heapString(addr.slice(0, *pos));
+        } else {
+          hostname = kj::heapString(addr);
+        }
+      }
     }
 
     return inner.parseAddress(addr, portHint)
-        .then(kj::mvCapture(hostname, [this](kj::String&& hostname, kj::Own<NetworkAddress>&& addr)
+        .then([this, hostname=kj::mv(hostname)](kj::Own<NetworkAddress>&& addr) mutable
             -> kj::Own<kj::NetworkAddress> {
       return kj::heap<TlsNetworkAddress>(tls, kj::mv(hostname), kj::mv(addr));
-    }));
+    });
   }
 
   Own<NetworkAddress> getSockaddr(const void* sockaddr, uint len) override {
@@ -670,6 +777,13 @@ TlsContext::TlsContext(Options options) {
   if (options.minVersion > TlsVersion::TLS_1_2) {
     optionFlags |= SSL_OP_NO_TLSv1_2;
   }
+  if (options.minVersion > TlsVersion::TLS_1_3) {
+#ifdef SSL_OP_NO_TLSv1_3
+    optionFlags |= SSL_OP_NO_TLSv1_3;
+#else
+    KJ_FAIL_REQUIRE("OpenSSL headers don't support TLS 1.3");
+#endif
+  }
   SSL_CTX_set_options(ctx, optionFlags);  // note: never fails; returns new options bitmask
 
   // honor options.cipherList
@@ -711,6 +825,8 @@ TlsContext::TlsContext(Options options) {
         "acceptTimeout option requires that a timer is also provided");
     this->acceptTimeout = *timeout;
   }
+
+  this->acceptErrorHandler = kj::mv(options.acceptErrorHandler);
 
   this->ctx = ctx;
 }
@@ -766,22 +882,24 @@ kj::Promise<kj::Own<kj::AsyncIoStream>> TlsContext::wrapClient(
     kj::Own<kj::AsyncIoStream> stream, kj::StringPtr expectedServerHostname) {
   auto conn = kj::heap<TlsConnection>(kj::mv(stream), reinterpret_cast<SSL_CTX*>(ctx));
   auto promise = conn->connect(expectedServerHostname);
-  return promise.then(kj::mvCapture(conn, [](kj::Own<TlsConnection> conn)
+  return promise.then([conn=kj::mv(conn)]() mutable
       -> kj::Own<kj::AsyncIoStream> {
     return kj::mv(conn);
-  }));
+  });
 }
 
 kj::Promise<kj::Own<kj::AsyncIoStream>> TlsContext::wrapServer(kj::Own<kj::AsyncIoStream> stream) {
   auto conn = kj::heap<TlsConnection>(kj::mv(stream), reinterpret_cast<SSL_CTX*>(ctx));
   auto promise = conn->accept();
   KJ_IF_MAYBE(timeout, acceptTimeout) {
-    promise = KJ_REQUIRE_NONNULL(timer).timeoutAfter(*timeout, kj::mv(promise));
+    promise = KJ_REQUIRE_NONNULL(timer).afterDelay(*timeout).then([]() -> kj::Promise<void> {
+      return KJ_EXCEPTION(DISCONNECTED, "timed out waiting for client during TLS handshake");
+    }).exclusiveJoin(kj::mv(promise));
   }
-  return promise.then(kj::mvCapture(conn, [](kj::Own<TlsConnection> conn)
+  return promise.then([conn=kj::mv(conn)]() mutable
       -> kj::Own<kj::AsyncIoStream> {
     return kj::mv(conn);
-  }));
+  });
 }
 
 kj::Promise<kj::AuthenticatedStream> TlsContext::wrapClient(
@@ -798,7 +916,9 @@ kj::Promise<kj::AuthenticatedStream> TlsContext::wrapServer(kj::AuthenticatedStr
   auto conn = kj::heap<TlsConnection>(kj::mv(stream.stream), reinterpret_cast<SSL_CTX*>(ctx));
   auto promise = conn->accept();
   KJ_IF_MAYBE(timeout, acceptTimeout) {
-    promise = KJ_REQUIRE_NONNULL(timer).timeoutAfter(*timeout, kj::mv(promise));
+    promise = KJ_REQUIRE_NONNULL(timer).afterDelay(*timeout).then([]() -> kj::Promise<void> {
+      return KJ_EXCEPTION(DISCONNECTED, "timed out waiting for client during TLS handshake");
+    }).exclusiveJoin(kj::mv(promise));
   }
   return promise.then([conn=kj::mv(conn),innerId=kj::mv(stream.peerIdentity)]() mutable {
     auto id = conn->getIdentity(kj::mv(innerId));
@@ -807,7 +927,15 @@ kj::Promise<kj::AuthenticatedStream> TlsContext::wrapServer(kj::AuthenticatedStr
 }
 
 kj::Own<kj::ConnectionReceiver> TlsContext::wrapPort(kj::Own<kj::ConnectionReceiver> port) {
-  return kj::heap<TlsConnectionReceiver>(*this, kj::mv(port));
+  auto handler = acceptErrorHandler.map([](TlsErrorHandler& handler) {
+    return handler.reference();
+  });
+  return kj::heap<TlsConnectionReceiver>(*this, kj::mv(port), kj::mv(handler));
+}
+
+kj::Own<kj::NetworkAddress> TlsContext::wrapAddress(
+    kj::Own<kj::NetworkAddress> address, kj::StringPtr expectedServerHostname) {
+  return kj::heap<TlsNetworkAddress>(*this, kj::str(expectedServerHostname), kj::mv(address));
 }
 
 kj::Own<kj::Network> TlsContext::wrapNetwork(kj::Network& network) {
@@ -885,7 +1013,7 @@ TlsCertificate::TlsCertificate(kj::ArrayPtr<const kj::ArrayPtr<const byte>> asn1
   for (auto i: kj::indices(asn1)) {
     auto p = asn1[i].begin();
 
-    // "_AUX" apparently refers to some auxilliary information that can be appended to the
+    // "_AUX" apparently refers to some auxiliary information that can be appended to the
     // certificate, but should only be trusted for your own certificate, not the whole chain??
     // I don't really know, I'm just cargo-culting.
     chain[i] = i == 0 ? d2i_X509_AUX(nullptr, &p, asn1[i].size())
@@ -913,7 +1041,7 @@ TlsCertificate::TlsCertificate(kj::StringPtr pem) {
   KJ_DEFER(BIO_free(bio));
 
   for (auto i: kj::indices(chain)) {
-    // "_AUX" apparently refers to some auxilliary information that can be appended to the
+    // "_AUX" apparently refers to some auxiliary information that can be appended to the
     // certificate, but should only be trusted for your own certificate, not the whole chain??
     // I don't really know, I'm just cargo-culting.
     chain[i] = i == 0 ? PEM_read_bio_X509_AUX(bio, nullptr, nullptr, nullptr)

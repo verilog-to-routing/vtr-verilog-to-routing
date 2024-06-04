@@ -3,6 +3,11 @@
 #include "initial_placement.h"
 #include "noc_place_utils.h"
 #include "noc_place_checkpoint.h"
+#include "place_constraints.h"
+#include "vtr_math.h"
+
+#include <limits>
+#include <queue>
 
 /**
  * @brief Evaluates whether a NoC router swap should be accepted or not.
@@ -32,7 +37,8 @@ static void place_constrained_noc_router(ClusterBlockId router_blk_id);
  *   NoC routers.
  *   @param seed Used for shuffling NoC routers.
  */
-static void place_noc_routers_randomly(std::vector<ClusterBlockId>& unfixed_routers, int seed);
+static void place_noc_routers_randomly(std::vector<ClusterBlockId>& unfixed_routers,
+                                       int seed);
 
 /**
  * @brief Runs a simulated annealing optimizer for NoC routers.
@@ -101,6 +107,11 @@ static void place_noc_routers_randomly(std::vector<ClusterBlockId>& unfixed_rout
      * only once.
      */
 
+    // check if all NoC routers have already been placed
+    if (unfixed_routers.empty()) {
+        return;
+    }
+
     // Make a copy of NoC physical routers because we want to change its order
     vtr::vector<NocRouterId, NocRouter> noc_phy_routers = noc_ctx.noc_model.get_noc_routers();
 
@@ -158,10 +169,11 @@ static void noc_routers_anneal(const t_noc_opts& noc_opts) {
     t_placer_costs costs;
 
     // Initialize NoC-related costs
-    costs.noc_aggregate_bandwidth_cost = comp_noc_aggregate_bandwidth_cost();
-    costs.noc_latency_cost = comp_noc_latency_cost(noc_opts);
+    costs.noc_cost_terms.aggregate_bandwidth = comp_noc_aggregate_bandwidth_cost();
+    std::tie(costs.noc_cost_terms.latency, costs.noc_cost_terms.latency_overrun) = comp_noc_latency_cost();
+    costs.noc_cost_terms.congestion = comp_noc_congestion_cost();
     update_noc_normalization_factors(costs);
-    costs.cost = calculate_noc_cost(costs, noc_opts);
+    costs.cost = calculate_noc_cost(costs.noc_cost_terms, costs.noc_cost_norm_factors, noc_opts);
 
     // Maximum distance in each direction that a router can travel in a move
     // It is assumed that NoC routers are organized in a square grid.
@@ -178,7 +190,8 @@ static void noc_routers_anneal(const t_noc_opts& noc_opts) {
     // the constant factor above 35000.
     // Get all the router clusters and figure out how many of them exist
     const int num_router_clusters = noc_ctx.noc_traffic_flows_storage.get_router_clusters_in_netlist().size();
-    const int N_MOVES = num_router_clusters * 35000;
+    const int N_MOVES_PER_ROUTER = 50000;
+    const int N_MOVES = num_router_clusters * N_MOVES_PER_ROUTER;
 
     const double starting_prob = 0.5;
     const double prob_step = starting_prob / N_MOVES;
@@ -211,10 +224,9 @@ static void noc_routers_anneal(const t_noc_opts& noc_opts) {
         if (create_move_outcome != e_create_move::ABORT) {
             apply_move_blocks(blocks_affected);
 
-            double noc_aggregate_bandwidth_delta_c = 0.0;
-            double noc_latency_delta_c = 0.0;
-            find_affected_noc_routers_and_update_noc_costs(blocks_affected, noc_aggregate_bandwidth_delta_c, noc_latency_delta_c, noc_opts);
-            double delta_cost = (noc_opts.noc_placement_weighting) * (noc_latency_delta_c * costs.noc_latency_cost_norm + noc_aggregate_bandwidth_delta_c * costs.noc_aggregate_bandwidth_cost_norm);
+            NocCostTerms noc_delta_c;
+            find_affected_noc_routers_and_update_noc_costs(blocks_affected, noc_delta_c);
+            double delta_cost = calculate_noc_cost(noc_delta_c, costs.noc_cost_norm_factors, noc_opts);
 
             double prob = starting_prob - i_move * prob_step;
             bool move_accepted = accept_noc_swap(delta_cost, prob);
@@ -223,8 +235,8 @@ static void noc_routers_anneal(const t_noc_opts& noc_opts) {
                 costs.cost += delta_cost;
                 commit_move_blocks(blocks_affected);
                 commit_noc_costs();
-                costs.noc_aggregate_bandwidth_cost += noc_aggregate_bandwidth_delta_c;
-                costs.noc_latency_cost += noc_latency_delta_c;
+                costs += noc_delta_c;
+                // check if the current placement is better than the stored checkpoint
                 if (costs.cost < checkpoint.get_cost() || !checkpoint.is_valid()) {
                     checkpoint.save_checkpoint(costs.cost);
                 }
@@ -236,11 +248,11 @@ static void noc_routers_anneal(const t_noc_opts& noc_opts) {
     }
 
     if (checkpoint.get_cost() < costs.cost) {
-        checkpoint.restore_checkpoint(noc_opts, costs);
+        checkpoint.restore_checkpoint(costs);
     }
 }
 
-void initial_noc_placement(const t_noc_opts& noc_opts, int seed) {
+void initial_noc_placement(const t_noc_opts& noc_opts, const t_placer_opts& placer_opts) {
     auto& noc_ctx = g_vpr_ctx.noc();
 
     // Get all the router clusters
@@ -264,11 +276,19 @@ void initial_noc_placement(const t_noc_opts& noc_opts, int seed) {
     }
 
     // Place unconstrained NoC routers randomly
-    place_noc_routers_randomly(unfixed_routers, seed);
+    place_noc_routers_randomly(unfixed_routers, placer_opts.seed);
 
     // populate internal data structures to maintain route, bandwidth usage, and latencies
     initial_noc_routing();
 
     // Run the simulated annealing optimizer for NoC routers
     noc_routers_anneal(noc_opts);
+
+    // check if there is any cycles
+    bool has_cycle = noc_routing_has_cycle();
+    if (has_cycle) {
+        VPR_FATAL_ERROR(VPR_ERROR_PLACE,
+                        "At least one cycle was found in NoC channel dependency graph. This may cause a deadlock "
+                        "when packets wait on each other in a cycle.\n");
+    }
 }

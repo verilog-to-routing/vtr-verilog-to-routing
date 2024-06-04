@@ -1,5 +1,6 @@
 #ifndef VTR_RAGGED_MATRIX_H
 #define VTR_RAGGED_MATRIX_H
+#include <cstddef>
 #include <vector>
 #include <iterator>
 
@@ -212,8 +213,14 @@ class FlatRaggedMatrix {
      * uses a callback to determine row lengths.
      */
     template<class Callback>
-    class RowLengthIterator : public std::iterator<std::random_access_iterator_tag, size_t> {
+    class RowLengthIterator {
       public:
+        using iterator_category = std::random_access_iterator_tag;
+        using difference_type = std::ptrdiff_t;
+        using value_type = size_t;
+        using pointer = size_t*;
+        using reference = size_t&;
+
         RowLengthIterator(size_t irow, Callback& callback)
             : irow_(irow)
             , callback_(callback) {}

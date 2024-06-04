@@ -32,7 +32,7 @@ void NoCPlacementCheckpoint::save_checkpoint(double cost) {
     cost_ = cost;
 }
 
-void NoCPlacementCheckpoint::restore_checkpoint(const t_noc_opts& noc_opts, t_placer_costs& costs) {
+void NoCPlacementCheckpoint::restore_checkpoint(t_placer_costs& costs) {
     const auto& noc_ctx = g_vpr_ctx.noc();
     const auto& device_ctx = g_vpr_ctx.device();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
@@ -68,7 +68,7 @@ void NoCPlacementCheckpoint::restore_checkpoint(const t_noc_opts& noc_opts, t_pl
     }
 
     // Re-initialize routes and static variables that keep track of NoC-related costs
-    reinitialize_noc_routing(noc_opts, costs);
+    reinitialize_noc_routing(costs);
 }
 
 bool NoCPlacementCheckpoint::is_valid() const {

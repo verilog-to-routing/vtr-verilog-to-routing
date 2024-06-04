@@ -43,8 +43,7 @@ struct RegionRectCoord {
     bool operator==(const RegionRectCoord& rhs) const {
         vtr::Rect<int> lhs_rect(xmin, ymin, xmax, ymax);
         vtr::Rect<int> rhs_rect(rhs.xmin, rhs.ymin, rhs.xmax, rhs.ymax);
-        return lhs_rect == rhs_rect
-               && layer_num == rhs.layer_num;
+        return (lhs_rect == rhs_rect) && (layer_num == rhs.layer_num);
     }
 };
 
@@ -105,7 +104,7 @@ class Region {
      *
      *   @param loc     The location to be checked
      */
-    bool is_loc_in_reg(t_pl_loc loc);
+    bool is_loc_in_reg(t_pl_loc loc) const;
 
     bool operator==(const Region& reg) const {
         return (reg.get_region_rect() == this->get_region_rect()
@@ -142,7 +141,7 @@ bool do_regions_intersect(Region r1, Region r2);
 Region intersection(const Region& r1, const Region& r2);
 
 ///@brief Used to print data from a Region
-void print_region(FILE* fp, Region region);
+void print_region(FILE* fp, const Region& region);
 
 namespace std {
 template<>

@@ -67,6 +67,7 @@ class NetlistRouter {
 #include "SerialNetlistRouter.h"
 #ifdef VPR_USE_TBB
 #    include "ParallelNetlistRouter.h"
+#    include "DecompNetlistRouter.h"
 #endif
 
 template<typename HeapType>
@@ -100,6 +101,24 @@ inline std::unique_ptr<NetlistRouter> make_netlist_router_with_heap(
     } else if (router_opts.router_algorithm == e_router_algorithm::PARALLEL) {
 #ifdef VPR_USE_TBB
         return std::make_unique<ParallelNetlistRouter<HeapType>>(
+            net_list,
+            router_lookahead,
+            router_opts,
+            connections_inf,
+            net_delay,
+            netlist_pin_lookup,
+            timing_info,
+            pin_timing_invalidator,
+            budgeting_inf,
+            routing_predictor,
+            choking_spots,
+            is_flat);
+#else
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "VPR isn't compiled with TBB support required for parallel routing");
+#endif
+    } else if (router_opts.router_algorithm == e_router_algorithm::PARALLEL_DECOMP) {
+#ifdef VPR_USE_TBB
+        return std::make_unique<DecompNetlistRouter<HeapType>>(
             net_list,
             router_lookahead,
             router_opts,
