@@ -103,6 +103,12 @@ size_t GzipInputStream::readImpl(
     byte* out, size_t minBytes, size_t maxBytes, size_t alreadyRead) {
   if (ctx.avail_in == 0) {
     size_t amount = inner.tryRead(buffer, 1, sizeof(buffer));
+    // Note: This check would reject valid streams with a high compression ratio if zlib were to
+    // read in the entire input data, getting more decompressed data than fits in the out buffer
+    // and subsequently fill the output buffer and internally store some pending data. It turns
+    // out that zlib does not maintain pending output during decompression and this is not
+    // possible, but this may be a concern when implementing support for other algorithms as e.g.
+    // brotli's reference implementation maintains a decompression output buffer.
     if (amount == 0) {
       if (!atValidEndpoint) {
         KJ_FAIL_REQUIRE("gzip compressed stream ended prematurely");
@@ -114,7 +120,7 @@ size_t GzipInputStream::readImpl(
     }
   }
 
-  ctx.next_out = reinterpret_cast<byte*>(out);
+  ctx.next_out = out;
   ctx.avail_out = maxBytes;
 
   auto inflateResult = inflate(&ctx, Z_NO_FLUSH);
@@ -182,7 +188,7 @@ GzipAsyncInputStream::~GzipAsyncInputStream() noexcept(false) {
 }
 
 Promise<size_t> GzipAsyncInputStream::tryRead(void* out, size_t minBytes, size_t maxBytes) {
-  if (maxBytes == 0) return size_t(0);
+  if (maxBytes == 0) return constPromise<size_t, 0>();
 
   return readImpl(reinterpret_cast<byte*>(out), minBytes, maxBytes, 0);
 }
@@ -205,7 +211,7 @@ Promise<size_t> GzipAsyncInputStream::readImpl(
     });
   }
 
-  ctx.next_out = reinterpret_cast<byte*>(out);
+  ctx.next_out = out;
   ctx.avail_out = maxBytes;
 
   auto inflateResult = inflate(&ctx, Z_NO_FLUSH);
