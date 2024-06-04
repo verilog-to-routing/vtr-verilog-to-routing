@@ -129,7 +129,7 @@ inline NetResultFlags route_net(ConnectionRouter& router,
     }
 
     // compare the criticality of different sink nodes
-    sort(begin(remaining_targets), end(remaining_targets), [&](int a, int b) {
+    std::stable_sort(begin(remaining_targets), end(remaining_targets), [&](int a, int b) {
         return pin_criticality[a] > pin_criticality[b];
     });
 

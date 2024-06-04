@@ -339,7 +339,7 @@ void draw_congestion(ezgl::renderer* g) {
 
         return lhs_cong_ratio < rhs_cong_ratio;
     };
-    std::sort(congested_rr_nodes.begin(), congested_rr_nodes.end(), cmp_ascending_acc_cost);
+    std::stable_sort(congested_rr_nodes.begin(), congested_rr_nodes.end(), cmp_ascending_acc_cost);
 
     if (draw_state->show_congestion == DRAW_CONGESTED_WITH_NETS) {
         auto rr_node_nets = collect_rr_node_nets();
@@ -660,6 +660,10 @@ void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::ren
         RRNodeId prev_node = rr_nodes_to_draw[i - 1];
         auto prev_type = rr_graph.node_type(RRNodeId(prev_node));
 
+        if (!is_inter_cluster_node(rr_graph, prev_node) || !is_inter_cluster_node(rr_graph, inode)) {
+            continue;
+        }
+
         auto iedge = find_edge(prev_node, inode);
         auto switch_type = rr_graph.edge_switch(RRNodeId(prev_node), iedge);
 
@@ -772,6 +776,10 @@ bool is_edge_valid_to_draw(RRNodeId current_node, RRNodeId prev_node) {
 
     int current_node_layer = rr_graph.node_layer(current_node);
     int prev_node_layer = rr_graph.node_layer(prev_node);
+
+    if (!(is_inter_cluster_node(rr_graph, current_node)) || !(is_inter_cluster_node(rr_graph, prev_node))) {
+        return false;
+    }
 
     if (current_node_layer != prev_node_layer) {
         if (draw_state->cross_layer_display.visible && draw_state->draw_layer_display[current_node_layer].visible && draw_state->draw_layer_display[prev_node_layer].visible) {
@@ -1103,6 +1111,81 @@ void draw_crit_path(ezgl::renderer* g) {
     }
 }
 
+/**
+ * @brief Draw critical path elements.
+ * 
+ * This function draws critical path elements based on the provided timing paths
+ * and indexes map. It is primarily used in server mode, where items are drawn upon request.
+ */
+void draw_crit_path_elements(const std::vector<tatum::TimingPath>& paths, const std::map<std::size_t, std::set<std::size_t>>& indexes, bool draw_crit_path_contour, ezgl::renderer* g) {
+    t_draw_state* draw_state = get_draw_state_vars();
+    const ezgl::color contour_color{0, 0, 0, 40};
+
+    auto draw_flyline_timing_edge_helper_fn = [](ezgl::renderer* renderer, const ezgl::color& color, ezgl::line_dash line_style, int line_width, float delay, 
+                                            const tatum::NodeId& prev_node, const tatum::NodeId& node, bool skip_draw_delays=false) {
+        renderer->set_color(color);
+        renderer->set_line_dash(line_style);
+        renderer->set_line_width(line_width);
+        draw_flyline_timing_edge(tnode_draw_coord(prev_node),
+                                tnode_draw_coord(node), delay, renderer, skip_draw_delays);
+
+        renderer->set_line_dash(ezgl::line_dash::none);
+        renderer->set_line_width(0);                        
+    };
+
+    for (const auto& [path_index, element_indexes]: indexes) {
+        if (path_index < paths.size()) {
+            const tatum::TimingPath& path = paths[path_index];
+
+            //Walk through the timing path drawing each edge
+            tatum::NodeId prev_node;
+            float prev_arr_time = std::numeric_limits<float>::quiet_NaN();
+            int element_counter = 0;
+            for (const tatum::TimingPathElem& elem : path.data_arrival_path().elements()) {
+                bool draw_current_element = element_indexes.empty() || element_indexes.find(element_counter) != element_indexes.end();
+   
+                // draw element
+                tatum::NodeId node = elem.node();
+                float arr_time = elem.tag().time();
+
+                //We draw each 'edge' in a different color, this allows users to identify the stages and
+                //any routing which corresponds to the edge
+                //
+                //We pick colors from the kelly max-contrast list, for long paths there may be repeats
+                ezgl::color color = kelly_max_contrast_colors[element_counter % kelly_max_contrast_colors.size()];
+
+                if (prev_node) {
+                    float delay = arr_time - prev_arr_time;
+                    if ((draw_state->show_crit_path == DRAW_CRIT_PATH_FLYLINES) || (draw_state->show_crit_path == DRAW_CRIT_PATH_FLYLINES_DELAYS)) {
+                        if (draw_current_element) {
+                            draw_flyline_timing_edge_helper_fn(g, color, ezgl::line_dash::none, /*line_width*/4, delay, prev_node, node);
+                        } else if (draw_crit_path_contour) {
+                            draw_flyline_timing_edge_helper_fn(g, contour_color, ezgl::line_dash::none, /*line_width*/1, delay, prev_node, node, /*skip_draw_delays*/true);
+                        }
+                    } else {
+                        VTR_ASSERT(draw_state->show_crit_path != DRAW_NO_CRIT_PATH);
+
+                        if (draw_current_element) {
+                            //Draw the routed version of the timing edge
+                            draw_routed_timing_edge_connection(prev_node, node, color, g);
+
+                            draw_flyline_timing_edge_helper_fn(g, color, ezgl::line_dash::asymmetric_5_3, /*line_width*/3, delay, prev_node, node);
+                        } else if (draw_crit_path_contour) {
+                            draw_flyline_timing_edge_helper_fn(g, color, ezgl::line_dash::asymmetric_5_3, /*line_width*/3, delay, prev_node, node, /*skip_draw_delays*/true);
+                        }
+                    }
+                }
+                
+                prev_node = node;
+                prev_arr_time = arr_time;
+                // end draw element
+
+                element_counter++;
+            }
+        }
+    }
+}
+
 int get_timing_path_node_layer_num(tatum::NodeId node) {
     auto& place_ctx = g_vpr_ctx.placement();
     auto& atom_ctx = g_vpr_ctx.atom();
@@ -1127,7 +1210,7 @@ bool is_flyline_valid_to_draw(int src_layer, int sink_layer) {
 }
 
 //Draws critical path shown as flylines.
-void draw_flyline_timing_edge(ezgl::point2d start, ezgl::point2d end, float incr_delay, ezgl::renderer* g) {
+void draw_flyline_timing_edge(ezgl::point2d start, ezgl::point2d end, float incr_delay, ezgl::renderer* g, bool skip_draw_delays/*=false*/) {
     g->draw_line(start, end);
     draw_triangle_along_line(g, start, end, 0.95, 40 * DEFAULT_ARROW_SIZE);
     draw_triangle_along_line(g, start, end, 0.05, 40 * DEFAULT_ARROW_SIZE);
@@ -1135,7 +1218,8 @@ void draw_flyline_timing_edge(ezgl::point2d start, ezgl::point2d end, float incr
     bool draw_delays = (get_draw_state_vars()->show_crit_path
                             == DRAW_CRIT_PATH_FLYLINES_DELAYS
                         || get_draw_state_vars()->show_crit_path
-                               == DRAW_CRIT_PATH_ROUTING_DELAYS);
+                               == DRAW_CRIT_PATH_ROUTING_DELAYS)
+                               && !skip_draw_delays;
     if (draw_delays) {
         //Determine the strict bounding box based on the lines start/end
         float min_x = std::min(start.x, end.x);

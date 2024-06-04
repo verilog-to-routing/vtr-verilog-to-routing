@@ -84,10 +84,10 @@ t_compressed_block_grid create_compressed_block_grid(const std::vector<std::vect
             }
 
             //Uniquify x/y locations
-            std::sort(layer_x_locs.begin(), layer_x_locs.end());
+            std::stable_sort(layer_x_locs.begin(), layer_x_locs.end());
             layer_x_locs.erase(unique(layer_x_locs.begin(), layer_x_locs.end()), layer_x_locs.end());
 
-            std::sort(layer_y_locs.begin(), layer_y_locs.end());
+            std::stable_sort(layer_y_locs.begin(), layer_y_locs.end());
             layer_y_locs.erase(unique(layer_y_locs.begin(), layer_y_locs.end()), layer_y_locs.end());
 
             //The index of an x-position in x_locs corresponds to it's compressed

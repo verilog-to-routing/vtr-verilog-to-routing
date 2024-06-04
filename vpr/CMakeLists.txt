@@ -32,6 +32,25 @@ else()
     message(STATUS "EZGL: graphics disabled")
 endif()
 
+
+#Handle server setup
+set(SERVER_DEFINES "")
+
+set(SERVER_DISABILED_REASON "")
+if (VPR_USE_SERVER)
+    if (VPR_USE_EZGL STREQUAL "off")
+        set(SERVER_DISABILED_REASON ", due to EZGL being disabled")
+        set(VPR_USE_SERVER OFF)
+    endif()
+endif()
+
+if (VPR_USE_SERVER)
+    message(STATUS "Server mode is enabled")
+else()
+    list(APPEND SERVER_DEFINES "-DNO_SERVER")
+    message(STATUS "Server mode is disabled${SERVER_DISABILED_REASON}")
+endif()
+
 #
 # Build Configuration
 #
@@ -87,6 +106,13 @@ target_link_libraries(libvpr
                         librrgraph
 )
 
+if(VPR_USE_SERVER)
+    target_link_libraries(libvpr
+                          sockpp-static
+                          -lz
+    )
+endif()
+
 #link graphics library only when graphics set to on
 if (VPR_USE_EZGL STREQUAL "on")
     target_link_libraries(libvpr
@@ -123,7 +149,7 @@ if (VPR_USE_EZGL STREQUAL "on")
 
 endif()
 
-target_compile_definitions(libvpr PUBLIC ${GRAPHICS_DEFINES})
+target_compile_definitions(libvpr PUBLIC ${GRAPHICS_DEFINES} ${SERVER_DEFINES})
 
 if(${VTR_ENABLE_CAPNPROTO})
     target_link_libraries(libvpr libvtrcapnproto)

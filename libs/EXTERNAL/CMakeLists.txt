@@ -11,6 +11,14 @@ add_subdirectory(libtatum)
 add_subdirectory(libcatch2)
 #add_subdirectory(parmys)
 
+#VPR_USE_SERVER is initialized in the root CMakeLists
+#compile sockpp only if server mode is enabled
+if (VPR_USE_SERVER)
+    set(SOCKPP_BUILD_SHARED OFF CACHE BOOL "Override default value" FORCE)
+    set(SOCKPP_BUILD_STATIC ON CACHE BOOL "Override default value" FORCE)
+    add_subdirectory(sockpp)
+endif()
+
 #VPR_USE_EZGL is initialized in the root CMakeLists.
 #compile libezgl only if the user asks for or has its dependencies installed.
 if (VPR_USE_EZGL STREQUAL "on")
@@ -132,3 +140,12 @@ target_include_directories(Catch2
         $<INSTALL_INTERFACE:include>
         )
 
+# Some sockpp headers generate warnings, so treat them as system headers to suppress warnings
+if (VPR_USE_SERVER)
+    target_include_directories(sockpp-static
+            SYSTEM
+            PUBLIC
+            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/sockpp/include>
+            $<INSTALL_INTERFACE:include>
+            )
+endif()

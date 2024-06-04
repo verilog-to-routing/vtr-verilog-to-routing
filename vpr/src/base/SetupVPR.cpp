@@ -38,6 +38,8 @@ static void SetupAnnealSched(const t_options& Options,
 static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts);
 static void SetupNocOpts(const t_options& Options,
                          t_noc_opts* NocOpts);
+static void SetupServerOpts(const t_options& Options,
+                            t_server_opts* ServerOpts);
 static void SetupRoutingArch(const t_arch& Arch, t_det_routing_arch* RoutingArch);
 static void SetupTiming(const t_options& Options, const bool TimingEnabled, t_timing_inf* Timing);
 static void SetupSwitches(const t_arch& Arch,
@@ -99,6 +101,7 @@ void SetupVPR(const t_options* Options,
               t_router_opts* RouterOpts,
               t_analysis_opts* AnalysisOpts,
               t_noc_opts* NocOpts,
+              t_server_opts* ServerOpts,
               t_det_routing_arch* RoutingArch,
               std::vector<t_lb_type_rr_node>** PackerRRGraphs,
               std::vector<t_segment_inf>& Segments,
@@ -144,6 +147,7 @@ void SetupVPR(const t_options* Options,
     SetupAnalysisOpts(*Options, *AnalysisOpts);
     SetupPowerOpts(*Options, PowerOpts, Arch);
     SetupNocOpts(*Options, NocOpts);
+    SetupServerOpts(*Options, ServerOpts);
 
     if (readArchFile == true) {
         vtr::ScopedStartFinishTimer t("Loading Architecture Description");
@@ -401,7 +405,7 @@ static void SetupRoutingArch(const t_arch& Arch,
     RoutingArch->Fs = Arch.Fs;
     RoutingArch->subFs = Arch.subFs;
     RoutingArch->directionality = BI_DIRECTIONAL;
-    if (Arch.Segments.size()) {
+    if (!Arch.Segments.empty()) {
         RoutingArch->directionality = Arch.Segments[0].directionality;
     }
 
@@ -429,6 +433,7 @@ static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts)
     RouterOpts->min_incremental_reroute_fanout = Options.min_incremental_reroute_fanout;
     RouterOpts->incr_reroute_delay_ripup = Options.incr_reroute_delay_ripup;
     RouterOpts->pres_fac_mult = Options.pres_fac_mult;
+    RouterOpts->max_pres_fac = Options.max_pres_fac;
     RouterOpts->route_type = Options.RouteType;
 
     RouterOpts->full_stats = Options.full_stats;
@@ -757,7 +762,13 @@ static void SetupNocOpts(const t_options& Options, t_noc_opts* NocOpts) {
     NocOpts->noc_latency_weighting = Options.noc_latency_weighting;
     NocOpts->noc_congestion_weighting = Options.noc_congestion_weighting;
     NocOpts->noc_swap_percentage = Options.noc_swap_percentage;
+    NocOpts->noc_centroid_weight = Options.noc_centroid_weight;
     NocOpts->noc_placement_file_name = Options.noc_placement_file_name;
+}
+
+static void SetupServerOpts(const t_options& Options, t_server_opts* ServerOpts) {
+    ServerOpts->is_server_mode_enabled = Options.is_server_mode_enabled;
+    ServerOpts->port_num = Options.server_port_num;
 }
 
 static void find_ipin_cblock_switch_index(const t_arch& Arch, int& wire_to_arch_ipin_switch, int& wire_to_arch_ipin_switch_between_dice) {

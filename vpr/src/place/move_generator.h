@@ -47,7 +47,7 @@ class MoveGenerator {
     /**
      * @brief Updates affected_blocks with the proposed move, while respecting the current rlim
      *
-     * This function proposes a new move and updates blocks affected and move_type accorrdingly. The function interface is general 
+     * This function proposes a new move and updates blocks affected and move_type accordingly. The function interface is general
      * to match the parameters needed by all move generators
      *
      *  @param blocks_affected: the output of the move
