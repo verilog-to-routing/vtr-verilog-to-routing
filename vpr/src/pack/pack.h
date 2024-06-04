@@ -15,6 +15,6 @@ bool try_pack(t_packer_opts* packer_opts,
 
 float get_arch_switch_info(short switch_index, int switch_fanin, float& Tdel_switch, float& R_switch, float& Cout_switch);
 
-std::unordered_set<AtomNetId> alloc_and_load_is_clock(bool global_clocks);
+std::unordered_set<AtomNetId> alloc_and_load_is_clock();
 
 #endif

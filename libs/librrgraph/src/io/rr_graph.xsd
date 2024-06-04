@@ -143,12 +143,20 @@
     <xs:attribute name="C_per_meter" type="xs:float"/>
   </xs:complexType>
 
+  <xs:simpleType name="segment_res_type">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="GENERAL"/>
+      <xs:enumeration value="GCLK"/>
+    </xs:restriction>
+  </xs:simpleType>
+
   <xs:complexType name="segment">
     <xs:all>
       <xs:element name="timing" type="segment_timing" minOccurs="0"/>
     </xs:all>
     <xs:attribute name="id" type="xs:int" use="required"/>
     <xs:attribute name="name" type="xs:string" use="required"/>
+    <xs:attribute name="res_type" type="segment_res_type"/>
   </xs:complexType>
 
   <!-- All previous tags only contained tags, attributes, or tags and
@@ -235,6 +243,12 @@
     </xs:restriction>
   </xs:simpleType>
 
+  <xs:simpleType name="node_clk_res_type">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="VIRTUAL_SINK"/>
+    </xs:restriction>
+  </xs:simpleType>
+
   <!-- Note that 16 enum solutions are used here in order to
        maintain back-compatibility with old rr_graph XML files
        where the first four types are the same -->
@@ -287,7 +301,9 @@
     </xs:all>
     <xs:attribute name="id" type="xs:unsignedInt" use="required"/>
     <xs:attribute name="type" type="node_type" use="required"/>
+    <xs:attribute name="name" type="xs:string"/>
     <xs:attribute name="direction" type="node_direction"/>
+    <xs:attribute name="clk_res_type" type="node_clk_res_type"/>
     <xs:attribute name="capacity" type="xs:unsignedInt" use="required"/>
   </xs:complexType>
 
