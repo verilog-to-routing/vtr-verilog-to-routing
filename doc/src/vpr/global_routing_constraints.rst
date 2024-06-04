@@ -64,3 +64,45 @@ Segment Definition for Clock Networks
 The node types ``"CHANX"`` and ``"CHANY"`` can construct the clock routing architecture, similar to a generic routing network. However, to identify nodes that are part of a clock network, one can define unique segments for clock networks. To indicate that a segment defined is a clock network resource, users can use the optional attribute ``res_type="GCLK"``. Therefore, nodes with a segment ID of this defined segment are considered to be part of a clock network.
 
 While VPR currently does not leverage this distinction of clock network resources, it is recommended to use the ``res_type="GCLK"`` attribute, as this preparation ensures compatibility for future support.
+
+
+Example of RR Graph Definition for Clock Networks
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Below are snapshots of a sample RR graph that illustrate how to define a clock network. This example demonstrates the definition of a virtual sink node, a clock network segment, and a CHANY node that is part of the clock network. 
+
+For the node with ``id="12746"``, the ``res_type="VIRTUAL_SINK"`` attribute marks it as the virtual sink node of a clock network named ``"global_network"``, as specified by the ``name`` attribute.
+
+For the segment with ``id="1"``, the ``res_type="GCLK"`` attribute indicates that this segment is a clock network resource.
+
+The ``"CHANY"`` node with the ``id="12746"`` has ``segment_id="1"``, which means this resource belongs to the clock network.
+
+.. code-block:: xml
+    :caption: Example snippets from an RR graph describing part of a clock network.
+    :linenos:
+
+        <rr_nodes>
+            <!-- Definition of a virtual sink node for a clock network named "global_network" -->
+            <node capacity="1" clk_res_type="VIRTUAL_SINK" id="12746" name="global_network" type="SINK">
+                <loc layer="0" ptc="72" xhigh="6" xlow="6" yhigh="6" ylow="6"/>
+                <timing C="0" R="0"/>
+            </node>
+
+            <!-- Definition of a CHANY node as part of the clock network -->
+            <node capacity="1" direction="BI_DIR" id="12668" type="CHANY">
+                <loc layer="0" ptc="20" xhigh="6" xlow="6" yhigh="6" ylow="6"/>
+                <timing C="1.98240038e-13" R="50.4199982"/>
+                <segment segment_id="1"/>
+            </node>
+            
+            <!-- ... other nodes ... -->
+        </rr_nodes>
+
+        <segments>
+            <!-- Definition of a clock network segment -->
+            <segment id="1" name="spine1_drive" res_type="GCLK">
+                <timing C_per_meter="2.06999995e-14" R_per_meter="50.4199982"/>
+            </segment>
+
+            <!-- ... other segments ... -->
+        </segments>
