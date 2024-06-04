@@ -64,6 +64,7 @@ namespace {
 
 static constexpr uint64_t NAMESPACE_ANNOTATION_ID = 0xb9c6f99ebf805f2cull;
 static constexpr uint64_t NAME_ANNOTATION_ID = 0xf264a779fef191ceull;
+static constexpr uint64_t ALLOW_CANCELLATION_ANNOTATION_ID = 0xac7096ff8cfc9dceull;
 
 bool hasDiscriminantValue(const schema::Field::Reader& reader) {
   return reader.getDiscriminantValue() != schema::Field::NO_DISCRIMINANT;
@@ -430,7 +431,7 @@ private:
 
 #if 0
         // Figure out exactly how many params are not bound to AnyPointer.
-        // TODO(msvc): In a few obscure cases, MSVC does not like empty template pramater lists,
+        // TODO(msvc): In a few obscure cases, MSVC does not like empty template parameter lists,
         //   even if all parameters have defaults. So, we give in and explicitly list all
         //   parameters in our generated code for now. Try again later.
         uint paramCount = 0;
@@ -2045,11 +2046,15 @@ private:
 
     kj::StringTree defineText = kj::strTree(
         "// ", fullName, "\n",
+        "#if CAPNP_NEED_REDUNDANT_CONSTEXPR_DECL\n",
         templates, "constexpr uint16_t ", fullName, "::_capnpPrivate::dataWordSize;\n",
-        templates, "constexpr uint16_t ", fullName, "::_capnpPrivate::pointerCount;\n"
+        templates, "constexpr uint16_t ", fullName, "::_capnpPrivate::pointerCount;\n",
+        "#endif  // !CAPNP_NEED_REDUNDANT_CONSTEXPR_DECL\n",
         "#if !CAPNP_LITE\n",
+        "#if CAPNP_NEED_REDUNDANT_CONSTEXPR_DECL\n",
         templates, "constexpr ::capnp::Kind ", fullName, "::_capnpPrivate::kind;\n",
-        templates, "constexpr ::capnp::_::RawSchema const* ", fullName, "::_capnpPrivate::schema;\n");
+        templates, "constexpr ::capnp::_::RawSchema const* ", fullName, "::_capnpPrivate::schema;\n",
+        "#endif  // !CAPNP_NEED_REDUNDANT_CONSTEXPR_DECL\n");
 
     if (templateContext.isGeneric()) {
       auto brandInitializers = makeBrandInitializers(templateContext, schema);
@@ -2236,6 +2241,8 @@ private:
     // the `CAPNP_AUTO_IF_MSVC()` hackery in the return type declarations below. We're depending on
     // the fact that that this function has an inline implementation for the deduction to work.
 
+    bool noPromisePipelining = !resultSchema.mayContainCapabilities();
+
     auto requestMethodImpl = kj::strTree(
         templateContext.allDecls(),
         implicitParamsTemplateDecl,
@@ -2247,8 +2254,23 @@ private:
         isStreaming
             ? kj::strTree("  return newStreamingCall<", paramType, ">(\n")
             : kj::strTree("  return newCall<", paramType, ", ", resultType, ">(\n"),
-        "      0x", interfaceIdHex, "ull, ", methodId, ", sizeHint);\n"
+        "      0x", interfaceIdHex, "ull, ", methodId, ", sizeHint, {", noPromisePipelining, "});\n"
         "}\n");
+
+    bool allowCancellation = false;
+    if (annotationValue(proto, ALLOW_CANCELLATION_ANNOTATION_ID) != nullptr) {
+      allowCancellation = true;
+    } else if (annotationValue(interfaceProto, ALLOW_CANCELLATION_ANNOTATION_ID) != nullptr) {
+      allowCancellation = true;
+    } else {
+      schema::Node::Reader node = interfaceProto;
+      while (!node.isFile()) {
+        node = schemaLoader.get(node.getScopeId()).getProto();
+      }
+      if (annotationValue(node, ALLOW_CANCELLATION_ANNOTATION_ID) != nullptr) {
+        allowCancellation = true;
+      }
+    }
 
     return MethodText {
       kj::strTree(
@@ -2297,7 +2319,8 @@ private:
               "          return ", identifierName, "(::capnp::Capability::Server::internalGetTypedStreamingContext<\n"
               "              ", genericParamType, ">(context));\n"
               "        }),\n"
-              "        true\n"
+              "        true,\n"
+              "        ", allowCancellation, "\n"
               "      };\n")
             : kj::strTree(
               // For non-streaming calls we let exceptions just flow through for a little more
@@ -2305,7 +2328,8 @@ private:
               "      return {\n"
               "        ", identifierName, "(::capnp::Capability::Server::internalGetTypedContext<\n"
               "            ", genericParamType, ", ", genericResultType, ">(context)),\n"
-              "        false\n"
+              "        false,\n"
+              "        ", allowCancellation, "\n"
               "      };\n"))
     };
   }
@@ -2372,8 +2396,10 @@ private:
     kj::StringTree defineText = kj::strTree(
         "// ", fullName, "\n",
         "#if !CAPNP_LITE\n",
+        "#if CAPNP_NEED_REDUNDANT_CONSTEXPR_DECL\n",
         templates, "constexpr ::capnp::Kind ", fullName, "::_capnpPrivate::kind;\n",
-        templates, "constexpr ::capnp::_::RawSchema const* ", fullName, "::_capnpPrivate::schema;\n");
+        templates, "constexpr ::capnp::_::RawSchema const* ", fullName, "::_capnpPrivate::schema;\n"
+        "#endif  // !CAPNP_NEED_REDUNDANT_CONSTEXPR_DECL\n");
 
     if (templateContext.isGeneric()) {
       auto brandInitializers = makeBrandInitializers(templateContext, schema);
@@ -2583,9 +2609,7 @@ private:
           kj::strTree("static constexpr ", typeName_, ' ', upperCase, " = ",
               literalValue(schema.getType(), constProto.getValue()), ";\n"),
           scope.size() == 0 ? kj::strTree() : kj::strTree(
-              // TODO(msvc): MSVC doesn't like definitions of constexprs, but other compilers and
-              //   the standard require them.
-              "#if !defined(_MSC_VER) || defined(__clang__)\n"
+              "#if CAPNP_NEED_REDUNDANT_CONSTEXPR_DECL\n"
               "constexpr ", typeName_, ' ', scope, upperCase, ";\n"
               "#endif\n")
         };
@@ -2771,6 +2795,8 @@ private:
     auto brandDeps = makeBrandDepInitializers(
         makeBrandDepMap(templateContext, schema.getGeneric()));
 
+    bool mayContainCapabilities = proto.isStruct() && schema.asStruct().mayContainCapabilities();
+
     auto schemaDef = kj::strTree(
         "static const ::capnp::_::AlignedData<", rawSchema.size(), "> b_", hexId, " = {\n"
         "  {", kj::mv(schemaLiteral), " }\n"
@@ -2803,7 +2829,7 @@ private:
         ", nullptr, nullptr, { &s_", hexId, ", nullptr, ",
         brandDeps.size() == 0 ? kj::strTree("nullptr, 0, 0") : kj::strTree(
             "bd_", hexId, ", 0, " "sizeof(bd_", hexId, ") / sizeof(bd_", hexId, "[0])"),
-        ", nullptr }\n"
+        ", nullptr }, ", mayContainCapabilities, "\n"
         "};\n"
         "#endif  // !CAPNP_LITE\n");
 
@@ -3042,7 +3068,9 @@ private:
             "#endif  // !CAPNP_LITE\n"
           ) : kj::strTree(),
           "\n"
-          "#if CAPNP_VERSION != ", CAPNP_VERSION, "\n"
+          "#ifndef CAPNP_VERSION\n"
+          "#error \"CAPNP_VERSION is not defined, is capnp/generated-header-support.h missing?\"\n"
+          "#elif CAPNP_VERSION != ", CAPNP_VERSION, "\n"
           "#error \"Version mismatch between generated code and library headers.  You must "
               "use the same version of the Cap'n Proto compiler and library.\"\n"
           "#endif\n"
@@ -3151,6 +3179,8 @@ private:
     for (auto node: request.getNodes()) {
       schemaLoader.load(node);
     }
+
+    schemaLoader.computeOptimizationHints();
 
     for (auto requestedFile: request.getRequestedFiles()) {
       auto schema = schemaLoader.get(requestedFile.getId());
