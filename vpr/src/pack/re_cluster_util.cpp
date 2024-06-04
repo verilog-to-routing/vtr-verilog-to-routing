@@ -184,6 +184,11 @@ bool start_new_cluster_for_mol(t_pack_molecule* molecule,
         pb->name = vtr::strdup(new_name.c_str());
         clb_index = cluster_ctx.clb_nlist.create_block(new_name.c_str(), pb, type);
         helper_ctx.total_clb_num++;
+
+        if (helper_ctx.atoms_lookup.size() < helper_ctx.total_clb_num) {
+            helper_ctx.atoms_lookup.resize(helper_ctx.total_clb_num);
+        }
+
         int molecule_size = get_array_size_of_molecule(molecule);
         update_cluster_pb_stats(molecule, molecule_size, clb_index, true);
 
