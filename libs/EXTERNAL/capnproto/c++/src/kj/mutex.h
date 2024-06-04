@@ -129,7 +129,7 @@ class Mutex {
 public:
   Mutex();
   ~Mutex();
-  KJ_DISALLOW_COPY(Mutex);
+  KJ_DISALLOW_COPY_AND_MOVE(Mutex);
 
   enum Exclusivity {
     EXCLUSIVE,
@@ -247,7 +247,7 @@ private:
 
   kj::Maybe<Waiter&> waitersHead = nullptr;
   kj::Maybe<Waiter&>* waitersTail = &waitersHead;
-  // linked list of waitUntil()s; can only modify under lock
+  // linked list of waiters; can only modify under lock
 
   inline void addWaiter(Waiter& waiter);
   inline void removeWaiter(Waiter& waiter);
@@ -268,7 +268,7 @@ public:
   Once(bool startInitialized = false);
   ~Once();
 #endif
-  KJ_DISALLOW_COPY(Once);
+  KJ_DISALLOW_COPY_AND_MOVE(Once);
 
   class Initializer {
   public:
@@ -446,12 +446,12 @@ public:
 
   Maybe<Locked<T>> lockExclusiveWithTimeout(Duration timeout,
       LockSourceLocationArg location = {}) const;
-  // Attempts to exclusively lock the object. If the timeout elapses before the lock is aquired,
+  // Attempts to exclusively lock the object. If the timeout elapses before the lock is acquired,
   // this returns null.
 
   Maybe<Locked<const T>> lockSharedWithTimeout(Duration timeout,
       LockSourceLocationArg location = {}) const;
-  // Attempts to lock the value for shared access. If the timeout elapses before the lock is aquired,
+  // Attempts to lock the value for shared access. If the timeout elapses before the lock is acquired,
   // this returns null.
 
   inline const T& getWithoutLock() const { return value; }
@@ -758,7 +758,7 @@ using BlockedOnReason = OneOf<BlockedOnMutexAcquisition, BlockedOnCondVarWait, B
 Maybe<const BlockedOnReason&> blockedReason() noexcept;
 // Returns the information about the reason the current thread is blocked synchronously on KJ
 // lock primitives. Returns nullptr if the current thread is not currently blocked on such
-// primitves. This is intended to be called from a signal handler to check whether the current
+// primitives. This is intended to be called from a signal handler to check whether the current
 // thread is blocked. Outside of a signal handler there is little value to this function. In those
 // cases by definition the thread is not blocked. This includes the callable used as part of a
 // condition variable since that happens after the lock is acquired & the current thread is no

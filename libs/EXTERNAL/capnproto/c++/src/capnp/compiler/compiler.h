@@ -76,7 +76,7 @@ public:
 
   explicit Compiler(AnnotationFlag annotationFlag = COMPILE_ANNOTATIONS);
   ~Compiler() noexcept(false);
-  KJ_DISALLOW_COPY(Compiler);
+  KJ_DISALLOW_COPY_AND_MOVE(Compiler);
 
   class CompiledType {
     // Represents a compiled type expression, from which you can traverse to nested types, apply
@@ -197,11 +197,11 @@ public:
     // dependencies.
 
     PARENTS = 1 << 1,
-    // Eagerly compile all lexical parents of the requested node.  Only meaningful in conjuction
+    // Eagerly compile all lexical parents of the requested node.  Only meaningful in conjunction
     // with NODE.
 
     CHILDREN = 1 << 2,
-    // Eagerly compile all of the node's lexically nested nodes.  Only meaningful in conjuction
+    // Eagerly compile all of the node's lexically nested nodes.  Only meaningful in conjunction
     // with NODE.
 
     DEPENDENCIES = NODE << 15,
