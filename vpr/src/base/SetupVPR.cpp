@@ -423,6 +423,7 @@ static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts)
     RouterOpts->min_incremental_reroute_fanout = Options.min_incremental_reroute_fanout;
     RouterOpts->incr_reroute_delay_ripup = Options.incr_reroute_delay_ripup;
     RouterOpts->pres_fac_mult = Options.pres_fac_mult;
+    RouterOpts->max_pres_fac = Options.max_pres_fac;
     RouterOpts->route_type = Options.RouteType;
 
     RouterOpts->full_stats = Options.full_stats;
