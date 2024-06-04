@@ -121,8 +121,8 @@ static inline void sdbl_test()
 {
     sdbl_t ten100_ = ABC_CONST(0x014c924d692ca61b);
     printf("%f\n", sdbl2double(ten100_));
-    printf("%016lX\n", double2sdbl(1 /0.95));
-    printf("%016lX\n", SDBL_CONST1);
+    //printf("%016lX\n", double2sdbl(1 /0.95));
+    //printf("%016lX\n", SDBL_CONST1);
     printf("%f\n", sdbl2double(SDBL_CONST1));
     printf("%f\n", sdbl2double(ABC_CONST(0x000086BCA1AF286B)));
 

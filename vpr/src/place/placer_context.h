@@ -91,19 +91,31 @@ struct PlacerRuntimeContext : public Context {
  */
 struct PlacerMoveContext : public Context {
   public:
+    // [0..cluster_ctx.clb_nlist.nets().size()-1]. Store the number of blocks on each of a net's bounding box (to allow efficient updates)
+    vtr::vector<ClusterNetId, t_bb> bb_num_on_edges;
+
     // [0..cluster_ctx.clb_nlist.nets().size()-1]. Store the bounding box coordinates of a net's bounding box
     vtr::vector<ClusterNetId, t_bb> bb_coords;
 
     // [0..cluster_ctx.clb_nlist.nets().size()-1]. Store the number of blocks on each of a net's bounding box (to allow efficient updates)
-    vtr::vector<ClusterNetId, t_bb> bb_num_on_edges;
+    vtr::vector<ClusterNetId, std::vector<t_2D_bb>> layer_bb_num_on_edges;
+
+    // [0..cluster_ctx.clb_nlist.nets().size()-1]. Store the bounding box coordinates of a net's bounding box
+    vtr::vector<ClusterNetId, std::vector<t_2D_bb>> layer_bb_coords;
+
+    // [0..cluster_ctx.clb_nlist.nets().size()-1]. Store the number of blocks on each layer ()
+    vtr::Matrix<int> num_sink_pin_layer;
 
     // The first range limit calculated by the anneal
     float first_rlim;
 
     // Scratch vectors that are used by different directed moves for temporary calculations (allocated here to save runtime)
     // These vectors will grow up with the net size as it is mostly used to save coords of the net pins or net bb edges
+    // Given that placement moves involve operations on each coordinate independently, we chose to 
+    // utilize a Struct of Arrays (SoA) rather than an Array of Struct (AoS).
     std::vector<int> X_coord;
     std::vector<int> Y_coord;
+    std::vector<int> layer_coord;
 
     // Container to save the highly critical pins (higher than a timing criticality limit setted by commandline option)
     std::vector<std::pair<ClusterNetId, int>> highly_crit_pins;

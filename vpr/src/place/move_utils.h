@@ -27,6 +27,7 @@ enum class e_move_type {
     W_MEDIAN,
     CRIT_UNIFORM,
     FEASIBLE_REGION,
+    NOC_ATTRACTION_CENTROID,
     NUMBER_OF_AUTO_MOVES,
     MANUAL_MOVE = NUMBER_OF_AUTO_MOVES,
     INVALID_MOVE
@@ -69,6 +70,8 @@ struct t_bb_cost {
     t_edge_cost xmax = {0, 0.0};
     t_edge_cost ymin = {0, 0.0};
     t_edge_cost ymax = {0, 0.0};
+    t_edge_cost layer_min = {0, 0.};
+    t_edge_cost layer_max = {0, 0.};
 };
 
 /**
@@ -85,7 +88,7 @@ struct t_range_limiters {
 };
 
 //Records a reasons for an aborted move
-void log_move_abort(const std::string& reason);
+void log_move_abort(std::string_view reason);
 
 //Prints a breif report about aborted move reasons and counts
 void report_aborted_moves();
@@ -222,24 +225,41 @@ const std::string& move_type_to_string(e_move_type);
 void compressed_grid_to_loc(t_logical_block_type_ptr blk_type,
                             t_physical_tile_loc compressed_loc,
                             t_pl_loc& to_loc);
+
+/**
+ * @brief Tries to find an compatible empty subtile with the given type at
+ * the given location. If such a subtile could be found, the subtile number
+ * is returned. Otherwise, -1 is returned to indicate that there are no
+ * compatible subtiles at the given location.
+ *
+ * @param type logical block type
+ * @param to_loc The location to be checked
+ *
+ * @return int The subtile number if there is an empty compatible subtile, otherwise -1
+ * is returned to indicate that there are no empty subtiles compatible with the given type..
+ */
+int find_empty_compatible_subtile(t_logical_block_type_ptr type,
+                                  const t_physical_tile_loc& to_loc);
+
 /**
  * @brief find compressed location in a compressed range for a specific type in the given layer (to_layer_num)
  * 
  * type: defines the moving block type
- * min_cx, max_cx: the minimum and maximum x coordinates of the range in the compressed grid
- * min_cy, max_cx: the minimum and maximum y coordinates of the range in the compressed grid
- * cx_from, cy_from: the x and y coordinates of the old location 
- * cx_to, cy_to: the x and y coordinates of the new location on the compressed grid
+ * search_range: the minimum and maximum coordinates of the search range in the compressed grid
+ * from_loc: the coordinates of the old location
+ * to_loc: the coordinates of the new location on the compressed grid
  * is_median: true if this is called from find_to_loc_median
  * to_layer_num: the layer number of the new location (set by the caller)
+ * search_for_empty: indicates that the returned location must be empty
  */
 bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
-                                             const int delta_cx,
+                                             int delta_cx,
                                              const t_physical_tile_loc& from_loc,
                                              t_bb search_range,
                                              t_physical_tile_loc& to_loc,
                                              bool is_median,
-                                             int to_layer_num);
+                                             int to_layer_num,
+                                             bool search_for_empty);
 
 /**
  * @brief Get the the compressed loc from the uncompressed loc (grid_loc)
@@ -275,13 +295,11 @@ std::vector<t_physical_tile_loc> get_compressed_loc_approx(const t_compressed_bl
  * @param compressed_block_grid
  * @param compressed_locs
  * @param rlim
- * @param num_layers
  * @return A compressed search range for each layer
  */
-std::vector<t_bb> get_compressed_grid_target_search_range(const t_compressed_block_grid& compressed_block_grid,
-                                                          const std::vector<t_physical_tile_loc>& compressed_locs,
-                                                          float rlim,
-                                                          int num_layers);
+t_bb get_compressed_grid_target_search_range(const t_compressed_block_grid& compressed_block_grid,
+                                             const t_physical_tile_loc& compressed_locs,
+                                             float rlim);
 
 /**
  * @brief This function calculates the search range based on the given rlim value and the number of columns/rows
@@ -294,14 +312,12 @@ std::vector<t_bb> get_compressed_grid_target_search_range(const t_compressed_blo
  * @param from_compressed_loc
  * @param target_compressed_loc
  * @param rlim
- * @param num_layers
  * @return
  */
-std::vector<t_bb> get_compressed_grid_bounded_search_range(const t_compressed_block_grid& compressed_block_grid,
-                                                           const std::vector<t_physical_tile_loc>& from_compressed_loc,
-                                                           const std::vector<t_physical_tile_loc>& target_compressed_loc,
-                                                           float rlim,
-                                                           int num_layers);
+t_bb get_compressed_grid_bounded_search_range(const t_compressed_block_grid& compressed_block_grid,
+                                              const t_physical_tile_loc& from_compressed_loc,
+                                              const t_physical_tile_loc& target_compressed_loc,
+                                              float rlim);
 
 /*
  * If the block to be moved (b_from) has a floorplan constraint, this routine changes the max and min coords
@@ -327,6 +343,37 @@ bool intersect_range_limit_with_floorplan_constraints(t_logical_block_type_ptr t
                                                       int layer_num);
 
 std::string e_move_result_to_string(e_move_result move_outcome);
+
+/**
+ * @brif Iterate over all layers that have a physical tile at the x-y location specified by "loc" that can accomodate "logical_block".
+ * If the location in the layer specified by "layer_num" is empty, return that layer. Otherwise,
+ * return a layer that is not occupied at that location. If there isn't any, again, return the layer of loc.
+ *
+ * @param logical_block
+ * @param loc
+ * @return
+ */
+int find_free_layer(t_logical_block_type_ptr logical_block, const t_pl_loc& loc);
+
+int get_random_layer(t_logical_block_type_ptr logical_block);
+
+/**
+ * @brief Iterate over all layers and get the maximum x and y over that layers that have a valid value. set the layer min and max
+ * based on the layers that have a valid BB.
+ * @param tbb_vec
+ * @return 3D bounding box
+ */
+t_bb union_2d_bb(const std::vector<t_2D_bb>& tbb_vec);
+
+/**
+ * @brief Iterate over all layers and get the maximum x and y over that layers that have a valid value. Create the "num_edge" in a similar way. This data structure
+ * stores how many blocks are on each edge of the BB. set the layer min and max based on the layers that have a valid BB.
+ * @param num_edge_vec
+ * @param bb_vec
+ * @return num_edge, 3D bb
+ */
+std::pair<t_bb, t_bb> union_2d_bb_incr(const std::vector<t_2D_bb>& num_edge_vec,
+                                       const std::vector<t_2D_bb>& bb_vec);
 
 #ifdef VTR_ENABLE_DEBUG_LOGGING
 /**

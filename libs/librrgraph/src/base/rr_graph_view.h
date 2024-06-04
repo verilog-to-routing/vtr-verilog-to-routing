@@ -234,7 +234,7 @@ class RRGraphView {
     }
 
     /** @brief Get string of information about routing resource node. The string will contain the following information.
-     * type, side, x_low, x_high, y_low, y_high, length, direction, segment_name
+     * type, side, x_low, x_high, y_low, y_high, length, direction, segment_name, layer num
      * This function is inlined for runtime optimization.
      */
     inline const std::string node_coordinate_to_string(RRNodeId node) const {
@@ -242,9 +242,13 @@ class RRGraphView {
         std::string start_y;                                           //start y-coordinate
         std::string end_x;                                             //end x-coordinate
         std::string end_y;                                             //end y-coordinate
+        std::string start_layer_str;                                     //layer number
+        std::string end_layer_str;                                     //layer number
         std::string arrow;                                             //direction arrow
         std::string coordinate_string = node_type_string(node);        //write the component's type as a routing resource node
         coordinate_string += ":" + std::to_string(size_t(node)) + " "; //add the index of the routing resource node
+
+        int node_layer_num = node_layer(node);
         if (node_type(node) == OPIN || node_type(node) == IPIN) {
             coordinate_string += "side: ("; //add the side of the routing resource node
             for (const e_side& node_side : SIDES) {
@@ -256,12 +260,14 @@ class RRGraphView {
             coordinate_string += ")"; //add the side of the routing resource node
             // For OPINs and IPINs the starting and ending coordinate are identical, so we can just arbitrarily assign the start to larger values
             // and the end to the lower coordinate
-            start_x = " (" + std::to_string(node_xhigh(node)) + ","; //start and end coordinates are the same for OPINs and IPINs
-            start_y = std::to_string(node_yhigh(node)) + ")";
+            start_x =  " (" + std::to_string(node_xhigh(node)) + ","; //start and end coordinates are the same for OPINs and IPINs
+            start_y = std::to_string(node_yhigh(node)) + ",";
+            start_layer_str = std::to_string(node_layer_num) + ")";
         } else if (node_type(node) == SOURCE || node_type(node) == SINK) {
             // For SOURCE and SINK the starting and ending coordinate are identical, so just use start
-            start_x = "(" + std::to_string(node_xhigh(node)) + ",";
-            start_y = std::to_string(node_yhigh(node)) + ")";
+            start_x = " (" + std::to_string(node_xhigh(node)) + ",";
+            start_y = std::to_string(node_yhigh(node)) + ",";
+            start_layer_str = std::to_string(node_layer_num) + ")";
         } else if (node_type(node) == CHANX || node_type(node) == CHANY) { //for channels, we would like to describe the component with segment specific information
             RRIndexedDataId cost_index = node_cost_index(node);
             int seg_index = rr_indexed_data_[cost_index].seg_index;
@@ -272,26 +278,31 @@ class RRGraphView {
             arrow = "->"; //we will point the coordinates from start to finish, left to right
 
             if (node_direction(node) == Direction::DEC) {                //signal travels along decreasing direction
+
                 start_x = " (" + std::to_string(node_xhigh(node)) + ","; //start coordinates have large value
-                start_y = std::to_string(node_yhigh(node)) + ")";
-                end_x = "(" + std::to_string(node_xlow(node)) + ","; //end coordinates have smaller value
-                end_y = std::to_string(node_ylow(node)) + ")";
+                start_y = std::to_string(node_yhigh(node)) + ",";
+                start_layer_str = std::to_string(node_layer_num);
+                end_x = " (" + std::to_string(node_xlow(node)) + ","; //end coordinates have smaller value
+                end_y = std::to_string(node_ylow(node)) + ",";
+                end_layer_str = std::to_string(node_layer_num) + ")";
             }
 
             else {                                                      // signal travels in increasing direction, stays at same point, or can travel both directions
                 start_x = " (" + std::to_string(node_xlow(node)) + ","; //start coordinates have smaller value
-                start_y = std::to_string(node_ylow(node)) + ")";
-                end_x = "(" + std::to_string(node_xhigh(node)) + ","; //end coordinates have larger value
-                end_y = std::to_string(node_yhigh(node)) + ")";
+                start_y = std::to_string(node_ylow(node)) + ",";
+                start_layer_str = std::to_string(node_layer_num);
+                end_x = " (" + std::to_string(node_xhigh(node)) + ","; //end coordinates have larger value
+                end_y = std::to_string(node_yhigh(node)) + ",";
+                end_layer_str = std::to_string(node_layer_num) + ")"; //layer number
                 if (node_direction(node) == Direction::BIDIR) {
                     arrow = "<->"; //indicate that signal can travel both direction
                 }
             }
         }
 
-        coordinate_string += start_x + start_y; //Write the starting coordinates
+        coordinate_string +=  start_x + start_y + start_layer_str; //Write the starting coordinates
         coordinate_string += arrow;             //Indicate the direction
-        coordinate_string += end_x + end_y;     //Write the end coordinates
+        coordinate_string += end_x + end_y + end_layer_str;     //Write the end coordinates
         return coordinate_string;
     }
 
@@ -310,6 +321,12 @@ class RRGraphView {
     inline short edge_switch(RRNodeId id, t_edge_size iedge) const {
         return node_storage_.edge_switch(id, iedge);
     }
+
+    /** @brief Get the source node for the specified edge. */
+    inline RRNodeId edge_src_node(const RREdgeId edge_id) const {
+        return node_storage_.edge_src_node(edge_id);
+    }
+
     /** @brief Get the destination node for the iedge'th edge from specified RRNodeId.
      *  This method should generally not be used, and instead first_edge and
      *  last_edge should be used.*/
@@ -352,7 +369,7 @@ class RRGraphView {
     /** @brief Get outgoing edges for a node.
      * This API is designed to enable range-based loop to walk through the outgoing edges of a node
      * Example:
-     *   RRGraphView rr_graph; // A dummny rr_graph for a short example
+     *   RRGraphView rr_graph; // A dummy rr_graph for a short example
      *   RRNodeId node; // A dummy node for a short example
      *   for (RREdgeId edge : rr_graph.edges(node)) {
      *     // Do something with the edge
@@ -419,7 +436,7 @@ class RRGraphView {
     }
 
     /** @brief  Return the switch information that is categorized in the rr_switch_inf with a given id
-     * rr_switch_inf is created to minimize memory footprint of RRGraph classs
+     * rr_switch_inf is created to minimize memory footprint of RRGraph class
      * While the RRG could contain millions (even much larger) of edges, there are only
      * a limited number of types of switches.
      * Hence, we use a flyweight pattern to store switch-related information that differs

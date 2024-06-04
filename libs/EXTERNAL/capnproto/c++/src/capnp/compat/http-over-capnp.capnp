@@ -24,16 +24,50 @@
 
 using import "byte-stream.capnp".ByteStream;
 
-$import "/capnp/c++.capnp".namespace("capnp");
+using Cxx = import "/capnp/c++.capnp";
+$Cxx.namespace("capnp");
+$Cxx.allowCancellation;
 
 interface HttpService {
-  startRequest @0 (request :HttpRequest, context :ClientRequestContext)
-               -> (requestBody :ByteStream, context :ServerRequestContext);
-  # Begin an HTTP request.
+  request @1 (request :HttpRequest, context :ClientRequestContext)
+          -> (requestBody :ByteStream);
+  # Perform an HTTP request.
   #
   # The client sends the request method/url/headers. The server responds with a `ByteStream` where
   # the client can make calls to stream up the request body. `requestBody` will be null in the case
   # that request.bodySize.fixed == 0.
+  #
+  # The server will send a response by invoking a method on `callback`.
+  #
+  # `request()` does not return until the server is completely done processing the request,
+  # including sending the response. The client therefore must use promise pipelining to send the
+  # request body. The client may request cancellation of the HTTP request by canceling the
+  # `request()` call itself.
+
+  startRequest @0 (request :HttpRequest, context :ClientRequestContext)
+               -> (requestBody :ByteStream, context :ServerRequestContext);
+  # DEPRECATED: Older form of `request()`. In this version, the server immediately returns a
+  #   `ServerRequestContext` before it begins processing the request. This version was designed
+  #   before `CallContext::setPipeline()` was introduced. At that time, it was impossible for the
+  #   server to receive data sent to the `requestBody` stream until `startRequest()` had returned
+  #   a stream capability to use, hence the ongoing call on the server side had to be represented
+  #   using a separate capability. Now that we have `CallContext::setPipeline()`, the server can
+  #   begin receiving the request body without returning from the top-level RPC, so we can now use
+  #   `request()` instead of `startRequest()`. The new approach is more intuitive and avoids some
+  #   unnecessary bookkeeping.
+  #
+  #   `HttpOverCapnpFactory` will continue to support both methods. Use the `peerOptimizationLevel`
+  #   constructor parameter to specify which method to use, for backwards-compatibiltiy purposes.
+
+  connect @2 (host :Text, headers :List(HttpHeader), down :ByteStream,
+              context :ConnectClientRequestContext, settings :ConnectSettings)
+          -> (up :ByteStream);
+  # Setup an HTTP CONNECT proxy tunnel.
+  #
+  # The client sends the request host/headers together with a `down` ByteStream that will be used
+  # for communication across the tunnel. The server will respond with the other side of that
+  # ByteStream for two-way communication. The `context` includes callbacks which are used to
+  # supply the client with headers.
 
   interface ClientRequestContext {
     # Provides callbacks for the server to send the response.
@@ -52,7 +86,20 @@ interface HttpService {
     # Server -> Client will be sent as calls to `downSocket`.
   }
 
+  interface ConnectClientRequestContext {
+    # Provides callbacks for the server to send the response.
+
+    startConnect @0 (response :HttpResponse);
+    # Server calls this method to let the client know that the CONNECT request has been
+    # accepted. It also includes status code and header information.
+
+    startError @1 (response :HttpResponse) -> (body :ByteStream);
+    # Server calls this method to let the client know that the CONNECT request has been rejected.
+  }
+
   interface ServerRequestContext {
+    # DEPRECATED: Used only with startRequest(); see comments there.
+    #
     # Represents execution of a particular request on the server side.
     #
     # Dropping this object before the request completes will cancel the request.
@@ -63,6 +110,10 @@ interface HttpService {
     # could not be captured in the HTTP response. Note that it's possible for such an exception to
     # be thrown even after the response body has been completely transmitted.
   }
+}
+
+struct ConnectSettings {
+  useTls @0 :Bool;
 }
 
 interface WebSocket {

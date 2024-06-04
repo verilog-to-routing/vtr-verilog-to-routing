@@ -52,6 +52,85 @@ static unsigned   Kit_TruthIsop5_rec( unsigned uOn, unsigned uOnDc, int nVars, K
   SeeAlso     []
 
 ***********************************************************************/
+int Kit_TruthIsop2( unsigned * puTruth0, unsigned * puTruth1, int nVars, Vec_Int_t * vMemory, int fTryBoth, int fReturnTt )
+{
+    Kit_Sop_t cRes, * pcRes = &cRes;
+    Kit_Sop_t cRes2, * pcRes2 = &cRes2;
+    unsigned * pResult;
+    int RetValue = 0;
+    assert( nVars >= 0 && nVars <= 16 );
+    // prepare memory manager
+    Vec_IntClear( vMemory );
+    Vec_IntGrow( vMemory, KIT_ISOP_MEM_LIMIT );
+    // compute ISOP for the direct polarity
+    Kit_TruthNot( puTruth0, puTruth0, nVars );
+    pResult = Kit_TruthIsop_rec( puTruth1, puTruth0, nVars, pcRes, vMemory );
+    Kit_TruthNot( puTruth0, puTruth0, nVars );
+    if ( pcRes->nCubes == -1 )
+    {
+        vMemory->nSize = -1;
+        return -1;
+    }
+    assert( Kit_TruthIsImply( puTruth1, pResult, nVars ) );
+    Kit_TruthNot( puTruth0, puTruth0, nVars );
+    assert( Kit_TruthIsImply( pResult, puTruth0, nVars ) );
+    Kit_TruthNot( puTruth0, puTruth0, nVars );
+    if ( pcRes->nCubes == 0 || (pcRes->nCubes == 1 && pcRes->pCubes[0] == 0) )
+    {
+        vMemory->pArray[0] = 0;
+        Vec_IntShrink( vMemory, pcRes->nCubes );
+        return 0;
+    }
+    if ( fTryBoth )
+    {
+        // compute ISOP for the complemented polarity
+        Kit_TruthNot( puTruth1, puTruth1, nVars );
+        pResult = Kit_TruthIsop_rec( puTruth0, puTruth1, nVars, pcRes2, vMemory );
+        Kit_TruthNot( puTruth1, puTruth1, nVars );
+        if ( pcRes2->nCubes >= 0 )
+        {
+            assert( Kit_TruthIsImply( puTruth0, pResult, nVars ) );
+            Kit_TruthNot( puTruth1, puTruth1, nVars );
+            assert( Kit_TruthIsImply( pResult, puTruth1, nVars ) );
+            Kit_TruthNot( puTruth1, puTruth1, nVars );
+            if ( pcRes->nCubes > pcRes2->nCubes || (pcRes->nCubes == pcRes2->nCubes && pcRes->nLits > pcRes2->nLits) )
+            {
+                RetValue = 1;
+                pcRes = pcRes2;
+            }
+        }
+    }
+//    printf( "%d ", vMemory->nSize );
+    // move the cover representation to the beginning of the memory buffer
+    if ( fReturnTt )
+    {
+        int nWords = Kit_TruthWordNum( nVars );
+        memmove( vMemory->pArray, pResult, nWords * sizeof(unsigned) );
+        Vec_IntShrink( vMemory, nWords );
+    }
+    else
+    {
+        memmove( vMemory->pArray, pcRes->pCubes, pcRes->nCubes * sizeof(unsigned) );
+        Vec_IntShrink( vMemory, pcRes->nCubes );
+    }
+    return RetValue;
+}
+
+
+/**Function*************************************************************
+
+  Synopsis    [Computes ISOP from TT.]
+
+  Description [Returns the cover in vMemory. Uses the rest of array in vMemory
+  as an intermediate memory storage. Returns the cover with -1 cubes, if the
+  the computation exceeded the memory limit (KIT_ISOP_MEM_LIMIT words of
+  intermediate data).]
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
 int Kit_TruthIsop( unsigned * puTruth, int nVars, Vec_Int_t * vMemory, int fTryBoth )
 {
     Kit_Sop_t cRes, * pcRes = &cRes;

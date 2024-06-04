@@ -37,7 +37,7 @@ class ConnectionRouterInterface {
   public:
     virtual ~ConnectionRouterInterface() {}
 
-    // Clear's the modified list.  Should be called after reset_path_costs
+    // Clears the modified list.  Should be called after reset_path_costs
     // have been called.
     virtual void clear_modified_rr_node_info() = 0;
 
@@ -50,16 +50,15 @@ class ConnectionRouterInterface {
      *
      * Returns a tuple of:
      * bool: path exists? (hard failure, rr graph disconnected)
-     * bool: should retry with full bounding box? (only used in parallel routing)
+     * bool: should retry with full bounding box?
      * t_heap: heap element of cheapest path */
     virtual std::tuple<bool, bool, t_heap> timing_driven_route_connection_from_route_tree(
         const RouteTreeNode& rt_root,
         RRNodeId sink_node,
-        const t_conn_cost_params cost_params,
-        t_bb bounding_box,
+        const t_conn_cost_params& cost_params,
+        const t_bb& bounding_box,
         RouterStats& router_stats,
-        const ConnectionParameters& conn_params,
-        bool can_grow_bb)
+        const ConnectionParameters& conn_params)
         = 0;
 
     /** Finds a path from the route tree rooted at rt_root to sink_node for a
@@ -70,17 +69,16 @@ class ConnectionRouterInterface {
      *
      * Returns a tuple of:
      * bool: path exists? (hard failure, rr graph disconnected)
-     * bool: should retry with full bounding box? (only used in parallel routing)
+     * bool: should retry with full bounding box?
      * t_heap: heap element of cheapest path */
     virtual std::tuple<bool, bool, t_heap> timing_driven_route_connection_from_route_tree_high_fanout(
         const RouteTreeNode& rt_root,
         RRNodeId sink_node,
-        const t_conn_cost_params cost_params,
-        t_bb bounding_box,
+        const t_conn_cost_params& cost_params,
+        const t_bb& bounding_box,
         const SpatialRouteTreeLookup& spatial_rt_lookup,
         RouterStats& router_stats,
-        const ConnectionParameters& conn_params,
-        bool can_grow_bb)
+        const ConnectionParameters& conn_params)
         = 0;
 
     // Finds a path from the route tree rooted at rt_root to all sinks
@@ -94,8 +92,8 @@ class ConnectionRouterInterface {
     // RouterLookahead used should be the NoOpLookahead.
     virtual vtr::vector<RRNodeId, t_heap> timing_driven_find_all_shortest_paths_from_route_tree(
         const RouteTreeNode& rt_root,
-        const t_conn_cost_params cost_params,
-        t_bb bounding_box,
+        const t_conn_cost_params& cost_params,
+        const t_bb& bounding_box,
         RouterStats& router_stats,
         const ConnectionParameters& conn_params)
         = 0;

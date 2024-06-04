@@ -483,70 +483,21 @@ static void Abc_SclWriteSurface( Vec_Str_t * vOut, SC_Surface * p )
     for ( i = 0; i < 6; i++ ) 
         Vec_StrPutF( vOut, p->approx[2][i] );
 }
-static void Abc_SclWriteLibrary( Vec_Str_t * vOut, SC_Lib * p )
+static void Abc_SclWriteLibraryCellsOnly( Vec_Str_t * vOut, SC_Lib * p, int fAddOn )
 {
-    SC_WireLoad * pWL;
-    SC_WireLoadSel * pWLS;
     SC_Cell * pCell;
     SC_Pin * pPin;
-    int n_valid_cells;
-    int i, j, k;
-
-    Vec_StrPutI( vOut, ABC_SCL_CUR_VERSION );
-
-    // Write non-composite fields:
-    Vec_StrPutS( vOut, p->pName );
-    Vec_StrPutS( vOut, p->default_wire_load );
-    Vec_StrPutS( vOut, p->default_wire_load_sel );
-    Vec_StrPutF( vOut, p->default_max_out_slew );
-
-    assert( p->unit_time >= 0 );
-    assert( p->unit_cap_snd >= 0 );
-    Vec_StrPutI( vOut, p->unit_time );
-    Vec_StrPutF( vOut, p->unit_cap_fst );
-    Vec_StrPutI( vOut, p->unit_cap_snd );
-
-    // Write 'wire_load' vector:
-    Vec_StrPutI( vOut, Vec_PtrSize(&p->vWireLoads) );
-    SC_LibForEachWireLoad( p, pWL, i )
-    {
-        Vec_StrPutS( vOut, pWL->pName );
-        Vec_StrPutF( vOut, pWL->cap );
-        Vec_StrPutF( vOut, pWL->slope );
-
-        Vec_StrPutI( vOut, Vec_IntSize(&pWL->vFanout) );
-        for ( j = 0; j < Vec_IntSize(&pWL->vFanout); j++ )
-        {
-            Vec_StrPutI( vOut, Vec_IntEntry(&pWL->vFanout, j) );
-            Vec_StrPutF( vOut, Vec_FltEntry(&pWL->vLen, j) );
-        }
-    }
-
-    // Write 'wire_load_sel' vector:
-    Vec_StrPutI( vOut, Vec_PtrSize(&p->vWireLoadSels) );
-    SC_LibForEachWireLoadSel( p, pWLS, i )
-    {
-        Vec_StrPutS( vOut, pWLS->pName );
-        Vec_StrPutI( vOut, Vec_FltSize(&pWLS->vAreaFrom) );
-        for ( j = 0; j < Vec_FltSize(&pWLS->vAreaFrom); j++)
-        {
-            Vec_StrPutF( vOut, Vec_FltEntry(&pWLS->vAreaFrom, j) );
-            Vec_StrPutF( vOut, Vec_FltEntry(&pWLS->vAreaTo, j) );
-            Vec_StrPutS( vOut, (char *)Vec_PtrEntry(&pWLS->vWireLoadModel, j) );
-        }
-    }
-
-    // Write 'cells' vector:
-    n_valid_cells = 0;
-    SC_LibForEachCell( p, pCell, i )
-        if ( !(pCell->seq || pCell->unsupp) )
-            n_valid_cells++;
-
-    Vec_StrPutI( vOut, n_valid_cells );
+    int i, j, k;    
     SC_LibForEachCell( p, pCell, i )
     {
         if ( pCell->seq || pCell->unsupp )
             continue;
+
+        if ( fAddOn ) {
+            Vec_StrPush( vOut, 'L' );
+            Vec_StrPush( vOut, '0'+(char)fAddOn );
+            Vec_StrPush( vOut, '_' );
+        }
 
         Vec_StrPutS( vOut, pCell->pName );
         Vec_StrPutF( vOut, pCell->area );
@@ -608,13 +559,78 @@ static void Abc_SclWriteLibrary( Vec_Str_t * vOut, SC_Lib * p )
                     assert( Vec_PtrSize(&pRTime->vTimings) == 0 );
             }
         }
+    }    
+}
+int Abc_SclCountValidCells( SC_Lib * p )
+{
+    SC_Cell * pCell;    
+    int i, n_valid_cells = 0;
+    SC_LibForEachCell( p, pCell, i )
+        if ( !(pCell->seq || pCell->unsupp) )
+            n_valid_cells++;
+    return n_valid_cells;
+}
+static void Abc_SclWriteLibrary( Vec_Str_t * vOut, SC_Lib * p, int nExtra )
+{
+    SC_WireLoad * pWL;
+    SC_WireLoadSel * pWLS;
+    int n_valid_cells;
+    int i, j;
+
+    Vec_StrPutI( vOut, ABC_SCL_CUR_VERSION );
+
+    // Write non-composite fields:
+    Vec_StrPutS( vOut, p->pName );
+    Vec_StrPutS( vOut, p->default_wire_load );
+    Vec_StrPutS( vOut, p->default_wire_load_sel );
+    Vec_StrPutF( vOut, p->default_max_out_slew );
+
+    assert( p->unit_time >= 0 );
+    assert( p->unit_cap_snd >= 0 );
+    Vec_StrPutI( vOut, p->unit_time );
+    Vec_StrPutF( vOut, p->unit_cap_fst );
+    Vec_StrPutI( vOut, p->unit_cap_snd );
+
+    // Write 'wire_load' vector:
+    Vec_StrPutI( vOut, Vec_PtrSize(&p->vWireLoads) );
+    SC_LibForEachWireLoad( p, pWL, i )
+    {
+        Vec_StrPutS( vOut, pWL->pName );
+        Vec_StrPutF( vOut, pWL->cap );
+        Vec_StrPutF( vOut, pWL->slope );
+
+        Vec_StrPutI( vOut, Vec_IntSize(&pWL->vFanout) );
+        for ( j = 0; j < Vec_IntSize(&pWL->vFanout); j++ )
+        {
+            Vec_StrPutI( vOut, Vec_IntEntry(&pWL->vFanout, j) );
+            Vec_StrPutF( vOut, Vec_FltEntry(&pWL->vLen, j) );
+        }
     }
+
+    // Write 'wire_load_sel' vector:
+    Vec_StrPutI( vOut, Vec_PtrSize(&p->vWireLoadSels) );
+    SC_LibForEachWireLoadSel( p, pWLS, i )
+    {
+        Vec_StrPutS( vOut, pWLS->pName );
+        Vec_StrPutI( vOut, Vec_FltSize(&pWLS->vAreaFrom) );
+        for ( j = 0; j < Vec_FltSize(&pWLS->vAreaFrom); j++)
+        {
+            Vec_StrPutF( vOut, Vec_FltEntry(&pWLS->vAreaFrom, j) );
+            Vec_StrPutF( vOut, Vec_FltEntry(&pWLS->vAreaTo, j) );
+            Vec_StrPutS( vOut, (char *)Vec_PtrEntry(&pWLS->vWireLoadModel, j) );
+        }
+    }
+
+    // Write 'cells' vector:
+    n_valid_cells = Abc_SclCountValidCells( p );
+    Vec_StrPutI( vOut, n_valid_cells + nExtra );
+    Abc_SclWriteLibraryCellsOnly( vOut, p, (int)(nExtra > 0) );
 }
 void Abc_SclWriteScl( char * pFileName, SC_Lib * p )
 {
     Vec_Str_t * vOut;
     vOut = Vec_StrAlloc( 10000 );
-    Abc_SclWriteLibrary( vOut, p );
+    Abc_SclWriteLibrary( vOut, p, 0 );
     if ( Vec_StrSize(vOut) > 0 )
     {
         FILE * pFile = fopen( pFileName, "wb" );
@@ -835,8 +851,34 @@ void Abc_SclWriteLiberty( char * pFileName, SC_Lib * p )
     {
         Abc_SclWriteLibraryText( pFile, p );
         fclose( pFile );
-        printf( "Dumped internal library into Liberty file \"%s\".\n", pFileName );
+        printf( "Dumped internal library with %d cells into Liberty file \"%s\".\n", SC_LibCellNum(p), pFileName );
     }
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Appends cells of pLib2 to those of pLib1.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+SC_Lib * Abc_SclMergeLibraries( SC_Lib * pLib1, SC_Lib * pLib2 )
+{
+    Vec_Str_t * vOut = Vec_StrAlloc( 10000 );
+    int n_valid_cells2 = Abc_SclCountValidCells( pLib2 );
+    Abc_SclWriteLibrary( vOut, pLib1, n_valid_cells2 );
+    Abc_SclWriteLibraryCellsOnly( vOut, pLib2, 2 );
+    SC_Lib * p = Abc_SclReadFromStr( vOut );
+    p->pFileName = Abc_UtilStrsav( pLib1->pFileName );
+    p->pName = ABC_ALLOC( char, strlen(pLib1->pName) + strlen(pLib2->pName) + 10 );
+    sprintf( p->pName, "%s__and__%s", pLib1->pName, pLib2->pName );
+    Vec_StrFree( vOut );
+    printf( "Updated library \"%s\" with additional %d cells from library \"%s\".\n", pLib1->pName, n_valid_cells2, pLib2->pName );
+    return p;
 }
 
 ////////////////////////////////////////////////////////////////////////

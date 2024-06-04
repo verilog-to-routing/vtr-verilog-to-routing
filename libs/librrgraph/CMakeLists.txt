@@ -21,7 +21,7 @@ target_include_directories(librrgraph PUBLIC ${LIB_INCLUDE_DIRS})
 
 set_target_properties(librrgraph PROPERTIES PREFIX "") #Avoid extra 'lib' prefix
 
-#Specify link-time dependancies
+#Specify link-time dependencies
 target_link_libraries(librrgraph
                       libvtrutil
                       libarchfpga
@@ -40,7 +40,7 @@ target_compile_definitions(librrgraph PUBLIC ${INTERCHANGE_SCHEMA_HEADERS})
 #                      librrgraph)
 
 # Run unit tests: comment out for now
-#add_test(NAME test_rr_graph COMMAND test_rr_graph --use-colour=yes)
+#add_test(NAME test_rr_graph COMMAND test_rr_graph --colour-mode ansi)
 
 add_custom_target(
     generate_rr_graph_serializers

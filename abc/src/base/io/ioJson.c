@@ -40,6 +40,131 @@ static inline Vec_Int_t * Json_EntryNode( Vec_Wec_t * vObjs, int Fan )    { asse
 
 /**Function*************************************************************
 
+  Synopsis    [Writes JSON into a file.]
+
+  Description []
+  
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+char * Nnc_LayerType2Str( char * pStr )
+{
+    if ( !strcmp(pStr, "InputLayer") )
+        return "input  ";
+    if ( !strcmp(pStr, "Conv2D") )
+        return "convo  ";
+    if ( !strcmp(pStr, "BatchNormalization") )
+        return "batch  ";
+    if ( !strcmp(pStr, "Activation") )
+        return "relu   ";
+    if ( !strcmp(pStr, "Add") )
+        return "eltwise";
+    if ( !strcmp(pStr, "MaxPooling2D") )
+        return "pool   ";
+    if ( !strcmp(pStr, "GlobalAveragePooling2D") )
+        return "pool   ";
+    if ( !strcmp(pStr, "Dense") )
+        return "fullcon";
+    if ( !strcmp(pStr, "ZeroPadding2D") )
+        return "pad";
+//    if ( !strcmp(pStr, "InputLayer") )
+//        return "softmax";
+    return NULL;
+}
+
+void Json_Extract_rec( FILE * pFile, Abc_Nam_t * pStr, Vec_Wec_t * vObjs, Vec_Int_t * vArray, int fWrite, int * pCount )
+{
+    int i, Entry1, Entry2;
+    if ( Vec_IntEntry(vArray, 0) ) // array
+    {
+        if ( Vec_IntSize(vArray) == 1 )
+            return;
+        if ( Vec_IntSize(vArray) == 2 && Json_EntryIsName(Vec_IntEntry(vArray,1)) )
+        {
+            if ( fWrite )
+                fprintf( pFile, "%s", Json_EntryName(pStr, Vec_IntEntry(vArray,1)) );
+            return;
+        }
+        else
+        {
+            Vec_IntForEachEntryStart( vArray, Entry1, i, 1 )
+            {
+                if ( Json_EntryIsName(Entry1) )
+                {
+                    int Digit = Json_EntryName(pStr, Entry1)[0];
+                    if ( fWrite && Digit != '0' )
+                        fprintf( pFile, "%s%s", Json_EntryName(pStr, Entry1), Digit >= '0' && Digit <= '9' ? "" : " " );
+                }
+                else
+                    Json_Extract_rec( pFile, pStr, vObjs, Json_EntryNode(vObjs, Entry1), fWrite, pCount );
+            }
+            return;
+        }
+    }
+    else // list of pairs
+    {
+        int fHaveConfig = 0;
+        assert( Vec_IntSize(vArray) % 2 != 0 );
+        Vec_IntForEachEntryDoubleStart( vArray, Entry1, Entry2, i, 1 )
+        {
+            char * pName1 = Json_EntryIsName(Entry1) ? Json_EntryName(pStr, Entry1) : NULL;
+            char * pName2 = Json_EntryIsName(Entry2) ? Json_EntryName(pStr, Entry2) : NULL;
+            char * pName3 = pName2 ? Nnc_LayerType2Str(pName2) : NULL;
+            if ( pName1 == NULL )
+                continue;
+            if ( !strcmp(pName1, "class_name") )
+            {
+                if ( pName3 )
+                    fprintf( pFile, "\n%3d : %-8s ", (*pCount)++, pName3 );
+            }
+            else if ( !strcmp(pName1, "name") )
+            {
+                if ( fHaveConfig )
+                    fprintf( pFile, " N=%s  ", pName2 ? pName2 : "???" );
+            }
+            else if ( !strcmp(pName1, "kernel_size") )
+            {
+                fprintf( pFile, " K=" );
+                Json_Extract_rec( pFile, pStr, vObjs, Json_EntryNode(vObjs, Entry2), 1, pCount );
+            }
+            else if ( !strcmp(pName1, "strides") )
+            {
+                fprintf( pFile, " S=" );
+                Json_Extract_rec( pFile, pStr, vObjs, Json_EntryNode(vObjs, Entry2), 1, pCount );
+            }
+            else if ( !strcmp(pName1, "filters") )
+                fprintf( pFile, " C=%s", pName2 );
+            else if ( !strcmp(pName1, "inbound_nodes") )
+                Json_Extract_rec( pFile, pStr, vObjs, Json_EntryNode(vObjs, Entry2), 1, pCount );
+            else if ( !strcmp(pName1, "layers") )
+                Json_Extract_rec( pFile, pStr, vObjs, Json_EntryNode(vObjs, Entry2), 1, pCount );
+            else if ( !strcmp(pName1, "config") )
+            {
+                fHaveConfig = 1;
+                Json_Extract_rec( pFile, pStr, vObjs, Json_EntryNode(vObjs, Entry2), 0, pCount );
+            }
+        }
+    }
+}
+void Json_Extract( char * pFileName, Abc_Nam_t * pStr, Vec_Wec_t * vObjs )
+{
+    int Count = 0;
+    FILE * pFile = fopen( pFileName, "wb" );
+    if ( pFile == NULL )
+    {
+        printf( "Cannot open file \"%s\" for writing.\n", pFileName );
+        return;
+    }
+    fprintf( pFile, "# Data extracted from JSON file:\n" );
+    Json_Extract_rec( pFile, pStr, vObjs, Vec_WecEntry(vObjs, 0), 0, &Count );
+    fprintf( pFile, "\n" );
+    fclose( pFile );
+}
+
+/**Function*************************************************************
+
   Synopsis    [Parsing.]
 
   Description []
@@ -51,7 +176,7 @@ static inline Vec_Int_t * Json_EntryNode( Vec_Wec_t * vObjs, int Fan )    { asse
 ***********************************************************************/
 static inline int Json_CharIsSpace( char c )   
 { 
-    return (c == ' ' || c == '\t' || c == '\r' || c == '\n');   
+    return (c == ' ' || c == '\t' || c == '\r' || c == '\n' || c == ':');   
 }
 static inline char * Json_SkipSpaces( char * pCur )
 {
@@ -164,6 +289,21 @@ void Json_Write( char * pFileName, Abc_Nam_t * pStr, Vec_Wec_t * vObjs )
   SeeAlso     []
 
 ***********************************************************************/
+char * Json_ReadPreprocess( char * pIn, int nFileSize )
+{
+    char * pOut = ABC_ALLOC( char, 3*nFileSize ); int i, k = 0;
+    for ( i = 0; i < nFileSize; i++ )
+        if ( pIn[i] == '{' || pIn[i] == '}' || pIn[i] == '[' || pIn[i] == ']' )
+        {
+            pOut[k++] = ' ';
+            pOut[k++] = pIn[i];
+            pOut[k++] = ' ';
+        }
+        else
+            pOut[k++] = pIn[i];
+    pOut[k++] = '\0';
+    return pOut;
+}
 Vec_Wec_t * Json_Read( char * pFileName, Abc_Nam_t ** ppStrs )
 {
     Abc_Nam_t * pStrs; 
@@ -185,6 +325,11 @@ Vec_Wec_t * Json_Read( char * pFileName, Abc_Nam_t ** ppStrs )
     RetValue = fread( pContents, nFileSize, 1, pFile );
     pContents[nFileSize] = 0;
     fclose( pFile );
+
+    pContents = Json_ReadPreprocess( pCur = pContents, nFileSize );
+    nFileSize = strlen(pContents);
+    ABC_FREE( pCur );
+    pCur = pContents;
 
     // start data-structures
     vObjs  = Vec_WecAlloc( 1000 );

@@ -22,6 +22,7 @@
 #include "sat/cnf/cnf.h"
 #include "sat/bsat/satStore.h"
 #include "aig/gia/giaAig.h"
+#include "misc/extra/extra.h"
 
 ABC_NAMESPACE_IMPL_START
 
@@ -48,6 +49,62 @@ ABC_NAMESPACE_IMPL_START
   SeeAlso     []
 
 ***********************************************************************/
+void Gia_DeriveFormula_rec( Gia_Man_t * pGia, char ** ppNamesIn, Vec_Str_t * vStr, int iLit )
+{
+    Gia_Obj_t * pObj = Gia_ManObj( pGia, Abc_Lit2Var(iLit) );
+    int fCompl = Abc_LitIsCompl(iLit);
+    if ( Gia_ObjIsAnd(pObj) )
+    {
+        Vec_StrPush( vStr, '(' );
+        if ( Gia_ObjIsMux(pGia, pObj) )
+        {
+            Gia_DeriveFormula_rec( pGia, ppNamesIn, vStr, Gia_ObjFaninLit0p(pGia, pObj) );
+            Vec_StrPush( vStr, '?' );
+            Gia_DeriveFormula_rec( pGia, ppNamesIn, vStr, Abc_LitNotCond( Gia_ObjFaninLit1p(pGia, pObj), fCompl ) );
+            Vec_StrPush( vStr, ':' );
+            Gia_DeriveFormula_rec( pGia, ppNamesIn, vStr, Abc_LitNotCond( Gia_ObjFaninLit2p(pGia, pObj), fCompl ) );
+        }
+        else
+        {
+            Gia_DeriveFormula_rec( pGia, ppNamesIn, vStr, Abc_LitNotCond( Gia_ObjFaninLit0p(pGia, pObj), fCompl ) );
+            Vec_StrPush( vStr, (char)(Gia_ObjIsXor(pObj) ? '^' : (char)(fCompl ? '|' : '&')) );
+            Gia_DeriveFormula_rec( pGia, ppNamesIn, vStr, Abc_LitNotCond( Gia_ObjFaninLit1p(pGia, pObj), fCompl ) );
+        }
+        Vec_StrPush( vStr, ')' );
+    }
+    else
+    {
+        if ( fCompl ) Vec_StrPush( vStr, '~' );
+        Vec_StrPrintF( vStr, "%s", ppNamesIn[Gia_ObjCioId(pObj)] );
+    }
+}
+char * Gia_DeriveFormula( Gia_Man_t * pGia, char ** ppNamesIn )
+{
+    char * pResult;
+    Vec_Str_t * vStr   = Vec_StrAlloc( 1000 );
+    Gia_Man_t * pMuxes = Gia_ManDupMuxes( pGia, 2 );
+    Gia_Obj_t * pObj   = Gia_ManCo( pGia, 0 );
+    Vec_StrPush( vStr, '(' );
+    Gia_DeriveFormula_rec( pGia, ppNamesIn, vStr, Gia_ObjFaninLit0p(pGia, pObj) );
+    Vec_StrPush( vStr, ')' );
+    Vec_StrPush( vStr, '\0' );
+    Gia_ManStop( pMuxes );
+    pResult = Vec_StrReleaseArray( vStr );
+    Vec_StrFree( vStr );
+    return pResult;
+}
+
+/**Function*************************************************************
+
+  Synopsis    [This procedure sets default parameters.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
 void Gia_ParFfSetDefault( Bmc_ParFf_t * p )
 {
     memset( p, 0, sizeof(Bmc_ParFf_t) );
@@ -58,6 +115,7 @@ void Gia_ParFfSetDefault( Bmc_ParFf_t * p )
     p->nIterCheck    =     0;
     p->fBasic        =     0; 
     p->fFfOnly       =     0;
+    p->fCheckUntest  =     0; 
     p->fDump         =     0; 
     p->fDumpUntest   =     0; 
     p->fVerbose      =     0; 
@@ -476,6 +534,7 @@ Gia_Man_t * Gia_ManFOFUnfold( Gia_Man_t * p, Vec_Int_t * vMap )
     Gia_Man_t * pNew, * pTemp;
     Gia_Obj_t * pObj;
     int i, iCtrl0, iCtrl1, iCtrl2, iCtrl3, iMuxA, iMuxB, iFuncVars = 0;
+    int VarLimit = 4 * Gia_ManAndNum(p);
     pNew = Gia_ManStart( 9 * Gia_ManObjNum(p) );
     pNew->pName = Abc_UtilStrsav( p->pName );
     Gia_ManHashAlloc( pNew );
@@ -484,22 +543,22 @@ Gia_Man_t * Gia_ManFOFUnfold( Gia_Man_t * p, Vec_Int_t * vMap )
         pObj->Value = Gia_ManAppendCi( pNew );
     Gia_ManForEachAnd( p, pObj, i )
     {
-        if ( Vec_IntEntry(vMap, iFuncVars++) )
+        if ( Vec_IntEntry(vMap, iFuncVars++) && iFuncVars < VarLimit )
             iCtrl0 = Gia_ManAppendCi(pNew);
         else
             iCtrl0 = 0, Gia_ManAppendCi(pNew);
 
-        if ( Vec_IntEntry(vMap, iFuncVars++) )
+        if ( Vec_IntEntry(vMap, iFuncVars++) && iFuncVars < VarLimit )
             iCtrl1 = Gia_ManAppendCi(pNew);
         else
             iCtrl1 = 0, Gia_ManAppendCi(pNew);
 
-        if ( Vec_IntEntry(vMap, iFuncVars++) )
+        if ( Vec_IntEntry(vMap, iFuncVars++) && iFuncVars < VarLimit )
             iCtrl2 = Gia_ManAppendCi(pNew);
         else
             iCtrl2 = 0, Gia_ManAppendCi(pNew);
 
-        if ( Vec_IntEntry(vMap, iFuncVars++) )
+        if ( Vec_IntEntry(vMap, iFuncVars++) && iFuncVars < VarLimit )
             iCtrl3 = Gia_ManAppendCi(pNew);
         else
             iCtrl3 = 0, Gia_ManAppendCi(pNew);
@@ -590,8 +649,8 @@ int Gia_FormStrCount( char * pStr, int * pnVars, int * pnPars )
     }
     if ( *pnVars != FFTEST_MAX_VARS )
         { printf( "The number of input variables (%d) should be 2\n", *pnVars ); return 1; }
-    if ( *pnPars < 1 && *pnPars > FFTEST_MAX_PARS )
-        { printf( "The number of parameters should be between 1 and %d\n", *pnPars ); return 1; }
+    if ( *pnPars < 1 || *pnPars > FFTEST_MAX_PARS )
+        { printf( "The number of parameters should be between 1 and %d\n", FFTEST_MAX_PARS ); return 1; }
     return 0;
 }
 void Gia_FormStrTransform( char * pStr, char * pForm )
@@ -611,10 +670,9 @@ void Gia_FormStrTransform( char * pStr, char * pForm )
     pStr[k] = 0; 
 }   
 
-
 /**Function*************************************************************
 
-  Synopsis    [Implements fault model formula using functional/parameter vars.]
+  Synopsis    [Print formula.]
 
   Description []
                
@@ -640,6 +698,88 @@ char * Gia_ManFormulaEndToken( char * pForm )
     assert( 0 );
     return NULL;
 }
+void Gia_ManPrintFormula_rec( char * pBeg, char * pEnd )
+{
+    int Oper = -1;
+    char * pEndNew;
+    if ( pBeg + 1 == pEnd )
+    {
+        if ( pBeg[0] >= 'a' && pBeg[0] <= 'b' )
+            printf( "%c", pBeg[0] );
+        else if ( pBeg[0] >= 'A' && pBeg[0] <= 'B' )
+            printf( "~%c", pBeg[0]-'A'+'a' );
+        else if ( pBeg[0] >= 'p' && pBeg[0] <= 'w' ) // pqrstuvw
+            printf( "%c", pBeg[0] );
+        else if ( pBeg[0] >= 'P' && pBeg[0] <= 'W' )
+            printf( "~%c", pBeg[0]-'A'+'a' );
+        return;
+    }
+    if ( pBeg[0] == '(' )
+    {
+        pEndNew = Gia_ManFormulaEndToken( pBeg );
+        if ( pEndNew == pEnd )
+        {
+            assert( pBeg[0] == '(' );
+            assert( pBeg[pEnd-pBeg-1] == ')' );
+            Gia_ManPrintFormula_rec( pBeg + 1, pEnd - 1 );
+            return;
+        }
+    }
+    // get first part
+    pEndNew  = Gia_ManFormulaEndToken( pBeg );
+    printf( "(" );
+    Gia_ManPrintFormula_rec( pBeg, pEndNew );
+    printf( ")" );
+    Oper     = pEndNew[0];
+    // derive the formula
+    if ( Oper == '&' )
+        printf( "&" );
+    else if ( Oper == '|' )
+        printf( "|" );
+    else if ( Oper == '^' )
+        printf( "^" );
+    else if ( Oper == '?' )
+        printf( "?" );
+    else assert( 0 );
+    // get second part
+    pBeg     = pEndNew + 1;
+    pEndNew  = Gia_ManFormulaEndToken( pBeg );
+    printf( "(" );
+    Gia_ManPrintFormula_rec( pBeg, pEndNew );
+    printf( ")" );
+    if ( Oper == '?' )
+    {
+        printf( ":" );
+        // get third part
+        assert( Oper == '?' );
+        assert( pEndNew[0] == ':' );
+        pBeg     = pEndNew + 1;
+        pEndNew  = Gia_ManFormulaEndToken( pBeg );
+        printf( "(" );
+        Gia_ManPrintFormula_rec( pBeg, pEndNew );
+        printf( ")" );
+    }
+}
+void Gia_ManPrintFormula( char * pStr )
+{
+    printf( "Using formula: " );
+    printf( "(" );
+    Gia_ManPrintFormula_rec( pStr, pStr + strlen(pStr) );
+    printf( ")" );
+    printf( "\n" );
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Implements fault model formula using functional/parameter vars.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
 int Gia_ManRealizeFormula_rec( Gia_Man_t * p, int * pVars, int * pPars, char * pBeg, char * pEnd, int nPars )
 {
     int iFans[3], Oper = -1;
@@ -706,6 +846,7 @@ Gia_Man_t * Gia_ManFormulaUnfold( Gia_Man_t * p, char * pForm, int fFfOnly )
     Gia_FormStrCount( pForm, &nVars, &nPars );
     assert( nVars == 2 );
     Gia_FormStrTransform( pStr, pForm );
+    Gia_ManPrintFormula( pStr );
     pNew = Gia_ManStart( 5 * Gia_ManObjNum(p) );
     pNew->pName = Abc_UtilStrsav( p->pName );
     Gia_ManHashAlloc( pNew );
@@ -751,7 +892,7 @@ Gia_Man_t * Gia_ManFormulaUnfold( Gia_Man_t * p, char * pForm, int fFfOnly )
     Gia_ManStop( pTemp );
     assert( Gia_ManPiNum(pNew) == Gia_ManCiNum(p) + nPars * (fFfOnly ? Count : Gia_ManAndNum(p)) );
 //    if ( fUseFaults )
-//        Gia_AigerWrite( pNew, "newfault.aig", 0, 0 );
+//        Gia_AigerWrite( pNew, "newfault.aig", 0, 0, 0 );
     return pNew;
 }
 
@@ -1257,7 +1398,7 @@ int Gia_ManFaultPrepare( Gia_Man_t * p, Gia_Man_t * pG, Bmc_ParFf_t * pPars, int
         p1 = Gia_ManFOFUnfold( p, vMap );
     if ( pPars->Algo != 1 )
         p0 = Gia_ManDeriveDup( pG, Gia_ManCiNum(p1) - Gia_ManCiNum(pG) );
-//    Gia_AigerWrite( p1, "newfault.aig", 0, 0 );
+//    Gia_AigerWrite( p1, "newfault.aig", 0, 0, 0 );
 //    printf( "Dumped circuit with fault parameters into file \"newfault.aig\".\n" );
 
     // create miter
@@ -1441,6 +1582,19 @@ void Gia_ManFaultTest( Gia_Man_t * p, Gia_Man_t * pG, Bmc_ParFf_t * pPars )
         return;
     }
 
+    printf( "Options: " );
+    printf( "Untestable faults = %s. ", pPars->fCheckUntest || pPars->fDumpDelay ? "yes": "no" );
+    if ( pPars->nCardConstr )
+        printf( "Using %sstrict cardinality %d. ", pPars->fNonStrict ? "non-" : "", pPars->nCardConstr );
+    if ( pPars->fFfOnly )
+        printf( "Faults at FF outputs only = yes. " );
+    if ( pPars->nTimeOut )
+        printf( "Runtime limit = %d sec.  ", pPars->nTimeOut );
+    if ( p != pG && pG->pSpec )
+        printf( "Golden model = %s. ", pG->pSpec );
+    printf( "Verbose = %s. ", pPars->fVerbose ? "yes": "no" );
+    printf( "\n" );
+
     // select algorithm
     if ( pPars->Algo == 0 )
         nFuncVars = Gia_ManCiNum(p);
@@ -1565,7 +1719,7 @@ finish:
     // dump the test suite
     if ( pPars->fDump )
     {
-        char * pFileName = "tests.txt";
+        char * pFileName = p->pSpec ? Extra_FileNameGenericAppend(p->pSpec, "_tests.txt") : (char *)"tests.txt";
         if ( pPars->fDumpDelay && pPars->Algo == 1 )
         {
             Gia_ManDumpTestsDelay( vTests, Iter, pFileName, p );
@@ -1579,7 +1733,7 @@ finish:
     }
 
     // compute untestable faults
-    if ( Iter && (p != pG || pPars->fDumpUntest) )
+    if ( Iter && (p != pG || pPars->fDumpUntest || pPars->fCheckUntest) )
     {
         abctime clkTotal = Abc_Clock();
         // restart the SAT solver
@@ -1680,7 +1834,7 @@ finish:
         if ( pPars->fDumpUntest && status == l_True )
         {
             abctime clk = Abc_Clock();
-            char * pFileName = "untest.txt";
+            char * pFileName = p->pSpec ? Extra_FileNameGenericAppend(p->pSpec, "_untest.txt") : (char *)"untest.txt";
             int nUntests = Gia_ManDumpUntests( pM, pCnf, pSat, nFuncVars, pFileName, pPars->fVerbose );
             if ( p == pG )
                 printf( "Dumped %d untestable multiple faults into file \"%s\".  ", nUntests, pFileName );

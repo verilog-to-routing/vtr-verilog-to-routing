@@ -1,18 +1,19 @@
-#include <climits>
 #include <cmath>
 
 #include "setup_noc.h"
 
-#include "vtr_assert.h"
+#include "globals.h"
 #include "vpr_error.h"
 #include "vtr_math.h"
 #include "echo_files.h"
 
-void setup_noc(const t_arch& arch) {
-    // variable to store all the noc router tiles within the FPGA device
-    // physical routers
-    std::vector<t_noc_router_tile_position> noc_router_tiles;
+// a default condition that helps keep track of whether a physical router has been assigned to a logical router or not
+static constexpr int PHYSICAL_ROUTER_NOT_ASSIGNED = -1;
 
+// a default index used for initialization purposes. No router will have a negative index
+static constexpr int INVALID_PHYSICAL_ROUTER_INDEX = -1;
+
+void setup_noc(const t_arch& arch) {
     // get references to global variables
     auto& device_ctx = g_vpr_ctx.device();
     auto& noc_ctx = g_vpr_ctx.mutable_noc();
@@ -25,17 +26,22 @@ void setup_noc(const t_arch& arch) {
 
     // go through the FPGA grid and find the noc router tiles
     // then store the position
-    identify_and_store_noc_router_tile_positions(device_ctx.grid, noc_router_tiles, arch.noc->noc_router_tile_name);
+    auto noc_router_tiles = identify_and_store_noc_router_tile_positions(device_ctx.grid, arch.noc->noc_router_tile_name);
 
     // check whether the noc topology information provided uses more than the number of available routers in the FPGA
     if (noc_router_tiles.size() < arch.noc->router_list.size()) {
-        VPR_FATAL_ERROR(VPR_ERROR_OTHER, "The Provided NoC topology information in the architecture file has more number of routers than what is available in the FPGA device.");
-    } else if (noc_router_tiles.size() > arch.noc->router_list.size()) // check whether the noc topology information provided is using all the routers in the FPGA
-    {
-        VPR_FATAL_ERROR(VPR_ERROR_OTHER, "The Provided NoC topology information in the architecture file uses less number of routers than what is available in the FPGA device.");
-    } else if (noc_router_tiles.size() == 0) // case where no physical router tiles were found
-    {
-        VPR_FATAL_ERROR(VPR_ERROR_OTHER, "No physical NoC routers were found on the FPGA device. Either the provided name for the physical router tile was incorrect or the FPGA device has no routers.");
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                        "The Provided NoC topology information in the architecture file "
+                        "has more number of routers than what is available in the FPGA device.");
+    } else if (noc_router_tiles.size() > arch.noc->router_list.size()) {
+        // check whether the noc topology information provided is using all the routers in the FPGA
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                        "The Provided NoC topology information in the architecture file "
+                        "uses less number of routers than what is available in the FPGA device.");
+    } else if (noc_router_tiles.empty()) {  // case where no physical router tiles were found
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                        "No physical NoC routers were found on the FPGA device. "
+                        "Either the provided name for the physical router tile was incorrect or the FPGA device has no routers.");
     }
 
     // store the reference to device grid with
@@ -45,8 +51,10 @@ void setup_noc(const t_arch& arch) {
     // generate noc model
     generate_noc(arch, noc_ctx, noc_router_tiles);
 
-    // store the general noc properties
-    noc_ctx.noc_model.set_noc_link_bandwidth(arch.noc->link_bandwidth);
+    /* store the general noc properties
+     * noc_ctx.noc_model.set_noc_link_bandwidth(...) is not called because all
+     * link bandwidths were set when create_noc_links(...) was called.
+     */
     noc_ctx.noc_model.set_noc_link_latency(arch.noc->link_latency);
     noc_ctx.noc_model.set_noc_router_latency(arch.noc->router_latency);
 
@@ -54,25 +62,18 @@ void setup_noc(const t_arch& arch) {
     if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_NOC_MODEL)) {
         noc_ctx.noc_model.echo_noc(getEchoFileName(E_ECHO_NOC_MODEL));
     }
-
-    return;
 }
 
-void identify_and_store_noc_router_tile_positions(const DeviceGrid& device_grid, std::vector<t_noc_router_tile_position>& noc_router_tiles, std::string noc_router_tile_name) {
+std::vector<t_noc_router_tile_position> identify_and_store_noc_router_tile_positions(const DeviceGrid& device_grid,
+                                                                                     std::string_view noc_router_tile_name) {
     const int num_layers = device_grid.get_num_layers();
-    int curr_tile_width;
-    int curr_tile_height;
-    int curr_tile_width_offset;
-    int curr_tile_height_offset;
-    std::string curr_tile_name;
+    const int grid_width = (int)device_grid.width();
+    const int grid_height = (int)device_grid.height();
 
-    double curr_tile_centroid_x;
-    double curr_tile_centroid_y;
+    std::vector<t_noc_router_tile_position> noc_router_tiles;
 
     // go through the device
     for (int layer_num = 0; layer_num < num_layers; layer_num++) {
-        int grid_width = (int)device_grid.width();
-        int grid_height = (int)device_grid.height();
         for (int i = 0; i < grid_width; i++) {
             for (int j = 0; j < grid_height; j++) {
                 // get some information from the current tile
@@ -80,34 +81,39 @@ void identify_and_store_noc_router_tile_positions(const DeviceGrid& device_grid,
                 int width_offset = device_grid.get_width_offset({i, j, layer_num});
                 int height_offset = device_grid.get_height_offset({i, j, layer_num});
 
-                curr_tile_name.assign(type->name);
-                curr_tile_width_offset = width_offset;
-                curr_tile_height_offset = height_offset;
+                std::string_view curr_tile_name = type->name;
+                int curr_tile_width_offset = width_offset;
+                int curr_tile_height_offset = height_offset;
 
-                curr_tile_height = type->height;
-                curr_tile_width = type->width;
+                int curr_tile_height = type->height;
+                int curr_tile_width = type->width;
 
                 /*
                  * Only store the tile position if it is a noc router.
-                 * Additionally, since a router tile can span multiple grid locations, we only add the tile if the height and width offset are zero (this prevents the router from being added multiple times for each grid location it spans).
+                 * Additionally, since a router tile can span multiple grid locations,
+                 * we only add the tile if the height and width offset are zero (this prevents the router from being added multiple times for each grid location it spans).
                  */
-                if (!(noc_router_tile_name.compare(curr_tile_name)) && !curr_tile_width_offset && !curr_tile_height_offset) {
+                if (noc_router_tile_name == curr_tile_name && !curr_tile_width_offset && !curr_tile_height_offset) {
                     // calculating the centroid position of the current tile
-                    curr_tile_centroid_x = (curr_tile_width - 1) / (double)2 + i;
-                    curr_tile_centroid_y = (curr_tile_height - 1) / (double)2 + j;
+                    double curr_tile_centroid_x = (curr_tile_width - 1) / (double)2 + i;
+                    double curr_tile_centroid_y = (curr_tile_height - 1) / (double)2 + j;
 
                     noc_router_tiles.emplace_back(i, j, layer_num, curr_tile_centroid_x, curr_tile_centroid_y);
                 }
             }
         }
     }
+
+    return noc_router_tiles;
 }
 
-void generate_noc(const t_arch& arch, NocContext& noc_ctx, std::vector<t_noc_router_tile_position>& noc_router_tiles) {
-    // refrernces to the noc
+void generate_noc(const t_arch& arch,
+                  NocContext& noc_ctx,
+                  const std::vector<t_noc_router_tile_position>& noc_router_tiles) {
+    // references to the noc
     NocStorage* noc_model = &noc_ctx.noc_model;
     // reference to the noc description
-    const t_noc_inf* noc_info = arch.noc;
+    const t_noc_inf& noc_info = *arch.noc;
 
     // initialize the noc
     noc_model->clear_noc();
@@ -120,26 +126,17 @@ void generate_noc(const t_arch& arch, NocContext& noc_ctx, std::vector<t_noc_rou
 
     // indicate that the NoC has been built, cannot be modified anymore
     noc_model->finished_building_noc();
-
-    return;
 }
 
-void create_noc_routers(const t_noc_inf& noc_info, NocStorage* noc_model, std::vector<t_noc_router_tile_position>& noc_router_tiles) {
+void create_noc_routers(const t_noc_inf& noc_info,
+                        NocStorage* noc_model,
+                        const std::vector<t_noc_router_tile_position>& noc_router_tiles) {
     // keep track of the shortest distance between a user described router (noc description in the arch file) and a physical router on the FPGA
     double shortest_distance;
-    double curr_calculated_distance;
     // stores the index of a physical router within the noc_router_tiles that is closest to a given user described router
     int closest_physical_router;
 
-    // information regarding physical router position
-    double curr_physical_router_pos_x;
-    double curr_physical_router_pos_y;
-
-    // information regarding logical router position
-    double curr_logical_router_position_x;
-    double curr_logical_router_position_y;
-
-    // keep track of the index of each physical router (this helps uniqely identify them)
+    // keep track of the index of each physical router (this helps uniquely identify them)
     int curr_physical_router_index = 0;
 
     // keep track of the ids of the routers that create the case where multiple routers have the same distance to a physical router tile
@@ -147,39 +144,40 @@ void create_noc_routers(const t_noc_inf& noc_info, NocStorage* noc_model, std::v
     int error_case_physical_router_index_2;
 
     // keep track of the router assignments (store the user router id that was assigned to each physical router tile)
-    // this is used in error checking, after determining the closest physical router for a user described router in the arch file, the datastructure below can be used to check if that physical router was already assigned previously
+    // this is used in error checking, after determining the closest physical router for a user described router in the arch file,
+    // the datastructure below can be used to check if that physical router was already assigned previously
     std::vector<int> router_assignments;
     router_assignments.resize(noc_router_tiles.size(), PHYSICAL_ROUTER_NOT_ASSIGNED);
 
     // Below we create all the routers within the NoC //
 
-    // go through each user desctibed router in the arch file and assign it to a physical router on the FPGA
-    for (auto logical_router = noc_info.router_list.begin(); logical_router != noc_info.router_list.end(); logical_router++) {
-        // assign the shortest distance to a large value (this is done so that the first distance calculated and we can replace this)
-        shortest_distance = LLONG_MAX;
-
+    // go through each user described router in the arch file and assign it to a physical router on the FPGA
+    for (const auto& logical_router : noc_info.router_list) {
+        // assign the shortest distance to a large value (this is done so that the first distance calculated, and we can replace this)
+        shortest_distance = std::numeric_limits<double>::max();
         // get position of the current logical router
-        curr_logical_router_position_x = logical_router->device_x_position;
-        curr_logical_router_position_y = logical_router->device_y_position;
+        double curr_logical_router_position_x = logical_router.device_x_position;
+        double curr_logical_router_position_y = logical_router.device_y_position;
 
         closest_physical_router = 0;
 
         // the starting index of the physical router list
         curr_physical_router_index = 0;
 
-        // initialze the router ids that track the error case where two physical router tiles have the same distance to a user described router
-        // we initialize it to a in-valid index, so that it reflects the situation where we never hit this case
+        // initialize the router ids that track the error case where two physical router tiles have the same distance to a user described router
+        // we initialize it to an invalid index, so that it reflects the situation where we never hit this case
         error_case_physical_router_index_1 = INVALID_PHYSICAL_ROUTER_INDEX;
         error_case_physical_router_index_2 = INVALID_PHYSICAL_ROUTER_INDEX;
 
         // determine the physical router tile that is closest to the current user described router in the arch file
-        for (auto physical_router = noc_router_tiles.begin(); physical_router != noc_router_tiles.end(); physical_router++) {
+        for (const auto& physical_router : noc_router_tiles) {
             // get the position of the current physical router tile on the FPGA device
-            curr_physical_router_pos_x = physical_router->tile_centroid_x;
-            curr_physical_router_pos_y = physical_router->tile_centroid_y;
+            double curr_physical_router_pos_x = physical_router.tile_centroid_x;
+            double curr_physical_router_pos_y = physical_router.tile_centroid_y;
 
-            // use euclidean distance to calculate the length between the current user described router and the physical router
-            curr_calculated_distance = sqrt(pow(abs(curr_physical_router_pos_x - curr_logical_router_position_x), 2.0) + pow(abs(curr_physical_router_pos_y - curr_logical_router_position_y), 2.0));
+            // use Euclidean distance to calculate the length between the current user described router and the physical router
+            double curr_calculated_distance = std::hypot(curr_physical_router_pos_x - curr_logical_router_position_x,
+                                                         curr_physical_router_pos_y - curr_logical_router_position_y);
 
             // if the current distance is the same as the previous shortest distance
             if (vtr::isclose(curr_calculated_distance, shortest_distance)) {
@@ -187,8 +185,8 @@ void create_noc_routers(const t_noc_inf& noc_info, NocStorage* noc_model, std::v
                 error_case_physical_router_index_1 = closest_physical_router;
                 error_case_physical_router_index_2 = curr_physical_router_index;
 
-            } else if (curr_calculated_distance < shortest_distance) // case where the current logical router is closest to the physical router tile
-            {
+            // case where the current logical router is closest to the physical router tile
+            } else if (curr_calculated_distance < shortest_distance) {
                 // update the shortest distance and then the closest router
                 shortest_distance = curr_calculated_distance;
                 closest_physical_router = curr_physical_router_index;
@@ -202,32 +200,34 @@ void create_noc_routers(const t_noc_inf& noc_info, NocStorage* noc_model, std::v
         if (error_case_physical_router_index_1 == closest_physical_router) {
             VPR_FATAL_ERROR(VPR_ERROR_OTHER,
                             "Router with ID:'%d' has the same distance to physical router tiles located at position (%d,%d) and (%d,%d). Therefore, no router assignment could be made.",
-                            logical_router->id, noc_router_tiles[error_case_physical_router_index_1].grid_width_position, noc_router_tiles[error_case_physical_router_index_1].grid_height_position,
+                            logical_router.id, noc_router_tiles[error_case_physical_router_index_1].grid_width_position, noc_router_tiles[error_case_physical_router_index_1].grid_height_position,
                             noc_router_tiles[error_case_physical_router_index_2].grid_width_position, noc_router_tiles[error_case_physical_router_index_2].grid_height_position);
         }
 
         // check if the current physical router was already assigned previously, if so then throw an error
         if (router_assignments[closest_physical_router] != PHYSICAL_ROUTER_NOT_ASSIGNED) {
             VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Routers with IDs:'%d' and '%d' are both closest to physical router tile located at (%d,%d) and the physical router could not be assigned multiple times.",
-                            logical_router->id, router_assignments[closest_physical_router], noc_router_tiles[closest_physical_router].grid_width_position,
+                            logical_router.id, router_assignments[closest_physical_router], noc_router_tiles[closest_physical_router].grid_width_position,
                             noc_router_tiles[closest_physical_router].grid_height_position);
         }
 
+        auto it = noc_info.router_latency_overrides.find(logical_router.id);
+        double router_latency = (it == noc_info.router_latency_overrides.end()) ? noc_info.router_latency : it->second;
+
         // at this point, the closest user described router to the current physical router was found
         // so add the router to the NoC
-        noc_model->add_router(logical_router->id,
+        noc_model->add_router(logical_router.id,
                               noc_router_tiles[closest_physical_router].grid_width_position,
                               noc_router_tiles[closest_physical_router].grid_height_position,
-                              noc_router_tiles[closest_physical_router].layer_position);
+                              noc_router_tiles[closest_physical_router].layer_position,
+                              router_latency);
 
         // add the new assignment to the tracker
-        router_assignments[closest_physical_router] = logical_router->id;
+        router_assignments[closest_physical_router] = logical_router.id;
     }
-
-    return;
 }
 
-void create_noc_links(const t_noc_inf* noc_info, NocStorage* noc_model) {
+void create_noc_links(const t_noc_inf& noc_info, NocStorage* noc_model) {
     // the ids used to represent the routers in the NoC are not the same as the ones provided by the user in the arch desc file.
     // while going through the router connections, the user provided router ids are converted and then stored below before being used in the links.
     NocRouterId source_router;
@@ -237,19 +237,27 @@ void create_noc_links(const t_noc_inf* noc_info, NocStorage* noc_model) {
     noc_model->make_room_for_noc_router_link_list();
 
     // go through each router and add its outgoing links to the NoC
-    for (auto router = noc_info->router_list.begin(); router != noc_info->router_list.end(); router++) {
+    for (const auto& router : noc_info.router_list) {
         // get the converted id of the current source router
-        source_router = noc_model->convert_router_id(router->id);
+        source_router = noc_model->convert_router_id(router.id);
 
         // go through all the routers connected to the current one and add links to the noc
-        for (auto conn_router_id = router->connection_list.begin(); conn_router_id != router->connection_list.end(); conn_router_id++) {
+        for (const auto conn_router_id : router.connection_list) {
             // get the converted id of the currently connected sink router
-            sink_router = noc_model->convert_router_id(*conn_router_id);
+            sink_router = noc_model->convert_router_id(conn_router_id);
+
+            // check if this link has an overridden latency
+            auto lat_it = noc_info.link_latency_overrides.find({router.id, conn_router_id});
+            // use the link-specific latency if it has an overridden latency, otherwise use the NoC-wide link latency
+            double link_lat = (lat_it == noc_info.link_latency_overrides.end()) ? noc_info.link_latency : lat_it->second;
+
+            // check if this link has an overridden bandwidth
+            auto bw_it = noc_info.link_bandwidth_overrides.find({router.id, conn_router_id});
+            // use the link-specific bandwidth if it has an overridden bandwidth, otherwise use the NoC-wide link bandwidth
+            double link_bw = (bw_it == noc_info.link_bandwidth_overrides.end()) ? noc_info.link_bandwidth : bw_it->second;
 
             // add the link to the Noc
-            noc_model->add_link(source_router, sink_router);
+            noc_model->add_link(source_router, sink_router, link_bw, link_lat);
         }
     }
-
-    return;
 }

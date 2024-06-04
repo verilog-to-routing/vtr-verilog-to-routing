@@ -1,4 +1,5 @@
 #pragma once
+#include <cstddef>
 #include <iterator>
 #include <memory>
 
@@ -104,15 +105,15 @@ class TimingTags {
 
         //Iterator definition
         template<class T>
-        class Iterator : public std::iterator<std::random_access_iterator_tag, T> {
+        class Iterator {
             friend TimingTags;
             public:
-                using value_type = typename std::iterator<std::random_access_iterator_tag, T>::value_type;
-                using difference_type = typename std::iterator<std::random_access_iterator_tag, T>::difference_type;
-                using pointer = typename std::iterator<std::random_access_iterator_tag, T>::pointer;
-                using reference = typename std::iterator<std::random_access_iterator_tag, T>::reference;
-                using iterator_category = typename std::iterator<std::random_access_iterator_tag, T>::iterator_category;
-            public:
+                using iterator_category = std::random_access_iterator_tag;
+                using difference_type = std::ptrdiff_t;
+                using value_type = T;
+                using pointer = T*;
+                using reference = T&;
+
                 Iterator(): p_(nullptr) {}
                 Iterator(pointer p): p_(p) {}
                 Iterator(const Iterator& other): p_(other.p_) {}
@@ -143,7 +144,7 @@ class TimingTags {
                 friend bool operator>=(Iterator lhs, Iterator rhs) { return lhs.p_ >= rhs.p_; }
                 friend void swap(Iterator lhs, Iterator rhs) { std::swap(lhs.p_, rhs.p_); }
             private:
-                T* p_ = nullptr;
+                pointer p_ = nullptr;
         };
 
     private:

@@ -24,6 +24,7 @@ SRC +=  src/base/io/io.c \
     src/base/io/ioWriteCnf.c \
     src/base/io/ioWriteDot.c \
     src/base/io/ioWriteEqn.c \
+    src/base/io/ioWriteEdgelist.c \
     src/base/io/ioWriteGml.c \
     src/base/io/ioWriteList.c \
     src/base/io/ioWritePla.c \

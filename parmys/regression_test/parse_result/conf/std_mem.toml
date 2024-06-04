@@ -1,0 +1,79 @@
+["SR latches"]
+    regex = "(\$$_SR_[NP][NP]_ \d+)"
+    default = []
+    hide-if = ${default}
+
+["FFs"]
+    regex = "(\$$_FF_ \d+)"
+    default = []
+    hide-if = ${default}
+
+["DFFs"]
+    regex = "(\$$_DFF_[NP]_ \d+)"
+    default = []
+    hide-if = ${default}
+
+["FFs with enable"]
+    regex = "(\$$_DFFE_[NP][NP]_ \d+)"
+    default = []
+    hide-if = ${default}
+
+["FFs with reset"]
+    regex = "(\$$_DFF_[NP][NP][01]_ \d+)"
+    default = []
+    hide-if = ${default}
+
+["FFs with asynchronous reset and enable"]
+    regex = "(\$$_DFFE_[NP][NP][01][NP]_ \d+)"
+    default = []
+    hide-if = ${default}
+
+["FFs with asynchronous load"]
+    regex = "(\$$_ALDFF_[NP][NP]_ \d+)"
+    default = []
+    hide-if = ${default}
+
+["FFs with asynchronous load and enable"]
+    regex = "(\$$_ALDFFE_[NP][NP][NP]_ \d+)"
+    default = []
+    hide-if = ${default}
+
+["FFs with set and reset"]
+    regex = "(\$$_DFFSR_[NP][NP][NP]_ \d+)"
+    default = []
+    hide-if = ${default}
+
+["FFs with asynchronous set and reset and enable"]
+    regex = "(\$$_DFFSRE_[NP][NP][NP][NP]_ \d+)"
+    default = []
+    hide-if = ${default}
+
+["FFs with synchronous reset"]
+    regex = "(\$$_SDFF_[NP][NP][01]_ \d+)"
+    default = []
+    hide-if = ${default}
+
+["FFs with synchronous reset and enable"]
+    regex = "(\$$_SDFFE_[NP][NP][01][NP]_ \d+)"
+    default = []
+    hide-if = ${default}
+
+["FFs with synchronous reset and enable"]
+    regex = "(\$$_SDFFCE_[NP][NP][01][NP]_ \d+)"
+    default = []
+    hide-if = ${default}
+
+["D latches"]
+    regex = "(\$$_DLATCH_[NP]_ \d+)"
+    default = []
+    hide-if = ${default}
+
+["D latches with reset"]
+    regex = "(\$$_DLATCH_[NP][NP][01]_ \d+)"
+    default = []
+    hide-if = ${default}
+
+["D latches with set and reset"]
+    regex = "(\$$_DLATCHSR_[NP][NP][NP]_ \d+)"
+    default = []
+    hide-if = ${default}

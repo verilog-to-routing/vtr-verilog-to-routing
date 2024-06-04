@@ -72,7 +72,7 @@ int Abc_NtkMinimumBase( Abc_Ntk_t * pNtk )
   SeeAlso     []
 
 ***********************************************************************/
-int Abc_NodeMinimumBase( Abc_Obj_t * pNode )
+int Abc_NodeMinimumBase_buggy( Abc_Obj_t * pNode )
 {
     Vec_Str_t * vSupport;
     Vec_Ptr_t * vFanins;
@@ -104,6 +104,72 @@ int Abc_NodeMinimumBase( Abc_Obj_t * pNode )
     Cudd_RecursiveDeref( (DdManager *)pNode->pNtk->pManFunc, bTemp );
     Vec_PtrFree( vFanins );
     Vec_StrFree( vSupport );
+    return 1;
+}
+
+int Abc_NodeMinimumBase( Abc_Obj_t * pNode )
+{
+    DdManager * dd = (DdManager *)pNode->pNtk->pManFunc;
+    DdNode * bTemp, ** pbVars;
+    Vec_Str_t * vSupport;
+    int i, nVars, j, iFanin, iFanin2, k = 0;
+    int ddSize, fDupFanins = 0;
+
+    assert( Abc_NtkIsBddLogic(pNode->pNtk) );
+    assert( Abc_ObjIsNode(pNode) );
+
+    // compute support
+    vSupport = Vec_StrAlloc( 10 );
+    nVars = Abc_NodeSupport( Cudd_Regular(pNode->pData), vSupport, Abc_ObjFaninNum(pNode) );
+    if ( nVars == Abc_ObjFaninNum(pNode) )
+    {
+        Vec_StrFree( vSupport );
+        return 0;
+    }
+
+    // remove unused fanins.
+
+    // By default, every BDD variable stays equivalent to itself.
+    ddSize = Cudd_ReadSize( dd );
+    pbVars = ABC_CALLOC( DdNode *, ddSize );
+    for (i = 0; i < ddSize; i += 1 ) {
+      pbVars[i] = Cudd_bddIthVar( dd, i );
+    }
+    Vec_IntForEachEntry( &pNode->vFanins, iFanin, i )
+    {
+        Abc_Obj_t * pFanin = Abc_NtkObj( pNode->pNtk, iFanin );
+        if ( !Vec_StrEntry(vSupport, i) )
+        {
+            if ( !Vec_IntRemove( &pFanin->vFanouts, pNode->Id ) )
+                printf( "The obj %d is not found among the fanouts of obj %d ...\n", pNode->Id, iFanin );
+            continue;
+        }
+        Vec_IntForEachEntryStop( &pNode->vFanins, iFanin2, j, k )
+            if ( iFanin == iFanin2 )
+                break;
+        fDupFanins |= (int)(j < k);
+        if ( j == k )
+            Vec_IntWriteEntry( &pNode->vFanins, k++, iFanin );
+        else if ( !Vec_IntRemove( &pFanin->vFanouts, pNode->Id ) )
+            printf( "The obj %d is not found among the fanouts of obj %d ...\n", pNode->Id, iFanin );
+
+        // i-th variable becomes equivalent to j-th variable (can be itself)
+        pbVars[i] = Cudd_bddIthVar( dd, j );
+    }
+    Vec_IntShrink( &pNode->vFanins, k );
+
+    // update the function of the node
+    if ( ! Cudd_IsConstant((DdNode *) pNode->pData ) ) {
+      pNode->pData = Cudd_bddVectorCompose( dd, bTemp = (DdNode *)pNode->pData, pbVars );
+      Cudd_Ref( (DdNode *)pNode->pData );
+      Cudd_RecursiveDeref( dd, bTemp );
+    }
+    Vec_StrFree( vSupport );
+    ABC_FREE( pbVars );
+
+    // try again if node had duplicated fanins
+    if ( fDupFanins )
+        Abc_NodeMinimumBase( pNode );
     return 1;
 }
 
@@ -447,7 +513,7 @@ int Abc_NtkEliminate( Abc_Ntk_t * pNtk, int nMaxSize, int fReverse, int fVerbose
         return 0;
     }
     // prepare nodes for sweeping
-    Abc_NtkRemoveDupFanins( pNtk );
+    //Abc_NtkRemoveDupFanins( pNtk );
     Abc_NtkMinimumBase( pNtk );
     Abc_NtkCleanup( pNtk, 0 );
     // get the nodes in the given order
@@ -703,7 +769,7 @@ void Abc_ObjSortInReverseOrder( Abc_Ntk_t * pNtk, Vec_Ptr_t * vNodes )
     vOrder = Abc_NtkDfsReverse( pNtk );
     Vec_PtrForEachEntry( Abc_Obj_t *, vOrder, pNode, i )
         pNode->iTemp = i;
-    Vec_PtrSort( vNodes, (int (*)())Abc_ObjCompareByNumber );
+    Vec_PtrSort( vNodes, (int (*)(const void *, const void *))Abc_ObjCompareByNumber );
     Vec_PtrForEachEntry( Abc_Obj_t *, vOrder, pNode, i )
         pNode->iTemp = 0;
     Vec_PtrFree( vOrder );
@@ -740,7 +806,7 @@ int Abc_NtkEliminateSpecial( Abc_Ntk_t * pNtk, int nMaxSize, int fVerbose )
     }
 
     // prepare nodes for sweeping
-    Abc_NtkRemoveDupFanins( pNtk );
+    //Abc_NtkRemoveDupFanins( pNtk );
     Abc_NtkMinimumBase( pNtk );
     Abc_NtkCleanup( pNtk, 0 );
 

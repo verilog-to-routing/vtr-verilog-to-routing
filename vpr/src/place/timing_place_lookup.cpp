@@ -20,7 +20,7 @@
 #include "globals.h"
 #include "place_and_route.h"
 #include "route_common.h"
-#include "route_timing.h"
+#include "route_net.h"
 #include "route_export.h"
 #include "rr_graph.h"
 #include "timing_place_lookup.h"
@@ -143,6 +143,13 @@ static vtr::NdMatrix<float, 3> compute_delta_delay_model(
     int longest_length,
     bool is_flat);
 
+/**
+ * @brief Use the information in the router lookahead to fill the delay matrix instead of running the router
+ * @param route_profiler
+ * @return The delay matrix that contain the minimum cost between two locations
+ */
+static vtr::NdMatrix<float, 5> compute_simple_delay_model(RouterDelayProfiler& route_profiler);
+
 static bool find_direct_connect_sample_locations(const t_direct_inf* direct,
                                                  t_physical_tile_type_ptr from_type,
                                                  int from_pin,
@@ -188,16 +195,21 @@ std::unique_ptr<PlaceDelayModel> compute_place_delay_model(const t_placer_opts& 
                                                                           router_opts.read_router_lookahead,
                                                                           segment_inf,
                                                                           is_flat);
+
     RouterDelayProfiler route_profiler(net_list, router_lookahead, is_flat);
 
     int longest_length = get_longest_segment_length(segment_inf);
 
     /*now setup and compute the actual arrays */
     std::unique_ptr<PlaceDelayModel> place_delay_model;
-    if (placer_opts.delay_model_type == PlaceDelayModelType::DELTA) {
-        place_delay_model = std::make_unique<DeltaDelayModel>(is_flat);
+    float min_cross_layer_delay = get_min_cross_layer_delay();
+
+    if (placer_opts.delay_model_type == PlaceDelayModelType::SIMPLE) {
+        place_delay_model = std::make_unique<SimpleDelayModel>();
+    } else if (placer_opts.delay_model_type == PlaceDelayModelType::DELTA) {
+        place_delay_model = std::make_unique<DeltaDelayModel>(min_cross_layer_delay, is_flat);
     } else if (placer_opts.delay_model_type == PlaceDelayModelType::DELTA_OVERRIDE) {
-        place_delay_model = std::make_unique<OverrideDelayModel>(is_flat);
+        place_delay_model = std::make_unique<OverrideDelayModel>(min_cross_layer_delay, is_flat);
     } else {
         VTR_ASSERT_MSG(false, "Invalid placer delay model");
     }
@@ -241,9 +253,17 @@ void OverrideDelayModel::compute(
         longest_length,
         is_flat_);
 
-    base_delay_model_ = std::make_unique<DeltaDelayModel>(delays, false);
+    base_delay_model_ = std::make_unique<DeltaDelayModel>(cross_layer_delay_, delays, false);
 
     compute_override_delay_model(route_profiler, router_opts);
+}
+
+void SimpleDelayModel::compute(
+    RouterDelayProfiler& router,
+    const t_placer_opts& /*placer_opts*/,
+    const t_router_opts& /*router_opts*/,
+    int /*longest_length*/) {
+    delays_ = compute_simple_delay_model(router);
 }
 
 /******* File Accessible Functions **********/
@@ -389,7 +409,8 @@ static float route_connection_delay(
                 successfully_routed = route_profiler.calculate_delay(
                     source_rr_node, sink_rr_node,
                     router_opts,
-                    &net_delay_value);
+                    &net_delay_value,
+                    layer_num);
             }
 
             if (successfully_routed) break;
@@ -851,7 +872,7 @@ float delay_reduce(std::vector<float>& delays, e_reducer reducer) {
         auto itr = std::max_element(delays.begin(), delays.end());
         delay = *itr;
     } else if (reducer == e_reducer::MEDIAN) {
-        std::sort(delays.begin(), delays.end());
+        std::stable_sort(delays.begin(), delays.end());
         delay = vtr::median(delays.begin(), delays.end());
     } else if (reducer == e_reducer::ARITHMEAN) {
         delay = vtr::arithmean(delays.begin(), delays.end());
@@ -995,6 +1016,37 @@ static vtr::NdMatrix<float, 3> compute_delta_delay_model(
     fill_impossible_coordinates(delta_delays);
 
     verify_delta_delays(delta_delays);
+
+    return delta_delays;
+}
+
+static vtr::NdMatrix<float, 5> compute_simple_delay_model(RouterDelayProfiler& route_profiler) {
+    const auto& grid = g_vpr_ctx.device().grid;
+    int num_physical_tile_types = static_cast<int>(g_vpr_ctx.device().physical_tile_types.size());
+    // Initializing the delay matrix to [num_physical_types][num_layers][num_layers][width][height]
+    // The second index related to the layer that the source location is on and the third index is for the sink layer
+    vtr::NdMatrix<float, 5> delta_delays({static_cast<unsigned long>(num_physical_tile_types),
+                                          static_cast<unsigned long>(grid.get_num_layers()),
+                                          static_cast<unsigned long>(grid.get_num_layers()),
+                                          grid.width(),
+                                          grid.height()});
+
+    for (int physical_tile_type_idx = 0; physical_tile_type_idx < num_physical_tile_types; ++physical_tile_type_idx) {
+        for (int from_layer = 0; from_layer < grid.get_num_layers(); ++from_layer) {
+            for (int to_layer = 0; to_layer < grid.get_num_layers(); ++to_layer) {
+                for (int dx = 0; dx < static_cast<int>(grid.width()); ++dx) {
+                    for (int dy = 0; dy < static_cast<int>(grid.height()); ++dy) {
+                        float min_delay = route_profiler.get_min_delay(physical_tile_type_idx,
+                                                                       from_layer,
+                                                                       to_layer,
+                                                                       dx,
+                                                                       dy);
+                        delta_delays[physical_tile_type_idx][from_layer][to_layer][dx][dy] = min_delay;
+                    }
+                }
+            }
+        }
+    }
 
     return delta_delays;
 }
@@ -1192,7 +1244,7 @@ void OverrideDelayModel::compute_override_delay_model(
             if (sampled_rr_pairs.count({src_rr, sink_rr})) continue;
 
             float direct_connect_delay = std::numeric_limits<float>::quiet_NaN();
-            bool found_routing_path = route_profiler.calculate_delay(src_rr, sink_rr, router_opts2, &direct_connect_delay);
+            bool found_routing_path = route_profiler.calculate_delay(src_rr, sink_rr, router_opts2, &direct_connect_delay, OPEN);
 
             if (found_routing_path) {
                 set_delay_override(from_type->index, from_pin_class, to_type->index, to_pin_class, direct->x_offset, direct->y_offset, direct_connect_delay);

@@ -1116,6 +1116,36 @@ int If_CutPerformCheck07( If_Man_t * p, unsigned * pTruth, int nVars, int nLeave
     return 0;
 }
 
+/**Function*************************************************************
+
+  Synopsis    []
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+int If_MatchCheck1( If_Man_t * p, unsigned * pTruth, int nVars, int nLeaves, char * pStr )
+{
+    if ( nLeaves < nVars )
+        return 1;
+    assert( nLeaves == nVars );
+    if ( Abc_Tt6Check1( ((word *)pTruth)[0], nLeaves ) )
+        return 1;
+    return 0;
+}
+int If_MatchCheck2( If_Man_t * p, unsigned * pTruth, int nVars, int nLeaves, char * pStr )
+{
+    if ( nLeaves < nVars )
+        return 1;
+    assert( nLeaves == nVars );
+    if ( Abc_Tt6Check2( ((word *)pTruth)[0], nLeaves ) )
+        return 1;
+    return 0;
+}
+
 ////////////////////////////////////////////////////////////////////////
 ///                       END OF FILE                                ///
 ////////////////////////////////////////////////////////////////////////

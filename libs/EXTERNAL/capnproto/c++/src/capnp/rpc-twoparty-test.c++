@@ -147,6 +147,7 @@ TEST(TwoPartyNetwork, Basic) {
   clock.increment(1 * kj::SECONDS);
 
   KJ_EXPECT(network.getCurrentQueueCount() == 1);
+  KJ_EXPECT(network.getCurrentQueueSize() % sizeof(word) == 0);
   KJ_EXPECT(network.getCurrentQueueSize() > 0);
   KJ_EXPECT(network.getOutgoingMessageWaitTime() == 1 * kj::SECONDS);
   size_t oldSize = network.getCurrentQueueSize();
@@ -158,6 +159,7 @@ TEST(TwoPartyNetwork, Basic) {
   auto promise1 = request1.send();
 
   KJ_EXPECT(network.getCurrentQueueCount() == 2);
+  KJ_EXPECT(network.getCurrentQueueSize() % sizeof(word) == 0);
   KJ_EXPECT(network.getCurrentQueueSize() > oldSize);
   KJ_EXPECT(network.getOutgoingMessageWaitTime() == 1 * kj::SECONDS);
   oldSize = network.getCurrentQueueSize();
@@ -167,6 +169,7 @@ TEST(TwoPartyNetwork, Basic) {
   auto promise2 = request2.send();
 
   KJ_EXPECT(network.getCurrentQueueCount() == 3);
+  KJ_EXPECT(network.getCurrentQueueSize() % sizeof(word) == 0);
   KJ_EXPECT(network.getCurrentQueueSize() > oldSize);
   oldSize = network.getCurrentQueueSize();
 
@@ -184,6 +187,7 @@ TEST(TwoPartyNetwork, Basic) {
   EXPECT_EQ(0, callCount);
 
   KJ_EXPECT(network.getCurrentQueueCount() == 4);
+  KJ_EXPECT(network.getCurrentQueueSize() % sizeof(word) == 0);
   KJ_EXPECT(network.getCurrentQueueSize() > oldSize);
   // Oldest message is now 2 seconds old
   KJ_EXPECT(network.getOutgoingMessageWaitTime() == 2 * kj::SECONDS);
@@ -213,6 +217,18 @@ TEST(TwoPartyNetwork, Basic) {
   // Now nothing is queued.
   KJ_EXPECT(network.getCurrentQueueCount() == 0);
   KJ_EXPECT(network.getCurrentQueueSize() == 0);
+
+  // Ensure that sending a message after not sending one for some time
+  // doesn't return incorrect waitTime statistics.
+  clock.increment(10 * kj::SECONDS);
+
+  auto request4 = client.fooRequest();
+  request4.setI(123);
+  request4.setJ(true);
+  auto promise4 = request4.send();
+
+  KJ_EXPECT(network.getCurrentQueueCount() == 1);
+  KJ_EXPECT(network.getOutgoingMessageWaitTime() == 0 * kj::SECONDS);
 }
 
 TEST(TwoPartyNetwork, Pipelining) {
@@ -390,8 +406,10 @@ TEST(TwoPartyNetwork, Abort) {
     msg->send();
   }
 
-  auto reply = KJ_ASSERT_NONNULL(conn->receiveIncomingMessage().wait(ioContext.waitScope));
-  EXPECT_EQ(rpc::Message::ABORT, reply->getBody().getAs<rpc::Message>().which());
+  {
+    auto reply = KJ_ASSERT_NONNULL(conn->receiveIncomingMessage().wait(ioContext.waitScope));
+    EXPECT_EQ(rpc::Message::ABORT, reply->getBody().getAs<rpc::Message>().which());
+  }
 
   EXPECT_TRUE(conn->receiveIncomingMessage().wait(ioContext.waitScope) == nullptr);
 }
@@ -720,6 +738,85 @@ KJ_TEST("Streaming over RPC") {
   }
 }
 
+KJ_TEST("Streaming over a chain of local and remote RPC calls") {
+  // This test verifies that a local RPC call that eventually resolves to a remote RPC call will
+  // still support streaming calls over the remote connection.
+
+  kj::EventLoop loop;
+  kj::WaitScope waitScope(loop);
+
+  // Set up a local server that will eventually delegate requests to a remote server.
+  auto localPaf = kj::newPromiseAndFulfiller<test::TestStreaming::Client>();
+  test::TestStreaming::Client promisedClient(kj::mv(localPaf.promise));
+
+  uint count = 0;
+  auto req = promisedClient.doStreamIRequest();
+  req.setI(++count);
+  auto promise = req.send();
+
+  // Expect streaming request to be blocked on promised client.
+  KJ_EXPECT(!promise.poll(waitScope));
+
+  // Set up a remote server with a flow control window for streaming.
+  auto pipe = kj::newTwoWayPipe();
+
+  size_t window = 1024;
+  size_t clientWritten = 0;
+  size_t serverWritten = 0;
+
+  pipe.ends[0] = kj::heap<MockSndbufStream>(kj::mv(pipe.ends[0]), window, clientWritten);
+  pipe.ends[1] = kj::heap<MockSndbufStream>(kj::mv(pipe.ends[1]), window, serverWritten);
+
+  auto remotePaf = kj::newPromiseAndFulfiller<test::TestStreaming::Client>();
+  test::TestStreaming::Client serverCap(kj::mv(remotePaf.promise));
+
+  TwoPartyClient tpClient(*pipe.ends[0]);
+  TwoPartyClient tpServer(*pipe.ends[1], kj::mv(serverCap), rpc::twoparty::Side::SERVER);
+
+  auto clientCap = tpClient.bootstrap().castAs<test::TestStreaming>();
+
+  // Expect streaming request to be unblocked by fulfilling promised client with remote server.
+  localPaf.fulfiller->fulfill(kj::mv(clientCap));
+  KJ_EXPECT(promise.poll(waitScope));
+
+  // Send stream requests until we can't anymore.
+  while (promise.poll(waitScope)) {
+    promise.wait(waitScope);
+
+    auto req = promisedClient.doStreamIRequest();
+    req.setI(++count);
+    promise = req.send();
+    KJ_ASSERT(count < 1000);
+  }
+
+  // Expect several stream requests to have fit in the flow control window.
+  KJ_EXPECT(count > 5);
+
+  auto finishReq = promisedClient.finishStreamRequest();
+  auto finishPromise = finishReq.send();
+  KJ_EXPECT(!finishPromise.poll(waitScope));
+
+  // Finish calls on server
+  auto ownServer = kj::heap<TestStreamingImpl>();
+  auto& server = *ownServer;
+  remotePaf.fulfiller->fulfill(kj::mv(ownServer));
+  KJ_EXPECT(!promise.poll(waitScope));
+
+  uint countReceived = 0;
+  for (uint i = 0; i < count; i++) {
+    KJ_EXPECT(server.iSum == ++countReceived);
+    server.iSum = 0;
+    KJ_ASSERT_NONNULL(server.fulfiller)->fulfill();
+
+    if (i < count - 1) {
+      KJ_EXPECT(!finishPromise.poll(waitScope));
+    }
+  }
+
+  KJ_EXPECT(finishPromise.poll(waitScope));
+  finishPromise.wait(waitScope);
+}
+
 KJ_TEST("Streaming over RPC then unwrap with CapabilitySet") {
   kj::EventLoop loop;
   kj::WaitScope waitScope(loop);
@@ -889,6 +986,284 @@ KJ_TEST("write error propagates to read error") {
     KJ_ASSERT(promise.poll(waitScope));
     promise.wait(waitScope);
   }
+}
+
+class TestStreamingCancellationBug final: public test::TestStreaming::Server {
+public:
+  uint iSum = 0;
+  kj::Maybe<kj::Own<kj::PromiseFulfiller<void>>> fulfiller;
+
+  kj::Promise<void> doStreamI(DoStreamIContext context) override {
+    auto paf = kj::newPromiseAndFulfiller<void>();
+    fulfiller = kj::mv(paf.fulfiller);
+    return paf.promise.then([this,context]() mutable {
+      // Don't count the sum until here so we actually detect if the call is canceled.
+      iSum += context.getParams().getI();
+    });
+  }
+
+  kj::Promise<void> finishStream(FinishStreamContext context) override {
+    auto results = context.getResults();
+    results.setTotalI(iSum);
+    return kj::READY_NOW;
+  }
+};
+
+KJ_TEST("Streaming over RPC no premature cancellation when client dropped") {
+  kj::EventLoop loop;
+  kj::WaitScope waitScope(loop);
+
+  auto pipe = kj::newTwoWayPipe();
+
+  auto ownServer = kj::heap<TestStreamingCancellationBug>();
+  auto& server = *ownServer;
+  test::TestStreaming::Client serverCap = kj::mv(ownServer);
+
+  TwoPartyClient tpClient(*pipe.ends[0]);
+  TwoPartyClient tpServer(*pipe.ends[1], kj::mv(serverCap), rpc::twoparty::Side::SERVER);
+
+  auto client = tpClient.bootstrap().castAs<test::TestStreaming>();
+
+  kj::Promise<void> promise1 = nullptr, promise2 = nullptr;
+
+  {
+    auto req = client.doStreamIRequest();
+    req.setI(123);
+    promise1 = req.send();
+  }
+  {
+    auto req = client.doStreamIRequest();
+    req.setI(456);
+    promise2 = req.send();
+  }
+
+  auto finishPromise = client.finishStreamRequest().send();
+
+  KJ_EXPECT(server.iSum == 0);
+
+  // Drop the client. This shouldn't cause a problem for the already-running RPCs.
+  { auto drop = kj::mv(client); }
+
+  while (!finishPromise.poll(waitScope)) {
+    KJ_ASSERT_NONNULL(server.fulfiller)->fulfill();
+  }
+
+  finishPromise.wait(waitScope);
+  KJ_EXPECT(server.iSum == 579);
+}
+
+KJ_TEST("Dropping capability during call doesn't destroy server") {
+  class TestInterfaceImpl final: public test::TestInterface::Server {
+    // An object which increments a count in the constructor and decrements it in the destructor,
+    // to detect when it is destroyed. The object's foo() method also sets a fulfiller to use to
+    // cause the method to complete.
+  public:
+    TestInterfaceImpl(uint& count, kj::Maybe<kj::Own<kj::PromiseFulfiller<void>>>& fulfillerSlot)
+        : count(count), fulfillerSlot(fulfillerSlot) { ++count; }
+    ~TestInterfaceImpl() noexcept(false) { --count; }
+
+    kj::Promise<void> foo(FooContext context) override {
+      auto paf = kj::newPromiseAndFulfiller<void>();
+      fulfillerSlot = kj::mv(paf.fulfiller);
+      return kj::mv(paf.promise);
+    }
+
+  private:
+    uint& count;
+    kj::Maybe<kj::Own<kj::PromiseFulfiller<void>>>& fulfillerSlot;
+  };
+
+  class TestBootstrapImpl final: public test::TestMoreStuff::Server {
+    // Bootstrap object which just vends instances of `TestInterfaceImpl`.
+  public:
+    TestBootstrapImpl(uint& count, kj::Maybe<kj::Own<kj::PromiseFulfiller<void>>>& fulfillerSlot)
+        : count(count), fulfillerSlot(fulfillerSlot) {}
+
+    kj::Promise<void> getHeld(GetHeldContext context) override {
+      context.initResults().setCap(kj::heap<TestInterfaceImpl>(count, fulfillerSlot));
+      return kj::READY_NOW;
+    }
+
+  private:
+    uint& count;
+    kj::Maybe<kj::Own<kj::PromiseFulfiller<void>>>& fulfillerSlot;
+  };
+
+  kj::EventLoop loop;
+  kj::WaitScope waitScope(loop);
+  auto pipe = kj::newTwoWayPipe();
+
+  uint count = 0;
+  kj::Maybe<kj::Own<kj::PromiseFulfiller<void>>> fulfillerSlot;
+  test::TestMoreStuff::Client bootstrap = kj::heap<TestBootstrapImpl>(count, fulfillerSlot);
+
+  TwoPartyClient tpClient(*pipe.ends[0]);
+  TwoPartyClient tpServer(*pipe.ends[1], kj::mv(bootstrap), rpc::twoparty::Side::SERVER);
+
+  auto cap = tpClient.bootstrap().castAs<test::TestMoreStuff>().getHeldRequest().send().getCap();
+
+  waitScope.poll();
+  auto promise = cap.fooRequest().send();
+  KJ_EXPECT(!promise.poll(waitScope));
+  KJ_EXPECT(count == 1);
+  KJ_EXPECT(fulfillerSlot != nullptr);
+
+  // Dropping the capability should not destroy the server as long as the call is still
+  // outstanding.
+  {auto drop = kj::mv(cap);}
+
+  KJ_EXPECT(!promise.poll(waitScope));
+  KJ_EXPECT(count == 1);
+
+  // Cancelling the call still should not destroy the server because the call is not marked to
+  // allow cancellation. So the call should keep running.
+  {auto drop = kj::mv(promise);}
+
+  waitScope.poll();
+  KJ_EXPECT(count == 1);
+
+  // When the call completes, only then should the server be dropped.
+  KJ_ASSERT_NONNULL(fulfillerSlot)->fulfill();
+
+  waitScope.poll();
+  KJ_EXPECT(count == 0);
+}
+
+RemotePromise<test::TestCallOrder::GetCallSequenceResults> getCallSequence(
+    test::TestCallOrder::Client& client, uint expected) {
+  auto req = client.getCallSequenceRequest();
+  req.setExpected(expected);
+  return req.send();
+}
+
+KJ_TEST("Two-hop embargo") {
+  // Copied from `TEST(Rpc, Embargo)` in `rpc-test.c++`, adapted to involve a two-hop path through
+  // a proxy. This tests what happens when disembargoes on multiple hops are happening in parallel.
+
+  kj::EventLoop loop;
+  kj::WaitScope waitScope(loop);
+
+  int callCount = 0, handleCount = 0;
+
+  // Set up two two-party RPC connections in series. The middle node just proxies requests through.
+  auto frontPipe = kj::newTwoWayPipe();
+  auto backPipe = kj::newTwoWayPipe();
+  TwoPartyClient tpClient(*frontPipe.ends[0]);
+  TwoPartyClient proxyBack(*backPipe.ends[0]);
+  TwoPartyClient proxyFront(*frontPipe.ends[1], proxyBack.bootstrap(), rpc::twoparty::Side::SERVER);
+  TwoPartyClient tpServer(*backPipe.ends[1], kj::heap<TestMoreStuffImpl>(callCount, handleCount),
+      rpc::twoparty::Side::SERVER);
+
+  // Perform some logic that does a bunch of promise pipelining, including passing a capability
+  // from the client to the server and back to the client, and making promise-pipelined calls on
+  // that capability. This should exercise the promise resolution and disembargo code.
+  auto client = tpClient.bootstrap().castAs<test::TestMoreStuff>();
+
+  auto cap = test::TestCallOrder::Client(kj::heap<TestCallOrderImpl>());
+
+  auto earlyCall = client.getCallSequenceRequest().send();
+
+  auto echoRequest = client.echoRequest();
+  echoRequest.setCap(cap);
+  auto echo = echoRequest.send();
+
+  auto pipeline = echo.getCap();
+
+  auto call0 = getCallSequence(pipeline, 0);
+  auto call1 = getCallSequence(pipeline, 1);
+
+  earlyCall.wait(waitScope);
+
+  auto call2 = getCallSequence(pipeline, 2);
+
+  auto resolved = echo.wait(waitScope).getCap();
+
+  auto call3 = getCallSequence(pipeline, 3);
+  auto call4 = getCallSequence(pipeline, 4);
+  auto call5 = getCallSequence(pipeline, 5);
+
+  EXPECT_EQ(0, call0.wait(waitScope).getN());
+  EXPECT_EQ(1, call1.wait(waitScope).getN());
+  EXPECT_EQ(2, call2.wait(waitScope).getN());
+  EXPECT_EQ(3, call3.wait(waitScope).getN());
+  EXPECT_EQ(4, call4.wait(waitScope).getN());
+  EXPECT_EQ(5, call5.wait(waitScope).getN());
+}
+
+class TestCallOrderImplAsPromise final: public test::TestCallOrder::Server {
+  // This is an implementation of TestCallOrder that presents itself as a promise by implementing
+  // `shortenPath()`, although it never resolves to anything (`shortenPath()` never completes).
+  // This tests deeper code paths in promise resolution and embargo code.
+public:
+  template <typename... Params>
+  TestCallOrderImplAsPromise(Params&&... params): inner(kj::fwd<Params>(params)...) {}
+
+  kj::Promise<void> getCallSequence(GetCallSequenceContext context) override {
+    return inner.getCallSequence(context);
+  }
+
+  kj::Maybe<kj::Promise<Capability::Client>> shortenPath() override {
+    // Make this object appear to be a promise.
+    return kj::Promise<Capability::Client>(kj::NEVER_DONE);
+  }
+
+private:
+  TestCallOrderImpl inner;
+};
+
+KJ_TEST("Two-hop embargo") {
+  // Same as above, but the eventual resolution is itself a promise. This verifies that
+  // handleDisembargo() only waits for the target to resolve back to the capability that the
+  // disembargo should reflect to, but not beyond that.
+
+  kj::EventLoop loop;
+  kj::WaitScope waitScope(loop);
+
+  int callCount = 0, handleCount = 0;
+
+  // Set up two two-party RPC connections in series. The middle node just proxies requests through.
+  auto frontPipe = kj::newTwoWayPipe();
+  auto backPipe = kj::newTwoWayPipe();
+  TwoPartyClient tpClient(*frontPipe.ends[0]);
+  TwoPartyClient proxyBack(*backPipe.ends[0]);
+  TwoPartyClient proxyFront(*frontPipe.ends[1], proxyBack.bootstrap(), rpc::twoparty::Side::SERVER);
+  TwoPartyClient tpServer(*backPipe.ends[1], kj::heap<TestMoreStuffImpl>(callCount, handleCount),
+      rpc::twoparty::Side::SERVER);
+
+  // Perform some logic that does a bunch of promise pipelining, including passing a capability
+  // from the client to the server and back to the client, and making promise-pipelined calls on
+  // that capability. This should exercise the promise resolution and disembargo code.
+  auto client = tpClient.bootstrap().castAs<test::TestMoreStuff>();
+
+  auto cap = test::TestCallOrder::Client(kj::heap<TestCallOrderImplAsPromise>());
+
+  auto earlyCall = client.getCallSequenceRequest().send();
+
+  auto echoRequest = client.echoRequest();
+  echoRequest.setCap(cap);
+  auto echo = echoRequest.send();
+
+  auto pipeline = echo.getCap();
+
+  auto call0 = getCallSequence(pipeline, 0);
+  auto call1 = getCallSequence(pipeline, 1);
+
+  earlyCall.wait(waitScope);
+
+  auto call2 = getCallSequence(pipeline, 2);
+
+  auto resolved = echo.wait(waitScope).getCap();
+
+  auto call3 = getCallSequence(pipeline, 3);
+  auto call4 = getCallSequence(pipeline, 4);
+  auto call5 = getCallSequence(pipeline, 5);
+
+  EXPECT_EQ(0, call0.wait(waitScope).getN());
+  EXPECT_EQ(1, call1.wait(waitScope).getN());
+  EXPECT_EQ(2, call2.wait(waitScope).getN());
+  EXPECT_EQ(3, call3.wait(waitScope).getN());
+  EXPECT_EQ(4, call4.wait(waitScope).getN());
+  EXPECT_EQ(5, call5.wait(waitScope).getN());
 }
 
 }  // namespace

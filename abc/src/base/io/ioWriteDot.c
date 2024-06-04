@@ -100,7 +100,7 @@ void Io_WriteDotNtk( Abc_Ntk_t * pNtk, Vec_Ptr_t * vNodes, Vec_Ptr_t * vNodesSho
     // transform logic functions from BDD to SOP
     if ( (fHasBdds = Abc_NtkIsBddLogic(pNtk)) )
     {
-        if ( !Abc_NtkBddToSop(pNtk, -1, ABC_INFINITY) )
+        if ( !Abc_NtkBddToSop(pNtk, -1, ABC_INFINITY, 1) )
         {
             printf( "Io_WriteDotNtk(): Converting to SOPs has failed.\n" );
             return;
@@ -463,7 +463,7 @@ void Io_WriteDotSeq( Abc_Ntk_t * pNtk, Vec_Ptr_t * vNodes, Vec_Ptr_t * vNodesSho
     // transform logic functions from BDD to SOP
     if ( (fHasBdds = Abc_NtkIsBddLogic(pNtk)) )
     {
-        if ( !Abc_NtkBddToSop(pNtk, -1, ABC_INFINITY) )
+        if ( !Abc_NtkBddToSop(pNtk, -1, ABC_INFINITY, 1) )
         {
             printf( "Io_WriteDotNtk(): Converting to SOPs has failed.\n" );
             return;

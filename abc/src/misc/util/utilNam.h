@@ -53,6 +53,8 @@ typedef struct Abc_Nam_t_           Abc_Nam_t;
 extern Abc_Nam_t *     Abc_NamStart( int nObjs, int nAveSize );
 extern void            Abc_NamStop( Abc_Nam_t * p );
 extern void            Abc_NamPrint( Abc_Nam_t * p, char * pFileName );
+extern void            Abc_NamSave( Abc_Nam_t * p, char * pFileName );
+extern Abc_Nam_t *     Abc_NamLoad( char * pFileName );
 extern Abc_Nam_t *     Abc_NamRef( Abc_Nam_t * p );
 extern void            Abc_NamDeref( Abc_Nam_t * p );
 extern int             Abc_NamObjNumMax( Abc_Nam_t * p );

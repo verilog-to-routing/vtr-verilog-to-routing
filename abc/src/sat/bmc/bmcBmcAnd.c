@@ -711,7 +711,7 @@ int Gia_ManBmcPerform_Unr( Gia_Man_t * pGia, Bmc_AndPar_t * pPars )
     if ( pPars->fDumpFrames )
     {
         p->pFrames = Gia_ManCleanup( p->pFrames );
-        Gia_AigerWrite( p->pFrames, "frames.aig", 0, 0 );
+        Gia_AigerWrite( p->pFrames, "frames.aig", 0, 0, 0 );
         printf( "Dumped unfolded frames into file \"frames.aig\".\n" );
         Gia_ManStop( p->pFrames );
     }
@@ -793,7 +793,7 @@ int Gia_ManBmcPerform_old_cnf( Gia_Man_t * pGia, Bmc_AndPar_t * pPars )
         Gia_ManPrintStats( p->pFrames, NULL );
     if ( pPars->fDumpFrames )
     {
-        Gia_AigerWrite( p->pFrames, "frames.aig", 0, 0 );
+        Gia_AigerWrite( p->pFrames, "frames.aig", 0, 0, 0 );
         printf( "Dumped unfolded frames into file \"frames.aig\".\n" );
     }
     for ( f = 0; f < nFramesMax; f++ )
@@ -977,7 +977,7 @@ int Gia_ManBmcPerformInt( Gia_Man_t * pGia, Bmc_AndPar_t * pPars )
         Gia_ManPrintStats( p->pFrames, NULL );
     if ( pPars->fDumpFrames )
     {
-        Gia_AigerWrite( p->pFrames, "frames.aig", 0, 0 );
+        Gia_AigerWrite( p->pFrames, "frames.aig", 0, 0, 0 );
         printf( "Dumped unfolded frames into file \"frames.aig\".\n" );
     }
     if ( pPars->fUseOldCnf )

@@ -96,8 +96,8 @@ int Abc_NtkRetimeMinDelayTry( Abc_Ntk_t * pNtk, int nDelayLim, int fForward, int
         }
     }
 
-if ( fVerbose && !fInitial )
-    printf( "Performing analysis:\n" );
+    if ( fVerbose && !fInitial )
+        printf( "Performing analysis:\n" );
     // find the best iteration
     DelayBest = ABC_INFINITY; IterBest = 0; LatchesBest = Abc_NtkLatchNum(pNtk);
     vCritical = Vec_PtrAlloc( 100 );
@@ -123,7 +123,7 @@ if ( fVerbose && !fInitial )
         // quit after timing analysis
         if ( i == nIterLimit )
             break;
-        // skip if 10 interations did not give improvement
+        // skip if 10 iterations did not give improvement
         if ( i - IterBest > 20 )
             break;
         // skip if delay limit is reached
@@ -150,9 +150,9 @@ if ( fVerbose && !fInitial )
             Vec_IntFree( vValues );
         }
     }
-if ( fVerbose && !fInitial )
-    printf( "%s : Starting delay = %3d.  Final delay = %3d.  IterBest = %2d (out of %2d).\n", 
-        fForward? "Forward " : "Backward", DelayStart, DelayBest, IterBest, nIterLimit );
+    if ( fVerbose && !fInitial )
+        printf( "%s : Starting delay = %3d.  Final delay = %3d.  IterBest = %2d (out of %2d).\n",
+            fForward? "Forward " : "Backward", DelayStart, DelayBest, IterBest, nIterLimit );
     *pIterBest = (nIterLimit == 1) ? 1 : IterBest;
     return DelayBest;
 }

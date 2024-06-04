@@ -97,6 +97,8 @@ static void Mini_LutPush( Mini_Lut_t * p, int nVars, int * pVars, unsigned * pTr
             Mini_LutGrow( p, 2 * p->nCap );
     }
     for ( i = 0; i < nVars; i++ )
+        assert( pVars[i] >= 0 && pVars[i] < p->nSize );
+    for ( i = 0; i < nVars; i++ )
         p->pArray[p->LutSize * p->nSize + i] = pVars[i];
     for ( ; i < p->LutSize; i++ )
         p->pArray[p->LutSize * p->nSize + i] = MINI_LUT_NULL;
@@ -177,7 +179,37 @@ static void Mini_LutPrintStats( Mini_Lut_t * p )
     nNodes = 0;
     Mini_LutForEachNode( p, i )
         nNodes++;
-    printf( "PI = %d. PO = %d. LUT = %d.\n", nPis, nPos, nNodes );
+    printf( "PI = %d. PO = %d. LUT = %d. FF = %d.\n", nPis, nPos, nNodes, p->nRegs );
+}
+static void Mini_LutPrint( Mini_Lut_t * p )
+{
+    int i, k, Fan;
+    printf( "MiniLUT statistics: " );
+    Mini_LutPrintStats( p );
+    printf( "Printout of nodes:\n" );
+    for ( i = 0; i < p->nSize; i++ )
+    {
+        printf( "%6d : ", i );
+        if ( Mini_LutNodeIsConst(p, i) )
+            printf( "Const%d", i );
+        else if ( Mini_LutNodeIsPi(p, i) )
+            printf( "PI" );
+        else if ( Mini_LutNodeIsPo(p, i) )
+            printf( "PO" );
+        else if ( Mini_LutNodeIsNode(p, i) )
+        {
+            printf( "LUT%d  Fanins:", p->LutSize );
+            Mini_LutForEachFanin( p, i, Fan, k )
+                printf( " %6d", Fan );
+            while ( k++ < p->LutSize )
+                printf( "       " );
+            printf( "   Function: " );
+            for ( k = 31; k >= 0; k-- )
+                printf( "%c", '0' + ((p->pTruths[i] >> k) & 1) );
+        }
+        printf( "\n" );
+    }
+    printf( "End of printout.\n" );
 }
 
 // serialization

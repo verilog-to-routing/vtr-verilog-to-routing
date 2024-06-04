@@ -205,7 +205,7 @@ Abc_Obj_t * Io_ReadDsd_rec( Abc_Ntk_t * pNtk, char * pCur, char * pSop )
         pEnd++;
     if ( *pEnd != '(' )
     {
-        printf( "Cannot find the end of hexidecimal truth table.\n" );
+        printf( "Cannot find the end of hexadecimal truth table.\n" );
         return NULL;
     }
 

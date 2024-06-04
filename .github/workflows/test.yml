@@ -18,6 +18,8 @@ jobs:
     # Prevents from running on forks where no custom runners are available
     if: ${{ github.repository_owner == 'verilog-to-routing' }}
 
+    timeout-minutes: 420
+    
     container: ubuntu:jammy
 
     runs-on: [self-hosted, Linux, X64]
@@ -26,29 +28,34 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - {test: "vtr_reg_nightly_test1",      cores: "16", options: "",          cmake: "",                                                                               extra_pkgs: ""}
-          - {test: "vtr_reg_nightly_test1_odin", cores: "16", options: "",          cmake: "-DWITH_PARMYS=OFF -DWITH_ODIN=ON",                                               extra_pkgs: ""}
-          - {test: "vtr_reg_nightly_test2",      cores: "16", options: "",          cmake: "",                                                                               extra_pkgs: ""}
-          - {test: "vtr_reg_nightly_test2_odin", cores: "16", options: "",          cmake: "-DWITH_PARMYS=OFF -DWITH_ODIN=ON",                                               extra_pkgs: "" }
-          - {test: "vtr_reg_nightly_test3",      cores: "16", options: "",          cmake: "",                                                                               extra_pkgs: ""}
-          - {test: "vtr_reg_nightly_test3_odin", cores: "16", options: "",          cmake: "-DWITH_PARMYS=OFF -DWITH_ODIN=ON",                                               extra_pkgs: ""}
-          - {test: "vtr_reg_nightly_test4",      cores: "16", options: "",          cmake: "",                                                                               extra_pkgs: "" }
-          - {test: "vtr_reg_nightly_test4_odin", cores: "16", options: "",          cmake: "-DWITH_PARMYS=OFF -DWITH_ODIN=ON",                                               extra_pkgs: "" }
-          - {test: "vtr_reg_nightly_test5",      cores: "16", options: "",          cmake: "",                                                                               extra_pkgs: ""}
-          - {test: "vtr_reg_nightly_test6",      cores: "16", options: "",          cmake: "",                                                                               extra_pkgs: ""}
-          - {test: "vtr_reg_parmys",             cores: "16", options: "",          cmake: "",                                                                               extra_pkgs: "" }
-          - {test: "vtr_reg_strong",             cores: "16", options: "",          cmake: "-DVTR_ASSERT_LEVEL=3",                                                           extra_pkgs: "libeigen3-dev"}
-          - {test: "vtr_reg_strong_odin",        cores: "16", options: "",          cmake: "-DVTR_ASSERT_LEVEL=3 -DWITH_PARMYS=OFF -DWITH_ODIN=ON",                          extra_pkgs: "libeigen3-dev"}
-          - {test: "vtr_reg_strong_odin",        cores: "16", options: "-skip_qor", cmake: "-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=ON -DWITH_PARMYS=OFF -DWITH_ODIN=ON", extra_pkgs: "libeigen3-dev"}
-          - {test: "vtr_reg_system_verilog",     cores: "16", options: "",          cmake: "-DYOSYS_F4PGA_PLUGINS=ON",                                                       extra_pkgs: ""}
-          - {test: "odin_reg_strong",            cores: "16", options: "",          cmake: "-DWITH_PARMYS=OFF -DWITH_ODIN=ON",                                               extra_pkgs: ""}
+          - {test: "vtr_reg_nightly_test1",      cores: "16", options: "",          cmake: "",                                                             extra_pkgs: ""}
+          - {test: "vtr_reg_nightly_test1_odin", cores: "16", options: "",          cmake: "-DWITH_ODIN=ON",                                               extra_pkgs: ""}
+          - {test: "vtr_reg_nightly_test2",      cores: "16", options: "",          cmake: "",                                                             extra_pkgs: ""}
+          - {test: "vtr_reg_nightly_test2_odin", cores: "16", options: "",          cmake: "-DWITH_ODIN=ON",                                               extra_pkgs: ""}
+          - {test: "vtr_reg_nightly_test3",      cores: "16", options: "",          cmake: "",                                                             extra_pkgs: ""}
+          - {test: "vtr_reg_nightly_test3_odin", cores: "16", options: "",          cmake: "-DWITH_ODIN=ON",                                               extra_pkgs: ""}
+          - {test: "vtr_reg_nightly_test4",      cores: "16", options: "",          cmake: "",                                                             extra_pkgs: ""}
+          - {test: "vtr_reg_nightly_test4_odin", cores: "16", options: "",          cmake: "-DWITH_ODIN=ON",                                               extra_pkgs: ""}
+          - {test: "vtr_reg_nightly_test5",      cores: "16", options: "",          cmake: "",                                                             extra_pkgs: ""}
+          - {test: "vtr_reg_nightly_test6",      cores: "16", options: "",          cmake: "",                                                             extra_pkgs: ""}
+          - {test: "vtr_reg_nightly_test7",      cores: "16", options: "",          cmake: "",                                                             extra_pkgs: ""}
+          - {test: "vtr_reg_strong",             cores: "16", options: "",          cmake: "-DVTR_ASSERT_LEVEL=3",                                         extra_pkgs: "libeigen3-dev"}
+          - {test: "vtr_reg_strong_odin",        cores: "16", options: "",          cmake: "-DVTR_ASSERT_LEVEL=3 -DWITH_ODIN=ON",                          extra_pkgs: "libeigen3-dev"}
+          - {test: "vtr_reg_strong_odin",        cores: "16", options: "-skip_qor", cmake: "-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=ON -DWITH_ODIN=ON", extra_pkgs: "libeigen3-dev"}
+          - {test: "vtr_reg_system_verilog",     cores: "16", options: "",          cmake: "-DYOSYS_F4PGA_PLUGINS=ON",                                     extra_pkgs: ""}
+          - {test: "odin_reg_strong",            cores: "16", options: "",          cmake: "-DWITH_ODIN=ON",                                               extra_pkgs: ""}
+          - {test: "parmys_reg_strong",          cores: "16", options: "",          cmake: "-DYOSYS_F4PGA_PLUGINS=ON",                                     extra_pkgs: ""}
 
     env:
       DEBIAN_FRONTEND: "noninteractive"
 
     steps:
 
+      # TODO: This runnner is running on a self-hosted CPU. In order to upgrade
+      #       to v4, need to upgrade the machine to support node20.
     - uses: actions/checkout@v3
+      with:
+        submodules: 'true'
 
     - name: Setup
       run: stdbuf -i0 -i0 -e0 ./.github/scripts/hostsetup.sh
@@ -66,9 +73,12 @@ jobs:
         VTR_CMAKE_PARAMS: ${{ matrix.cmake }}
         NUM_CORES: ${{ matrix.cores }}
 
-    - uses: actions/upload-artifact@v3
-      if: ${{ always() }}
+    - name: Upload test results
+      # TODO: This runnner is running on a self-hosted CPU. In order to upgrade
+      #       to v4, need to upgrade the machine to support node20.
+      uses: actions/upload-artifact@v3
       with:
+        name: ${{matrix.test}}_test_results
         path: |
           **/results*.gz
           **/plot_*.svg
@@ -87,10 +97,12 @@ jobs:
         - { build_type: 'debug',   verbose: '1' }
     steps:
 
-    - uses: actions/setup-python@v4
+    - uses: actions/setup-python@v5
       with:
         python-version: 3.10.10
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
+      with:
+        submodules: 'true'
     - run: ./.github/scripts/install_dependencies.sh
 
     - uses: hendrikmuhs/ccache-action@v1.2
@@ -115,10 +127,10 @@ jobs:
     name: 'F: ${{ matrix.name }}'
     steps:
 
-    - uses: actions/setup-python@v4
+    - uses: actions/setup-python@v5
       with:
         python-version: 3.10.10
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - run: ./.github/scripts/install_dependencies.sh
 
     - name: Test
@@ -130,10 +142,12 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
 
-    - uses: actions/setup-python@v4
+    - uses: actions/setup-python@v5
       with:
         python-version: 3.10.10
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
+      with:
+        submodules: 'true'
     - run: ./.github/scripts/install_dependencies.sh
 
     - name: Test
@@ -147,10 +161,12 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
 
-    - uses: actions/setup-python@v4
+    - uses: actions/setup-python@v5
       with:
         python-version: 3.10.10
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
+      with:
+        submodules: 'true'
     - run: ./.github/scripts/install_dependencies.sh
 
     - uses: hendrikmuhs/ccache-action@v1.2
@@ -173,52 +189,64 @@ jobs:
         include: [
           {
             name: 'Basic',
-            params: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on',
+            params: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on',
             suite: 'vtr_reg_basic'
           },
           {
             name: 'Basic_odin',
-            params: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DWITH_PARMYS=OFF -DWITH_ODIN=on',
+            params: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DWITH_PARMYS=OFF -DWITH_ODIN=on',
             suite: 'vtr_reg_basic_odin'
           },
           {
             name: 'Basic with NO_GRAPHICS',
-            params: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVPR_USE_EZGL=off',
+            params: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVPR_USE_EZGL=off',
+            suite: 'vtr_reg_basic'
+          },
+          {
+            name: 'Basic with NO_SERVER',
+            params: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVPR_USE_EZGL=on -DVPR_USE_SERVER=off',
+            suite: 'vtr_reg_basic'
+          },
+          {
+            name: 'Basic with CAPNPROTO disabled',
+            params: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVTR_ENABLE_CAPNPROTO=off',
             suite: 'vtr_reg_basic'
           },
           {
             name: 'Basic with VTR_ENABLE_DEBUG_LOGGING',
-            params: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVTR_ENABLE_DEBUG_LOGGING=on',
+            params: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVTR_ENABLE_DEBUG_LOGGING=on',
             suite: 'vtr_reg_basic'
           },
           {
             name: 'Basic_odin with VTR_ENABLE_DEBUG_LOGGING',
-            params: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVTR_ENABLE_DEBUG_LOGGING=on -DWITH_PARMYS=OFF -DWITH_ODIN=on',
+            params: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVTR_ENABLE_DEBUG_LOGGING=on -DWITH_PARMYS=OFF -DWITH_ODIN=on',
             suite: 'vtr_reg_basic_odin'
           },
           {
             name: 'Strong',
-            params: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on',
+            params: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on',
             suite: 'vtr_reg_strong'
           },
           {
             name: 'Strong_odin',
-            params: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DWITH_PARMYS=OFF -DWITH_ODIN=on',
+            params: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DWITH_PARMYS=OFF -DWITH_ODIN=on',
             suite: 'vtr_reg_strong_odin'
           },
           {
             name: 'Valgrind Memory',
-            params: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DWITH_ODIN=on',
+            params: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DWITH_ODIN=on',
             suite: 'vtr_reg_valgrind_small'
           }
         ]
     name: 'R: ${{ matrix.name }}'
     steps:
 
-    - uses: actions/setup-python@v4
+    - uses: actions/setup-python@v5
       with:
         python-version: 3.10.10
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
+      with:
+        submodules: 'true'
     - run: ./.github/scripts/install_dependencies.sh
 
     - uses: hendrikmuhs/ccache-action@v1.2
@@ -232,7 +260,7 @@ jobs:
         ./run_reg_test.py ${{ matrix.suite }} -show_failures -j2
 
     - name: Upload regression run files
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: ${{matrix.name}}_run_files
         path: |
@@ -243,7 +271,7 @@ jobs:
           vtr_flow/**/*.r
 
     - name: Upload regression results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: ${{matrix.name}}_results
         path: |
@@ -268,10 +296,13 @@ jobs:
     name: 'S: ${{ matrix.name }}'
     steps:
 
-    - uses: actions/setup-python@v4
+    - uses: actions/setup-python@v5
       with:
         python-version: 3.10.10
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
+      with:
+        submodules: 'true'
+
     - run: ./.github/scripts/install_dependencies.sh
 
     - uses: hendrikmuhs/ccache-action@v1.2
@@ -281,7 +312,13 @@ jobs:
         CMAKE_PARAMS: ${{ matrix.params }}
         BUILD_TYPE: debug
         LSAN_OPTIONS: 'exitcode=42' #Use a non-standard exit code to ensure LSAN errors are detected
+        # In Ubuntu 20240310.1.0, the entropy of ASLR has increased (28 -> 32). LLVM 14 in this
+        # image is not compatible with this increased ASLR entropy. Apparently, memory sanitizer
+        # depends on LLVM and all CI tests where VTR_ENABLE_SANITIZE is enabled fail. For a temporary
+        # fix, we manually reduce the entropy. This quick fix should be removed in the future
+        # when github deploys a more stable Ubuntu image.
       run: |
+        sudo sysctl -w vm.mmap_rnd_bits=28
         export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
         ./.github/scripts/build.sh
         # We skip QoR since we are only checking for errors in sanitizer runs
@@ -293,10 +330,12 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
 
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: 3.10.10
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+        with:
+          submodules: 'true'
       - run: ./.github/scripts/install_dependencies.sh
 
       - uses: hendrikmuhs/ccache-action@v1.2
@@ -316,10 +355,12 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
 
-    - uses: actions/setup-python@v4
+    - uses: actions/setup-python@v5
       with:
         python-version: 3.10.10
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
+      with:
+        submodules: 'true'
     - run: ./.github/scripts/install_dependencies.sh
 
     - uses: hendrikmuhs/ccache-action@v1.2
@@ -329,6 +370,7 @@ jobs:
         CMAKE_PARAMS: '-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=on -DVTR_IPO_BUILD=off -DWITH_BLIFEXPLORER=on -DWITH_PARMYS=OFF -DWITH_ODIN=on'
         BUILD_TYPE: debug
       run: |
+        sudo sysctl -w vm.mmap_rnd_bits=28
         export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
         ./.github/scripts/build.sh
         ./run_reg_test.py odin_reg_basic -show_failures -j2
@@ -339,10 +381,12 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
 
-    - uses: actions/setup-python@v4
+    - uses: actions/setup-python@v5
       with:
         python-version: 3.10.10
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
+      with:
+        submodules: 'true'
     - run: ./.github/scripts/install_dependencies.sh
 
     - uses: hendrikmuhs/ccache-action@v1.2
@@ -372,10 +416,12 @@ jobs:
     name: 'B: ${{ matrix.name }}'
     steps:
 
-    - uses: actions/setup-python@v4
+    - uses: actions/setup-python@v5
       with:
         python-version: 3.10.10
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
+      with:
+        submodules: 'true'
     - run: ./.github/scripts/install_dependencies.sh
 
     - uses: hendrikmuhs/ccache-action@v1.2
@@ -406,10 +452,12 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
 
-    - uses: actions/setup-python@v4
+    - uses: actions/setup-python@v5
       with:
         python-version: 3.10.10
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
+      with:
+        submodules: 'true'
     - run: ./.github/scripts/install_dependencies.sh
 
     - uses: hendrikmuhs/ccache-action@v1.2

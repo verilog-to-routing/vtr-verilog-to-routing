@@ -23,15 +23,15 @@ struct MoveOutcomeStats {
 /**
  * @brief A Struct to hold statistics about the different move types
  *
- * blk_type_moves: the block type index of each proposed move (e.g. [0..NUM_PL_MOVE_TYPES * (agent_available_types.size()-1)])
- * accepted_moves: the number of accepted moves of each move and block type (e.g. [0..NUM_PL_MOVE_TYPES * (agent_available_types.size()-1)] )
- * rejected_moves: the number of rejected moves of each move and block type (e.g. [0..NUM_PL_MOVE_TYPES * (agent_available_types.size()-1)] )
+ * blk_type_moves: the block type index of each proposed move (e.g. [0..NUM_PL_MOVE_TYPES][agent_available_types.size()-1)])
+ * accepted_moves: the number of accepted moves of each move and block type (e.g. [0..NUM_PL_MOVE_TYPES][agent_available_types.size()-1)] )
+ * rejected_moves: the number of rejected moves of each move and block type (e.g. [0..NUM_PL_MOVE_TYPES][agent_available_types.size()-1)] )
  *
  */
 struct MoveTypeStat {
-    std::vector<int> blk_type_moves;
-    std::vector<int> accepted_moves;
-    std::vector<int> rejected_moves;
+    vtr::NdMatrix<int, 2> blk_type_moves;
+    vtr::NdMatrix<int, 2> accepted_moves;
+    vtr::NdMatrix<int, 2> rejected_moves;
 };
 
 /**
@@ -47,10 +47,10 @@ class MoveGenerator {
     /**
      * @brief Updates affected_blocks with the proposed move, while respecting the current rlim
      *
-     * This function proposes a new move and updates blocks affected and move_type accorrdingly. The function interface is general 
+     * This function proposes a new move and updates blocks affected and move_type accordingly. The function interface is general
      * to match the parameters needed by all move generators
      *
-     *  @param blocks_affectedt: the output of the move
+     *  @param blocks_affected: the output of the move
      *  @param proposed_action: Contains the move type and block type. If the block type is specified,
      *  the proposed move swaps instances of the given block type. Otherwise, the selected block type
      *  by the move generator is written to proposed_action.logical_blk_type_index.

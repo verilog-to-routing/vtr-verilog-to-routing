@@ -110,7 +110,7 @@ Gia_Man_t * Bmc_CexTarget( Gia_Man_t * p, int nFrames )
     Gia_ManPrintStats( pNew, NULL );
     pTemp = Gia_ManDupAppendCones( p, &pNew, 1, 1 );
     Gia_ManStop( pNew );
-    Gia_AigerWrite( pTemp, "miter3.aig", 0, 0 );
+    Gia_AigerWrite( pTemp, "miter3.aig", 0, 0, 0 );
     return pTemp;
 }
 
@@ -308,7 +308,7 @@ Gia_Man_t * Bmc_CexBuildNetwork2Test( Gia_Man_t * p, Abc_Cex_t * pCex, int nFram
         Vec_PtrPush( vCones, pNew );
     }
     pNew = Gia_ManDupAppendCones( p, (Gia_Man_t **)Vec_PtrArray(vCones), Vec_PtrSize(vCones), 1 );
-    Gia_AigerWrite( pNew, "miter2.aig", 0, 0 );
+    Gia_AigerWrite( pNew, "miter2.aig", 0, 0, 0 );
 //Bmc_CexDumpAogStats( pNew, Abc_Clock() - clk );
     Vec_PtrForEachEntry( Gia_Man_t *, vCones, pTemp, i )
         Gia_ManStop( pTemp );

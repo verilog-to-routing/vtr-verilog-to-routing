@@ -1291,7 +1291,7 @@ static DdNode * extraBddCountCubes( DdManager * dd, DdNode * L, DdNode * U, st__
     if (r)
     {
         int nCubes = 0;
-        if ( st__lookup( table, (char *)r, (char **)&nCubes ) )
+        if ( st__lookup_int( table, (char *)r, &nCubes ) )
             *pnCubes = nCubes;
         else assert( 0 );
         return r;
@@ -2580,6 +2580,163 @@ void Extra_ZddTest()
     }
     Cudd_Quit(dd);
 }
+
+
+/**Function********************************************************************
+
+  Synopsis    [Performs the reordering-sensitive step of Extra_bddTuples().]
+
+  Description [Generates in a bottom-up fashion BDD for all combinations
+               composed of k variables out of variables belonging to bVarsN.]
+
+  SideEffects []
+
+  SeeAlso     []
+
+******************************************************************************/
+DdNode * extraBddTuples( 
+  DdManager * dd,    /* the DD manager */
+  DdNode * bVarsK,   /* the number of variables in tuples */
+  DdNode * bVarsN)   /* the set of all variables */
+{
+    DdNode *bRes, *bRes0, *bRes1;
+    statLine(dd); 
+
+    /* terminal cases */
+/*  if ( k < 0 || k > n )
+ *      return dd->zero;
+ *  if ( n == 0 )
+ *      return dd->one; 
+ */
+    if ( cuddI( dd, bVarsK->index ) < cuddI( dd, bVarsN->index ) )
+        return b0;
+    if ( bVarsN == b1 )
+        return b1;
+
+    /* check cache */
+    bRes = cuddCacheLookup2(dd, extraBddTuples, bVarsK, bVarsN);
+    if (bRes)
+        return(bRes);
+
+    /* ZDD in which is variable is 0 */
+/*  bRes0 = extraBddTuples( dd, k,     n-1 ); */
+    bRes0 = extraBddTuples( dd, bVarsK, cuddT(bVarsN) );
+    if ( bRes0 == NULL ) 
+        return NULL;
+    cuddRef( bRes0 );
+
+    /* ZDD in which is variable is 1 */
+/*  bRes1 = extraBddTuples( dd, k-1,          n-1 ); */
+    if ( bVarsK == b1 )
+    {
+        bRes1 = b0;
+        cuddRef( bRes1 );
+    }
+    else
+    {
+        bRes1 = extraBddTuples( dd, cuddT(bVarsK), cuddT(bVarsN) );
+        if ( bRes1 == NULL ) 
+        {
+            Cudd_RecursiveDeref( dd, bRes0 );
+            return NULL;
+        }
+        cuddRef( bRes1 );
+    }
+
+    /* consider the case when Res0 and Res1 are the same node */
+    if ( bRes0 == bRes1 )
+        bRes = bRes1;
+    /* consider the case when Res1 is complemented */
+    else if ( Cudd_IsComplement(bRes1) ) 
+    {
+        bRes = cuddUniqueInter(dd, bVarsN->index, Cudd_Not(bRes1), Cudd_Not(bRes0));
+        if ( bRes == NULL ) 
+        {
+            Cudd_RecursiveDeref(dd,bRes0);
+            Cudd_RecursiveDeref(dd,bRes1);
+            return NULL;
+        }
+        bRes = Cudd_Not(bRes);
+    } 
+    else 
+    {
+        bRes = cuddUniqueInter( dd, bVarsN->index, bRes1, bRes0 );
+        if ( bRes == NULL ) 
+        {
+            Cudd_RecursiveDeref(dd,bRes0);
+            Cudd_RecursiveDeref(dd,bRes1);
+            return NULL;
+        }
+    }
+    cuddDeref( bRes0 );
+    cuddDeref( bRes1 );
+
+    /* insert the result into cache */
+    cuddCacheInsert2(dd, extraBddTuples, bVarsK, bVarsN, bRes);
+    return bRes;
+
+} /* end of extraBddTuples */
+
+/**Function********************************************************************
+
+  Synopsis    [Builds BDD representing the set of fixed-size variable tuples.]
+
+  Description [Creates BDD of all combinations of variables in Support that have k vars in them.]
+
+  SideEffects []
+
+  SeeAlso     []
+
+******************************************************************************/
+DdNode * Extra_bddTuples( 
+  DdManager * dd,   /* the DD manager */
+  int K,            /* the number of variables in tuples */
+  DdNode * VarsN)   /* the set of all variables represented as a BDD */
+{
+    DdNode  *res;
+    int     autoDyn;
+
+    /* it is important that reordering does not happen, 
+       otherwise, this methods will not work */
+
+    autoDyn = dd->autoDyn;
+    dd->autoDyn = 0;
+
+    do {
+        /* transform the numeric arguments (K) into a DdNode * argument;
+         * this allows us to use the standard internal CUDD cache */
+        DdNode *VarSet = VarsN, *VarsK = VarsN;
+        int     nVars = 0, i;
+
+        /* determine the number of variables in VarSet */
+        while ( VarSet != b1 )
+        {
+            nVars++;
+            /* make sure that the VarSet is a cube */
+            if ( cuddE( VarSet ) != b0 )
+                return NULL;
+            VarSet = cuddT( VarSet );
+        }
+        /* make sure that the number of variables in VarSet is less or equal 
+           that the number of variables that should be present in the tuples
+        */
+        if ( K > nVars )
+            return NULL;
+
+        /* the second argument in the recursive call stands for <n>;
+         * create the first argument, which stands for <k> 
+         * as when we are talking about the tuple of <k> out of <n> */
+        for ( i = 0; i < nVars-K; i++ )
+            VarsK = cuddT( VarsK );
+
+        dd->reordered = 0;
+        res = extraBddTuples(dd, VarsK, VarsN );
+
+    } while (dd->reordered == 1);
+    dd->autoDyn = autoDyn;
+    return(res);
+
+} /* end of Extra_bddTuples */
 
 
 ////////////////////////////////////////////////////////////////////////
