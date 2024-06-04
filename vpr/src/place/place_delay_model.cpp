@@ -160,6 +160,14 @@ void OverrideDelayModel::set_base_delay_model(std::unique_ptr<DeltaDelayModel> b
     base_delay_model_ = std::move(base_delay_model_obj);
 }
 
+float SimpleDelayModel::delay(const t_physical_tile_loc& from_loc, int /*from_pin*/, const t_physical_tile_loc& to_loc, int /*to_pin*/) const {
+    int delta_x = std::abs(from_loc.x - to_loc.x);
+    int delta_y = std::abs(from_loc.y - to_loc.y);
+
+    int from_tile_idx = g_vpr_ctx.device().grid.get_physical_type(from_loc)->index;
+    return delays_[from_tile_idx][from_loc.layer_num][to_loc.layer_num][delta_x][delta_y];
+}
+
 /**
  * When writing capnp targetted serialization, always allow compilation when
  * VTR_ENABLE_CAPNPROTO=OFF. Generally this means throwing an exception instead.
@@ -319,7 +327,6 @@ void OverrideDelayModel::write(const std::string& file) const {
 
 ///@brief Initialize the placer delay model.
 std::unique_ptr<PlaceDelayModel> alloc_lookups_and_delay_model(const Netlist<>& net_list,
-                                                               const std::vector<t_arch_switch_inf>& arch_switch_inf,
                                                                t_chan_width_dist chan_width_dist,
                                                                const t_placer_opts& placer_opts,
                                                                const t_router_opts& router_opts,
@@ -331,7 +338,6 @@ std::unique_ptr<PlaceDelayModel> alloc_lookups_and_delay_model(const Netlist<>& 
     return compute_place_delay_model(placer_opts,
                                      router_opts,
                                      net_list,
-                                     arch_switch_inf,
                                      det_routing_arch,
                                      segment_inf,
                                      chan_width_dist,

@@ -46,9 +46,9 @@ CAPNP_BEGIN_HEADER
 
 namespace capnp {
 
-#define CAPNP_VERSION_MAJOR 0
-#define CAPNP_VERSION_MINOR 9
-#define CAPNP_VERSION_MICRO 1
+#define CAPNP_VERSION_MAJOR 1
+#define CAPNP_VERSION_MINOR 0
+#define CAPNP_VERSION_MICRO 2
 
 #define CAPNP_VERSION \
   (CAPNP_VERSION_MAJOR * 1000000 + CAPNP_VERSION_MINOR * 1000 + CAPNP_VERSION_MICRO)
@@ -361,7 +361,7 @@ private:
   // the copy constructor. We don't want to disable the warning because it's a useful warning and
   // we'd have to disable it for all applications that include this header. Instead we allow `word`
   // to be copyable on GCC.
-  KJ_DISALLOW_COPY(word);
+  KJ_DISALLOW_COPY_AND_MOVE(word);
 #endif
 };
 

@@ -23,7 +23,7 @@ set(VTR_IPO_BUILD "auto" CACHE STRING "Should VTR be compiled with interprocedur
 set_property(CACHE VTR_IPO_BUILD PROPERTY STRINGS auto on off)
 
 #Allow the user to configure how much assertion checking should occur
-set(VTR_ASSERT_LEVEL "2" CACHE STRING "VTR assertion checking level. 0: no assertions, 1: fast assertions, 2: regular assertions, 3: additional assertions with noticable run-time overhead, 4: all assertions (including those with significant run-time cost)")
+set(VTR_ASSERT_LEVEL "2" CACHE STRING "VTR assertion checking level. 0: no assertions, 1: fast assertions, 2: regular assertions, 3: additional assertions with noticeable run-time overhead, 4: all assertions (including those with significant run-time cost)")
 set_property(CACHE VTR_ASSERT_LEVEL PROPERTY STRINGS 0 1 2 3 4)
 
 option(VTR_ENABLE_STRICT_COMPILE "Specifies whether compiler warnings should be treated as errors (e.g. -Werror)" OFF)
@@ -38,6 +38,9 @@ option(SPEC_CPU "Enable SPEC CPU v8 support" OFF)
 set(VPR_USE_EZGL "auto" CACHE STRING "Specify whether vpr uses the graphics library")
 set_property(CACHE VPR_USE_EZGL PROPERTY STRINGS auto off on)
 option(VTR_ENABLE_CAPNPROTO "Enable capnproto binary serialization support in VPR." ON)
+
+#Allow the user to decide whether to compile the server module
+option(VPR_USE_SERVER "Specify whether vpr enables the server mode" ON)
 
 #Allow the user to enable/disable VPR analytic placement
 #VPR option --enable_analytic_placer is also required for Analytic Placement
@@ -342,6 +345,14 @@ add_custom_target(get_titan_benchmarks
     COMMENT "Downloading (~1GB) and extracting Titan benchmarks (~10GB) into VTR source tree.")
 
 #
+# NoC MLP Benchmarks
+#
+add_custom_target(get_noc_mlp_benchmarks
+        COMMAND ./vtr_flow/scripts/download_noc_mlp.py --vtr_flow_dir ./vtr_flow
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMENT "Downloading (~100MB) and extracting NoC MLP benchmarks (~3.2GB) into VTR source tree.")
+
+#
 # ISPD Benchmarks
 #
 add_custom_target(get_ispd_benchmarks
@@ -410,11 +421,13 @@ if(${WITH_PARMYS}) # define cmake params to compile Yosys
         set(MAKE_PROGRAM "make")
     endif()
 
-    if(NOT DEFINED "${CMAKE_BUILD_PARALLEL_LEVEL}")
-        set(CUSTOM_BUILD_PARALLEL_LEVEL 16)
-    else()
-        set(CUSTOM_BUILD_PARALLEL_LEVEL "${CMAKE_BUILD_PARALLEL_LEVEL}")
-    endif()
+    # Commented out since a make file should not call another make command with
+    # threads. It should pass this information from the parent automatically.
+    # if(NOT DEFINED "${CMAKE_BUILD_PARALLEL_LEVEL}")
+    #     set(CUSTOM_BUILD_PARALLEL_LEVEL 16)
+    # else()
+    #     set(CUSTOM_BUILD_PARALLEL_LEVEL "${CMAKE_BUILD_PARALLEL_LEVEL}")
+    # endif()
     add_subdirectory(yosys)
 endif()
 

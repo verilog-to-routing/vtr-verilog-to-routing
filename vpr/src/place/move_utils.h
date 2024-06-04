@@ -27,6 +27,7 @@ enum class e_move_type {
     W_MEDIAN,
     CRIT_UNIFORM,
     FEASIBLE_REGION,
+    NOC_ATTRACTION_CENTROID,
     NUMBER_OF_AUTO_MOVES,
     MANUAL_MOVE = NUMBER_OF_AUTO_MOVES,
     INVALID_MOVE
@@ -69,6 +70,8 @@ struct t_bb_cost {
     t_edge_cost xmax = {0, 0.0};
     t_edge_cost ymin = {0, 0.0};
     t_edge_cost ymax = {0, 0.0};
+    t_edge_cost layer_min = {0, 0.};
+    t_edge_cost layer_max = {0, 0.};
 };
 
 /**
@@ -85,7 +88,7 @@ struct t_range_limiters {
 };
 
 //Records a reasons for an aborted move
-void log_move_abort(const std::string& reason);
+void log_move_abort(std::string_view reason);
 
 //Prints a breif report about aborted move reasons and counts
 void report_aborted_moves();
@@ -253,24 +256,41 @@ const std::string& move_type_to_string(e_move_type);
 void compressed_grid_to_loc(t_logical_block_type_ptr blk_type,
                             t_physical_tile_loc compressed_loc,
                             t_pl_loc& to_loc);
+
+/**
+ * @brief Tries to find an compatible empty subtile with the given type at
+ * the given location. If such a subtile could be found, the subtile number
+ * is returned. Otherwise, -1 is returned to indicate that there are no
+ * compatible subtiles at the given location.
+ *
+ * @param type logical block type
+ * @param to_loc The location to be checked
+ *
+ * @return int The subtile number if there is an empty compatible subtile, otherwise -1
+ * is returned to indicate that there are no empty subtiles compatible with the given type..
+ */
+int find_empty_compatible_subtile(t_logical_block_type_ptr type,
+                                  const t_physical_tile_loc& to_loc);
+
 /**
  * @brief find compressed location in a compressed range for a specific type in the given layer (to_layer_num)
  * 
  * type: defines the moving block type
- * min_cx, max_cx: the minimum and maximum x coordinates of the range in the compressed grid
- * min_cy, max_cx: the minimum and maximum y coordinates of the range in the compressed grid
- * cx_from, cy_from: the x and y coordinates of the old location 
- * cx_to, cy_to: the x and y coordinates of the new location on the compressed grid
+ * search_range: the minimum and maximum coordinates of the search range in the compressed grid
+ * from_loc: the coordinates of the old location
+ * to_loc: the coordinates of the new location on the compressed grid
  * is_median: true if this is called from find_to_loc_median
  * to_layer_num: the layer number of the new location (set by the caller)
+ * search_for_empty: indicates that the returned location must be empty
  */
 bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
-                                             const int delta_cx,
+                                             int delta_cx,
                                              const t_physical_tile_loc& from_loc,
                                              t_bb search_range,
                                              t_physical_tile_loc& to_loc,
                                              bool is_median,
-                                             int to_layer_num);
+                                             int to_layer_num,
+                                             bool search_for_empty);
 
 /**
  * @brief Get the the compressed loc from the uncompressed loc (grid_loc)

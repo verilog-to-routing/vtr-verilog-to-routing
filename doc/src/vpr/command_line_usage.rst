@@ -350,7 +350,7 @@ Use the options below to override this default naming behaviour.
 
 .. option:: --read_rr_graph <file>
 
-    Reads in the routing resource graph named <file> loads it for use during the placement and routing stages. Expects a file extension of either ``.xml`` and ``.bin``.
+    Reads in the routing resource graph named <file> loads it for use during the placement and routing stages. Expects a file extension of either ``.xml`` or ``.bin``.
 
     The routing resource graph overthrows all the architecture definitions regarding switches, nodes, and edges. Other information such as grid information, block types, and segment information are matched with the architecture file to ensure accuracy.
 
@@ -368,22 +368,22 @@ Use the options below to override this default naming behaviour.
 
 .. option:: --read_router_lookahead <file>
 
-    Reads the lookahead data from the specified file instead of computing it.
+    Reads the lookahead data from the specified file instead of computing it. Expects a file extension of either ``.capnp`` or ``.bin``.
 
 .. option:: --write_router_lookahead <file>
 
-    Writes the lookahead data to the specified file.
+    Writes the lookahead data to the specified file. Accepted file extensions are ``.capnp``, ``.bin``, and ``.csv``.
 
 .. option:: --read_placement_delay_lookup <file>
 
-    Reads the placement delay lookup from the specified file instead of computing it.
+    Reads the placement delay lookup from the specified file instead of computing it. Expects a file extension of either ``.capnp`` or ``.bin``.
 
 .. option:: --write_placement_delay_lookup <file>
 
-    Writes the placement delay lookup to the specified file.
+    Writes the placement delay lookup to the specified file. Expects a file extension of either ``.capnp`` or ``.bin``.
 .. option:: --write_initial_place_file <file>
 
-    Writes out the the placement chosen by the initial placement algorithm to the specified file
+    Writes out the the placement chosen by the initial placement algorithm to the specified file.
 
 .. option:: --outfile_prefix <string>
 
@@ -1120,6 +1120,14 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
 
 .. seealso:: :ref:`timing_driven_router_options`
 
+.. option:: --flat_routing {on | off}
+
+    If this option is enabled, the *run-flat* router is used instead of the *two-stage* router.
+    This means that during the routing stage, all nets, both intra- and inter-cluster, are routed directly from one primitive pin to another primitive pin.
+    This increases routing time but can improve routing quality by re-arranging LUT inputs and exposing additional optimization opportunities in architectures with local intra-cluster routing that is not a full crossbar.
+
+    **Default:** ``OFF`
+
 .. option:: --max_router_iterations <int>
 
     The number of iterations of a Pathfinder-based router that will be executed before a circuit is declared unrouteable (if it hasn’t routed successfully yet) at a given channel width.
@@ -1154,6 +1162,14 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
     Sets the growth factor by which the present overuse penalty factor is multiplied after each router iteration.
 
     **Default:** ``1.3``
+
+.. option:: --max_pres_fac <float>
+
+    Sets the maximum present overuse penalty factor that can ever result during routing. Should always be less than 1e25 or so to prevent overflow. 
+    Smaller values may help prevent circuitous routing in difficult routing problems, but may increase 
+    the number of routing iterations needed and hence runtime.
+
+    **Default:** ``1000.0``
 
 .. option:: --acc_fac <float>
 
@@ -1287,6 +1303,14 @@ The following options are only valid when the router is in timing-driven mode (t
     Sets how aggressive the directed search used by the timing-driven router is.
 
     Values between 1 and 2 are reasonable, with higher values trading some quality for reduced CPU time.
+
+    **Default:** ``1.2``
+
+.. option:: --router_profiler_astar_fac <float>
+    
+    Controls the directedness of the timing-driven router's exploration when doing router delay profiling of an architecture.
+    The router delay profiling step is currently used to calculate the place delay matrix lookup.
+    Values between 1 and 2 are resonable; higher values trade some quality for reduced run-time.
 
     **Default:** ``1.2``
 

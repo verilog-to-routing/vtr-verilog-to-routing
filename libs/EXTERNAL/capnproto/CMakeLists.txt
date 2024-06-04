@@ -1,3 +1,5 @@
-cmake_minimum_required(VERSION 3.4...3.13)  # ! This line is edited to get rid of a CMake deprecation error
+cmake_minimum_required(VERSION 3.16)
 project("Cap'n Proto Root" CXX)
+include(CTest)
+
 add_subdirectory(c++)

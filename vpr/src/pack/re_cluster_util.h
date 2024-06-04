@@ -79,15 +79,16 @@ void remove_mol_from_cluster(const t_pack_molecule* molecule,
  */
 bool start_new_cluster_for_mol(t_pack_molecule* molecule,
                                const t_logical_block_type_ptr& type,
-                               const int mode,
-                               const int feasible_block_array_size,
+                               const int& mode,
+                               const int& feasible_block_array_size,
                                bool enable_pin_feasibility_filter,
                                ClusterBlockId clb_index,
                                bool during_packing,
                                int verbosity,
                                t_clustering_data& clustering_data,
                                t_lb_router_data** router_data,
-                               PartitionRegion& temp_cluster_pr);
+                               PartitionRegion& temp_cluster_pr,
+                               NocGroupId& temp_cluster_noc_grp_id);
 
 /**
  * @brief A function that packs a molecule into an existing cluster

@@ -16,10 +16,15 @@
 bool f_placer_breakpoint_reached = false;
 
 //Records counts of reasons for aborted moves
-static std::map<std::string, size_t> f_move_abort_reasons;
+static std::map<std::string, size_t, std::less<>> f_move_abort_reasons;
 
-void log_move_abort(const std::string& reason) {
-    ++f_move_abort_reasons[reason];
+void log_move_abort(std::string_view reason) {
+    auto it = f_move_abort_reasons.find(reason);
+    if (it != f_move_abort_reasons.end()) {
+        it->second++;
+    } else {
+        f_move_abort_reasons.emplace(reason, 1);
+    }
 }
 
 void report_aborted_moves() {
@@ -28,7 +33,7 @@ void report_aborted_moves() {
     if (f_move_abort_reasons.empty()) {
         VTR_LOG("  No moves aborted\n");
     }
-    for (auto kv : f_move_abort_reasons) {
+    for (const auto& kv : f_move_abort_reasons) {
         VTR_LOG("  %s: %zu\n", kv.first.c_str(), kv.second);
     }
 }
@@ -64,7 +69,7 @@ e_create_move create_move(t_pl_blocks_to_be_moved& blocks_affected, ClusterBlock
             outcome = find_affected_blocks(blocks_affected, b_to, from);
 
             if (outcome == e_block_move_result::INVERT) {
-                log_move_abort("inverted move recurrsion");
+                log_move_abort("inverted move recursion");
                 outcome = e_block_move_result::ABORT;
             }
         }
@@ -333,13 +338,13 @@ e_block_move_result record_macro_macro_swaps(t_pl_blocks_to_be_moved& blocks_aff
     //Continue walking along the overlapping parts of the from and to macros, recording
     //each block swap.
     //
-    //At the momemnt we only support swapping the two macros if they have the same shape.
+    //At the moment we only support swapping the two macros if they have the same shape.
     //This will be the case with the common cases we care about (i.e. carry-chains), so
     //we just abort in any other cases (if these types of macros become more common in
     //the future this could be updated).
     //
-    //Unless the two macros have thier root blocks aligned (i.e. the mutual overlap starts
-    //at imember_from == 0), then theree will be a fixed offset between the macros' relative
+    //Unless the two macros have their root blocks aligned (i.e. the mutual overlap starts
+    //at imember_from == 0), then there will be a fixed offset between the macros' relative
     //position. We record this as from_to_macro_*_offset which is used to verify the shape
     //of the macros is consistent.
     //
@@ -916,7 +921,8 @@ bool find_to_loc_uniform(t_logical_block_type_ptr type,
                                                     search_range,
                                                     to_compressed_loc,
                                                     false,
-                                                    to_layer_num);
+                                                    to_layer_num,
+                                                    false);
 
     if (!legal) {
         //No valid position found
@@ -1013,7 +1019,8 @@ bool find_to_loc_median(t_logical_block_type_ptr blk_type,
                                                     search_range,
                                                     to_compressed_loc,
                                                     true,
-                                                    to_layer_num);
+                                                    to_layer_num,
+                                                    false);
 
     if (!legal) {
         //No valid position found
@@ -1047,7 +1054,7 @@ bool find_to_loc_centroid(t_logical_block_type_ptr blk_type,
                           ClusterBlockId b_from) {
     //Retrieve the compressed block grid for this block type
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[blk_type->index];
-    const int to_layer_num = to_loc.layer;
+    const int to_layer_num = centroid.layer;
     VTR_ASSERT(to_layer_num >= 0);
     const int num_layers = g_vpr_ctx.device().grid.get_num_layers();
 
@@ -1099,7 +1106,8 @@ bool find_to_loc_centroid(t_logical_block_type_ptr blk_type,
                                                     search_range,
                                                     to_compressed_loc,
                                                     false,
-                                                    to_layer_num);
+                                                    to_layer_num,
+                                                    false);
 
     if (!legal) {
         //No valid position found
@@ -1126,7 +1134,7 @@ bool find_to_loc_centroid(t_logical_block_type_ptr blk_type,
 }
 
 //Array of move type strings
-static const std::array<std::string, NUM_PL_MOVE_TYPES + 1> move_type_strings = {
+static const std::array<std::string, NUM_PL_MOVE_TYPES + 2> move_type_strings = {
     "Uniform",
     "Median",
     "Centroid",
@@ -1134,6 +1142,7 @@ static const std::array<std::string, NUM_PL_MOVE_TYPES + 1> move_type_strings = 
     "W. Median",
     "Crit. Uniform",
     "Feasible Region",
+    "NoC Centroid",
     "Manual Move"};
 
 //To convert enum move type to string
@@ -1151,11 +1160,34 @@ void compressed_grid_to_loc(t_logical_block_type_ptr blk_type,
     auto& grid = g_vpr_ctx.device().grid;
     auto to_type = grid.get_physical_type({grid_loc.x, grid_loc.y, grid_loc.layer_num});
 
-    //Each x/y location contains only a single type, so we can pick a random z (capcity) location
+    //Each x/y location contains only a single type, so we can pick a random z (capacity) location
     auto& compatible_sub_tiles = compressed_block_grid.compatible_sub_tile_num(to_type->index);
     int sub_tile = compatible_sub_tiles[vtr::irand((int)compatible_sub_tiles.size() - 1)];
 
     to_loc = t_pl_loc(grid_loc.x, grid_loc.y, sub_tile, grid_loc.layer_num);
+}
+
+int find_empty_compatible_subtile(t_logical_block_type_ptr type,
+                                  const t_physical_tile_loc& to_loc) {
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& place_ctx = g_vpr_ctx.placement();
+
+    const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[type->index];
+    int return_sub_tile = -1;
+
+    t_pl_loc to_uncompressed_loc;
+    compressed_grid_to_loc(type, to_loc, to_uncompressed_loc);
+    const t_physical_tile_loc to_phy_uncompressed_loc{to_uncompressed_loc.x, to_uncompressed_loc.y, to_uncompressed_loc.layer};
+    const auto& phy_type = device_ctx.grid.get_physical_type(to_phy_uncompressed_loc);
+    const auto& compatible_sub_tiles = compressed_block_grid.compatible_sub_tiles_for_tile.at(phy_type->index);
+    for (const auto& sub_tile : compatible_sub_tiles) {
+        if (place_ctx.grid_blocks.is_sub_tile_empty(to_phy_uncompressed_loc, sub_tile)) {
+            return_sub_tile = sub_tile;
+            break;
+        }
+    }
+
+    return return_sub_tile;
 }
 
 bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
@@ -1164,7 +1196,8 @@ bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
                                              t_bb search_range,
                                              t_physical_tile_loc& to_loc,
                                              bool is_median,
-                                             int to_layer_num) {
+                                             int to_layer_num,
+                                             bool search_for_empty) {
     //TODO For the time being, the blocks only moved in the same layer. This assertion should be removed after VPR is updated to move blocks between layers
     VTR_ASSERT(to_layer_num == from_loc.layer_num);
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[type->index];
@@ -1245,7 +1278,9 @@ bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
             VTR_ASSERT(to_loc.y <= search_range.ymax);
 
             if (from_loc.x == to_loc.x && from_loc.y == to_loc.y && from_loc.layer_num == to_layer_num) {
-                continue; //Same from/to location -- try again for new y-position
+                continue;                  //Same from/to location -- try again for new y-position
+            } else if (search_for_empty) { // Check if the location has at least one empty sub-tile
+                legal = find_empty_compatible_subtile(type, to_loc) >= 0;
             } else {
                 legal = true;
             }
@@ -1374,13 +1409,10 @@ bool intersect_range_limit_with_floorplan_constraints(t_logical_block_type_ptr t
                                max_grid_loc.y,
                                layer_num});
 
-    auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
+    const auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
 
-    PartitionRegion pr = floorplanning_ctx.cluster_constraints[b_from];
-    std::vector<Region> regions;
-    if (!pr.empty()) {
-        regions = pr.get_partition_region();
-    }
+    const PartitionRegion& pr = floorplanning_ctx.cluster_constraints[b_from];
+    const std::vector<Region>& regions = pr.get_regions();
     Region intersect_reg;
     /*
      * If region size is greater than 1, the block is constrained to more than one rectangular region.

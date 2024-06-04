@@ -155,6 +155,13 @@ class edge_sort_iterator {
     using pointer = edge_swapper*;
     using difference_type = ssize_t;
 
+    // In order for this class to be used as an iterator within the std library,
+    // it needs to "act" like a pointer. One thing that it should do is that a
+    // const variable of this type should be de-referenceable. Therefore, this
+    // method should be const method; however, this requires modifying the class
+    // and may yield worst performance. For now the std::stable_sort allows this
+    // but in the future it may not. If this breaks, this is why.
+    // See issue #2517 and PR #2522
     edge_swapper& operator*() {
         return this->swapper_;
     }
@@ -419,7 +426,7 @@ size_t t_rr_graph_storage::count_rr_switches(
     // values.
     //
     // This sort is safe to do because partition_edges() has not been invoked yet.
-    std::sort(
+    std::stable_sort(
         edge_sort_iterator(this, 0),
         edge_sort_iterator(this, edge_dest_node_.size()),
         edge_compare_dest_node());
@@ -527,7 +534,7 @@ void t_rr_graph_storage::partition_edges(const vtr::vector<RRSwitchId, t_rr_swit
     //    by assign_first_edges()
     //  - Edges within a source node have the configurable edges before the
     //    non-configurable edges.
-    std::sort(
+    std::stable_sort(
         edge_sort_iterator(this, 0),
         edge_sort_iterator(this, edge_src_node_.size()),
         edge_compare_src_node_and_configurable_first(rr_switches));

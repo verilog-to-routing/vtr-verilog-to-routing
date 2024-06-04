@@ -171,7 +171,7 @@ std::vector<std::string> block_type_class_index_to_pin_names(t_physical_tile_typ
                                                              bool is_flat);
 
 ///@brief Returns the physical tile type matching a given physical tile type name, or nullptr (if not found)
-t_physical_tile_type_ptr find_tile_type_by_name(std::string name, const std::vector<t_physical_tile_type>& types);
+t_physical_tile_type_ptr find_tile_type_by_name(const std::string& name, const std::vector<t_physical_tile_type>& types);
 
 int find_pin_class(t_physical_tile_type_ptr type, std::string port_name, int pin_index_in_port, e_pin_type pin_type);
 

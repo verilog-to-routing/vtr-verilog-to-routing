@@ -25,8 +25,12 @@ class PartitionRegion {
     /**
      * @brief Return the union of regions
      */
-    std::vector<Region> get_partition_region();
-    std::vector<Region> get_partition_region() const;
+    std::vector<Region>& get_mutable_regions();
+
+    /**
+     * @brief Return the union of regions
+     */
+    const std::vector<Region>& get_regions() const;
 
     /**
      * @brief Set the union of regions
@@ -36,7 +40,7 @@ class PartitionRegion {
     /**
      * @brief Check if the PartitionRegion is empty (meaning there is no constraint on the object the PartitionRegion belongs to)
      */
-    bool empty();
+    bool empty() const;
 
     /**
      * @brief Check if the given location is within the legal bounds of the  PartitionRegion.
@@ -44,30 +48,30 @@ class PartitionRegion {
      *
      *   @param loc       The location to be checked
      */
-    bool is_loc_in_part_reg(t_pl_loc loc);
-
-    /**
-     * @brief Global friend function that returns the intersection of two PartitionRegions
-     *
-     *   @param cluster_pr     One of the PartitionRegions to be intersected
-     *   @param new_pr         One of the PartitionRegions to be intersected
-     */
-    friend PartitionRegion intersection(const PartitionRegion& cluster_pr, const PartitionRegion& new_pr);
-
-    /**
-     * @brief Global friend function that updates the PartitionRegion of a cluster with the intersection
-     *        of the cluster PartitionRegion and a new PartitionRegion
-     *
-     *   @param cluster_pr     The cluster PartitionRegion that is to be updated
-     *   @param new_pr         The new PartitionRegion that the cluster PartitionRegion will be intersected with
-     */
-    friend void update_cluster_part_reg(PartitionRegion& cluster_pr, const PartitionRegion& new_pr);
+    bool is_loc_in_part_reg(const t_pl_loc& loc) const;
 
   private:
-    std::vector<Region> partition_region; ///< union of rectangular regions that a partition can be placed in
+    std::vector<Region> regions; ///< union of rectangular regions that a partition can be placed in
 };
 
 ///@brief used to print data from a PartitionRegion
-void print_partition_region(FILE* fp, PartitionRegion pr);
+void print_partition_region(FILE* fp, const PartitionRegion& pr);
+
+/**
+* @brief Global function that returns the intersection of two PartitionRegions
+*
+*   @param cluster_pr     One of the PartitionRegions to be intersected
+*   @param new_pr         One of the PartitionRegions to be intersected
+*/
+PartitionRegion intersection(const PartitionRegion& cluster_pr, const PartitionRegion& new_pr);
+
+/**
+* @brief Global function that updates the PartitionRegion of a cluster with the intersection
+*        of the cluster PartitionRegion and a new PartitionRegion
+*
+*   @param cluster_pr     The cluster PartitionRegion that is to be updated
+*   @param new_pr         The new PartitionRegion that the cluster PartitionRegion will be intersected with
+*/
+void update_cluster_part_reg(PartitionRegion& cluster_pr, const PartitionRegion& new_pr);
 
 #endif /* PARTITION_REGIONS_H */

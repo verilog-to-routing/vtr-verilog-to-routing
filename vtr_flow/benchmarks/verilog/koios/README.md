@@ -13,7 +13,7 @@ Koios benchmarks use advanced DSP features that are available in only a few FPGA
 
 Similarly, Koios benchmark instantiate hard memory blocks (single port and dual port BRAM). These blocks are available in most architectures provided with VTR, but may not be available in a user's architecture. These hard memory blocks can be controlled by using the macro ``hard_mem``. If `hard_mem` is defined in a benchmark file (using `` `define hard_mem``), then hard memory blocks will be used. If `hard_mem` is not defined, then equivalent functionality is obtained through behavioral Verilog that the synthesis tools can automatically infer as RAMs.
 
-From a flow perspective, you can enable/disable a macro (like `complex_dsp`) without actually modifying the benchmark file(s). You can specify a separate Verilog header file while running a flow/task that contains these macros. For `run_vtr_flow` users, `-include <filename>` needs to be added. For `run_vtr_task` users, `includes_dir` and `include_list_add` need to be specified in the task file. An example task file can be seen [here](https://github.com/verilog-to-routing/vtr-verilog-to-routing/blob/master/vtr_flow/tasks/regression_tests/vtr_reg_basic/hdl_include/config/config.txt).
+From a flow perspective, you can enable/disable a macro (like `complex_dsp`) without actually modifying the benchmark file(s). You can specify a separate Verilog header file while running a flow/task that contains these macros. For `run_vtr_flow` users, `-include <filename>` needs to be added. For `run_vtr_task` users, `includes_dir` and `include_list_add` need to be specified in the task file. An example task file can be seen [here](https://github.com/verilog-to-routing/vtr-verilog-to-routing/blob/master/vtr_flow/vtr_reg_basic/hdl_include/config/config.txt).
 
 Using hard macros for DSPs and BRAMs to utilize advanced features (like chaining) is common in modern designs used with contemporary FPGAs. When using these benchmarks and enabling these advanced features, an FPGA architecture that supports these features must be provided. Supporting these features implies that the architecture XML file provided to VTR must describe such features (e.g. by defining a hard block macro DSP slice). We provide such architectures with Koios. The FPGA architectures with advanced DSP that work out-of-the-box with Koios benchmarks are available here: 
 
@@ -29,17 +29,41 @@ If users want to use a different FPGA architecture file, they can replace the ma
 ## Proxy benchmarks
 In Koios 2.0, there are 8 synthetic/proxy benchmarks. These were generated using a framework that is present [here](https://github.com/UT-LCA/koios_proxy_benchmarks). To generate more benchmarks using this framework, use the generate_benchmark.py script.
 
+## SystemVerilog benchmarks
+In Koios, there are 3 system-verilog benchmarks. These are based on ARM FixyNN DeepFreeze and accelerate some layers of MobileNet.
+
 ## Regressions
-Koios benchmarks are tested by the following regression tests in VTR:
-| Suite         |Test Description      | Config file   | Wall-clock time   |
-|---------------|----------------------|---------------|-------------------|
-| Strong        | A test circuit. Goal is to check the architecture files.   | tasks/regression_tests/vtr_reg_strong/koios | 6 seconds |
-| Strong        | Same test circuit without enabling complex dsp features    | tasks/regression_tests/vtr_reg_strong/koios_no_complex_dsp | 6 seconds|
-| Nightly       | Small-to-medium sized designs from Koios run with one arch file                           | tasks/regression_tests/vtr_reg_nightly_test6/koios | 2 hours with -j3 |
-| Nightly       | Small-to-medium sized designs from Koios run with an arch file without enabling complex dsp features  | tasks/regression_tests/vtr_reg_nightly_test6/koios_no_complex_dsp | 2 hours with -j3 |
-| Nightly       | A small design from Koios run with various flavors of the arch file that enables complex dsp features  | tasks/regression_tests/vtr_reg_nightly_test6/koios_multi_arch | 2 hours with -j3 |
-| Weekly        | Large designs from Koios run with one arch file                           | tasks/regression_tests/vtr_reg_weekly/koios | a little over 24 hours with -j4 |
-| Weekly        | Large designs from Koios run with an arch file without enabling complex dsp features  | tasks/regression_tests/vtr_reg_weekly/koios_no_complex_dsp | a little over 24 hours with -j4 |
+Koios benchmarks are tested by the following tasks in VTR:
+| Suite         |Test Description      | Target | Complex DSP Features   | Config file   | Frontend   | Parser   |
+|---------------|----------------------|---------------|---------------|---------------|---------------|---------------|
+| Nightly       | Medium designs     | k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml | &#10003; | vtr_reg_nightly_test4/koios_medium | Parmys | |
+| Nightly       | Medium designs     | k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml |          | vtr_reg_nightly_test4/koios_medium_no_hb | Parmys | |
+| Nightly       | Medium designs     | k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml | &#10003; | vtr_reg_nightly_test4_odin/koios_medium | Odin | |
+| Nightly       | Medium designs     | k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml |          | vtr_reg_nightly_test4_odin/koios_medium_no_hb | Odin | |
+| Weekly        | Large designs      | k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml | &#10003; | vtr_reg_weekly/koios_large | Parmys | |
+| Weekly        | Large designs      | k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml |          | vtr_reg_weekly/koios_large_no_hb | Parmys | |
+| Weekly        | Large designs      | k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml | &#10003; | vtr_reg_weekly/koios_large_odin | Odin | |
+| Weekly        | Large designs      | k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml |          | vtr_reg_weekly/koios_large_no_hb_odin | Odin | |
+| Weekly        | Proxy designs      | k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml | &#10003; | vtr_reg_weekly/koios_proxy | Parmys | |
+| Weekly        | Proxy designs      | k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml |          | vtr_reg_weekly/koios_proxy_no_hb | Parmys | |
+| Weekly        | deepfreeze designs | k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml | &#10003; | vtr_reg_weekly/koios_sv | Parmys | System-Verilog |
+| Weekly        | deepfreeze designs | k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml |          | vtr_reg_weekly/koios_sv_no_hb | Parmys | System-Verilog |
+
+The following are only for regression testing and less important for benchmarking:
+| Suite         |Test Description      | Target | Complex DSP Features   | Config file   | Frontend   |
+|---------------|----------------------|---------------|---------------|---------------|---------------|
+| Strong        | A test circuit to check the architecture file | k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml | &#10003; | vtr_reg_strong/koios_test | Parmys |
+| Strong        | Same test circuit without hard blocks         | k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml |          | vtr_reg_strong/koios_test_no_hb | Parmys |
+| Strong        | A test circuit to check the architecture file | k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml | &#10003; | vtr_reg_strong_odin/koios_test | Odin |
+| Strong        | Same test circuit without hard blocks         | k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml |          | vtr_reg_strong_odin/koios_test_no_hb | Odin |
+| Nightly       | The `conv_layer.v` design                     | multiple                                        | &#10003; | vtr_reg_nightly_test4/koios_medium_multi_arch | Parmys |
+| Nightly       | The `conv_layer.v` design                     | multiple                                        | &#10003; | vtr_reg_nightly_test4_odin/koios_medium_multi_arch | Odin |
+| Nightly       | Other designs                                 | k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml | &#10003; | vtr_reg_nightly_test6/koios_other | Parmys |
+| Nightly       | Other designs                                 | k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml |          | vtr_reg_nightly_test6/koios_other_no_hb | Parmys |
+| Nightly       | The `bwave_like.fixed.small.v` design         | multiple                                        | &#10003; | vtr_reg_nightly_test6/koios_other_multi_arch | Parmys |
+| Weekly        | The `dla_like.large.v` design                 | k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml | &#10003; | vtr_reg_weekly/koios_dla_large | Parmys |
+| Weekly        | The `bwave_like.float.large.v` design         | k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml | &#10003; | vtr_reg_weekly/koios_bwave_float_large | Parmys | |
+
 
 ## Collecting QoR measurements
 For collecting QoR measurements on Koios benchmarks, follow the instructions [here](https://docs.verilogtorouting.org/en/latest/README.developers/#example-koios-benchmarks-qor-measurement).

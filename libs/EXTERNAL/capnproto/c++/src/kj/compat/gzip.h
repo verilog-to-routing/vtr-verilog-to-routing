@@ -25,15 +25,19 @@
 #include <kj/async-io.h>
 #include <zlib.h>
 
+KJ_BEGIN_HEADER
+
 namespace kj {
 
 namespace _ {  // private
+
+constexpr size_t KJ_GZ_BUF_SIZE = 4096;
 
 class GzipOutputContext final {
 public:
   GzipOutputContext(kj::Maybe<int> compressionLevel);
   ~GzipOutputContext() noexcept(false);
-  KJ_DISALLOW_COPY(GzipOutputContext);
+  KJ_DISALLOW_COPY_AND_MOVE(GzipOutputContext);
 
   void setInput(const void* in, size_t size);
   kj::Tuple<bool, kj::ArrayPtr<const byte>> pumpOnce(int flush);
@@ -41,7 +45,7 @@ public:
 private:
   bool compressing;
   z_stream ctx = {};
-  byte buffer[4096];
+  byte buffer[_::KJ_GZ_BUF_SIZE];
 
   [[noreturn]] void fail(int result);
 };
@@ -52,7 +56,7 @@ class GzipInputStream final: public InputStream {
 public:
   GzipInputStream(InputStream& inner);
   ~GzipInputStream() noexcept(false);
-  KJ_DISALLOW_COPY(GzipInputStream);
+  KJ_DISALLOW_COPY_AND_MOVE(GzipInputStream);
 
   size_t tryRead(void* buffer, size_t minBytes, size_t maxBytes) override;
 
@@ -61,7 +65,7 @@ private:
   z_stream ctx = {};
   bool atValidEndpoint = false;
 
-  byte buffer[4096];
+  byte buffer[_::KJ_GZ_BUF_SIZE];
 
   size_t readImpl(byte* buffer, size_t minBytes, size_t maxBytes, size_t alreadyRead);
 };
@@ -73,7 +77,7 @@ public:
   GzipOutputStream(OutputStream& inner, int compressionLevel = Z_DEFAULT_COMPRESSION);
   GzipOutputStream(OutputStream& inner, decltype(DECOMPRESS));
   ~GzipOutputStream() noexcept(false);
-  KJ_DISALLOW_COPY(GzipOutputStream);
+  KJ_DISALLOW_COPY_AND_MOVE(GzipOutputStream);
 
   void write(const void* buffer, size_t size) override;
   using OutputStream::write;
@@ -93,7 +97,7 @@ class GzipAsyncInputStream final: public AsyncInputStream {
 public:
   GzipAsyncInputStream(AsyncInputStream& inner);
   ~GzipAsyncInputStream() noexcept(false);
-  KJ_DISALLOW_COPY(GzipAsyncInputStream);
+  KJ_DISALLOW_COPY_AND_MOVE(GzipAsyncInputStream);
 
   Promise<size_t> tryRead(void* buffer, size_t minBytes, size_t maxBytes) override;
 
@@ -102,7 +106,7 @@ private:
   z_stream ctx = {};
   bool atValidEndpoint = false;
 
-  byte buffer[4096];
+  byte buffer[_::KJ_GZ_BUF_SIZE];
 
   Promise<size_t> readImpl(byte* buffer, size_t minBytes, size_t maxBytes, size_t alreadyRead);
 };
@@ -113,7 +117,7 @@ public:
 
   GzipAsyncOutputStream(AsyncOutputStream& inner, int compressionLevel = Z_DEFAULT_COMPRESSION);
   GzipAsyncOutputStream(AsyncOutputStream& inner, decltype(DECOMPRESS));
-  KJ_DISALLOW_COPY(GzipAsyncOutputStream);
+  KJ_DISALLOW_COPY_AND_MOVE(GzipAsyncOutputStream);
 
   Promise<void> write(const void* buffer, size_t size) override;
   Promise<void> write(ArrayPtr<const ArrayPtr<const byte>> pieces) override;
@@ -140,3 +144,5 @@ private:
 };
 
 }  // namespace kj
+
+KJ_END_HEADER

@@ -96,7 +96,7 @@ void commit_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected);
 
 void revert_move_blocks(t_pl_atom_blocks_to_be_moved& blocks_affected);
 
-void revert_move_blocks(t_pl_blocks_to_be_moved& blocks_affected);
+void revert_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected);
 
 void clear_move_blocks(t_pl_blocks_to_be_moved& blocks_affected);
 
