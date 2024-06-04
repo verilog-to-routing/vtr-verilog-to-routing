@@ -33,7 +33,7 @@ kj::Promise<void> expectRead(kj::AsyncInputStream& in, kj::StringPtr expected) {
   auto buffer = kj::heapArray<char>(expected.size());
 
   auto promise = in.tryRead(buffer.begin(), 1, buffer.size());
-  return promise.then(kj::mvCapture(buffer, [&in,expected](kj::Array<char> buffer, size_t amount) {
+  return promise.then([&in,expected,buffer=kj::mv(buffer)](size_t amount) {
     if (amount == 0) {
       KJ_FAIL_ASSERT("expected data never sent", expected);
     }
@@ -44,7 +44,7 @@ kj::Promise<void> expectRead(kj::AsyncInputStream& in, kj::StringPtr expected) {
     }
 
     return expectRead(in, expected.slice(amount));
-  }));
+  });
 }
 
 kj::String makeString(size_t size) {
@@ -307,7 +307,7 @@ KJ_TEST("KJ -> ByteStream RPC -> KJ pipe -> ByteStream RPC -> KJ with shortening
       rpc::twoparty::Side::CLIENT);
   capnp::TwoPartyClient server(*rpcConnection.ends[1],
       serverFactory.kjToCapnp(kj::mv(middlePipe.out)),
-      rpc::twoparty::Side::CLIENT);
+      rpc::twoparty::Side::SERVER);
 
   auto backWrapped = serverFactory.capnpToKj(server.bootstrap().castAs<ByteStream>());
   auto midPumpPormise = middlePipe.in->pumpTo(*backWrapped, 3);
@@ -377,7 +377,7 @@ KJ_TEST("KJ -> ByteStream RPC -> KJ pipe -> ByteStream RPC -> KJ with concurrent
       rpc::twoparty::Side::CLIENT);
   capnp::TwoPartyClient server(*rpcConnection.ends[1],
       serverFactory.kjToCapnp(kj::mv(middlePipe.out)),
-      rpc::twoparty::Side::CLIENT);
+      rpc::twoparty::Side::SERVER);
 
   auto backWrapped = serverFactory.capnpToKj(server.bootstrap().castAs<ByteStream>());
   auto midPumpPormise = middlePipe.in->pumpTo(*backWrapped);
@@ -448,7 +448,7 @@ KJ_TEST("KJ -> KJ pipe -> ByteStream RPC -> KJ pipe -> ByteStream RPC -> KJ with
       rpc::twoparty::Side::CLIENT);
   capnp::TwoPartyClient server(*rpcConnection.ends[1],
       serverFactory.kjToCapnp(kj::mv(middlePipe.out)),
-      rpc::twoparty::Side::CLIENT);
+      rpc::twoparty::Side::SERVER);
 
   auto backWrapped = serverFactory.capnpToKj(server.bootstrap().castAs<ByteStream>());
   auto midPumpPormise = middlePipe.in->pumpTo(*backWrapped);

@@ -2030,7 +2030,7 @@ The ``<segment>`` tag and its contents are described below.
 
 .. arch:tag:: <mux name="string"/>
 
-    :req_param name: Name of the mux switch type used to drive this type of segment.
+    :req_param name: Name of the mux switch type used to drive this type of segment by default, from both block outputs and other wires. This information is used during rr-graph construction, and a custom switch block can override this switch type for specific connections if desired.
 
     .. note:: For UNIDIRECTIONAL only.
 
@@ -2038,7 +2038,7 @@ The ``<segment>`` tag and its contents are described below.
 
 .. arch:tag:: <wire_switch name="string"/>
 
-    :req_param name: Name of the switch type used by other wires to drive this type of segment.
+    :req_param name: Name of the switch type used by other wires to drive this type of segment by default. This information is used during rr-graph construction, and a custom switch block can override this switch type for specific connections if desired.
 
     .. note:: For BIDIRECTIONAL only.
 

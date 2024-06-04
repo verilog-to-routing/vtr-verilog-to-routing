@@ -254,6 +254,13 @@ ArrayPtr<void* const> getStackTrace(ArrayPtr<void*> space, uint ignoreCount) {
 #endif
 }
 
+#if (__GNUC__ && !_WIN32) || __clang__
+// Allow dependents to override the implementation of stack symbolication by making it a weak
+// symbol. We prefer weak symbols over some sort of callback registration mechanism becasue this
+// allows an alternate symbolication library to be easily linked into tests without changing the
+// code of the test.
+__attribute__((weak))
+#endif
 String stringifyStackTrace(ArrayPtr<void* const> trace) {
   if (trace.size() == 0) return nullptr;
   if (getExceptionCallback().stackTraceMode() != ExceptionCallback::StackTraceMode::FULL) {
@@ -278,7 +285,8 @@ String stringifyStackTrace(ArrayPtr<void* const> trace) {
     IMAGEHLP_LINE64 lineInfo;
     memset(&lineInfo, 0, sizeof(lineInfo));
     lineInfo.SizeOfStruct = sizeof(lineInfo);
-    if (dbghelp.symGetLineFromAddr64(process, reinterpret_cast<DWORD64>(trace[i]), NULL, &lineInfo)) {
+    DWORD displacement;
+    if (dbghelp.symGetLineFromAddr64(process, reinterpret_cast<DWORD64>(trace[i]), &displacement, &lineInfo)) {
       lines[i] = kj::str('\n', lineInfo.FileName, ':', lineInfo.LineNumber);
     }
   }
@@ -714,6 +722,29 @@ retry:
   return filename;
 }
 
+void resetCrashHandlers() {
+#ifndef _WIN32
+  struct sigaction action;
+  memset(&action, 0, sizeof(action));
+
+  action.sa_handler = SIG_DFL;
+  KJ_SYSCALL(sigaction(SIGSEGV, &action, nullptr));
+  KJ_SYSCALL(sigaction(SIGBUS, &action, nullptr));
+  KJ_SYSCALL(sigaction(SIGFPE, &action, nullptr));
+  KJ_SYSCALL(sigaction(SIGABRT, &action, nullptr));
+  KJ_SYSCALL(sigaction(SIGILL, &action, nullptr));
+  KJ_SYSCALL(sigaction(SIGSYS, &action, nullptr));
+
+#ifdef KJ_DEBUG
+  KJ_SYSCALL(sigaction(SIGINT, &action, nullptr));
+#endif
+#endif
+
+#if !KJ_NO_EXCEPTIONS
+  std::set_terminate(nullptr);
+#endif
+}
+
 StringPtr KJ_STRINGIFY(Exception::Type type) {
   static const char* TYPE_STRINGS[] = {
     "failed",
@@ -805,6 +836,15 @@ void Exception::wrapContext(const char* file, int line, String&& description) {
 }
 
 void Exception::extendTrace(uint ignoreCount, uint limit) {
+  if (isFullTrace) {
+    // Awkward: extendTrace() was called twice without truncating in between. This should probably
+    // be an error, but historically we didn't check for this so I'm hesitant to make it an error
+    // now. We shouldn't actually extend the trace, though, as our current trace is presumably
+    // rooted in main() and it'd be weird to append frames "above" that.
+    // TODO(cleanup): Abort here and see what breaks?
+    return;
+  }
+
   KJ_STACK_ARRAY(void*, newTraceSpace, kj::min(kj::size(trace), limit) + ignoreCount + 1,
       sizeof(trace)/sizeof(trace[0]) + 8, 128);
 
@@ -816,10 +856,26 @@ void Exception::extendTrace(uint ignoreCount, uint limit) {
     // Copy the rest into our trace.
     memcpy(trace + traceCount, newTrace.begin(), newTrace.asBytes().size());
     traceCount += newTrace.size();
+    isFullTrace = true;
   }
 }
 
 void Exception::truncateCommonTrace() {
+  if (isFullTrace) {
+    // We're truncating the common portion of the full trace, turning it back into a limited
+    // trace.
+    isFullTrace = false;
+  } else {
+    // If the trace was never extended in the first place, trying to truncate it is at best a waste
+    // of time and at worst might remove information for no reason. So, don't.
+    //
+    // This comes up in particular in coroutines, when the exception originated from a co_awaited
+    // promise. In that case we manually add the one relevant frame to the trace, rather than
+    // call extendTrace() just to have to truncate most of it again a moment later in the
+    // unhandled_exception() callback.
+    return;
+  }
+
   if (traceCount > 0) {
     // Create a "reference" stack trace that is a little bit deeper than the one in the exception.
     void* refTraceSpace[sizeof(this->trace) / sizeof(this->trace[0]) + 4];
@@ -857,6 +913,9 @@ void Exception::truncateCommonTrace() {
 }
 
 void Exception::addTrace(void* ptr) {
+  // TODO(cleanup): Abort here if isFullTrace is true, and see what breaks. This method only makes
+  // sense to call on partial traces.
+
   if (traceCount < kj::size(trace)) {
     trace[traceCount++] = ptr;
   }
@@ -969,14 +1028,21 @@ KJ_THREADLOCAL_PTR(ExceptionCallback) threadLocalCallback = nullptr;
 
 }  // namespace
 
-ExceptionCallback::ExceptionCallback(): next(getExceptionCallback()) {
+void requireOnStack(void* ptr, kj::StringPtr description) {
+#if defined(FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION) || \
+    KJ_HAS_COMPILER_FEATURE(address_sanitizer) || \
+    defined(__SANITIZE_ADDRESS__)
+  // When using libfuzzer or ASAN, this sanity check may spurriously fail, so skip it.
+#else
   char stackVar;
-#ifndef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
-  ptrdiff_t offset = reinterpret_cast<char*>(this) - &stackVar;
-  KJ_ASSERT(offset < 65536 && offset > -65536,
-            "ExceptionCallback must be allocated on the stack.");
+  ptrdiff_t offset = reinterpret_cast<char*>(ptr) - &stackVar;
+  KJ_REQUIRE(offset < 65536 && offset > -65536,
+            kj::str(description));
 #endif
+}
 
+ExceptionCallback::ExceptionCallback(): next(getExceptionCallback()) {
+  requireOnStack(this, "ExceptionCallback must be allocated on the stack.");
   threadLocalCallback = this;
 }
 
@@ -1124,13 +1190,13 @@ ExceptionCallback& getExceptionCallback() {
 }
 
 void throwFatalException(kj::Exception&& exception, uint ignoreCount) {
-  exception.extendTrace(ignoreCount + 1);
+  if (ignoreCount != (uint)kj::maxValue) exception.extendTrace(ignoreCount + 1);
   getExceptionCallback().onFatalException(kj::mv(exception));
   abort();
 }
 
 void throwRecoverableException(kj::Exception&& exception, uint ignoreCount) {
-  exception.extendTrace(ignoreCount + 1);
+  if (ignoreCount != (uint)kj::maxValue) exception.extendTrace(ignoreCount + 1);
   getExceptionCallback().onRecoverableException(kj::mv(exception));
 }
 
@@ -1138,7 +1204,7 @@ void throwRecoverableException(kj::Exception&& exception, uint ignoreCount) {
 
 namespace _ {  // private
 
-#if __cplusplus >= 201703L
+#if KJ_CPP_STD >= 201703L
 
 uint uncaughtExceptionCount() {
   return std::uncaught_exceptions();
@@ -1220,12 +1286,14 @@ bool UnwindDetector::isUnwinding() const {
   return _::uncaughtExceptionCount() > uncaughtCount;
 }
 
-void UnwindDetector::catchExceptionsAsSecondaryFaults(_::Runnable& runnable) const {
+#if !KJ_NO_EXCEPTIONS
+void UnwindDetector::catchThrownExceptionAsSecondaryFault() const {
   // TODO(someday):  Attach the secondary exception to whatever primary exception is causing
   //   the unwind.  For now we just drop it on the floor as this is probably fine most of the
   //   time.
-  runCatchingExceptions(runnable);
+  getCaughtExceptionAsKj();
 }
+#endif
 
 #if __GNUC__ && !KJ_NO_RTTI
 static kj::String demangleTypeName(const char* name) {
@@ -1294,6 +1362,8 @@ kj::ArrayPtr<void* const> computeRelativeTrace(
   return bestMatch;
 }
 
+#if KJ_NO_EXCEPTIONS
+
 namespace _ {  // private
 
 class RecoverableExceptionCatcher: public ExceptionCallback {
@@ -1315,17 +1385,21 @@ public:
 };
 
 Maybe<Exception> runCatchingExceptions(Runnable& runnable) {
-#if KJ_NO_EXCEPTIONS
   RecoverableExceptionCatcher catcher;
   runnable.run();
   KJ_IF_MAYBE(e, catcher.caught) {
     e->truncateCommonTrace();
   }
   return mv(catcher.caught);
-#else
+}
+
+}  // namespace _ (private)
+
+#else  // KJ_NO_EXCEPTIONS
+
+kj::Exception getCaughtExceptionAsKj() {
   try {
-    runnable.run();
-    return nullptr;
+    throw;
   } catch (Exception& e) {
     e.truncateCommonTrace();
     return kj::mv(e);
@@ -1347,9 +1421,7 @@ Maybe<Exception> runCatchingExceptions(Runnable& runnable) {
     return Exception(Exception::Type::FAILED, "(unknown)", -1, str("unknown non-KJ exception"));
 #endif
   }
-#endif
 }
-
-}  // namespace _ (private)
+#endif  // !KJ_NO_EXCEPTIONS
 
 }  // namespace kj
