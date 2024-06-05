@@ -105,6 +105,7 @@ bool WestFirstRouting::is_turn_legal(const std::array<std::reference_wrapper<con
     const int x3 = noc_routers[2].get().get_router_grid_position_x();
     const int y3 = noc_routers[2].get().get_router_grid_position_y();
 
+    // check if the given routers can be traversed one after another
     VTR_ASSERT(x2 == x1 || y2 == y1);
     VTR_ASSERT(x3 == x2 || y3 == y2);
 
@@ -113,6 +114,11 @@ bool WestFirstRouting::is_turn_legal(const std::array<std::reference_wrapper<con
         return false;
     }
 
+    /* In the west-first routing algorithm, once the traffic flow
+     * moved in a vertical direction, it is no longer allowed to move
+     * towards west. Therefore, if the first link was travelling in a
+     * vertical direction, the second link can't move towards left.
+     */
     if (y2 != y1 && x3 < x2) {
         return false;
     }

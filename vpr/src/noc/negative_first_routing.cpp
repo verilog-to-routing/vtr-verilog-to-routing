@@ -119,6 +119,7 @@ bool NegativeFirstRouting::is_turn_legal(const std::array<std::reference_wrapper
     const int x3 = noc_routers[2].get().get_router_grid_position_x();
     const int y3 = noc_routers[2].get().get_router_grid_position_y();
 
+    // check if the given routers can be traversed one after another
     VTR_ASSERT(x2 == x1 || y2 == y1);
     VTR_ASSERT(x3 == x2 || y3 == y2);
 
@@ -127,10 +128,16 @@ bool NegativeFirstRouting::is_turn_legal(const std::array<std::reference_wrapper
         return false;
     }
 
+    /* In negative-first routing algorithm, a traffic flow
+     * can't take a downward turn if it is travelling toward right direction.
+     */
     if (x2 > x1 && y3 < y2) {
         return false;
     }
 
+    /* In negative-first routing algorithm, a traffic flow
+     * can't take a left turn if it is travelling upwards.
+     */
     if (y2 > y1 && x3 < x2) {
         return false;
     }

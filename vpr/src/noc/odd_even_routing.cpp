@@ -171,12 +171,12 @@ bool OddEvenRouting::is_turn_legal(const std::array<std::reference_wrapper<const
     const int x3 = noc_routers[2].get().get_router_grid_position_x();
     const int y3 = noc_routers[2].get().get_router_grid_position_y();
 
+    // check if the given routers can be traversed one after another
     VTR_ASSERT(x2 == x1 || y2 == y1);
     VTR_ASSERT(x3 == x2 || y3 == y2);
 
     // get the position of the second NoC routers
     const auto router2_pos = noc_routers[1].get().get_router_physical_location();
-
 
     // Get the logical block type for router
     const auto router_block_type = cluster_ctx.clb_nlist.block_type(noc_ctx.noc_traffic_flows_storage.get_router_clusters_in_netlist()[0]);
@@ -192,6 +192,7 @@ bool OddEvenRouting::is_turn_legal(const std::array<std::reference_wrapper<const
         return false;
     }
 
+    // check if the turn is compatible with odd-even routing algorithm turn restrictions
     if (is_odd(compressed_2_loc.x)) {
         if (y2 != y1 && x3 < x2) {
             return false;

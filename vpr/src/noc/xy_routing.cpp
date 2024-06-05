@@ -92,6 +92,7 @@ bool XYRouting::is_turn_legal(const std::array<std::reference_wrapper<const NocR
     const int x3 = noc_routers[2].get().get_router_grid_position_x();
     const int y3 = noc_routers[2].get().get_router_grid_position_y();
 
+    // check if the given routers can be traversed one after another
     VTR_ASSERT(x2 == x1 || y2 == y1);
     VTR_ASSERT(x3 == x2 || y3 == y2);
 
