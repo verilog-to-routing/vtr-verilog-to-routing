@@ -482,7 +482,7 @@ static void create_flow_link_vars(orsat::CpModelBuilder& cp_model,
         const auto& traffic_flow = traffic_flow_storage.get_single_noc_traffic_flow(traffic_flow_id);
 
         // create an integer variable for each latency-constrained traffic flow
-        if (traffic_flow.max_traffic_flow_latency < 0.1) {
+        if (traffic_flow.max_traffic_flow_latency < NocTrafficFlows::DEFAULT_MAX_TRAFFIC_FLOW_LATENCY) {
             latency_overrun_vars[traffic_flow_id] = cp_model.NewIntVar(latency_overrun_domain);
         }
 
@@ -530,7 +530,7 @@ static int comp_max_number_of_traversed_links(NocTrafficFlowId traffic_flow_id) 
 
     const double traffic_flow_latency_constraint = traffic_flow.max_traffic_flow_latency;
 
-    VTR_ASSERT(traffic_flow_latency_constraint < 0.1);
+    VTR_ASSERT(traffic_flow_latency_constraint < NocTrafficFlows::DEFAULT_MAX_TRAFFIC_FLOW_LATENCY);
 
     int n_max_links = std::floor((traffic_flow_latency_constraint - noc_router_latency) / (noc_link_latency + noc_router_latency));
 
