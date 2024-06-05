@@ -9,13 +9,15 @@
 #include "echo_files.h"
 #include "constraints_load.h"
 #include "vtr_log.h"
+#include "vtr_error.h"
 #include "globals.h" //for the g_vpr_ctx
+#include "clock_modeling.h"
 
 #include "vpr_constraints_uxsdcxx_interface.h"
 
 /**
  * @file
- * @brief The reading of vpr floorplanning constraints is now done via uxsdcxx and the 'vpr_constraints.xsd' file.
+ * @brief The reading of vpr constraints is now done via uxsdcxx and the 'vpr_constraints.xsd' file.
  *        The interface between the generated code and VPR is provided by VprConstraintsBase, which is in the
  *        file 'vpr/src/base/gen/vpr_constraints_uxsdcxx_interface.h'.
  * 		  This file implements the virtual functions from VprConstraintsBase.
@@ -70,7 +72,7 @@ struct VprConstraintsContextTypes : public uxsd::DefaultVprConstraintsContextTyp
     using AddRegionReadContext = Region;
     using PartitionReadContext = partition_info;
     using PartitionListReadContext = void*;
-    using SetGlobalSignalReadContext = RouteConstraint;
+    using SetGlobalSignalReadContext = std::pair<std::string, RoutingScheme>;
     using GlobalRouteConstraintsReadContext = void*;
     using VprConstraintsReadContext = void*;
     using AddAtomWriteContext = void*;
@@ -107,6 +109,18 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
     // the reader implementation to add context (e.g. file and line number).
     void error_encountered(const char* file, int line, const char* message) final {
         vpr_throw(VPR_ERROR_OTHER, file, line, "%s", message);
+    }
+
+    //resets the routing scheme defined within loaded_route_constraint to the default values 
+    void reset_loaded_route_constrints(){
+        // The network name in the routing scheme needs to be reset to its default value
+        // before loading a new constraint for error-checking purposes when the route model
+        // is set to dedicated network. The "network_name" attribute is an optional argument
+        // but must be specified for use with dedicated network routing. Before loading the
+        // constraint, this parameter is set to the default value "INVALID". If, after loading
+        // the constraint, this parameter still has its default value but the route model
+        // is set to dedicated network, VPR will throw an error.
+        loaded_route_constraint.second.reset();
     }
 
     /** Generated for complex type "add_atom":
@@ -228,7 +242,7 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
         PartitionId part_id(num_partitions_);
 
         for (auto atom : atoms_) {
-            constraints_.add_constrained_atom(atom, part_id);
+            constraints_.mutable_place_constraints().add_constrained_atom(atom, part_id);
         }
     }
 
@@ -285,12 +299,12 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
         PartitionRegion clear_pr;
         loaded_part_region = clear_pr;
 
-        constraints_.add_partition(loaded_partition);
+        constraints_.mutable_place_constraints().add_partition(loaded_partition);
 
         num_partitions_++;
     }
     virtual inline size_t num_partition_list_partition(void*& /*ctx*/) final {
-        return constraints_.get_num_partitions();
+        return constraints_.place_constraints().get_num_partitions();
     }
 
     /*
@@ -299,8 +313,8 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
      */
     virtual inline partition_info get_partition_list_partition(int n, void*& /*ctx*/) final {
         PartitionId partid(n);
-        Partition part = constraints_.get_partition(partid);
-        std::vector<AtomBlockId> atoms = constraints_.get_part_atoms(partid);
+        Partition part = constraints_.place_constraints().get_partition(partid);
+        std::vector<AtomBlockId> atoms = constraints_.place_constraints().get_part_atoms(partid);
 
         partition_info part_info;
         part_info.part = part;
@@ -313,33 +327,60 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
     /** Generated for complex type "set_global_signal":
      * <xs:complexType name="set_global_signal">
      *   <xs:attribute name="name" type="xs:string" use="required" />
-     *   <xs:attribute name="type" type="xs:string" use="required" />
+     *   <xs:attribute name="network_name" type="xs:string" use="required" />
      *   <xs:attribute name="route_model" type="xs:string" use="required" />
      * </xs:complexType>
      */
-    virtual inline const char* get_set_global_signal_name(RouteConstraint& rc) final {
-        temp_name_string_ = rc.net_name();
+
+        e_clock_modeling from_uxsd_route_model(uxsd::enum_route_model_type route_model) {
+        switch (route_model) {
+            case uxsd::enum_route_model_type::DEDICATED_NETWORK:
+                return e_clock_modeling::DEDICATED_NETWORK;
+            case uxsd::enum_route_model_type::ROUTE:
+                return e_clock_modeling::ROUTED_CLOCK;
+            case uxsd::enum_route_model_type::IDEAL:
+                return e_clock_modeling::IDEAL_CLOCK;
+            default:
+                VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                         "Invalid route model %d", route_model);
+        }
+    }
+
+    uxsd::enum_route_model_type to_uxsd_route_model(e_clock_modeling route_model) {
+        switch (route_model) {
+            case e_clock_modeling::DEDICATED_NETWORK:
+                return uxsd::enum_route_model_type::DEDICATED_NETWORK;
+            case e_clock_modeling::ROUTED_CLOCK:
+                return uxsd::enum_route_model_type::ROUTE;
+            case e_clock_modeling::IDEAL_CLOCK:
+                return uxsd::enum_route_model_type::IDEAL;
+            default:
+                VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                         "Invalid route model %d", route_model);
+        }
+    }
+
+    virtual inline const char* get_set_global_signal_name(std::pair<std::string, RoutingScheme>& rc) final {
+        temp_name_string_ = rc.first;
         return temp_name_string_.c_str();
     }
     virtual inline void set_set_global_signal_name(const char* name, void*& /*ctx*/) final {
         std::string net_name = std::string(name);
-        loaded_route_constraint.set_net_name(net_name);
+        loaded_route_constraint.first = net_name;
         return;
     }
-    virtual inline const char* get_set_global_signal_route_model(RouteConstraint& rc) final {
-        temp_name_string_ = rc.route_model();
+    virtual inline uxsd::enum_route_model_type get_set_global_signal_route_model(std::pair<std::string, RoutingScheme>& rc) final {
+        return to_uxsd_route_model(rc.second.route_model());
+    }
+    virtual inline void set_set_global_signal_route_model(uxsd::enum_route_model_type route_model, void*& /*ctx*/) final {
+        loaded_route_constraint.second.set_route_model(from_uxsd_route_model(route_model));
+    }
+    virtual inline const char* get_set_global_signal_network_name(std::pair<std::string, RoutingScheme>& rc) final {
+        temp_name_string_ = rc.second.network_name();
         return temp_name_string_.c_str();
     }
-    virtual inline void set_set_global_signal_route_model(const char* route_model, void*& /*ctx*/) final {
-        loaded_route_constraint.set_route_model(std::string(route_model));
-        loaded_route_constraint.set_is_valid(true);
-    }
-    virtual inline const char* get_set_global_signal_type(RouteConstraint& rc) final {
-        temp_name_string_ = rc.net_type();
-        return temp_name_string_.c_str();
-    }
-    virtual inline void set_set_global_signal_type(const char* type, void*& /*ctx*/) final {
-        loaded_route_constraint.set_net_type(std::string(type));
+    virtual inline void set_set_global_signal_network_name(const char* network_name, void*& /*ctx*/) final {
+        loaded_route_constraint.second.set_network_name(std::string(network_name));
     }
 
     /** Generated for complex type "global_route_constraints":
@@ -350,25 +391,50 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
      * </xs:complexType>
      */
     virtual inline void preallocate_global_route_constraints_set_global_signal(void*& /*ctx*/, size_t /*size*/) final {}
-    virtual inline void* add_global_route_constraints_set_global_signal(void*& /*ctx*/) final {
+    virtual inline void* add_global_route_constraints_set_global_signal(void*& ctx, uxsd::enum_route_model_type route_model) final {
+        reset_loaded_route_constrints();
+        set_set_global_signal_route_model(route_model, ctx);
         return nullptr;
     }
     virtual inline void finish_global_route_constraints_set_global_signal(void*& /*ctx*/) final {
-        constraints_.add_route_constraint(loaded_route_constraint);
+        if(loaded_route_constraint.second.route_model() == e_clock_modeling::DEDICATED_NETWORK
+            && loaded_route_constraint.second.network_name() == "INVALID"){
+                VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                            "Invalid routing constraint for net \"%s\". The network name has to be specified when routing model is set to \"dedicated_network\".\n", loaded_route_constraint.first.c_str());
+            }
+        constraints_.mutable_route_constraints().add_route_constraint(loaded_route_constraint.first, loaded_route_constraint.second);
     }
     virtual inline size_t num_global_route_constraints_set_global_signal(void*& /*ctx*/) final {
-        return constraints_.get_route_constraint_num();
+        return constraints_.route_constraints().get_num_route_constraints();
     }
-    virtual inline RouteConstraint get_global_route_constraints_set_global_signal(int n, void*& /*ctx*/) final {
-        return constraints_.get_route_constraint_by_idx((std::size_t)n);
+    virtual inline std::pair<std::string, RoutingScheme> get_global_route_constraints_set_global_signal(int n, void*& /*ctx*/) final {
+        return constraints_.route_constraints().get_route_constraint_by_idx((std::size_t)n);
     }
+
+    virtual inline void* init_vpr_constraints_global_route_constraints(void*& /*ctx*/) final {
+        return nullptr;
+    }
+
+    virtual inline void finish_vpr_constraints_global_route_constraints(void*& /*ctx*/) final {}
+
+    virtual inline void* get_vpr_constraints_global_route_constraints(void*& /*ctx*/) final {
+        return nullptr;
+    }
+
+    virtual inline bool has_vpr_constraints_global_route_constraints(void*& /*ctx*/){
+        if(constraints_.route_constraints().get_num_route_constraints() > 0)
+            return true;
+        else   
+            return false;
+    }
+	
 
     /** Generated for complex type "vpr_constraints":
      * <xs:complexType xmlns:xs="http://www.w3.org/2001/XMLSchema">
-     *     <xs:choice minOccurs="0" maxOccurs="unbounded">
+     *      <xs:all minOccurs="0">
      *       <xs:element name="partition_list" type="partition_list" />
      *       <xs:element name="global_route_constraints" type="global_route_constraints" />
-     *     </xs:choice>
+     *     </xs:all>
      *     <xs:attribute name="tool_name" type="xs:string" />
      *   </xs:complexType>
      */
@@ -426,6 +492,12 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
         return nullptr;
     }
 
+    virtual inline bool has_vpr_constraints_partition_list(void*& /*ctx*/) final{
+        if(constraints_.place_constraints().get_num_partitions() > 0)
+            return true;
+        else   
+            return false;
+    }
     virtual void finish_load() final {
         return;
     }
@@ -448,7 +520,7 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
     Region loaded_region;
     Partition loaded_partition;
     PartitionRegion loaded_part_region;
-    RouteConstraint loaded_route_constraint;
+    std::pair<std::string, RoutingScheme> loaded_route_constraint;
 
     //temp string used when a method must return a const char*
     std::string temp_ = "vpr";

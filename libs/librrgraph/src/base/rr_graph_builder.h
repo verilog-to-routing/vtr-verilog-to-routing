@@ -119,10 +119,17 @@ class RRGraphBuilder {
     inline void set_node_type(RRNodeId id, t_rr_type type) {
         node_storage_.set_node_type(id, type);
     }
+
     /** @brief Create a new rr_node in the node storage and register it to the node look-up.
      *  Return a valid node id if succeed. Otherwise, return an invalid id.
      */
     RRNodeId create_node(int layer, int x, int y, t_rr_type type, int ptc, e_side side = NUM_SIDES); 
+
+    /** @brief Set the node name with a given valid id */
+    inline void set_node_name(RRNodeId id, std::string name) {
+        node_storage_.set_node_name(id, name);
+    }
+
     /**
      * @brief Add an existing rr_node in the node storage to the node look-up
      *
@@ -257,6 +264,11 @@ class RRGraphBuilder {
      *  Require build_in_edges() to be called first
      */
     std::vector<RREdgeId> node_in_edges(RRNodeId node) const;
+
+    /** @brief Set the node id for clock network virtual sink */
+    inline void set_virtual_clock_network_root_idx(RRNodeId virtual_clock_network_root_idx) {
+        node_storage_.set_virtual_clock_network_root_idx(virtual_clock_network_root_idx);
+    }
 
     /** @brief Reserve the lists of edges to be memory efficient.
      * This function is mainly used to reserve memory space inside RRGraph,

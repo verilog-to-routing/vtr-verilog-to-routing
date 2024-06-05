@@ -12,8 +12,8 @@
 #include "vpr_constraints_reader.h"
 #include "vtr_token.h"
 
-void load_vpr_constraints_files(const char* read_vpr_constraints_name) {
-    vtr::ScopedStartFinishTimer timer("Loading VPR constraints file(s)");
+void load_vpr_constraints_file(const char* read_vpr_constraints_name) {
+    vtr::ScopedStartFinishTimer timer("Reading VPR constraints from " + std::string(read_vpr_constraints_name));
 
     VprConstraintsSerializer reader;
 
@@ -58,13 +58,11 @@ void load_vpr_constraints_files(const char* read_vpr_constraints_name) {
 
     //Update the floorplanning constraints in the floorplanning constraints context
     auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
-    floorplanning_ctx.constraints = reader.constraints_;
+    floorplanning_ctx.constraints = reader.constraints_.place_constraints();
 
-
-    // update vpr constraints for routing
     auto& routing_ctx = g_vpr_ctx.mutable_routing();
-    routing_ctx.constraints = reader.constraints_;
-
+    routing_ctx.constraints = reader.constraints_.route_constraints();
+    
     const auto& ctx_constraints = floorplanning_ctx.constraints;
 
     if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_VPR_CONSTRAINTS)) {

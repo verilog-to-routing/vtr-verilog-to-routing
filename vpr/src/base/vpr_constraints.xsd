@@ -60,17 +60,24 @@
   </xs:complexType>
 
 
+<xs:simpleType name="route_model_type">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="ideal"/>
+      <xs:enumeration value="route"/>
+      <xs:enumeration value="dedicated_network"/>
+    </xs:restriction>
+  </xs:simpleType>
 
-  <!-- Add for global route constraint, an example
-    <global_route_constraints>
-      <set_global_signal name="clk0" type="clock" route_model="ideal"/> 
-      ...
-    </global_route_constraints>
-    -->
+  <!-- Add a global route constraint, an example:
+  <global_route_constraints>
+    <set_global_signal name="clk0" network_name="global_clock_network" route_model="dedicated_network"/> 
+    ...
+  </global_route_constraints>
+  -->
   <xs:complexType name="set_global_signal">
     <xs:attribute name="name" type="xs:string" use="required"/>
-    <xs:attribute name="type" type="xs:string" use="required"/>
-    <xs:attribute name="route_model" type="xs:string" use="required"/>
+    <xs:attribute name="route_model" type="route_model_type" use="required"/>
+    <xs:attribute name="network_name" type="xs:string"/>
   </xs:complexType>
 
   <xs:complexType name="global_route_constraints">
@@ -85,10 +92,11 @@
     -->
   <xs:element name="vpr_constraints">
     <xs:complexType>
-      <xs:choice minOccurs="0" maxOccurs="unbounded">
+      <xs:all minOccurs="0">
         <xs:element name="partition_list" type="partition_list"/>
         <xs:element name="global_route_constraints" type="global_route_constraints"/>
-      </xs:choice>
+      </xs:all>
+
       <xs:attribute name="tool_name" type="xs:string"/>
     </xs:complexType>
   </xs:element>

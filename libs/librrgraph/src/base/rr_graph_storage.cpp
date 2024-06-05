@@ -1,6 +1,8 @@
 #include <climits>
 #include "arch_types.h"
 #include "rr_graph_storage.h"
+#include "vtr_expr_eval.h"
+#include "vtr_error.h"
 
 #include <algorithm>
 
@@ -726,6 +728,9 @@ void t_rr_graph_storage::set_node_type(RRNodeId id, t_rr_type new_type) {
     node_storage_[id].type_ = new_type;
 }
 
+void t_rr_graph_storage::set_node_name(RRNodeId id, std::string new_name) {
+    node_name_.insert(std::make_pair(id, new_name));
+}
 void t_rr_graph_storage::set_node_coordinates(RRNodeId id, short x1, short y1, short x2, short y2) {
     auto& node = node_storage_[id];
     if (x1 < x2) {
@@ -782,6 +787,20 @@ void t_rr_graph_storage::add_node_side(RRNodeId id, e_side new_side) {
     node_storage_[id].dir_side_.sides = static_cast<unsigned char>(side_bits.to_ulong());
 }
 
+void t_rr_graph_storage::set_virtual_clock_network_root_idx(RRNodeId virtual_clock_network_root_idx) {
+    // Retrieve the name string for the specified RRNodeId.
+    auto clock_network_name_str = node_name(virtual_clock_network_root_idx);
+
+    // If the name is available, associate it with the given node id for the clock network virtual sink.
+    if(clock_network_name_str) {
+        virtual_clock_network_root_idx_.insert(std::make_pair(*(clock_network_name_str.value()), virtual_clock_network_root_idx));
+    }
+    else {
+        // If no name is available, throw a VtrError indicating the absence of the attribute name for the virtual sink node.
+        throw vtr::VtrError(vtr::string_fmt("Attribute name is not specified for virtual sink node '%u'\n", size_t(virtual_clock_network_root_idx)), __FILE__, __LINE__);
+    }
+}
+
 int t_rr_graph_view::node_ptc_num(RRNodeId id) const {
     return node_ptc_[id].ptc_.pin_num;
 }
@@ -805,10 +824,12 @@ t_rr_graph_view t_rr_graph_storage::view() const {
         vtr::make_const_array_view_id(node_first_edge_),
         vtr::make_const_array_view_id(node_fan_in_),
         vtr::make_const_array_view_id(node_layer_),
+        node_name_,
         vtr::make_const_array_view_id(node_ptc_twist_incr_),
         vtr::make_const_array_view_id(edge_src_node_),
         vtr::make_const_array_view_id(edge_dest_node_),
-        vtr::make_const_array_view_id(edge_switch_));
+        vtr::make_const_array_view_id(edge_switch_),
+        virtual_clock_network_root_idx_);
 }
 
 // Given `order`, a vector mapping each RRNodeId to a new one (old -> new),

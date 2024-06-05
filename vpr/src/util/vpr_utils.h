@@ -13,6 +13,7 @@
 #include "arch_util.h"
 #include "physical_types_util.h"
 #include "rr_graph_utils.h"
+#include "vpr_constraints.h"
 
 class DeviceGrid;
 
@@ -315,6 +316,16 @@ void add_pb_child_to_list(std::list<const t_pb*>& pb_list, const t_pb* parent_pb
 // apply route constraints for route flow
 class VprConstraints;
 void apply_route_constraints(VprConstraints& constraint);
+
+/**
+ * @brief Apply user-defined route constraints to set the 'net_is_ignored_' and 'net_is_global_' flags.
+ *
+ * The 'net_is_global_' flag is used to identify global nets, which can be either clock signals or specified as global by user constraints.
+ * The 'net_is_ignored_' flag ensures that the router will ignore routing for the net.
+ *
+ * @param route_constraints User-defined route constraints to guide the application of constraints.
+ */
+void apply_route_constraints(const UserRouteConstraints& constraint);
 
 /**
  * @brief Iterate over all inter-layer switch types and return the minimum delay of it.
