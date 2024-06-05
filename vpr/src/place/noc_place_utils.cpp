@@ -11,7 +11,10 @@
 #include "noc_routing.h"
 #include "place_constraints.h"
 #include "move_transactions.h"
+
+#ifdef ENABLE_NOC_SAT_ROUTING
 #include "sat_routing.h"
+#endif
 
 #include <fstream>
 
@@ -929,6 +932,7 @@ bool noc_routing_has_cycle(const vtr::vector<NocTrafficFlowId, std::vector<NocLi
     return has_cycles;
 }
 
+#ifdef ENABLE_NOC_SAT_ROUTING
 void invoke_sat_router(t_placer_costs& costs, const t_noc_opts& noc_opts, int seed) {
 
     auto traffic_flow_routes = noc_sat_route(true, noc_opts, seed);
@@ -947,6 +951,7 @@ void invoke_sat_router(t_placer_costs& costs, const t_noc_opts& noc_opts, int se
         VTR_LOG("SAT routing failed.\n");
     }
 }
+#endif
 
 void print_noc_costs(std::string_view header, const t_placer_costs& costs, const t_noc_opts& noc_opts) {
     VTR_LOG("%s. "

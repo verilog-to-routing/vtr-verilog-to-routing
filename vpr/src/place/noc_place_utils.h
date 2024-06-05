@@ -578,7 +578,9 @@ bool noc_routing_has_cycle(const vtr::vector<NocTrafficFlowId, std::vector<NocLi
  * @param noc_opts Contains NoC-related cost weighting factor used in the SAT router.
  * @param seed The initialization seed used in the SAT solver.
  */
+#ifdef ENABLE_NOC_SAT_ROUTING
 void invoke_sat_router(t_placer_costs& costs, const t_noc_opts& noc_opts, int seed);
+#endif
 
 /**
  * @brief Prints NoC related costs terms and metrics.
