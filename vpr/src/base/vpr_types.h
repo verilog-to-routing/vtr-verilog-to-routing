@@ -790,7 +790,7 @@ struct t_pl_loc {
     }
 
     friend bool operator==(const t_pl_loc& lhs, const t_pl_loc& rhs) {
-        return std::tie(lhs.x, lhs.y, lhs.sub_tile, lhs.layer) == std::tie(rhs.x, rhs.y, rhs.sub_tile, rhs.layer);
+        return std::tie(lhs.layer, lhs.x, lhs.y, lhs.sub_tile) == std::tie(rhs.layer, rhs.x, rhs.y, rhs.sub_tile);
     }
 
     friend bool operator!=(const t_pl_loc& lhs, const t_pl_loc& rhs) {

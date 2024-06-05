@@ -99,10 +99,10 @@ void reset_move_nets(int num_nets_affected);
  * @param costs
  */
 void recompute_costs_from_scratch(const t_placer_opts& placer_opts,
-                                  const t_noc_opts& noc_opts,
-                                  const PlaceDelayModel* delay_model,
-                                  const PlacerCriticalities* criticalities,
-                                  t_placer_costs* costs);
+                                const t_noc_opts& noc_opts,
+                                const PlaceDelayModel* delay_model,
+                                const PlacerCriticalities* criticalities,
+                                t_placer_costs* costs);
 
 /**
  * @brief Allocates and loads the chanx_place_cost_fac and chany_place_cost_fac

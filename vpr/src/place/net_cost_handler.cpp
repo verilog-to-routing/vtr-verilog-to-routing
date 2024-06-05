@@ -4,6 +4,7 @@
 #include "move_utils.h"
 #include "place_timing_update.h"
 #include "noc_place_utils.h"
+#include "vtr_math.h"
 
 using std::max;
 using std::min;
@@ -2026,68 +2027,66 @@ void reset_move_nets(int num_nets_affected) {
 }
 
 void recompute_costs_from_scratch(const t_placer_opts& placer_opts,
-                                  const t_noc_opts& noc_opts,
-                                  const PlaceDelayModel* delay_model,
-                                  const PlacerCriticalities* criticalities,
-                                  t_placer_costs* costs) {
+                                const t_noc_opts& noc_opts,
+                                const PlaceDelayModel* delay_model,
+                                const PlacerCriticalities* criticalities,
+                                t_placer_costs* costs) {
+    auto check_and_print_cost = [](double new_cost,
+                                   double old_cost,
+                                   const std::string& cost_name) {
+        if (!vtr::isclose(new_cost, old_cost, ERROR_TOL, 0.)) {
+            std::string msg = vtr::string_fmt(
+                "in recompute_costs_from_scratch: new_%s = %g, old %s = %g, ERROR_TOL = %g\n",
+                cost_name.c_str(), new_cost, cost_name.c_str(), old_cost, ERROR_TOL);
+            VPR_ERROR(VPR_ERROR_PLACE, msg.c_str());
+        }
+    };
+
     double new_bb_cost = recompute_bb_cost();
-    if (fabs(new_bb_cost - costs->bb_cost) > costs->bb_cost * ERROR_TOL) {
-        std::string msg = vtr::string_fmt(
-            "in recompute_costs_from_scratch: new_bb_cost = %g, old bb_cost = %g\n",
-            new_bb_cost, costs->bb_cost);
-        VPR_ERROR(VPR_ERROR_PLACE, msg.c_str());
-    }
+    check_and_print_cost(new_bb_cost, costs->bb_cost, "bb_cost");
     costs->bb_cost = new_bb_cost;
 
     if (placer_opts.place_algorithm.is_timing_driven()) {
         double new_timing_cost = 0.;
         comp_td_costs(delay_model, *criticalities, &new_timing_cost);
-        if (fabs(
-                new_timing_cost
-                - costs->timing_cost)
-            > costs->timing_cost * ERROR_TOL) {
-            std::string msg = vtr::string_fmt(
-                "in recompute_costs_from_scratch: new_timing_cost = %g, old timing_cost = %g, ERROR_TOL = %g\n",
-                new_timing_cost, costs->timing_cost, ERROR_TOL);
-            VPR_ERROR(VPR_ERROR_PLACE, msg.c_str());
-        }
+        check_and_print_cost(new_timing_cost, costs->timing_cost, "timing_cost");
         costs->timing_cost = new_timing_cost;
     } else {
         VTR_ASSERT(placer_opts.place_algorithm == BOUNDING_BOX_PLACE);
-
         costs->cost = new_bb_cost * costs->bb_cost_norm;
     }
 
     if (noc_opts.noc) {
-        double new_noc_aggregate_bandwidth_cost = 0.;
-        double new_noc_latency_cost = 0.;
-        recompute_noc_costs(new_noc_aggregate_bandwidth_cost, new_noc_latency_cost);
+        NocCostTerms new_noc_cost;
+        recompute_noc_costs(new_noc_cost);
 
-        if (fabs(
-                new_noc_aggregate_bandwidth_cost
-                - costs->noc_aggregate_bandwidth_cost)
-            > costs->noc_aggregate_bandwidth_cost * ERROR_TOL) {
-            std::string msg = vtr::string_fmt(
-                "in recompute_costs_from_scratch: new_noc_aggregate_bandwidth_cost = %g, old noc_aggregate_bandwidth_cost = %g, ERROR_TOL = %g\n",
-                new_noc_aggregate_bandwidth_cost, costs->noc_aggregate_bandwidth_cost, ERROR_TOL);
-            VPR_ERROR(VPR_ERROR_PLACE, msg.c_str());
-        }
-        costs->noc_aggregate_bandwidth_cost = new_noc_aggregate_bandwidth_cost;
+        check_and_print_cost(new_noc_cost.aggregate_bandwidth,
+                             costs->noc_cost_terms.aggregate_bandwidth,
+                             "noc_aggregate_bandwidth");
+        costs->noc_cost_terms.aggregate_bandwidth = new_noc_cost.aggregate_bandwidth;
 
         // only check if the recomputed cost and the current noc latency cost are within the error tolerance if the cost is above 1 picosecond.
         // Otherwise, there is no need to check (we expect the latency cost to be above the threshold of 1 picosecond)
-        if (new_noc_latency_cost > MIN_EXPECTED_NOC_LATENCY_COST) {
-            if (fabs(
-                    new_noc_latency_cost
-                    - costs->noc_latency_cost)
-                > costs->noc_latency_cost * ERROR_TOL) {
-                std::string msg = vtr::string_fmt(
-                    "in recompute_costs_from_scratch: new_noc_latency_cost = %g, old noc_latency_cost = %g, ERROR_TOL = %g\n",
-                    new_noc_latency_cost, costs->noc_latency_cost, ERROR_TOL);
-                VPR_ERROR(VPR_ERROR_PLACE, msg.c_str());
-            }
+        if (new_noc_cost.latency > MIN_EXPECTED_NOC_LATENCY_COST) {
+            check_and_print_cost(new_noc_cost.latency,
+                                 costs->noc_cost_terms.latency,
+                                 "noc_latency_cost");
         }
-        costs->noc_latency_cost = new_noc_latency_cost;
+        costs->noc_cost_terms.latency = new_noc_cost.latency;
+
+        if (new_noc_cost.latency_overrun > MIN_EXPECTED_NOC_LATENCY_COST) {
+            check_and_print_cost(new_noc_cost.latency_overrun,
+                                 costs->noc_cost_terms.latency_overrun,
+                                 "noc_latency_overrun_cost");
+        }
+        costs->noc_cost_terms.latency_overrun = new_noc_cost.latency_overrun;
+
+        if (new_noc_cost.congestion > MIN_EXPECTED_NOC_CONGESTION_COST) {
+            check_and_print_cost(new_noc_cost.congestion,
+                                 costs->noc_cost_terms.congestion,
+                                 "noc_congestion_cost");
+        }
+        costs->noc_cost_terms.congestion = new_noc_cost.congestion;
     }
 }
 
