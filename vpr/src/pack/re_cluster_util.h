@@ -88,7 +88,8 @@ bool start_new_cluster_for_mol(t_pack_molecule* molecule,
                                t_clustering_data& clustering_data,
                                t_lb_router_data** router_data,
                                PartitionRegion& temp_cluster_pr,
-                               NocGroupId& temp_cluster_noc_grp_id);
+                               NocGroupId& temp_cluster_noc_grp_id,
+                               const int detailed_routing_stage = 1);
 
 /**
  * @brief A function that packs a molecule into an existing cluster
@@ -107,7 +108,8 @@ bool pack_mol_in_existing_cluster(t_pack_molecule* molecule,
                                   std::unordered_set<AtomBlockId>* new_clb_atoms,
                                   bool during_packing,
                                   t_clustering_data& clustering_data,
-                                  t_lb_router_data*& router_data);
+                                  t_lb_router_data*& router_data,
+                                  const int detailed_routing_stage = 1);
 
 /**
  * @brief A function that fix the clustered netlist if the move is performed

@@ -129,7 +129,8 @@ bool start_new_cluster_for_mol(t_pack_molecule* molecule,
                                t_clustering_data& clustering_data,
                                t_lb_router_data** router_data,
                                PartitionRegion& temp_cluster_pr,
-                               NocGroupId& temp_cluster_noc_grp_id) {
+                               NocGroupId& temp_cluster_noc_grp_id,
+                               const int& detailed_routing_stage) {
     auto& atom_ctx = g_vpr_ctx.atom();
     auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
     auto& helper_ctx = g_vpr_ctx.mutable_cl_helper();
@@ -164,7 +165,7 @@ bool start_new_cluster_for_mol(t_pack_molecule* molecule,
                                     helper_ctx.num_models,
                                     helper_ctx.max_cluster_size,
                                     clb_index,
-                                    E_DETAILED_ROUTE_FOR_EACH_ATOM,
+                                    detailed_routing_stage,
                                     *router_data,
                                     0,
                                     enable_pin_feasibility_filter,
@@ -212,7 +213,8 @@ bool pack_mol_in_existing_cluster(t_pack_molecule* molecule,
                                   std::unordered_set<AtomBlockId>* new_clb_atoms,
                                   bool during_packing,
                                   t_clustering_data& clustering_data,
-                                  t_lb_router_data*& router_data) {
+                                  t_lb_router_data*& router_data,
+                                  const int& detailed_routing_stage) {
     auto& helper_ctx = g_vpr_ctx.mutable_cl_helper();
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
 
@@ -238,7 +240,7 @@ bool pack_mol_in_existing_cluster(t_pack_molecule* molecule,
                                     helper_ctx.num_models,
                                     helper_ctx.max_cluster_size,
                                     new_clb,
-                                    E_DETAILED_ROUTE_FOR_EACH_ATOM,
+                                    detailed_routing_stage,
                                     router_data,
                                     0,
                                     helper_ctx.enable_pin_feasibility_filter,
