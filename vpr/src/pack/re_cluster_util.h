@@ -108,7 +108,7 @@ bool pack_mol_in_existing_cluster(t_pack_molecule* molecule,
                                   bool during_packing,
                                   t_clustering_data& clustering_data,
                                   t_lb_router_data*& router_data
-                                  bool enable_pin_feasibility_filter);
+                                  bool enable_pin_feasibility_filter = true);
 
 /**
  * @brief A function that fix the clustered netlist if the move is performed
