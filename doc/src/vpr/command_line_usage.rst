@@ -360,11 +360,11 @@ Use the options below to override this default naming behaviour.
 
 .. option:: --read_vpr_constraints <file>
 
-    Reads the :ref:`floorplanning constraints <vpr_constraints_file>` that packing and placement must respect from the specified XML file.
+    Reads the :ref:`VPR constraints <vpr_constraints>` that the flow must respect from the specified XML file.
 
 .. option:: --write_vpr_constraints <file>
 
-    Writes out new :ref:`floorplanning constraints <vpr_constraints_file>` based on current placement to the specified XML file.
+    Writes out new :ref:`floorplanning constraints <placement_constraints>` based on the current placement to the specified XML file.
 
 .. option:: --read_router_lookahead <file>
 

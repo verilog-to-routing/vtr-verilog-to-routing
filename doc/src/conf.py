@@ -45,6 +45,7 @@ extensions = [
     "sphinx_markdown_tables",
     "sdcdomain",
     "archdomain",
+    "constraintsdomain",
     "rrgraphdomain",
     "myst_parser",
     "sphinx.ext.autodoc",

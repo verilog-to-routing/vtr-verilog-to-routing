@@ -1515,6 +1515,22 @@ enum e_parallel_axis {
     Y_AXIS,
     BOTH_AXIS
 };
+
+/**
+ * @brief An attribute of a segment that defines the general category of the wire segment type.
+ *
+ * @details
+ * - `GCLK`: A segment type that is part of the global routing network for clocks.
+ * - `GENERAL`: Describes a segment type that is part of the regular routing network.
+ */
+enum class SegResType {
+    GCLK = 0,
+    GENERAL = 1,
+    NUM_RES_TYPES
+};
+
+constexpr std::array<const char*, static_cast<size_t>(SegResType::NUM_RES_TYPES)> RES_TYPE_STRING = {{"GCLK", "GENERAL"}}; //String versions of segment resource types
+
 enum e_switch_block_type {
     SUBSET,
     WILTON,
@@ -1567,6 +1583,14 @@ enum e_Fc_type {
  *            the segment's index in the unified segment_inf vector. This is *
  *            useful when building the rr_graph for different Y & X channels *
  *            in terms of track distribution and segment type.                *
+ * res_type: Determines the routing network to which the segment belongs.    *
+ *           Possible values are:
+ *              - GENERAL: The segment is part of the general routing        *
+ *                         resources.                                        *
+ *              - GCLK: The segment is part of the global routing network.   *
+ *           For backward compatibility, this attribute is optional. If not  *
+ *           specified, the resource type for the segment is considered to   *
+ *           be GENERAL.                                                     *
  * meta: Table storing extra arbitrary metadata attributes.                  */
 struct t_segment_inf {
     std::string name;
@@ -1585,6 +1609,7 @@ struct t_segment_inf {
     std::vector<bool> cb;
     std::vector<bool> sb;
     int seg_index;
+    enum SegResType res_type = SegResType::GENERAL;
     //float Cmetal_per_m; /* Wire capacitance (per meter) */
 };
 
@@ -2020,6 +2045,7 @@ struct t_arch {
 
     std::string gnd_net = "$__gnd_net";
     std::string vcc_net = "$__vcc_net";
+    std::string default_clock_network_name = "clock_network";
 
     // Luts
     std::vector<t_lut_cell> lut_cells;
