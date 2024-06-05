@@ -1225,6 +1225,7 @@ struct t_pin_to_pin_annotation {
  *      parent_pb_graph_node  : parent pb graph node
  *      total_primitive_count : Total number of this primitive type in the cluster. If there are 10 ALMs per cluster
  *                              and 2 FFs per ALM (given the mode of the parent of this primitive) then the total is 20.
+ *      flat_site_index       : index of this primitive within its primitive type in this cluster; in [0,...,total_primitive_count]
  *      illegal_modes         : vector containing illegal modes that result in conflicts during routing
  */
 class t_pb_graph_node {
@@ -1281,6 +1282,8 @@ class t_pb_graph_node {
     int num_output_pin_class;   /* number of output pin classes that this pb_graph_node has */
 
     int total_primitive_count; /* total number of this primitive type in the cluster */
+     int flat_site_index;       /* index of this primitive within sites of its type in this cluster  */
+
 
     /* Interconnect instances for this pb
      * Only used for power

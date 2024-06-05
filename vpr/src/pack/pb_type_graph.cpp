@@ -48,6 +48,7 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
                                     t_pb_graph_node* parent_pb_graph_node,
                                     t_pb_type* pb_type,
                                     const int index,
+                                    const int flat_index,
                                     bool load_power_structures,
                                     int& pin_count_in_cluster);
 
@@ -151,6 +152,7 @@ void alloc_and_load_all_pb_graphs(bool load_power_structures, bool is_flat) {
                                     nullptr,
                                     type.pb_type,
                                     0,
+                                    0,
                                     load_power_structures,
                                     pin_count_in_cluster);
             type.pb_graph_head->total_pb_pins = pin_count_in_cluster;
@@ -224,6 +226,7 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
                                     t_pb_graph_node* parent_pb_graph_node,
                                     t_pb_type* pb_type,
                                     const int index,
+                                    const int flat_index,
                                     bool load_power_structures,
                                     int& pin_count_in_cluster) {
     int i, j, k, i_input, i_output, i_clockport;
@@ -237,6 +240,7 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
     pb_graph_node->num_clock_ports = 0;
 
     pb_graph_node->total_primitive_count = 0;
+    pb_graph_node->flat_site_index = flat_index;
 
     /* Generate ports for pb graph node */
     for (i = 0; i < pb_type->num_ports; i++) {
@@ -349,11 +353,14 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
                                                                                 sizeof(t_pb_graph_node*));
         for (j = 0; j < pb_type->modes[i].num_pb_type_children; j++) {
             pb_graph_node->child_pb_graph_nodes[i][j] = (t_pb_graph_node*)vtr::calloc(pb_type->modes[i].pb_type_children[j].num_pb, sizeof(t_pb_graph_node));
+            int base = flat_index*(pb_type->modes[i].pb_type_children[j].num_pb);
+
             for (k = 0; k < pb_type->modes[i].pb_type_children[j].num_pb; k++) {
                 alloc_and_load_pb_graph(&pb_graph_node->child_pb_graph_nodes[i][j][k],
                                         pb_graph_node,
                                         &pb_type->modes[i].pb_type_children[j],
                                         k,
+                                        base + k,
                                         load_power_structures,
                                         pin_count_in_cluster);
             }
