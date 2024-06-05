@@ -1,5 +1,8 @@
 
 #include "noc_storage.h"
+#include "vtr_assert.h"
+#include "vpr_error.h"
+
 
 #include <algorithm>
 
@@ -20,7 +23,7 @@ const vtr::vector<NocRouterId, NocRouter>& NocStorage::get_noc_routers() const {
     return router_storage;
 }
 
-int NocStorage::get_number_of_noc_routers(void) const {
+int NocStorage::get_number_of_noc_routers() const {
     return router_storage.size();
 }
 
@@ -281,12 +284,12 @@ NocLinkId NocStorage::get_parallel_link(NocLinkId current_link) const {
     NocRouterId curr_sink_router = link_storage[current_link].get_sink_router();
 
     // get the link list of the sink router
-    const std::vector<NocLinkId>* sink_router_links = &(router_outgoing_links_list[curr_sink_router]);
+    const std::vector<NocLinkId>& sink_router_links = router_outgoing_links_list[curr_sink_router];
 
-    NocLinkId parallel_link = INVALID_LINK_ID;
+    NocLinkId parallel_link = NocLinkId::INVALID();
 
     // go through the links of the sink router and the link that has the current source router as the sink router of the link is the parallel link we are looking for
-    for (auto sink_router_link : *sink_router_links) {
+    for (auto sink_router_link : sink_router_links) {
         if (link_storage[sink_router_link].get_sink_router() == curr_source_router) {
             parallel_link = sink_router_link;
             break;

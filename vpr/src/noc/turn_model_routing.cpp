@@ -237,6 +237,12 @@ TurnModelRouting::Direction TurnModelRouting::select_direction_other_than(const 
 std::vector<std::pair<NocLinkId, NocLinkId>> TurnModelRouting::get_all_illegal_turns(const NocStorage& noc_model) const {
     std::vector<std::pair<NocLinkId, NocLinkId>> illegal_turns;
 
+    /* Iterate over all sets of three routers that can be traversed in sequence.
+     * Check if traversing these three routes involves any turns, and if so,
+     * check if the resulting turn is illegal under the restrictions of a turn model
+     * routing algorithm. Store all illegal turns and return them.
+     */
+
     for (const auto& noc_router : noc_model.get_noc_routers()) {
         const int noc_router_user_id = noc_router.get_router_user_id();
         const NocRouterId noc_router_id = noc_model.convert_router_id(noc_router_user_id);

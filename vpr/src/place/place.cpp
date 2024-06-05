@@ -826,23 +826,7 @@ void try_place(const Netlist<>& net_list,
     VTR_LOG("Initial placement cost: %g bb_cost: %g td_cost: %g\n", costs.cost,
             costs.bb_cost, costs.timing_cost);
     if (noc_opts.noc) {
-        VTR_LOG("Initial NoC Placement Costs. "
-            "cost: %g, "
-            "aggregate_bandwidth_cost: %g, "
-            "latency_cost: %g, "
-            "n_met_latency_constraints: %d, "
-            "latency_overrun_cost: %g, "
-            "congestion_cost: %g, "
-            "accum_congested_ratio: %g, "
-            "n_congested_links: %d \n",
-            calculate_noc_cost(costs.noc_cost_terms, costs.noc_cost_norm_factors, noc_opts),
-            costs.noc_cost_terms.aggregate_bandwidth,
-            costs.noc_cost_terms.latency,
-            get_number_of_traffic_flows_with_latency_cons_met(),
-            costs.noc_cost_terms.latency_overrun,
-            costs.noc_cost_terms.congestion,
-            get_total_congestion_bandwidth_ratio(),
-            get_number_of_congested_noc_links());
+        print_noc_costs("Initial NoC Placement Costs", costs, noc_opts);
     }
     if (placer_opts.place_algorithm.is_timing_driven()) {
         VTR_LOG(
@@ -1184,59 +1168,12 @@ void try_place(const Netlist<>& net_list,
             costs.bb_cost, costs.timing_cost);
     // print the noc costs info
     if (noc_opts.noc) {
-        VTR_LOG("\nNoC Placement Costs. "
-            "cost: %g, "
-            "aggregate_bandwidth_cost: %g, "
-            "latency_cost: %g, "
-            "n_met_latency_constraints: %d, "
-            "latency_overrun_cost: %g, "
-            "congestion_cost: %g, "
-            "accum_congested_ratio: %g, "
-            "n_congested_links: %d \n",
-            calculate_noc_cost(costs.noc_cost_terms, costs.noc_cost_norm_factors, noc_opts),
-            costs.noc_cost_terms.aggregate_bandwidth,
-            costs.noc_cost_terms.latency,
-            get_number_of_traffic_flows_with_latency_cons_met(),
-            costs.noc_cost_terms.latency_overrun,
-            costs.noc_cost_terms.congestion,
-            get_total_congestion_bandwidth_ratio(),
-            get_number_of_congested_noc_links());
+        print_noc_costs("\nNoC Placement Costs", costs, noc_opts);
 
 #ifdef ENABLE_NOC_SAT_ROUTING
         if (costs.noc_cost_terms.congestion > 0.0) {
             VTR_LOG("NoC routing configuration is congested. Invoking the SAT NoC router.\n");
-            auto traffic_flow_routes = noc_sat_route(true,
-                                                     noc_opts,
-                                                     placer_opts.seed);
-
-            if (!traffic_flow_routes.empty()) {
-                bool has_cycle = noc_routing_has_cycle(traffic_flow_routes);
-                if (has_cycle) {
-                    VTR_LOG("SAT NoC routing has cycles.\n");
-                }
-
-                reinitialize_noc_routing(costs, traffic_flow_routes);
-
-                VTR_LOG("\nNoC Placement Costs after SAT routing. "
-                    "cost: %g, "
-                    "aggregate_bandwidth_cost: %g, "
-                    "latency_cost: %g, "
-                    "n_met_latency_constraints: %d, "
-                    "latency_overrun_cost: %g, "
-                    "congestion_cost: %g, "
-                    "accum_congested_ratio: %g, "
-                    "n_congested_links: %d \n",
-                    calculate_noc_cost(costs.noc_cost_terms, costs.noc_cost_norm_factors, noc_opts),
-                    costs.noc_cost_terms.aggregate_bandwidth,
-                    costs.noc_cost_terms.latency,
-                    get_number_of_traffic_flows_with_latency_cons_met(),
-                    costs.noc_cost_terms.latency_overrun,
-                    costs.noc_cost_terms.congestion,
-                    get_total_congestion_bandwidth_ratio(),
-                    get_number_of_congested_noc_links());
-            } else {
-                VTR_LOG("SAT routing failed.\n");
-            }
+            invoke_sat_router(costs, noc_opts, placer_opts.seed);
         }
 #endif //ENABLE_NOC_SAT_ROUTING
     }

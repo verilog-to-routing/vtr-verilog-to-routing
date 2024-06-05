@@ -11,6 +11,7 @@
 #include "noc_routing.h"
 #include "place_constraints.h"
 #include "move_transactions.h"
+#include "sat_routing.h"
 
 #include <fstream>
 
@@ -67,13 +68,18 @@ void initial_noc_routing(const vtr::vector<NocTrafficFlowId, std::vector<NocLink
     /* We need all the traffic flow ids to be able to access them. The range
      * of traffic flow ids go from 0 to the total number of traffic flows within
      * the NoC.
-     * go through all the traffic flows and route them. Then once routed, update the links used in the routed traffic flows with their usages
+     * Go through all the traffic flows and route them. Then once routed,
+     * update the links used in the routed traffic flows with their usages
      */
     for (const auto& traffic_flow_id : noc_traffic_flows_storage.get_all_traffic_flow_id()) {
         const t_noc_traffic_flow& curr_traffic_flow = noc_traffic_flows_storage.get_single_noc_traffic_flow(traffic_flow_id);
 
-        // update the traffic flow route based on where the router cluster blocks are placed
-        const std::vector<NocLinkId>& curr_traffic_flow_route = new_traffic_flow_routes.empty() ? route_traffic_flow(traffic_flow_id, noc_ctx.noc_model, noc_traffic_flows_storage, *noc_ctx.noc_flows_router) : new_traffic_flow_routes[traffic_flow_id];
+        /* Update the traffic flow route based on where the router cluster blocks are placed.
+         * If the caller has not provided traffic flow routes, route traffic flow, otherwise use the provided route.
+         */
+        const std::vector<NocLinkId>& curr_traffic_flow_route = new_traffic_flow_routes.empty()
+                                                                    ? route_traffic_flow(traffic_flow_id, noc_ctx.noc_model, noc_traffic_flows_storage, *noc_ctx.noc_flows_router)
+                                                                    : new_traffic_flow_routes[traffic_flow_id];
 
         if (!new_traffic_flow_routes.empty()) {
             noc_traffic_flows_storage.get_mutable_traffic_flow_route(traffic_flow_id) = curr_traffic_flow_route;
@@ -217,7 +223,10 @@ std::vector<NocLinkId>& route_traffic_flow(NocTrafficFlowId traffic_flow_id,
     return curr_traffic_flow_route;
 }
 
-void update_traffic_flow_link_usage(const std::vector<NocLinkId>& traffic_flow_route, NocStorage& noc_model, int inc_or_dec, double traffic_flow_bandwidth) {
+void update_traffic_flow_link_usage(const std::vector<NocLinkId>& traffic_flow_route,
+                                    NocStorage& noc_model,
+                                    int inc_or_dec,
+                                    double traffic_flow_bandwidth) {
     // go through the links within the traffic flow route and update their bandwidth usage
     for (auto& link_in_route_id : traffic_flow_route) {
         // get the link to update and its current bandwidth
@@ -918,6 +927,46 @@ bool noc_routing_has_cycle(const vtr::vector<NocTrafficFlowId, std::vector<NocLi
     bool has_cycles = channel_dependency_graph.has_cycles();
 
     return has_cycles;
+}
+
+void invoke_sat_router(t_placer_costs& costs, const t_noc_opts& noc_opts, int seed) {
+
+    auto traffic_flow_routes = noc_sat_route(true, noc_opts, seed);
+
+    if (!traffic_flow_routes.empty()) {
+        bool has_cycle = noc_routing_has_cycle(traffic_flow_routes);
+        if (has_cycle) {
+            VTR_LOG("SAT NoC routing has cycles.\n");
+        }
+
+        reinitialize_noc_routing(costs, traffic_flow_routes);
+
+        print_noc_costs("\nNoC Placement Costs after SAT routing", costs, noc_opts);
+
+    } else {
+        VTR_LOG("SAT routing failed.\n");
+    }
+}
+
+void print_noc_costs(std::string_view header, const t_placer_costs& costs, const t_noc_opts& noc_opts) {
+    VTR_LOG("%s. "
+        "cost: %g, "
+        "aggregate_bandwidth_cost: %g, "
+        "latency_cost: %g, "
+        "n_met_latency_constraints: %d, "
+        "latency_overrun_cost: %g, "
+        "congestion_cost: %g, "
+        "accum_congested_ratio: %g, "
+        "n_congested_links: %d \n",
+        header,
+        calculate_noc_cost(costs.noc_cost_terms, costs.noc_cost_norm_factors, noc_opts),
+        costs.noc_cost_terms.aggregate_bandwidth,
+        costs.noc_cost_terms.latency,
+        get_number_of_traffic_flows_with_latency_cons_met(),
+        costs.noc_cost_terms.latency_overrun,
+        costs.noc_cost_terms.congestion,
+        get_total_congestion_bandwidth_ratio(),
+        get_number_of_congested_noc_links());
 }
 
 static std::vector<NocLinkId> find_affected_links_by_flow_reroute(std::vector<NocLinkId>& prev_links,

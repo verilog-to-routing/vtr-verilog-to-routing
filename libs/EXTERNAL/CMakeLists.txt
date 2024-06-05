@@ -9,8 +9,6 @@ add_subdirectory(libsdcparse)
 add_subdirectory(libblifparse)
 add_subdirectory(libtatum)
 add_subdirectory(libcatch2)
-
-#SET(BUILD_DEPS ON CACHE BOOL "Build libfoo shared library")
 #add_subdirectory(parmys)
 
 #VPR_USE_SERVER is initialized in the root CMakeLists
