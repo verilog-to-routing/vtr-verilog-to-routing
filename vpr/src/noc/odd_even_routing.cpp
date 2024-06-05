@@ -34,7 +34,10 @@ const std::vector<TurnModelRouting::Direction>& OddEvenRouting::get_legal_direct
     const auto curr_router_pos = curr_router.get_router_physical_location();
     const auto dst_router_pos = dst_router.get_router_physical_location();
 
-    // get the compressed location for source, current, and destination NoC routers
+    /* get the compressed location for source, current, and destination NoC routers
+     * Odd-even routing algorithm restricts turn based on whether the current NoC router
+     * in an odd or even NoC column. This information can be extracted from the NoC compressed grid.
+     */
     auto compressed_src_loc = get_compressed_loc_approx(compressed_noc_grid, t_pl_loc{src_router_pos, 0}, num_layers)[src_router_pos.layer_num];
     auto compressed_curr_loc = get_compressed_loc_approx(compressed_noc_grid, t_pl_loc{curr_router_pos, 0}, num_layers)[curr_router_pos.layer_num];
     auto compressed_dst_loc = get_compressed_loc_approx(compressed_noc_grid, t_pl_loc{dst_router_pos, 0}, num_layers)[dst_router_pos.layer_num];

@@ -295,39 +295,4 @@ void initial_noc_placement(const t_noc_opts& noc_opts, const t_placer_opts& plac
                         "At least one cycle was found in NoC channel dependency graph. This may cause a deadlock "
                         "when packets wait on each other in a cycle.\n");
     }
-
-//    const auto& placement_ctx = g_vpr_ctx.placement();
-//
-//    vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> traffic_flow_routes;
-//    std::map<ClusterBlockId, t_pl_loc> noc_router_locs;
-//
-//    noc_sat_place_and_route(traffic_flow_routes, noc_router_locs, 4);
-//
-//    t_placer_costs costs;
-//    reinitialize_noc_routing(costs, traffic_flow_routes);
-//
-//    std::cout << "Initial NoC placement costs: "
-//              << " Agg BW: " << costs.noc_cost_terms.aggregate_bandwidth
-//              << " Latency: " << costs.noc_cost_terms.latency
-//              << " Latency Over: " << costs.noc_cost_terms.latency_overrun
-//              << " Congestion: " << costs.noc_cost_terms.congestion
-//              << " Congested Links: " << get_number_of_congested_noc_links() << std::endl;
-//
-//    for (auto& [router_blk_id, loc] : noc_router_locs) {
-//        if (placement_ctx.block_locs[router_blk_id].is_fixed) {
-//            continue;
-//        }
-//
-//        // Create a macro with a single member
-//        t_pl_macro_member macro_member;
-//        macro_member.blk_index = router_blk_id;
-//        macro_member.offset = t_pl_offset(0, 0, 0, 0);
-//        t_pl_macro pl_macro;
-//        pl_macro.members.push_back(macro_member);
-//
-//        bool legal = try_place_macro(pl_macro, loc);
-//        if (!legal) {
-//            VPR_FATAL_ERROR(VPR_ERROR_PLACE, "Could not place a router cluster into an empty physical router.");
-//        }
-//    }
 }

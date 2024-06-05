@@ -1504,7 +1504,7 @@ struct t_noc_opts {
     double noc_congestion_weighting;                  ///<controls the significance of the link congestions relative to the other NoC placement costs range:[0-inf)
     double noc_centroid_weight;                       ///<controls how much the centroid location is adjusted towards NoC routers in NoC-biased centroid move:[0, 1]
     int noc_swap_percentage;                          ///<controls the number of NoC router block swap attempts relative to the total number of swaps attempted by the placer range:[0-100]
-    int noc_sat_routing_bandwidth_resolution;         ///<the resolution by which traffic flow and link bandwidths are converted to integers in SAT routing algorithm
+    int noc_sat_routing_bandwidth_resolution;         ///<if this number is N, the SAT formulation models link utilization in increments of 1/N
     int noc_sat_routing_latency_overrun_weighting;    ///<controls the importance of reducing traffic flow latency overrun in SAT routing [0-inf)
     int noc_sat_routing_congestion_weighting;         ///<controls the importance of reducing the number of congested NoC links in SAT routing [0-inf)
     int noc_sat_routing_num_workers;                  ///<the number of parallel worker threads that the SAT solver can use to explore the solution space

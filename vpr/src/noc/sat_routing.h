@@ -1,6 +1,21 @@
 #ifndef VTR_SATROUTING_H
 #define VTR_SATROUTING_H
 
+/**
+ * @file
+ * @brief SAT formulation of NoC traffic flow routing.
+ *
+ * This file implements a SAT formulation of NoC routing problem.
+ * Each (traffic flow, link) pair is associated with boolean variable.
+ * When one of these boolean variables are set by the SAT solver, it means
+ * that the corresponding traffic flow is routed through the corresponding link.
+ * To ensure that traffic flow routes are continuous, deadlock-free, with
+ * minimum link congestion, several constraints are added to the SAT formulation.
+ *
+ * For more details refer to the following paper:
+ * The Road Less Traveled: Congestion-Aware NoC Placement and Packet Routing for FPGAs
+ */
+
 #ifdef ENABLE_NOC_SAT_ROUTING
 
 #include <utility>
@@ -30,29 +45,25 @@ vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> noc_sat_route(bool minimiz
                                                                     const t_noc_opts& noc_opts,
                                                                     int seed);
 
-//void noc_sat_place_and_route(vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>>& traffic_flow_routes,
-//                             std::map<ClusterBlockId, t_pl_loc>& noc_router_locs,
-//                             int seed);
-
 namespace std {
+
 template<>
 struct hash<std::pair<NocTrafficFlowId, NocLinkId>> {
+    /**
+     * @brief Generates a hash value for a (NocTrafficFlowId, NocLinkId) pair.
+     *
+     * This hash function is used to store SAT boolean variables for each
+     * (traffic flow, link) pair in a hash map.
+     *
+     * @param flow_link A (traffic flow, link) pair whose hash value is desired.
+     * @return The computed hash value.
+     */
     std::size_t operator()(const std::pair<NocTrafficFlowId, NocLinkId>& flow_link) const noexcept {
         std::size_t seed = std::hash<NocTrafficFlowId>{}(flow_link.first);
         vtr::hash_combine(seed, flow_link.second);
         return seed;
     }
 };
-
-template<>
-struct hash<std::pair<ClusterBlockId, NocRouterId>> {
-    std::size_t operator()(const std::pair<ClusterBlockId, NocRouterId>& block_router) const noexcept {
-        std::size_t seed = std::hash<ClusterBlockId>{}(block_router.first);
-        vtr::hash_combine(seed, block_router.second);
-        return seed;
-    }
-};
-
 } // namespace std
 
 
