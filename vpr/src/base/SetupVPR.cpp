@@ -749,9 +749,15 @@ static void SetupNocOpts(const t_options& Options, t_noc_opts* NocOpts) {
     NocOpts->noc_sat_routing_bandwidth_resolution = Options.noc_sat_routing_bandwidth_resolution;
     NocOpts->noc_sat_routing_latency_overrun_weighting = Options.noc_sat_routing_latency_overrun_weighting_factor;
     NocOpts->noc_sat_routing_congestion_weighting = Options.noc_sat_routing_congestion_weighting_factor;
-    NocOpts->noc_sat_routing_num_workers = Options.noc_sat_routing_num_workers;
+    if (Options.noc_sat_routing_num_workers.provenance() == argparse::Provenance::SPECIFIED) {
+        NocOpts->noc_sat_routing_num_workers = Options.noc_sat_routing_num_workers;
+    } else {
+        NocOpts->noc_sat_routing_num_workers = (int)Options.num_workers;
+    }
     NocOpts->noc_sat_routing_log_search_progress = Options.noc_sat_routing_log_search_progress;
     NocOpts->noc_placement_file_name = Options.noc_placement_file_name;
+
+
 }
 
 static void SetupServerOpts(const t_options& Options, t_server_opts* ServerOpts) {

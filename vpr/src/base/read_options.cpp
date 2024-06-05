@@ -1516,7 +1516,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
     gen_grp.add_argument<bool, ParseOnOff>(args.strict_checks, "--strict_checks")
         .help(
             "Controls whether VPR enforces some consistency checks strictly (as errors) or treats them as warnings."
-            " Usually these checks indicate an issue with either the targetted architecture, or consistency issues"
+            " Usually these checks indicate an issue with either the targeted architecture, or consistency issues"
             " with VPR's internal data structures/algorithms (possibly harming optimization quality)."
             " In specific circumstances on specific architectures these checks may be too restrictive and can be turned off."
             " However exercise extreme caution when turning this option off -- be sure you completely understand why the issue"
@@ -2902,8 +2902,8 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
     noc_grp.add_argument<int>(args.noc_sat_routing_num_workers, "--noc_sat_routing_num_workers")
         .help(
             "The maximum number of parallel threads that the SAT solver can use to explore the solution space.\n"
-            "When set to 0, the number of parallel workers is set automatically to maximize parallelism.")
-        .default_value("0")
+            "If not explicitly specified by the user, VPR will set the number parallel SAT solver workers to the value "
+            "specified by -j command line option.")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     noc_grp.add_argument<bool, ParseOnOff>(args.noc_sat_routing_log_search_progress, "--noc_sat_routing_log_search_progress")
