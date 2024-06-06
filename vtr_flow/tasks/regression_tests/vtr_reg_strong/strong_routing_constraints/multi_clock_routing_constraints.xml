@@ -1,0 +1,5 @@
+  <vpr_constraints>
+        <global_route_constraints> 
+                <set_global_signal name="clock.*" network_name="clock_network" route_model="dedicated_network"/> 
+        </global_route_constraints> 
+  </vpr_constraints>
