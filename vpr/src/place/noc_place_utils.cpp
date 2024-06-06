@@ -963,7 +963,7 @@ void print_noc_costs(std::string_view header, const t_placer_costs& costs, const
         "congestion_cost: %g, "
         "accum_congested_ratio: %g, "
         "n_congested_links: %d \n",
-        header,
+        header.data(),
         calculate_noc_cost(costs.noc_cost_terms, costs.noc_cost_norm_factors, noc_opts),
         costs.noc_cost_terms.aggregate_bandwidth,
         costs.noc_cost_terms.latency,
