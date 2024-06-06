@@ -450,9 +450,6 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
         vpr_analysis_flow(router_net_list, vpr_setup, arch, route_status, is_flat);
     }
 
-    // write out constratins
-    write_vpr_constraints(vpr_setup);
-
     //close the graphics
     vpr_close_graphics(vpr_setup);
 

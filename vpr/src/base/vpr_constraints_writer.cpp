@@ -70,50 +70,6 @@ void write_vpr_constraints(t_vpr_setup& vpr_setup) {
     return;
 }
 
-void write_vpr_constraints(t_vpr_setup& vpr_setup) {
-    auto& filename_opts = vpr_setup.FileNameOpts;
-    if (!filename_opts.write_vpr_constraints_file.empty()) {
-        std::string file_name = filename_opts.write_vpr_constraints_file;
-        if (vtr::check_file_name_extension(file_name.c_str(), ".xml")) {
-            VprConstraints constraints;
-
-            // update constraints with place info
-            // this is to align to original place/partion constraint behavior
-            const auto& placer_opts = vpr_setup.PlacerOpts;
-            int horizontal_partitions = placer_opts.floorplan_num_horizontal_partitions, vertical_partitions = placer_opts.floorplan_num_vertical_partitions;
-            if (horizontal_partitions != 0 && vertical_partitions != 0) {
-                setup_vpr_floorplan_constraints_cutpoints(constraints, horizontal_partitions, vertical_partitions);
-            } else {
-                setup_vpr_floorplan_constraints_one_loc(constraints, placer_opts.place_constraint_expand, placer_opts.place_constraint_subtile);
-            }
-
-            // update route constraints
-            for (int i = 0; i < g_vpr_ctx.routing().constraints.get_route_constraint_num(); i++) {
-                RouteConstraint rc = g_vpr_ctx.routing().constraints.get_route_constraint_by_idx(i);
-                // note: route constraints with regexpr in input constraint file
-                // is now replaced with the real net name and will not be written
-                // into output file
-                if (rc.is_valid()) {
-                    constraints.add_route_constraint(rc);
-                }
-            }
-
-            // VprConstraintsSerializer writer(g_vpr_ctx.routing().constraints);
-            VprConstraintsSerializer writer(constraints);
-            std::fstream fp;
-            fp.open(file_name.c_str(), std::fstream::out | std::fstream::trunc);
-            fp.precision(std::numeric_limits<float>::max_digits10);
-            void* context;
-            uxsd::write_vpr_constraints_xml(writer, context, fp);
-        } else {
-            VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                            "Unknown extension on output %s",
-                            file_name.c_str());
-        }
-    }
-    return;
-}
-
 void write_vpr_floorplan_constraints(const char* file_name, int expand, bool subtile, int horizontal_partitions, int vertical_partitions) {
     VprConstraints constraints;
     if (horizontal_partitions != 0 && vertical_partitions != 0) {
