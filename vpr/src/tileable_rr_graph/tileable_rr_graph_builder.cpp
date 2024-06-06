@@ -316,7 +316,7 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
     }
 
     /* No clock network support yet; Does not support flatten rr_graph yet */
-    check_rr_graph(device_ctx.rr_graph, types, device_ctx.rr_indexed_data, grids, device_ctx.chan_width, GRAPH_UNIDIR, OPEN, false);
+    check_rr_graph(device_ctx.rr_graph, types, device_ctx.rr_indexed_data, grids, device_ctx.chan_width, GRAPH_UNIDIR, false);
 
     /************************************************************************
      * Free all temp stucts

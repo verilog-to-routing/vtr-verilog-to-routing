@@ -2289,22 +2289,6 @@ bool is_inter_cluster_node(const RRGraphView& rr_graph_view,
     }
 }
 
-void apply_route_constraints(VprConstraints& vpr_constraint) {
-    ClusteringContext& mutable_cluster_ctx = g_vpr_ctx.mutable_clustering();
-    for (auto net_id : mutable_cluster_ctx.clb_nlist.nets()) {
-        std::string net_name = mutable_cluster_ctx.clb_nlist.net_name(net_id);
-        const RouteConstraint rc = vpr_constraint.get_route_constraint_by_net_name(net_name);
-        if (rc.is_valid()) {
-            mutable_cluster_ctx.clb_nlist.set_net_is_global(net_id, true);
-            if (rc.route_model() == "route") {
-                mutable_cluster_ctx.clb_nlist.set_net_is_ignored(net_id, false);
-            } else {
-                mutable_cluster_ctx.clb_nlist.set_net_is_ignored(net_id, true);
-            }
-        }
-    }
-}
-
 int get_rr_node_max_ptc(const RRGraphView& rr_graph_view,
                         RRNodeId node_id,
                         bool is_flat) {

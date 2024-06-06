@@ -2,7 +2,6 @@
 #define VPR_CONSTRAINTS_SERIALIZER_H_
 
 #include "region.h"
-#include "route_constraint.h"
 #include "vpr_constraints.h"
 #include "partition.h"
 #include "partition_region.h"
@@ -442,53 +441,21 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
         return temp_.c_str();
     }
 
-    virtual inline void set_vpr_constraints_tool_name(const char* /*tool_name*/, void*& /*ctx*/) final {
-    }
+    virtual inline void set_vpr_constraints_tool_name(const char* /*tool_name*/, void*& /*ctx*/) final {}
 
     virtual inline void set_vpr_constraints_constraints_comment(const char* /*constraints_comment*/, void*& /*ctx*/) final {}
 
     virtual inline const char* get_vpr_constraints_constraints_comment(void*& /*ctx*/) final {
         return temp_.c_str();
     }
-
-    virtual inline void preallocate_vpr_constraints_partition_list(void*& /*ctx*/, size_t) final {
-    }
-
-    virtual inline void* add_vpr_constraints_partition_list(void*& /*ctx*/) final {
+    virtual inline void* init_vpr_constraints_partition_list(void*& /*ctx*/) final {
         return nullptr;
     }
 
     virtual inline void finish_vpr_constraints_partition_list(void*& /*ctx*/) final {
-        return;
     }
 
-    virtual inline size_t num_vpr_constraints_partition_list(void*& /*ctx*/) final {
-        // only one or zero partion list is supported
-        if (constraints_.get_num_partitions()) {
-            return 1;
-        }
-        return 0;
-    }
-
-    virtual inline void* get_vpr_constraints_partition_list(int, void*& /*ctx*/) final {
-        return nullptr;
-    }
-
-    virtual inline void preallocate_vpr_constraints_global_route_constraints(void*& /*ctx*/, size_t) final {
-    }
-
-    virtual inline void* add_vpr_constraints_global_route_constraints(void*& /*ctx*/) final {
-        return nullptr;
-    }
-
-    virtual inline void finish_vpr_constraints_global_route_constraints(void*& /*ctx*/) final {
-        return;
-    }
-    virtual inline size_t num_vpr_constraints_global_route_constraints(void*& /*ctx*/) final {
-        return constraints_.get_route_constraint_num();
-    }
-
-    virtual inline void* get_vpr_constraints_global_route_constraints(int, void*& /*cts*/) final {
+    virtual inline void* get_vpr_constraints_partition_list(void*& /*ctx*/) final {
         return nullptr;
     }
 
@@ -499,7 +466,6 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
             return false;
     }
     virtual void finish_load() final {
-        return;
     }
 
     //temp data for writes
