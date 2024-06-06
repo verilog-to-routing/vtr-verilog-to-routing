@@ -653,6 +653,8 @@ struct TestUseGenerics $TestGenerics(Text, Data).ann("foo") {
       inner2Bind = (baz = "text", innerBound = (foo = (int16Field = 123))),
       inner2Text = (baz = "text", innerBound = (foo = (int16Field = 123))),
       revFoo = [12, 34, 56]);
+
+  bindEnumList @20 :TestGenerics(List(TestEnum), Text);
 }
 
 struct TestEmptyStruct {}
@@ -758,6 +760,13 @@ const embeddedStruct :TestAllTypes = embed "testdata/binary";
 
 const nonAsciiText :Text = "♫ é ✓";
 
+const blockText :Text =
+    `foo bar baz
+    `"qux" `corge` 'grault'
+    "regular\"quoted\"line"
+    `garply\nwaldo\tfred\"plugh\"xyzzy\'thud
+    ;
+
 struct TestAnyPointerConstants {
   anyKindAsStruct @0 :AnyPointer;
   anyStructAsStruct @1 :AnyStruct;
@@ -774,7 +783,7 @@ const anyPointerConstants :TestAnyPointerConstants = (
 
 struct TestListOfAny {
   capList @0 :List(Capability);
-  #listList @1 :List(AnyList); # TODO(0.10): Make List(AnyList) work correctly in C++ generated code.
+  #listList @1 :List(AnyList); # TODO(someday): Make List(AnyList) work correctly in C++ generated code.
 }
 
 interface TestInterface {
@@ -814,7 +823,7 @@ interface TestCallOrder {
   # The input `expected` is ignored but useful for disambiguating debug logs.
 }
 
-interface TestTailCallee {
+interface TestTailCallee $Cxx.allowCancellation {
   struct TailResult {
     i @0 :UInt32;
     t @1 :Text;
@@ -828,7 +837,7 @@ interface TestTailCaller {
   foo @0 (i :Int32, callee :TestTailCallee) -> TestTailCallee.TailResult;
 }
 
-interface TestStreaming {
+interface TestStreaming $Cxx.allowCancellation {
   doStreamI @0 (i :UInt32) -> stream;
   doStreamJ @1 (j :UInt32) -> stream;
   finishStream @2 () -> (totalI :UInt32, totalJ :UInt32);
@@ -846,7 +855,7 @@ interface TestMoreStuff extends(TestCallOrder) {
   callFooWhenResolved @1 (cap :TestInterface) -> (s: Text);
   # Like callFoo but waits for `cap` to resolve first.
 
-  neverReturn @2 (cap :TestInterface) -> (capCopy :TestInterface);
+  neverReturn @2 (cap :TestInterface) -> (capCopy :TestInterface) $Cxx.allowCancellation;
   # Doesn't return.  You should cancel it.
 
   hold @3 (cap :TestInterface) -> ();
@@ -861,7 +870,7 @@ interface TestMoreStuff extends(TestCallOrder) {
   echo @6 (cap :TestCallOrder) -> (cap :TestCallOrder);
   # Just returns the input cap.
 
-  expectCancel @7 (cap :TestInterface) -> ();
+  expectCancel @7 (cap :TestInterface) -> () $Cxx.allowCancellation;
   # evalLater()-loops forever, holding `cap`.  Must be canceled.
 
   methodWithDefaults @8 (a :Text, b :UInt32 = 123, c :Text = "foo") -> (d :Text, e :Text = "bar");
@@ -884,6 +893,7 @@ interface TestMoreStuff extends(TestCallOrder) {
   # the second. Also creates a socketpair, writes "baz" to one end, and returns the other end.
 
   throwException @14 ();
+  throwRemoteException @15 ();
 }
 
 interface TestMembrane {
@@ -892,7 +902,7 @@ interface TestMembrane {
   callIntercept @2 (thing :Thing, tailCall :Bool) -> Result;
   loopback @3 (thing :Thing) -> (thing :Thing);
 
-  waitForever @4 ();
+  waitForever @4 () $Cxx.allowCancellation;
 
   interface Thing {
     passThrough @0 () -> Result;
@@ -990,4 +1000,43 @@ struct TestNameAnnotation $Cxx.name("RenamedStruct") {
 
 interface TestNameAnnotationInterface $Cxx.name("RenamedInterface") {
   badlyNamedMethod @0 (badlyNamedParam :UInt8 $Cxx.name("renamedParam")) $Cxx.name("renamedMethod");
+}
+
+struct TestImpliedFirstField {
+  struct TextStruct {
+    text @0 :Text;
+    i @1 :UInt32 = 321;
+  }
+
+  textStruct @0 :TextStruct = "foo";
+  textStructList @1 :List(TextStruct);
+
+  intGroup :group {
+    i @2 :UInt32;
+    str @3 :Text = "corge";
+  }
+}
+
+const testImpliedFirstField :TestImpliedFirstField = (
+  textStruct = "bar",
+  textStructList = ["baz", (text = "qux", i = 123)],
+  intGroup = 123
+);
+
+struct TestCycleANoCaps {
+  foo @0 :TestCycleBNoCaps;
+}
+
+struct TestCycleBNoCaps {
+  foo @0 :List(TestCycleANoCaps);
+  bar @1 :TestAllTypes;
+}
+
+struct TestCycleAWithCaps {
+  foo @0 :TestCycleBWithCaps;
+}
+
+struct TestCycleBWithCaps {
+  foo @0 :List(TestCycleAWithCaps);
+  bar @1 :TestInterface;
 }

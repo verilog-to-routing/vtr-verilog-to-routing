@@ -187,6 +187,7 @@ struct t_options {
     argparse::ArgValue<float> first_iter_pres_fac;
     argparse::ArgValue<float> initial_pres_fac;
     argparse::ArgValue<float> pres_fac_mult;
+    argparse::ArgValue<float> max_pres_fac;
     argparse::ArgValue<float> acc_fac;
     argparse::ArgValue<int> bb_factor;
     argparse::ArgValue<e_base_cost_type> base_cost_type;

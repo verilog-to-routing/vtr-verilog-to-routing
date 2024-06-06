@@ -28,6 +28,7 @@
 #define PHYSICAL_TYPES_H
 
 #include <functional>
+#include <utility>
 #include <vector>
 #include <unordered_map>
 #include <string>
@@ -129,7 +130,7 @@ struct t_metadata_dict : vtr::flat_map<
 
     // Get metadata values matching key.
     //
-    // Returns nullptr if key is not found or if multiple values are prsent
+    // Returns nullptr if key is not found or if multiple values are present
     // per key.
     inline const t_metadata_value* one(vtr::interned_string key) const {
         auto values = get(key);
@@ -146,7 +147,7 @@ struct t_metadata_dict : vtr::flat_map<
     void add(vtr::interned_string key, vtr::interned_string value) {
         // Get the iterator to the key, which may already have elements if
         // add was called with this key in the past.
-        (*this)[key].emplace_back(t_metadata_value(value));
+        (*this)[key].emplace_back(value);
     }
 };
 
@@ -181,11 +182,11 @@ constexpr std::array<e_side, NUM_SIDES> SIDES = {{TOP, RIGHT, BOTTOM, LEFT}};   
 constexpr std::array<const char*, NUM_SIDES> SIDE_STRING = {{"TOP", "RIGHT", "BOTTOM", "LEFT"}}; //String versions of side orientations
 
 /* pin location distributions */
-enum e_pin_location_distr {
-    E_SPREAD_PIN_DISTR,
-    E_PERIMETER_PIN_DISTR,
-    E_SPREAD_INPUTS_PERIMETER_OUTPUTS_PIN_DISTR,
-    E_CUSTOM_PIN_DISTR
+enum class e_pin_location_distr {
+    SPREAD,
+    PERIMETER,
+    SPREAD_INPUTS_PERIMETER_OUTPUTS,
+    CUSTOM
 };
 
 /* pb_type class */
@@ -263,10 +264,10 @@ enum e_sb_location {
  */
 struct t_grid_loc_spec {
     t_grid_loc_spec(std::string start, std::string end, std::string repeat, std::string incr)
-        : start_expr(start)
-        , end_expr(end)
-        , repeat_expr(repeat)
-        , incr_expr(incr) {}
+        : start_expr(std::move(start))
+        , end_expr(std::move(end))
+        , repeat_expr(std::move(repeat))
+        , incr_expr(std::move(incr)) {}
 
     std::string start_expr; //Starting position (inclusive)
     std::string end_expr;   //Ending position (inclusive)
@@ -280,7 +281,7 @@ struct t_grid_loc_spec {
 
 /* Definition of how to place physical logic block in the grid.
  *  This defines a region of the grid to be set to a specific type
- *  (provided it's priority is high enough to override other blocks).
+ *  (provided its priority is high enough to override other blocks).
  *
  *  The diagram below illustrates the layout specification.
  *
@@ -345,7 +346,7 @@ struct t_grid_loc_spec {
  */
 struct t_grid_loc_def {
     t_grid_loc_def(std::string block_type_val, int priority_val)
-        : block_type(block_type_val)
+        : block_type(std::move(block_type_val))
         , priority(priority_val)
         , x("0", "W-1", "max(w+1,W)", "w") //Fill in x direction, no repeat, incr by block width
         , y("0", "H-1", "max(h+1,H)", "h") //Fill in y direction, no repeat, incr by block height
@@ -358,7 +359,7 @@ struct t_grid_loc_def {
                       // the largest priority wins.
 
     t_grid_loc_spec x; //Horizontal location specification
-    t_grid_loc_spec y; //Veritcal location specification
+    t_grid_loc_spec y; //Vertical location specification
 
     // When 1 metadata tag is split among multiple t_grid_loc_def, one
     // t_grid_loc_def is arbitrarily chosen to own the metadata, and the other
@@ -648,7 +649,7 @@ struct t_physical_tile_type {
 
     std::vector<t_class> class_inf; /* [0..num_class-1] */
 
-    // Primitive class is refered to a classes that are in the primitive blocks. These classes are
+    // Primitive class is referred to a classes that are in the primitive blocks. These classes are
     // used during flat-routing to route the nets.
     // The starting number of primitive classes
     int primitive_class_starting_idx = -1;
@@ -755,7 +756,7 @@ struct t_capacity_range {
 struct t_sub_tile {
     char* name = nullptr;
 
-    // Mapping between the sub tile's pins and the physical pins corresponding
+    // Mapping between the subtile's pins and the physical pins corresponding
     // to the physical tile type.
     std::vector<int> sub_tile_to_tile_pin_indices;
 
@@ -1508,6 +1509,22 @@ enum e_parallel_axis {
     Y_AXIS,
     BOTH_AXIS
 };
+
+/**
+ * @brief An attribute of a segment that defines the general category of the wire segment type.
+ *
+ * @details
+ * - `GCLK`: A segment type that is part of the global routing network for clocks.
+ * - `GENERAL`: Describes a segment type that is part of the regular routing network.
+ */
+enum class SegResType {
+    GCLK = 0,
+    GENERAL = 1,
+    NUM_RES_TYPES
+};
+
+constexpr std::array<const char*, static_cast<size_t>(SegResType::NUM_RES_TYPES)> RES_TYPE_STRING = {{"GCLK", "GENERAL"}}; //String versions of segment resource types
+
 enum e_switch_block_type {
     SUBSET,
     WILTON,
@@ -1558,8 +1575,16 @@ enum e_Fc_type {
  * seg_index: The index of the segment as stored in the appropriate Segs list*
  *            Upon loading the architecture, we use this field to keep track *
  *            the segment's index in the unified segment_inf vector. This is *
- *            usefull when building the rr_graph for different Y & X channels*
- *            interms of track distribution and segment type.                *
+ *            useful when building the rr_graph for different Y & X channels *
+ *            in terms of track distribution and segment type.                *
+ * res_type: Determines the routing network to which the segment belongs.    *
+ *           Possible values are:
+ *              - GENERAL: The segment is part of the general routing        *
+ *                         resources.                                        *
+ *              - GCLK: The segment is part of the global routing network.   *
+ *           For backward compatibility, this attribute is optional. If not  *
+ *           specified, the resource type for the segment is considered to   *
+ *           be GENERAL.                                                     *
  * meta: Table storing extra arbitrary metadata attributes.                  */
 struct t_segment_inf {
     std::string name;
@@ -1578,6 +1603,7 @@ struct t_segment_inf {
     std::vector<bool> cb;
     std::vector<bool> sb;
     int seg_index;
+    enum SegResType res_type = SegResType::GENERAL;
     //float Cmetal_per_m; /* Wire capacitance (per meter) */
 };
 
@@ -1601,7 +1627,7 @@ struct t_hash_segment_inf {
 enum class SwitchType {
     MUX = 0,   //A configurable (buffered) mux (single-driver)
     TRISTATE,  //A configurable tristate-able buffer (multi-driver)
-    PASS_GATE, //A configurable pass transitor switch (multi-driver)
+    PASS_GATE, //A configurable pass transistor switch (multi-driver)
     SHORT,     //A non-configurable electrically shorted connection (multi-driver)
     BUFFER,    //A non-configurable non-tristate-able buffer (uni-driver)
     INVALID,   //Unspecified, usually an error
@@ -1946,6 +1972,16 @@ struct t_noc_inf {
     /** A list of all routers in the NoC*/
     std::vector<t_router> router_list;
 
+    /** Stores NoC routers that have a different latency than the NoC-wide router latency.
+     * (router_user_id, overridden router latency)*/
+    std::map<int, double> router_latency_overrides;
+    /** Stores NoC links that have a different latency than the NoC-wide link latency.
+     * ((source router id, destination router id), overridden link latency)*/
+    std::map<std::pair<int, int>, double> link_latency_overrides;
+    /** Stores NoC links that have a different bandwidth than the NoC-wide link bandwidth.
+     * ((source router id, destination router id), overridden link bandwidth)*/
+    std::map<std::pair<int, int>, double> link_bandwidth_overrides;
+
     /** Represents the name of a router tile on the FPGA device. This should match the name used in the arch file when
      * describing a NoC router tile within the FPGA device*/
     std::string noc_router_tile_name;
@@ -1953,6 +1989,8 @@ struct t_noc_inf {
 
 /*   Detailed routing architecture */
 struct t_arch {
+    /** Stores unique strings used as key and values in <metadata> tags,
+     * i.e. implements a flyweight pattern to save memory.*/
     mutable vtr::string_internment strings;
     std::vector<vtr::interned_string> interned_strings;
 
@@ -1992,7 +2030,7 @@ struct t_arch {
     // nets from the circuit netlist are belonging to the constant network,
     // and assigned to it accordingly.
     //
-    // NOTE: At the moment, the constant cells and nets are primarly used
+    // NOTE: At the moment, the constant cells and nets are primarily used
     // for the interchange netlist format, to determine which are the constants
     // net names and which virtual cell is responsible to generate them.
     // The information is present in the device database.
@@ -2001,6 +2039,7 @@ struct t_arch {
 
     std::string gnd_net = "$__gnd_net";
     std::string vcc_net = "$__vcc_net";
+    std::string default_clock_network_name = "clock_network";
 
     // Luts
     std::vector<t_lut_cell> lut_cells;

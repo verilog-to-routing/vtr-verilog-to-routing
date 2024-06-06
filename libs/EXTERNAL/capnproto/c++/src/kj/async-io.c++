@@ -21,7 +21,7 @@
 
 #if _WIN32
 // Request Vista-level APIs.
-#include "win32-api-version.h"
+#include <kj/win32-api-version.h>
 #endif
 
 #include "async-io.h"
@@ -31,12 +31,13 @@
 #include "io.h"
 #include "one-of.h"
 #include <deque>
+#include <kj/filesystem.h>
 
 #if _WIN32
 #include <winsock2.h>
 #include <ws2ipdef.h>
 #include <ws2tcpip.h>
-#include "windows-sanity.h"
+#include <kj/windows-sanity.h>
 #define inet_pton InetPtonA
 #define inet_ntop InetNtopA
 #include <io.h>
@@ -75,12 +76,16 @@ void AsyncInputStream::registerAncillaryMessageHandler(
  KJ_UNIMPLEMENTED("registerAncillaryMsgHandler is not implemented by this AsyncInputStream");
 }
 
+Maybe<Own<AsyncInputStream>> AsyncInputStream::tryTee(uint64_t) {
+  return nullptr;
+}
+
 namespace {
 
 class AsyncPump {
 public:
-  AsyncPump(AsyncInputStream& input, AsyncOutputStream& output, uint64_t limit)
-      : input(input), output(output), limit(limit) {}
+  AsyncPump(AsyncInputStream& input, AsyncOutputStream& output, uint64_t limit, uint64_t doneSoFar)
+      : input(input), output(output), limit(limit), doneSoFar(doneSoFar) {}
 
   Promise<uint64_t> pump() {
     // TODO(perf): This could be more efficient by reading half a buffer at a time and then
@@ -104,11 +109,19 @@ private:
   AsyncInputStream& input;
   AsyncOutputStream& output;
   uint64_t limit;
-  uint64_t doneSoFar = 0;
+  uint64_t doneSoFar;
   byte buffer[4096];
 };
 
 }  // namespace
+
+Promise<uint64_t> unoptimizedPumpTo(
+    AsyncInputStream& input, AsyncOutputStream& output, uint64_t amount,
+    uint64_t completedSoFar) {
+  auto pump = heap<AsyncPump>(input, output, amount, completedSoFar);
+  auto promise = pump->pump();
+  return promise.attach(kj::mv(pump));
+}
 
 Promise<uint64_t> AsyncInputStream::pumpTo(
     AsyncOutputStream& output, uint64_t amount) {
@@ -118,9 +131,7 @@ Promise<uint64_t> AsyncInputStream::pumpTo(
   }
 
   // OK, fall back to naive approach.
-  auto pump = heap<AsyncPump>(*this, output, amount);
-  auto promise = pump->pump();
-  return promise.attach(kj::mv(pump));
+  return unoptimizedPumpTo(*this, output, amount);
 }
 
 namespace {
@@ -210,7 +221,7 @@ public:
 
   Promise<size_t> tryRead(void* buffer, size_t minBytes, size_t maxBytes) override {
     if (minBytes == 0) {
-      return size_t(0);
+      return constPromise<size_t, 0>();
     } else KJ_IF_MAYBE(s, state) {
       return s->tryRead(buffer, minBytes, maxBytes);
     } else {
@@ -249,7 +260,7 @@ public:
 
   Promise<uint64_t> pumpTo(AsyncOutputStream& output, uint64_t amount) override {
     if (amount == 0) {
-      return uint64_t(0);
+      return constPromise<uint64_t, 0>();
     } else KJ_IF_MAYBE(s, state) {
       return s->pumpTo(output, amount);
     } else {
@@ -337,7 +348,7 @@ public:
   Maybe<Promise<uint64_t>> tryPumpFrom(
       AsyncInputStream& input, uint64_t amount) override {
     if (amount == 0) {
-      return Promise<uint64_t>(uint64_t(0));
+      return constPromise<uint64_t, 0>();
     } else KJ_IF_MAYBE(s, state) {
       return s->tryPumpFrom(input, amount);
     } else {
@@ -1405,7 +1416,7 @@ private:
 
       if (input.tryGetLength().orDefault(1) == 0) {
         // Yeah a pump would pump nothing.
-        return Promise<uint64_t>(uint64_t(0));
+        return constPromise<uint64_t, 0>();
       } else {
         // While we *could* just return nullptr here, it would probably then fall back to a normal
         // buffered pump, which would allocate a big old buffer just to find there's nothing to
@@ -1438,7 +1449,7 @@ private:
 
   public:
     Promise<size_t> tryRead(void* readBufferPtr, size_t minBytes, size_t maxBytes) override {
-      return size_t(0);
+      return constPromise<size_t, 0>();
     }
     Promise<ReadResult> tryReadWithFds(void* readBuffer, size_t minBytes, size_t maxBytes,
                                        AutoCloseFd* fdBuffer, size_t maxFds) override {
@@ -1450,7 +1461,7 @@ private:
       return ReadResult { 0, 0 };
     }
     Promise<uint64_t> pumpTo(AsyncOutputStream& output, uint64_t amount) override {
-      return uint64_t(0);
+      return constPromise<uint64_t, 0>();
     }
     void abortRead() override {
       // ignore
@@ -1615,7 +1626,7 @@ public:
   }
 
   Promise<size_t> tryRead(void* buffer, size_t minBytes, size_t maxBytes) override {
-    if (limit == 0) return size_t(0);
+    if (limit == 0) return constPromise<size_t, 0>();
     return inner->tryRead(buffer, kj::min(minBytes, limit), kj::min(maxBytes, limit))
         .then([this,minBytes](size_t actual) {
       decreaseLimit(actual, minBytes);
@@ -1624,7 +1635,7 @@ public:
   }
 
   Promise<uint64_t> pumpTo(AsyncOutputStream& output, uint64_t amount) override {
-    if (limit == 0) return uint64_t(0);
+    if (limit == 0) return constPromise<uint64_t, 0>();
     auto requested = kj::min(amount, limit);
     return inner->pumpTo(output, requested)
         .then([this,requested](uint64_t actual) {
@@ -1680,103 +1691,10 @@ CapabilityPipe newCapabilityPipe() {
 namespace {
 
 class AsyncTee final: public Refcounted {
-public:
-  using BranchId = uint;
-
-  explicit AsyncTee(Own<AsyncInputStream> inner, uint64_t bufferSizeLimit)
-      : inner(mv(inner)), bufferSizeLimit(bufferSizeLimit), length(this->inner->tryGetLength()) {}
-  ~AsyncTee() noexcept(false) {
-    bool hasBranches = false;
-    for (auto& branch: branches) {
-      hasBranches = hasBranches || branch != nullptr;
-    }
-    KJ_ASSERT(!hasBranches, "destroying AsyncTee with branch still alive") {
-      // Don't std::terminate().
-      break;
-    }
-  }
-
-  void addBranch(BranchId branch) {
-    KJ_REQUIRE(branches[branch] == nullptr, "branch already exists");
-    branches[branch] = Branch();
-  }
-
-  void removeBranch(BranchId branch) {
-    auto& state = KJ_REQUIRE_NONNULL(branches[branch], "branch was already destroyed");
-    KJ_REQUIRE(state.sink == nullptr,
-        "destroying tee branch with operation still in-progress; probably going to segfault") {
-      // Don't std::terminate().
-      break;
-    }
-
-    branches[branch] = nullptr;
-  }
-
-  Promise<size_t> tryRead(BranchId branch, void* buffer, size_t minBytes, size_t maxBytes)  {
-    auto& state = KJ_ASSERT_NONNULL(branches[branch]);
-    KJ_ASSERT(state.sink == nullptr);
-
-    // If there is excess data in the buffer for us, slurp that up.
-    auto readBuffer = arrayPtr(reinterpret_cast<byte*>(buffer), maxBytes);
-    auto readSoFar = state.buffer.consume(readBuffer, minBytes);
-
-    if (minBytes == 0) {
-      return readSoFar;
-    }
-
-    if (state.buffer.empty()) {
-      KJ_IF_MAYBE(reason, stoppage) {
-        // Prefer a short read to an exception. The exception prevents the pull loop from adding any
-        // data to the buffer, so `readSoFar` will be zero the next time someone calls `tryRead()`,
-        // and the caller will see the exception.
-        if (reason->is<Eof>() || readSoFar > 0) {
-          return readSoFar;
-        }
-        return cp(reason->get<Exception>());
-      }
-    }
-
-    auto promise = newAdaptedPromise<size_t, ReadSink>(state.sink, readBuffer, minBytes, readSoFar);
-    ensurePulling();
-    return mv(promise);
-  }
-
-  Maybe<uint64_t> tryGetLength(BranchId branch)  {
-    auto& state = KJ_ASSERT_NONNULL(branches[branch]);
-
-    return length.map([&state](uint64_t amount) {
-      return amount + state.buffer.size();
-    });
-  }
-
-  Promise<uint64_t> pumpTo(BranchId branch, AsyncOutputStream& output, uint64_t amount)  {
-    auto& state = KJ_ASSERT_NONNULL(branches[branch]);
-    KJ_ASSERT(state.sink == nullptr);
-
-    if (amount == 0) {
-      return amount;
-    }
-
-    if (state.buffer.empty()) {
-      KJ_IF_MAYBE(reason, stoppage) {
-        if (reason->is<Eof>()) {
-          return uint64_t(0);
-        }
-        return cp(reason->get<Exception>());
-      }
-    }
-
-    auto promise = newAdaptedPromise<uint64_t, PumpSink>(state.sink, output, amount);
-    ensurePulling();
-    return mv(promise);
-  }
-
-private:
-  struct Eof {};
-  using Stoppage = OneOf<Eof, Exception>;
-
   class Buffer {
   public:
+    Buffer() = default;
+
     uint64_t consume(ArrayPtr<byte>& readBuffer, size_t& minBytes);
     // Consume as many bytes as possible, copying them into `readBuffer`. Return the number of bytes
     // consumed.
@@ -1797,9 +1715,158 @@ private:
     bool empty() const;
     uint64_t size() const;
 
+    Buffer clone() const {
+      size_t size = 0;
+      for (const auto& buf: bufferList) {
+        size += buf.size();
+      }
+      auto builder = heapArrayBuilder<byte>(size);
+      for (const auto& buf: bufferList) {
+        builder.addAll(buf);
+      }
+      std::deque<Array<byte>> deque;
+      deque.emplace_back(builder.finish());
+      return Buffer{mv(deque)};
+    }
+
   private:
+    Buffer(std::deque<Array<byte>>&& buffer) : bufferList(mv(buffer)) {}
+
     std::deque<Array<byte>> bufferList;
   };
+
+  class Sink;
+
+public:
+  class Branch final: public AsyncInputStream {
+  public:
+    Branch(Own<AsyncTee> teeArg): tee(mv(teeArg)) {
+      tee->branches.add(*this);
+    }
+
+    Branch(Own<AsyncTee> teeArg, Branch& cloneFrom)
+        : tee(mv(teeArg)), buffer(cloneFrom.buffer.clone()) {
+      tee->branches.add(*this);
+    }
+
+    ~Branch() noexcept(false) {
+      KJ_ASSERT(link.isLinked()) {
+        // Don't std::terminate().
+        return;
+      }
+      tee->branches.remove(*this);
+
+      KJ_REQUIRE(sink == nullptr,
+          "destroying tee branch with operation still in-progress; probably going to segfault") {
+        // Don't std::terminate().
+        break;
+      }
+    }
+
+    Promise<size_t> tryRead(void* buffer, size_t minBytes, size_t maxBytes) override {
+      return tee->tryRead(*this, buffer, minBytes, maxBytes);
+    }
+
+    Promise<uint64_t> pumpTo(AsyncOutputStream& output, uint64_t amount) override {
+      return tee->pumpTo(*this, output, amount);
+    }
+
+    Maybe<uint64_t> tryGetLength() override {
+      return tee->tryGetLength(*this);
+    }
+
+    Maybe<Own<AsyncInputStream>> tryTee(uint64_t limit) override {
+      if (tee->getBufferSizeLimit() != limit) {
+        // Cannot optimize this path as the limit has changed, so we need a new AsyncTee to manage
+        // the limit.
+        return nullptr;
+      }
+
+      return kj::heap<Branch>(addRef(*tee), *this);
+    }
+
+  private:
+    Own<AsyncTee> tee;
+    ListLink<Branch> link;
+
+    Buffer buffer;
+    Maybe<Sink&> sink;
+
+    friend class AsyncTee;
+  };
+
+  explicit AsyncTee(Own<AsyncInputStream> inner, uint64_t bufferSizeLimit)
+      : inner(mv(inner)), bufferSizeLimit(bufferSizeLimit), length(this->inner->tryGetLength()) {}
+  ~AsyncTee() noexcept(false) {
+    KJ_ASSERT(branches.size() == 0, "destroying AsyncTee with branch still alive") {
+      // Don't std::terminate().
+      break;
+    }
+  }
+
+  Promise<size_t> tryRead(Branch& branch, void* buffer, size_t minBytes, size_t maxBytes)  {
+    KJ_ASSERT(branch.sink == nullptr);
+
+    // If there is excess data in the buffer for us, slurp that up.
+    auto readBuffer = arrayPtr(reinterpret_cast<byte*>(buffer), maxBytes);
+    auto readSoFar = branch.buffer.consume(readBuffer, minBytes);
+
+    if (minBytes == 0) {
+      return readSoFar;
+    }
+
+    if (branch.buffer.empty()) {
+      KJ_IF_MAYBE(reason, stoppage) {
+        // Prefer a short read to an exception. The exception prevents the pull loop from adding any
+        // data to the buffer, so `readSoFar` will be zero the next time someone calls `tryRead()`,
+        // and the caller will see the exception.
+        if (reason->is<Eof>() || readSoFar > 0) {
+          return readSoFar;
+        }
+        return cp(reason->get<Exception>());
+      }
+    }
+
+    auto promise = newAdaptedPromise<size_t, ReadSink>(
+        branch.sink, readBuffer, minBytes, readSoFar);
+    ensurePulling();
+    return mv(promise);
+  }
+
+  Maybe<uint64_t> tryGetLength(Branch& branch)  {
+    return length.map([&branch](uint64_t amount) {
+      return amount + branch.buffer.size();
+    });
+  }
+
+  uint64_t getBufferSizeLimit() const {
+    return bufferSizeLimit;
+  }
+
+  Promise<uint64_t> pumpTo(Branch& branch, AsyncOutputStream& output, uint64_t amount)  {
+    KJ_ASSERT(branch.sink == nullptr);
+
+    if (amount == 0) {
+      return amount;
+    }
+
+    if (branch.buffer.empty()) {
+      KJ_IF_MAYBE(reason, stoppage) {
+        if (reason->is<Eof>()) {
+          return constPromise<uint64_t, 0>();
+        }
+        return cp(reason->get<Exception>());
+      }
+    }
+
+    auto promise = newAdaptedPromise<uint64_t, PumpSink>(branch.sink, output, amount);
+    ensurePulling();
+    return mv(promise);
+  }
+
+private:
+  struct Eof {};
+  using Stoppage = OneOf<Eof, Exception>;
 
   class Sink {
   public:
@@ -1843,7 +1910,7 @@ private:
       KJ_ASSERT(sinkLink == nullptr, "sink initiated with sink already in flight");
       sinkLink = *this;
     }
-    KJ_DISALLOW_COPY(SinkBase);
+    KJ_DISALLOW_COPY_AND_MOVE(SinkBase);
     ~SinkBase() noexcept(false) { detach(); }
 
     void reject(Exception&& exception) override {
@@ -1873,11 +1940,6 @@ private:
 
     PromiseFulfiller<T>& fulfiller;
     Maybe<Sink&>& sinkLink;
-  };
-
-  struct Branch {
-    Buffer buffer;
-    Maybe<Sink&> sink;
   };
 
   class ReadSink final: public SinkBase<size_t> {
@@ -1999,18 +2061,14 @@ private:
     uint64_t minBytes = 0;
     uint64_t maxBytes = kj::maxValue;
 
-    uint nBranches = 0;
     uint nSinks = 0;
 
-    for (auto& state: branches) {
-      KJ_IF_MAYBE(s, state) {
-        ++nBranches;
-        KJ_IF_MAYBE(sink, s->sink) {
-          ++nSinks;
-          auto need = sink->need();
-          minBytes = kj::max(minBytes, need.minBytes);
-          maxBytes = kj::min(maxBytes, need.maxBytes);
-        }
+    for (auto& branch: branches) {
+      KJ_IF_MAYBE(sink, branch.sink) {
+        ++nSinks;
+        auto need = sink->need();
+        minBytes = kj::max(minBytes, need.minBytes);
+        maxBytes = kj::min(maxBytes, need.maxBytes);
       }
     }
 
@@ -2041,11 +2099,9 @@ private:
     return pullLoop().eagerlyEvaluate([this](Exception&& exception) {
       // Exception from our loop, not from inner tryRead(). Something is broken; tell everybody!
       pulling = false;
-      for (auto& state: branches) {
-        KJ_IF_MAYBE(s, state) {
-          KJ_IF_MAYBE(sink, s->sink) {
-            sink->reject(KJ_EXCEPTION(FAILED, "Exception in tee loop", exception));
-          }
+      for (auto& branch: branches) {
+        KJ_IF_MAYBE(sink, branch.sink) {
+          sink->reject(KJ_EXCEPTION(FAILED, "Exception in tee loop", exception));
         }
       }
     });
@@ -2056,7 +2112,7 @@ private:
   Own<AsyncInputStream> inner;
   const uint64_t bufferSizeLimit = kj::maxValue;
   Maybe<uint64_t> length;
-  Maybe<Branch> branches[2];
+  List<Branch, &Branch::link> branches;
   Maybe<Stoppage> stoppage;
   Promise<void> pullPromise = READY_NOW;
   bool pulling = false;
@@ -2070,11 +2126,9 @@ private:
 
       Vector<Promise<void>> promises;
 
-      for (auto& state: branches) {
-        KJ_IF_MAYBE(s, state) {
-          KJ_IF_MAYBE(sink, s->sink) {
-            promises.add(sink->fill(s->buffer, stoppage));
-          }
+      for (auto& branch: branches) {
+        KJ_IF_MAYBE(sink, branch.sink) {
+          promises.add(sink->fill(branch.buffer, stoppage));
         }
       }
 
@@ -2108,13 +2162,11 @@ private:
       n.maxBytes = kj::min(n.maxBytes, MAX_BLOCK_SIZE);
       n.maxBytes = kj::min(n.maxBytes, bufferSizeLimit);
       n.maxBytes = kj::max(n.minBytes, n.maxBytes);
-      for (auto& state: branches) {
-        KJ_IF_MAYBE(s, state) {
-          // TODO(perf): buffer.size() is O(n) where n = # of individual heap-allocated byte arrays.
-          if (s->buffer.size() + n.maxBytes > bufferSizeLimit) {
-            stoppage = Stoppage(KJ_EXCEPTION(FAILED, "tee buffer size limit exceeded"));
-            return pullLoop();
-          }
+      for (auto& branch: branches) {
+        // TODO(perf): buffer.size() is O(n) where n = # of individual heap-allocated byte arrays.
+        if (branch.buffer.size() + n.maxBytes > bufferSizeLimit) {
+          stoppage = Stoppage(KJ_EXCEPTION(FAILED, "tee buffer size limit exceeded"));
+          return pullLoop();
         }
       }
       auto heapBuffer = heapArray<byte>(n.maxBytes);
@@ -2142,19 +2194,17 @@ private:
 
         KJ_ASSERT(stoppage == nullptr);
         Maybe<ArrayPtr<byte>> bufferPtr = nullptr;
-        for (auto& state: branches) {
-          KJ_IF_MAYBE(s, state) {
-            // Prefer to move the buffer into the receiving branch's deque, rather than memcpy.
-            //
-            // TODO(perf): For the 2-branch case, this is fine, since the majority of the time
-            //   only one buffer will be in use. If we generalize to the n-branch case, this would
-            //   become memcpy-heavy.
-            KJ_IF_MAYBE(ptr, bufferPtr) {
-              s->buffer.produce(heapArray(*ptr));
-            } else {
-              bufferPtr = ArrayPtr<byte>(heapBuffer);
-              s->buffer.produce(mv(heapBuffer));
-            }
+        for (auto& branch: branches) {
+          // Prefer to move the buffer into the receiving branch's deque, rather than memcpy.
+          //
+          // TODO(perf): For the 2-branch case, this is fine, since the majority of the time
+          //   only one buffer will be in use. If we generalize to the n-branch case, this would
+          //   become memcpy-heavy.
+          KJ_IF_MAYBE(ptr, bufferPtr) {
+            branch.buffer.produce(heapArray(*ptr));
+          } else {
+            bufferPtr = ArrayPtr<byte>(heapBuffer);
+            branch.buffer.produce(mv(heapBuffer));
           }
         }
 
@@ -2254,41 +2304,16 @@ uint64_t AsyncTee::Buffer::size() const {
   return result;
 }
 
-class TeeBranch final: public AsyncInputStream {
-public:
-  TeeBranch(Own<AsyncTee> tee, uint8_t branch): tee(mv(tee)), branch(branch) {
-    this->tee->addBranch(branch);
-  }
-  ~TeeBranch() noexcept(false) {
-    unwind.catchExceptionsIfUnwinding([&]() {
-      tee->removeBranch(branch);
-    });
-  }
-
-  Promise<size_t> tryRead(void* buffer, size_t minBytes, size_t maxBytes) override {
-    return tee->tryRead(branch, buffer, minBytes, maxBytes);
-  }
-
-  Promise<uint64_t> pumpTo(AsyncOutputStream& output, uint64_t amount) override {
-    return tee->pumpTo(branch, output, amount);
-  }
-
-  Maybe<uint64_t> tryGetLength() override {
-    return tee->tryGetLength(branch);
-  }
-
-private:
-  Own<AsyncTee> tee;
-  const uint8_t branch;
-  UnwindDetector unwind;
-};
-
 }  // namespace
 
 Tee newTee(Own<AsyncInputStream> input, uint64_t limit) {
+  KJ_IF_MAYBE(t, input->tryTee(limit)) {
+    return { { mv(input), mv(*t) }};
+  }
+
   auto impl = refcounted<AsyncTee>(mv(input), limit);
-  Own<AsyncInputStream> branch1 = heap<TeeBranch>(addRef(*impl), 0);
-  Own<AsyncInputStream> branch2 = heap<TeeBranch>(mv(impl), 1);
+  Own<AsyncInputStream> branch1 = heap<AsyncTee::Branch>(addRef(*impl));
+  Own<AsyncInputStream> branch2 = heap<AsyncTee::Branch>(mv(impl));
   return { { mv(branch1), mv(branch2) } };
 }
 
@@ -2549,7 +2574,7 @@ kj::Promise<Maybe<Own<AsyncCapabilityStream>>> AsyncCapabilityStream::tryReceive
     }
 
     KJ_REQUIRE(actual.capCount == 1,
-        "expected to receive a capability (e.g. file descirptor via SCM_RIGHTS), but didn't") {
+        "expected to receive a capability (e.g. file descriptor via SCM_RIGHTS), but didn't") {
       return nullptr;
     }
 
@@ -2724,9 +2749,9 @@ Promise<Own<AsyncIoStream>> CapabilityStreamNetworkAddress::connect() {
   }
   auto result = kj::mv(pipe.ends[0]);
   return inner.sendStream(kj::mv(pipe.ends[1]))
-      .then(kj::mvCapture(result, [](Own<AsyncIoStream>&& result) {
-    return kj::mv(result);
-  }));
+      .then([result=kj::mv(result)]() mutable {
+    return Own<AsyncIoStream>(kj::mv(result));
+  });
 }
 Promise<AuthenticatedStream> CapabilityStreamNetworkAddress::connectAuthenticated() {
   return connect().then([](Own<AsyncIoStream>&& stream) {
@@ -2744,7 +2769,175 @@ String CapabilityStreamNetworkAddress::toString() {
   return kj::str("<CapabilityStreamNetworkAddress>");
 }
 
+Promise<size_t> FileInputStream::tryRead(void* buffer, size_t minBytes, size_t maxBytes) {
+  // Note that our contract with `minBytes` is that we should only return fewer than `minBytes` on
+  // EOF. A file read will only produce fewer than the requested number of bytes if EOF was reached.
+  // `minBytes` cannot be greater than `maxBytes`. So, this read satisfies the `minBytes`
+  // requirement.
+  size_t result = file.read(offset, arrayPtr(reinterpret_cast<byte*>(buffer), maxBytes));
+  offset += result;
+  return result;
+}
+
+Maybe<uint64_t> FileInputStream::tryGetLength() {
+  uint64_t size = file.stat().size;
+  return offset < size ? size - offset : 0;
+}
+
+Promise<void> FileOutputStream::write(const void* buffer, size_t size) {
+  file.write(offset, arrayPtr(reinterpret_cast<const byte*>(buffer), size));
+  offset += size;
+  return kj::READY_NOW;
+}
+
+Promise<void> FileOutputStream::write(ArrayPtr<const ArrayPtr<const byte>> pieces) {
+  // TODO(perf): Extend kj::File with an array-of-arrays write?
+  for (auto piece: pieces) {
+    file.write(offset, piece);
+    offset += piece.size();
+  }
+  return kj::READY_NOW;
+}
+
+Promise<void> FileOutputStream::whenWriteDisconnected() {
+  return kj::NEVER_DONE;
+}
+
 // =======================================================================================
+
+namespace {
+
+class AggregateConnectionReceiver final: public ConnectionReceiver {
+public:
+  AggregateConnectionReceiver(Array<Own<ConnectionReceiver>> receiversParam)
+      : receivers(kj::mv(receiversParam)),
+        acceptTasks(kj::heapArray<Maybe<Promise<void>>>(receivers.size())) {}
+
+  Promise<Own<AsyncIoStream>> accept() override {
+    return acceptAuthenticated().then([](AuthenticatedStream&& authenticated) {
+      return kj::mv(authenticated.stream);
+    });
+  }
+
+  Promise<AuthenticatedStream> acceptAuthenticated() override {
+    // Whenever our accept() is called, we want it to resolve to the first connection accepted by
+    // any of our child receivers. Naively, it may seem like we should call accept() on them all
+    // and exclusiveJoin() the results. Unfortunately, this might not work in a certain race
+    // condition: if two or more of our children receive connections simultaneously, both child
+    // accept() calls may return, but we'll only end up taking one and dropping the other.
+    //
+    // To avoid this problem, we must instead initiate `accept()` calls on all children, and even
+    // after one of them returns a result, we must allow the others to keep running. If we end up
+    // accepting any sockets from children when there is no outstanding accept() on the aggregate,
+    // we must put that socket into a backlog. We only restart accept() calls on children if the
+    // backlog is empty, and hence the maximum length of the backlog is the number of children
+    // minus 1.
+
+    if (backlog.empty()) {
+      auto result = kj::newAdaptedPromise<AuthenticatedStream, Waiter>(*this);
+      ensureAllAccepting();
+      return result;
+    } else {
+      auto result = kj::mv(backlog.front());
+      backlog.pop_front();
+      return result;
+    }
+  }
+
+  uint getPort() override {
+    return receivers[0]->getPort();
+  }
+  void getsockopt(int level, int option, void* value, uint* length) override {
+    return receivers[0]->getsockopt(level, option, value, length);
+  }
+  void setsockopt(int level, int option, const void* value, uint length) override {
+    // Apply to all.
+    for (auto& r: receivers) {
+      r->setsockopt(level, option, value, length);
+    }
+  }
+  void getsockname(struct sockaddr* addr, uint* length) override {
+    return receivers[0]->getsockname(addr, length);
+  }
+
+private:
+  Array<Own<ConnectionReceiver>> receivers;
+  Array<Maybe<Promise<void>>> acceptTasks;
+
+  struct Waiter {
+    Waiter(PromiseFulfiller<AuthenticatedStream>& fulfiller,
+           AggregateConnectionReceiver& parent)
+        : fulfiller(fulfiller), parent(parent) {
+      parent.waiters.add(*this);
+    }
+    ~Waiter() noexcept(false) {
+      if (link.isLinked()) {
+        parent.waiters.remove(*this);
+      }
+    }
+
+    PromiseFulfiller<AuthenticatedStream>& fulfiller;
+    AggregateConnectionReceiver& parent;
+    ListLink<Waiter> link;
+  };
+
+  List<Waiter, &Waiter::link> waiters;
+  std::deque<Promise<AuthenticatedStream>> backlog;
+  // At least one of `waiters` or `backlog` is always empty.
+
+  void ensureAllAccepting() {
+    for (auto i: kj::indices(receivers)) {
+      if (acceptTasks[i] == nullptr) {
+        acceptTasks[i] = acceptLoop(i);
+      }
+    }
+  }
+
+  Promise<void> acceptLoop(size_t index) {
+    return kj::evalNow([&]() { return receivers[index]->acceptAuthenticated(); })
+        .then([this](AuthenticatedStream&& as) {
+      if (waiters.empty()) {
+        backlog.push_back(kj::mv(as));
+      } else {
+        auto& waiter = waiters.front();
+        waiter.fulfiller.fulfill(kj::mv(as));
+        waiters.remove(waiter);
+      }
+    }, [this](Exception&& e) {
+      if (waiters.empty()) {
+        backlog.push_back(kj::mv(e));
+      } else {
+        auto& waiter = waiters.front();
+        waiter.fulfiller.reject(kj::mv(e));
+        waiters.remove(waiter);
+      }
+    }).then([this, index]() -> Promise<void> {
+      if (waiters.empty()) {
+        // Don't keep accepting if there's no one waiting.
+        // HACK: We can't cancel ourselves, so detach the task so we can null out the slot.
+        //   We know that the promise we're detaching here is exactly the promise that's currently
+        //   executing and has no further `.then()`s on it, so no further callbacks will run in
+        //   detached state... we're just using `detach()` as a tricky way to have the event loop
+        //   dispose of this promise later after we've returned.
+        // TODO(cleanup): This pattern has come up several times, we need a better way to handle
+        //   it.
+        KJ_ASSERT_NONNULL(acceptTasks[index]).detach([](auto&&) {});
+        acceptTasks[index] = nullptr;
+        return READY_NOW;
+      } else {
+        return acceptLoop(index);
+      }
+    });
+  }
+};
+
+}  // namespace
+
+Own<ConnectionReceiver> newAggregateConnectionReceiver(Array<Own<ConnectionReceiver>> receivers) {
+  return kj::heap<AggregateConnectionReceiver>(kj::mv(receivers));
+}
+
+// -----------------------------------------------------------------------------
 
 namespace _ {  // private
 
@@ -2767,137 +2960,6 @@ kj::ArrayPtr<const char> safeUnixPath(const struct sockaddr_un* addr, uint addrl
 }
 
 #endif  // !_WIN32
-
-CidrRange::CidrRange(StringPtr pattern) {
-  size_t slashPos = KJ_REQUIRE_NONNULL(pattern.findFirst('/'), "invalid CIDR", pattern);
-
-  bitCount = pattern.slice(slashPos + 1).parseAs<uint>();
-
-  KJ_STACK_ARRAY(char, addr, slashPos + 1, 128, 128);
-  memcpy(addr.begin(), pattern.begin(), slashPos);
-  addr[slashPos] = '\0';
-
-  if (pattern.findFirst(':') == nullptr) {
-    family = AF_INET;
-    KJ_REQUIRE(bitCount <= 32, "invalid CIDR", pattern);
-  } else {
-    family = AF_INET6;
-    KJ_REQUIRE(bitCount <= 128, "invalid CIDR", pattern);
-  }
-
-  KJ_ASSERT(inet_pton(family, addr.begin(), bits) > 0, "invalid CIDR", pattern);
-  zeroIrrelevantBits();
-}
-
-CidrRange::CidrRange(int family, ArrayPtr<const byte> bits, uint bitCount)
-    : family(family), bitCount(bitCount) {
-  if (family == AF_INET) {
-    KJ_REQUIRE(bitCount <= 32);
-  } else {
-    KJ_REQUIRE(bitCount <= 128);
-  }
-  KJ_REQUIRE(bits.size() * 8 >= bitCount);
-  size_t byteCount = (bitCount + 7) / 8;
-  memcpy(this->bits, bits.begin(), byteCount);
-  memset(this->bits + byteCount, 0, sizeof(this->bits) - byteCount);
-
-  zeroIrrelevantBits();
-}
-
-CidrRange CidrRange::inet4(ArrayPtr<const byte> bits, uint bitCount) {
-  return CidrRange(AF_INET, bits, bitCount);
-}
-CidrRange CidrRange::inet6(
-    ArrayPtr<const uint16_t> prefix, ArrayPtr<const uint16_t> suffix,
-    uint bitCount) {
-  KJ_REQUIRE(prefix.size() + suffix.size() <= 8);
-
-  byte bits[16] = { 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, };
-
-  for (size_t i: kj::indices(prefix)) {
-    bits[i * 2] = prefix[i] >> 8;
-    bits[i * 2 + 1] = prefix[i] & 0xff;
-  }
-
-  byte* suffixBits = bits + (16 - suffix.size() * 2);
-  for (size_t i: kj::indices(suffix)) {
-    suffixBits[i * 2] = suffix[i] >> 8;
-    suffixBits[i * 2 + 1] = suffix[i] & 0xff;
-  }
-
-  return CidrRange(AF_INET6, bits, bitCount);
-}
-
-bool CidrRange::matches(const struct sockaddr* addr) const {
-  const byte* otherBits;
-
-  switch (family) {
-    case AF_INET:
-      if (addr->sa_family == AF_INET6) {
-        otherBits = reinterpret_cast<const struct sockaddr_in6*>(addr)->sin6_addr.s6_addr;
-        static constexpr byte V6MAPPED[12] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xff, 0xff };
-        if (memcmp(otherBits, V6MAPPED, sizeof(V6MAPPED)) == 0) {
-          // We're an ipv4 range and the address is ipv6, but it's a "v6 mapped" address, meaning
-          // it's equivalent to an ipv4 address. Try to match against the ipv4 part.
-          otherBits = otherBits + sizeof(V6MAPPED);
-        } else {
-          return false;
-        }
-      } else if (addr->sa_family == AF_INET) {
-        otherBits = reinterpret_cast<const byte*>(
-            &reinterpret_cast<const struct sockaddr_in*>(addr)->sin_addr.s_addr);
-      } else {
-        return false;
-      }
-
-      break;
-
-    case AF_INET6:
-      if (addr->sa_family != AF_INET6) return false;
-
-      otherBits = reinterpret_cast<const struct sockaddr_in6*>(addr)->sin6_addr.s6_addr;
-      break;
-
-    default:
-      KJ_UNREACHABLE;
-  }
-
-  if (memcmp(bits, otherBits, bitCount / 8) != 0) return false;
-
-  return bitCount == 128 ||
-      bits[bitCount / 8] == (otherBits[bitCount / 8] & (0xff00 >> (bitCount % 8)));
-}
-
-bool CidrRange::matchesFamily(int family) const {
-  switch (family) {
-    case AF_INET:
-      return this->family == AF_INET;
-    case AF_INET6:
-      // Even if we're a v4 CIDR, we can match v6 addresses in the v4-mapped range.
-      return true;
-    default:
-      return false;
-  }
-}
-
-String CidrRange::toString() const {
-  char result[128];
-  KJ_ASSERT(inet_ntop(family, (void*)bits, result, sizeof(result)) == result);
-  return kj::str(result, '/', bitCount);
-}
-
-void CidrRange::zeroIrrelevantBits() {
-  // Mask out insignificant bits of partial byte.
-  if (bitCount < 128) {
-    bits[bitCount / 8] &= 0xff00 >> (bitCount % 8);
-
-    // Zero the remaining bytes.
-    size_t n = bitCount / 8 + 1;
-    memset(bits + n, 0, sizeof(bits) - n);
-  }
-}
-
-// -----------------------------------------------------------------------------
 
 ArrayPtr<const CidrRange> localCidrs() {
   static const CidrRange result[] = {
@@ -2962,6 +3024,13 @@ ArrayPtr<const CidrRange> exampleAddresses() {
   return kj::arrayPtr(result, kj::size(result));
 }
 
+bool matchesAny(ArrayPtr<const CidrRange> cidrs, const struct sockaddr* addr) {
+  for (auto& cidr: cidrs) {
+    if (cidr.matches(addr)) return true;
+  }
+  return false;
+}
+
 NetworkFilter::NetworkFilter()
     : allowUnix(true), allowAbstractUnix(true) {
   allowCidrs.add(CidrRange::inet4({0,0,0,0}, 0));
@@ -2976,17 +3045,14 @@ NetworkFilter::NetworkFilter(ArrayPtr<const StringPtr> allow, ArrayPtr<const Str
     if (rule == "local") {
       allowCidrs.addAll(localCidrs());
     } else if (rule == "network") {
-      allowCidrs.add(CidrRange::inet4({0,0,0,0}, 0));
-      allowCidrs.add(CidrRange::inet6({}, {}, 0));
-      denyCidrs.addAll(localCidrs());
+      // Can't be represented as a simple union of CIDRs, so we handle in shouldAllow().
+      allowNetwork = true;
     } else if (rule == "private") {
       allowCidrs.addAll(privateCidrs());
       allowCidrs.addAll(localCidrs());
     } else if (rule == "public") {
-      allowCidrs.add(CidrRange::inet4({0,0,0,0}, 0));
-      allowCidrs.add(CidrRange::inet6({}, {}, 0));
-      denyCidrs.addAll(privateCidrs());
-      denyCidrs.addAll(localCidrs());
+      // Can't be represented as a simple union of CIDRs, so we handle in shouldAllow().
+      allowPublic = true;
     } else if (rule == "unix") {
       allowUnix = true;
     } else if (rule == "unix-abstract") {
@@ -3032,6 +3098,23 @@ bool NetworkFilter::shouldAllow(const struct sockaddr* addr, uint addrlen) {
 
   bool allowed = false;
   uint allowSpecificity = 0;
+
+  if (allowPublic) {
+    if ((addr->sa_family == AF_INET || addr->sa_family == AF_INET6) &&
+        !matchesAny(privateCidrs(), addr) && !matchesAny(localCidrs(), addr)) {
+      allowed = true;
+      // Don't adjust allowSpecificity as this match has an effective specificity of zero.
+    }
+  }
+
+  if (allowNetwork) {
+    if ((addr->sa_family == AF_INET || addr->sa_family == AF_INET6) &&
+        !matchesAny(localCidrs(), addr)) {
+      allowed = true;
+      // Don't adjust allowSpecificity as this match has an effective specificity of zero.
+    }
+  }
+
   for (auto& cidr: allowCidrs) {
     if (cidr.matches(addr)) {
       allowSpecificity = kj::max(allowSpecificity, cidr.getSpecificity());
@@ -3064,6 +3147,10 @@ bool NetworkFilter::shouldAllowParse(const struct sockaddr* addr, uint addrlen) 
     }
   } else {
 #endif
+    if ((addr->sa_family == AF_INET || addr->sa_family == AF_INET6) &&
+        (allowPublic || allowNetwork)) {
+      matched = true;
+    }
     for (auto& cidr: allowCidrs) {
       if (cidr.matchesFamily(addr->sa_family)) {
         matched = true;

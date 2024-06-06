@@ -360,11 +360,11 @@ Use the options below to override this default naming behaviour.
 
 .. option:: --read_vpr_constraints <file>
 
-    Reads the :ref:`floorplanning constraints <vpr_constraints_file>` that packing and placement must respect from the specified XML file.
+    Reads the :ref:`VPR constraints <vpr_constraints>` that the flow must respect from the specified XML file.
 
 .. option:: --write_vpr_constraints <file>
 
-    Writes out new :ref:`floorplanning constraints <vpr_constraints_file>` based on current placement to the specified XML file.
+    Writes out new :ref:`floorplanning constraints <placement_constraints>` based on the current placement to the specified XML file.
 
 .. option:: --read_router_lookahead <file>
 
@@ -1162,6 +1162,14 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
     Sets the growth factor by which the present overuse penalty factor is multiplied after each router iteration.
 
     **Default:** ``1.3``
+
+.. option:: --max_pres_fac <float>
+
+    Sets the maximum present overuse penalty factor that can ever result during routing. Should always be less than 1e25 or so to prevent overflow. 
+    Smaller values may help prevent circuitous routing in difficult routing problems, but may increase 
+    the number of routing iterations needed and hence runtime.
+
+    **Default:** ``1000.0``
 
 .. option:: --acc_fac <float>
 

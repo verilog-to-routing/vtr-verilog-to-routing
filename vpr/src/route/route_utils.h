@@ -136,10 +136,8 @@ void try_graph(int width_fac,
                int num_directs,
                bool is_flat);
 
-/* This routine should take the new value of the present congestion factor
- * and propagate it to all the relevant data fields in the vpr flow.
- * Currently, it only updates the pres_fac used by the drawing functions */
-float update_draw_pres_fac(float new_pres_fac);
+/* This routine updates the pres_fac used by the drawing functions */
+void update_draw_pres_fac(const float new_pres_fac);
 
 #ifndef NO_GRAPHICS
 /** Updates router iteration information and checks for router iteration and net id breakpoints

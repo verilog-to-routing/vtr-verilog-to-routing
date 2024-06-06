@@ -236,14 +236,6 @@ struct DeviceContext : public Context {
     std::vector<std::unique_ptr<ClockConnection>> clock_connections;
 
     /**
-     * @brief rr_node idx that connects to the input of all clock network wires
-     *
-     * Useful for two stage clock routing
-     * XXX: currently only one place to source the clock networks so only storing
-     *      a single value
-     */
-    int virtual_clock_network_root_idx;
-    /**
      * @brief switch_fanin_remap is only used for printing out switch fanin stats
      *        (the -switch_stats option)
      *
@@ -493,6 +485,11 @@ struct RoutingContext : public Context {
     vtr::Cache<std::tuple<e_router_lookahead, std::string, std::vector<t_segment_inf>>,
                RouterLookahead>
         cached_router_lookahead_;
+
+    /**
+     * @brief User specified routing constraints
+     */
+    UserRouteConstraints constraints;
 };
 
 /**
@@ -510,7 +507,7 @@ struct FloorplanningContext : public Context {
      *
      * The constraints are input into vpr and do not change.
      */
-    VprConstraints constraints;
+    UserPlaceConstraints constraints;
 
     /**
      * @brief Constraints for each cluster

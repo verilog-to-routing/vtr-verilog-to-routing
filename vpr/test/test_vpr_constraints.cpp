@@ -4,14 +4,14 @@
 
 #include "vpr_api.h"
 #include "globals.h"
-#include "vpr_constraints.h"
+#include "user_place_constraints.h"
 #include "partition.h"
 #include "region.h"
 #include "place_constraints.h"
 
 /**
  * This file contains unit tests that check the functionality of all classes related to vpr constraints. These classes include
- * VprConstraints, Region, PartitionRegions, and Partition.
+ * UserPlaceConstraints, Region, PartitionRegions, and Partition.
  */
 
 //Test Region class accessors and mutators
@@ -93,8 +93,8 @@ TEST_CASE("Partition", "[vpr]") {
     REQUIRE(pr_reg_coord.ymax == 8);
 }
 
-//Test VprConstraints class accessors and mutators
-TEST_CASE("VprConstraints", "[vpr]") {
+//Test UserPlaceConstraints class accessors and mutators
+TEST_CASE("UserPlaceConstraints", "[vpr]") {
     PartitionId part_id(0);
     PartitionId part_id_2(1);
     AtomBlockId atom_id(6);
@@ -102,7 +102,7 @@ TEST_CASE("VprConstraints", "[vpr]") {
     AtomBlockId atom_id_3(8);
     AtomBlockId atom_id_4(9);
 
-    VprConstraints vprcon;
+    UserPlaceConstraints vprcon;
 
     vprcon.add_constrained_atom(atom_id, part_id);
     vprcon.add_constrained_atom(atom_id_2, part_id);

@@ -928,7 +928,7 @@ bool find_to_loc_centroid(t_logical_block_type_ptr blk_type,
                           ClusterBlockId b_from) {
     //Retrieve the compressed block grid for this block type
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[blk_type->index];
-    const int to_layer_num = to_loc.layer;
+    const int to_layer_num = centroid.layer;
     VTR_ASSERT(to_layer_num >= 0);
     const int num_layers = g_vpr_ctx.device().grid.get_num_layers();
 

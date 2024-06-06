@@ -378,7 +378,7 @@ TEST(Array, ReleaseAsBytesOrChars) {
   }
 }
 
-#if __cplusplus > 201402L
+#if KJ_CPP_STD > 201402L
 KJ_TEST("kj::arr()") {
   kj::Array<kj::String> array = kj::arr(kj::str("foo"), kj::str(123));
   KJ_EXPECT(array == kj::ArrayPtr<const kj::StringPtr>({"foo", "123"}));
@@ -386,7 +386,7 @@ KJ_TEST("kj::arr()") {
 
 struct ImmovableInt {
   ImmovableInt(int i): i(i) {}
-  KJ_DISALLOW_COPY(ImmovableInt);
+  KJ_DISALLOW_COPY_AND_MOVE(ImmovableInt);
   int i;
 };
 
