@@ -30,7 +30,7 @@ The telegram header contains helper information required to properly extract the
 
     Communication telegram body structure.
 
-    **telegram body** is flat **JSON** structure.
+    **telegram body** is a flat **JSON** structure.
 
     **CMD** could have following integer values:
 
