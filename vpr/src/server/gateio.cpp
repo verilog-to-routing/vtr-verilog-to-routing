@@ -148,7 +148,7 @@ GateIO::ActivityStatus GateIO::handle_telegrams(std::vector<comm::TelegramFrameP
             std::optional<int> cmd_opt = comm::TelegramParser::try_extract_field_cmd(message);
             std::optional<std::string> options_opt = comm::TelegramParser::try_extract_field_options(message);
             if (job_id_opt && cmd_opt && options_opt) {
-                TaskPtr task = std::make_unique<Task>(job_id_opt.value(), cmd_opt.value(), options_opt.value());
+                TaskPtr task = std::make_unique<Task>(job_id_opt.value(), static_cast<comm::CMD>(cmd_opt.value()), options_opt.value());
                 const comm::TelegramHeader& header = telegram_frame->header;
                 m_logger.queue(LogLevel::Info, "received:", header.info(), task->info(/*skipDuration*/true));
                 std::unique_lock<std::mutex> lock(m_tasks_mutex);

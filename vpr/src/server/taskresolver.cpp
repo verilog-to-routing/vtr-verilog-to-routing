@@ -64,12 +64,12 @@ bool TaskResolver::update(ezgl::application* app) {
     for (auto& task: m_tasks) {
         if (!task->is_finished()) {
             switch(task->cmd()) {
-                case comm::CMD_GET_PATH_LIST_ID: {
+                case comm::CMD::GET_PATH_LIST_ID: {
                     process_get_path_list_task(app, task);
                     has_processed_task = true;
                     break;
                 } 
-                case comm::CMD_DRAW_PATH_ID: {
+                case comm::CMD::DRAW_PATH_ID: {
                     process_draw_critical_path_task(app, task);
                     has_processed_task = true;
                     break;

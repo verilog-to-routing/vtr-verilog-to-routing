@@ -10,7 +10,7 @@
 
 namespace server {
 
-Task::Task(int jobId, int cmd, const std::string& options)
+Task::Task(int jobId, comm::CMD cmd, const std::string& options)
 : m_job_id(jobId), m_cmd(cmd), m_options(options) {
     m_creation_time = std::chrono::high_resolution_clock::now();
 }
@@ -55,7 +55,7 @@ std::string Task::info(bool skip_duration) const {
     std::stringstream ss;
     ss << "task["
        << "id="   << std::to_string(m_job_id)
-       << ",cmd=" << std::to_string(m_cmd);
+       << ",cmd=" << std::to_string(static_cast<int>(m_cmd));
     if (!skip_duration) {
         ss << ",exists=" << get_pretty_duration_str_from_ms(time_ms_elapsed());
     }
@@ -73,7 +73,7 @@ void Task::bake_response() {
     ss << "{";
 
     ss << "\"" << comm::KEY_JOB_ID << "\":\"" << m_job_id << "\",";
-    ss << "\"" << comm::KEY_CMD << "\":\"" << m_cmd << "\",";
+    ss << "\"" << comm::KEY_CMD << "\":\"" << static_cast<int>(m_cmd) << "\",";
     ss << "\"" << comm::KEY_OPTIONS << "\":\"" << m_options << "\",";
     if (has_error()) {
         ss << "\"" << comm::KEY_DATA << "\":\"" << m_error << "\",";

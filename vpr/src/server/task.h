@@ -8,6 +8,7 @@
 #include <chrono>
 
 #include "telegramheader.h"
+#include "commconstants.h"
 
 namespace server {
 
@@ -23,10 +24,10 @@ public:
      * @brief Constructs a new Task object.
      * 
      * @param job_id The ID of the job associated with the task.
-     * @param cmd The command associated with the task.
+     * @param cmd The command ID (see @ref comm::CMD) associated with the task.
      * @param options Additional options for the task (default: empty string).
      */
-    Task(int job_id, int cmd, const std::string& options = "");
+    Task(int job_id, comm::CMD cmd, const std::string& options = "");
 
     Task(const Task&) = delete;
     Task& operator=(const Task&) = delete;
@@ -39,11 +40,11 @@ public:
     int job_id() const { return m_job_id; }
 
     /**
-     * @brief Gets the command associated with the task.
+     * @brief Gets the command ID associated with the task.
      * 
-     * @return The command.
+     * @return The command ID (see @ref comm::CMD).
      */
-    int cmd() const { return m_cmd; }
+    comm::CMD cmd() const { return m_cmd; }
 
     /**
      * @brief Removes the specified number of bytes from the response buffer.
@@ -179,7 +180,7 @@ public:
 
 private:
     int m_job_id = -1;
-    int m_cmd = -1;
+    comm::CMD m_cmd = comm::CMD::NONE;
     std::string m_options;
     std::string m_result;
     std::string m_error;
