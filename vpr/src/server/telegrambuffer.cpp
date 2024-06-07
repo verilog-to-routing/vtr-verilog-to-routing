@@ -65,12 +65,6 @@ void TelegramBuffer::take_telegram_frames(std::vector<comm::TelegramFramePtr>& r
     }
 }
 
-std::vector<comm::TelegramFramePtr> TelegramBuffer::take_telegram_frames() {
-    std::vector<comm::TelegramFramePtr> result;
-    take_telegram_frames(result);
-    return result;
-}
-
 void TelegramBuffer::take_errors(std::vector<std::string>& errors) {
     errors.reserve(errors.size() + m_errors.size());
     std::move(std::begin(m_errors), std::end(m_errors), std::back_inserter(errors));

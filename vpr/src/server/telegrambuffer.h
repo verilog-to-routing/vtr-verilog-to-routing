@@ -59,13 +59,6 @@ public:
     void take_telegram_frames(std::vector<TelegramFramePtr>& frames);
 
     /**
-     * @brief Extracts well-formed telegram frames from the internal byte buffer.
-     * 
-     * @return std::vector<TelegramFramePtr> A vector containing pointers to the extracted telegram frames.
-     */
-    std::vector<TelegramFramePtr> take_telegram_frames();
-
-    /**
      * @brief Takes errors from the internal storage.
      *
      * This function retrieves errors stored internally and moves them into the provided vector.
