@@ -62,6 +62,8 @@ public:
      *
      * This function retrieves a map of sets associated with the specified key.
      *
+     * @note The map of sets is used to store the critical path index (map key) and the associated set of selected sub-path element indexes (map value).
+     *
      * @param key The key of the map of sets to retrieve.
      * @return The map of sets associated with the specified key.
      */
