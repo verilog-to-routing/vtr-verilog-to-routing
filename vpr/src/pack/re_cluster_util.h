@@ -76,6 +76,7 @@ void remove_mol_from_cluster(const t_pack_molecule* molecule,
  *                          (is updated if this function is called during packing, especially intra_lb_routing data member).
  * @param router_data: returns the intra logic block router data.
  * @param temp_cluster_pr: returns the partition region of the new cluster.
+ * @param temp_cluster_noc_grp_id returns the NoC group ID of the new cluster
  */
 bool start_new_cluster_for_mol(t_pack_molecule* molecule,
                                const t_logical_block_type_ptr& type,
