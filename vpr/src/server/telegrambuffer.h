@@ -89,6 +89,15 @@ private:
     std::vector<std::string> m_errors;
     std::optional<TelegramHeader> m_header_opt;
 
+    /**
+     * @brief Checks for the presence of the telegram header in the buffer.
+     *
+     * This function searches for the telegram header signature in the raw buffer.
+     * If the signature is found, any bytes preceding the header start position
+     * are discarded from the buffer.
+     *
+     * @return true if the telegram header signature is found, false otherwise.
+     */
     bool check_telegram_header_presence();
 };
 
