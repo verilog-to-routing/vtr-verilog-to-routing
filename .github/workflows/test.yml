@@ -7,7 +7,17 @@ on:
   push:
     branches:
       - master
+    paths-ignore: # Prevents from running if only docs are updated
+      - 'doc/**'
+      - '**/*README*'
+      - '**.md'
+      - '**.rst'
   pull_request:
+    paths-ignore: # Prevents from running if only docs are updated
+      - 'doc/**'
+      - '**/*README*'
+      - '**.md'
+      - '**.rst'
   workflow_dispatch:
   schedule:
   - cron: '0 0 * * *' # daily
