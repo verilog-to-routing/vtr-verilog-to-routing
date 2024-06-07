@@ -18,9 +18,8 @@ namespace comm {
  * - [ 4 bytes ]: SIGNATURE - A 4-byte constant sequence "I", "P", "A", "\0" which indicates the valid start of a TelegramHeader.
  * - [ 4 bytes ]: DATA_LENGTH - A 4-byte field where the data length is stored, allowing for proper identification of the start and end of the TelegramFrame sequence.
  * - [ 4 bytes ]: DATA_CHECKSUM - A 4-byte field where the data checksum is stored to validate the attached data.
- * - [ 1 byte ]: COMPRESSOR_ID - A 1-byte field where the compressor id is stored. If it's \0, it means the data is not compressed (in text/json format).
- *
- * @note: Currently, only zlib compression for the telegram body is supported, which is specified with COMPRESSOR_ID='z'.
+ * - [ 1 byte  ]: COMPRESSOR_ID - A 1-byte field where the compressor ID is stored. If it's null, it means the telegram body is not compressed (in text/json format).
+ * Otherwise, the telegram body is compressed. Currently, only zlib compression for the telegram body is supported, which is specified with COMPRESSOR_ID='z'.
  *
  * @note: The DATA_CHECKSUM field can be used to check the integrity of the telegram body on the client app side.
  */
