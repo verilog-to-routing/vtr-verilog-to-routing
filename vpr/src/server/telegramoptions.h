@@ -38,7 +38,7 @@ public:
      * @brief Constructs a TelegramOptions object with the provided data and expected keys.
      *
      * This constructor initializes a TelegramOptions object with the given data string
-     * and a vector of expected keys. It parse data string and validate that such data has all required keys.
+     * and a vector of expected keys. It parses the data string and validates that such data has all required keys.
      * If some keys are absent, it collects the errors.
      *
      * @param data The data string containing the options.
