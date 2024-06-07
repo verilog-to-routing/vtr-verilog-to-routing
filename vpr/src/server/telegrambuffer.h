@@ -16,7 +16,7 @@ namespace comm {
 /** 
  * @brief Implements Telegram Buffer as a wrapper over BytesArray
  * 
- * It aggregates received bytes and return only well filled frames.
+ * It aggregates received bytes and assists in extracting telegram frames ( @ref TelegramFrame ) from the raw byte buffer.
 */
 class TelegramBuffer
 {
