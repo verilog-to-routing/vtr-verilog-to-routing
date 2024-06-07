@@ -129,12 +129,12 @@ public:
      * 
      * @param error The error message describing the reason for the task's failure.
      */
-    void fail(const std::string& error);
+    void set_fail(const std::string& error);
 
     /**
      * @brief Marks the task as successfully completed.
      */
-    void success();
+    void set_success();
 
     /**
      * @brief Marks the task as successfully completed with the specified result.
@@ -145,7 +145,7 @@ public:
      * @param result An rvalue reference to a string describing the result of the task execution.
      *               The content of this string will be moved into the task's result storage.
      */
-    void success(std::string&& result);
+    void set_success(std::string&& result);
 
     /**
      * @brief Generates a string containing information about the task.

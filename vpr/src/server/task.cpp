@@ -34,18 +34,18 @@ bool Task::options_match(const std::unique_ptr<Task>& other) {
     return other->options() == m_options;
 }
 
-void Task::fail(const std::string& error) {
+void Task::set_fail(const std::string& error) {
     m_is_finished = true;
     m_error = error;
     bake_response();
 }
 
-void Task::success() {
+void Task::set_success() {
     m_is_finished = true;
     bake_response();
 }
 
-void Task::success(std::string&& result) {
+void Task::set_success(std::string&& result) {
     m_result = std::move(result);
     m_is_finished = true;
     bake_response();

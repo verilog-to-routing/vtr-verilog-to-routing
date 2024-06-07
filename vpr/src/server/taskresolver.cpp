@@ -18,12 +18,12 @@ void TaskResolver::own_task(TaskPtr&& new_task) {
         if (task->cmd() == new_task->cmd()) {
             if (task->options_match(new_task)) {
                 std::string msg = "similar task is already in execution, reject new " + new_task->info() + " and waiting for old " + task->info() + " execution";
-                new_task->fail(msg);
+                new_task->set_fail(msg);
             } else {
                 // handle case when task has same cmd but different options
                 if (new_task->job_id() > task->job_id()) {
                     std::string msg = "old " + task->info() + " is overridden by a new " + new_task->info();
-                    task->fail(msg);
+                    task->set_fail(msg);
                 }
             }
         }
@@ -102,21 +102,21 @@ void TaskResolver::process_get_path_list_task(ezgl::application*, const TaskPtr&
             CritPathsResultPtr crit_paths_result = calc_critical_path(path_type, n_critical_path_num, details_level_opt.value(), is_flat);
             if (crit_paths_result->is_valid()) {
                 server_ctx.crit_paths = std::move(crit_paths_result->paths);
-                task->success(std::move(crit_paths_result->report));
+                task->set_success(std::move(crit_paths_result->report));
             } else {
                 std::string msg{"Critical paths report is empty"};
                 VTR_LOG_ERROR(msg.c_str());
-                task->fail(msg);
+                task->set_fail(msg);
             }
         } else {
             std::string msg{"unsupported report details level " + details_level_str};
             VTR_LOG_ERROR(msg.c_str());
-            task->fail(msg);
+            task->set_fail(msg);
         }
     } else {
         std::string msg{"options errors in get crit path list telegram: " + options.errors_str()};
         VTR_LOG_ERROR(msg.c_str());
-        task->fail(msg);
+        task->set_fail(msg);
     }
 }
 
@@ -138,16 +138,16 @@ void TaskResolver::process_draw_critical_path_task(ezgl::application* app, const
         gint high_light_mode_index = get_item_index_by_text(toggle_crit_path, high_light_mode.c_str());
         if (high_light_mode_index != -1) {
             gtk_combo_box_set_active(toggle_crit_path, high_light_mode_index);
-            task->success();
+            task->set_success();
         } else {
             std::string msg{"cannot find ToggleCritPath qcombobox index for item " + high_light_mode};
             VTR_LOG_ERROR(msg.c_str());
-            task->fail(msg);
+            task->set_fail(msg);
         }
     } else {
         std::string msg{"options errors in highlight crit path telegram: " + options.errors_str()};
         VTR_LOG_ERROR(msg.c_str());
-        task->fail(msg);
+        task->set_fail(msg);
     }
 }
 
