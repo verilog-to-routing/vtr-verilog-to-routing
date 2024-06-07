@@ -8,7 +8,7 @@
 #include <chrono>
 
 #include "telegramheader.h"
-#include "commconstants.h"
+#include "commcmd.h"
 
 namespace server {
 

@@ -18,6 +18,9 @@ server::GateIO
 server::Task
 ------------
 
+.. doxygenfile:: commcmd.h
+   :project: vpr
+
 .. doxygenclass:: server::Task
    :project: vpr
    :members:
