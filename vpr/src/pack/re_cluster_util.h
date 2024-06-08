@@ -76,7 +76,7 @@ void remove_mol_from_cluster(const t_pack_molecule* molecule,
  *                          (is updated if this function is called during packing, especially intra_lb_routing data member).
  * @param router_data: returns the intra logic block router data.
  * @param temp_cluster_pr: returns the partition region of the new cluster.
- * @param detailed_routing_stage: options are E_DETAILED_ROUTE_FOR_EACH_ATOM (default) and E_DETAILED_ROUTE_AT_END_ONLY
+ * @param detailed_routing_stage: options are E_xDETAILED_ROUTE_FOR_EACH_ATOM (default) and E_DETAILED_ROUTE_AT_END_ONLY
  *                                 specifies whether or not to run intra-cluster routing-based legality checking
  *                                 after adding the molecule to the cluster; default is the more conservative option,
  *                                 which is used in the top level re-clustering API functions
@@ -113,6 +113,7 @@ bool pack_mol_in_existing_cluster(t_pack_molecule* molecule,
                                   bool during_packing,
                                   t_clustering_data& clustering_data,
                                   t_lb_router_data*& router_data,
+                                  NocGroupId& temp_cluster_noc_grp_id,
                                   const int& detailed_routing_stage = 1);
 
 /**
