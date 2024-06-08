@@ -130,7 +130,7 @@ bool start_new_cluster_for_mol(t_pack_molecule* molecule,
                                t_lb_router_data** router_data,
                                PartitionRegion& temp_cluster_pr,
                                NocGroupId& temp_cluster_noc_grp_id,
-                               const int& detailed_routing_stage) {
+                               enum e_detailed_routing_stages detailed_routing_stage) {
     auto& atom_ctx = g_vpr_ctx.atom();
     auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
     auto& helper_ctx = g_vpr_ctx.mutable_cl_helper();
@@ -214,7 +214,7 @@ bool pack_mol_in_existing_cluster(t_pack_molecule* molecule,
                                   bool during_packing,
                                   t_clustering_data& clustering_data,
                                   t_lb_router_data*& router_data,
-                                  const int& detailed_routing_stage) {
+                                  enum e_detailed_routing_stages detailed_routing_stage) {
     auto& helper_ctx = g_vpr_ctx.mutable_cl_helper();
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
 
