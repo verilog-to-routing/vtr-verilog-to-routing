@@ -401,11 +401,13 @@ class t_rr_graph_storage {
 
     /** @brief Get the source node for the specified edge. */
     RRNodeId edge_src_node(const RREdgeId& edge) const {
+        VTR_ASSERT_DEBUG(edge.is_valid());
         return edge_src_node_[edge];
     }
 
     /** @brief Get the destination node for the specified edge. */
     RRNodeId edge_sink_node(const RREdgeId& edge) const {
+        VTR_ASSERT_DEBUG(edge.is_valid());
         return edge_dest_node_[edge];
     }
 

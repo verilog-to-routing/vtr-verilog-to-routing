@@ -723,7 +723,11 @@ static void update_cluster_pb_stats(const t_pack_molecule* molecule,
         }
 
         //Update atom netlist mapping
-        atom_ctx.lookup.set_atom_clb(blk_id, clb_index);
+        if (is_added) {
+            atom_ctx.lookup.set_atom_clb(blk_id, clb_index);
+        } else {
+            atom_ctx.lookup.set_atom_clb(blk_id, ClusterBlockId::INVALID());
+        }
 
         const t_pb* atom_pb = atom_ctx.lookup.atom_pb(blk_id);
         VTR_ASSERT(atom_pb);
