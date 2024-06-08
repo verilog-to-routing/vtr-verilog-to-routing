@@ -327,8 +327,8 @@ void print_place(const char* net_file,
 
     if (!place_ctx.block_locs.empty()) { //Only if placement exists
         for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-            fprintf(fp, "%s\t", cluster_ctx.clb_nlist.block_name(blk_id).c_str());
-            if (strlen(cluster_ctx.clb_nlist.block_name(blk_id).c_str()) < 8)
+            fprintf(fp, "%s\t", cluster_ctx.clb_nlist.block_pb(blk_id)->name);
+            if (strlen(cluster_ctx.clb_nlist.block_pb(blk_id)->name) < 8)
                 fprintf(fp, "\t");
 
             fprintf(fp, "%d\t%d\t%d\t%d",

@@ -3,5 +3,4 @@
 	url = https://github.com/catchorg/Catch2.git
 [submodule "libs/EXTERNAL/sockpp"]
 	path = libs/EXTERNAL/sockpp
-	#url = git@github.com:fpagliughi/sockpp.git
-	url = git@github.com:w0lek/sockpp.git # fork where in branch v1.0.0_no_complication_warnings there are compilation warnings fixes for upstream tag v1.0.0 of sockpp
+	url = https://github.com/w0lek/sockpp.git # fork where in branch v1.0.0_no_complication_warnings there are compilation warnings fixes for upstream tag v1.0.0 of sockpp
