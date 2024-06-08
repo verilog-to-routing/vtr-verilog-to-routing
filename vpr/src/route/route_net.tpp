@@ -139,6 +139,7 @@ inline NetResultFlags route_net(ConnectionRouter *router,
     t_conn_delay_budget conn_delay_budget;
     t_conn_cost_params cost_params;
     cost_params.astar_fac = router_opts.astar_fac;
+    cost_params.astar_offset = router_opts.astar_offset;
     cost_params.post_target_prune_fac = router_opts.post_target_prune_fac;
     cost_params.post_target_prune_offset = router_opts.post_target_prune_offset;
     cost_params.bend_cost = router_opts.bend_cost;

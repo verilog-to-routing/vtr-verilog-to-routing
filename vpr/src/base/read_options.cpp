@@ -2477,6 +2477,14 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .default_value("1.2")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    route_timing_grp.add_argument(args.astar_offset, "--astar_offset")
+        .help(
+            "Controls the directedness of the timing-driven router's exploration."
+            " It is a subtractive adjustment to the lookahead heuristic."
+            " Values between 0 and 1e-9 are resonable; higher values may increase quality at the expense of run-time.")
+        .default_value("0.0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     route_timing_grp.add_argument(args.router_profiler_astar_fac, "--router_profiler_astar_fac")
         .help(
             "Controls the directedness of the timing-driven router's exploration"

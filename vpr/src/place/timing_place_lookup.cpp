@@ -1187,7 +1187,8 @@ void OverrideDelayModel::compute_override_delay_model(
     RouterDelayProfiler& route_profiler,
     const t_router_opts& router_opts) {
     t_router_opts router_opts2 = router_opts;
-    router_opts2.astar_fac = 0.;
+    router_opts2.astar_fac = 0.f;
+    router_opts2.astar_offset = 0.f;
 
     //Look at all the direct connections that exist, and add overrides to delay model
     auto& device_ctx = g_vpr_ctx.device();

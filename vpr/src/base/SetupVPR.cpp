@@ -410,6 +410,7 @@ static void SetupRoutingArch(const t_arch& Arch,
 static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts) {
     RouterOpts->do_check_rr_graph = Options.check_rr_graph;
     RouterOpts->astar_fac = Options.astar_fac;
+    RouterOpts->astar_offset = Options.astar_offset;
     RouterOpts->router_profiler_astar_fac = Options.router_profiler_astar_fac;
     RouterOpts->post_target_prune_fac = Options.post_target_prune_fac;
     RouterOpts->post_target_prune_offset = Options.post_target_prune_offset;

@@ -338,6 +338,7 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
 
         if (TIMING_DRIVEN == RouterOpts.router_algorithm) {
             VTR_LOG("RouterOpts.astar_fac: %f\n", RouterOpts.astar_fac);
+            VTR_LOG("RouterOpts.astar_offset: %f\n", RouterOpts.astar_offset);
             VTR_LOG("RouterOpts.router_profiler_astar_fac: %f\n", RouterOpts.router_profiler_astar_fac);
             VTR_LOG("RouterOpts.criticality_exp: %f\n", RouterOpts.criticality_exp);
             VTR_LOG("RouterOpts.max_criticality: %f\n", RouterOpts.max_criticality);
@@ -482,6 +483,7 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
         VTR_LOG("RouterOpts.exit_after_first_routing_iteration: %s\n", RouterOpts.exit_after_first_routing_iteration ? "true" : "false");
         if (TIMING_DRIVEN == RouterOpts.router_algorithm) {
             VTR_LOG("RouterOpts.astar_fac: %f\n", RouterOpts.astar_fac);
+            VTR_LOG("RouterOpts.astar_offset: %f\n", RouterOpts.astar_offset);
             VTR_LOG("RouterOpts.router_profiler_astar_fac: %f\n", RouterOpts.router_profiler_astar_fac);
             VTR_LOG("RouterOpts.post_target_prune_fac: %f\n", RouterOpts.post_target_prune_fac);
             VTR_LOG("RouterOpts.post_target_prune_offset: %f\n", RouterOpts.post_target_prune_offset);

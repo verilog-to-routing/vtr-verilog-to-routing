@@ -1332,6 +1332,8 @@ struct t_placer_opts {
  *             an essentially breadth-first search, astar_fac = 1 is near   *
  *             the usual astar algorithm and astar_fac > 1 are more         *
  *             aggressive.                                                  *
+ * astar_offset: Offset that is subtracted from the lookahead (expected     *
+ *               future costs) in the timing-driven router.                 *
  * max_criticality: The maximum criticality factor (from 0 to 1) any sink   *
  *                  will ever have (i.e. clip criticality to this number).  *
  * criticality_exp: Set criticality to (path_length(sink) / longest_path) ^ *
@@ -1419,6 +1421,7 @@ struct t_router_opts {
     enum e_router_algorithm router_algorithm;
     enum e_base_cost_type base_cost_type;
     float astar_fac;
+    float astar_offset;
     float router_profiler_astar_fac;
     float post_target_prune_fac;
     float post_target_prune_offset;

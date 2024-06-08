@@ -205,6 +205,7 @@ struct t_options {
 
     /* Timing-driven router options only */
     argparse::ArgValue<float> astar_fac;
+    argparse::ArgValue<float> astar_offset;
     argparse::ArgValue<float> router_profiler_astar_fac;
     argparse::ArgValue<float> post_target_prune_fac;
     argparse::ArgValue<float> post_target_prune_offset;

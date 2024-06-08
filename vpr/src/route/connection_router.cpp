@@ -1,6 +1,7 @@
 #include "connection_router.h"
-#include "rr_graph.h"
 
+#include <algorithm>
+#include "rr_graph.h"
 #include "binary_heap.h"
 #include "bucket.h"
 #include "rr_graph_fwd.h"
@@ -695,8 +696,8 @@ float ConnectionRouter<Heap>::compute_node_cost_using_rcv(const t_conn_cost_para
     float expected_total_delay_cost;
     float expected_total_cong_cost;
 
-    float expected_total_cong = cost_params.astar_fac * expected_cong + backwards_cong;
-    float expected_total_delay = cost_params.astar_fac * expected_delay + backwards_delay;
+    float expected_total_cong = expected_cong + backwards_cong;
+    float expected_total_delay = expected_delay + backwards_delay;
 
     //If budgets specified calculate cost as described by RCV paper:
     //    R. Fung, V. Betz and W. Chow, "Slack Allocation and Routing to Improve FPGA Timing While
@@ -835,7 +836,7 @@ void ConnectionRouter<Heap>::evaluate_timing_driven_node_costs(t_heap* to,
                                                               target_node,
                                                               cost_params,
                                                               to->R_upstream);
-    total_cost += to->backward_path_cost + cost_params.astar_fac * expected_cost;
+    total_cost += to->backward_path_cost + cost_params.astar_fac * std::max(0.f, expected_cost - cost_params.astar_offset);
 
     // if (rcv_path_manager.is_enabled() && to->path_data != nullptr) {
     //     to->path_data->backward_delay += cost_params.criticality * Tdel;
@@ -952,12 +953,8 @@ void ConnectionRouter<Heap>::add_route_tree_node_to_heap(
 
     if (!rcv_path_manager.is_enabled()) {
         // tot_cost = backward_path_cost + cost_params.astar_fac * expected_cost;
-        float tot_cost = backward_path_cost
-                         + cost_params.astar_fac
-                               * router_lookahead_.get_expected_cost(inode,
-                                                                     target_node,
-                                                                     cost_params,
-                                                                     R_upstream);
+        float expected_cost = router_lookahead_.get_expected_cost(inode, target_node, cost_params, R_upstream);
+        float tot_cost = backward_path_cost + cost_params.astar_fac * std::max(0.f, expected_cost - cost_params.astar_offset);
         VTR_LOGV_DEBUG(router_debug_, "  Adding node %8d to heap from init route tree with cost %g (%s)\n",
                        inode,
                        tot_cost,
