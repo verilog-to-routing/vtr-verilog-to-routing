@@ -95,6 +95,7 @@ bool RouterDelayProfiler::calculate_delay(RRNodeId source_node,
     t_conn_cost_params cost_params;
     cost_params.criticality = 1.;
     cost_params.astar_fac = router_opts.router_profiler_astar_fac;
+    cost_params.astar_offset = router_opts.astar_offset;
     cost_params.bend_cost = router_opts.bend_cost;
 
     route_budgets budgeting_inf(net_list_, is_flat_);
@@ -164,6 +165,7 @@ vtr::vector<RRNodeId, float> calculate_all_path_delays_from_rr_node(RRNodeId src
     t_conn_cost_params cost_params;
     cost_params.criticality = 1.;
     cost_params.astar_fac = router_opts.astar_fac;
+    cost_params.astar_offset = router_opts.astar_offset;
     cost_params.bend_cost = router_opts.bend_cost;
     /* This function is called during placement. Thus, the flat routing option should be disabled. */
     //TODO: Placement is run with is_flat=false. However, since is_flat is passed, det_routing_arch should
