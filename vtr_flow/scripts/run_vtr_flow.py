@@ -525,7 +525,7 @@ def vtr_command_main(arg_list, prog=None):
 
     assert args.temp_dir
     temp_dir = Path(args.temp_dir)
-    # Create an absolute path is it is not already provided. 
+    # Create an absolute path is it is not already provided.
     # Parmys throws an error if an absolute path is not provided.
     if not str(temp_dir).startswith("/"):
         temp_dir = Path(os.getcwd() + "/" + args.temp_dir)
