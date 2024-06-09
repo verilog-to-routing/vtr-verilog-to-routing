@@ -390,6 +390,32 @@ struct t_grid_loc_def {
                                      // that come from a common definition.
 };
 
+struct t_vib_grid_loc_def {
+    t_vib_grid_loc_def(std::string block_type_val, int priority_val)
+        : block_type(block_type_val)
+        , priority(priority_val)
+        , x("0", "W-1", "max(w+1,W)", "w") //Fill in x direction, no repeat, incr by block width
+        , y("0", "H-1", "max(h+1,H)", "h") //Fill in y direction, no repeat, incr by block height
+    {}
+
+    std::string block_type; //The block type name
+
+    int priority = 0; //Priority of the specification.
+                      // In case of conflicting specifications
+                      // the largest priority wins.
+
+    t_grid_loc_spec x; //Horizontal location specification
+    t_grid_loc_spec y; //Veritcal location specification
+
+    // When 1 metadata tag is split among multiple t_grid_loc_def, one
+    // t_grid_loc_def is arbitrarily chosen to own the metadata, and the other
+    // t_grid_loc_def point to the owned version.
+    std::unique_ptr<t_metadata_dict> owned_meta;
+    t_metadata_dict* meta = nullptr; // Metadata for this location definition. This
+                                     // metadata may be shared with multiple grid_locs
+                                     // that come from a common definition.
+};
+
 enum GridDefType {
     AUTO,
     FIXED
@@ -397,6 +423,10 @@ enum GridDefType {
 
 struct t_layer_def {
     std::vector<t_grid_loc_def> loc_defs; //The list of block location definitions for this layer specification
+};
+
+struct t_vib_layer_def {
+    std::vector<t_vib_grid_loc_def> loc_defs; //The list of block location definitions for this layer specification
 };
 
 struct t_grid_def {
@@ -410,6 +440,19 @@ struct t_grid_def {
     float aspect_ratio = 1.; //Aspect ratio for auto-sized devices (only valid for
                              //grid_type == AUTO)
     std::vector<t_layer_def> layers;
+};
+
+struct t_vib_grid_def {
+    GridDefType grid_type = GridDefType::AUTO; //The type of this grid specification
+
+    std::string name = ""; //The name of this device
+
+    int width = -1;  //Fixed device width (only valid for grid_type == FIXED)
+    int height = -1; //Fixed device height (only valid for grid_type == FIXED)
+
+    float aspect_ratio = 1.; //Aspect ratio for auto-sized devices (only valid for
+                             //grid_type == AUTO)
+    std::vector<t_vib_layer_def> layers;
 };
 
 /************************* POWER ***********************************/
@@ -2133,6 +2176,47 @@ struct t_noc_inf {
     std::string noc_router_tile_name;
 };
 
+/* for vib tag */
+struct t_seg_group {
+    std::string name; 
+    int seg_index;
+    int track_num;
+};
+
+enum e_multistage_mux_from_or_to_type {
+    PB = 0,
+    SEGMENT,
+    MUX
+};
+
+struct t_from_or_to_inf {
+    std::string type_name;
+    e_multistage_mux_from_or_to_type from_type;  //from_or_to_type
+    int type_index = -1;
+    int phy_pin_index = -1;
+    char seg_dir = ' ';
+    int seg_index = -1;
+};
+
+struct t_first_stage_mux_inf {
+    std::string mux_name; 
+    std::vector<t_from_or_to_inf> froms;
+};
+
+struct t_second_stage_mux_inf : t_first_stage_mux_inf {
+    std::vector<t_from_or_to_inf> to;    // for io type, port[pin] may map to several sinks
+};
+
+struct t_vib_inf {
+    std::string name;           /* vib name */
+    std::string pbtype_name;    /* pbtype name of vib */
+    int seg_group_num;          /* seg group number of vib */
+    int switch_idx;             /* vib switch index */
+    std::vector<t_seg_group> seg_groups;
+    std::vector<t_first_stage_mux_inf> first_stages;
+    std::vector<t_second_stage_mux_inf> second_stages;
+};
+
 /*   Detailed routing architecture */
 struct t_arch {
     /** Stores unique strings used as key and values in <metadata> tags,
@@ -2216,9 +2300,15 @@ struct t_arch {
     //It is used to generate custom SB for a specific locations within the device
     //If the layout is not specified in the command line options, this variable will be set to "auto"
     std::string device_layout;
+    
+    std::vector<t_vib_grid_def> vib_grid_layouts;
 
     t_clock_arch_spec clock_arch; // Clock related data types
 
     /// Stores NoC-related architectural information when there is an embedded NoC
     t_noc_inf* noc = nullptr;
+
+    // added for vib
+    bool is_vib_arch = false;
+    std::vector<t_vib_inf> vib_infs;
 };
