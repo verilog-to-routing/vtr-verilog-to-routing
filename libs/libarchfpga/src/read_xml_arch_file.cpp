@@ -302,8 +302,29 @@ static void ProcessChanWidthDistrDir(pugi::xml_node Node, t_chan* chan, const pu
 static void ProcessModels(pugi::xml_node Node, t_arch* arch, const pugiutil::loc_data& loc_data);
 static void ProcessModelPorts(pugi::xml_node port_group, t_model* model, std::set<std::string>& port_names, const pugiutil::loc_data& loc_data);
 static void ProcessLayout(pugi::xml_node Node, t_arch* arch, const pugiutil::loc_data& loc_data, int& num_of_avail_layer);
+<<<<<<< HEAD
 static t_grid_def ProcessGridLayout(vtr::string_internment& strings, pugi::xml_node layout_type_tag, const pugiutil::loc_data& loc_data, t_arch* arch, int& num_of_avail_layer);
 static void ProcessBlockTypeLocs(t_grid_def& grid_def, int die_number, vtr::string_internment& strings, pugi::xml_node layout_block_type_tag, const pugiutil::loc_data& loc_data);
+=======
+
+/* Added for vib_layout*/
+static void ProcessVibLayout(pugi::xml_node Node, t_arch* arch, const pugiutil::loc_data& loc_data);
+
+static t_grid_def ProcessGridLayout(vtr::string_internment* strings, pugi::xml_node layout_type_tag, const pugiutil::loc_data& loc_data, t_arch* arch, int& num_of_avail_layer);
+
+/* Added for vib_layout*/
+static t_vib_grid_def ProcessVibGridLayout(vtr::string_internment* strings, pugi::xml_node layout_type_tag, const pugiutil::loc_data& loc_data, t_arch* arch, int& num_of_avail_layer);
+
+static void ProcessBlockTypeLocs(t_grid_def& grid_def, int die_number, vtr::string_internment* strings, pugi::xml_node layout_block_type_tag, const pugiutil::loc_data& loc_data);
+
+/* Added for vib_layout*/
+static void ProcessVibBlockTypeLocs(t_vib_grid_def& grid_def,
+                                    int die_number,
+                                    vtr::string_internment* strings,
+                                    pugi::xml_node layout_block_type_tag,
+                                    const pugiutil::loc_data& loc_data);
+
+>>>>>>> Update read_xml_arch_file.cpp
 static int get_number_of_layers(pugi::xml_node layout_type_tag, const pugiutil::loc_data& loc_data);
 static void ProcessDevice(pugi::xml_node Node, t_arch* arch, t_default_fc_spec& arch_def_fc, const pugiutil::loc_data& loc_data);
 
@@ -387,6 +408,14 @@ static e_side string_to_side(const std::string& side_str);
 template<typename T>
 static T* get_type_by_name(std::string_view type_name, std::vector<T>& types);
 
+/* for vib arch */
+static void ProcessVibArch(pugi::xml_node Parent, std::vector<t_physical_tile_type>& PhysicalTileTypes, t_arch* arch, const pugiutil::loc_data& loc_data);
+static void ProcessVib(pugi::xml_node Vib_node, std::vector<t_physical_tile_type>& PhysicalTileTypes, t_arch* arch, const pugiutil::loc_data& loc_data);
+static void ProcessFirstStage(pugi::xml_node Stage_node, std::vector<t_physical_tile_type>& PhysicalTileTypes, std::vector<t_segment_inf> segments, std::vector<t_first_stage_mux_inf>& first_stages, const pugiutil::loc_data& loc_data);
+static void ProcessSecondStage(pugi::xml_node Stage_node, std::vector<t_physical_tile_type>& PhysicalTileTypes, std::vector<t_segment_inf> segments, std::vector<t_second_stage_mux_inf>& second_stages, const pugiutil::loc_data& loc_data);
+static void ProcessFromOrToTokens(const std::vector<std::string> Tokens, std::vector<t_physical_tile_type>& PhysicalTileTypes, std::vector<t_segment_inf> segments, std::vector<t_from_or_to_inf>& froms);
+void parse_pin_name(char* src_string, int* start_pin_index, int* end_pin_index, char* pb_type_name, char* port_name);
+
 /*
  *
  *
@@ -447,6 +476,12 @@ void XmlReadArch(const char* ArchFile,
         Next = get_single_child(architecture, "layout", loc_data);
         ProcessLayout(Next, arch, loc_data, num_of_avail_layers);
 
+        /* Precess vib_layout */
+        Next = get_single_child(architecture, "vib_layout", loc_data, ReqOpt::OPTIONAL);
+        if (Next) {
+            ProcessVibLayout(Next, arch, loc_data);
+        }
+
         /* Process device */
         Next = get_single_child(architecture, "device", loc_data);
         ProcessDevice(Next, arch, arch_def_fc, loc_data);
@@ -483,6 +518,12 @@ void XmlReadArch(const char* ArchFile,
         Next = get_single_child(architecture, "directlist", loc_data, ReqOpt::OPTIONAL);
         if (Next) {
             arch->directs = ProcessDirects(Next, arch->switches, loc_data);
+        }
+
+        /* Process vib_arch */
+        Next = get_single_child(architecture, "vib_arch", loc_data, ReqOpt::OPTIONAL);
+        if (Next) {
+            ProcessVibArch(Next, PhysicalTileTypes, arch, loc_data);
         }
 
         /* Process Clock Networks */
