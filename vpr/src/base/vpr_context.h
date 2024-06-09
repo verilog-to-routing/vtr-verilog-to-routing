@@ -174,6 +174,9 @@ struct DeviceContext : public Context {
      * in this data structure should be used.
      */
     DeviceGrid grid;
+
+    vtr::NdMatrix<const t_vib_inf*, 3> vib_grid;
+
     /*
      * Empty types
      */
