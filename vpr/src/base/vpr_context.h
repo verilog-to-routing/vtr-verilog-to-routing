@@ -149,6 +149,9 @@ struct DeviceContext : public Context {
      * This represents the physical layout of the device. To get the physical tile at each location (layer_num, x, y) the helper functions in this data structure should be used.
      */
     DeviceGrid grid;
+
+    vtr::NdMatrix<const t_vib_inf*, 3> vib_grid;
+
     /*
      * Empty types
      */
