@@ -115,7 +115,7 @@ bool pack_mol_in_existing_cluster(t_pack_molecule* molecule,
                                   t_clustering_data& clustering_data,
                                   t_lb_router_data*& router_data,
                                   NocGroupId& temp_cluster_noc_grp_id,
-                                  const int& detailed_routing_stage = 1);
+                                 enum e_detailed_routing_stages detailed_routing_stage = E_DETAILED_ROUTE_FOR_EACH_ATOM);
 
 /**
  * @brief A function that fix the clustered netlist if the move is performed
