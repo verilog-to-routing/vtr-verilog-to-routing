@@ -27,6 +27,16 @@ DeviceGrid create_device_grid(const std::string& layout_name,
                               size_t min_width,
                               size_t min_height);
 
+vtr::NdMatrix<const t_vib_inf*, 3> create_vib_device_grid(std::string layout_name, const std::vector<t_vib_grid_def>& vib_grid_layouts);
+
+/**
+ * @brief Calculate the device utilization
+ *
+ * Calculate the device utilization (i.e. fraction of used grid tiles)
+ * foor the specified grid and resource requirements
+ */
+float calculate_device_utilization(const DeviceGrid& grid, const std::map<t_logical_block_type_ptr, size_t>& instance_counts);
+
 /**
  * @brief Returns the effective size of the device
  *        (size of the bounding box of non-empty grid tiles)

@@ -302,10 +302,6 @@ static void ProcessChanWidthDistrDir(pugi::xml_node Node, t_chan* chan, const pu
 static void ProcessModels(pugi::xml_node Node, t_arch* arch, const pugiutil::loc_data& loc_data);
 static void ProcessModelPorts(pugi::xml_node port_group, t_model* model, std::set<std::string>& port_names, const pugiutil::loc_data& loc_data);
 static void ProcessLayout(pugi::xml_node Node, t_arch* arch, const pugiutil::loc_data& loc_data, int& num_of_avail_layer);
-<<<<<<< HEAD
-static t_grid_def ProcessGridLayout(vtr::string_internment& strings, pugi::xml_node layout_type_tag, const pugiutil::loc_data& loc_data, t_arch* arch, int& num_of_avail_layer);
-static void ProcessBlockTypeLocs(t_grid_def& grid_def, int die_number, vtr::string_internment& strings, pugi::xml_node layout_block_type_tag, const pugiutil::loc_data& loc_data);
-=======
 
 /* Added for vib_layout*/
 static void ProcessVibLayout(pugi::xml_node Node, t_arch* arch, const pugiutil::loc_data& loc_data);
@@ -324,7 +320,6 @@ static void ProcessVibBlockTypeLocs(t_vib_grid_def& grid_def,
                                     pugi::xml_node layout_block_type_tag,
                                     const pugiutil::loc_data& loc_data);
 
->>>>>>> Update read_xml_arch_file.cpp
 static int get_number_of_layers(pugi::xml_node layout_type_tag, const pugiutil::loc_data& loc_data);
 static void ProcessDevice(pugi::xml_node Node, t_arch* arch, t_default_fc_spec& arch_def_fc, const pugiutil::loc_data& loc_data);
 
