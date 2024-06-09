@@ -1326,12 +1326,50 @@ Code included in VTR by subtrees should *not be modified within the VTR source t
 Instead changes should be made in the relevant up-stream repository, and then synced into the VTR tree.
 
 ## Updating an existing Subtree
+
+The following are instructions on how to pull in external changes from an
+existing subtree. Which instructions to follow depend on if you are changing
+the external ref or not.
+
+### External Ref Does Not Change
+
+These instructions are for if the subtree is tracking a ref of a repo which has
+changes we want to pull in. For example, if the subtree is tracking main/master.
+
 1. From the VTR root run: `./dev/external_subtrees.py $SUBTREE_NAME`, where `$SUBTREE_NAME` is the name of an existing subtree.
 
     For example to update the `libtatum` subtree:
     ```shell
     ./dev/external_subtrees.py --update libtatum -m "commit message describing why component is being updated"
     ```
+
+### External Ref Changes
+
+These instructions are for if you want to change the ref that a subtree is
+tracking. For example, if you want to change the version of a subtree (which
+exists on a different branch).
+
+1. Update `./dev/subtree_config.xml` with the new external ref.
+
+2. Run `git log <internal_path>` and take note of any local changes to the
+   subtree. It is bad practice to have local changes to subtrees you cannot
+   modify; however, some changes must be made to allow the library to work in
+   VTR. The next step will clear all these changes, and they may be important
+   and need to be recreated.
+
+3. Delete the subtree folder (the internal path) entirely and commit it to git.
+   The issue is that changing the external ref basically creates a new subtree,
+   so the regular way of updating the subtree does not work. You need to
+   completely wipe all of the code from the old subtree. NOTE: This will remove
+   all changes locally made to the subtree.
+
+4. Run `./dev/external_subtrees.py --update $SUBTREE_NAME`. This will pull in
+   the most recent version of the subtree, squash the changes, and raise a
+   commit.
+
+5. Recreate the local changes from step 2 above, such that the library builds
+   without issue; preferrably in a concise way such that the library can be
+   easily updated in the future.
 
 ## Adding a new Subtree
 
