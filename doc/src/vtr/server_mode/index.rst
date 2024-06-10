@@ -3,7 +3,8 @@
 Server Mode
 ================
 
-VTR provides the ability to run in server mode using the following command-line arguments.
+If VPR is in server mode, it listens on a socket for commands from a client. Currently, this is used to enable interactive timing analysis and visualization of timing paths in the VPR UI under the control of a separate client.
+VPR provides the ability to run in server mode using the following command-line arguments.
 
 .. code-block:: none
 
