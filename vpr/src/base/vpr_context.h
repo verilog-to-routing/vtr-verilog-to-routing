@@ -601,7 +601,8 @@ struct ServerContext : public Context {
     /**
      * @brief Stores the flag indicating whether to draw the critical path contour.
      *
-     * If the flag is set to true, the non-selected critical path elements will be drawn as a contour, while selected elements will be drawn as usual.
+     * If True, the entire path will be rendered with some level of transparency, regardless of the selection of path elements. However, selected path elements will be drawn in full color.
+     * This feature is helpful in visual debugging, to see how the separate path elements are mapped into the whole path.
      */
     bool draw_crit_path_contour = false;
 
