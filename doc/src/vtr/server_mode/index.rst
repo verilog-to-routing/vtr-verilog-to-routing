@@ -58,8 +58,8 @@ Get critical path timing report example
       :linenos:
 
       {
-        "CMD": "0",
         "JOB_ID": "1",
+        "CMD": "0",
         "OPTIONS": "int:path_num:1;string:path_type:setup;string:details_level:netlist;bool:is_flat_routing:0"
       }
 
@@ -169,8 +169,8 @@ Draw selected critical path elements example
       :linenos:
 
       {
-        "CMD": "1",
         "JOB_ID": "2",
+        "CMD": "1",
         "OPTIONS": "string:path_elements:0#10,11,12,13,14,15,20,21,22,23,24,25;string:high_light_mode:crit path flylines delays;bool:draw_path_contour:1"
       }
 
