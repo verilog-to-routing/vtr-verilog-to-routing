@@ -297,6 +297,49 @@ void mark_fixed_blocks() {
     }
 }
 
+void alloc_and_load_compressed_cluster_constraints() {
+    auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    // used to access the compressed grid
+    const auto& place_ctx = g_vpr_ctx.placement();
+
+    floorplanning_ctx.compressed_cluster_constraints.resize(cluster_ctx.clb_nlist.blocks().size());
+
+    for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks()) {
+        if (!is_cluster_constrained(blk_id)) {
+            continue;
+        }
+
+        const PartitionRegion& pr = floorplanning_ctx.cluster_constraints[blk_id];
+        auto block_type = cluster_ctx.clb_nlist.block_type(blk_id);
+        // Get the compressed grid for NoC
+        const auto& compressed_grid = place_ctx.compressed_block_grids[block_type->index];
+
+        PartitionRegion compressed_pr;
+
+        for (const Region& region : pr.get_regions()) {
+            RegionRectCoord rect = region.get_region_rect();
+            t_physical_tile_loc min_loc{rect.xmin, rect.ymin, rect.layer_num};
+            t_physical_tile_loc max_loc{rect.xmax, rect.ymax, rect.layer_num};
+            t_physical_tile_loc compressed_min_loc = compressed_grid.grid_loc_to_compressed_loc_approx_round_up(min_loc);
+            t_physical_tile_loc compressed_max_loc = compressed_grid.grid_loc_to_compressed_loc_approx_round_down(max_loc);
+
+            RegionRectCoord compressed_rect{compressed_min_loc.x, compressed_min_loc.y,
+                                            compressed_max_loc.x, compressed_max_loc.y,
+                                            rect.layer_num};
+
+            Region compressed_region;
+            compressed_region.set_region_rect(compressed_rect);
+            compressed_region.set_sub_tile(region.get_sub_tile());
+
+            compressed_pr.add_to_part_region(compressed_region);
+        }
+
+        floorplanning_ctx.compressed_cluster_constraints[blk_id] = compressed_pr;
+    }
+
+}
+
 /*
  * Returns 0, 1, or 2 depending on the number of tiles covered.
  * Will not return a value above 2 because as soon as num_tiles is above 1,

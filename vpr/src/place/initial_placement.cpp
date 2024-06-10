@@ -1146,6 +1146,8 @@ void initial_placement(const t_placer_opts& placer_opts,
      * as fixed so they do not get moved during initial placement or later during the simulated annealing stage of placement*/
     mark_fixed_blocks();
 
+    alloc_and_load_compressed_cluster_constraints();
+
 
     // read the constraint file and place fixed blocks
     if (strlen(constraints_file) != 0) {

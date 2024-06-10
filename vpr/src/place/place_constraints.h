@@ -96,6 +96,8 @@ void load_cluster_constraints();
  */
 void mark_fixed_blocks();
 
+void alloc_and_load_compressed_cluster_constraints();
+
 /*
  * Returns the number of tiles covered by a floorplan region.
  * The return value of this routine will either be 0, 1, or 2. This

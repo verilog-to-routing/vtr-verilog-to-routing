@@ -55,6 +55,46 @@ struct t_compressed_block_grid {
         return {cx, cy, layer_num};
     }
 
+    inline t_physical_tile_loc grid_loc_to_compressed_loc_approx_round_up(t_physical_tile_loc grid_loc) const {
+        int cx = OPEN;
+        int cy = OPEN;
+        int layer_num = grid_loc.layer_num;
+
+        auto itr_x = std::upper_bound(compressed_to_grid_x[layer_num].begin(), compressed_to_grid_x[layer_num].end(), grid_loc.x);
+        if (itr_x == compressed_to_grid_x[layer_num].begin())
+            cx = 0;
+        else
+            cx = std::distance(compressed_to_grid_x[layer_num].begin(), itr_x - 1);
+
+        auto itr_y = std::upper_bound(compressed_to_grid_y[layer_num].begin(), compressed_to_grid_y[layer_num].end(), grid_loc.y);
+        if (itr_y == compressed_to_grid_y[layer_num].begin())
+            cy = 0;
+        else
+            cy = std::distance(compressed_to_grid_y[layer_num].begin(), itr_y - 1);
+
+        return {cx, cy, layer_num};
+    }
+
+    inline t_physical_tile_loc grid_loc_to_compressed_loc_approx_round_down(t_physical_tile_loc grid_loc) const {
+        int cx = OPEN;
+        int cy = OPEN;
+        int layer_num = grid_loc.layer_num;
+
+        auto itr_x = std::lower_bound(compressed_to_grid_x[layer_num].begin(), compressed_to_grid_x[layer_num].end(), grid_loc.x);
+        if (itr_x == compressed_to_grid_x[layer_num].end())
+            cx = std::distance(compressed_to_grid_x[layer_num].begin(), itr_x - 1);
+        else
+            cx = std::distance(compressed_to_grid_x[layer_num].begin(), itr_x);
+
+        auto itr_y = std::lower_bound(compressed_to_grid_y[layer_num].begin(), compressed_to_grid_y[layer_num].end(), grid_loc.y);
+        if (itr_y == compressed_to_grid_y[layer_num].end())
+            cy = std::distance(compressed_to_grid_y[layer_num].begin(), itr_y - 1);
+        else
+            cy = std::distance(compressed_to_grid_y[layer_num].begin(), itr_y);
+
+        return {cx, cy, layer_num};
+    }
+
     /**
      * @brief  find the nearest location in the compressed grid.
      *

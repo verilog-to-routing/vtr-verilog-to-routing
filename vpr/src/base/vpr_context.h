@@ -520,6 +520,8 @@ struct FloorplanningContext : public Context {
      */
     vtr::vector<ClusterBlockId, PartitionRegion> cluster_constraints;
 
+    vtr::vector<ClusterBlockId, PartitionRegion> compressed_cluster_constraints;
+
     std::vector<Region> overfull_regions;
 };
 
