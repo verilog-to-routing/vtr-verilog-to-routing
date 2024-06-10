@@ -480,7 +480,9 @@ bool is_pr_size_one(PartitionRegion& pr, t_logical_block_type_ptr block_type, t_
     return pr_size_one;
 }
 
-int get_part_reg_size(PartitionRegion& pr, t_logical_block_type_ptr block_type, GridTileLookup& grid_tiles) {
+int get_part_reg_size(const PartitionRegion& pr,
+                      t_logical_block_type_ptr block_type,
+                      const GridTileLookup& grid_tiles) {
     const std::vector<Region>& regions = pr.get_regions();
     int num_tiles = 0;
 
@@ -491,7 +493,10 @@ int get_part_reg_size(PartitionRegion& pr, t_logical_block_type_ptr block_type, 
     return num_tiles;
 }
 
-double get_floorplan_score(ClusterBlockId blk_id, PartitionRegion& pr, t_logical_block_type_ptr block_type, GridTileLookup& grid_tiles) {
+double get_floorplan_score(ClusterBlockId blk_id,
+                           const PartitionRegion& pr,
+                           t_logical_block_type_ptr block_type,
+                           const GridTileLookup& grid_tiles) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     int num_pr_tiles = get_part_reg_size(pr, block_type, grid_tiles);

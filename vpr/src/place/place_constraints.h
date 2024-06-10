@@ -1,3 +1,6 @@
+#ifndef VPR_SRC_PLACE_PLACE_CONSTRAINTS_H_
+#define VPR_SRC_PLACE_PLACE_CONSTRAINTS_H_
+
 /*
  * place_constraints.h
  *
@@ -11,9 +14,6 @@
 #include "partition_region.h"
 #include "place_macro.h"
 #include "grid_tile_lookup.h"
-
-#ifndef VPR_SRC_PLACE_PLACE_CONSTRAINTS_H_
-#    define VPR_SRC_PLACE_PLACE_CONSTRAINTS_H_
 
 /*
  * Check that placement of each block is within the floorplan constraint region of that block (if the block has any constraints).
@@ -131,7 +131,9 @@ bool is_pr_size_one(PartitionRegion& pr, t_logical_block_type_ptr block_type, t_
  * Used prior to initial placement to help sort blocks based on how difficult they
  * are to place.
  */
-int get_part_reg_size(PartitionRegion& pr, t_logical_block_type_ptr block_type, GridTileLookup& grid_tiles);
+int get_part_reg_size(const PartitionRegion& pr,
+                      t_logical_block_type_ptr block_type,
+                      const GridTileLookup& grid_tiles);
 
 /*
  * Return the floorplan score that will be used for sorting blocks during initial placement. This score is the
@@ -139,6 +141,9 @@ int get_part_reg_size(PartitionRegion& pr, t_logical_block_type_ptr block_type, 
  * The resulting number is the number of tiles outside the block's floorplan region, meaning the higher
  * it is, the more difficult the block is to place.
  */
-double get_floorplan_score(ClusterBlockId blk_id, PartitionRegion& pr, t_logical_block_type_ptr block_type, GridTileLookup& grid_tiles);
+double get_floorplan_score(ClusterBlockId blk_id,
+                           const PartitionRegion& pr,
+                           t_logical_block_type_ptr block_type,
+                           const GridTileLookup& grid_tiles);
 
 #endif /* VPR_SRC_PLACE_PLACE_CONSTRAINTS_H_ */

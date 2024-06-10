@@ -1263,9 +1263,9 @@ bool intersect_range_limit_with_floorplan_constraints(ClusterBlockId b_from,
                                                       int layer_num) {
     const auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
 
-    const PartitionRegion& pr = floorplanning_ctx.compressed_cluster_constraints[b_from];
-    const std::vector<Region>& regions = pr.get_regions();
-    Region intersect_reg;
+    // get the block floorplanning constraints specified in the compressed grid
+    const PartitionRegion& compressed_pr = floorplanning_ctx.compressed_cluster_constraints[b_from];
+    const std::vector<Region>& compressed_regions = compressed_pr.get_regions();
     /*
      * If region size is greater than 1, the block is constrained to more than one rectangular region.
      * In this case, we return true (i.e. the range limit intersects with
@@ -1273,20 +1273,20 @@ bool intersect_range_limit_with_floorplan_constraints(ClusterBlockId b_from,
      * this routine is done for cpu time optimization, so we do not have to necessarily check each
      * complicated case to get correct functionality during place moves.
      */
-    if (regions.size() == 1) {
+    if (compressed_regions.size() == 1) {
         Region range_reg;
         range_reg.set_region_rect({search_range.xmin, search_range.ymin,
                                    search_range.xmax, search_range.ymax,
                                    layer_num});
 
-        intersect_reg = intersection(regions[0], range_reg);
+        Region compressed_intersect_reg = intersection(compressed_regions[0], range_reg);
 
-        if (intersect_reg.empty()) {
+        if (compressed_intersect_reg.empty()) {
             VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug,
                            "\tCouldn't find an intersection between floorplan constraints and search region\n");
             return false;
         } else {
-            const auto intersect_coord = intersect_reg.get_region_rect();
+            const auto intersect_coord = compressed_intersect_reg.get_region_rect();
             VTR_ASSERT(intersect_coord.layer_num == layer_num);
 
             delta_cx = intersect_coord.xmax -  intersect_coord.xmin;

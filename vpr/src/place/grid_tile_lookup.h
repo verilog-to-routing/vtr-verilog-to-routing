@@ -31,11 +31,11 @@ class GridTileLookup {
 
     void fill_type_matrix(t_logical_block_type_ptr block_type, vtr::NdMatrix<int, 3>& type_count);
 
-    int region_tile_count(const Region& reg, t_logical_block_type_ptr block_type);
+    int region_tile_count(const Region& reg, t_logical_block_type_ptr block_type) const;
 
-    int region_with_subtile_count(const Region& reg, t_logical_block_type_ptr block_type);
+    int region_with_subtile_count(const Region& reg, t_logical_block_type_ptr block_type) const;
 
-    int total_type_tiles(t_logical_block_type_ptr block_type);
+    int total_type_tiles(t_logical_block_type_ptr block_type) const;
 
   private:
     /*

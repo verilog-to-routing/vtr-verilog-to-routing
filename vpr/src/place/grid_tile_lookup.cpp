@@ -54,7 +54,7 @@ void GridTileLookup::fill_type_matrix(t_logical_block_type_ptr block_type, vtr::
     max_placement_locations[block_type->index] = type_count[0][0][0];
 }
 
-int GridTileLookup::total_type_tiles(t_logical_block_type_ptr block_type) {
+int GridTileLookup::total_type_tiles(t_logical_block_type_ptr block_type) const {
     return max_placement_locations[block_type->index];
 }
 
@@ -65,7 +65,7 @@ int GridTileLookup::total_type_tiles(t_logical_block_type_ptr block_type) {
  * and subtracting four values from within/at the edge of the region.
  * The region with subtile case is taken care of by a helper routine, region_with_subtile_count().
  */
-int GridTileLookup::region_tile_count(const Region& reg, t_logical_block_type_ptr block_type) {
+int GridTileLookup::region_tile_count(const Region& reg, t_logical_block_type_ptr block_type) const {
     auto& device_ctx = g_vpr_ctx.device();
     int subtile = reg.get_sub_tile();
     int layer_num = reg.get_layer_num();
@@ -120,7 +120,7 @@ int GridTileLookup::region_tile_count(const Region& reg, t_logical_block_type_pt
  * This routine is for the subtile specified case; an O(region_size) scan needs to be done to check whether each grid
  * location in the region is compatible for the block at the subtile specified.
  */
-int GridTileLookup::region_with_subtile_count(const Region& reg, t_logical_block_type_ptr block_type) {
+int GridTileLookup::region_with_subtile_count(const Region& reg, t_logical_block_type_ptr block_type) const{
     auto& device_ctx = g_vpr_ctx.device();
     int num_sub_tiles = 0;
 
@@ -134,8 +134,8 @@ int GridTileLookup::region_with_subtile_count(const Region& reg, t_logical_block
 
     for (int i = xmax; i >= xmin; i--) {
         for (int j = ymax; j >= ymin; j--) {
-            const auto& tile = device_ctx.grid.get_physical_type({i, j, reg_coord.layer_num});
-            if (is_sub_tile_compatible(tile, block_type, subtile)) {
+            const t_physical_tile_type_ptr tile_type = device_ctx.grid.get_physical_type({i, j, reg_coord.layer_num});
+            if (is_sub_tile_compatible(tile_type, block_type, subtile)) {
                 num_sub_tiles++;
             }
         }
