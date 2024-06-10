@@ -568,7 +568,7 @@ struct NocContext : public Context {
  * @brief State relating to server mode
  *
  * This should contain only data structures that
- * related to server state.
+ * relate to the vpr server state.
  */
 struct ServerContext : public Context {
     /**
