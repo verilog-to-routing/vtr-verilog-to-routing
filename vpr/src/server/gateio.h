@@ -27,9 +27,9 @@ namespace server {
  * Operable only with a single client. As soon as client connection is detected
  * it begins listening on the specified port number for incoming client requests,
  * collects and encapsulates them into tasks (see @ref Task).
- * The incoming tasks are extracted and handled by the top-level logic @ref TaskResolver in main thread.
+ * The incoming tasks are extracted and handled by the top-level logic @ref TaskResolver in the main thread.
  * Once the tasks are resolved by the @ref TaskResolver, they are returned to be sent back to the client app as a response.
- * Extraction and puting @ref Task is taken from main thread inside @ref server::update.
+ * Moving @ref Task across threads happens in @ref server::update.
  * 
  * @note
  * - The GateIO instance should be created and managed from the main thread, while its internal processing 
@@ -154,9 +154,7 @@ public:
     GateIO& operator=(GateIO&&) = delete;
 
     /**
-    * @brief Checks if the port listening process is currently running.
-    *
-    * This method returns a boolean indicating whether the port listening process is currently running.
+    * @brief Returns a bool indicating whether or not the port listening process is currently running.
     *
     * @return True if the port listening process is running, false otherwise.
     */
@@ -186,7 +184,7 @@ public:
     /**
      * @brief Prints log messages for the GateIO.
      * 
-     * @note Must be called from main thread since it's invoke std::cout.
+     * @note Must be called from the main thread since it's invoke std::cout.
      * Calling this method from other threads may result in unexpected behavior.
      */
     void print_logs(); 

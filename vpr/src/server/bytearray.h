@@ -10,7 +10,7 @@
 namespace comm {
 
 /**
- * @brief ByteArray as a simple wrapper over std::vector<char>
+ * @brief ByteArray is a simple wrapper over std::vector<char> that provides a user-friendly interface for manipulating array data..
 */
 class ByteArray : public std::vector<char> {
 public:

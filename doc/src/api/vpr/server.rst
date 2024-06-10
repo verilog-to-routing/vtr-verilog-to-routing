@@ -39,6 +39,9 @@ server::TaskResolver
 .. doxygenfunction:: server::calc_critical_path
    :project: vpr
 
+.. doxygenenum:: e_timing_report_detail
+   :project: vpr
+
 comm::Telegram
 --------------
 
