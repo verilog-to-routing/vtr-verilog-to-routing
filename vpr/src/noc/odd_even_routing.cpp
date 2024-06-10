@@ -34,10 +34,13 @@ const std::vector<TurnModelRouting::Direction>& OddEvenRouting::get_legal_direct
     const auto curr_router_pos = curr_router.get_router_physical_location();
     const auto dst_router_pos = dst_router.get_router_physical_location();
 
-    // get the compressed location for source, current, and destination NoC routers
-    auto compressed_src_loc = get_compressed_loc_approx(compressed_noc_grid,t_pl_loc{src_router_pos, 0}, num_layers)[src_router_pos.layer_num];
-    auto compressed_curr_loc = get_compressed_loc_approx(compressed_noc_grid,t_pl_loc{curr_router_pos, 0}, num_layers)[curr_router_pos.layer_num];
-    auto compressed_dst_loc = get_compressed_loc_approx(compressed_noc_grid,t_pl_loc{dst_router_pos, 0}, num_layers)[dst_router_pos.layer_num];
+    /* get the compressed location for source, current, and destination NoC routers
+     * Odd-even routing algorithm restricts turn based on whether the current NoC router
+     * in an odd or even NoC column. This information can be extracted from the NoC compressed grid.
+     */
+    auto compressed_src_loc = get_compressed_loc_approx(compressed_noc_grid, t_pl_loc{src_router_pos, 0}, num_layers)[src_router_pos.layer_num];
+    auto compressed_curr_loc = get_compressed_loc_approx(compressed_noc_grid, t_pl_loc{curr_router_pos, 0}, num_layers)[curr_router_pos.layer_num];
+    auto compressed_dst_loc = get_compressed_loc_approx(compressed_noc_grid, t_pl_loc{dst_router_pos, 0}, num_layers)[dst_router_pos.layer_num];
 
     // clear returned legal directions from the previous call
     returned_legal_direction.clear();
@@ -151,3 +154,67 @@ bool OddEvenRouting::is_odd(int number) {
 bool OddEvenRouting::is_even(int number) {
     return (number % 2) == 0;
 }
+
+bool OddEvenRouting::is_turn_legal(const std::array<std::reference_wrapper<const NocRouter>, 3>& noc_routers) const {
+    // used to access NoC compressed grid
+    const auto& place_ctx = g_vpr_ctx.placement();
+    // used to get NoC logical block type
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    // used to get the clustered block ID of a NoC router
+    auto& noc_ctx = g_vpr_ctx.noc();
+    // get number of layers
+    const int num_layers = g_vpr_ctx.device().grid.get_num_layers();
+
+    const int x1 = noc_routers[0].get().get_router_grid_position_x();
+    const int y1 = noc_routers[0].get().get_router_grid_position_y();
+
+    const int x2 = noc_routers[1].get().get_router_grid_position_x();
+    const int y2 = noc_routers[1].get().get_router_grid_position_y();
+
+    const int x3 = noc_routers[2].get().get_router_grid_position_x();
+    const int y3 = noc_routers[2].get().get_router_grid_position_y();
+
+    // check if the given routers can be traversed one after another
+    VTR_ASSERT(x2 == x1 || y2 == y1);
+    VTR_ASSERT(x3 == x2 || y3 == y2);
+
+    // get the position of the second NoC routers
+    const auto router2_pos = noc_routers[1].get().get_router_physical_location();
+
+    // Get the logical block type for router
+    const auto router_block_type = cluster_ctx.clb_nlist.block_type(noc_ctx.noc_traffic_flows_storage.get_router_clusters_in_netlist()[0]);
+
+    // Get the compressed grid for NoC
+    const auto& compressed_noc_grid = place_ctx.compressed_block_grids[router_block_type->index];
+
+    // get the compressed location of the second NoC router
+    auto compressed_2_loc = get_compressed_loc(compressed_noc_grid, t_pl_loc{router2_pos, 0}, num_layers)[router2_pos.layer_num];
+
+    // going back to the first router is not allowed
+    if (x1 == x3 && y1 == y3) {
+        return false;
+    }
+
+    // check if the turn is compatible with odd-even routing algorithm turn restrictions
+    if (is_odd(compressed_2_loc.x)) {
+        if (y2 != y1 && x3 < x2) {
+            return false;
+        }
+    } else { // even column
+        if (x2 > x1 && y2 != y3) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+
+
+
+
+
+
+
+
+

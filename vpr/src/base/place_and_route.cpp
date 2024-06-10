@@ -65,8 +65,8 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
                                   t_det_routing_arch* det_routing_arch,
                                   std::vector<t_segment_inf>& segment_inf,
                                   NetPinsMatrix<float>& net_delay,
-                                  std::shared_ptr<SetupHoldTimingInfo> timing_info,
-                                  std::shared_ptr<RoutingDelayCalculator> delay_calc,
+                                  const std::shared_ptr<SetupHoldTimingInfo>& timing_info,
+                                  const std::shared_ptr<RoutingDelayCalculator>& delay_calc,
                                   bool is_flat) {
     vtr::vector<ParentNetId, vtr::optional<RouteTree>> best_routing; /* Saves the best routing found so far. */
     int current, low, high, final;
@@ -101,7 +101,7 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
         graph_directionality = (det_routing_arch->directionality == BI_DIRECTIONAL ? GRAPH_BIDIR : GRAPH_UNIDIR);
     }
 
-    VTR_ASSERT(net_delay.size());
+    VTR_ASSERT(!net_delay.empty());
 
     if (det_routing_arch->directionality == BI_DIRECTIONAL)
         udsd_multiplier = 1;
@@ -298,7 +298,7 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
         current = current + current % udsd_multiplier;
     }
 
-    /* The binary search above occassionally does not find the minimum    *
+    /* The binary search above occasionally does not find the minimum    *
      * routeable channel width.  Sometimes a circuit that will not route  *
      * in 19 channels will route in 18, due to router flukiness.  If      *
      * verify_binary_search is set, the code below will ensure that FPGAs *

@@ -66,6 +66,8 @@ class NorthLastRouting : public TurnModelRouting {
                                                       NocRouterId curr_router_id,
                                                       NocTrafficFlowId traffic_flow_id,
                                                       const NocStorage& noc_model) override;
+
+    bool is_turn_legal(const std::array<std::reference_wrapper<const NocRouter>, 3>& noc_routers) const override;
 };
 
 #endif //VTR_NORTH_LAST_ROUTING_H
