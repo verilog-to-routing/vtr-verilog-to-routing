@@ -154,9 +154,7 @@ public:
     GateIO& operator=(GateIO&&) = delete;
 
     /**
-    * @brief Checks if the port listening process is currently running.
-    *
-    * This method returns a boolean indicating whether the port listening process is currently running.
+    * @brief Returns a bool indicating whether or not the port listening process is currently running.
     *
     * @return True if the port listening process is running, false otherwise.
     */
