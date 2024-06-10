@@ -40,9 +40,9 @@ using CritPathsResultPtr = std::shared_ptr<CritPathsResult>;
 * @brief Calculates the critical path.
 
 * This function calculates the critical path based on the provided parameters.
-* @param type The type of the critical path.
-* @param crit_path_num The max number of the critical path.
-* @param details_level The level of detail for the timing report.
+* @param type The type of the critical path. Must be either "setup" or "hold".
+* @param crit_path_num The max number of critical paths to record.
+* @param details_level The level of detail for the timing report. See @ref e_timing_report_detail.
 * @param is_flat_routing Indicates whether flat routing should be used.
 * @return A `CritPathsResultPtr` which is a pointer to the result of the critical path calculation (see @ref CritPathsResult).
 */
