@@ -23,7 +23,14 @@ The telegram header contains helper information required to properly extract the
 
     Communication telegram structure.
 
-    
+.. note:: The telegram body itself could be compressed with zlib to minimize the amount of data transferred over the socket.
+  This compression is applied to the response of the 'get critical path report' request. The compressor ID byte in the telegram header signals whether the telegram body is compressed.
+  When the compressor ID is null, the telegram body is not compressed. If the compressor ID is 'z', it means the body is compressed with zlib.
+
+.. note:: The checksum field contains the telegram body checksum. This checksum is used to validate the consistency of the telegram body during the dispatching phase.
+  If checksums are mismatched, the telegram is considered invalid and is skipped in processing.
+
+
 .. _fig_comm_telegram_body_structure:
 
 .. figure:: comm_telegram_body_structure.*
@@ -39,9 +46,6 @@ The telegram header contains helper information required to properly extract the
 
     JOB_ID is a unique ID for a task. It is used to associate the request with the response by matching the same JOB_ID. Each new client request should increment the JOB_ID value; otherwise, it will not be clear which request the current response belongs to.
 
-    .. note:: The telegram body itself could be compressed with zlib to minimize the amount of data transferred over the socket.
-      This compression is applied to the response of the 'get critical path report' request.
-      The compressor ID byte in the telegram header signals whether the telegram body is compressed.
 
 Get critical path timing report example
 ---------------------------------------
