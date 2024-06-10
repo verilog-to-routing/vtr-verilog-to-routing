@@ -37,7 +37,7 @@ The telegram header contains helper information required to properly extract the
     - 0 - command id for **get critical path**
     - 1 - command id for **highlight selected path elements**
 
-    JOB_ID - is unique id for a task.
+    JOB_ID is a unique ID for a task. It is used to associate the request with the response by matching the same JOB_ID. Each new client request should increment the JOB_ID value; otherwise, it will not be clear which request the current response belongs to.
 
     .. note:: The telegram body itself could be compressed with zlib to minimize the amount of data transferred over the socket.
       This compression is applied to the response of the 'get critical path report' request.
