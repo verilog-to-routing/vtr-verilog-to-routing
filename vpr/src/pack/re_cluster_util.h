@@ -27,17 +27,26 @@ ClusterBlockId atom_to_cluster(const AtomBlockId& atom);
 
 /**
  * @brief A function that return a list of atoms in a cluster
- * @note This finction can be called only after cluster/packing is done or
- * the clustered netlist is created
+ * @note This function can be called only after cluster/packing is done or
+ * the clustered netlist is created.
+ * @return Atoms in the given cluster. The returned set is immutable.
  */
+const std::unordered_set<AtomBlockId>& cluster_to_atoms(ClusterBlockId cluster);
 
-std::unordered_set<AtomBlockId>* cluster_to_atoms(const ClusterBlockId& cluster);
+/**
+ * @brief A function that return a list of atoms in a cluster
+ * @note This function can be called only after cluster/packing is done or
+ * the clustered netlist is created.
+ * @return Atoms in the given cluster. The returned set is mutable.
+ */
+std::unordered_set<AtomBlockId>& cluster_to_mutable_atoms(ClusterBlockId cluster);
+
 /**
  * @brief A function that loads the intra-cluster router data of one cluster
  */
 t_lb_router_data* lb_load_router_data(std::vector<t_lb_type_rr_node>* lb_type_rr_graphs,
                                       const ClusterBlockId& clb_index,
-                                      const std::unordered_set<AtomBlockId>* clb_atoms);
+                                      const std::unordered_set<AtomBlockId>& clb_atoms);
 
 /**
  * @brief A function that removes a molecule from a cluster and checks legality of
@@ -58,7 +67,7 @@ t_lb_router_data* lb_load_router_data(std::vector<t_lb_type_rr_node>* lb_type_rr
 void remove_mol_from_cluster(const t_pack_molecule* molecule,
                              int molecule_size,
                              ClusterBlockId& old_clb,
-                             std::unordered_set<AtomBlockId>* old_clb_atoms,
+                             std::unordered_set<AtomBlockId>& old_clb_atoms,
                              bool router_data_ready,
                              t_lb_router_data*& router_data);
 
@@ -105,7 +114,7 @@ bool start_new_cluster_for_mol(t_pack_molecule* molecule,
 bool pack_mol_in_existing_cluster(t_pack_molecule* molecule,
                                   int molecule_size,
                                   const ClusterBlockId& new_clb,
-                                  std::unordered_set<AtomBlockId>* new_clb_atoms,
+                                  std::unordered_set<AtomBlockId>& new_clb_atoms,
                                   bool during_packing,
                                   t_clustering_data& clustering_data,
                                   t_lb_router_data*& router_data);

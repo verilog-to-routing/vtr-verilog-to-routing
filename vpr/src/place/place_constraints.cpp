@@ -245,13 +245,13 @@ void load_cluster_constraints() {
     floorplanning_ctx.cluster_constraints.resize(cluster_ctx.clb_nlist.blocks().size());
 
     for (auto cluster_id : cluster_ctx.clb_nlist.blocks()) {
-        std::unordered_set<AtomBlockId>* atoms = cluster_to_atoms(cluster_id);
+        const std::unordered_set<AtomBlockId>& atoms = cluster_to_atoms(cluster_id);
         PartitionRegion empty_pr;
         floorplanning_ctx.cluster_constraints[cluster_id] = empty_pr;
 
         //if there are any constrained atoms in the cluster,
         //we update the cluster's PartitionRegion
-        for (auto atom : *atoms) {
+        for (AtomBlockId atom : atoms) {
             PartitionId partid = floorplanning_ctx.constraints.get_atom_partition(atom);
 
             if (partid != PartitionId::INVALID()) {

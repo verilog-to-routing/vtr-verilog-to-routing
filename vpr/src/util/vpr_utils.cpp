@@ -1372,8 +1372,8 @@ std::vector<int> get_cluster_internal_class_pairs(const AtomLookup& atom_lookup,
     std::tie(physical_tile, sub_tile, rel_cap, logical_block) = get_cluster_blk_physical_spec(cluster_block_id);
     class_num_vec.reserve(physical_tile->primitive_class_inf.size());
 
-    const auto& cluster_atoms = *cluster_to_atoms(cluster_block_id);
-    for (auto atom_blk_id : cluster_atoms) {
+    const auto& cluster_atoms = cluster_to_atoms(cluster_block_id);
+    for (AtomBlockId atom_blk_id : cluster_atoms) {
         auto atom_pb_graph_node = atom_lookup.atom_pb_graph_node(atom_blk_id);
         auto class_range = get_pb_graph_node_class_physical_range(physical_tile,
                                                                   sub_tile,
