@@ -779,8 +779,7 @@ bool find_to_loc_uniform(t_logical_block_type_ptr type,
 
     //TODO: constraints should be adapted to 3D architecture
     if (is_cluster_constrained(b_from)) {
-        bool intersect = intersect_range_limit_with_floorplan_constraints(type,
-                                                                          b_from,
+        bool intersect = intersect_range_limit_with_floorplan_constraints(b_from,
                                                                           search_range,
                                                                           delta_cx,
                                                                           to_layer_num);
@@ -877,8 +876,7 @@ bool find_to_loc_median(t_logical_block_type_ptr blk_type,
     bool legal = false;
 
     if (is_cluster_constrained(b_from)) {
-        bool intersect = intersect_range_limit_with_floorplan_constraints(blk_type,
-                                                                          b_from,
+        bool intersect = intersect_range_limit_with_floorplan_constraints(b_from,
                                                                           search_range,
                                                                           delta_cx,
                                                                           to_layer_num);
@@ -963,8 +961,7 @@ bool find_to_loc_centroid(t_logical_block_type_ptr blk_type,
     bool legal = false;
 
     if (is_cluster_constrained(b_from)) {
-        bool intersect = intersect_range_limit_with_floorplan_constraints(blk_type,
-                                                                          b_from,
+        bool intersect = intersect_range_limit_with_floorplan_constraints(b_from,
                                                                           search_range,
                                                                           delta_cx,
                                                                           to_layer_num);
@@ -1084,9 +1081,9 @@ bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
     else
         possibilities = delta_cx;
 
-    while (!legal && (int)tried_cx_to.size() < possibilities) { //Until legal or all possibilities exhaused
+    while (!legal && (int)tried_cx_to.size() < possibilities) { //Until legal or all possibilities exhausted
         //Pick a random x-location within [min_cx, max_cx],
-        //until we find a legal swap, or have exhuasted all possiblites
+        //until we find a legal swap, or have exhausted all possibilities
         to_loc.x = search_range.xmin + vtr::irand(delta_cx);
 
         VTR_ASSERT(to_loc.x >= search_range.xmin);
@@ -1260,8 +1257,7 @@ t_bb get_compressed_grid_bounded_search_range(const t_compressed_block_grid& com
     return search_range;
 }
 
-bool intersect_range_limit_with_floorplan_constraints(t_logical_block_type_ptr type,
-                                                      ClusterBlockId b_from,
+bool intersect_range_limit_with_floorplan_constraints(ClusterBlockId b_from,
                                                       t_bb& search_range,
                                                       int& delta_cx,
                                                       int layer_num) {
