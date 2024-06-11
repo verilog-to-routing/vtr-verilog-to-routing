@@ -1,5 +1,19 @@
 #include "grid_tile_lookup.h"
 
+GridTileLookup::GridTileLookup() {
+    const auto& device_ctx = g_vpr_ctx.device();
+    const int num_layers = device_ctx.grid.get_num_layers();
+
+    //Will store the max number of tile locations for each logical block type
+    max_placement_locations.resize(device_ctx.logical_block_types.size());
+
+    for (const auto& type : device_ctx.logical_block_types) {
+        vtr::NdMatrix<int, 3> type_count({static_cast<unsigned long>(num_layers), device_ctx.grid.width(), device_ctx.grid.height()});
+        fill_type_matrix(&type, type_count);
+        block_type_matrices.push_back(type_count);
+    }
+}
+
 void GridTileLookup::fill_type_matrix(t_logical_block_type_ptr block_type, vtr::NdMatrix<int, 3>& type_count) {
     auto& device_ctx = g_vpr_ctx.device();
 
@@ -58,13 +72,6 @@ int GridTileLookup::total_type_tiles(t_logical_block_type_ptr block_type) const 
     return max_placement_locations[block_type->index];
 }
 
-/*
- * This routine uses pre-computed values from the grids for each block type to get the number of grid tiles
- * covered by a region.
- * For a region with no subtiles specified, the number of grid tiles can be calculated by adding
- * and subtracting four values from within/at the edge of the region.
- * The region with subtile case is taken care of by a helper routine, region_with_subtile_count().
- */
 int GridTileLookup::region_tile_count(const Region& reg, t_logical_block_type_ptr block_type) const {
     auto& device_ctx = g_vpr_ctx.device();
     int subtile = reg.get_sub_tile();
@@ -116,10 +123,6 @@ int GridTileLookup::region_tile_count(const Region& reg, t_logical_block_type_pt
     return num_tiles;
 }
 
-/*
- * This routine is for the subtile specified case; an O(region_size) scan needs to be done to check whether each grid
- * location in the region is compatible for the block at the subtile specified.
- */
 int GridTileLookup::region_with_subtile_count(const Region& reg, t_logical_block_type_ptr block_type) const{
     auto& device_ctx = g_vpr_ctx.device();
     int num_sub_tiles = 0;
