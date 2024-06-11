@@ -1266,47 +1266,96 @@ make CMAKE_PARAMS="-DVTR_IPO_BUILD=off" -j8 vpr
 
 # Profiling VTR
 
-1. Install `gprof`, `gprof2dot`, and `xdot`. Specifically, the previous two packages require python3, and you should install the last one with `sudo apt install` for all the dependencies you will need for visualizing your profile results.
+## Use GNU Profiler gprof
+
+1. **Installation**: Install `gprof`, `gprof2dot`, and `xdot` (optional).
+   1. `gprof` is part of [GNU Binutils](https://www.gnu.org/software/binutils/), which is a commonly-installed package alongside the standard GCC package on most systems. `gprof` should already exist. If not, use `sudo apt install binutils`.
+   2. `gprof2dot` requires python3 or conda. You can install with `pip3 install gprof2dot` or `conda install -c conda-forge gprof2dot`.
+   3. `xdot` is optional. To install it, use `sudo apt install`.
     ```
-    pip3 install gprof
+    sudo apt install binutils
     pip3 install gprof2dot
-    sudo apt install xdot
+    sudo apt install xdot # optional
     ```
 
     Contact your administrator if you do not have the `sudo` rights.
 
-2. Use the CMake option below to enable VPR profiler build.
+2. **VPR build**: Use the CMake option below to enable VPR profiler build.
     ```
     make CMAKE_PARAMS="-DVTR_ENABLE_PROFILING=ON" vpr
     ```
 
-3. With the profiler build, each time you run the VTR flow script, it will produce an extra file `gmon.out` that contains the raw profile information. 
-    Run `gprof` to parse this file. You will need to specify the path to the VPR executable.
+3. **Profiling**:
+   1. With the profiler build, each time you run the VTR flow script, it will produce an extra file `gmon.out` that contains the raw profile information. Run `gprof` to parse this file. You will need to specify the path to the VPR executable.
+        ```
+        gprof $VTR_ROOT/vpr/vpr gmon.out > gprof.txt
+        ```
+
+   2. Next, use `gprof2dot` to transform the parsed results to a `.dot` file (Graphviz graph description), which describes the graph of your final profile results. If you encounter long function names, specify the `-s` option for a cleaner graph. For other useful options, please refer to its [online documentation](https://github.com/jrfonseca/gprof2dot?tab=readme-ov-file#documentation).
+        ```
+        gprof2dot -s gprof.txt > vpr.dot
+        ```
+
+   - Note: You can chain the above commands to directly produce the `.dot` file:
+        ```
+        gprof $VTR_ROOT/vpr/vpr gmon.out | gprof2dot -s > vpr.dot
+        ```
+
+4. **Visualization**:
+   - **Option 1** (Recommended): Use the [Edotor](https://edotor.net/) online Graphviz visualizer.
+     1. Open a browser and go to [https://edotor.net/](https://edotor.net/) (on any device, not necessarily the one where VPR is running).
+     2. Choose `dot` as the "Engine" at the top navigation bar.
+     3. Next, copy and paste `vpr.dot` into the editor space on the left side of the web view.
+     4. Then, you can interactively (i.e., pan and zoom) view the results and download an SVG or PNG image.
+   - **Option 2**: Use the locally-installed `xdot` visualization tool.
+     1. Use `xdot` to view your results:
+        ```
+        xdot vpr.dot
+        ```
+     2. To save your results as a PNG file:
+        ```
+        dot -Tpng -Gdpi=300 vpr.dot > vpr.png
+        ```
+        Note that you can use the `-Gdpi` option to make your picture clearer if you find the default dpi settings not clear enough.
+
+## Use Linux Perf Tool
+
+1. **Installation**: Install `perf` and `gprof2dot` (optional).
     ```
-    gprof $VTR_ROOT/vpr/vpr gmon.out > gprof.txt
+    sudo apt install linux-tools-common linux-tools-generic
+    pip3 install gprof2dot # optional
     ```
 
-4. Next, use `gprof2dot` to transform the parsed results to a `.dot` file, which describes the graph of your final profile results. If you encounter long function names, specify the `-s` option for a cleaner graph.
+2. **VPR build**: *No need* to enable any CMake options for using `perf`, unless you want to utilize specific features, such as `perf annotate`.
     ```
-    gprof2dot -s gprof.txt > vpr.dot
-    ```
-
-5. You can chain the above commands to directly produce the `.dot` file:
-    ```
-    gprof $VTR_ROOT/vpr/vpr gmon.out | gprof2dot -s > vpr.dot
+    make vpr
     ```
 
-6. Use `xdot` to view your results:
-    ```
-    xdot vpr.dot
-    ```
+3. **Profiling**: `perf` needs to know the process ID (i.e., pid) of the running VPR you want to monitor and profile, which can be obtained using the Linux command `top -u <username>`.
+   - **Option 1**: Real-time analysis
+        ```
+        sudo perf top -p <vpr pid>
+        ```
+   - **Option 2** (Recommended): Record and offline analysis
 
-7. To save your results as a `png` file:
-    ```
-    dot -Tpng -Gdpi=300 vpr.dot > vpr.png
-    ```
-    
-    Note that you can use the `-Gdpi` option to make your picture clearer if you find the default dpi settings not clear enough.
+        Use `perf record` to record the profile data and the call graph. (Note: The argument `lbr` for `--call-graph` only works on Intel platforms. If you encounter issues with call graph recording, please refer to the [`perf record` manual](https://perf.wiki.kernel.org/index.php/Latest_Manual_Page_of_perf-record.1) for more information.)
+        ```
+        sudo perf record --call-graph lbr -p <vpr pid>
+        ```
+        After VPR completes its run, or if you stop `perf` with CTRL+C (if you are focusing on a specific portion of the VPR execution), the `perf` tool will produce an extra file `perf.data` containing the raw profile results in the directory where you ran `perf`. You can further analyze the results by parsing this file using `perf report`.
+        ```
+        sudo perf report -i perf.data
+        ```
+   - Note 1: The official `perf` [wiki](https://perf.wiki.kernel.org/index.php/Main_Page) and [tutorial](https://perf.wiki.kernel.org/index.php/Tutorial) are highly recommended for those who want to explore more uses of the tool.
+   - Note 2: It is highly recommended to run `perf` with `sudo`, but you can find a workaround [here](https://superuser.com/questions/980632/run-perf-without-root-rights) to allow running `perf` without root rights.
+   - Note 3: You may also find [Hotspot](https://github.com/KDAB/hotspot) useful if you want to run `perf` with GUI support.
+
+4. **Visualization** (optional): If you want a better illustration of the profiling results, first run the following command to transform the `perf` report into a Graphviz dot graph. The remaining steps are exactly the same as those described under [Use GNU Profiler gprof
+](#use-gnu-profiler-gprof).
+     ```
+     perf script -i perf.data | c++filt | gprof2dot.py -f perf -s > vpr.dot
+     ```
+
 
 # External Subtrees
 VTR includes some code which is developed in external repositories, and is integrated into the VTR source tree using [git subtrees](https://www.atlassian.com/blog/git/alternatives-to-git-submodule-git-subtree).
