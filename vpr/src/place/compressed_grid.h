@@ -63,14 +63,22 @@ struct t_compressed_block_grid {
         auto itr_x = std::upper_bound(compressed_to_grid_x[layer_num].begin(), compressed_to_grid_x[layer_num].end(), grid_loc.x);
         if (itr_x == compressed_to_grid_x[layer_num].begin())
             cx = 0;
-        else
+        else if (*(itr_x - 1) == grid_loc.x)
             cx = std::distance(compressed_to_grid_x[layer_num].begin(), itr_x - 1);
+        else if (itr_x == compressed_to_grid_x[layer_num].end())
+            cx = compressed_to_grid_x[layer_num].size();
+        else
+            cx = std::distance(compressed_to_grid_x[layer_num].begin(), itr_x);
 
         auto itr_y = std::upper_bound(compressed_to_grid_y[layer_num].begin(), compressed_to_grid_y[layer_num].end(), grid_loc.y);
         if (itr_y == compressed_to_grid_y[layer_num].begin())
             cy = 0;
-        else
+        else if (*(itr_y - 1) == grid_loc.y)
             cy = std::distance(compressed_to_grid_y[layer_num].begin(), itr_y - 1);
+        else if (itr_y == compressed_to_grid_y[layer_num].end())
+            cy = compressed_to_grid_y[layer_num].size();
+        else
+            cy = std::distance(compressed_to_grid_y[layer_num].begin(), itr_y);
 
         return {cx, cy, layer_num};
     }
