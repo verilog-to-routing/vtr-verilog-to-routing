@@ -134,6 +134,8 @@ static bool check_input_pins_equivalence(const t_pb_graph_pin* cur_pin,
                                          const int i_pin,
                                          std::map<int, int>& edges_map,
                                          int* line_num);
+
+/* computes the index of a pb graph node at its level of the pb hierarchy */
 static int compute_flat_index_for_child_node(int num_children_of_type,
                                              int parent_flat_index,
                                              int child_index);
