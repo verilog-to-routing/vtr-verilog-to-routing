@@ -1,0 +1,51 @@
+# This workflow is designed to test that VTR can run on Ubuntu 24.04. Since
+# the Ubuntu 24.04 GitHub runners are still in Beta, this is left as a workflow
+# that must be dispatched manually. In the future this workflow should be
+# removed and made the default (integrated into test.yml).
+name: Noble
+
+on:
+  workflow_dispatch:
+  schedule:
+  - cron: '0 0 * * *' # daily
+
+# We want to cancel previous runs for a given PR or branch / ref if another CI
+# run is requested.
+# See: https://docs.github.com/en/actions/using-jobs/using-concurrency
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  MATRIX_EVAL: "CC=gcc-13 && CXX=g++-13"
+
+jobs:
+  FutureCompatibility:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - { name: 'GCC 13 (Ubuntu Noble - 24.04)',    eval: 'CC=gcc-13 && CXX=g++-13',         }
+        - { name: 'Clang 18 (Ubuntu Noble - 24.04)',  eval: 'CC=clang-18 && CXX=clang++-18',   }
+    name: 'B: ${{ matrix.name }}'
+    steps:
+    - uses: actions/setup-python@v5
+      with:
+        python-version: 3.12.3
+    - uses: actions/checkout@v4
+      with:
+        submodules: 'true'
+    - run: ./.github/scripts/install_noble_dependencies.sh
+
+    - uses: hendrikmuhs/ccache-action@v1.2
+
+    - name: Test
+      env:
+        CMAKE_PARAMS: "-DVTR_ASSERT_LEVEL=3 -DVTR_IPO_BUILD=off"
+        MATRIX_EVAL: ${{ matrix.eval }}
+        BUILD_TYPE: release
+      run: |
+        export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
+        ./.github/scripts/build.sh
+
