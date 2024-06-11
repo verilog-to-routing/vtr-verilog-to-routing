@@ -101,6 +101,7 @@ bool start_new_cluster_for_mol(t_pack_molecule* molecule,
  * @param clustering_data: A data structure containing helper data for the clustering process
  *                          (is updated if this function is called during packing, especially intra_lb_routing data member).
  * @param router_data: returns the intra logic block router data.
+ * @param enable_pin_feasibility_filter: do a pin couting based legality check (before or in place of intra-cluster routing check).
  */
 bool pack_mol_in_existing_cluster(t_pack_molecule* molecule,
                                   int molecule_size,
@@ -108,7 +109,8 @@ bool pack_mol_in_existing_cluster(t_pack_molecule* molecule,
                                   std::unordered_set<AtomBlockId>* new_clb_atoms,
                                   bool during_packing,
                                   t_clustering_data& clustering_data,
-                                  t_lb_router_data*& router_data);
+                                  t_lb_router_data*& router_data,
+                                  bool enable_pin_feasibility_filter = true);
 
 /**
  * @brief A function that fix the clustered netlist if the move is performed
