@@ -13,7 +13,6 @@
 #include "place_util.h"
 #include "re_cluster_util.h"
 
-/*checks that each block's location is compatible with its floorplanning constraints if it has any*/
 int check_placement_floorplanning() {
     int error = 0;
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -30,7 +29,6 @@ int check_placement_floorplanning() {
     return error;
 }
 
-/*returns true if cluster has floorplanning constraints, false if it doesn't*/
 bool is_cluster_constrained(ClusterBlockId blk_id) {
     auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
     const PartitionRegion& pr = floorplanning_ctx.cluster_constraints[blk_id];
@@ -114,7 +112,10 @@ PartitionRegion update_macro_head_pr(const t_pl_macro& pl_macro, const Partition
     return macro_head_pr;
 }
 
-PartitionRegion update_macro_member_pr(PartitionRegion& head_pr, const t_pl_offset& offset, const PartitionRegion& grid_pr, const t_pl_macro& pl_macro) {
+PartitionRegion update_macro_member_pr(const PartitionRegion& head_pr,
+                                       const t_pl_offset& offset,
+                                       const PartitionRegion& grid_pr,
+                                       const t_pl_macro& pl_macro) {
     const std::vector<Region>& block_regions = head_pr.get_regions();
     PartitionRegion macro_pr;
 
@@ -420,7 +421,7 @@ int region_tile_cover(const Region& reg, t_logical_block_type_ptr block_type, t_
  * PartitionRegion covers more than one tile, there is no need to check further regions
  * and the routine will return false.
  */
-bool is_pr_size_one(PartitionRegion& pr, t_logical_block_type_ptr block_type, t_pl_loc& loc) {
+bool is_pr_size_one(const PartitionRegion& pr, t_logical_block_type_ptr block_type, t_pl_loc& loc) {
     auto& device_ctx = g_vpr_ctx.device();
     const std::vector<Region>& regions = pr.get_regions();
     bool pr_size_one;
