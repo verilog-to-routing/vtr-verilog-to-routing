@@ -26,16 +26,16 @@ namespace server {
  * 
  * Operable only with a single client. As soon as client connection is detected
  * it begins listening on the specified port number for incoming client requests,
- * collects and encapsulates them into tasks.
- * The incoming tasks are extracted and handled by the top-level logic (TaskResolver). 
- * Once the tasks are resolved by the TaskResolver, they are returned 
- * to be sent back to the client as a response.
+ * collects and encapsulates them into tasks (see @ref Task).
+ * The incoming tasks are extracted and handled by the top-level logic @ref TaskResolver in the main thread.
+ * Once the tasks are resolved by the @ref TaskResolver, they are returned to be sent back to the client app as a response.
+ * Moving @ref Task across threads happens in @ref server::update.
  * 
- * @note: 
+ * @note
  * - The GateIO instance should be created and managed from the main thread, while its internal processing 
  *   and IO operations are performed asynchronously in a separate thread.  This separation ensures smooth IO behavior 
  *   and responsiveness of the application.
- * - Gateio is not started automatically upon creation, you have to use the 'start' method with the port number.
+ * - GateIO is not started automatically upon creation, you have to use the 'start' method with the port number.
  * - The socket is initialized in a non-blocking mode to function properly in a multithreaded environment.
 */
 class GateIO
@@ -141,6 +141,9 @@ class GateIO
     const int LOOP_INTERVAL_MS = 100;
 
 public:
+    /**
+     * @brief Default constructor for GateIO.
+     */
     GateIO();
     ~GateIO();
 
@@ -150,7 +153,11 @@ public:
     GateIO(GateIO&&) = delete;
     GateIO& operator=(GateIO&&) = delete;
 
-    // Check if the port listening process is currently running
+    /**
+    * @brief Returns a bool indicating whether or not the port listening process is currently running.
+    *
+    * @return True if the port listening process is running, false otherwise.
+    */
     bool is_running() const { return m_is_running.load(); }
 
     /**
@@ -161,7 +168,7 @@ public:
      * 
      * @param tasks A reference to a vector where the received tasks will be moved.
      */
-    void take_received_tasks(std::vector<TaskPtr>&);
+    void take_received_tasks(std::vector<TaskPtr>& tasks);
 
     /**
      * @brief Moves tasks to the send queue.
@@ -172,12 +179,12 @@ public:
      * 
      * @param tasks A reference to a vector containing the tasks to be moved to the send queue.
     */
-    void move_tasks_to_send_queue(std::vector<TaskPtr>&);
+    void move_tasks_to_send_queue(std::vector<TaskPtr>& tasks);
 
     /**
      * @brief Prints log messages for the GateIO.
      * 
-     * @note Must be called from main thread since it's invoke std::cout.
+     * @note Must be called from the main thread since it's invoke std::cout.
      * Calling this method from other threads may result in unexpected behavior.
      */
     void print_logs(); 
@@ -189,9 +196,9 @@ public:
      * Once started,the server will continue running in a separate thread and will accept connection only from a single client
      * attempting to connect to the specified port.
      * 
-     * @param portNum The port number on which the server will listen for incoming connection.
+     * @param port_num The port number on which the server will listen for incoming connection.
      */
-    void start(int portNum);
+    void start(int port_num);
 
     /**
      * @brief Stops the server and terminates the listening thread.
