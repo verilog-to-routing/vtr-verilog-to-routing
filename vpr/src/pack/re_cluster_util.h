@@ -16,7 +16,6 @@
  * It can also be used during placement to allow fine-grained moves that can move a BLE or a single FF/LUT.
  * 
  * Note: Some of the helper functions defined here might be useful in different places in VPR.
- * 
  */
 
 /**
@@ -57,7 +56,7 @@ t_lb_router_data* lb_load_router_data(std::vector<t_lb_type_rr_node>* lb_type_rr
  * illegal.
  *
  * This function updates the intra-logic block router data structure (router_data) and
- * remove all the atoms of the moecule from old_clb_atoms vector.
+ * remove all the atoms of the molecule from old_clb_atoms vector.
  *
  * @param old_clb: The original cluster of this molecule
  * @param old_clb_atoms: A vector containing the list of atoms in the old cluster of the molecule.
@@ -88,9 +87,9 @@ void remove_mol_from_cluster(const t_pack_molecule* molecule,
  * @param temp_cluster_noc_grp_id returns the NoC group ID of the new cluster
  */
 bool start_new_cluster_for_mol(t_pack_molecule* molecule,
-                               const t_logical_block_type_ptr& type,
-                               const int& mode,
-                               const int& feasible_block_array_size,
+                               t_logical_block_type_ptr type,
+                               int mode,
+                               int feasible_block_array_size,
                                bool enable_pin_feasibility_filter,
                                ClusterBlockId clb_index,
                                bool during_packing,
@@ -157,7 +156,6 @@ void revert_mol_move(ClusterBlockId old_clb,
                      t_clustering_data& clustering_data);
 
 /**
- *
  * @brief A function that checks the legality of a cluster by running the intra-cluster routing
  */
 bool is_cluster_legal(t_lb_router_data*& router_data);
@@ -169,7 +167,7 @@ bool is_cluster_legal(t_lb_router_data*& router_data);
  * @params new_clb_created: true if the move is creating a new cluster (e.g. move_mol_to_new_cluster)
  */
 void commit_mol_removal(const t_pack_molecule* molecule,
-                        const int& molecule_size,
+                        int molecule_size,
                         ClusterBlockId old_clb,
                         bool during_packing,
                         t_lb_router_data*& router_data,

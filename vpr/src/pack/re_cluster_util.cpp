@@ -10,7 +10,7 @@
 
 
 // The name suffix of the new block (if exists)
-// This suffex is useful in preventing duplicate high-level cluster block names
+// This suffix is useful in preventing duplicate high-level cluster block names
 const char* name_suffix = "_m";
 
 /******************* Static Functions ********************/
@@ -19,12 +19,11 @@ static void load_internal_to_block_net_nums(const t_logical_block_type_ptr type,
 static void fix_atom_pin_mapping(const AtomBlockId blk);
 
 static void fix_cluster_pins_after_moving(const ClusterBlockId clb_index);
-static void check_net_absorbtion(const AtomNetId atom_net_id,
-                                 const ClusterBlockId new_clb,
-                                 const ClusterBlockId old_clb,
-                                 ClusterPinId& cluster_pin_id,
-                                 bool& previously_absorbed,
-                                 bool& now_abosrbed);
+
+static std::pair<bool, bool> check_net_absorption(AtomNetId atom_net_id,
+                                                  ClusterBlockId new_clb,
+                                                  ClusterBlockId old_clb,
+                                                  ClusterPinId& cluster_pin_id);
 
 static void fix_cluster_port_after_moving(const ClusterBlockId clb_index);
 
@@ -113,9 +112,9 @@ t_lb_router_data* lb_load_router_data(std::vector<t_lb_type_rr_node>* lb_type_rr
 }
 
 bool start_new_cluster_for_mol(t_pack_molecule* molecule,
-                               const t_logical_block_type_ptr& type,
-                               const int& mode,
-                               const int& feasible_block_array_size,
+                               const t_logical_block_type_ptr type,
+                               const int mode,
+                               const int feasible_block_array_size,
                                bool enable_pin_feasibility_filter,
                                ClusterBlockId clb_index,
                                bool during_packing,
@@ -330,7 +329,6 @@ static void fix_cluster_net_after_moving(const t_pack_molecule* molecule,
 
     AtomNetId atom_net_id;
     ClusterPinId cluster_pin;
-    bool previously_absorbed, now_abosrbed;
 
     //remove all old cluster pin from their nets
     ClusterNetId cur_clb_net;
@@ -344,9 +342,9 @@ static void fix_cluster_net_after_moving(const t_pack_molecule* molecule,
         if (molecule->atom_block_ids[i_atom]) {
             for (auto atom_pin : atom_ctx.nlist.block_pins(molecule->atom_block_ids[i_atom])) {
                 atom_net_id = atom_ctx.nlist.pin_net(atom_pin);
-                check_net_absorbtion(atom_net_id, new_clb, old_clb, cluster_pin, previously_absorbed, now_abosrbed);
+                auto [previously_absorbed, now_absorbed] = check_net_absorption(atom_net_id, new_clb, old_clb, cluster_pin);
 
-                if (!previously_absorbed && now_abosrbed) {
+                if (!previously_absorbed && now_absorbed) {
                     cur_clb_net = cluster_ctx.clb_nlist.pin_net(cluster_pin);
                     cluster_ctx.clb_nlist.remove_net(cur_clb_net);
                 }
@@ -496,12 +494,10 @@ static void fix_cluster_pins_after_moving(const ClusterBlockId clb_index) {
     }
 }
 
-static void check_net_absorbtion(const AtomNetId atom_net_id,
-                                 const ClusterBlockId new_clb,
-                                 const ClusterBlockId old_clb,
-                                 ClusterPinId& cluster_pin_id,
-                                 bool& previously_absorbed,
-                                 bool& now_abosrbed) {
+static std::pair<bool, bool> check_net_absorption(const AtomNetId atom_net_id,
+                                                  const ClusterBlockId new_clb,
+                                                  const ClusterBlockId old_clb,
+                                                  ClusterPinId& cluster_pin_id) {
     auto& atom_ctx = g_vpr_ctx.atom();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
@@ -510,6 +506,7 @@ static void check_net_absorbtion(const AtomNetId atom_net_id,
 
     ClusterNetId clb_net_id = atom_ctx.lookup.clb_net(atom_net_id);
 
+    bool previously_absorbed;
     if (clb_net_id == ClusterNetId::INVALID())
         previously_absorbed = true;
     else {
@@ -523,16 +520,18 @@ static void check_net_absorbtion(const AtomNetId atom_net_id,
     }
 
     //iterate over net pins and check their cluster
-    now_abosrbed = true;
+    bool now_absorbed = true;
     for (auto& net_pin : atom_ctx.nlist.net_pins(atom_net_id)) {
         atom_block_id = atom_ctx.nlist.pin_block(net_pin);
         clb_index = atom_ctx.lookup.atom_clb(atom_block_id);
 
         if (clb_index != new_clb) {
-            now_abosrbed = false;
+            now_absorbed = false;
             break;
         }
     }
+
+    return {previously_absorbed, now_absorbed};
 }
 
 static void fix_atom_pin_mapping(const AtomBlockId blk) {
@@ -655,7 +654,7 @@ bool is_cluster_legal(t_lb_router_data*& router_data) {
 }
 
 void commit_mol_removal(const t_pack_molecule* molecule,
-                        const int& molecule_size,
+                        int molecule_size,
                         ClusterBlockId old_clb,
                         bool during_packing,
                         t_lb_router_data*& router_data,
