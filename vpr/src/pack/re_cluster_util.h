@@ -23,7 +23,7 @@
  * @brief A function that returns the block ID in the clustered netlist
  *        from its ID in the atom netlist.
  */
-ClusterBlockId atom_to_cluster(const AtomBlockId& atom);
+ClusterBlockId atom_to_cluster(AtomBlockId atom);
 
 /**
  * @brief A function that return a list of atoms in a cluster
@@ -45,7 +45,7 @@ std::unordered_set<AtomBlockId>& cluster_to_mutable_atoms(ClusterBlockId cluster
  * @brief A function that loads the intra-cluster router data of one cluster
  */
 t_lb_router_data* lb_load_router_data(std::vector<t_lb_type_rr_node>* lb_type_rr_graphs,
-                                      const ClusterBlockId& clb_index,
+                                      ClusterBlockId clb_index,
                                       const std::unordered_set<AtomBlockId>& clb_atoms);
 
 /**
@@ -113,7 +113,7 @@ bool start_new_cluster_for_mol(t_pack_molecule* molecule,
  */
 bool pack_mol_in_existing_cluster(t_pack_molecule* molecule,
                                   int molecule_size,
-                                  const ClusterBlockId& new_clb,
+                                  ClusterBlockId new_clb,
                                   std::unordered_set<AtomBlockId>& new_clb_atoms,
                                   bool during_packing,
                                   t_clustering_data& clustering_data,
@@ -129,8 +129,8 @@ bool pack_mol_in_existing_cluster(t_pack_molecule* molecule,
  */
 void fix_clustered_netlist(t_pack_molecule* molecule,
                            int molecule_size,
-                           const ClusterBlockId& old_clb,
-                           const ClusterBlockId& new_clb);
+                           ClusterBlockId old_clb,
+                           ClusterBlockId new_clb);
 
 /**
  * @brief A function that commits the molecule move if it is legal
@@ -138,8 +138,8 @@ void fix_clustered_netlist(t_pack_molecule* molecule,
  * @params during_packing: true if this function is called during packing, false if it is called during placement
  * @params new_clb_created: true if the move is creating a new cluster (e.g. move_mol_to_new_cluster)
  */
-void commit_mol_move(const ClusterBlockId& old_clb,
-                     const ClusterBlockId& new_clb,
+void commit_mol_move(ClusterBlockId old_clb,
+                     ClusterBlockId new_clb,
                      bool during_packing,
                      bool new_clb_created);
 
@@ -150,7 +150,7 @@ void commit_mol_move(const ClusterBlockId& old_clb,
  * @params new_clb_created: true if the move is creating a new cluster (e.g. move_mol_to_new_cluster)
  * @params
  */
-void revert_mol_move(const ClusterBlockId& old_clb,
+void revert_mol_move(ClusterBlockId old_clb,
                      t_pack_molecule* molecule,
                      t_lb_router_data*& old_router_data,
                      bool during_packing,
@@ -170,18 +170,16 @@ bool is_cluster_legal(t_lb_router_data*& router_data);
  */
 void commit_mol_removal(const t_pack_molecule* molecule,
                         const int& molecule_size,
-                        const ClusterBlockId& old_clb,
+                        ClusterBlockId old_clb,
                         bool during_packing,
                         t_lb_router_data*& router_data,
                         t_clustering_data& clustering_data);
 
 /**
- *
  * @brief A function that check that two clusters are of the same type and in the same mode of operation
- *
  */
-bool check_type_and_mode_compitability(const ClusterBlockId& old_clb,
-                                       const ClusterBlockId& new_clb,
+bool check_type_and_mode_compatibility(ClusterBlockId old_clb,
+                                       ClusterBlockId new_clb,
                                        int verbosity);
 
 #endif

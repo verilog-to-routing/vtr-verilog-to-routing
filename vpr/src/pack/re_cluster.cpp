@@ -112,9 +112,9 @@ bool move_mol_to_existing_cluster(t_pack_molecule* molecule,
     std::unordered_set<AtomBlockId>& new_clb_atoms = cluster_to_mutable_atoms(new_clb);
     ClusterBlockId old_clb = atom_to_cluster(root_atom_id);
 
-    //check old and new clusters compitability
-    bool is_compitable = check_type_and_mode_compitability(old_clb, new_clb, verbosity);
-    if (!is_compitable)
+    //check old and new clusters compatibility
+    bool is_compatible = check_type_and_mode_compatibility(old_clb, new_clb, verbosity);
+    if (!is_compatible)
         return false;
 
     //remove the molecule from its current cluster
@@ -189,7 +189,7 @@ bool swap_two_molecules(t_pack_molecule* molecule_1,
         return false;
     }
     //Check that the old and new clusters are of the same type
-    bool is_compitable = check_type_and_mode_compitability(clb_1, clb_2, verbosity);
+    bool is_compitable = check_type_and_mode_compatibility(clb_1, clb_2, verbosity);
     if (!is_compitable)
         return false;
 
