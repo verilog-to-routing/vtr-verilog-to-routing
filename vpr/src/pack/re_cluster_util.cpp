@@ -214,7 +214,6 @@ bool pack_mol_in_existing_cluster(t_pack_molecule* molecule,
                                   bool during_packing,
                                   t_clustering_data& clustering_data,
                                   t_lb_router_data*& router_data,
-                                  NocGroupId& temp_cluster_noc_grp_id,
                                   enum e_detailed_routing_stages detailed_routing_stage) {
     auto& helper_ctx = g_vpr_ctx.mutable_cl_helper();
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
