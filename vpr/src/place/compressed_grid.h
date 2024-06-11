@@ -55,50 +55,53 @@ struct t_compressed_block_grid {
         return {cx, cy, layer_num};
     }
 
+    /**
+     * @brief Converts a grid location to its corresponding compressed location, rounding up where necessary.
+     *
+     * This function takes a physical tile location in the grid and converts it to the corresponding
+     * compressed location. The conversion approximates by rounding up to the nearest valid compressed location.
+     *
+     * @param grid_loc The physical tile location in the grid.
+     * @return The corresponding compressed location with the same layer number.
+     */
     inline t_physical_tile_loc grid_loc_to_compressed_loc_approx_round_up(t_physical_tile_loc grid_loc) const {
-        int cx = OPEN;
-        int cy = OPEN;
+        auto find_compressed_index = [](const std::vector<int>& compressed, int value) -> int {
+            auto itr = std::upper_bound(compressed.begin(), compressed.end(), value);
+            if (itr == compressed.begin())
+                return 0;
+            if (itr == compressed.end() || *(itr - 1) == value)
+                return (int)std::distance(compressed.begin(), itr - 1);
+            return (int)std::distance(compressed.begin(), itr);
+        };
+
         int layer_num = grid_loc.layer_num;
-
-        auto itr_x = std::upper_bound(compressed_to_grid_x[layer_num].begin(), compressed_to_grid_x[layer_num].end(), grid_loc.x);
-        if (itr_x == compressed_to_grid_x[layer_num].begin())
-            cx = 0;
-        else if (*(itr_x - 1) == grid_loc.x)
-            cx = std::distance(compressed_to_grid_x[layer_num].begin(), itr_x - 1);
-        else if (itr_x == compressed_to_grid_x[layer_num].end())
-            cx = compressed_to_grid_x[layer_num].size();
-        else
-            cx = std::distance(compressed_to_grid_x[layer_num].begin(), itr_x);
-
-        auto itr_y = std::upper_bound(compressed_to_grid_y[layer_num].begin(), compressed_to_grid_y[layer_num].end(), grid_loc.y);
-        if (itr_y == compressed_to_grid_y[layer_num].begin())
-            cy = 0;
-        else if (*(itr_y - 1) == grid_loc.y)
-            cy = std::distance(compressed_to_grid_y[layer_num].begin(), itr_y - 1);
-        else if (itr_y == compressed_to_grid_y[layer_num].end())
-            cy = compressed_to_grid_y[layer_num].size();
-        else
-            cy = std::distance(compressed_to_grid_y[layer_num].begin(), itr_y);
+        int cx = find_compressed_index(compressed_to_grid_x[layer_num], grid_loc.x);
+        int cy = find_compressed_index(compressed_to_grid_y[layer_num], grid_loc.y);
 
         return {cx, cy, layer_num};
     }
 
+    /**
+     * @brief Converts a grid location to its corresponding compressed location, rounding down where necessary.
+     *
+     * This function takes a physical tile location in the grid and converts it to the corresponding
+     * compressed location. The conversion approximates by rounding down to the nearest valid compressed location.
+     *
+     * @param grid_loc The physical tile location in the grid.
+     * @return The corresponding compressed location with the same layer number.
+     */
     inline t_physical_tile_loc grid_loc_to_compressed_loc_approx_round_down(t_physical_tile_loc grid_loc) const {
-        int cx = OPEN;
-        int cy = OPEN;
+        auto find_compressed_index = [](const std::vector<int>& compressed, int value) -> int {
+            auto itr = std::lower_bound(compressed.begin(), compressed.end(), value);
+            if (itr == compressed.end()) {
+                return (int)std::distance(compressed.begin(), itr - 1);
+            }
+            return (int)std::distance(compressed.begin(), itr);
+        };
+
         int layer_num = grid_loc.layer_num;
-
-        auto itr_x = std::lower_bound(compressed_to_grid_x[layer_num].begin(), compressed_to_grid_x[layer_num].end(), grid_loc.x);
-        if (itr_x == compressed_to_grid_x[layer_num].end())
-            cx = std::distance(compressed_to_grid_x[layer_num].begin(), itr_x - 1);
-        else
-            cx = std::distance(compressed_to_grid_x[layer_num].begin(), itr_x);
-
-        auto itr_y = std::lower_bound(compressed_to_grid_y[layer_num].begin(), compressed_to_grid_y[layer_num].end(), grid_loc.y);
-        if (itr_y == compressed_to_grid_y[layer_num].end())
-            cy = std::distance(compressed_to_grid_y[layer_num].begin(), itr_y - 1);
-        else
-            cy = std::distance(compressed_to_grid_y[layer_num].begin(), itr_y);
+        int cx = find_compressed_index(compressed_to_grid_x[layer_num], grid_loc.x);
+        int cy = find_compressed_index(compressed_to_grid_y[layer_num], grid_loc.y);
 
         return {cx, cy, layer_num};
     }
