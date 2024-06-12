@@ -210,7 +210,8 @@ bool pack_mol_in_existing_cluster(t_pack_molecule* molecule,
                                   std::unordered_set<AtomBlockId>* new_clb_atoms,
                                   bool during_packing,
                                   t_clustering_data& clustering_data,
-                                  t_lb_router_data*& router_data) {
+                                  t_lb_router_data*& router_data,
+                                  bool enable_pin_feasibility_filter) {
     auto& helper_ctx = g_vpr_ctx.mutable_cl_helper();
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
 
@@ -239,7 +240,7 @@ bool pack_mol_in_existing_cluster(t_pack_molecule* molecule,
                                     E_DETAILED_ROUTE_FOR_EACH_ATOM,
                                     router_data,
                                     0,
-                                    helper_ctx.enable_pin_feasibility_filter,
+                                    enable_pin_feasibility_filter,
                                     //false,
                                     helper_ctx.feasible_block_array_size,
                                     target_ext_pin_util,
@@ -719,7 +720,11 @@ static void update_cluster_pb_stats(const t_pack_molecule* molecule,
         }
 
         //Update atom netlist mapping
-        atom_ctx.lookup.set_atom_clb(blk_id, clb_index);
+        if (is_added) {
+            atom_ctx.lookup.set_atom_clb(blk_id, clb_index);
+        } else {
+            atom_ctx.lookup.set_atom_clb(blk_id, ClusterBlockId::INVALID());
+        }
 
         const t_pb* atom_pb = atom_ctx.lookup.atom_pb(blk_id);
         VTR_ASSERT(atom_pb);

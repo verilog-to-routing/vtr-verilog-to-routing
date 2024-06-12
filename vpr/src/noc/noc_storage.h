@@ -35,7 +35,6 @@
  * 
  */
 
-#include <iostream>
 #include <vector>
 #include <string>
 #include <unordered_map>
@@ -43,13 +42,6 @@
 #include "vtr_vector.h"
 #include "noc_router.h"
 #include "noc_link.h"
-#include "vtr_assert.h"
-#include "vpr_error.h"
-#include "echo_files.h"
-// \cond
-// represents the id of a link that does not exist in the NoC
-constexpr NocLinkId INVALID_LINK_ID(-1);
-// \endcond
 
 class NocStorage {
   private:
@@ -61,9 +53,15 @@ class NocStorage {
      * @brief Stores outgoing links for each router in the NoC. These
      * links can be used by the router to communicate to other routers
      * in the NoC.
-     * 
      */
-    vtr::vector<NocRouterId, std::vector<NocLinkId>> router_link_list;
+    vtr::vector<NocRouterId, std::vector<NocLinkId>> router_outgoing_links_list;
+
+    /**
+     * @brief Stores incoming links for each router in the NoC. These
+     * links can be used by the router to communicate to other routers
+     * in the NoC.
+     */
+    vtr::vector<NocRouterId, std::vector<NocLinkId>> router_incoming_links_list;
 
     /** Contains all the links in the NoC*/
     vtr::vector<NocLinkId, NocLink> link_storage;
@@ -76,7 +74,6 @@ class NocStorage {
      * are dense since it is used to index the routers. The datastructure
      * below is a conversiont able that maps the user router IDs to the
      * corresponding internal ones.
-     * 
      */
     std::unordered_map<int, NocRouterId> router_id_conversion_table;
 
@@ -178,13 +175,23 @@ class NocStorage {
 
     /**
      * @brief Gets a vector of outgoing links for a given router
-     * in the NoC. THe link vector cannot be modified.
+     * in the NoC. The link vector cannot be modified.
      * 
      * @param id A unique identifier that represents a router
      * @return A vector of links. The links are represented by a unique
      * identifier.
      */
-    const std::vector<NocLinkId>& get_noc_router_connections(NocRouterId id) const;
+    const std::vector<NocLinkId>& get_noc_router_outgoing_links(NocRouterId id) const;
+
+    /**
+     * @brief Gets a vector of incoming links for a given router
+     * in the NoC.
+     *
+     * @param id A unique identifier that represents a router
+     * @return A vector of links. The links are represented by a unique
+     * identifier.
+     */
+    const std::vector<NocLinkId>& get_noc_router_incoming_links(NocRouterId id) const;
 
     /**
      * @brief Get all the routers in the NoC. The routers themselves cannot

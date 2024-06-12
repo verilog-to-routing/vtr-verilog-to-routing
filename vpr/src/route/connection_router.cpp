@@ -116,11 +116,6 @@ std::tuple<bool, t_heap*> ConnectionRouter<Heap>::timing_driven_route_connection
         return std::make_tuple(true, nullptr);
     }
 
-    if (cheapest == nullptr) {
-        VTR_LOG("%s\n", describe_unrouteable_connection(source_node, sink_node, is_flat_).c_str());
-        return std::make_tuple(false, nullptr);
-    }
-
     return std::make_tuple(false, cheapest);
 }
 
@@ -372,7 +367,7 @@ void ConnectionRouter<Heap>::timing_driven_expand_cheapest(t_heap* cheapest,
         VTR_LOGV_DEBUG(router_debug_, "    Better cost to %d\n", inode);
         VTR_LOGV_DEBUG(router_debug_, "    New total cost: %g\n", new_total_cost);
         VTR_LOGV_DEBUG(router_debug_, "    New back cost: %g\n", new_back_cost);
-        VTR_LOGV_DEBUG(router_debug_, "      Setting path costs for associated node %d (from %d edge %zu)\n",
+        VTR_LOGV_DEBUG(router_debug_ && (rr_nodes_.node_type(RRNodeId(cheapest->index)) != t_rr_type::SOURCE), "      Setting path costs for associated node %d (from %d edge %zu)\n",
                        cheapest->index,
                        static_cast<size_t>(rr_graph_->edge_src_node(cheapest->prev_edge())),
                        static_cast<size_t>(cheapest->prev_edge()));

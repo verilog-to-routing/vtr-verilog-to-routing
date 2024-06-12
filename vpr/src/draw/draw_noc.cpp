@@ -34,8 +34,8 @@ void draw_noc(ezgl::renderer* g) {
         return;
     }
 
-    // check that the NoC tile has a capacity greater than 0 (can we assume it always will?) and if not then we cant draw anythign as the NoC tile wont be drawn
-    /* since the vector of routers all have a reference positions on the grid to the corresponding physical tile, just use the first router in the vector and get its position, then use this to get the capcity of a noc router tile
+    // check that the NoC tile has a capacity greater than 0 (can we assume it always will?) and if not then we cant draw anything as the NoC tile won't be drawn
+    /* since the vector of routers all have a reference positions on the grid to the corresponding physical tile, just use the first router in the vector and get its position, then use this to get the capacity of a noc router tile
      */
     const auto& type = device_ctx.grid.get_physical_type({router_list.begin()->get_router_grid_position_x(),
                                                           router_list.begin()->get_router_grid_position_y(),
@@ -239,7 +239,7 @@ void draw_noc_links(ezgl::renderer* g, t_logical_block_type_ptr noc_router_logic
     NocLinkType link_type;
 
     // get half the width and height of the noc connection marker
-    // we will shift the links based on this parameters since the links will be drawn at the boundaries of connection marker instead of the center
+    // we will shift the links based on these parameters since the links will be drawn at the boundaries of connection marker instead of the center
     double noc_connection_marker_quarter_width = (noc_connection_marker_bbox.center().x - noc_connection_marker_bbox.bottom_left().x) / 2;
     double noc_connection_marker_quarter_height = (noc_connection_marker_bbox.center().y - noc_connection_marker_bbox.bottom_left().y) / 2;
 
@@ -293,7 +293,7 @@ void determine_direction_to_shift_noc_links(vtr::vector<NocLinkId, NocLinkShift>
 
     int number_of_links = list_of_noc_link_shift_directions.size();
 
-    // store the parallel link of wach link we process
+    // store the parallel link of each link we process
     NocLinkId parallel_link;
 
     // go through all the noc links and assign how the link should be shifted
@@ -301,7 +301,7 @@ void determine_direction_to_shift_noc_links(vtr::vector<NocLinkId, NocLinkShift>
         // convert the link to a link id
         NocLinkId link_id(link);
 
-        // only assign a shift direction if we havent already
+        // only assign a shift direction if we haven't already
         if (list_of_noc_link_shift_directions[link_id] == NocLinkShift::NO_SHIFT) {
             // the current link will always have a TOP_shift
             list_of_noc_link_shift_directions[link_id] = NocLinkShift::TOP_SHIFT;
@@ -310,8 +310,8 @@ void determine_direction_to_shift_noc_links(vtr::vector<NocLinkId, NocLinkShift>
             parallel_link = noc_ctx.noc_model.get_parallel_link(link_id);
 
             // check first if a legal link id was found
-            if (parallel_link == INVALID_LINK_ID) {
-                // if we are here, then a parallel link wasnt found, so that means there is only a single link and there is no need to perform any shifting on the single link
+            if (parallel_link == NocLinkId::INVALID()) {
+                // if we are here, then a parallel link wasn't found, so that means there is only a single link and there is no need to perform any shifting on the single link
                 list_of_noc_link_shift_directions[link_id] = NocLinkShift::NO_SHIFT;
 
                 continue;
@@ -334,13 +334,13 @@ NocLinkType determine_noc_link_type(ezgl::point2d link_start_point, ezgl::point2
     double x_coord_horizontal_start = link_start_point.x;
     double y_coord_horizontal_start = link_start_point.y;
 
-    double x_coord_horziontal_end = x_coord_horizontal_start + HORIZONTAL_LINE_LENGTH;
+    double x_coord_horizontal_end = x_coord_horizontal_start + HORIZONTAL_LINE_LENGTH;
     double y_coord_horizontal_end = link_start_point.y;
 
     // stores the link type
     NocLinkType result = NocLinkType::INVALID_TYPE;
 
-    // we can check quickly if the link is vertical or horizontal without calculating the dot product. If it is vertical or horizontal then we just return. Otherwise we have to calculate it.
+    // we can check quickly if the link is vertical or horizontal without calculating the dot product. If it is vertical or horizontal then we just return. Otherwise, we have to calculate it.
 
     // check if the link is vertical by determining if there is any horizontal change
     if (vtr::isclose(x_coord_end - x_coord_start, 0.0)) {
@@ -349,7 +349,7 @@ NocLinkType determine_noc_link_type(ezgl::point2d link_start_point, ezgl::point2
         return result;
     }
 
-    // check if the link is horizontal by determinig if there is any vertical shift
+    // check if the link is horizontal by determining if there is any vertical shift
     if (vtr::isclose(y_coord_end - y_coord_start, 0.0)) {
         result = NocLinkType::HORIZONTAL;
 
@@ -361,11 +361,11 @@ NocLinkType determine_noc_link_type(ezgl::point2d link_start_point, ezgl::point2
     // get the magnitude of the link
     double link_magnitude = sqrt(pow(x_coord_end - x_coord_start, 2.0) + pow(y_coord_end - y_coord_start, 2.0));
     // get the dot product of the two connecting line
-    double dot_product_of_link_and_horizontal_line = (x_coord_end - x_coord_start) * (x_coord_horziontal_end - x_coord_horizontal_start) + (y_coord_end - y_coord_start) * (y_coord_horizontal_end - y_coord_horizontal_start);
+    double dot_product_of_link_and_horizontal_line = (x_coord_end - x_coord_start) * (x_coord_horizontal_end - x_coord_horizontal_start) + (y_coord_end - y_coord_start) * (y_coord_horizontal_end - y_coord_horizontal_start);
     // calculate the angle
     double angle = acos(dot_product_of_link_and_horizontal_line / (link_magnitude * HORIZONTAL_LINE_LENGTH));
 
-    // the angle is in the first or fourth quandrant of the unit circle
+    // the angle is in the first or fourth quadrant of the unit circle
     if ((angle > 0) && (angle < (PI_RADIAN / 2))) {
         // if the link is a positive sloped line, then its end point must be higher than its start point (must be higher than the connected horizontal line)
         if (y_coord_end > y_coord_horizontal_end) {
@@ -375,7 +375,7 @@ NocLinkType determine_noc_link_type(ezgl::point2d link_start_point, ezgl::point2
             result = NocLinkType::NEGATIVE_SLOPE;
         }
 
-    } else { // the case where the angle is in the 3rd and 4th quandrant of the unit cirle
+    } else { // the case where the angle is in the 3rd and 4th quadrant of the unit circle
 
         // if the link is a positive sloped line, then its end point must be lower than its start point (must be lower than the connected horizontal line)
         if (y_coord_end < y_coord_horizontal_end) {
@@ -415,7 +415,7 @@ void shift_noc_link(noc_link_draw_coords& link_coords, NocLinkShift link_shift_d
                 link_coords.start.x += noc_connection_marker_quarter_width;
                 link_coords.end.x += noc_connection_marker_quarter_width;
             }
-            // dont change anything if we arent shifting at all
+            // don't change anything if we aren't shifting at all
             break;
         case NocLinkType::HORIZONTAL:
             if (link_shift_direction == NocLinkShift::TOP_SHIFT) {
@@ -427,7 +427,7 @@ void shift_noc_link(noc_link_draw_coords& link_coords, NocLinkShift link_shift_d
                 link_coords.start.y -= noc_connection_marker_quarter_height;
                 link_coords.end.y -= noc_connection_marker_quarter_height;
             }
-            // dont change anything if we arent shifting at all
+            // don't change anything if we aren't shifting at all
             break;
         case NocLinkType::POSITVE_SLOPE:
             if (link_shift_direction == NocLinkShift::TOP_SHIFT) {
@@ -445,7 +445,7 @@ void shift_noc_link(noc_link_draw_coords& link_coords, NocLinkShift link_shift_d
                 link_coords.start.y -= noc_connection_marker_quarter_height;
                 link_coords.end.y -= noc_connection_marker_quarter_height;
             }
-            // dont change anything if we arent shifting at all
+            // don't change anything if we aren't shifting at all
             break;
         case NocLinkType::NEGATIVE_SLOPE:
             if (link_shift_direction == NocLinkShift::TOP_SHIFT) {

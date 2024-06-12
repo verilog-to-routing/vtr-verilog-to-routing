@@ -9,12 +9,12 @@
 namespace server {
 
 gboolean update(gpointer data) {
-    const bool is_running = g_vpr_ctx.server().gateIO().is_running();
+    const bool is_running = g_vpr_ctx.server().gate_io.is_running();
     if (is_running) {
         // shortcuts
         ezgl::application* app = static_cast<ezgl::application*>(data);
-        GateIO& gate_io = g_vpr_ctx.mutable_server().mutable_gateIO();
-        TaskResolver& task_resolver = g_vpr_ctx.mutable_server().mutable_task_resolver();
+        GateIO& gate_io = g_vpr_ctx.mutable_server().gate_io;
+        TaskResolver& task_resolver = g_vpr_ctx.mutable_server().task_resolver;
 
         std::vector<TaskPtr> tasks_buff;
 
@@ -24,7 +24,7 @@ gboolean update(gpointer data) {
         }
         tasks_buff.clear();
 
-        const bool is_server_context_initialized = g_vpr_ctx.server().timing_info() && g_vpr_ctx.server().routing_delay_calc();
+        const bool is_server_context_initialized = g_vpr_ctx.server().timing_info && g_vpr_ctx.server().routing_delay_calc;
         if (is_server_context_initialized) {
             bool has_finished_tasks = task_resolver.update(app);
 
