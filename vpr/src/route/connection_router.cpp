@@ -116,11 +116,6 @@ std::tuple<bool, t_heap*> ConnectionRouter<Heap>::timing_driven_route_connection
         return std::make_tuple(true, nullptr);
     }
 
-    if (cheapest == nullptr) {
-        VTR_LOG("%s\n", describe_unrouteable_connection(source_node, sink_node, is_flat_).c_str());
-        return std::make_tuple(false, nullptr);
-    }
-
     return std::make_tuple(false, cheapest);
 }
 

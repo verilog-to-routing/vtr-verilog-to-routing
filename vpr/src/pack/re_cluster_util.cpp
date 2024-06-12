@@ -214,7 +214,9 @@ bool pack_mol_in_existing_cluster(t_pack_molecule* molecule,
                                   bool during_packing,
                                   t_clustering_data& clustering_data,
                                   t_lb_router_data*& router_data,
-                                  enum e_detailed_routing_stages detailed_routing_stage) {
+                                  enum e_detailed_routing_stages detailed_routing_stage,
+                                  bool enable_pin_feasibility_filter) {
+
     auto& helper_ctx = g_vpr_ctx.mutable_cl_helper();
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
 
@@ -243,7 +245,7 @@ bool pack_mol_in_existing_cluster(t_pack_molecule* molecule,
                                     detailed_routing_stage,
                                     router_data,
                                     0,
-                                    helper_ctx.enable_pin_feasibility_filter,
+                                    enable_pin_feasibility_filter,
                                     //false,
                                     helper_ctx.feasible_block_array_size,
                                     target_ext_pin_util,

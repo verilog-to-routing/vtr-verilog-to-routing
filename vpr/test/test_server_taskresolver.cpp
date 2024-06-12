@@ -8,7 +8,7 @@
 
 TEST_CASE("test_server_taskresolver_cmdSpamFilter", "[vpr]") {
     server::TaskResolver resolver;
-    const int cmd = 10;
+    const comm::CMD cmd = comm::CMD::GET_PATH_LIST_ID;
 
     {
         server::TaskPtr task0 = std::make_unique<server::Task>(1, cmd);
@@ -43,7 +43,7 @@ TEST_CASE("test_server_taskresolver_cmdSpamFilter", "[vpr]") {
 
 TEST_CASE("test_server_taskresolver_cmdOverrideFilter", "[vpr]") {
     server::TaskResolver resolver;
-    const int cmd = 10;
+    const comm::CMD cmd = comm::CMD::GET_PATH_LIST_ID;
 
     {
         server::TaskPtr task0 = std::make_unique<server::Task>(1, cmd, "1");
@@ -75,14 +75,17 @@ TEST_CASE("test_server_taskresolver_cmdOverrideFilter", "[vpr]") {
 TEST_CASE("test_server_taskresolver_cmdSpamAndOverrideOptions", "[vpr]") {
     server::TaskResolver resolver;
 
+    const comm::CMD cmd1 = comm::CMD::GET_PATH_LIST_ID;
+    const comm::CMD cmd2 = comm::CMD::DRAW_PATH_ID;
+
     {
-        server::TaskPtr task0 = std::make_unique<server::Task>(1, 2, "1");
-        server::TaskPtr task1 = std::make_unique<server::Task>(2, 2, "11");
-        server::TaskPtr task2 = std::make_unique<server::Task>(3, 2, "222");
-        server::TaskPtr task3 = std::make_unique<server::Task>(4, 2, "222");
-        server::TaskPtr task4 = std::make_unique<server::Task>(5, 1);
-        server::TaskPtr task5 = std::make_unique<server::Task>(6, 1);
-        server::TaskPtr task6 = std::make_unique<server::Task>(7, 1);
+        server::TaskPtr task0 = std::make_unique<server::Task>(1, cmd2, "1");
+        server::TaskPtr task1 = std::make_unique<server::Task>(2, cmd2, "11");
+        server::TaskPtr task2 = std::make_unique<server::Task>(3, cmd2, "222");
+        server::TaskPtr task3 = std::make_unique<server::Task>(4, cmd2, "222");
+        server::TaskPtr task4 = std::make_unique<server::Task>(5, cmd1);
+        server::TaskPtr task5 = std::make_unique<server::Task>(6, cmd1);
+        server::TaskPtr task6 = std::make_unique<server::Task>(7, cmd1);
 
         resolver.own_task(std::move(task0));
         resolver.own_task(std::move(task1));
@@ -101,11 +104,11 @@ TEST_CASE("test_server_taskresolver_cmdSpamAndOverrideOptions", "[vpr]") {
     const server::TaskPtr& task1 = resolver.tasks().at(1);
 
     REQUIRE(task0->job_id() == 3);
-    REQUIRE(task0->cmd() == 2);
+    REQUIRE(task0->cmd() == cmd2);
     REQUIRE(task0->options() == "222");
 
     REQUIRE(task1->job_id() == 5);
-    REQUIRE(task1->cmd() == 1);
+    REQUIRE(task1->cmd() == cmd1);
     REQUIRE(task1->options() == "");
 }
 

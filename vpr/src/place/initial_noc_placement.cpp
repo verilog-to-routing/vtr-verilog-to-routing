@@ -4,7 +4,11 @@
 #include "noc_place_utils.h"
 #include "noc_place_checkpoint.h"
 #include "place_constraints.h"
+
+#include "sat_routing.h"
+
 #include "vtr_math.h"
+#include "vtr_time.h"
 
 #include <limits>
 #include <queue>
@@ -253,11 +257,11 @@ static void noc_routers_anneal(const t_noc_opts& noc_opts) {
 }
 
 void initial_noc_placement(const t_noc_opts& noc_opts, const t_placer_opts& placer_opts) {
+	vtr::ScopedStartFinishTimer timer("Initial NoC Placement");
     auto& noc_ctx = g_vpr_ctx.noc();
 
     // Get all the router clusters
     const std::vector<ClusterBlockId>& router_blk_ids = noc_ctx.noc_traffic_flows_storage.get_router_clusters_in_netlist();
-
     // Holds all the routers that are not fixed into a specific location by constraints
     std::vector<ClusterBlockId> unfixed_routers;
 
@@ -279,7 +283,7 @@ void initial_noc_placement(const t_noc_opts& noc_opts, const t_placer_opts& plac
     place_noc_routers_randomly(unfixed_routers, placer_opts.seed);
 
     // populate internal data structures to maintain route, bandwidth usage, and latencies
-    initial_noc_routing();
+    initial_noc_routing({});
 
     // Run the simulated annealing optimizer for NoC routers
     noc_routers_anneal(noc_opts);

@@ -117,6 +117,7 @@ bool start_new_cluster_for_mol(t_pack_molecule* molecule,
  *                                the function does not run a detailed intra-cluster routing-based legality check.
  *                                If many molecules will be added to a cluster, this option enables use of a single
  *                                routing check on the completed cluster (vs many incremental checks).
+ * @param enable_pin_feasibility_filter: do a pin couting based legality check (before or in place of intra-cluster routing check).
  */
 bool pack_mol_in_existing_cluster(t_pack_molecule* molecule,
                                   int molecule_size,
@@ -125,7 +126,8 @@ bool pack_mol_in_existing_cluster(t_pack_molecule* molecule,
                                   bool during_packing,
                                   t_clustering_data& clustering_data,
                                   t_lb_router_data*& router_data,
-                                  enum e_detailed_routing_stages detailed_routing_stage = E_DETAILED_ROUTE_FOR_EACH_ATOM);
+                                  enum e_detailed_routing_stages detailed_routing_stage = E_DETAILED_ROUTE_FOR_EACH_ATOM,
+                                  bool enable_pin_feasibility_filter = true);
 
 /**
  * @brief A function that fix the clustered netlist if the move is performed

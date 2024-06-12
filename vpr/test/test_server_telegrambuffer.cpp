@@ -40,7 +40,8 @@ TEST_CASE("test_server_telegrambuffer_oneOpened", "[vpr]") {
     buff.append(comm::ByteArray{"111"});
     buff.append(comm::ByteArray{"222"});
 
-    auto frames = buff.take_telegram_frames();
+    std::vector<comm::TelegramFramePtr> frames;
+    buff.take_telegram_frames(frames);
     REQUIRE(frames.size() == 0);
 
     REQUIRE(std::string_view{buff.data()} == "111222");
@@ -52,12 +53,13 @@ TEST_CASE("test_server_telegrambuffer_notFilledTelegramButWithPrependedRubish", 
 
     const comm::ByteArray rubbish{"#@!"};
     const comm::ByteArray msgBody{"some message"};
-    const comm::TelegramHeader msgHeader{comm::TelegramHeader::construct_from_data(msgBody)};
+    const comm::TelegramHeader msgHeader{comm::TelegramHeader::construct_from_body(msgBody)};
 
     tBuff.append(rubbish);
     tBuff.append(msgHeader.buffer());
 
-    auto frames = tBuff.take_telegram_frames();
+    std::vector<comm::TelegramFramePtr> frames;
+    tBuff.take_telegram_frames(frames);
     REQUIRE(0 == frames.size());
 
     REQUIRE(msgHeader.buffer() == tBuff.data()); // the rubbish prefix fragment will be absent here
@@ -70,8 +72,8 @@ TEST_CASE("test_server_telegrambuffer__oneFinishedOneOpened", "[vpr]")
     const comm::ByteArray msgBody1{"message1"};
     const comm::ByteArray msgBody2{"message2"};
 
-    const comm::TelegramHeader msgHeader1{comm::TelegramHeader::construct_from_data(msgBody1)};
-    const comm::TelegramHeader msgHeader2{comm::TelegramHeader::construct_from_data(msgBody2)};
+    const comm::TelegramHeader msgHeader1{comm::TelegramHeader::construct_from_body(msgBody1)};
+    const comm::TelegramHeader msgHeader2{comm::TelegramHeader::construct_from_body(msgBody2)};
 
     comm::ByteArray t1(msgHeader1.buffer());
     t1.append(msgBody1);
@@ -83,10 +85,11 @@ TEST_CASE("test_server_telegrambuffer__oneFinishedOneOpened", "[vpr]")
     tBuff.append(t1);
     tBuff.append(t2);
 
-    auto frames = tBuff.take_telegram_frames();
+    std::vector<comm::TelegramFramePtr> frames;
+    tBuff.take_telegram_frames(frames);
     REQUIRE(1 == frames.size());
 
-    REQUIRE(msgBody1 == frames[0]->data);
+    REQUIRE(msgBody1 == frames[0]->body);
 
     REQUIRE(t2 == tBuff.data());
 }
@@ -98,8 +101,8 @@ TEST_CASE("test_server_telegrambuffer_twoFinished", "[vpr]")
     const comm::ByteArray msgBody1{"message1"};
     const comm::ByteArray msgBody2{"message2"};
 
-    const comm::TelegramHeader msgHeader1{comm::TelegramHeader::construct_from_data(msgBody1)};
-    const comm::TelegramHeader msgHeader2{comm::TelegramHeader::construct_from_data(msgBody2)};
+    const comm::TelegramHeader msgHeader1{comm::TelegramHeader::construct_from_body(msgBody1)};
+    const comm::TelegramHeader msgHeader2{comm::TelegramHeader::construct_from_body(msgBody2)};
 
     comm::ByteArray t1(msgHeader1.buffer());
     t1.append(msgBody1);
@@ -110,11 +113,12 @@ TEST_CASE("test_server_telegrambuffer_twoFinished", "[vpr]")
     tBuff.append(t1);
     tBuff.append(t2);
 
-    auto frames = tBuff.take_telegram_frames();
+    std::vector<comm::TelegramFramePtr> frames;
+    tBuff.take_telegram_frames(frames);
     REQUIRE(2 == frames.size());
 
-    REQUIRE(msgBody1 == frames[0]->data);
-    REQUIRE(msgBody2 == frames[1]->data);
+    REQUIRE(msgBody1 == frames[0]->body);
+    REQUIRE(msgBody2 == frames[1]->body);
 
     REQUIRE(comm::ByteArray{} == tBuff.data());
 }
@@ -126,8 +130,8 @@ TEST_CASE("test_server_telegrambuffer_clear", "[vpr]")
     const comm::ByteArray msgBody1{"message1"};
     const comm::ByteArray msgBody2{"message2"};
 
-    const comm::TelegramHeader msgHeader1{comm::TelegramHeader::construct_from_data(msgBody1)};
-    const comm::TelegramHeader msgHeader2{comm::TelegramHeader::construct_from_data(msgBody2)};
+    const comm::TelegramHeader msgHeader1{comm::TelegramHeader::construct_from_body(msgBody1)};
+    const comm::TelegramHeader msgHeader2{comm::TelegramHeader::construct_from_body(msgBody2)};
 
     comm::ByteArray t1(msgHeader1.buffer());
     t1.append(msgBody1);
@@ -137,7 +141,8 @@ TEST_CASE("test_server_telegrambuffer_clear", "[vpr]")
 
     tBuff.clear();
 
-    auto frames = tBuff.take_telegram_frames();
+    std::vector<comm::TelegramFramePtr> frames;
+    tBuff.take_telegram_frames(frames);
     REQUIRE(0 == frames.size());
 
     REQUIRE(comm::ByteArray{} == tBuff.data());
