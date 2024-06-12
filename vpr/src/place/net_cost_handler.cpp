@@ -1396,8 +1396,8 @@ static void get_bb_from_scratch(ClusterNetId net_id,
                                 t_bb& coords,
                                 t_bb& num_on_edges,
                                 vtr::NdMatrixProxy<int, 1> num_sink_pin_layer) {
-    int pnum, x, y, pin_layer, xmin, xmax, ymin, ymax;
-    int xmin_edge, xmax_edge, ymin_edge, ymax_edge;
+    int pnum, x, y, pin_layer, xmin, xmax, ymin, ymax, layer_min, layer_max;
+    int xmin_edge, xmax_edge, ymin_edge, ymax_edge, layer_min_edge, layer_max_edge;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
@@ -1411,18 +1411,25 @@ static void get_bb_from_scratch(ClusterNetId net_id,
         + physical_tile_type(bnum)->pin_width_offset[pnum];
     y = place_ctx.block_locs[bnum].loc.y
         + physical_tile_type(bnum)->pin_height_offset[pnum];
+    pin_layer = place_ctx.block_locs[bnum].loc.layer;
 
     x = max(min<int>(x, grid.width() - 2), 1);
     y = max(min<int>(y, grid.height() - 2), 1);
+    pin_layer = max(min<int>(pin_layer, grid.get_num_layers() - 1), 0);
 
     xmin = x;
     ymin = y;
+    layer_min = pin_layer;
     xmax = x;
     ymax = y;
+    layer_max = pin_layer;
+
     xmin_edge = 1;
     ymin_edge = 1;
+    layer_min_edge = 1;
     xmax_edge = 1;
     ymax_edge = 1;
+    layer_max_edge = 1;
 
     for (int layer_num = 0; layer_num < grid.get_num_layers(); layer_num++) {
         num_sink_pin_layer[layer_num] = 0;
@@ -1446,6 +1453,7 @@ static void get_bb_from_scratch(ClusterNetId net_id,
 
         x = max(min<int>(x, grid.width() - 2), 1);  //-2 for no perim channels
         y = max(min<int>(y, grid.height() - 2), 1); //-2 for no perim channels
+        pin_layer = max(min<int>(pin_layer, grid.get_num_layers() - 1), 0);
 
         if (x == xmin) {
             xmin_edge++;
@@ -1473,6 +1481,19 @@ static void get_bb_from_scratch(ClusterNetId net_id,
             ymax_edge = 1;
         }
 
+        if (pin_layer == layer_min) {
+            layer_min_edge++;
+        }
+        if (pin_layer == layer_max) {
+            layer_max_edge++;
+        } else if (pin_layer < layer_min) {
+            layer_min = pin_layer;
+            layer_min_edge = 1;
+        } else if (pin_layer > layer_max) {
+            layer_max = pin_layer;
+            layer_max_edge = 1;
+        }
+
         num_sink_pin_layer[pin_layer]++;
     }
 
@@ -1482,11 +1503,18 @@ static void get_bb_from_scratch(ClusterNetId net_id,
     coords.xmax = xmax;
     coords.ymin = ymin;
     coords.ymax = ymax;
+    coords.layer_min = layer_min;
+    coords.layer_max = layer_max;
+    VTR_ASSERT_DEBUG(layer_min >= 0 && layer_min < device_ctx.grid.get_num_layers());
+    VTR_ASSERT_DEBUG(layer_max >= 0 && layer_max < device_ctx.grid.get_num_layers());
+
 
     num_on_edges.xmin = xmin_edge;
     num_on_edges.xmax = xmax_edge;
     num_on_edges.ymin = ymin_edge;
     num_on_edges.ymax = ymax_edge;
+    num_on_edges.layer_min = layer_min_edge;
+    num_on_edges.layer_max = layer_max_edge;
 }
 
 /* This routine finds the bounding box of each net from scratch when the bounding box is of type per-layer (i.e.   *
