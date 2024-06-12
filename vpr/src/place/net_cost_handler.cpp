@@ -122,11 +122,10 @@ static void update_net_bb(const ClusterNetId& net,
  * @param blk_pin
  * @param pl_moved_block
  */
-static void update_net_layer_bb(const ClusterNetId net,
-                                const t_pl_blocks_to_be_moved& blocks_affected,
-                                int iblk,
-                                const ClusterBlockId blk,
-                                const ClusterPinId blk_pin);
+static void update_net_layer_bb(const ClusterNetId& net,
+                                const ClusterBlockId& blk,
+                                const ClusterPinId& blk_pin,
+                                const t_pl_moved_block& pl_moved_block);
 
 /**
  * @brief Calculate the new connection delay and timing cost of all the
