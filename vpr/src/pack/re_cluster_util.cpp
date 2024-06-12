@@ -130,7 +130,8 @@ bool start_new_cluster_for_mol(t_pack_molecule* molecule,
                                t_lb_router_data** router_data,
                                PartitionRegion& temp_cluster_pr,
                                NocGroupId& temp_cluster_noc_grp_id,
-                               enum e_detailed_routing_stages detailed_routing_stage) {
+                               enum e_detailed_routing_stages detailed_routing_stage,
+                               int force_site) {
     auto& atom_ctx = g_vpr_ctx.atom();
     auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
     auto& helper_ctx = g_vpr_ctx.mutable_cl_helper();
@@ -172,7 +173,8 @@ bool start_new_cluster_for_mol(t_pack_molecule* molecule,
                                     0,
                                     FULL_EXTERNAL_PIN_UTIL,
                                     temp_cluster_pr,
-                                    temp_cluster_noc_grp_id);
+                                    temp_cluster_noc_grp_id,
+                                    force_site);
 
     // If clustering succeeds, add it to the clb netlist
     if (pack_result == e_block_pack_status::BLK_PASSED) {
@@ -215,7 +217,8 @@ bool pack_mol_in_existing_cluster(t_pack_molecule* molecule,
                                   t_clustering_data& clustering_data,
                                   t_lb_router_data*& router_data,
                                   enum e_detailed_routing_stages detailed_routing_stage,
-                                  bool enable_pin_feasibility_filter) {
+                                  bool enable_pin_feasibility_filter,
+                                  int force_site) {
 
     auto& helper_ctx = g_vpr_ctx.mutable_cl_helper();
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
@@ -250,7 +253,8 @@ bool pack_mol_in_existing_cluster(t_pack_molecule* molecule,
                                     helper_ctx.feasible_block_array_size,
                                     target_ext_pin_util,
                                     temp_cluster_pr,
-                                    temp_cluster_noc_grp_id);
+                                    temp_cluster_noc_grp_id,
+                                    force_site);
 
     // If clustering succeeds, add it to the clb netlist
     if (pack_result == e_block_pack_status::BLK_PASSED) {
