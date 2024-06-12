@@ -860,8 +860,10 @@ static void update_bb(ClusterNetId net_id,
 
     pin_new_loc.x = max(min<int>(pin_new_loc.x, device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
     pin_new_loc.y = max(min<int>(pin_new_loc.y, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
+    pin_new_loc.layer_num = max(min<int>(pin_new_loc.layer_num, device_ctx.grid.get_num_layers() - 1), 0);
     pin_old_loc.x = max(min<int>(pin_old_loc.x, device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
     pin_old_loc.y = max(min<int>(pin_old_loc.y, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
+    pin_old_loc.layer_num = max(min<int>(pin_old_loc.layer_num, device_ctx.grid.get_num_layers() - 1), 0);
 
     /* Check if the net had been updated before. */
     if (bb_updated_before[net_id] == NetUpdateState::GOT_FROM_SCRATCH) {
@@ -897,7 +899,7 @@ static void update_bb(ClusterNetId net_id,
                 bb_edge_new.xmax = curr_bb_edge->xmax - 1;
                 bb_coord_new.xmax = curr_bb_coord->xmax;
             }
-        } else { /* Move to left, old postion was not at xmax. */
+        } else { /* Move to left, old position was not at xmax. */
             bb_coord_new.xmax = curr_bb_coord->xmax;
             bb_edge_new.xmax = curr_bb_edge->xmax;
         }
@@ -1041,6 +1043,75 @@ static void update_bb(ClusterNetId net_id,
                 num_sink_pin_layer_new[pin_new_loc.layer_num] = (curr_num_sink_pin_layer)[pin_new_loc.layer_num] + 1;
             }
         }
+
+        if (pin_new_loc.layer_num < pin_old_loc.layer_num) {
+            if (pin_old_loc.layer_num == curr_bb_coord->layer_max) {
+                if (curr_bb_edge->layer_max == 1) {
+                    get_bb_from_scratch(net_id, bb_coord_new, bb_edge_new, num_sink_pin_layer_new);
+                    bb_updated_before[net_id] = NetUpdateState::GOT_FROM_SCRATCH;
+                    return;
+                } else {
+                    bb_edge_new.layer_max = curr_bb_edge->layer_max - 1;
+                    bb_coord_new.layer_max = curr_bb_coord->layer_max;
+                }
+            } else {
+                bb_coord_new.layer_max = curr_bb_coord->layer_max;
+                bb_edge_new.layer_max = curr_bb_edge->layer_max;
+            }
+
+
+            if (pin_new_loc.layer_num < curr_bb_coord->layer_min) {
+                bb_coord_new.layer_min = pin_new_loc.layer_num;
+                bb_edge_new.layer_min = 1;
+            } else if (pin_new_loc.layer_num == curr_bb_coord->layer_min) {
+                bb_coord_new.layer_min = pin_new_loc.layer_num;
+                bb_edge_new.layer_min = curr_bb_edge->layer_min + 1;
+            } else {
+                bb_coord_new.layer_min = curr_bb_coord->layer_min;
+                bb_edge_new.layer_min = curr_bb_edge->layer_min;
+            }
+
+        } else if (pin_new_loc.layer_num > pin_old_loc.layer_num) {
+
+
+            if (pin_old_loc.layer_num == curr_bb_coord->layer_min) {
+                if (curr_bb_edge->layer_min == 1) {
+                    get_bb_from_scratch(net_id, bb_coord_new, bb_edge_new, num_sink_pin_layer_new);
+                    bb_updated_before[net_id] = NetUpdateState::GOT_FROM_SCRATCH;
+                    return;
+                } else {
+                    bb_edge_new.layer_min = curr_bb_edge->layer_min - 1;
+                    bb_coord_new.layer_min = curr_bb_coord->layer_min;
+                }
+            } else {
+                bb_coord_new.layer_min = curr_bb_coord->layer_min;
+                bb_edge_new.layer_min = curr_bb_edge->layer_min;
+            }
+
+            if (pin_new_loc.layer_num > curr_bb_coord->layer_max) {
+                bb_coord_new.layer_max = pin_new_loc.layer_num;
+                bb_edge_new.layer_max = 1;
+            } else if (pin_new_loc.layer_num == curr_bb_coord->layer_max) {
+                bb_coord_new.layer_max = pin_new_loc.layer_num;
+                bb_edge_new.layer_max = curr_bb_edge->layer_max + 1;
+            } else {
+                bb_coord_new.layer_max = curr_bb_coord->layer_max;
+                bb_edge_new.layer_max = curr_bb_edge->layer_max;
+            }
+
+
+        } else {
+            bb_coord_new.layer_min = curr_bb_coord->layer_min;
+            bb_coord_new.layer_max = curr_bb_coord->layer_max;
+            bb_edge_new.layer_min = curr_bb_edge->layer_min;
+            bb_edge_new.layer_max = curr_bb_edge->layer_max;
+        }
+
+    } else {
+        bb_coord_new.layer_min = curr_bb_coord->layer_min;
+        bb_coord_new.layer_max = curr_bb_coord->layer_max;
+        bb_edge_new.layer_min = curr_bb_edge->layer_min;
+        bb_edge_new.layer_max = curr_bb_edge->layer_max;
     }
 
     if (bb_updated_before[net_id] == NetUpdateState::NOT_UPDATED_YET) {
