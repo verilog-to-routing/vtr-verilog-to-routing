@@ -18,6 +18,7 @@
 #include "region.h"
 #include "vpr_constraints.h"
 #include "vpr_context.h"
+#include "vtr_assert.h"
 #include "vtr_time.h"
 
 // Pre-pack the atoms into molecules
@@ -79,13 +80,23 @@ void run_analytical_placement_flow() {
     // Set up the partial placement object
     PartialPlacement p_placement = PartialPlacement(atom_netlist, fixed_blocks, fixed_blocks_x, fixed_blocks_y);
     // Solve the QP problem
-    std::unique_ptr<AnalyticalSolver> solver = make_analytical_solver(e_analytical_solver::QP_HYBRID);
-    solver->solve(p_placement);
-    p_placement.print_stats();
-    VTR_LOG("HPWL: %f\n", p_placement.get_HPWL());
-    // Partial legalization using cut spreading algorithm
+    VTR_LOG("construct analytical solver\n");
+    std::unique_ptr<AnalyticalSolver> solver = make_analytical_solver(e_analytical_solver::QP_HYBRID, p_placement);
+    p_placement.is_valid_partial_placement();
+    VTR_LOG("legalize for the first time");
     FlowBasedLegalizer().legalize(p_placement);
-    VTR_LOG("Post-Legalized HPWL: %f\n", p_placement.get_HPWL());
+    p_placement.is_valid_partial_placement();
+    for (unsigned iteration = 1; iteration < 200; iteration++) {
+        VTR_LOG("iteration: %ld\n", iteration);
+        solver->solve(iteration);
+        p_placement.is_valid_partial_placement();
+        p_placement.print_stats();
+        VTR_LOG("HPWL: %f\n", p_placement.get_HPWL());
+        // Partial legalization using cut spreading algorithm
+        FlowBasedLegalizer().legalize(p_placement);
+        p_placement.is_valid_partial_placement();
+        VTR_LOG("Post-Legalized HPWL: %f\n", p_placement.get_HPWL());
+    }
     FullLegalizer().legalize(p_placement);
 }
 

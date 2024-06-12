@@ -3,6 +3,7 @@
 
 #include <memory>
 #include "PartialPlacement.h"
+#include "Eigen/Sparse"
 
 enum class e_analytical_solver {
     QP_HYBRID
@@ -14,10 +15,10 @@ enum class e_analytical_solver {
 class AnalyticalSolver {
 public:
     virtual ~AnalyticalSolver() {}
-    virtual void solve(PartialPlacement &p_placement) = 0;
+    virtual void solve(unsigned iteration) = 0;
 };
 
-std::unique_ptr<AnalyticalSolver> make_analytical_solver(e_analytical_solver solver_type);
+std::unique_ptr<AnalyticalSolver> make_analytical_solver(e_analytical_solver solver_type, PartialPlacement &p_placement);
 
 // TODO: There is no difference between the hybrid, clique, and star since the
 //       the threshold acts as a mixing factor. 0 = star, inf = clique
@@ -26,6 +27,17 @@ class QPHybridSolver : public AnalyticalSolver {
 // need to store the matrices for the system of equations in the class.
 // TODO: Store a standard VTR matrix and pass that into Eigen using Map
 public:
-    void solve(PartialPlacement &p_placement) final;
-};
+    QPHybridSolver(PartialPlacement &p_placement);
+    void solve(unsigned iteration) final;
+    PartialPlacement &p_placement;
+    Eigen::SparseMatrix<double> A_sparse;
+    Eigen::VectorXd b_x;
+    Eigen::VectorXd b_y;
 
+    Eigen::SparseMatrix<double> A_sparse_diff;
+    Eigen::VectorXd b_x_diff;
+    Eigen::VectorXd b_y_diff;
+
+    bool isASymetric();
+    bool isAPosSemiDef();
+};

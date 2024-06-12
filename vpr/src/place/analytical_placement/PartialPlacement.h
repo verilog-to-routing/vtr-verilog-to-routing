@@ -54,6 +54,10 @@ public:
 
     double get_HPWL();
 
+    bool is_valid_partial_placement();
+
+    bool is_valid_node(size_t node_id);
+
     inline void print_stats() {
         VTR_LOG("Number of moveable nodes: %zu\n", num_moveable_nodes);
         VTR_LOG("Number of fixed nodes: %zu\n", num_nodes - num_moveable_nodes);

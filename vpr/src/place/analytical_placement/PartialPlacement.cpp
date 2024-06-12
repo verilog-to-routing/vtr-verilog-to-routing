@@ -1,12 +1,16 @@
 
 #include "PartialPlacement.h"
+#include <cmath>
+#include <cstddef>
 #include <limits>
 #include <map>
 #include <unordered_set>
 #include <vector>
 #include "globals.h"
+#include "vpr_constraints_uxsdcxx.h"
 #include "vpr_context.h"
 #include "vpr_types.h"
+#include "vtr_assert.h"
 
 PartialPlacement::PartialPlacement(const AtomNetlist& netlist,                                                                                                                                                            
                                    const std::set<AtomBlockId>& fixed_blocks,                                                                                                                                          
@@ -72,16 +76,19 @@ PartialPlacement::PartialPlacement(const AtomNetlist& netlist,
 }
 
 double PartialPlacement::get_HPWL() {
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    size_t grid_width = device_ctx.grid.width();
+    size_t grid_height = device_ctx.grid.height();
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
     double hpwl = 0.0;
     for (AtomNetId net_id : atom_netlist.nets()) {
         // FIXME: Confirm if this should be here.
         if (net_is_ignored_for_placement(atom_netlist, net_id))
             continue;
-        double min_x = std::numeric_limits<double>::max();
-        double max_x = std::numeric_limits<double>::lowest();
-        double min_y = std::numeric_limits<double>::max();
-        double max_y = std::numeric_limits<double>::lowest();
+        double min_x = grid_width;
+        double max_x = 0;
+        double min_y = grid_height;
+        double max_y = 0;
         for (AtomPinId pin_id : atom_netlist.net_pins(net_id)) {
             AtomBlockId blk_id = atom_netlist.pin_block(pin_id);
             size_t node_id = get_node_id_from_blk(blk_id, atom_ctx.atom_molecules);
@@ -93,11 +100,52 @@ double PartialPlacement::get_HPWL() {
                 max_y = node_loc_y[node_id];
             if (node_loc_y[node_id] < min_y)
                 min_y = node_loc_y[node_id];
+            if (max_x < min_x || max_y < min_y) {
+                VTR_LOG("maxx:%f, minx:%f, maxy: %f, miny: %f, x: %f, y: %f\n", max_x, min_x, max_y, min_y, node_loc_x[node_id], node_loc_y[node_id]);
+            }
+            VTR_ASSERT(max_x >= min_x);
+            VTR_ASSERT(max_y >= min_y);
         }
-        VTR_ASSERT(max_x >= min_x);
-        VTR_ASSERT(max_y >= min_y);
         hpwl += max_x - min_x + max_y - min_y;
     }
     return hpwl;
 }
 
+bool PartialPlacement::is_valid_partial_placement(){
+    VTR_ASSERT(node_loc_x.size() == node_loc_y.size());
+    bool result = true;
+    for (size_t node_id = 0; node_id < node_loc_x.size(); node_id++){
+        result &= is_valid_node(node_id);
+    } 
+    return result; 
+}
+
+bool PartialPlacement::is_valid_node(size_t node_id){
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    size_t grid_width = device_ctx.grid.width();
+    size_t grid_height = device_ctx.grid.height();
+    bool result = true;
+    if (std::isnan(node_loc_x[node_id])) {
+        result = false;
+        VTR_LOG("node_id %zu's x value is NaN\n", node_id);
+    }
+    if (std::isnan(node_loc_y[node_id])) {
+        result = false;
+        VTR_LOG("node_id %zu's y value is NaN\n", node_id);
+    }
+    if (node_loc_x[node_id] >= grid_width) {
+        result = false;
+        VTR_LOG("node_id %zu's x value is %f, width is %zu\n", node_id, node_loc_x[node_id], grid_width);
+    }else if(node_loc_x[node_id] < 0) {
+        result = false;
+        VTR_LOG("node_id %zu's x value is %f\n", node_id, node_loc_x[node_id]);
+    }
+    if (node_loc_y[node_id] >= grid_height) {
+        result = false;
+        VTR_LOG("node_id %zu's y value is %f, height is %zu\n", node_id, node_loc_y[node_id], grid_width);
+    }else if(node_loc_x[node_id] < 0) {
+        result = false;
+        VTR_LOG("node_id %zu's y value is %f\n", node_id, node_loc_y[node_id]);
+    }
+    return result;
+}
