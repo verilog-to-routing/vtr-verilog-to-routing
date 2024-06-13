@@ -309,7 +309,8 @@ void read_place_body(std::ifstream& placement_file,
  */
 void print_place(const char* net_file,
                  const char* net_id,
-                 const char* place_file) {
+                 const char* place_file,
+                 bool is_place_file) {
     FILE* fp;
 
     auto& device_ctx = g_vpr_ctx.device();
@@ -318,15 +319,21 @@ void print_place(const char* net_file,
 
     fp = fopen(place_file, "w");
 
-    fprintf(fp, "Netlist_File: %s Netlist_ID: %s\n",
-            net_file,
-            net_id);
-    fprintf(fp, "Array size: %zu x %zu logic blocks\n\n", device_ctx.grid.width(), device_ctx.grid.height());
-    fprintf(fp, "#block name\tx\ty\tsubblk\tlayer\tblock number\n");
-    fprintf(fp, "#----------\t--\t--\t------\t-----\t------------\n");
+    if (is_place_file) {
+        fprintf(fp, "Netlist_File: %s Netlist_ID: %s\n",
+                net_file,
+                net_id);
+        fprintf(fp, "Array size: %zu x %zu logic blocks\n\n", device_ctx.grid.width(), device_ctx.grid.height());
+        fprintf(fp, "#block name\tx\ty\tsubblk\tlayer\tblock number\n");
+        fprintf(fp, "#----------\t--\t--\t------\t-----\t------------\n");
+    }
 
     if (!place_ctx.block_locs.empty()) { //Only if placement exists
         for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+            // if block is not placed, skip (useful for printing legalizer output)
+            if (!is_place_file && (place_ctx.block_locs[blk_id].loc.x == -1)) {
+                continue;
+            }
             fprintf(fp, "%s\t", cluster_ctx.clb_nlist.block_pb(blk_id)->name);
             if (strlen(cluster_ctx.clb_nlist.block_pb(blk_id)->name) < 8)
                 fprintf(fp, "\t");

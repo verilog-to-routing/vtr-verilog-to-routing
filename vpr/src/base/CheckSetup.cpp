@@ -23,6 +23,18 @@ void CheckSetup(const t_packer_opts& PackerOpts,
                         "Packing cannot be timing driven without timing analysis enabled\n");
     }
 
+    if (PackerOpts.load_flat_placement) {
+        if (PackerOpts.device_layout == "auto") {
+            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                            "Legalization requires a fixed device layout.\n");
+        }
+        if (!PlacerOpts.constraints_file.empty()) {
+            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                            "Cannot specify a fixed clusters file when running legalization.\n");
+        }
+    }
+
+
     if ((GLOBAL == RouterOpts.route_type)
         && (PlacerOpts.place_algorithm.is_timing_driven())) {
         /* Works, but very weird.  Can't optimize timing well, since you're

@@ -903,6 +903,7 @@ struct t_file_name_opts {
     std::string CircuitName;
     std::string CircuitFile;
     std::string NetFile;
+    std::string FlatPlaceFile;
     std::string PlaceFile;
     std::string RouteFile;
     std::string FPGAInterchangePhysicalFile;
@@ -912,6 +913,8 @@ struct t_file_name_opts {
     std::string out_file_prefix;
     std::string read_vpr_constraints_file;
     std::string write_vpr_constraints_file;
+    std::string write_constraints_file;
+    std::string write_flat_place_file;
     std::string write_block_usage;
     bool verify_file_digests;
 };
@@ -976,6 +979,7 @@ struct t_packer_opts {
     bool use_attraction_groups;
     int pack_num_moves;
     std::string pack_move_type;
+    bool load_flat_placement;
 };
 
 /**

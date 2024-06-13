@@ -96,6 +96,8 @@
 #include "log.h"
 #include "iostream"
 
+#include "load_flat_place.h"
+
 #ifdef VPR_USE_TBB
 #    define TBB_PREVIEW_GLOBAL_CONTROL 1 /* Needed for compatibility with old TBB versions */
 #    include <tbb/task_arena.h>
@@ -393,6 +395,7 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
             return false; //Unimplementable
         }
     }
+
     // For the time being, we decided to create the flat graph after placement is done. Thus, the is_flat parameter for this function
     //, since it is called before routing, should be false.
     vpr_create_device(vpr_setup, arch, false);
@@ -410,6 +413,7 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
             std::cout << "failed placement" << std::endl;
             return false; //Unimplementable
         }
+        print_flat_placement(vpr_setup.FileNameOpts.write_flat_place_file.c_str());
     }
     bool is_flat = vpr_setup.RouterOpts.flat_routing;
     const Netlist<>& router_net_list = is_flat ? (const Netlist<>&)g_vpr_ctx.atom().nlist : (const Netlist<>&)g_vpr_ctx.clustering().clb_nlist;
@@ -595,6 +599,9 @@ bool vpr_pack_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
         if (packer_opts.doPacking == STAGE_DO) {
             //Do the actual packing
             status = vpr_pack(vpr_setup, arch);
+            if (!status) {
+                return status;
+            }
 
             //TODO: to be consistent with placement/routing vpr_pack should really
             //      load the netlist data structures itself, instead of re-loading
@@ -604,10 +611,41 @@ bool vpr_pack_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
             vpr_load_packing(vpr_setup, arch);
         } else {
             VTR_ASSERT(packer_opts.doPacking == STAGE_LOAD);
-            //Load a previous packing from the .net file
-            vpr_load_packing(vpr_setup, arch);
-            //Load cluster_constraints data structure here since loading pack file
-            load_cluster_constraints();
+
+            // generate a .net file by legalizing an input flat placement file
+            if (packer_opts.load_flat_placement) {
+
+                // set up the device grid for the legalizer
+                auto& device_ctx = g_vpr_ctx.mutable_device();
+                device_ctx.arch = &arch;
+                device_ctx.grid = create_device_grid(vpr_setup.device_layout, arch.grid_layouts);
+
+                // load and legalize flat placement file, print .net and fix clusters files
+                status = load_flat_placement(vpr_setup, arch);
+                if (!status) {
+                    return status;
+                }
+
+                // reset the device grid
+                device_ctx.grid.clear();
+
+                // if running placement, use the fix clusters file produced by the legalizer
+                if (vpr_setup.PlacerOpts.doPlacement) {
+                    vpr_setup.PlacerOpts.constraints_file = vpr_setup.FileNameOpts.write_constraints_file;
+                }
+
+                //Load the result from the .net file
+                vpr_load_packing(vpr_setup, arch);
+
+            } else {
+
+                //Load a previous packing from the .net file
+                vpr_load_packing(vpr_setup, arch);
+
+                //Load cluster_constraints data structure here since loading pack file
+                load_cluster_constraints();
+            }
+
         }
 
         /* Sanity check the resulting netlist */

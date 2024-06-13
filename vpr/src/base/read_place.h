@@ -17,8 +17,15 @@ void read_place(
  */
 void read_constraints(const char* constraints_file);
 
+/**
+ * This function prints out a place file.
+ * @param is_place_file: defaults to true. If false, does not print file header; this is useful if
+ *                       the output will be used as a constraints file. If is_place_file is false,
+ *                       net_file and net_id parameters are not used and can be set to nullptr.
+ */
 void print_place(const char* net_file,
                  const char* net_id,
-                 const char* place_file);
+                 const char* place_file,
+                 bool is_place_file = true);
 
 #endif
