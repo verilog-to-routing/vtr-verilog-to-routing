@@ -621,7 +621,7 @@ bool vpr_pack_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
                 device_ctx.grid = create_device_grid(vpr_setup.device_layout, arch.grid_layouts);
 
                 // load and legalize flat placement file, print .net and fix clusters files
-                status = load_flat_placement(vpr_setup, arch);
+                status = load_flat_placement(vpr_setup, arch.architecture_id);
                 if (!status) {
                     return status;
                 }

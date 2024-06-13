@@ -44,9 +44,10 @@ void print_flat_placement(const char* flat_place_file) {
 }
 
 /* ingests and legalizes a flat placement file  */
-bool load_flat_placement(t_vpr_setup& vpr_setup, const t_arch& arch) {
+bool load_flat_placement(t_vpr_setup& vpr_setup, const char* architecture_id) {
     VTR_LOG("load_flat_placement(); when implemented, this function:");
     VTR_LOG("\n\tLoads flat placement file: %s, ", vpr_setup.FileNameOpts.FlatPlaceFile.c_str());
+    VTR_LOG("\n\tArch id: %s, ", architecture_id);
     VTR_LOG("\n\tPrints clustered netlist file: %s, ", vpr_setup.FileNameOpts.NetFile.c_str());
     VTR_LOG("\n\tPrints fix clusters file: %s\n", vpr_setup.FileNameOpts.write_constraints_file.c_str());
 
