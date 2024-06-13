@@ -182,14 +182,14 @@ void echo_compressed_grids(const char* filename, const std::vector<t_compressed_
             fprintf(fp, "\n\nGrid type: %s \n", device_ctx.logical_block_types[i].name);
 
             fprintf(fp, "X coordinates: \n");
-            for (int j = 0; j < (int)comp_grids[i].compressed_to_grid_x.size(); j++) {
+            for (int j = 0; j < (int)comp_grids[i].compressed_to_grid_x[layer_num].size(); j++) {
                 auto grid_loc = comp_grids[i].compressed_loc_to_grid_loc({j, 0, layer_num});
                 fprintf(fp, "%d ", grid_loc.x);
             }
             fprintf(fp, "\n");
 
             fprintf(fp, "Y coordinates: \n");
-            for (int k = 0; k < (int)comp_grids[i].compressed_to_grid_y.size(); k++) {
+            for (int k = 0; k < (int)comp_grids[i].compressed_to_grid_y[layer_num].size(); k++) {
                 auto grid_loc = comp_grids[i].compressed_loc_to_grid_loc({0, k, layer_num});
                 fprintf(fp, "%d ", grid_loc.y);
             }
