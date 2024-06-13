@@ -119,8 +119,6 @@ typedef std::vector<t_compressed_block_grid> t_compressed_block_grids;
 
 std::vector<t_compressed_block_grid> create_compressed_block_grids();
 
-t_compressed_block_grid create_compressed_block_grid(const std::vector<std::vector<vtr::Point<int>>>& locations, int num_layers);
-
 /**
  * @brief  print the contents of the compressed grids to an echo file
  *
@@ -128,6 +126,6 @@ t_compressed_block_grid create_compressed_block_grid(const std::vector<std::vect
  *   @param comp_grids the compressed grids that are used during placement
  *
  */
-void echo_compressed_grids(char* filename, const std::vector<t_compressed_block_grid>& comp_grids);
+void echo_compressed_grids(const char* filename, const std::vector<t_compressed_block_grid>& comp_grids);
 
 #endif
