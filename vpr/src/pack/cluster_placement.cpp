@@ -86,10 +86,14 @@ t_cluster_placement_stats* alloc_and_load_cluster_placement_stats() {
  * primitives_list - a list of primitives indexed to match atom_block_ids of molecule.
  *                   Expects an allocated array of primitives ptrs as inputs.
  *                   This function loads the array with the lowest cost primitives that implement molecule
+ * force_site - optional user-specified primitive site on which to place the molecule; if a force_site
+ *              argument is provided, the function either selects the specified site or reports failure.
+ *              If the force_site argument is set to its default value (-1), vpr selects an available site.
  */
 bool get_next_primitive_list(t_cluster_placement_stats* cluster_placement_stats,
                              const t_pack_molecule* molecule,
-                             t_pb_graph_node** primitives_list) {
+                             t_pb_graph_node** primitives_list,
+                             int force_site) {
     std::unordered_multimap<int, t_cluster_placement_primitive*>::iterator best;
 
     int i;
@@ -136,6 +140,23 @@ bool get_next_primitive_list(t_cluster_placement_stats* cluster_placement_stats,
                         continue;
                     }
 
+
+                    /* check for force site match, if applicable */
+                    if (force_site > -1) {
+                        if (force_site == it->second->pb_graph_node->flat_site_index) {
+                            cost = try_place_molecule(molecule, it->second->pb_graph_node, primitives_list);
+                            if (cost < HUGE_POSITIVE_FLOAT) {
+                                cluster_placement_stats->move_primitive_to_inflight(i, it);
+                                return true;
+                            } else {
+                                break;
+                            }
+                        } else {
+                            ++it;
+                            continue;
+                        }
+                    }
+
                     /* try place molecule at root location cur */
                     cost = try_place_molecule(molecule, it->second->pb_graph_node, primitives_list);
 
@@ -151,6 +172,11 @@ bool get_next_primitive_list(t_cluster_placement_stats* cluster_placement_stats,
                 }
             }
         }
+    }
+
+    /* if force_site was specified but not found, fail */
+    if (force_site > -1) {
+        found_best = false;
     }
 
     if (!found_best) {
