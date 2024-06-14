@@ -214,7 +214,8 @@ e_block_pack_status try_pack_molecule(t_cluster_placement_stats* cluster_placeme
                                       int feasible_block_array_size,
                                       t_ext_pin_util max_external_pin_util,
                                       PartitionRegion& temp_cluster_pr,
-                                      NocGroupId& temp_noc_grp_id);
+                                      NocGroupId& temp_noc_grp_id,
+                                      int force_site = -1);
 
 void try_fill_cluster(const t_packer_opts& packer_opts,
                       t_cluster_placement_stats* cur_cluster_placement_stats_ptr,
