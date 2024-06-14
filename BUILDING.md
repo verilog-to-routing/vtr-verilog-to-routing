@@ -46,7 +46,7 @@ If you download a different version of those tools, then those versions may not 
 
 To verfiy that VTR has been installed correctly run::
 
-    ./vtr_flow/scripts/run_vtr_task.py regression_tests/vtr_reg_basic/basic_timing
+    ./vtr_flow/scripts/run_vtr_task.py ./vtr_flow/tasks/regression_tests/vtr_reg_basic/basic_timing
 
 The expected output is::
     
