@@ -1,9 +1,11 @@
 *.o
 *.d
+*.dwo
 .*.swp
 *.gch
 *.gcda
 *.gcno
+*~
 __pycache__
 /.cproject
 /.project
