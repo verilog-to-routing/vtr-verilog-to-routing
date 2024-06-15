@@ -5669,42 +5669,88 @@ static void ProcessFromOrToTokens(const std::vector<std::string> Tokens, std::ve
                     port_name = new char[strlen(Token_char)];
                     parse_pin_name((char*)Token_char, &start_pin_index, &end_pin_index, pb_type_name, port_name);
                     
+                    std::vector<int> all_sub_tile_to_tile_pin_indices;
                     for (auto& sub_tile : PhysicalTileTypes[i_phy_type].sub_tiles) {
-                        //int sub_tile_index = sub_tile.index;
                         int sub_tile_capacity = sub_tile.capacity.total();
 
+                        int start = 0;
+                        int end = 0;
                         int i_port = 0;
                         for (; i_port < (int)sub_tile.ports.size(); ++i_port) {
-                            
                             if (!strcmp(sub_tile.ports[i_port].name, port_name)) {
-                                if (start_pin_index == end_pin_index && start_pin_index < 0) {
-                                    start_pin_index = 0;
-                                    end_pin_index = sub_tile.ports[i_port].num_pins - 1;
-                                }
-                                start_pin_index += sub_tile.ports[i_port].absolute_first_pin_index;
-                                end_pin_index += sub_tile.ports[i_port].absolute_first_pin_index;
+                                start = sub_tile.ports[i_port].absolute_first_pin_index;
+                                end = start + sub_tile.ports[i_port].num_pins - 1;
                                 break;
                             }
                         }
-
                         if (i_port == (int)sub_tile.ports.size()) {
                             continue;
                         }
-
-                        for (int pin_num = start_pin_index; pin_num <= end_pin_index; ++pin_num) {
+                        for (int pin_num = start; pin_num <= end; ++pin_num) {
                             VTR_ASSERT(pin_num < (int)sub_tile.sub_tile_to_tile_pin_indices.size() / sub_tile_capacity);
                             for (int capacity = 0; capacity < sub_tile_capacity; ++ capacity) {
                                 int sub_tile_pin_index = pin_num + capacity * sub_tile.num_phy_pins / sub_tile_capacity;
                                 int physical_pin_index = sub_tile.sub_tile_to_tile_pin_indices[sub_tile_pin_index];
-                                t_from_or_to_inf from_inf;
-                                from_inf.type_name = from_type_name;
-                                from_inf.from_type = from_type;
-                                from_inf.type_index = i_phy_type;
-                                from_inf.phy_pin_index = physical_pin_index;
-                                froms.push_back(from_inf);
+                                all_sub_tile_to_tile_pin_indices.push_back(physical_pin_index);
                             }
                         }
                     }
+
+                    if (start_pin_index == end_pin_index && start_pin_index < 0) {
+                        start_pin_index = 0;
+                        end_pin_index = all_sub_tile_to_tile_pin_indices.size() - 1;
+                    }
+
+                    if ((int)all_sub_tile_to_tile_pin_indices.size() <= start_pin_index || (int)all_sub_tile_to_tile_pin_indices.size() <= end_pin_index) {
+                        VTR_LOGF_ERROR(__FILE__, __LINE__,
+                                       "The index of pbtype %s : port %s exceeds its total number!\n", pb_type_name, port_name);
+                    }
+
+                    for (int i = start_pin_index; i <= end_pin_index; i++) {
+                        t_from_or_to_inf from_inf;
+                        from_inf.type_name = from_type_name;
+                        from_inf.from_type = from_type;
+                        from_inf.type_index = i_phy_type;
+                        from_inf.phy_pin_index = all_sub_tile_to_tile_pin_indices[i];
+                        froms.push_back(from_inf);
+                    }
+                    
+                    // for (auto& sub_tile : PhysicalTileTypes[i_phy_type].sub_tiles) {
+                    //     //int sub_tile_index = sub_tile.index;
+                    //     int sub_tile_capacity = sub_tile.capacity.total();
+
+                    //     int i_port = 0;
+                    //     for (; i_port < (int)sub_tile.ports.size(); ++i_port) {
+                            
+                    //         if (!strcmp(sub_tile.ports[i_port].name, port_name)) {
+                    //             if (start_pin_index == end_pin_index && start_pin_index < 0) {
+                    //                 start_pin_index = 0;
+                    //                 end_pin_index = sub_tile.ports[i_port].num_pins - 1;
+                    //             }
+                    //             start_pin_index += sub_tile.ports[i_port].absolute_first_pin_index;
+                    //             end_pin_index += sub_tile.ports[i_port].absolute_first_pin_index;
+                    //             break;
+                    //         }
+                    //     }
+
+                    //     if (i_port == (int)sub_tile.ports.size()) {
+                    //         continue;
+                    //     }
+
+                    //     for (int pin_num = start_pin_index; pin_num <= end_pin_index; ++pin_num) {
+                    //         VTR_ASSERT(pin_num < (int)sub_tile.sub_tile_to_tile_pin_indices.size() / sub_tile_capacity);
+                    //         for (int capacity = 0; capacity < sub_tile_capacity; ++ capacity) {
+                    //             int sub_tile_pin_index = pin_num + capacity * sub_tile.num_phy_pins / sub_tile_capacity;
+                    //             int physical_pin_index = sub_tile.sub_tile_to_tile_pin_indices[sub_tile_pin_index];
+                    //             t_from_or_to_inf from_inf;
+                    //             from_inf.type_name = from_type_name;
+                    //             from_inf.from_type = from_type;
+                    //             from_inf.type_index = i_phy_type;
+                    //             from_inf.phy_pin_index = physical_pin_index;
+                    //             froms.push_back(from_inf);
+                    //         }
+                    //     }
+                    // }
                     
                 }
             }
