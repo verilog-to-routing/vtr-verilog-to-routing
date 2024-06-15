@@ -195,8 +195,8 @@ std::vector<RRNodeId> RRSpatialLookup::find_grid_nodes_at_all_sides(int layer,
                                                                     int x,
                                                                     int y,
                                                                     t_rr_type rr_type) const {
-    VTR_ASSERT(rr_type == SOURCE || rr_type == OPIN || rr_type == IPIN || rr_type == SINK);
-    if (rr_type == SOURCE || rr_type == SINK) {
+    VTR_ASSERT(rr_type == SOURCE || rr_type == OPIN || rr_type == IPIN || rr_type == SINK || rr_type == MEDIUM);
+    if (rr_type == SOURCE || rr_type == SINK || rr_type == MEDIUM) {
         return find_nodes(layer,x, y, rr_type);
     }
 
