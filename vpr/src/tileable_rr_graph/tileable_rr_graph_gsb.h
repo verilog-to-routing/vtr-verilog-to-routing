@@ -25,6 +25,7 @@
  * Data stuctures related to the functions
  ***********************************************************************/
 typedef std::map<RRNodeId, RRNodeId> t_bend_track2track_map;
+typedef std::map<RRNodeId, std::vector<RRNodeId>> t_vib_map;
 typedef std::vector<std::vector<std::vector<RRNodeId>>> t_track2track_map;
 typedef std::vector<std::vector<std::vector<RRNodeId>>> t_track2pin_map;
 typedef std::vector<std::vector<std::vector<std::vector<RRNodeId>>>> t_pin2track_map;
@@ -41,7 +42,7 @@ t_track2track_map build_gsb_track_to_track_map(const RRGraphView& rr_graph,
                                                const bool& concat_wire,
                                                const bool& wire_opposite_side,
                                                const std::vector<t_segment_inf>& segment_inf);
-
+                                               
 t_bend_track2track_map build_bend_track_to_track_map(const DeviceGrid& grids,
 						                             RRGraphBuilder& rr_graph_builder,
                                                      const RRGraphView& rr_graph,
@@ -90,4 +91,19 @@ void build_direct_connections_for_one_gsb(const RRGraphView& rr_graph,
                                           const std::vector<t_direct_inf>& directs,
                                           const std::vector<t_clb_to_clb_directs>& clb_to_clb_directs);
 
+t_vib_map build_vib_map(const RRGraphView& rr_graph,
+                        const DeviceGrid& grids,
+                        const vtr::NdMatrix<const t_vib_inf*, 3>& vib_grid,
+                        const RRGSB& rr_gsb,
+                        const std::vector<t_segment_inf>& segment_inf,
+                        const size_t& layer,
+                        const vtr::Point<size_t>& gsb_coordinate,
+                        const vtr::Point<size_t>& actual_coordinate,
+                        std::vector<std::vector<std::vector<std::map<std::string, size_t>>>> medium_mux_name2medium_index);
+
+void build_edges_for_one_tileable_vib(RRGraphBuilder& rr_graph_builder,
+                                      const t_vib_map& vib_map,
+                                      const t_bend_track2track_map& sb_bend_conn,
+                                      const vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
+                                      size_t& num_edges_to_create);
 #endif
