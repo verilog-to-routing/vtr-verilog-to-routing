@@ -1225,6 +1225,12 @@ struct t_pin_to_pin_annotation {
  *      parent_pb_graph_node  : parent pb graph node
  *      total_primitive_count : Total number of this primitive type in the cluster. If there are 10 ALMs per cluster
  *                              and 2 FFs per ALM (given the mode of the parent of this primitive) then the total is 20.
+ *                              This member is only used by nodes corresponding to primitive sites.
+ *      flat_site_index       : Index of this primitive site within its primitive type within this cluster type.
+ *                              Values are in [0...total_primitive_count-1], e.g. if there are 10 ALMs per cluster, 2 FFS
+ *                              and 2 LUTs per ALM, then flat site indices for FFs would run from 0 to 19, and flat site
+                                indices for LUTs would run from 0 to 19. This member is only used by nodes corresponding
+                                to primitive sites. It is used when reconstructing clusters from a flat placement file.
  *      illegal_modes         : vector containing illegal modes that result in conflicts during routing
  */
 class t_pb_graph_node {
@@ -1281,6 +1287,8 @@ class t_pb_graph_node {
     int num_output_pin_class;   /* number of output pin classes that this pb_graph_node has */
 
     int total_primitive_count; /* total number of this primitive type in the cluster */
+    int flat_site_index;       /* index of this primitive within sites of its type in this cluster  */
+
 
     /* Interconnect instances for this pb
      * Only used for power
@@ -1509,6 +1517,22 @@ enum e_parallel_axis {
     Y_AXIS,
     BOTH_AXIS
 };
+
+/**
+ * @brief An attribute of a segment that defines the general category of the wire segment type.
+ *
+ * @details
+ * - `GCLK`: A segment type that is part of the global routing network for clocks.
+ * - `GENERAL`: Describes a segment type that is part of the regular routing network.
+ */
+enum class SegResType {
+    GCLK = 0,
+    GENERAL = 1,
+    NUM_RES_TYPES
+};
+
+constexpr std::array<const char*, static_cast<size_t>(SegResType::NUM_RES_TYPES)> RES_TYPE_STRING = {{"GCLK", "GENERAL"}}; //String versions of segment resource types
+
 enum e_switch_block_type {
     SUBSET,
     WILTON,
@@ -1561,6 +1585,14 @@ enum e_Fc_type {
  *            the segment's index in the unified segment_inf vector. This is *
  *            useful when building the rr_graph for different Y & X channels *
  *            in terms of track distribution and segment type.                *
+ * res_type: Determines the routing network to which the segment belongs.    *
+ *           Possible values are:
+ *              - GENERAL: The segment is part of the general routing        *
+ *                         resources.                                        *
+ *              - GCLK: The segment is part of the global routing network.   *
+ *           For backward compatibility, this attribute is optional. If not  *
+ *           specified, the resource type for the segment is considered to   *
+ *           be GENERAL.                                                     *
  * meta: Table storing extra arbitrary metadata attributes.                  */
 struct t_segment_inf {
     std::string name;
@@ -1579,6 +1611,7 @@ struct t_segment_inf {
     std::vector<bool> cb;
     std::vector<bool> sb;
     int seg_index;
+    enum SegResType res_type = SegResType::GENERAL;
     //float Cmetal_per_m; /* Wire capacitance (per meter) */
 };
 
@@ -2014,6 +2047,7 @@ struct t_arch {
 
     std::string gnd_net = "$__gnd_net";
     std::string vcc_net = "$__vcc_net";
+    std::string default_clock_network_name = "clock_network";
 
     // Luts
     std::vector<t_lut_cell> lut_cells;

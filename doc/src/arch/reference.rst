@@ -1955,7 +1955,7 @@ Wire Segments
 The content within the ``<segmentlist>`` tag consists of a group of ``<segment>`` tags.
 The ``<segment>`` tag and its contents are described below.
 
-.. arch:tag:: <segment axis="{x|y}" name="unique_name" length="int" type="{bidir|unidir}" freq="float" Rmetal="float" Cmetal="float">content</segment>
+.. arch:tag:: <segment axis="{x|y}" name="unique_name" length="int" type="{bidir|unidir}" res_type="{GCLK|GENERAL}" freq="float" Rmetal="float" Cmetal="float">content</segment>
 
 
     :opt_param axis:
@@ -1975,6 +1975,10 @@ The ``<segment>`` tag and its contents are described below.
 
         .. note:: ``longline`` is only supported on with ``bidir`` routing
 
+    :opt_param res_type:
+        Specifies whether the segment belongs to the general or a clock routing network. If this tag is not specified, the resource type for
+        the segment is considered to be GENERAL (i.e. regular routing).
+  
     :req_param freq:
         The supply of routing tracks composed of this type of segment.
         VPR automatically determines the percentage of tracks for each segment type by taking the frequency for the type specified and dividing with the sum of all frequencies.
@@ -2026,7 +2030,7 @@ The ``<segment>`` tag and its contents are described below.
 
 .. arch:tag:: <mux name="string"/>
 
-    :req_param name: Name of the mux switch type used to drive this type of segment.
+    :req_param name: Name of the mux switch type used to drive this type of segment by default, from both block outputs and other wires. This information is used during rr-graph construction, and a custom switch block can override this switch type for specific connections if desired.
 
     .. note:: For UNIDIRECTIONAL only.
 
@@ -2034,7 +2038,7 @@ The ``<segment>`` tag and its contents are described below.
 
 .. arch:tag:: <wire_switch name="string"/>
 
-    :req_param name: Name of the switch type used by other wires to drive this type of segment.
+    :req_param name: Name of the switch type used by other wires to drive this type of segment by default. This information is used during rr-graph construction, and a custom switch block can override this switch type for specific connections if desired.
 
     .. note:: For BIDIRECTIONAL only.
 
@@ -2092,6 +2096,7 @@ Specifing a Clock Architecture
 
 The element ``<clocknetworks>`` contains three sub-elements that collectively describe the clock architecture: the wiring parameters ``<metal_layers>``, the clock distribution ``<clock_network>``, and the clock connectivity ``<clock_routing>``.
 
+    .. note:: The clock network architecture defined in this structure is assigned the fixed default name ``"clock_network"``. When the user wants to specify a net to be routed through the defined clock architecture using a :ref:`global routing constraints file <global_routing_constraints>`, the network name attribute in the constraint tag must be set to ``"clock_network"``.
 
 .. _clock_arch_example:
 

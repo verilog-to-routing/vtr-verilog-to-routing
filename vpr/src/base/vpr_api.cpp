@@ -343,10 +343,16 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
         }
     }
 
-    //Initialize vpr floorplanning constraints
+    //Initialize vpr floorplanning and routing constraints
     auto& filename_opts = vpr_setup->FileNameOpts;
     if (!filename_opts.read_vpr_constraints_file.empty()) {
         load_vpr_constraints_file(filename_opts.read_vpr_constraints_file.c_str());
+
+        // Check if there are route constraints specified, and if the clock modeling setting is explicitly specified
+        // If both conditions are met, issue a warning that the route constraints will override the clock modeling setting.
+        if (g_vpr_ctx.routing().constraints.get_num_route_constraints() && options->clock_modeling.provenance() == argparse::Provenance::SPECIFIED) {
+            VTR_LOG_WARN("Route constraint(s) detected and will override clock modeling setting.\n");
+        }
     }
 
     fflush(stdout);
@@ -376,7 +382,6 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
             return false; //Unimplementable
         }
     }
-
     // For the time being, we decided to create the flat graph after placement is done. Thus, the is_flat parameter for this function
     //, since it is called before routing, should be false.
     vpr_create_device(vpr_setup, arch, false);
@@ -793,6 +798,10 @@ RouteStatus vpr_route_flow(const Netlist<>& net_list,
         //Assume successful
         route_status = RouteStatus(true, -1);
     } else { //Do or load
+
+        // set the net_is_ignored flag for nets that that have route_model set to ideal in route constraints
+        apply_route_constraints(g_vpr_ctx.routing().constraints);
+
         int chan_width = router_opts.fixed_channel_width;
 
         NetPinsMatrix<float> net_delay;
@@ -807,9 +816,9 @@ RouteStatus vpr_route_flow(const Netlist<>& net_list,
             routing_delay_calc = std::make_shared<RoutingDelayCalculator>(atom_ctx.nlist, atom_ctx.lookup, net_delay, is_flat);
             timing_info = make_setup_hold_timing_info(routing_delay_calc, router_opts.timing_update_type);
 #ifndef NO_SERVER
-            if (g_vpr_ctx.server().gateIO().is_running()) {
-                g_vpr_ctx.mutable_server().set_timing_info(timing_info);
-                g_vpr_ctx.mutable_server().set_routing_delay_calc(routing_delay_calc);
+            if (g_vpr_ctx.server().gate_io.is_running()) {
+                g_vpr_ctx.mutable_server().timing_info = timing_info;
+                g_vpr_ctx.mutable_server().routing_delay_calc = routing_delay_calc;
             }
 #endif /* NO_SERVER */
         } else {
@@ -1059,7 +1068,7 @@ void vpr_init_server(const t_vpr_setup& vpr_setup) {
 #ifndef NO_SERVER
     if (vpr_setup.ServerOpts.is_server_mode_enabled) {
         /* Set up a server and its callback to be triggered at 100ms intervals by the timer's timeout event. */
-        server::GateIO& gate_io = g_vpr_ctx.mutable_server().mutable_gateIO();
+        server::GateIO& gate_io = g_vpr_ctx.mutable_server().gate_io;
         if (!gate_io.is_running()) {
             gate_io.start(vpr_setup.ServerOpts.port_num);
             g_timeout_add(/*interval_ms*/ 100, server::update, &application);

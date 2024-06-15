@@ -932,7 +932,8 @@ e_block_pack_status try_pack_molecule(t_cluster_placement_stats* cluster_placeme
                                       int feasible_block_array_size,
                                       t_ext_pin_util max_external_pin_util,
                                       PartitionRegion& temp_cluster_pr,
-                                      NocGroupId& temp_noc_grp_id) {
+                                      NocGroupId& temp_noc_grp_id,
+                                      int force_site) {
     t_pb* parent;
     t_pb* cur_pb;
 
@@ -1009,7 +1010,7 @@ e_block_pack_status try_pack_molecule(t_cluster_placement_stats* cluster_placeme
 
     while (block_pack_status != e_block_pack_status::BLK_PASSED) {
         if (get_next_primitive_list(cluster_placement_stats_ptr, molecule,
-                                    primitives_list)) {
+                                    primitives_list, force_site)) {
             block_pack_status = e_block_pack_status::BLK_PASSED;
 
             int failed_location = 0;
@@ -1243,7 +1244,10 @@ enum e_block_pack_status try_place_atom_block_rec(const t_pb_graph_node* pb_grap
             }
         }
     } else {
-        VTR_ASSERT(parent_pb->mode == pb_graph_node->pb_type->parent_mode->index);
+       /* if this is not the first child of this parent, must match existing parent mode */
+       if (parent_pb->mode != pb_graph_node->pb_type->parent_mode->index) {
+            return e_block_pack_status::BLK_FAILED_FEASIBLE;
+        }
     }
 
     const t_mode* mode = &parent_pb->pb_graph_node->pb_type->modes[parent_pb->mode];

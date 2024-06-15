@@ -48,6 +48,7 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
                                     t_pb_graph_node* parent_pb_graph_node,
                                     t_pb_type* pb_type,
                                     const int index,
+                                    const int flat_index,
                                     bool load_power_structures,
                                     int& pin_count_in_cluster);
 
@@ -134,6 +135,11 @@ static bool check_input_pins_equivalence(const t_pb_graph_pin* cur_pin,
                                          std::map<int, int>& edges_map,
                                          int* line_num);
 
+/* computes the index of a pb graph node at its level of the pb hierarchy */
+static int compute_flat_index_for_child_node(int num_children_of_type,
+                                             int parent_flat_index,
+                                             int child_index);
+
 /**
  * Allocate memory into types and load the pb graph with interconnect edges
  */
@@ -150,6 +156,7 @@ void alloc_and_load_all_pb_graphs(bool load_power_structures, bool is_flat) {
             alloc_and_load_pb_graph(type.pb_graph_head,
                                     nullptr,
                                     type.pb_type,
+                                    0,
                                     0,
                                     load_power_structures,
                                     pin_count_in_cluster);
@@ -224,6 +231,7 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
                                     t_pb_graph_node* parent_pb_graph_node,
                                     t_pb_type* pb_type,
                                     const int index,
+                                    const int flat_index,
                                     bool load_power_structures,
                                     int& pin_count_in_cluster) {
     int i, j, k, i_input, i_output, i_clockport;
@@ -237,6 +245,7 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
     pb_graph_node->num_clock_ports = 0;
 
     pb_graph_node->total_primitive_count = 0;
+    pb_graph_node->flat_site_index = 0;
 
     /* Generate ports for pb graph node */
     for (i = 0; i < pb_type->num_ports; i++) {
@@ -349,11 +358,15 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
                                                                                 sizeof(t_pb_graph_node*));
         for (j = 0; j < pb_type->modes[i].num_pb_type_children; j++) {
             pb_graph_node->child_pb_graph_nodes[i][j] = (t_pb_graph_node*)vtr::calloc(pb_type->modes[i].pb_type_children[j].num_pb, sizeof(t_pb_graph_node));
-            for (k = 0; k < pb_type->modes[i].pb_type_children[j].num_pb; k++) {
+            int num_children_of_type = pb_type->modes[i].pb_type_children[j].num_pb;
+
+            for (k = 0; k < num_children_of_type; k++) {
+                int child_flat_index = compute_flat_index_for_child_node(num_children_of_type, flat_index, k);
                 alloc_and_load_pb_graph(&pb_graph_node->child_pb_graph_nodes[i][j][k],
                                         pb_graph_node,
                                         &pb_type->modes[i].pb_type_children[j],
                                         k,
+                                        child_flat_index,
                                         load_power_structures,
                                         pin_count_in_cluster);
             }
@@ -380,6 +393,10 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
             pb_node = pb_node->parent_pb_graph_node;
         }
         pb_graph_node->total_primitive_count = total_count;
+
+        // if this is a primitive, then flat_index corresponds
+        // to its index within all primitives of this type
+        pb_graph_node->flat_site_index = flat_index;
     }
 }
 
@@ -1913,4 +1930,23 @@ const t_pb_graph_edge* get_edge_between_pins(const t_pb_graph_pin* driver_pin, c
     }
 
     return nullptr;
+}
+
+/* Date:June 8th, 2024
+ * Author: Kate Thurmer
+ * Purpose: This subroutine computes the index of a pb graph node at its
+            level of the pb hierarchy; it is computed by the parent and
+            passed to each child of each child pb type. When the child is
+            a primitive, the computed indes is its flat site index.
+            For example, if there are 10 ALMs, each with 2 FFs and 2 LUTs,
+            then the ALM at index N, when calling this function for
+            its FF child at index M, would compute the child's index as:
+                N*(FFs per ALM) + M
+            e.g. for FF[1] in ALM[5], this returns
+                5*(2 FFS per ALM) + 1 = 11
+ */
+static int compute_flat_index_for_child_node(int num_children_of_type,
+                                             int parent_flat_index,
+                                             int child_index) {
+    return parent_flat_index*num_children_of_type + child_index;
 }

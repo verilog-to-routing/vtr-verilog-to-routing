@@ -16,15 +16,20 @@ namespace comm {
 /** 
  * @brief Implements Telegram Buffer as a wrapper over BytesArray
  * 
- * It aggregates received bytes and return only well filled frames.
+ * It aggregates received bytes and assists in extracting telegram frames ( @ref TelegramFrame ) from the raw byte buffer.
 */
 class TelegramBuffer
 {
-    static const std::size_t DEFAULT_SIZE_HINT = 1024;
+    inline static const std::size_t DEFAULT_SIZE_HINT = 1024;
 
 public:
-    TelegramBuffer(): m_raw_buffer(DEFAULT_SIZE_HINT) {}
-    explicit TelegramBuffer(std::size_t sizeHint): m_raw_buffer(sizeHint) {}
+    /**
+     * @brief Constructs a TelegramBuffer object with a specified size hint.
+     *
+     * This constructor initializes a TelegramBuffer object with a specified size hint for the raw buffer.
+     */
+    explicit TelegramBuffer(std::size_t size_hint = DEFAULT_SIZE_HINT): m_raw_buffer(size_hint) {}
+
     ~TelegramBuffer()=default;
 
     /**
@@ -44,21 +49,14 @@ public:
      * 
      * @param data The byte array whose contents will be appended to internal byte buffer.
      */
-    void append(const ByteArray&);
+    void append(const ByteArray& data);
 
     /**
      * @brief Extracts well-formed telegram frames from the internal byte buffer.
      * 
      * @param frames A reference to a vector where the extracted telegram frames will be stored.
      */
-    void take_telegram_frames(std::vector<TelegramFramePtr>&);
-
-    /**
-     * @brief Extracts well-formed telegram frames from the internal byte buffer.
-     * 
-     * @return std::vector<TelegramFramePtr> A vector containing pointers to the extracted telegram frames.
-     */
-    std::vector<TelegramFramePtr> take_telegram_frames();
+    void take_telegram_frames(std::vector<TelegramFramePtr>& frames);
 
     /**
      * @brief Takes errors from the internal storage.
@@ -70,7 +68,7 @@ public:
      *
      * @note After calling this function, the internal error storage will be cleared.
      */
-    void take_errors(std::vector<std::string>&);
+    void take_errors(std::vector<std::string>& errors);
 
     /**
      * @brief Retrieves a constant reference to the internal byte buffer.
@@ -84,6 +82,15 @@ private:
     std::vector<std::string> m_errors;
     std::optional<TelegramHeader> m_header_opt;
 
+    /**
+     * @brief Checks for the presence of the telegram header in the buffer.
+     *
+     * This function searches for the telegram header signature in the raw buffer.
+     * If the signature is found, any bytes preceding the header start position
+     * are discarded from the buffer.
+     *
+     * @return true if the telegram header signature is found, false otherwise.
+     */
     bool check_telegram_header_presence();
 };
 

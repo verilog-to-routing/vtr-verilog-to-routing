@@ -3724,6 +3724,18 @@ static void ProcessSegments(pugi::xml_node Parent,
             y_axis_seg_found = true;
         }
 
+        /*Get segment resource type*/
+        tmp = get_attribute(Node, "res_type", loc_data, ReqOpt::OPTIONAL).as_string(nullptr);
+
+        if (tmp) {
+            auto it = std::find(RES_TYPE_STRING.begin(), RES_TYPE_STRING.end(), tmp);
+            if (it != RES_TYPE_STRING.end()) {
+                Segs[i].res_type = static_cast<SegResType>(std::distance(RES_TYPE_STRING.begin(), it));
+            } else {
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node), "Unsopported segment res_type: %s\n", tmp);
+            }
+        }
+
         /* Get Power info */
         /*
          * (*Segs)[i].Cmetal_per_m = get_attribute(Node, "Cmetal_per_m", false,

@@ -3,7 +3,7 @@
 
 void read_xml_noc_traffic_flows_file(const char* noc_flows_file) {
     // start by checking that the provided file is a ".flows" file
-    if (vtr::check_file_name_extension(noc_flows_file, ".flows") == false) {
+    if (!vtr::check_file_name_extension(noc_flows_file, ".flows")) {
         VPR_FATAL_ERROR(VPR_ERROR_OTHER, "NoC traffic flows file '%s' has an unknown extension. Expecting .flows for NoC traffic flow files.", noc_flows_file);
     }
 
@@ -72,8 +72,6 @@ void read_xml_noc_traffic_flows_file(const char* noc_flows_file) {
     if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_NOC_TRAFFIC_FLOWS)) {
         noc_ctx.noc_traffic_flows_storage.echo_noc_traffic_flows(getEchoFileName(E_ECHO_NOC_TRAFFIC_FLOWS));
     }
-
-    return;
 }
 
 void process_single_flow(pugi::xml_node single_flow_tag,
@@ -125,8 +123,6 @@ void process_single_flow(pugi::xml_node single_flow_tag,
                                                       traffic_flow_bandwidth,
                                                       max_traffic_flow_latency,
                                                       traffic_flow_priority);
-
-    return;
 }
 
 double get_traffic_flow_bandwidth(pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data) {
@@ -144,7 +140,7 @@ double get_traffic_flow_bandwidth(pugi::xml_node single_flow_tag, const pugiutil
 
 double get_max_traffic_flow_latency(pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data) {
     // "set to large value, indicating no constraint
-    double max_traffic_flow_latency = DEFAULT_MAX_TRAFFIC_FLOW_LATENCY;
+    double max_traffic_flow_latency = NocTrafficFlows::DEFAULT_MAX_TRAFFIC_FLOW_LATENCY;
 
     // holds the latency value as a string so that it can be used to convert to a floating point value (this is done so that scientific notation is supported)
     std::string max_traffic_flow_latency_intermediate_val;
@@ -194,8 +190,6 @@ void verify_traffic_flow_router_modules(const std::string& source_router_name, c
         // Cannot have the source and sink routers have the same name (they need to be different). A flow cant go to a single router.
         vpr_throw(VPR_ERROR_OTHER, loc_data.filename_c_str(), loc_data.line(single_flow_tag), "Source and sink NoC routers cannot be the same modules.");
     }
-
-    return;
 }
 
 void verify_traffic_flow_properties(double traffic_flow_bandwidth, double max_traffic_flow_latency, int traffic_flow_priority, pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data) {
@@ -213,8 +207,6 @@ void verify_traffic_flow_properties(double traffic_flow_bandwidth, double max_tr
     if (traffic_flow_priority <= 0) {
         vpr_throw(VPR_ERROR_OTHER, loc_data.filename_c_str(), loc_data.line(single_flow_tag), "The traffic flow priorities expected to be positive, non-zero integer values.");
     }
-
-    return;
 }
 
 ClusterBlockId get_router_module_cluster_id(const std::string& router_module_name,
@@ -254,8 +246,6 @@ void check_traffic_flow_router_module_type(const std::string& router_module_name
     if (!is_tile_compatible(noc_router_tile_type, router_module_logical_type)) {
         vpr_throw(VPR_ERROR_OTHER, loc_data.filename_c_str(), loc_data.line(single_flow_tag), "The supplied module name '%s' is not a NoC router.", router_module_name.c_str());
     }
-
-    return;
 }
 
 t_physical_tile_type_ptr get_physical_type_of_noc_router_tile(const DeviceContext& device_ctx, NocContext& noc_ctx) {

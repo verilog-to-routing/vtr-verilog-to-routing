@@ -529,7 +529,7 @@ static void update_blk_type_first_loc(int blk_type_column_index,
                                       t_logical_block_type_ptr block_type,
                                       const t_pl_macro& pl_macro, std::vector<t_grid_empty_locs_block_type>* blk_types_empty_locs_in_grid) {
     //check if dense placement could place macro successfully
-    if (blk_type_column_index == -1 || blk_types_empty_locs_in_grid->size() <= abs(blk_type_column_index)) {
+    if (blk_type_column_index == -1 || blk_types_empty_locs_in_grid->size() <= (size_t)abs(blk_type_column_index)) {
         return;
     }
 

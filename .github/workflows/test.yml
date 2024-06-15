@@ -1,11 +1,33 @@
 name: Test
 
 on:
+  # We want to run the CI when anything is pushed to master.
+  # Since master is a protected branch this only happens when a PR is merged.
+  # This is a double check in case the PR was stale and had some issues.
   push:
+    branches:
+      - master
+    paths-ignore: # Prevents from running if only docs are updated
+      - 'doc/**'
+      - '**/*README*'
+      - '**.md'
+      - '**.rst'
   pull_request:
+    paths-ignore: # Prevents from running if only docs are updated
+      - 'doc/**'
+      - '**/*README*'
+      - '**.md'
+      - '**.rst'
   workflow_dispatch:
   schedule:
   - cron: '0 0 * * *' # daily
+
+# We want to cancel previous runs for a given PR or branch / ref if another CI
+# run is requested.
+# See: https://docs.github.com/en/actions/using-jobs/using-concurrency
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 env:
   # default compiler for all non-compatibility tests
@@ -74,6 +96,10 @@ jobs:
         NUM_CORES: ${{ matrix.cores }}
 
     - name: Upload test results
+      # If the job was not cancelled, we want to save the result (this includes
+      # when the job fails). See warning here:
+      # https://docs.github.com/en/actions/learn-github-actions/expressions#always
+      if: ${{ !cancelled() }}
       # TODO: This runnner is running on a self-hosted CPU. In order to upgrade
       #       to v4, need to upgrade the machine to support node20.
       uses: actions/upload-artifact@v3
@@ -260,17 +286,19 @@ jobs:
         ./run_reg_test.py ${{ matrix.suite }} -show_failures -j2
 
     - name: Upload regression run files
+      if: ${{ !cancelled() }}
       uses: actions/upload-artifact@v4
       with:
         name: ${{matrix.name}}_run_files
         path: |
           vtr_flow/**/*.out
-          vtr_flow/**/*.blif
+          # vtr_flow/**/*.blif  # Removed since it was taking too much space and was hardly used.
           vtr_flow/**/*.p
           vtr_flow/**/*.net
           vtr_flow/**/*.r
 
     - name: Upload regression results
+      if: ${{ !cancelled() }}
       uses: actions/upload-artifact@v4
       with:
         name: ${{matrix.name}}_results
@@ -406,9 +434,9 @@ jobs:
       matrix:
         include:
         - { name: 'GCC 9 (Ubuntu Jammy - 22.04)',     eval: 'CC=gcc-9 && CXX=g++-9',           }
-        - { name: 'GCC 10 (Ubuntu Jammy - 22.04)',  eval: 'CC=gcc-10 && CXX=g++-10',         }
-        - { name: 'GCC 11 (Ubuntu Jammy - 22.04)',                  eval: 'CC=gcc-11 && CXX=g++-11',         }
-        - { name: 'GCC 12 (Ubuntu Jammy - 22.04)',                  eval: 'CC=gcc-12 && CXX=g++-12',         }
+        - { name: 'GCC 10 (Ubuntu Jammy - 22.04)',    eval: 'CC=gcc-10 && CXX=g++-10',         }
+        - { name: 'GCC 11 (Ubuntu Jammy - 22.04)',    eval: 'CC=gcc-11 && CXX=g++-11',         }
+        - { name: 'GCC 12 (Ubuntu Jammy - 22.04)',    eval: 'CC=gcc-12 && CXX=g++-12',         }
         - { name: 'Clang 11 (Ubuntu Jammy - 22.04)',  eval: 'CC=clang-11 && CXX=clang++-11',   }
         - { name: 'Clang 12 (Ubuntu Jammy - 22.04)',  eval: 'CC=clang-12 && CXX=clang++-12',   }
         - { name: 'Clang 13 (Ubuntu Jammy - 22.04)',  eval: 'CC=clang-13 && CXX=clang++-13',   }
@@ -434,7 +462,6 @@ jobs:
       run: |
         export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
         ./.github/scripts/build.sh
-
 
   Coverity:
     name: 'Coverity Scan'
