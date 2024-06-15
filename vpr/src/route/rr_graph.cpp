@@ -1573,11 +1573,13 @@ static void build_rr_graph(const t_graph_type graph_type,
     device_ctx.chan_width = nodes_per_chan;
 
     rr_graph_externals(segment_inf, segment_inf_x, segment_inf_y, *wire_to_rr_ipin_switch, base_cost_type);
-
+    
+    const vtr::NdMatrix<const t_vib_inf*, 3> vib_grid;
     check_rr_graph(device_ctx.rr_graph,
                    types,
                    device_ctx.rr_indexed_data,
                    grid,
+                   vib_grid,
                    device_ctx.chan_width,
                    graph_type,
                    is_flat);
@@ -1668,10 +1670,12 @@ static void build_intra_cluster_rr_graph(const t_graph_type graph_type,
 
     rr_graph_builder.clear_temp_storage();
 
+    const vtr::NdMatrix<const t_vib_inf*, 3> vib_grid;
     check_rr_graph(device_ctx.rr_graph,
                    types,
                    device_ctx.rr_indexed_data,
                    grid,
+                   vib_grid,
                    device_ctx.chan_width,
                    graph_type,
                    is_flat);
