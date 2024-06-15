@@ -62,7 +62,7 @@ struct alignas(64) t_rr_node_data {
     int16_t ylow_ = -1;
     int16_t xhigh_ = -1;
     int16_t yhigh_ = -1;
-
+    
     size_t node_bend_start_ = 0;
     size_t node_bend_end_ = 0;
 
@@ -102,6 +102,7 @@ struct t_rr_node_ptc_data {
         int pin_num;
         int track_num;
         int class_num;
+        int medium_num;
     } ptc_;
 };
 
@@ -188,7 +189,7 @@ class t_rr_graph_storage {
     short node_yhigh(RRNodeId id) const {
         return node_storage_[id].yhigh_;
     }
-
+    
     short node_bend_start(RRNodeId id) const {
         return node_storage_[id].node_bend_start_;
     }
@@ -233,6 +234,7 @@ class t_rr_graph_storage {
     int node_pin_num(RRNodeId id) const;   //Same as ptc_num() but checks that type() is consistent
     int node_track_num(RRNodeId id) const; //Same as ptc_num() but checks that type() is consistent
     int node_class_num(RRNodeId id) const; //Same as ptc_num() but checks that type() is consistent
+    int node_medium_num(RRNodeId id) const; //Same as ptc_num() but checks that type() is consistent
 
     /** @brief Retrieve fan_in for RRNodeId, init_fan_in must have been called first. */
     t_edge_size fan_in(RRNodeId id) const {
@@ -626,6 +628,7 @@ class t_rr_graph_storage {
     void set_node_pin_num(RRNodeId id, int);   //Same as set_ptc_num() by checks type() is consistent
     void set_node_track_num(RRNodeId id, int); //Same as set_ptc_num() by checks type() is consistent
     void set_node_class_num(RRNodeId id, int); //Same as set_ptc_num() by checks type() is consistent
+    void set_node_medium_num(RRNodeId id, int); //Same as set_ptc_num() by checks type() is consistent
 
     void set_node_type(RRNodeId id, t_rr_type new_type);
     void set_node_name(RRNodeId id, std::string new_name);
@@ -1027,6 +1030,7 @@ class t_rr_graph_view {
     int node_pin_num(RRNodeId id) const;   //Same as ptc_num() but checks that type() is consistent
     int node_track_num(RRNodeId id) const; //Same as ptc_num() but checks that type() is consistent
     int node_class_num(RRNodeId id) const; //Same as ptc_num() but checks that type() is consistent
+    int node_medium_num(RRNodeId id) const; //Same as ptc_num() but checks that type() is consistent
 
     /**
     * @brief Retrieve the fan-in for a given RRNodeId.
