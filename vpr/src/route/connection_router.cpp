@@ -1133,7 +1133,16 @@ static inline void update_router_stats(RouterStats* router_stats,
                                                                                 rr_graph->node_ylow(rr_node_id),
                                                                                 rr_graph->node_layer(rr_node_id)});
 
+    const t_vib_inf* vib;
+    if (device_ctx.arch->is_vib_arch) {
+        vib = device_ctx.vib_grid[rr_graph->node_layer(rr_node_id)][rr_graph->node_xlow(rr_node_id)][rr_graph->node_ylow(rr_node_id)];
+    }
+    else {
+        vib = nullptr;
+    }
+    //const t_vib_inf* vib = device_ctx.vib_grid[rr_graph->node_layer(rr_node_id)][rr_graph->node_xlow(rr_node_id)][rr_graph->node_ylow(rr_node_id)];
     if (is_inter_cluster_node(physical_type,
+                              vib,
                               node_type,
                               rr_graph->node_ptc_num(rr_node_id))) {
         if (is_push) {
