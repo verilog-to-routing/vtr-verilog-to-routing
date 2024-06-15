@@ -1737,6 +1737,9 @@ bool is_inter_cluster_node(const RRGraphView& rr_graph_view,
     auto node_type = rr_graph_view.node_type(node_id);
     if (node_type == CHANX || node_type == CHANY) {
         return true;
+    } else if (node_type == MEDIUM) {
+        VTR_ASSERT(vib != nullptr);
+        return (node_ptc < (int)vib->first_stages.size());
     } else {
         int x_low = rr_graph_view.node_xlow(node_id);
         int y_low = rr_graph_view.node_ylow(node_id);
