@@ -28,11 +28,12 @@ typedef enum e_rr_type : unsigned char {
     OPIN,       ///Output pin of a block
     CHANX,      ///x-directed routing wire, or an x-directed segment of a channel for global routing
     CHANY,      ///y-directed routing wire, or a y-directed segment of a channel for global routing
+    MEDIUM,
     NUM_RR_TYPES
 } t_rr_type;
 
-constexpr std::array<t_rr_type, NUM_RR_TYPES> RR_TYPES = {{SOURCE, SINK, IPIN, OPIN, CHANX, CHANY}};
-constexpr std::array<const char*, NUM_RR_TYPES> rr_node_typename{{"SOURCE", "SINK", "IPIN", "OPIN", "CHANX", "CHANY"}};
+constexpr std::array<t_rr_type, NUM_RR_TYPES> RR_TYPES = {{SOURCE, SINK, IPIN, OPIN, CHANX, CHANY, MEDIUM}};
+constexpr std::array<const char*, NUM_RR_TYPES> rr_node_typename{{"SOURCE", "SINK", "IPIN", "OPIN", "CHANX", "CHANY", "MEDIUM"}};
 
 /*
  * Direction::INC: wire driver is positioned at the low-coordinate end of the wire.
