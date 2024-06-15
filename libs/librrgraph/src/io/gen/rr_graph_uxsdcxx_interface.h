@@ -25,7 +25,7 @@ enum class enum_switch_type {UXSD_INVALID = 0, MUX, TRISTATE, PASS_GATE, SHORT, 
 
 enum class enum_pin_type {UXSD_INVALID = 0, OPEN, OUTPUT, INPUT};
 
-enum class enum_node_type {UXSD_INVALID = 0, CHANX, CHANY, SOURCE, SINK, OPIN, IPIN};
+enum class enum_node_type {UXSD_INVALID = 0, CHANX, CHANY, SOURCE, SINK, OPIN, IPIN, MEDIUM};
 
 enum class enum_node_direction {UXSD_INVALID = 0, INC_DIR, DEC_DIR, BI_DIR};
 
