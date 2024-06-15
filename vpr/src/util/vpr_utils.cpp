@@ -2275,10 +2275,14 @@ std::vector<const t_pb_graph_node*> get_all_pb_graph_node_primitives(const t_pb_
 }
 
 bool is_inter_cluster_node(t_physical_tile_type_ptr physical_tile,
+                           const t_vib_inf* vib,
                            t_rr_type node_type,
                            int node_ptc) {
     if (node_type == CHANX || node_type == CHANY) {
         return true;
+    } else if (node_type == MEDIUM) {
+        VTR_ASSERT(vib != nullptr);
+        return (node_ptc < (int)vib->first_stages.size());
     } else {
         VTR_ASSERT(node_type == IPIN || node_type == SINK || node_type == OPIN || node_type == SOURCE);
         if (node_type == IPIN || node_type == OPIN) {
