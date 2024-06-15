@@ -200,6 +200,14 @@ float MapLookahead::get_expected_cost_flat_router(RRNodeId current_node, RRNodeI
     t_physical_tile_type_ptr from_physical_type = device_ctx.grid.get_physical_type({rr_graph.node_xlow(current_node),
                                                                                      rr_graph.node_ylow(current_node),
                                                                                      rr_graph.node_layer(current_node)});
+    const t_vib_inf* vib;
+    if (device_ctx.arch->is_vib_arch) {
+        vib = device_ctx.vib_grid[rr_graph.node_layer(current_node)][rr_graph.node_xlow(current_node)][rr_graph.node_ylow(current_node)];
+    }
+    else {
+        vib = nullptr;
+    }
+    //const t_vib_inf* vib = device_ctx.vib_grid[rr_graph.node_layer(current_node)][rr_graph.node_xlow(current_node)][rr_graph.node_ylow(current_node)];
     int from_node_ptc_num = rr_graph.node_ptc_num(current_node);
     t_physical_tile_type_ptr to_physical_type = device_ctx.grid.get_physical_type({rr_graph.node_xlow(target_node),
                                                                                    rr_graph.node_ylow(target_node),
