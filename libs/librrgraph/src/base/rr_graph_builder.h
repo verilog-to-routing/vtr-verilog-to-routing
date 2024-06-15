@@ -190,7 +190,7 @@ class RRGraphBuilder {
     inline void set_node_coordinates(RRNodeId id, short x1, short y1, short x2, short y2) {
         node_storage_.set_node_coordinates(id, x1, y1, x2, y2);
     }
-
+    
     inline void set_node_bend_start(RRNodeId id, size_t bend_start) {
         node_storage_.set_node_bend_start(id, bend_start);
     }
@@ -246,6 +246,11 @@ class RRGraphBuilder {
     /** @brief set_node_class_num() is designed for routing source and sinks, which are SOURCE and SINK nodes */
     inline void set_node_class_num(RRNodeId id, short new_class_num) {
         node_storage_.set_node_class_num(id, new_class_num);
+    }
+
+    /** @brief set_node_medium_num() is designed for routing medium nodes */
+    inline void set_node_medium_num(RRNodeId id, int new_class_num) {
+        node_storage_.set_node_medium_num(id, new_class_num);
     }
 
     /** @brief Add a list of ptc number in string (split by comma) to a given node. This function is used by rr graph reader only. Not suggested for internal builder!!! */
