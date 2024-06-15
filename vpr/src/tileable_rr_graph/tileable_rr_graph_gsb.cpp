@@ -1715,3 +1715,318 @@ void build_direct_connections_for_one_gsb(const RRGraphView& rr_graph,
     /* Build actual edges */
     rr_graph_builder.build_edges(true);
 }
+
+/* Vib edge builder */
+t_vib_map build_vib_map(const RRGraphView& rr_graph,
+                        const DeviceGrid& grids,
+                        const vtr::NdMatrix<const t_vib_inf*, 3>& vib_grid,
+                        const RRGSB& rr_gsb,
+                        const std::vector<t_segment_inf>& segment_inf,
+                        const size_t& layer,
+                        const vtr::Point<size_t>& gsb_coordinate,
+                        const vtr::Point<size_t>& actual_coordinate,
+                        std::vector<std::vector<std::vector<std::map<std::string, size_t>>>> medium_mux_name2medium_index) {
+    VTR_ASSERT(rr_gsb.get_x() == gsb_coordinate.x() && rr_gsb.get_y() == gsb_coordinate.y());
+    
+    t_vib_map vib_map;
+
+    const t_vib_inf* vib = vib_grid[layer][actual_coordinate.x()][actual_coordinate.y()];
+    auto phy_type = grids.get_physical_type({(int)actual_coordinate.x(), (int)actual_coordinate.y(), (int)layer});
+    VTR_ASSERT(!strcmp(vib->pbtype_name.c_str(), phy_type->name));
+    const std::vector<t_first_stage_mux_inf> first_stages = vib->first_stages;
+    for (size_t i_first_stage = 0; i_first_stage < first_stages.size(); i_first_stage++) {
+        std::vector<t_from_or_to_inf> froms = first_stages[i_first_stage].froms;
+        RRNodeId to_node = rr_graph.node_lookup().find_node(layer, actual_coordinate.x(), actual_coordinate.y(), MEDIUM, i_first_stage);
+        VTR_ASSERT(to_node.is_valid());
+        for (auto from : froms) {
+            RRNodeId from_node;
+            if (from.from_type == PB) {
+                
+                if (from.type_name != vib->pbtype_name) {
+                    VTR_LOGF_ERROR(__FILE__, __LINE__,
+                                   "Wrong from type name!\n");
+                    exit(1);
+                }
+                    
+                for (e_side side : SIDES) {
+                    from_node = rr_graph.node_lookup().find_node(layer, actual_coordinate.x(), actual_coordinate.y(), OPIN, from.phy_pin_index, side);
+                    if (from_node.is_valid())
+                        break;                    
+                }
+                if (!from_node.is_valid()) {
+                    VTR_LOGF_WARN(__FILE__, __LINE__,
+                                  "Can not find from node %s:%d!\n", from.type_name, from.phy_pin_index);
+                    continue;
+                }
+            }
+            else if (from.from_type == SEGMENT) {
+                char from_dir = from.seg_dir;
+                //int from_index = from.seg_index;
+                t_segment_inf segment = segment_inf[from.type_index];
+                VTR_ASSERT(segment.name == from.type_name);
+                t_seg_group seg_group;
+                for (auto seg : vib->seg_groups) {
+                    if (seg.name == segment.name) {
+                        seg_group = seg;
+                        break;
+                    }
+                }
+                VTR_ASSERT(from.seg_index < seg_group.track_num * segment.length);
+                e_side side;
+                if (from_dir == 'W') side = RIGHT;
+                else if (from_dir == 'E') side = LEFT;
+                else if (from_dir == 'N') side = BOTTOM;
+                else if (from_dir == 'S') side = TOP;
+                else {
+                    VTR_LOGF_ERROR(__FILE__, __LINE__,
+                                   "Wrong segment from direction!\n");
+                    exit(1);
+                }
+
+                std::vector<size_t> track_list = rr_gsb.get_chan_node_ids_by_segment_ids(side, RRSegmentId(segment.seg_index));
+                if (track_list.size() == 0) continue;
+                else {
+                    VTR_ASSERT((int)track_list.size() >= (from.seg_index + 1) * 2);
+                    size_t seg_id;
+                    if (side == LEFT || side == BOTTOM) {  //INC
+                        seg_id = from.seg_index * 2;
+                    }
+                    else {                                 //DEC
+                        VTR_ASSERT(side == RIGHT || side == TOP);
+                        seg_id = from.seg_index * 2 + 1;
+                    }
+                    from_node = rr_gsb.get_chan_node(side, track_list[seg_id]);
+                    VTR_ASSERT(IN_PORT == rr_gsb.get_chan_node_direction(side, track_list[seg_id]));
+                }
+                    
+
+            }
+            else if (from.from_type == MUX) {
+                size_t from_mux_index = medium_mux_name2medium_index[layer][actual_coordinate.x()][actual_coordinate.y()][from.type_name];
+                from_node = rr_graph.node_lookup().find_node(layer, actual_coordinate.x(), actual_coordinate.y(), MEDIUM, from_mux_index);
+            }
+            else {
+                VTR_LOGF_ERROR(__FILE__, __LINE__,
+                               "Wrong from type!\n");
+                exit(1);
+            }
+            VTR_ASSERT(from_node.is_valid());
+            auto iter = vib_map.begin();
+            for (; iter != vib_map.end(); ++iter) {
+                if (iter->first == from_node) {
+                    vib_map[from_node].push_back(to_node);
+                }
+            }
+            if (iter == vib_map.end()) {
+                std::vector<RRNodeId> to_nodes;
+                to_nodes.push_back(to_node);
+                vib_map.emplace(std::make_pair(from_node, to_nodes));
+            }
+                    
+            
+        }
+    }
+    /* Second stages*/
+    const std::vector<t_second_stage_mux_inf> second_stages = vib->second_stages;
+    for (size_t i_second_stage = 0; i_second_stage < second_stages.size(); i_second_stage++) {
+        std::vector<t_from_or_to_inf> froms = second_stages[i_second_stage].froms;
+        std::vector<t_from_or_to_inf> tos = second_stages[i_second_stage].to;
+        
+        std::vector<RRNodeId> to_nodes;
+        for (auto to : tos) {
+            RRNodeId to_node;
+            if (to.from_type == PB) {
+                
+                if (to.type_name != vib->pbtype_name) {
+                    VTR_LOGF_ERROR(__FILE__, __LINE__,
+                                   "Wrong to type name!\n");
+                    exit(1);
+                }
+                    
+                for (e_side side : SIDES) {
+                    to_node = rr_graph.node_lookup().find_node(layer, actual_coordinate.x(), actual_coordinate.y(), IPIN, to.phy_pin_index, side);
+                    if (to_node.is_valid())
+                        break;                    
+                }
+                if (!to_node.is_valid()) {
+                    VTR_LOGF_WARN(__FILE__, __LINE__,
+                                  "Can not find from node %s:%d!\n", to.type_name, to.phy_pin_index);
+                    continue;
+                }
+            }
+            else if (to.from_type == SEGMENT) {
+                char to_dir = to.seg_dir;
+                //int from_index = from.seg_index;
+                t_segment_inf segment = segment_inf[to.type_index];
+                VTR_ASSERT(segment.name == to.type_name);
+                t_seg_group seg_group;
+                for (auto seg : vib->seg_groups) {
+                    if (seg.name == segment.name) {
+                        seg_group = seg;
+                        break;
+                    }
+                }
+                VTR_ASSERT(to.seg_index < seg_group.track_num * segment.length);
+                e_side side;
+                if (to_dir == 'W') side = LEFT;
+                else if (to_dir == 'E') side = RIGHT;
+                else if (to_dir == 'N') side = TOP;
+                else if (to_dir == 'S') side = BOTTOM;
+                else {
+                    VTR_LOGF_ERROR(__FILE__, __LINE__,
+                                   "Wrong segment from direction!\n");
+                    exit(1);
+                }
+
+                std::vector<size_t> track_list = rr_gsb.get_chan_node_ids_by_segment_ids(side, RRSegmentId(segment.seg_index));
+                if (track_list.size() == 0) continue;
+                else {
+                    //enum e_track_status track_status = determine_track_status_of_gsb
+                    VTR_ASSERT((int)track_list.size() >= (to.seg_index + 1) * 2);
+                    size_t seg_id;
+                    if (side == LEFT || side == BOTTOM) {  //DEC
+                        seg_id = to.seg_index * 2 + 1;
+                    }
+                    else {                                 //INC
+                        VTR_ASSERT(side == RIGHT || side == TOP);
+                        seg_id = to.seg_index * 2;
+                    }
+                    enum e_track_status track_status = determine_track_status_of_gsb(rr_graph, rr_gsb, side, track_list[seg_id]);
+                    VTR_ASSERT(track_status == TRACK_START);
+                    to_node = rr_gsb.get_chan_node(side, track_list[seg_id]);
+                    VTR_ASSERT(OUT_PORT == rr_gsb.get_chan_node_direction(side, track_list[seg_id]));
+                }
+                    
+
+            }
+            else {
+                VTR_LOGF_ERROR(__FILE__, __LINE__,
+                               "Wrong from type!\n");
+                exit(1);
+            }
+            VTR_ASSERT(to_node.is_valid());
+            to_nodes.push_back(to_node);      
+        }
+        
+
+
+        std::vector<RRNodeId> from_nodes;
+        for (auto from : froms) {
+            RRNodeId from_node;
+            if (from.from_type == PB) {
+                
+                if (from.type_name != vib->pbtype_name) {
+                    VTR_LOGF_ERROR(__FILE__, __LINE__,
+                                   "Wrong from type name!\n");
+                    exit(1);
+                }
+                    
+                for (e_side side : SIDES) {
+                    from_node = rr_graph.node_lookup().find_node(layer, actual_coordinate.x(), actual_coordinate.y(), OPIN, from.phy_pin_index, side);
+                    if (from_node.is_valid())
+                        break;                    
+                }
+                if (!from_node.is_valid()) {
+                    VTR_LOGF_WARN(__FILE__, __LINE__,
+                                  "Can not find from node %s:%d!\n", from.type_name, from.phy_pin_index);
+                    continue;
+                }
+            }
+            else if (from.from_type == SEGMENT) {
+                char from_dir = from.seg_dir;
+                //int from_index = from.seg_index;
+                t_segment_inf segment = segment_inf[from.type_index];
+                VTR_ASSERT(segment.name == from.type_name);
+                t_seg_group seg_group;
+                for (auto seg : vib->seg_groups) {
+                    if (seg.name == segment.name) {
+                        seg_group = seg;
+                        break;
+                    }
+                }
+                VTR_ASSERT(from.seg_index < seg_group.track_num * segment.length);
+                e_side side;
+                if (from_dir == 'W') side = RIGHT;
+                else if (from_dir == 'E') side = LEFT;
+                else if (from_dir == 'N') side = BOTTOM;
+                else if (from_dir == 'S') side = TOP;
+                else {
+                    VTR_LOGF_ERROR(__FILE__, __LINE__,
+                                   "Wrong segment from direction!\n");
+                    exit(1);
+                }
+
+                std::vector<size_t> track_list = rr_gsb.get_chan_node_ids_by_segment_ids(side, RRSegmentId(segment.seg_index));
+                if (track_list.size() == 0) continue;
+                else {
+                    VTR_ASSERT((int)track_list.size() >= (from.seg_index + 1) * 2);
+                    size_t seg_id;
+                    if (side == LEFT || side == BOTTOM) {  //INC
+                        seg_id = from.seg_index * 2;
+                    }
+                    else {                                 //DEC
+                        VTR_ASSERT(side == RIGHT || side == TOP);
+                        seg_id = from.seg_index * 2 + 1;
+                    }
+                    from_node = rr_gsb.get_chan_node(side, track_list[seg_id]);
+                    VTR_ASSERT(IN_PORT == rr_gsb.get_chan_node_direction(side, track_list[seg_id]));
+                }
+                    
+
+            }
+            else if (from.from_type == MUX) {
+                size_t from_mux_index = medium_mux_name2medium_index[layer][actual_coordinate.x()][actual_coordinate.y()][from.type_name];
+                from_node = rr_graph.node_lookup().find_node(layer, actual_coordinate.x(), actual_coordinate.y(), MEDIUM, from_mux_index);
+            }
+            else {
+                VTR_LOGF_ERROR(__FILE__, __LINE__,
+                               "Wrong from type!\n");
+                exit(1);
+            }
+            VTR_ASSERT(from_node.is_valid());
+            from_nodes.push_back(from_node);      
+        }
+        
+        if (to_nodes.size() > 0 && from_nodes.size() > 0) {
+            for (auto from_node : from_nodes) {
+                auto iter = vib_map.begin();
+                for (; iter != vib_map.end(); ++iter) {
+                    if (iter->first == from_node) {
+                        for (auto to_node : to_nodes) {
+                            vib_map[from_node].push_back(to_node);
+                        }
+                        
+                    }
+                }
+                if (iter == vib_map.end()) {
+                    vib_map.emplace(std::make_pair(from_node, to_nodes));
+                }
+            }
+        }
+        else {
+            VTR_LOGF_WARN(__FILE__, __LINE__,
+                          "This medium mux has no from or to nodes!\n");
+        }
+    }
+    return vib_map;
+}
+
+void build_edges_for_one_tileable_vib(RRGraphBuilder& rr_graph_builder,
+                                      const t_vib_map& vib_map,
+                                      const t_bend_track2track_map& sb_bend_conn,
+                                      const vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
+                                      size_t& num_edges_to_create) {
+
+    size_t edge_count = 0;
+    for (auto iter = vib_map.begin(); iter != vib_map.end(); ++iter) {
+        for (auto to_node : iter->second) {
+            rr_graph_builder.create_edge(iter->first, to_node, rr_node_driver_switches[to_node], false);
+            edge_count++;
+        }
+    }
+    for (auto iter = sb_bend_conn.begin(); iter != sb_bend_conn.end(); ++iter) {
+        rr_graph_builder.create_edge(iter->first, iter->second, rr_node_driver_switches[iter->second], false);
+        edge_count++;
+    }
+    num_edges_to_create += edge_count;
+}
