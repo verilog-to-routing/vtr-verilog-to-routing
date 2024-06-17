@@ -64,6 +64,7 @@
 #include "parse_switchblocks.h"
 
 #include "physical_types_util.h"
+#include "vtr_expr_eval.h"
 
 #include "read_xml_arch_file_noc_tag.h"
 
@@ -3932,9 +3933,69 @@ static void ProcessSwitchblocks(pugi::xml_node Parent, t_arch* arch, const pugiu
                 sb.location = E_CORNER;
             } else if (strcmp(tmp, "FRINGE") == 0) {
                 sb.location = E_FRINGE;
+            } else if (strcmp(tmp,"XY_SPECIFIED") == 0){
+                sb.location = E_XY_SPECIFIED;
             } else {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem), "unrecognized switchblock location: %s\n", tmp);
             }
+        }
+
+        /* get the switchblock coordinate only if sb.location is set to E_XY_SPECIFIED*/
+        if(sb.location == e_sb_location::E_XY_SPECIFIED){
+            expect_only_attributes(SubElem,
+                                   {"x", "y", "type",
+                                    "startx", "endx", "repeatx", "incrx",
+                                    "starty", "endy", "repeaty", "incry"},
+                                   loc_data);
+
+            int grid_width = arch->grid_layouts.at(0).width;
+            int grid_height = arch->grid_layouts.at(0).height; 
+            
+            /* Absolute location that this SB must be applied to, -1 if not specified*/
+            sb.x = get_attribute(SubElem, "x", loc_data, ReqOpt::OPTIONAL).as_int(-1);
+            sb.y = get_attribute(SubElem, "y", loc_data, ReqOpt::OPTIONAL).as_int(-1);
+
+            //check if the absolute value is within the device grid width and height
+            if(sb.x > grid_width || sb.y > grid_height){
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem), "Location (%d,%d) is not valid within the grid! grid dimensions are: (%d,%d)\n", sb.x, sb.y, grid_width, grid_height);
+            }
+            
+
+            /* Location also might be speicified with regular expression, get the region that this SB should be applied to*/
+            if (sb.x == -1 && sb.y == -1){
+                auto startx_attr = get_attribute(SubElem, "startx", loc_data, ReqOpt::OPTIONAL);
+                auto endx_attr   = get_attribute(SubElem, "endx", loc_data, ReqOpt::OPTIONAL);
+
+                auto starty_attr = get_attribute(SubElem, "starty", loc_data, ReqOpt::OPTIONAL);
+                auto endy_attr   = get_attribute(SubElem, "endy", loc_data, ReqOpt::OPTIONAL);
+
+                auto repeatx_attr = get_attribute(SubElem, "repeatx", loc_data, ReqOpt::OPTIONAL);
+                auto repeaty_attr = get_attribute(SubElem, "repeaty", loc_data, ReqOpt::OPTIONAL);
+
+                auto incrx_attr = get_attribute(SubElem, "incrx", loc_data, ReqOpt::OPTIONAL);
+                auto incry_attr = get_attribute(SubElem, "incry", loc_data, ReqOpt::OPTIONAL);
+
+                //parse the values from the architecture file and fill out SB region information
+                vtr::FormulaParser p;
+
+                vtr::t_formula_data vars;
+                vars.set_var_value("W", grid_width);
+                vars.set_var_value("H", grid_height);
+
+                sb.reg.startx = startx_attr.empty() ? -1 : p.parse_formula(startx_attr.value(), vars);
+                sb.reg.endx = endx_attr.empty() ? -1 : p.parse_formula(endx_attr.value(), vars);
+
+                sb.reg.starty = starty_attr.empty() ? -1 : p.parse_formula(starty_attr.value(), vars);
+                sb.reg.endy = endy_attr.empty() ? -1 : p.parse_formula(endy_attr.value(), vars);
+
+                sb.reg.repeatx = repeatx_attr.empty() ? -1 : p.parse_formula(repeatx_attr.value(), vars);
+                sb.reg.repeaty = repeaty_attr.empty() ? -1 : p.parse_formula(repeaty_attr.value(), vars);
+
+                sb.reg.incrx = incrx_attr.empty() ? -1 : p.parse_formula(incrx_attr.value(), vars);
+                sb.reg.incry = incry_attr.empty() ? -1 : p.parse_formula(incry_attr.value(), vars);
+
+            }
+
         }
 
         /* get switchblock permutation functions */

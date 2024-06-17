@@ -251,7 +251,19 @@ enum e_sb_location {
     E_CORNER,
     E_FRINGE, /* perimeter minus corners */
     E_CORE,
-    E_EVERYWHERE
+    E_EVERYWHERE,
+    E_XY_SPECIFIED
+};
+
+struct e_sb_region{
+    int startx = -1;
+    int starty = -1;
+    int repeatx = -1;
+    int repeaty = -1;
+    int incrx = -1;
+    int incry = -1;
+    int endx = -1;
+    int endy = -1;
 };
 
 /*************************************************************************************************/
@@ -1909,6 +1921,12 @@ struct t_switchblock_inf {
     e_sb_location location;          /* where on the FPGA this switchblock should be built (i.e. perimeter, core, everywhere) */
     e_directionality directionality; /* the directionality of this switchblock (unidir/bidir) */
 
+    int x = -1; /* The exact x-axis location that this SB is used, meaningful when location is set to E_XY_specified */
+    int y = -1; /* The exact y-axis location that this SB is used, meanignful when location is set to E_XY_specified */
+
+    /* We can also define a region to apply this SB to all locations falls into this region using regular expression in the architecture file*/
+    e_sb_region reg;
+    
     t_permutation_map permutation_map; /* map holding the permutation functions attributed to this switchblock */
 
     std::vector<t_wireconn_inf> wireconns; /* list of wire types/groups this SB will connect */
