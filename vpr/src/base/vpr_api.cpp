@@ -615,24 +615,8 @@ bool vpr_pack_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
             // generate a .net file by legalizing an input flat placement file
             if (packer_opts.load_flat_placement) {
 
-                // set up the device grid for the legalizer
-                auto& device_ctx = g_vpr_ctx.mutable_device();
-                device_ctx.arch = &arch;
-                device_ctx.grid = create_device_grid(vpr_setup.device_layout, arch.grid_layouts);
-
-                // load and legalize flat placement file, print .net and fix clusters files
-                status = load_flat_placement(vpr_setup, arch.architecture_id);
-                if (!status) {
-                    return status;
-                }
-
-                // reset the device grid
-                device_ctx.grid.clear();
-
-                // if running placement, use the fix clusters file produced by the legalizer
-                if (vpr_setup.PlacerOpts.doPlacement) {
-                    vpr_setup.PlacerOpts.constraints_file = vpr_setup.FileNameOpts.write_constraints_file;
-                }
+                //Load and legalizer flat placement file
+                vpr_load_flat_placement(vpr_setup, arch);
 
                 //Load the result from the .net file
                 vpr_load_packing(vpr_setup, arch);
@@ -747,6 +731,37 @@ void vpr_load_packing(t_vpr_setup& vpr_setup, const t_arch& arch) {
     }
 }
 
+bool vpr_load_flat_placement(t_vpr_setup& vpr_setup, const t_arch& arch) {
+
+    // set up the device grid for the legalizer
+    auto& device_ctx = g_vpr_ctx.mutable_device();
+    device_ctx.arch = &arch;
+    device_ctx.grid = create_device_grid(vpr_setup.device_layout, arch.grid_layouts);
+    if (device_ctx.grid.get_num_layers() > 1) {
+        VPR_FATAL_ERROR(VPR_ERROR_PACK, "Legalizer currently only supports single layer devices.\n");
+    }
+
+    // load and legalize flat placement file, print .net and fix clusters files
+    bool status = load_flat_placement(vpr_setup, arch);
+    if (!status) {
+        return status;
+    }
+
+    // echo flat placement (orphan clusters will have -1 for X, Y, subtile coordinates)
+    if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_FLAT_PLACE)) {
+        print_flat_placement(getEchoFileName(E_ECHO_FLAT_PLACE));
+    }
+
+    // reset the device grid
+    device_ctx.grid.clear();
+
+    // if running placement, use the fix clusters file produced by the legalizer
+    if (vpr_setup.PlacerOpts.doPlacement) {
+        vpr_setup.PlacerOpts.constraints_file = vpr_setup.FileNameOpts.write_constraints_file;
+    }
+    return true;
+}
+
 bool vpr_place_flow(const Netlist<>& net_list, t_vpr_setup& vpr_setup, const t_arch& arch) {
     VTR_LOG("\n");
     const auto& placer_opts = vpr_setup.PlacerOpts;
@@ -773,6 +788,13 @@ bool vpr_place_flow(const Netlist<>& net_list, t_vpr_setup& vpr_setup, const t_a
     if (!filename_opts.write_vpr_constraints_file.empty()) {
         write_vpr_floorplan_constraints(filename_opts.write_vpr_constraints_file.c_str(), placer_opts.place_constraint_expand, placer_opts.place_constraint_subtile,
                                         placer_opts.floorplan_num_horizontal_partitions, placer_opts.floorplan_num_vertical_partitions);
+    }
+
+    // Write out a flat placement file if the option is specified
+    // A flat placement file includes cluster and intra-cluster placement coordinates for
+    // each primitive and can be used to reconstruct a clustering and placement solution.
+    if (!filename_opts.write_flat_place_file.empty()) {
+        print_flat_placement(vpr_setup.FileNameOpts.write_flat_place_file.c_str());
     }
 
     return true;

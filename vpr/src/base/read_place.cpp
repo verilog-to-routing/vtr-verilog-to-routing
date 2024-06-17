@@ -331,7 +331,7 @@ void print_place(const char* net_file,
     if (!place_ctx.block_locs.empty()) { //Only if placement exists
         for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
             // if block is not placed, skip (useful for printing legalizer output)
-            if (!is_place_file && (place_ctx.block_locs[blk_id].loc.x == -1)) {
+            if (!is_place_file && (place_ctx.block_locs[blk_id].loc.x == INVALID_X)) {
                 continue;
             }
             fprintf(fp, "%s\t", cluster_ctx.clb_nlist.block_pb(blk_id)->name);

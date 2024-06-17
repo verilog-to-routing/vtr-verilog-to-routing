@@ -715,6 +715,9 @@ struct hash<t_pl_offset> {
 };
 } // namespace std
 
+/// @brief Sentinel value for indicating that a block does not have a valid x location, used to check whether a block has been placed
+static constexpr int INVALID_X = -1;
+
 /**
  * @brief A placement location coordinate
  *
