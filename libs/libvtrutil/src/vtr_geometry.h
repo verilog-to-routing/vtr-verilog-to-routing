@@ -12,7 +12,7 @@
 
 /**
  * @file
- * @brief   This file include differents different geometry classes
+ * @brief   This file includes different geometry classes
  */
 
 namespace vtr {
@@ -302,7 +302,7 @@ class RectUnion {
     friend bool operator!= <>(const RectUnion<T>& lhs, const RectUnion<T>& rhs);
 
   private:
-    // Note that a union of rectanges may have holes and may not be contiguous
+    // Note that a union of rectangles may have holes and may not be contiguous
     std::vector<Rect<T>> rects_;
 };
 
