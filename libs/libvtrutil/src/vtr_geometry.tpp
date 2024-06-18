@@ -121,6 +121,11 @@ Point<T> Rect<T>::top_right() const {
 }
 
 template<class T>
+std::tuple<T, T, T, T> Rect<T>::coordinates() const {
+    return {xmin(), ymin(), xmax(), ymax()};
+}
+
+template<class T>
 T Rect<T>::width() const {
     return xmax() - xmin();
 }

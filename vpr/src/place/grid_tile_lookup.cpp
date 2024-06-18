@@ -67,27 +67,24 @@ int GridTileLookup::total_type_tiles(t_logical_block_type_ptr block_type) {
  */
 int GridTileLookup::region_tile_count(const Region& reg, t_logical_block_type_ptr block_type) {
     auto& device_ctx = g_vpr_ctx.device();
+    const int n_layers = device_ctx.grid.get_num_layers();
     int subtile = reg.get_sub_tile();
-    int layer_num = reg.get_layer_num();
+
     /*Intersect the region with the grid, in case the region passed in goes out of bounds
      * By intersecting with the grid, we ensure that we are only counting tiles for the part of the
      * region that fits on the grid.*/
     Region grid_reg;
-    grid_reg.set_region_rect({0,
-                              0,
-                              (int)device_ctx.grid.width() - 1,
-                              (int)device_ctx.grid.height() - 1,
-                              layer_num});
+    grid_reg.set_region_bounds({0, 0,
+                                (int)device_ctx.grid.width() - 1, (int)device_ctx.grid.height() - 1,
+                                0, n_layers - 1});
     Region intersect_reg;
     intersect_reg = intersection(reg, grid_reg);
 
-    const auto intersect_coord = intersect_reg.get_region_rect();
-    VTR_ASSERT(intersect_coord.layer_num == layer_num);
+    const vtr::Rect<int>& intersect_rect = intersect_reg.get_region_bounds().get_rect();
+//    VTR_ASSERT(intersect_coord.layer_num == layer_num);
 
-    int xmin = intersect_coord.xmin;
-    int ymin = intersect_coord.ymin;
-    int xmax = intersect_coord.xmax;
-    int ymax = intersect_coord.ymax;
+    const auto [xmin, ymin, xmax, ymax] = intersect_rect.coordinates();
+    auto [layer_low, layer_high] = intersect_reg.get_region_bounds().get_layer_range();
     auto& layer_type_grid = block_type_matrices[block_type->index];
 
     int xdim = (int)layer_type_grid.dim_size(1);
@@ -96,18 +93,22 @@ int GridTileLookup::region_tile_count(const Region& reg, t_logical_block_type_pt
     int num_tiles = 0;
 
     if (subtile == NO_SUBTILE) {
-        num_tiles = layer_type_grid[layer_num][xmin][ymin];
+        for (int l = layer_low; l < layer_high; l++) {
+            int num_tiles_in_layer = layer_type_grid[l][xmin][ymin];
 
-        if ((ymax + 1) < ydim) {
-            num_tiles -= layer_type_grid[layer_num][xmin][ymax + 1];
-        }
+            if ((ymax + 1) < ydim) {
+                num_tiles_in_layer -= layer_type_grid[l][xmin][ymax + 1];
+            }
 
-        if ((xmax + 1) < xdim) {
-            num_tiles -= layer_type_grid[layer_num][xmax + 1][ymin];
-        }
+            if ((xmax + 1) < xdim) {
+                num_tiles_in_layer -= layer_type_grid[l][xmax + 1][ymin];
+            }
 
-        if ((xmax + 1) < xdim && (ymax + 1) < ydim) {
-            num_tiles += layer_type_grid[layer_num][xmax + 1][ymax + 1];
+            if ((xmax + 1) < xdim && (ymax + 1) < ydim) {
+                num_tiles_in_layer += layer_type_grid[l][xmax + 1][ymax + 1];
+            }
+
+            num_tiles += num_tiles_in_layer;
         }
     } else {
         num_tiles = region_with_subtile_count(reg, block_type);
@@ -124,19 +125,18 @@ int GridTileLookup::region_with_subtile_count(const Region& reg, t_logical_block
     auto& device_ctx = g_vpr_ctx.device();
     int num_sub_tiles = 0;
 
-    const auto reg_coord = reg.get_region_rect();
+    const vtr::Rect<int>& reg_rect = reg.get_region_bounds().get_rect();
+    const auto [xmin, ymin, xmax, ymax] = reg_rect.coordinates();
+    const auto [layer_low, layer_high] = reg.get_region_bounds().get_layer_range();
     int subtile = reg.get_sub_tile();
-
-    int xmin = reg_coord.xmin;
-    int ymin = reg_coord.ymin;
-    int xmax = reg_coord.xmax;
-    int ymax = reg_coord.ymax;
 
     for (int i = xmax; i >= xmin; i--) {
         for (int j = ymax; j >= ymin; j--) {
-            const auto& tile = device_ctx.grid.get_physical_type({i, j, reg_coord.layer_num});
-            if (is_sub_tile_compatible(tile, block_type, subtile)) {
-                num_sub_tiles++;
+            for (int l = layer_low; l < layer_high; l++) {
+                const auto& tile = device_ctx.grid.get_physical_type({i, j, l});
+                if (is_sub_tile_compatible(tile, block_type, subtile)) {
+                    num_sub_tiles++;
+                }
             }
         }
     }

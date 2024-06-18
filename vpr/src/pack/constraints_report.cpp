@@ -39,17 +39,22 @@ bool floorplan_constraints_regions_overfull() {
 
     bool floorplan_regions_overfull = false;
 
-    for (auto& region_info : regions_count_info) {
-        const auto rect = region_info.first.get_region_rect();
-        for (unsigned int j = 0; j < block_types.size(); j++) {
-            int num_assigned_blocks = region_info.second[j];
+    for (const auto& [region, block_type_counts] : regions_count_info) {
+        const vtr::Rect<int>& rect = region.get_region_bounds().get_rect();
+        const auto [layer_low, layer_high] = region.get_region_bounds().get_layer_range();
+        for (const auto & block_type : block_types) {
+            int num_assigned_blocks = block_type_counts[block_type.index];
             int num_tiles = 0;
-            num_tiles = grid_tiles.region_tile_count(region_info.first, &block_types[j]);
+            num_tiles = grid_tiles.region_tile_count(region, &block_type);
             if (num_assigned_blocks > num_tiles) {
                 floorplan_regions_overfull = true;
-                floorplanning_ctx.overfull_regions.push_back(region_info.first);
-                VTR_LOG("\n \nRegion (%d, %d) to (%d, %d) st %d \n", rect.xmin, rect.ymin, rect.xmax, rect.ymax, region_info.first.get_sub_tile());
-                VTR_LOG("Assigned %d blocks of type %s, but only has %d tiles of that type\n", num_assigned_blocks, block_types[j].name, num_tiles);
+                floorplanning_ctx.overfull_regions.push_back(region);
+                VTR_LOG("\n \nRegion (%d, %d, %d) to (%d, %d, %d) st %d \n",
+                        rect.xmin(), rect.ymin(), layer_low,
+                        rect.xmax(), rect.ymax(), layer_high,
+                        region.get_sub_tile());
+                VTR_LOG("Assigned %d blocks of type %s, but only has %d tiles of that type\n",
+                        num_assigned_blocks, block_type.name, num_tiles);
             }
         }
     }

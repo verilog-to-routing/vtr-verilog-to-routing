@@ -144,6 +144,9 @@ class Rect {
     ///@brief Return the top right point
     Point<T> top_right() const;
 
+    ///@brief Return the bottom left and top right coordinates
+    std::tuple<T, T, T, T> coordinates() const;
+
     ///@brief Return the rectangle width
     T width() const;
 
