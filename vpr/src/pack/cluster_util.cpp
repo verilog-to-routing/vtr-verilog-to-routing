@@ -932,7 +932,8 @@ e_block_pack_status try_pack_molecule(t_cluster_placement_stats* cluster_placeme
                                       int feasible_block_array_size,
                                       t_ext_pin_util max_external_pin_util,
                                       PartitionRegion& temp_cluster_pr,
-                                      NocGroupId& temp_noc_grp_id) {
+                                      NocGroupId& temp_noc_grp_id,
+                                      int force_site) {
     t_pb* parent;
     t_pb* cur_pb;
 
@@ -1009,7 +1010,7 @@ e_block_pack_status try_pack_molecule(t_cluster_placement_stats* cluster_placeme
 
     while (block_pack_status != e_block_pack_status::BLK_PASSED) {
         if (get_next_primitive_list(cluster_placement_stats_ptr, molecule,
-                                    primitives_list)) {
+                                    primitives_list, force_site)) {
             block_pack_status = e_block_pack_status::BLK_PASSED;
 
             int failed_location = 0;
@@ -1383,7 +1384,8 @@ bool atom_cluster_noc_group_check(AtomBlockId blk_id,
                                   ClusterBlockId clb_index,
                                   int verbosity,
                                   NocGroupId& temp_cluster_noc_grp_id) {
-    const NocGroupId atom_noc_grp_id = g_vpr_ctx.cl_helper().atom_noc_grp_id[blk_id];
+    const auto& atom_noc_grp_ids = g_vpr_ctx.cl_helper().atom_noc_grp_id;
+    const NocGroupId atom_noc_grp_id = atom_noc_grp_ids.empty() ? NocGroupId::INVALID() : atom_noc_grp_ids[blk_id];
 
     if (temp_cluster_noc_grp_id == NocGroupId::INVALID()) {
         // the cluster does not have a NoC group

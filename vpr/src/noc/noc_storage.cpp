@@ -1,21 +1,29 @@
 
 #include "noc_storage.h"
+#include "vtr_assert.h"
+#include "vpr_error.h"
+
+
+#include <algorithm>
 
 NocStorage::NocStorage() {
     clear_noc();
 }
 
 // getters for the NoC
+const std::vector<NocLinkId>& NocStorage::get_noc_router_outgoing_links(NocRouterId id) const {
+    return router_outgoing_links_list[id];
+}
 
-const std::vector<NocLinkId>& NocStorage::get_noc_router_connections(NocRouterId id) const {
-    return router_link_list[id];
+const std::vector<NocLinkId>& NocStorage::get_noc_router_incoming_links(NocRouterId id) const {
+    return router_incoming_links_list[id];
 }
 
 const vtr::vector<NocRouterId, NocRouter>& NocStorage::get_noc_routers() const {
     return router_storage;
 }
 
-int NocStorage::get_number_of_noc_routers(void) const {
+int NocStorage::get_number_of_noc_routers() const {
     return router_storage.size();
 }
 
@@ -124,7 +132,8 @@ void NocStorage::add_link(NocRouterId source, NocRouterId sink, double bandwidth
 
     link_storage.emplace_back(added_link_id, source, sink, bandwidth, latency);
 
-    router_link_list[source].push_back(added_link_id);
+    router_outgoing_links_list[source].push_back(added_link_id);
+    router_incoming_links_list[sink].push_back(added_link_id);
 }
 
 void NocStorage::set_noc_link_bandwidth(double link_bandwidth) {
@@ -158,38 +167,49 @@ bool NocStorage::remove_link(NocRouterId src_router_id, NocRouterId sink_router_
     // check if the src router for the link to remove exists (within the id ranges). Otherwise, there is no point looking for the link
     if ((size_t)src_router_id < router_storage.size()) {
         // get all the outgoing links of the provided source router
-        std::vector<NocLinkId>* source_router_outgoing_links = &router_link_list[src_router_id];
+        std::vector<NocLinkId>& source_router_outgoing_links = router_outgoing_links_list[src_router_id];
+        std::vector<NocLinkId>& sink_router_incoming_links = router_incoming_links_list[sink_router_id];
 
-        // keeps track of the position of each outgoing link for the provided src router. When the id of the link to remove is found, this index can be used to remove it from the outgoing link vector.
-        int outgoing_link_index = 0;
+        const NocLinkId link_to_be_removed_id = get_single_noc_link_id(src_router_id, sink_router_id);
+        link_removed_status = (link_to_be_removed_id != NocLinkId::INVALID());
 
-        // go through each outgoing link of the source router and see if there is a link that also has the corresponding sink router.
-        // Save this link index and remove it
-        for (auto outgoing_link_id = source_router_outgoing_links->begin(); outgoing_link_id != source_router_outgoing_links->end(); outgoing_link_id++) {
-            // check to see if the current link id matches the id of the link to remove
-            if (link_storage[*outgoing_link_id].get_sink_router() == sink_router_id) {
-                // found the link we need to remove, so we delete it here
-                //change the link to be invalid
-                link_storage[*outgoing_link_id].set_source_router(NocRouterId::INVALID());
-                link_storage[*outgoing_link_id].set_sink_router(NocRouterId::INVALID());
-                link_storage[*outgoing_link_id].set_bandwidth_usage(-1);
+        auto it = std::remove(source_router_outgoing_links.begin(),
+                              source_router_outgoing_links.end(),
+                              link_to_be_removed_id);
 
-                // removing this link as an outgoing link from the source router
-                source_router_outgoing_links->erase(source_router_outgoing_links->begin() + outgoing_link_index);
-
-                // indicate that the link to remove has been found and deleted
-                link_removed_status = true;
-
-                break;
-            }
-
-            outgoing_link_index++;
+        if (it == source_router_outgoing_links.end()) {
+            VTR_LOG_WARN("No link could be found among outgoing links of source router with id(%d) "
+                "that that connects to the sink router with id (%d).\n",
+                (size_t)src_router_id,
+                (size_t)sink_router_id);
         }
+
+        source_router_outgoing_links.erase(it, source_router_outgoing_links.end());
+
+        it = std::remove(sink_router_incoming_links.begin(),
+                         sink_router_incoming_links.end(),
+                         link_to_be_removed_id);
+
+        if (it == sink_router_incoming_links.end()) {
+            VTR_LOG_WARN("No link could be found among incoming links of sink router with id(%d) "
+                "that that connects to the source router with id (%d).\n",
+                (size_t)sink_router_id,
+                (size_t)src_router_id);
+        }
+
+        sink_router_incoming_links.erase(it, sink_router_incoming_links.end());
+
+        link_storage[link_to_be_removed_id].set_source_router(NocRouterId::INVALID());
+        link_storage[link_to_be_removed_id].set_sink_router(NocRouterId::INVALID());
+        link_storage[link_to_be_removed_id].set_bandwidth_usage(-1);
+
     }
 
     // if a link was not removed then throw warning message
     if (!link_removed_status) {
-        VTR_LOG_WARN("No link could be found that has a source router with id: '%d' and sink router with id:'%d'.\n", (size_t)src_router_id, (size_t)sink_router_id);
+        VTR_LOG_WARN("No link could be found that has a source router with id: '%d' and sink router with id:'%d'.\n",
+                     (size_t)src_router_id,
+                     (size_t)sink_router_id);
     }
 
     return link_removed_status;
@@ -225,7 +245,8 @@ void NocStorage::finished_building_noc() {
 void NocStorage::clear_noc() {
     router_storage.clear();
     link_storage.clear();
-    router_link_list.clear();
+    router_outgoing_links_list.clear();
+    router_incoming_links_list.clear();
     grid_location_to_router_id.clear();
 
     built_noc = false;
@@ -253,7 +274,8 @@ int NocStorage::convert_router_id(NocRouterId id) const {
 
 void NocStorage::make_room_for_noc_router_link_list() {
     VTR_ASSERT_MSG(!built_noc, "NoC already built, cannot modify further.");
-    router_link_list.resize(router_storage.size());
+    router_outgoing_links_list.resize(router_storage.size());
+    router_incoming_links_list.resize(router_storage.size());
 }
 
 NocLinkId NocStorage::get_parallel_link(NocLinkId current_link) const {
@@ -262,12 +284,12 @@ NocLinkId NocStorage::get_parallel_link(NocLinkId current_link) const {
     NocRouterId curr_sink_router = link_storage[current_link].get_sink_router();
 
     // get the link list of the sink router
-    const std::vector<NocLinkId>* sink_router_links = &(router_link_list[curr_sink_router]);
+    const std::vector<NocLinkId>& sink_router_links = router_outgoing_links_list[curr_sink_router];
 
-    NocLinkId parallel_link = INVALID_LINK_ID;
+    NocLinkId parallel_link = NocLinkId::INVALID();
 
     // go through the links of the sink router and the link that has the current source router as the sink router of the link is the parallel link we are looking for
-    for (auto sink_router_link : *sink_router_links) {
+    for (auto sink_router_link : sink_router_links) {
         if (link_storage[sink_router_link].get_sink_router() == curr_source_router) {
             parallel_link = sink_router_link;
             break;
@@ -312,7 +334,7 @@ void NocStorage::echo_noc(char* file_name) const {
         fprintf(fp, "Equivalent Physical Tile Grid Position -> (%d,%d)\n", router.get_router_grid_position_x(), router.get_router_grid_position_y());
         fprintf(fp, "Router Connections (destination router id, link bandwidth, link latency) ->");
 
-        auto& router_connections = this->get_noc_router_connections(this->convert_router_id(router.get_router_user_id()));
+        auto& router_connections = this->get_noc_router_outgoing_links(this->convert_router_id(router.get_router_user_id()));
 
         // go through the outgoing links of the current router and print the connecting router
         for (auto router_connection : router_connections) {

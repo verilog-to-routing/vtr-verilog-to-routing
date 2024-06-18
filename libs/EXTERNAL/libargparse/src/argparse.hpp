@@ -173,7 +173,7 @@ namespace argparse {
             //Sets the hlep text
             Argument& help(std::string help_str);
 
-            //Sets the defuault value
+            //Sets the default value
             Argument& default_value(const std::string& default_val);
             Argument& default_value(const std::vector<std::string>& default_val);
             Argument& default_value(const std::initializer_list<std::string>& default_val);

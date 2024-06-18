@@ -97,3 +97,34 @@ TurnModelRouting::Direction NorthLastRouting::select_next_direction(const std::v
 
     return selected_direction;
 }
+
+bool NorthLastRouting::is_turn_legal(const std::array<std::reference_wrapper<const NocRouter>, 3>& noc_routers) const {
+    const int x1 = noc_routers[0].get().get_router_grid_position_x();
+    const int y1 = noc_routers[0].get().get_router_grid_position_y();
+
+    const int x2 = noc_routers[1].get().get_router_grid_position_x();
+    const int y2 = noc_routers[1].get().get_router_grid_position_y();
+
+    const int x3 = noc_routers[2].get().get_router_grid_position_x();
+    const int y3 = noc_routers[2].get().get_router_grid_position_y();
+
+    // check if the given routers can be traversed one after another
+    VTR_ASSERT(x2 == x1 || y2 == y1);
+    VTR_ASSERT(x3 == x2 || y3 == y2);
+
+    // going back to the first router is not allowed
+    if (x1 == x3 && y1 == y3) {
+        return false;
+    }
+
+    /* In the north-last algorithm, once the north direction is taken, no other
+     * direction can be followed. Therefore, if the first link moves upward, the
+     * second one cannot move horizontally. The case where the second link goes
+     * back to the first router was checked in the previous if statement.
+     */
+    if (y2 > y1 && x2 != x3) {
+        return false;
+    }
+
+    return true;
+}
