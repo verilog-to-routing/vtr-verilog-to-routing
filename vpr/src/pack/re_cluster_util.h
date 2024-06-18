@@ -84,6 +84,10 @@ void remove_mol_from_cluster(const t_pack_molecule* molecule,
  *                                the function does not run a detailed intra-cluster routing-based legality check.
  *                                If many molecules will be added to a cluster, this option enables use of a single
  *                                routing check on the completed cluster (vs many incremental checks).
+ * @param force_site: optional user-specified primitive site on which to place the molecule; this is passed to
+ *                    try_pack_molecule and then to get_next_primitive_site. If a force_site argument is provided,
+ *                    the molecule is either placed on the specified site or fails to add to the cluster.
+ *                    If the force_site argument is set to its default value (-1), vpr selects an available site.
  */
 bool start_new_cluster_for_mol(t_pack_molecule* molecule,
                                const t_logical_block_type_ptr& type,
@@ -97,7 +101,8 @@ bool start_new_cluster_for_mol(t_pack_molecule* molecule,
                                t_lb_router_data** router_data,
                                PartitionRegion& temp_cluster_pr,
                                NocGroupId& temp_cluster_noc_grp_id,
-                               enum e_detailed_routing_stages detailed_routing_stage = E_DETAILED_ROUTE_FOR_EACH_ATOM);
+                               enum e_detailed_routing_stages detailed_routing_stage = E_DETAILED_ROUTE_FOR_EACH_ATOM,
+                               int force_site = -1);
 
 /**
  * @brief A function that packs a molecule into an existing cluster
@@ -118,6 +123,10 @@ bool start_new_cluster_for_mol(t_pack_molecule* molecule,
  *                                If many molecules will be added to a cluster, this option enables use of a single
  *                                routing check on the completed cluster (vs many incremental checks).
  * @param enable_pin_feasibility_filter: do a pin couting based legality check (before or in place of intra-cluster routing check).
+ * @param force_site: optional user-specified primitive site on which to place the molecule; this is passed to
+ *                    try_pack_molecule and then to get_next_primitive_site. If a force_site argument is provided,
+ *                    the molecule is either placed on the specified site or fails to add to the cluster.
+ *                    If the force_site argument is set to its default value (-1), vpr selects an available site.
  */
 bool pack_mol_in_existing_cluster(t_pack_molecule* molecule,
                                   int molecule_size,
@@ -127,7 +136,8 @@ bool pack_mol_in_existing_cluster(t_pack_molecule* molecule,
                                   t_clustering_data& clustering_data,
                                   t_lb_router_data*& router_data,
                                   enum e_detailed_routing_stages detailed_routing_stage = E_DETAILED_ROUTE_FOR_EACH_ATOM,
-                                  bool enable_pin_feasibility_filter = true);
+                                  bool enable_pin_feasibility_filter = true,
+                                  int force_site = -1);
 
 /**
  * @brief A function that fix the clustered netlist if the move is performed
