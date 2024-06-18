@@ -26,7 +26,7 @@ bool PartitionRegion::empty() const {
 bool PartitionRegion::is_loc_in_part_reg(const t_pl_loc& loc) const {
     bool is_in_pr = false;
 
-    for (const auto & region : regions) {
+    for (const auto& region : regions) {
         is_in_pr = region.is_loc_in_reg(loc);
         if (is_in_pr) {
             break;
@@ -80,7 +80,7 @@ void print_partition_region(FILE* fp, const PartitionRegion& pr) {
 
     fprintf(fp, "\tNumber of regions in partition is: %d\n", pr_size);
 
-    for (const auto & region : regions) {
+    for (const auto& region : regions) {
         print_region(fp, region);
     }
 }

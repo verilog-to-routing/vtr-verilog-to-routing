@@ -176,7 +176,7 @@ void draw_noc_connection_marker(ezgl::renderer* g, const vtr::vector<NocRouterId
     ezgl::rectangle updated_connection_marker_bbox;
 
     // go through the routers and create the connection marker
-    for (const auto & router : router_list) {
+    for (const auto& router : router_list) {
         int router_grid_position_layer = router.get_router_layer_position();
 
         t_draw_layer_display marker_box_visibility = draw_state->draw_layer_display[router_grid_position_layer];

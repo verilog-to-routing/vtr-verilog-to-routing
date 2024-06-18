@@ -37,7 +37,6 @@ void Region::set_region_bounds(const RegionRectCoord& rect_coord) {
     region_bounds_ = rect_coord;
 }
 
-
 int Region::get_sub_tile() const {
     return sub_tile_;
 }
@@ -161,7 +160,6 @@ Region intersection(const Region& r1, const Region& r2) {
         intersect.set_region_bounds(region_bounds);
     }
 
-
     // subtile are not compatible
     return {};
 }
@@ -174,4 +172,3 @@ void print_region(FILE* fp, const Region& region) {
     print_rect(fp, region_bounds.get_rect());
     fprintf(fp, "\tsubtile: %d\n\n", region.get_sub_tile());
 }
-

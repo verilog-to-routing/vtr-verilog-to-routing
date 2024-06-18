@@ -24,15 +24,16 @@
  * through which the net should be routed.
  */
 class RoutingScheme {
-private:
+  private:
     std::string network_name_ = "INVALID"; // Name of the clock network (if applicable)
-    e_clock_modeling route_model_ = e_clock_modeling::ROUTED_CLOCK; 
+    e_clock_modeling route_model_ = e_clock_modeling::ROUTED_CLOCK;
 
-public:
+  public:
     // Constructors
     RoutingScheme() = default;
     RoutingScheme(const std::string network_name, const e_clock_modeling route_model)
-        : network_name_(network_name), route_model_(route_model) {}
+        : network_name_(network_name)
+        , route_model_(route_model) {}
 
     // Getters
     std::string network_name() const {
@@ -55,10 +56,9 @@ public:
     // Reset network_name_ and route_model_ to their default values
     void reset() {
         network_name_ = "INVALID";
-        route_model_ = e_clock_modeling::ROUTED_CLOCK; 
+        route_model_ = e_clock_modeling::ROUTED_CLOCK;
     }
 };
-
 
 /**
  * @brief This class is used to store information related to global route constraints from a constraints XML file.
@@ -146,8 +146,6 @@ class UserRouteConstraints {
      * @brief Get the total number of user-specified global route constraints.
      */
     int get_num_route_constraints(void) const;
-
-
 
   private:
     /**

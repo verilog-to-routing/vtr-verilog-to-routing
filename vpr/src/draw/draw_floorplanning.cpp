@@ -100,16 +100,17 @@ static void highlight_partition(ezgl::renderer* g, int partitionID, int alpha) {
     // the on screen units for ezgl to use.
 
     for (int region = 0; (size_t)region < regions.size(); region++) {
-        const auto reg_coord = regions[region].get_region_rect();
+        const vtr::Rect<int>& reg_coord = regions[region].get_region_bounds().get_rect();
+        const auto [layer_begin, layer_end] = regions[region].get_region_bounds().get_layer_range();
 
         //TODO: 0 should be replaced with the actual z value of the region when graph is 3D
-        ezgl::rectangle top_right = draw_coords->get_absolute_clb_bbox(reg_coord.layer_num,
-                                                                       reg_coord.xmax,
-                                                                       reg_coord.ymax,
+        ezgl::rectangle top_right = draw_coords->get_absolute_clb_bbox(layer_begin,
+                                                                       reg_coord.xmax(),
+                                                                       reg_coord.ymax(),
                                                                        0);
-        ezgl::rectangle bottom_left = draw_coords->get_absolute_clb_bbox(reg_coord.layer_num,
-                                                                         reg_coord.xmin,
-                                                                         reg_coord.ymin,
+        ezgl::rectangle bottom_left = draw_coords->get_absolute_clb_bbox(layer_end,
+                                                                         reg_coord.xmin(),
+                                                                         reg_coord.ymin(),
                                                                          0);
 
         ezgl::rectangle on_screen_rect(bottom_left.bottom_left(), top_right.top_right());
@@ -296,7 +297,7 @@ void highlight_selected_partition(GtkWidget* widget) {
 }
 
 //Fills in the legend
-static GtkTreeModel* create_and_fill_model(void) {
+static GtkTreeModel* create_and_fill_model() {
     auto& atom_ctx = g_vpr_ctx.atom();
     auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
     auto constraints = floorplanning_ctx.constraints;
@@ -312,7 +313,7 @@ static GtkTreeModel* create_and_fill_model(void) {
                                    + " (" + std::to_string(atoms.size()) + " primitives)");
 
         GtkTreeIter iter, child_iter;
-        gtk_tree_store_append(store, &iter, NULL);
+        gtk_tree_store_append(store, &iter, nullptr);
         gtk_tree_store_set(store, &iter,
                            COL_NAME, partition_name.c_str(),
                            -1);

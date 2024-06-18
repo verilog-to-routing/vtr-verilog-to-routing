@@ -58,20 +58,20 @@ class PartitionRegion {
 void print_partition_region(FILE* fp, const PartitionRegion& pr);
 
 /**
-* @brief Global function that returns the intersection of two PartitionRegions
-*
-*   @param cluster_pr     One of the PartitionRegions to be intersected
-*   @param new_pr         One of the PartitionRegions to be intersected
-*/
+ * @brief Global function that returns the intersection of two PartitionRegions
+ *
+ *   @param cluster_pr     One of the PartitionRegions to be intersected
+ *   @param new_pr         One of the PartitionRegions to be intersected
+ */
 PartitionRegion intersection(const PartitionRegion& cluster_pr, const PartitionRegion& new_pr);
 
 /**
-* @brief Global function that updates the PartitionRegion of a cluster with the intersection
-*        of the cluster PartitionRegion and a new PartitionRegion
-*
-*   @param cluster_pr     The cluster PartitionRegion that is to be updated
-*   @param new_pr         The new PartitionRegion that the cluster PartitionRegion will be intersected with
-*/
+ * @brief Global function that updates the PartitionRegion of a cluster with the intersection
+ *        of the cluster PartitionRegion and a new PartitionRegion
+ *
+ *   @param cluster_pr     The cluster PartitionRegion that is to be updated
+ *   @param new_pr         The new PartitionRegion that the cluster PartitionRegion will be intersected with
+ */
 void update_cluster_part_reg(PartitionRegion& cluster_pr, const PartitionRegion& new_pr);
 
 #endif /* PARTITION_REGIONS_H */

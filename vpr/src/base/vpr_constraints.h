@@ -4,7 +4,6 @@
 #include "user_place_constraints.h"
 #include "user_route_constraints.h"
 
-
 /**
  * @brief This file defines the VprConstraints class, which encapsulates user-specified placement and routing constraints
  *      
@@ -26,7 +25,6 @@
  */
 class VprConstraints {
   public:
-
     /**
      * @brief Get a mutable reference to the UserPlaceConstraints instance.
      */
@@ -48,10 +46,8 @@ class VprConstraints {
     const UserRouteConstraints& route_constraints() const;
 
   private:
-   
     UserRouteConstraints route_constraints_;
     UserPlaceConstraints placement_constraints_;
-
 };
 
 #endif /* VPR_CONSTRAINTS_H */
