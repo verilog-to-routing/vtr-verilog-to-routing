@@ -72,9 +72,7 @@ class VprConstraintsBase {
      * </xs:complexType>
      */
     virtual inline int get_add_region_layer_high(typename ContextTypes::AddRegionReadContext& ctx) = 0;
-    virtual inline void set_add_region_layer_high(int layer_high, typename ContextTypes::AddRegionWriteContext& ctx) = 0;
     virtual inline int get_add_region_layer_low(typename ContextTypes::AddRegionReadContext& ctx) = 0;
-    virtual inline void set_add_region_layer_low(int layer_low, typename ContextTypes::AddRegionWriteContext& ctx) = 0;
     virtual inline int get_add_region_subtile(typename ContextTypes::AddRegionReadContext& ctx) = 0;
     virtual inline void set_add_region_subtile(int subtile, typename ContextTypes::AddRegionWriteContext& ctx) = 0;
     virtual inline int get_add_region_x_high(typename ContextTypes::AddRegionReadContext& ctx) = 0;

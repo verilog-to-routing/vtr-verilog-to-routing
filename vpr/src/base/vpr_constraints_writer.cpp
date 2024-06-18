@@ -66,11 +66,8 @@ void setup_vpr_floorplan_constraints_one_loc(VprConstraints& constraints, int ex
 
         const auto& loc = place_ctx.block_locs[blk_id].loc;
 
-        reg.set_region_rect({loc.x - expand,
-                             loc.y - expand,
-                             loc.x + expand,
-                             loc.y + expand,
-                             loc.layer});
+        reg.set_region_bounds({loc.x - expand, loc.y - expand,
+                               loc.x + expand, loc.y + expand, loc.layer});
         if (subtile) {
             int st = loc.sub_tile;
             reg.set_sub_tile(st);
@@ -94,6 +91,8 @@ void setup_vpr_floorplan_constraints_cutpoints(VprConstraints& constraints, int 
     auto& place_ctx = g_vpr_ctx.placement();
     auto& device_ctx = g_vpr_ctx.device();
 
+    const int n_layers = device_ctx.grid.get_num_layers();
+
     //calculate the cutpoint values according to the grid size
     //load two arrays - one for horizontal cutpoints and one for vertical
 
@@ -102,7 +101,7 @@ void setup_vpr_floorplan_constraints_cutpoints(VprConstraints& constraints, int 
     std::vector<int> vertical_cuts;
 
     // This function has not been tested for multi-layer grids
-    VTR_ASSERT(device_ctx.grid.get_num_layers() == 1);
+    VTR_ASSERT(n_layers == 1);
     int horizontal_interval = device_ctx.grid.width() / horizontal_cutpoints;
     VTR_LOG("Device grid width is %d, horizontal interval is %d\n", device_ctx.grid.width(), horizontal_interval);
 
@@ -144,7 +143,7 @@ void setup_vpr_floorplan_constraints_cutpoints(VprConstraints& constraints, int 
 
             Region reg;
             // This function has not been tested for multi-layer grids. An assertion is used earlier to make sure that the grid has only one layer
-            reg.set_region_rect({xmin, ymin, xmax, ymax, 0});
+            reg.set_region_bounds({xmin, ymin, xmax, ymax, 0, n_layers-1});
             std::vector<AtomBlockId> atoms;
 
             region_atoms.insert({reg, atoms});
@@ -183,7 +182,7 @@ void setup_vpr_floorplan_constraints_cutpoints(VprConstraints& constraints, int 
 
         Region current_reg;
         // This function has not been tested for multi-layer grids. An assertion is used earlier to make sure that the grid has only one layer
-        current_reg.set_region_rect({xminimum, yminimum, xmaximum, ymaximum, 0});
+        current_reg.set_region_bounds({xminimum, yminimum, xmaximum, ymaximum, 0, n_layers-1});
 
         auto got = region_atoms.find(current_reg);
 
@@ -195,16 +194,15 @@ void setup_vpr_floorplan_constraints_cutpoints(VprConstraints& constraints, int 
     }
 
     int num_partitions = 0;
-    for (const auto& region : region_atoms) {
+    for (const auto& [region, atoms] : region_atoms) {
         Partition part;
         PartitionId partid(num_partitions);
         std::string part_name = "Part" + std::to_string(num_partitions);
-        const auto reg_coord = region.first.get_region_rect();
-        create_partition(part, part_name,
-                         {reg_coord.xmin, reg_coord.ymin, reg_coord.xmax, reg_coord.ymax, reg_coord.layer_num});
+        const auto& reg_bounds = region.get_region_bounds();
+        create_partition(part, part_name, reg_bounds);
         constraints.mutable_place_constraints().add_partition(part);
 
-        for (auto blk_id : region.second) {
+        for (auto blk_id : atoms) {
             constraints.mutable_place_constraints().add_constrained_atom(blk_id, partid);
         }
 
@@ -216,7 +214,7 @@ void create_partition(Partition& part, const std::string& part_name, const Regio
     part.set_name(part_name);
     PartitionRegion part_pr;
     Region part_region;
-    part_region.set_region_rect(region_cord);
+    part_region.set_region_bounds(region_cord);
     std::vector<Region> part_regions;
     part_regions.push_back(part_region);
     part_pr.set_partition_region(part_regions);
