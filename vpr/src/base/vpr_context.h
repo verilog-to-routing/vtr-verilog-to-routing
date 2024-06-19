@@ -521,13 +521,13 @@ struct FloorplanningContext : public Context {
     vtr::vector<ClusterBlockId, PartitionRegion> cluster_constraints;
 
     /**
-     * @brief Floorplanning constraints specified in the compressed grid coordinate system.
+     * @brief Floorplanning constraints in the compressed grid coordinate system.
      *
-     * Each clustered block has a logical type, and each logical type has a corresponding compressed grid.
-     * Compressed floorplanning constraints are computed by translating grid location of floorplanning
-     * regions to compressed locations in the corresponding compressed grid. To ensure this translation
-     * does not enlarge the floorplanning regions, the bottom left corner of the region is rounded up
-     * in compresses location approximation, while the top right corner is rounded down.
+     * Each clustered block has a logical type with a corresponding compressed grid.
+     * Compressed floorplanning constraints are calculated by translating the grid locations
+     * of floorplanning regions to compressed grid locations. To ensure regions do not enlarge:
+     * - The bottom left corner is rounded up to the nearest compressed location.
+     * - The top right corner is rounded down to the nearest compressed location.
      */
     vtr::vector<ClusterBlockId, PartitionRegion> compressed_cluster_constraints;
 
