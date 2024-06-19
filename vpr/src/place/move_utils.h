@@ -336,8 +336,7 @@ t_bb get_compressed_grid_bounded_search_range(const t_compressed_block_grid& com
  * The intersection takes place in the layer (die) specified by layer_num.
  *
  */
-bool intersect_range_limit_with_floorplan_constraints(t_logical_block_type_ptr type,
-                                                      ClusterBlockId b_from,
+bool intersect_range_limit_with_floorplan_constraints(ClusterBlockId b_from,
                                                       t_bb& search_range,
                                                       int& delta_cx,
                                                       int layer_num);
@@ -345,7 +344,7 @@ bool intersect_range_limit_with_floorplan_constraints(t_logical_block_type_ptr t
 std::string e_move_result_to_string(e_move_result move_outcome);
 
 /**
- * @brif Iterate over all layers that have a physical tile at the x-y location specified by "loc" that can accomodate "logical_block".
+ * @brif Iterate over all layers that have a physical tile at the x-y location specified by "loc" that can accommodate "logical_block".
  * If the location in the layer specified by "layer_num" is empty, return that layer. Otherwise,
  * return a layer that is not occupied at that location. If there isn't any, again, return the layer of loc.
  *

@@ -118,7 +118,7 @@ class DeviceGrid {
      * @note which can be used for indexing in the second dimension, allowing
      * @note traditional 2-d indexing to be used
      */
-    vtr::NdMatrix<t_grid_tile, 3> grid_; //This stores the grid of complex blocks. It is a a 3D matrix: [0..num_layers-1][0..grid.width()-1][0..grid_height()-1]
+    vtr::NdMatrix<t_grid_tile, 3> grid_; //This stores the grid of complex blocks. It is a 3D matrix: [0..num_layers-1][0..grid.width()-1][0..grid_height()-1]
 
     ///@brief instance_counts_ stores the number of each tile type on each layer. It is initialized in count_instances().
     std::vector<std::map<t_physical_tile_type_ptr, size_t>> instance_counts_; /* [layer_num][physical_tile_type_ptr] */

@@ -37,8 +37,8 @@ bool move_mol_to_new_cluster(t_pack_molecule* molecule,
     }
 
     //remove the molecule from its current cluster
-    std::unordered_set<AtomBlockId>* old_clb_atoms = cluster_to_atoms(old_clb);
-    if (old_clb_atoms->size() == 1) {
+    std::unordered_set<AtomBlockId>& old_clb_atoms = cluster_to_mutable_atoms(old_clb);
+    if (old_clb_atoms.size() == 1) {
         VTR_LOGV(verbosity > 4, "Atom: %zu move failed. This is the last atom in its cluster.\n");
         return false;
     }
@@ -73,14 +73,6 @@ bool move_mol_to_new_cluster(t_pack_molecule* molecule,
     //Commit or revert the move
     if (is_created) {
         commit_mol_move(old_clb, new_clb, during_packing, true);
-        // Update the clb-->atoms lookup table
-        helper_ctx.atoms_lookup.resize(helper_ctx.total_clb_num);
-        for (int i_atom = 0; i_atom < molecule_size; ++i_atom) {
-            if (molecule->atom_block_ids[i_atom]) {
-                helper_ctx.atoms_lookup[new_clb].insert(molecule->atom_block_ids[i_atom]);
-            }
-        }
-
         VTR_LOGV(verbosity > 4, "Atom:%zu is moved to a new cluster\n", molecule->atom_block_ids[molecule->root]);
     } else {
         revert_mol_move(old_clb, molecule, old_router_data, during_packing, clustering_data);
@@ -109,17 +101,17 @@ bool move_mol_to_existing_cluster(t_pack_molecule* molecule,
     AtomBlockId root_atom_id = molecule->atom_block_ids[molecule->root];
     int molecule_size = get_array_size_of_molecule(molecule);
     t_lb_router_data* old_router_data = nullptr;
-    std::unordered_set<AtomBlockId>* new_clb_atoms = cluster_to_atoms(new_clb);
+    std::unordered_set<AtomBlockId>& new_clb_atoms = cluster_to_mutable_atoms(new_clb);
     ClusterBlockId old_clb = atom_to_cluster(root_atom_id);
 
-    //check old and new clusters compitability
-    bool is_compitable = check_type_and_mode_compitability(old_clb, new_clb, verbosity);
-    if (!is_compitable)
+    //check old and new clusters compatibility
+    bool is_compatible = check_type_and_mode_compatibility(old_clb, new_clb, verbosity);
+    if (!is_compatible)
         return false;
 
     //remove the molecule from its current cluster
-    std::unordered_set<AtomBlockId>* old_clb_atoms = cluster_to_atoms(old_clb);
-    if (old_clb_atoms->size() == 1) {
+    std::unordered_set<AtomBlockId>& old_clb_atoms = cluster_to_mutable_atoms(old_clb);
+    if (old_clb_atoms.size() == 1) {
         VTR_LOGV(verbosity > 4, "Atom: %zu move failed. This is the last atom in its cluster.\n");
         return false;
     }
@@ -189,7 +181,7 @@ bool swap_two_molecules(t_pack_molecule* molecule_1,
         return false;
     }
     //Check that the old and new clusters are of the same type
-    bool is_compitable = check_type_and_mode_compitability(clb_1, clb_2, verbosity);
+    bool is_compitable = check_type_and_mode_compatibility(clb_1, clb_2, verbosity);
     if (!is_compitable)
         return false;
 
@@ -197,11 +189,13 @@ bool swap_two_molecules(t_pack_molecule* molecule_1,
     t_lb_router_data* old_2_router_data = nullptr;
 
     //save the atoms of the 2 clusters
-    std::unordered_set<AtomBlockId>* clb_1_atoms = cluster_to_atoms(clb_1);
-    std::unordered_set<AtomBlockId>* clb_2_atoms = cluster_to_atoms(clb_2);
+    std::unordered_set<AtomBlockId>& clb_1_atoms = cluster_to_mutable_atoms(clb_1);
+    std::unordered_set<AtomBlockId>& clb_2_atoms = cluster_to_mutable_atoms(clb_2);
 
-    if (clb_1_atoms->size() == 1 || clb_2_atoms->size() == 1) {
-        VTR_LOGV(verbosity > 4, "Atom: %zu, %zu swap failed. This is the last atom in its cluster.\n", molecule_1->atom_block_ids[molecule_1->root], molecule_2->atom_block_ids[molecule_2->root]);
+    if (clb_1_atoms.size() == 1 || clb_2_atoms.size() == 1) {
+        VTR_LOGV(verbosity > 4, "Atom: %zu, %zu swap failed. This is the last atom in its cluster.\n",
+                 molecule_1->atom_block_ids[molecule_1->root],
+                 molecule_2->atom_block_ids[molecule_2->root]);
         return false;
     }
 
