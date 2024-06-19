@@ -13,7 +13,15 @@
  *******************************************/
 ezgl::color t_draw_state::block_color(ClusterBlockId blk) const {
     if (use_default_block_color_[blk]) {
-        t_physical_tile_type_ptr tile_type = get_physical_tile_type(blk);
+        t_physical_tile_type_ptr tile_type = nullptr;
+        auto& cluster_ctx = g_vpr_ctx.clustering();
+        auto& place_ctx = g_vpr_ctx.placement();
+        if (place_ctx.block_locs.empty()) { //No placement, pick best match
+            tile_type = pick_physical_type(cluster_ctx.clb_nlist.block_type(blk));
+        } else { // Have placement, select physical tile implementing blk
+            tile_type = physical_tile_type(blk);
+        }
+        VTR_ASSERT(tile_type != nullptr);
         return get_block_type_color(tile_type);
     } else {
         return block_color_[blk];

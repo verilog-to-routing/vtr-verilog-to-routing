@@ -579,35 +579,18 @@ struct NocContext : public Context {
  * @brief State relating to server mode
  *
  * This should contain only data structures that
- * related to server state.
+ * relate to the vpr server state.
  */
-class ServerContext : public Context {
-  public:
-    const server::GateIO& gateIO() const { return gate_io_; }
-    server::GateIO& mutable_gateIO() { return gate_io_; }
+struct ServerContext : public Context {
+    /**
+     * @brief \ref server::GateIO.
+     */
+    server::GateIO gate_io;
 
-    const server::TaskResolver& task_resolver() const { return task_resolver_; }
-    server::TaskResolver& mutable_task_resolver() { return task_resolver_; }
-
-    void set_crit_paths(std::vector<tatum::TimingPath>&& crit_paths) { crit_paths_ = std::move(crit_paths); }
-    const std::vector<tatum::TimingPath>& crit_paths() const { return crit_paths_; }
-
-    void clear_crit_path_elements() { crit_path_element_indexes_.clear(); }
-    void set_crit_path_elements(const std::map<std::size_t, std::set<std::size_t>>& crit_path_element_indexes) { crit_path_element_indexes_ = crit_path_element_indexes; }
-    std::map<std::size_t, std::set<std::size_t>> crit_path_element_indexes() const { return crit_path_element_indexes_; }
-
-    void set_draw_crit_path_contour(bool draw_crit_path_contour) { draw_crit_path_contour_ = draw_crit_path_contour; }
-    bool draw_crit_path_contour() const { return draw_crit_path_contour_; }
-
-    void set_timing_info(const std::shared_ptr<SetupHoldTimingInfo>& timing_info) { timing_info_ = timing_info; }
-    const std::shared_ptr<SetupHoldTimingInfo>& timing_info() const { return timing_info_; }
-
-    void set_routing_delay_calc(const std::shared_ptr<PostClusterDelayCalculator>& routing_delay_calc) { routing_delay_calc_ = routing_delay_calc; }
-    const std::shared_ptr<PostClusterDelayCalculator>& routing_delay_calc() const { return routing_delay_calc_; }
-
-  private:
-    server::GateIO gate_io_;
-    server::TaskResolver task_resolver_;
+    /**
+     * @brief \ref server::TaskResolver.
+     */
+    server::TaskResolver task_resolver;
 
     /**
      * @brief Stores the critical path items.
@@ -616,7 +599,7 @@ class ServerContext : public Context {
      * Once calculated upon request, it provides the value for a specific critical path
      * to be rendered upon user request.
      */
-    std::vector<tatum::TimingPath> crit_paths_;
+    std::vector<tatum::TimingPath> crit_paths;
 
     /**
      * @brief Stores the selected critical path elements.
@@ -624,24 +607,25 @@ class ServerContext : public Context {
      * This value is used to render the selected critical path elements upon client request.
      * The std::map key plays role of path index, where the element indexes are stored as std::set.
      */
-    std::map<std::size_t, std::set<std::size_t>> crit_path_element_indexes_;
+    std::map<std::size_t, std::set<std::size_t>> crit_path_element_indexes;
 
     /**
      * @brief Stores the flag indicating whether to draw the critical path contour.
      *
-     * If the flag is set to true, the non-selected critical path elements will be drawn as a contour, while selected elements will be drawn as usual.
+     * If True, the entire path will be rendered with some level of transparency, regardless of the selection of path elements. However, selected path elements will be drawn in full color.
+     * This feature is helpful in visual debugging, to see how the separate path elements are mapped into the whole path.
      */
-    bool draw_crit_path_contour_ = false;
+    bool draw_crit_path_contour = false;
 
     /**
      * @brief Reference to the SetupHoldTimingInfo calculated during the routing stage.
      */
-    std::shared_ptr<SetupHoldTimingInfo> timing_info_;
+    std::shared_ptr<SetupHoldTimingInfo> timing_info;
 
     /**
      * @brief Reference to the PostClusterDelayCalculator calculated during the routing stage.
      */
-    std::shared_ptr<PostClusterDelayCalculator> routing_delay_calc_;
+    std::shared_ptr<PostClusterDelayCalculator> routing_delay_calc;
 };
 #endif /* NO_SERVER */
 

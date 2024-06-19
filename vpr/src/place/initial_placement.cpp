@@ -12,7 +12,7 @@
 #include "move_utils.h"
 #include "region.h"
 #include "directed_moves_util.h"
-
+#include "vpr_types.h"
 #include "echo_files.h"
 
 #include <ctime>
@@ -22,9 +22,6 @@
 #ifdef VERBOSE
 void print_clb_placement(const char* fname);
 #endif
-
-/// @brief Sentinel value for indicating that a block does not have a valid x location, used to check whether a block has been placed
-static constexpr int INVALID_X = -1;
 
 // Number of iterations that initial placement tries to place all blocks before throwing an error
 static constexpr int MAX_INIT_PLACE_ATTEMPTS = 2;
@@ -509,7 +506,7 @@ static void update_blk_type_first_loc(int blk_type_column_index,
                                       t_logical_block_type_ptr block_type,
                                       const t_pl_macro& pl_macro, std::vector<t_grid_empty_locs_block_type>* blk_types_empty_locs_in_grid) {
     //check if dense placement could place macro successfully
-    if (blk_type_column_index == -1 || blk_types_empty_locs_in_grid->size() <= abs(blk_type_column_index)) {
+    if (blk_type_column_index == -1 || blk_types_empty_locs_in_grid->size() <= (size_t)abs(blk_type_column_index)) {
         return;
     }
 

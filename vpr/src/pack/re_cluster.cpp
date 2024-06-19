@@ -73,14 +73,6 @@ bool move_mol_to_new_cluster(t_pack_molecule* molecule,
     //Commit or revert the move
     if (is_created) {
         commit_mol_move(old_clb, new_clb, during_packing, true);
-        // Update the clb-->atoms lookup table
-        helper_ctx.atoms_lookup.resize(helper_ctx.total_clb_num);
-        for (int i_atom = 0; i_atom < molecule_size; ++i_atom) {
-            if (molecule->atom_block_ids[i_atom]) {
-                helper_ctx.atoms_lookup[new_clb].insert(molecule->atom_block_ids[i_atom]);
-            }
-        }
-
         VTR_LOGV(verbosity > 4, "Atom:%zu is moved to a new cluster\n", molecule->atom_block_ids[molecule->root]);
     } else {
         revert_mol_move(old_clb, molecule, old_router_data, during_packing, clustering_data);

@@ -111,6 +111,10 @@ void draw_crit_path(ezgl::renderer* g);
  * 
  * This function draws critical path elements based on the provided timing paths
  * and indexes map. It is primarily used in server mode, where items are drawn upon request.
+ *
+ * @param paths The vector of TimingPath objects representing the critical paths.
+ * @param indexes The map of sets, where the map keys are path indices in std::vector<tatum::TimingPath>, and each set contains the indices of the data_arrival_path elements ( @ref tatum::TimingPath ) to draw.
+ * @param g Pointer to the ezgl::renderer object on which the elements will be drawn.
  */
 void draw_crit_path_elements(const std::vector<tatum::TimingPath>& paths, const std::map<std::size_t, std::set<std::size_t>>& indexes, bool draw_crit_path_contour, ezgl::renderer* g);
 

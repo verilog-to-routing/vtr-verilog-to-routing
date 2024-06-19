@@ -12,6 +12,7 @@ struct t_options {
     argparse::ArgValue<std::string> ArchFile;
     argparse::ArgValue<std::string> CircuitName;
     argparse::ArgValue<std::string> NetFile;
+    argparse::ArgValue<std::string> FlatPlaceFile;
     argparse::ArgValue<std::string> PlaceFile;
     argparse::ArgValue<std::string> RouteFile;
     argparse::ArgValue<std::string> CircuitFile;
@@ -30,6 +31,8 @@ struct t_options {
     argparse::ArgValue<std::string> write_initial_place_file;
     argparse::ArgValue<std::string> read_vpr_constraints_file;
     argparse::ArgValue<std::string> write_vpr_constraints_file;
+    argparse::ArgValue<std::string> write_constraints_file;
+    argparse::ArgValue<std::string> write_flat_place_file;
 
     argparse::ArgValue<std::string> write_placement_delay_lookup;
     argparse::ArgValue<std::string> read_placement_delay_lookup;
@@ -44,6 +47,7 @@ struct t_options {
 
     /* Stage Options */
     argparse::ArgValue<bool> do_packing;
+    argparse::ArgValue<bool> do_legalize;
     argparse::ArgValue<bool> do_placement;
     argparse::ArgValue<bool> do_routing;
     argparse::ArgValue<bool> do_analysis;
@@ -160,8 +164,13 @@ struct t_options {
     argparse::ArgValue<double> noc_latency_constraints_weighting;
     argparse::ArgValue<double> noc_latency_weighting;
     argparse::ArgValue<double> noc_congestion_weighting;
-    argparse::ArgValue<double> noc_swap_percentage;
     argparse::ArgValue<double> noc_centroid_weight;
+    argparse::ArgValue<double> noc_swap_percentage;
+    argparse::ArgValue<int> noc_sat_routing_bandwidth_resolution;
+    argparse::ArgValue<int> noc_sat_routing_latency_overrun_weighting_factor;
+    argparse::ArgValue<int> noc_sat_routing_congestion_weighting_factor;
+    argparse::ArgValue<int> noc_sat_routing_num_workers;
+    argparse::ArgValue<bool> noc_sat_routing_log_search_progress;
     argparse::ArgValue<std::string> noc_placement_file_name;
 
     /* Timing-driven placement options only */

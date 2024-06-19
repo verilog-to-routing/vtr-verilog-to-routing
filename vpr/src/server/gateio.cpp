@@ -134,10 +134,10 @@ GateIO::ActivityStatus GateIO::handle_telegrams(std::vector<comm::TelegramFrameP
     telegram_buff.take_telegram_frames(telegram_frames);
     for (const comm::TelegramFramePtr& telegram_frame: telegram_frames) {
         // process received data
-        std::string message{telegram_frame->data};
+        std::string message{telegram_frame->body};
         bool is_echo_telegram = false;
-        if ((message.size() == comm::ECHO_DATA.size()) && (message == comm::ECHO_DATA)) {
-            m_logger.queue(LogLevel::Detail, "received", comm::ECHO_DATA);
+        if ((message.size() == comm::ECHO_TELEGRAM_BODY.size()) && (message == comm::ECHO_TELEGRAM_BODY)) {
+            m_logger.queue(LogLevel::Detail, "received", comm::ECHO_TELEGRAM_BODY);
             is_echo_telegram = true;
             status = ActivityStatus::CLIENT_ACTIVITY;
         }
@@ -148,7 +148,7 @@ GateIO::ActivityStatus GateIO::handle_telegrams(std::vector<comm::TelegramFrameP
             std::optional<int> cmd_opt = comm::TelegramParser::try_extract_field_cmd(message);
             std::optional<std::string> options_opt = comm::TelegramParser::try_extract_field_options(message);
             if (job_id_opt && cmd_opt && options_opt) {
-                TaskPtr task = std::make_unique<Task>(job_id_opt.value(), cmd_opt.value(), options_opt.value());
+                TaskPtr task = std::make_unique<Task>(job_id_opt.value(), static_cast<comm::CMD>(cmd_opt.value()), options_opt.value());
                 const comm::TelegramHeader& header = telegram_frame->header;
                 m_logger.queue(LogLevel::Info, "received:", header.info(), task->info(/*skipDuration*/true));
                 std::unique_lock<std::mutex> lock(m_tasks_mutex);
@@ -167,17 +167,17 @@ GateIO::ActivityStatus GateIO::handle_client_alive_tracker(sockpp::tcp6_socket& 
     if (client_alive_tracker_ptr) {
         /// handle sending echo to client
         if (client_alive_tracker_ptr->is_time_to_sent_echo()) {
-            comm::TelegramHeader echo_header = comm::TelegramHeader::construct_from_data(comm::ECHO_DATA);
+            comm::TelegramHeader echo_header = comm::TelegramHeader::construct_from_body(comm::ECHO_TELEGRAM_BODY);
             std::string message{echo_header.buffer()};
-            message.append(comm::ECHO_DATA);
+            message.append(comm::ECHO_TELEGRAM_BODY);
             try {
                 std::size_t bytes_sent = client.write(message);
                 if (bytes_sent == message.size()) {
-                    m_logger.queue(LogLevel::Detail, "sent", comm::ECHO_DATA);
+                    m_logger.queue(LogLevel::Detail, "sent", comm::ECHO_TELEGRAM_BODY);
                     client_alive_tracker_ptr->on_echo_sent();
                 }
             } catch(...) {
-                m_logger.queue(LogLevel::Debug, "fail to sent", comm::ECHO_DATA);
+                m_logger.queue(LogLevel::Debug, "fail to sent", comm::ECHO_TELEGRAM_BODY);
                 status = ActivityStatus::COMMUNICATION_PROBLEM;
             }
         }

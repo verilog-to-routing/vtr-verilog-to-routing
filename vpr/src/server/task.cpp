@@ -10,7 +10,7 @@
 
 namespace server {
 
-Task::Task(int jobId, int cmd, const std::string& options)
+Task::Task(int jobId, comm::CMD cmd, const std::string& options)
 : m_job_id(jobId), m_cmd(cmd), m_options(options) {
     m_creation_time = std::chrono::high_resolution_clock::now();
 }
@@ -27,25 +27,25 @@ void Task::chop_num_sent_bytes_from_response_buffer(std::size_t bytes_sent_num) 
     }
 }
 
-bool Task::options_match(const class std::unique_ptr<Task>& other) {
+bool Task::options_match(const std::unique_ptr<Task>& other) {
     if (other->options().size() != m_options.size()) {
         return false;
     }
     return other->options() == m_options;
 }
 
-void Task::fail(const std::string& error) {
+void Task::set_fail(const std::string& error) {
     m_is_finished = true;
     m_error = error;
     bake_response();
 }
 
-void Task::success() {
+void Task::set_success() {
     m_is_finished = true;
     bake_response();
 }
 
-void Task::success(std::string&& result) {
+void Task::set_success(std::string&& result) {
     m_result = std::move(result);
     m_is_finished = true;
     bake_response();
@@ -55,7 +55,7 @@ std::string Task::info(bool skip_duration) const {
     std::stringstream ss;
     ss << "task["
        << "id="   << std::to_string(m_job_id)
-       << ",cmd=" << std::to_string(m_cmd);
+       << ",cmd=" << std::to_string(static_cast<int>(m_cmd));
     if (!skip_duration) {
         ss << ",exists=" << get_pretty_duration_str_from_ms(time_ms_elapsed());
     }
@@ -73,7 +73,7 @@ void Task::bake_response() {
     ss << "{";
 
     ss << "\"" << comm::KEY_JOB_ID << "\":\"" << m_job_id << "\",";
-    ss << "\"" << comm::KEY_CMD << "\":\"" << m_cmd << "\",";
+    ss << "\"" << comm::KEY_CMD << "\":\"" << static_cast<int>(m_cmd) << "\",";
     ss << "\"" << comm::KEY_OPTIONS << "\":\"" << m_options << "\",";
     if (has_error()) {
         ss << "\"" << comm::KEY_DATA << "\":\"" << m_error << "\",";
@@ -100,7 +100,7 @@ void Task::bake_response() {
     }
 
     std::string body{std::move(body_opt.value())};
-    m_telegram_header = comm::TelegramHeader::construct_from_data(body, compressor_id);
+    m_telegram_header = comm::TelegramHeader::construct_from_body(body, compressor_id);
 
     m_response_buffer.append(m_telegram_header.buffer().begin(), m_telegram_header.buffer().end());
     m_response_buffer.append(body);
