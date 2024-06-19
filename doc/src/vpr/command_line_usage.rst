@@ -98,7 +98,8 @@ VPR runs all stages of (pack, place, route, and analysis) if none of :option:`--
 .. option:: --legalize
 
     Reconstruct a clustering and placement solution from an input flat placement file.
-    Use of this option supercedes option:: --pack.
+    Must be used with :option:`--flat_place_file <file>'.
+    Use of this option supercedes option::`--pack`.
 
     **Default:** ``off``
 
@@ -1867,7 +1868,7 @@ Legalizer Options
 ^^^^^^^^^^^^^^^^^^^^^^^^
 The following options are available when VPR's legalizer is invoked to reconstruct a clustering and placement solution from a flat placement file (see :ref:`Flat Placement File Format<vpr_flat_placement_file>`).
 
-.. note:: Use :option:`vpr --legalize` and `vpr --flat_place_file <file>` to invoke the legalizer and specify an input flat placement file.
+.. note:: Use :option:`vpr --legalize` and :option:`vpr --flat_place_file <file>` to invoke the legalizer and specify an input flat placement file.
 
 .. option:: --write_fixed_clusters <file>
 
