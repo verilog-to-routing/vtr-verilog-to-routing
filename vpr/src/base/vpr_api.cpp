@@ -413,7 +413,6 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
             std::cout << "failed placement" << std::endl;
             return false; //Unimplementable
         }
-        print_flat_placement(vpr_setup.FileNameOpts.write_flat_place_file.c_str());
     }
     bool is_flat = vpr_setup.RouterOpts.flat_routing;
     const Netlist<>& router_net_list = is_flat ? (const Netlist<>&)g_vpr_ctx.atom().nlist : (const Netlist<>&)g_vpr_ctx.clustering().clb_nlist;
