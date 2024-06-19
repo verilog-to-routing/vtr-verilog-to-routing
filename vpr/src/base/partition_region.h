@@ -74,4 +74,6 @@ PartitionRegion intersection(const PartitionRegion& cluster_pr, const PartitionR
  */
 void update_cluster_part_reg(PartitionRegion& cluster_pr, const PartitionRegion& new_pr);
 
+const PartitionRegion& get_device_partition_region();
+
 #endif /* PARTITION_REGIONS_H */

@@ -1,5 +1,7 @@
 #include "partition_region.h"
+
 #include "region.h"
+#include "globals.h"
 
 #include <utility>
 
@@ -76,11 +78,38 @@ void update_cluster_part_reg(PartitionRegion& cluster_pr, const PartitionRegion&
 void print_partition_region(FILE* fp, const PartitionRegion& pr) {
     const std::vector<Region>& regions = pr.get_regions();
 
-    int pr_size = regions.size();
-
-    fprintf(fp, "\tNumber of regions in partition is: %d\n", pr_size);
+    fprintf(fp, "\tNumber of regions in partition is: %d\n", (int)regions.size());
 
     for (const auto& region : regions) {
         print_region(fp, region);
     }
+}
+
+const PartitionRegion& get_device_partition_region() {
+    static PartitionRegion device_pr;
+
+    const auto& grid_ctx = g_vpr_ctx.device().grid;
+
+    if (grid_ctx.grid_size() == 0) {
+        // TODO: error message
+    }
+
+    const int n_layers = grid_ctx.get_num_layers();
+    const int width = (int)grid_ctx.width();
+    const int height = (int)grid_ctx.height();
+
+    if (device_pr.empty()) {
+        Region device_region;
+        device_region.set_region_bounds({0, 0, width - 1, height - 1, 0, n_layers - 1});
+        device_region.set_sub_tile(NO_SUBTILE);
+        device_pr.add_to_part_region(device_region);
+    }
+
+    VTR_ASSERT_SAFE(device_pr.get_regions().size() == 1);
+    const auto [xmin, ymin, xmax, ymax] = device_pr.get_regions()[0].get_region_bounds().get_rect().coordinates();
+    VTR_ASSERT_SAFE(xmin == 0 && ymin == 0 && xmax == width -1 && ymax == height - 1);
+    const auto [layer_low, layer_high] = device_pr.get_regions()[0].get_region_bounds().get_layer_range();
+    VTR_ASSERT_SAFE(layer_low == 0 && layer_high == n_layers - 1);
+
+    return device_pr;
 }
