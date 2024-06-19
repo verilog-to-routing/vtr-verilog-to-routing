@@ -747,12 +747,17 @@ inferring mode and intra-cluster routing information and correcting legality vio
 
 Each line in the flat placement file corresponds to a netlist primitive and has the following format::
 
-    primitive_name    X    Y    Subtile    Site   # optional extra info
+    primitive_name    X    Y    subtile    site   # optional extra info
 
 The ``primitive_name`` is the netlist name of the primitive (see :ref:`VPR netlist naming conventions<vpr_blif_naming_convention_primitives>`).
-``X``, ``Y``, and ``Subtile`` describe the placement coordinates of the complex block within which the primitive should be placed (see :ref:`VPR Placement File Format<vpr_place_file>`).
-``Site`` is the ``flat site index`` on which the primitive should be placed. The flat site index is the index of a primitive site within its primitive type within its complex block type. Values are in [0...total_primitive_count-1], e.g. if there are 10 ALMs per cluster, 2 FFS and 2 LUTs per ALM, then flat site indices for FFs would run from 0 to 19, and flat site indices for LUTs would run from 0 to 19.
+
+``X``, ``Y``, and ``subtile`` describe the placement coordinates of the complex block within which the primitive should be placed (see :ref:`VPR Placement File Format<vpr_place_file>`).
+
+The``site`` specifies the ``flat site index`` of the primitive site on which the primitive should be placed, i.e. the index of the primitive type site within its complex block type. For example, if there are 10 ALMs per cluster, 2 FFs and 2 LUTs per ALM, then flat site indices for FFs and LUTs would each run from 0 to 19.
+
 Optional information, e.g. cluster index or primitive type name, may be included after the `Site`; the legalizer ignores this information.
+
+.. note:: The primitives in a flat placement file can be listed in any order.
 
 Example flat placement file entries are shown below:
 
@@ -791,14 +796,14 @@ Example flat placement file entries are shown below:
    hh_core:hh_core_0|Add0~74       53   24     0       18     # 86 lcell_comb
    hh_core:hh_core_0|Add0~78       53   24     0       19     # 86 lcell_comb
 
-For complex pack molecules such as carry chains (see :ref: `Pack Patterns in <arch_complex_blocks>`), it is only necessary to include the root primitive in the flat placement file; the legalizer ignores non-root primitives and places all primitives in each pack molecule based on the root primitive entry. In the example file above, all lcell_comb instances shown are part of a carry chain segment, and so all except the root primitive are ignored.
+For complex pack molecules such as carry chains (see :ref:`Pack Patterns in <arch_complex_blocks>`), it is only necessary to include the root primitive in the flat placement file; the legalizer ignores non-root primitives and places all primitives in each pack molecule based on the root primitive entry. In the example file above, all lcell_comb instances shown are part of a carry chain segment, and so all except the root primitive are ignored.
 VPR's legalizer does not require the flat placement file to contain every primitive in the netlist; it will reconstruct the portion of the netlist and print a warning if the file does not cover the entire netlist. This functionality is useful for debugging legalization in an external placement tool.
 
-.. note:: Use :option:`vpr --legalize` and `vpr --flat_place_file <file>` to invoke the legalizer and specify an input flat placement file.
+.. note:: Use :option:`vpr --legalize` and :option:`vpr --flat_place_file <file>` to invoke the legalizer and specify an input flat placement file.
 
 .. note: Use :option:`vpr --write_flat_place <file>` to write out a post-placement flat placement file. Use :option:`vpr --echo_file on` to write out a (possibly incomplete) post-legalization flat placement file (the file will be named `post_legalizer_flat_placement.echo`).
 
-.. note: A flat placement file must correspond to a specific XML architecture file and a specific fixed size device layout (see :ref: `FPGA Grid Layout <arch_grid_layout>`). Use :option:`vpr --device <fixed layout name>` to specify a fixed device layout.
+.. note: A flat placement file must correspond to a specific XML architecture file and a specific fixed size device layout (see :ref:`FPGA Grid Layout <arch_grid_layout>`). Use :option:`vpr --device <fixed layout name>` to specify a fixed device layout.
 
 .. _vpr_route_resource_file:
 
