@@ -837,7 +837,6 @@ static bool place_macro(int macros_max_num_tries,
     bool macro_placed = false;
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
-    auto& device_ctx = g_vpr_ctx.device();
 
     // Assume that all the blocks in the macro are of the same type
     auto block_type = cluster_ctx.clb_nlist.block_type(blk_id);

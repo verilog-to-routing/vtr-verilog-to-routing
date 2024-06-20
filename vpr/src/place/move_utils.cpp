@@ -1264,7 +1264,7 @@ bool intersect_range_limit_with_floorplan_constraints(ClusterBlockId b_from,
     const auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
 
     // get the block floorplanning constraints specified in the compressed grid
-    const PartitionRegion& compressed_pr = floorplanning_ctx.compressed_cluster_constraints[b_from];
+    const PartitionRegion& compressed_pr = floorplanning_ctx.compressed_cluster_constraints[layer_num][b_from];
     const std::vector<Region>& compressed_regions = compressed_pr.get_regions();
     /*
      * If region size is greater than 1, the block is constrained to more than one rectangular region.
@@ -1275,9 +1275,9 @@ bool intersect_range_limit_with_floorplan_constraints(ClusterBlockId b_from,
      */
     if (compressed_regions.size() == 1) {
         Region range_reg;
-        range_reg.set_region_rect({search_range.xmin, search_range.ymin,
-                                   search_range.xmax, search_range.ymax,
-                                   layer_num});
+        range_reg.set_region_bounds({search_range.xmin, search_range.ymin,
+                                     search_range.xmax, search_range.ymax,
+                                     layer_num});
 
         Region compressed_intersect_reg = intersection(compressed_regions[0], range_reg);
 
@@ -1286,15 +1286,15 @@ bool intersect_range_limit_with_floorplan_constraints(ClusterBlockId b_from,
                            "\tCouldn't find an intersection between floorplan constraints and search region\n");
             return false;
         } else {
-            const auto intersect_coord = compressed_intersect_reg.get_region_rect();
-            VTR_ASSERT(intersect_coord.layer_num == layer_num);
+            const vtr::Rect<int>& intersect_rect = compressed_intersect_reg.get_region_bounds().get_rect();
+            const auto [layer_low, layer_high] = compressed_intersect_reg.get_region_bounds().get_layer_range();
+            VTR_ASSERT(layer_low == layer_num && layer_high == layer_num);
 
-            delta_cx = intersect_coord.xmax -  intersect_coord.xmin;
-            search_range.xmin = intersect_coord.xmin;
-            search_range.ymin = intersect_coord.ymin;
-            search_range.xmax = intersect_coord.xmax;
-            search_range.ymax = intersect_coord.ymax;
-            search_range.layer_max = search_range.layer_min = layer_num;
+            delta_cx = intersect_rect.xmax() -  intersect_rect.xmin();
+            std::tie(search_range.xmin, search_range.ymin,
+                     search_range.xmax, search_range.ymax) = intersect_rect.coordinates();
+            search_range.layer_min = layer_low;
+            search_range.layer_max = layer_high;
         }
     }
 

@@ -62,10 +62,9 @@ bool is_macro_constrained(const t_pl_macro& pl_macro);
  * regions to determine the tightest region constraint for the macro's head.
  *
  * @param pl_macro The macro whose head's PartitionRegion is to be calculated.
- * @param grid_pr The PartitionRegion of the grid to be considered.
  * @return PartitionRegion The calculated PartitionRegion for the head of the macro.
  */
-PartitionRegion update_macro_head_pr(const t_pl_macro& pl_macro, const PartitionRegion& grid_pr);
+PartitionRegion update_macro_head_pr(const t_pl_macro& pl_macro);
 
 /**
  * @brief Update the PartitionRegions of non-head members of a macro,
@@ -77,13 +76,11 @@ PartitionRegion update_macro_head_pr(const t_pl_macro& pl_macro, const Partition
  *
  * @param head_pr The PartitionRegion constraint of the macro's head.
  * @param offset The offset of the macro member from the head.
- * @param grid_pr A PartitionRegion covering the entire grid.
  * @param pl_macro The placement macro whose members' PartitionRegions are to be updated.
  * @return PartitionRegion The updated PartitionRegion for the macro member.
  */
 PartitionRegion update_macro_member_pr(const PartitionRegion& head_pr,
                                        const t_pl_offset& offset,
-                                       const PartitionRegion& grid_pr,
                                        const t_pl_macro& pl_macro);
 
 /**

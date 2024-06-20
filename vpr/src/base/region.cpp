@@ -120,7 +120,7 @@ Region intersection(const Region& r1, const Region& r2) {
     auto [r2_layer_begin, r2_layer_end] = r2.get_region_bounds().get_layer_range();
 
     auto [intersect_layer_begin, intersect_layer_end] = std::make_pair(std::max(r1_layer_begin, r2_layer_begin),
-                                                                                std::min(r1_layer_end, r2_layer_begin));
+                                                                                std::min(r1_layer_end, r2_layer_end));
 
     if (intersect_layer_begin > intersect_layer_end || intersect_layer_begin < 0 || intersect_layer_end < 0) {
         return {};

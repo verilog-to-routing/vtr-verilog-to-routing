@@ -529,7 +529,7 @@ struct FloorplanningContext : public Context {
      * - The bottom left corner is rounded up to the nearest compressed location.
      * - The top right corner is rounded down to the nearest compressed location.
      */
-    vtr::vector<ClusterBlockId, PartitionRegion> compressed_cluster_constraints;
+    std::vector<vtr::vector<ClusterBlockId, PartitionRegion>> compressed_cluster_constraints;
 
     std::vector<Region> overfull_regions;
 };
