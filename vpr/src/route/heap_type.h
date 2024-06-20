@@ -212,6 +212,7 @@ class HeapInterface {
 enum class e_heap_type {
     INVALID_HEAP = 0,
     BINARY_HEAP,
+    FOUR_ARY_HEAP,
     BUCKET_HEAP_APPROXIMATION,
 };
 
