@@ -55,6 +55,7 @@
 #include "VprTimingGraphResolver.h"
 #include "timing_util.h"
 #include "timing_info.h"
+#include "concrete_timing_info.h"
 #include "tatum/echo_writer.hpp"
 #include "tatum/TimingReporter.hpp"
 
