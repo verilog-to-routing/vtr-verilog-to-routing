@@ -16,7 +16,7 @@
  * of this interface. */
 
 #include "NetPinTimingInvalidator.h"
-#include "binary_heap.h"
+#include "four_ary_heap.h"
 #include "bucket.h"
 #include "clustered_netlist_utils.h"
 #include "connection_based_routing_fwd.h"
@@ -154,7 +154,7 @@ inline std::unique_ptr<NetlistRouter> make_netlist_router(
     const vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>>& choking_spots,
     bool is_flat) {
     if (router_opts.router_heap == e_heap_type::BINARY_HEAP) {
-        return make_netlist_router_with_heap<BinaryHeap>(
+        return make_netlist_router_with_heap<FourAryHeap>(
             net_list,
             router_lookahead,
             router_opts,

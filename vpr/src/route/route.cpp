@@ -227,7 +227,7 @@ bool route(const Netlist<>& net_list,
     int itry_since_last_convergence = -1;
 
     // This heap is used for reserve_locally_used_opins.
-    BinaryHeap small_heap;
+    FourAryHeap small_heap;
     small_heap.init_heap(device_ctx.grid);
 
     // When RCV is enabled the router will not stop unless negative hold slack is 0
