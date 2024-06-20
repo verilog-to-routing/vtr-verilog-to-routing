@@ -2,6 +2,7 @@
 #include "PartialPlacement.h"
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
 #include <limits>
 #include <map>
 #include <unordered_set>
@@ -128,24 +129,100 @@ bool PartialPlacement::is_valid_node(size_t node_id){
     if (std::isnan(node_loc_x[node_id])) {
         result = false;
         VTR_LOG("node_id %zu's x value is NaN\n", node_id);
+        VTR_ASSERT(0 && "node x has NaN!");
     }
     if (std::isnan(node_loc_y[node_id])) {
         result = false;
         VTR_LOG("node_id %zu's y value is NaN\n", node_id);
+        VTR_ASSERT(0 && "node y has NaN!");
     }
     if (node_loc_x[node_id] >= grid_width) {
         result = false;
-        VTR_LOG("node_id %zu's x value is %f, width is %zu\n", node_id, node_loc_x[node_id], grid_width);
+        VTR_LOG("Too Large! node_id %zu's x value is %f, width is %zu\n", node_id, node_loc_x[node_id], grid_width);
     }else if(node_loc_x[node_id] < 0) {
         result = false;
-        VTR_LOG("node_id %zu's x value is %f\n", node_id, node_loc_x[node_id]);
+        VTR_LOG("Too Small! node_id %zu's x value is %f\n", node_id, node_loc_x[node_id]);
     }
     if (node_loc_y[node_id] >= grid_height) {
         result = false;
-        VTR_LOG("node_id %zu's y value is %f, height is %zu\n", node_id, node_loc_y[node_id], grid_width);
+        VTR_LOG("Too Large! node_id %zu's y value is %f, height is %zu\n", node_id, node_loc_y[node_id], grid_width);
     }else if(node_loc_x[node_id] < 0) {
         result = false;
-        VTR_LOG("node_id %zu's y value is %f\n", node_id, node_loc_y[node_id]);
+        VTR_LOG("Too Small! node_id %zu's y value is %f\n", node_id, node_loc_y[node_id]);
     }
     return result;
+}
+
+void PartialPlacement::unicode_art(){
+    VTR_LOG("unicode_art start\n");
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    size_t device_width = device_ctx.grid.width();
+    size_t device_height = device_ctx.grid.height();
+    size_t board_width = device_width * 5;
+    size_t board_height = device_height * 5;
+    std::vector<std::vector<int>> board(board_height, std::vector<int>(board_width, 0));
+    for (size_t node_id = 0; node_id < num_nodes; node_id++) {
+        unsigned node_x_relative = node_loc_x[node_id]/device_width*board_width;
+        unsigned node_y_relative = node_loc_y[node_id]/device_height*board_height;
+        if(node_id < num_moveable_nodes){
+            board[node_x_relative][node_y_relative]++;
+        }else{
+            board[node_x_relative][node_y_relative] = -1;
+        }
+    }
+    int max = 0;
+    for(unsigned y_board_id = 0; y_board_id < board_height; y_board_id++)
+        for(unsigned x_board_id = 0; x_board_id < board_width; x_board_id++)
+            if (board[x_board_id][y_board_id] > max)
+                max = board[x_board_id][y_board_id];
+    for(unsigned y_board_id = 0; y_board_id < board_height; y_board_id++){
+        for(unsigned x_board_id = 0; x_board_id < board_width; x_board_id++){
+            int density = board[y_board_id][x_board_id];
+            int density_range = std::floor((double)density/(double)max*6);
+            // if (density >=0 && density <=9){
+            //     char digit[8] = "0️⃣";
+            //     digit[0] += density;
+            //     VTR_LOG(digit);
+            // }else if(density >= 10){
+            //     VTR_LOG("🔟");
+            // }else if(density == -1){
+            //     VTR_LOG("*️⃣");
+            // }else{
+            //     VTR_ASSERT(0 && "Unexpected range!");
+            // }
+            switch (density_range) {
+                default:
+                VTR_ASSERT(0 && "unexpected range!");
+                break;
+                case -1:
+                VTR_LOG("⬜");
+                break;
+                case 0:
+                VTR_LOG("⬛");
+                break;
+                case 1:
+                VTR_LOG("🟫");
+                break;
+                case 2:
+                VTR_LOG("🟩");
+                break;
+                case 3:
+                VTR_LOG("🟨");
+                break;
+                case 4:
+                VTR_LOG("🟧");
+                break;
+                case 5:
+                VTR_LOG("🟥");
+                break;
+                case 6:
+                VTR_LOG("🟪");
+                break;
+                
+            }
+        }
+        VTR_LOG("\n");
+    }
+    VTR_LOG("unicode_art end\n");
+    fflush(stderr);
 }

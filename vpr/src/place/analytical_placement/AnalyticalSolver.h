@@ -2,6 +2,7 @@
 #pragma once
 
 #include <memory>
+#include <vector>
 #include "PartialPlacement.h"
 #include "Eigen/Sparse"
 
@@ -38,6 +39,8 @@ public:
     Eigen::VectorXd b_x_diff;
     Eigen::VectorXd b_y_diff;
 
-    bool isASymetric();
-    bool isAPosSemiDef();
+    std::vector<double> diagonal;
+
+    bool isASymetric(const Eigen::SparseMatrix<double>&A);
+    bool isAPosDef(const Eigen::SparseMatrix<double>&A);
 };

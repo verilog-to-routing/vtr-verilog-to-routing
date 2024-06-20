@@ -1,5 +1,6 @@
 
 #include "analytical_placement_flow.h"
+#include <cstdio>
 #include <map>
 #include <memory>
 #include <set>
@@ -89,13 +90,14 @@ void run_analytical_placement_flow() {
     for (unsigned iteration = 1; iteration < 200; iteration++) {
         VTR_LOG("iteration: %ld\n", iteration);
         solver->solve(iteration);
-        p_placement.is_valid_partial_placement();
+        VTR_ASSERT(p_placement.is_valid_partial_placement() && "placement not valid after solve!");
         p_placement.print_stats();
         VTR_LOG("HPWL: %f\n", p_placement.get_HPWL());
         // Partial legalization using cut spreading algorithm
         FlowBasedLegalizer().legalize(p_placement);
-        p_placement.is_valid_partial_placement();
+        VTR_ASSERT(p_placement.is_valid_partial_placement() && "placement not valid after legalize!");
         VTR_LOG("Post-Legalized HPWL: %f\n", p_placement.get_HPWL());
+        p_placement.unicode_art();
     }
     FullLegalizer().legalize(p_placement);
 }
