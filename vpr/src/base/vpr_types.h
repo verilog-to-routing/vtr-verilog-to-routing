@@ -98,9 +98,7 @@ enum class ScreenUpdatePriority {
 
 /* Defining macros for the placement_ctx t_grid_blocks. Assumes that ClusterBlockId's won't exceed positive 32-bit integers */
 constexpr auto EMPTY_BLOCK_ID = ClusterBlockId(-1);
-constexpr auto EMPTY_PRIMITIVE_BLOCK_ID = AtomBlockId(-1);
 constexpr auto INVALID_BLOCK_ID = ClusterBlockId(-2);
-constexpr auto INVALID_PRIMITIVE_BLOCK_ID = AtomBlockId(-2);
 
 /*
  * Files
@@ -814,40 +812,6 @@ struct hash<t_pl_loc> {
 };
 } // namespace std
 
-struct t_pl_atom_loc {
-    t_pl_atom_loc() = default;
-    t_pl_atom_loc(int primitive_id_, int x_, int y_, int sub_tile_, int layer_)
-        : primitive_id(primitive_id_)
-        , x(x_)
-        , y(y_)
-        , sub_tile(sub_tile_)
-        , layer(layer_) {}
-
-    int primitive_id = OPEN;
-    int x = OPEN;
-    int y = OPEN;
-    int sub_tile = OPEN;
-    int layer = OPEN;
-};
-
-inline bool operator==(const t_pl_atom_loc& lhs, const t_pl_atom_loc& rhs) {
-    return std::tie(lhs.primitive_id, lhs.x, lhs.y, lhs.sub_tile, lhs.layer) == std::tie(rhs.primitive_id, rhs.x, rhs.y, rhs.sub_tile, rhs.layer);
-}
-
-namespace std {
-template<>
-struct hash<t_pl_atom_loc> {
-    std::size_t operator()(const t_pl_atom_loc& v) const noexcept {
-        std::size_t seed = std::hash<int>{}(v.x);
-        vtr::hash_combine(seed, v.y);
-        vtr::hash_combine(seed, v.sub_tile);
-        vtr::hash_combine(seed, v.layer);
-        vtr::hash_combine(seed, v.primitive_id);
-        return seed;
-    }
-};
-} // namespace std
-
 struct t_place_region {
     float capacity; ///<Capacity of this region, in tracks.
     float inv_capacity;
@@ -911,8 +875,6 @@ class GridBlock {
     inline ClusterBlockId block_at_location(const t_pl_loc& loc) const {
         return grid_blocks_[loc.layer][loc.x][loc.y].blocks[loc.sub_tile];
     }
-
-    AtomBlockId block_at_location(const t_pl_atom_loc& loc) const;
 
     inline size_t num_blocks_at_location(const t_physical_tile_loc& loc) const {
         return grid_blocks_[loc.layer_num][loc.x][loc.y].blocks.size();
@@ -1316,7 +1278,6 @@ struct t_placer_opts {
     int floorplan_num_horizontal_partitions;
     int floorplan_num_vertical_partitions;
 
-    bool place_re_cluster;
     int placer_debug_block;
     int placer_debug_net;
 

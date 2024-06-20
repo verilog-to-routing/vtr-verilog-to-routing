@@ -3,35 +3,6 @@
 #include "globals.h"
 #include "place_util.h"
 
-e_block_move_result record_block_move(t_pl_atom_blocks_to_be_moved& blocks_affected, AtomBlockId blk, t_pl_atom_loc to) {
-    auto res = blocks_affected.moved_to.emplace(to);
-    if (!res.second) {
-        log_move_abort("duplicate block move to location");
-        return e_block_move_result::ABORT;
-    }
-
-    const auto& place_ctx = g_vpr_ctx.placement();
-
-    t_pl_atom_loc from = get_atom_loc(blk);
-
-    auto res2 = blocks_affected.moved_from.emplace(from);
-    if (!res2.second) {
-        log_move_abort("duplicate block move from location");
-        return e_block_move_result::ABORT;
-    }
-
-    VTR_ASSERT_SAFE(to.sub_tile < int(place_ctx.grid_blocks.num_blocks_at_location({to.x, to.y, to.layer})));
-
-    // Sets up the blocks moved
-    int imoved_blk = blocks_affected.num_moved_blocks;
-    blocks_affected.moved_blocks[imoved_blk].block_num = blk;
-    blocks_affected.moved_blocks[imoved_blk].old_loc = from;
-    blocks_affected.moved_blocks[imoved_blk].new_loc = to;
-    blocks_affected.num_moved_blocks++;
-
-    return e_block_move_result::VALID;
-}
-
 //Records that block 'blk' should be moved to the specified 'to' location
 e_block_move_result record_block_move(t_pl_blocks_to_be_moved& blocks_affected, ClusterBlockId blk, t_pl_loc to) {
     auto res = blocks_affected.moved_to.emplace(to);
@@ -60,21 +31,6 @@ e_block_move_result record_block_move(t_pl_blocks_to_be_moved& blocks_affected, 
     blocks_affected.num_moved_blocks++;
 
     return e_block_move_result::VALID;
-}
-
-//Moves the blocks in blocks_affected to their new locations
-void apply_move_blocks(const t_pl_atom_blocks_to_be_moved& blocks_affected) {
-    const auto& atom_lookup = g_vpr_ctx.atom().lookup;
-    std::set<ClusterBlockId> seen_clusters;
-    const int num_moved_blocks = blocks_affected.num_moved_blocks;
-    for (int blk_idx = 0; blk_idx < num_moved_blocks; blk_idx++) {
-        AtomBlockId atom_blk = blocks_affected.moved_blocks[blk_idx].block_num;
-        ClusterBlockId cluster_blk = atom_lookup.atom_clb(atom_blk);
-        if (seen_clusters.find(cluster_blk) == seen_clusters.end()) {
-            seen_clusters.insert(cluster_blk);
-            place_sync_external_block_connections(cluster_blk);
-        }
-    }
 }
 
 //Moves the blocks in blocks_affected to their new locations
@@ -133,10 +89,6 @@ void commit_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected) {
         place_ctx.grid_blocks.set_block_at_location(to, blk);
 
     } // Finish updating clb for all blocks
-}
-
-void revert_move_blocks(t_pl_atom_blocks_to_be_moved& blocks_affected) {
-    //TODO: this function needs to be implemented
 }
 
 //Moves the blocks in blocks_affected to their old locations

@@ -558,30 +558,3 @@ void t_cluster_placement_stats::free_primitives() {
         }
     }
 }
-
-/**
- * @brief Get the atom block id at the given location. Since we currently don't have any array to retrieve this information directly,
- * we first find the cluster mapped to that location, and then find the atom inside that cluster that is mapped to the given location.
- */
-AtomBlockId GridBlock::block_at_location(const t_pl_atom_loc& loc) const {
-    const auto& atom_lookup = g_vpr_ctx.atom().lookup;
-    t_pl_loc cluster_loc(loc.x, loc.y, loc.sub_tile, loc.layer);
-    ClusterBlockId cluster_at_loc = block_at_location(cluster_loc);
-    if (cluster_at_loc == EMPTY_BLOCK_ID) {
-        return EMPTY_PRIMITIVE_BLOCK_ID;
-    } else if (cluster_at_loc == INVALID_BLOCK_ID) {
-        return INVALID_PRIMITIVE_BLOCK_ID;
-    } else {
-        VTR_ASSERT(cluster_at_loc.is_valid());
-        const auto& cluster_atoms = g_vpr_ctx.cl_helper().atoms_lookup;
-        const auto& atom_list = cluster_atoms.at(cluster_at_loc);
-        for (const auto& atom : atom_list) {
-            int primitive_pin = atom_lookup.atom_pb_graph_node(atom)->primitive_num;
-            t_pl_atom_loc atom_loc(primitive_pin, cluster_loc.x, cluster_loc.y, cluster_loc.sub_tile, cluster_loc.layer);
-            if (atom_loc == loc) {
-                return atom;
-            }
-        }
-        return EMPTY_PRIMITIVE_BLOCK_ID;
-    }
-}

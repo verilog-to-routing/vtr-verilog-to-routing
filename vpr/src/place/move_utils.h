@@ -93,13 +93,7 @@ void log_move_abort(std::string_view reason);
 //Prints a breif report about aborted move reasons and counts
 void report_aborted_moves();
 
-e_create_move create_move(t_pl_atom_blocks_to_be_moved& blocks_affected, AtomBlockId b_from, t_pl_atom_loc to);
-
 e_create_move create_move(t_pl_blocks_to_be_moved& blocks_affected, ClusterBlockId b_from, t_pl_loc to);
-
-// Update atom_blocks_affects with the information about blocks which will be moved if b_from is to be moved to t_loc. Return Valid if the move is legal.
-// Currently, this function is much more limited compare to cluster one. It only supports single block move.
-e_block_move_result find_affected_blocks(t_pl_atom_blocks_to_be_moved& atom_blocks_affected, AtomBlockId b_from, t_pl_atom_loc to_loc);
 
 /**
  * @brief Find the blocks that will be affected by a move of b_from to to_loc
@@ -110,9 +104,6 @@ e_block_move_result find_affected_blocks(t_pl_atom_blocks_to_be_moved& atom_bloc
  * compatible, etc. INVERT if the "from" block is a single block and the "to" block is a macro. VALID otherwise.
  */
 e_block_move_result find_affected_blocks(t_pl_blocks_to_be_moved& blocks_affected, ClusterBlockId b_from, t_pl_loc to);
-
-// Update blocks affected if neither b_from nor the block at to_loc (if there is any) is part of a macro
-e_block_move_result record_single_block_swap(t_pl_atom_blocks_to_be_moved& blocks_affected, AtomBlockId b_from, t_pl_atom_loc to_loc);
 
 e_block_move_result record_single_block_swap(t_pl_blocks_to_be_moved& blocks_affected, ClusterBlockId b_from, t_pl_loc to);
 
@@ -125,14 +116,6 @@ e_block_move_result record_macro_move(t_pl_blocks_to_be_moved& blocks_affected,
                                       t_pl_offset swap_offset);
 e_block_move_result identify_macro_self_swap_affected_macros(std::vector<int>& macros, const int imacro, t_pl_offset swap_offset);
 e_block_move_result record_macro_self_swaps(t_pl_blocks_to_be_moved& blocks_affected, const int imacro, t_pl_offset swap_offset);
-
-/**
- * @brief Check whether the "to" location is legal for the given "blk"
- * @param blk
- * @param to
- * @return
- */
-bool is_legal_swap_to_location(AtomBlockId blk, t_pl_atom_loc to);
 
 /**
  * @brief Check whether the "to" location is legal for the given "blk"

@@ -64,12 +64,9 @@
 
 #include "clustered_netlist_utils.h"
 
-#include "re_cluster_util.h"
 #include "cluster_placement.h"
 
 #include "noc_place_utils.h"
-
-#include "place_re_cluster.h"
 
 #include "net_cost_handler.h"
 
@@ -399,8 +396,6 @@ void try_place(const Netlist<>& net_list,
     t_placer_statistics stats;
 
     t_placement_checkpoint placement_checkpoint;
-
-    PlaceReCluster place_re_cluster;
 
     std::shared_ptr<SetupTimingInfo> timing_info;
     std::shared_ptr<PlacementDelayCalculator> placement_delay_calc;
@@ -886,12 +881,6 @@ void try_place(const Netlist<>& net_list,
                            noc_opts.noc, costs.noc_cost_terms);
     }
     auto post_quench_timing_stats = timing_ctx.stats;
-
-    if (placer_opts.place_re_cluster) {
-        place_re_cluster.re_cluster(placer_opts.place_algorithm,
-                                    place_delay_model.get(),
-                                    placer_criticalities.get());
-    }
 
     //Final timing analysis
     PlaceCritParams crit_params;

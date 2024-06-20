@@ -473,15 +473,6 @@ bool macro_can_be_placed(t_pl_macro pl_macro, t_pl_loc head_pos, bool check_all_
     return (mac_can_be_placed);
 }
 
-t_pl_atom_loc get_atom_loc(AtomBlockId atom) {
-    const auto& atom_lookup = g_vpr_ctx.atom().lookup;
-    ClusterBlockId cluster_blk = atom_lookup.atom_clb(atom);
-    t_pl_loc cluster_loc = g_vpr_ctx.placement().block_locs[cluster_blk].loc;
-    int primitive_id = atom_lookup.atom_pb_graph_node(atom)->primitive_num;
-
-    return {primitive_id, cluster_loc.x, cluster_loc.y, cluster_loc.sub_tile, cluster_loc.layer};
-}
-
 NocCostTerms::NocCostTerms(double agg_bw, double lat, double lat_overrun, double congest)
     : aggregate_bandwidth(agg_bw)
     , latency(lat)

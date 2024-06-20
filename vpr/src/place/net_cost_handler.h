@@ -11,25 +11,6 @@ enum e_cost_methods {
 
 /**
  * @brief Update the wire length and timing cost of the blocks (ts and proposed_* data structures) and set
- * the delta costs in bb_delta_c and timing_delta_c. This functions is used when the moving bocks are atoms
- * @param place_algorithm
- * @param delay_model
- * @param criticalities
- * @param blocks_affected
- * @param bb_delta_c
- * @param timing_delta_c
- * @return
- */
-int find_affected_nets_and_update_costs(
-    const t_place_algorithm& place_algorithm,
-    const PlaceDelayModel* delay_model,
-    const PlacerCriticalities* criticalities,
-    t_pl_atom_blocks_to_be_moved& blocks_affected,
-    double& bb_delta_c,
-    double& timing_delta_c);
-
-/**
- * @brief Update the wire length and timing cost of the blocks (ts and proposed_* data structures) and set
  * the delta costs in bb_delta_c and timing_delta_c. This functions is used when the moving bocks are clusters
  * @param place_algorithm
  * @param delay_model

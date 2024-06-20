@@ -153,9 +153,6 @@ std::vector<AtomPinId> find_clb_pin_sink_atom_pins(ClusterBlockId clb, int logic
 
 std::tuple<ClusterNetId, int, int> find_pb_route_clb_input_net_pin(ClusterBlockId clb, int sink_pb_route_id);
 
-// Return the cluster pins connected to the atom pin
-std::vector<ClusterPinId> cluster_pins_connected_to_atom_pin(AtomPinId atom_pin);
-
 //Returns the port matching name within pb_gnode
 const t_port* find_pb_graph_port(const t_pb_graph_node* pb_gnode, const std::string& port_name);
 

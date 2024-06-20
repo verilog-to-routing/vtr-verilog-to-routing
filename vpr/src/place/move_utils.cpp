@@ -38,19 +38,6 @@ void report_aborted_moves() {
     }
 }
 
-e_create_move create_move(t_pl_atom_blocks_to_be_moved& blocks_affected, AtomBlockId b_from, t_pl_atom_loc to) {
-    e_block_move_result outcome = find_affected_blocks(blocks_affected, b_from, to);
-    // Currently, for re-clustering during placement, we don't support INVERT
-    VTR_ASSERT(outcome != e_block_move_result::INVERT || outcome != e_block_move_result::INVERT_VALID);
-
-    if (outcome == e_block_move_result::VALID) {
-        return e_create_move::VALID;
-    } else {
-        VTR_ASSERT(outcome == e_block_move_result::ABORT);
-        return e_create_move::ABORT;
-    }
-}
-
 e_create_move create_move(t_pl_blocks_to_be_moved& blocks_affected, ClusterBlockId b_from, t_pl_loc to) {
     e_block_move_result outcome = find_affected_blocks(blocks_affected, b_from, to);
 
@@ -82,35 +69,6 @@ e_create_move create_move(t_pl_blocks_to_be_moved& blocks_affected, ClusterBlock
         VTR_ASSERT_SAFE(outcome == e_block_move_result::ABORT);
         return e_create_move::ABORT;
     }
-}
-
-e_block_move_result find_affected_blocks(t_pl_atom_blocks_to_be_moved& atom_blocks_affected, AtomBlockId b_from, t_pl_atom_loc to_loc) {
-    const auto& atom_lookup = g_vpr_ctx.atom().lookup;
-    e_block_move_result outcome = e_block_move_result::VALID;
-
-    ClusterBlockId from_cluster_block = atom_lookup.atom_clb(b_from);
-    VTR_ASSERT(from_cluster_block.is_valid());
-
-    //TODO: Currently, if the atom belong to a cluster that is a part of a macro, we don't move it
-    const auto& pl_macros = g_vpr_ctx.placement().pl_macros;
-    int imacro = OPEN;
-    get_imacro_from_iblk(&imacro, from_cluster_block, pl_macros);
-    if (imacro != OPEN) {
-        return e_block_move_result::ABORT;
-    } else {
-        const auto& grid_blocks = g_vpr_ctx.placement().grid_blocks;
-        AtomBlockId to_atom = grid_blocks.block_at_location(to_loc);
-        if (to_atom.is_valid()) {
-            ClusterBlockId to_cluster_block = atom_lookup.atom_clb(to_atom);
-            get_imacro_from_iblk(&imacro, to_cluster_block, pl_macros);
-            if (imacro != OPEN) {
-                return e_block_move_result::ABORT;
-            }
-        }
-    }
-
-    outcome = record_single_block_swap(atom_blocks_affected, b_from, to_loc);
-    return outcome;
 }
 
 e_block_move_result find_affected_blocks(t_pl_blocks_to_be_moved& blocks_affected, ClusterBlockId b_from, t_pl_loc to) {
@@ -156,43 +114,6 @@ e_block_move_result find_affected_blocks(t_pl_blocks_to_be_moved& blocks_affecte
         }
 
     } // Finish handling cases for blocks in macro and otherwise
-
-    return outcome;
-}
-
-e_block_move_result record_single_block_swap(t_pl_atom_blocks_to_be_moved& blocks_affected, AtomBlockId b_from, t_pl_atom_loc to_loc) {
-    VTR_ASSERT(b_from);
-    ClusterBlockId cluster_b_from = g_vpr_ctx.atom().lookup.atom_clb(b_from);
-
-    const auto& place_ctx = g_vpr_ctx.placement();
-
-    if (place_ctx.block_locs[cluster_b_from].is_fixed) {
-        return e_block_move_result::ABORT;
-    }
-
-    VTR_ASSERT_SAFE(to_loc.sub_tile < int(place_ctx.grid_blocks.num_blocks_at_location({to_loc.x, to_loc.y, to_loc.layer})));
-
-    e_block_move_result outcome = e_block_move_result::ABORT;
-
-    AtomBlockId b_to = place_ctx.grid_blocks.block_at_location(to_loc);
-
-    if (b_to == EMPTY_PRIMITIVE_BLOCK_ID) {
-        outcome = record_block_move(blocks_affected, b_from, to_loc);
-    } else if (b_to != INVALID_PRIMITIVE_BLOCK_ID) {
-        ClusterBlockId cluster_b_to = g_vpr_ctx.atom().lookup.atom_clb(b_to);
-        if (!(is_legal_swap_to_location(b_to, to_loc)) || place_ctx.block_locs[cluster_b_to].is_fixed) {
-            return e_block_move_result::ABORT;
-        }
-
-        outcome = record_block_move(blocks_affected, b_from, to_loc);
-
-        if (outcome != e_block_move_result::VALID) {
-            return outcome;
-        }
-
-        t_pl_atom_loc from_atom_loc = get_atom_loc(b_from);
-        outcome = record_block_move(blocks_affected, b_to, from_atom_loc);
-    }
 
     return outcome;
 }
@@ -522,53 +443,6 @@ e_block_move_result record_macro_self_swaps(t_pl_blocks_to_be_moved& blocks_affe
     }
 
     return outcome;
-}
-
-bool is_legal_swap_to_location(AtomBlockId blk, t_pl_atom_loc to) {
-    //Make sure that the swap_to location is valid
-    //It must be:
-    // * on chip, and
-    // * match the correct block type
-    //
-    //Note that we need to explicitly check that the types match, since the device floorplan is not
-    //(neccessarily) translationally invariant for an arbitrary macro
-
-    const auto& place_ctx = g_vpr_ctx.placement();
-    const auto& atom_lookup = g_vpr_ctx.atom().lookup;
-    const auto& atom_pb = g_vpr_ctx.atom().lookup.atom_pb(blk);
-
-    ClusterBlockId from_cluster_block = atom_lookup.atom_clb(blk);
-    t_pl_loc to_cluster_loc(to.x, to.y, to.sub_tile, to.layer);
-    ClusterBlockId to_cluster_block = place_ctx.grid_blocks.block_at_location(to_cluster_loc);
-
-
-    // If the clusters cannot be swapped return false
-    if (!is_legal_swap_to_location(from_cluster_block, to_cluster_loc)) {
-        return false;
-    }
-
-    // Check legality issues specific to atoms
-    std::vector<t_logical_block_type_ptr> logical_blocks;
-
-    // If there is already a block at the destination, the only logical block there is the logical block of that particular cluster.
-    // If there isn't any, all logical blocks compatible to that sub_tile should be considered.
-    if (to_cluster_block.is_valid() && to_cluster_block != INVALID_BLOCK_ID) {
-        const auto& cluster_ctx = g_vpr_ctx.clustering();
-        auto logical_block = cluster_ctx.clb_nlist.block_type(to_cluster_block);
-        logical_blocks.push_back(logical_block);
-    } else if (to_cluster_block == EMPTY_BLOCK_ID) {
-        const auto& physical_tile = g_vpr_ctx.device().grid.get_physical_type(t_physical_tile_loc(to.x, to.y, to.layer));
-        const auto& sub_tile = physical_tile->sub_tiles[to.sub_tile];
-        logical_blocks = sub_tile.equivalent_sites;
-    }
-
-    for (const auto& logical_block : logical_blocks) {
-        if (is_atom_compatible(logical_block, atom_pb->pb_graph_node, to.primitive_id)) {
-            return true;
-        }
-    }
-
-    return false;
 }
 
 bool is_legal_swap_to_location(ClusterBlockId blk, t_pl_loc to) {

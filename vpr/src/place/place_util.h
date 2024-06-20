@@ -383,9 +383,4 @@ inline bool is_loc_on_chip(t_physical_tile_loc loc) {
  *        require to check for all legality constraints.
  */
 bool macro_can_be_placed(t_pl_macro pl_macro, t_pl_loc head_pos, bool check_all_legality);
-
-//TODO: The atom loc should be stored in place_ctx -- I am creating this function because I didn't want to create another
-// Array in place_ctx.
-t_pl_atom_loc get_atom_loc(AtomBlockId atom);
-
 #endif

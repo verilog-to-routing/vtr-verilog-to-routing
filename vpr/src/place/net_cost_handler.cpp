@@ -84,15 +84,6 @@ static vtr::Matrix<int> ts_layer_sink_pin_count;
 /* [0...num_afftected_nets] -> net_id of the affected nets */
 static std::vector<ClusterNetId> ts_nets_to_update;
 
-
-/**
- * @param net
- * @param moved_blocks
- * @return True if the driver block of the net is among the moving blocks
- */
-static bool driven_by_moved_block(const AtomNetId net,
-                                  const std::vector<t_pl_moved_atom_block>& moved_blocks);
-
 /**
  * @param net
  * @param moved_blocks
@@ -407,21 +398,6 @@ static double wirelength_crossing_count(size_t fanout);
  * @breif Calculate the wire-length cost of nets affected by moving the blocks and set bb_delta_c to the total cost change.
  */
 static void set_bb_delta_cost(const int num_affected_nets, double& bb_delta_c);
-
-//Returns true if 'net' is driven by one of the blocks in 'blocks_affected'
-static bool driven_by_moved_block(const AtomNetId net,
-                                  const std::vector<t_pl_moved_atom_block>& moved_blocks) {
-    const auto& atom_nlist = g_vpr_ctx.atom().nlist;
-    bool is_driven_by_move_blk;
-    AtomBlockId net_driver_block = atom_nlist.net_driver_block(
-        net);
-
-    is_driven_by_move_blk = std::any_of(moved_blocks.begin(), moved_blocks.end(), [&net_driver_block](const auto& move_blk) {
-        return net_driver_block == move_blk.block_num;
-    });
-
-    return is_driven_by_move_blk;
-}
 
 //Returns true if 'net' is driven by one of the blocks in 'blocks_affected'
 static bool driven_by_moved_block(const ClusterNetId net,
@@ -1876,63 +1852,6 @@ static void set_bb_delta_cost(const int num_affected_nets, double& bb_delta_c) {
 
         bb_delta_c += proposed_net_cost[net_id] - net_cost[net_id];
     }
-}
-
-int find_affected_nets_and_update_costs(
-    const t_place_algorithm& place_algorithm,
-    const PlaceDelayModel* delay_model,
-    const PlacerCriticalities* criticalities,
-    t_pl_atom_blocks_to_be_moved& blocks_affected,
-    double& bb_delta_c,
-    double& timing_delta_c) {
-    const auto& atom_look_up = g_vpr_ctx.atom().lookup;
-    const auto& atom_nlist = g_vpr_ctx.atom().nlist;
-
-    VTR_ASSERT_SAFE(bb_delta_c == 0.);
-    VTR_ASSERT_SAFE(timing_delta_c == 0.);
-
-    int num_affected_nets = 0;
-
-    std::vector<ClusterPinId> affected_pins;
-
-    for (int iblk = 0; iblk < blocks_affected.num_moved_blocks; iblk++) {
-        AtomBlockId atom_blk_id = blocks_affected.moved_blocks[iblk].block_num;
-        ClusterBlockId cluster_blk_id = atom_look_up.atom_clb(atom_blk_id);
-        const auto& atom_old_loc = blocks_affected.moved_blocks[iblk].old_loc;
-        const auto& atom_new_loc = blocks_affected.moved_blocks[iblk].new_loc;
-
-        for (const AtomPinId& atom_pin : atom_nlist.block_pins(atom_blk_id)) {
-            auto cluster_pins = cluster_pins_connected_to_atom_pin(atom_pin);
-            for (const auto& cluster_pin : cluster_pins) {
-                bool is_src_moving = false;
-                if (atom_nlist.pin_type(atom_pin) == PinType::SINK) {
-                    AtomNetId net_id = atom_nlist.pin_net(atom_pin);
-                    is_src_moving = driven_by_moved_block(net_id, blocks_affected.moved_blocks);
-                }
-                t_pl_moved_block move_cluster_inf;
-                move_cluster_inf.block_num = cluster_blk_id;
-                move_cluster_inf.old_loc = t_pl_loc(atom_old_loc.x, atom_old_loc.y, atom_old_loc.sub_tile, atom_old_loc.layer);
-                move_cluster_inf.new_loc = t_pl_loc(atom_new_loc.x, atom_new_loc.y, atom_new_loc.sub_tile, atom_new_loc.layer);
-                update_net_info_on_pin_move(place_algorithm,
-                                            delay_model,
-                                            criticalities,
-                                            cluster_blk_id,
-                                            cluster_pin,
-                                            move_cluster_inf,
-                                            affected_pins,
-                                            timing_delta_c,
-                                            num_affected_nets,
-                                            is_src_moving);
-            }
-        }
-    }
-
-    /* Now update the bounding box costs (since the net bounding     *
-     * boxes are up-to-date). The cost is only updated once per net. */
-    set_bb_delta_cost(num_affected_nets, bb_delta_c);
-
-
-    return num_affected_nets;
 }
 
 /**
