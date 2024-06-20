@@ -100,7 +100,7 @@ class Region {
      * @brief Return whether the region is empty (i. e. the region bounds rectangle
      * covers no area)
      */
-    bool empty();
+    bool empty() const;
 
     /**
      * @brief Check if the location is in the region (at a valid x, y, subtile location within the region bounds, inclusive)

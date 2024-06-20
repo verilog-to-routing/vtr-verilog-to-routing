@@ -45,7 +45,7 @@ void Region::set_sub_tile(int sub_tile) {
     sub_tile_ = sub_tile;
 }
 
-bool Region::empty() {
+bool Region::empty() const {
     const vtr::Rect<int>& rect = region_bounds_.get_rect();
     const auto [layer_begin, layer_end] = region_bounds_.get_layer_range();
 

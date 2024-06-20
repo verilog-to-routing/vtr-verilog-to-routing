@@ -1274,6 +1274,10 @@ bool intersect_range_limit_with_floorplan_constraints(ClusterBlockId b_from,
      * complicated case to get correct functionality during place moves.
      */
     if (compressed_regions.size() == 1) {
+        if (compressed_regions[0].empty()) {
+            return false;
+        }
+
         Region range_reg;
         range_reg.set_region_bounds({search_range.xmin, search_range.ymin,
                                      search_range.xmax, search_range.ymax,
