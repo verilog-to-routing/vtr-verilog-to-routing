@@ -131,6 +131,11 @@ and VTR's k6_N10_40nm.xml were pulled from to create
         unidirectional architecture, an fc value of 20% and any channel width <170 will have no
         connections to the clb ports. -->
         <fc in_type="abs" in_val="2" out_type="abs" out_val="2">
+          <!-- One might note that L2 MC and C wires only have 1 connection per input port according
+          to Netcracker. However, the value of 2 still holds as each CLB input in xilinx connects to
+          1 wire in a direction and its directions oposite. Since we are using a uni-directional
+          arch, a fc of 2 ensures 1 connection for each direction and its counterpart which is
+          correct.-->
           <!--!
           <fc_override port_name="cout" fc_type="frac" fc_val="0" /> -->
           <!-- len4 wires only occur for outputs -->
@@ -159,6 +164,10 @@ and VTR's k6_N10_40nm.xml were pulled from to create
           <fc_override segment_name="len12_y" fc_type="frac" fc_val="0" />
 
           <fc_override segment_name="len18_y" fc_type="frac" fc_val="0" />
+
+          <!-- LEN 1 wires have double the connections of length 2! -->
+          <fc_override segment_name="len1_y" fc_type="abs" fc_val="4" />
+          <fc_override segment_name="len1_x" fc_type="abs" fc_val="4" />
 
         </fc>
         <pinlocations pattern="custom">
@@ -603,18 +612,18 @@ and VTR's k6_N10_40nm.xml were pulled from to create
       <cb type="pattern">1 1 1</cb>
     </segment>
 
-    <segment axis="x" name="len4x_stub" freq="6.451612903" length="5" type="unidir" Rmetal="101"
+    <segment axis="x" name="len4x_stub" freq="6.451612903" length="4" type="unidir" Rmetal="101"
       Cmetal="22.5e-15">
       <mux name="0" />
-      <sb type="pattern">1 0 0 0 0 1</sb>
-      <cb type="pattern">1 0 0 0 1</cb>
+      <sb type="pattern">1 0 0 0 1</sb>
+      <cb type="pattern">1 0 0 1</cb>
     </segment>
 
-    <segment axis="x" name="len2x_stub" freq="3.225806452" length="3" type="unidir" Rmetal="101"
+    <segment axis="x" name="len2x_stub" freq="3.225806452" length="2" type="unidir" Rmetal="101"
       Cmetal="22.5e-15">
       <mux name="0" />
-      <sb type="pattern">1 0 0 1</sb>
-      <cb type="pattern">1 0 1</cb>
+      <sb type="pattern">1 0 1</sb>
+      <cb type="pattern">1 1</cb>
     </segment>
 
     <!-- For our stubs that branch off not in the same plane as the wire they branch from there are
@@ -1091,11 +1100,6 @@ and VTR's k6_N10_40nm.xml were pulled from to create
       Values are taken from prjxray-db/artix7/tile_int_l -->
       <interconnect>
         <!-- <complete name="top_slice" input="clb.I" output="slice[0:1].I" /> -->
-        <!--!combine
-        these into a single interconnection-->
-        <!-- ! You cant use two seperate interconnects. Either one is overriding the other or they
-        ! are shorting together. -->
-        <!-- ! Look at PRJXray online database -->
         <!-- The follwing Cin/Cout pattern matches xilinx -->
         <direct name="cin1" input="clb.cin[0]" output="slice[0:0].cin">
           <pack_pattern name="chain" in_port="clb.cin[0]" out_port="slice[0:0].cin" />
@@ -1136,9 +1140,7 @@ and VTR's k6_N10_40nm.xml were pulled from to create
         <direct name="DX_conn" input="clb.I[6]" output="slice[0].I[27]" />
         <direct name="DX_conn2" input="clb.I[7]" output="slice[1].I[27]" />
 
-        <!-- ! all 48 connections apear to be here (these are the imux connections) 
-          ! The nodes that should be missing are 6,13,20,27 which are the #X equivalents. 
-          ! These nodes are indeed missing -->
+
         <mux name="cross0" input="clb.I[52] slice[0].O[6] slice[0].O[1] slice[1].O[2]"
           output="slice[1].I[2]" />
         <mux name="cross1" input="clb.I[45] slice[1].O[6] slice[1].O[1] slice[0].O[2]"
@@ -1155,7 +1157,6 @@ and VTR's k6_N10_40nm.xml were pulled from to create
           output="slice[1].I[0]" />
         <mux name="cross7" input="clb.I[50] slice[0].O[3] slice[0].O[10] slice[1].O[11]"
           output="slice[0].I[0]" />
-        <!-- !! ^^ APEARS TO BE FAULT changed from I[1]->0 -->
         <mux name="cross8" input="clb.I[44] slice[0].O[6] slice[1].O[2] slice[0].O[1]"
           output="slice[0].I[4]" />
         <mux name="cross9" input="clb.I[53] slice[1].O[6] slice[0].O[2] slice[1].O[1]"
@@ -1166,8 +1167,7 @@ and VTR's k6_N10_40nm.xml were pulled from to create
           output="slice[0].I[3]" />
         <mux name="cross12" input="clb.I[40] slice[0].O[0] slice[1].O[8] slice[0].O[7]"
           output="slice[1].I[12]" />
-        <!-- ! ^^ need to check this one! apears to be coppy. changed to slice[1] instead of 0.
-        coppy of bellow! -->
+
         <mux name="cross13" input="clb.I[41] slice[1].O[0] slice[0].O[8] slice[1].O[7]"
           output="slice[0].I[12]" />
         <mux name="cross14" input="clb.I[43] slice[1].O[3] slice[0].O[11] slice[1].O[10]"
@@ -3162,6 +3162,117 @@ and VTR's k6_N10_40nm.xml were pulled from to create
   achieved.   -->
 
   <switchblocklist>
+    <!-- The folowing values are the counts for each wire type. The values are based on a channel
+    width of 190:
+     Segment_name     Designation       Count
+     len1_x            WW/EE1             14
+     len1_y            SS/NN1             14
+     len2_x            WW/EE2             12            
+     len2_y            SS/NN2             12
+     len4_x            WW/EE4             24
+     len6_y            SS/NN6             36 (34 from stub_y)
+     len12_x           WW/EE12            12
+     len12_y           SS/NN12            12
+     len18_y           SS/NN18            18
+     
+     1len4D_y          NE/SW6             16
+     2len4D_y          SE/NW6             16
+     3len4D_y          SE/NW6             16 
+     4len4D_y          NE/SW6             16
+     1len2D_x          NE/SW6             8
+     2len2D_x          SE/NW6             8
+     3len2D_x          SE/NW6             8
+     4len2D_x          NE/SW6             8
+
+     Totals:           NE/SW6             32
+                       SE/NW6             32
+     
+     len1D_y           NE/SW2             6
+     2len1D_y          SE/NW2             4
+     3len1D_y          SE/NW2             4
+     4len1D_y          NE/SW2             4
+     len1D_x           NE/SW2             6
+     2len1D_x          SE/NW2             4
+     3len1D_x          SE/NW2             4
+     4len1D_x          NE/SW2             4
+
+     Totals:           NE/SW2             10
+                       SE/NW2             8
+
+     len6y_stub        SS/NN6             12
+     len2y_stub        SS/NN2             4
+     len4x_stub        WW/EE4             8
+     len2x_stub        WW/EE2             4
+     stub_y            NONE               2
+
+     Note: As was statted in the netcracker paper,
+     a channel width in the traditional sense is
+     a little misleading because the longer L shaped
+     wires (i.e. len6 diagonals) contribute diffrent 
+     channel widths in the X and Y directions.
+     Also note that Table 1 in the netcracker paper
+     clumps the parts of these L shaped wires into 
+     their respective cardinal parts. For example: 
+     length 2 H wires includes the count for both 
+     cardinal length 2 wires and the diagonal 
+     length 2 component of a multi-cardinal
+     length 6 wire. Same goes for length 1 
+     (two length 1 components of a diagonal length 2)
+     and length 4 V wires (a component of the diagonal 
+     length 6).
+
+
+     The following are the totals for each wire type. 
+     In cases where a segment is made up of multiple 
+     wire types in the X and Y (i.e. multi-cardinal 
+     wires) the number of wires in the Y channel is 
+     used.
+
+                    Designation         Count        Num_Terminating/Starting_Per_SB
+     Totals:           NN1                7                    7                  
+                       SS1                7                    7
+                       WW1                7                    7
+                       EE1                7                    7
+               
+                       NE2                5                    2/3
+                       SE2                4                    2
+                       NW2                4                    2
+                       SW2                5                    2/3
+               
+                       NN2                8                    2
+                       SS2                8                    2
+                       WW2                8                    2
+                       EE2                8                    2
+               
+                       NE6                16                   2/4
+                       SE6                16                   2/4
+                       NW6                16                   2/4
+                       SW6                16                   2/4
+               
+                       NN6                24                   2 (1)
+                       SS6                24                   2 (1)
+               
+                       WW4                16                   2
+                       EE4                16                   2
+
+                       NN12               6                    0/1
+                       SS12               6                    0/1
+                       WW12               6                    0/1
+                       EE12               6                    0/1
+               
+                       NN18               9                    0/1
+                       SS18               9                    0/1
+
+
+     
+     NOTE that each multi-cardinal wire is split into two sides of the SB (i.e. NE comes in 
+     from the left and from the bottom). The counts above are for all sides of the SB. 
+     Cut the multi-cardinal values in half to find out the number of wires per side.
+     
+     
+     -->
+
+    <!-- TODO: we start with the assumption that the above is true! -->
     <!-- custom SBs used to create diagonal wires -->
     <switchblock name="diagonal_cw_turns" type="unidir">
       <switchblock_location type="CORE" />
@@ -3227,66 +3338,94 @@ and VTR's k6_N10_40nm.xml were pulled from to create
         <func type="br" formula="2*W-2-t" />
       </switchfuncs>
 
-      <!-- SW 2,6 from T -->
-      <!-- technichly WW2, SS2, SS6 is not alowed but we leave it here, N1 also has 8 cons but
-          we
+      <!-- NE 2,6 from B -->
+      <!-- technichly WW2, SS2, SS6 is not alowed but we leave it here since their uni-directional 
+       counterparts need to connect. N1 also has 8 cons but we
       leave it becaus it is the one and only outlier. we also cant do one type of NE turn in the
       same direction-->
 
       <!-- 4/3D cannot connect to 3Dy,4Dy,2Dx or 1Dx or else the connections will interfear
           with
       single connections on diagonal -->
-      <wireconn num_conns="from*17" from_type="4len1D_y" from_switchpoint="0"
+      <!-- Type 4 is NE and SW. This SB only makes connections coming 
+      from the bottom of the SB so we are only dealing with NE connections.
+      Looking at figure 8 in netcracker we see that we connect to two of each 
+      type of wire with the exception of N1. Their should be 4/5 wires of this 
+      type per channel (2/3 NE 2/3 SW). From figure 8 in netcracker we see that 
+      NE2 has a total of 68 connections shared between 5 wires. 3 of these 
+      are in the switchblock that comes from the left (from type 4)! 
+      So each wire has 13.6 connections and we have 2 wires in the from set
+      so we should have a total of from*7 connections rounding up -->
+      <!-- ! verify this visualy in the arch! Also make sure that EACH wire has this many
+      connections. Verified - This is 68 shared between 5 wires, we round this division up to-->
+      <wireconn num_conns="from*7" from_type="4len1D_y" from_switchpoint="0"
         to_type="len1_x,len2_x,len2x_stub,len4_x,len4x_stub,len1_y,len2_y,len2y_stub,len6_y,len6y_stub,4len1D_x,4len2D_x,3len2D_x,3len1D_x,len1D_y,2len4D_y,2len1D_y"
         to_switchpoint="0" />
-
-      <wireconn num_conns="from*17" from_type="4len4D_y" from_switchpoint="0"
+      <!-- Note that the two NE wire lengths (2 and 6) both connect to the exact same segment types
+      as found in the
+      netcracker paper, see figure 8! The only diffrence is the number. Each SB will have a total of 2
+      wires that 
+      terminate on the bottom of each block. Each wire should make 12 connections as shown before, so the
+      total 
+      number of connections is from*6-->
+      <wireconn num_conns="from*7" from_type="4len4D_y" from_switchpoint="0"
         to_type="len1_x,len2_x,len2x_stub,len4_x,len4x_stub,len1_y,len2_y,len2y_stub,len6_y,len6y_stub,4len1D_x,4len2D_x,3len2D_x,3len1D_x,len1D_y,2len4D_y,2len1D_y"
         to_switchpoint="0" />
 
       <!-- NW 2,6 from T. the fact this is bottom two garenties this is NW and not SE -->
-      <wireconn num_conns="from*18" from_type="3len1D_y" from_switchpoint="0"
+      <!-- 2 wires starting per SB. need to make 60/5=12 connections per wire.-->
+      <wireconn num_conns="from*7" from_type="3len1D_y" from_switchpoint="0"
         to_type="len1_x,len2_x,len2x_stub,len4_x,len4x_stub,len1_y,len2_y,len2y_stub,len6_y,len6y_stub,len1D_y,1len4D_y,4len1D_x,4len2D_x,3len2D_x,3len1D_x,2len4D_y,2len1D_y"
         to_switchpoint="0" />
-      <wireconn num_conns="from*18" from_type="3len4D_y" from_switchpoint="0"
+      <wireconn num_conns="from*7" from_type="3len4D_y" from_switchpoint="0"
         to_type="len1_x,len2_x,len2x_stub,len4_x,len4x_stub,len1_y,len2_y,len2y_stub,len6_y,len6y_stub,len1D_y,1len4D_y,4len1D_x,4len2D_x,3len2D_x,3len1D_x,2len4D_y,2len1D_y"
         to_switchpoint="0" />
 
+      <!-- 1 connection split between 1 wire, 1 terminating wire per sb. -->
       <wireconn num_conns="to" from_type="3len4D_y,3len1D_y" from_switchpoint="0"
         to_type="len12_y"
         to_switchpoint="0" />
 
-      <!-- NN2 and 6 connection -->
-      <!-- for current distributions each SB has exactly 2 L2/L6 stub in it. Calculating for
+      <!--
+      NN2 and 6 connection -->
+      <!--
+      for current distributions each SB has exactly 2 L2/L6 stub in it. Calculating for
           this
       there should be 2*num_cons_to*from_set connections -->
-      <wireconn num_conns="36*from" from_type="len2y_stub,len6y_stub"
+      <!-- These two wire types share the same interconectivity. 64 connections split between 5
+      wires for both types. 1 stub per SB and 3 normal types. 13 connections per wire,  -->
+      <wireconn num_conns="6*from" from_type="len2y_stub,len6y_stub"
         from_switchpoint="0"
         to_type="len1_x,len1_y,len2_x,len2x_stub,len4_x,len4x_stub,len2_y,len2y_stub,len6_y,len6y_stub,len1D_y,1len4D_y,2len4D_y,4len1D_x,4len2D_x,2len1D_y,3len1D_x,3len2D_x"
         to_switchpoint="0" />
-      <!-- There should be 6 len2/6 wires per SB meaning there should be
+      <!--
+      There should be 6 len2/6 wires per SB meaning there should be
           2/3*num_cons_to*from_set -->
-      <wireconn num_conns="12*from" from_type="len2_y,len6_y"
+      <wireconn num_conns="2*from" from_type="len2_y,len6_y"
         from_switchpoint="0"
         to_type="len1_x,len1_y,len2_x,len2x_stub,len4_x,len4x_stub,len2_y,len2y_stub,len6_y,len6y_stub,len1D_y,1len4D_y,2len4D_y,4len1D_x,4len2D_x,2len1D_y,3len1D_x,3len2D_x"
         to_switchpoint="0" />
 
-      <!-- For connection 1 things are a little diffrent and should be 1/2 of previus. -->
-      <wireconn num_conns="18*from" from_type="len2y_stub,len6y_stub"
+      <!--
+      For branches connection 1 things are a little diffrent and should be 1/2 of previus. -->
+      <wireconn num_conns="3*from" from_type="len2y_stub,len6y_stub"
         from_switchpoint="1"
         to_type="len1_x,len1_y,len2_x,len2x_stub,len4_x,len4x_stub,len2_y,len2y_stub,len6_y,len6y_stub,len1D_y,1len4D_y,2len4D_y,4len1D_x,4len2D_x,2len1D_y,3len1D_x,3len2D_x"
         to_switchpoint="0" />
 
-      <wireconn num_conns="18*from" from_type="len6y_stub" from_switchpoint="5"
+      <wireconn num_conns="3*from" from_type="len6y_stub" from_switchpoint="5"
         to_type="len1_x,len1_y,len2_x,len2x_stub,len4_x,len4x_stub,len2_y,len2y_stub,len6_y,len6y_stub,len1D_y,1len4D_y,2len4D_y,4len1D_x,4len2D_x,2len1D_y,3len1D_x,3len2D_x,len18_y,len12_y"
         to_switchpoint="0" />
       <wireconn num_conns="to" from_type="len6_y,len6y_stub" from_switchpoint="0,5"
         to_type="len18_y,len12_y" to_switchpoint="0" />
 
-      <!-- NL1 -->
-      <!-- 2 diffrent L1 wires will connect to a single L1 wire heading in the same
+      <!--
+      NL1 -->
+      <!--
+      2 diffrent L1 wires will connect to a single L1 wire heading in the same
           direction-->
-      <!-- 14 wires terminate at each SB. 8/14=4/7 we round up to 2 for NS->>NS because of int
+      <!--
+      14 wires terminate at each SB. 8/14=4/7 we round up to 2 for NS->>NS because of int
       division -->
       <wireconn num_conns="4*from" from_type="len1_y" from_switchpoint="0"
         to_type="len1_x,len2_x,len2x_stub,len2_y,len2y_stub,len1D_y,1len4D_y,4len1D_x,2len1D_y,3len1D_x,len18_y,len12_y"
@@ -3294,16 +3433,19 @@ and VTR's k6_N10_40nm.xml were pulled from to create
       <wireconn num_conns="2*from" from_type="len1_y" from_switchpoint="0" to_type="len1_y"
         to_switchpoint="0" />
 
-      <!-- L18 L12 -->
-      <wireconn num_conns="13" from_type="len18_y" from_switchpoint="0"
+      <!--
+      L18 L12 -->
+      <wireconn num_conns="11*from" from_type="len18_y" from_switchpoint="0"
         to_type="len12_x,len12_y,len18_y,len6_y,len6y_stub,4len2D_x,3len2D_x,2len4D_y,len4_x,len4x_stub"
         to_switchpoint="0" />
 
-      <wireconn num_conns="10" from_type="len12_y" from_switchpoint="0"
+      <wireconn num_conns="7*from" from_type="len12_y" from_switchpoint="0"
         to_type="len12_y,len6_y,len6y_stub,4len2D_x,3len2D_x,2len4D_y,len4_x"
         to_switchpoint="0" />
 
-      <!-- Stub connection for L2x-->
+      <!--
+      Stub connection for L2x-->
+      <!-- ! Need to fix -->
       <wireconn num_conns="36*from" from_type="stub_y" from_switchpoint="0"
         to_type="len1_x,len1_y,len6_y,len6y_stub,len2_y,len2y_stub,len2_x,len2x_stub,len4_x,len4x_stub,3len2D_x,2len4D_y,2len1D_y,3len1D_x,4len2D_x,len1D_y,4len1D_x,len12_x"
         to_switchpoint="0" />
@@ -3313,90 +3455,108 @@ and VTR's k6_N10_40nm.xml were pulled from to create
       <switchblock_location type="CORE" />
 
       <switchfuncs>
-        <!-- top->botom/left/right -->
+        <!--
+        top->botom/left/right -->
         <func type="tb" formula="W-t" />
         <func type="tl" formula="t+1" />
         <func type="tr" formula="2*W-2-t" />
       </switchfuncs>
 
-      <!-- SW 2,6 from T -->
-      <!-- technichly WW2, SS2, SS6 is not alowed but we leave it here, N1 also has 8 cons but
+      <!--
+      SW 2,6 from T -->
+      <!--
+      technichly WW2, SS2, SS6 is not alowed but we leave it here, N1 also has 8 cons but
           we
       leave it becaus it is the one and only outlier. we also cant do one type of NE turn in the
       same direction-->
 
-      <!-- 4/3D cannot connect to 3Dy,4Dy,2Dx or 1Dx or else the connections will interfear
+      <!--
+      4/3D cannot connect to 3Dy,4Dy,2Dx or 1Dx or else the connections will interfear
           with
       single connections on diagonal -->
-      <wireconn num_conns="17*from" from_type="4len4D_y" from_switchpoint="0"
+      <wireconn num_conns="7*from" from_type="4len4D_y" from_switchpoint="0"
         to_type="len1_x,len2_x,len2x_stub,len4_x,len4x_stub,len1_y,len2_y,len2y_stub,len6_y,len6y_stub,4len1D_x,4len2D_x,3len2D_x,3len1D_x,len1D_y,2len4D_y,2len1D_y"
         to_switchpoint="0" />
       <wireconn num_conns="17*from" from_type="4len1D_y" from_switchpoint="0"
         to_type="len1_x,len2_x,len2x_stub,len4_x,len4x_stub,len1_y,len2_y,len2y_stub,len6_y,len6y_stub,4len1D_x,4len2D_x,3len2D_x,3len1D_x,len1D_y,2len4D_y,2len1D_y"
         to_switchpoint="0" />
 
-      <!-- SE 2,6 from T -->
-      <wireconn num_conns="17*from" from_type="3len1D_y" from_switchpoint="0"
+      <!--
+      SE 2,6 from T -->
+      <wireconn num_conns="7*from" from_type="3len1D_y" from_switchpoint="0"
         to_type="len1_x,len2_x,len2x_stub,len4_x,len4x_stub,len1_y,len2_y,len2y_stub,len6_y,len6y_stub,4len1D_x,4len2D_x,3len2D_x,3len1D_x,len1D_y,2len4D_y,2len1D_y"
         to_switchpoint="0" />
       <wireconn num_conns="17*from" from_type="3len4D_y" from_switchpoint="0"
         to_type="len1_x,len2_x,len2x_stub,len4_x,len4x_stub,len1_y,len2_y,len2y_stub,len6_y,len6y_stub,4len1D_x,4len2D_x,3len2D_x,3len1D_x,len1D_y,2len4D_y,2len1D_y"
         to_switchpoint="0" />
 
-      <!-- !!! -->
+      <!--
+      !!! -->
       <wireconn num_conns="to" from_type="3len4D_y,3len1D_y" from_switchpoint="0"
         to_type="len12_y"
         to_switchpoint="0" />
 
-      <!-- South bound connections (from top only) -->
-      <!-- SS2, SS6 -->
-      <!-- 8 len2_y+len2y_stub so 1/2*18 -->
-      <wireconn num_conns="9*from" from_type="len2_y,len2y_stub"
+      <!--
+      South bound connections (from top only) -->
+      <!--
+      SS2, SS6 -->
+      <!--
+      8 len2_y+len2y_stub so 1/2*18 -->
+      <wireconn num_conns="7*from" from_type="len2_y,len2y_stub"
         from_switchpoint="0"
         to_type="len1_x,len1_y,len6_y,len6y_stub,len2_y,len2y_stub,len2_x,len2x_stub,len4_x,len4x_stub,3len2D_x,2len4D_y,2len1D_y,3len1D_x,4len2D_x,len1D_y,4len1D_x,len12_x"
         to_switchpoint="0" />
-      <!-- 2 L2 stub per SB so 2*18 -->
-      <wireconn num_conns="36*from" from_type="len2x_stub"
+      <!--
+      2 L2 stub per SB so 2*18 -->
+      <wireconn num_conns="13*from" from_type="len2x_stub"
         from_switchpoint="0"
         to_type="len1_x,len1_y,len6_y,len6y_stub,len2_y,len2y_stub,len2_x,len2x_stub,len4_x,len4x_stub,3len2D_x,2len4D_y,2len1D_y,3len1D_x,4len2D_x,len1D_y,4len1D_x,len12_x"
         to_switchpoint="0" />
-      <wireconn num_conns="9*from" from_type="len6_y,len6y_stub"
+      <wireconn num_conns="7*from" from_type="len6_y,len6y_stub"
         from_switchpoint="0"
         to_type="len1_x,len1_y,len6_y,len6y_stub,len2_y,len2y_stub,len2_x,len2x_stub,len4_x,len4x_stub,3len2D_x,2len4D_y,2len1D_y,3len1D_x,4len2D_x,len1D_y,4len1D_x,len12_x"
         to_switchpoint="0" />
 
-      <wireconn num_conns="36*from" from_type="len6y_stub" from_switchpoint="5"
+      <wireconn num_conns="13*from" from_type="len6y_stub" from_switchpoint="5"
         to_type="len1_x,len1_y,len6_y,len6y_stub,len2_y,len2y_stub,len2_x,len2x_stub,len4_x,len4x_stub,3len2D_x,2len4D_y,2len1D_y,3len1D_x,4len2D_x,len1D_y,4len1D_x,len12_x"
         to_switchpoint="0" />
-      <!-- len12 should only conn from ss6 not 2-->
-      <!-- I think 28from is the best option -->
-      <!-- <wireconn num_conns="2*from" from_type="len6_stub" from_switchpoint="0,1,2,5"
+      <!--
+      len12 should only conn from ss6 not 2-->
+      <!--
+      I think 28from is the best option -->
+      <!--
+      <wireconn num_conns="2*from" from_type="len6_stub" from_switchpoint="0,1,2,5"
       to_type="len1_x,len1_y,len6_y,len6_stub,len2_y,len2_x,len2x_stub,len4_x,len4x_stub,len2_stub,3len2D_x,2len4D_y,2len1D_y,3len1D_x,4len2D_x,len1D_y,4len1D_x,len12_x"
       to_switchpoint="0" /> -->
-      <!-- ^^ stright conns are ok in the middle because in xilinx these cons would happen
+      <!--
+      ^^ stright conns are ok in the middle because in xilinx these cons would happen
           anyway. -->
 
-      <!-- S1 note that this is the most iregular  -->
-      <wireconn num_conns="4*from" from_type="len1_y" from_switchpoint="0"
+      <!--
+      S1 note that this is the most iregular  -->
+      <!-- For L1 we have 64 connections to 9 wires so 7 per wire. 7 Len1 per SB -->
+      <wireconn num_conns="from" from_type="len1_y" from_switchpoint="0"
         to_type="len1_x,len2_x,len2x_stub,len2_y,len2y_stub,len1D_y,1len4D_y,4len1D_x,2len1D_y,3len1D_x,len18_y,len12_x"
         to_switchpoint="0" />
       <wireconn num_conns="2*from" from_type="len1_y" from_switchpoint="0" to_type="len1_y"
         to_switchpoint="0" />
 
 
-      <!-- L18 and L12 -->
-      <wireconn num_conns="10" from_type="len18_y" from_switchpoint="9"
+      <!--
+      L18 and L12 -->
+      <wireconn num_conns="8*from" from_type="len18_y" from_switchpoint="9"
         to_type="len12_x,len6_y,len6y_stub,4len2D_x,3len2D_x,2len4D_y,len4_x,len4x_stub"
         to_switchpoint="0" />
-      <wireconn num_conns="13" from_type="len18_y" from_switchpoint="0"
+      <wireconn num_conns="10*from" from_type="len18_y" from_switchpoint="0"
         to_type="len12_x,len12_y,len18_y,len6_y,len6y_stub,4len2D_x,3len2D_x,2len4D_y,len4_x,len4x_stub"
         to_switchpoint="0" />
 
-      <wireconn num_conns="10" from_type="len12_y" from_switchpoint="0"
+      <wireconn num_conns="8*from" from_type="len12_y" from_switchpoint="0"
         to_type="len12_y,len6_y,len6y_stub,4len2D_x,3len2D_x,2len4D_y,len4_x,len4x_stub"
         to_switchpoint="0" />
 
-      <!-- stub connection for L4x -->
+      <!--
+      stub connection for L4x -->
       <wireconn num_conns="11*from" from_type="stub_y" from_switchpoint="0"
         to_type="len1_x,len1_y,len2_x,len2x_stub,len4_x,len4x_stub,len2_y,len2y_stub,len6_y,len6y_stub,len1D_y,1len4D_y,4len1D_x,4len2D_x,2len4D_y,3len2D_x"
         to_switchpoint="0" />
@@ -3405,30 +3565,37 @@ and VTR's k6_N10_40nm.xml were pulled from to create
     <switchblock name="SW_NW_x" type="unidir">
       <switchblock_location type="CORE" />
       <switchfuncs>
-        <!-- Right->left/top/bottom -->
+        <!--
+        Right->left/top/bottom -->
         <func type="rl" formula="W-t" />
         <func type="rt" formula="t+1" />
         <func type="rb" formula="2*W-2-t" />
 
       </switchfuncs>
-      <!-- NE 2,6 from L -->
-      <!-- technichly WW2, SS2, SS6 is not alowed but we leave it here, N1 also has 8 cons but
+      <!--
+      NE 2,6 from L -->
+      <!--
+      technichly WW2, SS2, SS6 is not alowed but we leave it here, N1 also has 8 cons but
           we
       leave it becaus it is the one and only outlier. we alwo cant do one type of NE turn in the
       same direction-->
-      <!-- 6 of these wires in a channel 4/6=2/3 -->
-      <wireconn num_conns="12*from" from_type="len1D_x"
+      <!--
+      6 of these wires in a channel 4/6=2/3 -->
+      <!-- All L1 wires have 7 connections per wire -->
+      <wireconn num_conns="from" from_type="len1D_x"
         from_switchpoint="0"
         to_type="len1_x,len2_x,len2x_stub,len4_x,len4x_stub,len1_y,len2_y,len2y_stub,len6_y,len6y_stub,4len1D_x,4len2D_x,3len2D_x,3len1D_x,len1D_y,1len4D_y,2len4D_y,2len1D_y"
         to_switchpoint="0" />
 
-      <wireconn num_conns="18*from" from_type="1len2D_x"
+      <!-- SW connections -->
+      <wireconn num_conns="7*from" from_type="1len2D_x"
         from_switchpoint="0"
         to_type="len1_x,len2_x,len2x_stub,len4_x,len4x_stub,len1_y,len2_y,len2y_stub,len6_y,len6y_stub,4len1D_x,4len2D_x,3len2D_x,3len1D_x,len1D_y,1len4D_y,2len4D_y,2len1D_y"
         to_switchpoint="0" />
 
-      <!-- SE 2,6 from L -->
-      <wireconn num_conns="18*from" from_type="2len1D_x"
+      <!--
+      SE 2,6 from L -->
+      <wireconn num_conns="7*from" from_type="2len1D_x"
         from_switchpoint="0"
         to_type="len1_x,len2_x,len2x_stub,len4_x,len4x_stub,len1_y,len2_y,len2y_stub,len6_y,len6y_stub,4len1D_x,4len2D_x,3len2D_x,3len1D_x,len1D_y,1len4D_y,2len4D_y,2len1D_y"
         to_switchpoint="0" />
@@ -3437,12 +3604,14 @@ and VTR's k6_N10_40nm.xml were pulled from to create
         to_type="len1_x,len2_x,len2x_stub,len4_x,len4x_stub,len1_y,len2_y,len2y_stub,len6_y,len6y_stub,4len1D_x,4len2D_x,3len2D_x,3len1D_x,len1D_y,1len4D_y,2len4D_y,2len1D_y"
         to_switchpoint="0" />
 
-      <!-- WW4 WW2 interconn -->
-      <!-- 6 cons per SB 2/3*to_set rounded up -->
-      <wireconn num_conns="11*from" from_type="len2_x,len2x_stub" from_switchpoint="0"
+      <!--
+      WW4 WW2 interconn -->
+      <!--
+      6 cons per SB 2/3*to_set rounded up -->
+      <wireconn num_conns="7*from" from_type="len2_x,len2x_stub" from_switchpoint="0"
         to_type="len1_x,len1_y,len2_x,len2x_stub,len4_x,len4x_stub,len2_y,len2y_stub,len6_y,len6y_stub,len1D_y,1len4D_y,4len1D_x,4len2D_x,2len4D_y,3len2D_x"
         to_switchpoint="0" />
-      <wireconn num_conns="11*from" from_type="len4_x,len4x_stub" from_switchpoint="0"
+      <wireconn num_conns="7*from" from_type="len4_x,len4x_stub" from_switchpoint="0"
         to_type="len1_x,len1_y,len2_x,len2x_stub,len4_x,len4x_stub,len2_y,len2y_stub,len6_y,len6y_stub,len1D_y,1len4D_y,4len1D_x,4len2D_x,2len4D_y,3len2D_x"
         to_switchpoint="0" />
 
@@ -3450,18 +3619,21 @@ and VTR's k6_N10_40nm.xml were pulled from to create
         from_switchpoint="0"
         to_type="len18_y,len12_y"
         to_switchpoint="0" />
-      <!-- Technichly len18 and 12 should only be connected to ww4
+      <!--
+      Technichly len18 and 12 should only be connected to ww4
       not 2-->
 
-      <!-- WL1 -->
+      <!--
+      WL1 -->
       <wireconn num_conns="4*from" from_type="len1_x" from_switchpoint="0"
         to_type="len1_y,len2_x,len2x_stub,len2_y,len2y_stub,len1D_y,1len4D_y,4len1D_x,2len1D_y,3len1D_x,len18_y,len12_y"
         to_switchpoint="0" />
       <wireconn num_conns="2*from" from_type="len1_x" from_switchpoint="0" to_type="len1_x"
         to_switchpoint="0" />
 
-      <!-- L12 -->
-      <wireconn num_conns="14" from_type="len12_x" from_switchpoint="0"
+      <!--
+      L12 -->
+      <wireconn num_conns="10*from" from_type="len12_x" from_switchpoint="0"
         to_type="len12_x,len12_y,len18_y,len6_y,len6y_stub,4len2D_x,3len2D_x,2len4D_y,len4_x,len4x_stub"
         to_switchpoint="0" />
     </switchblock>
@@ -3469,40 +3641,45 @@ and VTR's k6_N10_40nm.xml were pulled from to create
     <switchblock name="NE_SE_x" type="unidir">
       <switchblock_location type="CORE" />
       <switchfuncs>
-        <!-- left->right/top/bottom -->
+        <!--
+        left->right/top/bottom -->
         <func type="lt" formula="W-t" />
         <func type="lb" formula="t+1" />
         <func type="lr" formula="2*W-2-t" />
       </switchfuncs>
-      <!-- NE 2,6 from L -->
-      <!-- technichly WW2, SS2, SS6 is not alowed but we leave it here, N1 also has 8 cons but
+      <!--
+      NE 2,6 from L -->
+      <!--
+      technichly WW2, SS2, SS6 is not alowed but we leave it here, N1 also has 8 cons but
           we
       leave it becaus it is the one and only outlier. we alwo cant do one type of NE turn in the
       same direction -->
-      <wireconn num_conns="12*from" from_type="len1D_x"
+      <wireconn num_conns="from" from_type="len1D_x"
         from_switchpoint="0"
         to_type="len1_x,len2_x,len2x_stub,len4_x,len4x_stub,len1_y,len2_y,len2y_stub,len6_y,len6y_stub,4len1D_x,4len2D_x,3len2D_x,3len1D_x,len1D_y,1len4D_y,2len4D_y,2len1D_y"
         to_switchpoint="0" />
-      <wireconn num_conns="18*from" from_type="1len2D_x" from_switchpoint="0"
+      <wireconn num_conns="7*from" from_type="1len2D_x" from_switchpoint="0"
         to_type="len1_x,len2_x,len2x_stub,len4_x,len4x_stub,len1_y,len2_y,len2y_stub,len6_y,len6y_stub,4len1D_x,4len2D_x,3len2D_x,3len1D_x,len1D_y,1len4D_y,2len4D_y,2len1D_y"
         to_switchpoint="0" />
 
       <wireconn num_conns="to" from_type="1len2D_x" from_switchpoint="0"
         to_type="len12_x" to_switchpoint="0" />
 
-      <!-- SE 2,6 from L -->
-      <wireconn num_conns="18*from" from_type="2len1D_x" from_switchpoint="0"
+      <!--
+      SE 2,6 from L -->
+      <wireconn num_conns="7*from" from_type="2len1D_x" from_switchpoint="0"
         to_type="len1_x,len2_x,len2x_stub,len4_x,len4x_stub,len1_y,len2_y,len2y_stub,len6_y,len6y_stub,4len1D_x,4len2D_x,3len2D_x,3len1D_x,len1D_y,1len4D_y,2len4D_y,2len1D_y"
         to_switchpoint="0" />
       <wireconn num_conns="18*from" from_type="2len2D_x" from_switchpoint="0"
         to_type="len1_x,len2_x,len2x_stub,len4_x,len4x_stub,len1_y,len2_y,len2y_stub,len6_y,len6y_stub,4len1D_x,4len2D_x,3len2D_x,3len1D_x,len1D_y,1len4D_y,2len4D_y,2len1D_y"
         to_switchpoint="0" />
 
-      <!-- EE4 and EE2 -->
-      <wireconn num_conns="11*from" from_type="len2_x,len2x_stub" from_switchpoint="0"
+      <!--
+      EE4 and EE2 -->
+      <wireconn num_conns="7*from" from_type="len2_x,len2x_stub" from_switchpoint="0"
         to_type="len1_x,len1_y,len2_x,len2x_stub,len4_x,len4x_stub,len2_y,len2y_stub,len6_y,len6y_stub,len1D_y,1len4D_y,4len1D_x,2len4D_y,3len2D_x,2len1D_y,3len1D_x,4len2D_x"
         to_switchpoint="0" />
-      <wireconn num_conns="11*from" from_type="len4_x,len4x_stub" from_switchpoint="0"
+      <wireconn num_conns="7*from" from_type="len4_x,len4x_stub" from_switchpoint="0"
         to_type="len1_x,len1_y,len2_x,len2x_stub,len4_x,len4x_stub,len2_y,len2y_stub,len6_y,len6y_stub,len1D_y,1len4D_y,4len1D_x,2len4D_y,3len2D_x,2len1D_y,3len1D_x,4len2D_x"
         to_switchpoint="0" />
 
@@ -3513,33 +3690,42 @@ and VTR's k6_N10_40nm.xml were pulled from to create
         to_type="len12_x"
         to_switchpoint="0" />
 
-      <!-- EL1 -->
+      <!--
+      EL1 -->
       <wireconn num_conns="4*from" from_type="len1_x" from_switchpoint="0"
         to_type="len1_y,len2_x,len2x_stub,len2_y,len2y_stub,len1D_y,1len4D_y,4len1D_x,2len1D_y,3len1D_x,len18_y,len12_x"
         to_switchpoint="0" />
       <wireconn num_conns="2*from" from_type="len1_x" from_switchpoint="0" to_type="len1_x"
         to_switchpoint="0" />
 
-      <!-- L12 -->
-      <wireconn num_conns="14" from_type="len12_x" from_switchpoint="0"
+      <!--
+      L12 -->
+      <wireconn num_conns="14*from" from_type="len12_x" from_switchpoint="0"
         to_type="len12_x,len12_y,len18_y,len6_y,len6y_stub,4len2D_x,3len2D_x,2len4D_y,len4_x,len4x_stub"
         to_switchpoint="0" />
     </switchblock>
-    <!-- End connection from wires->stubs -->
+    <!--
+    End connection from wires->stubs -->
 
-    <!-- Start Perimiter connections -->
+    <!--
+    Start Perimiter connections -->
     <switchblock name="wilton_straight" type="unidir">
       <switchblock_location type="PERIMETER" />
       <switchfuncs>
-        <!-- Straight -->
+        <!--
+        Straight -->
         <func type="lr" formula="t" />
-        <!-- left to right -->
+        <!--
+        left to right -->
         <func type="tb" formula="t" />
-        <!-- top to bottom -->
+        <!--
+        top to bottom -->
         <func type="rl" formula="t" />
-        <!-- right to left -->
+        <!--
+        right to left -->
         <func type="bt" formula="t" />
-        <!-- bottom to top -->
+        <!--
+        bottom to top -->
       </switchfuncs>
       <wireconn num_conns="3*to"
         from_type="1len4D_y,2len4D_y,3len4D_y,4len4D_y,len1D_y,2len1D_y,3len1D_y,4len1D_y"
@@ -3547,9 +3733,9 @@ and VTR's k6_N10_40nm.xml were pulled from to create
         to_type="1len4D_y,2len4D_y,3len4D_y,4len4D_y,len1D_y,2len1D_y,3len1D_y,4len1D_y"
         to_switchpoint="0" />
       <wireconn num_conns="3*to"
-        from_type="len1_y,len2_y,len6_y,len12_y,len18_y,len6y_stub,len2y_stub"
+        from_type="len1_y,len2_y,len6_y,len12_y,len18_y,len6y_stub,len2y_stub,stub_y"
         from_switchpoint="0"
-        to_type="len1_y,len2_y,len6_y,len12_y,len18_y,len6y_stub,len2y_stub"
+        to_type="len1_y,len2_y,len6_y,len12_y,len18_y,len6y_stub,len2y_stub,stub_y"
         to_switchpoint="0" />
 
       <wireconn num_conns="3*to"
@@ -3558,33 +3744,44 @@ and VTR's k6_N10_40nm.xml were pulled from to create
         to_type="len1D_x,2len1D_x,3len1D_x,4len1D_x,1len2D_x,2len2D_x,3len2D_x,4len2D_x"
         to_switchpoint="0" />
       <wireconn num_conns="3*to"
-        from_type="len1_x,len2_x,len4_x,len12_x,len4x_stub,len2x_stub,stub_y"
+        from_type="len1_x,len2_x,len4_x,len12_x,len4x_stub,len2x_stub"
         from_switchpoint="0" to_type="len1_x,len2_x,len4_x,len12_x,len4x_stub,len2x_stub"
         to_switchpoint="0" />
     </switchblock>
 
     <switchblock name="wilton_straight_corner" type="unidir">
-      <!-- Same as wilton straight, but turning around a corner -->
+      <!--
+      Same as wilton straight, but turning around a corner -->
       <switchblock_location type="CORNER" />
       <switchfuncs>
-        <!-- Counter-clock-wise turns -->
+        <!--
+        Counter-clock-wise turns -->
         <func type="lt" formula="t" />
-        <!-- left to top -->
+        <!--
+        left to top -->
         <func type="tr" formula="t" />
-        <!-- top to right -->
+        <!--
+        top to right -->
         <func type="rb" formula="t" />
-        <!-- right to bottom -->
+        <!--
+        right to bottom -->
         <func type="bl" formula="t" />
-        <!-- bottom to left -->
-        <!-- Clock-wise turns -->
+        <!--
+        bottom to left -->
+        <!--
+        Clock-wise turns -->
         <func type="tl" formula="t" />
-        <!-- top to left -->
+        <!--
+        top to left -->
         <func type="rt" formula="t" />
-        <!-- right to top -->
+        <!--
+        right to top -->
         <func type="br" formula="t" />
-        <!-- bottom to right -->
+        <!--
+        bottom to right -->
         <func type="lb" formula="t" />
-        <!-- left to bottom -->
+        <!--
+        left to bottom -->
       </switchfuncs>
       <wireconn num_conns="3*to"
         from_type="1len4D_y,2len4D_y,3len4D_y,4len4D_y,len1D_y,2len1D_y,3len1D_y,4len1D_y"
@@ -3596,7 +3793,7 @@ and VTR's k6_N10_40nm.xml were pulled from to create
         from_switchpoint="0" to_type="len1D_x,2len1D_x,3len1D_x,4len1D_x"
         to_switchpoint="0" />
       <wireconn num_conns="3*to"
-        from_type="len1_y,len2_y,len6_y,len12_y,len18_y,len6y_stub,len2y_stub"
+        from_type="len1_y,len2_y,len6_y,len12_y,len18_y,len6y_stub,len2y_stub,stub_y"
         from_switchpoint="0" to_type="len1_x,len2_x,len4_x,len12_x,len4x_stub,len2x_stub"
         to_switchpoint="0" />
 
@@ -3610,39 +3807,52 @@ and VTR's k6_N10_40nm.xml were pulled from to create
         to_type="1len4D_y,2len4D_y,3len4D_y,4len4D_y,len1D_y,2len1D_y,3len1D_y,4len1D_y"
         to_switchpoint="0" />
       <wireconn num_conns="3*to"
-        from_type="len1_x,len2_x,len4_x,len12_x,len4x_stub,len2x_stub,stub_y"
+        from_type="len1_x,len2_x,len4_x,len12_x,len4x_stub,len2x_stub"
         from_switchpoint="0"
         to_type="len1_y,len2_y,len6_y,len12_y,len18_y,len6y_stub,len2y_stub,stub_y"
         to_switchpoint="0" />
     </switchblock>
 
     <switchblock name="wilton_turn_fringe" type="unidir">
-      <!-- Non-corner perimeter SBs -->
+      <!--
+      Non-corner perimeter SBs -->
       <switchblock_location type="FRINGE" />
       <switchfuncs>
-        <!-- Counter-clock-wise turns -->
+        <!--
+        Counter-clock-wise turns -->
         <func type="lt" formula="W-t" />
-        <!-- left to top -->
+        <!--
+        left to top -->
         <func type="tr" formula="t+1" />
-        <!-- top to right -->
+        <!--
+        top to right -->
         <func type="rb" formula="2*W-2-t" />
-        <!-- right to bottom -->
+        <!--
+        right to bottom -->
         <func type="bl" formula="t+1" />
-        <!-- bottom to left -->
-        <!-- Clock-wise turns -->
+        <!--
+        bottom to left -->
+        <!--
+        Clock-wise turns -->
         <func type="tl" formula="W-t" />
-        <!-- top to left -->
+        <!--
+        top to left -->
         <func type="rt" formula="t+1" />
-        <!-- right to top -->
+        <!--
+        right to top -->
         <func type="br" formula="2*W-2-t" />
-        <!-- bottom to right -->
+        <!--
+        bottom to right -->
         <func type="lb" formula="t+1" />
-        <!-- left to bottom -->
+        <!--
+        left to bottom -->
       </switchfuncs>
-      <!-- We use 'max' style connections here to ensure there are no dangling wires,
+      <!--
+      We use 'max' style connections here to ensure there are no dangling wires,
           otherwise like
       core turns -->
-      <!-- L16 drivers -->
+      <!--
+      L16 drivers -->
       <wireconn num_conns="3*max(from,to)"
         from_type="1len4D_y,2len4D_y,3len4D_y,4len4D_y,len1D_y,2len1D_y,3len1D_y,4len1D_y"
         from_switchpoint="0"
@@ -3656,17 +3866,19 @@ and VTR's k6_N10_40nm.xml were pulled from to create
         to_switchpoint="0" />
 
       <wireconn num_conns="3*max(from,to)"
-        from_type="len1_y,len2_y,len6_y,len12_y,len18_y,len6y_stub,len2y_stub"
+        from_type="len1_y,len2_y,len6_y,len12_y,len18_y,len6y_stub,len2y_stub,stub_y"
         from_switchpoint="0" to_type="len1_x,len2_x,len4_x,len12_x,len4x_stub,len2x_stub"
         to_switchpoint="0" />
       <wireconn num_conns="3*max(from,to)"
-        from_type="len1_x,len2_x,len4_x,len12_x,len4x_stub,len2x_stub,stub_y" from_switchpoint="0"
+        from_type="len1_x,len2_x,len4_x,len12_x,len4x_stub,len2x_stub" from_switchpoint="0"
         to_type="len1_y,len2_y,len6_y,len12_y,len18_y,len6y_stub,len2y_stub,stub_y"
         to_switchpoint="0" />
     </switchblock>
-    <!-- End Perimiter connections -->
+    <!--
+    End Perimiter connections -->
 
-    <!-- Start connections with branching stub (i.e. stubs that are not on the same dirrection as
+    <!--
+    Start connections with branching stub (i.e. stubs that are not on the same dirrection as
     the wire they stem from) -->
     <switchblock name="rt_branch" type="unidir">
       <switchblock_location type="CORE" />
@@ -3677,7 +3889,8 @@ and VTR's k6_N10_40nm.xml were pulled from to create
 
       <wireconn num_conns="from" from_type="stub_y"
         from_switchpoint="0" to_type="len2x_stub" to_switchpoint="0" />
-      <!-- No switch override because we are going to be going to other wires as well. this is just
+      <!--
+      No switch override because we are going to be going to other wires as well. this is just
       to ensure there is always a connection from a stub. -->
 
       <wireconn num_conns="to" from_type="len2x_stub" from_switchpoint="0"
@@ -3698,6 +3911,10 @@ and VTR's k6_N10_40nm.xml were pulled from to create
       <wireconn num_conns="to" from_type="len4x_stub" from_switchpoint="0" to_type="stub_y"
         to_switchpoint="0" switch_override="electrical_short2" />
 
+      <!--
+      Only x dirrected wires have stubs that branch out to a SB perpendicular to the direction
+      of travel. See Figure 7 in the Netcracker Paper. -->
+
     </switchblock>
   </switchblocklist>
   <power>
@@ -3709,4 +3926,5 @@ and VTR's k6_N10_40nm.xml were pulled from to create
   <clocks>
     <clock buffer_size="auto" C_wire="2.5e-10" />
   </clocks>
+
 </architecture>
