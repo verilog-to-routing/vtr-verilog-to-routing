@@ -2,6 +2,7 @@
 #include "region.h"
 
 #include <algorithm>
+#include <limits>
 
 RegionRectCoord::RegionRectCoord(const vtr::Rect<int>& rect, int layer_num_min, int layer_num_max)
     : rect_(rect)
@@ -26,7 +27,9 @@ void RegionRectCoord::set_rect(const vtr::Rect<int>& rect) {
 }
 
 Region::Region()
-    : region_bounds_({999, 999, -1, -1}, -1, -1)    //these values indicate an empty rectangle, they are set as default values to help catch uninitialized use
+    : region_bounds_({std::numeric_limits<int>::max(), std::numeric_limits<int>::max(),
+                      std::numeric_limits<int>::min(), std::numeric_limits<int>::min()},
+                      -1, -1)    //these values indicate an empty rectangle
     , sub_tile_(NO_SUBTILE) {}
 
 const RegionRectCoord& Region::get_region_bounds() const {
@@ -80,37 +83,6 @@ bool Region::is_loc_in_reg(t_pl_loc loc) const {
 
     return false;
 }
-
-//bool do_regions_intersect(Region r1, Region r2) {
-//    bool intersect = true;
-//
-//    const auto r1_reg_coord = r1.get_region_rect();
-//    const auto r2_reg_coord = r2.get_region_rect();
-//
-//    vtr::Rect<int> r1_rect(r1_reg_coord.xmin, r1_reg_coord.ymin, r1_reg_coord.xmax, r1_reg_coord.ymax);
-//    vtr::Rect<int> r2_rect(r2_reg_coord.xmin, r2_reg_coord.ymin, r2_reg_coord.xmax, r2_reg_coord.ymax);
-//
-//    int r1_layer_num = r1_reg_coord.layer_num;
-//    int r2_layer_num = r2_reg_coord.layer_num;
-//
-//    vtr::Rect<int> intersect_rect;
-//
-//    if (r1_layer_num != r2_layer_num) {
-//        return intersect;
-//    }
-//
-//    intersect_rect = intersection(r1_rect, r2_rect);
-//
-//    /**
-//     * if the intersection rectangle is empty or the subtile of the two regions does not match,
-//     * the regions do not intersect
-//     */
-//    if (intersect_rect.empty() || r1.get_sub_tile() != r2.get_sub_tile()) {
-//        return intersect = false;
-//    }
-//
-//    return intersect;
-//}
 
 Region intersection(const Region& r1, const Region& r2) {
     const vtr::Rect<int>& r1_rect = r1.get_region_bounds().get_rect();

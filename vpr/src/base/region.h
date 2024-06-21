@@ -6,12 +6,8 @@
 #include "vpr_types.h"
 
 /**
- * @brief This class stores the data for each constraint region on a layer
- * @param xmin The minimum x coordinate of the region
- * @param ymin The minimum y coordinate of the region
- * @param xmax The maximum x coordinate of the region
- * @param ymax The maximum y coordinate of the region
- * @param layer_num The layer number of the region
+ * @class RegionRectCoord
+ * @brief This class stores coordinates of a cubic floorplan region.
  */
 struct RegionRectCoord {
     RegionRectCoord() = default;
@@ -53,7 +49,20 @@ struct RegionRectCoord {
     }
 
   private:
+    /**
+     * Represents a rectangle in the x-y plane.
+     * This rectangle is the projection of the cube represented by this class
+     * onto the x-y plane.
+     */
     vtr::Rect<int> rect_;
+
+    /**
+     * Represents the range of layers spanned by the projected rectangle (rect_).
+     * layer_range_.first --> the lowest layer
+     * layer_range.second --> the higher layer
+     * This range is inclusive, meaning that the lowest and highest layers are
+     * part of the floorplan region.
+     */
     std::pair<int, int> layer_range_;
 };
 
