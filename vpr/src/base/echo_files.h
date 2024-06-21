@@ -16,6 +16,9 @@ enum e_echo_files {
     //Packing
     E_ECHO_CLUSTERS,
 
+    //Legalizer
+    E_ECHO_FLAT_PLACE,
+
     // Intra-block routing
     E_ECHO_INTRA_LB_FAILED_ROUTE,
 

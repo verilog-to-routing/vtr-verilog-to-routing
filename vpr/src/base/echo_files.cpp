@@ -80,6 +80,9 @@ void alloc_and_load_echo_file_info() {
     //Packing
     setEchoFileName(E_ECHO_CLUSTERS, "clusters.echo");
 
+    //Legalizer
+    setEchoFileName(E_ECHO_FLAT_PLACE, "post_legalizer_flat_placement.echo");
+
     //Intra-block routing
     setEchoFileName(E_ECHO_INTRA_LB_FAILED_ROUTE, "intra_lb_failed_route.echo");
 
