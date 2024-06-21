@@ -171,8 +171,8 @@ TEST_CASE("RegionIntersect", "[vpr]") {
     Region region1_ml;
     Region region2_ml;
 
-    region1.set_region_bounds({1, 2, 3, 5, 0, 1});
-    region2.set_region_bounds({2, 3, 4, 6, 1, 2});
+    region1_ml.set_region_bounds({1, 2, 3, 5, 0, 1});
+    region2_ml.set_region_bounds({2, 3, 4, 6, 1, 2});
 
     const Region int_reg_ml = intersection(region1_ml, region2_ml);
     REQUIRE(int_reg_ml.get_region_bounds().get_rect() == vtr::Rect<int>(2, 3, 3, 5));
@@ -306,17 +306,36 @@ TEST_CASE("PartRegionIntersect2", "[vpr]") {
     pr1.add_to_part_region(r2);
     pr2.add_to_part_region(r3);
 
-    PartitionRegion int_pr;
-
-    int_pr = intersection(pr1, pr2);
+    PartitionRegion int_pr = intersection(pr1, pr2);
     const std::vector<Region>& regions = int_pr.get_regions();
-    vtr::Rect<int> int_rect(0, 0, 2, 2);
+
     REQUIRE(regions.size() == 1);
-    const vtr::Rect<int>& first_reg_coord = regions[0].get_region_bounds().get_rect();
-    const auto [layer_low, layer_high] = regions[0].get_region_bounds().get_layer_range();
-    REQUIRE(first_reg_coord == int_rect);
-    REQUIRE(layer_low == 0);
-    REQUIRE(layer_high == 0);
+    REQUIRE(regions[0].get_region_bounds().get_rect() == vtr::Rect<int> (0, 0, 2, 2));
+    REQUIRE(regions[0].get_region_bounds().get_layer_range() == std::make_pair(0, 0));
+}
+
+TEST_CASE("PartRegionIntersect2Multilayer", "[vpr]") {
+    PartitionRegion pr1;
+    PartitionRegion pr2;
+
+    Region r1;
+    Region r2;
+    Region r3;
+
+    r1.set_region_bounds({0, 0, 2, 2, 0, 1});
+    r2.set_region_bounds({4, 4, 6, 6, 1});
+    r3.set_region_bounds({0, 0, 2, 2, 1});
+
+    pr1.add_to_part_region(r1);
+    pr1.add_to_part_region(r2);
+    pr2.add_to_part_region(r3);
+
+    PartitionRegion int_pr = intersection(pr1, pr2);
+    const std::vector<Region>& regions = int_pr.get_regions();
+
+    REQUIRE(regions.size() == 1);
+    REQUIRE(regions[0].get_region_bounds().get_rect() == vtr::Rect<int> (0, 0, 2, 2));
+    REQUIRE(regions[0].get_region_bounds().get_layer_range() == std::make_pair(1, 1));
 }
 
 //2x2 regions, no overlaps
@@ -344,9 +363,37 @@ TEST_CASE("PartRegionIntersect3", "[vpr]") {
     pr2.add_to_part_region(r3);
     pr2.add_to_part_region(r4);
 
-    PartitionRegion int_pr;
+    PartitionRegion int_pr = intersection(pr1, pr2);
+    const std::vector<Region>& regions = int_pr.get_regions();
 
-    int_pr = intersection(pr1, pr2);
+    REQUIRE(regions.empty());
+}
+
+TEST_CASE("PartRegionIntersect3MultiLayer", "[vpr]") {
+    PartitionRegion pr1;
+    PartitionRegion pr2;
+
+    Region r1;
+    Region r2;
+    Region r3;
+    Region r4;
+
+    r1.set_region_bounds({1, 2, 3, 5, 0, 1});
+    r1.set_sub_tile(2);
+
+    r2.set_region_bounds({4, 2, 6, 4, 0, 1});
+
+    r3.set_region_bounds({4, 5, 5, 7, 0, 1});
+
+    r4.set_region_bounds({1, 2, 3, 5, 0, 1});
+    r4.set_sub_tile(4);
+
+    pr1.add_to_part_region(r1);
+    pr1.add_to_part_region(r2);
+    pr2.add_to_part_region(r3);
+    pr2.add_to_part_region(r4);
+
+    PartitionRegion int_pr = intersection(pr1, pr2);
     const std::vector<Region>& regions = int_pr.get_regions();
 
     REQUIRE(regions.empty());
@@ -377,16 +424,47 @@ TEST_CASE("PartRegionIntersect4", "[vpr]") {
     pr2.add_to_part_region(r3);
     pr2.add_to_part_region(r4);
 
-    PartitionRegion int_pr;
 
-    int_pr = intersection(pr1, pr2);
+    PartitionRegion int_pr = intersection(pr1, pr2);
     const std::vector<Region>& regions = int_pr.get_regions();
-
-    vtr::Rect<int> intersect(1, 2, 3, 4);
 
     REQUIRE(regions.size() == 1);
     REQUIRE(regions[0].get_region_bounds().get_layer_range() == std::make_pair(0, 0));
-    REQUIRE(regions[0].get_region_bounds().get_rect() == intersect);
+    REQUIRE(regions[0].get_region_bounds().get_rect() == vtr::Rect<int> (1, 2, 3, 4));
+    REQUIRE(regions[0].get_sub_tile() == 2);
+}
+
+TEST_CASE("PartRegionIntersect4MultiLayer", "[vpr]") {
+    PartitionRegion pr1;
+    PartitionRegion pr2;
+
+    Region r1;
+    Region r2;
+    Region r3;
+    Region r4;
+
+    r1.set_region_bounds({1, 2, 3, 5, 0, 1});
+    r1.set_sub_tile(2);
+
+    r2.set_region_bounds({4, 2, 6, 4, 0, 1});
+
+    r3.set_region_bounds({4, 2, 5, 7, 2});
+
+    r4.set_region_bounds({1, 2, 3, 4, 1, 2});
+    r4.set_sub_tile(2);
+
+    pr1.add_to_part_region(r1);
+    pr1.add_to_part_region(r2);
+    pr2.add_to_part_region(r3);
+    pr2.add_to_part_region(r4);
+
+
+    PartitionRegion int_pr = intersection(pr1, pr2);
+    const std::vector<Region>& regions = int_pr.get_regions();
+
+    REQUIRE(regions.size() == 1);
+    REQUIRE(regions[0].get_region_bounds().get_layer_range() == std::make_pair(1, 1));
+    REQUIRE(regions[0].get_region_bounds().get_rect() == vtr::Rect<int> (1, 2, 3, 4));
     REQUIRE(regions[0].get_sub_tile() == 2);
 }
 
