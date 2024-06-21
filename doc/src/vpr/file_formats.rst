@@ -744,7 +744,7 @@ Flat Placement File Format (.flat_place)
 ----------------------------------------
 The flat placement file contains the information needed for VPR's legalizer to reconstruct a clustering and placement solution,
 inferring mode and intra-cluster routing information and correcting legality violations as needed. 
-
+This input file format can be used as an alternative to the packed netlist (.net) and clustered placment (.place) files; the more succinct and higher-level input format permits an external tool to more easily provide a packing and placement solution to VPR.
 Each line in the flat placement file corresponds to a netlist primitive and has the following format::
 
     primitive_name    X    Y    subtile    site   # optional extra info
@@ -797,13 +797,15 @@ Example flat placement file entries are shown below:
    hh_core:hh_core_0|Add0~78       53   24     0       19     # 86 lcell_comb
 
 For complex pack molecules such as carry chains (see :ref:`Pack Patterns in <arch_complex_blocks>`), it is only necessary to include the root primitive in the flat placement file; the legalizer ignores non-root primitives and places all primitives in each pack molecule based on the root primitive entry. In the example file above, all lcell_comb instances shown are part of a carry chain segment, and so all except the root primitive are ignored.
-VPR's legalizer does not require the flat placement file to contain every primitive in the netlist; it will reconstruct the portion of the netlist and print a warning if the file does not cover the entire netlist. This functionality is useful for debugging legalization in an external placement tool.
+VPR's legalizer does not require the flat placement file to contain every primitive in the netlist; it will reconstruct the packing and placement for the specified portion of the netlist and print a warning if the file does not cover the entire netlist. This functionality is useful for debugging legalization in an external placement tool.
 
 .. note:: Use :option:`vpr --legalize` and :option:`vpr --flat_place_file <file>` to invoke the legalizer and specify an input flat placement file.
 
 .. note: Use :option:`vpr --write_flat_place <file>` to write out a post-placement flat placement file. Use :option:`vpr --echo_file on` to write out a (possibly incomplete) post-legalization flat placement file (the file will be named `post_legalizer_flat_placement.echo`).
 
 .. note: A flat placement file must correspond to a specific XML architecture file and a specific fixed size device layout (see :ref:`FPGA Grid Layout <arch_grid_layout>`). Use :option:`vpr --device <fixed layout name>` to specify a fixed device layout.
+
+.. note: Currently, this file format only supports 2D FPGA architectures.
 
 .. _vpr_route_resource_file:
 

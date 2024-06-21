@@ -346,7 +346,7 @@ Use the options below to override this default naming behaviour.
 
     Path to input :ref:`flat placement file <vpr_flat_placement_file>`.
 
-    **Default:** :option:`circuit <circuit>`.route
+    **Default:** :option:`circuit <circuit>`.flat_place
 
 .. option:: --sdc_file <file>
 
@@ -1873,7 +1873,7 @@ The following options are available when VPR's legalizer is invoked to reconstru
 .. option:: --write_fixed_clusters <file>
 
     Write out a (possibly incomplete) clustered placement file listing placement coordinates for clusters reconstructed from an input flat placement file.
-    If placement is run after legalization, this file is automatically set as an input placement constraints file.
+    If placement is run after legalization (in the same vpr run), this file is automatically used to constrain the placement of the clusters listed within it. If placement is run in a separate vpr run, this file should be specified using :option:`--fix_clusters <file>`.
 
     **Default:** ``fixed_clusters.out``
 
