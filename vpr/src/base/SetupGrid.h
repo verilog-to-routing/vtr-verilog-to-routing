@@ -13,10 +13,11 @@
 #include "physical_types.h"
 
 ///@brief Find the device satisfying the specified minimum resources
+/// minimum_instance_counts and target_device_utilization are not required when specifying a fixed layout
 DeviceGrid create_device_grid(const std::string& layout_name,
                               const std::vector<t_grid_def>& grid_layouts,
-                              const std::map<t_logical_block_type_ptr, size_t>& minimum_instance_counts,
-                              float target_device_utilization);
+                              const std::map<t_logical_block_type_ptr, size_t>& minimum_instance_counts = {},
+                              float target_device_utilization = 0.0);
 
 ///@brief Find the device close in size to the specified dimensions
 DeviceGrid create_device_grid(const std::string& layout_name,
