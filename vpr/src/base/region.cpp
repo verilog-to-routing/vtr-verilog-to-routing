@@ -119,17 +119,19 @@ Region intersection(const Region& r1, const Region& r2) {
         vtr::Rect<int> intersect_rect = intersection(r1_rect, r2_rect);
         region_bounds.set_rect(intersect_rect);
         intersect.set_region_bounds(region_bounds);
-
+        return intersect;
     } else if (r1.get_sub_tile() == NO_SUBTILE && r2.get_sub_tile() != NO_SUBTILE) {
         intersect.set_sub_tile(r2.get_sub_tile());
         vtr::Rect<int> intersect_rect = intersection(r1_rect, r2_rect);
         region_bounds.set_rect(intersect_rect);
         intersect.set_region_bounds(region_bounds);
+        return intersect;
     } else if (r1.get_sub_tile() != NO_SUBTILE && r2.get_sub_tile() == NO_SUBTILE) {
         intersect.set_sub_tile(r1.get_sub_tile());
         vtr::Rect<int> intersect_rect = intersection(r1_rect, r2_rect);
         region_bounds.set_rect(intersect_rect);
         intersect.set_region_bounds(region_bounds);
+        return intersect;
     }
 
     // subtile are not compatible
