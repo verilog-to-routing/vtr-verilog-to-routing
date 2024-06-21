@@ -154,15 +154,3 @@ tags
 cmake-build-debug
 cmake-build-release
 /.metadata/
-
-#
-# OTHER
-#
-fine-grained-parallel-router
-lookahead_info_paths
-lookahead_verifier_output
-run_flat
-run_vpr.py
-tests
-.gitignore
-run_heap_tests.py
