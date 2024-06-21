@@ -11,6 +11,7 @@ class BinaryHeap : public KAryHeap {
 
   private:
     void sift_down(size_t hole) final;
+    size_t parent(size_t i) const final;
 };
 
 #endif //VTR_BINARY_HEAP_H

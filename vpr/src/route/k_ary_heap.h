@@ -37,6 +37,7 @@ class KAryHeap : public HeapInterface {
     void prune_heap();
 
     virtual void sift_down(size_t hole) = 0;
+    virtual size_t parent(size_t i) const = 0;
 
     HeapStorage storage_;
 
