@@ -96,6 +96,8 @@
 #include "log.h"
 #include "iostream"
 
+#include "load_flat_place.h"
+
 #ifdef VPR_USE_TBB
 #    define TBB_PREVIEW_GLOBAL_CONTROL 1 /* Needed for compatibility with old TBB versions */
 #    include <tbb/task_arena.h>
@@ -354,10 +356,16 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
         }
     }
 
-    //Initialize vpr floorplanning constraints
+    //Initialize vpr floorplanning and routing constraints
     auto& filename_opts = vpr_setup->FileNameOpts;
     if (!filename_opts.read_vpr_constraints_file.empty()) {
         load_vpr_constraints_file(filename_opts.read_vpr_constraints_file.c_str());
+
+        // Check if there are route constraints specified, and if the clock modeling setting is explicitly specified
+        // If both conditions are met, issue a warning that the route constraints will override the clock modeling setting.
+        if (g_vpr_ctx.routing().constraints.get_num_route_constraints() && options->clock_modeling.provenance() == argparse::Provenance::SPECIFIED) {
+            VTR_LOG_WARN("Route constraint(s) detected and will override clock modeling setting.\n");
+        }
     }
 
     fflush(stdout);
@@ -462,7 +470,9 @@ void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
     float target_device_utilization = vpr_setup.PackerOpts.target_device_utilization;
     device_ctx.grid = create_device_grid(vpr_setup.device_layout, Arch.grid_layouts, num_type_instances, target_device_utilization);
 
-    VTR_ASSERT_MSG(device_ctx.grid.get_num_layers() <= MAX_NUM_LAYERS, "Number of layers should be less than MAX_NUM_LAYERS. If you need more layers, please increase the value of MAX_NUM_LAYERS in vpr_types.h");
+    VTR_ASSERT_MSG(device_ctx.grid.get_num_layers() <= MAX_NUM_LAYERS,
+                   "Number of layers should be less than MAX_NUM_LAYERS. "
+                   "If you need more layers, please increase the value of MAX_NUM_LAYERS in vpr_types.h");
 
     /*
      *Report on the device
@@ -588,6 +598,9 @@ bool vpr_pack_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
         if (packer_opts.doPacking == STAGE_DO) {
             //Do the actual packing
             status = vpr_pack(vpr_setup, arch);
+            if (!status) {
+                return status;
+            }
 
             //TODO: to be consistent with placement/routing vpr_pack should really
             //      load the netlist data structures itself, instead of re-loading
@@ -597,10 +610,25 @@ bool vpr_pack_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
             vpr_load_packing(vpr_setup, arch);
         } else {
             VTR_ASSERT(packer_opts.doPacking == STAGE_LOAD);
-            //Load a previous packing from the .net file
-            vpr_load_packing(vpr_setup, arch);
-            //Load cluster_constraints data structure here since loading pack file
-            load_cluster_constraints();
+
+            // generate a .net file by legalizing an input flat placement file
+            if (packer_opts.load_flat_placement) {
+
+                //Load and legalizer flat placement file
+                vpr_load_flat_placement(vpr_setup, arch);
+
+                //Load the result from the .net file
+                vpr_load_packing(vpr_setup, arch);
+
+            } else {
+
+                //Load a previous packing from the .net file
+                vpr_load_packing(vpr_setup, arch);
+
+                //Load cluster_constraints data structure here since loading pack file
+                load_cluster_constraints();
+            }
+
         }
 
         /* Sanity check the resulting netlist */
@@ -702,6 +730,37 @@ void vpr_load_packing(t_vpr_setup& vpr_setup, const t_arch& arch) {
     }
 }
 
+bool vpr_load_flat_placement(t_vpr_setup& vpr_setup, const t_arch& arch) {
+
+    // set up the device grid for the legalizer
+    auto& device_ctx = g_vpr_ctx.mutable_device();
+    device_ctx.arch = &arch;
+    device_ctx.grid = create_device_grid(vpr_setup.device_layout, arch.grid_layouts);
+    if (device_ctx.grid.get_num_layers() > 1) {
+        VPR_FATAL_ERROR(VPR_ERROR_PACK, "Legalizer currently only supports single layer devices.\n");
+    }
+
+    // load and legalize flat placement file, print .net and fix clusters files
+    bool status = load_flat_placement(vpr_setup, arch);
+    if (!status) {
+        return status;
+    }
+
+    // echo flat placement (orphan clusters will have -1 for X, Y, subtile coordinates)
+    if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_FLAT_PLACE)) {
+        print_flat_placement(getEchoFileName(E_ECHO_FLAT_PLACE));
+    }
+
+    // reset the device grid
+    device_ctx.grid.clear();
+
+    // if running placement, use the fix clusters file produced by the legalizer
+    if (vpr_setup.PlacerOpts.doPlacement) {
+        vpr_setup.PlacerOpts.constraints_file = vpr_setup.FileNameOpts.write_constraints_file;
+    }
+    return true;
+}
+
 bool vpr_place_flow(const Netlist<>& net_list, t_vpr_setup& vpr_setup, const t_arch& arch) {
     VTR_LOG("\n");
     const auto& placer_opts = vpr_setup.PlacerOpts;
@@ -728,6 +787,13 @@ bool vpr_place_flow(const Netlist<>& net_list, t_vpr_setup& vpr_setup, const t_a
     if (!filename_opts.write_vpr_constraints_file.empty()) {
         write_vpr_floorplan_constraints(filename_opts.write_vpr_constraints_file.c_str(), placer_opts.place_constraint_expand, placer_opts.place_constraint_subtile,
                                         placer_opts.floorplan_num_horizontal_partitions, placer_opts.floorplan_num_vertical_partitions);
+    }
+
+    // Write out a flat placement file if the option is specified
+    // A flat placement file includes cluster and intra-cluster placement coordinates for
+    // each primitive and can be used to reconstruct a clustering and placement solution.
+    if (!filename_opts.write_flat_place_file.empty()) {
+        print_flat_placement(vpr_setup.FileNameOpts.write_flat_place_file.c_str());
     }
 
     return true;
@@ -803,6 +869,10 @@ RouteStatus vpr_route_flow(const Netlist<>& net_list,
         //Assume successful
         route_status = RouteStatus(true, -1);
     } else { //Do or load
+
+        // set the net_is_ignored flag for nets that that have route_model set to ideal in route constraints
+        apply_route_constraints(g_vpr_ctx.routing().constraints);
+
         int chan_width = router_opts.fixed_channel_width;
 
         NetPinsMatrix<float> net_delay;
@@ -817,9 +887,9 @@ RouteStatus vpr_route_flow(const Netlist<>& net_list,
             routing_delay_calc = std::make_shared<RoutingDelayCalculator>(atom_ctx.nlist, atom_ctx.lookup, net_delay, is_flat);
             timing_info = make_setup_hold_timing_info(routing_delay_calc, router_opts.timing_update_type);
 #ifndef NO_SERVER
-            if (g_vpr_ctx.server().gateIO().is_running()) {
-                g_vpr_ctx.mutable_server().set_timing_info(timing_info);
-                g_vpr_ctx.mutable_server().set_routing_delay_calc(routing_delay_calc);
+            if (g_vpr_ctx.server().gate_io.is_running()) {
+                g_vpr_ctx.mutable_server().timing_info = timing_info;
+                g_vpr_ctx.mutable_server().routing_delay_calc = routing_delay_calc;
             }
 #endif /* NO_SERVER */
         } else {
@@ -1069,7 +1139,7 @@ void vpr_init_server(const t_vpr_setup& vpr_setup) {
 #ifndef NO_SERVER
     if (vpr_setup.ServerOpts.is_server_mode_enabled) {
         /* Set up a server and its callback to be triggered at 100ms intervals by the timer's timeout event. */
-        server::GateIO& gate_io = g_vpr_ctx.mutable_server().mutable_gateIO();
+        server::GateIO& gate_io = g_vpr_ctx.mutable_server().gate_io;
         if (!gate_io.is_running()) {
             gate_io.start(vpr_setup.ServerOpts.port_num);
             g_timeout_add(/*interval_ms*/ 100, server::update, &application);
@@ -1455,15 +1525,15 @@ void vpr_analysis(const Netlist<>& net_list,
         generate_setup_timing_stats(/*prefix=*/"", *timing_info,
                                     *analysis_delay_calc, vpr_setup.AnalysisOpts, vpr_setup.RouterOpts.flat_routing);
 
-        //Write the post-syntesis netlist
+        //Write the post-synthesis netlist
         if (vpr_setup.AnalysisOpts.gen_post_synthesis_netlist) {
-            netlist_writer(atom_ctx.nlist.netlist_name().c_str(), analysis_delay_calc,
+            netlist_writer(atom_ctx.nlist.netlist_name(), analysis_delay_calc,
                            vpr_setup.AnalysisOpts);
         }
 
         //Write the post-implementation merged netlist
         if (vpr_setup.AnalysisOpts.gen_post_implementation_merged_netlist) {
-            merged_netlist_writer(atom_ctx.nlist.netlist_name().c_str(), analysis_delay_calc, vpr_setup.AnalysisOpts);
+            merged_netlist_writer(atom_ctx.nlist.netlist_name(), analysis_delay_calc, vpr_setup.AnalysisOpts);
         }
 
         //Do power analysis

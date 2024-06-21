@@ -16,6 +16,7 @@
 #include "vpr_utils.h"
 #include "cluster_placement.h"
 #include "device_grid.h"
+#include "user_route_constraints.h"
 #include "re_cluster_util.h"
 
 /* This module contains subroutines that are used in several unrelated parts *
@@ -526,10 +527,9 @@ t_physical_tile_type_ptr physical_tile_type(ClusterBlockId blk) {
     auto& place_ctx = g_vpr_ctx.placement();
     auto& device_ctx = g_vpr_ctx.device();
 
-    auto block_loc = place_ctx.block_locs[blk];
-    auto loc = block_loc.loc;
+    auto block_loc = place_ctx.block_locs[blk].loc;
 
-    return device_ctx.grid.get_physical_type({loc.x, loc.y, loc.layer});
+    return device_ctx.grid.get_physical_type({block_loc.x, block_loc.y, block_loc.layer});
 }
 
 t_physical_tile_type_ptr physical_tile_type(AtomBlockId atom_blk) {
@@ -2149,20 +2149,6 @@ int max_pins_per_grid_tile() {
     return max_pins;
 }
 
-t_physical_tile_type_ptr get_physical_tile_type(const ClusterBlockId blk) {
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_ctx = g_vpr_ctx.placement();
-    if (place_ctx.block_locs.empty()) { //No placement, pick best match
-        return pick_physical_type(cluster_ctx.clb_nlist.block_type(blk));
-    } else { //Have placement, select physical tile implementing blk
-        auto& device_ctx = g_vpr_ctx.device();
-
-        t_pl_loc loc = place_ctx.block_locs[blk].loc;
-
-        return device_ctx.grid.get_physical_type({loc.x, loc.y, loc.layer});
-    }
-}
-
 int net_pin_to_tile_pin_index(const ClusterNetId net_id, int net_pin_index) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
@@ -2503,6 +2489,32 @@ void add_pb_child_to_list(std::list<const t_pb*>& pb_list, const t_pb* parent_pb
             // any atom block
             if (child_pb->parent_pb != nullptr) {
                 pb_list.push_back(child_pb);
+            }
+        }
+    }
+}
+
+void apply_route_constraints(const UserRouteConstraints& route_constraints) {
+    ClusteringContext& mutable_cluster_ctx = g_vpr_ctx.mutable_clustering();
+
+    // Iterate through all the nets 
+    for (auto net_id : mutable_cluster_ctx.clb_nlist.nets()) {
+        // Get the name of the current net
+        std::string net_name = mutable_cluster_ctx.clb_nlist.net_name(net_id);
+
+        // Check if a routing constraint is specified for the current net
+        if (route_constraints.has_routing_constraint(net_name)) {
+            // Mark the net as 'global' if there is a routing constraint for this net
+            // as the routing constraints are used to set the net as global
+            // and specify the routing model for it
+            mutable_cluster_ctx.clb_nlist.set_net_is_global(net_id, true);
+
+            // Mark the net as 'ignored' if the route model is 'ideal'
+            if (route_constraints.get_route_model_by_net_name(net_name) == e_clock_modeling::IDEAL_CLOCK) {
+                mutable_cluster_ctx.clb_nlist.set_net_is_ignored(net_id, true);
+            } else {
+                // Set the 'ignored' flag to false otherwise
+                mutable_cluster_ctx.clb_nlist.set_net_is_ignored(net_id, false);
             }
         }
     }

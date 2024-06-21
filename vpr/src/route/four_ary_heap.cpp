@@ -13,7 +13,7 @@ size_t FourAryHeap::smallest_child(size_t i) const {
     size_t child_3 = child_1 + 2;
     size_t child_4 = child_1 + 3;
 
-    int num_children = (((int)heap_tail_ - (int)child_1) > 4) ? 4 : (int)heap_tail_ - (int)child_1;
+    size_t num_children = std::min((size_t)4, heap_tail_ - child_1);
 
     switch (num_children) {
         case 4: {
@@ -70,7 +70,6 @@ t_heap* FourAryHeap::get_heap_head() {
         cheapest = heap_[1].elem_ptr;
 
         hole = 1;
-
         child = smallest_child(hole);
 
         --heap_tail_;
@@ -78,7 +77,6 @@ t_heap* FourAryHeap::get_heap_head() {
         while (child < heap_tail_) {
             heap_[hole] = heap_[child];
             hole = child;
-
             child = smallest_child(child);
         }
 

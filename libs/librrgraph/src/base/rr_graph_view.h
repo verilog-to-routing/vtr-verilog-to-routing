@@ -93,6 +93,19 @@ class RRGraphView {
         return node_storage_.node_type(node);
     }
 
+    /**
+     * @brief Retrieve the name assigned to a given node ID.
+     *
+     * If no name is assigned, an empty optional is returned.
+     *
+     * @param id The id of the node.
+     * @return An optional pointer to the string representing the name if found,
+     *         otherwise an empty optional.
+     */
+    std::optional<const std::string*> node_name(RRNodeId node) const {
+        return node_storage_.node_name(node);
+    }
+
     /** @brief Get the type string of a routing resource node. This function is inlined for runtime optimization. */
     inline const char* node_type_string(RRNodeId node) const {
         return node_storage_.node_type_string(node);
@@ -315,6 +328,21 @@ class RRGraphView {
     inline const char* node_side_string(RRNodeId node) const {
         return node_storage_.node_side_string(node);
     }
+
+    /** @brief Get the node id of the clock network virtual sink */
+    inline RRNodeId virtual_clock_network_root_idx(const char* clock_network_name) const {
+        return node_storage_.virtual_clock_network_root_idx(clock_network_name);
+    }
+
+    /**
+     * @brief Checks if the specified RRNode ID is a virtual sink for a clock network.
+     * @param id The ID of an RRNode.
+     * @return True if the node with the given ID is a virtual sink for a clock network, false otherwise.
+     */
+    inline bool is_virtual_clock_network_root(RRNodeId id) const {
+        return node_storage_.is_virtual_clock_network_root(id);
+    }
+
     /** @brief Get the switch id that represents the iedge'th outgoing edge from a specific node
      * TODO: We may need to revisit this API and think about higher level APIs, like ``switch_delay()``
      **/
@@ -369,7 +397,7 @@ class RRGraphView {
     /** @brief Get outgoing edges for a node.
      * This API is designed to enable range-based loop to walk through the outgoing edges of a node
      * Example:
-     *   RRGraphView rr_graph; // A dummny rr_graph for a short example
+     *   RRGraphView rr_graph; // A dummy rr_graph for a short example
      *   RRNodeId node; // A dummy node for a short example
      *   for (RREdgeId edge : rr_graph.edges(node)) {
      *     // Do something with the edge
@@ -436,7 +464,7 @@ class RRGraphView {
     }
 
     /** @brief  Return the switch information that is categorized in the rr_switch_inf with a given id
-     * rr_switch_inf is created to minimize memory footprint of RRGraph classs
+     * rr_switch_inf is created to minimize memory footprint of RRGraph class
      * While the RRG could contain millions (even much larger) of edges, there are only
      * a limited number of types of switches.
      * Hence, we use a flyweight pattern to store switch-related information that differs

@@ -37,9 +37,7 @@ void KAryHeap::add_to_heap(t_heap* hptr) {
     expand_heap_if_full();
     // start with undefined hole
     ++heap_tail_;
-
     heap_elem new_elem = {hptr, hptr->cost};
-
     sift_up(heap_tail_ - 1, new_elem);
 
     // If we have pruned, rebuild the heap now.
@@ -90,7 +88,7 @@ void KAryHeap::sift_up(size_t leaf, heap_elem const& node) {
 
 //expands heap by "realloc"
 void KAryHeap::expand_heap_if_full() {
-    if (heap_tail_ > heap_size_) { /* Heap is full */
+    if (heap_tail_ >= heap_size_) { /* Heap is full */
         heap_size_ *= 2;
         heap_.resize(heap_size_ + 1);
     }
@@ -101,7 +99,6 @@ void KAryHeap::push_back(t_heap* const hptr) {
     expand_heap_if_full();
 
     heap_elem new_elem = {hptr, hptr->cost};
-
     heap_[heap_tail_] = new_elem;
     ++heap_tail_;
 
@@ -111,13 +108,11 @@ void KAryHeap::push_back(t_heap* const hptr) {
 void KAryHeap::free_all_memory() {
     if (!heap_.empty()) {
         empty_heap();
-
         // coverity[offset_free : Intentional]
         heap_.clear();
     }
 
     //  heap_ = nullptr; /* Defensive coding:  crash hard if I use these. */
-
     storage_.free_all_memory();
 }
 
@@ -134,7 +129,6 @@ void KAryHeap::prune_heap() {
     VTR_ASSERT(max_index_ < prune_limit_);
 
     heap_elem blank_elem = {nullptr, 0.0};
-
     std::vector<heap_elem> best_heap_item(max_index_, blank_elem);
 
     // Find the cheapest instance of each index and store it.

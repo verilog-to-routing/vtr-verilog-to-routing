@@ -42,6 +42,11 @@ void calculate_centroid_loc(ClusterBlockId b_from,
     //iterate over the from block pins
     for (ClusterPinId pin_id : cluster_ctx.clb_nlist.block_pins(b_from)) {
         ClusterNetId net_id = cluster_ctx.clb_nlist.pin_net(pin_id);
+
+        if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
+            continue;
+        }
+
         /* Ignore the special case nets which only connects a block to itself  *
          * Experimentally, it was found that this case greatly degrade QoR     */
         if (cluster_ctx.clb_nlist.net_sinks(net_id).size() == 1) {
@@ -122,9 +127,9 @@ void calculate_centroid_loc(ClusterBlockId b_from,
     }
 
     //Calculate the centroid location
-    centroid.x = acc_x / acc_weight;
-    centroid.y = acc_y / acc_weight;
-    centroid.layer = acc_layer / acc_weight;
+    centroid.x = (int)std::round(acc_x / acc_weight);
+    centroid.y = (int)std::round(acc_y / acc_weight);
+    centroid.layer = (int)std::round(acc_layer / acc_weight);
 }
 
 static std::map<std::string, e_reward_function> available_reward_function = {

@@ -12,7 +12,7 @@ inline const std::string KEY_CMD{"CMD"};
 inline const std::string KEY_OPTIONS{"OPTIONS"};
 inline const std::string KEY_DATA{"DATA"};
 inline const std::string KEY_STATUS{"STATUS"};
-inline const std::string ECHO_DATA{"ECHO"};
+inline const std::string ECHO_TELEGRAM_BODY{"ECHO"};
 
 const unsigned char ZLIB_COMPRESSOR_ID = 'z';
 const unsigned char NONE_COMPRESSOR_ID = '\x0';
@@ -27,11 +27,6 @@ inline const std::string OPTION_DRAW_PATH_CONTOUR{"draw_path_contour"};
 
 inline const std::string KEY_SETUP_PATH_LIST{"setup"};
 inline const std::string KEY_HOLD_PATH_LIST{"hold"};
-
-enum CMD {
-    CMD_GET_PATH_LIST_ID=0,
-    CMD_DRAW_PATH_ID
-};
 
 } // namespace comm
 

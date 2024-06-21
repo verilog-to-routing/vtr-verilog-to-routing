@@ -43,3 +43,7 @@ Structures
 .. doxygenstruct:: TimingContext
    :project: vpr
    :members:
+
+.. doxygenstruct:: ServerContext
+   :project: vpr
+   :members:

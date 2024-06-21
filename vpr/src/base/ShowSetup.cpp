@@ -328,6 +328,7 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
         VTR_LOG("RouterOpts.first_iter_pres_fac: %f\n", RouterOpts.first_iter_pres_fac);
         VTR_LOG("RouterOpts.initial_pres_fac: %f\n", RouterOpts.initial_pres_fac);
         VTR_LOG("RouterOpts.pres_fac_mult: %f\n", RouterOpts.pres_fac_mult);
+        VTR_LOG("RouterOpts.max_pres_fac: %f\n", RouterOpts.max_pres_fac);
         VTR_LOG("RouterOpts.max_router_iterations: %d\n", RouterOpts.max_router_iterations);
         VTR_LOG("RouterOpts.min_incremental_reroute_fanout: %d\n", RouterOpts.min_incremental_reroute_fanout);
         VTR_LOG("RouterOpts.do_check_rr_graph: %s\n", RouterOpts.do_check_rr_graph ? "true" : "false");
@@ -473,6 +474,7 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
         VTR_LOG("RouterOpts.first_iter_pres_fac: %f\n", RouterOpts.first_iter_pres_fac);
         VTR_LOG("RouterOpts.initial_pres_fac: %f\n", RouterOpts.initial_pres_fac);
         VTR_LOG("RouterOpts.pres_fac_mult: %f\n", RouterOpts.pres_fac_mult);
+        VTR_LOG("RouterOpts.max_pres_fac: %f\n", RouterOpts.max_pres_fac);
         VTR_LOG("RouterOpts.max_router_iterations: %d\n", RouterOpts.max_router_iterations);
         VTR_LOG("RouterOpts.min_incremental_reroute_fanout: %d\n", RouterOpts.min_incremental_reroute_fanout);
         VTR_LOG("RouterOpts.do_check_rr_graph: %s\n", RouterOpts.do_check_rr_graph ? "true" : "false");
@@ -800,6 +802,10 @@ static void ShowNocOpts(const t_noc_opts& NocOpts) {
     VTR_LOG("NocOpts.noc_latency_weighting: %f\n", NocOpts.noc_latency_weighting);
     VTR_LOG("NocOpts.noc_congestion_weighting: %f\n", NocOpts.noc_congestion_weighting);
     VTR_LOG("NocOpts.noc_swap_percentage: %d%%\n", NocOpts.noc_swap_percentage);
+    VTR_LOG("NocOpts.noc_sat_routing_bandwidth_resolution: %d\n", NocOpts.noc_sat_routing_bandwidth_resolution);
+    VTR_LOG("NocOpts.noc_sat_routing_latency_overrun_weighting: %d\n", NocOpts.noc_sat_routing_latency_overrun_weighting);
+    VTR_LOG("NocOpts.noc_sat_routing_congestion_weighting: %d\n", NocOpts.noc_sat_routing_congestion_weighting);
+    VTR_LOG("NocOpts.noc_sat_routing_num_workers: %d\n", NocOpts.noc_sat_routing_num_workers);
     VTR_LOG("NocOpts.noc_routing_algorithm: %s\n", NocOpts.noc_placement_file_name.c_str());
     VTR_LOG("\n");
 }

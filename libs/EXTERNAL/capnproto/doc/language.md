@@ -581,7 +581,9 @@ struct Foo {
 
 The above imports specify relative paths.  If the path begins with a `/`, it is absolute -- in
 this case, the `capnp` tool searches for the file in each of the search path directories specified
-with `-I`.
+with `-I`, appending the path you specify to the path given to the `-I` flag. So, for example,
+if you ran `capnp` with `-Ifoo/bar`, and the import statement is `import "/baz/qux.capnp"`, then
+the compiler would open the file `foo/bar/baz/qux.capnp`.
 
 ### Annotations
 
@@ -606,7 +608,7 @@ struct MyType $foo("bar") {
 {% endhighlight %}
 
 The possible targets for an annotation are: `file`, `struct`, `field`, `union`, `group`, `enum`,
-`enumerant`, `interface`, `method`, `parameter`, `annotation`, `const`.
+`enumerant`, `interface`, `method`, `param`, `annotation`, `const`.
 You may also specify `*` to cover them all.
 
 {% highlight capnp %}
@@ -736,7 +738,15 @@ without changing the [canonical](encoding.html#canonicalization) encoding of a m
 
 * A field can be moved into a group or a union, as long as the group/union and all other fields
   within it are new.  In other words, a field can be replaced with a group or union containing an
-  equivalent field and some new fields.
+  equivalent field and some new fields.  Note that when creating a union this way, this particular
+  change is not fully forwards-compatible: if you create a message where one of the union's new
+  fields are set, and the message is read by an old program that dosen't know about the union, then
+  it may expect the original field to be present, and if it tries to read that field, may see a
+  garbage value or throw an exception. To avoid this problem, make sure to only use the new union
+  members when talking to programs that know about the union. This caveat only applies when moving
+  an existing field into a new union; adding new fields to an existing union does not create a
+  problem, because existing programs should already know to check the union's tag (although they
+  may or may not behave reasonably when the tag has a value they don't recognize).
 
 * A non-generic type can be made [generic](#generic-types), and new generic parameters may be
   added to an existing generic type. Other types used inside the body of the newly-generic type can

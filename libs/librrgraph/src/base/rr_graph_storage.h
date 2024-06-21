@@ -15,6 +15,8 @@
 #include "vtr_memory.h"
 #include "vtr_strong_id_range.h"
 #include "vtr_array_view.h"
+#include<iostream>
+#include <optional>
 
 /* Main structure describing one routing resource node.  Everything in       *
  * this structure should describe the graph -- information needed only       *
@@ -101,50 +103,49 @@ struct t_rr_node_ptc_data {
 
 class t_rr_graph_view;
 
-// RR node and edge storage class.
-//
-// Description:
-//
-// This class stores the detailed routing graph.  Each node within the graph is
-// identified by a RRNodeId.  Each edge within the graph is identified by a
-// RREdgeId.
-//
-// Each node contains data about the node itself, for example look at the
-// comment t_rr_node_data. Each node also has a set of RREdgeId's that all have
-// RRNodeId as the source node.
-//
-// Each edge is defined by the source node, destination node, and the switch
-// index that connects the source to the destination node.
-//
-// NOTE: The switch index represents either an index into arch_switch_inf
-// **or** rr_switch_inf.  During rr graph construction, the switch index is
-// always is an index into arch_switch_inf.  Once the graph is completed, the
-// RR graph construction code coverts all arch_switch_inf indicies
-// into rr_switch_inf indicies via the remap_rr_node_switch_indices method.
-//
-// Usage notes and assumptions:
-//
-// This class broadly speak is used by two types of code:
-//  - Code that writes to the rr graph
-//  - Code that reads from the rr graph
-//
-// Within VPR, there are two locations that the rr graph is expected to be
-// modified, either:
-//  - During the building of the rr graph in rr_graph.cpp
-//  - During the reading of a static rr graph from a file in rr_graph_reader
-//  / rr_graph_uxsdcxx_serializer.
-//
-// It is expected and assume that once the graph is completed, the graph is
-// fixed until the entire graph is cleared.  This object enforces this
-// assumption with state flags.  In particular RR graph edges are assumed
-// to be write only during construction of the RR graph, and read only
-// otherwise.  See the description of the "Edge methods" for details.
-//
-// Broadly speaking there are two sets of methods.  Methods for reading and
-// writing RR nodes, and methods for reading and writing RR edges. The node
-// methods can be found underneath the header "Node methods" and the edge
-// methods can be found underneath the header "Edge methods".
-//
+/**
+ * @file
+ * @brief RR node and edge storage class.
+ *
+ * @details
+ * This class stores the detailed routing graph. Each node within the graph is
+ * identified by a RRNodeId. Each edge within the graph is identified by a
+ * RREdgeId.
+ *
+ * Each node contains data about the node itself; refer to the comment for t_rr_node_data.
+ * Each node also has a set of RREdgeId's, all with RRNodeId as the source node.
+ *
+ * Each edge is defined by the source node, destination node, and the switch
+ * index that connects the source to the destination node.
+ *
+ * NOTE: The switch index represents either an index into arch_switch_inf
+ * **or** rr_switch_inf. During rr graph construction, the switch index is
+ * always an index into arch_switch_inf. Once the graph is completed, the
+ * RR graph construction code converts all arch_switch_inf indices
+ * into rr_switch_inf indices via the remap_rr_node_switch_indices method.
+ *
+ * @par Usage notes and assumptions:
+ * This class is broadly used by two types of code:
+ *   - Code that writes to the rr graph
+ *   - Code that reads from the rr graph
+ *
+ * Within VPR, there are two locations where the rr graph is expected to be
+ * modified:
+ *   - During the building of the rr graph in rr_graph.cpp
+ *   - During the reading of a static rr graph from a file in rr_graph_reader
+ *     / rr_graph_uxsdcxx_serializer.
+ *
+ * It is expected and assumed that once the graph is completed, the graph is
+ * fixed until the entire graph is cleared. This object enforces this
+ * assumption with state flags. In particular, RR graph edges are assumed
+ * to be write-only during the construction of the RR graph and read-only
+ * otherwise. See the description of the "Edge methods" for details.
+ *
+ * Broadly speaking, there are two sets of methods: methods for reading and
+ * writing RR nodes, and methods for reading and writing RR edges. The node
+ * methods can be found underneath the header "Node methods," and the edge
+ * methods can be found underneath the header "Edge methods."
+ */
 class t_rr_graph_storage {
   public:
     t_rr_graph_storage() {
@@ -234,6 +235,23 @@ class t_rr_graph_storage {
     short node_layer(RRNodeId id) const{
         return node_layer_[id];
     }
+    
+    /**
+     * @brief Retrieve the name assigned to a given node ID.
+     *
+     * If no name is assigned, an empty optional is returned.
+     *
+     * @param id The id of the node.
+     * @return An optional pointer to the string representing the name if found,
+     *         otherwise an empty optional.
+     */
+    std::optional<const std::string*> node_name(RRNodeId id) const{
+        auto it = node_name_.find(id);
+        if (it != node_name_.end()) {
+            return &it->second;  // Return the value if key is found
+        }
+        return std::nullopt;  // Return an empty optional if key is not found
+    }
 
     /** @brief Find the twist number that RR node uses to change ptc number across the same track.
      * By default this number is zero, meaning that ptc number across the same track should be the same.
@@ -245,6 +263,51 @@ class t_rr_graph_storage {
             return 0;
         }
         return node_ptc_twist_incr_[id];
+    }
+
+    /**
+     * @brief Returns the node ID of the virtual sink for the specified clock network name.
+     *
+     * If the clock network name is not found, the function returns INVALID RRNodeId.
+     *
+     * @param clock_network_name The name of the clock network.
+     * @return The node ID of the virtual sink associated with the provided clock network name,
+     *         or INVALID RRNodeID if the clock network name is not found.
+     */
+    RRNodeId virtual_clock_network_root_idx(const char* clock_network_name) const {
+        // Convert the input char* to a C++ string
+        std::string clock_network_name_str(clock_network_name);
+        
+        // Check if the clock network name exists in the list of virtual sink entries
+        auto it = virtual_clock_network_root_idx_.find(clock_network_name);
+        
+        if (it != virtual_clock_network_root_idx_.end()) {
+            // Return the node ID for the virtual sink of the given clock network name
+            return it->second;
+        }
+
+        // Return INVALID RRNodeID if the clock network name is not found
+        return RRNodeId::INVALID();
+    }
+
+    /**
+     * @brief Checks if the specified RRNode ID is a virtual sink for a clock network.
+     *
+     * A virtual sink/root is a node with the type SINK to which all clock network drive points are 
+     * connected in the routing graph.
+     * When the two-stage router routes a net through a clock network, it first routes to the virtual sink 
+     * in the first stage and then proceeds from there to the destination in the second stage.
+     *
+     * @param id The ID of an RRNode.
+     * @return True if the node with the given ID is a virtual sink for a clock network, false otherwise.
+     */
+    bool is_virtual_clock_network_root(RRNodeId id) const{
+        for (const auto& pair : virtual_clock_network_root_idx_) {
+            if (pair.second == id) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** @brief This prefetechs hot RR node data required for optimization.
@@ -338,11 +401,13 @@ class t_rr_graph_storage {
 
     /** @brief Get the source node for the specified edge. */
     RRNodeId edge_src_node(const RREdgeId& edge) const {
+        VTR_ASSERT_DEBUG(edge.is_valid());
         return edge_src_node_[edge];
     }
 
     /** @brief Get the destination node for the specified edge. */
     RRNodeId edge_sink_node(const RREdgeId& edge) const {
+        VTR_ASSERT_DEBUG(edge.is_valid());
         return edge_dest_node_[edge];
     }
 
@@ -472,6 +537,8 @@ class t_rr_graph_storage {
         node_first_edge_.clear();
         node_fan_in_.clear();
         node_layer_.clear();
+        node_name_.clear();
+        virtual_clock_network_root_idx_.clear();
         node_ptc_twist_incr_.clear();
         edge_src_node_.clear();
         edge_dest_node_.clear();
@@ -538,6 +605,7 @@ class t_rr_graph_storage {
     void set_node_class_num(RRNodeId id, int); //Same as set_ptc_num() by checks type() is consistent
 
     void set_node_type(RRNodeId id, t_rr_type new_type);
+    void set_node_name(RRNodeId id, std::string new_name);
     void set_node_coordinates(RRNodeId id, short x1, short y1, short x2, short y2);
     void set_node_layer(RRNodeId id, short layer);
     void set_node_ptc_twist_incr(RRNodeId id, short twist);
@@ -551,6 +619,13 @@ class t_rr_graph_storage {
      * This is the function to use when you just add a new side WITHOUT reseting side attributes
      */
     void add_node_side(RRNodeId, e_side new_side);
+
+    /**
+     * @brief Set the node ID of the virtual sink for the clock network.
+     *
+     * @param virtual_clock_network_root_idx The node ID of the virtual sink for the clock network.
+     */
+    void set_virtual_clock_network_root_idx(RRNodeId virtual_clock_network_root_idx);
 
     /****************
      * Edge methods *
@@ -675,7 +750,14 @@ class t_rr_graph_storage {
         return node_storage[id].dir_side_.direction;
     }
 
-    /* Find if the given node appears on a specific side */
+    /**
+     * @brief Find if the given node appears on a specific side.
+     *
+     * @param node_storage Array view containing data for the nodes.
+     * @param id The RRNodeId to check for.
+     * @param side The specific side to check for the node.
+     * @return true if the node appears on the specified side, false otherwise.
+     */
     static inline bool is_node_on_specific_side(
         vtr::array_view_id<RRNodeId, const t_rr_node_data> node_storage,
         const RRNodeId& id,
@@ -731,7 +813,7 @@ class t_rr_graph_storage {
      */
     vtr::vector<RRNodeId, t_rr_node_data, vtr::aligned_allocator<t_rr_node_data>> node_storage_;
 
-    /**@brief
+    /** @brief
      * The PTC data is cold data, and is generally not used during the inner
      * loop of either the placer or router.
      */
@@ -754,6 +836,26 @@ class t_rr_graph_storage {
      *in a separate vector.
      */
     vtr::vector<RRNodeId, short> node_layer_;
+
+    /**
+     * @brief Stores the assigned names for the RRNode IDs.
+     *
+     * We use a hash table for efficiency because most RRNodes do not have names.
+     * An RRNode can be given a name (e.g., example_name) by reading in an rr-graph
+     * in which the optional attribute <name=example_name> is set.
+     * Currently, the only use case for names is with global clock networks, where
+     * the name specifies the clock network to which an RRNode belongs.
+     */
+    std::unordered_map<RRNodeId, std::string> node_name_;
+
+    /**
+     * @brief A map that uses the name for each clock network as the key and stores 
+     * the rr_node index for the virtual sink that connects to all the nodes that 
+     * are clock network entry points.
+     *
+     * This map is particularly useful for two-stage clock routing.
+     */
+    std::unordered_map<std::string, RRNodeId> virtual_clock_network_root_idx_;
 
     /** @brief
      *Twist Increment number is defined for CHANX/CHANY nodes; it is useful for layout of tileable FPGAs used by openFPGA.
@@ -816,14 +918,17 @@ class t_rr_graph_storage {
     bool partitioned_;
 };
 
-// t_rr_graph_view is a read-only version of t_rr_graph_storage that only
-// uses pointers and sizes to rr graph data.
-//
-// t_rr_graph_view enables efficient access to RR graph storage without owning
-// the underlying storage.
-//
-// Because t_rr_graph_view only uses pointers and sizes, it is suitable for
-// use with purely mmap'd data.
+/**
+ * @brief t_rr_graph_view is a read-only version of t_rr_graph_storage that only
+ * uses pointers and sizes to RR graph data.
+ *
+ * @details
+ * t_rr_graph_view enables efficient access to RR graph storage without owning
+ * the underlying storage.
+ *
+ * Because t_rr_graph_view only uses pointers and sizes, it is suitable for
+ * use with purely mmap'd data.
+ */
 class t_rr_graph_view {
   public:
     t_rr_graph_view();
@@ -833,19 +938,23 @@ class t_rr_graph_view {
         const vtr::array_view_id<RRNodeId, const RREdgeId> node_first_edge,
         const vtr::array_view_id<RRNodeId, const t_edge_size> node_fan_in,
         const vtr::array_view_id<RRNodeId, const short> node_layer,
+        const std::unordered_map<RRNodeId, std::string>& node_name,
         const vtr::array_view_id<RRNodeId, const short> node_ptc_twist_incr,
         const vtr::array_view_id<RREdgeId, const RRNodeId> edge_src_node,
         const vtr::array_view_id<RREdgeId, const RRNodeId> edge_dest_node,
-        const vtr::array_view_id<RREdgeId, const short> edge_switch)
+        const vtr::array_view_id<RREdgeId, const short> edge_switch,
+        const std::unordered_map<std::string, RRNodeId>& virtual_clock_network_root_idx)
         : node_storage_(node_storage)
         , node_ptc_(node_ptc)
         , node_first_edge_(node_first_edge)
         , node_fan_in_(node_fan_in)
         , node_layer_(node_layer)
+        , node_name_(node_name)
         , node_ptc_twist_incr_(node_ptc_twist_incr)
         , edge_src_node_(edge_src_node)
         , edge_dest_node_(edge_dest_node)
-        , edge_switch_(edge_switch) {}
+        , edge_switch_(edge_switch)
+        , virtual_clock_network_root_idx_(virtual_clock_network_root_idx) {}
 
     /****************
      * Node methods *
@@ -894,17 +1003,49 @@ class t_rr_graph_view {
     int node_track_num(RRNodeId id) const; //Same as ptc_num() but checks that type() is consistent
     int node_class_num(RRNodeId id) const; //Same as ptc_num() but checks that type() is consistent
 
-    /* Retrieve fan_in for RRNodeId. */
+    /**
+    * @brief Retrieve the fan-in for a given RRNodeId.
+    *
+    * @param id The RRNodeId for which to retrieve the fan-in.
+    * @return The fan-in value.
+    */
     t_edge_size fan_in(RRNodeId id) const {
         return node_fan_in_[id];
     }
 
-    /* Retrieve layer(die) number that RRNodeId is located at */
+    /**
+     * @brief Retrieve the layer (die) number where the given RRNodeId is located.
+     *
+     * @param id The RRNodeId for which to retrieve the layer number.
+     * @return The layer number (die) where the RRNodeId is located.
+     */
     short node_layer(RRNodeId id) const{
         return node_layer_[id];
     }
 
-    /* Retrieve twist number (if available) that RRNodeId used for its ptc number */
+    /**
+     * @brief Retrieve the name assigned to a given node ID.
+     *
+     * If no name is assigned, an empty optional is returned.
+     *
+     * @param id The id of the node.
+     * @return An optional pointer to the string representing the name if found,
+     *         otherwise an empty optional.
+     */
+    std::optional<const std::string*> node_name(RRNodeId id) const{
+        auto it = node_name_.find(id);
+        if (it != node_name_.end()) {
+            return &it->second;  // Return the value if key is found
+        }
+        return std::nullopt;  // Return an empty optional if key is not found
+    }
+
+    /**
+     * @brief Retrieve the twist number (if available) that the given RRNodeId used for its PTC number.
+     *
+     * @param id The RRNodeId for which to retrieve the twist number.
+     * @return The twist number used for the PTC number, or a default value if not available.
+     */
     short node_ptc_twist_incr(RRNodeId id) const{
         //check if ptc twist increment allocated
         if(node_ptc_twist_incr_.empty()){
@@ -913,29 +1054,101 @@ class t_rr_graph_view {
         return node_ptc_twist_incr_[id];
     }
 
-    // This prefetechs hot RR node data required for optimization.
-    //
-    // Note: This is optional, but may lower time spent on memory stalls in
-    // some circumstances.
+    /**
+     * @brief Prefetches hot RR node data required for optimization.
+     *
+     * @details
+     * This is optional but may lower time spent on memory stalls in some circumstances.
+     *
+     * @param id The RRNodeId for which to prefetch hot node data.
+     */
     inline void prefetch_node(RRNodeId id) const {
         VTR_PREFETCH(&node_storage_[id], 0, 0);
     }
 
+    /**
+     * @brief Returns the node ID of the virtual sink for the specified clock network name.
+     *
+     * If the clock network name is not found, the function returns INVALID RRNodeId.
+     *
+     * @param clock_network_name The name of the clock network.
+     * @return The node ID of the virtual sink associated with the provided clock network name,
+     *         or INVALID RRNodeID if the clock network name is not found.
+     */
+    RRNodeId virtual_clock_network_root_idx(const char* clock_network_name) const {
+        // Convert the input char* to a C++ string
+        std::string clock_network_name_str(clock_network_name);
+        
+        // Check if the clock network name exists in the list of virtual sink entries
+        auto it = virtual_clock_network_root_idx_.find(clock_network_name_str);
+        
+        if (it != virtual_clock_network_root_idx_.end()) {
+            // Return the node ID for the virtual sink of the given clock network name
+            return it->second;
+        }
+        
+        // Return INVALID RRNodeID if the clock network name is not found
+        return RRNodeId::INVALID();
+    }
+
+    
+    /**
+     * @brief Checks if the specified RRNode ID is a virtual sink for a clock network.
+     *
+     * A virtual sink is a node with the type SINK to which all clock network drive points are 
+     * connected in the routing graph.
+     * When the two-stage router routes a net through a clock network, it first routes to the virtual sink 
+     * in the first stage and then proceeds from there to the destination in the second stage.
+     *
+     * @param id The ID of an RRNode.
+     * @return True if the node with the given ID is a virtual sink for a clock network, false otherwise.
+     */
+    bool is_virtual_clock_network_root(RRNodeId id) const {
+        for (const auto& pair : virtual_clock_network_root_idx_) {
+            if (pair.second == id) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /* Edge accessors */
 
-    // Returns a range of RREdgeId's belonging to RRNodeId id.
-    //
-    // If this range is empty, then RRNodeId id has no edges.
+    /**
+     * @brief Returns a range of RREdgeId's belonging to RRNodeId id.
+     *
+     * @details
+     * If this range is empty, then RRNodeId id has no edges.
+     *
+     * @param id The RRNodeId for which to retrieve the edge range.
+     * @return A range of RREdgeId's belonging to the specified RRNodeId.
+     */
     vtr::StrongIdRange<RREdgeId> edge_range(RRNodeId id) const {
         return vtr::StrongIdRange<RREdgeId>(first_edge(id), last_edge(id));
     }
 
-    // Get the destination node for the specified edge.
+    /**
+     * @brief Get the destination node for the specified edge.
+     *
+     * @details
+     * This function retrieves the RRNodeId representing the destination node for the specified edge.
+     *
+     * @param edge The RREdgeId for which to retrieve the destination node.
+     * @return The RRNodeId representing the destination node for the specified edge.
+     */
     RRNodeId edge_sink_node(RREdgeId edge) const {
         return edge_dest_node_[edge];
     }
 
-    // Get the switch used for the specified edge.
+    /**
+     * @brief Get the switch used for the specified edge.
+     *
+     * @details
+     * This function retrieves the switch used for the specified edge.
+     *
+     * @param edge The RREdgeId for which to retrieve the switch.
+     * @return The switch index used for the specified edge.
+     */
     short edge_switch(RREdgeId edge) const {
         return edge_switch_[edge];
     }
@@ -954,10 +1167,13 @@ class t_rr_graph_view {
     vtr::array_view_id<RRNodeId, const RREdgeId> node_first_edge_;
     vtr::array_view_id<RRNodeId, const t_edge_size> node_fan_in_;
     vtr::array_view_id<RRNodeId, const short> node_layer_;
+    const std::unordered_map<RRNodeId, std::string>& node_name_;
     vtr::array_view_id<RRNodeId, const short> node_ptc_twist_incr_;
     vtr::array_view_id<RREdgeId, const RRNodeId> edge_src_node_;
     vtr::array_view_id<RREdgeId, const RRNodeId> edge_dest_node_;
     vtr::array_view_id<RREdgeId, const short> edge_switch_;
+    const std::unordered_map<std::string, RRNodeId>& virtual_clock_network_root_idx_;
+
 };
 
 #endif /* _RR_GRAPH_STORAGE_ */

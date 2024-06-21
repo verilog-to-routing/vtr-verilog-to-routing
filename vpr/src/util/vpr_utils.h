@@ -13,6 +13,7 @@
 #include "arch_util.h"
 #include "physical_types_util.h"
 #include "rr_graph_utils.h"
+#include "vpr_constraints.h"
 
 class DeviceGrid;
 
@@ -233,10 +234,6 @@ AtomBlockId find_memory_sibling(const t_pb* pb);
  */
 void place_sync_external_block_connections(ClusterBlockId iblk);
 
-//Returns the current tile implemnting blk (if placement is valid), or
-//the best expected physical tile the block should use (if no valid placement).
-t_physical_tile_type_ptr get_physical_tile_type(const ClusterBlockId blk);
-
 //Returns the physical pin of the tile, related to the given ClusterNedId, and the net pin index
 int net_pin_to_tile_pin_index(const ClusterNetId net_id, int net_pin_index);
 
@@ -309,6 +306,16 @@ std::vector<int> get_cluster_block_pins(t_physical_tile_type_ptr physical_tile,
 t_arch_switch_inf create_internal_arch_sw(float delay);
 
 void add_pb_child_to_list(std::list<const t_pb*>& pb_list, const t_pb* parent_pb);
+
+/**
+ * @brief Apply user-defined route constraints to set the 'net_is_ignored_' and 'net_is_global_' flags.
+ *
+ * The 'net_is_global_' flag is used to identify global nets, which can be either clock signals or specified as global by user constraints.
+ * The 'net_is_ignored_' flag ensures that the router will ignore routing for the net.
+ *
+ * @param route_constraints User-defined route constraints to guide the application of constraints.
+ */
+void apply_route_constraints(const UserRouteConstraints& constraint);
 
 /**
  * @brief Iterate over all inter-layer switch types and return the minimum delay of it.
