@@ -62,7 +62,6 @@ size_t KAryHeap::size() const { return heap_tail_ - 1; } // heap[0] is not valid
 // runs in O(n) time by sifting down; the least work is done on the most elements: 1 swap for bottom layer, 2 swap for 2nd, ... lgn swap for top
 // 1*(n/2) + 2*(n/4) + 3*(n/8) + ... + lgn*1 = 2n (sum of i/2^i)
 void KAryHeap::build_heap() {
-    // second half of heap are leaves
     for (size_t i = parent(heap_tail_); i != 0; --i)
         sift_down(i);
 }

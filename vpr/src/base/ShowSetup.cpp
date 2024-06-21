@@ -410,6 +410,9 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
                 case e_heap_type::BINARY_HEAP:
                     VTR_LOG("BINARY_HEAP\n");
                     break;
+                case e_heap_type::FOUR_ARY_HEAP:
+                    VTR_LOG("FOUR_ARY_HEAP\n");
+                    break;
                 case e_heap_type::BUCKET_HEAP_APPROXIMATION:
                     VTR_LOG("BUCKET_HEAP_APPROXIMATION\n");
                     break;
@@ -552,6 +555,9 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
                     break;
                 case e_heap_type::BINARY_HEAP:
                     VTR_LOG("BINARY_HEAP\n");
+                    break;
+                case e_heap_type::FOUR_ARY_HEAP:
+                    VTR_LOG("FOUR_ARY_HEAP:\n");
                     break;
                 case e_heap_type::BUCKET_HEAP_APPROXIMATION:
                     VTR_LOG("BUCKET_HEAP_APPROXIMATION\n");

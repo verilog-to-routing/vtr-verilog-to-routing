@@ -3,10 +3,10 @@
 
 static inline size_t first_child(size_t i) { return (i << 2) - 2; }
 
-size_t FourAryHeap::parent(size_t i) const { return (i + 2) >> 2; }
+inline size_t FourAryHeap::parent(size_t i) const { return (i + 2) >> 2; }
 
-size_t FourAryHeap::smallest_child(size_t i) const {
-    // Returns heap_tail_ if i has no children
+inline size_t FourAryHeap::smallest_child(size_t i) const {
+    // Returns first_child(i) if i has no children
 
     size_t child_1 = first_child(i);
     size_t child_2 = child_1 + 1;
@@ -27,10 +27,8 @@ size_t FourAryHeap::smallest_child(size_t i) const {
         }
         case 2:
             return (heap_[child_1].cost < heap_[child_2].cost) ? child_1 : child_2;
-        case 1:
-            return child_1;
         default:
-            return heap_tail_;
+            return child_1;
     }
 }
 
@@ -75,9 +73,11 @@ t_heap* FourAryHeap::get_heap_head() {
         --heap_tail_;
 
         while (child < heap_tail_) {
+            child = smallest_child(hole);
+
             heap_[hole] = heap_[child];
             hole = child;
-            child = smallest_child(child);
+            child = first_child(hole);
         }
 
         sift_up(hole, heap_[heap_tail_]);
@@ -89,14 +89,13 @@ t_heap* FourAryHeap::get_heap_head() {
 // make a heap rooted at index hole by **sifting down** in O(lgn) time
 void FourAryHeap::sift_down(size_t hole) {
     heap_elem head{heap_[hole]};
-
     size_t child{smallest_child(hole)};
 
     while (child < heap_tail_) {
         if (heap_[child].cost < head.cost) {
             heap_[hole] = heap_[child];
             hole = child;
-            child = smallest_child(child);
+            child = smallest_child(hole);
         } else
             break;
     }

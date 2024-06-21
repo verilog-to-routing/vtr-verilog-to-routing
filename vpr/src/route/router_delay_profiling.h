@@ -2,6 +2,7 @@
 #define ROUTER_DELAY_PROFILING_H_
 
 #include "vpr_types.h"
+#include "binary_heap.h"
 #include "four_ary_heap.h"
 #include "connection_router.h"
 
