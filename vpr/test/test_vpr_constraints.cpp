@@ -14,6 +14,19 @@
  * UserPlaceConstraints, Region, PartitionRegions, and Partition.
  */
 
+namespace Catch
+{
+template <typename T>
+struct StringMaker<vtr::Rect<T>>
+{
+    static std::string convert(vtr::Rect<T> const &value) {
+        std::ostringstream oss;
+        oss << "Rectangle: (" << value.xmin() << ", " << value.ymin() << ") to (" << value.xmax() << ", " << value.ymax() << ")";
+        return oss.str();
+    }
+};
+}
+
 //Test Region class accessors and mutators
 TEST_CASE("Region", "[vpr]") {
     Region r1;
