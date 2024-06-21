@@ -52,7 +52,7 @@ bool Region::empty() const {
     const vtr::Rect<int>& rect = region_bounds_.get_rect();
     const auto [layer_begin, layer_end] = region_bounds_.get_layer_range();
 
-    return (rect.xmax() < rect.xmax() || rect.ymax() < rect.ymin() ||
+    return (rect.xmax() < rect.xmin() || rect.ymax() < rect.ymin() ||
             layer_begin < 0 || layer_end < 0 ||
             layer_end < layer_begin);
 }
