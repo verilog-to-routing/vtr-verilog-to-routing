@@ -2,8 +2,7 @@
 #include "vtr_log.h"
 
 static inline size_t first_child(size_t i) { return (i << 2) - 2; }
-
-inline size_t FourAryHeap::parent(size_t i) const { return (i + 2) >> 2; }
+static inline size_t parent(size_t i) { return (i + 2) >> 2; }
 
 inline size_t FourAryHeap::smallest_child(size_t i) const {
     // Returns first_child(i) if i has no children

@@ -11,7 +11,6 @@ class FourAryHeap : public KAryHeap {
 
   private:
     void sift_down(size_t hole) final;
-    size_t parent(size_t i) const final;
     size_t smallest_child(size_t i) const;
 };
 

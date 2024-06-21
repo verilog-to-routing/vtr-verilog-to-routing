@@ -4,8 +4,7 @@
 // child indices of a heap
 static inline size_t left(size_t i) { return i << 1; }
 static inline size_t right(size_t i) { return (i << 1) + 1; }
-
-inline size_t BinaryHeap::parent(size_t i) const { return i >> 1; }
+static inline size_t parent(size_t i) { return i >> 1; }
 
 bool BinaryHeap::is_valid() const {
     if (heap_.empty()) {
