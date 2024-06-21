@@ -113,7 +113,8 @@ PartitionRegion update_macro_head_pr(const t_pl_macro& pl_macro) {
 
 PartitionRegion update_macro_member_pr(const PartitionRegion& head_pr,
                                        const t_pl_offset& offset,
-                                       const t_pl_macro& pl_macro) {
+                                       const t_pl_macro& pl_macro,
+                                       const PartitionRegion& grid_pr) {
     const std::vector<Region>& block_regions = head_pr.get_regions();
     PartitionRegion macro_pr;
 
@@ -134,7 +135,7 @@ PartitionRegion update_macro_member_pr(const PartitionRegion& head_pr,
         macro_pr.add_to_part_region(modified_reg);
     }
 
-    const PartitionRegion& grid_pr = get_device_partition_region();
+
     //intersect to ensure the macro pr does not go outside of grid dimensions
     macro_pr = intersection(macro_pr, grid_pr);
 
@@ -179,7 +180,8 @@ void propagate_place_constraints() {
                 if (imember == 0) { //Update head PR
                     floorplanning_ctx.cluster_constraints[iblk] = macro_head_pr;
                 } else { //Update macro member PR
-                    PartitionRegion macro_pr = update_macro_member_pr(macro_head_pr, offset, pl_macro);
+                    const PartitionRegion& grid_pr = get_device_partition_region();
+                    PartitionRegion macro_pr = update_macro_member_pr(macro_head_pr, offset, pl_macro, grid_pr);
                     floorplanning_ctx.cluster_constraints[iblk] = macro_pr;
                 }
             }

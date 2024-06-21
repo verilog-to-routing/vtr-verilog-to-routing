@@ -18,27 +18,30 @@
 TEST_CASE("Region", "[vpr]") {
     Region r1;
 
-    r1.set_region_rect({1, 2, 3, 4, 5});
+    r1.set_region_bounds({1, 2, 3, 4, 5});
     r1.set_sub_tile(2);
 
-    const auto r1_coord = r1.get_region_rect();
+    const vtr::Rect<int>& r1_rect = r1.get_region_bounds().get_rect();
+    auto [layer_low, layer_high] = r1.get_region_bounds().get_layer_range();
 
-    REQUIRE(r1_coord.xmin == 1);
-    REQUIRE(r1_coord.ymin == 2);
-    REQUIRE(r1_coord.xmax == 3);
-    REQUIRE(r1_coord.ymax == 4);
-    REQUIRE(r1_coord.layer_num == 5);
+    REQUIRE(r1_rect.xmin() == 1);
+    REQUIRE(r1_rect.ymin() == 2);
+    REQUIRE(r1_rect.xmax() == 3);
+    REQUIRE(r1_rect.ymax() == 4);
+    REQUIRE(layer_low == 5);
+    REQUIRE(layer_high == 5);
     REQUIRE(r1.get_sub_tile() == 2);
 
     //checking that default constructor creates an empty rectangle (999, 999,-1,-1)
     Region def_region;
-    bool is_def_empty = false;
 
-    const auto def_coord = def_region.get_region_rect();
-    is_def_empty = def_region.empty();
+    const vtr::Rect<int>& def_coord = def_region.get_region_bounds().get_rect();
+    std::tie(layer_low, layer_high) = def_region.get_region_bounds().get_layer_range();
+    bool is_def_empty = def_region.empty();
     REQUIRE(is_def_empty == true);
-    REQUIRE(def_coord.xmin == 999);
-    REQUIRE(def_coord.layer_num == -1);
+    REQUIRE(def_coord.xmin() == std::numeric_limits<int>::max());
+    REQUIRE(layer_low == -1);
+    REQUIRE(layer_high == -1);
     REQUIRE(def_region.get_sub_tile() == -1);
 }
 
@@ -46,7 +49,7 @@ TEST_CASE("Region", "[vpr]") {
 TEST_CASE("PartitionRegion", "[vpr]") {
     Region r1;
 
-    r1.set_region_rect({2, 3, 6, 7, 0});
+    r1.set_region_bounds({2, 3, 6, 7, 0});
     r1.set_sub_tile(3);
 
     PartitionRegion pr1;
@@ -56,12 +59,14 @@ TEST_CASE("PartitionRegion", "[vpr]") {
     const std::vector<Region>& pr_regions = pr1.get_regions();
     REQUIRE(pr_regions[0].get_sub_tile() == 3);
 
-    const auto pr_reg_coord = pr_regions[0].get_region_rect();
-    REQUIRE(pr_reg_coord.layer_num == 0);
-    REQUIRE(pr_reg_coord.xmin == 2);
-    REQUIRE(pr_reg_coord.ymin == 3);
-    REQUIRE(pr_reg_coord.xmax == 6);
-    REQUIRE(pr_reg_coord.ymax == 7);
+    const vtr::Rect<int>& pr_reg_rect = pr_regions[0].get_region_bounds().get_rect();
+    const auto [layer_low, layer_high] = pr_regions[0].get_region_bounds().get_layer_range();
+    REQUIRE(layer_low == 0);
+    REQUIRE(layer_high == 0);
+    REQUIRE(pr_reg_rect.xmin() == 2);
+    REQUIRE(pr_reg_rect.ymin() == 3);
+    REQUIRE(pr_reg_rect.xmax() == 6);
+    REQUIRE(pr_reg_rect.ymax() == 7);
 }
 
 //Test Partition class accessors and mutators
@@ -73,7 +78,7 @@ TEST_CASE("Partition", "[vpr]") {
 
     //create region and partitionregions objects to test functions of the Partition class
     Region r1;
-    r1.set_region_rect({2, 3, 7, 8, 0});
+    r1.set_region_bounds({2, 3, 7, 8, 0});
     r1.set_sub_tile(3);
 
     PartitionRegion part_reg;
@@ -85,12 +90,15 @@ TEST_CASE("Partition", "[vpr]") {
 
     REQUIRE(regions[0].get_sub_tile() == 3);
 
-    const auto pr_reg_coord = regions[0].get_region_rect();
-    REQUIRE(pr_reg_coord.layer_num == 0);
-    REQUIRE(pr_reg_coord.xmin == 2);
-    REQUIRE(pr_reg_coord.ymin == 3);
-    REQUIRE(pr_reg_coord.xmax == 7);
-    REQUIRE(pr_reg_coord.ymax == 8);
+
+    const vtr::Rect<int>& pr_reg_rect = regions[0].get_region_bounds().get_rect();
+    const auto [layer_low, layer_high] = regions[0].get_region_bounds().get_layer_range();
+    REQUIRE(layer_low == 0);
+    REQUIRE(layer_high == 0);
+    REQUIRE(pr_reg_rect.xmin() == 2);
+    REQUIRE(pr_reg_rect.ymin() == 3);
+    REQUIRE(pr_reg_rect.xmax() == 7);
+    REQUIRE(pr_reg_rect.ymax() == 8);
 }
 
 //Test UserPlaceConstraints class accessors and mutators
@@ -136,37 +144,41 @@ TEST_CASE("RegionIntersect", "[vpr]") {
     Region region1;
     Region region2;
 
-    region1.set_region_rect({1, 2, 3, 5, 0});
-    region2.set_region_rect({2, 3, 4, 6, 0});
+    region1.set_region_bounds({1, 2, 3, 5, 0});
+    region2.set_region_bounds({2, 3, 4, 6, 0});
 
     Region int_reg;
 
     int_reg = intersection(region1, region2);
-    auto intersect_reg_coord = int_reg.get_region_rect();
+    vtr::Rect<int> intersect_reg_coord = int_reg.get_region_bounds().get_rect();
+    auto [layer_low, layer_high] = int_reg.get_region_bounds().get_layer_range();
 
-    REQUIRE(intersect_reg_coord.layer_num == 0);
-    REQUIRE(intersect_reg_coord.xmin == 2);
-    REQUIRE(intersect_reg_coord.ymin == 3);
-    REQUIRE(intersect_reg_coord.xmax == 3);
-    REQUIRE(intersect_reg_coord.ymax == 5);
+    REQUIRE(layer_low == 0);
+    REQUIRE(layer_high == 0);
+    REQUIRE(intersect_reg_coord.xmin() == 2);
+    REQUIRE(intersect_reg_coord.ymin() == 3);
+    REQUIRE(intersect_reg_coord.xmax() == 3);
+    REQUIRE(intersect_reg_coord.ymax() == 5);
 
     //Test full overlap
     Region region3;
     Region region4;
 
-    region3.set_region_rect({5, 1, 8, 6, 0});
-    region4.set_region_rect({6, 3, 8, 6, 0});
+    region3.set_region_bounds({5, 1, 8, 6, 0});
+    region4.set_region_bounds({6, 3, 8, 6, 0});
 
     Region int_reg_2;
 
     int_reg_2 = intersection(region3, region4);
-    intersect_reg_coord = int_reg_2.get_region_rect();
+    intersect_reg_coord = int_reg_2.get_region_bounds().get_rect();
+    std::tie(layer_low, layer_high) = int_reg_2.get_region_bounds().get_layer_range();
 
-    REQUIRE(intersect_reg_coord.layer_num == 0);
-    REQUIRE(intersect_reg_coord.xmin == 6);
-    REQUIRE(intersect_reg_coord.ymin == 3);
-    REQUIRE(intersect_reg_coord.xmax == 8);
-    REQUIRE(intersect_reg_coord.ymax == 6);
+    REQUIRE(layer_low == 0);
+    REQUIRE(layer_high == 0);
+    REQUIRE(intersect_reg_coord.xmin() == 6);
+    REQUIRE(intersect_reg_coord.ymin() == 3);
+    REQUIRE(intersect_reg_coord.xmax() == 8);
+    REQUIRE(intersect_reg_coord.ymax() == 6);
 
     //Test no intersection (rectangles don't overlap, intersect region will be returned empty)
 
@@ -191,12 +203,15 @@ TEST_CASE("RegionIntersect", "[vpr]") {
 
     Region int_reg_5;
     int_reg_5 = intersection(region1, region2);
-    const auto reg_5_coord = int_reg_5.get_region_rect();
-    REQUIRE(reg_5_coord.layer_num == 0);
-    REQUIRE(reg_5_coord.xmin == 2);
-    REQUIRE(reg_5_coord.ymin == 3);
-    REQUIRE(reg_5_coord.xmax == 3);
-    REQUIRE(reg_5_coord.ymax == 5);
+    const vtr::Rect<int>& reg_5_coord = int_reg_5.get_region_bounds().get_rect();
+    std::tie(layer_low, layer_high) = int_reg_5.get_region_bounds().get_layer_range();
+
+    REQUIRE(layer_low == 0);
+    REQUIRE(layer_high == 0);
+    REQUIRE(reg_5_coord.xmin() == 2);
+    REQUIRE(reg_5_coord.ymin() == 3);
+    REQUIRE(reg_5_coord.xmax() == 3);
+    REQUIRE(reg_5_coord.ymax() == 5);
 }
 
 //The following six test cases test the intersection function for PartitionRegions
@@ -209,23 +224,9 @@ TEST_CASE("PartRegionIntersect", "[vpr]") {
     Region r2;
     Region r3;
 
-    r1.set_region_rect({0,
-                        0,
-                        1,
-                        1,
-                        0});
-
-    r2.set_region_rect({1,
-                        1,
-                        2,
-                        2,
-                        0});
-
-    r3.set_region_rect({0,
-                        0,
-                        2,
-                        2,
-                        0});
+    r1.set_region_bounds({0, 0, 1, 1, 0});
+    r2.set_region_bounds({1, 1, 2, 2, 0});
+    r3.set_region_bounds({0, 0, 2, 2, 0});
 
     pr1.add_to_part_region(r1);
     pr1.add_to_part_region(r2);
@@ -239,12 +240,12 @@ TEST_CASE("PartRegionIntersect", "[vpr]") {
     vtr::Rect<int> int_rect(0, 0, 1, 1);
     vtr::Rect<int> int_rect_2(1, 1, 2, 2);
 
-    const auto first_reg_coord = regions[0].get_region_rect();
-    const auto second_reg_coord = regions[1].get_region_rect();
-    REQUIRE(vtr::Rect<int>(first_reg_coord.xmin, first_reg_coord.ymin, first_reg_coord.xmax, first_reg_coord.ymax) == int_rect);
-    REQUIRE(vtr::Rect<int>(second_reg_coord.xmin, second_reg_coord.ymin, second_reg_coord.xmax, second_reg_coord.ymax) == int_rect_2);
-    REQUIRE(first_reg_coord.layer_num == 0);
-    REQUIRE(second_reg_coord.layer_num == 0);
+    const vtr::Rect<int>& first_reg_coord = regions[0].get_region_bounds().get_rect();
+    const vtr::Rect<int>& second_reg_coord = regions[1].get_region_bounds().get_rect();
+    REQUIRE(first_reg_coord == int_rect);
+    REQUIRE(second_reg_coord == int_rect_2);
+    REQUIRE(regions[0].get_region_bounds().get_layer_range() == std::make_pair(0, 0));
+    REQUIRE(regions[1].get_region_bounds().get_layer_range() == std::make_pair(0, 0));
 }
 
 //2x1 regions, 1 overlap
@@ -256,9 +257,9 @@ TEST_CASE("PartRegionIntersect2", "[vpr]") {
     Region r2;
     Region r3;
 
-    r1.set_region_rect({0, 0, 2, 2, 0});
-    r2.set_region_rect({4, 4, 6, 6, 0});
-    r3.set_region_rect({0, 0, 2, 2, 0});
+    r1.set_region_bounds({0, 0, 2, 2, 0});
+    r2.set_region_bounds({4, 4, 6, 6, 0});
+    r3.set_region_bounds({0, 0, 2, 2, 0});
 
     pr1.add_to_part_region(r1);
     pr1.add_to_part_region(r2);
@@ -270,9 +271,11 @@ TEST_CASE("PartRegionIntersect2", "[vpr]") {
     const std::vector<Region>& regions = int_pr.get_regions();
     vtr::Rect<int> int_rect(0, 0, 2, 2);
     REQUIRE(regions.size() == 1);
-    const auto first_reg_coord = regions[0].get_region_rect();
-    REQUIRE(vtr::Rect<int>(first_reg_coord.xmin, first_reg_coord.ymin, first_reg_coord.xmax, first_reg_coord.ymax) == int_rect);
-    REQUIRE(first_reg_coord.layer_num == 0);
+    const vtr::Rect<int>& first_reg_coord = regions[0].get_region_bounds().get_rect();
+    const auto [layer_low, layer_high] = regions[0].get_region_bounds().get_layer_range();
+    REQUIRE(first_reg_coord == int_rect);
+    REQUIRE(layer_low == 0);
+    REQUIRE(layer_high == 0);
 }
 
 //2x2 regions, no overlaps
@@ -285,14 +288,14 @@ TEST_CASE("PartRegionIntersect3", "[vpr]") {
     Region r3;
     Region r4;
 
-    r1.set_region_rect({1, 2, 3, 5, 0});
+    r1.set_region_bounds({1, 2, 3, 5, 0});
     r1.set_sub_tile(2);
 
-    r2.set_region_rect({4, 2, 6, 4, 0});
+    r2.set_region_bounds({4, 2, 6, 4, 0});
 
-    r3.set_region_rect({4, 5, 5, 7, 0});
+    r3.set_region_bounds({4, 5, 5, 7, 0});
 
-    r4.set_region_rect({1, 2, 3, 5, 0});
+    r4.set_region_bounds({1, 2, 3, 5, 0});
     r4.set_sub_tile(4);
 
     pr1.add_to_part_region(r1);
@@ -318,14 +321,14 @@ TEST_CASE("PartRegionIntersect4", "[vpr]") {
     Region r3;
     Region r4;
 
-    r1.set_region_rect({1, 2, 3, 5, 0});
+    r1.set_region_bounds({1, 2, 3, 5, 0});
     r1.set_sub_tile(2);
 
-    r2.set_region_rect({4, 2, 6, 4, 0});
+    r2.set_region_bounds({4, 2, 6, 4, 0});
 
-    r3.set_region_rect({4, 5, 5, 7, 0});
+    r3.set_region_bounds({4, 5, 5, 7, 0});
 
-    r4.set_region_rect({1, 2, 3, 4, 0});
+    r4.set_region_bounds({1, 2, 3, 4, 0});
     r4.set_sub_tile(2);
 
     pr1.add_to_part_region(r1);
@@ -341,9 +344,8 @@ TEST_CASE("PartRegionIntersect4", "[vpr]") {
     vtr::Rect<int> intersect(1, 2, 3, 4);
 
     REQUIRE(regions.size() == 1);
-    const auto first_reg_coord = regions[0].get_region_rect();
-    REQUIRE(first_reg_coord.layer_num == 0);
-    REQUIRE(first_reg_coord.get_rect() == intersect);
+    REQUIRE(regions[0].get_region_bounds().get_layer_range() == std::make_pair(0, 0));
+    REQUIRE(regions[0].get_region_bounds().get_rect() == intersect);
     REQUIRE(regions[0].get_sub_tile() == 2);
 }
 
@@ -357,13 +359,13 @@ TEST_CASE("PartRegionIntersect5", "[vpr]") {
     Region r3;
     Region r4;
 
-    r1.set_region_rect({1, 5, 5, 7, 0});
+    r1.set_region_bounds({1, 5, 5, 7, 0});
 
-    r2.set_region_rect({6, 3, 8, 5, 0});
+    r2.set_region_bounds({6, 3, 8, 5, 0});
 
-    r3.set_region_rect({2, 6, 4, 9, 0});
+    r3.set_region_bounds({2, 6, 4, 9, 0});
 
-    r4.set_region_rect({6, 4, 8, 7, 0});
+    r4.set_region_bounds({6, 4, 8, 7, 0});
 
     pr1.add_to_part_region(r1);
     pr1.add_to_part_region(r2);
@@ -379,13 +381,10 @@ TEST_CASE("PartRegionIntersect5", "[vpr]") {
     vtr::Rect<int> int_r2r4(6, 4, 8, 5);
 
     REQUIRE(regions.size() == 2);
-    const auto first_reg_coord = regions[0].get_region_rect();
-    const auto second_reg_coord = regions[1].get_region_rect();
-
-    REQUIRE(first_reg_coord.layer_num == 0);
-    REQUIRE(second_reg_coord.layer_num == 0);
-    REQUIRE(first_reg_coord.get_rect() == int_r1r3);
-    REQUIRE(second_reg_coord.get_rect() == int_r2r4);
+    REQUIRE(regions[0].get_region_bounds().get_layer_range() == std::make_pair(0, 0));
+    REQUIRE(regions[1].get_region_bounds().get_layer_range() == std::make_pair(0, 0));
+    REQUIRE(regions[0].get_region_bounds().get_rect() == int_r1r3);
+    REQUIRE(regions[1].get_region_bounds().get_rect() == int_r2r4);
 }
 
 //2x2 regions, 4 overlap
@@ -398,13 +397,13 @@ TEST_CASE("PartRegionIntersect6", "[vpr]") {
     Region r3;
     Region r4;
 
-    r1.set_region_rect({2, 3, 4, 7, 0});
+    r1.set_region_bounds({2, 3, 4, 7, 0});
 
-    r2.set_region_rect({5, 3, 7, 8, 0});
+    r2.set_region_bounds({5, 3, 7, 8, 0});
 
-    r3.set_region_rect({2, 2, 7, 4, 0});
+    r3.set_region_bounds({2, 2, 7, 4, 0});
 
-    r4.set_region_rect({2, 6, 7, 8, 0});
+    r4.set_region_bounds({2, 6, 7, 8, 0});
 
     pr1.add_to_part_region(r1);
     pr1.add_to_part_region(r2);
@@ -422,15 +421,15 @@ TEST_CASE("PartRegionIntersect6", "[vpr]") {
     vtr::Rect<int> int_r2r4(5, 6, 7, 8);
 
     REQUIRE(regions.size() == 4);
-    REQUIRE(regions[0].get_region_rect().get_rect() == int_r1r3);
-    REQUIRE(regions[1].get_region_rect().get_rect() == int_r1r4);
-    REQUIRE(regions[2].get_region_rect().get_rect() == int_r2r3);
-    REQUIRE(regions[3].get_region_rect().get_rect() == int_r2r4);
+    REQUIRE(regions[0].get_region_bounds().get_rect() == int_r1r3);
+    REQUIRE(regions[1].get_region_bounds().get_rect() == int_r1r4);
+    REQUIRE(regions[2].get_region_bounds().get_rect() == int_r2r3);
+    REQUIRE(regions[3].get_region_bounds().get_rect() == int_r2r4);
 
-    REQUIRE(regions[0].get_region_rect().layer_num == 0);
-    REQUIRE(regions[1].get_region_rect().layer_num == 0);
-    REQUIRE(regions[2].get_region_rect().layer_num == 0);
-    REQUIRE(regions[3].get_region_rect().layer_num == 0);
+    REQUIRE(regions[0].get_region_bounds().get_layer_range() == std::make_pair(0, 0));
+    REQUIRE(regions[1].get_region_bounds().get_layer_range() == std::make_pair(0, 0));
+    REQUIRE(regions[2].get_region_bounds().get_layer_range() == std::make_pair(0, 0));
+    REQUIRE(regions[3].get_region_bounds().get_layer_range() == std::make_pair(0, 0));
 }
 
 //Test calculation of macro constraints
@@ -443,26 +442,25 @@ TEST_CASE("MacroConstraints", "[vpr]") {
     t_pl_offset offset(2, 1, 0, 0);
 
     Region reg;
-    reg.set_region_rect({5, 2, 9, 6, 0});
+    reg.set_region_bounds({5, 2, 9, 6, 0});
 
     head_pr.add_to_part_region(reg);
 
     Region grid_reg;
-    grid_reg.set_region_rect({0, 0, 20, 20, 0});
+    grid_reg.set_region_bounds({0, 0, 20, 20, 0});
     PartitionRegion grid_pr;
     grid_pr.add_to_part_region(grid_reg);
 
-    PartitionRegion macro_pr = update_macro_member_pr(head_pr, offset, grid_pr, pl_macro);
+    PartitionRegion macro_pr = update_macro_member_pr(head_pr, offset, pl_macro, grid_pr);
 
     const std::vector<Region>& mac_regions = macro_pr.get_regions();
 
-    const auto mac_first_reg_coord = mac_regions[0].get_region_rect();
-
-    REQUIRE(mac_first_reg_coord.layer_num == 0);
-    REQUIRE(mac_first_reg_coord.xmin == 7);
-    REQUIRE(mac_first_reg_coord.ymin == 3);
-    REQUIRE(mac_first_reg_coord.xmax == 11);
-    REQUIRE(mac_first_reg_coord.ymax == 7);
+    const vtr::Rect<int>& mac_first_reg_coord = mac_regions[0].get_region_bounds().get_rect();
+    REQUIRE(mac_regions[0].get_region_bounds().get_layer_range() == std::make_pair(0, 0));
+    REQUIRE(mac_first_reg_coord.xmin() == 7);
+    REQUIRE(mac_first_reg_coord.ymin() == 3);
+    REQUIRE(mac_first_reg_coord.xmax() == 11);
+    REQUIRE(mac_first_reg_coord.ymax() == 7);
 }
 
 #if 0

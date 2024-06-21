@@ -77,11 +77,13 @@ PartitionRegion update_macro_head_pr(const t_pl_macro& pl_macro);
  * @param head_pr The PartitionRegion constraint of the macro's head.
  * @param offset The offset of the macro member from the head.
  * @param pl_macro The placement macro whose members' PartitionRegions are to be updated.
+ * @param grid_pr A PartitionRegion that covers the entire device.
  * @return PartitionRegion The updated PartitionRegion for the macro member.
  */
 PartitionRegion update_macro_member_pr(const PartitionRegion& head_pr,
                                        const t_pl_offset& offset,
-                                       const t_pl_macro& pl_macro);
+                                       const t_pl_macro& pl_macro,
+                                       const PartitionRegion& grid_pr);
 
 /**
  * @brief Updates the floorplan constraints information for all constrained macros.
@@ -99,7 +101,8 @@ inline bool floorplan_legal(const t_pl_blocks_to_be_moved& blocks_affected) {
     bool floorplan_legal;
 
     for (int i = 0; i < blocks_affected.num_moved_blocks; i++) {
-        floorplan_legal = cluster_floorplanning_legal(blocks_affected.moved_blocks[i].block_num, blocks_affected.moved_blocks[i].new_loc);
+        floorplan_legal = cluster_floorplanning_legal(blocks_affected.moved_blocks[i].block_num,
+                                                      blocks_affected.moved_blocks[i].new_loc);
         if (!floorplan_legal) {
             VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug,
                            "\tMove aborted for block %zu, location tried was x: %d, y: %d, subtile: %d \n",
