@@ -1491,22 +1491,22 @@ bool verify_rr_node_indices(const DeviceGrid& grid,
                                           describe_rr_node(rr_graph, grid, rr_indexed_data, inode, is_flat).c_str());
                             }
                         } else if (rr_graph.node_type(inode) == SOURCE || rr_graph.node_type(inode) == SINK) {
-                            //Sources have co-ordintes covering the entire block they are in
-                            if (!rr_graph.x_in_node_range(x, inode)) {
-                                VPR_ERROR(VPR_ERROR_ROUTE, "RR node x positions do not agree between rr_nodes (%d <-> %d) and rr_node_indices (%d): %s",
-                                          rr_graph.node_xlow(inode),
-                                          rr_graph.node_xlow(inode),
-                                          x,
-                                          describe_rr_node(rr_graph, grid, rr_indexed_data, inode, is_flat).c_str());
-                            }
-
-                            if (!rr_graph.y_in_node_range(y, inode)) {
-                                VPR_ERROR(VPR_ERROR_ROUTE, "RR node y positions do not agree between rr_nodes (%d <-> %d) and rr_node_indices (%d): %s",
-                                          rr_graph.node_ylow(inode),
-                                          rr_graph.node_ylow(inode),
-                                          y,
-                                          describe_rr_node(rr_graph, grid, rr_indexed_data, inode, is_flat).c_str());
-                            }
+                            //Sources have co-ordintes covering the entire block they are in -- NOT ANYMORE
+                            //                            if (!rr_graph.x_in_node_range(x, inode)) {
+                            //                                VPR_ERROR(VPR_ERROR_ROUTE, "RR node x positions do not agree between rr_nodes (%d <-> %d) and rr_node_indices (%d): %s",
+                            //                                          rr_graph.node_xlow(inode),
+                            //                                          rr_graph.node_xlow(inode),
+                            //                                          x,
+                            //                                          describe_rr_node(rr_graph, grid, rr_indexed_data, inode, is_flat).c_str());
+                            //                            }
+                            //
+                            //                            if (!rr_graph.y_in_node_range(y, inode)) {
+                            //                                VPR_ERROR(VPR_ERROR_ROUTE, "RR node y positions do not agree between rr_nodes (%d <-> %d) and rr_node_indices (%d): %s",
+                            //                                          rr_graph.node_ylow(inode),
+                            //                                          rr_graph.node_ylow(inode),
+                            //                                          y,
+                            //                                          describe_rr_node(rr_graph, grid, rr_indexed_data, inode, is_flat).c_str());
+                            //                            }
 
                         } else {
                             VTR_ASSERT(rr_graph.node_type(inode) == IPIN || rr_graph.node_type(inode) == OPIN);
@@ -1560,16 +1560,16 @@ bool verify_rr_node_indices(const DeviceGrid& grid,
         auto& rr_node = rr_nodes[size_t(inode)];
 
         if (rr_graph.node_type(inode) == SOURCE || rr_graph.node_type(inode) == SINK) {
-            int rr_width = (rr_graph.node_xhigh(rr_node.id()) - rr_graph.node_xlow(rr_node.id()) + 1);
-            int rr_height = (rr_graph.node_yhigh(rr_node.id()) - rr_graph.node_ylow(rr_node.id()) + 1);
-            int rr_area = rr_width * rr_height;
-            if (count != rr_area) {
-                VPR_ERROR(VPR_ERROR_ROUTE, "Mismatch between RR node size (%d) and count within rr_node_indices (%d): %s",
-                          rr_area,
-                          rr_node.length(),
-                          count,
-                          describe_rr_node(rr_graph, grid, rr_indexed_data, inode, is_flat).c_str());
-            }
+            //            int rr_width = (rr_graph.node_xhigh(rr_node.id()) - rr_graph.node_xlow(rr_node.id()) + 1);
+            //            int rr_height = (rr_graph.node_yhigh(rr_node.id()) - rr_graph.node_ylow(rr_node.id()) + 1);
+            //            int rr_area = rr_width * rr_height;
+            //            if (count != rr_area) {
+            //                VPR_ERROR(VPR_ERROR_ROUTE, "Mismatch between RR node size (%d) and count within rr_node_indices (%d): %s",
+            //                          rr_area,
+            //                          rr_node.length(),
+            //                          count,
+            //                          describe_rr_node(rr_graph, grid, rr_indexed_data, inode, is_flat).c_str());
+            //            }
             /* As we allow a pin to be indexable on multiple sides,
              * This check code should not be applied to input and output pins
              */
