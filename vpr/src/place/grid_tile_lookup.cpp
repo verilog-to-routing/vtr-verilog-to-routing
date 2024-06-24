@@ -91,7 +91,7 @@ int GridTileLookup::region_tile_count(const Region& reg, t_logical_block_type_pt
 //    VTR_ASSERT(intersect_coord.layer_num == layer_num);
 
     const auto [xmin, ymin, xmax, ymax] = intersect_rect.coordinates();
-    auto [layer_low, layer_high] = intersect_reg.get_region_bounds().get_layer_range();
+    const auto [layer_low, layer_high] = intersect_reg.get_region_bounds().get_layer_range();
     auto& layer_type_grid = block_type_matrices[block_type->index];
 
     int xdim = (int)layer_type_grid.dim_size(1);
@@ -100,7 +100,7 @@ int GridTileLookup::region_tile_count(const Region& reg, t_logical_block_type_pt
     int num_tiles = 0;
 
     if (subtile == NO_SUBTILE) {
-        for (int l = layer_low; l < layer_high; l++) {
+        for (int l = layer_low; l <= layer_high; l++) {
             int num_tiles_in_layer = layer_type_grid[l][xmin][ymin];
 
             if ((ymax + 1) < ydim) {
