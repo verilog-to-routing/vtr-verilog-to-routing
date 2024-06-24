@@ -21,7 +21,6 @@ static void ShowPlacerOpts(const t_placer_opts& PlacerOpts,
 static void ShowRouterOpts(const t_router_opts& RouterOpts);
 static void ShowAnalysisOpts(const t_analysis_opts& AnalysisOpts);
 static void ShowNocOpts(const t_noc_opts& NocOpts);
-
 static void ShowAnnealSched(const t_annealing_sched& AnnealSched);
 
 /******** Function Implementations ********/
@@ -257,56 +256,79 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
         VTR_LOG("false\n");
     }
 
+    VTR_ASSERT(GLOBAL == RouterOpts.route_type || DETAILED == RouterOpts.route_type);
+
+    VTR_LOG("RouterOpts.router_algorithm: ");
+    switch (RouterOpts.router_algorithm) {
+        case PARALLEL:
+            VTR_LOG("PARALLEL\n");
+            break;
+        case PARALLEL_DECOMP:
+            VTR_LOG("PARALLEL_DECOMP\n");
+            break;
+        case TIMING_DRIVEN:
+            VTR_LOG("TIMING_DRIVEN\n");
+            break;
+        default:
+            switch (RouterOpts.route_type) {
+                case DETAILED:
+                    VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "<Unknown>\n");
+                case GLOBAL:
+                    VTR_LOG_ERROR("Unknown router algorithm\n");
+                    break;
+                default:
+                    break;
+            }
+    }
+
+    VTR_LOG("RouterOpts.base_cost_type: ");
+    switch (RouterOpts.base_cost_type) {
+        case DELAY_NORMALIZED:
+            VTR_LOG("DELAY_NORMALIZED\n");
+            break;
+        case DELAY_NORMALIZED_LENGTH:
+            VTR_ASSERT_SAFE(DETAILED == RouterOpts.route_type);
+            VTR_LOG("DELAY_NORMALIZED_LENGTH\n");
+            break;
+        case DELAY_NORMALIZED_LENGTH_BOUNDED:
+            VTR_ASSERT_SAFE(DETAILED == RouterOpts.route_type);
+            VTR_LOG("DELAY_NORMALIZED_LENGTH_BOUNDED\n");
+            break;
+        case DELAY_NORMALIZED_FREQUENCY:
+            VTR_ASSERT_SAFE(DETAILED == RouterOpts.route_type);
+            VTR_LOG("DELAY_NORMALIZED_FREQUENCY\n");
+            break;
+        case DELAY_NORMALIZED_LENGTH_FREQUENCY:
+            VTR_ASSERT_SAFE(DETAILED == RouterOpts.route_type);
+            VTR_LOG("DELAY_NORMALIZED_LENGTH_FREQUENCY\n");
+            break;
+        case DEMAND_ONLY:
+            VTR_LOG("DEMAND_ONLY\n");
+            break;
+        case DEMAND_ONLY_NORMALIZED_LENGTH:
+            VTR_ASSERT_SAFE(DETAILED == RouterOpts.route_type);
+            VTR_LOG("DEMAND_ONLY_NORMALIZED_LENGTH\n");
+            break;
+        default:
+            switch (RouterOpts.route_type) {
+                case DETAILED:
+                    VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown base_cost_type\n");
+                case GLOBAL:
+                    VTR_LOG_ERROR("Unknown router base cost type\n");
+                    break;
+                default:
+                    break;
+            }
+    }
+
+    VTR_LOG("RouterOpts.fixed_channel_width: ");
+    if (NO_FIXED_CHANNEL_WIDTH == RouterOpts.fixed_channel_width) {
+        VTR_LOG("NO_FIXED_CHANNEL_WIDTH\n");
+    } else {
+        VTR_LOG("%d\n", RouterOpts.fixed_channel_width);
+    }
+
     if (DETAILED == RouterOpts.route_type) {
-        VTR_LOG("RouterOpts.router_algorithm: ");
-        switch (RouterOpts.router_algorithm) {
-            case PARALLEL:
-                VTR_LOG("PARALLEL\n");
-                break;
-            case PARALLEL_DECOMP:
-                VTR_LOG("PARALLEL_DECOMP\n");
-                break;
-            case TIMING_DRIVEN:
-                VTR_LOG("TIMING_DRIVEN\n");
-                break;
-            default:
-                VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "<Unknown>\n");
-        }
-
-        VTR_LOG("RouterOpts.base_cost_type: ");
-        switch (RouterOpts.base_cost_type) {
-            case DELAY_NORMALIZED:
-                VTR_LOG("DELAY_NORMALIZED\n");
-                break;
-            case DELAY_NORMALIZED_LENGTH:
-                VTR_LOG("DELAY_NORMALIZED_LENGTH\n");
-                break;
-            case DELAY_NORMALIZED_LENGTH_BOUNDED:
-                VTR_LOG("DELAY_NORMALIZED_LENGTH_BOUNDED\n");
-                break;
-            case DELAY_NORMALIZED_FREQUENCY:
-                VTR_LOG("DELAY_NORMALIZED_FREQUENCY\n");
-                break;
-            case DELAY_NORMALIZED_LENGTH_FREQUENCY:
-                VTR_LOG("DELAY_NORMALIZED_LENGTH_FREQUENCY\n");
-                break;
-            case DEMAND_ONLY:
-                VTR_LOG("DEMAND_ONLY\n");
-                break;
-            case DEMAND_ONLY_NORMALIZED_LENGTH:
-                VTR_LOG("DEMAND_ONLY_NORMALIZED_LENGTH\n");
-                break;
-            default:
-                VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown base_cost_type\n");
-        }
-
-        VTR_LOG("RouterOpts.fixed_channel_width: ");
-        if (NO_FIXED_CHANNEL_WIDTH == RouterOpts.fixed_channel_width) {
-            VTR_LOG("NO_FIXED_CHANNEL_WIDTH\n");
-        } else {
-            VTR_LOG("%d\n", RouterOpts.fixed_channel_width);
-        }
-
         VTR_LOG("RouterOpts.check_route: ");
         switch (RouterOpts.check_route) {
             case e_check_route_option::OFF:
@@ -321,105 +343,113 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
             default:
                 VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown check_route value\n");
         }
+    }
 
-        VTR_LOG("RouterOpts.acc_fac: %f\n", RouterOpts.acc_fac);
-        VTR_LOG("RouterOpts.bb_factor: %d\n", RouterOpts.bb_factor);
-        VTR_LOG("RouterOpts.bend_cost: %f\n", RouterOpts.bend_cost);
-        VTR_LOG("RouterOpts.first_iter_pres_fac: %f\n", RouterOpts.first_iter_pres_fac);
-        VTR_LOG("RouterOpts.initial_pres_fac: %f\n", RouterOpts.initial_pres_fac);
-        VTR_LOG("RouterOpts.pres_fac_mult: %f\n", RouterOpts.pres_fac_mult);
-        VTR_LOG("RouterOpts.max_pres_fac: %f\n", RouterOpts.max_pres_fac);
-        VTR_LOG("RouterOpts.max_router_iterations: %d\n", RouterOpts.max_router_iterations);
-        VTR_LOG("RouterOpts.min_incremental_reroute_fanout: %d\n", RouterOpts.min_incremental_reroute_fanout);
-        VTR_LOG("RouterOpts.do_check_rr_graph: %s\n", RouterOpts.do_check_rr_graph ? "true" : "false");
-        VTR_LOG("RouterOpts.verify_binary_search: %s\n", RouterOpts.verify_binary_search ? "true" : "false");
-        VTR_LOG("RouterOpts.min_channel_width_hint: %d\n", RouterOpts.min_channel_width_hint);
-        VTR_LOG("RouterOpts.read_rr_edge_metadata: %s\n", RouterOpts.read_rr_edge_metadata ? "true" : "false");
-        VTR_LOG("RouterOpts.exit_after_first_routing_iteration: %s\n", RouterOpts.exit_after_first_routing_iteration ? "true" : "false");
+    VTR_LOG("RouterOpts.acc_fac: %f\n", RouterOpts.acc_fac);
+    VTR_LOG("RouterOpts.bb_factor: %d\n", RouterOpts.bb_factor);
+    VTR_LOG("RouterOpts.bend_cost: %f\n", RouterOpts.bend_cost);
+    VTR_LOG("RouterOpts.first_iter_pres_fac: %f\n", RouterOpts.first_iter_pres_fac);
+    VTR_LOG("RouterOpts.initial_pres_fac: %f\n", RouterOpts.initial_pres_fac);
+    VTR_LOG("RouterOpts.pres_fac_mult: %f\n", RouterOpts.pres_fac_mult);
+    VTR_LOG("RouterOpts.max_pres_fac: %f\n", RouterOpts.max_pres_fac);
+    VTR_LOG("RouterOpts.max_router_iterations: %d\n", RouterOpts.max_router_iterations);
+    VTR_LOG("RouterOpts.min_incremental_reroute_fanout: %d\n", RouterOpts.min_incremental_reroute_fanout);
+    VTR_LOG("RouterOpts.do_check_rr_graph: %s\n", RouterOpts.do_check_rr_graph ? "true" : "false");
+    VTR_LOG("RouterOpts.verify_binary_search: %s\n", RouterOpts.verify_binary_search ? "true" : "false");
+    VTR_LOG("RouterOpts.min_channel_width_hint: %d\n", RouterOpts.min_channel_width_hint);
+    VTR_LOG("RouterOpts.read_rr_edge_metadata: %s\n", RouterOpts.read_rr_edge_metadata ? "true" : "false");
+    VTR_LOG("RouterOpts.exit_after_first_routing_iteration: %s\n", RouterOpts.exit_after_first_routing_iteration ? "true" : "false");
 
-        if (TIMING_DRIVEN == RouterOpts.router_algorithm) {
-            VTR_LOG("RouterOpts.astar_fac: %f\n", RouterOpts.astar_fac);
-            VTR_LOG("RouterOpts.router_profiler_astar_fac: %f\n", RouterOpts.router_profiler_astar_fac);
-            VTR_LOG("RouterOpts.criticality_exp: %f\n", RouterOpts.criticality_exp);
-            VTR_LOG("RouterOpts.max_criticality: %f\n", RouterOpts.max_criticality);
-            VTR_LOG("RouterOpts.init_wirelength_abort_threshold: %f\n", RouterOpts.init_wirelength_abort_threshold);
-            VTR_LOG("RouterOpts.save_routing_per_iteration: %s\n", RouterOpts.save_routing_per_iteration ? "true" : "false");
-            VTR_LOG("RouterOpts.congested_routing_iteration_threshold_frac: %f\n", RouterOpts.congested_routing_iteration_threshold_frac);
-            VTR_LOG("RouterOpts.high_fanout_threshold: %d\n", RouterOpts.high_fanout_threshold);
-            VTR_LOG("RouterOpts.router_debug_net: %d\n", RouterOpts.router_debug_net);
-            VTR_LOG("RouterOpts.router_debug_sink_rr: %d\n", RouterOpts.router_debug_sink_rr);
-            VTR_LOG("RouterOpts.router_debug_iteration: %d\n", RouterOpts.router_debug_iteration);
-            VTR_LOG("RouterOpts.max_convergence_count: %d\n", RouterOpts.max_convergence_count);
-            VTR_LOG("RouterOpts.reconvergence_cpd_threshold: %f\n", RouterOpts.reconvergence_cpd_threshold);
-            VTR_LOG("RouterOpts.update_lower_bound_delays: %s\n", RouterOpts.update_lower_bound_delays ? "true" : "false");
-            VTR_LOG("RouterOpts.first_iteration_timing_report_file: %s\n", RouterOpts.first_iteration_timing_report_file.c_str());
+    if (TIMING_DRIVEN == RouterOpts.router_algorithm) {
+        VTR_LOG("RouterOpts.astar_fac: %f\n", RouterOpts.astar_fac);
+        VTR_LOG("RouterOpts.router_profiler_astar_fac: %f\n", RouterOpts.router_profiler_astar_fac);
+        VTR_LOG("RouterOpts.criticality_exp: %f\n", RouterOpts.criticality_exp);
+        VTR_LOG("RouterOpts.max_criticality: %f\n", RouterOpts.max_criticality);
+        VTR_LOG("RouterOpts.init_wirelength_abort_threshold: %f\n", RouterOpts.init_wirelength_abort_threshold);
 
+        if (GLOBAL == RouterOpts.route_type)
+            VTR_LOG("RouterOpts.incr_reroute_delay_ripup: %f\n", RouterOpts.incr_reroute_delay_ripup);
+        else {
             std::string incr_delay_ripup_opts[3] = {"ON", "OFF", "AUTO"};
             VTR_LOG("RouterOpts.incr_reroute_delay_ripup: %s\n", incr_delay_ripup_opts[(size_t)RouterOpts.incr_reroute_delay_ripup].c_str());
-
-            VTR_LOG("RouterOpts.route_bb_update: ");
-            switch (RouterOpts.route_bb_update) {
-                case e_route_bb_update::STATIC:
-                    VTR_LOG("STATIC\n");
-                    break;
-                case e_route_bb_update::DYNAMIC:
-                    VTR_LOG("DYNAMIC\n");
-                    break;
-                default:
-                    VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown route_bb_update\n");
-            }
-
-            VTR_LOG("RouterOpts.lookahead_type: ");
-            switch (RouterOpts.lookahead_type) {
-                case e_router_lookahead::CLASSIC:
-                    VTR_LOG("CLASSIC\n");
-                    break;
-                case e_router_lookahead::MAP:
-                    VTR_LOG("MAP\n");
-                    break;
-                case e_router_lookahead::COMPRESSED_MAP:
-                    VTR_LOG("COMPRESSED_MAP\n");
-                    break;
-                case e_router_lookahead::EXTENDED_MAP:
-                    VTR_LOG("EXTENDED_MAP\n");
-                    break;
-                case e_router_lookahead::NO_OP:
-                    VTR_LOG("NO_OP\n");
-                    break;
-                default:
-                    VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown lookahead_type\n");
-            }
-
-            VTR_LOG("RouterOpts.initial_timing: ");
-            switch (RouterOpts.initial_timing) {
-                case e_router_initial_timing::ALL_CRITICAL:
-                    VTR_LOG("ALL_CRITICAL\n");
-                    break;
-                case e_router_initial_timing::LOOKAHEAD:
-                    VTR_LOG("LOOKAHEAD\n");
-                    break;
-                default:
-                    VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown initial_timing\n");
-            }
-
-            VTR_LOG("RouterOpts.router_heap: ");
-            switch (RouterOpts.router_heap) {
-                case e_heap_type::INVALID_HEAP:
-                    VTR_LOG("INVALID_HEAP\n");
-                    break;
-                case e_heap_type::BINARY_HEAP:
-                    VTR_LOG("BINARY_HEAP\n");
-                    break;
-                case e_heap_type::FOUR_ARY_HEAP:
-                    VTR_LOG("FOUR_ARY_HEAP\n");
-                    break;
-                case e_heap_type::BUCKET_HEAP_APPROXIMATION:
-                    VTR_LOG("BUCKET_HEAP_APPROXIMATION\n");
-                    break;
-                default:
-                    VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown router_heap\n");
-            }
         }
+
+        VTR_LOG("RouterOpts.save_routing_per_iteration: %s\n", RouterOpts.save_routing_per_iteration ? "true" : "false");
+        VTR_LOG("RouterOpts.congested_routing_iteration_threshold_frac: %f\n", RouterOpts.congested_routing_iteration_threshold_frac);
+        VTR_LOG("RouterOpts.high_fanout_threshold: %d\n", RouterOpts.high_fanout_threshold);
+        VTR_LOG("RouterOpts.router_debug_net: %d\n", RouterOpts.router_debug_net);
+        VTR_LOG("RouterOpts.router_debug_sink_rr: %d\n", RouterOpts.router_debug_sink_rr);
+        VTR_LOG("RouterOpts.router_debug_iteration: %d\n", RouterOpts.router_debug_iteration);
+        VTR_LOG("RouterOpts.max_convergence_count: %d\n", RouterOpts.max_convergence_count);
+        VTR_LOG("RouterOpts.reconvergence_cpd_threshold: %f\n", RouterOpts.reconvergence_cpd_threshold);
+        VTR_LOG("RouterOpts.update_lower_bound_delays: %s\n", RouterOpts.update_lower_bound_delays ? "true" : "false");
+        VTR_LOG("RouterOpts.first_iteration_timing_report_file: %s\n", RouterOpts.first_iteration_timing_report_file.c_str());
+
+        VTR_LOG("RouterOpts.route_bb_update: ");
+        switch (RouterOpts.route_bb_update) {
+            case e_route_bb_update::STATIC:
+                VTR_LOG("STATIC\n");
+                break;
+            case e_route_bb_update::DYNAMIC:
+                VTR_LOG("DYNAMIC\n");
+                break;
+            default:
+                VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown route_bb_update\n");
+        }
+
+        VTR_LOG("RouterOpts.lookahead_type: ");
+        switch (RouterOpts.lookahead_type) {
+            case e_router_lookahead::CLASSIC:
+                VTR_LOG("CLASSIC\n");
+                break;
+            case e_router_lookahead::MAP:
+                VTR_LOG("MAP\n");
+                break;
+            case e_router_lookahead::COMPRESSED_MAP:
+                VTR_LOG("COMPRESSED_MAP\n");
+                break;
+            case e_router_lookahead::EXTENDED_MAP:
+                VTR_LOG("EXTENDED_MAP\n");
+                break;
+            case e_router_lookahead::NO_OP:
+                VTR_LOG("NO_OP\n");
+                break;
+            default:
+                VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown lookahead_type\n");
+        }
+
+        VTR_LOG("RouterOpts.initial_timing: ");
+        switch (RouterOpts.initial_timing) {
+            case e_router_initial_timing::ALL_CRITICAL:
+                VTR_LOG("ALL_CRITICAL\n");
+                break;
+            case e_router_initial_timing::LOOKAHEAD:
+                VTR_LOG("LOOKAHEAD\n");
+                break;
+            default:
+                VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown initial_timing\n");
+        }
+
+        VTR_LOG("RouterOpts.router_heap: ");
+        switch (RouterOpts.router_heap) {
+            case e_heap_type::INVALID_HEAP:
+                VTR_LOG("INVALID_HEAP\n");
+                break;
+            case e_heap_type::BINARY_HEAP:
+                VTR_LOG("BINARY_HEAP\n");
+                break;
+            case e_heap_type::FOUR_ARY_HEAP:
+                VTR_LOG("FOUR_ARY_HEAP\n");
+                break;
+            case e_heap_type::BUCKET_HEAP_APPROXIMATION:
+                VTR_LOG("BUCKET_HEAP_APPROXIMATION\n");
+                break;
+            default:
+                VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown router_heap\n");
+        }
+    }
+
+    if (DETAILED == RouterOpts.route_type) {
         if (RouterOpts.routing_failure_predictor == SAFE)
             VTR_LOG("RouterOpts.routing_failure_predictor = SAFE\n");
         else if (RouterOpts.routing_failure_predictor == AGGRESSIVE)
@@ -436,137 +466,8 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
         } else if (RouterOpts.routing_budgets_algorithm == SCALE_DELAY) {
             VTR_LOG("RouterOpts.routing_budgets_algorithm = SCALE_DELAY\n");
         }
-
-    } else {
-        VTR_ASSERT(GLOBAL == RouterOpts.route_type);
-
-        VTR_LOG("RouterOpts.router_algorithm: ");
-        switch (RouterOpts.router_algorithm) {
-            case PARALLEL:
-                VTR_LOG("PARALLEL\n");
-                break;
-            case TIMING_DRIVEN:
-                VTR_LOG("TIMING_DRIVEN\n");
-                break;
-            default:
-                VTR_LOG_ERROR("Unknown router algorithm\n");
-        }
-
-        VTR_LOG("RouterOpts.base_cost_type: ");
-        switch (RouterOpts.base_cost_type) {
-            case DELAY_NORMALIZED:
-                VTR_LOG("DELAY_NORMALIZED\n");
-                break;
-            case DEMAND_ONLY:
-                VTR_LOG("DEMAND_ONLY\n");
-                break;
-            default:
-                VTR_LOG_ERROR("Unknown router base cost type\n");
-        }
-
-        VTR_LOG("RouterOpts.fixed_channel_width: ");
-        if (NO_FIXED_CHANNEL_WIDTH == RouterOpts.fixed_channel_width) {
-            VTR_LOG("NO_FIXED_CHANNEL_WIDTH\n");
-        } else {
-            VTR_LOG("%d\n", RouterOpts.fixed_channel_width);
-        }
-
-        VTR_LOG("RouterOpts.acc_fac: %f\n", RouterOpts.acc_fac);
-        VTR_LOG("RouterOpts.bb_factor: %d\n", RouterOpts.bb_factor);
-        VTR_LOG("RouterOpts.bend_cost: %f\n", RouterOpts.bend_cost);
-        VTR_LOG("RouterOpts.first_iter_pres_fac: %f\n", RouterOpts.first_iter_pres_fac);
-        VTR_LOG("RouterOpts.initial_pres_fac: %f\n", RouterOpts.initial_pres_fac);
-        VTR_LOG("RouterOpts.pres_fac_mult: %f\n", RouterOpts.pres_fac_mult);
-        VTR_LOG("RouterOpts.max_pres_fac: %f\n", RouterOpts.max_pres_fac);
-        VTR_LOG("RouterOpts.max_router_iterations: %d\n", RouterOpts.max_router_iterations);
-        VTR_LOG("RouterOpts.min_incremental_reroute_fanout: %d\n", RouterOpts.min_incremental_reroute_fanout);
-        VTR_LOG("RouterOpts.do_check_rr_graph: %s\n", RouterOpts.do_check_rr_graph ? "true" : "false");
-        VTR_LOG("RouterOpts.verify_binary_search: %s\n", RouterOpts.verify_binary_search ? "true" : "false");
-        VTR_LOG("RouterOpts.min_channel_width_hint: %d\n", RouterOpts.min_channel_width_hint);
-        VTR_LOG("RouterOpts.read_rr_edge_metadata: %s\n", RouterOpts.read_rr_edge_metadata ? "true" : "false");
-        VTR_LOG("RouterOpts.exit_after_first_routing_iteration: %s\n", RouterOpts.exit_after_first_routing_iteration ? "true" : "false");
-        if (TIMING_DRIVEN == RouterOpts.router_algorithm) {
-            VTR_LOG("RouterOpts.astar_fac: %f\n", RouterOpts.astar_fac);
-            VTR_LOG("RouterOpts.router_profiler_astar_fac: %f\n", RouterOpts.router_profiler_astar_fac);
-            VTR_LOG("RouterOpts.criticality_exp: %f\n", RouterOpts.criticality_exp);
-            VTR_LOG("RouterOpts.max_criticality: %f\n", RouterOpts.max_criticality);
-            VTR_LOG("RouterOpts.init_wirelength_abort_threshold: %f\n", RouterOpts.init_wirelength_abort_threshold);
-            VTR_LOG("RouterOpts.incr_reroute_delay_ripup: %f\n", RouterOpts.incr_reroute_delay_ripup);
-            VTR_LOG("RouterOpts.save_routing_per_iteration: %s\n", RouterOpts.save_routing_per_iteration ? "true" : "false");
-            VTR_LOG("RouterOpts.congested_routing_iteration_threshold_frac: %f\n", RouterOpts.congested_routing_iteration_threshold_frac);
-            VTR_LOG("RouterOpts.high_fanout_threshold: %d\n", RouterOpts.high_fanout_threshold);
-            VTR_LOG("RouterOpts.router_debug_net: %d\n", RouterOpts.router_debug_net);
-            VTR_LOG("RouterOpts.router_debug_sink_rr: %d\n", RouterOpts.router_debug_sink_rr);
-            VTR_LOG("RouterOpts.router_debug_iteration: %d\n", RouterOpts.router_debug_iteration);
-            VTR_LOG("RouterOpts.max_convergence_count: %d\n", RouterOpts.max_convergence_count);
-            VTR_LOG("RouterOpts.reconvergence_cpd_threshold: %f\n", RouterOpts.reconvergence_cpd_threshold);
-            VTR_LOG("RouterOpts.update_lower_bound_delays: %s\n", RouterOpts.update_lower_bound_delays ? "true" : "false");
-            VTR_LOG("RouterOpts.first_iteration_timing_report_file: %s\n", RouterOpts.first_iteration_timing_report_file.c_str());
-
-            VTR_LOG("RouterOpts.route_bb_update: ");
-            switch (RouterOpts.route_bb_update) {
-                case e_route_bb_update::STATIC:
-                    VTR_LOG("STATIC\n");
-                    break;
-                case e_route_bb_update::DYNAMIC:
-                    VTR_LOG("DYNAMIC\n");
-                    break;
-                default:
-                    VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown route_bb_update\n");
-            }
-
-            VTR_LOG("RouterOpts.lookahead_type: ");
-            switch (RouterOpts.lookahead_type) {
-                case e_router_lookahead::CLASSIC:
-                    VTR_LOG("CLASSIC\n");
-                    break;
-                case e_router_lookahead::MAP:
-                    VTR_LOG("MAP\n");
-                    break;
-                case e_router_lookahead::COMPRESSED_MAP:
-                    VTR_LOG("COMPRESSED_MAP\n");
-                    break;
-                case e_router_lookahead::EXTENDED_MAP:
-                    VTR_LOG("EXTENDED_MAP\n");
-                    break;
-                case e_router_lookahead::NO_OP:
-                    VTR_LOG("NO_OP\n");
-                    break;
-                default:
-                    VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown lookahead_type\n");
-            }
-
-            VTR_LOG("RouterOpts.initial_timing: ");
-            switch (RouterOpts.initial_timing) {
-                case e_router_initial_timing::ALL_CRITICAL:
-                    VTR_LOG("ALL_CRITICAL\n");
-                    break;
-                case e_router_initial_timing::LOOKAHEAD:
-                    VTR_LOG("LOOKAHEAD\n");
-                    break;
-                default:
-                    VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown initial_timing\n");
-            }
-
-            VTR_LOG("RouterOpts.router_heap: ");
-            switch (RouterOpts.router_heap) {
-                case e_heap_type::INVALID_HEAP:
-                    VTR_LOG("INVALID_HEAP\n");
-                    break;
-                case e_heap_type::BINARY_HEAP:
-                    VTR_LOG("BINARY_HEAP\n");
-                    break;
-                case e_heap_type::FOUR_ARY_HEAP:
-                    VTR_LOG("FOUR_ARY_HEAP:\n");
-                    break;
-                case e_heap_type::BUCKET_HEAP_APPROXIMATION:
-                    VTR_LOG("BUCKET_HEAP_APPROXIMATION\n");
-                    break;
-                default:
-                    VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown router_heap\n");
-            }
-        }
     }
+
     VTR_LOG("\n");
 }
 
