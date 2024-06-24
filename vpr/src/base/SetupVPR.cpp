@@ -128,6 +128,7 @@ void SetupVPR(const t_options* Options,
     FileNameOpts->ArchFile = Options->ArchFile;
     FileNameOpts->CircuitFile = Options->CircuitFile;
     FileNameOpts->NetFile = Options->NetFile;
+    FileNameOpts->FlatPlaceFile = Options->FlatPlaceFile;
     FileNameOpts->PlaceFile = Options->PlaceFile;
     FileNameOpts->RouteFile = Options->RouteFile;
     FileNameOpts->ActFile = Options->ActFile;
@@ -136,6 +137,8 @@ void SetupVPR(const t_options* Options,
     FileNameOpts->out_file_prefix = Options->out_file_prefix;
     FileNameOpts->read_vpr_constraints_file = Options->read_vpr_constraints_file;
     FileNameOpts->write_vpr_constraints_file = Options->write_vpr_constraints_file;
+    FileNameOpts->write_constraints_file = Options->write_constraints_file;
+    FileNameOpts->write_flat_place_file = Options->write_flat_place_file;
     FileNameOpts->write_block_usage = Options->write_block_usage;
 
     FileNameOpts->verify_file_digests = Options->verify_file_digests;
@@ -239,6 +242,7 @@ void SetupVPR(const t_options* Options,
     //Setup the default flow, if no specific stages specified
     //do all
     if (!Options->do_packing
+        && !Options->do_legalize
         && !Options->do_placement
         && !Options->do_routing
         && !Options->do_analysis) {
@@ -274,6 +278,11 @@ void SetupVPR(const t_options* Options,
 
         if (Options->do_packing) {
             PackerOpts->doPacking = STAGE_DO;
+        }
+
+        if (Options->do_legalize) {
+            PackerOpts->doPacking = STAGE_LOAD;
+            PackerOpts->load_flat_placement = true;
         }
     }
 

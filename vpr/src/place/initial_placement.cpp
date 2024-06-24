@@ -12,7 +12,7 @@
 #include "move_utils.h"
 #include "region.h"
 #include "directed_moves_util.h"
-
+#include "vpr_types.h"
 #include "echo_files.h"
 
 #include <ctime>
@@ -22,9 +22,6 @@
 #ifdef VERBOSE
 void print_clb_placement(const char* fname);
 #endif
-
-/// @brief Sentinel value for indicating that a block does not have a valid x location, used to check whether a block has been placed
-static constexpr int INVALID_X = -1;
 
 // Number of iterations that initial placement tries to place all blocks before throwing an error
 static constexpr int MAX_INIT_PLACE_ATTEMPTS = 2;
