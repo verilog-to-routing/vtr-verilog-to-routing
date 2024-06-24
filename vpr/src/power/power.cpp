@@ -924,6 +924,9 @@ static void power_usage_routing(t_power_usage* power_usage,
                 int seg_index = device_ctx.rr_indexed_data[rr_graph.node_cost_index(rr_id)].seg_index;
                 C_wire = wire_length * rr_graph.rr_segments(RRSegmentId(seg_index)).Cmetal;
                 //(double)power_ctx.commonly_used->tile_length);
+                if (node_fan_in == 0) {
+                  continue; // Bypass some nodes with 0 fan-in
+                }
                 VTR_ASSERT(node_power->selected_input < node_fan_in);
 
                 /* Multiplexor */

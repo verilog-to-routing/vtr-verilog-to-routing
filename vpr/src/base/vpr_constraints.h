@@ -4,7 +4,6 @@
 #include "user_place_constraints.h"
 #include "user_route_constraints.h"
 
-
 /**
  * @brief This file defines the VprConstraints class, which encapsulates user-specified placement and routing constraints
  *      
@@ -46,6 +45,34 @@ class VprConstraints {
      * @brief Get a const reference to the UserRouteConstraints instance.
      */
     const UserRouteConstraints& route_constraints() const;
+
+    /**
+     * @brief add route constraint
+     *
+     *   @param net_name the route constraint 
+     */
+    void add_route_constraint(UserRouteConstraints rc);
+
+    /**
+     * @brief returns route constraint by index
+     *
+     *   @param index the constraint index 
+     */
+    const UserRouteConstraints get_route_constraint_by_idx(std::size_t index) const;
+
+    /**
+     * @brief returns route constraint of a specific net
+     *
+     *   @param net_name the net name
+     */
+    const UserRouteConstraints get_route_constraint_by_net_name(std::string net_name);
+
+    /**
+     * @brief returns number of route constraints
+     *
+     *   @param void
+     */
+    int get_route_constraint_num(void) const;
 
   private:
    
