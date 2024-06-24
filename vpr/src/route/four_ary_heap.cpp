@@ -1,6 +1,7 @@
 #include "four_ary_heap.h"
 #include "vtr_log.h"
 
+// The leftmost/smallest-index child of node i
 static inline size_t first_child(size_t i) { return (i << 2) - 2; }
 
 inline size_t FourAryHeap::parent(size_t i) const { return (i + 2) >> 2; }

@@ -16,7 +16,8 @@ class FourAryHeap : public KAryHeap {
     /**
      * @param i The parent node.
      *
-     * @return The child node of i with the smallest cost.
+     * @return The child node of i with the smallest cost. Returns the first (smallest index) child of i
+     * if i has no children.
      */
     size_t smallest_child(size_t i) const;
 };

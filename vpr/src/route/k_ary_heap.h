@@ -112,7 +112,7 @@ class KAryHeap : public HeapInterface {
     /**
      * heap_ is indexed from [1..heap_size]; the 0th element is unused. For BinaryHeap, this simplifies
      * arithmetic in left() and parent() functions. Using a heap beginning at index 0 would simplify
-     * leftmost_child() and parent() functions in FourAryHeap, but this does not improve runtime.
+     * first_child() and parent() functions in FourAryHeap, but this does not improve runtime.
      */
     /* TODO: If an 8-ary heap is implemented, experiment with starting at index 0 */
     std::vector<heap_elem> heap_;
