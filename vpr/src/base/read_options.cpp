@@ -1310,6 +1310,11 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .action(argparse::Action::STORE_TRUE)
         .default_value("off");
 
+    stage_grp.add_argument<bool, ParseOnOff>(args.do_legalize, "--legalize")
+        .help("Legalize a flat placement, i.e. reconstruct and place clusters based on a flat placement file, which lists cluster and intra-cluster placement coordinates for each primitive.")
+        .action(argparse::Action::STORE_TRUE)
+        .default_value("off");
+
     stage_grp.add_argument<bool, ParseOnOff>(args.do_placement, "--place")
         .help("Run placement")
         .action(argparse::Action::STORE_TRUE)
@@ -1590,6 +1595,10 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .help("Path to packed netlist file")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    file_grp.add_argument(args.FlatPlaceFile, "--flat_place_file")
+        .help("Path to input flat placement file")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     file_grp.add_argument(args.PlaceFile, "--place_file")
         .help("Path to placement file")
         .show_in(argparse::ShowIn::HELP_ONLY);
@@ -1625,6 +1634,17 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
 
     file_grp.add_argument(args.write_vpr_constraints_file, "--write_vpr_constraints")
         .help("Writes out new floorplanning constraints based on current placement to the specified XML file.")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    file_grp.add_argument(args.write_constraints_file, "--write_fix_clusters")
+        .help(
+            "Output file containing fixed locations of legalized input clusters - does not include clusters without placement coordinates; this file is used during post-legalization placement in order to hold input placement coordinates fixed while VPR places legalizer-generated orphan clusters.")
+        .default_value("fix_clusters.out")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    file_grp.add_argument(args.write_flat_place_file, "--write_flat_place")
+        .help(
+            "VPR's (or reconstructed external) placement solution in flat placement file format; this file lists cluster and intra-cluster placement coordinates for each atom and can be used to reconstruct a clustering and placement solution.")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     file_grp.add_argument(args.read_router_lookahead, "--read_router_lookahead")
@@ -2988,6 +3008,12 @@ void set_conditional_defaults(t_options& args) {
         std::string route_file = args.out_file_prefix;
         route_file += default_output_name + ".route";
         args.RouteFile.set(route_file, Provenance::INFERRED);
+    }
+
+    if (args.FlatPlaceFile.provenance() != Provenance::SPECIFIED) {
+        std::string flat_place_file = args.out_file_prefix;
+        flat_place_file += default_output_name + ".flat_place";
+        args.FlatPlaceFile.set(flat_place_file, Provenance::INFERRED);
     }
 
     if (args.ActFile.provenance() != Provenance::SPECIFIED) {

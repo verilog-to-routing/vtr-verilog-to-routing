@@ -550,7 +550,7 @@ std::unordered_set<t_logical_block_type_ptr> get_equivalent_sites_set(t_physical
     std::unordered_set<t_logical_block_type_ptr> equivalent_sites;
 
     for (auto& sub_tile : type->sub_tiles) {
-        for (auto& logical_block : sub_tile.equivalent_sites) {
+        for (auto logical_block : sub_tile.equivalent_sites) {
             equivalent_sites.insert(logical_block);
         }
     }

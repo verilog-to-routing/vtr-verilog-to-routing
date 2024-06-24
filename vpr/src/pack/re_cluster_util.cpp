@@ -190,6 +190,14 @@ bool start_new_cluster_for_mol(t_pack_molecule* molecule,
         int molecule_size = get_array_size_of_molecule(molecule);
         update_cluster_pb_stats(molecule, molecule_size, clb_index, true);
 
+        // Update the clb-->atoms lookup table
+        helper_ctx.atoms_lookup.resize(helper_ctx.total_clb_num);
+        for (int i_atom = 0; i_atom < molecule_size; ++i_atom) {
+            if (molecule->atom_block_ids[i_atom]) {
+                helper_ctx.atoms_lookup[clb_index].insert(molecule->atom_block_ids[i_atom]);
+            }
+        }
+
         //If you are still in packing, update the clustering data. Otherwise, update the clustered netlist.
         if (during_packing) {
             clustering_data.intra_lb_routing.push_back((*router_data)->saved_lb_nets);

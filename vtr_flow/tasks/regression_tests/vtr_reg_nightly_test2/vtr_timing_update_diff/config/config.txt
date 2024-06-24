@@ -24,4 +24,4 @@ qor_parse_file=qor_standard.txt
 pass_requirements_file=pass_requirements.txt
 
 # Script parameters
-script_params = --route_chan_width 100 -check_incremental_sta_consistency
+script_params = --route_chan_width 110 -check_incremental_sta_consistency
