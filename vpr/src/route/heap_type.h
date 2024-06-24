@@ -96,116 +96,152 @@ class HeapStorage {
     size_t num_heap_allocated_;
 };
 
-// Interface to heap used for router optimization.
-//
-// Note: Objects used in instances of HeapInterface must always be allocated
-// and free'd using the HeapInterface::alloc and HeapInterface::free methods
-// of that instance.  Object pools are likely in use.
-//
-// As a general rule, any t_heap objects returned from this interface,
-// **must** be HeapInterface::free'd before destroying the HeapInterface
-// instance.  This ensure that no leaks are present in the users of the heap.
-// Violating this assumption may result in a assertion violation.
+/**
+ * @brief Interface to heap used for router optimization.
+ *
+ * @details
+ * Note: Objects used in instances of HeapInterface must always be allocated
+ * and free'd using the HeapInterface::alloc and HeapInterface::free methods
+ * of that instance.  Object pools are likely in use.<BR><BR>
+ * As a general rule, any t_heap objects returned from this interface,
+ * **must** be HeapInterface::free'd before destroying the HeapInterface
+ * instance. This ensure that no leaks are present in the users of the heap.
+ * Violating this assumption may result in a assertion violation.
+ */
 class HeapInterface {
   public:
     virtual ~HeapInterface() {}
 
-    // Allocate a heap item.
-    //
-    // This transfers ownership of the t_heap object from HeapInterface to the
-    // caller.
+    /**
+     * @brief Allocate a heap item.
+     *
+     * @details
+     * This transfers ownership of the t_heap object from HeapInterface to the
+     * caller.
+     */
     virtual t_heap* alloc() = 0;
 
-    // Free a heap item.
-    //
-    // HeapInterface::free can be called on objects returned from either
-    // HeapInterface::alloc or HeapInterface::get_heap_head.
+    /**
+     * @brief Free a heap item.
+     *
+     * @details
+     * HeapInterface::free can be called on objects returned from either
+     * HeapInterface::alloc or HeapInterface::get_heap_head.
+     *
+     * @param hptr The element to free.
+     */
     virtual void free(t_heap* hptr) = 0;
 
-    // Initializes heap storage based on the size of the device.
-    //
-    // Note: this method **must** be invoked at least once prior to the
-    // following methods being called:
-    //  - add_to_heap
-    //  - push_back
-    //  - get_heap_head
-    //  - is_empty_heap
-    //  - empty_heap
-    //  - build_heap
+    /**
+     * @brief Initializes heap storage based on the size of the device.
+     *
+     * @details
+     * Note: this method **must** be invoked at least once prior to the
+     * following methods being called:<BR>
+     *  - add_to_heap<BR>
+     *  - push_back<BR>
+     *  - get_heap_head<BR>
+     *  - is_empty_heap<BR>
+     *  - empty_heap<BR>
+     *  - build_heap<BR>
+     *
+     *  @param grid
+     */
     virtual void init_heap(const DeviceGrid& grid) = 0;
 
-    // Add t_heap to heap, preserving heap property.
-    //
-    // This transfers ownership of the t_heap object to HeapInterface from the
-    // called.
+    /**
+     * @brief Add t_heap to heap, preserving heap property.
+     *
+     * @details
+     * This transfers ownership of the t_heap object to HeapInterface from the
+     * called.
+     *
+     * @param hptr The element to add.
+     */
     virtual void add_to_heap(t_heap* hptr) = 0;
 
-    // Add t_heap to heap, however does not preserve heap property.
-    //
-    // This is useful if multiple t_heap's are being added in bulk.  Once
-    // all t_heap's have been added, HeapInterface::build_heap can be invoked
-    // to restore the heap property in an efficient way.
-    //
-    // This transfers ownership of the t_heap object to HeapInterface from the
-    // called.
+    /**
+     * @brief Add t_heap to heap, however does not preserve heap property.
+     *
+     * @details
+     * This is useful if multiple t_heap's are being added in bulk. Once
+     * all t_heap's have been added, HeapInterface::build_heap can be invoked
+     * to restore the heap property in an efficient way.<BR><BR>
+     * This transfers ownership of the t_heap object to HeapInterface from the
+     * called.
+     *
+     * @param hptr The element to insert.
+     */
     virtual void push_back(t_heap* const hptr) = 0;
 
-    // Restore the heap property.
-    //
-    // This is useful in conjunction with HeapInterface::push_back when adding
-    // multiple heap elements.
+    /**
+     * @brief Restore the heap property.
+     *
+     * @details
+     * This is useful in conjunction with HeapInterface::push_back when adding
+     * multiple heap elements.
+     */
     virtual void build_heap() = 0;
 
-    // Pop the head (smallest element) of the heap, and return it.
-    //
-    // This transfers ownership of the t_heap object from HeapInterface to the
-    // caller.
+    /**
+     * @brief Pop the head (smallest element) of the heap, and return it.
+     *
+     * @details
+     * This transfers ownership of the t_heap object from HeapInterface to the
+     * caller.
+     */
     virtual t_heap* get_heap_head() = 0;
 
-    // Is the heap empty?
+    /**
+     * @brief Is the heap empty?
+     */
     virtual bool is_empty_heap() const = 0;
 
-    // Is the heap valid?
+    /**
+     * @brief Is the heap valid?
+     */
     virtual bool is_valid() const = 0;
 
-    // Empty all items from the heap.
+    /**
+     * @brief Empty all items from the heap.
+     */
     virtual void empty_heap() = 0;
 
-    // Free all storage used by the heap.
-    //
-    // This returns all memory allocated by the HeapInterface instance. Only
-    // call this if the heap is no longer being used.
-    //
-    // Note: Only invoke this method if all objects returned from this
-    // HeapInterface instace have been free'd.
+    /**
+     * @brief Free all storage used by the heap.
+     *
+     * @details
+     * This returns all memory allocated by the HeapInterface instance. Only
+     * call this if the heap is no longer being used.<BR><BR>
+     * Note: Only invoke this method if all objects returned from this
+     * HeapInterface instance have been free'd.
+     */
     virtual void free_all_memory() = 0;
 
-    // Set maximum number of elements that the heap should contain
-    // (the prune_limit).  If the prune limit is hit, then the heap should
-    // kick out duplicate index entries.
-    //
-    // The prune limit exists to provide a maximum bound on memory usage in
-    // the heap.  In some pathological cases, the router may explore
-    // incrementally better paths, resulting in many duplicate entries for
-    // RR nodes.  To handle this edge case, if the number of heap items
-    // exceeds the prune_limit, then the heap will compacts itself.
-    //
-    // The heap compaction process simply means taking the lowest cost entry
-    // for each index (e.g. RR node).  All nodes with higher costs can safely
-    // be dropped.
-    //
-    // The pruning process is intended to bound the memory usage the heap can
-    // consume based on the prune_limit, which is expected to be a function of
-    // the graph size.
-    //
-    // max_index should be the highest index possible in the heap.
-    // prune_limit is the maximuming number of heap entries before pruning
-    // should take place.
-    //
-    // The prune_limit should always be higher than max_index, likely by a
-    // significant amount.  The pruning process has some overhead, so
-    // prune_limit should be ~2-4x the max_index to prevent excess pruning
-    // when not required.
+    /**
+     * @brief Set maximum number of elements that the heap should contain
+     * (the prune_limit). If the prune limit is hit, then the heap should
+     * kick out duplicate index entries.
+     *
+     * @details
+     * The prune limit exists to provide a maximum bound on memory usage in
+     * the heap. In some pathological cases, the router may explore
+     * incrementally better paths, resulting in many duplicate entries for
+     * RR nodes. To handle this edge case, if the number of heap items
+     * exceeds the prune_limit, then the heap will compacts itself.<BR><BR>
+     * The heap compaction process simply means taking the lowest cost entry
+     * for each index (e.g. RR node).  All nodes with higher costs can safely
+     * be dropped.<BR><BR>
+     * The pruning process is intended to bound the memory usage the heap can
+     * consume based on the prune_limit, which is expected to be a function of
+     * the graph size.
+     *
+     * @param max_index The highest index possible in the heap.
+     * @param prune_limit The maximum number of heap entries before pruning should
+     * take place. This should alwasy be higher than max_index, likely by a
+     * significant amount. The pruning process has some overhead, so prune_limit
+     * should be ~2-4x the max_index to prevent excess pruning when not required.
+     */
     virtual void set_prune_limit(size_t max_index, size_t prune_limit) = 0;
 };
 

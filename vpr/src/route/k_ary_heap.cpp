@@ -60,7 +60,7 @@ void KAryHeap::empty_heap() {
 size_t KAryHeap::size() const { return heap_tail_ - 1; } // heap[0] is not valid element
 
 // runs in O(n) time by sifting down; the least work is done on the most elements: 1 swap for bottom layer, 2 swap for 2nd, ... lgn swap for top
-// 1*(n/2) + 2*(n/4) + 3*(n/8) + ... + lgn*1 = 2n (sum of i/2^i)
+// 1*(n/k^1) + 2*(n/k^2) + 3*(n/k^3) + ... + lgn*1 = k*n (sum of i/k^i)
 void KAryHeap::build_heap() {
     for (size_t i = parent(heap_tail_); i != 0; --i)
         sift_down(i);
@@ -74,7 +74,6 @@ void KAryHeap::set_prune_limit(size_t max_index, size_t prune_limit) {
     prune_limit_ = prune_limit;
 }
 
-// O(lgn) sifting up to maintain heap property after insertion (should sift down when building heap)
 void KAryHeap::sift_up(size_t leaf, heap_elem const& node) {
     while ((leaf > 1) && (node.cost < heap_[parent(leaf)].cost)) {
         // sift hole up
@@ -85,7 +84,6 @@ void KAryHeap::sift_up(size_t leaf, heap_elem const& node) {
     heap_[leaf] = node;
 }
 
-//expands heap by "realloc"
 void KAryHeap::expand_heap_if_full() {
     if (heap_tail_ >= heap_size_) { /* Heap is full */
         heap_size_ *= 2;

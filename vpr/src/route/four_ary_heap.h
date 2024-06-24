@@ -12,6 +12,12 @@ class FourAryHeap : public KAryHeap {
   private:
     void sift_down(size_t hole) final;
     size_t parent(size_t i) const final;
+
+    /**
+     * @param i The parent node.
+     *
+     * @return The child node of i with the smallest cost.
+     */
     size_t smallest_child(size_t i) const;
 };
 
