@@ -4,6 +4,16 @@
 #include "k_ary_heap.h"
 #include <vector>
 
+/**
+ * @brief Minheap with 4 child nodes per parent.
+ *
+ * @note
+ * Currently, KAryHeap's two children are BinaryHeap and FourAryHeap. On small circuits, these
+ * heaps have negligible differences in runtime, but on larger heaps, runtime is lower when
+ * using FourAryHeap. On titan benchmarks, the runtime is ~1.8% better on FourAryHeap compared
+ * to BinaryHeap. This is likely because FourAryHeap is more cache friendly, as we can fit 5
+ * heap_elem on a cache line.
+*/
 class FourAryHeap : public KAryHeap {
   public:
     bool is_valid() const final;

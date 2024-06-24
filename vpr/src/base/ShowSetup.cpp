@@ -287,26 +287,46 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
             VTR_LOG("DELAY_NORMALIZED\n");
             break;
         case DELAY_NORMALIZED_LENGTH:
-            VTR_ASSERT_SAFE(DETAILED == RouterOpts.route_type);
+            if (GLOBAL == RouterOpts.route_type) {
+                VTR_LOG_ERROR("Unknown router base cost type\n");
+                break;
+            }
+
             VTR_LOG("DELAY_NORMALIZED_LENGTH\n");
             break;
         case DELAY_NORMALIZED_LENGTH_BOUNDED:
-            VTR_ASSERT_SAFE(DETAILED == RouterOpts.route_type);
+            if (GLOBAL == RouterOpts.route_type) {
+                VTR_LOG_ERROR("Unknown router base cost type\n");
+                break;
+            }
+
             VTR_LOG("DELAY_NORMALIZED_LENGTH_BOUNDED\n");
             break;
         case DELAY_NORMALIZED_FREQUENCY:
-            VTR_ASSERT_SAFE(DETAILED == RouterOpts.route_type);
+            if (GLOBAL == RouterOpts.route_type) {
+                VTR_LOG_ERROR("Unknown router base cost type\n");
+                break;
+            }
+
             VTR_LOG("DELAY_NORMALIZED_FREQUENCY\n");
             break;
         case DELAY_NORMALIZED_LENGTH_FREQUENCY:
-            VTR_ASSERT_SAFE(DETAILED == RouterOpts.route_type);
+            if (GLOBAL == RouterOpts.route_type) {
+                VTR_LOG_ERROR("Unknown router base cost type\n");
+                break;
+            }
+
             VTR_LOG("DELAY_NORMALIZED_LENGTH_FREQUENCY\n");
             break;
         case DEMAND_ONLY:
             VTR_LOG("DEMAND_ONLY\n");
             break;
         case DEMAND_ONLY_NORMALIZED_LENGTH:
-            VTR_ASSERT_SAFE(DETAILED == RouterOpts.route_type);
+            if (GLOBAL == RouterOpts.route_type) {
+                VTR_LOG_ERROR("Unknown router base cost type\n");
+                break;
+            }
+
             VTR_LOG("DEMAND_ONLY_NORMALIZED_LENGTH\n");
             break;
         default:

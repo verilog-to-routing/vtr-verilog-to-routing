@@ -99,10 +99,12 @@ class HeapStorage {
 /**
  * @brief Interface to heap used for router optimization.
  *
- * @details
- * Note: Objects used in instances of HeapInterface must always be allocated
+ * @note
+ * Objects used in instances of HeapInterface must always be allocated
  * and free'd using the HeapInterface::alloc and HeapInterface::free methods
- * of that instance.  Object pools are likely in use.<BR><BR>
+ * of that instance.  Object pools are likely in use.
+ *
+ * @details
  * As a general rule, any t_heap objects returned from this interface,
  * **must** be HeapInterface::free'd before destroying the HeapInterface
  * instance. This ensure that no leaks are present in the users of the heap.
@@ -135,8 +137,8 @@ class HeapInterface {
     /**
      * @brief Initializes heap storage based on the size of the device.
      *
-     * @details
-     * Note: this method **must** be invoked at least once prior to the
+     * @note
+     * This method **must** be invoked at least once prior to the
      * following methods being called:<BR>
      *  - add_to_heap<BR>
      *  - push_back<BR>
@@ -212,8 +214,10 @@ class HeapInterface {
      *
      * @details
      * This returns all memory allocated by the HeapInterface instance. Only
-     * call this if the heap is no longer being used.<BR><BR>
-     * Note: Only invoke this method if all objects returned from this
+     * call this if the heap is no longer being used.
+     *
+     * @note
+     * Only invoke this method if all objects returned from this
      * HeapInterface instance have been free'd.
      */
     virtual void free_all_memory() = 0;
