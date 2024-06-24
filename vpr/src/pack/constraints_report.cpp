@@ -44,8 +44,7 @@ bool floorplan_constraints_regions_overfull() {
         const auto [layer_low, layer_high] = region.get_region_bounds().get_layer_range();
         for (const auto & block_type : block_types) {
             int num_assigned_blocks = block_type_counts[block_type.index];
-            int num_tiles = 0;
-            num_tiles = grid_tiles.region_tile_count(region, &block_type);
+            int num_tiles = grid_tiles.region_tile_count(region, &block_type);
             if (num_assigned_blocks > num_tiles) {
                 floorplan_regions_overfull = true;
                 floorplanning_ctx.overfull_regions.push_back(region);

@@ -29,7 +29,7 @@ void RegionRectCoord::set_rect(const vtr::Rect<int>& rect) {
 Region::Region()
     : region_bounds_({std::numeric_limits<int>::max(), std::numeric_limits<int>::max(),
                       std::numeric_limits<int>::min(), std::numeric_limits<int>::min()},
-                      -1, -1)    //these values indicate an empty rectangle
+                      0, 0)    //these values indicate an empty rectangle
     , sub_tile_(NO_SUBTILE) {}
 
 const RegionRectCoord& Region::get_region_bounds() const {
