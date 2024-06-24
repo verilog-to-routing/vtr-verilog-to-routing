@@ -213,17 +213,17 @@ float calc_buffer_stage_effort(int N, float final_stage_size) {
  */
 char* alloc_SRAM_values_from_truth_table(int LUT_size,
                                          const AtomNetlist::TruthTable& truth_table) {
-    int num_SRAM_bits = 1 << LUT_size;
+    size_t num_SRAM_bits = 1 << LUT_size;
 
     //SRAM value stored as a string of '0' and '1' characters
     // Initialize to all zeros
     char* SRAM_values = new char[num_SRAM_bits + 1];
-    for (int i = 0; i < num_SRAM_bits + 1; i++)
+    for (size_t i = 0; i < num_SRAM_bits + 1; i++)
         SRAM_values[i] = '0';
     SRAM_values[num_SRAM_bits] = '\0';
 
     if (truth_table.empty()) {
-        for (int i = 0; i < num_SRAM_bits; i++) {
+        for (size_t i = 0; i < num_SRAM_bits; i++) {
             SRAM_values[i] = '1';
         }
         return SRAM_values;
@@ -237,7 +237,7 @@ char* alloc_SRAM_values_from_truth_table(int LUT_size,
         if (truth_table[0].size() == 1) {
             if (truth_table[0][0] == vtr::LogicValue::TRUE) {
                 //Mark all the SRAM values as ON
-                for (int i = 0; i < num_SRAM_bits; i++) {
+                for (size_t i = 0; i < num_SRAM_bits; i++) {
                     SRAM_values[i] = '1';
                 }
                 return SRAM_values;
@@ -250,7 +250,7 @@ char* alloc_SRAM_values_from_truth_table(int LUT_size,
     auto expanded_truth_table = expand_truth_table(truth_table, LUT_size);
     std::vector<vtr::LogicValue> lut_mask = truth_table_to_lut_mask(expanded_truth_table, LUT_size);
 
-    VTR_ASSERT(lut_mask.size() == (size_t)num_SRAM_bits);
+    VTR_ASSERT(lut_mask.size() == num_SRAM_bits);
 
     //Convert to string
     for (size_t i = 0; i < lut_mask.size(); ++i) {
