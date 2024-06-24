@@ -682,7 +682,7 @@ bool try_place_macro_exhaustively(const t_pl_macro& pl_macro,
         const vtr::Rect<int> reg_rect = regions[reg].get_region_bounds().get_rect();
         const auto [layer_low, layer_high] = regions[reg].get_region_bounds().get_layer_range();
 
-        for (int layer_num = layer_low; layer_num < layer_high; layer_num++) {
+        for (int layer_num = layer_low; layer_num <= layer_high; layer_num++) {
             int min_cx = compressed_block_grid.grid_loc_to_compressed_loc_approx({reg_rect.xmin(), OPEN, layer_num}).x;
             int max_cx = compressed_block_grid.grid_loc_to_compressed_loc_approx({reg_rect.xmax(), OPEN, layer_num}).x;
 
