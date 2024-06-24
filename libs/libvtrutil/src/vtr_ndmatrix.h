@@ -41,8 +41,8 @@ class NdMatrixProxy {
 
     NdMatrixProxy<T, N>& operator=(const NdMatrixProxy<T, N>& other) = delete;
 
-    ///@brief const [] operator
-    const NdMatrixProxy<T, N - 1> operator[](size_t index) const {
+    ///@brief [] operator
+    NdMatrixProxy<T, N - 1> operator[](size_t index) const {
         VTR_ASSERT_SAFE_MSG(index < dim_sizes_[0], "Index out of range (above dimension maximum)");
         VTR_ASSERT_SAFE_MSG(dim_sizes_[1] > 0, "Can not index into zero-sized dimension");
 
@@ -51,12 +51,6 @@ class NdMatrixProxy {
             dim_sizes_ + 1,                    // Pass the dimension information
             dim_strides_ + 1,                  // Pass the stride for the next dimension
             start_ + dim_strides_[0] * index); // Advance to index in this dimension
-    }
-
-    ///@brief [] operator
-    NdMatrixProxy<T, N - 1> operator[](size_t index) {
-        // Call the const version and cast-away constness
-        return const_cast<const NdMatrixProxy<T, N>*>(this)->operator[](index);
     }
 
   private:
@@ -83,19 +77,13 @@ class NdMatrixProxy<T, 1> {
 
     NdMatrixProxy<T, 1>& operator=(const NdMatrixProxy<T, 1>& other) = delete;
 
-    ///@brief const [] operator
-    const T& operator[](size_t index) const {
+    ///@brief [] operator
+    T& operator[](size_t index) const {
         VTR_ASSERT_SAFE_MSG(dim_strides_[0] == 1, "Final dimension must have stride 1");
         VTR_ASSERT_SAFE_MSG(index < dim_sizes_[0], "Index out of range (above dimension maximum)");
 
         //Base case
         return start_[index];
-    }
-
-    ///@brief [] operator
-    T& operator[](size_t index) {
-        // Call the const version and cast-away constness
-        return const_cast<T&>(const_cast<const NdMatrixProxy<T, 1>*>(this)->operator[](index));
     }
 
     /**
@@ -107,14 +95,8 @@ class NdMatrixProxy<T, 1> {
      * Note that it is the caller's responsibility to use this correctly; care must be taken
      * not to clobber elements in other dimensions
      */
-    const T* data() const {
+    T* data() const {
         return start_;
-    }
-
-    ///@brief same as above but allow update the value
-    T* data() {
-        // Call the const version and cast-away constness
-        return const_cast<T*>(const_cast<const NdMatrixProxy<T, 1>*>(this)->data());
     }
 
   private:
@@ -203,14 +185,8 @@ class NdMatrixBase {
         return dim_sizes_[i];
     }
 
-    ///@brief const Flat accessors of NdMatrix
-    const T& get(size_t i) const {
-        VTR_ASSERT_SAFE(i < size_);
-        return data_[i];
-    }
-
     ///@brief Flat accessors of NdMatrix
-    T& get(size_t i) {
+    T& get(size_t i) const {
         VTR_ASSERT_SAFE(i < size_);
         return data_[i];
     }
@@ -344,13 +320,12 @@ class NdMatrix : public NdMatrixBase<T, N> {
     ///@brief Use the base constructors
     using NdMatrixBase<T, N>::NdMatrixBase;
 
-  public:
     /**
      * @brief Access an element
      *
      * Returns a proxy-object to allow chained array-style indexing  (N >= 2 case)
      */
-    const NdMatrixProxy<T, N - 1> operator[](size_t index) const {
+    NdMatrixProxy<T, N - 1> operator[](size_t index) const {
         VTR_ASSERT_SAFE_MSG(this->dim_size(0) > 0, "Can not index into size zero dimension");
         VTR_ASSERT_SAFE_MSG(this->dim_size(1) > 0, "Can not index into size zero dimension");
         VTR_ASSERT_SAFE_MSG(index < this->dim_sizes_[0], "Index out of range (above dimension maximum)");
@@ -360,16 +335,6 @@ class NdMatrix : public NdMatrixBase<T, N> {
             this->dim_sizes_.data() + 1,                        //Pass the dimension information
             this->dim_strides_.data() + 1,                      //Pass the stride for the next dimension
             this->data_.get() + this->dim_strides_[0] * index); //Advance to index in this dimension
-    }
-
-    /**
-     * @brief Access an element
-     *
-     * Returns a proxy-object to allow chained array-style indexing
-     */
-    NdMatrixProxy<T, N - 1> operator[](size_t index) {
-        //Call the const version, since returned by value don't need to worry about const
-        return const_cast<const NdMatrix<T, N>*>(this)->operator[](index);
     }
 };
 
@@ -384,20 +349,13 @@ class NdMatrix<T, 1> : public NdMatrixBase<T, 1> {
     ///@brief Use the base constructors
     using NdMatrixBase<T, 1>::NdMatrixBase;
 
-  public:
-    ///@brief Access an element (immutable)
-    const T& operator[](size_t index) const {
+    ///@brief Access an element
+    T& operator[](size_t index) const {
         VTR_ASSERT_SAFE_MSG(this->dim_size(0) > 0, "Can not index into size zero dimension");
         VTR_ASSERT_SAFE_MSG(index >= 0, "Index out of range (below dimension minimum)");
         VTR_ASSERT_SAFE_MSG(index < this->dim_sizes_[0], "Index out of range (above dimension maximum)");
 
         return this->data_[index];
-    }
-
-    ///@brief Access an element (mutable)
-    T& operator[](size_t index) {
-        //Call the const version, and cast away const-ness
-        return const_cast<T&>(const_cast<const NdMatrix<T, 1>*>(this)->operator[](index));
     }
 };
 
