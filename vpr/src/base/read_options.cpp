@@ -3010,6 +3010,12 @@ void set_conditional_defaults(t_options& args) {
         args.RouteFile.set(route_file, Provenance::INFERRED);
     }
 
+    if (args.FlatPlaceFile.provenance() != Provenance::SPECIFIED) {
+        std::string flat_place_file = args.out_file_prefix;
+        flat_place_file += default_output_name + ".flat_place";
+        args.FlatPlaceFile.set(flat_place_file, Provenance::INFERRED);
+    }
+
     if (args.ActFile.provenance() != Provenance::SPECIFIED) {
         std::string activity_file = args.out_file_prefix;
         activity_file += default_output_name + ".act";
