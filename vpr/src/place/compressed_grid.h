@@ -56,6 +56,57 @@ struct t_compressed_block_grid {
     }
 
     /**
+     * @brief Converts a grid location to its corresponding compressed location, rounding up where necessary.
+     *
+     * This function takes a physical tile location in the grid and converts it to the corresponding
+     * compressed location. The conversion approximates by rounding up to the nearest valid compressed location.
+     *
+     * @param grid_loc The physical tile location in the grid.
+     * @return The corresponding compressed location with the same layer number.
+     */
+    inline t_physical_tile_loc grid_loc_to_compressed_loc_approx_round_up(t_physical_tile_loc grid_loc) const {
+        auto find_compressed_index = [](const std::vector<int>& compressed, int value) -> int {
+            auto itr = std::upper_bound(compressed.begin(), compressed.end(), value);
+            if (itr == compressed.begin())
+                return 0;
+            if (itr == compressed.end() || *(itr - 1) == value)
+                return (int)std::distance(compressed.begin(), itr - 1);
+            return (int)std::distance(compressed.begin(), itr);
+        };
+
+        int layer_num = grid_loc.layer_num;
+        int cx = find_compressed_index(compressed_to_grid_x[layer_num], grid_loc.x);
+        int cy = find_compressed_index(compressed_to_grid_y[layer_num], grid_loc.y);
+
+        return {cx, cy, layer_num};
+    }
+
+    /**
+     * @brief Converts a grid location to its corresponding compressed location, rounding down where necessary.
+     *
+     * This function takes a physical tile location in the grid and converts it to the corresponding
+     * compressed location. The conversion approximates by rounding down to the nearest valid compressed location.
+     *
+     * @param grid_loc The physical tile location in the grid.
+     * @return The corresponding compressed location with the same layer number.
+     */
+    inline t_physical_tile_loc grid_loc_to_compressed_loc_approx_round_down(t_physical_tile_loc grid_loc) const {
+        auto find_compressed_index = [](const std::vector<int>& compressed, int value) -> int {
+            auto itr = std::lower_bound(compressed.begin(), compressed.end(), value);
+            if (itr == compressed.end()) {
+                return (int)std::distance(compressed.begin(), itr - 1);
+            }
+            return (int)std::distance(compressed.begin(), itr);
+        };
+
+        int layer_num = grid_loc.layer_num;
+        int cx = find_compressed_index(compressed_to_grid_x[layer_num], grid_loc.x);
+        int cy = find_compressed_index(compressed_to_grid_y[layer_num], grid_loc.y);
+
+        return {cx, cy, layer_num};
+    }
+
+    /**
      * @brief  find the nearest location in the compressed grid.
      *
      * Useful when the point is of a different block type from coords.
