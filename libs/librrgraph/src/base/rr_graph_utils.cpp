@@ -17,10 +17,12 @@ static void walk_cluster_recursive(const RRGraphView& rr_graph,
                                    std::unordered_map<RRNodeId, std::unordered_set<RRNodeId>>& sink_ipins,
                                    RRNodeId curr,
                                    RRNodeId origin) {
-    // Check that curr is SINK in the same cluster as origin
+    // Make sure SINK in the same cluster as origin. This might not be the case when we have direct-connect between blocks
     int curr_x = rr_graph.node_xlow(curr);
     int curr_y = rr_graph.node_ylow(curr);
-    VTR_ASSERT_SAFE(!((curr_x < rr_graph.node_xlow(origin)) || (curr_x > rr_graph.node_xhigh(origin)) || (curr_y < rr_graph.node_ylow(origin)) || (curr_y > rr_graph.node_yhigh(origin))));
+    if ((curr_x < rr_graph.node_xlow(origin)) || (curr_x > rr_graph.node_xhigh(origin)) || (curr_y < rr_graph.node_ylow(origin)) || (curr_y > rr_graph.node_yhigh(origin)))
+        return;
+
     VTR_ASSERT_SAFE(rr_graph.node_type(origin) == e_rr_type::SINK);
 
     // We want to go "backward" to the cluster IPINs connected to the origin node
@@ -174,7 +176,7 @@ void set_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_builder
         walk_cluster_recursive(rr_graph, node_fanins, sink_ipins, node_id, node_id);
     }
 
-    // Set SINK locations based on "cluster-edge" OPINs and IPINs
+    // Set SINK locations based on "cluster-edge" IPINs
     for (const auto& node_pins : sink_ipins) {
         const auto& pin_set = node_pins.second;
 
@@ -182,8 +184,8 @@ void set_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_builder
             continue;
 
         // Use float so that we can take average later
-        std::vector<float> x_coords(pin_set.size());
-        std::vector<float> y_coords(pin_set.size());
+        std::vector<float> x_coords;
+        std::vector<float> y_coords;
 
         // Add coordinates of each "cluster-edge" pin to vectors
         for (const auto& pin : pin_set) {

@@ -1437,7 +1437,7 @@ static void build_rr_graph(const t_graph_type graph_type,
         delete[] clb_to_clb_directs;
     }
 
-    // Get better locations for SOURCE and SINK nodes
+    // Get better locations for SINK nodes
     set_sink_locs(rr_graph, device_ctx.rr_graph_builder);
 
     // We are done with building the RR Graph. Thus, we can clear the storages only used
