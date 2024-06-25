@@ -174,7 +174,7 @@ void set_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_builder
         walk_cluster_recursive(rr_graph, node_fanins, sink_ipins, node_id, node_id);
     }
 
-    // Set SINK locations based on "cluster-edge" OPINs and IPINs
+    // Set SINK locations based on "cluster-edge" IPINs
     for (const auto& node_pins : sink_ipins) {
         const auto& pin_set = node_pins.second;
 
@@ -182,8 +182,8 @@ void set_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_builder
             continue;
 
         // Use float so that we can take average later
-        std::vector<float> x_coords(pin_set.size());
-        std::vector<float> y_coords(pin_set.size());
+        std::vector<float> x_coords;
+        std::vector<float> y_coords;
 
         // Add coordinates of each "cluster-edge" pin to vectors
         for (const auto& pin : pin_set) {
