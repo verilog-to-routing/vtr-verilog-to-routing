@@ -144,7 +144,8 @@ RSA* Decryption::loadPrivateKey(const std::string& privateKeyString) {
         return nullptr;
     }
 
-    if (!PEM_read_bio_RSAPrivateKey(privateKeyBio, &key, NULL, (void*)passphrase.c_str())) {
+    char* passphrase_cstr = const_cast<char*>(passphrase.c_str());
+    if (!PEM_read_bio_RSAPrivateKey(privateKeyBio, &key, NULL, passphrase_cstr)) {
         std::cerr << "Error reading private key" << std::endl;
         BIO_free(privateKeyBio);
         return nullptr;
