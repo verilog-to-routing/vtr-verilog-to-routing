@@ -184,11 +184,11 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
      * </xs:complexType>
      */
     virtual inline int get_add_region_layer_low(Region& r) final {
-        return r.get_region_bounds().get_layer_range().first;
+        return r.get_layer_range().first;
     }
 
     virtual inline int get_add_region_layer_high(Region& r) final {
-        return r.get_region_bounds().get_layer_range().second;
+        return r.get_layer_range().second;
     }
 
     virtual inline int get_add_region_subtile(Region& r) final {
@@ -200,35 +200,31 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
     }
 
     virtual inline void set_add_region_layer_high(int layer, void*& /*ctx*/) final {
-        auto region_bounds = loaded_region.get_region_bounds();
-        auto [layer_low, layer_high] = region_bounds.get_layer_range();
+        auto [layer_low, layer_high] = loaded_region.get_layer_range();
         layer_high = layer;
-        region_bounds.set_layer_range({layer_low, layer_high});
-        loaded_region.set_region_bounds(region_bounds);
+        loaded_region.set_layer_range({layer_low, layer_high});
     }
 
     virtual inline void set_add_region_layer_low(int layer, void*& /*ctx*/) final {
-        auto region_bounds = loaded_region.get_region_bounds();
-        auto [layer_low, layer_high] = region_bounds.get_layer_range();
+        auto [layer_low, layer_high] = loaded_region.get_layer_range();
         layer_low = layer;
-        region_bounds.set_layer_range({layer_low, layer_high});
-        loaded_region.set_region_bounds(region_bounds);
+        loaded_region.set_layer_range({layer_low, layer_high});
     }
 
     virtual inline int get_add_region_x_high(Region& r) final {
-        return r.get_region_bounds().get_rect().xmax();
+        return r.get_rect().xmax();
     }
 
     virtual inline int get_add_region_x_low(Region& r) final {
-        return r.get_region_bounds().get_rect().xmin();
+        return r.get_rect().xmin();
     }
 
     virtual inline int get_add_region_y_high(Region& r) final {
-        return r.get_region_bounds().get_rect().ymax();
+        return r.get_rect().ymax();
     }
 
     virtual inline int get_add_region_y_low(Region& r) final {
-        return r.get_region_bounds().get_rect().ymin();
+        return r.get_rect().ymin();
     }
 
     /** Generated for complex type "partition":
@@ -272,9 +268,7 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
     virtual inline void preallocate_partition_add_region(void*& /*ctx*/, size_t /*size*/) final {}
 
     virtual inline void* add_partition_add_region(void*& /*ctx*/, int x_high, int x_low, int y_high, int y_low) final {
-        auto bounds = loaded_region.get_region_bounds();
-        bounds.set_rect({x_low, y_low, x_high, y_high});
-        loaded_region.set_region_bounds(bounds);
+        loaded_region.set_rect({x_low, y_low, x_high, y_high});
 
         return nullptr;
     }

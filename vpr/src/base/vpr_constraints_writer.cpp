@@ -61,16 +61,14 @@ void setup_vpr_floorplan_constraints_one_loc(VprConstraints& constraints, int ex
         Partition part;
         part.set_name(part_name);
 
-        PartitionRegion pr;
-        Region reg;
-
         const auto& loc = place_ctx.block_locs[blk_id].loc;
 
-        reg.set_region_bounds({loc.x - expand, loc.y - expand,
-                               loc.x + expand, loc.y + expand, loc.layer});
+        PartitionRegion pr;
+        Region reg(loc.x - expand, loc.y - expand,
+                   loc.x + expand, loc.y + expand, loc.layer);
+
         if (subtile) {
-            int st = loc.sub_tile;
-            reg.set_sub_tile(st);
+            reg.set_sub_tile(loc.sub_tile);
         }
 
         pr.add_to_part_region(reg);
@@ -141,11 +139,9 @@ void setup_vpr_floorplan_constraints_cutpoints(VprConstraints& constraints, int 
             int ymin = vertical_cuts[j];
             int ymax = vertical_cuts[j + 1] - 1;
 
-            Region reg;
+            Region reg(xmin, ymin, xmax, ymax, 0, n_layers-1);
             // This function has not been tested for multi-layer grids. An assertion is used earlier to make sure that the grid has only one layer
-            reg.set_region_bounds({xmin, ymin, xmax, ymax, 0, n_layers-1});
             std::vector<AtomBlockId> atoms;
-
             region_atoms.insert({reg, atoms});
         }
     }
@@ -180,9 +176,8 @@ void setup_vpr_floorplan_constraints_cutpoints(VprConstraints& constraints, int 
             }
         }
 
-        Region current_reg;
+        Region current_reg(xminimum, yminimum, xmaximum, ymaximum, 0, n_layers-1);
         // This function has not been tested for multi-layer grids. An assertion is used earlier to make sure that the grid has only one layer
-        current_reg.set_region_bounds({xminimum, yminimum, xmaximum, ymaximum, 0, n_layers-1});
 
         auto got = region_atoms.find(current_reg);
 
@@ -198,8 +193,7 @@ void setup_vpr_floorplan_constraints_cutpoints(VprConstraints& constraints, int 
         Partition part;
         PartitionId partid(num_partitions);
         std::string part_name = "Part" + std::to_string(num_partitions);
-        const auto& reg_bounds = region.get_region_bounds();
-        create_partition(part, part_name, reg_bounds);
+        create_partition(part, part_name, region);
         constraints.mutable_place_constraints().add_partition(part);
 
         for (auto blk_id : atoms) {
@@ -210,13 +204,9 @@ void setup_vpr_floorplan_constraints_cutpoints(VprConstraints& constraints, int 
     }
 }
 
-void create_partition(Partition& part, const std::string& part_name, const RegionRectCoord& region_cord) {
+void create_partition(Partition& part, const std::string& part_name, const Region& region) {
     part.set_name(part_name);
     PartitionRegion part_pr;
-    Region part_region;
-    part_region.set_region_bounds(region_cord);
-    std::vector<Region> part_regions;
-    part_regions.push_back(part_region);
-    part_pr.set_partition_region(part_regions);
+    part_pr.set_partition_region({region});
     part.set_part_region(part_pr);
 }

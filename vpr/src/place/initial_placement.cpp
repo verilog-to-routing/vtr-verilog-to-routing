@@ -260,8 +260,8 @@ static bool is_loc_legal(const t_pl_loc& loc,
 
     //Check if the location is within its constraint region
     for (const auto& reg : pr.get_regions()) {
-        const vtr::Rect<int> reg_rect = reg.get_region_bounds().get_rect();
-        const auto [layer_low, layer_high] = reg.get_region_bounds().get_layer_range();
+        const vtr::Rect<int>& reg_rect = reg.get_rect();
+        const auto [layer_low, layer_high] = reg.get_layer_range();
 
         if (loc.layer > layer_high || loc.layer < layer_low) {
             continue;
@@ -617,8 +617,8 @@ bool try_place_macro_randomly(const t_pl_macro& pl_macro,
     }
     const Region& reg = regions[region_index];
 
-    const vtr::Rect<int>& reg_rect = reg.get_region_bounds().get_rect();
-    const auto [layer_low, layer_high] = reg.get_region_bounds().get_layer_range();
+    const vtr::Rect<int>& reg_rect = reg.get_rect();
+    const auto [layer_low, layer_high] = reg.get_layer_range();
 
     int selected_layer = (layer_low == layer_high) ? layer_low : layer_low + vtr::irand(layer_high - layer_low);
 
@@ -679,8 +679,8 @@ bool try_place_macro_exhaustively(const t_pl_macro& pl_macro,
     t_pl_loc to_loc;
 
     for (unsigned int reg = 0; reg < regions.size() && !placed; reg++) {
-        const vtr::Rect<int> reg_rect = regions[reg].get_region_bounds().get_rect();
-        const auto [layer_low, layer_high] = regions[reg].get_region_bounds().get_layer_range();
+        const vtr::Rect<int> reg_rect = regions[reg].get_rect();
+        const auto [layer_low, layer_high] = regions[reg].get_layer_range();
 
         for (int layer_num = layer_low; layer_num <= layer_high; layer_num++) {
             int min_cx = compressed_block_grid.grid_loc_to_compressed_loc_approx({reg_rect.xmin(), OPEN, layer_num}).x;
@@ -940,7 +940,7 @@ static void place_all_blocks([[maybe_unused]] const t_placer_opts& placer_opts,
     //keep tracks of which block types can not be placed in each iteration
     std::unordered_set<int> unplaced_blk_type_in_curr_itr;
 
-    auto criteria = [&block_scores, &cluster_ctx](ClusterBlockId lhs, ClusterBlockId rhs) {
+    auto criteria = [&block_scores](ClusterBlockId lhs, ClusterBlockId rhs) {
         int lhs_score = block_scores[lhs].macro_size + block_scores[lhs].number_of_placed_connections + SORT_WEIGHT_PER_TILES_OUTSIDE_OF_PR * block_scores[lhs].tiles_outside_of_floorplan_constraints + SORT_WEIGHT_PER_FAILED_BLOCK * block_scores[lhs].failed_to_place_in_prev_attempts;
         int rhs_score = block_scores[rhs].macro_size + block_scores[rhs].number_of_placed_connections + SORT_WEIGHT_PER_TILES_OUTSIDE_OF_PR * block_scores[rhs].tiles_outside_of_floorplan_constraints + SORT_WEIGHT_PER_FAILED_BLOCK * block_scores[rhs].failed_to_place_in_prev_attempts;
 

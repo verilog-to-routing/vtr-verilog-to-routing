@@ -151,7 +151,10 @@ class Rect {
     ///@brief Return the top right point
     Point<T> top_right() const;
 
-    ///@brief Return the bottom left and top right coordinates
+    /**
+     * @brief Return the bottom left and top right coordinates
+     * @return [xmin, ymin, xmax, ymax]
+     */
     std::tuple<T, T, T, T> coordinates() const;
 
     ///@brief Return the rectangle width
@@ -203,6 +206,7 @@ class Rect {
     /// @brief += operator
     Rect<T>& operator+= (const Point<T>& rhs);
 
+    /// @brief -= operator
     Rect<T>& operator-= (const Point<T>& rhs);
 
     ///@brief Equivalent to `*this = bounding_box(*this, other)`

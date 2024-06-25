@@ -100,8 +100,8 @@ static void highlight_partition(ezgl::renderer* g, int partitionID, int alpha) {
     // the on screen units for ezgl to use.
 
     for (int region = 0; (size_t)region < regions.size(); region++) {
-        const vtr::Rect<int>& reg_coord = regions[region].get_region_bounds().get_rect();
-        const auto [layer_begin, layer_end] = regions[region].get_region_bounds().get_layer_range();
+        const vtr::Rect<int>& reg_coord = regions[region].get_rect();
+        const auto [layer_begin, layer_end] = regions[region].get_layer_range();
 
         //TODO: 0 should be replaced with the actual z value of the region when graph is 3D
         ezgl::rectangle top_right = draw_coords->get_absolute_clb_bbox(layer_begin,

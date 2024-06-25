@@ -1278,10 +1278,8 @@ bool intersect_range_limit_with_floorplan_constraints(ClusterBlockId b_from,
             return false;
         }
 
-        Region range_reg;
-        range_reg.set_region_bounds({search_range.xmin, search_range.ymin,
-                                     search_range.xmax, search_range.ymax,
-                                     layer_num});
+        Region range_reg(search_range.xmin, search_range.ymin,
+                         search_range.xmax, search_range.ymax, layer_num);
 
         Region compressed_intersect_reg = intersection(compressed_regions[0], range_reg);
 
@@ -1290,8 +1288,8 @@ bool intersect_range_limit_with_floorplan_constraints(ClusterBlockId b_from,
                            "\tCouldn't find an intersection between floorplan constraints and search region\n");
             return false;
         } else {
-            const vtr::Rect<int>& intersect_rect = compressed_intersect_reg.get_region_bounds().get_rect();
-            const auto [layer_low, layer_high] = compressed_intersect_reg.get_region_bounds().get_layer_range();
+            const vtr::Rect<int>& intersect_rect = compressed_intersect_reg.get_rect();
+            const auto [layer_low, layer_high] = compressed_intersect_reg.get_layer_range();
             VTR_ASSERT(layer_low == layer_num && layer_high == layer_num);
 
             delta_cx = intersect_rect.xmax() -  intersect_rect.xmin();

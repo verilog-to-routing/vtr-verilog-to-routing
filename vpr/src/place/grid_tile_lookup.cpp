@@ -80,18 +80,15 @@ int GridTileLookup::region_tile_count(const Region& reg, t_logical_block_type_pt
     /*Intersect the region with the grid, in case the region passed in goes out of bounds
      * By intersecting with the grid, we ensure that we are only counting tiles for the part of the
      * region that fits on the grid.*/
-    Region grid_reg;
-    grid_reg.set_region_bounds({0, 0,
-                                (int)device_ctx.grid.width() - 1, (int)device_ctx.grid.height() - 1,
-                                0, n_layers - 1});
-    Region intersect_reg;
-    intersect_reg = intersection(reg, grid_reg);
+    Region grid_reg(0, 0,
+                    (int)device_ctx.grid.width() - 1, (int)device_ctx.grid.height() - 1,
+                    0, n_layers - 1);
+    Region intersect_reg = intersection(reg, grid_reg);
 
-    const vtr::Rect<int>& intersect_rect = intersect_reg.get_region_bounds().get_rect();
 //    VTR_ASSERT(intersect_coord.layer_num == layer_num);
 
-    const auto [xmin, ymin, xmax, ymax] = intersect_rect.coordinates();
-    const auto [layer_low, layer_high] = intersect_reg.get_region_bounds().get_layer_range();
+    const auto [xmin, ymin, xmax, ymax] = intersect_reg.get_rect().coordinates();
+    const auto [layer_low, layer_high] = intersect_reg.get_layer_range();
     auto& layer_type_grid = block_type_matrices[block_type->index];
 
     int xdim = (int)layer_type_grid.dim_size(1);
@@ -128,9 +125,9 @@ int GridTileLookup::region_with_subtile_count(const Region& reg, t_logical_block
     auto& device_ctx = g_vpr_ctx.device();
     int num_sub_tiles = 0;
 
-    const vtr::Rect<int>& reg_rect = reg.get_region_bounds().get_rect();
+    const vtr::Rect<int>& reg_rect = reg.get_rect();
     const auto [xmin, ymin, xmax, ymax] = reg_rect.coordinates();
-    const auto [layer_low, layer_high] = reg.get_region_bounds().get_layer_range();
+    const auto [layer_low, layer_high] = reg.get_layer_range();
     int subtile = reg.get_sub_tile();
 
     for (int i = xmax; i >= xmin; i--) {

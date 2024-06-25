@@ -40,8 +40,8 @@ bool floorplan_constraints_regions_overfull() {
     bool floorplan_regions_overfull = false;
 
     for (const auto& [region, block_type_counts] : regions_count_info) {
-        const vtr::Rect<int>& rect = region.get_region_bounds().get_rect();
-        const auto [layer_low, layer_high] = region.get_region_bounds().get_layer_range();
+        const vtr::Rect<int>& rect = region.get_rect();
+        const auto [layer_low, layer_high] = region.get_layer_range();
         for (const auto & block_type : block_types) {
             int num_assigned_blocks = block_type_counts[block_type.index];
             int num_tiles = grid_tiles.region_tile_count(region, &block_type);
