@@ -8,58 +8,52 @@
 #include "rr_graph_fwd.h"
 #include "route_path_manager.h"
 
-/* Used by the heap as its fundamental data structure.
- * Each heap element represents a partial route.
- *
- * cost:    The cost used to sort heap.
- *          For the timing-driven router this is the backward_path_cost +
- *          expected cost to the target.
- *
- * backward_path_cost:  Used only by the timing-driven router.  The "known"
- *                      cost of the path up to and including this node.
- *                      In this case, the .cost member contains not only
- *                      the known backward cost but also an expected cost
- *                      to the target.
- *
- * R_upstream: Used only by the timing-driven router.  Stores the upstream
- *             resistance to ground from this node, including the
- *             resistance of the node itself (device_ctx.rr_nodes[index].R).
- *
- * index: The RR node index associated with the costs/R_upstream values
- *
- * u.prev.node: The previous node used to reach the current 'index' node
- * u.prev.next: The edge from u.prev.node used to reach the current 'index' node
- *
- * u.next:  pointer to the next s_heap structure in the free
- *          linked list.  Not used when on the heap.
- * 
+/**
+ * @brief Used by the heap as its fundamental data structure. Each heap
+ * element represents a partial route.
  */
 struct t_heap {
+    ///@brief The cost used to sort heap. For the timing-driven router this is the backward_path_cost + expected cost to the target.
     float cost = 0.;
+    ///@brief The "known" cost of the path up to and including this node. Used only by the timing-driven router. In this case, the
+    ///.cost member contains not only the known backward cost but also an expected cost to the target.
     float backward_path_cost = 0.;
+    ///@brief Used only by the timing-driven router. Stores the upstream resistance to ground from this node, including the resistance
+    /// of the node itself (device_ctx.rr_nodes[index].R).
     float R_upstream = 0.;
-
+    ///@brief The RR node index associated with the costs/R_upstream values.
     RRNodeId index = RRNodeId::INVALID();
-
-    // Structure to handle extra RCV structures
-    // Managed by PathManager class
+    ///@brief Structure to handle extra RCV structures. Managed by PathManager class.
     t_heap_path* path_data;
 
+    /**
+     * @brief Get <i>u.next</i>.
+     */
     t_heap* next_heap_item() const {
         return u.next;
     }
 
+    /**
+     * @brief Set <i>u.next</i>.
+     */
     void set_next_heap_item(t_heap* next) {
         u.next = next;
     }
 
-    /** Get prev_edge.
-     * Be careful: will return 0 (a valid id!) if uninitialized. */
+    /**
+     * @brief Get <i>u.prev_edge</i>.
+     *
+     * @note
+     * Be careful: will return 0 (a valid id!) if uninitialized.
+     */
     constexpr RREdgeId prev_edge() const {
         static_assert(sizeof(uint32_t) == sizeof(RREdgeId));
         return RREdgeId(u.prev_edge);
     }
 
+    /**
+     * @brief Set <i>u.prev_edge</i>.
+     */
     inline void set_prev_edge(RREdgeId edge) {
         static_assert(sizeof(uint32_t) == sizeof(RREdgeId));
         u.prev_edge = size_t(edge);
@@ -67,25 +61,44 @@ struct t_heap {
 
   private:
     union {
+        ///@brief Pointer to the next s_heap structure in the free linked list.
         t_heap* next = nullptr;
-        // The previous edge is not a StrongId for performance & brevity
-        // reasons: StrongIds can't be trivially placed into an anonymous
-        // union.
+
+        /**
+         * @brief The edge from the previous node used to reach the current. Not used when on the heap.
+         *
+         * @note
+         * The previous edge is not a StrongId for performance & brevity
+         * reasons: StrongIds can't be trivially placed into an anonymous
+         * union.
+         */
         uint32_t prev_edge;
     } u;
 };
 
-// t_heap object pool, useful for implementing heaps that conform to
-// HeapInterface.
+/**
+ * @brief t_heap object pool, useful for implementing heaps that conform to
+ * HeapInterface.
+ */
 class HeapStorage {
   public:
     HeapStorage();
 
-    // Allocate a heap item.
+    /**
+     * @brief Allocate a heap item.
+     *
+     * @return The allocated item.
+     */
     t_heap* alloc();
 
-    // Free a heap item.
+    /**
+     * @brief Free a heap item.
+     */
     void free(t_heap* hptr);
+
+    /**
+     * @brief Free all heap items.
+     */
     void free_all_memory();
 
   private:
@@ -242,7 +255,7 @@ class HeapInterface {
      *
      * @param max_index The highest index possible in the heap.
      * @param prune_limit The maximum number of heap entries before pruning should
-     * take place. This should alwasy be higher than max_index, likely by a
+     * take place. This should always be higher than max_index, likely by a
      * significant amount. The pruning process has some overhead, so prune_limit
      * should be ~2-4x the max_index to prevent excess pruning when not required.
      */
@@ -256,7 +269,9 @@ enum class e_heap_type {
     BUCKET_HEAP_APPROXIMATION,
 };
 
-// Heap factory.
+/**
+ * @brief Heap factory.
+ */
 std::unique_ptr<HeapInterface> make_heap(e_heap_type);
 
 #endif /* _HEAP_TYPE_H */
