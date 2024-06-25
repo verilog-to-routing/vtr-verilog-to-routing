@@ -61,7 +61,7 @@ vtr::vector<RRNodeId, std::vector<RREdgeId>> get_fan_in_list(const RRGraphView& 
  * @param rr_graph
  * @param rr_graph_builder
  */
-void set_source_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_builder);
+void set_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_builder);
 
 int seg_index_of_cblock(const RRGraphView& rr_graph, t_rr_type from_rr_type, int to_node);
 int seg_index_of_sblock(const RRGraphView& rr_graph, int from_node, int to_node);

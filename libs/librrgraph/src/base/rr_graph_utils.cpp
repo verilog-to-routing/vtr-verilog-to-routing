@@ -11,66 +11,36 @@
 #include "rr_graph_obj.h"
 #include "rr_graph_builder.h"
 
-// Add "cluster-edge" OPINs and IPINs to source_opins and sink_ipins, respectively
+// Add "cluster-edge" IPINs to sink_ipins
 static void walk_cluster_recursive(const RRGraphView& rr_graph,
                                    const vtr::vector<RRNodeId, std::vector<RREdgeId>>& fanins,
-                                   std::unordered_map<RRNodeId, std::unordered_set<RRNodeId>>& source_opins,
                                    std::unordered_map<RRNodeId, std::unordered_set<RRNodeId>>& sink_ipins,
                                    RRNodeId curr,
                                    RRNodeId origin) {
-    auto in_orig_cluster = [&](RRNodeId node) -> bool {
-        return !(rr_graph.node_type(node) == e_rr_type::CHANX || rr_graph.node_type(node) == e_rr_type::CHANY);
-    };
-
-    // Check that curr is in the same cluster as origin
+    // Check that curr is SINK in the same cluster as origin
     int curr_x = rr_graph.node_xlow(curr);
     int curr_y = rr_graph.node_ylow(curr);
     VTR_ASSERT_SAFE(!((curr_x < rr_graph.node_xlow(origin)) || (curr_x > rr_graph.node_xhigh(origin)) || (curr_y < rr_graph.node_ylow(origin)) || (curr_y > rr_graph.node_yhigh(origin))));
+    VTR_ASSERT_SAFE(rr_graph.node_type(origin) == e_rr_type::SINK);
 
-    if (rr_graph.node_type(origin) == e_rr_type::SOURCE) {
-        // If we started at a SOURCE, we want to go "forward" to the cluster OPINs connected to the
-        // origin node
-        auto outgoing_edges = rr_graph.edges(curr);
-        for (t_edge_size edge : outgoing_edges) {
-            RRNodeId child = rr_graph.edge_sink_node(curr, edge);
-            VTR_ASSERT_SAFE(child != RRNodeId::INVALID());
+    // We want to go "backward" to the cluster IPINs connected to the origin node
+    auto incoming_edges = fanins[curr];
+    for (RREdgeId edge : incoming_edges) {
+        RRNodeId parent = rr_graph.edge_src_node(edge);
+        VTR_ASSERT_SAFE(parent != RRNodeId::INVALID());
 
-            if (!in_orig_cluster(child)) {
-                VTR_ASSERT_SAFE(source_opins.find(origin) != source_opins.end());
-                VTR_ASSERT_SAFE(rr_graph.node_type(curr) == e_rr_type::OPIN);
+        if (rr_graph.node_type(parent) == e_rr_type::CHANX || rr_graph.node_type(parent) == e_rr_type::CHANY) { /* Outside of origin cluster */
+            VTR_ASSERT_SAFE(sink_ipins.find(origin) != sink_ipins.end());
+            VTR_ASSERT_SAFE(rr_graph.node_type(curr) == e_rr_type::IPIN);
 
-                // If the child node isn't in the origin's cluster, the current node is a "cluster-edge" pin,
-                // so add it to source_opins
-                source_opins[origin].insert(curr);
-                return;
-            }
-
-            // If the child node is in_orig_cluster, keep going "forward"
-            walk_cluster_recursive(rr_graph, fanins, source_opins, sink_ipins, child, origin);
+            // If the parent node isn't in the origin's cluster, the current node is a "cluster-edge" pin,
+            // so add it to sink_ipins
+            sink_ipins[origin].insert(curr);
+            return;
         }
-    } else {
-        VTR_ASSERT_SAFE(rr_graph.node_type(origin) == e_rr_type::SINK);
 
-        // If we started at a SINK, we want to go "backward" to the cluster IPINs connected to the
-        // origin node
-        auto incoming_edges = fanins[curr];
-        for (RREdgeId edge : incoming_edges) {
-            RRNodeId parent = rr_graph.edge_src_node(edge);
-            VTR_ASSERT_SAFE(parent != RRNodeId::INVALID());
-
-            if (!in_orig_cluster(parent)) {
-                VTR_ASSERT_SAFE(sink_ipins.find(origin) != sink_ipins.end());
-                VTR_ASSERT_SAFE(rr_graph.node_type(curr) == e_rr_type::IPIN);
-
-                // If the parent node isn't in the origin's cluster, the current node is a "cluster-edge" pin,
-                // so add it to sink_ipins
-                sink_ipins[origin].insert(curr);
-                return;
-            }
-
-            // If the parent node is intra-cluster, keep going "backward"
-            walk_cluster_recursive(rr_graph, fanins, source_opins, sink_ipins, parent, origin);
-        }
+        // If the parent node is intra-cluster, keep going "backward"
+        walk_cluster_recursive(rr_graph, fanins, sink_ipins, parent, origin);
     }
 }
 
@@ -179,36 +149,33 @@ vtr::vector<RRNodeId, std::vector<RREdgeId>> get_fan_in_list(const RRGraphView& 
     return node_fan_in_list;
 }
 
-void set_source_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_builder) {
+void set_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_builder) {
     auto node_fanins = get_fan_in_list(rr_graph);
 
-    // The "cluster-edge" OPINs and IPINs of SOURCE and SINK nodes, respectively
-    std::unordered_map<RRNodeId, std::unordered_set<RRNodeId>> source_opins;
+    // The "cluster-edge" IPINs of SINK nodes
     std::unordered_map<RRNodeId, std::unordered_set<RRNodeId>> sink_ipins;
 
-    // Iterate over all nodes and fill source_opins and sink_ipins
+    // Iterate over all nodes and fill sink_ipins
     for (size_t node = 0; node < rr_graph.num_nodes(); ++node) {
         auto node_id = RRNodeId(node);
 
-        // Assume node is SOURCE or SINK, and skip if tile dimensions are 1x1
+        // Assume node is SINK, and skip if tile dimensions are 1x1
         int tile_width = rr_graph.node_xhigh(node_id) - rr_graph.node_xlow(node_id);
         int tile_height = rr_graph.node_yhigh(node_id) - rr_graph.node_ylow(node_id);
 
         if (tile_width <= 1 && tile_height <= 1)
             continue;
 
-        if (rr_graph.node_type((RRNodeId)node_id) == e_rr_type::SOURCE) {
-            source_opins[node_id] = {};
-        } else if (rr_graph.node_type((RRNodeId)node_id) == e_rr_type::SINK) {
+        if (rr_graph.node_type((RRNodeId)node_id) == e_rr_type::SINK) {
             sink_ipins[node_id] = {};
         } else
             continue;
 
-        walk_cluster_recursive(rr_graph, node_fanins, source_opins, sink_ipins, node_id, node_id);
+        walk_cluster_recursive(rr_graph, node_fanins, sink_ipins, node_id, node_id);
     }
 
-    // Set SOURCE and SINK locations based on "cluster-edge" OPINs and IPINs
-    for (const auto& node_pins : source_opins) {
+    // Set SINK locations based on "cluster-edge" OPINs and IPINs
+    for (const auto& node_pins : sink_ipins) {
         const auto& pin_set = node_pins.second;
 
         if (pin_set.empty())
