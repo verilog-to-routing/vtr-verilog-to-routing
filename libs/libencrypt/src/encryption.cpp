@@ -20,7 +20,8 @@ RSA* Encryption::loadPublicKey(const std::string& filename) {
         return nullptr;
     }
 
-    if (!PEM_read_RSA_PUBKEY(keyFile, &key, NULL, (void*)passphrase_enc.c_str())) {
+    char* passphrase_cstr = const_cast<char*>(passphrase_enc.c_str());
+    if (!PEM_read_RSA_PUBKEY(keyFile, &key, NULL, passphrase_cstr)) {
         std::cerr << "Error reading public key from file: " << filename << std::endl;
         fclose(keyFile);
         return nullptr;
