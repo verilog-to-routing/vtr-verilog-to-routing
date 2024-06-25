@@ -520,6 +520,17 @@ struct FloorplanningContext : public Context {
      */
     vtr::vector<ClusterBlockId, PartitionRegion> cluster_constraints;
 
+    /**
+     * @brief Floorplanning constraints in the compressed grid coordinate system.
+     *
+     * Each clustered block has a logical type with a corresponding compressed grid.
+     * Compressed floorplanning constraints are calculated by translating the grid locations
+     * of floorplanning regions to compressed grid locations. To ensure regions do not enlarge:
+     * - The bottom left corner is rounded up to the nearest compressed location.
+     * - The top right corner is rounded down to the nearest compressed location.
+     */
+    vtr::vector<ClusterBlockId, PartitionRegion> compressed_cluster_constraints;
+
     std::vector<Region> overfull_regions;
 };
 

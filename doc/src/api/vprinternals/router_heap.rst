@@ -14,6 +14,12 @@ HeapInterface
    :project: vpr
    :members:
 
+HeapStorage
+----------
+.. doxygenclass:: HeapStorage
+   :project: vpr
+   :members:
+
 KAryHeap
 ----------
 .. doxygenclass:: KAryHeap

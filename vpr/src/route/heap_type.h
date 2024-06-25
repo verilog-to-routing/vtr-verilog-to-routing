@@ -115,7 +115,7 @@ class HeapStorage {
  * @note
  * Objects used in instances of HeapInterface must always be allocated
  * and free'd using the HeapInterface::alloc and HeapInterface::free methods
- * of that instance.  Object pools are likely in use.
+ * of that instance. Object pools are likely in use.
  *
  * @details
  * As a general rule, any t_heap objects returned from this interface,
