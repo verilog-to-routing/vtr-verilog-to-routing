@@ -31,14 +31,15 @@ public:
     QPHybridSolver(PartialPlacement &p_placement);
     void solve(unsigned iteration) final;
     PartialPlacement &p_placement;
+    // Constructor fills the following with no legalization
     Eigen::SparseMatrix<double> A_sparse;
     Eigen::VectorXd b_x;
     Eigen::VectorXd b_y;
-
+    // Difference due to psudo anchor points from legalization
     Eigen::SparseMatrix<double> A_sparse_diff;
     Eigen::VectorXd b_x_diff;
     Eigen::VectorXd b_y_diff;
-
+    // Indexing Sparse matrix is expensive, it records diagonal values from A_sparse, created in constructor
     std::vector<double> diagonal;
 
     bool isASymetric(const Eigen::SparseMatrix<double>&A);

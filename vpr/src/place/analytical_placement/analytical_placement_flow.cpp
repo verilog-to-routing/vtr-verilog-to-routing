@@ -87,7 +87,7 @@ void run_analytical_placement_flow() {
     VTR_LOG("legalize for the first time");
     FlowBasedLegalizer().legalize(p_placement);
     p_placement.is_valid_partial_placement();
-    for (unsigned iteration = 1; iteration < 200; iteration++) {
+    for (unsigned iteration = 1; iteration < 100; iteration++) {
         VTR_LOG("iteration: %ld\n", iteration);
         solver->solve(iteration);
         VTR_ASSERT(p_placement.is_valid_partial_placement() && "placement not valid after solve!");
@@ -97,7 +97,7 @@ void run_analytical_placement_flow() {
         FlowBasedLegalizer().legalize(p_placement);
         VTR_ASSERT(p_placement.is_valid_partial_placement() && "placement not valid after legalize!");
         VTR_LOG("Post-Legalized HPWL: %f\n", p_placement.get_HPWL());
-        p_placement.unicode_art();
+        // p_placement.unicode_art();
     }
     FullLegalizer().legalize(p_placement);
 }
