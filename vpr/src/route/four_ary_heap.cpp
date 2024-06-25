@@ -7,14 +7,16 @@ static inline size_t first_child(size_t i) { return (i << 2) - 2; }
 inline size_t FourAryHeap::parent(size_t i) const { return (i + 2) >> 2; }
 
 inline size_t FourAryHeap::smallest_child(size_t i) const {
-    // Returns first_child(i) if i has no children
+    // This function could be a simple loop to find the min cost child. However,
+    // using switch-case is 3% faster, which is worthwhile as this function is
+    // called very frequently.
 
-    size_t child_1 = first_child(i);
-    size_t child_2 = child_1 + 1;
-    size_t child_3 = child_1 + 2;
-    size_t child_4 = child_1 + 3;
+    const size_t child_1 = first_child(i);
+    const size_t child_2 = child_1 + 1;
+    const size_t child_3 = child_1 + 2;
+    const size_t child_4 = child_1 + 3;
 
-    size_t num_children = std::min((size_t)4, heap_tail_ - child_1);
+    size_t num_children = std::max(std::min(4, (int)heap_tail_ - (int)child_1), 0);
 
     switch (num_children) {
         case 4: {
