@@ -201,7 +201,11 @@ void draw_noc_connection_marker(ezgl::renderer* g, const vtr::vector<NocRouterId
 /*
  * This function draws the links within the noc. So based on a given noc topology, this function draws the links that connect the routers in the noc together.
  */
-void draw_noc_links(ezgl::renderer* g, t_logical_block_type_ptr noc_router_logical_block_type, vtr::vector<NocLinkId, ezgl::color>& noc_link_colors, ezgl::rectangle noc_connection_marker_bbox, const vtr::vector<NocLinkId, NocLinkShift>& list_of_noc_link_shift_directions) {
+void draw_noc_links(ezgl::renderer* g,
+                    t_logical_block_type_ptr noc_router_logical_block_type,
+                    vtr::vector<NocLinkId, ezgl::color>& noc_link_colors,
+                    ezgl::rectangle noc_connection_marker_bbox,
+                    const vtr::vector<NocLinkId, NocLinkShift>& list_of_noc_link_shift_directions) {
     t_draw_coords* draw_coords = get_draw_coords_vars();
     auto& noc_ctx = g_vpr_ctx.noc();
 

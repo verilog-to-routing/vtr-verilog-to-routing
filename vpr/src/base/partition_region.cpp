@@ -86,18 +86,17 @@ void print_partition_region(FILE* fp, const PartitionRegion& pr) {
 }
 
 const PartitionRegion& get_device_partition_region() {
-    // the device partition region is constructed
+    // the device partition region is initialized the first time this function is called
     static PartitionRegion device_pr;
 
-    const auto& grid_ctx = g_vpr_ctx.device().grid;
+    const auto& grid = g_vpr_ctx.device().grid;
 
-    if (grid_ctx.grid_size() == 0) {
-        // TODO: error message
-    }
+    // this function is supposed to be called when the grid is constructed
+    VTR_ASSERT_SAFE(grid.grid_size() != 0);
 
-    const int n_layers = grid_ctx.get_num_layers();
-    const int width = (int)grid_ctx.width();
-    const int height = (int)grid_ctx.height();
+    const int n_layers = grid.get_num_layers();
+    const int width = static_cast<int>(grid.width());
+    const int height = static_cast<int>(grid.height());
 
     if (device_pr.empty()) {
         Region device_region(0, 0, width - 1, height - 1, 0, n_layers - 1);
