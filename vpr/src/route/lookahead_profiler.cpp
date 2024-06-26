@@ -89,19 +89,35 @@ void LookaheadProfiler::record(const int iteration,
     std::string tile_height = "--";
     std::string tile_width = "--";
 
-    if (net_id != ParentNetId::INVALID() && target_net_pin_index != OPEN) {
-        block_name = net_list.block_name(net_list.net_pin_block(net_id, target_net_pin_index));
+    if (atom_block_names.find(sink_inode) != atom_block_names.end()) {
+        VTR_ASSERT_SAFE(atom_block_models.find(sink_inode) != atom_block_models.end());
+        VTR_ASSERT_SAFE(cluster_block_types.find(sink_inode) != cluster_block_types.end());
+        VTR_ASSERT_SAFE(tile_dimensions.find(sink_inode) != tile_dimensions.end());
 
-        AtomBlockId atom_block_id = g_vpr_ctx.atom().nlist.find_block(block_name);
-        atom_block_model = g_vpr_ctx.atom().nlist.block_model(atom_block_id)->name;
+        block_name = atom_block_names[sink_inode];
+        atom_block_model = atom_block_models[sink_inode];
+        cluster_block_type = cluster_block_types[sink_inode];
+        std::tie(tile_width, tile_height) = tile_dimensions[sink_inode];
+    } else {
+        if (net_id != ParentNetId::INVALID() && target_net_pin_index != OPEN) {
+            block_name = net_list.block_name(net_list.net_pin_block(net_id, target_net_pin_index));
 
-        ClusterBlockId cluster_block_id = atom_to_cluster(atom_block_id);
+            AtomBlockId atom_block_id = g_vpr_ctx.atom().nlist.find_block(block_name);
+            atom_block_model = g_vpr_ctx.atom().nlist.block_model(atom_block_id)->name;
 
-        cluster_block_type = g_vpr_ctx.clustering().clb_nlist.block_type(cluster_block_id)->name;
+            ClusterBlockId cluster_block_id = atom_to_cluster(atom_block_id);
 
-        auto tile_type = physical_tile_type(cluster_block_id);
-        tile_height = std::to_string(tile_type->height);
-        tile_width = std::to_string(tile_type->width);
+            cluster_block_type = g_vpr_ctx.clustering().clb_nlist.block_type(cluster_block_id)->name;
+
+            auto tile_type = physical_tile_type(cluster_block_id);
+            tile_height = std::to_string(tile_type->height);
+            tile_width = std::to_string(tile_type->width);
+        }
+
+        atom_block_names[sink_inode] = block_name;
+        atom_block_models[sink_inode] = atom_block_model;
+        cluster_block_types[sink_inode] = cluster_block_type;
+        tile_dimensions[sink_inode] = {tile_width, tile_height};
     }
 
     auto node_type = rr_graph.node_type(curr_inode);

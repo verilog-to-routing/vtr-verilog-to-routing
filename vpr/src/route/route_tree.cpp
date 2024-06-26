@@ -552,17 +552,19 @@ RouteTree::add_subtree_from_heap(t_heap* hptr, int target_net_pin_index, bool is
     /*
      * ROUTER LOOKAHEAD VERIFIER
      */
-    for (size_t i = 2; i < new_branch_inodes.size(); ++i) { /* Distance one node away is always 0.0 */
-        lookahead_profiler.record(itry,
-                                  target_net_pin_index,
-                                  new_branch_inodes.back(),
-                                  new_branch_inodes.front(),
-                                  new_branch_inodes[i],
-                                  i,
-                                  cost_params,
-                                  router_lookahead,
-                                  net_id,
-                                  net_list);
+    if (itry >= 1) {
+        for (size_t i = 2; i < new_branch_inodes.size(); ++i) { /* Distance one node away is always 0.0 */
+            lookahead_profiler.record(itry,
+                                      target_net_pin_index,
+                                      new_branch_inodes.back(),
+                                      new_branch_inodes.front(),
+                                      new_branch_inodes[i],
+                                      i,
+                                      cost_params,
+                                      router_lookahead,
+                                      net_id,
+                                      net_list);
+        }
     }
 
     /* Build the new tree branch starting from the existing node we found */

@@ -130,7 +130,7 @@ static void do_one_route(const Netlist<>& net_list,
         VTR_ASSERT(cheapest.index == sink_node);
 
         vtr::optional<const RouteTreeNode&> rt_node_of_sink;
-        std::tie(std::ignore, rt_node_of_sink) = tree.update_from_heap(&cheapest, OPEN, nullptr, router_opts.flat_routing);
+        std::tie(std::ignore, rt_node_of_sink) = tree.update_from_heap(&cheapest, OPEN, nullptr, router_opts.flat_routing, router.get_router_lookahead(), cost_params, -1, net_list, conn_params.net_id_);
 
         //find delay
         float net_delay = rt_node_of_sink.value().Tdel;
@@ -209,7 +209,7 @@ static void profile_source(const Netlist<>& net_list,
                                                                    RRNodeId(sink_rr_node),
                                                                    router_opts,
                                                                    &delays[sink_x][sink_y],
-                                                                   layer_num, net_list);
+                                                                   layer_num);
                 }
 
                 if (successfully_routed) {

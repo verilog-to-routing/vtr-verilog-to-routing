@@ -28,6 +28,10 @@ class LookaheadProfiler {
 
   private:
     std::ofstream lookahead_verifier_csv;
+    std::unordered_map<RRNodeId, std::string> atom_block_names;
+    std::unordered_map<RRNodeId, std::string> atom_block_models;
+    std::unordered_map<RRNodeId, std::string> cluster_block_types;
+    std::unordered_map<RRNodeId, std::pair<std::string, std::string>> tile_dimensions;
 };
 
 extern LookaheadProfiler lookahead_profiler;
