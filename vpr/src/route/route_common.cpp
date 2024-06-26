@@ -286,6 +286,8 @@ void reset_path_costs(const std::vector<RRNodeId>& visited_rr_nodes) {
     for (auto node : visited_rr_nodes) {
         route_ctx.rr_node_route_inf[node].path_cost = std::numeric_limits<float>::infinity();
         route_ctx.rr_node_route_inf[node].backward_path_cost = std::numeric_limits<float>::infinity();
+        route_ctx.rr_node_route_inf[node].backward_path_delay = std::numeric_limits<float>::infinity();
+        route_ctx.rr_node_route_inf[node].backward_path_congestion = std::numeric_limits<float>::infinity();
         route_ctx.rr_node_route_inf[node].prev_edge = RREdgeId::INVALID();
     }
 }
@@ -423,6 +425,8 @@ void reset_rr_node_route_structs() {
         node_inf.acc_cost = 1.0;
         node_inf.path_cost = std::numeric_limits<float>::infinity();
         node_inf.backward_path_cost = std::numeric_limits<float>::infinity();
+        node_inf.backward_path_delay = std::numeric_limits<float>::infinity();
+        node_inf.backward_path_congestion = std::numeric_limits<float>::infinity();
         node_inf.set_occ(0);
     }
 }
@@ -811,7 +815,7 @@ void reserve_locally_used_opins(HeapInterface* heap, float pres_fac, float acc_f
                 cost = get_rr_cong_cost(to_node, pres_fac);
                 add_node_to_heap(heap, route_ctx.rr_node_route_inf,
                                  to_node, cost, RREdgeId::INVALID(),
-                                 0., 0.);
+                                 0., 0., 0., 0.);
             }
 
             for (ipin = 0; ipin < num_local_opin; ipin++) {

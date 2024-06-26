@@ -441,7 +441,7 @@ static void add_delay_to_matrix(
 }
 
 static void generic_compute_matrix_dijkstra_expansion(
-    RouterDelayProfiler& /*route_profiler*/,
+    RouterDelayProfiler& route_profiler,
     vtr::Matrix<std::vector<float>>& matrix,
     int layer_num,
     int source_x,
@@ -489,7 +489,7 @@ static void generic_compute_matrix_dijkstra_expansion(
         RRNodeId source_rr_node = device_ctx.rr_graph.node_lookup().find_node(layer_num, source_x, source_y, SOURCE, driver_ptc);
 
         VTR_ASSERT(source_rr_node != RRNodeId::INVALID());
-        auto delays = calculate_all_path_delays_from_rr_node(source_rr_node, router_opts, is_flat);
+        auto delays = calculate_all_path_delays_from_rr_node(source_rr_node, router_opts, is_flat, route_profiler.get_net_list());
 
         bool path_to_all_sinks = true;
         for (int sink_x = start_x; sink_x <= end_x; sink_x++) {

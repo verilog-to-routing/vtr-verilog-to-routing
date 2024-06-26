@@ -23,7 +23,7 @@ class RouterLookahead {
      * @return
      */
     virtual float get_expected_cost(RRNodeId node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const = 0;
-    virtual std::pair<float, float> get_expected_delay_and_cong(RRNodeId node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const = 0;
+    virtual std::pair<float, float> get_expected_delay_and_cong(RRNodeId node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream, bool ignore_criticality) const = 0;
 
     /**
      * @brief Compute router lookahead (if needed)
@@ -123,7 +123,7 @@ const RouterLookahead* get_cached_router_lookahead(const t_det_routing_arch& det
 class ClassicLookahead : public RouterLookahead {
   public:
     float get_expected_cost(RRNodeId node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const override;
-    std::pair<float, float> get_expected_delay_and_cong(RRNodeId node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const override;
+    std::pair<float, float> get_expected_delay_and_cong(RRNodeId node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream, bool ignore_criticality) const override;
 
     void compute(const std::vector<t_segment_inf>& /*segment_inf*/) override {
     }
@@ -159,7 +159,7 @@ class ClassicLookahead : public RouterLookahead {
 class NoOpLookahead : public RouterLookahead {
   protected:
     float get_expected_cost(RRNodeId node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const override;
-    std::pair<float, float> get_expected_delay_and_cong(RRNodeId node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const override;
+    std::pair<float, float> get_expected_delay_and_cong(RRNodeId node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream, bool ignore_criticality) const override;
 
     void compute(const std::vector<t_segment_inf>& /*segment_inf*/) override {
     }

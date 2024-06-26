@@ -1746,6 +1746,8 @@ struct t_rr_node_route_inf {
     float acc_cost;
     float path_cost;
     float backward_path_cost;
+    float backward_path_delay;
+    float backward_path_congestion;
 
   public: //Accessors
     short occ() const { return occ_; }

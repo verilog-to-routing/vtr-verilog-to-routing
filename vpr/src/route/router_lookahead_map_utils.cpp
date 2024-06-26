@@ -58,16 +58,6 @@ static void expand_dijkstra_neighbours(util::PQ_Entry parent_entry,
                                        vtr::vector<RRNodeId, bool>& node_expanded,
                                        std::priority_queue<util::PQ_Entry>& pq);
 
-
-/**
- * @brief Computes the adjusted position of an RR graph node.
- * This function does not modify the position of the given node.
- * It only returns the computed adjusted position.
- * @param rr The ID of the node whose adjusted position is desired.
- * @return The adjusted position (x, y).
- */
-static std::pair<int, int> get_adjusted_rr_position(RRNodeId rr);
-
 /**
  * @brief Computes the adjusted location of a pin to match the position of
  * the channel it can reach based on which side of the block it is at.
@@ -677,6 +667,22 @@ std::pair<int, int> get_xy_deltas(RRNodeId from_node, RRNodeId to_node) {
     VTR_ASSERT_SAFE(std::abs(delta_y) < (int)device_ctx.grid.height());
 
     return {delta_x, delta_y};
+}
+
+std::pair<int, int> get_adjusted_rr_position(const RRNodeId rr) {
+    auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
+
+    e_rr_type rr_type = rr_graph.node_type(rr);
+
+    if (is_chan(rr_type)) {
+        return get_adjusted_rr_wire_position(rr);
+    } else if (is_pin(rr_type)) {
+        return get_adjusted_rr_pin_position(rr);
+    } else {
+        VTR_ASSERT_SAFE(is_src_sink(rr_type));
+        return get_adjusted_rr_src_sink_position(rr);
+    }
 }
 
 t_routing_cost_map get_routing_cost_map(int longest_seg_length,
@@ -1407,22 +1413,6 @@ static void expand_dijkstra_neighbours(util::PQ_Entry parent_entry,
         /* finally, record the cost with which the child was visited and put the child entry on the queue */
         node_visited_costs[child_node] = child_entry.cost;
         pq.push(child_entry);
-    }
-}
-
-static std::pair<int, int> get_adjusted_rr_position(const RRNodeId rr) {
-    auto& device_ctx = g_vpr_ctx.device();
-    const auto& rr_graph = device_ctx.rr_graph;
-
-    e_rr_type rr_type = rr_graph.node_type(rr);
-
-    if (is_chan(rr_type)) {
-        return get_adjusted_rr_wire_position(rr);
-    } else if (is_pin(rr_type)) {
-        return get_adjusted_rr_pin_position(rr);
-    } else {
-        VTR_ASSERT_SAFE(is_src_sink(rr_type));
-        return get_adjusted_rr_src_sink_position(rr);
     }
 }
 

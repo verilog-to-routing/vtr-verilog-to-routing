@@ -209,7 +209,7 @@ static void profile_source(const Netlist<>& net_list,
                                                                    RRNodeId(sink_rr_node),
                                                                    router_opts,
                                                                    &delays[sink_x][sink_y],
-                                                                   layer_num);
+                                                                   layer_num, net_list);
                 }
 
                 if (successfully_routed) {

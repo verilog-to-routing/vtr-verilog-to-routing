@@ -127,6 +127,10 @@ class ConnectionRouter : public ConnectionRouterInterface {
     // Ensure route budgets have been calculated before enabling this
     void set_rcv_enabled(bool enable) final;
 
+    const RouterLookahead& get_router_lookahead() const {
+        return router_lookahead_;
+    }
+
   private:
     // Mark that data associated with rr_node "inode" has been modified, and
     // needs to be reset in reset_path_costs.
@@ -148,6 +152,8 @@ class ConnectionRouter : public ConnectionRouterInterface {
         route_inf->prev_edge = cheapest->prev_edge();
         route_inf->path_cost = cheapest->cost;
         route_inf->backward_path_cost = cheapest->backward_path_cost;
+        route_inf->backward_path_delay = cheapest->backward_path_delay;
+        route_inf->backward_path_congestion = cheapest->backward_path_congestion;
     }
 
     /** Common logic from timing_driven_route_connection_from_route_tree and

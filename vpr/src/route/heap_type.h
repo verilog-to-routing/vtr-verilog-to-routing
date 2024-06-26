@@ -37,6 +37,8 @@
 struct t_heap {
     float cost = 0.;
     float backward_path_cost = 0.;
+    float backward_path_delay = 0.;
+    float backward_path_congestion = 0.;
     float R_upstream = 0.;
 
     RRNodeId index = RRNodeId::INVALID();

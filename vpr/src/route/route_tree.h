@@ -87,6 +87,7 @@
 #include <unordered_map>
 
 #include "connection_based_routing_fwd.h"
+#include "lookahead_profiler.h"
 #include "route_tree_fwd.h"
 #include "vtr_assert.h"
 #include "spatial_route_tree_lookup.h"
@@ -357,7 +358,7 @@ class RouteTree {
      * RouteTreeNode of the SINK it adds to the routing.
      * Locking operation: only one thread can update_from_heap() a RouteTree at a time. */
     std::tuple<vtr::optional<const RouteTreeNode&>, vtr::optional<const RouteTreeNode&>>
-    update_from_heap(t_heap* hptr, int target_net_pin_index, SpatialRouteTreeLookup* spatial_rt_lookup, bool is_flat);
+    update_from_heap(t_heap* hptr, int target_net_pin_index, SpatialRouteTreeLookup* spatial_rt_lookup, bool is_flat, const RouterLookahead& router_lookahead, const t_conn_cost_params cost_params, const int itry, const Netlist<>& net_list, const ParentNetId& net_id);
 
     /** Reload timing values (R_upstream, C_downstream, Tdel).
      * Can take a RouteTreeNode& to do an incremental update.
@@ -491,7 +492,7 @@ class RouteTree {
 
   private:
     std::tuple<vtr::optional<RouteTreeNode&>, vtr::optional<RouteTreeNode&>>
-    add_subtree_from_heap(t_heap* hptr, int target_net_pin_index, bool is_flat);
+    add_subtree_from_heap(t_heap* hptr, int target_net_pin_index, bool is_flat, const RouterLookahead& router_lookahead, const t_conn_cost_params cost_params, const int itry, const Netlist<>& net_list, const ParentNetId& net_id);
 
     void add_non_configurable_nodes(RouteTreeNode* rt_node,
                                     bool reached_by_non_configurable_edge,

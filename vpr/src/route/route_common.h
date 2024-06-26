@@ -161,6 +161,8 @@ t_heap* prepare_to_add_node_to_heap(
     float total_cost,
     RREdgeId prev_edge,
     float backward_path_cost,
+    float backward_path_delay,
+    float backward_path_congestion,
     float R_upstream) {
     if (total_cost >= rr_node_route_inf[inode].path_cost)
         return nullptr;
@@ -171,6 +173,8 @@ t_heap* prepare_to_add_node_to_heap(
     hptr->cost = total_cost;
     hptr->set_prev_edge(prev_edge);
     hptr->backward_path_cost = backward_path_cost;
+    hptr->backward_path_delay = backward_path_delay;
+    hptr->backward_path_congestion = backward_path_congestion;
     hptr->R_upstream = R_upstream;
     return hptr;
 }
@@ -184,11 +188,14 @@ void add_node_to_heap(
     float total_cost,
     RREdgeId prev_edge,
     float backward_path_cost,
+    float backward_path_delay,
+    float backward_path_congestion,
     float R_upstream) {
     t_heap* hptr = prepare_to_add_node_to_heap(
         heap,
         rr_node_route_inf, inode, total_cost,
-        prev_edge, backward_path_cost, R_upstream);
+        prev_edge, backward_path_cost, backward_path_delay,
+        backward_path_congestion, R_upstream);
     if (hptr) {
         heap->add_to_heap(hptr);
     }
@@ -205,11 +212,13 @@ void push_back_node(
     float total_cost,
     RREdgeId prev_edge,
     float backward_path_cost,
+    float backward_path_delay,
+    float backward_path_congestion,
     float R_upstream) {
     t_heap* hptr = prepare_to_add_node_to_heap(
         heap,
         rr_node_route_inf, inode, total_cost, prev_edge,
-        backward_path_cost, R_upstream);
+        backward_path_cost, backward_path_delay, backward_path_congestion, R_upstream);
     if (hptr) {
         heap->push_back(hptr);
     }
