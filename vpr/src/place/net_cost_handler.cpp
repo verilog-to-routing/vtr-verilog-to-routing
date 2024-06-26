@@ -1854,28 +1854,6 @@ static void set_bb_delta_cost(const int num_affected_nets, double& bb_delta_c) {
     }
 }
 
-/**
- * @brief Find all the nets and pins affected by this swap and update costs.
- *
- * Find all the nets affected by this swap and update the bounding box (wiring)
- * costs. This cost function doesn't depend on the timing info.
- *
- * Find all the connections affected by this swap and update the timing cost.
- * For a connection to be affected, it not only needs to be on or driven by
- * a block, but it also needs to have its delay changed. Otherwise, it will
- * not be added to the affected_pins structure.
- *
- * For more, see update_td_delta_costs().
- *
- * The timing costs are calculated by getting the new connection delays,
- * multiplied by the connection criticalities returned by the timing
- * analyzer. These timing costs are stored in the proposed_* data structures.
- *
- * The change in the bounding box cost is stored in `bb_delta_c`.
- * The change in the timing cost is stored in `timing_delta_c`.
- *
- * @return The number of affected nets.
- */
 int find_affected_nets_and_update_costs(
     const t_place_algorithm& place_algorithm,
     const PlaceDelayModel* delay_model,
@@ -2258,11 +2236,7 @@ void init_try_swap_net_cost_structs(size_t num_nets, bool cube_bb) {
         layer_ts_bb_coord_new.resize(num_nets, std::vector<t_2D_bb>(num_layers, t_2D_bb()));
     }
 
-    ts_layer_sink_pin_count.resize({num_nets, size_t(num_layers)});
-    for (size_t flat_idx = 0; flat_idx < ts_layer_sink_pin_count.size(); flat_idx++) {
-        auto& elem = ts_layer_sink_pin_count.get(flat_idx);
-        elem = OPEN;
-    }
+    ts_layer_sink_pin_count.resize({num_nets, size_t(num_layers)}, OPEN);
 
     ts_nets_to_update.resize(num_nets, ClusterNetId::INVALID());
 }

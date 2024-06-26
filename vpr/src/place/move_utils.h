@@ -97,9 +97,9 @@ e_create_move create_move(t_pl_blocks_to_be_moved& blocks_affected, ClusterBlock
 
 /**
  * @brief Find the blocks that will be affected by a move of b_from to to_loc
- * @param blocks_affected
- * @param b_from
- * @param to
+ * @param blocks_affected Loaded by this routine and returned via reference; it lists the blocks etc. moved
+ * @param b_from Id of the cluster-level block to be moved
+ * @param to Where b_from will be moved to
  * @return e_block_move_result ABORT if either of the the moving blocks are already stored, or either of the blocks are fixed, to location is not
  * compatible, etc. INVERT if the "from" block is a single block and the "to" block is a macro. VALID otherwise.
  */
@@ -121,7 +121,7 @@ e_block_move_result record_macro_self_swaps(t_pl_blocks_to_be_moved& blocks_affe
  * @brief Check whether the "to" location is legal for the given "blk"
  * @param blk
  * @param to
- * @return
+ * @return True if this would be a legal move, false otherwise
  */
 bool is_legal_swap_to_location(ClusterBlockId blk, t_pl_loc to);
 
