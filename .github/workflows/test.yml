@@ -73,18 +73,16 @@ jobs:
 
     steps:
 
-      # TODO: This runnner is running on a self-hosted CPU. In order to upgrade
-      #       to v4, need to upgrade the machine to support node20.
-    - uses: actions/checkout@v4
-      with:
-        submodules: 'true'
-
       # Node 20 is required for recent versions of the upload artifacts action.
       # This may not be required once we upgrade to Ubuntu 24.04
     - uses: actions/setup-node@v4
       with:
         node-version: 20
         cache: 'npm'
+
+    - uses: actions/checkout@v4
+      with:
+        submodules: 'true'
 
     - name: Setup
       run: stdbuf -i0 -i0 -e0 ./.github/scripts/hostsetup.sh
@@ -107,8 +105,6 @@ jobs:
       # when the job fails). See warning here:
       # https://docs.github.com/en/actions/learn-github-actions/expressions#always
       if: ${{ !cancelled() }}
-      # TODO: This runnner is running on a self-hosted CPU. In order to upgrade
-      #       to v4, need to upgrade the machine to support node20.
       uses: actions/upload-artifact@v4
       with:
         name: ${{matrix.test}}_test_results
