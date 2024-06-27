@@ -42,8 +42,6 @@ jobs:
 
     timeout-minutes: 420
     
-    container: ubuntu:jammy
-
     runs-on: [self-hosted, Linux, X64]
 
     strategy:
@@ -78,13 +76,6 @@ jobs:
     - uses: actions/checkout@v4
       with:
         submodules: 'true'
-
-      # Node 20 is required for recent versions of the upload artifacts action.
-      # This may not be required once we upgrade to Ubuntu 24.04
-    - uses: actions/setup-node@v4
-      with:
-        node-version: 20
-        cache: 'npm'
 
     - name: Setup
       run: stdbuf -i0 -i0 -e0 ./.github/scripts/hostsetup.sh
