@@ -42,7 +42,7 @@ jobs:
 
     timeout-minutes: 420
     
-    container: ubuntu-22.04
+    container: ubuntu:24.04
 
     runs-on: [self-hosted, Linux, X64]
 
@@ -72,13 +72,6 @@ jobs:
       DEBIAN_FRONTEND: "noninteractive"
 
     steps:
-
-      # Node 20 is required for recent versions of the upload artifacts action.
-      # This may not be required once we upgrade to Ubuntu 24.04
-    - uses: actions/setup-node@v4
-      with:
-        node-version: 20
-        cache: 'npm'
 
     - uses: actions/checkout@v4
       with:
