@@ -81,22 +81,24 @@ void run_analytical_placement_flow() {
     // Set up the partial placement object
     PartialPlacement p_placement = PartialPlacement(atom_netlist, fixed_blocks, fixed_blocks_x, fixed_blocks_y);
     // Solve the QP problem
-    VTR_LOG("construct analytical solver\n");
-    std::unique_ptr<AnalyticalSolver> solver = make_analytical_solver(e_analytical_solver::QP_HYBRID, p_placement);
-    p_placement.is_valid_partial_placement();
-    VTR_LOG("legalize for the first time");
-    FlowBasedLegalizer().legalize(p_placement);
-    p_placement.is_valid_partial_placement();
-    for (unsigned iteration = 1; iteration < 100; iteration++) {
+    std::unique_ptr<AnalyticalSolver> solver = make_analytical_solver(e_analytical_solver::QP_HYBRID);
+    // This for loop always starts at iteration 0
+    for (unsigned iteration = 0; iteration < 100; iteration++) {
         VTR_LOG("iteration: %ld\n", iteration);
-        solver->solve(iteration);
-        VTR_ASSERT(p_placement.is_valid_partial_placement() && "placement not valid after solve!");
+        solver->solve(iteration, p_placement);
+        VTR_ASSERT_DEBUG(p_placement.is_valid_partial_placement() && "placement not valid after solve!");
         p_placement.print_stats();
-        VTR_LOG("HPWL: %f\n", p_placement.get_HPWL());
+        double post_solve_hpwl = p_placement.get_HPWL();
+        VTR_LOG("HPWL: %f\n", post_solve_hpwl);
         // Partial legalization using cut spreading algorithm
         FlowBasedLegalizer().legalize(p_placement);
-        VTR_ASSERT(p_placement.is_valid_partial_placement() && "placement not valid after legalize!");
-        VTR_LOG("Post-Legalized HPWL: %f\n", p_placement.get_HPWL());
+        VTR_ASSERT_DEBUG(p_placement.is_valid_partial_placement() && "placement not valid after legalize!");
+        double post_legalize_hpwl = p_placement.get_HPWL();
+        VTR_LOG("Post-Legalized HPWL: %f\n", post_legalize_hpwl);
+        if(std::abs(post_solve_hpwl - post_legalize_hpwl) < 20){
+            VTR_LOG("ended because of convergence\n");
+            break;
+        }
         // p_placement.unicode_art();
     }
     FullLegalizer().legalize(p_placement);

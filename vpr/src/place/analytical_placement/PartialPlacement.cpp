@@ -77,19 +77,16 @@ PartialPlacement::PartialPlacement(const AtomNetlist& netlist,
 }
 
 double PartialPlacement::get_HPWL() {
-    const DeviceContext& device_ctx = g_vpr_ctx.device();
-    size_t grid_width = device_ctx.grid.width();
-    size_t grid_height = device_ctx.grid.height();
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
     double hpwl = 0.0;
     for (AtomNetId net_id : atom_netlist.nets()) {
         // FIXME: Confirm if this should be here.
         if (net_is_ignored_for_placement(atom_netlist, net_id))
             continue;
-        double min_x = grid_width;
-        double max_x = 0;
-        double min_y = grid_height;
-        double max_y = 0;
+        double min_x = std::numeric_limits<double>::max();
+        double max_x = std::numeric_limits<double>::lowest();
+        double min_y = std::numeric_limits<double>::max();
+        double max_y = std::numeric_limits<double>::lowest();
         for (AtomPinId pin_id : atom_netlist.net_pins(net_id)) {
             AtomBlockId blk_id = atom_netlist.pin_block(pin_id);
             size_t node_id = get_node_id_from_blk(blk_id, atom_ctx.atom_molecules);
@@ -112,8 +109,10 @@ double PartialPlacement::get_HPWL() {
     return hpwl;
 }
 
+// This function checks whether all nodes of this placement reside within the board
 bool PartialPlacement::is_valid_partial_placement(){
-    VTR_ASSERT(node_loc_x.size() == node_loc_y.size());
+    if (node_loc_x.size() != node_loc_y.size()) 
+        return false; 
     bool result = true;
     for (size_t node_id = 0; node_id < node_loc_x.size(); node_id++){
         result &= is_valid_node(node_id);
@@ -121,6 +120,7 @@ bool PartialPlacement::is_valid_partial_placement(){
     return result; 
 }
 
+// Checks whether a node is well defined (not NaN) within the board 
 bool PartialPlacement::is_valid_node(size_t node_id){
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     size_t grid_width = device_ctx.grid.width();
@@ -129,12 +129,10 @@ bool PartialPlacement::is_valid_node(size_t node_id){
     if (std::isnan(node_loc_x[node_id])) {
         result = false;
         VTR_LOG("node_id %zu's x value is NaN\n", node_id);
-        VTR_ASSERT(0 && "node x has NaN!");
     }
     if (std::isnan(node_loc_y[node_id])) {
         result = false;
         VTR_LOG("node_id %zu's y value is NaN\n", node_id);
-        VTR_ASSERT(0 && "node y has NaN!");
     }
     if (node_loc_x[node_id] >= grid_width) {
         result = false;
@@ -153,6 +151,9 @@ bool PartialPlacement::is_valid_node(size_t node_id){
     return result;
 }
 
+// This function print the the board with the current placement to stdout
+// It does not have infinit resolutions. Nodes too close to each other will be represented by the same charactor
+// Concentrated nodes are represented by brighter colors, listed in the switch statment
 void PartialPlacement::unicode_art(){
     VTR_LOG("unicode_art start\n");
     const DeviceContext& device_ctx = g_vpr_ctx.device();

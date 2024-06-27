@@ -1,5 +1,6 @@
 #include "AnalyticalSolver.h"
 #include <Eigen/src/Cholesky/LDLT.h>
+#include <Eigen/src/Core/Matrix.h>
 #include <Eigen/src/Core/util/Constants.h>
 #include <Eigen/src/SparseCholesky/SimplicialCholesky.h>
 #include <Eigen/src/SparseCore/SparseMatrix.h>
@@ -17,9 +18,9 @@
 #include "vpr_error.h"
 #include "vtr_assert.h"
 
-std::unique_ptr<AnalyticalSolver> make_analytical_solver(e_analytical_solver solver_type, PartialPlacement &p_placement) {
+std::unique_ptr<AnalyticalSolver> make_analytical_solver(e_analytical_solver solver_type) {
     if (solver_type == e_analytical_solver::QP_HYBRID)
-        return std::make_unique<QPHybridSolver>(p_placement);
+        return std::make_unique<QPHybridSolver>();
     VPR_FATAL_ERROR(VPR_ERROR_PLACE, "Unrecognized analytical solver type");
     return nullptr;
 }
@@ -27,30 +28,23 @@ std::unique_ptr<AnalyticalSolver> make_analytical_solver(e_analytical_solver sol
 static inline void populate_update_hybrid_matrix(Eigen::SparseMatrix<double> &A_sparse_diff,
                                           Eigen::VectorXd &b_x_diff,
                                           Eigen::VectorXd &b_y_diff,
-                                          const std::vector<double> &diagonal,
                                           PartialPlacement& p_placement,
                                           unsigned iteration) {
     // Aii = Aii+w, bi = bi + wi * xi
     // TODO: verify would it be better if the initial weights are not part of the function.
-    std::vector<Eigen::Triplet<double>> tripletList;
-    tripletList.reserve(A_sparse_diff.rows());
     double coeff_pseudo_anchor = 0.01 * std::exp((double)iteration/5);
-    for (int i = 0; i < A_sparse_diff.rows(); i++){
-        double pseudo_w = coeff_pseudo_anchor * diagonal[i];
-        // double pseudo_w = 0.01 * iteration;
-        tripletList.emplace_back(i, i, pseudo_w);
+    for (size_t i = 0; i < p_placement.num_moveable_nodes; i++){
+        double pseudo_w = coeff_pseudo_anchor; 
+        A_sparse_diff.coeffRef(i, i) += pseudo_w;
         b_x_diff(i) += pseudo_w * p_placement.node_loc_x[i];
         b_y_diff(i) += pseudo_w * p_placement.node_loc_y[i];
     }
-
-    A_sparse_diff.setFromTriplets(tripletList.begin(), tripletList.end());
 }
 
 
 static inline void populate_hybrid_matrix(Eigen::SparseMatrix<double> &A_sparse,
                                           Eigen::VectorXd &b_x,
                                           Eigen::VectorXd &b_y,
-                                          std::vector<double> &diagonal,
                                           PartialPlacement& p_placement) {
     size_t num_star_nodes = 0;
     const AtomNetlist& netlist = p_placement.atom_netlist;
@@ -136,35 +130,26 @@ static inline void populate_hybrid_matrix(Eigen::SparseMatrix<double> &A_sparse,
             }
         }
     }
-
     A_sparse.setFromTriplets(tripletList.begin(), tripletList.end());
-    diagonal = std::vector<double>(num_moveable_nodes + num_star_nodes);
-    for(size_t i = 0; i < diagonal.size(); i++){
-        diagonal[i] = A_sparse.coeff(i, i);
-    }
 }
 
-void QPHybridSolver::solve(unsigned iteration) {
-    VTR_LOG("Running Quadratic Solver\n");
-    long num_total_nodes = A_sparse.rows();
-    // TODO: consider for zeroth iteration now we are doing expotential alpha
-    // linear we get 0 at iteration = 0, exp we get 1 at iteration zero. 
-    
-    // Calculated differences due to anchors from legalization
-    A_sparse_diff = Eigen::SparseMatrix<double>(num_total_nodes, num_total_nodes);
-    b_x_diff = Eigen::VectorXd::Zero(num_total_nodes);
-    b_y_diff = Eigen::VectorXd::Zero(num_total_nodes);
-    populate_update_hybrid_matrix(A_sparse_diff, b_x_diff, b_y_diff, diagonal, p_placement, iteration);
-    A_sparse_diff += A_sparse;
-    b_x_diff += b_x;
-    b_y_diff += b_y;
+void QPHybridSolver::solve(unsigned iteration, PartialPlacement &p_placement) {
+    if(iteration == 0)
+        populate_hybrid_matrix(A_sparse,b_x, b_y, p_placement);
+    Eigen::SparseMatrix<double> A_sparse_diff = Eigen::SparseMatrix<double>(A_sparse);
+    Eigen::VectorXd b_x_diff = Eigen::VectorXd(b_x);
+    Eigen::VectorXd b_y_diff = Eigen::VectorXd(b_y);
+    if(iteration != 0)
+        populate_update_hybrid_matrix(A_sparse_diff, b_x_diff, b_y_diff, p_placement, iteration);
 
+    VTR_LOG("Running Quadratic Solver\n");
+    
     // Solve Ax=b and fills placement with x.
     Eigen::VectorXd x, y;
     Eigen::ConjugateGradient<Eigen::SparseMatrix<double>, Eigen::Lower|Eigen::Upper> cg;
     // TODO: can change cg.tolerance to increase performance when needed
-    VTR_ASSERT(!b_x_diff.hasNaN() && "b_x has NaN!");
-    VTR_ASSERT(!b_y_diff.hasNaN() && "b_y has NaN!");
+    VTR_ASSERT_DEBUG(!b_x_diff.hasNaN() && "b_x has NaN!");
+    VTR_ASSERT_DEBUG(!b_y_diff.hasNaN() && "b_y has NaN!");
     cg.compute(A_sparse_diff);
     VTR_ASSERT(cg.info() == Eigen::Success && "Conjugate Gradient failed at compute!");
     x = cg.solve(b_x_diff);
@@ -177,16 +162,12 @@ void QPHybridSolver::solve(unsigned iteration) {
     }
 }
 
-QPHybridSolver::QPHybridSolver(PartialPlacement &p):p_placement(p){
-    populate_hybrid_matrix(A_sparse,b_x, b_y, diagonal, p_placement);
-}
-
-bool QPHybridSolver::isASymetric(const Eigen::SparseMatrix<double> &A){
+bool QPHybridSolver::isSymmetric(const Eigen::SparseMatrix<double> &A){
     return A.isApprox(A.transpose());
 }
 
-bool QPHybridSolver::isAPosDef(const Eigen::SparseMatrix<double> &A){
-    // This is slow, it could be faster if we use Cholesky decomposition (Eigen::SimplicialLDLT), still O(n^3)
+bool QPHybridSolver::isSemiPosDef(const Eigen::SparseMatrix<double> &A){
+    // TODO: This is slow, it could be faster if we use Cholesky decomposition (Eigen::SimplicialLDLT), still O(n^3)
     Eigen::SelfAdjointEigenSolver<Eigen::SparseMatrix<double>> solver;
     solver.compute(A);
     VTR_ASSERT(solver.info() == Eigen::Success && "Eigen solver failed!");

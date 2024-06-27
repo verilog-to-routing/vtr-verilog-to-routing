@@ -16,10 +16,10 @@ enum class e_analytical_solver {
 class AnalyticalSolver {
 public:
     virtual ~AnalyticalSolver() {}
-    virtual void solve(unsigned iteration) = 0;
+    virtual void solve(unsigned iteration, PartialPlacement &p_placement) = 0;
 };
 
-std::unique_ptr<AnalyticalSolver> make_analytical_solver(e_analytical_solver solver_type, PartialPlacement &p_placement);
+std::unique_ptr<AnalyticalSolver> make_analytical_solver(e_analytical_solver solver_type);
 
 // TODO: There is no difference between the hybrid, clique, and star since the
 //       the threshold acts as a mixing factor. 0 = star, inf = clique
@@ -28,20 +28,12 @@ class QPHybridSolver : public AnalyticalSolver {
 // need to store the matrices for the system of equations in the class.
 // TODO: Store a standard VTR matrix and pass that into Eigen using Map
 public:
-    QPHybridSolver(PartialPlacement &p_placement);
-    void solve(unsigned iteration) final;
-    PartialPlacement &p_placement;
+    void solve(unsigned iteration, PartialPlacement &p_placement) final;
     // Constructor fills the following with no legalization
     Eigen::SparseMatrix<double> A_sparse;
     Eigen::VectorXd b_x;
     Eigen::VectorXd b_y;
-    // Difference due to psudo anchor points from legalization
-    Eigen::SparseMatrix<double> A_sparse_diff;
-    Eigen::VectorXd b_x_diff;
-    Eigen::VectorXd b_y_diff;
-    // Indexing Sparse matrix is expensive, it records diagonal values from A_sparse, created in constructor
-    std::vector<double> diagonal;
 
-    bool isASymetric(const Eigen::SparseMatrix<double>&A);
-    bool isAPosDef(const Eigen::SparseMatrix<double>&A);
+    bool isSymmetric(const Eigen::SparseMatrix<double>&A);
+    bool isSemiPosDef(const Eigen::SparseMatrix<double>&A);
 };
