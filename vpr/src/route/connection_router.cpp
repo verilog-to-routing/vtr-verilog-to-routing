@@ -835,9 +835,6 @@ void ConnectionRouter<Heap>::add_route_tree_to_heap(
     /* Pre-order depth-first traversal */
     // IPINs and SINKS are not re_expanded
     if (rt_node.re_expand) {
-        if (target_node.is_valid()) {
-            return;
-        }
         add_route_tree_node_to_heap(rt_node,
                                     target_node,
                                     cost_params,
