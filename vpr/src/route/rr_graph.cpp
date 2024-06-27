@@ -105,8 +105,10 @@ static vtr::NdMatrix<std::vector<int>, 5> alloc_and_load_pin_to_track_map(const 
                                                                           const int* sets_per_seg_type);
 
 static vtr::NdMatrix<int, 6> alloc_and_load_pin_to_seg_type(const e_pin_type pin_type,
+                                                            const vtr::Matrix<int>& Fc,
                                                             const int seg_type_tracks,
-                                                            const int Fc,
+                                                            const int seg_index,
+                                                            const int max_Fc,
                                                             const t_physical_tile_type_ptr Type,
                                                             const std::set<int> type_layer,
                                                             const bool perturb_switch_pattern,
@@ -283,9 +285,10 @@ static void alloc_and_load_tile_rr_graph(RRGraphBuilder& rr_graph_builder,
 static float pattern_fmod(float a, float b);
 static void load_uniform_connection_block_pattern(vtr::NdMatrix<int, 6>& tracks_connected_to_pin,
                                                   const std::vector<t_pin_loc>& pin_locations,
+                                                  const vtr::Matrix<int>& Fc,
+                                                  const int seg_index,
                                                   const int x_chan_width,
                                                   const int y_chan_width,
-                                                  const int Fc,
                                                   const enum e_directionality directionality);
 
 static void load_perturbed_connection_block_pattern(vtr::NdMatrix<int, 6>& tracks_connected_to_pin,
@@ -1144,7 +1147,7 @@ static void build_rr_graph(const t_graph_type graph_type,
                         segment_inf[k].name.c_str(),
                         Fc_out[i][j][k],
                         Fc_in[i][j][k]);
-#endif /* VERBOSE */
+#endif
                     VTR_ASSERT_MSG(Fc_out[i][j][k] == 0 || Fc_in[i][j][k] == 0,
                                    "Pins must be inputs or outputs (i.e. can not have both non-zero Fc_out and Fc_in)");
                 }
@@ -3259,7 +3262,7 @@ static vtr::NdMatrix<std::vector<int>, 5> alloc_and_load_pin_to_track_map(const 
         }
 
         /* get pin connections to tracks of the current segment type */
-        auto pin_to_seg_type_map = alloc_and_load_pin_to_seg_type(pin_type, num_seg_type_tracks, max_Fc, Type, type_layer, perturb_switch_pattern[seg_inf[iseg].seg_index], directionality);
+        auto pin_to_seg_type_map = alloc_and_load_pin_to_seg_type(pin_type, Fc, num_seg_type_tracks, seg_inf[iseg].seg_index, max_Fc, Type, type_layer, perturb_switch_pattern[seg_inf[iseg].seg_index], directionality);
 
         /* connections in pin_to_seg_type_map are within that seg type -- i.e. in the [0,num_seg_type_tracks-1] range.
          * now load up 'result' array with these connections, but offset them so they are relative to the channel
@@ -3296,8 +3299,10 @@ static vtr::NdMatrix<std::vector<int>, 5> alloc_and_load_pin_to_track_map(const 
 }
 
 static vtr::NdMatrix<int, 6> alloc_and_load_pin_to_seg_type(const e_pin_type pin_type,
+                                                            const vtr::Matrix<int>& Fc,
                                                             const int num_seg_type_tracks,
-                                                            const int Fc,
+                                                            const int seg_index,
+                                                            const int max_Fc,
                                                             const t_physical_tile_type_ptr Type,
                                                             const std::set<int> type_layer,
                                                             const bool perturb_switch_pattern,
@@ -3331,7 +3336,7 @@ static vtr::NdMatrix<int, 6> alloc_and_load_pin_to_seg_type(const e_pin_type pin
                                                              size_t(Type->height),          //[0..height-1]
                                                              size_t(grid.get_num_layers()), //[0..layer-1]
                                                              NUM_SIDES,                     //[0..NUM_SIDES-1]
-                                                             size_t(Fc)                     //[0..Fc-1]
+                                                             size_t(max_Fc)                     //[0..Fc-1]
                                                          },
                                                          OPEN); //Unconnected
 
@@ -3471,11 +3476,11 @@ static vtr::NdMatrix<int, 6> alloc_and_load_pin_to_seg_type(const e_pin_type pin
     if (perturb_switch_pattern) {
         load_perturbed_connection_block_pattern(tracks_connected_to_pin,
                                                 pin_ordering,
-                                                num_seg_type_tracks, num_seg_type_tracks, Fc, directionality);
+                                                num_seg_type_tracks, num_seg_type_tracks, max_Fc, directionality);
     } else {
         load_uniform_connection_block_pattern(tracks_connected_to_pin,
-                                              pin_ordering,
-                                              num_seg_type_tracks, num_seg_type_tracks, Fc, directionality);
+                                              pin_ordering, Fc, seg_index,
+                                              num_seg_type_tracks, num_seg_type_tracks, directionality);
     }
 
 #ifdef ENABLE_CHECK_ALL_TRACKS
@@ -3620,9 +3625,10 @@ static float pattern_fmod(float a, float b) {
 
 static void load_uniform_connection_block_pattern(vtr::NdMatrix<int, 6>& tracks_connected_to_pin,
                                                   const std::vector<t_pin_loc>& pin_locations,
+                                                  const vtr::Matrix<int>& Fc,
+                                                  const int seg_index,
                                                   const int x_chan_width,
                                                   const int y_chan_width,
-                                                  const int Fc,
                                                   enum e_directionality directionality) {
     /* Loads the tracks_connected_to_pin array with an even distribution of     *
      * switches across the tracks for each pin.  For example, each pin connects *
@@ -3700,7 +3706,7 @@ static void load_uniform_connection_block_pattern(vtr::NdMatrix<int, 6>& tracks_
         group_size = 2;
     }
 
-    VTR_ASSERT((x_chan_width % group_size == 0) && (y_chan_width % group_size == 0) && (Fc % group_size == 0));
+    VTR_ASSERT((x_chan_width % group_size == 0) && (y_chan_width % group_size == 0));
 
     /* offset is used to move to a different point in the track space if it is detected that
      * the tracks being assigned overlap recently assigned tracks, with the goal of increasing
@@ -3714,19 +3720,23 @@ static void load_uniform_connection_block_pattern(vtr::NdMatrix<int, 6>& tracks_
         int width = pin_locations[i].width_offset;
         int height = pin_locations[i].height_offset;
         int layer = pin_locations[i].layer_offset;
+        int pin_fc = Fc[pin][seg_index];
+
+        VTR_ASSERT(pin_fc % group_size == 0);
+        VTR_LOG("pin %d, side %d, width %d, height %d, layer %d, pin_fc %d\n", pin, side, width, height, layer, pin_fc);
 
         /* Bi-directional treats each track separately, uni-directional works with pairs of tracks */
-        for (int j = 0; j < (Fc / group_size); ++j) {
+        for (int j = 0; j < (pin_fc / group_size); ++j) {
             int max_chan_width = (((side == TOP) || (side == BOTTOM)) ? x_chan_width : y_chan_width);
 
             // if the number of tracks we can assign is zero break from the loop
             if (max_chan_width == 0) {
                 break;
             }
-            float step_size = (float)max_chan_width / (float)(Fc * num_phys_pins);
+            float step_size = (float)max_chan_width / (float)(pin_fc * num_phys_pins);
 
-            VTR_ASSERT(Fc > 0);
-            float fc_step = (float)max_chan_width / (float)Fc;
+            VTR_ASSERT(pin_fc > 0);
+            float fc_step = (float)max_chan_width / (float)pin_fc;
 
             /* We may go outside the track ID space, because of offset, so use modulo arithmetic below. */
 
@@ -3753,7 +3763,7 @@ static void load_uniform_connection_block_pattern(vtr::NdMatrix<int, 6>& tracks_
                         int num_unassigned_tracks = 0;
                         int num_total_tracks = 0;
 
-                        for (int j2 = 0; j2 < (Fc / group_size); ++j2) {
+                        for (int j2 = 0; j2 < (pin_fc / group_size); ++j2) {
                             ftrack = pattern_fmod((i + offset + offset_increment) * step_size, fc_step) + (j2 * fc_step);
                             itrack = ((int)ftrack) * group_size;
 
