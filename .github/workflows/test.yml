@@ -42,7 +42,7 @@ jobs:
 
     timeout-minutes: 420
     
-    container: ubuntu:jammy
+    container: ubuntu-22.04
 
     runs-on: [self-hosted, Linux, X64]
 
