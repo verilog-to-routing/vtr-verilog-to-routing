@@ -42,7 +42,7 @@ jobs:
 
     timeout-minutes: 420
     
-    container: ubuntu:jammy
+    container: ubuntu:24.04
 
     runs-on: [self-hosted, Linux, X64]
 
@@ -73,9 +73,7 @@ jobs:
 
     steps:
 
-      # TODO: This runnner is running on a self-hosted CPU. In order to upgrade
-      #       to v4, need to upgrade the machine to support node20.
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         submodules: 'true'
 
@@ -100,9 +98,7 @@ jobs:
       # when the job fails). See warning here:
       # https://docs.github.com/en/actions/learn-github-actions/expressions#always
       if: ${{ !cancelled() }}
-      # TODO: This runnner is running on a self-hosted CPU. In order to upgrade
-      #       to v4, need to upgrade the machine to support node20.
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: ${{matrix.test}}_test_results
         path: |
