@@ -7,7 +7,7 @@
 /* Cut off for incremental bounding box updates.                          *
  * 4 is fastest -- I checked.                                             */
 /* To turn off incremental bounding box updates, set this to a huge value */
-#define SMALL_NET 4
+constexpr size_t SMALL_NET = 4;
 
 /* This is for the placement swap routines. A swap attempt could be       *
  * rejected, accepted or aborted (due to the limitations placed on the    *
@@ -128,6 +128,13 @@ ClusterBlockId propose_block_to_move(const t_placer_opts& placer_opts,
                                      bool highly_crit_block,
                                      ClusterNetId* net_from,
                                      int* pin_from);
+
+/**
+ * Returns all movable clustered blocks with a specified logical block type.
+ * @param blk_type Specifies the logical block block type.
+ * @return A const reference to a vector containing all movable blocks with the specified logical block type.
+ */
+const std::vector<ClusterBlockId>& movable_blocks_per_type(const t_logical_block_type& blk_type);
 
 /**
  * @brief Select a random block to be swapped with another block
