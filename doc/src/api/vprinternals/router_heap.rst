@@ -24,10 +24,8 @@ KAryHeap
 ----------
 .. doxygenclass:: KAryHeap
    :project: vpr
-   :members:
 
 FourAryHeap
 ----------
 .. doxygenclass:: FourAryHeap
    :project: vpr
-   :members:

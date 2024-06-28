@@ -27,21 +27,21 @@ struct t_heap {
     t_heap_path* path_data;
 
     /**
-     * @brief Get <i>u.next</i>.
+     * @brief Get the next t_heap item in the linked list.
      */
     t_heap* next_heap_item() const {
         return u.next;
     }
 
     /**
-     * @brief Set <i>u.next</i>.
+     * @brief Set the next t_heap item in the linked list.
      */
     void set_next_heap_item(t_heap* next) {
         u.next = next;
     }
 
     /**
-     * @brief Get <i>u.prev_edge</i>.
+     * @brief Get the edge from the previous node used to reach the current node.
      *
      * @note
      * Be careful: will return 0 (a valid id!) if uninitialized.
@@ -52,7 +52,7 @@ struct t_heap {
     }
 
     /**
-     * @brief Set <i>u.prev_edge</i>.
+     * @brief Set the edge from the previous node used to reach the current node..
      */
     inline void set_prev_edge(RREdgeId edge) {
         static_assert(sizeof(uint32_t) == sizeof(RREdgeId));
@@ -61,7 +61,7 @@ struct t_heap {
 
   private:
     union {
-        ///@brief Pointer to the next s_heap structure in the free linked list.
+        ///@brief Pointer to the next t_heap structure in the free linked list.
         t_heap* next = nullptr;
 
         /**
@@ -121,7 +121,7 @@ class HeapStorage {
  * As a general rule, any t_heap objects returned from this interface,
  * **must** be HeapInterface::free'd before destroying the HeapInterface
  * instance. This ensure that no leaks are present in the users of the heap.
- * Violating this assumption may result in a assertion violation.
+ * Violating this assumption may result in an assertion violation.
  */
 class HeapInterface {
   public:
@@ -160,7 +160,7 @@ class HeapInterface {
      *  - empty_heap<BR>
      *  - build_heap<BR>
      *
-     *  @param grid
+     *  @param grid The FPGA device grid
      */
     virtual void init_heap(const DeviceGrid& grid) = 0;
 
