@@ -965,7 +965,7 @@ t_class_range get_pb_graph_node_class_physical_range(t_physical_tile_type_ptr /*
                                                      const t_pb_graph_node* pb_graph_node) {
     VTR_ASSERT(pb_graph_node->is_primitive());
 
-    t_class_range class_range = logical_block->pb_graph_node_class_range.at(pb_graph_node);
+    t_class_range class_range = logical_block->primitive_pb_graph_node_class_range.at(pb_graph_node);
     int logical_block_class_offset = sub_tile->primitive_class_range[sub_tile_relative_cap].at(logical_block).low;
 
     class_range.low += logical_block_class_offset;
