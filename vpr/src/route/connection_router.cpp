@@ -2,6 +2,7 @@
 #include "rr_graph.h"
 
 #include "binary_heap.h"
+#include "four_ary_heap.h"
 #include "bucket.h"
 #include "rr_graph_fwd.h"
 
@@ -1150,6 +1151,16 @@ std::unique_ptr<ConnectionRouterInterface> make_connection_router(e_heap_type he
     switch (heap_type) {
         case e_heap_type::BINARY_HEAP:
             return std::make_unique<ConnectionRouter<BinaryHeap>>(
+                grid,
+                router_lookahead,
+                rr_nodes,
+                rr_graph,
+                rr_rc_data,
+                rr_switch_inf,
+                rr_node_route_inf,
+                is_flat);
+        case e_heap_type::FOUR_ARY_HEAP:
+            return std::make_unique<ConnectionRouter<FourAryHeap>>(
                 grid,
                 router_lookahead,
                 rr_nodes,
