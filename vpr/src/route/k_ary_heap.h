@@ -24,9 +24,6 @@ class KAryHeap : public HeapInterface {
     void set_prune_limit(size_t max_index, size_t prune_limit) final;
     void free_all_memory() final;
 
-    virtual bool is_valid() const = 0;
-    virtual t_heap* get_heap_head() = 0;
-
   protected:
     /**
      * @brief The struct which the heap_ vector contains.
@@ -53,6 +50,9 @@ class KAryHeap : public HeapInterface {
         t_heap* elem_ptr;
         float cost;
     };
+
+    virtual bool is_valid() const = 0;
+    virtual t_heap* get_heap_head() = 0;
 
     /**
      * @return The number of elements in the heap.
