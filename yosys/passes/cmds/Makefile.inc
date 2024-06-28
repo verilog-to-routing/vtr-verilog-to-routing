@@ -46,3 +46,6 @@ OBJS += passes/cmds/printattrs.o
 OBJS += passes/cmds/sta.o
 OBJS += passes/cmds/clean_zerowidth.o
 OBJS += passes/cmds/xprop.o
+OBJS += passes/cmds/dft_tag.o
+OBJS += passes/cmds/future.o
+OBJS += passes/cmds/box_derive.o
