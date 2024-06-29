@@ -44,6 +44,8 @@ struct t_cluster_pin_chain {
 
 /**
 * @brief Get node-to-node switches in a RRGraph
+ *
+ * @return A vector of switch ids
 * */
 std::vector<RRSwitchId> find_rr_graph_switches(const RRGraph& rr_graph,
                                                const RRNodeId& from_node,

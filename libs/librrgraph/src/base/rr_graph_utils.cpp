@@ -41,10 +41,6 @@ static void walk_cluster_recursive(const RRGraphView& rr_graph,
     }
 }
 
-/****************************************************************************
- * Find the switches interconnecting two nodes
- * Return a vector of switch ids
- ***************************************************************************/
 std::vector<RRSwitchId> find_rr_graph_switches(const RRGraph& rr_graph,
                                                const RRNodeId& from_node,
                                                const RRNodeId& to_node) {
