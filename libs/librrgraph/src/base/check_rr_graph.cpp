@@ -389,15 +389,21 @@ void check_rr_node(const RRGraphView& rr_graph,
 
     switch (rr_type) {
         case SOURCE:
+            if (type == nullptr) {
+                VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                                "in check_rr_node: node %d (type %d) is at an illegal clb location (%d, %d).\n", inode, rr_type, xlow, ylow);
+            }
+
+            if (xlow != (xhigh - type->width + 1) || ylow != (yhigh - type->height + 1)) {
+                VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                                "in check_rr_node: node %d (type %d) has endpoints (%d,%d) and (%d,%d)\n", inode, rr_type, xlow, ylow, xhigh, yhigh);
+            }
+            break;
         case SINK:
             if (type == nullptr) {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                                 "in check_rr_node: node %d (type %d) is at an illegal clb location (%d, %d).\n", inode, rr_type, xlow, ylow);
             }
-            //            if (xlow != (xhigh - type->width + 1) || ylow != (yhigh - type->height + 1)) {
-            //                VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-            //                                "in check_rr_node: node %d (type %d) has endpoints (%d,%d) and (%d,%d)\n", inode, rr_type, xlow, ylow, xhigh, yhigh);
-            //            }
             break;
         case IPIN:
         case OPIN:

@@ -1,8 +1,3 @@
-
-/****************************************************************************
- * This file include most-utilized functions that manipulate on the
- * RRGraph object
- ***************************************************************************/
 #include <queue>
 #include <random>
 
@@ -14,9 +9,9 @@
 // Add "cluster-edge" IPINs to sink_ipins
 static void walk_cluster_recursive(const RRGraphView& rr_graph,
                                    const vtr::vector<RRNodeId, std::vector<RREdgeId>>& fanins,
-                                   std::unordered_map<RRNodeId, std::unordered_set<RRNodeId>>& sink_ipins,
-                                   RRNodeId curr,
-                                   RRNodeId origin) {
+                                   std::unordered_set<RRNodeId>& sink_ipins,
+                                   const RRNodeId curr,
+                                   const RRNodeId origin) {
     // Make sure SINK in the same cluster as origin. This might not be the case when we have direct-connect between blocks
     int curr_x = rr_graph.node_xlow(curr);
     int curr_y = rr_graph.node_ylow(curr);
@@ -37,7 +32,7 @@ static void walk_cluster_recursive(const RRGraphView& rr_graph,
 
             // If the parent node isn't in the origin's cluster, the current node is a "cluster-edge" pin,
             // so add it to sink_ipins
-            sink_ipins[origin].insert(curr);
+            sink_ipins.insert(curr);
             return;
         }
 
@@ -71,9 +66,6 @@ std::vector<RRSwitchId> find_rr_graph_switches(const RRGraph& rr_graph,
 }
 
 int seg_index_of_cblock(const RRGraphView& rr_graph, t_rr_type from_rr_type, int to_node) {
-    /* Returns the segment number (distance along the channel) of the connection *
-     * box from from_rr_type (CHANX or CHANY) to to_node (IPIN).                 */
-
     if (from_rr_type == CHANX)
         return (rr_graph.node_xlow(RRNodeId(to_node)));
     else
@@ -82,13 +74,6 @@ int seg_index_of_cblock(const RRGraphView& rr_graph, t_rr_type from_rr_type, int
 }
 
 int seg_index_of_sblock(const RRGraphView& rr_graph, int from_node, int to_node) {
-    /* Returns the segment number (distance along the channel) of the switch box *
-     * box from from_node (CHANX or CHANY) to to_node (CHANX or CHANY).  The     *
-     * switch box on the left side of a CHANX segment at (i,j) has seg_index =   *
-     * i-1, while the switch box on the right side of that segment has seg_index *
-     * = i.  CHANY stuff works similarly.  Hence the range of values returned is *
-     * 0 to device_ctx.grid.width()-1 (if from_node is a CHANX) or 0 to device_ctx.grid.height()-1 (if from_node is a CHANY).   */
-
     t_rr_type from_rr_type, to_rr_type;
 
     from_rr_type = rr_graph.node_type(RRNodeId(from_node));
@@ -158,6 +143,8 @@ void set_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_builder
     std::unordered_map<RRNodeId, std::unordered_set<RRNodeId>> sink_ipins;
 
     // Iterate over all nodes and fill sink_ipins
+    // We fill sink_ipins first and then iterate through it to avoid changing the rr_graph
+    // before we are done collecting all the data we need
     for (size_t node = 0; node < rr_graph.num_nodes(); ++node) {
         auto node_id = RRNodeId(node);
 
@@ -172,10 +159,12 @@ void set_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_builder
             continue;
 
         sink_ipins[node_id] = {};
-        walk_cluster_recursive(rr_graph, node_fanins, sink_ipins, node_id, node_id);
+        walk_cluster_recursive(rr_graph, node_fanins, sink_ipins[node_id], node_id, node_id);
     }
 
-    // Set SINK locations based on "cluster-edge" IPINs
+    // Set SINK locations as average of "cluster-edge" IPINs. Generally, larger blocks do not have
+    // equivalent IPINs, so each SINK will be connected to only one IPIN, so taking the average is
+    // redundant.
     for (const auto& node_pins : sink_ipins) {
         const auto& pin_set = node_pins.second;
 
