@@ -161,18 +161,17 @@ void set_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_builder
     for (size_t node = 0; node < rr_graph.num_nodes(); ++node) {
         auto node_id = RRNodeId(node);
 
-        // Assume node is SINK, and skip if tile dimensions are 1x1
+        if (rr_graph.node_type((RRNodeId)node_id) != e_rr_type::SINK)
+            continue;
+
+        // Skip if tile dimensions are 1x1
         int tile_width = rr_graph.node_xhigh(node_id) - rr_graph.node_xlow(node_id);
         int tile_height = rr_graph.node_yhigh(node_id) - rr_graph.node_ylow(node_id);
 
         if (tile_width <= 1 && tile_height <= 1)
             continue;
 
-        if (rr_graph.node_type((RRNodeId)node_id) == e_rr_type::SINK) {
-            sink_ipins[node_id] = {};
-        } else
-            continue;
-
+        sink_ipins[node_id] = {};
         walk_cluster_recursive(rr_graph, node_fanins, sink_ipins, node_id, node_id);
     }
 
