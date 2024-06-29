@@ -2,6 +2,7 @@
 #include "rr_graph.h"
 
 #include "binary_heap.h"
+#include "four_ary_heap.h"
 #include "bucket.h"
 #include "rr_graph_fwd.h"
 
@@ -981,7 +982,6 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
     int target_bin_x = grid_to_bin_x(rr_graph_->node_xlow(target_node), spatial_rt_lookup);
     int target_bin_y = grid_to_bin_y(rr_graph_->node_ylow(target_node), spatial_rt_lookup);
 
-    int nodes_added = 0;
     int chan_nodes_added = 0;
 
     t_bb highfanout_bb;
@@ -1029,14 +1029,9 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
                 // Expand HF BB to include the node (clip by original BB)
                 expand_highfanout_bounding_box(highfanout_bb, net_bounding_box, rr_node_to_add, rr_graph_);
 
-                if (is_flat_) {
-                    if (rr_graph_->node_type(rr_node_to_add) == CHANY || rr_graph_->node_type(rr_node_to_add) == CHANX) {
-                        chan_nodes_added++;
-                    }
-                } else {
+                if (rr_graph_->node_type(rr_node_to_add) == CHANY || rr_graph_->node_type(rr_node_to_add) == CHANX) {
                     chan_nodes_added++;
                 }
-                nodes_added++;
             }
 
             constexpr int SINGLE_BIN_MIN_NODES = 2;
@@ -1054,7 +1049,7 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
         if (done) break;
     }
 
-    if (nodes_added == 0) { //If the target bin, and it's surrounding bins were empty, just add the full route tree
+    if (chan_nodes_added == 0) { //If the target bin, and it's surrounding bins were empty, just add the full route tree
         add_route_tree_to_heap(rt_root, target_node, cost_params, net_bounding_box);
         return net_bounding_box;
     } else {
@@ -1156,6 +1151,16 @@ std::unique_ptr<ConnectionRouterInterface> make_connection_router(e_heap_type he
     switch (heap_type) {
         case e_heap_type::BINARY_HEAP:
             return std::make_unique<ConnectionRouter<BinaryHeap>>(
+                grid,
+                router_lookahead,
+                rr_nodes,
+                rr_graph,
+                rr_rc_data,
+                rr_switch_inf,
+                rr_node_route_inf,
+                is_flat);
+        case e_heap_type::FOUR_ARY_HEAP:
+            return std::make_unique<ConnectionRouter<FourAryHeap>>(
                 grid,
                 router_lookahead,
                 rr_nodes,
