@@ -1589,9 +1589,8 @@ bool verify_rr_node_indices(const DeviceGrid& grid,
             }
         }
     }
-}
 
-return true;
+    return true;
 }
 
 int get_track_to_pins(RRGraphBuilder& rr_graph_builder,

@@ -1,15 +1,15 @@
 /**
-* @file rr_graph_utils.h
-*
-* @brief This file includes the most-utilized functions that manipulate the RRGraph object.
-*/
+ * @file rr_graph_utils.h
+ *
+ * @brief This file includes the most-utilized functions that manipulate the RRGraph object.
+ */
 
 #ifndef RR_GRAPH_UTILS_H
 #define RR_GRAPH_UTILS_H
 
 /* Include header files which include data structures used by
-* the function declaration
-*/
+ * the function declaration
+ */
 #include <vector>
 #include "rr_graph_fwd.h"
 #include "rr_node_types.h"
@@ -43,53 +43,53 @@ struct t_cluster_pin_chain {
 };
 
 /**
-* @brief Get node-to-node switches in a RRGraph
+ * @brief Get node-to-node switches in a RRGraph
  *
  * @return A vector of switch ids
-* */
+ */
 std::vector<RRSwitchId> find_rr_graph_switches(const RRGraph& rr_graph,
                                                const RRNodeId& from_node,
                                                const RRNodeId& to_node);
 
 /**
-* @brief This function generates and returns a vector indexed by RRNodeId containing a list of fan-in edges for each node.
-*/
+ * @brief This function generates and returns a vector indexed by RRNodeId containing a list of fan-in edges for each node.
+ */
 vtr::vector<RRNodeId, std::vector<RREdgeId>> get_fan_in_list(const RRGraphView& rr_graph);
 
 /**
-* @brief This function sets better locations for SINK nodes.
-*
-* @details
-* build_rr_graph() sets the location of SINK nodes to span the entire tile they are in. This function sets the location
-* of SINK nodes to be the average coordinate of the IPINs on their cluster block to which they are connected
-*
-* @note
-* This function only changes SINK locations in tiles which have dimensions greater than 1x1
-*/
+ * @brief This function sets better locations for SINK nodes.
+ *
+ * @details
+ * build_rr_graph() sets the location of SINK nodes to span the entire tile they are in. This function sets the location
+ * of SINK nodes to be the average coordinate of the IPINs on their cluster block to which they are connected
+ *
+ * @note
+ * This function only changes SINK locations in tiles which have dimensions greater than 1x1
+ */
 void set_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_builder);
 
 /**
-* @brief Returns the segment number (distance along the channel) of the connection box from from_rr_type (CHANX or
-* CHANY) to to_node (IPIN).
-*/
+ * @brief Returns the segment number (distance along the channel) of the connection box from from_rr_type (CHANX or
+ * CHANY) to to_node (IPIN).
+ */
 int seg_index_of_cblock(const RRGraphView& rr_graph, t_rr_type from_rr_type, int to_node);
 
 /**
-* @breif Returns the segment number (distance along the channel) of the switch box from from_node (CHANX or CHANY) to
-* to_node (CHANX or CHANY).
-*
-* @details
-* The switch box on the left side of a CHANX segment at (i,j) has seg_index = i-1, while the switch box on the right
-* side of that segment has seg_index = i.  CHANY stuff works similarly.  Hence the range of values returned is 0 to
-* device_ctx.grid.width()-1 (if from_node is a CHANX) or 0 to device_ctx.grid.height()-1 (if from_node is a CHANY).
-*/
+ * @breif Returns the segment number (distance along the channel) of the switch box from from_node (CHANX or CHANY) to
+ * to_node (CHANX or CHANY).
+ *
+ * @details
+ * The switch box on the left side of a CHANX segment at (i,j) has seg_index = i-1, while the switch box on the right
+ * side of that segment has seg_index = i.  CHANY stuff works similarly.  Hence the range of values returned is 0 to
+ * device_ctx.grid.width()-1 (if from_node is a CHANX) or 0 to device_ctx.grid.height()-1 (if from_node is a CHANY).
+ */
 int seg_index_of_sblock(const RRGraphView& rr_graph, int from_node, int to_node);
 
 /**
-* @brief This function checks whether all inter-die connections are form OPINs. Return "true"
-* if that is the case. Can be used for multiple purposes. For example, to determine which type of bounding
-* box to be used to estimate the wire-length of a net.
-* @return limited_to_opin
-*/
+ * @brief This function checks whether all inter-die connections are form OPINs. Return "true"
+ * if that is the case. Can be used for multiple purposes. For example, to determine which type of bounding
+ * box to be used to estimate the wire-length of a net.
+ * @return limited_to_opin
+ */
 bool inter_layer_connections_limited_to_opin(const RRGraphView& rr_graph);
 #endif
