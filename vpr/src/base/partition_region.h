@@ -75,10 +75,28 @@ PartitionRegion intersection(const PartitionRegion& cluster_pr, const PartitionR
 void update_cluster_part_reg(PartitionRegion& cluster_pr, const PartitionRegion& new_pr);
 
 /**
- * @brief Get a PartitionRegion that covers the entire device.
+ * @brief Get a PartitionRegion with a single Region that covers the entire device.
  *
  * @return A PartitionRegion that covers the whole device grid.
  */
 const PartitionRegion& get_device_partition_region();
+
+namespace std {
+template<>
+struct hash<PartitionRegion> {
+    std::size_t operator()(const PartitionRegion& pr) const noexcept {
+        const std::vector<Region>& regions = pr.get_regions();
+
+        std::size_t seed = std::hash<size_t>{}(regions.size());
+
+        for (const Region& region : regions) {
+            vtr::hash_combine(seed, region);
+        }
+
+        return seed;
+    }
+};
+} // namespace std
+
 
 #endif /* PARTITION_REGIONS_H */

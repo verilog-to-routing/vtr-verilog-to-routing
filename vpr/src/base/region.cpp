@@ -85,6 +85,8 @@ Region intersection(const Region& r1, const Region& r2) {
     auto [intersect_layer_begin, intersect_layer_end] = std::make_pair(std::max(r1_layer_low, r2_layer_low),
                                                                                 std::min(r1_layer_high, r2_layer_high));
 
+    // check that the give layer range start from a lower layer and end at a higher or the same layer
+    // negative layer means that the given Region object is an empty region
     if (intersect_layer_begin > intersect_layer_end || intersect_layer_begin < 0 || intersect_layer_end < 0) {
         return {};
     }
