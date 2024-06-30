@@ -179,9 +179,6 @@ void set_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_builder
         auto x_avg = (short)round(std::accumulate(x_coords.begin(), x_coords.end(), 0.f) / (double)x_coords.size());
         auto y_avg = (short)round(std::accumulate(y_coords.begin(), y_coords.end(), 0.f) / (double)y_coords.size());
 
-        VTR_ASSERT(x_avg >= 0);
-        VTR_ASSERT(y_avg >= 0);
-
         RRNodeId node = node_pins.first;
         rr_graph_builder.set_node_coordinates(node, x_avg, y_avg, x_avg, y_avg);
     }

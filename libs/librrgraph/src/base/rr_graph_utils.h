@@ -63,8 +63,15 @@ vtr::vector<RRNodeId, std::vector<RREdgeId>> get_fan_in_list(const RRGraphView& 
  * build_rr_graph() sets the location of SINK nodes to span the entire tile they are in. This function sets the location
  * of SINK nodes to be the average coordinate of the IPINs on their cluster block to which they are connected
  *
- * @note
- * This function only changes SINK locations in tiles which have dimensions greater than 1x1
+ * @warning
+ * 1. Do not call this function if the RR graph will be written out.<BR>
+ * 2. If using flat routing, this function must be called before building the intra-cluster RR graph.
+ *
+ * @todo
+ * Either when writing out the RR graph after this function has been called, or reading in an RR graph produced in VPR
+ * after this function was called, an error occurs (many IPINs have no fanins). The reason for this error has not been
+ * determined. However, this is quite a big issue, as choosing to write out the RR graph now significantly increases
+ * runtime!
  */
 void set_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_builder);
 

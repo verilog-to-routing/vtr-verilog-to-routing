@@ -643,7 +643,8 @@ static void build_rr_graph(const t_graph_type graph_type,
                            const int num_directs,
                            int* wire_to_rr_ipin_switch,
                            bool is_flat,
-                           int* Warnings);
+                           int* Warnings,
+                           bool writing_graph_out);
 
 static void build_intra_cluster_rr_graph(const t_graph_type graph_type,
                                          const DeviceGrid& grid,
@@ -714,6 +715,9 @@ void create_rr_graph(const t_graph_type graph_type,
                                                                       router_opts.reorder_rr_graph_nodes_threshold,
                                                                       router_opts.reorder_rr_graph_nodes_seed);
                 }
+
+                if (det_routing_arch->write_rr_graph_filename.empty())
+                    set_sink_locs(device_ctx.rr_graph, mutable_device_ctx.rr_graph_builder);
             }
         } else {
             free_rr_graph();
@@ -736,7 +740,8 @@ void create_rr_graph(const t_graph_type graph_type,
                            directs, num_directs,
                            &det_routing_arch->wire_to_rr_ipin_switch,
                            is_flat,
-                           Warnings);
+                           Warnings,
+                           !det_routing_arch->write_rr_graph_filename.empty());
         }
     }
 
@@ -957,7 +962,8 @@ static void build_rr_graph(const t_graph_type graph_type,
                            const int num_directs,
                            int* wire_to_rr_ipin_switch,
                            bool is_flat,
-                           int* Warnings) {
+                           int* Warnings,
+                           bool writing_graph_out) {
     vtr::ScopedStartFinishTimer timer("Build routing resource graph");
 
     /* Reset warning flag */
@@ -1438,7 +1444,9 @@ static void build_rr_graph(const t_graph_type graph_type,
     }
 
     // Get better locations for SINK nodes
-    set_sink_locs(rr_graph, device_ctx.rr_graph_builder);
+    // Note: this function is also called after load_rr_file() in create_rr_graph()
+    if (!writing_graph_out)
+        set_sink_locs(rr_graph, device_ctx.rr_graph_builder);
 
     // We are done with building the RR Graph. Thus, we can clear the storages only used
     // to build the RR Graph
