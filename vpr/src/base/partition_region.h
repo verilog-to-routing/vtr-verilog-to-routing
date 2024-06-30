@@ -50,6 +50,16 @@ class PartitionRegion {
      */
     bool is_loc_in_part_reg(const t_pl_loc& loc) const;
 
+    /**
+     * @brief Compares whether this PartitionRegion includes the same regions
+     * and another PartitionRegion.
+     * @param pr The other PartitionRegion to be compared with this object.
+     * @return True if both PartitionRegions contain the same regions.
+     */
+    bool operator==(const PartitionRegion& pr) const {
+        return (regions == pr.get_regions());
+    }
+
   private:
     std::vector<Region> regions; ///< union of rectangular regions that a partition can be placed in
 };
