@@ -1525,8 +1525,8 @@ bool verify_rr_node_indices(const DeviceGrid& grid,
                              */
                         } else {
                             // Previously, SINKs had co-ordinates covering the entire block they are in. Now, their locations
-                            // are the average of the IPINs they are connected to, so we cannot do the same check that we did
-                            // for SOURCEs.
+                            // are the average of the IPINs they are connected to; but, this does not affect where they are in
+                            // the spatial lookup. So, we cannot do this check.
 
                             VTR_ASSERT(rr_graph.node_type(inode) == SINK);
                         }

@@ -147,13 +147,6 @@ void set_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_builder
         if (rr_graph.node_type((RRNodeId)node_id) != e_rr_type::SINK)
             continue;
 
-        // Skip if tile dimensions are 1x1
-        int tile_width = rr_graph.node_xhigh(node_id) - rr_graph.node_xlow(node_id);
-        int tile_height = rr_graph.node_yhigh(node_id) - rr_graph.node_ylow(node_id);
-
-        if (tile_width <= 1 && tile_height <= 1)
-            continue;
-
         sink_ipins[node_id] = {};
         walk_cluster_recursive(rr_graph, node_fanins, sink_ipins[node_id], node_id, node_id);
     }
@@ -185,6 +178,9 @@ void set_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_builder
 
         auto x_avg = (short)round(std::accumulate(x_coords.begin(), x_coords.end(), 0.f) / (double)x_coords.size());
         auto y_avg = (short)round(std::accumulate(y_coords.begin(), y_coords.end(), 0.f) / (double)y_coords.size());
+
+        VTR_ASSERT(x_avg >= 0);
+        VTR_ASSERT(y_avg >= 0);
 
         RRNodeId node = node_pins.first;
         rr_graph_builder.set_node_coordinates(node, x_avg, y_avg, x_avg, y_avg);

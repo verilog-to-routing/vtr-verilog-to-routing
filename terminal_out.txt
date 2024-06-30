@@ -1,0 +1,10 @@
+Cleaning files..
+cd build && /usr/local/bin/cmake -DCMAKE_BUILD_TYPE=release -G 'Unix Makefiles'  /home/shrevena/Documents/vtr/vtr-verilog-to-routing
+-- Using ccache binary found @ /usr/bin/ccache
+-- CMAKE_BUILD_TYPE: release
+-- Building with IPO: on
+-- Performing Test CXX_COMPILER_SUPPORTS_-Wformat=2
+-- Performing Test CXX_COMPILER_SUPPORTS_-Wformat=2 - Success
+-- Performing Test CXX_COMPILER_SUPPORTS_-Wcatch-value=3
+-- Performing Test CXX_COMPILER_SUPPORTS_-Wcatch-value=3 - Success
+-- Performing Test CXX_COMPILER_SUPPORTS_-Wimplicit-fallthrough=3
