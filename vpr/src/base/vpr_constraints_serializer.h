@@ -274,6 +274,24 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
     }
 
     virtual inline void finish_partition_add_region(void*& /*ctx*/) final {
+        const auto [layer_low, layer_high] = loaded_region.get_layer_range();
+
+        if (layer_low < 0 || layer_high < 0 || layer_high < layer_low) {
+            if (report_error_ == nullptr) {
+                VPR_ERROR(VPR_ERROR_PLACE, "\nIllegal layer numbers are specified in the constraint file.\n");
+            } else {
+                report_error_->operator()("Illegal layer numbers are specified in the constraint file.");
+            }
+        }
+
+        if (loaded_region.empty()) {
+            if (report_error_ == nullptr) {
+                VPR_ERROR(VPR_ERROR_PLACE, "\nThe specified region is empty.\n");
+            } else {
+                report_error_->operator()("The specified region is empty.");
+            }
+        }
+        
         loaded_part_region.add_to_part_region(loaded_region);
 
         Region clear_region;
