@@ -291,7 +291,7 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
                 report_error_->operator()("The specified region is empty.");
             }
         }
-        
+
         loaded_part_region.add_to_part_region(loaded_region);
 
         Region clear_region;

@@ -123,7 +123,7 @@ Region intersection(const Region& r1, const Region& r2) {
         return intersect;
     }
 
-    // subtile are not compatible
+    // subtiles are not compatible
     return {};
 }
 

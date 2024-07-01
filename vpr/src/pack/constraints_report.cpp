@@ -1,6 +1,5 @@
 #include "constraints_report.h"
 
-//To-do: alter this routine to check whether whole PartitionRegions are full instead of individual Regions
 bool floorplan_constraints_regions_overfull() {
     GridTileLookup grid_tiles;
 
