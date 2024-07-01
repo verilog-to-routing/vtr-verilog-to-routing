@@ -21,7 +21,7 @@ static void collect_crit_path_metadata(std::stringstream& ss, const std::vector<
     ss << "#RPT METADATA:\n";
     ss << "path_index/clock_launch_path_elements_num/arrival_path_elements_num\n";
     std::size_t counter = 0;
-    for (const tatum::TimingPath& path: paths) {
+    for (const tatum::TimingPath& path : paths) {
         std::size_t offset_index = path.clock_launch_path().elements().size();
         std::size_t selectable_items = path.data_arrival_path().elements().size();
         ss << counter << "/" << offset_index << "/" << selectable_items << "\n";

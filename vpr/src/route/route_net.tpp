@@ -149,20 +149,18 @@ inline NetResultFlags route_net(ConnectionRouter& router,
         std::string net_name = net_list.net_name(net_id);
 
         // If there is no routing constraint for the current global net
-        // and the clock modelling is set to dedicated network or 
+        // and the clock modelling is set to dedicated network or
         //there is a routing constraint for the current net setting routing model
         // to the dedicated network run the first stage router.
-        if((!route_constraints.has_routing_constraint(net_name) && router_opts.clock_modeling == e_clock_modeling::DEDICATED_NETWORK)
-            || route_constraints.get_route_model_by_net_name(net_name) == e_clock_modeling::DEDICATED_NETWORK){
-
+        if ((!route_constraints.has_routing_constraint(net_name) && router_opts.clock_modeling == e_clock_modeling::DEDICATED_NETWORK)
+            || route_constraints.get_route_model_by_net_name(net_name) == e_clock_modeling::DEDICATED_NETWORK) {
             std::string clock_network_name = "";
 
             // If a user-specified routing constratins exists for the curret net get the clock network name
             // from the constraints file, otherwise use the default clock network name
-            if(route_constraints.has_routing_constraint(net_name)){
+            if (route_constraints.has_routing_constraint(net_name)) {
                 clock_network_name = route_constraints.get_routing_network_name_by_net_name(net_name);
-            }
-            else {
+            } else {
                 auto& arch = device_ctx.arch;
                 clock_network_name = arch->default_clock_network_name;
             }
@@ -177,7 +175,7 @@ inline NetResultFlags route_net(ConnectionRouter& router,
             // delay by selecting a direct route from the clock source to the virtual sink
             cost_params.criticality = router_opts.max_criticality;
 
-            if (sink_node == RRNodeId::INVALID()){
+            if (sink_node == RRNodeId::INVALID()) {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Cannot route net \"%s\" through given clock network. Unknown clock network name \"%s\"", net_name.c_str(), clock_network_name.c_str());
             }
 

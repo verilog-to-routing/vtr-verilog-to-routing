@@ -72,7 +72,7 @@ class UserPlaceConstraints {
      *   @param part_id    The id of the partition that is wanted
      */
     Partition& get_mutable_partition(PartitionId part_id);
-    
+
     /**
      * @brief Return all the atoms that belong to a partition
      *

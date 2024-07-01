@@ -3,7 +3,6 @@
 
 #include "move_generator.h"
 
-
 //enum represents the available agent states
 enum class e_agent_state {
     EARLY_IN_THE_ANNEAL,

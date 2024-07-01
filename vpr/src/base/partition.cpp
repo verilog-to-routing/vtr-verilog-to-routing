@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <utility>
 
-const std::string& Partition::get_name() const{
+const std::string& Partition::get_name() const {
     return name;
 }
 

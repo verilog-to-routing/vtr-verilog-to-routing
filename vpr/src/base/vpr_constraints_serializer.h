@@ -110,8 +110,8 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
         vpr_throw(VPR_ERROR_OTHER, file, line, "%s", message);
     }
 
-    //resets the routing scheme defined within loaded_route_constraint to the default values 
-    void reset_loaded_route_constrints(){
+    //resets the routing scheme defined within loaded_route_constraint to the default values
+    void reset_loaded_route_constrints() {
         // The network name in the routing scheme needs to be reset to its default value
         // before loading a new constraint for error-checking purposes when the route model
         // is set to dedicated network. The "network_name" attribute is an optional argument
@@ -178,12 +178,17 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
      *   <xs:attribute name="y_low" type="xs:int" use="required" />
      *   <xs:attribute name="x_high" type="xs:int" use="required" />
      *   <xs:attribute name="y_high" type="xs:int" use="required" />
+     *   <xs:attribute name="layer_low" type="xs:int" />
+     *   <xs:attribute name="layer_high" type="xs:int" />
      *   <xs:attribute name="subtile" type="xs:int" />
      * </xs:complexType>
      */
+    virtual inline int get_add_region_layer_low(Region& r) final {
+        return r.get_layer_range().first;
+    }
 
-    virtual inline int get_add_region_layer_num(Region& r) final {
-        return r.get_layer_num();
+    virtual inline int get_add_region_layer_high(Region& r) final {
+        return r.get_layer_range().second;
     }
 
     virtual inline int get_add_region_subtile(Region& r) final {
@@ -194,24 +199,32 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
         loaded_region.set_sub_tile(subtile);
     }
 
+    virtual inline void set_add_region_layer_high(int layer, void*& /*ctx*/) final {
+        auto [layer_low, layer_high] = loaded_region.get_layer_range();
+        layer_high = layer;
+        loaded_region.set_layer_range({layer_low, layer_high});
+    }
+
+    virtual inline void set_add_region_layer_low(int layer, void*& /*ctx*/) final {
+        auto [layer_low, layer_high] = loaded_region.get_layer_range();
+        layer_low = layer;
+        loaded_region.set_layer_range({layer_low, layer_high});
+    }
+
     virtual inline int get_add_region_x_high(Region& r) final {
-        const auto reg_coord = r.get_region_rect();
-        return reg_coord.xmax;
+        return r.get_rect().xmax();
     }
 
     virtual inline int get_add_region_x_low(Region& r) final {
-        const auto reg_coord = r.get_region_rect();
-        return reg_coord.xmin;
+        return r.get_rect().xmin();
     }
 
     virtual inline int get_add_region_y_high(Region& r) final {
-        const auto reg_coord = r.get_region_rect();
-        return reg_coord.ymax;
+        return r.get_rect().ymax();
     }
 
     virtual inline int get_add_region_y_low(Region& r) final {
-        const auto reg_coord = r.get_region_rect();
-        return reg_coord.ymin;
+        return r.get_rect().ymin();
     }
 
     /** Generated for complex type "partition":
@@ -255,12 +268,30 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
     virtual inline void preallocate_partition_add_region(void*& /*ctx*/, size_t /*size*/) final {}
 
     virtual inline void* add_partition_add_region(void*& /*ctx*/, int x_high, int x_low, int y_high, int y_low) final {
-        loaded_region.set_region_rect({x_low, y_low, x_high, y_high, 0});
+        loaded_region.set_rect({x_low, y_low, x_high, y_high});
 
         return nullptr;
     }
 
     virtual inline void finish_partition_add_region(void*& /*ctx*/) final {
+        const auto [layer_low, layer_high] = loaded_region.get_layer_range();
+
+        if (layer_low < 0 || layer_high < 0 || layer_high < layer_low) {
+            if (report_error_ == nullptr) {
+                VPR_ERROR(VPR_ERROR_PLACE, "\nIllegal layer numbers are specified in the constraint file.\n");
+            } else {
+                report_error_->operator()("Illegal layer numbers are specified in the constraint file.");
+            }
+        }
+
+        if (loaded_region.empty()) {
+            if (report_error_ == nullptr) {
+                VPR_ERROR(VPR_ERROR_PLACE, "\nThe specified region is empty.\n");
+            } else {
+                report_error_->operator()("The specified region is empty.");
+            }
+        }
+
         loaded_part_region.add_to_part_region(loaded_region);
 
         Region clear_region;
@@ -331,7 +362,7 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
      * </xs:complexType>
      */
 
-        e_clock_modeling from_uxsd_route_model(uxsd::enum_route_model_type route_model) {
+    e_clock_modeling from_uxsd_route_model(uxsd::enum_route_model_type route_model) {
         switch (route_model) {
             case uxsd::enum_route_model_type::DEDICATED_NETWORK:
                 return e_clock_modeling::DEDICATED_NETWORK;
@@ -341,7 +372,7 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
                 return e_clock_modeling::IDEAL_CLOCK;
             default:
                 VPR_FATAL_ERROR(VPR_ERROR_OTHER,
-                         "Invalid route model %d", route_model);
+                                "Invalid route model %d", route_model);
         }
     }
 
@@ -355,7 +386,7 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
                 return uxsd::enum_route_model_type::IDEAL;
             default:
                 VPR_FATAL_ERROR(VPR_ERROR_OTHER,
-                         "Invalid route model %d", route_model);
+                                "Invalid route model %d", route_model);
         }
     }
 
@@ -396,11 +427,11 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
         return nullptr;
     }
     virtual inline void finish_global_route_constraints_set_global_signal(void*& /*ctx*/) final {
-        if(loaded_route_constraint.second.route_model() == e_clock_modeling::DEDICATED_NETWORK
-            && loaded_route_constraint.second.network_name() == "INVALID"){
-                VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+        if (loaded_route_constraint.second.route_model() == e_clock_modeling::DEDICATED_NETWORK
+            && loaded_route_constraint.second.network_name() == "INVALID") {
+            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
                             "Invalid routing constraint for net \"%s\". The network name has to be specified when routing model is set to \"dedicated_network\".\n", loaded_route_constraint.first.c_str());
-            }
+        }
         constraints_.mutable_route_constraints().add_route_constraint(loaded_route_constraint.first, loaded_route_constraint.second);
     }
     virtual inline size_t num_global_route_constraints_set_global_signal(void*& /*ctx*/) final {
@@ -420,13 +451,12 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
         return nullptr;
     }
 
-    virtual inline bool has_vpr_constraints_global_route_constraints(void*& /*ctx*/){
-        if(constraints_.route_constraints().get_num_route_constraints() > 0)
+    virtual inline bool has_vpr_constraints_global_route_constraints(void*& /*ctx*/) {
+        if (constraints_.route_constraints().get_num_route_constraints() > 0)
             return true;
-        else   
+        else
             return false;
     }
-	
 
     /** Generated for complex type "vpr_constraints":
      * <xs:complexType xmlns:xs="http://www.w3.org/2001/XMLSchema">
@@ -459,10 +489,10 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
         return nullptr;
     }
 
-    virtual inline bool has_vpr_constraints_partition_list(void*& /*ctx*/) final{
-        if(constraints_.place_constraints().get_num_partitions() > 0)
+    virtual inline bool has_vpr_constraints_partition_list(void*& /*ctx*/) final {
+        if (constraints_.place_constraints().get_num_partitions() > 0)
             return true;
-        else   
+        else
             return false;
     }
     virtual void finish_load() final {

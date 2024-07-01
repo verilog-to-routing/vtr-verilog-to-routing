@@ -4,13 +4,12 @@
  * https://github.com/duck2/uxsdcxx
  * Modify only if your build process doesn't involve regenerating this file.
  *
- * Cmdline: /home/kimia/uxsdcxx/uxsdcxx.py ../vpr_constraints.xsd
- * Input file: /home/kimia/vtr-verilog-to-routing/vpr/src/base/vpr_constraints.xsd
- * md5sum of input file: f2b3721db9b14ccdf0787c9c99e00a78
+ * Cmdline: uxsdcxx.py ../vpr_repos/vpr/src/base/vpr_constraints.xsd
+ * Input file: /home/soheil/vpr_repos/vpr/src/base/vpr_constraints.xsd
+ * md5sum of input file: ea99cd05d67036ef541872d9d77a83c5
  */
 
 #include <functional>
-
 
 /* All uxsdcxx functions and structs live in this namespace. */
 
@@ -21,141 +20,148 @@ namespace uxsd {
 
 /* Enum tokens generated from XSD enumerations. */
 
-enum class enum_route_model_type {UXSD_INVALID = 0, IDEAL, ROUTE, DEDICATED_NETWORK};
+enum class enum_route_model_type { UXSD_INVALID = 0,
+                                   IDEAL,
+                                   ROUTE,
+                                   DEDICATED_NETWORK };
 
 /* Base class for the schema. */
 struct DefaultVprConstraintsContextTypes {
-using AddAtomReadContext = void *;
-	using AddRegionReadContext = void *;
-	using PartitionReadContext = void *;
-	using PartitionListReadContext = void *;
-	using SetGlobalSignalReadContext = void *;
-	using GlobalRouteConstraintsReadContext = void *;
-	using VprConstraintsReadContext = void *;
-using AddAtomWriteContext = void *;
-	using AddRegionWriteContext = void *;
-	using PartitionWriteContext = void *;
-	using PartitionListWriteContext = void *;
-	using SetGlobalSignalWriteContext = void *;
-	using GlobalRouteConstraintsWriteContext = void *;
-	using VprConstraintsWriteContext = void *;
+    using AddAtomReadContext = void*;
+    using AddRegionReadContext = void*;
+    using PartitionReadContext = void*;
+    using PartitionListReadContext = void*;
+    using SetGlobalSignalReadContext = void*;
+    using GlobalRouteConstraintsReadContext = void*;
+    using VprConstraintsReadContext = void*;
+    using AddAtomWriteContext = void*;
+    using AddRegionWriteContext = void*;
+    using PartitionWriteContext = void*;
+    using PartitionListWriteContext = void*;
+    using SetGlobalSignalWriteContext = void*;
+    using GlobalRouteConstraintsWriteContext = void*;
+    using VprConstraintsWriteContext = void*;
 };
 
-template<typename ContextTypes=DefaultVprConstraintsContextTypes>
+template<typename ContextTypes = DefaultVprConstraintsContextTypes>
 class VprConstraintsBase {
-public:
-	virtual ~VprConstraintsBase() {}
-	virtual void start_load(const std::function<void(const char*)> *report_error) = 0;
-	virtual void finish_load() = 0;
-	virtual void start_write() = 0;
-	virtual void finish_write() = 0;
-	virtual void error_encountered(const char * file, int line, const char *message) = 0;
-	/** Generated for complex type "add_atom":
-	 * <xs:complexType name="add_atom">
-	 *   <xs:attribute name="name_pattern" type="xs:string" use="required" />
-	 * </xs:complexType>
-	*/
-	virtual inline const char * get_add_atom_name_pattern(typename ContextTypes::AddAtomReadContext &ctx) = 0;
-	virtual inline void set_add_atom_name_pattern(const char * name_pattern, typename ContextTypes::AddAtomWriteContext &ctx) = 0;
+  public:
+    virtual ~VprConstraintsBase() {}
+    virtual void start_load(const std::function<void(const char*)>* report_error) = 0;
+    virtual void finish_load() = 0;
+    virtual void start_write() = 0;
+    virtual void finish_write() = 0;
+    virtual void error_encountered(const char* file, int line, const char* message) = 0;
+    /** Generated for complex type "add_atom":
+     * <xs:complexType name="add_atom">
+     *   <xs:attribute name="name_pattern" type="xs:string" use="required" />
+     * </xs:complexType>
+     */
+    virtual inline const char* get_add_atom_name_pattern(typename ContextTypes::AddAtomReadContext& ctx) = 0;
+    virtual inline void set_add_atom_name_pattern(const char* name_pattern, typename ContextTypes::AddAtomWriteContext& ctx) = 0;
 
-	/** Generated for complex type "add_region":
-	 * <xs:complexType name="add_region">
-	 *   <xs:attribute name="x_low" type="xs:int" use="required" />
-	 *   <xs:attribute name="y_low" type="xs:int" use="required" />
-	 *   <xs:attribute name="x_high" type="xs:int" use="required" />
-	 *   <xs:attribute name="y_high" type="xs:int" use="required" />
-	 *   <xs:attribute name="subtile" type="xs:int" />
-	 * </xs:complexType>
-	*/
-	virtual inline int get_add_region_subtile(typename ContextTypes::AddRegionReadContext &ctx) = 0;
-	virtual inline void set_add_region_subtile(int subtile, typename ContextTypes::AddRegionWriteContext &ctx) = 0;
-	virtual inline int get_add_region_x_high(typename ContextTypes::AddRegionReadContext &ctx) = 0;
-	virtual inline int get_add_region_x_low(typename ContextTypes::AddRegionReadContext &ctx) = 0;
-	virtual inline int get_add_region_y_high(typename ContextTypes::AddRegionReadContext &ctx) = 0;
-	virtual inline int get_add_region_y_low(typename ContextTypes::AddRegionReadContext &ctx) = 0;
+    /** Generated for complex type "add_region":
+     * <xs:complexType name="add_region">
+     *   <xs:attribute name="x_low" type="xs:int" use="required" />
+     *   <xs:attribute name="y_low" type="xs:int" use="required" />
+     *   <xs:attribute name="x_high" type="xs:int" use="required" />
+     *   <xs:attribute name="y_high" type="xs:int" use="required" />
+     *   <xs:attribute name="layer_low" type="xs:int" />
+     *   <xs:attribute name="layer_high" type="xs:int" />
+     *   <xs:attribute name="subtile" type="xs:int" />
+     * </xs:complexType>
+     */
+    virtual inline int get_add_region_layer_high(typename ContextTypes::AddRegionReadContext& ctx) = 0;
+    virtual inline int get_add_region_layer_low(typename ContextTypes::AddRegionReadContext& ctx) = 0;
+    virtual inline int get_add_region_subtile(typename ContextTypes::AddRegionReadContext& ctx) = 0;
+    virtual inline void set_add_region_subtile(int subtile, typename ContextTypes::AddRegionWriteContext& ctx) = 0;
+    virtual inline int get_add_region_x_high(typename ContextTypes::AddRegionReadContext& ctx) = 0;
+    virtual inline int get_add_region_x_low(typename ContextTypes::AddRegionReadContext& ctx) = 0;
+    virtual inline int get_add_region_y_high(typename ContextTypes::AddRegionReadContext& ctx) = 0;
+    virtual inline int get_add_region_y_low(typename ContextTypes::AddRegionReadContext& ctx) = 0;
 
-	/** Generated for complex type "partition":
-	 * <xs:complexType name="partition">
-	 *   <xs:sequence>
-	 *      <xs:choice maxOccurs="unbounded">
-	 *          <xs:element name="add_atom" type="add_atom" />
-	 *          <xs:element name="add_region" type="add_region" />
-	 *      </xs:choice>
-	 *   </xs:sequence>
-	 *   <xs:attribute name="name" type="xs:string" use="required" />
-	 * </xs:complexType>
-	*/
-	virtual inline const char * get_partition_name(typename ContextTypes::PartitionReadContext &ctx) = 0;
-	virtual inline void set_partition_name(const char * name, typename ContextTypes::PartitionWriteContext &ctx) = 0;
-	virtual inline void preallocate_partition_add_atom(typename ContextTypes::PartitionWriteContext &ctx, size_t size) = 0;
-	virtual inline typename ContextTypes::AddAtomWriteContext add_partition_add_atom(typename ContextTypes::PartitionWriteContext &ctx) = 0;
-	virtual inline void finish_partition_add_atom(typename ContextTypes::AddAtomWriteContext &ctx) = 0;
-	virtual inline size_t num_partition_add_atom(typename ContextTypes::PartitionReadContext &ctx) = 0;
-	virtual inline typename ContextTypes::AddAtomReadContext get_partition_add_atom(int n, typename ContextTypes::PartitionReadContext &ctx) = 0;
-	virtual inline void preallocate_partition_add_region(typename ContextTypes::PartitionWriteContext &ctx, size_t size) = 0;
-	virtual inline typename ContextTypes::AddRegionWriteContext add_partition_add_region(typename ContextTypes::PartitionWriteContext &ctx, int x_high, int x_low, int y_high, int y_low) = 0;
-	virtual inline void finish_partition_add_region(typename ContextTypes::AddRegionWriteContext &ctx) = 0;
-	virtual inline size_t num_partition_add_region(typename ContextTypes::PartitionReadContext &ctx) = 0;
-	virtual inline typename ContextTypes::AddRegionReadContext get_partition_add_region(int n, typename ContextTypes::PartitionReadContext &ctx) = 0;
+    /** Generated for complex type "partition":
+     * <xs:complexType name="partition">
+     *   <xs:sequence>
+     *      <xs:choice maxOccurs="unbounded">
+     *          <xs:element name="add_atom" type="add_atom" />
+     *          <xs:element name="add_region" type="add_region" />
+     *      </xs:choice>
+     *   </xs:sequence>
+     *   <xs:attribute name="name" type="xs:string" use="required" />
+     * </xs:complexType>
+     */
+    virtual inline const char* get_partition_name(typename ContextTypes::PartitionReadContext& ctx) = 0;
+    virtual inline void set_partition_name(const char* name, typename ContextTypes::PartitionWriteContext& ctx) = 0;
+    virtual inline void preallocate_partition_add_atom(typename ContextTypes::PartitionWriteContext& ctx, size_t size) = 0;
+    virtual inline typename ContextTypes::AddAtomWriteContext add_partition_add_atom(typename ContextTypes::PartitionWriteContext& ctx) = 0;
+    virtual inline void finish_partition_add_atom(typename ContextTypes::AddAtomWriteContext& ctx) = 0;
+    virtual inline size_t num_partition_add_atom(typename ContextTypes::PartitionReadContext& ctx) = 0;
+    virtual inline typename ContextTypes::AddAtomReadContext get_partition_add_atom(int n, typename ContextTypes::PartitionReadContext& ctx) = 0;
+    virtual inline void preallocate_partition_add_region(typename ContextTypes::PartitionWriteContext& ctx, size_t size) = 0;
+    virtual inline typename ContextTypes::AddRegionWriteContext add_partition_add_region(typename ContextTypes::PartitionWriteContext& ctx, int x_high, int x_low, int y_high, int y_low) = 0;
+    virtual inline void finish_partition_add_region(typename ContextTypes::AddRegionWriteContext& ctx) = 0;
+    virtual inline size_t num_partition_add_region(typename ContextTypes::PartitionReadContext& ctx) = 0;
+    virtual inline typename ContextTypes::AddRegionReadContext get_partition_add_region(int n, typename ContextTypes::PartitionReadContext& ctx) = 0;
 
-	/** Generated for complex type "partition_list":
-	 * <xs:complexType name="partition_list">
-	 *   <xs:sequence>
-	 *     <xs:element name="partition" type="partition" maxOccurs="unbounded" />
-	 *   </xs:sequence>
-	 * </xs:complexType>
-	*/
-	virtual inline void preallocate_partition_list_partition(typename ContextTypes::PartitionListWriteContext &ctx, size_t size) = 0;
-	virtual inline typename ContextTypes::PartitionWriteContext add_partition_list_partition(typename ContextTypes::PartitionListWriteContext &ctx) = 0;
-	virtual inline void finish_partition_list_partition(typename ContextTypes::PartitionWriteContext &ctx) = 0;
-	virtual inline size_t num_partition_list_partition(typename ContextTypes::PartitionListReadContext &ctx) = 0;
-	virtual inline typename ContextTypes::PartitionReadContext get_partition_list_partition(int n, typename ContextTypes::PartitionListReadContext &ctx) = 0;
+    /** Generated for complex type "partition_list":
+     * <xs:complexType name="partition_list">
+     *   <xs:sequence>
+     *     <xs:element name="partition" type="partition" maxOccurs="unbounded" />
+     *   </xs:sequence>
+     * </xs:complexType>
+     */
+    virtual inline void preallocate_partition_list_partition(typename ContextTypes::PartitionListWriteContext& ctx, size_t size) = 0;
+    virtual inline typename ContextTypes::PartitionWriteContext add_partition_list_partition(typename ContextTypes::PartitionListWriteContext& ctx) = 0;
+    virtual inline void finish_partition_list_partition(typename ContextTypes::PartitionWriteContext& ctx) = 0;
+    virtual inline size_t num_partition_list_partition(typename ContextTypes::PartitionListReadContext& ctx) = 0;
+    virtual inline typename ContextTypes::PartitionReadContext get_partition_list_partition(int n, typename ContextTypes::PartitionListReadContext& ctx) = 0;
 
-	/** Generated for complex type "set_global_signal":
-	 * <xs:complexType name="set_global_signal">
-	 *   <xs:attribute name="name" type="xs:string" use="required" />
-	 *   <xs:attribute name="route_model" type="route_model_type" use="required" />
-	 *   <xs:attribute name="network_name" type="xs:string" />
-	 * </xs:complexType>
-	*/
-	virtual inline const char * get_set_global_signal_name(typename ContextTypes::SetGlobalSignalReadContext &ctx) = 0;
-	virtual inline void set_set_global_signal_name(const char * name, typename ContextTypes::SetGlobalSignalWriteContext &ctx) = 0;
-	virtual inline const char * get_set_global_signal_network_name(typename ContextTypes::SetGlobalSignalReadContext &ctx) = 0;
-	virtual inline void set_set_global_signal_network_name(const char * network_name, typename ContextTypes::SetGlobalSignalWriteContext &ctx) = 0;
-	virtual inline enum_route_model_type get_set_global_signal_route_model(typename ContextTypes::SetGlobalSignalReadContext &ctx) = 0;
+    /** Generated for complex type "set_global_signal":
+     * <xs:complexType name="set_global_signal">
+     *   <xs:attribute name="name" type="xs:string" use="required" />
+     *   <xs:attribute name="route_model" type="route_model_type" use="required" />
+     *   <xs:attribute name="network_name" type="xs:string" />
+     * </xs:complexType>
+     */
+    virtual inline const char* get_set_global_signal_name(typename ContextTypes::SetGlobalSignalReadContext& ctx) = 0;
+    virtual inline void set_set_global_signal_name(const char* name, typename ContextTypes::SetGlobalSignalWriteContext& ctx) = 0;
+    virtual inline const char* get_set_global_signal_network_name(typename ContextTypes::SetGlobalSignalReadContext& ctx) = 0;
+    virtual inline void set_set_global_signal_network_name(const char* network_name, typename ContextTypes::SetGlobalSignalWriteContext& ctx) = 0;
+    virtual inline enum_route_model_type get_set_global_signal_route_model(typename ContextTypes::SetGlobalSignalReadContext& ctx) = 0;
 
-	/** Generated for complex type "global_route_constraints":
-	 * <xs:complexType name="global_route_constraints">
-	 *   <xs:sequence>
-	 *     <xs:element name="set_global_signal" type="set_global_signal" maxOccurs="unbounded" />
-	 *   </xs:sequence>
-	 * </xs:complexType>
-	*/
-	virtual inline void preallocate_global_route_constraints_set_global_signal(typename ContextTypes::GlobalRouteConstraintsWriteContext &ctx, size_t size) = 0;
-	virtual inline typename ContextTypes::SetGlobalSignalWriteContext add_global_route_constraints_set_global_signal(typename ContextTypes::GlobalRouteConstraintsWriteContext &ctx, enum_route_model_type route_model) = 0;
-	virtual inline void finish_global_route_constraints_set_global_signal(typename ContextTypes::SetGlobalSignalWriteContext &ctx) = 0;
-	virtual inline size_t num_global_route_constraints_set_global_signal(typename ContextTypes::GlobalRouteConstraintsReadContext &ctx) = 0;
-	virtual inline typename ContextTypes::SetGlobalSignalReadContext get_global_route_constraints_set_global_signal(int n, typename ContextTypes::GlobalRouteConstraintsReadContext &ctx) = 0;
+    /** Generated for complex type "global_route_constraints":
+     * <xs:complexType name="global_route_constraints">
+     *   <xs:sequence>
+     *     <xs:element name="set_global_signal" type="set_global_signal" maxOccurs="unbounded" />
+     *   </xs:sequence>
+     * </xs:complexType>
+     */
+    virtual inline void preallocate_global_route_constraints_set_global_signal(typename ContextTypes::GlobalRouteConstraintsWriteContext& ctx, size_t size) = 0;
+    virtual inline typename ContextTypes::SetGlobalSignalWriteContext add_global_route_constraints_set_global_signal(typename ContextTypes::GlobalRouteConstraintsWriteContext& ctx, enum_route_model_type route_model) = 0;
+    virtual inline void finish_global_route_constraints_set_global_signal(typename ContextTypes::SetGlobalSignalWriteContext& ctx) = 0;
+    virtual inline size_t num_global_route_constraints_set_global_signal(typename ContextTypes::GlobalRouteConstraintsReadContext& ctx) = 0;
+    virtual inline typename ContextTypes::SetGlobalSignalReadContext get_global_route_constraints_set_global_signal(int n, typename ContextTypes::GlobalRouteConstraintsReadContext& ctx) = 0;
 
-	/** Generated for complex type "vpr_constraints":
-	 * <xs:complexType xmlns:xs="http://www.w3.org/2001/XMLSchema">
-	 *     <xs:all minOccurs="0">
-	 *       <xs:element name="partition_list" type="partition_list" />
-	 *       <xs:element name="global_route_constraints" type="global_route_constraints" />
-	 *     </xs:all>
-	 *     <xs:attribute name="tool_name" type="xs:string" />
-	 *   </xs:complexType>
-	*/
-	virtual inline const char * get_vpr_constraints_tool_name(typename ContextTypes::VprConstraintsReadContext &ctx) = 0;
-	virtual inline void set_vpr_constraints_tool_name(const char * tool_name, typename ContextTypes::VprConstraintsWriteContext &ctx) = 0;
-	virtual inline typename ContextTypes::PartitionListWriteContext init_vpr_constraints_partition_list(typename ContextTypes::VprConstraintsWriteContext &ctx) = 0;
-	virtual inline void finish_vpr_constraints_partition_list(typename ContextTypes::PartitionListWriteContext &ctx) = 0;
-	virtual inline typename ContextTypes::PartitionListReadContext get_vpr_constraints_partition_list(typename ContextTypes::VprConstraintsReadContext &ctx) = 0;
-	virtual inline bool has_vpr_constraints_partition_list(typename ContextTypes::VprConstraintsReadContext &ctx) = 0;
-	virtual inline typename ContextTypes::GlobalRouteConstraintsWriteContext init_vpr_constraints_global_route_constraints(typename ContextTypes::VprConstraintsWriteContext &ctx) = 0;
-	virtual inline void finish_vpr_constraints_global_route_constraints(typename ContextTypes::GlobalRouteConstraintsWriteContext &ctx) = 0;
-	virtual inline typename ContextTypes::GlobalRouteConstraintsReadContext get_vpr_constraints_global_route_constraints(typename ContextTypes::VprConstraintsReadContext &ctx) = 0;
-	virtual inline bool has_vpr_constraints_global_route_constraints(typename ContextTypes::VprConstraintsReadContext &ctx) = 0;
+    /** Generated for complex type "vpr_constraints":
+     * <xs:complexType xmlns:xs="http://www.w3.org/2001/XMLSchema">
+     *     <xs:all minOccurs="0">
+     *       <xs:element name="partition_list" type="partition_list" />
+     *       <xs:element name="global_route_constraints" type="global_route_constraints" />
+     *     </xs:all>
+     *     <xs:attribute name="tool_name" type="xs:string" />
+     *   </xs:complexType>
+     */
+    virtual inline const char* get_vpr_constraints_tool_name(typename ContextTypes::VprConstraintsReadContext& ctx) = 0;
+    virtual inline void set_vpr_constraints_tool_name(const char* tool_name, typename ContextTypes::VprConstraintsWriteContext& ctx) = 0;
+    virtual inline typename ContextTypes::PartitionListWriteContext init_vpr_constraints_partition_list(typename ContextTypes::VprConstraintsWriteContext& ctx) = 0;
+    virtual inline void finish_vpr_constraints_partition_list(typename ContextTypes::PartitionListWriteContext& ctx) = 0;
+    virtual inline typename ContextTypes::PartitionListReadContext get_vpr_constraints_partition_list(typename ContextTypes::VprConstraintsReadContext& ctx) = 0;
+    virtual inline bool has_vpr_constraints_partition_list(typename ContextTypes::VprConstraintsReadContext& ctx) = 0;
+    virtual inline typename ContextTypes::GlobalRouteConstraintsWriteContext init_vpr_constraints_global_route_constraints(typename ContextTypes::VprConstraintsWriteContext& ctx) = 0;
+    virtual inline void finish_vpr_constraints_global_route_constraints(typename ContextTypes::GlobalRouteConstraintsWriteContext& ctx) = 0;
+    virtual inline typename ContextTypes::GlobalRouteConstraintsReadContext get_vpr_constraints_global_route_constraints(typename ContextTypes::VprConstraintsReadContext& ctx) = 0;
+    virtual inline bool has_vpr_constraints_global_route_constraints(typename ContextTypes::VprConstraintsReadContext& ctx) = 0;
 };
 
 } /* namespace uxsd */

@@ -61,7 +61,12 @@ enum NocLinkType {
 };
 
 /*
- * Since the noc links run in both directions between any two routers, we want to draw them parallel to each other instead of ovrelapping them. So the idea is to shift one link in one direction and shift the other link in the opposite direction. THe enum below defines the direction a link was shifted, so for example if we had a vertical line, top would be mean shift left and Bottom would mean shift right. SImilarily, if we had a horizontal line, top would mean shift up and bottom would mean shift down.
+ * Since the noc links run in both directions between any two routers,
+ * we want to draw them parallel to each other instead of overlapping them.
+ * So the idea is to shift one link in one direction and shift the other link
+ * in the opposite direction. The enum below defines the direction a link was shifted,
+ * so for example if we had a vertical line, top would be mean shift left and Bottom would mean shift right.
+ * Similarly, if we had a horizontal line, top would mean shift up and bottom would mean shift down.
  */
 enum NocLinkShift {
     NO_SHIFT, // initially there is no shift
@@ -173,7 +178,11 @@ void draw_noc_connection_marker(ezgl::renderer* g, const vtr::vector<NocRouterId
  * will overlap. This vector describes how the two links should be moved
  * so that they do not overlap.
  */
-void draw_noc_links(ezgl::renderer* g, t_logical_block_type_ptr noc_router_logical_block_type, vtr::vector<NocLinkId, ezgl::color>& noc_link_colors, ezgl::rectangle noc_connection_marker_bbox, const vtr::vector<NocLinkId, NocLinkShift>& list_of_noc_link_shift_directions);
+void draw_noc_links(ezgl::renderer* g,
+                    t_logical_block_type_ptr noc_router_logical_block_type,
+                    vtr::vector<NocLinkId, ezgl::color>& noc_link_colors,
+                    ezgl::rectangle noc_connection_marker_bbox,
+                    const vtr::vector<NocLinkId, NocLinkShift>& list_of_noc_link_shift_directions);
 
 /**
  * @brief Goes through all the links within the NoC and updates the color that
