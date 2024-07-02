@@ -12,7 +12,7 @@ static void walk_cluster_recursive(const RRGraphView& rr_graph,
                                    std::unordered_set<RRNodeId>& sink_ipins,
                                    const RRNodeId curr,
                                    const RRNodeId origin) {
-    // Make sure SINK in the same cluster as origin. This might not be the case when we have direct-connect between blocks
+    // Make sure SINK in the same cluster as origin
     int curr_x = rr_graph.node_xlow(curr);
     int curr_y = rr_graph.node_ylow(curr);
     if ((curr_x < rr_graph.node_xlow(origin)) || (curr_x > rr_graph.node_xhigh(origin)) || (curr_y < rr_graph.node_ylow(origin)) || (curr_y > rr_graph.node_yhigh(origin)))
@@ -145,6 +145,12 @@ void set_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_builder
         auto node_id = RRNodeId(node);
 
         if (rr_graph.node_type((RRNodeId)node_id) != e_rr_type::SINK)
+            continue;
+
+        int tile_width = rr_graph.node_xhigh(node_id) - rr_graph.node_xlow(node_id);
+        int tile_height = rr_graph.node_yhigh(node_id) - rr_graph.node_ylow(node_id);
+
+        if (tile_width == 0 && tile_height == 0)
             continue;
 
         sink_ipins[node_id] = {};
