@@ -1,0 +1,19 @@
+#VPR metrix at relaxed (relative to minimum) channel width with timing
+%include "../common/pass_requirements.vpr_route_relaxed_chan_width_small.txt"
+
+#Routing Metrics
+crit_path_routed_wirelength;Range(0.40,1.60)
+
+#Area Metrics
+crit_path_routing_area_total;Range(0.5,1.5)
+crit_path_routing_area_per_tile;Range(0.5,1.5)
+
+#Run-time Metrics
+crit_path_route_time;RangeAbs(0.10,10.0,2)
+#Timing Metrics
+critical_path_delay;Range(0.40,1.60)
+geomean_nonvirtual_intradomain_critical_path_delay;Range(0.40,1.60)
+setup_TNS;Range(0.40,1.60)
+setup_WNS;Range(0.40,1.60)
+#hold_TNS;Range(0.05,20.00)
+#hold_WNS;Range(0.05,20.00)

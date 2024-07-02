@@ -1,0 +1,27 @@
+#VPR metrics at minimum channel width
+
+#Routing Metrics
+min_chan_width;Range(0.25,1.50)
+routed_wirelength;RangeAbs(0.50,1.50,5)
+
+#Area metrics
+logic_block_area_total;Range(0.5,1.6)
+logic_block_area_used;Range(0.5,1.6)
+min_chan_width_routing_area_total;Range(0.5,1.6)
+min_chan_width_routing_area_per_tile;Range(0.5,1.6)
+
+#Run-time metrics
+min_chan_width_route_time;RangeAbs(0.10,15.0,2)
+
+#Peak memory
+#We set a 100MiB minimum threshold since the memory 
+#alloctor (e.g. TBB vs glibc) can cause a difference
+#particularly on small benchmarks
+#
+#Note that due to different binary search path, peak memory
+#can differ significantly during binary search (e.g. a larger
+#or smaller channel width explored during the search can
+#significantly affect the size of the RR graph, and correspondingly
+#peak mememory usage in VPR. As a result we just a larger permissible
+#range for peak memory usage.
+max_vpr_mem;RangeAbs(0.5,2.0,102400)
