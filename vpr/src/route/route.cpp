@@ -440,7 +440,7 @@ bool route(const Netlist<>& net_list,
             pres_fac = update_draw_pres_fac(router_opts.initial_pres_fac);
         } else {
             pres_fac *= router_opts.pres_fac_mult;
-
+            pres_fac = std::min(pres_fac, 1000.f);
             /* Avoid overflow for high iteration counts, even if acc_cost is big */
             pres_fac = update_draw_pres_fac(std::min(pres_fac, static_cast<float>(HUGE_POSITIVE_FLOAT / 1e5)));
 

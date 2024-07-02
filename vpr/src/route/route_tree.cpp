@@ -7,6 +7,8 @@
 #include "rr_graph_fwd.h"
 #include "vtr_math.h"
 
+// #define DEBUG_CHECK_FOR_LOOP
+
 /* Construct a new RouteTreeNode.
  * Doesn't add the node to parent's child_nodes! (see add_child) */
 RouteTreeNode::RouteTreeNode(RRNodeId _inode, RRSwitchId _parent_switch, RouteTreeNode* parent)
@@ -535,9 +537,25 @@ RouteTree::add_subtree_from_heap(t_heap* hptr, int target_net_pin_index, bool is
     RRNodeId new_inode = rr_graph.edge_src_node(edge);
     RRSwitchId new_iswitch = RRSwitchId(rr_graph.rr_nodes().edge_switch(edge));
 
+#ifdef DEBUG_CHECK_FOR_LOOP
+    std::unordered_set<RRNodeId> seen_nodes;
+#endif
+
     /* build a path, looking up rr nodes and switches from rr_node_route_inf */
     new_branch_inodes.push_back(sink_inode);
     while (!_rr_node_to_rt_node.count(new_inode)) {
+#ifdef DEBUG_CHECK_FOR_LOOP
+        VTR_ASSERT(new_inode.is_valid() && "Invalid node being added to path!");
+        if (seen_nodes.count(new_inode) != 0) {
+            for (const RRNodeId &n : new_branch_inodes) {
+                VTR_LOG("%zu (%.20e), ", (size_t)n, route_ctx.rr_node_route_inf[n].backward_path_cost);
+            }
+            VTR_LOG("\n");
+            VTR_LOG("Duplicate node: %zu\n", new_inode);
+            VTR_ASSERT(false && "Duplicate node in path!");
+        }
+        seen_nodes.insert(new_inode);
+#endif
         new_branch_inodes.push_back(new_inode);
         new_branch_iswitches.push_back(new_iswitch);
         edge = route_ctx.rr_node_route_inf[new_inode].prev_edge;

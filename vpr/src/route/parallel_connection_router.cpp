@@ -881,7 +881,7 @@ void ParallelConnectionRouter::add_route_tree_node_to_heap(
                        describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, inode, is_flat_).c_str());
 
 
-        if (tot_cost >= rr_node_route_inf_[inode].path_cost)
+        if (prune_node(inode, tot_cost, backward_path_cost, RREdgeId::INVALID(), target_node, rr_node_route_inf_, cost_params))
             return ;
         add_to_mod_list(inode, 0/*main thread*/);
         rr_node_route_inf_[inode].path_cost = tot_cost;
