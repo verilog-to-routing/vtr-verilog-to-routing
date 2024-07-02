@@ -221,9 +221,15 @@ static void place_all_blocks(const t_placer_opts& placer_opts,
  */
 static void check_initial_placement_legality();
 
+/**
+ * @brief Fills movable_blocks in global PlacementContext
+ */
+static void alloc_and_load_movable_blocks();
+
 static void check_initial_placement_legality() {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
+    auto& device_ctx = g_vpr_ctx.device();
 
     int unplaced_blocks = 0;
 
@@ -243,6 +249,28 @@ static void check_initial_placement_legality() {
                         "%d blocks could not be placed during initial placement; no spaces were available for them on the grid.\n"
                         "If VPR was run with floorplan constraints, the constraints may be too tight.\n",
                         unplaced_blocks);
+    }
+
+    for (auto movable_blk_id : place_ctx.movable_blocks) {
+        if (place_ctx.block_locs[movable_blk_id].is_fixed) {
+            VPR_FATAL_ERROR(VPR_ERROR_PLACE, "Fixed block was mistakenly marked as movable during initial placement.\n");
+        }
+    }
+    
+    for (const auto& logical_block_type : device_ctx.logical_block_types) {
+        const auto& movable_blocks_of_type = place_ctx.movable_blocks_per_type[logical_block_type.index];
+        for (const auto& movable_blk_id : movable_blocks_of_type) {
+            if (place_ctx.block_locs[movable_blk_id].is_fixed) {
+                VPR_FATAL_ERROR(VPR_ERROR_PLACE, "Fixed block %d of logical type %s was mistakenly marked as movable during initial placement.\n",
+                                (size_t)movable_blk_id, logical_block_type.name);
+            }
+            if (cluster_ctx.clb_nlist.block_type(movable_blk_id)->index != logical_block_type.index) {
+                VPR_FATAL_ERROR(VPR_ERROR_PLACE, "Clustered block %d of logical type %s was mistakenly marked as logical type %s.\n",
+                                (size_t)movable_blk_id,
+                                cluster_ctx.clb_nlist.block_type(movable_blk_id)->name,
+                                logical_block_type.name);
+            }
+        }
     }
 }
 
@@ -1132,6 +1160,30 @@ bool place_one_block(const ClusterBlockId& blk_id,
     return placed_macro;
 }
 
+static void alloc_and_load_movable_blocks() {
+    auto& place_ctx = g_vpr_ctx.mutable_placement();
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& device_ctx = g_vpr_ctx.device();
+
+    place_ctx.movable_blocks.clear();
+    place_ctx.movable_blocks_per_type.clear();
+
+    size_t n_logical_blocks = device_ctx.logical_block_types.size();
+    place_ctx.movable_blocks_per_type.resize(n_logical_blocks);
+
+
+    // iterate over all clustered blocks and store block ids of movable ones
+    for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+        const auto& loc = place_ctx.block_locs[blk_id];
+        if (!loc.is_fixed) {
+            place_ctx.movable_blocks.push_back(blk_id);
+
+            const t_logical_block_type_ptr block_type = cluster_ctx.clb_nlist.block_type(blk_id);
+            place_ctx.movable_blocks_per_type[block_type->index].push_back(blk_id);
+        }
+    }
+}
+
 void initial_placement(const t_placer_opts& placer_opts,
                        const char* constraints_file,
                        const t_noc_opts& noc_opts) {
@@ -1148,7 +1200,7 @@ void initial_placement(const t_placer_opts& placer_opts,
     propagate_place_constraints();
 
     /*Mark the blocks that have already been locked to one spot via floorplan constraints
-     * as fixed so they do not get moved during initial placement or later during the simulated annealing stage of placement*/
+     * as fixed, so they do not get moved during initial placement or later during the simulated annealing stage of placement*/
     mark_fixed_blocks();
 
     // Compute and store compressed floorplanning constraints
@@ -1171,6 +1223,8 @@ void initial_placement(const t_placer_opts& placer_opts,
 
     //Place all blocks
     place_all_blocks(placer_opts, block_scores, placer_opts.pad_loc_type, constraints_file);
+
+    alloc_and_load_movable_blocks();
 
     // ensure all blocks are placed and that NoC routing has no cycles
     check_initial_placement_legality();
