@@ -155,17 +155,22 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
     std::vector<t_segment_inf> segment_inf_x = get_parallel_segs(segment_inf, segment_index_map, X_AXIS, true);
     std::vector<t_segment_inf> segment_inf_y = get_parallel_segs(segment_inf, segment_index_map, Y_AXIS, true);
 
+    /* Get vib grid */
+    const auto& vib_grid = device_ctx.vib_grid;
+    const bool is_vib_arch = device_ctx.arch->is_vib_arch;
+
     /************************
      * Allocate the rr_nodes
      ************************/
     alloc_tileable_rr_graph_nodes(device_ctx.rr_graph_builder,
                                   rr_node_driver_switches,
-                                  grids, 0,
+                                  grids, vib_grid, 0,
                                   device_chan_width,
                                   segment_inf_x, segment_inf_y,
                                   device_grid_annotation,
                                   shrink_boundary,
-                                  through_channel);
+                                  through_channel,
+                                  is_vib_arch);
 
     /************************
      * Create all the rr_nodes
@@ -175,7 +180,7 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
                                    rr_node_driver_switches,
                                    rr_node_track_ids,
                                    device_ctx.rr_rc_data,
-                                   grids, 0,
+                                   grids, vib_grid, 0,
                                    device_chan_width,
                                    segment_inf_x, segment_inf_y,
                                    segment_index_map,
@@ -183,7 +188,8 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
                                    delayless_rr_switch,
                                    device_grid_annotation,
                                    shrink_boundary,
-                                   through_channel);
+                                   through_channel,
+                                   is_vib_arch);
 
     /************************************************************************
      * Create the connectivity of OPINs
@@ -251,13 +257,15 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
     build_rr_graph_edges(device_ctx.rr_graph,
                          device_ctx.rr_graph_builder,
                          rr_node_driver_switches,
-                         grids, 0,
+                         grids, vib_grid, 0,
                          device_chan_width,
                          segment_inf, segment_inf_x, segment_inf_y,
                          Fc_in, Fc_out,
                          sb_type, Fs, sb_subtype, subFs,
                          opin2all_sides, concat_wire,
-                         wire_opposite_side);
+                         wire_opposite_side,
+                         delayless_rr_switch,
+                         is_vib_arch);
 
     /************************************************************************
      * Build direction connection lists
@@ -316,7 +324,9 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
     }
 
     /* No clock network support yet; Does not support flatten rr_graph yet */
-    check_rr_graph(device_ctx.rr_graph, types, device_ctx.rr_indexed_data, grids, device_ctx.chan_width, GRAPH_UNIDIR, false);
+
+    check_rr_graph(device_ctx.rr_graph, types, device_ctx.rr_indexed_data, grids, vib_grid, device_ctx.chan_width, GRAPH_UNIDIR, OPEN, false);
+
 
     /************************************************************************
      * Free all temp stucts

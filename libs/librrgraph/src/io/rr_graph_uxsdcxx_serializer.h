@@ -1827,10 +1827,12 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         read_rr_graph_filename_->assign(read_rr_graph_name_);
 
         if (do_check_rr_graph_) {
+            const vtr::NdMatrix<const t_vib_inf*, 3> vib_grid_;
             check_rr_graph(*rr_graph_,
                            physical_tile_types_,
                            *rr_indexed_data_,
                            grid_,
+                           vib_grid_,
                            *chan_width_,
                            graph_type_,
                            is_flat_);
@@ -2018,6 +2020,8 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
                 return OPIN;
             case uxsd::enum_node_type::IPIN:
                 return IPIN;
+            case uxsd::enum_node_type::MEDIUM:
+                return MEDIUM;
             default:
                 report_error(
                     "Invalid node type %d",
@@ -2038,6 +2042,8 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
                 return uxsd::enum_node_type::OPIN;
             case IPIN:
                 return uxsd::enum_node_type::IPIN;
+            case MEDIUM:
+                return uxsd::enum_node_type::MEDIUM;
             default:
                 report_error(
                     "Invalid type %d", type);

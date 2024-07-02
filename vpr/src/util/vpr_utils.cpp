@@ -2254,11 +2254,16 @@ std::vector<const t_pb_graph_node*> get_all_pb_graph_node_primitives(const t_pb_
     return primitives;
 }
 
-bool is_inter_cluster_node(const RRGraphView& rr_graph_view,
-                           RRNodeId node_id) {
-    auto node_type = rr_graph_view.node_type(node_id);
+bool is_inter_cluster_node(t_physical_tile_type_ptr physical_tile,
+                           const t_vib_inf* vib,
+                           t_rr_type node_type,
+                           int node_ptc) {
+
     if (node_type == CHANX || node_type == CHANY) {
         return true;
+    } else if (node_type == MEDIUM) {
+        VTR_ASSERT(vib != nullptr);
+        return (node_ptc < (int)vib->first_stages.size());
     } else {
         int x_low = rr_graph_view.node_xlow(node_id);
         int y_low = rr_graph_view.node_ylow(node_id);

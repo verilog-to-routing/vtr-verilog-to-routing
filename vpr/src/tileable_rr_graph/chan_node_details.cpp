@@ -76,6 +76,16 @@ bool ChanNodeDetails::is_track_end(const size_t& track_id) const {
     return track_end_[track_id];
 }
 
+size_t ChanNodeDetails::get_track_bend_start(const size_t& track_id) const {
+    VTR_ASSERT(validate_track_id(track_id));
+    return track_bend_start_[track_id];
+}
+
+size_t ChanNodeDetails::get_track_bend_end(const size_t& track_id) const {
+    VTR_ASSERT(validate_track_id(track_id));
+    return track_bend_end_[track_id];
+}
+
 /* Track_id is the starting point of group (whose is_start should be true)
  * This function will try to find the track_ids with the same directionality as track_id and seg_length
  * A group size is the number of such nodes between the starting points (include the 1st starting point)
@@ -168,13 +178,15 @@ void ChanNodeDetails::reserve(const size_t& chan_width) {
 }
 
 /* Add a track to the channel */
-void ChanNodeDetails::add_track(const size_t& track_node_id, const Direction& track_direction, const size_t& seg_id, const size_t& seg_length, const size_t& is_start, const size_t& is_end) {
+void ChanNodeDetails::add_track(const size_t& track_node_id, const Direction& track_direction, const size_t& seg_id, const size_t& seg_length, const size_t& is_start, const size_t& is_end, const size_t& seg_bend_start, const size_t& seg_bend_end) {
     track_node_ids_.push_back(track_node_id);
     track_direction_.push_back(track_direction);
     seg_ids_.push_back(seg_id);
     seg_length_.push_back(seg_length);
     track_start_.push_back(is_start);
     track_end_.push_back(is_end);
+    track_bend_start_.push_back(seg_bend_start);
+    track_bend_end_.push_back(seg_bend_end);
 }
 
 /* Update the node_id of a given track */
