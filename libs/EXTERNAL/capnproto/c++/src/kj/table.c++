@@ -23,6 +23,11 @@
 #include "debug.h"
 #include <stdlib.h>
 
+#if KJ_DEBUG_TABLE_IMPL
+#undef KJ_DASSERT
+#define KJ_DASSERT KJ_ASSERT
+#endif
+
 namespace kj {
 namespace _ {
 
@@ -257,26 +262,37 @@ size_t BTreeImpl::verifyNode(size_t size, FunctionParam<bool(uint, uint)>& f,
     auto n = parent.keyCount();
     size_t total = 0;
     for (auto i: kj::zeroTo(n)) {
-      KJ_ASSERT(*parent.keys[i] < size);
+      KJ_ASSERT(*parent.keys[i] < size, n, i);
       total += verifyNode(size, f, parent.children[i], height - 1, parent.keys[i]);
-      KJ_ASSERT(i + 1 == n || f(*parent.keys[i], *parent.keys[i + 1]));
+      if (i > 0) {
+        KJ_ASSERT(f(*parent.keys[i - 1], *parent.keys[i]),
+            n, i, parent.keys[i - 1], parent.keys[i]);
+      }
     }
     total += verifyNode(size, f, parent.children[n], height - 1, maxRow);
-    KJ_ASSERT(maxRow == nullptr || f(*parent.keys[n-1], *maxRow));
+    if (maxRow != nullptr) {
+      KJ_ASSERT(f(*parent.keys[n-1], *maxRow), n, parent.keys[n-1], maxRow);
+    }
     return total;
   } else {
     auto& leaf = tree[pos].leaf;
     auto n = leaf.size();
     for (auto i: kj::zeroTo(n)) {
-      KJ_ASSERT(*leaf.rows[i] < size);
-      if (i + 1 < n) {
-        KJ_ASSERT(f(*leaf.rows[i], *leaf.rows[i + 1]));
-      } else {
-        KJ_ASSERT(maxRow == nullptr || leaf.rows[n-1] == maxRow);
+      KJ_ASSERT(*leaf.rows[i] < size, n, i);
+      if (i > 0) {
+        KJ_ASSERT(f(*leaf.rows[i - 1], *leaf.rows[i]),
+            n, i, leaf.rows[i - 1], leaf.rows[i]);
       }
+    }
+    if (maxRow != nullptr) {
+      KJ_ASSERT(leaf.rows[n-1] == maxRow, n);
     }
     return n;
   }
+}
+
+kj::String BTreeImpl::MaybeUint::toString() const {
+  return i == 0 ? kj::str("(null)") : kj::str(i - 1);
 }
 
 void BTreeImpl::logInconsistency() const {
@@ -319,7 +335,7 @@ void BTreeImpl::clear() {
     azero(tree, treeCapacity);
     height = 0;
     freelistHead = 1;
-    freelistSize = treeCapacity;
+    freelistSize = treeCapacity - 1;  // subtract one to account for the root node
     beginLeaf = 0;
     endLeaf = 0;
   }
@@ -651,7 +667,7 @@ void BTreeImpl::renumber(uint oldRow, uint newRow, const SearchKey& searchKey) {
     auto& node = tree[pos].parent;
     uint indexInParent = searchKey.search(node);
     pos = node.children[indexInParent];
-    if (node.keys[indexInParent] == oldRow) {
+    if (indexInParent < kj::size(node.keys) && node.keys[indexInParent] == oldRow) {
       node.keys[indexInParent] = newRow;
     }
     KJ_DASSERT(pos != 0);
@@ -715,7 +731,7 @@ void BTreeImpl::merge(Leaf& dst, uint dstPos, uint pivot, Leaf& src) {
   KJ_DASSERT(dst.isHalfFull());
 
   constexpr size_t mid = Leaf::NROWS/2;
-  dst.rows[mid] = pivot;
+  KJ_DASSERT(dst.rows[mid-1] == pivot);
   acopy(dst.rows + mid, src.rows, mid);
 
   dst.next = src.next;

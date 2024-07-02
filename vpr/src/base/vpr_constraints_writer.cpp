@@ -20,50 +20,6 @@
 #include "region.h"
 #include "re_cluster_util.h"
 
-void write_vpr_constraints(t_vpr_setup& vpr_setup) {
-    auto& filename_opts = vpr_setup.FileNameOpts;
-    if (!filename_opts.write_vpr_constraints_file.empty()) {
-        std::string file_name = filename_opts.write_vpr_constraints_file;
-        if (vtr::check_file_name_extension(file_name.c_str(), ".xml")) {
-            VprConstraints constraints;
-
-            // update constraints with place info
-            // this is to align to original place/partion constraint behavior
-            const auto& placer_opts = vpr_setup.PlacerOpts;
-            int horizontal_partitions = placer_opts.floorplan_num_horizontal_partitions, vertical_partitions = placer_opts.floorplan_num_vertical_partitions;
-            if (horizontal_partitions != 0 && vertical_partitions != 0) {
-                setup_vpr_floorplan_constraints_cutpoints(constraints, horizontal_partitions, vertical_partitions);
-            } else {
-                setup_vpr_floorplan_constraints_one_loc(constraints, placer_opts.place_constraint_expand, placer_opts.place_constraint_subtile);
-            }
-
-            // update route constraints
-            for (int i = 0; i < g_vpr_ctx.routing().constraints.get_route_constraint_num(); i++) {
-                RouteConstraint rc = g_vpr_ctx.routing().constraints.get_route_constraint_by_idx(i);
-                // note: route constraints with regexpr in input constraint file
-                // is now replaced with the real net name and will not be written
-                // into output file
-                if (rc.is_valid()) {
-                    constraints.add_route_constraint(rc);
-                }
-            }
-
-            // VprConstraintsSerializer writer(g_vpr_ctx.routing().constraints);
-            VprConstraintsSerializer writer(constraints);
-            std::fstream fp;
-            fp.open(file_name.c_str(), std::fstream::out | std::fstream::trunc);
-            fp.precision(std::numeric_limits<float>::max_digits10);
-            void* context;
-            uxsd::write_vpr_constraints_xml(writer, context, fp);
-        } else {
-            VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                            "Unknown extension on output %s",
-                            file_name.c_str());
-        }
-    }
-    return;
-}
-
 void write_vpr_floorplan_constraints(const char* file_name, int expand, bool subtile, int horizontal_partitions, int vertical_partitions) {
     VprConstraints constraints;
 
@@ -99,8 +55,7 @@ void setup_vpr_floorplan_constraints_one_loc(VprConstraints& constraints, int ex
      * The subtile can also optionally be set in the PartitionRegion, based on the value passed in by the user.
      */
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-        std::string part_name;
-        part_name = cluster_ctx.clb_nlist.block_name(blk_id);
+        const std::string& part_name = cluster_ctx.clb_nlist.block_name(blk_id);
         PartitionId partid(part_id);
 
         Partition part;
@@ -109,7 +64,7 @@ void setup_vpr_floorplan_constraints_one_loc(VprConstraints& constraints, int ex
         PartitionRegion pr;
         Region reg;
 
-        auto loc = place_ctx.block_locs[blk_id].loc;
+        const auto& loc = place_ctx.block_locs[blk_id].loc;
 
         reg.set_region_rect({loc.x - expand,
                              loc.y - expand,
@@ -123,12 +78,12 @@ void setup_vpr_floorplan_constraints_one_loc(VprConstraints& constraints, int ex
 
         pr.add_to_part_region(reg);
         part.set_part_region(pr);
-        constraints.add_partition(part);
+        constraints.mutable_place_constraints().add_partition(part);
 
         std::unordered_set<AtomBlockId>* atoms = cluster_to_atoms(blk_id);
 
         for (auto atom_id : *atoms) {
-            constraints.add_constrained_atom(atom_id, partid);
+            constraints.mutable_place_constraints().add_constrained_atom(atom_id, partid);
         }
         part_id++;
     }
@@ -240,24 +195,24 @@ void setup_vpr_floorplan_constraints_cutpoints(VprConstraints& constraints, int 
     }
 
     int num_partitions = 0;
-    for (auto region : region_atoms) {
+    for (const auto& region : region_atoms) {
         Partition part;
         PartitionId partid(num_partitions);
         std::string part_name = "Part" + std::to_string(num_partitions);
         const auto reg_coord = region.first.get_region_rect();
         create_partition(part, part_name,
                          {reg_coord.xmin, reg_coord.ymin, reg_coord.xmax, reg_coord.ymax, reg_coord.layer_num});
-        constraints.add_partition(part);
+        constraints.mutable_place_constraints().add_partition(part);
 
-        for (unsigned int k = 0; k < region.second.size(); k++) {
-            constraints.add_constrained_atom(region.second[k], partid);
+        for (auto blk_id : region.second) {
+            constraints.mutable_place_constraints().add_constrained_atom(blk_id, partid);
         }
 
         num_partitions++;
     }
 }
 
-void create_partition(Partition& part, std::string part_name, const RegionRectCoord& region_cord) {
+void create_partition(Partition& part, const std::string& part_name, const RegionRectCoord& region_cord) {
     part.set_name(part_name);
     PartitionRegion part_pr;
     Region part_region;

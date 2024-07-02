@@ -12,7 +12,7 @@
 #include "move_utils.h"
 #include "region.h"
 #include "directed_moves_util.h"
-
+#include "vpr_types.h"
 #include "echo_files.h"
 
 #include <ctime>
@@ -22,9 +22,6 @@
 #ifdef VERBOSE
 void print_clb_placement(const char* fname);
 #endif
-
-/// @brief Sentinel value for indicating that a block does not have a valid x location, used to check whether a block has been placed
-static constexpr int INVALID_X = -1;
 
 // Number of iterations that initial placement tries to place all blocks before throwing an error
 static constexpr int MAX_INIT_PLACE_ATTEMPTS = 2;
@@ -258,7 +255,7 @@ static bool is_loc_legal(t_pl_loc& loc, PartitionRegion& pr, t_logical_block_typ
     bool legal = false;
 
     //Check if the location is within its constraint region
-    for (auto reg : pr.get_partition_region()) {
+    for (const auto& reg : pr.get_regions()) {
         const auto reg_coord = reg.get_region_rect();
         vtr::Rect<int> reg_rect(reg_coord.xmin, reg_coord.ymin, reg_coord.xmax, reg_coord.ymax);
         if (reg_coord.layer_num != loc.layer) continue;
@@ -501,7 +498,7 @@ static void update_blk_type_first_loc(int blk_type_column_index,
                                       t_logical_block_type_ptr block_type,
                                       const t_pl_macro& pl_macro, std::vector<t_grid_empty_locs_block_type>* blk_types_empty_locs_in_grid) {
     //check if dense placement could place macro successfully
-    if (blk_type_column_index == -1 || blk_types_empty_locs_in_grid->size() <= abs(blk_type_column_index)) {
+    if (blk_type_column_index == -1 || blk_types_empty_locs_in_grid->size() <= (size_t)abs(blk_type_column_index)) {
         return;
     }
 
@@ -606,7 +603,7 @@ bool try_place_macro_randomly(const t_pl_macro& pl_macro, const PartitionRegion&
 
     //If the block has more than one floorplan region, pick a random region to get the min/max x and y values
     int region_index;
-    std::vector<Region> regions = pr.get_partition_region();
+    const std::vector<Region>& regions = pr.get_regions();
     if (regions.size() > 1) {
         region_index = vtr::irand(regions.size() - 1);
     } else {
@@ -663,7 +660,7 @@ bool try_place_macro_exhaustively(const t_pl_macro& pl_macro, const PartitionReg
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[block_type->index];
     auto& place_ctx = g_vpr_ctx.mutable_placement();
 
-    std::vector<Region> regions = pr.get_partition_region();
+    const std::vector<Region>& regions = pr.get_regions();
 
     bool placed = false;
 
@@ -1154,7 +1151,8 @@ void initial_placement(const t_placer_opts& placer_opts,
 
     if (noc_opts.noc) {
         // NoC routers are placed before other blocks
-        initial_noc_placement(noc_opts, placer_opts.seed);
+        initial_noc_placement(noc_opts, placer_opts);
+        propagate_place_constraints();
     }
 
     //Assign scores to blocks and placement macros according to how difficult they are to place

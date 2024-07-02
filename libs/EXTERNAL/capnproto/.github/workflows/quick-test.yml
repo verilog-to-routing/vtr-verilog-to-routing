@@ -10,12 +10,36 @@ on:
     - 'release-*'
 
 jobs:
+  Linux-musl:
+    runs-on: ubuntu-20.04
+    container: alpine:3.16.3
+    steps:
+      - uses: actions/checkout@v2
+      - name: install dependencies
+        run: apk add autoconf automake bash build-base cmake libtool libucontext-dev linux-headers openssl-dev
+      - name: super-test
+        run: ./super-test.sh quick
+  Linux-old:
+    runs-on: ubuntu-20.04
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [g++-7, clang-6.0]
+    steps:
+      - uses: actions/checkout@v2
+      - name: install dependencies
+        run: |
+            export DEBIAN_FRONTEND=noninteractive
+            sudo apt-get install -y build-essential git zlib1g-dev cmake libssl-dev ${{ matrix.compiler }}
+      - name: super-test
+        run: |
+            ./super-test.sh quick ${{ matrix.compiler }}
   Linux:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        compiler: [g++-7, g++-10, clang-6.0, clang-10]
+        compiler: [g++-12, clang-14]
     steps:
       - uses: actions/checkout@v2
       - name: install dependencies
@@ -26,7 +50,7 @@ jobs:
         run: |
             ./super-test.sh quick ${{ matrix.compiler }}
   Linux-lock-tracking:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
       matrix:
@@ -42,6 +66,24 @@ jobs:
         run: |
             # librt is used for timer_create in the unit tests for lock tracking (mutex-test.c++).
             ./super-test.sh quick ${{ matrix.compiler }} cpp-features "${{matrix.features}}" extra-libs "-lrt"
+  ManyLinux:
+    runs-on: ubuntu-20.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - cross-compiler: manylinux2014-x64
+          - cross-compiler: manylinux2014-x86
+            docker-run-args: --platform linux/386
+    steps:
+      - uses: actions/checkout@v2
+      - name: install dockcross
+        run: |
+            docker run ${{ matrix.docker-run-args }} --rm dockcross/${{ matrix.cross-compiler }} > ./dockcross
+            chmod +x ./dockcross
+      - name: super-test
+        run: |
+            ./dockcross ./super-test.sh quick g++
   MacOS:
     runs-on: macos-latest
     strategy:
@@ -59,13 +101,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: ['windows-2016', 'windows-latest']
+        os: ['windows-2019', 'windows-latest']
         include:
-          - os: windows-2016
-            target: 'Visual Studio 15 2017'
+          - os: windows-2019
+            target: 'Visual Studio 16 2019'
             arch: -A x64
           - os: windows-latest
-            target: 'Visual Studio 16 2019'
+            target: 'Visual Studio 17 2022'
             arch: -A x64
     steps:
       - uses: actions/checkout@v2
@@ -104,7 +146,7 @@ jobs:
             rmdir /s /q C:\PROGRA~1\POSTGR~1
 
             echo "Building Cap'n Proto with MinGW"
-            cmake -Hc++ -Bbuild-output -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=debug -DCMAKE_INSTALL_PREFIX=%CD%\capnproto-c++-install -DCMAKE_SH="CMAKE_SH-NOTFOUND"
+            cmake -Hc++ -Bbuild-output -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=debug -DCMAKE_INSTALL_PREFIX=%CD%\capnproto-c++-install -DCMAKE_SH="CMAKE_SH-NOTFOUND" -DCMAKE_CXX_STANDARD_LIBRARIES="-static-libgcc -static-libstdc++"
             cmake --build build-output --target install -- -j2
 
             echo "Building Cap'n Proto samples with MinGW"
@@ -113,27 +155,49 @@ jobs:
 
             cd build-output\src
             ctest -V -C debug
-  Cygwin:
-    runs-on: windows-latest
+  # Cygwin:
+  #   runs-on: windows-latest
+  #   strategy:
+  #     fail-fast: false
+  #   steps:
+  #     - run: git config --global core.autocrlf false
+  #     - uses: actions/checkout@v2
+  #     # TODO(someday): If we could cache the Cygwin installation we wouldn't have to spend three
+  #     #     minutes installing it for every build. Unfortuntaley, actions/cache@v1 does not preserve
+  #     #     DOS file attributes, which corrupts the Cygwin install. In particular, Cygwin marks
+  #     #     symlinks with the "DOS SYSTEM" attribute. We could cache just the downloaded packages,
+  #     #     but it turns out that only saves a couple seconds; most of the time is spend unpacking.
+  #     - name: Install Cygwin
+  #       run: |
+  #         choco config get cacheLocation
+  #         choco install --no-progress cygwin
+  #     - name: Install Cygwin additional packages
+  #       shell: cmd
+  #       run: |
+  #         C:\tools\cygwin\cygwinsetup.exe -qgnNdO -R C:/tools/cygwin -l C:/tools/cygwin/packages -s http://mirrors.kernel.org/sourceware/cygwin/ -P autoconf,automake,libtool,gcc,gcc-g++,binutils,libssl-devel,make,zlib-devel,pkg-config,cmake,xxd
+  #     - name: Build and test
+  #       shell: cmd
+  #       run: |
+  #         C:\tools\cygwin\bin\bash -lc 'export PATH=/usr/local/bin:/usr/bin:/bin; cd /cygdrive/d/a/capnproto/capnproto; ./super-test.sh quick'
+  Linux-bazel-clang:
+    runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
+      matrix:
+        clang_version: [16]
     steps:
-      - run: git config --global core.autocrlf false
-      - uses: actions/checkout@v2
-      # TODO(someday): If we could cache the Cygwin installation we wouldn't have to spend three
-      #     minutes installing it for every build. Unfortuntaley, actions/cache@v1 does not preserve
-      #     DOS file attributes, which corrupts the Cygwin install. In particular, Cygwin marks
-      #     symlinks with the "DOS SYSTEM" attribute. We could cache just the downloaded packages,
-      #     but it turns out that only saves a couple seconds; most of the time is spend unpacking.
-      - name: Install Cygwin
+      - uses: actions/checkout@v3
+      - uses: bazelbuild/setup-bazelisk@v2
+      - name: install dependencies
         run: |
-          choco config get cacheLocation
-          choco install --no-progress cygwin
-      - name: Install Cygwin additional packages
-        shell: cmd
+            export DEBIAN_FRONTEND=noninteractive
+            sudo apt-get install -y build-essential git
+      # todo: replace with apt-get when clang-16 is part of ubuntu lts
+      - name: install clang
+        uses: egor-tensin/setup-clang@v1
+        with:
+          version: ${{ matrix.clang_version }}
+      - name: super-test
         run: |
-          C:\tools\cygwin\cygwinsetup.exe -qgnNdO -R C:/tools/cygwin -l C:/tools/cygwin/packages -s http://mirrors.kernel.org/sourceware/cygwin/ -P autoconf,automake,libtool,gcc,gcc-g++,binutils,libssl-devel,make,zlib-devel,pkg-config,cmake,xxd
-      - name: Build and test
-        shell: cmd
-        run: |
-          C:\tools\cygwin\bin\bash -lc 'export PATH=/usr/local/bin:/usr/bin:/bin; cd /cygdrive/d/a/capnproto/capnproto; ./super-test.sh quick'
+            cd c++
+            bazel test --verbose_failures --test_output=errors //...

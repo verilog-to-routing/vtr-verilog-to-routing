@@ -230,6 +230,7 @@ static void report_overused_ipin_opin(std::ostream& os,
     //const t_vib_inf* vib = device_ctx.vib_grid[grid_layer][grid_x][grid_y];
     os << "Pin physical number = " << rr_graph.node_pin_num(node_id) << '\n';
     if (is_inter_cluster_node(physical_tile, vib, rr_graph.node_type(node_id), rr_graph.node_ptc_num(node_id))) {
+
         os << "On Tile Pin"
            << "\n";
     } else {

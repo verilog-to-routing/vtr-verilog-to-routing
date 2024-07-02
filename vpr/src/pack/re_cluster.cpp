@@ -16,6 +16,7 @@ bool move_mol_to_new_cluster(t_pack_molecule* molecule,
     ClusterBlockId old_clb = atom_to_cluster(molecule->atom_block_ids[molecule->root]);
     int molecule_size = get_array_size_of_molecule(molecule);
 
+    NocGroupId temp_noc_grp_id = NocGroupId::INVALID();
     PartitionRegion temp_cluster_pr;
     t_lb_router_data* old_router_data = nullptr;
     t_lb_router_data* router_data = nullptr;
@@ -66,7 +67,8 @@ bool move_mol_to_new_cluster(t_pack_molecule* molecule,
                                            verbosity,
                                            clustering_data,
                                            &router_data,
-                                           temp_cluster_pr);
+                                           temp_cluster_pr,
+                                           temp_noc_grp_id);
 
     //Commit or revert the move
     if (is_created) {
@@ -128,7 +130,7 @@ bool move_mol_to_existing_cluster(t_pack_molecule* molecule,
 
     //Add the atom to the new cluster
     t_lb_router_data* new_router_data = nullptr;
-    is_added = pack_mol_in_existing_cluster(molecule, molecule_size, new_clb, new_clb_atoms, during_packing, false, clustering_data, new_router_data);
+    is_added = pack_mol_in_existing_cluster(molecule, molecule_size, new_clb, new_clb_atoms, during_packing, clustering_data, new_router_data);
 
     //Commit or revert the move
     if (is_added) {
@@ -157,6 +159,8 @@ bool swap_two_molecules(t_pack_molecule* molecule_1,
                         bool during_packing,
                         int verbosity,
                         t_clustering_data& clustering_data) {
+    auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
+
     //define local variables
     PartitionRegion temp_cluster_pr_1, temp_cluster_pr_2;
 
@@ -193,6 +197,11 @@ bool swap_two_molecules(t_pack_molecule* molecule_1,
         return false;
     }
 
+    t_pb* clb_pb_1 = cluster_ctx.clb_nlist.block_pb(clb_1);
+    std::string clb_pb_1_name = (std::string)clb_pb_1->name;
+    t_pb* clb_pb_2 = cluster_ctx.clb_nlist.block_pb(clb_2);
+    std::string clb_pb_2_name = (std::string)clb_pb_2->name;
+
     //remove the molecule from its current cluster
     remove_mol_from_cluster(molecule_1, molecule_1_size, clb_1, clb_1_atoms, false, old_1_router_data);
     commit_mol_removal(molecule_1, molecule_1_size, clb_1, during_packing, old_1_router_data, clustering_data);
@@ -201,31 +210,43 @@ bool swap_two_molecules(t_pack_molecule* molecule_1,
     commit_mol_removal(molecule_2, molecule_2_size, clb_2, during_packing, old_2_router_data, clustering_data);
 
     //Add the atom to the new cluster
-    mol_1_success = pack_mol_in_existing_cluster(molecule_1, molecule_1_size, clb_2, clb_2_atoms, during_packing, true, clustering_data, old_2_router_data);
+    mol_1_success = pack_mol_in_existing_cluster(molecule_1, molecule_1_size, clb_2, clb_2_atoms, during_packing, clustering_data, old_2_router_data);
     if (!mol_1_success) {
-        mol_1_success = pack_mol_in_existing_cluster(molecule_1, molecule_1_size, clb_1, clb_1_atoms, during_packing, true, clustering_data, old_1_router_data);
-        mol_2_success = pack_mol_in_existing_cluster(molecule_2, molecule_2_size, clb_2, clb_2_atoms, during_packing, true, clustering_data, old_2_router_data);
+        mol_1_success = pack_mol_in_existing_cluster(molecule_1, molecule_1_size, clb_1, clb_1_atoms, during_packing, clustering_data, old_1_router_data);
+        mol_2_success = pack_mol_in_existing_cluster(molecule_2, molecule_2_size, clb_2, clb_2_atoms, during_packing, clustering_data, old_2_router_data);
 
         VTR_ASSERT(mol_1_success && mol_2_success);
         free_router_data(old_1_router_data);
         free_router_data(old_2_router_data);
         old_1_router_data = nullptr;
         old_2_router_data = nullptr;
+
+        free(clb_pb_1->name);
+        cluster_ctx.clb_nlist.block_pb(clb_1)->name = vtr::strdup(clb_pb_1_name.c_str());
+        free(clb_pb_2->name);
+        cluster_ctx.clb_nlist.block_pb(clb_2)->name = vtr::strdup(clb_pb_2_name.c_str());
+
         return false;
     }
 
-    mol_2_success = pack_mol_in_existing_cluster(molecule_2, molecule_2_size, clb_1, clb_1_atoms, during_packing, true, clustering_data, old_1_router_data);
+    mol_2_success = pack_mol_in_existing_cluster(molecule_2, molecule_2_size, clb_1, clb_1_atoms, during_packing, clustering_data, old_1_router_data);
     if (!mol_2_success) {
         remove_mol_from_cluster(molecule_1, molecule_1_size, clb_2, clb_2_atoms, true, old_2_router_data);
         commit_mol_removal(molecule_1, molecule_1_size, clb_2, during_packing, old_2_router_data, clustering_data);
-        mol_1_success = pack_mol_in_existing_cluster(molecule_1, molecule_1_size, clb_1, clb_1_atoms, during_packing, true, clustering_data, old_1_router_data);
-        mol_2_success = pack_mol_in_existing_cluster(molecule_2, molecule_2_size, clb_2, clb_2_atoms, during_packing, true, clustering_data, old_2_router_data);
+        mol_1_success = pack_mol_in_existing_cluster(molecule_1, molecule_1_size, clb_1, clb_1_atoms, during_packing, clustering_data, old_1_router_data);
+        mol_2_success = pack_mol_in_existing_cluster(molecule_2, molecule_2_size, clb_2, clb_2_atoms, during_packing, clustering_data, old_2_router_data);
 
         VTR_ASSERT(mol_1_success && mol_2_success);
         free_router_data(old_1_router_data);
         free_router_data(old_2_router_data);
         old_1_router_data = nullptr;
         old_2_router_data = nullptr;
+
+        free(clb_pb_1->name);
+        cluster_ctx.clb_nlist.block_pb(clb_1)->name = vtr::strdup(clb_pb_1_name.c_str());
+        free(clb_pb_2->name);
+        cluster_ctx.clb_nlist.block_pb(clb_2)->name = vtr::strdup(clb_pb_2_name.c_str());
+
         return false;
     }
 
@@ -242,6 +263,12 @@ bool swap_two_molecules(t_pack_molecule* molecule_1,
     free_router_data(old_2_router_data);
     old_1_router_data = nullptr;
     old_2_router_data = nullptr;
+
+    free(clb_pb_1->name);
+    cluster_ctx.clb_nlist.block_pb(clb_1)->name = vtr::strdup(clb_pb_1_name.c_str());
+    free(clb_pb_2->name);
+    cluster_ctx.clb_nlist.block_pb(clb_2)->name = vtr::strdup(clb_pb_2_name.c_str());
+
     return true;
 }
 #endif

@@ -520,7 +520,7 @@ t_port* findPortByName(const char* name, t_pb_type* pb_type, int* high_index, in
     return port;
 }
 
-t_physical_tile_type get_empty_physical_type(const char* name) {
+t_physical_tile_type get_empty_physical_type(const char* name /*= EMPTY_BLOCK_NAME*/) {
     t_physical_tile_type type;
     type.name = vtr::strdup(name);
     type.num_pins = 0;
@@ -538,7 +538,7 @@ t_physical_tile_type get_empty_physical_type(const char* name) {
     return type;
 }
 
-t_logical_block_type get_empty_logical_type(const char* name) {
+t_logical_block_type get_empty_logical_type(const char* name /*=EMPTY_BLOCK_NAME*/) {
     t_logical_block_type type;
     type.name = vtr::strdup(name);
     type.pb_type = nullptr;
@@ -550,7 +550,7 @@ std::unordered_set<t_logical_block_type_ptr> get_equivalent_sites_set(t_physical
     std::unordered_set<t_logical_block_type_ptr> equivalent_sites;
 
     for (auto& sub_tile : type->sub_tiles) {
-        for (auto& logical_block : sub_tile.equivalent_sites) {
+        for (auto logical_block : sub_tile.equivalent_sites) {
             equivalent_sites.insert(logical_block);
         }
     }

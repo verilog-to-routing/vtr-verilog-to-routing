@@ -63,7 +63,7 @@ void restore_best_placement(t_placement_checkpoint& placement_checkpoint,
          * and need to be re-computed from scratch.
          */
         if (noc_opts.noc) {
-            reinitialize_noc_routing(costs);
+            reinitialize_noc_routing(costs, {});
         }
 
         VTR_LOG("\nCheckpoint restored\n");

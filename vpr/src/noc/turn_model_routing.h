@@ -52,6 +52,7 @@
  */
 
 #include "noc_routing.h"
+#include <array>
 
 class TurnModelRouting : public NocRouting {
   public:
@@ -89,6 +90,17 @@ class TurnModelRouting : public NocRouting {
                     NocTrafficFlowId traffic_flow_id,
                     std::vector<NocLinkId>& flow_route,
                     const NocStorage& noc_model) override;
+
+    /**
+     * @brief Turn model algorithms forbid specific turns in the mesh topology
+     * to guarantee deadlock-freedom. This function finds all illegal turns
+     * implied by a turn model routing algorithm.
+     *
+     * @param noc_model Contains NoC router and link connectivity information.
+     * @return A vector of std::pair<NocLinkId, NocLinkId>. In each pair,
+     * a traffic flow cannot traverse the second link after the first link.
+     */
+    std::vector<std::pair<NocLinkId, NocLinkId>> get_all_illegal_turns(const NocStorage& noc_model) const;
 
   protected:
     /**
@@ -236,6 +248,17 @@ class TurnModelRouting : public NocRouting {
                                                               NocTrafficFlowId traffic_flow_id,
                                                               const NocStorage& noc_model)
         = 0;
+
+    /**
+     * @brief Determines whether a turn specified by 3 NoC routers visited in the turn
+     * is legal. Turn model routing algorithms forbid specific turns in the mesh topology
+     * to guarantee deadlock-freedom. In addition to turns forbidden by the turn model algorithm,
+     * 180-degree turns are also illegal.
+     *
+     * @param noc_routers Three NoC routers visited in a turn.
+     * @return True if the turn is legal, otherwise false.
+     */
+    virtual bool is_turn_legal(const std::array<std::reference_wrapper<const NocRouter>, 3>& noc_routers) const = 0;
 
   protected:
     // get_legal_directions() return a reference to this vector to avoid allocating a new vector

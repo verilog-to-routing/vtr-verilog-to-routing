@@ -5,7 +5,6 @@
 #include <iostream>
 #include <numeric>
 #include <chrono>
-#include <vtr_ndmatrix.h>
 #include <optional>
 
 #include "NetPinTimingInvalidator.h"
@@ -16,6 +15,7 @@
 #include "vtr_geometry.h"
 #include "vtr_time.h"
 #include "vtr_math.h"
+#include "vtr_ndmatrix.h"
 
 #include "vpr_types.h"
 #include "vpr_error.h"
@@ -75,7 +75,7 @@
  * -1*(1.5-REWARD_BB_TIMING_RELATIVE_WEIGHT)*timing_cost + (1+REWARD_BB_TIMING_RELATIVE_WEIGHT)*bb_cost)
  */
 
-#define REWARD_BB_TIMING_RELATIVE_WEIGHT 0.4
+static constexpr float REWARD_BB_TIMING_RELATIVE_WEIGHT = 0.4;
 
 #ifdef VTR_ENABLE_DEBUG_LOGGING
 #    include "draw_types.h"
@@ -90,12 +90,12 @@ using std::min;
 
 /* This defines the error tolerance for floating points variables used in *
  * cost computation. 0.01 means that there is a 1% error tolerance.       */
-#define ERROR_TOL .01
+static constexpr double ERROR_TOL = .01;
 
 /* This defines the maximum number of swap attempts before invoking the   *
  * once-in-a-while placement legality check as well as floating point     *
  * variables round-offs check.                                            */
-#define MAX_MOVES_BEFORE_RECOMPUTE 500000
+static constexpr int MAX_MOVES_BEFORE_RECOMPUTE = 500000;
 
 /* Flags for the states of the bounding box.                              *
  * Stored as char for memory efficiency.                                  */
@@ -103,7 +103,7 @@ using std::min;
 #define UPDATED_ONCE 'U'
 #define GOT_FROM_SCRATCH 'S'
 
-/* For comp_cost.  NORMAL means use the method that generates updateable  *
+/* For comp_cost.  NORMAL means use the method that generates updatable   *
  * bounding boxes for speed.  CHECK means compute all bounding boxes from *
  * scratch using a very simple routine to allow checks of the other       *
  * costs.                                   
@@ -648,7 +648,7 @@ void try_place(const Netlist<>& net_list,
                      * pow(net_list.blocks().size(), 1.3333));
 
     //create the move generator based on the chosen strategy
-    create_move_generators(move_generator, move_generator2, placer_opts, move_lim);
+    create_move_generators(move_generator, move_generator2, placer_opts, move_lim, noc_opts.noc_centroid_weight);
 
     alloc_and_load_placement_structs(placer_opts.place_cost_exp, placer_opts, noc_opts, directs, num_directs);
 
@@ -821,27 +821,11 @@ void try_place(const Netlist<>& net_list,
                 placer_opts.place_algorithm,
                 noc_opts);
 
-    //Initial pacement statistics
+    //Initial placement statistics
     VTR_LOG("Initial placement cost: %g bb_cost: %g td_cost: %g\n", costs.cost,
             costs.bb_cost, costs.timing_cost);
     if (noc_opts.noc) {
-        VTR_LOG("NoC Placement Costs. "
-            "cost: %g, "
-            "aggregate_bandwidth_cost: %g, "
-            "latency_cost: %g, "
-            "n_met_latency_constraints: %d, "
-            "latency_overrun_cost: %g, "
-            "congestion_cost: %g, "
-            "accum_congested_ratio: %g, "
-            "n_congested_links: %d \n",
-            calculate_noc_cost(costs.noc_cost_terms, costs.noc_cost_norm_factors, noc_opts),
-            costs.noc_cost_terms.aggregate_bandwidth,
-            costs.noc_cost_terms.latency,
-            get_number_of_traffic_flows_with_latency_cons_met(),
-            costs.noc_cost_terms.latency_overrun,
-            costs.noc_cost_terms.congestion,
-            get_total_congestion_bandwidth_ratio(),
-            get_number_of_congested_noc_links());
+        print_noc_costs("Initial NoC Placement Costs", costs, noc_opts);
     }
     if (placer_opts.place_algorithm.is_timing_driven()) {
         VTR_LOG(
@@ -873,29 +857,7 @@ void try_place(const Netlist<>& net_list,
     sprintf(msg,
             "Initial Placement.  Cost: %g  BB Cost: %g  TD Cost %g \t Channel Factor: %d",
             costs.cost, costs.bb_cost, costs.timing_cost, width_fac);
-    if (noc_opts.noc) {
-        sprintf(msg,
-                "\nInitial NoC Placement Costs. "
-                "cost: %g, "
-                "aggregate_bandwidth_cost: %g, "
-                "latency_cost: %g, "
-                "n_met_latency_constraints: %d, "
-                "latency_overrun_cost: %g, "
-                "congestion_cost: %g, "
-                "accum_congested_ratio: %g, "
-                "n_congested_links: %d \n",
-                calculate_noc_cost(costs.noc_cost_terms, costs.noc_cost_norm_factors, noc_opts),
-                costs.noc_cost_terms.aggregate_bandwidth,
-                costs.noc_cost_terms.latency,
-                get_number_of_traffic_flows_with_latency_cons_met(),
-                costs.noc_cost_terms.latency_overrun,
-                costs.noc_cost_terms.congestion,
-                get_total_congestion_bandwidth_ratio(),
-                get_number_of_congested_noc_links());
 
-
-
-    }
     //Draw the initial placement
     update_screen(ScreenUpdatePriority::MAJOR, msg, PLACEMENT, timing_info);
 
@@ -932,6 +894,7 @@ void try_place(const Netlist<>& net_list,
     //allocate helper vectors that are used by many move generators
     place_move_ctx.X_coord.resize(10, 0);
     place_move_ctx.Y_coord.resize(10, 0);
+    place_move_ctx.layer_coord.resize(10, 0);
 
     //allocate move type statistics vectors
     MoveTypeStat move_type_stat;
@@ -1064,7 +1027,7 @@ void try_place(const Netlist<>& net_list,
             //#endif
         } while (state.outer_loop_update(stats.success_rate, costs, placer_opts,
                                          annealing_sched));
-        /* Outer loop of the simmulated annealing ends */
+        /* Outer loop of the simulated annealing ends */
     } //skip_anneal ends
 
     /* Start Quench */
@@ -1082,7 +1045,7 @@ void try_place(const Netlist<>& net_list,
                                       placer_setup_slacks.get(), pin_timing_invalidator.get(),
                                       timing_info.get());
 
-        //move the appropoiate move_generator to be the current used move generator
+        //move the appropriate move_generator to be the current used move generator
         assign_current_move_generator(move_generator, move_generator2,
                                       agent_state, placer_opts, true, current_move_generator);
 
@@ -1204,43 +1167,16 @@ void try_place(const Netlist<>& net_list,
             costs.bb_cost, costs.timing_cost);
     // print the noc costs info
     if (noc_opts.noc) {
-        sprintf(msg,
-                "\nNoC Placement Costs. "
-                "cost: %g, "
-                "aggregate_bandwidth_cost: %g, "
-                "latency_cost: %g, "
-                "n_met_latency_constraints: %d, "
-                "latency_overrun_cost: %g, "
-                "congestion_cost: %g, "
-                "accum_congested_ratio: %g, "
-                "n_congested_links: %d \n",
-                calculate_noc_cost(costs.noc_cost_terms, costs.noc_cost_norm_factors, noc_opts),
-                costs.noc_cost_terms.aggregate_bandwidth,
-                costs.noc_cost_terms.latency,
-                get_number_of_traffic_flows_with_latency_cons_met(),
-                costs.noc_cost_terms.latency_overrun,
-                costs.noc_cost_terms.congestion,
-                get_total_congestion_bandwidth_ratio(),
-                get_number_of_congested_noc_links());
+        print_noc_costs("\nNoC Placement Costs", costs, noc_opts);
 
-        VTR_LOG("\nNoC Placement Costs. "
-            "cost: %g, "
-            "aggregate_bandwidth_cost: %g, "
-            "latency_cost: %g, "
-            "n_met_latency_constraints: %d, "
-            "latency_overrun_cost: %g, "
-            "congestion_cost: %g, "
-            "accum_congested_ratio: %g, "
-            "n_congested_links: %d \n",
-            calculate_noc_cost(costs.noc_cost_terms, costs.noc_cost_norm_factors, noc_opts),
-            costs.noc_cost_terms.aggregate_bandwidth,
-            costs.noc_cost_terms.latency,
-            get_number_of_traffic_flows_with_latency_cons_met(),
-            costs.noc_cost_terms.latency_overrun,
-            costs.noc_cost_terms.congestion,
-            get_total_congestion_bandwidth_ratio(),
-            get_number_of_congested_noc_links());
+#ifdef ENABLE_NOC_SAT_ROUTING
+        if (costs.noc_cost_terms.congestion > 0.0) {
+            VTR_LOG("NoC routing configuration is congested. Invoking the SAT NoC router.\n");
+            invoke_sat_router(costs, noc_opts, placer_opts.seed);
+        }
+#endif //ENABLE_NOC_SAT_ROUTING
     }
+
     update_screen(ScreenUpdatePriority::MAJOR, msg, PLACEMENT, timing_info);
     // Print out swap statistics
     print_resources_utilization();
@@ -1480,7 +1416,6 @@ static void recompute_costs_from_scratch(const t_placer_opts& placer_opts,
                                  "noc_congestion_cost");
         }
         costs->noc_cost_terms.congestion = new_noc_cost.congestion;
-
     }
 }
 
@@ -1710,8 +1645,8 @@ static e_move_result try_swap(const t_annealing_state* state,
     if (manual_move_enabled) {
 #ifndef NO_GRAPHICS
         create_move_outcome = manual_move_display_and_propose(manual_move_generator, blocks_affected, proposed_action.move_type, rlim, placer_opts, criticalities);
-#else //NO_GRAPHICS
-        // Cast to void to explicitly avoid warning.
+#else  //NO_GRAPHICS 
+        //Cast to void to explicitly avoid warning.
         (void)manual_move_generator;
 #endif //NO_GRAPHICS
     } else if (router_block_move) {
@@ -1819,7 +1754,6 @@ static e_move_result try_swap(const t_annealing_state* state,
                            costs->bb_cost_norm);
             delta_c = bb_delta_c * costs->bb_cost_norm;
         }
-
 
         NocCostTerms noc_delta_c; // change in NoC cost
         /* Update the NoC datastructure and costs*/
@@ -1955,6 +1889,8 @@ static e_move_result try_swap(const t_annealing_state* state,
     if (!router_block_move) {
         calculate_reward_and_process_outcome(placer_opts, move_outcome_stats,
                                              delta_c, timing_bb_factor, move_generator);
+    } else {
+//        std::cout << "Group move delta cost: " << delta_c << std::endl;
     }
 
 #ifdef VTR_ENABLE_DEBUG_LOGGING
@@ -2393,8 +2329,8 @@ static float analyze_setup_slack_cost(const PlacerSetupSlacks* setup_slacks) {
     }
 
     //Sort in ascending order, from the worse slack value to the best
-    std::sort(original_setup_slacks.begin(), original_setup_slacks.end());
-    std::sort(proposed_setup_slacks.begin(), proposed_setup_slacks.end());
+    std::stable_sort(original_setup_slacks.begin(), original_setup_slacks.end());
+    std::stable_sort(proposed_setup_slacks.begin(), proposed_setup_slacks.end());
 
     //Check the first pair of slack values that are different
     //If found, return their difference
@@ -2818,8 +2754,8 @@ static void get_bb_from_scratch(ClusterNetId net_id,
                                 t_bb& coords,
                                 t_bb& num_on_edges,
                                 vtr::NdMatrixProxy<int, 1> num_sink_pin_layer) {
-    int pnum, x, y, pin_layer, xmin, xmax, ymin, ymax;
-    int xmin_edge, xmax_edge, ymin_edge, ymax_edge;
+    int pnum, x, y, pin_layer, xmin, xmax, ymin, ymax, layer_min, layer_max;
+    int xmin_edge, xmax_edge, ymin_edge, ymax_edge, layer_min_edge, layer_max_edge;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
@@ -2833,18 +2769,25 @@ static void get_bb_from_scratch(ClusterNetId net_id,
         + physical_tile_type(bnum)->pin_width_offset[pnum];
     y = place_ctx.block_locs[bnum].loc.y
         + physical_tile_type(bnum)->pin_height_offset[pnum];
+    pin_layer = place_ctx.block_locs[bnum].loc.layer;
 
     x = max(min<int>(x, grid.width() - 2), 1);
     y = max(min<int>(y, grid.height() - 2), 1);
+    pin_layer = max(min<int>(pin_layer, grid.get_num_layers() - 1), 0);
 
     xmin = x;
     ymin = y;
+    layer_min = pin_layer;
     xmax = x;
     ymax = y;
+    layer_max = pin_layer;
+
     xmin_edge = 1;
     ymin_edge = 1;
+    layer_min_edge = 1;
     xmax_edge = 1;
     ymax_edge = 1;
+    layer_max_edge = 1;
 
     for (int layer_num = 0; layer_num < grid.get_num_layers(); layer_num++) {
         num_sink_pin_layer[layer_num] = 0;
@@ -2868,6 +2811,7 @@ static void get_bb_from_scratch(ClusterNetId net_id,
 
         x = max(min<int>(x, grid.width() - 2), 1);  //-2 for no perim channels
         y = max(min<int>(y, grid.height() - 2), 1); //-2 for no perim channels
+        pin_layer = max(min<int>(pin_layer, grid.get_num_layers() - 1), 0);
 
         if (x == xmin) {
             xmin_edge++;
@@ -2895,6 +2839,19 @@ static void get_bb_from_scratch(ClusterNetId net_id,
             ymax_edge = 1;
         }
 
+        if (pin_layer == layer_min) {
+            layer_min_edge++;
+        }
+        if (pin_layer == layer_max) {
+            layer_max_edge++;
+        } else if (pin_layer < layer_min) {
+            layer_min = pin_layer;
+            layer_min_edge = 1;
+        } else if (pin_layer > layer_max) {
+            layer_max = pin_layer;
+            layer_max_edge = 1;
+        }
+
         num_sink_pin_layer[pin_layer]++;
     }
 
@@ -2904,11 +2861,18 @@ static void get_bb_from_scratch(ClusterNetId net_id,
     coords.xmax = xmax;
     coords.ymin = ymin;
     coords.ymax = ymax;
+    coords.layer_min = layer_min;
+    coords.layer_max = layer_max;
+    VTR_ASSERT_DEBUG(layer_min >= 0 && layer_min < device_ctx.grid.get_num_layers());
+    VTR_ASSERT_DEBUG(layer_max >= 0 && layer_max < device_ctx.grid.get_num_layers());
+
 
     num_on_edges.xmin = xmin_edge;
     num_on_edges.xmax = xmax_edge;
     num_on_edges.ymin = ymin_edge;
     num_on_edges.ymax = ymax_edge;
+    num_on_edges.layer_min = layer_min_edge;
+    num_on_edges.layer_max = layer_max_edge;
 }
 
 /* This routine finds the bounding box of each net from scratch when the bounding box is of type per-layer (i.e.   *
@@ -3163,7 +3127,7 @@ static void get_non_updateable_bb(ClusterNetId net_id,
                                   vtr::NdMatrixProxy<int, 1> num_sink_pin_layer) {
     //TODO: account for multiple physical pin instances per logical pin
 
-    int xmax, ymax, xmin, ymin, x, y, layer;
+    int xmax, ymax, layer_max, xmin, ymin, layer_min, x, y, layer;
     int pnum;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -3177,11 +3141,14 @@ static void get_non_updateable_bb(ClusterNetId net_id,
         + physical_tile_type(bnum)->pin_width_offset[pnum];
     y = place_ctx.block_locs[bnum].loc.y
         + physical_tile_type(bnum)->pin_height_offset[pnum];
+    layer = place_ctx.block_locs[bnum].loc.layer;
 
     xmin = x;
     ymin = y;
+    layer_min = layer;
     xmax = x;
     ymax = y;
+    layer_max = layer;
 
     for (int layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); layer_num++) {
         num_sink_pin_layer[layer_num] = 0;
@@ -3208,6 +3175,12 @@ static void get_non_updateable_bb(ClusterNetId net_id,
             ymax = y;
         }
 
+        if (layer < layer_min) {
+            layer_min = layer;
+        } else if (layer > layer_max) {
+            layer_max = layer;
+        }
+
         num_sink_pin_layer[layer]++;
     }
 
@@ -3221,8 +3194,10 @@ static void get_non_updateable_bb(ClusterNetId net_id,
 
     bb_coord_new.xmin = max(min<int>(xmin, device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
     bb_coord_new.ymin = max(min<int>(ymin, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
+    bb_coord_new.layer_min = max(min<int>(layer_min, device_ctx.grid.get_num_layers() - 1), 0);
     bb_coord_new.xmax = max(min<int>(xmax, device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
     bb_coord_new.ymax = max(min<int>(ymax, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
+    bb_coord_new.layer_max = max(min<int>(layer_max, device_ctx.grid.get_num_layers() - 1), 0);
 }
 
 static void get_non_updateable_layer_bb(ClusterNetId net_id,
@@ -3322,8 +3297,10 @@ static void update_bb(ClusterNetId net_id,
 
     pin_new_loc.x = max(min<int>(pin_new_loc.x, device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
     pin_new_loc.y = max(min<int>(pin_new_loc.y, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
+    pin_new_loc.layer_num = max(min<int>(pin_new_loc.layer_num, device_ctx.grid.get_num_layers() - 1), 0);
     pin_old_loc.x = max(min<int>(pin_old_loc.x, device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
     pin_old_loc.y = max(min<int>(pin_old_loc.y, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
+    pin_old_loc.layer_num = max(min<int>(pin_old_loc.layer_num, device_ctx.grid.get_num_layers() - 1), 0);
 
     /* Check if the net had been updated before. */
     if (bb_updated_before[net_id] == GOT_FROM_SCRATCH) {
@@ -3359,7 +3336,7 @@ static void update_bb(ClusterNetId net_id,
                 bb_edge_new.xmax = curr_bb_edge->xmax - 1;
                 bb_coord_new.xmax = curr_bb_coord->xmax;
             }
-        } else { /* Move to left, old postion was not at xmax. */
+        } else { /* Move to left, old position was not at xmax. */
             bb_coord_new.xmax = curr_bb_coord->xmax;
             bb_edge_new.xmax = curr_bb_edge->xmax;
         }
@@ -3503,6 +3480,75 @@ static void update_bb(ClusterNetId net_id,
                 num_sink_pin_layer_new[pin_new_loc.layer_num] = (curr_num_sink_pin_layer)[pin_new_loc.layer_num] + 1;
             }
         }
+
+        if (pin_new_loc.layer_num < pin_old_loc.layer_num) {
+            if (pin_old_loc.layer_num == curr_bb_coord->layer_max) {
+                if (curr_bb_edge->layer_max == 1) {
+                    get_bb_from_scratch(net_id, bb_coord_new, bb_edge_new, num_sink_pin_layer_new);
+                    bb_updated_before[net_id] = GOT_FROM_SCRATCH;
+                    return;
+                } else {
+                    bb_edge_new.layer_max = curr_bb_edge->layer_max - 1;
+                    bb_coord_new.layer_max = curr_bb_coord->layer_max;
+                }
+            } else {
+                bb_coord_new.layer_max = curr_bb_coord->layer_max;
+                bb_edge_new.layer_max = curr_bb_edge->layer_max;
+            }
+
+
+            if (pin_new_loc.layer_num < curr_bb_coord->layer_min) {
+                bb_coord_new.layer_min = pin_new_loc.layer_num;
+                bb_edge_new.layer_min = 1;
+            } else if (pin_new_loc.layer_num == curr_bb_coord->layer_min) {
+                bb_coord_new.layer_min = pin_new_loc.layer_num;
+                bb_edge_new.layer_min = curr_bb_edge->layer_min + 1;
+            } else {
+                bb_coord_new.layer_min = curr_bb_coord->layer_min;
+                bb_edge_new.layer_min = curr_bb_edge->layer_min;
+            }
+
+        } else if (pin_new_loc.layer_num > pin_old_loc.layer_num) {
+
+
+            if (pin_old_loc.layer_num == curr_bb_coord->layer_min) {
+                if (curr_bb_edge->layer_min == 1) {
+                    get_bb_from_scratch(net_id, bb_coord_new, bb_edge_new, num_sink_pin_layer_new);
+                    bb_updated_before[net_id] = GOT_FROM_SCRATCH;
+                    return;
+                } else {
+                    bb_edge_new.layer_min = curr_bb_edge->layer_min - 1;
+                    bb_coord_new.layer_min = curr_bb_coord->layer_min;
+                }
+            } else {
+                bb_coord_new.layer_min = curr_bb_coord->layer_min;
+                bb_edge_new.layer_min = curr_bb_edge->layer_min;
+            }
+
+            if (pin_new_loc.layer_num > curr_bb_coord->layer_max) {
+                bb_coord_new.layer_max = pin_new_loc.layer_num;
+                bb_edge_new.layer_max = 1;
+            } else if (pin_new_loc.layer_num == curr_bb_coord->layer_max) {
+                bb_coord_new.layer_max = pin_new_loc.layer_num;
+                bb_edge_new.layer_max = curr_bb_edge->layer_max + 1;
+            } else {
+                bb_coord_new.layer_max = curr_bb_coord->layer_max;
+                bb_edge_new.layer_max = curr_bb_edge->layer_max;
+            }
+
+
+        } else {
+            bb_coord_new.layer_min = curr_bb_coord->layer_min;
+            bb_coord_new.layer_max = curr_bb_coord->layer_max;
+            bb_edge_new.layer_min = curr_bb_edge->layer_min;
+            bb_edge_new.layer_max = curr_bb_edge->layer_max;
+        }
+
+    } else {
+        bb_coord_new.layer_min = curr_bb_coord->layer_min;
+        bb_coord_new.layer_max = curr_bb_coord->layer_max;
+        bb_edge_new.layer_min = curr_bb_edge->layer_min;
+        bb_edge_new.layer_max = curr_bb_edge->layer_max;
     }
 
     if (bb_updated_before[net_id] == NOT_UPDATED_YET) {
@@ -4250,7 +4296,6 @@ static void print_place_status_header(bool noc_enabled) {
         VTR_LOG(
             "---- ------ ------- ------- ---------- ---------- ------- ---------- -------- ------- ------- ------ -------- --------- ------ -------- -------- --------- ---------\n");
     }
-
 }
 
 static void print_place_status(const t_annealing_state& state,

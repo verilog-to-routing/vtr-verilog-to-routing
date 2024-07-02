@@ -8,7 +8,9 @@ DeviceGrid::DeviceGrid(std::string grid_name, vtr::NdMatrix<t_grid_tile, 3> grid
     count_instances();
 }
 
-DeviceGrid::DeviceGrid(std::string grid_name, vtr::NdMatrix<t_grid_tile, 3> grid, std::vector<t_logical_block_type_ptr> limiting_res)
+DeviceGrid::DeviceGrid(std::string grid_name,
+                       vtr::NdMatrix<t_grid_tile, 3> grid,
+                       std::vector<t_logical_block_type_ptr> limiting_res)
     : DeviceGrid(std::move(grid_name), std::move(grid)) {
     limiting_resources_ = std::move(limiting_res);
 }

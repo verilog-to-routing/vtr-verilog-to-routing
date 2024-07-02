@@ -12,7 +12,6 @@ void check_rr_graph(const RRGraphView& rr_graph,
                     const vtr::NdMatrix<const t_vib_inf*, 3>& vib_grid,
                     const t_chan_width& chan_width,
                     const t_graph_type graph_type,
-                    const int virtual_clock_network_root_idx,
                     bool is_flat);
 
 void check_rr_node(const RRGraphView& rr_graph,

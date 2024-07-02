@@ -88,3 +88,4 @@ regression_tests/vtr_reg_strong/strong_tileable_rr_graph_verify
 regression_tests/vtr_reg_strong/strong_tileable_rr_graph_verify_bin
 regression_tests/vtr_reg_strong/strong_noc
 regression_tests/vtr_reg_strong/strong_flat_router
+regression_tests/vtr_reg_strong/strong_routing_constraints

@@ -43,6 +43,7 @@ VTR also includes a set of benchmark designs known to work with the design flow.
    running_vtr
    benchmarks
    power_estimation/index.rst
+   server_mode/index.rst
    tasks
    run_vtr_flow
    run_vtr_task

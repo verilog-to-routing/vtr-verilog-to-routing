@@ -116,11 +116,6 @@ std::tuple<bool, t_heap*> ConnectionRouter<Heap>::timing_driven_route_connection
         return std::make_tuple(true, nullptr);
     }
 
-    if (cheapest == nullptr) {
-        VTR_LOG("%s\n", describe_unrouteable_connection(source_node, sink_node, is_flat_).c_str());
-        return std::make_tuple(false, nullptr);
-    }
-
     return std::make_tuple(false, cheapest);
 }
 
@@ -372,7 +367,7 @@ void ConnectionRouter<Heap>::timing_driven_expand_cheapest(t_heap* cheapest,
         VTR_LOGV_DEBUG(router_debug_, "    Better cost to %d\n", inode);
         VTR_LOGV_DEBUG(router_debug_, "    New total cost: %g\n", new_total_cost);
         VTR_LOGV_DEBUG(router_debug_, "    New back cost: %g\n", new_back_cost);
-        VTR_LOGV_DEBUG(router_debug_, "      Setting path costs for associated node %d (from %d edge %zu)\n",
+        VTR_LOGV_DEBUG(router_debug_ && (rr_nodes_.node_type(RRNodeId(cheapest->index)) != t_rr_type::SOURCE), "      Setting path costs for associated node %d (from %d edge %zu)\n",
                        cheapest->index,
                        static_cast<size_t>(rr_graph_->edge_src_node(cheapest->prev_edge())),
                        static_cast<size_t>(cheapest->prev_edge()));
@@ -1126,12 +1121,9 @@ static inline void update_router_stats(RouterStats* router_stats,
     }
 
 #ifdef VTR_ENABLE_DEBUG_LOGGING
-    const auto& device_ctx = g_vpr_ctx.device();
     auto node_type = rr_graph->node_type(rr_node_id);
     VTR_ASSERT(node_type != NUM_RR_TYPES);
-    t_physical_tile_type_ptr physical_type = device_ctx.grid.get_physical_type({rr_graph->node_xlow(rr_node_id),
-                                                                                rr_graph->node_ylow(rr_node_id),
-                                                                                rr_graph->node_layer(rr_node_id)});
+
 
     const t_vib_inf* vib;
     if (device_ctx.arch->is_vib_arch) {
@@ -1145,6 +1137,7 @@ static inline void update_router_stats(RouterStats* router_stats,
                               vib,
                               node_type,
                               rr_graph->node_ptc_num(rr_node_id))) {
+
         if (is_push) {
             router_stats->inter_cluster_node_pushes++;
             router_stats->inter_cluster_node_type_cnt_pushes[node_type]++;
@@ -1152,7 +1145,6 @@ static inline void update_router_stats(RouterStats* router_stats,
             router_stats->inter_cluster_node_pops++;
             router_stats->inter_cluster_node_type_cnt_pops[node_type]++;
         }
-
     } else {
         if (is_push) {
             router_stats->intra_cluster_node_pushes++;

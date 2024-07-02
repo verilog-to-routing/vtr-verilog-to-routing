@@ -22,9 +22,9 @@
 #pragma once
 
 #include "async.h"
-#include "function.h"
-#include "thread.h"
-#include "timer.h"
+#include <kj/function.h>
+#include <kj/thread.h>
+#include <kj/timer.h>
 
 KJ_BEGIN_HEADER
 
@@ -45,10 +45,13 @@ class AsyncOutputStream;
 class AsyncIoStream;
 class AncillaryMessage;
 
+class ReadableFile;
+class File;
+
 // =======================================================================================
 // Streaming I/O
 
-class AsyncInputStream {
+class AsyncInputStream: private AsyncObject {
   // Asynchronous equivalent of InputStream (from io.h).
 
 public:
@@ -91,9 +94,18 @@ public:
   // The provided callback will be called whenever any are encountered. The messages passed to
   // the function do not live beyond when function returns.
   // Only supported on Unix (the default impl throws UNIMPLEMENTED). Most apps will not use this.
+
+  virtual Maybe<Own<AsyncInputStream>> tryTee(uint64_t limit = kj::maxValue);
+  // Primarily intended as an optimization for the `tee` call. Returns an input stream whose state
+  // is independent from this one but which will return the exact same set of bytes read going
+  // forward. limit is a total limit on the amount of memory, in bytes, which a tee implementation
+  // may use to buffer stream data. An implementation must throw an exception if a read operation
+  // would cause the limit to be exceeded. If tryTee() can see that the new limit is impossible to
+  // satisfy, it should return nullptr so that the pessimized path is taken in newTee. This is
+  // likely to arise if tryTee() is called twice with different limits on the same stream.
 };
 
-class AsyncOutputStream {
+class AsyncOutputStream: private AsyncObject {
   // Asynchronous equivalent of OutputStream (from io.h).
 
 public:
@@ -158,6 +170,20 @@ public:
   // Get the underlying Unix file descriptor, if any. Returns nullptr if this object actually
   // isn't wrapping a file descriptor.
 };
+
+Promise<uint64_t> unoptimizedPumpTo(
+    AsyncInputStream& input, AsyncOutputStream& output, uint64_t amount,
+    uint64_t completedSoFar = 0);
+// Performs a pump using read() and write(), without calling the stream's pumpTo() nor
+// tryPumpFrom() methods. This is intended to be used as a fallback by implementations of pumpTo()
+// and tryPumpFrom() when they want to give up on optimization, but can't just call pumpTo() again
+// because this would recursively retry the optimization. unoptimizedPumpTo() should only be called
+// inside implementations of streams, never by the caller of a stream -- use the pumpTo() method
+// instead.
+//
+// `completedSoFar` is the number of bytes out of `amount` that have already been pumped. This is
+// provided for convenience for cases where the caller has already done some pumping before they
+// give up. Otherwise, a `.then()` would need to be used to add the bytes to the final result.
 
 class AsyncCapabilityStream: public AsyncIoStream {
   // An AsyncIoStream that also allows transmitting new stream objects and file descriptors
@@ -405,7 +431,7 @@ public:
 // =======================================================================================
 // Accepting connections
 
-class ConnectionReceiver {
+class ConnectionReceiver: private AsyncObject {
   // Represents a server socket listening on a port.
 
 public:
@@ -429,6 +455,10 @@ public:
   virtual void getsockname(struct sockaddr* addr, uint* length);
   // Same as the methods of AsyncIoStream.
 };
+
+Own<ConnectionReceiver> newAggregateConnectionReceiver(Array<Own<ConnectionReceiver>> receivers);
+// Create a ConnectionReceiver that listens on several other ConnectionReceivers and returns
+// sockets from any of them.
 
 // =======================================================================================
 // Datagram I/O
@@ -536,7 +566,7 @@ public:
 // =======================================================================================
 // Networks
 
-class NetworkAddress {
+class NetworkAddress: private AsyncObject {
   // Represents a remote address to which the application can connect.
 
 public:
@@ -972,6 +1002,68 @@ private:
   AsyncCapabilityStream& inner;
 };
 
+class FileInputStream: public AsyncInputStream {
+  // InputStream that reads from a disk file -- and enables sendfile() optimization.
+  //
+  // Reads are performed synchronously -- no actual attempt is made to use asynchronous file I/O.
+  // True asynchronous file I/O is complicated and is mostly unnecessary in the presence of
+  // caching. Only certain niche programs can expect to benefit from it. For the rest, it's better
+  // to use regular syrchronous disk I/O, so that's what this class does.
+  //
+  // The real purpose of this class, aside from general convenience, is to enable sendfile()
+  // optimization. When you use this class's pumpTo() method, and the destination is a socket,
+  // the system will detect this and optimize to sendfile(), so that the file data never needs to
+  // be read into userspace.
+  //
+  // NOTE: As of this writing, sendfile() optimization is only implemented on Linux.
+
+public:
+  FileInputStream(const ReadableFile& file, uint64_t offset = 0)
+      : file(file), offset(offset) {}
+
+  const ReadableFile& getUnderlyingFile() { return file; }
+  uint64_t getOffset() { return offset; }
+  void seek(uint64_t newOffset) { offset = newOffset; }
+
+  Promise<size_t> tryRead(void* buffer, size_t minBytes, size_t maxBytes);
+  Maybe<uint64_t> tryGetLength();
+
+  // (pumpTo() is not actually overridden here, but AsyncStreamFd's tryPumpFrom() will detect when
+  // the source is a file.)
+
+private:
+  const ReadableFile& file;
+  uint64_t offset;
+};
+
+class FileOutputStream: public AsyncOutputStream {
+  // OutputStream that writes to a disk file.
+  //
+  // As with FileInputStream, calls are not actually async. Async would be even less useful here
+  // because writes should usually land in cache anyway.
+  //
+  // sendfile() optimization does not apply when writing to a file, but on Linux, splice() can
+  // be used to achieve a similar effect.
+  //
+  // NOTE: As of this writing, splice() optimization is not implemented.
+
+public:
+  FileOutputStream(const File& file, uint64_t offset = 0)
+      : file(file), offset(offset) {}
+
+  const File& getUnderlyingFile() { return file; }
+  uint64_t getOffset() { return offset; }
+  void seek(uint64_t newOffset) { offset = newOffset; }
+
+  Promise<void> write(const void* buffer, size_t size);
+  Promise<void> write(ArrayPtr<const ArrayPtr<const byte>> pieces);
+  Promise<void> whenWriteDisconnected();
+
+private:
+  const File& file;
+  uint64_t offset;
+};
+
 // =======================================================================================
 // inline implementation details
 
@@ -995,6 +1087,57 @@ template <typename T>
 inline ArrayPtr<const T> AncillaryMessage::asArray() const {
   return arrayPtr(reinterpret_cast<const T*>(data.begin()), data.size() / sizeof(T));
 }
+
+class SecureNetworkWrapper {
+  // Abstract interface for a class which implements a "secure" network as a wrapper around an
+  // insecure one. "secure" means:
+  // * Connections to a server will only succeed if it can be verified that the requested hostname
+  //   actually belongs to the responding server.
+  // * No man-in-the-middle attacker can potentially see the bytes sent and received.
+  //
+  // The typical implementation uses TLS. The object in this case could be configured to use cerain
+  // keys, certificates, etc. See kj/compat/tls.h for such an implementation.
+  //
+  // However, an implementation could use some other form of encryption, or might not need to use
+  // encryption at all. For example, imagine a kj::Network that exists only on a single machine,
+  // providing communications between various processes using unix sockets. Perhaps the "hostnames"
+  // are actually PIDs in this case. An implementation of such a network could verify the other
+  // side's identity using an `SCM_CREDENTIALS` auxiliary message, which cannot be forged. Once
+  // verified, there is no need to encrypt since unix sockets cannot be intercepted.
+
+public:
+  virtual kj::Promise<kj::Own<kj::AsyncIoStream>> wrapServer(kj::Own<kj::AsyncIoStream> stream) = 0;
+  // Act as the server side of a connection. The given stream is already connected to a client, but
+  // no authentication has occurred. The returned stream represents the secure transport once
+  // established.
+
+  virtual kj::Promise<kj::Own<kj::AsyncIoStream>> wrapClient(
+      kj::Own<kj::AsyncIoStream> stream, kj::StringPtr expectedServerHostname) = 0;
+  // Act as the client side of a connection. The given stream is already connecetd to a server, but
+  // no authentication has occurred. This method will verify that the server actually is the given
+  // hostname, then return the stream representing a secure transport to that server.
+
+  virtual kj::Promise<kj::AuthenticatedStream> wrapServer(kj::AuthenticatedStream stream) = 0;
+  virtual kj::Promise<kj::AuthenticatedStream> wrapClient(
+      kj::AuthenticatedStream stream, kj::StringPtr expectedServerHostname) = 0;
+  // Same as above, but implementing kj::AuthenticatedStream, which provides PeerIdentity objects
+  // with more details about the peer. The SecureNetworkWrapper will provide its own implementation
+  // of PeerIdentity with the specific details it is able to authenticate.
+
+  virtual kj::Own<kj::ConnectionReceiver> wrapPort(kj::Own<kj::ConnectionReceiver> port) = 0;
+  // Wrap a connection listener. This is equivalent to calling wrapServer() on every connection
+  // received.
+
+  virtual kj::Own<kj::NetworkAddress> wrapAddress(
+      kj::Own<kj::NetworkAddress> address, kj::StringPtr expectedServerHostname) = 0;
+  // Wrap a NetworkAddress. This is equivalent to calling `wrapClient()` on every connection
+  // formed by calling `connect()` on the address.
+
+  virtual kj::Own<kj::Network> wrapNetwork(kj::Network& network) = 0;
+  // Wrap a whole `kj::Network`. This automatically wraps everything constructed using the network.
+  // The network will only accept address strings that can be authenticated, and will automatically
+  // authenticate servers against those addresses when connecting to them.
+};
 
 }  // namespace kj
 
