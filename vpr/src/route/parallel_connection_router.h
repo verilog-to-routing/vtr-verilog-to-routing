@@ -13,6 +13,7 @@
 
 #include <fstream>
 
+// For details on setting core affinity, please see `parse_core_affinity_list`.
 #define ENABLE_CORE_AFFINITY
 
 #define VPR_PARALLEL_CONNECTION_ROUTER_USE_MULTI_QUEUE
@@ -129,6 +130,10 @@ inline std::vector<std::string> get_tokens_split_by_delimiter(std::string str, c
     return tokens;
 }
 
+// To assign core affinity (i.e., pin threads to specific cores), please set the
+// environment variable `export VPR_CORE_AFFINITY=0-8` before running VPR.
+// Formats such as `0,1,2,3,4,5,6,7` and `0-7` and `0-3,4-7` and `0,1-2,3-6,7`
+// are all supported.
 inline std::vector<size_t> parse_core_affinity_list(std::string str) {
     std::vector<size_t> core_affinity_list;
     std::vector<std::string> lv1_tokens_split_by_comma = get_tokens_split_by_delimiter(str, ',');
