@@ -382,8 +382,22 @@ void ParallelConnectionRouter::timing_driven_route_connection_from_heap_thread_f
     // cheapest t_heap in current route tree to be expanded on
     float new_total_cost;
     RRNodeId inode;
+#ifdef PROFILE_HEAP_OCCUPANCY
+    unsigned count = 0;
+    if (thread_idx == 0) {
+        heap_occ_profile_ << size_t(sink_node) << "\n";
+    }
+#endif
     // While the heap is not empty do
     while (heap_.try_pop(new_total_cost, inode)) {
+#ifdef PROFILE_HEAP_OCCUPANCY
+        if (thread_idx == 0) {
+            if (count % (1000 / mq_num_threads) == 0) {
+                heap_occ_profile_ << count << " " << heap_.getHeapOccupancy() << "\n";
+            }
+            count ++;
+        }
+#endif
         // update_router_stats(router_stats_,
         //                     false,
         //                     cheapest->index,
@@ -392,6 +406,7 @@ void ParallelConnectionRouter::timing_driven_route_connection_from_heap_thread_f
         // Should we explore the neighbors of this node?
 
         if (inode == sink_node) {
+            heap_.setMinPrio(new_total_cost);
             continue;
         }
 

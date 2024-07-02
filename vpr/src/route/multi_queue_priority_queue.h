@@ -34,7 +34,9 @@ class MultiQueuePriorityQueue {
     void build_heap();
     inline uint64_t getNumPushes() const { return pq_->getNumPushes(); }
     inline uint64_t getNumPops() const { return pq_->getNumPops(); }
+    inline uint64_t getHeapOccupancy() const { return pq_->getQueueOccupancy(); }
     inline void reset() { pq_->reset(); }
+    inline void setMinPrio(const pq_prio_t min_prio) { pq_->setMinPrioForPop(min_prio); }
 
   private:
     MQ_IO* pq_;

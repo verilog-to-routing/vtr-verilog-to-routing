@@ -11,6 +11,10 @@
 #include "router_stats.h"
 #include "spatial_route_tree_lookup.h"
 
+#include <fstream>
+
+#define ENABLE_CORE_AFFINITY
+
 #define VPR_PARALLEL_CONNECTION_ROUTER_USE_MULTI_QUEUE
 // #define VPR_PARALLEL_CONNECTION_ROUTER_USE_ONE_TBB
 
@@ -110,6 +114,41 @@ public:
 
 using barrier_t = barrier_spin_t;
 
+inline std::vector<std::string> get_tokens_split_by_delimiter(std::string str, char delimiter) {
+    std::vector<std::string> tokens;
+    std::string acc = "";
+    for(const auto &x : str) {
+        if (x == delimiter) {
+            tokens.push_back(acc);
+            acc = "";
+        } else {
+            acc += x;
+        }
+    }
+    tokens.push_back(acc);
+    return tokens;
+}
+
+inline std::vector<size_t> parse_core_affinity_list(std::string str) {
+    std::vector<size_t> core_affinity_list;
+    std::vector<std::string> lv1_tokens_split_by_comma = get_tokens_split_by_delimiter(str, ',');
+    for (const auto &l1_token : lv1_tokens_split_by_comma) {
+        std::vector<std::string> lv2_tokens_split_by_dash = get_tokens_split_by_delimiter(l1_token, '-');
+        size_t num_lv2_tokens = lv2_tokens_split_by_dash.size();
+        assert(num_lv2_tokens == 1 || num_lv2_tokens == 2);
+        if (num_lv2_tokens == 2) {
+            int start_core_id = std::stoi(lv2_tokens_split_by_dash[0]);
+            int end_core_id = std::stoi(lv2_tokens_split_by_dash[1]);
+            for (int i = start_core_id; i <= end_core_id; ++i) {
+                core_affinity_list.push_back(i);
+            }
+        } else {
+            core_affinity_list.push_back(std::stoi(lv2_tokens_split_by_dash[0]));
+        }
+    }
+    return core_affinity_list;
+}
+
 // Prune the heap when it contains 4x the number of nodes in the RR graph.
 // constexpr size_t kHeapPruneFactor = 4;
 
@@ -154,10 +193,48 @@ class ParallelConnectionRouter : public ConnectionRouterInterface {
         std::cout << "#T=" << mq_num_threads << " #Q=" << mq_num_queues << std::endl << std::flush;
         sub_threads_.resize(mq_num_threads-1);
         thread_barrier_.init();
+
+#ifdef PROFILE_HEAP_OCCUPANCY
+        heap_occ_profile_.open("occupancy.txt", std::ios::trunc);
+#endif
+
+#ifdef ENABLE_CORE_AFFINITY
+        std::vector<size_t> thread_core_affinity_mapping;
+        if (std::getenv("VPR_CORE_AFFINITY")) {
+            thread_core_affinity_mapping = parse_core_affinity_list(std::getenv("VPR_CORE_AFFINITY"));
+            assert(thread_core_affinity_mapping.size() == mq_num_threads);
+        } else {
+            for (size_t i = 0; i < mq_num_threads; ++i) {
+                thread_core_affinity_mapping.push_back(i);
+            }
+        }
+#endif
+
         for (size_t i = 0 ; i < mq_num_threads - 1; ++i) {
             sub_threads_[i] = std::thread(&ParallelConnectionRouter::timing_driven_route_connection_from_heap_sub_thread_wrapper, this, i + 1 /*0: main thread*/);
+            // Create a cpu_set_t object representing a set of CPUs. Clear it and mark only CPU i as set.
+#ifdef ENABLE_CORE_AFFINITY
+            cpu_set_t cpuset;
+            CPU_ZERO(&cpuset);
+            CPU_SET(thread_core_affinity_mapping[i + 1], &cpuset);
+            int rc = pthread_setaffinity_np(sub_threads_[i].native_handle(),
+                                            sizeof(cpu_set_t), &cpuset);
+            if (rc != 0) {
+                VTR_LOG("Error calling pthread_setaffinity_np: %d\n", rc);
+            }
+#endif
             sub_threads_[i].detach();
         }
+#ifdef ENABLE_CORE_AFFINITY
+        cpu_set_t cpuset;
+        CPU_ZERO(&cpuset);
+        CPU_SET(thread_core_affinity_mapping[0], &cpuset);
+        int rc = pthread_setaffinity_np(pthread_self(),
+                                        sizeof(cpu_set_t), &cpuset);
+        if (rc != 0) {
+            VTR_LOG("Error calling pthread_setaffinity_np: %d\n", rc);
+        }
+#endif
     }
 
     ~ParallelConnectionRouter() {
@@ -165,6 +242,10 @@ class ParallelConnectionRouter : public ConnectionRouterInterface {
         thread_barrier_.wait();
 
         VTR_LOG("Parallel Connection Router is being destroyed. Time spent computing SSSP: %g seconds\n.", this->sssp_total_time.count() / 1000000.0);
+
+#ifdef PROFILE_HEAP_OCCUPANCY
+        heap_occ_profile_.close();
+#endif
     }
 
     // Clear's the modified list.  Should be called after reset_path_costs
@@ -424,6 +505,11 @@ class ParallelConnectionRouter : public ConnectionRouterInterface {
 
     // Timing
     std::chrono::microseconds sssp_total_time{0};
+
+    // Profiling
+#ifdef PROFILE_HEAP_OCCUPANCY
+    std::ofstream heap_occ_profile_;
+#endif
 };
 
 #endif /* _PARALLEL_CONNECTION_ROUTER_H */

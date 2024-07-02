@@ -20,7 +20,7 @@ void MultiQueuePriorityQueue::init_heap(const DeviceGrid& grid) {
 }
 
 bool MultiQueuePriorityQueue::try_pop(pq_prio_t &prio, RRNodeId &node) {
-    auto tmp = pq_->tryPop();
+    auto tmp = pq_->tryPopWithMinPrio();
     if (!tmp) {
         return false;
     } else {
