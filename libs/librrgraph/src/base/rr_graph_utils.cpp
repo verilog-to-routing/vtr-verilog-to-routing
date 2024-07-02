@@ -27,7 +27,6 @@ static void walk_cluster_recursive(const RRGraphView& rr_graph,
         VTR_ASSERT_SAFE(parent != RRNodeId::INVALID());
 
         if (rr_graph.node_type(parent) == e_rr_type::CHANX || rr_graph.node_type(parent) == e_rr_type::CHANY) { /* Outside of origin cluster */
-            VTR_ASSERT_SAFE(sink_ipins.find(origin) != sink_ipins.end());
             VTR_ASSERT_SAFE(rr_graph.node_type(curr) == e_rr_type::IPIN);
 
             // If the parent node isn't in the origin's cluster, the current node is a "cluster-edge" pin,
