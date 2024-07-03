@@ -2146,20 +2146,20 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
 
     place_grp.add_argument(args.place_constraint_expand, "--place_constraint_expand")
         .help(
-            "The value used to decide how much to expand the floorplan constraint region when writing"
-            "a floorplan constraint XML file. Takes in an integer value from zero to infinity."
-            "If the value is zero, the block stays at the same x, y location. If it is"
-            "greater than zero the constraint region expands by the specified value in each direction."
-            "For example, if 1 was specified, a block at the x, y location (1, 1) would have a constraint region"
+            "The value used to decide how much to expand the floorplan constraint region when writing "
+            "a floorplan constraint XML file. Takes in an integer value from zero to infinity. "
+            "If the value is zero, the block stays at the same x, y location. If it is "
+            "greater than zero the constraint region expands by the specified value in each direction. "
+            "For example, if 1 was specified, a block at the x, y location (1, 1) would have a constraint region "
             "of 2x2 centered around (1, 1), from (0, 0) to (2, 2).")
         .default_value("0")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument<bool, ParseOnOff>(args.place_constraint_subtile, "--place_constraint_subtile")
         .help(
-            "The bool used to say whether to print subtile constraints when printing a floorplan constraints XML file."
-            "If it is off, no subtile locations are specified when printing the floorplan constraints."
-            "If it is on, the floorplan constraints are printed with the subtiles from current placement.")
+            "The bool used to say whether to print subtile constraints when printing a floorplan constraints XML file. "
+            "If it is off, no subtile locations are specified when printing the floorplan constraints. "
+            "If it is on, the floorplan constraints are printed with the subtiles from current placement. ")
         .default_value("off")
         .show_in(argparse::ShowIn::HELP_ONLY);
 

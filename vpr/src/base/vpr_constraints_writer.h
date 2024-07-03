@@ -64,6 +64,4 @@ void setup_vpr_floorplan_constraints_one_loc(VprConstraints& constraints, int ex
  */
 void setup_vpr_floorplan_constraints_cutpoints(VprConstraints& constraints, int horizontal_cutpoints, int vertical_cutpoints);
 
-void create_partition(Partition& part, const std::string& part_name, const Region& region);
-
 #endif /* VPR_SRC_BASE_VPR_CONSTRAINTS_WRITER_H_ */

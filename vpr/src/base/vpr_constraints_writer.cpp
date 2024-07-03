@@ -12,13 +12,21 @@
 #include "globals.h"
 #include "pugixml.hpp"
 #include "pugixml_util.hpp"
-#include "echo_files.h"
 #include "clustered_netlist_utils.h"
 
 #include <fstream>
 #include "vpr_constraints_writer.h"
 #include "region.h"
 #include "re_cluster_util.h"
+
+/**
+ * @brief Create a partition with the given name and a single region.
+ *
+ * @param part_name The name of the partition to be created.
+ * @param region The region that the partition covers.
+ * @return A newly created partition with the giver name and region.
+ */
+static Partition create_partition(const std::string& part_name, const Region& region);
 
 void write_vpr_floorplan_constraints(const char* file_name, int expand, bool subtile, int horizontal_partitions, int vertical_partitions) {
     VprConstraints constraints;
@@ -54,7 +62,7 @@ void setup_vpr_floorplan_constraints_one_loc(VprConstraints& constraints, int ex
      * The PartitionRegion will be the location of the block in current placement, modified by the expansion factor.
      * The subtile can also optionally be set in the PartitionRegion, based on the value passed in by the user.
      */
-    for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+    for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks()) {
         const std::string& part_name = cluster_ctx.clb_nlist.block_name(blk_id);
         PartitionId partid(part_id);
 
@@ -190,13 +198,12 @@ void setup_vpr_floorplan_constraints_cutpoints(VprConstraints& constraints, int 
 
     int num_partitions = 0;
     for (const auto& [region, atoms] : region_atoms) {
-        Partition part;
         PartitionId partid(num_partitions);
         std::string part_name = "Part" + std::to_string(num_partitions);
-        create_partition(part, part_name, region);
+        Partition part = create_partition(part_name, region);
         constraints.mutable_place_constraints().add_partition(part);
 
-        for (auto blk_id : atoms) {
+        for (AtomBlockId blk_id : atoms) {
             constraints.mutable_place_constraints().add_constrained_atom(blk_id, partid);
         }
 
@@ -204,9 +211,13 @@ void setup_vpr_floorplan_constraints_cutpoints(VprConstraints& constraints, int 
     }
 }
 
-void create_partition(Partition& part, const std::string& part_name, const Region& region) {
+static Partition create_partition(const std::string& part_name, const Region& region) {
+    Partition part;
+
     part.set_name(part_name);
     PartitionRegion part_pr;
     part_pr.set_partition_region({region});
     part.set_part_region(part_pr);
+
+    return part;
 }
