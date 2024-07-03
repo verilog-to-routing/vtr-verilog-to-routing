@@ -199,8 +199,15 @@ size_t get_grid_num_classes(const DeviceGrid& grids,
 bool is_chanx_exist(const DeviceGrid& grids,
                     const size_t& layer,
                     const vtr::Point<size_t>& chanx_coord,
+                    const bool& perimeter_cb,
                     const bool& through_channel) {
-    if ((1 > chanx_coord.x()) || (chanx_coord.x() > grids.width() - 2)) {
+    size_t chanx_start = 1;
+    size_t chanx_end = grids.width() - 2;
+    if (perimeter_cb) {
+      chanx_start = 0;
+      chanx_end = grids.width() - 1;
+    }
+    if ((chanx_start > chanx_coord.x()) || (chanx_coord.x() > chanx_end)) {
         return false;
     }
 
@@ -238,12 +245,19 @@ bool is_chanx_exist(const DeviceGrid& grids,
 bool is_chany_exist(const DeviceGrid& grids,
                     const size_t& layer,
                     const vtr::Point<size_t>& chany_coord,
+                    const bool& perimeter_cb,
                     const bool& through_channel) {
+    size_t chany_start = 1;
+    size_t chany_end = grids.height() - 2;
+    if (perimeter_cb) {
+      chany_start = 0;
+      chany_end = grids.height() - 1;
+    }
     if (chany_coord.x() > grids.width() - 2) {
         return false;
     }
 
-    if ((1 > chany_coord.y()) || (chany_coord.y() > grids.height() - 2)) {
+    if ((chany_start > chany_coord.y()) || (chany_coord.y() > chany_end)) {
         return false;
     }
 
@@ -270,9 +284,14 @@ bool is_chany_exist(const DeviceGrid& grids,
 bool is_chanx_right_to_multi_height_grid(const DeviceGrid& grids,
                                          const size_t& layer,
                                          const vtr::Point<size_t>& chanx_coord,
+                                         const bool& perimeter_cb,
                                          const bool& through_channel) {
-    VTR_ASSERT(0 < chanx_coord.x());
-    if (1 == chanx_coord.x()) {
+    VTR_ASSERT(0 <= chanx_coord.x());
+    size_t start_x = 1;
+    if (perimeter_cb) {
+      start_x = 0;
+    }
+    if (start_x == chanx_coord.x()) {
         /* This is already the LEFT side of FPGA fabric,
          * it is the same results as chanx is right to a multi-height grid
          */
@@ -282,7 +301,7 @@ bool is_chanx_right_to_multi_height_grid(const DeviceGrid& grids,
     if (false == through_channel) {
         /* We check the left neighbor of chanx, if it does not exist, the chanx is left to a multi-height grid */
         vtr::Point<size_t> left_chanx_coord(chanx_coord.x() - 1, chanx_coord.y());
-        if (false == is_chanx_exist(grids, layer, left_chanx_coord)) {
+        if (false == is_chanx_exist(grids, layer, left_chanx_coord, perimeter_cb)) {
             return true;
         }
     }
@@ -306,9 +325,15 @@ bool is_chanx_right_to_multi_height_grid(const DeviceGrid& grids,
 bool is_chanx_left_to_multi_height_grid(const DeviceGrid& grids,
                                         const size_t& layer,
                                         const vtr::Point<size_t>& chanx_coord,
+                                        const bool& perimeter_cb,
                                         const bool& through_channel) {
-    VTR_ASSERT(chanx_coord.x() < grids.width() - 1);
-    if (grids.width() - 2 == chanx_coord.x()) {
+    VTR_ASSERT(chanx_coord.x() <= grids.width() - 1);
+    size_t end_x = grids.width() - 2;
+    if (perimeter_cb) {
+      end_x = grids.width() - 1;
+    }
+
+    if (end_x == chanx_coord.x()) {
         /* This is already the RIGHT side of FPGA fabric,
          * it is the same results as chanx is right to a multi-height grid
          */
@@ -318,7 +343,7 @@ bool is_chanx_left_to_multi_height_grid(const DeviceGrid& grids,
     if (false == through_channel) {
         /* We check the right neighbor of chanx, if it does not exist, the chanx is left to a multi-height grid */
         vtr::Point<size_t> right_chanx_coord(chanx_coord.x() + 1, chanx_coord.y());
-        if (false == is_chanx_exist(grids, layer, right_chanx_coord)) {
+        if (false == is_chanx_exist(grids, layer, right_chanx_coord, perimeter_cb)) {
             return true;
         }
     }
@@ -347,9 +372,14 @@ bool is_chanx_left_to_multi_height_grid(const DeviceGrid& grids,
 bool is_chany_top_to_multi_width_grid(const DeviceGrid& grids,
                                       const size_t& layer,
                                       const vtr::Point<size_t>& chany_coord,
+                                      const bool& perimeter_cb,
                                       const bool& through_channel) {
-    VTR_ASSERT(0 < chany_coord.y());
-    if (1 == chany_coord.y()) {
+    VTR_ASSERT(0 <= chany_coord.y());
+    size_t start_y = 1;
+    if (perimeter_cb) {
+      start_y = 0;
+    }
+    if (start_y == chany_coord.y()) {
         /* This is already the BOTTOM side of FPGA fabric,
          * it is the same results as chany is at the top of a multi-width grid
          */
@@ -359,7 +389,7 @@ bool is_chany_top_to_multi_width_grid(const DeviceGrid& grids,
     if (false == through_channel) {
         /* We check the bottom neighbor of chany, if it does not exist, the chany is top to a multi-height grid */
         vtr::Point<size_t> bottom_chany_coord(chany_coord.x(), chany_coord.y() - 1);
-        if (false == is_chany_exist(grids, layer, bottom_chany_coord)) {
+        if (false == is_chany_exist(grids, layer, bottom_chany_coord, perimeter_cb)) {
             return true;
         }
     }
@@ -388,9 +418,15 @@ bool is_chany_top_to_multi_width_grid(const DeviceGrid& grids,
 bool is_chany_bottom_to_multi_width_grid(const DeviceGrid& grids,
                                          const size_t& layer,
                                          const vtr::Point<size_t>& chany_coord,
+                                         const bool& perimeter_cb,
                                          const bool& through_channel) {
-    VTR_ASSERT(chany_coord.y() < grids.height() - 1);
-    if (grids.height() - 2 == chany_coord.y()) {
+    VTR_ASSERT(chany_coord.y() <= grids.height() - 1);
+    size_t end_y = grids.height() - 2;
+    if (perimeter_cb) {
+      end_y = grids.height() - 1;
+    }
+
+    if (end_y == chany_coord.y()) {
         /* This is already the TOP side of FPGA fabric,
          * it is the same results as chany is at the bottom of a multi-width grid
          */
@@ -400,7 +436,7 @@ bool is_chany_bottom_to_multi_width_grid(const DeviceGrid& grids,
     if (false == through_channel) {
         /* We check the top neighbor of chany, if it does not exist, the chany is left to a multi-height grid */
         vtr::Point<size_t> top_chany_coord(chany_coord.x(), chany_coord.y() + 1);
-        if (false == is_chany_exist(grids, layer, top_chany_coord)) {
+        if (false == is_chany_exist(grids, layer, top_chany_coord, perimeter_cb)) {
             return true;
         }
     }
