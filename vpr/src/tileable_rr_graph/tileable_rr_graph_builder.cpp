@@ -85,6 +85,7 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
                                     const int& num_directs,
                                     int* wire_to_rr_ipin_switch,
                                     const bool& shrink_boundary,
+                                    const bool& perimeter_cb,
                                     const bool& through_channel,
                                     const bool& opin2all_sides,
                                     const bool& concat_wire,
