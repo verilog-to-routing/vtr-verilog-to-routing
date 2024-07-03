@@ -55,11 +55,13 @@ size_t get_grid_num_classes(const DeviceGrid& grids,
 bool is_chanx_exist(const DeviceGrid& grids,
                     const size_t& layer,
                     const vtr::Point<size_t>& chanx_coord,
+                    const bool& perimeter_cb,
                     const bool& through_channel = false);
 
 bool is_chany_exist(const DeviceGrid& grids,
                     const size_t& layer,
                     const vtr::Point<size_t>& chany_coord,
+                    const bool& perimeter_cb,
                     const bool& through_channel = false);
 
 bool is_chanx_right_to_multi_height_grid(const DeviceGrid& grids,
