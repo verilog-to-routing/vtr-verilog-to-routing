@@ -463,7 +463,7 @@ def check_two_files(
                         )
                     )
                     first_fail = False
-                print("[Fail]\n{}/{}/{} {} {} - golden file path: {} task file path: {}".format(arch, circuit, script_params, metric, reason, second_results_filepath, first_results_filepath))
+                print("[Fail]\n{}/{}/{} {} {}".format(arch, circuit, script_params, metric, reason))
                 num_qor_failures += 1
     return num_qor_failures
 

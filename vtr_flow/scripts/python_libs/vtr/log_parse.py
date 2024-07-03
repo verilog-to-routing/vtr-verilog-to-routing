@@ -254,9 +254,8 @@ class RangeAbsPassRequirement(PassRequirement):
 
         return (
             False,
-            "check value {} relative value {} outside of range [{},{}], "
+            "relative value {} outside of range [{},{}], "
             "above absolute threshold {} and not equal to {} value: {}".format(
-                original_check_value,
                 norm_check_value,
                 self.min_value(),
                 self.max_value(),
