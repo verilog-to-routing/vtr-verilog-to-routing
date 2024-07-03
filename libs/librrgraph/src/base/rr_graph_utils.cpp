@@ -97,8 +97,12 @@ vtr::vector<RRNodeId, std::vector<RREdgeId>> get_fan_in_list(const RRGraphView& 
     return node_fan_in_list;
 }
 
-void set_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_builder) {
+void set_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_builder, const DeviceGrid& grid) {
     auto node_fanins = get_fan_in_list(rr_graph);
+
+    // Keep track of offsets for SINKs for each tile type, to avoid repeated
+    // calculations
+    std::unordered_map<std::string, std::unordered_map<size_t, vtr::Point<int>>> physical_type_offsets;
 
     // Iterate over all SINK nodes
     for (size_t node = 0; node < rr_graph.num_nodes(); ++node) {
@@ -112,6 +116,24 @@ void set_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_builder
 
         if (tile_width == 0 && tile_height == 0)
             continue;
+
+        // See if we have encountered this tile before
+        size_t tile_layer = rr_graph.node_layer(node_id);
+        size_t node_x = rr_graph.node_xhigh(node_id);
+        size_t node_y = rr_graph.node_yhigh(node_id);
+        std::string tile_name = grid.get_physical_type({(int)node_x, (int)node_y, (int)tile_layer})->name;
+
+        size_t sink_ptc = rr_graph.node_ptc_num(node_id);
+
+        if ((physical_type_offsets.find(tile_name) != physical_type_offsets.end()) && (physical_type_offsets[tile_name].find(sink_ptc) != physical_type_offsets[tile_name].end())) { /* We have seen this tile before */
+            auto new_x = (short)((int)node_x + physical_type_offsets[tile_name].at(sink_ptc).x());
+            auto new_y = (short)((int)node_y + physical_type_offsets[tile_name].at(sink_ptc).y());
+
+            // Set new coordinates
+            rr_graph_builder.set_node_coordinates(node_id, new_x, new_y, new_x, new_y);
+
+            continue;
+        }
 
         // The IPINs of the current SINK node
         std::unordered_set<RRNodeId> sink_ipins = {};
@@ -156,6 +178,13 @@ void set_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_builder
         auto x_avg = (short)round(std::accumulate(x_coords.begin(), x_coords.end(), 0.f) / (double)x_coords.size());
         auto y_avg = (short)round(std::accumulate(y_coords.begin(), y_coords.end(), 0.f) / (double)y_coords.size());
 
+        // Save offset for this tile type
+        if (physical_type_offsets.find(tile_name) == physical_type_offsets.end())
+            physical_type_offsets[tile_name] = {};
+
+        physical_type_offsets[tile_name].insert({sink_ptc, {x_avg - (int)node_x, y_avg - (int)node_y}});
+
+        // Set new coordinates
         rr_graph_builder.set_node_coordinates(node_id, x_avg, y_avg, x_avg, y_avg);
     }
 }
