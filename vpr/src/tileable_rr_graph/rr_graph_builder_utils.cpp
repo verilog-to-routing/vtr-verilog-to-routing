@@ -286,10 +286,11 @@ bool is_chanx_right_to_multi_height_grid(const DeviceGrid& grids,
                                          const vtr::Point<size_t>& chanx_coord,
                                          const bool& perimeter_cb,
                                          const bool& through_channel) {
-    VTR_ASSERT(0 <= chanx_coord.x());
     size_t start_x = 1;
     if (perimeter_cb) {
       start_x = 0;
+    } else {
+      VTR_ASSERT(0 < chanx_coord.x());
     }
     if (start_x == chanx_coord.x()) {
         /* This is already the LEFT side of FPGA fabric,
@@ -374,10 +375,11 @@ bool is_chany_top_to_multi_width_grid(const DeviceGrid& grids,
                                       const vtr::Point<size_t>& chany_coord,
                                       const bool& perimeter_cb,
                                       const bool& through_channel) {
-    VTR_ASSERT(0 <= chany_coord.y());
     size_t start_y = 1;
     if (perimeter_cb) {
       start_y = 0;
+    } else {
+      VTR_ASSERT(0 < chany_coord.y());
     }
     if (start_y == chany_coord.y()) {
         /* This is already the BOTTOM side of FPGA fabric,

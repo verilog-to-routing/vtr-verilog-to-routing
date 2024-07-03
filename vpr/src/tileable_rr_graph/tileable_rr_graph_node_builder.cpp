@@ -347,7 +347,7 @@ static size_t estimate_num_chany_rr_nodes(const DeviceGrid& grids,
                 force_end = true;
             }
 
-            ChanNodeDetails chany_details = build_unidir_chan_node_details(chan_width, seg_max_length, force_start, force_end, segment_infs);
+            ChanNodeDetails chany_details = build_unidir_chan_node_details(chan_width, max_seg_length, force_start, force_end, segment_infs);
             /* When an INC_DIRECTION CHANX starts, we need a new rr_node */
             num_chany_rr_nodes += chany_details.get_num_starting_tracks(Direction::INC);
             /* When an DEC_DIRECTION CHANX ends, we need a new rr_node */

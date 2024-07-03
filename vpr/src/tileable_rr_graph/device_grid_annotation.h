@@ -19,7 +19,7 @@ class DeviceGridAnnotation {
 
   private: /* Private mutators */
     void alloc(const DeviceGrid& grid);
-    void init(const DeviceGrid& grid);
+    void init(const DeviceGrid& grid, const bool& perimeter_cb);
 
   public: /* Public accessors */
     /** @brief Check if at a given coordinate, a X-direction routing channel should exist or not */
