@@ -3,6 +3,7 @@
 
 #include "vpr_types.h"
 #include "binary_heap.h"
+#include "four_ary_heap.h"
 #include "connection_router.h"
 
 #include <vector>
@@ -45,7 +46,7 @@ class RouterDelayProfiler {
   private:
     const Netlist<>& net_list_;
     RouterStats router_stats_;
-    ConnectionRouter<BinaryHeap> router_;
+    ConnectionRouter<FourAryHeap> router_;
     vtr::NdMatrix<float, 5> min_delays_; // [physical_type_idx][from_layer][to_layer][dx][dy]
     bool is_flat_;
 };
