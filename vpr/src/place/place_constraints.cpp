@@ -13,7 +13,6 @@
 #include "place_util.h"
 #include "re_cluster_util.h"
 
-/*checks that each block's location is compatible with its floorplanning constraints if it has any*/
 int check_placement_floorplanning() {
     int error = 0;
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -30,7 +29,6 @@ int check_placement_floorplanning() {
     return error;
 }
 
-/*returns true if cluster has floorplanning constraints, false if it doesn't*/
 bool is_cluster_constrained(ClusterBlockId blk_id) {
     auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
     const PartitionRegion& pr = floorplanning_ctx.cluster_constraints[blk_id];
@@ -114,7 +112,10 @@ PartitionRegion update_macro_head_pr(const t_pl_macro& pl_macro, const Partition
     return macro_head_pr;
 }
 
-PartitionRegion update_macro_member_pr(PartitionRegion& head_pr, const t_pl_offset& offset, const PartitionRegion& grid_pr, const t_pl_macro& pl_macro) {
+PartitionRegion update_macro_member_pr(const PartitionRegion& head_pr,
+                                       const t_pl_offset& offset,
+                                       const PartitionRegion& grid_pr,
+                                       const t_pl_macro& pl_macro) {
     const std::vector<Region>& block_regions = head_pr.get_regions();
     PartitionRegion macro_pr;
 
@@ -245,13 +246,13 @@ void load_cluster_constraints() {
     floorplanning_ctx.cluster_constraints.resize(cluster_ctx.clb_nlist.blocks().size());
 
     for (auto cluster_id : cluster_ctx.clb_nlist.blocks()) {
-        std::unordered_set<AtomBlockId>* atoms = cluster_to_atoms(cluster_id);
+        const std::unordered_set<AtomBlockId>& atoms = cluster_to_atoms(cluster_id);
         PartitionRegion empty_pr;
         floorplanning_ctx.cluster_constraints[cluster_id] = empty_pr;
 
         //if there are any constrained atoms in the cluster,
         //we update the cluster's PartitionRegion
-        for (auto atom : *atoms) {
+        for (AtomBlockId atom : atoms) {
             PartitionId partid = floorplanning_ctx.constraints.get_atom_partition(atom);
 
             if (partid != PartitionId::INVALID()) {
@@ -295,6 +296,49 @@ void mark_fixed_blocks() {
             place_ctx.block_locs[blk_id].is_fixed = true;
         }
     }
+}
+
+void alloc_and_load_compressed_cluster_constraints() {
+    auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    // used to access the compressed grid
+    const auto& place_ctx = g_vpr_ctx.placement();
+
+    floorplanning_ctx.compressed_cluster_constraints.resize(cluster_ctx.clb_nlist.blocks().size());
+
+    for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks()) {
+        if (!is_cluster_constrained(blk_id)) {
+            continue;
+        }
+
+        const PartitionRegion& pr = floorplanning_ctx.cluster_constraints[blk_id];
+        auto block_type = cluster_ctx.clb_nlist.block_type(blk_id);
+        // Get the compressed grid for NoC
+        const auto& compressed_grid = place_ctx.compressed_block_grids[block_type->index];
+
+        PartitionRegion compressed_pr;
+
+        for (const Region& region : pr.get_regions()) {
+            RegionRectCoord rect = region.get_region_rect();
+            t_physical_tile_loc min_loc{rect.xmin, rect.ymin, rect.layer_num};
+            t_physical_tile_loc max_loc{rect.xmax, rect.ymax, rect.layer_num};
+            t_physical_tile_loc compressed_min_loc = compressed_grid.grid_loc_to_compressed_loc_approx_round_up(min_loc);
+            t_physical_tile_loc compressed_max_loc = compressed_grid.grid_loc_to_compressed_loc_approx_round_down(max_loc);
+
+            RegionRectCoord compressed_rect{compressed_min_loc.x, compressed_min_loc.y,
+                                            compressed_max_loc.x, compressed_max_loc.y,
+                                            rect.layer_num};
+
+            Region compressed_region;
+            compressed_region.set_region_rect(compressed_rect);
+            compressed_region.set_sub_tile(region.get_sub_tile());
+
+            compressed_pr.add_to_part_region(compressed_region);
+        }
+
+        floorplanning_ctx.compressed_cluster_constraints[blk_id] = compressed_pr;
+    }
+
 }
 
 /*
@@ -377,7 +421,7 @@ int region_tile_cover(const Region& reg, t_logical_block_type_ptr block_type, t_
  * PartitionRegion covers more than one tile, there is no need to check further regions
  * and the routine will return false.
  */
-bool is_pr_size_one(PartitionRegion& pr, t_logical_block_type_ptr block_type, t_pl_loc& loc) {
+bool is_pr_size_one(const PartitionRegion& pr, t_logical_block_type_ptr block_type, t_pl_loc& loc) {
     auto& device_ctx = g_vpr_ctx.device();
     const std::vector<Region>& regions = pr.get_regions();
     bool pr_size_one;
@@ -437,7 +481,9 @@ bool is_pr_size_one(PartitionRegion& pr, t_logical_block_type_ptr block_type, t_
     return pr_size_one;
 }
 
-int get_part_reg_size(PartitionRegion& pr, t_logical_block_type_ptr block_type, GridTileLookup& grid_tiles) {
+int get_part_reg_size(const PartitionRegion& pr,
+                      t_logical_block_type_ptr block_type,
+                      const GridTileLookup& grid_tiles) {
     const std::vector<Region>& regions = pr.get_regions();
     int num_tiles = 0;
 
@@ -448,7 +494,10 @@ int get_part_reg_size(PartitionRegion& pr, t_logical_block_type_ptr block_type, 
     return num_tiles;
 }
 
-double get_floorplan_score(ClusterBlockId blk_id, PartitionRegion& pr, t_logical_block_type_ptr block_type, GridTileLookup& grid_tiles) {
+double get_floorplan_score(ClusterBlockId blk_id,
+                           const PartitionRegion& pr,
+                           t_logical_block_type_ptr block_type,
+                           const GridTileLookup& grid_tiles) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     int num_pr_tiles = get_part_reg_size(pr, block_type, grid_tiles);
