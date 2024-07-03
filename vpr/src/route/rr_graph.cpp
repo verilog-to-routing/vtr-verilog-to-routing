@@ -643,8 +643,7 @@ static void build_rr_graph(const t_graph_type graph_type,
                            const int num_directs,
                            int* wire_to_rr_ipin_switch,
                            bool is_flat,
-                           int* Warnings,
-                           bool writing_graph_out);
+                           int* Warnings);
 
 static void build_intra_cluster_rr_graph(const t_graph_type graph_type,
                                          const DeviceGrid& grid,
@@ -737,8 +736,7 @@ void create_rr_graph(const t_graph_type graph_type,
                            directs, num_directs,
                            &det_routing_arch->wire_to_rr_ipin_switch,
                            is_flat,
-                           Warnings,
-                           !det_routing_arch->write_rr_graph_filename.empty());
+                           Warnings);
         }
     }
 
@@ -959,8 +957,7 @@ static void build_rr_graph(const t_graph_type graph_type,
                            const int num_directs,
                            int* wire_to_rr_ipin_switch,
                            bool is_flat,
-                           int* Warnings,
-                           bool writing_graph_out) {
+                           int* Warnings) {
     vtr::ScopedStartFinishTimer timer("Build routing resource graph");
 
     /* Reset warning flag */
