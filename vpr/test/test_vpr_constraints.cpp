@@ -48,7 +48,7 @@ TEST_CASE("Region", "[vpr]") {
     bool is_def_empty = def_region.empty();
     REQUIRE(is_def_empty == true);
     REQUIRE(def_region.get_rect().xmin() == std::numeric_limits<int>::max());
-    REQUIRE(def_region.get_layer_range() == std::make_pair(-1, -1));
+    REQUIRE(def_region.get_layer_range() == std::make_pair(0, 0));
     REQUIRE(def_region.get_sub_tile() == -1);
 }
 
