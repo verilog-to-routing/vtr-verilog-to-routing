@@ -6,40 +6,6 @@
 #include "rr_graph_obj.h"
 #include "rr_graph_builder.h"
 
-// Add "cluster-edge" IPINs to sink_ipins
-static void walk_cluster_recursive(const RRGraphView& rr_graph,
-                                   const vtr::vector<RRNodeId, std::vector<RREdgeId>>& fanins,
-                                   std::unordered_set<RRNodeId>& sink_ipins,
-                                   const RRNodeId curr,
-                                   const RRNodeId origin) {
-    // Make sure SINK in the same cluster as origin
-    int curr_x = rr_graph.node_xlow(curr);
-    int curr_y = rr_graph.node_ylow(curr);
-    if ((curr_x < rr_graph.node_xlow(origin)) || (curr_x > rr_graph.node_xhigh(origin)) || (curr_y < rr_graph.node_ylow(origin)) || (curr_y > rr_graph.node_yhigh(origin)))
-        return;
-
-    VTR_ASSERT_SAFE(rr_graph.node_type(origin) == e_rr_type::SINK);
-
-    // We want to go "backward" to the cluster IPINs connected to the origin node
-    auto incoming_edges = fanins[curr];
-    for (RREdgeId edge : incoming_edges) {
-        RRNodeId parent = rr_graph.edge_src_node(edge);
-        VTR_ASSERT_SAFE(parent != RRNodeId::INVALID());
-
-        if (rr_graph.node_type(parent) == e_rr_type::CHANX || rr_graph.node_type(parent) == e_rr_type::CHANY) { /* Outside of origin cluster */
-            VTR_ASSERT_SAFE(rr_graph.node_type(curr) == e_rr_type::IPIN);
-
-            // If the parent node isn't in the origin's cluster, the current node is a "cluster-edge" pin,
-            // so add it to sink_ipins
-            sink_ipins.insert(curr);
-            return;
-        }
-
-        // If the parent node is intra-cluster, keep going "backward"
-        walk_cluster_recursive(rr_graph, fanins, sink_ipins, parent, origin);
-    }
-}
-
 std::vector<RRSwitchId> find_rr_graph_switches(const RRGraph& rr_graph,
                                                const RRNodeId& from_node,
                                                const RRNodeId& to_node) {
@@ -134,12 +100,7 @@ vtr::vector<RRNodeId, std::vector<RREdgeId>> get_fan_in_list(const RRGraphView& 
 void set_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_builder) {
     auto node_fanins = get_fan_in_list(rr_graph);
 
-    // The "cluster-edge" IPINs of SINK nodes
-    std::unordered_map<RRNodeId, std::unordered_set<RRNodeId>> sink_ipins;
-
-    // Iterate over all nodes and fill sink_ipins
-    // We fill sink_ipins first and then iterate through it to avoid changing the rr_graph
-    // before we are done collecting all the data we need
+    // Iterate over all SINK nodes
     for (size_t node = 0; node < rr_graph.num_nodes(); ++node) {
         auto node_id = RRNodeId(node);
 
@@ -152,17 +113,28 @@ void set_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_builder
         if (tile_width == 0 && tile_height == 0)
             continue;
 
-        sink_ipins[node_id] = {};
-        walk_cluster_recursive(rr_graph, node_fanins, sink_ipins[node_id], node_id, node_id);
-    }
+        // The IPINs of the current SINK node
+        std::unordered_set<RRNodeId> sink_ipins = {};
 
-    // Set SINK locations as average of "cluster-edge" IPINs. Generally, larger blocks do not have
-    // equivalent IPINs, so each SINK will be connected to only one IPIN, so taking the average is
-    // redundant.
-    for (const auto& node_pins : sink_ipins) {
-        const auto& pin_set = node_pins.second;
+        // IPINs are always one node away from the SINK. So, we just get the fanins of the SINK
+        // and add them to the set
+        for (auto edge : node_fanins[node_id]) {
+            RRNodeId pin = rr_graph.edge_src_node(edge);
 
-        if (pin_set.empty())
+            VTR_ASSERT_SAFE(rr_graph.node_type(pin) == e_rr_type::IPIN);
+
+            // Make sure IPIN in the same cluster as origin
+            int curr_x = rr_graph.node_xlow(pin);
+            int curr_y = rr_graph.node_ylow(pin);
+            if ((curr_x < rr_graph.node_xlow(node_id)) || (curr_x > rr_graph.node_xhigh(node_id)) || (curr_y < rr_graph.node_ylow(node_id)) || (curr_y > rr_graph.node_yhigh(node_id)))
+                continue;
+
+            sink_ipins.insert(pin);
+        }
+
+        /* Set SINK locations as average of collected IPINs */
+
+        if (sink_ipins.empty())
             continue;
 
         // Use float so that we can take average later
@@ -170,12 +142,12 @@ void set_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_builder
         std::vector<float> y_coords;
 
         // Add coordinates of each "cluster-edge" pin to vectors
-        for (const auto& pin : pin_set) {
+        for (const auto& pin : sink_ipins) {
             int pin_x = rr_graph.node_xlow(pin);
             int pin_y = rr_graph.node_ylow(pin);
 
-            VTR_ASSERT_SAFE(pin_x = rr_graph.node_xhigh(pin));
-            VTR_ASSERT_SAFE(pin_y = rr_graph.node_yhigh(pin));
+            VTR_ASSERT_SAFE(pin_x == rr_graph.node_xhigh(pin));
+            VTR_ASSERT_SAFE(pin_y == rr_graph.node_yhigh(pin));
 
             x_coords.push_back((float)pin_x);
             y_coords.push_back((float)pin_y);
@@ -184,8 +156,7 @@ void set_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_builder
         auto x_avg = (short)round(std::accumulate(x_coords.begin(), x_coords.end(), 0.f) / (double)x_coords.size());
         auto y_avg = (short)round(std::accumulate(y_coords.begin(), y_coords.end(), 0.f) / (double)y_coords.size());
 
-        RRNodeId node = node_pins.first;
-        rr_graph_builder.set_node_coordinates(node, x_avg, y_avg, x_avg, y_avg);
+        rr_graph_builder.set_node_coordinates(node_id, x_avg, y_avg, x_avg, y_avg);
     }
 }
 
