@@ -1361,6 +1361,7 @@ struct t_det_routing_arch {
 
     /* Xifan Tang: tileable routing */
     bool tileable;
+    bool perimeter_cb;
     bool shrink_boundary;
     bool through_channel;
     bool opin2all_sides;

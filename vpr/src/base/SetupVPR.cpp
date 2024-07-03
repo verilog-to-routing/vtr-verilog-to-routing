@@ -431,6 +431,7 @@ static void SetupRoutingArch(const t_arch& Arch,
 
     /* Copy the tileable routing setting */
     RoutingArch->tileable = Arch.tileable;
+    RoutingArch->perimeter_cb = Arch.perimeter_cb;
     RoutingArch->shrink_boundary = Arch.shrink_boundary;
     RoutingArch->through_channel = Arch.through_channel;
     RoutingArch->opin2all_sides = Arch.opin2all_sides;
