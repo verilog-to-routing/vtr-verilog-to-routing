@@ -715,9 +715,6 @@ void create_rr_graph(const t_graph_type graph_type,
                                                                       router_opts.reorder_rr_graph_nodes_threshold,
                                                                       router_opts.reorder_rr_graph_nodes_seed);
                 }
-
-                if (det_routing_arch->write_rr_graph_filename.empty())
-                    set_sink_locs(device_ctx.rr_graph, mutable_device_ctx.rr_graph_builder);
             }
         } else {
             free_rr_graph();
@@ -1444,9 +1441,7 @@ static void build_rr_graph(const t_graph_type graph_type,
     }
 
     // Get better locations for SINK nodes
-    // Note: this function is also called after load_rr_file() in create_rr_graph()
-    if (!writing_graph_out)
-        set_sink_locs(rr_graph, device_ctx.rr_graph_builder);
+    set_sink_locs(rr_graph, device_ctx.rr_graph_builder);
 
     // We are done with building the RR Graph. Thus, we can clear the storages only used
     // to build the RR Graph
