@@ -43,26 +43,54 @@ int get_grid_pin_class_index(const DeviceGrid& grids,
 }
 
 /* Deteremine the side of a io grid */
-e_side determine_io_grid_pin_side(const vtr::Point<size_t>& device_size,
-                                  const vtr::Point<size_t>& grid_coordinate) {
+std::vector<e_side> determine_io_grid_pin_side(const vtr::Point<size_t>& device_size,
+                                  const vtr::Point<size_t>& grid_coordinate,
+                                  const bool& perimeter_cb) {
+    std::vector<e_side> pin_sides; 
     /* TOP side IO of FPGA */
     if (device_size.y() == grid_coordinate.y()) {
-        return BOTTOM;                                   /* Such I/O has only Bottom side pins */
+        /* Such I/O has only bottom side pins */
+        pin_sides.push_back(BOTTOM);
+        /* If cbs are allowed around boundary I/Os, add two more sides */
+        if (perimeter_cb) {
+            pin_sides.push_back(LEFT);
+            pin_sides.push_back(RIGHT);
+        }
     } else if (device_size.x() == grid_coordinate.x()) { /* RIGHT side IO of FPGA */
-        return LEFT;                                     /* Such I/O has only Left side pins */
+        /* Such I/O has only Left side pins */
+        pin_sides.push_back(LEFT);
+        /* If cbs are allowed around boundary I/Os, add two more sides */
+        if (perimeter_cb) {
+            pin_sides.push_back(TOP);
+            pin_sides.push_back(BOTTOM);
+        }
     } else if (0 == grid_coordinate.y()) {               /* BOTTOM side IO of FPGA */
-        return TOP;                                      /* Such I/O has only Top side pins */
+        /* Such I/O has only Top side pins */
+        pin_sides.push_back(TOP);
+        /* If cbs are allowed around boundary I/Os, add two more sides */
+        if (perimeter_cb) {
+            pin_sides.push_back(LEFT);
+            pin_sides.push_back(RIGHT);
+        }
     } else if (0 == grid_coordinate.x()) {               /* LEFT side IO of FPGA */
-        return RIGHT;                                    /* Such I/O has only Right side pins */
+        /* Such I/O has only Right side pins */
+        pin_sides.push_back(RIGHT);
+        /* If cbs are allowed around boundary I/Os, add two more sides */
+        if (perimeter_cb) {
+            pin_sides.push_back(TOP);
+            pin_sides.push_back(BOTTOM);
+        }
     } else if ((grid_coordinate.x() < device_size.x()) && (grid_coordinate.y() < device_size.y())) {
         /* I/O grid in the center grid */
         return NUM_SIDES;
-    }
-    VTR_LOGF_ERROR(__FILE__, __LINE__,
-                   "Invalid coordinate (%lu, %lu) for I/O Grid whose size is (%lu, %lu)!\n",
-                   grid_coordinate.x(), grid_coordinate.y(),
-                   device_size.x(), device_size.y());
-    exit(1);
+    } else {
+        VTR_LOGF_ERROR(__FILE__, __LINE__,
+                       "Invalid coordinate (%lu, %lu) for I/O Grid whose size is (%lu, %lu)!\n",
+                       grid_coordinate.x(), grid_coordinate.y(),
+                       device_size.x(), device_size.y());
+        exit(1);
+   }
+   return pin_sides;
 }
 
 /* Deteremine the side of a pin of a grid */
@@ -124,17 +152,12 @@ size_t get_grid_num_pins(const DeviceGrid& grids,
                          const size_t& x,
                          const size_t& y,
                          const e_pin_type& pin_type,
-                         const e_side& io_side) {
+                         const std::vector<e_side>& io_side) {
     size_t num_pins = 0;
 
     /* For IO_TYPE sides */
     t_physical_tile_type_ptr phy_tile_type = grids.get_physical_type(t_physical_tile_loc(x, y, layer));
-    for (const e_side& side : {TOP, RIGHT, BOTTOM, LEFT}) {
-        /* skip unwanted sides */
-        if ((true == is_io_type(phy_tile_type))
-            && (side != io_side) && (NUM_SIDES != io_side)) {
-            continue;
-        }
+    for (const e_side& side : io_side) {
         /* Get pin list */
         for (int width = 0; width < phy_tile_type->width; ++width) {
             for (int height = 0; height < phy_tile_type->height; ++height) {
