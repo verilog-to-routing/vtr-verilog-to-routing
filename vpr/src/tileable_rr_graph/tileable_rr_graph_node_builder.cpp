@@ -740,8 +740,6 @@ static void load_grid_nodes_basic_info(RRGraphBuilder& rr_graph_builder,
             }
 
             vtr::Point<size_t> grid_coordinate(ix, iy);
-            enum e_side io_side = NUM_SIDES;
-
             std::vector<e_side> wanted_sides{TOP, RIGHT, BOTTOM, LEFT};
 
             /* If this is the block on borders, we consider IO side */
