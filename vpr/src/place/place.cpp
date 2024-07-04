@@ -1922,7 +1922,7 @@ static void alloc_and_load_placement_structs(float place_cost_exp,
         elem = OPEN;
     }
 
-    alloc_and_load_for_fast_cost_update(place_cost_exp);
+    alloc_and_load_chan_w_factors_for_place_cost (place_cost_exp);
 
     alloc_and_load_try_swap_structs(cube_bb);
 
@@ -1962,7 +1962,7 @@ static void free_placement_structs(const t_placer_opts& placer_opts, const t_noc
 
     place_move_ctx.num_sink_pin_layer.clear();
 
-    free_fast_cost_update();
+    free_chan_w_factors_for_place_cost ();
 
     free_try_swap_structs();
 

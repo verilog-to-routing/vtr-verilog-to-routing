@@ -114,12 +114,12 @@ void recompute_costs_from_scratch(const t_placer_opts& placer_opts,
  * @param place_cost_exp It is an exponent to which you take the average inverse channel 
  * capacity; a higher value would favour wider channels more over narrower channels during placement (usually we use 1).
  */
-void alloc_and_load_for_fast_cost_update(float place_cost_exp);
+void alloc_and_load_chan_w_factors_for_place_cost(float place_cost_exp);
 
 /**
  * @brief Frees the chanx_place_cost_fac and chany_place_cost_fac arrays.
  */
-void free_fast_cost_update();
+void free_chan_w_factors_for_place_cost ();
 
 /**
  * @brief Resize net_cost, proposed_net_cost, and  bb_updated_before data structures to accommodate all nets.
