@@ -878,6 +878,10 @@ void RRGSB::sort_chan_node_in_edges(const RRGraphView& rr_graph) {
 
     for (size_t side = 0; side < get_num_sides(); ++side) {
         SideManager side_manager(side);
+        /* Bypass boundary GSBs here. When perimeter_cb option is on, Some GSBs may have only 1 side of CHANX or CHANY. There are no edges in the GSB, so we should skip them */
+        if (chan_node_[side_manager.get_opposite()].get_chan_width() == 0) {
+            continue;
+        }
         chan_node_in_edges_[side].resize(chan_node_[side].get_chan_width());
         for (size_t track_id = 0; track_id < chan_node_[side].get_chan_width(); ++track_id) {
             /* Only sort the output nodes and bypass passing wires */
