@@ -220,7 +220,7 @@ void build_rr_graph_edges(const RRGraphView& rr_graph,
             /* Create a GSB object */
             const RRGSB& rr_gsb = build_one_tileable_rr_gsb(grids, rr_graph,
                                                             device_chan_width, segment_inf_x, segment_inf_y,
-                                                            layer, gsb_coord);
+                                                            layer, gsb_coord, perimeter_cb);
 
             
             t_vib_map vib_map;
