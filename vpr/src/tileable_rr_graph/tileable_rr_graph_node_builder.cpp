@@ -26,7 +26,8 @@
  ***********************************************************************/
 static size_t estimate_num_grid_rr_nodes_by_type(const DeviceGrid& grids,
                                                  const size_t& layer,
-                                                 const t_rr_type& node_type) {
+                                                 const t_rr_type& node_type,
+                                                 const bool& perimeter_cb) {
     size_t num_grid_rr_nodes = 0;
 
     for (size_t ix = 0; ix < grids.width(); ++ix) {
@@ -43,13 +44,13 @@ static size_t estimate_num_grid_rr_nodes_by_type(const DeviceGrid& grids,
                 continue;
             }
 
-            enum e_side io_side = NUM_SIDES;
+            std::vector<e_side> io_side = {TOP, RIGHT, BOTTOM, LEFT};
 
             /* If this is the block on borders, we consider IO side */
             if (true == is_io_type(grids.get_physical_type(tile_loc))) {
                 vtr::Point<size_t> io_device_size(grids.width() - 1, grids.height() - 1);
                 vtr::Point<size_t> grid_coordinate(ix, iy);
-                io_side = determine_io_grid_pin_side(io_device_size, grid_coordinate);
+                io_side = determine_io_grid_pin_side(io_device_size, grid_coordinate, perimeter_cb);
             }
 
             switch (node_type) {
@@ -340,10 +341,10 @@ static std::vector<size_t> estimate_num_rr_nodes(const DeviceGrid& grids,
     /**
      * 1 Find number of rr nodes related to grids
      */
-    num_rr_nodes_per_type[OPIN] = estimate_num_grid_rr_nodes_by_type(grids, layer, OPIN);
-    num_rr_nodes_per_type[IPIN] = estimate_num_grid_rr_nodes_by_type(grids, layer, IPIN);
-    num_rr_nodes_per_type[SOURCE] = estimate_num_grid_rr_nodes_by_type(grids, layer, SOURCE);
-    num_rr_nodes_per_type[SINK] = estimate_num_grid_rr_nodes_by_type(grids, layer, SINK);
+    num_rr_nodes_per_type[OPIN] = estimate_num_grid_rr_nodes_by_type(grids, layer, OPIN, perimeter_cb);
+    num_rr_nodes_per_type[IPIN] = estimate_num_grid_rr_nodes_by_type(grids, layer, IPIN, perimeter_cb);
+    num_rr_nodes_per_type[SOURCE] = estimate_num_grid_rr_nodes_by_type(grids, layer, SOURCE, perimeter_cb);
+    num_rr_nodes_per_type[SINK] = estimate_num_grid_rr_nodes_by_type(grids, layer, SINK, perimeter_cb);
 
     /**
      * 2. Assign the segments for each routing channel,
@@ -432,10 +433,8 @@ static void load_one_grid_opin_nodes_basic_info(RRGraphBuilder& rr_graph_builder
                                                 const size_t& layer,
                                                 const vtr::Point<size_t>& grid_coordinate,
                                                 const DeviceGrid& grids,
-                                                const e_side& io_side,
+                                                const std::vector<e_side>& wanted_sides,
                                                 const RRSwitchId& delayless_switch) {
-    SideManager io_side_manager(io_side);
-
     /* Walk through the width height of each grid,
      * get pins and configure the rr_nodes
      */
@@ -443,13 +442,8 @@ static void load_one_grid_opin_nodes_basic_info(RRGraphBuilder& rr_graph_builder
     for (int width = 0; width < phy_tile_type->width; ++width) {
         for (int height = 0; height < phy_tile_type->height; ++height) {
             /* Walk through sides */
-            for (e_side side : SIDES) {
+            for (e_side side : wanted_sides) {
                 SideManager side_manager(side);
-                /* skip unwanted sides */
-                if ((true == is_io_type(phy_tile_type))
-                    && (side != io_side_manager.to_size_t()) && (NUM_SIDES != io_side)) {
-                    continue;
-                }
                 /* Find OPINs */
                 /* Configure pins by pins */
                 std::vector<int> opin_list = get_grid_side_pins(grids, layer, grid_coordinate.x(), grid_coordinate.y(), DRIVER, side_manager.get_side(),
@@ -497,7 +491,7 @@ static void load_one_grid_ipin_nodes_basic_info(RRGraphBuilder& rr_graph_builder
                                                 const size_t& layer,
                                                 const vtr::Point<size_t>& grid_coordinate,
                                                 const DeviceGrid& grids,
-                                                const e_side& io_side,
+                                                const std::vector<e_side>& wanted_sides,
                                                 const RRSwitchId& wire_to_ipin_switch) {
     SideManager io_side_manager(io_side);
 
@@ -508,14 +502,8 @@ static void load_one_grid_ipin_nodes_basic_info(RRGraphBuilder& rr_graph_builder
     for (int width = 0; width < phy_tile_type->width; ++width) {
         for (int height = 0; height < phy_tile_type->height; ++height) {
             /* Walk through sides */
-            for (e_side side : SIDES) {
+            for (e_side side : wanted_sides) {
                 SideManager side_manager(side);
-                /* skip unwanted sides */
-                if ((true == is_io_type(phy_tile_type))
-                    && (side != io_side_manager.to_size_t()) && (NUM_SIDES != io_side)) {
-                    continue;
-                }
-
                 /* Find IPINs */
                 /* Configure pins by pins */
                 std::vector<int> ipin_list = get_grid_side_pins(grids, layer, grid_coordinate.x(), grid_coordinate.y(), RECEIVER, side_manager.get_side(), width, height);
@@ -562,10 +550,7 @@ static void load_one_grid_source_nodes_basic_info(RRGraphBuilder& rr_graph_build
                                                   const size_t& layer,
                                                   const vtr::Point<size_t>& grid_coordinate,
                                                   const DeviceGrid& grids,
-                                                  const e_side& io_side,
                                                   const RRSwitchId& delayless_switch) {
-    SideManager io_side_manager(io_side);
-
     /* Set a SOURCE rr_node for each DRIVER class */
     t_physical_tile_loc tile_loc(grid_coordinate.x(), grid_coordinate.y(), layer);
     t_physical_tile_type_ptr phy_tile_type = grids.get_physical_type(tile_loc);
@@ -614,10 +599,7 @@ static void load_one_grid_sink_nodes_basic_info(RRGraphBuilder& rr_graph_builder
                                                 const size_t& layer,
                                                 const vtr::Point<size_t>& grid_coordinate,
                                                 const DeviceGrid& grids,
-                                                const e_side& io_side,
                                                 const RRSwitchId& delayless_switch) {
-    SideManager io_side_manager(io_side);
-
     /* Set a SINK rr_node for each RECEIVER class */
     t_physical_tile_loc tile_loc(grid_coordinate.x(), grid_coordinate.y(), layer);
     t_physical_tile_type_ptr phy_tile_type = grids.get_physical_type(tile_loc);
@@ -664,7 +646,8 @@ static void load_grid_nodes_basic_info(RRGraphBuilder& rr_graph_builder,
                                        const DeviceGrid& grids,
                                        const size_t& layer,
                                        const RRSwitchId& wire_to_ipin_switch,
-                                       const RRSwitchId& delayless_switch) {
+                                       const RRSwitchId& delayless_switch,
+                                       const bool& perimeter_cb) {
     for (size_t iy = 0; iy < grids.height(); ++iy) {
         for (size_t ix = 0; ix < grids.width(); ++ix) {
             t_physical_tile_loc tile_loc(ix, iy, layer);
@@ -687,9 +670,7 @@ static void load_grid_nodes_basic_info(RRGraphBuilder& rr_graph_builder,
             /* If this is the block on borders, we consider IO side */
             if (true == is_io_type(grids.get_physical_type(tile_loc))) {
                 vtr::Point<size_t> io_device_size(grids.width() - 1, grids.height() - 1);
-                io_side = determine_io_grid_pin_side(io_device_size, grid_coordinate);
-                wanted_sides.clear();
-                wanted_sides.push_back(io_side);
+                wanted_sides = determine_io_grid_pin_side(io_device_size, grid_coordinate, perimeter_cb);
             }
 
             for (e_side side : wanted_sides) {
@@ -709,7 +690,6 @@ static void load_grid_nodes_basic_info(RRGraphBuilder& rr_graph_builder,
                                                   rr_rc_data,
                                                   layer, grid_coordinate,
                                                   grids,
-                                                  io_side,
                                                   delayless_switch);
 
             /* Configure sink rr_nodes for this grid */
@@ -718,7 +698,6 @@ static void load_grid_nodes_basic_info(RRGraphBuilder& rr_graph_builder,
                                                 rr_rc_data,
                                                 layer, grid_coordinate,
                                                 grids,
-                                                io_side,
                                                 delayless_switch);
 
             /* Configure opin rr_nodes for this grid */
@@ -727,7 +706,7 @@ static void load_grid_nodes_basic_info(RRGraphBuilder& rr_graph_builder,
                                                 rr_rc_data,
                                                 layer, grid_coordinate,
                                                 grids,
-                                                io_side,
+                                                wanted_sides,
                                                 delayless_switch);
 
             /* Configure ipin rr_nodes for this grid */
@@ -736,7 +715,7 @@ static void load_grid_nodes_basic_info(RRGraphBuilder& rr_graph_builder,
                                                 rr_rc_data,
                                                 layer, grid_coordinate,
                                                 grids,
-                                                io_side,
+                                                wanted_sides,
                                                 wire_to_ipin_switch);
         }
     }
@@ -1231,7 +1210,7 @@ void create_tileable_rr_graph_nodes(const RRGraphView& rr_graph,
                                rr_rc_data,
                                grids, layer,
                                wire_to_ipin_switch,
-                               delayless_switch);
+                               delayless_switch, perimeter_cb);
 
     load_chanx_rr_nodes_basic_info(rr_graph,
                                    rr_graph_builder,
