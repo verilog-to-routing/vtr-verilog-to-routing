@@ -597,30 +597,12 @@ vtr::Point<size_t> RRGSB::get_sb_coordinate() const {
 
 /* get the x coordinate of this X/Y-direction block */
 size_t RRGSB::get_cb_x(const t_rr_type& cb_type) const {
-    VTR_ASSERT(validate_cb_type(cb_type));
-    switch (cb_type) {
-        case CHANX:
-            return get_side_block_coordinate(LEFT).x();
-        case CHANY:
-            return get_side_block_coordinate(TOP).x();
-        default:
-            VTR_LOG("Invalid type of connection block!\n");
-            exit(1);
-    }
+    return get_cb_coordinate(cb_type).x();
 }
 
 /* get the y coordinate of this X/Y-direction block */
 size_t RRGSB::get_cb_y(const t_rr_type& cb_type) const {
-    VTR_ASSERT(validate_cb_type(cb_type));
-    switch (cb_type) {
-        case CHANX:
-            return get_side_block_coordinate(LEFT).y();
-        case CHANY:
-            return get_side_block_coordinate(TOP).y();
-        default:
-            VTR_LOG("Invalid type of connection block!\n");
-            exit(1);
-    }
+    return get_cb_coordinate(cb_type).y();
 }
 
 /* Get the coordinate of the X/Y-direction CB */
@@ -628,9 +610,9 @@ vtr::Point<size_t> RRGSB::get_cb_coordinate(const t_rr_type& cb_type) const {
     VTR_ASSERT(validate_cb_type(cb_type));
     switch (cb_type) {
         case CHANX:
-            return get_side_block_coordinate(LEFT);
+            return get_side_block_coordinate(BOTTOM);
         case CHANY:
-            return get_side_block_coordinate(TOP);
+            return get_side_block_coordinate(RIGHT);
         default:
             VTR_LOG("Invalid type of connection block!\n");
             exit(1);
