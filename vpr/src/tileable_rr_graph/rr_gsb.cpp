@@ -610,9 +610,9 @@ vtr::Point<size_t> RRGSB::get_cb_coordinate(const t_rr_type& cb_type) const {
     VTR_ASSERT(validate_cb_type(cb_type));
     switch (cb_type) {
         case CHANX:
-            return get_side_block_coordinate(BOTTOM);
+            return get_side_block_coordinate(LEFT);
         case CHANY:
-            return get_side_block_coordinate(RIGHT);
+            return get_side_block_coordinate(TOP);
         default:
             VTR_LOG("Invalid type of connection block!\n");
             exit(1);
