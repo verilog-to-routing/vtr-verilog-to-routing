@@ -7,6 +7,7 @@
 #include "route_common.h"
 #include "route_export.h"
 #include "rr_graph.h"
+#include "re_cluster_util.h"
 
 /*  The numbering relation between the channels and clbs is:				*
  *																	        *
@@ -452,7 +453,30 @@ static vtr::vector<ParentNetId, std::vector<RRNodeId>> load_net_rr_terminals(con
                                                               blk_loc.loc.y,
                                                               (pin_count == 0 ? SOURCE : SINK), /* First pin is driver */
                                                               iclass);
+
+            // SINK nodes do not cover their whole tile, so we need to check all coordinates in the tile.
+            if (pin_count != 0 && inode == RRNodeId::INVALID()) {
+                ClusterBlockId cluster_block_id;
+
+                if (is_flat)
+                    cluster_block_id = atom_to_cluster(AtomBlockId(size_t(block_id)));
+                else
+                    cluster_block_id = ClusterBlockId(size_t(block_id));
+
+                auto tile_type = physical_tile_type(cluster_block_id);
+
+                for (int x = blk_loc.loc.x; x < blk_loc.loc.x + tile_type->width; ++x) {
+                    for (int y = blk_loc.loc.y; y < blk_loc.loc.y + tile_type->height; ++y) {
+                        inode = rr_graph.node_lookup().find_node(blk_loc.loc.layer, x, y, SINK, iclass);
+
+                        if (inode != RRNodeId::INVALID())
+                            break;
+                    }
+                }
+            }
+
             VTR_ASSERT(inode != RRNodeId::INVALID());
+
             net_rr_terminals[net_id][pin_count] = inode;
             pin_count++;
         }

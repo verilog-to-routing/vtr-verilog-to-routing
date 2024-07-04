@@ -100,6 +100,9 @@ vtr::vector<RRNodeId, std::vector<RREdgeId>> get_fan_in_list(const RRGraphView& 
 void set_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_builder) {
     auto node_fanins = get_fan_in_list(rr_graph);
 
+    // We could keep track of xy-"offsets" by tile and ptc number; however, this results
+    // in a ~10% increase in runtime to build the RR graph (on vtr benchmarks)
+
     // Iterate over all SINK nodes
     for (size_t node = 0; node < rr_graph.num_nodes(); ++node) {
         auto node_id = RRNodeId(node);
@@ -107,8 +110,13 @@ void set_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_builder
         if (rr_graph.node_type((RRNodeId)node_id) != e_rr_type::SINK)
             continue;
 
-        int tile_width = rr_graph.node_xhigh(node_id) - rr_graph.node_xlow(node_id);
-        int tile_height = rr_graph.node_yhigh(node_id) - rr_graph.node_ylow(node_id);
+        int tile_xlow = rr_graph.node_xlow(node_id);
+        int tile_xhigh = rr_graph.node_xhigh(node_id);
+        int tile_ylow = rr_graph.node_ylow(node_id);
+        int tile_yhigh = rr_graph.node_yhigh(node_id);
+
+        int tile_width = tile_xhigh - tile_xlow;
+        int tile_height = tile_yhigh - tile_ylow;
 
         if (tile_width == 0 && tile_height == 0)
             continue;
@@ -126,7 +134,7 @@ void set_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_builder
             // Make sure IPIN in the same cluster as origin
             int curr_x = rr_graph.node_xlow(pin);
             int curr_y = rr_graph.node_ylow(pin);
-            if ((curr_x < rr_graph.node_xlow(pin)) || (curr_x > rr_graph.node_xhigh(pin)) || (curr_y < rr_graph.node_ylow(pin)) || (curr_y > rr_graph.node_yhigh(pin)))
+            if ((curr_x < tile_xlow) || (curr_x > tile_xhigh) || (curr_y < tile_ylow) || (curr_y > tile_yhigh))
                 continue;
 
             sink_ipins.insert(pin);
@@ -146,8 +154,8 @@ void set_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_builder
             int pin_x = rr_graph.node_xlow(pin);
             int pin_y = rr_graph.node_ylow(pin);
 
-            VTR_ASSERT_SAFE(pin_x = rr_graph.node_xhigh(pin));
-            VTR_ASSERT_SAFE(pin_y = rr_graph.node_yhigh(pin));
+            VTR_ASSERT_SAFE(pin_x == rr_graph.node_xhigh(pin));
+            VTR_ASSERT_SAFE(pin_y == rr_graph.node_yhigh(pin));
 
             x_coords.push_back((float)pin_x);
             y_coords.push_back((float)pin_y);
@@ -155,6 +163,19 @@ void set_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_builder
 
         auto x_avg = (short)round(std::accumulate(x_coords.begin(), x_coords.end(), 0.f) / (double)x_coords.size());
         auto y_avg = (short)round(std::accumulate(y_coords.begin(), y_coords.end(), 0.f) / (double)y_coords.size());
+
+        // Remove old indices from RRSpatialLookup
+        int layer = rr_graph.node_layer(node_id);
+        int ptc = rr_graph.node_ptc_num(node_id);
+
+        for (int x = tile_xlow; x <= tile_xhigh; ++x) {
+            for (int y = tile_ylow; y <= tile_yhigh; ++y) {
+                if (x == x_avg && y == y_avg)
+                    continue;
+
+                rr_graph_builder.node_lookup().remove_node(node_id, layer, x, y, SINK, ptc);
+            }
+        }
 
         rr_graph_builder.set_node_coordinates(node_id, x_avg, y_avg, x_avg, y_avg);
     }
