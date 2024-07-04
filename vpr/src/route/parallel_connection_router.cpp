@@ -1,5 +1,6 @@
 #include "parallel_connection_router.h"
 #include <algorithm>
+#include <chrono>
 #include <tuple>
 #include "router_lookahead.h"
 #include "rr_graph.h"
@@ -338,6 +339,9 @@ void ParallelConnectionRouter::timing_driven_route_connection_from_heap(RRNodeId
     this->cost_params_ = const_cast<t_conn_cost_params*>(&cost_params);
     this->bounding_box_ = const_cast<t_bb*>(&bounding_box);
 
+    // Start measuring time before the barrier
+    std::chrono::steady_clock::time_point begin_time = std::chrono::steady_clock::now();
+
     thread_barrier_.wait();
     this->timing_driven_route_connection_from_heap_thread_func(*this->sink_node_, *this->cost_params_, *this->bounding_box_, 0);
     thread_barrier_.wait();
@@ -347,6 +351,10 @@ void ParallelConnectionRouter::timing_driven_route_connection_from_heap(RRNodeId
     router_stats_->heap_pops += heap_.getNumPops();
     // Reset the heap for the next connection
     heap_.reset();
+
+    // Stop measuring time after the barrier and the heap is reset.
+    std::chrono::steady_clock::time_point end_time = std::chrono::steady_clock::now();
+    this->sssp_total_time += std::chrono::duration_cast<std::chrono::microseconds>(end_time - begin_time);
 
     // if (router_debug_) {
     //     //Update known path costs for nodes pushed but not popped, useful for debugging

@@ -1,6 +1,7 @@
 #ifndef _PARALLEL_CONNECTION_ROUTER_H
 #define _PARALLEL_CONNECTION_ROUTER_H
 
+#include <chrono>
 #include "connection_router_interface.h"
 #include "rr_graph_storage.h"
 #include "route_common.h"
@@ -162,6 +163,8 @@ class ParallelConnectionRouter : public ConnectionRouterInterface {
     ~ParallelConnectionRouter() {
         is_router_destroying_ = true;
         thread_barrier_.wait();
+
+        VTR_LOG("Parallel Connection Router is being destroyed. Time spent computing SSSP: %g seconds\n.", this->sssp_total_time.count() / 1000000.0);
     }
 
     // Clear's the modified list.  Should be called after reset_path_costs
@@ -418,6 +421,9 @@ class ParallelConnectionRouter : public ConnectionRouterInterface {
     std::atomic<RRNodeId*> sink_node_;
     std::atomic<t_conn_cost_params*> cost_params_;
     std::atomic<t_bb*> bounding_box_;
+
+    // Timing
+    std::chrono::microseconds sssp_total_time{0};
 };
 
 #endif /* _PARALLEL_CONNECTION_ROUTER_H */
