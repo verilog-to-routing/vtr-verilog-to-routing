@@ -623,7 +623,8 @@ RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
                                 const std::vector<t_segment_inf>& segment_inf_x,
                                 const std::vector<t_segment_inf>& segment_inf_y,
                                 const size_t& layer,
-                                const vtr::Point<size_t>& gsb_coordinate) {
+                                const vtr::Point<size_t>& gsb_coordinate,
+                                const bool& perimeter_cb) {
     /* Create an object to return */
     RRGSB rr_gsb;
 
@@ -719,7 +720,7 @@ RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
                 break;
             case BOTTOM: /* BOTTOM = 2*/
                 /* For the bording, we should take special care */
-                if (gsb_coordinate.y() == 0) {
+                if (!perimeter_cb && gsb_coordinate.y() == 0) {
                     rr_gsb.clear_one_side(side_manager.get_side());
                     break;
                 }
@@ -749,7 +750,7 @@ RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
                 break;
             case LEFT: /* LEFT = 3 */
                 /* For the bording, we should take special care */
-                if (gsb_coordinate.x() == 0) {
+                if (!perimeter_cb && gsb_coordinate.x() == 0) {
                     rr_gsb.clear_one_side(side_manager.get_side());
                     break;
                 }
