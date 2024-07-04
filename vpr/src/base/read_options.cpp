@@ -1061,6 +1061,8 @@ struct ParseRouterHeap {
         ConvertedValue<e_heap_type> conv_value;
         if (str == "binary")
             conv_value.set_value(e_heap_type::BINARY_HEAP);
+        else if (str == "four_ary")
+            conv_value.set_value(e_heap_type::FOUR_ARY_HEAP);
         else if (str == "bucket")
             conv_value.set_value(e_heap_type::BUCKET_HEAP_APPROXIMATION);
         else {
@@ -1075,6 +1077,8 @@ struct ParseRouterHeap {
         ConvertedValue<std::string> conv_value;
         if (val == e_heap_type::BINARY_HEAP)
             conv_value.set_value("binary");
+        else if (val == e_heap_type::FOUR_ARY_HEAP)
+            conv_value.set_value("four_ary");
         else {
             VTR_ASSERT(val == e_heap_type::BUCKET_HEAP_APPROXIMATION);
             conv_value.set_value("bucket");
@@ -1083,7 +1087,7 @@ struct ParseRouterHeap {
     }
 
     std::vector<std::string> default_choices() {
-        return {"binary", "bucket"};
+        return {"binary", "four_ary", "bucket"};
     }
 };
 
@@ -2648,11 +2652,12 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .help(
             "Controls what type of heap to use for timing driven router.\n"
             " * binary: A binary heap is used.\n"
+            " * four_ary: A four_ary heap is used.\n"
             " * bucket: A bucket heap approximation is used. The bucket heap\n"
             " *         is faster because it is only a heap approximation.\n"
             " *         Testing has shown the approximation results in\n"
-            " *         similiar QoR with less CPU work.\n")
-        .default_value("binary")
+            " *         similar QoR with less CPU work.\n")
+        .default_value("four_ary")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_timing_grp.add_argument(args.router_first_iteration_timing_report_file, "--router_first_iter_timing_report")
@@ -3008,6 +3013,12 @@ void set_conditional_defaults(t_options& args) {
         std::string route_file = args.out_file_prefix;
         route_file += default_output_name + ".route";
         args.RouteFile.set(route_file, Provenance::INFERRED);
+    }
+
+    if (args.FlatPlaceFile.provenance() != Provenance::SPECIFIED) {
+        std::string flat_place_file = args.out_file_prefix;
+        flat_place_file += default_output_name + ".flat_place";
+        args.FlatPlaceFile.set(flat_place_file, Provenance::INFERRED);
     }
 
     if (args.ActFile.provenance() != Provenance::SPECIFIED) {

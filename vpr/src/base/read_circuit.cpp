@@ -191,22 +191,22 @@ static void show_circuit_stats(const AtomNetlist& netlist) {
 
     //Determine the maximum length of a type name for nice formatting
     size_t max_block_type_len = 0;
-    for (auto kv : block_type_counts) {
+    for (const auto& kv : block_type_counts) {
         max_block_type_len = std::max(max_block_type_len, kv.first.size());
     }
     size_t max_net_type_len = 0;
-    for (auto kv : net_stats) {
+    for (const auto& kv : net_stats) {
         max_net_type_len = std::max(max_net_type_len, kv.first.size());
     }
 
     //Print the statistics
     VTR_LOG("Circuit Statistics:\n");
     VTR_LOG("  Blocks: %zu\n", netlist.blocks().size());
-    for (auto kv : block_type_counts) {
+    for (const auto& kv : block_type_counts) {
         VTR_LOG("    %-*s: %7zu\n", max_block_type_len, kv.first.c_str(), kv.second);
     }
     VTR_LOG("  Nets  : %zu\n", netlist.nets().size());
-    for (auto kv : net_stats) {
+    for (const auto& kv : net_stats) {
         VTR_LOG("    %-*s: %7.1f\n", max_net_type_len, kv.first.c_str(), kv.second);
     }
     VTR_LOG("  Netlist Clocks: %zu\n", find_netlist_logical_clock_drivers(netlist).size());

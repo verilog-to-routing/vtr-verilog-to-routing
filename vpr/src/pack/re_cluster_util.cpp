@@ -8,7 +8,7 @@
 #include "read_netlist.h"
 
 // The name suffix of the new block (if exists)
-// This suffex is useful in preventing duplicate high-level cluster block names
+// This suffix is useful in preventing duplicate high-level cluster block names
 const char* name_suffix = "_m";
 
 /******************* Static Functions ********************/
@@ -17,22 +17,21 @@ static void load_internal_to_block_net_nums(const t_logical_block_type_ptr type,
 static void fix_atom_pin_mapping(const AtomBlockId blk);
 
 static void fix_cluster_pins_after_moving(const ClusterBlockId clb_index);
-static void check_net_absorbtion(const AtomNetId atom_net_id,
-                                 const ClusterBlockId new_clb,
-                                 const ClusterBlockId old_clb,
-                                 ClusterPinId& cluster_pin_id,
-                                 bool& previously_absorbed,
-                                 bool& now_abosrbed);
+
+static std::pair<bool, bool> check_net_absorption(AtomNetId atom_net_id,
+                                                  ClusterBlockId new_clb,
+                                                  ClusterBlockId old_clb,
+                                                  ClusterPinId& cluster_pin_id);
 
 static void fix_cluster_port_after_moving(const ClusterBlockId clb_index);
 
 static void fix_cluster_net_after_moving(const t_pack_molecule* molecule,
                                          int molecule_size,
-                                         const ClusterBlockId& old_clb,
-                                         const ClusterBlockId& new_clb);
+                                         ClusterBlockId old_clb,
+                                         ClusterBlockId new_clb);
 
-static void rebuild_cluster_placement_stats(const ClusterBlockId& clb_index,
-                                            const std::unordered_set<AtomBlockId>* clb_atoms);
+static void rebuild_cluster_placement_stats(ClusterBlockId clb_index,
+                                            const std::unordered_set<AtomBlockId>& clb_atoms);
 
 static void update_cluster_pb_stats(const t_pack_molecule* molecule,
                                     int molecule_size,
@@ -40,34 +39,30 @@ static void update_cluster_pb_stats(const t_pack_molecule* molecule,
                                     bool is_added);
 
 /*****************  API functions ***********************/
-ClusterBlockId atom_to_cluster(const AtomBlockId& atom) {
+ClusterBlockId atom_to_cluster(AtomBlockId atom) {
     auto& atom_ctx = g_vpr_ctx.atom();
     return (atom_ctx.lookup.atom_clb(atom));
 }
 
-std::unordered_set<AtomBlockId>* cluster_to_atoms(const ClusterBlockId& cluster) {
-    auto& helper_ctx = g_vpr_ctx.mutable_cl_helper();
+const std::unordered_set<AtomBlockId>& cluster_to_atoms(ClusterBlockId cluster) {
+    const auto& atoms = cluster_to_mutable_atoms(cluster);
 
-    //If the lookup is not built yet, build it first
-    if (helper_ctx.atoms_lookup.empty())
-        init_clb_atoms_lookup(helper_ctx.atoms_lookup);
-
-    return &(helper_ctx.atoms_lookup[cluster]);
+    return atoms;
 }
 
 void remove_mol_from_cluster(const t_pack_molecule* molecule,
                              int molecule_size,
                              ClusterBlockId& old_clb,
-                             std::unordered_set<AtomBlockId>* old_clb_atoms,
+                             std::unordered_set<AtomBlockId>& old_clb_atoms,
                              bool router_data_ready,
                              t_lb_router_data*& router_data) {
     auto& helper_ctx = g_vpr_ctx.mutable_cl_helper();
 
     for (int i_atom = 0; i_atom < molecule_size; i_atom++) {
         if (molecule->atom_block_ids[i_atom]) {
-            auto it = old_clb_atoms->find(molecule->atom_block_ids[i_atom]);
-            if (it != old_clb_atoms->end())
-                old_clb_atoms->erase(molecule->atom_block_ids[i_atom]);
+            auto it = old_clb_atoms.find(molecule->atom_block_ids[i_atom]);
+            if (it != old_clb_atoms.end())
+                old_clb_atoms.erase(molecule->atom_block_ids[i_atom]);
         }
     }
 
@@ -78,8 +73,8 @@ void remove_mol_from_cluster(const t_pack_molecule* molecule,
     update_cluster_pb_stats(molecule, molecule_size, old_clb, false);
 }
 
-void commit_mol_move(const ClusterBlockId& old_clb,
-                     const ClusterBlockId& new_clb,
+void commit_mol_move(ClusterBlockId old_clb,
+                     ClusterBlockId new_clb,
                      bool during_packing,
                      bool new_clb_created) {
     auto& device_ctx = g_vpr_ctx.device();
@@ -94,18 +89,16 @@ void commit_mol_move(const ClusterBlockId& old_clb,
     }
 }
 
-t_lb_router_data* lb_load_router_data(std::vector<t_lb_type_rr_node>* lb_type_rr_graphs, const ClusterBlockId& clb_index, const std::unordered_set<AtomBlockId>* clb_atoms) {
+t_lb_router_data* lb_load_router_data(std::vector<t_lb_type_rr_node>* lb_type_rr_graphs,
+                                      ClusterBlockId clb_index,
+                                      const std::unordered_set<AtomBlockId>& clb_atoms) {
     //build data structures used by intra-logic block router
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& atom_ctx = g_vpr_ctx.atom();
     auto block_type = cluster_ctx.clb_nlist.block_type(clb_index);
     t_lb_router_data* router_data = alloc_and_load_router_data(&lb_type_rr_graphs[block_type->index], block_type);
 
-    //iterate over atoms of the current cluster and add them to router data
-    if (!clb_atoms)
-        return router_data;
-
-    for (auto atom_id : *clb_atoms) {
+    for (auto atom_id : clb_atoms) {
         add_atom_as_target(router_data, atom_id);
         const t_pb* pb = atom_ctx.lookup.atom_pb(atom_id);
         while (pb) {
@@ -117,9 +110,9 @@ t_lb_router_data* lb_load_router_data(std::vector<t_lb_type_rr_node>* lb_type_rr
 }
 
 bool start_new_cluster_for_mol(t_pack_molecule* molecule,
-                               const t_logical_block_type_ptr& type,
-                               const int& mode,
-                               const int& feasible_block_array_size,
+                               const t_logical_block_type_ptr type,
+                               const int mode,
+                               const int feasible_block_array_size,
                                bool enable_pin_feasibility_filter,
                                ClusterBlockId clb_index,
                                bool during_packing,
@@ -217,8 +210,8 @@ bool start_new_cluster_for_mol(t_pack_molecule* molecule,
 
 bool pack_mol_in_existing_cluster(t_pack_molecule* molecule,
                                   int molecule_size,
-                                  const ClusterBlockId& new_clb,
-                                  std::unordered_set<AtomBlockId>* new_clb_atoms,
+                                  ClusterBlockId new_clb,
+                                  std::unordered_set<AtomBlockId>& new_clb_atoms,
                                   bool during_packing,
                                   t_clustering_data& clustering_data,
                                   t_lb_router_data*& router_data,
@@ -276,7 +269,7 @@ bool pack_mol_in_existing_cluster(t_pack_molecule* molecule,
 
         for (int i_atom = 0; i_atom < molecule_size; i_atom++) {
             if (molecule->atom_block_ids[i_atom]) {
-                new_clb_atoms->insert(molecule->atom_block_ids[i_atom]);
+                new_clb_atoms.insert(molecule->atom_block_ids[i_atom]);
             }
         }
         update_cluster_pb_stats(molecule, molecule_size, new_clb, true);
@@ -291,13 +284,13 @@ bool pack_mol_in_existing_cluster(t_pack_molecule* molecule,
 
 void fix_clustered_netlist(t_pack_molecule* molecule,
                            int molecule_size,
-                           const ClusterBlockId& old_clb,
-                           const ClusterBlockId& new_clb) {
+                           ClusterBlockId old_clb,
+                           ClusterBlockId new_clb) {
     fix_cluster_port_after_moving(new_clb);
     fix_cluster_net_after_moving(molecule, molecule_size, old_clb, new_clb);
 }
 
-void revert_mol_move(const ClusterBlockId& old_clb,
+void revert_mol_move(ClusterBlockId old_clb,
                      t_pack_molecule* molecule,
                      t_lb_router_data*& old_router_data,
                      bool during_packing,
@@ -343,14 +336,13 @@ void revert_mol_move(const ClusterBlockId& old_clb,
 
 static void fix_cluster_net_after_moving(const t_pack_molecule* molecule,
                                          int molecule_size,
-                                         const ClusterBlockId& old_clb,
-                                         const ClusterBlockId& new_clb) {
+                                         ClusterBlockId old_clb,
+                                         ClusterBlockId new_clb) {
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
     auto& atom_ctx = g_vpr_ctx.mutable_atom();
 
     AtomNetId atom_net_id;
     ClusterPinId cluster_pin;
-    bool previously_absorbed, now_abosrbed;
 
     //remove all old cluster pin from their nets
     ClusterNetId cur_clb_net;
@@ -364,9 +356,9 @@ static void fix_cluster_net_after_moving(const t_pack_molecule* molecule,
         if (molecule->atom_block_ids[i_atom]) {
             for (auto atom_pin : atom_ctx.nlist.block_pins(molecule->atom_block_ids[i_atom])) {
                 atom_net_id = atom_ctx.nlist.pin_net(atom_pin);
-                check_net_absorbtion(atom_net_id, new_clb, old_clb, cluster_pin, previously_absorbed, now_abosrbed);
+                auto [previously_absorbed, now_absorbed] = check_net_absorption(atom_net_id, new_clb, old_clb, cluster_pin);
 
-                if (!previously_absorbed && now_abosrbed) {
+                if (!previously_absorbed && now_absorbed) {
                     cur_clb_net = cluster_ctx.clb_nlist.pin_net(cluster_pin);
                     cluster_ctx.clb_nlist.remove_net(cur_clb_net);
                 }
@@ -378,10 +370,10 @@ static void fix_cluster_net_after_moving(const t_pack_molecule* molecule,
     fix_cluster_pins_after_moving(old_clb);
     fix_cluster_pins_after_moving(new_clb);
 
-    for (auto& atom_blk : *(cluster_to_atoms(old_clb)))
+    for (AtomBlockId atom_blk : cluster_to_atoms(old_clb))
         fix_atom_pin_mapping(atom_blk);
 
-    for (auto& atom_blk : *(cluster_to_atoms(new_clb)))
+    for (AtomBlockId atom_blk : cluster_to_atoms(new_clb))
         fix_atom_pin_mapping(atom_blk);
 
     cluster_ctx.clb_nlist.remove_and_compress();
@@ -516,12 +508,10 @@ static void fix_cluster_pins_after_moving(const ClusterBlockId clb_index) {
     }
 }
 
-static void check_net_absorbtion(const AtomNetId atom_net_id,
-                                 const ClusterBlockId new_clb,
-                                 const ClusterBlockId old_clb,
-                                 ClusterPinId& cluster_pin_id,
-                                 bool& previously_absorbed,
-                                 bool& now_abosrbed) {
+static std::pair<bool, bool> check_net_absorption(const AtomNetId atom_net_id,
+                                                  const ClusterBlockId new_clb,
+                                                  const ClusterBlockId old_clb,
+                                                  ClusterPinId& cluster_pin_id) {
     auto& atom_ctx = g_vpr_ctx.atom();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
@@ -530,6 +520,7 @@ static void check_net_absorbtion(const AtomNetId atom_net_id,
 
     ClusterNetId clb_net_id = atom_ctx.lookup.clb_net(atom_net_id);
 
+    bool previously_absorbed;
     if (clb_net_id == ClusterNetId::INVALID())
         previously_absorbed = true;
     else {
@@ -543,16 +534,18 @@ static void check_net_absorbtion(const AtomNetId atom_net_id,
     }
 
     //iterate over net pins and check their cluster
-    now_abosrbed = true;
+    bool now_absorbed = true;
     for (auto& net_pin : atom_ctx.nlist.net_pins(atom_net_id)) {
         atom_block_id = atom_ctx.nlist.pin_block(net_pin);
         clb_index = atom_ctx.lookup.atom_clb(atom_block_id);
 
         if (clb_index != new_clb) {
-            now_abosrbed = false;
+            now_absorbed = false;
             break;
         }
     }
+
+    return {previously_absorbed, now_absorbed};
 }
 
 static void fix_atom_pin_mapping(const AtomBlockId blk) {
@@ -654,8 +647,8 @@ static bool count_children_pbs(const t_pb* pb) {
 }
 #endif
 
-static void rebuild_cluster_placement_stats(const ClusterBlockId& clb_index,
-                                            const std::unordered_set<AtomBlockId>* clb_atoms) {
+static void rebuild_cluster_placement_stats(ClusterBlockId clb_index,
+                                            const std::unordered_set<AtomBlockId>& clb_atoms) {
     auto& helper_ctx = g_vpr_ctx.mutable_cl_helper();
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& atom_ctx = g_vpr_ctx.atom();
@@ -664,7 +657,7 @@ static void rebuild_cluster_placement_stats(const ClusterBlockId& clb_index,
     reset_cluster_placement_stats(cluster_placement_stats);
     set_mode_cluster_placement_stats(cluster_ctx.clb_nlist.block_pb(clb_index)->pb_graph_node, cluster_ctx.clb_nlist.block_pb(clb_index)->mode);
 
-    for (auto& atom : *clb_atoms) {
+    for (AtomBlockId atom : clb_atoms) {
         const t_pb* atom_pb = atom_ctx.lookup.atom_pb(atom);
         commit_primitive(cluster_placement_stats, atom_pb->pb_graph_node);
     }
@@ -675,8 +668,8 @@ bool is_cluster_legal(t_lb_router_data*& router_data) {
 }
 
 void commit_mol_removal(const t_pack_molecule* molecule,
-                        const int& molecule_size,
-                        const ClusterBlockId& old_clb,
+                        int molecule_size,
+                        ClusterBlockId old_clb,
                         bool during_packing,
                         t_lb_router_data*& router_data,
                         t_clustering_data& clustering_data) {
@@ -697,12 +690,13 @@ void commit_mol_removal(const t_pack_molecule* molecule,
         router_data->saved_lb_nets = nullptr;
     } else {
         cluster_ctx.clb_nlist.block_pb(old_clb)->pb_route.clear();
-        cluster_ctx.clb_nlist.block_pb(old_clb)->pb_route = alloc_and_load_pb_route(router_data->saved_lb_nets, cluster_ctx.clb_nlist.block_pb(old_clb)->pb_graph_node);
+        cluster_ctx.clb_nlist.block_pb(old_clb)->pb_route = alloc_and_load_pb_route(router_data->saved_lb_nets,
+                                                                                    cluster_ctx.clb_nlist.block_pb(old_clb)->pb_graph_node);
     }
 }
 
-bool check_type_and_mode_compitability(const ClusterBlockId& old_clb,
-                                       const ClusterBlockId& new_clb,
+bool check_type_and_mode_compatibility(ClusterBlockId old_clb,
+                                       ClusterBlockId new_clb,
                                        int verbosity) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
@@ -757,4 +751,14 @@ static void update_cluster_pb_stats(const t_pack_molecule* molecule,
             cur_pb = cur_pb->parent_pb;
         }
     }
+}
+
+std::unordered_set<AtomBlockId>& cluster_to_mutable_atoms(ClusterBlockId cluster) {
+    auto& helper_ctx = g_vpr_ctx.mutable_cl_helper();
+
+    //If the lookup is not built yet, build it first
+    if (helper_ctx.atoms_lookup.empty())
+        init_clb_atoms_lookup(helper_ctx.atoms_lookup);
+
+    return helper_ctx.atoms_lookup[cluster];
 }

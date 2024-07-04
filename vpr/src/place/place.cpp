@@ -450,9 +450,6 @@ void try_place(const Netlist<>& net_list,
     move_lim = (int)(annealing_sched.inner_num
                      * pow(net_list.blocks().size(), 1.3333));
 
-    //create the move generator based on the chosen strategy
-    create_move_generators(move_generator, move_generator2, placer_opts, move_lim, noc_opts.noc_centroid_weight);
-
     alloc_and_load_placement_structs(placer_opts.place_cost_exp, placer_opts, noc_opts, directs, num_directs);
 
     vtr::ScopedStartFinishTimer timer("Placement");
@@ -464,6 +461,9 @@ void try_place(const Netlist<>& net_list,
     initial_placement(placer_opts,
                       placer_opts.constraints_file.c_str(),
                       noc_opts);
+
+    //create the move generator based on the chosen strategy
+    create_move_generators(move_generator, move_generator2, placer_opts, move_lim, noc_opts.noc_centroid_weight);
 
     if (!placer_opts.write_initial_place_file.empty()) {
         print_place(nullptr,
@@ -2384,14 +2384,13 @@ static void print_placement_move_types_stats(const MoveTypeStat& move_type_stat)
 
 
     auto& device_ctx = g_vpr_ctx.device();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
     int count = 0;
     int num_of_avail_moves = move_type_stat.blk_type_moves.size() / device_ctx.logical_block_types.size();
 
     //Print placement information for each block type
     for (const auto& itype : device_ctx.logical_block_types) {
         //Skip non-existing block types in the netlist
-        if (itype.index == 0 || cluster_ctx.clb_nlist.blocks_per_type(itype).empty()) {
+        if (itype.index == 0 || movable_blocks_per_type(itype).empty()) {
             continue;
         }
 
