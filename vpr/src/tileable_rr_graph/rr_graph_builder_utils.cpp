@@ -82,7 +82,7 @@ std::vector<e_side> determine_io_grid_pin_side(const vtr::Point<size_t>& device_
         }
     } else if ((grid_coordinate.x() < device_size.x()) && (grid_coordinate.y() < device_size.y())) {
         /* I/O grid in the center grid */
-        return NUM_SIDES;
+        return {TOP, RIGHT, BOTTOM, LEFT};
     } else {
         VTR_LOGF_ERROR(__FILE__, __LINE__,
                        "Invalid coordinate (%lu, %lu) for I/O Grid whose size is (%lu, %lu)!\n",
