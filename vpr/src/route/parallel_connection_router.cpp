@@ -405,11 +405,6 @@ void ParallelConnectionRouter::timing_driven_route_connection_from_heap_thread_f
 
         // Should we explore the neighbors of this node?
 
-        if (inode == sink_node) {
-            heap_.setMinPrio(new_total_cost);
-            continue;
-        }
-
         if (should_not_explore_neighbors(inode, new_total_cost, rr_node_route_inf_[inode].backward_path_cost, sink_node, rr_node_route_inf_, cost_params)) {
             continue;
         }
@@ -634,7 +629,7 @@ void ParallelConnectionRouter::timing_driven_add_to_heap(const t_conn_cost_param
 
     releaseLock(to_node);
 
-    heap_.add_to_heap(next.total_cost, to_node);
+    heap_.add_to_heap(new_total_cost, to_node, target_node);
 
     // update_router_stats(router_stats_,
     //                     true,

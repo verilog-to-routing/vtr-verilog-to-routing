@@ -11,7 +11,10 @@
 #include "router_stats.h"
 #include "spatial_route_tree_lookup.h"
 
+// #define PROFILE_HEAP_OCCUPANCY
+#ifdef PROFILE_HEAP_OCCUPANCY
 #include <fstream>
+#endif
 
 // For details on setting core affinity, please see `parse_core_affinity_list`.
 #define ENABLE_CORE_AFFINITY

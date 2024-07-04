@@ -20,7 +20,7 @@ void MultiQueuePriorityQueue::init_heap(const DeviceGrid& grid) {
 }
 
 bool MultiQueuePriorityQueue::try_pop(pq_prio_t &prio, RRNodeId &node) {
-    auto tmp = pq_->tryPopWithMinPrio();
+    auto tmp = pq_->tryPop();
     if (!tmp) {
         return false;
     } else {
@@ -37,7 +37,13 @@ static inline pq_index_t cast_RRNodeId_to_pq_index_t(RRNodeId node) {
     return static_cast<pq_index_t>(std::size_t(node));
 }
 
-void MultiQueuePriorityQueue::add_to_heap(const pq_prio_t& prio, const RRNodeId& node) {
+void MultiQueuePriorityQueue::add_to_heap(const pq_prio_t& prio, const RRNodeId& node, const RRNodeId& target_node) {
+    if (node == target_node) {
+#ifdef MQ_IO_ENABLE_CLEAR_FOR_POP
+        pq_.setMinPrio(new_total_cost);
+#endif
+        return;
+    }
     pq_->push({prio, cast_RRNodeId_to_pq_index_t(node)});
 }
 
