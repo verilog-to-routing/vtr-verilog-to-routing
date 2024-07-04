@@ -532,8 +532,6 @@ static void load_one_grid_ipin_nodes_basic_info(RRGraphBuilder& rr_graph_builder
                                                 const DeviceGrid& grids,
                                                 const std::vector<e_side>& wanted_sides,
                                                 const RRSwitchId& wire_to_ipin_switch) {
-    SideManager io_side_manager(io_side);
-
     /* Walk through the width and height of each grid,
      * get pins and configure the rr_nodes
      */
