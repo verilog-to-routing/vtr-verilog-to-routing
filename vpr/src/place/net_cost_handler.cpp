@@ -9,24 +9,29 @@
 using std::max;
 using std::min;
 
-/* Flags for the states of the bounding box.                              *
- * Stored as char for memory efficiency.                                  */
-
+/**
+ * @brief for the states of the bounding box. 
+ * Stored as char for memory efficiency.                              
+ */
 enum class NetUpdateState {
     NOT_UPDATED_YET,
     UPDATED_ONCE,
     GOT_FROM_SCRATCH
 };
 
-/* This defines the error tolerance for floating points variables used in *
- * cost computation. 0.01 means that there is a 1% error tolerance.       */
+/** 
+ * @brief The error tolerance due to round off for the total cost computation. 
+ * When we check it from scratch vs. incrementally. 0.01 means that there is a 1% error tolerance.      
+ */
 #define ERROR_TOL .01
 
-/* Expected crossing counts for nets with different #'s of pins.  From *
- * ICCAD 94 pp. 690 - 695 (with linear interpolation applied by me).   *
- * Multiplied to bounding box of a net to better estimate wire length  *
- * for higher fanout nets. Each entry is the correction factor for the *
- * fanout index-1                                                      */
+/** 
+ * @brief Crossing counts for nets with different #'s of pins.  From 
+ * ICCAD 94 pp. 690 - 695 (with linear interpolation applied by me).   
+ * Multiplied to bounding box of a net to better estimate wire length  
+ * for higher fanout nets. Each entry is the correction factor for the 
+ * fanout index-1
+ */
 static const float cross_count[50] = {/* [0..49] */ 1.0, 1.0, 1.0, 1.0828,
                                       1.1536, 1.2206, 1.2823, 1.3385, 1.3991, 1.4493, 1.4974, 1.5455, 1.5937,
                                       1.6418, 1.6899, 1.7304, 1.7709, 1.8114, 1.8519, 1.8924, 1.9288, 1.9652,
@@ -35,33 +40,35 @@ static const float cross_count[50] = {/* [0..49] */ 1.0, 1.0, 1.0, 1.0828,
                                       2.5610, 2.5864, 2.6117, 2.6371, 2.6625, 2.6887, 2.7148, 2.7410, 2.7671,
                                       2.7933};
 
-/* The arrays below are used to precompute the inverse of the average   *
- * number of tracks per channel between [subhigh] and [sublow].  Access *
- * them as chan?_place_cost_fac[subhigh][sublow].  They are used to     *
- * speed up the computation of the cost function that takes the length  *
- * of the net bounding box in each dimension, divided by the average    *
- * number of tracks in that direction; for other cost functions they    *
- * will never be used.                                                  *
+/** 
+ * @brief Matrices below are used to precompute the inverse of the average   
+ * number of tracks per channel between [subhigh] and [sublow].  Access 
+ * them as chan?_place_cost_fac[subhigh][sublow].  They are used to     
+ * speed up the computation of the cost function that takes the length  
+ * of the net bounding box in each dimension, divided by the average    
+ * number of tracks in that direction; for other cost functions they    
+ * will never be used.                                                  
  */
-static vtr::NdMatrix<float, 2> chanx_place_cost_fac({0, 0}); //[0...device_ctx.grid.width()-2]
-static vtr::NdMatrix<float, 2> chany_place_cost_fac({0, 0}); //[0...device_ctx.grid.height()-2]
+static vtr::NdMatrix<float, 2> chanx_place_cost_fac({0, 0}); // [0...device_ctx.grid.width()-2]
+static vtr::NdMatrix<float, 2> chany_place_cost_fac({0, 0}); // [0...device_ctx.grid.height()-2]
 
 /* Cost of a net, and a temporary cost of a net used during move assessment. */
 static vtr::vector<ClusterNetId, double> net_cost, proposed_net_cost;
 
-/* [0...cluster_ctx.clb_nlist.nets().size()-1]                                               *
- * A flag array to indicate whether the specific bounding box has been updated   *
- * in this particular swap or not. If it has been updated before, the code       *
- * must use the updated data, instead of the out-of-date data passed into the    *
- * subroutine, particularly used in try_swap(). The value NOT_UPDATED_YET        *
- * indicates that the net has not been updated before, UPDATED_ONCE indicated    *
- * that the net has been updated once, if it is going to be updated again, the   *
- * values from the previous update must be used. GOT_FROM_SCRATCH is only        *
- * applicable for nets larger than SMALL_NETS and it indicates that the          *
- * particular bounding box cannot be updated incrementally before, hence the     *
- * bounding box is got from scratch, so the bounding box would definitely be     *
- * right, DO NOT update again.                                                   */
-static vtr::vector<ClusterNetId, NetUpdateState> bb_updated_before;
+/**                                              *
+ * @brief Flag array to indicate whether the specific bounding box has been updated
+ * in this particular swap or not. If it has been updated before, the code    
+ * must use the updated data, instead of the out-of-date data passed into the 
+ * subroutine, particularly used in try_swap(). The value NOT_UPDATED_YET     
+ * indicates that the net has not been updated before, UPDATED_ONCE indicated 
+ * that the net has been updated once, if it is going to be updated again, the
+ * values from the previous update must be used. GOT_FROM_SCRATCH is only     
+ * applicable for nets larger than SMALL_NETS and it indicates that the       
+ * particular bounding box is not incrementally updated, and hence the
+ * bounding box is got from scratch, so the bounding box would definitely be
+ * right, DO NOT update again.                                                   
+ */
+static vtr::vector<ClusterNetId, NetUpdateState> bb_updated_before; // [0...cluster_ctx.clb_nlist.nets().size()-1]
 
 /* The following arrays are used by the try_swap function for speed.   */
 
@@ -77,9 +84,9 @@ static vtr::vector<ClusterNetId, NetUpdateState> bb_updated_before;
 
 /* [0...cluster_ctx.clb_nlist.nets().size()-1] -> 3D bounding box*/
 static vtr::vector<ClusterNetId, t_bb> ts_bb_coord_new, ts_bb_edge_new;
-/* [0...cluster_ctx.clb_nlist.nets().size()-1][0...num_layers] -> 2D bonding box on a layer*/
+/* [0...cluster_ctx.clb_nlist.nets().size()-1][0...num_layers-1] -> 2D bonding box on a layer*/
 static vtr::vector<ClusterNetId, std::vector<t_2D_bb>> layer_ts_bb_edge_new, layer_ts_bb_coord_new;
-/* [0...cluster_ctx.clb_nlist.nets().size()-1][0...num_layers] -> number of sink pins on a layer*/
+/* [0...cluster_ctx.clb_nlist.nets().size()-1][0...num_layers-1] -> number of sink pins on a layer*/
 static vtr::Matrix<int> ts_layer_sink_pin_count;
 /* [0...num_afftected_nets] -> net_id of the affected nets */
 static std::vector<ClusterNetId> ts_nets_to_update;
