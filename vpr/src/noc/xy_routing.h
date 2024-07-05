@@ -108,8 +108,14 @@ class XYRouting : public TurnModelRouting {
     bool is_turn_legal(const std::array<std::reference_wrapper<const NocRouter>, 3>& noc_routers) const override;
 
   private:
-    const std::vector<TurnModelRouting::Direction> x_axis_directions {TurnModelRouting::Direction::LEFT, TurnModelRouting::Direction::RIGHT};
-    const std::vector<TurnModelRouting::Direction> y_axis_directions {TurnModelRouting::Direction::UP, TurnModelRouting::Direction::DOWN};
+    const std::vector<TurnModelRouting::Direction> right_direction {TurnModelRouting::Direction::RIGHT};
+    const std::vector<TurnModelRouting::Direction> left_direction {TurnModelRouting::Direction::LEFT};
+    const std::vector<TurnModelRouting::Direction> up_direction {TurnModelRouting::Direction::UP};
+    const std::vector<TurnModelRouting::Direction> down_direction {TurnModelRouting::Direction::DOWN};
+    const std::vector<TurnModelRouting::Direction> above_direction {TurnModelRouting::Direction::ABOVE};
+    const std::vector<TurnModelRouting::Direction> below_direction {TurnModelRouting::Direction::BELOW};
+    const std::vector<TurnModelRouting::Direction> no_direction;
+
 };
 
 #endif

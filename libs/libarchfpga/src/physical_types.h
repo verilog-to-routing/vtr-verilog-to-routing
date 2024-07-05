@@ -822,10 +822,10 @@ struct t_physical_pin {
 
 /**
  * @brief Describes The location of a physical tile
- * @param layer_num The die number of the physical tile. If the FPGA only has one die, or the physical tile is located
- *                  on the base die, layer_num is equal to zero. If it is one the die above base die, it is one, etc.
  * @param x The x location of the physical tile on the given die
  * @param y The y location of the physical tile on the given die
+ * @param layer_num The die number of the physical tile. If the FPGA only has one die, or the physical tile is located
+ *                  on the base die, layer_num is equal to zero. If it is one the die above base die, it is one, etc.
  */
 struct t_physical_tile_loc {
     int x = OPEN;

@@ -113,6 +113,8 @@ class TurnModelRouting : public NocRouting {
         RIGHT,       /*!< Moving towards the positive X-axis*/
         UP,          /*!< Moving towards the positive Y-axis*/
         DOWN,        /*!< Moving towards the negative Y-axis*/
+        ABOVE,       /*!< Moving towards the positive Z-axis*/
+        BELOW,       /*!< Moving towards the negative Z-axis*/
         INVALID      /*!< Invalid direction*/
     };
 
