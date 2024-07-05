@@ -2216,7 +2216,7 @@ void free_chan_w_factors_for_place_cost () {
     chany_place_cost_fac.clear();
 }
 
-void init_net_cost_structs(size_t num_nets) {
+void init_place_move_structs(size_t num_nets) {
     net_cost.resize(num_nets, -1.);
     proposed_net_cost.resize(num_nets, -1.);
     /* Used to store costs for moves not yet made and to indicate when a net's   *
@@ -2225,7 +2225,7 @@ void init_net_cost_structs(size_t num_nets) {
     bb_updated_before.resize(num_nets, NetUpdateState::NOT_UPDATED_YET);
 }
 
-void free_net_cost_structs() {
+void free_place_move_structs() {
     vtr::release_memory(net_cost);
     vtr::release_memory(proposed_net_cost);
     vtr::release_memory(bb_updated_before);

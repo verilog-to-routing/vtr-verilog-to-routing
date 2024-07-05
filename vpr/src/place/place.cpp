@@ -98,12 +98,6 @@ static constexpr double ERROR_TOL = .01;
  * variables round-offs check.                                            */
 static constexpr int MAX_MOVES_BEFORE_RECOMPUTE = 500000;
 
-/* For comp_cost.  NORMAL means use the method that generates updateable  *
- * bounding boxes for speed.  CHECK means compute all bounding boxes from *
- * scratch using a very simple routine to allow checks of the other       *
- * costs.                                   
- */
-
 constexpr float INVALID_DELAY = std::numeric_limits<float>::quiet_NaN();
 constexpr float INVALID_COST = std::numeric_limits<double>::quiet_NaN();
 
@@ -1905,7 +1899,7 @@ static void alloc_and_load_placement_structs(float place_cost_exp,
         }
     }
 
-    init_net_cost_structs(num_nets);
+    init_place_move_structs(num_nets);
 
     if (cube_bb) {
         place_move_ctx.bb_coords.resize(num_nets, t_bb());
@@ -1951,7 +1945,7 @@ static void free_placement_structs(const t_placer_opts& placer_opts, const t_noc
 
     free_placement_macros_structs();
 
-    free_net_cost_structs();
+    free_place_move_structs();
 
     vtr::release_memory(place_move_ctx.bb_coords);
     vtr::release_memory(place_move_ctx.bb_num_on_edges);

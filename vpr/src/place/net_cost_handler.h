@@ -6,6 +6,9 @@
 
 /**
  * @brief The method used to calculate palcement cost
+ * @details For comp_cost.  NORMAL means use the method that generates updateable bounding boxes for speed.  
+ * CHECK means compute all bounding boxes from scratch using a very simple routine to allow checks 
+ * of the other costs.
  * NORMAL: Compute cost efficiently using incremental techniques.
  * CHECK: Brute-force cost computation; useful to validate the more complex incremental cost update code.
  */
@@ -125,12 +128,12 @@ void free_chan_w_factors_for_place_cost ();
  * @brief Resize net_cost, proposed_net_cost, and  bb_updated_before data structures to accommodate all nets.
  * @param num_nets Number of nets in the netlist (clustered currently) that the placement engine uses.
  */
-void init_net_cost_structs(size_t num_nets);
+void init_place_move_structs(size_t num_nets);
 
 /**
  * @brief Free net_cost, proposed_net_cost, and  bb_updated_before data structures.
  */
-void free_net_cost_structs();
+void free_place_move_structs();
 
 /**
  * @brief Resize temporary storage data structures needed to determine which nets are affected by a move and data needed per net 
