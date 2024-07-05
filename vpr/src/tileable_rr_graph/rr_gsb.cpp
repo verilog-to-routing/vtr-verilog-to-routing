@@ -1181,3 +1181,8 @@ bool RRGSB::validate_ipin_node_id(const e_side& side, const size_t& node_id) con
 bool RRGSB::validate_cb_type(const t_rr_type& cb_type) const {
     return ((CHANX == cb_type) || (CHANY == cb_type));
 }
+
+size_t RRGSB::get_cb_opin_type_id(const t_rr_type& cb_type) const {
+    VTR_ASSERT(validate_cb_type(cb_type));
+    return cb_type == CHANX ? 0 : 1;
+}

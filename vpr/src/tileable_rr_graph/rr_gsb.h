@@ -229,6 +229,7 @@ class RRGSB {
     bool validate_opin_node_id(const e_side& side, const size_t& node_id) const;
     bool validate_ipin_node_id(const e_side& side, const size_t& node_id) const;
     bool validate_cb_type(const t_rr_type& cb_type) const;
+    size_t get_cb_opin_type_id(const t_rr_type& cb_type) const;
 
   private: /* Internal Data */
     /* Coordinator */
