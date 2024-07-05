@@ -251,8 +251,7 @@ class TurnModelRouting : public NocRouting {
                                                               NocRouterId dst_router_id,
                                                               NocRouterId curr_router_id,
                                                               NocTrafficFlowId traffic_flow_id,
-                                                              const NocStorage& noc_model)
-        = 0;
+                                                              const NocStorage& noc_model);
 
     /**
      * @brief Determines whether a turn specified by 3 NoC routers visited in the turn

@@ -71,61 +71,6 @@ const std::vector<TurnModelRouting::Direction>& NegativeFirstRouting::get_legal_
     return returned_legal_direction;
 }
 
-TurnModelRouting::Direction NegativeFirstRouting::select_next_direction(const std::vector<TurnModelRouting::Direction>& legal_directions,
-                                                                        NocRouterId src_router_id,
-                                                                        NocRouterId dst_router_id,
-                                                                        NocRouterId curr_router_id,
-                                                                        NocTrafficFlowId traffic_flow_id,
-                                                                        const NocStorage& noc_model) {
-    // get current and destination NoC routers
-    const auto& curr_router = noc_model.get_single_noc_router(curr_router_id);
-    const auto& dst_router = noc_model.get_single_noc_router(dst_router_id);
-
-    // get the position of current and destination NoC routers
-    const auto curr_router_pos = curr_router.get_router_physical_location();
-    const auto dst_router_pos = dst_router.get_router_physical_location();
-
-    // if there is only one legal direction, take it
-    if (legal_directions.size() == 1) {
-        return legal_directions[0];
-    }
-
-    /* If the function reaches this point,
-     * the destination routed is located at SW or NE of
-     * the current router. We adopt a similar approach to
-     * WestFirstRouting to select between south/north and west/east.
-     */
-
-    // compute the hash value
-    uint32_t hash_val = get_hash_value(src_router_id, dst_router_id, curr_router_id, traffic_flow_id);
-    // get the maximum value that can be represented by size_t
-    const uint32_t max_uint32_t_val = std::numeric_limits<uint32_t>::max();
-
-    // get the distance from the current router to the destination in each coordination
-    const int delta_x = abs(dst_router_pos.x - curr_router_pos.x);
-    const int delta_y = abs(dst_router_pos.y - curr_router_pos.y);
-    const int delta_z = abs(dst_router_pos.layer_num - curr_router_pos.layer_num);
-    const int manhattan_dist = delta_x + delta_y + delta_z;
-
-    // compute the probability of going to north/south direction
-    uint32_t ns_probability = delta_y * (max_uint32_t_val / manhattan_dist);
-    // compute the probability of going to north/south direction
-    uint32_t z_probability = delta_z * (max_uint32_t_val / manhattan_dist);
-
-
-    TurnModelRouting::Direction selected_direction = TurnModelRouting::Direction::INVALID;
-
-    if (hash_val < z_probability) {
-        selected_direction = select_z_direction(legal_directions);
-    } else if (hash_val < ns_probability + z_probability) {
-        selected_direction = select_y_direction(legal_directions);
-    } else {
-        selected_direction = select_x_direction(legal_directions);
-    }
-
-    return selected_direction;
-}
-
 bool NegativeFirstRouting::is_turn_legal(const std::array<std::reference_wrapper<const NocRouter>, 3>& noc_routers) const {
     const auto[x1, y1, z1] = noc_routers[0].get().get_router_physical_location();
     const auto[x2, y2, z2] = noc_routers[1].get().get_router_physical_location();

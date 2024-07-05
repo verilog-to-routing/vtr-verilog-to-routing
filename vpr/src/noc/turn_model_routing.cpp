@@ -281,3 +281,46 @@ std::vector<std::pair<NocLinkId, NocLinkId>> TurnModelRouting::get_all_illegal_t
     return illegal_turns;
 }
 
+TurnModelRouting::Direction TurnModelRouting::select_next_direction(const std::vector<TurnModelRouting::Direction>& legal_directions,
+                                                                    NocRouterId src_router_id,
+                                                                    NocRouterId dst_router_id,
+                                                                    NocRouterId curr_router_id,
+                                                                    NocTrafficFlowId traffic_flow_id,
+                                                                    const NocStorage& noc_model) {
+    // get current and destination NoC routers
+    const auto& curr_router = noc_model.get_single_noc_router(curr_router_id);
+    const auto& dst_router = noc_model.get_single_noc_router(dst_router_id);
+
+    // get the position of current and destination NoC routers
+    const auto curr_router_pos = curr_router.get_router_physical_location();
+    const auto dst_router_pos = dst_router.get_router_physical_location();
+
+    // if there is only one legal direction, take it
+    if (legal_directions.size() == 1) {
+        return legal_directions[0];
+    }
+
+    // compute the hash value
+    uint32_t hash_val = get_hash_value(src_router_id, dst_router_id, curr_router_id, traffic_flow_id);
+
+    // get the distance from the current router to the destination in each coordination
+    const int delta_x = abs(dst_router_pos.x - curr_router_pos.x);
+    const int delta_y = abs(dst_router_pos.y - curr_router_pos.y);
+    const int delta_z = abs(dst_router_pos.layer_num - curr_router_pos.layer_num);
+    const int manhattan_dist = delta_x + delta_y + delta_z;
+
+    int hash_val_remainder = hash_val % manhattan_dist;
+
+
+    TurnModelRouting::Direction selected_direction = TurnModelRouting::Direction::INVALID;
+
+    if (hash_val_remainder < delta_x) {
+        selected_direction = select_x_direction(legal_directions);
+    } else if (hash_val_remainder < delta_x + delta_y) {
+        selected_direction = select_y_direction(legal_directions);
+    } else {
+        selected_direction = select_z_direction(legal_directions);
+    }
+
+    return selected_direction;
+}
