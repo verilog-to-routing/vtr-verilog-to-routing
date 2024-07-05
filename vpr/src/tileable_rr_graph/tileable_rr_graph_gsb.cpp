@@ -1119,7 +1119,7 @@ RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
                 break;
             case RIGHT:
                 /* Consider the routing channel that is connected to the top side of the switch block */
-                chan_side = TOP;
+                chan_side = BOTTOM;
                 /* The input pins of the routing channel come from the left side of Grid[x+1][y+1] */
                 ix = rr_gsb.get_sb_x() + 1;
                 iy = rr_gsb.get_sb_y();
@@ -1135,7 +1135,7 @@ RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
                 break;
             case LEFT:
                 /* Consider the routing channel that is connected to the top side of the switch block */
-                chan_side = TOP;
+                chan_side = BOTTOM;
                 /* The input pins of the routing channel come from the right side of Grid[x][y+1] */
                 ix = rr_gsb.get_sb_x();
                 iy = rr_gsb.get_sb_y();
