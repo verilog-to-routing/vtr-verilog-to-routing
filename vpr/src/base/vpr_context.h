@@ -157,7 +157,9 @@ struct DeviceContext : public Context {
     /**
      * @brief The device grid
      *
-     * This represents the physical layout of the device. To get the physical tile at each location (layer_num, x, y) the helper functions in this data structure should be used.
+     * This represents the physical layout of the device.
+     * To get the physical tile at each location (layer_num, x, y) the helper functions
+     * in this data structure should be used.
      */
     DeviceGrid grid;
     /*
@@ -563,7 +565,8 @@ struct NocContext : public Context {
     /**
      * @brief Stores all the communication happening between routers in the NoC
      *
-     * Contains all of the traffic flows that describe which pairs of logical routers are communicating and also some metrics and constraints on the data transfer between the two routers.
+     * Contains all of the traffic flows that describe which pairs of logical routers are
+     * communicating and also some metrics and constraints on the data transfer between the two routers.
      * 
      *
      * This is created from a user supplied .flows file.

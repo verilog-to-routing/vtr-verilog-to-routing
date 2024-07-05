@@ -1958,10 +1958,12 @@ struct t_router {
 
     /** A value representing the approximate horizontal position on the FPGA device where the router
      * tile is located*/
-    double device_x_position = -1;
+    float device_x_position = -1;
     /** A value representing the approximate vertical position on the FPGA device where the router
      * tile is located*/
-    double device_y_position = -1;
+    float device_y_position = -1;
+    /** A value representing the exact layer in the FPGA device where the router tile is located.*/
+    int device_layer_position = -1;
 
     /** A list of router ids that are connected to the current router*/
     std::vector<int> connection_list;
