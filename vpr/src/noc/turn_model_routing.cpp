@@ -197,7 +197,7 @@ uint32_t TurnModelRouting::murmur3_32(const std::vector<uint32_t>& key, uint32_t
     return h;
 }
 
-TurnModelRouting::Direction TurnModelRouting::select_vertical_direction(const std::vector<TurnModelRouting::Direction>& directions) {
+TurnModelRouting::Direction TurnModelRouting::select_y_direction(const std::vector<TurnModelRouting::Direction>& directions) {
     // iterate over the given iterations and return the first vertical one
     for (const auto& direction : directions) {
         if (direction == TurnModelRouting::Direction::DOWN || direction == TurnModelRouting::Direction::UP) {
@@ -209,10 +209,22 @@ TurnModelRouting::Direction TurnModelRouting::select_vertical_direction(const st
     return TurnModelRouting::Direction::INVALID;
 }
 
-TurnModelRouting::Direction TurnModelRouting::select_horizontal_direction(const std::vector<TurnModelRouting::Direction>& directions) {
+TurnModelRouting::Direction TurnModelRouting::select_x_direction(const std::vector<TurnModelRouting::Direction>& directions) {
     // iterate over the given iterations and return the first horizontal one
     for (const auto& direction : directions) {
         if (direction == TurnModelRouting::Direction::RIGHT || direction == TurnModelRouting::Direction::LEFT) {
+            return direction;
+        }
+    }
+
+    // if there was not any horizontal directions, return INVALID
+    return TurnModelRouting::Direction::INVALID;
+}
+
+TurnModelRouting::Direction TurnModelRouting::select_z_direction(const std::vector<TurnModelRouting::Direction>& directions) {
+    // iterate over the given iterations and return the first one along the z axis
+    for (const auto& direction : directions) {
+        if (direction == TurnModelRouting::Direction::ABOVE || direction == TurnModelRouting::Direction::BELOW) {
             return direction;
         }
     }

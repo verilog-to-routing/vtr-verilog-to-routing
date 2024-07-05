@@ -115,6 +115,7 @@ class TurnModelRouting : public NocRouting {
         DOWN,        /*!< Moving towards the negative Y-axis*/
         ABOVE,       /*!< Moving towards the positive Z-axis*/
         BELOW,       /*!< Moving towards the negative Z-axis*/
+        N_DIRECTIONS,
         INVALID      /*!< Invalid direction*/
     };
 
@@ -139,7 +140,7 @@ class TurnModelRouting : public NocRouting {
      * @return Direction The first vertical direction found or INVALID if there
      * is no vertical direction among given directions.
      */
-    TurnModelRouting::Direction select_vertical_direction(const std::vector<TurnModelRouting::Direction>& directions);
+    TurnModelRouting::Direction select_y_direction(const std::vector<TurnModelRouting::Direction>& directions);
 
     /**
      * @brief Returns the first horizontal direction found among given directions.
@@ -149,7 +150,9 @@ class TurnModelRouting : public NocRouting {
      * @return Direction The first horizontal direction found or INVALID if there
      * is no horizontal direction among given directions.
      */
-    TurnModelRouting::Direction select_horizontal_direction(const std::vector<TurnModelRouting::Direction>& directions);
+    TurnModelRouting::Direction select_x_direction(const std::vector<TurnModelRouting::Direction>& directions);
+
+    TurnModelRouting::Direction select_z_direction(const std::vector<TurnModelRouting::Direction>& directions);
 
     /**
      * @brief Returns the first direction among given direction
@@ -265,7 +268,7 @@ class TurnModelRouting : public NocRouting {
   protected:
     // get_legal_directions() return a reference to this vector to avoid allocating a new vector
     // each time it is called
-    std::vector<TurnModelRouting::Direction> returned_legal_direction{4};
+    std::vector<TurnModelRouting::Direction> returned_legal_direction{TurnModelRouting::Direction::N_DIRECTIONS};
 
   private:
     std::vector<uint32_t> inputs_to_murmur3_hasher{4};

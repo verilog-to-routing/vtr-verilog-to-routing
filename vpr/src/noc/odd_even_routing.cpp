@@ -139,9 +139,9 @@ TurnModelRouting::Direction OddEvenRouting::select_next_direction(const std::vec
 
     // choose whether move vertically or horizontally
     if (hash_val < vertical_probability) {
-        selected_direction = select_vertical_direction(legal_directions);
+        selected_direction = select_y_direction(legal_directions);
     } else {
-        selected_direction = select_horizontal_direction(legal_directions);
+        selected_direction = select_x_direction(legal_directions);
     }
 
     return selected_direction;

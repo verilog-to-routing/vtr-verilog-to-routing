@@ -37,6 +37,11 @@ const std::vector<TurnModelRouting::Direction>& NegativeFirstRouting::get_legal_
         returned_legal_direction.push_back(TurnModelRouting::Direction::DOWN);
     }
 
+    // check whether moving below keeps us on a minimal route
+    if (dst_router_pos.layer_num < curr_router_pos.layer_num) {
+        returned_legal_direction.push_back(TurnModelRouting::Direction::BELOW);
+    }
+
     // if at least one of the negative directions is legal,
     // we don't need to check the positive ones and can return
     if (!returned_legal_direction.empty()) {
@@ -56,6 +61,11 @@ const std::vector<TurnModelRouting::Direction>& NegativeFirstRouting::get_legal_
     // check whether moving north keeps us on a minimal route
     if (dst_router_pos.y > curr_router_pos.y) {
         returned_legal_direction.push_back(TurnModelRouting::Direction::UP);
+    }
+
+    // check whether moving above keeps us on a minimal route
+    if (dst_router_pos.layer_num > curr_router_pos.layer_num) {
+        returned_legal_direction.push_back(TurnModelRouting::Direction::ABOVE);
     }
 
     return returned_legal_direction;
@@ -92,53 +102,47 @@ TurnModelRouting::Direction NegativeFirstRouting::select_next_direction(const st
     const uint32_t max_uint32_t_val = std::numeric_limits<uint32_t>::max();
 
     // get the distance from the current router to the destination in each coordination
-    int delta_x = abs(dst_router_pos.x - curr_router_pos.x);
-    int delta_y = abs(dst_router_pos.y - curr_router_pos.y);
+    const int delta_x = abs(dst_router_pos.x - curr_router_pos.x);
+    const int delta_y = abs(dst_router_pos.y - curr_router_pos.y);
+    const int delta_z = abs(dst_router_pos.layer_num - curr_router_pos.layer_num);
+    const int manhattan_dist = delta_x + delta_y + delta_z;
 
     // compute the probability of going to north/south direction
-    uint32_t ns_probability = delta_y * (max_uint32_t_val / (delta_x + delta_y));
+    uint32_t ns_probability = delta_y * (max_uint32_t_val / manhattan_dist);
+    // compute the probability of going to north/south direction
+    uint32_t z_probability = delta_z * (max_uint32_t_val / manhattan_dist);
+
 
     TurnModelRouting::Direction selected_direction = TurnModelRouting::Direction::INVALID;
 
-    if (hash_val < ns_probability) {
-        selected_direction = select_vertical_direction(legal_directions);
+    if (hash_val < z_probability) {
+        selected_direction = select_z_direction(legal_directions);
+    } else if (hash_val < ns_probability + z_probability) {
+        selected_direction = select_y_direction(legal_directions);
     } else {
-        selected_direction = select_horizontal_direction(legal_directions);
+        selected_direction = select_x_direction(legal_directions);
     }
 
     return selected_direction;
 }
 
 bool NegativeFirstRouting::is_turn_legal(const std::array<std::reference_wrapper<const NocRouter>, 3>& noc_routers) const {
-    const int x1 = noc_routers[0].get().get_router_grid_position_x();
-    const int y1 = noc_routers[0].get().get_router_grid_position_y();
-
-    const int x2 = noc_routers[1].get().get_router_grid_position_x();
-    const int y2 = noc_routers[1].get().get_router_grid_position_y();
-
-    const int x3 = noc_routers[2].get().get_router_grid_position_x();
-    const int y3 = noc_routers[2].get().get_router_grid_position_y();
+    const auto[x1, y1, z1] = noc_routers[0].get().get_router_physical_location();
+    const auto[x2, y2, z2] = noc_routers[1].get().get_router_physical_location();
+    const auto[x3, y3, z3] = noc_routers[2].get().get_router_physical_location();
 
     // check if the given routers can be traversed one after another
-    VTR_ASSERT(x2 == x1 || y2 == y1);
-    VTR_ASSERT(x3 == x2 || y3 == y2);
+    VTR_ASSERT(vtr::exactly_k_conditions(2, x1 == x2, y1 == y2, z1 == z2));
+    VTR_ASSERT(vtr::exactly_k_conditions(2, x2 == x3, y2 == y3, z2 == z3));
 
     // going back to the first router is not allowed
-    if (x1 == x3 && y1 == y3) {
+    if (x1 == x3 && y1 == y3 && z1 == z3) {
         return false;
     }
 
-    /* In negative-first routing algorithm, a traffic flow
-     * can't take a downward turn if it is travelling toward right direction.
-     */
-    if (x2 > x1 && y3 < y2) {
-        return false;
-    }
-
-    /* In negative-first routing algorithm, a traffic flow
-     * can't take a left turn if it is travelling upwards.
-     */
-    if (y2 > y1 && x3 < x2) {
+    // In negative-first routing algorithm, these 6 90-degree turns are prohibited.
+    if ((x2 > x1 && y3 < y2) || (y2 > y1 && x3 < x2) || (z2 > z1 && x3 < x2) ||
+        (x2 > x1 && z3 < z2) || (z2 > z1 && y3 < y2) || (y2 > y1 && z3 < z2)) {
         return false;
     }
 
