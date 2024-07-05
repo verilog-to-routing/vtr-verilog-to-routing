@@ -97,8 +97,13 @@ vtr::vector<RRNodeId, std::vector<RREdgeId>> get_fan_in_list(const RRGraphView& 
     return node_fan_in_list;
 }
 
-void set_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_builder) {
+void set_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_builder, const DeviceGrid& grid) {
     auto node_fanins = get_fan_in_list(rr_graph);
+
+    // Keep track of offsets for SINKs for each tile type, to avoid repeated
+    // calculations
+    using Offset = vtr::Point<size_t>;
+    std::unordered_map<t_physical_tile_type_ptr, std::unordered_map<size_t, Offset>> physical_type_offsets;
 
     // Iterate over all SINK nodes
     for (size_t node = 0; node < rr_graph.num_nodes(); ++node) {
@@ -107,11 +112,35 @@ void set_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_builder
         if (rr_graph.node_type((RRNodeId)node_id) != e_rr_type::SINK)
             continue;
 
-        int tile_width = rr_graph.node_xhigh(node_id) - rr_graph.node_xlow(node_id);
-        int tile_height = rr_graph.node_yhigh(node_id) - rr_graph.node_ylow(node_id);
+        // Skip 1x1 tiles
+        size_t tile_xlow = rr_graph.node_xlow(node_id);
+        size_t tile_ylow = rr_graph.node_ylow(node_id);
+        size_t tile_xhigh = rr_graph.node_xhigh(node_id);
+        size_t tile_yhigh = rr_graph.node_yhigh(node_id);
+
+        size_t tile_width = tile_xhigh - tile_xlow;
+        size_t tile_height = tile_yhigh - tile_ylow;
 
         if (tile_width == 0 && tile_height == 0)
             continue;
+
+        // See if we have encountered this tile type/ptc combo before, and used saved offset if so
+        size_t tile_layer = rr_graph.node_layer(node_id);
+        t_physical_tile_type_ptr tile_type = grid.get_physical_type({(int)tile_xlow, (int)tile_ylow, (int)tile_layer});
+
+        size_t sink_ptc = rr_graph.node_ptc_num(node_id);
+
+        if ((physical_type_offsets.find(tile_type) != physical_type_offsets.end()) && (physical_type_offsets[tile_type].find(sink_ptc) != physical_type_offsets[tile_type].end())) {
+            auto new_x = (short)((int)tile_xlow + physical_type_offsets[tile_type].at(sink_ptc).x());
+            auto new_y = (short)((int)tile_ylow + physical_type_offsets[tile_type].at(sink_ptc).y());
+
+            // Set new coordinates
+            rr_graph_builder.set_node_coordinates(node_id, new_x, new_y, new_x, new_y);
+
+            continue;
+        }
+
+        /* We have not seen this tile type/ptc combo before */
 
         // The IPINs of the current SINK node
         std::unordered_set<RRNodeId> sink_ipins = {};
@@ -124,9 +153,9 @@ void set_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_builder
             VTR_ASSERT_SAFE(rr_graph.node_type(pin) == e_rr_type::IPIN);
 
             // Make sure IPIN in the same cluster as origin
-            int curr_x = rr_graph.node_xlow(pin);
-            int curr_y = rr_graph.node_ylow(pin);
-            if ((curr_x < rr_graph.node_xlow(node_id)) || (curr_x > rr_graph.node_xhigh(node_id)) || (curr_y < rr_graph.node_ylow(node_id)) || (curr_y > rr_graph.node_yhigh(node_id)))
+            size_t curr_x = rr_graph.node_xlow(pin);
+            size_t curr_y = rr_graph.node_ylow(pin);
+            if ((curr_x < tile_xlow) || (curr_x > tile_xhigh) || (curr_y < tile_ylow) || (curr_y > tile_yhigh))
                 continue;
 
             sink_ipins.insert(pin);
@@ -143,8 +172,8 @@ void set_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_builder
 
         // Add coordinates of each "cluster-edge" pin to vectors
         for (const auto& pin : sink_ipins) {
-            int pin_x = rr_graph.node_xlow(pin);
-            int pin_y = rr_graph.node_ylow(pin);
+            size_t pin_x = rr_graph.node_xlow(pin);
+            size_t pin_y = rr_graph.node_ylow(pin);
 
             VTR_ASSERT_SAFE(pin_x == rr_graph.node_xhigh(pin));
             VTR_ASSERT_SAFE(pin_y == rr_graph.node_yhigh(pin));
@@ -156,6 +185,13 @@ void set_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_builder
         auto x_avg = (short)round(std::accumulate(x_coords.begin(), x_coords.end(), 0.f) / (double)x_coords.size());
         auto y_avg = (short)round(std::accumulate(y_coords.begin(), y_coords.end(), 0.f) / (double)y_coords.size());
 
+        // Save offset for this tile/ptc combo
+        if (physical_type_offsets.find(tile_type) == physical_type_offsets.end())
+            physical_type_offsets[tile_type] = {};
+
+        physical_type_offsets[tile_type].insert({sink_ptc, {x_avg - tile_xlow, y_avg - tile_ylow}});
+
+        // Set new coordinates
         rr_graph_builder.set_node_coordinates(node_id, x_avg, y_avg, x_avg, y_avg);
     }
 }
