@@ -44,7 +44,7 @@ bool floorplan_constraints_regions_overfull() {
             if (num_assigned_blocks > num_tiles) {
                 floorplan_regions_overfull = true;
                 floorplanning_ctx.overfull_partition_regions.push_back(pr);
-                VTR_LOG("\n\nA partition including the following regions has been assigned %d blocks of type $s, "
+                VTR_LOG("\n\nA partition including the following regions has been assigned %d blocks of type %s, "
                         "but only has %d tiles of that type\n",
                         num_assigned_blocks, block_type.name, num_tiles);
                 for (const Region& reg : regions) {

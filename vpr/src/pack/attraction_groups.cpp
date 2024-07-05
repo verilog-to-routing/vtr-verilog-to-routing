@@ -97,7 +97,7 @@ void AttractionInfo::create_att_groups_for_all_regions() {
      */
 
     /*
-     * Create an attraction group for each parition with an overfull region.
+     * Create an attraction group for each partition with an overfull region.
      */
 
     for (int ipart = 0; ipart < num_parts; ipart++) {
