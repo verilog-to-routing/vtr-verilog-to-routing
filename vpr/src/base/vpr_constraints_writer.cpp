@@ -103,7 +103,6 @@ void setup_vpr_floorplan_constraints_cutpoints(VprConstraints& constraints, int 
     //load two arrays - one for horizontal cutpoints and one for vertical
 
     std::vector<int> horizontal_cuts;
-
     std::vector<int> vertical_cuts;
 
     // This function has not been tested for multi-layer grids
@@ -147,7 +146,7 @@ void setup_vpr_floorplan_constraints_cutpoints(VprConstraints& constraints, int 
             int ymin = vertical_cuts[j];
             int ymax = vertical_cuts[j + 1] - 1;
 
-            Region reg(xmin, ymin, xmax, ymax, 0, n_layers-1);
+            Region reg(xmin, ymin, xmax, ymax, 0, n_layers - 1);
             // This function has not been tested for multi-layer grids. An assertion is used earlier to make sure that the grid has only one layer
             std::vector<AtomBlockId> atoms;
             region_atoms.insert({reg, atoms});
@@ -158,7 +157,7 @@ void setup_vpr_floorplan_constraints_cutpoints(VprConstraints& constraints, int 
      * For each cluster block, see which region it belongs to, and add its atoms to the
      * appropriate region accordingly
      */
-    for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+    for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks()) {
         const std::unordered_set<AtomBlockId>& atoms = cluster_to_atoms(blk_id);
         int x = place_ctx.block_locs[blk_id].loc.x;
         int y = place_ctx.block_locs[blk_id].loc.y;
