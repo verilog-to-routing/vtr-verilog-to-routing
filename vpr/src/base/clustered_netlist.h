@@ -134,9 +134,6 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
     ///@brief Returns the type of CLB (Logic block, RAM, DSP, etc.)
     t_logical_block_type_ptr block_type(const ClusterBlockId id) const;
 
-    ///@brief Returns the blocks with the specific block types in the netlist
-    const std::vector<ClusterBlockId>& blocks_per_type(const t_logical_block_type& blk_type) const;
-
     ///@brief Returns the net of the block attached to the specific pin index
     ClusterNetId block_net(const ClusterBlockId blk_id, const int pin_index) const;
 
