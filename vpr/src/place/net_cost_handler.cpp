@@ -240,10 +240,13 @@ static void get_non_updatable_layer_bb(ClusterNetId net_id,
 
 /**
  * @brief Update the per-layer bounding box of "net_id" incrementally based on the old and new locations of a pin on that net
- * @details /* Updates the bounding box of a net by storing its coordinates in the bb_coord_new data structure and 
+ * @details Updates the bounding box of a net by storing its coordinates in the bb_coord_new data structure and 
  * the number of blocks on each edge in the bb_edge_new data structure. This routine should only  be called for 
  * large nets, since it has some overhead relative to just doing a brute force bounding box calculation. 
- * The bounding box coordinate and edge information for inet must be valid before  this routine is called.                                            Currently assumes channels on both sides of the CLBs forming the   edges of the bounding box can be used.  Essentially, I am assuming the pins always lie on the outside of the bounding box.            The x and y coordinates are the pin's x and y coordinates. IO blocks are considered to be one cell in for simplicity.
+ * The bounding box coordinate and edge information for inet must be valid before  this routine is called. 
+ * Currently assumes channels on both sides of the CLBs forming the   edges of the bounding box can be used.  
+ * Essentially, I am assuming the pins always lie on the outside of the bounding box. The x and y coordinates 
+ * are the pin's x and y coordinates. IO blocks are considered to be one cell in for simplicity.
  * @param bb_edge_new Number of blocks on the edges of the bounding box
  * @param bb_coord_new Coordinates of the bounding box
  * @param num_sink_pin_layer_new Number of sinks of the given net on each layer
@@ -441,7 +444,8 @@ static double recompute_bb_cost();
 static double wirelength_crossing_count(size_t fanout);
 
 /**
- * @brief Calculates and returns the total bb (wirelength) cost change that would result from moving the blocks indicated in the blocks_affected data structure.
+ * @brief Calculates and returns the total bb (wirelength) cost change that would result from moving the blocks 
+ * indicated in the blocks_affected data structure.
  * @param num_affected_nets Number of valid elements in ts_bb_coord_new 
  * @param bb_delta_c Cost difference after and before moving the block
  */
@@ -880,7 +884,8 @@ static void update_bb(ClusterNetId net_id,
         return;
     }
 
-    vtr::NdMatrixProxy<int, 1> curr_num_sink_pin_layer = (bb_updated_before[net_id] == NetUpdateState::NOT_UPDATED_YET) ? place_move_ctx.num_sink_pin_layer[size_t(net_id)] : num_sink_pin_layer_new;
+    vtr::NdMatrixProxy<int, 1> curr_num_sink_pin_layer = (bb_updated_before[net_id] == NetUpdateState::NOT_UPDATED_YET) ? 
+    place_move_ctx.num_sink_pin_layer[size_t(net_id)] : num_sink_pin_layer_new;
 
     if (bb_updated_before[net_id] == NetUpdateState::NOT_UPDATED_YET) {
         /* The net had NOT been updated before, could use the old values */
@@ -1150,7 +1155,8 @@ static void update_layer_bb(ClusterNetId net_id,
         return;
     }
 
-    const vtr::NdMatrixProxy<int, 1> curr_layer_pin_sink_count = (bb_updated_before[net_id] == NetUpdateState::NOT_UPDATED_YET) ? place_move_ctx.num_sink_pin_layer[size_t(net_id)] : bb_pin_sink_count_new;
+    const vtr::NdMatrixProxy<int, 1> curr_layer_pin_sink_count = (bb_updated_before[net_id] == NetUpdateState::NOT_UPDATED_YET) ? 
+    place_move_ctx.num_sink_pin_layer[size_t(net_id)] : bb_pin_sink_count_new;
 
     const std::vector<t_2D_bb>*curr_bb_edge, *curr_bb_coord;
     if (bb_updated_before[net_id] == NetUpdateState::NOT_UPDATED_YET) {
