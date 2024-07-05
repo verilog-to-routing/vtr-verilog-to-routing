@@ -159,6 +159,14 @@ class RRSpatialLookup {
                   int ptc,
                   e_side side = SIDES[0]);
 
+    void remove_node(RRNodeId node,
+                     int layer,
+                     int x,
+                     int y,
+                     t_rr_type type,
+                     int ptc,
+                     e_side side = SIDES[0]);
+
     /**
      * @brief Mirror the last dimension of a look-up, i.e., a list of nodes, from a source coordinate to 
      * a destination coordinate.

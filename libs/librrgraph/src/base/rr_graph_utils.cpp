@@ -185,6 +185,16 @@ void set_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_builder
         auto x_avg = (short)round(std::accumulate(x_coords.begin(), x_coords.end(), 0.f) / (double)x_coords.size());
         auto y_avg = (short)round(std::accumulate(y_coords.begin(), y_coords.end(), 0.f) / (double)y_coords.size());
 
+        // Remove old indices from RRSpatialLookup
+        for (size_t x = tile_xlow; x <= tile_xhigh; ++x) {
+            for (size_t y = tile_ylow; y <= tile_yhigh; ++y) {
+                if (x == (size_t)x_avg && y == (size_t)y_avg)
+                    continue;
+
+                rr_graph_builder.node_lookup().remove_node(node_id, tile_layer, x, y, SINK, sink_ptc);
+            }
+        }
+
         // Save offset for this tile/ptc combo
         if (physical_type_offsets.find(tile_type) == physical_type_offsets.end())
             physical_type_offsets[tile_type] = {};
