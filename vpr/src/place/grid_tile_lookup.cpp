@@ -132,7 +132,7 @@ int GridTileLookup::region_with_subtile_count(const Region& reg, t_logical_block
 
     for (int i = xmax; i >= xmin; i--) {
         for (int j = ymax; j >= ymin; j--) {
-            for (int l = layer_low; l < layer_high; l++) {
+            for (int l = layer_low; l <= layer_high; l++) {
                 const t_physical_tile_type_ptr tile_type = device_ctx.grid.get_physical_type({i, j, l});
                 if (is_sub_tile_compatible(tile_type, block_type, subtile)) {
                     num_sub_tiles++;
