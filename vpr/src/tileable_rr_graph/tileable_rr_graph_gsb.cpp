@@ -637,16 +637,16 @@ RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
      * - bottom side routing tracks for any GSB exist on y = [0, H)
      * - left side routing tracks for any GSB exist on x = [0, W)
      */
-    size_t std::map<e_side, vtr:Point<size_t>> track_range;
-    track_range[TOP] = vtr:Point<size_t>(0, grids.height() - 2);
-    track_range[RIGHT] = vtr:Point<size_t>(0, grids.width() - 2);
-    track_range[BOTTOM] = vtr:Point<size_t>(1, grids.height() - 2);
-    track_range[LEFT] = vtr:Point<size_t>(1, grids.width() - 2);
+    std::map<e_side, vtr::Point<size_t>> track_range;
+    track_range[TOP] = vtr::Point<size_t>(0, grids.height() - 2);
+    track_range[RIGHT] = vtr::Point<size_t>(0, grids.width() - 2);
+    track_range[BOTTOM] = vtr::Point<size_t>(1, grids.height() - 2);
+    track_range[LEFT] = vtr::Point<size_t>(1, grids.width() - 2);
     if (perimeter_cb) {
-        track_range[TOP] = vtr:Point<size_t>(0, grids.height() - 1);
-        track_range[RIGHT] = vtr:Point<size_t>(0, grids.width() - 1);
-        track_range[BOTTOM] = vtr:Point<size_t>(0, grids.height());
-        track_range[LEFT] = vtr:Point<size_t>(0, grids.width());
+        track_range[TOP] = vtr::Point<size_t>(0, grids.height() - 1);
+        track_range[RIGHT] = vtr::Point<size_t>(0, grids.width() - 1);
+        track_range[BOTTOM] = vtr::Point<size_t>(0, grids.height());
+        track_range[LEFT] = vtr::Point<size_t>(0, grids.width());
     }
 
     /* Create an object to return */
@@ -684,7 +684,7 @@ RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
         switch (side) {
             case TOP: /* TOP = 0 */
                 /* For the border, we should take special care. The top column (H-1) does not have any top side routing channel. Any lower column may have (<= H-2) */
-                if (track_range[side].x() > gsb_coordinate.y() || gsb_coordinate.y() >= track_range[side].y()) {
+                if (track_range[side_manager.get_side()].x() > gsb_coordinate.y() || gsb_coordinate.y() >= track_range[side_manager.get_side()].y()) {
                     rr_gsb.clear_one_side(side_manager.get_side());
                     break;
                 }
@@ -714,7 +714,7 @@ RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
                 break;
             case RIGHT: /* RIGHT = 1 */
                 /* For the border, we should take special care. The rightmost column (W-1) does not have any right side routing channel. If perimeter connection block is not enabled, even the last second rightmost column (W-2) does not have any right side routing channel  */
-                if (track_range[side].x() > gsb_coordinate.x() || gsb_coordinate.x() >= track_range[side].y()) {
+                if (track_range[side_manager.get_side()].x() > gsb_coordinate.x() || gsb_coordinate.x() >= track_range[side_manager.get_side()].y()) {
                     rr_gsb.clear_one_side(side_manager.get_side());
                     break;
                 }
@@ -744,7 +744,7 @@ RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
                 break;
             case BOTTOM: /* BOTTOM = 2*/
                 /* For the border, we should take special care */
-                if (track_range[side].x() > gsb_coordinate.y() || gsb_coordinate.y() >= track_range[side].y()) {
+                if (track_range[side_manager.get_side()].x() > gsb_coordinate.y() || gsb_coordinate.y() >= track_range[side_manager.get_side()].y()) {
                     rr_gsb.clear_one_side(side_manager.get_side());
                     break;
                 }
@@ -774,7 +774,7 @@ RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
                 break;
             case LEFT: /* LEFT = 3 */
                 /* For the border, we should take special care */
-                if (track_range[side].x() > gsb_coordinate.x() || gsb_coordinate.x() >= track_range[side].y()) {
+                if (track_range[side_manager.get_side()].x() > gsb_coordinate.x() || gsb_coordinate.x() >= track_range[side_manager.get_side()].y()) {
                     rr_gsb.clear_one_side(side_manager.get_side());
                     break;
                 }
