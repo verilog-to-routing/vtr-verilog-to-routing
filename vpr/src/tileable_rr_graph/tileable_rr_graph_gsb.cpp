@@ -625,6 +625,30 @@ RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
                                 const size_t& layer,
                                 const vtr::Point<size_t>& gsb_coordinate,
                                 const bool& perimeter_cb) {
+    /* Bounding box for GSB ranges on routing tracks.
+     * Note that when perimeter connection blocks are not allowed,
+     * - top side routing tracks for any GSB exist on y = [0, H-2)
+     * - right side routing tracks for any GSB exist on x = [0, W-2)
+     * - bottom side routing tracks for any GSB exist on y = [1, H-1)
+     * - left side routing tracks for any GSB exist on x = [1, W-1)
+     * Note that when perimeter connection blocks are allowed,
+     * - top side routing tracks for any GSB exist on y = [0, H-1)
+     * - right side routing tracks for any GSB exist on x = [0, W-1)
+     * - bottom side routing tracks for any GSB exist on y = [0, H)
+     * - left side routing tracks for any GSB exist on x = [0, W)
+     */
+    size_t std::map<e_side, vtr:Point<size_t>> track_range;
+    track_range[TOP] = vtr:Point<size_t>(0, grids.height() - 2);
+    track_range[RIGHT] = vtr:Point<size_t>(0, grids.width() - 2);
+    track_range[BOTTOM] = vtr:Point<size_t>(1, grids.height() - 2);
+    track_range[LEFT] = vtr:Point<size_t>(1, grids.width() - 2);
+    if (perimeter_cb) {
+        track_range[TOP] = vtr:Point<size_t>(0, grids.height() - 1);
+        track_range[RIGHT] = vtr:Point<size_t>(0, grids.width() - 1);
+        track_range[BOTTOM] = vtr:Point<size_t>(0, grids.height());
+        track_range[LEFT] = vtr:Point<size_t>(0, grids.width());
+    }
+
     /* Create an object to return */
     RRGSB rr_gsb;
 
@@ -659,8 +683,8 @@ RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
 
         switch (side) {
             case TOP: /* TOP = 0 */
-                /* For the bording, we should take special care */
-                if (gsb_coordinate.y() == grids.height() - 1) {
+                /* For the border, we should take special care. The top column (H-1) does not have any top side routing channel. Any lower column may have (<= H-2) */
+                if (track_range[side].x() > gsb_coordinate.y() || gsb_coordinate.y() >= track_range[side].y()) {
                     rr_gsb.clear_one_side(side_manager.get_side());
                     break;
                 }
@@ -689,8 +713,8 @@ RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
 
                 break;
             case RIGHT: /* RIGHT = 1 */
-                /* For the bording, we should take special care */
-                if (gsb_coordinate.x() == grids.width() - 1) {
+                /* For the border, we should take special care. The rightmost column (W-1) does not have any right side routing channel. If perimeter connection block is not enabled, even the last second rightmost column (W-2) does not have any right side routing channel  */
+                if (track_range[side].x() > gsb_coordinate.x() || gsb_coordinate.x() >= track_range[side].y()) {
                     rr_gsb.clear_one_side(side_manager.get_side());
                     break;
                 }
@@ -719,8 +743,8 @@ RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
                                                                  OPIN, opin_grid_side[1]);
                 break;
             case BOTTOM: /* BOTTOM = 2*/
-                /* For the bording, we should take special care */
-                if (!perimeter_cb && gsb_coordinate.y() == 0) {
+                /* For the border, we should take special care */
+                if (track_range[side].x() > gsb_coordinate.y() || gsb_coordinate.y() >= track_range[side].y()) {
                     rr_gsb.clear_one_side(side_manager.get_side());
                     break;
                 }
@@ -749,8 +773,8 @@ RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
                                                                  OPIN, opin_grid_side[1]);
                 break;
             case LEFT: /* LEFT = 3 */
-                /* For the bording, we should take special care */
-                if (!perimeter_cb && gsb_coordinate.x() == 0) {
+                /* For the border, we should take special care */
+                if (track_range[side].x() > gsb_coordinate.x() || gsb_coordinate.x() >= track_range[side].y()) {
                     rr_gsb.clear_one_side(side_manager.get_side());
                     break;
                 }
@@ -846,7 +870,7 @@ RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
      * - The concept of top/bottom side of connection block in GSB domain:
      *
      *   ---------------+  +---------------------- ... ---------------------+  +----------------
-     *     Grid[x][y+1] |->| Y- Connection Block        Y- Connection Block |<-| Grid[x+1][y+1]
+     *     Grid[x][y]   |->| Y- Connection Block        Y- Connection Block |<-| Grid[x+1][y]
      *    RIGHT side    |  | LEFT side             ...  RIGHT side          |  | LEFT side
      *    --------------+  +---------------------- ... ---------------------+  +----------------
      *
@@ -873,7 +897,7 @@ RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
                 chan_side = TOP;
                 /* The input pins of the routing channel come from the left side of Grid[x+1][y+1] */
                 ix = rr_gsb.get_sb_x() + 1;
-                iy = rr_gsb.get_sb_y() + 1;
+                iy = rr_gsb.get_sb_y();
                 ipin_rr_node_grid_side = LEFT;
                 break;
             case BOTTOM:
@@ -889,7 +913,7 @@ RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
                 chan_side = TOP;
                 /* The input pins of the routing channel come from the right side of Grid[x][y+1] */
                 ix = rr_gsb.get_sb_x();
-                iy = rr_gsb.get_sb_y() + 1;
+                iy = rr_gsb.get_sb_y();
                 ipin_rr_node_grid_side = RIGHT;
                 break;
             default:
