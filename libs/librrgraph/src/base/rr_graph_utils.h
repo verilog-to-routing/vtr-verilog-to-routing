@@ -14,6 +14,7 @@
 #include "rr_graph_fwd.h"
 #include "rr_node_types.h"
 #include "rr_graph_view.h"
+#include "device_grid.h"
 
 struct t_pin_chain_node {
     int pin_physical_num = OPEN;
@@ -73,7 +74,7 @@ vtr::vector<RRNodeId, std::vector<RREdgeId>> get_fan_in_list(const RRGraphView& 
  * determined. However, this is quite a big issue, as choosing to write out the RR graph now significantly increases
  * runtime!
  */
-void set_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_builder);
+void set_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_builder, const DeviceGrid& grid);
 
 /**
  * @brief Returns the segment number (distance along the channel) of the connection box from from_rr_type (CHANX or
