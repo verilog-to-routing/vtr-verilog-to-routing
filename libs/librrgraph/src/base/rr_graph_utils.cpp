@@ -175,8 +175,8 @@ void set_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_builder
             size_t pin_x = rr_graph.node_xlow(pin);
             size_t pin_y = rr_graph.node_ylow(pin);
 
-            VTR_ASSERT_SAFE(pin_x == rr_graph.node_xhigh(pin));
-            VTR_ASSERT_SAFE(pin_y == rr_graph.node_yhigh(pin));
+            VTR_ASSERT_SAFE(pin_x == (size_t)rr_graph.node_xhigh(pin));
+            VTR_ASSERT_SAFE(pin_y == (size_t)rr_graph.node_yhigh(pin));
 
             x_coords.push_back((float)pin_x);
             y_coords.push_back((float)pin_y);
@@ -191,7 +191,7 @@ void set_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_builder
                 if (x == (size_t)x_avg && y == (size_t)y_avg)
                     continue;
 
-                rr_graph_builder.node_lookup().remove_node(node_id, tile_layer, x, y, SINK, sink_ptc);
+                rr_graph_builder.node_lookup().remove_node(node_id, (int)tile_layer, (int)x, (int)y, SINK, sink_ptc);
             }
         }
 
