@@ -625,7 +625,7 @@ e_side RRGSB::get_cb_chan_side(const t_rr_type& cb_type) const {
         case CHANX:
             return LEFT;
         case CHANY:
-            return TOP;
+            return BOTTOM;
         default:
             VTR_LOG("Invalid type of connection block!\n");
             exit(1);
@@ -638,11 +638,11 @@ e_side RRGSB::get_cb_chan_side(const e_side& ipin_side) const {
         case TOP:
             return LEFT;
         case RIGHT:
-            return TOP;
+            return BOTTOM;
         case BOTTOM:
             return LEFT;
         case LEFT:
-            return TOP;
+            return BOTTOM;
         default:
             VTR_LOG("Invalid type of ipin_side!\n");
             exit(1);
