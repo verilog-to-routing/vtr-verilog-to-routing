@@ -935,7 +935,7 @@ RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
         switch (side) {
             case TOP: /* TOP = 0 */
                 /* For the border, we should take special care. The top column (H-1) does not have any top side routing channel. Any lower column may have (<= H-2) */
-                if (track_range[side_manager.get_side()].x() > gsb_coordinate.y() || gsb_coordinate.y() >= track_range[side_manager.get_side()].y()) {
+                if (track_range[side_manager.get_side()].x() > gsb_coordinate.y() || gsb_coordinate.y() > track_range[side_manager.get_side()].y()) {
                     rr_gsb.clear_one_side(side_manager.get_side());
                     break;
                 }
@@ -965,7 +965,7 @@ RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
                 break;
             case RIGHT: /* RIGHT = 1 */
                 /* For the border, we should take special care. The rightmost column (W-1) does not have any right side routing channel. If perimeter connection block is not enabled, even the last second rightmost column (W-2) does not have any right side routing channel  */
-                if (track_range[side_manager.get_side()].x() > gsb_coordinate.x() || gsb_coordinate.x() >= track_range[side_manager.get_side()].y()) {
+                if (track_range[side_manager.get_side()].x() > gsb_coordinate.x() || gsb_coordinate.x() > track_range[side_manager.get_side()].y()) {
                     rr_gsb.clear_one_side(side_manager.get_side());
                     break;
                 }
@@ -995,7 +995,7 @@ RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
                 break;
             case BOTTOM: /* BOTTOM = 2*/
                 /* For the border, we should take special care */
-                if (track_range[side_manager.get_side()].x() > gsb_coordinate.y() || gsb_coordinate.y() >= track_range[side_manager.get_side()].y()) {
+                if (track_range[side_manager.get_side()].x() > gsb_coordinate.y() || gsb_coordinate.y() > track_range[side_manager.get_side()].y()) {
                     rr_gsb.clear_one_side(side_manager.get_side());
                     break;
                 }
@@ -1025,7 +1025,7 @@ RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
                 break;
             case LEFT: /* LEFT = 3 */
                 /* For the border, we should take special care */
-                if (track_range[side_manager.get_side()].x() > gsb_coordinate.x() || gsb_coordinate.x() >= track_range[side_manager.get_side()].y()) {
+                if (track_range[side_manager.get_side()].x() > gsb_coordinate.x() || gsb_coordinate.x() > track_range[side_manager.get_side()].y()) {
                     rr_gsb.clear_one_side(side_manager.get_side());
                     break;
                 }
