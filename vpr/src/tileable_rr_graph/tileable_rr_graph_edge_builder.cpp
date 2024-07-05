@@ -125,10 +125,7 @@ void build_rr_graph_edges(const RRGraphView& rr_graph,
     build_rr_graph_edges_for_source_nodes(rr_graph, rr_graph_builder, rr_node_driver_switches, grids, layer, num_edges_to_create);
     build_rr_graph_edges_for_sink_nodes(rr_graph, rr_graph_builder, rr_node_driver_switches, grids, layer, num_edges_to_create);
 
-    vtr::Point<size_t> gsb_range(grids.width() - 2, grids.height() - 2);
-    if (perimeter_cb) {
-        gsb_range.set(grids.width() - 1, grids.height() - 1);
-    }
+    vtr::Point<size_t> gsb_range(grids.width() - 1, grids.height() - 1);
 
     /* Go Switch Block by Switch Block */
     for (size_t ix = 0; ix <= gsb_range.x(); ++ix) {
