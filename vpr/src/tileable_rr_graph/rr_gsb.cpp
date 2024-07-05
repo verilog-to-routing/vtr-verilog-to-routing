@@ -610,9 +610,9 @@ vtr::Point<size_t> RRGSB::get_cb_coordinate(const t_rr_type& cb_type) const {
     VTR_ASSERT(validate_cb_type(cb_type));
     switch (cb_type) {
         case CHANX:
-            return get_side_block_coordinate(LEFT);
+            return coordinate_;
         case CHANY:
-            return get_side_block_coordinate(TOP);
+            return coordinate_;
         default:
             VTR_LOG("Invalid type of connection block!\n");
             exit(1);
@@ -682,10 +682,7 @@ vtr::Point<size_t> RRGSB::get_side_block_coordinate(const e_side& side) const {
 }
 
 vtr::Point<size_t> RRGSB::get_grid_coordinate() const {
-    vtr::Point<size_t> ret(get_sb_x(), get_sb_y());
-    ret.set_y(ret.y() + 1);
-
-    return ret;
+    return coordinate_;
 }
 
 /************************************************************************
@@ -1184,9 +1181,3 @@ bool RRGSB::validate_ipin_node_id(const e_side& side, const size_t& node_id) con
 bool RRGSB::validate_cb_type(const t_rr_type& cb_type) const {
     return ((CHANX == cb_type) || (CHANY == cb_type));
 }
-
-size_t RRGSB::get_cb_opin_type_id(const t_rr_type& cb_type) const {
-    VTR_ASSERT(validate_cb_type(cb_type));
-    return cb_type == CHANX ? 0 : 1;
-}
-
