@@ -254,7 +254,6 @@ class vector : private std::vector<V, Allocator> {
     pair_iterator pair_begin() const { return pair_iterator(*const_cast<vector<K, V, Allocator>*>(this), key_type(0)); }
     pair_iterator pair_end() const { return pair_iterator(*const_cast<vector<K, V, Allocator>*>(this), key_type(size())); }
 };
-};
 
 } // namespace vtr
 #endif

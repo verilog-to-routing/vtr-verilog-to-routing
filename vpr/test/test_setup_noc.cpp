@@ -39,7 +39,7 @@ TEST_CASE("test_identify_and_store_noc_router_tile_positions", "[vpr_setup_noc]"
     router_tile.width = 2;
 
     // results from the test function
-    std::vector<t_noc_router_tile_position> list_of_routers;
+    vtr::vector<int, t_noc_router_tile_position> list_of_routers;
 
     // make sure the test result is not corrupted
     REQUIRE(list_of_routers.empty());
@@ -140,26 +140,26 @@ TEST_CASE("test_identify_and_store_noc_router_tile_positions", "[vpr_setup_noc]"
         // check the bottom left router
         REQUIRE(list_of_routers[0].grid_width_position == 0);
         REQUIRE(list_of_routers[0].grid_height_position == 0);
-        REQUIRE(vtr::isclose(list_of_routers[0].tile_centroid_x, 0.5));
-        REQUIRE(vtr::isclose(list_of_routers[0].tile_centroid_y, 0.5));
+        REQUIRE(vtr::isclose(list_of_routers[0].tile_centroid_x, 0.5f));
+        REQUIRE(vtr::isclose(list_of_routers[0].tile_centroid_y, 0.5f));
 
         // check the bottom right router
         REQUIRE(list_of_routers[1].grid_width_position == 0);
         REQUIRE(list_of_routers[1].grid_height_position == 8);
-        REQUIRE(vtr::isclose(list_of_routers[1].tile_centroid_x, 0.5));
-        REQUIRE(vtr::isclose(list_of_routers[1].tile_centroid_y, 8.5));
+        REQUIRE(vtr::isclose(list_of_routers[1].tile_centroid_x, 0.5f));
+        REQUIRE(vtr::isclose(list_of_routers[1].tile_centroid_y, 8.5f));
 
         // check the top left router
         REQUIRE(list_of_routers[2].grid_width_position == 8);
         REQUIRE(list_of_routers[2].grid_height_position == 0);
-        REQUIRE(vtr::isclose(list_of_routers[2].tile_centroid_x, 8.5));
-        REQUIRE(vtr::isclose(list_of_routers[2].tile_centroid_y, 0.5));
+        REQUIRE(vtr::isclose(list_of_routers[2].tile_centroid_x, 8.5f));
+        REQUIRE(vtr::isclose(list_of_routers[2].tile_centroid_y, 0.5f));
 
         // check the top right router
         REQUIRE(list_of_routers[3].grid_width_position == 8);
         REQUIRE(list_of_routers[3].grid_height_position == 8);
-        REQUIRE(vtr::isclose(list_of_routers[3].tile_centroid_x, 8.5));
-        REQUIRE(vtr::isclose(list_of_routers[3].tile_centroid_y, 8.5));
+        REQUIRE(vtr::isclose(list_of_routers[3].tile_centroid_x, 8.5f));
+        REQUIRE(vtr::isclose(list_of_routers[3].tile_centroid_y, 8.5f));
     }
     SECTION("All routers are horizontally connected to another router") {
         // in this test, the routers will be on the 4 corners of the FPGA
@@ -257,26 +257,26 @@ TEST_CASE("test_identify_and_store_noc_router_tile_positions", "[vpr_setup_noc]"
         // check the bottom left router
         REQUIRE(list_of_routers[0].grid_width_position == 0);
         REQUIRE(list_of_routers[0].grid_height_position == 5);
-        REQUIRE(vtr::isclose(list_of_routers[0].tile_centroid_x, 0.5));
-        REQUIRE(vtr::isclose(list_of_routers[0].tile_centroid_y, 5.5));
+        REQUIRE(vtr::isclose(list_of_routers[0].tile_centroid_x, 0.5f));
+        REQUIRE(vtr::isclose(list_of_routers[0].tile_centroid_y, 5.5f));
 
         // check the bottom right router
         REQUIRE(list_of_routers[1].grid_width_position == 2);
         REQUIRE(list_of_routers[1].grid_height_position == 5);
-        REQUIRE(vtr::isclose(list_of_routers[1].tile_centroid_x, 2.5));
-        REQUIRE(vtr::isclose(list_of_routers[1].tile_centroid_y, 5.5));
+        REQUIRE(vtr::isclose(list_of_routers[1].tile_centroid_x, 2.5f));
+        REQUIRE(vtr::isclose(list_of_routers[1].tile_centroid_y, 5.5f));
 
         // check the top left router
         REQUIRE(list_of_routers[2].grid_width_position == 3);
         REQUIRE(list_of_routers[2].grid_height_position == 0);
-        REQUIRE(vtr::isclose(list_of_routers[2].tile_centroid_x, 3.5));
-        REQUIRE(vtr::isclose(list_of_routers[2].tile_centroid_y, 0.5));
+        REQUIRE(vtr::isclose(list_of_routers[2].tile_centroid_x, 3.5f));
+        REQUIRE(vtr::isclose(list_of_routers[2].tile_centroid_y, 0.5f));
 
         // check the top right router
         REQUIRE(list_of_routers[3].grid_width_position == 5);
         REQUIRE(list_of_routers[3].grid_height_position == 0);
-        REQUIRE(vtr::isclose(list_of_routers[3].tile_centroid_x, 5.5));
-        REQUIRE(vtr::isclose(list_of_routers[3].tile_centroid_y, 0.5));
+        REQUIRE(vtr::isclose(list_of_routers[3].tile_centroid_x, 5.5f));
+        REQUIRE(vtr::isclose(list_of_routers[3].tile_centroid_y, 0.5f));
     }
     SECTION("All routers are vertically connected to another router") {
         // in this test, the routers will be on the 4 corners of the FPGA
@@ -374,31 +374,31 @@ TEST_CASE("test_identify_and_store_noc_router_tile_positions", "[vpr_setup_noc]"
         // check the bottom left router
         REQUIRE(list_of_routers[0].grid_width_position == 0);
         REQUIRE(list_of_routers[0].grid_height_position == 2);
-        REQUIRE(vtr::isclose(list_of_routers[0].tile_centroid_x, 0.5));
-        REQUIRE(vtr::isclose(list_of_routers[0].tile_centroid_y, 2.5));
+        REQUIRE(vtr::isclose(list_of_routers[0].tile_centroid_x, 0.5f));
+        REQUIRE(vtr::isclose(list_of_routers[0].tile_centroid_y, 2.5f));
 
         // check the bottom right router
         REQUIRE(list_of_routers[1].grid_width_position == 0);
         REQUIRE(list_of_routers[1].grid_height_position == 4);
-        REQUIRE(vtr::isclose(list_of_routers[1].tile_centroid_x, 0.5));
-        REQUIRE(vtr::isclose(list_of_routers[1].tile_centroid_y, 4.5));
+        REQUIRE(vtr::isclose(list_of_routers[1].tile_centroid_x, 0.5f));
+        REQUIRE(vtr::isclose(list_of_routers[1].tile_centroid_y, 4.5f));
 
         // check the top left router
         REQUIRE(list_of_routers[2].grid_width_position == 7);
         REQUIRE(list_of_routers[2].grid_height_position == 6);
-        REQUIRE(vtr::isclose(list_of_routers[2].tile_centroid_x, 7.5));
-        REQUIRE(vtr::isclose(list_of_routers[2].tile_centroid_y, 6.5));
+        REQUIRE(vtr::isclose(list_of_routers[2].tile_centroid_x, 7.5f));
+        REQUIRE(vtr::isclose(list_of_routers[2].tile_centroid_y, 6.5f));
 
         // check the top right router
         REQUIRE(list_of_routers[3].grid_width_position == 7);
         REQUIRE(list_of_routers[3].grid_height_position == 8);
-        REQUIRE(vtr::isclose(list_of_routers[3].tile_centroid_x, 7.5));
-        REQUIRE(vtr::isclose(list_of_routers[3].tile_centroid_y, 8.5));
+        REQUIRE(vtr::isclose(list_of_routers[3].tile_centroid_x, 7.5f));
+        REQUIRE(vtr::isclose(list_of_routers[3].tile_centroid_y, 8.5f));
     }
 }
 TEST_CASE("test_create_noc_routers", "[vpr_setup_noc]") {
     // datastructure to hold the list of physical tiles
-    std::vector<t_noc_router_tile_position> list_of_routers;
+    vtr::vector<int, t_noc_router_tile_position> list_of_routers;
 
     /*
      * Setup:
