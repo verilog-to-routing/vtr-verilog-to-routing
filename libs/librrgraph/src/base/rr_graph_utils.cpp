@@ -139,6 +139,18 @@ void set_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_builder
     using Offset = vtr::Point<size_t>;
     std::unordered_map<t_physical_tile_type_ptr, std::unordered_map<size_t, Offset>> physical_type_offsets;
 
+    // Helper fn. to remove old sink locations from RRSpatialLookup
+    auto remove_sink_locs_from_lookup = [&](Offset bottom_left, Offset top_right, Offset exclude, RRNodeId node, size_t layer, size_t ptc) {
+        for (size_t x = bottom_left.x(); x <= top_right.x(); ++x) {
+            for (size_t y = bottom_left.y(); y <= top_right.y(); ++y) {
+                if (x == exclude.x() && y == exclude.y()) /* The new sink location */
+                    continue;
+
+                rr_graph_builder.node_lookup().remove_node(node, (int)layer, (int)x, (int)y, SINK, ptc);
+            }
+        }
+    };
+
     // Iterate over all SINK nodes
     for (size_t node = 0; node < rr_graph.num_nodes(); ++node) {
         auto node_id = RRNodeId(node);
@@ -167,6 +179,9 @@ void set_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_builder
         if ((physical_type_offsets.find(tile_type) != physical_type_offsets.end()) && (physical_type_offsets[tile_type].find(sink_ptc) != physical_type_offsets[tile_type].end())) {
             auto new_x = (short)((int)tile_xlow + physical_type_offsets[tile_type].at(sink_ptc).x());
             auto new_y = (short)((int)tile_ylow + physical_type_offsets[tile_type].at(sink_ptc).y());
+
+            // Remove old locations from lookup
+            remove_sink_locs_from_lookup({tile_xlow, tile_ylow}, {tile_xhigh, tile_yhigh}, {(size_t)new_x, (size_t)new_y}, node_id, tile_layer, sink_ptc);
 
             // Set new coordinates
             rr_graph_builder.set_node_coordinates(node_id, new_x, new_y, new_x, new_y);
@@ -204,15 +219,8 @@ void set_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_builder
         auto x_avg = (short)round(std::accumulate(x_coords.begin(), x_coords.end(), 0.f) / (double)x_coords.size());
         auto y_avg = (short)round(std::accumulate(y_coords.begin(), y_coords.end(), 0.f) / (double)y_coords.size());
 
-        // Remove old indices from RRSpatialLookup
-        for (size_t x = tile_xlow; x <= tile_xhigh; ++x) {
-            for (size_t y = tile_ylow; y <= tile_yhigh; ++y) {
-                if (x == (size_t)x_avg && y == (size_t)y_avg)
-                    continue;
-
-                rr_graph_builder.node_lookup().remove_node(node_id, (int)tile_layer, (int)x, (int)y, SINK, sink_ptc);
-            }
-        }
+        // Remove old locations from lookup
+        remove_sink_locs_from_lookup({tile_xlow, tile_ylow}, {tile_xhigh, tile_yhigh}, {(size_t)x_avg, (size_t)y_avg}, node_id, tile_layer, sink_ptc);
 
         // Save offset for this tile/ptc combo
         if (physical_type_offsets.find(tile_type) == physical_type_offsets.end())
