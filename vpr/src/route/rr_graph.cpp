@@ -761,9 +761,6 @@ void create_rr_graph(const t_graph_type graph_type,
         mutable_device_ctx.rr_graph_is_flat = true;
     }
 
-    // Get better locations for SINK nodes
-    set_sink_locs(device_ctx.rr_graph, mutable_device_ctx.rr_graph_builder, grid);
-
     process_non_config_sets();
 
     verify_rr_node_indices(grid,
@@ -1439,6 +1436,9 @@ static void build_rr_graph(const t_graph_type graph_type,
     if (clb_to_clb_directs != nullptr) {
         delete[] clb_to_clb_directs;
     }
+
+    // Get better locations for SINK nodes
+    set_sink_locs(rr_graph, device_ctx.rr_graph_builder, grid);
 
     // We are done with building the RR Graph. Thus, we can clear the storages only used
     // to build the RR Graph
