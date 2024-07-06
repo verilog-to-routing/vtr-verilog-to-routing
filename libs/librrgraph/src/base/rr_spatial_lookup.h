@@ -159,6 +159,23 @@ class RRSpatialLookup {
                   int ptc,
                   e_side side = SIDES[0]);
 
+    /**
+     * @brief Remove a node in the fast lookup.
+     *
+     * @warning
+     * This function does not check for out-of-bounds/indexing errors. Make sure that the
+     * parameters you provide point to a node that is already in the lookup to avoid
+     * potential segfaults/unwanted behaviour.
+     *
+     * @param layer specified which FPGA die the node is located at (e.g. multi-die(3D) FPGA)
+     * @param (x, y) are the coordinate of the node
+     * @param type is the type of a node
+     * @param ptc is a feature number of a node, which can be
+     *     - the class number of a common SINK/SOURCE node of grid,
+     *     - pin index in a tile when type is OPIN/IPIN
+     *     - track index in a routing channel when type is CHANX/CHANY
+     * @param side is the side of node on the tile, applicable to OPIN/IPIN
+     */
     void remove_node(RRNodeId node,
                      int layer,
                      int x,
