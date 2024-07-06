@@ -6,6 +6,40 @@
 #include "rr_graph_obj.h"
 #include "rr_graph_builder.h"
 
+// Add "cluster-edge" IPINs to sink_ipins
+static void walk_cluster_recursive(const RRGraphView& rr_graph,
+                                   const vtr::vector<RRNodeId, std::vector<RREdgeId>>& fanins,
+                                   std::unordered_set<RRNodeId>& sink_ipins,
+                                   const RRNodeId curr,
+                                   const RRNodeId origin) {
+    // Make sure SINK in the same cluster as origin
+    int curr_x = rr_graph.node_xlow(curr);
+    int curr_y = rr_graph.node_ylow(curr);
+    if ((curr_x < rr_graph.node_xlow(origin)) || (curr_x > rr_graph.node_xhigh(origin)) || (curr_y < rr_graph.node_ylow(origin)) || (curr_y > rr_graph.node_yhigh(origin)))
+        return;
+
+    VTR_ASSERT_SAFE(rr_graph.node_type(origin) == e_rr_type::SINK);
+
+    // We want to go "backward" to the cluster IPINs connected to the origin node
+    auto incoming_edges = fanins[curr];
+    for (RREdgeId edge : incoming_edges) {
+        RRNodeId parent = rr_graph.edge_src_node(edge);
+        VTR_ASSERT_SAFE(parent != RRNodeId::INVALID());
+
+        if (rr_graph.node_type(parent) == e_rr_type::CHANX || rr_graph.node_type(parent) == e_rr_type::CHANY) { /* Outside of origin cluster */
+            VTR_ASSERT_SAFE(rr_graph.node_type(curr) == e_rr_type::IPIN);
+
+            // If the parent node isn't in the origin's cluster, the current node is a "cluster-edge" pin,
+            // so add it to sink_ipins
+            sink_ipins.insert(curr);
+            return;
+        }
+
+        // If the parent node is intra-cluster, keep going "backward"
+        walk_cluster_recursive(rr_graph, fanins, sink_ipins, parent, origin);
+    }
+}
+
 std::vector<RRSwitchId> find_rr_graph_switches(const RRGraph& rr_graph,
                                                const RRNodeId& from_node,
                                                const RRNodeId& to_node) {
@@ -144,22 +178,7 @@ void set_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_builder
 
         // The IPINs of the current SINK node
         std::unordered_set<RRNodeId> sink_ipins = {};
-
-        // IPINs are always one node away from the SINK. So, we just get the fanins of the SINK
-        // and add them to the set
-        for (auto edge : node_fanins[node_id]) {
-            RRNodeId pin = rr_graph.edge_src_node(edge);
-
-            VTR_ASSERT_SAFE(rr_graph.node_type(pin) == e_rr_type::IPIN);
-
-            // Make sure IPIN in the same cluster as origin
-            size_t curr_x = rr_graph.node_xlow(pin);
-            size_t curr_y = rr_graph.node_ylow(pin);
-            if ((curr_x < tile_xlow) || (curr_x > tile_xhigh) || (curr_y < tile_ylow) || (curr_y > tile_yhigh))
-                continue;
-
-            sink_ipins.insert(pin);
-        }
+        walk_cluster_recursive(rr_graph, node_fanins, sink_ipins, node_id, node_id);
 
         /* Set SINK locations as average of collected IPINs */
 
