@@ -1502,6 +1502,8 @@ static void build_intra_cluster_rr_graph(const t_graph_type graph_type,
 
     rr_graph_builder.partition_edges();
 
+    set_sink_locs(rr_graph, rr_graph_builder, grid);
+
     rr_graph_builder.clear_temp_storage();
 
     check_rr_graph(device_ctx.rr_graph,

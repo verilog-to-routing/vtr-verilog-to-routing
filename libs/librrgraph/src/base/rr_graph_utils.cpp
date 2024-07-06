@@ -26,8 +26,9 @@ static void walk_cluster_recursive(const RRGraphView& rr_graph,
         RRNodeId parent = rr_graph.edge_src_node(edge);
         VTR_ASSERT_SAFE(parent != RRNodeId::INVALID());
 
-        if (rr_graph.node_type(parent) == e_rr_type::CHANX || rr_graph.node_type(parent) == e_rr_type::CHANY) { /* Outside of origin cluster */
-            VTR_ASSERT_SAFE(rr_graph.node_type(curr) == e_rr_type::IPIN);
+        if (rr_graph.node_type(parent) != e_rr_type::IPIN) {
+            if (rr_graph.node_type(parent) != e_rr_type::CHANX && rr_graph.node_type(parent) != e_rr_type::CHANY)
+                return;
 
             // If the parent node isn't in the origin's cluster, the current node is a "cluster-edge" pin,
             // so add it to sink_ipins
@@ -140,13 +141,20 @@ void set_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_builder
     std::unordered_map<t_physical_tile_type_ptr, std::unordered_map<size_t, Offset>> physical_type_offsets;
 
     // Helper fn. to remove old sink locations from RRSpatialLookup
-    auto remove_sink_locs_from_lookup = [&](Offset bottom_left, Offset top_right, Offset exclude, RRNodeId node, size_t layer, size_t ptc) {
+    auto remove_sink_locs_from_lookup = [&](Offset bottom_left, Offset top_right, Offset new_sink_loc, RRNodeId node, size_t layer, size_t ptc) {
+        if (rr_graph_builder.node_lookup().find_node((int)layer, (int)new_sink_loc.x(), (int)new_sink_loc.y(), SINK, (int)ptc) == RRNodeId::INVALID()) {
+            rr_graph_builder.node_lookup().add_node(node, (int)layer, (int)new_sink_loc.x(), (int)new_sink_loc.y(), SINK, ptc);
+        }
+
         for (size_t x = bottom_left.x(); x <= top_right.x(); ++x) {
             for (size_t y = bottom_left.y(); y <= top_right.y(); ++y) {
-                if (x == exclude.x() && y == exclude.y()) /* The new sink location */
+                if (x == new_sink_loc.x() && y == new_sink_loc.y()) /* The new sink location */
                     continue;
 
-                rr_graph_builder.node_lookup().remove_node(node, (int)layer, (int)x, (int)y, SINK, ptc);
+                if (rr_graph_builder.node_lookup().find_node((int)layer, (int)x, (int)y, SINK, (int)ptc) == RRNodeId::INVALID())
+                    continue;
+
+                rr_graph_builder.node_lookup().remove_node(node, (int)layer, (int)x, (int)y, SINK, (int)ptc);
             }
         }
     };
@@ -159,10 +167,16 @@ void set_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_builder
             continue;
 
         // Skip 1x1 tiles
-        size_t tile_xlow = rr_graph.node_xlow(node_id);
-        size_t tile_ylow = rr_graph.node_ylow(node_id);
-        size_t tile_xhigh = rr_graph.node_xhigh(node_id);
-        size_t tile_yhigh = rr_graph.node_yhigh(node_id);
+        size_t node_xlow = rr_graph.node_xlow(node_id);
+        size_t node_ylow = rr_graph.node_ylow(node_id);
+
+        size_t tile_layer = rr_graph.node_layer(node_id);
+        t_physical_tile_type_ptr tile_type = grid.get_physical_type({(int)node_xlow, (int)node_ylow, (int)tile_layer});
+
+        size_t tile_xlow = node_xlow - grid.get_width_offset({(int)node_xlow, (int)node_ylow, (int)tile_layer});
+        size_t tile_ylow = node_ylow - grid.get_height_offset({(int)node_xlow, (int)node_ylow, (int)tile_layer});
+        size_t tile_xhigh = tile_xlow + tile_type->width - 1;
+        size_t tile_yhigh = tile_ylow + tile_type->height - 1;
 
         size_t tile_width = tile_xhigh - tile_xlow;
         size_t tile_height = tile_yhigh - tile_ylow;
@@ -171,9 +185,6 @@ void set_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_builder
             continue;
 
         // See if we have encountered this tile type/ptc combo before, and used saved offset if so
-        size_t tile_layer = rr_graph.node_layer(node_id);
-        t_physical_tile_type_ptr tile_type = grid.get_physical_type({(int)tile_xlow, (int)tile_ylow, (int)tile_layer});
-
         size_t sink_ptc = rr_graph.node_ptc_num(node_id);
 
         if ((physical_type_offsets.find(tile_type) != physical_type_offsets.end()) && (physical_type_offsets[tile_type].find(sink_ptc) != physical_type_offsets[tile_type].end())) {

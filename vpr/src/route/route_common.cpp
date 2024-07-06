@@ -456,18 +456,15 @@ static vtr::vector<ParentNetId, std::vector<RRNodeId>> load_net_rr_terminals(con
 
             // SINK nodes do not cover their whole tile, so we need to check all coordinates in the tile.
             if (pin_count != 0 && inode == RRNodeId::INVALID()) {
-                ClusterBlockId cluster_block_id;
+                auto tile_type = g_vpr_ctx.device().grid.get_physical_type({blk_loc.loc.x, blk_loc.loc.y, blk_loc.loc.layer});
+                size_t tile_xlow = blk_loc.loc.x - g_vpr_ctx.device().grid.get_width_offset({blk_loc.loc.x, blk_loc.loc.y, blk_loc.loc.layer});
+                size_t tile_ylow = blk_loc.loc.y - g_vpr_ctx.device().grid.get_height_offset({blk_loc.loc.x, blk_loc.loc.y, blk_loc.loc.layer});
+                size_t tile_xhigh = tile_xlow + tile_type->width - 1;
+                size_t tile_yhigh = tile_ylow + tile_type->height - 1;
 
-                if (is_flat)
-                    cluster_block_id = atom_to_cluster(AtomBlockId(size_t(block_id)));
-                else
-                    cluster_block_id = ClusterBlockId(size_t(block_id));
-
-                auto tile_type = physical_tile_type(cluster_block_id);
-
-                for (int x = blk_loc.loc.x; x < blk_loc.loc.x + tile_type->width; ++x) {
-                    for (int y = blk_loc.loc.y; y < blk_loc.loc.y + tile_type->height; ++y) {
-                        inode = rr_graph.node_lookup().find_node(blk_loc.loc.layer, x, y, SINK, iclass);
+                for (size_t x = tile_xlow; x <= tile_xhigh; ++x) {
+                    for (size_t y = tile_ylow; y <= tile_yhigh; ++y) {
+                        inode = rr_graph.node_lookup().find_node(blk_loc.loc.layer, (int)x, (int)y, SINK, iclass);
 
                         if (inode != RRNodeId::INVALID())
                             break;
