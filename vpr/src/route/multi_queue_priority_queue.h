@@ -28,7 +28,7 @@ class MultiQueuePriorityQueue {
 
     void init_heap(const DeviceGrid& grid);
     bool try_pop(pq_prio_t &prio, RRNodeId &node);
-    void add_to_heap(const pq_prio_t& prio, const RRNodeId& node, const RRNodeId& target_node);
+    void add_to_heap(const pq_prio_t& prio, const RRNodeId& node);
     void push_back(const pq_prio_t& prio, const RRNodeId& node);
     bool is_empty_heap() const;
     bool is_valid() const;
@@ -38,6 +38,9 @@ class MultiQueuePriorityQueue {
     inline uint64_t getNumPops() const { return pq_->getNumPops(); }
     inline uint64_t getHeapOccupancy() const { return pq_->getQueueOccupancy(); }
     inline void reset() { pq_->reset(); }
+#ifdef MQ_IO_ENABLE_CLEAR_FOR_POP
+    inline void setMinPrioForPop(const pq_prio_t& minPrio) { pq_->setMinPrioForPop(minPrio); }
+#endif
 
   private:
     MQ_IO* pq_;

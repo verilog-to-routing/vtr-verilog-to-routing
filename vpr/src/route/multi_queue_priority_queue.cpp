@@ -37,13 +37,7 @@ static inline pq_index_t cast_RRNodeId_to_pq_index_t(RRNodeId node) {
     return static_cast<pq_index_t>(std::size_t(node));
 }
 
-void MultiQueuePriorityQueue::add_to_heap(const pq_prio_t& prio, const RRNodeId& node, const RRNodeId& target_node) {
-    if (node == target_node) {
-#ifdef MQ_IO_ENABLE_CLEAR_FOR_POP
-        pq_->setMinPrioForPop(prio);
-#endif
-        return;
-    }
+void MultiQueuePriorityQueue::add_to_heap(const pq_prio_t& prio, const RRNodeId& node) {
     pq_->push({prio, cast_RRNodeId_to_pq_index_t(node)});
 }
 

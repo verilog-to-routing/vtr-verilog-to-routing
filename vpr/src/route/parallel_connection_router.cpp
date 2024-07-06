@@ -629,7 +629,13 @@ void ParallelConnectionRouter::timing_driven_add_to_heap(const t_conn_cost_param
 
     releaseLock(to_node);
 
-    heap_.add_to_heap(new_total_cost, to_node, target_node);
+    if (to_node == target_node) {
+#ifdef MQ_IO_ENABLE_CLEAR_FOR_POP
+        heap_.setMinPrioForPop(new_total_cost);
+#endif
+        return ;
+    }
+    heap_.add_to_heap(new_total_cost, to_node);
 
     // update_router_stats(router_stats_,
     //                     true,
