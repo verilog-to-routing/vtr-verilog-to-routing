@@ -780,7 +780,7 @@ void ParallelConnectionRouter::evaluate_timing_driven_node_costs(node_t* to,
                                                               target_node,
                                                               cost_params,
                                                               to->R_upstream);
-    total_cost += to->backward_path_cost + cost_params.astar_fac * expected_cost;
+    total_cost += to->backward_path_cost + cost_params.astar_fac * std::max(0.f, expected_cost - cost_params.astar_offset);
 
     // if (rcv_path_manager.is_enabled() && to->path_data != nullptr) {
     //     to->path_data->backward_delay += cost_params.criticality * Tdel;
@@ -893,12 +893,8 @@ void ParallelConnectionRouter::add_route_tree_node_to_heap(
 
     // if (!rcv_path_manager.is_enabled()) {
         // tot_cost = backward_path_cost + cost_params.astar_fac * expected_cost;
-        float tot_cost = backward_path_cost
-                         + cost_params.astar_fac
-                               * router_lookahead_.get_expected_cost(inode,
-                                                                     target_node,
-                                                                     cost_params,
-                                                                     R_upstream);
+        float expected_cost = router_lookahead_.get_expected_cost(inode, target_node, cost_params, R_upstream);
+        float tot_cost = backward_path_cost + cost_params.astar_fac * std::max(0.f, expected_cost - cost_params.astar_offset);
         VTR_LOGV_DEBUG(router_debug_, "  Adding node %8d to heap from init route tree with cost %g (%s)\n",
                        inode,
                        tot_cost,
