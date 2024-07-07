@@ -185,17 +185,17 @@ class RRSpatialLookup {
                      e_side side = SIDES[0]);
 
     /**
-     * @brief Mirror the last dimension of a look-up, i.e., a list of nodes, from a source coordinate to 
+     * @brief Mirror the last dimension of a look-up, i.e., a list of nodes, from a source coordinate to
      * a destination coordinate.
      *
-     * This function is mostly need by SOURCE and SINK nodes which are indexable in multiple locations.
+     * This function is mostly need by SOURCE nodes which are indexable in multiple locations.
      * Considering a bounding box (layer, x, y)->(layer, x + width, y + height) of a multi-height and multi-width grid,
-     * SOURCE and SINK nodes are indexable in any location inside the boundry.
+     * SOURCE nodes are indexable in any location inside the boundary.
      *
-     * An example of usage: 
+     * An example of usage:
      *
      *
-     * ``` 
+     * ```
      *   // Create a empty lookup
      *   RRSpatialLookup rr_lookup;
      *   // Adding other nodes ...
@@ -206,21 +206,21 @@ class RRSpatialLookup {
      *                          TOP);
      * ```
      *
-     * @note currently this function only accepts SOURCE/SINK nodes. May unlock for the other types 
+     * @note currently this function only accepts SOURCE nodes. May unlock for the other types
      * depending on needs
      */
     /*
-     * TODO: Consider to make a high-level API to duplicate the nodes for large blocks. 
+     * TODO: Consider to make a high-level API to duplicate the nodes for large blocks.
      * Then this API can become a private one
-     * For example, 
+     * For example,
      *
      *
      * ```
      *   expand_nodes(source_coordinate, bounding_box_coordinate, type, side);
      * ```
      *
-     * Alternatively, we can rework the ``find_node()`` API so that we always search the lowest (x,y) 
-     * corner when dealing with large blocks. But this may require the data structure to be dependent 
+     * Alternatively, we can rework the ``find_node()`` API so that we always search the lowest (x,y)
+     * corner when dealing with large blocks. But this may require the data structure to be dependent
      * on DeviceGrid information (it needs to identify if a grid has height > 1 as well as width > 1)
      */
     void mirror_nodes(const int layer,
