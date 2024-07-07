@@ -469,6 +469,9 @@ static vtr::vector<ParentNetId, std::vector<RRNodeId>> load_net_rr_terminals(con
                         if (inode != RRNodeId::INVALID())
                             break;
                     }
+
+                    if (inode != RRNodeId::INVALID())
+                        break;
                 }
             }
 

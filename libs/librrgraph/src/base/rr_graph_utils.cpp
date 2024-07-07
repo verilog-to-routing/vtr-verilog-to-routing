@@ -142,6 +142,8 @@ void set_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_builder
 
     // Helper fn. to remove old sink locations from RRSpatialLookup
     auto remove_sink_locs_from_lookup = [&](Offset bottom_left, Offset top_right, Offset new_sink_loc, RRNodeId node, size_t layer, size_t ptc) {
+        VTR_ASSERT(rr_graph_builder.node_lookup().find_node((int)layer, (int)new_sink_loc.x(), (int)new_sink_loc.y(), SINK, (int)ptc) != RRNodeId::INVALID());
+
         for (size_t x = bottom_left.x(); x <= top_right.x(); ++x) {
             for (size_t y = bottom_left.y(); y <= top_right.y(); ++y) {
                 if (x == new_sink_loc.x() && y == new_sink_loc.y()) /* The new sink location */
