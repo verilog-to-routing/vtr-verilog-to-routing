@@ -8,6 +8,7 @@
 #include <openssl/evp.h>
 #include <openssl/bn.h>
 #include <openssl/rand.h>
+#include <openssl/evp.h>
 #include <iostream>
 #include <sstream>
 #include <vector>
@@ -49,38 +50,38 @@ private:
     std::string decryptedContent_; /**< The decrypted content of the file. */
 
     /**
-     * @brief Decrypts the given ciphertext using the provided RSA key.
+     * @brief 
      * 
-     * @param ciphertext The ciphertext to decrypt.
-     * @param key The RSA key for decryption.
-     * @return The decrypted plaintext.
+     * @param encryptedData The encrypted data to decrypt.
+     * @param sessionKey The session key for data decryption.
+     * @return std::string The decrypted plaintext.
      */
-    static std::string decrypt(const std::string &ciphertext, RSA *key);
+    static std::string decryptData(const std::string& encryptedData, const unsigned char* sessionKey);
 
     /**
-     * @brief Decodes the given base64-encoded string.
+     * @brief 
      * 
-     * @param input The base64-encoded input string.
-     * @return The decoded output string.
+     * @param encoded he base64-encoded input string.
+     * @return std::vector<unsigned char> The decoded dynamic array of characters.
      */
-    static std::string base64_decode(const std::string &input);
+    static std::vector<unsigned char> base64Decode(const std::string& encoded);
 
     /**
      * @brief Loads the private key from the given PEM string.
      * 
      * @param privateKeyString The PEM string representing the private key.
-     * @return The loaded RSA private key.
+     * @return The loaded EVP private key.
      */
-    static RSA *loadPrivateKey(const std::string &privateKeyString);
+    static EVP_PKEY* loadPrivateKey(const std::string& privateKeyString);
 
     /**
-     * @brief Decrypts the given encrypted session key using the provided RSA key.
+     * @brief Decrypts the given encrypted session key using the provided EVP key.
      * 
      * @param encryptedSessionKey The encrypted session key.
-     * @param key The RSA key for decryption.
+     * @param privateKey The EVP key for decryption.
      * @return The decrypted session key.
      */
-    static std::string decryptSessionKey(const std::string &encryptedSessionKey, RSA *key);
+    static std::string decryptSessionKey(const std::string& encryptedSessionKey, EVP_PKEY* privateKey);
 };
 
 #endif // DECRYPTION_H

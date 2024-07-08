@@ -4,11 +4,6 @@ project(libencrypt)
 find_package(PkgConfig REQUIRED)
 pkg_search_module(OPENSSL REQUIRED openssl)
 
-file(READ "config.txt" PASSPHRASE_CONTENTS)
-string(REPLACE "\n" "\\n" PASSPHRASE_CONTENTS "${PASSPHRASE_CONTENTS}")
-set(PASS_PHRASE "${PASSPHRASE_CONTENTS}")
-add_compile_definitions(PASS_PHRASE="${PASS_PHRASE}")
-
 if(OPENSSL_FOUND)
     include_directories(${OPENSSL_INCLUDE_DIRS})
     message(STATUS "Using OpenSSL ${OPENSSL_VERSION}")
