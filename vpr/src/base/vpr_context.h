@@ -529,15 +529,24 @@ struct FloorplanningContext : public Context {
     /**
      * @brief Floorplanning constraints in the compressed grid coordinate system.
      *
+     * Indexing -->  [0..grid.num_layers-1][0..numClusters-1]
+     *
      * Each clustered block has a logical type with a corresponding compressed grid.
      * Compressed floorplanning constraints are calculated by translating the grid locations
      * of floorplanning regions to compressed grid locations. To ensure regions do not enlarge:
      * - The bottom left corner is rounded up to the nearest compressed location.
      * - The top right corner is rounded down to the nearest compressed location.
+     *
+     * When the floorplanning constraint spans across multiple layers, a compressed
+     * constraints is created for each a layer that the original constraint includes.
+     * This is because blocks of the same type might have different (x, y) locations
+     * in different layers, and as result, their compressed locations in each layer
+     * may correspond to a different physical (x, y) location.
+     *
      */
-    vtr::vector<ClusterBlockId, PartitionRegion> compressed_cluster_constraints;
+    std::vector<vtr::vector<ClusterBlockId, PartitionRegion>> compressed_cluster_constraints;
 
-    std::vector<Region> overfull_regions;
+    std::vector<PartitionRegion> overfull_partition_regions;
 };
 
 /**
