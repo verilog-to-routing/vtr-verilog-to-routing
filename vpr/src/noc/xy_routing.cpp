@@ -56,9 +56,9 @@ TurnModelRouting::Direction XYRouting::select_next_direction(const std::vector<T
 }
 
 bool XYRouting::is_turn_legal(const std::array<std::reference_wrapper<const NocRouter>, 3>& noc_routers) const {
-    const auto[x1, y1, z1] = noc_routers[0].get().get_router_physical_location();
-    const auto[x2, y2, z2] = noc_routers[1].get().get_router_physical_location();
-    const auto[x3, y3, z3] = noc_routers[2].get().get_router_physical_location();
+    const auto [x1, y1, z1] = noc_routers[0].get().get_router_physical_location();
+    const auto [x2, y2, z2] = noc_routers[1].get().get_router_physical_location();
+    const auto [x3, y3, z3] = noc_routers[2].get().get_router_physical_location();
 
     // check if the given routers can be traversed one after another
     VTR_ASSERT(vtr::exactly_k_conditions(2, x1 == x2, y1 == y2, z1 == z2));

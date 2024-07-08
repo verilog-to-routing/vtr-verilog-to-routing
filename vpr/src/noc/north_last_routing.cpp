@@ -42,7 +42,7 @@ const std::vector<TurnModelRouting::Direction>& NorthLastRouting::get_legal_dire
         returned_legal_direction.push_back(TurnModelRouting::Direction::DOWN);
     }
 
-    // check if the destination router is at the layer below of the current router
+    // check if the destination router is at the layer below the current router
     if (dst_router_pos.layer_num < curr_router_pos.layer_num) {
         returned_legal_direction.push_back(TurnModelRouting::Direction::BELOW);
     }
@@ -62,30 +62,23 @@ const std::vector<TurnModelRouting::Direction>& NorthLastRouting::get_legal_dire
 }
 
 bool NorthLastRouting::is_turn_legal(const std::array<std::reference_wrapper<const NocRouter>, 3>& noc_routers) const {
-    const int x1 = noc_routers[0].get().get_router_grid_position_x();
-    const int y1 = noc_routers[0].get().get_router_grid_position_y();
-
-    const int x2 = noc_routers[1].get().get_router_grid_position_x();
-    const int y2 = noc_routers[1].get().get_router_grid_position_y();
-
-    const int x3 = noc_routers[2].get().get_router_grid_position_x();
-    const int y3 = noc_routers[2].get().get_router_grid_position_y();
+    const auto [x1, y1, z1] = noc_routers[0].get().get_router_physical_location();
+    const auto [x2, y2, z2] = noc_routers[1].get().get_router_physical_location();
+    const auto [x3, y3, z3] = noc_routers[2].get().get_router_physical_location();
 
     // check if the given routers can be traversed one after another
-    VTR_ASSERT(x2 == x1 || y2 == y1);
-    VTR_ASSERT(x3 == x2 || y3 == y2);
+    VTR_ASSERT(vtr::exactly_k_conditions(2, x1 == x2, y1 == y2, z1 == z2));
+    VTR_ASSERT(vtr::exactly_k_conditions(2, x2 == x3, y2 == y3, z2 == z3));
+
 
     // going back to the first router is not allowed
-    if (x1 == x3 && y1 == y3) {
+    if (x1 == x3 && y1 == y3 && z1 == z3) {
         return false;
     }
 
-    /* In the north-last algorithm, once the north direction is taken, no other
-     * direction can be followed. Therefore, if the first link moves upward, the
-     * second one cannot move horizontally. The case where the second link goes
-     * back to the first router was checked in the previous if statement.
-     */
-    if (y2 > y1 && x2 != x3) {
+    // In north-last routing algorithm, these 6 90-degree turns are prohibited.
+    if ((z2 > z1 && x3 < x2) || (z2 > z1 && x3 > x2) || (z2 > z1 && y3 < y2) ||
+        (y2 > y1 && z3 < z2) || (y2 > y1 && x3 < x2) || (y2 > y1 && x3 > x2)) {
         return false;
     }
 
