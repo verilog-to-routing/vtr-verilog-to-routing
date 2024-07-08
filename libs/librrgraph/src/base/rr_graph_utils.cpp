@@ -149,7 +149,7 @@ void set_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_builder
                 if (x == new_sink_loc.x() && y == new_sink_loc.y()) /* The new sink location */
                     continue;
 
-                if (rr_graph_builder.node_lookup().find_node((int)layer, (int)x, (int)y, SINK, (int)ptc) == RRNodeId::INVALID())
+                if (rr_graph_builder.node_lookup().find_node((int)layer, (int)x, (int)y, SINK, (int)ptc) == RRNodeId::INVALID()) /* Already removed */
                     continue;
 
                 rr_graph_builder.node_lookup().remove_node(node, (int)layer, (int)x, (int)y, SINK, (int)ptc);
@@ -169,10 +169,11 @@ void set_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_builder
         size_t node_ylow = rr_graph.node_ylow(node_id);
 
         size_t tile_layer = rr_graph.node_layer(node_id);
-        t_physical_tile_type_ptr tile_type = grid.get_physical_type({(int)node_xlow, (int)node_ylow, (int)tile_layer});
+        t_physical_tile_loc tile_loc = {(int)node_xlow, (int)node_ylow, (int)tile_layer};
+        t_physical_tile_type_ptr tile_type = grid.get_physical_type(tile_loc);
 
-        size_t tile_xlow = node_xlow - grid.get_width_offset({(int)node_xlow, (int)node_ylow, (int)tile_layer});
-        size_t tile_ylow = node_ylow - grid.get_height_offset({(int)node_xlow, (int)node_ylow, (int)tile_layer});
+        size_t tile_xlow = node_xlow - grid.get_width_offset(tile_loc);
+        size_t tile_ylow = node_ylow - grid.get_height_offset(tile_loc);
         size_t tile_xhigh = tile_xlow + tile_type->width - 1;
         size_t tile_yhigh = tile_ylow + tile_type->height - 1;
 
