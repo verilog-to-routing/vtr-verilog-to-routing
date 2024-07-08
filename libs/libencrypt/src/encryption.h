@@ -14,6 +14,10 @@
 #include <fstream>
 #include <openssl/rand.h>
 #include "obfuscate.h"
+#include <string>
+#include <openssl/ecdh.h>
+#include <openssl/buffer.h>
+#include <iomanip>
 //#include "config.h"
 /**
  * @class Encryption
@@ -22,40 +26,51 @@
 class Encryption {
 public:
     /**
+     * @brief Generates random session key
+     * 
+     * @param sessionKey A pointer to session key
+     * @param keySize Session key length (128 bits for AES-128)
+     */
+    static void generateSessionKey(unsigned char* sessionKey, size_t keySize);
+
+    /**
      * @brief Loads a public key from a file.
      *
      * @param filename The name of the file containing the public key.
-     * @return RSA* A pointer to the loaded public key.
+     * @return EVP_PKEY* A pointer to the loaded public key.
      *         Returns nullptr if the key file cannot be opened or there is an error reading the key.
      */
-    static RSA *loadPublicKey(const std::string &filename);
+    static EVP_PKEY* loadPublicKey(const std::string& filename);
 
     /**
-     * @brief Encrypts a session key using the provided public key.
-     *
-     * @param key The public key used for encryption.
-     * @return std::string The encrypted session key.
-     *         Returns an empty string if there is an error generating or encrypting the session key.
+     * @brief 
+     * 
+     * @param sessionKey Key to be encrypted
+     * @param keySize Session key length
+     * @param publicKey The public key used for encryption
+     * @return std::string Encrypted session key
      */
-    static std::string encryptSessionKey(RSA *key);
+    static std::string encryptSessionKey(const unsigned char* sessionKey, size_t keySize, EVP_PKEY* publicKey);
 
     /**
-     * @brief Encrypts the given plaintext using the provided public key.
-     *
+     * @brief 
+     * 
+     * @param buffer pointer to data to be encoded
+     * @param length data length
+     * @return std::string encoded data
+     */
+    static std::string base64Encode(const unsigned char* buffer, size_t length);
+
+    /**
+     * @brief 
+     * 
      * @param plaintext The plaintext to be encrypted.
-     * @param key The public key used for encryption.
+     * @param sessionKey The session key used for encryption.
+     * @param iv Initialization vector.
      * @return std::string The encrypted ciphertext.
      *         Returns an empty string if there is an error during encryption.
      */
-    static std::string encrypt(const std::string &plaintext, RSA *key);
-
-    /**
-     * @brief Base64 encodes the given input string.
-     *
-     * @param input The input string to be encoded.
-     * @return std::string The base64-encoded string.
-     */
-    static std::string base64_encode(const std::string &input);
+    static std::string encryptData(const std::string& plaintext, const unsigned char* sessionKey, const unsigned char* iv);
 
     /**
      * @brief Encrypts a file using the provided public key.
@@ -64,7 +79,7 @@ public:
      * @param publicKeyFile The path to the file containing the public key.
      * @return bool True if the file encryption is successful, false otherwise.
      */
-    static bool encryptFile(const std::string& publicKeyFile, std::string &filePath);
+    static bool encryptFile(const std::string& publicKeyFile, std::string& filePath);
 };
 
 #endif // ENCRYPTION_H
