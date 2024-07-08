@@ -144,7 +144,9 @@ void build_rr_graph_edges(const RRGraphView& rr_graph,
 
             /* adapt the opin_to_track_map for the GSB nodes */
             t_pin2track_map opin2track_map; /* [0..gsb_side][0..num_opin_node][track_indices] */
-            opin2track_map = build_gsb_opin_to_track_map(rr_graph, rr_gsb, grids, segment_inf, Fc_out, opin2all_sides);
+            if (ix < gsb_range.x() && iy < gsb_range.y()) {
+              opin2track_map = build_gsb_opin_to_track_map(rr_graph, rr_gsb, grids, segment_inf, Fc_out, opin2all_sides);
+            }
 
             /* adapt the switch_block_conn for the GSB nodes */
             t_track2track_map sb_conn; /* [0..from_gsb_side][0..chan_width-1][track_indices] */
