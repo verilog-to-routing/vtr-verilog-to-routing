@@ -57,9 +57,9 @@ void Decryption::decryptFile() {
     std::string decrypted = decryptData(base64EncryptedLoaded, reinterpret_cast<const unsigned char*>(decryptedSessionKey.c_str()));
 
     // Write the decrypted data to a file
-    std::ofstream decryptedFile("decrypted.xml");
-    decryptedFile << decrypted;
-    decryptedFile.close();
+    // std::ofstream decryptedFile("decrypted.xml");
+    // decryptedFile << decrypted;
+    // decryptedFile.close();
     
     decryptedContent_ = decrypted;
     EVP_PKEY_free(privateKey);
