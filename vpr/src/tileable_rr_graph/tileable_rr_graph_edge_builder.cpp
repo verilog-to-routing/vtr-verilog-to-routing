@@ -219,71 +219,28 @@ void build_rr_graph_edges(const RRGraphView& rr_graph,
                                                             device_chan_width, segment_inf_x, segment_inf_y,
                                                             layer, gsb_coord, perimeter_cb);
 
-            
-            t_vib_map vib_map;
-            vib_map = build_vib_map(rr_graph, grids, vib_grid, rr_gsb, segment_inf, layer, gsb_coord, actual_coord, medium_mux_name2medium_index);
-            //build_edges_for_one_tileable_vib(rr_graph_builder, vib_map, sb_bend_conn, rr_node_driver_switches, num_edges_to_create);
-            size_t edge_count = 0;
-            for (auto iter = vib_map.begin(); iter != vib_map.end(); ++iter) {
-                for (auto to_node : iter->second) {
-                    rr_graph_builder.create_edge(iter->first, to_node, rr_node_driver_switches[to_node], false);
-                    edge_count++;
-                }
+            /* adapt the track_to_ipin_lookup for the GSB nodes */
+            t_track2pin_map track2ipin_map; /* [0..track_gsb_side][0..num_tracks][ipin_indices] */
+            track2ipin_map = build_gsb_track_to_ipin_map(rr_graph, rr_gsb, grids, segment_inf, Fc_in);
+
+            /* adapt the opin_to_track_map for the GSB nodes */
+            t_pin2track_map opin2track_map; /* [0..gsb_side][0..num_opin_node][track_indices] */
+            if (ix < gsb_range.x() && iy < gsb_range.y()) {
+              opin2track_map = build_gsb_opin_to_track_map(rr_graph, rr_gsb, grids, segment_inf, Fc_out, opin2all_sides);
             }
-            num_edges_to_create += edge_count;
-            //rr_graph_builder.build_edges(true);
-            
-        }
 
-        // process right boundary
-        ix = grids.width() - 1;
-        for (iy = 0; iy < grids.height() - 1; ++iy) {
-            vtr::Point<size_t> actual_coord(ix, iy);
-            vtr::Point<size_t> gsb_coord(ix - 1, iy);
+            /* adapt the switch_block_conn for the GSB nodes */
+            t_track2track_map sb_conn; /* [0..from_gsb_side][0..chan_width-1][track_indices] */
+            sb_conn = build_gsb_track_to_track_map(rr_graph, rr_gsb,
+                                                   sb_type, Fs, sb_subtype, subFs, concat_wire, wire_opposite_side,
+                                                   segment_inf);
 
-            /* Create a GSB object */
-            const RRGSB& rr_gsb = build_one_tileable_rr_gsb(grids, rr_graph,
-                                                            device_chan_width, segment_inf_x, segment_inf_y,
-                                                            layer, gsb_coord);
-
-            
-            t_vib_map vib_map;
-            vib_map = build_vib_map(rr_graph, grids, vib_grid, rr_gsb, segment_inf, layer, gsb_coord, actual_coord, medium_mux_name2medium_index);
-            //build_edges_for_one_tileable_vib(rr_graph_builder, vib_map, sb_bend_conn, rr_node_driver_switches, num_edges_to_create);
-            size_t edge_count = 0;
-            for (auto iter = vib_map.begin(); iter != vib_map.end(); ++iter) {
-                for (auto to_node : iter->second) {
-                    rr_graph_builder.create_edge(iter->first, to_node, rr_node_driver_switches[to_node], false);
-                    edge_count++;
-                }
-            }
-            num_edges_to_create += edge_count;
-            //rr_graph_builder.build_edges(true);
-            
-        }
-
-        // process right-top corner
-        ix = grids.width() - 1;
-        iy = grids.height() - 1;
-
-        vtr::Point<size_t> actual_coord(ix, iy);
-        vtr::Point<size_t> gsb_coord(ix - 1, iy - 1);
-
-        /* Create a GSB object */
-        const RRGSB& rr_gsb = build_one_tileable_rr_gsb(grids, rr_graph,
-                                                        device_chan_width, segment_inf_x, segment_inf_y,
-                                                        layer, gsb_coord);
-
-            
-        t_vib_map vib_map;
-        vib_map = build_vib_map(rr_graph, grids, vib_grid, rr_gsb, segment_inf, layer, gsb_coord, actual_coord, medium_mux_name2medium_index);
-        //build_edges_for_one_tileable_vib(rr_graph_builder, vib_map, sb_bend_conn, rr_node_driver_switches, num_edges_to_create);
-        size_t edge_count = 0;
-        for (auto iter = vib_map.begin(); iter != vib_map.end(); ++iter) {
-            for (auto to_node : iter->second) {
-                rr_graph_builder.create_edge(iter->first, to_node, rr_node_driver_switches[to_node], false);
-                edge_count++;
-            }
+            /* Build edges for a GSB */
+            build_edges_for_one_tileable_rr_gsb(rr_graph_builder, rr_gsb,
+                                                track2ipin_map, opin2track_map,
+                                                sb_conn, rr_node_driver_switches, num_edges_to_create);
+            /* Finish this GSB, go to the next*/
+            rr_graph_builder.build_edges(true);
         }
         num_edges_to_create += edge_count;
         rr_graph_builder.build_edges(true);
