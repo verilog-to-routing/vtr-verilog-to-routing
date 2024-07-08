@@ -17,11 +17,6 @@
  * 2. A X-direction Connection block locates at the left side of the switch block
  * 2. A Y-direction Connection block locates at the top side of the switch block
  *
- *  +-------------+              +---------------------------------+
- *  |             |              |          Y-direction CB         |
- *  |    Grid     |              |              [x][y + 1]         |
- *  |  [x][y+1]   |              +---------------------------------+
- *  +-------------+
  *                                          TOP SIDE
  *  +-------------+              +---------------------------------+
  *  |             |              | OPIN_NODE CHAN_NODES OPIN_NODES |
@@ -38,6 +33,11 @@
  *  |             |              | OPIN_NODE CHAN_NODES OPIN_NODES |
  *  +-------------+              +---------------------------------+
  *                                             BOTTOM SIDE
+ *  +-------------+              +---------------------------------+
+ *  |    Grid     |              |          Y-direction CB         |
+ *  |  [x][y]     |              |              [x][y]             |
+ *  +-------------+              +---------------------------------+
+ *
  * num_sides: number of sides of this switch block
  * chan_rr_node: a collection of rr_nodes as routing tracks locating at each side of the Switch block <0..num_sides-1><0..chan_width-1>
  * chan_rr_node_direction: Indicate if this rr_node is an input or an output of the Switch block <0..num_sides-1><0..chan_width-1>

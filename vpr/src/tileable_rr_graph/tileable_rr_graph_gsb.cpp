@@ -623,7 +623,8 @@ RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
                                 const std::vector<t_segment_inf>& segment_inf_x,
                                 const std::vector<t_segment_inf>& segment_inf_y,
                                 const size_t& layer,
-                                const vtr::Point<size_t>& gsb_coordinate) {
+                                const vtr::Point<size_t>& gsb_coordinate,
+                                const bool& perimeter_cb) {
     /* Create an object to return */
     RRGSB rr_gsb;
 
@@ -658,7 +659,7 @@ RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
 
         switch (side) {
             case TOP: /* TOP = 0 */
-                /* For the bording, we should take special care */
+                /* For the border, we should take special care. */
                 if (gsb_coordinate.y() == grids.height() - 1) {
                     rr_gsb.clear_one_side(side_manager.get_side());
                     break;
@@ -688,7 +689,7 @@ RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
 
                 break;
             case RIGHT: /* RIGHT = 1 */
-                /* For the bording, we should take special care */
+                /* For the border, we should take special care. The rightmost column (W-1) does not have any right side routing channel. If perimeter connection block is not enabled, even the last second rightmost column (W-2) does not have any right side routing channel  */
                 if (gsb_coordinate.x() == grids.width() - 1) {
                     rr_gsb.clear_one_side(side_manager.get_side());
                     break;
@@ -718,8 +719,7 @@ RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
                                                                  OPIN, opin_grid_side[1]);
                 break;
             case BOTTOM: /* BOTTOM = 2*/
-                /* For the bording, we should take special care */
-                if (gsb_coordinate.y() == 0) {
+                if (!perimeter_cb && gsb_coordinate.y() == 0)  {
                     rr_gsb.clear_one_side(side_manager.get_side());
                     break;
                 }
@@ -748,8 +748,7 @@ RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
                                                                  OPIN, opin_grid_side[1]);
                 break;
             case LEFT: /* LEFT = 3 */
-                /* For the bording, we should take special care */
-                if (gsb_coordinate.x() == 0) {
+                if (!perimeter_cb && gsb_coordinate.x() == 0)  {
                     rr_gsb.clear_one_side(side_manager.get_side());
                     break;
                 }
@@ -845,7 +844,7 @@ RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
      * - The concept of top/bottom side of connection block in GSB domain:
      *
      *   ---------------+  +---------------------- ... ---------------------+  +----------------
-     *     Grid[x][y+1] |->| Y- Connection Block        Y- Connection Block |<-| Grid[x+1][y+1]
+     *     Grid[x][y]   |->| Y- Connection Block        Y- Connection Block |<-| Grid[x+1][y]
      *    RIGHT side    |  | LEFT side             ...  RIGHT side          |  | LEFT side
      *    --------------+  +---------------------- ... ---------------------+  +----------------
      *
@@ -869,10 +868,10 @@ RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
                 break;
             case RIGHT:
                 /* Consider the routing channel that is connected to the top side of the switch block */
-                chan_side = TOP;
+                chan_side = BOTTOM;
                 /* The input pins of the routing channel come from the left side of Grid[x+1][y+1] */
                 ix = rr_gsb.get_sb_x() + 1;
-                iy = rr_gsb.get_sb_y() + 1;
+                iy = rr_gsb.get_sb_y();
                 ipin_rr_node_grid_side = LEFT;
                 break;
             case BOTTOM:
@@ -885,10 +884,10 @@ RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
                 break;
             case LEFT:
                 /* Consider the routing channel that is connected to the top side of the switch block */
-                chan_side = TOP;
+                chan_side = BOTTOM;
                 /* The input pins of the routing channel come from the right side of Grid[x][y+1] */
                 ix = rr_gsb.get_sb_x();
-                iy = rr_gsb.get_sb_y() + 1;
+                iy = rr_gsb.get_sb_y();
                 ipin_rr_node_grid_side = RIGHT;
                 break;
             default:

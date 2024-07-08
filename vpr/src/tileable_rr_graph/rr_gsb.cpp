@@ -519,7 +519,7 @@ bool RRGSB::is_sb_node_passing_wire(const RRGraphView& rr_graph,
         VTR_LOG("Cannot find a node on the opposite side to GSB[%lu][%lu] track node[%lu] at %s!\nDetailed node information:\n",
                 get_x(), get_y(), track_id, SIDE_STRING[node_side]);
         VTR_LOG("Node type: %s\n", rr_graph.node_type_string(track_node));
-        VTR_LOG("Node coordinate: %d\n", rr_graph.node_coordinate_to_string(track_node).c_str());
+        VTR_LOG("Node coordinate: %s\n", rr_graph.node_coordinate_to_string(track_node).c_str());
         VTR_LOG("Node ptc: %d\n", rr_graph.node_ptc_num(track_node));
     }
     VTR_ASSERT(true == is_sb_node_exist_opposite_side(rr_graph, track_node, node_side));
@@ -597,30 +597,12 @@ vtr::Point<size_t> RRGSB::get_sb_coordinate() const {
 
 /* get the x coordinate of this X/Y-direction block */
 size_t RRGSB::get_cb_x(const t_rr_type& cb_type) const {
-    VTR_ASSERT(validate_cb_type(cb_type));
-    switch (cb_type) {
-        case CHANX:
-            return get_side_block_coordinate(LEFT).x();
-        case CHANY:
-            return get_side_block_coordinate(TOP).x();
-        default:
-            VTR_LOG("Invalid type of connection block!\n");
-            exit(1);
-    }
+    return get_cb_coordinate(cb_type).x();
 }
 
 /* get the y coordinate of this X/Y-direction block */
 size_t RRGSB::get_cb_y(const t_rr_type& cb_type) const {
-    VTR_ASSERT(validate_cb_type(cb_type));
-    switch (cb_type) {
-        case CHANX:
-            return get_side_block_coordinate(LEFT).y();
-        case CHANY:
-            return get_side_block_coordinate(TOP).y();
-        default:
-            VTR_LOG("Invalid type of connection block!\n");
-            exit(1);
-    }
+    return get_cb_coordinate(cb_type).y();
 }
 
 /* Get the coordinate of the X/Y-direction CB */
@@ -628,9 +610,9 @@ vtr::Point<size_t> RRGSB::get_cb_coordinate(const t_rr_type& cb_type) const {
     VTR_ASSERT(validate_cb_type(cb_type));
     switch (cb_type) {
         case CHANX:
-            return get_side_block_coordinate(LEFT);
+            return coordinate_;
         case CHANY:
-            return get_side_block_coordinate(TOP);
+            return coordinate_;
         default:
             VTR_LOG("Invalid type of connection block!\n");
             exit(1);
@@ -643,7 +625,7 @@ e_side RRGSB::get_cb_chan_side(const t_rr_type& cb_type) const {
         case CHANX:
             return LEFT;
         case CHANY:
-            return TOP;
+            return BOTTOM;
         default:
             VTR_LOG("Invalid type of connection block!\n");
             exit(1);
@@ -656,11 +638,11 @@ e_side RRGSB::get_cb_chan_side(const e_side& ipin_side) const {
         case TOP:
             return LEFT;
         case RIGHT:
-            return TOP;
+            return BOTTOM;
         case BOTTOM:
             return LEFT;
         case LEFT:
-            return TOP;
+            return BOTTOM;
         default:
             VTR_LOG("Invalid type of ipin_side!\n");
             exit(1);
@@ -700,10 +682,7 @@ vtr::Point<size_t> RRGSB::get_side_block_coordinate(const e_side& side) const {
 }
 
 vtr::Point<size_t> RRGSB::get_grid_coordinate() const {
-    vtr::Point<size_t> ret(get_sb_x(), get_sb_y());
-    ret.set_y(ret.y() + 1);
-
-    return ret;
+    return coordinate_;
 }
 
 /************************************************************************
@@ -878,6 +857,7 @@ void RRGSB::sort_chan_node_in_edges(const RRGraphView& rr_graph) {
 
     for (size_t side = 0; side < get_num_sides(); ++side) {
         SideManager side_manager(side);
+        /* Bypass boundary GSBs here. When perimeter_cb option is on, Some GSBs may have only 1 side of CHANX or CHANY. There are no edges in the GSB, so we should skip them */
         chan_node_in_edges_[side].resize(chan_node_[side].get_chan_width());
         for (size_t track_id = 0; track_id < chan_node_[side].get_chan_width(); ++track_id) {
             /* Only sort the output nodes and bypass passing wires */
@@ -1203,4 +1183,3 @@ size_t RRGSB::get_cb_opin_type_id(const t_rr_type& cb_type) const {
     VTR_ASSERT(validate_cb_type(cb_type));
     return cb_type == CHANX ? 0 : 1;
 }
-

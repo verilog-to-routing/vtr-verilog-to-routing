@@ -13,17 +13,13 @@
 
 #include <cstdio>
 #include <cstring>
-#include <ctime>
-#include <chrono>
 #include <cmath>
-#include <sstream>
 
 #include "vtr_assert.h"
 #include "vtr_math.h"
 #include "vtr_log.h"
 #include "vtr_version.h"
 #include "vtr_time.h"
-#include "vtr_path.h"
 
 #include "vpr_types.h"
 #include "vpr_utils.h"
@@ -44,15 +40,12 @@
 #include "stats.h"
 #include "read_options.h"
 #include "echo_files.h"
-#include "read_xml_arch_file.h"
 #include "SetupVPR.h"
 #include "ShowSetup.h"
 #include "CheckArch.h"
 #include "CheckSetup.h"
 #include "rr_graph.h"
 #include "pb_type_graph.h"
-#include "route_common.h"
-#include "timing_place_lookup.h"
 #include "route.h"
 #include "route_export.h"
 #include "vpr_api.h"
@@ -65,7 +58,6 @@
 #include "concrete_timing_info.h"
 #include "netlist_writer.h"
 #include "AnalysisDelayCalculator.h"
-#include "RoutingDelayCalculator.h"
 #include "check_route.h"
 #include "constant_nets.h"
 #include "atom_netlist_utils.h"
@@ -86,15 +78,12 @@
 #include "tatum/echo_writer.hpp"
 
 #include "read_route.h"
-#include "read_blif.h"
 #include "read_place.h"
 
 #include "arch_util.h"
 
 #include "post_routing_pb_pin_fixup.h"
 
-#include "log.h"
-#include "iostream"
 
 #include "load_flat_place.h"
 
@@ -410,7 +399,6 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
         bool place_success = vpr_place_flow(placement_net_list, vpr_setup, arch);
 
         if (!place_success) {
-            std::cout << "failed placement" << std::endl;
             return false; //Unimplementable
         }
     }
@@ -1471,7 +1459,7 @@ bool vpr_analysis_flow(const Netlist<>& net_list,
                 VTR_LOG_WARN("Sychronization between packing and routing results is not applied due to users select to skip it\n");
             }
         } else {
-            VTR_LOG_WARN("Sychronization between packing and routing results is not applied due to illegal circuit implementation\n");
+            VTR_LOG_WARN("Synchronization between packing and routing results is not applied due to illegal circuit implementation\n");
         }
         VTR_LOG("\n");
     }

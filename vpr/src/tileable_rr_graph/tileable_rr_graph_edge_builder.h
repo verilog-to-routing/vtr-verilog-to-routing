@@ -36,6 +36,7 @@ void build_rr_graph_edges(const RRGraphView& rr_graph,
                           const int& Fs,
                           const e_switch_block_type& sb_subtype,
                           const int& subFs,
+                          const bool& perimeter_cb,
                           const bool& opin2all_sides,
                           const bool& concat_wire,
                           const bool& wire_opposite_side);
