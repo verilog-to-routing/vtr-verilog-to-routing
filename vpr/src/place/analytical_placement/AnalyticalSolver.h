@@ -7,7 +7,8 @@
 #include "Eigen/Sparse"
 
 enum class e_analytical_solver {
-    QP_HYBRID
+    QP_HYBRID,
+    B2B
 };
 
 // TODO: How should the hint be handled?
@@ -33,7 +34,13 @@ public:
     Eigen::SparseMatrix<double> A_sparse;
     Eigen::VectorXd b_x;
     Eigen::VectorXd b_y;
+};
 
-    bool isSymmetric(const Eigen::SparseMatrix<double>&A);
-    bool isSemiPosDef(const Eigen::SparseMatrix<double>&A);
+class B2BSolver : public AnalyticalSolver {
+    public:
+        void solve(unsigned iteration, PartialPlacement &p_placement) final;
+        void initialize_placement(PartialPlacement &p_placement);
+        void populate_matrix(Eigen::SparseMatrix<double> &A_sparse_x, Eigen::SparseMatrix<double> &A_sparse_y, Eigen::VectorXd &b_x, Eigen::VectorXd &b_y, PartialPlacement &p_placement);
+        void populate_matrix_anchor(Eigen::SparseMatrix<double> &A_sparse_x, Eigen::SparseMatrix<double> &A_sparse_y, Eigen::VectorXd &b_x, Eigen::VectorXd &b_y, PartialPlacement& p_placement, unsigned iteration);
+        std::pair<size_t, size_t> boundNode(std::vector<size_t> &node_id, std::vector<double> &node_loc);
 };
