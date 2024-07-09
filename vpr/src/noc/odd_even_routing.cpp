@@ -48,6 +48,8 @@ const std::vector<TurnModelRouting::Direction>& OddEvenRouting::get_legal_direct
     // calculate the distance between the current router and the destination
     const int diff_x = compressed_dst_loc.x - compressed_curr_loc.x;
     const int diff_y = compressed_dst_loc.y - compressed_curr_loc.y;
+    const int diff_z = compressed_dst_loc.layer_num - compressed_curr_loc.layer_num;
+
 
     /* The implementation below is a carbon copy of the Fig. 2 in the following paper
      * Chiu GM. The odd-even turn model for adaptive routing.
@@ -57,38 +59,38 @@ const std::vector<TurnModelRouting::Direction>& OddEvenRouting::get_legal_direct
      */
     if (diff_x == 0) { // the same column as the destination. Only north or south are allowed
         if (diff_y > 0) {
-            returned_legal_direction.push_back(TurnModelRouting::Direction::UP);
+            returned_legal_direction.push_back(TurnModelRouting::Direction::NORTH);
         } else {
-            returned_legal_direction.push_back(TurnModelRouting::Direction::DOWN);
+            returned_legal_direction.push_back(TurnModelRouting::Direction::SOUTH);
         }
     } else { // currently in a different column than the destination
         if (diff_x > 0) { // eastbound message
             if (diff_y == 0) { // already in the same row as the destination. Just move to the east
-                returned_legal_direction.push_back(TurnModelRouting::Direction::RIGHT);
+                returned_legal_direction.push_back(TurnModelRouting::Direction::EAST);
             } else {
                 /* Since EN and ES turns are forbidden in even columns, we move along the vertical
                  * direction only in we are in an odd column. */
                 if (is_odd(compressed_curr_loc.x) || compressed_curr_loc.x == compressed_src_loc.x) {
                     if (diff_y > 0) {
-                        returned_legal_direction.push_back(TurnModelRouting::Direction::UP);
+                        returned_legal_direction.push_back(TurnModelRouting::Direction::NORTH);
                     } else {
-                        returned_legal_direction.push_back(TurnModelRouting::Direction::DOWN);
+                        returned_legal_direction.push_back(TurnModelRouting::Direction::SOUTH);
                     }
                 }
                 // the destination column is odd and there are more than 1 column left to destination
                 if (is_odd(compressed_dst_loc.x) || diff_x != 1) {
-                    returned_legal_direction.push_back(TurnModelRouting::Direction::RIGHT);
+                    returned_legal_direction.push_back(TurnModelRouting::Direction::EAST);
                 }
             }
         } else { // westbound message
-            returned_legal_direction.push_back(TurnModelRouting::Direction::LEFT);
+            returned_legal_direction.push_back(TurnModelRouting::Direction::WEST);
             /* Since NW and SW turns are forbidden in odd columns, we allow
              * moving along vertical axis only in even columns */
             if (is_even(compressed_curr_loc.x)) {
                 if (diff_y > 0) {
-                    returned_legal_direction.push_back(TurnModelRouting::Direction::UP);
+                    returned_legal_direction.push_back(TurnModelRouting::Direction::NORTH);
                 } else {
-                    returned_legal_direction.push_back(TurnModelRouting::Direction::DOWN);
+                    returned_legal_direction.push_back(TurnModelRouting::Direction::SOUTH);
                 }
             }
         }
@@ -170,13 +172,3 @@ bool OddEvenRouting::is_turn_legal(const std::array<std::reference_wrapper<const
 
     return true;
 }
-
-
-
-
-
-
-
-
-
-

@@ -32,29 +32,29 @@ const std::vector<TurnModelRouting::Direction>& NorthLastRouting::get_legal_dire
 
     // check if the destination is at the west/east of the current router
     if (dst_router_pos.x < curr_router_pos.x) {
-        returned_legal_direction.push_back(TurnModelRouting::Direction::LEFT);
+        returned_legal_direction.push_back(TurnModelRouting::Direction::WEST);
     } else if (dst_router_pos.x > curr_router_pos.x) {
-        returned_legal_direction.push_back(TurnModelRouting::Direction::RIGHT);
+        returned_legal_direction.push_back(TurnModelRouting::Direction::EAST);
     }
 
     // check if the destination router is at the south of the current router
     if (dst_router_pos.y < curr_router_pos.y) {
-        returned_legal_direction.push_back(TurnModelRouting::Direction::DOWN);
+        returned_legal_direction.push_back(TurnModelRouting::Direction::SOUTH);
     }
 
     // check if the destination router is at the layer below the current router
     if (dst_router_pos.layer_num < curr_router_pos.layer_num) {
-        returned_legal_direction.push_back(TurnModelRouting::Direction::BELOW);
+        returned_legal_direction.push_back(TurnModelRouting::Direction::DOWN);
     }
 
     // consider north and up only when none of other directions are legal
     if (returned_legal_direction.empty()) {
         if (dst_router_pos.y > curr_router_pos.y) {
-            returned_legal_direction.push_back(TurnModelRouting::Direction::UP);
+            returned_legal_direction.push_back(TurnModelRouting::Direction::NORTH);
         }
 
         if (dst_router_pos.layer_num > curr_router_pos.layer_num) {
-            returned_legal_direction.push_back(TurnModelRouting::Direction::ABOVE);
+            returned_legal_direction.push_back(TurnModelRouting::Direction::UP);
         }
     }
 

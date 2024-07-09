@@ -25,17 +25,17 @@ const std::vector<TurnModelRouting::Direction>& XYRouting::get_legal_directions(
     */
 
     if (dst_router_pos.x > curr_router_pos.x) {
-        return right_direction;
+        return east_direction;
     } else if (dst_router_pos.x < curr_router_pos.x) {
-        return left_direction;
+        return west_direction;
     } else if (dst_router_pos.y > curr_router_pos.y) {
-        return up_direction;
+        return north_direction;
     } else if (dst_router_pos.y < curr_router_pos.y) {
-        return down_direction;
+        return south_direction;
     } else if (dst_router_pos.layer_num > curr_router_pos.layer_num) {
-        return above_direction;
+        return up_direction;
     } else if (dst_router_pos.layer_num < curr_router_pos.layer_num) {
-        return below_direction;
+        return down_direction;
     } else {
         return no_direction;
     }

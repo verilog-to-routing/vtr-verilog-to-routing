@@ -29,17 +29,17 @@ const std::vector<TurnModelRouting::Direction>& NegativeFirstRouting::get_legal_
 
     // check whether moving west keeps us on a minimal route
     if (dst_router_pos.x < curr_router_pos.x) {
-        returned_legal_direction.push_back(TurnModelRouting::Direction::LEFT);
+        returned_legal_direction.push_back(TurnModelRouting::Direction::WEST);
     }
 
     // check whether moving south keeps us on a minimal route
     if (dst_router_pos.y < curr_router_pos.y) {
-        returned_legal_direction.push_back(TurnModelRouting::Direction::DOWN);
+        returned_legal_direction.push_back(TurnModelRouting::Direction::SOUTH);
     }
 
     // check whether moving below keeps us on a minimal route
     if (dst_router_pos.layer_num < curr_router_pos.layer_num) {
-        returned_legal_direction.push_back(TurnModelRouting::Direction::BELOW);
+        returned_legal_direction.push_back(TurnModelRouting::Direction::DOWN);
     }
 
     // if at least one of the negative directions is legal,
@@ -55,17 +55,17 @@ const std::vector<TurnModelRouting::Direction>& NegativeFirstRouting::get_legal_
 
     // check whether moving east keeps us on a minimal route
     if (dst_router_pos.x > curr_router_pos.x) {
-        returned_legal_direction.push_back(TurnModelRouting::Direction::RIGHT);
+        returned_legal_direction.push_back(TurnModelRouting::Direction::EAST);
     }
 
     // check whether moving north keeps us on a minimal route
     if (dst_router_pos.y > curr_router_pos.y) {
-        returned_legal_direction.push_back(TurnModelRouting::Direction::UP);
+        returned_legal_direction.push_back(TurnModelRouting::Direction::NORTH);
     }
 
     // check whether moving above keeps us on a minimal route
     if (dst_router_pos.layer_num > curr_router_pos.layer_num) {
-        returned_legal_direction.push_back(TurnModelRouting::Direction::ABOVE);
+        returned_legal_direction.push_back(TurnModelRouting::Direction::UP);
     }
 
     return returned_legal_direction;

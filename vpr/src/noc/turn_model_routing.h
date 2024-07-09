@@ -109,12 +109,12 @@ class TurnModelRouting : public NocRouting {
      * choose to travel.
      */
     enum class Direction {
-        LEFT,        /*!< Moving towards the negative X-axis*/
-        RIGHT,       /*!< Moving towards the positive X-axis*/
-        UP,          /*!< Moving towards the positive Y-axis*/
-        DOWN,        /*!< Moving towards the negative Y-axis*/
-        ABOVE,       /*!< Moving towards the positive Z-axis*/
-        BELOW,       /*!< Moving towards the negative Z-axis*/
+        WEST,        /*!< Moving towards the negative X-axis*/
+        EAST,        /*!< Moving towards the positive X-axis*/
+        NORTH,       /*!< Moving towards the positive Y-axis*/
+        SOUTH,       /*!< Moving towards the negative Y-axis*/
+        UP,          /*!< Moving towards the positive Z-axis*/
+        DOWN,        /*!< Moving towards the negative Z-axis*/
         N_DIRECTIONS,
         INVALID      /*!< Invalid direction*/
     };

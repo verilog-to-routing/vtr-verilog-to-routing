@@ -118,22 +118,22 @@ NocLinkId TurnModelRouting::move_to_next_router(NocRouterId& curr_router_id,
          * If the directions do not match, then this link is not valid.
          */
         switch (next_step_direction) {
-            case TurnModelRouting::Direction::LEFT:
+            case TurnModelRouting::Direction::WEST:
                 if (next_router_position.x < curr_router_position.x) {
                     found_next_router = true;
                 }
                 break;
-            case TurnModelRouting::Direction::RIGHT:
+            case TurnModelRouting::Direction::EAST:
                 if (next_router_position.x > curr_router_position.x) {
                     found_next_router = true;
                 }
                 break;
-            case TurnModelRouting::Direction::UP:
+            case TurnModelRouting::Direction::NORTH:
                 if (next_router_position.y > curr_router_position.y) {
                     found_next_router = true;
                 }
                 break;
-            case TurnModelRouting::Direction::DOWN:
+            case TurnModelRouting::Direction::SOUTH:
                 if (next_router_position.y < curr_router_position.y) {
                     found_next_router = true;
                 }
@@ -200,7 +200,7 @@ uint32_t TurnModelRouting::murmur3_32(const std::vector<uint32_t>& key, uint32_t
 TurnModelRouting::Direction TurnModelRouting::select_y_direction(const std::vector<TurnModelRouting::Direction>& directions) {
     // iterate over the given iterations and return the first vertical one
     for (const auto& direction : directions) {
-        if (direction == TurnModelRouting::Direction::DOWN || direction == TurnModelRouting::Direction::UP) {
+        if (direction == TurnModelRouting::Direction::SOUTH || direction == TurnModelRouting::Direction::NORTH) {
             return direction;
         }
     }
@@ -212,7 +212,7 @@ TurnModelRouting::Direction TurnModelRouting::select_y_direction(const std::vect
 TurnModelRouting::Direction TurnModelRouting::select_x_direction(const std::vector<TurnModelRouting::Direction>& directions) {
     // iterate over the given iterations and return the first horizontal one
     for (const auto& direction : directions) {
-        if (direction == TurnModelRouting::Direction::RIGHT || direction == TurnModelRouting::Direction::LEFT) {
+        if (direction == TurnModelRouting::Direction::EAST || direction == TurnModelRouting::Direction::WEST) {
             return direction;
         }
     }
@@ -224,7 +224,7 @@ TurnModelRouting::Direction TurnModelRouting::select_x_direction(const std::vect
 TurnModelRouting::Direction TurnModelRouting::select_z_direction(const std::vector<TurnModelRouting::Direction>& directions) {
     // iterate over the given iterations and return the first one along the z axis
     for (const auto& direction : directions) {
-        if (direction == TurnModelRouting::Direction::ABOVE || direction == TurnModelRouting::Direction::BELOW) {
+        if (direction == TurnModelRouting::Direction::UP || direction == TurnModelRouting::Direction::DOWN) {
             return direction;
         }
     }
