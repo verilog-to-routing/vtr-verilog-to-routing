@@ -29,13 +29,6 @@ class OddEvenRouting : public TurnModelRouting{
                                                                          NocRouterId dst_router_id,
                                                                          const NocStorage& noc_model) override;
 
-    TurnModelRouting::Direction select_next_direction(const std::vector<TurnModelRouting::Direction>& legal_directions,
-                                                      NocRouterId src_router_id,
-                                                      NocRouterId dst_router_id,
-                                                      NocRouterId curr_router_id,
-                                                      NocTrafficFlowId traffic_flow_id,
-                                                      const NocStorage& noc_model) override;
-
     bool is_turn_legal(const std::array<std::reference_wrapper<const NocRouter>, 3>& noc_routers) const override;
 
     /**
