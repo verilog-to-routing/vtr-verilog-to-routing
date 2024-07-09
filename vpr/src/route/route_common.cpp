@@ -723,10 +723,22 @@ t_bb load_net_route_bb(const Netlist<>& net_list,
         VTR_ASSERT(rr_graph.node_layer(sink_rr) >= 0);
         VTR_ASSERT(rr_graph.node_layer(sink_rr) <= device_ctx.grid.get_num_layers() - 1);
 
-        xmin = std::min<int>(xmin, rr_graph.node_xlow(sink_rr));
-        xmax = std::max<int>(xmax, rr_graph.node_xhigh(sink_rr));
-        ymin = std::min<int>(ymin, rr_graph.node_ylow(sink_rr));
-        ymax = std::max<int>(ymax, rr_graph.node_yhigh(sink_rr));
+        size_t node_xlow = rr_graph.node_xlow(sink_rr);
+        size_t node_ylow = rr_graph.node_ylow(sink_rr);
+
+        size_t tile_layer = rr_graph.node_layer(sink_rr);
+        t_physical_tile_loc tile_loc = {(int)node_xlow, (int)node_ylow, (int)tile_layer};
+        t_physical_tile_type_ptr tile_type = g_vpr_ctx.device().grid.get_physical_type(tile_loc);
+
+        size_t tile_xlow = node_xlow - g_vpr_ctx.device().grid.get_width_offset(tile_loc);
+        size_t tile_ylow = node_ylow - g_vpr_ctx.device().grid.get_height_offset(tile_loc);
+        size_t tile_xhigh = tile_xlow + tile_type->width - 1;
+        size_t tile_yhigh = tile_ylow + tile_type->height - 1;
+
+        xmin = std::min<int>(xmin, (int)tile_xlow);
+        xmax = std::max<int>(xmax, (int)tile_xhigh);
+        ymin = std::min<int>(ymin, (int)tile_ylow);
+        ymax = std::max<int>(ymax, (int)tile_yhigh);
         layer_min = std::min<int>(layer_min, rr_graph.node_layer(sink_rr));
         layer_max = std::max<int>(layer_max, rr_graph.node_layer(sink_rr));
     }
