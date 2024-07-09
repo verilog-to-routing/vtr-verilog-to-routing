@@ -220,6 +220,7 @@ bool Encryption::encryptFile(const std::string& publicKeyFile, std::string& file
     unsigned char iv[EVP_MAX_IV_LENGTH];
     if (RAND_bytes(iv, sizeof(iv)) != 1) {
         std::cerr << "Error generating IV." << std::endl;
+        EVP_PKEY_free(publicKey);
         return false;
     }
 
@@ -248,6 +249,8 @@ bool Encryption::encryptFile(const std::string& publicKeyFile, std::string& file
     encryptedDoc.save_file(encryptedFilePath.c_str(), "  ");
 
     std::cout << "File encrypted successfully. Encrypted file saved as: " << encryptedFilePath << std::endl;
+
+    EVP_PKEY_free(publicKey);
 
     return true;
 }
