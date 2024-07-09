@@ -62,7 +62,7 @@ EVP_PKEY* Encryption::loadPublicKey(const std::string& filename) {
  * @param publicKey The public key used for encryption
  * @return std::string Encrypted session key
  */
-std::string Encryption::encryptSessionKey(const unsigned char* sessionKey, size_t keySize, EVP_PKEY* publicKey) {
+std::string Encryption::encryptSessionKey(std::vector<unsigned char>& sessionKey, EVP_PKEY* publicKey) {
     EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new(publicKey, NULL);
     if (!ctx) {
         std::cerr << "Failed to create EVP_PKEY_CTX" << std::endl;
@@ -82,14 +82,15 @@ std::string Encryption::encryptSessionKey(const unsigned char* sessionKey, size_
     }
 
     size_t outLen;
-    if (EVP_PKEY_encrypt(ctx, NULL, &outLen, sessionKey, keySize) <= 0) {
+    size_t keySize = sessionKey.size();
+    if (EVP_PKEY_encrypt(ctx, NULL, &outLen, sessionKey.data(), keySize) <= 0) {
         std::cerr << "EVP_PKEY_encrypt (determine length) failed" << std::endl;
         EVP_PKEY_CTX_free(ctx);
         return "";
     }
 
     std::vector<unsigned char> out(outLen);
-    if (EVP_PKEY_encrypt(ctx, out.data(), &outLen, sessionKey, keySize) <= 0) {
+    if (EVP_PKEY_encrypt(ctx, out.data(), &outLen, sessionKey.data(), keySize) <= 0) {
         std::cerr << "EVP_PKEY_encrypt failed" << std::endl;
         EVP_PKEY_CTX_free(ctx);
         return "";
@@ -133,7 +134,7 @@ std::string Encryption::base64Encode(const unsigned char* buffer, size_t length)
  * @return std::string The encrypted ciphertext.
  *         Returns an empty string if there is an error during encryption.
  */
-std::string Encryption::encryptData(const std::string& plaintext, const unsigned char* sessionKey, const unsigned char* iv) {
+std::string Encryption::encryptData(const std::string& plaintext, std::vector<unsigned char>& sessionKey, const unsigned char* iv) {
     EVP_CIPHER_CTX* ctx = EVP_CIPHER_CTX_new();
     if (!ctx) {
         std::cerr << "Failed to create EVP_CIPHER_CTX" << std::endl;
@@ -141,7 +142,7 @@ std::string Encryption::encryptData(const std::string& plaintext, const unsigned
     }
 
     // Initialize the encryption operation with AES-128-CBC
-    if (EVP_EncryptInit_ex(ctx, EVP_aes_128_cbc(), NULL, sessionKey, iv) != 1) {
+    if (EVP_EncryptInit_ex(ctx, EVP_aes_128_cbc(), NULL, sessionKey.data(), iv) != 1) {
         std::cerr << "EVP_EncryptInit_ex failed" << std::endl;
         EVP_CIPHER_CTX_free(ctx);
         return "";
@@ -189,8 +190,8 @@ bool Encryption::encryptFile(const std::string& publicKeyFile, std::string& file
 
     OpenSSL_add_all_algorithms();
     ERR_load_crypto_strings();
-    unsigned char sessionKey[sessionKeySize];
-    generateSessionKey(sessionKey, sizeof(sessionKey));
+    std::vector<unsigned char> sessionKey(sessionKeySize);
+    generateSessionKey(sessionKey.data(), sessionKey.size());
 
     //load public key
     EVP_PKEY* publicKey = loadPublicKey(publicKeyFile);
@@ -211,7 +212,7 @@ bool Encryption::encryptFile(const std::string& publicKeyFile, std::string& file
     file.close();
 
     // Encrypt session key
-    std::string encryptedSessionKey = encryptSessionKey(sessionKey, sizeof(sessionKey), publicKey);
+    std::string encryptedSessionKey = encryptSessionKey(sessionKey, publicKey);
     if (encryptedSessionKey.empty()) {
         EVP_PKEY_free(publicKey);
         return false;
