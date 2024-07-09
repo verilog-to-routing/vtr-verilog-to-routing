@@ -98,19 +98,19 @@ NocLinkId TurnModelRouting::move_to_next_router(NocRouterId& curr_router_id,
     bool visited_next_router = false;
 
     // get all the outgoing links for the current router
-    const auto& router_connections = noc_model.get_noc_router_outgoing_links(curr_router_id);
+    const std::vector<NocLinkId>& router_connections = noc_model.get_noc_router_outgoing_links(curr_router_id);
 
     // go through each outgoing link and determine whether the link leads towards the intended route direction
-    for (auto connecting_link : router_connections) {
+    for (NocLinkId connecting_link : router_connections) {
         // get the current outgoing link which is being processed
         const NocLink& curr_outgoing_link = noc_model.get_single_noc_link(connecting_link);
 
         // get the next router that we will visit if we travel across the current link
-        auto next_router_id = curr_outgoing_link.get_sink_router();
+        NocRouterId next_router_id = curr_outgoing_link.get_sink_router();
         const NocRouter& next_router = noc_model.get_single_noc_router(next_router_id);
 
         // get the coordinates of the next router
-        auto next_router_position = next_router.get_router_physical_location();
+        t_physical_tile_loc next_router_position = next_router.get_router_physical_location();
 
         /* Using the position of the next router we will visit if we take the current link,
          * determine if the travel direction through the link matches
@@ -135,6 +135,16 @@ NocLinkId TurnModelRouting::move_to_next_router(NocRouterId& curr_router_id,
                 break;
             case TurnModelRouting::Direction::SOUTH:
                 if (next_router_position.y < curr_router_position.y) {
+                    found_next_router = true;
+                }
+                break;
+            case TurnModelRouting::Direction::UP:
+                if (next_router_position.layer_num > curr_router_position.layer_num) {
+                    found_next_router = true;
+                }
+                break;
+            case TurnModelRouting::Direction::DOWN:
+                if (next_router_position.layer_num < curr_router_position.layer_num) {
                     found_next_router = true;
                 }
                 break;
