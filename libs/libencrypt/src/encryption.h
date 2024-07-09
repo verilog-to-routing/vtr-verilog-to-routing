@@ -50,7 +50,7 @@ public:
      * @param publicKey The public key used for encryption
      * @return std::string Encrypted session key
      */
-    static std::string encryptSessionKey(const unsigned char* sessionKey, size_t keySize, EVP_PKEY* publicKey);
+    static std::string encryptSessionKey(std::vector<unsigned char>& sessionKey, EVP_PKEY* publicKey);
 
     /**
      * @brief 
@@ -70,7 +70,7 @@ public:
      * @return std::string The encrypted ciphertext.
      *         Returns an empty string if there is an error during encryption.
      */
-    static std::string encryptData(const std::string& plaintext, const unsigned char* sessionKey, const unsigned char* iv);
+    static std::string encryptData(const std::string& plaintext, std::vector<unsigned char>& sessionKey, const unsigned char* iv);
 
     /**
      * @brief Encrypts a file using the provided public key.
