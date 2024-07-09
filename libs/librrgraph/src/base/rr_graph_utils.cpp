@@ -132,30 +132,31 @@ vtr::vector<RRNodeId, std::vector<RREdgeId>> get_fan_in_list(const RRGraphView& 
     return node_fan_in_list;
 }
 
-void set_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_builder, const DeviceGrid& grid) {
-    auto node_fanins = get_fan_in_list(rr_graph);
-
-    // Keep track of offsets for SINKs for each tile type, to avoid repeated
-    // calculations
-    using Offset = vtr::Point<size_t>;
-    std::unordered_map<t_physical_tile_type_ptr, std::unordered_map<size_t, Offset>> physical_type_offsets;
+void rr_set_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_builder, const DeviceGrid& grid) {
+    using Offset = vtr::Point<int>;
+    using BoundingBox = vtr::Rect<int>;
 
     // Helper fn. to remove old sink locations from RRSpatialLookup
-    auto remove_sink_locs_from_lookup = [&](Offset bottom_left, Offset top_right, Offset new_sink_loc, RRNodeId node, size_t layer, size_t ptc) {
-        VTR_ASSERT(rr_graph_builder.node_lookup().find_node((int)layer, (int)new_sink_loc.x(), (int)new_sink_loc.y(), SINK, (int)ptc) != RRNodeId::INVALID());
+    auto remove_sink_locs_from_lookup = [&](BoundingBox tile_bb, Offset new_sink_loc, RRNodeId node, int layer, int ptc) {
+        VTR_ASSERT(rr_graph_builder.node_lookup().find_node(layer, new_sink_loc.x(), new_sink_loc.y(), SINK, ptc) != RRNodeId::INVALID());
 
-        for (size_t x = bottom_left.x(); x <= top_right.x(); ++x) {
-            for (size_t y = bottom_left.y(); y <= top_right.y(); ++y) {
+        for (int x = tile_bb.xmin(); x <= tile_bb.xmax(); ++x) {
+            for (int y = tile_bb.ymin(); y <= tile_bb.ymax(); ++y) {
                 if (x == new_sink_loc.x() && y == new_sink_loc.y()) /* The new sink location */
                     continue;
 
-                if (rr_graph_builder.node_lookup().find_node((int)layer, (int)x, (int)y, SINK, (int)ptc) == RRNodeId::INVALID()) /* Already removed */
+                if (rr_graph_builder.node_lookup().find_node(layer, x, y, SINK, ptc) == RRNodeId::INVALID()) /* Already removed */
                     continue;
 
-                rr_graph_builder.node_lookup().remove_node(node, (int)layer, (int)x, (int)y, SINK, (int)ptc);
+                rr_graph_builder.node_lookup().remove_node(node, layer, x, y, SINK, ptc);
             }
         }
     };
+
+    auto node_fanins = get_fan_in_list(rr_graph);
+
+    // Keep track of offsets for SINKs for each tile type, to avoid repeated calculations
+    std::unordered_map<t_physical_tile_type_ptr, std::unordered_map<int, Offset>> physical_type_offsets;
 
     // Iterate over all SINK nodes
     for (size_t node = 0; node < rr_graph.num_nodes(); ++node) {
@@ -164,82 +165,64 @@ void set_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_builder
         if (rr_graph.node_type((RRNodeId)node_id) != e_rr_type::SINK)
             continue;
 
-        // Skip 1x1 tiles
-        size_t node_xlow = rr_graph.node_xlow(node_id);
-        size_t node_ylow = rr_graph.node_ylow(node_id);
+        int node_xlow = rr_graph.node_xlow(node_id);
+        int node_ylow = rr_graph.node_ylow(node_id);
+        int tile_layer = rr_graph.node_layer(node_id);
+        int sink_ptc = rr_graph.node_ptc_num(node_id);
 
-        size_t tile_layer = rr_graph.node_layer(node_id);
-        t_physical_tile_loc tile_loc = {(int)node_xlow, (int)node_ylow, (int)tile_layer};
+        t_physical_tile_loc tile_loc = {node_xlow, node_ylow, tile_layer};
         t_physical_tile_type_ptr tile_type = grid.get_physical_type(tile_loc);
+        BoundingBox tile_bb = get_sink_tile_bb(node_id, rr_graph, grid);
 
-        size_t tile_xlow = node_xlow - grid.get_width_offset(tile_loc);
-        size_t tile_ylow = node_ylow - grid.get_height_offset(tile_loc);
-        size_t tile_xhigh = tile_xlow + tile_type->width - 1;
-        size_t tile_yhigh = tile_ylow + tile_type->height - 1;
-
-        size_t tile_width = tile_xhigh - tile_xlow;
-        size_t tile_height = tile_yhigh - tile_ylow;
-
-        if (tile_width == 0 && tile_height == 0)
+        // Skip 1x1 tiles
+        if (tile_type->width == 1 && tile_type->height == 1)
             continue;
 
         // See if we have encountered this tile type/ptc combo before, and used saved offset if so
-        size_t sink_ptc = rr_graph.node_ptc_num(node_id);
-
+        Offset new_loc(-1, -1);
         if ((physical_type_offsets.find(tile_type) != physical_type_offsets.end()) && (physical_type_offsets[tile_type].find(sink_ptc) != physical_type_offsets[tile_type].end())) {
-            auto new_x = (short)((int)tile_xlow + physical_type_offsets[tile_type].at(sink_ptc).x());
-            auto new_y = (short)((int)tile_ylow + physical_type_offsets[tile_type].at(sink_ptc).y());
+            new_loc = tile_bb.bottom_left() + physical_type_offsets[tile_type].at(sink_ptc);
+        } else { /* We have not seen this tile type/ptc combo before */
+            // The IPINs of the current SINK node
+            std::unordered_set<RRNodeId> sink_ipins = {};
+            walk_cluster_recursive(rr_graph, node_fanins, sink_ipins, node_id, node_id);
 
-            // Remove old locations from lookup
-            remove_sink_locs_from_lookup({tile_xlow, tile_ylow}, {tile_xhigh, tile_yhigh}, {(size_t)new_x, (size_t)new_y}, node_id, tile_layer, sink_ptc);
+            /* Set SINK locations as average of collected IPINs */
 
-            // Set new coordinates
-            rr_graph_builder.set_node_coordinates(node_id, new_x, new_y, new_x, new_y);
+            if (sink_ipins.empty())
+                continue;
 
-            continue;
+            // Use float so that we can take average later
+            std::vector<float> x_coords;
+            std::vector<float> y_coords;
+
+            // Add coordinates of each "cluster-edge" pin to vectors
+            for (const auto& pin : sink_ipins) {
+                int pin_x = rr_graph.node_xlow(pin);
+                int pin_y = rr_graph.node_ylow(pin);
+
+                VTR_ASSERT_SAFE(pin_x == rr_graph.node_xhigh(pin));
+                VTR_ASSERT_SAFE(pin_y == rr_graph.node_yhigh(pin));
+
+                x_coords.push_back((float)pin_x);
+                y_coords.push_back((float)pin_y);
+            }
+
+            new_loc = {(int)round(std::accumulate(x_coords.begin(), x_coords.end(), 0.f) / (double)x_coords.size()),
+                       (int)round(std::accumulate(y_coords.begin(), y_coords.end(), 0.f) / (double)y_coords.size())};
+
+            // Save offset for this tile/ptc combo
+            if (physical_type_offsets.find(tile_type) == physical_type_offsets.end())
+                physical_type_offsets[tile_type] = {};
+
+            physical_type_offsets[tile_type].insert({sink_ptc, new_loc - tile_bb.bottom_left()});
         }
-
-        /* We have not seen this tile type/ptc combo before */
-
-        // The IPINs of the current SINK node
-        std::unordered_set<RRNodeId> sink_ipins = {};
-        walk_cluster_recursive(rr_graph, node_fanins, sink_ipins, node_id, node_id);
-
-        /* Set SINK locations as average of collected IPINs */
-
-        if (sink_ipins.empty())
-            continue;
-
-        // Use float so that we can take average later
-        std::vector<float> x_coords;
-        std::vector<float> y_coords;
-
-        // Add coordinates of each "cluster-edge" pin to vectors
-        for (const auto& pin : sink_ipins) {
-            size_t pin_x = rr_graph.node_xlow(pin);
-            size_t pin_y = rr_graph.node_ylow(pin);
-
-            VTR_ASSERT_SAFE(pin_x == (size_t)rr_graph.node_xhigh(pin));
-            VTR_ASSERT_SAFE(pin_y == (size_t)rr_graph.node_yhigh(pin));
-
-            x_coords.push_back((float)pin_x);
-            y_coords.push_back((float)pin_y);
-        }
-
-        auto x_avg = (short)round(std::accumulate(x_coords.begin(), x_coords.end(), 0.f) / (double)x_coords.size());
-        auto y_avg = (short)round(std::accumulate(y_coords.begin(), y_coords.end(), 0.f) / (double)y_coords.size());
 
         // Remove old locations from lookup
-        remove_sink_locs_from_lookup({tile_xlow, tile_ylow}, {tile_xhigh, tile_yhigh}, {(size_t)x_avg, (size_t)y_avg}, node_id, tile_layer, sink_ptc);
-
-        // Save offset for this tile/ptc combo
-        if (physical_type_offsets.find(tile_type) == physical_type_offsets.end())
-            physical_type_offsets[tile_type] = {};
-
-        physical_type_offsets[tile_type].insert({sink_ptc, {x_avg - tile_xlow, y_avg - tile_ylow}});
+        remove_sink_locs_from_lookup(tile_bb, new_loc, node_id, tile_layer, sink_ptc);
 
         // Set new coordinates
-        rr_graph_builder.set_node_coordinates(node_id, x_avg, y_avg, x_avg, y_avg);
+        rr_graph_builder.set_node_coordinates(node_id, (short)new_loc.x(), (short)new_loc.y(), (short)new_loc.x(), (short)new_loc.y());
     }
 }
 
@@ -264,4 +247,20 @@ bool inter_layer_connections_limited_to_opin(const RRGraphView& rr_graph) {
     }
 
     return limited_to_opin;
+}
+
+vtr::Rect<int> get_sink_tile_bb(RRNodeId sink_node, const RRGraphView& rr_graph, const DeviceGrid& grid) {
+    int node_xlow = rr_graph.node_xlow(sink_node);
+    int node_ylow = rr_graph.node_ylow(sink_node);
+    int node_layer = rr_graph.node_layer(sink_node);
+
+    t_physical_tile_loc tile_loc = {node_xlow, node_ylow, node_layer};
+    t_physical_tile_type_ptr tile_type = grid.get_physical_type(tile_loc);
+
+    int tile_xlow = node_xlow - grid.get_width_offset(tile_loc);
+    int tile_ylow = node_ylow - grid.get_height_offset(tile_loc);
+    int tile_xhigh = tile_xlow + tile_type->width - 1;
+    int tile_yhigh = tile_ylow + tile_type->height - 1;
+
+    return {{tile_xlow, tile_ylow}, {tile_xhigh, tile_yhigh}};
 }

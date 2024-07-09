@@ -763,7 +763,7 @@ void create_rr_graph(const t_graph_type graph_type,
 
     process_non_config_sets();
 
-    set_sink_locs(device_ctx.rr_graph, mutable_device_ctx.rr_graph_builder, grid);
+    rr_set_sink_locs(device_ctx.rr_graph, mutable_device_ctx.rr_graph_builder, grid);
 
     verify_rr_node_indices(grid,
                            device_ctx.rr_graph,

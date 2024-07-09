@@ -58,6 +58,16 @@ void Point<T>::swap() {
     std::swap(x_, y_);
 }
 
+template<class T>
+Point<T> Point<T>::operator+(const Point<T>& rhs) {
+    return {x_ + rhs.x_, y_ + rhs.y_};
+}
+
+template<class T>
+Point<T> Point<T>::operator-(const Point<T>& rhs) {
+    return {x_ - rhs.x_, y_ - rhs.y_};
+}
+
 /*
  * Rect
  */

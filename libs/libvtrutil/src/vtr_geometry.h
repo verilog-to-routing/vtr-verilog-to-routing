@@ -92,6 +92,12 @@ class Point {
     ///@brief Swap x and y values
     void swap();
 
+    /// @brief + operator
+    Point<T> operator+(const Point<T>& rhs);
+
+    /// @brief -= operator
+    Point<T> operator-(const Point<T>& rhs);
+
   private:
     T x_;
     T y_;

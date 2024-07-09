@@ -74,7 +74,7 @@ vtr::vector<RRNodeId, std::vector<RREdgeId>> get_fan_in_list(const RRGraphView& 
  * determined. However, this is quite a big issue, as choosing to write out the RR graph now significantly increases
  * runtime!
  */
-void set_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_builder, const DeviceGrid& grid);
+void rr_set_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_builder, const DeviceGrid& grid);
 
 /**
  * @brief Returns the segment number (distance along the channel) of the connection box from from_rr_type (CHANX or
@@ -100,4 +100,19 @@ int seg_index_of_sblock(const RRGraphView& rr_graph, int from_node, int to_node)
  * @return limited_to_opin
  */
 bool inter_layer_connections_limited_to_opin(const RRGraphView& rr_graph);
+
+/**
+ * @brief This function returns a rectangle whose coordinates are those of the given sink's tile.
+ *
+ * @note
+ * Before rr_set_sink_locs is called in vpr, calling this function would return the coordinates of the given sink.
+ * This function is useful for getting the coordinates of a sink's tile once its location is set to a 0x0 point
+ * in rr_set_sink_locs.
+ *
+ * @param sink_node
+ *
+ * @return sink_tile_bbox
+ */
+vtr::Rect<int> get_sink_tile_bb(RRNodeId sink_node, const RRGraphView& rr_graph, const DeviceGrid& grid);
+
 #endif
