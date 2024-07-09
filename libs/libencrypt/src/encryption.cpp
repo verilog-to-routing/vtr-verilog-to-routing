@@ -1,5 +1,11 @@
 #include "encryption.h"
 
+#ifdef SESSION_KEY_SIZE
+unsigned sessionKeySize = SESSION_KEY_SIZE;
+#else
+unsigned sessionKeySize = 16;
+#endif
+
 /**
  * @brief Generates random session key
  * 
@@ -183,7 +189,7 @@ bool Encryption::encryptFile(const std::string& publicKeyFile, std::string& file
 
     OpenSSL_add_all_algorithms();
     ERR_load_crypto_strings();
-    unsigned char sessionKey[16];
+    unsigned char sessionKey[sessionKeySize];
     generateSessionKey(sessionKey, sizeof(sessionKey));
 
     //load public key
@@ -214,7 +220,7 @@ bool Encryption::encryptFile(const std::string& publicKeyFile, std::string& file
     unsigned char iv[EVP_MAX_IV_LENGTH];
     if (RAND_bytes(iv, sizeof(iv)) != 1) {
         std::cerr << "Error generating IV." << std::endl;
-        return -1;
+        return false;
     }
 
     // Encrypt file contents

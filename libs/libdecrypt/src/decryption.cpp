@@ -103,7 +103,7 @@ EVP_PKEY *Decryption::loadPrivateKey(const std::string& privateKeyString) {
 /**
  * @brief 
  * 
- * @param encoded he base64-encoded input string.
+ * @param encoded The base64-encoded input string.
  * @return std::vector<unsigned char> The decoded dynamic array of characters.
  */
 std::vector<unsigned char> Decryption::base64Decode(const std::string& encoded) {

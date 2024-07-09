@@ -4,6 +4,9 @@ project(libencrypt)
 find_package(PkgConfig REQUIRED)
 pkg_search_module(OPENSSL REQUIRED openssl)
 
+set(SESSION_KEY_SIZE 16)
+add_definitions(-DSESSION_KEY_SIZE=${SESSION_KEY_SIZE})
+
 if(OPENSSL_FOUND)
     include_directories(${OPENSSL_INCLUDE_DIRS})
     message(STATUS "Using OpenSSL ${OPENSSL_VERSION}")
