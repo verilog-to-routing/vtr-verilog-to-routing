@@ -301,6 +301,17 @@ static bool check_adjacent(RRNodeId from_node, RRNodeId to_node, bool is_flat) {
     to_yhigh = rr_graph.node_yhigh(to_rr);
     to_ptc = rr_graph.node_ptc_num(to_rr);
 
+    // If to_node is SINK, use its tile coordinates
+    if (to_type == SINK) {
+        t_physical_tile_loc tile_loc = {(int)to_xlow, (int)to_ylow, (int)to_layer};
+        t_physical_tile_type_ptr tile_type = g_vpr_ctx.device().grid.get_physical_type(tile_loc);
+
+        to_xlow -= g_vpr_ctx.device().grid.get_width_offset(tile_loc);
+        to_ylow -= g_vpr_ctx.device().grid.get_height_offset(tile_loc);
+        to_xhigh = to_xlow + tile_type->width - 1;
+        to_yhigh = to_ylow + tile_type->height - 1;
+    }
+
     // Layer numbers are should not be more than one layer apart for connected nodes
     VTR_ASSERT(abs(from_layer - to_layer) <= 1);
     switch (from_type) {
@@ -348,7 +359,7 @@ static bool check_adjacent(RRNodeId from_node, RRNodeId to_node, bool is_flat) {
                 VTR_ASSERT(to_type == SINK);
             }
 
-            //An IPIN should be contained within the bounding box of it's connected sink
+            //An IPIN should be contained within the bounding box of its connected sink's tile
             if (to_type == SINK) {
                 if (from_xlow >= to_xlow
                     && from_ylow >= to_ylow
