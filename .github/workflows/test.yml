@@ -64,9 +64,9 @@ jobs:
           - {test: "vtr_reg_strong",             cores: "16", options: "",          cmake: "-DVTR_ASSERT_LEVEL=3",                                         extra_pkgs: "libeigen3-dev"}
           - {test: "vtr_reg_strong_odin",        cores: "16", options: "",          cmake: "-DVTR_ASSERT_LEVEL=3 -DWITH_ODIN=ON",                          extra_pkgs: "libeigen3-dev"}
           - {test: "vtr_reg_strong_odin",        cores: "16", options: "-skip_qor", cmake: "-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=ON -DWITH_ODIN=ON", extra_pkgs: "libeigen3-dev"}
-          #- {test: "vtr_reg_system_verilog",     cores: "16", options: "",          cmake: "-DYOSYS_F4PGA_PLUGINS=ON",                                     extra_pkgs: ""}
+          - {test: "vtr_reg_system_verilog",     cores: "16", options: "",          cmake: "-DYOSYS_F4PGA_PLUGINS=ON",                                     extra_pkgs: ""}
           - {test: "odin_reg_strong",            cores: "16", options: "",          cmake: "-DWITH_ODIN=ON",                                               extra_pkgs: ""}
-          #- {test: "parmys_reg_strong",          cores: "16", options: "",          cmake: "-DYOSYS_F4PGA_PLUGINS=ON",                                     extra_pkgs: ""}
+          - {test: "parmys_reg_strong",          cores: "16", options: "",          cmake: "-DYOSYS_F4PGA_PLUGINS=ON",                                     extra_pkgs: ""}
 
     env:
       DEBIAN_FRONTEND: "noninteractive"
