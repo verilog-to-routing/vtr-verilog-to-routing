@@ -527,10 +527,9 @@ t_physical_tile_type_ptr physical_tile_type(ClusterBlockId blk) {
     auto& place_ctx = g_vpr_ctx.placement();
     auto& device_ctx = g_vpr_ctx.device();
 
-    auto block_loc = place_ctx.block_locs[blk];
-    auto loc = block_loc.loc;
+    auto block_loc = place_ctx.block_locs[blk].loc;
 
-    return device_ctx.grid.get_physical_type({loc.x, loc.y, loc.layer});
+    return device_ctx.grid.get_physical_type({block_loc.x, block_loc.y, block_loc.layer});
 }
 
 t_physical_tile_type_ptr physical_tile_type(AtomBlockId atom_blk) {
@@ -1372,8 +1371,8 @@ std::vector<int> get_cluster_internal_class_pairs(const AtomLookup& atom_lookup,
     std::tie(physical_tile, sub_tile, rel_cap, logical_block) = get_cluster_blk_physical_spec(cluster_block_id);
     class_num_vec.reserve(physical_tile->primitive_class_inf.size());
 
-    const auto& cluster_atoms = *cluster_to_atoms(cluster_block_id);
-    for (auto atom_blk_id : cluster_atoms) {
+    const auto& cluster_atoms = cluster_to_atoms(cluster_block_id);
+    for (AtomBlockId atom_blk_id : cluster_atoms) {
         auto atom_pb_graph_node = atom_lookup.atom_pb_graph_node(atom_blk_id);
         auto class_range = get_pb_graph_node_class_physical_range(physical_tile,
                                                                   sub_tile,
@@ -2148,20 +2147,6 @@ int max_pins_per_grid_tile() {
         max_pins = std::max(max_pins, pins_per_grid_tile);
     }
     return max_pins;
-}
-
-t_physical_tile_type_ptr get_physical_tile_type(const ClusterBlockId blk) {
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_ctx = g_vpr_ctx.placement();
-    if (place_ctx.block_locs.empty()) { //No placement, pick best match
-        return pick_physical_type(cluster_ctx.clb_nlist.block_type(blk));
-    } else { //Have placement, select physical tile implementing blk
-        auto& device_ctx = g_vpr_ctx.device();
-
-        t_pl_loc loc = place_ctx.block_locs[blk].loc;
-
-        return device_ctx.grid.get_physical_type({loc.x, loc.y, loc.layer});
-    }
 }
 
 int net_pin_to_tile_pin_index(const ClusterNetId net_id, int net_pin_index) {

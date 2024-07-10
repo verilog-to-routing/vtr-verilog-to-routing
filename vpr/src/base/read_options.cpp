@@ -1061,6 +1061,8 @@ struct ParseRouterHeap {
         ConvertedValue<e_heap_type> conv_value;
         if (str == "binary")
             conv_value.set_value(e_heap_type::BINARY_HEAP);
+        else if (str == "four_ary")
+            conv_value.set_value(e_heap_type::FOUR_ARY_HEAP);
         else if (str == "bucket")
             conv_value.set_value(e_heap_type::BUCKET_HEAP_APPROXIMATION);
         else {
@@ -1075,6 +1077,8 @@ struct ParseRouterHeap {
         ConvertedValue<std::string> conv_value;
         if (val == e_heap_type::BINARY_HEAP)
             conv_value.set_value("binary");
+        else if (val == e_heap_type::FOUR_ARY_HEAP)
+            conv_value.set_value("four_ary");
         else {
             VTR_ASSERT(val == e_heap_type::BUCKET_HEAP_APPROXIMATION);
             conv_value.set_value("bucket");
@@ -1083,7 +1087,7 @@ struct ParseRouterHeap {
     }
 
     std::vector<std::string> default_choices() {
-        return {"binary", "bucket"};
+        return {"binary", "four_ary", "bucket"};
     }
 };
 
@@ -1307,6 +1311,11 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
 
     stage_grp.add_argument<bool, ParseOnOff>(args.do_packing, "--pack")
         .help("Run packing")
+        .action(argparse::Action::STORE_TRUE)
+        .default_value("off");
+
+    stage_grp.add_argument<bool, ParseOnOff>(args.do_legalize, "--legalize")
+        .help("Legalize a flat placement, i.e. reconstruct and place clusters based on a flat placement file, which lists cluster and intra-cluster placement coordinates for each primitive.")
         .action(argparse::Action::STORE_TRUE)
         .default_value("off");
 
@@ -1590,6 +1599,10 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .help("Path to packed netlist file")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    file_grp.add_argument(args.FlatPlaceFile, "--flat_place_file")
+        .help("Path to input flat placement file")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     file_grp.add_argument(args.PlaceFile, "--place_file")
         .help("Path to placement file")
         .show_in(argparse::ShowIn::HELP_ONLY);
@@ -1625,6 +1638,17 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
 
     file_grp.add_argument(args.write_vpr_constraints_file, "--write_vpr_constraints")
         .help("Writes out new floorplanning constraints based on current placement to the specified XML file.")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    file_grp.add_argument(args.write_constraints_file, "--write_fix_clusters")
+        .help(
+            "Output file containing fixed locations of legalized input clusters - does not include clusters without placement coordinates; this file is used during post-legalization placement in order to hold input placement coordinates fixed while VPR places legalizer-generated orphan clusters.")
+        .default_value("fix_clusters.out")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    file_grp.add_argument(args.write_flat_place_file, "--write_flat_place")
+        .help(
+            "VPR's (or reconstructed external) placement solution in flat placement file format; this file lists cluster and intra-cluster placement coordinates for each atom and can be used to reconstruct a clustering and placement solution.")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     file_grp.add_argument(args.read_router_lookahead, "--read_router_lookahead")
@@ -2126,20 +2150,20 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
 
     place_grp.add_argument(args.place_constraint_expand, "--place_constraint_expand")
         .help(
-            "The value used to decide how much to expand the floorplan constraint region when writing"
-            "a floorplan constraint XML file. Takes in an integer value from zero to infinity."
-            "If the value is zero, the block stays at the same x, y location. If it is"
-            "greater than zero the constraint region expands by the specified value in each direction."
-            "For example, if 1 was specified, a block at the x, y location (1, 1) would have a constraint region"
+            "The value used to decide how much to expand the floorplan constraint region when writing "
+            "a floorplan constraint XML file. Takes in an integer value from zero to infinity. "
+            "If the value is zero, the block stays at the same x, y location. If it is "
+            "greater than zero the constraint region expands by the specified value in each direction. "
+            "For example, if 1 was specified, a block at the x, y location (1, 1) would have a constraint region "
             "of 2x2 centered around (1, 1), from (0, 0) to (2, 2).")
         .default_value("0")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument<bool, ParseOnOff>(args.place_constraint_subtile, "--place_constraint_subtile")
         .help(
-            "The bool used to say whether to print subtile constraints when printing a floorplan constraints XML file."
-            "If it is off, no subtile locations are specified when printing the floorplan constraints."
-            "If it is on, the floorplan constraints are printed with the subtiles from current placement.")
+            "The bool used to say whether to print subtile constraints when printing a floorplan constraints XML file. "
+            "If it is off, no subtile locations are specified when printing the floorplan constraints. "
+            "If it is on, the floorplan constraints are printed with the subtiles from current placement. ")
         .default_value("off")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
@@ -2252,7 +2276,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             " * 'simple' uses map router lookahead\n"
             " * 'delta' uses differences in position only\n"
             " * 'delta_override' uses differences in position with overrides for direct connects\n")
-        .default_value("delta")
+        .default_value("simple")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_timing_grp.add_argument<e_reducer, ParseReducer>(args.place_delay_model_reducer, "--place_delay_model_reducer")
@@ -2628,11 +2652,12 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .help(
             "Controls what type of heap to use for timing driven router.\n"
             " * binary: A binary heap is used.\n"
+            " * four_ary: A four_ary heap is used.\n"
             " * bucket: A bucket heap approximation is used. The bucket heap\n"
             " *         is faster because it is only a heap approximation.\n"
             " *         Testing has shown the approximation results in\n"
-            " *         similiar QoR with less CPU work.\n")
-        .default_value("binary")
+            " *         similar QoR with less CPU work.\n")
+        .default_value("four_ary")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_timing_grp.add_argument(args.router_first_iteration_timing_report_file, "--router_first_iter_timing_report")
@@ -2990,6 +3015,12 @@ void set_conditional_defaults(t_options& args) {
         args.RouteFile.set(route_file, Provenance::INFERRED);
     }
 
+    if (args.FlatPlaceFile.provenance() != Provenance::SPECIFIED) {
+        std::string flat_place_file = args.out_file_prefix;
+        flat_place_file += default_output_name + ".flat_place";
+        args.FlatPlaceFile.set(flat_place_file, Provenance::INFERRED);
+    }
+
     if (args.ActFile.provenance() != Provenance::SPECIFIED) {
         std::string activity_file = args.out_file_prefix;
         activity_file += default_output_name + ".act";
@@ -3031,6 +3062,13 @@ void set_conditional_defaults(t_options& args) {
             args.PlaceAlgorithm.set(CRITICALITY_TIMING_PLACE, Provenance::INFERRED);
         } else {
             args.PlaceAlgorithm.set(BOUNDING_BOX_PLACE, Provenance::INFERRED);
+        }
+    }
+
+    // If MAP Router lookahead is not used, we cannot use simple place delay lookup
+    if (args.place_delay_model.provenance() != Provenance::SPECIFIED) {
+        if (args.router_lookahead_type != e_router_lookahead::MAP) {
+            args.place_delay_model.set(PlaceDelayModelType::DELTA, Provenance::INFERRED);
         }
     }
 

@@ -175,7 +175,7 @@ vtr::vector<RRNodeId, float> calculate_all_path_delays_from_rr_node(RRNodeId src
                                                   /*segment_inf=*/{},
                                                   is_flat);
 
-    ConnectionRouter<BinaryHeap> router(
+    ConnectionRouter<FourAryHeap> router(
         device_ctx.grid,
         *router_lookahead,
         device_ctx.rr_graph.rr_nodes(),

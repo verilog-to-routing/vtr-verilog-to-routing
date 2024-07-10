@@ -13,17 +13,13 @@
 
 #include <cstdio>
 #include <cstring>
-#include <ctime>
-#include <chrono>
 #include <cmath>
-#include <sstream>
 
 #include "vtr_assert.h"
 #include "vtr_math.h"
 #include "vtr_log.h"
 #include "vtr_version.h"
 #include "vtr_time.h"
-#include "vtr_path.h"
 
 #include "vpr_types.h"
 #include "vpr_utils.h"
@@ -44,15 +40,12 @@
 #include "stats.h"
 #include "read_options.h"
 #include "echo_files.h"
-#include "read_xml_arch_file.h"
 #include "SetupVPR.h"
 #include "ShowSetup.h"
 #include "CheckArch.h"
 #include "CheckSetup.h"
 #include "rr_graph.h"
 #include "pb_type_graph.h"
-#include "route_common.h"
-#include "timing_place_lookup.h"
 #include "route.h"
 #include "route_export.h"
 #include "vpr_api.h"
@@ -65,7 +58,6 @@
 #include "concrete_timing_info.h"
 #include "netlist_writer.h"
 #include "AnalysisDelayCalculator.h"
-#include "RoutingDelayCalculator.h"
 #include "check_route.h"
 #include "constant_nets.h"
 #include "atom_netlist_utils.h"
@@ -86,15 +78,14 @@
 #include "tatum/echo_writer.hpp"
 
 #include "read_route.h"
-#include "read_blif.h"
 #include "read_place.h"
 
 #include "arch_util.h"
 
 #include "post_routing_pb_pin_fixup.h"
 
-#include "log.h"
-#include "iostream"
+
+#include "load_flat_place.h"
 
 #ifdef VPR_USE_TBB
 #    define TBB_PREVIEW_GLOBAL_CONTROL 1 /* Needed for compatibility with old TBB versions */
@@ -393,6 +384,7 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
             return false; //Unimplementable
         }
     }
+
     // For the time being, we decided to create the flat graph after placement is done. Thus, the is_flat parameter for this function
     //, since it is called before routing, should be false.
     vpr_create_device(vpr_setup, arch, false);
@@ -407,7 +399,6 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
         bool place_success = vpr_place_flow(placement_net_list, vpr_setup, arch);
 
         if (!place_success) {
-            std::cout << "failed placement" << std::endl;
             return false; //Unimplementable
         }
     }
@@ -595,6 +586,9 @@ bool vpr_pack_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
         if (packer_opts.doPacking == STAGE_DO) {
             //Do the actual packing
             status = vpr_pack(vpr_setup, arch);
+            if (!status) {
+                return status;
+            }
 
             //TODO: to be consistent with placement/routing vpr_pack should really
             //      load the netlist data structures itself, instead of re-loading
@@ -604,10 +598,25 @@ bool vpr_pack_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
             vpr_load_packing(vpr_setup, arch);
         } else {
             VTR_ASSERT(packer_opts.doPacking == STAGE_LOAD);
-            //Load a previous packing from the .net file
-            vpr_load_packing(vpr_setup, arch);
-            //Load cluster_constraints data structure here since loading pack file
-            load_cluster_constraints();
+
+            // generate a .net file by legalizing an input flat placement file
+            if (packer_opts.load_flat_placement) {
+
+                //Load and legalizer flat placement file
+                vpr_load_flat_placement(vpr_setup, arch);
+
+                //Load the result from the .net file
+                vpr_load_packing(vpr_setup, arch);
+
+            } else {
+
+                //Load a previous packing from the .net file
+                vpr_load_packing(vpr_setup, arch);
+
+                //Load cluster_constraints data structure here since loading pack file
+                load_cluster_constraints();
+            }
+
         }
 
         /* Sanity check the resulting netlist */
@@ -709,6 +718,37 @@ void vpr_load_packing(t_vpr_setup& vpr_setup, const t_arch& arch) {
     }
 }
 
+bool vpr_load_flat_placement(t_vpr_setup& vpr_setup, const t_arch& arch) {
+
+    // set up the device grid for the legalizer
+    auto& device_ctx = g_vpr_ctx.mutable_device();
+    device_ctx.arch = &arch;
+    device_ctx.grid = create_device_grid(vpr_setup.device_layout, arch.grid_layouts);
+    if (device_ctx.grid.get_num_layers() > 1) {
+        VPR_FATAL_ERROR(VPR_ERROR_PACK, "Legalizer currently only supports single layer devices.\n");
+    }
+
+    // load and legalize flat placement file, print .net and fix clusters files
+    bool status = load_flat_placement(vpr_setup, arch);
+    if (!status) {
+        return status;
+    }
+
+    // echo flat placement (orphan clusters will have -1 for X, Y, subtile coordinates)
+    if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_FLAT_PLACE)) {
+        print_flat_placement(getEchoFileName(E_ECHO_FLAT_PLACE));
+    }
+
+    // reset the device grid
+    device_ctx.grid.clear();
+
+    // if running placement, use the fix clusters file produced by the legalizer
+    if (vpr_setup.PlacerOpts.doPlacement) {
+        vpr_setup.PlacerOpts.constraints_file = vpr_setup.FileNameOpts.write_constraints_file;
+    }
+    return true;
+}
+
 bool vpr_place_flow(const Netlist<>& net_list, t_vpr_setup& vpr_setup, const t_arch& arch) {
     VTR_LOG("\n");
     const auto& placer_opts = vpr_setup.PlacerOpts;
@@ -735,6 +775,13 @@ bool vpr_place_flow(const Netlist<>& net_list, t_vpr_setup& vpr_setup, const t_a
     if (!filename_opts.write_vpr_constraints_file.empty()) {
         write_vpr_floorplan_constraints(filename_opts.write_vpr_constraints_file.c_str(), placer_opts.place_constraint_expand, placer_opts.place_constraint_subtile,
                                         placer_opts.floorplan_num_horizontal_partitions, placer_opts.floorplan_num_vertical_partitions);
+    }
+
+    // Write out a flat placement file if the option is specified
+    // A flat placement file includes cluster and intra-cluster placement coordinates for
+    // each primitive and can be used to reconstruct a clustering and placement solution.
+    if (!filename_opts.write_flat_place_file.empty()) {
+        print_flat_placement(vpr_setup.FileNameOpts.write_flat_place_file.c_str());
     }
 
     return true;
@@ -1404,7 +1451,7 @@ bool vpr_analysis_flow(const Netlist<>& net_list,
                                          Arch.architecture_id,
                                          post_routing_packing_output_file_name.c_str());
         } else {
-            VTR_LOG_WARN("Sychronization between packing and routing results is not applied due to illegal circuit implementation\n");
+            VTR_LOG_WARN("Synchronization between packing and routing results is not applied due to illegal circuit implementation\n");
         }
         VTR_LOG("\n");
     }

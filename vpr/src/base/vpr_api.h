@@ -65,6 +65,9 @@ bool vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch);
 ///@brief Loads a previous packing
 void vpr_load_packing(t_vpr_setup& vpr_setup, const t_arch& arch);
 
+///@brief Reconstructs a packing and placement solution from a flat placement file
+bool vpr_load_flat_placement(t_vpr_setup& vpr_setup, const t_arch& arch);
+
 /* Placement */
 
 ///@brief Perform, load or skip the placement stage

@@ -234,10 +234,6 @@ AtomBlockId find_memory_sibling(const t_pb* pb);
  */
 void place_sync_external_block_connections(ClusterBlockId iblk);
 
-//Returns the current tile implemnting blk (if placement is valid), or
-//the best expected physical tile the block should use (if no valid placement).
-t_physical_tile_type_ptr get_physical_tile_type(const ClusterBlockId blk);
-
 //Returns the physical pin of the tile, related to the given ClusterNedId, and the net pin index
 int net_pin_to_tile_pin_index(const ClusterNetId net_id, int net_pin_index);
 

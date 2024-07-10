@@ -715,6 +715,9 @@ struct hash<t_pl_offset> {
 };
 } // namespace std
 
+/// @brief Sentinel value for indicating that a block does not have a valid x location, used to check whether a block has been placed
+static constexpr int INVALID_X = -1;
+
 /**
  * @brief A placement location coordinate
  *
@@ -903,6 +906,7 @@ struct t_file_name_opts {
     std::string CircuitName;
     std::string CircuitFile;
     std::string NetFile;
+    std::string FlatPlaceFile;
     std::string PlaceFile;
     std::string RouteFile;
     std::string FPGAInterchangePhysicalFile;
@@ -912,6 +916,8 @@ struct t_file_name_opts {
     std::string out_file_prefix;
     std::string read_vpr_constraints_file;
     std::string write_vpr_constraints_file;
+    std::string write_constraints_file;
+    std::string write_flat_place_file;
     std::string write_block_usage;
     bool verify_file_digests;
 };
@@ -976,6 +982,7 @@ struct t_packer_opts {
     bool use_attraction_groups;
     int pack_num_moves;
     std::string pack_move_type;
+    bool load_flat_placement;
 };
 
 /**
@@ -1494,22 +1501,22 @@ struct t_analysis_opts {
 
 // used to store NoC specific options, when supplied as an input by the user
 struct t_noc_opts {
-    bool noc;                                         ///<options to turn on hard NoC modeling & optimization
-    std::string noc_flows_file;                       ///<name of the file that contains all the traffic flow information to be sent over the NoC in this design
-    std::string noc_routing_algorithm;                ///<controls the routing algorithm used to route packets within the NoC
-    double noc_placement_weighting;                   ///<controls the significance of the NoC placement cost relative to the total placement cost range:[0-inf)
-    double noc_aggregate_bandwidth_weighting;         ///<controls the significance of aggregate used bandwidth relative to other NoC placement costs:[0:-inf)
-    double noc_latency_constraints_weighting;         ///<controls the significance of meeting the traffic flow constraints range:[0-inf)
-    double noc_latency_weighting;                     ///<controls the significance of the traffic flow latencies relative to the other NoC placement costs range:[0-inf)
-    double noc_congestion_weighting;                  ///<controls the significance of the link congestions relative to the other NoC placement costs range:[0-inf)
-    double noc_centroid_weight;                       ///<controls how much the centroid location is adjusted towards NoC routers in NoC-biased centroid move:[0, 1]
-    int noc_swap_percentage;                          ///<controls the number of NoC router block swap attempts relative to the total number of swaps attempted by the placer range:[0-100]
-    int noc_sat_routing_bandwidth_resolution;         ///<if this number is N, the SAT formulation models link utilization in increments of 1/N
-    int noc_sat_routing_latency_overrun_weighting;    ///<controls the importance of reducing traffic flow latency overrun in SAT routing [0-inf)
-    int noc_sat_routing_congestion_weighting;         ///<controls the importance of reducing the number of congested NoC links in SAT routing [0-inf)
-    int noc_sat_routing_num_workers;                  ///<the number of parallel worker threads that the SAT solver can use to explore the solution space
-    bool noc_sat_routing_log_search_progress;         ///<indicates whether the detailed log of the SAT solver's search progress in printed
-    std::string noc_placement_file_name;              ///<is the name of the output file that contains the NoC placement information
+    bool noc;                                      ///<options to turn on hard NoC modeling & optimization
+    std::string noc_flows_file;                    ///<name of the file that contains all the traffic flow information to be sent over the NoC in this design
+    std::string noc_routing_algorithm;             ///<controls the routing algorithm used to route packets within the NoC
+    double noc_placement_weighting;                ///<controls the significance of the NoC placement cost relative to the total placement cost range:[0-inf)
+    double noc_aggregate_bandwidth_weighting;      ///<controls the significance of aggregate used bandwidth relative to other NoC placement costs:[0:-inf)
+    double noc_latency_constraints_weighting;      ///<controls the significance of meeting the traffic flow constraints range:[0-inf)
+    double noc_latency_weighting;                  ///<controls the significance of the traffic flow latencies relative to the other NoC placement costs range:[0-inf)
+    double noc_congestion_weighting;               ///<controls the significance of the link congestions relative to the other NoC placement costs range:[0-inf)
+    double noc_centroid_weight;                    ///<controls how much the centroid location is adjusted towards NoC routers in NoC-biased centroid move:[0, 1]
+    int noc_swap_percentage;                       ///<controls the number of NoC router block swap attempts relative to the total number of swaps attempted by the placer range:[0-100]
+    int noc_sat_routing_bandwidth_resolution;      ///<if this number is N, the SAT formulation models link utilization in increments of 1/N
+    int noc_sat_routing_latency_overrun_weighting; ///<controls the importance of reducing traffic flow latency overrun in SAT routing [0-inf)
+    int noc_sat_routing_congestion_weighting;      ///<controls the importance of reducing the number of congested NoC links in SAT routing [0-inf)
+    int noc_sat_routing_num_workers;               ///<the number of parallel worker threads that the SAT solver can use to explore the solution space
+    bool noc_sat_routing_log_search_progress;      ///<indicates whether the detailed log of the SAT solver's search progress in printed
+    std::string noc_placement_file_name;           ///<is the name of the output file that contains the NoC placement information
 };
 
 /**

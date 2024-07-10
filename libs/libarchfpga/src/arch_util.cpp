@@ -35,7 +35,7 @@ const char* get_arch_file_name() {
     return arch_file_name;
 }
 
-InstPort::InstPort(std::string str) {
+InstPort::InstPort(const std::string& str) {
     std::vector<std::string> inst_port = vtr::split(str, ".");
 
     if (inst_port.size() == 1) {
@@ -550,7 +550,7 @@ std::unordered_set<t_logical_block_type_ptr> get_equivalent_sites_set(t_physical
     std::unordered_set<t_logical_block_type_ptr> equivalent_sites;
 
     for (auto& sub_tile : type->sub_tiles) {
-        for (auto& logical_block : sub_tile.equivalent_sites) {
+        for (auto logical_block : sub_tile.equivalent_sites) {
             equivalent_sites.insert(logical_block);
         }
     }
