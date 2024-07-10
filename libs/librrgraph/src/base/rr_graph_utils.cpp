@@ -152,7 +152,7 @@ void rr_set_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_buil
 
         // Skip "0x0" nodes; either the tile is 1x1, or we have seen the node on a previous call of this function
         // and its new location has already been set
-        if ((node_xhigh - node_xlow) == 0 || (node_yhigh - node_ylow) == 0)
+        if ((node_xhigh - node_xlow) == 0 && (node_yhigh - node_ylow) == 0)
             continue;
 
         int node_layer = rr_graph.node_layer(node_id);
