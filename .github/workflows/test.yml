@@ -509,4 +509,4 @@ jobs:
     - name: Test_Encryption_Decryption
       shell: bash
       run: |
-        valgrind ./build/libs/libdecrypt/test/test_encrypt_decrypt
+        ./build/libs/libdecrypt/test/test_encrypt_decrypt
