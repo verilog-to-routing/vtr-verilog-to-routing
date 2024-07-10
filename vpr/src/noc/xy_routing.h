@@ -96,6 +96,7 @@ class XYRouting : public TurnModelRouting {
     const std::vector<TurnModelRouting::Direction>& get_legal_directions(NocRouterId src_router_id,
                                                                          NocRouterId curr_router_id,
                                                                          NocRouterId dst_router_id,
+                                                                         TurnModelRouting::Direction prev_dir,
                                                                          const NocStorage& noc_model) override;
 
     TurnModelRouting::Direction select_next_direction(const std::vector<TurnModelRouting::Direction>& legal_directions,

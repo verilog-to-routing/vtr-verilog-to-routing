@@ -50,6 +50,9 @@ void TurnModelRouting::route_flow(NocRouterId src_router_id,
      */
     std::unordered_set<NocRouterId> visited_routers;
 
+    // indicates the last direction taken in the route which is being formed.
+    TurnModelRouting::Direction prev_dir = TurnModelRouting::Direction::INVALID;
+
     // The route is terminated when we reach at the destination router
     while (curr_router_id != dst_router_id) {
         // get the current router (the last one added to the route)
@@ -59,20 +62,21 @@ void TurnModelRouting::route_flow(NocRouterId src_router_id,
         auto curr_router_pos = curr_router.get_router_physical_location();
 
         // get all directions that moves us closer to the destination router
-        const auto legal_directions = get_legal_directions(src_router_id, curr_router_id, dst_router_id, noc_model);
+        const auto& legal_directions = get_legal_directions(src_router_id, curr_router_id, dst_router_id, prev_dir, noc_model);
 
         // select the next direction from the available options
-        auto next_step_direction = select_next_direction(legal_directions,
-                                                         src_router_id,
-                                                         dst_router_id,
-                                                         curr_router_id,
-                                                         traffic_flow_id,
-                                                         noc_model);
+        TurnModelRouting::Direction next_step_direction = select_next_direction(legal_directions,
+                                                                                src_router_id,
+                                                                                dst_router_id,
+                                                                                curr_router_id,
+                                                                                traffic_flow_id,
+                                                                                noc_model);
 
-        auto next_link = move_to_next_router(curr_router_id, curr_router_pos, next_step_direction, visited_routers, noc_model);
+        NocLinkId next_link = move_to_next_router(curr_router_id, curr_router_pos, next_step_direction, visited_routers, noc_model);
 
         if (next_link) {
             flow_route.push_back(next_link);
+            prev_dir = next_step_direction;
         } else {
             VPR_FATAL_ERROR(VPR_ERROR_OTHER, "No route could be found from starting router with ID:'%d' "
                             "and the destination router with ID:'%d' using the XY-Routing algorithm.",

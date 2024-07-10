@@ -38,6 +38,7 @@ class NegativeFirstRouting : public TurnModelRouting {
     const std::vector<TurnModelRouting::Direction>& get_legal_directions(NocRouterId src_router_id,
                                                                          NocRouterId curr_router_id,
                                                                          NocRouterId dst_router_id,
+                                                                         TurnModelRouting::Direction prev_dir,
                                                                          const NocStorage& noc_model) override;
 
     bool is_turn_legal(const std::array<std::reference_wrapper<const NocRouter>, 3>& noc_routers) const override;

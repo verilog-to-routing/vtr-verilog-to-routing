@@ -9,6 +9,7 @@ XYRouting::~XYRouting() = default;
 const std::vector<TurnModelRouting::Direction>& XYRouting::get_legal_directions(NocRouterId /*src_router_id*/,
                                                                                 NocRouterId curr_router_id,
                                                                                 NocRouterId dst_router_id,
+                                                                                TurnModelRouting::Direction /*prev_dir*/,
                                                                                 const NocStorage& noc_model) {
     // get current and destination NoC routers
     const auto& curr_router = noc_model.get_single_noc_router(curr_router_id);

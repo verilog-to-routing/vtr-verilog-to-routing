@@ -8,6 +8,7 @@ OddEvenRouting::~OddEvenRouting() = default;
 const std::vector<TurnModelRouting::Direction>& OddEvenRouting::get_legal_directions(NocRouterId src_router_id,
                                                                                      NocRouterId curr_router_id,
                                                                                      NocRouterId dst_router_id,
+                                                                                     TurnModelRouting::Direction /*prev_dir*/,
                                                                                      const NocStorage& noc_model) {
     // used to access NoC compressed grid
     auto& place_ctx = g_vpr_ctx.placement();
