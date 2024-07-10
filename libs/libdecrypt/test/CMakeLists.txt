@@ -10,7 +10,7 @@ set(PUBLIC_KEY_FILE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../../libencrypt/public_ke
 target_compile_definitions(test_encrypt_decrypt PRIVATE PUBLIC_KEY_FILE="${PUBLIC_KEY_FILE_PATH}")
 
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/../../libencrypt/src"
-                        "${CMAKE_CURRENT_SOURCE_DIR}/../libdecrypt/src"
+                        "${CMAKE_CURRENT_SOURCE_DIR}/../src"
                         "${CMAKE_CURRENT_SOURCE_DIR}/src")
 
 target_link_libraries(test_encrypt_decrypt
