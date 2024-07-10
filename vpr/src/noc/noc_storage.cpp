@@ -99,6 +99,10 @@ NocRouterId NocStorage::get_router_at_grid_location(const t_pl_loc& hard_router_
     return hard_router_block->second;
 }
 
+bool NocStorage::is_noc_3d() const {
+    return multi_layer_noc_;
+}
+
 // setters for the NoC
 
 void NocStorage::add_router(int id,
@@ -240,6 +244,13 @@ void NocStorage::finished_building_noc() {
                                                   return a.get_latency() != b.get_latency();
                                               });
     detailed_link_latency_ = (link_latency_it != link_storage.end());
+
+    auto router_layer_it = std::adjacent_find(router_storage.begin(), router_storage.end(),
+                                              [](const NocRouter& a, const NocRouter& b) {
+                                                  return a.get_router_layer_position() != b.get_router_layer_position();
+                                              });
+
+    multi_layer_noc_ = (router_layer_it != router_storage.end());
 }
 
 void NocStorage::clear_noc() {
