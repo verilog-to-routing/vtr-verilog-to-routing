@@ -133,30 +133,10 @@ vtr::vector<RRNodeId, std::vector<RREdgeId>> get_fan_in_list(const RRGraphView& 
 }
 
 void rr_set_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_builder, const DeviceGrid& grid) {
-    using Offset = vtr::Point<int>;
-    using BoundingBox = vtr::Rect<int>;
-
-    // Helper fn. to remove old sink locations from RRSpatialLookup
-    auto remove_sink_locs_from_lookup = [&](BoundingBox tile_bb, Offset new_sink_loc, RRNodeId node, int layer, int ptc) {
-        VTR_ASSERT(rr_graph_builder.node_lookup().find_node(layer, new_sink_loc.x(), new_sink_loc.y(), SINK, ptc) != RRNodeId::INVALID());
-
-        for (int x = tile_bb.xmin(); x <= tile_bb.xmax(); ++x) {
-            for (int y = tile_bb.ymin(); y <= tile_bb.ymax(); ++y) {
-                if (x == new_sink_loc.x() && y == new_sink_loc.y()) /* The new sink location */
-                    continue;
-
-                if (rr_graph_builder.node_lookup().find_node(layer, x, y, SINK, ptc) == RRNodeId::INVALID()) /* Already removed */
-                    continue;
-
-                rr_graph_builder.node_lookup().remove_node(node, layer, x, y, SINK, ptc);
-            }
-        }
-    };
-
     auto node_fanins = get_fan_in_list(rr_graph);
 
     // Keep track of offsets for SINKs for each tile type, to avoid repeated calculations
-    std::unordered_map<t_physical_tile_type_ptr, std::unordered_map<int, Offset>> physical_type_offsets;
+    std::unordered_map<t_physical_tile_type_ptr, std::unordered_map<int, vtr::Point<int>>> physical_type_offsets;
 
     // Iterate over all SINK nodes
     for (size_t node = 0; node < rr_graph.num_nodes(); ++node) {
@@ -167,21 +147,25 @@ void rr_set_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_buil
 
         int node_xlow = rr_graph.node_xlow(node_id);
         int node_ylow = rr_graph.node_ylow(node_id);
-        int tile_layer = rr_graph.node_layer(node_id);
-        int sink_ptc = rr_graph.node_ptc_num(node_id);
+        int node_xhigh = rr_graph.node_xhigh(node_id);
+        int node_yhigh = rr_graph.node_yhigh(node_id);
 
-        t_physical_tile_loc tile_loc = {node_xlow, node_ylow, tile_layer};
-        t_physical_tile_type_ptr tile_type = grid.get_physical_type(tile_loc);
-        BoundingBox tile_bb = get_sink_tile_bb(node_id, rr_graph, grid);
-
-        // Skip 1x1 tiles
-        if (tile_type->width == 1 && tile_type->height == 1)
+        // Skip "0x0" nodes; either the tile is 1x1, or we have seen the node on a previous call of this function
+        // and its new location has already been set
+        if ((node_xhigh - node_xlow) == 0 || (node_yhigh - node_ylow) == 0)
             continue;
 
+        int node_layer = rr_graph.node_layer(node_id);
+        int node_ptc = rr_graph.node_ptc_num(node_id);
+
+        t_physical_tile_loc tile_loc = {node_xlow, node_ylow, node_layer};
+        t_physical_tile_type_ptr tile_type = grid.get_physical_type(tile_loc);
+        auto tile_bb = grid.get_tile_bb(tile_loc);
+
         // See if we have encountered this tile type/ptc combo before, and used saved offset if so
-        Offset new_loc(-1, -1);
-        if ((physical_type_offsets.find(tile_type) != physical_type_offsets.end()) && (physical_type_offsets[tile_type].find(sink_ptc) != physical_type_offsets[tile_type].end())) {
-            new_loc = tile_bb.bottom_left() + physical_type_offsets[tile_type].at(sink_ptc);
+        vtr::Point<int> new_loc(-1, -1);
+        if ((physical_type_offsets.find(tile_type) != physical_type_offsets.end()) && (physical_type_offsets[tile_type].find(node_ptc) != physical_type_offsets[tile_type].end())) {
+            new_loc = tile_bb.bottom_left() + physical_type_offsets[tile_type].at(node_ptc);
         } else { /* We have not seen this tile type/ptc combo before */
             // The IPINs of the current SINK node
             std::unordered_set<RRNodeId> sink_ipins = {};
@@ -215,11 +199,24 @@ void rr_set_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_buil
             if (physical_type_offsets.find(tile_type) == physical_type_offsets.end())
                 physical_type_offsets[tile_type] = {};
 
-            physical_type_offsets[tile_type].insert({sink_ptc, new_loc - tile_bb.bottom_left()});
+            physical_type_offsets[tile_type].insert({node_ptc, new_loc - tile_bb.bottom_left()});
         }
 
         // Remove old locations from lookup
-        remove_sink_locs_from_lookup(tile_bb, new_loc, node_id, tile_layer, sink_ptc);
+        VTR_ASSERT(rr_graph_builder.node_lookup().find_node(node_layer, new_loc.x(), new_loc.y(), SINK, node_ptc) != RRNodeId::INVALID());
+
+        for (int x = tile_bb.xmin(); x <= tile_bb.xmax(); ++x) {
+            for (int y = tile_bb.ymin(); y <= tile_bb.ymax(); ++y) {
+                if (x == new_loc.x() && y == new_loc.y()) /* The new sink location */
+                    continue;
+
+                if (rr_graph_builder.node_lookup().find_node(node_layer, x, y, SINK, node_ptc) == RRNodeId::INVALID()) /* Already removed */
+                    continue;
+
+                bool removed_successfully = rr_graph_builder.node_lookup().remove_node(node_id, node_layer, x, y, SINK, node_ptc);
+                VTR_ASSERT(removed_successfully);
+            }
+        }
 
         // Set new coordinates
         rr_graph_builder.set_node_coordinates(node_id, (short)new_loc.x(), (short)new_loc.y(), (short)new_loc.x(), (short)new_loc.y());
@@ -247,20 +244,4 @@ bool inter_layer_connections_limited_to_opin(const RRGraphView& rr_graph) {
     }
 
     return limited_to_opin;
-}
-
-vtr::Rect<int> get_sink_tile_bb(RRNodeId sink_node, const RRGraphView& rr_graph, const DeviceGrid& grid) {
-    int node_xlow = rr_graph.node_xlow(sink_node);
-    int node_ylow = rr_graph.node_ylow(sink_node);
-    int node_layer = rr_graph.node_layer(sink_node);
-
-    t_physical_tile_loc tile_loc = {node_xlow, node_ylow, node_layer};
-    t_physical_tile_type_ptr tile_type = grid.get_physical_type(tile_loc);
-
-    int tile_xlow = node_xlow - grid.get_width_offset(tile_loc);
-    int tile_ylow = node_ylow - grid.get_height_offset(tile_loc);
-    int tile_xhigh = tile_xlow + tile_type->width - 1;
-    int tile_yhigh = tile_ylow + tile_type->height - 1;
-
-    return {{tile_xlow, tile_ylow}, {tile_xhigh, tile_yhigh}};
 }

@@ -40,6 +40,7 @@
 
 /******************** Subroutines local to route_common.cpp *******************/
 static vtr::vector<ParentNetId, std::vector<RRNodeId>> load_net_rr_terminals(const RRGraphView& rr_graph,
+                                                                             const DeviceGrid& grid,
                                                                              const Netlist<>& net_list,
                                                                              bool is_flat);
 
@@ -259,6 +260,7 @@ void init_route_structs(const Netlist<>& net_list,
 
     //Various look-ups
     route_ctx.net_rr_terminals = load_net_rr_terminals(device_ctx.rr_graph,
+                                                       device_ctx.grid,
                                                        net_list,
                                                        is_flat);
 
@@ -432,6 +434,7 @@ void reset_rr_node_route_structs() {
  * index of the SOURCE of the net and all the SINKs of the net [clb_nlist.nets()][clb_nlist.net_pins()].    *
  * Entry [inet][pnum] stores the rr index corresponding to the SOURCE (opin) or SINK (ipin) of the pin.     */
 static vtr::vector<ParentNetId, std::vector<RRNodeId>> load_net_rr_terminals(const RRGraphView& rr_graph,
+                                                                             const DeviceGrid& grid,
                                                                              const Netlist<>& net_list,
                                                                              bool is_flat) {
     vtr::vector<ParentNetId, std::vector<RRNodeId>> net_rr_terminals;
@@ -448,31 +451,26 @@ static vtr::vector<ParentNetId, std::vector<RRNodeId>> load_net_rr_terminals(con
             t_block_loc blk_loc;
             blk_loc = get_block_loc(block_id, is_flat);
             int iclass = get_block_pin_class_num(block_id, pin_id, is_flat);
-            RRNodeId inode = rr_graph.node_lookup().find_node(blk_loc.loc.layer,
-                                                              blk_loc.loc.x,
-                                                              blk_loc.loc.y,
-                                                              (pin_count == 0 ? SOURCE : SINK), /* First pin is driver */
-                                                              iclass);
-
-            // SINK nodes do not cover their whole tile, so we need to check all coordinates in the tile.
-            if (pin_count != 0 && inode == RRNodeId::INVALID()) {
-                auto tile_type = g_vpr_ctx.device().grid.get_physical_type({blk_loc.loc.x, blk_loc.loc.y, blk_loc.loc.layer});
-                size_t tile_xlow = blk_loc.loc.x - g_vpr_ctx.device().grid.get_width_offset({blk_loc.loc.x, blk_loc.loc.y, blk_loc.loc.layer});
-                size_t tile_ylow = blk_loc.loc.y - g_vpr_ctx.device().grid.get_height_offset({blk_loc.loc.x, blk_loc.loc.y, blk_loc.loc.layer});
-                size_t tile_xhigh = tile_xlow + tile_type->width - 1;
-                size_t tile_yhigh = tile_ylow + tile_type->height - 1;
-
-                for (size_t x = tile_xlow; x <= tile_xhigh; ++x) {
-                    for (size_t y = tile_ylow; y <= tile_yhigh; ++y) {
-                        inode = rr_graph.node_lookup().find_node(blk_loc.loc.layer, (int)x, (int)y, SINK, iclass);
-
-                        if (inode != RRNodeId::INVALID())
-                            break;
-                    }
-
-                    if (inode != RRNodeId::INVALID())
-                        break;
-                }
+            RRNodeId inode;
+            if (pin_count == 0) { /* First pin is driver */
+                inode = rr_graph.node_lookup().find_node(blk_loc.loc.layer,
+                                                         blk_loc.loc.x,
+                                                         blk_loc.loc.y,
+                                                         SOURCE,
+                                                         iclass);
+            } else {
+                auto tile_bb = grid.get_tile_bb({blk_loc.loc.x,
+                                                 blk_loc.loc.y,
+                                                 blk_loc.loc.layer});
+                std::vector<RRNodeId> sink_nodes = rr_graph.node_lookup().find_nodes_in_range(blk_loc.loc.layer,
+                                                                                              tile_bb.xmin(),
+                                                                                              tile_bb.ymin(),
+                                                                                              tile_bb.xmax(),
+                                                                                              tile_bb.ymax(),
+                                                                                              SINK,
+                                                                                              iclass);
+                VTR_ASSERT_SAFE(sink_nodes.size() == 1);
+                inode = sink_nodes[0];
             }
 
             VTR_ASSERT(inode != RRNodeId::INVALID());
@@ -723,27 +721,19 @@ t_bb load_net_route_bb(const Netlist<>& net_list,
         VTR_ASSERT(rr_graph.node_layer(sink_rr) >= 0);
         VTR_ASSERT(rr_graph.node_layer(sink_rr) <= device_ctx.grid.get_num_layers() - 1);
 
-        size_t node_xlow = rr_graph.node_xlow(sink_rr);
-        size_t node_ylow = rr_graph.node_ylow(sink_rr);
+        auto tile_bb = device_ctx.grid.get_tile_bb({rr_graph.node_xlow(sink_rr),
+                                                    rr_graph.node_ylow(sink_rr),
+                                                    rr_graph.node_layer(sink_rr)});
 
-        size_t tile_layer = rr_graph.node_layer(sink_rr);
-        t_physical_tile_loc tile_loc = {(int)node_xlow, (int)node_ylow, (int)tile_layer};
-        t_physical_tile_type_ptr tile_type = g_vpr_ctx.device().grid.get_physical_type(tile_loc);
-
-        size_t tile_xlow = node_xlow - g_vpr_ctx.device().grid.get_width_offset(tile_loc);
-        size_t tile_ylow = node_ylow - g_vpr_ctx.device().grid.get_height_offset(tile_loc);
-        size_t tile_xhigh = tile_xlow + tile_type->width - 1;
-        size_t tile_yhigh = tile_ylow + tile_type->height - 1;
-
-        xmin = std::min<int>(xmin, (int)tile_xlow);
-        xmax = std::max<int>(xmax, (int)tile_xhigh);
-        ymin = std::min<int>(ymin, (int)tile_ylow);
-        ymax = std::max<int>(ymax, (int)tile_yhigh);
+        xmin = std::min<int>(xmin, tile_bb.xmin());
+        xmax = std::max<int>(xmax, tile_bb.xmax());
+        ymin = std::min<int>(ymin, tile_bb.ymin());
+        ymax = std::max<int>(ymax, tile_bb.ymax());
         layer_min = std::min<int>(layer_min, rr_graph.node_layer(sink_rr));
         layer_max = std::max<int>(layer_max, rr_graph.node_layer(sink_rr));
     }
 
-    /* Want the channels on all 4 sides to be usuable, even if bb_factor = 0. */
+    /* Want the channels on all 4 sides to be usable, even if bb_factor = 0. */
     xmin -= 1;
     ymin -= 1;
 

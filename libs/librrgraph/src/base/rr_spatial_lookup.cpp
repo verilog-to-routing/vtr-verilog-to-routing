@@ -78,6 +78,27 @@ RRNodeId RRSpatialLookup::find_node(int layer,
     return RRNodeId(rr_node_indices_[type][layer][node_x][node_y][node_side][ptc]);
 }
 
+std::vector<RRNodeId> RRSpatialLookup::find_nodes_in_range(int layer,
+                                                           int xlow,
+                                                           int ylow,
+                                                           int xhigh,
+                                                           int yhigh,
+                                                           t_rr_type type,
+                                                           int ptc,
+                                                           e_side side) const {
+    std::set<RRNodeId> nodes;
+    for (int x = xlow; x <= xhigh; ++x) {
+        for (int y = ylow; y <= yhigh; ++y) {
+            RRNodeId node = find_node(layer, x, y, type, ptc, side);
+
+            if (node != RRNodeId::INVALID())
+                nodes.insert(node);
+        }
+    }
+
+    return std::vector<RRNodeId>(nodes.begin(), nodes.end());
+}
+
 std::vector<RRNodeId> RRSpatialLookup::find_nodes(int layer,
                                                   int x,
                                                   int y,
@@ -258,7 +279,7 @@ void RRSpatialLookup::add_node(RRNodeId node,
     rr_node_indices_[type][layer][x][y][side][ptc] = int(size_t(node));
 }
 
-void RRSpatialLookup::remove_node(RRNodeId node,
+bool RRSpatialLookup::remove_node(RRNodeId node,
                                   int layer,
                                   int x,
                                   int y,
@@ -274,15 +295,16 @@ void RRSpatialLookup::remove_node(RRNodeId node,
     VTR_ASSERT_SAFE(ptc >= 0);
     VTR_ASSERT_SAFE(side != NUM_SIDES);
 
-    VTR_ASSERT_SAFE(!(type >= rr_node_indices_.size()));
-    VTR_ASSERT_SAFE(!((size_t)layer >= rr_node_indices_[type].dim_size(0)));
-    VTR_ASSERT_SAFE(!((size_t)x >= rr_node_indices_[type].dim_size(1)));
-    VTR_ASSERT_SAFE(!((size_t)y >= rr_node_indices_[type].dim_size(2)));
-    VTR_ASSERT_SAFE(!(side >= rr_node_indices_[type].dim_size(3)));
-    VTR_ASSERT_SAFE(!((size_t)ptc >= rr_node_indices_[type][layer][x][y][side].size()));
-    VTR_ASSERT_SAFE(!(rr_node_indices_[type][layer][x][y][side][ptc] == -1));
+    if (type >= rr_node_indices_.size()) return false;
+    if ((size_t)layer >= rr_node_indices_[type].dim_size(0)) return false;
+    if ((size_t)x >= rr_node_indices_[type].dim_size(1)) return false;
+    if ((size_t)y >= rr_node_indices_[type].dim_size(2)) return false;
+    if (side >= rr_node_indices_[type].dim_size(3)) return false;
+    if ((size_t)ptc >= rr_node_indices_[type][layer][x][y][side].size()) return false;
+    if (rr_node_indices_[type][layer][x][y][side][ptc] != int(size_t(node))) return false;
 
     rr_node_indices_[type][layer][x][y][side][ptc] = -1;
+    return true;
 }
 
 void RRSpatialLookup::mirror_nodes(const int layer,

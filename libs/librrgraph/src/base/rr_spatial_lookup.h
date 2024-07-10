@@ -76,6 +76,29 @@ class RRSpatialLookup {
                        e_side side = NUM_SIDES) const;
 
     /**
+     * @brief Returns unique indices of the routing resource nodes in the bounds (xlow, ylow) to (xhigh, yhigh).
+     *
+     *   @param layer specifies which FPGA die the node is located at (e.g. multi-die(3D) FPGA)
+     *   @param (xlow, ylow) is the lower left corner of the grid location range to search within the FPGA
+     *   @param (xlow, ylow) is the top right corner of the grid location range to search within the FPGA
+     *   @param rr_type specifies the type of resource,
+     *   @param ptc gives a unique number of resources of that type (e.g. CHANX) at that (layer,x,y).
+     *
+     *   @return nodes A vector of unique nodes within the given bounds which meet the given parameters
+     *
+     * @note This function works by calling find_node() at the coordinates bounded by (xlow, ylow) to (xhigh, yhigh).
+     *
+     */
+    std::vector<RRNodeId> find_nodes_in_range(int layer,
+                                              int xlow,
+                                              int ylow,
+                                              int xhigh,
+                                              int yhigh,
+                                              t_rr_type type,
+                                              int ptc,
+                                              e_side side = NUM_SIDES) const;
+
+    /**
      * @brief Returns the indices of the specified routing resource nodes, representing routing tracks in a channel.  
      *
      *   @param layer specified which FPGA die the node is located at (e.g. multi-die(3D) FPGA)
@@ -162,11 +185,6 @@ class RRSpatialLookup {
     /**
      * @brief Remove a node in the fast lookup.
      *
-     * @warning
-     * This function does not check for out-of-bounds/indexing errors. Make sure that the
-     * parameters you provide point to a node that is already in the lookup to avoid
-     * potential segfaults/unwanted behaviour.
-     *
      * @param layer specified which FPGA die the node is located at (e.g. multi-die(3D) FPGA)
      * @param (x, y) are the coordinate of the node
      * @param type is the type of a node
@@ -175,8 +193,11 @@ class RRSpatialLookup {
      *     - pin index in a tile when type is OPIN/IPIN
      *     - track index in a routing channel when type is CHANX/CHANY
      * @param side is the side of node on the tile, applicable to OPIN/IPIN
+     *
+     * @return success Whether the node was removed successfully. If the function returns false,
+     * the node was not in the lookup at the indices provided.
      */
-    void remove_node(RRNodeId node,
+    bool remove_node(RRNodeId node,
                      int layer,
                      int x,
                      int y,

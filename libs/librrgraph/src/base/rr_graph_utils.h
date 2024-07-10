@@ -97,22 +97,20 @@ int seg_index_of_sblock(const RRGraphView& rr_graph, int from_node, int to_node)
  * @brief This function checks whether all inter-die connections are form OPINs. Return "true"
  * if that is the case. Can be used for multiple purposes. For example, to determine which type of bounding
  * box to be used to estimate the wire-length of a net.
+ *
+ * @param rr_graph
+ *
  * @return limited_to_opin
  */
 bool inter_layer_connections_limited_to_opin(const RRGraphView& rr_graph);
 
 /**
- * @brief This function returns a rectangle whose coordinates are those of the given sink's tile.
+ * @brief This function returns a rectangle which represents the bounding box of the tile at the given location.
  *
- * @note
- * Before rr_set_sink_locs is called in vpr, calling this function would return the coordinates of the given sink.
- * This function is useful for getting the coordinates of a sink's tile once its location is set to a 0x0 point
- * in rr_set_sink_locs.
+ * @param tile_loc
+ * @param rr_graph
+ * @param grid
  *
- * @param sink_node
- *
- * @return sink_tile_bbox
+ * @return tile_bounding_box
  */
-vtr::Rect<int> get_sink_tile_bb(RRNodeId sink_node, const RRGraphView& rr_graph, const DeviceGrid& grid);
-
 #endif

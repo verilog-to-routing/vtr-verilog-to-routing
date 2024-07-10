@@ -397,23 +397,15 @@ void ConnectionRouter<Heap>::timing_driven_expand_neighbours(t_heap* current,
 
     t_bb target_bb;
     if (target_node != RRNodeId::INVALID()) {
-        if (rr_graph_->node_type(target_node) == SINK) {
-            size_t node_xlow = rr_graph_->node_xlow(target_node);
-            size_t node_ylow = rr_graph_->node_ylow(target_node);
+        if (rr_graph_->node_type(target_node) == SINK) { // We need to get a bounding box for the sink's entire tile
+            auto tile_bb = grid_.get_tile_bb({rr_graph_->node_xlow(target_node),
+                                              rr_graph_->node_ylow(target_node),
+                                              rr_graph_->node_layer(target_node)});
 
-            size_t tile_layer = rr_graph_->node_layer(target_node);
-            t_physical_tile_loc tile_loc = {(int)node_xlow, (int)node_ylow, (int)tile_layer};
-            t_physical_tile_type_ptr tile_type = g_vpr_ctx.device().grid.get_physical_type(tile_loc);
-
-            size_t tile_xlow = node_xlow - g_vpr_ctx.device().grid.get_width_offset(tile_loc);
-            size_t tile_ylow = node_ylow - g_vpr_ctx.device().grid.get_height_offset(tile_loc);
-            size_t tile_xhigh = tile_xlow + tile_type->width - 1;
-            size_t tile_yhigh = tile_ylow + tile_type->height - 1;
-
-            target_bb.xmin = tile_xlow;
-            target_bb.ymin = tile_ylow;
-            target_bb.xmax = tile_xhigh;
-            target_bb.ymax = tile_yhigh;
+            target_bb.xmin = tile_bb.xmin();
+            target_bb.ymin = tile_bb.ymin();
+            target_bb.xmax = tile_bb.xmax();
+            target_bb.ymax = tile_bb.ymax();
         } else {
             target_bb.xmin = rr_graph_->node_xlow(target_node);
             target_bb.ymin = rr_graph_->node_ylow(target_node);

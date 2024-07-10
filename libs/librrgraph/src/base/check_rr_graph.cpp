@@ -9,6 +9,7 @@
 #include "physical_types_util.h"
 
 #include "describe_rr_node.h"
+#include "rr_graph_utils.h"
 
 /*********************** Subroutines local to this module *******************/
 
@@ -405,12 +406,8 @@ void check_rr_node(const RRGraphView& rr_graph,
                                 "in check_rr_node: node %d (type %d) is at an illegal clb location (%d, %d).\n", inode, rr_type, xlow, ylow);
             }
 
-            int tile_xlow = xlow - grid.get_width_offset({xlow, ylow, layer_num});
-            int tile_ylow = ylow - grid.get_height_offset({xlow, ylow, layer_num});
-            int tile_xhigh = tile_xlow + type->width - 1;
-            int tile_yhigh = tile_ylow + type->height - 1;
-
-            if (xlow < tile_xlow || ylow < tile_ylow || xhigh > tile_xhigh || yhigh > tile_yhigh) {
+            auto tile_bb = grid.get_tile_bb({xlow, ylow, layer_num});
+            if (xlow < tile_bb.xmin() || ylow < tile_bb.ymin() || xhigh > tile_bb.xmax() || yhigh > tile_bb.ymax()) {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                                 "in check_rr_node: node %d (type %d) has endpoints (%d,%d) and (%d,%d)\n", inode, rr_type, xlow, ylow, xhigh, yhigh);
             }

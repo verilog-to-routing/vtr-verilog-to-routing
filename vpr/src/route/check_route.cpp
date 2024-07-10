@@ -303,13 +303,12 @@ static bool check_adjacent(RRNodeId from_node, RRNodeId to_node, bool is_flat) {
 
     // If to_node is SINK, use its tile coordinates
     if (to_type == SINK) {
-        t_physical_tile_loc tile_loc = {(int)to_xlow, (int)to_ylow, (int)to_layer};
-        t_physical_tile_type_ptr tile_type = g_vpr_ctx.device().grid.get_physical_type(tile_loc);
+        auto tile_bb = device_ctx.grid.get_tile_bb({to_xlow, to_ylow, to_layer});
 
-        to_xlow -= g_vpr_ctx.device().grid.get_width_offset(tile_loc);
-        to_ylow -= g_vpr_ctx.device().grid.get_height_offset(tile_loc);
-        to_xhigh = to_xlow + tile_type->width - 1;
-        to_yhigh = to_ylow + tile_type->height - 1;
+        to_xlow = tile_bb.xmin();
+        to_ylow = tile_bb.ymin();
+        to_xhigh = tile_bb.xmax();
+        to_yhigh = tile_bb.ymax();
     }
 
     // Layer numbers are should not be more than one layer apart for connected nodes

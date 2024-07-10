@@ -1479,6 +1479,7 @@ bool verify_rr_node_indices(const DeviceGrid& grid,
                                           describe_rr_node(rr_graph, grid, rr_indexed_data, inode, is_flat).c_str());
                             }
                         } else if (rr_graph.node_type(inode) == SOURCE || rr_graph.node_type(inode) == SINK) {
+                            // Sources have co-ordinates covering the entire block they are in, but not sinks
                             if (!rr_graph.x_in_node_range(x, inode)) {
                                 VPR_ERROR(VPR_ERROR_ROUTE, "RR node x positions do not agree between rr_nodes (%d <-> %d) and rr_node_indices (%d): %s",
                                           rr_graph.node_xlow(inode),
