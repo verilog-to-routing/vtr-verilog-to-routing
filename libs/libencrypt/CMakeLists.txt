@@ -24,14 +24,17 @@ foreach(_headerFile ${LIB_HEADERS})
 endforeach()
 list(REMOVE_DUPLICATES LIB_INCLUDE_DIRS)
 
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
 
+add_library(libencrypt ${LIB_HEADERS} ${LIB_SOURCES})
+
+set_target_properties(libencrypt PROPERTIES PREFIX "")
+
+target_link_libraries(libencrypt PRIVATE ${OPENSSL_LIBRARIES} libpugixml)
 
 # Add executable
 add_executable(encrypt main.cpp ${LIB_HEADERS} ${LIB_SOURCES} )
 
-target_include_directories(encrypt PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/src   
-)
 target_link_libraries(encrypt PRIVATE ${OPENSSL_LIBRARIES} libpugixml)
 
 #install(TARGETS libencrypt DESTINATION bin)
