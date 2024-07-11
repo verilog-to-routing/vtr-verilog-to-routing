@@ -382,8 +382,8 @@ void ConnectionRouter<Heap>::timing_driven_expand_neighbours(t_heap* current,
     t_bb target_bb;
     if (target_node != RRNodeId::INVALID()) {
         if (rr_graph_->node_type(target_node) == SINK) { // We need to get a bounding box for the sink's entire tile
-            auto tile_bb = grid_.get_tile_bb({rr_graph_->node_xlow(target_node),
-                                              rr_graph_->node_ylow(target_node),
+            vtr::Rect<int> tile_bb = grid_.get_tile_bb({rr_graph_->node_xlow(target_node),
+                                                        rr_graph_->node_ylow(target_node),
                                               rr_graph_->node_layer(target_node)});
 
             target_bb.xmin = tile_bb.xmin();

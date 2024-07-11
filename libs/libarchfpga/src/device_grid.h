@@ -75,7 +75,7 @@ class DeviceGrid {
     }
 
     ///@brief Returns a rectangle which represents the bounding box of the tile at the given location.
-    inline vtr::Rect<int> get_tile_bb(t_physical_tile_loc tile_loc) const {
+    inline vtr::Rect<int> get_tile_bb(const t_physical_tile_loc& tile_loc) const {
         t_physical_tile_type_ptr tile_type = get_physical_type(tile_loc);
 
         int tile_xlow = tile_loc.x - get_width_offset(tile_loc);

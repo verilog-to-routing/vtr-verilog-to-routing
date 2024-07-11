@@ -21,7 +21,7 @@ static void walk_cluster_recursive(const RRGraphView& rr_graph,
     VTR_ASSERT_SAFE(rr_graph.node_type(origin) == e_rr_type::SINK);
 
     // We want to go "backward" to the cluster IPINs connected to the origin node
-    auto incoming_edges = fanins[curr];
+    const std::vector<RREdgeId>& incoming_edges = fanins[curr];
     for (RREdgeId edge : incoming_edges) {
         RRNodeId parent = rr_graph.edge_src_node(edge);
         VTR_ASSERT_SAFE(parent != RRNodeId::INVALID());
@@ -133,7 +133,7 @@ vtr::vector<RRNodeId, std::vector<RREdgeId>> get_fan_in_list(const RRGraphView& 
 }
 
 void rr_set_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_builder, const DeviceGrid& grid) {
-    auto node_fanins = get_fan_in_list(rr_graph);
+    const vtr::vector<RRNodeId, std::vector<RREdgeId>> node_fanins = get_fan_in_list(rr_graph);
 
     // Keep track of offsets for SINKs for each tile type, to avoid repeated calculations
     std::unordered_map<t_physical_tile_type_ptr, std::unordered_map<int, vtr::Point<int>>> physical_type_offsets;
@@ -160,7 +160,7 @@ void rr_set_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_buil
 
         t_physical_tile_loc tile_loc = {node_xlow, node_ylow, node_layer};
         t_physical_tile_type_ptr tile_type = grid.get_physical_type(tile_loc);
-        auto tile_bb = grid.get_tile_bb(tile_loc);
+        vtr::Rect<int> tile_bb = grid.get_tile_bb(tile_loc);
 
         // See if we have encountered this tile type/ptc combo before, and used saved offset if so
         vtr::Point<int> new_loc(-1, -1);

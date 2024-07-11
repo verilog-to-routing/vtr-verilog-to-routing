@@ -406,7 +406,7 @@ void check_rr_node(const RRGraphView& rr_graph,
                                 "in check_rr_node: node %d (type %d) is at an illegal clb location (%d, %d).\n", inode, rr_type, xlow, ylow);
             }
 
-            auto tile_bb = grid.get_tile_bb({xlow, ylow, layer_num});
+            vtr::Rect<int> tile_bb = grid.get_tile_bb({xlow, ylow, layer_num});
             if (xlow < tile_bb.xmin() || ylow < tile_bb.ymin() || xhigh > tile_bb.xmax() || yhigh > tile_bb.ymax()) {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                                 "in check_rr_node: node %d (type %d) has endpoints (%d,%d) and (%d,%d)\n", inode, rr_type, xlow, ylow, xhigh, yhigh);

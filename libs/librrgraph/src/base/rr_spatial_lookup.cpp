@@ -260,7 +260,7 @@ void RRSpatialLookup::add_node(RRNodeId node,
                                t_rr_type type,
                                int ptc,
                                e_side side) {
-    VTR_ASSERT(node); /* Must have a valid node id to be added */
+    VTR_ASSERT(node.is_valid()); /* Must have a valid node id to be added */
     VTR_ASSERT_SAFE(4 == rr_node_indices_[type].ndims());
 
     /* For non-IPIN/OPIN nodes, the side should always be the TOP side which follows the convention in find_node() API! */
@@ -286,7 +286,7 @@ bool RRSpatialLookup::remove_node(RRNodeId node,
                                   t_rr_type type,
                                   int ptc,
                                   e_side side) {
-    VTR_ASSERT(node);
+    VTR_ASSERT(node.is_valid());
     VTR_ASSERT_SAFE(4 == rr_node_indices_[type].ndims());
     VTR_ASSERT_SAFE(layer >= 0);
     VTR_ASSERT_SAFE(x >= 0);

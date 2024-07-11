@@ -459,9 +459,9 @@ static vtr::vector<ParentNetId, std::vector<RRNodeId>> load_net_rr_terminals(con
                                                          SOURCE,
                                                          iclass);
             } else {
-                auto tile_bb = grid.get_tile_bb({blk_loc.loc.x,
-                                                 blk_loc.loc.y,
-                                                 blk_loc.loc.layer});
+                vtr::Rect<int> tile_bb = grid.get_tile_bb({blk_loc.loc.x,
+                                                           blk_loc.loc.y,
+                                                           blk_loc.loc.layer});
                 std::vector<RRNodeId> sink_nodes = rr_graph.node_lookup().find_nodes_in_range(blk_loc.loc.layer,
                                                                                               tile_bb.xmin(),
                                                                                               tile_bb.ymin(),
@@ -721,9 +721,9 @@ t_bb load_net_route_bb(const Netlist<>& net_list,
         VTR_ASSERT(rr_graph.node_layer(sink_rr) >= 0);
         VTR_ASSERT(rr_graph.node_layer(sink_rr) <= device_ctx.grid.get_num_layers() - 1);
 
-        auto tile_bb = device_ctx.grid.get_tile_bb({rr_graph.node_xlow(sink_rr),
-                                                    rr_graph.node_ylow(sink_rr),
-                                                    rr_graph.node_layer(sink_rr)});
+        vtr::Rect<int> tile_bb = device_ctx.grid.get_tile_bb({rr_graph.node_xlow(sink_rr),
+                                                              rr_graph.node_ylow(sink_rr),
+                                                              rr_graph.node_layer(sink_rr)});
 
         xmin = std::min<int>(xmin, tile_bb.xmin());
         xmax = std::max<int>(xmax, tile_bb.xmax());

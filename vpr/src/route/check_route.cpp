@@ -303,7 +303,7 @@ static bool check_adjacent(RRNodeId from_node, RRNodeId to_node, bool is_flat) {
 
     // If to_node is SINK, use its tile coordinates
     if (to_type == SINK) {
-        auto tile_bb = device_ctx.grid.get_tile_bb({to_xlow, to_ylow, to_layer});
+        vtr::Rect<int> tile_bb = device_ctx.grid.get_tile_bb({to_xlow, to_ylow, to_layer});
 
         to_xlow = tile_bb.xmin();
         to_ylow = tile_bb.ymin();
