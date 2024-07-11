@@ -83,7 +83,7 @@ void run_analytical_placement_flow() {
     // Solve the QP problem
     std::unique_ptr<AnalyticalSolver> solver = make_analytical_solver(e_analytical_solver::B2B);
     // This for loop always starts at iteration 0
-    for (unsigned iteration = 0; iteration < 100; iteration++) {
+    for (unsigned iteration = 0; iteration < 300; iteration++) {
         VTR_LOG("iteration: %ld\n", iteration);
         solver->solve(iteration, p_placement);
         VTR_ASSERT(p_placement.is_valid_partial_placement() && "placement not valid after solve!");
