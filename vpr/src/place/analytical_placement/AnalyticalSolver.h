@@ -39,8 +39,18 @@ public:
 class B2BSolver : public AnalyticalSolver {
     public:
         void solve(unsigned iteration, PartialPlacement &p_placement) final;
+        void b2b_solve_loop(unsigned iteration, PartialPlacement &p_placement, double hpwl);
         void initialize_placement(PartialPlacement &p_placement);
-        void populate_matrix(Eigen::SparseMatrix<double> &A_sparse_x, Eigen::SparseMatrix<double> &A_sparse_y, Eigen::VectorXd &b_x, Eigen::VectorXd &b_y, PartialPlacement &p_placement);
-        void populate_matrix_anchor(Eigen::SparseMatrix<double> &A_sparse_x, Eigen::SparseMatrix<double> &A_sparse_y, Eigen::VectorXd &b_x, Eigen::VectorXd &b_y, PartialPlacement& p_placement, unsigned iteration);
+        void populate_matrix(PartialPlacement &p_placement);
+        void populate_matrix_anchor(PartialPlacement& p_placement, unsigned iteration);
         std::pair<size_t, size_t> boundNode(std::vector<size_t> &node_id, std::vector<double> &node_loc);
+        void storeXY(PartialPlacement &p_placement);
+        void swapXY(PartialPlacement &p_placement);
+
+        Eigen::SparseMatrix<double> A_sparse_x;
+        Eigen::SparseMatrix<double> A_sparse_y;
+        Eigen::VectorXd b_x;
+        Eigen::VectorXd b_y;
+        std::vector<double> node_loc_x;
+        std::vector<double> node_loc_y;
 };

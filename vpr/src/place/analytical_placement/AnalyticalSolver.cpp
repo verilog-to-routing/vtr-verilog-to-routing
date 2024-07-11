@@ -8,7 +8,9 @@
 #include <limits>
 #include <memory>
 #include <random>
+#include <unordered_set>
 #include <utility>
+#include <vector>
 #include "PartialPlacement.h"
 #include "atom_netlist.h"
 #include "globals.h"
@@ -208,57 +210,70 @@ void QPHybridSolver::solve(unsigned iteration, PartialPlacement &p_placement) {
     }
 }
 
-
-// Starting B2B solver
-
-void B2BSolver::solve(unsigned iteration, PartialPlacement &p_placement) {
-    // Need an initial placement to decide who are the bounding nodes.
-    if (iteration == 0) {
-        initialize_placement(p_placement);
-        return;
-    }
-    size_t ASize = p_placement.num_moveable_nodes;
-    Eigen::SparseMatrix<double> A_sparse_x = Eigen::SparseMatrix<double>(ASize, ASize);
-    Eigen::SparseMatrix<double> A_sparse_y = Eigen::SparseMatrix<double>(ASize, ASize);
-    Eigen::VectorXd b_x = Eigen::VectorXd::Zero(ASize);
-    Eigen::VectorXd b_y = Eigen::VectorXd::Zero(ASize);
-    populate_matrix(A_sparse_x, A_sparse_y, b_x, b_y, p_placement);
-    bool x_has_diag_zero, y_has_diag_zero = false;
-    for (int i = 0; i < A_sparse_x.rows(); ++i) {
-        if (A_sparse_x.coeff(i, i) == 0) {
-            x_has_diag_zero = true;
-            break;
-        }
-    }
-    for (int i = 0; i < A_sparse_y.rows(); ++i) {
-        if (A_sparse_y.coeff(i, i) == 0) {
-            y_has_diag_zero = true;
-            break;
-        }
-    }
-    // VTR_LOG("x condition number: %f, y condition number: %f\n", conditionNumber(A_sparse_x), conditionNumber(A_sparse_y));
-    VTR_LOG("x has zero: %u, y has zero: %u\n", x_has_diag_zero, y_has_diag_zero);
-    // populate_matrix_anchor(A_sparse_x, A_sparse_y, b_x, b_y, p_placement, iteration);
+void B2BSolver::b2b_solve_loop(unsigned iteration, PartialPlacement &p_placement, double hpwl){
+    VTR_LOG("placement hpwl in b2b loop: %f\n", p_placement.get_HPWL());
+    VTR_ASSERT(p_placement.is_valid_partial_placement() && "did not produce a valid placement in b2b solve loop");
+    populate_matrix(p_placement);
+    if(iteration != 0)
+        populate_matrix_anchor(p_placement, iteration);
     Eigen::VectorXd x, y;
     Eigen::ConjugateGradient<Eigen::SparseMatrix<double>, Eigen::Lower|Eigen::Upper> cg_x;
     Eigen::ConjugateGradient<Eigen::SparseMatrix<double>, Eigen::Lower|Eigen::Upper> cg_y;
-    VTR_ASSERT_DEBUG(!b_x.hasNaN() && "b_x has NaN!");
-    VTR_ASSERT_DEBUG(!b_y.hasNaN() && "b_y has NaN!");
-    VTR_ASSERT_DEBUG((b_x.array() > 0).all() && "b_x has NaN!");
-    VTR_ASSERT_DEBUG((b_y.array() > 0).all() && "b_y has NaN!");
+    VTR_ASSERT(!b_x.hasNaN() && "b_x has NaN!");
+    VTR_ASSERT(!b_y.hasNaN() && "b_y has NaN!");
+    VTR_ASSERT((b_x.array() >= 0).all() && "b_x has NaN!");
+    VTR_ASSERT((b_y.array() >= 0).all() && "b_y has NaN!");
     cg_x.compute(A_sparse_x);
     cg_y.compute(A_sparse_y);
+    // Not worth the time
+    // cg_x.setMaxIterations(cg_x.maxIterations() * 10);
+    // cg_x.setTolerance(cg_x.tolerance() * 100);
+    // cg_y.setMaxIterations(cg_y.maxIterations() * 10);
+    // cg_y.setTolerance(cg_y.tolerance() * 100);
     VTR_ASSERT(cg_x.info() == Eigen::Success && "Conjugate Gradient failed at compute for A_x!");
     VTR_ASSERT(cg_y.info() == Eigen::Success && "Conjugate Gradient failed at compute for A_y!");
     x = cg_x.solve(b_x);
     y = cg_y.solve(b_y);
-    VTR_LOG("error code: %u", cg_x.info());
-    VTR_ASSERT(cg_x.info() == Eigen::Success && "Conjugate Gradient failed at solving b_x!");
-    VTR_ASSERT(cg_y.info() == Eigen::Success && "Conjugate Gradient failed at solving b_y!");
+    // VTR_ASSERT(cg_x.info() == Eigen::Success && "Conjugate Gradient failed at solving b_x!");
+    // VTR_ASSERT(cg_y.info() == Eigen::Success && "Conjugate Gradient failed at solving b_y!");
     for (size_t node_id = 0; node_id < p_placement.num_moveable_nodes; node_id++) {
         p_placement.node_loc_x[node_id] = x[node_id];
         p_placement.node_loc_y[node_id] = y[node_id];
     }
+    double current_hpwl = p_placement.get_HPWL();
+    if (current_hpwl > (hpwl - 10)){
+        return;
+    }
+    b2b_solve_loop(iteration, p_placement, current_hpwl);
+}
+
+void B2BSolver::storeXY(PartialPlacement &p_placement){
+    node_loc_x = p_placement.node_loc_x;
+    node_loc_y = p_placement.node_loc_y;
+}
+
+void B2BSolver::swapXY(PartialPlacement &p_placement){
+    node_loc_x.swap(p_placement.node_loc_x);
+    node_loc_y.swap(p_placement.node_loc_y);
+}
+
+// Starting B2B solver
+void B2BSolver::solve(unsigned iteration, PartialPlacement &p_placement) {
+    // Need an initial placement to decide who are the bounding nodes.
+    if (iteration == 0){
+        initialize_placement(p_placement);
+        size_t ASize = p_placement.num_moveable_nodes;
+        A_sparse_x = Eigen::SparseMatrix<double>(ASize, ASize);
+        A_sparse_y = Eigen::SparseMatrix<double>(ASize, ASize);
+        b_x = Eigen::VectorXd::Zero(ASize);
+        b_y = Eigen::VectorXd::Zero(ASize);
+        b2b_solve_loop(iteration, p_placement, p_placement.get_HPWL());
+        storeXY(p_placement);
+        return;
+    }
+    swapXY(p_placement);
+    b2b_solve_loop(iteration, p_placement, std::numeric_limits<double>::max());
+    storeXY(p_placement);
 }
 
 void B2BSolver::initialize_placement(PartialPlacement &p_placement) {
@@ -286,10 +301,11 @@ std::pair<size_t, size_t> B2BSolver::boundNode(std::vector<size_t>& node_ids, st
     };
     auto maxIt = std::max_element(node_ids.begin(), node_ids.end(), compare);
     auto minIt = std::min_element(node_ids.begin(), node_ids.end(), compare);
+    VTR_ASSERT(node_locs[*maxIt] >= node_locs[*minIt] && "max note should be greater than min node");
     return std::make_pair(*maxIt, *minIt);
 }
 
-void B2BSolver::populate_matrix(Eigen::SparseMatrix<double> &A_sparse_x, Eigen::SparseMatrix<double> &A_sparse_y, Eigen::VectorXd &b_x, Eigen::VectorXd &b_y, PartialPlacement &p_placement) {
+void B2BSolver::populate_matrix(PartialPlacement &p_placement) {
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
     const AtomNetlist& netlist = p_placement.atom_netlist;
     
@@ -297,6 +313,8 @@ void B2BSolver::populate_matrix(Eigen::SparseMatrix<double> &A_sparse_x, Eigen::
     tripletList_x.reserve(p_placement.num_moveable_nodes * netlist.nets().size());
     std::vector<Eigen::Triplet<double>> tripletList_y;
     tripletList_y.reserve(p_placement.num_moveable_nodes * netlist.nets().size());
+    b_x = Eigen::VectorXd::Zero(p_placement.num_moveable_nodes);
+    b_y = Eigen::VectorXd::Zero(p_placement.num_moveable_nodes);
 
     for (AtomNetId net_id : netlist.nets()) {
         if (p_placement.net_is_ignored_for_placement(net_id))
@@ -319,78 +337,87 @@ void B2BSolver::populate_matrix(Eigen::SparseMatrix<double> &A_sparse_x, Eigen::
         if (node_ids_no_duplicate.size() <= 1){
             continue;
         }
-        // if(maxXId == minXId || maxYId == minYId) {
-        //     VTR_LOG("num of nodes: %u", node_ids.size());
-        //     for(auto id : node_ids) {
-        //         VTR_LOG("node: %u, x: %f, y: %f\n", id, p_placement.node_loc_x[id], p_placement.node_loc_y[id]);
-        //     }
-        // }
-        VTR_ASSERT(maxXId != minXId && "not expecting a netlist to have zero width");
-        VTR_ASSERT(maxYId != minYId && "not expecting a netlist to have zero height");
-        double epsilon = 1e-4;
-        for (size_t ipin = 0; ipin < node_ids_no_duplicate.size(); ipin++) {
-            // AtomBlockId first_block_id = netlist.net_pin_block(net_id, ipin);
-            // size_t first_node_id = p_placement.get_node_id_from_blk(first_block_id, atom_ctx.atom_molecules);
-            size_t first_node_id = node_ids_no_duplicate[ipin];
-            for (size_t jpin = ipin + 1; jpin < node_ids_no_duplicate.size(); jpin++) {
-                // AtomBlockId second_block_id = netlist.net_pin_block(net_id, jpin);
-                // size_t second_node_id = p_placement.get_node_id_from_blk(second_block_id, atom_ctx.atom_molecules);
-                size_t second_node_id = node_ids_no_duplicate[jpin];
-                VTR_ASSERT(first_node_id != second_node_id && "the net should not have self connections");
-                VTR_ASSERT(first_node_id < p_placement.num_nodes && second_node_id < p_placement.num_nodes);
-                double w_x = 0;
-                double w_y = 0;
-                size_t num_nodes = node_ids_no_duplicate.size();
-                if (first_node_id == maxXId || first_node_id == minXId || second_node_id == maxXId || second_node_id == minXId)
-                    w_x = 2.0/(num_nodes - 1)/std::max(std::abs(p_placement.node_loc_x[first_node_id] - p_placement.node_loc_x[second_node_id]), epsilon);
-                if (first_node_id == maxYId || first_node_id == minYId || second_node_id == maxYId || second_node_id == minYId)
-                    w_y = 2.0/(num_nodes - 1)/std::max(std::abs(p_placement.node_loc_y[first_node_id] - p_placement.node_loc_y[second_node_id]), epsilon);
-                if (!p_placement.is_moveable_node(first_node_id)) {
-                    if (!p_placement.is_moveable_node(second_node_id)) {
-                        continue;
-                    }
-                    std::swap(first_node_id, second_node_id);
+        if (maxXId == minXId) {
+            maxXId = node_ids_no_duplicate[0];
+            minXId = node_ids_no_duplicate[1];
+        }
+        if (maxYId == minYId) {
+            maxYId = node_ids_no_duplicate[0];
+            minYId = node_ids_no_duplicate[1];
+        }
+        auto add_node = [&](size_t first_node_id, size_t second_node_id, unsigned num_nodes, bool is_x){
+            if (!p_placement.is_moveable_node(first_node_id)) {
+                if (!p_placement.is_moveable_node(second_node_id)) {
+                    return;
                 }
-                // TODO: should avoid adding zero?
-                if (p_placement.is_moveable_node(second_node_id)) {
-                    tripletList_x.emplace_back(first_node_id, first_node_id, w_x);
-                    tripletList_x.emplace_back(second_node_id, second_node_id, w_x);
-                    tripletList_x.emplace_back(first_node_id, second_node_id, -w_x);
-                    tripletList_x.emplace_back(second_node_id, first_node_id, -w_x);
-
-                    tripletList_y.emplace_back(first_node_id, first_node_id, w_y);
-                    tripletList_y.emplace_back(second_node_id, second_node_id, w_y);
-                    tripletList_y.emplace_back(first_node_id, second_node_id, -w_y);
-                    tripletList_y.emplace_back(second_node_id, first_node_id, -w_y);
-                } else {
-                    tripletList_x.emplace_back(first_node_id, first_node_id, w_x);
-                    b_x(first_node_id) += w_x * p_placement.node_loc_x[second_node_id];
-
-                    tripletList_y.emplace_back(first_node_id, first_node_id, w_y);
-                    b_y(first_node_id) += w_y * p_placement.node_loc_y[second_node_id];
+                std::swap(first_node_id, second_node_id);
+            }
+            double epsilon = 1e-6;
+            double dist = 0; 
+            if(is_x)
+                dist = 1.0/std::max(std::abs(p_placement.node_loc_x[first_node_id] - p_placement.node_loc_x[second_node_id]), epsilon);
+            else
+                dist = 1.0/std::max(std::abs(p_placement.node_loc_y[first_node_id] - p_placement.node_loc_y[second_node_id]), epsilon);
+            double w = (2.0/static_cast<double>(num_nodes - 1)) * dist;
+            if (p_placement.is_moveable_node(second_node_id)) {
+                if (is_x) {
+                    tripletList_x.emplace_back(first_node_id, first_node_id, w);
+                    tripletList_x.emplace_back(second_node_id, second_node_id, w);
+                    tripletList_x.emplace_back(first_node_id, second_node_id, -w);
+                    tripletList_x.emplace_back(second_node_id, first_node_id, -w);
+                }else{
+                    tripletList_y.emplace_back(first_node_id, first_node_id, w);
+                    tripletList_y.emplace_back(second_node_id, second_node_id, w);
+                    tripletList_y.emplace_back(first_node_id, second_node_id, -w);
+                    tripletList_y.emplace_back(second_node_id, first_node_id, -w);
+                }
+            } else {
+                if (is_x){
+                    tripletList_x.emplace_back(first_node_id, first_node_id, w);
+                    b_x(first_node_id) += w * p_placement.node_loc_x[second_node_id];
+                }else{
+                    tripletList_y.emplace_back(first_node_id, first_node_id, w);
+                    b_y(first_node_id) += w * p_placement.node_loc_y[second_node_id];
                 }
             }
+        };
+        for (size_t node_id = 0; node_id < node_ids_no_duplicate.size(); node_id++) {
+            if (node_id != maxXId && node_id != minXId) {
+                add_node(node_id, maxXId, node_ids_no_duplicate.size(), true);
+                add_node(node_id, minXId, node_ids_no_duplicate.size(), true);
+            } 
+            if (node_id != maxYId && node_id != minYId) {
+                add_node(node_id, maxYId, node_ids_no_duplicate.size(), false);
+                add_node(node_id, minYId, node_ids_no_duplicate.size(), false);
+            } 
         }
+        add_node(maxXId, minXId, node_ids_no_duplicate.size(), true);
+        add_node(maxYId, minYId, node_ids_no_duplicate.size(), false);
     }
     A_sparse_x.setFromTriplets(tripletList_x.begin(), tripletList_x.end());
     A_sparse_y.setFromTriplets(tripletList_y.begin(), tripletList_y.end());
 }
 
 
-void B2BSolver::populate_matrix_anchor(Eigen::SparseMatrix<double> &A_sparse_x,
-                                            Eigen::SparseMatrix<double> &A_sparse_y,
-                                          Eigen::VectorXd &b_x,
-                                          Eigen::VectorXd &b_y,
-                                          PartialPlacement& p_placement,
-                                          unsigned iteration) {
+void B2BSolver::populate_matrix_anchor(PartialPlacement& p_placement, unsigned iteration) {
     // Aii = Aii+w, bi = bi + wi * xi
     // TODO: verify would it be better if the initial weights are not part of the function.
-    double coeff_pseudo_anchor = 0.01 * std::exp((double)iteration/5);
+    double epsilon = 1e-6;
     for (size_t i = 0; i < p_placement.num_moveable_nodes; i++){
-        double pseudo_w = coeff_pseudo_anchor; 
-        A_sparse_x.coeffRef(i, i) += pseudo_w;
-        A_sparse_y.coeffRef(i, i) += pseudo_w;
-        b_x(i) += pseudo_w * p_placement.node_loc_x[i];
-        b_y(i) += pseudo_w * p_placement.node_loc_y[i];
+        // double pseudo_w = coeff_pseudo_anchor; 
+        double pseudo_w_x =  0.05*iteration*2.0/std::max(std::abs(p_placement.node_loc_x[i] - node_loc_x[i]), epsilon);
+        double pseudo_w_y =  0.05*iteration*2.0/std::max(std::abs(p_placement.node_loc_y[i] - node_loc_y[i]), epsilon);
+        A_sparse_x.coeffRef(i, i) += pseudo_w_x;
+        A_sparse_y.coeffRef(i, i) += pseudo_w_y;
+        b_x(i) += pseudo_w_x * p_placement.node_loc_x[i];
+        b_y(i) += pseudo_w_y * p_placement.node_loc_y[i];
     }
+    // double coeff_pseudo_anchor = 0.01 * std::exp((double)iteration/5.0);
+    // for (size_t i = 0; i < p_placement.num_moveable_nodes; i++){
+    //     double pseudo_w = coeff_pseudo_anchor; 
+    //     A_sparse_x.coeffRef(i, i) += pseudo_w;
+    //     A_sparse_y.coeffRef(i, i) += pseudo_w;
+    //     b_x(i) += pseudo_w * p_placement.node_loc_x[i];
+    //     b_y(i) += pseudo_w * p_placement.node_loc_y[i];
+    // }
 }
