@@ -268,7 +268,7 @@ int get_wire_segment_length(const DeviceGrid& grid, e_rr_type chan_type, const t
 static int get_switchpoint_of_wire(const DeviceGrid& grid, e_rr_type chan_type, const t_chan_seg_details& wire_details, int seg_coord, e_side sb_side);
 
 /* returns true if the coordinates x/y do not correspond to the location specified by 'location' */
-static bool sb_not_here(const DeviceGrid& grid, int x, int y, e_sb_location location, int sb_x, int sb_y, const e_sb_region& sb_reg);
+static bool sb_not_here(const DeviceGrid& grid, int x, int y, e_sb_location location, int sb_x, int sb_y, const e_sb_loc_spec& sb_reg_x, const e_sb_loc_spec& sb_reg_y);
 
 /* checks if the specified coordinates represent a corner of the FPGA */
 static bool is_corner(const DeviceGrid& grid, int x, int y);
@@ -280,7 +280,7 @@ static bool is_perimeter(const DeviceGrid& grid, int x, int y);
 static bool is_core(const DeviceGrid& grid, int x, int y);
 
 /*checks if the specified coordinates matches the exact one specified in the SB architecture description*/
-static bool match_sb_xy(const DeviceGrid& grid, int x, int y, int sb_x, int sb_y, const e_sb_region& sb_reg);
+static bool match_sb_xy(const DeviceGrid& grid, int x, int y, int sb_x, int sb_y, const e_sb_loc_spec& sb_reg_x, const e_sb_loc_spec& sb_reg_y);
 
 /* adjusts a negative destination wire index calculated from a permutation formula */
 static int adjust_formula_result(int dest_wire, int src_W, int dest_W, int connection_ind);
@@ -331,7 +331,7 @@ t_sb_connection_map* alloc_and_load_switchblock_permutations(const t_chan_detail
         /* Iterate over the x,y coordinates spanning the FPGA. */
         for (size_t x_coord = 0; x_coord < grid.width(); x_coord++) {
             for (size_t y_coord = 0; y_coord <= grid.height(); y_coord++) {
-                if (sb_not_here(grid, x_coord, y_coord, sb.location, sb.x, sb.y, sb.reg)) {
+                if (sb_not_here(grid, x_coord, y_coord, sb.location, sb.x, sb.y, sb.reg_x, sb.reg_y)) {
                     continue;
                 }
                 /* now we iterate over all the potential side1->side2 connections */
@@ -366,7 +366,7 @@ void free_switchblock_permutations(t_sb_connection_map* sb_conns) {
 }
 
 /* returns true if the coordinates x/y do not correspond to the location specified by 'location' */
-static bool sb_not_here(const DeviceGrid& grid, int x, int y, e_sb_location location, int sb_x, int sb_y, const e_sb_region& sb_reg) {
+static bool sb_not_here(const DeviceGrid& grid, int x, int y, e_sb_location location, int sb_x, int sb_y, const e_sb_loc_spec& sb_reg_x, const e_sb_loc_spec& sb_reg_y) {
     bool sb_not_here = true;
 
     switch (location) {
@@ -394,7 +394,7 @@ static bool sb_not_here(const DeviceGrid& grid, int x, int y, e_sb_location loca
             }
             break;
         case E_XY_SPECIFIED:
-            if(match_sb_xy(grid, x, y, sb_x, sb_y, sb_reg)){
+            if(match_sb_xy(grid, x, y, sb_x, sb_y, sb_reg_x, sb_reg_y)){
                 sb_not_here = false;
             }
             
@@ -432,7 +432,7 @@ static bool is_core(const DeviceGrid& grid, int x, int y) {
     return is_core;
 }
 
-static bool match_sb_xy(const DeviceGrid& grid, int x, int y, int sb_x, int sb_y, const e_sb_region& sb_reg){
+static bool match_sb_xy(const DeviceGrid& grid, int x, int y, int sb_x, int sb_y, const e_sb_loc_spec& sb_reg_x, const e_sb_loc_spec& sb_reg_y){
     
     //if one of sb_x and sb_y is defined, we either know the exact location (x,y) or the exact x location (will apply it to all columns) 
     //or the exact y location (will apply it to all rows)   
@@ -463,26 +463,26 @@ static bool match_sb_xy(const DeviceGrid& grid, int x, int y, int sb_x, int sb_y
         //    calculated region is valid. 
         
         //calculate the region
-        int x_reg_step = (sb_reg.repeatx != 0) ? (sb_x - sb_reg.startx) / sb_reg.repeatx : sb_reg.startx;
-        int y_reg_step = (sb_reg.repeaty != 0) ? (sb_y - sb_reg.starty) / sb_reg.repeaty : sb_reg.starty;
+        int x_reg_step = (sb_reg_x.repeat != 0) ? (sb_x - sb_reg_x.start) / sb_reg_x.repeat : sb_reg_x.start;
+        int y_reg_step = (sb_reg_y.repeat != 0) ? (sb_y - sb_reg_y.start) / sb_reg_y.repeat : sb_reg_y.start;
 
-        int reg_startx = sb_reg.startx + (x_reg_step * sb_reg.repeatx);
-        int reg_endx = sb_reg.endx + (x_reg_step * sb_reg.repeatx);
+        int reg_startx = sb_reg_x.start + (x_reg_step * sb_reg_x.repeat);
+        int reg_endx = sb_reg_x.end + (x_reg_step * sb_reg_x.repeat);
         reg_endx = std::min(reg_endx, int(grid.width() - 1));
 
-        int reg_starty = sb_reg.starty + (y_reg_step * sb_reg.repeaty);
-        int reg_endy = sb_reg.endy + (y_reg_step * sb_reg.repeaty);
+        int reg_starty = sb_reg_y.start + (y_reg_step * sb_reg_y.repeat);
+        int reg_endy = sb_reg_y.end + (y_reg_step * sb_reg_y.repeat);
         reg_endy = std::min(reg_endy, int(grid.height() - 1));
   
         //check x coordinate
         if (sb_x >= reg_startx && sb_x <= reg_endx){ //should fall into the region
             //we also should respect the incrx
             //if incrx is not equal to 1, all locations within this region is *NOT* valid
-            if((sb_x + reg_startx) % sb_reg.incrx == 0){
+            if((sb_x + reg_startx) % sb_reg_x.incr == 0){
                 //valid x coordinate, check for y value
                 if(sb_y >= reg_starty && sb_y <= reg_endy){
                     //check for incry, similar as incrx
-                    if((sb_y + reg_starty) % sb_reg.incry == 0){
+                    if((sb_y + reg_starty) % sb_reg_y.incr == 0){
                         //both x and y are valid
                         return true;
                     }

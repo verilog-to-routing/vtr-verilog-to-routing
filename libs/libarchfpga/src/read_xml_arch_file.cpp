@@ -3948,8 +3948,10 @@ static void ProcessSwitchblocks(pugi::xml_node Parent, t_arch* arch, const pugiu
                                     "starty", "endy", "repeaty", "incry"},
                                    loc_data);
 
-            int grid_width = arch->grid_layouts.at(0).width;
-            int grid_height = arch->grid_layouts.at(0).height; 
+            int grid_width = arch->grid_layouts.at(5).width;
+            int grid_height = arch->grid_layouts.at(5).height; 
+
+            printf("grid size grid_width and grid_height (%d,%d)\n", grid_width, grid_height);
             
             /* Absolute location that this SB must be applied to, -1 if not specified*/
             sb.x = get_attribute(SubElem, "x", loc_data, ReqOpt::OPTIONAL).as_int(-1);
@@ -3982,17 +3984,18 @@ static void ProcessSwitchblocks(pugi::xml_node Parent, t_arch* arch, const pugiu
                 vars.set_var_value("W", grid_width);
                 vars.set_var_value("H", grid_height);
 
-                sb.reg.startx = startx_attr.empty() ? -1 : p.parse_formula(startx_attr.value(), vars);
-                sb.reg.endx = endx_attr.empty() ? -1 : p.parse_formula(endx_attr.value(), vars);
+                
+                sb.reg_x.start = startx_attr.empty() ? -1 : p.parse_formula(startx_attr.value(), vars);
+                sb.reg_x.end = endx_attr.empty() ? -1 : p.parse_formula(endx_attr.value(), vars);
 
-                sb.reg.starty = starty_attr.empty() ? -1 : p.parse_formula(starty_attr.value(), vars);
-                sb.reg.endy = endy_attr.empty() ? -1 : p.parse_formula(endy_attr.value(), vars);
+                sb.reg_y.start = starty_attr.empty() ? -1 : p.parse_formula(starty_attr.value(), vars);
+                sb.reg_y.end = endy_attr.empty() ? -1 : p.parse_formula(endy_attr.value(), vars);
 
-                sb.reg.repeatx = repeatx_attr.empty() ? -1 : p.parse_formula(repeatx_attr.value(), vars);
-                sb.reg.repeaty = repeaty_attr.empty() ? -1 : p.parse_formula(repeaty_attr.value(), vars);
+                sb.reg_x.repeat = repeatx_attr.empty() ? -1 : p.parse_formula(repeatx_attr.value(), vars);
+                sb.reg_y.repeat = repeaty_attr.empty() ? -1 : p.parse_formula(repeaty_attr.value(), vars);
 
-                sb.reg.incrx = incrx_attr.empty() ? -1 : p.parse_formula(incrx_attr.value(), vars);
-                sb.reg.incry = incry_attr.empty() ? -1 : p.parse_formula(incry_attr.value(), vars);
+                sb.reg_x.incr = incrx_attr.empty() ? -1 : p.parse_formula(incrx_attr.value(), vars);
+                sb.reg_y.incr = incry_attr.empty() ? -1 : p.parse_formula(incry_attr.value(), vars);
 
             }
 
