@@ -23,7 +23,7 @@
 /* #define DUMP_BLIF_INPUT 1 */
 
 static bool try_size_device_grid(const t_arch& arch,
-                                 const std::map<t_logical_block_type_ptr,size_t>& num_type_instances,
+                                 const std::map<t_logical_block_type_ptr, size_t>& num_type_instances,
                                  float target_device_utilization,
                                  const std::string& device_layout_name);
 

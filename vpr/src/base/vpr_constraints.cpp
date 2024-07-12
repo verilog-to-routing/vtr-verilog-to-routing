@@ -1,6 +1,5 @@
 #include "vpr_constraints.h"
 
-
 UserPlaceConstraints& VprConstraints::mutable_place_constraints() {
     return placement_constraints_;
 }

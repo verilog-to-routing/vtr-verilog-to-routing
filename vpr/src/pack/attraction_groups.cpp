@@ -47,35 +47,24 @@ void AttractionInfo::create_att_groups_for_overfull_regions() {
     atom_attraction_group.resize(num_atoms);
     fill(atom_attraction_group.begin(), atom_attraction_group.end(), AttractGroupId::INVALID());
 
-    const auto& overfull_regions = floorplanning_ctx.overfull_regions;
-    PartitionRegion overfull_regions_pr;
-    for (const auto& overfull_region : overfull_regions) {
-        overfull_regions_pr.add_to_part_region(overfull_region);
-    }
-    /*
-     * Create a PartitionRegion that contains all the overfull regions so that you can
-     * make an attraction group for any partition that intersects with any of these regions
-     */
+    const std::vector<PartitionRegion>& overfull_prs = floorplanning_ctx.overfull_partition_regions;
 
     /*
-     * Create an attraction group for each parition with an overfull region.
+     * Create an attraction group for each partition that overlaps with at least one overfull partition
      */
-
     for (int ipart = 0; ipart < num_parts; ipart++) {
         PartitionId partid(ipart);
 
         const Partition& part = floorplanning_ctx.constraints.get_partition(partid);
-        const auto& pr_regions = part.get_part_region();
 
-        PartitionRegion intersect_pr;
-
-        intersect_pr = intersection(overfull_regions_pr, pr_regions);
-
-        if (!intersect_pr.empty()) {
-            AttractionGroup group_info;
-            group_info.group_atoms = floorplanning_ctx.constraints.get_part_atoms(partid);
-
-            attraction_groups.push_back(group_info);
+        for (const PartitionRegion& overfull_pr : overfull_prs) {
+            PartitionRegion intersect_pr = intersection(part.get_part_region(), overfull_pr);
+            if (!intersect_pr.empty()) {
+                AttractionGroup group_info;
+                group_info.group_atoms = floorplanning_ctx.constraints.get_part_atoms(partid);
+                attraction_groups.push_back(group_info);
+                break;
+            }
         }
     }
 
@@ -108,7 +97,7 @@ void AttractionInfo::create_att_groups_for_all_regions() {
      */
 
     /*
-     * Create an attraction group for each parition with an overfull region.
+     * Create an attraction group for each partition with an overfull region.
      */
 
     for (int ipart = 0; ipart < num_parts; ipart++) {
