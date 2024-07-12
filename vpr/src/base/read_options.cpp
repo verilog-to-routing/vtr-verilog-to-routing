@@ -1259,6 +1259,67 @@ struct ParsePostSynthNetlistUnconnOutputHandling {
     }
 };
 
+struct ParseTheadAffinityList {
+    inline std::vector<std::string> get_tokens_split_by_delimiter(const std::string& str, char delimiter) {
+        std::vector<std::string> tokens;
+        std::string acc = "";
+        for(const auto &x : str) {
+            if (x == delimiter) {
+                tokens.push_back(acc);
+                acc = "";
+            } else {
+                acc += x;
+            }
+        }
+        tokens.push_back(acc);
+        return tokens;
+    }
+
+    // Parse thread/core affinity list (i.e., pin threads to specific cores).
+    // Formats such as `0,1,2,3,4,5,6,7` and `0-7` and `0-3,4-7` and `0,1-2,3-6,7`
+    // are all supported.
+    inline std::vector<int> parse_thread_affinity_list(const std::string& str) {
+        std::vector<int> thread_affinity_list;
+        std::vector<std::string> lv1_tokens_split_by_comma = get_tokens_split_by_delimiter(str, ',');
+        for (const auto &l1_token : lv1_tokens_split_by_comma) {
+            std::vector<std::string> lv2_tokens_split_by_dash = get_tokens_split_by_delimiter(l1_token, '-');
+            size_t num_lv2_tokens = lv2_tokens_split_by_dash.size();
+            VTR_ASSERT(num_lv2_tokens == 1 || num_lv2_tokens == 2);
+            if (num_lv2_tokens == 2) {
+                int start_core_id = std::stoi(lv2_tokens_split_by_dash[0]);
+                int end_core_id = std::stoi(lv2_tokens_split_by_dash[1]);
+                for (int i = start_core_id; i <= end_core_id; ++i) {
+                    thread_affinity_list.push_back(i);
+                }
+            } else {
+                thread_affinity_list.push_back(std::stoi(lv2_tokens_split_by_dash[0]));
+            }
+        }
+        return thread_affinity_list;
+    }
+
+    ConvertedValue<std::vector<int>> from_str(const std::string& str) {
+        ConvertedValue<std::vector<int>> conv_value;
+        VTR_ASSERT(str.size() > 0);
+        if (str == "off") {
+            conv_value.set_value({});
+        } else {
+            conv_value.set_value(parse_thread_affinity_list(str));
+        }
+        return conv_value;
+    }
+
+    ConvertedValue<std::string> to_str(std::vector<int> val) {
+        ConvertedValue<std::string> conv_value;
+        std::string str = val.size() ? std::to_string(val.front()) : "off";
+        for (size_t i = 1; i < val.size(); str += ',' + std::to_string(val[i++])) ;
+        conv_value.set_value(str);
+        return conv_value;
+    }
+
+    std::vector<std::string> default_choices() { return {}; }
+};
+
 argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& args) {
     std::string description =
         "Implements the specified circuit onto the target FPGA architecture"
@@ -2502,6 +2563,26 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
     route_timing_grp.add_argument(args.post_target_prune_offset, "--post_target_prune_offset")
         .help("TODO")
         .default_value("0.0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    route_timing_grp.add_argument<int>(args.multi_queue_num_threads, "--multi_queue_num_threads")
+        .help("TODO")
+        .default_value("1")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    route_timing_grp.add_argument<int>(args.multi_queue_num_queues, "--multi_queue_num_queues")
+        .help("TODO")
+        .default_value("2")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    route_timing_grp.add_argument<bool, ParseOnOff>(args.multi_queue_direct_draining, "--multi_queue_direct_draining")
+        .help("TODO")
+        .default_value("off")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    route_timing_grp.add_argument<std::vector<int>, ParseTheadAffinityList>(args.thread_affinity, "--thread_affinity")
+        .help("TODO")
+        .default_value("off")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_timing_grp.add_argument(args.max_criticality, "--max_criticality")

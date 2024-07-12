@@ -21,8 +21,8 @@ class SerialNetlistRouter : public NetlistRouter {
         const RoutingPredictor& routing_predictor,
         const vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>>& choking_spots,
         bool is_flat)
-        : _serial_router(_make_router(router_lookahead, is_flat, false))
-        , _parallel_router(_make_router(router_lookahead, is_flat, true))
+        : _serial_router(_make_router(router_lookahead, router_opts, is_flat, false))
+        , _parallel_router(_make_router(router_lookahead, router_opts, is_flat, true))
         , _net_list(net_list)
         , _router_opts(router_opts)
         , _connections_inf(connections_inf)
@@ -45,8 +45,10 @@ class SerialNetlistRouter : public NetlistRouter {
 
   private:
     bool should_use_parallel_connection_router(const ParentNetId &net_id, int itry, float pres_fac, float worst_neg_slack);
-    
-    ConnectionRouterInterface *_make_router(const RouterLookahead* router_lookahead, bool is_flat, bool is_parallel) {
+
+    ConnectionRouterInterface *_make_router(const RouterLookahead* router_lookahead,
+                                            const t_router_opts& router_opts,
+                                            bool is_flat, bool is_parallel) {
         auto& device_ctx = g_vpr_ctx.device();
         auto& route_ctx = g_vpr_ctx.mutable_routing();
 
@@ -71,7 +73,11 @@ class SerialNetlistRouter : public NetlistRouter {
                 device_ctx.rr_rc_data,
                 device_ctx.rr_graph.rr_switch(),
                 route_ctx.rr_node_route_inf,
-                is_flat);
+                is_flat,
+                router_opts.multi_queue_num_threads,
+                router_opts.multi_queue_num_queues,
+                router_opts.multi_queue_direct_draining,
+                router_opts.thread_affinity);
             }
     }
     /* Context fields */

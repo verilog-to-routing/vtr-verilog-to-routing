@@ -1425,6 +1425,10 @@ struct t_router_opts {
     float router_profiler_astar_fac;
     float post_target_prune_fac;
     float post_target_prune_offset;
+    int multi_queue_num_threads;
+    int multi_queue_num_queues;
+    bool multi_queue_direct_draining;
+    std::vector<int> thread_affinity;
     float max_criticality;
     float criticality_exp;
     float init_wirelength_abort_threshold;

@@ -16,9 +16,6 @@
 #include <fstream>
 #endif
 
-// For details on setting core affinity, please see `parse_core_affinity_list`.
-#define ENABLE_CORE_AFFINITY
-
 #define VPR_PARALLEL_CONNECTION_ROUTER_USE_MULTI_QUEUE
 // #define VPR_PARALLEL_CONNECTION_ROUTER_USE_ONE_TBB
 
@@ -37,15 +34,6 @@ using ParallelPriorityQueue = OneTBBConcurrentPriorityQueue;
 #include <thread>
 #include <mutex>
 #include <condition_variable>
-
-const size_t mq_num_threads = std::atoi(
-    std::getenv("MQ_NUM_THREADS") ? std::getenv("MQ_NUM_THREADS") : "1");
-const size_t mq_num_queues_per_thread = std::atoi(
-    std::getenv("MQ_NUM_QUEUES_PER_THREAD") ? std::getenv("MQ_NUM_QUEUES_PER_THREAD") : "2");
-const size_t mq_num_queues_from_env = std::atoi(
-    std::getenv("MQ_NUM_QUEUES") ? std::getenv("MQ_NUM_QUEUES") : "0");
-const size_t mq_num_queues = mq_num_queues_from_env ?
-    mq_num_queues_from_env : (mq_num_threads * mq_num_queues_per_thread);
 
 class spin_lock_t {
     std::atomic_flag lock_ = ATOMIC_FLAG_INIT;
@@ -118,45 +106,6 @@ public:
 
 using barrier_t = barrier_spin_t;
 
-inline std::vector<std::string> get_tokens_split_by_delimiter(std::string str, char delimiter) {
-    std::vector<std::string> tokens;
-    std::string acc = "";
-    for(const auto &x : str) {
-        if (x == delimiter) {
-            tokens.push_back(acc);
-            acc = "";
-        } else {
-            acc += x;
-        }
-    }
-    tokens.push_back(acc);
-    return tokens;
-}
-
-// To assign core affinity (i.e., pin threads to specific cores), please set the
-// environment variable `export VPR_CORE_AFFINITY=0-8` before running VPR.
-// Formats such as `0,1,2,3,4,5,6,7` and `0-7` and `0-3,4-7` and `0,1-2,3-6,7`
-// are all supported.
-inline std::vector<size_t> parse_core_affinity_list(std::string str) {
-    std::vector<size_t> core_affinity_list;
-    std::vector<std::string> lv1_tokens_split_by_comma = get_tokens_split_by_delimiter(str, ',');
-    for (const auto &l1_token : lv1_tokens_split_by_comma) {
-        std::vector<std::string> lv2_tokens_split_by_dash = get_tokens_split_by_delimiter(l1_token, '-');
-        size_t num_lv2_tokens = lv2_tokens_split_by_dash.size();
-        assert(num_lv2_tokens == 1 || num_lv2_tokens == 2);
-        if (num_lv2_tokens == 2) {
-            int start_core_id = std::stoi(lv2_tokens_split_by_dash[0]);
-            int end_core_id = std::stoi(lv2_tokens_split_by_dash[1]);
-            for (int i = start_core_id; i <= end_core_id; ++i) {
-                core_affinity_list.push_back(i);
-            }
-        } else {
-            core_affinity_list.push_back(std::stoi(lv2_tokens_split_by_dash[0]));
-        }
-    }
-    return core_affinity_list;
-}
-
 // Prune the heap when it contains 4x the number of nodes in the RR graph.
 // constexpr size_t kHeapPruneFactor = 4;
 
@@ -178,7 +127,11 @@ class ParallelConnectionRouter : public ConnectionRouterInterface {
         const std::vector<t_rr_rc_data>& rr_rc_data,
         const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf,
         vtr::vector<RRNodeId, t_rr_node_route_inf>& rr_node_route_inf,
-        bool is_flat)
+        bool is_flat,
+        int multi_queue_num_threads,
+        int multi_queue_num_queues,
+        bool multi_queue_direct_draining,
+        const std::vector<int>& thread_affinity)
         : grid_(grid)
         , router_lookahead_(router_lookahead)
         , rr_nodes_(rr_nodes.view())
@@ -189,60 +142,52 @@ class ParallelConnectionRouter : public ConnectionRouterInterface {
         , net_terminal_group_num(g_vpr_ctx.routing().net_terminal_group_num)
         , rr_node_route_inf_(rr_node_route_inf)
         , is_flat_(is_flat)
-        , modified_rr_node_inf_(mq_num_threads)
+        , modified_rr_node_inf_(multi_queue_num_threads)
         , router_stats_(nullptr)
-        , heap_(mq_num_threads, mq_num_queues)
-        , thread_barrier_(mq_num_threads)
+        , heap_(multi_queue_num_threads, multi_queue_num_queues)
+        , thread_barrier_(multi_queue_num_threads)
         , is_router_destroying_(false)
         , locks_(rr_node_route_inf.size())
-        , router_debug_(false) {
+        , router_debug_(false)
+        , multi_queue_direct_draining_(multi_queue_direct_draining) {
         heap_.init_heap(grid);
         only_opin_inter_layer = (grid.get_num_layers() > 1) && inter_layer_connections_limited_to_opin(*rr_graph);
-        std::cout << "#T=" << mq_num_threads << " #Q=" << mq_num_queues << std::endl << std::flush;
-        sub_threads_.resize(mq_num_threads-1);
+        sub_threads_.resize(multi_queue_num_threads - 1);
         thread_barrier_.init();
 
 #ifdef PROFILE_HEAP_OCCUPANCY
         heap_occ_profile_.open("occupancy.txt", std::ios::trunc);
 #endif
 
-#ifdef ENABLE_CORE_AFFINITY
-        std::vector<size_t> thread_core_affinity_mapping;
-        if (std::getenv("VPR_CORE_AFFINITY")) {
-            thread_core_affinity_mapping = parse_core_affinity_list(std::getenv("VPR_CORE_AFFINITY"));
-            assert(thread_core_affinity_mapping.size() == mq_num_threads);
-        } else {
-            for (size_t i = 0; i < mq_num_threads; ++i) {
-                thread_core_affinity_mapping.push_back(i);
-            }
-        }
-#endif
+        bool enable_thread_affinity = thread_affinity.size() > 0;
+        VTR_ASSERT((!enable_thread_affinity) || (static_cast<int>(thread_affinity.size()) == multi_queue_num_threads));
 
-        for (size_t i = 0 ; i < mq_num_threads - 1; ++i) {
+        for (int i = 0 ; i < multi_queue_num_threads - 1; ++i) {
             sub_threads_[i] = std::thread(&ParallelConnectionRouter::timing_driven_route_connection_from_heap_sub_thread_wrapper, this, i + 1 /*0: main thread*/);
             // Create a cpu_set_t object representing a set of CPUs. Clear it and mark only CPU i as set.
-#ifdef ENABLE_CORE_AFFINITY
+            if (enable_thread_affinity) {
+                cpu_set_t cpuset;
+                CPU_ZERO(&cpuset);
+                CPU_SET(thread_affinity[i + 1], &cpuset);
+                int rc = pthread_setaffinity_np(sub_threads_[i].native_handle(),
+                                                sizeof(cpu_set_t), &cpuset);
+                if (rc != 0) {
+                    VTR_LOG("Error calling pthread_setaffinity_np: %d\n", rc);
+                }
+            }
+            sub_threads_[i].detach();
+        }
+
+        if (enable_thread_affinity) {
             cpu_set_t cpuset;
             CPU_ZERO(&cpuset);
-            CPU_SET(thread_core_affinity_mapping[i + 1], &cpuset);
-            int rc = pthread_setaffinity_np(sub_threads_[i].native_handle(),
+            CPU_SET(thread_affinity[0], &cpuset);
+            int rc = pthread_setaffinity_np(pthread_self(),
                                             sizeof(cpu_set_t), &cpuset);
             if (rc != 0) {
                 VTR_LOG("Error calling pthread_setaffinity_np: %d\n", rc);
             }
-#endif
-            sub_threads_[i].detach();
         }
-#ifdef ENABLE_CORE_AFFINITY
-        cpu_set_t cpuset;
-        CPU_ZERO(&cpuset);
-        CPU_SET(thread_core_affinity_mapping[0], &cpuset);
-        int rc = pthread_setaffinity_np(pthread_self(),
-                                        sizeof(cpu_set_t), &cpuset);
-        if (rc != 0) {
-            VTR_LOG("Error calling pthread_setaffinity_np: %d\n", rc);
-        }
-#endif
     }
 
     ~ParallelConnectionRouter() {
@@ -513,6 +458,8 @@ class ParallelConnectionRouter : public ConnectionRouterInterface {
 
     // Timing
     std::chrono::microseconds sssp_total_time{0};
+
+    bool multi_queue_direct_draining_;
 
     // Profiling
 #ifdef PROFILE_HEAP_OCCUPANCY

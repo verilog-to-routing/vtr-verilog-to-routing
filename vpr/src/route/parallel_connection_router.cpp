@@ -392,7 +392,7 @@ void ParallelConnectionRouter::timing_driven_route_connection_from_heap_thread_f
     while (heap_.try_pop(new_total_cost, inode)) {
 #ifdef PROFILE_HEAP_OCCUPANCY
         if (thread_idx == 0) {
-            if (count % (1000 / mq_num_threads) == 0) {
+            if (count % 1000 == 0) {
                 heap_occ_profile_ << count << " " << heap_.getHeapOccupancy() << "\n";
             }
             count ++;
@@ -631,7 +631,9 @@ void ParallelConnectionRouter::timing_driven_add_to_heap(const t_conn_cost_param
 
     if (to_node == target_node) {
 #ifdef MQ_IO_ENABLE_CLEAR_FOR_POP
-        heap_.setMinPrioForPop(new_total_cost);
+        if (multi_queue_direct_draining_) {
+            heap_.setMinPrioForPop(new_total_cost);
+        }
 #endif
         return ;
     }

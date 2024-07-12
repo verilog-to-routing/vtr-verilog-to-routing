@@ -414,6 +414,10 @@ static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts)
     RouterOpts->router_profiler_astar_fac = Options.router_profiler_astar_fac;
     RouterOpts->post_target_prune_fac = Options.post_target_prune_fac;
     RouterOpts->post_target_prune_offset = Options.post_target_prune_offset;
+    RouterOpts->multi_queue_num_threads = Options.multi_queue_num_threads;
+    RouterOpts->multi_queue_num_queues = Options.multi_queue_num_queues;
+    RouterOpts->multi_queue_direct_draining = Options.multi_queue_direct_draining;
+    RouterOpts->thread_affinity = Options.thread_affinity;
     RouterOpts->bb_factor = Options.bb_factor;
     RouterOpts->criticality_exp = Options.criticality_exp;
     RouterOpts->max_criticality = Options.max_criticality;

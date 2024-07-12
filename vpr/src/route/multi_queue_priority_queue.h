@@ -1,7 +1,12 @@
 #ifndef _MULTI_QUEUE_PRIORITY_QUEUE_H
 #define _MULTI_QUEUE_PRIORITY_QUEUE_H
 
-// #define MQ_IO_ENABLE_CLEAR_FOR_POP
+// This is only used to enable the clearing code in the MQIO codebase. Whether
+// using queue draining optimization only depends on the VPR command-line option
+// `--multi_queue_direct_draining` setting during runtime. If the option is set
+// to `off`, the queue draining won't work since the `setMinPrioForPop` won't be
+// called leaving the `minPrioForPop` in MQIO object always as float maximum.
+#define MQ_IO_ENABLE_CLEAR_FOR_POP
 
 #include "heap_type.h"
 

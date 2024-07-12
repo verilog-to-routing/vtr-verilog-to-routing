@@ -209,6 +209,10 @@ struct t_options {
     argparse::ArgValue<float> router_profiler_astar_fac;
     argparse::ArgValue<float> post_target_prune_fac;
     argparse::ArgValue<float> post_target_prune_offset;
+    argparse::ArgValue<int> multi_queue_num_threads;
+    argparse::ArgValue<int> multi_queue_num_queues;
+    argparse::ArgValue<bool> multi_queue_direct_draining;
+    argparse::ArgValue<std::vector<int>> thread_affinity;
     argparse::ArgValue<float> max_criticality;
     argparse::ArgValue<float> criticality_exp;
     argparse::ArgValue<float> router_init_wirelength_abort_threshold;
