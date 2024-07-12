@@ -152,6 +152,9 @@ void SetupVPR(const t_options* Options,
     SetupNocOpts(*Options, NocOpts);
     SetupServerOpts(*Options, ServerOpts);
 
+    //save the device layout, which is required to parse the architecture file
+    Arch->device_layout = Options->device_layout;
+
     if (readArchFile == true) {
         vtr::ScopedStartFinishTimer t("Loading Architecture Description");
         switch (Options->arch_format) {

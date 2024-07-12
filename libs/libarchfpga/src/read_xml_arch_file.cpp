@@ -3895,6 +3895,15 @@ static void ProcessSwitchblocks(pugi::xml_node Parent, t_arch* arch, const pugiu
     int num_switchblocks = count_children(Parent, "switchblock", loc_data);
     arch->switchblocks.reserve(num_switchblocks);
 
+    // get the device layout width and height
+    int layout_index = -1;
+    for(layout_index = 0; layout_index < (int) arch->grid_layouts.size(); layout_index++){
+        if(arch->grid_layouts.at(layout_index).name == arch->device_layout){
+            //found the used layout
+            break;
+        }
+    }
+
     /* read-in all switchblock data */
     Node = get_first_child(Parent, "switchblock", loc_data);
     for (int i_sb = 0; i_sb < num_switchblocks; i_sb++) {
@@ -3948,10 +3957,8 @@ static void ProcessSwitchblocks(pugi::xml_node Parent, t_arch* arch, const pugiu
                                     "starty", "endy", "repeaty", "incry"},
                                    loc_data);
 
-            int grid_width = arch->grid_layouts.at(5).width;
-            int grid_height = arch->grid_layouts.at(5).height; 
-
-            printf("grid size grid_width and grid_height (%d,%d)\n", grid_width, grid_height);
+            int grid_width = arch->grid_layouts.at(layout_index).width;
+            int grid_height = arch->grid_layouts.at(layout_index).height;
             
             /* Absolute location that this SB must be applied to, -1 if not specified*/
             sb.x = get_attribute(SubElem, "x", loc_data, ReqOpt::OPTIONAL).as_int(-1);
@@ -3986,9 +3993,9 @@ static void ProcessSwitchblocks(pugi::xml_node Parent, t_arch* arch, const pugiu
 
                 
                 sb.reg_x.start = startx_attr.empty() ? -1 : p.parse_formula(startx_attr.value(), vars);
-                sb.reg_x.end = endx_attr.empty() ? -1 : p.parse_formula(endx_attr.value(), vars);
-
                 sb.reg_y.start = starty_attr.empty() ? -1 : p.parse_formula(starty_attr.value(), vars);
+
+                sb.reg_x.end = endx_attr.empty() ? -1 : p.parse_formula(endx_attr.value(), vars);
                 sb.reg_y.end = endy_attr.empty() ? -1 : p.parse_formula(endy_attr.value(), vars);
 
                 sb.reg_x.repeat = repeatx_attr.empty() ? -1 : p.parse_formula(repeatx_attr.value(), vars);

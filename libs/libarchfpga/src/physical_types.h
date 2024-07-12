@@ -2075,6 +2075,7 @@ struct t_arch {
     std::vector<std::string> ipin_cblock_switch_name;
 
     std::vector<t_grid_def> grid_layouts; //Set of potential device layouts
+    std::string device_layout; //the layout that is choosen to be used with command line options
 
     t_clock_arch_spec clock_arch; // Clock related data types
 
