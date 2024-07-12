@@ -40,7 +40,9 @@ class B2BSolver : public AnalyticalSolver {
     public:
         void solve(unsigned iteration, PartialPlacement &p_placement) final;
         void b2b_solve_loop(unsigned iteration, PartialPlacement &p_placement);
-        void initialize_placement(PartialPlacement &p_placement);
+        void initialize_placement_random_normal(PartialPlacement &p_placement);
+        void initialize_placement_random_uniform(PartialPlacement &p_placement);
+        void initialize_placement_least_dense(PartialPlacement &p_placement);
         void populate_matrix(PartialPlacement &p_placement);
         void populate_matrix_anchor(PartialPlacement& p_placement, unsigned iteration);
         std::pair<size_t, size_t> boundNode(std::vector<size_t> &node_id, std::vector<double> &node_loc);
