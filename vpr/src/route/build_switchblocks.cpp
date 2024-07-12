@@ -334,8 +334,6 @@ t_sb_connection_map* alloc_and_load_switchblock_permutations(const t_chan_detail
                 if (sb_not_here(grid, x_coord, y_coord, sb.location, sb.x, sb.y, sb.reg_x, sb.reg_y)) {
                     continue;
                 }
-                std::cout << "locations that have SBs" << std::endl;
-                std::cout << x_coord << " " << y_coord << std::endl;
                 /* now we iterate over all the potential side1->side2 connections */
                 for (e_side from_side : {TOP, RIGHT, BOTTOM, LEFT}) {
                     for (e_side to_side : {TOP, RIGHT, BOTTOM, LEFT}) {
