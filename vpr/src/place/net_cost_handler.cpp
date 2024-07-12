@@ -556,18 +556,8 @@ static void update_td_delta_costs(const PlaceDelayModel* delay_model,
                                   std::vector<ClusterPinId>& affected_pins,
                                   double& delta_timing_cost,
                                   bool is_src_moving) {
-    
-/**
-/**
- * @brief Calculate the new connection delay and timing cost of all the
- *        sink pins affected by moving a specific pin to a new location.
- *        Also calculates the total change in the timing cost.
- *
+
     /**
- * @brief Calculate the new connection delay and timing cost of all the
- *        sink pins affected by moving a specific pin to a new location.
- *        Also calculates the total change in the timing cost.
- *
      * Assumes that the blocks have been moved to the proposed new locations.
      * Otherwise, the routine comp_td_single_connection_delay() will not be
      * able to calculate the most up to date connection delay estimation value.
