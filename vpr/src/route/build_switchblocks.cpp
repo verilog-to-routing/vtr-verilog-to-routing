@@ -334,6 +334,8 @@ t_sb_connection_map* alloc_and_load_switchblock_permutations(const t_chan_detail
                 if (sb_not_here(grid, x_coord, y_coord, sb.location, sb.x, sb.y, sb.reg_x, sb.reg_y)) {
                     continue;
                 }
+                std::cout << "locations that have SBs" << std::endl;
+                std::cout << x_coord << " " << y_coord << std::endl;
                 /* now we iterate over all the potential side1->side2 connections */
                 for (e_side from_side : {TOP, RIGHT, BOTTOM, LEFT}) {
                     for (e_side to_side : {TOP, RIGHT, BOTTOM, LEFT}) {
@@ -463,8 +465,12 @@ static bool match_sb_xy(const DeviceGrid& grid, int x, int y, int sb_x, int sb_y
         //    calculated region is valid. 
         
         //calculate the region
-        int x_reg_step = (sb_reg_x.repeat != 0) ? (sb_x - sb_reg_x.start) / sb_reg_x.repeat : sb_reg_x.start;
-        int y_reg_step = (sb_reg_y.repeat != 0) ? (sb_y - sb_reg_y.start) / sb_reg_y.repeat : sb_reg_y.start;
+        int x_reg_step = (sb_reg_x.repeat != 0) ? (x - sb_reg_x.start) / sb_reg_x.repeat : sb_reg_x.start;
+        int y_reg_step = (sb_reg_y.repeat != 0) ? (y - sb_reg_y.start) / sb_reg_y.repeat : sb_reg_y.start;
+
+        //step must be non-negative
+        x_reg_step = (x_reg_step < 0) ? 0 : x_reg_step;
+        y_reg_step = (y_reg_step < 0) ? 0 : y_reg_step;
 
         int reg_startx = sb_reg_x.start + (x_reg_step * sb_reg_x.repeat);
         int reg_endx = sb_reg_x.end + (x_reg_step * sb_reg_x.repeat);
@@ -475,14 +481,14 @@ static bool match_sb_xy(const DeviceGrid& grid, int x, int y, int sb_x, int sb_y
         reg_endy = std::min(reg_endy, int(grid.height() - 1));
   
         //check x coordinate
-        if (sb_x >= reg_startx && sb_x <= reg_endx){ //should fall into the region
+        if (x >= reg_startx && x <= reg_endx){ //should fall into the region
             //we also should respect the incrx
             //if incrx is not equal to 1, all locations within this region is *NOT* valid
-            if((sb_x + reg_startx) % sb_reg_x.incr == 0){
+            if((y + reg_startx) % sb_reg_x.incr == 0){
                 //valid x coordinate, check for y value
-                if(sb_y >= reg_starty && sb_y <= reg_endy){
+                if(y >= reg_starty && y <= reg_endy){
                     //check for incry, similar as incrx
-                    if((sb_y + reg_starty) % sb_reg_y.incr == 0){
+                    if((y + reg_starty) % sb_reg_y.incr == 0){
                         //both x and y are valid
                         return true;
                     }

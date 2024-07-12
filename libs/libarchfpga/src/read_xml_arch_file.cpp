@@ -3992,17 +3992,17 @@ static void ProcessSwitchblocks(pugi::xml_node Parent, t_arch* arch, const pugiu
                 vars.set_var_value("H", grid_height);
 
                 
-                sb.reg_x.start = startx_attr.empty() ? -1 : p.parse_formula(startx_attr.value(), vars);
-                sb.reg_y.start = starty_attr.empty() ? -1 : p.parse_formula(starty_attr.value(), vars);
+                sb.reg_x.start = startx_attr.empty() ? 0 : p.parse_formula(startx_attr.value(), vars);
+                sb.reg_y.start = starty_attr.empty() ? 0 : p.parse_formula(starty_attr.value(), vars);
 
-                sb.reg_x.end = endx_attr.empty() ? -1 : p.parse_formula(endx_attr.value(), vars);
-                sb.reg_y.end = endy_attr.empty() ? -1 : p.parse_formula(endy_attr.value(), vars);
+                sb.reg_x.end = endx_attr.empty() ? (grid_width - 1) : p.parse_formula(endx_attr.value(), vars);
+                sb.reg_y.end = endy_attr.empty() ? (grid_height -1) : p.parse_formula(endy_attr.value(), vars);
 
-                sb.reg_x.repeat = repeatx_attr.empty() ? -1 : p.parse_formula(repeatx_attr.value(), vars);
-                sb.reg_y.repeat = repeaty_attr.empty() ? -1 : p.parse_formula(repeaty_attr.value(), vars);
+                sb.reg_x.repeat = repeatx_attr.empty() ? 0 : p.parse_formula(repeatx_attr.value(), vars);
+                sb.reg_y.repeat = repeaty_attr.empty() ? 0 : p.parse_formula(repeaty_attr.value(), vars);
 
-                sb.reg_x.incr = incrx_attr.empty() ? -1 : p.parse_formula(incrx_attr.value(), vars);
-                sb.reg_y.incr = incry_attr.empty() ? -1 : p.parse_formula(incry_attr.value(), vars);
+                sb.reg_x.incr = incrx_attr.empty() ? 1 : p.parse_formula(incrx_attr.value(), vars);
+                sb.reg_y.incr = incry_attr.empty() ? 1 : p.parse_formula(incry_attr.value(), vars);
 
             }
 
