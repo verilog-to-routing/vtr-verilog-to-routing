@@ -30,7 +30,7 @@ std::unique_ptr<AnalyticalSolver> make_analytical_solver(e_analytical_solver sol
     return nullptr;
 }
 
-bool contains_NaN(Eigen::SparseMatrix<double> &mat) {
+static bool contains_NaN(Eigen::SparseMatrix<double> &mat) {
     bool contains_nan = false;
     for (int k = 0; k < mat.outerSize(); ++k) {
         for (Eigen::SparseMatrix<double>::InnerIterator it(mat, k); it; ++it) {
@@ -46,11 +46,11 @@ bool contains_NaN(Eigen::SparseMatrix<double> &mat) {
     return contains_nan;
 }
 
-bool isSymmetric(const Eigen::SparseMatrix<double> &A){
+static bool isSymmetric(const Eigen::SparseMatrix<double> &A){
     return A.isApprox(A.transpose());
 }
 
-bool isSemiPosDef(const Eigen::SparseMatrix<double> &A){
+static bool isSemiPosDef(const Eigen::SparseMatrix<double> &A){
     // TODO: This is slow, it could be faster if we use Cholesky decomposition (Eigen::SimplicialLDLT), still O(n^3)
     Eigen::SelfAdjointEigenSolver<Eigen::SparseMatrix<double>> solver;
     solver.compute(A);
@@ -65,7 +65,7 @@ bool isSemiPosDef(const Eigen::SparseMatrix<double> &A){
     return true;
 }
 
-double conditionNumber(const Eigen::SparseMatrix<double> &A) {
+static double conditionNumber(const Eigen::SparseMatrix<double> &A) {
     // Since real and sym, instead of sigmamax/sigmamin, lambdamax^2/lambdamin^2 is also ok, could be faster. 
     // Eigen::MatrixXd denseMat = Eigen::MatrixXd(A);
     // Eigen::JacobiSVD<Eigen::MatrixXd> svd(denseMat);
@@ -217,6 +217,8 @@ void B2BSolver::initialize_placement_random_normal(PartialPlacement &p_placement
     // std::random_device rd;
     // std::mt19937 gen(rd());
     std::mt19937 gen(1894650209824387);
+    // FIXME: the standard deviation is too small, [width/height] / [2/3]
+    // can spread nodes further aparts.
     std::normal_distribution<> disx((double)grid_width / 2, 1.0);
     std::normal_distribution<> disy((double)grid_height / 2, 1.0);
     for (size_t i = 0; i < p_placement.num_moveable_nodes; i++) {
@@ -247,21 +249,27 @@ void B2BSolver::initialize_placement_random_uniform(PartialPlacement &p_placemen
 void B2BSolver::initialize_placement_least_dense(PartialPlacement &p_placement) {
     size_t grid_width = g_vpr_ctx.device().grid.width();
     size_t grid_height = g_vpr_ctx.device().grid.height();
-    unsigned cols = std::ceil(std::sqrt(p_placement.num_moveable_nodes * grid_height / static_cast<double>(grid_width)));
-    unsigned rows = std::ceil(p_placement.num_moveable_nodes / static_cast<double>(cols));
-    double x_gap = grid_width / static_cast<double>(cols + 1);
-    double y_gap = grid_height / static_cast<double>(rows + 1);
-    for (int r = 1; r <= static_cast<int>(rows); r++) {
-        for (int c = 1; c <= static_cast<int>(cols); c++) {
-            p_placement.node_loc_x[(r-1)*cols + c -1] = c * x_gap;
-            p_placement.node_loc_x[(r-1)*cols + c -1] = r * y_gap;
+    double gap = std::sqrt(grid_height * grid_width / static_cast<double>(p_placement.num_moveable_nodes));
+    size_t cols = std::ceil(grid_width / gap);
+    size_t rows = std::ceil(grid_height / gap);
+    // VTR_LOG("width: %zu, height: %zu, gap: %f\n", grid_width, grid_height, gap);
+    // VTR_LOG("cols: %zu, row: %zu, cols * rows: %zu, numnode: %zu\n", cols, rows, cols*rows, p_placement.num_moveable_nodes);
+    // VTR_ASSERT(cols * rows == p_placement.num_moveable_nodes && "number of movable nodes does not match grid size");
+    for (size_t r = 0; r <= rows; r++) {
+        for (size_t c = 0; c <= cols; c++) {
+            size_t i = r * cols + c;
+            if (i >= p_placement.num_moveable_nodes)
+                break;
+            p_placement.node_loc_x[i] = c * gap;
+            p_placement.node_loc_x[i] = r * gap;
         }
     }
+
 }
 
 // This function return the two nodes on the bound of a netlist, (max, min)
 std::pair<size_t, size_t> B2BSolver::boundNode(std::vector<size_t>& node_ids, std::vector<double>& node_locs){
-    auto compare = [&node_locs](int a, int b) {
+    auto compare = [&node_locs](size_t a, size_t b) {
         return node_locs[a] < node_locs[b];
     };
     auto maxIt = std::max_element(node_ids.begin(), node_ids.end(), compare);
@@ -274,8 +282,10 @@ void B2BSolver::populate_matrix(PartialPlacement &p_placement) {
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
     const AtomNetlist& netlist = p_placement.atom_netlist;
     // Resetting As bs
-    A_sparse_x.setZero();
-    A_sparse_y.setZero();
+    A_sparse_x = Eigen::SparseMatrix<double>(A_sparse_x.rows(), A_sparse_x.cols());
+    A_sparse_y = Eigen::SparseMatrix<double>(A_sparse_y.rows(), A_sparse_y.cols());
+    // A_sparse_x.setZero();
+    // A_sparse_y.setZero();
     std::vector<Eigen::Triplet<double>> tripletList_x;
     tripletList_x.reserve(p_placement.num_moveable_nodes * netlist.nets().size());
     std::vector<Eigen::Triplet<double>> tripletList_y;
@@ -297,15 +307,19 @@ void B2BSolver::populate_matrix(PartialPlacement &p_placement) {
             node_ids.push_back(node_id);
         }
         // remove duplicated node, they are there becaues of prepacked molecules.
+        // FIXME: duplicate exists because atoms are packed in to molecules so some edges are now hidden.
+        // We can create our own netlist class to resolve this problem.
         std::set<size_t> node_ids_set(node_ids.begin(), node_ids.end());
         std::vector<size_t> node_ids_no_duplicate(node_ids_set.begin(), node_ids_set.end());
         
-        auto [maxXId, minXId] = boundNode(node_ids_no_duplicate, p_placement.node_loc_x);
-        auto [maxYId, minYId] = boundNode(node_ids_no_duplicate, p_placement.node_loc_y);
         if (node_ids_no_duplicate.size() <= 1){
             continue;
         }
+        // TODO: do this in a for loop instead of creating vectors
+        auto [maxXId, minXId] = boundNode(node_ids_no_duplicate, p_placement.node_loc_x);
+        auto [maxYId, minYId] = boundNode(node_ids_no_duplicate, p_placement.node_loc_y);
         // assign arbitrary node as bound node when they are all equal
+        // TODO: although deterministic, investigate other ways to break ties.
         if (maxXId == minXId) {
             maxXId = node_ids_no_duplicate[0];
             minXId = node_ids_no_duplicate[1];
@@ -321,7 +335,9 @@ void B2BSolver::populate_matrix(PartialPlacement &p_placement) {
                 }
                 std::swap(first_node_id, second_node_id);
             }
-            double epsilon = 1e-6;
+            // epsilon is needed to prevent numerical instability. If two nodes are on top of each other.
+            // The denominator of weight is zero, which causes infinity term in the matrix. Another way of
+            // interpreting epsilon is the minimum distance two nodes are considered to be in placement.
             double dist = 0; 
             if(is_x)
                 dist = 1.0/std::max(std::abs(p_placement.node_loc_x[first_node_id] - p_placement.node_loc_x[second_node_id]), epsilon);
@@ -334,7 +350,7 @@ void B2BSolver::populate_matrix(PartialPlacement &p_placement) {
                     tripletList_x.emplace_back(second_node_id, second_node_id, w);
                     tripletList_x.emplace_back(first_node_id, second_node_id, -w);
                     tripletList_x.emplace_back(second_node_id, first_node_id, -w);
-                }else{
+                } else {
                     tripletList_y.emplace_back(first_node_id, first_node_id, w);
                     tripletList_y.emplace_back(second_node_id, second_node_id, w);
                     tripletList_y.emplace_back(first_node_id, second_node_id, -w);
@@ -344,13 +360,15 @@ void B2BSolver::populate_matrix(PartialPlacement &p_placement) {
                 if (is_x){
                     tripletList_x.emplace_back(first_node_id, first_node_id, w);
                     b_x(first_node_id) += w * p_placement.node_loc_x[second_node_id];
-                }else{
+                } else {
                     tripletList_y.emplace_back(first_node_id, first_node_id, w);
                     b_y(first_node_id) += w * p_placement.node_loc_y[second_node_id];
                 }
             }
         };
-        for (size_t node_id = 0; node_id < node_ids_no_duplicate.size(); node_id++) {
+        // TODO: when adding custom netlist, also modify here.
+        size_t num_nodes = node_ids_no_duplicate.size();
+        for (size_t node_id = 0; node_id < num_nodes; node_id++) {
             if (node_id != maxXId && node_id != minXId) {
                 add_node(node_id, maxXId, node_ids_no_duplicate.size(), true);
                 add_node(node_id, minXId, node_ids_no_duplicate.size(), true);
@@ -367,9 +385,9 @@ void B2BSolver::populate_matrix(PartialPlacement &p_placement) {
     A_sparse_y.setFromTriplets(tripletList_y.begin(), tripletList_y.end());
 }
 
-
+// This function adds anchors for legalized solution. Anchors are treated as fixed node,
+// each connecting to a movable node. Number of nodes in a anchor net is always 2.
 void B2BSolver::populate_matrix_anchor(PartialPlacement& p_placement, unsigned iteration) {
-    double epsilon = 1e-6;
     double coeff_pseudo_anchor = 0.001 * std::exp((double)iteration/29.0);
     // double coeff_pseudo_anchor = std::exp((double)iteration/1.0);
     for (size_t i = 0; i < p_placement.num_moveable_nodes; i++){
@@ -395,14 +413,13 @@ void B2BSolver::populate_matrix_anchor(PartialPlacement& p_placement, unsigned i
 // This function is the inner loop that alternate between building matrix based on placement, and solving model to get placement.
 void B2BSolver::b2b_solve_loop(unsigned iteration, PartialPlacement &p_placement){
     double previous_hpwl, current_hpwl = std::numeric_limits<double>::max();
-    unsigned counter = 0;
-    do{
+    for(unsigned counter = 0; counter < inner_iterations; counter++) {
         counter++; 
         previous_hpwl = current_hpwl;
         VTR_LOG("placement hpwl in b2b loop: %f\n", p_placement.get_HPWL());
         VTR_ASSERT(p_placement.is_valid_partial_placement() && "did not produce a valid placement in b2b solve loop");
         populate_matrix(p_placement);
-        if(iteration != 0)
+        if (iteration != 0)
             populate_matrix_anchor(p_placement, iteration);
         Eigen::VectorXd x, y;
         Eigen::ConjugateGradient<Eigen::SparseMatrix<double>, Eigen::Lower|Eigen::Upper> cg_x;
@@ -423,6 +440,7 @@ void B2BSolver::b2b_solve_loop(unsigned iteration, PartialPlacement &p_placement
         VTR_ASSERT(cg_y.info() == Eigen::Success && "Conjugate Gradient failed at compute for A_y!");
         x = cg_x.solve(b_x);
         y = cg_y.solve(b_y);
+        // These assertion are not valid because we do not need cg to converge. And often they do not converge with in default max iterations.
         // VTR_ASSERT(cg_x.info() == Eigen::Success && "Conjugate Gradient failed at solving b_x!");
         // VTR_ASSERT(cg_y.info() == Eigen::Success && "Conjugate Gradient failed at solving b_y!");
         for (size_t node_id = 0; node_id < p_placement.num_moveable_nodes; node_id++) {
@@ -434,7 +452,7 @@ void B2BSolver::b2b_solve_loop(unsigned iteration, PartialPlacement &p_placement
     // }while(std::abs(current_hpwl - previous_hpwl) < 5 && counter < 100);
     // current_hpwl > previous_hpwl - 10 would not work when this tries to grow and converge to legalized solution
     // simplest one for now
-    }while(counter < 30);
+    }
 }
 
 void B2BSolver::solve(unsigned iteration, PartialPlacement &p_placement) {

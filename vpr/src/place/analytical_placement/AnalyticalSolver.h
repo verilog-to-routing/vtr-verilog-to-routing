@@ -46,11 +46,19 @@ class B2BSolver : public AnalyticalSolver {
         void populate_matrix(PartialPlacement &p_placement);
         void populate_matrix_anchor(PartialPlacement& p_placement, unsigned iteration);
         std::pair<size_t, size_t> boundNode(std::vector<size_t> &node_id, std::vector<double> &node_loc);
+        
+        static inline const double epsilon = 1e-6;
+        static inline const unsigned inner_iterations = 30;
 
+        // These are stored because there might be potential oppurtunities of reuse. 
+        // Also, it could be more efficient to allocate heap once and reusing it instead
+        // of freeing and reallocating. 
         Eigen::SparseMatrix<double> A_sparse_x;
         Eigen::SparseMatrix<double> A_sparse_y;
         Eigen::VectorXd b_x;
         Eigen::VectorXd b_y;
+        // They are being stored because legalizer will modified the placement passed in. While building the b2b model with anchors,
+        // both the previously solved and legalized placement are needed, so we store them as a member.
         std::vector<double> node_loc_x_solved;
         std::vector<double> node_loc_y_solved;
         std::vector<double> node_loc_x_legalized;
