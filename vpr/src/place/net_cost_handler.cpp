@@ -1,26 +1,26 @@
 /**
  * @file net_cost_handler.cpp
  * @brief This file contains the implementation of functions used to update placement cost when a new move is proposed/committed.
- * 
- * VPR placement cost consists of three terms which represent wirelength, timing, and NoC cost. 
- * 
- * To get an estimation of the wirelength of each net, the Half Perimeter Wire Length (HPWL) approach is used. In this approach, 
- * half of the perimeter of the bounding box which contains all terminals of the net is multiplied by a correction factor, 
- * and the resulting number is considered as an estimation of the bounding box. 
- * 
- * Currently, we have two types of bounding boxes: 3D bounding box (or Cube BB) and per-layer bounding box. 
- * If the FPGA grid is a 2D structure, a Cube bounding box is used, which will always have the z direction equal to 1. For 3D architectures, 
- * the user can specify the type of bounding box. If no type is specified, the RR graph is analyzed. If all inter-die connections happen from OPINs, 
- * the Cube bounding box is chosen; otherwise, the per-layer bounding box is chosen. In the Cube bounding box, when a net is stretched across multiple layers, 
- * the edges of the bounding box are determined by all of the blocks on all layers. 
- * When the per-layer bounding box is used, a separate bounding box for each layer is created, and the wirelength estimation for each layer is calculated. 
- * To get the total wirelength of a net, the wirelength estimation on all layers is summed up. For more details, please refer to Amin Mohaghegh's MASc thesis. 
- * 
- * For timing estimation, the placement delay model is used. For 2D architectures, you can think of the placement delay model as a 2D array indexed by dx and dy. 
- * To get a delay estimation of a connection (from a source to a sink), first, dx and dy between these two points should be calculated, 
- * and these two numbers are the indices to access this 2D array. By default, the placement delay model is created by iterating over the router lookahead 
+ *
+ * VPR placement cost consists of three terms which represent wirelength, timing, and NoC cost.
+ *
+ * To get an estimation of the wirelength of each net, the Half Perimeter Wire Length (HPWL) approach is used. In this approach,
+ * half of the perimeter of the bounding box which contains all terminals of the net is multiplied by a correction factor,
+ * and the resulting number is considered as an estimation of the bounding box.
+ *
+ * Currently, we have two types of bounding boxes: 3D bounding box (or Cube BB) and per-layer bounding box.
+ * If the FPGA grid is a 2D structure, a Cube bounding box is used, which will always have the z direction equal to 1. For 3D architectures,
+ * the user can specify the type of bounding box. If no type is specified, the RR graph is analyzed. If all inter-die connections happen from OPINs,
+ * the Cube bounding box is chosen; otherwise, the per-layer bounding box is chosen. In the Cube bounding box, when a net is stretched across multiple layers,
+ * the edges of the bounding box are determined by all of the blocks on all layers.
+ * When the per-layer bounding box is used, a separate bounding box for each layer is created, and the wirelength estimation for each layer is calculated.
+ * To get the total wirelength of a net, the wirelength estimation on all layers is summed up. For more details, please refer to Amin Mohaghegh's MASc thesis.
+ *
+ * For timing estimation, the placement delay model is used. For 2D architectures, you can think of the placement delay model as a 2D array indexed by dx and dy.
+ * To get a delay estimation of a connection (from a source to a sink), first, dx and dy between these two points should be calculated,
+ * and these two numbers are the indices to access this 2D array. By default, the placement delay model is created by iterating over the router lookahead
  * to get the minimum cost for each dx and dy.
- * 
+ *
  * @date July 12, 2024
  */
 #include "net_cost_handler.h"
@@ -35,8 +35,8 @@ using std::max;
 using std::min;
 
 /**
- * @brief for the states of the bounding box. 
- * Stored as char for memory efficiency.                              
+ * @brief for the states of the bounding box.
+ * Stored as char for memory efficiency.
  */
 enum class NetUpdateState {
     NOT_UPDATED_YET,
@@ -44,19 +44,19 @@ enum class NetUpdateState {
     GOT_FROM_SCRATCH
 };
 
-/** 
- * @brief The error tolerance due to round off for the total cost computation. 
- * When we check it from scratch vs. incrementally. 0.01 means that there is a 1% error tolerance.      
+/**
+ * @brief The error tolerance due to round off for the total cost computation.
+ * When we check it from scratch vs. incrementally. 0.01 means that there is a 1% error tolerance.
  */
 #define ERROR_TOL .01
 
 const int MAX_FANOUT_CROSSING_COUNT = 50;
 
-/** 
- * @brief Crossing counts for nets with different #'s of pins.  From 
- * ICCAD 94 pp. 690 - 695 (with linear interpolation applied by me).   
- * Multiplied to bounding box of a net to better estimate wire length  
- * for higher fanout nets. Each entry is the correction factor for the 
+/**
+ * @brief Crossing counts for nets with different #'s of pins.  From
+ * ICCAD 94 pp. 690 - 695 (with linear interpolation applied by me).
+ * Multiplied to bounding box of a net to better estimate wire length
+ * for higher fanout nets. Each entry is the correction factor for the
  * fanout index-1
  */
 static const float cross_count[MAX_FANOUT_CROSSING_COUNT] = {/* [0..49] */ 1.0, 1.0, 1.0, 1.0828,
@@ -67,39 +67,40 @@ static const float cross_count[MAX_FANOUT_CROSSING_COUNT] = {/* [0..49] */ 1.0, 
                                       2.5610, 2.5864, 2.6117, 2.6371, 2.6625, 2.6887, 2.7148, 2.7410, 2.7671,
                                       2.7933};
 
-/** 
- * @brief Matrices below are used to precompute the inverse of the average   
- * number of tracks per channel between [subhigh] and [sublow].  Access 
- * them as chan?_place_cost_fac[subhigh][sublow].  They are used to     
- * speed up the computation of the cost function that takes the length  
- * of the net bounding box in each dimension, divided by the average    
- * number of tracks in that direction; for other cost functions they    
- * will never be used.                                                  
+/**
+ * @brief Matrices below are used to precompute the inverse of the average
+ * number of tracks per channel between [subhigh] and [sublow].  Access
+ * them as chan?_place_cost_fac[subhigh][sublow].  They are used to
+ * speed up the computation of the cost function that takes the length
+ * of the net bounding box in each dimension, divided by the average
+ * number of tracks in that direction; for other cost functions they
+ * will never be used.
  */
 static vtr::NdMatrix<float, 2> chanx_place_cost_fac({0, 0}); // [0...device_ctx.grid.width()-2]
 static vtr::NdMatrix<float, 2> chany_place_cost_fac({0, 0}); // [0...device_ctx.grid.height()-2]
 
 /**
- * @brief Cost of a net, and a temporary cost of a net used during move assessment. 
- * We also use negative cost values in proposed_net_cost as a flag to indicate that 
+ * @brief For the first two element in the struct: Cost of a net, and a temporary cost of a net used during move assessment.
+ * We also use negative cost values in proposed_net_cost as a flag to indicate that
  * the cost of a net has not yet been updated.
- */
-static vtr::vector<ClusterNetId, double> net_cost, proposed_net_cost;
-
-/**                                              *
- * @brief Flag array to indicate whether the specific bounding box has been updated
- * in this particular swap or not. If it has been updated before, the code    
- * must use the updated data, instead of the out-of-date data passed into the 
- * subroutine, particularly used in try_swap(). The value NOT_UPDATED_YET     
- * indicates that the net has not been updated before, UPDATED_ONCE indicated 
+ * For the last one element in the struct: Flag array to indicate whether the specific bounding box has been updated
+ * in this particular swap or not. If it has been updated before, the code
+ * must use the updated data, instead of the out-of-date data passed into the
+ * subroutine, particularly used in try_swap(). The value NOT_UPDATED_YET
+ * indicates that the net has not been updated before, UPDATED_ONCE indicated
  * that the net has been updated once, if it is going to be updated again, the
- * values from the previous update must be used. GOT_FROM_SCRATCH is only     
- * applicable for nets larger than SMALL_NETS and it indicates that the       
+ * values from the previous update must be used. GOT_FROM_SCRATCH is only
+ * applicable for nets larger than SMALL_NETS and it indicates that the
  * particular bounding box is not incrementally updated, and hence the
  * bounding box is got from scratch, so the bounding box would definitely be
- * right, DO NOT update again.                                                   
+ * right, DO NOT update again.
  */
-static vtr::vector<ClusterNetId, NetUpdateState> bb_updated_before; // [0...cluster_ctx.clb_nlist.nets().size()-1]
+struct NetInfo {
+    vtr::vector<ClusterNetId, double> net_cost;
+    vtr::vector<ClusterNetId, double> proposed_net_cost;
+    vtr::vector<ClusterNetId, NetUpdateState> bb_update_status; // [0...cluster_ctx.clb_nlist.nets().size()-1]
+} NetInfo;
+static struct NetInfo net_info;
 
 /* The following arrays are used by the try_swap function for speed.   */
 
@@ -132,7 +133,7 @@ static bool driven_by_moved_block(const ClusterNetId net,
                                   const std::vector<t_pl_moved_block>& moved_blocks);
 /**
  * @brief Update the bounding box (3D) of the net connected to blk_pin. The old and new locations of the pin are
- * stored in pl_moved_block. The updated bounding box will be stored in ts data structures. Do not update the net 
+ * stored in pl_moved_block. The updated bounding box will be stored in ts data structures. Do not update the net
  * cost here since it should only be updated once per net, not once per pin.
  * @param net
  * @param blk
@@ -146,7 +147,7 @@ static void update_net_bb(const ClusterNetId& net,
 
 /**
  * @brief Calculate the new connection delay and timing cost of all the
- * sink pins affected by moving a specific pin to a new location. Also 
+ * sink pins affected by moving a specific pin to a new location. Also
  * calculates the total change in the timing cost.
  * @param delay_model
  * @param criticalities
@@ -195,16 +196,16 @@ static void update_net_info_on_pin_move(const t_place_algorithm& place_algorithm
                                                double& timing_delta_c,
                                                int& num_affected_nets,
                                                bool is_src_moving);
-                                            
+
 /**
  * @brief Update the 3D bounding box of "net_id" incrementally based on the old and new locations of a pin on that net
- * @details Updates the bounding box of a net by storing its coordinates in the bb_coord_new data structure and the 
- * number of blocks on each edge in the bb_edge_new data structure. This routine should only be called for large nets, 
- * since it has some overhead relative to just doing a brute force bounding box calculation. The bounding box coordinate 
- * and edge information for inet must be valid before this routine is called. Currently assumes channels on both sides of 
- * the CLBs forming the edges of the bounding box can be used.  Essentially, I am assuming the pins always lie on the 
- * outside of the bounding box. The x and y coordinates are the pin's x and y coordinates. IO blocks are considered to be one 
- * cell in for simplicity.     
+ * @details Updates the bounding box of a net by storing its coordinates in the bb_coord_new data structure and the
+ * number of blocks on each edge in the bb_edge_new data structure. This routine should only be called for large nets,
+ * since it has some overhead relative to just doing a brute force bounding box calculation. The bounding box coordinate
+ * and edge information for inet must be valid before this routine is called. Currently assumes channels on both sides of
+ * the CLBs forming the edges of the bounding box can be used.  Essentially, I am assuming the pins always lie on the
+ * outside of the bounding box. The x and y coordinates are the pin's x and y coordinates. IO blocks are considered to be one
+ * cell in for simplicity.
  * @param bb_edge_new Number of blocks on the edges of the bounding box
  * @param bb_coord_new Coordinates of the bounding box
  * @param num_sink_pin_layer_new Number of sinks of the given net on each layer
@@ -235,12 +236,12 @@ static void get_non_updatable_bb(ClusterNetId net_id,
 /**
  * @brief Update the bounding box (per-layer) of the net connected to blk_pin. The old and new locations of the pin are
  * stored in pl_moved_block. The updated bounding box will be stored in ts data structures.
- * @details Finds the bounding box of a net and stores its coordinates in the bb_coord_new 
- * data structure.  This routine should only be called for small nets, since it does not 
- * determine enough information for the bounding box to be updated incrementally later.                
- * Currently assumes channels on both sides of the CLBs forming the edges of the bounding box 
- * can be used.  Essentially, I am assuming the pins always lie on the outside of the 
- * bounding box.            
+ * @details Finds the bounding box of a net and stores its coordinates in the bb_coord_new
+ * data structure.  This routine should only be called for small nets, since it does not
+ * determine enough information for the bounding box to be updated incrementally later.
+ * Currently assumes channels on both sides of the CLBs forming the edges of the bounding box
+ * can be used.  Essentially, I am assuming the pins always lie on the outside of the
+ * bounding box.
  * @param net ID of the net for which the bounding box is requested
  * @param blk ID of the moving block
  * @param blk_pin ID of the pin connected to the net
@@ -265,12 +266,12 @@ static void get_non_updatable_layer_bb(ClusterNetId net_id,
 
 /**
  * @brief Update the per-layer bounding box of "net_id" incrementally based on the old and new locations of a pin on that net
- * @details Updates the bounding box of a net by storing its coordinates in the bb_coord_new data structure and 
- * the number of blocks on each edge in the bb_edge_new data structure. This routine should only  be called for 
- * large nets, since it has some overhead relative to just doing a brute force bounding box calculation. 
- * The bounding box coordinate and edge information for inet must be valid before  this routine is called. 
- * Currently assumes channels on both sides of the CLBs forming the   edges of the bounding box can be used.  
- * Essentially, I am assuming the pins always lie on the outside of the bounding box. The x and y coordinates 
+ * @details Updates the bounding box of a net by storing its coordinates in the bb_coord_new data structure and
+ * the number of blocks on each edge in the bb_edge_new data structure. This routine should only  be called for
+ * large nets, since it has some overhead relative to just doing a brute force bounding box calculation.
+ * The bounding box coordinate and edge information for inet must be valid before  this routine is called.
+ * Currently assumes channels on both sides of the CLBs forming the   edges of the bounding box can be used.
+ * Essentially, I am assuming the pins always lie on the outside of the bounding box. The x and y coordinates
  * are the pin's x and y coordinates. IO blocks are considered to be one cell in for simplicity.
  * @param bb_edge_new Number of blocks on the edges of the bounding box
  * @param bb_coord_new Coordinates of the bounding box
@@ -307,11 +308,11 @@ static inline void update_bb_layer_changed(ClusterNetId net_id,
                                            vtr::NdMatrixProxy<int, 1> bb_pin_sink_count_new,
                                            std::vector<t_2D_bb>& bb_edge_new,
                                            std::vector<t_2D_bb>& bb_coord_new);
-                                
+
 /**
  * @brief Calculate the per-layer BB of a large net from scratch and update coord, edge, and num_sink_pin_layer data structures.
- * @details This routine finds the bounding box of each net from scratch when the bounding box is of type per-layer (i.e. from 
- * only the block location information). It updates the coordinate, number of pins on each edge information, and the 
+ * @details This routine finds the bounding box of each net from scratch when the bounding box is of type per-layer (i.e. from
+ * only the block location information). It updates the coordinate, number of pins on each edge information, and the
  * number of sinks on each layer. It should only be called when the bounding box information is not valid.
  * @param net_id ID of the net which the moving pin belongs to
  * @param coords Bounding box coordinates of the net. It is calculated in this function
@@ -421,8 +422,8 @@ static void add_block_to_bb(const t_physical_tile_loc& new_pin_loc,
 
 /**
  * @brief Calculate the 3D BB of a large net from scratch and update coord, edge, and num_sink_pin_layer data structures.
- * @details This routine finds the bounding box of each net from scratch (i.e. from only the block location information).  It updates both the       
- * coordinate and number of pins on each edge information. It should only be called when the bounding box 
+ * @details This routine finds the bounding box of each net from scratch (i.e. from only the block location information).  It updates both the
+ * coordinate and number of pins on each edge information. It should only be called when the bounding box
  * information is not valid.
  * @param net_id ID of the net which the moving pin belongs to
  * @param coords Bounding box coordinates of the net. It is calculated in this function
@@ -462,16 +463,16 @@ static double get_net_wirelength_estimate(ClusterNetId net_id, const t_bb& bb);
 static double recompute_bb_cost();
 
 /**
- * @brief To get the wirelength cost/est, BB perimeter is multiplied by a factor to approximately correct for the half-perimeter 
+ * @brief To get the wirelength cost/est, BB perimeter is multiplied by a factor to approximately correct for the half-perimeter
  * bounding box wirelength's underestimate of wiring for nets with fanout greater than 2.
  * @return Multiplicative wirelength correction factor
  */
 static double wirelength_crossing_count(size_t fanout);
 
 /**
- * @brief Calculates and returns the total bb (wirelength) cost change that would result from moving the blocks 
+ * @brief Calculates and returns the total bb (wirelength) cost change that would result from moving the blocks
  * indicated in the blocks_affected data structure.
- * @param num_affected_nets Number of valid elements in ts_bb_coord_new 
+ * @param num_affected_nets Number of valid elements in ts_bb_coord_new
  * @param bb_delta_c Cost difference after and before moving the block
  */
 static void set_bb_delta_cost(const int num_affected_nets, double& bb_delta_c);
@@ -506,7 +507,7 @@ static void update_net_bb(const ClusterNetId& net,
     if (cluster_ctx.clb_nlist.net_sinks(net).size() < SMALL_NET) {
         //For small nets brute-force bounding box update is faster
 
-        if (bb_updated_before[net] == NetUpdateState::NOT_UPDATED_YET) { //Only once per-net
+        if (net_info.bb_update_status[net] == NetUpdateState::NOT_UPDATED_YET) { //Only once per-net
             get_non_updatable_bb(net,
                                  ts_bb_coord_new[net],
                                  ts_layer_sink_pin_count[size_t(net)]);
@@ -544,7 +545,7 @@ static void update_net_layer_bb(const ClusterNetId& net,
     if (cluster_ctx.clb_nlist.net_sinks(net).size() < SMALL_NET) {
         //For small nets brute-force bounding box update is faster
 
-        if (bb_updated_before[net] == NetUpdateState::NOT_UPDATED_YET) { //Only once per-net
+        if (net_info.bb_update_status[net] == NetUpdateState::NOT_UPDATED_YET) { //Only once per-net
             get_non_updatable_layer_bb(net,
                                        layer_ts_bb_coord_new[net],
                                        ts_layer_sink_pin_count[size_t(net)]);
@@ -670,13 +671,13 @@ static void update_td_delta_costs(const PlaceDelayModel* delay_model,
 static void record_affected_net(const ClusterNetId net,
                                 int& num_affected_nets) {
     /* Record effected nets. */
-    if (proposed_net_cost[net] < 0.) {
+    if (net_info.proposed_net_cost[net] < 0.) {
         /* Net not marked yet. */
         ts_nets_to_update[num_affected_nets] = net;
         num_affected_nets++;
 
         /* Flag to say we've marked this net. */
-        proposed_net_cost[net] = 1.;
+        net_info.proposed_net_cost[net] = 1.;
     }
 }
 
@@ -894,19 +895,19 @@ static void update_bb(ClusterNetId net_id,
     pin_old_loc.layer_num = max(min<int>(pin_old_loc.layer_num, device_ctx.grid.get_num_layers() - 1), 0);
 
     /* Check if the net had been updated before. */
-    if (bb_updated_before[net_id] == NetUpdateState::GOT_FROM_SCRATCH) {
+    if (net_info.bb_update_status[net_id] == NetUpdateState::GOT_FROM_SCRATCH) {
         /* The net had been updated from scratch, DO NOT update again! */
         return;
     }
 
-    vtr::NdMatrixProxy<int, 1> curr_num_sink_pin_layer = (bb_updated_before[net_id] == NetUpdateState::NOT_UPDATED_YET) ? 
-    place_move_ctx.num_sink_pin_layer[size_t(net_id)] : num_sink_pin_layer_new;
+    vtr::NdMatrixProxy<int, 1> curr_num_sink_pin_layer = (net_info.bb_update_status[net_id] == NetUpdateState::NOT_UPDATED_YET) ?
+        place_move_ctx.num_sink_pin_layer[size_t(net_id)] : num_sink_pin_layer_new;
 
-    if (bb_updated_before[net_id] == NetUpdateState::NOT_UPDATED_YET) {
+    if (net_info.bb_update_status[net_id] == NetUpdateState::NOT_UPDATED_YET) {
         /* The net had NOT been updated before, could use the old values */
         curr_bb_edge = &place_move_ctx.bb_num_on_edges[net_id];
         curr_bb_coord = &place_move_ctx.bb_coords[net_id];
-        bb_updated_before[net_id] = NetUpdateState::UPDATED_ONCE;
+        net_info.bb_update_status[net_id] = NetUpdateState::UPDATED_ONCE;
     } else {
         /* The net had been updated before, must use the new values */
         curr_bb_coord = &bb_coord_new;
@@ -922,7 +923,7 @@ static void update_bb(ClusterNetId net_id,
         if (pin_old_loc.x == curr_bb_coord->xmax) { /* Old position at xmax. */
             if (curr_bb_edge->xmax == 1) {
                 get_bb_from_scratch(net_id, bb_coord_new, bb_edge_new, num_sink_pin_layer_new);
-                bb_updated_before[net_id] = NetUpdateState::GOT_FROM_SCRATCH;
+                net_info.bb_update_status[net_id] = NetUpdateState::GOT_FROM_SCRATCH;
                 return;
             } else {
                 bb_edge_new.xmax = curr_bb_edge->xmax - 1;
@@ -954,7 +955,7 @@ static void update_bb(ClusterNetId net_id,
         if (pin_old_loc.x == curr_bb_coord->xmin) { /* Old position at xmin. */
             if (curr_bb_edge->xmin == 1) {
                 get_bb_from_scratch(net_id, bb_coord_new, bb_edge_new, num_sink_pin_layer_new);
-                bb_updated_before[net_id] = NetUpdateState::GOT_FROM_SCRATCH;
+                net_info.bb_update_status[net_id] = NetUpdateState::GOT_FROM_SCRATCH;
                 return;
             } else {
                 bb_edge_new.xmin = curr_bb_edge->xmin - 1;
@@ -995,7 +996,7 @@ static void update_bb(ClusterNetId net_id,
         if (pin_old_loc.y == curr_bb_coord->ymax) { /* Old position at ymax. */
             if (curr_bb_edge->ymax == 1) {
                 get_bb_from_scratch(net_id, bb_coord_new, bb_edge_new, num_sink_pin_layer_new);
-                bb_updated_before[net_id] = NetUpdateState::GOT_FROM_SCRATCH;
+                net_info.bb_update_status[net_id] = NetUpdateState::GOT_FROM_SCRATCH;
                 return;
             } else {
                 bb_edge_new.ymax = curr_bb_edge->ymax - 1;
@@ -1027,7 +1028,7 @@ static void update_bb(ClusterNetId net_id,
         if (pin_old_loc.y == curr_bb_coord->ymin) { /* Old position at ymin. */
             if (curr_bb_edge->ymin == 1) {
                 get_bb_from_scratch(net_id, bb_coord_new, bb_edge_new, num_sink_pin_layer_new);
-                bb_updated_before[net_id] = NetUpdateState::GOT_FROM_SCRATCH;
+                net_info.bb_update_status[net_id] = NetUpdateState::GOT_FROM_SCRATCH;
                 return;
             } else {
                 bb_edge_new.ymin = curr_bb_edge->ymin - 1;
@@ -1077,7 +1078,7 @@ static void update_bb(ClusterNetId net_id,
             if (pin_old_loc.layer_num == curr_bb_coord->layer_max) {
                 if (curr_bb_edge->layer_max == 1) {
                     get_bb_from_scratch(net_id, bb_coord_new, bb_edge_new, num_sink_pin_layer_new);
-                    bb_updated_before[net_id] = NetUpdateState::GOT_FROM_SCRATCH;
+                    net_info.bb_update_status[net_id] = NetUpdateState::GOT_FROM_SCRATCH;
                     return;
                 } else {
                     bb_edge_new.layer_max = curr_bb_edge->layer_max - 1;
@@ -1106,7 +1107,7 @@ static void update_bb(ClusterNetId net_id,
             if (pin_old_loc.layer_num == curr_bb_coord->layer_min) {
                 if (curr_bb_edge->layer_min == 1) {
                     get_bb_from_scratch(net_id, bb_coord_new, bb_edge_new, num_sink_pin_layer_new);
-                    bb_updated_before[net_id] = NetUpdateState::GOT_FROM_SCRATCH;
+                    net_info.bb_update_status[net_id] = NetUpdateState::GOT_FROM_SCRATCH;
                     return;
                 } else {
                     bb_edge_new.layer_min = curr_bb_edge->layer_min - 1;
@@ -1143,8 +1144,8 @@ static void update_bb(ClusterNetId net_id,
         bb_edge_new.layer_max = curr_bb_edge->layer_max;
     }
 
-    if (bb_updated_before[net_id] == NetUpdateState::NOT_UPDATED_YET) {
-        bb_updated_before[net_id] = NetUpdateState::UPDATED_ONCE;
+    if (net_info.bb_update_status[net_id] == NetUpdateState::NOT_UPDATED_YET) {
+        net_info.bb_update_status[net_id] = NetUpdateState::UPDATED_ONCE;
     }
 }
 
@@ -1165,20 +1166,20 @@ static void update_layer_bb(ClusterNetId net_id,
     pin_old_loc.y = max(min<int>(pin_old_loc.y, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
 
     /* Check if the net had been updated before. */
-    if (bb_updated_before[net_id] == NetUpdateState::GOT_FROM_SCRATCH) {
+    if (net_info.bb_update_status[net_id] == NetUpdateState::GOT_FROM_SCRATCH) {
         /* The net had been updated from scratch, DO NOT update again! */
         return;
     }
 
-    const vtr::NdMatrixProxy<int, 1> curr_layer_pin_sink_count = (bb_updated_before[net_id] == NetUpdateState::NOT_UPDATED_YET) ? 
     place_move_ctx.num_sink_pin_layer[size_t(net_id)] : bb_pin_sink_count_new;
+    const vtr::NdMatrixProxy<int, 1> curr_layer_pin_sink_count = (net_info.bb_update_status[net_id] == NetUpdateState::NOT_UPDATED_YET) ?
 
     const std::vector<t_2D_bb>*curr_bb_edge, *curr_bb_coord;
-    if (bb_updated_before[net_id] == NetUpdateState::NOT_UPDATED_YET) {
+    if (net_info.bb_update_status[net_id] == NetUpdateState::NOT_UPDATED_YET) {
         /* The net had NOT been updated before, could use the old values */
         curr_bb_edge = &place_move_ctx.layer_bb_num_on_edges[net_id];
         curr_bb_coord = &place_move_ctx.layer_bb_coords[net_id];
-        bb_updated_before[net_id] = NetUpdateState::UPDATED_ONCE;
+        net_info.bb_update_status[net_id] = NetUpdateState::UPDATED_ONCE;
     } else {
         /* The net had been updated before, must use the new values */
         curr_bb_edge = &bb_edge_new;
@@ -1220,8 +1221,8 @@ static void update_layer_bb(ClusterNetId net_id,
                              bb_coord_new);
     }
 
-    if (bb_updated_before[net_id] == NetUpdateState::NOT_UPDATED_YET) {
-        bb_updated_before[net_id] = NetUpdateState::UPDATED_ONCE;
+    if (net_info.bb_update_status[net_id] == NetUpdateState::NOT_UPDATED_YET) {
+        net_info.bb_update_status[net_id] = NetUpdateState::UPDATED_ONCE;
     }
 }
 
@@ -1252,7 +1253,7 @@ static inline void update_bb_same_layer(ClusterNetId net_id,
                            curr_bb_coord[layer_num].xmax,
                            bb_edge_new[layer_num].xmax,
                            bb_coord_new[layer_num].xmax);
-            if (bb_updated_before[net_id] == NetUpdateState::GOT_FROM_SCRATCH) {
+            if (net_info.bb_update_status[net_id] == NetUpdateState::GOT_FROM_SCRATCH) {
                 return;
             }
         }
@@ -1275,7 +1276,7 @@ static inline void update_bb_same_layer(ClusterNetId net_id,
                            curr_bb_coord[layer_num].xmin,
                            bb_edge_new[layer_num].xmin,
                            bb_coord_new[layer_num].xmin);
-            if (bb_updated_before[net_id] == NetUpdateState::GOT_FROM_SCRATCH) {
+            if (net_info.bb_update_status[net_id] == NetUpdateState::GOT_FROM_SCRATCH) {
                 return;
             }
         }
@@ -1299,7 +1300,7 @@ static inline void update_bb_same_layer(ClusterNetId net_id,
                            curr_bb_coord[layer_num].ymax,
                            bb_edge_new[layer_num].ymax,
                            bb_coord_new[layer_num].ymax);
-            if (bb_updated_before[net_id] == NetUpdateState::GOT_FROM_SCRATCH) {
+            if (net_info.bb_update_status[net_id] == NetUpdateState::GOT_FROM_SCRATCH) {
                 return;
             }
         }
@@ -1322,7 +1323,7 @@ static inline void update_bb_same_layer(ClusterNetId net_id,
                            curr_bb_coord[layer_num].ymin,
                            bb_edge_new[layer_num].ymin,
                            bb_coord_new[layer_num].ymin);
-            if (bb_updated_before[net_id] == NetUpdateState::GOT_FROM_SCRATCH) {
+            if (net_info.bb_update_status[net_id] == NetUpdateState::GOT_FROM_SCRATCH) {
                 return;
             }
         }
@@ -1367,7 +1368,7 @@ static inline void update_bb_layer_changed(ClusterNetId net_id,
                        curr_bb_coord[old_layer_num].xmax,
                        bb_edge_new[old_layer_num].xmax,
                        bb_coord_new[old_layer_num].xmax);
-        if (bb_updated_before[net_id] == NetUpdateState::GOT_FROM_SCRATCH) {
+        if (net_info.bb_update_status[net_id] == NetUpdateState::GOT_FROM_SCRATCH) {
             return;
         }
     } else if (x_old == curr_bb_coord[old_layer_num].xmin) {
@@ -1379,7 +1380,7 @@ static inline void update_bb_layer_changed(ClusterNetId net_id,
                        curr_bb_coord[old_layer_num].xmin,
                        bb_edge_new[old_layer_num].xmin,
                        bb_coord_new[old_layer_num].xmin);
-        if (bb_updated_before[net_id] == NetUpdateState::GOT_FROM_SCRATCH) {
+        if (net_info.bb_update_status[net_id] == NetUpdateState::GOT_FROM_SCRATCH) {
             return;
         }
     }
@@ -1393,7 +1394,7 @@ static inline void update_bb_layer_changed(ClusterNetId net_id,
                        curr_bb_coord[old_layer_num].ymax,
                        bb_edge_new[old_layer_num].ymax,
                        bb_coord_new[old_layer_num].ymax);
-        if (bb_updated_before[net_id] == NetUpdateState::GOT_FROM_SCRATCH) {
+        if (net_info.bb_update_status[net_id] == NetUpdateState::GOT_FROM_SCRATCH) {
             return;
         }
     } else if (y_old == curr_bb_coord[old_layer_num].ymin) {
@@ -1405,7 +1406,7 @@ static inline void update_bb_layer_changed(ClusterNetId net_id,
                        curr_bb_coord[old_layer_num].ymin,
                        bb_edge_new[old_layer_num].ymin,
                        bb_coord_new[old_layer_num].ymin);
-        if (bb_updated_before[net_id] == NetUpdateState::GOT_FROM_SCRATCH) {
+        if (net_info.bb_update_status[net_id] == NetUpdateState::GOT_FROM_SCRATCH) {
             return;
         }
     }
@@ -1445,7 +1446,7 @@ static inline void update_bb_edge(ClusterNetId net_id,
                                   bb_edge_new,
                                   bb_coord_new,
                                   bb_layer_pin_sink_count);
-        bb_updated_before[net_id] = NetUpdateState::GOT_FROM_SCRATCH;
+        net_info.bb_update_status[net_id] = NetUpdateState::GOT_FROM_SCRATCH;
         return;
     } else {
         new_num_block_on_edge = old_num_block_on_edge - 1;
@@ -1461,7 +1462,7 @@ static void add_block_to_bb(const t_physical_tile_loc& new_pin_loc,
     int x_new = new_pin_loc.x;
     int y_new = new_pin_loc.y;
 
-    /* 
+    /*
     This function is called to only update the bounding box on the new layer from a block
     moving to this layer from another layer. Thus, we only need to assess the effect of this
     new block on the edges.
@@ -1774,10 +1775,10 @@ static double get_net_layer_bb_wire_cost(ClusterNetId /* net_id */,
         if (layer_pin_sink_count[layer_num] == 0) {
             continue;
         }
-        /* 
-        adjust the bounding box half perimeter by the wirelength correction 
-        factor based on terminal count, which is 1 for the source + the number 
-        of sinks on this layer. 
+        /*
+        adjust the bounding box half perimeter by the wirelength correction
+        factor based on terminal count, which is 1 for the source + the number
+        of sinks on this layer.
         */
         crossing = wirelength_crossing_count(layer_pin_sink_count[layer_num] + 1);
 
@@ -1859,7 +1860,7 @@ static double recompute_bb_cost() {
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {       /* for each net ... */
         if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)) { /* Do only if not ignored. */
             /* Bounding boxes don't have to be recomputed; they're correct. */
-            cost += net_cost[net_id];
+            cost += net_info.net_cost[net_id];
         }
     }
 
@@ -1884,15 +1885,15 @@ static void set_bb_delta_cost(const int num_affected_nets, double& bb_delta_c) {
         const auto& cube_bb = g_vpr_ctx.placement().cube_bb;
 
         if (cube_bb) {
-            proposed_net_cost[net_id] = get_net_cost(net_id,
+            net_info.proposed_net_cost[net_id] = get_net_cost(net_id,
                                                      ts_bb_coord_new[net_id]);
         } else {
-            proposed_net_cost[net_id] = get_net_layer_bb_wire_cost(net_id,
+            net_info.proposed_net_cost[net_id] = get_net_layer_bb_wire_cost(net_id,
                                                            layer_ts_bb_coord_new[net_id],
                                                            ts_layer_sink_pin_count[size_t(net_id)]);
         }
 
-        bb_delta_c += proposed_net_cost[net_id] - net_cost[net_id];
+        bb_delta_c += net_info.proposed_net_cost[net_id] - net_info.net_cost[net_id];
     }
 }
 
@@ -1966,8 +1967,8 @@ double comp_bb_cost(e_cost_methods method) {
                                      place_move_ctx.num_sink_pin_layer[size_t(net_id)]);
             }
 
-            net_cost[net_id] = get_net_cost(net_id, place_move_ctx.bb_coords[net_id]);
-            cost += net_cost[net_id];
+            net_info.net_cost[net_id] = get_net_cost(net_id, place_move_ctx.bb_coords[net_id]);
+            cost += net_info.net_cost[net_id];
             if (method == CHECK)
                 expected_wirelength += get_net_wirelength_estimate(net_id, place_move_ctx.bb_coords[net_id]);
         }
@@ -2003,10 +2004,10 @@ double comp_layer_bb_cost(e_cost_methods method) {
                                            place_move_ctx.num_sink_pin_layer[size_t(net_id)]);
             }
 
-            net_cost[net_id] = get_net_layer_bb_wire_cost(net_id,
+            net_info.net_cost[net_id] = get_net_layer_bb_wire_cost(net_id,
                                                   place_move_ctx.layer_bb_coords[net_id],
                                                   place_move_ctx.num_sink_pin_layer[size_t(net_id)]);
-            cost += net_cost[net_id];
+            cost += net_info.net_cost[net_id];
             if (method == CHECK)
                 expected_wirelength += get_net_wirelength_from_layer_bb(net_id,
                                                                          place_move_ctx.layer_bb_coords[net_id],
@@ -2050,11 +2051,11 @@ void update_move_nets(int num_nets_affected,
             }
         }
 
-        net_cost[net_id] = proposed_net_cost[net_id];
+        net_info.net_cost[net_id] = net_info.proposed_net_cost[net_id];
 
         /* negative proposed_net_cost value is acting as a flag to mean not computed yet. */
-        proposed_net_cost[net_id] = -1;
-        bb_updated_before[net_id] = NetUpdateState::NOT_UPDATED_YET;
+        net_info.proposed_net_cost[net_id] = -1;
+        net_info.bb_update_status[net_id] = NetUpdateState::NOT_UPDATED_YET;
     }
 }
 
@@ -2063,8 +2064,8 @@ void reset_move_nets(int num_nets_affected) {
     for (int inet_affected = 0; inet_affected < num_nets_affected;
          inet_affected++) {
         ClusterNetId net_id = ts_nets_to_update[inet_affected];
-        proposed_net_cost[net_id] = -1;
-        bb_updated_before[net_id] = NetUpdateState::NOT_UPDATED_YET;
+        net_info.proposed_net_cost[net_id] = -1;
+        net_info.bb_update_status[net_id] = NetUpdateState::NOT_UPDATED_YET;
     }
 }
 
@@ -2147,9 +2148,9 @@ void alloc_and_load_chan_w_factors_for_place_cost(float place_cost_exp) {
 
     auto& device_ctx = g_vpr_ctx.device();
 
-    /* 
-    Access arrays below as chan?_place_cost_fac[subhigh][sublow]. Since subhigh must be greater than or 
-    equal to sublow, we will only access the lower half of a matrix, but we allocate the whole matrix anyway 
+    /*
+    Access arrays below as chan?_place_cost_fac[subhigh][sublow]. Since subhigh must be greater than or
+    equal to sublow, we will only access the lower half of a matrix, but we allocate the whole matrix anyway
     for simplicity so we can use the vtr utility matrix functions.
     */
 
@@ -2238,18 +2239,18 @@ void free_chan_w_factors_for_place_cost () {
 }
 
 void init_place_move_structs(size_t num_nets) {
-    net_cost.resize(num_nets, -1.);
-    proposed_net_cost.resize(num_nets, -1.);
+    net_info.net_cost.resize(num_nets, -1.);
+    net_info.proposed_net_cost.resize(num_nets, -1.);
     /* Used to store costs for moves not yet made and to indicate when a net's   *
      * cost has been recomputed. proposed_net_cost[inet] < 0 means net's cost hasn't *
      * been recomputed.                                                          */
-    bb_updated_before.resize(num_nets, NetUpdateState::NOT_UPDATED_YET);
+    net_info.bb_update_status.resize(num_nets, NetUpdateState::NOT_UPDATED_YET);
 }
 
 void free_place_move_structs() {
-    vtr::release_memory(net_cost);
-    vtr::release_memory(proposed_net_cost);
-    vtr::release_memory(bb_updated_before);
+    vtr::release_memory(net_info.net_cost);
+    vtr::release_memory(net_info.proposed_net_cost);
+    vtr::release_memory(net_info.bb_update_status);
 }
 
 void init_try_swap_net_cost_structs(size_t num_nets, bool cube_bb) {
