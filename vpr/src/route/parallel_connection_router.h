@@ -194,7 +194,7 @@ class ParallelConnectionRouter : public ConnectionRouterInterface {
         is_router_destroying_ = true;
         thread_barrier_.wait();
 
-        VTR_LOG("Parallel Connection Router is being destroyed. Time spent computing SSSP: %g seconds\n.", this->sssp_total_time.count() / 1000000.0);
+        VTR_LOG("Parallel Connection Router is being destroyed. Time spent computing SSSP: %.3f seconds\n.", this->sssp_total_time.count() / 1000000.0);
 
 #ifdef PROFILE_HEAP_OCCUPANCY
         heap_occ_profile_.close();
