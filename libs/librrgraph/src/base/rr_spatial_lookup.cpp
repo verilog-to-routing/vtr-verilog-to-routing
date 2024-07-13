@@ -272,11 +272,11 @@ void RRSpatialLookup::add_node(RRNodeId node,
 
     if (size_t(ptc) >= rr_node_indices_[type][layer][x][y][side].size()) {
         /* Deposit invalid ids to newly allocated elements while original elements are untouched */
-        rr_node_indices_[type][layer][x][y][side].resize(ptc + 1, int(size_t(RRNodeId::INVALID())));
+        rr_node_indices_[type][layer][x][y][side].resize(ptc + 1, int(RRNodeId::INVALID()));
     }
 
     /* Resize on demand finished; Register the node */
-    rr_node_indices_[type][layer][x][y][side][ptc] = int(size_t(node));
+    rr_node_indices_[type][layer][x][y][side][ptc] = int(node);
 }
 
 bool RRSpatialLookup::remove_node(RRNodeId node,
@@ -302,7 +302,7 @@ bool RRSpatialLookup::remove_node(RRNodeId node,
     if ((size_t)y >= rr_node_indices_[type].dim_size(2)) return false;
     if (side >= rr_node_indices_[type].dim_size(3)) return false;
     if ((size_t)ptc >= rr_node_indices_[type][layer][x][y][side].size()) return false;
-    if (rr_node_indices_[type][layer][x][y][side][ptc] != int(size_t(node))) return false;
+    if (rr_node_indices_[type][layer][x][y][side][ptc] != int(node)) return false;
 
     // The node was in the spatial lookup; remove it. -1 corresponds to an invalid node id,
     // and so is treated as absent in the spatial lookup

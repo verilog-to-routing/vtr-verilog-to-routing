@@ -532,7 +532,7 @@ load_net_terminal_groups(const RRGraphView& rr_graph,
                 /* TODO: net_terminal_groups cannot be fully RRNodeId - ified, because this code calls libarchfpga which 
                  * I think should not be aware of RRNodeIds. Fixing this requires some refactoring to lift the offending functions 
                  * into VPR. */
-                std::vector<int> new_group = {int(size_t(rr_node_num))};
+                std::vector<int> new_group = {int(rr_node_num)};
                 int new_group_num = net_terminal_groups[net_id].size();
                 net_terminal_groups[net_id].push_back(new_group);
                 net_terminal_group_num[net_id][pin_count] = new_group_num;
