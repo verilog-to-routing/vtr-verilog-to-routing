@@ -208,10 +208,10 @@ class Rect {
     ///@brief set ymax to a point
     void set_ymax(T ymax_val);
 
-    /// @brief += operator
+    /// @brief += operator; translates all corners of the rectangle by rhs
     Rect<T>& operator+=(const Point<T>& rhs);
 
-    /// @brief -= operator
+    /// @brief -= operator; translates all corners of the rectangle by -rhs
     Rect<T>& operator-=(const Point<T>& rhs);
 
     ///@brief Equivalent to `*this = bounding_box(*this, other)`

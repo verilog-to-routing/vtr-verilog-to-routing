@@ -295,6 +295,7 @@ bool RRSpatialLookup::remove_node(RRNodeId node,
     VTR_ASSERT_SAFE(ptc >= 0);
     VTR_ASSERT_SAFE(side != NUM_SIDES);
 
+    // Check if the node given is in the spatial lookup at the given indices
     if (type >= rr_node_indices_.size()) return false;
     if ((size_t)layer >= rr_node_indices_[type].dim_size(0)) return false;
     if ((size_t)x >= rr_node_indices_[type].dim_size(1)) return false;
@@ -303,6 +304,8 @@ bool RRSpatialLookup::remove_node(RRNodeId node,
     if ((size_t)ptc >= rr_node_indices_[type][layer][x][y][side].size()) return false;
     if (rr_node_indices_[type][layer][x][y][side][ptc] != int(size_t(node))) return false;
 
+    // The node was in the spatial lookup; remove it. -1 corresponds to an invalid node id,
+    // and so is treated as absent in the spatial lookup
     rr_node_indices_[type][layer][x][y][side][ptc] = -1;
     return true;
 }

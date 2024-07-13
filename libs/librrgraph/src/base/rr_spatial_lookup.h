@@ -42,7 +42,7 @@ class RRSpatialLookup {
      * @brief Returns the index of the specified routing resource node.  
      *
      *   @param layer specified which FPGA die the node is located at (e.g. multi-die(3D) FPGA)
-     *   @param (x, y) are the grid location within the FPGA
+     *   @param (x, y) is the grid location within the FPGA
      *   @param rr_type specifies the type of resource,
      *   @param ptc gives a unique number of resources of that type (e.g. CHANX) at that (layer,x,y).
      *
@@ -80,7 +80,7 @@ class RRSpatialLookup {
      *
      *   @param layer specifies which FPGA die the node is located at (e.g. multi-die(3D) FPGA)
      *   @param (xlow, ylow) is the lower left corner of the grid location range to search within the FPGA
-     *   @param (xlow, ylow) is the top right corner of the grid location range to search within the FPGA
+     *   @param (xhigh, yhigh) is the top right corner of the grid location range to search within the FPGA
      *   @param rr_type specifies the type of resource,
      *   @param ptc gives a unique number of resources of that type (e.g. CHANX) at that (layer,x,y).
      *
@@ -102,7 +102,7 @@ class RRSpatialLookup {
      * @brief Returns the indices of the specified routing resource nodes, representing routing tracks in a channel.  
      *
      *   @param layer specified which FPGA die the node is located at (e.g. multi-die(3D) FPGA)
-     *   @param (x, y) are the coordinate of the routing channel within the FPGA
+     *   @param (x, y) is the coordinate of the routing channel within the FPGA
      *   @param rr_type specifies the type of routing channel, either x-direction or y-direction
      *
      * @note 
@@ -151,18 +151,19 @@ class RRSpatialLookup {
                        e_side side = SIDES[0]);
 
     /**
-     * @brief Register a node in the fast look-up 
+     * @brief Register a node in the fast spatial lookup
      *
      * @note You must have a valid node id to register the node in the lookup
      *
      *   @param layer specified which FPGA die the node is located at (e.g. multi-die(3D) FPGA)
-     *   @param (x, y) are the coordinate of the node to be indexable in the fast look-up
+     *   @param (x, y) is the coordinate of the node to be indexable in the fast spatial lookup
      *   @param type is the type of a node
-     *   @param ptc is a feature number of a node, which can be
-     *     - the class number of a common SINK/SOURCE node of grid, 
-     *     - pin index in a tile when type is OPIN/IPIN
+     *   @param ptc is a feature number of a node, which can be<BR>
+     *     - the class number of a common SINK/SOURCE node of grid,<BR>
+     *     - pin index in a tile when type is OPIN/IPIN<BR>
      *     - track index in a routing channel when type is CHANX/CHANY
-     *   @param side is the side of node on the tile, applicable to OPIN/IPIN 
+     *   @param side is the side of node on the tile, applicable to OPIN/IPIN; it is ignored for
+     * other types, and hence has a default set
      *
      * @note a node added with this call will not create a node in the rr_graph_storage node list
      * You MUST add the node in the rr_graph_storage so that the node is valid  
@@ -183,16 +184,17 @@ class RRSpatialLookup {
                   e_side side = SIDES[0]);
 
     /**
-     * @brief Remove a node in the fast lookup.
+     * @brief Remove a node in the fast spatial lookup.
      *
      * @param layer specified which FPGA die the node is located at (e.g. multi-die(3D) FPGA)
-     * @param (x, y) are the coordinate of the node
+     * @param (x, y) is the coordinate of the node
      * @param type is the type of a node
-     * @param ptc is a feature number of a node, which can be
-     *     - the class number of a common SINK/SOURCE node of grid,
-     *     - pin index in a tile when type is OPIN/IPIN
+     * @param ptc is a feature number of a node, which can be<BR>
+     *     - the class number of a common SINK/SOURCE node of grid,<BR>
+     *     - pin index in a tile when type is OPIN/IPIN<BR>
      *     - track index in a routing channel when type is CHANX/CHANY
-     * @param side is the side of node on the tile, applicable to OPIN/IPIN
+     * @param side is the side of node on the tile, applicable to OPIN/IPIN; it is ignored for
+     * other types, and hence has a default set
      *
      * @return success Whether the node was removed successfully. If the function returns false,
      * the node was not in the lookup at the indices provided.
@@ -209,7 +211,7 @@ class RRSpatialLookup {
      * @brief Mirror the last dimension of a look-up, i.e., a list of nodes, from a source coordinate to
      * a destination coordinate.
      *
-     * This function is mostly need by SOURCE nodes which are indexable in multiple locations.
+     * This function is mostly needed by SOURCE nodes which are indexable in multiple locations.
      * Considering a bounding box (layer, x, y)->(layer, x + width, y + height) of a multi-height and multi-width grid,
      * SOURCE nodes are indexable in any location inside the boundary.
      *

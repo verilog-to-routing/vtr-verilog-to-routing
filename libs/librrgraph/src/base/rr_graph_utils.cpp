@@ -6,9 +6,23 @@
 #include "rr_graph_obj.h"
 #include "rr_graph_builder.h"
 
-// Add "cluster-edge" IPINs to sink_ipins
-static void walk_cluster_recursive(const RRGraphView& rr_graph,
-                                   const vtr::vector<RRNodeId, std::vector<RREdgeId>>& fanins,
+/*
+ * @brief Walk backwards from origin SINK, and insert all cluster-edge IPINs to which origin is connected to sink_ipins
+ *
+ * @param rr_graph
+ * @param fanins A vector where, at each node index, is a vector of edges which are fanins of that node
+ * @param sink_ipins The set in which cluster-edge IPINs will be collected; should be empty
+ * @param curr The current node in recursion; originally, should be the same as origin
+ * @param origin The SINK whose cluster-edge IPINs are to be collected
+ */
+static void rr_walk_cluster_recursive(const RRGraphView& rr_graph,
+                                      const vtr::vector<RRNodeId, std::vector<RREdgeId>>& fanins,
+                                      std::unordered_set<RRNodeId>& sink_ipins,
+                                      const RRNodeId curr,
+                                      const RRNodeId origin);
+
+static void rr_walk_cluster_recursive(const RRGraphView& rr_graph,
+                                      const vtr::vector<RRNodeId, std::vector<RREdgeId>>& fanins,
                                    std::unordered_set<RRNodeId>& sink_ipins,
                                    const RRNodeId curr,
                                    const RRNodeId origin) {
@@ -37,7 +51,7 @@ static void walk_cluster_recursive(const RRGraphView& rr_graph,
         }
 
         // If the parent node is intra-cluster, keep going "backward"
-        walk_cluster_recursive(rr_graph, fanins, sink_ipins, parent, origin);
+        rr_walk_cluster_recursive(rr_graph, fanins, sink_ipins, parent, origin);
     }
 }
 
@@ -169,7 +183,7 @@ void rr_set_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_buil
         } else { /* We have not seen this tile type/ptc combo before */
             // The IPINs of the current SINK node
             std::unordered_set<RRNodeId> sink_ipins = {};
-            walk_cluster_recursive(rr_graph, node_fanins, sink_ipins, node_id, node_id);
+            rr_walk_cluster_recursive(rr_graph, node_fanins, sink_ipins, node_id, node_id);
 
             /* Set SINK locations as average of collected IPINs */
 

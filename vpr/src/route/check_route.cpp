@@ -301,7 +301,8 @@ static bool check_adjacent(RRNodeId from_node, RRNodeId to_node, bool is_flat) {
     to_yhigh = rr_graph.node_yhigh(to_rr);
     to_ptc = rr_graph.node_ptc_num(to_rr);
 
-    // If to_node is SINK, use its tile coordinates
+    // If to_node is a SINK, it could be anywhere within its containing device grid tile, and it is reasonable for
+    // any input pins or within-cluster pins to reach it. Hence, treat its size as that of its containing tile.
     if (to_type == SINK) {
         vtr::Rect<int> tile_bb = device_ctx.grid.get_tile_bb({to_xlow, to_ylow, to_layer});
 

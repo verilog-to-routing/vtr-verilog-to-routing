@@ -123,7 +123,7 @@ enum class e_router_lookahead {
     MAP,
     ///@brief Similar to MAP, but use a sparse sampling of the chip
     COMPRESSED_MAP,
-    ///@breif Lookahead with a more extensive node sampling method
+    ///@brief Lookahead with a more extensive node sampling method
     EXTENDED_MAP,
     ///@brief A no-operation lookahead which always returns zero
     NO_OP

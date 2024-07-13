@@ -44,16 +44,22 @@ struct t_cluster_pin_chain {
 };
 
 /**
- * @brief Get node-to-node switches in a RRGraph
+ * @brief Get switches in a RRGraph starting at from_node and ending at to_node.
  *
- * @return A vector of switch ids
+ * @details
+ * Uses RRGraphView::find_edges(), then converts these edges to switch IDs.
+ *
+ * @return A vector of switch IDs
  */
 std::vector<RRSwitchId> find_rr_graph_switches(const RRGraph& rr_graph,
                                                const RRNodeId& from_node,
                                                const RRNodeId& to_node);
 
 /**
- * @brief This function generates and returns a vector indexed by RRNodeId containing a list of fan-in edges for each node.
+ * @brief This function generates and returns a vector indexed by RRNodeId containing a vector of fan-in edges for each node.
+ *
+ * @note
+ * This function is CPU expensive; complexity O(E) where E is the number of edges in rr_graph
  */
 vtr::vector<RRNodeId, std::vector<RREdgeId>> get_fan_in_list(const RRGraphView& rr_graph);
 
@@ -62,17 +68,7 @@ vtr::vector<RRNodeId, std::vector<RREdgeId>> get_fan_in_list(const RRGraphView& 
  *
  * @details
  * build_rr_graph() sets the location of SINK nodes to span the entire tile they are in. This function sets the location
- * of SINK nodes to be the average coordinate of the IPINs on their cluster block to which they are connected
- *
- * @warning
- * 1. Do not call this function if the RR graph will be written out.<BR>
- * 2. If using flat routing, this function must be called before building the intra-cluster RR graph.
- *
- * @todo
- * Either when writing out the RR graph after this function has been called, or reading in an RR graph produced in VPR
- * after this function was called, an error occurs (many IPINs have no fanins). The reason for this error has not been
- * determined. However, this is quite a big issue, as choosing to write out the RR graph now significantly increases
- * runtime!
+ * of SINK nodes to be the average coordinate of the "cluster-edge" IPINs to which they are connected
  */
 void rr_set_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_builder, const DeviceGrid& grid);
 
@@ -83,7 +79,7 @@ void rr_set_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_buil
 int seg_index_of_cblock(const RRGraphView& rr_graph, t_rr_type from_rr_type, int to_node);
 
 /**
- * @breif Returns the segment number (distance along the channel) of the switch box from from_node (CHANX or CHANY) to
+ * @brief Returns the segment number (distance along the channel) of the switch box from from_node (CHANX or CHANY) to
  * to_node (CHANX or CHANY).
  *
  * @details
@@ -103,14 +99,4 @@ int seg_index_of_sblock(const RRGraphView& rr_graph, int from_node, int to_node)
  * @return limited_to_opin
  */
 bool inter_layer_connections_limited_to_opin(const RRGraphView& rr_graph);
-
-/**
- * @brief This function returns a rectangle which represents the bounding box of the tile at the given location.
- *
- * @param tile_loc
- * @param rr_graph
- * @param grid
- *
- * @return tile_bounding_box
- */
 #endif
