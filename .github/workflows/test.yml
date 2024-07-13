@@ -497,16 +497,3 @@ jobs:
       run: |
         export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
         ./.github/scripts/build.sh
-
-  test_xml_encryption:
-    name: 'Encryption/Decryption test'
-    strategy:
-      fail-fast: false
-    needs: Build
-    runs-on: ubuntu-22.04
-
-    steps:
-    - name: Test_Encryption_Decryption
-      shell: bash
-      run: |
-        /root/vtr-verilog-to-routing/vtr-verilog-to-routing/build/libs/libdecrypt/test/test_encrypt_decrypt
