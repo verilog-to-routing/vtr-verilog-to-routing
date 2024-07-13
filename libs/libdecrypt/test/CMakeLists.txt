@@ -17,3 +17,5 @@ target_link_libraries(test_encrypt_decrypt
                         libpugixml
                         libdecrypt
                         libencrypt)
+
+add_test(NAME test_encrypt_decrypt COMMAND test_encrypt_decrypt)
