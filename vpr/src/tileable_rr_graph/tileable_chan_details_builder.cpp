@@ -221,8 +221,41 @@ ChanNodeDetails build_unidir_chan_node_details(const size_t& chan_width,
             	num_tracks_bend.push_back(num_tracks[iseg] * seg_len[i] / segment_inf[iseg].length);
             	
             VTR_ASSERT(num_tracks_bend[0] + num_tracks_bend[1] == num_tracks[iseg]);
+
+            for (size_t itrack = 0; itrack < num_tracks[iseg]; ++itrack) {
+                bool seg_start = false;
+                bool seg_end = false;
+                size_t seg_bend_start = 0;
+                size_t seg_bend_end = 0;
+
+                if (0 == itrack % segment_inf[iseg].length) {
+                    seg_start = true;  
+                }
+
+                if (seg_len[0] == int(itrack) % segment_inf[iseg].length) {
+                    seg_start = true;
+                    seg_bend_start = bend_num;
+                }
+
+                if (seg_len[0] - 1 == int(itrack) % segment_inf[iseg].length) {
+                    seg_end = true;
+                    seg_bend_end = bend_num;
+                }
+
+                if ((segment_inf[iseg].length - 1 == int(itrack) % segment_inf[iseg].length)
+                    || (itrack == num_tracks[iseg] - 1)) {
+                    seg_end = true;
+                }
+
+                int seg_index = segment_inf[iseg].seg_index;
+
+                chan_node_details.add_track(cur_track, Direction::INC, seg_index, seg_len[0], seg_start, seg_end, seg_bend_start, seg_bend_end);
+                cur_track++;
+                chan_node_details.add_track(cur_track, Direction::DEC, seg_index, seg_len[0], seg_start, seg_end, seg_bend_start, seg_bend_end);
+                cur_track++;
+            }
             
-            for (size_t itrack = 0; itrack < num_tracks_bend[0]; ++itrack) {
+            /*for (size_t itrack = 0; itrack < num_tracks_bend[0]; ++itrack) {
                 
                 bool seg_start = false;
                 bool seg_end = false;
@@ -270,7 +303,7 @@ ChanNodeDetails build_unidir_chan_node_details(const size_t& chan_width,
                 chan_node_details.add_track(cur_track, Direction::DEC, seg_index, seg_len[1], seg_start, seg_end, seg_bend_start, seg_bend_end);
                 cur_track++;
                 
-            }
+            }*/
         }
     }
     /* Check if all the tracks have been satisified */
