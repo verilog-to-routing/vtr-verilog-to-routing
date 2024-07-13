@@ -209,7 +209,7 @@ void build_rr_graph_edges(const RRGraphView& rr_graph,
         size_t ix, iy;
         // process top boundary
         iy = grids.height() - 1;
-        for (ix = 0; ix < grids.width() - 2; ++ix) {
+        for (ix = 0; ix < grids.width() - 1; ++ix) {
             vtr::Point<size_t> actual_coord(ix, iy);
             vtr::Point<size_t> gsb_coord(ix, iy - 1);
 
@@ -236,7 +236,7 @@ void build_rr_graph_edges(const RRGraphView& rr_graph,
 
         // process right boundary
         ix = grids.width() - 1;
-        for (iy = 0; iy < grids.height() - 2; ++iy) {
+        for (iy = 0; iy < grids.height() - 1; ++iy) {
             vtr::Point<size_t> actual_coord(ix, iy);
             vtr::Point<size_t> gsb_coord(ix - 1, iy);
 
