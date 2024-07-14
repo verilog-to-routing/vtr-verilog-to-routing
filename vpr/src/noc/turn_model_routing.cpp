@@ -263,6 +263,8 @@ TurnModelRouting::Direction TurnModelRouting::select_direction_other_than(const 
 std::vector<std::pair<NocLinkId, NocLinkId>> TurnModelRouting::get_all_illegal_turns(const NocStorage& noc_model) const {
     std::vector<std::pair<NocLinkId, NocLinkId>> illegal_turns;
 
+    const bool noc_is_3d = noc_model.is_noc_3d();
+
     /* Iterate over all sets of three routers that can be traversed in sequence.
      * Check if traversing these three routes involves any turns, and if so,
      * check if the resulting turn is illegal under the restrictions of a turn model
@@ -285,7 +287,7 @@ std::vector<std::pair<NocLinkId, NocLinkId>> TurnModelRouting::get_all_illegal_t
                 const NocLink& second_noc_link = noc_model.get_single_noc_link(second_noc_link_id);
                 const NocRouterId third_noc_router_id = second_noc_link.get_sink_router();
                 const NocRouter& third_noc_router = noc_model.get_single_noc_router(third_noc_router_id);
-                if (!is_turn_legal({noc_router, second_noc_router, third_noc_router})) {
+                if (!is_turn_legal({noc_router, second_noc_router, third_noc_router}, noc_is_3d)) {
                     illegal_turns.emplace_back(first_noc_link_id, second_noc_link_id);
                 }
             }

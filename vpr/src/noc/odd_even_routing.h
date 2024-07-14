@@ -30,7 +30,8 @@ class OddEvenRouting : public TurnModelRouting{
                                                                          TurnModelRouting::Direction prev_dir,
                                                                          const NocStorage& noc_model) override;
 
-    bool is_turn_legal(const std::array<std::reference_wrapper<const NocRouter>, 3>& noc_routers) const override;
+    bool is_turn_legal(const std::array<std::reference_wrapper<const NocRouter>, 3>& noc_routers,
+                       bool noc_is_3d) const override;
 
     /**
      * Checks whether the given umber is odd.

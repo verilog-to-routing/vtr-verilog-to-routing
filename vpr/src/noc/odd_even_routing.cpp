@@ -157,7 +157,8 @@ bool OddEvenRouting::is_even(int number) {
     return (number % 2) == 0;
 }
 
-bool OddEvenRouting::is_turn_legal(const std::array<std::reference_wrapper<const NocRouter>, 3>& noc_routers) const {
+bool OddEvenRouting::is_turn_legal(const std::array<std::reference_wrapper<const NocRouter>, 3>& noc_routers,
+                                   bool noc_is_3d) const {
     const auto [x1, y1, z1] = noc_routers[0].get().get_router_physical_location();
     const auto [x2, y2, z2] = noc_routers[1].get().get_router_physical_location();
     const auto [x3, y3, z3] = noc_routers[2].get().get_router_physical_location();
@@ -187,36 +188,49 @@ bool OddEvenRouting::is_turn_legal(const std::array<std::reference_wrapper<const
     // get the compressed location of the second NoC router
     auto compressed_2_loc = get_compressed_loc(compressed_noc_grid, t_pl_loc{router2_pos, 0}, num_layers)[router2_pos.layer_num];
 
+
     // going back to the first router is not allowed (180-degree turns)
     if (x1 == x3 && y1 == y3 && z1 == z3) {
         return false;
     }
 
-    /* A packet is not allowed to take any of the X+ --> YZ turns at a router
-     * located in an even yz-place. */
-    if (is_even(compressed_2_loc.x)) {
-        if (x2 > x1 && (y3 != y2 || z3 != z2)) {
-          return false;
+    if (noc_is_3d) {
+        /* A packet is not allowed to take any of the X+ --> YZ turns at a router
+         * located in an even yz-place. */
+        if (is_even(compressed_2_loc.x)) {
+            if (x2 > x1 && (y3 != y2 || z3 != z2)) {
+                return false;
+            }
         }
-    }
 
-    /* A packet is not allowed to take any of the YZ ---> X- turns at a router
-     * located in an odd yz-plane. */
-    if (is_odd(compressed_2_loc.x)) {
-        if ((y1 != y2 || z1 != z2) && x2 < x1) {
-          return false;
+        /* A packet is not allowed to take any of the YZ ---> X- turns at a router
+         * located in an odd yz-plane. */
+        if (is_odd(compressed_2_loc.x)) {
+            if ((y1 != y2 || z1 != z2) && x2 < x1) {
+                return false;
+            }
         }
-    }
 
 
-    // check if the turn is compatible with odd-even routing algorithm turn restrictions
-    if (is_odd(compressed_2_loc.y)) {
-        if ((z2 > z1 && y3 < y2) || (z2 < z1 && y3 < y2)) {
-          return false;
+        // check if the turn is compatible with odd-even routing algorithm turn restrictions
+        if (is_odd(compressed_2_loc.y)) {
+            if ((z2 > z1 && y3 < y2) || (z2 < z1 && y3 < y2)) {
+                return false;
+            }
+        } else { // y is even
+            if ((y2 > y1 && z3 > z2) || (y2 > y1 && z3 < z2)) {
+                return false;
+            }
         }
-    } else { // y is even
-        if ((y2 > y1 && z3 > z2) || (y2 > y1 && z3 < z2)) {
-          return false;
+    } else {  // 2D NoC
+        if (is_odd(compressed_2_loc.x)) {
+            if (y2 != y1 && x3 < x2) {
+                return false;
+            }
+        } else { // even column
+            if (x2 > x1 && y2 != y3) {
+                return false;
+            }
         }
     }
 
