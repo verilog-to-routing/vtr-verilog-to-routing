@@ -309,14 +309,14 @@ static void ProcessVibLayout(pugi::xml_node Node, t_arch* arch, const pugiutil::
 static t_grid_def ProcessGridLayout(vtr::string_internment* strings, pugi::xml_node layout_type_tag, const pugiutil::loc_data& loc_data, t_arch* arch, int& num_of_avail_layer);
 
 /* Added for vib_layout*/
-static t_vib_grid_def ProcessVibGridLayout(vtr::string_internment* strings, pugi::xml_node layout_type_tag, const pugiutil::loc_data& loc_data, t_arch* arch, int& num_of_avail_layer);
+static t_vib_grid_def ProcessVibGridLayout(vtr::string_internment& strings, pugi::xml_node layout_type_tag, const pugiutil::loc_data& loc_data, t_arch* arch, int& num_of_avail_layer);
 
 static void ProcessBlockTypeLocs(t_grid_def& grid_def, int die_number, vtr::string_internment* strings, pugi::xml_node layout_block_type_tag, const pugiutil::loc_data& loc_data);
 
 /* Added for vib_layout*/
 static void ProcessVibBlockTypeLocs(t_vib_grid_def& grid_def,
                                     int die_number,
-                                    vtr::string_internment* strings,
+                                    vtr::string_internment& strings,
                                     pugi::xml_node layout_block_type_tag,
                                     const pugiutil::loc_data& loc_data);
 
@@ -5755,14 +5755,14 @@ static void ProcessVibLayout(pugi::xml_node vib_layout_tag, t_arch* arch, const 
     int num_of_avail_layer;
 
     for (auto vib_layout_type_tag : vib_layout_tag.children()) {
-        t_vib_grid_def grid_def = ProcessVibGridLayout(&arch->strings, vib_layout_type_tag, loc_data, arch, num_of_avail_layer);
+        t_vib_grid_def grid_def = ProcessVibGridLayout(arch->strings, vib_layout_type_tag, loc_data, arch, num_of_avail_layer);
 
         arch->vib_grid_layouts.emplace_back(std::move(grid_def));
     }
     
 }
 
-static t_vib_grid_def ProcessVibGridLayout(vtr::string_internment* strings, pugi::xml_node layout_type_tag, const pugiutil::loc_data& loc_data, t_arch* arch, int& num_of_avail_layer) {
+static t_vib_grid_def ProcessVibGridLayout(vtr::string_internment& strings, pugi::xml_node layout_type_tag, const pugiutil::loc_data& loc_data, t_arch* arch, int& num_of_avail_layer) {
     t_vib_grid_def grid_def;
     num_of_avail_layer = get_number_of_layers(layout_type_tag, loc_data);
     bool has_layer = layout_type_tag.child("layer");
@@ -5841,7 +5841,7 @@ static t_vib_grid_def ProcessVibGridLayout(vtr::string_internment* strings, pugi
 
 static void ProcessVibBlockTypeLocs(t_vib_grid_def& grid_def,
                                     int die_number,
-                                    vtr::string_internment* strings,
+                                    vtr::string_internment& strings,
                                     pugi::xml_node layout_block_type_tag,
                                     const pugiutil::loc_data& loc_data) {
     //Process all the block location specifications
