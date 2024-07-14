@@ -260,6 +260,9 @@ bool is_inter_cluster_node(t_physical_tile_type_ptr physical_tile,
                            t_rr_type node_type,
                            int node_ptc);
 
+bool is_inter_cluster_node(const RRGraphView& rr_graph_view,
+                           RRNodeId node_id);
+
 int get_rr_node_max_ptc(const RRGraphView& rr_graph_view,
                         RRNodeId node_id,
                         bool is_flat);
