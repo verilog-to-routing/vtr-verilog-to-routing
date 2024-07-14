@@ -1409,7 +1409,9 @@ static void expand_dijkstra_neighbours(util::PQ_Entry parent_entry,
     for (t_edge_size edge : rr_graph.edges(parent)) {
         RRNodeId child_node = rr_graph.edge_sink_node(parent, edge);
         // For the time being, we decide to not let the lookahead explore the node inside the clusters
-
+        t_physical_tile_type_ptr physical_type = device_ctx.grid.get_physical_type({rr_graph.node_xlow(child_node),
+                                                                                    rr_graph.node_ylow(child_node),
+                                                                                    rr_graph.node_layer(child_node)});
         const t_vib_inf* vib;
         if (device_ctx.arch->is_vib_arch) {
             vib = device_ctx.vib_grid[rr_graph.node_layer(child_node)][rr_graph.node_xlow(child_node)][rr_graph.node_ylow(child_node)];
