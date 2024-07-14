@@ -1741,15 +1741,11 @@ bool is_inter_cluster_node(const RRGraphView& rr_graph_view,
         VTR_ASSERT(vib != nullptr);
         return (node_ptc < (int)vib->first_stages.size());
     } else {
-        int x_low = rr_graph_view.node_xlow(node_id);
-        int y_low = rr_graph_view.node_ylow(node_id);
-        int layer = rr_graph_view.node_layer(node_id);
-        int node_ptc = rr_graph_view.node_ptc_num(node_id);
-        const t_physical_tile_type_ptr physical_tile = g_vpr_ctx.device().grid.get_physical_type({x_low, y_low, layer});
+        VTR_ASSERT(node_type == IPIN || node_type == OPIN || node_type == SINK || node_type == SOURCE);
         if (node_type == IPIN || node_type == OPIN) {
             return is_pin_on_tile(physical_tile, node_ptc);
         } else {
-            VTR_ASSERT_DEBUG(node_type == SINK || node_type == SOURCE);
+            VTR_ASSERT(node_type == SINK || node_type == SOURCE);
             return is_class_on_tile(physical_tile, node_ptc);
         }
     }
