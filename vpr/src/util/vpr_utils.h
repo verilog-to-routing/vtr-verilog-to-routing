@@ -245,6 +245,9 @@ std::vector<const t_pb_graph_node*> get_all_pb_graph_node_primitives(const t_pb_
 bool is_inter_cluster_node(const RRGraphView& rr_graph_view,
                            RRNodeId node_id);
 
+bool is_inter_cluster_node(const RRGraphView& rr_graph_view,
+                           RRNodeId node_id);
+
 int get_rr_node_max_ptc(const RRGraphView& rr_graph_view,
                         RRNodeId node_id,
                         bool is_flat);
