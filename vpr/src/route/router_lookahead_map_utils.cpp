@@ -1397,9 +1397,6 @@ static void expand_dijkstra_neighbours(util::PQ_Entry parent_entry,
         RRNodeId child_node = rr_graph.edge_sink_node(parent, edge);
         // For the time being, we decide to not let the lookahead explore the node inside the clusters
 
-<<<<<<< HEAD
-        if (!is_inter_cluster_node(rr_graph, child_node)) {
-=======
         const t_vib_inf* vib;
         if (device_ctx.arch->is_vib_arch) {
             vib = device_ctx.vib_grid[rr_graph.node_layer(child_node)][rr_graph.node_xlow(child_node)][rr_graph.node_ylow(child_node)];
@@ -1408,11 +1405,7 @@ static void expand_dijkstra_neighbours(util::PQ_Entry parent_entry,
             vib = nullptr;
         }
         
-        if (!is_inter_cluster_node(physical_type,
-                                   vib,
-                                   rr_graph.node_type(child_node),
-                                   rr_graph.node_ptc_num(child_node))) {
->>>>>>> Update router_lookahead_map_utils.cpp
+        if (!is_inter_cluster_node(rr_graph, child_node)) {
             continue;
         }
         int switch_ind = size_t(rr_graph.edge_switch(parent, edge));
