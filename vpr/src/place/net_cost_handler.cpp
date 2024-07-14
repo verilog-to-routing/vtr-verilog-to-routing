@@ -55,7 +55,7 @@ static vtr::NdMatrix<float, 2> chanx_place_cost_fac({0, 0}); // [0...device_ctx.
 static vtr::NdMatrix<float, 2> chany_place_cost_fac({0, 0}); // [0...device_ctx.grid.height()-2]
 
 /**
- * @brief For each of the vector in this struct, there is one entry per cluster level net: 
+ * @brief For each of the vectors in this struct, there is one entry per cluster level net: 
  * [0...cluster_ctx.clb_nlist.nets().size()-1].
  * net_cost and proposed_net_cost: Cost of a net, and a temporary cost of a net used during move assessment. 
  * We also use negative cost values in proposed_net_cost as a flag to indicate that 
