@@ -2,7 +2,9 @@
 #include "catch2/matchers/catch_matchers_all.hpp"
 
 #include "odd_even_routing.h"
+#include "channel_dependency_graph.h"
 
+#include <random>
 
 namespace {
 
@@ -42,6 +44,8 @@ TEST_CASE("test_route_flow", "[vpr_noc_odd_even_routing]") {
     // Create the NoC storage
     NocStorage noc_model;
 
+    vtr::vector_map<ClusterBlockId, t_block_loc> block_locs;
+
     // store the reference to device grid with
     // this will be set to the device grid width
     noc_model.set_device_grid_width((int)10);
@@ -50,6 +54,7 @@ TEST_CASE("test_route_flow", "[vpr_noc_odd_even_routing]") {
     for (int i = 0; i < 10; i++) {
         for (int j = 0; j < 10; j++) {
             noc_model.add_router((i * 10) + j, j, i, 0, DUMMY_LATENCY);
+            block_locs.insert((ClusterBlockId)((i * 10) + j), t_block_loc{{j, i, 0, 0}, false});
         }
     }
 
@@ -201,6 +206,45 @@ TEST_CASE("test_route_flow", "[vpr_noc_odd_even_routing]") {
         // make sure that size of the found route and golden route match
         compare_routes(golden_path, found_path, noc_model);
     }
+
+    SECTION("To be named ") {
+        std::random_device device;
+        std::mt19937 rand_num_gen(device());
+        std::uniform_int_distribution<std::mt19937::result_type> dist(0,  99);
+
+        NocTrafficFlows traffic_flow_storage;
+
+        for (int i = 0; i < 100; i++) {
+            auto src_blk_id = (ClusterBlockId)dist(rand_num_gen);
+
+            ClusterBlockId dst_blk_id;
+            do {
+                dst_blk_id = (ClusterBlockId)dist(rand_num_gen);
+            } while (src_blk_id == dst_blk_id);
+
+            traffic_flow_storage.create_noc_traffic_flow("dummy_name_1", "dummy_name_2", src_blk_id, dst_blk_id, 1, 1, 1);
+        }
+
+        traffic_flow_storage.finished_noc_traffic_flows_setup();
+
+        vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> traffic_flow_routes(traffic_flow_storage.get_number_of_traffic_flows());
+
+        for (const auto& [id, traffic_flow] : traffic_flow_storage.get_all_traffic_flows().pairs()) {
+
+            NocRouterId src_router_id = noc_model.get_router_at_grid_location(block_locs[traffic_flow.source_router_cluster_id].loc);
+            NocRouterId dst_router_id = noc_model.get_router_at_grid_location(block_locs[traffic_flow.sink_router_cluster_id].loc);
+
+            REQUIRE_NOTHROW(routing_algorithm.route_flow(src_router_id, dst_router_id,
+                                                         id, traffic_flow_routes[id], noc_model));
+        }
+
+        ChannelDependencyGraph cdg(noc_model, traffic_flow_storage, traffic_flow_routes, block_locs);
+
+        REQUIRE(cdg.has_cycles() == false);
+
+    }
+
+
 }
 
 }
