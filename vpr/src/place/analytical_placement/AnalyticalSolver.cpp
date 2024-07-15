@@ -370,16 +370,16 @@ void B2BSolver::populate_matrix(PartialPlacement &p_placement) {
         size_t num_nodes = node_ids_no_duplicate.size();
         for (size_t node_id = 0; node_id < num_nodes; node_id++) {
             if (node_id != maxXId && node_id != minXId) {
-                add_node(node_id, maxXId, node_ids_no_duplicate.size(), true);
-                add_node(node_id, minXId, node_ids_no_duplicate.size(), true);
+                add_node(node_id, maxXId, num_nodes, true);
+                add_node(node_id, minXId, num_nodes, true);
             } 
             if (node_id != maxYId && node_id != minYId) {
-                add_node(node_id, maxYId, node_ids_no_duplicate.size(), false);
-                add_node(node_id, minYId, node_ids_no_duplicate.size(), false);
+                add_node(node_id, maxYId, num_nodes, false);
+                add_node(node_id, minYId, num_nodes, false);
             } 
         }
-        add_node(maxXId, minXId, node_ids_no_duplicate.size(), true);
-        add_node(maxYId, minYId, node_ids_no_duplicate.size(), false);
+        add_node(maxXId, minXId, num_nodes, true);
+        add_node(maxYId, minYId, num_nodes, false);
     }
     A_sparse_x.setFromTriplets(tripletList_x.begin(), tripletList_x.end());
     A_sparse_y.setFromTriplets(tripletList_y.begin(), tripletList_y.end());
@@ -414,7 +414,6 @@ void B2BSolver::populate_matrix_anchor(PartialPlacement& p_placement, unsigned i
 void B2BSolver::b2b_solve_loop(unsigned iteration, PartialPlacement &p_placement){
     double previous_hpwl, current_hpwl = std::numeric_limits<double>::max();
     for(unsigned counter = 0; counter < inner_iterations; counter++) {
-        counter++; 
         previous_hpwl = current_hpwl;
         VTR_LOG("placement hpwl in b2b loop: %f\n", p_placement.get_HPWL());
         VTR_ASSERT(p_placement.is_valid_partial_placement() && "did not produce a valid placement in b2b solve loop");
