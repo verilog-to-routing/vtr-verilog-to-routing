@@ -52,11 +52,16 @@ void write_vpr_floorplan_constraints(const char* file_name, int expand, bool sub
  */
 void setup_vpr_floorplan_constraints_one_loc(VprConstraints& constraints, int expand, bool subtile);
 
-/* Generate constraints which divide the grid into partition according to the horizontal and vertical partition values passed in
- * and lock down blocks to their appropriate partition.
+/**
+ * @brief Populates VprConstraints by dividing the grid into multiple partitions.
+ *
+ * Generate constraints which divide the grid into partition according to the horizontal
+ * and vertical partition values passed in and lock down blocks to their appropriate partition.
+ *
+ * @param constraints The VprConstraints to be populated.
+ * @param horizontal_cutpoints The number of horizontal cut-lines.
+ * @param vertical_cutpoints The number of vertical cut_lines.
  */
 void setup_vpr_floorplan_constraints_cutpoints(VprConstraints& constraints, int horizontal_cutpoints, int vertical_cutpoints);
-
-void create_partition(Partition& part, const std::string& part_name, const RegionRectCoord& region_cord);
 
 #endif /* VPR_SRC_BASE_VPR_CONSTRAINTS_WRITER_H_ */

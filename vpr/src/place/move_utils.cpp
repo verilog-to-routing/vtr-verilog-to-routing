@@ -226,7 +226,7 @@ e_block_move_result record_macro_swaps(t_pl_blocks_to_be_moved& blocks_affected,
 //to a new position offset from its current position by swap_offset. The new location must be where
 //blk_to is located and blk_to must be part of imacro_to.
 e_block_move_result record_macro_macro_swaps(t_pl_blocks_to_be_moved& blocks_affected, const int imacro_from, int& imember_from, const int imacro_to, ClusterBlockId blk_to, t_pl_offset swap_offset) {
-    //Adds the macro imacro_to to the set of affected block caused by swapping 'blk_to' to it's
+    //Adds the macro imacro_to to the set of affected block caused by swapping 'blk_to' to its
     //new position.
     //
     //This function is only called when both the main swap's from/to blocks are placement macros.
@@ -489,7 +489,7 @@ std::set<t_pl_loc> determine_locations_emptied_by_move(t_pl_blocks_to_be_moved& 
     std::set<t_pl_loc> moved_to;
 
     for (int iblk = 0; iblk < blocks_affected.num_moved_blocks; ++iblk) {
-        //When a block is moved it's old location becomes free
+        //When a block is moved its old location becomes free
         moved_from.emplace(blocks_affected.moved_blocks[iblk].old_loc);
 
         //But any block later moved to a position fills it
@@ -595,81 +595,47 @@ ClusterBlockId propose_block_to_move(const t_placer_opts& /* placer_opts */,
     return b_from;
 }
 
-//Pick a random block to be swapped with another random block.
-//If none is found return ClusterBlockId::INVALID()
-ClusterBlockId pick_from_block() {
-    /* Some blocks may be fixed, and should never be moved from their *
-     * initial positions. If we randomly selected such a block try    *
-     * another random block.                                          *
-     *                                                                *
-     * We need to track the blocks we have tried to avoid an infinite *
-     * loop if all blocks are fixed.                                  */
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_ctx = g_vpr_ctx.mutable_placement();
+const std::vector<ClusterBlockId>& movable_blocks_per_type(const t_logical_block_type& blk_type) {
+    const auto& place_ctx = g_vpr_ctx.placement();
 
-    std::unordered_set<ClusterBlockId> tried_from_blocks;
-
-    //Keep selecting random blocks as long as there are any untried blocks
-    //Can get slow if there are many blocks but only a few (or none) can move
-    while (tried_from_blocks.size() < cluster_ctx.clb_nlist.blocks().size()) {
-        //Pick a block at random
-        ClusterBlockId b_from = ClusterBlockId(vtr::irand((int)cluster_ctx.clb_nlist.blocks().size() - 1));
-
-        //Record it as tried
-        tried_from_blocks.insert(b_from);
-
-        if (place_ctx.block_locs[b_from].is_fixed) {
-            continue; //Fixed location, try again
-        }
-
-        //Found a movable block
-        return b_from;
-    }
-
-    //No movable blocks found
-    return ClusterBlockId::INVALID();
+    // the vector is returned as const reference to avoid unnecessary copies,
+    // especially that returned vectors may be very large as they contain
+    // all clustered blocks with a specific block type
+    return place_ctx.movable_blocks_per_type[blk_type.index];
 }
 
-//Pick a random block with a specific blk_type to be swapped with another random block.
+//Pick a random movable block to be swapped with another random block.
+//If none is found return ClusterBlockId::INVALID()
+ClusterBlockId pick_from_block() {
+    auto& place_ctx = g_vpr_ctx.mutable_placement();
+
+    // get the number of movable clustered blocks
+    const size_t n_movable_blocks = place_ctx.movable_blocks.size();
+
+    if (n_movable_blocks > 0) {
+        //Pick a movable block at random and return it
+        auto b_from = ClusterBlockId(vtr::irand((int)n_movable_blocks - 1));
+        return b_from;
+    } else {
+        //No movable blocks found
+        return ClusterBlockId::INVALID();
+    }
+}
+
+//Pick a random movable block with a specific blk_type to be swapped with another random block.
 //If none is found return ClusterBlockId::INVALID()
 ClusterBlockId pick_from_block(const int logical_blk_type_index) {
-    /* Some blocks may be fixed, and should never be moved from their *
-     * initial positions. If we randomly selected such a block try    *
-     * another random block.                                          *
-     *                                                                *
-     * We need to track the blocks we have tried to avoid an infinite *
-     * loop if all blocks are fixed.                                  */
-    auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
-    t_logical_block_type blk_type_temp;
-    blk_type_temp.index = logical_blk_type_index;
-    const auto& blocks_per_type = cluster_ctx.clb_nlist.blocks_per_type(blk_type_temp);
 
-    //no blocks with this type is available
-    if (blocks_per_type.empty()) {
+    const auto& movable_blocks_of_type = place_ctx.movable_blocks_per_type[logical_blk_type_index];
+
+    if (movable_blocks_of_type.empty()) {
         return ClusterBlockId::INVALID();
     }
 
-    std::unordered_set<ClusterBlockId> tried_from_blocks;
+    auto b_from = ClusterBlockId(movable_blocks_of_type[vtr::irand((int)movable_blocks_of_type.size() - 1)]);
 
-    //Keep selecting random blocks as long as there are any untried blocks with type "blk_type"
-    //Can get slow if there are many blocks but only a few (or none) can move
-    while (tried_from_blocks.size() < blocks_per_type.size()) {
-        //Pick a block at random
-        ClusterBlockId b_from = ClusterBlockId(blocks_per_type[vtr::irand((int)blocks_per_type.size() - 1)]);
-        //Record it as tried
-        tried_from_blocks.insert(b_from);
-
-        if (place_ctx.block_locs[b_from].is_fixed) {
-            continue; //Fixed location, try again
-        }
-        //Found a movable block
-        return b_from;
-    }
-
-    //No movable blocks found
-    //Unreachable statement
-    return ClusterBlockId::INVALID();
+    return b_from;
 }
 
 //Pick a random highly critical block to be swapped with another random block.
@@ -779,8 +745,7 @@ bool find_to_loc_uniform(t_logical_block_type_ptr type,
 
     //TODO: constraints should be adapted to 3D architecture
     if (is_cluster_constrained(b_from)) {
-        bool intersect = intersect_range_limit_with_floorplan_constraints(type,
-                                                                          b_from,
+        bool intersect = intersect_range_limit_with_floorplan_constraints(b_from,
                                                                           search_range,
                                                                           delta_cx,
                                                                           to_layer_num);
@@ -877,8 +842,7 @@ bool find_to_loc_median(t_logical_block_type_ptr blk_type,
     bool legal = false;
 
     if (is_cluster_constrained(b_from)) {
-        bool intersect = intersect_range_limit_with_floorplan_constraints(blk_type,
-                                                                          b_from,
+        bool intersect = intersect_range_limit_with_floorplan_constraints(b_from,
                                                                           search_range,
                                                                           delta_cx,
                                                                           to_layer_num);
@@ -963,8 +927,7 @@ bool find_to_loc_centroid(t_logical_block_type_ptr blk_type,
     bool legal = false;
 
     if (is_cluster_constrained(b_from)) {
-        bool intersect = intersect_range_limit_with_floorplan_constraints(blk_type,
-                                                                          b_from,
+        bool intersect = intersect_range_limit_with_floorplan_constraints(b_from,
                                                                           search_range,
                                                                           delta_cx,
                                                                           to_layer_num);
@@ -1084,9 +1047,9 @@ bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
     else
         possibilities = delta_cx;
 
-    while (!legal && (int)tried_cx_to.size() < possibilities) { //Until legal or all possibilities exhaused
+    while (!legal && (int)tried_cx_to.size() < possibilities) { //Until legal or all possibilities exhausted
         //Pick a random x-location within [min_cx, max_cx],
-        //until we find a legal swap, or have exhuasted all possiblites
+        //until we find a legal swap, or have exhausted all possibilities
         to_loc.x = search_range.xmin + vtr::irand(delta_cx);
 
         VTR_ASSERT(to_loc.x >= search_range.xmin);
@@ -1260,34 +1223,15 @@ t_bb get_compressed_grid_bounded_search_range(const t_compressed_block_grid& com
     return search_range;
 }
 
-bool intersect_range_limit_with_floorplan_constraints(t_logical_block_type_ptr type,
-                                                      ClusterBlockId b_from,
+bool intersect_range_limit_with_floorplan_constraints(ClusterBlockId b_from,
                                                       t_bb& search_range,
                                                       int& delta_cx,
                                                       int layer_num) {
-    //Retrieve the compressed block grid for this block type
-    const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[type->index];
-
-    auto min_grid_loc = compressed_block_grid.compressed_loc_to_grid_loc({search_range.xmin,
-                                                                          search_range.ymin,
-                                                                          layer_num});
-
-    auto max_grid_loc = compressed_block_grid.compressed_loc_to_grid_loc({search_range.xmax,
-                                                                          search_range.ymax,
-                                                                          layer_num});
-
-    Region range_reg;
-    range_reg.set_region_rect({min_grid_loc.x,
-                               min_grid_loc.y,
-                               max_grid_loc.x,
-                               max_grid_loc.y,
-                               layer_num});
-
     const auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
 
-    const PartitionRegion& pr = floorplanning_ctx.cluster_constraints[b_from];
-    const std::vector<Region>& regions = pr.get_regions();
-    Region intersect_reg;
+    // get the block floorplanning constraints specified in the compressed grid
+    const PartitionRegion& compressed_pr = floorplanning_ctx.compressed_cluster_constraints[layer_num][b_from];
+    const std::vector<Region>& compressed_regions = compressed_pr.get_regions();
     /*
      * If region size is greater than 1, the block is constrained to more than one rectangular region.
      * In this case, we return true (i.e. the range limit intersects with
@@ -1295,23 +1239,30 @@ bool intersect_range_limit_with_floorplan_constraints(t_logical_block_type_ptr t
      * this routine is done for cpu time optimization, so we do not have to necessarily check each
      * complicated case to get correct functionality during place moves.
      */
-    if (regions.size() == 1) {
-        intersect_reg = intersection(regions[0], range_reg);
+    if (compressed_regions.size() == 1) {
+        if (compressed_regions[0].empty()) {
+            return false;
+        }
 
-        if (intersect_reg.empty()) {
-            VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\tCouldn't find an intersection between floorplan constraints and search region\n");
+        Region range_reg(search_range.xmin, search_range.ymin,
+                         search_range.xmax, search_range.ymax, layer_num);
+
+        Region compressed_intersect_reg = intersection(compressed_regions[0], range_reg);
+
+        if (compressed_intersect_reg.empty()) {
+            VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug,
+                           "\tCouldn't find an intersection between floorplan constraints and search region\n");
             return false;
         } else {
-            const auto intersect_coord = intersect_reg.get_region_rect();
-            VTR_ASSERT(intersect_coord.layer_num == layer_num);
-            auto min_compressed_loc = compressed_block_grid.grid_loc_to_compressed_loc_approx({intersect_coord.xmin,
-                                                                                               intersect_coord.ymin,
-                                                                                               layer_num});
+            const vtr::Rect<int>& intersect_rect = compressed_intersect_reg.get_rect();
+            const auto [layer_low, layer_high] = compressed_intersect_reg.get_layer_range();
+            VTR_ASSERT(layer_low == layer_num && layer_high == layer_num);
 
-            auto max_compressed_loc = compressed_block_grid.grid_loc_to_compressed_loc_approx({intersect_coord.xmax,
-                                                                                               intersect_coord.ymax,
-                                                                                               layer_num});
-            delta_cx = max_compressed_loc.x - min_compressed_loc.x;
+            delta_cx = intersect_rect.xmax() -  intersect_rect.xmin();
+            std::tie(search_range.xmin, search_range.ymin,
+                     search_range.xmax, search_range.ymax) = intersect_rect.coordinates();
+            search_range.layer_min = layer_low;
+            search_range.layer_max = layer_high;
         }
     }
 
