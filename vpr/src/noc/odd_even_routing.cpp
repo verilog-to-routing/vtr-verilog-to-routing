@@ -8,7 +8,7 @@ OddEvenRouting::~OddEvenRouting() = default;
 const std::vector<TurnModelRouting::Direction>& OddEvenRouting::get_legal_directions(NocRouterId src_router_id,
                                                                                      NocRouterId curr_router_id,
                                                                                      NocRouterId dst_router_id,
-                                                                                     TurnModelRouting::Direction /*prev_dir*/,
+                                                                                     TurnModelRouting::Direction prev_dir,
                                                                                      const NocStorage& noc_model) {
     // used to access NoC compressed grid
     auto& place_ctx = g_vpr_ctx.placement();
@@ -46,104 +46,10 @@ const std::vector<TurnModelRouting::Direction>& OddEvenRouting::get_legal_direct
     // clear returned legal directions from the previous call
     returned_legal_direction.clear();
 
-    // calculate the distance between the current router and the destination
-    const int diff_x = compressed_dst_loc.x - compressed_curr_loc.x;
-    const int diff_y = compressed_dst_loc.y - compressed_curr_loc.y;
-    const int diff_z = compressed_dst_loc.layer_num - compressed_curr_loc.layer_num;
-
-    if (diff_x > 0) {
-        if (is_even(compressed_curr_loc.x) || (diff_y == 0 && diff_z == 0)) {
-            returned_legal_direction.push_back(TurnModelRouting::Direction::EAST);
-        }
-    } else if (diff_x < 0) {
-        if (is_even(compressed_curr_loc.x) ||
-            (compressed_curr_loc.y == compressed_src_loc.y && compressed_curr_loc.layer_num == compressed_src_loc.layer_num)) {
-            returned_legal_direction.push_back(TurnModelRouting::Direction::WEST);
-        }
-    }
-
-
-
-    if (diff_y == 0) { // the same column as the destination. Only north or south are allowed
-        if (diff_z > 0) {
-            returned_legal_direction.push_back(TurnModelRouting::Direction::UP);
-        } else {
-            returned_legal_direction.push_back(TurnModelRouting::Direction::DOWN);
-        }
-    } else if (diff_y > 0) { // eastbound message
-        if (diff_z == 0) { // already in the same row as the destination. Just move to the east
-            returned_legal_direction.push_back(TurnModelRouting::Direction::NORTH);
-        } else {
-            /* Since EN and ES turns are forbidden in even columns, we move along the vertical
-             * direction only in we are in an odd column. */
-            if (is_odd(compressed_curr_loc.y) || compressed_curr_loc.y == compressed_src_loc.y) {
-                if (diff_z > 0) {
-                    returned_legal_direction.push_back(TurnModelRouting::Direction::UP);
-                } else {
-                    returned_legal_direction.push_back(TurnModelRouting::Direction::DOWN);
-                }
-            }
-            // the destination column is odd and there are more than 1 column left to destination
-            if (is_odd(compressed_dst_loc.y) || diff_y > 1) {
-                returned_legal_direction.push_back(TurnModelRouting::Direction::NORTH);
-            }
-        }
-    } else { // westbound message
-        returned_legal_direction.push_back(TurnModelRouting::Direction::SOUTH);
-        /* Since NW and SW turns are forbidden in odd columns, we allow
-         * moving along vertical axis only in even columns */
-        if (is_even(compressed_curr_loc.y)) {
-            if (diff_z > 0) {
-                returned_legal_direction.push_back(TurnModelRouting::Direction::UP);
-            } else {
-                returned_legal_direction.push_back(TurnModelRouting::Direction::DOWN);
-            }
-        }
-    }
-
-    /* The implementation below is a carbon copy of the Fig. 2 in the following paper
-     * Chiu GM. The odd-even turn model for adaptive routing.
-     * IEEE Transactions on parallel and distributed systems. 2000 Jul;11(7):729-38.
-     * In summary, the odd-even algorithm forbids NW and SW turns in odd columns,
-     * while EN and ES turns are forbidden in even columns.
-     */
-    if (diff_x == 0) { // the same column as the destination. Only north or south are allowed
-        if (diff_y > 0) {
-            returned_legal_direction.push_back(TurnModelRouting::Direction::NORTH);
-        } else {
-            returned_legal_direction.push_back(TurnModelRouting::Direction::SOUTH);
-        }
-    } else { // currently in a different column than the destination
-        if (diff_x > 0) { // eastbound message
-            if (diff_y == 0) { // already in the same row as the destination. Just move to the east
-                returned_legal_direction.push_back(TurnModelRouting::Direction::EAST);
-            } else {
-                /* Since EN and ES turns are forbidden in even columns, we move along the vertical
-                 * direction only in we are in an odd column. */
-                if (is_odd(compressed_curr_loc.x) || compressed_curr_loc.x == compressed_src_loc.x) {
-                    if (diff_y > 0) {
-                        returned_legal_direction.push_back(TurnModelRouting::Direction::NORTH);
-                    } else {
-                        returned_legal_direction.push_back(TurnModelRouting::Direction::SOUTH);
-                    }
-                }
-                // the destination column is odd and there are more than 1 column left to destination
-                if (is_odd(compressed_dst_loc.x) || diff_x != 1) {
-                    returned_legal_direction.push_back(TurnModelRouting::Direction::EAST);
-                }
-            }
-        } else { // westbound message
-            returned_legal_direction.push_back(TurnModelRouting::Direction::WEST);
-            /* Since NW and SW turns are forbidden in odd columns, we allow
-             * moving along vertical axis only in even columns */
-            if (is_even(compressed_curr_loc.x)) {
-                if (diff_y > 0) {
-                    returned_legal_direction.push_back(TurnModelRouting::Direction::NORTH);
-                } else {
-                    returned_legal_direction.push_back(TurnModelRouting::Direction::SOUTH);
-                }
-            }
-        }
+    if (noc_model.is_noc_3d()) {
+        route_3d(compressed_src_loc, compressed_curr_loc, compressed_dst_loc, prev_dir);
+    } else {    // 2D NoC
+        route_2d(compressed_src_loc, compressed_curr_loc, compressed_dst_loc);
     }
 
     return returned_legal_direction;
@@ -187,7 +93,6 @@ bool OddEvenRouting::is_turn_legal(const std::array<std::reference_wrapper<const
 
     // get the compressed location of the second NoC router
     auto compressed_2_loc = get_compressed_loc(compressed_noc_grid, t_pl_loc{router2_pos, 0}, num_layers)[router2_pos.layer_num];
-
 
     // going back to the first router is not allowed (180-degree turns)
     if (x1 == x3 && y1 == y3 && z1 == z3) {
@@ -235,4 +140,124 @@ bool OddEvenRouting::is_turn_legal(const std::array<std::reference_wrapper<const
     }
 
     return true;
+}
+
+void OddEvenRouting::route_2d(t_physical_tile_loc comp_src_loc,
+                              t_physical_tile_loc comp_curr_loc,
+                              t_physical_tile_loc comp_dst_loc) {
+
+    // calculate the distance between the current router and the destination
+    const int diff_x = comp_dst_loc.x - comp_curr_loc.x;
+    const int diff_y = comp_dst_loc.y - comp_curr_loc.y;
+
+    VTR_ASSERT_SAFE(comp_dst_loc.layer_num == comp_src_loc.layer_num);
+    VTR_ASSERT_SAFE(comp_dst_loc.layer_num == comp_curr_loc.layer_num);
+
+    if (diff_x == 0) { // the same column as the destination. Only north or south are allowed
+        if (diff_y > 0) {
+            returned_legal_direction.push_back(TurnModelRouting::Direction::NORTH);
+        } else {
+            returned_legal_direction.push_back(TurnModelRouting::Direction::SOUTH);
+        }
+    } else { // currently in a different column than the destination
+        if (diff_x > 0) { // eastbound message
+            if (diff_y == 0) { // already in the same row as the destination. Just move to the east
+                returned_legal_direction.push_back(TurnModelRouting::Direction::EAST);
+            } else {
+                /* Since EN and ES turns are forbidden in even columns, we move along the vertical
+                 * direction only in we are in an odd column. */
+                if (is_odd(comp_curr_loc.x) || comp_curr_loc.x == comp_src_loc.x) {
+                    if (diff_y > 0) {
+                        returned_legal_direction.push_back(TurnModelRouting::Direction::NORTH);
+                    } else {
+                        returned_legal_direction.push_back(TurnModelRouting::Direction::SOUTH);
+                    }
+                }
+                // the destination column is odd and there are more than 1 column left to destination
+                if (is_odd(comp_dst_loc.x) || diff_x != 1) {
+                    returned_legal_direction.push_back(TurnModelRouting::Direction::EAST);
+                }
+            }
+        } else { // westbound message
+            returned_legal_direction.push_back(TurnModelRouting::Direction::WEST);
+            /* Since NW and SW turns are forbidden in odd columns, we allow
+             * moving along vertical axis only in even columns */
+            if (is_even(comp_curr_loc.x)) {
+                if (diff_y > 0) {
+                    returned_legal_direction.push_back(TurnModelRouting::Direction::NORTH);
+                } else {
+                    returned_legal_direction.push_back(TurnModelRouting::Direction::SOUTH);
+                }
+            }
+        }
+    }
+
+}
+
+void OddEvenRouting::route_3d(t_physical_tile_loc comp_src_loc,
+                              t_physical_tile_loc comp_curr_loc,
+                              t_physical_tile_loc comp_dst_loc,
+                              TurnModelRouting::Direction prev_dir) {
+    // calculate the distance between the current router and the destination
+    const int diff_x = comp_dst_loc.x - comp_curr_loc.x;
+    const int diff_y = comp_dst_loc.y - comp_curr_loc.y;
+    const int diff_z = comp_dst_loc.layer_num - comp_curr_loc.layer_num;
+
+    if (diff_x > 0) {
+
+        if (is_even(comp_dst_loc.x) && (diff_x == 1) && (diff_y != 0 || diff_z != 0)) {
+            goto route_in_yz_plane;
+        }
+
+        if (is_even(comp_curr_loc.x) || (diff_y == 0 && diff_z == 0)) {
+            returned_legal_direction.push_back(TurnModelRouting::Direction::EAST);
+        }
+
+    } else if (diff_x < 0) {
+
+        if (is_even(comp_curr_loc.x) ||
+            (comp_curr_loc.y == comp_src_loc.y && comp_curr_loc.layer_num == comp_src_loc.layer_num)) {
+            returned_legal_direction.push_back(TurnModelRouting::Direction::WEST);
+        }
+    }
+
+
+    route_in_yz_plane :
+
+    if (diff_y == 0) { // the same column as the destination. Only north or south are allowed
+        if (diff_z > 0) {
+            returned_legal_direction.push_back(TurnModelRouting::Direction::UP);
+        } else {
+            returned_legal_direction.push_back(TurnModelRouting::Direction::DOWN);
+        }
+    } else if (diff_y > 0) { // eastbound message
+        if (diff_z == 0) { // already in the same row as the destination. Just move to the east
+            returned_legal_direction.push_back(TurnModelRouting::Direction::NORTH);
+        } else {
+            /* Since EN and ES turns are forbidden in even columns, we move along the vertical
+             * direction only in we are in an odd column. */
+            if (is_odd(comp_curr_loc.y) || comp_curr_loc.y == comp_src_loc.y) {
+                if (diff_z > 0) {
+                    returned_legal_direction.push_back(TurnModelRouting::Direction::UP);
+                } else {
+                    returned_legal_direction.push_back(TurnModelRouting::Direction::DOWN);
+                }
+            }
+            // the destination column is odd and there are more than 1 column left to destination
+            if (is_odd(comp_dst_loc.y) || diff_y > 1) {
+                returned_legal_direction.push_back(TurnModelRouting::Direction::NORTH);
+            }
+        }
+    } else { // westbound message
+        returned_legal_direction.push_back(TurnModelRouting::Direction::SOUTH);
+        /* Since NW and SW turns are forbidden in odd columns, we allow
+         * moving along vertical axis only in even columns */
+        if (is_even(comp_curr_loc.y)) {
+            if (diff_z > 0) {
+                returned_legal_direction.push_back(TurnModelRouting::Direction::UP);
+            } else {
+                returned_legal_direction.push_back(TurnModelRouting::Direction::DOWN);
+            }
+        }
+    }
 }
