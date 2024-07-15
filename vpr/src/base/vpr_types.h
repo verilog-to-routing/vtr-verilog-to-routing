@@ -1217,6 +1217,10 @@ enum class e_move_type;
  *   @param doPlacement
  *              True if placement is supposed to be done in the CAD flow.
  *              False if otherwise.
+ *   @param doAnalyticalPlacement
+ *              True if analytical placement is supposed to be done in the CAD
+ *              flow.
+ *              False if otherwise.
  *   @param place_constraint_expand
  *              Integer value that specifies how far to expand the floorplan
  *              region when printing out floorplan constraints based on
@@ -1245,6 +1249,7 @@ struct t_placer_opts {
     int seed;
     float td_place_exp_last;
     e_stage_action doPlacement;
+    e_stage_action doAnalyticalPlacement;
     float rlim_escape_fraction;
     std::string move_stats_file;
     int placement_saves_per_temperature;

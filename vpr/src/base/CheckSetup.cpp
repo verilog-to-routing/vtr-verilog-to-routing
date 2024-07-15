@@ -72,6 +72,28 @@ void CheckSetup(const t_packer_opts& PackerOpts,
                         NUM_PL_MOVE_TYPES);
     }
 
+    // Rules for doing analytical placement.
+    if (PlacerOpts.doAnalyticalPlacement) {
+        // Make sure that the --place option was not set.
+        if (PlacerOpts.doPlacement) {
+            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                            "Cannot perform both analytical and non-analytical placement.\n");
+        }
+        // Make sure that the --pack option was not set.
+        if (PackerOpts.doPacking) {
+            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                            "Analytical placement should skip packing.\n");
+        }
+
+        // TODO: Should check that read_vpr_constraint_file is non-empty or
+        //       check within analytical placement that the floorplanning has
+        //       some fixed blocks somewhere. Maybe we can live without fixed
+        //       blocks.
+
+        // FIXME: Should we enforce that the size of the device is fixed? Or is
+        //        that defined in the constraints file?
+    }
+
     if (RouterOpts.doRouting) {
         if (!Timing.timing_analysis_enabled
             && (DEMAND_ONLY != RouterOpts.base_cost_type && DEMAND_ONLY_NORMALIZED_LENGTH != RouterOpts.base_cost_type)) {

@@ -244,11 +244,13 @@ void SetupVPR(const t_options* Options,
     if (!Options->do_packing
         && !Options->do_legalize
         && !Options->do_placement
+        && !Options->do_analytical_placement
         && !Options->do_routing
         && !Options->do_analysis) {
         //run all stages if none specified
         PackerOpts->doPacking = STAGE_DO;
         PlacerOpts->doPlacement = STAGE_DO;
+        PlacerOpts->doAnalyticalPlacement = STAGE_SKIP; // AP not default.
         RouterOpts->doRouting = STAGE_DO;
         AnalysisOpts->doAnalysis = STAGE_AUTO; //Deferred until implementation status known
     } else {
@@ -274,6 +276,12 @@ void SetupVPR(const t_options* Options,
         if (Options->do_placement) {
             PackerOpts->doPacking = STAGE_LOAD;
             PlacerOpts->doPlacement = STAGE_DO;
+        }
+
+        if (Options->do_analytical_placement) {
+            PackerOpts->doPacking = STAGE_SKIP;
+            PlacerOpts->doPlacement = STAGE_SKIP;
+            PlacerOpts->doAnalyticalPlacement = STAGE_DO;
         }
 
         if (Options->do_packing) {

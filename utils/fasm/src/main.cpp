@@ -72,11 +72,12 @@ int main(int argc, const char **argv) {
         /* Read options, architecture, and circuit netlist */
         vpr_init(argc, argv, &Options, &vpr_setup, &Arch);
 
-        vpr_setup.PackerOpts.doPacking    = STAGE_LOAD;
-        vpr_setup.PlacerOpts.doPlacement  = STAGE_LOAD;
-        vpr_setup.RouterOpts.doRouting    = STAGE_LOAD;
+        vpr_setup.PackerOpts.doPacking              = STAGE_LOAD;
+        vpr_setup.PlacerOpts.doPlacement            = STAGE_LOAD;
+        vpr_setup.PlacerOpts.doAnalyticalPlacement  = STAGE_SKIP;
+        vpr_setup.RouterOpts.doRouting              = STAGE_LOAD;
         vpr_setup.RouterOpts.read_rr_edge_metadata = true;
-        vpr_setup.AnalysisOpts.doAnalysis = STAGE_SKIP;
+        vpr_setup.AnalysisOpts.doAnalysis           = STAGE_SKIP;
 
         bool flow_succeeded = false;
         flow_succeeded = vpr_flow(vpr_setup, Arch);

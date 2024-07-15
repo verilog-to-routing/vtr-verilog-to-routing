@@ -1,4 +1,5 @@
 #include <fstream>
+#include <tuple>
 
 #include "vtr_assert.h"
 #include "vtr_log.h"
@@ -18,6 +19,7 @@ static void ShowPackerOpts(const t_packer_opts& PackerOpts);
 static void ShowNetlistOpts(const t_netlist_opts& NetlistOpts);
 static void ShowPlacerOpts(const t_placer_opts& PlacerOpts,
                            const t_annealing_sched& AnnealSched);
+static void ShowAnalyticalPlacerOpts(const t_placer_opts& PlacerOpts);
 static void ShowRouterOpts(const t_router_opts& RouterOpts);
 static void ShowAnalysisOpts(const t_analysis_opts& AnalysisOpts);
 static void ShowNocOpts(const t_noc_opts& NocOpts);
@@ -41,6 +43,7 @@ void ShowSetup(const t_vpr_setup& vpr_setup) {
 
     VTR_LOG("Packer: %s\n", (vpr_setup.PackerOpts.doPacking ? "ENABLED" : "DISABLED"));
     VTR_LOG("Placer: %s\n", (vpr_setup.PlacerOpts.doPlacement ? "ENABLED" : "DISABLED"));
+    VTR_LOG("Analytical Placer: %s\n", (vpr_setup.PlacerOpts.doAnalyticalPlacement ? "ENABLED" : "DISABLED"));
     VTR_LOG("Router: %s\n", (vpr_setup.RouterOpts.doRouting ? "ENABLED" : "DISABLED"));
     VTR_LOG("Analysis: %s\n", (vpr_setup.AnalysisOpts.doAnalysis ? "ENABLED" : "DISABLED"));
     VTR_LOG("\n");
@@ -54,6 +57,9 @@ void ShowSetup(const t_vpr_setup& vpr_setup) {
     }
     if (vpr_setup.PlacerOpts.doPlacement) {
         ShowPlacerOpts(vpr_setup.PlacerOpts, vpr_setup.AnnealSched);
+    }
+    if (vpr_setup.PlacerOpts.doAnalyticalPlacement) {
+        ShowAnalyticalPlacerOpts(vpr_setup.PlacerOpts);
     }
     if (vpr_setup.RouterOpts.doRouting) {
         ShowRouterOpts(vpr_setup.RouterOpts);
@@ -606,6 +612,11 @@ static void ShowPlacerOpts(const t_placer_opts& PlacerOpts,
         ShowAnnealSched(AnnealSched);
     }
     VTR_LOG("\n");
+}
+
+static void ShowAnalyticalPlacerOpts(const t_placer_opts& PlacerOpts) {
+    std::ignore = PlacerOpts;
+    // Currently nothing to show, but will happen eventually.
 }
 
 static void ShowNetlistOpts(const t_netlist_opts& NetlistOpts) {
