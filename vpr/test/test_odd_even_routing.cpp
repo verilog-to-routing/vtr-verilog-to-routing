@@ -37,6 +37,24 @@ void compare_routes(const std::vector<NocLink>& golden_path,
     }
 }
 
+
+void check_turn_legality(const vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>>& traffic_flow_routes,
+                         const NocStorage& noc_model,
+                         const TurnModelRouting& routing_algorithm) {
+
+    for (const auto& traffic_flow_route : traffic_flow_routes) {
+        for (size_t i = 0; i < traffic_flow_route.size() - 1; i++) {
+            const NocLink& noc_link1 = noc_model.get_single_noc_link(traffic_flow_route[i]);
+            const NocLink& noc_link2 = noc_model.get_single_noc_link(traffic_flow_route[i + 1]);
+            REQUIRE(noc_link1.get_sink_router() == noc_link2.get_source_router());
+            const NocRouter& router_1 = noc_model.get_single_noc_router(noc_link1.get_source_router());
+            const NocRouter& router_2 = noc_model.get_single_noc_router(noc_link1.get_sink_router());
+            const NocRouter& router_3 = noc_model.get_single_noc_router(noc_link2.get_sink_router());
+            REQUIRE(routing_algorithm.is_turn_legal({router_1, router_2, router_3}, noc_model) == true);
+        }
+    }
+}
+
 TEST_CASE("test_route_flow", "[vpr_noc_odd_even_routing]") {
     /* Creating a test FPGA device below. The NoC itself will be a 10x10 mesh where
      * they will span over a grid size of 10x10. So this FPGA will only consist of NoC routers */
@@ -207,7 +225,7 @@ TEST_CASE("test_route_flow", "[vpr_noc_odd_even_routing]") {
         compare_routes(golden_path, found_path, noc_model);
     }
 
-    SECTION("To be named ") {
+    SECTION("Test case where multiple traffic flows are router, and routes are checked for turn legality and deadlock freedom.") {
         std::random_device device;
         std::mt19937 rand_num_gen(device());
         std::uniform_int_distribution<std::mt19937::result_type> dist(0,  99);
@@ -242,9 +260,8 @@ TEST_CASE("test_route_flow", "[vpr_noc_odd_even_routing]") {
 
         REQUIRE(cdg.has_cycles() == false);
 
+        check_turn_legality(traffic_flow_routes, noc_model, routing_algorithm);
     }
-
-
 }
 
 }

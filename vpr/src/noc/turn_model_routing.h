@@ -102,6 +102,19 @@ class TurnModelRouting : public NocRouting {
      */
     std::vector<std::pair<NocLinkId, NocLinkId>> get_all_illegal_turns(const NocStorage& noc_model) const;
 
+    /**
+     * @brief Determines whether a turn specified by 3 NoC routers visited in the turn
+     * is legal. Turn model routing algorithms forbid specific turns in the mesh topology
+     * to guarantee deadlock-freedom. In addition to turns forbidden by the turn model algorithm,
+     * 180-degree turns are also illegal.
+     *
+     * @param noc_routers Three NoC routers visited in a turn.
+     * @param noc_is_3d Specifies whether the NoC is 2D or 3D.
+     * @return True if the turn is legal, otherwise false.
+     */
+    virtual bool is_turn_legal(const std::array<std::reference_wrapper<const NocRouter>, 3>& noc_routers,
+                               const NocStorage& noc_model) const = 0;
+
   protected:
     /**
      * @brief This enum describes the all the possible
@@ -253,19 +266,6 @@ class TurnModelRouting : public NocRouting {
                                                               NocRouterId curr_router_id,
                                                               NocTrafficFlowId traffic_flow_id,
                                                               const NocStorage& noc_model);
-
-    /**
-     * @brief Determines whether a turn specified by 3 NoC routers visited in the turn
-     * is legal. Turn model routing algorithms forbid specific turns in the mesh topology
-     * to guarantee deadlock-freedom. In addition to turns forbidden by the turn model algorithm,
-     * 180-degree turns are also illegal.
-     *
-     * @param noc_routers Three NoC routers visited in a turn.
-     * @param noc_is_3d Specifies whether the NoC is 2D or 3D.
-     * @return True if the turn is legal, otherwise false.
-     */
-    virtual bool is_turn_legal(const std::array<std::reference_wrapper<const NocRouter>, 3>& noc_routers,
-                               const NocStorage& noc_model) const = 0;
 
   protected:
     // get_legal_directions() return a reference to this vector to avoid allocating a new vector
