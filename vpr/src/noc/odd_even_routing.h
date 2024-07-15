@@ -18,8 +18,10 @@
  * in odd columns, while EN and ES turns are not allowed in even columns.
  */
 
-class OddEvenRouting : public TurnModelRouting{
+class OddEvenRouting : public TurnModelRouting {
   public:
+    OddEvenRouting(const NocStorage& noc_model);
+
     ~OddEvenRouting() override;
 
   private:
@@ -31,7 +33,7 @@ class OddEvenRouting : public TurnModelRouting{
                                                                          const NocStorage& noc_model) override;
 
     bool is_turn_legal(const std::array<std::reference_wrapper<const NocRouter>, 3>& noc_routers,
-                       bool noc_is_3d) const override;
+                       const NocStorage& noc_model) const override;
 
     inline void route_2d(t_physical_tile_loc comp_src_loc,
                          t_physical_tile_loc comp_curr_loc,
@@ -56,6 +58,9 @@ class OddEvenRouting : public TurnModelRouting{
      * @return True if the passed number of even, otherwise false.
      */
     static inline bool is_even(int number);
+
+  private:
+    vtr::vector<NocRouterId, t_physical_tile_loc> compressed_noc_locs_;
 };
 
 #endif //VTR_ODD_EVEN_ROUTING_H

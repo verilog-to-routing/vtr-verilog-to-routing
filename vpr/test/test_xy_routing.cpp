@@ -84,6 +84,8 @@ TEST_CASE("test_route_flow", "[vpr_noc_xy_routing]") {
         }
     }
 
+    noc_model.finished_building_noc();
+
     // creating the XY routing object
     XYRouting routing_algorithm;
 
@@ -274,6 +276,8 @@ TEST_CASE("test_route_flow when it fails in a mesh topology.", "[vpr_noc_xy_rout
         }
     }
 
+    noc_model.finished_building_noc();
+
     // creating the XY routing object
     XYRouting routing_algorithm;
 
@@ -367,6 +371,8 @@ TEST_CASE("test_route_flow when it fails in a non mesh topology.", "[vpr_noc_xy_
     noc_model.add_link((NocRouterId)0, (NocRouterId)3, DUMMY_BANDWIDTH, DUMMY_LATENCY);
     noc_model.add_link((NocRouterId)3, (NocRouterId)0, DUMMY_BANDWIDTH, DUMMY_LATENCY);
     noc_model.add_link((NocRouterId)2, (NocRouterId)1, DUMMY_BANDWIDTH, DUMMY_LATENCY);
+
+    noc_model.finished_building_noc();
 
     // now create the start and the destination routers of the route we want to test
     auto start_router_id = NocRouterId(3);

@@ -42,7 +42,7 @@ class NegativeFirstRouting : public TurnModelRouting {
                                                                          const NocStorage& noc_model) override;
 
     bool is_turn_legal(const std::array<std::reference_wrapper<const NocRouter>, 3>& noc_routers,
-                       bool noc_is_3d) const override;
+                       const NocStorage& noc_model) const override;
 };
 
 #endif //VTR_NEGATIVE_FIRST_ROUTING_H

@@ -56,10 +56,10 @@ void TurnModelRouting::route_flow(NocRouterId src_router_id,
     // The route is terminated when we reach at the destination router
     while (curr_router_id != dst_router_id) {
         // get the current router (the last one added to the route)
-        const auto& curr_router = noc_model.get_single_noc_router(curr_router_id);
+        const NocRouter& curr_router = noc_model.get_single_noc_router(curr_router_id);
 
         // get the physical location of the current router
-        auto curr_router_pos = curr_router.get_router_physical_location();
+        t_physical_tile_loc curr_router_pos = curr_router.get_router_physical_location();
 
         // get all directions that moves us closer to the destination router
         const auto& legal_directions = get_legal_directions(src_router_id, curr_router_id, dst_router_id, prev_dir, noc_model);
@@ -263,8 +263,6 @@ TurnModelRouting::Direction TurnModelRouting::select_direction_other_than(const 
 std::vector<std::pair<NocLinkId, NocLinkId>> TurnModelRouting::get_all_illegal_turns(const NocStorage& noc_model) const {
     std::vector<std::pair<NocLinkId, NocLinkId>> illegal_turns;
 
-    const bool noc_is_3d = noc_model.is_noc_3d();
-
     /* Iterate over all sets of three routers that can be traversed in sequence.
      * Check if traversing these three routes involves any turns, and if so,
      * check if the resulting turn is illegal under the restrictions of a turn model
@@ -287,7 +285,7 @@ std::vector<std::pair<NocLinkId, NocLinkId>> TurnModelRouting::get_all_illegal_t
                 const NocLink& second_noc_link = noc_model.get_single_noc_link(second_noc_link_id);
                 const NocRouterId third_noc_router_id = second_noc_link.get_sink_router();
                 const NocRouter& third_noc_router = noc_model.get_single_noc_router(third_noc_router_id);
-                if (!is_turn_legal({noc_router, second_noc_router, third_noc_router}, noc_is_3d)) {
+                if (!is_turn_legal({noc_router, second_noc_router, third_noc_router}, noc_model)) {
                     illegal_turns.emplace_back(first_noc_link_id, second_noc_link_id);
                 }
             }

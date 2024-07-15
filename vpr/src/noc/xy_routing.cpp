@@ -57,7 +57,7 @@ TurnModelRouting::Direction XYRouting::select_next_direction(const std::vector<T
 }
 
 bool XYRouting::is_turn_legal(const std::array<std::reference_wrapper<const NocRouter>, 3>& noc_routers,
-                              bool /*noc_is_3d*/) const {
+                              const NocStorage& /*noc_model*/) const {
     const auto [x1, y1, z1] = noc_routers[0].get().get_router_physical_location();
     const auto [x2, y2, z2] = noc_routers[1].get().get_router_physical_location();
     const auto [x3, y3, z3] = noc_routers[2].get().get_router_physical_location();

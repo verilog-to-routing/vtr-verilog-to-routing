@@ -63,7 +63,7 @@ const std::vector<TurnModelRouting::Direction>& NorthLastRouting::get_legal_dire
 }
 
 bool NorthLastRouting::is_turn_legal(const std::array<std::reference_wrapper<const NocRouter>, 3>& noc_routers,
-                                     bool noc_is_3d) const {
+                                     const NocStorage& noc_model) const {
     const auto [x1, y1, z1] = noc_routers[0].get().get_router_physical_location();
     const auto [x2, y2, z2] = noc_routers[1].get().get_router_physical_location();
     const auto [x3, y3, z3] = noc_routers[2].get().get_router_physical_location();
@@ -79,7 +79,7 @@ bool NorthLastRouting::is_turn_legal(const std::array<std::reference_wrapper<con
     }
 
     // In north-last routing algorithm, these 6 90-degree turns are prohibited.
-    if (noc_is_3d) {
+    if (noc_model.is_noc_3d()) {
         if ((z2 > z1 && x3 < x2) || (z2 > z1 && x3 > x2) || (z2 > z1 && y3 < y2) ||
             (y2 > y1 && z3 < z2) || (y2 > y1 && x3 < x2) || (y2 > y1 && x3 > x2)) {
             return false;

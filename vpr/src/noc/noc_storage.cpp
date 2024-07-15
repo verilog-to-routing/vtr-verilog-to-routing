@@ -64,7 +64,7 @@ NocRouter& NocStorage::get_single_mutable_noc_router(NocRouterId id) {
 }
 
 // get link properties
-    const NocLink& NocStorage::get_single_noc_link(NocLinkId id) const {
+const NocLink& NocStorage::get_single_noc_link(NocLinkId id) const {
     return link_storage[id];
 }
 
@@ -234,19 +234,19 @@ void NocStorage::finished_building_noc() {
      */
 
     auto router_latency_it = std::adjacent_find(router_storage.begin(), router_storage.end(),
-                                                [](const NocRouter& a, const NocRouter& b) {
+                                                [](const NocRouter& a, const NocRouter& b) -> bool {
                                                     return a.get_latency() != b.get_latency();
                                                 });
     detailed_router_latency_ = (router_latency_it != router_storage.end());
 
     auto link_latency_it = std::adjacent_find(link_storage.begin(), link_storage.end(),
-                                              [](const NocLink& a, const NocLink& b) {
+                                              [](const NocLink& a, const NocLink& b) -> bool {
                                                   return a.get_latency() != b.get_latency();
                                               });
     detailed_link_latency_ = (link_latency_it != link_storage.end());
 
     auto router_layer_it = std::adjacent_find(router_storage.begin(), router_storage.end(),
-                                              [](const NocRouter& a, const NocRouter& b) {
+                                              [](const NocRouter& a, const NocRouter& b) -> bool {
                                                   return a.get_router_layer_position() != b.get_router_layer_position();
                                               });
 

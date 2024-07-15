@@ -265,7 +265,7 @@ class TurnModelRouting : public NocRouting {
      * @return True if the turn is legal, otherwise false.
      */
     virtual bool is_turn_legal(const std::array<std::reference_wrapper<const NocRouter>, 3>& noc_routers,
-                               bool noc_is_3d) const = 0;
+                               const NocStorage& noc_model) const = 0;
 
   protected:
     // get_legal_directions() return a reference to this vector to avoid allocating a new vector

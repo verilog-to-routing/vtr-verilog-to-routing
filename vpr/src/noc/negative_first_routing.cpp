@@ -73,7 +73,7 @@ const std::vector<TurnModelRouting::Direction>& NegativeFirstRouting::get_legal_
 }
 
 bool NegativeFirstRouting::is_turn_legal(const std::array<std::reference_wrapper<const NocRouter>, 3>& noc_routers,
-                                         bool noc_is_3d) const {
+                                         const NocStorage& noc_model) const {
     const auto[x1, y1, z1] = noc_routers[0].get().get_router_physical_location();
     const auto[x2, y2, z2] = noc_routers[1].get().get_router_physical_location();
     const auto[x3, y3, z3] = noc_routers[2].get().get_router_physical_location();
@@ -88,7 +88,7 @@ bool NegativeFirstRouting::is_turn_legal(const std::array<std::reference_wrapper
     }
 
     // In negative-first routing algorithm, these 6 90-degree turns are prohibited.
-    if (noc_is_3d) {
+    if (noc_model.is_noc_3d()) {
         if ((x2 > x1 && y3 < y2) || (y2 > y1 && x3 < x2) || (z2 > z1 && x3 < x2) ||
             (x2 > x1 && z3 < z2) || (z2 > z1 && y3 < y2) || (y2 > y1 && z3 < z2)) {
             return false;
