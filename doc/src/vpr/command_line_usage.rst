@@ -98,8 +98,7 @@ VPR runs all stages of (pack, place, route, and analysis) if none of :option:`--
 .. option:: --legalize
 
     Reconstruct a clustering and placement solution from an input flat placement file.
-    Must be used with :option:`--flat_place_file <file>'.
-    Use of this option supercedes option::`--pack`.
+    Use of this option supercedes :option:`--pack`.
 
     **Default:** ``off``
 
