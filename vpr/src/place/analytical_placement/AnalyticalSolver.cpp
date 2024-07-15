@@ -9,16 +9,12 @@
 #include <limits>
 #include <memory>
 #include <random>
-#include <unordered_set>
 #include <utility>
 #include <vector>
 #include "PartialPlacement.h"
-#include "atom_netlist.h"
 #include "globals.h"
-#include "partition_region.h"
 #include "vpr_context.h"
 #include "vpr_error.h"
-#include "vpr_types.h"
 #include "vtr_assert.h"
 
 std::unique_ptr<AnalyticalSolver> make_analytical_solver(e_analytical_solver solver_type) {
@@ -96,11 +92,9 @@ static inline void populate_hybrid_matrix(Eigen::SparseMatrix<double> &A_sparse,
                                           Eigen::VectorXd &b_y,
                                           PartialPlacement& p_placement) {
     size_t num_star_nodes = 0;
-    const AtomNetlist& netlist = p_placement.atom_netlist;
-    for (AtomNetId net_id : netlist.nets()) {
-        if (p_placement.net_is_ignored_for_placement(net_id))
-            continue;
-        if (netlist.net_pins(net_id).size() > 3)
+    for (const std::vector<size_t> &net : p_placement.ap_netlist) {
+        size_t num_pins = net.size();
+        if (num_pins > 3)
             num_star_nodes++;
     }
 
@@ -109,28 +103,19 @@ static inline void populate_hybrid_matrix(Eigen::SparseMatrix<double> &A_sparse,
     b_x = Eigen::VectorXd::Zero(num_moveable_nodes + num_star_nodes);
     b_y = Eigen::VectorXd::Zero(num_moveable_nodes + num_star_nodes);
 
-    const AtomContext& atom_ctx = g_vpr_ctx.atom();
-
+    size_t num_nets = p_placement.ap_netlist.size();
     std::vector<Eigen::Triplet<double>> tripletList;
-    tripletList.reserve(num_moveable_nodes * netlist.nets().size());
+    tripletList.reserve(num_moveable_nodes * num_nets);
 
     size_t star_node_offset = 0;
-    // FIXME: Instead of iterating over the whole nelist and reverse looking up
-    //        it may make more sense to pre-compute the netlist.
-    for (AtomNetId net_id : netlist.nets()) {
-        if (p_placement.net_is_ignored_for_placement(net_id))
-            continue;
-        int num_pins = netlist.net_pins(net_id).size();
+    for (const std::vector<size_t> &net : p_placement.ap_netlist) {
+        size_t num_pins = net.size();
         VTR_ASSERT(num_pins > 1);
         if (num_pins > 3) {
-            // FIXME: THIS WAS DIRECTLY COPIED FROM THE STAR FORMULATION. MOVE TO OWN FUNCTION.
-            //          (with the exeption of the star node offset).
             // Using the weight from FastPlace
             double w = static_cast<double>(num_pins) / static_cast<double>(num_pins - 1);
             size_t star_node_id = num_moveable_nodes + star_node_offset;
-            for (AtomPinId pin_id : netlist.net_pins(net_id)) {
-                AtomBlockId blk_id = netlist.pin_block(pin_id);
-                size_t node_id = p_placement.get_node_id_from_blk(blk_id, atom_ctx.atom_molecules);
+            for (size_t node_id : net) {
                 // Note: the star node is always moveable
                 if (p_placement.is_moveable_node(node_id)) {
                     tripletList.emplace_back(star_node_id, star_node_id, w);
@@ -145,19 +130,13 @@ static inline void populate_hybrid_matrix(Eigen::SparseMatrix<double> &A_sparse,
             }
             star_node_offset++;
         } else {
-            // FIXME: THIS WAS DIRECTLY COPIED FROM THE CLIQUE FORMULATION. MOVE TO OWN FUNCTION.
             // Using the weight from FastPlace
             double w = 1.0 / static_cast<double>(num_pins - 1);
 
-            for (int ipin = 0; ipin < num_pins; ipin++) {
-                // FIXME: Is it possible for two pins to be connected to the same block?
-                //        I am wondering if this doesnt matter because it would appear as tho
-                //        this block really wants to be connected lol.
-                AtomBlockId first_block_id = netlist.net_pin_block(net_id, ipin);
-                size_t first_node_id = p_placement.get_node_id_from_blk(first_block_id, atom_ctx.atom_molecules);
-                for (int jpin = ipin + 1; jpin < num_pins; jpin++) {
-                    AtomBlockId second_block_id = netlist.net_pin_block(net_id, jpin);
-                    size_t second_node_id = p_placement.get_node_id_from_blk(second_block_id, atom_ctx.atom_molecules);
+            for (size_t inode_idx = 0; inode_idx < num_pins; inode_idx++) {
+                size_t first_node_id = net[inode_idx];
+                for (size_t jnode_idx = inode_idx + 1; jnode_idx < num_pins; jnode_idx++) {
+                    size_t second_node_id = net[jnode_idx];
                     // Make sure that the first node is moveable. This makes creating the connection easier.
                     if (!p_placement.is_moveable_node(first_node_id)) {
                         if (!p_placement.is_moveable_node(second_node_id)) {
@@ -268,7 +247,7 @@ void B2BSolver::initialize_placement_least_dense(PartialPlacement &p_placement) 
 }
 
 // This function return the two nodes on the bound of a netlist, (max, min)
-std::pair<size_t, size_t> B2BSolver::boundNode(std::vector<size_t>& node_ids, std::vector<double>& node_locs){
+std::pair<size_t, size_t> B2BSolver::boundNode(const std::vector<size_t>& node_ids, const std::vector<double>& node_locs){
     auto compare = [&node_locs](size_t a, size_t b) {
         return node_locs[a] < node_locs[b];
     };
@@ -279,54 +258,36 @@ std::pair<size_t, size_t> B2BSolver::boundNode(std::vector<size_t>& node_ids, st
 }
 
 void B2BSolver::populate_matrix(PartialPlacement &p_placement) {
-    const AtomContext& atom_ctx = g_vpr_ctx.atom();
-    const AtomNetlist& netlist = p_placement.atom_netlist;
     // Resetting As bs
     A_sparse_x = Eigen::SparseMatrix<double>(A_sparse_x.rows(), A_sparse_x.cols());
     A_sparse_y = Eigen::SparseMatrix<double>(A_sparse_y.rows(), A_sparse_y.cols());
     // A_sparse_x.setZero();
     // A_sparse_y.setZero();
+    size_t num_nets = p_placement.ap_netlist.size();
     std::vector<Eigen::Triplet<double>> tripletList_x;
-    tripletList_x.reserve(p_placement.num_moveable_nodes * netlist.nets().size());
+    tripletList_x.reserve(p_placement.num_moveable_nodes * num_nets);
     std::vector<Eigen::Triplet<double>> tripletList_y;
-    tripletList_y.reserve(p_placement.num_moveable_nodes * netlist.nets().size());
+    tripletList_y.reserve(p_placement.num_moveable_nodes * num_nets);
     b_x = Eigen::VectorXd::Zero(p_placement.num_moveable_nodes);
     b_y = Eigen::VectorXd::Zero(p_placement.num_moveable_nodes);
 
-    for (AtomNetId net_id : netlist.nets()) {
-        if (p_placement.net_is_ignored_for_placement(net_id))
-            continue;
-
-        int num_pins = netlist.net_pins(net_id).size();
+    for (const std::vector<size_t> &net : p_placement.ap_netlist) {
+        int num_pins = net.size();
         VTR_ASSERT(num_pins > 1 && "net least has at least 2 pins");
-        
-        std::vector<size_t> node_ids;
-        for (AtomPinId pin_id : netlist.net_pins(net_id)) {
-            AtomBlockId blk_id = netlist.pin_block(pin_id);
-            size_t node_id = p_placement.get_node_id_from_blk(blk_id, atom_ctx.atom_molecules);
-            node_ids.push_back(node_id);
-        }
-        // remove duplicated node, they are there becaues of prepacked molecules.
-        // FIXME: duplicate exists because atoms are packed in to molecules so some edges are now hidden.
-        // We can create our own netlist class to resolve this problem.
-        std::set<size_t> node_ids_set(node_ids.begin(), node_ids.end());
-        std::vector<size_t> node_ids_no_duplicate(node_ids_set.begin(), node_ids_set.end());
-        
-        if (node_ids_no_duplicate.size() <= 1){
-            continue;
-        }
-        // TODO: do this in a for loop instead of creating vectors
-        auto [maxXId, minXId] = boundNode(node_ids_no_duplicate, p_placement.node_loc_x);
-        auto [maxYId, minYId] = boundNode(node_ids_no_duplicate, p_placement.node_loc_y);
+
+        // TODO: do this in a single for loop. Will likely be more efficient than
+        //       iterating 4 times.
+        auto [maxXId, minXId] = boundNode(net, p_placement.node_loc_x);
+        auto [maxYId, minYId] = boundNode(net, p_placement.node_loc_y);
         // assign arbitrary node as bound node when they are all equal
         // TODO: although deterministic, investigate other ways to break ties.
         if (maxXId == minXId) {
-            maxXId = node_ids_no_duplicate[0];
-            minXId = node_ids_no_duplicate[1];
+            maxXId = net[0];
+            minXId = net[1];
         }
         if (maxYId == minYId) {
-            maxYId = node_ids_no_duplicate[0];
-            minYId = node_ids_no_duplicate[1];
+            maxYId = net[0];
+            minYId = net[1];
         }
         auto add_node = [&](size_t first_node_id, size_t second_node_id, unsigned num_nodes, bool is_x){
             if (!p_placement.is_moveable_node(first_node_id)) {
@@ -366,20 +327,19 @@ void B2BSolver::populate_matrix(PartialPlacement &p_placement) {
                 }
             }
         };
-        // TODO: when adding custom netlist, also modify here.
-        size_t num_nodes = node_ids_no_duplicate.size();
-        for (size_t node_id = 0; node_id < num_nodes; node_id++) {
+
+        for (size_t node_id : net) {
             if (node_id != maxXId && node_id != minXId) {
-                add_node(node_id, maxXId, num_nodes, true);
-                add_node(node_id, minXId, num_nodes, true);
+                add_node(node_id, maxXId, num_pins, true);
+                add_node(node_id, minXId, num_pins, true);
             } 
             if (node_id != maxYId && node_id != minYId) {
-                add_node(node_id, maxYId, num_nodes, false);
-                add_node(node_id, minYId, num_nodes, false);
+                add_node(node_id, maxYId, num_pins, false);
+                add_node(node_id, minYId, num_pins, false);
             } 
         }
-        add_node(maxXId, minXId, num_nodes, true);
-        add_node(maxYId, minYId, num_nodes, false);
+        add_node(maxXId, minXId, num_pins, true);
+        add_node(maxYId, minYId, num_pins, false);
     }
     A_sparse_x.setFromTriplets(tripletList_x.begin(), tripletList_x.end());
     A_sparse_y.setFromTriplets(tripletList_y.begin(), tripletList_y.end());
@@ -388,8 +348,11 @@ void B2BSolver::populate_matrix(PartialPlacement &p_placement) {
 // This function adds anchors for legalized solution. Anchors are treated as fixed node,
 // each connecting to a movable node. Number of nodes in a anchor net is always 2.
 void B2BSolver::populate_matrix_anchor(PartialPlacement& p_placement, unsigned iteration) {
-    double coeff_pseudo_anchor = 0.001 * std::exp((double)iteration/29.0);
+    // double coeff_pseudo_anchor = 0.001 * std::exp((double)iteration/29.0);
     // double coeff_pseudo_anchor = std::exp((double)iteration/1.0);
+
+    // Using alpha from the SimPL paper
+    double coeff_pseudo_anchor = 0.01 * (1.0 + static_cast<double>(iteration));
     for (size_t i = 0; i < p_placement.num_moveable_nodes; i++){
         // Anchor node are always 2 pins.
         double pseudo_w_x = coeff_pseudo_anchor*2.0/std::max(std::abs(p_placement.node_loc_x[i] - node_loc_x_legalized[i]), epsilon);

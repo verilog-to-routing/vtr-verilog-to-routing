@@ -20,12 +20,16 @@ PartialPlacement::PartialPlacement(const AtomNetlist& netlist,
 
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
 
+    std::vector<std::unordered_set<t_pack_molecule*>> interesting_nets;
+    interesting_nets.reserve(atom_netlist.nets().size());
+
     // Collect the unique moveable and fixed molecules from the netlist.
     std::unordered_set<t_pack_molecule*> moveable_mols;
     std::unordered_set<t_pack_molecule*> fixed_mols;
     for (const AtomNetId& net_id : atom_netlist.nets()) {
         if (net_is_ignored_for_placement(net_id))
             continue;
+        std::unordered_set<t_pack_molecule*> net_mols;
         for (const AtomPinId& pin_id : atom_netlist.net_pins(net_id)) {
             AtomBlockId blk_id = atom_netlist.pin_block(pin_id);
             // Get the molecule for this block.
@@ -35,7 +39,9 @@ PartialPlacement::PartialPlacement(const AtomNetlist& netlist,
                 fixed_mols.insert(mol);
             else
                 moveable_mols.insert(mol);
+            net_mols.insert(mol);
         }
+        interesting_nets.push_back(std::move(net_mols));
     }
 
     // Ensure that no fixed molecules are moveable (safety check)
@@ -74,6 +80,35 @@ PartialPlacement::PartialPlacement(const AtomNetlist& netlist,
         node_loc_y[fixed_node_id] = fixed_blocks_y[fixed_blk_id];
     }
 
+    // Create the AP Netlist
+    // FIXME: We should experiment with having duplicate pins! It is possible
+    //        that a block would have multiple pin inputs connected to the same
+    //        net. This should give that block more power...
+    for (const std::unordered_set<t_pack_molecule*> &mols : interesting_nets) {
+        // If the number of molecules in a net is 1 or less, we do not care.
+        // This can happen when a LUT + FF are packed together and now the
+        // net connects to itself.
+        if (mols.size() <= 1)
+            continue;
+        // If the molecules connected by a net are all fixed, then we do not care
+        // about this net.
+        bool is_all_fixed = true;
+        for (t_pack_molecule *mol : mols) {
+            if (moveable_mols.find(mol) != moveable_mols.end()) {
+                is_all_fixed = false;
+                break;
+            }
+        }
+        if (is_all_fixed)
+            continue;
+        // Insert these nodes into the AP Netlist.
+        std::vector<size_t> net_nodes;
+        net_nodes.reserve(mols.size());
+        for (t_pack_molecule *mol : mols) {
+            net_nodes.push_back(mol_to_node_id[mol]);
+        }
+        ap_netlist.emplace_back(std::move(net_nodes));
+    }
 }
 
 double PartialPlacement::get_HPWL() {
@@ -83,6 +118,11 @@ double PartialPlacement::get_HPWL() {
         // FIXME: Confirm if this should be here.
         if (net_is_ignored_for_placement(atom_netlist, net_id))
             continue;
+        // FIXME: This is not necessarily correct for solving HPWL. The x and y
+        //        positions should be clamped to the grid coordinates.
+        //        However, this may make it harder to debug since we lose the
+        //        granualirty of the HPWL. Perhaps create an option to get a
+        //        clamped / unclamped version.
         double min_x = std::numeric_limits<double>::max();
         double max_x = std::numeric_limits<double>::lowest();
         double min_y = std::numeric_limits<double>::max();

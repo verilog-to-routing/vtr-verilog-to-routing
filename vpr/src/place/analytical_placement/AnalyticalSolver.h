@@ -45,7 +45,7 @@ class B2BSolver : public AnalyticalSolver {
         void initialize_placement_least_dense(PartialPlacement &p_placement);
         void populate_matrix(PartialPlacement &p_placement);
         void populate_matrix_anchor(PartialPlacement& p_placement, unsigned iteration);
-        std::pair<size_t, size_t> boundNode(std::vector<size_t> &node_id, std::vector<double> &node_loc);
+        std::pair<size_t, size_t> boundNode(const std::vector<size_t> &node_id, const std::vector<double> &node_loc);
         
         static inline const double epsilon = 1e-6;
         static inline const unsigned inner_iterations = 30;

@@ -64,9 +64,21 @@ public:
         VTR_LOG("Number of moveable nodes: %zu\n", num_moveable_nodes);
         VTR_LOG("Number of fixed nodes: %zu\n", num_nodes - num_moveable_nodes);
         VTR_LOG("Number of total nodes: %zu\n", num_nodes);
+        VTR_LOG("Number of AP nets: %zu\n", ap_netlist.size());
     }
 
     const AtomNetlist& atom_netlist;
+    // Analytical Placement-specific Netlist
+    // This is a netlist containing the nets that AP cares about, using the node
+    // type that AP uses. It also removes duplicate nodes from the net. This
+    // will not include all nets.
+    // Nets which are ignored:
+    //  - nets "ignored for placement", see net_is_ignored_for_placement
+    //  - nets that only connect to 1 (or less) nodes
+    //  - nets that do not contain any moveable nodes
+    // TODO: Eventually we should use the actual Netlist class to contain this
+    // information. vector of vectors is inefficient and may be dangerous.
+    std::vector<std::vector<size_t>> ap_netlist;
     std::map<t_pack_molecule*, size_t> mol_to_node_id;
     std::vector<t_pack_molecule*> node_id_to_mol;
     std::vector<double> node_loc_x;

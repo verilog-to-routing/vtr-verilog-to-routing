@@ -80,14 +80,14 @@ void run_analytical_placement_flow() {
 
     // Set up the partial placement object
     PartialPlacement p_placement = PartialPlacement(atom_netlist, fixed_blocks, fixed_blocks_x, fixed_blocks_y);
+    p_placement.print_stats();
     // Solve the QP problem
     std::unique_ptr<AnalyticalSolver> solver = make_analytical_solver(e_analytical_solver::B2B);
     // This for loop always starts at iteration 0
-    for (unsigned iteration = 0; iteration < 300; iteration++) {
+    for (unsigned iteration = 0; iteration < 100; iteration++) {
         VTR_LOG("iteration: %ld\n", iteration);
         solver->solve(iteration, p_placement);
         VTR_ASSERT(p_placement.is_valid_partial_placement() && "placement not valid after solve!");
-        p_placement.print_stats();
         double post_solve_hpwl = p_placement.get_HPWL();
         VTR_LOG("HPWL: %f\n", post_solve_hpwl);
         // Partial legalization using cut spreading algorithm
@@ -95,10 +95,10 @@ void run_analytical_placement_flow() {
         VTR_ASSERT(p_placement.is_valid_partial_placement() && "placement not valid after legalize!");
         double post_legalize_hpwl = p_placement.get_HPWL();
         VTR_LOG("Post-Legalized HPWL: %f\n", post_legalize_hpwl);
-        // if(std::abs(post_solve_hpwl - post_legalize_hpwl) < 20){
-        //     VTR_LOG("ended because of convergence\n");
-        //     break;
-        // }
+        if(std::abs(post_solve_hpwl - post_legalize_hpwl) < 20){
+            VTR_LOG("ended because of convergence\n");
+            break;
+        }
         // p_placement.unicode_art();
     }
     FullLegalizer().legalize(p_placement);
