@@ -144,7 +144,8 @@ bool OddEvenRouting::is_turn_legal(const std::array<std::reference_wrapper<const
 
 void OddEvenRouting::route_2d(t_physical_tile_loc comp_src_loc,
                               t_physical_tile_loc comp_curr_loc,
-                              t_physical_tile_loc comp_dst_loc) {
+                              t_physical_tile_loc comp_dst_loc,
+                              TurnModelRouting::Direction prev_dir) {
 
     // calculate the distance between the current router and the destination
     const int diff_x = comp_dst_loc.x - comp_curr_loc.x;
@@ -159,38 +160,37 @@ void OddEvenRouting::route_2d(t_physical_tile_loc comp_src_loc,
         } else {
             returned_legal_direction.push_back(TurnModelRouting::Direction::SOUTH);
         }
-    } else { // currently in a different column than the destination
-        if (diff_x > 0) { // eastbound message
-            if (diff_y == 0) { // already in the same row as the destination. Just move to the east
-                returned_legal_direction.push_back(TurnModelRouting::Direction::EAST);
-            } else {
-                /* Since EN and ES turns are forbidden in even columns, we move along the vertical
-                 * direction only in we are in an odd column. */
-                if (is_odd(comp_curr_loc.x) || comp_curr_loc.x == comp_src_loc.x) {
-                    if (diff_y > 0) {
-                        returned_legal_direction.push_back(TurnModelRouting::Direction::NORTH);
-                    } else {
-                        returned_legal_direction.push_back(TurnModelRouting::Direction::SOUTH);
-                    }
-                }
-                // the destination column is odd and there are more than 1 column left to destination
-                if (is_odd(comp_dst_loc.x) || diff_x != 1) {
-                    returned_legal_direction.push_back(TurnModelRouting::Direction::EAST);
-                }
-            }
-        } else { // westbound message
-            returned_legal_direction.push_back(TurnModelRouting::Direction::WEST);
-            /* Since NW and SW turns are forbidden in odd columns, we allow
-             * moving along vertical axis only in even columns */
-            if (is_even(comp_curr_loc.x)) {
+    } else if (diff_x > 0) { // eastbound message
+        if (diff_y == 0) {   // already in the same row as the destination. Just move to the east
+            returned_legal_direction.push_back(TurnModelRouting::Direction::EAST);
+        } else {
+            /* Since EN and ES turns are forbidden in even columns, we move along the vertical
+             * direction only in we are in an odd column. */
+            if (is_odd(comp_curr_loc.x) || comp_curr_loc.x == comp_src_loc.x || prev_dir != TurnModelRouting::Direction::EAST) {
                 if (diff_y > 0) {
                     returned_legal_direction.push_back(TurnModelRouting::Direction::NORTH);
                 } else {
                     returned_legal_direction.push_back(TurnModelRouting::Direction::SOUTH);
                 }
             }
+            // the destination column is odd and there are more than 1 column left to destination
+            if (is_odd(comp_dst_loc.x) || diff_x != 1) {
+                returned_legal_direction.push_back(TurnModelRouting::Direction::EAST);
+            }
+        }
+    } else { // westbound message
+        returned_legal_direction.push_back(TurnModelRouting::Direction::WEST);
+        /* Since NW and SW turns are forbidden in odd columns, we allow
+         * moving along vertical axis only in even columns */
+        if (is_even(comp_curr_loc.x)) {
+            if (diff_y > 0) {
+                returned_legal_direction.push_back(TurnModelRouting::Direction::NORTH);
+            } else {
+                returned_legal_direction.push_back(TurnModelRouting::Direction::SOUTH);
+            }
         }
     }
+
 
 }
 
@@ -205,19 +205,28 @@ void OddEvenRouting::route_3d(t_physical_tile_loc comp_src_loc,
 
     if (diff_x > 0) {
 
-        if (is_even(comp_dst_loc.x) && (diff_x == 1) && (diff_y != 0 || diff_z != 0)) {
-            goto route_in_yz_plane;
+        if (diff_y == 0 && diff_z == 0) {
+            returned_legal_direction.push_back(TurnModelRouting::Direction::EAST);
+            return;
         }
 
-        if (is_even(comp_curr_loc.x) || (diff_y == 0 && diff_z == 0)) {
+        if (is_odd(comp_dst_loc.x) || diff_x > 1) {
             returned_legal_direction.push_back(TurnModelRouting::Direction::EAST);
         }
 
-    } else if (diff_x < 0) {
+        if (is_odd(comp_curr_loc.x) || comp_curr_loc.x == comp_src_loc.x || prev_dir != TurnModelRouting::Direction::EAST) {
+            goto route_in_yz_plane;
+        } else {
+            return;
+        }
 
-        if (is_even(comp_curr_loc.x) ||
-            (comp_curr_loc.y == comp_src_loc.y && comp_curr_loc.layer_num == comp_src_loc.layer_num)) {
-            returned_legal_direction.push_back(TurnModelRouting::Direction::WEST);
+    } else if (diff_x < 0) {
+        returned_legal_direction.push_back(TurnModelRouting::Direction::WEST);
+
+        if (is_even(comp_curr_loc.x)) {
+            goto route_in_yz_plane;
+        } else {
+            return;
         }
     }
 
@@ -231,12 +240,12 @@ void OddEvenRouting::route_3d(t_physical_tile_loc comp_src_loc,
             returned_legal_direction.push_back(TurnModelRouting::Direction::DOWN);
         }
     } else if (diff_y > 0) { // eastbound message
-        if (diff_z == 0) { // already in the same row as the destination. Just move to the east
+        if (diff_z == 0) {   // already in the same row as the destination. Just move to the east
             returned_legal_direction.push_back(TurnModelRouting::Direction::NORTH);
         } else {
             /* Since EN and ES turns are forbidden in even columns, we move along the vertical
              * direction only in we are in an odd column. */
-            if (is_odd(comp_curr_loc.y) || comp_curr_loc.y == comp_src_loc.y) {
+            if (is_odd(comp_curr_loc.y) || comp_curr_loc.y == comp_src_loc.y || prev_dir != TurnModelRouting::Direction::NORTH) {
                 if (diff_z > 0) {
                     returned_legal_direction.push_back(TurnModelRouting::Direction::UP);
                 } else {

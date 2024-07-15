@@ -35,7 +35,8 @@ class OddEvenRouting : public TurnModelRouting{
 
     inline void route_2d(t_physical_tile_loc comp_src_loc,
                          t_physical_tile_loc comp_curr_loc,
-                         t_physical_tile_loc comp_dst_loc);
+                         t_physical_tile_loc comp_dst_loc,
+                         TurnModelRouting::Direction prev_dir);
 
     inline void route_3d(t_physical_tile_loc comp_src_loc,
                          t_physical_tile_loc comp_curr_loc,
