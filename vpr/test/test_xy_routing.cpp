@@ -342,7 +342,7 @@ TEST_CASE("test_route_flow when it fails in a non mesh topology.", "[vpr_noc_xy_
      * For example, looking at the example below, suppose we are trying to route between routers 3 and 1. The XY routing algorithm will first traverse to router 0 as it is towards the direction of router 1.
      * But then at router 0 the algorithm will go towards router 3 as its now
      * in the direction of router 1. But then the algorithm will infinitely
-     * just pinpong between routers 0 and 3.
+     * just ping-pong between routers 0 and 3.
      *
      * The purpose of this test case is to make sure that this situation is
      * appropriately handled through an error.
