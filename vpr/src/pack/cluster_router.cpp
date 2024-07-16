@@ -474,11 +474,11 @@ bool try_intra_lb_route(t_lb_router_data* router_data,
                 }
 
                 if (is_impossible) {
-                    VTR_LOG("Routing was impossible!\n");
+                    VTR_LOGV(verbosity > 5, "Routing was impossible!\n");
                 } else if (mode_status->expand_all_modes) {
                     is_impossible = route_has_conflict(lb_nets[idx].rt_tree, router_data);
                     if (is_impossible) {
-                        VTR_LOG("Routing was impossible due to modes!\n");
+                        VTR_LOGV(verbosity > 5, "Routing was impossible due to modes!\n");
                     }
                 }
 
@@ -506,7 +506,7 @@ bool try_intra_lb_route(t_lb_router_data* router_data,
         } else {
             --inet;
             auto& atom_ctx = g_vpr_ctx.atom();
-            VTR_LOGV(verbosity < 3, "Net '%s' is impossible to route within proposed %s cluster\n",
+            VTR_LOGV(verbosity > 3, "Net '%s' is impossible to route within proposed %s cluster\n",
                      atom_ctx.nlist.net_name(lb_nets[inet].atom_net_id).c_str(), router_data->lb_type->name);
             is_routed = false;
         }
@@ -1328,7 +1328,7 @@ static void reset_explored_node_tb(t_lb_router_data* router_data) {
     }
 }
 
-/* Save last successful intra-logic block route and reset current traceback */
+/* Save last successful intra-logic block route and reset current lb_traceback */
 static void save_and_reset_lb_route(t_lb_router_data* router_data) {
     std::vector<t_intra_lb_net>& lb_nets = *router_data->intra_lb_nets;
 
@@ -1446,7 +1446,7 @@ static std::string describe_congested_rr_nodes(const std::vector<int>& congested
     for (unsigned int inet = 0; inet < lb_nets.size(); inet++) {
         AtomNetId atom_net = lb_nets[inet].atom_net_id;
 
-        //Walk the traceback to find congested RR nodes for each net
+        //Walk the lb_traceback to find congested RR nodes for each net
         std::queue<t_lb_trace> q;
 
         if (lb_nets[inet].rt_tree) {

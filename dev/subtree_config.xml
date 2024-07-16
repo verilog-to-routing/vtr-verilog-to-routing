@@ -33,12 +33,7 @@
         name="capnproto"
         internal_path="libs/EXTERNAL/capnproto"
         external_url="https://github.com/capnproto/capnproto.git"
-        default_external_ref="v0.9.1"/>
-    <subtree
-        name="libyosys"
-        internal_path="libs/EXTERNAL/libyosys"
-        external_url="https://github.com/YosysHQ/yosys.git"
-        default_external_ref="master"/>
+        default_external_ref="v1.0.2"/>
     <subtree
         name="libinterchange"
         internal_path="libs/EXTERNAL/libinterchange"
@@ -59,4 +54,14 @@
         internal_path="vtr_flow/benchmarks/system_verilog/fx68k"
         external_url="https://github.com/ijor/fx68k.git"
         default_external_ref="master"/>
+    <subtree
+        name="yosys"
+        internal_path="yosys"
+        external_url="https://github.com/YosysHQ/yosys.git"
+        default_external_ref="yosys-0.32"/>
+    <subtree
+        name="parmys"
+        internal_path="parmys"
+        external_url="https://github.com/CAS-Atlantic/parmys-plugin.git"
+        default_external_ref="v3.0"/>
 </subtrees>

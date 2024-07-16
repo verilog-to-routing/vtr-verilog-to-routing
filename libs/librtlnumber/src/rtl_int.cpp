@@ -418,42 +418,48 @@ VNumber V_LOGICAL_OR(VNumber& a, VNumber& b) {
 
 VNumber V_LT(VNumber& a, VNumber& b) {
     compare_bit cmp = eval_op(a, b);
-    BitSpace::bit_value_t result = cmp.is_unk() ? BitSpace::_x : cmp.is_lt() ? BitSpace::_1 : BitSpace::_0;
+    BitSpace::bit_value_t result = cmp.is_unk() ? BitSpace::_x : cmp.is_lt() ? BitSpace::_1
+                                                                             : BitSpace::_0;
     VNumber to_return(1, result, false, true);
     return to_return;
 }
 
 VNumber V_GT(VNumber& a, VNumber& b) {
     compare_bit cmp = eval_op(a, b);
-    BitSpace::bit_value_t result = cmp.is_unk() ? BitSpace::_x : cmp.is_gt() ? BitSpace::_1 : BitSpace::_0;
+    BitSpace::bit_value_t result = cmp.is_unk() ? BitSpace::_x : cmp.is_gt() ? BitSpace::_1
+                                                                             : BitSpace::_0;
     VNumber to_return(1, result, false, true);
     return to_return;
 }
 
 VNumber V_EQUAL(VNumber& a, VNumber& b) {
     compare_bit cmp = eval_op(a, b);
-    BitSpace::bit_value_t result = cmp.is_unk() ? BitSpace::_x : cmp.is_eq() ? BitSpace::_1 : BitSpace::_0;
+    BitSpace::bit_value_t result = cmp.is_unk() ? BitSpace::_x : cmp.is_eq() ? BitSpace::_1
+                                                                             : BitSpace::_0;
     VNumber to_return(1, result, false, true);
     return to_return;
 }
 
 VNumber V_GE(VNumber& a, VNumber& b) {
     compare_bit cmp = eval_op(a, b);
-    BitSpace::bit_value_t result = cmp.is_unk() ? BitSpace::_x : cmp.is_ge() ? BitSpace::_1 : BitSpace::_0;
+    BitSpace::bit_value_t result = cmp.is_unk() ? BitSpace::_x : cmp.is_ge() ? BitSpace::_1
+                                                                             : BitSpace::_0;
     VNumber to_return(1, result, false, true);
     return to_return;
 }
 
 VNumber V_LE(VNumber& a, VNumber& b) {
     compare_bit cmp = eval_op(a, b);
-    BitSpace::bit_value_t result = cmp.is_unk() ? BitSpace::_x : cmp.is_le() ? BitSpace::_1 : BitSpace::_0;
+    BitSpace::bit_value_t result = cmp.is_unk() ? BitSpace::_x : cmp.is_le() ? BitSpace::_1
+                                                                             : BitSpace::_0;
     VNumber to_return(1, result, false, true);
     return to_return;
 }
 
 VNumber V_NOT_EQUAL(VNumber& a, VNumber& b) {
     compare_bit cmp = eval_op(a, b);
-    BitSpace::bit_value_t result = cmp.is_unk() ? BitSpace::_x : cmp.is_ne() ? BitSpace::_1 : BitSpace::_0;
+    BitSpace::bit_value_t result = cmp.is_unk() ? BitSpace::_x : cmp.is_ne() ? BitSpace::_1
+                                                                             : BitSpace::_0;
     VNumber to_return(1, result, false, true);
     return to_return;
 }
@@ -603,11 +609,14 @@ VNumber V_POWER(VNumber& a, VNumber& b) {
     }
 
     compare_bit res_a = eval_op(a, 0);
-    short val_a = (res_a.is_eq()) ? 0 : (res_a.is_lt()) ? (eval_op(a, -1).is_lt()) ? -2 : -1 :
-                                                        /* GREATHER_THAN */ (eval_op(a, 1).is_gt()) ? 2 : 1;
+    short val_a = (res_a.is_eq()) ? 0 : (res_a.is_lt()) ? (eval_op(a, -1).is_lt()) ? -2 : -1
+                                    :
+                                    /* GREATHER_THAN */ (eval_op(a, 1).is_gt()) ? 2
+                                                                                : 1;
 
     compare_bit res_b = eval_op(b, 0);
-    short val_b = (res_b.is_eq()) ? 0 : (res_b.is_lt()) ? -1 :
+    short val_b = (res_b.is_eq()) ? 0 : (res_b.is_lt()) ? -1
+                                                        :
                                                         /* GREATHER_THAN */ 1;
 
     // Compute: Case Where 'val_a <= -2' or 'val_a >= 2'; As-Per the Spec:
@@ -742,5 +751,6 @@ VNumber V_TERNARY(VNumber& a_in, VNumber& b_in, VNumber& c_in) {
     /*	if a evaluates properly	*/
     compare_bit eval = eval_op(V_LOGICAL_NOT(a_in), 0);
 
-    return (eval.is_unk()) ? b_in.bitwise(c_in, l_ternary) : (eval.is_eq()) ? VNumber(b_in) : VNumber(c_in);
+    return (eval.is_unk()) ? b_in.bitwise(c_in, l_ternary) : (eval.is_eq()) ? VNumber(b_in)
+                                                                            : VNumber(c_in);
 }

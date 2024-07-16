@@ -66,8 +66,9 @@ add_library(capnp ${capnp_sources})
 add_library(CapnProto::capnp ALIAS capnp)
 target_link_libraries(capnp PUBLIC kj)
 #make sure external consumers don't need to manually set the include dirs
+get_filename_component(PARENT_DIR ${CMAKE_CURRENT_SOURCE_DIR} DIRECTORY)
 target_include_directories(capnp INTERFACE
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>
+  $<BUILD_INTERFACE:${PARENT_DIR}>
   $<INSTALL_INTERFACE:include>
 )
 # Ensure the library has a version set to match autotools build
@@ -212,7 +213,7 @@ if(NOT CAPNP_LITE)
   install(TARGETS capnp_tool capnpc_cpp capnpc_capnp ${INSTALL_TARGETS_DEFAULT_ARGS})
 
   if(WIN32)
-    # On Windows platforms symlinks are not guranteed to support. Also differnt version of CMake handle create_symlink in a different way.
+    # On Windows platforms symlinks are not guaranteed to support. Also different version of CMake handle create_symlink in a different way.
     # The most portable way in this case just copy the file.
     install(CODE "execute_process(COMMAND \"${CMAKE_COMMAND}\" -E copy \"\$ENV{DESTDIR}${CMAKE_INSTALL_FULL_BINDIR}/capnp${CMAKE_EXECUTABLE_SUFFIX}\" \"\$ENV{DESTDIR}${CMAKE_INSTALL_FULL_BINDIR}/capnpc${CMAKE_EXECUTABLE_SUFFIX}\")")
   else()

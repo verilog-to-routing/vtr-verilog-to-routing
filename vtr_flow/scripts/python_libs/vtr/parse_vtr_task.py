@@ -209,6 +209,9 @@ def parse_task(config, config_jobs, flow_metrics_basename=FIRST_PARSE_FILE, alt_
     max_circuit_len = len("circuit")
     for job in config_jobs:
         work_dir = job.work_dir(get_latest_run_dir(find_task_dir(config, alt_tasks_dir)))
+        job.parse_command()[0] = work_dir
+        # job.second_parse_command()[0] = work_dir
+        job.qor_parse_command()[0] = work_dir
         if job.parse_command():
             parse_filepath = str(PurePath(work_dir) / flow_metrics_basename)
             with open(parse_filepath, "w+") as parse_file:

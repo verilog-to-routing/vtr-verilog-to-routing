@@ -22,7 +22,7 @@
 
 /**************** Subroutines local to this module **************************/
 
-static int check_connections_to_global_clb_pins(ClusterNetId net_id, int verbosity);
+static int check_connections_to_global_clb_pins(ClusterNetId net_id, int verbosity, bool is_flat);
 
 static int check_for_duplicated_names();
 
@@ -54,7 +54,8 @@ void check_netlist(int verbosity) {
                           cluster_ctx.clb_nlist.net_name(net_id).c_str());
             error++;
         }
-        global_to_non_global_connection_count += check_connections_to_global_clb_pins(net_id, verbosity);
+        // This function is called during packing - For the time being, we only use a flat netlist during routing
+        global_to_non_global_connection_count += check_connections_to_global_clb_pins(net_id, verbosity, false);
         if (error >= ERROR_THRESHOLD) {
             VTR_LOG_ERROR("Too many errors in netlist, exiting.\n");
         }
@@ -90,7 +91,7 @@ void check_netlist(int verbosity) {
  *
  * Either global or non-global nets are allowed to connect to pads.
  */
-static int check_connections_to_global_clb_pins(ClusterNetId net_id, int verbosity) {
+static int check_connections_to_global_clb_pins(ClusterNetId net_id, int verbosity, bool is_flat) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     bool net_is_ignored = cluster_ctx.clb_nlist.net_is_ignored(net_id);
@@ -113,7 +114,7 @@ static int check_connections_to_global_clb_pins(ClusterNetId net_id, int verbosi
             VTR_LOGV_WARN(verbosity > 2,
                           "Global net '%s' connects to non-global architecture pin '%s' (netlist pin '%s')\n",
                           cluster_ctx.clb_nlist.net_name(net_id).c_str(),
-                          block_type_pin_index_to_name(physical_type, pin_index).c_str(),
+                          block_type_pin_index_to_name(physical_type, pin_index, is_flat).c_str(),
                           cluster_ctx.clb_nlist.pin_name(pin_id).c_str());
 
             ++global_to_non_global_connection_count;

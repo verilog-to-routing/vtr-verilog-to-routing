@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.9)
+cmake_minimum_required(VERSION 3.16)
 
 project("genfasm")
 
@@ -33,7 +33,7 @@ if (GENFASM_USES_IPO)
     set_property(TARGET genfasm APPEND PROPERTY LINK_FLAGS ${IPO_LINK_WARN_SUPRESS_FLAGS})
 endif()
 
-#Specify link-time dependancies
+#Specify link-time dependencies
 install(TARGETS genfasm DESTINATION bin)
 
 #
@@ -49,7 +49,7 @@ set(TEST_SOURCES
 add_executable(test_fasm ${TEST_SOURCES})
 target_link_libraries(test_fasm fasm Catch2::Catch2WithMain)
 
-#Supress IPO link warnings if IPO is enabled
+#Suppress IPO link warnings if IPO is enabled
 get_target_property(TEST_FASM_USES_IPO test_fasm INTERPROCEDURAL_OPTIMIZATION)
 if (TEST_FASM_USES_IPO)
     set_property(TARGET test_fasm APPEND PROPERTY LINK_FLAGS ${IPO_LINK_WARN_SUPRESS_FLAGS})
@@ -57,6 +57,6 @@ endif()
 
 add_test(
   NAME test_fasm
-  COMMAND test_fasm --use-colour=yes
+  COMMAND test_fasm --colour-mode ansi
   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/test
   )

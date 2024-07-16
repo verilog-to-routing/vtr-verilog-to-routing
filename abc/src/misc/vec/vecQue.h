@@ -103,8 +103,8 @@ static inline void Vec_QueGrow( Vec_Que_t * p, int nCapMin )
         return;
     p->pHeap  = ABC_REALLOC( int, p->pHeap,  nCapMin );
     p->pOrder = ABC_REALLOC( int, p->pOrder, nCapMin ); 
-    memset( p->pHeap  + p->nCap, 0xff, (nCapMin - p->nCap) * sizeof(int) );
-    memset( p->pOrder + p->nCap, 0xff, (nCapMin - p->nCap) * sizeof(int) );
+    memset( p->pHeap  + p->nCap, 0xff, (size_t)(nCapMin - p->nCap) * sizeof(int) );
+    memset( p->pOrder + p->nCap, 0xff, (size_t)(nCapMin - p->nCap) * sizeof(int) );
     p->nCap   = nCapMin;
 }
 static inline void Vec_QueClear( Vec_Que_t * p )
@@ -118,6 +118,10 @@ static inline void Vec_QueClear( Vec_Que_t * p )
         p->pHeap[i] = -1;
     }
     p->nSize = 1;
+}
+static inline double Vec_QueMemory( Vec_Que_t * p )
+{
+    return !p ? 0.0 : 2.0 * sizeof(int) * (size_t)p->nCap + sizeof(Vec_Que_t) ;
 }
 
 /**Function*************************************************************

@@ -24,7 +24,7 @@ The VTR design flow takes as input a Verilog description of a digital circuit, a
 
 It then perfoms:
 
- * Elaboration & Synthesis (:ref:`odin_II`)
+ * Elaboration & Synthesis (:ref:`odin_ii`)
  * Logic Optimization & Technology Mapping (:ref:`abc`)
  * Packing, Placement, Routing & Timing Analysis (:ref:`vpr`)
 
@@ -43,6 +43,7 @@ VTR also includes a set of benchmark designs known to work with the design flow.
    running_vtr
    benchmarks
    power_estimation/index.rst
+   server_mode/index.rst
    tasks
    run_vtr_flow
    run_vtr_task

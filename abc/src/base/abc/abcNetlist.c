@@ -216,10 +216,13 @@ Abc_Ntk_t * Abc_NtkLogicToNetlist( Abc_Ntk_t * pNtk )
     // create the missing nets
     Abc_NtkForEachNode( pNtk, pObj, i )
     {
+        char Buffer[1000];
         if ( pObj->pCopy->pCopy ) // the net of the new object is already created
             continue;
         // create the new net
-        pNet = Abc_NtkFindOrCreateNet( pNtkNew, Abc_ObjName(pObj) ); // here we create ridiculous names net line "n48", where 48 is the ID of the node
+        sprintf( Buffer, "new_%s", Abc_ObjName(pObj) );
+        //pNet = Abc_NtkFindOrCreateNet( pNtkNew, Abc_ObjName(pObj) ); // here we create net names such as "n48", where 48 is the ID of the node
+        pNet = Abc_NtkFindOrCreateNet( pNtkNew, Buffer ); 
         Abc_ObjAddFanin( pNet, pObj->pCopy );
         pObj->pCopy->pCopy = pNet;
     }

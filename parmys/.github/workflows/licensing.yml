@@ -1,0 +1,44 @@
+# Copyright 2020-2022 F4PGA Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+name: Licensing
+
+on:
+  push:
+  pull_request:
+
+
+jobs:
+  Checks:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - uses: SymbiFlow/actions/checks@main
+      with:
+        exclude_license: |
+          ./design_introspection-plugin/tests/selection_to_tcl_list/selection_to_tcl_list.v
+          ./third_party/minilitex_ddr_arty/minilitex_ddr_arty.v
+          ./third_party/VexRiscv_Lite/VexRiscv_Lite.v
+          ./third_party/vtr_flow/verilog/eltwise_layer.v
+          ./third_party/vtr_flow/verilog/raygentop.v
+          ./third_party/vtr_flow/verilog/hard_block_include.v
+          ./third_party/vtr_flow/arch/k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml
+          ./third_party/vtr_flow/arch/k6_frac_N10_frac_chain_mem32K_40nm.xml
+          ./third_party/vtr_flow/primitives.v
+        third_party: |
+          ./third_party/googletest/
+          .third_party/mips32r1_core/

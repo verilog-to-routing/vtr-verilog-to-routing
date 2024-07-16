@@ -4,7 +4,7 @@
 
 #include "vtr_assert.h"
 
-void process_constant_nets(ClusteredNetlist& nlist, e_constant_net_method method, int verbosity) {
+void process_constant_nets(AtomNetlist& atom_nlist, const AtomLookup& atom_look_up, ClusteredNetlist& nlist, e_constant_net_method method, int verbosity) {
     if (method == CONSTANT_NET_GLOBAL) {
         /*
          * Treat constant nets (e.g. gnd/vcc) as globals so they are not routed.
@@ -21,6 +21,9 @@ void process_constant_nets(ClusteredNetlist& nlist, e_constant_net_method method
                 VTR_LOGV_WARN(verbosity > 2, "Treating constant net '%s' as global (will not be routed)\n",
                               nlist.net_name(net).c_str());
                 nlist.set_net_is_ignored(net, true);
+                AtomNetId atom_net_id = atom_look_up.atom_net(net);
+                VTR_ASSERT(atom_net_id != AtomNetId::INVALID());
+                atom_nlist.set_net_is_ignored(atom_net_id, true);
                 ++constant_net_count;
             }
         }

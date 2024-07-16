@@ -1,17 +1,16 @@
 language: cpp
 dist: trusty #Ubuntu 14.04 by default
-sudo: false #Use container based infrastructure
 
 matrix:
     include:
         #Extensive testing for base compiler
-        - env: TESTS="basic mcnc20" TATUM_EXECUTION_ENGINE=auto MATRIX_EVAL="CC=gcc-5 CXX=g++-5"
+        - env: TESTS="basic mcnc20 vtr titan_other" TATUM_EXECUTION_ENGINE=auto MATRIX_EVAL="CC=gcc-5 CXX=g++-5"
           addons: { apt: { packages: ["cmake", "g++-5", "libtbb-dev"], sources: ["ubuntu-toolchain-r-test"] } }
 
-        - env: TESTS="basic mcnc20" TATUM_EXECUTION_ENGINE=serial MATRIX_EVAL="CC=gcc-5 CXX=g++-5"
+        - env: TESTS="basic mcnc20 vtr titan_other" TATUM_EXECUTION_ENGINE=serial MATRIX_EVAL="CC=gcc-5 CXX=g++-5"
           addons: { apt: { packages: ["cmake", "g++-5", "libtbb-dev"], sources: ["ubuntu-toolchain-r-test"] } }
 
-        - env: TESTS="basic mcnc20" TATUM_EXECUTION_ENGINE=tbb MATRIX_EVAL="CC=gcc-5 CXX=g++-5"
+        - env: TESTS="basic mcnc20 vtr titan_other" TATUM_EXECUTION_ENGINE=tbb MATRIX_EVAL="CC=gcc-5 CXX=g++-5"
           addons: { apt: { packages: ["cmake", "g++-5", "libtbb-dev"], sources: ["ubuntu-toolchain-r-test"] } }
 
         #Simple testing for other compilers

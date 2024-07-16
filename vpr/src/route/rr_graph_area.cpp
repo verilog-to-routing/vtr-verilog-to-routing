@@ -284,17 +284,17 @@ void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch, fl
         } /* End switch on from_rr_type */
     }     /* End for all nodes */
 
-    delete[](cblock_counted);
-    delete[](shared_buffer_trans);
-    delete[](unsharable_switch_trans);
-    delete[](sharable_switch_trans);
+    delete[] cblock_counted;
+    delete[] shared_buffer_trans;
+    delete[] unsharable_switch_trans;
+    delete[] sharable_switch_trans;
 
     /* Now add in the input connection block transistors. */
 
     input_cblock_trans = get_cblock_trans(num_inputs_to_cblock, wire_to_ipin_switch,
                                           max_inputs_to_cblock, trans_sram_bit);
 
-    delete[](num_inputs_to_cblock);
+    delete[] num_inputs_to_cblock;
 
     ntrans_sharing += input_cblock_trans;
     ntrans_no_sharing += input_cblock_trans;
@@ -419,7 +419,7 @@ void count_unidir_routing_transistors(std::vector<t_segment_inf>& /*segment_inf*
                                             "Uni-directional RR node driven by non-configurable "
                                             "BUFFER has fan in %d (expected 1)\n",
                                             fan_in);
-                                        msg += "  " + describe_rr_node(rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, size_t(to_node), is_flat);
+                                        msg += "  " + describe_rr_node(rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, to_node, is_flat);
                                         VPR_FATAL_ERROR(VPR_ERROR_OTHER, msg.c_str());
                                     }
 
@@ -485,14 +485,14 @@ void count_unidir_routing_transistors(std::vector<t_segment_inf>& /*segment_inf*
     input_cblock_trans = get_cblock_trans(num_inputs_to_cblock, wire_to_ipin_switch,
                                           max_inputs_to_cblock, trans_sram_bit);
 
-    delete[](cblock_counted);
-    delete[](num_inputs_to_cblock);
+    delete[] cblock_counted;
+    delete[] num_inputs_to_cblock;
 
     ntrans += input_cblock_trans;
 
     VTR_LOG("\n");
     VTR_LOG("Routing area (in minimum width transistor areas)...\n");
-    VTR_LOG("\tTotal routing area: %#g, per logic tile: %#g\n", ntrans, ntrans / (float)(device_ctx.grid.width() * device_ctx.grid.height()));
+    VTR_LOG("\tTotal routing area: %#g, per logic tile: %#g\n", ntrans, ntrans / (float)(device_ctx.grid.get_num_layers() * device_ctx.grid.width() * device_ctx.grid.height()));
 }
 
 static float get_cblock_trans(int* num_inputs_to_cblock, int wire_to_ipin_switch, int max_inputs_to_cblock, float trans_sram_bit) {
@@ -528,7 +528,7 @@ static float get_cblock_trans(int* num_inputs_to_cblock, int wire_to_ipin_switch
         trans_count += trans_per_cblock[num_inputs];
     }
 
-    delete[](trans_per_cblock);
+    delete[] trans_per_cblock;
     return (trans_count);
 }
 

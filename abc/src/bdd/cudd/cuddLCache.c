@@ -219,7 +219,7 @@ cuddLocalCacheInit(
     manager->memused += cacheSize * cache->itemsize + sizeof(DdLocalCache);
 
     /* Initialize the cache. */
-    memset(cache->item, 0, cacheSize * cache->itemsize);
+    memset(cache->item, 0, (size_t)(cacheSize * cache->itemsize));
 
     /* Add to manager's list of local caches for GC. */
     cuddLocalCacheAddToList(cache);
@@ -407,7 +407,7 @@ cuddLocalCacheClearAll(
     DdLocalCache *cache = manager->localCaches;
 
     while (cache != NULL) {
-        memset(cache->item, 0, cache->slots * cache->itemsize);
+        memset(cache->item, 0, (size_t)(cache->slots * cache->itemsize));
         cache = cache->next;
     }
     return;
@@ -569,7 +569,7 @@ cuddHashTableInit(
         ABC_FREE(hash);
         return(NULL);
     }
-    memset(hash->bucket, 0, hash->numBuckets * sizeof(DdHashItem *));
+    memset(hash->bucket, 0, (size_t)(hash->numBuckets * sizeof(DdHashItem *)));
     hash->size = 0;
     hash->maxsize = hash->numBuckets * DD_MAX_HASHTABLE_DENSITY;
 #ifdef __osf__
@@ -1140,7 +1140,7 @@ cuddLocalCacheResize(
     cache->manager->memused += (slots - oldslots) * cache->itemsize;
 
     /* Clear new cache. */
-    memset(item, 0, slots * cache->itemsize);
+    memset(item, 0, (size_t)(slots * cache->itemsize));
 
     /* Copy from old cache to new one. */
     for (i = 0; (unsigned) i < oldslots; i++) {

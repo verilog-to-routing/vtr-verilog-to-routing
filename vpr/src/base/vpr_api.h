@@ -65,13 +65,16 @@ bool vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch);
 ///@brief Loads a previous packing
 void vpr_load_packing(t_vpr_setup& vpr_setup, const t_arch& arch);
 
+///@brief Reconstructs a packing and placement solution from a flat placement file
+bool vpr_load_flat_placement(t_vpr_setup& vpr_setup, const t_arch& arch);
+
 /* Placement */
 
 ///@brief Perform, load or skip the placement stage
-bool vpr_place_flow(t_vpr_setup& vpr_setup, const t_arch& arch);
+bool vpr_place_flow(const Netlist<>& net_list, t_vpr_setup& vpr_setup, const t_arch& arch);
 
 ///@brief Perform placement
-void vpr_place(t_vpr_setup& vpr_setup, const t_arch& arch);
+void vpr_place(const Netlist<>& net_list, t_vpr_setup& vpr_setup, const t_arch& arch);
 
 ///@brief Loads a previous placement
 void vpr_load_placement(t_vpr_setup& vpr_setup, const t_arch& arch);
@@ -79,23 +82,28 @@ void vpr_load_placement(t_vpr_setup& vpr_setup, const t_arch& arch);
 /* Routing */
 
 ///@brief Perform, load or skip the routing stage
-RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch, bool is_flat);
+RouteStatus vpr_route_flow(const Netlist<>& net_list,
+                           t_vpr_setup& vpr_setup,
+                           const t_arch& arch,
+                           bool is_flat);
 
 ///@brief Perform routing at a fixed channel width)
-RouteStatus vpr_route_fixed_W(t_vpr_setup& vpr_setup,
+RouteStatus vpr_route_fixed_W(const Netlist<>& net_list,
+                              t_vpr_setup& vpr_setup,
                               const t_arch& arch,
                               int fixed_channel_width,
                               std::shared_ptr<SetupHoldTimingInfo> timing_info,
                               std::shared_ptr<RoutingDelayCalculator> delay_calc,
-                              ClbNetPinsMatrix<float>& net_delay,
+                              NetPinsMatrix<float>& net_delay,
                               bool is_flat);
 
 ///@brief Perform routing to find the minimum channel width
-RouteStatus vpr_route_min_W(t_vpr_setup& vpr_setup,
+RouteStatus vpr_route_min_W(const Netlist<>& net_list,
+                            t_vpr_setup& vpr_setup,
                             const t_arch& arch,
                             std::shared_ptr<SetupHoldTimingInfo> timing_info,
                             std::shared_ptr<RoutingDelayCalculator> delay_calc,
-                            ClbNetPinsMatrix<float>& net_delay,
+                            NetPinsMatrix<float>& net_delay,
                             bool is_flat);
 
 ///@brief Loads a previous routing
@@ -103,37 +111,49 @@ RouteStatus vpr_load_routing(t_vpr_setup& vpr_setup,
                              const t_arch& arch,
                              int fixed_channel_width,
                              std::shared_ptr<SetupHoldTimingInfo> timing_info,
-                             ClbNetPinsMatrix<float>& net_delay);
+                             NetPinsMatrix<float>& net_delay,
+                             bool is_flat);
 
 /* Analysis */
 
 ///@brief Perform or skips the analysis stage
-bool vpr_analysis_flow(t_vpr_setup& vpr_setup, const t_arch& Arch, const RouteStatus& route_status, bool is_flat);
+bool vpr_analysis_flow(const Netlist<>& net_list,
+                       t_vpr_setup& vpr_setup,
+                       const t_arch& Arch,
+                       const RouteStatus& route_status,
+                       bool is_flat);
 
 ///@brief Perform post-implementation analysis
-void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch, const RouteStatus& route_status, bool is_flat);
+void vpr_analysis(const Netlist<>& net_list,
+                  t_vpr_setup& vpr_setup,
+                  const t_arch& Arch,
+                  const RouteStatus& route_status,
+                  bool is_flat);
 
 /* Device creating */
 
 ///@brief Create the device (grid + rr graph)
-void vpr_create_device(t_vpr_setup& vpr_setup, const t_arch& Arch);
+void vpr_create_device(t_vpr_setup& vpr_setup, const t_arch& Arch, bool is_flat);
 
 ///@brief Create the device grid
 void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch);
 
 ///@brief Create routing graph at specified channel width
-void vpr_create_rr_graph(t_vpr_setup& vpr_setup, const t_arch& arch, int chan_width);
+void vpr_create_rr_graph(t_vpr_setup& vpr_setup, const t_arch& arch, int chan_width, bool is_flat);
 
 void vpr_init_graphics(const t_vpr_setup& vpr_setup, const t_arch& arch, bool is_flat);
+void vpr_init_server(const t_vpr_setup& vpr_setup);
+
 void vpr_close_graphics(const t_vpr_setup& vpr_setup);
 
 void vpr_setup_clock_networks(t_vpr_setup& vpr_setup, const t_arch& Arch);
 
 void vpr_setup_noc(const t_vpr_setup& vpr_setup, const t_arch& arch);
-void vpr_setup_noc_routing_algorithm(std::string noc_routing_algorithm_name);
+void vpr_setup_noc_routing_algorithm(const std::string& noc_routing_algorithm_name);
 
 void vpr_free_vpr_data_structures(t_arch& Arch, t_vpr_setup& vpr_setup);
-void vpr_free_all(t_arch& Arch, t_vpr_setup& vpr_setup);
+void vpr_free_all(t_arch& Arch,
+                  t_vpr_setup& vpr_setup);
 
 /* Display general info to user */
 void vpr_print_title();
@@ -162,6 +182,7 @@ void vpr_setup_vpr(t_options* Options,
                    t_router_opts* RouterOpts,
                    t_analysis_opts* AnalysisOpts,
                    t_noc_opts* NocOpts,
+                   t_server_opts* ServerOpts,
                    t_det_routing_arch* RoutingArch,
                    std::vector<t_lb_type_rr_node>** PackerRRGraph,
                    std::vector<t_segment_inf>& Segments,
@@ -180,6 +201,7 @@ void vpr_check_arch(const t_arch& Arch);
 void vpr_check_setup(const t_packer_opts& PackerOpts,
                      const t_placer_opts& PlacerOpts,
                      const t_router_opts& RouterOpts,
+                     const t_server_opts& ServerOpts,
                      const t_det_routing_arch& RoutingArch,
                      const std::vector<t_segment_inf>& Segments,
                      const t_timing_inf& Timing,

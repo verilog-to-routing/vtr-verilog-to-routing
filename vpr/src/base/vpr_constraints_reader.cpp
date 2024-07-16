@@ -12,7 +12,7 @@
 #include "vpr_constraints_reader.h"
 
 void load_vpr_constraints_file(const char* read_vpr_constraints_name) {
-    vtr::ScopedStartFinishTimer timer("Loading VPR constraints file");
+    vtr::ScopedStartFinishTimer timer("Reading VPR constraints from " + std::string(read_vpr_constraints_name));
 
     VprConstraintsSerializer reader;
 
@@ -33,9 +33,12 @@ void load_vpr_constraints_file(const char* read_vpr_constraints_name) {
 
     //Update the floorplanning constraints in the floorplanning constraints context
     auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
-    floorplanning_ctx.constraints = reader.constraints_;
+    floorplanning_ctx.constraints = reader.constraints_.place_constraints();
 
-    VprConstraints ctx_constraints = floorplanning_ctx.constraints;
+    auto& routing_ctx = g_vpr_ctx.mutable_routing();
+    routing_ctx.constraints = reader.constraints_.route_constraints();
+
+    const auto& ctx_constraints = floorplanning_ctx.constraints;
 
     if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_VPR_CONSTRAINTS)) {
         echo_constraints(getEchoFileName(E_ECHO_VPR_CONSTRAINTS), ctx_constraints);

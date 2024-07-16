@@ -53,7 +53,6 @@ int main(int argc, const char** argv) {
 
         /* Read options, architecture, and circuit netlist */
         vpr_init(argc, argv, &Options, &vpr_setup, &Arch);
-
         if (Options.show_version) {
             vpr_free_all(Arch, vpr_setup);
             return SUCCESS_EXIT_CODE;
@@ -82,12 +81,10 @@ int main(int argc, const char** argv) {
 
     } catch (const VprError& vpr_error) {
         vpr_print_error(vpr_error);
-
+        vpr_free_all(Arch, vpr_setup);
         if (vpr_error.type() == VPR_ERROR_INTERRUPTED) {
-            vpr_free_all(Arch, vpr_setup);
             return INTERRUPTED_EXIT_CODE;
         } else {
-            vpr_free_all(Arch, vpr_setup);
             return ERROR_EXIT_CODE;
         }
 

@@ -2,7 +2,7 @@
 # Configuration file for running experiments                    #
 #                                                               #
 # This config file is testing the ability to specify include    #
-# files that should be passed to the VTR Yosys frontend with    #
+# files that should be passed to the VTR Odin-II frontend with  #
 # the top module of the benchmark (ch_intrinsic_modified.v).    #
 # This is done by specifying two Verilog header files that      #
 # provide essential definitions, and memory_controller design   #
@@ -39,4 +39,4 @@ parse_file=vpr_no_timing.txt
 qor_parse_file=qor_no_timing.txt
 
 # Script parameters
-script_params_common=-track_memory_usage --timing_analysis off -start yosys
+script_params_common=-track_memory_usage --timing_analysis off

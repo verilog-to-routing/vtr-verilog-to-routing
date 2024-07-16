@@ -28,6 +28,8 @@
 #include "function.h"
 #include "hash.h"
 
+KJ_BEGIN_HEADER
+
 namespace kj {
 
 template <typename T>
@@ -359,7 +361,7 @@ public:
     uint64_t hashCode = 0;
     // Hint which can be used to determine if two FsNode instances point to the same underlying
     // file object. If two FsNodes report different hashCodes, then they are not the same object.
-    // If they report the same hashCode, then they may or may not be teh same object.
+    // If they report the same hashCode, then they may or may not be the same object.
     //
     // The Unix filesystem implementation builds the hashCode based on st_dev and st_ino of
     // `struct stat`. However, note that some filesystems -- especially FUSE-based -- may not fill
@@ -880,6 +882,13 @@ public:
   // tryRemove() returns false in the specific case that the path doesn't exist. remove() would
   // throw in this case. In all other error cases (like "access denied"), tryRemove() still throws;
   // it is only "does not exist" that produces a false return.
+  //
+  // WARNING: The Windows implementation of recursive deletion is currently not safe to call from a
+  //   privileged process to delete directories writable by unprivileged users, due to a race
+  //   condition in which the user could trick the algorithm into following a symlink and deleting
+  //   everything at the destination. This race condition is not present in the Unix
+  //   implementation. Fixing it for Windows would require rewriting a lot of code to use different
+  //   APIs. If you're interested, see the TODO(security) in filesystem-disk-win32.c++.
 
   // TODO(someday):
   // - Support sockets? There's no openat()-like interface for sockets, so it's hard to support
@@ -938,7 +947,7 @@ Own<Directory> newInMemoryDirectory(const Clock& clock);
 //   which would expand it will throw.
 //
 // InMemoryDirectory has the following special properties:
-// - Symlinks are processed using Path::parse(). This implies tha a symlink cannot point to a
+// - Symlinks are processed using Path::parse(). This implies that a symlink cannot point to a
 //   parent directory -- InMemoryDirectory does not know its parent.
 // - link() can link directory nodes in addition to files.
 // - link() and rename() accept any kind of Directory as `fromDirectory` -- it doesn't need to be
@@ -1110,3 +1119,5 @@ void Directory::Replacer<T>::commit() {
 }
 
 } // namespace kj
+
+KJ_END_HEADER

@@ -1,4 +1,4 @@
-ODIN=odin_II.exe
+ODIN=odin_ii.exe
 
 generate_fir: generate_fir.c++
 	g++ -Wall -Wextra -Werror -pedantic -std=c++0x generate_fir.c++ -o generate_fir

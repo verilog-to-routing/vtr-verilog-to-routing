@@ -58,7 +58,7 @@ using namespace Gluco;
   SeeAlso     []
 
 ***********************************************************************/
-Gluco::SimpSolver * glucose_solver_start()
+SimpSolver * glucose_solver_start()
 {
     SimpSolver * S = new SimpSolver;
     S->setIncrementalMode();
@@ -114,6 +114,11 @@ int glucose_solver_addvar(Gluco::SimpSolver* S)
 {
     S->newVar();
     return S->nVars() - 1;
+}
+
+int * glucose_solver_read_cex(Gluco::SimpSolver* S )
+{
+    return S->getCex();
 }
 
 int glucose_solver_read_cex_varvalue(Gluco::SimpSolver* S, int ivar)
@@ -208,6 +213,10 @@ int bmcg_sat_solver_elim_varnum(bmcg_sat_solver* s)
     return ((Gluco::SimpSolver*)s)->eliminated_vars;
 }
 
+int * bmcg_sat_solver_read_cex(bmcg_sat_solver* s)
+{
+    return glucose_solver_read_cex((Gluco::SimpSolver*)s);
+}
 int bmcg_sat_solver_read_cex_varvalue(bmcg_sat_solver* s, int ivar)
 {
     return glucose_solver_read_cex_varvalue((Gluco::SimpSolver*)s, ivar);
@@ -317,6 +326,64 @@ int bmcg_sat_solver_add_and( bmcg_sat_solver * s, int iVar, int iVar0, int iVar1
     return 1;
 }
 
+int bmcg_solver_add_xor( bmcg_sat_solver * pSat, int iVarA, int iVarB, int iVarC, int fCompl )
+{
+    int Lits[3];
+    int Cid;
+    assert( iVarA >= 0 && iVarB >= 0 && iVarC >= 0 );
+
+    Lits[0] = Abc_Var2Lit( iVarA, !fCompl );
+    Lits[1] = Abc_Var2Lit( iVarB, 1 );
+    Lits[2] = Abc_Var2Lit( iVarC, 1 );
+    Cid = bmcg_sat_solver_addclause( pSat, Lits, 3 );
+    assert( Cid );
+
+    Lits[0] = Abc_Var2Lit( iVarA, !fCompl );
+    Lits[1] = Abc_Var2Lit( iVarB, 0 );
+    Lits[2] = Abc_Var2Lit( iVarC, 0 );
+    Cid = bmcg_sat_solver_addclause( pSat, Lits, 3 );
+    assert( Cid );
+
+    Lits[0] = Abc_Var2Lit( iVarA, fCompl );
+    Lits[1] = Abc_Var2Lit( iVarB, 1 );
+    Lits[2] = Abc_Var2Lit( iVarC, 0 );
+    Cid = bmcg_sat_solver_addclause( pSat, Lits, 3 );
+    assert( Cid );
+
+    Lits[0] = Abc_Var2Lit( iVarA, fCompl );
+    Lits[1] = Abc_Var2Lit( iVarB, 0 );
+    Lits[2] = Abc_Var2Lit( iVarC, 1 );
+    Cid = bmcg_sat_solver_addclause( pSat, Lits, 3 );
+    assert( Cid );
+    return 4;
+}
+
+int bmcg_sat_solver_jftr(bmcg_sat_solver* s)
+{
+    return ((Gluco::SimpSolver*)s)->jftr;
+}
+
+void bmcg_sat_solver_set_jftr(bmcg_sat_solver* s, int jftr)
+{
+    ((Gluco::SimpSolver*)s)->jftr = jftr;
+}
+
+void bmcg_sat_solver_set_var_fanin_lit(bmcg_sat_solver* s, int var, int lit0, int lit1)
+{
+    ((Gluco::SimpSolver*)s)->sat_solver_set_var_fanin_lit(var, lit0, lit1);
+}
+
+void bmcg_sat_solver_start_new_round(bmcg_sat_solver* s)
+{
+    ((Gluco::SimpSolver*)s)->sat_solver_start_new_round();
+}
+
+void bmcg_sat_solver_mark_cone(bmcg_sat_solver* s, int var)
+{
+    ((Gluco::SimpSolver*)s)->sat_solver_mark_cone(var);
+}
+
+
 #else
 
 /**Function*************************************************************
@@ -330,7 +397,7 @@ int bmcg_sat_solver_add_and( bmcg_sat_solver * s, int iVar, int iVar0, int iVar1
   SeeAlso     []
 
 ***********************************************************************/
-Gluco::Solver * glucose_solver_start()
+Solver * glucose_solver_start()
 {
     Solver * S = new Solver;
     S->setIncrementalMode();
@@ -340,6 +407,11 @@ Gluco::Solver * glucose_solver_start()
 void glucose_solver_stop(Gluco::Solver* S)
 {
     delete S;
+}
+
+void glucose_solver_reset(Gluco::Solver* S)
+{
+    S->reset();
 }
 
 int glucose_solver_addclause(Gluco::Solver* S, int * plits, int nlits)
@@ -383,6 +455,11 @@ int glucose_solver_addvar(Gluco::Solver* S)
     return S->nVars() - 1;
 }
 
+int * glucose_solver_read_cex(Gluco::Solver* S )
+{
+    return S->getCex();
+}
+
 int glucose_solver_read_cex_varvalue(Gluco::Solver* S, int ivar)
 {
     return S->model[ivar] == l_True;
@@ -412,6 +489,10 @@ bmcg_sat_solver * bmcg_sat_solver_start()
 void bmcg_sat_solver_stop(bmcg_sat_solver* s)
 {
     glucose_solver_stop((Gluco::Solver*)s);
+}
+void bmcg_sat_solver_reset(bmcg_sat_solver* s)
+{
+    glucose_solver_reset((Gluco::Solver*)s);
 }
 
 int bmcg_sat_solver_addclause(bmcg_sat_solver* s, int * plits, int nlits)
@@ -468,6 +549,11 @@ int bmcg_sat_solver_elim_varnum(bmcg_sat_solver* s)
 {
     return 0;
 //    return ((Gluco::SimpSolver*)s)->eliminated_vars;
+}
+
+int * bmcg_sat_solver_read_cex(bmcg_sat_solver* s)
+{
+    return glucose_solver_read_cex((Gluco::Solver*)s);
 }
 
 int bmcg_sat_solver_read_cex_varvalue(bmcg_sat_solver* s, int ivar)
@@ -554,6 +640,86 @@ int bmcg_sat_solver_minimize_assumptions( bmcg_sat_solver * s, int * plits, int 
 //    nResR = nLitsL == 1 ? 1 : sat_solver_minimize_assumptions( s, pLits + nResL, nLitsL, nConfLimit );
     nresR = nlitsL == 1 ? 1 : bmcg_sat_solver_minimize_assumptions( s, plits, pivot + nresL + nlitsL, pivot + nresL );
     return nresL + nresR;
+}
+
+int bmcg_sat_solver_add_and( bmcg_sat_solver * s, int iVar, int iVar0, int iVar1, int fCompl0, int fCompl1, int fCompl )
+{
+    int Lits[3];
+
+    Lits[0] = Abc_Var2Lit( iVar, !fCompl );
+    Lits[1] = Abc_Var2Lit( iVar0, fCompl0 );
+    if ( !bmcg_sat_solver_addclause( s, Lits, 2 ) )
+        return 0;
+
+    Lits[0] = Abc_Var2Lit( iVar, !fCompl );
+    Lits[1] = Abc_Var2Lit( iVar1, fCompl1 );
+    if ( !bmcg_sat_solver_addclause( s, Lits, 2 ) )
+        return 0;
+
+    Lits[0] = Abc_Var2Lit( iVar,   fCompl );
+    Lits[1] = Abc_Var2Lit( iVar0, !fCompl0 );
+    Lits[2] = Abc_Var2Lit( iVar1, !fCompl1 );
+    if ( !bmcg_sat_solver_addclause( s, Lits, 3 ) )
+        return 0;
+
+    return 1;
+}
+
+int bmcg_solver_add_xor( bmcg_sat_solver * pSat, int iVarA, int iVarB, int iVarC, int fCompl )
+{
+    int Lits[3];
+    int Cid;
+    assert( iVarA >= 0 && iVarB >= 0 && iVarC >= 0 );
+
+    Lits[0] = Abc_Var2Lit( iVarA, !fCompl );
+    Lits[1] = Abc_Var2Lit( iVarB, 1 );
+    Lits[2] = Abc_Var2Lit( iVarC, 1 );
+    Cid = bmcg_sat_solver_addclause( pSat, Lits, 3 );
+    assert( Cid );
+
+    Lits[0] = Abc_Var2Lit( iVarA, !fCompl );
+    Lits[1] = Abc_Var2Lit( iVarB, 0 );
+    Lits[2] = Abc_Var2Lit( iVarC, 0 );
+    Cid = bmcg_sat_solver_addclause( pSat, Lits, 3 );
+    assert( Cid );
+
+    Lits[0] = Abc_Var2Lit( iVarA, fCompl );
+    Lits[1] = Abc_Var2Lit( iVarB, 1 );
+    Lits[2] = Abc_Var2Lit( iVarC, 0 );
+    Cid = bmcg_sat_solver_addclause( pSat, Lits, 3 );
+    assert( Cid );
+
+    Lits[0] = Abc_Var2Lit( iVarA, fCompl );
+    Lits[1] = Abc_Var2Lit( iVarB, 0 );
+    Lits[2] = Abc_Var2Lit( iVarC, 1 );
+    Cid = bmcg_sat_solver_addclause( pSat, Lits, 3 );
+    assert( Cid );
+    return 4;
+}
+
+int bmcg_sat_solver_jftr(bmcg_sat_solver* s)
+{
+    return ((Gluco::Solver*)s)->jftr;
+}
+
+void bmcg_sat_solver_set_jftr(bmcg_sat_solver* s, int jftr)
+{
+    ((Gluco::Solver*)s)->jftr = jftr;
+}
+
+void bmcg_sat_solver_set_var_fanin_lit(bmcg_sat_solver* s, int var, int lit0, int lit1)
+{
+    ((Gluco::Solver*)s)->sat_solver_set_var_fanin_lit(var, lit0, lit1);
+}
+
+void bmcg_sat_solver_start_new_round(bmcg_sat_solver* s)
+{
+    ((Gluco::Solver*)s)->sat_solver_start_new_round();
+}
+
+void bmcg_sat_solver_mark_cone(bmcg_sat_solver* s, int var)
+{
+    ((Gluco::Solver*)s)->sat_solver_mark_cone(var);
 }
 
 #endif
@@ -652,7 +818,7 @@ void Glucose_ReadDimacs( char * pFileName, SimpSolver& s )
   SeeAlso     []
 
 ***********************************************************************/
-void Glucose_SolveCnf( char * pFileName, Glucose_Pars * pPars )
+void Glucose_SolveCnf( char * pFileName, Glucose_Pars * pPars, int fDumpCnf )
 {
     abctime clk = Abc_Clock();
 
@@ -676,8 +842,17 @@ void Glucose_SolveCnf( char * pFileName, Glucose_Pars * pPars )
     if ( pPars->pre ) 
     {
         S.eliminate(true);
-        printf( "c Simplication removed %d variables and %d clauses.  ", S.eliminated_vars, S.eliminated_clauses );
+        printf( "c Simplification removed %d variables and %d clauses.  ", S.eliminated_vars, S.eliminated_clauses );
         Abc_PrintTime( 1, "Time", Abc_Clock() - clk );
+
+        if ( fDumpCnf )
+        {
+            char * pFileCnf = Extra_FileNameGenericAppend( pFileName, "_out.cnf" );
+            S.toDimacs(pFileCnf);
+            printf( "Finished dumping CNF after preprocessing into file \"%s\".\n", pFileCnf );
+            printf( "SAT solving is not performed.\n" );
+            return;
+        }
     }
 
     vec<Lit> dummy;
@@ -1335,7 +1510,7 @@ int Glucose_SolveAig(Gia_Man_t * p, Glucose_Pars * pPars)
     if (pPars->pre) 
     {
         S.eliminate(true);
-        printf( "c Simplication removed %d variables and %d clauses.  ", S.eliminated_vars, S.eliminated_clauses );
+        printf( "c Simplification removed %d variables and %d clauses.  ", S.eliminated_vars, S.eliminated_clauses );
         Abc_PrintTime( 1, "Time", Abc_Clock() - clk );
     }
     

@@ -94,14 +94,14 @@ digraph G {
 
 Odin II uses Bison and Flex to parse a passed Verilog file and produce an Abstract Syntax Tree for each module found in the Verilog File.
 The AST is considered the "front-end" of Odin II.
-Most of the code for this can be found in verilog_bison.y, verilog_flex.l and parse_making_ast.cpp located in the ODIN_II/SRC directory.
+Most of the code for this can be found in verilog_bison.y, verilog_flex.l and parse_making_ast.cpp located in the odin_ii/SRC directory.
 
 ### AST Elaboration
 
 In this step, Odin II parses through the ASTs and elaborates specific parts like for loops, function instances, etc.
 It also will simplify the tree and rid itself of useless parts, such as an unused if statement.
 It then builds one large AST, incorporating each module.
-The code for this can mostly be found in ast_elaborate.cpp located in the ODIN_II/SRC directory.
+The code for this can mostly be found in ast_elaborate.cpp located in the odin_ii/SRC directory.
 
 > **NOTE**
 >
@@ -111,7 +111,7 @@ The code for this can mostly be found in ast_elaborate.cpp located in the ODIN_I
 
 Once again, Odin II parses through the AST assembling a Netlist.
 During the Netlist creation, pins are assigned and connected.
-The code for this can be found in netlist_create_from_ast.cpp located in the ODIN_II/SRC directory.
+The code for this can be found in netlist_create_from_ast.cpp located in the odin_ii/SRC directory.
 
 > **NOTE**
 >
@@ -132,7 +132,7 @@ The simulator of Odin II takes an Input Vector file and creates an Output Vector
 
 When making improvements to Odin II, there are some features the developer should be aware of to make their job easier.
 For instance, Odin II has a -A and -G command that prints the ASTs and Netlist viewable with GraphViz.
-These files can be found in the ODIN_II directory.
+These files can be found in the odin_ii directory.
 This is very helpful to visualize what is being created and how everything is related to each other in the Netlist and AST.
 
 Another feature to be aware of is ``make test``.

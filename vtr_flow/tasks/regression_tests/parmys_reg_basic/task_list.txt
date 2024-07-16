@@ -1,0 +1,5 @@
+regression_tests/parmys_reg_basic/koios_medium/
+regression_tests/parmys_reg_basic/vtr_benchmarks/
+regression_tests/parmys_reg_basic/ultraembedded/
+regression_tests/parmys_reg_basic/vexriscv/
+regression_tests/parmys_reg_basic/freecores/

@@ -1,0 +1,154 @@
+# -*- Makefile -*-
+# This Makefile template is supposed to be included in each plugin's Makefile.
+# Plugin Makefiles need to specify the plugin's name and source files.
+# The plugin name is how the final shared object will be named.
+# This shared object can be imported to Yosys with `plugin -i` command.
+#
+# Below is an example of a plugin Makefile that uses this template:
+# PLUGIN_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
+# NAME = plugin_name
+# SOURCES = source1.cc source2.cc
+# include ../Makefile_plugin.common
+#
+# For the above example the final plugin shared object will be named plugin_name.so.
+# In order to test the plugin it has to be copied to Yosys's shared folder.
+# The install target in this Makefile copies the plugins into the shared folder
+# of the Yosys installation that is found in the PATH.
+# This is needed because the shared folder is where Yosys will look for the
+# plugin object when `plugin -i` is called in Yosys's synthesis script.
+#
+# To add tests for the plugin the Makefile_test.common Makefile should be used.
+# Refer to Makefile_test.common to learn more details.
+#
+# Below is a directory structure which shows how the plugin sources and tests
+# should be laid out
+#
+# |-- Makefile_plugin.common
+# |-- Makefile_test.common
+# |-- example-plugin
+# |   |-- Makefile
+# |   |-- source1.cc
+# |   |-- source2.cc
+# |   |-- tests
+# |       |-- Makefile
+# |       |-- test_case_1
+# |       |   |-- test_case_1.tcl
+# |       |   |-- test_case_1.v
+# |       |   |-- test_case_1.golden.ext
+# |       |   |-- ...
+# |-- example2-plugin
+# |-- ...
+
+SHELL := /usr/bin/env bash
+
+# Directory containing this Makefile
+TOP_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
+
+_MAKEFILES := $(abspath $(filter-out %.d,$(MAKEFILE_LIST)))
+
+# Either find yosys in system and use its path or use the given path
+YOSYS_PATH ?= $(realpath $(dir $(shell command -v yosys))/..)
+
+# Find yosys-config, throw an error if not found
+YOSYS_CONFIG = $(YOSYS_PATH)/bin/yosys-config
+ifeq (,$(wildcard $(YOSYS_CONFIG)))
+  $(error "Didn't find 'yosys-config' under '$(YOSYS_PATH)'")
+endif
+
+CXX ?= $(shell $(YOSYS_CONFIG) --cxx)
+CXXFLAGS := $(shell $(YOSYS_CONFIG) --cxxflags) $(CXXFLAGS) #-DSDC_DEBUG
+LDFLAGS := $(shell $(YOSYS_CONFIG) --ldflags) $(LDFLAGS)
+LDLIBS := $(shell $(YOSYS_CONFIG) --ldlibs) $(LDLIBS)
+EXTRA_FLAGS ?=
+
+YOSYS_DATA_DIR = $(DESTDIR)$(shell $(YOSYS_CONFIG) --datdir)
+YOSYS_PLUGINS_DIR = $(YOSYS_DATA_DIR)/plugins
+
+BUILD_DIR := $(PLUGIN_DIR)/build
+
+# Filled below with all object file paths
+_ALL_OBJECTS :=
+# Filled below with all build directory paths
+_ALL_BUILD_SUBDIRS :=
+
+# Default rule
+
+.PHONY: all
+all: $(NAME).so
+
+# Object files
+
+define _process-single-source-file
+_source_abs := $(abspath $(addprefix $(PLUGIN_DIR)/,$(source)))
+_object_abs := $(abspath $(addprefix $(BUILD_DIR)/,$(source).o))
+_object_dir := $(abspath $(dir $(_object_abs)))
+_ALL_OBJECTS += $(_object_abs)
+_ALL_BUILD_SUBDIRS += $(_object_dir)
+
+-include $(abspath $(addprefix $(BUILD_DIR)/,$(source).d))
+
+$(_object_abs): TARGET_SOURCES := $(_source_abs)
+$(_object_abs): $(_source_abs) | $(_object_dir)
+endef
+$(foreach source,$(SOURCES),$(eval $(value _process-single-source-file)))
+
+$(_ALL_OBJECTS): $(_MAKEFILES)
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) $(EXTRA_FLAGS) -MMD -c -o $@ $(TARGET_SOURCES)
+
+# Objects list for the purpose of adding extra dependencies after inclusion.
+# Example use: `$(OBJECTS): $(BUILD_DIR)/some-file.h`
+OBJECTS := $(_ALL_OBJECTS)
+
+# Shared library
+
+_SO_LIB := $(BUILD_DIR)/$(NAME).so
+_ALL_BUILD_SUBDIRS += $(abspath $(dir $(_SO_LIB)))
+
+$(_SO_LIB): $(_ALL_OBJECTS) $(_MAKEFILES) | $(abspath $(dir $(_SO_LIB)))
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -shared -o $@ $(_ALL_OBJECTS) $(LDLIBS)
+
+.PHONY: $(NAME).so
+$(NAME).so: $(_SO_LIB)
+
+# Tests
+
+.PHONY: test test_clean
+ifneq ($(wildcard $(PLUGIN_DIR)/tests/Makefile),)
+test:
+	@$(MAKE) -C tests all
+test_clean:
+	$(MAKE) -C tests clean
+else
+test:
+test_clean:
+endif
+
+# Installation
+
+$(YOSYS_PLUGINS_DIR)/$(NAME).so: $(_SO_LIB) | $(YOSYS_PLUGINS_DIR)
+	install -D $(_SO_LIB) $@
+
+.PHONY: install_plugin
+install_plugin: $(YOSYS_PLUGINS_DIR)/$(NAME).so
+
+.PHONY: install
+install: install_plugin
+
+# Cleanup
+
+clean: test_clean
+	rm -rf $(BUILD_DIR)
+
+# Other
+
+$(sort $(_ALL_BUILD_SUBDIRS)):
+	mkdir -p $@
+
+$(YOSYS_PLUGINS_DIR):
+	@mkdir -p $@
+
+PMGEN_PY := $(TOP_DIR)/pmgen.py
+
+$(PMGEN_PY):
+	@$(MAKE) -C $(TOP_DIR) pmgen.py
+

@@ -53,7 +53,6 @@ void check_rr_graph(const RRGraphView& rr_graph,
                     const DeviceGrid& grid,
                     const t_chan_width& chan_width,
                     const t_graph_type graph_type,
-                    const int virtual_clock_network_root_idx,
                     bool is_flat) {
     e_route_type route_type = DETAILED;
     if (graph_type == GRAPH_GLOBAL) {
@@ -76,7 +75,7 @@ void check_rr_graph(const RRGraphView& rr_graph,
         }
 
         // Virtual clock network sink is special, ignore.
-        if (virtual_clock_network_root_idx == int(inode)) {
+        if (rr_graph.is_virtual_clock_network_root(rr_node)) {
             continue;
         }
 
@@ -220,6 +219,12 @@ void check_rr_graph(const RRGraphView& rr_graph,
 
     } /* End for all rr_nodes */
 
+    // AM: For the time being, if is_flat is enabled, we don't have proper tests to check whether a node should have an incoming
+    // edge or not
+    if(is_flat) {
+        return;
+    }
+
     /* I built a list of how many edges went to everything in the code above -- *
      * now I check that everything is reachable.                                */
     bool is_fringe_warning_sent = false;
@@ -228,18 +233,17 @@ void check_rr_graph(const RRGraphView& rr_graph,
         size_t inode = (size_t)rr_node;
         t_rr_type rr_type = rr_graph.node_type(rr_node);
         int ptc_num = rr_graph.node_ptc_num(rr_node);
+        int layer_num = rr_graph.node_layer(rr_node);
         int xlow = rr_graph.node_xlow(rr_node);
         int ylow = rr_graph.node_ylow(rr_node);
-        t_physical_tile_type_ptr type = grid[xlow][ylow].type;
+
+        t_physical_tile_type_ptr type = grid.get_physical_type({xlow, ylow, layer_num});
+
         if (rr_type == IPIN || rr_type == OPIN) {
             // #TODO: No edges are added for internal pins. However, they need to be checked somehow!
             if (ptc_num >= type->num_pins) {
-                if(is_flat) {
-                    continue;
-                } else {
-                    VTR_LOG_ERROR("in check_rr_graph: node %d (%s) type: %s is internal node.\n",
-                                  inode, rr_graph.node_type_string(rr_node), rr_node_typename[rr_type]);
-                }
+                VTR_LOG_ERROR("in check_rr_graph: node %d (%s) type: %s is internal node.\n",
+                              inode, rr_graph.node_type_string(rr_node), rr_node_typename[rr_type]);
             }
         }
 
@@ -270,8 +274,10 @@ void check_rr_graph(const RRGraphView& rr_graph,
                 if (!is_chain && !is_fringe && !is_wire) {
                     if (rr_graph.node_type(rr_node) == IPIN || rr_graph.node_type(rr_node) == OPIN) {
                         if (has_adjacent_channel(rr_graph, grid, node)) {
-                            auto block_type = grid[rr_graph.node_xlow(rr_node)][rr_graph.node_ylow(rr_node)].type;
-                            std::string pin_name = block_type_pin_index_to_name(block_type, rr_graph.node_pin_num(rr_node));
+                            auto block_type = grid.get_physical_type({rr_graph.node_xlow(rr_node),
+                                                                      rr_graph.node_ylow(rr_node),
+                                                                      rr_graph.node_layer(rr_node)});
+                            std::string pin_name = block_type_pin_index_to_name(block_type, rr_graph.node_pin_num(rr_node), is_flat);
                             /* Print error messages for all the sides that a node may appear */
                             for (const e_side& node_side : SIDES) {
                                 if (!rr_graph.is_node_on_specific_side(rr_node, node_side)) {
@@ -300,6 +306,7 @@ void check_rr_graph(const RRGraphView& rr_graph,
             }
         }
     }
+
 }
 
 static bool rr_node_is_global_clb_ipin(const RRGraphView& rr_graph, const DeviceGrid& grid, RRNodeId inode) {
@@ -308,7 +315,9 @@ static bool rr_node_is_global_clb_ipin(const RRGraphView& rr_graph, const Device
     int ipin;
     t_physical_tile_type_ptr type;
 
-    type = grid[rr_graph.node_xlow(inode)][rr_graph.node_ylow(inode)].type;
+    type = grid.get_physical_type({rr_graph.node_xlow(inode),
+                                   rr_graph.node_ylow(inode),
+                                   rr_graph.node_layer(inode)});
 
     if (rr_graph.node_type(inode) != IPIN)
         return (false);
@@ -331,7 +340,7 @@ void check_rr_node(const RRGraphView& rr_graph,
 
     //Make sure over-flow doesn't happen
     VTR_ASSERT(inode >= 0);
-    int xlow, ylow, xhigh, yhigh, ptc_num, capacity;
+    int xlow, ylow, xhigh, yhigh, layer_num, ptc_num, capacity;
     t_rr_type rr_type;
     t_physical_tile_type_ptr type;
     int nodes_per_chan, tracks_per_node;
@@ -344,6 +353,7 @@ void check_rr_node(const RRGraphView& rr_graph,
     xhigh = rr_graph.node_xhigh(rr_node);
     ylow = rr_graph.node_ylow(rr_node);
     yhigh = rr_graph.node_yhigh(rr_node);
+    layer_num = rr_graph.node_layer(rr_node);
     ptc_num = rr_graph.node_ptc_num(rr_node);
     capacity = rr_graph.node_capacity(rr_node);
     cost_index = rr_graph.node_cost_index(rr_node);
@@ -359,6 +369,11 @@ void check_rr_node(const RRGraphView& rr_graph,
                         "in check_rr_node: rr endpoints (%d,%d) and (%d,%d) are out of range.\n", xlow, ylow, xhigh, yhigh);
     }
 
+    if (layer_num < 0 || layer_num > int(grid.get_num_layers()) - 1) {
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                        "in check_rr_node: rr endpoints layer_num (%d) is out of range.\n", layer_num);
+    }
+
     if (ptc_num < 0) {
         VPR_ERROR(VPR_ERROR_ROUTE,
                   "in check_rr_node: inode %d (type %d) had a ptc_num of %d.\n", inode, rr_type, ptc_num);
@@ -370,7 +385,7 @@ void check_rr_node(const RRGraphView& rr_graph,
     }
 
     /* Check that the segment is within the array and such. */
-    type = grid[xlow][ylow].type;
+    type = grid.get_physical_type({xlow, ylow, layer_num});
 
     switch (rr_type) {
         case SOURCE:
@@ -426,7 +441,7 @@ void check_rr_node(const RRGraphView& rr_graph,
     /* Check that it's capacities and such make sense. */
 
     int class_max_ptc = get_tile_class_max_ptc(type, is_flat);
-    int pin_max_ptc = get_tile_ipin_opin_max_ptc(type, is_flat);
+    int pin_max_ptc = get_tile_pin_max_ptc(type, is_flat);
     e_pin_type class_type = OPEN;
     int class_num_pins = -1;
     switch (rr_type) {
@@ -549,7 +564,7 @@ static void check_unbuffered_edges(const RRGraphView& rr_graph, int from_node) {
                       "in check_unbuffered_edges:\n"
                       "connection from node %d to node %d uses an unbuffered switch (switch type %d '%s')\n"
                       "but there is no corresponding unbuffered switch edge in the other direction.\n",
-                      from_node, to_node, from_switch_type, rr_graph.rr_switch_inf(RRSwitchId(from_switch_type)).name);
+                      from_node, to_node, from_switch_type, rr_graph.rr_switch_inf(RRSwitchId(from_switch_type)).name.c_str());
         }
 
     } /* End for all from_node edges */
@@ -571,6 +586,7 @@ static bool has_adjacent_channel(const RRGraphView& rr_graph, const DeviceGrid& 
     return true; //All other blocks will be surrounded on all sides by channels
 }
 
+
 static void check_rr_edge(const RRGraphView& rr_graph,
                           const DeviceGrid& grid,
                           const vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data,
@@ -591,8 +607,7 @@ static void check_rr_edge(const RRGraphView& rr_graph,
                 std::string msg = "Non-configurable BUFFER type switch must have only one driver. ";
                 msg += vtr::string_fmt(" Actual fan-in was %d (expected 1).\n", to_fanin);
                 msg += "  Possible cause is complex block output pins connecting to:\n";
-                msg += "    " + describe_rr_node(rr_graph, grid, rr_indexed_data, to_node, is_flat);
-
+                msg += "    " + describe_rr_node(rr_graph, grid, rr_indexed_data, RRNodeId(to_node), is_flat);
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE, msg.c_str());
             }
             break;

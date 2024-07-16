@@ -66,6 +66,8 @@ def parse_vtr_flow(arg_list):
 
     for param in extra_params:
         key, value = param.split("=", 1)
+        if value == "None":
+            continue
         extra_params_parsed[key] = value
         print(key, end="\t")
 

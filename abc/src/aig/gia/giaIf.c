@@ -39,6 +39,8 @@ ABC_NAMESPACE_IMPL_START
 extern int Kit_TruthToGia( Gia_Man_t * pMan, unsigned * pTruth, int nVars, Vec_Int_t * vMemory, Vec_Int_t * vLeaves, int fHash );
 extern int Abc_RecToGia3( Gia_Man_t * pMan, If_Man_t * pIfMan, If_Cut_t * pCut, Vec_Int_t * vLeaves, int fHash );
 
+extern void Gia_ManPrintGetMuxFanins( Gia_Man_t * p, Gia_Obj_t * pObj, int * pFanins );
+
 ////////////////////////////////////////////////////////////////////////
 ///                     FUNCTION DEFINITIONS                         ///
 ////////////////////////////////////////////////////////////////////////
@@ -200,6 +202,7 @@ int Gia_ManLutLevel( Gia_Man_t * p, int ** ppLevels )
 ***********************************************************************/
 void Gia_ManLutParams( Gia_Man_t * p, int * pnCurLuts, int * pnCurEdges, int * pnCurLevels )
 {
+    int fDisable2Lut = 1;
     if ( p->pManTime && Tim_ManBoxNum((Tim_Man_t *)p->pManTime) )
     {
         int i;
@@ -219,20 +222,37 @@ void Gia_ManLutParams( Gia_Man_t * p, int * pnCurLuts, int * pnCurEdges, int * p
         int * pLevels = ABC_CALLOC( int, Gia_ManObjNum(p) );
         *pnCurLuts = 0;
         *pnCurEdges = 0;
+        *pnCurLevels = 0;
         Gia_ManForEachLut( p, i )
         {
-            int Level = 0;
+            if ( Gia_ObjLutIsMux(p, i) && !(fDisable2Lut && Gia_ObjLutSize(p, i) == 2) )
+            {
+                int pFanins[3];
+                if ( Gia_ObjLutSize(p, i) == 3 )
+                {
+                    Gia_ManPrintGetMuxFanins( p, Gia_ManObj(p, i), pFanins );
+                    pLevels[i] = Abc_MaxInt( pLevels[i], pLevels[pFanins[0]]+1 );
+                    pLevels[i] = Abc_MaxInt( pLevels[i], pLevels[pFanins[1]] );
+                    pLevels[i] = Abc_MaxInt( pLevels[i], pLevels[pFanins[2]] );
+                }
+                else if ( Gia_ObjLutSize(p, i) == 2 )
+                {
+                    pObj = Gia_ManObj( p, i );
+                    pLevels[i] = Abc_MaxInt( pLevels[i], pLevels[Gia_ObjFaninId0(pObj, i)] );
+                    pLevels[i] = Abc_MaxInt( pLevels[i], pLevels[Gia_ObjFaninId1(pObj, i)] );
+                }
+                *pnCurLevels = Abc_MaxInt( *pnCurLevels, pLevels[i] );
+                (*pnCurEdges)++;
+                //nMuxF++;
+                continue;
+            }
             (*pnCurLuts)++;
             (*pnCurEdges) += Gia_ObjLutSize(p, i);
             Gia_LutForEachFanin( p, i, iFan, k )
-                if ( Level < pLevels[iFan] )
-                    Level = pLevels[iFan];
-            pLevels[i] = Level + 1;
+                pLevels[i] = Abc_MaxInt( pLevels[i], pLevels[iFan] );
+            pLevels[i]++;
+            *pnCurLevels = Abc_MaxInt( *pnCurLevels, pLevels[i] );
         }
-        *pnCurLevels = 0;
-        Gia_ManForEachCo( p, pObj, k )
-            if ( *pnCurLevels < pLevels[Gia_ObjFaninId0p(p, pObj)] )
-                *pnCurLevels = pLevels[Gia_ObjFaninId0p(p, pObj)];
         ABC_FREE( pLevels );
     }
 }
@@ -452,6 +472,7 @@ int Gia_ManCountDupLut( Gia_Man_t * p )
 
 void Gia_ManPrintMappingStats( Gia_Man_t * p, char * pDumpFile )
 {
+    int fDisable2Lut = 1;
     Gia_Obj_t * pObj;
     int * pLevels;
     int i, k, iFan, nLutSize = 0, nLuts = 0, nFanins = 0, LevelMax = 0, Ave = 0, nMuxF = 0;
@@ -460,7 +481,7 @@ void Gia_ManPrintMappingStats( Gia_Man_t * p, char * pDumpFile )
     pLevels = ABC_CALLOC( int, Gia_ManObjNum(p) );
     Gia_ManForEachLut( p, i )
     {
-        if ( Gia_ObjLutIsMux(p, i) )
+        if ( Gia_ObjLutIsMux(p, i) && !(fDisable2Lut && Gia_ObjLutSize(p, i) == 2) )
         {
             int pFanins[3];
             if ( Gia_ObjLutSize(p, i) == 3 )
@@ -537,11 +558,12 @@ void Gia_ManPrintMappingStats( Gia_Man_t * p, char * pDumpFile )
         FILE * pTable = fopen( pDumpFile, "a+" );
         if ( strcmp( FileNameOld, p->pName ) )
         {
-            sprintf( FileNameOld, "%s", p->pName );
+            sprintf( FileNameOld, "%s_out", p->pName );
             fprintf( pTable, "\n" );
             fprintf( pTable, "%s ", p->pName );
             fprintf( pTable, " " );
-            fprintf( pTable, "%d ", Gia_ManAndNum(p) );
+            //fprintf( pTable, "%d ", Gia_ManAndNum(p) );
+            fprintf( pTable, "%d ", Gia_ManRegNum(p) );
             fprintf( pTable, "%d ", nLuts           );
             fprintf( pTable, "%d ", Gia_ManLutLevelWithBoxes(p) );
             //fprintf( pTable, "%d ", Gia_ManRegBoxNum(p) );
@@ -554,11 +576,13 @@ void Gia_ManPrintMappingStats( Gia_Man_t * p, char * pDumpFile )
             //printf( "This part of the code is currently not used.\n" );
             //assert( 0 );
             fprintf( pTable, " " );
+            fprintf( pTable, " " );
+            fprintf( pTable, "%d ", Gia_ManRegNum(p) );
             fprintf( pTable, "%d ", nLuts           );
             fprintf( pTable, "%d ", Gia_ManLutLevelWithBoxes(p) );
             //fprintf( pTable, "%d ", Gia_ManRegBoxNum(p) );
             //fprintf( pTable, "%d ", Gia_ManNonRegBoxNum(p) );
-            fprintf( pTable, "%.2f", 1.0*(Abc_Clock() - clk)/CLOCKS_PER_SEC );
+//            fprintf( pTable, "%.2f", 1.0*(Abc_Clock() - clk)/CLOCKS_PER_SEC );
             clk = Abc_Clock();
         }
         fclose( pTable );
@@ -756,6 +780,43 @@ int Gia_ManChoiceLevel( Gia_Man_t * p )
 } 
 
 
+/**Function*************************************************************
+
+  Synopsis    [Checks integrity of choice nodes.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+void If_ManCheckChoices_rec( If_Man_t * pIfMan, If_Obj_t * pIfObj )
+{
+    if ( !pIfObj || pIfObj->Type != IF_AND || pIfObj->fDriver )
+        return;
+    pIfObj->fDriver = 1;
+    If_ManCheckChoices_rec( pIfMan, If_ObjFanin0(pIfObj) );
+    If_ManCheckChoices_rec( pIfMan, If_ObjFanin1(pIfObj) );
+    If_ManCheckChoices_rec( pIfMan, pIfObj->pEquiv );
+}
+void If_ManCheckChoices( If_Man_t * pIfMan )
+{
+    If_Obj_t * pIfObj;
+    int i, fFound = 0;
+    If_ManForEachObj( pIfMan, pIfObj, i )
+        pIfObj->fDriver = 0;
+    If_ManForEachCo( pIfMan, pIfObj, i )
+        If_ManCheckChoices_rec( pIfMan, If_ObjFanin0(pIfObj) );
+    If_ManForEachNode( pIfMan, pIfObj, i )
+        if ( !pIfObj->fDriver )
+            printf( "Object %d is dangling.\n", i ), fFound = 1;
+    if ( !fFound )
+        printf( "There are no dangling objects.\n" );
+    If_ManForEachObj( pIfMan, pIfObj, i )
+        pIfObj->fDriver = 0;
+}
+
 
 /**Function*************************************************************
 
@@ -824,6 +885,7 @@ If_Man_t * Gia_ManToIf( Gia_Man_t * p, If_Par_t * pPars )
     }
     if ( Gia_ManHasChoices(p) )
         Gia_ManCleanMark0( p );
+    //If_ManCheckChoices( pIfMan );
     return pIfMan;
 }
 
@@ -1090,6 +1152,34 @@ int Gia_ManFromIfLogicNode( void * pIfMan, Gia_Man_t * pNew, int iObj, Vec_Int_t
             return iObjLit1;
         }
         return Gia_ManFromIfLogicCreateLutSpecial( pNew, pRes, vLeaves, vLeavesTemp, vCover, vMapping, vMapping2, vPacking );
+    }
+    if ( ((If_Man_t *)pIfMan)->pPars->fLut6Filter && Vec_IntSize(vLeaves) == 6 )
+    {
+        extern word If_Dec6Perform( word t, int fDerive );
+        extern void If_Dec6Verify( word t, word z );
+        Vec_Int_t * vLeaves2 = Vec_IntAlloc( 4 );
+        word t = pRes[0];
+        word z = If_Dec6Perform( t, 1 );
+        //If_DecPrintConfig( z );
+        If_Dec6Verify( t, z );
+
+        t = Abc_Tt6Stretch( z & 0xffff, 4 );
+        Vec_IntClear( vLeaves2 );
+        for ( i = 0; i < 4; i++ )
+            Vec_IntPush( vLeaves2, Vec_IntEntry( vLeaves, (int)((z >> (16+i*4)) & 7) ) );
+        iObjLit1 = Gia_ManFromIfLogicCreateLut( pNew, &t, vLeaves2, vCover, vMapping, vMapping2 );
+
+        t = Abc_Tt6Stretch( (z >> 32) & 0xffff, 4 );
+        Vec_IntClear( vLeaves2 );
+        for ( i = 0; i < 4; i++ )
+            if ( ((z >> (48+i*4)) & 7) == 7 )
+                Vec_IntPush( vLeaves2, iObjLit1 );
+            else
+                Vec_IntPush( vLeaves2, Vec_IntEntry( vLeaves, (int)((z >> (48+i*4)) & 7) ) );
+        iObjLit1 = Gia_ManFromIfLogicCreateLut( pNew, &t, vLeaves2, vCover, vMapping, vMapping2 );
+
+        Vec_IntFree( vLeaves2 );
+        return iObjLit1;
     }
     // check if there is no LUT structures
     if ( pStr == NULL )
@@ -1804,7 +1894,7 @@ Gia_Man_t * Gia_ManFromIfLogic( If_Man_t * pIfMan )
             if ( !pIfMan->pPars->fUseTtPerm && !pIfMan->pPars->fDelayOpt && !pIfMan->pPars->fDelayOptLut && !pIfMan->pPars->fDsdBalance && 
                  !pIfMan->pPars->pLutStruct && !pIfMan->pPars->fUserRecLib && !pIfMan->pPars->fUserSesLib && !pIfMan->pPars->nGateSize && 
                  !pIfMan->pPars->fEnableCheck75 && !pIfMan->pPars->fEnableCheck75u && !pIfMan->pPars->fEnableCheck07 && !pIfMan->pPars->fUseDsdTune && 
-                 !pIfMan->pPars->fUseCofVars && !pIfMan->pPars->fUseAndVars )
+                 !pIfMan->pPars->fUseCofVars && !pIfMan->pPars->fUseAndVars && !pIfMan->pPars->fUseCheck1 && !pIfMan->pPars->fUseCheck2 )
                 If_CutRotatePins( pIfMan, pCutBest );
             // collect leaves of the best cut
             Vec_IntClear( vLeaves );
@@ -1959,6 +2049,7 @@ Gia_Man_t * Gia_ManFromIfLogic( If_Man_t * pIfMan )
         pFile = fopen( Buffer, "wb" );
         if ( pFile == NULL )
         {
+            Vec_StrFree( vConfigsStr );
             printf( "Cannot open file \"%s\".\n", Buffer );
             return pNew;
         }
@@ -2132,11 +2223,13 @@ void Gia_ManTransferTiming( Gia_Man_t * p, Gia_Man_t * pGia )
         p->vOutReqs    = pGia->vOutReqs;    pGia->vOutReqs    = NULL;
         p->DefInArrs   = pGia->DefInArrs;
         p->DefOutReqs  = pGia->DefOutReqs;
+        p->And2Delay   = pGia->And2Delay;
     }
-    if ( pGia->vNamesIn || pGia->vNamesOut )
+    if ( pGia->vNamesIn || pGia->vNamesOut || pGia->vNamesNode )
     {
         p->vNamesIn     = pGia->vNamesIn;     pGia->vNamesIn     = NULL;
         p->vNamesOut    = pGia->vNamesOut;    pGia->vNamesOut    = NULL;
+        p->vNamesNode   = pGia->vNamesNode;   pGia->vNamesNode   = NULL;
     }
     if ( pGia->vConfigs || pGia->pCellStr )
     {
@@ -2231,7 +2324,7 @@ Gia_Man_t * Gia_ManPerformMappingInt( Gia_Man_t * p, If_Par_t * pPars )
 {
     extern void Gia_ManIffTest( Gia_Man_t * pGia, If_LibLut_t * pLib, int fVerbose );
     Gia_Man_t * pNew;
-    If_Man_t * pIfMan; int i, Entry;
+    If_Man_t * pIfMan; int i, Entry;//, Id, EntryF;
     assert( pPars->pTimesArr == NULL );
     assert( pPars->pTimesReq == NULL );
     if ( p->vCiArrs )
@@ -2241,6 +2334,15 @@ Gia_Man_t * Gia_ManPerformMappingInt( Gia_Man_t * p, If_Par_t * pPars )
         Vec_IntForEachEntry( p->vCiArrs, Entry, i )
             pPars->pTimesArr[i] = (float)Entry;
     }
+/*  // uncommenting this leads to a mysterious memory corruption 
+    else if ( p->vInArrs )
+    {
+        assert( Vec_FltSize(p->vInArrs) == Gia_ManCiNum(p) );
+        pPars->pTimesArr = ABC_CALLOC( float, Gia_ManCiNum(p));
+        Gia_ManForEachCiId( p, Id, i )
+            pPars->pTimesArr[i] = Vec_FltEntry(p->vInArrs, i);
+    }
+*/
     if ( p->vCoReqs )
     {
         assert( Vec_IntSize(p->vCoReqs) == Gia_ManCoNum(p) );
@@ -2248,6 +2350,15 @@ Gia_Man_t * Gia_ManPerformMappingInt( Gia_Man_t * p, If_Par_t * pPars )
         Vec_IntForEachEntry( p->vCoReqs, Entry, i )
             pPars->pTimesReq[i] = (float)Entry;
     }
+/*  // uncommenting this leads to a mysterious memory corruption 
+    else if ( p->vOutReqs )
+    {
+        assert( Vec_FltSize(p->vOutReqs) == Gia_ManCoNum(p) );
+        pPars->pTimesReq = ABC_CALLOC( float, Gia_ManCoNum(p) );
+        Vec_FltForEachEntry( p->vOutReqs, EntryF, i )
+            pPars->pTimesReq[i] = EntryF;
+    }
+*/
     ABC_FREE( p->pCellStr );
     Vec_IntFreeP( &p->vConfigs );
     // disable cut minimization when GIA strucure is needed
@@ -2310,8 +2421,16 @@ Gia_Man_t * Gia_ManPerformMappingInt( Gia_Man_t * p, If_Par_t * pPars )
     // transfer name
     assert( pNew->pName == NULL );
     pNew->pName = Abc_UtilStrsav( p->pName );
+    ABC_FREE( pNew->pSpec );
     pNew->pSpec = Abc_UtilStrsav( p->pSpec );
     Gia_ManSetRegNum( pNew, Gia_ManRegNum(p) );
+    // print delay trace
+    if ( pPars->fVerboseTrace )
+    {
+        pNew->pLutLib = pPars->pLutLib;
+        Gia_ManDelayTraceLutPrint( pNew, 1 );
+        pNew->pLutLib = NULL;
+    }
     return pNew;
 }
 Gia_Man_t * Gia_ManPerformMapping( Gia_Man_t * p, void * pp )

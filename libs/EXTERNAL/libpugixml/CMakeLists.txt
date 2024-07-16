@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.9)
+cmake_minimum_required(VERSION 3.16)
 
 project("libpugixml")
 
@@ -26,3 +26,4 @@ if(NOT VTR_ENABLE_SANITIZE)
 endif()
 
 install(TARGETS libpugixml DESTINATION bin)
+install(FILES ${LIB_HEADERS} DESTINATION include/libpugixml)

@@ -442,10 +442,10 @@ int Msat_IntVecPop( Msat_IntVec_t * p )
 void Msat_IntVecSort( Msat_IntVec_t * p, int fReverse )
 {
     if ( fReverse ) 
-        qsort( (void *)p->pArray, p->nSize, sizeof(int), 
+        qsort( (void *)p->pArray, (size_t)p->nSize, sizeof(int), 
                 (int (*)(const void *, const void *)) Msat_IntVecSortCompare2 );
     else
-        qsort( (void *)p->pArray, p->nSize, sizeof(int), 
+        qsort( (void *)p->pArray, (size_t)p->nSize, sizeof(int), 
                 (int (*)(const void *, const void *)) Msat_IntVecSortCompare1 );
 }
 

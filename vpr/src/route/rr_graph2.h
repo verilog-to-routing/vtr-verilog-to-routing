@@ -29,10 +29,17 @@ void alloc_and_load_rr_node_indices(RRGraphBuilder& rr_graph_builder,
                                     const t_chan_details& chan_details_y,
                                     bool is_flat);
 
+void alloc_and_load_tile_rr_node_indices(RRGraphBuilder& rr_graph_builder,
+                                         t_physical_tile_type_ptr physical_tile,
+                                         int layer,
+                                         int x,
+                                         int y,
+                                         int* num_rr_nodes);
+
 void alloc_and_load_intra_cluster_rr_node_indices(RRGraphBuilder& rr_graph_builder,
                                                   const DeviceGrid& grid,
-                                                  int x,
-                                                  int y,
+                                                  const vtr::vector<ClusterBlockId, t_cluster_pin_chain>& pin_chains,
+                                                  const vtr::vector<ClusterBlockId, std::unordered_set<int>>& pin_chains_num,
                                                   int* index);
 
 bool verify_rr_node_indices(const DeviceGrid& grid,
@@ -119,6 +126,8 @@ bool is_sblock(const int chan,
                const enum e_directionality directionality);
 
 int get_bidir_opin_connections(RRGraphBuilder& rr_graph_builder,
+                               const int opin_layer,
+                               const int track_layer,
                                const int i,
                                const int j,
                                const int ipin,
@@ -129,6 +138,8 @@ int get_bidir_opin_connections(RRGraphBuilder& rr_graph_builder,
                                const t_chan_details& chan_details_y);
 
 int get_unidir_opin_connections(RRGraphBuilder& rr_graph_builder,
+                                const int opin_layer,
+                                const int track_layer,
                                 const int chan,
                                 const int seg,
                                 int Fc,
@@ -143,6 +154,7 @@ int get_unidir_opin_connections(RRGraphBuilder& rr_graph_builder,
                                 bool* Fc_clipped);
 
 int get_track_to_pins(RRGraphBuilder& rr_graph_builder,
+                      int layer,
                       int seg,
                       int chan,
                       int track,
@@ -154,9 +166,11 @@ int get_track_to_pins(RRGraphBuilder& rr_graph_builder,
                       enum e_rr_type chan_type,
                       int chan_length,
                       int wire_to_ipin_switch,
+                      int wire_to_pin_between_dice_switch,
                       enum e_directionality directionality);
 
 int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
+                        const int layer,
                         const int from_chan,
                         const int from_seg,
                         const int from_track,

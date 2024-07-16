@@ -47,18 +47,24 @@ static std::vector<e_side> find_physical_tile_pin_side(t_physical_tile_type_ptr 
  *    - find the net id for the node in clustering context
  *    - if the net id does not match, we update the clustering context
  *******************************************************************/
-static void update_cluster_pin_with_post_routing_results(const DeviceContext& device_ctx,
+static void update_cluster_pin_with_post_routing_results(const Netlist<>& net_list,
+                                                         const AtomContext& atom_ctx,
+                                                         const DeviceContext& device_ctx,
                                                          ClusteringContext& clustering_ctx,
-                                                         const vtr::vector<RRNodeId, ClusterNetId>& rr_node_nets,
-                                                         const vtr::Point<size_t>& grid_coord,
+                                                         const vtr::vector<RRNodeId, ParentNetId>& rr_node_nets,
+                                                         const t_pl_loc& grid_coord,
                                                          const ClusterBlockId& blk_id,
-                                                         const int& sub_tile_z,
                                                          size_t& num_mismatches,
-                                                         const bool& verbose) {
+                                                         const bool& verbose,
+                                                         bool is_flat) {
+    const int sub_tile_z = grid_coord.sub_tile;
+    const int coord_x = grid_coord.x;
+    const int coord_y = grid_coord.y;
+    const int coord_layer = grid_coord.layer;
     const auto& node_lookup = device_ctx.rr_graph.node_lookup();
     /* Handle each pin */
     auto logical_block = clustering_ctx.clb_nlist.block_type(blk_id);
-    auto physical_tile = device_ctx.grid[grid_coord.x()][grid_coord.y()].type;
+    auto physical_tile = device_ctx.grid.get_physical_type({coord_x, coord_y, coord_layer});
 
     /* Narrow down side search for grids
      *   The wanted side depends on the location of the grid.
@@ -84,16 +90,16 @@ static void update_cluster_pin_with_post_routing_results(const DeviceContext& de
      *   -------------------------------------------------------
      */
     std::vector<e_side> wanted_sides;
-    if (device_ctx.grid.height() - 1 == grid_coord.y()) { /* TOP side */
+    if ((int)device_ctx.grid.height() - 1 == coord_y) { /* TOP side */
         wanted_sides.push_back(BOTTOM);
     }
-    if (device_ctx.grid.width() - 1 == grid_coord.x()) { /* RIGHT side */
+    if ((int)device_ctx.grid.width() - 1 == coord_x) { /* RIGHT side */
         wanted_sides.push_back(LEFT);
     }
-    if (0 == grid_coord.y()) { /* BOTTOM side */
+    if (0 == coord_y) { /* BOTTOM side */
         wanted_sides.push_back(TOP);
     }
-    if (0 == grid_coord.x()) { /* LEFT side */
+    if (0 == coord_x) { /* LEFT side */
         wanted_sides.push_back(RIGHT);
     }
 
@@ -147,12 +153,12 @@ static void update_cluster_pin_with_post_routing_results(const DeviceContext& de
         /* We should have at least one side now after merging */
         VTR_ASSERT(!pin_sides.empty());
 
-        ClusterNetId routing_net_id = ClusterNetId::INVALID();
+        ParentNetId routing_net_id = ParentNetId::INVALID();
         std::vector<RRNodeId> visited_rr_nodes;
         short valid_routing_net_cnt = 0;
         for (const e_side& pin_side : pin_sides) {
             /* Find the net mapped to this pin in routing results */
-            RRNodeId rr_node = node_lookup.find_node(grid_coord.x(), grid_coord.y(), rr_node_type, physical_pin, pin_side);
+            RRNodeId rr_node = node_lookup.find_node(coord_layer, coord_x, coord_y, rr_node_type, physical_pin, pin_side);
 
             /* Bypass invalid nodes, after that we must have a valid rr_node id */
             if (!rr_node) {
@@ -182,8 +188,8 @@ static void update_cluster_pin_with_post_routing_results(const DeviceContext& de
                     if (routing_net_id != rr_node_nets[rr_node]) {
                         VTR_LOG_ERROR("Pin '%s' is mapped to two nets: '%s' and '%s'\n",
                                       pb_graph_pin->to_string().c_str(),
-                                      clustering_ctx.clb_nlist.net_name(routing_net_id).c_str(),
-                                      clustering_ctx.clb_nlist.net_name(rr_node_nets[rr_node]).c_str());
+                                      net_list.net_name(routing_net_id).c_str(),
+                                      net_list.net_name(rr_node_nets[rr_node]).c_str());
                     }
                     VTR_ASSERT(routing_net_id == rr_node_nets[rr_node]);
                 }
@@ -204,19 +210,29 @@ static void update_cluster_pin_with_post_routing_results(const DeviceContext& de
             continue;
         }
 
+        ClusterNetId cluster_equivalent_net_id = ClusterNetId::INVALID();
+        if (is_flat) {
+            cluster_equivalent_net_id = atom_ctx.lookup.clb_net(convert_to_atom_net_id(routing_net_id));
+            if (routing_net_id != ParentNetId::INVALID()) {
+                VTR_ASSERT(cluster_equivalent_net_id != ClusterNetId::INVALID());
+            }
+        } else {
+            cluster_equivalent_net_id = convert_to_cluster_net_id(routing_net_id);
+        }
+
         /* If the net from the routing results matches the net from the packing results,
          * nothing to be changed. Move on to the next net.
          */
-        if (routing_net_id == cluster_net_id) {
+        if (cluster_equivalent_net_id == cluster_net_id) {
             continue;
         }
 
         /* Update the clustering context with net modification */
-        clustering_ctx.post_routing_clb_pin_nets[blk_id][pb_graph_pin->pin_count_in_cluster] = routing_net_id;
+        clustering_ctx.post_routing_clb_pin_nets[blk_id][pb_graph_pin->pin_count_in_cluster] = cluster_equivalent_net_id;
 
         std::string routing_net_name("unmapped");
-        if (clustering_ctx.clb_nlist.valid_net_id(routing_net_id)) {
-            routing_net_name = clustering_ctx.clb_nlist.net_name(routing_net_id);
+        if (clustering_ctx.clb_nlist.valid_net_id(cluster_equivalent_net_id)) {
+            routing_net_name = clustering_ctx.clb_nlist.net_name(cluster_equivalent_net_id);
         }
 
         std::string cluster_net_name("unmapped");
@@ -225,13 +241,14 @@ static void update_cluster_pin_with_post_routing_results(const DeviceContext& de
         }
 
         VTR_LOGV(verbose,
-                 "Fixed up net '%s' mapping mismatch at clustered block '%s' pin 'grid[%ld][%ld].%s.%s[%d]' (was net '%s')\n",
+                 "Fixed up net '%s' mapping mismatch at clustered block '%s' pin 'grid[%ld][%ld].%s.%s[%d] - layer %d' (was net '%s')\n",
                  routing_net_name.c_str(),
                  clustering_ctx.clb_nlist.block_pb(blk_id)->name,
-                 grid_coord.x(), grid_coord.y(),
+                 coord_x, coord_y,
                  clustering_ctx.clb_nlist.block_pb(blk_id)->pb_graph_node->pb_type->name,
                  get_pb_graph_node_pin_from_block_pin(blk_id, physical_pin)->port->name,
                  get_pb_graph_node_pin_from_block_pin(blk_id, physical_pin)->pin_number,
+                 coord_layer,
                  cluster_net_name.c_str());
 
         /* Update counter */
@@ -1026,8 +1043,10 @@ static void update_cluster_routing_traces_with_post_routing_results(AtomContext&
  * Note:
  *   - This function SHOULD be run ONLY when routing is finished!!!
  *******************************************************************/
-void sync_netlists_to_routing(const DeviceContext& device_ctx,
+void sync_netlists_to_routing(const Netlist<>& net_list,
+                              const DeviceContext& device_ctx,
                               AtomContext& atom_ctx,
+                              const AtomLookup& atom_look_up,
                               ClusteringContext& clustering_ctx,
                               const PlacementContext& placement_ctx,
                               const RoutingContext& routing_ctx,
@@ -1040,11 +1059,11 @@ void sync_netlists_to_routing(const DeviceContext& device_ctx,
     clustering_ctx.pre_routing_net_pin_mapping.clear();
 
     /* Create net-to-rr_node mapping */
-    vtr::vector<RRNodeId, ClusterNetId> rr_node_nets = annotate_rr_node_nets(device_ctx,
-                                                                             clustering_ctx,
-                                                                             routing_ctx,
-                                                                             verbose,
-                                                                             is_flat);
+    vtr::vector<RRNodeId, ParentNetId> rr_node_nets = annotate_rr_node_nets(net_list,
+                                                                            device_ctx,
+                                                                            routing_ctx,
+                                                                            verbose,
+                                                                            is_flat);
 
     IntraLbPbPinLookup intra_lb_pb_pin_lookup(device_ctx.logical_block_types);
 
@@ -1052,25 +1071,38 @@ void sync_netlists_to_routing(const DeviceContext& device_ctx,
     size_t num_mismatches = 0;
     size_t num_fixup = 0;
 
+    std::unordered_set<ClusterBlockId> seen_block_ids;
+    seen_block_ids.reserve(clustering_ctx.clb_nlist.blocks().size());
     /* Update the core logic (center blocks of the FPGA) */
-    for (const ClusterBlockId& cluster_blk_id : clustering_ctx.clb_nlist.blocks()) {
+    for (const ParentBlockId& blk_id : net_list.blocks()) {
         /* We know the entrance to grid info and mapping results, do the fix-up for this block */
-        vtr::Point<size_t> grid_coord(placement_ctx.block_locs[cluster_blk_id].loc.x,
-                                      placement_ctx.block_locs[cluster_blk_id].loc.y);
+        ClusterBlockId clb_blk_id;
+        if (is_flat) {
+            clb_blk_id = atom_look_up.atom_clb(convert_to_atom_block_id(blk_id));
+        } else {
+            clb_blk_id = convert_to_cluster_block_id(blk_id);
+        }
+        VTR_ASSERT(clb_blk_id != ClusterBlockId::INVALID());
 
-        update_cluster_pin_with_post_routing_results(device_ctx,
-                                                     clustering_ctx,
-                                                     rr_node_nets,
-                                                     grid_coord, cluster_blk_id,
-                                                     placement_ctx.block_locs[cluster_blk_id].loc.sub_tile,
-                                                     num_mismatches,
-                                                     verbose);
-        update_cluster_routing_traces_with_post_routing_results(atom_ctx,
-                                                                intra_lb_pb_pin_lookup,
-                                                                clustering_ctx,
-                                                                cluster_blk_id,
-                                                                num_fixup,
-                                                                verbose);
+        if (seen_block_ids.insert(clb_blk_id).second) {
+            update_cluster_pin_with_post_routing_results(net_list,
+                                                         atom_ctx,
+                                                         device_ctx,
+                                                         clustering_ctx,
+                                                         rr_node_nets,
+                                                         placement_ctx.block_locs[clb_blk_id].loc,
+                                                         clb_blk_id,
+                                                         num_mismatches,
+                                                         verbose,
+                                                         is_flat);
+
+            update_cluster_routing_traces_with_post_routing_results(atom_ctx,
+                                                                    intra_lb_pb_pin_lookup,
+                                                                    clustering_ctx,
+                                                                    clb_blk_id,
+                                                                    num_fixup,
+                                                                    verbose);
+        }
     }
 
     /* Print a short summary */

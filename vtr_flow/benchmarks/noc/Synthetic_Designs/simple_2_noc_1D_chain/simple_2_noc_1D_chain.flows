@@ -1,0 +1,5 @@
+<traffic_flows>
+
+	<single_flow src=".*noc_router_adapter_block_one.*" dst=".*noc_router_adapter_block_two.*" bandwidth="4e5" latency_cons="3e-9" />
+
+</traffic_flows>

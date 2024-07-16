@@ -609,7 +609,7 @@ void Solver::analyze(CRef confl, vec<Lit>& out_learnt,vec<Lit>&selectors, int& o
     for(i = 0;i<selectors.size();i++)  
       out_learnt.push(selectors[i]);       
 
-    out_learnt.copyTo(analyze_toclear);
+    out_learnt.copyTo_(analyze_toclear);
     if (ccmin_mode == 2){
         uint32_t abstract_level = 0;
         for (i = 1; i < out_learnt.size(); i++)
@@ -1124,7 +1124,7 @@ lbool Solver::search(int nof_conflicts)
             return l_False;
           }
             // Perform clause database reduction !
-            if(conflicts>=curRestart* nbclausesbeforereduce) 
+            if(conflicts>=curRestart* nbclausesbeforereduce && learnts.size()>0) 
               {
                   
                 assert(learnts.size()>0);
@@ -1330,7 +1330,7 @@ void Solver::toDimacs(FILE* f, Clause& c, vec<Var>& map, Var& max)
 
 void Solver::toDimacs(const char *file, const vec<Lit>& assumps)
 {
-    FILE* f = fopen(file, "wr");
+    FILE* f = fopen(file, "wb");
     if (f == NULL)
         fprintf(stderr, "could not open file %s\n", file), exit(1);
     toDimacs(f, assumps);

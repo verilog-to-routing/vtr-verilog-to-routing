@@ -30,7 +30,7 @@ class ExtendedMapLookahead : public RouterLookahead {
      * @param criticality_fac criticality of the current connection between 0 (all congestion) and 1 (all timing)
      * @return expected cost to get to the destination
      */
-    std::pair<float, float> get_src_opin_cost(RRNodeId from_node, int delta_x, int delta_y, const t_conn_cost_params& params) const;
+    std::pair<float, float> get_src_opin_cost(RRNodeId from_node, int delta_x, int delta_y, int to_layer_num, const t_conn_cost_params& params) const;
 
     /**
      * @brief Returns the CHAN -> IPIN delay that gets added to the final expected delay
@@ -76,15 +76,37 @@ class ExtendedMapLookahead : public RouterLookahead {
      */
     void compute(const std::vector<t_segment_inf>& segment_inf) override;
 
+    void compute_intra_tile() override {
+        VPR_THROW(VPR_ERROR_ROUTE, "ClassicLookahead::compute_intra_time unimplemented");
+    }
+
     /**
      * @brief Reads the extended lookahead map
      */
     void read(const std::string& file) override;
 
     /**
+     * @brief Read the extended intra-cluster lookahead map
+     */
+    void read_intra_cluster(const std::string& /*file*/) override {
+        VPR_THROW(VPR_ERROR_ROUTE, "ExtendedMapLookahead::read_intra_cluster unimplemented");
+    }
+
+    /**
      * @brief Writes the extended lookahead map
      */
     void write(const std::string& file) const override;
+
+    /**
+     * @brief Writes the extended intra-cluster lookahead map
+     */
+    void write_intra_cluster(const std::string& /*file*/) const override {
+        VPR_THROW(VPR_ERROR_ROUTE, "ExtendedMapLookahead::write_intra_cluster unimplemented");
+    }
+
+    float get_opin_distance_min_delay(int /*physical_tile_idx*/, int /*from_layer*/, int /*to_layer*/, int /*dx*/, int /*dy*/) const override {
+        return -1.;
+    }
 };
 
 #endif

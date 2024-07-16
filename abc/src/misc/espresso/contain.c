@@ -342,7 +342,7 @@ IN int (*compare)();
     *pdest = NULL;                      /* Sentinel -- never seen by sort */
 
     /* Sort cubes by size */
-    qsort((char *) A1, A->count, sizeof(pset), compare);
+    qsort((char *) A1, (size_t)A->count, sizeof(pset), compare);
     return A1;
 }
 

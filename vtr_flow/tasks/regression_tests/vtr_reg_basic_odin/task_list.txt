@@ -1,0 +1,4 @@
+regression_tests/vtr_reg_basic_odin/basic_no_timing
+regression_tests/vtr_reg_basic_odin/basic_timing
+regression_tests/vtr_reg_basic_odin/basic_timing_no_sdc
+regression_tests/vtr_reg_basic_odin/hdl_include_odin

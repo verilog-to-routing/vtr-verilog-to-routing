@@ -1,2 +1,0 @@
-regression_tests/vtr_reg_yosys_parmys/vtr_benchmarks/
-regression_tests/vtr_reg_yosys_parmys/koios/

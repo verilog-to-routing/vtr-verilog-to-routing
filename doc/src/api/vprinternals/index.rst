@@ -9,3 +9,5 @@ VPR INTERNALS
    draw_structs
    vpr_ui
    draw_files
+   vpr_noc
+   vpr_router

@@ -34,7 +34,7 @@ TEST_CASE("read_arch_metadata", "[vpr]") {
     bool found_perimeter_meta = false;
     bool found_single_meta = false;
     for (const auto& grid_def : arch.grid_layouts) {
-        for (const auto& loc_def : grid_def.loc_defs) {
+        for (const auto& loc_def : grid_def.layers.at(0).loc_defs) {
             if (loc_def.block_type == "io") {
                 REQUIRE(loc_def.meta != nullptr);
                 REQUIRE(loc_def.meta->has(type_str));
@@ -132,7 +132,7 @@ TEST_CASE("read_rr_graph_metadata", "[vpr]") {
         vpr_init(sizeof(argv) / sizeof(argv[0]), argv,
                  &options, &vpr_setup, &arch);
         vpr_setup.RouterOpts.read_rr_edge_metadata = true;
-        vpr_create_device(vpr_setup, arch);
+        vpr_create_device(vpr_setup, arch, false);
 
         const auto& device_ctx = g_vpr_ctx.device();
         auto& mutable_device_ctx = g_vpr_ctx.mutable_device();
@@ -164,9 +164,7 @@ TEST_CASE("read_rr_graph_metadata", "[vpr]") {
                        device_ctx.arch_switch_inf,
                        device_ctx.arch,
                        &mutable_device_ctx.chan_width,
-                       device_ctx.num_arch_switches,
                        kRrGraphFile,
-                       device_ctx.virtual_clock_network_root_idx,
                        echo_enabled,
                        echo_file_name,
                        false);
@@ -201,7 +199,7 @@ TEST_CASE("read_rr_graph_metadata", "[vpr]") {
     vpr_init(sizeof(argv) / sizeof(argv[0]), argv,
              &options, &vpr_setup, &arch);
     vpr_setup.RouterOpts.read_rr_edge_metadata = true;
-    vpr_create_device(vpr_setup, arch);
+    vpr_create_device(vpr_setup, arch, false);
 
     const auto& device_ctx = g_vpr_ctx.device();
 

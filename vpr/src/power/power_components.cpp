@@ -60,7 +60,7 @@ void power_components_init() {
  */
 void power_components_uninit() {
     auto& power_ctx = g_vpr_ctx.mutable_power();
-    delete[](power_ctx.by_component.components);
+    delete[] power_ctx.by_component.components;
 }
 
 /**
@@ -375,13 +375,13 @@ void power_usage_lut(t_power_usage* power_usage, int lut_size, float transistor_
 
     /* Free allocated memory */
     for (i = 0; i <= lut_size; i++) {
-        delete[](internal_prob[i]);
-        delete[](internal_dens[i]);
-        delete[](internal_v[i]);
+        delete[] internal_prob[i];
+        delete[] internal_dens[i];
+        delete[] internal_v[i];
     }
-    delete[](internal_prob);
-    delete[](internal_dens);
-    delete[](internal_v);
+    delete[] internal_prob;
+    delete[] internal_dens;
+    delete[] internal_v;
 
     /* Callibration */
     callibration = power_ctx.commonly_used->component_callibration[POWER_CALLIB_COMPONENT_LUT];
@@ -507,8 +507,8 @@ void power_usage_local_interc_mux(t_power_usage* power_usage, t_pb* pb, t_interc
                 }
             }
 
-            delete[](in_dens);
-            delete[](in_prob);
+            delete[] in_dens;
+            delete[] in_prob;
             break;
         default:
             VTR_ASSERT(0);
@@ -561,7 +561,7 @@ void power_usage_mux_multilevel(t_power_usage* power_usage,
                         mux_arch->mux_graph_head, mux_arch, selector_values, in_prob,
                         in_dens, output_level_restored, period);
 
-    delete[](selector_values);
+    delete[] selector_values;
 
     callibration = power_ctx.commonly_used->component_callibration[POWER_CALLIB_COMPONENT_MUX];
     if (callibration->is_done_callibration()) {
@@ -625,11 +625,11 @@ static void power_usage_mux_rec(t_power_usage* power_usage, float* out_prob, flo
     power_add_usage(power_usage, &sub_power_usage);
 
     if (mux_node->level != 0) {
-        delete[](in_prob);
-        delete[](in_dens);
+        delete[] in_prob;
+        delete[] in_dens;
     }
 
-    delete[](v_in);
+    delete[] v_in;
 }
 
 /**

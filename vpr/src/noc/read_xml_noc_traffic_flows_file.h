@@ -3,7 +3,7 @@
 
 /**
  *  @brief The purpose of this file is to read and parse an xml file that has 
- *         then a '.flows' extension. This file contains the description of
+ *         a '.flows' extension. This file contains the description of
  *         a number of traffic flows within the NoC. A traffic flow describes
  *         the communication between two routers in the NoC.
  * 
@@ -34,16 +34,20 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include <float.h>
 
 // identifier when an integer conversion failed while reading an attribute value in an xml file
 constexpr int NUMERICAL_ATTRIBUTE_CONVERSION_FAILURE = -1;
+
+// defines the priority of a traffic flow when not specified by a user
+constexpr int DEFAULT_TRAFFIC_FLOW_PRIORITY = 1;
 
 /**
  * @brief Parse an xml '.flows' file that contains a number of traffic
  *        in the NoC. A traffic flow is a communication between one router
  *        in the NoC to another. The XML file contains a number of these traffic
  *        flows and provides additional information about them, such as the
- *        size of data being tranferred and constraints on the latency of the
+ *        size of data being transferred and constraints on the latency of the
  *        data transmission. Once the traffic flows are parsed, they are stored
  *        inside the NocTrafficFlows class.
  * 
@@ -76,6 +80,49 @@ void read_xml_noc_traffic_flows_file(const char* noc_flows_file);
 void process_single_flow(pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data, const ClusteringContext& cluster_ctx, NocContext& noc_ctx, t_physical_tile_type_ptr noc_router_tile_type, const std::vector<ClusterBlockId>& cluster_blocks_compatible_with_noc_router_tiles);
 
 /**
+ * @brief Retrieves the user provided bandwidth for the traffic
+ * flow currently being processed. If a bandwidth is not provided then
+ * an error is thrown. If the value provided was not an number then it is 
+ * assigned to an illegal value. 
+ * 
+ * @param single_flow_tag An xml tag that contains the traffic flow information.
+ * @param loc_data Contains location data about the current line in the xml
+ *                 file.
+ * @return double The bandwidth for the currently processed
+ * traffic flow.
+ */
+double get_traffic_flow_bandwidth(pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data);
+
+/**
+ * @brief Retrieves the user provided maximum allowed latency for the traffic
+ * flow currently being processed. If a maximum latency is not provided, then 
+ * it is set to 1 to indicate that there are no constraints on the
+ * latency. If the value provided was not a number then it is assigned to
+ * an illegal value.
+ * 
+ * @param single_flow_tag A xml tag that contains the traffic flow information.
+ * @param loc_data Contains location data about the current line in the xml
+ *                 file.
+ * @return double The maximum allowable latency for the currently processed
+ * traffic flow.
+ */
+double get_max_traffic_flow_latency(pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data);
+
+/**
+ * @brief Retrieves the user provided priority for the traffic flow currently
+ * being processed. If a priority was not provided then its set to a default 
+ * value of 1 (it has an equal weighting to all other traffic flows). If the
+ * value not a number then it is assigned to an illegal value. If a floating
+ * point value is passed, then it is converted to an integer.
+ * 
+ * @param single_flow_tag A xml tag that contains the traffic flow information.
+ * @param loc_data Contains location data about the current line in the xml
+ *                 file.
+ * @return int The priority for the currently processed traffic flow.
+ */
+int get_traffic_flow_priority(pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data);
+
+/**
  * @brief Checks to see that the two router module names provided in the 
  *        traffic flow description are not empty and they dont have the
  *        same names. The two routers cant be the exact same since a router
@@ -90,13 +137,14 @@ void process_single_flow(pugi::xml_node single_flow_tag, const pugiutil::loc_dat
  * @param loc_data Contains location data about the current line in the xml
  *                 file. Passed in for error logging.
  */
-void verify_traffic_flow_router_modules(std::string source_router_name, std::string sink_router_name, pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data);
+void verify_traffic_flow_router_modules(const std::string& source_router_name, const std::string& sink_router_name, pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data);
 
 /**
- * @brief Ensures that the a given traffic flows data transmission size and
- *        latency constraints are not negative values.
+ * @brief Ensures the traffic flow's bandwidth, latency constraint and 
+ *        priority are all non-negative. An error is thrown if the
+ *        above conditions are not met.
  * 
- * @param traffic_flow_bandwidth The transmission size betwee the two routers
+ * @param traffic_flow_bandwidth The transmission size between the two routers
  *                               in the traffic flow.
  * @param max_traffic_flow_latency The allowable latency for the data
  *                                 transmission between the two routers in the
@@ -106,7 +154,7 @@ void verify_traffic_flow_router_modules(std::string source_router_name, std::str
  * @param loc_data Contains location data about the current line in the xml
  *                 file. Passed in for error logging.
  */
-void verify_traffic_flow_properties(double traffic_flow_bandwidth, double max_traffic_flow_latency, pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data);
+void verify_traffic_flow_properties(double traffic_flow_bandwidth, double max_traffic_flow_latency, int traffic_flow_priority, pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data);
 
 /**
  * @brief Given a router module name in the design, retrieve the
@@ -128,7 +176,11 @@ void verify_traffic_flow_properties(double traffic_flow_bandwidth, double max_tr
  * @return ClusterBlockId The corresponding router block id of the provided
  *         router module name.
  */
-ClusterBlockId get_router_module_cluster_id(std::string router_module_name, const ClusteringContext& cluster_ctx, pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data, const std::vector<ClusterBlockId>& cluster_blocks_compatible_with_noc_router_tiles);
+ClusterBlockId get_router_module_cluster_id(const std::string& router_module_name,
+                                            const ClusteringContext& cluster_ctx,
+                                            pugi::xml_node single_flow_tag,
+                                            const pugiutil::loc_data& loc_data,
+                                            const std::vector<ClusterBlockId>& cluster_blocks_compatible_with_noc_router_tiles);
 
 /**
  * @brief Checks to see whether a given router block is compatible with a NoC
@@ -151,10 +203,10 @@ ClusterBlockId get_router_module_cluster_id(std::string router_module_name, cons
  *                             FPGA. Used to check if the router block is
  *                             compatible with a router tile.
  */
-void check_traffic_flow_router_module_type(std::string router_module_name, ClusterBlockId router_module_id, pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data, const ClusteringContext& cluster_ctx, t_physical_tile_type_ptr noc_router_tile_type);
+void check_traffic_flow_router_module_type(const std::string& router_module_name, ClusterBlockId router_module_id, pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data, const ClusteringContext& cluster_ctx, t_physical_tile_type_ptr noc_router_tile_type);
 
 /**
- * @brief Retreives the physical type of a noc router tile.
+ * @brief Retrieves the physical type of a noc router tile.
  * 
  * @param device_ctx Contains the device information. Has a datastructure that
  *                   can determine a tile type based on grid position on the 
@@ -184,10 +236,10 @@ t_physical_tile_type_ptr get_physical_type_of_noc_router_tile(const DeviceContex
  *              associated traffic flow. False means there are some router
  *              blocks that do not have a an associated traffic flow.
  */
-bool check_that_all_router_blocks_have_an_associated_traffic_flow(NocContext& noc_ctx, t_physical_tile_type_ptr noc_router_tile_type, std::string noc_flows_file);
+bool check_that_all_router_blocks_have_an_associated_traffic_flow(NocContext& noc_ctx, t_physical_tile_type_ptr noc_router_tile_type, const std::string& noc_flows_file);
 
 /**
- * @brief Goes through the blocks within the clustered netlist and indetifies
+ * @brief Goes through the blocks within the clustered netlist and identifies
  *        all blocks that are compatible with a NoC router tile. BY compatible
  *        it means that we can place the cluster block on a NoC router tile.
  *        The run time for this function is O(N) where N is the number of

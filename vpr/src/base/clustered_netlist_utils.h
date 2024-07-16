@@ -38,7 +38,7 @@ class ClusterAtomsLookup {
     ClusterAtomsLookup();
     std::vector<AtomBlockId> atoms_in_cluster(ClusterBlockId blk_id);
 
-  private:
+  public:
     void init_lookup();
 
   private:

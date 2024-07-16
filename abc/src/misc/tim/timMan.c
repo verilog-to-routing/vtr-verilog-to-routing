@@ -738,7 +738,7 @@ void Tim_ManBlackBoxIoNum( Tim_Man_t * p, int * pnBbIns, int * pnBbOuts )
     if ( Tim_ManBoxNum(p) )
         Tim_ManForEachBox( p, pBox, i )
         {
-            if ( !pBox->fBlack )
+            if ( !pBox->fBlack )//&& pBox->nInputs <= 6 )
                 continue;
             *pnBbIns  += Tim_ManBoxInputNum( p, i );
             *pnBbOuts += Tim_ManBoxOutputNum( p, i );

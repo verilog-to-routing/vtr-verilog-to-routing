@@ -17,6 +17,10 @@
 ***********************************************************************/
 #include "Fxch.h"
 
+#if (__GNUC__ >= 8)
+  #pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
+#endif
+
 ABC_NAMESPACE_IMPL_START
 
 ////////////////////////////////////////////////////////////////////////

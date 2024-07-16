@@ -94,5 +94,5 @@ void checkpoint() {
 
     std::string router_checkpoint_file = "router_checkpoint.route";
     VTR_LOG("Attempting to checkpoint current routing to file: %s\n", router_checkpoint_file.c_str());
-    print_route(nullptr, router_checkpoint_file.c_str());
+    //print_route(nullptr, router_checkpoint_file.c_str());
 }

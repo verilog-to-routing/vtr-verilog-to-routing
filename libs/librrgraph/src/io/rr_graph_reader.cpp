@@ -1,4 +1,4 @@
-/*This function loads in a routing resource graph written in xml format
+/* This function loads in a routing resource graph written in xml format
  * into vpr when the option --read_rr_graph <file name> is specified.
  * When it is not specified the build_rr_graph function is then called.
  * This is done using the libpugixml library. This is useful
@@ -11,7 +11,7 @@
  * to ensure it matches. An error will through if any feature does not match.
  * Other elements such as edges, nodes, and switches
  * are overwritten by the rr graph file if one is specified. If an optional
- * identifier such as capacitance is not specified, it is set to 0*/
+ * identifier such as capacitance is not specified, it is set to 0 */
 
 #include "rr_graph_reader.h"
 
@@ -45,14 +45,13 @@ void load_rr_file(RRGraphBuilder* rr_graph_builder,
                   vtr::vector<RRIndexedDataId, t_rr_indexed_data>* rr_indexed_data,
                   std::vector<t_rr_rc_data>* rr_rc_data,
                   const DeviceGrid& grid,
-                  const t_arch_switch_inf* arch_switch_inf,
+                  const std::vector<t_arch_switch_inf>& arch_switch_inf,
                   const t_graph_type graph_type,
                   const t_arch* arch,
                   t_chan_width* chan_width,
                   const enum e_base_cost_type base_cost_type,
-                  const size_t num_arch_switches,
-                  const int virtual_clock_network_root_idx,
                   int* wire_to_rr_ipin_switch,
+                  int* wire_to_rr_ipin_switch_between_dice,
                   const char* read_rr_graph_name,
                   std::string* read_rr_graph_filename,
                   bool read_edge_metadata,
@@ -72,6 +71,7 @@ void load_rr_file(RRGraphBuilder* rr_graph_builder,
         graph_type,
         base_cost_type,
         wire_to_rr_ipin_switch,
+        wire_to_rr_ipin_switch_between_dice,
         do_check_rr_graph,
         read_rr_graph_name,
         read_rr_graph_filename,
@@ -85,8 +85,6 @@ void load_rr_file(RRGraphBuilder* rr_graph_builder,
         &rr_graph_builder->rr_switch(),
         rr_indexed_data,
         rr_rc_data,
-        virtual_clock_network_root_idx,
-        num_arch_switches,
         arch_switch_inf,
         rr_graph->rr_segments(),
         physical_tile_types,

@@ -28,7 +28,7 @@ class Partition {
     /**
      *  @brief Get the unique name of the partition
      */
-    const std::string get_name();
+    const std::string& get_name() const;
 
     /**
      * @brief Set the name of the partition
@@ -46,7 +46,12 @@ class Partition {
     /**
      * @brief Get the PartitionRegion (union of rectangular regions) for this partition
      */
-    const PartitionRegion get_part_region();
+    const PartitionRegion& get_part_region() const;
+
+    /**
+     * @brief Get the mutable PartitionRegion (union of rectangular regions) for this partition
+     */
+    PartitionRegion& get_mutable_part_region();
 
   private:
     std::string name;            ///< name of the partition, name will be unique across partitions
@@ -54,6 +59,6 @@ class Partition {
 };
 
 ///@brief used to print data from a Partition
-void print_partition(FILE* fp, Partition part);
+void print_partition(FILE* fp, const Partition& part);
 
 #endif /* PARTITION_H */

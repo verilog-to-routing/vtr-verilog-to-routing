@@ -4,9 +4,9 @@
  * https://github.com/duck2/uxsdcxx
  * Modify only if your build process doesn't involve regenerating this file.
  *
- * Cmdline: uxsdcxx/uxsdcap.py /home/oscar/Desktop/vtr-new/libs/librrgraph/src/base/rr_graph.xsd
- * Input file: /home/oscar/Desktop/vtr-new/libs/librrgraph/src/base/rr_graph.xsd
- * md5sum of input file: 41df83ecf127a53590711ddec605742a
+ * Cmdline: /home/talaeikh/uxsdcxx/uxsdcap.py /home/talaeikh/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
+ * Input file: /home/talaeikh/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
+ * md5sum of input file: 9c14a0ddd3c6bc1e690ca6abf467bae6
  */
 
 #include <functional>
@@ -154,6 +154,33 @@ inline ucap::SwitchType conv_to_enum_switch_type(enum_switch_type e) {
 	}
 }
 
+inline enum_segment_res_type conv_enum_segment_res_type(ucap::SegmentResType e, const std::function<void(const char *)> * report_error) {
+	switch(e) {
+	case ucap::SegmentResType::UXSD_INVALID:
+		return enum_segment_res_type::UXSD_INVALID;
+	case ucap::SegmentResType::GENERAL:
+		return enum_segment_res_type::GENERAL;
+	case ucap::SegmentResType::GCLK:
+		return enum_segment_res_type::GCLK;
+	default:
+		(*report_error)("Unknown enum_segment_res_type");
+		throw std::runtime_error("Unreachable!");
+	}
+}
+
+inline ucap::SegmentResType conv_to_enum_segment_res_type(enum_segment_res_type e) {
+	switch(e) {
+	case enum_segment_res_type::UXSD_INVALID:
+		return ucap::SegmentResType::UXSD_INVALID;
+	case enum_segment_res_type::GENERAL:
+		return ucap::SegmentResType::GENERAL;
+	case enum_segment_res_type::GCLK:
+		return ucap::SegmentResType::GCLK;
+	default:
+		throw std::runtime_error("Unknown enum_segment_res_type");
+	}
+}
+
 inline enum_pin_type conv_enum_pin_type(ucap::PinType e, const std::function<void(const char *)> * report_error) {
 	switch(e) {
 	case ucap::PinType::UXSD_INVALID:
@@ -256,6 +283,29 @@ inline ucap::NodeDirection conv_to_enum_node_direction(enum_node_direction e) {
 		return ucap::NodeDirection::BI_DIR;
 	default:
 		throw std::runtime_error("Unknown enum_node_direction");
+	}
+}
+
+inline enum_node_clk_res_type conv_enum_node_clk_res_type(ucap::NodeClkResType e, const std::function<void(const char *)> * report_error) {
+	switch(e) {
+	case ucap::NodeClkResType::UXSD_INVALID:
+		return enum_node_clk_res_type::UXSD_INVALID;
+	case ucap::NodeClkResType::VIRTUAL_SINK:
+		return enum_node_clk_res_type::VIRTUAL_SINK;
+	default:
+		(*report_error)("Unknown enum_node_clk_res_type");
+		throw std::runtime_error("Unreachable!");
+	}
+}
+
+inline ucap::NodeClkResType conv_to_enum_node_clk_res_type(enum_node_clk_res_type e) {
+	switch(e) {
+	case enum_node_clk_res_type::UXSD_INVALID:
+		return ucap::NodeClkResType::UXSD_INVALID;
+	case enum_node_clk_res_type::VIRTUAL_SINK:
+		return ucap::NodeClkResType::VIRTUAL_SINK;
+	default:
+		throw std::runtime_error("Unknown enum_node_clk_res_type");
 	}
 }
 
@@ -552,6 +602,7 @@ inline void load_segment_capnp_type(const ucap::Segment::Reader &root, T &out, C
 	(void)stack;
 
 	out.set_segment_name(root.getName().cStr(), context);
+	out.set_segment_res_type(conv_enum_segment_res_type(root.getResType(), report_error), context);
 	stack->push_back(std::make_pair("getTiming", 0));
 	if (root.hasTiming()) {
 		auto child_el = root.getTiming();
@@ -672,6 +723,7 @@ inline void load_grid_loc_capnp_type(const ucap::GridLoc::Reader &root, T &out, 
 	(void)report_error;
 	(void)stack;
 
+	out.set_grid_loc_layer(root.getLayer(), context);
 }
 
 template<class T, typename Context>
@@ -704,7 +756,9 @@ inline void load_node_loc_capnp_type(const ucap::NodeLoc::Reader &root, T &out, 
 	(void)report_error;
 	(void)stack;
 
+	out.set_node_loc_layer(root.getLayer(), context);
 	out.set_node_loc_side(conv_enum_loc_side(root.getSide(), report_error), context);
+	out.set_node_loc_twist(root.getTwist(), context);
 }
 
 template<class T, typename Context>
@@ -771,7 +825,9 @@ inline void load_node_capnp_type(const ucap::Node::Reader &root, T &out, Context
 	(void)report_error;
 	(void)stack;
 
+	out.set_node_clk_res_type(conv_enum_node_clk_res_type(root.getClkResType(), report_error), context);
 	out.set_node_direction(conv_enum_node_direction(root.getDirection(), report_error), context);
+	out.set_node_name(root.getName().cStr(), context);
 	stack->push_back(std::make_pair("getLoc", 0));
 	if (root.hasLoc()) {
 		auto child_el = root.getLoc();
@@ -1046,6 +1102,8 @@ inline void write_segments_capnp_type(T &in, ucap::Segments::Builder &root, Cont
 		auto child_context = in.get_segments_segment(i, context);
 		segments_segment.setId(in.get_segment_id(child_context));
 		segments_segment.setName(in.get_segment_name(child_context));
+		if((bool)in.get_segment_res_type(child_context))
+			segments_segment.setResType(conv_to_enum_segment_res_type(in.get_segment_res_type(child_context)));
 		write_segment_capnp_type(in, segments_segment, child_context);
 	}
 }
@@ -1117,6 +1175,7 @@ inline void write_grid_locs_capnp_type(T &in, ucap::GridLocs::Builder &root, Con
 		auto child_context = in.get_grid_locs_grid_loc(i, context);
 		grid_locs_grid_loc.setBlockTypeId(in.get_grid_loc_block_type_id(child_context));
 		grid_locs_grid_loc.setHeightOffset(in.get_grid_loc_height_offset(child_context));
+		grid_locs_grid_loc.setLayer(in.get_grid_loc_layer(child_context));
 		grid_locs_grid_loc.setWidthOffset(in.get_grid_loc_width_offset(child_context));
 		grid_locs_grid_loc.setX(in.get_grid_loc_x(child_context));
 		grid_locs_grid_loc.setY(in.get_grid_loc_y(child_context));
@@ -1153,9 +1212,12 @@ inline void write_node_capnp_type(T &in, ucap::Node::Builder &root, Context &con
 	{
 		auto child_context = in.get_node_loc(context);
 		auto node_loc = root.initLoc();
+		node_loc.setLayer(in.get_node_loc_layer(child_context));
 		node_loc.setPtc(in.get_node_loc_ptc(child_context));
 		if((bool)in.get_node_loc_side(child_context))
 			node_loc.setSide(conv_to_enum_loc_side(in.get_node_loc_side(child_context)));
+		if((bool)in.get_node_loc_twist(child_context))
+			node_loc.setTwist(in.get_node_loc_twist(child_context));
 		node_loc.setXhigh(in.get_node_loc_xhigh(child_context));
 		node_loc.setXlow(in.get_node_loc_xlow(child_context));
 		node_loc.setYhigh(in.get_node_loc_yhigh(child_context));
@@ -1193,9 +1255,13 @@ inline void write_rr_nodes_capnp_type(T &in, ucap::RrNodes::Builder &root, Conte
 		auto rr_nodes_node = rr_nodes_nodes[i];
 		auto child_context = in.get_rr_nodes_node(i, context);
 		rr_nodes_node.setCapacity(in.get_node_capacity(child_context));
+		if((bool)in.get_node_clk_res_type(child_context))
+			rr_nodes_node.setClkResType(conv_to_enum_node_clk_res_type(in.get_node_clk_res_type(child_context)));
 		if((bool)in.get_node_direction(child_context))
 			rr_nodes_node.setDirection(conv_to_enum_node_direction(in.get_node_direction(child_context)));
 		rr_nodes_node.setId(in.get_node_id(child_context));
+		if((bool)in.get_node_name(child_context))
+			rr_nodes_node.setName(in.get_node_name(child_context));
 		rr_nodes_node.setType(conv_to_enum_node_type(in.get_node_type(child_context)));
 		write_node_capnp_type(in, rr_nodes_node, child_context);
 	}

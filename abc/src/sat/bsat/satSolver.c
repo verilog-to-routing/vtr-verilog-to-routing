@@ -217,16 +217,32 @@ static inline int  order_select(sat_solver* s, float random_var_freq) // selectv
 void sat_solver_set_var_activity(sat_solver* s, int * pVars, int nVars) 
 {
     int i;
-    assert( s->VarActType == 1 );
     for (i = 0; i < s->size; i++)
         s->activity[i] = 0;
-    s->var_inc = Abc_Dbl2Word(1);
-    for ( i = 0; i < nVars; i++ )
+    if ( s->VarActType == 0 )
     {
-        int iVar = pVars ? pVars[i] : i;
-        s->activity[iVar] = Abc_Dbl2Word(nVars-i);
-        order_update( s, iVar );
+        s->var_inc            = (1 <<  5);
+        s->var_decay          = -1;
+        for ( i = 0; i < nVars; i++ )
+        {
+            int iVar = pVars ? pVars[i] : i;
+            s->activity[iVar] = s->var_inc*(nVars-i);
+            if (s->orderpos[iVar] != -1)
+                order_update( s, iVar );
+        }
     }
+    else if ( s->VarActType == 1 )
+    {
+        s->var_inc = Abc_Dbl2Word(1);
+        for ( i = 0; i < nVars; i++ )
+        {
+            int iVar = pVars ? pVars[i] : i;
+            s->activity[iVar] = Abc_Dbl2Word(nVars-i);
+            if (s->orderpos[iVar] != -1)
+                order_update( s, iVar );
+        }
+    }
+    else assert( 0 );
 }
 
 //=================================================================================================
@@ -495,13 +511,14 @@ static void sortrnd(void** array, int size, int(*comp)(const void *, const void 
 
 static inline int sat_clause_compute_lbd( sat_solver* s, clause* c )
 {
-    int i, lev, minl = 0, lbd = 0;
-    for (i = 0; i < (int)c->size; i++)
+    unsigned int i, lev, minl = 0;
+    int lbd = 0;
+    for (i = 0; i < c->size; i++)
     {
         lev = var_level(s, lit_var(c->lits[i]));
-        if ( !(minl & (1 << (lev & 31))) )
+        if ( !(minl & (1U << (lev & 31))) )
         {
-            minl |= 1 << (lev & 31);
+            minl |= 1U << (lev & 31);
             lbd++;
 //            printf( "%d ", lev );
         }

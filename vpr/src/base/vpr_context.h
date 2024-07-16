@@ -3,9 +3,11 @@
 #include <unordered_map>
 #include <memory>
 #include <vector>
+#include <mutex>
 
 #include "vpr_types.h"
 #include "vtr_ndmatrix.h"
+#include "vtr_optional.h"
 #include "vtr_vector.h"
 #include "atom_netlist.h"
 #include "clustered_netlist.h"
@@ -21,7 +23,7 @@
 #include "device_grid.h"
 #include "clock_network_builders.h"
 #include "clock_connection_builders.h"
-#include "route_traceback.h"
+#include "route_tree.h"
 #include "router_lookahead.h"
 #include "place_macro.h"
 #include "compressed_grid.h"
@@ -30,6 +32,17 @@
 #include "noc_storage.h"
 #include "noc_traffic_flows.h"
 #include "noc_routing.h"
+#include "tatum/report/TimingPath.hpp"
+
+#ifndef NO_SERVER
+
+#include "gateio.h"
+#include "taskresolver.h"
+
+class SetupHoldTimingInfo;
+class PostClusterDelayCalculator;
+
+#endif /* NO_SERVER */
 
 /**
  * @brief A Context is collection of state relating to a particular part of VPR
@@ -60,7 +73,7 @@ struct AtomContext : public Context {
      ********************************************************************/
     /**
      * @brief constructor
-     * 
+     *
      * In the constructor initialize the list of pack molecules to nullptr and defines a custom deletor for it
      */
     AtomContext()
@@ -74,7 +87,7 @@ struct AtomContext : public Context {
 
     /**
      * @brief The molecules associated with each atom block.
-     * 
+     *
      * This map is loaded in the pre-packing stage and freed at the very end of vpr flow run.
      * The pointers in this multimap is shared with list_of_pack_molecules.
      */
@@ -82,7 +95,7 @@ struct AtomContext : public Context {
 
     /**
      * @brief A linked list of all the packing molecules that are loaded in pre-packing stage.
-     * 
+     *
      * Is is useful in freeing the pack molecules at the destructor of the Atom context using free_pack_molecules.
      */
     std::unique_ptr<t_pack_molecule, decltype(&free_pack_molecules)> list_of_pack_molecules;
@@ -141,8 +154,12 @@ struct DeviceContext : public Context {
      * Physical FPGA architecture
      *********************************************************************/
 
-    DeviceGrid grid; ///<FPGA complex block grid [0 .. grid.width()-1][0 .. grid.height()-1]
-
+    /**
+     * @brief The device grid
+     *
+     * This represents the physical layout of the device. To get the physical tile at each location (layer_num, x, y) the helper functions in this data structure should be used.
+     */
+    DeviceGrid grid;
     /*
      * Empty types
      */
@@ -158,6 +175,13 @@ struct DeviceContext : public Context {
 
     std::vector<t_physical_tile_type> physical_tile_types;
     std::vector<t_logical_block_type> logical_block_types;
+
+    /*
+     * Keep which layer in multi-die FPGA require inter-cluster programmable routing resources [0..number_of_layers-1]
+     * If a layer doesn't require inter-cluster programmable routing resources,
+     * RRGraph generation will ignore building SBs and CBs for that specific layer.
+     */
+    std::vector<bool> inter_cluster_prog_routing_resources;
 
     /**
      * @brief Boolean that indicates whether the architecture implements an N:M
@@ -182,22 +206,27 @@ struct DeviceContext : public Context {
     std::vector<t_rr_rc_data> rr_rc_data;
 
     ///@brief Sets of non-configurably connected nodes
-    std::vector<std::vector<int>> rr_non_config_node_sets;
+    std::vector<std::vector<RRNodeId>> rr_non_config_node_sets;
 
-    ///@brief Reverse look-up from RR node to non-configurably connected node set (index into rr_nonconf_node_sets)
-    std::unordered_map<int, int> rr_node_to_non_config_node_set;
+    ///@brief Reverse look-up from RR node to non-configurably connected node set (index into rr_non_config_node_sets)
+    std::unordered_map<RRNodeId, int> rr_node_to_non_config_node_set;
 
-    /* A writeable view of routing resource graph to be the ONLY database 
+    /* A writeable view of routing resource graph to be the ONLY database
      * for routing resource graph builder functions.
      */
     RRGraphBuilder rr_graph_builder{};
 
-    /* A read-only view of routing resource graph to be the ONLY database 
+    /* A read-only view of routing resource graph to be the ONLY database
      * for client functions: GUI, placer, router, timing analyzer etc.
      */
     RRGraphView rr_graph{rr_graph_builder.rr_nodes(), rr_graph_builder.node_lookup(), rr_graph_builder.rr_node_metadata(), rr_graph_builder.rr_edge_metadata(), rr_indexed_data, rr_rc_data, rr_graph_builder.rr_segments(), rr_graph_builder.rr_switch()};
-    int num_arch_switches;
-    t_arch_switch_inf* arch_switch_inf; // [0..(num_arch_switches-1)]
+    std::vector<t_arch_switch_inf> arch_switch_inf; // [0..(num_arch_switches-1)]
+
+    std::map<int, t_arch_switch_inf> all_sw_inf;
+
+    int delayless_switch_idx = OPEN;
+
+    bool rr_graph_is_flat = false;
 
     /*
      * Clock Networks
@@ -206,14 +235,6 @@ struct DeviceContext : public Context {
     std::vector<std::unique_ptr<ClockNetwork>> clock_networks;
     std::vector<std::unique_ptr<ClockConnection>> clock_connections;
 
-    /**
-     * @brief rr_node idx that connects to the input of all clock network wires
-     *
-     * Useful for two stage clock routing
-     * XXX: currently only one place to source the clock networks so only storing
-     *      a single value
-     */
-    int virtual_clock_network_root_idx;
     /**
      * @brief switch_fanin_remap is only used for printing out switch fanin stats
      *        (the -switch_stats option)
@@ -296,7 +317,7 @@ struct ClusteringContext : public Context {
 
 /**
  * @brief State relating to helper data structure using in the clustering stage
- * 
+ *
  * This should contain helper data structures that are useful in the clustering/packing stage.
  * They are encapsulated here as they are useful in clustering and reclustering algorithms that may be used
  * in packing or placement stages.
@@ -325,6 +346,34 @@ struct ClusteringHelperContext : public Context {
 
     // the utilization of external input/output pins during packing (between 0 and 1)
     t_ext_pin_util_targets target_external_pin_util;
+
+    // During clustering, a block is related to un-clustered primitives with nets.
+    // This relation has three types: low fanout, high fanout, and transitive
+    // high_fanout_thresholds stores the threshold for nets to a block type to be considered high fanout
+    t_pack_high_fanout_thresholds high_fanout_thresholds;
+
+    // A vector of unordered_sets of AtomBlockIds that are inside each clustered block [0 .. num_clustered_blocks-1]
+    // unordered_set for faster insertion/deletion during the iterative improvement process of packing
+    vtr::vector<ClusterBlockId, std::unordered_set<AtomBlockId>> atoms_lookup;
+
+    /** Stores the NoC group ID of each atom block. Atom blocks that belong
+     * to different NoC groups can't be clustered with each other into the
+     * same clustered block.*/
+    vtr::vector<AtomBlockId, NocGroupId> atom_noc_grp_id;
+
+    ~ClusteringHelperContext() {
+        delete[] primitives_list;
+    }
+};
+
+/**
+ * @brief State relating to packing multithreading
+ *
+ * This contain data structures to synchronize multithreading of packing iterative improvement.
+ */
+struct PackingMultithreadingContext : public Context {
+    vtr::vector<ClusterBlockId, bool> clb_in_flight;
+    vtr::vector<ClusterBlockId, std::mutex> mu;
 };
 
 /**
@@ -341,16 +390,23 @@ struct PlacementContext : public Context {
     vtr::vector_map<ClusterPinId, int> physical_pins;
 
     ///@brief Clustered block associated with each grid location (i.e. inverse of block_locs)
-    vtr::Matrix<t_grid_blocks> grid_blocks; //[0..device_ctx.grid.width()-1][0..device_ctx.grid.width()-1]
+    GridBlock grid_blocks;
 
     ///@brief The pl_macros array stores all the placement macros (usually carry chains).
     std::vector<t_pl_macro> pl_macros;
+
+    ///@brief Stores ClusterBlockId of all movable clustered blocks (blocks that are not locked down to a single location)
+    std::vector<ClusterBlockId> movable_blocks;
+
+    ///@brief Stores ClusterBlockId of all movable clustered of each block type
+    std::vector<std::vector<ClusterBlockId>> movable_blocks_per_type;
 
     /**
      * @brief Compressed grid space for each block type
      *
      * Used to efficiently find logically 'adjacent' blocks of the same
      * block type even though the may be physically far apart
+     * Indexed with logical block type index: [0...num_logical_block_types-1] -> logical block compressed grid
      */
     t_compressed_block_grids compressed_block_grids;
 
@@ -360,6 +416,18 @@ struct PlacementContext : public Context {
      * Used for unique identification and consistency checking
      */
     std::string placement_id;
+
+    /**
+     * Use during placement to print extra debug information. It is set to true based on the number assigned to
+     * placer_debug_net or placer_debug_block parameters in the command line.
+     */
+    bool f_placer_debug = false;
+
+    /**
+     * Set this variable to ture if the type of the bounding box used in placement is of the type cube. If it is false,
+     * it would mean that per-layer bounding box is used. For the 2D architecture, the cube bounding box would be used.
+     */
+    bool cube_bb = false;
 };
 
 /**
@@ -370,15 +438,21 @@ struct PlacementContext : public Context {
  */
 struct RoutingContext : public Context {
     /* [0..num_nets-1] of linked list start pointers.  Defines the routing.  */
-    vtr::vector<ClusterNetId, t_traceback> trace;
-    vtr::vector<ClusterNetId, std::unordered_set<int>> trace_nodes;
+    vtr::vector<ParentNetId, vtr::optional<RouteTree>> route_trees;
 
-    vtr::vector<ClusterNetId, std::vector<int>> net_rr_terminals; /* [0..num_nets-1][0..num_pins-1] */
-    vtr::vector<ClusterNetId, uint8_t> is_clock_net;              /* [0..num_nets-1] */
+    vtr::vector<ParentNetId, std::unordered_set<int>> trace_nodes;
 
-    vtr::vector<ClusterBlockId, std::vector<int>> rr_blk_source; /* [0..num_blocks-1][0..num_class-1] */
+    vtr::vector<ParentNetId, std::vector<RRNodeId>> net_rr_terminals; /* [0..num_nets-1][0..num_pins-1] */
 
-    std::vector<t_rr_node_route_inf> rr_node_route_inf; /* [0..device_ctx.num_rr_nodes-1] */
+    vtr::vector<ParentNetId, uint8_t> is_clock_net; /* [0..num_nets-1] */
+
+    vtr::vector<ParentBlockId, std::vector<RRNodeId>> rr_blk_source; /* [0..num_blocks-1][0..num_class-1] */
+
+    vtr::vector<RRNodeId, t_rr_node_route_inf> rr_node_route_inf; /* [0..device_ctx.num_rr_nodes-1] */
+
+    vtr::vector<ParentNetId, std::vector<std::vector<int>>> net_terminal_groups;
+
+    vtr::vector<ParentNetId, std::vector<int>> net_terminal_group_num;
 
     /**
      * @brief Information about whether a node is part of a non-configurable set
@@ -389,13 +463,13 @@ struct RoutingContext : public Context {
      * bit value 1: node is part of a non-configurable set
      * Initialized once when RoutingContext is initialized, static throughout invocation of router
      */
-    vtr::dynamic_bitset<> non_configurable_bitset; /*[0...device_ctx.num_rr_nodes] */
+    vtr::dynamic_bitset<RRNodeId> non_configurable_bitset; /*[0...device_ctx.num_rr_nodes] */
 
     ///@brief Information about current routing status of each net
     t_net_routing_status net_status;
 
     ///@brief Limits area within which each net must be routed.
-    vtr::vector<ClusterNetId, t_bb> route_bb; /* [0..cluster_ctx.clb_nlist.nets().size()-1]*/
+    vtr::vector<ParentNetId, t_bb> route_bb; /* [0..cluster_ctx.clb_nlist.nets().size()-1]*/
 
     t_clb_opins_used clb_opins_used_locally; //[0..cluster_ctx.clb_nlist.blocks().size()-1][0..num_class-1]
 
@@ -406,6 +480,9 @@ struct RoutingContext : public Context {
      */
     std::string routing_id;
 
+    // Cache key used to create router lookahead
+    std::tuple<e_router_lookahead, std::string, std::vector<t_segment_inf>> router_lookahead_cache_key_;
+
     /**
      * @brief Cache of router lookahead object.
      *
@@ -414,6 +491,11 @@ struct RoutingContext : public Context {
     vtr::Cache<std::tuple<e_router_lookahead, std::string, std::vector<t_segment_inf>>,
                RouterLookahead>
         cached_router_lookahead_;
+
+    /**
+     * @brief User specified routing constraints
+     */
+    UserRouteConstraints constraints;
 };
 
 /**
@@ -431,7 +513,7 @@ struct FloorplanningContext : public Context {
      *
      * The constraints are input into vpr and do not change.
      */
-    VprConstraints constraints;
+    UserPlaceConstraints constraints;
 
     /**
      * @brief Constraints for each cluster
@@ -444,33 +526,53 @@ struct FloorplanningContext : public Context {
      */
     vtr::vector<ClusterBlockId, PartitionRegion> cluster_constraints;
 
-    std::vector<Region> overfull_regions;
+    /**
+     * @brief Floorplanning constraints in the compressed grid coordinate system.
+     *
+     * Indexing -->  [0..grid.num_layers-1][0..numClusters-1]
+     *
+     * Each clustered block has a logical type with a corresponding compressed grid.
+     * Compressed floorplanning constraints are calculated by translating the grid locations
+     * of floorplanning regions to compressed grid locations. To ensure regions do not enlarge:
+     * - The bottom left corner is rounded up to the nearest compressed location.
+     * - The top right corner is rounded down to the nearest compressed location.
+     *
+     * When the floorplanning constraint spans across multiple layers, a compressed
+     * constraints is created for each a layer that the original constraint includes.
+     * This is because blocks of the same type might have different (x, y) locations
+     * in different layers, and as result, their compressed locations in each layer
+     * may correspond to a different physical (x, y) location.
+     *
+     */
+    std::vector<vtr::vector<ClusterBlockId, PartitionRegion>> compressed_cluster_constraints;
+
+    std::vector<PartitionRegion> overfull_partition_regions;
 };
 
 /**
  * @brief State of the Network on Chip (NoC)
  *
- * This should only contain data structures related to descrbing the
+ * This should only contain data structures related to describing the
  * NoC within the device.
  */
 struct NocContext : public Context {
     /**
-     * @brief A model of the NoC  
+     * @brief A model of the NoC
      *
      * Contains all the routers and links that make up the NoC. The routers contain
      * information regarding the physical tile positions they represent. The links
      * define the connections between every router (topology) and also metrics that describe its
-     * "usage". 
-     * 
+     * "usage".
      *
-     * The NoC model is created once from the architecture file description. 
+     *
+     * The NoC model is created once from the architecture file description.
      */
     NocStorage noc_model;
 
     /**
-     * @brief Stores all the communication happening between routers in the NoC 
+     * @brief Stores all the communication happening between routers in the NoC
      *
-     * Contains all of the traffic flows that ddescribe which pairs of logical routers are communicating and also some metrics and constraints on the data transfer between the two routers. 
+     * Contains all of the traffic flows that describe which pairs of logical routers are communicating and also some metrics and constraints on the data transfer between the two routers.
      * 
      *
      * This is created from a user supplied .flows file.
@@ -479,13 +581,68 @@ struct NocContext : public Context {
 
     /**
      * @brief Contains the packet routing algorithm used by the NoC.
-     * 
+     *
      * This should be used to route traffic flows within the NoC.
-     * 
+     *
      * This is created from a user supplied command line option "--noc_routing_algorithm"
      */
-    NocRouting* noc_flows_router;
+    std::unique_ptr<NocRouting> noc_flows_router;
 };
+
+#ifndef NO_SERVER
+/**
+ * @brief State relating to server mode
+ *
+ * This should contain only data structures that
+ * relate to the vpr server state.
+ */
+struct ServerContext : public Context {
+    /**
+     * @brief \ref server::GateIO.
+     */
+    server::GateIO gate_io;
+
+    /**
+     * @brief \ref server::TaskResolver.
+     */
+    server::TaskResolver task_resolver;
+
+    /**
+     * @brief Stores the critical path items.
+     *
+     * This value is used when rendering the critical path by the selected index.
+     * Once calculated upon request, it provides the value for a specific critical path
+     * to be rendered upon user request.
+     */
+    std::vector<tatum::TimingPath> crit_paths;
+
+    /**
+     * @brief Stores the selected critical path elements.
+     *
+     * This value is used to render the selected critical path elements upon client request.
+     * The std::map key plays role of path index, where the element indexes are stored as std::set.
+     */
+    std::map<std::size_t, std::set<std::size_t>> crit_path_element_indexes;
+
+    /**
+     * @brief Stores the flag indicating whether to draw the critical path contour.
+     *
+     * If True, the entire path will be rendered with some level of transparency, regardless of the selection of path elements. However, selected path elements will be drawn in full color.
+     * This feature is helpful in visual debugging, to see how the separate path elements are mapped into the whole path.
+     */
+    bool draw_crit_path_contour = false;
+
+    /**
+     * @brief Reference to the SetupHoldTimingInfo calculated during the routing stage.
+     */
+    std::shared_ptr<SetupHoldTimingInfo> timing_info;
+
+    /**
+     * @brief Reference to the PostClusterDelayCalculator calculated during the routing stage.
+     */
+    std::shared_ptr<PostClusterDelayCalculator> routing_delay_calc;
+};
+#endif /* NO_SERVER */
 
 /**
  * @brief This object encapsulates VPR's state.
@@ -567,6 +724,14 @@ class VprContext : public Context {
     const NocContext& noc() const { return noc_; }
     NocContext& mutable_noc() { return noc_; }
 
+    const PackingMultithreadingContext& packing_multithreading() const { return packing_multithreading_; }
+    PackingMultithreadingContext& mutable_packing_multithreading() { return packing_multithreading_; }
+
+#ifndef NO_SERVER
+    const ServerContext& server() const { return server_; }
+    ServerContext& mutable_server() { return server_; }
+#endif /* NO_SERVER */
+
   private:
     DeviceContext device_;
 
@@ -582,6 +747,12 @@ class VprContext : public Context {
     RoutingContext routing_;
     FloorplanningContext constraints_;
     NocContext noc_;
+
+#ifndef NO_SERVER
+    ServerContext server_;
+#endif /* NO_SERVER */
+
+    PackingMultithreadingContext packing_multithreading_;
 };
 
 #endif

@@ -7,21 +7,12 @@ from collections import OrderedDict
 from pathlib import Path
 import xml.etree.ElementTree as ET
 import vtr
-from vtr.yosys import YOSYS_PARSERS
 
 # supported input file type by Odin
 FILE_TYPES = {
     ".v": "verilog",
     ".vh": "verilog_header",
-    ".sv": "systemverilog",
-    ".svh": "systemverilog_header",
     ".blif": "blif",
-}
-
-YOSYS_ODIN_PARSER = {
-    YOSYS_PARSERS[0]: "-v",  # yosys (Yosys conventional Verilog parser)
-    YOSYS_PARSERS[1]: "-u",  # surelog (Yosys Surelog plugin)
-    YOSYS_PARSERS[2]: "-s",  # yosys-plugins (Yosys SystemVerilog plugin)
 }
 
 
@@ -191,14 +182,7 @@ def run(
 
     # set the parser
     odin_parser_arg = "-v"
-    if odin_args["elaborator"] == "yosys":
-        if odin_args["parser"] in YOSYS_PARSERS:
-            odin_parser_arg = YOSYS_ODIN_PARSER[odin_args["parser"]]
-        else:
-            raise vtr.VtrError(
-                "Invalid parser is specified for the Yosys elaborator,"
-                " available parsers are [{}]".format(" ".join(str(x) for x in YOSYS_PARSERS))
-            )
+
     del odin_args["parser"]
 
     init_config_file(
@@ -214,11 +198,6 @@ def run(
 
     cmd = [odin_exec]
     use_odin_simulation = False
-
-    # handling the Odin-II decode_name flag for Yosys coarse-grained BLIFs
-    if not odin_args["encode_names"]:
-        odin_args["decode_names"] = True
-    del odin_args["encode_names"]
 
     if "use_odin_simulation" in odin_args:
         use_odin_simulation = True

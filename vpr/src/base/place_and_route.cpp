@@ -5,6 +5,7 @@
 #include <climits>
 #include <cstdlib>
 #include <cmath>
+#include <algorithm>
 
 #include "vtr_util.h"
 #include "vtr_memory.h"
@@ -20,6 +21,7 @@
 #include "place.h"
 #include "read_place.h"
 #include "read_route.h"
+#include "route.h"
 #include "route_export.h"
 #include "draw.h"
 #include "stats.h"
@@ -49,21 +51,24 @@ static float comp_width(t_chan* chan, float x, float separation);
  *        tracks per channel required to successfully route a circuit, and returns
  *        that minimum width_fac.
  */
-int binary_search_place_and_route(const t_placer_opts& placer_opts_ref,
+int binary_search_place_and_route(const Netlist<>& placement_net_list,
+                                  const Netlist<>& router_net_list,
+                                  const t_placer_opts& placer_opts_ref,
                                   const t_annealing_sched& annealing_sched,
                                   const t_router_opts& router_opts,
                                   const t_analysis_opts& analysis_opts,
+                                  const t_noc_opts& noc_opts,
                                   const t_file_name_opts& filename_opts,
                                   const t_arch* arch,
                                   bool verify_binary_search,
                                   int min_chan_width_hint,
                                   t_det_routing_arch* det_routing_arch,
                                   std::vector<t_segment_inf>& segment_inf,
-                                  ClbNetPinsMatrix<float>& net_delay,
-                                  std::shared_ptr<SetupHoldTimingInfo> timing_info,
-                                  std::shared_ptr<RoutingDelayCalculator> delay_calc,
+                                  NetPinsMatrix<float>& net_delay,
+                                  const std::shared_ptr<SetupHoldTimingInfo>& timing_info,
+                                  const std::shared_ptr<RoutingDelayCalculator>& delay_calc,
                                   bool is_flat) {
-    vtr::vector<ClusterNetId, t_trace*> best_routing; /* Saves the best routing found so far. */
+    vtr::vector<ParentNetId, vtr::optional<RouteTree>> best_routing; /* Saves the best routing found so far. */
     int current, low, high, final;
     bool success, prev_success, prev2_success, Fc_clipped = false;
     bool using_minw_hint = false;
@@ -96,9 +101,7 @@ int binary_search_place_and_route(const t_placer_opts& placer_opts_ref,
         graph_directionality = (det_routing_arch->directionality == BI_DIRECTIONAL ? GRAPH_BIDIR : GRAPH_UNIDIR);
     }
 
-    best_routing = alloc_saved_routing();
-
-    VTR_ASSERT(net_delay.size());
+    VTR_ASSERT(!net_delay.empty());
 
     if (det_routing_arch->directionality == BI_DIRECTIONAL)
         udsd_multiplier = 1;
@@ -177,10 +180,12 @@ int binary_search_place_and_route(const t_placer_opts& placer_opts_ref,
 
         if (placer_opts.place_freq == PLACE_ALWAYS) {
             placer_opts.place_chan_width = current;
-            try_place(placer_opts,
+            try_place(placement_net_list,
+                      placer_opts,
                       annealing_sched,
                       router_opts,
                       analysis_opts,
+                      noc_opts,
                       arch->Chans,
                       det_routing_arch,
                       segment_inf,
@@ -188,18 +193,20 @@ int binary_search_place_and_route(const t_placer_opts& placer_opts_ref,
                       arch->num_directs,
                       false);
         }
-        success = try_route(current,
-                            router_opts,
-                            analysis_opts,
-                            det_routing_arch, segment_inf,
-                            net_delay,
-                            timing_info,
-                            delay_calc,
-                            arch->Chans,
-                            arch->Directs,
-                            arch->num_directs,
-                            (attempt_count == 0) ? ScreenUpdatePriority::MAJOR : ScreenUpdatePriority::MINOR,
-                            is_flat);
+        success = route(router_net_list,
+                        current,
+                        router_opts,
+                        analysis_opts,
+                        det_routing_arch, segment_inf,
+                        net_delay,
+                        timing_info,
+                        delay_calc,
+                        arch->Chans,
+                        arch->Directs,
+                        arch->num_directs,
+                        (attempt_count == 0) ? ScreenUpdatePriority::MAJOR : ScreenUpdatePriority::MINOR,
+                        is_flat);
+
         attempt_count++;
         fflush(stdout);
 
@@ -218,7 +225,9 @@ int binary_search_place_and_route(const t_placer_opts& placer_opts_ref,
             }
 
             /* Save routing in case it is best. */
-            save_routing(best_routing, route_ctx.clb_opins_used_locally, saved_clb_opins_used_locally);
+            save_routing(best_routing,
+                         route_ctx.clb_opins_used_locally,
+                         saved_clb_opins_used_locally);
 
             //If the user gave us a minW hint (and we routed successfully at that width)
             //make the initial guess closer to the current value instead of the standard guess.
@@ -289,7 +298,7 @@ int binary_search_place_and_route(const t_placer_opts& placer_opts_ref,
         current = current + current % udsd_multiplier;
     }
 
-    /* The binary search above occassionally does not find the minimum    *
+    /* The binary search above occasionally does not find the minimum    *
      * routeable channel width.  Sometimes a circuit that will not route  *
      * in 19 channels will route in 18, due to router flukiness.  If      *
      * verify_binary_search is set, the code below will ensure that FPGAs *
@@ -318,29 +327,36 @@ int binary_search_place_and_route(const t_placer_opts& placer_opts_ref,
                 break;
             if (placer_opts.place_freq == PLACE_ALWAYS) {
                 placer_opts.place_chan_width = current;
-                try_place(placer_opts, annealing_sched, router_opts, analysis_opts,
+                try_place(placement_net_list, placer_opts, annealing_sched, router_opts, analysis_opts, noc_opts,
                           arch->Chans, det_routing_arch, segment_inf,
                           arch->Directs, arch->num_directs,
                           false);
             }
-            success = try_route(current,
-                                router_opts,
-                                analysis_opts,
-                                det_routing_arch,
-                                segment_inf, net_delay,
-                                timing_info,
-                                delay_calc,
-                                arch->Chans, arch->Directs, arch->num_directs,
-                                ScreenUpdatePriority::MINOR,
-                                is_flat);
+
+            success = route(router_net_list,
+                            current,
+                            router_opts,
+                            analysis_opts,
+                            det_routing_arch,
+                            segment_inf,
+                            net_delay,
+                            timing_info,
+                            delay_calc,
+                            arch->Chans,
+                            arch->Directs,
+                            arch->num_directs,
+                            ScreenUpdatePriority::MINOR,
+                            is_flat);
 
             if (success && Fc_clipped == false) {
                 final = current;
-                save_routing(best_routing, route_ctx.clb_opins_used_locally,
+                save_routing(best_routing,
+                             route_ctx.clb_opins_used_locally,
                              saved_clb_opins_used_locally);
 
                 if (placer_opts.place_freq == PLACE_ALWAYS) {
                     auto& cluster_ctx = g_vpr_ctx.clustering();
+                    // Cluster-based net_list is used for placement
                     print_place(filename_opts.NetFile.c_str(), cluster_ctx.clb_nlist.netlist_id().c_str(),
                                 filename_opts.PlaceFile.c_str());
                 }
@@ -366,7 +382,6 @@ int binary_search_place_and_route(const t_placer_opts& placer_opts_ref,
                     device_ctx.physical_tile_types,
                     device_ctx.grid,
                     chan_width,
-                    device_ctx.num_arch_switches,
                     det_routing_arch,
                     segment_inf,
                     router_opts,
@@ -379,18 +394,25 @@ int binary_search_place_and_route(const t_placer_opts& placer_opts_ref,
     /* Allocate and load additional rr_graph information needed only by the router. */
     alloc_and_load_rr_node_route_structs();
 
-    init_route_structs(router_opts.bb_factor);
+    init_route_structs(router_net_list,
+                       router_opts.bb_factor,
+                       router_opts.has_choking_spot,
+                       is_flat);
 
-    restore_routing(best_routing, route_ctx.clb_opins_used_locally, saved_clb_opins_used_locally);
+    restore_routing(best_routing,
+                    route_ctx.clb_opins_used_locally,
+                    saved_clb_opins_used_locally);
 
     if (Fc_clipped) {
         VTR_LOG_WARN("Best routing Fc_output too high, clipped to full (maximum) connectivity.\n");
     }
     VTR_LOG("Best routing used a channel width factor of %d.\n", final);
 
-    print_route(filename_opts.PlaceFile.c_str(), filename_opts.RouteFile.c_str());
+    print_route(router_net_list,
+                filename_opts.PlaceFile.c_str(),
+                filename_opts.RouteFile.c_str(),
+                is_flat);
 
-    free_saved_routing(best_routing);
     fflush(stdout);
 
     return (final);
@@ -404,7 +426,7 @@ int binary_search_place_and_route(const t_placer_opts& placer_opts_ref,
  * is used to determine if the channel width should be rounded to an
  * even number.
  */
-t_chan_width init_chan(int cfactor, t_chan_width_dist chan_width_dist, t_graph_type graph_directionality) {
+t_chan_width init_chan(int cfactor, const t_chan_width_dist& chan_width_dist, t_graph_type graph_directionality) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
     auto& grid = device_ctx.grid;
 
@@ -439,19 +461,15 @@ t_chan_width init_chan(int cfactor, t_chan_width_dist chan_width_dist, t_graph_t
         }
     }
 
-    chan_width.max = 0;
-    chan_width.x_max = chan_width.y_max = INT_MIN;
-    chan_width.x_min = chan_width.y_min = INT_MAX;
-    for (size_t i = 0; i < grid.height(); ++i) {
-        chan_width.x_max = std::max(chan_width.x_max, chan_width.x_list[i]);
-        chan_width.x_min = std::min(chan_width.x_min, chan_width.x_list[i]);
-    }
-    chan_width.max = std::max(chan_width.max, chan_width.x_max);
-    for (size_t i = 0; i < grid.width(); ++i) {
-        chan_width.y_max = std::max(chan_width.y_max, chan_width.y_list[i]);
-        chan_width.y_min = std::min(chan_width.y_min, chan_width.y_list[i]);
-    }
-    chan_width.max = std::max(chan_width.max, chan_width.y_max);
+    auto minmax = std::minmax_element(chan_width.x_list.begin(), chan_width.x_list.end());
+    chan_width.x_min = *minmax.first;
+    chan_width.x_max = *minmax.second;
+
+    minmax = std::minmax_element(chan_width.y_list.begin(), chan_width.y_list.end());
+    chan_width.y_min = *minmax.first;
+    chan_width.y_max = *minmax.second;
+
+    chan_width.max = std::max(chan_width.x_max, chan_width.y_max);
 
 #ifdef VERBOSE
     VTR_LOG("\n");
@@ -471,9 +489,9 @@ t_chan_width init_chan(int cfactor, t_chan_width_dist chan_width_dist, t_graph_t
 }
 
 /**
- * @brief Computes the channel width and adjusts it to be an an even number if unidirectional 
+ * @brief Computes the channel width and adjusts it to be an an even number if unidirectional
  *        since unidirectional graphs need to have paired wires.
- * 
+ *
  *   @param cfactor                 Channel width factor: multiplier on the channel width distribution (usually the number of tracks in the widest channel).
  *   @param chan_dist               Channel width distribution.
  *   @param x                       The distance (between 0 and 1) we are across the chip.
@@ -556,6 +574,7 @@ static float comp_width(t_chan* chan, float x, float separation) {
 void post_place_sync() {
     /* Go through each block */
     auto& cluster_ctx = g_vpr_ctx.clustering();
+    // Cluster-based netlist is used for placement
     for (auto block_id : cluster_ctx.clb_nlist.blocks()) {
         place_sync_external_block_connections(block_id);
     }

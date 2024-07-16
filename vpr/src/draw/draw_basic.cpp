@@ -60,7 +60,7 @@
 #    endif
 
 #    include "rr_graph.h"
-#    include "route_util.h"
+#    include "route_utilization.h"
 #    include "place_macro.h"
 #    include "buttons.h"
 
@@ -108,93 +108,112 @@ void drawplace(ezgl::renderer* g) {
     ClusterBlockId bnum;
     int num_sub_tiles;
 
+    int total_num_layers = device_ctx.grid.get_num_layers();
+
     g->set_line_width(0);
-    for (size_t i = 0; i < device_ctx.grid.width(); i++) {
-        for (size_t j = 0; j < device_ctx.grid.height(); j++) {
-            /* Only the first block of a group should control drawing */
-            if (device_ctx.grid[i][j].width_offset > 0
-                || device_ctx.grid[i][j].height_offset > 0)
-                continue;
+    for (int layer_num = 0; layer_num < total_num_layers; layer_num++) {
+        if (draw_state->draw_layer_display[layer_num].visible) {
+            for (int i = 0; i < (int)device_ctx.grid.width(); i++) {
+                for (int j = 0; j < (int)device_ctx.grid.height(); j++) {
+                    /* Only the first block of a group should control drawing */
+                    const auto& type = device_ctx.grid.get_physical_type({i, j, layer_num});
+                    int width_offset = device_ctx.grid.get_width_offset({i, j, layer_num});
+                    int height_offset = device_ctx.grid.get_height_offset({i, j, layer_num});
 
-            num_sub_tiles = device_ctx.grid[i][j].type->capacity;
-            /* Don't draw if tile capacity is zero. eg-> corners. */
-            if (num_sub_tiles == 0) {
-                continue;
-            }
+                    //The transparency level for the current layer being drawn (0-255)
+                    // 0 - opaque, 255 - transparent
+                    int transparency_factor = draw_state->draw_layer_display[layer_num].alpha;
 
-            for (int k = 0; k < num_sub_tiles; ++k) {
-                /* Look at the tile at start of large block */
-                bnum = place_ctx.grid_blocks[i][j].blocks[k];
-                /* Fill background for the clb. Do not fill if "show_blk_internal"
-                 * is toggled.
-                 */
-                if (bnum == INVALID_BLOCK_ID)
-                    continue;
+                    if (width_offset > 0
+                        || height_offset > 0)
+                        continue;
 
-                //Determine the block color and logical type
-                ezgl::color block_color;
-                t_logical_block_type_ptr logical_block_type = nullptr;
-
-                //flag whether the current location is highlighted with a special color or not
-                bool current_loc_is_highlighted = false;
-
-                if (placer_breakpoint_reached())
-                    current_loc_is_highlighted = highlight_loc_with_specific_color(int(i), int(j),
-                                                                                   block_color);
-
-                // No color specified at this location; use the block color.
-                if (current_loc_is_highlighted == false) {
-                    if (bnum != EMPTY_BLOCK_ID) {
-                        block_color = draw_state->block_color(bnum);
-                    } else {
-                        block_color = get_block_type_color(
-                            device_ctx.grid[i][j].type);
-                        block_color = lighten_color(block_color,
-                                                    EMPTY_BLOCK_LIGHTEN_FACTOR);
+                    num_sub_tiles = type->capacity;
+                    /* Don't draw if tile capacity is zero. eg-> corners. */
+                    if (num_sub_tiles == 0) {
+                        continue;
                     }
-                }
 
-                auto tile_type = device_ctx.grid[i][j].type;
-                logical_block_type = pick_logical_type(tile_type);
+                    for (int k = 0; k < num_sub_tiles; ++k) {
+                        /* Look at the tile at start of large block */
+                        bnum = place_ctx.grid_blocks.block_at_location({i, j, k, layer_num});
+                        /* Fill background for the clb. Do not fill if "show_blk_internal"
+                         * is toggled.
+                         */
+                        if (bnum == INVALID_BLOCK_ID)
+                            continue;
 
-                g->set_color(block_color);
-                /* Get coords of current sub_tile */
-                ezgl::rectangle abs_clb_bbox = draw_coords->get_absolute_clb_bbox(i, j, k,
-                                                                                  logical_block_type);
-                ezgl::point2d center = abs_clb_bbox.center();
+                        //Determine the block color and logical type
+                        ezgl::color block_color;
+                        t_logical_block_type_ptr logical_block_type = nullptr;
 
-                g->fill_rectangle(abs_clb_bbox);
+                        //flag whether the current location is highlighted with a special color or not
+                        bool current_loc_is_highlighted = false;
 
-                g->set_color(ezgl::BLACK);
+                        if (placer_breakpoint_reached()) {
+                            t_pl_loc curr_loc;
+                            curr_loc.x = i;
+                            curr_loc.y = j;
+                            curr_loc.layer = layer_num;
+                            current_loc_is_highlighted = highlight_loc_with_specific_color(curr_loc,
+                                                                                           block_color);
+                        }
+                        // No color specified at this location; use the block color.
+                        if (current_loc_is_highlighted == false) {
+                            if (bnum != EMPTY_BLOCK_ID) {
+                                block_color = draw_state->block_color(bnum);
+                            } else {
+                                block_color = get_block_type_color(type);
+                                block_color = lighten_color(block_color,
+                                                            EMPTY_BLOCK_LIGHTEN_FACTOR);
+                            }
+                        }
 
-                g->set_line_dash(
-                    (EMPTY_BLOCK_ID == bnum) ? ezgl::line_dash::asymmetric_5_3 : ezgl::line_dash::none);
-                if (draw_state->draw_block_outlines) {
-                    g->draw_rectangle(abs_clb_bbox);
-                }
+                        logical_block_type = pick_logical_type(type);
+                        g->set_color(block_color, transparency_factor);
 
-                if (draw_state->draw_block_text) {
-                    /* Draw text if the space has parts of the netlist */
-                    if (bnum != EMPTY_BLOCK_ID && bnum != INVALID_BLOCK_ID) {
-                        std::string name = cluster_ctx.clb_nlist.block_name(
-                                               bnum)
-                                           + vtr::string_fmt(" (#%zu)", size_t(bnum));
+                        /* Get coords of current sub_tile */
+                        ezgl::rectangle abs_clb_bbox = draw_coords->get_absolute_clb_bbox(layer_num,
+                                                                                          i,
+                                                                                          j,
+                                                                                          k,
+                                                                                          logical_block_type);
+                        ezgl::point2d center = abs_clb_bbox.center();
 
-                        g->draw_text(center, name.c_str(), abs_clb_bbox.width(),
-                                     abs_clb_bbox.height());
-                    }
-                    /* Draw text for block type so that user knows what block */
-                    if (device_ctx.grid[i][j].width_offset == 0
-                        && device_ctx.grid[i][j].height_offset == 0) {
-                        std::string block_type_loc = device_ctx.grid[i][j].type->name;
-                        block_type_loc += vtr::string_fmt(" (%d,%d)", i, j);
+                        g->fill_rectangle(abs_clb_bbox);
 
-                        g->draw_text(
-                            center
-                                - ezgl::point2d(0,
-                                                abs_clb_bbox.height() / 4),
-                            block_type_loc.c_str(), abs_clb_bbox.width(),
-                            abs_clb_bbox.height());
+                        g->set_color(ezgl::BLACK, transparency_factor);
+
+                        g->set_line_dash(
+                            (EMPTY_BLOCK_ID == bnum) ? ezgl::line_dash::asymmetric_5_3 : ezgl::line_dash::none);
+                        if (draw_state->draw_block_outlines) {
+                            g->draw_rectangle(abs_clb_bbox);
+                        }
+
+                        if (draw_state->draw_block_text) {
+                            /* Draw text if the space has parts of the netlist */
+                            if (bnum != EMPTY_BLOCK_ID && bnum != INVALID_BLOCK_ID) {
+                                std::string name = cluster_ctx.clb_nlist.block_name(
+                                                       bnum)
+                                                   + vtr::string_fmt(" (#%zu)", size_t(bnum));
+
+                                g->draw_text(center, name.c_str(), abs_clb_bbox.width(),
+                                             abs_clb_bbox.height());
+                            }
+                            /* Draw text for block type so that user knows what block */
+                            if (width_offset == 0
+                                && height_offset == 0) {
+                                std::string block_type_loc = type->name;
+                                block_type_loc += vtr::string_fmt(" (%d,%d)", i, j);
+
+                                g->draw_text(
+                                    center
+                                        - ezgl::point2d(0,
+                                                        abs_clb_bbox.height() / 4),
+                                    block_type_loc.c_str(), abs_clb_bbox.width(),
+                                    abs_clb_bbox.height());
+                            }
+                        }
                     }
                 }
             }
@@ -211,30 +230,58 @@ void drawnets(ezgl::renderer* g) {
 
     ClusterBlockId b1, b2;
     auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& place_ctx = g_vpr_ctx.placement();
 
+    float transparency_factor;
     float NET_ALPHA = draw_state->net_alpha;
 
     g->set_line_dash(ezgl::line_dash::none);
     g->set_line_width(0);
 
+    int driver_block_layer_num = -1;
+    int sink_block_layer_num = -1;
+
     /* Draw the net as a star from the source to each sink. Draw from centers of *
      * blocks (or sub blocks in the case of IOs).                                */
 
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-        if (cluster_ctx.clb_nlist.net_is_ignored(net_id))
+        if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
             continue; /* Don't draw */
+        }
 
-        g->set_color(draw_state->net_color[net_id],
-                     draw_state->net_color[net_id].alpha * NET_ALPHA);
+        if ((int)cluster_ctx.clb_nlist.net_pins(net_id).size() - 1 > draw_state->draw_net_max_fanout) {
+            continue;
+        }
+
         b1 = cluster_ctx.clb_nlist.net_driver_block(net_id);
-        ezgl::point2d driver_center = draw_coords->get_absolute_clb_bbox(b1,
-                                                                         cluster_ctx.clb_nlist.block_type(b1))
-                                          .center();
+
+        //The layer of the net driver block
+        driver_block_layer_num = place_ctx.block_locs[b1].loc.layer;
+
+        //To only show nets that are connected to currently active layers on the screen
+        if (!draw_state->draw_layer_display[driver_block_layer_num].visible) {
+            continue; /* Don't draw */
+        }
+
+        ezgl::point2d driver_center = draw_coords->get_absolute_clb_bbox(b1, cluster_ctx.clb_nlist.block_type(b1)).center();
         for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
             b2 = cluster_ctx.clb_nlist.pin_block(pin_id);
-            ezgl::point2d sink_center = draw_coords->get_absolute_clb_bbox(b2,
-                                                                           cluster_ctx.clb_nlist.block_type(b2))
-                                            .center();
+
+            //the layer of the pin block (net sinks)
+            sink_block_layer_num = place_ctx.block_locs[b2].loc.layer;
+
+            t_draw_layer_display element_visibility = get_element_visibility_and_transparency(driver_block_layer_num, sink_block_layer_num);
+
+            if (!element_visibility.visible) {
+                continue; /* Don't Draw */
+            }
+            transparency_factor = element_visibility.alpha;
+
+            //Take the higher of the 2 transparency values that the user can select from the UI
+            // Compare the current cross layer transparency to the overall Net transparency set by the user.
+            g->set_color(draw_state->net_color[net_id], fmin(transparency_factor, draw_state->net_color[net_id].alpha * NET_ALPHA));
+
+            ezgl::point2d sink_center = draw_coords->get_absolute_clb_bbox(b2, cluster_ctx.clb_nlist.block_type(b2)).center();
             g->draw_line(driver_center, sink_center);
             /* Uncomment to draw a chain instead of a star. */
             /* driver_center = sink_center;  */
@@ -257,10 +304,10 @@ void draw_congestion(ezgl::renderer* g) {
     //Record min/max congestion
     float min_congestion_ratio = 1.;
     float max_congestion_ratio = min_congestion_ratio;
-    std::vector<int> congested_rr_nodes = collect_congested_rr_nodes();
-    for (int inode : congested_rr_nodes) {
+    auto congested_rr_nodes = collect_congested_rr_nodes();
+    for (RRNodeId inode : congested_rr_nodes) {
         short occ = route_ctx.rr_node_route_inf[inode].occ();
-        short capacity = rr_graph.node_capacity(RRNodeId(inode));
+        short capacity = rr_graph.node_capacity(inode);
 
         float congestion_ratio = float(occ) / capacity;
 
@@ -280,24 +327,24 @@ void draw_congestion(ezgl::renderer* g) {
 
     //Sort the nodes in ascending order of value for drawing, this ensures high
     //valued nodes are not overdrawn by lower value ones (e.g-> when zoomed-out far)
-    auto cmp_ascending_acc_cost = [&](int lhs_node, int rhs_node) {
+    auto cmp_ascending_acc_cost = [&](RRNodeId lhs_node, RRNodeId rhs_node) {
         short lhs_occ = route_ctx.rr_node_route_inf[lhs_node].occ();
-        short lhs_capacity = rr_graph.node_capacity(RRNodeId(lhs_node));
+        short lhs_capacity = rr_graph.node_capacity(lhs_node);
 
         short rhs_occ = route_ctx.rr_node_route_inf[rhs_node].occ();
-        short rhs_capacity = rr_graph.node_capacity(RRNodeId(rhs_node));
+        short rhs_capacity = rr_graph.node_capacity(rhs_node);
 
         float lhs_cong_ratio = float(lhs_occ) / lhs_capacity;
         float rhs_cong_ratio = float(rhs_occ) / rhs_capacity;
 
         return lhs_cong_ratio < rhs_cong_ratio;
     };
-    std::sort(congested_rr_nodes.begin(), congested_rr_nodes.end(), cmp_ascending_acc_cost);
+    std::stable_sort(congested_rr_nodes.begin(), congested_rr_nodes.end(), cmp_ascending_acc_cost);
 
     if (draw_state->show_congestion == DRAW_CONGESTED_WITH_NETS) {
         auto rr_node_nets = collect_rr_node_nets();
 
-        for (int inode : congested_rr_nodes) {
+        for (RRNodeId inode : congested_rr_nodes) {
             for (ClusterNetId net : rr_node_nets[inode]) {
                 ezgl::color color = kelly_max_contrast_colors[size_t(net) % kelly_max_contrast_colors.size()];
                 draw_state->net_color[net] = color;
@@ -307,7 +354,7 @@ void draw_congestion(ezgl::renderer* g) {
         drawroute(HIGHLIGHTED, g);
 
         //Reset colors
-        for (int inode : congested_rr_nodes) {
+        for (RRNodeId inode : congested_rr_nodes) {
             for (ClusterNetId net : rr_node_nets[inode]) {
                 draw_state->net_color[net] = DEFAULT_RR_NODE_COLOR;
             }
@@ -317,9 +364,13 @@ void draw_congestion(ezgl::renderer* g) {
     }
 
     //Draw each congested node
-    for (int inode : congested_rr_nodes) {
+    for (RRNodeId inode : congested_rr_nodes) {
+        int layer_num = rr_graph.node_layer(inode);
+        int transparency_factor = get_rr_node_transparency(inode);
+        if (!draw_state->draw_layer_display[layer_num].visible)
+            continue;
         short occ = route_ctx.rr_node_route_inf[inode].occ();
-        short capacity = rr_graph.node_capacity(RRNodeId(inode));
+        short capacity = rr_graph.node_capacity(inode);
 
         float congestion_ratio = float(occ) / capacity;
 
@@ -327,8 +378,9 @@ void draw_congestion(ezgl::renderer* g) {
         VTR_ASSERT(node_congested);
 
         ezgl::color color = to_ezgl_color(cmap->color(congestion_ratio));
+        color.alpha = transparency_factor;
 
-        switch (rr_graph.node_type(RRNodeId(inode))) {
+        switch (rr_graph.node_type(inode)) {
             case CHANX: //fallthrough
             case CHANY:
                 draw_rr_chan(inode, color, g);
@@ -366,30 +418,30 @@ void draw_routing_costs(ezgl::renderer* g) {
 
     float min_cost = std::numeric_limits<float>::infinity();
     float max_cost = -min_cost;
-    std::vector<float> rr_node_costs(device_ctx.rr_graph.num_nodes(), 0.);
+    vtr::vector<RRNodeId, float> rr_node_costs(0.);
 
-    for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes()) {
+    for (const RRNodeId inode : device_ctx.rr_graph.nodes()) {
         float cost = 0.;
         if (draw_state->show_routing_costs == DRAW_TOTAL_ROUTING_COSTS
             || draw_state->show_routing_costs
                    == DRAW_LOG_TOTAL_ROUTING_COSTS) {
-            cost = get_single_rr_cong_cost((size_t)rr_id,
+            cost = get_single_rr_cong_cost(inode,
                                            get_draw_state_vars()->pres_fac);
 
         } else if (draw_state->show_routing_costs == DRAW_BASE_ROUTING_COSTS) {
-            cost = get_single_rr_cong_base_cost((size_t)rr_id);
+            cost = get_single_rr_cong_base_cost(inode);
 
         } else if (draw_state->show_routing_costs == DRAW_ACC_ROUTING_COSTS
                    || draw_state->show_routing_costs
                           == DRAW_LOG_ACC_ROUTING_COSTS) {
-            cost = get_single_rr_cong_acc_cost((size_t)rr_id);
+            cost = get_single_rr_cong_acc_cost(inode);
 
         } else {
             VTR_ASSERT(
                 draw_state->show_routing_costs == DRAW_PRES_ROUTING_COSTS
                 || draw_state->show_routing_costs
                        == DRAW_LOG_PRES_ROUTING_COSTS);
-            cost = get_single_rr_cong_pres_cost((size_t)rr_id,
+            cost = get_single_rr_cong_pres_cost(inode,
                                                 get_draw_state_vars()->pres_fac);
         }
 
@@ -399,17 +451,18 @@ void draw_routing_costs(ezgl::renderer* g) {
                    == DRAW_LOG_PRES_ROUTING_COSTS) {
             cost = std::log(cost);
         }
-        rr_node_costs[(size_t)rr_id] = cost;
+        rr_node_costs[inode] = cost;
         min_cost = std::min(min_cost, cost);
         max_cost = std::max(max_cost, cost);
     }
 
     //Hide min value, draw_rr_costs() ignores NaN's
-    for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes()) {
-        if (rr_node_costs[(size_t)rr_id] == min_cost) {
-            rr_node_costs[(size_t)rr_id] = NAN;
+    for (RRNodeId inode : device_ctx.rr_graph.nodes()) {
+        if (rr_node_costs[inode] == min_cost) {
+            rr_node_costs[inode] = NAN;
         }
     }
+
     char msg[vtr::bufsize];
     if (draw_state->show_routing_costs == DRAW_TOTAL_ROUTING_COSTS) {
         sprintf(msg, "Total Congestion Cost Range [%g, %g]", min_cost,
@@ -456,7 +509,7 @@ void draw_routing_bb(ezgl::renderer* g) {
 
     t_draw_coords* draw_coords = get_draw_coords_vars();
 
-    auto net_id = ClusterNetId(draw_state->show_routing_bb);
+    auto net_id = ParentNetId(draw_state->show_routing_bb);
     const t_bb* bb = &route_ctx.route_bb[net_id];
 
     //The router considers an RR node to be 'within' the the bounding box if it
@@ -495,7 +548,7 @@ void draw_routing_bb(ezgl::renderer* g) {
     msg += " (" + std::to_string(bb->xmin) + ", " + std::to_string(bb->ymin)
            + ", " + std::to_string(bb->xmax) + ", " + std::to_string(bb->ymax)
            + ")";
-    msg += " and routing for net '" + cluster_ctx.clb_nlist.net_name(net_id)
+    msg += " and routing for net '" + cluster_ctx.clb_nlist.net_name(convert_to_cluster_net_id(net_id))
            + "'";
     msg += " (#" + std::to_string(size_t(net_id)) + ")";
     application.update_message(msg.c_str());
@@ -529,35 +582,30 @@ void drawroute(enum e_draw_net_type draw_net_type, ezgl::renderer* g) {
             && draw_state->net_color[net_id] == ezgl::BLACK)
             continue;
 
-        draw_routed_net(net_id, g);
+        draw_routed_net((ParentNetId&)net_id, g);
     } /* End for (each net) */
 }
 
-void draw_routed_net(ClusterNetId net_id, ezgl::renderer* g) {
+void draw_routed_net(ParentNetId net_id, ezgl::renderer* g) {
     auto& route_ctx = g_vpr_ctx.routing();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     t_draw_state* draw_state = get_draw_state_vars();
 
-    if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) /* Don't draw. */
+    if (cluster_ctx.clb_nlist.net_is_ignored(convert_to_cluster_net_id(net_id))) /* Don't draw. */
         return;
 
-    if (route_ctx.trace[net_id].head == nullptr) /* No routing->  Skip.  (Allows me to draw */
-        return;                                  /* partially complete routes).            */
+    if (!route_ctx.route_trees[net_id]) // No routing -> Skip. (Allows me to draw partially complete routes)
+        return;
 
-    t_trace* tptr = route_ctx.trace[net_id].head; /* SOURCE to start */
-    int inode = tptr->index;
+    std::vector<RRNodeId> rr_nodes_to_draw;
+    for (auto& rt_node : route_ctx.route_trees[net_id].value().all_nodes()) {
+        RRNodeId inode = rt_node.inode;
 
-    std::vector<int> rr_nodes_to_draw;
-    rr_nodes_to_draw.push_back(inode);
-    for (;;) {
-        tptr = tptr->next;
-        inode = tptr->index;
-
-        if (draw_if_net_highlighted(net_id)) {
+        if (draw_if_net_highlighted(convert_to_cluster_net_id(net_id))) {
             /* If a net has been highlighted, highlight the whole net in *
              * the same color.											 */
-            draw_state->draw_rr_node[inode].color = draw_state->net_color[net_id];
+            draw_state->draw_rr_node[inode].color = draw_state->net_color[convert_to_cluster_net_id(net_id)];
             draw_state->draw_rr_node[inode].node_highlighted = true;
         } else {
             /* If not highlighted, draw the node in default color. */
@@ -566,25 +614,18 @@ void draw_routed_net(ClusterNetId net_id, ezgl::renderer* g) {
 
         rr_nodes_to_draw.push_back(inode);
 
-        if (tptr->iswitch == OPEN) { //End of branch
+        if (rt_node.is_leaf()) { // End of branch
             draw_partial_route(rr_nodes_to_draw, g);
             rr_nodes_to_draw.clear();
-
-            /* Skip the next segment */
-            tptr = tptr->next;
-            if (tptr == nullptr)
-                break;
-            inode = tptr->index;
-            rr_nodes_to_draw.push_back(inode);
         }
 
-    } /* End loop over traceback. */
+    } /* End loop over route tree. */
 
     draw_partial_route(rr_nodes_to_draw, g);
 }
 
 //Draws the set of rr_nodes specified, using the colors set in draw_state
-void draw_partial_route(const std::vector<int>& rr_nodes_to_draw, ezgl::renderer* g) {
+void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
@@ -613,56 +654,72 @@ void draw_partial_route(const std::vector<int>& rr_nodes_to_draw, ezgl::renderer
     }
 
     for (size_t i = 1; i < rr_nodes_to_draw.size(); ++i) {
-        int inode = rr_nodes_to_draw[i];
-        RRNodeId rr_node = RRNodeId(inode);
-        auto rr_type = rr_graph.node_type(rr_node);
+        RRNodeId inode = rr_nodes_to_draw[i];
+        auto rr_type = rr_graph.node_type(inode);
 
-        int prev_node = rr_nodes_to_draw[i - 1];
+        RRNodeId prev_node = rr_nodes_to_draw[i - 1];
         auto prev_type = rr_graph.node_type(RRNodeId(prev_node));
+
+        if (!is_inter_cluster_node(rr_graph, prev_node) || !is_inter_cluster_node(rr_graph, inode)) {
+            continue;
+        }
 
         auto iedge = find_edge(prev_node, inode);
         auto switch_type = rr_graph.edge_switch(RRNodeId(prev_node), iedge);
 
+        int current_node_layer = rr_graph.node_layer(inode);
+        int prev_node_layer = rr_graph.node_layer(prev_node);
+        t_draw_layer_display edge_visibility = get_element_visibility_and_transparency(prev_node_layer, current_node_layer);
+
+        //Don't draw node if the layer of the node is not set to visible on screen
+        if (!draw_state->draw_layer_display[current_node_layer].visible) {
+            continue;
+        }
+
+        ezgl::color color = draw_state->draw_rr_node[inode].color;
+
         switch (rr_type) {
             case OPIN: {
-                draw_rr_pin(inode, draw_state->draw_rr_node[inode].color, g);
+                draw_rr_pin(inode, color, g);
                 break;
             }
             case IPIN: {
-                draw_rr_pin(inode, draw_state->draw_rr_node[inode].color, g);
-                if (rr_graph.node_type(RRNodeId(prev_node)) == OPIN) {
-                    draw_pin_to_pin(prev_node, inode, g);
-                } else {
-                    draw_pin_to_chan_edge(inode, prev_node, g);
+                draw_rr_pin(inode, color, g);
+                if (edge_visibility.visible) {
+                    g->set_color(color, edge_visibility.alpha);
+                    if (rr_graph.node_type(prev_node) == OPIN) {
+                        draw_pin_to_pin(prev_node, inode, g);
+                    } else {
+                        draw_pin_to_chan_edge(inode, prev_node, g);
+                    }
                 }
                 break;
             }
             case CHANX: {
                 if (draw_state->draw_route_type == GLOBAL)
-                    chanx_track[rr_graph.node_xlow(rr_node)][rr_graph.node_ylow(rr_node)]++;
+                    chanx_track[rr_graph.node_xlow(inode)][rr_graph.node_ylow(inode)]++;
 
-                draw_rr_chan(inode, draw_state->draw_rr_node[inode].color, g);
-
-                switch (prev_type) {
-                    case CHANX: {
-                        draw_chanx_to_chanx_edge(RRNodeId(prev_node), RRNodeId(inode),
-                                                 switch_type, g);
-                        break;
-                    }
-                    case CHANY: {
-                        draw_chanx_to_chany_edge(inode, prev_node,
-
-                                                 FROM_Y_TO_X, switch_type, g);
-                        break;
-                    }
-                    case OPIN: {
-                        draw_pin_to_chan_edge(prev_node, inode, g);
-                        break;
-                    }
-                    default: {
-                        VPR_ERROR(VPR_ERROR_OTHER,
-                                  "Unexpected connection from an rr_node of type %d to one of type %d.\n",
-                                  prev_type, rr_type);
+                draw_rr_chan(inode, color, g);
+                if (edge_visibility.visible) {
+                    g->set_color(color, edge_visibility.alpha);
+                    switch (prev_type) {
+                        case CHANX: {
+                            draw_chanx_to_chanx_edge(prev_node, inode, switch_type, g);
+                            break;
+                        }
+                        case CHANY: {
+                            draw_chanx_to_chany_edge(inode, prev_node, FROM_Y_TO_X, switch_type, g);
+                            break;
+                        }
+                        case OPIN: {
+                            draw_pin_to_chan_edge(prev_node, inode, g);
+                            break;
+                        }
+                        default: {
+                            VPR_ERROR(VPR_ERROR_OTHER,
+                                      "Unexpected connection from an rr_node of type %d to one of type %d.\n",
+                                      prev_type, rr_type);
+                        }
                     }
                 }
 
@@ -670,30 +727,33 @@ void draw_partial_route(const std::vector<int>& rr_nodes_to_draw, ezgl::renderer
             }
             case CHANY: {
                 if (draw_state->draw_route_type == GLOBAL)
-                    chany_track[rr_graph.node_xlow(rr_node)][rr_graph.node_ylow(rr_node)]++;
+                    chany_track[rr_graph.node_xlow(inode)][rr_graph.node_ylow(inode)]++;
 
-                draw_rr_chan(inode, draw_state->draw_rr_node[inode].color, g);
+                draw_rr_chan(inode, color, g);
 
-                switch (prev_type) {
-                    case CHANX: {
-                        draw_chanx_to_chany_edge(prev_node, inode,
-                                                 FROM_X_TO_Y, switch_type, g);
-                        break;
-                    }
-                    case CHANY: {
-                        draw_chany_to_chany_edge(RRNodeId(prev_node), RRNodeId(inode),
-                                                 switch_type, g);
-                        break;
-                    }
-                    case OPIN: {
-                        draw_pin_to_chan_edge(prev_node, inode, g);
+                if (edge_visibility.visible) {
+                    g->set_color(color, edge_visibility.alpha);
+                    switch (prev_type) {
+                        case CHANX: {
+                            draw_chanx_to_chany_edge(prev_node, inode,
+                                                     FROM_X_TO_Y, switch_type, g);
+                            break;
+                        }
+                        case CHANY: {
+                            draw_chany_to_chany_edge(RRNodeId(prev_node), RRNodeId(inode),
+                                                     switch_type, g);
+                            break;
+                        }
+                        case OPIN: {
+                            draw_pin_to_chan_edge(prev_node, inode, g);
 
-                        break;
-                    }
-                    default: {
-                        VPR_ERROR(VPR_ERROR_OTHER,
-                                  "Unexpected connection from an rr_node of type %d to one of type %d.\n",
-                                  prev_type, rr_type);
+                            break;
+                        }
+                        default: {
+                            VPR_ERROR(VPR_ERROR_OTHER,
+                                      "Unexpected connection from an rr_node of type %d to one of type %d.\n",
+                                      prev_type, rr_type);
+                        }
                     }
                 }
 
@@ -703,6 +763,32 @@ void draw_partial_route(const std::vector<int>& rr_nodes_to_draw, ezgl::renderer
                 break;
             }
         }
+    }
+}
+
+/* Helper function that checks whether the edges between the current and previous nodes can be drawn
+ * based on whether the cross-layer connections option is enabled and whether the layer on which the
+ * nodes are located are enabled.
+ */
+bool is_edge_valid_to_draw(RRNodeId current_node, RRNodeId prev_node) {
+    t_draw_state* draw_state = get_draw_state_vars();
+    auto& rr_graph = g_vpr_ctx.device().rr_graph;
+
+    int current_node_layer = rr_graph.node_layer(current_node);
+    int prev_node_layer = rr_graph.node_layer(prev_node);
+
+    if (!(is_inter_cluster_node(rr_graph, current_node)) || !(is_inter_cluster_node(rr_graph, prev_node))) {
+        return false;
+    }
+
+    if (current_node_layer != prev_node_layer) {
+        if (draw_state->cross_layer_display.visible && draw_state->draw_layer_display[current_node_layer].visible && draw_state->draw_layer_display[prev_node_layer].visible) {
+            return true; //if both layers are enabled and cross layer connections are enabled
+        } else {
+            return false; //if cross layer connections are disabled or if either the current or prev node's layers are disabled
+        }
+    } else {
+        return draw_state->draw_layer_display[current_node_layer].visible; //if both nodes are from the same layer
     }
 }
 
@@ -779,8 +865,8 @@ void draw_routing_util(ezgl::renderer* g) {
     t_draw_coords* draw_coords = get_draw_coords_vars();
     auto& device_ctx = g_vpr_ctx.device();
 
-    auto chanx_usage = calculate_routing_usage(CHANX);
-    auto chany_usage = calculate_routing_usage(CHANY);
+    auto chanx_usage = calculate_routing_usage(CHANX, draw_state->is_flat, false);
+    auto chany_usage = calculate_routing_usage(CHANY, draw_state->is_flat, false);
 
     auto chanx_avail = calculate_routing_avail(CHANX);
     auto chany_avail = calculate_routing_avail(CHANY);
@@ -970,6 +1056,7 @@ void draw_crit_path(ezgl::renderer* g) {
     for (tatum::TimingPathElem elem : path.data_arrival_path().elements()) {
         tatum::NodeId node = elem.node();
         float arr_time = elem.tag().time();
+
         if (prev_node) {
             //We draw each 'edge' in a different color, this allows users to identify the stages and
             //any routing which corresponds to the edge
@@ -979,19 +1066,44 @@ void draw_crit_path(ezgl::renderer* g) {
                                                           % kelly_max_contrast_colors.size()];
 
             float delay = arr_time - prev_arr_time;
+
+            int src_block_layer = get_timing_path_node_layer_num(node);
+            int sink_block_layer = get_timing_path_node_layer_num(prev_node);
+
+            t_draw_layer_display flyline_visibility = get_element_visibility_and_transparency(src_block_layer, sink_block_layer);
+
             if (draw_state->show_crit_path == DRAW_CRIT_PATH_FLYLINES
                 || draw_state->show_crit_path
                        == DRAW_CRIT_PATH_FLYLINES_DELAYS) {
-                g->set_color(color);
-                g->set_line_dash(ezgl::line_dash::none);
-                g->set_line_width(4);
-                draw_flyline_timing_edge(tnode_draw_coord(prev_node),
-                                         tnode_draw_coord(node), delay, g);
+                // FLylines for critical path are drawn based on the layer visibility of the source and sink
+                if (flyline_visibility.visible) {
+                    g->set_color(color, flyline_visibility.alpha);
+                    g->set_line_dash(ezgl::line_dash::none);
+                    g->set_line_width(4);
+                    draw_flyline_timing_edge(tnode_draw_coord(prev_node),
+                                             tnode_draw_coord(node), delay, g);
+                    g->set_line_width(0);
+                }
             } else {
                 VTR_ASSERT(draw_state->show_crit_path != DRAW_NO_CRIT_PATH);
 
+                // Draws critical path shown by both flylines and routed net connections.
+
                 //Draw the routed version of the timing edge
-                draw_routed_timing_edge(prev_node, node, delay, color, g);
+                draw_routed_timing_edge_connection(prev_node, node, color, g);
+
+                // FLylines for critical path are drawn based on the layer visibility of the source and sink
+                if (flyline_visibility.visible) {
+                    g->set_line_dash(ezgl::line_dash::asymmetric_5_3);
+                    g->set_line_width(3);
+                    g->set_color(color, flyline_visibility.alpha);
+
+                    draw_flyline_timing_edge((ezgl::point2d)tnode_draw_coord(prev_node),
+                                             (ezgl::point2d)tnode_draw_coord(node), (float)delay,
+                                             (ezgl::renderer*)g);
+                    g->set_line_dash(ezgl::line_dash::none);
+                    g->set_line_width(0);
+                }
             }
         }
         prev_node = node;
@@ -999,8 +1111,106 @@ void draw_crit_path(ezgl::renderer* g) {
     }
 }
 
+/**
+ * @brief Draw critical path elements.
+ * 
+ * This function draws critical path elements based on the provided timing paths
+ * and indexes map. It is primarily used in server mode, where items are drawn upon request.
+ */
+void draw_crit_path_elements(const std::vector<tatum::TimingPath>& paths, const std::map<std::size_t, std::set<std::size_t>>& indexes, bool draw_crit_path_contour, ezgl::renderer* g) {
+    t_draw_state* draw_state = get_draw_state_vars();
+    const ezgl::color contour_color{0, 0, 0, 40};
+
+    auto draw_flyline_timing_edge_helper_fn = [](ezgl::renderer* renderer, const ezgl::color& color, ezgl::line_dash line_style, int line_width, float delay, 
+                                            const tatum::NodeId& prev_node, const tatum::NodeId& node, bool skip_draw_delays=false) {
+        renderer->set_color(color);
+        renderer->set_line_dash(line_style);
+        renderer->set_line_width(line_width);
+        draw_flyline_timing_edge(tnode_draw_coord(prev_node),
+                                tnode_draw_coord(node), delay, renderer, skip_draw_delays);
+
+        renderer->set_line_dash(ezgl::line_dash::none);
+        renderer->set_line_width(0);                        
+    };
+
+    for (const auto& [path_index, element_indexes]: indexes) {
+        if (path_index < paths.size()) {
+            const tatum::TimingPath& path = paths[path_index];
+
+            //Walk through the timing path drawing each edge
+            tatum::NodeId prev_node;
+            float prev_arr_time = std::numeric_limits<float>::quiet_NaN();
+            int element_counter = 0;
+            for (const tatum::TimingPathElem& elem : path.data_arrival_path().elements()) {
+                bool draw_current_element = element_indexes.empty() || element_indexes.find(element_counter) != element_indexes.end();
+   
+                // draw element
+                tatum::NodeId node = elem.node();
+                float arr_time = elem.tag().time();
+
+                //We draw each 'edge' in a different color, this allows users to identify the stages and
+                //any routing which corresponds to the edge
+                //
+                //We pick colors from the kelly max-contrast list, for long paths there may be repeats
+                ezgl::color color = kelly_max_contrast_colors[element_counter % kelly_max_contrast_colors.size()];
+
+                if (prev_node) {
+                    float delay = arr_time - prev_arr_time;
+                    if ((draw_state->show_crit_path == DRAW_CRIT_PATH_FLYLINES) || (draw_state->show_crit_path == DRAW_CRIT_PATH_FLYLINES_DELAYS)) {
+                        if (draw_current_element) {
+                            draw_flyline_timing_edge_helper_fn(g, color, ezgl::line_dash::none, /*line_width*/4, delay, prev_node, node);
+                        } else if (draw_crit_path_contour) {
+                            draw_flyline_timing_edge_helper_fn(g, contour_color, ezgl::line_dash::none, /*line_width*/1, delay, prev_node, node, /*skip_draw_delays*/true);
+                        }
+                    } else {
+                        VTR_ASSERT(draw_state->show_crit_path != DRAW_NO_CRIT_PATH);
+
+                        if (draw_current_element) {
+                            //Draw the routed version of the timing edge
+                            draw_routed_timing_edge_connection(prev_node, node, color, g);
+
+                            draw_flyline_timing_edge_helper_fn(g, color, ezgl::line_dash::asymmetric_5_3, /*line_width*/3, delay, prev_node, node);
+                        } else if (draw_crit_path_contour) {
+                            draw_flyline_timing_edge_helper_fn(g, color, ezgl::line_dash::asymmetric_5_3, /*line_width*/3, delay, prev_node, node, /*skip_draw_delays*/true);
+                        }
+                    }
+                }
+                
+                prev_node = node;
+                prev_arr_time = arr_time;
+                // end draw element
+
+                element_counter++;
+            }
+        }
+    }
+}
+
+int get_timing_path_node_layer_num(tatum::NodeId node) {
+    auto& place_ctx = g_vpr_ctx.placement();
+    auto& atom_ctx = g_vpr_ctx.atom();
+
+    AtomPinId atom_pin = atom_ctx.lookup.tnode_atom_pin(node);
+    AtomBlockId atom_block = atom_ctx.nlist.pin_block(atom_pin);
+    ClusterBlockId clb_block = atom_ctx.lookup.atom_clb(atom_block);
+    return place_ctx.block_locs[clb_block].loc.layer;
+}
+
+bool is_flyline_valid_to_draw(int src_layer, int sink_layer) {
+    t_draw_state* draw_state = get_draw_state_vars();
+
+    if (!draw_state->draw_layer_display[src_layer].visible || !draw_state->draw_layer_display[sink_layer].visible) {
+        return false; /* Don't Draw if either nodes are not on a currently visible layer in the UI*/
+    }
+    if (src_layer != sink_layer && !draw_state->cross_layer_display.visible) {
+        return false; /* Don't Draw if cross layer option is off and nodes are on different layers*/
+    }
+
+    return true;
+}
+
 //Draws critical path shown as flylines.
-void draw_flyline_timing_edge(ezgl::point2d start, ezgl::point2d end, float incr_delay, ezgl::renderer* g) {
+void draw_flyline_timing_edge(ezgl::point2d start, ezgl::point2d end, float incr_delay, ezgl::renderer* g, bool skip_draw_delays/*=false*/) {
     g->draw_line(start, end);
     draw_triangle_along_line(g, start, end, 0.95, 40 * DEFAULT_ARROW_SIZE);
     draw_triangle_along_line(g, start, end, 0.05, 40 * DEFAULT_ARROW_SIZE);
@@ -1008,7 +1218,8 @@ void draw_flyline_timing_edge(ezgl::point2d start, ezgl::point2d end, float incr
     bool draw_delays = (get_draw_state_vars()->show_crit_path
                             == DRAW_CRIT_PATH_FLYLINES_DELAYS
                         || get_draw_state_vars()->show_crit_path
-                               == DRAW_CRIT_PATH_ROUTING_DELAYS);
+                               == DRAW_CRIT_PATH_ROUTING_DELAYS)
+                               && !skip_draw_delays;
     if (draw_delays) {
         //Determine the strict bounding box based on the lines start/end
         float min_x = std::min(start.x, end.x);
@@ -1070,26 +1281,6 @@ void draw_flyline_timing_edge(ezgl::point2d start, ezgl::point2d end, float incr
     }
 }
 
-//Draws critical path shown by both flylines and routed net connections.
-void draw_routed_timing_edge(tatum::NodeId start_tnode,
-                             tatum::NodeId end_tnode,
-                             float incr_delay,
-                             ezgl::color color,
-                             ezgl::renderer* g) {
-    draw_routed_timing_edge_connection(start_tnode, end_tnode, color, g);
-
-    g->set_line_dash(ezgl::line_dash::asymmetric_5_3);
-    g->set_line_width(3);
-    g->set_color(color);
-
-    draw_flyline_timing_edge((ezgl::point2d)tnode_draw_coord(start_tnode),
-                             (ezgl::point2d)tnode_draw_coord(end_tnode), (float)incr_delay,
-                             (ezgl::renderer*)g);
-
-    g->set_line_width(0);
-    g->set_line_dash(ezgl::line_dash::none);
-}
-
 //Collect all the drawing locations associated with the timing edge between start and end
 void draw_routed_timing_edge_connection(tatum::NodeId src_tnode,
                                         tatum::NodeId sink_tnode,
@@ -1146,17 +1337,18 @@ void draw_routed_timing_edge_connection(tatum::NodeId src_tnode,
                 cluster_ctx.clb_nlist.net_driver_block(net_id)
                 == clb_src_block);
 
-            std::vector<int> routed_rr_nodes = trace_routed_connection_rr_nodes(
-                net_id, 0, sink_net_pin_index);
+            t_draw_state* draw_state = get_draw_state_vars();
+
+            std::vector<RRNodeId> routed_rr_nodes = trace_routed_connection_rr_nodes(net_id, 0, sink_net_pin_index);
 
             //Mark all the nodes highlighted
-            t_draw_state* draw_state = get_draw_state_vars();
-            for (int inode : routed_rr_nodes) {
+
+            for (RRNodeId inode : routed_rr_nodes) {
                 draw_state->draw_rr_node[inode].color = color;
             }
 
-            draw_partial_route((std::vector<int>)routed_rr_nodes,
-                               (ezgl::renderer*)g);
+            //draw_partial_route() takes care of layer visibility and cross-layer settings
+            draw_partial_route(routed_rr_nodes, (ezgl::renderer*)g);
         } else {
             //Connection entirely within the CLB, we don't draw the internal routing so treat it as a fly-line
             VTR_ASSERT(clb_src_block == clb_sink_block);

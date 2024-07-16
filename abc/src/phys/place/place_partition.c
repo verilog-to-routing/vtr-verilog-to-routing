@@ -107,14 +107,14 @@ void presortNets() {
   allNetsR2 = (ConcreteNet**)realloc(allNetsR2, sizeof(ConcreteNet*)*g_place_numNets);
   allNetsB2 = (ConcreteNet**)realloc(allNetsB2, sizeof(ConcreteNet*)*g_place_numNets);
   allNetsT2 = (ConcreteNet**)realloc(allNetsT2, sizeof(ConcreteNet*)*g_place_numNets);
-  memcpy(allNetsL2, g_place_concreteNets, sizeof(ConcreteNet*)*g_place_numNets);
-  memcpy(allNetsR2, g_place_concreteNets, sizeof(ConcreteNet*)*g_place_numNets);
-  memcpy(allNetsB2, g_place_concreteNets, sizeof(ConcreteNet*)*g_place_numNets);
-  memcpy(allNetsT2, g_place_concreteNets, sizeof(ConcreteNet*)*g_place_numNets);
-  qsort(allNetsL2, g_place_numNets, sizeof(ConcreteNet*), netSortByL);
-  qsort(allNetsR2, g_place_numNets, sizeof(ConcreteNet*), netSortByR);
-  qsort(allNetsB2, g_place_numNets, sizeof(ConcreteNet*), netSortByB);
-  qsort(allNetsT2, g_place_numNets, sizeof(ConcreteNet*), netSortByT);
+  memcpy(allNetsL2, (size_t)g_place_concreteNets, sizeof(ConcreteNet*)*g_place_numNets);
+  memcpy(allNetsR2, (size_t)g_place_concreteNets, sizeof(ConcreteNet*)*g_place_numNets);
+  memcpy(allNetsB2, (size_t)g_place_concreteNets, sizeof(ConcreteNet*)*g_place_numNets);
+  memcpy(allNetsT2, (size_t)g_place_concreteNets, sizeof(ConcreteNet*)*g_place_numNets);
+  qsort(allNetsL2, (size_t)g_place_numNets, sizeof(ConcreteNet*), netSortByL);
+  qsort(allNetsR2, (size_t)g_place_numNets, sizeof(ConcreteNet*), netSortByR);
+  qsort(allNetsB2, (size_t)g_place_numNets, sizeof(ConcreteNet*), netSortByB);
+  qsort(allNetsT2, (size_t)g_place_numNets, sizeof(ConcreteNet*), netSortByT);
 }
 
 // --------------------------------------------------------------------
@@ -838,10 +838,10 @@ void partitionEqualArea(Partition *parent) {
   // which way to sort?
   if (parent->m_vertical)
     // sort by X position
-    qsort(parent->m_members, parent->m_numMembers, sizeof(ConcreteCell*), cellSortByX);
+    qsort(parent->m_members, (size_t)parent->m_numMembers, sizeof(ConcreteCell*), cellSortByX);
   else
     // sort by Y position
-    qsort(parent->m_members, parent->m_numMembers, sizeof(ConcreteCell*), cellSortByY);
+    qsort(parent->m_members, (size_t)parent->m_numMembers, sizeof(ConcreteCell*), cellSortByY);
 
   // split the list
   halfArea = parent->m_area*0.5;
@@ -1109,9 +1109,9 @@ void incrementalPartition() {
   assert(g_place_rootPartition);
 
   // update cell list of root partition
-  memcpy(allCells, g_place_concreteCells, sizeof(ConcreteCell*)*g_place_numCells);
-  qsort(allCells, g_place_numCells, sizeof(ConcreteCell*), cellSortByID);
-  qsort(g_place_rootPartition->m_members, g_place_rootPartition->m_numMembers,
+  memcpy(allCells, (size_t)g_place_concreteCells, sizeof(ConcreteCell*)*g_place_numCells);
+  qsort(allCells, (size_t)g_place_numCells, sizeof(ConcreteCell*), cellSortByID);
+  qsort(g_place_rootPartition->m_members, (size_t)g_place_rootPartition->m_numMembers,
         sizeof(ConcreteCell*), cellSortByID);
 
   // scan sorted lists and collect cells not in partitions

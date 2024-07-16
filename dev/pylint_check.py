@@ -23,7 +23,7 @@ repo_path = pathlib.Path(__file__).parent.parent.absolute()
 paths_to_lint = [
     (repo_path, False),
     (repo_path / "dev", True),
-    (repo_path / "ODIN_II", True),
+    (repo_path / "odin_ii", True),
     (repo_path / "ace2", True),
     (repo_path / "doc", True),
     (repo_path / "vpr", True),
@@ -41,25 +41,26 @@ grandfathered_files = [
     repo_path / "dev/autoformat.py",
     repo_path / "dev/vpr_animate.py",
     repo_path / "dev/external_subtrees.py",
-    repo_path / "ODIN_II/usefull_tools/restore_blackboxed_latches_from_blif_file.py",
-    repo_path / "ODIN_II/regression_test/parse_result/parse_result.py",
-    repo_path / "ODIN_II/regression_test/parse_result/conf/hooks.py",
-    repo_path / "ODIN_II/regression_test/tools/parse_odin_result.py",
-    repo_path / "ODIN_II/regression_test/tools/odin_script_util.py",
-    repo_path / "ODIN_II/regression_test/tools/ODIN_CONFIG.py",
-    repo_path / "ODIN_II/regression_test/tools/synth_using_quartus.py",
-    repo_path / "ODIN_II/regression_test/tools/odin_config_maker.py",
-    repo_path / "ODIN_II/regression_test/tools/synth_using_vl2mv.py",
-    repo_path / "ODIN_II/regression_test/tools/synth_using_odin.py",
-    repo_path / "ODIN_II/regression_test/tools/asr_vector_maker.py",
-    repo_path / "ODIN_II/regression_test/tools/8_bit_arithmetic_power_output.py",
-    repo_path / "ODIN_II/regression_test/tools/8_bit_input.py",
+    repo_path / "odin_ii/usefull_tools/restore_blackboxed_latches_from_blif_file.py",
+    repo_path / "odin_ii/regression_test/parse_result/parse_result.py",
+    repo_path / "odin_ii/regression_test/parse_result/conf/hooks.py",
+    repo_path / "odin_ii/regression_test/tools/parse_odin_result.py",
+    repo_path / "odin_ii/regression_test/tools/odin_script_util.py",
+    repo_path / "odin_ii/regression_test/tools/ODIN_CONFIG.py",
+    repo_path / "odin_ii/regression_test/tools/synth_using_quartus.py",
+    repo_path / "odin_ii/regression_test/tools/odin_config_maker.py",
+    repo_path / "odin_ii/regression_test/tools/synth_using_vl2mv.py",
+    repo_path / "odin_ii/regression_test/tools/synth_using_odin.py",
+    repo_path / "odin_ii/regression_test/tools/asr_vector_maker.py",
+    repo_path / "odin_ii/regression_test/tools/8_bit_arithmetic_power_output.py",
+    repo_path / "odin_ii/regression_test/tools/8_bit_input.py",
     repo_path / "ace2/scripts/extract_clk_from_blif.py",
     repo_path / "doc/src/vtr_version.py",
     repo_path / "doc/src/conf.py",
     repo_path / "doc/_exts/rrgraphdomain/__init__.py",
     repo_path / "doc/_exts/sdcdomain/__init__.py",
     repo_path / "doc/_exts/archdomain/__init__.py",
+    repo_path / "doc/_exts/constraintsdomain/__init__.py",
     repo_path / "vpr/scripts/compare_timing_reports.py",
     repo_path / "vpr/scripts/profile/util.py",
     repo_path / "vpr/scripts/profile/parse_and_plot_detailed.py",
@@ -216,6 +217,9 @@ def main():
         cmd = ["pylint", path, "-s", "n"]
         if ignore_list:
             cmd.append("--disable=" + ",".join(ignore_list))
+        # Don't object to single-letter variable names (that's not in PEP8)
+        # see https://stackoverflow.com/q/21833872
+        cmd.append("--variable-rgx=[a-z][a-z0-9_]{0,40}$")
 
         # Run pylint and check output
         process = subprocess.run(cmd, check=False, stdout=subprocess.PIPE)

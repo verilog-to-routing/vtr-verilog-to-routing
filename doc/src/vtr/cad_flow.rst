@@ -9,7 +9,7 @@ VTR CAD Flow
 
     VTR CAD flow (and variants)
 
-In the standard VTR Flow (:numref:`fig_vtr_cad_flow`), :ref:`odin_II` converts a Verilog Hardware Destription Language (HDL) design into a flattened netlist consisting of logic gates, flip-flops, and blackboxes representing heterogeneous blocks (e.g. adders, multipliers, RAM slices) :cite:`jamieson_odin_II`.
+In the standard VTR Flow (:numref:`fig_vtr_cad_flow`), :ref:`parmys` converts a Verilog Hardware Destription Language (HDL) design into a flattened netlist consisting of logic gates, flip-flops, and blackboxes representing heterogeneous blocks (e.g. adders, multipliers, RAM slices).
 
 Next, the :ref:`abc`  synthesis package is used to perform technology-independent logic optimization, and technology-maps the circuit into LUTs :cite:`abc_cite,pistorius_benchmarking_method_fpga_synthesis,cho_priority_cuts`.
 The output of ABC is a :ref:`.blif format <blif_format>` netlist of LUTs, flip flops, and blackboxes.
@@ -24,7 +24,7 @@ CAD Flow Variations
 
 Titan CAD Flow
 ~~~~~~~~~~~~~~
-The Titan CAD Flow :cite:`murray_titan,murray_timing_driven_titan` interfaces Intel's Quartus tool with VPR.
+The Titan CAD Flow :cite:`murray_titan,murray_timing_driven_titan, talaei_titan2` interfaces Intel's Quartus tool with VPR.
 This allows designs requiring industrial strength language coverage and IP to be brought into VPR.
 
 Other CAD Flow Variants

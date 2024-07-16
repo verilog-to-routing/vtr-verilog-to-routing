@@ -337,6 +337,30 @@ void Abc_ObjReplace( Abc_Obj_t * pNodeOld, Abc_Obj_t * pNodeNew )
 
 /**Function*************************************************************
 
+  Synopsis    [Replaces a node by a constant.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+void Abc_ObjReplaceByConstant( Abc_Obj_t * pNode, int fConst1 )
+{
+    Abc_Obj_t * pNodeNew;
+    assert( Abc_NtkIsLogic(pNode->pNtk) );
+    assert( !Abc_ObjIsCo(pNode) );
+    pNodeNew = fConst1 ? Abc_NtkCreateNodeConst1(pNode->pNtk) : Abc_NtkCreateNodeConst0(pNode->pNtk);
+    // transfer the fanouts to the old node
+    Abc_ObjTransferFanout( pNode, pNodeNew );
+    // remove the old node
+    if ( Abc_ObjIsNode(pNode) )
+        Abc_NtkDeleteObj_rec( pNode, 1 );
+}
+
+/**Function*************************************************************
+
   Synopsis    [Returns the index of the fanin in the fanin list of the fanout.]
 
   Description []

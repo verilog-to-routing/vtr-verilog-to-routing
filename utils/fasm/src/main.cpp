@@ -36,14 +36,14 @@ constexpr int INTERRUPTED_EXIT_CODE = 3; //VPR was interrupted by the user (e.g.
 /*
  * Writes FASM file based on the netlist name by walking the netlist.
  */
-static bool write_fasm() {
+static bool write_fasm(bool is_flat) {
   auto& device_ctx = g_vpr_ctx.device();
   auto& atom_ctx = g_vpr_ctx.atom();
 
   std::string fasm_filename = atom_ctx.nlist.netlist_name() + ".fasm";
   vtr::printf("Writing Implementation FASM: %s\n", fasm_filename.c_str());
   std::ofstream fasm_os(fasm_filename);
-  fasm::FasmWriterVisitor visitor(&device_ctx.arch->strings, fasm_os);
+  fasm::FasmWriterVisitor visitor(&device_ctx.arch->strings, fasm_os, is_flat);
   NetlistWalker nl_walker(visitor);
   nl_walker.walk();
 
@@ -83,18 +83,33 @@ int main(int argc, const char **argv) {
 
         /* Sync netlist to the actual routing (necessary if there are block
            ports with equivalent pins) */
+        bool is_flat = vpr_setup.RouterOpts.flat_routing;
         if (flow_succeeded) {
-            sync_netlists_to_routing(g_vpr_ctx.device(),
-                                     g_vpr_ctx.mutable_atom(),
-                                     g_vpr_ctx.mutable_clustering(),
-                                     g_vpr_ctx.placement(),
-                                     g_vpr_ctx.routing(),
-                                     vpr_setup.PackerOpts.pack_verbosity > 2,
-                                     vpr_setup.RouterOpts.flat_routing);
+            if(is_flat) {
+                sync_netlists_to_routing((const Netlist<>&) g_vpr_ctx.atom().nlist,
+                                         g_vpr_ctx.device(),
+                                         g_vpr_ctx.mutable_atom(),
+                                         g_vpr_ctx.atom().lookup,
+                                         g_vpr_ctx.mutable_clustering(),
+                                         g_vpr_ctx.placement(),
+                                         g_vpr_ctx.routing(),
+                                         vpr_setup.PackerOpts.pack_verbosity > 2,
+                                         is_flat);
+            } else {
+                sync_netlists_to_routing((const Netlist<>&) g_vpr_ctx.clustering().clb_nlist,
+                                         g_vpr_ctx.device(),
+                                         g_vpr_ctx.mutable_atom(),
+                                         g_vpr_ctx.atom().lookup,
+                                         g_vpr_ctx.mutable_clustering(),
+                                         g_vpr_ctx.placement(),
+                                         g_vpr_ctx.routing(),
+                                         vpr_setup.PackerOpts.pack_verbosity > 2,
+                                         is_flat);
+            }
         }
 
         /* Actually write output FASM file. */
-        flow_succeeded = write_fasm();
+        flow_succeeded = write_fasm(is_flat);
         if (!flow_succeeded) {
             return UNIMPLEMENTABLE_EXIT_CODE;
         }
@@ -106,6 +121,7 @@ int main(int argc, const char **argv) {
 
         /* free data structures */
         vpr_free_all(Arch, vpr_setup);
+
 
     } catch (const tatum::Error& tatum_error) {
         vtr::printf_error(__FILE__, __LINE__, "STA Engine: %s\n", tatum_error.what());

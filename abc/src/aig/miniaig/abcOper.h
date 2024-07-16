@@ -29,7 +29,9 @@
 ///                         PARAMETERS                               ///
 ////////////////////////////////////////////////////////////////////////
 
+#ifndef _YOSYS_
 ABC_NAMESPACE_HEADER_START 
+#endif
 
 ////////////////////////////////////////////////////////////////////////
 ///                         BASIC TYPES                              ///
@@ -60,7 +62,7 @@ typedef enum {
     ABC_OPER_BIT_NXOR,     // 18
     ABC_OPER_BIT_SHARP,    // 19
     ABC_OPER_BIT_SHARPL,   // 20
-    ABC_OPER_BIT_MUX,      // 21
+    ABC_OPER_BIT_MUX,      // 21  fanins are: {Ctrl, Data1, Data0}
     ABC_OPER_BIT_MAJ,      // 22
 
     ABC_OPER_ABC,          // 23
@@ -86,7 +88,7 @@ typedef enum {
     ABC_OPER_LOGIC_XOR,    // 41
     ABC_OPER_LOGIC_XNOR,   // 42
 
-    ABC_OPER_SEL_NMUX,     // 43
+    ABC_OPER_SEL_NMUX,     // 43  fanins are: {Ctrl, Data0, Data1, Data2, ...}
     ABC_OPER_SEL_SEL,      // 44
     ABC_OPER_SEL_PSEL,     // 45
     ABC_OPER_SEL_ENC,      // 46
@@ -138,8 +140,8 @@ typedef enum {
     ABC_OPER_LATCH,        // 86
     ABC_OPER_LATCHRS,      // 87
     ABC_OPER_DFF,          // 88
-    ABC_OPER_DFFCPL,       // 89
-    ABC_OPER_DFFRS,        // 90
+    ABC_OPER_DFFRSE,       // 89
+    ABC_OPER_DFFLAST,      // 90
 
     ABC_OPER_SLICE,        // 91
     ABC_OPER_CONCAT,       // 92
@@ -150,12 +152,14 @@ typedef enum {
     ABC_OPER_ARI_SQUARE,   // 96
     ABC_OPER_CONST,        // 97
 
-    ABC_OPER_LAST          // 98
+    ABC_OPER_ARI_ADDSUB,   // 98
+
+    ABC_OPER_LAST          // 99
 } Acb_ObjType_t; 
 
 
 // printing operator types
-static inline char * Abc_OperName( int Type )
+static inline const char * Abc_OperName( int Type )
 {
     if ( Type == ABC_OPER_NONE         )   return NULL;
     if ( Type == ABC_OPER_PI           )   return "pi";     
@@ -192,6 +196,7 @@ static inline char * Abc_OperName( int Type )
     if ( Type == ABC_OPER_ARI_ADD      )   return "+";      
     if ( Type == ABC_OPER_ARI_SUB      )   return "-";      
     if ( Type == ABC_OPER_ARI_MUL      )   return "*";      
+    if ( Type == ABC_OPER_ARI_SMUL     )   return "*";      
     if ( Type == ABC_OPER_ARI_DIV      )   return "/";      
     if ( Type == ABC_OPER_ARI_REM      )   return "%";      
     if ( Type == ABC_OPER_ARI_MOD      )   return "mod";    
@@ -214,13 +219,41 @@ static inline char * Abc_OperName( int Type )
     if ( Type == ABC_OPER_SHIFT_ROTL   )   return "rotL";   
     if ( Type == ABC_OPER_SHIFT_ROTR   )   return "rotR";   
 
+    if ( Type == ABC_OPER_DFFRSE       )   return "DFFRSE";    
+
     if ( Type == ABC_OPER_SLICE        )   return "[:]";    
     if ( Type == ABC_OPER_CONCAT       )   return "{}";     
     if ( Type == ABC_OPER_ZEROPAD      )   return "zPad";   
     if ( Type == ABC_OPER_SIGNEXT      )   return "sExt";   
 
+    if ( Type == ABC_OPER_BIT_MUX      )   return "mux";       
+    if ( Type == ABC_OPER_SEL_NMUX     )   return "nmux";   
+    if ( Type == ABC_OPER_SEL_SEL      )   return "pmux";   
+
+    if ( Type == ABC_OPER_CONST        )   return "const";  
     if ( Type == ABC_OPER_TABLE        )   return "table";  
+    if ( Type == ABC_OPER_LUT          )   return "lut";  
     if ( Type == ABC_OPER_LAST         )   return NULL;     
+    assert( 0 );
+    return NULL;
+}
+
+// printing operator types
+static inline const char * Abc_OperNameSimple( int Type )
+{
+    if ( Type == ABC_OPER_NONE         )   return NULL;  
+    if ( Type == ABC_OPER_CONST_F      )   return "buf";    
+    if ( Type == ABC_OPER_CONST_T      )   return "buf";    
+    if ( Type == ABC_OPER_CONST_X      )   return "buf";    
+    if ( Type == ABC_OPER_CONST_Z      )   return "buf";   
+    if ( Type == ABC_OPER_BIT_BUF      )   return "buf";    
+    if ( Type == ABC_OPER_BIT_INV      )   return "not";      
+    if ( Type == ABC_OPER_BIT_AND      )   return "and";      
+    if ( Type == ABC_OPER_BIT_OR       )   return "or";      
+    if ( Type == ABC_OPER_BIT_XOR      )   return "xor";      
+    if ( Type == ABC_OPER_BIT_NAND     )   return "nand";     
+    if ( Type == ABC_OPER_BIT_NOR      )   return "nor";     
+    if ( Type == ABC_OPER_BIT_NXOR     )   return "xnor";     
     assert( 0 );
     return NULL;
 }
@@ -237,9 +270,9 @@ static inline char * Abc_OperName( int Type )
 ///                    FUNCTION DECLARATIONS                         ///
 ////////////////////////////////////////////////////////////////////////
 
-
+#ifndef _YOSYS_
 ABC_NAMESPACE_HEADER_END
-
+#endif
 
 #endif
 

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.9)
+cmake_minimum_required(VERSION 3.16)
 
 project("librtlnumber")
 
@@ -31,3 +31,5 @@ target_link_libraries(rtl_number
                         librtlnumber)
 
 install(TARGETS rtl_number librtlnumber DESTINATION bin)
+install(FILES ${LIB_HEADERS} DESTINATION include/librtlnumber)
+

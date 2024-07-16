@@ -584,10 +584,10 @@ int Fpga_CompareNodesByLevelIncreasing( Fpga_Node_t ** ppS1, Fpga_Node_t ** ppS2
 void Fpga_MappingSortByLevel( Fpga_Man_t * pMan, Fpga_NodeVec_t * vNodes, int fIncreasing )
 {
     if ( fIncreasing )
-        qsort( (void *)vNodes->pArray, vNodes->nSize, sizeof(Fpga_Node_t *), 
+        qsort( (void *)vNodes->pArray, (size_t)vNodes->nSize, sizeof(Fpga_Node_t *), 
                 (int (*)(const void *, const void *)) Fpga_CompareNodesByLevelIncreasing );
     else
-        qsort( (void *)vNodes->pArray, vNodes->nSize, sizeof(Fpga_Node_t *), 
+        qsort( (void *)vNodes->pArray, (size_t)vNodes->nSize, sizeof(Fpga_Node_t *), 
                 (int (*)(const void *, const void *)) Fpga_CompareNodesByLevelDecreasing );
 //    assert( Fpga_CompareNodesByLevel( vNodes->pArray, vNodes->pArray + vNodes->nSize - 1 ) <= 0 );
 }

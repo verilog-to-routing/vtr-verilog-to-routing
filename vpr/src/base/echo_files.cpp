@@ -32,8 +32,7 @@ void setEchoEnabled(bool echo_enabled) {
 }
 
 void setAllEchoFileEnabled(bool value) {
-    int i;
-    for (i = 0; i < (int)E_ECHO_END_TOKEN; i++) {
+    for (int i = 0; i < (int)E_ECHO_END_TOKEN; i++) {
         echoFileEnabled[i] = value;
     }
 }
@@ -44,7 +43,7 @@ void setEchoFileEnabled(enum e_echo_files echo_option, bool value) {
 
 void setEchoFileName(enum e_echo_files echo_option, const char* name) {
     if (echoFileNames[(int)echo_option] != nullptr) {
-        delete[](echoFileNames[(int)echo_option]);
+        delete[] echoFileNames[(int)echo_option];
     }
     echoFileNames[(int)echo_option] = new char[strlen(name) + 1];
     strcpy(echoFileNames[(int)echo_option], name);
@@ -67,7 +66,7 @@ void alloc_and_load_echo_file_info() {
     echoFileNames = new char*[(int)E_ECHO_END_TOKEN];
     for (auto i = 0; i < (int)E_ECHO_END_TOKEN; i++) {
         echoFileEnabled[i] = false;
-        echoFileNames[i] = NULL;
+        echoFileNames[i] = nullptr;
     }
 
     setAllEchoFileEnabled(getEchoEnabled());
@@ -80,6 +79,9 @@ void alloc_and_load_echo_file_info() {
 
     //Packing
     setEchoFileName(E_ECHO_CLUSTERS, "clusters.echo");
+
+    //Legalizer
+    setEchoFileName(E_ECHO_FLAT_PLACE, "post_legalizer_flat_placement.echo");
 
     //Intra-block routing
     setEchoFileName(E_ECHO_INTRA_LB_FAILED_ROUTE, "intra_lb_failed_route.echo");
@@ -136,11 +138,10 @@ void alloc_and_load_echo_file_info() {
 }
 
 void free_echo_file_info() {
-    int i;
     if (echoFileEnabled != nullptr) {
-        for (i = 0; i < (int)E_ECHO_END_TOKEN; i++) {
+        for (int i = 0; i < (int)E_ECHO_END_TOKEN; i++) {
             if (echoFileNames[i] != nullptr) {
-                delete[](echoFileNames[i]);
+                delete[] echoFileNames[i];
             }
         }
         delete[] echoFileNames;
@@ -155,7 +156,7 @@ void setOutputFileName(enum e_output_files ename, const char* name, const char* 
         alloc_and_load_output_file_names(default_name);
     }
     if (outputFileNames[(int)ename] != nullptr) {
-        delete[](outputFileNames[(int)ename]);
+        delete[] outputFileNames[(int)ename];
     }
     outputFileNames[(int)ename] = new char[strlen(name) + 1];
     strcpy(outputFileNames[(int)ename], name);
@@ -165,7 +166,7 @@ char* getOutputFileName(enum e_output_files ename) {
     return outputFileNames[(int)ename];
 }
 
-void alloc_and_load_output_file_names(const std::string default_name) {
+void alloc_and_load_output_file_names(const std::string& default_name) {
     std::string name;
 
     if (outputFileNames == nullptr) {
@@ -185,11 +186,10 @@ void alloc_and_load_output_file_names(const std::string default_name) {
 }
 
 void free_output_file_names() {
-    int i;
     if (outputFileNames != nullptr) {
-        for (i = 0; i < (int)E_FILE_END_TOKEN; i++) {
+        for (int i = 0; i < (int)E_FILE_END_TOKEN; i++) {
             if (outputFileNames[i] != nullptr) {
-                delete[](outputFileNames[i]);
+                delete[] outputFileNames[i];
                 outputFileNames[i] = nullptr;
             }
         }

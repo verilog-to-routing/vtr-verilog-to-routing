@@ -1,0 +1,4 @@
+#Parmys Run-time Metrics
+parmys_synth_time;parmys.out;\s*User time \(seconds\): (.*)
+max_parmys_mem;parmys.out;\s*Maximum resident set size \(kbytes\): (\d+)
+

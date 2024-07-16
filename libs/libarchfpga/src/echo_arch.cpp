@@ -13,6 +13,10 @@
 
 using vtr::t_linked_vptr;
 
+/// @brief indices to lookup IPIN connection block switch name
+constexpr int ipin_cblock_switch_index_within_die = 0;
+constexpr int ipin_cblock_switch_index_between_dice = 1;
+
 void PrintArchInfo(FILE* Echo, const t_arch* arch);
 static void PrintPb_types_rec(FILE* Echo, const t_pb_type* pb_type, int level);
 static void PrintPb_types_recPower(FILE* Echo,
@@ -231,7 +235,15 @@ void PrintArchInfo(FILE* Echo, const t_arch* arch) {
             break;
     }
 
-    fprintf(Echo, "\tInput Connect Block Switch Name: %s\n", arch->ipin_cblock_switch_name.c_str());
+    fprintf(Echo, "\tInput Connect Block Switch Name Within a Same Die: %s\n", arch->ipin_cblock_switch_name[ipin_cblock_switch_index_within_die].c_str());
+
+    //if there is more than one layer available, print the connection block switch name that is used for connection between two dice
+    for (const auto& layout : arch->grid_layouts) {
+        int num_layers = (int)layout.layers.size();
+        if (num_layers > 1) {
+            fprintf(Echo, "\tInput Connect Block Switch Name Between Two Dice: %s\n", arch->ipin_cblock_switch_name[ipin_cblock_switch_index_between_dice].c_str());
+        }
+    }
 
     fprintf(Echo, "*************************************************\n\n");
     //Switch list
@@ -243,16 +255,16 @@ void PrintArchInfo(FILE* Echo, const t_arch* arch) {
     //and a sign
     for (i = 0; i < arch->num_switches; i++) {
         if (arch->Switches[i].type() == SwitchType::MUX) {
-            fprintf(Echo, "\tSwitch[%d]: name %s type mux\n", i + 1, arch->Switches[i].name);
+            fprintf(Echo, "\tSwitch[%d]: name %s type mux\n", i + 1, arch->Switches[i].name.c_str());
         } else if (arch->Switches[i].type() == SwitchType::TRISTATE) {
-            fprintf(Echo, "\tSwitch[%d]: name %s type tristate\n", i + 1, arch->Switches[i].name);
+            fprintf(Echo, "\tSwitch[%d]: name %s type tristate\n", i + 1, arch->Switches[i].name.c_str());
         } else if (arch->Switches[i].type() == SwitchType::SHORT) {
-            fprintf(Echo, "\tSwitch[%d]: name %s type short\n", i + 1, arch->Switches[i].name);
+            fprintf(Echo, "\tSwitch[%d]: name %s type short\n", i + 1, arch->Switches[i].name.c_str());
         } else if (arch->Switches[i].type() == SwitchType::BUFFER) {
-            fprintf(Echo, "\tSwitch[%d]: name %s type buffer\n", i + 1, arch->Switches[i].name);
+            fprintf(Echo, "\tSwitch[%d]: name %s type buffer\n", i + 1, arch->Switches[i].name.c_str());
         } else {
             VTR_ASSERT(arch->Switches[i].type() == SwitchType::PASS_GATE);
-            fprintf(Echo, "\tSwitch[%d]: name %s type pass_gate\n", i + 1, arch->Switches[i].name);
+            fprintf(Echo, "\tSwitch[%d]: name %s type pass_gate\n", i + 1, arch->Switches[i].name.c_str());
         }
         fprintf(Echo, "\t\t\t\tR %e Cin %e Cout %e\n", arch->Switches[i].R,
                 arch->Switches[i].Cin, arch->Switches[i].Cout);
@@ -280,12 +292,20 @@ void PrintArchInfo(FILE* Echo, const t_arch* arch) {
 
         if (seg.directionality == UNI_DIRECTIONAL) {
             //wire_switch == arch_opin_switch
-            fprintf(Echo, "\t\t\t\ttype unidir mux_name %s\n",
-                    arch->Switches[seg.arch_wire_switch].name);
+            fprintf(Echo, "\t\t\t\ttype unidir mux_name for within die connections: %s\n",
+                    arch->Switches[seg.arch_wire_switch].name.c_str());
+            //if there is more than one layer available, print the segment switch name that is used for connection between two dice
+            for (const auto& layout : arch->grid_layouts) {
+                int num_layers = (int)layout.layers.size();
+                if (num_layers > 1) {
+                    fprintf(Echo, "\t\t\t\ttype unidir mux_name for between two dice connections: %s\n",
+                            arch->Switches[seg.arch_opin_between_dice_switch].name.c_str());
+                }
+            }
         } else { //Should be bidir
             fprintf(Echo, "\t\t\t\ttype bidir wire_switch %s arch_opin_switch %s\n",
-                    arch->Switches[seg.arch_wire_switch].name,
-                    arch->Switches[seg.arch_opin_switch].name);
+                    arch->Switches[seg.arch_wire_switch].name.c_str(),
+                    arch->Switches[seg.arch_opin_switch].name.c_str());
         }
 
         fprintf(Echo, "\t\t\t\tcb ");
@@ -321,6 +341,21 @@ void PrintArchInfo(FILE* Echo, const t_arch* arch) {
                 arch->Directs[i].sub_tile_offset);
     }
     fprintf(Echo, "*************************************************\n\n");
+
+    //Router Connection List
+    if (arch->noc != nullptr) {
+        fprintf(Echo, "*************************************************\n");
+        fprintf(Echo, "NoC Router Connection List:\n");
+
+        for (auto noc_router : arch->noc->router_list) {
+            fprintf(Echo, "NoC router %d is connected to:\t", noc_router.id);
+            for (auto noc_conn_id : noc_router.connection_list) {
+                fprintf(Echo, "%d\t", noc_conn_id);
+            }
+            fprintf(Echo, "\n");
+        }
+        fprintf(Echo, "*************************************************\n\n");
+    }
 
     //Architecture Power
     fprintf(Echo, "*************************************************\n");
