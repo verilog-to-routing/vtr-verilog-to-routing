@@ -69,12 +69,13 @@ class GridTileLookup {
    void fill_type_matrix(t_logical_block_type_ptr block_type, vtr::NdMatrix<int, 3>& type_count);
 
    /**
-    * @brief Stores the cumulative total of subtiles available at each location in the grid for each block type.
+    * @brief Stores the cumulative total of subtiles available at each (x, y) location in each layer
+    * for all block types.
     *
     * Therefore, the length of the vector will be the number of logical block types. To access the cumulative
-    * number of subtiles at a location, you would use block_type_matrices[iblock_type][x][y] - this would
-    * give the number of placement locations that are at, or above and to the right of the given [x,y] for
-    * the given block type.
+    * number of subtiles at a location in a specific layer, you would use block_type_matrices[iblock_type][layer][x][y].
+    * This would give the number of placement locations that are at, or above (larger y) and to the right of the given [x,y] for
+    * the given block type in the given layer.
     */
    std::vector<vtr::NdMatrix<int, 3>> block_type_matrices;
 
