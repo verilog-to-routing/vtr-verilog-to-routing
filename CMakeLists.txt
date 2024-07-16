@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.9)
+cmake_minimum_required(VERSION 3.16)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
 include(SupportCcache)
@@ -23,7 +23,7 @@ set(VTR_IPO_BUILD "auto" CACHE STRING "Should VTR be compiled with interprocedur
 set_property(CACHE VTR_IPO_BUILD PROPERTY STRINGS auto on off)
 
 #Allow the user to configure how much assertion checking should occur
-set(VTR_ASSERT_LEVEL "2" CACHE STRING "VTR assertion checking level. 0: no assertions, 1: fast assertions, 2: regular assertions, 3: additional assertions with noticable run-time overhead, 4: all assertions (including those with significant run-time cost)")
+set(VTR_ASSERT_LEVEL "2" CACHE STRING "VTR assertion checking level. 0: no assertions, 1: fast assertions, 2: regular assertions, 3: additional assertions with noticeable run-time overhead, 4: all assertions (including those with significant run-time cost)")
 set_property(CACHE VTR_ASSERT_LEVEL PROPERTY STRINGS 0 1 2 3 4)
 
 option(VTR_ENABLE_STRICT_COMPILE "Specifies whether compiler warnings should be treated as errors (e.g. -Werror)" OFF)
@@ -31,21 +31,27 @@ option(VTR_ENABLE_SANITIZE "Enable address/leak/undefined-behaviour sanitizers (
 option(VTR_ENABLE_PROFILING "Enable performance profiler (gprof)" OFF)
 option(VTR_ENABLE_COVERAGE "Enable code coverage tracking (gcov)" OFF)
 option(VTR_ENABLE_DEBUG_LOGGING "Enable debug logging" OFF)
+option(VTR_ENABLE_VERBOSE "Enable increased debug verbosity" OFF)
+option(SPEC_CPU "Enable SPEC CPU v8 support" OFF)
 
 #Allow the user to decide whether to compile the graphics library
 set(VPR_USE_EZGL "auto" CACHE STRING "Specify whether vpr uses the graphics library")
 set_property(CACHE VPR_USE_EZGL PROPERTY STRINGS auto off on)
 option(VTR_ENABLE_CAPNPROTO "Enable capnproto binary serialization support in VPR." ON)
 
+#Allow the user to decide whether to compile the server module
+option(VPR_USE_SERVER "Specify whether vpr enables the server mode" ON)
+
 #Allow the user to enable/disable VPR analytic placement
 #VPR option --enable_analytic_placer is also required for Analytic Placement
 option(VPR_ANALYTIC_PLACE "Enable analytic placement in VPR." ON)
 option(VPR_ENABLE_INTERCHANGE "Enable FPGA interchange." ON)
+option(VPR_ENABLE_NOC_SAT_ROUTING "Enable NoC SAT routing." OFF)
 
 option(WITH_BLIFEXPLORER "Enable build with blifexplorer" OFF)
 
 option(WITH_ABC "Enable building abc" ON)
-option(WITH_ODIN "Enable building odin" ON)
+option(WITH_ODIN "Enable building odin" OFF)
 option(ODIN_DEBUG "Enable building odin with debug flags" OFF)
 option(ODIN_WARN "Enable building odin with extra warning flags" OFF)
 option(ODIN_COVERAGE "Enable building odin with coverage flags" OFF)
@@ -53,8 +59,8 @@ option(ODIN_TIDY "Enable building odin with clang tidy" OFF)
 option(ODIN_SANITIZE "Enable building odin with sanitize flags" OFF)
 
 # Allow the user to enable building Yosys
-option(WITH_YOSYS "Enable building Yosys" OFF)
-option(ODIN_USE_YOSYS "Enable building Yosys" OFF)
+option(WITH_PARMYS "Enable Yosys as elaborator and parmys-plugin as partial mapper" ON)
+option(YOSYS_F4PGA_PLUGINS "Enable building and installing Yosys SystemVerilog and UHDM plugins" OFF)
 
 set(VTR_VERSION_MAJOR 8)
 set(VTR_VERSION_MINOR 1)
@@ -87,9 +93,9 @@ add_definitions("-DVTR_ASSERT_LEVEL=${VTR_ASSERT_LEVEL}")
 include(CheckCXXCompilerFlag)
 
 #
-# We require c++14 support
+# We require c++17 support
 #
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF) #No compiler specific extensions
 
@@ -113,6 +119,8 @@ elseif(VTR_IPO_BUILD STREQUAL "auto")
         set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
     else()
         message(STATUS "Building with IPO: off (auto)")
+        set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -fPIC")
+        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fPIC")
     endif()
 else()
     message(STATUS "Building with IPO: off")
@@ -132,6 +140,9 @@ if(NOT MSVC)
     set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O0 -g3")
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g3")
 endif()
+
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
 
 #
 # Warning flags
@@ -210,12 +221,12 @@ endforeach()
 set(FLEX_BISON_WARN_SUPPRESS_FLAGS "")
 set(FLEX_BISON_WARN_SUPPRESS_FLAGS_TO_CHECK
     "-Wno-redundant-decls"  #Flex/bison generate code with redundant declarations
-    "-Wno-switch-default"   #Flex/bison generate switch statments w/o default cases
+    "-Wno-switch-default"   #Flex/bison generate switch statements w/o default cases
     "-Wno-unused-parameter" #Flex produces functions with unused params in re-entrant mode
     "-Wno-missing-declarations" #Flex misses some declarations in re-entrant mode
     "-Wimplicit-fallthrough=0" #Bison produces some cases with explicit
     "-Wno-sign-compare" #Flex generates code which performs some signed/unsigned comparison
-    "-Wno-null-dereference" #Bison produces some cases with potenetial null derefs
+    "-Wno-null-dereference" #Bison produces some cases with potential null derefs
     )
 foreach(flag ${FLEX_BISON_WARN_SUPPRESS_FLAGS_TO_CHECK})
     CHECK_CXX_COMPILER_FLAG(${flag} CXX_COMPILER_SUPPORTS_${flag})
@@ -246,7 +257,7 @@ set(SANITIZE_FLAGS "")
 if(VTR_ENABLE_SANITIZE)
     #Enable sanitizers
     # -fuse-ld=gold force the gold linker to be used (required for sanitizers, but not enabled by default on some systems)
-    set(SANITIZE_FLAGS "-g -fsanitize=address -fsanitize=leak -fsanitize=undefined -fuse-ld=gold -static-libasan")
+    set(SANITIZE_FLAGS "-g -fsanitize=address -fsanitize=leak -fuse-ld=gold -static-libasan")
     message(STATUS "SANITIZE_FLAGS: ${SANITIZE_FLAGS}")
 endif()
 
@@ -284,6 +295,24 @@ if(VTR_ENABLE_DEBUG_LOGGING)
     message(STATUS "Logging Flags: ${LOGGING_FLAGS}")
 endif()
 
+#
+# Increased debugging vebosity
+#
+if(VTR_ENABLE_VERBOSE)
+    set(EXTRA_FLAGS "${EXTRA_FLAGS} -DVTR_ENABLE_DEBUG_LOGGING")
+    message(STATUS "Enabling increased debugging verbosity")
+endif()
+
+#
+# Build for SPEC CPU Benchmark v8
+#
+set(SPEC_CPU_FLAGS "")
+if(SPEC_CPU)
+    # Enable SPEC CPU flag - Maximizes portability of code and minimizing the variation in how much work we do on different platforms
+    set(SPEC_CPU_FLAGS "-DSPEC_CPU")
+    message(STATUS "SPEC CPU FLAGS: ${SPEC_CPU_FLAGS}")
+endif()
+
 if (CMAKE_MAKE_PROGRAM EQUAL "ninja" )
     #Only for coloured output for ninja, it may be desired
     #to not force colours with other make programs (e.g. if
@@ -301,7 +330,7 @@ endif()
 # Set final flags
 #
 separate_arguments(
-    ADDITIONAL_FLAGS UNIX_COMMAND "${SANITIZE_FLAGS} ${PROFILING_FLAGS} ${COVERAGE_FLAGS} ${LOGGING_FLAGS} ${COLORED_COMPILE} ${EXTRA_FLAGS}"
+    ADDITIONAL_FLAGS UNIX_COMMAND "${SANITIZE_FLAGS} ${PROFILING_FLAGS} ${COVERAGE_FLAGS} ${LOGGING_FLAGS} ${COLORED_COMPILE} ${EXTRA_FLAGS} ${SPEC_CPU_FLAGS}"
     )
 separate_arguments(
     WARN_FLAGS UNIX_COMMAND "${WARN_FLAGS}"
@@ -315,6 +344,14 @@ add_custom_target(get_titan_benchmarks
     COMMAND ./vtr_flow/scripts/download_titan.py --vtr_flow_dir ./vtr_flow
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     COMMENT "Downloading (~1GB) and extracting Titan benchmarks (~10GB) into VTR source tree.")
+
+#
+# NoC MLP Benchmarks
+#
+add_custom_target(get_noc_mlp_benchmarks
+        COMMAND ./vtr_flow/scripts/download_noc_mlp.py --vtr_flow_dir ./vtr_flow
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMENT "Downloading (~100MB) and extracting NoC MLP benchmarks (~3.2GB) into VTR source tree.")
 
 #
 # ISPD Benchmarks
@@ -376,7 +413,30 @@ endif()
 if(${WITH_ABC})
     add_subdirectory(abc)
 endif()
+
+if(${WITH_PARMYS}) # define cmake params to compile Yosys
+    add_definitions("-D_YOSYS_")
+
+    set(MAKE_PROGRAM "$(MAKE)")
+    if(${CMAKE_GENERATOR} STREQUAL "Ninja")
+        set(MAKE_PROGRAM "make")
+    endif()
+
+    # Commented out since a make file should not call another make command with
+    # threads. It should pass this information from the parent automatically.
+    # if(NOT DEFINED "${CMAKE_BUILD_PARALLEL_LEVEL}")
+    #     set(CUSTOM_BUILD_PARALLEL_LEVEL 16)
+    # else()
+    #     set(CUSTOM_BUILD_PARALLEL_LEVEL "${CMAKE_BUILD_PARALLEL_LEVEL}")
+    # endif()
+    add_subdirectory(yosys)
+endif()
+
 add_subdirectory(libs) #libs/CMakeLists.txt handles adding warnings flags to non-external libraries
+
+if(${WITH_PARMYS})
+    add_subdirectory(parmys)
+endif()
 
 #Add the various tools
 add_compile_options(${WARN_FLAGS}) #Add warn flags for VTR tools
@@ -387,14 +447,20 @@ if(${WITH_ABC})
     add_subdirectory(ace2)
 endif()
 add_subdirectory(utils)
-# define cmake params to compile Yosys
-if(${WITH_YOSYS})
-    add_definitions("-D_YOSYS_")
-elseif(${WITH_ODIN})
-    add_subdirectory(ODIN_II)
+
+if(${WITH_ODIN})
+    add_subdirectory(odin_ii)
     # blifexplorer depends on odin
     if(${WITH_BLIFEXPLORER})
         add_subdirectory(blifexplorer)
+    endif()
+endif()
+
+# handle cmake params to compile Yosys SystemVerilog/UHDM plugins
+if(${YOSYS_F4PGA_PLUGINS})
+    # avoid compiling plugins in case the Parmys frontend is not active
+    if(NOT ${WITH_PARMYS})
+        message(SEND_ERROR "Utilizing SystemVerilog/UHDM plugins requires activating Parmys frontend. Please set WITH_PARMYS.")
     endif()
 endif()
 
@@ -439,11 +505,11 @@ list(APPEND DIRS_TO_FORMAT_CPP "${CMAKE_CURRENT_SOURCE_DIR}/libs/libvtrutil")
 list(APPEND DIRS_TO_FORMAT_CPP "${CMAKE_CURRENT_SOURCE_DIR}/libs/libpugiutil")
 list(APPEND DIRS_TO_FORMAT_CPP "${CMAKE_CURRENT_SOURCE_DIR}/libs/liblog")
 list(APPEND DIRS_TO_FORMAT_CPP "${CMAKE_CURRENT_SOURCE_DIR}/libs/librtlnumber")
-list(APPEND DIRS_TO_FORMAT_CPP "${CMAKE_CURRENT_SOURCE_DIR}/ODIN_II")
+list(APPEND DIRS_TO_FORMAT_CPP "${CMAKE_CURRENT_SOURCE_DIR}/odin_ii")
 
 include(AutoClangFormat)
 
-list(APPEND DIRS_TO_FORMAT_PY "${CMAKE_CURRENT_SOURCE_DIR}/ODIN_II")
+list(APPEND DIRS_TO_FORMAT_PY "${CMAKE_CURRENT_SOURCE_DIR}/odin_ii")
 list(APPEND DIRS_TO_FORMAT_PY "${CMAKE_CURRENT_SOURCE_DIR}/ace2")
 list(APPEND DIRS_TO_FORMAT_PY "${CMAKE_CURRENT_SOURCE_DIR}/dev")
 list(APPEND DIRS_TO_FORMAT_PY "${CMAKE_CURRENT_SOURCE_DIR}/doc")

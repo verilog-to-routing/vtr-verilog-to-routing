@@ -19,28 +19,40 @@
 module DLA (
 	input clk,
 	input i_reset,
+	input i_ddr_wen_0_0,
 	input [15:0] i_ddr_0_0,
 	output o_dummy_out_0_0,
+	input i_ddr_wen_0_1,
 	input [15:0] i_ddr_0_1,
 	output o_dummy_out_0_1,
+	input i_ddr_wen_1_0,
 	input [15:0] i_ddr_1_0,
 	output o_dummy_out_1_0,
+	input i_ddr_wen_1_1,
 	input [15:0] i_ddr_1_1,
 	output o_dummy_out_1_1,
+	input i_ddr_wen_2_0,
 	input [15:0] i_ddr_2_0,
 	output o_dummy_out_2_0,
+	input i_ddr_wen_2_1,
 	input [15:0] i_ddr_2_1,
 	output o_dummy_out_2_1,
+	input i_ddr_wen_3_0,
 	input [15:0] i_ddr_3_0,
 	output o_dummy_out_3_0,
+	input i_ddr_wen_3_1,
 	input [15:0] i_ddr_3_1,
 	output o_dummy_out_3_1,
+	input i_ddr_wen_4_0,
 	input [15:0] i_ddr_4_0,
 	output o_dummy_out_4_0,
+	input i_ddr_wen_4_1,
 	input [15:0] i_ddr_4_1,
 	output o_dummy_out_4_1,
+	input i_ddr_wen_5_0,
 	input [15:0] i_ddr_5_0,
 	output o_dummy_out_5_0,
+	input i_ddr_wen_5_1,
 	input [15:0] i_ddr_5_1,
 	output o_dummy_out_5_1,
 	output o_valid
@@ -480,7 +492,7 @@ wire [15:0] dummy_out_5_1;
 stream_buffer_0_0 stream_buffer_0_0_inst (
 	.clk(clk),
 	.i_reset(i_reset),
-	.i_wen0(1'b0),
+	.i_wen0(i_ddr_wen_0_0),
 	.i_wen1(STORE_wen_0),
 	.i_ddr(i_ddr_0_0),
 	.i_pool(STORE_output_0_0),
@@ -496,7 +508,7 @@ assign dummy_out_0_0 = f_buffer_el_0_0;
 stream_buffer_0_1 stream_buffer_0_1_inst (
 	.clk(clk),
 	.i_reset(i_reset),
-	.i_wen0(1'b0),
+	.i_wen0(i_ddr_wen_0_1),
 	.i_wen1(STORE_wen_0),
 	.i_ddr(i_ddr_0_1),
 	.i_pool(STORE_output_0_1),
@@ -512,7 +524,7 @@ assign dummy_out_0_1 = f_buffer_el_0_1;
 stream_buffer_1_0 stream_buffer_1_0_inst (
 	.clk(clk),
 	.i_reset(i_reset),
-	.i_wen0(1'b0),
+	.i_wen0(i_ddr_wen_1_0),
 	.i_wen1(STORE_wen_1),
 	.i_ddr(i_ddr_1_0),
 	.i_pool(STORE_output_1_0),
@@ -528,7 +540,7 @@ assign dummy_out_1_0 = f_buffer_el_1_0;
 stream_buffer_1_1 stream_buffer_1_1_inst (
 	.clk(clk),
 	.i_reset(i_reset),
-	.i_wen0(1'b0),
+	.i_wen0(i_ddr_wen_1_1),
 	.i_wen1(STORE_wen_1),
 	.i_ddr(i_ddr_1_1),
 	.i_pool(STORE_output_1_1),
@@ -544,7 +556,7 @@ assign dummy_out_1_1 = f_buffer_el_1_1;
 stream_buffer_2_0 stream_buffer_2_0_inst (
 	.clk(clk),
 	.i_reset(i_reset),
-	.i_wen0(1'b0),
+	.i_wen0(i_ddr_wen_2_0),
 	.i_wen1(STORE_wen_2),
 	.i_ddr(i_ddr_2_0),
 	.i_pool(STORE_output_2_0),
@@ -560,7 +572,7 @@ assign dummy_out_2_0 = f_buffer_el_2_0;
 stream_buffer_2_1 stream_buffer_2_1_inst (
 	.clk(clk),
 	.i_reset(i_reset),
-	.i_wen0(1'b0),
+	.i_wen0(i_ddr_wen_2_1),
 	.i_wen1(STORE_wen_2),
 	.i_ddr(i_ddr_2_1),
 	.i_pool(STORE_output_2_1),
@@ -576,7 +588,7 @@ assign dummy_out_2_1 = f_buffer_el_2_1;
 stream_buffer_3_0 stream_buffer_3_0_inst (
 	.clk(clk),
 	.i_reset(i_reset),
-	.i_wen0(1'b0),
+	.i_wen0(i_ddr_wen_3_0),
 	.i_wen1(STORE_wen_3),
 	.i_ddr(i_ddr_3_0),
 	.i_pool(STORE_output_3_0),
@@ -592,7 +604,7 @@ assign dummy_out_3_0 = f_buffer_el_3_0;
 stream_buffer_3_1 stream_buffer_3_1_inst (
 	.clk(clk),
 	.i_reset(i_reset),
-	.i_wen0(1'b0),
+	.i_wen0(i_ddr_wen_3_1),
 	.i_wen1(STORE_wen_3),
 	.i_ddr(i_ddr_3_1),
 	.i_pool(STORE_output_3_1),
@@ -608,7 +620,7 @@ assign dummy_out_3_1 = f_buffer_el_3_1;
 stream_buffer_4_0 stream_buffer_4_0_inst (
 	.clk(clk),
 	.i_reset(i_reset),
-	.i_wen0(1'b0),
+	.i_wen0(i_ddr_wen_4_0),
 	.i_wen1(STORE_wen_4),
 	.i_ddr(i_ddr_4_0),
 	.i_pool(STORE_output_4_0),
@@ -624,7 +636,7 @@ assign dummy_out_4_0 = f_buffer_el_4_0;
 stream_buffer_4_1 stream_buffer_4_1_inst (
 	.clk(clk),
 	.i_reset(i_reset),
-	.i_wen0(1'b0),
+	.i_wen0(i_ddr_wen_4_1),
 	.i_wen1(STORE_wen_4),
 	.i_ddr(i_ddr_4_1),
 	.i_pool(STORE_output_4_1),
@@ -640,7 +652,7 @@ assign dummy_out_4_1 = f_buffer_el_4_1;
 stream_buffer_5_0 stream_buffer_5_0_inst (
 	.clk(clk),
 	.i_reset(i_reset),
-	.i_wen0(1'b0),
+	.i_wen0(i_ddr_wen_5_0),
 	.i_wen1(STORE_wen_5),
 	.i_ddr(i_ddr_5_0),
 	.i_pool(STORE_output_5_0),
@@ -656,7 +668,7 @@ assign dummy_out_5_0 = f_buffer_el_5_0;
 stream_buffer_5_1 stream_buffer_5_1_inst (
 	.clk(clk),
 	.i_reset(i_reset),
-	.i_wen0(1'b0),
+	.i_wen0(i_ddr_wen_5_1),
 	.i_wen1(STORE_wen_5),
 	.i_ddr(i_ddr_5_1),
 	.i_pool(STORE_output_5_1),
@@ -10992,13 +11004,13 @@ endmodule
 module buffer_16_24200_buffer_init_15 (
 	input clk,
 	input wen,
-	input [14:0] waddr,
+	input [11:0] waddr,
 	input [15:0] wdata,
-	input [14:0] raddr,
+	input [11:0] raddr,
 	output [15:0] rdata
 );
 
-reg [14:0] raddr_reg;
+reg [11:0] raddr_reg;
 reg [15:0] rdata_reg;
 reg [15:0] pipeline_reg_0;
 wire [15:0] rd_dummy_signal;
@@ -11012,7 +11024,7 @@ always @(posedge clk) begin
 	pipeline_reg_0 <= rdata_reg;
 end
 
-dual_port_ram u_dual_port_ram(
+dpram #(.AWIDTH(12),.DWIDTH(16),.NUM_WORDS(1<<12)) u_dpram(
 	.addr1(waddr),
 	.we1(wen),
 	.data1(wdata),
@@ -11185,13 +11197,13 @@ endmodule
 module buffer_16_24200_buffer_init_05 (
 	input clk,
 	input wen,
-	input [14:0] waddr,
+	input [11:0] waddr,
 	input [15:0] wdata,
-	input [14:0] raddr,
+	input [11:0] raddr,
 	output [15:0] rdata
 );
 
-reg [14:0] raddr_reg;
+reg [11:0] raddr_reg;
 reg [15:0] rdata_reg;
 reg [15:0] pipeline_reg_0;
 wire [15:0] rd_dummy_signal;
@@ -11205,7 +11217,7 @@ always @(posedge clk) begin
 	pipeline_reg_0 <= rdata_reg;
 end
 
-dual_port_ram u_dual_port_ram(
+dpram #(.AWIDTH(12),.DWIDTH(16),.NUM_WORDS(1<<12)) u_dpram(
 	.addr1(waddr),
 	.we1(wen),
 	.data1(wdata),
@@ -11524,7 +11536,7 @@ accumulator_24_30_3 accumulator_24_30_3_inst_5 (
 	.o_accum(o_result_5)
 );
 
-reg [10:0] weight_cache_addr;
+reg [9:0] weight_cache_addr;
 always @ (*) begin
 	weight_cache_addr <= base_addr+offset;
 end
@@ -11533,10 +11545,10 @@ weight_cache_2048_8_0_weight_init_00 weight_cache_2048_8_0_weight_init_00_inst_0
 	.wen0(1'b0),
 	.wen1(1'b0),
 	.addr0(weight_cache_addr),
-	.wdata0(0),
+	.wdata0(8'd0),
 	.data0(weights_0_0),
 	.addr1(weight_cache_addr),
-	.wdata1(0),
+	.wdata1(8'd0),
 	.data1(weights_0_1)
 );
 
@@ -11545,10 +11557,10 @@ weight_cache_2048_8_0_weight_init_01 weight_cache_2048_8_0_weight_init_01_inst_1
 	.wen0(1'b0),
 	.wen1(1'b0),
 	.addr0(weight_cache_addr),
-	.wdata0(0),
+	.wdata0(8'd0),
 	.data0(weights_1_0),
 	.addr1(weight_cache_addr),
-	.wdata1(0),
+	.wdata1(8'd0),
 	.data1(weights_1_1)
 );
 
@@ -11557,10 +11569,10 @@ weight_cache_2048_8_0_weight_init_02 weight_cache_2048_8_0_weight_init_02_inst_2
 	.wen0(1'b0),
 	.wen1(1'b0),
 	.addr0(weight_cache_addr),
-	.wdata0(0),
+	.wdata0(8'd0),
 	.data0(weights_2_0),
 	.addr1(weight_cache_addr),
-	.wdata1(0),
+	.wdata1(8'd0),
 	.data1(weights_2_1)
 );
 
@@ -11569,10 +11581,10 @@ weight_cache_2048_8_0_weight_init_03 weight_cache_2048_8_0_weight_init_03_inst_3
 	.wen0(1'b0),
 	.wen1(1'b0),
 	.addr0(weight_cache_addr),
-	.wdata0(0),
+	.wdata0(8'd0),
 	.data0(weights_3_0),
 	.addr1(weight_cache_addr),
-	.wdata1(0),
+	.wdata1(8'd0),
 	.data1(weights_3_1)
 );
 
@@ -11581,10 +11593,10 @@ weight_cache_2048_8_0_weight_init_04 weight_cache_2048_8_0_weight_init_04_inst_4
 	.wen0(1'b0),
 	.wen1(1'b0),
 	.addr0(weight_cache_addr),
-	.wdata0(0),
+	.wdata0(8'd0),
 	.data0(weights_4_0),
 	.addr1(weight_cache_addr),
-	.wdata1(0),
+	.wdata1(8'd0),
 	.data1(weights_4_1)
 );
 
@@ -11593,10 +11605,10 @@ weight_cache_2048_8_0_weight_init_05 weight_cache_2048_8_0_weight_init_05_inst_5
 	.wen0(1'b0),
 	.wen1(1'b0),
 	.addr0(weight_cache_addr),
-	.wdata0(0),
+	.wdata0(8'd0),
 	.data0(weights_5_0),
 	.addr1(weight_cache_addr),
-	.wdata1(0),
+	.wdata1(8'd0),
 	.data1(weights_5_1)
 );
 
@@ -11694,8 +11706,8 @@ module dsp_block_16_8_false (
 	output [23:0] resulta
 );
 
-wire [10:0] mode;
-assign mode = 11'b1010_1010_011;
+wire [11:0] mode;
+assign mode = 12'b1010_1010_0110;
 
 `ifdef complex_dsp
 int_sop_2 mac_component (
@@ -11707,7 +11719,7 @@ int_sop_2 mac_component (
 	.bx(bx),
 	.by(by),
 	.chainin(chainin),
-	.resulta(resulta),
+	.result(resulta),
 	.chainout(chainout)
 );
 
@@ -11716,10 +11728,10 @@ reg [15:0] ax_reg;
 reg [7:0] ay_reg;
 reg [15:0] bx_reg;
 reg [7:0] by_reg;
-reg [23:0] resulta;
+reg [23:0] resulta_tmp;
 always @(posedge clk) begin
   if(aclr) begin
-    resulta <= 0;
+    resulta_tmp <= 0;
     ax_reg <= 0;
     ay_reg <= 0;
     bx_reg <= 0;
@@ -11730,10 +11742,11 @@ always @(posedge clk) begin
     ay_reg <= ay;
     bx_reg <= bx;
     by_reg <= by;
-    resulta <= ax_reg * ay_reg + bx_reg * by_reg + chainin;
+    resulta_tmp <= ax_reg * ay_reg + bx_reg * by_reg + chainin;
   end
 end
-assign chainout = {40'b0, resulta};
+assign resulta = resulta_tmp;
+assign chainout = {40'b0, resulta_tmp};
 `endif
 
 endmodule
@@ -11742,18 +11755,18 @@ module weight_cache_2048_8_0_weight_init_05 (
 	input clk,
 	input wen0,
 	input wen1,
-	input [10:0] addr0,
+	input [9:0] addr0,
 	input [7:0] wdata0,
 	output [7:0] data0,
-	input [10:0] addr1,
+	input [9:0] addr1,
 	input [7:0] wdata1,
 	output [7:0] data1
 );
 
-reg [10:0] addr0_reg;
-reg [7:0] data0_reg;
-reg [10:0] addr1_reg;
-reg [7:0] data1_reg;
+reg [9:0] addr0_reg;
+wire [7:0] data0_reg;
+reg [9:0] addr1_reg;
+wire [7:0] data1_reg;
 reg [7:0] pipeline0_reg_0;
 reg [7:0] pipeline1_reg_0;
 always @(posedge clk) begin
@@ -11763,7 +11776,7 @@ always @(posedge clk) begin
 	pipeline1_reg_0 <= data1_reg;
 end
 
-dual_port_ram u_dual_port_ram(
+dpram #(.AWIDTH(10),.DWIDTH(8),.NUM_WORDS(1<<10)) u_dpram(
 	.addr1(addr0_reg),
 	.we1(wen0),
 	.data1(wdata0),
@@ -11784,18 +11797,18 @@ module weight_cache_2048_8_0_weight_init_03 (
 	input clk,
 	input wen0,
 	input wen1,
-	input [10:0] addr0,
+	input [9:0] addr0,
 	input [7:0] wdata0,
 	output [7:0] data0,
-	input [10:0] addr1,
+	input [9:0] addr1,
 	input [7:0] wdata1,
 	output [7:0] data1
 );
 
-reg [10:0] addr0_reg;
-reg [7:0] data0_reg;
-reg [10:0] addr1_reg;
-reg [7:0] data1_reg;
+reg [9:0] addr0_reg;
+wire [7:0] data0_reg;
+reg [9:0] addr1_reg;
+wire [7:0] data1_reg;
 reg [7:0] pipeline0_reg_0;
 reg [7:0] pipeline1_reg_0;
 always @(posedge clk) begin
@@ -11805,7 +11818,7 @@ always @(posedge clk) begin
 	pipeline1_reg_0 <= data1_reg;
 end
 
-dual_port_ram u_dual_port_ram(
+dpram #(.AWIDTH(10),.DWIDTH(8),.NUM_WORDS(1<<10)) u_dpram(
 	.addr1(addr0_reg),
 	.we1(wen0),
 	.data1(wdata0),
@@ -11826,18 +11839,18 @@ module weight_cache_2048_8_0_weight_init_02 (
 	input clk,
 	input wen0,
 	input wen1,
-	input [10:0] addr0,
+	input [9:0] addr0,
 	input [7:0] wdata0,
 	output [7:0] data0,
-	input [10:0] addr1,
+	input [9:0] addr1,
 	input [7:0] wdata1,
 	output [7:0] data1
 );
 
-reg [10:0] addr0_reg;
-reg [7:0] data0_reg;
-reg [10:0] addr1_reg;
-reg [7:0] data1_reg;
+reg [9:0] addr0_reg;
+wire [7:0] data0_reg;
+reg [9:0] addr1_reg;
+wire [7:0] data1_reg;
 reg [7:0] pipeline0_reg_0;
 reg [7:0] pipeline1_reg_0;
 always @(posedge clk) begin
@@ -11847,7 +11860,7 @@ always @(posedge clk) begin
 	pipeline1_reg_0 <= data1_reg;
 end
 
-dual_port_ram u_dual_port_ram(
+dpram #(.AWIDTH(10),.DWIDTH(8),.NUM_WORDS(1<<10)) u_dpram(
 	.addr1(addr0_reg),
 	.we1(wen0),
 	.data1(wdata0),
@@ -11868,18 +11881,18 @@ module weight_cache_2048_8_0_weight_init_01 (
 	input clk,
 	input wen0,
 	input wen1,
-	input [10:0] addr0,
+	input [9:0] addr0,
 	input [7:0] wdata0,
 	output [7:0] data0,
-	input [10:0] addr1,
+	input [9:0] addr1,
 	input [7:0] wdata1,
 	output [7:0] data1
 );
 
-reg [10:0] addr0_reg;
-reg [7:0] data0_reg;
-reg [10:0] addr1_reg;
-reg [7:0] data1_reg;
+reg [9:0] addr0_reg;
+wire [7:0] data0_reg;
+reg [9:0] addr1_reg;
+wire [7:0] data1_reg;
 reg [7:0] pipeline0_reg_0;
 reg [7:0] pipeline1_reg_0;
 always @(posedge clk) begin
@@ -11889,7 +11902,7 @@ always @(posedge clk) begin
 	pipeline1_reg_0 <= data1_reg;
 end
 
-dual_port_ram u_dual_port_ram(
+dpram #(.AWIDTH(10),.DWIDTH(8),.NUM_WORDS(1<<10)) u_dpram(
 	.addr1(addr0_reg),
 	.we1(wen0),
 	.data1(wdata0),
@@ -11910,18 +11923,18 @@ module weight_cache_2048_8_0_weight_init_00 (
 	input clk,
 	input wen0,
 	input wen1,
-	input [10:0] addr0,
+	input [9:0] addr0,
 	input [7:0] wdata0,
 	output [7:0] data0,
-	input [10:0] addr1,
+	input [9:0] addr1,
 	input [7:0] wdata1,
 	output [7:0] data1
 );
 
-reg [10:0] addr0_reg;
-reg [7:0] data0_reg;
-reg [10:0] addr1_reg;
-reg [7:0] data1_reg;
+reg [9:0] addr0_reg;
+wire [7:0] data0_reg;
+reg [9:0] addr1_reg;
+wire [7:0] data1_reg;
 reg [7:0] pipeline0_reg_0;
 reg [7:0] pipeline1_reg_0;
 always @(posedge clk) begin
@@ -11931,7 +11944,7 @@ always @(posedge clk) begin
 	pipeline1_reg_0 <= data1_reg;
 end
 
-dual_port_ram u_dual_port_ram(
+dpram #(.AWIDTH(10),.DWIDTH(8),.NUM_WORDS(1<<10)) u_dpram(
 	.addr1(addr0_reg),
 	.we1(wen0),
 	.data1(wdata0),
@@ -11994,18 +12007,18 @@ module weight_cache_2048_8_0_weight_init_04 (
 	input clk,
 	input wen0,
 	input wen1,
-	input [10:0] addr0,
+	input [9:0] addr0,
 	input [7:0] wdata0,
 	output [7:0] data0,
-	input [10:0] addr1,
+	input [9:0] addr1,
 	input [7:0] wdata1,
 	output [7:0] data1
 );
 
-reg [10:0] addr0_reg;
-reg [7:0] data0_reg;
-reg [10:0] addr1_reg;
-reg [7:0] data1_reg;
+reg [9:0] addr0_reg;
+wire [7:0] data0_reg;
+reg [9:0] addr1_reg;
+wire [7:0] data1_reg;
 reg [7:0] pipeline0_reg_0;
 reg [7:0] pipeline1_reg_0;
 always @(posedge clk) begin
@@ -12015,7 +12028,7 @@ always @(posedge clk) begin
 	pipeline1_reg_0 <= data1_reg;
 end
 
-dual_port_ram u_dual_port_ram(
+dpram #(.AWIDTH(10),.DWIDTH(8),.NUM_WORDS(1<<10)) u_dpram(
 	.addr1(addr0_reg),
 	.we1(wen0),
 	.data1(wdata0),
@@ -12190,13 +12203,13 @@ endmodule
 module buffer_16_24200_buffer_init_04 (
 	input clk,
 	input wen,
-	input [14:0] waddr,
+	input [11:0] waddr,
 	input [15:0] wdata,
-	input [14:0] raddr,
+	input [11:0] raddr,
 	output [15:0] rdata
 );
 
-reg [14:0] raddr_reg;
+reg [11:0] raddr_reg;
 reg [15:0] rdata_reg;
 reg [15:0] pipeline_reg_0;
 wire [15:0] rd_dummy_signal;
@@ -12210,7 +12223,7 @@ always @(posedge clk) begin
 	pipeline_reg_0 <= rdata_reg;
 end
 
-dual_port_ram u_dual_port_ram(
+dpram #(.AWIDTH(12),.DWIDTH(16),.NUM_WORDS(1<<12)) u_dpram(
 	.addr1(waddr),
 	.we1(wen),
 	.data1(wdata),
@@ -12383,13 +12396,13 @@ endmodule
 module buffer_16_24200_buffer_init_14 (
 	input clk,
 	input wen,
-	input [14:0] waddr,
+	input [11:0] waddr,
 	input [15:0] wdata,
-	input [14:0] raddr,
+	input [11:0] raddr,
 	output [15:0] rdata
 );
 
-reg [14:0] raddr_reg;
+reg [11:0] raddr_reg;
 reg [15:0] rdata_reg;
 reg [15:0] pipeline_reg_0;
 wire [15:0] rd_dummy_signal;
@@ -12403,7 +12416,7 @@ always @(posedge clk) begin
 	pipeline_reg_0 <= rdata_reg;
 end
 
-dual_port_ram u_dual_port_ram(
+dpram #(.AWIDTH(12),.DWIDTH(16),.NUM_WORDS(1<<12)) u_dpram(
 	.addr1(waddr),
 	.we1(wen),
 	.data1(wdata),
@@ -12576,13 +12589,13 @@ endmodule
 module buffer_16_24200_buffer_init_02 (
 	input clk,
 	input wen,
-	input [14:0] waddr,
+	input [11:0] waddr,
 	input [15:0] wdata,
-	input [14:0] raddr,
+	input [11:0] raddr,
 	output [15:0] rdata
 );
 
-reg [14:0] raddr_reg;
+reg [11:0] raddr_reg;
 reg [15:0] rdata_reg;
 reg [15:0] pipeline_reg_0;
 wire [15:0] rd_dummy_signal;
@@ -12596,7 +12609,7 @@ always @(posedge clk) begin
 	pipeline_reg_0 <= rdata_reg;
 end
 
-dual_port_ram u_dual_port_ram(
+dpram #(.AWIDTH(12),.DWIDTH(16),.NUM_WORDS(1<<12)) u_dpram(
 	.addr1(waddr),
 	.we1(wen),
 	.data1(wdata),
@@ -12769,13 +12782,13 @@ endmodule
 module buffer_16_24200_buffer_init_12 (
 	input clk,
 	input wen,
-	input [14:0] waddr,
+	input [11:0] waddr,
 	input [15:0] wdata,
-	input [14:0] raddr,
+	input [11:0] raddr,
 	output [15:0] rdata
 );
 
-reg [14:0] raddr_reg;
+reg [11:0] raddr_reg;
 reg [15:0] rdata_reg;
 reg [15:0] pipeline_reg_0;
 wire [15:0] rd_dummy_signal;
@@ -12789,7 +12802,7 @@ always @(posedge clk) begin
 	pipeline_reg_0 <= rdata_reg;
 end
 
-dual_port_ram u_dual_port_ram(
+dpram #(.AWIDTH(12),.DWIDTH(16),.NUM_WORDS(1<<12)) u_dpram(
 	.addr1(waddr),
 	.we1(wen),
 	.data1(wdata),
@@ -12962,13 +12975,13 @@ endmodule
 module buffer_16_24200_buffer_init_11 (
 	input clk,
 	input wen,
-	input [14:0] waddr,
+	input [11:0] waddr,
 	input [15:0] wdata,
-	input [14:0] raddr,
+	input [11:0] raddr,
 	output [15:0] rdata
 );
 
-reg [14:0] raddr_reg;
+reg [11:0] raddr_reg;
 reg [15:0] rdata_reg;
 reg [15:0] pipeline_reg_0;
 wire [15:0] rd_dummy_signal;
@@ -12982,7 +12995,7 @@ always @(posedge clk) begin
 	pipeline_reg_0 <= rdata_reg;
 end
 
-dual_port_ram u_dual_port_ram(
+dpram #(.AWIDTH(12),.DWIDTH(16),.NUM_WORDS(1<<12)) u_dpram(
 	.addr1(waddr),
 	.we1(wen),
 	.data1(wdata),
@@ -13155,13 +13168,13 @@ endmodule
 module buffer_16_24200_buffer_init_01 (
 	input clk,
 	input wen,
-	input [14:0] waddr,
+	input [11:0] waddr,
 	input [15:0] wdata,
-	input [14:0] raddr,
+	input [11:0] raddr,
 	output [15:0] rdata
 );
 
-reg [14:0] raddr_reg;
+reg [11:0] raddr_reg;
 reg [15:0] rdata_reg;
 reg [15:0] pipeline_reg_0;
 wire [15:0] rd_dummy_signal;
@@ -13175,7 +13188,7 @@ always @(posedge clk) begin
 	pipeline_reg_0 <= rdata_reg;
 end
 
-dual_port_ram u_dual_port_ram(
+dpram #(.AWIDTH(12),.DWIDTH(16),.NUM_WORDS(1<<12)) u_dpram(
 	.addr1(waddr),
 	.we1(wen),
 	.data1(wdata),
@@ -13348,13 +13361,13 @@ endmodule
 module buffer_16_24200_buffer_init_00 (
 	input clk,
 	input wen,
-	input [14:0] waddr,
+	input [11:0] waddr,
 	input [15:0] wdata,
-	input [14:0] raddr,
+	input [11:0] raddr,
 	output [15:0] rdata
 );
 
-reg [14:0] raddr_reg;
+reg [12:0] raddr_reg;
 reg [15:0] rdata_reg;
 reg [15:0] pipeline_reg_0;
 wire [15:0] rd_dummy_signal;
@@ -13368,7 +13381,7 @@ always @(posedge clk) begin
 	pipeline_reg_0 <= rdata_reg;
 end
 
-dual_port_ram u_dual_port_ram(
+dpram #(.AWIDTH(12),.DWIDTH(16),.NUM_WORDS(1<<12)) u_dpram(
 	.addr1(waddr),
 	.we1(wen),
 	.data1(wdata),
@@ -13541,13 +13554,13 @@ endmodule
 module buffer_16_24200_buffer_init_10 (
 	input clk,
 	input wen,
-	input [14:0] waddr,
+	input [11:0] waddr,
 	input [15:0] wdata,
-	input [14:0] raddr,
+	input [11:0] raddr,
 	output [15:0] rdata
 );
 
-reg [14:0] raddr_reg;
+reg [11:0] raddr_reg;
 reg [15:0] rdata_reg;
 reg [15:0] pipeline_reg_0;
 wire [15:0] rd_dummy_signal;
@@ -13561,7 +13574,7 @@ always @(posedge clk) begin
 	pipeline_reg_0 <= rdata_reg;
 end
 
-dual_port_ram u_dual_port_ram(
+dpram #(.AWIDTH(12),.DWIDTH(16),.NUM_WORDS(1<<12)) u_dpram(
 	.addr1(waddr),
 	.we1(wen),
 	.data1(wdata),
@@ -14262,13 +14275,13 @@ endmodule
 module buffer_16_24200_buffer_init_13 (
 	input clk,
 	input wen,
-	input [14:0] waddr,
+	input [11:0] waddr,
 	input [15:0] wdata,
-	input [14:0] raddr,
+	input [11:0] raddr,
 	output [15:0] rdata
 );
 
-reg [14:0] raddr_reg;
+reg [11:0] raddr_reg;
 reg [15:0] rdata_reg;
 reg [15:0] pipeline_reg_0;
 wire [15:0] rd_dummy_signal;
@@ -14282,7 +14295,7 @@ always @(posedge clk) begin
 	pipeline_reg_0 <= rdata_reg;
 end
 
-dual_port_ram u_dual_port_ram(
+dpram #(.AWIDTH(12),.DWIDTH(16),.NUM_WORDS(1<<12)) u_dpram(
 	.addr1(waddr),
 	.we1(wen),
 	.data1(wdata),
@@ -14455,13 +14468,13 @@ endmodule
 module buffer_16_24200_buffer_init_03 (
 	input clk,
 	input wen,
-	input [14:0] waddr,
+	input [11:0] waddr,
 	input [15:0] wdata,
-	input [14:0] raddr,
+	input [11:0] raddr,
 	output [15:0] rdata
 );
 
-reg [14:0] raddr_reg;
+reg [11:0] raddr_reg;
 reg [15:0] rdata_reg;
 reg [15:0] pipeline_reg_0;
 wire [15:0] rd_dummy_signal;
@@ -14475,7 +14488,7 @@ always @(posedge clk) begin
 	pipeline_reg_0 <= rdata_reg;
 end
 
-dual_port_ram u_dual_port_ram(
+dpram #(.AWIDTH(12),.DWIDTH(16),.NUM_WORDS(1<<12)) u_dpram(
 	.addr1(waddr),
 	.we1(wen),
 	.data1(wdata),
@@ -14488,6 +14501,70 @@ dual_port_ram u_dual_port_ram(
 );
 assign rdata = pipeline_reg_0;
 
+endmodule
+
+module dpram (
+    clk,
+    addr1,
+    addr2,
+    we1,
+    we2,
+    data1,
+    data2,
+    out1,
+    out2
+);
+parameter AWIDTH=10;
+parameter NUM_WORDS=1024;
+parameter DWIDTH=32;
+input clk;
+input [(AWIDTH-1):0] addr1;
+input [(AWIDTH-1):0] addr2;
+input  we1;
+input  we2;
+input [(DWIDTH-1):0] data1;
+input [(DWIDTH-1):0] data2;
+output reg [(DWIDTH-1):0] out1;
+output reg [(DWIDTH-1):0] out2;
+
+`ifndef hard_mem
+
+reg [DWIDTH-1:0] ram[NUM_WORDS-1:0];
+always @ (posedge clk) begin 
+  if (we1) begin
+      ram[addr1] <= data1;
+  end
+//  else begin
+      out1 <= ram[addr1];
+//  end
+end
+  
+always @ (posedge clk) begin 
+  if (we2) begin
+      ram[addr2] <= data2;
+  end 
+//  else begin
+      out2 <= ram[addr2];
+//  end
+end
+
+`else
+defparam u_dual_port_ram.ADDR_WIDTH = AWIDTH;
+defparam u_dual_port_ram.DATA_WIDTH = DWIDTH;
+
+dual_port_ram u_dual_port_ram(
+.addr1(addr1),
+.we1(we1),
+.data1(data1),
+.out1(out1),
+.addr2(addr2),
+.we2(we2),
+.data2(data2),
+.out2(out2),
+.clk(clk)
+);
+
+`endif
 endmodule
 
 

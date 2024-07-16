@@ -25,4 +25,4 @@ qor_parse_file=qor_standard.txt
 pass_requirements_file=pass_requirements_chain.txt
 
 # Script parameters
-script_params=-adder_cin_global -min_hard_mult_size 10
+script_params=-adder_cin_global -min_hard_mult_size 10 --seed 3

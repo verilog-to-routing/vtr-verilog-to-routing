@@ -228,6 +228,22 @@ ClusteredNetlist read_netlist(const char* net_file,
         atom_ctx.lookup.set_atom_clb_net(net_id, clb_net_id);
     }
 
+    // Mark ignored and global atom nets
+    /* We have to make set the following variables after the mapping between cluster nets and atom nets
+     * is created
+     */
+    const AtomNetlist atom_nlist = g_vpr_ctx.atom().nlist;
+    for (auto clb_net : clb_nlist.nets()) {
+        AtomNetId atom_net = atom_ctx.lookup.atom_net(clb_net);
+        VTR_ASSERT(atom_net != AtomNetId::INVALID());
+        if (clb_nlist.net_is_global(clb_net)) {
+            atom_ctx.nlist.set_net_is_global(atom_net, true);
+        }
+        if (clb_nlist.net_is_ignored(clb_net)) {
+            atom_ctx.nlist.set_net_is_ignored(atom_net, true);
+        }
+    }
+
     /* load mapping between atom pins and pb_graph_pins */
     load_atom_pin_mapping(clb_nlist);
 
@@ -751,10 +767,10 @@ static void processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_routes& pb_route,
                         }
                     }
                     for (j = 0; j < num_sets; j++) {
-                        free(pin_node[j]);
+                        delete[] pin_node[j];
                     }
-                    free(pin_node);
-                    free(num_ptrs);
+                    delete[] pin_node;
+                    delete[] num_ptrs;
                     if (!found) {
                         vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(Cur),
                                   "Unknown interconnect %s connecting to pin %s.\n",
@@ -820,10 +836,10 @@ static void processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_routes& pb_route,
                         }
                     }
                     for (j = 0; j < num_sets; j++) {
-                        free(pin_node[j]);
+                        delete[] pin_node[j];
                     }
-                    free(pin_node);
-                    free(num_ptrs);
+                    delete[] pin_node;
+                    delete[] num_ptrs;
                     if (!found) {
                         vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(Cur),
                                   "Unknown interconnect %s connecting to pin %s.\n",
@@ -996,7 +1012,7 @@ static void load_external_nets_and_cb(ClusteredNetlist& clb_nlist) {
 
             if (clb_net_id != ClusterNetId::INVALID()) {
                 //Verify old and new CLB netlists have the same # of pins per net
-                if (RECEIVER == tile_type->class_inf[tile_type->pin_class[physical_pin]].type) {
+                if (RECEIVER == get_pin_type_from_pin_physical_num(tile_type, physical_pin)) {
                     count[clb_net_id]++;
 
                     if (count[clb_net_id] > (int)clb_nlist.net_sinks(clb_net_id).size()) {
@@ -1023,7 +1039,7 @@ static void load_external_nets_and_cb(ClusteredNetlist& clb_nlist) {
                     /* Error check performed later to ensure no mixing of ignored and non ignored signals */
 
                 } else {
-                    VTR_ASSERT(DRIVER == tile_type->class_inf[tile_type->pin_class[physical_pin]].type);
+                    VTR_ASSERT(DRIVER == get_pin_type_from_pin_physical_num(tile_type, physical_pin));
                     VTR_ASSERT(j == clb_nlist.pin_logical_index(*(clb_nlist.net_pins(clb_net_id).begin())));
                     VTR_ASSERT(j == clb_nlist.net_pin_logical_index(clb_net_id, 0));
                 }

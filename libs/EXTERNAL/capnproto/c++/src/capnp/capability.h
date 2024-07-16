@@ -101,6 +101,8 @@ class RequestHook;
 class ResponseHook;
 class PipelineHook;
 class ClientHook;
+template <typename T>
+class RevocableServer;
 
 template <typename Params, typename Results>
 class Request: public Params::Builder {
@@ -118,6 +120,24 @@ public:
 
   RemotePromise<Results> send() KJ_WARN_UNUSED_RESULT;
   // Send the call and return a promise for the results.
+
+  typename Results::Pipeline sendForPipeline();
+  // Send the call in pipeline-only mode. The returned object can be used to make pipelined calls,
+  // but there is no way to wait for the completion of the original call. This allows some
+  // bookkeeping to be skipped under the hood, saving some time.
+  //
+  // Generally, this method should only be used when the caller will immediately make one or more
+  // pipelined calls on the result, and then throw away the pipeline and all pipelined
+  // capabilities. Other uses may run into caveats, such as:
+  // - Normally, calling `whenResolved()` on a pipelined capability would wait for the original RPC
+  //   to complete (and possibly other things, if that RPC itself returned a promise capability),
+  //   but when using `sendPipelineOnly()`, `whenResolved()` may complete immediately, or never, or
+  //   at an arbitrary time. Do not rely on it.
+  // - Normal path shortening may not work with these capabilities. For exmaple, if the caller
+  //   forwards a pipelined capability back to the callee's vat, calls made by the callee to that
+  //   capability may continue to proxy through the caller. Conversely, if the callee ends up
+  //   returning a capability that points back to the caller's vat, calls on the pipelined
+  //   capability may continue to proxy through the callee.
 
 private:
   kj::Own<RequestHook> hook;
@@ -225,9 +245,25 @@ public:
   // where no calls are being made.  There is no reason to wait for this before making calls; if
   // the capability does not resolve, the call results will propagate the error.
 
+  struct CallHints {
+    bool noPromisePipelining = false;
+    // Hints that the pipeline part of the VoidPromiseAndPipeline won't be used, so it can be
+    // a bogus object.
+
+    bool onlyPromisePipeline = false;
+    // Hints that the promise part of the VoidPromiseAndPipeline won't be used, so it can be a
+    // bogus promise.
+    //
+    // This hint is primarily intended to be passed to `ClientHook::call()`. When using
+    // `ClientHook::newCall()`, you would instead indicate the hint by calling the `ResponseHook`'s
+    // `sendForPipeline()` method. The effect of setting `onlyPromisePipeline = true` when invoking
+    // `ClientHook::newCall()` is unspecified; it might cause the returned `Request` to support
+    // only pipelining even when `send()` is called, or it might not.
+  };
+
   Request<AnyPointer, AnyPointer> typelessRequest(
       uint64_t interfaceId, uint16_t methodId,
-      kj::Maybe<MessageSize> sizeHint);
+      kj::Maybe<MessageSize> sizeHint, CallHints hints);
   // Make a request without knowing the types of the params or results. You specify the type ID
   // and method number manually.
 
@@ -251,15 +287,18 @@ protected:
 
   template <typename Params, typename Results>
   Request<Params, Results> newCall(uint64_t interfaceId, uint16_t methodId,
-                                   kj::Maybe<MessageSize> sizeHint);
+                                   kj::Maybe<MessageSize> sizeHint, CallHints hints);
   template <typename Params>
   StreamingRequest<Params> newStreamingCall(uint64_t interfaceId, uint16_t methodId,
-                                            kj::Maybe<MessageSize> sizeHint);
+                                            kj::Maybe<MessageSize> sizeHint, CallHints hints);
 
 private:
   kj::Own<ClientHook> hook;
 
   static kj::Own<ClientHook> makeLocalClient(kj::Own<Capability::Server>&& server);
+  static kj::Own<ClientHook> makeRevocableLocalClient(Capability::Server& server);
+  static void revokeLocalClient(ClientHook& hook);
+  static void revokeLocalClient(ClientHook& hook, kj::Exception&& reason);
 
   template <typename, Kind>
   friend struct _::PointerHelpers;
@@ -271,6 +310,8 @@ private:
   friend struct List;
   friend class _::CapabilityServerSetBase;
   friend class ClientHook;
+  template <typename T>
+  friend class RevocableServer;
 };
 
 // =======================================================================================
@@ -366,6 +407,11 @@ public:
   // Note: This method has an overload that takes an lvalue reference for convenience. This
   //   overload increments the refcount on the underlying PipelineHook -- it does not keep the
   //   reference.
+  //
+  // Note: Capabilities returned by the replacement pipeline MUST either be exactly the same
+  //   capabilities as in the final response, or eventually resolve to exactly the same
+  //   capabilities, where "exactly the same" means the underlying `ClientHook` object is exactly
+  //   the same object by identity. Resolving to some "equivalent" capability is not good enough.
 
   template <typename SubParams>
   kj::Promise<void> tailCall(Request<SubParams, Results>&& tailRequest);
@@ -380,33 +426,20 @@ public:
   // In general, this should be the last thing a method implementation calls, and the promise
   // returned from `tailCall()` should then be returned by the method implementation.
 
-  void allowCancellation();
-  // Indicate that it is OK for the RPC system to discard its Promise for this call's result if
-  // the caller cancels the call, thereby transitively canceling any asynchronous operations the
-  // call implementation was performing.  This is not done by default because it could represent a
-  // security risk:  applications must be carefully written to ensure that they do not end up in
-  // a bad state if an operation is canceled at an arbitrary point.  However, for long-running
-  // method calls that hold significant resources, prompt cancellation is often useful.
-  //
-  // Keep in mind that asynchronous cancellation cannot occur while the method is synchronously
-  // executing on a local thread.  The method must perform an asynchronous operation or call
-  // `EventLoop::current().evalLater()` to yield control.
-  //
-  // Note:  You might think that we should offer `onCancel()` and/or `isCanceled()` methods that
-  // provide notification when the caller cancels the request without forcefully killing off the
-  // promise chain.  Unfortunately, this composes poorly with promise forking:  the canceled
-  // path may be just one branch of a fork of the result promise.  The other branches still want
-  // the call to continue.  Promise forking is used within the Cap'n Proto implementation -- in
-  // particular each pipelined call forks the result promise.  So, if a caller made a pipelined
-  // call and then dropped the original object, the call should not be canceled, but it would be
-  // excessively complicated for the framework to avoid notififying of cancellation as long as
-  // pipelined calls still exist.
+  void allowCancellation()
+      KJ_UNAVAILABLE(
+          "As of Cap'n Proto 1.0, allowCancellation must be applied statically using an "
+          "annotation in the schema. See annotations defined in /capnp/c++.capnp. For "
+          "DynamicCapability::Server, use the constructor option (the annotation does not apply "
+          "to DynamicCapability). This change was made to gain a significant performance boost -- "
+          "dynamically allowing cancellation required excessive bookkeeping.");
 
 private:
   CallContextHook* hook;
 
   friend class Capability::Server;
   friend struct DynamicCapability;
+  friend class CallContextHook;
 };
 
 template <typename Params>
@@ -424,13 +457,20 @@ public:
   // - It wouldn't be particularly useful since streaming calls don't return anything, and they
   //   already compensate for latency.
 
-  void allowCancellation();
+  void allowCancellation()
+      KJ_UNAVAILABLE(
+          "As of Cap'n Proto 1.0, allowCancellation must be applied statically using an "
+          "annotation in the schema. See annotations defined in /capnp/c++.capnp. For "
+          "DynamicCapability::Server, use the constructor option (the annotation does not apply "
+          "to DynamicCapability). This change was made to gain a significant performance boost -- "
+          "dynamically allowing cancellation required excessive bookkeeping.");
 
 private:
   CallContextHook* hook;
 
   friend class Capability::Server;
   friend struct DynamicCapability;
+  friend class CallContextHook;
 };
 
 class Capability::Server {
@@ -449,13 +489,20 @@ public:
     // If true, this method was declared as `-> stream;`. No other calls should be permitted until
     // this call finishes, and if this call throws an exception, all future calls will throw the
     // same exception.
+
+    bool allowCancellation = false;
+    // If true, the call can be canceled normally. If false, the immediate caller is responsible
+    // for ensuring that cancellation is prevented and that `context` remains valid until the
+    // call completes normally.
+    //
+    // See the `allowCancellation` annotation defined in `c++.capnp`.
   };
 
   virtual DispatchCallResult dispatchCall(uint64_t interfaceId, uint16_t methodId,
                                           CallContext<AnyPointer, AnyPointer> context) = 0;
   // Call the given method.  `params` is the input struct, and should be released as soon as it
-  // is no longer needed.  `context` may be used to allocate the output struct and deal with
-  // cancellation.
+  // is no longer needed.  `context` may be used to allocate the output struct and other call
+  // logistics.
 
   virtual kj::Maybe<int> getFd() { return nullptr; }
   // If this capability is backed by a file descriptor that is safe to directly expose to clients,
@@ -491,6 +538,7 @@ protected:
   //   the server's constructor.)
   // - The capability client pointing at this object has been destroyed. (This is always the case
   //   in the server's destructor.)
+  // - The capability client pointing at this object has been revoked using RevocableServer.
   // - Multiple capability clients have been created around the same server (possible if the server
   //   is refcounted, which is not recommended since the client itself provides refcounting).
 
@@ -510,6 +558,39 @@ protected:
 private:
   ClientHook* thisHook = nullptr;
   friend class LocalClient;
+};
+
+template <typename T>
+class RevocableServer {
+  // Allows you to create a capability client pointing to a capability server without taking
+  // ownership of the server. When `RevocableServer` is destroyed, all clients created through it
+  // will become broken. All outstanding RPCs via those clients will be canceled and all future
+  // RPCs will immediately throw. Hence, once the `RevocableServer` is destroyed, it is safe
+  // to destroy the server object it referenced.
+  //
+  // This is particularly useful when you want to create a capability server that points to an
+  // object that you do not own, and thus cannot keep alive beyond some defined lifetime. Since
+  // you cannot force the client to respect lifetime rules, you should use a RevocableServer to
+  // revoke access before the lifetime ends.
+  //
+  // The RevocableServer object can be moved (as long as the server outlives it).
+
+public:
+  RevocableServer(typename T::Server& server);
+  RevocableServer(RevocableServer&&) = default;
+  RevocableServer& operator=(RevocableServer&&) = default;
+  ~RevocableServer() noexcept(false);
+  KJ_DISALLOW_COPY(RevocableServer);
+
+  typename T::Client getClient();
+
+  void revoke();
+  void revoke(kj::Exception&& reason);
+  // Revokes the capability immediately, rather than waiting for the destructor. This can also
+  // be used to specify a custom exception to use when revoking.
+
+private:
+  kj::Own<ClientHook> hook;
 };
 
 // =======================================================================================
@@ -558,7 +639,7 @@ class ReaderCapabilityTable: private _::CapTableReader {
 
 public:
   explicit ReaderCapabilityTable(kj::Array<kj::Maybe<kj::Own<ClientHook>>> table);
-  KJ_DISALLOW_COPY(ReaderCapabilityTable);
+  KJ_DISALLOW_COPY_AND_MOVE(ReaderCapabilityTable);
 
   template <typename T>
   T imbue(T reader);
@@ -579,7 +660,7 @@ class BuilderCapabilityTable: private _::CapTableBuilder {
 
 public:
   BuilderCapabilityTable();
-  KJ_DISALLOW_COPY(BuilderCapabilityTable);
+  KJ_DISALLOW_COPY_AND_MOVE(BuilderCapabilityTable);
 
   inline kj::ArrayPtr<kj::Maybe<kj::Own<ClientHook>>> getTable() { return table; }
 
@@ -624,7 +705,7 @@ class CapabilityServerSet: private _::CapabilityServerSetBase {
 
 public:
   CapabilityServerSet() = default;
-  KJ_DISALLOW_COPY(CapabilityServerSet);
+  KJ_DISALLOW_COPY_AND_MOVE(CapabilityServerSet);
 
   typename T::Client add(kj::Own<typename T::Server>&& server);
   // Create a new capability Client for the given Server and also add this server to the set.
@@ -650,6 +731,9 @@ public:
 
   virtual kj::Promise<void> sendStreaming() = 0;
   // Send a streaming call.
+
+  virtual AnyPointer::Pipeline sendForPipeline() = 0;
+  // Send a call for pipelining purposes only.
 
   virtual const void* getBrand() = 0;
   // Returns a void* that identifies who made this request.  This can be used by an RPC adapter to
@@ -684,8 +768,11 @@ class ClientHook {
 public:
   ClientHook();
 
+  using CallHints = Capability::Client::CallHints;
+
   virtual Request<AnyPointer, AnyPointer> newCall(
-      uint64_t interfaceId, uint16_t methodId, kj::Maybe<MessageSize> sizeHint) = 0;
+      uint64_t interfaceId, uint16_t methodId, kj::Maybe<MessageSize> sizeHint,
+      CallHints hints) = 0;
   // Start a new call, allowing the client to allocate request/response objects as it sees fit.
   // This version is used when calls are made from application code in the local process.
 
@@ -695,16 +782,12 @@ public:
   };
 
   virtual VoidPromiseAndPipeline call(uint64_t interfaceId, uint16_t methodId,
-                                      kj::Own<CallContextHook>&& context) = 0;
+                                      kj::Own<CallContextHook>&& context, CallHints hints) = 0;
   // Call the object, but the caller controls allocation of the request/response objects.  If the
   // callee insists on allocating these objects itself, it must make a copy.  This version is used
   // when calls come in over the network via an RPC system.  Note that even if the returned
   // `Promise<void>` is discarded, the call may continue executing if any pipelined calls are
   // waiting for it.
-  //
-  // Since the caller of this method chooses the CallContext implementation, it is the caller's
-  // responsibility to ensure that the returned promise is not canceled unless allowed via
-  // the context's `allowCancellation()`.
   //
   // The call must not begin synchronously; the callee must arrange for the call to begin in a
   // later turn of the event loop. Otherwise, application code may call back and affect the
@@ -715,12 +798,22 @@ public:
   // of the capability.  The caller may permanently replace this client with the resolved one if
   // desired.  Returns null if the client isn't a promise or hasn't resolved yet -- use
   // `whenMoreResolved()` to distinguish between them.
+  //
+  // Once a particular ClientHook's `getResolved()` returns non-null, it must permanently return
+  // exactly the same resolution. This is why `getResolved()` returns a reference -- it is assumed
+  // this object must have a strong reference to the resolution which it intends to keep
+  // permanently, therefore the returned reference will live at least as long as this `ClientHook`.
+  // This "only one resolution" policy is necessary for the RPC system to implement embargoes
+  // properly.
 
   virtual kj::Maybe<kj::Promise<kj::Own<ClientHook>>> whenMoreResolved() = 0;
   // If this client is a settled reference (not a promise), return nullptr.  Otherwise, return a
   // promise that eventually resolves to a new client that is closer to being the final, settled
   // client (i.e. the value eventually returned by `getResolved()`).  Calling this repeatedly
   // should eventually produce a settled client.
+  //
+  // Once the promise resolves, `getResolved()` must return exactly the same `ClientHook` as the
+  // one this Promise resolved to.
 
   kj::Promise<void> whenResolved();
   // Repeatedly calls whenMoreResolved() until it returns nullptr.
@@ -751,6 +844,12 @@ public:
   static kj::Own<ClientHook> from(Capability::Client client) { return kj::mv(client.hook); }
 };
 
+class RevocableClientHook: public ClientHook {
+public:
+  virtual void revoke() = 0;
+  virtual void revoke(kj::Exception&& reason) = 0;
+};
+
 class CallContextHook {
   // Hook interface implemented by RPC system to manage a call on the server side.  See
   // CallContext<T>.
@@ -760,7 +859,6 @@ public:
   virtual void releaseParams() = 0;
   virtual AnyPointer::Builder getResults(kj::Maybe<MessageSize> sizeHint) = 0;
   virtual kj::Promise<void> tailCall(kj::Own<RequestHook>&& request) = 0;
-  virtual void allowCancellation() = 0;
 
   virtual void setPipeline(kj::Own<PipelineHook>&& pipeline) = 0;
 
@@ -774,6 +872,11 @@ public:
   // promise fulfiller for onTailCall() with the returned pipeline.
 
   virtual kj::Own<CallContextHook> addRef() = 0;
+
+  template <typename Params, typename Results>
+  static CallContextHook& from(CallContext<Params, Results>& context) { return *context.hook; }
+  template <typename Params>
+  static CallContextHook& from(StreamingCallContext<Params>& context) { return *context.hook; }
 };
 
 kj::Own<ClientHook> newLocalPromiseClient(kj::Promise<kj::Own<ClientHook>>&& promise);
@@ -795,6 +898,11 @@ kj::Own<PipelineHook> newBrokenPipeline(kj::Exception&& reason);
 Request<AnyPointer, AnyPointer> newBrokenRequest(
     kj::Exception&& reason, kj::Maybe<MessageSize> sizeHint);
 // Helper function that creates a Request object that simply throws exceptions when sent.
+
+kj::Own<PipelineHook> getDisabledPipeline();
+// Gets a PipelineHook appropriate to use when CallHints::noPromisePipelining is true. This will
+// throw from all calls. This does not actually allocate the object; a static global object is
+// returned with a null disposer.
 
 // =======================================================================================
 // Extend PointerHelpers for interfaces
@@ -964,6 +1072,13 @@ RemotePromise<Results> Request<Params, Results>::send() {
   return RemotePromise<Results>(kj::mv(typedPromise), kj::mv(typedPipeline));
 }
 
+template <typename Params, typename Results>
+typename Results::Pipeline Request<Params, Results>::sendForPipeline() {
+  auto typelessPipeline = hook->sendForPipeline();
+  hook = nullptr;  // prevent reuse
+  return typename Results::Pipeline(kj::mv(typelessPipeline));
+}
+
 template <typename Params>
 kj::Promise<void> StreamingRequest<Params>::send() {
   auto promise = hook->sendStreaming();
@@ -989,19 +1104,19 @@ inline typename T::Client Capability::Client::castAs() {
 }
 inline Request<AnyPointer, AnyPointer> Capability::Client::typelessRequest(
     uint64_t interfaceId, uint16_t methodId,
-    kj::Maybe<MessageSize> sizeHint) {
-  return newCall<AnyPointer, AnyPointer>(interfaceId, methodId, sizeHint);
+    kj::Maybe<MessageSize> sizeHint, CallHints hints) {
+  return newCall<AnyPointer, AnyPointer>(interfaceId, methodId, sizeHint, hints);
 }
 template <typename Params, typename Results>
 inline Request<Params, Results> Capability::Client::newCall(
-    uint64_t interfaceId, uint16_t methodId, kj::Maybe<MessageSize> sizeHint) {
-  auto typeless = hook->newCall(interfaceId, methodId, sizeHint);
+    uint64_t interfaceId, uint16_t methodId, kj::Maybe<MessageSize> sizeHint, CallHints hints) {
+  auto typeless = hook->newCall(interfaceId, methodId, sizeHint, hints);
   return Request<Params, Results>(typeless.template getAs<Params>(), kj::mv(typeless.hook));
 }
 template <typename Params>
 inline StreamingRequest<Params> Capability::Client::newStreamingCall(
-    uint64_t interfaceId, uint16_t methodId, kj::Maybe<MessageSize> sizeHint) {
-  auto typeless = hook->newCall(interfaceId, methodId, sizeHint);
+    uint64_t interfaceId, uint16_t methodId, kj::Maybe<MessageSize> sizeHint, CallHints hints) {
+  auto typeless = hook->newCall(interfaceId, methodId, sizeHint, hints);
   return StreamingRequest<Params>(typeless.template getAs<Params>(), kj::mv(typeless.hook));
 }
 
@@ -1064,14 +1179,6 @@ inline kj::Promise<void> CallContext<Params, Results>::tailCall(
     Request<SubParams, Results>&& tailRequest) {
   return hook->tailCall(kj::mv(tailRequest.hook));
 }
-template <typename Params, typename Results>
-inline void CallContext<Params, Results>::allowCancellation() {
-  hook->allowCancellation();
-}
-template <typename Params>
-inline void StreamingCallContext<Params>::allowCancellation() {
-  hook->allowCancellation();
-}
 
 template <typename Params, typename Results>
 CallContext<Params, Results> Capability::Server::internalGetTypedContext(
@@ -1087,6 +1194,31 @@ StreamingCallContext<Params> Capability::Server::internalGetTypedStreamingContex
 
 Capability::Client Capability::Server::thisCap() {
   return Client(thisHook->addRef());
+}
+
+template <typename T>
+RevocableServer<T>::RevocableServer(typename T::Server& server)
+    : hook(Capability::Client::makeRevocableLocalClient(server)) {}
+template <typename T>
+RevocableServer<T>::~RevocableServer() noexcept(false) {
+  // Check if moved away.
+  if (hook.get() != nullptr) {
+    Capability::Client::revokeLocalClient(*hook);
+  }
+}
+
+template <typename T>
+typename T::Client RevocableServer<T>::getClient() {
+  return typename T::Client(hook->addRef());
+}
+
+template <typename T>
+void RevocableServer<T>::revoke() {
+  Capability::Client::revokeLocalClient(*hook);
+}
+template <typename T>
+void RevocableServer<T>::revoke(kj::Exception&& exception) {
+  Capability::Client::revokeLocalClient(*hook, kj::mv(exception));
 }
 
 namespace _ { // private

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.9)
+cmake_minimum_required(VERSION 3.16)
 
 project("vpr")
 
@@ -32,6 +32,25 @@ else()
     message(STATUS "EZGL: graphics disabled")
 endif()
 
+
+#Handle server setup
+set(SERVER_DEFINES "")
+
+set(SERVER_DISABILED_REASON "")
+if (VPR_USE_SERVER)
+    if (VPR_USE_EZGL STREQUAL "off")
+        set(SERVER_DISABILED_REASON ", due to EZGL being disabled")
+        set(VPR_USE_SERVER OFF)
+    endif()
+endif()
+
+if (VPR_USE_SERVER)
+    message(STATUS "Server mode is enabled")
+else()
+    list(APPEND SERVER_DEFINES "-DNO_SERVER")
+    message(STATUS "Server mode is disabled${SERVER_DISABILED_REASON}")
+endif()
+
 #
 # Build Configuration
 #
@@ -43,8 +62,9 @@ file(GLOB_RECURSE LIB_SOURCES src/*/*.cpp)
 file(GLOB_RECURSE LIB_HEADERS src/*/*.h)
 files_to_dirs(LIB_HEADERS LIB_INCLUDE_DIRS)
 
-if(${VTR_ENABLE_CAPNPROTO})
-    add_definitions("-DVTR_ENABLE_CAPNPROTO")
+if(${VPR_DEBUG_PARTITION_TREE})
+    message(STATUS "VPR: Partition tree debug logs: enabled")
+    add_definitions("-DVPR_DEBUG_PARTITION_TREE")
 endif()
 
 #Create the library
@@ -56,7 +76,7 @@ add_library(libvpr STATIC
 
 target_include_directories(libvpr PUBLIC ${LIB_INCLUDE_DIRS})
 
-#VPR_ANALYTIC_PLACE is inisitalized in the root CMakeLists
+#VPR_ANALYTIC_PLACE is initialized in the root CMakeLists
 #Check Eigen dependency
 if(${VPR_ANALYTIC_PLACE})
 	message(STATUS "VPR Analytic Placement: Requested")
@@ -72,9 +92,23 @@ if(${VPR_ANALYTIC_PLACE})
 	endif(TARGET Eigen3::Eigen)
 endif()
 
+if (${VPR_ENABLE_NOC_SAT_ROUTING})
+    message(STATUS "VPR NoC SAT Routing: Requested")
+    find_package(ortools CONFIG REQUIRED)
+    if (TARGET ortools::ortools)
+        message(STATUS "VPR NoC SAT Routing dependency (or-tools): Found")
+        message(STATUS "VPR NoC SAT Routing: Enabled")
+        target_link_libraries(libvpr ortools::ortools)
+        target_compile_definitions(libvpr PUBLIC -DENABLE_NOC_SAT_ROUTING)
+    else ()
+        message(STATUS "VPR NoC SAT Routing dependency (or-tools): Not Found (You may need to set CMAKE_PREFIX_PATH in order for CMake to find your OR-Tools installation)")
+        message(STATUS "VPR NoC SAT Routing: Disabled")
+    endif (TARGET ortools::ortools)
+endif ()
+
 set_target_properties(libvpr PROPERTIES PREFIX "") #Avoid extra 'lib' prefix
 
-#Specify link-time dependancies
+#Specify link-time dependencies
 target_link_libraries(libvpr
                         libvtrutil
                         libarchfpga
@@ -85,6 +119,13 @@ target_link_libraries(libvpr
                         libpugixml
                         librrgraph
 )
+
+if(VPR_USE_SERVER)
+    target_link_libraries(libvpr
+                          sockpp-static
+                          -lz
+    )
+endif()
 
 #link graphics library only when graphics set to on
 if (VPR_USE_EZGL STREQUAL "on")
@@ -122,10 +163,11 @@ if (VPR_USE_EZGL STREQUAL "on")
 
 endif()
 
-target_compile_definitions(libvpr PUBLIC ${GRAPHICS_DEFINES})
+target_compile_definitions(libvpr PUBLIC ${GRAPHICS_DEFINES} ${SERVER_DEFINES})
 
 if(${VTR_ENABLE_CAPNPROTO})
     target_link_libraries(libvpr libvtrcapnproto)
+    target_compile_definitions(libvpr PRIVATE VTR_ENABLE_CAPNPROTO)
 endif()
 
 add_executable(vpr ${EXEC_SOURCES})
@@ -133,7 +175,7 @@ add_executable(vpr ${EXEC_SOURCES})
 target_link_libraries(vpr libvpr)
 
 
-#Supress IPO link warnings if IPO is enabled
+#Suppress IPO link warnings if IPO is enabled
 get_target_property(VPR_USES_IPO vpr INTERPROCEDURAL_OPTIMIZATION)
 if (VPR_USES_IPO)
     set_property(TARGET vpr APPEND PROPERTY LINK_FLAGS ${IPO_LINK_WARN_SUPRESS_FLAGS})
@@ -232,7 +274,7 @@ endif()
 if (VPR_USE_EXECUTION_ENGINE STREQUAL "tbb")
     target_compile_definitions(libvpr PRIVATE VPR_USE_TBB)
     target_link_libraries(libvpr tbb)
-    target_link_libraries(libvpr tbbmalloc_proxy) #Use the scalable memory allocator
+    target_link_libraries(libvpr ${TBB_tbbmalloc_proxy_LIBRARY}) #Use the scalable memory allocator
     message(STATUS "VPR: will support parallel execution using '${VPR_USE_EXECUTION_ENGINE}'")
 elseif(VPR_USE_EXECUTION_ENGINE STREQUAL "serial")
     message(STATUS "VPR: will only support serial execution")
@@ -244,7 +286,7 @@ endif()
 # Signal handler configuration
 #
 if (VPR_USE_SIGNAL_HANDLER)
-    #Check wheter VPR can use sigaction to handle signals (only supported by POSIX)
+    #Check whether VPR can use sigaction to handle signals (only supported by POSIX)
     CHECK_CXX_SYMBOL_EXISTS(sigaction csignal HAVE_SIGACTION)
     if(HAVE_SIGACTION)
         target_compile_definitions(libvpr PRIVATE VPR_USE_SIGACTION)
@@ -252,6 +294,7 @@ if (VPR_USE_SIGNAL_HANDLER)
 endif()
 
 install(TARGETS vpr libvpr DESTINATION bin)
+install(FILES ${LIB_HEADERS} DESTINATION include/libvpr)
 
 
 #
@@ -263,35 +306,14 @@ target_link_libraries(test_vpr
                         Catch2::Catch2WithMain
                         libvpr)
 
-#Supress IPO link warnings if IPO is enabled
+#Suppress IPO link warnings if IPO is enabled
 get_target_property(TEST_VPR_USES_IPO vpr INTERPROCEDURAL_OPTIMIZATION)
 if (TEST_VPR_USES_IPO)
     set_property(TARGET test_vpr APPEND PROPERTY LINK_FLAGS ${IPO_LINK_WARN_SUPRESS_FLAGS})
 endif()
 
 add_test(NAME test_vpr
-    COMMAND test_vpr --use-colour=yes
+    COMMAND test_vpr --colour-mode ansi
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/test
     )
 
-add_custom_target(
-    generate_rr_graph_serializers
-    COMMAND ${CMAKE_COMMAND} -E remove_directory rr_graph_generate
-    COMMAND ${CMAKE_COMMAND} -E make_directory rr_graph_generate
-    COMMAND ${CMAKE_COMMAND} -E chdir rr_graph_generate git clone https://github.com/duck2/uxsdcxx
-    COMMAND python3 -mpip install --user -r rr_graph_generate/uxsdcxx/requirements.txt
-    COMMAND ${CMAKE_COMMAND} -E chdir rr_graph_generate python3 uxsdcxx/uxsdcxx.py ${CMAKE_CURRENT_SOURCE_DIR}/src/route/rr_graph.xsd
-    COMMAND ${CMAKE_COMMAND} -E chdir rr_graph_generate python3 uxsdcxx/uxsdcap.py ${CMAKE_CURRENT_SOURCE_DIR}/src/route/rr_graph.xsd
-    COMMAND ${CMAKE_COMMAND} -E copy
-        rr_graph_generate/rr_graph_uxsdcxx.h
-        rr_graph_generate/rr_graph_uxsdcxx_capnp.h
-        rr_graph_generate/rr_graph_uxsdcxx_interface.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/route/gen
-    COMMAND ${CMAKE_COMMAND} -E copy
-        rr_graph_generate/rr_graph_uxsdcxx.capnp
-        ${CMAKE_CURRENT_SOURCE_DIR}/../libs/libvtrcapnproto/gen
-    DEPENDS
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/route/rr_graph.xsd
-    WORKING_DIRECTORY
-        ${CMAKE_CURRENT_BINARY_DIR}
-        )

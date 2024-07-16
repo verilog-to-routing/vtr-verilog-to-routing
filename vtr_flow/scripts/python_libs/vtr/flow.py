@@ -14,7 +14,7 @@ class VtrStage(Enum):
     """
 
     ODIN = 1
-    YOSYS = 2
+    PARMYS = 2
     ABC = 3
     ACE = 4
     VPR = 5
@@ -36,12 +36,12 @@ def run(
     circuit_file,
     power_tech_file=None,
     include_files=None,
-    start_stage=VtrStage.ODIN,
+    start_stage=VtrStage.PARMYS,
     end_stage=VtrStage.VPR,
     command_runner=vtr.CommandRunner(),
     temp_dir=Path("./temp"),
     odin_args=None,
-    yosys_args=None,
+    parmys_args=None,
     abc_args=None,
     vpr_args=None,
     keep_intermediate_files=True,
@@ -56,6 +56,7 @@ def run(
     relax_w_factor=1.3,
     check_route=False,
     check_place=False,
+    no_second_run=False,
 ):
     """
     Runs the VTR CAD flow to map the specified circuit_file onto the target architecture_file
@@ -106,11 +107,11 @@ def run(
             Determines if the result files are kept or deleted
 
         min_hard_mult_size :
-            Tells ODIN II/YOSYS the minimum multiplier size that should
+            Tells PARMYS/ODIN II the minimum multiplier size that should
             be implemented using hard multiplier (if available)
 
         min_hard_adder_size :
-            Tells ODIN II/YOSYS the minimum adder size that should be implemented
+            Tells PARMYS/ODIN II the minimum adder size that should be implemented
             using hard adder (if available).
 
         check_equivalent  :
@@ -130,6 +131,9 @@ def run(
 
         check_place:
             Route existing placement by enabling VPR routing.
+
+        no_second_run:
+            Don't run VPR again even if it's writing out some intermediate files.
     """
 
     #
@@ -137,7 +141,7 @@ def run(
     #
     vpr_args = OrderedDict() if not vpr_args else vpr_args
     odin_args = OrderedDict() if not odin_args else odin_args
-    yosys_args = OrderedDict() if not yosys_args else yosys_args
+    parmys_args = OrderedDict() if not parmys_args else parmys_args
     abc_args = OrderedDict() if not abc_args else abc_args
     # Verify that files are Paths or convert them to Paths and check that they exist
     architecture_file = vtr.util.verify_file(architecture_file, "Architecture")
@@ -153,7 +157,7 @@ def run(
 
     # Define useful filenames
     post_odin_netlist = temp_dir / (circuit_file.stem + ".odin" + netlist_ext)
-    post_yosys_netlist = temp_dir / (circuit_file.stem + ".yosys" + netlist_ext)
+    post_yosys_netlist = temp_dir / (circuit_file.stem + ".parmys" + netlist_ext)
     post_abc_netlist = temp_dir / (circuit_file.stem + ".abc" + netlist_ext)
     post_ace_netlist = temp_dir / (circuit_file.stem + ".ace" + netlist_ext)
     post_ace_activity_file = temp_dir / (circuit_file.stem + ".act")
@@ -207,17 +211,17 @@ def run(
 
         lec_base_netlist = post_odin_netlist if not lec_base_netlist else lec_base_netlist
     #
-    # RTL Elaboration & Synthesis (YOSYS)
+    # RTL Elaboration & Synthesis (PARMYS)
     #
-    elif should_run_stage(VtrStage.YOSYS, start_stage, end_stage):
-        vtr.yosys.run(
+    elif should_run_stage(VtrStage.PARMYS, start_stage, end_stage):
+        vtr.parmys.run(
             architecture_copy,
             next_stage_netlist,
             include_files,
             output_netlist=post_yosys_netlist,
             command_runner=command_runner,
             temp_dir=temp_dir,
-            yosys_args=yosys_args,
+            parmys_args=parmys_args,
             yosys_script=yosys_script,
             min_hard_mult_size=min_hard_mult_size,
             min_hard_adder_size=min_hard_adder_size,
@@ -254,7 +258,9 @@ def run(
         if should_run_stage(VtrStage.ACE, start_stage, end_stage):
             vtr.ace.run(
                 next_stage_netlist,
-                old_netlist=post_odin_netlist,
+                old_netlist=post_odin_netlist
+                if start_stage == VtrStage.ODIN
+                else post_yosys_netlist,
                 output_netlist=post_ace_netlist,
                 output_activity_file=post_ace_activity_file,
                 command_runner=command_runner,
@@ -289,8 +295,17 @@ def run(
             do_second_run = False
             second_run_args = vpr_args
 
-            if "write_rr_graph" in vpr_args or "analysis" in vpr_args or "route" in vpr_args:
+            if (
+                "write_rr_graph" in vpr_args
+                or "analysis" in vpr_args
+                or "route" in vpr_args
+                or "write_router_lookahead" in vpr_args
+                or "write_intra_cluster_router_lookahead" in vpr_args
+            ):
                 do_second_run = True
+
+            if no_second_run:
+                do_second_run = False
 
             vtr.vpr.run(
                 architecture_copy,

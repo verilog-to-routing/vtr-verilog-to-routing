@@ -36,6 +36,12 @@ class Cache {
         return value_.get();
     }
 
+    CacheValue* release() {
+        key_ = CacheKey();
+
+        return value_.release();
+    }
+
   private:
     CacheKey key_;
     std::unique_ptr<CacheValue> value_;

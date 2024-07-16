@@ -33,7 +33,7 @@ AtomNetlist read_and_process_circuit(e_circuit_format circuit_format, t_vpr_setu
     bool should_sweep_dangling_nets = vpr_setup.NetlistOpts.sweep_dangling_nets;
     bool should_sweep_dangling_blocks = vpr_setup.NetlistOpts.sweep_dangling_blocks;
     bool should_sweep_constant_primary_outputs = vpr_setup.NetlistOpts.sweep_constant_primary_outputs;
-    bool verbosity = vpr_setup.NetlistOpts.netlist_verbosity;
+    int verbosity = vpr_setup.NetlistOpts.netlist_verbosity;
 
     if (circuit_format == e_circuit_format::AUTO) {
         auto name_ext = vtr::split_ext(circuit_file);
@@ -191,22 +191,22 @@ static void show_circuit_stats(const AtomNetlist& netlist) {
 
     //Determine the maximum length of a type name for nice formatting
     size_t max_block_type_len = 0;
-    for (auto kv : block_type_counts) {
+    for (const auto& kv : block_type_counts) {
         max_block_type_len = std::max(max_block_type_len, kv.first.size());
     }
     size_t max_net_type_len = 0;
-    for (auto kv : net_stats) {
+    for (const auto& kv : net_stats) {
         max_net_type_len = std::max(max_net_type_len, kv.first.size());
     }
 
     //Print the statistics
     VTR_LOG("Circuit Statistics:\n");
     VTR_LOG("  Blocks: %zu\n", netlist.blocks().size());
-    for (auto kv : block_type_counts) {
+    for (const auto& kv : block_type_counts) {
         VTR_LOG("    %-*s: %7zu\n", max_block_type_len, kv.first.c_str(), kv.second);
     }
     VTR_LOG("  Nets  : %zu\n", netlist.nets().size());
-    for (auto kv : net_stats) {
+    for (const auto& kv : net_stats) {
         VTR_LOG("    %-*s: %7.1f\n", max_net_type_len, kv.first.c_str(), kv.second);
     }
     VTR_LOG("  Netlist Clocks: %zu\n", find_netlist_logical_clock_drivers(netlist).size());

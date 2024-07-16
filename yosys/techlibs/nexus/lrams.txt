@@ -1,0 +1,21 @@
+ram huge $__NX_DPSC512K_ {
+	abits 14;
+	width 32;
+	byte 8;
+	cost 2048;
+	init no_undef;
+	port srsw "A" "B" {
+		clock posedge "C";
+		clken;
+		wrbe_separate;
+		rdwr no_change;
+		option "RESETMODE" "SYNC" {
+			rdsrst zero gated_clken;
+		}
+		option "RESETMODE" "ASYNC" {
+			rdarst zero;
+		}
+		rdinit zero;
+		wrtrans all old;
+	}
+}

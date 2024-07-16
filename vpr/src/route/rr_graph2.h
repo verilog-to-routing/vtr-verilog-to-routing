@@ -3,12 +3,14 @@
 #include <vector>
 
 #include "build_switchblocks.h"
+#include "rr_graph_type.h"
 #include "rr_graph_fwd.h"
-#include "rr_graph_util.h"
+#include "rr_graph_utils.h"
 #include "rr_graph_view.h"
 #include "rr_graph_builder.h"
 #include "rr_types.h"
 #include "device_grid.h"
+#include "get_parallel_segs.h"
 
 /******************* Types shared by rr_graph2 functions *********************/
 
@@ -17,11 +19,6 @@
  * originally initialized to UN_SET until alloc_and_load_sb is called */
 typedef vtr::NdMatrix<short, 6> t_sblock_pattern;
 
-/* This map is used to get indices w.r.t segment_inf_x or segment_inf_y based on parallel_axis of a segment, 
- * from indices w.r.t the **unified** segment vector, segment_inf in devices context which stores all segments 
- * regardless of their axis. (see get_parallel_segs for more details)*/
-typedef std::unordered_multimap<size_t, std::pair<size_t, e_parallel_axis>> t_unified_to_parallel_seg_index;
-
 /******************* Subroutines exported by rr_graph2.c *********************/
 
 void alloc_and_load_rr_node_indices(RRGraphBuilder& rr_graph_builder,
@@ -29,11 +26,27 @@ void alloc_and_load_rr_node_indices(RRGraphBuilder& rr_graph_builder,
                                     const DeviceGrid& grid,
                                     int* index,
                                     const t_chan_details& chan_details_x,
-                                    const t_chan_details& chan_details_y);
+                                    const t_chan_details& chan_details_y,
+                                    bool is_flat);
+
+void alloc_and_load_tile_rr_node_indices(RRGraphBuilder& rr_graph_builder,
+                                         t_physical_tile_type_ptr physical_tile,
+                                         int layer,
+                                         int x,
+                                         int y,
+                                         int* num_rr_nodes);
+
+void alloc_and_load_intra_cluster_rr_node_indices(RRGraphBuilder& rr_graph_builder,
+                                                  const DeviceGrid& grid,
+                                                  const vtr::vector<ClusterBlockId, t_cluster_pin_chain>& pin_chains,
+                                                  const vtr::vector<ClusterBlockId, std::unordered_set<int>>& pin_chains_num,
+                                                  int* index);
 
 bool verify_rr_node_indices(const DeviceGrid& grid,
                             const RRGraphView& rr_graph,
-                            const t_rr_graph_storage& rr_nodes);
+                            const vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data,
+                            const t_rr_graph_storage& rr_nodes,
+                            bool is_flat);
 
 //Returns all x-channel or y-channel wires at the specified location
 std::vector<int> get_rr_node_chan_wires_at_location(const t_rr_node_indices& L_rr_node_indices,
@@ -113,6 +126,8 @@ bool is_sblock(const int chan,
                const enum e_directionality directionality);
 
 int get_bidir_opin_connections(RRGraphBuilder& rr_graph_builder,
+                               const int opin_layer,
+                               const int track_layer,
                                const int i,
                                const int j,
                                const int ipin,
@@ -123,6 +138,8 @@ int get_bidir_opin_connections(RRGraphBuilder& rr_graph_builder,
                                const t_chan_details& chan_details_y);
 
 int get_unidir_opin_connections(RRGraphBuilder& rr_graph_builder,
+                                const int opin_layer,
+                                const int track_layer,
                                 const int chan,
                                 const int seg,
                                 int Fc,
@@ -137,6 +154,7 @@ int get_unidir_opin_connections(RRGraphBuilder& rr_graph_builder,
                                 bool* Fc_clipped);
 
 int get_track_to_pins(RRGraphBuilder& rr_graph_builder,
+                      int layer,
                       int seg,
                       int chan,
                       int track,
@@ -148,9 +166,11 @@ int get_track_to_pins(RRGraphBuilder& rr_graph_builder,
                       enum e_rr_type chan_type,
                       int chan_length,
                       int wire_to_ipin_switch,
+                      int wire_to_pin_between_dice_switch,
                       enum e_directionality directionality);
 
 int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
+                        const int layer,
                         const int from_chan,
                         const int from_seg,
                         const int from_track,
@@ -183,10 +203,6 @@ void load_sblock_pattern_lookup(const int i,
                                 const int Fs,
                                 const enum e_switch_block_type switch_block_type,
                                 t_sblock_pattern& sblock_pattern);
-
-std::vector<t_segment_inf> get_parallel_segs(const std::vector<t_segment_inf>& segment_inf,
-                                             t_unified_to_parallel_seg_index& seg_index_map,
-                                             enum e_parallel_axis parallel_axis);
 
 int get_parallel_seg_index(const int abs,
                            const t_unified_to_parallel_seg_index& index_map,

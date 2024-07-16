@@ -22,8 +22,11 @@
 #include "extra.h"
 #include "misc/vec/vec.h"
 
-ABC_NAMESPACE_IMPL_START
+#if (__GNUC__ >= 8)
+  #pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
+#endif
 
+ABC_NAMESPACE_IMPL_START
 
 ////////////////////////////////////////////////////////////////////////
 ///                        DECLARATIONS                              ///
@@ -369,7 +372,7 @@ void Extra_FileReaderReload( Extra_FileReader_t * p )
     // figure out how many chars are still not processed
     nCharsUsed = p->pBufferEnd - p->pBufferCur;
     // move the remaining data to the beginning of the buffer
-    memmove( p->pBuffer, p->pBufferCur, nCharsUsed );
+    memmove( p->pBuffer, p->pBufferCur, (size_t)nCharsUsed );
     p->pBufferCur = p->pBuffer;
     // determine how many chars we will read
     nCharsToRead = EXTRA_MINIMUM( p->nBufferSize - nCharsUsed, p->nFileSize - p->nFileRead );

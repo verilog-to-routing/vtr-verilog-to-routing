@@ -1571,6 +1571,22 @@ cuddCProjectionRecur(
 } /* end of cuddCProjectionRecur */
 
 
+#ifdef USE_CASH_DUMMY
+/**Function********************************************************************
+
+  Synopsis    We need to declare a function passed to cuddCacheLookup2 that can
+              be casted to DD_CTFP.
+
+******************************************************************************/
+DdNode *
+Cudd_bddClosestCube_dummy(DdManager *dd, DdNode *f, DdNode *g)
+{
+  assert(0);
+  return 0;
+}
+#endif
+
+
 /**Function********************************************************************
 
   Synopsis    [Performs the recursive step of Cudd_bddClosestCube.]
@@ -1667,7 +1683,11 @@ cuddBddClosestCube(
     F = Cudd_Regular(f);
     G = Cudd_Regular(g);
     if (F->ref != 1 || G->ref != 1) {
+#ifdef USE_CASH_DUMMY
+        res = cuddCacheLookup2(dd,(DD_CTFP) Cudd_bddClosestCube_dummy, f, g);
+#else
         res = cuddCacheLookup2(dd,(DD_CTFP) Cudd_bddClosestCube, f, g);
+#endif
         if (res != NULL) return(res);
     }
 
@@ -1817,7 +1837,11 @@ cuddBddClosestCube(
     /* Only cache results that are different from azero to avoid
     ** storing results that depend on the value of the bound. */
     if ((F->ref != 1 || G->ref != 1) && res != azero)
+#ifdef USE_CASH_DUMMY
+        cuddCacheInsert2(dd,(DD_CTFP) Cudd_bddClosestCube_dummy, f, g, res);
+#else
         cuddCacheInsert2(dd,(DD_CTFP) Cudd_bddClosestCube, f, g, res);
+#endif
 
     cuddDeref(res);
     return(res);

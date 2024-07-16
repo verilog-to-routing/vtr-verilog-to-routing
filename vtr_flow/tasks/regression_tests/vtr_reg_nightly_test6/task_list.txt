@@ -1,0 +1,3 @@
+regression_tests/vtr_reg_nightly_test6/koios_other_multi_arch
+regression_tests/vtr_reg_nightly_test6/koios_other
+regression_tests/vtr_reg_nightly_test6/koios_other_no_hb

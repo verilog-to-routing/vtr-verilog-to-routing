@@ -1,0 +1,23 @@
+ram block $__ICE40_RAM4K_ {
+	abits 11;
+	widths 2 4 8 16 per_port;
+	cost 64;
+	option "HAS_BE" 1 {
+		byte 1;
+	}
+	init any;
+	port sw "W" {
+		option "HAS_BE" 0 {
+			width 2 4 8;
+		}
+		option "HAS_BE" 1 {
+			width 16;
+			wrbe_separate;
+		}
+		clock anyedge;
+	}
+	port sr "R" {
+		clock anyedge;
+		rden;
+	}
+}

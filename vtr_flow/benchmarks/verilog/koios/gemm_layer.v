@@ -6722,7 +6722,7 @@ module processing_element(
  assign out_c = out_mac;
 
  `ifdef complex_dsp
- mac_fp u_mac(.a(in_a), .b(in_b), .out(out_mac), .reset(reset), .clk(clk));
+ mac_fp_16 u_mac(.a(in_a), .b(in_b), .out(out_mac), .reset(reset), .clk(clk));
  `else
  seq_mac u_mac(.a(in_a), .b(in_b), .out(out_mac), .reset(reset), .clk(clk));
  `endif
@@ -6916,7 +6916,7 @@ FPMult_16 u_fpmult_16(
  );
 
 //Convert fp16 to fp32
-fp16_to_fp32 u_16to32 (.a(fpmult_16_result), .b(o_result));
+fp16_to_fp32 u_16to32 (.clk(clk), .a(fpmult_16_result), .b(o_result));
 
 endmodule
 
@@ -7292,47 +7292,54 @@ endmodule
 // A floating point 16-bit to floating point 32-bit converter
 //////////////////////////////////////////////////////////////////////////
 `ifndef complex_dsp
-module fp16_to_fp32 (input [15:0] a , output [31:0] b);
+module fp16_to_fp32 (input clk, input [15:0] a , output [31:0] b);
 
 reg [31:0]b_temp;
-reg [3:0] j;
-reg [3:0] k;
 reg [3:0] k_temp;
-always @ (*) begin
 
-if ( a [14: 0] == 15'b0 ) begin //signed zero
-	b_temp [31] = a[15]; //sign bit
-	b_temp[30:0] = 31'b0;
-end
+always @ (posedge clk) begin
 
-else begin
-
-	if ( a[14 : 10] == 5'b0 ) begin //denormalized (covert to normalized)
-		
-		for (j=0; j<=9; j=j+1) begin
-			if (a[j] == 1'b1) begin 
-			    k_temp = j;	
+	if (a[14: 0] == 15'b0) begin //signed zero
+		b_temp [31] <= a[15]; //sign bit
+		b_temp[30:0] <= 31'b0;
+	end else begin
+		if (a[14:10] == 5'b0) begin //denormalized (covert to normalized)
+			if (a[9] == 1'b1) begin
+				k_temp <= 4'd0;
+			end else if (a[8] == 1'b1) begin
+				k_temp <= 4'd1;
+			end else if (a[7] == 1'b1) begin
+				k_temp <= 4'd2;
+			end else if (a[6] == 1'b1) begin
+				k_temp <= 4'd3;
+			end else if (a[5] == 1'b1) begin
+				k_temp <= 4'd4;
+			end else if (a[4] == 1'b1) begin
+				k_temp <= 4'd5;
+			end else if (a[3] == 1'b1) begin
+				k_temp <= 4'd6;
+			end else if (a[2] == 1'b1) begin
+				k_temp <= 4'd7;
+			end else if (a[1] == 1'b1) begin
+				k_temp <= 4'd8;
+			end else if (a[0] == 1'b1) begin
+				k_temp <= 4'd9;	
+			end else begin
+				k_temp <= 4'd0;
 			end
+			b_temp [22:0] <= ( (a [9:0] << (k_temp+1'b1)) & 10'h3FF ) << 13;
+			b_temp [30:23] <=  7'd127 - 4'd15 - k_temp;
+			b_temp [31] <= a[15];
+		end else if (a[14 : 10] == 5'b11111) begin //Infinity/ NAN
+			b_temp [22:0] <= a [9:0] << 13;
+			b_temp [30:23] <= 8'hFF;
+			b_temp [31] <= a[15];
+		end else begin //Normalized Number
+			b_temp [22:0] <= a [9:0] << 13;
+			b_temp [30:23] <=  7'd127 - 4'd15 + a[14:10];
+			b_temp [31] <= a[15];
 		end
-	k = 9 - k_temp;
-
-	b_temp [22:0] = ( (a [9:0] << (k+1'b1)) & 10'h3FF ) << 13;
-	b_temp [30:23] =  7'd127 - 4'd15 - k;
-	b_temp [31] = a[15];
 	end
-
-	else if ( a[14 : 10] == 5'b11111 ) begin //Infinity/ NAN
-	b_temp [22:0] = a [9:0] << 13;
-	b_temp [30:23] = 8'hFF;
-	b_temp [31] = a[15];
-	end
-
-	else begin //Normalized Number
-	b_temp [22:0] = a [9:0] << 13;
-	b_temp [30:23] =  7'd127 - 4'd15 + a[14:10];
-	b_temp [31] = a[15];
-	end
-end
 end
 
 assign b = b_temp;
@@ -7636,13 +7643,13 @@ module FPAddSub_a(
 	always @(*) begin    					// Rotate {0 | 4 | 8 | 12} bits
 	  case (Shift_1[1:0])
 			// Rotate by 0	
-			2'b00:  Lvl2 <= Stage1[23:0];       			
+			2'b00: Lvl2 <= Stage1[23:0];       			
 			// Rotate by 4	
-			2'b01:  begin for (i=0; i<=23; i=i+1) begin Lvl2[i] <= Stage1[i+4]; end Lvl2[23:19] <= 0; end
+			2'b01: Lvl2 <= Stage1[27:4]; 
 			// Rotate by 8
-			2'b10:  begin for (i=0; i<=23; i=i+1) begin Lvl2[i] <= Stage1[i+8]; end Lvl2[23:15] <= 0; end
+			2'b10: Lvl2 <= Stage1[31:8];
 			// Rotate by 12	
-			2'b11:  begin for (i=0; i<=23; i=i+1) begin Lvl2[i] <= Stage1[i+12]; end Lvl2[23:11] <= 0; end
+			2'b11: Lvl2 <= Stage1[35:12];
 	  endcase
 	end
 	
@@ -7664,13 +7671,13 @@ module FPAddSub_a(
 	always @(*) begin    // Rotate {0 | 1 | 2 | 3} bits
 	  case (Shift_2[1:0])
 			// Rotate by 0
-			2'b00:  Lvl3 <= Stage2[23:0];   
+			2'b00: Lvl3 <= Stage2[23:0];   
 			// Rotate by 1
-			2'b01:  begin for (j=0; j<=23; j=j+1)  begin Lvl3[j] <= Stage2[j+1]; end Lvl3[23] <= 0; end 
+			2'b01: Lvl3 <= Stage2[24:1];
 			// Rotate by 2
-			2'b10:  begin for (j=0; j<=23; j=j+1)  begin Lvl3[j] <= Stage2[j+2]; end Lvl3[23:22] <= 0; end 
+			2'b10: Lvl3 <= Stage2[25:2];
 			// Rotate by 3
-			2'b11:  begin for (j=0; j<=23; j=j+1)  begin Lvl3[j] <= Stage2[j+3]; end Lvl3[23:21] <= 0; end 	  
+			2'b11: Lvl3 <= Stage2[26:3];
 	  endcase
 	end
 	
@@ -7809,11 +7816,11 @@ module FPAddSub_c(
 			// Rotate by 0
 			2'b00: Lvl2 <= Stage1[32:0];       		
 			// Rotate by 4
-			2'b01: begin for (i=65; i>=33; i=i-1) begin Lvl2[i-33] <= Stage1[i-4]; end Lvl2[3:0] <= 0; end
+			2'b01: Lvl2 <= Stage1[61:29];
 			// Rotate by 8
-			2'b10: begin for (i=65; i>=33; i=i-1) begin Lvl2[i-33] <= Stage1[i-8]; end Lvl2[7:0] <= 0; end
+			2'b10: Lvl2 <= Stage1[57:25];
 			// Rotate by 12
-			2'b11: begin for (i=65; i>=33; i=i-1) begin Lvl2[i-33] <= Stage1[i-12]; end Lvl2[11:0] <= 0; end
+			2'b11: Lvl2 <= Stage1[53:21];
 	  endcase
 	end
 	
@@ -7822,13 +7829,13 @@ module FPAddSub_c(
 	always @(*) begin   				 		// Rotate {0 | 1 | 2 | 3} bits
 	  case (Shift_1[1:0])
 			// Rotate by 0
-			2'b00:  Lvl3 <= Stage2[32:0];
+			2'b00: Lvl3 <= Stage2[32:0];
 			// Rotate by 1
-			2'b01: begin for (i=65; i>=33; i=i-1) begin Lvl3[i-33] <= Stage2[i-1]; end Lvl3[0] <= 0; end 
+			2'b01: Lvl3 <= Stage2[64:32];
 			// Rotate by 2
-			2'b10: begin for (i=65; i>=33; i=i-1) begin Lvl3[i-33] <= Stage2[i-2]; end Lvl3[1:0] <= 0; end
+			2'b10: Lvl3 <= Stage2[63:31];
 			// Rotate by 3
-			2'b11: begin for (i=65; i>=33; i=i-1) begin Lvl3[i-33] <= Stage2[i-3]; end Lvl3[2:0] <= 0; end
+			2'b11: Lvl3 <= Stage2[62:30];
 	  endcase
 	end
 	
@@ -7966,5 +7973,4 @@ module FPAddSub_d(
 	
 endmodule
 `endif
-
 

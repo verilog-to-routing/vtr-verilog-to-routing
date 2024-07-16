@@ -22,7 +22,7 @@ class InstPort {
     static constexpr int UNSPECIFIED = -1;
 
     InstPort() = default;
-    InstPort(std::string str);
+    InstPort(const std::string& str);
     std::string instance_name() const { return instance_.name; }
     std::string port_name() const { return port_.name; }
 

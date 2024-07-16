@@ -1,0 +1,9 @@
+Name: This repository hosts a RISC-V implementation written in SpinalHDL.
+Short Name: VexRiscv
+URL: https://github.com/SpinalHDL/VexRiscv
+Version: 0
+Date: 16/06/2019
+License: MIT License
+
+Description:
+This package is used as stimuli in some test cases that verify that the Yosys plugins produce expected results.

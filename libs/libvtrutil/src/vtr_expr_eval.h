@@ -214,7 +214,7 @@ class FormulaParser {
     FormulaParser& operator=(const FormulaParser&) = delete;
 
     ///@brief returns integer result according to specified formula and data
-    int parse_formula(std::string formula, const t_formula_data& mydata, bool is_breakpoint = false);
+    int parse_formula(const std::string& formula, const t_formula_data& mydata, bool is_breakpoint = false);
 
     ///@brief returns integer result according to specified piece-wise formula and data
     int parse_piecewise_formula(const char* formula, const t_formula_data& mydata);

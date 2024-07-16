@@ -33,11 +33,23 @@ temp/
 #
 titan_release*.tar.gz
 vtr_flow/arch/titan/*.xml
-vtr_flow/benchmarks/titan_blif/*.blif
-vtr_flow/benchmarks/titan_blif/*.sdc
-vtr_flow/benchmarks/titan_other_blif/*.blif
-vtr_flow/benchmarks/titan_other_blif/*.sdc
+vtr_flow/benchmarks/titan_blif/other_benchmarks
+vtr_flow/benchmarks/titan_blif/titan23
+vtr_flow/benchmarks/titan_blif/titan_new
 
+
+#
+# NoC MLP benchmarks
+#
+#   We ignore blif and vqm files because of thier large size.
+#   We also ignore symbolic links to traffic flow and blif files.
+#
+vtr_flow/benchmarks/noc/Large_Designs/MLP/**/*.vqm
+vtr_flow/benchmarks/noc/Large_Designs/MLP/**/*.blif
+vtr_flow/benchmarks/noc/Large_Designs/MLP/blif_files/*
+vtr_flow/benchmarks/noc/Large_Designs/MLP/traffic_flow_files/*
+MLP_Benchmark_Netlist_Files_blif.tar.gz
+MLP_Benchmark_Netlist_Files_vqm_blif.tar.gz
 
 #
 # ISPD benchmarks
@@ -88,11 +100,11 @@ vgcore*
 #
 #Odin test outputs
 #
-ODIN_II/log
-ODIN_II/regression_test/run[0-9]*
-ODIN_II/temp/*
-ODIN_II/usefull_tools/**/run[0-9]*
-ODIN_II/usefull_tools/**/track_completed
+odin_ii/log
+odin_ii/regression_test/run[0-9]*
+odin_ii/temp/*
+odin_ii/usefull_tools/**/run[0-9]*
+odin_ii/usefull_tools/**/track_completed
 #
 #C/C++
 #
@@ -140,4 +152,5 @@ tags
 #
 .idea
 cmake-build-debug
+cmake-build-release
 /.metadata/

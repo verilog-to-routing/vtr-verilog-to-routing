@@ -1,0 +1,2214 @@
+#BLIF OUTPUT: simple_noc_1D_chain.blif
+
+#MAIN MODEL
+
+.model simple_noc_1D_chain
+.inputs \
+    clk \
+    reset
+.outputs \
+    data_out[0] \
+    data_out[1] \
+    data_out[2] \
+    data_out[3] \
+    data_out[4] \
+    data_out[5] \
+    data_out[6] \
+    data_out[7] \
+    data_out[8] \
+    data_out[9] \
+    data_out[10] \
+    data_out[11] \
+    data_out[12] \
+    data_out[13] \
+    data_out[14] \
+    data_out[15] \
+    data_out[16] \
+    data_out[17] \
+    data_out[18] \
+    data_out[19] \
+    data_out[20] \
+    data_out[21] \
+    data_out[22] \
+    data_out[23] \
+    data_out[24] \
+    data_out[25] \
+    data_out[26] \
+    data_out[27] \
+    data_out[28] \
+    data_out[29] \
+    data_out[30] \
+    data_out[31] \
+    data_out[32] \
+    data_out[33] \
+    data_out[34] \
+    data_out[35] \
+    data_out[36] \
+    data_out[37] \
+    data_out[38] \
+    data_out[39] \
+    data_out[40] \
+    data_out[41] \
+    data_out[42] \
+    data_out[43] \
+    data_out[44] \
+    data_out[45] \
+    data_out[46] \
+    data_out[47] \
+    data_out[48] \
+    data_out[49] \
+    data_out[50] \
+    data_out[51] \
+    data_out[52] \
+    data_out[53] \
+    data_out[54] \
+    data_out[55] \
+    data_out[56] \
+    data_out[57] \
+    data_out[58] \
+    data_out[59] \
+    data_out[60] \
+    data_out[61] \
+    data_out[62] \
+    data_out[63]
+
+.names gnd
+0
+
+.names vcc
+1
+
+.names traffic_processor:tp|sum_reg[0] data_out[0]
+1 1
+
+.names traffic_processor:tp|sum_reg[1] data_out[1]
+1 1
+
+.names traffic_processor:tp|sum_reg[2] data_out[2]
+1 1
+
+.names traffic_processor:tp|sum_reg[3] data_out[3]
+1 1
+
+.names traffic_processor:tp|sum_reg[4] data_out[4]
+1 1
+
+.names traffic_processor:tp|sum_reg[5] data_out[5]
+1 1
+
+.names traffic_processor:tp|sum_reg[6] data_out[6]
+1 1
+
+.names traffic_processor:tp|sum_reg[7] data_out[7]
+1 1
+
+.names traffic_processor:tp|sum_reg[8] data_out[8]
+1 1
+
+.names traffic_processor:tp|sum_reg[9] data_out[9]
+1 1
+
+.names traffic_processor:tp|sum_reg[10] data_out[10]
+1 1
+
+.names traffic_processor:tp|sum_reg[11] data_out[11]
+1 1
+
+.names traffic_processor:tp|sum_reg[12] data_out[12]
+1 1
+
+.names traffic_processor:tp|sum_reg[13] data_out[13]
+1 1
+
+.names traffic_processor:tp|sum_reg[14] data_out[14]
+1 1
+
+.names traffic_processor:tp|sum_reg[15] data_out[15]
+1 1
+
+.names traffic_processor:tp|sum_reg[16] data_out[16]
+1 1
+
+.names traffic_processor:tp|sum_reg[17] data_out[17]
+1 1
+
+.names traffic_processor:tp|sum_reg[18] data_out[18]
+1 1
+
+.names traffic_processor:tp|sum_reg[19] data_out[19]
+1 1
+
+.names traffic_processor:tp|sum_reg[20] data_out[20]
+1 1
+
+.names traffic_processor:tp|sum_reg[21] data_out[21]
+1 1
+
+.names traffic_processor:tp|sum_reg[22] data_out[22]
+1 1
+
+.names traffic_processor:tp|sum_reg[23] data_out[23]
+1 1
+
+.names traffic_processor:tp|sum_reg[24] data_out[24]
+1 1
+
+.names traffic_processor:tp|sum_reg[25] data_out[25]
+1 1
+
+.names traffic_processor:tp|sum_reg[26] data_out[26]
+1 1
+
+.names traffic_processor:tp|sum_reg[27] data_out[27]
+1 1
+
+.names traffic_processor:tp|sum_reg[28] data_out[28]
+1 1
+
+.names traffic_processor:tp|sum_reg[29] data_out[29]
+1 1
+
+.names traffic_processor:tp|sum_reg[30] data_out[30]
+1 1
+
+.names traffic_processor:tp|sum_reg[31] data_out[31]
+1 1
+
+.names traffic_processor:tp|sum_reg[32] data_out[32]
+1 1
+
+.names traffic_processor:tp|sum_reg[33] data_out[33]
+1 1
+
+.names traffic_processor:tp|sum_reg[34] data_out[34]
+1 1
+
+.names traffic_processor:tp|sum_reg[35] data_out[35]
+1 1
+
+.names traffic_processor:tp|sum_reg[36] data_out[36]
+1 1
+
+.names traffic_processor:tp|sum_reg[37] data_out[37]
+1 1
+
+.names traffic_processor:tp|sum_reg[38] data_out[38]
+1 1
+
+.names traffic_processor:tp|sum_reg[39] data_out[39]
+1 1
+
+.names traffic_processor:tp|sum_reg[40] data_out[40]
+1 1
+
+.names traffic_processor:tp|sum_reg[41] data_out[41]
+1 1
+
+.names traffic_processor:tp|sum_reg[42] data_out[42]
+1 1
+
+.names traffic_processor:tp|sum_reg[43] data_out[43]
+1 1
+
+.names traffic_processor:tp|sum_reg[44] data_out[44]
+1 1
+
+.names traffic_processor:tp|sum_reg[45] data_out[45]
+1 1
+
+.names traffic_processor:tp|sum_reg[46] data_out[46]
+1 1
+
+.names traffic_processor:tp|sum_reg[47] data_out[47]
+1 1
+
+.names traffic_processor:tp|sum_reg[48] data_out[48]
+1 1
+
+.names traffic_processor:tp|sum_reg[49] data_out[49]
+1 1
+
+.names traffic_processor:tp|sum_reg[50] data_out[50]
+1 1
+
+.names traffic_processor:tp|sum_reg[51] data_out[51]
+1 1
+
+.names traffic_processor:tp|sum_reg[52] data_out[52]
+1 1
+
+.names traffic_processor:tp|sum_reg[53] data_out[53]
+1 1
+
+.names traffic_processor:tp|sum_reg[54] data_out[54]
+1 1
+
+.names traffic_processor:tp|sum_reg[55] data_out[55]
+1 1
+
+.names traffic_processor:tp|sum_reg[56] data_out[56]
+1 1
+
+.names traffic_processor:tp|sum_reg[57] data_out[57]
+1 1
+
+.names traffic_processor:tp|sum_reg[58] data_out[58]
+1 1
+
+.names traffic_processor:tp|sum_reg[59] data_out[59]
+1 1
+
+.names traffic_processor:tp|sum_reg[60] data_out[60]
+1 1
+
+.names traffic_processor:tp|sum_reg[61] data_out[61]
+1 1
+
+.names traffic_processor:tp|sum_reg[62] data_out[62]
+1 1
+
+.names traffic_processor:tp|sum_reg[63] data_out[63]
+1 1
+
+
+# Subckt 0: traffic_generator:tg|Add0~1_I 
+.subckt stratixiv_lcell_comb \
+    cin=gnd \
+    dataf=traffic_generator:tg|tdata[1] \
+    datad=traffic_generator:tg|tdata[0] \
+    cout=traffic_generator:tg|Add0~2 \
+    sumout=traffic_generator:tg|Add0~1
+
+# Subckt 1: traffic_generator:tg|Add0~5_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_generator:tg|Add0~2 \
+    datad=traffic_generator:tg|tdata[2] \
+    cout=traffic_generator:tg|Add0~6 \
+    sumout=traffic_generator:tg|Add0~5
+
+# Subckt 2: traffic_generator:tg|Add0~9_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_generator:tg|Add0~6 \
+    datad=traffic_generator:tg|tdata[3] \
+    cout=traffic_generator:tg|Add0~10 \
+    sumout=traffic_generator:tg|Add0~9
+
+# Subckt 3: traffic_generator:tg|Add0~13_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_generator:tg|Add0~10 \
+    datad=traffic_generator:tg|tdata[4] \
+    cout=traffic_generator:tg|Add0~14 \
+    sumout=traffic_generator:tg|Add0~13
+
+# Subckt 4: traffic_generator:tg|Add0~17_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_generator:tg|Add0~14 \
+    datad=traffic_generator:tg|tdata[5] \
+    cout=traffic_generator:tg|Add0~18 \
+    sumout=traffic_generator:tg|Add0~17
+
+# Subckt 5: traffic_generator:tg|Add0~21_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_generator:tg|Add0~18 \
+    datad=traffic_generator:tg|tdata[6] \
+    cout=traffic_generator:tg|Add0~22 \
+    sumout=traffic_generator:tg|Add0~21
+
+# Subckt 6: traffic_generator:tg|Add0~25_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_generator:tg|Add0~22 \
+    datad=traffic_generator:tg|tdata[7] \
+    cout=traffic_generator:tg|Add0~26 \
+    sumout=traffic_generator:tg|Add0~25
+
+# Subckt 7: traffic_generator:tg|Add0~29_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_generator:tg|Add0~26 \
+    datad=traffic_generator:tg|tdata[8] \
+    cout=traffic_generator:tg|Add0~30 \
+    sumout=traffic_generator:tg|Add0~29
+
+# Subckt 8: traffic_generator:tg|Add0~33_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_generator:tg|Add0~30 \
+    datad=traffic_generator:tg|tdata[9] \
+    cout=traffic_generator:tg|Add0~34 \
+    sumout=traffic_generator:tg|Add0~33
+
+# Subckt 9: traffic_generator:tg|Add0~37_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_generator:tg|Add0~34 \
+    datad=traffic_generator:tg|tdata[10] \
+    cout=traffic_generator:tg|Add0~38 \
+    sumout=traffic_generator:tg|Add0~37
+
+# Subckt 10: traffic_generator:tg|Add0~41_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_generator:tg|Add0~38 \
+    datad=traffic_generator:tg|tdata[11] \
+    cout=traffic_generator:tg|Add0~42 \
+    sumout=traffic_generator:tg|Add0~41
+
+# Subckt 11: traffic_generator:tg|Add0~45_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_generator:tg|Add0~42 \
+    datad=traffic_generator:tg|tdata[12] \
+    cout=traffic_generator:tg|Add0~46 \
+    sumout=traffic_generator:tg|Add0~45
+
+# Subckt 12: traffic_generator:tg|Add0~49_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_generator:tg|Add0~46 \
+    datad=traffic_generator:tg|tdata[13] \
+    cout=traffic_generator:tg|Add0~50 \
+    sumout=traffic_generator:tg|Add0~49
+
+# Subckt 13: traffic_generator:tg|Add0~53_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_generator:tg|Add0~50 \
+    datad=traffic_generator:tg|tdata[14] \
+    cout=traffic_generator:tg|Add0~54 \
+    sumout=traffic_generator:tg|Add0~53
+
+# Subckt 14: traffic_generator:tg|Add0~57_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_generator:tg|Add0~54 \
+    datad=traffic_generator:tg|tdata[15] \
+    cout=traffic_generator:tg|Add0~58 \
+    sumout=traffic_generator:tg|Add0~57
+
+# Subckt 15: traffic_generator:tg|Add0~61_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_generator:tg|Add0~58 \
+    datad=traffic_generator:tg|tdata[16] \
+    cout=traffic_generator:tg|Add0~62 \
+    sumout=traffic_generator:tg|Add0~61
+
+# Subckt 16: traffic_generator:tg|Add0~65_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_generator:tg|Add0~62 \
+    datad=traffic_generator:tg|tdata[17] \
+    cout=traffic_generator:tg|Add0~66 \
+    sumout=traffic_generator:tg|Add0~65
+
+# Subckt 17: traffic_generator:tg|Add0~69_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_generator:tg|Add0~66 \
+    datad=traffic_generator:tg|tdata[18] \
+    cout=traffic_generator:tg|Add0~70 \
+    sumout=traffic_generator:tg|Add0~69
+
+# Subckt 18: traffic_generator:tg|Add0~73_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_generator:tg|Add0~70 \
+    datad=traffic_generator:tg|tdata[19] \
+    cout=traffic_generator:tg|Add0~74 \
+    sumout=traffic_generator:tg|Add0~73
+
+# Subckt 19: traffic_generator:tg|Add0~77_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_generator:tg|Add0~74 \
+    datad=traffic_generator:tg|tdata[20] \
+    cout=traffic_generator:tg|Add0~78 \
+    sumout=traffic_generator:tg|Add0~77
+
+# Subckt 20: traffic_generator:tg|Add0~81_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_generator:tg|Add0~78 \
+    datad=traffic_generator:tg|tdata[21] \
+    cout=traffic_generator:tg|Add0~82 \
+    sumout=traffic_generator:tg|Add0~81
+
+# Subckt 21: traffic_generator:tg|Add0~85_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_generator:tg|Add0~82 \
+    datad=traffic_generator:tg|tdata[22] \
+    cout=traffic_generator:tg|Add0~86 \
+    sumout=traffic_generator:tg|Add0~85
+
+# Subckt 22: traffic_generator:tg|Add0~89_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_generator:tg|Add0~86 \
+    datad=traffic_generator:tg|tdata[23] \
+    cout=traffic_generator:tg|Add0~90 \
+    sumout=traffic_generator:tg|Add0~89
+
+# Subckt 23: traffic_generator:tg|Add0~93_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_generator:tg|Add0~90 \
+    datad=traffic_generator:tg|tdata[24] \
+    cout=traffic_generator:tg|Add0~94 \
+    sumout=traffic_generator:tg|Add0~93
+
+# Subckt 24: traffic_generator:tg|Add0~97_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_generator:tg|Add0~94 \
+    datad=traffic_generator:tg|tdata[25] \
+    cout=traffic_generator:tg|Add0~98 \
+    sumout=traffic_generator:tg|Add0~97
+
+# Subckt 25: traffic_generator:tg|Add0~101_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_generator:tg|Add0~98 \
+    datad=traffic_generator:tg|tdata[26] \
+    cout=traffic_generator:tg|Add0~102 \
+    sumout=traffic_generator:tg|Add0~101
+
+# Subckt 26: traffic_generator:tg|Add0~105_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_generator:tg|Add0~102 \
+    datad=traffic_generator:tg|tdata[27] \
+    cout=traffic_generator:tg|Add0~106 \
+    sumout=traffic_generator:tg|Add0~105
+
+# Subckt 27: traffic_generator:tg|Add0~109_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_generator:tg|Add0~106 \
+    datad=traffic_generator:tg|tdata[28] \
+    cout=traffic_generator:tg|Add0~110 \
+    sumout=traffic_generator:tg|Add0~109
+
+# Subckt 28: traffic_generator:tg|Add0~113_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_generator:tg|Add0~110 \
+    datad=traffic_generator:tg|tdata[29] \
+    cout=traffic_generator:tg|Add0~114 \
+    sumout=traffic_generator:tg|Add0~113
+
+# Subckt 29: traffic_generator:tg|Add0~117_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_generator:tg|Add0~114 \
+    datad=traffic_generator:tg|tdata[30] \
+    cout=traffic_generator:tg|Add0~118 \
+    sumout=traffic_generator:tg|Add0~117
+
+# Subckt 30: traffic_generator:tg|Add0~121_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_generator:tg|Add0~118 \
+    datad=traffic_generator:tg|tdata[31] \
+    sumout=traffic_generator:tg|Add0~121
+
+# Subckt 31: slave_interface:si|curr_state~I 
+.subckt dffeas \
+    d=slave_interface:si|tready~0 \
+    clrn=reset \
+    clk=clk \
+    q=slave_interface:si|curr_state
+
+# Subckt 32: slave_interface:si|tready~0_I 
+.subckt stratixiv_lcell_comb \
+    datab=slave_interface:si|curr_state \
+    dataa=noc_router_adapter_block:noc_router_adapter_block_two|master_tvalid~reg0 \
+    combout=slave_interface:si|tready~0
+
+# Subckt 33: traffic_generator:tg|tdata[0]~I 
+.subckt dffeas \
+    d=traffic_generator:tg|tdata[0]~0 \
+    clrn=reset \
+    clk=clk \
+    q=traffic_generator:tg|tdata[0]
+
+# Subckt 34: traffic_generator:tg|tdata[1]~I 
+.subckt dffeas \
+    d=traffic_generator:tg|Add0~1 \
+    clrn=reset \
+    clk=clk \
+    q=traffic_generator:tg|tdata[1]
+
+# Subckt 35: traffic_generator:tg|tdata[2]~I 
+.subckt dffeas \
+    d=traffic_generator:tg|Add0~5 \
+    clrn=reset \
+    clk=clk \
+    q=traffic_generator:tg|tdata[2]
+
+# Subckt 36: traffic_generator:tg|tdata[3]~I 
+.subckt dffeas \
+    d=traffic_generator:tg|Add0~9 \
+    clrn=reset \
+    clk=clk \
+    q=traffic_generator:tg|tdata[3]
+
+# Subckt 37: traffic_generator:tg|tdata[4]~I 
+.subckt dffeas \
+    d=traffic_generator:tg|Add0~13 \
+    clrn=reset \
+    clk=clk \
+    q=traffic_generator:tg|tdata[4]
+
+# Subckt 38: traffic_generator:tg|tdata[5]~I 
+.subckt dffeas \
+    d=traffic_generator:tg|Add0~17 \
+    clrn=reset \
+    clk=clk \
+    q=traffic_generator:tg|tdata[5]
+
+# Subckt 39: traffic_generator:tg|tdata[6]~I 
+.subckt dffeas \
+    d=traffic_generator:tg|Add0~21 \
+    clrn=reset \
+    clk=clk \
+    q=traffic_generator:tg|tdata[6]
+
+# Subckt 40: traffic_generator:tg|tdata[7]~I 
+.subckt dffeas \
+    d=traffic_generator:tg|Add0~25 \
+    clrn=reset \
+    clk=clk \
+    q=traffic_generator:tg|tdata[7]
+
+# Subckt 41: traffic_generator:tg|tdata[8]~I 
+.subckt dffeas \
+    d=traffic_generator:tg|Add0~29 \
+    clrn=reset \
+    clk=clk \
+    q=traffic_generator:tg|tdata[8]
+
+# Subckt 42: traffic_generator:tg|tdata[9]~I 
+.subckt dffeas \
+    d=traffic_generator:tg|Add0~33 \
+    clrn=reset \
+    clk=clk \
+    q=traffic_generator:tg|tdata[9]
+
+# Subckt 43: traffic_generator:tg|tdata[10]~I 
+.subckt dffeas \
+    d=traffic_generator:tg|Add0~37 \
+    clrn=reset \
+    clk=clk \
+    q=traffic_generator:tg|tdata[10]
+
+# Subckt 44: traffic_generator:tg|tdata[11]~I 
+.subckt dffeas \
+    d=traffic_generator:tg|Add0~41 \
+    clrn=reset \
+    clk=clk \
+    q=traffic_generator:tg|tdata[11]
+
+# Subckt 45: traffic_generator:tg|tdata[12]~I 
+.subckt dffeas \
+    d=traffic_generator:tg|Add0~45 \
+    clrn=reset \
+    clk=clk \
+    q=traffic_generator:tg|tdata[12]
+
+# Subckt 46: traffic_generator:tg|tdata[13]~I 
+.subckt dffeas \
+    d=traffic_generator:tg|Add0~49 \
+    clrn=reset \
+    clk=clk \
+    q=traffic_generator:tg|tdata[13]
+
+# Subckt 47: traffic_generator:tg|tdata[14]~I 
+.subckt dffeas \
+    d=traffic_generator:tg|Add0~53 \
+    clrn=reset \
+    clk=clk \
+    q=traffic_generator:tg|tdata[14]
+
+# Subckt 48: traffic_generator:tg|tdata[15]~I 
+.subckt dffeas \
+    d=traffic_generator:tg|Add0~57 \
+    clrn=reset \
+    clk=clk \
+    q=traffic_generator:tg|tdata[15]
+
+# Subckt 49: traffic_generator:tg|tdata[16]~I 
+.subckt dffeas \
+    d=traffic_generator:tg|Add0~61 \
+    clrn=reset \
+    clk=clk \
+    q=traffic_generator:tg|tdata[16]
+
+# Subckt 50: traffic_generator:tg|tdata[17]~I 
+.subckt dffeas \
+    d=traffic_generator:tg|Add0~65 \
+    clrn=reset \
+    clk=clk \
+    q=traffic_generator:tg|tdata[17]
+
+# Subckt 51: traffic_generator:tg|tdata[18]~I 
+.subckt dffeas \
+    d=traffic_generator:tg|Add0~69 \
+    clrn=reset \
+    clk=clk \
+    q=traffic_generator:tg|tdata[18]
+
+# Subckt 52: traffic_generator:tg|tdata[19]~I 
+.subckt dffeas \
+    d=traffic_generator:tg|Add0~73 \
+    clrn=reset \
+    clk=clk \
+    q=traffic_generator:tg|tdata[19]
+
+# Subckt 53: traffic_generator:tg|tdata[20]~I 
+.subckt dffeas \
+    d=traffic_generator:tg|Add0~77 \
+    clrn=reset \
+    clk=clk \
+    q=traffic_generator:tg|tdata[20]
+
+# Subckt 54: traffic_generator:tg|tdata[21]~I 
+.subckt dffeas \
+    d=traffic_generator:tg|Add0~81 \
+    clrn=reset \
+    clk=clk \
+    q=traffic_generator:tg|tdata[21]
+
+# Subckt 55: traffic_generator:tg|tdata[22]~I 
+.subckt dffeas \
+    d=traffic_generator:tg|Add0~85 \
+    clrn=reset \
+    clk=clk \
+    q=traffic_generator:tg|tdata[22]
+
+# Subckt 56: traffic_generator:tg|tdata[23]~I 
+.subckt dffeas \
+    d=traffic_generator:tg|Add0~89 \
+    clrn=reset \
+    clk=clk \
+    q=traffic_generator:tg|tdata[23]
+
+# Subckt 57: traffic_generator:tg|tdata[24]~I 
+.subckt dffeas \
+    d=traffic_generator:tg|Add0~93 \
+    clrn=reset \
+    clk=clk \
+    q=traffic_generator:tg|tdata[24]
+
+# Subckt 58: traffic_generator:tg|tdata[25]~I 
+.subckt dffeas \
+    d=traffic_generator:tg|Add0~97 \
+    clrn=reset \
+    clk=clk \
+    q=traffic_generator:tg|tdata[25]
+
+# Subckt 59: traffic_generator:tg|tdata[26]~I 
+.subckt dffeas \
+    d=traffic_generator:tg|Add0~101 \
+    clrn=reset \
+    clk=clk \
+    q=traffic_generator:tg|tdata[26]
+
+# Subckt 60: traffic_generator:tg|tdata[27]~I 
+.subckt dffeas \
+    d=traffic_generator:tg|Add0~105 \
+    clrn=reset \
+    clk=clk \
+    q=traffic_generator:tg|tdata[27]
+
+# Subckt 61: traffic_generator:tg|tdata[28]~I 
+.subckt dffeas \
+    d=traffic_generator:tg|Add0~109 \
+    clrn=reset \
+    clk=clk \
+    q=traffic_generator:tg|tdata[28]
+
+# Subckt 62: traffic_generator:tg|tdata[29]~I 
+.subckt dffeas \
+    d=traffic_generator:tg|Add0~113 \
+    clrn=reset \
+    clk=clk \
+    q=traffic_generator:tg|tdata[29]
+
+# Subckt 63: traffic_generator:tg|tdata[30]~I 
+.subckt dffeas \
+    d=traffic_generator:tg|Add0~117 \
+    clrn=reset \
+    clk=clk \
+    q=traffic_generator:tg|tdata[30]
+
+# Subckt 64: traffic_generator:tg|tdata[31]~I 
+.subckt dffeas \
+    d=traffic_generator:tg|Add0~121 \
+    clrn=reset \
+    clk=clk \
+    q=traffic_generator:tg|tdata[31]
+
+# Subckt 65: master_interface:mi|curr_state~I 
+.subckt dffeas \
+    d=master_interface:mi|tvalid_out~0 \
+    clrn=reset \
+    clk=clk \
+    q=master_interface:mi|curr_state
+
+# Subckt 66: traffic_generator:tg|tvalid~I 
+.subckt dffeas \
+    d=vcc \
+    clrn=reset \
+    clk=clk \
+    q=traffic_generator:tg|tvalid
+
+# Subckt 67: master_interface:mi|tvalid_out~0_I 
+.subckt stratixiv_lcell_comb \
+    datac=traffic_generator:tg|tvalid \
+    datab=master_interface:mi|curr_state \
+    dataa=noc_router_adapter_block:noc_router_adapter_block_one|slave_tready~reg0 \
+    combout=master_interface:mi|tvalid_out~0
+
+# Subckt 68: traffic_generator:tg|tdata[0]~0_I 
+.subckt stratixiv_lcell_comb \
+    dataa=traffic_generator:tg|tdata[0] \
+    combout=traffic_generator:tg|tdata[0]~0
+
+# Subckt 69: ~GND~I 
+.subckt stratixiv_lcell_comb \
+    combout=~GND
+
+# Subckt 70: noc_router_adapter_block:noc_router_adapter_block_two| 
+.subckt noc_router_adapter_block \
+    reset=reset \
+    clk=clk \
+    slave_tlast=~GND \
+    slave_tuser[0]=~GND \
+    slave_tuser[1]=~GND \
+    slave_tuser[2]=~GND \
+    slave_tuser[3]=~GND \
+    slave_tuser[4]=~GND \
+    slave_tuser[5]=~GND \
+    slave_tuser[6]=~GND \
+    slave_tuser[7]=~GND \
+    slave_tdest[0]=~GND \
+    slave_tdest[1]=~GND \
+    slave_tdest[2]=~GND \
+    slave_tdest[3]=~GND \
+    slave_tdest[4]=~GND \
+    slave_tdest[5]=~GND \
+    slave_tdest[6]=~GND \
+    slave_tdest[7]=~GND \
+    slave_tid[0]=~GND \
+    slave_tid[1]=~GND \
+    slave_tid[2]=~GND \
+    slave_tid[3]=~GND \
+    slave_tid[4]=~GND \
+    slave_tid[5]=~GND \
+    slave_tid[6]=~GND \
+    slave_tid[7]=~GND \
+    slave_tkeep[0]=~GND \
+    slave_tkeep[1]=~GND \
+    slave_tkeep[2]=~GND \
+    slave_tkeep[3]=~GND \
+    slave_tstrb[0]=~GND \
+    slave_tstrb[1]=~GND \
+    slave_tstrb[2]=~GND \
+    slave_tstrb[3]=~GND \
+    slave_tdata[0]=~GND \
+    slave_tdata[1]=~GND \
+    slave_tdata[2]=~GND \
+    slave_tdata[3]=~GND \
+    slave_tdata[4]=~GND \
+    slave_tdata[5]=~GND \
+    slave_tdata[6]=~GND \
+    slave_tdata[7]=~GND \
+    slave_tdata[8]=~GND \
+    slave_tdata[9]=~GND \
+    slave_tdata[10]=~GND \
+    slave_tdata[11]=~GND \
+    slave_tdata[12]=~GND \
+    slave_tdata[13]=~GND \
+    slave_tdata[14]=~GND \
+    slave_tdata[15]=~GND \
+    slave_tdata[16]=~GND \
+    slave_tdata[17]=~GND \
+    slave_tdata[18]=~GND \
+    slave_tdata[19]=~GND \
+    slave_tdata[20]=~GND \
+    slave_tdata[21]=~GND \
+    slave_tdata[22]=~GND \
+    slave_tdata[23]=~GND \
+    slave_tdata[24]=~GND \
+    slave_tdata[25]=~GND \
+    slave_tdata[26]=~GND \
+    slave_tdata[27]=~GND \
+    slave_tdata[28]=~GND \
+    slave_tdata[29]=~GND \
+    slave_tdata[30]=~GND \
+    slave_tdata[31]=~GND \
+    slave_tvalid=~GND \
+    master_tready=slave_interface:si|tready~0 \
+    slave_tready=noc_router_adapter_block:noc_router_adapter_block_two|slave_tready~reg0 \
+    master_tlast=noc_router_adapter_block:noc_router_adapter_block_two|master_tlast~reg0 \
+    master_tuser[0]=noc_router_adapter_block:noc_router_adapter_block_two|master_tuser[0]~reg0 \
+    master_tuser[1]=noc_router_adapter_block:noc_router_adapter_block_two|master_tuser[1]~reg0 \
+    master_tuser[2]=noc_router_adapter_block:noc_router_adapter_block_two|master_tuser[2]~reg0 \
+    master_tuser[3]=noc_router_adapter_block:noc_router_adapter_block_two|master_tuser[3]~reg0 \
+    master_tuser[4]=noc_router_adapter_block:noc_router_adapter_block_two|master_tuser[4]~reg0 \
+    master_tuser[5]=noc_router_adapter_block:noc_router_adapter_block_two|master_tuser[5]~reg0 \
+    master_tuser[6]=noc_router_adapter_block:noc_router_adapter_block_two|master_tuser[6]~reg0 \
+    master_tuser[7]=noc_router_adapter_block:noc_router_adapter_block_two|master_tuser[7]~reg0 \
+    master_tdest[0]=noc_router_adapter_block:noc_router_adapter_block_two|master_tdest[0]~reg0 \
+    master_tdest[1]=noc_router_adapter_block:noc_router_adapter_block_two|master_tdest[1]~reg0 \
+    master_tdest[2]=noc_router_adapter_block:noc_router_adapter_block_two|master_tdest[2]~reg0 \
+    master_tdest[3]=noc_router_adapter_block:noc_router_adapter_block_two|master_tdest[3]~reg0 \
+    master_tdest[4]=noc_router_adapter_block:noc_router_adapter_block_two|master_tdest[4]~reg0 \
+    master_tdest[5]=noc_router_adapter_block:noc_router_adapter_block_two|master_tdest[5]~reg0 \
+    master_tdest[6]=noc_router_adapter_block:noc_router_adapter_block_two|master_tdest[6]~reg0 \
+    master_tdest[7]=noc_router_adapter_block:noc_router_adapter_block_two|master_tdest[7]~reg0 \
+    master_tid[0]=noc_router_adapter_block:noc_router_adapter_block_two|master_tid[0]~reg0 \
+    master_tid[1]=noc_router_adapter_block:noc_router_adapter_block_two|master_tid[1]~reg0 \
+    master_tid[2]=noc_router_adapter_block:noc_router_adapter_block_two|master_tid[2]~reg0 \
+    master_tid[3]=noc_router_adapter_block:noc_router_adapter_block_two|master_tid[3]~reg0 \
+    master_tid[4]=noc_router_adapter_block:noc_router_adapter_block_two|master_tid[4]~reg0 \
+    master_tid[5]=noc_router_adapter_block:noc_router_adapter_block_two|master_tid[5]~reg0 \
+    master_tid[6]=noc_router_adapter_block:noc_router_adapter_block_two|master_tid[6]~reg0 \
+    master_tid[7]=noc_router_adapter_block:noc_router_adapter_block_two|master_tid[7]~reg0 \
+    master_tkeep[0]=noc_router_adapter_block:noc_router_adapter_block_two|master_tkeep[0]~reg0 \
+    master_tkeep[1]=noc_router_adapter_block:noc_router_adapter_block_two|master_tkeep[1]~reg0 \
+    master_tkeep[2]=noc_router_adapter_block:noc_router_adapter_block_two|master_tkeep[2]~reg0 \
+    master_tkeep[3]=noc_router_adapter_block:noc_router_adapter_block_two|master_tkeep[3]~reg0 \
+    master_tstrb[0]=noc_router_adapter_block:noc_router_adapter_block_two|master_tstrb[0]~reg0 \
+    master_tstrb[1]=noc_router_adapter_block:noc_router_adapter_block_two|master_tstrb[1]~reg0 \
+    master_tstrb[2]=noc_router_adapter_block:noc_router_adapter_block_two|master_tstrb[2]~reg0 \
+    master_tstrb[3]=noc_router_adapter_block:noc_router_adapter_block_two|master_tstrb[3]~reg0 \
+    master_tdata[0]=noc_router_adapter_block:noc_router_adapter_block_two|master_tdata[0]~reg0 \
+    master_tdata[1]=noc_router_adapter_block:noc_router_adapter_block_two|master_tdata[1]~reg0 \
+    master_tdata[2]=noc_router_adapter_block:noc_router_adapter_block_two|master_tdata[2]~reg0 \
+    master_tdata[3]=noc_router_adapter_block:noc_router_adapter_block_two|master_tdata[3]~reg0 \
+    master_tdata[4]=noc_router_adapter_block:noc_router_adapter_block_two|master_tdata[4]~reg0 \
+    master_tdata[5]=noc_router_adapter_block:noc_router_adapter_block_two|master_tdata[5]~reg0 \
+    master_tdata[6]=noc_router_adapter_block:noc_router_adapter_block_two|master_tdata[6]~reg0 \
+    master_tdata[7]=noc_router_adapter_block:noc_router_adapter_block_two|master_tdata[7]~reg0 \
+    master_tdata[8]=noc_router_adapter_block:noc_router_adapter_block_two|master_tdata[8]~reg0 \
+    master_tdata[9]=noc_router_adapter_block:noc_router_adapter_block_two|master_tdata[9]~reg0 \
+    master_tdata[10]=noc_router_adapter_block:noc_router_adapter_block_two|master_tdata[10]~reg0 \
+    master_tdata[11]=noc_router_adapter_block:noc_router_adapter_block_two|master_tdata[11]~reg0 \
+    master_tdata[12]=noc_router_adapter_block:noc_router_adapter_block_two|master_tdata[12]~reg0 \
+    master_tdata[13]=noc_router_adapter_block:noc_router_adapter_block_two|master_tdata[13]~reg0 \
+    master_tdata[14]=noc_router_adapter_block:noc_router_adapter_block_two|master_tdata[14]~reg0 \
+    master_tdata[15]=noc_router_adapter_block:noc_router_adapter_block_two|master_tdata[15]~reg0 \
+    master_tdata[16]=noc_router_adapter_block:noc_router_adapter_block_two|master_tdata[16]~reg0 \
+    master_tdata[17]=noc_router_adapter_block:noc_router_adapter_block_two|master_tdata[17]~reg0 \
+    master_tdata[18]=noc_router_adapter_block:noc_router_adapter_block_two|master_tdata[18]~reg0 \
+    master_tdata[19]=noc_router_adapter_block:noc_router_adapter_block_two|master_tdata[19]~reg0 \
+    master_tdata[20]=noc_router_adapter_block:noc_router_adapter_block_two|master_tdata[20]~reg0 \
+    master_tdata[21]=noc_router_adapter_block:noc_router_adapter_block_two|master_tdata[21]~reg0 \
+    master_tdata[22]=noc_router_adapter_block:noc_router_adapter_block_two|master_tdata[22]~reg0 \
+    master_tdata[23]=noc_router_adapter_block:noc_router_adapter_block_two|master_tdata[23]~reg0 \
+    master_tdata[24]=noc_router_adapter_block:noc_router_adapter_block_two|master_tdata[24]~reg0 \
+    master_tdata[25]=noc_router_adapter_block:noc_router_adapter_block_two|master_tdata[25]~reg0 \
+    master_tdata[26]=noc_router_adapter_block:noc_router_adapter_block_two|master_tdata[26]~reg0 \
+    master_tdata[27]=noc_router_adapter_block:noc_router_adapter_block_two|master_tdata[27]~reg0 \
+    master_tdata[28]=noc_router_adapter_block:noc_router_adapter_block_two|master_tdata[28]~reg0 \
+    master_tdata[29]=noc_router_adapter_block:noc_router_adapter_block_two|master_tdata[29]~reg0 \
+    master_tdata[30]=noc_router_adapter_block:noc_router_adapter_block_two|master_tdata[30]~reg0 \
+    master_tdata[31]=noc_router_adapter_block:noc_router_adapter_block_two|master_tdata[31]~reg0 \
+    master_tvalid=noc_router_adapter_block:noc_router_adapter_block_two|master_tvalid~reg0
+
+# Subckt 71: noc_router_adapter_block:noc_router_adapter_block_one| 
+.subckt noc_router_adapter_block \
+    reset=reset \
+    clk=clk \
+    slave_tlast=~GND \
+    slave_tuser[0]=~GND \
+    slave_tuser[1]=~GND \
+    slave_tuser[2]=~GND \
+    slave_tuser[3]=~GND \
+    slave_tuser[4]=~GND \
+    slave_tuser[5]=~GND \
+    slave_tuser[6]=~GND \
+    slave_tuser[7]=~GND \
+    slave_tdest[0]=~GND \
+    slave_tdest[1]=~GND \
+    slave_tdest[2]=~GND \
+    slave_tdest[3]=~GND \
+    slave_tdest[4]=~GND \
+    slave_tdest[5]=~GND \
+    slave_tdest[6]=~GND \
+    slave_tdest[7]=~GND \
+    slave_tid[0]=~GND \
+    slave_tid[1]=~GND \
+    slave_tid[2]=~GND \
+    slave_tid[3]=~GND \
+    slave_tid[4]=~GND \
+    slave_tid[5]=~GND \
+    slave_tid[6]=~GND \
+    slave_tid[7]=~GND \
+    slave_tkeep[0]=~GND \
+    slave_tkeep[1]=~GND \
+    slave_tkeep[2]=~GND \
+    slave_tkeep[3]=~GND \
+    slave_tstrb[0]=~GND \
+    slave_tstrb[1]=~GND \
+    slave_tstrb[2]=~GND \
+    slave_tstrb[3]=~GND \
+    slave_tdata[0]=traffic_generator:tg|tdata[0] \
+    slave_tdata[1]=traffic_generator:tg|tdata[1] \
+    slave_tdata[2]=traffic_generator:tg|tdata[2] \
+    slave_tdata[3]=traffic_generator:tg|tdata[3] \
+    slave_tdata[4]=traffic_generator:tg|tdata[4] \
+    slave_tdata[5]=traffic_generator:tg|tdata[5] \
+    slave_tdata[6]=traffic_generator:tg|tdata[6] \
+    slave_tdata[7]=traffic_generator:tg|tdata[7] \
+    slave_tdata[8]=traffic_generator:tg|tdata[8] \
+    slave_tdata[9]=traffic_generator:tg|tdata[9] \
+    slave_tdata[10]=traffic_generator:tg|tdata[10] \
+    slave_tdata[11]=traffic_generator:tg|tdata[11] \
+    slave_tdata[12]=traffic_generator:tg|tdata[12] \
+    slave_tdata[13]=traffic_generator:tg|tdata[13] \
+    slave_tdata[14]=traffic_generator:tg|tdata[14] \
+    slave_tdata[15]=traffic_generator:tg|tdata[15] \
+    slave_tdata[16]=traffic_generator:tg|tdata[16] \
+    slave_tdata[17]=traffic_generator:tg|tdata[17] \
+    slave_tdata[18]=traffic_generator:tg|tdata[18] \
+    slave_tdata[19]=traffic_generator:tg|tdata[19] \
+    slave_tdata[20]=traffic_generator:tg|tdata[20] \
+    slave_tdata[21]=traffic_generator:tg|tdata[21] \
+    slave_tdata[22]=traffic_generator:tg|tdata[22] \
+    slave_tdata[23]=traffic_generator:tg|tdata[23] \
+    slave_tdata[24]=traffic_generator:tg|tdata[24] \
+    slave_tdata[25]=traffic_generator:tg|tdata[25] \
+    slave_tdata[26]=traffic_generator:tg|tdata[26] \
+    slave_tdata[27]=traffic_generator:tg|tdata[27] \
+    slave_tdata[28]=traffic_generator:tg|tdata[28] \
+    slave_tdata[29]=traffic_generator:tg|tdata[29] \
+    slave_tdata[30]=traffic_generator:tg|tdata[30] \
+    slave_tdata[31]=traffic_generator:tg|tdata[31] \
+    slave_tvalid=master_interface:mi|tvalid_out~0 \
+    master_tready=~GND \
+    slave_tready=noc_router_adapter_block:noc_router_adapter_block_one|slave_tready~reg0 \
+    master_tlast=noc_router_adapter_block:noc_router_adapter_block_one|master_tlast~reg0 \
+    master_tuser[0]=noc_router_adapter_block:noc_router_adapter_block_one|master_tuser[0]~reg0 \
+    master_tuser[1]=noc_router_adapter_block:noc_router_adapter_block_one|master_tuser[1]~reg0 \
+    master_tuser[2]=noc_router_adapter_block:noc_router_adapter_block_one|master_tuser[2]~reg0 \
+    master_tuser[3]=noc_router_adapter_block:noc_router_adapter_block_one|master_tuser[3]~reg0 \
+    master_tuser[4]=noc_router_adapter_block:noc_router_adapter_block_one|master_tuser[4]~reg0 \
+    master_tuser[5]=noc_router_adapter_block:noc_router_adapter_block_one|master_tuser[5]~reg0 \
+    master_tuser[6]=noc_router_adapter_block:noc_router_adapter_block_one|master_tuser[6]~reg0 \
+    master_tuser[7]=noc_router_adapter_block:noc_router_adapter_block_one|master_tuser[7]~reg0 \
+    master_tdest[0]=noc_router_adapter_block:noc_router_adapter_block_one|master_tdest[0]~reg0 \
+    master_tdest[1]=noc_router_adapter_block:noc_router_adapter_block_one|master_tdest[1]~reg0 \
+    master_tdest[2]=noc_router_adapter_block:noc_router_adapter_block_one|master_tdest[2]~reg0 \
+    master_tdest[3]=noc_router_adapter_block:noc_router_adapter_block_one|master_tdest[3]~reg0 \
+    master_tdest[4]=noc_router_adapter_block:noc_router_adapter_block_one|master_tdest[4]~reg0 \
+    master_tdest[5]=noc_router_adapter_block:noc_router_adapter_block_one|master_tdest[5]~reg0 \
+    master_tdest[6]=noc_router_adapter_block:noc_router_adapter_block_one|master_tdest[6]~reg0 \
+    master_tdest[7]=noc_router_adapter_block:noc_router_adapter_block_one|master_tdest[7]~reg0 \
+    master_tid[0]=noc_router_adapter_block:noc_router_adapter_block_one|master_tid[0]~reg0 \
+    master_tid[1]=noc_router_adapter_block:noc_router_adapter_block_one|master_tid[1]~reg0 \
+    master_tid[2]=noc_router_adapter_block:noc_router_adapter_block_one|master_tid[2]~reg0 \
+    master_tid[3]=noc_router_adapter_block:noc_router_adapter_block_one|master_tid[3]~reg0 \
+    master_tid[4]=noc_router_adapter_block:noc_router_adapter_block_one|master_tid[4]~reg0 \
+    master_tid[5]=noc_router_adapter_block:noc_router_adapter_block_one|master_tid[5]~reg0 \
+    master_tid[6]=noc_router_adapter_block:noc_router_adapter_block_one|master_tid[6]~reg0 \
+    master_tid[7]=noc_router_adapter_block:noc_router_adapter_block_one|master_tid[7]~reg0 \
+    master_tkeep[0]=noc_router_adapter_block:noc_router_adapter_block_one|master_tkeep[0]~reg0 \
+    master_tkeep[1]=noc_router_adapter_block:noc_router_adapter_block_one|master_tkeep[1]~reg0 \
+    master_tkeep[2]=noc_router_adapter_block:noc_router_adapter_block_one|master_tkeep[2]~reg0 \
+    master_tkeep[3]=noc_router_adapter_block:noc_router_adapter_block_one|master_tkeep[3]~reg0 \
+    master_tstrb[0]=noc_router_adapter_block:noc_router_adapter_block_one|master_tstrb[0]~reg0 \
+    master_tstrb[1]=noc_router_adapter_block:noc_router_adapter_block_one|master_tstrb[1]~reg0 \
+    master_tstrb[2]=noc_router_adapter_block:noc_router_adapter_block_one|master_tstrb[2]~reg0 \
+    master_tstrb[3]=noc_router_adapter_block:noc_router_adapter_block_one|master_tstrb[3]~reg0 \
+    master_tdata[0]=noc_router_adapter_block:noc_router_adapter_block_one|master_tdata[0]~reg0 \
+    master_tdata[1]=noc_router_adapter_block:noc_router_adapter_block_one|master_tdata[1]~reg0 \
+    master_tdata[2]=noc_router_adapter_block:noc_router_adapter_block_one|master_tdata[2]~reg0 \
+    master_tdata[3]=noc_router_adapter_block:noc_router_adapter_block_one|master_tdata[3]~reg0 \
+    master_tdata[4]=noc_router_adapter_block:noc_router_adapter_block_one|master_tdata[4]~reg0 \
+    master_tdata[5]=noc_router_adapter_block:noc_router_adapter_block_one|master_tdata[5]~reg0 \
+    master_tdata[6]=noc_router_adapter_block:noc_router_adapter_block_one|master_tdata[6]~reg0 \
+    master_tdata[7]=noc_router_adapter_block:noc_router_adapter_block_one|master_tdata[7]~reg0 \
+    master_tdata[8]=noc_router_adapter_block:noc_router_adapter_block_one|master_tdata[8]~reg0 \
+    master_tdata[9]=noc_router_adapter_block:noc_router_adapter_block_one|master_tdata[9]~reg0 \
+    master_tdata[10]=noc_router_adapter_block:noc_router_adapter_block_one|master_tdata[10]~reg0 \
+    master_tdata[11]=noc_router_adapter_block:noc_router_adapter_block_one|master_tdata[11]~reg0 \
+    master_tdata[12]=noc_router_adapter_block:noc_router_adapter_block_one|master_tdata[12]~reg0 \
+    master_tdata[13]=noc_router_adapter_block:noc_router_adapter_block_one|master_tdata[13]~reg0 \
+    master_tdata[14]=noc_router_adapter_block:noc_router_adapter_block_one|master_tdata[14]~reg0 \
+    master_tdata[15]=noc_router_adapter_block:noc_router_adapter_block_one|master_tdata[15]~reg0 \
+    master_tdata[16]=noc_router_adapter_block:noc_router_adapter_block_one|master_tdata[16]~reg0 \
+    master_tdata[17]=noc_router_adapter_block:noc_router_adapter_block_one|master_tdata[17]~reg0 \
+    master_tdata[18]=noc_router_adapter_block:noc_router_adapter_block_one|master_tdata[18]~reg0 \
+    master_tdata[19]=noc_router_adapter_block:noc_router_adapter_block_one|master_tdata[19]~reg0 \
+    master_tdata[20]=noc_router_adapter_block:noc_router_adapter_block_one|master_tdata[20]~reg0 \
+    master_tdata[21]=noc_router_adapter_block:noc_router_adapter_block_one|master_tdata[21]~reg0 \
+    master_tdata[22]=noc_router_adapter_block:noc_router_adapter_block_one|master_tdata[22]~reg0 \
+    master_tdata[23]=noc_router_adapter_block:noc_router_adapter_block_one|master_tdata[23]~reg0 \
+    master_tdata[24]=noc_router_adapter_block:noc_router_adapter_block_one|master_tdata[24]~reg0 \
+    master_tdata[25]=noc_router_adapter_block:noc_router_adapter_block_one|master_tdata[25]~reg0 \
+    master_tdata[26]=noc_router_adapter_block:noc_router_adapter_block_one|master_tdata[26]~reg0 \
+    master_tdata[27]=noc_router_adapter_block:noc_router_adapter_block_one|master_tdata[27]~reg0 \
+    master_tdata[28]=noc_router_adapter_block:noc_router_adapter_block_one|master_tdata[28]~reg0 \
+    master_tdata[29]=noc_router_adapter_block:noc_router_adapter_block_one|master_tdata[29]~reg0 \
+    master_tdata[30]=noc_router_adapter_block:noc_router_adapter_block_one|master_tdata[30]~reg0 \
+    master_tdata[31]=noc_router_adapter_block:noc_router_adapter_block_one|master_tdata[31]~reg0 \
+    master_tvalid=noc_router_adapter_block:noc_router_adapter_block_one|master_tvalid~reg0
+
+# Subckt 72: traffic_processor:tp|sum_reg[63]~I 
+.subckt dffeas \
+    d=traffic_processor:tp|Add0~253 \
+    sclr=reset \
+    ena=traffic_processor:tp|sum_reg[39]~0 \
+    clk=clk \
+    q=traffic_processor:tp|sum_reg[63]
+
+# Subckt 73: traffic_processor:tp|Add0~253_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_processor:tp|Add0~250 \
+    datad=traffic_processor:tp|sum_reg[63] \
+    sumout=traffic_processor:tp|Add0~253
+
+# Subckt 74: traffic_processor:tp|sum_reg[62]~I 
+.subckt dffeas \
+    d=traffic_processor:tp|Add0~249 \
+    sclr=reset \
+    ena=traffic_processor:tp|sum_reg[39]~0 \
+    clk=clk \
+    q=traffic_processor:tp|sum_reg[62]
+
+# Subckt 75: traffic_processor:tp|Add0~249_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_processor:tp|Add0~246 \
+    datad=traffic_processor:tp|sum_reg[62] \
+    cout=traffic_processor:tp|Add0~250 \
+    sumout=traffic_processor:tp|Add0~249
+
+# Subckt 76: traffic_processor:tp|sum_reg[61]~I 
+.subckt dffeas \
+    d=traffic_processor:tp|Add0~245 \
+    sclr=reset \
+    ena=traffic_processor:tp|sum_reg[39]~0 \
+    clk=clk \
+    q=traffic_processor:tp|sum_reg[61]
+
+# Subckt 77: traffic_processor:tp|Add0~245_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_processor:tp|Add0~242 \
+    datad=traffic_processor:tp|sum_reg[61] \
+    cout=traffic_processor:tp|Add0~246 \
+    sumout=traffic_processor:tp|Add0~245
+
+# Subckt 78: traffic_processor:tp|sum_reg[60]~I 
+.subckt dffeas \
+    d=traffic_processor:tp|Add0~241 \
+    sclr=reset \
+    ena=traffic_processor:tp|sum_reg[39]~0 \
+    clk=clk \
+    q=traffic_processor:tp|sum_reg[60]
+
+# Subckt 79: traffic_processor:tp|Add0~241_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_processor:tp|Add0~238 \
+    datad=traffic_processor:tp|sum_reg[60] \
+    cout=traffic_processor:tp|Add0~242 \
+    sumout=traffic_processor:tp|Add0~241
+
+# Subckt 80: traffic_processor:tp|sum_reg[59]~I 
+.subckt dffeas \
+    d=traffic_processor:tp|Add0~237 \
+    sclr=reset \
+    ena=traffic_processor:tp|sum_reg[39]~0 \
+    clk=clk \
+    q=traffic_processor:tp|sum_reg[59]
+
+# Subckt 81: traffic_processor:tp|Add0~237_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_processor:tp|Add0~234 \
+    datad=traffic_processor:tp|sum_reg[59] \
+    cout=traffic_processor:tp|Add0~238 \
+    sumout=traffic_processor:tp|Add0~237
+
+# Subckt 82: traffic_processor:tp|sum_reg[58]~I 
+.subckt dffeas \
+    d=traffic_processor:tp|Add0~233 \
+    sclr=reset \
+    ena=traffic_processor:tp|sum_reg[39]~0 \
+    clk=clk \
+    q=traffic_processor:tp|sum_reg[58]
+
+# Subckt 83: traffic_processor:tp|Add0~233_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_processor:tp|Add0~230 \
+    datad=traffic_processor:tp|sum_reg[58] \
+    cout=traffic_processor:tp|Add0~234 \
+    sumout=traffic_processor:tp|Add0~233
+
+# Subckt 84: traffic_processor:tp|sum_reg[57]~I 
+.subckt dffeas \
+    d=traffic_processor:tp|Add0~229 \
+    sclr=reset \
+    ena=traffic_processor:tp|sum_reg[39]~0 \
+    clk=clk \
+    q=traffic_processor:tp|sum_reg[57]
+
+# Subckt 85: traffic_processor:tp|Add0~229_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_processor:tp|Add0~226 \
+    datad=traffic_processor:tp|sum_reg[57] \
+    cout=traffic_processor:tp|Add0~230 \
+    sumout=traffic_processor:tp|Add0~229
+
+# Subckt 86: traffic_processor:tp|sum_reg[56]~I 
+.subckt dffeas \
+    d=traffic_processor:tp|Add0~225 \
+    sclr=reset \
+    ena=traffic_processor:tp|sum_reg[39]~0 \
+    clk=clk \
+    q=traffic_processor:tp|sum_reg[56]
+
+# Subckt 87: traffic_processor:tp|Add0~225_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_processor:tp|Add0~222 \
+    datad=traffic_processor:tp|sum_reg[56] \
+    cout=traffic_processor:tp|Add0~226 \
+    sumout=traffic_processor:tp|Add0~225
+
+# Subckt 88: traffic_processor:tp|sum_reg[55]~I 
+.subckt dffeas \
+    d=traffic_processor:tp|Add0~221 \
+    sclr=reset \
+    ena=traffic_processor:tp|sum_reg[39]~0 \
+    clk=clk \
+    q=traffic_processor:tp|sum_reg[55]
+
+# Subckt 89: traffic_processor:tp|Add0~221_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_processor:tp|Add0~218 \
+    datad=traffic_processor:tp|sum_reg[55] \
+    cout=traffic_processor:tp|Add0~222 \
+    sumout=traffic_processor:tp|Add0~221
+
+# Subckt 90: traffic_processor:tp|sum_reg[54]~I 
+.subckt dffeas \
+    d=traffic_processor:tp|Add0~217 \
+    sclr=reset \
+    ena=traffic_processor:tp|sum_reg[39]~0 \
+    clk=clk \
+    q=traffic_processor:tp|sum_reg[54]
+
+# Subckt 91: traffic_processor:tp|Add0~217_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_processor:tp|Add0~214 \
+    datad=traffic_processor:tp|sum_reg[54] \
+    cout=traffic_processor:tp|Add0~218 \
+    sumout=traffic_processor:tp|Add0~217
+
+# Subckt 92: traffic_processor:tp|sum_reg[53]~I 
+.subckt dffeas \
+    d=traffic_processor:tp|Add0~213 \
+    sclr=reset \
+    ena=traffic_processor:tp|sum_reg[39]~0 \
+    clk=clk \
+    q=traffic_processor:tp|sum_reg[53]
+
+# Subckt 93: traffic_processor:tp|Add0~213_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_processor:tp|Add0~210 \
+    datad=traffic_processor:tp|sum_reg[53] \
+    cout=traffic_processor:tp|Add0~214 \
+    sumout=traffic_processor:tp|Add0~213
+
+# Subckt 94: traffic_processor:tp|sum_reg[52]~I 
+.subckt dffeas \
+    d=traffic_processor:tp|Add0~209 \
+    sclr=reset \
+    ena=traffic_processor:tp|sum_reg[39]~0 \
+    clk=clk \
+    q=traffic_processor:tp|sum_reg[52]
+
+# Subckt 95: traffic_processor:tp|Add0~209_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_processor:tp|Add0~206 \
+    datad=traffic_processor:tp|sum_reg[52] \
+    cout=traffic_processor:tp|Add0~210 \
+    sumout=traffic_processor:tp|Add0~209
+
+# Subckt 96: traffic_processor:tp|sum_reg[51]~I 
+.subckt dffeas \
+    d=traffic_processor:tp|Add0~205 \
+    sclr=reset \
+    ena=traffic_processor:tp|sum_reg[39]~0 \
+    clk=clk \
+    q=traffic_processor:tp|sum_reg[51]
+
+# Subckt 97: traffic_processor:tp|Add0~205_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_processor:tp|Add0~202 \
+    datad=traffic_processor:tp|sum_reg[51] \
+    cout=traffic_processor:tp|Add0~206 \
+    sumout=traffic_processor:tp|Add0~205
+
+# Subckt 98: traffic_processor:tp|sum_reg[50]~I 
+.subckt dffeas \
+    d=traffic_processor:tp|Add0~201 \
+    sclr=reset \
+    ena=traffic_processor:tp|sum_reg[39]~0 \
+    clk=clk \
+    q=traffic_processor:tp|sum_reg[50]
+
+# Subckt 99: traffic_processor:tp|Add0~201_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_processor:tp|Add0~198 \
+    datad=traffic_processor:tp|sum_reg[50] \
+    cout=traffic_processor:tp|Add0~202 \
+    sumout=traffic_processor:tp|Add0~201
+
+# Subckt 100: traffic_processor:tp|sum_reg[49]~I 
+.subckt dffeas \
+    d=traffic_processor:tp|Add0~197 \
+    sclr=reset \
+    ena=traffic_processor:tp|sum_reg[39]~0 \
+    clk=clk \
+    q=traffic_processor:tp|sum_reg[49]
+
+# Subckt 101: traffic_processor:tp|Add0~197_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_processor:tp|Add0~194 \
+    datad=traffic_processor:tp|sum_reg[49] \
+    cout=traffic_processor:tp|Add0~198 \
+    sumout=traffic_processor:tp|Add0~197
+
+# Subckt 102: traffic_processor:tp|sum_reg[48]~I 
+.subckt dffeas \
+    d=traffic_processor:tp|Add0~193 \
+    sclr=reset \
+    ena=traffic_processor:tp|sum_reg[39]~0 \
+    clk=clk \
+    q=traffic_processor:tp|sum_reg[48]
+
+# Subckt 103: traffic_processor:tp|Add0~193_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_processor:tp|Add0~190 \
+    datad=traffic_processor:tp|sum_reg[48] \
+    cout=traffic_processor:tp|Add0~194 \
+    sumout=traffic_processor:tp|Add0~193
+
+# Subckt 104: traffic_processor:tp|sum_reg[47]~I 
+.subckt dffeas \
+    d=traffic_processor:tp|Add0~189 \
+    sclr=reset \
+    ena=traffic_processor:tp|sum_reg[39]~0 \
+    clk=clk \
+    q=traffic_processor:tp|sum_reg[47]
+
+# Subckt 105: traffic_processor:tp|Add0~189_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_processor:tp|Add0~186 \
+    datad=traffic_processor:tp|sum_reg[47] \
+    cout=traffic_processor:tp|Add0~190 \
+    sumout=traffic_processor:tp|Add0~189
+
+# Subckt 106: traffic_processor:tp|sum_reg[46]~I 
+.subckt dffeas \
+    d=traffic_processor:tp|Add0~185 \
+    sclr=reset \
+    ena=traffic_processor:tp|sum_reg[39]~0 \
+    clk=clk \
+    q=traffic_processor:tp|sum_reg[46]
+
+# Subckt 107: traffic_processor:tp|Add0~185_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_processor:tp|Add0~182 \
+    datad=traffic_processor:tp|sum_reg[46] \
+    cout=traffic_processor:tp|Add0~186 \
+    sumout=traffic_processor:tp|Add0~185
+
+# Subckt 108: traffic_processor:tp|sum_reg[45]~I 
+.subckt dffeas \
+    d=traffic_processor:tp|Add0~181 \
+    sclr=reset \
+    ena=traffic_processor:tp|sum_reg[39]~0 \
+    clk=clk \
+    q=traffic_processor:tp|sum_reg[45]
+
+# Subckt 109: traffic_processor:tp|Add0~181_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_processor:tp|Add0~178 \
+    datad=traffic_processor:tp|sum_reg[45] \
+    cout=traffic_processor:tp|Add0~182 \
+    sumout=traffic_processor:tp|Add0~181
+
+# Subckt 110: traffic_processor:tp|sum_reg[44]~I 
+.subckt dffeas \
+    d=traffic_processor:tp|Add0~177 \
+    sclr=reset \
+    ena=traffic_processor:tp|sum_reg[39]~0 \
+    clk=clk \
+    q=traffic_processor:tp|sum_reg[44]
+
+# Subckt 111: traffic_processor:tp|Add0~177_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_processor:tp|Add0~174 \
+    datad=traffic_processor:tp|sum_reg[44] \
+    cout=traffic_processor:tp|Add0~178 \
+    sumout=traffic_processor:tp|Add0~177
+
+# Subckt 112: traffic_processor:tp|sum_reg[43]~I 
+.subckt dffeas \
+    d=traffic_processor:tp|Add0~173 \
+    sclr=reset \
+    ena=traffic_processor:tp|sum_reg[39]~0 \
+    clk=clk \
+    q=traffic_processor:tp|sum_reg[43]
+
+# Subckt 113: traffic_processor:tp|Add0~173_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_processor:tp|Add0~170 \
+    datad=traffic_processor:tp|sum_reg[43] \
+    cout=traffic_processor:tp|Add0~174 \
+    sumout=traffic_processor:tp|Add0~173
+
+# Subckt 114: traffic_processor:tp|sum_reg[42]~I 
+.subckt dffeas \
+    d=traffic_processor:tp|Add0~169 \
+    sclr=reset \
+    ena=traffic_processor:tp|sum_reg[39]~0 \
+    clk=clk \
+    q=traffic_processor:tp|sum_reg[42]
+
+# Subckt 115: traffic_processor:tp|Add0~169_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_processor:tp|Add0~166 \
+    datad=traffic_processor:tp|sum_reg[42] \
+    cout=traffic_processor:tp|Add0~170 \
+    sumout=traffic_processor:tp|Add0~169
+
+# Subckt 116: traffic_processor:tp|sum_reg[41]~I 
+.subckt dffeas \
+    d=traffic_processor:tp|Add0~165 \
+    sclr=reset \
+    ena=traffic_processor:tp|sum_reg[39]~0 \
+    clk=clk \
+    q=traffic_processor:tp|sum_reg[41]
+
+# Subckt 117: traffic_processor:tp|Add0~165_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_processor:tp|Add0~162 \
+    datad=traffic_processor:tp|sum_reg[41] \
+    cout=traffic_processor:tp|Add0~166 \
+    sumout=traffic_processor:tp|Add0~165
+
+# Subckt 118: traffic_processor:tp|sum_reg[40]~I 
+.subckt dffeas \
+    d=traffic_processor:tp|Add0~161 \
+    sclr=reset \
+    ena=traffic_processor:tp|sum_reg[39]~0 \
+    clk=clk \
+    q=traffic_processor:tp|sum_reg[40]
+
+# Subckt 119: traffic_processor:tp|Add0~161_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_processor:tp|Add0~158 \
+    datad=traffic_processor:tp|sum_reg[40] \
+    cout=traffic_processor:tp|Add0~162 \
+    sumout=traffic_processor:tp|Add0~161
+
+# Subckt 120: traffic_processor:tp|sum_reg[39]~I 
+.subckt dffeas \
+    d=traffic_processor:tp|Add0~157 \
+    sclr=reset \
+    ena=traffic_processor:tp|sum_reg[39]~0 \
+    clk=clk \
+    q=traffic_processor:tp|sum_reg[39]
+
+# Subckt 121: traffic_processor:tp|Add0~157_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_processor:tp|Add0~154 \
+    datad=traffic_processor:tp|sum_reg[39] \
+    cout=traffic_processor:tp|Add0~158 \
+    sumout=traffic_processor:tp|Add0~157
+
+# Subckt 122: traffic_processor:tp|sum_reg[38]~I 
+.subckt dffeas \
+    d=traffic_processor:tp|Add0~153 \
+    sclr=reset \
+    ena=traffic_processor:tp|sum_reg[39]~0 \
+    clk=clk \
+    q=traffic_processor:tp|sum_reg[38]
+
+# Subckt 123: traffic_processor:tp|Add0~153_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_processor:tp|Add0~150 \
+    datad=traffic_processor:tp|sum_reg[38] \
+    cout=traffic_processor:tp|Add0~154 \
+    sumout=traffic_processor:tp|Add0~153
+
+# Subckt 124: traffic_processor:tp|sum_reg[37]~I 
+.subckt dffeas \
+    d=traffic_processor:tp|Add0~149 \
+    sclr=reset \
+    ena=traffic_processor:tp|sum_reg[39]~0 \
+    clk=clk \
+    q=traffic_processor:tp|sum_reg[37]
+
+# Subckt 125: traffic_processor:tp|Add0~149_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_processor:tp|Add0~146 \
+    datad=traffic_processor:tp|sum_reg[37] \
+    cout=traffic_processor:tp|Add0~150 \
+    sumout=traffic_processor:tp|Add0~149
+
+# Subckt 126: traffic_processor:tp|sum_reg[36]~I 
+.subckt dffeas \
+    d=traffic_processor:tp|Add0~145 \
+    sclr=reset \
+    ena=traffic_processor:tp|sum_reg[39]~0 \
+    clk=clk \
+    q=traffic_processor:tp|sum_reg[36]
+
+# Subckt 127: traffic_processor:tp|Add0~145_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_processor:tp|Add0~142 \
+    datad=traffic_processor:tp|sum_reg[36] \
+    cout=traffic_processor:tp|Add0~146 \
+    sumout=traffic_processor:tp|Add0~145
+
+# Subckt 128: traffic_processor:tp|sum_reg[35]~I 
+.subckt dffeas \
+    d=traffic_processor:tp|Add0~141 \
+    sclr=reset \
+    ena=traffic_processor:tp|sum_reg[39]~0 \
+    clk=clk \
+    q=traffic_processor:tp|sum_reg[35]
+
+# Subckt 129: traffic_processor:tp|Add0~141_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_processor:tp|Add0~138 \
+    datad=traffic_processor:tp|sum_reg[35] \
+    cout=traffic_processor:tp|Add0~142 \
+    sumout=traffic_processor:tp|Add0~141
+
+# Subckt 130: traffic_processor:tp|sum_reg[34]~I 
+.subckt dffeas \
+    d=traffic_processor:tp|Add0~137 \
+    sclr=reset \
+    ena=traffic_processor:tp|sum_reg[39]~0 \
+    clk=clk \
+    q=traffic_processor:tp|sum_reg[34]
+
+# Subckt 131: traffic_processor:tp|Add0~137_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_processor:tp|Add0~134 \
+    datad=traffic_processor:tp|sum_reg[34] \
+    cout=traffic_processor:tp|Add0~138 \
+    sumout=traffic_processor:tp|Add0~137
+
+# Subckt 132: traffic_processor:tp|sum_reg[33]~I 
+.subckt dffeas \
+    d=traffic_processor:tp|Add0~133 \
+    sclr=reset \
+    ena=traffic_processor:tp|sum_reg[39]~0 \
+    clk=clk \
+    q=traffic_processor:tp|sum_reg[33]
+
+# Subckt 133: traffic_processor:tp|Add0~133_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_processor:tp|Add0~130 \
+    datad=traffic_processor:tp|sum_reg[33] \
+    cout=traffic_processor:tp|Add0~134 \
+    sumout=traffic_processor:tp|Add0~133
+
+# Subckt 134: traffic_processor:tp|sum_reg[32]~I 
+.subckt dffeas \
+    d=traffic_processor:tp|Add0~129 \
+    sclr=reset \
+    ena=traffic_processor:tp|sum_reg[39]~0 \
+    clk=clk \
+    q=traffic_processor:tp|sum_reg[32]
+
+# Subckt 135: traffic_processor:tp|Add0~129_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_processor:tp|Add0~126 \
+    datad=traffic_processor:tp|sum_reg[32] \
+    cout=traffic_processor:tp|Add0~130 \
+    sumout=traffic_processor:tp|Add0~129
+
+# Subckt 136: traffic_processor:tp|sum_reg[31]~I 
+.subckt dffeas \
+    d=traffic_processor:tp|Add0~125 \
+    sclr=reset \
+    ena=traffic_processor:tp|sum_reg[39]~0 \
+    clk=clk \
+    q=traffic_processor:tp|sum_reg[31]
+
+# Subckt 137: traffic_processor:tp|Add0~125_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_processor:tp|Add0~122 \
+    dataf=noc_router_adapter_block:noc_router_adapter_block_two|master_tdata[31]~reg0 \
+    datad=traffic_processor:tp|sum_reg[31] \
+    cout=traffic_processor:tp|Add0~126 \
+    sumout=traffic_processor:tp|Add0~125
+
+# Subckt 138: traffic_processor:tp|sum_reg[30]~I 
+.subckt dffeas \
+    d=traffic_processor:tp|Add0~121 \
+    sclr=reset \
+    ena=traffic_processor:tp|sum_reg[39]~0 \
+    clk=clk \
+    q=traffic_processor:tp|sum_reg[30]
+
+# Subckt 139: traffic_processor:tp|Add0~121_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_processor:tp|Add0~118 \
+    dataf=noc_router_adapter_block:noc_router_adapter_block_two|master_tdata[30]~reg0 \
+    datad=traffic_processor:tp|sum_reg[30] \
+    cout=traffic_processor:tp|Add0~122 \
+    sumout=traffic_processor:tp|Add0~121
+
+# Subckt 140: traffic_processor:tp|sum_reg[29]~I 
+.subckt dffeas \
+    d=traffic_processor:tp|Add0~117 \
+    sclr=reset \
+    ena=traffic_processor:tp|sum_reg[39]~0 \
+    clk=clk \
+    q=traffic_processor:tp|sum_reg[29]
+
+# Subckt 141: traffic_processor:tp|Add0~117_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_processor:tp|Add0~114 \
+    dataf=noc_router_adapter_block:noc_router_adapter_block_two|master_tdata[29]~reg0 \
+    datad=traffic_processor:tp|sum_reg[29] \
+    cout=traffic_processor:tp|Add0~118 \
+    sumout=traffic_processor:tp|Add0~117
+
+# Subckt 142: traffic_processor:tp|sum_reg[28]~I 
+.subckt dffeas \
+    d=traffic_processor:tp|Add0~113 \
+    sclr=reset \
+    ena=traffic_processor:tp|sum_reg[39]~0 \
+    clk=clk \
+    q=traffic_processor:tp|sum_reg[28]
+
+# Subckt 143: traffic_processor:tp|Add0~113_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_processor:tp|Add0~110 \
+    dataf=noc_router_adapter_block:noc_router_adapter_block_two|master_tdata[28]~reg0 \
+    datad=traffic_processor:tp|sum_reg[28] \
+    cout=traffic_processor:tp|Add0~114 \
+    sumout=traffic_processor:tp|Add0~113
+
+# Subckt 144: traffic_processor:tp|sum_reg[27]~I 
+.subckt dffeas \
+    d=traffic_processor:tp|Add0~109 \
+    sclr=reset \
+    ena=traffic_processor:tp|sum_reg[39]~0 \
+    clk=clk \
+    q=traffic_processor:tp|sum_reg[27]
+
+# Subckt 145: traffic_processor:tp|Add0~109_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_processor:tp|Add0~106 \
+    dataf=noc_router_adapter_block:noc_router_adapter_block_two|master_tdata[27]~reg0 \
+    datad=traffic_processor:tp|sum_reg[27] \
+    cout=traffic_processor:tp|Add0~110 \
+    sumout=traffic_processor:tp|Add0~109
+
+# Subckt 146: traffic_processor:tp|sum_reg[26]~I 
+.subckt dffeas \
+    d=traffic_processor:tp|Add0~105 \
+    sclr=reset \
+    ena=traffic_processor:tp|sum_reg[39]~0 \
+    clk=clk \
+    q=traffic_processor:tp|sum_reg[26]
+
+# Subckt 147: traffic_processor:tp|Add0~105_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_processor:tp|Add0~102 \
+    dataf=noc_router_adapter_block:noc_router_adapter_block_two|master_tdata[26]~reg0 \
+    datad=traffic_processor:tp|sum_reg[26] \
+    cout=traffic_processor:tp|Add0~106 \
+    sumout=traffic_processor:tp|Add0~105
+
+# Subckt 148: traffic_processor:tp|sum_reg[25]~I 
+.subckt dffeas \
+    d=traffic_processor:tp|Add0~101 \
+    sclr=reset \
+    ena=traffic_processor:tp|sum_reg[39]~0 \
+    clk=clk \
+    q=traffic_processor:tp|sum_reg[25]
+
+# Subckt 149: traffic_processor:tp|Add0~101_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_processor:tp|Add0~98 \
+    dataf=noc_router_adapter_block:noc_router_adapter_block_two|master_tdata[25]~reg0 \
+    datad=traffic_processor:tp|sum_reg[25] \
+    cout=traffic_processor:tp|Add0~102 \
+    sumout=traffic_processor:tp|Add0~101
+
+# Subckt 150: traffic_processor:tp|sum_reg[24]~I 
+.subckt dffeas \
+    d=traffic_processor:tp|Add0~97 \
+    sclr=reset \
+    ena=traffic_processor:tp|sum_reg[39]~0 \
+    clk=clk \
+    q=traffic_processor:tp|sum_reg[24]
+
+# Subckt 151: traffic_processor:tp|Add0~97_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_processor:tp|Add0~94 \
+    dataf=noc_router_adapter_block:noc_router_adapter_block_two|master_tdata[24]~reg0 \
+    datad=traffic_processor:tp|sum_reg[24] \
+    cout=traffic_processor:tp|Add0~98 \
+    sumout=traffic_processor:tp|Add0~97
+
+# Subckt 152: traffic_processor:tp|sum_reg[23]~I 
+.subckt dffeas \
+    d=traffic_processor:tp|Add0~93 \
+    sclr=reset \
+    ena=traffic_processor:tp|sum_reg[39]~0 \
+    clk=clk \
+    q=traffic_processor:tp|sum_reg[23]
+
+# Subckt 153: traffic_processor:tp|Add0~93_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_processor:tp|Add0~90 \
+    dataf=noc_router_adapter_block:noc_router_adapter_block_two|master_tdata[23]~reg0 \
+    datad=traffic_processor:tp|sum_reg[23] \
+    cout=traffic_processor:tp|Add0~94 \
+    sumout=traffic_processor:tp|Add0~93
+
+# Subckt 154: traffic_processor:tp|sum_reg[22]~I 
+.subckt dffeas \
+    d=traffic_processor:tp|Add0~89 \
+    sclr=reset \
+    ena=traffic_processor:tp|sum_reg[39]~0 \
+    clk=clk \
+    q=traffic_processor:tp|sum_reg[22]
+
+# Subckt 155: traffic_processor:tp|Add0~89_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_processor:tp|Add0~86 \
+    dataf=noc_router_adapter_block:noc_router_adapter_block_two|master_tdata[22]~reg0 \
+    datad=traffic_processor:tp|sum_reg[22] \
+    cout=traffic_processor:tp|Add0~90 \
+    sumout=traffic_processor:tp|Add0~89
+
+# Subckt 156: traffic_processor:tp|sum_reg[21]~I 
+.subckt dffeas \
+    d=traffic_processor:tp|Add0~85 \
+    sclr=reset \
+    ena=traffic_processor:tp|sum_reg[39]~0 \
+    clk=clk \
+    q=traffic_processor:tp|sum_reg[21]
+
+# Subckt 157: traffic_processor:tp|Add0~85_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_processor:tp|Add0~82 \
+    dataf=noc_router_adapter_block:noc_router_adapter_block_two|master_tdata[21]~reg0 \
+    datad=traffic_processor:tp|sum_reg[21] \
+    cout=traffic_processor:tp|Add0~86 \
+    sumout=traffic_processor:tp|Add0~85
+
+# Subckt 158: traffic_processor:tp|sum_reg[20]~I 
+.subckt dffeas \
+    d=traffic_processor:tp|Add0~81 \
+    sclr=reset \
+    ena=traffic_processor:tp|sum_reg[39]~0 \
+    clk=clk \
+    q=traffic_processor:tp|sum_reg[20]
+
+# Subckt 159: traffic_processor:tp|Add0~81_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_processor:tp|Add0~78 \
+    dataf=noc_router_adapter_block:noc_router_adapter_block_two|master_tdata[20]~reg0 \
+    datad=traffic_processor:tp|sum_reg[20] \
+    cout=traffic_processor:tp|Add0~82 \
+    sumout=traffic_processor:tp|Add0~81
+
+# Subckt 160: traffic_processor:tp|sum_reg[19]~I 
+.subckt dffeas \
+    d=traffic_processor:tp|Add0~77 \
+    sclr=reset \
+    ena=traffic_processor:tp|sum_reg[39]~0 \
+    clk=clk \
+    q=traffic_processor:tp|sum_reg[19]
+
+# Subckt 161: traffic_processor:tp|Add0~77_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_processor:tp|Add0~74 \
+    dataf=noc_router_adapter_block:noc_router_adapter_block_two|master_tdata[19]~reg0 \
+    datad=traffic_processor:tp|sum_reg[19] \
+    cout=traffic_processor:tp|Add0~78 \
+    sumout=traffic_processor:tp|Add0~77
+
+# Subckt 162: traffic_processor:tp|sum_reg[18]~I 
+.subckt dffeas \
+    d=traffic_processor:tp|Add0~73 \
+    sclr=reset \
+    ena=traffic_processor:tp|sum_reg[39]~0 \
+    clk=clk \
+    q=traffic_processor:tp|sum_reg[18]
+
+# Subckt 163: traffic_processor:tp|Add0~73_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_processor:tp|Add0~70 \
+    dataf=noc_router_adapter_block:noc_router_adapter_block_two|master_tdata[18]~reg0 \
+    datad=traffic_processor:tp|sum_reg[18] \
+    cout=traffic_processor:tp|Add0~74 \
+    sumout=traffic_processor:tp|Add0~73
+
+# Subckt 164: traffic_processor:tp|sum_reg[17]~I 
+.subckt dffeas \
+    d=traffic_processor:tp|Add0~69 \
+    sclr=reset \
+    ena=traffic_processor:tp|sum_reg[39]~0 \
+    clk=clk \
+    q=traffic_processor:tp|sum_reg[17]
+
+# Subckt 165: traffic_processor:tp|Add0~69_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_processor:tp|Add0~66 \
+    dataf=noc_router_adapter_block:noc_router_adapter_block_two|master_tdata[17]~reg0 \
+    datad=traffic_processor:tp|sum_reg[17] \
+    cout=traffic_processor:tp|Add0~70 \
+    sumout=traffic_processor:tp|Add0~69
+
+# Subckt 166: traffic_processor:tp|sum_reg[16]~I 
+.subckt dffeas \
+    d=traffic_processor:tp|Add0~65 \
+    sclr=reset \
+    ena=traffic_processor:tp|sum_reg[39]~0 \
+    clk=clk \
+    q=traffic_processor:tp|sum_reg[16]
+
+# Subckt 167: traffic_processor:tp|Add0~65_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_processor:tp|Add0~62 \
+    dataf=noc_router_adapter_block:noc_router_adapter_block_two|master_tdata[16]~reg0 \
+    datad=traffic_processor:tp|sum_reg[16] \
+    cout=traffic_processor:tp|Add0~66 \
+    sumout=traffic_processor:tp|Add0~65
+
+# Subckt 168: traffic_processor:tp|sum_reg[15]~I 
+.subckt dffeas \
+    d=traffic_processor:tp|Add0~61 \
+    sclr=reset \
+    ena=traffic_processor:tp|sum_reg[39]~0 \
+    clk=clk \
+    q=traffic_processor:tp|sum_reg[15]
+
+# Subckt 169: traffic_processor:tp|Add0~61_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_processor:tp|Add0~58 \
+    dataf=noc_router_adapter_block:noc_router_adapter_block_two|master_tdata[15]~reg0 \
+    datad=traffic_processor:tp|sum_reg[15] \
+    cout=traffic_processor:tp|Add0~62 \
+    sumout=traffic_processor:tp|Add0~61
+
+# Subckt 170: traffic_processor:tp|sum_reg[14]~I 
+.subckt dffeas \
+    d=traffic_processor:tp|Add0~57 \
+    sclr=reset \
+    ena=traffic_processor:tp|sum_reg[39]~0 \
+    clk=clk \
+    q=traffic_processor:tp|sum_reg[14]
+
+# Subckt 171: traffic_processor:tp|Add0~57_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_processor:tp|Add0~54 \
+    dataf=noc_router_adapter_block:noc_router_adapter_block_two|master_tdata[14]~reg0 \
+    datad=traffic_processor:tp|sum_reg[14] \
+    cout=traffic_processor:tp|Add0~58 \
+    sumout=traffic_processor:tp|Add0~57
+
+# Subckt 172: traffic_processor:tp|sum_reg[13]~I 
+.subckt dffeas \
+    d=traffic_processor:tp|Add0~53 \
+    sclr=reset \
+    ena=traffic_processor:tp|sum_reg[39]~0 \
+    clk=clk \
+    q=traffic_processor:tp|sum_reg[13]
+
+# Subckt 173: traffic_processor:tp|Add0~53_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_processor:tp|Add0~50 \
+    dataf=noc_router_adapter_block:noc_router_adapter_block_two|master_tdata[13]~reg0 \
+    datad=traffic_processor:tp|sum_reg[13] \
+    cout=traffic_processor:tp|Add0~54 \
+    sumout=traffic_processor:tp|Add0~53
+
+# Subckt 174: traffic_processor:tp|Add0~1_I 
+.subckt stratixiv_lcell_comb \
+    cin=gnd \
+    dataf=noc_router_adapter_block:noc_router_adapter_block_two|master_tdata[0]~reg0 \
+    datad=traffic_processor:tp|sum_reg[0] \
+    cout=traffic_processor:tp|Add0~2 \
+    sumout=traffic_processor:tp|Add0~1
+
+# Subckt 175: traffic_processor:tp|sum_reg[12]~I 
+.subckt dffeas \
+    d=traffic_processor:tp|Add0~49 \
+    sclr=reset \
+    ena=traffic_processor:tp|sum_reg[39]~0 \
+    clk=clk \
+    q=traffic_processor:tp|sum_reg[12]
+
+# Subckt 176: traffic_processor:tp|Add0~49_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_processor:tp|Add0~46 \
+    dataf=noc_router_adapter_block:noc_router_adapter_block_two|master_tdata[12]~reg0 \
+    datad=traffic_processor:tp|sum_reg[12] \
+    cout=traffic_processor:tp|Add0~50 \
+    sumout=traffic_processor:tp|Add0~49
+
+# Subckt 177: traffic_processor:tp|sum_reg[39]~0_I 
+.subckt stratixiv_lcell_comb \
+    datab=reset \
+    dataa=noc_router_adapter_block:noc_router_adapter_block_two|master_tvalid~reg0 \
+    combout=traffic_processor:tp|sum_reg[39]~0
+
+# Subckt 178: traffic_processor:tp|sum_reg[0]~I 
+.subckt dffeas \
+    d=traffic_processor:tp|Add0~1 \
+    sclr=reset \
+    ena=traffic_processor:tp|sum_reg[39]~0 \
+    clk=clk \
+    q=traffic_processor:tp|sum_reg[0]
+
+# Subckt 179: traffic_processor:tp|sum_reg[11]~I 
+.subckt dffeas \
+    d=traffic_processor:tp|Add0~45 \
+    sclr=reset \
+    ena=traffic_processor:tp|sum_reg[39]~0 \
+    clk=clk \
+    q=traffic_processor:tp|sum_reg[11]
+
+# Subckt 180: traffic_processor:tp|Add0~45_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_processor:tp|Add0~42 \
+    dataf=noc_router_adapter_block:noc_router_adapter_block_two|master_tdata[11]~reg0 \
+    datad=traffic_processor:tp|sum_reg[11] \
+    cout=traffic_processor:tp|Add0~46 \
+    sumout=traffic_processor:tp|Add0~45
+
+# Subckt 181: traffic_processor:tp|Add0~5_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_processor:tp|Add0~2 \
+    dataf=noc_router_adapter_block:noc_router_adapter_block_two|master_tdata[1]~reg0 \
+    datad=traffic_processor:tp|sum_reg[1] \
+    cout=traffic_processor:tp|Add0~6 \
+    sumout=traffic_processor:tp|Add0~5
+
+# Subckt 182: traffic_processor:tp|sum_reg[1]~I 
+.subckt dffeas \
+    d=traffic_processor:tp|Add0~5 \
+    sclr=reset \
+    ena=traffic_processor:tp|sum_reg[39]~0 \
+    clk=clk \
+    q=traffic_processor:tp|sum_reg[1]
+
+# Subckt 183: traffic_processor:tp|sum_reg[10]~I 
+.subckt dffeas \
+    d=traffic_processor:tp|Add0~41 \
+    sclr=reset \
+    ena=traffic_processor:tp|sum_reg[39]~0 \
+    clk=clk \
+    q=traffic_processor:tp|sum_reg[10]
+
+# Subckt 184: traffic_processor:tp|Add0~41_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_processor:tp|Add0~38 \
+    dataf=noc_router_adapter_block:noc_router_adapter_block_two|master_tdata[10]~reg0 \
+    datad=traffic_processor:tp|sum_reg[10] \
+    cout=traffic_processor:tp|Add0~42 \
+    sumout=traffic_processor:tp|Add0~41
+
+# Subckt 185: traffic_processor:tp|Add0~9_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_processor:tp|Add0~6 \
+    dataf=noc_router_adapter_block:noc_router_adapter_block_two|master_tdata[2]~reg0 \
+    datad=traffic_processor:tp|sum_reg[2] \
+    cout=traffic_processor:tp|Add0~10 \
+    sumout=traffic_processor:tp|Add0~9
+
+# Subckt 186: traffic_processor:tp|sum_reg[2]~I 
+.subckt dffeas \
+    d=traffic_processor:tp|Add0~9 \
+    sclr=reset \
+    ena=traffic_processor:tp|sum_reg[39]~0 \
+    clk=clk \
+    q=traffic_processor:tp|sum_reg[2]
+
+# Subckt 187: traffic_processor:tp|sum_reg[9]~I 
+.subckt dffeas \
+    d=traffic_processor:tp|Add0~37 \
+    sclr=reset \
+    ena=traffic_processor:tp|sum_reg[39]~0 \
+    clk=clk \
+    q=traffic_processor:tp|sum_reg[9]
+
+# Subckt 188: traffic_processor:tp|Add0~37_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_processor:tp|Add0~34 \
+    dataf=noc_router_adapter_block:noc_router_adapter_block_two|master_tdata[9]~reg0 \
+    datad=traffic_processor:tp|sum_reg[9] \
+    cout=traffic_processor:tp|Add0~38 \
+    sumout=traffic_processor:tp|Add0~37
+
+# Subckt 189: traffic_processor:tp|Add0~13_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_processor:tp|Add0~10 \
+    dataf=noc_router_adapter_block:noc_router_adapter_block_two|master_tdata[3]~reg0 \
+    datad=traffic_processor:tp|sum_reg[3] \
+    cout=traffic_processor:tp|Add0~14 \
+    sumout=traffic_processor:tp|Add0~13
+
+# Subckt 190: traffic_processor:tp|sum_reg[3]~I 
+.subckt dffeas \
+    d=traffic_processor:tp|Add0~13 \
+    sclr=reset \
+    ena=traffic_processor:tp|sum_reg[39]~0 \
+    clk=clk \
+    q=traffic_processor:tp|sum_reg[3]
+
+# Subckt 191: traffic_processor:tp|sum_reg[8]~I 
+.subckt dffeas \
+    d=traffic_processor:tp|Add0~33 \
+    sclr=reset \
+    ena=traffic_processor:tp|sum_reg[39]~0 \
+    clk=clk \
+    q=traffic_processor:tp|sum_reg[8]
+
+# Subckt 192: traffic_processor:tp|Add0~33_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_processor:tp|Add0~30 \
+    dataf=noc_router_adapter_block:noc_router_adapter_block_two|master_tdata[8]~reg0 \
+    datad=traffic_processor:tp|sum_reg[8] \
+    cout=traffic_processor:tp|Add0~34 \
+    sumout=traffic_processor:tp|Add0~33
+
+# Subckt 193: traffic_processor:tp|Add0~17_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_processor:tp|Add0~14 \
+    dataf=noc_router_adapter_block:noc_router_adapter_block_two|master_tdata[4]~reg0 \
+    datad=traffic_processor:tp|sum_reg[4] \
+    cout=traffic_processor:tp|Add0~18 \
+    sumout=traffic_processor:tp|Add0~17
+
+# Subckt 194: traffic_processor:tp|sum_reg[4]~I 
+.subckt dffeas \
+    d=traffic_processor:tp|Add0~17 \
+    sclr=reset \
+    ena=traffic_processor:tp|sum_reg[39]~0 \
+    clk=clk \
+    q=traffic_processor:tp|sum_reg[4]
+
+# Subckt 195: traffic_processor:tp|sum_reg[7]~I 
+.subckt dffeas \
+    d=traffic_processor:tp|Add0~29 \
+    sclr=reset \
+    ena=traffic_processor:tp|sum_reg[39]~0 \
+    clk=clk \
+    q=traffic_processor:tp|sum_reg[7]
+
+# Subckt 196: traffic_processor:tp|Add0~29_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_processor:tp|Add0~26 \
+    dataf=noc_router_adapter_block:noc_router_adapter_block_two|master_tdata[7]~reg0 \
+    datad=traffic_processor:tp|sum_reg[7] \
+    cout=traffic_processor:tp|Add0~30 \
+    sumout=traffic_processor:tp|Add0~29
+
+# Subckt 197: traffic_processor:tp|Add0~21_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_processor:tp|Add0~18 \
+    dataf=noc_router_adapter_block:noc_router_adapter_block_two|master_tdata[5]~reg0 \
+    datad=traffic_processor:tp|sum_reg[5] \
+    cout=traffic_processor:tp|Add0~22 \
+    sumout=traffic_processor:tp|Add0~21
+
+# Subckt 198: traffic_processor:tp|sum_reg[5]~I 
+.subckt dffeas \
+    d=traffic_processor:tp|Add0~21 \
+    sclr=reset \
+    ena=traffic_processor:tp|sum_reg[39]~0 \
+    clk=clk \
+    q=traffic_processor:tp|sum_reg[5]
+
+# Subckt 199: traffic_processor:tp|sum_reg[6]~I 
+.subckt dffeas \
+    d=traffic_processor:tp|Add0~25 \
+    sclr=reset \
+    ena=traffic_processor:tp|sum_reg[39]~0 \
+    clk=clk \
+    q=traffic_processor:tp|sum_reg[6]
+
+# Subckt 200: traffic_processor:tp|Add0~25_I 
+.subckt stratixiv_lcell_comb \
+    cin=traffic_processor:tp|Add0~22 \
+    dataf=noc_router_adapter_block:noc_router_adapter_block_two|master_tdata[6]~reg0 \
+    datad=traffic_processor:tp|sum_reg[6] \
+    cout=traffic_processor:tp|Add0~26 \
+    sumout=traffic_processor:tp|Add0~25
+
+.end
+
+#SUBCKT MODELS
+
+.model noc_router_adapter_block
+.inputs \
+    reset \
+    clk \
+    slave_tlast \
+    slave_tuser[0] \
+    slave_tuser[1] \
+    slave_tuser[2] \
+    slave_tuser[3] \
+    slave_tuser[4] \
+    slave_tuser[5] \
+    slave_tuser[6] \
+    slave_tuser[7] \
+    slave_tdest[0] \
+    slave_tdest[1] \
+    slave_tdest[2] \
+    slave_tdest[3] \
+    slave_tdest[4] \
+    slave_tdest[5] \
+    slave_tdest[6] \
+    slave_tdest[7] \
+    slave_tid[0] \
+    slave_tid[1] \
+    slave_tid[2] \
+    slave_tid[3] \
+    slave_tid[4] \
+    slave_tid[5] \
+    slave_tid[6] \
+    slave_tid[7] \
+    slave_tkeep[0] \
+    slave_tkeep[1] \
+    slave_tkeep[2] \
+    slave_tkeep[3] \
+    slave_tstrb[0] \
+    slave_tstrb[1] \
+    slave_tstrb[2] \
+    slave_tstrb[3] \
+    slave_tdata[0] \
+    slave_tdata[1] \
+    slave_tdata[2] \
+    slave_tdata[3] \
+    slave_tdata[4] \
+    slave_tdata[5] \
+    slave_tdata[6] \
+    slave_tdata[7] \
+    slave_tdata[8] \
+    slave_tdata[9] \
+    slave_tdata[10] \
+    slave_tdata[11] \
+    slave_tdata[12] \
+    slave_tdata[13] \
+    slave_tdata[14] \
+    slave_tdata[15] \
+    slave_tdata[16] \
+    slave_tdata[17] \
+    slave_tdata[18] \
+    slave_tdata[19] \
+    slave_tdata[20] \
+    slave_tdata[21] \
+    slave_tdata[22] \
+    slave_tdata[23] \
+    slave_tdata[24] \
+    slave_tdata[25] \
+    slave_tdata[26] \
+    slave_tdata[27] \
+    slave_tdata[28] \
+    slave_tdata[29] \
+    slave_tdata[30] \
+    slave_tdata[31] \
+    slave_tvalid \
+    master_tready
+.outputs \
+    slave_tready \
+    master_tlast \
+    master_tuser[0] \
+    master_tuser[1] \
+    master_tuser[2] \
+    master_tuser[3] \
+    master_tuser[4] \
+    master_tuser[5] \
+    master_tuser[6] \
+    master_tuser[7] \
+    master_tdest[0] \
+    master_tdest[1] \
+    master_tdest[2] \
+    master_tdest[3] \
+    master_tdest[4] \
+    master_tdest[5] \
+    master_tdest[6] \
+    master_tdest[7] \
+    master_tid[0] \
+    master_tid[1] \
+    master_tid[2] \
+    master_tid[3] \
+    master_tid[4] \
+    master_tid[5] \
+    master_tid[6] \
+    master_tid[7] \
+    master_tkeep[0] \
+    master_tkeep[1] \
+    master_tkeep[2] \
+    master_tkeep[3] \
+    master_tstrb[0] \
+    master_tstrb[1] \
+    master_tstrb[2] \
+    master_tstrb[3] \
+    master_tdata[0] \
+    master_tdata[1] \
+    master_tdata[2] \
+    master_tdata[3] \
+    master_tdata[4] \
+    master_tdata[5] \
+    master_tdata[6] \
+    master_tdata[7] \
+    master_tdata[8] \
+    master_tdata[9] \
+    master_tdata[10] \
+    master_tdata[11] \
+    master_tdata[12] \
+    master_tdata[13] \
+    master_tdata[14] \
+    master_tdata[15] \
+    master_tdata[16] \
+    master_tdata[17] \
+    master_tdata[18] \
+    master_tdata[19] \
+    master_tdata[20] \
+    master_tdata[21] \
+    master_tdata[22] \
+    master_tdata[23] \
+    master_tdata[24] \
+    master_tdata[25] \
+    master_tdata[26] \
+    master_tdata[27] \
+    master_tdata[28] \
+    master_tdata[29] \
+    master_tdata[30] \
+    master_tdata[31] \
+    master_tvalid
+.blackbox
+.end
+
+.model dffeas
+.inputs \
+    devpor \
+    devclrn \
+    d \
+    sclr \
+    sload \
+    aload \
+    asdata \
+    clrn \
+    prn \
+    ena \
+    clk
+.outputs \
+    q
+.blackbox
+.end
+
+.model stratixiv_lcell_comb
+.inputs \
+    sharein \
+    cin \
+    datag \
+    dataf \
+    datae \
+    datad \
+    datac \
+    datab \
+    dataa
+.outputs \
+    shareout \
+    cout \
+    sumout \
+    combout
+.blackbox
+.end

@@ -1,0 +1,810 @@
+#BLIF OUTPUT: /mnt/hgfs/Research_shared_folder/noc_project/multiple_router.blif
+
+#MAIN MODEL
+
+.model test_noc
+.inputs \
+    i_id[0] \
+    i_id[1] \
+    i_id[2] \
+    i_id[3] \
+    i_ctrl[0] \
+    i_ctrl[1] \
+    i_valid \
+    i_sum_a[0] \
+    i_sum_a[1] \
+    i_sum_a[2] \
+    i_sum_a[3] \
+    i_sum_a[4] \
+    i_sum_a[5] \
+    i_sum_a[6] \
+    i_sum_a[7] \
+    i_sum_b[0] \
+    i_sum_b[1] \
+    i_sum_b[2] \
+    i_sum_b[3] \
+    i_sum_b[4] \
+    i_sum_b[5] \
+    i_sum_b[6] \
+    i_sum_b[7] \
+    clk
+.outputs \
+    o_flag
+
+.names gnd
+0
+
+.names vcc
+1
+
+
+# Subckt 0: Add0~1_I 
+.subckt stratixiv_lcell_comb \
+    cin=gnd \
+    dataf=i_sum_a[0] \
+    datad=i_sum_b[0] \
+    cout=Add0~2 \
+    sumout=Add0~1
+
+# Subckt 1: Add0~5_I 
+.subckt stratixiv_lcell_comb \
+    cin=Add0~2 \
+    dataf=i_sum_a[1] \
+    datad=i_sum_b[1] \
+    cout=Add0~6 \
+    sumout=Add0~5
+
+# Subckt 2: Add0~9_I 
+.subckt stratixiv_lcell_comb \
+    cin=Add0~6 \
+    dataf=i_sum_a[2] \
+    datad=i_sum_b[2] \
+    cout=Add0~10 \
+    sumout=Add0~9
+
+# Subckt 3: Add0~13_I 
+.subckt stratixiv_lcell_comb \
+    cin=Add0~10 \
+    dataf=i_sum_a[3] \
+    datad=i_sum_b[3] \
+    cout=Add0~14 \
+    sumout=Add0~13
+
+# Subckt 4: Add0~17_I 
+.subckt stratixiv_lcell_comb \
+    cin=Add0~14 \
+    dataf=i_sum_a[4] \
+    datad=i_sum_b[4] \
+    cout=Add0~18 \
+    sumout=Add0~17
+
+# Subckt 5: Add0~21_I 
+.subckt stratixiv_lcell_comb \
+    cin=Add0~18 \
+    dataf=i_sum_a[5] \
+    datad=i_sum_b[5] \
+    cout=Add0~22 \
+    sumout=Add0~21
+
+# Subckt 6: Add0~25_I 
+.subckt stratixiv_lcell_comb \
+    cin=Add0~22 \
+    dataf=i_sum_a[6] \
+    datad=i_sum_b[6] \
+    cout=Add0~26 \
+    sumout=Add0~25
+
+# Subckt 7: Add0~29_I 
+.subckt stratixiv_lcell_comb \
+    cin=Add0~26 \
+    dataf=i_sum_a[7] \
+    datad=i_sum_b[7] \
+    cout=Add0~30 \
+    sumout=Add0~29
+
+# Subckt 8: Add0~33_I 
+.subckt stratixiv_lcell_comb \
+    cin=Add0~30 \
+    sumout=Add0~33
+
+# Subckt 9: noc_input[16]~I 
+.subckt stratixiv_lcell_comb \
+    datab=i_valid \
+    dataa=i_ctrl[0] \
+    combout=noc_input[16]
+
+# Subckt 10: ~GND~I 
+.subckt stratixiv_lcell_comb \
+    combout=~GND
+
+# Subckt 11: router:noc_router_four| 
+.subckt router \
+    i_clk=clk \
+    flit_in_two[0]=~GND \
+    flit_in_two[1]=~GND \
+    flit_in_two[2]=~GND \
+    flit_in_two[3]=~GND \
+    flit_in_two[4]=~GND \
+    flit_in_two[5]=~GND \
+    flit_in_two[6]=~GND \
+    flit_in_two[7]=~GND \
+    flit_in_two[8]=~GND \
+    flit_in_two[9]=~GND \
+    flit_in_two[10]=~GND \
+    flit_in_two[11]=~GND \
+    flit_in_two[12]=~GND \
+    flit_in_two[13]=~GND \
+    flit_in_two[14]=~GND \
+    flit_in_two[15]=~GND \
+    flit_in_two[16]=~GND \
+    flit_in_two[17]=~GND \
+    flit_in_two[18]=~GND \
+    flit_in_two[19]=~GND \
+    flit_in_two[20]=~GND \
+    flit_in_two[21]=~GND \
+    flit_in_two[22]=~GND \
+    flit_in_two[23]=~GND \
+    flit_in_two[24]=~GND \
+    flit_in_two[25]=~GND \
+    flit_in_two[26]=~GND \
+    flit_in_two[27]=~GND \
+    flit_in_two[28]=~GND \
+    flit_in_two[29]=~GND \
+    flit_in_two[30]=~GND \
+    flit_in_two[31]=~GND \
+    flit_in_one[0]=router:noc_router_three|flit_out_two[0]~reg0 \
+    flit_in_one[1]=router:noc_router_three|flit_out_two[1]~reg0 \
+    flit_in_one[2]=router:noc_router_three|flit_out_two[2]~reg0 \
+    flit_in_one[3]=router:noc_router_three|flit_out_two[3]~reg0 \
+    flit_in_one[4]=router:noc_router_three|flit_out_two[4]~reg0 \
+    flit_in_one[5]=router:noc_router_three|flit_out_two[5]~reg0 \
+    flit_in_one[6]=router:noc_router_three|flit_out_two[6]~reg0 \
+    flit_in_one[7]=router:noc_router_three|flit_out_two[7]~reg0 \
+    flit_in_one[8]=router:noc_router_three|flit_out_two[8]~reg0 \
+    flit_in_one[9]=router:noc_router_three|flit_out_two[9]~reg0 \
+    flit_in_one[10]=router:noc_router_three|flit_out_two[10]~reg0 \
+    flit_in_one[11]=router:noc_router_three|flit_out_two[11]~reg0 \
+    flit_in_one[12]=router:noc_router_three|flit_out_two[12]~reg0 \
+    flit_in_one[13]=router:noc_router_three|flit_out_two[13]~reg0 \
+    flit_in_one[14]=router:noc_router_three|flit_out_two[14]~reg0 \
+    flit_in_one[15]=router:noc_router_three|flit_out_two[15]~reg0 \
+    flit_in_one[16]=router:noc_router_three|flit_out_two[16]~reg0 \
+    flit_in_one[17]=router:noc_router_three|flit_out_two[17]~reg0 \
+    flit_in_one[18]=router:noc_router_three|flit_out_two[18]~reg0 \
+    flit_in_one[19]=router:noc_router_three|flit_out_two[19]~reg0 \
+    flit_in_one[20]=router:noc_router_three|flit_out_two[20]~reg0 \
+    flit_in_one[21]=router:noc_router_three|flit_out_two[21]~reg0 \
+    flit_in_one[22]=router:noc_router_three|flit_out_two[22]~reg0 \
+    flit_in_one[23]=router:noc_router_three|flit_out_two[23]~reg0 \
+    flit_in_one[24]=router:noc_router_three|flit_out_two[24]~reg0 \
+    flit_in_one[25]=router:noc_router_three|flit_out_two[25]~reg0 \
+    flit_in_one[26]=router:noc_router_three|flit_out_two[26]~reg0 \
+    flit_in_one[27]=router:noc_router_three|flit_out_two[27]~reg0 \
+    flit_in_one[28]=router:noc_router_three|flit_out_two[28]~reg0 \
+    flit_in_one[29]=router:noc_router_three|flit_out_two[29]~reg0 \
+    flit_in_one[30]=router:noc_router_three|flit_out_two[30]~reg0 \
+    flit_in_one[31]=router:noc_router_three|flit_out_two[31]~reg0 \
+    flit_out_two[0]=router:noc_router_four|flit_out_two[0]~reg0 \
+    flit_out_two[1]=router:noc_router_four|flit_out_two[1]~reg0 \
+    flit_out_two[2]=router:noc_router_four|flit_out_two[2]~reg0 \
+    flit_out_two[3]=router:noc_router_four|flit_out_two[3]~reg0 \
+    flit_out_two[4]=router:noc_router_four|flit_out_two[4]~reg0 \
+    flit_out_two[5]=router:noc_router_four|flit_out_two[5]~reg0 \
+    flit_out_two[6]=router:noc_router_four|flit_out_two[6]~reg0 \
+    flit_out_two[7]=router:noc_router_four|flit_out_two[7]~reg0 \
+    flit_out_two[8]=router:noc_router_four|flit_out_two[8]~reg0 \
+    flit_out_two[9]=router:noc_router_four|flit_out_two[9]~reg0 \
+    flit_out_two[10]=router:noc_router_four|flit_out_two[10]~reg0 \
+    flit_out_two[11]=router:noc_router_four|flit_out_two[11]~reg0 \
+    flit_out_two[12]=router:noc_router_four|flit_out_two[12]~reg0 \
+    flit_out_two[13]=router:noc_router_four|flit_out_two[13]~reg0 \
+    flit_out_two[14]=router:noc_router_four|flit_out_two[14]~reg0 \
+    flit_out_two[15]=router:noc_router_four|flit_out_two[15]~reg0 \
+    flit_out_two[16]=router:noc_router_four|flit_out_two[16]~reg0 \
+    flit_out_two[17]=router:noc_router_four|flit_out_two[17]~reg0 \
+    flit_out_two[18]=router:noc_router_four|flit_out_two[18]~reg0 \
+    flit_out_two[19]=router:noc_router_four|flit_out_two[19]~reg0 \
+    flit_out_two[20]=router:noc_router_four|flit_out_two[20]~reg0 \
+    flit_out_two[21]=router:noc_router_four|flit_out_two[21]~reg0 \
+    flit_out_two[22]=router:noc_router_four|flit_out_two[22]~reg0 \
+    flit_out_two[23]=router:noc_router_four|flit_out_two[23]~reg0 \
+    flit_out_two[24]=router:noc_router_four|flit_out_two[24]~reg0 \
+    flit_out_two[25]=router:noc_router_four|flit_out_two[25]~reg0 \
+    flit_out_two[26]=router:noc_router_four|flit_out_two[26]~reg0 \
+    flit_out_two[27]=router:noc_router_four|flit_out_two[27]~reg0 \
+    flit_out_two[28]=router:noc_router_four|flit_out_two[28]~reg0 \
+    flit_out_two[29]=router:noc_router_four|flit_out_two[29]~reg0 \
+    flit_out_two[30]=router:noc_router_four|flit_out_two[30]~reg0 \
+    flit_out_two[31]=router:noc_router_four|flit_out_two[31]~reg0 \
+    flit_out_one[0]=router:noc_router_four|flit_out_one[0]~reg0 \
+    flit_out_one[1]=router:noc_router_four|flit_out_one[1]~reg0 \
+    flit_out_one[2]=router:noc_router_four|flit_out_one[2]~reg0 \
+    flit_out_one[3]=router:noc_router_four|flit_out_one[3]~reg0 \
+    flit_out_one[4]=router:noc_router_four|flit_out_one[4]~reg0 \
+    flit_out_one[5]=router:noc_router_four|flit_out_one[5]~reg0 \
+    flit_out_one[6]=router:noc_router_four|flit_out_one[6]~reg0 \
+    flit_out_one[7]=router:noc_router_four|flit_out_one[7]~reg0 \
+    flit_out_one[8]=router:noc_router_four|flit_out_one[8]~reg0 \
+    flit_out_one[9]=router:noc_router_four|flit_out_one[9]~reg0 \
+    flit_out_one[10]=router:noc_router_four|flit_out_one[10]~reg0 \
+    flit_out_one[11]=router:noc_router_four|flit_out_one[11]~reg0 \
+    flit_out_one[12]=router:noc_router_four|flit_out_one[12]~reg0 \
+    flit_out_one[13]=router:noc_router_four|flit_out_one[13]~reg0 \
+    flit_out_one[14]=router:noc_router_four|flit_out_one[14]~reg0 \
+    flit_out_one[15]=router:noc_router_four|flit_out_one[15]~reg0 \
+    flit_out_one[16]=router:noc_router_four|flit_out_one[16]~reg0 \
+    flit_out_one[17]=router:noc_router_four|flit_out_one[17]~reg0 \
+    flit_out_one[18]=router:noc_router_four|flit_out_one[18]~reg0 \
+    flit_out_one[19]=router:noc_router_four|flit_out_one[19]~reg0 \
+    flit_out_one[20]=router:noc_router_four|flit_out_one[20]~reg0 \
+    flit_out_one[21]=router:noc_router_four|flit_out_one[21]~reg0 \
+    flit_out_one[22]=router:noc_router_four|flit_out_one[22]~reg0 \
+    flit_out_one[23]=router:noc_router_four|flit_out_one[23]~reg0 \
+    flit_out_one[24]=router:noc_router_four|flit_out_one[24]~reg0 \
+    flit_out_one[25]=router:noc_router_four|flit_out_one[25]~reg0 \
+    flit_out_one[26]=router:noc_router_four|flit_out_one[26]~reg0 \
+    flit_out_one[27]=router:noc_router_four|flit_out_one[27]~reg0 \
+    flit_out_one[28]=router:noc_router_four|flit_out_one[28]~reg0 \
+    flit_out_one[29]=router:noc_router_four|flit_out_one[29]~reg0 \
+    flit_out_one[30]=router:noc_router_four|flit_out_one[30]~reg0 \
+    flit_out_one[31]=router:noc_router_four|flit_out_one[31]~reg0
+
+# Subckt 12: router:noc_router_two| 
+.subckt router \
+    i_clk=clk \
+    flit_in_two[0]=~GND \
+    flit_in_two[1]=~GND \
+    flit_in_two[2]=~GND \
+    flit_in_two[3]=~GND \
+    flit_in_two[4]=~GND \
+    flit_in_two[5]=~GND \
+    flit_in_two[6]=~GND \
+    flit_in_two[7]=~GND \
+    flit_in_two[8]=~GND \
+    flit_in_two[9]=~GND \
+    flit_in_two[10]=~GND \
+    flit_in_two[11]=~GND \
+    flit_in_two[12]=~GND \
+    flit_in_two[13]=~GND \
+    flit_in_two[14]=~GND \
+    flit_in_two[15]=~GND \
+    flit_in_two[16]=~GND \
+    flit_in_two[17]=~GND \
+    flit_in_two[18]=~GND \
+    flit_in_two[19]=~GND \
+    flit_in_two[20]=~GND \
+    flit_in_two[21]=~GND \
+    flit_in_two[22]=~GND \
+    flit_in_two[23]=~GND \
+    flit_in_two[24]=~GND \
+    flit_in_two[25]=~GND \
+    flit_in_two[26]=~GND \
+    flit_in_two[27]=~GND \
+    flit_in_two[28]=~GND \
+    flit_in_two[29]=~GND \
+    flit_in_two[30]=~GND \
+    flit_in_two[31]=~GND \
+    flit_in_one[0]=router:noc_router_one|flit_out_one[0]~reg0 \
+    flit_in_one[1]=router:noc_router_one|flit_out_one[1]~reg0 \
+    flit_in_one[2]=router:noc_router_one|flit_out_one[2]~reg0 \
+    flit_in_one[3]=router:noc_router_one|flit_out_one[3]~reg0 \
+    flit_in_one[4]=router:noc_router_one|flit_out_one[4]~reg0 \
+    flit_in_one[5]=router:noc_router_one|flit_out_one[5]~reg0 \
+    flit_in_one[6]=router:noc_router_one|flit_out_one[6]~reg0 \
+    flit_in_one[7]=router:noc_router_one|flit_out_one[7]~reg0 \
+    flit_in_one[8]=router:noc_router_one|flit_out_one[8]~reg0 \
+    flit_in_one[9]=router:noc_router_one|flit_out_one[9]~reg0 \
+    flit_in_one[10]=router:noc_router_one|flit_out_one[10]~reg0 \
+    flit_in_one[11]=router:noc_router_one|flit_out_one[11]~reg0 \
+    flit_in_one[12]=router:noc_router_one|flit_out_one[12]~reg0 \
+    flit_in_one[13]=router:noc_router_one|flit_out_one[13]~reg0 \
+    flit_in_one[14]=router:noc_router_one|flit_out_one[14]~reg0 \
+    flit_in_one[15]=router:noc_router_one|flit_out_one[15]~reg0 \
+    flit_in_one[16]=router:noc_router_one|flit_out_one[16]~reg0 \
+    flit_in_one[17]=router:noc_router_one|flit_out_one[17]~reg0 \
+    flit_in_one[18]=router:noc_router_one|flit_out_one[18]~reg0 \
+    flit_in_one[19]=router:noc_router_one|flit_out_one[19]~reg0 \
+    flit_in_one[20]=router:noc_router_one|flit_out_one[20]~reg0 \
+    flit_in_one[21]=router:noc_router_one|flit_out_one[21]~reg0 \
+    flit_in_one[22]=router:noc_router_one|flit_out_one[22]~reg0 \
+    flit_in_one[23]=router:noc_router_one|flit_out_one[23]~reg0 \
+    flit_in_one[24]=router:noc_router_one|flit_out_one[24]~reg0 \
+    flit_in_one[25]=router:noc_router_one|flit_out_one[25]~reg0 \
+    flit_in_one[26]=router:noc_router_one|flit_out_one[26]~reg0 \
+    flit_in_one[27]=router:noc_router_one|flit_out_one[27]~reg0 \
+    flit_in_one[28]=router:noc_router_one|flit_out_one[28]~reg0 \
+    flit_in_one[29]=router:noc_router_one|flit_out_one[29]~reg0 \
+    flit_in_one[30]=router:noc_router_one|flit_out_one[30]~reg0 \
+    flit_in_one[31]=router:noc_router_one|flit_out_one[31]~reg0 \
+    flit_out_two[0]=router:noc_router_two|flit_out_two[0]~reg0 \
+    flit_out_two[1]=router:noc_router_two|flit_out_two[1]~reg0 \
+    flit_out_two[2]=router:noc_router_two|flit_out_two[2]~reg0 \
+    flit_out_two[3]=router:noc_router_two|flit_out_two[3]~reg0 \
+    flit_out_two[4]=router:noc_router_two|flit_out_two[4]~reg0 \
+    flit_out_two[5]=router:noc_router_two|flit_out_two[5]~reg0 \
+    flit_out_two[6]=router:noc_router_two|flit_out_two[6]~reg0 \
+    flit_out_two[7]=router:noc_router_two|flit_out_two[7]~reg0 \
+    flit_out_two[8]=router:noc_router_two|flit_out_two[8]~reg0 \
+    flit_out_two[9]=router:noc_router_two|flit_out_two[9]~reg0 \
+    flit_out_two[10]=router:noc_router_two|flit_out_two[10]~reg0 \
+    flit_out_two[11]=router:noc_router_two|flit_out_two[11]~reg0 \
+    flit_out_two[12]=router:noc_router_two|flit_out_two[12]~reg0 \
+    flit_out_two[13]=router:noc_router_two|flit_out_two[13]~reg0 \
+    flit_out_two[14]=router:noc_router_two|flit_out_two[14]~reg0 \
+    flit_out_two[15]=router:noc_router_two|flit_out_two[15]~reg0 \
+    flit_out_two[16]=router:noc_router_two|flit_out_two[16]~reg0 \
+    flit_out_two[17]=router:noc_router_two|flit_out_two[17]~reg0 \
+    flit_out_two[18]=router:noc_router_two|flit_out_two[18]~reg0 \
+    flit_out_two[19]=router:noc_router_two|flit_out_two[19]~reg0 \
+    flit_out_two[20]=router:noc_router_two|flit_out_two[20]~reg0 \
+    flit_out_two[21]=router:noc_router_two|flit_out_two[21]~reg0 \
+    flit_out_two[22]=router:noc_router_two|flit_out_two[22]~reg0 \
+    flit_out_two[23]=router:noc_router_two|flit_out_two[23]~reg0 \
+    flit_out_two[24]=router:noc_router_two|flit_out_two[24]~reg0 \
+    flit_out_two[25]=router:noc_router_two|flit_out_two[25]~reg0 \
+    flit_out_two[26]=router:noc_router_two|flit_out_two[26]~reg0 \
+    flit_out_two[27]=router:noc_router_two|flit_out_two[27]~reg0 \
+    flit_out_two[28]=router:noc_router_two|flit_out_two[28]~reg0 \
+    flit_out_two[29]=router:noc_router_two|flit_out_two[29]~reg0 \
+    flit_out_two[30]=router:noc_router_two|flit_out_two[30]~reg0 \
+    flit_out_two[31]=router:noc_router_two|flit_out_two[31]~reg0 \
+    flit_out_one[0]=router:noc_router_two|flit_out_one[0]~reg0 \
+    flit_out_one[1]=router:noc_router_two|flit_out_one[1]~reg0 \
+    flit_out_one[2]=router:noc_router_two|flit_out_one[2]~reg0 \
+    flit_out_one[3]=router:noc_router_two|flit_out_one[3]~reg0 \
+    flit_out_one[4]=router:noc_router_two|flit_out_one[4]~reg0 \
+    flit_out_one[5]=router:noc_router_two|flit_out_one[5]~reg0 \
+    flit_out_one[6]=router:noc_router_two|flit_out_one[6]~reg0 \
+    flit_out_one[7]=router:noc_router_two|flit_out_one[7]~reg0 \
+    flit_out_one[8]=router:noc_router_two|flit_out_one[8]~reg0 \
+    flit_out_one[9]=router:noc_router_two|flit_out_one[9]~reg0 \
+    flit_out_one[10]=router:noc_router_two|flit_out_one[10]~reg0 \
+    flit_out_one[11]=router:noc_router_two|flit_out_one[11]~reg0 \
+    flit_out_one[12]=router:noc_router_two|flit_out_one[12]~reg0 \
+    flit_out_one[13]=router:noc_router_two|flit_out_one[13]~reg0 \
+    flit_out_one[14]=router:noc_router_two|flit_out_one[14]~reg0 \
+    flit_out_one[15]=router:noc_router_two|flit_out_one[15]~reg0 \
+    flit_out_one[16]=router:noc_router_two|flit_out_one[16]~reg0 \
+    flit_out_one[17]=router:noc_router_two|flit_out_one[17]~reg0 \
+    flit_out_one[18]=router:noc_router_two|flit_out_one[18]~reg0 \
+    flit_out_one[19]=router:noc_router_two|flit_out_one[19]~reg0 \
+    flit_out_one[20]=router:noc_router_two|flit_out_one[20]~reg0 \
+    flit_out_one[21]=router:noc_router_two|flit_out_one[21]~reg0 \
+    flit_out_one[22]=router:noc_router_two|flit_out_one[22]~reg0 \
+    flit_out_one[23]=router:noc_router_two|flit_out_one[23]~reg0 \
+    flit_out_one[24]=router:noc_router_two|flit_out_one[24]~reg0 \
+    flit_out_one[25]=router:noc_router_two|flit_out_one[25]~reg0 \
+    flit_out_one[26]=router:noc_router_two|flit_out_one[26]~reg0 \
+    flit_out_one[27]=router:noc_router_two|flit_out_one[27]~reg0 \
+    flit_out_one[28]=router:noc_router_two|flit_out_one[28]~reg0 \
+    flit_out_one[29]=router:noc_router_two|flit_out_one[29]~reg0 \
+    flit_out_one[30]=router:noc_router_two|flit_out_one[30]~reg0 \
+    flit_out_one[31]=router:noc_router_two|flit_out_one[31]~reg0
+
+# Subckt 13: router:noc_router_three| 
+.subckt router \
+    i_clk=clk \
+    flit_in_two[0]=router:noc_router_two|flit_out_one[0]~reg0 \
+    flit_in_two[1]=router:noc_router_two|flit_out_one[1]~reg0 \
+    flit_in_two[2]=router:noc_router_two|flit_out_one[2]~reg0 \
+    flit_in_two[3]=router:noc_router_two|flit_out_one[3]~reg0 \
+    flit_in_two[4]=router:noc_router_two|flit_out_one[4]~reg0 \
+    flit_in_two[5]=router:noc_router_two|flit_out_one[5]~reg0 \
+    flit_in_two[6]=router:noc_router_two|flit_out_one[6]~reg0 \
+    flit_in_two[7]=router:noc_router_two|flit_out_one[7]~reg0 \
+    flit_in_two[8]=router:noc_router_two|flit_out_one[8]~reg0 \
+    flit_in_two[9]=router:noc_router_two|flit_out_one[9]~reg0 \
+    flit_in_two[10]=router:noc_router_two|flit_out_one[10]~reg0 \
+    flit_in_two[11]=router:noc_router_two|flit_out_one[11]~reg0 \
+    flit_in_two[12]=router:noc_router_two|flit_out_one[12]~reg0 \
+    flit_in_two[13]=router:noc_router_two|flit_out_one[13]~reg0 \
+    flit_in_two[14]=router:noc_router_two|flit_out_one[14]~reg0 \
+    flit_in_two[15]=router:noc_router_two|flit_out_one[15]~reg0 \
+    flit_in_two[16]=router:noc_router_two|flit_out_one[16]~reg0 \
+    flit_in_two[17]=router:noc_router_two|flit_out_one[17]~reg0 \
+    flit_in_two[18]=router:noc_router_two|flit_out_one[18]~reg0 \
+    flit_in_two[19]=router:noc_router_two|flit_out_one[19]~reg0 \
+    flit_in_two[20]=router:noc_router_two|flit_out_one[20]~reg0 \
+    flit_in_two[21]=router:noc_router_two|flit_out_one[21]~reg0 \
+    flit_in_two[22]=router:noc_router_two|flit_out_one[22]~reg0 \
+    flit_in_two[23]=router:noc_router_two|flit_out_one[23]~reg0 \
+    flit_in_two[24]=router:noc_router_two|flit_out_one[24]~reg0 \
+    flit_in_two[25]=router:noc_router_two|flit_out_one[25]~reg0 \
+    flit_in_two[26]=router:noc_router_two|flit_out_one[26]~reg0 \
+    flit_in_two[27]=router:noc_router_two|flit_out_one[27]~reg0 \
+    flit_in_two[28]=router:noc_router_two|flit_out_one[28]~reg0 \
+    flit_in_two[29]=router:noc_router_two|flit_out_one[29]~reg0 \
+    flit_in_two[30]=router:noc_router_two|flit_out_one[30]~reg0 \
+    flit_in_two[31]=router:noc_router_two|flit_out_one[31]~reg0 \
+    flit_in_one[0]=~GND \
+    flit_in_one[1]=~GND \
+    flit_in_one[2]=~GND \
+    flit_in_one[3]=~GND \
+    flit_in_one[4]=~GND \
+    flit_in_one[5]=~GND \
+    flit_in_one[6]=~GND \
+    flit_in_one[7]=~GND \
+    flit_in_one[8]=~GND \
+    flit_in_one[9]=~GND \
+    flit_in_one[10]=~GND \
+    flit_in_one[11]=~GND \
+    flit_in_one[12]=~GND \
+    flit_in_one[13]=~GND \
+    flit_in_one[14]=~GND \
+    flit_in_one[15]=~GND \
+    flit_in_one[16]=~GND \
+    flit_in_one[17]=~GND \
+    flit_in_one[18]=~GND \
+    flit_in_one[19]=~GND \
+    flit_in_one[20]=~GND \
+    flit_in_one[21]=~GND \
+    flit_in_one[22]=~GND \
+    flit_in_one[23]=~GND \
+    flit_in_one[24]=~GND \
+    flit_in_one[25]=~GND \
+    flit_in_one[26]=~GND \
+    flit_in_one[27]=~GND \
+    flit_in_one[28]=~GND \
+    flit_in_one[29]=~GND \
+    flit_in_one[30]=~GND \
+    flit_in_one[31]=~GND \
+    flit_out_two[0]=router:noc_router_three|flit_out_two[0]~reg0 \
+    flit_out_two[1]=router:noc_router_three|flit_out_two[1]~reg0 \
+    flit_out_two[2]=router:noc_router_three|flit_out_two[2]~reg0 \
+    flit_out_two[3]=router:noc_router_three|flit_out_two[3]~reg0 \
+    flit_out_two[4]=router:noc_router_three|flit_out_two[4]~reg0 \
+    flit_out_two[5]=router:noc_router_three|flit_out_two[5]~reg0 \
+    flit_out_two[6]=router:noc_router_three|flit_out_two[6]~reg0 \
+    flit_out_two[7]=router:noc_router_three|flit_out_two[7]~reg0 \
+    flit_out_two[8]=router:noc_router_three|flit_out_two[8]~reg0 \
+    flit_out_two[9]=router:noc_router_three|flit_out_two[9]~reg0 \
+    flit_out_two[10]=router:noc_router_three|flit_out_two[10]~reg0 \
+    flit_out_two[11]=router:noc_router_three|flit_out_two[11]~reg0 \
+    flit_out_two[12]=router:noc_router_three|flit_out_two[12]~reg0 \
+    flit_out_two[13]=router:noc_router_three|flit_out_two[13]~reg0 \
+    flit_out_two[14]=router:noc_router_three|flit_out_two[14]~reg0 \
+    flit_out_two[15]=router:noc_router_three|flit_out_two[15]~reg0 \
+    flit_out_two[16]=router:noc_router_three|flit_out_two[16]~reg0 \
+    flit_out_two[17]=router:noc_router_three|flit_out_two[17]~reg0 \
+    flit_out_two[18]=router:noc_router_three|flit_out_two[18]~reg0 \
+    flit_out_two[19]=router:noc_router_three|flit_out_two[19]~reg0 \
+    flit_out_two[20]=router:noc_router_three|flit_out_two[20]~reg0 \
+    flit_out_two[21]=router:noc_router_three|flit_out_two[21]~reg0 \
+    flit_out_two[22]=router:noc_router_three|flit_out_two[22]~reg0 \
+    flit_out_two[23]=router:noc_router_three|flit_out_two[23]~reg0 \
+    flit_out_two[24]=router:noc_router_three|flit_out_two[24]~reg0 \
+    flit_out_two[25]=router:noc_router_three|flit_out_two[25]~reg0 \
+    flit_out_two[26]=router:noc_router_three|flit_out_two[26]~reg0 \
+    flit_out_two[27]=router:noc_router_three|flit_out_two[27]~reg0 \
+    flit_out_two[28]=router:noc_router_three|flit_out_two[28]~reg0 \
+    flit_out_two[29]=router:noc_router_three|flit_out_two[29]~reg0 \
+    flit_out_two[30]=router:noc_router_three|flit_out_two[30]~reg0 \
+    flit_out_two[31]=router:noc_router_three|flit_out_two[31]~reg0 \
+    flit_out_one[0]=router:noc_router_three|flit_out_one[0]~reg0 \
+    flit_out_one[1]=router:noc_router_three|flit_out_one[1]~reg0 \
+    flit_out_one[2]=router:noc_router_three|flit_out_one[2]~reg0 \
+    flit_out_one[3]=router:noc_router_three|flit_out_one[3]~reg0 \
+    flit_out_one[4]=router:noc_router_three|flit_out_one[4]~reg0 \
+    flit_out_one[5]=router:noc_router_three|flit_out_one[5]~reg0 \
+    flit_out_one[6]=router:noc_router_three|flit_out_one[6]~reg0 \
+    flit_out_one[7]=router:noc_router_three|flit_out_one[7]~reg0 \
+    flit_out_one[8]=router:noc_router_three|flit_out_one[8]~reg0 \
+    flit_out_one[9]=router:noc_router_three|flit_out_one[9]~reg0 \
+    flit_out_one[10]=router:noc_router_three|flit_out_one[10]~reg0 \
+    flit_out_one[11]=router:noc_router_three|flit_out_one[11]~reg0 \
+    flit_out_one[12]=router:noc_router_three|flit_out_one[12]~reg0 \
+    flit_out_one[13]=router:noc_router_three|flit_out_one[13]~reg0 \
+    flit_out_one[14]=router:noc_router_three|flit_out_one[14]~reg0 \
+    flit_out_one[15]=router:noc_router_three|flit_out_one[15]~reg0 \
+    flit_out_one[16]=router:noc_router_three|flit_out_one[16]~reg0 \
+    flit_out_one[17]=router:noc_router_three|flit_out_one[17]~reg0 \
+    flit_out_one[18]=router:noc_router_three|flit_out_one[18]~reg0 \
+    flit_out_one[19]=router:noc_router_three|flit_out_one[19]~reg0 \
+    flit_out_one[20]=router:noc_router_three|flit_out_one[20]~reg0 \
+    flit_out_one[21]=router:noc_router_three|flit_out_one[21]~reg0 \
+    flit_out_one[22]=router:noc_router_three|flit_out_one[22]~reg0 \
+    flit_out_one[23]=router:noc_router_three|flit_out_one[23]~reg0 \
+    flit_out_one[24]=router:noc_router_three|flit_out_one[24]~reg0 \
+    flit_out_one[25]=router:noc_router_three|flit_out_one[25]~reg0 \
+    flit_out_one[26]=router:noc_router_three|flit_out_one[26]~reg0 \
+    flit_out_one[27]=router:noc_router_three|flit_out_one[27]~reg0 \
+    flit_out_one[28]=router:noc_router_three|flit_out_one[28]~reg0 \
+    flit_out_one[29]=router:noc_router_three|flit_out_one[29]~reg0 \
+    flit_out_one[30]=router:noc_router_three|flit_out_one[30]~reg0 \
+    flit_out_one[31]=router:noc_router_three|flit_out_one[31]~reg0
+
+# Subckt 14: router:noc_router_one| 
+.subckt router \
+    i_clk=clk \
+    flit_in_two[0]=~GND \
+    flit_in_two[1]=~GND \
+    flit_in_two[2]=~GND \
+    flit_in_two[3]=~GND \
+    flit_in_two[4]=~GND \
+    flit_in_two[5]=~GND \
+    flit_in_two[6]=~GND \
+    flit_in_two[7]=~GND \
+    flit_in_two[8]=~GND \
+    flit_in_two[9]=~GND \
+    flit_in_two[10]=~GND \
+    flit_in_two[11]=~GND \
+    flit_in_two[12]=~GND \
+    flit_in_two[13]=~GND \
+    flit_in_two[14]=~GND \
+    flit_in_two[15]=~GND \
+    flit_in_two[16]=~GND \
+    flit_in_two[17]=~GND \
+    flit_in_two[18]=~GND \
+    flit_in_two[19]=~GND \
+    flit_in_two[20]=~GND \
+    flit_in_two[21]=~GND \
+    flit_in_two[22]=~GND \
+    flit_in_two[23]=~GND \
+    flit_in_two[24]=~GND \
+    flit_in_two[25]=~GND \
+    flit_in_two[26]=~GND \
+    flit_in_two[27]=~GND \
+    flit_in_two[28]=~GND \
+    flit_in_two[29]=~GND \
+    flit_in_two[30]=~GND \
+    flit_in_two[31]=~GND \
+    flit_in_one[0]=Add0~1 \
+    flit_in_one[1]=Add0~5 \
+    flit_in_one[2]=Add0~9 \
+    flit_in_one[3]=Add0~13 \
+    flit_in_one[4]=Add0~17 \
+    flit_in_one[5]=Add0~21 \
+    flit_in_one[6]=Add0~25 \
+    flit_in_one[7]=Add0~29 \
+    flit_in_one[8]=Add0~33 \
+    flit_in_one[9]=~GND \
+    flit_in_one[10]=~GND \
+    flit_in_one[11]=~GND \
+    flit_in_one[12]=~GND \
+    flit_in_one[13]=~GND \
+    flit_in_one[14]=~GND \
+    flit_in_one[15]=~GND \
+    flit_in_one[16]=noc_input[16] \
+    flit_in_one[17]=i_id[0] \
+    flit_in_one[18]=i_id[1] \
+    flit_in_one[19]=i_id[2] \
+    flit_in_one[20]=i_id[3] \
+    flit_in_one[21]=~GND \
+    flit_in_one[22]=~GND \
+    flit_in_one[23]=~GND \
+    flit_in_one[24]=~GND \
+    flit_in_one[25]=~GND \
+    flit_in_one[26]=~GND \
+    flit_in_one[27]=~GND \
+    flit_in_one[28]=~GND \
+    flit_in_one[29]=~GND \
+    flit_in_one[30]=~GND \
+    flit_in_one[31]=~GND \
+    flit_out_two[0]=router:noc_router_one|flit_out_two[0]~reg0 \
+    flit_out_two[1]=router:noc_router_one|flit_out_two[1]~reg0 \
+    flit_out_two[2]=router:noc_router_one|flit_out_two[2]~reg0 \
+    flit_out_two[3]=router:noc_router_one|flit_out_two[3]~reg0 \
+    flit_out_two[4]=router:noc_router_one|flit_out_two[4]~reg0 \
+    flit_out_two[5]=router:noc_router_one|flit_out_two[5]~reg0 \
+    flit_out_two[6]=router:noc_router_one|flit_out_two[6]~reg0 \
+    flit_out_two[7]=router:noc_router_one|flit_out_two[7]~reg0 \
+    flit_out_two[8]=router:noc_router_one|flit_out_two[8]~reg0 \
+    flit_out_two[9]=router:noc_router_one|flit_out_two[9]~reg0 \
+    flit_out_two[10]=router:noc_router_one|flit_out_two[10]~reg0 \
+    flit_out_two[11]=router:noc_router_one|flit_out_two[11]~reg0 \
+    flit_out_two[12]=router:noc_router_one|flit_out_two[12]~reg0 \
+    flit_out_two[13]=router:noc_router_one|flit_out_two[13]~reg0 \
+    flit_out_two[14]=router:noc_router_one|flit_out_two[14]~reg0 \
+    flit_out_two[15]=router:noc_router_one|flit_out_two[15]~reg0 \
+    flit_out_two[16]=router:noc_router_one|flit_out_two[16]~reg0 \
+    flit_out_two[17]=router:noc_router_one|flit_out_two[17]~reg0 \
+    flit_out_two[18]=router:noc_router_one|flit_out_two[18]~reg0 \
+    flit_out_two[19]=router:noc_router_one|flit_out_two[19]~reg0 \
+    flit_out_two[20]=router:noc_router_one|flit_out_two[20]~reg0 \
+    flit_out_two[21]=router:noc_router_one|flit_out_two[21]~reg0 \
+    flit_out_two[22]=router:noc_router_one|flit_out_two[22]~reg0 \
+    flit_out_two[23]=router:noc_router_one|flit_out_two[23]~reg0 \
+    flit_out_two[24]=router:noc_router_one|flit_out_two[24]~reg0 \
+    flit_out_two[25]=router:noc_router_one|flit_out_two[25]~reg0 \
+    flit_out_two[26]=router:noc_router_one|flit_out_two[26]~reg0 \
+    flit_out_two[27]=router:noc_router_one|flit_out_two[27]~reg0 \
+    flit_out_two[28]=router:noc_router_one|flit_out_two[28]~reg0 \
+    flit_out_two[29]=router:noc_router_one|flit_out_two[29]~reg0 \
+    flit_out_two[30]=router:noc_router_one|flit_out_two[30]~reg0 \
+    flit_out_two[31]=router:noc_router_one|flit_out_two[31]~reg0 \
+    flit_out_one[0]=router:noc_router_one|flit_out_one[0]~reg0 \
+    flit_out_one[1]=router:noc_router_one|flit_out_one[1]~reg0 \
+    flit_out_one[2]=router:noc_router_one|flit_out_one[2]~reg0 \
+    flit_out_one[3]=router:noc_router_one|flit_out_one[3]~reg0 \
+    flit_out_one[4]=router:noc_router_one|flit_out_one[4]~reg0 \
+    flit_out_one[5]=router:noc_router_one|flit_out_one[5]~reg0 \
+    flit_out_one[6]=router:noc_router_one|flit_out_one[6]~reg0 \
+    flit_out_one[7]=router:noc_router_one|flit_out_one[7]~reg0 \
+    flit_out_one[8]=router:noc_router_one|flit_out_one[8]~reg0 \
+    flit_out_one[9]=router:noc_router_one|flit_out_one[9]~reg0 \
+    flit_out_one[10]=router:noc_router_one|flit_out_one[10]~reg0 \
+    flit_out_one[11]=router:noc_router_one|flit_out_one[11]~reg0 \
+    flit_out_one[12]=router:noc_router_one|flit_out_one[12]~reg0 \
+    flit_out_one[13]=router:noc_router_one|flit_out_one[13]~reg0 \
+    flit_out_one[14]=router:noc_router_one|flit_out_one[14]~reg0 \
+    flit_out_one[15]=router:noc_router_one|flit_out_one[15]~reg0 \
+    flit_out_one[16]=router:noc_router_one|flit_out_one[16]~reg0 \
+    flit_out_one[17]=router:noc_router_one|flit_out_one[17]~reg0 \
+    flit_out_one[18]=router:noc_router_one|flit_out_one[18]~reg0 \
+    flit_out_one[19]=router:noc_router_one|flit_out_one[19]~reg0 \
+    flit_out_one[20]=router:noc_router_one|flit_out_one[20]~reg0 \
+    flit_out_one[21]=router:noc_router_one|flit_out_one[21]~reg0 \
+    flit_out_one[22]=router:noc_router_one|flit_out_one[22]~reg0 \
+    flit_out_one[23]=router:noc_router_one|flit_out_one[23]~reg0 \
+    flit_out_one[24]=router:noc_router_one|flit_out_one[24]~reg0 \
+    flit_out_one[25]=router:noc_router_one|flit_out_one[25]~reg0 \
+    flit_out_one[26]=router:noc_router_one|flit_out_one[26]~reg0 \
+    flit_out_one[27]=router:noc_router_one|flit_out_one[27]~reg0 \
+    flit_out_one[28]=router:noc_router_one|flit_out_one[28]~reg0 \
+    flit_out_one[29]=router:noc_router_one|flit_out_one[29]~reg0 \
+    flit_out_one[30]=router:noc_router_one|flit_out_one[30]~reg0 \
+    flit_out_one[31]=router:noc_router_one|flit_out_one[31]~reg0
+
+# Subckt 15: o_flag~0_I 
+.subckt stratixiv_lcell_comb \
+    datab=router:noc_router_four|flit_out_one[3]~reg0 \
+    dataa=router:noc_router_four|flit_out_one[0]~reg0 \
+    combout=o_flag
+
+.end
+
+#SUBCKT MODELS
+
+.model router
+.inputs \
+    i_clk \
+    flit_in_two[0] \
+    flit_in_two[1] \
+    flit_in_two[2] \
+    flit_in_two[3] \
+    flit_in_two[4] \
+    flit_in_two[5] \
+    flit_in_two[6] \
+    flit_in_two[7] \
+    flit_in_two[8] \
+    flit_in_two[9] \
+    flit_in_two[10] \
+    flit_in_two[11] \
+    flit_in_two[12] \
+    flit_in_two[13] \
+    flit_in_two[14] \
+    flit_in_two[15] \
+    flit_in_two[16] \
+    flit_in_two[17] \
+    flit_in_two[18] \
+    flit_in_two[19] \
+    flit_in_two[20] \
+    flit_in_two[21] \
+    flit_in_two[22] \
+    flit_in_two[23] \
+    flit_in_two[24] \
+    flit_in_two[25] \
+    flit_in_two[26] \
+    flit_in_two[27] \
+    flit_in_two[28] \
+    flit_in_two[29] \
+    flit_in_two[30] \
+    flit_in_two[31] \
+    flit_in_one[0] \
+    flit_in_one[1] \
+    flit_in_one[2] \
+    flit_in_one[3] \
+    flit_in_one[4] \
+    flit_in_one[5] \
+    flit_in_one[6] \
+    flit_in_one[7] \
+    flit_in_one[8] \
+    flit_in_one[9] \
+    flit_in_one[10] \
+    flit_in_one[11] \
+    flit_in_one[12] \
+    flit_in_one[13] \
+    flit_in_one[14] \
+    flit_in_one[15] \
+    flit_in_one[16] \
+    flit_in_one[17] \
+    flit_in_one[18] \
+    flit_in_one[19] \
+    flit_in_one[20] \
+    flit_in_one[21] \
+    flit_in_one[22] \
+    flit_in_one[23] \
+    flit_in_one[24] \
+    flit_in_one[25] \
+    flit_in_one[26] \
+    flit_in_one[27] \
+    flit_in_one[28] \
+    flit_in_one[29] \
+    flit_in_one[30] \
+    flit_in_one[31]
+.outputs \
+    flit_out_two[0] \
+    flit_out_two[1] \
+    flit_out_two[2] \
+    flit_out_two[3] \
+    flit_out_two[4] \
+    flit_out_two[5] \
+    flit_out_two[6] \
+    flit_out_two[7] \
+    flit_out_two[8] \
+    flit_out_two[9] \
+    flit_out_two[10] \
+    flit_out_two[11] \
+    flit_out_two[12] \
+    flit_out_two[13] \
+    flit_out_two[14] \
+    flit_out_two[15] \
+    flit_out_two[16] \
+    flit_out_two[17] \
+    flit_out_two[18] \
+    flit_out_two[19] \
+    flit_out_two[20] \
+    flit_out_two[21] \
+    flit_out_two[22] \
+    flit_out_two[23] \
+    flit_out_two[24] \
+    flit_out_two[25] \
+    flit_out_two[26] \
+    flit_out_two[27] \
+    flit_out_two[28] \
+    flit_out_two[29] \
+    flit_out_two[30] \
+    flit_out_two[31] \
+    flit_out_one[0] \
+    flit_out_one[1] \
+    flit_out_one[2] \
+    flit_out_one[3] \
+    flit_out_one[4] \
+    flit_out_one[5] \
+    flit_out_one[6] \
+    flit_out_one[7] \
+    flit_out_one[8] \
+    flit_out_one[9] \
+    flit_out_one[10] \
+    flit_out_one[11] \
+    flit_out_one[12] \
+    flit_out_one[13] \
+    flit_out_one[14] \
+    flit_out_one[15] \
+    flit_out_one[16] \
+    flit_out_one[17] \
+    flit_out_one[18] \
+    flit_out_one[19] \
+    flit_out_one[20] \
+    flit_out_one[21] \
+    flit_out_one[22] \
+    flit_out_one[23] \
+    flit_out_one[24] \
+    flit_out_one[25] \
+    flit_out_one[26] \
+    flit_out_one[27] \
+    flit_out_one[28] \
+    flit_out_one[29] \
+    flit_out_one[30] \
+    flit_out_one[31]
+.blackbox
+.end
+
+.model stratixiv_lcell_comb
+.inputs \
+    sharein \
+    cin \
+    datag \
+    dataf \
+    datae \
+    datad \
+    datac \
+    datab \
+    dataa
+.outputs \
+    shareout \
+    cout \
+    sumout \
+    combout
+.blackbox
+.end

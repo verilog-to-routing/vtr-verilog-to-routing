@@ -87,7 +87,7 @@ module Sum_Calc
  reg [7:0] alpha_flopped;
  reg [31:0] Q_flopped;
  
-always @(posedge clk or posedge reset)
+always @(posedge clk)
     begin 
       if (reset == 1'b1) begin
         Sum1_out1_flopped <= 0;
@@ -107,10 +107,17 @@ always @(posedge clk or posedge reset)
   assign Product1_cast_1 = Product1_mul_temp[39:0];
   assign Product1_out1 = Product1_cast_1[38:7];
 
+//pipelining
+  reg [31:0] Product1_out1_flopped;  // int32
+  reg [31:0] Q_flopped2;
+  always @(posedge clk) begin
+    Q_flopped2 <= Q_flopped;
+    Product1_out1_flopped <= Product1_out1;
+  end
 
 
-  assign Sum_add_cast = Q_flopped[15:0];
-  assign Sum_add_cast_1 = Product1_out1[15:0];
+  assign Sum_add_cast = Q_flopped2[15:0];
+  assign Sum_add_cast_1 = Product1_out1_flopped[15:0];
   assign Sum_add_temp = Sum_add_cast + Sum_add_cast_1;
   assign Sum_out1 = {{16{Sum_add_temp[15]}}, Sum_add_temp};
 
@@ -179,9 +186,16 @@ module Max
   assign Max_stage1_val_0 = (in0_0 >= in0_1 ? in0_0 : in0_1);
   assign Max_stage1_val_1 = (in0_2 >= in0_3 ? in0_2 : in0_3);
 
+  reg  [31:0] Max_stage1_val_0_flopped;  // int32 [2]
+  reg  [31:0] Max_stage1_val_1_flopped;  // int32 [2]
+	//pipelining the tree
+  always @(posedge clk) begin
+    Max_stage1_val_0_flopped <= Max_stage1_val_0;
+    Max_stage1_val_1_flopped <= Max_stage1_val_1;
+  end
 
   // ---- Tree max stage 2 ----
-  assign Max_stage2_val = (Max_stage1_val_0 >= Max_stage1_val_1 ? Max_stage1_val_0 : Max_stage1_val_1);
+  assign Max_stage2_val = (Max_stage1_val_0_flopped >= Max_stage1_val_1_flopped ? Max_stage1_val_0_flopped : Max_stage1_val_1_flopped);
 
 
   assign out0 = Max_stage2_val[15:0];
@@ -214,16 +228,14 @@ module SimpleDualPortRAM_generic
   input   wr_en;  // ufix1
   input   [AddrWidth - 1:0] rd_addr;  // parameterized width
   output  [DataWidth - 1:0] rd_dout;  // parameterized width
- wire temp_wr_en;
- assign temp_wr_en = enb && wr_en;
-
-
- 
-  reg  [DataWidth - 1:0] data_int;
- `ifdef?SIMULATION_MEMORY //vtr_edit
    
-   reg  [DataWidth - 1:0] ram [2**AddrWidth - 1:0];
-  //integer i;
+  wire temp_wr_en;
+  assign temp_wr_en = enb && wr_en;
+
+ `ifndef hard_mem //vtr_edit
+   
+  reg  [DataWidth - 1:0] data_int;
+  reg  [DataWidth - 1:0] ram [2**AddrWidth - 1:0];
 
 /*
   initial begin
@@ -242,12 +254,13 @@ module SimpleDualPortRAM_generic
 
   always @(posedge clk)
     begin
-      if (enb == 1'b1) begin
-        if (wr_en == 1'b1) begin
+      //if (enb == 1'b1) begin
+      //  if (wr_en == 1'b1) begin
+        if (temp_wr_en)
           ram[wr_addr] <= wr_din;
-        end
+      //  end
         data_int <= ram[rd_addr];
-      end
+      //end
     end
 
   assign rd_dout = data_int;
@@ -255,9 +268,12 @@ module SimpleDualPortRAM_generic
   //vtr_edit
 `else 
  
+wire [DataWidth - 1:0] data_int;
 wire [DataWidth - 1:0] fake_op_1;
 wire [DataWidth - 1:0] fake_op_2;
 
+defparam u_dual_port_ram.ADDR_WIDTH = AddrWidth;
+defparam u_dual_port_ram.DATA_WIDTH = DataWidth;
 
 dual_port_ram u_dual_port_ram( 
 .addr1(wr_addr), 
@@ -270,10 +286,10 @@ dual_port_ram u_dual_port_ram(
 .out2(data_int), 
 .clk(clk) 
 ); 
- 
-`endif 
 
 assign rd_dout = data_int;
+ 
+`endif 
 
 endmodule  // SimpleDualPortRAM_generic
 
@@ -391,7 +407,7 @@ assign Data_Type_Conversion_out1_3 = Data_Type_Conversion_out1_3;
 */
   assign enb = clk_enable;
 
-  always @(posedge clk or posedge reset)
+  always @(posedge clk)
     begin
       if (reset == 1'b1) begin
         Delay2_out1 <= 2'b00;
@@ -405,7 +421,7 @@ assign Data_Type_Conversion_out1_3 = Data_Type_Conversion_out1_3;
 
 
 
-  always @(posedge clk or posedge reset)
+  always @(posedge clk)
     begin
       if (reset == 1'b1) begin
         Delay5_out1 <= 2'b00;
@@ -423,7 +439,7 @@ assign Data_Type_Conversion_out1_3 = Data_Type_Conversion_out1_3;
 
 
 
-  always @(posedge clk or posedge reset)
+  always @(posedge clk)
     begin : Delay1_process
       if (reset == 1'b1) begin
         Delay1_out1 <= 3'b000;
@@ -437,7 +453,7 @@ assign Data_Type_Conversion_out1_3 = Data_Type_Conversion_out1_3;
 
 
 
-  always @(posedge clk or posedge reset)
+  always @(posedge clk)
     begin
       if (reset == 1'b1) begin
         Delay4_out1 <= 3'b000;
@@ -454,7 +470,7 @@ assign Data_Type_Conversion_out1_3 = Data_Type_Conversion_out1_3;
   assign Constant3_out1 = !mode;
 
 
-  always @(posedge clk or posedge reset)
+  always @(posedge clk)
     begin
       if (reset == 1'b1) begin
         Delay11_out1 <= 8'b00000000;
@@ -468,7 +484,7 @@ assign Data_Type_Conversion_out1_3 = Data_Type_Conversion_out1_3;
 
 
 
-  always @(posedge clk or posedge reset)
+  always @(posedge clk)
     begin 
       if (reset == 1'b1) begin
         Delay13_out1 <= 8'b00000000;
@@ -482,7 +498,7 @@ assign Data_Type_Conversion_out1_3 = Data_Type_Conversion_out1_3;
 
 
 
-  always @(posedge clk or posedge reset)
+  always @(posedge clk)
     begin 
       if (reset == 1'b1) begin
         Delay3_out1 <= 32'sb00000000000000000000000000000000;
@@ -496,7 +512,7 @@ assign Data_Type_Conversion_out1_3 = Data_Type_Conversion_out1_3;
 
 
 
-  always @(posedge clk or posedge reset)
+  always @(posedge clk)
     begin 
       if (reset == 1'b1) begin
         Delay6_out1 <= 32'sb00000000000000000000000000000000;
@@ -510,7 +526,7 @@ assign Data_Type_Conversion_out1_3 = Data_Type_Conversion_out1_3;
 
 
 
-  always @(posedge clk or posedge reset)
+  always @(posedge clk)
     begin 
       if (reset == 1'b1) begin
         Delay12_out1 <= 8'b00000000;
@@ -524,7 +540,7 @@ assign Data_Type_Conversion_out1_3 = Data_Type_Conversion_out1_3;
 
 
 
-  always @(posedge clk or posedge reset)
+  always @(posedge clk)
     begin 
       if (reset == 1'b1) begin
         Delay7_out1 <= 8'b00000000;
@@ -623,7 +639,7 @@ assign Data_Type_Conversion_out1_3 = Data_Type_Conversion_out1_3;
 
 
 
-  always @(posedge clk or posedge reset)
+  always @(posedge clk)
     begin : Delay_process
       if (reset == 1'b1) begin
         Delay_reg_0 <= 32'sb00000000000000000000000000000000;
@@ -663,7 +679,7 @@ reg [31:0] Delay6_out1_flopped;
 reg [7:0] Delay7_out1_flopped;
 reg [15:0] Max_out1_flopped;
 
-always @(posedge clk or posedge reset)
+always @(posedge clk)
     begin 
       if (reset == 1'b1) begin
         Multiport_Switch_out1_flopped <= 0;
@@ -698,7 +714,7 @@ always @(posedge clk or posedge reset)
                        );
 */
 
-  always @(posedge clk or posedge reset)
+  always @(posedge clk)
     begin : Delay9_process
       if (reset == 1'b1) begin
         Delay9_out1 <= 32'sb00000000000000000000000000000000;
@@ -4928,9 +4944,9 @@ always @ (posedge clk)  begin
 if (reset) random <= 8'd85;
 
 else begin
-	bit_ = random[7] ^ random[6] ^ random[5] ^ random[4];
-	random[7:1] = random[6:0]; 
-	random[0] = bit_;
+	bit_ <= random[7] ^ random[6] ^ random[5] ^ random[4];
+	random[7:1] <= random[6:0]; 
+	random[0] <= bit_;
 end
 end
 
@@ -4955,19 +4971,33 @@ module policy_generator_2 (input clk, input reset, input   [31:0]in0_0, input   
   assign Max_stage1_val_0 = (in0_0 >= in0_1 ? in0_0 : in0_1);
   assign Max_stage1_val_1 = (in0_2 >= in0_3? in0_2 : in0_3);
 
+  reg  [31:0] Max_stage1_val_0_flopped;  // int32 [2]
+  reg  [31:0] Max_stage1_val_1_flopped;  // int32 [2]
+	//pipelining the tree
+  always @(posedge clk) begin
+    Max_stage1_val_0_flopped <= Max_stage1_val_0;
+    Max_stage1_val_1_flopped <= Max_stage1_val_1;
+  end
+
 
   // ---- Tree max stage 2 ----
-  assign Max_stage2_val = (Max_stage1_val_0 >= Max_stage1_val_1 ? Max_stage1_val_0 :
-              Max_stage1_val_1);
+  assign Max_stage2_val = (Max_stage1_val_0_flopped >= Max_stage1_val_1_flopped ? Max_stage1_val_0_flopped :
+              Max_stage1_val_1_flopped);
+
+  reg [31:0] Max_stage2_val_flopped;  // int32
+	//pipelining the tree
+  always @(posedge clk) begin
+    Max_stage2_val_flopped <= Max_stage2_val;
+  end
 
 always @ (posedge clk) begin
 
 if (reset== 1'b1) action<= 2'b0;
 else begin
 
-	if (Max_stage2_val == in0_0) action <= 2'd0;
-	else if (Max_stage2_val == in0_1) action <= 2'd1;
-	else if (Max_stage2_val == in0_2) action <= 2'd2;
+	if (Max_stage2_val_flopped == in0_0) action <= 2'd0;
+	else if (Max_stage2_val_flopped == in0_1) action <= 2'd1;
+	else if (Max_stage2_val_flopped == in0_2) action <= 2'd2;
 	else action <= 2'd3;
 
 	end
@@ -5088,6 +5118,5 @@ robot_high_level robot_11 ( 4'd10, clk, reset, mode, Q_11);
 robot_high_level robot_12 ( 4'd11, clk, reset, mode, Q_12);
 
 endmodule
-
 
 

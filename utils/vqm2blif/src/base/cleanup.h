@@ -9,6 +9,7 @@
 #include "vqm2blif_util.h"
 #include "lut_recog.h"
 #include "vqm_common.h"
+#include <unordered_map>
 
 //============================================================================================
 //				GLOBALS

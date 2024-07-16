@@ -45,6 +45,10 @@ input reset,
 input start,  		   //start the computation
 input [6:0] start_addr,   //start address of the Xin bram (input words to LSTM)
 input [6:0] end_addr,	  //end address of the Xin bram 
+input wren_a,
+input [`uarraysize-1:0] wdata_u,
+input [`varraysize-1:0] wdata_v,
+input [`DATA_WIDTH-1:0] wdata_b,
 output ht_valid,	//indicates the output ht_out is valid in those cycles
 output [`DATA_WIDTH-1:0] ht_out, //output ht from the lstm
 output reg cycle_complete,	//generates a pulse when a cycle fo 64 ht outputs are complete
@@ -63,9 +67,9 @@ wire [`varraysize-1:0] x_in;
 reg [`uarraysize-1:0] h_in;
 
 
-reg [`uarraysize-1:0] dummyin_u;
-reg [`varraysize-1:0] dummyin_v;
-reg [`DATA_WIDTH-1:0] dummyin_b;
+//reg [`uarraysize-1:0] dummyin_u;
+//reg [`varraysize-1:0] dummyin_v;
+//reg [`DATA_WIDTH-1:0] dummyin_b;
 
 wire [`DATA_WIDTH-1:0] bi_in;
 wire [`DATA_WIDTH-1:0] bf_in;
@@ -79,7 +83,7 @@ reg [`DATA_WIDTH-1:0] C_in;
 //and start repeating access to elements prematurely
 reg [6:0] inaddr; 
 reg [6:0] waddr;
-reg wren_a;
+//reg wren_a;
 reg [6:0] c_count;
 reg [6:0] b_count;
 reg [6:0] ct_count;
@@ -91,34 +95,34 @@ wire [`DATA_WIDTH-1:0] ht;
 reg [`uarraysize-1:0] ht_prev;
 reg [`uarraysize-1:0] Ct;
 wire [`DATA_WIDTH-1:0] add_cf;
-reg wren_a_ct, wren_b_cin;
+//reg wren_a_ct, wren_b_cin;
 
 assign ht_out = ht;
 
 
 //indicates that the ht_out output is valid 
-assign ht_valid = (count>16)?1:0;
+assign ht_valid = (count>16)? 1'b1: 1'b0;
 
 
 //BRAMs storing the input and hidden weights of each of the gates
 //Hidden weights are represented by U and Input weights by W
-spram_u Ui_mem(.clk(clk),.address_a(waddr),.wren_a(wren_a),.data_a(dummyin_u),.out_a(Ui_in));
-spram_u Uf_mem(.clk(clk),.address_a(waddr),.wren_a(wren_a),.data_a(dummyin_u),.out_a(Uf_in));
-spram_u Uo_mem(.clk(clk),.address_a(waddr),.wren_a(wren_a),.data_a(dummyin_u),.out_a(Uo_in));
-spram_u Uc_mem(.clk(clk),.address_a(waddr),.wren_a(wren_a),.data_a(dummyin_u),.out_a(Uc_in));
-spram_v Wi_mem(.clk(clk),.address_a(waddr),.wren_a(wren_a),.data_a(dummyin_v),.out_a(Wi_in));
-spram_v Wf_mem(.clk(clk),.address_a(waddr),.wren_a(wren_a),.data_a(dummyin_v),.out_a(Wf_in));
-spram_v Wo_mem(.clk(clk),.address_a(waddr),.wren_a(wren_a),.data_a(dummyin_v),.out_a(Wo_in));
-spram_v Wc_mem(.clk(clk),.address_a(waddr),.wren_a(wren_a),.data_a(dummyin_v),.out_a(Wc_in));
+spram_u Ui_mem(.clk(clk),.address_a(waddr),.wren_a(wren_a),.data_a(wdata_u),.out_a(Ui_in));
+spram_u Uf_mem(.clk(clk),.address_a(waddr),.wren_a(wren_a),.data_a(wdata_u),.out_a(Uf_in));
+spram_u Uo_mem(.clk(clk),.address_a(waddr),.wren_a(wren_a),.data_a(wdata_u),.out_a(Uo_in));
+spram_u Uc_mem(.clk(clk),.address_a(waddr),.wren_a(wren_a),.data_a(wdata_u),.out_a(Uc_in));
+spram_v Wi_mem(.clk(clk),.address_a(waddr),.wren_a(wren_a),.data_a(wdata_v),.out_a(Wi_in));
+spram_v Wf_mem(.clk(clk),.address_a(waddr),.wren_a(wren_a),.data_a(wdata_v),.out_a(Wf_in));
+spram_v Wo_mem(.clk(clk),.address_a(waddr),.wren_a(wren_a),.data_a(wdata_v),.out_a(Wo_in));
+spram_v Wc_mem(.clk(clk),.address_a(waddr),.wren_a(wren_a),.data_a(wdata_v),.out_a(Wc_in));
 
 //BRAM of the input vectors to LSTM
-spram_v Xi_mem(.clk(clk),.address_a(inaddr),.wren_a(wren_a),.data_a(dummyin_v),.out_a(x_in));
+spram_v Xi_mem(.clk(clk),.address_a(inaddr),.wren_a(wren_a),.data_a(wdata_v),.out_a(x_in));
 
 //BRAM storing Bias of each gate
-spram_b bi_mem(.clk(clk),.address_a(b_count),.wren_a(wren_a),.data_a(dummyin_b),.out_a(bi_in));
-spram_b bf_mem(.clk(clk),.address_a(b_count),.wren_a(wren_a),.data_a(dummyin_b),.out_a(bf_in));
-spram_b bo_mem(.clk(clk),.address_a(b_count),.wren_a(wren_a),.data_a(dummyin_b),.out_a(bo_in));
-spram_b bc_mem(.clk(clk),.address_a(b_count),.wren_a(wren_a),.data_a(dummyin_b),.out_a(bc_in));
+spram_b bi_mem(.clk(clk),.address_a(b_count),.wren_a(wren_a),.data_a(wdata_b),.out_a(bi_in));
+spram_b bf_mem(.clk(clk),.address_a(b_count),.wren_a(wren_a),.data_a(wdata_b),.out_a(bf_in));
+spram_b bo_mem(.clk(clk),.address_a(b_count),.wren_a(wren_a),.data_a(wdata_b),.out_a(bo_in));
+spram_b bc_mem(.clk(clk),.address_a(b_count),.wren_a(wren_a),.data_a(wdata_b),.out_a(bc_in));
 
 
 
@@ -137,18 +141,18 @@ always @(posedge clk) begin
 	   C_in <=0;
 	   h_in <= 0;
 	   ht_prev <= 0;
-	   wren_a <= 0;
-	   wren_a_ct <= 1;
-	   wren_b_cin <= 0;
+	   //wren_a <= 0;
+	   //wren_a_ct <= 1;
+	   //wren_b_cin <= 0;
 	   cycle_complete <=0;
 	   Done <= 0;
    	   waddr <=0;	
 	   inaddr <= start_addr;
 	  
 	   //dummy ports initialize
-	   dummyin_u <= 0; 
-	   dummyin_v <=0;
-	   dummyin_b <= 0;
+	   //dummyin_u <= 0; 
+	   //dummyin_v <=0;
+	   //dummyin_b <= 0;
  
   end
   else begin
@@ -162,23 +166,23 @@ always @(posedge clk) begin
 		c_count <= 0;
 	
 		if(inaddr == end_addr)
-			Done = 1;			
+			Done <= 1;			
 		else begin
-			inaddr <= inaddr+1;
+			inaddr <= inaddr+1'b1;
 			h_count <= 0;
 
 		 end
 	 end
 	 else begin
 		cycle_complete <= 0;
-    	waddr <= waddr+1;
-	  	count <= count+1;
+    	waddr <= waddr+1'b1;
+	  	count <= count+1'b1;
 	 
 		if(count>7)     //delay before bias add
-			b_count <= b_count+1; 
+			b_count <= b_count+1'b1; 
 
 		if(count >8)  begin //delay before Cin elmul
-			c_count <=c_count+1;
+			c_count <=c_count+1'b1;
 			case(c_count)
 			0: C_in<=Ct[16*0+:16] ;
 			1: C_in<=Ct[16*1+:16] ;
@@ -249,7 +253,7 @@ always @(posedge clk) begin
 		end
 
 		if(count >11) begin  //for storing output of Ct
-			ct_count <= ct_count+1;
+			ct_count <= ct_count+1'b1;
 		 //storing cell state
 			case(ct_count)
 			0:	Ct[16*0+:16] <= add_cf;
@@ -320,7 +324,7 @@ always @(posedge clk) begin
 		 endcase
 		end
 		if(count >16) begin
-			h_count <= h_count + 1;
+			h_count <= h_count + 1'b1;
 			case(h_count)
 			0:	ht_prev[16*0+:16] <= ht;
 			1:	ht_prev[16*1+:16] <= ht;
@@ -418,7 +422,7 @@ output reg [(`varraysize-1):0] out_a
 );
 
 
-`ifdef SIMULATION_MEMORY
+`ifndef hard_mem
 
 reg [`varraysize-1:0] ram[`ARRAY_DEPTH-1:0];
 
@@ -433,6 +437,9 @@ end
   
 
 `else
+
+defparam u_single_port_ram.ADDR_WIDTH = 7;
+defparam u_single_port_ram.DATA_WIDTH = `varraysize;
 
 single_port_ram u_single_port_ram(
 .addr(address_a),
@@ -455,7 +462,7 @@ output reg [(`uarraysize-1):0] out_a
 );
 
 
-`ifdef SIMULATION_MEMORY
+`ifndef hard_mem
 
 reg [`uarraysize-1:0] ram[`ARRAY_DEPTH-1:0];
 
@@ -470,6 +477,9 @@ end
   
 
 `else
+
+defparam u_single_port_ram.ADDR_WIDTH = 7;
+defparam u_single_port_ram.DATA_WIDTH = `uarraysize;
 
 single_port_ram u_single_port_ram(
 .addr(address_a),
@@ -492,7 +502,7 @@ output reg [(`DATA_WIDTH-1):0] out_a
 );
 
 
-`ifdef SIMULATION_MEMORY
+`ifndef hard_mem
 
 reg [`DATA_WIDTH-1:0] ram[`ARRAY_DEPTH-1:0];
 
@@ -507,6 +517,9 @@ end
   
 
 `else
+
+defparam u_single_port_ram.ADDR_WIDTH = 7;
+defparam u_single_port_ram.DATA_WIDTH = `DATA_WIDTH;
 
 single_port_ram u_single_port_ram(
 .addr(address_a),
@@ -1346,7 +1359,7 @@ begin
                     begin
                         address =  6'd11;                                                          
                     end
-                 else if(x[11:0] > 12'hccd)
+                 else
                     begin
                         address =  6'd12;                                    
                     end   
@@ -1366,7 +1379,7 @@ begin
                     begin
                         address =  6'd16;                                                                           
                     end
-                 else if(x[11:0] > 12'hccd)
+                 else
                     begin
                         address =  6'd17;                                                        
                     end 
@@ -1386,7 +1399,7 @@ begin
                     begin
                         address =  6'd21;                                                                                                
                     end
-                 else if(x[11:0] > 12'hccd)
+                 else
                     begin
                         address =  6'd22;                                                                            
                     end 
@@ -1406,7 +1419,7 @@ begin
                     begin
                         address =  6'd26;                                                                            
                     end
-                 else if(x[11:0] > 12'hccd)
+                 else
                     begin
                         address =  6'd27;                                                        
                     end 
@@ -1426,7 +1439,7 @@ begin
                     begin
                         address =  6'd31;                                                                            
                     end
-                else if(x[11:0] > 12'hccd)
+                else
                     begin
                        address =  6'd32;                                                         
                     end 
@@ -1446,7 +1459,7 @@ begin
                     begin
                        address =  6'd36;                                                                               
                     end
-                 else if(x[11:0] > 12'hccd)
+                 else
                     begin
                        address =  6'd37;                                                          
                     end 
@@ -1466,7 +1479,7 @@ begin
                     begin
                       address = 6'd41;                                                                              
                     end
-               else if(x[11:0] > 12'hccd)
+               else
                     begin
                        address = 6'd42;                                                        
                     end 
@@ -1516,7 +1529,7 @@ reg [4:0] address;
 assign x_comp = x[15]? {1'b0,~(x[14:0])}+1'b1:x; // first take 2's complement if x is negative
 assign tanh_out = x[15]?(~lut+1'b1):lut; // take 2's complement of tanh if x was negative
 
-always @(address)
+always @(address, x_comp)
 begin
   case(address) 	    
   5'd0:  lut =16'b0000100000000010; //address(0.55)
@@ -1547,7 +1560,7 @@ begin
   endcase
 end
 
-always@(x)
+always@(x_comp)
 begin
   /*if(rst == 0)
         tanh_out = 0;
@@ -1577,7 +1590,7 @@ begin
                     address = 5'd2;
                 else if((x_comp[11:0] >= 16'hccd) && (x_comp[11:0] < 16'he66))
                     address = 5'd3;
-                else if(x_comp[11:0] >= 16'he66)
+                else 
                     address = 5'd4;
                 end
         4'b0001:begin
@@ -1599,7 +1612,7 @@ begin
                     address = 5'd12;
                 else if((x_comp[11:0] >= 16'hccd) && (x_comp[11:0] < 16'he66))
                     address = 5'd13;
-                else if(x_comp[11:0] >= 16'he66)
+                else 
                     address = 5'd14;
                 end
         4'b0010:begin
@@ -1615,7 +1628,7 @@ begin
                     address = 5'd19;
                 else if((x_comp[11:0] >= 16'h800) && (x_comp[11:0] < 16'h99a))
                     address = 5'd20;
-                else if(x_comp[11:0] >= 16'h99a)
+                else
                     address = 5'd21;
                 end
 	default: address = 0;
@@ -1626,8 +1639,7 @@ begin
            begin
                address = 5'd23;
            end
-    else if(x_comp >= 16'h3000)
-           begin
+    else begin
                address = 5'd22;
            end               
    //end
@@ -1636,4 +1648,5 @@ end
 
 
 endmodule
+
 

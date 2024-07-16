@@ -21,7 +21,9 @@
 #include <stdlib.h>
 #include <stdint.h>
 //#include <crtdbg.h>
+#ifndef __APPLE__
 #include <malloc.h>
+#endif
 #include <string.h>
 #include <assert.h>
 #include "vqm_dll.h"
@@ -36,11 +38,11 @@ extern int yylex(void);
 
 %union
 {
-	uintptr_t value;
-	char *string;
+    uintptr_t value;
+    char *string;
 }
 %parse-param {t_parse_info* parse_info}
-%error-verbose
+%define parse.error verbose
 /********************************************************/
 /**** DEFINE TOKENS *************************************/
 /********************************************************/
@@ -533,7 +535,7 @@ Connection:			'.' TOKEN_REGULARID '(' Identifier ')'
                             array_of_connections->array_size = 0;
                             array_of_connections->allocated_size = 0;
 
-                            port_associations = associate_identifier_with_port_name(ident, $2, -1);
+                            port_associations = associate_identifier_with_port_name(ident, $2, 0);
                             if (port_associations != NULL)
                             {
                                 for(index = 0; index < port_associations->array_size; index++)
@@ -572,7 +574,7 @@ Connection:			'.' TOKEN_REGULARID '(' Identifier ')'
                             array_of_connections->array_size = 0;
                             array_of_connections->allocated_size = 0;
 
-                            port_associations = associate_identifier_with_port_name(ident, $2, -1);
+                            port_associations = associate_identifier_with_port_name(ident, $2, 0);
                             if (port_associations != NULL)
                             {
                                 for(index = 0; index < port_associations->array_size; index++)

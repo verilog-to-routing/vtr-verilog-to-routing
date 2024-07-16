@@ -76,21 +76,43 @@ void compare_files(const std::string& output_fname, const std::string& golden_fn
     REQUIRE(output_data == golden_data);
 }
 
+void copy_file(const std::string& src_fname, const std::string& dst_fname) {
+    std::ifstream src_file(src_fname, std::ios::binary);
+    std::ofstream dst_file(dst_fname, std::ios::binary);
+
+    REQUIRE(src_file.good());
+    REQUIRE(dst_file.good());
+
+    src_file.seekg(0, std::ios_base::end);
+    size_t size = src_file.tellg();
+    src_file.seekg(0, std::ios_base::beg);
+
+    auto buf = std::unique_ptr<uint8_t>(new uint8_t[size]);
+    src_file.read((char*)buf.get(), size);
+    dst_file.write((char*)buf.get(), size);
+}
+
 TEST_CASE("post_verilog", "[vpr]") {
     do_vpr_flow("unconnected", "unconnected");
-    compare_files("unconnected_post_synthesis.v", "test_post_verilog_i_unconnected_o_unconnected.golden.v");
+    copy_file("unconnected_post_synthesis.v", "test_post_verilog_i_unconnected_o_unconnected.out.v");
 
     do_vpr_flow("unconnected", "nets");
-    compare_files("unconnected_post_synthesis.v", "test_post_verilog_i_unconnected_o_nets.golden.v");
+    copy_file("unconnected_post_synthesis.v", "test_post_verilog_i_unconnected_o_nets.out.v");
 
     do_vpr_flow("vcc", "unconnected");
-    compare_files("unconnected_post_synthesis.v", "test_post_verilog_i_vcc_o_unconnected.golden.v");
+    copy_file("unconnected_post_synthesis.v", "test_post_verilog_i_vcc_o_unconnected.out.v");
 
     do_vpr_flow("gnd", "unconnected");
-    compare_files("unconnected_post_synthesis.v", "test_post_verilog_i_gnd_o_unconnected.golden.v");
+    copy_file("unconnected_post_synthesis.v", "test_post_verilog_i_gnd_o_unconnected.out.v");
 
     do_vpr_flow("nets", "unconnected");
-    compare_files("unconnected_post_synthesis.v", "test_post_verilog_i_nets_o_unconnected.golden.v");
+    copy_file("unconnected_post_synthesis.v", "test_post_verilog_i_nets_o_unconnected.out.v");
+
+    compare_files("test_post_verilog_i_unconnected_o_unconnected.out.v", "test_post_verilog_i_unconnected_o_unconnected.golden.v");
+    compare_files("test_post_verilog_i_unconnected_o_nets.out.v", "test_post_verilog_i_unconnected_o_nets.golden.v");
+    compare_files("test_post_verilog_i_vcc_o_unconnected.out.v", "test_post_verilog_i_vcc_o_unconnected.golden.v");
+    compare_files("test_post_verilog_i_gnd_o_unconnected.out.v", "test_post_verilog_i_gnd_o_unconnected.golden.v");
+    compare_files("test_post_verilog_i_nets_o_unconnected.out.v", "test_post_verilog_i_nets_o_unconnected.golden.v");
 }
 
 } // namespace

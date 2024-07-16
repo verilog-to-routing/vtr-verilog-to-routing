@@ -60,6 +60,7 @@ typedef enum {
 
 typedef struct Dss_Man_t_ Dss_Man_t;
 typedef struct Abc_TtHieMan_t_ Abc_TtHieMan_t;
+typedef unsigned(*TtCanonicizeFunc)(Abc_TtHieMan_t * p, word * pTruth, int nVars, char * pCanonPerm, int flag);
 
 ////////////////////////////////////////////////////////////////////////
 ///                      MACRO DEFINITIONS                           ///
@@ -77,7 +78,17 @@ static inline int Dau_DsdReadVar( char * p )  { if ( *p == '!' ) p++; return *p 
 
 /*=== dauCanon.c ==========================================================*/
 extern unsigned      Abc_TtCanonicize( word * pTruth, int nVars, char * pCanonPerm );
+extern unsigned      Abc_TtCanonicizePerm( word * pTruth, int nVars, char * pCanonPerm );
 extern unsigned      Abc_TtCanonicizePhase( word * pTruth, int nVars );
+extern int           Abc_TtCountOnesInCofsSimple( word * pTruth, int nVars, int * pStore );
+extern unsigned      Abc_TtCanonicizeHie(Abc_TtHieMan_t * p, word * pTruth, int nVars, char * pCanonPerm, int fExact );
+extern Abc_TtHieMan_t * Abc_TtHieManStart( int nVars, int nLevels );
+extern void          Abc_TtHieManStop(Abc_TtHieMan_t * p );
+extern unsigned      Abc_TtCanonicizeWrap(TtCanonicizeFunc func, Abc_TtHieMan_t * p, word * pTruth, int nVars, char * pCanonPerm, int flag);
+extern unsigned      Abc_TtCanonicizeAda(Abc_TtHieMan_t * p, word * pTruth, int nVars, char * pCanonPerm, int iThres);
+extern unsigned      Abc_TtCanonicizeHie(Abc_TtHieMan_t * p, word * pTruthInit, int nVars, char * pCanonPerm, int fExact);
+/*=== dauCount.c ==========================================================*/
+extern int           Abc_TtCountOnesInCofsQuick( word * pTruth, int nVars, int * pStore );
 /*=== dauDsd.c  ==========================================================*/
 extern int *         Dau_DsdComputeMatches( char * p );
 extern int           Dau_DsdDecompose( word * pTruth, int nVarsInit, int fSplitPrime, int fWriteTruth, char * pRes );

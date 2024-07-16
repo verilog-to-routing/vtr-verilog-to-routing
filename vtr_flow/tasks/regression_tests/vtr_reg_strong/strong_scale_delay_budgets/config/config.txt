@@ -24,4 +24,4 @@ qor_parse_file=qor_fixed_chan_width.txt
 pass_requirements_file=pass_requirements_fixed_chan_width.txt
 
 # Script parameters
-script_params = --routing_budgets_algorithm scale_delay --route_chan_width 100 -sdc_file /sdc/samples/stereovision3.sdc
+script_params = --routing_budgets_algorithm scale_delay --route_chan_width 100 -sdc_file sdc/samples/stereovision3.sdc

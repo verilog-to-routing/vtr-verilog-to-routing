@@ -10,7 +10,7 @@
 //////////////////////////////////////////////////////////////////////////////
 
 `timescale 1ns/1ns
-//`define ARCH_SPECIFIC_IMP 1
+//`define complex_dsp 1
 `define DWIDTH 16
 `define AWIDTH 10
 `define MEM_SIZE 1024
@@ -38,7 +38,7 @@
 `define ADDRESS_BASE_B 10'd0
 `define ADDRESS_BASE_C 10'd0
 
-module conv(
+module conv_layer(
   input clk,
   input clk_mem,
   input resetn,
@@ -53,8 +53,8 @@ module conv(
 );
 
 
-  wire PCLK;
-  assign PCLK = clk;
+  //wire PCLK;
+  //assign PCLK = clk;
   //Dummy register to sync all other invalid/unimplemented addresses
   reg [`REG_DATAWIDTH-1:0] reg_dummy;
 
@@ -456,124 +456,125 @@ assign pe_reset = ~pe_resetn;
 
     
 
-  always @* begin
+  always @ (posedge clk) begin
     case (bram_select)
-
-
       0: begin
-      bram_addr_a_0_ext = bram_addr_ext;
-      bram_wdata_a_0_ext = bram_wdata_ext;
-      bram_we_a_0_ext = bram_we_ext;
-      bram_rdata_ext = bram_rdata_a_0_ext;
+      bram_addr_a_0_ext <= bram_addr_ext;
+      bram_wdata_a_0_ext <= bram_wdata_ext;
+      bram_we_a_0_ext <= bram_we_ext;
+      bram_rdata_ext <= bram_rdata_a_0_ext;
       end
     
 
       1: begin
-      bram_addr_b_0_ext = bram_addr_ext;
-      bram_wdata_b_0_ext = bram_wdata_ext;
-      bram_we_b_0_ext = bram_we_ext;
-      bram_rdata_ext = bram_rdata_b_0_ext;
+      bram_addr_b_0_ext <= bram_addr_ext;
+      bram_wdata_b_0_ext <= bram_wdata_ext;
+      bram_we_b_0_ext <= bram_we_ext;
+      bram_rdata_ext <= bram_rdata_b_0_ext;
       end
     
 
       2: begin
-      bram_addr_a_1_ext = bram_addr_ext;
-      bram_wdata_a_1_ext = bram_wdata_ext;
-      bram_we_a_1_ext = bram_we_ext;
-      bram_rdata_ext = bram_rdata_a_1_ext;
+      bram_addr_a_1_ext <= bram_addr_ext;
+      bram_wdata_a_1_ext <= bram_wdata_ext;
+      bram_we_a_1_ext <= bram_we_ext;
+      bram_rdata_ext <= bram_rdata_a_1_ext;
       end
     
 
       3: begin
-      bram_addr_b_1_ext = bram_addr_ext;
-      bram_wdata_b_1_ext = bram_wdata_ext;
-      bram_we_b_1_ext = bram_we_ext;
-      bram_rdata_ext = bram_rdata_b_1_ext;
+      bram_addr_b_1_ext <= bram_addr_ext;
+      bram_wdata_b_1_ext <= bram_wdata_ext;
+      bram_we_b_1_ext <= bram_we_ext;
+      bram_rdata_ext <= bram_rdata_b_1_ext;
       end
     
 
       4: begin
-      bram_addr_a_2_ext = bram_addr_ext;
-      bram_wdata_a_2_ext = bram_wdata_ext;
-      bram_we_a_2_ext = bram_we_ext;
-      bram_rdata_ext = bram_rdata_a_2_ext;
+      bram_addr_a_2_ext <= bram_addr_ext;
+      bram_wdata_a_2_ext <= bram_wdata_ext;
+      bram_we_a_2_ext <= bram_we_ext;
+      bram_rdata_ext <= bram_rdata_a_2_ext;
       end
     
 
       5: begin
-      bram_addr_b_2_ext = bram_addr_ext;
-      bram_wdata_b_2_ext = bram_wdata_ext;
-      bram_we_b_2_ext = bram_we_ext;
-      bram_rdata_ext = bram_rdata_b_2_ext;
+      bram_addr_b_2_ext <= bram_addr_ext;
+      bram_wdata_b_2_ext <= bram_wdata_ext;
+      bram_we_b_2_ext <= bram_we_ext;
+      bram_rdata_ext <= bram_rdata_b_2_ext;
       end
     
 
       6: begin
-      bram_addr_a_3_ext = bram_addr_ext;
-      bram_wdata_a_3_ext = bram_wdata_ext;
-      bram_we_a_3_ext = bram_we_ext;
-      bram_rdata_ext = bram_rdata_a_3_ext;
+      bram_addr_a_3_ext <= bram_addr_ext;
+      bram_wdata_a_3_ext <= bram_wdata_ext;
+      bram_we_a_3_ext <= bram_we_ext;
+      bram_rdata_ext <= bram_rdata_a_3_ext;
       end
     
 
       7: begin
-      bram_addr_b_3_ext = bram_addr_ext;
-      bram_wdata_b_3_ext = bram_wdata_ext;
-      bram_we_b_3_ext = bram_we_ext;
-      bram_rdata_ext = bram_rdata_b_3_ext;
+      bram_addr_b_3_ext <= bram_addr_ext;
+      bram_wdata_b_3_ext <= bram_wdata_ext;
+      bram_we_b_3_ext <= bram_we_ext;
+      bram_rdata_ext <= bram_rdata_b_3_ext;
       end
     
 
       8: begin
-      bram_addr_a_4_ext = bram_addr_ext;
-      bram_wdata_a_4_ext = bram_wdata_ext;
-      bram_we_a_4_ext = bram_we_ext;
-      bram_rdata_ext = bram_rdata_a_4_ext;
+      bram_addr_a_4_ext <= bram_addr_ext;
+      bram_wdata_a_4_ext <= bram_wdata_ext;
+      bram_we_a_4_ext <= bram_we_ext;
+      bram_rdata_ext <= bram_rdata_a_4_ext;
       end
     
 
       9: begin
-      bram_addr_b_4_ext = bram_addr_ext;
-      bram_wdata_b_4_ext = bram_wdata_ext;
-      bram_we_b_4_ext = bram_we_ext;
-      bram_rdata_ext = bram_rdata_b_4_ext;
+      bram_addr_b_4_ext <= bram_addr_ext;
+      bram_wdata_b_4_ext <= bram_wdata_ext;
+      bram_we_b_4_ext <= bram_we_ext;
+      bram_rdata_ext <= bram_rdata_b_4_ext;
       end
     
 
       10: begin
-      bram_addr_a_5_ext = bram_addr_ext;
-      bram_wdata_a_5_ext = bram_wdata_ext;
-      bram_we_a_5_ext = bram_we_ext;
-      bram_rdata_ext = bram_rdata_a_5_ext;
+      bram_addr_a_5_ext <= bram_addr_ext;
+      bram_wdata_a_5_ext <= bram_wdata_ext;
+      bram_we_a_5_ext <= bram_we_ext;
+      bram_rdata_ext <= bram_rdata_a_5_ext;
       end
     
 
       11: begin
-      bram_addr_b_5_ext = bram_addr_ext;
-      bram_wdata_b_5_ext = bram_wdata_ext;
-      bram_we_b_5_ext = bram_we_ext;
-      bram_rdata_ext = bram_rdata_b_5_ext;
+      bram_addr_b_5_ext <= bram_addr_ext;
+      bram_wdata_b_5_ext <= bram_wdata_ext;
+      bram_we_b_5_ext <= bram_we_ext;
+      bram_rdata_ext <= bram_rdata_b_5_ext;
       end
     
 
       12: begin
-      bram_addr_a_6_ext = bram_addr_ext;
-      bram_wdata_a_6_ext = bram_wdata_ext;
-      bram_we_a_6_ext = bram_we_ext;
-      bram_rdata_ext = bram_rdata_a_6_ext;
+      bram_addr_a_6_ext <= bram_addr_ext;
+      bram_wdata_a_6_ext <= bram_wdata_ext;
+      bram_we_a_6_ext <= bram_we_ext;
+      bram_rdata_ext <= bram_rdata_a_6_ext;
       end
     
 
       13: begin
-      bram_addr_b_6_ext = bram_addr_ext;
-      bram_wdata_b_6_ext = bram_wdata_ext;
-      bram_we_b_6_ext = bram_we_ext;
-      bram_rdata_ext = bram_rdata_b_6_ext;
+      bram_addr_b_6_ext <= bram_addr_ext;
+      bram_wdata_b_6_ext <= bram_wdata_ext;
+      bram_we_b_6_ext <= bram_we_ext;
+      bram_rdata_ext <= bram_rdata_b_6_ext;
       end
     
 
       default: begin
-      bram_rdata_ext = 0;
+      bram_rdata_ext <= 0;
+		  bram_addr_a_0_ext <= bram_addr_a_0_ext;
+      bram_wdata_a_0_ext <= bram_wdata_a_0_ext;
+      bram_we_a_0_ext <= bram_we_a_0_ext;
       end
     endcase 
   end
@@ -1125,7 +1126,7 @@ start_mat_mul_6 <= 1'b0;
       validity_mask_b_6_cols <= 4'b0111; //constant
       
 
-  count <= count + 1;
+  count <= count + 1'b1;
 
   if (done_mat_mul == 1'b1) begin
     state <= 5'd2;
@@ -1295,7 +1296,7 @@ end
       state <= 5'd0;
     end 
     else begin
-      vertical_count <= vertical_count + 1;
+      vertical_count <= vertical_count + 1'b1;
       state <= 5'd1;
     end
     end
@@ -1613,56 +1614,82 @@ output [`MAT_MUL_SIZE*`DWIDTH-1:0] q0;
 output [`MAT_MUL_SIZE*`DWIDTH-1:0] q1;
 input clk;
 
-`ifdef VCS
-reg [`MAT_MUL_SIZE*`DWIDTH-1:0] q0;
-reg [`MAT_MUL_SIZE*`DWIDTH-1:0] q1;
-reg [`DWIDTH-1:0] ram[((1<<`AWIDTH)-1):0];
-reg [31:0] i;
+genvar i; 
 
-always @(posedge clk)  
-begin 
-    for (i = 0; i < `MAT_MUL_SIZE; i=i+1) begin
-        if (we0[i]) ram[addr0+i] <= d0[i*`DWIDTH +: `DWIDTH]; 
-    end    
-    for (i = 0; i < `MAT_MUL_SIZE; i=i+1) begin
-        q0[i*`DWIDTH +: `DWIDTH] <= ram[addr0+i];
-    end    
+generate
+`ifdef QUARTUS
+   for (i=0;i<`MAT_MUL_SIZE;i=i+1) begin: gen_dpram
+`else
+   for (i=0;i<`MAT_MUL_SIZE;i=i+1) begin
+`endif
+     dpram_original #(.AWIDTH(`AWIDTH),.DWIDTH(`DWIDTH),.NUM_WORDS(1<<`AWIDTH)) dp1 (.clk(clk),.address_a(addr0),.address_b(addr1),.wren_a(we0[i]),.wren_b(we1[i]),.data_a(d0[i*`DWIDTH +: `DWIDTH]),.data_b(d1[i*`DWIDTH +: `DWIDTH]),.out_a(q0[i*`DWIDTH +: `DWIDTH]),.out_b(q1[i*`DWIDTH +: `DWIDTH]));
+  end
+endgenerate
+endmodule
+
+module dpram_original (
+    clk,
+    address_a,
+    address_b,
+    wren_a,
+    wren_b,
+    data_a,
+    data_b,
+    out_a,
+    out_b
+);
+parameter AWIDTH=10;
+parameter NUM_WORDS=1024;
+parameter DWIDTH=32;
+input clk;
+input [(AWIDTH-1):0] address_a;
+input [(AWIDTH-1):0] address_b;
+input  wren_a;
+input  wren_b;
+input [(DWIDTH-1):0] data_a;
+input [(DWIDTH-1):0] data_b;
+output reg [(DWIDTH-1):0] out_a;
+output reg [(DWIDTH-1):0] out_b;
+
+`ifndef hard_mem
+
+reg [DWIDTH-1:0] ram[NUM_WORDS-1:0];
+always @ (posedge clk) begin 
+  if (wren_a) begin
+      ram[address_a] <= data_a;
+  end
+  else begin
+      out_a <= ram[address_a];
+  end
 end
-
-always @(posedge clk)  
-begin 
-    for (i = 0; i < `MAT_MUL_SIZE; i=i+1) begin
-        if (we1[i]) ram[addr0+i] <= d1[i*`DWIDTH +: `DWIDTH]; 
-    end    
-    for (i = 0; i < `MAT_MUL_SIZE; i=i+1) begin
-        q1[i*`DWIDTH +: `DWIDTH] <= ram[addr1+i];
-    end    
+  
+always @ (posedge clk) begin 
+  if (wren_b) begin
+      ram[address_b] <= data_b;
+  end 
+  else begin
+      out_b <= ram[address_b];
+  end
 end
 
 `else
-//BRAMs available in VTR FPGA architectures have one bit write-enables.
-//So let's combine multiple bits into 1. We don't have a usecase of
-//writing/not-writing only parts of the word anyway.
-wire we0_coalesced;
-assign we0_coalesced = |we0;
-wire we1_coalesced;
-assign we1_coalesced = |we1;
+
+defparam u_dual_port_ram.ADDR_WIDTH = AWIDTH;
+defparam u_dual_port_ram.DATA_WIDTH = DWIDTH;
 
 dual_port_ram u_dual_port_ram(
-.addr1(addr0),
-.we1(we0_coalesced),
-.data1(d0),
-.out1(q0),
-.addr2(addr1),
-.we2(we1_coalesced),
-.data2(d1),
-.out2(q1),
+.addr1(address_a),
+.we1(wren_a),
+.data1(data_a),
+.out1(out_a),
+.addr2(address_b),
+.we2(wren_b),
+.data2(data_b),
+.out2(out_b),
 .clk(clk)
 );
 
 `endif
-
-
 endmodule
 
   
@@ -1785,8 +1812,10 @@ reg [7:0] clk_cnt;
 //to avoid multiplication, we now use "final_mat_mul_size<<2"
 wire [7:0] clk_cnt_for_done;
 assign clk_cnt_for_done = 
-                          (eltwise_mode) ? ((final_mat_mul_size<<1) + 1):
-                          ((final_mat_mul_size<<2) - 2 + `NUM_CYCLES_IN_MAC) ;  
+                          (eltwise_mode) ? ((final_mat_mul_size<<1) + 1'b1):
+												  //hardcoding the define to avoid odin failure
+                          //((final_mat_mul_size<<2) - 2'd2 + 8'd`NUM_CYCLES_IN_MAC) ;  
+                          ((final_mat_mul_size<<2) - 2'd2 + 8'd3) ;  
 
 always @(posedge clk) begin
   if (reset || ~start_mat_mul) begin
@@ -1795,14 +1824,14 @@ always @(posedge clk) begin
   end
   else if (clk_cnt == clk_cnt_for_done) begin
     done_mat_mul <= 1;
-    clk_cnt <= clk_cnt + 1;
+    clk_cnt <= clk_cnt + 1'b1;
   end
   else if (done_mat_mul == 0) begin
-    clk_cnt <= clk_cnt + 1;
+    clk_cnt <= clk_cnt + 1'b1;
   end    
   else begin
     done_mat_mul <= 0;
-    clk_cnt <= clk_cnt + 1;
+    clk_cnt <= clk_cnt + 1'b1;
   end
 end
 
@@ -2124,7 +2153,7 @@ always @(posedge clk) begin
   if (reset | ~start_mat_mul) begin
     start_capturing_c_data <= 1'b0;
     c_data_available <= 1'b0;
-    c_addr <= address_mat_c+address_stride_c;
+    c_addr <= address_mat_c+address_stride_c[`AWIDTH-1:0];
     c_data_out <= 0;
     counter <= 0;
     c_data_out_1 <= 0; 
@@ -2134,7 +2163,7 @@ always @(posedge clk) begin
   else if (condition_to_start_shifting_output) begin
     start_capturing_c_data <= 1'b1;
     c_data_available <= 1'b1;
-    c_addr <= c_addr - address_stride_c;
+    c_addr <= c_addr - address_stride_c[`AWIDTH-1:0];
     c_data_out <= col0; 
     c_data_out_1 <= col1; 
     c_data_out_2 <= col2; 
@@ -2144,14 +2173,14 @@ always @(posedge clk) begin
   else if (done_mat_mul) begin
     start_capturing_c_data <= 1'b0;
     c_data_available <= 1'b0;
-    c_addr <= address_mat_c+address_stride_c;
+    c_addr <= address_mat_c+address_stride_c[`AWIDTH-1:0];
     c_data_out <= 0;
     c_data_out_1 <= 0;
     c_data_out_2 <= 0;
     c_data_out_3 <= 0;
   end 
   else if (counter >= `MAT_MUL_SIZE) begin
-    c_addr <= c_addr - address_stride_c;
+    c_addr <= c_addr - address_stride_c[`AWIDTH-1:0];
     c_data_out <= c_data_out_1;
     c_data_out_1 <= c_data_out_2;
     c_data_out_2 <= c_data_out_3;
@@ -2159,7 +2188,7 @@ always @(posedge clk) begin
   end
   else if (start_capturing_c_data) begin
     c_data_available <= 1'b1;
-    c_addr <= c_addr - address_stride_c;
+    c_addr <= c_addr - address_stride_c[`AWIDTH-1:0];
     counter <= counter + 1;
     c_data_out <= c_data_out_1;
     c_data_out_1 <= c_data_out_2;
@@ -2252,14 +2281,14 @@ always @(posedge clk) begin
   //else if (clk_cnt >= a_loc*`MAT_MUL_SIZE+final_mat_mul_size) begin
   //Writing the line above to avoid multiplication:
   if ((reset || ~start_mat_mul) || (clk_cnt >= (a_loc<<`LOG2_MAT_MUL_SIZE)+final_mat_mul_size)) begin
-      a_addr <= address_mat_a-address_stride_a;
+      a_addr <= address_mat_a-address_stride_a[`AWIDTH-1:0];
     a_mem_access <= 0;
   end
 
   //else if ((clk_cnt >= a_loc*`MAT_MUL_SIZE) && (clk_cnt < a_loc*`MAT_MUL_SIZE+final_mat_mul_size)) begin
   //Writing the line above to avoid multiplication:
   else if ((clk_cnt >= (a_loc<<`LOG2_MAT_MUL_SIZE)) && (clk_cnt < (a_loc<<`LOG2_MAT_MUL_SIZE)+final_mat_mul_size)) begin
-      a_addr <= a_addr + address_stride_a;
+      a_addr <= a_addr + address_stride_a[`AWIDTH-1:0];
     a_mem_access <= 1;
   end
 end  
@@ -2273,7 +2302,7 @@ always @(posedge clk) begin
     a_mem_access_counter <= 0;
   end
   else if (a_mem_access == 1) begin
-    a_mem_access_counter <= a_mem_access_counter + 1;  
+    a_mem_access_counter <= a_mem_access_counter + 1'b1;  
 
   end
   else begin
@@ -2338,13 +2367,13 @@ always @(posedge clk) begin
   //else if (clk_cnt >= b_loc*`MAT_MUL_SIZE+final_mat_mul_size) begin
   //Writing the line above to avoid multiplication:
   if ((reset || ~start_mat_mul) || (clk_cnt >= (b_loc<<`LOG2_MAT_MUL_SIZE)+final_mat_mul_size)) begin
-      b_addr <= address_mat_b - address_stride_b;
+      b_addr <= address_mat_b - address_stride_b[`AWIDTH-1:0];
     b_mem_access <= 0;
   end
   //else if ((clk_cnt >= b_loc*`MAT_MUL_SIZE) && (clk_cnt < b_loc*`MAT_MUL_SIZE+final_mat_mul_size)) begin
   //Writing the line above to avoid multiplication:
   else if ((clk_cnt >= (b_loc<<`LOG2_MAT_MUL_SIZE)) && (clk_cnt < (b_loc<<`LOG2_MAT_MUL_SIZE)+final_mat_mul_size)) begin
-      b_addr <= b_addr + address_stride_b;
+      b_addr <= b_addr + address_stride_b[`AWIDTH-1:0];
     b_mem_access <= 1;
   end
 end  
@@ -2358,7 +2387,7 @@ always @(posedge clk) begin
     b_mem_access_counter <= 0;
   end
   else if (b_mem_access == 1) begin
-    b_mem_access_counter <= b_mem_access_counter + 1;  
+    b_mem_access_counter <= b_mem_access_counter + 1'b1;  
   end
   else begin
     b_mem_access_counter <= 0;
@@ -2636,7 +2665,7 @@ endmodule
 // Multiply-and-accumulate (MAC) block
 //////////////////////////////////////////////////////////////////////////
 
-`ifdef ARCH_SPECIFIC_IMP
+`ifdef complex_dsp
 
 module seq_mac(a, b, out, eltwise_mode, eltwise_add, reset, clk);
 input [`DWIDTH-1:0] a;
@@ -2671,7 +2700,7 @@ wire [18:0] b_in;
 wire [36:0] c_out;
 assign a_in = {1'b0,a_flopped};
 assign b_in = {1'b0,1'b0,b_flopped};
-mac_int u_mac (.clk(clk), .reset(reset), .a(a_flopped), .b(b_flopped), .out(c_out));
+mac_int_18x19 u_mac (.clk(clk), .reset(reset), .a(a_flopped), .b(b_flopped), .out(c_out));
 assign mac_out = c_out[2*`DWIDTH-1:0];
 
 
@@ -2836,8 +2865,5 @@ assign c = a + b;
 //DW01_add #(`DWIDTH) u_add(.A(a), .B(b), .CI(1'b0), .SUM(c), .CO());
 endmodule
 
-
-
 `endif
-
 

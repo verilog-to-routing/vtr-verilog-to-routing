@@ -1,4 +1,5 @@
 #include "place_checkpoint.h"
+#include "noc_place_utils.h"
 
 float t_placement_checkpoint::get_cp_cpd() { return cpd; }
 double t_placement_checkpoint::get_cp_bb_cost() { return costs.bb_cost; }
@@ -26,8 +27,21 @@ void save_placement_checkpoint_if_needed(t_placement_checkpoint& placement_check
     }
 }
 
-void restore_best_placement(t_placement_checkpoint& placement_checkpoint, std::shared_ptr<SetupTimingInfo>& timing_info, t_placer_costs& costs, std::unique_ptr<PlacerCriticalities>& placer_criticalities, std::unique_ptr<PlacerSetupSlacks>& placer_setup_slacks, std::unique_ptr<PlaceDelayModel>& place_delay_model, std::unique_ptr<ClusteredPinTimingInvalidator>& pin_timing_invalidator, PlaceCritParams crit_params) {
-    if (placement_checkpoint.cp_is_valid() && timing_info->least_slack_critical_path().delay() > placement_checkpoint.get_cp_cpd() && costs.bb_cost < 1.05 * placement_checkpoint.get_cp_bb_cost()) {
+void restore_best_placement(t_placement_checkpoint& placement_checkpoint,
+                            std::shared_ptr<SetupTimingInfo>& timing_info,
+                            t_placer_costs& costs,
+                            std::unique_ptr<PlacerCriticalities>& placer_criticalities,
+                            std::unique_ptr<PlacerSetupSlacks>& placer_setup_slacks,
+                            std::unique_ptr<PlaceDelayModel>& place_delay_model,
+                            std::unique_ptr<NetPinTimingInvalidator>& pin_timing_invalidator,
+                            PlaceCritParams crit_params,
+                            const t_noc_opts& noc_opts) {
+    /* The (valid) checkpoint is restored if the following conditions are met:
+     * 1) The checkpoint has a lower critical path delay.
+     * 2) The checkpoint's wire-length cost is either better than the current solution,
+     * or at least is not more than 5% worse than the current solution.
+     */
+    if (placement_checkpoint.cp_is_valid() && timing_info->least_slack_critical_path().delay() > placement_checkpoint.get_cp_cpd() && costs.bb_cost * 1.05 > placement_checkpoint.get_cp_bb_cost()) {
         //restore the latest placement checkpoint
         costs = placement_checkpoint.restore_placement();
 
@@ -42,6 +56,15 @@ void restore_best_placement(t_placement_checkpoint& placement_checkpoint, std::s
                                    pin_timing_invalidator.get(),
                                    timing_info.get(),
                                    &costs);
+
+        /* If NoC is enabled, re-compute NoC costs and re-initialize NoC internal data structures.
+         * If some routers have different locations than the last placement, NoC-related costs and
+         * internal data structures that are used to keep track of each flow's cost are no longer valid,
+         * and need to be re-computed from scratch.
+         */
+        if (noc_opts.noc) {
+            reinitialize_noc_routing(costs, {});
+        }
 
         VTR_LOG("\nCheckpoint restored\n");
     }

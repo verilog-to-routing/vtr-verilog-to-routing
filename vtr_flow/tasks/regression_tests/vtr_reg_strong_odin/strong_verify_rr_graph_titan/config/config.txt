@@ -1,0 +1,28 @@
+#
+############################################
+# Configuration file for running experiments
+##############################################
+
+# Path to directory of circuits to use
+circuits_dir=benchmarks/blif/6
+
+# Path to directory of architectures to use
+archs_dir=arch/titan
+
+# Add circuits to list to sweep
+circuit_list_add=styr.blif
+
+# Add architectures to list to sweep
+arch_list_add=stratixiv_arch.timing.xml
+
+# Parse info and how to parse
+parse_file=vpr_fixed_chan_width.txt
+parse_file=vpr_parse_second_file.txt
+
+# How to parse QoR info
+qor_parse_file=qor_rr_graph.txt
+
+# Pass requirements
+pass_requirements_file=pass_requirements_verify_rr_graph.txt
+
+script_params=-starting_stage vpr -verify_rr_graph -rr_graph_ext .xml -route_chan_width 20

@@ -1,0 +1,7 @@
+vpr_status;output.txt;vpr_status=(.*)
+total_wirelength;vpr.out;\s*Total wirelength:\s*(\d+)
+total_runtime;vpr.out;The entire flow of VPR took (.*) seconds
+min_chan_width;vpr.out;Best routing used a channel width factor of (\d+)
+crit_path_delay;vpr.crit_path.out;Final critical path delay \(least slack\): (.*) ns
+NoC_agg_bandwidth;vpr.out;NoC Placement Costs. noc_aggregate_bandwidth_cost: (.*), noc_latency_cost: .*,
+NoC_latency;vpr.out;NoC Placement Costs. noc_aggregate_bandwidth_cost: .*, noc_latency_cost: (.*),

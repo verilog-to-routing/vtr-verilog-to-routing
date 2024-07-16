@@ -8,3 +8,4 @@ Developer Tutorials
 
     new_developer_tutorial
     timing_graph_debug/index
+    edit_vpr_ui

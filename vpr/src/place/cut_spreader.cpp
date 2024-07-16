@@ -175,14 +175,16 @@ void CutSpreader::init() {
 }
 
 int CutSpreader::occ_at(int x, int y) {
-    if (!is_loc_on_chip(x, y)) {
+    //TODO: layer_num should be passed
+    if (!is_loc_on_chip({x, y, 0})) {
         return 0;
     }
     return occupancy[x][y];
 }
 
 int CutSpreader::tiles_at(int x, int y) {
-    if (!is_loc_on_chip(x, y)) {
+    //TODO: layer_num should be passed
+    if (!is_loc_on_chip({x, y, 0})) {
         return 0;
     }
     return int(subtiles_at_location[x][y].size());
@@ -200,7 +202,8 @@ int CutSpreader::tiles_at(int x, int y) {
 void CutSpreader::merge_regions(SpreaderRegion& merged, SpreaderRegion& mergee) {
     for (int x = mergee.bb.xmin(); x <= mergee.bb.xmax(); x++)
         for (int y = mergee.bb.ymin(); y <= mergee.bb.ymax(); y++) {
-            if (!is_loc_on_chip(x, y)) { //location is not within the chip
+            //TODO: layer_num should be passed
+            if (!is_loc_on_chip({x, y, 0})) { //location is not within the chip
                 continue;
             }
             //x and y might belong to "merged" region already, no further action is required
@@ -235,7 +238,8 @@ void CutSpreader::grow_region(SpreaderRegion& r, vtr::Rect<int> rect_to_include,
 
     auto process_location = [&](int x, int y) {
         //x and y should represent a location on the chip, otherwise no processing is required
-        if (!is_loc_on_chip(x, y)) {
+        //TODO: layer_num should be passed
+        if (!is_loc_on_chip({x, y, 0})) {
             return;
         }
         // kicks in only when grid is not claimed, claimed by another region, or part of a macro
@@ -403,6 +407,10 @@ std::pair<int, int> CutSpreader::cut_region(SpreaderRegion& r, bool dir) {
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
     PlacementContext& place_ctx = g_vpr_ctx.mutable_placement();
 
+    // TODO: CutSpreader is not compatible with 3D FPGA
+    VTR_ASSERT(device_ctx.grid.get_num_layers() == 1);
+    int layer_num = 0;
+
     std::vector<ClusterBlockId> cut_blks;
     init_cut_blks(r, cut_blks); // copy all logic blocks to cut into cut_blks
 
@@ -416,13 +424,13 @@ std::pair<int, int> CutSpreader::cut_region(SpreaderRegion& r, bool dir) {
         auto blk = cut_blks.at(0);
         auto& tiles_type = clb_nlist.block_type(blk)->equivalent_tiles;
         auto loc = ap->blk_locs[blk].loc;
-        if (std::find(tiles_type.begin(), tiles_type.end(), device_ctx.grid[loc.x][loc.y].type) == tiles_type.end()) {
+        if (std::find(tiles_type.begin(), tiles_type.end(), device_ctx.grid.get_physical_type({loc.x, loc.y, loc.layer})) == tiles_type.end()) {
             // logic block type doesn't match tile type
             // exhaustive search for tile of right type
             // this search should be fast as region must be small at this point (only 1 logic block left)
             for (int x = r.bb.xmin(); x <= r.bb.xmax(); x++)
                 for (int y = r.bb.ymin(); y <= r.bb.ymax(); y++) {
-                    if (std::find(tiles_type.begin(), tiles_type.end(), device_ctx.grid[x][y].type) != tiles_type.end()) {
+                    if (std::find(tiles_type.begin(), tiles_type.end(), device_ctx.grid.get_physical_type({x, y, layer_num})) != tiles_type.end()) {
                         VTR_ASSERT(blks_at_location[x][y].empty());
                         ap->blk_locs[blk].rawx = x;
                         ap->blk_locs[blk].rawy = y;
@@ -438,7 +446,7 @@ std::pair<int, int> CutSpreader::cut_region(SpreaderRegion& r, bool dir) {
     }
 
     // sort blks based on raw location
-    std::sort(cut_blks.begin(), cut_blks.end(), [&](const ClusterBlockId a, const ClusterBlockId b) {
+    std::stable_sort(cut_blks.begin(), cut_blks.end(), [&](const ClusterBlockId a, const ClusterBlockId b) {
         return dir ? (ap->blk_locs[a].rawy < ap->blk_locs[b].rawy) : (ap->blk_locs[a].rawx < ap->blk_locs[b].rawx);
     });
 
@@ -954,11 +962,12 @@ void CutSpreader::strict_legalize() {
  */
 void CutSpreader::bind_tile(t_pl_loc sub_tile, ClusterBlockId blk) {
     auto& place_ctx = g_vpr_ctx.mutable_placement();
-    VTR_ASSERT(place_ctx.grid_blocks[sub_tile.x][sub_tile.y].blocks[sub_tile.sub_tile] == EMPTY_BLOCK_ID);
+    VTR_ASSERT(place_ctx.grid_blocks.block_at_location(sub_tile) == EMPTY_BLOCK_ID);
     VTR_ASSERT(place_ctx.block_locs[blk].is_fixed == false);
-    place_ctx.grid_blocks[sub_tile.x][sub_tile.y].blocks[sub_tile.sub_tile] = blk;
+    place_ctx.grid_blocks.set_block_at_location(sub_tile, blk);
     place_ctx.block_locs[blk].loc = sub_tile;
-    place_ctx.grid_blocks[sub_tile.x][sub_tile.y].usage++;
+    place_ctx.grid_blocks.set_usage({sub_tile.x, sub_tile.y, sub_tile.layer},
+                                    place_ctx.grid_blocks.get_usage({sub_tile.x, sub_tile.y, sub_tile.layer}) + 1);
     ap->blk_locs[blk].loc = sub_tile;
 }
 
@@ -968,12 +977,13 @@ void CutSpreader::bind_tile(t_pl_loc sub_tile, ClusterBlockId blk) {
  */
 void CutSpreader::unbind_tile(t_pl_loc sub_tile) {
     auto& place_ctx = g_vpr_ctx.mutable_placement();
-    VTR_ASSERT(place_ctx.grid_blocks[sub_tile.x][sub_tile.y].blocks[sub_tile.sub_tile] != EMPTY_BLOCK_ID);
-    ClusterBlockId blk = place_ctx.grid_blocks[sub_tile.x][sub_tile.y].blocks[sub_tile.sub_tile];
+    VTR_ASSERT(place_ctx.grid_blocks.block_at_location(sub_tile) != EMPTY_BLOCK_ID);
+    ClusterBlockId blk = place_ctx.grid_blocks.block_at_location(sub_tile);
     VTR_ASSERT(place_ctx.block_locs[blk].is_fixed == false);
     place_ctx.block_locs[blk].loc = t_pl_loc{};
-    place_ctx.grid_blocks[sub_tile.x][sub_tile.y].blocks[sub_tile.sub_tile] = EMPTY_BLOCK_ID;
-    place_ctx.grid_blocks[sub_tile.x][sub_tile.y].usage--;
+    place_ctx.grid_blocks.set_block_at_location(sub_tile, EMPTY_BLOCK_ID);
+    place_ctx.grid_blocks.set_usage({sub_tile.x, sub_tile.y, sub_tile.layer},
+                                    place_ctx.grid_blocks.get_usage({sub_tile.x, sub_tile.y, sub_tile.layer}) - 1);
 }
 
 /*
@@ -985,7 +995,7 @@ bool CutSpreader::is_placed(ClusterBlockId blk) {
     auto& place_ctx = g_vpr_ctx.mutable_placement();
     if (place_ctx.block_locs[blk].loc != t_pl_loc{}) {
         auto loc = place_ctx.block_locs[blk].loc;
-        VTR_ASSERT(place_ctx.grid_blocks[loc.x][loc.y].blocks[loc.sub_tile] == blk);
+        VTR_ASSERT(place_ctx.grid_blocks.block_at_location(loc) == blk);
         return true;
     }
     return false;
@@ -1022,7 +1032,7 @@ bool CutSpreader::try_place_blk(ClusterBlockId blk,
     // then blk is placed in best_subtile
     if (exceeds_explore_limit && best_subtile != t_pl_loc{}) {
         // find the logic block bound to (placed on) best_subtile
-        ClusterBlockId bound_blk = place_ctx.grid_blocks[best_subtile.x][best_subtile.y].blocks[best_subtile.sub_tile];
+        ClusterBlockId bound_blk = place_ctx.grid_blocks.block_at_location(best_subtile);
         if (bound_blk != EMPTY_BLOCK_ID) {   // if best_subtile has a logic block
             unbind_tile(best_subtile);       // clear bound_block and best_subtile's placement info
             remaining.emplace(1, bound_blk); // put bound_blk back into remaining blocks to place
@@ -1032,8 +1042,8 @@ bool CutSpreader::try_place_blk(ClusterBlockId blk,
     }
 
     // if exploration limit is not met or a candidate sub_tile is not found yet
-    for (auto sub_t : subtiles_at_location[nx][ny]) {                                              // for each available sub_tile at random location
-        ClusterBlockId bound_blk = place_ctx.grid_blocks[sub_t.x][sub_t.y].blocks[sub_t.sub_tile]; // logic blk at [nx, ny]
+    for (auto sub_t : subtiles_at_location[nx][ny]) {                              // for each available sub_tile at random location
+        ClusterBlockId bound_blk = place_ctx.grid_blocks.block_at_location(sub_t); // logic blk at [nx, ny]
         if (bound_blk == EMPTY_BLOCK_ID
             || ripup_radius_met
             || rand() % (20000) < 10) {
@@ -1109,7 +1119,7 @@ bool CutSpreader::try_place_macro(ClusterBlockId blk,
 
             // ensure the target location has compatible tile
             auto blk_t = clb_nlist.block_type(blk);
-            auto result = std::find(blk_t->equivalent_tiles.begin(), blk_t->equivalent_tiles.end(), g_vpr_ctx.device().grid[target.x][target.y].type);
+            auto result = std::find(blk_t->equivalent_tiles.begin(), blk_t->equivalent_tiles.end(), g_vpr_ctx.device().grid.get_physical_type({target.x, target.y, target.layer}));
             if (result == blk_t->equivalent_tiles.end()) {
                 placement_impossible = true;
                 break;
@@ -1117,7 +1127,7 @@ bool CutSpreader::try_place_macro(ClusterBlockId blk,
 
             // if the target location has a logic block, ensure it's not part of a macro
             // because a macro placed before the current one has higher priority (longer chain)
-            ClusterBlockId bound = place_ctx.grid_blocks[target.x][target.y].blocks[target.sub_tile];
+            ClusterBlockId bound = place_ctx.grid_blocks.block_at_location(target);
             if (bound != EMPTY_BLOCK_ID && imacro(bound) != NO_MACRO) {
                 placement_impossible = true;
                 break;
@@ -1136,7 +1146,7 @@ bool CutSpreader::try_place_macro(ClusterBlockId blk,
 
         if (!placement_impossible) { // if placement is possible, apply this placement
             for (auto& target : targets) {
-                ClusterBlockId bound = place_ctx.grid_blocks[target.second.x][target.second.y].blocks[target.second.sub_tile];
+                ClusterBlockId bound = place_ctx.grid_blocks.block_at_location(target.second);
                 if (bound != EMPTY_BLOCK_ID) {
                     // if target location has a logic block, displace it and put it in remaining queue to be placed later
                     unbind_tile(target.second);

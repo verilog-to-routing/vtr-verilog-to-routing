@@ -21,11 +21,11 @@ add_custom_target(format-cpp-files
     COMMAND find ${DIRS_TO_FORMAT_CPP} ${FIND_TO_FORMAT_CPP})
 
 #
-# Use clang-format-7 for code format
+# Use clang-format-14 for code format
 #
 add_custom_target(format-cpp
     COMMAND find ${DIRS_TO_FORMAT_CPP} ${FIND_TO_FORMAT_CPP} |
-    xargs -P ${CPU_COUNT} clang-format-7 -style=file -i)
+    xargs -P ${CPU_COUNT} clang-format-14 -style=file -i)
 
 #
 # Use simple python script for fixing C like boxed comments

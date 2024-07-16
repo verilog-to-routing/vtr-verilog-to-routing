@@ -98,7 +98,7 @@ void Acb_DeriveCnfForWindowOne( Acb_Ntk_t * p, int iObj )
     assert( Vec_WecSize(vCnfs) == Acb_NtkObjNumMax(p) );
     Acb_DeriveCnfFromTruth( Acb_ObjTruth(p, iObj), Acb_ObjFaninNum(p, iObj), &p->vCover, &p->vCnf );
     Vec_StrGrow( vCnfBase, Vec_StrSize(&p->vCnf) );
-    memcpy( Vec_StrArray(vCnfBase), Vec_StrArray(&p->vCnf), Vec_StrSize(&p->vCnf) );
+    memcpy( Vec_StrArray(vCnfBase), Vec_StrArray(&p->vCnf), (size_t)Vec_StrSize(&p->vCnf) );
     vCnfBase->nSize = Vec_StrSize(&p->vCnf);
 }
 Vec_Wec_t * Acb_DeriveCnfForWindow( Acb_Ntk_t * p, Vec_Int_t * vWin, int PivotVar )

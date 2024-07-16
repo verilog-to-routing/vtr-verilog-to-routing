@@ -1,3 +1,8 @@
+#RR Graph Metrics
+crit_path_num_rr_graph_nodes;vpr.crit_path.out;\s*RR Graph Nodes: (\d+)
+crit_path_num_rr_graph_edges;vpr.crit_path.out;\s*RR Graph Edges: (\d+)
+crit_path_collapsed_nodes;vpr.crit_path.out;Number of collapsed nodes: (\d+)
+
 #VPR Critical Path Routing Metrics
 crit_path_routed_wirelength;vpr.crit_path.out;\s*Total wirelength: (.*), average
 crit_path_route_success_iteration;vpr.crit_path.out;Successfully routed after (\d+) routing iterations
@@ -22,5 +27,9 @@ crit_path_routing_area_per_tile;vpr.crit_path.out;\s*Total routing area: .*, per
 #Run-time Metrics
 router_lookahead_computation_time;vpr.crit_path.out;\s*Computing router lookahead map took (.*) seconds
 crit_path_route_time;vpr.crit_path.out;\s*Routing took (.*) seconds
+crit_path_create_rr_graph_time;vpr.crit_path.out;\s.*Build routing resource graph took (.*) seconds
+crit_path_create_intra_cluster_rr_graph_time;vpr.crit_path.out;\s.*Build intra-cluster routing resource graph took (.*) seconds
+crit_path_tile_lookahead_computation_time;vpr.crit_path.out;\s*Computing tile lookahead took (.*) seconds
+crit_path_router_lookahead_computation_time;vpr.crit_path.out;\s*Computing router lookahead map took (.*) seconds
 crit_path_total_timing_analysis_time;vpr.crit_path.out;Flow timing analysis took (.*) seconds
 crit_path_total_sta_time;vpr.crit_path.out;Flow timing analysis took .* seconds \((.*) STA

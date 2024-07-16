@@ -50,16 +50,16 @@
     Fixed point modes:
     _________________
     1. 27x27 fixed point multiplier (multiply)
-    2. 27x27 fixed point mac (mac_int)
+    2. 27x27 fixed point mac (mac_int_27x27)
     3. Two 18x19 fixed point multipliers (multiply)
-    3. Two 18x19 fixed point macs (mac_int)
-    4. Four 9x9 fixed point multipliers (multiply)
-    5. Four 9x9 fixed point macs (mac_int)
-    6. 27x27 plus 64 mode (mult_add_mode_27_27_64/mult_add_int). 27 * 27 + 64 -> 64. result = ax * ay + bx + chainin. chainout = result 
-    7. 18x19 sum-of-2 mode (sop_2_mode/int_sop_2) resulta = (bx * by) + (ax * ay) + chainin. chainout = resulta    
-    8. 18x19 plus 36 mode (mult_add_mode_18_19_36/mult_add_int). 18 * 19 + 36 -> 64. resulta = ax * ay + bx + chainin. chainout = resulta 
-    9. 9x9 sum-of-4 mode (sop_4_mode/int_sop_4) resulta = (dx * dy) + (cx * cy) + (bx * by) + (ax * ay) + chainin. chainout = resulta 
-    10. 9x9 sum-of-4 accum mode (sop_4_accum_mode/int_sop_accum_4) resulta = (dx * dy) + (cx * cy) + (bx * by) + (ax * ay) + chainin + accumulator. chainout = resulta 
+    4. Two 18x19 fixed point macs (mac_int_18x19)
+    5. Four 9x9 fixed point multipliers (multiply)
+    6. Four 9x9 fixed point macs (mac_int_9x9)
+    7. 27x27 plus 64 mode (mult_add_mode_27_27_64/mult_add_int_27x27). 27 * 27 + 64 -> 64. result = ax * ay + bx + chainin. chainout = result 
+    8. 18x19 sum-of-2 mode (sop_2_mode/int_sop_2) result = (bx * by) + (ax * ay) + chainin. chainout = result    
+    9. 18x19 plus 36 mode (mult_add_mode_18_19_36/mult_add_int_18x19). 18 * 19 + 36 -> 64. result = ax * ay + bx + chainin. chainout = result 
+    10. 9x9 sum-of-4 mode (sop_4_mode/int_sop_4) result = (dx * dy) + (cx * cy) + (bx * by) + (ax * ay) + chainin. chainout = result 
+    11. 9x9 sum-of-4 accum mode (sop_4_accum_mode/int_sop_accum_4) result = (dx * dy) + (cx * cy) + (bx * by) + (ax * ay) + chainin + accumulator. chainout = result 
 
     Floating point modes:
     ____________________
@@ -73,16 +73,16 @@
     Since the goal is architectural exploration and not functional simulation, the mode bits 
     can be specified to any random value while instantiating the DSP slice in a Verilog benchmark.
 
-    1A. One fp32 multiplier (multiply_fp)
-    1B. One fp32 multiplier, clocked (multiply_fp_clk)
-    2A. One fp32 adder/subtractor (adder_fp)
-    2B. One fp32 adder/subtractor, clocked (adder_fp_clk)
-    3. One fp32 mac (mac_fp)
-    4A. Two fp16 multipliers (multiply_fp)
-    4B. Two fp16 multipliers, clocked (multiply_fp_clk)
-    5A. Two fp16 adders/subtractors (adder_fp)
-    5B. Two fp16 adders/subtractors, clocked (adder_fp_clk)
-    6. Two fp16 macs (mac_fp)
+    1A. One fp32 multiplier (mult_fp_32)
+    1B. One fp32 multiplier, clocked (mult_fp_clk_32)
+    2A. One fp32 adder/subtractor (addition_fp_32)
+    2B. One fp32 adder/subtractor, clocked (addition_fp_clk_32)
+    3. One fp32 mac (mac_fp_32)
+    4A. Two fp16 multipliers (mult_fp_16)
+    4B. Two fp16 multipliers, clocked (mult_fp_clk_16)
+    5A. Two fp16 adders/subtractors (addition_fp_16)
+    5B. Two fp16 adders/subtractors, clocked (addition_fp_clk_16)
+    6. Two fp16 macs (mac_fp_16)
     7. floating point fp16 sum-of-products mode (result = fp16_mult_top_a * fp16_mult_top_b + fp16_mult_bot_a * fp16_mult_bot_b. chainout = third_inp or result) (fp16_sum_of_products_mode/fp16_mult_add)
     8. floating point fp16 sum-of-2 mult mode (result = fp16_mult_top_a * fp16_mult_top_b + fp16_mult_bot_a * fp16_mult_bot_b + fp32 chainin or third inp. chainout = third_inp or result) (fp16_sum_of_products_2_mult_mode/fp16_sop2_mult)
     9. floating point fp16 sum-of-2 accum mode (result = fp16_mult_top_a * fp16_mult_top_b + fp16_mult_bot_a * fp16_mult_bot_b + accumulator. chainout = result) (fp16_sum_of_products_2_accum_mode/fp16_sop2_accum)
@@ -140,8 +140,8 @@
     some important points:
     1. The DSP slice supports lower precision modes - int8 (actually 9x9) and 16-bit floating point
        (IEEE half-precision and bfloat16). These modes are present in Intel Agilex FPGA DSPs.
-    2. DSPs are chained in vertical direction (currently only chainin-chainout are supported; 
-       in the future, scanin-scanout connections will be added as well). This is a common feature
+    2. DSPs are chained in vertical direction (chainin-chainout connections for output cascading
+       and scanin-scanout connections for input cascading). This is a common feature
        in modern FPGAs.
     3. There are no registers on the interconnect/routing wires in this architecture. That is a main
        feature in the Stratix10 and Agilex families of Intel FPGA (it's called HyperFlex by Intel).
@@ -230,7 +230,7 @@
     </model>
     <!-- Used inside DSPs. 
          Floating point multiplication. -->
-    <model name="multiply_fp">
+    <model name="mult_fp_16">
       <input_ports>
         <port name="a" combinational_sink_ports="out"/>
         <port name="b" combinational_sink_ports="out"/>
@@ -239,7 +239,26 @@
         <port name="out"/>
       </output_ports>
     </model>   
-    <model name="multiply_fp_clk">
+    <model name="mult_fp_32">
+      <input_ports>
+        <port name="a" combinational_sink_ports="out"/>
+        <port name="b" combinational_sink_ports="out"/>
+      </input_ports>
+      <output_ports>
+        <port name="out"/>
+      </output_ports>
+    </model>   
+    <model name="mult_fp_clk_16">
+      <input_ports>
+        <port name="clk" is_clock="1"/>  
+        <port name="a" clock="clk" combinational_sink_ports="out"/>
+        <port name="b" clock="clk" combinational_sink_ports="out"/>
+      </input_ports>
+      <output_ports>
+        <port name="out" clock="clk"/>
+      </output_ports>
+    </model>
+    <model name="mult_fp_clk_32">
       <input_ports>
         <port name="clk" is_clock="1"/>  
         <port name="a" clock="clk" combinational_sink_ports="out"/>
@@ -266,7 +285,7 @@
       </output_ports>
     </model>
     <!-- Multi bit floating point adder inside DSP slices -->
-    <model name="adder_fp">
+    <model name="addition_fp_16">
       <input_ports>
         <port name="a" combinational_sink_ports="out"/>
         <port name="b" combinational_sink_ports="out"/>
@@ -275,7 +294,26 @@
         <port name="out"/>
       </output_ports>
     </model>
-    <model name="adder_fp_clk">
+    <model name="addition_fp_32">
+      <input_ports>
+        <port name="a" combinational_sink_ports="out"/>
+        <port name="b" combinational_sink_ports="out"/>
+      </input_ports>
+      <output_ports>
+        <port name="out"/>
+      </output_ports>
+    </model>
+    <model name="addition_fp_clk_16">
+      <input_ports>
+        <port name="clk" is_clock="1"/>  
+        <port name="a" clock="clk" combinational_sink_ports="out"/>
+        <port name="b" clock="clk" combinational_sink_ports="out"/>
+      </input_ports>
+      <output_ports>
+        <port name="out" clock="clk"/>
+      </output_ports>
+    </model>
+    <model name="addition_fp_clk_32">
       <input_ports>
         <port name="clk" is_clock="1"/>  
         <port name="a" clock="clk" combinational_sink_ports="out"/>
@@ -289,53 +327,72 @@
     <model name="int_sop_2">
       <input_ports>
         <port name="clk" is_clock="1"/>  
-        <port name="reset" clock="clk" combinational_sink_ports="resulta chainout"/>
-        <port name="mode_sigs" clock="clk" combinational_sink_ports="resulta chainout"/>
-        <port name="ax" clock="clk" combinational_sink_ports="resulta chainout"/>
-        <port name="ay" clock="clk" combinational_sink_ports="resulta chainout"/>
-        <port name="bx" clock="clk" combinational_sink_ports="resulta chainout"/>
-        <port name="by" clock="clk" combinational_sink_ports="resulta chainout"/>
-        <port name="chainin" clock="clk" combinational_sink_ports="resulta chainout"/>
+        <port name="reset" clock="clk" combinational_sink_ports="result chainout"/>
+        <port name="mode_sigs" clock="clk" combinational_sink_ports="result chainout"/>
+        <port name="ax" clock="clk" combinational_sink_ports="result chainout"/>
+        <port name="ay" clock="clk" combinational_sink_ports="result chainout"/>
+        <port name="bx" clock="clk" combinational_sink_ports="result chainout"/>
+        <port name="by" clock="clk" combinational_sink_ports="result chainout"/>
+        <port name="chainin" clock="clk" combinational_sink_ports="result chainout"/>
       </input_ports>
       <output_ports>
-        <port name="resulta" clock="clk"/>
+        <port name="result" clock="clk"/>
         <port name="chainout"/>
       </output_ports>
     </model>
     <!--A mode in DSP slice-->
-    <model name="mult_add_int">
+    <model name="mult_add_int_27x27">
       <input_ports>
         <port name="clk" is_clock="1"/>  
-        <port name="reset" clock="clk" combinational_sink_ports="resulta chainout"/>
-        <port name="mode_sigs" clock="clk" combinational_sink_ports="resulta chainout"/>
-        <port name="ax" clock="clk" combinational_sink_ports="resulta chainout"/>
-        <port name="ay" clock="clk" combinational_sink_ports="resulta chainout"/>
-        <port name="bx" clock="clk" combinational_sink_ports="resulta chainout"/>
-        <port name="chainin" clock="clk" combinational_sink_ports="resulta chainout"/>
+        <port name="reset" clock="clk" combinational_sink_ports="result scanout chainout"/>
+        <port name="mode_sigs" clock="clk" combinational_sink_ports="result scanout chainout"/>
+        <port name="ax" clock="clk" combinational_sink_ports="result scanout chainout"/>
+        <port name="ay" clock="clk" combinational_sink_ports="result scanout chainout"/>
+        <port name="bx" clock="clk" combinational_sink_ports="result scanout chainout"/>
+        <port name="chainin" clock="clk" combinational_sink_ports="result scanout chainout"/>
+        <port name="scanin" clock="clk" combinational_sink_ports="result scanout chainout"/>
       </input_ports>
       <output_ports>
-        <port name="resulta" clock="clk"/>
+        <port name="result" clock="clk"/>
         <port name="chainout"/>
+        <port name="scanout"/>
+      </output_ports>
+    </model>
+    <model name="mult_add_int_18x19">
+      <input_ports>
+        <port name="clk" is_clock="1"/>  
+        <port name="reset" clock="clk" combinational_sink_ports="result scanout chainout"/>
+        <port name="mode_sigs" clock="clk" combinational_sink_ports="result scanout chainout"/>
+        <port name="ax" clock="clk" combinational_sink_ports="result scanout chainout"/>
+        <port name="ay" clock="clk" combinational_sink_ports="result scanout chainout"/>
+        <port name="bx" clock="clk" combinational_sink_ports="result scanout chainout"/>
+        <port name="chainin" clock="clk" combinational_sink_ports="result scanout chainout"/>
+        <port name="scanin" clock="clk" combinational_sink_ports="result scanout chainout"/>
+      </input_ports>
+      <output_ports>
+        <port name="result" clock="clk"/>
+        <port name="chainout"/>
+        <port name="scanout"/>
       </output_ports>
     </model>
     <!--A mode in DSP slice-->
     <model name="int_sop_4">
       <input_ports>
         <port name="clk" is_clock="1"/>  
-        <port name="reset" clock="clk" combinational_sink_ports="resulta chainout"/>
-        <port name="mode_sigs" clock="clk" combinational_sink_ports="resulta chainout"/>
-        <port name="ax" clock="clk" combinational_sink_ports="resulta chainout"/>
-        <port name="ay" clock="clk" combinational_sink_ports="resulta chainout"/>
-        <port name="bx" clock="clk" combinational_sink_ports="resulta chainout"/>
-        <port name="by" clock="clk" combinational_sink_ports="resulta chainout"/>
-        <port name="cx" clock="clk" combinational_sink_ports="resulta chainout"/>
-        <port name="cy" clock="clk" combinational_sink_ports="resulta chainout"/>
-        <port name="dx" clock="clk" combinational_sink_ports="resulta chainout"/>
-        <port name="dy" clock="clk" combinational_sink_ports="resulta chainout"/>
-        <port name="chainin" clock="clk" combinational_sink_ports="resulta chainout"/>
+        <port name="reset" clock="clk" combinational_sink_ports="result chainout"/>
+        <port name="mode_sigs" clock="clk" combinational_sink_ports="result chainout"/>
+        <port name="ax" clock="clk" combinational_sink_ports="result chainout"/>
+        <port name="ay" clock="clk" combinational_sink_ports="result chainout"/>
+        <port name="bx" clock="clk" combinational_sink_ports="result chainout"/>
+        <port name="by" clock="clk" combinational_sink_ports="result chainout"/>
+        <port name="cx" clock="clk" combinational_sink_ports="result chainout"/>
+        <port name="cy" clock="clk" combinational_sink_ports="result chainout"/>
+        <port name="dx" clock="clk" combinational_sink_ports="result chainout"/>
+        <port name="dy" clock="clk" combinational_sink_ports="result chainout"/>
+        <port name="chainin" clock="clk" combinational_sink_ports="result chainout"/>
       </input_ports>
       <output_ports>
-        <port name="resulta" clock="clk"/>
+        <port name="result" clock="clk"/>
         <port name="chainout"/>
       </output_ports>
     </model>
@@ -343,25 +400,36 @@
     <model name="int_sop_accum_4">
       <input_ports>
         <port name="clk" is_clock="1"/>  
-        <port name="reset" clock="clk" combinational_sink_ports="resulta chainout"/>
-        <port name="mode_sigs" clock="clk" combinational_sink_ports="resulta chainout"/>
-        <port name="ax" clock="clk" combinational_sink_ports="resulta chainout"/>
-        <port name="ay" clock="clk" combinational_sink_ports="resulta chainout"/>
-        <port name="bx" clock="clk" combinational_sink_ports="resulta chainout"/>
-        <port name="by" clock="clk" combinational_sink_ports="resulta chainout"/>
-        <port name="cx" clock="clk" combinational_sink_ports="resulta chainout"/>
-        <port name="cy" clock="clk" combinational_sink_ports="resulta chainout"/>
-        <port name="dx" clock="clk" combinational_sink_ports="resulta chainout"/>
-        <port name="dy" clock="clk" combinational_sink_ports="resulta chainout"/>
-        <port name="chainin" clock="clk" combinational_sink_ports="resulta chainout"/>
+        <port name="reset" clock="clk" combinational_sink_ports="result chainout"/>
+        <port name="mode_sigs" clock="clk" combinational_sink_ports="result chainout"/>
+        <port name="ax" clock="clk" combinational_sink_ports="result chainout"/>
+        <port name="ay" clock="clk" combinational_sink_ports="result chainout"/>
+        <port name="bx" clock="clk" combinational_sink_ports="result chainout"/>
+        <port name="by" clock="clk" combinational_sink_ports="result chainout"/>
+        <port name="cx" clock="clk" combinational_sink_ports="result chainout"/>
+        <port name="cy" clock="clk" combinational_sink_ports="result chainout"/>
+        <port name="dx" clock="clk" combinational_sink_ports="result chainout"/>
+        <port name="dy" clock="clk" combinational_sink_ports="result chainout"/>
+        <port name="chainin" clock="clk" combinational_sink_ports="result chainout"/>
       </input_ports>
       <output_ports>
-        <port name="resulta" clock="clk"/>
+        <port name="result" clock="clk"/>
         <port name="chainout"/>
       </output_ports>
     </model>
     <!-- Floating point MAC inside DSP slices -->
-    <model name="mac_fp">
+    <model name="mac_fp_16">
+      <input_ports>
+        <port name="clk" is_clock="1"/>  
+        <port name="reset" clock="clk" combinational_sink_ports="out"/>
+        <port name="a" clock="clk" combinational_sink_ports="out"/>
+        <port name="b" clock="clk" combinational_sink_ports="out"/>
+      </input_ports>
+      <output_ports>
+        <port name="out" clock="clk"/>
+      </output_ports>
+    </model>
+    <model name="mac_fp_32">
       <input_ports>
         <port name="clk" is_clock="1"/>  
         <port name="reset" clock="clk" combinational_sink_ports="out"/>
@@ -373,7 +441,29 @@
       </output_ports>
     </model>
     <!-- Fixed point MAC inside DSP slices -->
-    <model name="mac_int">
+    <model name="mac_int_27x27">
+      <input_ports>
+        <port name="clk" is_clock="1"/>  
+        <port name="reset" clock="clk" combinational_sink_ports="out"/>
+        <port name="a" clock="clk" combinational_sink_ports="out"/>
+        <port name="b" clock="clk" combinational_sink_ports="out"/>
+      </input_ports>
+      <output_ports>
+        <port name="out" clock="clk"/>
+      </output_ports>
+    </model>
+    <model name="mac_int_18x19">
+      <input_ports>
+        <port name="clk" is_clock="1"/>  
+        <port name="reset" clock="clk" combinational_sink_ports="out"/>
+        <port name="a" clock="clk" combinational_sink_ports="out"/>
+        <port name="b" clock="clk" combinational_sink_ports="out"/>
+      </input_ports>
+      <output_ports>
+        <port name="out" clock="clk"/>
+      </output_ports>
+    </model>
+    <model name="mac_int_9x9">
       <input_ports>
         <port name="clk" is_clock="1"/>  
         <port name="reset" clock="clk" combinational_sink_ports="out"/>
@@ -423,7 +513,6 @@
     <model name="fp16_sop2_accum">
       <input_ports>
         <port name="clk" is_clock="1"/>  
-        <port name="reset" clock="clk" combinational_sink_ports="result chainout"/>
         <port name="mode_sigs" clock="clk" combinational_sink_ports="result chainout"/>
         <port name="reset" clock="clk" combinational_sink_ports="result chainout"/>
         <port name="top_a" clock="clk" combinational_sink_ports="result chainout"/>
@@ -551,29 +640,32 @@
         </equivalent_sites>
         <input name="reset" num_pins="1" is_non_clock_global="true"/>
         <input name="dsp_I1" num_pins="64" />
-        <input name="dsp_I2" num_pins="63" />
+        <input name="dsp_I2" num_pins="64" />
         <input name="chainin" num_pins="64"/>
-        <output name="resulta" num_pins="64"/>
-        <output name="resultb" num_pins="37"/>
+        <input name="scanin" num_pins="27"/>
+        <output name="result" num_pins="74"/>
         <output name="chainout" num_pins="64"/>
+        <output name="scanout" num_pins="27"/>
         <clock name="clk" num_pins="1"/>
         <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10">
           <!-- clock pins and chain ports do not connect to local routing -->
           <fc_override port_name="clk" fc_type="frac" fc_val="0"/>
           <fc_override port_name="chainin" fc_type="frac" fc_val="0"/>
           <fc_override port_name="chainout" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="scanin" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="scanout" fc_type="frac" fc_val="0"/>
         </fc>
         <pinlocations pattern="custom">
         	  <loc side="left" yoffset="0">dsp_top.dsp_I1[31:0]</loc>
 	          <loc side="right" yoffset="1">dsp_top.dsp_I1[63:32]</loc>
 	          <loc side="left" yoffset="2">dsp_top.dsp_I2[31:0]</loc>
-	          <loc side="right" yoffset="3">dsp_top.dsp_I2[62:32]</loc>
-	          <loc side="top">dsp_top.chainin</loc>
-	          <loc side="bottom">dsp_top.chainout</loc>
-	          <loc side="right" yoffset="0">dsp_top.resulta[24:0] dsp_top.clk</loc>
-	          <loc side="left" yoffset="1">dsp_top.resulta[49:25]</loc>
-	          <loc side="right" yoffset="2">dsp_top.resulta[63:50] dsp_top.resultb[10:0]</loc>
-	          <loc side="left" yoffset="3">dsp_top.resultb[36:11] dsp_top.reset</loc>
+	          <loc side="right" yoffset="3">dsp_top.dsp_I2[63:32]</loc>
+	          <loc side="top">dsp_top.chainin dsp_top.scanin</loc>
+	          <loc side="bottom">dsp_top.chainout dsp_top.scanout</loc>
+	          <loc side="right" yoffset="0">dsp_top.result[17:0] dsp_top.clk</loc>
+	          <loc side="left" yoffset="1">dsp_top.result[36:18]</loc>
+	          <loc side="right" yoffset="2">dsp_top.result[55:37] </loc>
+	          <loc side="left" yoffset="3">dsp_top.result[73:56] dsp_top.reset</loc>
         </pinlocations>
       </sub_tile>
     </tile>
@@ -696,17 +788,9 @@
   <directlist>
     <!-- Direct connect from one LAB to the LAB directly below it (carry chain) -->
     <direct name="adder_carry" from_pin="clb.cout" to_pin="clb.cin" x_offset="0" y_offset="-1" z_offset="0"/>
-    <!-- Direct connect to left and right LAB -->
-    <direct name="direct_right_1" from_pin="clb.O[4:0]" to_pin="clb.I1[9:5]" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="direct_right_2" from_pin="clb.O[24:20]" to_pin="clb.I2[9:5]" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="direct_right_3" from_pin="clb.O[9:5]" to_pin="clb.I3[9:5]" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="direct_right_4" from_pin="clb.O[29:25]" to_pin="clb.I4[9:5]" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="direct_left_1" from_pin="clb.O[14:10]" to_pin="clb.I1[14:10]" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="direct_left_2" from_pin="clb.O[34:30]" to_pin="clb.I2[14:10]" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="direct_left_3" from_pin="clb.O[19:15]" to_pin="clb.I3[14:10]" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="direct_left_4" from_pin="clb.O[39:35]" to_pin="clb.I4[14:10]" x_offset="-1" y_offset="0" z_offset="0"/>
     <!-- Direct connect from one DSP to the DSP directly below it -->
-    <direct name="dsp_chain" from_pin="dsp_top.chainout" from_side="bottom" to_pin="dsp_top.chainin" to_side="top" x_offset="0" y_offset="-4" z_offset="0"/>
+    <direct name="dsp_out_chain" from_pin="dsp_top.chainout" from_side="bottom" to_pin="dsp_top.chainin" to_side="top" x_offset="0" y_offset="-4" z_offset="0"/>
+    <direct name="dsp_in_chain" from_pin="dsp_top.scanout" from_side="bottom" to_pin="dsp_top.scanin" to_side="top" x_offset="0" y_offset="-4" z_offset="0"/>
   </directlist>
   <complexblocklist>
     <!-- Define I/O pads begin -->
@@ -746,7 +830,6 @@
           If I do not make a physically equivalent definition, then I need to define 4 different I/Os, one for each side of the FPGA
         -->
       <!-- Place I/Os on the sides of the FPGA -->
-      <power method="ignore"/>
     </pb_type>
     <!-- Define I/O pads ends -->
     <!-- Define general purpose logic block (CLB) begin -->
@@ -1115,34 +1198,37 @@
     <pb_type name="dsp_top">
       <input name="reset" num_pins="1" is_non_clock_global="true"/>
       <input name="dsp_I1" num_pins="64" />
-      <input name="dsp_I2" num_pins="63" />
+      <input name="dsp_I2" num_pins="64" />
       <input name="chainin" num_pins="64"/>
-      <output name="resulta" num_pins="64"/>
-      <output name="resultb" num_pins="37"/>
+      <input name="scanin" num_pins="27"/>
+      <output name="result" num_pins="74"/>
       <output name="chainout" num_pins="64"/>
+      <output name="scanout" num_pins="27"/>
       <clock name="clk" num_pins="1"/>
 
     <pb_type name="dsp" num_pb="1">
       <input name="reset" num_pins="1"/>
       <input name="dsp_I1" num_pins="64"/>
-      <input name="dsp_I2" num_pins="63"/>
+      <input name="dsp_I2" num_pins="64"/>
       <input name="chainin" num_pins="64"/>
-      <output name="resulta" num_pins="64"/>
-      <output name="resultb" num_pins="37"/>
+      <input name="scanin" num_pins="27"/>
+      <output name="result" num_pins="74"/>
       <output name="chainout" num_pins="64"/>
+      <output name="scanout" num_pins="27"/>
       <clock name="clk" num_pins="1"/>
 
       <pb_type name="dsp_pb" num_pb="1">
         <input name="reset" num_pins="1"/>
-        <input name="mode_sigs" num_pins="11"/>
+        <input name="mode_sigs" num_pins="12"/>
         <input name="datain" num_pins="116"/>
         <input name="chainin" num_pins="64"/>
-        <output name="resulta" num_pins="64"/>
-        <output name="resultb" num_pins="37"/>
+        <input name="scanin" num_pins="27"/>
+        <output name="result" num_pins="74"/>
         <output name="chainout" num_pins="64"/>
+        <output name="scanout" num_pins="27"/>
         <clock name="clk" num_pins="1"/>
 
-        <!-- fixed-point multiplier mode (1 27x27 multiplier) resulta = ax*ay -->
+        <!-- fixed-point multiplier mode (1 27x27 multiplier) result = ax*ay -->
         <mode name="one_mult_27x27">
           <pb_type name="one_mult_27x27" num_pb="1">
             <input name="a" num_pins="27"/>
@@ -1163,23 +1249,18 @@
               <direct name="out2out" input="mult_27x27.out" output="one_mult_27x27.out">
               </direct>
             </interconnect>
-            <power method="pin-toggle">
-              <port name="a" energy_per_toggle="2.13e-12"/>
-              <port name="b" energy_per_toggle="2.13e-12"/>
-              <static_power power_per_instance="0.0"/>
-            </power>
           </pb_type>
           <interconnect>
             <direct name="datain2a" input="dsp_pb.datain[26:0]" output="one_mult_27x27.a">
             </direct>
             <direct name="datain2b" input="dsp_pb.datain[53:27]" output="one_mult_27x27.b">
             </direct>
-            <direct name="out2dataout" input="one_mult_27x27.out" output="dsp_pb.resulta[53:0]">
+            <direct name="out2dataout" input="one_mult_27x27.out" output="dsp_pb.result[53:0]">
             </direct>
           </interconnect>
         </mode>
 
-        <!-- fixed-point multiplier mode (2 18x19 multipliers) resulta = ax*ay, resultb = bx*by -->
+        <!-- fixed-point multiplier mode (2 18x19 multipliers) result[some:bits] = ax*ay, result[other:bits] = bx*by -->
         <mode name="two_mult_18x19">
           <pb_type name="two_mult_18x19" num_pb="2">
             <input name="a" num_pins="18"/>
@@ -1200,11 +1281,6 @@
               <direct name="out2out" input="mult_18x19.out" output="two_mult_18x19.out">
                  </direct>
             </interconnect>
-            <power method="pin-toggle">
-              <port name="a" energy_per_toggle="1.09e-12"/>
-              <port name="b" energy_per_toggle="1.09e-12"/>
-              <static_power power_per_instance="0.0"/>
-            </power>
           </pb_type>
           <interconnect>
             <direct name="datain2a1" input="dsp_pb.datain[17:0]" output="two_mult_18x19[0].a">
@@ -1215,9 +1291,7 @@
             </direct>
             <direct name="datain2b2" input="dsp_pb.datain[73:55]" output="two_mult_18x19[1].b">
             </direct>
-            <direct name="out2resulta" input="two_mult_18x19[0].out" output="dsp_pb.resulta[36:0]">
-            </direct>
-            <direct name="out2resultb" input="two_mult_18x19[1].out" output="dsp_pb.resultb[36:0]">
+            <direct name="out2result" input="two_mult_18x19.out" output="dsp_pb.result[73:0]">
             </direct>
           </interconnect>
         </mode>
@@ -1241,34 +1315,34 @@
             <direct name="btob2" input="dsp_pb.datain[53:45]" output="mult_9x9_fixed_pt[2].b"/>
             <direct name="atoa3" input="dsp_pb.datain[62:54]" output="mult_9x9_fixed_pt[3].a"/>
             <direct name="btob3" input="dsp_pb.datain[71:63]" output="mult_9x9_fixed_pt[3].b"/>
-            <direct name="sumouttosumout0" input="mult_9x9_fixed_pt[0].out" output="dsp_pb.resulta[17:0]"/>
-            <direct name="sumouttosumout1" input="mult_9x9_fixed_pt[1].out" output="dsp_pb.resulta[35:18]"/>
-            <direct name="sumouttosumout2" input="mult_9x9_fixed_pt[2].out" output="dsp_pb.resulta[53:36]"/>
-            <direct name="sumouttosumout3" input="mult_9x9_fixed_pt[3].out" output="dsp_pb.resultb[17:0]"/>
+            <direct name="sumouttosumout0" input="mult_9x9_fixed_pt[0].out" output="dsp_pb.result[17:0]"/>
+            <direct name="sumouttosumout1" input="mult_9x9_fixed_pt[1].out" output="dsp_pb.result[35:18]"/>
+            <direct name="sumouttosumout2" input="mult_9x9_fixed_pt[2].out" output="dsp_pb.result[53:36]"/>
+            <direct name="sumouttosumout3" input="mult_9x9_fixed_pt[3].out" output="dsp_pb.result[71:54]"/>
           </interconnect>
         </mode>
 
-        <!-- fixed-point multiplier-add-sum mode resulta = (bx * by) + (ax * ay) + chainin. chainout = resulta -->
+        <!-- fixed-point multiplier-add-sum mode result = (bx * by) + (ax * ay) + chainin. chainout = result -->
         <mode name="sop_2_mode">
           <pb_type name="sop_2" num_pb="1" blif_model=".subckt int_sop_2">
             <input name="reset" num_pins="1"/>
-            <input name="mode_sigs" num_pins="11"/>
+            <input name="mode_sigs" num_pins="12"/>
             <input name="ax" num_pins="18"/>
             <input name="ay" num_pins="19"/>
             <input name="bx" num_pins="18"/>
             <input name="by" num_pins="19"/>
             <input name="chainin" num_pins="37"/>
-            <output name="resulta" num_pins="37"/>
+            <output name="result" num_pins="37"/>
             <output name="chainout" num_pins="37"/>
             <clock name="clk" num_pins="1"/>
 
-            <delay_constant max="2.14e-9" in_port="sop_2.reset" out_port="sop_2.resulta"/>
-            <delay_constant max="2.14e-9" in_port="sop_2.mode_sigs" out_port="sop_2.resulta"/>
-            <delay_constant max="2.14e-9" in_port="sop_2.ax" out_port="sop_2.resulta"/>
-            <delay_constant max="2.14e-9" in_port="sop_2.ay" out_port="sop_2.resulta"/>
-            <delay_constant max="2.14e-9" in_port="sop_2.bx" out_port="sop_2.resulta"/>
-            <delay_constant max="2.14e-9" in_port="sop_2.by" out_port="sop_2.resulta"/>
-            <delay_constant max="2.14e-9" in_port="sop_2.chainin" out_port="sop_2.resulta"/>
+            <delay_constant max="2.14e-9" in_port="sop_2.reset" out_port="sop_2.result"/>
+            <delay_constant max="2.14e-9" in_port="sop_2.mode_sigs" out_port="sop_2.result"/>
+            <delay_constant max="2.14e-9" in_port="sop_2.ax" out_port="sop_2.result"/>
+            <delay_constant max="2.14e-9" in_port="sop_2.ay" out_port="sop_2.result"/>
+            <delay_constant max="2.14e-9" in_port="sop_2.bx" out_port="sop_2.result"/>
+            <delay_constant max="2.14e-9" in_port="sop_2.by" out_port="sop_2.result"/>
+            <delay_constant max="2.14e-9" in_port="sop_2.chainin" out_port="sop_2.result"/>
 
             <delay_constant max="2.14e-9" in_port="sop_2.reset" out_port="sop_2.chainout"/>
             <delay_constant max="2.14e-9" in_port="sop_2.mode_sigs" out_port="sop_2.chainout"/>
@@ -1285,7 +1359,7 @@
             <T_setup value="18.91e-12" port="sop_2.by" clock="clk"/>
             <T_setup value="18.91e-12" port="sop_2.chainin" clock="clk"/>
             <T_setup value="18.91e-12" port="sop_2.reset" clock="clk"/>
-            <T_setup value="18.91e-12" port="sop_2.resulta" clock="clk"/>
+            <T_setup value="18.91e-12" port="sop_2.result" clock="clk"/>
 
             <T_clock_to_Q max="60.32e-12" min="60.32e-12" port="sop_2.mode_sigs" clock="clk"/>
             <T_clock_to_Q max="60.32e-12" min="60.32e-12" port="sop_2.ax" clock="clk"/>
@@ -1294,7 +1368,7 @@
             <T_clock_to_Q max="60.32e-12" min="60.32e-12" port="sop_2.by" clock="clk"/>
             <T_clock_to_Q max="60.32e-12" min="60.32e-12" port="sop_2.chainin" clock="clk"/>
             <T_clock_to_Q max="60.32e-12" min="60.32e-12" port="sop_2.reset" clock="clk"/>
-            <T_clock_to_Q max="60.32e-12" min="60.32e-12" port="sop_2.resulta" clock="clk"/>
+            <T_clock_to_Q max="60.32e-12" min="60.32e-12" port="sop_2.result" clock="clk"/>
           </pb_type>
           <interconnect>
             <direct name="clk" input="dsp_pb.clk" output="sop_2.clk">
@@ -1313,32 +1387,35 @@
             </direct>
             <direct name="chainin"   input="dsp_pb.chainin[36:0]" output="sop_2.chainin">
             </direct>
-            <direct name="dataout2result" input="sop_2.resulta" output="dsp_pb.resulta[36:0]">
+            <direct name="dataout2result" input="sop_2.result" output="dsp_pb.result[36:0]">
             </direct>
             <direct name="chainout" input="sop_2.chainout" output="dsp_pb.chainout[36:0]">
             </direct>
           </interconnect>
         </mode>
 
-        <!-- fixed-point multiplier-add-sum mode resulta = (ax * ay) + bx + chainin. chainout = resulta  -->
+        <!-- fixed-point multiplier-add-sum mode result = (ax * ay) + bx + chainin. chainout = result. with scanin-scanout support -->
         <mode name="mult_add_mode_18_19_36">
-          <pb_type name="mult_add" num_pb="1" blif_model=".subckt mult_add_int">
+          <pb_type name="mult_add" num_pb="1" blif_model=".subckt mult_add_int_18x19">
             <input name="reset" num_pins="1"/>
-            <input name="mode_sigs" num_pins="11"/>
+            <input name="mode_sigs" num_pins="12"/>
             <input name="ax" num_pins="18"/>
             <input name="ay" num_pins="19"/>
             <input name="bx" num_pins="36"/>
             <input name="chainin" num_pins="64"/>
-            <output name="resulta" num_pins="64"/>
+            <input name="scanin" num_pins="19"/>
+            <output name="result" num_pins="64"/>
             <output name="chainout" num_pins="64"/>
+            <output name="scanout" num_pins="19"/>
             <clock name="clk" num_pins="1"/>
 
-            <delay_constant max="2.14e-9" in_port="mult_add.reset" out_port="mult_add.resulta"/>
-            <delay_constant max="2.14e-9" in_port="mult_add.mode_sigs" out_port="mult_add.resulta"/>
-            <delay_constant max="2.14e-9" in_port="mult_add.ax" out_port="mult_add.resulta"/>
-            <delay_constant max="2.14e-9" in_port="mult_add.ay" out_port="mult_add.resulta"/>
-            <delay_constant max="2.14e-9" in_port="mult_add.bx" out_port="mult_add.resulta"/>
-            <delay_constant max="2.14e-9" in_port="mult_add.chainin" out_port="mult_add.resulta"/>
+            <delay_constant max="2.14e-9" in_port="mult_add.reset" out_port="mult_add.result"/>
+            <delay_constant max="2.14e-9" in_port="mult_add.mode_sigs" out_port="mult_add.result"/>
+            <delay_constant max="2.14e-9" in_port="mult_add.ax" out_port="mult_add.result"/>
+            <delay_constant max="2.14e-9" in_port="mult_add.ay" out_port="mult_add.result"/>
+            <delay_constant max="2.14e-9" in_port="mult_add.bx" out_port="mult_add.result"/>
+            <delay_constant max="2.14e-9" in_port="mult_add.chainin" out_port="mult_add.result"/>
+            <delay_constant max="2.14e-9" in_port="mult_add.scanin" out_port="mult_add.result"/>
 
             <delay_constant max="2.14e-9" in_port="mult_add.reset" out_port="mult_add.chainout"/>
             <delay_constant max="2.14e-9" in_port="mult_add.mode_sigs" out_port="mult_add.chainout"/>
@@ -1346,22 +1423,33 @@
             <delay_constant max="2.14e-9" in_port="mult_add.ay" out_port="mult_add.chainout"/>
             <delay_constant max="2.14e-9" in_port="mult_add.bx" out_port="mult_add.chainout"/>
             <delay_constant max="2.14e-9" in_port="mult_add.chainin" out_port="mult_add.chainout"/>
+            <delay_constant max="2.14e-9" in_port="mult_add.scanin" out_port="mult_add.chainout"/>
+
+            <delay_constant max="2.14e-9" in_port="mult_add.reset" out_port="mult_add.scanout"/>
+            <delay_constant max="2.14e-9" in_port="mult_add.mode_sigs" out_port="mult_add.scanout"/>
+            <delay_constant max="2.14e-9" in_port="mult_add.ax" out_port="mult_add.scanout"/>
+            <delay_constant max="2.14e-9" in_port="mult_add.ay" out_port="mult_add.scanout"/>
+            <delay_constant max="2.14e-9" in_port="mult_add.bx" out_port="mult_add.scanout"/>
+            <delay_constant max="2.14e-9" in_port="mult_add.chainin" out_port="mult_add.scanout"/>
+            <delay_constant max="2.14e-9" in_port="mult_add.scanin" out_port="mult_add.scanout"/>
 
             <T_setup value="18.91e-12" port="mult_add.mode_sigs" clock="clk"/>
             <T_setup value="18.91e-12" port="mult_add.ax" clock="clk"/>
             <T_setup value="18.91e-12" port="mult_add.ay" clock="clk"/>
             <T_setup value="18.91e-12" port="mult_add.bx" clock="clk"/>
             <T_setup value="18.91e-12" port="mult_add.chainin" clock="clk"/>
+            <T_setup value="18.91e-12" port="mult_add.scanin" clock="clk"/>
             <T_setup value="18.91e-12" port="mult_add.reset" clock="clk"/>
-            <T_setup value="18.91e-12" port="mult_add.resulta" clock="clk"/>
+            <T_setup value="18.91e-12" port="mult_add.result" clock="clk"/>
 
             <T_clock_to_Q max="60.32e-12" min="60.32e-12" port="mult_add.mode_sigs" clock="clk"/>
             <T_clock_to_Q max="60.32e-12" min="60.32e-12" port="mult_add.ax" clock="clk"/>
             <T_clock_to_Q max="60.32e-12" min="60.32e-12" port="mult_add.ay" clock="clk"/>
             <T_clock_to_Q max="60.32e-12" min="60.32e-12" port="mult_add.bx" clock="clk"/>
             <T_clock_to_Q max="60.32e-12" min="60.32e-12" port="mult_add.chainin" clock="clk"/>
+            <T_clock_to_Q max="60.32e-12" min="60.32e-12" port="mult_add.scanin" clock="clk"/>
             <T_clock_to_Q max="60.32e-12" min="60.32e-12" port="mult_add.reset" clock="clk"/>
-            <T_clock_to_Q max="60.32e-12" min="60.32e-12" port="mult_add.resulta" clock="clk"/>
+            <T_clock_to_Q max="60.32e-12" min="60.32e-12" port="mult_add.result" clock="clk"/>
           </pb_type>
           <interconnect>
             <direct name="clk" input="dsp_pb.clk" output="mult_add.clk">
@@ -1378,32 +1466,39 @@
             </direct>
             <direct name="chainin"   input="dsp_pb.chainin[63:0]" output="mult_add.chainin">
             </direct>
-            <direct name="dataout2result" input="mult_add.resulta" output="dsp_pb.resulta[63:0]">
+            <direct name="scanin"   input="dsp_pb.scanin[18:0]" output="mult_add.scanin">
+            </direct>
+            <direct name="dataout2result" input="mult_add.result" output="dsp_pb.result[63:0]">
             </direct>
             <direct name="chainout" input="mult_add.chainout" output="dsp_pb.chainout[63:0]">
+            </direct>
+            <direct name="scanout" input="mult_add.scanout" output="dsp_pb.scanout[18:0]">
             </direct>
           </interconnect>
         </mode>
 
-        <!-- fixed-point multiplier-add-sum mode resulta = (ax * ay) + bx + chainin. chainout = resulta  -->
+        <!-- fixed-point multiplier-add-sum mode result = (ax * ay) + bx + chainin. chainout = result. with scanin-scanout support -->
         <mode name="mult_add_mode_27_27_64">
-          <pb_type name="mult_add" num_pb="1" blif_model=".subckt mult_add_int">
+          <pb_type name="mult_add" num_pb="1" blif_model=".subckt mult_add_int_27x27">
             <input name="reset" num_pins="1"/>
-            <input name="mode_sigs" num_pins="11"/>
+            <input name="mode_sigs" num_pins="12"/>
             <input name="ax" num_pins="27"/>
             <input name="ay" num_pins="27"/>
             <input name="bx" num_pins="36"/>
             <input name="chainin" num_pins="64"/>
-            <output name="resulta" num_pins="64"/>
+            <input name="scanin" num_pins="27"/>
+            <output name="result" num_pins="64"/>
             <output name="chainout" num_pins="64"/>
+            <output name="scanout" num_pins="27"/>
             <clock name="clk" num_pins="1"/>
 
-            <delay_constant max="2.14e-9" in_port="mult_add.reset" out_port="mult_add.resulta"/>
-            <delay_constant max="2.14e-9" in_port="mult_add.mode_sigs" out_port="mult_add.resulta"/>
-            <delay_constant max="2.14e-9" in_port="mult_add.ax" out_port="mult_add.resulta"/>
-            <delay_constant max="2.14e-9" in_port="mult_add.ay" out_port="mult_add.resulta"/>
-            <delay_constant max="2.14e-9" in_port="mult_add.bx" out_port="mult_add.resulta"/>
-            <delay_constant max="2.14e-9" in_port="mult_add.chainin" out_port="mult_add.resulta"/>
+            <delay_constant max="2.14e-9" in_port="mult_add.reset" out_port="mult_add.result"/>
+            <delay_constant max="2.14e-9" in_port="mult_add.mode_sigs" out_port="mult_add.result"/>
+            <delay_constant max="2.14e-9" in_port="mult_add.ax" out_port="mult_add.result"/>
+            <delay_constant max="2.14e-9" in_port="mult_add.ay" out_port="mult_add.result"/>
+            <delay_constant max="2.14e-9" in_port="mult_add.bx" out_port="mult_add.result"/>
+            <delay_constant max="2.14e-9" in_port="mult_add.chainin" out_port="mult_add.result"/>
+            <delay_constant max="2.14e-9" in_port="mult_add.scanin" out_port="mult_add.result"/>
 
             <delay_constant max="2.14e-9" in_port="mult_add.reset" out_port="mult_add.chainout"/>
             <delay_constant max="2.14e-9" in_port="mult_add.mode_sigs" out_port="mult_add.chainout"/>
@@ -1411,22 +1506,33 @@
             <delay_constant max="2.14e-9" in_port="mult_add.ay" out_port="mult_add.chainout"/>
             <delay_constant max="2.14e-9" in_port="mult_add.bx" out_port="mult_add.chainout"/>
             <delay_constant max="2.14e-9" in_port="mult_add.chainin" out_port="mult_add.chainout"/>
+            <delay_constant max="2.14e-9" in_port="mult_add.scanin" out_port="mult_add.chainout"/>
+
+            <delay_constant max="2.14e-9" in_port="mult_add.reset" out_port="mult_add.scanout"/>
+            <delay_constant max="2.14e-9" in_port="mult_add.mode_sigs" out_port="mult_add.scanout"/>
+            <delay_constant max="2.14e-9" in_port="mult_add.ax" out_port="mult_add.scanout"/>
+            <delay_constant max="2.14e-9" in_port="mult_add.ay" out_port="mult_add.scanout"/>
+            <delay_constant max="2.14e-9" in_port="mult_add.bx" out_port="mult_add.scanout"/>
+            <delay_constant max="2.14e-9" in_port="mult_add.chainin" out_port="mult_add.scanout"/>
+            <delay_constant max="2.14e-9" in_port="mult_add.scanin" out_port="mult_add.scanout"/>
 
             <T_setup value="18.91e-12" port="mult_add.mode_sigs" clock="clk"/>
             <T_setup value="18.91e-12" port="mult_add.ax" clock="clk"/>
             <T_setup value="18.91e-12" port="mult_add.ay" clock="clk"/>
             <T_setup value="18.91e-12" port="mult_add.bx" clock="clk"/>
             <T_setup value="18.91e-12" port="mult_add.chainin" clock="clk"/>
+            <T_setup value="18.91e-12" port="mult_add.scanin" clock="clk"/>
             <T_setup value="18.91e-12" port="mult_add.reset" clock="clk"/>
-            <T_setup value="18.91e-12" port="mult_add.resulta" clock="clk"/>
+            <T_setup value="18.91e-12" port="mult_add.result" clock="clk"/>
 
             <T_clock_to_Q max="60.32e-12" min="60.32e-12" port="mult_add.mode_sigs" clock="clk"/>
             <T_clock_to_Q max="60.32e-12" min="60.32e-12" port="mult_add.ax" clock="clk"/>
             <T_clock_to_Q max="60.32e-12" min="60.32e-12" port="mult_add.ay" clock="clk"/>
             <T_clock_to_Q max="60.32e-12" min="60.32e-12" port="mult_add.bx" clock="clk"/>
             <T_clock_to_Q max="60.32e-12" min="60.32e-12" port="mult_add.chainin" clock="clk"/>
+            <T_clock_to_Q max="60.32e-12" min="60.32e-12" port="mult_add.scanin" clock="clk"/>
             <T_clock_to_Q max="60.32e-12" min="60.32e-12" port="mult_add.reset" clock="clk"/>
-            <T_clock_to_Q max="60.32e-12" min="60.32e-12" port="mult_add.resulta" clock="clk"/>
+            <T_clock_to_Q max="60.32e-12" min="60.32e-12" port="mult_add.result" clock="clk"/>
           </pb_type>
           <interconnect>
             <direct name="clk" input="dsp_pb.clk" output="mult_add.clk">
@@ -1443,18 +1549,22 @@
             </direct>
             <direct name="chainin"   input="dsp_pb.chainin[63:0]" output="mult_add.chainin">
             </direct>
-            <direct name="dataout2result" input="mult_add.resulta" output="dsp_pb.resulta[63:0]">
+            <direct name="scanin"   input="dsp_pb.scanin[26:0]" output="mult_add.scanin">
+            </direct>
+            <direct name="dataout2result" input="mult_add.result" output="dsp_pb.result[63:0]">
             </direct>
             <direct name="chainout" input="mult_add.chainout" output="dsp_pb.chainout[63:0]">
+            </direct>
+            <direct name="scanout" input="mult_add.scanout" output="dsp_pb.scanout[26:0]">
             </direct>
           </interconnect>
         </mode>
 
-        <!-- fixed-point sum-of-4 mode resulta = (dx * dy) + (cx * cy) + (bx * by) + (ax * ay) + chainin. chainout = resulta -->
+        <!-- fixed-point sum-of-4 mode result = (dx * dy) + (cx * cy) + (bx * by) + (ax * ay) + chainin. chainout = result -->
         <mode name="sop_4_mode">
           <pb_type name="sop_4" num_pb="1" blif_model=".subckt int_sop_4">
             <input name="reset" num_pins="1"/>
-            <input name="mode_sigs" num_pins="11"/>
+            <input name="mode_sigs" num_pins="12"/>
             <input name="ax" num_pins="9"/>
             <input name="ay" num_pins="9"/>
             <input name="bx" num_pins="9"/>
@@ -1464,21 +1574,21 @@
             <input name="dx" num_pins="9"/>
             <input name="dy" num_pins="9"/>
             <input name="chainin" num_pins="64"/>
-            <output name="resulta" num_pins="64"/>
+            <output name="result" num_pins="64"/>
             <output name="chainout" num_pins="64"/>
             <clock name="clk" num_pins="1"/>
 
-            <delay_constant max="2.14e-9" in_port="sop_4.reset" out_port="sop_4.resulta"/>
-            <delay_constant max="2.14e-9" in_port="sop_4.mode_sigs" out_port="sop_4.resulta"/>
-            <delay_constant max="2.14e-9" in_port="sop_4.ax" out_port="sop_4.resulta"/>
-            <delay_constant max="2.14e-9" in_port="sop_4.ay" out_port="sop_4.resulta"/>
-            <delay_constant max="2.14e-9" in_port="sop_4.bx" out_port="sop_4.resulta"/>
-            <delay_constant max="2.14e-9" in_port="sop_4.by" out_port="sop_4.resulta"/>
-            <delay_constant max="2.14e-9" in_port="sop_4.cx" out_port="sop_4.resulta"/>
-            <delay_constant max="2.14e-9" in_port="sop_4.cy" out_port="sop_4.resulta"/>
-            <delay_constant max="2.14e-9" in_port="sop_4.dx" out_port="sop_4.resulta"/>
-            <delay_constant max="2.14e-9" in_port="sop_4.dy" out_port="sop_4.resulta"/>
-            <delay_constant max="2.14e-9" in_port="sop_4.chainin" out_port="sop_4.resulta"/>
+            <delay_constant max="2.14e-9" in_port="sop_4.reset" out_port="sop_4.result"/>
+            <delay_constant max="2.14e-9" in_port="sop_4.mode_sigs" out_port="sop_4.result"/>
+            <delay_constant max="2.14e-9" in_port="sop_4.ax" out_port="sop_4.result"/>
+            <delay_constant max="2.14e-9" in_port="sop_4.ay" out_port="sop_4.result"/>
+            <delay_constant max="2.14e-9" in_port="sop_4.bx" out_port="sop_4.result"/>
+            <delay_constant max="2.14e-9" in_port="sop_4.by" out_port="sop_4.result"/>
+            <delay_constant max="2.14e-9" in_port="sop_4.cx" out_port="sop_4.result"/>
+            <delay_constant max="2.14e-9" in_port="sop_4.cy" out_port="sop_4.result"/>
+            <delay_constant max="2.14e-9" in_port="sop_4.dx" out_port="sop_4.result"/>
+            <delay_constant max="2.14e-9" in_port="sop_4.dy" out_port="sop_4.result"/>
+            <delay_constant max="2.14e-9" in_port="sop_4.chainin" out_port="sop_4.result"/>
 
             <delay_constant max="2.14e-9" in_port="sop_4.reset" out_port="sop_4.chainout"/>
             <delay_constant max="2.14e-9" in_port="sop_4.mode_sigs" out_port="sop_4.chainout"/>
@@ -1503,7 +1613,7 @@
             <T_setup value="18.91e-12" port="sop_4.dy" clock="clk"/>
             <T_setup value="18.91e-12" port="sop_4.chainin" clock="clk"/>
             <T_setup value="18.91e-12" port="sop_4.reset" clock="clk"/>
-            <T_setup value="18.91e-12" port="sop_4.resulta" clock="clk"/>
+            <T_setup value="18.91e-12" port="sop_4.result" clock="clk"/>
 
             <T_clock_to_Q max="60.32e-12" min="60.32e-12" port="sop_4.mode_sigs" clock="clk"/>
             <T_clock_to_Q max="60.32e-12" min="60.32e-12" port="sop_4.ax" clock="clk"/>
@@ -1516,7 +1626,7 @@
             <T_clock_to_Q max="60.32e-12" min="60.32e-12" port="sop_4.dy" clock="clk"/>
             <T_clock_to_Q max="60.32e-12" min="60.32e-12" port="sop_4.chainin" clock="clk"/>
             <T_clock_to_Q max="60.32e-12" min="60.32e-12" port="sop_4.reset" clock="clk"/>
-            <T_clock_to_Q max="60.32e-12" min="60.32e-12" port="sop_4.resulta" clock="clk"/>
+            <T_clock_to_Q max="60.32e-12" min="60.32e-12" port="sop_4.result" clock="clk"/>
           </pb_type>
           <interconnect>
             <direct name="clk" input="dsp_pb.clk" output="sop_4.clk">
@@ -1543,18 +1653,18 @@
             </direct>
             <direct name="chainin"   input="dsp_pb.chainin[63:0]" output="sop_4.chainin">
             </direct>
-            <direct name="dataout2result" input="sop_4.resulta" output="dsp_pb.resulta[63:0]">
+            <direct name="dataout2result" input="sop_4.result" output="dsp_pb.result[63:0]">
             </direct>
             <direct name="chainout" input="sop_4.chainout" output="dsp_pb.chainout[63:0]">
             </direct>
           </interconnect>
         </mode>
 
-        <!-- fixed-point sum-of-4 accum mode resulta = (dx * dy) + (cx * cy) + (bx * by) + (ax * ay) + chainin + accumulator. chainout = resulta -->
+        <!-- fixed-point sum-of-4 accum mode result = (dx * dy) + (cx * cy) + (bx * by) + (ax * ay) + chainin + accumulator. chainout = result -->
         <mode name="sop_4_accum_mode">
           <pb_type name="sop_4" num_pb="1" blif_model=".subckt int_sop_accum_4">
             <input name="reset" num_pins="1"/>
-            <input name="mode_sigs" num_pins="11"/>
+            <input name="mode_sigs" num_pins="12"/>
             <input name="ax" num_pins="9"/>
             <input name="ay" num_pins="9"/>
             <input name="bx" num_pins="9"/>
@@ -1564,21 +1674,21 @@
             <input name="dx" num_pins="9"/>
             <input name="dy" num_pins="9"/>
             <input name="chainin" num_pins="64"/>
-            <output name="resulta" num_pins="64"/>
+            <output name="result" num_pins="64"/>
             <output name="chainout" num_pins="64"/>
             <clock name="clk" num_pins="1"/>
 
-            <delay_constant max="2.14e-9" in_port="sop_4.mode_sigs" out_port="sop_4.resulta"/>
-            <delay_constant max="2.14e-9" in_port="sop_4.ax" out_port="sop_4.resulta"/>
-            <delay_constant max="2.14e-9" in_port="sop_4.ay" out_port="sop_4.resulta"/>
-            <delay_constant max="2.14e-9" in_port="sop_4.bx" out_port="sop_4.resulta"/>
-            <delay_constant max="2.14e-9" in_port="sop_4.by" out_port="sop_4.resulta"/>
-            <delay_constant max="2.14e-9" in_port="sop_4.cx" out_port="sop_4.resulta"/>
-            <delay_constant max="2.14e-9" in_port="sop_4.cy" out_port="sop_4.resulta"/>
-            <delay_constant max="2.14e-9" in_port="sop_4.dx" out_port="sop_4.resulta"/>
-            <delay_constant max="2.14e-9" in_port="sop_4.dy" out_port="sop_4.resulta"/>
-            <delay_constant max="2.14e-9" in_port="sop_4.chainin" out_port="sop_4.resulta"/>
-            <delay_constant max="2.14e-9" in_port="sop_4.reset" out_port="sop_4.resulta"/>
+            <delay_constant max="2.14e-9" in_port="sop_4.mode_sigs" out_port="sop_4.result"/>
+            <delay_constant max="2.14e-9" in_port="sop_4.ax" out_port="sop_4.result"/>
+            <delay_constant max="2.14e-9" in_port="sop_4.ay" out_port="sop_4.result"/>
+            <delay_constant max="2.14e-9" in_port="sop_4.bx" out_port="sop_4.result"/>
+            <delay_constant max="2.14e-9" in_port="sop_4.by" out_port="sop_4.result"/>
+            <delay_constant max="2.14e-9" in_port="sop_4.cx" out_port="sop_4.result"/>
+            <delay_constant max="2.14e-9" in_port="sop_4.cy" out_port="sop_4.result"/>
+            <delay_constant max="2.14e-9" in_port="sop_4.dx" out_port="sop_4.result"/>
+            <delay_constant max="2.14e-9" in_port="sop_4.dy" out_port="sop_4.result"/>
+            <delay_constant max="2.14e-9" in_port="sop_4.chainin" out_port="sop_4.result"/>
+            <delay_constant max="2.14e-9" in_port="sop_4.reset" out_port="sop_4.result"/>
 
             <delay_constant max="2.14e-9" in_port="sop_4.mode_sigs" out_port="sop_4.chainout"/>
             <delay_constant max="2.14e-9" in_port="sop_4.ax" out_port="sop_4.chainout"/>
@@ -1603,7 +1713,7 @@
             <T_setup value="18.91e-12" port="sop_4.dy" clock="clk"/>
             <T_setup value="18.91e-12" port="sop_4.chainin" clock="clk"/>
             <T_setup value="18.91e-12" port="sop_4.reset" clock="clk"/>
-            <T_setup value="18.91e-12" port="sop_4.resulta" clock="clk"/>
+            <T_setup value="18.91e-12" port="sop_4.result" clock="clk"/>
 
             <T_clock_to_Q max="60.32e-12" min="60.32e-12" port="sop_4.mode_sigs" clock="clk"/>
             <T_clock_to_Q max="60.32e-12" min="60.32e-12" port="sop_4.ax" clock="clk"/>
@@ -1616,7 +1726,7 @@
             <T_clock_to_Q max="60.32e-12" min="60.32e-12" port="sop_4.dy" clock="clk"/>
             <T_clock_to_Q max="60.32e-12" min="60.32e-12" port="sop_4.chainin" clock="clk"/>
             <T_clock_to_Q max="60.32e-12" min="60.32e-12" port="sop_4.reset" clock="clk"/>
-            <T_clock_to_Q max="60.32e-12" min="60.32e-12" port="sop_4.resulta" clock="clk"/>
+            <T_clock_to_Q max="60.32e-12" min="60.32e-12" port="sop_4.result" clock="clk"/>
           </pb_type>
           <interconnect>
             <direct name="clk" input="dsp_pb.clk" output="sop_4.clk">
@@ -1643,7 +1753,7 @@
             </direct>
             <direct name="chainin"   input="dsp_pb.chainin[63:0]" output="sop_4.chainin">
             </direct>
-            <direct name="dataout2result" input="sop_4.resulta" output="dsp_pb.resulta[63:0]">
+            <direct name="dataout2result" input="sop_4.result" output="dsp_pb.result[63:0]">
             </direct>
             <direct name="chainout" input="sop_4.chainout" output="dsp_pb.chainout[63:0]">
             </direct>
@@ -1652,7 +1762,7 @@
 
         <!-- Fixed point mac mode (result = a*b + accumulated value-->
         <mode name="mac_27x27_fixed_pt_mode">
-          <pb_type name="mac_27x27_fixed_pt" blif_model=".subckt mac_int" num_pb="1">
+          <pb_type name="mac_27x27_fixed_pt" blif_model=".subckt mac_int_27x27" num_pb="1">
             <input name="reset" num_pins="1"/>
             <input name="a" num_pins="27"/>
             <input name="b" num_pins="27"/>
@@ -1678,13 +1788,13 @@
             <direct name="clk" input="dsp_pb.clk" output="mac_27x27_fixed_pt.clk"/>
             <direct name="atoa" input="dsp_pb.datain[26:0]" output="mac_27x27_fixed_pt.a"/>
             <direct name="btob" input="dsp_pb.datain[53:27]" output="mac_27x27_fixed_pt.b"/>
-            <direct name="sumouttosumout" input="mac_27x27_fixed_pt.out" output="dsp_pb.resulta[53:0]"/>
+            <direct name="sumouttosumout" input="mac_27x27_fixed_pt.out" output="dsp_pb.result[53:0]"/>
           </interconnect>
         </mode>
 
         <!-- Fixed point mac mode (result = a*b + accumulated value-->
         <mode name="mac_18x19_fixed_pt_mode">
-          <pb_type name="mac_fixed_pt" blif_model=".subckt mac_int" num_pb="2">
+          <pb_type name="mac_fixed_pt" blif_model=".subckt mac_int_18x19" num_pb="2">
             <input name="reset" num_pins="1"/>
             <input name="a" num_pins="18"/>
             <input name="b" num_pins="19"/>
@@ -1714,14 +1824,14 @@
             <direct name="btob0" input="dsp_pb.datain[36:18]" output="mac_fixed_pt[0].b"/>
             <direct name="atoa1" input="dsp_pb.datain[54:37]" output="mac_fixed_pt[1].a"/>
             <direct name="btob1" input="dsp_pb.datain[73:55]" output="mac_fixed_pt[1].b"/>
-            <direct name="sumouttosumout0" input="mac_fixed_pt[0].out" output="dsp_pb.resulta[36:0]"/>
-            <direct name="sumouttosumout1" input="mac_fixed_pt[1].out" output="dsp_pb.resultb[36:0]"/>
+            <direct name="sumouttosumout0" input="mac_fixed_pt[0].out" output="dsp_pb.result[36:0]"/>
+            <direct name="sumouttosumout1" input="mac_fixed_pt[1].out" output="dsp_pb.result[73:37]"/>
           </interconnect>
         </mode>
 
         <!-- Fixed point mac mode (result = a*b + accumulated value-->
         <mode name="mac_9x9_fixed_pt_mode">
-          <pb_type name="mac_9x9_fixed_pt" blif_model=".subckt mac_int" num_pb="4">
+          <pb_type name="mac_9x9_fixed_pt" blif_model=".subckt mac_int_9x9" num_pb="4">
             <input name="reset" num_pins="1"/>
             <input name="a" num_pins="9"/>
             <input name="b" num_pins="9"/>
@@ -1759,16 +1869,16 @@
             <direct name="btob2" input="dsp_pb.datain[53:45]" output="mac_9x9_fixed_pt[2].b"/>
             <direct name="atoa3" input="dsp_pb.datain[62:54]" output="mac_9x9_fixed_pt[3].a"/>
             <direct name="btob3" input="dsp_pb.datain[71:63]" output="mac_9x9_fixed_pt[3].b"/>
-            <direct name="sumouttosumout0" input="mac_9x9_fixed_pt[0].out" output="dsp_pb.resulta[17:0]"/>
-            <direct name="sumouttosumout1" input="mac_9x9_fixed_pt[1].out" output="dsp_pb.resulta[35:18]"/>
-            <direct name="sumouttosumout2" input="mac_9x9_fixed_pt[2].out" output="dsp_pb.resulta[53:36]"/>
-            <direct name="sumouttosumout3" input="mac_9x9_fixed_pt[3].out" output="dsp_pb.resultb[17:0]"/>
+            <direct name="sumouttosumout0" input="mac_9x9_fixed_pt[0].out" output="dsp_pb.result[17:0]"/>
+            <direct name="sumouttosumout1" input="mac_9x9_fixed_pt[1].out" output="dsp_pb.result[35:18]"/>
+            <direct name="sumouttosumout2" input="mac_9x9_fixed_pt[2].out" output="dsp_pb.result[53:36]"/>
+            <direct name="sumouttosumout3" input="mac_9x9_fixed_pt[3].out" output="dsp_pb.result[71:54]"/>
           </interconnect>
         </mode>
 
         <!-- floating point multiplier mode (result = a * b)-->
         <mode name="mult_fp32_mode">
-          <pb_type name="mult_fp32" blif_model=".subckt multiply_fp" num_pb="1">
+          <pb_type name="mult_fp32" blif_model=".subckt mult_fp_32" num_pb="1">
             <input name="a" num_pins="32"/>
             <input name="b" num_pins="32"/>
             <output name="out" num_pins="32"/>
@@ -1781,14 +1891,14 @@
             </direct>
             <direct name="b2b" input="dsp_pb.datain[63:32]" output="mult_fp32.b">
             </direct>
-            <direct name="out2out" input="mult_fp32.out" output="dsp_pb.resulta[31:0]">
+            <direct name="out2out" input="mult_fp32.out" output="dsp_pb.result[31:0]">
             </direct>
           </interconnect>
         </mode>
 
         <!-- floating point multiplier mode (result = a * b)-->
         <mode name="mult_fp16_mode">
-          <pb_type name="mult_fp16" blif_model=".subckt multiply_fp" num_pb="2">
+          <pb_type name="mult_fp16" blif_model=".subckt mult_fp_16" num_pb="2">
             <input name="a" num_pins="16"/>
             <input name="b" num_pins="16"/>
             <output name="out" num_pins="16"/>
@@ -1801,14 +1911,14 @@
             <direct name="a2a1" input="dsp_pb.datain[31:16]" output="mult_fp16[1].a"></direct>
             <direct name="b2b0" input="dsp_pb.datain[47:32]" output="mult_fp16[0].b"></direct>
             <direct name="b2b1" input="dsp_pb.datain[63:48]" output="mult_fp16[1].b"></direct>
-            <direct name="out2out0" input="mult_fp16[0].out" output="dsp_pb.resulta[15:0]"></direct>
-            <direct name="out2out1" input="mult_fp16[1].out" output="dsp_pb.resulta[31:16]"></direct>
+            <direct name="out2out0" input="mult_fp16[0].out" output="dsp_pb.result[15:0]"></direct>
+            <direct name="out2out1" input="mult_fp16[1].out" output="dsp_pb.result[31:16]"></direct>
           </interconnect>
         </mode>
 
         <!-- floating point adder mode (result = a + b)-->
         <mode name="adder_fp32_mode"> 
-          <pb_type name="adder_fp32" blif_model=".subckt adder_fp" num_pb="1">
+          <pb_type name="adder_fp32" blif_model=".subckt addition_fp_32" num_pb="1">
             <input name="a" num_pins="32"/>
             <input name="b" num_pins="32"/>
             <output name="out" num_pins="32"/>
@@ -1821,14 +1931,14 @@
             </direct>
             <direct name="btob" input="dsp_pb.datain[63:32]" output="adder_fp32.b">
             </direct>
-            <direct name="sumouttosumout" input="adder_fp32.out" output="dsp_pb.resulta[31:0]">
+            <direct name="sumouttosumout" input="adder_fp32.out" output="dsp_pb.result[31:0]">
             </direct>
           </interconnect>
         </mode>
 
         <!-- floating point adder mode (result = a + b)-->
         <mode name="adder_fp16_mode">
-          <pb_type name="adder_fp16" blif_model=".subckt adder_fp" num_pb="2">
+          <pb_type name="adder_fp16" blif_model=".subckt addition_fp_16" num_pb="2">
             <input name="a" num_pins="16"/>
             <input name="b" num_pins="16"/>
             <output name="out" num_pins="16"/>
@@ -1841,14 +1951,14 @@
             <direct name="a2a1" input="dsp_pb.datain[31:16]" output="adder_fp16[1].a"></direct>
             <direct name="b2b0" input="dsp_pb.datain[47:32]" output="adder_fp16[0].b"></direct>
             <direct name="b2b1" input="dsp_pb.datain[63:48]" output="adder_fp16[1].b"></direct>
-            <direct name="out2out0" input="adder_fp16[0].out" output="dsp_pb.resulta[15:0]"></direct>
-            <direct name="out2out1" input="adder_fp16[1].out" output="dsp_pb.resulta[31:16]"></direct>
+            <direct name="out2out0" input="adder_fp16[0].out" output="dsp_pb.result[15:0]"></direct>
+            <direct name="out2out1" input="adder_fp16[1].out" output="dsp_pb.result[31:16]"></direct>
           </interconnect>
         </mode>
 
         <!-- clocked floating point multiplier mode (result = a * b)-->
         <mode name="mult_fp32_clocked_mode">
-          <pb_type name="mult_fp32" blif_model=".subckt multiply_fp_clk" num_pb="1">
+          <pb_type name="mult_fp32" blif_model=".subckt mult_fp_clk_32" num_pb="1">
             <input name="a" num_pins="32"/>
             <input name="b" num_pins="32"/>
             <output name="out" num_pins="32"/>
@@ -1871,14 +1981,14 @@
             </direct>
             <direct name="b2b" input="dsp_pb.datain[63:32]" output="mult_fp32.b">
             </direct>
-            <direct name="out2out" input="mult_fp32.out" output="dsp_pb.resulta[31:0]">
+            <direct name="out2out" input="mult_fp32.out" output="dsp_pb.result[31:0]">
             </direct>
           </interconnect>
         </mode>
 
         <!-- clocked floating point multiplier mode (result = a * b)-->
         <mode name="mult_fp16_clocked_mode">
-          <pb_type name="mult_fp16" blif_model=".subckt multiply_fp_clk" num_pb="2">
+          <pb_type name="mult_fp16" blif_model=".subckt mult_fp_clk_16" num_pb="2">
             <input name="a" num_pins="16"/>
             <input name="b" num_pins="16"/>
             <output name="out" num_pins="16"/>
@@ -1902,14 +2012,14 @@
             <direct name="a2a1" input="dsp_pb.datain[31:16]" output="mult_fp16[1].a"></direct>
             <direct name="b2b0" input="dsp_pb.datain[47:32]" output="mult_fp16[0].b"></direct>
             <direct name="b2b1" input="dsp_pb.datain[63:48]" output="mult_fp16[1].b"></direct>
-            <direct name="out2out0" input="mult_fp16[0].out" output="dsp_pb.resulta[15:0]"></direct>
-            <direct name="out2out1" input="mult_fp16[1].out" output="dsp_pb.resulta[31:16]"></direct>
+            <direct name="out2out0" input="mult_fp16[0].out" output="dsp_pb.result[15:0]"></direct>
+            <direct name="out2out1" input="mult_fp16[1].out" output="dsp_pb.result[31:16]"></direct>
           </interconnect>
         </mode>
 
         <!-- clocked floating point adder mode (result = a + b)-->
         <mode name="adder_fp32_clocked_mode"> 
-          <pb_type name="adder_fp32" blif_model=".subckt adder_fp_clk" num_pb="1">
+          <pb_type name="adder_fp32" blif_model=".subckt addition_fp_clk_32" num_pb="1">
             <input name="a" num_pins="32"/>
             <input name="b" num_pins="32"/>
             <output name="out" num_pins="32"/>
@@ -1932,14 +2042,14 @@
             </direct>
             <direct name="btob" input="dsp_pb.datain[63:32]" output="adder_fp32.b">
             </direct>
-            <direct name="sumouttosumout" input="adder_fp32.out" output="dsp_pb.resulta[31:0]">
+            <direct name="sumouttosumout" input="adder_fp32.out" output="dsp_pb.result[31:0]">
             </direct>
           </interconnect>
         </mode>
 
         <!-- clocked floating point adder mode (result = a + b)-->
         <mode name="adder_fp16_clocked_mode">
-          <pb_type name="adder_fp16" blif_model=".subckt adder_fp_clk" num_pb="2">
+          <pb_type name="adder_fp16" blif_model=".subckt addition_fp_clk_16" num_pb="2">
             <input name="a" num_pins="16"/>
             <input name="b" num_pins="16"/>
             <output name="out" num_pins="16"/>
@@ -1963,14 +2073,14 @@
             <direct name="a2a1" input="dsp_pb.datain[31:16]" output="adder_fp16[1].a"></direct>
             <direct name="b2b0" input="dsp_pb.datain[47:32]" output="adder_fp16[0].b"></direct>
             <direct name="b2b1" input="dsp_pb.datain[63:48]" output="adder_fp16[1].b"></direct>
-            <direct name="out2out0" input="adder_fp16[0].out" output="dsp_pb.resulta[15:0]"></direct>
-            <direct name="out2out1" input="adder_fp16[1].out" output="dsp_pb.resulta[31:16]"></direct>
+            <direct name="out2out0" input="adder_fp16[0].out" output="dsp_pb.result[15:0]"></direct>
+            <direct name="out2out1" input="adder_fp16[1].out" output="dsp_pb.result[31:16]"></direct>
           </interconnect>
         </mode>
 
         <!-- floating point mac mode (result = a*b + accumulated value-->
         <mode name="mac_fp32_mode">
-          <pb_type name="mac_fp32" blif_model=".subckt mac_fp" num_pb="1">
+          <pb_type name="mac_fp32" blif_model=".subckt mac_fp_32" num_pb="1">
             <input name="reset" num_pins="1"/>
             <input name="a" num_pins="32"/>
             <input name="b" num_pins="32"/>
@@ -1998,14 +2108,14 @@
             </direct>
             <direct name="btob" input="dsp_pb.datain[63:32]" output="mac_fp32.b">
             </direct>
-            <direct name="sumouttosumout" input="mac_fp32.out" output="dsp_pb.resulta[31:0]">
+            <direct name="sumouttosumout" input="mac_fp32.out" output="dsp_pb.result[31:0]">
             </direct>
           </interconnect>
         </mode>
 
         <!-- floating point 16-bit mac mode (result = a*b + accumulated value-->
         <mode name="mac_fp16_mode">
-          <pb_type name="mac_fp16" blif_model=".subckt mac_fp" num_pb="2">
+          <pb_type name="mac_fp16" blif_model=".subckt mac_fp_16" num_pb="2">
             <input name="reset" num_pins="1"/>
             <input name="a" num_pins="16"/>
             <input name="b" num_pins="16"/>
@@ -2035,8 +2145,8 @@
             <direct name="atoa1" input="dsp_pb.datain[31:16]" output="mac_fp16[1].a"></direct>
             <direct name="btob0" input="dsp_pb.datain[47:32]" output="mac_fp16[0].b"></direct>
             <direct name="btob1" input="dsp_pb.datain[63:48]" output="mac_fp16[1].b"></direct>
-            <direct name="sumouttosumout0" input="mac_fp16[0].out" output="dsp_pb.resulta[15:0]"></direct>
-            <direct name="sumouttosumout1" input="mac_fp16[1].out" output="dsp_pb.resulta[31:16]"></direct>
+            <direct name="sumouttosumout0" input="mac_fp16[0].out" output="dsp_pb.result[15:0]"></direct>
+            <direct name="sumouttosumout1" input="mac_fp16[1].out" output="dsp_pb.result[31:16]"></direct>
           </interconnect>
         </mode>
 
@@ -2044,7 +2154,7 @@
         <mode name="fp16_sum_of_products_mode"> 
           <pb_type name="fp16_sum_of_2_mult" blif_model=".subckt fp16_mult_add" num_pb="1">
             <input name="reset" num_pins="1"/>
-            <input name="mode_sigs" num_pins="11"/>
+            <input name="mode_sigs" num_pins="12"/>
             <input name="top_a" num_pins="16"/>
             <input name="top_b" num_pins="16"/>
             <input name="bot_a" num_pins="16"/>
@@ -2097,13 +2207,13 @@
             </direct>
             <direct name="btob_top" input="dsp_pb.datain[31:16]" output="fp16_sum_of_2_mult.top_b">
             </direct>
-            <direct name="result_top" input="fp16_sum_of_2_mult.result" output="dsp_pb.resulta[31:0]">
+            <direct name="result_top" input="fp16_sum_of_2_mult.result" output="dsp_pb.result[31:0]">
             </direct>
             <direct name="atoa_bot" input="dsp_pb.datain[47:32]" output="fp16_sum_of_2_mult.bot_a">
             </direct>
             <direct name="btob_bot" input="dsp_pb.datain[63:48]" output="fp16_sum_of_2_mult.bot_b">
             </direct>
-            <direct name="result_bot" input="fp16_sum_of_2_mult.result" output="dsp_pb.resulta[63:32]">
+            <direct name="result_bot" input="fp16_sum_of_2_mult.result" output="dsp_pb.result[63:32]">
             </direct>
             <direct name="fp32in" input="dsp_pb.datain[95:64]" output="fp16_sum_of_2_mult.fp32_in">
             </direct>
@@ -2116,7 +2226,7 @@
         <mode name="fp16_sum_of_products_2_mult_mode"> 
           <pb_type name="fp16_sum_of_2_mult" blif_model=".subckt fp16_sop2_mult" num_pb="1">
             <input name="reset" num_pins="1"/>
-            <input name="mode_sigs" num_pins="11"/>
+            <input name="mode_sigs" num_pins="12"/>
             <input name="top_a" num_pins="16"/>
             <input name="top_b" num_pins="16"/>
             <input name="bot_a" num_pins="16"/>
@@ -2174,13 +2284,13 @@
             </direct>
             <direct name="btob_top" input="dsp_pb.datain[31:16]" output="fp16_sum_of_2_mult.top_b">
             </direct>
-            <direct name="result_top" input="fp16_sum_of_2_mult.result" output="dsp_pb.resulta[31:0]">
+            <direct name="result_top" input="fp16_sum_of_2_mult.result" output="dsp_pb.result[31:0]">
             </direct>
             <direct name="atoa_bot" input="dsp_pb.datain[47:32]" output="fp16_sum_of_2_mult.bot_a">
             </direct>
             <direct name="btob_bot" input="dsp_pb.datain[63:48]" output="fp16_sum_of_2_mult.bot_b">
             </direct>
-            <direct name="result_bot" input="fp16_sum_of_2_mult.result" output="dsp_pb.resulta[63:32]">
+            <direct name="result_bot" input="fp16_sum_of_2_mult.result" output="dsp_pb.result[63:32]">
             </direct>
             <direct name="chainin" input="dsp_pb.chainin[31:0]" output="fp16_sum_of_2_mult.chainin">
             </direct>
@@ -2194,7 +2304,7 @@
         <!-- floating point fp16 sum-of-2 accum mode (result = fp16_mult_top_a * fp16_mult_top_b + fp16_mult_bot_a * fp16_mult_bot_b + accumulator. chainout = result)-->
         <mode name="fp16_sum_of_products_2_accum_mode"> 
           <pb_type name="fp16_sum_of_2_accum" blif_model=".subckt fp16_sop2_accum" num_pb="1">
-            <input name="mode_sigs" num_pins="11"/>
+            <input name="mode_sigs" num_pins="12"/>
             <input name="reset" num_pins="1"/>
             <input name="top_a" num_pins="16"/>
             <input name="top_b" num_pins="16"/>
@@ -2242,13 +2352,13 @@
             </direct>
             <direct name="btob_top" input="dsp_pb.datain[31:16]" output="fp16_sum_of_2_accum.top_b">
             </direct>
-            <direct name="result_top" input="fp16_sum_of_2_accum.result" output="dsp_pb.resulta[31:0]">
+            <direct name="result_top" input="fp16_sum_of_2_accum.result" output="dsp_pb.result[31:0]">
             </direct>
             <direct name="atoa_bot" input="dsp_pb.datain[47:32]" output="fp16_sum_of_2_accum.bot_a">
             </direct>
             <direct name="btob_bot" input="dsp_pb.datain[63:48]" output="fp16_sum_of_2_accum.bot_b">
             </direct>
-            <direct name="result_bot" input="fp16_sum_of_2_accum.result" output="dsp_pb.resulta[63:32]">
+            <direct name="result_bot" input="fp16_sum_of_2_accum.result" output="dsp_pb.result[63:32]">
             </direct>
             <direct name="chainout" input="fp16_sum_of_2_accum.chainout" output="dsp_pb.chainout[31:0]">
             </direct>
@@ -2258,7 +2368,7 @@
         <!-- floating point fp16 mult, fp32 add mode (chainout = fp16_mult_top_a * fp16_mult_top_b + fp16_mult_bot_a * fp16_mult_bot_b. result = chainin + third_inp)-->
         <mode name="fp16_mult_fp32_add"> 
           <pb_type name="fp16_mult_fp32_add" blif_model=".subckt fp16_mult_fp32_add" num_pb="1">
-            <input name="mode_sigs" num_pins="11"/>
+            <input name="mode_sigs" num_pins="12"/>
             <input name="reset" num_pins="1"/>
             <input name="top_a" num_pins="16"/>
             <input name="top_b" num_pins="16"/>
@@ -2317,13 +2427,13 @@
             </direct>
             <direct name="btob_top" input="dsp_pb.datain[31:16]" output="fp16_mult_fp32_add.top_b">
             </direct>
-            <direct name="result_top" input="fp16_mult_fp32_add.result" output="dsp_pb.resulta[31:0]">
+            <direct name="result_top" input="fp16_mult_fp32_add.result" output="dsp_pb.result[31:0]">
             </direct>
             <direct name="atoa_bot" input="dsp_pb.datain[47:32]" output="fp16_mult_fp32_add.bot_a">
             </direct>
             <direct name="btob_bot" input="dsp_pb.datain[63:48]" output="fp16_mult_fp32_add.bot_b">
             </direct>
-            <direct name="result_bot" input="fp16_mult_fp32_add.result" output="dsp_pb.resulta[63:32]">
+            <direct name="result_bot" input="fp16_mult_fp32_add.result" output="dsp_pb.result[63:32]">
             </direct>
             <direct name="chainin" input="dsp_pb.chainin[31:0]" output="fp16_mult_fp32_add.chainin">
             </direct>
@@ -2337,7 +2447,7 @@
         <!-- floating point fp16 mult, fp32 accum mode (chainout = fp16_mult_top_a * fp16_mult_top_b + fp16_mult_bot_a * fp16_mult_bot_b. result = third_inp + accumulator)-->
         <mode name="fp16_mult_fp32_accum"> 
           <pb_type name="fp16_mult_fp32_accum" blif_model=".subckt fp16_mult_fp32_accum" num_pb="1">
-            <input name="mode_sigs" num_pins="11"/>
+            <input name="mode_sigs" num_pins="12"/>
             <input name="reset" num_pins="1"/>
             <input name="top_a" num_pins="16"/>
             <input name="top_b" num_pins="16"/>
@@ -2390,13 +2500,13 @@
             </direct>
             <direct name="btob_top" input="dsp_pb.datain[31:16]" output="fp16_mult_fp32_accum.top_b">
             </direct>
-            <direct name="result_top" input="fp16_mult_fp32_accum.result" output="dsp_pb.resulta[31:0]">
+            <direct name="result_top" input="fp16_mult_fp32_accum.result" output="dsp_pb.result[31:0]">
             </direct>
             <direct name="atoa_bot" input="dsp_pb.datain[47:32]" output="fp16_mult_fp32_accum.bot_a">
             </direct>
             <direct name="btob_bot" input="dsp_pb.datain[63:48]" output="fp16_mult_fp32_accum.bot_b">
             </direct>
-            <direct name="result_bot" input="fp16_mult_fp32_accum.result" output="dsp_pb.resulta[63:32]">
+            <direct name="result_bot" input="fp16_mult_fp32_accum.result" output="dsp_pb.result[63:32]">
             </direct>
             <direct name="fp32in" input="dsp_pb.datain[95:64]" output="fp16_mult_fp32_accum.fp32_in">
             </direct>
@@ -2409,7 +2519,7 @@
         <mode name="fp32_mult_then_add"> 
           <pb_type name="fp32_mult_then_add" blif_model=".subckt fp32_mult_then_add" num_pb="1">
             <input name="reset" num_pins="1"/>
-            <input name="mode_sigs" num_pins="11"/>
+            <input name="mode_sigs" num_pins="12"/>
             <input name="a" num_pins="32"/>
             <input name="b" num_pins="32"/>
             <input name="fp32_in" num_pins="32"/>
@@ -2457,7 +2567,7 @@
             </direct>
             <direct name="btob" input="dsp_pb.datain[63:32]" output="fp32_mult_then_add.b">
             </direct>
-            <direct name="result" input="fp32_mult_then_add.result" output="dsp_pb.resulta[31:0]">
+            <direct name="result" input="fp32_mult_then_add.result" output="dsp_pb.result[31:0]">
             </direct>
             <direct name="chainin" input="dsp_pb.chainin[31:0]" output="fp32_mult_then_add.chainin">
             </direct>
@@ -2472,7 +2582,7 @@
         <mode name="fp32_mult_add"> 
           <pb_type name="fp32_mult_add" blif_model=".subckt fp32_mult_add" num_pb="1">
             <input name="reset" num_pins="1"/>
-            <input name="mode_sigs" num_pins="11"/>
+            <input name="mode_sigs" num_pins="12"/>
             <input name="a" num_pins="32"/>
             <input name="b" num_pins="32"/>
             <input name="fp32_in" num_pins="32"/>
@@ -2520,7 +2630,7 @@
             </direct>
             <direct name="btob" input="dsp_pb.datain[63:32]" output="fp32_mult_add.b">
             </direct>
-            <direct name="result" input="fp32_mult_add.result" output="dsp_pb.resulta[31:0]">
+            <direct name="result" input="fp32_mult_add.result" output="dsp_pb.result[31:0]">
             </direct>
             <direct name="chainin" input="dsp_pb.chainin[31:0]" output="fp32_mult_add.chainin">
             </direct>
@@ -2533,18 +2643,18 @@
       </pb_type>
 
       <interconnect>
-        <direct name="mode_sigs" input="dsp.dsp_I1[10:0]" output ="dsp_pb.mode_sigs"/>
-        <direct name="datain1" input="dsp.dsp_I1[63:11]" output ="dsp_pb.datain[52:0]"/>
-        <direct name="datain2" input="dsp.dsp_I2" output ="dsp_pb.datain[115:53]"/>
+        <direct name="mode_sigs" input="dsp.dsp_I1[11:0]" output ="dsp_pb.mode_sigs"/>
+        <direct name="datain1" input="dsp.dsp_I1[63:12]" output ="dsp_pb.datain[51:0]"/>
+        <direct name="datain2" input="dsp.dsp_I2" output ="dsp_pb.datain[115:52]"/>
         <direct name="reset" input="dsp.reset" output="dsp_pb.reset"></direct>
         <direct name="chainin" input="dsp.chainin"    output="dsp_pb.chainin"></direct>
         <direct name="chainout" input="dsp_pb.chainout" output="dsp.chainout"></direct>
-        <direct name="resulta" input="dsp_pb.resulta" output="dsp.resulta"></direct>
-        <direct name="resultb" input="dsp_pb.resultb" output="dsp.resultb"></direct>
+        <direct name="scanin" input="dsp.scanin"    output="dsp_pb.scanin"></direct>
+        <direct name="scanout" input="dsp_pb.scanout" output="dsp.scanout"></direct>
+        <direct name="result" input="dsp_pb.result" output="dsp.result"></direct>
         <direct name="clk" input="dsp.clk" output="dsp_pb.clk"></direct>
       </interconnect>  
 
-      <power method="sum-of-children"/>
     </pb_type>
     <interconnect>
         <!--50% sparse crossbar means 50% of the lines can reach an actual input of the dsp 
@@ -2577,8 +2687,13 @@
         <direct name="chainout" input="dsp.chainout" output="dsp_top.chainout">
             <delay_constant max="1179e-12" in_port="dsp.chainout" out_port="dsp_top.chainout"/>
         </direct>
-        <direct name="resulta" input="dsp.resulta" output="dsp_top.resulta"></direct>
-        <direct name="resultb" input="dsp.resultb" output="dsp_top.resultb"></direct>
+        <direct name="scanin" input="dsp_top.scanin" output="dsp.scanin">
+            <delay_constant max="1179e-12" in_port="dsp_top.scanin" out_port="dsp.scanin"/>
+        </direct>
+        <direct name="scanout" input="dsp.scanout" output="dsp_top.scanout">
+            <delay_constant max="1179e-12" in_port="dsp.scanout" out_port="dsp_top.scanout"/>
+        </direct>
+        <direct name="result" input="dsp.result" output="dsp_top.result"></direct>
         <direct name="clk" input="dsp_top.clk" output="dsp.clk"></direct>
     </interconnect>
     </pb_type>
@@ -2660,10 +2775,6 @@
           <delay_constant max="0.852e-9" in_port="mem_512x40_sp.data" out_port="mem_512x40_sp.out"/>
           <delay_constant max="0.852e-9" in_port="mem_512x40_sp.we"   out_port="mem_512x40_sp.out"/>
 
-          <power method="pin-toggle">
-            <port name="clk" energy_per_toggle="9.0e-12"/>
-            <static_power power_per_instance="0.0"/>
-          </power>
         </pb_type>
         <interconnect>
           <direct name="address1" input="memory.addr1[8:0]" output="mem_512x40_sp.addr">
@@ -2701,10 +2812,6 @@
           <delay_constant max="0.852e-9" in_port="mem_1024x20_sp.data" out_port="mem_1024x20_sp.out"/>
           <delay_constant max="0.852e-9" in_port="mem_1024x20_sp.we"   out_port="mem_1024x20_sp.out"/>
 
-          <power method="pin-toggle">
-            <port name="clk" energy_per_toggle="9.0e-12"/>
-            <static_power power_per_instance="0.0"/>
-          </power>
         </pb_type>
         <interconnect>
           <direct name="address1" input="memory.addr1[9:0]" output="mem_1024x20_sp.addr">
@@ -2742,10 +2849,6 @@
           <delay_constant max="0.852e-9" in_port="mem_2048x10_sp.data" out_port="mem_2048x10_sp.out"/>
           <delay_constant max="0.852e-9" in_port="mem_2048x10_sp.we"   out_port="mem_2048x10_sp.out"/>
 
-          <power method="pin-toggle">
-            <port name="clk" energy_per_toggle="9.0e-12"/>
-            <static_power power_per_instance="0.0"/>
-          </power>
         </pb_type>
         <interconnect>
           <direct name="address1" input="memory.addr1[10:0]" output="mem_2048x10_sp.addr">
@@ -2799,10 +2902,6 @@
           <delay_constant max="0.852e-9" in_port="mem_1024x20_dp.data2" out_port="mem_1024x20_dp.out2"/>
           <delay_constant max="0.852e-9" in_port="mem_1024x20_dp.we2" out_port="mem_1024x20_dp.out2"/>
 
-          <power method="pin-toggle">
-            <port name="clk" energy_per_toggle="17.9e-12"/>
-            <static_power power_per_instance="0.0"/>
-          </power>
         </pb_type>
         <interconnect>
           <direct name="address1" input="memory.addr1[9:0]" output="mem_1024x20_dp.addr1">
@@ -2863,10 +2962,6 @@
           <delay_constant max="0.852e-9" in_port="mem_2048x10_dp.data2" out_port="mem_2048x10_dp.out2"/>
           <delay_constant max="0.852e-9" in_port="mem_2048x10_dp.we2" out_port="mem_2048x10_dp.out2"/>
 
-          <power method="pin-toggle">
-            <port name="clk" energy_per_toggle="17.9e-12"/>
-            <static_power power_per_instance="0.0"/>
-          </power>
         </pb_type>
         <interconnect>
           <direct name="address1" input="memory.addr1[10:0]" output="mem_2048x10_dp.addr1">
@@ -2889,7 +2984,6 @@
           </direct>
         </interconnect>
       </mode>
-      <power method="sum-of-children"/>
     </pb_type>
     <!-- Define fracturable memory end -->
   </complexblocklist>
@@ -3150,14 +3244,9 @@
     </switchblock>
   </switchblocklist>
 
-  <power>
-    <local_interconnect C_wire="2.5e-10"/>
-    <mux_transistor_size mux_transistor_size="3"/>
-    <FF_size FF_size="4"/>
-    <LUT_transistor_size LUT_transistor_size="4"/>
-  </power>
   <clocks>
     <clock buffer_size="auto" C_wire="2.5e-10"/>
   </clocks>
 </architecture>
+
 

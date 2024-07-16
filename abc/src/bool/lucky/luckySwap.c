@@ -115,9 +115,9 @@ void Kit_TruthChangePhase_64bit( word * pInOut, int nVars, int iVar )
         SizeOfBlock = sizeof(word)*Step;
         for ( i = 0; i < nWords; i += 2*Step )
         {   
-            memcpy(Temp,pInOut,SizeOfBlock);
-            memcpy(pInOut,pInOut+Step,SizeOfBlock);
-            memcpy(pInOut+Step,Temp,SizeOfBlock);
+            memcpy(Temp,pInOut,(size_t)SizeOfBlock);
+            memcpy(pInOut,pInOut+Step,(size_t)SizeOfBlock);
+            memcpy(pInOut+Step,Temp,(size_t)SizeOfBlock);
             //          Temp = pInOut[i];
             //          pInOut[i] = pInOut[Step+i];
             //          pInOut[Step+i] = Temp;          
@@ -165,9 +165,9 @@ void Kit_TruthSwapAdjacentVars_64bit( word * pInOut, int nVars, int iVar )
         pInOut += 2*Step;
         for(i=2*Step; i<nWords; i+=4*Step)
         {           
-            memcpy(temp,pInOut-Step,SizeOfBlock);
-            memcpy(pInOut-Step,pInOut,SizeOfBlock);
-            memcpy(pInOut,temp,SizeOfBlock);
+            memcpy(temp,pInOut-Step,(size_t)SizeOfBlock);
+            memcpy(pInOut-Step,pInOut,(size_t)SizeOfBlock);
+            memcpy(pInOut,temp,(size_t)SizeOfBlock);
             pInOut += 4*Step;
         }
     }

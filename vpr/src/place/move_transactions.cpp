@@ -21,7 +21,7 @@ e_block_move_result record_block_move(t_pl_blocks_to_be_moved& blocks_affected, 
         return e_block_move_result::ABORT;
     }
 
-    VTR_ASSERT_SAFE(to.sub_tile < int(place_ctx.grid_blocks[to.x][to.y].blocks.size()));
+    VTR_ASSERT_SAFE(to.sub_tile < int(place_ctx.grid_blocks.num_blocks_at_location({to.x, to.y, to.layer})));
 
     // Sets up the blocks moved
     int imoved_blk = blocks_affected.num_moved_blocks;
@@ -43,10 +43,19 @@ void apply_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected) {
     for (int iblk = 0; iblk < blocks_affected.num_moved_blocks; ++iblk) {
         ClusterBlockId blk = blocks_affected.moved_blocks[iblk].block_num;
 
-        place_ctx.block_locs[blk].loc = blocks_affected.moved_blocks[iblk].new_loc;
+        const t_pl_loc& old_loc = blocks_affected.moved_blocks[iblk].old_loc;
+        const t_pl_loc& new_loc = blocks_affected.moved_blocks[iblk].new_loc;
+
+        // move the block to its new location
+        place_ctx.block_locs[blk].loc = new_loc;
+
+        // get physical tile type of the old location
+        t_physical_tile_type_ptr old_type = device_ctx.grid.get_physical_type({old_loc.x,old_loc.y,old_loc.layer});
+        // get physical tile type of the new location
+        t_physical_tile_type_ptr new_type = device_ctx.grid.get_physical_type({new_loc.x,new_loc.y, new_loc.layer});
 
         //if physical tile type of old location does not equal physical tile type of new location, sync the new physical pins
-        if (device_ctx.grid[blocks_affected.moved_blocks[iblk].old_loc.x][blocks_affected.moved_blocks[iblk].old_loc.y].type != device_ctx.grid[blocks_affected.moved_blocks[iblk].new_loc.x][blocks_affected.moved_blocks[iblk].new_loc.y].type) {
+        if (old_type != new_type) {
             place_sync_external_block_connections(blk);
         }
     }
@@ -61,28 +70,29 @@ void commit_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected) {
     for (int iblk = 0; iblk < blocks_affected.num_moved_blocks; ++iblk) {
         ClusterBlockId blk = blocks_affected.moved_blocks[iblk].block_num;
 
-        t_pl_loc to = blocks_affected.moved_blocks[iblk].new_loc;
-
-        t_pl_loc from = blocks_affected.moved_blocks[iblk].old_loc;
+        const t_pl_loc& to = blocks_affected.moved_blocks[iblk].new_loc;
+        const t_pl_loc& from = blocks_affected.moved_blocks[iblk].old_loc;
 
         //Remove from old location only if it hasn't already been updated by a previous block update
-        if (place_ctx.grid_blocks[from.x][from.y].blocks[from.sub_tile] == blk) {
-            place_ctx.grid_blocks[from.x][from.y].blocks[from.sub_tile] = EMPTY_BLOCK_ID;
-            --place_ctx.grid_blocks[from.x][from.y].usage;
+        if (place_ctx.grid_blocks.block_at_location(from) == blk) {
+            place_ctx.grid_blocks.set_block_at_location(from, EMPTY_BLOCK_ID);
+            place_ctx.grid_blocks.set_usage({from.x, from.y, from.layer},
+                                            place_ctx.grid_blocks.get_usage({from.x, from.y, from.layer}) - 1);
         }
 
         //Add to new location
-        if (place_ctx.grid_blocks[to.x][to.y].blocks[to.sub_tile] == EMPTY_BLOCK_ID) {
+        if (place_ctx.grid_blocks.block_at_location(to) == EMPTY_BLOCK_ID) {
             //Only need to increase usage if previously unused
-            ++place_ctx.grid_blocks[to.x][to.y].usage;
+            place_ctx.grid_blocks.set_usage({to.x, to.y, to.layer},
+                                            place_ctx.grid_blocks.get_usage({to.x, to.y, to.layer}) + 1);
         }
-        place_ctx.grid_blocks[to.x][to.y].blocks[to.sub_tile] = blk;
+        place_ctx.grid_blocks.set_block_at_location(to, blk);
 
     } // Finish updating clb for all blocks
 }
 
 //Moves the blocks in blocks_affected to their old locations
-void revert_move_blocks(t_pl_blocks_to_be_moved& blocks_affected) {
+void revert_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected) {
     auto& place_ctx = g_vpr_ctx.mutable_placement();
     auto& device_ctx = g_vpr_ctx.device();
 
@@ -90,16 +100,23 @@ void revert_move_blocks(t_pl_blocks_to_be_moved& blocks_affected) {
     for (int iblk = 0; iblk < blocks_affected.num_moved_blocks; ++iblk) {
         ClusterBlockId blk = blocks_affected.moved_blocks[iblk].block_num;
 
-        t_pl_loc old = blocks_affected.moved_blocks[iblk].old_loc;
+        const t_pl_loc& old_loc = blocks_affected.moved_blocks[iblk].old_loc;
+        const t_pl_loc& new_loc = blocks_affected.moved_blocks[iblk].new_loc;
 
-        place_ctx.block_locs[blk].loc = old;
+        // return the block to where it was before the swap
+        place_ctx.block_locs[blk].loc = old_loc;
+
+        // get physical tile type of the old location
+        t_physical_tile_type_ptr old_type = device_ctx.grid.get_physical_type({old_loc.x,old_loc.y,old_loc.layer});
+        // get physical tile type of the new location
+        t_physical_tile_type_ptr new_type = device_ctx.grid.get_physical_type({new_loc.x,new_loc.y, new_loc.layer});
 
         //if physical tile type of old location does not equal physical tile type of new location, sync the new physical pins
-        if (device_ctx.grid[blocks_affected.moved_blocks[iblk].old_loc.x][blocks_affected.moved_blocks[iblk].old_loc.y].type != device_ctx.grid[blocks_affected.moved_blocks[iblk].new_loc.x][blocks_affected.moved_blocks[iblk].new_loc.y].type) {
+        if (old_type != new_type) {
             place_sync_external_block_connections(blk);
         }
 
-        VTR_ASSERT_SAFE_MSG(place_ctx.grid_blocks[old.x][old.y].blocks[old.sub_tile] == blk, "Grid blocks should only have been updated if swap commited (not reverted)");
+        VTR_ASSERT_SAFE_MSG(place_ctx.grid_blocks.block_at_location(old_loc) == blk, "Grid blocks should only have been updated if swap committed (not reverted)");
     }
 }
 
@@ -109,7 +126,7 @@ void clear_move_blocks(t_pl_blocks_to_be_moved& blocks_affected) {
     blocks_affected.moved_to.clear();
     blocks_affected.moved_from.clear();
 
-    //For run-time we just reset num_moved_blocks to zero, but do not free the blocks_affected
+    //For run-time, we just reset num_moved_blocks to zero, but do not free the blocks_affected
     //array to avoid memory allocation
     blocks_affected.num_moved_blocks = 0;
 

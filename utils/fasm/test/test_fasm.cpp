@@ -1,6 +1,7 @@
 #include "catch2/catch_test_macros.hpp"
 #include "catch2/matchers/catch_matchers_all.hpp"
 
+#include "route_common.h"
 #include "vpr_api.h"
 #include "vtr_util.h"
 #include "rr_metadata.h"
@@ -23,7 +24,6 @@ namespace {
 
 // ============================================================================
 
-using Catch::Matchers::Equals;
 using Catch::Matchers::StartsWith;
 using Catch::Matchers::ContainsSubstring;
 
@@ -192,7 +192,8 @@ static std::string get_pin_feature (size_t inode) {
     // Get tile physical tile and the pin number
     int ilow = rr_graph.node_xlow(RRNodeId(inode));
     int jlow = rr_graph.node_ylow(RRNodeId(inode));
-    auto physical_tile = device_ctx.grid[ilow][jlow].type;
+    int layer_num = rr_graph.node_layer(RRNodeId(inode));
+    auto physical_tile = device_ctx.grid.get_physical_type({ilow, jlow, layer_num});
     int pin_num = rr_graph.node_pin_num(RRNodeId(inode));
 
     // Get the sub tile (type, not instance) and index of its pin that matches
@@ -235,6 +236,7 @@ static std::string get_pin_feature (size_t inode) {
 }
 
 TEST_CASE("fasm_integration_test", "[fasm]") {
+    bool is_flat = false;
     {
         t_vpr_setup vpr_setup;
         t_arch arch;
@@ -254,6 +256,8 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
 
         auto &device_ctx = g_vpr_ctx.mutable_device();
         const auto& rr_graph = device_ctx.rr_graph;
+        bool echo_enabled = getEchoEnabled() && isEchoFileEnabled(E_ECHO_RR_GRAPH_INDEXED_DATA);
+        const char* echo_file_name = getEchoFileName(E_ECHO_RR_GRAPH_INDEXED_DATA);
         for (const RRNodeId& inode : rr_graph.nodes()){
             for(t_edge_size iedge = 0; iedge < rr_graph.num_edges(inode); ++iedge) {
                 auto sink_inode = size_t(rr_graph.edge_sink_node(inode, iedge));
@@ -269,12 +273,29 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
                     value = value + "\n" + pin_feature;
                 }
 
-                vpr::add_rr_edge_metadata((size_t)inode, sink_inode, switch_id,
-                        vtr::string_view("fasm_features"), vtr::string_view(value.data(), value.size()));
+                vpr::add_rr_edge_metadata(device_ctx.rr_graph_builder.rr_edge_metadata(),
+                                          (size_t)inode,
+                                          sink_inode, 
+                                          switch_id,
+                                          vtr::string_view("fasm_features"), 
+                                          vtr::string_view(value.data(), value.size()),
+                                          device_ctx.arch);
             }
         }
 
-        write_rr_graph(kRrGraphFile);
+        write_rr_graph(&device_ctx.rr_graph_builder,
+                       &device_ctx.rr_graph,
+                       device_ctx.physical_tile_types,
+                       &device_ctx.rr_indexed_data,
+                       &device_ctx.rr_rc_data,
+                       device_ctx.grid,
+                       device_ctx.arch_switch_inf,
+                       device_ctx.arch,
+                       &device_ctx.chan_width,
+                       kRrGraphFile,
+                       echo_enabled,
+                       echo_file_name,
+                       is_flat);
         vpr_free_all(arch, vpr_setup);
     }
 
@@ -306,16 +327,19 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
     /* Sync netlist to the actual routing (necessary if there are block
        ports with equivalent pins) */
     if (flow_succeeded) {
-        sync_netlists_to_routing(g_vpr_ctx.device(),
+        sync_netlists_to_routing((const Netlist<>&) g_vpr_ctx.clustering().clb_nlist,
+                                 g_vpr_ctx.device(),
                                  g_vpr_ctx.mutable_atom(),
+                                 g_vpr_ctx.atom().lookup,
                                  g_vpr_ctx.mutable_clustering(),
                                  g_vpr_ctx.placement(),
                                  g_vpr_ctx.routing(),
-                                 vpr_setup.PackerOpts.pack_verbosity > 2);
+                                 vpr_setup.PackerOpts.pack_verbosity > 2,
+                                 is_flat);
     }
 
     std::stringstream fasm_string;
-    fasm::FasmWriterVisitor visitor(&arch.strings, fasm_string);
+    fasm::FasmWriterVisitor visitor(&arch.strings, fasm_string, false);
     NetlistWalker nl_walker(visitor);
     nl_walker.walk();
 
@@ -562,20 +586,17 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
 
     // Verify routes
     const auto & route_ctx = g_vpr_ctx.routing();
-    for(const auto &trace : route_ctx.trace) {
-        const t_trace *head = trace.head;
-        while(head != nullptr) {
-            const t_trace *next = head->next;
+    for(const auto& root : route_ctx.route_trees) {
+        if(!root)
+            continue;
 
-            if(next != nullptr && head->iswitch != OPEN) {
-                const auto next_inode = next->index;
-                auto iter = routing_edges.find(std::make_tuple(head->index, next_inode, head->iswitch));
+        for(auto& rt_node: root.value().all_nodes()) {
+            for(auto& child_node: rt_node.child_nodes()){
+                auto iter = routing_edges.find(std::make_tuple(size_t(rt_node.inode), size_t(child_node.inode), size_t(child_node.parent_switch)));
                 if (iter == routing_edges.end()) {
-                    FAIL_CHECK("source: " << head->index << " sink: " << next_inode << " switch:" << head->iswitch);
+                    FAIL_CHECK("source: " << size_t(rt_node.inode) << " sink: " << size_t(child_node.inode) << " switch:" << size_t(child_node.parent_switch));
                 }
             }
-
-            head = next;
         }
     }
 
@@ -609,6 +630,7 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
     CHECK(found_mux2);
     CHECK(found_mux3);
     CHECK(found_mux4);
+
 
     vpr_free_all(arch, vpr_setup);
 }

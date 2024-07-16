@@ -1,6 +1,7 @@
 #include "bucket.h"
 
 #include <cmath>
+#include "rr_graph_fwd.h"
 #include "vtr_log.h"
 #include "vpr_error.h"
 
@@ -110,12 +111,14 @@ Bucket::~Bucket() {
 }
 
 void Bucket::init_heap(const DeviceGrid& grid) {
-    vtr::free(heap_);
+    delete[] heap_;
     heap_ = nullptr;
 
     heap_size_ = (grid.width() - 1) * (grid.height() - 1);
-    heap_ = (BucketItem**)vtr::malloc(heap_size_ * sizeof(BucketItem*));
-    memset(heap_, 0, heap_size_ * sizeof(t_heap*));
+
+    heap_ = new BucketItem*[heap_size_];
+    for (size_t i = 0; i < (size_t)heap_size_; i++)
+        heap_[i] = 0;
 
     heap_head_ = std::numeric_limits<size_t>::max();
     front_head_ = std::numeric_limits<size_t>::max();
@@ -132,7 +135,7 @@ void Bucket::init_heap(const DeviceGrid& grid) {
 }
 
 void Bucket::free_all_memory() {
-    vtr::free(heap_);
+    delete[] heap_;
     heap_ = nullptr;
 
     items_.free();
@@ -141,10 +144,15 @@ void Bucket::free_all_memory() {
 void Bucket::expand(size_t required_number_of_buckets) {
     auto old_size = heap_size_;
     heap_size_ = required_number_of_buckets * 2;
+    size_t i;
 
-    heap_ = (BucketItem**)vtr::realloc((void*)(heap_),
-                                       heap_size_ * sizeof(BucketItem*));
-    std::fill(heap_ + old_size, heap_ + heap_size_, nullptr);
+    std::vector<BucketItem*> temp(heap_, heap_ + old_size);
+    delete[] heap_;
+    heap_ = new BucketItem*[heap_size_];
+    for (i = 0; i < old_size; i++)
+        heap_[i] = temp[i];
+    for (i = temp.size(); i < heap_size_; i++)
+        heap_[i] = nullptr;
 }
 
 void Bucket::verify() {
@@ -267,13 +275,13 @@ void Bucket::push_back(t_heap* hptr) {
     }
 
     if (!min_push_cost_.empty()) {
-        if (hptr->cost > min_push_cost_[hptr->index]) {
+        if (hptr->cost > min_push_cost_[size_t(hptr->index)]) {
             BucketItem* item = reinterpret_cast<BucketItem*>(hptr);
             items_.free_item(item);
             return;
         }
 
-        min_push_cost_[hptr->index] = hptr->cost;
+        min_push_cost_[size_t(hptr->index)] = hptr->cost;
     }
 
     // Check to see if the range of costs observed by the heap has changed.
@@ -435,10 +443,6 @@ t_heap* Bucket::get_heap_head() {
     return &item->item;
 }
 
-void Bucket::invalidate_heap_entries(int /*sink_node*/, int /*ipin_node*/) {
-    throw std::runtime_error("invalidate_heap_entries not implemented for Bucket");
-}
-
 void Bucket::print() {
     for (size_t i = heap_head_; i < heap_tail_; ++i) {
         if (heap_[heap_head_] != nullptr) {
@@ -464,9 +468,11 @@ void Bucket::prune_heap() {
 
     for (size_t bucket = heap_head_; bucket <= heap_tail_; ++bucket) {
         for (BucketItem* item = heap_[bucket]; item != nullptr; item = item->next_bucket) {
-            VTR_ASSERT(static_cast<size_t>(item->item.index) < max_index_);
-            if (best_heap_item[item->item.index] == nullptr || best_heap_item[item->item.index]->item.cost > item->item.cost) {
-                best_heap_item[item->item.index] = item;
+            auto idx = size_t(item->item.index);
+            VTR_ASSERT(idx < max_index_);
+            if (best_heap_item[idx] == nullptr
+                || best_heap_item[idx]->item.cost > item->item.cost) {
+                best_heap_item[idx] = item;
             }
         }
     }
@@ -477,8 +483,9 @@ void Bucket::prune_heap() {
         BucketItem* item = heap_[bucket];
         while (item != nullptr) {
             BucketItem* next_item = item->next_bucket;
+            auto idx = size_t(item->item.index);
 
-            if (best_heap_item[item->item.index] != item) {
+            if (best_heap_item[idx] != item) {
                 // This item isn't the cheapest, return it to the free list.
                 items_.free_item(item);
             } else {

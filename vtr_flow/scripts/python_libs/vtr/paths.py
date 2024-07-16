@@ -9,17 +9,24 @@ root_path = pathlib.Path(__file__).absolute().parent.parent.parent.parent.parent
 vtr_flow_path = root_path / "vtr_flow"
 
 # ODIN paths
-odin_path = root_path / "ODIN_II"
-odin_exe_path = odin_path / "odin_II"
+odin_path = root_path / "odin_ii"
+odin_exe_path = odin_path / "odin_ii"
 odin_cfg_path = vtr_flow_path / "misc" / "basic_odin_config_split.xml"
 odin_verify_path = odin_path / "verify_odin.sh"
 odin_benchmark_path = odin_path / "regression_test" / "benchmark"
 odin_output_on_error_path = odin_path / "regression_test" / ".library" / "output_on_error.conf"
 
 # YOSYS paths
-yosys_exe_path = root_path / "libs" / "EXTERNAL" / "libyosys" / "yosys"
-yosys_lib_path = vtr_flow_path / "misc" / "yosyslib"
-yosys_script_path = yosys_lib_path / "synthesis.ys"
+yosys_path = root_path / "build" / "bin"
+yosys_exe_path = yosys_path / "yosys"
+yosys_tcl_path = vtr_flow_path / "misc" / "yosys"
+yosys_script_path = yosys_tcl_path / "synthesis.tcl"
+
+# PARMYS paths
+parmys_path = root_path / "parmys"
+parmys_verify_path = parmys_path / "verify_parmys.sh"
+parmys_benchmark_path = parmys_path / "regression_test" / "benchmark"
+parmys_output_on_error_path = parmys_path / "regression_test" / ".library" / "output_on_error.conf"
 
 # ABC paths
 abc_path = root_path / "abc"

@@ -1,0 +1,12 @@
+version: 2
+
+updates:
+
+  # Monthly update of submodules.
+  # This dependabot will create a PR if there are any updates to the submodules.
+  - package-ecosystem: gitsubmodule
+    schedule:
+        interval: "monthly"
+
+    # Update all submodules
+    directory: /

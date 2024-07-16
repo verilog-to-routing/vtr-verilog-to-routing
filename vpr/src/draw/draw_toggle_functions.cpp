@@ -1,6 +1,5 @@
-/*draw_toggle_functions.cpp contains callback functions that change draw_state variables
- * connected to buttons and sliders on the GUI.
- */
+
+
 #include <cstdio>
 #include <cfloat>
 #include <cstring>
@@ -63,49 +62,52 @@ constexpr float SB_EDGE_TURN_ARROW_POSITION = 0.2;
 constexpr float SB_EDGE_STRAIGHT_ARROW_POSITION = 0.95;
 constexpr float EMPTY_BLOCK_LIGHTEN_FACTOR = 0.20;
 
-void toggle_nets(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
-    /* this is the callback function for runtime created toggle_nets button
-     * which is written in button.cpp                                         */
-    t_draw_state* draw_state = get_draw_state_vars();
-
-    // get the pointer to the toggle_nets button
-    std::string button_name = "toggle_nets";
-    auto toggle_nets = find_button(button_name.c_str());
-
-    // use the pointer to get the active text
+/**
+ * @brief toggles net drawing status based on status of combo box
+ * updates draw_state->show_nets
+ * 
+ * @param self ptr to gtkComboBox
+ * @param app ezgl::application
+ */
+void toggle_nets_cbk(GtkComboBox* self, ezgl::application* app) {
+    std::cout << "Nets toggled" << std::endl;
     enum e_draw_nets new_state;
-    gchar* combo_box_content = gtk_combo_box_text_get_active_text(
-        GTK_COMBO_BOX_TEXT(toggle_nets));
-
+    t_draw_state* draw_state = get_draw_state_vars();
+    std::cout << draw_state << std::endl;
+    gchar* setting = gtk_combo_box_text_get_active_text(
+        GTK_COMBO_BOX_TEXT(self));
+    std::cout << setting << std::endl;
     // assign corresponding enum value to draw_state->show_nets
-    if (strcmp(combo_box_content, "None") == 0)
+    if (strcmp(setting, "None") == 0)
         new_state = DRAW_NO_NETS;
-    else if (strcmp(combo_box_content, "Nets") == 0) {
-        new_state = DRAW_NETS;
-    } else { // "Logical Connections"
-        new_state = DRAW_LOGICAL_CONNECTIONS;
+    else if (strcmp(setting, "Cluster Nets") == 0) {
+        new_state = DRAW_CLUSTER_NETS;
+    } else { // Primitive Nets - Used to be called "Logical Connections"
+        new_state = DRAW_PRIMITIVE_NETS;
     }
     draw_state->reset_nets_congestion_and_rr();
     draw_state->show_nets = new_state;
 
     //free dynamically allocated pointers
-    g_free(combo_box_content);
+    g_free(setting);
 
     //redraw
-    application.update_message(draw_state->default_message);
-    application.refresh_drawing();
+    app->update_message(draw_state->default_message);
+    app->refresh_drawing();
 }
 
-void toggle_rr(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
-    /* this is the callback function for runtime created toggle_rr button
-     * which is written in button.cpp                                         */
+/**
+ * @brief cbk function for toggle rr combo-box. sets rr draw state based on selected option
+ * updates draw_state->draw_rr_toggle
+ * 
+ * @param self ptr to gtkComboBoxText object
+ * @param app ezgl application
+ */
+void toggle_rr_cbk(GtkComboBoxText* self, ezgl::application* app) {
     t_draw_state* draw_state = get_draw_state_vars();
-    std::string button_name = "toggle_rr";
-    auto toggle_rr = find_button(button_name.c_str());
 
     enum e_draw_rr_toggle new_state;
-    gchar* combo_box_content = gtk_combo_box_text_get_active_text(
-        GTK_COMBO_BOX_TEXT(toggle_rr));
+    gchar* combo_box_content = gtk_combo_box_text_get_active_text(self);
     if (strcmp(combo_box_content, "None") == 0)
         new_state = DRAW_NO_RR;
     else if (strcmp(combo_box_content, "Nodes") == 0)
@@ -126,20 +128,21 @@ void toggle_rr(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
     draw_state->reset_nets_congestion_and_rr();
     draw_state->draw_rr_toggle = new_state;
 
-    application.update_message(draw_state->default_message);
-    application.refresh_drawing();
+    app->update_message(draw_state->default_message);
+    app->refresh_drawing();
 }
 
-void toggle_congestion(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
-    /* this is the callback function for runtime created toggle_congestion button
-     * which is written in button.cpp                                         */
+/**
+ * @brief cbk function for toggle congestion comboBox. Updates shown cong. based on selected option
+ * updates draw_state->show_congestion
+ * 
+ * @param self self ptr to GtkComboBoxText
+ * @param app ezgl application
+ */
+void toggle_cong_cbk(GtkComboBoxText* self, ezgl::application* app) {
     t_draw_state* draw_state = get_draw_state_vars();
-    std::string button_name = "toggle_congestion";
-    auto toggle_congestion = find_button(button_name.c_str());
-
     enum e_draw_congestion new_state;
-    gchar* combo_box_content = gtk_combo_box_text_get_active_text(
-        GTK_COMBO_BOX_TEXT(toggle_congestion));
+    gchar* combo_box_content = gtk_combo_box_text_get_active_text(self);
     if (strcmp(combo_box_content, "None") == 0)
         new_state = DRAW_NO_CONGEST;
     else if (strcmp(combo_box_content, "Congested") == 0)
@@ -151,21 +154,25 @@ void toggle_congestion(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*d
     draw_state->reset_nets_congestion_and_rr();
     draw_state->show_congestion = new_state;
     if (draw_state->show_congestion == DRAW_NO_CONGEST) {
-        application.update_message(draw_state->default_message);
+        app->update_message(draw_state->default_message);
     }
     g_free(combo_box_content);
-    application.refresh_drawing();
+    app->refresh_drawing();
 }
 
-void toggle_routing_congestion_cost(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
+/**
+ * @brief cbk function for toggle cong. cost combobox. sets draws state according to new setting
+ * updates draw_state->show_routing_costs
+ * 
+ * @param self self ptr
+ * @param app ezgl app
+ */
+void toggle_cong_cost_cbk(GtkComboBoxText* self, ezgl::application* app) {
     /* this is the callback function for runtime created toggle_routing_congestion_cost button
      * which is written in button.cpp                                         */
     t_draw_state* draw_state = get_draw_state_vars();
-    std::string button_name = "toggle_routing_congestion_cost";
-    auto toggle_routing_congestion_cost = find_button(button_name.c_str());
     enum e_draw_routing_costs new_state;
-    gchar* combo_box_content = gtk_combo_box_text_get_active_text(
-        GTK_COMBO_BOX_TEXT(toggle_routing_congestion_cost));
+    gchar* combo_box_content = gtk_combo_box_text_get_active_text(self);
     if (strcmp(combo_box_content, "None") == 0)
         new_state = DRAW_NO_ROUTING_COSTS;
     else if (strcmp(combo_box_content, "Total Routing Costs") == 0)
@@ -187,26 +194,28 @@ void toggle_routing_congestion_cost(GtkWidget* /*widget*/, gint /*response_id*/,
     draw_state->show_routing_costs = new_state;
     g_free(combo_box_content);
     if (draw_state->show_routing_costs == DRAW_NO_ROUTING_COSTS) {
-        application.update_message(draw_state->default_message);
+        app->update_message(draw_state->default_message);
     }
-    application.refresh_drawing();
+    app->refresh_drawing();
 }
 
-void toggle_routing_bounding_box(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
-    /* this is the callback function for runtime created toggle_routing_bounding_box button
-     * which is written in button.cpp                                         */
+/**
+ * @brief cbk fn for spin button which manages drawing of routing bbox. 
+ * Updates draw_state->show_routing_bb
+ * 
+ * @param self 
+ * @param app 
+ */
+void toggle_routing_bbox_cbk(GtkSpinButton* self, ezgl::application* app) {
     t_draw_state* draw_state = get_draw_state_vars();
     auto& route_ctx = g_vpr_ctx.routing();
     // get the pointer to the toggle_routing_bounding_box button
-    std::string button_name = "toggle_routing_bounding_box";
-    auto toggle_routing_bounding_box = find_button(button_name.c_str());
 
     if (route_ctx.route_bb.size() == 0)
         return; //Nothing to draw
 
     // use the pointer to get the active value
-    int new_value = gtk_spin_button_get_value_as_int(
-        (GtkSpinButton*)toggle_routing_bounding_box);
+    int new_value = gtk_spin_button_get_value_as_int(self);
 
     // assign value to draw_state->show_routing_bb, bound check + set OPEN when it's -1 (draw nothing)
     if (new_value < -1)
@@ -221,21 +230,25 @@ void toggle_routing_bounding_box(GtkWidget* /*widget*/, gint /*response_id*/, gp
     //redraw
     if ((int)(draw_state->show_routing_bb)
         == (int)((int)(route_ctx.route_bb.size()) - 1)) {
-        application.update_message(draw_state->default_message);
+        app->update_message(draw_state->default_message);
     }
-    application.refresh_drawing();
+    app->refresh_drawing();
 }
 
-void toggle_routing_util(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
+/**
+ * @brief cbk fn for toggle router util gtkComboBoxText.
+ * Alters draw_state->show_routing_util to reflect new value
+ * 
+ * @param self self ptr
+ * @param app ezgl app
+ */
+void toggle_router_util_cbk(GtkComboBoxText* self, ezgl::application* app) {
     /* this is the callback function for runtime created toggle_routing_util button
      * which is written in button.cpp                                         */
     t_draw_state* draw_state = get_draw_state_vars();
-    std::string button_name = "toggle_routing_util";
-    auto toggle_routing_util = find_button(button_name.c_str());
-
     enum e_draw_routing_util new_state;
-    gchar* combo_box_content = gtk_combo_box_text_get_active_text(
-        GTK_COMBO_BOX_TEXT(toggle_routing_util));
+
+    gchar* combo_box_content = gtk_combo_box_text_get_active_text(self);
     if (strcmp(combo_box_content, "None") == 0)
         new_state = DRAW_NO_ROUTING_UTIL;
     else if (strcmp(combo_box_content, "Routing Util") == 0)
@@ -251,41 +264,44 @@ void toggle_routing_util(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /
     draw_state->show_routing_util = new_state;
 
     if (draw_state->show_routing_util == DRAW_NO_ROUTING_UTIL) {
-        application.update_message(draw_state->default_message);
+        app->update_message(draw_state->default_message);
     }
-    application.refresh_drawing();
+    app->refresh_drawing();
 }
 
-void toggle_blk_internal(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
-    /* this is the callback function for runtime created toggle_blk_internal button
-     * which is written in button.cpp                                         */
+/**
+ * @brief cbk fn for block internals spin button, updates values
+ * updates draw_state->show_blk_internal
+ * 
+ * @param self ptr to self
+ * @param app ezgl::app
+ */
+void toggle_blk_internal_cbk(GtkSpinButton* self, ezgl::application* app) {
     t_draw_state* draw_state = get_draw_state_vars();
-    std::string button_name = "toggle_blk_internal";
-    auto toggle_blk_internal = find_button(button_name.c_str());
-
-    int new_value = gtk_spin_button_get_value_as_int(
-        (GtkSpinButton*)toggle_blk_internal);
+    int new_value = gtk_spin_button_get_value_as_int(self);
     if (new_value < 0)
         draw_state->show_blk_internal = 0;
     else if (new_value >= draw_state->max_sub_blk_lvl)
         draw_state->show_blk_internal = draw_state->max_sub_blk_lvl - 1;
     else
         draw_state->show_blk_internal = new_value;
-    application.refresh_drawing();
+    app->refresh_drawing();
 }
 
-void toggle_block_pin_util(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
-    /* this is the callback function for runtime created toggle_block_pin_util button
-     * which is written in button.cpp                                         */
+/**
+ * @brief cbk function when pin util gets changed in ui; sets pin util drawing to new val
+ * updates draw_state->show_blk_pin_util
+ * 
+ * @param self ptr to selt
+ * @param app ezgl::app
+ */
+void toggle_blk_pin_util_cbk(GtkComboBoxText* self, ezgl::application* app) {
     t_draw_state* draw_state = get_draw_state_vars();
-    std::string button_name = "toggle_block_pin_util";
-    auto toggle_block_pin_util = find_button(button_name.c_str());
-    gchar* combo_box_content = gtk_combo_box_text_get_active_text(
-        GTK_COMBO_BOX_TEXT(toggle_block_pin_util));
+    gchar* combo_box_content = gtk_combo_box_text_get_active_text(self);
     if (strcmp(combo_box_content, "None") == 0) {
         draw_state->show_blk_pin_util = DRAW_NO_BLOCK_PIN_UTIL;
         draw_reset_blk_colors();
-        application.update_message(draw_state->default_message);
+        app->update_message(draw_state->default_message);
     } else if (strcmp(combo_box_content, "All") == 0)
         draw_state->show_blk_pin_util = DRAW_BLOCK_PIN_UTIL_TOTAL;
     else if (strcmp(combo_box_content, "Inputs") == 0)
@@ -294,36 +310,38 @@ void toggle_block_pin_util(GtkWidget* /*widget*/, gint /*response_id*/, gpointer
         draw_state->show_blk_pin_util = DRAW_BLOCK_PIN_UTIL_OUTPUTS;
 
     g_free(combo_box_content);
-    application.refresh_drawing();
+    app->refresh_drawing();
 }
 
-void toggle_placement_macros(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
-    /* this is the callback function for runtime created toggle_placement_macros button
-     * which is written in button.cpp                                         */
+/**
+ * @brief cbk function when pin util gets changed in ui; sets pin util drawing to new val
+ * updates draw_state->show_placement_macros
+ * 
+ * @param self ptr to selt
+ * @param app ezgl::app
+ */
+void placement_macros_cbk(GtkComboBoxText* self, ezgl::application* app) {
     t_draw_state* draw_state = get_draw_state_vars();
-    std::string button_name = "toggle_placement_macros";
-    auto toggle_placement_macros = find_button(button_name.c_str());
-
-    gchar* combo_box_content = gtk_combo_box_text_get_active_text(
-        GTK_COMBO_BOX_TEXT(toggle_placement_macros));
+    gchar* combo_box_content = gtk_combo_box_text_get_active_text(self);
     if (strcmp(combo_box_content, "None") == 0)
         draw_state->show_placement_macros = DRAW_NO_PLACEMENT_MACROS;
     else
         draw_state->show_placement_macros = DRAW_PLACEMENT_MACROS;
 
     g_free(combo_box_content);
-    application.refresh_drawing();
+    app->refresh_drawing();
 }
 
-void toggle_crit_path(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
-    /* this is the callback function for runtime created toggle_crit_path button
-     * which is written in button.cpp                                         */
+/**
+ * @brief cbk fn for toggling critical path. 
+ * alters draw_state->show_crit_path to reflect new state
+ * 
+ * @param self ptr to combo box w setting
+ * @param app ezgl app
+ */
+void toggle_crit_path_cbk(GtkComboBoxText* self, ezgl::application* app) {
     t_draw_state* draw_state = get_draw_state_vars();
-    std::string button_name = "toggle_crit_path";
-    auto toggle_crit_path = find_button(button_name.c_str());
-
-    gchar* combo_box_content = gtk_combo_box_text_get_active_text(
-        GTK_COMBO_BOX_TEXT(toggle_crit_path));
+    gchar* combo_box_content = gtk_combo_box_text_get_active_text(self);
     if (strcmp(combo_box_content, "None") == 0) {
         draw_state->show_crit_path = DRAW_NO_CRIT_PATH;
     } else if (strcmp(combo_box_content, "Crit Path Flylines") == 0)
@@ -337,19 +355,20 @@ void toggle_crit_path(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*da
         draw_state->show_crit_path = DRAW_CRIT_PATH_ROUTING_DELAYS;
 
     g_free(combo_box_content);
-    application.refresh_drawing();
+    app->refresh_drawing();
 }
 
-void toggle_router_expansion_costs(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
-    /* this is the callback function for runtime created toggle_router_expansion_costs button
-     * which is written in button.cpp                                         */
+/**
+ * @brief cbk function for toggling routing expansion cost. 
+ * alters draw_state->show_router_expansion cost var. to reflect new value
+ * 
+ * @param self self ptr
+ * @param app ezgl::application
+ */
+void toggle_expansion_cost_cbk(GtkComboBoxText* self, ezgl::application* app) {
     t_draw_state* draw_state = get_draw_state_vars();
-    std::string button_name = "toggle_router_expansion_costs";
-    auto toggle_router_expansion_costs = find_button(button_name.c_str());
-
     e_draw_router_expansion_cost new_state;
-    gchar* combo_box_content = gtk_combo_box_text_get_active_text(
-        GTK_COMBO_BOX_TEXT(toggle_router_expansion_costs));
+    gchar* combo_box_content = gtk_combo_box_text_get_active_text(self);
     if (strcmp(combo_box_content, "None") == 0) {
         new_state = DRAW_NO_ROUTER_EXPANSION_COST;
     } else if (strcmp(combo_box_content, "Total") == 0) {
@@ -373,20 +392,23 @@ void toggle_router_expansion_costs(GtkWidget* /*widget*/, gint /*response_id*/, 
 
     if (draw_state->show_router_expansion_cost
         == DRAW_NO_ROUTER_EXPANSION_COST) {
-        application.update_message(draw_state->default_message);
+        app->update_message(draw_state->default_message);
     }
-    application.refresh_drawing();
+    app->refresh_drawing();
 }
 
-void toggle_noc_display(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
-    /* this is the callback function for runtime created toggle_noc_display button
-     * which is written in button.cpp                                         */
+/**
+ * @brief cbk fn to toggle Network-On-Chip (Noc) visibility
+ * alters draw_state->draw_noc to reflect new state
+ * Reacts to main.ui created combo box, setup in ui_setup.cpp
+ * 
+ * @param self ptr to combo box
+ * @param app ezgl application
+ */
+void toggle_noc_cbk(GtkComboBoxText* self, ezgl::application* app) {
     t_draw_state* draw_state = get_draw_state_vars();
-    std::string button_name = "toggle_noc_display";
-    auto toggle_crit_path = find_button(button_name.c_str());
 
-    gchar* combo_box_content = gtk_combo_box_text_get_active_text(
-        GTK_COMBO_BOX_TEXT(toggle_crit_path));
+    gchar* combo_box_content = gtk_combo_box_text_get_active_text(self);
     if (strcmp(combo_box_content, "None") == 0) {
         draw_state->draw_noc = DRAW_NO_NOC;
     } else if (strcmp(combo_box_content, "NoC Links") == 0)
@@ -395,37 +417,124 @@ void toggle_noc_display(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*
         draw_state->draw_noc = DRAW_NOC_LINK_USAGE;
 
     g_free(combo_box_content);
-    application.refresh_drawing();
+    app->refresh_drawing();
 }
 
-// Callback function for NetMax Fanout checkbox
-void net_max_fanout(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
-    /* this is the callback function for runtime created net_max_fanout widget
-     * which is written in button.cpp                                         */
-    std::string button_name = "netMaxFanout";
-    auto max_fanout = find_button(button_name.c_str());
+/**
+ * @brief CBK for Net Max Fanout spin button. Sets max fanout when val. changes
+ * updates draw_state->draw_net_max_fanout
+ * 
+ * @param self self ptr to GtkSpinButton
+ * @param app ezgl::app
+ */
+void set_net_max_fanout_cbk(GtkSpinButton* self, ezgl::application* app) {
+    t_draw_state* draw_state = get_draw_state_vars();
+    draw_state->draw_net_max_fanout = gtk_spin_button_get_value_as_int(self);
+    app->refresh_drawing();
+}
+
+/**
+ * @brief Set the net alpha value (transparency) based on value of spin button
+ * updates draw_state->net_alpha
+ * 
+ * @param self 
+ * @param app 
+ */
+void set_net_alpha_value_cbk(GtkSpinButton* self, ezgl::application* app) {
+    t_draw_state* draw_state = get_draw_state_vars();
+    draw_state->net_alpha = (255 - gtk_spin_button_get_value_as_int(self)) / 255.0;
+    app->refresh_drawing();
+}
+
+/**
+ * @brief Callback function for 3d layer checkboxes
+ */
+void select_layer_cbk(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/) {
     t_draw_state* draw_state = get_draw_state_vars();
 
-    //set draw_state->draw_net_max_fanout to its corresponding value in the ui
-    int new_value = gtk_spin_button_get_value_as_int(
-        (GtkSpinButton*)max_fanout);
-    draw_state->draw_net_max_fanout = new_value;
+    GtkWidget* parent = gtk_widget_get_parent(widget);
+    GtkBox* box = GTK_BOX(parent);
 
-    //redraw
+    GList* children = gtk_container_get_children(GTK_CONTAINER(box));
+    int index = 0;
+    // Iterate over the checkboxes
+    for (GList* iter = children; iter != NULL; iter = g_list_next(iter)) {
+        if (GTK_IS_CHECK_BUTTON(iter->data)) {
+            GtkWidget* checkbox = GTK_WIDGET(iter->data);
+            gboolean state = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(checkbox));
+            const gchar* name = gtk_button_get_label(GTK_BUTTON(checkbox));
+
+            // Only iterate through checkboxes with name "Layer ...", skip Cross Layer Connection
+            if (std::string(name).find("Layer") != std::string::npos
+                && std::string(name).find("Cross") == std::string::npos) {
+                // Change the the boolean of the draw_layer_display vector depending on checkbox
+                if (state) {
+                    draw_state->draw_layer_display[index].visible = true;
+                } else {
+                    draw_state->draw_layer_display[index].visible = false;
+                }
+                index++;
+            }
+        }
+    }
     application.refresh_drawing();
+    g_list_free(children);
 }
-
-void set_net_alpha_value(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
-    std::string button_name = "netAlpha";
-    auto net_alpha = find_button(button_name.c_str());
+/**
+ * @brief Callback function for 3d layer transparency spin buttons
+ */
+void transparency_cbk(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/) {
     t_draw_state* draw_state = get_draw_state_vars();
 
-    //set draw_state->net_alpha to its corresponding value in the ui
-    int new_value = gtk_spin_button_get_value_as_int((GtkSpinButton*)net_alpha);
-    draw_state->net_alpha = new_value;
+    GtkWidget* parent = gtk_widget_get_parent(widget);
+    GtkBox* box = GTK_BOX(parent);
+    GList* children = gtk_container_get_children(GTK_CONTAINER(box));
 
-    //redraw
+    int index = 0;
+    // Iterate over transparency layers
+    for (GList* iter = children; iter != NULL; iter = g_list_next(iter)) {
+        if (GTK_IS_SPIN_BUTTON(iter->data)) {
+            GtkWidget* spin_button = GTK_WIDGET(iter->data);
+            const gchar* name = gtk_widget_get_name(spin_button);
+
+            if (std::string(name).find("Transparency") != std::string::npos
+                && std::string(name).find("Cross") == std::string::npos) {
+                gint value = gtk_spin_button_get_value(GTK_SPIN_BUTTON(spin_button));
+                draw_state->draw_layer_display[index].alpha = 255 - value;
+                index++;
+            }
+        }
+    }
+    application.refresh_drawing();
+    g_list_free(children);
+}
+
+/**
+ * @brief Callback function for cross layer connection checkbox
+ */
+void cross_layer_checkbox_cbk(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/) {
+    t_draw_state* draw_state = get_draw_state_vars();
+
+    gboolean state = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
+
+    if (state) {
+        draw_state->cross_layer_display.visible = true;
+    } else {
+        draw_state->cross_layer_display.visible = false;
+    }
+
     application.refresh_drawing();
 }
 
+/**
+ * @brief Callback function for cross layer connection spin button
+ */
+void cross_layer_transparency_cbk(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/) {
+    t_draw_state* draw_state = get_draw_state_vars();
+
+    gint value = gtk_spin_button_get_value(GTK_SPIN_BUTTON(widget));
+    draw_state->cross_layer_display.alpha = 255 - value;
+
+    application.refresh_drawing();
+}
 #endif

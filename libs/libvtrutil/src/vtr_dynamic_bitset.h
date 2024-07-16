@@ -20,6 +20,11 @@ class dynamic_bitset {
     static_assert(std::numeric_limits<Storage>::is_integer,
                   "dynamic_bitset storage must be integer!");
 
+    constexpr dynamic_bitset() = default;
+    constexpr dynamic_bitset(Index size) {
+        resize(size);
+    }
+
     ///@brief Reize to the determined size
     void resize(size_t size) {
         array_.resize((size + kWidth - 1) / kWidth);
@@ -61,6 +66,39 @@ class dynamic_bitset {
         size_t index_value(index);
         VTR_ASSERT_SAFE(index_value < size());
         return (array_[index_value / kWidth] & (1u << (index_value % kWidth))) != 0;
+    }
+
+    ///@brief Return count of set bits.
+    constexpr size_t count(void) const {
+        size_t out = 0;
+        for (auto x : array_)
+            out += __builtin_popcount(x);
+        return out;
+    }
+
+    ///@brief Bitwise OR with rhs. Truncate the operation if one operand is smaller.
+    constexpr dynamic_bitset<Index, Storage>& operator|=(const dynamic_bitset<Index, Storage>& x) {
+        size_t n = std::min(array_.size(), x.array_.size());
+        for (size_t i = 0; i < n; i++)
+            array_[i] |= x.array_[i];
+        return *this;
+    }
+
+    ///@brief Bitwise AND with rhs. Truncate the operation if one operand is smaller.
+    constexpr dynamic_bitset<Index, Storage>& operator&=(const dynamic_bitset<Index, Storage>& x) {
+        size_t n = std::min(array_.size(), x.array_.size());
+        for (size_t i = 0; i < n; i++)
+            array_[i] &= x.array_[i];
+        return *this;
+    }
+
+    ///@brief Return inverted bitset.
+    inline dynamic_bitset<Index, Storage> operator~(void) const {
+        dynamic_bitset<Index, Storage> out(size());
+        size_t n = array_.size();
+        for (size_t i = 0; i < n; i++)
+            out.array_[i] = ~array_[i];
+        return out;
     }
 
   private:

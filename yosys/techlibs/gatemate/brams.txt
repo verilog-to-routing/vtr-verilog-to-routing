@@ -1,0 +1,80 @@
+ram block $__CC_BRAM_TDP_ {
+	option "MODE" "20K" {
+		abits 14;
+		widths 1 2 5 10 20 per_port;
+		cost 129;
+	}
+	option "MODE" "40K" {
+		abits 15;
+		widths 1 2 5 10 20 40 per_port;
+		cost 257;
+	}
+	option "MODE" "CASCADE" {
+		abits 16;
+		# hack to enforce same INIT layout as in the other modes
+		widths 1 2 5 per_port;
+		cost 513;
+	}
+	byte 1;
+	init no_undef;
+	port srsw "A" "B" {
+		clock anyedge;
+		clken;
+		option "MODE" "20K" {
+			width mix;
+		}
+		option "MODE" "40K" {
+			width mix;
+		}
+		option "MODE" "CASCADE" {
+			width mix 1;
+		}
+		portoption "WR_MODE" "NO_CHANGE" {
+			rdwr no_change;
+		}
+		portoption "WR_MODE" "WRITE_THROUGH" {
+			rdwr new;
+			wrtrans all new;
+		}
+		wrbe_separate;
+		optional_rw;
+	}
+}
+
+ram block $__CC_BRAM_SDP_ {
+	option "MODE" "20K" {
+		abits 14;
+		widths 1 2 5 10 20 40 per_port;
+		cost 129;
+	}
+	option "MODE" "40K" {
+		abits 15;
+		widths 1 2 5 10 20 40 80 per_port;
+		cost 257;
+	}
+	byte 1;
+	init no_undef;
+	port sr "R" {
+		option "MODE" "20K" {
+			width 40;
+		}
+		option "MODE" "40K" {
+			width 80;
+		}
+		clock anyedge;
+		clken;
+		optional;
+	}
+	port sw "W" {
+		option "MODE" "20K" {
+			width 40;
+		}
+		option "MODE" "40K" {
+			width 80;
+		}
+		clock anyedge;
+		clken;
+		wrbe_separate;
+		optional;
+	}
+}

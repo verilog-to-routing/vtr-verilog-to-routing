@@ -238,9 +238,9 @@ void Rwt_Man5ExplorePrint()
         if ( CountMax < Counter )
             CountMax = Counter;
     }
-    printf( "Number of cuts considered       = %8d.\n", nCuts );
-    printf( "Classes occurring at least once = %8d.\n", stmm_count(s_pManRwrExp5->tTableNN) );
-    printf( "The largest number of occurence = %8d.\n", CountMax );
+    printf( "Number of cuts considered        = %8d.\n", nCuts );
+    printf( "Classes occurring at least once  = %8d.\n", stmm_count(s_pManRwrExp5->tTableNN) );
+    printf( "The largest number of occurrence = %8d.\n", CountMax );
 
     // print the distribution of classes
     pDistrib = ABC_ALLOC( int, CountMax + 1 );

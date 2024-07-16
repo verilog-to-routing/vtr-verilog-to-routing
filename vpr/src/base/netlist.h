@@ -443,7 +443,7 @@ class NetlistIdRemapper {
     vtr::vector_map<NetId, NetId> net_id_map_;
 };
 
-template<typename BlockId, typename PortId, typename PinId, typename NetId>
+template<typename BlockId = ParentBlockId, typename PortId = ParentPortId, typename PinId = ParentPinId, typename NetId = ParentNetId>
 class Netlist {
   public: //Public Types
     typedef typename vtr::vector_map<BlockId, BlockId>::const_iterator block_iterator;
@@ -494,6 +494,12 @@ class Netlist {
      * @note   This is a convenience method which is the logical inverse of is_dirty()
      */
     bool is_compressed() const;
+
+    ///@brief Returns whether the net is ignored i.e. not routed
+    bool net_is_ignored(const NetId id) const;
+
+    ///@brief Returns whether the net is global
+    bool net_is_global(const NetId id) const;
 
     ///@brief Item counts and container info (for debugging)
     void print_stats() const;
@@ -728,6 +734,43 @@ class Netlist {
     BlockId find_block(const std::string& name) const;
 
     /**
+     * @brief Finds a block where the block's name contains the
+     *        provided input name as a substring. 
+     *        The intented use is to find the block id of a 
+     *        hard block without knowing its name in the netlist. Instead
+     *        the block's module name in the HDL design can be used as it will
+     *        be a substring within its full name in the netlist.
+     * 
+     *        For example, suppose a RAM block was named in the netlist as
+     *        "top|alu|test_ram|out". The user instantiated the ram module
+     *        in the HDL design as "test_ram". So instead of going through 
+     *        the netlist and finding the ram block's full name, this
+     *        function can be used by just providing the module name "test_ram"
+     *        and using this substring to match the blocks name in the netlist
+     *        and retrieving its block id. If no blocks matched to input pattern
+     *        then an invalid block id is returned.
+     * 
+     *        This function runs in linear time (O(N)) as it goes over all the 
+     *        cluster blocks in the netlist. Additionally, if there are multiple
+     *        blocks that contain the provided input as a substring, then the
+     *        first block found is returned.
+     * 
+     *        NOTE: This function tries to find blocks by checking for 
+     *              substrings.
+     *              The clustered netlist class defines another version of this
+     *              function that find blocks by checking for a pattern match,
+     *              meaning that the input is a pattern string and the pattern
+     *              is looked for ine each block name.
+     * 
+     * @param name_substring A substring of a block name for which an ID needs  
+     *             to be found.
+     * @return A cluster block id representing a unique cluster block that 
+     *         matched to the input string pattern.
+     *        
+     */
+    BlockId find_block_by_name_fragment(const std::string& name_substring) const;
+
+    /**
      * @brief Returns the PortId of the specifed port if it exists or PortId::INVALID() if not
      *
      * @note  This method is typically less efficient than searching by a t_model_port
@@ -805,6 +848,17 @@ class Netlist {
      *   @param value    The new value for the specified parameter on the specified block
      */
     void set_block_param(const BlockId blk_id, const std::string& name, const std::string& value);
+
+    /**
+     * @brief Sets the flag in net_ignored_ = state
+     *
+     *   @param net_id   The Net Id
+     *   @param state   true(false): net should(shouldn't) be ignored
+     */
+    void set_net_is_ignored(NetId net_id, bool state);
+
+    ///@brief Sets the flag in net_is_global_ = state
+    void set_net_is_global(NetId net_id, bool state);
 
     /**
      * @brief Merges sink_net into driver_net
@@ -1025,27 +1079,27 @@ class Netlist {
   protected: //Protected virtual functions implemented in derived classes
     //The functions follow the Non-Virtual Interface (NVI) idiom, and
     //are called from this class in their respective non-impl() functions.
-    virtual void shrink_to_fit_impl() = 0;
+    virtual void shrink_to_fit_impl() {}
 
-    virtual bool validate_block_sizes_impl(size_t num_blocks) const = 0;
-    virtual bool validate_port_sizes_impl(size_t num_ports) const = 0;
-    virtual bool validate_pin_sizes_impl(size_t num_pins) const = 0;
-    virtual bool validate_net_sizes_impl(size_t num_nets) const = 0;
+    virtual bool validate_block_sizes_impl(size_t /*num_blocks*/) const { return true; }
+    virtual bool validate_port_sizes_impl(size_t /*num_ports*/) const { return true; }
+    virtual bool validate_pin_sizes_impl(size_t /*num_pins*/) const { return true; }
+    virtual bool validate_net_sizes_impl(size_t /*num_nets*/) const { return true; }
 
-    virtual void clean_blocks_impl(const vtr::vector_map<BlockId, BlockId>& block_id_map) = 0;
-    virtual void clean_ports_impl(const vtr::vector_map<PortId, PortId>& port_id_map) = 0;
-    virtual void clean_pins_impl(const vtr::vector_map<PinId, PinId>& pin_id_map) = 0;
-    virtual void clean_nets_impl(const vtr::vector_map<NetId, NetId>& net_id_map) = 0;
+    virtual void clean_blocks_impl(const vtr::vector_map<BlockId, BlockId>& /*block_id_map*/) {}
+    virtual void clean_ports_impl(const vtr::vector_map<PortId, PortId>& /*port_id_map*/) {}
+    virtual void clean_pins_impl(const vtr::vector_map<PinId, PinId>& /*pin_id_map*/) {}
+    virtual void clean_nets_impl(const vtr::vector_map<NetId, NetId>& /*net_id_map*/) {}
 
-    virtual void remove_block_impl(const BlockId blk_id) = 0;
-    virtual void remove_port_impl(const PortId port_id) = 0;
-    virtual void remove_pin_impl(const PinId pin_id) = 0;
-    virtual void remove_net_impl(const NetId net_id) = 0;
+    virtual void remove_block_impl(const BlockId /*blk_id*/) {}
+    virtual void remove_port_impl(const PortId /*port_id*/) {}
+    virtual void remove_pin_impl(const PinId /*pin_id*/) {}
+    virtual void remove_net_impl(const NetId /*net_id*/) {}
 
-    virtual void rebuild_block_refs_impl(const vtr::vector_map<PinId, PinId>& pin_id_map, const vtr::vector_map<PortId, PortId>& port_id_map) = 0;
-    virtual void rebuild_port_refs_impl(const vtr::vector_map<BlockId, BlockId>& block_id_map, const vtr::vector_map<PinId, PinId>& pin_id_map) = 0;
-    virtual void rebuild_pin_refs_impl(const vtr::vector_map<PortId, PortId>& port_id_map, const vtr::vector_map<NetId, NetId>& net_id_map) = 0;
-    virtual void rebuild_net_refs_impl(const vtr::vector_map<PinId, PinId>& pin_id_map) = 0;
+    virtual void rebuild_block_refs_impl(const vtr::vector_map<PinId, PinId>& /*pin_id_map*/, const vtr::vector_map<PortId, PortId>& /*port_id_map*/) {}
+    virtual void rebuild_port_refs_impl(const vtr::vector_map<BlockId, BlockId>& /*block_id_map*/, const vtr::vector_map<PinId, PinId>& /*pin_id_map*/) {}
+    virtual void rebuild_pin_refs_impl(const vtr::vector_map<PortId, PortId>& /*port_id_map*/, const vtr::vector_map<NetId, NetId>& /*net_id_map*/) {}
+    virtual void rebuild_net_refs_impl(const vtr::vector_map<PinId, PinId>& /*pin_id_map*/) {}
 
   protected:
     constexpr static int INVALID_INDEX = -1;
@@ -1105,6 +1159,8 @@ class Netlist {
     vtr::vector_map<StringId, BlockId> block_name_to_block_id_;
     vtr::vector_map<StringId, NetId> net_name_to_net_id_;
     std::unordered_map<std::string, StringId> string_to_string_id_;
+    vtr::vector_map<NetId, bool> net_is_ignored_; ///<Boolean mapping indicating if the net is ignored
+    vtr::vector_map<NetId, bool> net_is_global_;  ///<Boolean mapping indicating if the net is global
 };
 
 #include "netlist.tpp"

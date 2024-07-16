@@ -225,7 +225,7 @@ For example, in the following:
     .model top
     .inputs a b x y z clk
     .outputs c c_reg cout[0] sum[0]
-    
+
     .names a b c
     11 1
 
@@ -608,9 +608,9 @@ The io pad is set to inpad mode and is driven by the inpad:
           - After packing is completed, the packing results will be outputted. The ``.net`` file can be loaded as an input for placer, router and analyzer. Note that the file may **not** represent the final packing results as the analyzer will apply synchronization between packing and routing results.
           - After analysis is completed, updated packing results will be outputted. This is due to that VPR router may swap pin mapping in packing results for optimizations. In such cases, packing results are synchronized with routing results. The outputted ``.net`` file will have a postfix of ``.post_routing`` as compared to the original packing results. It could happen that VPR router does not apply any pin swapping and the two ``.net`` files are the same. In both cases, the post-analysis ``.net`` file should be considered to be **the final packing results** for downstream tools, e.g., bitstream generator. Users may load the post-routing ``.net`` file in VPR's analysis flow to sign-off the final results.
 
-.. warning:: Currently, the packing result synchronization is only applicable to input pins which may be remapped to different nets during routing optimization. If your architecture defines `link_instance_pin_xml_syntax_` equivalence for output pins, the packing results still mismatch the routing results! 
+.. warning:: Currently, the packing result synchronization is only applicable to input pins which may be remapped to different nets during routing optimization. If your architecture defines `link_instance_pin_xml_syntax_` equivalence for output pins, the packing results still mismatch the routing results!
 
-.. _link_instance_pin_xml_syntax: https://docs.verilogtorouting.org/en/latest/arch/reference/#tag-%3Coutputname= 
+.. _link_instance_pin_xml_syntax: https://docs.verilogtorouting.org/en/latest/arch/reference/#tag-%3Coutputname=
 
 .. _vpr_place_file:
 
@@ -743,14 +743,16 @@ An example listing for a global net is given below.
 Routing Resource Graph File Format (.xml)
 -----------------------------------------
 The routing resource graph (rr graph) file is an XML file that describes the routing resources within the FPGA.
-This file is generated through the last stage of the rr graph generation during routing with the final channel width.
-When reading in rr graph from an external file, the rr graph is used during the placement and routing section of VPR.
+VPR can generate a rr graph that matches your architecture specifications (from the architecture xml file), or it can read in an externally generated rr graph.
+When this file is written by VPR, the rr graph written out is the rr graph generated before routing with a final channel width 
+(even if multiple routings at different channel widths are performed during a binary search for the minimum channel width). 
+When reading in rr graph from an external file, the rr graph is used during both the placement and routing phases of VPR.
 The file is constructed using tags. The top level is the ``rr_graph`` tag.
 This tag contains all the channel, switches, segments, block, grid, node, and edge information of the FPGA.
 It is important to keep all the values as high precision as possible. Sensitive values include capacitance and Tdel. As default, these values are printed out with a precision of 30 digits.
 Each of these sections are separated into separate tags as described below.
 
-.. note:: Use :option:`vpr --read_rr_graph` to specify an RR graph file to be load.
+.. note:: Use :option:`vpr --read_rr_graph` to specify an RR graph file to be loaded.
 .. note:: Use :option:`vpr --write_rr_graph` to specify where the RR graph should be written.
 
 Top Level Tags
@@ -1064,7 +1066,102 @@ An example of what a generated routing resource graph file would look like is sh
             <edge src_node="1" sink_node="2" switch_id="0"/>
         </rr_edges>
     </rr_graph>
+
+Binary Format (Cap'n Proto)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To aid in handling large graphs, rr_graph files can also be :ref:`saved in <filename_options>` a binary (Cap'n Proto) format. This will result in a smaller file and faster read/write times.
+
 .. _end:
+
+
+Network-on-Chip (NoC) Traffic Flows Format (.flows)
+---------------------------------------------------
+
+In order to co-optimize for the NoC placement VPR needs expected performance metrics of the NoC.
+VPR defines the performance requirements of the NoC as traffic flows. A traffic flow is a one-way communication between two
+logical routers in a design. The traffic flows provide the communications bandwidth and Quality of
+Service (QoS) requirements. The traffic flows are application dependant and need to be supplied
+externally by a user. The traffic flows file is an XML based file format which designers
+can use to describe the traffic flows in a given application.
+
+.. note:: Use :option:`vpr --noc_traffic_flows` to specify an NoC traffic flows file to be loaded.
+
+Top Level Tags
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The first tag in all NoC traffic flow files is the ``<traffic_flows>`` tag that contains detailed subtags for each catagory in the NoC traffic flows.
+
+The ``traffic_flows`` tag contains the following tags:
+
+* ``<single_flow>``
+        * ``<single_flow>``content``</single_flow>`` 
+
+Detailed Tag Information
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Single Flow
+^^^^^^^^^^^
+
+A given traffic flow information is contained within the ``single_flow`` tag. There can be 0 or more single flow tags.
+0 would indicate that an application does not have any traffic flows.
+
+.. rrgraph:tag:: <channel src="logical_router_name" dst="logical_router_name" bandwidth="float" latency_cons="float" priority="int"/>
+
+    :opt_param latency_cons:
+        A floating point number which indicates the upper bound
+        on the latency for a traffic flow. This is in units of seconds and is an optional attribute.
+        If this attribute is not provided then the CAD tool will try to reduce the latency as much
+        as possible.
+
+    :opt_param priority:
+        An integer which represents the relative importance of the traffic flow
+        against all other traffic flows in an application. For example, a traffic flow with priority
+        10 would be weighted ten times more than a traffic flow with priority 1. This is an
+        optional attribute and by default all traffic flows have a priority of 1
+
+    :req_param src:
+        A string which represents a logical router name in an application.
+        This logical router is the source endpoint for the traffic flow being described by the cor-
+        responding single flow tag. The logical router name must match the name of the router
+        as found in the clustered netlist; since this name assigned by the CAD tool, instead of
+        having the designer go through the clustered netlist to retrieve the exact name we instead
+        allow designers to use regex patters in the logical router name. For example, instead of
+        ”noc_router_adapter_block:noc_router_layer1_mvm2:slave_tready_reg0” user could pro-
+        vide ”.*noc_router_layer1_mvm2.*”. This allows users to provide the instance name for a given logical router
+        module in the design. This is a required attribute.
+    
+    :req_param dst:
+        A string which represents a logical router name in an application.
+        This logical router is the deastination endpoint for the traffic flow being described by the cor-
+        responding single flow tag. The logical router name must match the name of the router
+        as found in the clustered netlist; since this name assigned by the CAD tool, instead of
+        having the designer go through the clustered netlist to retrieve the exact name we instead
+        allow designers to use regex patters in the logical router name. For example, instead of
+        ”noc_router_adapter_block:noc_router_layer1_mvm3:slave_tready_reg0” user could pro-
+        vide ”.*noc_router_layer1_mvm3.*”. This allows users to provide the instance name for a given logical router
+        module in the design. This is a required attribute.
+
+    :req_param bandwidth:
+        A floating point number which indicates the data size in the
+        traffic flow communication. This is in units of bits-per-second (bps) and is a required
+        attribute.
+
+NoC Traffic Flows File Example
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+An example of what a NoC traffic flows file looks like is shown below:
+
+.. code-block:: xml
+    :caption: Example of a NoC traffic flows file in XML format
+    :linenos:
+
+    <traffic_flows>
+        <single_flow src="m0" dst="m1" bandwidth="2.3e9" latency_cons="3e-9"/>
+        <single_flow src="m0" dst="m2" bandwidth="5e8"/>
+        <single_flow src="ddr" dst="m0" bandwidth="1.3e8" priority=3/>
+        <single_flow src="m3" dst="m2" bandwidth="4.8e9" latency_cons="5e-9" priority=2/>
+    </traffic_flows>
 
 Block types usage summary (.txt .xml or .json)
 -----------------------------------------

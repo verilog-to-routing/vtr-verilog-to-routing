@@ -6,8 +6,11 @@
 #include "vtr_math.h"
 
 #include "globals.h"
-#include "timing_util.h"
+#include "timing_fail_error.h"
 #include "timing_info.h"
+#include "timing_util.h"
+
+#include "tatum/report/graphviz_dot_writer.hpp"
 
 double sec_to_nanosec(double seconds) {
     return 1e9 * seconds;
@@ -150,8 +153,10 @@ std::vector<HistogramBucket> create_setup_slack_histogram(const tatum::SetupTimi
     return histogram;
 }
 
-std::vector<HistogramBucket> create_criticality_histogram(const SetupTimingInfo& setup_timing,
+std::vector<HistogramBucket> create_criticality_histogram(const Netlist<>& net_list,
+                                                          const SetupTimingInfo& setup_timing,
                                                           const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
+                                                          bool is_flat,
                                                           size_t num_bins) {
     std::vector<HistogramBucket> histogram;
     float step = 1. / num_bins;
@@ -174,12 +179,11 @@ std::vector<HistogramBucket> create_criticality_histogram(const SetupTimingInfo&
     };
 
     //Count the criticalities into the buckets
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-        auto sinks = cluster_ctx.clb_nlist.net_sinks(net_id);
+    for (auto net_id : net_list.nets()) {
+        auto sinks = net_list.net_sinks(net_id);
 
         for (auto pin : sinks) {
-            float crit = calculate_clb_net_pin_criticality(setup_timing, netlist_pin_lookup, pin);
+            float crit = calculate_clb_net_pin_criticality(setup_timing, netlist_pin_lookup, pin, is_flat);
 
             auto iter = std::lower_bound(histogram.begin(), histogram.end(), crit, cmp);
             VTR_ASSERT(iter != histogram.end());
@@ -415,6 +419,15 @@ void print_setup_timing_summary(const tatum::TimingConstraints& constraints,
             sec_to_mhz(fanout_weighted_geomean_intra_domain_cpd));
 
     VTR_LOG("\n");
+
+    /* If the terminate_if_timing fails option is on, this checks if slack is negative and if user wants VPR
+     * flow to fail if their design doesn't meet timing constraints. If both conditions are true, the function
+     * adds details about the negative slack to a string that will be printed when VPR throws an error.
+     */
+    if (timing_ctx.terminate_if_timing_fails && (setup_worst_neg_slack < 0 || setup_total_neg_slack < 0) && prefix == "Final ") {
+        std::string msg = "\nDesign did not meet timing constraints.\nTiming failed and terminate_if_timing_fails set -- exiting";
+        VPR_FATAL_ERROR(VPR_ERROR_TIMING, msg.c_str());
+    }
 }
 
 /*
@@ -593,8 +606,14 @@ std::vector<HistogramBucket> create_hold_slack_histogram(const tatum::HoldTiming
 }
 
 void print_hold_timing_summary(const tatum::TimingConstraints& constraints, const tatum::HoldTimingAnalyzer& hold_analyzer, std::string prefix) {
-    VTR_LOG("%shold Worst Negative Slack (hWNS): %g ns\n", prefix.c_str(), sec_to_nanosec(find_hold_worst_negative_slack(hold_analyzer)));
-    VTR_LOG("%shold Total Negative Slack (hTNS): %g ns\n", prefix.c_str(), sec_to_nanosec(find_hold_total_negative_slack(hold_analyzer)));
+    auto& timing_ctx = g_vpr_ctx.timing();
+
+    auto hold_worst_neg_slack = sec_to_nanosec(find_hold_worst_negative_slack(hold_analyzer));
+    auto hold_total_neg_slack = sec_to_nanosec(find_hold_total_negative_slack(hold_analyzer));
+
+    VTR_LOG("%shold Worst Negative Slack (hWNS): %g ns\n", prefix.c_str(), hold_worst_neg_slack);
+    VTR_LOG("%shold Total Negative Slack (hTNS): %g ns\n", prefix.c_str(), hold_total_neg_slack);
+
     /*For testing*/
     //VTR_LOG("Hold Total Negative Slack within clbs: %g ns\n", sec_to_nanosec(find_total_negative_slack_within_clb_blocks(hold_analyzer)));
     VTR_LOG("\n");
@@ -637,6 +656,15 @@ void print_hold_timing_summary(const tatum::TimingConstraints& constraints, cons
         }
     }
     VTR_LOG("\n");
+
+    /* If the terminate_if_timing fails option is on, this checks if slack is negative and if user wants VPR
+     * flow to fail if their design doesn't meet timing constraints. If both conditions are true, the function
+     * adds details about the negative slack to a string that will be printed when VPR throws an error.
+     */
+    if (timing_ctx.terminate_if_timing_fails && (hold_worst_neg_slack < 0 || hold_total_neg_slack < 0) && prefix == "Final ") {
+        std::string msg = "\nDesign did not meet timing constraints.\nTiming failed and terminate_if_timing_fails set -- exiting";
+        VPR_FATAL_ERROR(VPR_ERROR_TIMING, msg.c_str());
+    }
 }
 
 /*
@@ -667,15 +695,22 @@ std::map<tatum::DomainId, size_t> count_clock_fanouts(const tatum::TimingGraph& 
  * @brief Returns the criticality of a net's pin in the CLB netlist.
  *        Assumes that the timing graph is correct and up to date.
  */
-float calculate_clb_net_pin_criticality(const SetupTimingInfo& timing_info, const ClusteredPinAtomPinsLookup& pin_lookup, ClusterPinId clb_pin) {
-    //There may be multiple atom netlist pins connected to this CLB pin
-    float clb_pin_crit = 0.;
-    for (const auto atom_pin : pin_lookup.connected_atom_pins(clb_pin)) {
-        //Take the maximum of the atom pin criticality as the CLB pin criticality
-        clb_pin_crit = std::max(clb_pin_crit, timing_info.setup_pin_criticality(atom_pin));
+float calculate_clb_net_pin_criticality(const SetupTimingInfo& timing_info,
+                                        const ClusteredPinAtomPinsLookup& pin_lookup,
+                                        const ParentPinId& pin_id,
+                                        bool is_flat) {
+    float pin_crit = 0.;
+    if (is_flat) {
+        pin_crit = timing_info.setup_pin_criticality(convert_to_atom_pin_id(pin_id));
+    } else {
+        //There may be multiple atom netlist pins connected to this CLB pin
+        for (const auto atom_pin : pin_lookup.connected_atom_pins(convert_to_cluster_pin_id(pin_id))) {
+            //Take the maximum of the atom pin criticality as the CLB pin criticality
+            pin_crit = std::max(pin_crit, timing_info.setup_pin_criticality(atom_pin));
+        }
     }
 
-    return clb_pin_crit;
+    return pin_crit;
 }
 
 /**
@@ -712,7 +747,7 @@ float calc_relaxed_criticality(const std::map<DomainPair, float>& domains_max_re
                                const std::map<DomainPair, float>& domains_worst_slack,
                                const tatum::TimingTags::tag_range tags) {
     //Allowable round-off tolerance during criticality calculation
-    constexpr float CRITICALITY_ROUND_OFF_TOLERANCE = 1e-4;
+    constexpr float CRITICALITY_ROUND_OFF_TOLERANCE = 5e-4;
 
     //Record the maximum criticality over all the tags
     float max_crit = 0.;
@@ -767,7 +802,7 @@ float calc_relaxed_criticality(const std::map<DomainPair, float>& domains_max_re
         VTR_ASSERT_SAFE_MSG(!std::isnan(crit), "Criticality not be nan");
         VTR_ASSERT_SAFE_MSG(std::isfinite(crit), "Criticality should not be infinite");
         VTR_ASSERT_MSG(crit >= 0. - CRITICALITY_ROUND_OFF_TOLERANCE, "Criticality should never be negative");
-        VTR_ASSERT_MSG(crit <= 1. + CRITICALITY_ROUND_OFF_TOLERANCE, "Criticality should never be greather than one");
+        VTR_ASSERT_MSG(crit <= 1. + CRITICALITY_ROUND_OFF_TOLERANCE, "Criticality should never be greater than one");
 
         //Clamp criticality to [0., 1.] to correct round-off
         crit = std::max(0.f, crit);
@@ -776,7 +811,7 @@ float calc_relaxed_criticality(const std::map<DomainPair, float>& domains_max_re
         max_crit = std::max(max_crit, crit);
     }
     VTR_ASSERT_MSG(max_crit >= 0., "Criticality should never be negative");
-    VTR_ASSERT_MSG(max_crit <= 1., "Criticality should never be greather than one");
+    VTR_ASSERT_MSG(max_crit <= 1., "Criticality should never be greater than one");
 
     return max_crit;
 }

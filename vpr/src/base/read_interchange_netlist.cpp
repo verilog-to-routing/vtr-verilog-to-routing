@@ -6,35 +6,40 @@
  * hierarchical) netlist in FPGA Interchange Format file, and
  * builds a netlist data structure (AtomNetlist) from it.
  */
-#include <cmath>
-#include <limits>
-#include <kj/std/iostream.h>
-#include <regex>
-#include <string>
-#include <unordered_map>
-#include <unordered_set>
-#include <zlib.h>
-#include <iostream>
 
-#include "LogicalNetlist.capnp.h"
-#include "capnp/serialize.h"
-#include "capnp/serialize-packed.h"
-
-#include "atom_netlist.h"
-
-#include "vtr_assert.h"
-#include "vtr_hash.h"
-#include "vtr_util.h"
-#include "vtr_log.h"
-#include "vtr_logic.h"
-#include "vtr_time.h"
-#include "vtr_digest.h"
-
-#include "vpr_types.h"
-#include "vpr_error.h"
-#include "globals.h"
 #include "read_interchange_netlist.h"
-#include "arch_types.h"
+#include "atom_netlist.h"
+#include "vtr_error.h"
+
+#ifdef VTR_ENABLE_CAPNPROTO
+
+#    include <cmath>
+#    include <limits>
+#    include <kj/std/iostream.h>
+#    include <regex>
+#    include <string>
+#    include <unordered_map>
+#    include <unordered_set>
+#    include <zlib.h>
+#    include <iostream>
+#    include <sstream>
+
+#    include "LogicalNetlist.capnp.h"
+#    include "capnp/serialize.h"
+#    include "capnp/serialize-packed.h"
+
+#    include "vtr_assert.h"
+#    include "vtr_hash.h"
+#    include "vtr_util.h"
+#    include "vtr_log.h"
+#    include "vtr_logic.h"
+#    include "vtr_time.h"
+#    include "vtr_digest.h"
+
+#    include "vpr_types.h"
+#    include "vpr_error.h"
+#    include "globals.h"
+#    include "arch_types.h"
 
 struct NetlistReader {
   public:
@@ -519,8 +524,11 @@ struct NetlistReader {
     }
 };
 
+#endif // VTR_ENABLE_CAPNPROTO
+
 AtomNetlist read_interchange_netlist(const char* ic_netlist_file,
                                      t_arch& arch) {
+#ifdef VTR_ENABLE_CAPNPROTO
     AtomNetlist netlist;
     std::string netlist_id = vtr::secure_digest_file(ic_netlist_file);
 
@@ -563,4 +571,13 @@ AtomNetlist read_interchange_netlist(const char* ic_netlist_file,
     NetlistReader reader(netlist, netlist_reader, netlist_id, ic_netlist_file, arch);
 
     return netlist;
+
+#else // VTR_ENABLE_CAPNPROTO
+
+    // If CAPNPROTO is not enabled, throw an error
+    (void)ic_netlist_file;
+    (void)arch;
+    throw vtr::VtrError("Unable to read interchange netlist with CAPNPROTO disabled", __FILE__, __LINE__);
+
+#endif // VTR_ENABLE_CAPNPROTO
 }

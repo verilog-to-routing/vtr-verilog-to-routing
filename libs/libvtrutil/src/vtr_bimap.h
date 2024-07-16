@@ -31,6 +31,8 @@ namespace vtr {
 template<class K, class V, template<typename...> class Map = std::map, template<typename...> class InvMap = std::map>
 class bimap {
   public: //Public types
+    typedef typename Map<K, V>::value_type value_type;
+    typedef typename InvMap<V, K>::value_type inverse_value_type;
     typedef typename Map<K, V>::const_iterator iterator;
     typedef typename InvMap<V, K>::const_iterator inverse_iterator;
 
@@ -91,6 +93,22 @@ class bimap {
 
     ///@brief Return true if the specified value exists
     bool contains(const V value) const { return find(value) != inverse_end(); }
+
+  public: //Constructors/Deconstructor
+    ///@brief default constructor required by compiler
+    bimap() = default;
+
+    ///@brief construct the bimap using initializer list with value_type
+    bimap(std::initializer_list<value_type> il) {
+        for (const auto& rec : il)
+            insert(rec.first, rec.second);
+    }
+
+    ///@brief construct the bimap using initializer list with inverse_value_type
+    bimap(std::initializer_list<inverse_value_type> il) {
+        for (const auto& rec : il)
+            insert(rec.second, rec.first);
+    }
 
   public: //Mutators
     ///@brief Drop all stored key-values

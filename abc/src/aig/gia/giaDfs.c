@@ -143,6 +143,26 @@ void Gia_ManCollectAnds( Gia_Man_t * p, int * pNodes, int nNodes, Vec_Int_t * vN
 
 /**Function*************************************************************
 
+  Synopsis    [Collects support nodes.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+Vec_Int_t * Gia_ManCollectAndsAll( Gia_Man_t * p )
+{
+    Gia_Obj_t * pObj; int i;
+    Vec_Int_t * vNodes = Vec_IntAlloc( Gia_ManAndNum(p) );
+    Gia_ManForEachAnd( p, pObj, i )
+        Vec_IntPush( vNodes, i );
+    return vNodes;
+}
+
+/**Function*************************************************************
+
   Synopsis    [Counts the support size of the node.]
 
   Description []
@@ -396,6 +416,34 @@ Vec_Vec_t * Gia_ManLevelize( Gia_Man_t * p )
     return vLevels;
 }
 
+/**Function*************************************************************
+
+  Synopsis    [Levelizes the nodes.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+Vec_Wec_t * Gia_ManLevelizeR( Gia_Man_t * p )
+{ 
+    Gia_Obj_t * pObj;
+    Vec_Wec_t * vLevels;
+    int nLevels, Level, i;
+    nLevels = Gia_ManLevelRNum( p );
+    vLevels = Vec_WecStart( nLevels + 1 );
+    Gia_ManForEachObj( p, pObj, i )
+    {
+        if ( i == 0 || (!Gia_ObjIsCo(pObj) && !Gia_ObjLevel(p, pObj)) )
+            continue;
+        Level = Gia_ObjLevel( p, pObj );
+        assert( Level <= nLevels );
+        Vec_WecPush( vLevels, Level, i );
+    }
+    return vLevels;
+}
 /**Function*************************************************************
 
   Synopsis    [Computes reverse topological order.]

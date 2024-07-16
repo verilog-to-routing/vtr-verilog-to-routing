@@ -47,6 +47,16 @@ Detailed Command-line Options
     A file containing a list of tasks to parse.
     Each task name should be on a separate line.
 
+.. option:: -temp_dir <path>
+
+    Alternate directory containing task results to parse (see run_vtr_task).
+
+    **Default:** ``config/..`` for each task being parsed
+
+    Specifies the parent directory for the output of a set of tasks, which will contain ``<task_name>/run<#>`` directories, as well as any generated parse results.
+    
+    A task folder or list with a config directory must still be specified when invoking the script.
+
 .. option:: -create_golden
 
     The results will be stored as golden results.

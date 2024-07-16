@@ -10,6 +10,10 @@
 #
 # To perform a debug build use:
 #   'make BUILD_TYPE=debug'
+#
+# To enable debugging verbose messages as well use:
+#
+#   'make BUILD_TYPE=debug VERBOSE=1'
 
 #Default build type
 # Possible values:
@@ -18,6 +22,9 @@
 #    debug			#Build with debug info and no compiler optimization
 #    strict			#Build VPR with warnings treated as errors
 BUILD_TYPE ?= release
+
+#Debugging verbosity enable
+VERBOSE ?= 0
 
 #Convert to lower case for consistency
 BUILD_TYPE := $(shell echo $(BUILD_TYPE) | tr '[:upper:]' '[:lower:]')
@@ -35,6 +42,11 @@ ifneq (,$(findstring strict,$(BUILD_TYPE)))
 	#Configure for strict build with VPR warning treated as errors
 override CMAKE_PARAMS := -DVTR_ENABLE_STRICT_COMPILE=on ${CMAKE_PARAMS}
 endif #Strict build type
+
+#Enable verbosity
+ifeq ($(VERBOSE),1)
+override CMAKE_PARAMS := -DVTR_ENABLE_VERBOSE=on ${CMAKE_PARAMS}
+endif
 
 # -s : Suppresss makefile output (e.g. entering/leaving directories)
 # --output-sync target : For parallel compilation ensure output for each target is synchronized (make version >= 4.0)

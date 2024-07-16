@@ -10,22 +10,16 @@ import urllib.request
 import math
 import subprocess
 import shutil
-
+import hashlib
 TATUM_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
 tests = {
     'basic': [os.path.join(TATUM_ROOT, 'test', 'basic')],
-    'mcnc20': ["http://www.eecg.utoronto.ca/~kmurray/tatum/golden_results/mcnc20_tatum_golden.tar.gz"],
-    #'vtr': [
-
-        #],
-    #'titan_other': [
-
-        #],
-    #'titan': [
-
-        #],
+    'mcnc20': ["http://www.eecg.utoronto.ca/~kmurray/tatum/golden_results/mcnc20_tatum_golden.tar"],
+    'vtr': ["http://www.eecg.utoronto.ca/~kmurray/tatum/golden_results/vtr_tatum_golden.tar"],
+    'titan_other': ["http://www.eecg.utoronto.ca/~kmurray/tatum/golden_results/titan_other_tatum_golden.tar"],
+    'titan23': ["http://www.eecg.utoronto.ca/~kmurray/tatum/golden_results/titan23_tatum_golden.tar"],
     #'tau15_unit_delay': [
 
         #],
@@ -68,6 +62,11 @@ def parse_args():
                         default=False,
                         action='store_true')
 
+    parser.add_argument("-f", "--force",
+                        help="Force download even if test files already found",
+                        default=False,
+                        action='store_true')
+
     return parser.parse_args()
 
 def main():
@@ -83,7 +82,7 @@ def main():
         for test_url in tests[test_name]:
             work_dir = tempfile.mkdtemp(prefix="tatum_reg_test")
             try:
-                test_files = download_extract_test(args, work_dir, test_url)
+                test_files = download_extract_test(args, test_name, test_url)
                 num_failures += run_test(args, work_dir, test_name, test_files)
             finally:
                 if not args.debug:
@@ -123,16 +122,28 @@ def run_single_test(args, work_dir, test_file):
     if args.tatum_nworkers:
         cmd += ['--num_workers', str(args.tatum_nworkers)]
 
-    cmd += [test_file]
 
     print(" {}".format(test_file), end='')
 
-    if args.debug:
-        print()
-        print(" cmd: {} log: {}".format(' '.join(cmd), log))
+    if test_file.endswith(".xz"):
 
-    with open(log, 'w') as outfile:
-        retcode = subprocess.call(cmd, stdout=outfile, stderr=outfile)
+        cmd += ["-"] #Read from stdin
+
+        cmd_str = "xzcat {} | {} > {}".format(test_file, " ".join(cmd), log)
+
+        if args.debug:
+            print(cmd_str)
+
+        retcode = os.system(cmd_str)
+    else:
+        cmd += [test_file] #Read file directly
+
+        if args.debug:
+            print()
+            print(" cmd: {} log: {}".format(' '.join(cmd), log))
+
+        with open(log, 'w') as outfile:
+            retcode = subprocess.call(cmd, stdout=outfile, stderr=outfile)
 
     if retcode == 0:
         print(" PASSED")
@@ -147,34 +158,52 @@ def run_single_test(args, work_dir, test_file):
 
     return num_failed
 
-def download_extract_test(args, work_dir, test_url):
+def download_extract_test(args, test_name, test_url):
 
     test_files = []
 
-    if '.tar' in test_url:
+    if 'tar' in test_url:
         #A tar file of benchmark files
-        benchmark_tar = os.path.join(work_dir, os.path.basename(test_url))
+        benchmark_tar = os.path.join(os.path.join(TATUM_ROOT, os.path.basename(test_url)))
     
-        get_url(test_url, benchmark_tar)
+        new_tar = get_url(args, test_url, benchmark_tar)
 
-        with tarfile.TarFile.open(benchmark_tar, mode="r|*") as tar_file:
-            tar_file.extractall(path=work_dir)
+        test_files_dir = os.path.join(TATUM_ROOT, "test")
 
-        test_files += glob.glob("{}/*.tatum".format(work_dir))
-        test_files += glob.glob("{}/*/*.tatum".format(work_dir))
+        if new_tar or args.force:
+
+            print("Extracting test files to {}".format(test_files_dir))
+            with tarfile.TarFile.open(benchmark_tar, mode="r|*") as tar_file:
+                tar_file.extractall(path=test_files_dir)
+        else:
+            print("Skipping file extraction".format(test_files_dir))
+
+
+        test_files += glob.glob("{}/{}/*.tatum*".format(test_files_dir, test_name))
     else:
         #A directory of benchmark files
 
         test_files += glob.glob("{}/*.tatum".format(test_url))
-        test_files += glob.glob("{}/*/*.tatum".format(test_url))
 
     return test_files
 
-def get_url(url, filename):
+def get_url(args, url, filename):
+    if not args.force and os.path.exists(filename):
+        print("Found existing file {}, checking if hash matches".format(filename))
+        file_matches = check_hash_match(args, url, filename)
+
+        if file_matches:
+            print("Existing file {} matches, skipping download".format(filename))
+            return False
+        else:
+            print("Existing file {} contents differ, re-downloading".format(filename))
+
     if '://' in url:
         download_url(url, filename)
     else:
         shutl.copytree(url, filename)
+
+    return True
 
 def download_url(url, filename):
     """
@@ -191,9 +220,39 @@ def download_progress_callback(block_num, block_size, expected_size):
     progress_increment = int(math.ceil(total_blocks / 100))
 
     if block_num % progress_increment == 0:
-        print(".", end='', flush=False)
+        print(".", end='', flush=True)
     if block_num*block_size >= expected_size:
         print("")
+
+def check_hash_match(args, url, filename):
+    checksum_url = url + ".sha256"
+    try:
+        web_hash = urllib.request.urlopen(checksum_url).read()
+    except urllib.error.HTTPError as e:
+        print("Failed to find expected SHA256 checksum at {} (reason '{}')".format(checksum_url, e))
+        return False
+
+    local_hash = hash_file(filename)
+
+    web_digest_bytes = web_hash.split()[0]
+    local_digest_bytes = str.encode(local_hash)
+
+    if web_digest_bytes == local_digest_bytes:
+        return True
+
+    return False
+
+def hash_file(filepath):
+    BUF_SIZE = 65536
+    sha256 = hashlib.sha256()
+    with open(filepath, "rb") as f:
+        while True:
+            data = f.read(BUF_SIZE)
+            if not data:
+                break
+            sha256.update(data)
+
+    return sha256.hexdigest()
 
 if __name__ == "__main__":
     main()

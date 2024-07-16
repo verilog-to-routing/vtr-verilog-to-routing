@@ -1,8 +1,0 @@
-Nomemory Runs and compiles
-
-
-The instantiation of memory seems to form a combinational
-loop in memory_combinational.v
-
-THe main difference is that in the memory one the sign extender module's input is not primary, but from the output of the memory.
-

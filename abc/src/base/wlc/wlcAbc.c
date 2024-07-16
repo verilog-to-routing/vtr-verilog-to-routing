@@ -42,6 +42,58 @@ ABC_NAMESPACE_IMPL_START
   SeeAlso     []
 
 ***********************************************************************/
+void Wlc_NtkPrintInputInfo( Wlc_Ntk_t * pNtk )
+{
+    Wlc_Obj_t * pObj;
+    int i, k, nRange, nBeg, nEnd, nBits = 0;
+    FILE * output;
+
+    output = fopen("abc_blast_input.info","w");
+
+    Wlc_NtkForEachCi( pNtk, pObj, i )
+    {
+        nRange = Wlc_ObjRange(pObj);
+        nBeg = pObj->Beg;
+        nEnd = pObj->End;
+
+        for ( k = 0; k < nRange; k++ )
+        {
+            int index = nEnd > nBeg ? nBeg + k : nEnd + k;
+            char c = pObj->Type != WLC_OBJ_FO ? 'i' : pNtk->pInits[nBits + k];
+            fprintf(output,"%s[%d] : %c \n", Wlc_ObjName(pNtk, Wlc_ObjId(pNtk, pObj)), index , c );
+        }
+        if (pObj->Type == WLC_OBJ_FO)
+            nBits += nRange;
+    }
+
+    Wlc_NtkForEachPo( pNtk, pObj, i )
+    {
+        nRange = Wlc_ObjRange(pObj);
+        nBeg = pObj->Beg;
+        nEnd = pObj->End;
+
+        for ( k = 0; k < nRange; k++ )
+        {
+            int index = nEnd > nBeg ? nBeg + k : nEnd + k;
+            fprintf(output,"%s[%d] : o \n", Wlc_ObjName(pNtk, Wlc_ObjId(pNtk, pObj)), index);
+        }
+    }
+
+    fclose(output);
+    return;
+}
+
+/**Function*************************************************************
+
+  Synopsis    []
+
+  Description []
+
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
 void Wlc_NtkPrintInvStats( Wlc_Ntk_t * pNtk, Vec_Int_t * vCounts, int fVerbose )
 {
     Wlc_Obj_t * pObj;
@@ -88,7 +140,7 @@ void Wlc_NtkPrintInvStats( Wlc_Ntk_t * pNtk, Vec_Int_t * vCounts, int fVerbose )
   SeeAlso     []
 
 ***********************************************************************/
-Abc_Ntk_t * Wlc_NtkGetInv( Wlc_Ntk_t * pNtk, Vec_Int_t * vInv )
+Abc_Ntk_t * Wlc_NtkGetInv( Wlc_Ntk_t * pNtk, Vec_Int_t * vInv, Vec_Ptr_t * vNamesIn )
 {
     extern Vec_Int_t * Pdr_InvCounts( Vec_Int_t * vInv );
     extern Vec_Str_t * Pdr_InvPrintStr( Vec_Int_t * vInv, Vec_Int_t * vCounts );
@@ -114,8 +166,16 @@ Abc_Ntk_t * Wlc_NtkGetInv( Wlc_Ntk_t * pNtk, Vec_Int_t * vInv )
             if ( Entry == 0 )
                 continue;
             pMainObj = Abc_NtkCreatePi( pMainNtk );
-            sprintf( Buffer, "pi%d", i );
-            Abc_ObjAssignName( pMainObj, Buffer, NULL );
+            // If vNamesIn is given, take names from there for as many entries as possible
+            // otherwise generate names from counter
+            if (vNamesIn != NULL && i < Vec_PtrSize(vNamesIn)) {
+                Abc_ObjAssignName( pMainObj, (char *)Vec_PtrEntry(vNamesIn, i), NULL );
+            }
+            else
+            {
+                sprintf( Buffer, "pi%d", i );
+                Abc_ObjAssignName( pMainObj, Buffer, NULL );
+            }
         }
         if ( Abc_NtkPiNum(pMainNtk) != nInputs )
         {

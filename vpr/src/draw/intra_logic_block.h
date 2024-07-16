@@ -1,3 +1,13 @@
+/**
+ * @file intra_logic_block.h
+ * 
+ * This file manages the interactions between logic blocks, cluster blocks, and their sub blocks
+ * Contains declaration of selected_Sub_block_info struct, which holds the information on
+ * the currently selected/highlighted block
+ * 
+ * Authors: Long Yu Wang, Matthew J.P. Walker, Sebastian Lievano
+ */
+
 /* Author: Long Yu Wang
  * Date: August 2013
  *
@@ -13,7 +23,6 @@
 #    include "vpr_types.h"
 #    include "draw_types.h"
 #    include "atom_netlist_fwd.h"
-#    include "route_tree_timing.h"
 #    include <unordered_set>
 
 #    include "ezgl/point.hpp"
@@ -127,6 +136,9 @@ t_selected_sub_block_info& get_selected_sub_block_info();
 void draw_logical_connections(ezgl::renderer* g);
 
 void find_pin_index_at_model_scope(const AtomPinId the_pin, const AtomBlockId lblk, int* pin_index, int* total_pins);
+
+//Returns pb ptr of given atom block name, given the pb of its containing block. Returns null if nothing found
+t_pb* find_atom_block_in_pb(const std::string& name, t_pb* pb);
 
 #endif /* NO_GRAPHICS */
 

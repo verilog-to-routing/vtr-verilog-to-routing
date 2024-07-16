@@ -120,8 +120,10 @@ struct t_pack_patterns {
  * Linked list for easy insertion/deletion
  */
 struct t_cluster_placement_primitive {
+    t_cluster_placement_primitive() {
+        pb_graph_node = nullptr;
+    }
     t_pb_graph_node* pb_graph_node;
-    t_cluster_placement_primitive* next_primitive;
     bool valid;
     float base_cost;        /* cost independent of current status of packing */
     float incremental_cost; /* cost dependant on current status of packing */

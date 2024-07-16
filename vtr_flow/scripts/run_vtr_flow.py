@@ -10,6 +10,7 @@ import textwrap
 import socket
 from datetime import datetime
 from collections import OrderedDict
+import os
 
 # pylint: disable=wrong-import-position, import-error
 sys.path.insert(0, str(Path(__file__).resolve().parent / "python_libs"))
@@ -19,7 +20,7 @@ import vtr
 
 BASIC_VERBOSITY = 1
 
-VTR_STAGES = ["odin", "yosys", "abc", "ace", "vpr"]
+VTR_STAGES = ["odin", "parmys", "abc", "ace", "vpr"]
 
 # pylint: disable=too-few-public-methods
 class VtrStageArgparseAction(argparse.Action):
@@ -30,8 +31,8 @@ class VtrStageArgparseAction(argparse.Action):
     def __call__(self, parser, namespace, value, option_string=None):
         if value == "odin":
             setattr(namespace, self.dest, vtr.VtrStage.ODIN)
-        elif value == "yosys":
-            setattr(namespace, self.dest, vtr.VtrStage.YOSYS)
+        elif value == "parmys":
+            setattr(namespace, self.dest, vtr.VtrStage.PARMYS)
         elif value == "abc":
             setattr(namespace, self.dest, vtr.VtrStage.ABC)
         elif value == "vpr":
@@ -112,7 +113,7 @@ def vtr_command_argparser(prog=None):
         "-start",
         "-starting_stage",
         choices=VTR_STAGES,
-        default=vtr.VtrStage.ODIN,
+        default=vtr.VtrStage.PARMYS,
         action=VtrStageArgparseAction,
         help="Starting stage of the VTR flow.",
     )
@@ -146,6 +147,14 @@ def vtr_command_argparser(prog=None):
         dest="verbose",
         help="Verbosity of the script.",
     )
+    parser.add_argument(
+        "-include",
+        nargs="*",
+        default=None,
+        dest="include_list_file",
+        help="List of include files to a benchmark circuit (pass to VTR"
+        + " frontends as a benchmark design set)",
+    )
 
     #
     # Power arguments
@@ -178,8 +187,8 @@ def vtr_command_argparser(prog=None):
 
     house_keeping.add_argument(
         "-temp_dir",
-        default=None,
-        help="Directory to run the flow in (will be created if non-existant).",
+        default=os.getcwd() + "/temp",
+        help="Absolute Directory to run the flow in (will be created if non-existent).",
     )
 
     house_keeping.add_argument("-name", default=None, help="Name for this run to be output.")
@@ -325,50 +334,41 @@ def vtr_command_argparser(prog=None):
         help="Supplies Odin with a custom config file for optimizations.",
     )
     odin.add_argument(
-        "-elaborator",
-        nargs=None,
-        default="odin",
-        dest="elaborator",
-        help="Specify the elaborator of the synthesis flow for Odin-II",
-    )
-    odin.add_argument(
-        "-include",
-        nargs="*",
-        default=None,
-        dest="include_list_file",
-        help="List of include files to a benchmark circuit(pass to Odin as a benchmark design set)",
-    )
-    odin.add_argument(
         "-top_module",
         default=None,
         dest="top_module",
         help="Specify the name of the module in the design that should be considered as top",
     )
     odin.add_argument(
-        "-coarsen",
-        default=False,
-        action="store_true",
-        dest="coarsen",
-        help="Notify Odin if the input BLIF is coarse-grain",
+        "-mults_ratio",
+        default=-1.0,
+        dest="mults_ratio",
+        help="Specify the percentage of multipliers optimizations",
     )
     odin.add_argument(
-        "-fflegalize",
-        default=False,
-        action="store_true",
-        dest="fflegalize",
-        help="Make flip-flops rising edge for coarse-grain input BLIFs in the techmap"
-        + "(Odin-II synthesis flow generates rising edge FFs by default)",
+        "-adders_ratio",
+        default=-1.0,
+        dest="adders_ratio",
+        help="Specify the percentage of adders optimizations",
     )
     #
-    # YOSYS arguments
+    # PARMYS arguments
     #
-    yosys = parser.add_argument_group("Yosys", description="Arguments to be passed to Yosys")
-    yosys.add_argument(
+    parmys = parser.add_argument_group("Parmys", description="Arguments to be passed to Parmys")
+    parmys.add_argument(
         "-yosys_script",
         default=None,
         dest="yosys_script",
         help="Supplies Yosys with a .ys script file (similar to Tcl script)"
         + ", including synthesis steps.",
+    )
+    parmys.add_argument(
+        "-parser",
+        default="default",
+        dest="parser",
+        help="Specify a parser for the Yosys synthesizer [default (Verilog-2005), surelog (UHDM), "
+        + "system-verilog]. The script used the Yosys conventional Verilog"
+        + " parser if this argument is not specified.",
     )
     #
     # VPR arguments
@@ -400,10 +400,16 @@ def vtr_command_argparser(prog=None):
         help="Tells VPR to verify the routing resource graph.",
     )
     vpr.add_argument(
+        "-no_second_run",
+        default=False,
+        action="store_true",
+        help="Don't run VPR a second time to check if it can read intermediate files.",
+    )
+    vpr.add_argument(
         "-rr_graph_ext",
         default=".xml",
         type=str,
-        help="Determines the output rr_graph files' extention.",
+        help="Determines the output rr_graph files' extension.",
     )
     vpr.add_argument(
         "-check_route",
@@ -421,10 +427,29 @@ def vtr_command_argparser(prog=None):
         "-sdc_file", default=None, type=str, help="Path to SDC timing constraints file."
     )
     vpr.add_argument(
+        "-read_vpr_constraints", default=None, type=str, help="Path to vpr constraints file."
+    )
+    vpr.add_argument(
         "-check_incremental_sta_consistency",
         default=False,
         action="store_true",
         help="Do a second-run of the incremental analysis to compare the result files",
+    )
+    vpr.add_argument(
+        "-verify_inter_cluster_router_lookahead",
+        default=False,
+        action="store_true",
+        help="Tells VPR to verify the inter-cluster router lookahead.",
+    )
+    vpr.add_argument(
+        "-verify_intra_cluster_router_lookahead",
+        default=False,
+        action="store_true",
+        help="Tells VPR to verify the intra-cluster router lookahead. \
+        Intra-cluster router lookahead information \
+        is stored in a separate data structure than the \
+        inter-cluster router lookahead information, \
+        and they are written into separate files.",
     )
 
     return parser
@@ -447,15 +472,15 @@ def get_max_memory_usage(temp_dir):
     """
     cnt = 0
     output_files = {
-        "yosys": Path(temp_dir / "yosys.out"),
+        "parmys": Path(temp_dir / "parmys.out"),
         "odin": Path(temp_dir / "odin.out"),
         "abc": Path(temp_dir / "abc{}.out".format(cnt)),
         "vpr": Path(temp_dir / "vpr.out"),
     }
-    memory_usages = {"yosys": -1, "odin": -1, "abc": -1, "vpr": -1}
+    memory_usages = {"parmys": -1, "odin": -1, "abc": -1, "vpr": -1}
 
-    if output_files["yosys"].is_file():
-        memory_usages["yosys"] = get_memory_usage(output_files["yosys"])
+    if output_files["parmys"].is_file():
+        memory_usages["parmys"] = get_memory_usage(output_files["parmys"])
 
     if output_files["odin"].is_file():
         memory_usages["odin"] = get_memory_usage(output_files["odin"])
@@ -497,10 +522,9 @@ def vtr_command_main(arg_list, prog=None):
     # Load the arguments
     args, unknown_args = vtr_command_argparser(prog).parse_known_args(arg_list)
     error_status = "Error"
-    if args.temp_dir is None:
-        temp_dir = Path("./temp")
-    else:
-        temp_dir = Path(args.temp_dir)
+
+    assert args.temp_dir
+    temp_dir = Path(args.temp_dir)
     # Specify how command should be run
     command_runner = vtr.CommandRunner(
         track_memory=args.track_memory_usage,
@@ -517,7 +541,13 @@ def vtr_command_main(arg_list, prog=None):
         vpr_args = process_unknown_args(unknown_args)
         vpr_args = process_vpr_args(args, prog, temp_dir, vpr_args)
         if args.sdc_file:
-            vpr_args["sdc_file"] = get_sdc_file(args.sdc_file, prog)
+            sdc_file_copy = get_sdc_file(args.sdc_file, prog, temp_dir)
+            vpr_args["sdc_file"] = Path(sdc_file_copy).name
+        if args.read_vpr_constraints:
+            vpr_constraint_file_copy = get_read_vpr_constraints(
+                args.read_vpr_constraints, prog, temp_dir
+            )
+            vpr_args["read_vpr_constraints"] = Path(vpr_constraint_file_copy).name
 
         print(
             args.name
@@ -538,7 +568,7 @@ def vtr_command_main(arg_list, prog=None):
             vpr_args=vpr_args,
             abc_args=process_abc_args(args),
             odin_args=process_odin_args(args),
-            yosys_args=process_yosys_args(),
+            parmys_args=process_parmys_args(args),
             keep_intermediate_files=args.keep_intermediate_files,
             keep_result_files=args.keep_result_files,
             min_hard_mult_size=args.min_hard_mult_size,
@@ -551,6 +581,7 @@ def vtr_command_main(arg_list, prog=None):
             relax_w_factor=args.relax_w_factor,
             check_route=args.check_route,
             check_place=args.check_place,
+            no_second_run=args.no_second_run,
         )
         error_status = "OK"
     except vtr.VtrError as error:
@@ -559,38 +590,46 @@ def vtr_command_main(arg_list, prog=None):
         )
 
     except KeyboardInterrupt as error:
-        print("{} recieved keyboard interrupt".format(prog))
+        print("{} received keyboard interrupt".format(prog))
         exit_status = 4
         return_status = exit_status
 
     finally:
-        seconds = datetime.now() - start
+        write_vtr_summary(start, error_status, exit_status, temp_dir)
 
-        print(
-            "{status} (took {time}, "
-            "overall memory peak {stage[0]} consumed by {stage[1]} run)".format(
-                status=error_status,
-                time=vtr.format_elapsed_time(seconds),
-                stage=get_max_memory_usage(temp_dir),
-            )
-        )
-        temp_dir.mkdir(parents=True, exist_ok=True)
-        out = temp_dir / "output.txt"
-        out.touch()
-        with out.open("w") as file:
-            file.write("vpr_status=")
-            if exit_status == 0:
-                file.write("success\n")
-            else:
-                file.write("exited with return code {}\n".format(exit_status))
-            file.write(
-                "vpr_seconds=%d\nrundir=%s\nhostname=%s\nerror="
-                % (seconds.total_seconds(), str(Path.cwd()), socket.gethostname())
-            )
-            file.write("\n")
     if __name__ == "__main__":
         sys.exit(return_status)
     return return_status
+
+
+def write_vtr_summary(start, error_status, exit_status, temp_dir):
+    """
+    Write the summary of the results in vtr flow.
+    Keep 15 variable limits of pylint in function vtr_command_main.
+    """
+    seconds = datetime.now() - start
+    print(
+        "{status} (took {time}, "
+        "overall memory peak {stage[0]} consumed by {stage[1]} run)".format(
+            status=error_status,
+            time=vtr.format_elapsed_time(seconds),
+            stage=get_max_memory_usage(temp_dir),
+        )
+    )
+    temp_dir.mkdir(parents=True, exist_ok=True)
+    out = temp_dir / "output.txt"
+    out.touch()
+    with out.open("w") as file:
+        file.write("vpr_status=")
+        if exit_status == 0:
+            file.write("success\n")
+        else:
+            file.write("exited with return code {}\n".format(exit_status))
+        file.write(
+            "vpr_seconds=%d\nrundir=%s\nhostname=%s\nerror="
+            % (seconds.total_seconds(), str(Path.cwd()), socket.gethostname())
+        )
+        file.write("\n")
 
 
 def process_unknown_args(unknown_args):
@@ -669,9 +708,11 @@ def process_odin_args(args):
     Finds arguments needed in the ODIN stage of the flow
     """
     odin_args = OrderedDict()
+    odin_args["parser"] = args.parser
     odin_args["adder_type"] = args.adder_type
     odin_args["top_module"] = args.top_module
-    odin_args["elaborator"] = args.elaborator
+    odin_args["mults_ratio"] = args.mults_ratio
+    odin_args["adders_ratio"] = args.adders_ratio
 
     if args.adder_cin_global:
         odin_args["adder_cin_global"] = True
@@ -682,22 +723,17 @@ def process_odin_args(args):
     if args.use_odin_simulation:
         odin_args["use_odin_simulation"] = True
 
-    if args.coarsen:
-        odin_args["coarsen"] = True
-
-    if args.fflegalize:
-        odin_args["fflegalize"] = True
-
     return odin_args
 
 
-def process_yosys_args():
+def process_parmys_args(args):
     """
-    Finds arguments needed in the YOSYS stage of the flow
+    Finds arguments needed in the PARMYS stage of the flow
     """
-    yosys_args = OrderedDict()
+    parmys_args = OrderedDict()
+    parmys_args["parser"] = args.parser
 
-    return yosys_args
+    return parmys_args
 
 
 def process_vpr_args(args, prog, temp_dir, vpr_args):
@@ -705,8 +741,7 @@ def process_vpr_args(args, prog, temp_dir, vpr_args):
     Finds arguments needed in the VPR stage of the flow
     """
     if args.crit_path_router_iterations:
-        if "max_router_iterations" not in vpr_args:
-            vpr_args["max_router_iterations"] = args.crit_path_router_iterations
+        vpr_args["crit_path_router_iterations"] = args.crit_path_router_iterations
     if args.fix_pins:
         new_file = str(temp_dir / Path(args.fix_pins).name)
         shutil.copyfile(str((Path(prog).parent.parent / args.fix_pins)), new_file)
@@ -714,21 +749,41 @@ def process_vpr_args(args, prog, temp_dir, vpr_args):
     if args.verify_rr_graph:
         rr_graph_out_file = "rr_graph" + args.rr_graph_ext
         vpr_args["write_rr_graph"] = rr_graph_out_file
+    if args.verify_inter_cluster_router_lookahead:
+        vpr_args["write_router_lookahead"] = "inter_cluster_router_lookahead.capnp"
+    if args.verify_intra_cluster_router_lookahead:
+        assert (
+            "flat_routing" in vpr_args
+        ), "Flat router should be enabled if intra cluster router lookahead is to be verified"
+        vpr_args["write_intra_cluster_router_lookahead"] = "intra_cluster_router_lookahead.capnp"
 
     return vpr_args
 
 
-def get_sdc_file(sdc_file, prog):
+def get_sdc_file(sdc_file, prog, temp_dir):
     """
     takes in the sdc_file and returns a path to that file if it exists.
     """
-    if not Path(sdc_file).exists():
-        if sdc_file.startswith("/"):
-            sdc_file = Path(str(Path(prog).parent.parent) + sdc_file)
-        else:
-            sdc_file = Path(prog).parent.parent / sdc_file
+    if not sdc_file.startswith("/"):
+        sdc_file = Path(prog).parent.parent / sdc_file
+    sdc_file_name = Path(sdc_file).name
+    sdc_file_copy = Path(temp_dir) / Path(sdc_file_name)
+    shutil.copy(str(sdc_file), str(sdc_file_copy))
 
-    return str(vtr.verify_file(sdc_file, "sdc file"))
+    return str(vtr.verify_file(sdc_file_copy, "sdc file"))
+
+
+def get_read_vpr_constraints(read_vpr_constraints, prog, temp_dir):
+    """
+    takes in the read_vpr_constraints and returns a path to that file if it exists.
+    """
+    if not read_vpr_constraints.startswith("/"):
+        read_vpr_constraints = Path(prog).parent.parent / read_vpr_constraints
+    vpr_constraint_file_name = Path(read_vpr_constraints).name
+    vpr_constraint_file_copy = Path(temp_dir) / Path(vpr_constraint_file_name)
+    shutil.copy(str(read_vpr_constraints), str(vpr_constraint_file_copy))
+
+    return str(vtr.verify_file(vpr_constraint_file_copy, "vpr constraint file"))
 
 
 def except_vtr_error(error, expect_fail, verbose):

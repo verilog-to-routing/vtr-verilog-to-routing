@@ -20,8 +20,6 @@
 #include <sstream>
 #include <unordered_set>
 #include <cctype> //std::isdigit
-#include <algorithm>
-#include <regex>
 
 #include "blifparse.hpp"
 #include "atom_netlist.h"
@@ -392,8 +390,7 @@ struct BlifAllocCallback : public blifparse::Callback {
         bool is_valid = is_string_param(value) || is_binary_param(value) || is_real_param(value);
 
         if (!is_valid) {
-            std::string msg = "Incorrect parameter '" + name + "' value specification. Value '" + value + "' is not recognized as string, binary word or real number. Possible causes:\n\t* lack or inconsistency in quotes (string)\n\t* no dot '.' to separate integer and fractional part (real number)\n\t* use of characters other than '1' and '0' (binary word)";
-            parse_error(lineno_, ".param", msg);
+            parse_error(lineno_, ".param", "Incorrect parameter value specification");
         }
 
         curr_model().set_block_param(curr_block(), name, value);
@@ -446,7 +443,7 @@ struct BlifAllocCallback : public blifparse::Callback {
     }
 
   private:
-    const t_model* find_model(std::string name) {
+    const t_model* find_model(std::string_view name) {
         const t_model* arch_model = nullptr;
         for (const t_model* arch_models : {user_arch_models_, library_arch_models_}) {
             arch_model = arch_models;
@@ -464,12 +461,12 @@ struct BlifAllocCallback : public blifparse::Callback {
         }
         if (!arch_model) {
             vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_, "Failed to find matching architecture model for '%s'\n",
-                      name.c_str());
+                      name.data());
         }
         return arch_model;
     }
 
-    const t_model_ports* find_model_port(const t_model* blk_model, std::string port_name) {
+    const t_model_ports* find_model_port(const t_model* blk_model, const std::string& port_name) {
         //We need to handle both single, and multi-bit port names
         //
         //By convention multi-bit port names have the bit index stored in square brackets
@@ -585,7 +582,7 @@ struct BlifAllocCallback : public blifparse::Callback {
             } else {
                 VTR_ASSERT(blif_model.block_type(blk_id) == AtomBlockType::OUTPAD);
 
-                auto raw_output_name = blif_model.block_name(blk_id);
+                const auto& raw_output_name = blif_model.block_name(blk_id);
 
                 std::string output_name = vtr::replace_first(raw_output_name, OUTPAD_NAME_PREFIX, "");
 
@@ -621,7 +618,7 @@ struct BlifAllocCallback : public blifparse::Callback {
      * @brief Merges all the recorded net pairs which need to be merged
      *
      * This should only be called at the end of a .model to ensure that
-     * all the associated driver/sink pins have been delcared and connected
+     * all the associated driver/sink pins have been declared and connected
      * to their nets
      */
     void merge_conn_nets() {
@@ -671,7 +668,7 @@ vtr::LogicValue to_vtr_logic_value(blifparse::LogicValue val) {
             new_val = vtr::LogicValue::UNKOWN;
             break;
         default:
-            VTR_ASSERT_OPT_MSG(false, "Unkown logic value");
+            VTR_ASSERT_OPT_MSG(false, "Unknown logic value");
     }
     return new_val;
 }
@@ -722,15 +719,18 @@ bool is_binary_param(const std::string& param) {
 }
 
 bool is_real_param(const std::string& param) {
+    const std::string chars = "012345678.";
+
     /* Must be non-empty */
     if (param.empty()) {
         return false;
     }
 
-    /* The string must match the regular expression */
-    static const std::regex real_number_expr("[+-]?([0-9]*\\.[0-9]+)|([0-9]+\\.[0-9]*)");
-    if (!std::regex_match(param, real_number_expr)) {
-        return false;
+    /* The string mustn't contain any other chars that the expected ones */
+    for (size_t i = 0; i < param.length(); ++i) {
+        if (chars.find(param[i]) == std::string::npos) {
+            return false;
+        }
     }
 
     /* This is a real number param */

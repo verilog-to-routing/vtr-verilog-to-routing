@@ -266,7 +266,7 @@ Abc_Obj_t * Abc_NodeBalance_rec( Abc_Ntk_t * pNtkNew, Abc_Obj_t * pNodeOld, Vec_
     if ( vSuper->nSize < 2 )
         printf( "BUG!\n" );
     // sort the new nodes by level in the decreasing order
-    Vec_PtrSort( vSuper, (int (*)(void))Abc_NodeCompareLevelsDecrease );
+    Vec_PtrSort( vSuper, (int (*)(const void *, const void *))Abc_NodeCompareLevelsDecrease );
     // balance the nodes
     assert( vSuper->nSize > 1 );
     while ( vSuper->nSize > 1 )

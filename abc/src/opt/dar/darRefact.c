@@ -586,7 +586,7 @@ p->timeEval += Abc_Clock() - clk;
         // if we end up here, a rewriting step is accepted
         nNodeBefore = Aig_ManNodeNum( pAig );
         pObjNew = Dar_RefactBuildGraph( pAig, p->vLeavesBest, p->pGraphBest );
-        assert( (int)Aig_Regular(pObjNew)->Level <= Required );
+        //assert( (int)Aig_Regular(pObjNew)->Level <= Required );
         // replace the node
         Aig_ObjReplace( pAig, pObj, pObjNew, p->pPars->fUpdateLevel );
         // compare the gains

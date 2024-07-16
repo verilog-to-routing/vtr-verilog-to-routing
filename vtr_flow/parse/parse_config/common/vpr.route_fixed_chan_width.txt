@@ -1,5 +1,8 @@
 #VPR Routing Metrics
 routed_wirelength;vpr.out;\s*Total wirelength: (.*), average .*
+avg_routed_wirelength;vpr.out;\s.*average net length: (.*)
+routed_wiresegment;vpr.out;\s*Total wiring segments used: (.*), average .*
+avg_routed_wiresegment;vpr.out;\s.*average wire segments per net: (.*)
 
 total_nets_routed;vpr.out;Router Stats: total_nets_routed: (\d+) .*
 total_connections_routed;vpr.out;Router Stats: .*total_connections_routed: (\d+) .*

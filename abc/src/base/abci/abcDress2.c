@@ -21,6 +21,7 @@
 #include "base/abc/abc.h"
 #include "aig/aig/aig.h"
 #include "proof/dch/dch.h"
+#include "aig/gia/giaAig.h"
 
 ABC_NAMESPACE_IMPL_START
 
@@ -274,6 +275,32 @@ Vec_Ptr_t * Abc_NtkDressMapIds( Aig_Man_t * pMiter, Abc_Ntk_t * pNtk1, Abc_Ntk_t
 
 /**Function*************************************************************
 
+  Synopsis    [Alternative way to compute equivalences.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+void Dch_ComputeEquivalences2( Aig_Man_t * pMiter, Dch_Pars_t * pPars )
+{
+    extern Gia_Man_t * Cec4_ManSimulateTest3( Gia_Man_t * p, int nBTLimit, int fVerbose );
+    Gia_Man_t * pGia = Gia_ManFromAigSimple(pMiter);
+    Gia_Man_t * pNew = Cec4_ManSimulateTest3( pGia, pPars->nBTLimit, pPars->fVerbose );
+    int i, k;
+    ABC_FREE( pMiter->pReprs );
+    pMiter->pReprs = ABC_CALLOC( Aig_Obj_t *, Aig_ManObjNumMax(pMiter) );
+    Gia_ManForEachClass( pGia, i )
+        Gia_ClassForEachObj1( pGia, i, k )
+            pMiter->pReprs[k] = Aig_ManObj( pMiter, i );
+    Gia_ManStop( pGia );
+    Gia_ManStop( pNew );
+}
+
+/**Function*************************************************************
+
   Synopsis    [Computes equivalence classes of objects in pNtk1 and pNtk2.]
 
   Description [Returns the array (Vec_Ptr_t) of integer arrays (Vec_Int_t).
@@ -307,7 +334,7 @@ Vec_Ptr_t * Abc_NtkDressComputeEquivs( Abc_Ntk_t * pNtk1, Abc_Ntk_t * pNtk2, int
     pPars->nBTLimit = nConflictLimit;
     pPars->fVerbose = fVerbose;
     // perform SAT sweeping
-    Dch_ComputeEquivalences( pMiter, pPars );
+    Dch_ComputeEquivalences2( pMiter, pPars );
     // now, pMiter is annotated with the equivl class info
     // convert this info into the resulting array
     vRes = Abc_NtkDressMapIds( pMiter, pNtk1, pNtk2 );

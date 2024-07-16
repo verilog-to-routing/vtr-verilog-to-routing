@@ -56,7 +56,7 @@ DdNode *      Dsd_NodeReadSupp( Dsd_Node_t * p )         { return p->S;        }
 Dsd_Node_t ** Dsd_NodeReadDecs( Dsd_Node_t * p )         { return p->pDecs;    } 
 Dsd_Node_t *  Dsd_NodeReadDec ( Dsd_Node_t * p, int i )  { return p->pDecs[i]; } 
 int           Dsd_NodeReadDecsNum( Dsd_Node_t * p )      { return p->nDecs;    } 
-int           Dsd_NodeReadMark( Dsd_Node_t * p )         { return p->Mark;     } 
+word          Dsd_NodeReadMark( Dsd_Node_t * p )         { return p->Mark;     } 
 
 /**Function*************************************************************
 
@@ -74,7 +74,7 @@ int           Dsd_NodeReadMark( Dsd_Node_t * p )         { return p->Mark;     }
   SeeAlso     []
 
 ***********************************************************************/
-void          Dsd_NodeSetMark( Dsd_Node_t * p, int Mark ){ p->Mark = Mark;     } 
+void          Dsd_NodeSetMark( Dsd_Node_t * p, word Mark ){ p->Mark = Mark;     } 
 
 /**Function*************************************************************
 

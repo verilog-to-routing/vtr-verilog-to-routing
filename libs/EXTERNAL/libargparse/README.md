@@ -2,7 +2,7 @@ libargparse
 ===========
 This is (yet another) simple command-line parser for C++ applications, inspired by Python's agparse module.
 
-It requires only a C++11 compiler, and has no external dependancies.
+It requires only a C++11 compiler, and has no external dependencies.
 
 One of the advantages of libargparse is that all conversions from command-line strings to program types (bool, int etc.) are performed when the command line is parsed (and not when the options are accessed).
 This avoids command-line related errors from showing up deep in the program execution, which can be problematic for long-running programs.

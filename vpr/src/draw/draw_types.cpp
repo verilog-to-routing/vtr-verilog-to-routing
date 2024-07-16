@@ -13,7 +13,15 @@
  *******************************************/
 ezgl::color t_draw_state::block_color(ClusterBlockId blk) const {
     if (use_default_block_color_[blk]) {
-        t_physical_tile_type_ptr tile_type = get_physical_tile_type(blk);
+        t_physical_tile_type_ptr tile_type = nullptr;
+        auto& cluster_ctx = g_vpr_ctx.clustering();
+        auto& place_ctx = g_vpr_ctx.placement();
+        if (place_ctx.block_locs.empty()) { //No placement, pick best match
+            tile_type = pick_physical_type(cluster_ctx.clb_nlist.block_type(blk));
+        } else { // Have placement, select physical tile implementing blk
+            tile_type = physical_tile_type(blk);
+        }
+        VTR_ASSERT(tile_type != nullptr);
         return get_block_type_color(tile_type);
     } else {
         return block_color_[blk];
@@ -79,10 +87,15 @@ float t_draw_coords::get_tile_height() {
 ezgl::rectangle t_draw_coords::get_pb_bbox(ClusterBlockId clb_index, const t_pb_graph_node& pb_gnode) {
     auto& place_ctx = g_vpr_ctx.placement();
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    return get_pb_bbox(place_ctx.block_locs[clb_index].loc.x, place_ctx.block_locs[clb_index].loc.y, place_ctx.block_locs[clb_index].loc.sub_tile, cluster_ctx.clb_nlist.block_type(clb_index), pb_gnode);
+    return get_pb_bbox(place_ctx.block_locs[clb_index].loc.layer,
+                       place_ctx.block_locs[clb_index].loc.x,
+                       place_ctx.block_locs[clb_index].loc.y,
+                       place_ctx.block_locs[clb_index].loc.sub_tile,
+                       cluster_ctx.clb_nlist.block_type(clb_index),
+                       pb_gnode);
 }
 
-ezgl::rectangle t_draw_coords::get_pb_bbox(int grid_x, int grid_y, int sub_block_index, const t_logical_block_type_ptr logical_block_type, const t_pb_graph_node& pb_gnode) {
+ezgl::rectangle t_draw_coords::get_pb_bbox(int grid_layer, int grid_x, int grid_y, int sub_block_index, const t_logical_block_type_ptr logical_block_type, const t_pb_graph_node& pb_gnode) {
     auto& device_ctx = g_vpr_ctx.device();
     t_draw_pb_type_info& blk_type_info = this->blk_info.at(logical_block_type->index);
 
@@ -90,7 +103,8 @@ ezgl::rectangle t_draw_coords::get_pb_bbox(int grid_x, int grid_y, int sub_block
 
     // if getting clb bbox, apply location info.
     if (pb_gnode.is_root()) {
-        float sub_blk_offset = this->tile_width * (sub_block_index / (float)device_ctx.grid[grid_x][grid_y].type->capacity);
+        const auto& type = device_ctx.grid.get_physical_type({grid_x, grid_y, grid_layer});
+        float sub_blk_offset = this->tile_width * (sub_block_index / (float)type->capacity);
 
         result += ezgl::point2d(this->tile_x[grid_x], this->tile_y[grid_y]);
         if (sub_block_index != 0) {
@@ -100,7 +114,7 @@ ezgl::rectangle t_draw_coords::get_pb_bbox(int grid_x, int grid_y, int sub_block
     return result;
 }
 
-ezgl::rectangle t_draw_coords::get_pb_bbox(int grid_x, int grid_y, int sub_block_index, const t_logical_block_type_ptr logical_block_type) {
+ezgl::rectangle t_draw_coords::get_pb_bbox(int grid_layer, int grid_x, int grid_y, int sub_block_index, const t_logical_block_type_ptr logical_block_type) {
     auto& device_ctx = g_vpr_ctx.device();
     t_draw_pb_type_info& blk_type_info = this->blk_info.at(logical_block_type->index);
 
@@ -109,7 +123,8 @@ ezgl::rectangle t_draw_coords::get_pb_bbox(int grid_x, int grid_y, int sub_block
 
     // if getting clb bbox, apply location info.
     if (pb_gnode.is_root()) {
-        float sub_blk_offset = this->tile_width * (sub_block_index / (float)device_ctx.grid[grid_x][grid_y].type->capacity);
+        const auto& type = device_ctx.grid.get_physical_type({grid_x, grid_y, grid_layer});
+        float sub_blk_offset = this->tile_width * (sub_block_index / (float)type->capacity);
 
         result += ezgl::point2d(this->tile_x[grid_x], this->tile_y[grid_y]);
         if (sub_block_index != 0) {
@@ -137,16 +152,17 @@ ezgl::rectangle t_draw_coords::get_absolute_clb_bbox(const ClusterBlockId clb_in
     auto& place_ctx = g_vpr_ctx.placement();
 
     t_pl_loc loc = place_ctx.block_locs[clb_index].loc;
-    return get_pb_bbox(loc.x, loc.y, loc.sub_tile, block_type);
+    return get_pb_bbox(loc.layer, loc.x, loc.y, loc.sub_tile, block_type);
 }
 
-ezgl::rectangle t_draw_coords::get_absolute_clb_bbox(int grid_x, int grid_y, int sub_block_index) {
+ezgl::rectangle t_draw_coords::get_absolute_clb_bbox(int grid_layer, int grid_x, int grid_y, int sub_block_index) {
     auto& device_ctx = g_vpr_ctx.device();
-    return get_pb_bbox(grid_x, grid_y, sub_block_index, pick_logical_type(device_ctx.grid[grid_x][grid_y].type));
+    const auto& type = device_ctx.grid.get_physical_type({grid_x, grid_y, grid_layer});
+    return get_pb_bbox(grid_layer, grid_x, grid_y, sub_block_index, pick_logical_type(type));
 }
 
-ezgl::rectangle t_draw_coords::get_absolute_clb_bbox(int grid_x, int grid_y, int sub_block_index, const t_logical_block_type_ptr logical_block_type) {
-    return get_pb_bbox(grid_x, grid_y, sub_block_index, logical_block_type);
+ezgl::rectangle t_draw_coords::get_absolute_clb_bbox(int grid_layer, int grid_x, int grid_y, int sub_block_index, const t_logical_block_type_ptr logical_block_type) {
+    return get_pb_bbox(grid_layer, grid_x, grid_y, sub_block_index, logical_block_type);
 }
 
 #endif // NO_GRAPHICS

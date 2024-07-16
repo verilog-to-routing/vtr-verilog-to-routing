@@ -1,11 +1,33 @@
 name: Test
 
 on:
+  # We want to run the CI when anything is pushed to master.
+  # Since master is a protected branch this only happens when a PR is merged.
+  # This is a double check in case the PR was stale and had some issues.
   push:
+    branches:
+      - master
+    paths-ignore: # Prevents from running if only docs are updated
+      - 'doc/**'
+      - '**/*README*'
+      - '**.md'
+      - '**.rst'
   pull_request:
+    paths-ignore: # Prevents from running if only docs are updated
+      - 'doc/**'
+      - '**/*README*'
+      - '**.md'
+      - '**.rst'
   workflow_dispatch:
   schedule:
   - cron: '0 0 * * *' # daily
+
+# We want to cancel previous runs for a given PR or branch / ref if another CI
+# run is requested.
+# See: https://docs.github.com/en/actions/using-jobs/using-concurrency
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 env:
   # default compiler for all non-compatibility tests
@@ -18,7 +40,9 @@ jobs:
     # Prevents from running on forks where no custom runners are available
     if: ${{ github.repository_owner == 'verilog-to-routing' }}
 
-    container: ubuntu:bionic
+    timeout-minutes: 420
+    
+    container: ubuntu:jammy
 
     runs-on: [self-hosted, Linux, X64]
 
@@ -26,38 +50,61 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - {test: "vtr_reg_nightly_test1", cores: "8",  options: "",          cmake: ""                                             }
-          - {test: "vtr_reg_nightly_test2", cores: "16", options: "",          cmake: ""                                             }
-          - {test: "vtr_reg_nightly_test3", cores: "16", options: "",          cmake: ""                                             }
-          - {test: "vtr_reg_nightly_test4", cores: "16", options: "",          cmake: ""                                             }
-          - {test: "vtr_reg_strong",        cores: "16", options: "",          cmake: "-DVTR_ASSERT_LEVEL=3"                         }
-          - {test: "vtr_reg_strong",        cores: "16", options: "-skip_qor", cmake: "-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=ON"}
-          - {test: "vtr_reg_yosys",         cores: "16", options: "",          cmake: "-DWITH_YOSYS=ON"                              }
-          - {test: "vtr_reg_yosys_odin",    cores: "16", options: "",          cmake: "-DODIN_USE_YOSYS=ON"                          }
-          - {test: "odin_tech_strong",      cores: "16", options: "",          cmake: "-DODIN_USE_YOSYS=ON"                          }
-          - {test: "odin_reg_strong",       cores: "16", options: "",          cmake: ""                                             }
+          - {test: "vtr_reg_nightly_test1",      cores: "16", options: "",          cmake: "",                                                             extra_pkgs: ""}
+          - {test: "vtr_reg_nightly_test1_odin", cores: "16", options: "",          cmake: "-DWITH_ODIN=ON",                                               extra_pkgs: ""}
+          - {test: "vtr_reg_nightly_test2",      cores: "16", options: "",          cmake: "",                                                             extra_pkgs: ""}
+          - {test: "vtr_reg_nightly_test2_odin", cores: "16", options: "",          cmake: "-DWITH_ODIN=ON",                                               extra_pkgs: ""}
+          - {test: "vtr_reg_nightly_test3",      cores: "16", options: "",          cmake: "",                                                             extra_pkgs: ""}
+          - {test: "vtr_reg_nightly_test3_odin", cores: "16", options: "",          cmake: "-DWITH_ODIN=ON",                                               extra_pkgs: ""}
+          - {test: "vtr_reg_nightly_test4",      cores: "16", options: "",          cmake: "",                                                             extra_pkgs: ""}
+          - {test: "vtr_reg_nightly_test4_odin", cores: "16", options: "",          cmake: "-DWITH_ODIN=ON",                                               extra_pkgs: ""}
+          - {test: "vtr_reg_nightly_test5",      cores: "16", options: "",          cmake: "",                                                             extra_pkgs: ""}
+          - {test: "vtr_reg_nightly_test6",      cores: "16", options: "",          cmake: "",                                                             extra_pkgs: ""}
+          - {test: "vtr_reg_nightly_test7",      cores: "16", options: "",          cmake: "",                                                             extra_pkgs: ""}
+          - {test: "vtr_reg_strong",             cores: "16", options: "",          cmake: "-DVTR_ASSERT_LEVEL=3",                                         extra_pkgs: "libeigen3-dev"}
+          - {test: "vtr_reg_strong_odin",        cores: "16", options: "",          cmake: "-DVTR_ASSERT_LEVEL=3 -DWITH_ODIN=ON",                          extra_pkgs: "libeigen3-dev"}
+          - {test: "vtr_reg_strong_odin",        cores: "16", options: "-skip_qor", cmake: "-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=ON -DWITH_ODIN=ON", extra_pkgs: "libeigen3-dev"}
+          - {test: "vtr_reg_system_verilog",     cores: "16", options: "",          cmake: "-DYOSYS_F4PGA_PLUGINS=ON",                                     extra_pkgs: ""}
+          - {test: "odin_reg_strong",            cores: "16", options: "",          cmake: "-DWITH_ODIN=ON",                                               extra_pkgs: ""}
+          - {test: "parmys_reg_strong",          cores: "16", options: "",          cmake: "-DYOSYS_F4PGA_PLUGINS=ON",                                     extra_pkgs: ""}
 
     env:
       DEBIAN_FRONTEND: "noninteractive"
 
     steps:
 
-    - uses: actions/checkout@v2
+      # TODO: This runnner is running on a self-hosted CPU. In order to upgrade
+      #       to v4, need to upgrade the machine to support node20.
+    - uses: actions/checkout@v3
+      with:
+        submodules: 'true'
 
     - name: Setup
       run: stdbuf -i0 -i0 -e0 ./.github/scripts/hostsetup.sh
 
+    - name: Install external libraries
+      run: apt install -y ${{ matrix.extra_pkgs }}
+      if: ${{ matrix.extra_pkgs }}
+
     - name: Execute test script
       run: stdbuf -i0 -o0 -e0 ./.github/scripts/run-vtr.sh
       env:
+        VPR_NUM_WORKERS: 4
         VTR_TEST: ${{ matrix.test }}
         VTR_TEST_OPTIONS: ${{ matrix.options }}
         VTR_CMAKE_PARAMS: ${{ matrix.cmake }}
         NUM_CORES: ${{ matrix.cores }}
 
-    - uses: actions/upload-artifact@v2
-      if: ${{ always() }}
+    - name: Upload test results
+      # If the job was not cancelled, we want to save the result (this includes
+      # when the job fails). See warning here:
+      # https://docs.github.com/en/actions/learn-github-actions/expressions#always
+      if: ${{ !cancelled() }}
+      # TODO: This runnner is running on a self-hosted CPU. In order to upgrade
+      #       to v4, need to upgrade the machine to support node20.
+      uses: actions/upload-artifact@v3
       with:
+        name: ${{matrix.test}}_test_results
         path: |
           **/results*.gz
           **/plot_*.svg
@@ -66,27 +113,36 @@ jobs:
 
   Build:
     name: 'B: Building VtR'
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - { build_type: 'release', verbose: '0' }
+        - { build_type: 'debug',   verbose: '0' }
+        - { build_type: 'debug',   verbose: '1' }
     steps:
 
-    - uses: actions/setup-python@v2
+    - uses: actions/setup-python@v5
       with:
-        python-version: 3.6
-    - uses: actions/checkout@v2
+        python-version: 3.10.10
+    - uses: actions/checkout@v4
+      with:
+        submodules: 'true'
     - run: ./.github/scripts/install_dependencies.sh
 
-    - uses: hendrikmuhs/ccache-action@v1
+    - uses: hendrikmuhs/ccache-action@v1.2
 
     - name: Test
       env:
-        BUILD_TYPE: release
+        BUILD_TYPE: ${{ matrix.build_type }}
       run: |
         export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
-        ./.github/scripts/build.sh
+        ./.github/scripts/build.sh VERBOSE=${{ matrix.verbose }}
 
 
   Format:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
@@ -97,10 +153,10 @@ jobs:
     name: 'F: ${{ matrix.name }}'
     steps:
 
-    - uses: actions/setup-python@v2
+    - uses: actions/setup-python@v5
       with:
-        python-version: 3.6
-    - uses: actions/checkout@v2
+        python-version: 3.10.10
+    - uses: actions/checkout@v4
     - run: ./.github/scripts/install_dependencies.sh
 
     - name: Test
@@ -109,13 +165,15 @@ jobs:
 
   UniTests:
     name: 'U: C++ Unit Tests'
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     steps:
 
-    - uses: actions/setup-python@v2
+    - uses: actions/setup-python@v5
       with:
-        python-version: 3.6
-    - uses: actions/checkout@v2
+        python-version: 3.10.10
+    - uses: actions/checkout@v4
+      with:
+        submodules: 'true'
     - run: ./.github/scripts/install_dependencies.sh
 
     - name: Test
@@ -126,16 +184,18 @@ jobs:
 
   Warnings:
     name: 'W: Check Compilation Warnings'
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     steps:
 
-    - uses: actions/setup-python@v2
+    - uses: actions/setup-python@v5
       with:
-        python-version: 3.6
-    - uses: actions/checkout@v2
+        python-version: 3.10.10
+    - uses: actions/checkout@v4
+      with:
+        submodules: 'true'
     - run: ./.github/scripts/install_dependencies.sh
 
-    - uses: hendrikmuhs/ccache-action@v1
+    - uses: hendrikmuhs/ccache-action@v1.2
 
     - name: Test
       env:
@@ -148,47 +208,74 @@ jobs:
 
 
   Regression:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
         include: [
           {
             name: 'Basic',
-            params: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on',
+            params: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on',
             suite: 'vtr_reg_basic'
           },
           {
+            name: 'Basic_odin',
+            params: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DWITH_PARMYS=OFF -DWITH_ODIN=on',
+            suite: 'vtr_reg_basic_odin'
+          },
+          {
             name: 'Basic with NO_GRAPHICS',
-            params: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVPR_USE_EZGL=off',
+            params: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVPR_USE_EZGL=off',
+            suite: 'vtr_reg_basic'
+          },
+          {
+            name: 'Basic with NO_SERVER',
+            params: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVPR_USE_EZGL=on -DVPR_USE_SERVER=off',
+            suite: 'vtr_reg_basic'
+          },
+          {
+            name: 'Basic with CAPNPROTO disabled',
+            params: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVTR_ENABLE_CAPNPROTO=off',
             suite: 'vtr_reg_basic'
           },
           {
             name: 'Basic with VTR_ENABLE_DEBUG_LOGGING',
-            params: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVTR_ENABLE_DEBUG_LOGGING=on',
+            params: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVTR_ENABLE_DEBUG_LOGGING=on',
             suite: 'vtr_reg_basic'
           },
           {
+            name: 'Basic_odin with VTR_ENABLE_DEBUG_LOGGING',
+            params: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVTR_ENABLE_DEBUG_LOGGING=on -DWITH_PARMYS=OFF -DWITH_ODIN=on',
+            suite: 'vtr_reg_basic_odin'
+          },
+          {
             name: 'Strong',
-            params: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on',
+            params: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on',
             suite: 'vtr_reg_strong'
           },
           {
+            name: 'Strong_odin',
+            params: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DWITH_PARMYS=OFF -DWITH_ODIN=on',
+            suite: 'vtr_reg_strong_odin'
+          },
+          {
             name: 'Valgrind Memory',
-            params: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on',
+            params: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DWITH_ODIN=on',
             suite: 'vtr_reg_valgrind_small'
           }
         ]
     name: 'R: ${{ matrix.name }}'
     steps:
 
-    - uses: actions/setup-python@v2
+    - uses: actions/setup-python@v5
       with:
-        python-version: 3.6
-    - uses: actions/checkout@v2
+        python-version: 3.10.10
+    - uses: actions/checkout@v4
+      with:
+        submodules: 'true'
     - run: ./.github/scripts/install_dependencies.sh
 
-    - uses: hendrikmuhs/ccache-action@v1
+    - uses: hendrikmuhs/ccache-action@v1.2
 
     - name: Test
       env:
@@ -199,18 +286,20 @@ jobs:
         ./run_reg_test.py ${{ matrix.suite }} -show_failures -j2
 
     - name: Upload regression run files
-      uses: actions/upload-artifact@v2
+      if: ${{ !cancelled() }}
+      uses: actions/upload-artifact@v4
       with:
         name: ${{matrix.name}}_run_files
         path: |
           vtr_flow/**/*.out
-          vtr_flow/**/*.blif
+          # vtr_flow/**/*.blif  # Removed since it was taking too much space and was hardly used.
           vtr_flow/**/*.p
           vtr_flow/**/*.net
           vtr_flow/**/*.r
 
     - name: Upload regression results
-      uses: actions/upload-artifact@v2
+      if: ${{ !cancelled() }}
+      uses: actions/upload-artifact@v4
       with:
         name: ${{matrix.name}}_results
         path: |
@@ -218,54 +307,98 @@ jobs:
           vtr_flow/**/parse_results*.txt
 
   Sanitized:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
-        include:
-        - { name: 'Basic',  suite: 'vtr_reg_basic'  }
-        #- { name: 'Strong', suite: 'vtr_reg_strong' } # SKIP Too long to run on GitHub Actions (max 6h)
+        include: [
+          {
+            name: 'Basic',
+            params: '-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=on -DVTR_IPO_BUILD=off -DWITH_BLIFEXPLORER=on -DWITH_PARMYS=OFF -DWITH_ODIN=on',
+            suite: 'vtr_reg_basic_odin'
+          }
+          #- { name: 'Strong', suite: 'vtr_reg_strong' } # SKIP Too long to run on GitHub Actions (max 6h)
+        ]
+
+
     name: 'S: ${{ matrix.name }}'
     steps:
 
-    - uses: actions/setup-python@v2
+    - uses: actions/setup-python@v5
       with:
-        python-version: 3.6
-    - uses: actions/checkout@v2
+        python-version: 3.10.10
+    - uses: actions/checkout@v4
+      with:
+        submodules: 'true'
+
     - run: ./.github/scripts/install_dependencies.sh
 
-    - uses: hendrikmuhs/ccache-action@v1
+    - uses: hendrikmuhs/ccache-action@v1.2
 
     - name: Test
       env:
-        CMAKE_PARAMS: '-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=on -DVTR_IPO_BUILD=off -DWITH_BLIFEXPLORER=on'
+        CMAKE_PARAMS: ${{ matrix.params }}
         BUILD_TYPE: debug
         LSAN_OPTIONS: 'exitcode=42' #Use a non-standard exit code to ensure LSAN errors are detected
+        # In Ubuntu 20240310.1.0, the entropy of ASLR has increased (28 -> 32). LLVM 14 in this
+        # image is not compatible with this increased ASLR entropy. Apparently, memory sanitizer
+        # depends on LLVM and all CI tests where VTR_ENABLE_SANITIZE is enabled fail. For a temporary
+        # fix, we manually reduce the entropy. This quick fix should be removed in the future
+        # when github deploys a more stable Ubuntu image.
       run: |
+        sudo sysctl -w vm.mmap_rnd_bits=28
         export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
         ./.github/scripts/build.sh
         # We skip QoR since we are only checking for errors in sanitizer runs
         ./run_reg_test.py ${{ matrix.suite }} -show_failures -j2 -skip_qor
 
 
-  ODINII:
-    name: 'ODIN-II Basic Test'
-    runs-on: ubuntu-18.04
+  Parmys:
+    name: 'Parmys Basic Test'
+    runs-on: ubuntu-22.04
     steps:
 
-    - uses: actions/setup-python@v2
+      - uses: actions/setup-python@v5
+        with:
+          python-version: 3.10.10
+      - uses: actions/checkout@v4
+        with:
+          submodules: 'true'
+      - run: ./.github/scripts/install_dependencies.sh
+
+      - uses: hendrikmuhs/ccache-action@v1.2
+
+      - name: Test
+        env:
+          CMAKE_PARAMS: '-DVTR_IPO_BUILD=off'
+          BUILD_TYPE: debug
+        run: |
+          export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
+          ./.github/scripts/build.sh
+          ./run_reg_test.py parmys_reg_basic -show_failures -j2
+
+
+  ODINII:
+    name: 'ODIN-II Basic Test'
+    runs-on: ubuntu-22.04
+    steps:
+
+    - uses: actions/setup-python@v5
       with:
-        python-version: 3.6
-    - uses: actions/checkout@v2
+        python-version: 3.10.10
+    - uses: actions/checkout@v4
+      with:
+        submodules: 'true'
     - run: ./.github/scripts/install_dependencies.sh
 
-    - uses: hendrikmuhs/ccache-action@v1
+    - uses: hendrikmuhs/ccache-action@v1.2
 
     - name: Test
       env:
-        CMAKE_PARAMS: '-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=on -DVTR_IPO_BUILD=off -DWITH_BLIFEXPLORER=on'
+        CMAKE_PARAMS: '-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=on -DVTR_IPO_BUILD=off -DWITH_BLIFEXPLORER=on -DWITH_PARMYS=OFF -DWITH_ODIN=on'
         BUILD_TYPE: debug
       run: |
+        sudo sysctl -w vm.mmap_rnd_bits=28
         export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
         ./.github/scripts/build.sh
         ./run_reg_test.py odin_reg_basic -show_failures -j2
@@ -273,16 +406,18 @@ jobs:
 
   VQM2BLIF:
     name: 'VQM2BLIF Basic Tests'
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     steps:
 
-    - uses: actions/setup-python@v2
+    - uses: actions/setup-python@v5
       with:
-        python-version: 3.6
-    - uses: actions/checkout@v2
+        python-version: 3.10.10
+    - uses: actions/checkout@v4
+      with:
+        submodules: 'true'
     - run: ./.github/scripts/install_dependencies.sh
 
-    - uses: hendrikmuhs/ccache-action@v1
+    - uses: hendrikmuhs/ccache-action@v1.2
 
     - name: Test
       env:
@@ -292,73 +427,41 @@ jobs:
         ./.github/scripts/build.sh
         ./utils/vqm2blif/test/scripts/test_vqm2blif.sh
 
-
-  YOSYSODINII:
-    runs-on: ubuntu-18.04
-    strategy:
-      fail-fast: false
-      matrix:
-        include: [
-          {
-            name: 'Yosys+ODIN-II Basic',
-            suite: 'odin_tech_basic'
-          }
-        ]
-    name: '${{ matrix.name }}'
-    steps:
-
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.6
-    - uses: actions/checkout@v2
-    - run: ./.github/scripts/install_dependencies.sh
-
-    - uses: hendrikmuhs/ccache-action@v1
-
-    - name: Test
-      env:
-        CMAKE_PARAMS: '-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=on -DVTR_IPO_BUILD=off -DWITH_BLIFEXPLORER=on -DODIN_USE_YOSYS=ON'
-        BUILD_TYPE: debug
-      run: |
-        export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
-        ./.github/scripts/build.sh
-        ./run_reg_test.py ${{ matrix.suite }} -show_failures -j2
-
-
   Compatibility:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
         include:
-        - { name: 'GCC 7 (Ubuntu Bionic - 18.04)',    eval: 'CC=gcc-7 && CXX=g++-7',           build: ''               }
-        - { name: 'GCC 8 (Debian Buster)',            eval: 'CC=gcc-8 && CXX=g++-8',           build: ''               }
-        - { name: 'GCC 9 (Ubuntu Focal - 20.04)',     eval: 'CC=gcc-9 && CXX=g++-9',           build: ''               }
-        - { name: 'GCC 10 (Ubuntu Hirsute - 21.04)',  eval: 'CC=gcc-10 && CXX=g++-10',         build: ''               }
-        - { name: 'GCC 11 (Latest)',                  eval: 'CC=gcc-11 && CXX=g++-11',         build: ''               }
-        - { name: 'Clang 6 (Ubuntu Bionic - 18.04)',  eval: 'CC=clang-6.0 && CXX=clang++-6.0', build: ''               }
-        - { name: 'Clang 7 (Debian Buster)',          eval: 'CC=clang-7 && CXX=clang++-7',     build: ''               }
-        - { name: 'Clang 10 (Ubuntu Focal - 20.04)',  eval: 'CC=clang-10 && CXX=clang++-10',   build: ''               }
+        - { name: 'GCC 9 (Ubuntu Jammy - 22.04)',     eval: 'CC=gcc-9 && CXX=g++-9',           }
+        - { name: 'GCC 10 (Ubuntu Jammy - 22.04)',    eval: 'CC=gcc-10 && CXX=g++-10',         }
+        - { name: 'GCC 11 (Ubuntu Jammy - 22.04)',    eval: 'CC=gcc-11 && CXX=g++-11',         }
+        - { name: 'GCC 12 (Ubuntu Jammy - 22.04)',    eval: 'CC=gcc-12 && CXX=g++-12',         }
+        - { name: 'Clang 11 (Ubuntu Jammy - 22.04)',  eval: 'CC=clang-11 && CXX=clang++-11',   }
+        - { name: 'Clang 12 (Ubuntu Jammy - 22.04)',  eval: 'CC=clang-12 && CXX=clang++-12',   }
+        - { name: 'Clang 13 (Ubuntu Jammy - 22.04)',  eval: 'CC=clang-13 && CXX=clang++-13',   }
+        - { name: 'Clang 14 (Ubuntu Jammy - 22.04)',  eval: 'CC=clang-14 && CXX=clang++-14',   }
     name: 'B: ${{ matrix.name }}'
     steps:
 
-    - uses: actions/setup-python@v2
+    - uses: actions/setup-python@v5
       with:
-        python-version: 3.6
-    - uses: actions/checkout@v2
+        python-version: 3.10.10
+    - uses: actions/checkout@v4
+      with:
+        submodules: 'true'
     - run: ./.github/scripts/install_dependencies.sh
 
-    - uses: hendrikmuhs/ccache-action@v1
+    - uses: hendrikmuhs/ccache-action@v1.2
 
     - name: Test
       env:
-        CMAKE_PARAMS: "-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on"
+        CMAKE_PARAMS: "-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DWITH_ODIN=on"
         MATRIX_EVAL: ${{ matrix.eval }}
-        BUILD_TYPE: ${{ matrix.build }}
+        BUILD_TYPE: release
       run: |
         export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
         ./.github/scripts/build.sh
-
 
   Coverity:
     name: 'Coverity Scan'
@@ -369,20 +472,22 @@ jobs:
       - Warnings
       - Regression
       - Sanitized
+      - Parmys
       - ODINII
       - VQM2BLIF
-      - YOSYSODINII
       - Compatibility
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     steps:
 
-    - uses: actions/setup-python@v2
+    - uses: actions/setup-python@v5
       with:
-        python-version: 3.6
-    - uses: actions/checkout@v2
+        python-version: 3.10.10
+    - uses: actions/checkout@v4
+      with:
+        submodules: 'true'
     - run: ./.github/scripts/install_dependencies.sh
 
-    - uses: hendrikmuhs/ccache-action@v1
+    - uses: hendrikmuhs/ccache-action@v1.2
 
     - name: Test
       env:

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.9)
+cmake_minimum_required(VERSION 3.16)
 
 project("liblog")
 
@@ -22,3 +22,4 @@ add_executable(test_log ${EXEC_SOURCES})
 target_link_libraries(test_log liblog)
 
 install(TARGETS liblog DESTINATION bin)
+install(FILES ${LIB_HEADERS} DESTINATION include/liblog)

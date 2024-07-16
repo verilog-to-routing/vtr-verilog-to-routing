@@ -1,4 +1,6 @@
-/* This file contains declaration of accessor functions that can be used to
+/**
+ * @file draw_global.h
+ * This file contains declaration of accessor functions that can be used to
  * retrieve global variables declared at filed scope inside draw_global.c.
  * Doing so could reduce the number of global variables in VPR and thus
  * reduced the likelihood of compiler error for declaration of multiple

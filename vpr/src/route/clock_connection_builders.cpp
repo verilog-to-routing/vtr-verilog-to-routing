@@ -23,9 +23,10 @@ void RoutingToClockConnection::set_clock_switch_point_name(std::string clock_swi
     switch_point_name = clock_switch_point_name;
 }
 
-void RoutingToClockConnection::set_switch_location(int x, int y) {
+void RoutingToClockConnection::set_switch_location(int x, int y, int layer /* =0 */) {
     switch_location.x = x;
     switch_location.y = y;
+    switch_location.layer = layer;
 }
 
 void RoutingToClockConnection::set_switch(int arch_switch_index) {
@@ -49,56 +50,57 @@ void RoutingToClockConnection::create_switches(const ClockRRGraphBuilder& clock_
     // Initialize random seed
     // Must be done during every call in order for restored rr_graphs after a binary
     // search to be consistent
-    std::srand(seed);
+    std::mt19937 rand_generator;
+    rand_generator.seed(seed);
 
-    auto& device_ctx = g_vpr_ctx.device();
+    auto& device_ctx = g_vpr_ctx.mutable_device();
+    auto& rr_graph_builder = device_ctx.rr_graph_builder;
     const auto& node_lookup = device_ctx.rr_graph.node_lookup();
 
-    RRNodeId virtual_clock_network_root_idx = create_virtual_clock_network_sink_node(switch_location.x, switch_location.y);
-    {
-        auto& mut_device_ctx = g_vpr_ctx.mutable_device();
-        mut_device_ctx.virtual_clock_network_root_idx = size_t(virtual_clock_network_root_idx);
-    }
+    RRNodeId virtual_clock_network_root_idx = create_virtual_clock_network_sink_node(switch_location.layer, switch_location.x, switch_location.y);
+    rr_graph_builder.set_virtual_clock_network_root_idx(virtual_clock_network_root_idx);
 
     // rr_node indices for x and y channel routing wires and clock wires to connect to
-    auto x_wire_indices = node_lookup.find_channel_nodes(switch_location.x, switch_location.y, CHANX);
-    auto y_wire_indices = node_lookup.find_channel_nodes(switch_location.x, switch_location.y, CHANY);
+    auto x_wire_indices = node_lookup.find_channel_nodes(switch_location.layer, switch_location.x, switch_location.y, CHANX);
+    auto y_wire_indices = node_lookup.find_channel_nodes(switch_location.layer, switch_location.x, switch_location.y, CHANY);
     auto clock_indices = clock_graph.get_rr_node_indices_at_switch_location(
         clock_to_connect_to, switch_point_name, switch_location.x, switch_location.y);
 
     for (auto clock_index : clock_indices) {
         // Select wires to connect to at random
-        std::random_shuffle(x_wire_indices.begin(), x_wire_indices.end());
-        std::random_shuffle(y_wire_indices.begin(), y_wire_indices.end());
+        std::shuffle(x_wire_indices.begin(), x_wire_indices.end(), rand_generator);
+        std::shuffle(y_wire_indices.begin(), y_wire_indices.end(), rand_generator);
 
         // Connect to x-channel wires
         unsigned num_wires_x = x_wire_indices.size() * fc;
         for (size_t i = 0; i < num_wires_x; i++) {
-            clock_graph.add_edge(rr_edges_to_create, x_wire_indices[i], RRNodeId(clock_index), arch_switch_idx);
+            clock_graph.add_edge(rr_edges_to_create, x_wire_indices[i], RRNodeId(clock_index), arch_switch_idx, false);
         }
 
         // Connect to y-channel wires
         unsigned num_wires_y = y_wire_indices.size() * fc;
         for (size_t i = 0; i < num_wires_y; i++) {
-            clock_graph.add_edge(rr_edges_to_create, y_wire_indices[i], RRNodeId(clock_index), arch_switch_idx);
+            clock_graph.add_edge(rr_edges_to_create, y_wire_indices[i], RRNodeId(clock_index), arch_switch_idx, false);
         }
 
         // Connect to virtual clock sink node
         // used by the two stage router
-        clock_graph.add_edge(rr_edges_to_create, RRNodeId(clock_index), virtual_clock_network_root_idx, arch_switch_idx);
+        clock_graph.add_edge(rr_edges_to_create, RRNodeId(clock_index), virtual_clock_network_root_idx, arch_switch_idx, false);
     }
 }
 
-RRNodeId RoutingToClockConnection::create_virtual_clock_network_sink_node(int x, int y) {
+RRNodeId RoutingToClockConnection::create_virtual_clock_network_sink_node(int layer, int x, int y) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
     auto& rr_graph = device_ctx.rr_graph;
     auto& rr_graph_builder = device_ctx.rr_graph_builder;
     auto& node_lookup = device_ctx.rr_graph_builder.node_lookup();
+    auto& rr_rc_data = device_ctx.rr_rc_data;
+    auto& arch = device_ctx.arch;
     rr_graph_builder.emplace_back();
     RRNodeId node_index = RRNodeId(rr_graph.num_nodes() - 1);
 
-    //Determine the a valid PTC
-    std::vector<RRNodeId> nodes_at_loc = node_lookup.find_grid_nodes_at_all_sides(x, y, SINK);
+    //Determine a valid PTC
+    std::vector<RRNodeId> nodes_at_loc = node_lookup.find_grid_nodes_at_all_sides(layer, x, y, SINK);
 
     int max_ptc = 0;
     for (RRNodeId inode : nodes_at_loc) {
@@ -107,20 +109,22 @@ RRNodeId RoutingToClockConnection::create_virtual_clock_network_sink_node(int x,
     int ptc = max_ptc + 1;
 
     rr_graph_builder.set_node_type(node_index, SINK);
+    rr_graph_builder.set_node_name(node_index, arch->default_clock_network_name);
     rr_graph_builder.set_node_class_num(node_index, ptc);
     rr_graph_builder.set_node_coordinates(node_index, x, y, x, y);
+    rr_graph_builder.set_node_layer(node_index, layer);
     rr_graph_builder.set_node_capacity(node_index, 1);
     rr_graph_builder.set_node_cost_index(node_index, RRIndexedDataId(SINK_COST_INDEX));
 
     float R = 0.;
     float C = 0.;
-    rr_graph_builder.set_node_rc_index(node_index, NodeRCIndex(find_create_rr_rc_data(R, C)));
+    rr_graph_builder.set_node_rc_index(node_index, NodeRCIndex(find_create_rr_rc_data(R, C, rr_rc_data)));
 
     // Use a generic way when adding nodes to lookup.
     // However, since the SINK node has the same xhigh/xlow as well as yhigh/ylow, we can probably use a shortcut
     for (int ix = rr_graph.node_xlow(node_index); ix <= rr_graph.node_xhigh(node_index); ++ix) {
         for (int iy = rr_graph.node_ylow(node_index); iy <= rr_graph.node_yhigh(node_index); ++iy) {
-            node_lookup.add_node(node_index, ix, iy, rr_graph.node_type(node_index), rr_graph.node_class_num(node_index));
+            node_lookup.add_node(node_index, layer, ix, iy, rr_graph.node_type(node_index), rr_graph.node_class_num(node_index));
         }
     }
 
@@ -206,7 +210,7 @@ void ClockToClockConneciton::create_switches(const ClockRRGraphBuilder& clock_gr
                 if (from_itter == from_rr_node_indices.end()) {
                     from_itter = from_rr_node_indices.begin();
                 }
-                clock_graph.add_edge(rr_edges_to_create, RRNodeId(*from_itter), RRNodeId(to_index), arch_switch_idx);
+                clock_graph.add_edge(rr_edges_to_create, RRNodeId(*from_itter), RRNodeId(to_index), arch_switch_idx, false);
                 from_itter++;
             }
         }
@@ -246,23 +250,24 @@ void ClockToPinsConnection::create_switches(const ClockRRGraphBuilder& clock_gra
     auto& device_ctx = g_vpr_ctx.device();
     const auto& node_lookup = device_ctx.rr_graph.node_lookup();
     auto& grid = clock_graph.grid();
+    int layer_num = 0; //Function *FOR NOW* assumes that layer_num is always 0
 
-    for (size_t x = 0; x < grid.width(); x++) {
-        for (size_t y = 0; y < grid.height(); y++) {
+    for (int x = 0; x < (int)grid.width(); x++) {
+        for (int y = 0; y < (int)grid.height(); y++) {
             //Avoid boundary
-            if ((y == 0 && x == 0) || (x == grid.width() - 1 && y == grid.height() - 1)) {
+            if ((y == 0 && x == 0) || (x == (int)grid.width() - 1 && y == (int)grid.height() - 1)) {
                 continue;
             }
 
-            auto type = grid[x][y].type;
+            auto type = grid.get_physical_type({x, y, layer_num});
 
             // Skip EMPTY type
             if (is_empty_type(type)) {
                 continue;
             }
 
-            auto width_offset = grid[x][y].width_offset;
-            auto height_offset = grid[x][y].height_offset;
+            auto width_offset = grid.get_width_offset({x, y, layer_num});
+            auto height_offset = grid.get_height_offset({x, y, layer_num});
 
             // Ignore grid locations that do not have blocks
             bool has_pb_type = false;
@@ -280,7 +285,7 @@ void ClockToPinsConnection::create_switches(const ClockRRGraphBuilder& clock_gra
 
             for (e_side side : SIDES) {
                 //Don't connect pins which are not adjacent to channels around the perimeter
-                if ((x == 0 && side != RIGHT) || (x == grid.width() - 1 && side != LEFT) || (y == 0 && side != TOP) || (y == grid.height() - 1 && side != BOTTOM)) {
+                if ((x == 0 && side != RIGHT) || (x == (int)grid.width() - 1 && side != LEFT) || (y == 0 && side != TOP) || (y == (int)grid.height() - 1 && side != BOTTOM)) {
                     continue;
                 }
 
@@ -296,7 +301,7 @@ void ClockToPinsConnection::create_switches(const ClockRRGraphBuilder& clock_gra
                     if (x == 0) {
                         clock_x_offset = 1;  // chanx clock always starts at 1 offset
                         clock_y_offset = -1; // pick the chanx below the block
-                    } else if (x == grid.width() - 1) {
+                    } else if (x == (int)grid.width() - 1) {
                         clock_x_offset = -1; // chanx clock always ends at 1 offset
                         clock_y_offset = -1; // pick the chanx below the block
                     } else if (y == 0) {
@@ -305,7 +310,8 @@ void ClockToPinsConnection::create_switches(const ClockRRGraphBuilder& clock_gra
                         clock_y_offset = -1; // pick the chanx below the block
                     }
 
-                    auto clock_pin_node_idx = node_lookup.find_node(x,
+                    auto clock_pin_node_idx = node_lookup.find_node(layer_num,
+                                                                    x,
                                                                     y,
                                                                     IPIN,
                                                                     clock_pin_idx,
@@ -319,7 +325,7 @@ void ClockToPinsConnection::create_switches(const ClockRRGraphBuilder& clock_gra
 
                     //Create edges depending on Fc
                     for (size_t i = 0; i < clock_network_indices.size() * fc; i++) {
-                        clock_graph.add_edge(rr_edges_to_create, RRNodeId(clock_network_indices[i]), RRNodeId(clock_pin_node_idx), arch_switch_idx);
+                        clock_graph.add_edge(rr_edges_to_create, RRNodeId(clock_network_indices[i]), RRNodeId(clock_pin_node_idx), arch_switch_idx, false);
                     }
                 }
             }

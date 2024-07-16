@@ -29,7 +29,7 @@ void initialize_timing_info(const PlaceCritParams& crit_params,
                             const PlaceDelayModel* delay_model,
                             PlacerCriticalities* criticalities,
                             PlacerSetupSlacks* setup_slacks,
-                            ClusteredPinTimingInvalidator* pin_timing_invalidator,
+                            NetPinTimingInvalidator* pin_timing_invalidator,
                             SetupTimingInfo* timing_info,
                             t_placer_costs* costs) {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -77,7 +77,7 @@ void perform_full_timing_update(const PlaceCritParams& crit_params,
                                 const PlaceDelayModel* delay_model,
                                 PlacerCriticalities* criticalities,
                                 PlacerSetupSlacks* setup_slacks,
-                                ClusteredPinTimingInvalidator* pin_timing_invalidator,
+                                NetPinTimingInvalidator* pin_timing_invalidator,
                                 SetupTimingInfo* timing_info,
                                 t_placer_costs* costs) {
     /* Update all timing related classes. */
@@ -120,14 +120,14 @@ void perform_full_timing_update(const PlaceCritParams& crit_params,
  * we wish to compare the new slack values to the original ones.
  *
  * All the pins with changed connection delays have already been added into
- * the ClusteredPinTimingInvalidator to allow incremental STA update. These
+ * the NetPinTimingInvalidator to allow incremental STA update. These
  * changed connection delays are a direct result of moved blocks in try_swap().
  */
 void update_timing_classes(const PlaceCritParams& crit_params,
                            SetupTimingInfo* timing_info,
                            PlacerCriticalities* criticalities,
                            PlacerSetupSlacks* setup_slacks,
-                           ClusteredPinTimingInvalidator* pin_timing_invalidator) {
+                           NetPinTimingInvalidator* pin_timing_invalidator) {
     /* Run STA to update slacks and adjusted/relaxed criticalities. */
     timing_info->update();
 
@@ -149,7 +149,7 @@ void update_timing_classes(const PlaceCritParams& crit_params,
  * by iterating over the set of clustered netlist connections/pins
  * returned by PlacerCriticalities::pins_with_modified_criticality().
  *
- * Hence, this routine should always be called when PlacerCriticalites
+ * Hence, this routine should always be called when PlacerCriticalities
  * is enabled to be updated in update_timing_classes(). Otherwise, the
  * incremental method will no longer be correct.
  */

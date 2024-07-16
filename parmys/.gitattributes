@@ -1,0 +1,9 @@
+# Settings to improve linguist data reporting (used by GitHub)
+*.v                     linguist-language=Verilog
+*.vh                    linguist-language=Verilog
+*.sql                   linguist-language=SQL
+
+third_party/**          linguist-vendored
+
+# FIXME: All vendor files should be under third_party
+xdc-plugin/tests/minilitex_ddr_arty/**     linguist-vendored

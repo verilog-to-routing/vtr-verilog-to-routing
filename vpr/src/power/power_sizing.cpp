@@ -98,8 +98,8 @@ static double power_count_transistors_connectionbox() {
         /* Muxes to IPINs */
         transistor_cnt += inputs
                           * power_count_transistors_mux(
-                                power_get_mux_arch(power_ctx.commonly_used->max_IPIN_fanin,
-                                                   power_ctx.arch->mux_transistor_size));
+                              power_get_mux_arch(power_ctx.commonly_used->max_IPIN_fanin,
+                                                 power_ctx.arch->mux_transistor_size));
     }
     return transistor_cnt;
 }
@@ -167,7 +167,7 @@ static double power_count_transistors_mux(t_mux_arch* mux_arch) {
 
     transistor_cnt += power_count_transistors_mux_node(mux_arch->mux_graph_head,
                                                        mux_arch->transistor_size);
-    delete[](max_inputs);
+    delete[] max_inputs;
     return transistor_cnt;
 }
 
@@ -234,9 +234,9 @@ static double power_count_transistors_interc(t_interconnect* interc) {
             transistor_cnt += interc->interconnect_power->num_output_ports
                               * interc->interconnect_power->num_pins_per_port
                               * power_count_transistors_mux(
-                                    power_get_mux_arch(
-                                        interc->interconnect_power->num_input_ports,
-                                        power_ctx.arch->mux_transistor_size));
+                                  power_get_mux_arch(
+                                      interc->interconnect_power->num_input_ports,
+                                      power_ctx.arch->mux_transistor_size));
             break;
         }
         default:
@@ -659,7 +659,7 @@ static void power_size_pin_buffers_and_wires(t_pb_graph_pin* pin,
                                              bool pin_is_an_input) {
     int edge_idx;
     int list_cnt;
-    t_interconnect** list;
+    std::vector<t_interconnect*> list;
     bool found;
     int i;
 
@@ -714,7 +714,6 @@ static void power_size_pin_buffers_and_wires(t_pb_graph_pin* pin,
      * be higher)*/
 
     /* Loop through all edges, building a list of interconnect that this pin drives */
-    list = nullptr;
     list_cnt = 0;
     for (edge_idx = 0; edge_idx < pin->num_output_edges; edge_idx++) {
         /* Check if its already in the list */
@@ -728,8 +727,7 @@ static void power_size_pin_buffers_and_wires(t_pb_graph_pin* pin,
 
         if (!found) {
             list_cnt++;
-            list = (t_interconnect**)vtr::realloc(list,
-                                                  list_cnt * sizeof(t_interconnect*));
+            list.resize(list_cnt);
             list[list_cnt - 1] = pin->output_edges[edge_idx]->interconnect;
         }
     }
@@ -775,8 +773,8 @@ static void power_size_pin_buffers_and_wires(t_pb_graph_pin* pin,
                               * this_pb_interc_sidelength;
         }
 
-        delete[](fanout_per_mode);
-        delete[](wirelength_out_per_mode);
+        delete[] fanout_per_mode;
+        delete[] wirelength_out_per_mode;
 
         /* Input wirelength - from parent PB */
         if (!top_level_pb) {
@@ -813,7 +811,6 @@ static void power_size_pin_buffers_and_wires(t_pb_graph_pin* pin,
         wirelength_in = power_ctx.arch->local_interc_factor
                         * this_pb_interc_sidelength;
     }
-    free(list);
 
     /* Wirelength */
     switch (pin->port->port_power->wire_type) {

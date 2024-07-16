@@ -1,0 +1,19 @@
+ram block $__EFINIX_5K_ {
+	abits 12;
+	widths 1 2 5 10 20 per_port;
+	cost 32;
+	init no_undef;
+	port sr "R" {
+		clock anyedge;
+		rden;
+	}
+	port sw "W" {
+		clock anyedge;
+		option "WRITE_MODE" "READ_FIRST" {
+			wrtrans "R" old;
+		}
+		option "WRITE_MODE" "WRITE_FIRST" {
+			wrtrans "R" new;
+		}
+	}
+}

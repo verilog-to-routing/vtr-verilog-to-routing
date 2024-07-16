@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.9)
+cmake_minimum_required(VERSION 3.16)
 
 project("vqm2blif")
 
@@ -15,7 +15,7 @@ add_library(libvqm2blif STATIC
 target_include_directories(libvqm2blif PUBLIC ${LIB_INCLUDE_DIRS})
 set_target_properties(libvqm2blif PROPERTIES PREFIX "") #Avoid extra 'lib' prefix
 
-#Specify link-time dependancies
+#Specify link-time dependencies
 target_link_libraries(libvqm2blif
                         libarchfpga
                         libvqm)

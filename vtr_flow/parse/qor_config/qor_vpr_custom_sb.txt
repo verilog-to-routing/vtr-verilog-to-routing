@@ -1,0 +1,5 @@
+vpr_status;output.txt;vpr_status=(.*)
+total_wirelength;vpr.out;\s*Total wirelength:\s*(\d+)
+total_runtime;vpr.out;The entire flow of VPR took (.*) seconds
+crit_path_delay;vpr.crit_path.out;Final critical path: (.*) ns
+

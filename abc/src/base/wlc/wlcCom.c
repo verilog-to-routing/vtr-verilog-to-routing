@@ -19,8 +19,9 @@
 ***********************************************************************/
 
 #include "wlc.h"
+#include "base/wln/wln.h"
 #include "base/main/mainInt.h"
-#include "aig/miniaig/ndr.h"
+//#include "aig/miniaig/ndr.h"
 
 ABC_NAMESPACE_IMPL_START
 
@@ -36,19 +37,22 @@ static int  Abc_CommandCone       ( Abc_Frame_t * pAbc, int argc, char ** argv )
 static int  Abc_CommandAbs        ( Abc_Frame_t * pAbc, int argc, char ** argv );
 static int  Abc_CommandPdrAbs     ( Abc_Frame_t * pAbc, int argc, char ** argv );
 static int  Abc_CommandAbs2       ( Abc_Frame_t * pAbc, int argc, char ** argv );
+static int  Abc_CommandMemAbs     ( Abc_Frame_t * pAbc, int argc, char ** argv );
+static int  Abc_CommandMemAbs2    ( Abc_Frame_t * pAbc, int argc, char ** argv );
 static int  Abc_CommandBlast      ( Abc_Frame_t * pAbc, int argc, char ** argv );
+static int  Abc_CommandBlastMem   ( Abc_Frame_t * pAbc, int argc, char ** argv );
 static int  Abc_CommandGraft      ( Abc_Frame_t * pAbc, int argc, char ** argv );
+static int  Abc_CommandRetime     ( Abc_Frame_t * pAbc, int argc, char ** argv );
 static int  Abc_CommandProfile    ( Abc_Frame_t * pAbc, int argc, char ** argv );
 static int  Abc_CommandShortNames ( Abc_Frame_t * pAbc, int argc, char ** argv );
 static int  Abc_CommandShow       ( Abc_Frame_t * pAbc, int argc, char ** argv );
-static int  Abc_CommandTest       ( Abc_Frame_t * pAbc, int argc, char ** argv );
-
 static int  Abc_CommandInvPs      ( Abc_Frame_t * pAbc, int argc, char ** argv );
 static int  Abc_CommandInvPrint   ( Abc_Frame_t * pAbc, int argc, char ** argv );
 static int  Abc_CommandInvCheck   ( Abc_Frame_t * pAbc, int argc, char ** argv );
 static int  Abc_CommandInvGet     ( Abc_Frame_t * pAbc, int argc, char ** argv );
 static int  Abc_CommandInvPut     ( Abc_Frame_t * pAbc, int argc, char ** argv );
 static int  Abc_CommandInvMin     ( Abc_Frame_t * pAbc, int argc, char ** argv );
+static int  Abc_CommandTest       ( Abc_Frame_t * pAbc, int argc, char ** argv );
 
 static inline Wlc_Ntk_t * Wlc_AbcGetNtk( Abc_Frame_t * pAbc )                       { return (Wlc_Ntk_t *)pAbc->pAbcWlc;                      }
 static inline void        Wlc_AbcFreeNtk( Abc_Frame_t * pAbc )                      { if ( pAbc->pAbcWlc ) Wlc_NtkFree(Wlc_AbcGetNtk(pAbc));  }
@@ -80,8 +84,12 @@ void Wlc_Init( Abc_Frame_t * pAbc )
     Cmd_CommandAdd( pAbc, "Word level", "%abs",         Abc_CommandAbs,        0 );
     Cmd_CommandAdd( pAbc, "Word level", "%pdra",        Abc_CommandPdrAbs,     0 );
     Cmd_CommandAdd( pAbc, "Word level", "%abs2",        Abc_CommandAbs2,       0 );
+    Cmd_CommandAdd( pAbc, "Word level", "%memabs",      Abc_CommandMemAbs,     0 );
+    Cmd_CommandAdd( pAbc, "Word level", "%memabs2",     Abc_CommandMemAbs2,    0 );
     Cmd_CommandAdd( pAbc, "Word level", "%blast",       Abc_CommandBlast,      0 );
-    Cmd_CommandAdd( pAbc, "Word level", "%graft",       Abc_CommandGraft,      0 );
+    Cmd_CommandAdd( pAbc, "Word level", "%blastmem",    Abc_CommandBlastMem,   0 );
+//    Cmd_CommandAdd( pAbc, "Word level", "%graft",       Abc_CommandGraft,      0 );
+    Cmd_CommandAdd( pAbc, "Word level", "%retime",      Abc_CommandRetime,     0 );
     Cmd_CommandAdd( pAbc, "Word level", "%profile",     Abc_CommandProfile,    0 );
     Cmd_CommandAdd( pAbc, "Word level", "%short_names", Abc_CommandShortNames, 0 );
     Cmd_CommandAdd( pAbc, "Word level", "%show",        Abc_CommandShow,       0 );
@@ -287,7 +295,6 @@ usage:
     return 1;
 }
 
-
 /**Function********************************************************************
 
   Synopsis    []
@@ -305,28 +312,36 @@ int Abc_CommandPs( Abc_Frame_t * pAbc, int argc, char ** argv )
     int fShowCones   = 0;
     int fShowMulti   = 0;
     int fShowAdder   = 0;
+    int fShowMem     = 0;
     int fDistrib     = 0;
     int fTwoSides    = 0;
+    int fAllObjects  = 0;
     int c, fVerbose  = 0;
     Extra_UtilGetoptReset();
-    while ( ( c = Extra_UtilGetopt( argc, argv, "cmadtvh" ) ) != EOF )
+    while ( ( c = Extra_UtilGetopt( argc, argv, "cbamdtovh" ) ) != EOF )
     {
         switch ( c )
         {
         case 'c':
             fShowCones ^= 1;
             break;
-        case 'm':
+        case 'b':
             fShowMulti ^= 1;
             break;
         case 'a':
             fShowAdder ^= 1;
+            break;
+        case 'm':
+            fShowMem ^= 1;
             break;
         case 'd':
             fDistrib ^= 1;
             break;
         case 't':
             fTwoSides ^= 1;
+            break;
+        case 'o':
+            fAllObjects ^= 1;
             break;
         case 'v':
             fVerbose ^= 1;
@@ -349,16 +364,22 @@ int Abc_CommandPs( Abc_Frame_t * pAbc, int argc, char ** argv )
         Wlc_NtkPrintNodes( pNtk, WLC_OBJ_ARI_MULTI );
     if ( fShowAdder )
         Wlc_NtkPrintNodes( pNtk, WLC_OBJ_ARI_ADD );
+    if ( fShowMem )
+        Wlc_NtkPrintMemory( pNtk );
+    if ( fAllObjects )
+        Wlc_NtkPrintObjects( pNtk );
     return 0;
 usage:
-    Abc_Print( -2, "usage: %%ps [-cmadtvh]\n" );
+    Abc_Print( -2, "usage: %%ps [-cbamdtovh]\n" );
     Abc_Print( -2, "\t         prints statistics\n" );
     Abc_Print( -2, "\t-c     : toggle printing cones [default = %s]\n",                 fShowCones? "yes": "no" );
-    Abc_Print( -2, "\t-m     : toggle printing multipliers [default = %s]\n",           fShowMulti? "yes": "no" );
+    Abc_Print( -2, "\t-b     : toggle printing multipliers [default = %s]\n",           fShowMulti? "yes": "no" );
     Abc_Print( -2, "\t-a     : toggle printing adders [default = %s]\n",                fShowAdder? "yes": "no" );
-    Abc_Print( -2, "\t-d     : toggle printing distrubition [default = %s]\n",          fDistrib? "yes": "no" );
-    Abc_Print( -2, "\t-t     : toggle printing stats for LHS and RHS [default = %s]\n", fTwoSides? "yes": "no" );
-    Abc_Print( -2, "\t-v     : toggle printing verbose information [default = %s]\n",   fVerbose? "yes": "no" );
+    Abc_Print( -2, "\t-m     : toggle printing memories [default = %s]\n",              fShowMem?   "yes": "no" );
+    Abc_Print( -2, "\t-d     : toggle printing distrubition [default = %s]\n",          fDistrib?   "yes": "no" );
+    Abc_Print( -2, "\t-t     : toggle printing stats for LHS and RHS [default = %s]\n", fTwoSides?  "yes": "no" );
+    Abc_Print( -2, "\t-o     : toggle printing all objects [default = %s]\n",           fAllObjects?"yes": "no" );
+    Abc_Print( -2, "\t-v     : toggle printing verbose information [default = %s]\n",   fVerbose?   "yes": "no" );
     Abc_Print( -2, "\t-h     : print the command usage\n");
     return 1;
 }
@@ -885,15 +906,137 @@ usage:
   SeeAlso     []
 
 ******************************************************************************/
-int Abc_CommandBlast( Abc_Frame_t * pAbc, int argc, char ** argv )
+int Abc_CommandMemAbs( Abc_Frame_t * pAbc, int argc, char ** argv )
 {
     Wlc_Ntk_t * pNtk = Wlc_AbcGetNtk(pAbc);
-    Gia_Man_t * pNew = NULL; int c;
+    int c, nIterMax = 1000, fDumpAbs = 0, fPdrVerbose = 0, fVerbose = 0;
+    Extra_UtilGetoptReset();
+    while ( ( c = Extra_UtilGetopt( argc, argv, "Idwvh" ) ) != EOF )
+    {
+        switch ( c )
+        {
+        case 'I':
+            if ( globalUtilOptind >= argc )
+            {
+                Abc_Print( -1, "Command line switch \"-I\" should be followed by an integer.\n" );
+                goto usage;
+            }
+            nIterMax = atoi(argv[globalUtilOptind]);
+            globalUtilOptind++;
+            if ( nIterMax <= 0 )
+                goto usage;
+            break;
+        case 'd':
+            fDumpAbs ^= 1;
+            break;
+        case 'w':
+            fPdrVerbose ^= 1;
+            break;
+        case 'v':
+            fVerbose ^= 1;
+            break;
+        case 'h':
+            goto usage;
+        default:
+            goto usage;
+        }
+    }
+    if ( pNtk == NULL )
+    {
+        Abc_Print( 1, "Abc_CommandMemAbs(): There is no current design.\n" );
+        return 0;
+    }
+    Wlc_NtkMemAbstract( pNtk, nIterMax, fDumpAbs, fPdrVerbose, fVerbose );
+    return 0;
+usage:
+    Abc_Print( -2, "usage: %%memabs [-I num] [-dwvh]\n" );
+    Abc_Print( -2, "\t         memory abstraction for word-level networks\n" );
+    Abc_Print( -2, "\t-I num : maximum number of CEGAR iterations [default = %d]\n",  nIterMax );
+    Abc_Print( -2, "\t-d     : toggle dumping abstraction as an AIG [default = %s]\n",fDumpAbs? "yes": "no" );
+    Abc_Print( -2, "\t-w     : toggle printing verbose PDR output [default = %s]\n",  fPdrVerbose? "yes": "no" );
+    Abc_Print( -2, "\t-v     : toggle printing verbose information [default = %s]\n", fVerbose? "yes": "no" );
+    Abc_Print( -2, "\t-h     : print the command usage\n");
+    return 1;
+}
+
+/**Function********************************************************************
+
+  Synopsis    []
+
+  Description []
+
+  SideEffects []
+
+  SeeAlso     []
+
+******************************************************************************/
+int Abc_CommandMemAbs2( Abc_Frame_t * pAbc, int argc, char ** argv )
+{
+    Wlc_Ntk_t * pNtk = Wlc_AbcGetNtk(pAbc);
+    int c, nFrames = 0, fVerbose = 0;
+    Extra_UtilGetoptReset();
+    while ( ( c = Extra_UtilGetopt( argc, argv, "Fvh" ) ) != EOF )
+    {
+        switch ( c )
+        {
+        case 'F':
+            if ( globalUtilOptind >= argc )
+            {
+                Abc_Print( -1, "Command line switch \"-I\" should be followed by an integer.\n" );
+                goto usage;
+            }
+            nFrames = atoi(argv[globalUtilOptind]);
+            globalUtilOptind++;
+            if ( nFrames <= 0 )
+                goto usage;
+            break;
+        case 'v':
+            fVerbose ^= 1;
+            break;
+        case 'h':
+            goto usage;
+        default:
+            goto usage;
+        }
+    }
+    if ( pNtk == NULL )
+    {
+        Abc_Print( 1, "Abc_CommandMemAbs2(): There is no current design.\n" );
+        return 0;
+    }
+    pNtk = Wlc_NtkAbstractMem( pNtk, nFrames, fVerbose );
+    Wlc_AbcUpdateNtk( pAbc, pNtk );
+    return 0;
+usage:
+    Abc_Print( -2, "usage: %%memabs2 [-F num] [-vh]\n" );
+    Abc_Print( -2, "\t         memory abstraction for word-level networks\n" );
+    Abc_Print( -2, "\t-F num : the number of timeframes [default = %d]\n",  nFrames );
+    Abc_Print( -2, "\t-v     : toggle printing verbose information [default = %s]\n", fVerbose? "yes": "no" );
+    Abc_Print( -2, "\t-h     : print the command usage\n");
+    return 1;
+}
+
+/**Function********************************************************************
+
+  Synopsis    []
+
+  Description []
+
+  SideEffects []
+
+  SeeAlso     []
+
+******************************************************************************/
+int Abc_CommandBlast( Abc_Frame_t * pAbc, int argc, char ** argv )
+{
+    extern void Wlc_NtkPrintInputInfo( Wlc_Ntk_t * pNtk );
+    Wlc_Ntk_t * pNtk = Wlc_AbcGetNtk(pAbc);
+    Gia_Man_t * pNew = NULL; int c, fMiter = 0, fDumpNames = 0, fPrintInputInfo = 0, fReorder = 0;
     Wlc_BstPar_t Par, * pPar = &Par;
     Wlc_BstParDefault( pPar );
     pPar->nOutputRange = 2;
     Extra_UtilGetoptReset();
-    while ( ( c = Extra_UtilGetopt( argc, argv, "ORAMcombdsvh" ) ) != EOF )
+    while ( ( c = Extra_UtilGetopt( argc, argv, "ORAMcombqaydestrnizvh" ) ) != EOF )
     {
         switch ( c )
         {
@@ -953,11 +1096,39 @@ int Abc_CommandBlast( Abc_Frame_t * pAbc, int argc, char ** argv )
         case 'b':
             pPar->fBooth ^= 1;
             break;
+        case 'q':
+            pPar->fNonRest ^= 1;
+            break;
+        case 'a':
+            pPar->fCla ^= 1;
+            break;
+        case 'y':
+            pPar->fDivBy0 ^= 1;
+            break;
         case 'd':
             pPar->fCreateMiter ^= 1;
             break;
+        case 'e':
+            pPar->fCreateWordMiter ^= 1;
+            break;
         case 's':
             pPar->fDecMuxes ^= 1;
+            break;
+        case 't':
+            pPar->fCreateMiter ^= 1;
+            fMiter ^= 1;
+            break;
+        case 'r':
+            fReorder ^= 1;
+            break;
+        case 'n':
+            fDumpNames ^= 1;
+            break;
+        case 'i': 
+            fPrintInputInfo ^= 1; 
+            break;
+        case 'z': 
+            pPar->fSaveFfNames ^= 1; 
             break;
         case 'v':
             pPar->fVerbose ^= 1;
@@ -973,6 +1144,13 @@ int Abc_CommandBlast( Abc_Frame_t * pAbc, int argc, char ** argv )
         Abc_Print( 1, "Abc_CommandBlast(): There is no current design.\n" );
         return 0;
     }
+    if ( pNtk->fAsyncRst )
+    {
+        Abc_Print( 1, "Abc_CommandBlast(): Trying to bit-blast network with asynchronous reset.\n" );
+        return 0;
+    }
+    if ( fPrintInputInfo )
+        Wlc_NtkPrintInputInfo(pNtk); 
     if ( pPar->fMulti )
     {
         pPar->vBoxIds = Wlc_NtkCollectMultipliers( pNtk );
@@ -1001,10 +1179,40 @@ int Abc_CommandBlast( Abc_Frame_t * pAbc, int argc, char ** argv )
         Abc_Print( 1, "Abc_CommandBlast(): Bit-blasting has failed.\n" );
         return 0;
     }
+    // generate miter
+    if ( fMiter )
+    {
+        Gia_Man_t * pTemp = pNew;
+        pNew = Gia_ManTransformMiter( pNew );
+        Gia_ManStop( pTemp );
+        Abc_Print( 1, "Bit-blasting created a traditional multi-output miter by XORing POs pair-wise.\n" );
+        if ( fDumpNames )
+        {
+            int i; char * pName;
+            FILE * pFile = fopen( "pio_name_map.txt", "wb" );
+            if ( pNew->vNamesIn )
+                Vec_PtrForEachEntry( char *, pNew->vNamesIn, pName, i )
+                    fprintf( pFile, "i%d %s\n", i, pName );
+            if ( pNew->vNamesOut )
+                Vec_PtrForEachEntry( char *, pNew->vNamesOut, pName, i )
+                    fprintf( pFile, "o%d %s\n", i, pName );
+            fclose( pFile );
+            Abc_Print( 1, "Finished dumping file \"pio_name_map.txt\" containing PI/PO name mapping.\n" );
+        }
+    }
+    if ( fReorder )
+    {
+        extern Vec_Int_t * Wlc_ComputePerm( Wlc_Ntk_t * pNtk, int nPis );
+        Vec_Int_t * vPiPerm = Wlc_ComputePerm( pNtk, Gia_ManPiNum(pNew) );
+        Gia_Man_t * pTemp = Gia_ManDupPerm( pNew, vPiPerm );
+        Vec_IntFree( vPiPerm );
+        Gia_ManStop( pNew );
+        pNew = pTemp;
+    }
     Abc_FrameUpdateGia( pAbc, pNew );
     return 0;
 usage:
-    Abc_Print( -2, "usage: %%blast [-ORAM num] [-combdsvh]\n" );
+    Abc_Print( -2, "usage: %%blast [-ORAM num] [-combqaydestrnizvh]\n" );
     Abc_Print( -2, "\t         performs bit-blasting of the word-level design\n" );
     Abc_Print( -2, "\t-O num : zero-based index of the first word-level PO to bit-blast [default = %d]\n", pPar->iOutput );
     Abc_Print( -2, "\t-R num : the total number of word-level POs to bit-blast [default = %d]\n",          pPar->nOutputRange );
@@ -1014,9 +1222,64 @@ usage:
     Abc_Print( -2, "\t-o     : toggle using additional POs on the word-level boundaries [default = %s]\n", pPar->fAddOutputs? "yes": "no" );
     Abc_Print( -2, "\t-m     : toggle creating boxes for all multipliers in the design [default = %s]\n",  pPar->fMulti? "yes": "no" );
     Abc_Print( -2, "\t-b     : toggle generating radix-4 Booth multipliers [default = %s]\n",              pPar->fBooth? "yes": "no" );
-    Abc_Print( -2, "\t-d     : toggle creating dual-output miter [default = %s]\n",                        pPar->fCreateMiter? "yes": "no" );
+    Abc_Print( -2, "\t-q     : toggle generating non-restoring square root and divider [default = %s]\n",  pPar->fNonRest? "yes": "no" );
+    Abc_Print( -2, "\t-a     : toggle generating carry-look-ahead adder [default = %s]\n",                 pPar->fCla? "yes": "no" );
+    Abc_Print( -2, "\t-y     : toggle creating different divide-by-0 condition [default = %s]\n",          pPar->fDivBy0? "yes": "no" );
+    Abc_Print( -2, "\t-d     : toggle creating dual-output multi-output miter [default = %s]\n",           pPar->fCreateMiter? "yes": "no" );
+    Abc_Print( -2, "\t-e     : toggle creating miter with output word bits combined [default = %s]\n",     pPar->fCreateWordMiter? "yes": "no" );
     Abc_Print( -2, "\t-s     : toggle creating decoded MUXes [default = %s]\n",                            pPar->fDecMuxes? "yes": "no" );
+    Abc_Print( -2, "\t-t     : toggle creating regular multi-output miter [default = %s]\n",               fMiter? "yes": "no" );
+    Abc_Print( -2, "\t-r     : toggle using interleaved variable ordering [default = %s]\n",               fReorder? "yes": "no" );
+    Abc_Print( -2, "\t-n     : toggle dumping signal names into a text file [default = %s]\n",             fDumpNames? "yes": "no" );
+    Abc_Print( -2, "\t-i     : toggle to print input names after blasting [default = %s]\n",               fPrintInputInfo ? "yes": "no" );
+    Abc_Print( -2, "\t-z     : toggle saving flop names after blasting [default = %s]\n",                  pPar->fSaveFfNames ? "yes": "no" );
     Abc_Print( -2, "\t-v     : toggle printing verbose information [default = %s]\n",                      pPar->fVerbose? "yes": "no" );
+    Abc_Print( -2, "\t-h     : print the command usage\n");
+    return 1;
+}
+
+/**Function********************************************************************
+
+  Synopsis    []
+
+  Description []
+
+  SideEffects []
+
+  SeeAlso     []
+
+******************************************************************************/
+int Abc_CommandBlastMem( Abc_Frame_t * pAbc, int argc, char ** argv )
+{
+    extern Wlc_Ntk_t * Wlc_NtkMemBlast( Wlc_Ntk_t * p );
+    Wlc_Ntk_t * pNtk = Wlc_AbcGetNtk(pAbc);
+    int c, fVerbose  = 0;
+    Extra_UtilGetoptReset();
+    while ( ( c = Extra_UtilGetopt( argc, argv, "vh" ) ) != EOF )
+    {
+        switch ( c )
+        {
+        case 'v':
+            fVerbose ^= 1;
+            break;
+        case 'h':
+            goto usage;
+        default:
+            goto usage;
+        }
+    }
+    if ( pNtk == NULL )
+    {
+        Abc_Print( 1, "Abc_CommandBlastMem(): There is no current design.\n" );
+        return 0;
+    }
+    pNtk = Wlc_NtkMemBlast( pNtk );
+    Wlc_AbcUpdateNtk( pAbc, pNtk );
+    return 0;
+usage:
+    Abc_Print( -2, "usage: %%blastmem [-vh]\n" );
+    Abc_Print( -2, "\t         performs blasting of memory read/write ports\n" );
+    Abc_Print( -2, "\t-v     : toggle printing verbose information [default = %s]\n", fVerbose? "yes": "no" );
     Abc_Print( -2, "\t-h     : print the command usage\n");
     return 1;
 }
@@ -1062,6 +1325,94 @@ int Abc_CommandGraft( Abc_Frame_t * pAbc, int argc, char ** argv )
 usage:
     Abc_Print( -2, "usage: %%graft [-vh]\n" );
     Abc_Print( -2, "\t         detects multipliers in LHS of the miter and moves them to RHS\n" );
+    Abc_Print( -2, "\t-v     : toggle printing verbose information [default = %s]\n", fVerbose? "yes": "no" );
+    Abc_Print( -2, "\t-h     : print the command usage\n");
+    return 1;
+}
+
+/**Function********************************************************************
+
+  Synopsis    []
+
+  Description []
+
+  SideEffects []
+
+  SeeAlso     []
+
+******************************************************************************/
+int Abc_CommandRetime( Abc_Frame_t * pAbc, int argc, char ** argv )
+{
+    extern void Wln_NtkRetimeTest( char * pFileName, int fIgnoreIO, int fSkipSimple, int fDump, int fVerbose );
+    FILE * pFile;
+    char * pFileName = NULL;
+    int fIgnoreIO = 0;
+    int fSkipSimple  = 0;
+    int c, fDump = 0, fVerbose  = 0;
+    Extra_UtilGetoptReset();
+    while ( ( c = Extra_UtilGetopt( argc, argv, "isdvh" ) ) != EOF )
+    {
+        switch ( c )
+        {
+        case 'i':
+            fIgnoreIO ^= 1;
+            break;
+        case 's':
+            fSkipSimple ^= 1;
+            break;
+        case 'd':
+            fDump ^= 1;
+            break;
+        case 'v':
+            fVerbose ^= 1;
+            break;
+        case 'h':
+            goto usage;
+        default:
+            goto usage;
+        }
+    }
+    if ( pAbc->pNdr )
+    {
+        Vec_Int_t * vMoves;
+        Wln_Ntk_t * pNtk = Wln_NtkFromNdr( pAbc->pNdr, fDump );
+        Wln_NtkRetimeCreateDelayInfo( pNtk );
+        if ( pNtk == NULL )
+        {
+            printf( "Transforming NDR into internal represnetation has failed.\n" );
+            return 0;
+        }
+        vMoves = Wln_NtkRetime( pNtk, fIgnoreIO, fSkipSimple, fVerbose );
+        Wln_NtkFree( pNtk );
+        ABC_FREE( pAbc->pNdrArray );
+        if ( vMoves ) pAbc->pNdrArray = Vec_IntReleaseNewArray( vMoves );
+        Vec_IntFreeP( &vMoves );
+        return 0;
+    }
+    if ( argc != globalUtilOptind + 1 )
+    {
+        printf( "Abc_CommandRetime(): Input file name should be given on the command line.\n" );
+        return 0;
+    }
+    // get the file name
+    pFileName = argv[globalUtilOptind];
+    if ( (pFile = fopen( pFileName, "r" )) == NULL )
+    {
+        Abc_Print( 1, "Cannot open input file \"%s\". ", pFileName );
+        if ( (pFileName = Extra_FileGetSimilarName( pFileName, ".ndr", NULL, NULL, NULL, NULL )) )
+            Abc_Print( 1, "Did you mean \"%s\"?", pFileName );
+        Abc_Print( 1, "\n" );
+        return 0;
+    }
+    fclose( pFile );
+    Wln_NtkRetimeTest( pFileName, fIgnoreIO, fSkipSimple, fDump, fVerbose );
+    return 0;
+usage:
+    Abc_Print( -2, "usage: %%retime [-isdvh]\n" );
+    Abc_Print( -2, "\t         performs retiming for the NDR design\n" );
+    Abc_Print( -2, "\t-i     : toggle ignoring delays of IO paths [default = %s]\n", fIgnoreIO? "yes": "no" );
+    Abc_Print( -2, "\t-s     : toggle printing simple nodes [default = %s]\n", !fSkipSimple? "yes": "no" );
+    Abc_Print( -2, "\t-d     : toggle dumping the network in Verilog [default = %s]\n", fDump? "yes": "no" );
     Abc_Print( -2, "\t-v     : toggle printing verbose information [default = %s]\n", fVerbose? "yes": "no" );
     Abc_Print( -2, "\t-h     : print the command usage\n");
     return 1;
@@ -1170,13 +1521,16 @@ int Abc_CommandShow( Abc_Frame_t * pAbc, int argc, char ** argv )
 {
     extern void Wlc_NtkShow( Wlc_Ntk_t * p, Vec_Int_t * vBold );
     Wlc_Ntk_t * pNtk = Wlc_AbcGetNtk(pAbc);
-    int c, fVerbose = 0;
+    int c, fMemory = 0, fVerbose = 0;
     // set defaults
     Extra_UtilGetoptReset();
-    while ( ( c = Extra_UtilGetopt( argc, argv, "vh" ) ) != EOF )
+    while ( ( c = Extra_UtilGetopt( argc, argv, "mvh" ) ) != EOF )
     {
         switch ( c )
         {
+        case 'm':
+            fMemory ^= 1;
+            break;
         case 'v':
             fVerbose ^= 1;
             break;
@@ -1189,70 +1543,25 @@ int Abc_CommandShow( Abc_Frame_t * pAbc, int argc, char ** argv )
         Abc_Print( -1, "Empty network.\n" );
         return 1;
     }
-    Wlc_NtkShow( pNtk, NULL );
+    if ( fMemory )
+    {
+        Vec_Int_t * vTemp = Wlc_NtkCollectMemory( pNtk, 1 );
+        Wlc_NtkShow( pNtk, vTemp );
+        Vec_IntFree( vTemp );
+    }
+    else
+        Wlc_NtkShow( pNtk, NULL );
     return 0;
 
 usage:
-    Abc_Print( -2, "usage: %%show [-h]\n" );
-    Abc_Print( -2, "       visualizes the network structure using DOT and GSVIEW\n" );
+    Abc_Print( -2, "usage: %%show [-mh]\n" );
+    Abc_Print( -2, "          visualizes the network structure using DOT and GSVIEW\n" );
 #ifdef WIN32
-    Abc_Print( -2, "       \"dot.exe\" and \"gsview32.exe\" should be set in the paths\n" );
-    Abc_Print( -2, "       (\"gsview32.exe\" may be in \"C:\\Program Files\\Ghostgum\\gsview\\\")\n" );
+    Abc_Print( -2, "          \"dot.exe\" and \"gsview32.exe\" should be set in the paths\n" );
+    Abc_Print( -2, "          (\"gsview32.exe\" may be in \"C:\\Program Files\\Ghostgum\\gsview\\\")\n" );
 #endif
-    Abc_Print( -2, "\t-h    : print the command usage\n");
-    return 1;
-}
-
-/**Function********************************************************************
-
-  Synopsis    []
-
-  Description []
-
-  SideEffects []
-
-  SeeAlso     []
-
-******************************************************************************/
-int Abc_CommandTest( Abc_Frame_t * pAbc, int argc, char ** argv )
-{
-    extern void Wlc_NtkSimulateTest( Wlc_Ntk_t * p );
-    Wlc_Ntk_t * pNtk = Wlc_AbcGetNtk(pAbc);
-    int c, fVerbose  = 0;
-    Extra_UtilGetoptReset();
-    while ( ( c = Extra_UtilGetopt( argc, argv, "vh" ) ) != EOF )
-    {
-        switch ( c )
-        {
-        case 'v':
-            fVerbose ^= 1;
-            break;
-        case 'h':
-            goto usage;
-        default:
-            goto usage;
-        }
-    }
-    if ( pNtk == NULL )
-    {
-        Abc_Print( 1, "Abc_CommandTest(): There is no current design.\n" );
-        return 0;
-    }
-    // transform
-    //pNtk = Wlc_NtkUifNodePairs( pNtk, NULL );
-    //pNtk = Wlc_NtkAbstractNodes( pNtk, NULL );
-    //Wlc_AbcUpdateNtk( pAbc, pNtk );
-    //Wlc_GenerateSmtStdout( pAbc );
-    //Wlc_NtkSimulateTest( (Wlc_Ntk_t *)pAbc->pAbcWlc );
-    //pNtk = Wlc_NtkDupSingleNodes( pNtk );
-    //Wlc_AbcUpdateNtk( pAbc, pNtk );
-    //Wlc_ReadNdrTest( pNtk );
-    return 0;
-usage:
-    Abc_Print( -2, "usage: %%test [-vh]\n" );
-    Abc_Print( -2, "\t         experiments with word-level networks\n" );
-    Abc_Print( -2, "\t-v     : toggle printing verbose information [default = %s]\n", fVerbose? "yes": "no" );
-    Abc_Print( -2, "\t-h     : print the command usage\n");
+    Abc_Print( -2, "\t-m   :  toggle showing memory subsystem [default = %s]\n", fMemory? "yes": "no" );
+    Abc_Print( -2, "\t-h   :  print the command usage\n");
     return 1;
 }
 
@@ -1430,15 +1739,19 @@ usage:
 ******************************************************************************/
 int Abc_CommandInvGet( Abc_Frame_t * pAbc, int argc, char ** argv )
 {
-    extern Abc_Ntk_t * Wlc_NtkGetInv( Wlc_Ntk_t * pNtk, Vec_Int_t * vInv );
+    extern Abc_Ntk_t * Wlc_NtkGetInv( Wlc_Ntk_t * pNtk, Vec_Int_t * vInv, Vec_Ptr_t * vNamesIn );
     Abc_Ntk_t * pMainNtk;
     Wlc_Ntk_t * pNtk = Wlc_AbcGetNtk(pAbc);
-    int c, fVerbose  = 0;
+    int c, i, fVerbose = 0, fFlopNamesFromGia = 0;
+    Vec_Ptr_t * vNamesIn = NULL;
     Extra_UtilGetoptReset();
-    while ( ( c = Extra_UtilGetopt( argc, argv, "vh" ) ) != EOF )
+    while ( ( c = Extra_UtilGetopt( argc, argv, "fvh" ) ) != EOF )
     {
         switch ( c )
         {
+            case 'f':
+                fFlopNamesFromGia ^= 1;
+                break;
             case 'v':
                 fVerbose ^= 1;
                 break;
@@ -1453,16 +1766,38 @@ int Abc_CommandInvGet( Abc_Frame_t * pAbc, int argc, char ** argv )
         Abc_Print( 1, "Abc_CommandInvGet(): Invariant is not available.\n" );
         return 0;
     }
+    // See if we shall and can copy the PI names from the current GIA
+    if ( fFlopNamesFromGia )
+    {
+        if ( pAbc->pGia == NULL )
+        {
+            Abc_Print( 1, "Abc_CommandInvGet(): No network in &-space, cannot copy names.\n" );
+            fFlopNamesFromGia = 0;
+        }
+        else
+        {
+            vNamesIn = Vec_PtrStart( Gia_ManRegNum(pAbc->pGia) );
+            for ( i = 0; i < Gia_ManRegNum(pAbc->pGia); ++i )
+            {
+                // Only the registers
+                Vec_PtrSetEntry( vNamesIn, i, Extra_UtilStrsav( (const char*)Vec_PtrEntry( pAbc->pGia->vNamesIn, Gia_ManPiNum(pAbc->pGia)+i ) ) );
+            }
+        }
+    }
     // derive the network
-    pMainNtk = Wlc_NtkGetInv( pNtk, Wlc_AbcGetInv(pAbc) );
+    pMainNtk = Wlc_NtkGetInv( pNtk, Wlc_AbcGetInv(pAbc), vNamesIn );
+    // Delete names
+    if (vNamesIn)
+        Vec_PtrFree( vNamesIn );
     // replace the current network
     if ( pMainNtk )
         Abc_FrameReplaceCurrentNetwork( pAbc, pMainNtk );
     return 0;
 usage:
-    Abc_Print( -2, "usage: inv_get [-vh]\n" );
+    Abc_Print( -2, "usage: inv_get [-fvh]\n" );
     Abc_Print( -2, "\t         places invariant found by PDR as the current network in the main-space\n" );
-    Abc_Print( -2, "\t         (in the case of \'sat\' or \'undecided\', inifity clauses are used)\n" );
+    Abc_Print( -2, "\t         (in the case of \'sat\' or \'undecided\', infinity clauses are used)\n" );
+    Abc_Print( -2, "\t-f     : toggle reading flop names from the &-space [default = %s]\n", fFlopNamesFromGia? "yes": "no" );
     Abc_Print( -2, "\t-v     : toggle printing verbose information [default = %s]\n", fVerbose? "yes": "no" );
     Abc_Print( -2, "\t-h     : print the command usage\n");
     return 1;
@@ -1585,6 +1920,65 @@ usage:
     Abc_Print( -2, "\t         performs minimization of the current invariant\n" );
     Abc_Print( -2, "\t         (AIG representing the design should be in the &-space)\n" );
     Abc_Print( -2, "\t-l     : toggle minimizing literals rather than clauses [default = %s]\n", fLits? "yes": "no" );
+    Abc_Print( -2, "\t-v     : toggle printing verbose information [default = %s]\n", fVerbose? "yes": "no" );
+    Abc_Print( -2, "\t-h     : print the command usage\n");
+    return 1;
+}
+
+/**Function********************************************************************
+
+  Synopsis    []
+
+  Description []
+
+  SideEffects []
+
+  SeeAlso     []
+
+******************************************************************************/
+int Abc_CommandTest( Abc_Frame_t * pAbc, int argc, char ** argv )
+{
+    extern void Wlc_NtkExploreMem( Wlc_Ntk_t * p, int nFrames );
+    extern void Wlc_NtkSimulateTest( Wlc_Ntk_t * p );
+    Wlc_Ntk_t * pNtk = Wlc_AbcGetNtk(pAbc);
+    int c, fVerbose  = 0;
+    Extra_UtilGetoptReset();
+    while ( ( c = Extra_UtilGetopt( argc, argv, "vh" ) ) != EOF )
+    {
+        switch ( c )
+        {
+        case 'v':
+            fVerbose ^= 1;
+            break;
+        case 'h':
+            goto usage;
+        default:
+            goto usage;
+        }
+    }
+//    if ( pNtk == NULL )
+//    {
+//        Abc_Print( 1, "Abc_CommandTest(): There is no current design.\n" );
+//        return 0;
+//    }
+
+    // transform
+    //pNtk = Wlc_NtkUifNodePairs( pNtk, NULL );
+    //pNtk = Wlc_NtkAbstractNodes( pNtk, NULL );
+    //Wlc_AbcUpdateNtk( pAbc, pNtk );
+    //Wlc_GenerateSmtStdout( pAbc );
+    //Wlc_NtkSimulateTest( (Wlc_Ntk_t *)pAbc->pAbcWlc );
+    //pNtk = Wlc_NtkDupSingleNodes( pNtk );
+    //Wlc_AbcUpdateNtk( pAbc, pNtk );
+    //Wln_ReadNdrTest();
+    //pNtk = Wlc_NtkMemAbstractTest( pNtk );
+    //Wlc_AbcUpdateNtk( pAbc, pNtk );
+    //Wln_NtkFromWlcTest( pNtk );
+    Wlc_NtkExploreMem( pNtk, 0 );
+    return 0;
+usage:
+    Abc_Print( -2, "usage: %%test [-vh]\n" );
+    Abc_Print( -2, "\t         experiments with word-level networks\n" );
     Abc_Print( -2, "\t-v     : toggle printing verbose information [default = %s]\n", fVerbose? "yes": "no" );
     Abc_Print( -2, "\t-h     : print the command usage\n");
     return 1;

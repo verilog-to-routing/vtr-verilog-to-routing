@@ -67,7 +67,7 @@ output reg [(DWIDTH-1):0] out_b;
 
 
 
-`ifdef SIMULATION_MEMORY
+`ifndef hard_mem
 
 
 
@@ -81,11 +81,8 @@ always @ (posedge clk) begin
 
   end
 
-  else begin
+  out_a <= ram[address_a];
 
-      out_a <= ram[address_a];
-
-  end
 
 end
 
@@ -99,11 +96,7 @@ always @ (posedge clk) begin
 
   end 
 
-  else begin
-
-      out_b <= ram[address_b];
-
-  end
+  out_b <= ram[address_b];
 
 end
 
@@ -112,6 +105,8 @@ end
 `else
 
 
+defparam u_dual_port_ram.ADDR_WIDTH = AWIDTH;
+defparam u_dual_port_ram.DATA_WIDTH = DWIDTH;
 
 dual_port_ram u_dual_port_ram(
 
@@ -253,7 +248,7 @@ always @ (*) begin
             ap_NS_fsm = ap_ST_fsm_state1;
         end
         default : begin
-            ap_NS_fsm = 'bx;
+            ap_NS_fsm = 1'b0;
         end
     endcase
 end
@@ -2457,6 +2452,7 @@ input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
 output [DATA_WIDTH-1:0] q;
+reg [DATA_WIDTH-1:0] q_tmp;
 
 reg [DATA_WIDTH-1:0] sr_0, sr_1, sr_2, sr_3, sr_4, sr_5;
 integer i;
@@ -2477,15 +2473,17 @@ always @ (posedge clk)
 //assign q = SRL_SIG[a];
 always @(sr_0, sr_1, sr_2, sr_3, sr_4, sr_5, a) begin
    case (a)
-      3'd0: q = sr_0;
-      3'd1: q = sr_1;
-      3'd2: q = sr_2;
-      3'd3: q = sr_3;
-      3'd4: q = sr_4;
-      3'd5: q = sr_5;
-      default: q = sr_5;
+      3'd0: q_tmp = sr_0;
+      3'd1: q_tmp = sr_1;
+      3'd2: q_tmp = sr_2;
+      3'd3: q_tmp = sr_3;
+      3'd4: q_tmp = sr_4;
+      3'd5: q_tmp = sr_5;
+      default: q_tmp = sr_5;
    endcase
 end
+
+assign q = q_tmp;
 
 endmodule
 
@@ -2597,6 +2595,8 @@ input ce;
 input [ADDR_WIDTH-1:0] a;
 output [DATA_WIDTH-1:0] q;
 
+reg [DATA_WIDTH-1:0] q_tmp;
+
 reg[DATA_WIDTH-1:0] sr_0, sr_1;
 integer i;
 
@@ -2611,11 +2611,13 @@ always @ (posedge clk)
 
 always @(sr_0, sr_1, a) begin
    case (a)
-      1'b0: q = sr_0;
-      1'b1: q = sr_1;
-      default: q = sr_1;
+      1'b0: q_tmp = sr_0;
+      1'b1: q_tmp = sr_1;
+      default: q_tmp = sr_1;
    endcase
 end
+
+assign q = q_tmp;
 
 endmodule
 
@@ -2726,6 +2728,7 @@ input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
 output [DATA_WIDTH-1:0] q;
+reg [DATA_WIDTH-1:0] q_tmp;
 
 reg [DATA_WIDTH-1:0] sr_0, sr_1;
 
@@ -2742,11 +2745,13 @@ always @ (posedge clk)
 
 always @(sr_0, sr_1, a) begin
    case (a)
-      1'b0: q = sr_0;
-      1'b1: q = sr_1;
-      default: q = sr_1;
+      1'b0: q_tmp = sr_0;
+      1'b1: q_tmp = sr_1;
+      default: q_tmp = sr_1;
    endcase
 end
+
+assign q = q_tmp;
 
 endmodule
 
@@ -2857,6 +2862,7 @@ input [DATA_WIDTH-1:0] data;
 input ce;
 input [ADDR_WIDTH-1:0] a;
 output [DATA_WIDTH-1:0] q;
+reg [DATA_WIDTH-1:0] q_tmp;
 
 //reg[DATA_WIDTH-1:0] SRL_SIG [DEPTH-1:0];
 reg [DATA_WIDTH-1:0] sr_0, sr_1, sr_2, sr_3, sr_4, sr_5;
@@ -2878,15 +2884,17 @@ always @ (posedge clk)
 //assign q = SRL_SIG[a];
 always @(sr_0, sr_1, sr_2, sr_3, sr_4, sr_5, a) begin
    case (a)
-      3'd0: q = sr_0;
-      3'd1: q = sr_1;
-      3'd2: q = sr_2;
-      3'd3: q = sr_3;
-      3'd4: q = sr_4;
-      3'd5: q = sr_5;
-      default: q = sr_5;
+      3'd0: q_tmp = sr_0;
+      3'd1: q_tmp = sr_1;
+      3'd2: q_tmp = sr_2;
+      3'd3: q_tmp = sr_3;
+      3'd4: q_tmp = sr_4;
+      3'd5: q_tmp = sr_5;
+      default: q_tmp = sr_5;
    endcase
 end
+
+assign q = q_tmp;
 
 endmodule
 
@@ -2992,7 +3000,7 @@ module td_fused_top_ap_hadd_0_full_dsp_16 (
 
 
 `ifdef complex_dsp
-   adder_fp u_add_fp (
+   addition_fp_16 u_add_fp (
       .a(s_axis_a_tdata),
       .b(s_axis_b_tdata),
       .out(m_axis_result_tdata)
@@ -3082,7 +3090,7 @@ module td_fused_top_ap_hmul_0_max_dsp_16 (
 );
 
 `ifdef complex_dsp
-   multiply_fp u_mult_fp (
+   mult_fp_16 u_mult_fp (
       .a(s_axis_a_tdata),
       .b(s_axis_b_tdata),
       .out(m_axis_result_tdata)
@@ -3483,10 +3491,10 @@ always @ (*) begin
         end else if (((1'b0 == ap_block_pp0_stage0) & (1'b1 == ap_CS_fsm_pp0_stage0))) begin
             accum_in_0_address0 = zext_ln29_fu_356_p1;
         end else begin
-            accum_in_0_address0 = 'bx;
+            accum_in_0_address0 = 5'd0;
         end
     end else begin
-        accum_in_0_address0 = 'bx;
+        accum_in_0_address0 = 5'd0;
     end
 end
 
@@ -3501,10 +3509,10 @@ always @ (*) begin
         end else if (((1'b0 == ap_block_pp0_stage0) & (1'b1 == ap_CS_fsm_pp0_stage0))) begin
             accum_in_0_address1 = zext_ln25_fu_341_p1;
         end else begin
-            accum_in_0_address1 = 'bx;
+            accum_in_0_address1 = 5'd0;
         end
     end else begin
-        accum_in_0_address1 = 'bx;
+        accum_in_0_address1 = 5'd0;
     end
 end
 
@@ -3599,10 +3607,10 @@ always @ (*) begin
         end else if ((trunc_ln33_fu_440_p1 == 3'd2)) begin
             ap_phi_mux_phi_ln45_phi_fu_290_p8 = psum_2_03_reg_240;
         end else begin
-            ap_phi_mux_phi_ln45_phi_fu_290_p8 = 'bx;
+            ap_phi_mux_phi_ln45_phi_fu_290_p8 = 16'd0;
         end
     end else begin
-        ap_phi_mux_phi_ln45_phi_fu_290_p8 = 'bx;
+        ap_phi_mux_phi_ln45_phi_fu_290_p8 = 16'd0;
     end
 end
 
@@ -3646,7 +3654,7 @@ always @ (*) begin
     end else if (((1'b0 == ap_block_pp0_stage1) & (ap_enable_reg_pp0_iter0 == 1'b1) & (1'b1 == ap_CS_fsm_pp0_stage1))) begin
         grp_fu_311_p0 = psum_1_reg_543;
     end else begin
-        grp_fu_311_p0 = 'bx;
+        grp_fu_311_p0 = 16'd0;
     end
 end
 
@@ -3703,7 +3711,7 @@ always @ (*) begin
             ap_NS_fsm = ap_ST_fsm_state1;
         end
         default : begin
-            ap_NS_fsm = 'bx;
+            ap_NS_fsm = 8'b0;
         end
     endcase
 end
@@ -4049,7 +4057,7 @@ always @ (*) begin
             ap_NS_fsm = ap_ST_fsm_state2;
         end
         default : begin
-            ap_NS_fsm = 'bx;
+            ap_NS_fsm = 4'd0;
         end
     endcase
 end
@@ -4229,7 +4237,7 @@ always @ (posedge ap_clk) begin
         if ((1'b0 == ap_block_pp0_stage0_subdone)) begin
             if ((1'b1 == ap_condition_pp0_exit_iter0_state2)) begin
                 ap_enable_reg_pp0_iter1 <= (1'b1 ^ ap_condition_pp0_exit_iter0_state2);
-            end else if ((1'b1 == 1'b1)) begin
+            end else begin
                 ap_enable_reg_pp0_iter1 <= ap_enable_reg_pp0_iter0;
             end
         end
@@ -4364,7 +4372,7 @@ always @ (*) begin
             ap_NS_fsm = ap_ST_fsm_state1;
         end
         default : begin
-            ap_NS_fsm = 'bx;
+            ap_NS_fsm = 3'd0;
         end
     endcase
 end
@@ -4552,7 +4560,7 @@ always @ (*) begin
     end else if ((((icmp_ln81_fu_130_p2 == 1'd0) & (icmp_ln78_fu_117_p2 == 1'd1) & (1'b1 == ap_CS_fsm_state1)) | ((icmp_ln81_fu_130_p2 == 1'd1) & (icmp_ln78_fu_117_p2 == 1'd1) & (1'b1 == ap_CS_fsm_state1)))) begin
         ap_phi_mux_j_14_flag_0_i_phi_fu_55_p6 = 1'd1;
     end else begin
-        ap_phi_mux_j_14_flag_0_i_phi_fu_55_p6 = 'bx;
+        ap_phi_mux_j_14_flag_0_i_phi_fu_55_p6 = 16'd0;
     end
 end
 
@@ -4563,10 +4571,10 @@ always @ (*) begin
         end else if ((icmp_ln81_fu_130_p2 == 1'd1)) begin
             ap_phi_mux_j_14_new_0_i_phi_fu_69_p6 = 16'd0;
         end else begin
-            ap_phi_mux_j_14_new_0_i_phi_fu_69_p6 = 'bx;
+            ap_phi_mux_j_14_new_0_i_phi_fu_69_p6 = 16'd0;
         end
     end else begin
-        ap_phi_mux_j_14_new_0_i_phi_fu_69_p6 = 'bx;
+        ap_phi_mux_j_14_new_0_i_phi_fu_69_p6 = 16'd0;
     end
 end
 
@@ -4576,7 +4584,7 @@ always @ (*) begin
     end else if ((((icmp_ln81_fu_130_p2 == 1'd0) & (icmp_ln78_fu_117_p2 == 1'd1) & (1'b1 == ap_CS_fsm_state1)) | ((icmp_ln81_fu_130_p2 == 1'd1) & (icmp_ln78_fu_117_p2 == 1'd1) & (1'b1 == ap_CS_fsm_state1)))) begin
         ap_phi_mux_k_14_new_0_i_phi_fu_82_p6 = 16'd0;
     end else begin
-        ap_phi_mux_k_14_new_0_i_phi_fu_82_p6 = 'bx;
+        ap_phi_mux_k_14_new_0_i_phi_fu_82_p6 = 16'd0;
     end
 end
 
@@ -4626,7 +4634,7 @@ always @ (*) begin
             ap_NS_fsm = ap_ST_fsm_state1;
         end
         default : begin
-            ap_NS_fsm = 'bx;
+            ap_NS_fsm = 1'b0;
         end
     endcase
 end
@@ -4917,7 +4925,7 @@ always @ (*) begin
             ap_NS_fsm = ap_ST_fsm_state1;
         end
         default : begin
-            ap_NS_fsm = 'bx;
+            ap_NS_fsm = 3'd0;
         end
     endcase
 end
@@ -5318,7 +5326,7 @@ always @ (*) begin
     end else if (((ap_enable_reg_pp0_iter0 == 1'b1) & (1'b0 == ap_block_pp0_stage1) & (1'b1 == ap_CS_fsm_pp0_stage1))) begin
         ifmap_vec_0_0_d0 = select_ln32_39_fu_366_p3;
     end else begin
-        ifmap_vec_0_0_d0 = 'bx;
+        ifmap_vec_0_0_d0 = 16'd0;
     end
 end
 
@@ -5328,7 +5336,7 @@ always @ (*) begin
     end else if (((ap_enable_reg_pp0_iter0 == 1'b1) & (1'b0 == ap_block_pp0_stage1) & (1'b1 == ap_CS_fsm_pp0_stage1))) begin
         ifmap_vec_0_0_d1 = select_ln32_fu_333_p3;
     end else begin
-        ifmap_vec_0_0_d1 = 'bx;
+        ifmap_vec_0_0_d1 = 16'd0;
     end
 end
 
@@ -5449,7 +5457,7 @@ always @ (*) begin
             ap_NS_fsm = ap_ST_fsm_state1;
         end
         default : begin
-            ap_NS_fsm = 'bx;
+            ap_NS_fsm = 4'd0;
         end
     endcase
 end
@@ -5960,7 +5968,7 @@ always @ (*) begin
             ap_NS_fsm = ap_ST_fsm_state1;
         end
         default : begin
-            ap_NS_fsm = 'bx;
+            ap_NS_fsm = 1'd0;
         end
     endcase
 end
@@ -6928,8 +6936,8 @@ module FPMult_NormalizeModule(
 	output [`MANTISSA:0] RoundM ;
 	output [`MANTISSA:0] RoundMP ;
 
-	assign RoundE = NormE - 15 ;
-	assign RoundEP = NormE - 14 ;
+	assign RoundE = NormE - 6'd15 ;
+	assign RoundEP = NormE - 6'd14 ;
 	assign RoundM = NormM ;
 	assign RoundMP = NormM ;
 
@@ -7309,8 +7317,8 @@ module FPAddSub_PrealignModule(
 
 	//assign DAB = (A[30:23] - B[30:23]) ;
 	//assign DBA = (B[30:23] - A[30:23]) ;
-	assign DAB = (A[`DWIDTH-2:`MANTISSA] + ~(B[`DWIDTH-2:`MANTISSA]) + 1) ;
-	assign DBA = (B[`DWIDTH-2:`MANTISSA] + ~(A[`DWIDTH-2:`MANTISSA]) + 1) ;
+	assign DAB = (A[`DWIDTH-2:`MANTISSA] + ~(B[`DWIDTH-2:`MANTISSA]) + 1'b1) ;
+	assign DBA = (B[`DWIDTH-2:`MANTISSA] + ~(A[`DWIDTH-2:`MANTISSA]) + 1'b1) ;
 
 	assign Sa = A[`DWIDTH-1] ;									// A's sign bit
 	assign Sb = B[`DWIDTH-1] ;									// B's sign	bit
@@ -7399,19 +7407,19 @@ module FPAddSub_AlignShift1(
 
 	end
 
-	assign Stage1 = { 11'b0, Lvl1};
+	assign Stage1 = {Lvl1, Lvl1};
 
 	always @(*) begin    					// Rotate {0 | 4 | 8 | 12} bits
 	  case (Shift[1:0])
 			// Rotate by 0
-			2'b00:  Lvl2 <= Stage1[`MANTISSA:0];
+			2'b00: Lvl2 <= Stage1[`MANTISSA:0];
 			// Rotate by 4
-			2'b01:  begin for (i=0; i<=`MANTISSA; i=i+1) begin Lvl2[i] <= Stage1[i+4]; end /*Lvl2[`MANTISSA:`MANTISSA-3] <= 0;*/ end
+			2'b01: Lvl2 <= Stage1[`MANTISSA+4:4];
 			// Rotate by 8
-			2'b10:  begin for (i=0; i<=`MANTISSA; i=i+1) begin Lvl2[i] <= Stage1[i+8]; end /*Lvl2[`MANTISSA:`MANTISSA-7] <= 0;*/ end
+			2'b10: Lvl2 <= Stage1[`MANTISSA+8:8];
 			// Rotate by 12
 			2'b11: Lvl2[`MANTISSA: 0] <= 0;
-			//2'b11:  begin for (i=0; i<=`MANTISSA; i=i+1) begin Lvl2[i] <= Stage1[i+12]; end Lvl2[`MANTISSA:`MANTISSA-12] <= 0; end
+			default: Lvl2[`MANTISSA: 0] <= 0;
 	  endcase
 	end
 
@@ -7440,18 +7448,19 @@ module FPAddSub_AlignShift2(
 	wire    [2*`MANTISSA+1:0]    Stage2;
 	integer           j;               // Loop variable
 
-	assign Stage2 = {11'b0, MminP};
+	assign Stage2 = {MminP, MminP};
 
 	always @(*) begin    // Rotate {0 | 1 | 2 | 3} bits
 	  case (Shift[1:0])
 			// Rotate by 0
-			2'b00:  Lvl3 <= Stage2[`MANTISSA:0];
+			2'b00: Lvl3 <= Stage2[`MANTISSA:0];
 			// Rotate by 1
-			2'b01:  begin for (j=0; j<=`MANTISSA; j=j+1)  begin Lvl3[j] <= Stage2[j+1]; end /*Lvl3[`MANTISSA] <= 0; */end
+			2'b01: Lvl3 <= Stage2[`MANTISSA+1:1];
 			// Rotate by 2
-			2'b10:  begin for (j=0; j<=`MANTISSA; j=j+1)  begin Lvl3[j] <= Stage2[j+2]; end /*Lvl3[`MANTISSA:`MANTISSA-1] <= 0;*/ end
+			2'b10: Lvl3 <= Stage2[`MANTISSA+2:2];
 			// Rotate by 3
-			2'b11:  begin for (j=0; j<=`MANTISSA; j=j+1)  begin Lvl3[j] <= Stage2[j+3]; end /*Lvl3[`MANTISSA:`MANTISSA-2] <= 0;*/ end
+			2'b11: Lvl3 <= Stage2[`MANTISSA+3:3];
+			default: Lvl3 <= Stage2[`MANTISSA+3:3];
 	  endcase
 	end
 
@@ -7717,7 +7726,7 @@ module FPAddSub_RoundModule(
 	assign RoundUp = (G & ((R | S) | NormM[0])) ;
 
 	// Note that in the other cases (rounding down), the sum is already 'rounded'
-	assign RoundUpM = (NormM + 1) ;								// The sum, rounded up by 1
+	assign RoundUpM = (NormM + 1'b1) ;								// The sum, rounded up by 1
 	assign RoundM = (RoundUp ? RoundUpM[`MANTISSA-1:0] : NormM) ; 	// Compute final mantissa
 	assign RoundOF = RoundUp & RoundUpM[`MANTISSA] ; 				// Check for overflow when rounding up
 
@@ -7794,4 +7803,5 @@ module FPAddSub_ExceptionModule(
 
 endmodule
 `endif
+
 

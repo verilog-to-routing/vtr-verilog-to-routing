@@ -97,8 +97,7 @@ class RRGraphBuilder {
      */
     inline RRSwitchId add_rr_switch(const t_rr_switch_inf& switch_info) {
         //Allocate an ID
-        RRSwitchId switch_id = RRSwitchId(switch_ids_.size());
-        switch_ids_.push_back(switch_id);
+        RRSwitchId switch_id = RRSwitchId(rr_switch_inf_.size());
 
         rr_switch_inf_.push_back(switch_info);
 
@@ -115,6 +114,11 @@ class RRGraphBuilder {
     inline void set_node_type(RRNodeId id, t_rr_type type) {
         node_storage_.set_node_type(id, type);
     }
+
+    /** @brief Set the node name with a given valid id */
+    inline void set_node_name(RRNodeId id, std::string name) {
+        node_storage_.set_node_name(id, name);
+    }
     /**
      * @brief Add an existing rr_node in the node storage to the node look-up
      *
@@ -129,6 +133,10 @@ class RRGraphBuilder {
      *   - a valid side (applicable to OPIN and IPIN nodes only
      */
     void add_node_to_all_locs(RRNodeId node);
+
+    void init_edge_remap(bool val);
+
+    void clear_temp_storage();
 
     /** @brief Clear all the underlying data storage */
     void clear();
@@ -166,6 +174,11 @@ class RRGraphBuilder {
         node_storage_.set_node_coordinates(id, x1, y1, x2, y2);
     }
 
+    /** @brief Set the node layer (specifies which die the node is located at) */
+    inline void set_node_layer(RRNodeId id, short layer){
+        node_storage_.set_node_layer(id,layer);
+    }
+
     /** @brief The ptc_num carries different meanings for different node types
      * (true in VPR RRG that is currently supported, may not be true in customized RRG)
      * CHANX or CHANY: the track id in routing channels
@@ -176,28 +189,44 @@ class RRGraphBuilder {
      * e.g the node type is unknown. If the node type is known, the more specific routines, `set_node_pin_num()`,
      * `set_node_track_num()`and `set_node_class_num()`, for different types of nodes should be used.*/
 
-    inline void set_node_ptc_num(RRNodeId id, short new_ptc_num) {
+    inline void set_node_ptc_num(RRNodeId id, int new_ptc_num) {
         node_storage_.set_node_ptc_num(id, new_ptc_num);
     }
 
+    /** @brief set the layer number at which RRNodeId is located at */
+    inline void set_node_layer(RRNodeId id, int layer){
+        node_storage_.set_node_layer(id, layer);
+    }
+
+    /** @brief set the ptc twist increment number for TILEABLE rr graphs (for more information see rr_graph_storage.h twist increment comment) */
+    inline void set_node_ptc_twist_incr(RRNodeId id, int twist){
+        node_storage_.set_node_ptc_twist_incr(id, twist);
+    }
+
+
     /** @brief set_node_pin_num() is designed for logic blocks, which are IPIN and OPIN nodes */
-    inline void set_node_pin_num(RRNodeId id, short new_pin_num) {
+    inline void set_node_pin_num(RRNodeId id, int new_pin_num) {
         node_storage_.set_node_pin_num(id, new_pin_num);
     }
 
     /** @brief set_node_track_num() is designed for routing tracks, which are CHANX and CHANY nodes */
-    inline void set_node_track_num(RRNodeId id, short new_track_num) {
+    inline void set_node_track_num(RRNodeId id, int new_track_num) {
         node_storage_.set_node_track_num(id, new_track_num);
     }
 
     /** @brief set_ node_class_num() is designed for routing source and sinks, which are SOURCE and SINK nodes */
-    inline void set_node_class_num(RRNodeId id, short new_class_num) {
+    inline void set_node_class_num(RRNodeId id, int new_class_num) {
         node_storage_.set_node_class_num(id, new_class_num);
     }
 
     /** @brief Set the node direction; The node direction is only available of routing channel nodes, such as x-direction routing tracks (CHANX) and y-direction routing tracks (CHANY). For other nodes types, this value is not meaningful and should be set to NONE. */
     inline void set_node_direction(RRNodeId id, Direction new_direction) {
         node_storage_.set_node_direction(id, new_direction);
+    }
+
+    /** @brief Set the node id for clock network virtual sink */
+    inline void set_virtual_clock_network_root_idx(RRNodeId virtual_clock_network_root_idx) {
+        node_storage_.set_virtual_clock_network_root_idx(virtual_clock_network_root_idx);
     }
 
     /** @brief Reserve the lists of edges to be memory efficient.
@@ -207,10 +236,14 @@ class RRGraphBuilder {
         node_storage_.reserve_edges(num_edges);
     }
 
-    /** @brief emplace_back_edge; It add one edge. This method is efficient if reserve_edges was called with
-     * the number of edges present in the graph. */
-    inline void emplace_back_edge(RRNodeId src, RRNodeId dest, short edge_switch) {
-        node_storage_.emplace_back_edge(src, dest, edge_switch);
+    /** @brief emplace_back_edge It adds one edge. This method is efficient if reserve_edges was called with
+     * the number of edges present in the graph.
+     * @param remapped If true, it means the switch id (edge_switch) corresponds to rr switch id. Thus, when the remapped function is called to
+     * remap the arch switch id to rr switch id, the edge switch id of this edge shouldn't be changed. For example, when the intra-cluster graph
+     * is built and the rr-graph related to global resources are read from a file, this parameter is true since the intra-cluster switches are
+     * also listed in rr-graph file. So, we use that list to use the rr switch id instead of passing arch switch id for intra-cluster edges.*/
+    inline void emplace_back_edge(RRNodeId src, RRNodeId dest, short edge_switch, bool remapped) {
+        node_storage_.emplace_back_edge(src, dest, edge_switch, remapped);
     }
     /** @brief Append 1 more RR node to the RR graph. */
     inline void emplace_back() {
@@ -255,10 +288,9 @@ class RRGraphBuilder {
     /** @brief Counts the number of rr switches needed based on fan in to support mux
      * size dependent switch delays. */
     inline size_t count_rr_switches(
-        size_t num_arch_switches,
-        t_arch_switch_inf* arch_switch_inf,
+        const std::vector<t_arch_switch_inf>& arch_switch_inf,
         t_arch_switch_fanin& arch_switch_fanins) {
-        return node_storage_.count_rr_switches(num_arch_switches, arch_switch_inf, arch_switch_fanins);
+        return node_storage_.count_rr_switches(arch_switch_inf, arch_switch_fanins);
     }
 
     /** @brief Reserve the lists of nodes, edges, switches etc. to be memory efficient.
@@ -273,13 +305,18 @@ class RRGraphBuilder {
         this->rr_segments_.reserve(num_segments);
     }
     inline void reserve_switches(size_t num_switches) {
-        this->switch_ids_.reserve(num_switches);
         this->rr_switch_inf_.reserve(num_switches);
     }
     /** @brief This function resize node storage to accomidate size RR nodes. */
     inline void resize_nodes(size_t size) {
         node_storage_.resize(size);
     }
+
+    /** @brief This function resize node ptc twist increment; Since it is only used for tileable rr-graph, we don't put it in general resize function*/
+    inline void resize_ptc_twist_incr(size_t size){
+        node_storage_.resize(size);
+    }
+
     /** @brief This function resize rr_switch to accomidate size RR Switch. */
     inline void resize_switches(size_t size) {
         rr_switch_inf_.resize(size);
@@ -309,6 +346,19 @@ class RRGraphBuilder {
         node_storage_.init_fan_in();
     }
 
+    /** @brief Disable the flags which would prevent adding adding extra-resources, when flat-routing
+     * is enabled, to the RR Graph
+     * @note
+     * When flat-routing is enabled, intra-cluster resources are added to the RR Graph after global rosources
+     * are already added. This function disables the flags which would prevent adding extra-resources to the RR Graph
+     */
+    inline void reset_rr_graph_flags() {
+        node_storage_.edges_read_ = false;
+        node_storage_.partitioned_ = false;
+        node_storage_.remapped_edges_ = false;
+        node_storage_.clear_node_first_edge();
+    }
+
     /* -- Internal data storage -- */
   private:
     /* TODO: When the refactoring effort finishes, 
@@ -335,7 +385,6 @@ class RRGraphBuilder {
      *  - Each rr_switch contains the detailed information of a routing switch interconnecting two routing resource nodes.
      *  - We use a fly-weight data structure here, in the same philosophy as the rr_indexed_data. See detailed explanation in the t_rr_switch_inf data structure
      */
-    vtr::vector<RRSwitchId, RRSwitchId> switch_ids_;
     /* Detailed information about the switches, which are used in the RRGraph */
     vtr::vector<RRSwitchId, t_rr_switch_inf> rr_switch_inf_;
 

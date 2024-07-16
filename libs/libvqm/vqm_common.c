@@ -35,7 +35,9 @@
 
 #include <assert.h>
 #include <stdio.h>
+#ifndef __APPLE__
 #include <malloc.h>
+#endif
 #include <string.h>
 #include <stdint.h>
 #include "vqm_dll.h"

@@ -1,0 +1,12 @@
+<vpr_constraints tool_name="vpr">
+        <partition_list>
+        <partition name="top">
+                <add_atom name_pattern="data_in*"/>      
+                <add_region x_low="0" y_low="0" x_high="81" y_high="6"/>
+         </partition>
+         <partition name="bottom">
+                <add_atom name_pattern="data_out*"/>
+                <add_region x_low="0" y_low="60" x_high="81" y_high="65"/> 
+        </partition>
+        </partition_list>
+</vpr_constraints>

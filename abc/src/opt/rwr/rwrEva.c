@@ -566,7 +566,7 @@ void Rwr_ScoresReport( Rwr_Man_t * p )
             Gains[i] += pNode->nGain;
     }
     // sort the gains
-    qsort( Perm, 222, sizeof(int), (int (*)(const void *, const void *))Rwr_ScoresCompare );
+    qsort( Perm, (size_t)222, sizeof(int), (int (*)(const void *, const void *))Rwr_ScoresCompare );
 
     // print classes
     for ( i = 0; i < p->vClasses->nSize; i++ )

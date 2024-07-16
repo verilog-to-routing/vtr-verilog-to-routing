@@ -1,26 +1,32 @@
-#include <algorithm>
-#include <kj/std/iostream.h>
-#include <limits>
-#include <map>
-#include <regex>
-#include <set>
-#include <stdlib.h>
-#include <string>
-#include <string.h>
-#include <zlib.h>
 
-#include "vtr_assert.h"
-#include "vtr_digest.h"
-#include "vtr_log.h"
-#include "vtr_memory.h"
-#include "vtr_util.h"
-
-#include "arch_check.h"
-#include "arch_error.h"
-#include "arch_util.h"
-#include "arch_types.h"
 
 #include "read_fpga_interchange_arch.h"
+#include "vtr_error.h"
+
+#ifdef VTR_ENABLE_CAPNPROTO
+
+#    include <algorithm>
+#    include <kj/std/iostream.h>
+#    include <limits>
+#    include <map>
+#    include <regex>
+#    include <set>
+#    include <stdlib.h>
+#    include <string>
+#    include <string.h>
+#    include <zlib.h>
+#    include <sstream>
+
+#    include "vtr_assert.h"
+#    include "vtr_digest.h"
+#    include "vtr_log.h"
+#    include "vtr_memory.h"
+#    include "vtr_util.h"
+
+#    include "arch_check.h"
+#    include "arch_error.h"
+#    include "arch_util.h"
+#    include "arch_types.h"
 
 /*
  * FPGA Interchange Device frontend
@@ -2242,6 +2248,8 @@ struct ArchReader {
 
         for (auto name : packages) {
             t_grid_def grid_def;
+            int num_layers = 1;
+            grid_def.layers.resize(num_layers);
             grid_def.width = grid_def.height = 0;
             for (auto tile : tiles) {
                 grid_def.width = std::max(grid_def.width, tile.getCol() + 1);
@@ -2292,7 +2300,7 @@ struct ArchReader {
 
                 single.owned_meta = std::make_unique<t_metadata_dict>(data);
                 single.meta = single.owned_meta.get();
-                grid_def.loc_defs.emplace_back(std::move(single));
+                grid_def.layers.at(num_layers - 1).loc_defs.emplace_back(std::move(single));
             }
 
             // The constant source tile will be placed at (0, 0)
@@ -2303,7 +2311,7 @@ struct ArchReader {
             constant.x.end_expr = constant.x.start_expr + " + w - 1";
             constant.y.end_expr = constant.y.start_expr + " + h - 1";
 
-            grid_def.loc_defs.emplace_back(std::move(constant));
+            grid_def.layers.at(num_layers - 1).loc_defs.emplace_back(std::move(constant));
 
             arch_->grid_layouts.emplace_back(std::move(grid_def));
         }
@@ -2334,7 +2342,7 @@ struct ArchReader {
         arch_->Chans.chan_y_dist.width = 0;
         arch_->Chans.chan_y_dist.xpeak = 0;
         arch_->Chans.chan_y_dist.dc = 0;
-        arch_->ipin_cblock_switch_name = std::string("generic");
+        arch_->ipin_cblock_switch_name.push_back(std::string("generic"));
         arch_->SBType = WILTON;
         arch_->Fs = 3;
         default_fc_.specified = true;
@@ -2422,7 +2430,7 @@ struct ArchReader {
                                "Switch name '%s' is a reserved name for VPR internal usage!", switch_name.c_str());
             }
 
-            as->name = vtr::strdup(switch_name.c_str());
+            as->name = switch_name;
             as->set_type(type);
             as->mux_trans_size = as->type() == SwitchType::MUX ? 1 : 0;
 
@@ -2494,11 +2502,14 @@ struct ArchReader {
     }
 };
 
+#endif // VTR_ENABLE_CAPNPROTO
+
 void FPGAInterchangeReadArch(const char* FPGAInterchangeDeviceFile,
                              const bool /*timing_enabled*/,
                              t_arch* arch,
                              std::vector<t_physical_tile_type>& PhysicalTileTypes,
                              std::vector<t_logical_block_type>& LogicalBlockTypes) {
+#ifdef VTR_ENABLE_CAPNPROTO
     // Decompress GZipped capnproto device file
     gzFile file = gzopen(FPGAInterchangeDeviceFile, "r");
     VTR_ASSERT(file != Z_NULL);
@@ -2539,4 +2550,12 @@ void FPGAInterchangeReadArch(const char* FPGAInterchangeDeviceFile,
 
     ArchReader reader(arch, device_reader, FPGAInterchangeDeviceFile, PhysicalTileTypes, LogicalBlockTypes);
     reader.read_arch();
+#else  // VTR_ENABLE_CAPNPROTO
+    // If CAPNPROTO is disabled, throw an error.
+    (void)FPGAInterchangeDeviceFile;
+    (void)arch;
+    (void)PhysicalTileTypes;
+    (void)LogicalBlockTypes;
+    throw vtr::VtrError("Unable to read FPGA interchange if CAPNPROTO is not enabled", __FILE__, __LINE__);
+#endif // VTR_ENABLE_CAPNPROTO
 }

@@ -67,7 +67,8 @@ static t_rr_node_power* rr_node_power;
 /************************* Function Declarations ********************/
 /* Routing */
 static void power_usage_routing(t_power_usage* power_usage,
-                                const t_det_routing_arch* routing_arch);
+                                const t_det_routing_arch* routing_arch,
+                                bool is_flat);
 
 /* Tiles */
 static void power_usage_blocks(t_power_usage* power_usage);
@@ -173,9 +174,9 @@ static void power_usage_primitive(t_power_usage* power_usage, t_pb* pb, t_pb_gra
                         power_ctx.arch->LUT_transistor_size, SRAM_values,
                         input_probabilities, input_densities, power_ctx.solution_inf.T_crit);
         power_add_usage(power_usage, &sub_power_usage);
-        free(SRAM_values);
-        delete[](input_probabilities);
-        delete[](input_densities);
+        delete[] SRAM_values;
+        delete[] input_probabilities;
+        delete[] input_densities;
     } else if (strcmp(pb_graph_node->pb_type->blif_model, MODEL_LATCH) == 0) {
         /* Flip-Flop */
 
@@ -608,32 +609,36 @@ static void power_usage_blocks(t_power_usage* power_usage) {
     t_logical_block_type_ptr logical_block;
 
     /* Loop through all grid locations */
-    for (size_t x = 0; x < device_ctx.grid.width(); x++) {
-        for (size_t y = 0; y < device_ctx.grid.height(); y++) {
-            auto physical_tile = device_ctx.grid[x][y].type;
+    for (int layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); layer_num++) {
+        for (int x = 0; x < (int)device_ctx.grid.width(); x++) {
+            for (int y = 0; y < (int)device_ctx.grid.height(); y++) {
+                auto physical_tile = device_ctx.grid.get_physical_type({x, y, layer_num});
+                int width_offset = device_ctx.grid.get_width_offset({x, y, layer_num});
+                int height_offset = device_ctx.grid.get_height_offset({x, y, layer_num});
 
-            if ((device_ctx.grid[x][y].width_offset != 0)
-                || (device_ctx.grid[x][y].height_offset != 0)
-                || is_empty_type(physical_tile)) {
-                continue;
-            }
-
-            for (int z = 0; z < physical_tile->capacity; z++) {
-                t_pb* pb = nullptr;
-                t_power_usage pb_power;
-
-                ClusterBlockId iblk = place_ctx.grid_blocks[x][y].blocks[z];
-
-                if (iblk != EMPTY_BLOCK_ID && iblk != INVALID_BLOCK_ID) {
-                    pb = cluster_ctx.clb_nlist.block_pb(iblk);
-                    logical_block = cluster_ctx.clb_nlist.block_type(iblk);
-                } else {
-                    logical_block = pick_logical_type(physical_tile);
+                if ((width_offset != 0)
+                    || (height_offset != 0)
+                    || is_empty_type(physical_tile)) {
+                    continue;
                 }
 
-                /* Calculate power of this CLB */
-                power_usage_pb(&pb_power, pb, logical_block->pb_graph_head, iblk);
-                power_add_usage(power_usage, &pb_power);
+                for (int z = 0; z < physical_tile->capacity; z++) {
+                    t_pb* pb = nullptr;
+                    t_power_usage pb_power;
+
+                    ClusterBlockId iblk = place_ctx.grid_blocks.block_at_location({x, y, z, layer_num});
+
+                    if (iblk != EMPTY_BLOCK_ID && iblk != INVALID_BLOCK_ID) {
+                        pb = cluster_ctx.clb_nlist.block_pb(iblk);
+                        logical_block = cluster_ctx.clb_nlist.block_type(iblk);
+                    } else {
+                        logical_block = pick_logical_type(physical_tile);
+                    }
+
+                    /* Calculate power of this CLB */
+                    power_usage_pb(&pb_power, pb, logical_block->pb_graph_head, iblk);
+                    power_add_usage(power_usage, &pb_power);
+                }
             }
         }
     }
@@ -763,7 +768,7 @@ static void power_usage_clock_single(t_power_usage* power_usage,
 /* Frees a multiplexer graph */
 static void dealloc_mux_graph(t_mux_node* node) {
     dealloc_mux_graph_rec(node);
-    free(node);
+    delete node;
 }
 
 static void dealloc_mux_graph_rec(t_mux_node* node) {
@@ -774,7 +779,7 @@ static void dealloc_mux_graph_rec(t_mux_node* node) {
         for (child_idx = 0; child_idx < node->num_inputs; child_idx++) {
             dealloc_mux_graph_rec(&node->children[child_idx]);
         }
-        free(node->children);
+        delete[] node->children;
     }
 }
 
@@ -782,7 +787,8 @@ static void dealloc_mux_graph_rec(t_mux_node* node) {
  * Calculates the power of the entire routing fabric (not local routing
  */
 static void power_usage_routing(t_power_usage* power_usage,
-                                const t_det_routing_arch* routing_arch) {
+                                const t_det_routing_arch* routing_arch,
+                                bool is_flat) {
     auto& power_ctx = g_vpr_ctx.power();
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.device();
@@ -806,27 +812,29 @@ static void power_usage_routing(t_power_usage* power_usage,
 
     /* Populate net indices into rr graph */
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-        t_trace* trace;
-
-        for (trace = route_ctx.trace[net_id].head; trace != nullptr; trace = trace->next) {
-            rr_node_power[trace->index].visited = false;
-            rr_node_power[trace->index].net_num = net_id;
+        ParentNetId parent_id = get_cluster_net_parent_id(g_vpr_ctx.atom().lookup, net_id, is_flat);
+        if (!route_ctx.route_trees[parent_id])
+            continue;
+        for (auto& rt_node : route_ctx.route_trees[parent_id].value().all_nodes()) {
+            rr_node_power[size_t(rt_node.inode)].visited = false;
+            rr_node_power[size_t(rt_node.inode)].net_num = net_id;
         }
     }
 
     /* Populate net indices into rr graph */
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-        t_trace* trace;
-
-        for (trace = route_ctx.trace[net_id].head; trace != nullptr; trace = trace->next) {
-            t_rr_node_power* node_power = &rr_node_power[trace->index];
+        ParentNetId parent_id = get_cluster_net_parent_id(g_vpr_ctx.atom().lookup, net_id, is_flat);
+        if (!route_ctx.route_trees[parent_id])
+            continue;
+        for (auto& rt_node : route_ctx.route_trees[parent_id].value().all_nodes()) {
+            t_rr_node_power* node_power = &rr_node_power[size_t(rt_node.inode)];
 
             if (node_power->visited) {
                 continue;
             }
 
-            for (t_edge_size edge_idx = 0; edge_idx < rr_graph.num_edges(RRNodeId(trace->index)); edge_idx++) {
-                const auto& next_node_id = size_t(rr_graph.edge_sink_node(RRNodeId(trace->index), edge_idx));
+            for (t_edge_size edge_idx = 0; edge_idx < rr_graph.num_edges(rt_node.inode); edge_idx++) {
+                const auto& next_node_id = size_t(rr_graph.edge_sink_node(rt_node.inode, edge_idx));
                 if (next_node_id != size_t(OPEN)) {
                     t_rr_node_power* next_node_power = &rr_node_power[next_node_id];
 
@@ -1084,7 +1092,7 @@ void power_alloc_and_init_pb_pin(t_pb_graph_pin* pin) {
 }
 
 void power_uninit_pb_pin(t_pb_graph_pin* pin) {
-    delete (pin->pin_power);
+    delete pin->pin_power;
     pin->pin_power = nullptr;
 }
 
@@ -1197,9 +1205,9 @@ void power_routing_init(const t_det_routing_arch* routing_arch) {
     }
 
     /* Initialize RR Graph Structures */
-    rr_node_power = (t_rr_node_power*)vtr::calloc(rr_graph.num_nodes(),
-                                                  sizeof(t_rr_node_power));
+    rr_node_power = new t_rr_node_power[rr_graph.num_nodes()];
     for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes()) {
+        rr_node_power[(size_t)rr_id] = t_rr_node_power();
         rr_node_power[(size_t)rr_id].driver_switch_type = OPEN;
     }
 
@@ -1219,10 +1227,13 @@ void power_routing_init(const t_det_routing_arch* routing_arch) {
                 max_IPIN_fanin = std::max(max_IPIN_fanin, node_fan_in);
                 max_fanin = std::max(max_fanin, node_fan_in);
 
-                node_power->in_dens = (float*)vtr::calloc(node_fan_in,
-                                                          sizeof(float));
-                node_power->in_prob = (float*)vtr::calloc(node_fan_in,
-                                                          sizeof(float));
+                node_power->in_dens = new float[node_fan_in];
+                node_power->in_prob = new float[node_fan_in];
+                for (int i = 0; i < node_fan_in; i++) {
+                    node_power->in_dens[i] = 0;
+                    node_power->in_prob[i] = 0;
+                }
+
                 break;
             case CHANX:
             case CHANY:
@@ -1238,10 +1249,12 @@ void power_routing_init(const t_det_routing_arch* routing_arch) {
                 max_seg_to_seg_fanout = std::max(max_seg_to_seg_fanout, fanout_to_seg);
                 max_fanin = std::max(max_fanin, node_fan_in);
 
-                node_power->in_dens = (float*)vtr::calloc(node_fan_in,
-                                                          sizeof(float));
-                node_power->in_prob = (float*)vtr::calloc(node_fan_in,
-                                                          sizeof(float));
+                node_power->in_dens = new float[node_fan_in];
+                node_power->in_prob = new float[node_fan_in];
+                for (int i = 0; i < node_fan_in; i++) {
+                    node_power->in_dens[i] = 0;
+                    node_power->in_prob[i] = 0;
+                }
                 break;
             default:
                 /* Do nothing */
@@ -1302,15 +1315,16 @@ bool power_init(const char* power_out_filepath,
     /* Set global power architecture & options */
     power_ctx.arch = arch->power;
     power_ctx.commonly_used = new t_power_commonly_used;
-    power_ctx.tech = (t_power_tech*)vtr::malloc(sizeof(t_power_tech));
-    power_ctx.output = (t_power_output*)vtr::malloc(sizeof(t_power_output));
+    power_ctx.tech = new t_power_tech;
+    power_ctx.output = new t_power_output;
 
     /* Set up Logs */
     power_ctx.output->num_logs = POWER_LOG_NUM_TYPES;
-    power_ctx.output->logs = (t_log*)vtr::calloc(power_ctx.output->num_logs,
-                                                 sizeof(t_log));
-    power_ctx.output->logs[POWER_LOG_ERROR].name = vtr::strdup("Errors");
-    power_ctx.output->logs[POWER_LOG_WARNING].name = vtr::strdup("Warnings");
+    power_ctx.output->logs = new t_log[power_ctx.output->num_logs];
+    for (int i = 0; i < power_ctx.output->num_logs; i++)
+        power_ctx.output->logs[i] = t_log();
+    power_ctx.output->logs[POWER_LOG_ERROR].name = "Errors";
+    power_ctx.output->logs[POWER_LOG_WARNING].name = "Warnings";
 
     /* Initialize output file */
     if (!error) {
@@ -1353,8 +1367,6 @@ bool power_init(const char* power_out_filepath,
  */
 bool power_uninit() {
     int mux_size;
-    int log_idx;
-    int msg_idx;
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     auto& power_ctx = g_vpr_ctx.power();
@@ -1367,17 +1379,15 @@ bool power_uninit() {
             case CHANX:
             case CHANY:
             case IPIN:
-                if (rr_graph.node_fan_in(rr_id)) {
-                    free(node_power->in_dens);
-                    free(node_power->in_prob);
-                }
+                delete[] node_power->in_dens;
+                delete[] node_power->in_prob;
                 break;
             default:
                 /* Do nothing */
                 break;
         }
     }
-    free(rr_node_power);
+    delete[] rr_node_power;
 
     /* Free mux architectures */
     for (std::map<float, t_power_mux_info*>::iterator it = power_ctx.commonly_used->mux_info.begin();
@@ -1386,14 +1396,14 @@ bool power_uninit() {
         for (mux_size = 1; mux_size <= mux_info->mux_arch_max_size; mux_size++) {
             dealloc_mux_graph(mux_info->mux_arch[mux_size].mux_graph_head);
         }
-        free(mux_info->mux_arch);
+
         delete mux_info;
     }
     /* Free components */
     for (int i = 0; i < POWER_CALLIB_COMPONENT_MAX; ++i) {
         delete power_ctx.commonly_used->component_callibration[i];
     }
-    free(power_ctx.commonly_used->component_callibration);
+    delete[] power_ctx.commonly_used->component_callibration;
 
     delete power_ctx.commonly_used;
 
@@ -1401,16 +1411,9 @@ bool power_uninit() {
     if (power_ctx.output->out) {
         fclose(power_ctx.output->out);
     }
-    for (log_idx = 0; log_idx < power_ctx.output->num_logs; log_idx++) {
-        for (msg_idx = 0; msg_idx < power_ctx.output->logs[log_idx].num_messages;
-             msg_idx++) {
-            free(power_ctx.output->logs[log_idx].messages[msg_idx]);
-        }
-        free(power_ctx.output->logs[log_idx].messages);
-        free(power_ctx.output->logs[log_idx].name);
-    }
-    free(power_ctx.output->logs);
-    free(power_ctx.output);
+
+    delete[] power_ctx.output->logs;
+    delete power_ctx.output;
 
     power_pb_pins_uninit();
 
@@ -1731,7 +1734,7 @@ e_power_ret_code power_total(float* run_time_s, const t_vpr_setup& vpr_setup, co
 
     /* Calculate Power */
     /* Routing */
-    power_usage_routing(&sub_power_usage, routing_arch);
+    power_usage_routing(&sub_power_usage, routing_arch, vpr_setup.RouterOpts.flat_routing);
     power_add_usage(&total_power, &sub_power_usage);
     power_component_add_usage(&sub_power_usage, POWER_COMPONENT_ROUTING);
 

@@ -26,4 +26,4 @@ qor_parse_file=qor_standard.txt
 pass_requirements_file=pass_requirements.txt
 
 #Script parameters
-script_params=-starting_stage vpr -track_memory_usage
+script_params=-starting_stage vpr -track_memory_usage --seed 2

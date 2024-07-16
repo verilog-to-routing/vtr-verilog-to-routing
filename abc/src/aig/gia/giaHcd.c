@@ -626,7 +626,7 @@ Aig_Man_t * Hcd_ComputeChoices( Aig_Man_t * pAig, int nBTLimit, int fSynthesis, 
         Vec_PtrForEachEntry( Gia_Man_t *, vGias, pGia, i )
             Gia_ManStop( pGia );
 
-        Gia_AigerWrite( pMiter, "m3.aig", 0, 0 );
+        Gia_AigerWrite( pMiter, "m3.aig", 0, 0, 0 );
     }
     else 
     {

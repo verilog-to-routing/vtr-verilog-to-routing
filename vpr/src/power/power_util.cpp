@@ -149,28 +149,23 @@ static void log_msg(t_log* log_ptr, const char* msg) {
 
     /* Check if this message is already in the log */
     for (msg_idx = 0; msg_idx < log_ptr->num_messages; msg_idx++) {
-        if (strcmp(log_ptr->messages[msg_idx], msg) == 0) {
+        if (strcmp((log_ptr->messages[msg_idx]).c_str(), msg) == 0) {
             return;
         }
     }
 
     if (log_ptr->num_messages <= MAX_LOGS) {
         log_ptr->num_messages++;
-        log_ptr->messages = (char**)vtr::realloc(log_ptr->messages,
-                                                 log_ptr->num_messages * sizeof(char*));
+        log_ptr->messages.resize(log_ptr->num_messages);
     } else {
         /* Can't add any more messages */
         return;
     }
 
     if (log_ptr->num_messages == (MAX_LOGS + 1)) {
-        const char* full_msg = "\n***LOG IS FULL***\n";
-        log_ptr->messages[log_ptr->num_messages - 1] = (char*)vtr::calloc(strlen(full_msg) + 1, sizeof(char));
-        strncpy(log_ptr->messages[log_ptr->num_messages - 1], full_msg, strlen(full_msg) + 1);
+        log_ptr->messages[log_ptr->num_messages - 1] = "\n***LOG IS FULL***\n";
     } else {
-        size_t len = strlen(msg) + 1;
-        log_ptr->messages[log_ptr->num_messages - 1] = (char*)vtr::calloc(len, sizeof(char));
-        strncpy(log_ptr->messages[log_ptr->num_messages - 1], msg, len);
+        log_ptr->messages[log_ptr->num_messages - 1] = msg;
     }
 }
 
@@ -222,7 +217,9 @@ char* alloc_SRAM_values_from_truth_table(int LUT_size,
 
     //SRAM value stored as a string of '0' and '1' characters
     // Initialize to all zeros
-    char* SRAM_values = (char*)vtr::calloc(num_SRAM_bits + 1, sizeof(char));
+    char* SRAM_values = new char[num_SRAM_bits + 1];
+    for (int i = 0; i < num_SRAM_bits + 1; i++)
+        SRAM_values[i] = '0';
     SRAM_values[num_SRAM_bits] = '\0';
 
     if (truth_table.empty()) {
@@ -315,7 +312,7 @@ void output_log(t_log* log_ptr, FILE* fp) {
     int msg_idx;
 
     for (msg_idx = 0; msg_idx < log_ptr->num_messages; msg_idx++) {
-        fprintf(fp, "%s\n", log_ptr->messages[msg_idx]);
+        fprintf(fp, "%s\n", log_ptr->messages[msg_idx].c_str());
     }
 }
 
@@ -324,7 +321,7 @@ void output_logs(FILE* fp, t_log* logs, int num_logs) {
 
     for (log_idx = 0; log_idx < num_logs; log_idx++) {
         if (logs[log_idx].num_messages) {
-            power_print_title(fp, logs[log_idx].name);
+            power_print_title(fp, logs[log_idx].name.c_str());
             output_log(&logs[log_idx], fp);
             fprintf(fp, "\n");
         }
@@ -365,7 +362,6 @@ t_mux_arch* power_get_mux_arch(int num_mux_inputs, float transistor_size) {
 
     if (it == power_ctx.commonly_used->mux_info.end()) {
         mux_info = new t_power_mux_info;
-        mux_info->mux_arch = nullptr;
         mux_info->mux_arch_max_size = 0;
         VTR_ASSERT(power_ctx.commonly_used->mux_info[transistor_size] == nullptr);
         power_ctx.commonly_used->mux_info[transistor_size] = mux_info;
@@ -374,8 +370,7 @@ t_mux_arch* power_get_mux_arch(int num_mux_inputs, float transistor_size) {
     }
 
     if (num_mux_inputs > mux_info->mux_arch_max_size) {
-        mux_info->mux_arch = (t_mux_arch*)vtr::realloc(mux_info->mux_arch,
-                                                       (num_mux_inputs + 1) * sizeof(t_mux_arch));
+        mux_info->mux_arch.resize(num_mux_inputs + 1);
 
         for (i = mux_info->mux_arch_max_size + 1; i <= num_mux_inputs; i++) {
             init_mux_arch_default(&mux_info->mux_arch[i], 2, i,
@@ -407,7 +402,7 @@ static void init_mux_arch_default(t_mux_arch* mux_arch, int levels, int num_inpu
 static t_mux_node* alloc_and_load_mux_graph(int num_inputs, int levels) {
     t_mux_node* node;
 
-    node = (t_mux_node*)vtr::malloc(sizeof(t_mux_node));
+    node = new t_mux_node;
     alloc_and_load_mux_graph_recursive(node, num_inputs, levels - 1, 0);
 
     return node;
@@ -426,8 +421,7 @@ static void alloc_and_load_mux_graph_recursive(t_mux_node* node,
     node->starting_pin_idx = starting_pin_idx;
 
     if (level != 0) {
-        node->children = (t_mux_node*)vtr::calloc(node->num_inputs,
-                                                  sizeof(t_mux_node));
+        node->children = new t_mux_node[node->num_inputs];
         for (child_idx = 0; child_idx < node->num_inputs; child_idx++) {
             int num_child_pi = num_primary_inputs / node->num_inputs;
             if (child_idx < (num_primary_inputs % node->num_inputs)) {

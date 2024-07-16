@@ -35,6 +35,7 @@ DEFAULT_METRICS = [
     "geomean_nonvirtual_intradomain_critical_path_delay",  # VTR/Titan
     # Run-time Metrics
     "odin_synth_time",
+    "parmys_synth_time",
     "abc_synth_time",
     "pack_time",
     "place_time",
@@ -145,7 +146,7 @@ def main():
             sep = "\t"
         else:
             sep = ","
-        df = pd.read_csv(csv, sep=sep)
+        df = pd.read_csv(csv, skipinitialspace=True, sep=sep, engine="python")
 
         avail_metrics.update(df.columns)  # Record available metrics
 

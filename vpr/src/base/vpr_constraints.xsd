@@ -33,6 +33,8 @@
     <xs:attribute name="y_low" type="xs:int" use="required"/>
     <xs:attribute name="x_high" type="xs:int" use="required"/>
     <xs:attribute name="y_high" type="xs:int" use="required"/>
+    <xs:attribute name="layer_low" type="xs:int"/>
+    <xs:attribute name="layer_high" type="xs:int"/>
     <xs:attribute name="subtile" type="xs:int"/>
   </xs:complexType>
 
@@ -59,14 +61,42 @@
     </xs:sequence>
   </xs:complexType>
 
+
+<xs:simpleType name="route_model_type">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="ideal"/>
+      <xs:enumeration value="route"/>
+      <xs:enumeration value="dedicated_network"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- Add a global route constraint, an example:
+  <global_route_constraints>
+    <set_global_signal name="clk0" network_name="global_clock_network" route_model="dedicated_network"/> 
+    ...
+  </global_route_constraints>
+  -->
+  <xs:complexType name="set_global_signal">
+    <xs:attribute name="name" type="xs:string" use="required"/>
+    <xs:attribute name="route_model" type="route_model_type" use="required"/>
+    <xs:attribute name="network_name" type="xs:string"/>
+  </xs:complexType>
+
+  <xs:complexType name="global_route_constraints">
+    <xs:sequence>
+      <xs:element name="set_global_signal" type="set_global_signal" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
 <!-- This last definition is the root tag definition.  The name of the
        xs:element is the root tag, and the contents of the xs:complexType
        defines what attributes and subtags are expected.
     -->
   <xs:element name="vpr_constraints">
     <xs:complexType>
-      <xs:all>
+      <xs:all minOccurs="0">
         <xs:element name="partition_list" type="partition_list"/>
+        <xs:element name="global_route_constraints" type="global_route_constraints"/>
       </xs:all>
 
       <xs:attribute name="tool_name" type="xs:string"/>

@@ -1007,7 +1007,7 @@ Map_Cut_t * Map_CutSortCuts( Map_Man_t * pMan, Map_CutTable_t * p, Map_Cut_t * p
     assert( nCuts <= MAP_CUTS_MAX_COMPUTE );
     // sort the cuts
 //clk = Abc_Clock();
-    qsort( (void *)p->pCuts1, nCuts, sizeof(Map_Cut_t *), 
+    qsort( (void *)p->pCuts1, (size_t)nCuts, sizeof(Map_Cut_t *), 
             (int (*)(const void *, const void *)) Map_CutSortCutsCompare );
 //pMan->time2 += Abc_Clock() - clk;
     // move them back into the list

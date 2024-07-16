@@ -38,10 +38,10 @@ libs/EXTERNAL/**        linguist-vendored
 # External benchmarks imported into vtr_flow benchmark suite.
 vtr_flow/benchmarks/**  linguist-vendored
 vtr_flow/scripts/perl_libs/** linguist-vendored
-# External benchmarks imported into ODIN_II benchmark suite.
-ODIN_II/regression_test/benchmark/verilog/large/** linguist-vendored
-ODIN_II/regression_test/benchmark/verilog/full/** linguist-vendored
-ODIN_II/regression_test/benchmark/verilog/FIR/** linguist-vendored
+# External benchmarks imported into odin_ii benchmark suite.
+odin_ii/regression_test/benchmark/verilog/large/** linguist-vendored
+odin_ii/regression_test/benchmark/verilog/full/** linguist-vendored
+odin_ii/regression_test/benchmark/verilog/FIR/** linguist-vendored
 
 # Documentation
 doc/**                  linguist-documentation

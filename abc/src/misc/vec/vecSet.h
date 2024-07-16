@@ -195,7 +195,7 @@ static inline double Vec_ReportMemory( Vec_Set_t * p )
 {
     double Mem = sizeof(Vec_Set_t);
     Mem += p->nPagesAlloc * sizeof(void *);
-    Mem += sizeof(word) * (int)(((word)1) << p->nPageSize) * (1 + p->iPage);
+    Mem += sizeof(word) * (size_t)(((word)1) << p->nPageSize) * (size_t)(1 + p->iPage);
     return Mem;
 }
 
@@ -220,7 +220,7 @@ static inline int Vec_SetAppend( Vec_Set_t * p, int * pArray, int nSize )
         if ( ++p->iPage == p->nPagesAlloc )
         {
             p->pPages = ABC_REALLOC( word *, p->pPages, p->nPagesAlloc * 2 );
-            memset( p->pPages + p->nPagesAlloc, 0, sizeof(word *) * p->nPagesAlloc );
+            memset( p->pPages + p->nPagesAlloc, 0, sizeof(word *) * (size_t)p->nPagesAlloc );
             p->nPagesAlloc *= 2;
         }
         if ( p->pPages[p->iPage] == NULL )
@@ -229,7 +229,7 @@ static inline int Vec_SetAppend( Vec_Set_t * p, int * pArray, int nSize )
         p->pPages[p->iPage][1] = ~0;
     }
     if ( pArray )
-        memcpy( p->pPages[p->iPage] + Vec_SetLimit(p->pPages[p->iPage]), pArray, sizeof(int) * nSize );
+        memcpy( p->pPages[p->iPage] + Vec_SetLimit(p->pPages[p->iPage]), pArray, sizeof(int) * (size_t)nSize );
     Vec_SetIncLimit( p->pPages[p->iPage], nWords );
     return Vec_SetHandCurrent(p) - nWords;
 }

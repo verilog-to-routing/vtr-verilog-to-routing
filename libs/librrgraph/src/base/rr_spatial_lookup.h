@@ -41,24 +41,25 @@ class RRSpatialLookup {
     /**
      * @brief Returns the index of the specified routing resource node.  
      *
+     *   @param layer specified which FPGA die the node is located at (e.g. multi-die(3D) FPGA)
      *   @param (x, y) are the grid location within the FPGA
      *   @param rr_type specifies the type of resource,
-     *   @param ptc gives a unique number of resources of that type (e.g. CHANX) at that (x,y).
+     *   @param ptc gives a unique number of resources of that type (e.g. CHANX) at that (layer,x,y).
      *
      * @note All ptcs start at 0 and are positive.
      *       Depending on what type of resource this is, ptc can be 
      *         - the class number of a common SINK/SOURCE node of grid, 
-     *           starting at 0 and go up to class_inf size - 1 of SOURCEs + SINKs in a grid
+     *           starting at 0 and go up to logical_class_inf size - 1 of SOURCEs + SINKs in a grid
      *         - pin number of an input/output pin of a grid. They would normally start at 0
-     *           and go to the number of pins on a block at that (x, y) location
+     *           and go to the number of pins on a block at that (layer,x,y) location
      *         - track number of a routing wire in a channel. They would normally go from 0
-     *           to channel_width - 1 at that (x,y)
+     *           to channel_width - 1 at that (layer,x,y)
      *
      * @note An invalid id will be returned if the node does not exist
      *
      * @note For segments (CHANX and CHANY) of length > 1, the segment is
-     * given an rr_index based on the (x,y) location at which it starts (i.e.
-     * lowest (x,y) location at which this segment exists).
+     * given an rr_index based on the (layer,x,y) location at which it starts (i.e.
+     * lowest (layer,x,y) location at which this segment exists).
      *
      * @note The 'side' argument only applies to IPIN/OPIN types, and specifies which
      * side of the grid tile the node should be located on. The value is ignored
@@ -67,7 +68,8 @@ class RRSpatialLookup {
      * This routine also performs error checking to make sure the node in
      * question exists.
      */
-    RRNodeId find_node(int x,
+    RRNodeId find_node(int layer,
+                       int x,
                        int y,
                        t_rr_type type,
                        int ptc,
@@ -76,18 +78,20 @@ class RRSpatialLookup {
     /**
      * @brief Returns the indices of the specified routing resource nodes, representing routing tracks in a channel.  
      *
+     *   @param layer specified which FPGA die the node is located at (e.g. multi-die(3D) FPGA)
      *   @param (x, y) are the coordinate of the routing channel within the FPGA
      *   @param rr_type specifies the type of routing channel, either x-direction or y-direction
      *
      * @note 
-     * - Return an empty list if there are no routing channel at the given (x, y) location
+     * - Return an empty list if there are no routing channel at the given (layer,x,y) location
      * - The node list returned only contain valid ids
-     *   For example, if the 2nd routing track does not exist in a routing channel at (x, y) location,
-     *   while the 3rd routing track does exist in a routing channel at (x, y) location,
+     *   For example, if the 2nd routing track does not exist in a routing channel at (layer,x,y) location,
+     *   while the 3rd routing track does exist in a routing channel at (layer,x, y) location,
      *   the node list will not contain the node for the 2nd routing track, but the 2nd element in the list
      *   will be the node for the 3rd routing track
      */
-    std::vector<RRNodeId> find_channel_nodes(int x,
+    std::vector<RRNodeId> find_channel_nodes(int layer,
+                                             int x,
                                              int y,
                                              t_rr_type type) const;
 
@@ -95,26 +99,29 @@ class RRSpatialLookup {
      * @brief Like find_node() but returns all matching nodes on all the sides.
      *
      * This is particularly useful for getting all instances
-     * of a specific IPIN/OPIN at a specific grid tile (x,y) location.
+     * of a specific IPIN/OPIN at a specific grid tile (layer,x,y).
      */
-    std::vector<RRNodeId> find_nodes_at_all_sides(int x,
+    std::vector<RRNodeId> find_nodes_at_all_sides(int layer,
+                                                  int x,
                                                   int y,
                                                   t_rr_type rr_type,
                                                   int ptc) const;
 
     /**
-     * @brief Returns all matching nodes on all the sides at a specific grid tile (x,y) location.
+     * @brief Returns all matching nodes on all the sides at a specific grid tile (layer,x,y) location.
      *
      * As this is applicable to grid pins, the type of nodes are limited to SOURCE/SINK/IPIN/OPIN
      */
-    std::vector<RRNodeId> find_grid_nodes_at_all_sides(int x,
+    std::vector<RRNodeId> find_grid_nodes_at_all_sides(int layer,
+                                                       int x,
                                                        int y,
                                                        t_rr_type rr_type) const;
 
     /* -- Mutators -- */
   public:
-    /** @brief Reserve the memory for a list of nodes at (x, y) location with given type and side */
-    void reserve_nodes(int x,
+    /** @brief Reserve the memory for a list of nodes at (layer, x, y) location with given type and side */
+    void reserve_nodes(int layer,
+                       int x,
                        int y,
                        t_rr_type type,
                        int num_nodes,
@@ -125,6 +132,7 @@ class RRSpatialLookup {
      *
      * @note You must have a valid node id to register the node in the lookup
      *
+     *   @param layer specified which FPGA die the node is located at (e.g. multi-die(3D) FPGA)
      *   @param (x, y) are the coordinate of the node to be indexable in the fast look-up
      *   @param type is the type of a node
      *   @param ptc is a feature number of a node, which can be
@@ -144,6 +152,7 @@ class RRSpatialLookup {
      *   As such, multiple node addition could be efficiently implemented
      */
     void add_node(RRNodeId node,
+                  int layer,
                   int x,
                   int y,
                   t_rr_type type,
@@ -155,7 +164,7 @@ class RRSpatialLookup {
      * a destination coordinate.
      *
      * This function is mostly need by SOURCE and SINK nodes which are indexable in multiple locations.
-     * Considering a bounding box (x, y)->(x + width, y + height) of a multi-height and multi-width grid, 
+     * Considering a bounding box (layer, x, y)->(layer, x + width, y + height) of a multi-height and multi-width grid,
      * SOURCE and SINK nodes are indexable in any location inside the boundry.
      *
      * An example of usage: 
@@ -189,13 +198,14 @@ class RRSpatialLookup {
      * corner when dealing with large blocks. But this may require the data structure to be dependent 
      * on DeviceGrid information (it needs to identify if a grid has height > 1 as well as width > 1)
      */
-    void mirror_nodes(const vtr::Point<int>& src_coord,
+    void mirror_nodes(const int layer,
+                      const vtr::Point<int>& src_coord,
                       const vtr::Point<int>& des_coord,
                       t_rr_type type,
                       e_side side);
 
     /**
-     * @brief Resize the given 3 dimensions (x, y, side) of the RRSpatialLookup data structure for the given type
+     * @brief Resize the given 4 dimensions (layer, x, y, side) of the RRSpatialLookup data structure for the given type
      *
      * This function will keep any existing data
      *
@@ -205,7 +215,8 @@ class RRSpatialLookup {
      * TODO: should have a reserve function but vtd::ndmatrix does not have such API
      *       as a result, resize can be an internal one while reserve function is a public mutator
      */
-    void resize_nodes(int x,
+    void resize_nodes(int layer,
+                      int x,
                       int y,
                       t_rr_type type,
                       e_side side);
@@ -220,17 +231,18 @@ class RRSpatialLookup {
   private:
     /* An internal API to find all the nodes in a specific location with a given type
      * For OPIN/IPIN nodes that may exist on multiple sides, a specific side must be provided  
-     * This API is NOT public because its too powerful for developers with very limited sanity checks 
+     * This API is NOT public because it is too powerful for developers with very limited sanity checks
      * But it is used to build the public APIs find_channel_nodes() etc., where sufficient sanity checks are applied
      */
-    std::vector<RRNodeId> find_nodes(int x,
+    std::vector<RRNodeId> find_nodes(int layer,
+                                     int x,
                                      int y,
                                      t_rr_type type,
                                      e_side side = SIDES[0]) const;
 
     /* -- Internal data storage -- */
   private:
-    /* Fast look-up: TODO: Should rework the data type. Currently it is based on a 3-dimensional arrqay mater where some dimensions must always be accessed with a specific index. Such limitation should be overcome */
+    /* Fast look-up: TODO: Should rework the data type. Currently it is based on a 3-dimensional array mater where some dimensions must always be accessed with a specific index. Such limitation should be overcome */
     t_rr_node_indices rr_node_indices_;
 };
 
