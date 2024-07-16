@@ -430,7 +430,7 @@ t_seg_details* alloc_and_load_seg_details(int* max_chan_width,
 
             //check for directionality to set the wire_switch and opin_switch
             //if not specified in the architecture file, we will use a same mux for both directions
-            if (seg_details[cur_track].direction == Direction::INC || arch_wire_switch_dec == -1){
+            if (seg_details[cur_track].direction == Direction::INC || seg_details[cur_track].direction == Direction::BIDIR || arch_wire_switch_dec == -1){
                 seg_details[cur_track].arch_opin_switch = arch_opin_switch;
                 seg_details[cur_track].arch_wire_switch = arch_wire_switch;
             }
