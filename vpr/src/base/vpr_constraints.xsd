@@ -33,6 +33,8 @@
     <xs:attribute name="y_low" type="xs:int" use="required"/>
     <xs:attribute name="x_high" type="xs:int" use="required"/>
     <xs:attribute name="y_high" type="xs:int" use="required"/>
+    <xs:attribute name="layer_low" type="xs:int"/>
+    <xs:attribute name="layer_high" type="xs:int"/>
     <xs:attribute name="subtile" type="xs:int"/>
   </xs:complexType>
 
