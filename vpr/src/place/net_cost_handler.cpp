@@ -19,13 +19,7 @@ enum class NetUpdateState {
     GOT_FROM_SCRATCH
 };
 
-/** 
- * @brief The error tolerance due to round off for the total cost computation. 
- * When we check it from scratch vs. incrementally. 0.01 means that there is a 1% error tolerance.      
- */
-#define ERROR_TOL .01
-
-const int MAX_FANOUT_CROSSING_COUNT = 50;
+static constexpr int MAX_FANOUT_CROSSING_COUNT = 50;
 
 /** 
  * @brief Crossing counts for nets with different #'s of pins.  From 
