@@ -228,7 +228,7 @@ static void process_mesh_topology(pugi::xml_node mesh_topology_tag,
     constexpr int ATTRIBUTE_CONVERSION_FAILURE = -1;
 
     // a list of attributes that should be found for the mesh tag
-    std::vector<std::string> expected_router_attributes = {"startx", "endx", "starty", "endy", "size"};
+    std::vector<std::string> expected_router_attributes = {"startx", "endx", "starty", "endy", "startlayer", "endlayer", "size"};
 
     // verify that only the acceptable attributes were supplied
     pugiutil::expect_only_attributes(mesh_topology_tag, expected_router_attributes, loc_data);
