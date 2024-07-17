@@ -106,8 +106,8 @@ struct SynthIce40Pass : public ScriptPass
 		log("        generate an output netlist (and BLIF file) suitable for VPR\n");
 		log("        (this feature is experimental and incomplete)\n");
 		log("\n");
-		log("    -abc9\n");
-		log("        use new ABC9 flow (EXPERIMENTAL)\n");
+		log("    -noabc9\n");
+		log("        disable use of new ABC9 flow\n");
 		log("\n");
 		log("    -flowmap\n");
 		log("        use FlowMap LUT techmapping instead of abc (EXPERIMENTAL)\n");
@@ -144,7 +144,7 @@ struct SynthIce40Pass : public ScriptPass
 		noabc = false;
 		abc2 = false;
 		vpr = false;
-		abc9 = false;
+		abc9 = true;
 		flowmap = false;
 		device_opt = "hx";
 		no_rw_check = false;
@@ -235,7 +235,11 @@ struct SynthIce40Pass : public ScriptPass
 				continue;
 			}
 			if (args[argidx] == "-abc9") {
-				abc9 = true;
+				// removed, ABC9 is on by default.
+				continue;
+			}
+			if (args[argidx] == "-noabc9") {
+				abc9 = false;
 				continue;
 			}
 			if (args[argidx] == "-dff") {
@@ -349,12 +353,14 @@ struct SynthIce40Pass : public ScriptPass
 		if (check_label("map_ram"))
 		{
 			std::string args = "";
-			if (!spram)
-				args += " -no-auto-huge";
-			if (nobram)
-				args += " -no-auto-block";
 			if (help_mode)
 				args += " [-no-auto-huge] [-no-auto-block]";
+			else {
+				if (!spram)
+					args += " -no-auto-huge";
+				if (nobram)
+					args += " -no-auto-block";
+			}
 			run("memory_libmap -lib +/ice40/brams.txt -lib +/ice40/spram.txt" + args, "(-no-auto-huge unless -spram, -no-auto-block if -nobram)");
 			run("techmap -map +/ice40/brams_map.v -map +/ice40/spram_map.v");
 			run("ice40_braminit");
@@ -428,7 +434,7 @@ struct SynthIce40Pass : public ScriptPass
 			run("ice40_wrapcarry -unwrap");
 			run("techmap -map +/ice40/ff_map.v");
 			run("clean");
-			run("opt_lut -dlogic SB_CARRY:I0=1:I1=2:CI=3 -dlogic SB_CARRY:CO=3");
+			run("opt_lut -tech ice40");
 		}
 
 		if (check_label("map_cells"))
