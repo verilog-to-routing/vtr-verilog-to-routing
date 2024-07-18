@@ -1481,8 +1481,7 @@ static e_move_result try_swap(const t_annealing_state* state,
             }
 
             /* Update net cost functions and reset flags. */
-            update_move_nets(num_nets_affected,
-                             g_vpr_ctx.placement().cube_bb);
+            update_move_nets(num_nets_affected);
 
             /* Update clb data structures since we kept the move. */
             commit_move_blocks(blocks_affected);
