@@ -1606,8 +1606,8 @@ struct t_segment_inf {
     int length;
     short arch_wire_switch;
     short arch_opin_switch;
-    short arch_wire_switch_dec;
-    short arch_opin_switch_dec;
+    short arch_wire_switch_dec = -1;
+    short arch_opin_switch_dec = -1;
     short arch_opin_between_dice_switch = -1;
     float frac_cb;
     float frac_sb;
