@@ -1378,7 +1378,7 @@ static e_move_result try_swap(const t_annealing_state* state,
         //
         //Also find all the pins affected by the swap, and calculates new connection
         //delays and timing costs and store them in proposed_* data structures.
-        int num_nets_affected = find_affected_nets_and_update_costs(
+        find_affected_nets_and_update_costs(
             place_algorithm, delay_model, criticalities, blocks_affected,
             bb_delta_c, timing_delta_c);
 
@@ -1481,8 +1481,7 @@ static e_move_result try_swap(const t_annealing_state* state,
             }
 
             /* Update net cost functions and reset flags. */
-            update_move_nets(num_nets_affected,
-                             g_vpr_ctx.placement().cube_bb);
+            update_move_nets(g_vpr_ctx.placement().cube_bb);
 
             /* Update clb data structures since we kept the move. */
             commit_move_blocks(blocks_affected);
@@ -1506,7 +1505,7 @@ static e_move_result try_swap(const t_annealing_state* state,
             VTR_ASSERT_SAFE(move_outcome == REJECTED);
 
             /* Reset the net cost function flags first. */
-            reset_move_nets(num_nets_affected);
+            reset_move_nets();
 
             /* Restore the place_ctx.block_locs data structures to their state before the move. */
             revert_move_blocks(blocks_affected);

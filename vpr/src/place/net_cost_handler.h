@@ -45,7 +45,7 @@ enum e_cost_methods {
  * @param timing_delta_c
  * @return The number of affected nets.
  */
-int find_affected_nets_and_update_costs(
+void find_affected_nets_and_update_costs(
     const t_place_algorithm& place_algorithm,
     const PlaceDelayModel* delay_model,
     const PlacerCriticalities* criticalities,
@@ -85,14 +85,13 @@ double comp_layer_bb_cost(e_cost_methods method);
  * @param num_nets_affected The number of nets affected by the move. It is used to determine the index up to which elements in ts_nets_to_update are valid.
  * @param cube_bb True if we should use the 3D bounding box (cube_bb), false otherwise.
  */
-void update_move_nets(int num_nets_affected,
-                      const bool cube_bb);
+void update_move_nets(const bool cube_bb);
 
 /**
  * @brief Reset the net cost function flags (proposed_net_cost and bb_updated_before)
  * @param num_nets_affected
  */
-void reset_move_nets(int num_nets_affected);
+void reset_move_nets();
 
 /**
  * @brief re-calculates different terms of the cost function (wire-length, timing, NoC) and update "costs" accordingly. It is important to note that
