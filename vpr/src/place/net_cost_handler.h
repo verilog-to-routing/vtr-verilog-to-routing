@@ -83,10 +83,8 @@ double comp_layer_bb_cost(e_cost_methods method);
 /**
  * @brief update net cost data structures (in placer context and net_cost in .cpp file) and reset flags (proposed_net_cost and bb_updated_before).
  * @param num_nets_affected The number of nets affected by the move. It is used to determine the index up to which elements in ts_nets_to_update are valid.
- * @param cube_bb True if we should use the 3D bounding box (cube_bb), false otherwise.
  */
-void update_move_nets(int num_nets_affected,
-                      const bool cube_bb);
+void update_move_nets(int num_nets_affected);
 
 /**
  * @brief Reset the net cost function flags (proposed_net_cost and bb_updated_before)
