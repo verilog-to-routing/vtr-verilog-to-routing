@@ -414,7 +414,6 @@ inline NetResultFlags route_sink(ConnectionRouter& router,
                                  const std::vector<std::unordered_map<RRNodeId, int>>& choking_spots,
                                  bool is_flat,
                                  const t_bb& net_bb) {
-    const auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
     NetResultFlags flags;
@@ -422,6 +421,8 @@ inline NetResultFlags route_sink(ConnectionRouter& router,
     profiling::sink_criticality_start();
 
     RRNodeId sink_node = route_ctx.net_rr_terminals[net_id][target_pin];
+    const auto& device_ctx = g_vpr_ctx.device();
+    static_cast<void>(device_ctx);
     VTR_LOGV_DEBUG(f_router_debug, "Net %zu Target %d (%s)\n", size_t(net_id), itarget, describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, sink_node, is_flat).c_str());
 
     router.clear_modified_rr_node_info();

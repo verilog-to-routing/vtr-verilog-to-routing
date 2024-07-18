@@ -1,7 +1,6 @@
 #ifndef VTR_LOG_H
 #define VTR_LOG_H
 #include <tuple>
-#include <unordered_set>
 #include <string>
 
 /**
@@ -99,21 +98,15 @@
     } while (false)
 
 /*
- * No-op version of logging macro which avoids unused parameter warnings.
+ * No-op version of logging macro. Drops all arguments so they have no
+ * performance effects.
  *
- * Note that to avoid unused parameter warnings we call sizeof() and cast
- * the result to void. sizeof is evaluated at compile time so there is no
- * run-time overhead.
- *
- * Also note the use of std::make_tuple to ensure all arguments in VA_ARGS
- * are used.
+ * Note: To prevent unused variable warnings, users of this logging feature
+ *       should handle the case when debugging is off. This should be done
+ *       explicitly to prevent hidden function calls that do not get optimized.
  */
 #define VTR_LOGVF_NOP(expr, file, line, ...)                     \
     do {                                                         \
-        static_cast<void>(sizeof(expr));                         \
-        static_cast<void>(sizeof(file));                         \
-        static_cast<void>(sizeof(line));                         \
-        static_cast<void>(sizeof(std::make_tuple(__VA_ARGS__))); \
     } while (false)
 
 // Debug logging macros
@@ -141,9 +134,6 @@ extern PrintHandlerDirect printf_direct;
 void set_log_file(const char* filename);
 
 } // namespace vtr
-
-static std::unordered_set<std::string> warnings_to_suppress;
-static std::string noisy_warn_log_file;
 
 /**
  * @brief The following data structure and functions allow to suppress noisy warnings and direct them into an external file, if specified.

@@ -1,6 +1,7 @@
-#include <string>
-#include <fstream>
 #include <cstdarg>
+#include <fstream>
+#include <string>
+#include <unordered_set>
 
 #include "vtr_util.h"
 #include "vtr_log.h"
@@ -18,6 +19,9 @@ void set_log_file(const char* filename) {
 }
 
 } // namespace vtr
+
+static std::unordered_set<std::string> warnings_to_suppress;
+static std::string noisy_warn_log_file;
 
 void add_warnings_to_suppress(std::string function_name) {
     warnings_to_suppress.insert(function_name);

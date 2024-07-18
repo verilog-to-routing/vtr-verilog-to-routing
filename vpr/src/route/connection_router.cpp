@@ -193,7 +193,6 @@ t_heap* ConnectionRouter<Heap>::timing_driven_route_connection_from_heap(RRNodeI
         VTR_LOGV_DEBUG(router_debug_, "  Initial heap empty (no source)\n");
     }
 
-    const auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
     t_heap* cheapest = nullptr;
@@ -217,6 +216,8 @@ t_heap* ConnectionRouter<Heap>::timing_driven_route_connection_from_heap(RRNodeI
             if (rcv_path_manager.is_enabled()) {
                 rcv_path_manager.insert_backwards_path_into_traceback(cheapest->path_data, cheapest->cost, cheapest->backward_path_cost, route_ctx);
             }
+            const auto& device_ctx = g_vpr_ctx.device();
+            static_cast<void>(device_ctx); // Ignore unused variable when logging is disabled.
             VTR_LOGV_DEBUG(router_debug_, "  Found target %8d (%s)\n", inode, describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, inode, is_flat_).c_str());
             break;
         }
@@ -525,7 +526,6 @@ void ConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_params&
                                                        RRNodeId to_node,
                                                        const RREdgeId from_edge,
                                                        RRNodeId target_node) {
-    const auto& device_ctx = g_vpr_ctx.device();
     t_heap next;
 
     // Initalize RCV data struct if needed, otherwise it's set to nullptr
@@ -557,6 +557,8 @@ void ConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_params&
     float new_back_cost = next.backward_path_cost;
 
     if (new_total_cost < best_total_cost && ((rcv_path_manager.is_enabled()) || (new_back_cost < best_back_cost))) {
+        const auto& device_ctx = g_vpr_ctx.device();
+        static_cast<void>(device_ctx); // Ignore unused variable when logging is disabled.
         VTR_LOGV_DEBUG(router_debug_, "      Expanding to node %d (%s)\n", to_node,
                        describe_rr_node(device_ctx.rr_graph,
                                         device_ctx.grid,
@@ -596,6 +598,8 @@ void ConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_params&
                             rr_graph_);
 
     } else {
+        const auto& device_ctx = g_vpr_ctx.device();
+        static_cast<void>(device_ctx); // Ignore unused variable when logging is disabled.
         VTR_LOGV_DEBUG(router_debug_, "      Didn't expand to %d (%s)\n", to_node, describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, to_node, is_flat_).c_str());
         VTR_LOGV_DEBUG(router_debug_, "        Prev Total Cost %g Prev back Cost %g \n", best_total_cost, best_back_cost);
         VTR_LOGV_DEBUG(router_debug_, "        New Total Cost %g New back Cost %g \n", new_total_cost, new_back_cost);
@@ -783,12 +787,13 @@ void ConnectionRouter<Heap>::evaluate_timing_driven_node_costs(t_heap* to,
 
         total_cost = compute_node_cost_using_rcv(cost_params, to_node, target_node, to->path_data->backward_delay, to->path_data->backward_cong, to->R_upstream);
     } else {
-        const auto& device_ctx = g_vpr_ctx.device();
         //Update total cost
         float expected_cost = router_lookahead_.get_expected_cost(to_node,
                                                                   target_node,
                                                                   cost_params,
                                                                   to->R_upstream);
+        const auto& device_ctx = g_vpr_ctx.device();
+        static_cast<void>(device_ctx);  // Ignore unused variable when logging is disabled.
         VTR_LOGV_DEBUG(router_debug_ && !std::isfinite(expected_cost),
                        "        Lookahead from %s (%s) to %s (%s) is non-finite, expected_cost = %f, to->R_upstream = %f\n",
                        rr_node_arch_name(to_node, is_flat_).c_str(),
@@ -871,7 +876,6 @@ void ConnectionRouter<Heap>::add_route_tree_node_to_heap(
     RRNodeId target_node,
     const t_conn_cost_params& cost_params,
     const t_bb& net_bb) {
-    const auto& device_ctx = g_vpr_ctx.device();
     const RRNodeId inode = rt_node.inode;
     float backward_path_cost = cost_params.criticality * rt_node.Tdel;
     float R_upstream = rt_node.R_upstream;
@@ -894,6 +898,8 @@ void ConnectionRouter<Heap>::add_route_tree_node_to_heap(
                                                                      target_node,
                                                                      cost_params,
                                                                      R_upstream);
+        const auto& device_ctx = g_vpr_ctx.device();
+        static_cast<void>(device_ctx); // Ignore unused variable when logging is disabled.
         VTR_LOGV_DEBUG(router_debug_, "  Adding node %8d to heap from init route tree with cost %g (%s)\n",
                        inode,
                        tot_cost,
