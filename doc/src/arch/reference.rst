@@ -2036,6 +2036,26 @@ The ``<segment>`` tag and its contents are described below.
 
     Tag must be included and ``name`` must be the same as the name you give in ``<switch type="mux" name="...``
 
+.. arch:tag:: <mux_inc name="string"/>
+
+    :req_param name: 
+        Name of the mux switch type used to drive the incremental wires in this segment from both block outputs and other wires.
+        Incremental wires are tracks within this segment that are heading in the "right" direction on the x-axis and the "top" direction on the y-axis.
+        This information is used during rr-graph construction, and a custom switch block can override this switch type for specific connections if desired.
+
+    .. note:: For UNIDIRECTIONAL only.
+
+.. arch:tag:: <mux_dec name="string">
+    
+    :req_param name: 
+        Name of the mux switch type used to drive the decremental wires in this segment from both block outputs and other wires.
+        Incremental wires are tracks within this segment that are heading in the "left" direction on the x-axis and the "bottom" direction on the y-axis.
+        This information is used during rr-graph construction, and a custom switch block can override this switch type for specific connections if desired.
+
+    .. note:: For UNIDIRECTIONAL only.
+
+    .. note:: For unidirectional segments, either <mux> tag or both <mux_inc> and <mux_dec> should be defined in the architecture file. If only the <mux> tag is defined, we assume that the same mux drives both incremental and decremental wires within this segment.     
+
 .. arch:tag:: <wire_switch name="string"/>
 
     :req_param name: Name of the switch type used by other wires to drive this type of segment by default. This information is used during rr-graph construction, and a custom switch block can override this switch type for specific connections if desired.
