@@ -2031,6 +2031,8 @@ The ``<segment>`` tag and its contents are described below.
 .. arch:tag:: <mux name="string"/>
 
     :req_param name: Name of the mux switch type used to drive this type of segment by default, from both block outputs and other wires. This information is used during rr-graph construction, and a custom switch block can override this switch type for specific connections if desired.
+                     The switch type specified with the <mux> tag will be used for both the incrementing and decrementing wires within this segment. 
+                     If more control is needed, the mux_inc and mux_dec tags can be used to assign different muxes to drive incremental and decremental wires within the segment.
 
     .. note:: For UNIDIRECTIONAL only.
 
