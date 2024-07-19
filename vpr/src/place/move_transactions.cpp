@@ -1,8 +1,6 @@
 #include "move_utils.h"
 
 #include "globals.h"
-// Is this needed?
-#include "place_util.h"
 
 t_pl_blocks_to_be_moved::t_pl_blocks_to_be_moved(size_t max_blocks){
         moved_blocks.reserve(max_blocks);
