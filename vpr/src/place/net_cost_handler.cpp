@@ -156,7 +156,6 @@ static BBUpdater bb_updater;
  * @return True if the driver block of the net is among the moving blocks
  */
 static bool driven_by_moved_block(const ClusterNetId net,
-                                  const int num_blocks,
                                   const std::vector<t_pl_moved_block>& moved_blocks);
 /**
  * @brief Update the bounding box (3D) of the net connected to blk_pin. The old and new locations of the pin are
@@ -555,14 +554,13 @@ void BBUpdater::set_ts_edge(const ClusterNetId& net_id) {
 
 //Returns true if 'net' is driven by one of the blocks in 'blocks_affected'
 static bool driven_by_moved_block(const ClusterNetId net,
-                                  const int num_blocks,
                                   const std::vector<t_pl_moved_block>& moved_blocks) {
     auto& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
     bool is_driven_by_move_blk = false;
     ClusterBlockId net_driver_block = clb_nlist.net_driver_block(
         net);
 
-    for (int block_num = 0; block_num < num_blocks; block_num++) {
+    for (size_t block_num = 0; block_num < moved_blocks.size(); block_num++) {
         if (net_driver_block == moved_blocks[block_num].block_num) {
             is_driven_by_move_blk = true;
             break;
@@ -1918,7 +1916,7 @@ void find_affected_nets_and_update_costs(
     ts_info.ts_nets_to_update.resize(0);
 
     /* Go through all the blocks moved. */
-    for (int iblk = 0; iblk < blocks_affected.num_moved_blocks; iblk++) {
+    for (size_t iblk = 0; iblk < blocks_affected.moved_blocks.size(); iblk++) {
         const auto& moving_block_inf = blocks_affected.moved_blocks[iblk];
         auto& affected_pins = blocks_affected.affected_pins;
         ClusterBlockId blk = blocks_affected.moved_blocks[iblk].block_num;
@@ -1929,7 +1927,6 @@ void find_affected_nets_and_update_costs(
             if (clb_nlist.pin_type(blk_pin) == PinType::SINK) {
                 ClusterNetId net_id = clb_nlist.pin_net(blk_pin);
                 is_src_moving = driven_by_moved_block(net_id,
-                                                      blocks_affected.num_moved_blocks,
                                                       blocks_affected.moved_blocks);
             }
             update_net_info_on_pin_move(place_algorithm,
