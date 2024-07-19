@@ -1,7 +1,19 @@
 #include "move_utils.h"
 
 #include "globals.h"
+// Is this needed?
 #include "place_util.h"
+
+t_pl_blocks_to_be_moved::t_pl_blocks_to_be_moved(size_t max_blocks){
+        moved_blocks.reserve(max_blocks);
+        moved_blocks.resize(0);
+}
+
+size_t t_pl_blocks_to_be_moved::get_size_and_increment() {
+    VTR_ASSERT(moved_blocks.size() < moved_blocks.capacity());
+    moved_blocks.resize(moved_blocks.size() + 1);
+    return moved_blocks.size() - 1;
+}
 
 //Records that block 'blk' should be moved to the specified 'to' location
 e_block_move_result record_block_move(t_pl_blocks_to_be_moved& blocks_affected, ClusterBlockId blk, t_pl_loc to) {
@@ -24,11 +36,10 @@ e_block_move_result record_block_move(t_pl_blocks_to_be_moved& blocks_affected, 
     VTR_ASSERT_SAFE(to.sub_tile < int(place_ctx.grid_blocks.num_blocks_at_location({to.x, to.y, to.layer})));
 
     // Sets up the blocks moved
-    int imoved_blk = blocks_affected.num_moved_blocks;
+    size_t imoved_blk = blocks_affected.get_size_and_increment();
     blocks_affected.moved_blocks[imoved_blk].block_num = blk;
     blocks_affected.moved_blocks[imoved_blk].old_loc = from;
     blocks_affected.moved_blocks[imoved_blk].new_loc = to;
-    blocks_affected.num_moved_blocks++;
 
     return e_block_move_result::VALID;
 }
@@ -40,7 +51,7 @@ void apply_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected) {
 
     //Swap the blocks, but don't swap the nets or update place_ctx.grid_blocks
     //yet since we don't know whether the swap will be accepted
-    for (int iblk = 0; iblk < blocks_affected.num_moved_blocks; ++iblk) {
+    for (size_t iblk = 0; iblk < blocks_affected.moved_blocks.size(); ++iblk) {
         ClusterBlockId blk = blocks_affected.moved_blocks[iblk].block_num;
 
         const t_pl_loc& old_loc = blocks_affected.moved_blocks[iblk].old_loc;
@@ -67,7 +78,7 @@ void commit_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected) {
     auto& place_ctx = g_vpr_ctx.mutable_placement();
 
     /* Swap physical location */
-    for (int iblk = 0; iblk < blocks_affected.num_moved_blocks; ++iblk) {
+    for (size_t iblk = 0; iblk < blocks_affected.moved_blocks.size(); ++iblk) {
         ClusterBlockId blk = blocks_affected.moved_blocks[iblk].block_num;
 
         const t_pl_loc& to = blocks_affected.moved_blocks[iblk].new_loc;
@@ -97,7 +108,7 @@ void revert_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected) {
     auto& device_ctx = g_vpr_ctx.device();
 
     // Swap the blocks back, nets not yet swapped they don't need to be changed
-    for (int iblk = 0; iblk < blocks_affected.num_moved_blocks; ++iblk) {
+    for (size_t iblk = 0; iblk < blocks_affected.moved_blocks.size(); ++iblk) {
         ClusterBlockId blk = blocks_affected.moved_blocks[iblk].block_num;
 
         const t_pl_loc& old_loc = blocks_affected.moved_blocks[iblk].old_loc;
@@ -126,10 +137,10 @@ void clear_move_blocks(t_pl_blocks_to_be_moved& blocks_affected) {
     blocks_affected.moved_to.clear();
     blocks_affected.moved_from.clear();
 
-    //For run-time, we just reset num_moved_blocks to zero, but do not free the blocks_affected
+    //For run-time, we just reset size of blocks_affected.moved_blocks to zero, but do not free the blocks_affected
     //array to avoid memory allocation
 
-    blocks_affected.num_moved_blocks = 0;
+    blocks_affected.moved_blocks.resize(0);
 
     blocks_affected.affected_pins.clear();
 }

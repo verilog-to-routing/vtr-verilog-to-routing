@@ -150,7 +150,7 @@ std::unique_ptr<FILE, decltype(&vtr::fclose)> f_move_stats_file(nullptr,
                         t,                                                                     \
                         int(size_t(b_from)), int(size_t(b_to)),                                \
                         from_type->name, (to_type ? to_type->name : "EMPTY"),                  \
-                        affected_blocks.num_moved_blocks);                                     \
+                        affected_blocks.moved_blocks.size());                                     \
             }                                                                                  \
         } while (false)
 

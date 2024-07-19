@@ -488,7 +488,7 @@ std::set<t_pl_loc> determine_locations_emptied_by_move(t_pl_blocks_to_be_moved& 
     std::set<t_pl_loc> moved_from;
     std::set<t_pl_loc> moved_to;
 
-    for (int iblk = 0; iblk < blocks_affected.num_moved_blocks; ++iblk) {
+    for (size_t iblk = 0; iblk < blocks_affected.moved_blocks.size(); ++iblk) {
         //When a block is moved its old location becomes free
         moved_from.emplace(blocks_affected.moved_blocks[iblk].old_loc);
 

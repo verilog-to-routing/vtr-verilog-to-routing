@@ -100,7 +100,7 @@ void print_macro_constraint_error(const t_pl_macro& pl_macro);
 inline bool floorplan_legal(const t_pl_blocks_to_be_moved& blocks_affected) {
     bool floorplan_legal;
 
-    for (int i = 0; i < blocks_affected.num_moved_blocks; i++) {
+    for (size_t i = 0; i < blocks_affected.moved_blocks.size(); i++) {
         floorplan_legal = cluster_floorplanning_legal(blocks_affected.moved_blocks[i].block_num,
                                                       blocks_affected.moved_blocks[i].new_loc);
         if (!floorplan_legal) {
