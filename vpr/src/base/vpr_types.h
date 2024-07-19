@@ -1919,4 +1919,10 @@ void free_pack_molecules(t_pack_molecule* list_of_pack_molecules);
  */
 void free_cluster_placement_stats(t_cluster_placement_stats* cluster_placement_stats);
 
+struct pair_hash {
+    std::size_t operator()(const std::pair<ClusterBlockId, ClusterBlockId>& p) const noexcept {
+        return std::hash<ClusterBlockId>()(p.first) ^ (std::hash<ClusterBlockId>()(p.second) << 1);
+    }
+};
+
 #endif
