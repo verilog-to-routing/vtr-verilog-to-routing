@@ -657,7 +657,16 @@ double calculate_noc_cost(const NocCostTerms& cost_terms,
      * is computed. Weighting factors determine the contribution of each
      * normalized term to the sum.
      */
-    cost = noc_opts.noc_placement_weighting * (cost_terms.aggregate_bandwidth * norm_factors.aggregate_bandwidth * noc_opts.noc_aggregate_bandwidth_weighting + cost_terms.latency * norm_factors.latency * noc_opts.noc_latency_weighting + cost_terms.latency_overrun * norm_factors.latency_overrun * noc_opts.noc_latency_constraints_weighting + cost_terms.congestion * norm_factors.congestion * noc_opts.noc_congestion_weighting);
+    // clang-format off
+    cost =
+        noc_opts.noc_placement_weighting *
+        (
+            cost_terms.aggregate_bandwidth * norm_factors.aggregate_bandwidth * noc_opts.noc_aggregate_bandwidth_weighting +
+            cost_terms.latency * norm_factors.latency * noc_opts.noc_latency_weighting +
+            cost_terms.latency_overrun * norm_factors.latency_overrun * noc_opts.noc_latency_constraints_weighting +
+            cost_terms.congestion * norm_factors.congestion * noc_opts.noc_congestion_weighting
+        );
+    // clang-format on
 
     return cost;
 }

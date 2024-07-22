@@ -98,13 +98,6 @@ constexpr float INVALID_COST = std::numeric_limits<double>::quiet_NaN();
 
 /********************** Variables local to place.c ***************************/
 
-/* These file-scoped variables keep track of the number of swaps       *
- * rejected, accepted or aborted. The total number of swap attempts    *
- * is the sum of the three number.                                     */
-static int num_swap_rejected = 0;
-static int num_swap_accepted = 0;
-static int num_swap_aborted = 0;
-static int num_ts_called = 0;
 
 std::unique_ptr<FILE, decltype(&vtr::fclose)> f_move_stats_file(nullptr,
                                                                 vtr::fclose);
@@ -221,7 +214,8 @@ static e_move_result try_swap(const t_annealing_state* state,
                               MoveTypeStat& move_type_stat,
                               const t_place_algorithm& place_algorithm,
                               float timing_bb_factor,
-                              bool manual_move_enabled);
+                              bool manual_move_enabled,
+                              t_swap_stats& swap_stats);
 
 static void check_place(const t_placer_costs& costs,
                         const PlaceDelayModel* delay_model,
@@ -251,7 +245,8 @@ static float starting_t(const t_annealing_state* state,
                         t_pl_blocks_to_be_moved& blocks_affected,
                         const t_placer_opts& placer_opts,
                         const t_noc_opts& noc_opts,
-                        MoveTypeStat& move_type_stat);
+                        MoveTypeStat& move_type_stat,
+                        t_swap_stats& swap_stats);
 
 static int count_connections();
 
@@ -303,7 +298,8 @@ static void placement_inner_loop(const t_annealing_state* state,
                                  SetupTimingInfo* timing_info,
                                  const t_place_algorithm& place_algorithm,
                                  MoveTypeStat& move_type_stat,
-                                 float timing_bb_factor);
+                                 float timing_bb_factor,
+                                 t_swap_stats& swap_stats);
 
 static void generate_post_place_timing_reports(const t_placer_opts& placer_opts,
                                                const t_analysis_opts& analysis_opts,
@@ -333,7 +329,7 @@ static void print_place_status(const t_annealing_state& state,
 
 static void print_resources_utilization();
 
-static void print_placement_swaps_stats(const t_annealing_state& state);
+static void print_placement_swaps_stats(const t_annealing_state& state, const t_swap_stats& swap_stats);
 
 static void print_placement_move_types_stats(const MoveTypeStat& move_type_stat);
 
@@ -392,22 +388,16 @@ void try_place(const Netlist<>& net_list,
     std::unique_ptr<PlaceDelayModel> place_delay_model;
     std::unique_ptr<MoveGenerator> move_generator;
     std::unique_ptr<MoveGenerator> move_generator2;
-    std::unique_ptr<ManualMoveGenerator> manual_move_generator;
+    std::unique_ptr<ManualMoveGenerator> manual_move_generator = std::make_unique<ManualMoveGenerator>();
     std::unique_ptr<PlacerSetupSlacks> placer_setup_slacks;
 
     std::unique_ptr<PlacerCriticalities> placer_criticalities;
     std::unique_ptr<NetPinTimingInvalidator> pin_timing_invalidator;
 
-    manual_move_generator = std::make_unique<ManualMoveGenerator>();
+    t_pl_blocks_to_be_moved blocks_affected(net_list.blocks().size());
 
-    t_pl_blocks_to_be_moved blocks_affected(
-        net_list.blocks().size());
-
-    /* init file scope variables */
-    num_swap_rejected = 0;
-    num_swap_accepted = 0;
-    num_swap_aborted = 0;
-    num_ts_called = 0;
+    // Swap statistics keep record of the number accepted/rejected/aborted swaps.
+    t_swap_stats swap_stats;
 
     if (placer_opts.place_algorithm.is_timing_driven()) {
         /*do this before the initial placement to avoid messing up the initial placement */
@@ -435,9 +425,7 @@ void try_place(const Netlist<>& net_list,
     VTR_LOG("Bounding box mode is %s\n", (cube_bb ? "Cube" : "Per-layer"));
     VTR_LOG("\n");
 
-    int move_lim = 1;
-    move_lim = (int)(annealing_sched.inner_num
-                     * pow(net_list.blocks().size(), 1.3333));
+    int move_lim = (int)(annealing_sched.inner_num * pow(net_list.blocks().size(), 1.3333));
 
     alloc_and_load_placement_structs(placer_opts.place_cost_exp, placer_opts, noc_opts, directs, num_directs);
 
@@ -447,9 +435,7 @@ void try_place(const Netlist<>& net_list,
         normalize_noc_cost_weighting_factor(const_cast<t_noc_opts&>(noc_opts));
     }
 
-    initial_placement(placer_opts,
-                      placer_opts.constraints_file.c_str(),
-                      noc_opts);
+    initial_placement(placer_opts, placer_opts.constraints_file.c_str(), noc_opts);
 
     //create the move generator based on the chosen strategy
     create_move_generators(move_generator, move_generator2, placer_opts, move_lim, noc_opts.noc_centroid_weight);
@@ -714,7 +700,8 @@ void try_place(const Netlist<>& net_list,
                          place_delay_model.get(), placer_criticalities.get(),
                          placer_setup_slacks.get(), timing_info.get(), *move_generator,
                          *manual_move_generator, pin_timing_invalidator.get(),
-                         blocks_affected, placer_opts, noc_opts, move_type_stat);
+                         blocks_affected, placer_opts, noc_opts, move_type_stat,
+                         swap_stats);
 
     if (!placer_opts.move_stats_file.empty()) {
         f_move_stats_file = std::unique_ptr<FILE, decltype(&vtr::fclose)>(
@@ -785,7 +772,8 @@ void try_place(const Netlist<>& net_list,
                                  *current_move_generator, *manual_move_generator,
                                  blocks_affected, timing_info.get(),
                                  placer_opts.place_algorithm, move_type_stat,
-                                 timing_bb_factor);
+                                 timing_bb_factor,
+                                 swap_stats);
 
             //move the update used move_generator to its original variable
             update_move_generator(move_generator, move_generator2, agent_state,
@@ -851,7 +839,8 @@ void try_place(const Netlist<>& net_list,
                              *current_move_generator, *manual_move_generator,
                              blocks_affected, timing_info.get(),
                              placer_opts.place_quench_algorithm, move_type_stat,
-                             timing_bb_factor);
+                             timing_bb_factor,
+                             swap_stats);
 
         //move the update used move_generator to its original variable
         update_move_generator(move_generator, move_generator2, agent_state,
@@ -920,7 +909,7 @@ void try_place(const Netlist<>& net_list,
 
     //Some stats
     VTR_LOG("\n");
-    VTR_LOG("Swaps called: %d\n", num_ts_called);
+    VTR_LOG("Swaps called: %d\n", swap_stats.num_ts_called);
     report_aborted_moves();
 
     if (placer_opts.place_algorithm.is_timing_driven()) {
@@ -973,7 +962,7 @@ void try_place(const Netlist<>& net_list,
     // Print out swap statistics
     print_resources_utilization();
 
-    print_placement_swaps_stats(state);
+    print_placement_swaps_stats(state, swap_stats);
 
     print_placement_move_types_stats(move_type_stat);
 
@@ -1054,33 +1043,31 @@ static void placement_inner_loop(const t_annealing_state* state,
                                  SetupTimingInfo* timing_info,
                                  const t_place_algorithm& place_algorithm,
                                  MoveTypeStat& move_type_stat,
-                                 float timing_bb_factor) {
-    int inner_crit_iter_count, inner_iter;
-
-    int inner_placement_save_count = 0; //How many times have we dumped placement to a file this temperature?
+                                 float timing_bb_factor,
+                                 t_swap_stats& swap_stats) {
+    //How many times have we dumped placement to a file this temperature?
+    int inner_placement_save_count = 0;
 
     stats->reset();
-
-    inner_crit_iter_count = 1;
 
     bool manual_move_enabled = false;
 
     /* Inner loop begins */
-    for (inner_iter = 0; inner_iter < state->move_lim; inner_iter++) {
+    for (int inner_iter = 0, inner_crit_iter_count = 1; inner_iter < state->move_lim; inner_iter++) {
         e_move_result swap_result = try_swap(state, costs, move_generator,
                                              manual_move_generator, timing_info, pin_timing_invalidator,
                                              blocks_affected, delay_model, criticalities, setup_slacks,
                                              placer_opts, noc_opts, move_type_stat, place_algorithm,
-                                             timing_bb_factor, manual_move_enabled);
+                                             timing_bb_factor, manual_move_enabled, swap_stats);
 
         if (swap_result == ACCEPTED) {
             /* Move was accepted.  Update statistics that are useful for the annealing schedule. */
             stats->single_swap_update(*costs);
-            num_swap_accepted++;
+            swap_stats.num_swap_accepted++;
         } else if (swap_result == ABORTED) {
-            num_swap_aborted++;
+            swap_stats.num_swap_aborted++;
         } else { // swap_result == REJECTED
-            num_swap_rejected++;
+            swap_stats.num_swap_rejected++;
         }
 
         if (place_algorithm.is_timing_driven()) {
@@ -1169,7 +1156,8 @@ static float starting_t(const t_annealing_state* state,
                         t_pl_blocks_to_be_moved& blocks_affected,
                         const t_placer_opts& placer_opts,
                         const t_noc_opts& noc_opts,
-                        MoveTypeStat& move_type_stat) {
+                        MoveTypeStat& move_type_stat,
+                        t_swap_stats& swap_stats) {
     if (annealing_sched.type == USER_SCHED) {
         return (annealing_sched.init_t);
     }
@@ -1202,17 +1190,17 @@ static float starting_t(const t_annealing_state* state,
                                              manual_move_generator, timing_info, pin_timing_invalidator,
                                              blocks_affected, delay_model, criticalities, setup_slacks,
                                              placer_opts, noc_opts, move_type_stat, placer_opts.place_algorithm,
-                                             REWARD_BB_TIMING_RELATIVE_WEIGHT, manual_move_enabled);
+                                             REWARD_BB_TIMING_RELATIVE_WEIGHT, manual_move_enabled, swap_stats);
 
         if (swap_result == ACCEPTED) {
             num_accepted++;
             av += costs->cost;
             sum_of_squares += costs->cost * costs->cost;
-            num_swap_accepted++;
+            swap_stats.num_swap_accepted++;
         } else if (swap_result == ABORTED) {
-            num_swap_aborted++;
+            swap_stats.num_swap_aborted++;
         } else {
-            num_swap_rejected++;
+            swap_stats.num_swap_rejected++;
         }
     }
 
@@ -1271,7 +1259,8 @@ static e_move_result try_swap(const t_annealing_state* state,
                               MoveTypeStat& move_type_stat,
                               const t_place_algorithm& place_algorithm,
                               float timing_bb_factor,
-                              bool manual_move_enabled) {
+                              bool manual_move_enabled,
+                              t_swap_stats& swap_stats) {
     /* Picks some block and moves it to another spot.  If this spot is   *
      * occupied, switch the blocks.  Assess the change in cost function. *
      * rlim is the range limiter.                                        *
@@ -1288,7 +1277,7 @@ static e_move_result try_swap(const t_annealing_state* state,
     // move type and block type chosen by the agent
     t_propose_action proposed_action{e_move_type::UNIFORM, -1};
 
-    num_ts_called++;
+    swap_stats.num_ts_called++;
 
     MoveOutcomeStats move_outcome_stats;
 
@@ -2308,7 +2297,7 @@ static void print_resources_utilization() {
     std::map<t_logical_block_type_ptr,
              std::map<t_physical_tile_type_ptr, size_t>>
         num_placed_instances;
-    for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+    for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks()) {
         auto block_loc = place_ctx.block_locs[blk_id];
         auto loc = block_loc.loc;
 
@@ -2336,24 +2325,23 @@ static void print_resources_utilization() {
     VTR_LOG("\n");
 }
 
-static void print_placement_swaps_stats(const t_annealing_state& state) {
-    size_t total_swap_attempts = num_swap_rejected + num_swap_accepted
-                                 + num_swap_aborted;
+static void print_placement_swaps_stats(const t_annealing_state& state, const t_swap_stats& swap_stats) {
+    size_t total_swap_attempts = swap_stats.num_swap_rejected + swap_stats.num_swap_accepted + swap_stats.num_swap_aborted;
     VTR_ASSERT(total_swap_attempts > 0);
 
     size_t num_swap_print_digits = ceil(log10(total_swap_attempts));
-    float reject_rate = (float)num_swap_rejected / total_swap_attempts;
-    float accept_rate = (float)num_swap_accepted / total_swap_attempts;
-    float abort_rate = (float)num_swap_aborted / total_swap_attempts;
+    float reject_rate = (float)swap_stats.num_swap_rejected / total_swap_attempts;
+    float accept_rate = (float)swap_stats.num_swap_accepted / total_swap_attempts;
+    float abort_rate = (float)swap_stats.num_swap_aborted / total_swap_attempts;
     VTR_LOG("Placement number of temperatures: %d\n", state.num_temps);
     VTR_LOG("Placement total # of swap attempts: %*d\n", num_swap_print_digits,
             total_swap_attempts);
     VTR_LOG("\tSwaps accepted: %*d (%4.1f %%)\n", num_swap_print_digits,
-            num_swap_accepted, 100 * accept_rate);
+            swap_stats.num_swap_accepted, 100 * accept_rate);
     VTR_LOG("\tSwaps rejected: %*d (%4.1f %%)\n", num_swap_print_digits,
-            num_swap_rejected, 100 * reject_rate);
+            swap_stats.num_swap_rejected, 100 * reject_rate);
     VTR_LOG("\tSwaps aborted: %*d (%4.1f %%)\n", num_swap_print_digits,
-            num_swap_aborted, 100 * abort_rate);
+            swap_stats.num_swap_aborted, 100 * abort_rate);
 }
 
 static void print_placement_move_types_stats(const MoveTypeStat& move_type_stat) {

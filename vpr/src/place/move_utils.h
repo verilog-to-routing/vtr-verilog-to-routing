@@ -87,6 +87,18 @@ struct t_range_limiters {
     float dm_rlim;
 };
 
+/**
+ * These variables keep track of the number of swaps
+ * rejected, accepted or aborted. The total number of swap attempts
+ * is the sum of the three number.
+ */
+struct t_swap_stats {
+    int num_swap_rejected = 0;
+    int num_swap_accepted = 0;
+    int num_swap_aborted = 0;
+    int num_ts_called = 0;
+};
+
 //Records a reasons for an aborted move
 void log_move_abort(std::string_view reason);
 
