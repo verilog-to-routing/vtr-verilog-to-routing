@@ -17,7 +17,7 @@ enum e_reward_function {
 e_reward_function string_to_reward(const std::string& st);
 
 ///@brief Helper function that returns the x, y coordinates of a pin
-void get_coordinate_of_pin(ClusterPinId pin, t_physical_tile_loc& tile_loc);
+t_physical_tile_loc get_coordinate_of_pin(ClusterPinId pin, const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
 
 /**
  * @brief Calculates the exact centroid location

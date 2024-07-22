@@ -367,10 +367,9 @@ void try_place(const Netlist<>& net_list,
 
     auto& timing_ctx = g_vpr_ctx.timing();
     auto pre_place_timing_stats = timing_ctx.stats;
-    int tot_iter, moves_since_cost_recompute, num_connections,
-        outer_crit_iter_count, inner_recompute_limit;
-    float first_crit_exponent, first_rlim, first_t;
-    int first_move_lim;
+    int tot_iter, moves_since_cost_recompute, num_connections, outer_crit_iter_count;
+    float first_crit_exponent;
+
 
     t_placer_costs costs(placer_opts.place_algorithm);
 
@@ -388,7 +387,6 @@ void try_place(const Netlist<>& net_list,
     std::unique_ptr<PlaceDelayModel> place_delay_model;
     std::unique_ptr<ManualMoveGenerator> manual_move_generator = std::make_unique<ManualMoveGenerator>();
     std::unique_ptr<PlacerSetupSlacks> placer_setup_slacks;
-
     std::unique_ptr<PlacerCriticalities> placer_criticalities;
     std::unique_ptr<NetPinTimingInvalidator> pin_timing_invalidator;
 
@@ -458,7 +456,7 @@ void try_place(const Netlist<>& net_list,
 #endif /* ENABLE_ANALYTIC_PLACE */
 
     // Update physical pin values
-    for (auto block_id : cluster_ctx.clb_nlist.blocks()) {
+    for (ClusterBlockId block_id : cluster_ctx.clb_nlist.blocks()) {
         place_sync_external_block_connections(block_id);
     }
 
@@ -468,8 +466,7 @@ void try_place(const Netlist<>& net_list,
     /* Allocated here because it goes into timing critical code where each memory allocation is expensive */
     IntraLbPbPinLookup pb_gpin_lookup(device_ctx.logical_block_types);
     //Enables fast look-up of atom pins connect to CLB pins
-    ClusteredPinAtomPinsLookup netlist_pin_lookup(cluster_ctx.clb_nlist,
-                                                  atom_ctx.nlist, pb_gpin_lookup);
+    ClusteredPinAtomPinsLookup netlist_pin_lookup(cluster_ctx.clb_nlist, atom_ctx.nlist, pb_gpin_lookup);
 
     /* Gets initial cost and loads bounding boxes. */
 
@@ -500,19 +497,15 @@ void try_place(const Netlist<>& net_list,
                                                                           atom_ctx.lookup,
                                                                           p_timing_ctx.connection_delay,
                                                                           is_flat);
-        placement_delay_calc->set_tsu_margin_relative(
-            placer_opts.tsu_rel_margin);
-        placement_delay_calc->set_tsu_margin_absolute(
-            placer_opts.tsu_abs_margin);
+        placement_delay_calc->set_tsu_margin_relative(placer_opts.tsu_rel_margin);
+        placement_delay_calc->set_tsu_margin_absolute(placer_opts.tsu_abs_margin);
 
         timing_info = make_setup_timing_info(placement_delay_calc,
                                              placer_opts.timing_update_type);
 
-        placer_setup_slacks = std::make_unique<PlacerSetupSlacks>(
-            cluster_ctx.clb_nlist, netlist_pin_lookup);
+        placer_setup_slacks = std::make_unique<PlacerSetupSlacks>(cluster_ctx.clb_nlist, netlist_pin_lookup);
 
-        placer_criticalities = std::make_unique<PlacerCriticalities>(
-            cluster_ctx.clb_nlist, netlist_pin_lookup);
+        placer_criticalities = std::make_unique<PlacerCriticalities>(cluster_ctx.clb_nlist, netlist_pin_lookup);
 
         pin_timing_invalidator = make_net_pin_timing_invalidator(
             placer_opts.timing_update_type,
@@ -541,8 +534,8 @@ void try_place(const Netlist<>& net_list,
                 *timing_ctx.graph, *timing_ctx.constraints,
                 *placement_delay_calc, timing_info->analyzer());
 
-            tatum::NodeId debug_tnode = id_or_pin_name_to_tnode(
-                analysis_opts.echo_dot_timing_graph_node);
+            tatum::NodeId debug_tnode = id_or_pin_name_to_tnode(analysis_opts.echo_dot_timing_graph_node);
+
             write_setup_timing_graph_dot(
                 getEchoFileName(E_ECHO_INITIAL_PLACEMENT_TIMING_GRAPH)
                     + std::string(".dot"),
@@ -616,8 +609,7 @@ void try_place(const Netlist<>& net_list,
         VTR_LOG("\n");
 
         VTR_LOG("Initial placement estimated setup slack histogram:\n");
-        print_histogram(
-            create_setup_slack_histogram(*timing_info->setup_analyzer()));
+        print_histogram(create_setup_slack_histogram(*timing_info->setup_analyzer()));
     }
 
     size_t num_macro_members = 0;
@@ -644,12 +636,11 @@ void try_place(const Netlist<>& net_list,
         print_place(nullptr, nullptr, filename.c_str());
     }
 
-    first_move_lim = get_initial_move_lim(placer_opts, annealing_sched);
+    int first_move_lim = get_initial_move_lim(placer_opts, annealing_sched);
 
+    int inner_recompute_limit;
     if (placer_opts.inner_loop_recompute_divider != 0) {
-        inner_recompute_limit = (int)(0.5
-                                      + (float)first_move_lim
-                                            / (float)placer_opts.inner_loop_recompute_divider);
+        inner_recompute_limit = static_cast<int>(0.5 + (float)first_move_lim / (float)placer_opts.inner_loop_recompute_divider);
     } else {
         /*don't do an inner recompute */
         inner_recompute_limit = first_move_lim + 1;
@@ -659,9 +650,7 @@ void try_place(const Netlist<>& net_list,
      * the commandline option quench_recompute_divider                                                         */
     int quench_recompute_limit;
     if (placer_opts.quench_recompute_divider != 0) {
-        quench_recompute_limit = (int)(0.5
-                                       + (float)move_lim
-                                             / (float)placer_opts.quench_recompute_divider);
+        quench_recompute_limit = static_cast<int>(0.5 + (float)move_lim / (float)placer_opts.quench_recompute_divider);
     } else {
         /*don't do an quench recompute */
         quench_recompute_limit = first_move_lim + 1;
@@ -679,15 +668,11 @@ void try_place(const Netlist<>& net_list,
     move_type_stat.rejected_moves.resize({device_ctx.logical_block_types.size(), (int)e_move_type::NUMBER_OF_AUTO_MOVES}, 0);
 
     /* Get the first range limiter */
-    first_rlim = (float)max(device_ctx.grid.width() - 1,
-                            device_ctx.grid.height() - 1);
+    float first_rlim = (float)max(device_ctx.grid.width() - 1, device_ctx.grid.height() - 1);
     place_move_ctx.first_rlim = first_rlim;
 
-    /* Set the temperature low to ensure that initial placement quality will be preserved */
-    first_t = EPSILON;
-
     t_annealing_state state(annealing_sched,
-                            first_t,
+                            EPSILON,    // Set the temperature low to ensure that initial placement quality will be preserved
                             first_rlim,
                             first_move_lim,
                             first_crit_exponent,

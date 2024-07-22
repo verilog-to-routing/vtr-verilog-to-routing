@@ -360,8 +360,8 @@ static bool find_centroid_neighbor(t_pl_loc& centroid_loc, t_logical_block_type_
 
 static std::vector<ClusterBlockId> find_centroid_loc(const t_pl_macro& pl_macro, t_pl_loc& centroid) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& place_ctx = g_vpr_ctx.placement();
 
-    t_physical_tile_loc tile_loc;
     float acc_weight = 0;
     float acc_x = 0;
     float acc_y = 0;
@@ -399,7 +399,7 @@ static std::vector<ClusterBlockId> find_centroid_loc(const t_pl_macro& pl_macro,
             if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
                 continue;
             }
-            for (auto sink_pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
+            for (ClusterPinId sink_pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
                 /* Ignore if one of the sinks is the block itself*/
                 if (pin_id == sink_pin_id)
                     continue;
@@ -410,7 +410,7 @@ static std::vector<ClusterBlockId> find_centroid_loc(const t_pl_macro& pl_macro,
                     continue;
                 }
 
-                get_coordinate_of_pin(sink_pin_id, tile_loc);
+                t_physical_tile_loc tile_loc = get_coordinate_of_pin(sink_pin_id, place_ctx.block_locs);
                 if (find_layer) {
                     VTR_ASSERT(tile_loc.layer_num != OPEN);
                     layer_count[tile_loc.layer_num]++;
@@ -430,7 +430,7 @@ static std::vector<ClusterBlockId> find_centroid_loc(const t_pl_macro& pl_macro,
                 continue;
             }
 
-            get_coordinate_of_pin(source_pin, tile_loc);
+            t_physical_tile_loc tile_loc = get_coordinate_of_pin(source_pin, place_ctx.block_locs);
             if (find_layer) {
                 VTR_ASSERT(tile_loc.layer_num != OPEN);
                 layer_count[tile_loc.layer_num]++;
