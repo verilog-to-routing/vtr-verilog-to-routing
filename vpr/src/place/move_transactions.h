@@ -9,12 +9,17 @@
  * old_loc: the location the block is moved from                *
  * new_loc: the location the block is moved to                  */
 struct t_pl_moved_block {
+    t_pl_moved_block() = default;
+    t_pl_moved_block(ClusterBlockId block_num_, const t_pl_loc& old_loc_, const t_pl_loc& new_loc_)
+        : block_num(block_num_)
+        , old_loc(old_loc_)
+        , new_loc(new_loc_) {}
     ClusterBlockId block_num;
     t_pl_loc old_loc;
     t_pl_loc new_loc;
 };
 
-/* Stores the list of blocks to be moved in a swap during       *
+/* Stores the list of cluster blocks to be moved in a swap during       *
  * placement.                                                   *
  * Store the information on the blocks to be moved in a swap during     *
  * placement, in the form of array of structs instead of struct with    *
@@ -29,7 +34,7 @@ struct t_pl_moved_block {
  *                incrementally invalidate parts of the timing  *
  *                graph.                                        */
 struct t_pl_blocks_to_be_moved {
-    t_pl_blocks_to_be_moved(size_t max_blocks)
+    explicit t_pl_blocks_to_be_moved(size_t max_blocks)
         : moved_blocks(max_blocks) {}
 
     int num_moved_blocks = 0;

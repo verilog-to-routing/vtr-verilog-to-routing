@@ -200,9 +200,9 @@ bool swap_two_molecules(t_pack_molecule* molecule_1,
     }
 
     t_pb* clb_pb_1 = cluster_ctx.clb_nlist.block_pb(clb_1);
-    std::string clb_pb_1_name = (std::string)clb_pb_1->name;
+    std::string clb_pb_1_name = static_cast<std::string>(clb_pb_1->name);
     t_pb* clb_pb_2 = cluster_ctx.clb_nlist.block_pb(clb_2);
-    std::string clb_pb_2_name = (std::string)clb_pb_2->name;
+    std::string clb_pb_2_name = static_cast<std::string>(clb_pb_2->name);
 
     //remove the molecule from its current cluster
     remove_mol_from_cluster(molecule_1, molecule_1_size, clb_1, clb_1_atoms, false, old_1_router_data);
