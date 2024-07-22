@@ -804,7 +804,7 @@ static bool select_random_router_cluster(ClusterBlockId& b_from, t_pl_loc& from,
         return false;
     }
 
-    const int number_of_router_blocks = router_clusters.size();
+    const int number_of_router_blocks = static_cast<int>(router_clusters.size());
 
     //randomly choose a router block to move
     const int random_cluster_block_index = vtr::irand(number_of_router_blocks - 1);
