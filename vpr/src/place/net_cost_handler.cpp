@@ -1,3 +1,28 @@
+/**
+ * @file net_cost_handler.cpp
+ * @brief This file contains the implementation of functions used to update placement cost when a new move is proposed/committed.
+ * 
+ * VPR placement cost consists of three terms which represent wirelength, timing, and NoC cost. 
+ * 
+ * To get an estimation of the wirelength of each net, the Half Perimeter Wire Length (HPWL) approach is used. In this approach, 
+ * half of the perimeter of the bounding box which contains all terminals of the net is multiplied by a correction factor, 
+ * and the resulting number is considered as an estimation of the bounding box. 
+ * 
+ * Currently, we have two types of bounding boxes: 3D bounding box (or Cube BB) and per-layer bounding box. 
+ * If the FPGA grid is a 2D structure, a Cube bounding box is used, which will always have the z direction equal to 1. For 3D architectures, 
+ * the user can specify the type of bounding box. If no type is specified, the RR graph is analyzed. If all inter-die connections happen from OPINs, 
+ * the Cube bounding box is chosen; otherwise, the per-layer bounding box is chosen. In the Cube bounding box, when a net is stretched across multiple layers, 
+ * the edges of the bounding box are determined by all of the blocks on all layers. 
+ * When the per-layer bounding box is used, a separate bounding box for each layer is created, and the wirelength estimation for each layer is calculated. 
+ * To get the total wirelength of a net, the wirelength estimation on all layers is summed up. For more details, please refer to Amin Mohaghegh's MASc thesis. 
+ * 
+ * For timing estimation, the placement delay model is used. For 2D architectures, you can think of the placement delay model as a 2D array indexed by dx and dy. 
+ * To get a delay estimation of a connection (from a source to a sink), first, dx and dy between these two points should be calculated, 
+ * and these two numbers are the indices to access this 2D array. By default, the placement delay model is created by iterating over the router lookahead 
+ * to get the minimum cost for each dx and dy.
+ * 
+ * @date July 12, 2024
+ */
 #include "net_cost_handler.h"
 #include "globals.h"
 #include "placer_globals.h"
