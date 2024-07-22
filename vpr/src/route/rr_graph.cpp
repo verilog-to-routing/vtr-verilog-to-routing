@@ -295,7 +295,8 @@ static void load_perturbed_connection_block_pattern(vtr::NdMatrix<int, 6>& track
                                                     const std::vector<t_pin_loc>& pin_locations,
                                                     const int x_chan_width,
                                                     const int y_chan_width,
-                                                    const int Fc,
+                                                    const vtr::Matrix<int>& Fc,
+                                                    const int seg_index,
                                                     const enum e_directionality directionality);
 
 static std::vector<bool> alloc_and_load_perturb_opins(const t_physical_tile_type_ptr type, const vtr::Matrix<int>& Fc_out, const int max_chan_width, const std::vector<t_segment_inf>& segment_inf);
@@ -3269,10 +3270,11 @@ static vtr::NdMatrix<std::vector<int>, 5> alloc_and_load_pin_to_track_map(const 
          * as a whole */
         for (auto type_layer_index : type_layer) {
             for (int ipin = 0; ipin < Type->num_pins; ipin++) {
+                int cur_Fc = Fc[ipin][seg_inf[iseg].seg_index];
                 for (int iwidth = 0; iwidth < Type->width; iwidth++) {
                     for (int iheight = 0; iheight < Type->height; iheight++) {
                         for (int iside = 0; iside < 4; iside++) {
-                            for (int iconn = 0; iconn < max_Fc; iconn++) {
+                            for (int iconn = 0; iconn < cur_Fc; iconn++) {
                                 for (auto connected_layer : get_layers_pin_is_connected_to(Type, type_layer_index, ipin)) {
                                     int relative_track_ind = pin_to_seg_type_map[ipin][iwidth][iheight][connected_layer][iside][iconn];
                                     if (relative_track_ind != OPEN) {
@@ -3476,7 +3478,7 @@ static vtr::NdMatrix<int, 6> alloc_and_load_pin_to_seg_type(const e_pin_type pin
     if (perturb_switch_pattern) {
         load_perturbed_connection_block_pattern(tracks_connected_to_pin,
                                                 pin_ordering,
-                                                num_seg_type_tracks, num_seg_type_tracks, max_Fc, directionality);
+                                                num_seg_type_tracks, num_seg_type_tracks, Fc, seg_index, directionality);
     } else {
         load_uniform_connection_block_pattern(tracks_connected_to_pin,
                                               pin_ordering, Fc, seg_index,
@@ -3838,7 +3840,8 @@ static void load_perturbed_connection_block_pattern(vtr::NdMatrix<int, 6>& track
                                                     const std::vector<t_pin_loc>& pin_locations,
                                                     const int x_chan_width,
                                                     const int y_chan_width,
-                                                    const int Fc,
+                                                    const vtr::Matrix<int>& Fc,
+                                                    const int seg_index,
                                                     enum e_directionality directionality) {
     /* Loads the tracks_connected_to_pin array with an unevenly distributed     *
      * set of switches across the channel.  This is done for inputs when        *
@@ -3853,10 +3856,6 @@ static void load_perturbed_connection_block_pattern(vtr::NdMatrix<int, 6>& track
 
     VTR_ASSERT(directionality == BI_DIRECTIONAL);
 
-    int Fc_dense = (Fc / 2) + 1;
-    int Fc_sparse = Fc - Fc_dense; /* Works for even or odd Fc */
-    int Fc_half[2];
-
     int num_phys_pins = pin_locations.size();
 
     for (int i = 0; i < num_phys_pins; ++i) {
@@ -3866,8 +3865,13 @@ static void load_perturbed_connection_block_pattern(vtr::NdMatrix<int, 6>& track
         int height = pin_locations[i].height_offset;
         int layer = pin_locations[i].layer_offset;
 
+        int pin_Fc = Fc[pin][seg_index];
+        int Fc_dense = ( pin_Fc / 2) + 1;
+        int Fc_sparse = pin_Fc - Fc_dense;
+        int Fc_half[2];
+
         int max_chan_width = (((side == TOP) || (side == BOTTOM)) ? x_chan_width : y_chan_width);
-        float step_size = (float)max_chan_width / (float)(Fc * num_phys_pins);
+        float step_size = (float)max_chan_width / (float)(pin_Fc * num_phys_pins);
 
         float spacing_dense = (float)max_chan_width / (float)(2 * Fc_dense);
         float spacing_sparse = (float)max_chan_width / (float)(2 * Fc_sparse);
