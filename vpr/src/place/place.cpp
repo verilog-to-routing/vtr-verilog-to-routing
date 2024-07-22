@@ -386,8 +386,6 @@ void try_place(const Netlist<>& net_list,
     std::shared_ptr<SetupTimingInfo> timing_info;
     std::shared_ptr<PlacementDelayCalculator> placement_delay_calc;
     std::unique_ptr<PlaceDelayModel> place_delay_model;
-    std::unique_ptr<MoveGenerator> move_generator;
-    std::unique_ptr<MoveGenerator> move_generator2;
     std::unique_ptr<ManualMoveGenerator> manual_move_generator = std::make_unique<ManualMoveGenerator>();
     std::unique_ptr<PlacerSetupSlacks> placer_setup_slacks;
 
@@ -438,7 +436,7 @@ void try_place(const Netlist<>& net_list,
     initial_placement(placer_opts, placer_opts.constraints_file.c_str(), noc_opts);
 
     //create the move generator based on the chosen strategy
-    create_move_generators(move_generator, move_generator2, placer_opts, move_lim, noc_opts.noc_centroid_weight);
+    auto [move_generator, move_generator2] = create_move_generators(placer_opts, move_lim, noc_opts.noc_centroid_weight);
 
     if (!placer_opts.write_initial_place_file.empty()) {
         print_place(nullptr,

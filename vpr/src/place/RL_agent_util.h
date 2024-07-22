@@ -17,11 +17,9 @@ enum class e_agent_state {
  * It returns a unique pointer for each move generator in move_generator and move_generator2
  * move_lim: represents the num of moves per temp.
  */
-void create_move_generators(std::unique_ptr<MoveGenerator>& move_generator,
-                            std::unique_ptr<MoveGenerator>& move_generator2,
-                            const t_placer_opts& placer_opts,
-                            int move_lim,
-                            float noc_attraction_weight);
+std::pair<std::unique_ptr<MoveGenerator>, std::unique_ptr<MoveGenerator>> create_move_generators(const t_placer_opts& placer_opts,
+                                                                                                 int move_lim,
+                                                                                                 double noc_attraction_weight);
 
 /**
  * @brief copy one of the available move_generators to be the current move_generator that would be used in the placement based on the placer_options and the agent state
