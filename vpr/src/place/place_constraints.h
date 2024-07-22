@@ -10,7 +10,6 @@
  */
 #include "move_transactions.h"
 #include "region.h"
-#include "clustered_netlist_utils.h"
 #include "partition_region.h"
 #include "place_macro.h"
 #include "grid_tile_lookup.h"
@@ -100,16 +99,16 @@ void print_macro_constraint_error(const t_pl_macro& pl_macro);
 inline bool floorplan_legal(const t_pl_blocks_to_be_moved& blocks_affected) {
     bool floorplan_legal;
 
-    for (size_t i = 0; i < blocks_affected.moved_blocks.size(); i++) {
-        floorplan_legal = cluster_floorplanning_legal(blocks_affected.moved_blocks[i].block_num,
-                                                      blocks_affected.moved_blocks[i].new_loc);
+    for (const auto& block : blocks_affected.moved_blocks) {
+        floorplan_legal = cluster_floorplanning_legal(block.block_num,
+                                                      block.new_loc);
         if (!floorplan_legal) {
             VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug,
                            "\tMove aborted for block %zu, location tried was x: %d, y: %d, subtile: %d \n",
-                           size_t(blocks_affected.moved_blocks[i].block_num),
-                           blocks_affected.moved_blocks[i].new_loc.x,
-                           blocks_affected.moved_blocks[i].new_loc.y,
-                           blocks_affected.moved_blocks[i].new_loc.sub_tile);
+                           size_t(block.block_num),
+                           block.new_loc.x,
+                           block.new_loc.y,
+                           block.new_loc.sub_tile);
             return false;
         }
     }

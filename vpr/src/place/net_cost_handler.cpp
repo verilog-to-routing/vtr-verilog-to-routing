@@ -192,7 +192,7 @@ static void update_td_delta_costs(const PlaceDelayModel* delay_model,
                                   bool is_src_moving);
 
 /**
- * @brief if "net" is not already stored as an affected net, mark it in ts_nets_to_update and increment the size ofts_nets_to_update.
+ * @brief if "net" is not already stored as an affected net, add it in ts_nets_to_update.
  * @param net ID of a net affected by a move
  */
 static void record_affected_net(const ClusterNetId net);
@@ -560,8 +560,8 @@ static bool driven_by_moved_block(const ClusterNetId net,
     ClusterBlockId net_driver_block = clb_nlist.net_driver_block(
         net);
 
-    for (size_t block_num = 0; block_num < moved_blocks.size(); block_num++) {
-        if (net_driver_block == moved_blocks[block_num].block_num) {
+    for (const auto& block : moved_blocks) {
+        if (net_driver_block == block.block_num) {
             is_driven_by_move_blk = true;
             break;
         }
@@ -1892,9 +1892,8 @@ static double wirelength_crossing_count(size_t fanout) {
 }
 
 static void set_bb_delta_cost(double& bb_delta_c) {
-    for (size_t inet_affected = 0; inet_affected < ts_info.ts_nets_to_update.size();
-         inet_affected++) {
-        ClusterNetId net_id = ts_info.ts_nets_to_update[inet_affected];
+    for (const auto& ts_net: ts_info.ts_nets_to_update) {
+        ClusterNetId net_id = ts_net;
 
         pl_net_cost.proposed_net_cost[net_id] = bb_updater.get_net_cost(net_id);
 
@@ -1916,10 +1915,10 @@ void find_affected_nets_and_update_costs(
     ts_info.ts_nets_to_update.resize(0);
 
     /* Go through all the blocks moved. */
-    for (size_t iblk = 0; iblk < blocks_affected.moved_blocks.size(); iblk++) {
-        const auto& moving_block_inf = blocks_affected.moved_blocks[iblk];
+    for (const auto& block : blocks_affected.moved_blocks) {
+        const auto& moving_block_inf = block;
         auto& affected_pins = blocks_affected.affected_pins;
-        ClusterBlockId blk = blocks_affected.moved_blocks[iblk].block_num;
+        ClusterBlockId blk = block.block_num;
 
         /* Go through all the pins in the moved block. */
         for (ClusterPinId blk_pin : clb_nlist.block_pins(blk)) {
@@ -2029,9 +2028,8 @@ void update_move_nets() {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_move_ctx = g_placer_ctx.mutable_move();
 
-    for (size_t inet_affected = 0; inet_affected < ts_info.ts_nets_to_update.size();
-         inet_affected++) {
-        ClusterNetId net_id = ts_info.ts_nets_to_update[inet_affected];
+    for (const auto& ts_net : ts_info.ts_nets_to_update) {
+        ClusterNetId net_id = ts_net;
 
         bb_updater.set_ts_bb_coord(net_id);
 
@@ -2053,9 +2051,8 @@ void update_move_nets() {
 
 void reset_move_nets() {
     /* Reset the net cost function flags first. */
-    for (size_t inet_affected = 0; inet_affected < ts_info.ts_nets_to_update.size();
-         inet_affected++) {
-        ClusterNetId net_id = ts_info.ts_nets_to_update[inet_affected];
+    for (const auto& ts_net : ts_info.ts_nets_to_update) {
+        ClusterNetId net_id = ts_net;
         pl_net_cost.proposed_net_cost[net_id] = -1;
         pl_net_cost.bb_update_status[net_id] = NetUpdateState::NOT_UPDATED_YET;
     }

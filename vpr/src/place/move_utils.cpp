@@ -1,13 +1,6 @@
 #include "move_utils.h"
-
-#include "place_util.h"
 #include "globals.h"
-
 #include "vtr_random.h"
-
-#include "draw_debug.h"
-#include "draw.h"
-
 #include "place_constraints.h"
 #include "placer_globals.h"
 
@@ -488,12 +481,12 @@ std::set<t_pl_loc> determine_locations_emptied_by_move(t_pl_blocks_to_be_moved& 
     std::set<t_pl_loc> moved_from;
     std::set<t_pl_loc> moved_to;
 
-    for (size_t iblk = 0; iblk < blocks_affected.moved_blocks.size(); ++iblk) {
+    for (const auto& block : blocks_affected.moved_blocks) {
         //When a block is moved its old location becomes free
-        moved_from.emplace(blocks_affected.moved_blocks[iblk].old_loc);
+        moved_from.emplace(block.old_loc);
 
         //But any block later moved to a position fills it
-        moved_to.emplace(blocks_affected.moved_blocks[iblk].new_loc);
+        moved_to.emplace(block.new_loc);
     }
 
     std::set<t_pl_loc> empty_locs;

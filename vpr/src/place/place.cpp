@@ -1,20 +1,11 @@
 #include <cstdio>
 #include <cmath>
 #include <memory>
-#include <fstream>
-#include <iostream>
-#include <numeric>
-#include <chrono>
-#include <optional>
-
-#include "NetPinTimingInvalidator.h"
 #include "vtr_assert.h"
 #include "vtr_log.h"
 #include "vtr_util.h"
 #include "vtr_random.h"
-#include "vtr_geometry.h"
 #include "vtr_time.h"
-#include "vtr_math.h"
 #include "vtr_ndmatrix.h"
 
 #include "vpr_types.h"
@@ -27,11 +18,6 @@
 #include "placer_globals.h"
 #include "read_place.h"
 #include "draw.h"
-#include "place_and_route.h"
-#include "net_delay.h"
-#include "timing_place_lookup.h"
-#include "timing_place.h"
-#include "read_xml_arch_file.h"
 #include "echo_files.h"
 #include "place_macro.h"
 #include "histogram.h"
@@ -45,10 +31,7 @@
 #include "read_place.h"
 #include "place_constraints.h"
 #include "manual_moves.h"
-#include "buttons.h"
 
-#include "static_move_generator.h"
-#include "simpleRL_move_generator.h"
 #include "manual_move_generator.h"
 
 #include "PlacementDelayCalculator.h"
@@ -59,13 +42,11 @@
 #include "tatum/echo_writer.hpp"
 #include "tatum/TimingReporter.hpp"
 
-#include "placer_breakpoint.h"
 #include "RL_agent_util.h"
 #include "place_checkpoint.h"
 
 #include "clustered_netlist_utils.h"
 
-#include "cluster_placement.h"
 
 #include "noc_place_utils.h"
 
@@ -150,7 +131,7 @@ std::unique_ptr<FILE, decltype(&vtr::fclose)> f_move_stats_file(nullptr,
                         t,                                                                     \
                         int(b_from), int(b_to),                                                \
                         from_type->name, (to_type ? to_type->name : "EMPTY"),                  \
-                        affected_blocks.moved_blocks.size());                                     \
+                        affected_blocks.moved_blocks.size());                                  \
             }                                                                                  \
         } while (false)
 
@@ -1325,7 +1306,7 @@ static e_move_result try_swap(const t_annealing_state* state,
     if (manual_move_enabled) {
 #ifndef NO_GRAPHICS
         create_move_outcome = manual_move_display_and_propose(manual_move_generator, blocks_affected, proposed_action.move_type, rlim, placer_opts, criticalities);
-#else  //NO_GRAPHICS \
+#else  //NO_GRAPHICS
        //Cast to void to explicitly avoid warning.
         (void)manual_move_generator;
 #endif //NO_GRAPHICS

@@ -36,6 +36,7 @@ enum e_cost_methods {
  *
  * The change in the bounding box cost is stored in `bb_delta_c`.
  * The change in the timing cost is stored in `timing_delta_c`.
+ * ts_nets_to_update is also extended with the latest net.
  *
  * @param place_algorithm
  * @param delay_model
