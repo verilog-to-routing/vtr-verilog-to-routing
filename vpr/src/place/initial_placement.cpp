@@ -38,13 +38,14 @@ static constexpr int SORT_WEIGHT_PER_TILES_OUTSIDE_OF_PR = 100;
  *   @param unplaced_blk_types_index Block types that their grid locations must be cleared.
  * 
  */
-static void clear_block_type_grid_locs(const std::unordered_set<int>& unplaced_blk_types_index);
+static void clear_block_type_grid_locs(const std::unordered_set<int>& unplaced_blk_types_index,
+                                       vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
 
 /**
  * @brief Initializes the grid to empty. It also initialized the location for
  * all blocks to unplaced.
  */
-static void clear_all_grid_locs();
+static void clear_all_grid_locs(vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
 
 /**
  * @brief Control routine for placing a macro.
@@ -233,7 +234,7 @@ static void check_initial_placement_legality(const vtr::vector_map<ClusterBlockI
 /**
  * @brief Fills movable_blocks in global PlacementContext
  */
-static void alloc_and_load_movable_blocks();
+static void alloc_and_load_movable_blocks(const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
 
 static void check_initial_placement_legality(const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -999,7 +1000,7 @@ static void place_all_blocks([[maybe_unused]] const t_placer_opts& placer_opts,
 
     for (auto iter_no = 0; iter_no < MAX_INIT_PLACE_ATTEMPTS; iter_no++) {
         //clear grid for a new placement iteration
-        clear_block_type_grid_locs(unplaced_blk_type_in_curr_itr);
+        clear_block_type_grid_locs(unplaced_blk_type_in_curr_itr, block_locs);
         unplaced_blk_type_in_curr_itr.clear();
 
         // read the constraint file if the user has provided one and this is not the first attempt
@@ -1071,7 +1072,8 @@ static void place_all_blocks([[maybe_unused]] const t_placer_opts& placer_opts,
     }
 }
 
-static void clear_block_type_grid_locs(const std::unordered_set<int>& unplaced_blk_types_index) {
+static void clear_block_type_grid_locs(const std::unordered_set<int>& unplaced_blk_types_index,
+                                       vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
     auto& device_ctx = g_vpr_ctx.device();
     bool clear_all_block_types = false;
 
@@ -1111,12 +1113,12 @@ static void clear_block_type_grid_locs(const std::unordered_set<int>& unplaced_b
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
         auto blk_type = cluster_ctx.clb_nlist.block_type(blk_id)->index;
         if (clear_all_block_types || unplaced_blk_types_index.count(blk_type)) {
-            place_ctx.block_locs[blk_id].loc = t_pl_loc();
+            block_locs[blk_id].loc = t_pl_loc();
         }
     }
 }
 
-static void clear_all_grid_locs() {
+static void clear_all_grid_locs(vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
     auto& device_ctx = g_vpr_ctx.device();
 
     std::unordered_set<int> blk_types_to_be_cleared;
@@ -1130,7 +1132,7 @@ static void clear_all_grid_locs() {
         }
     }
 
-    clear_block_type_grid_locs(blk_types_to_be_cleared);
+    clear_block_type_grid_locs(blk_types_to_be_cleared, block_locs);
 }
 
 bool place_one_block(const ClusterBlockId blk_id,
@@ -1171,7 +1173,7 @@ bool place_one_block(const ClusterBlockId blk_id,
     return placed_macro;
 }
 
-static void alloc_and_load_movable_blocks() {
+static void alloc_and_load_movable_blocks(const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
     auto& place_ctx = g_vpr_ctx.mutable_placement();
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     const auto& device_ctx = g_vpr_ctx.device();
@@ -1185,7 +1187,7 @@ static void alloc_and_load_movable_blocks() {
 
     // iterate over all clustered blocks and store block ids of movable ones
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-        const auto& loc = place_ctx.block_locs[blk_id];
+        const auto& loc = block_locs[blk_id];
         if (!loc.is_fixed) {
             place_ctx.movable_blocks.push_back(blk_id);
 
@@ -1204,7 +1206,7 @@ void initial_placement(const t_placer_opts& placer_opts,
     /* Initialize the grid blocks to empty.
      * Initialize all the blocks to unplaced.
      */
-    clear_all_grid_locs();
+    clear_all_grid_locs(block_locs);
 
     /* Go through cluster blocks to calculate the tightest placement
      * floorplan constraint for each constrained block
@@ -1236,7 +1238,7 @@ void initial_placement(const t_placer_opts& placer_opts,
     //Place all blocks
     place_all_blocks(placer_opts, block_scores, placer_opts.pad_loc_type, constraints_file, block_locs);
 
-    alloc_and_load_movable_blocks();
+    alloc_and_load_movable_blocks(block_locs);
 
     // ensure all blocks are placed and that NoC routing has no cycles
     check_initial_placement_legality(block_locs);

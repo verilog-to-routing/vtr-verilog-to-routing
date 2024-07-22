@@ -54,7 +54,8 @@ struct TrafficFlowPlaceCost {
  * @param new_traffic_flow_routes Traffic flow routes used to initialize link bandwidth utilization.
  * If an empty vector is passed, this function uses a routing algorithm to route traffic flows.
  */
-void initial_noc_routing(const vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>>& new_traffic_flow_routes);
+void initial_noc_routing(const vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>>& new_traffic_flow_routes,
+                         const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
 
 /**
  * @brief Re-initializes all link bandwidth usages by either re-routing
@@ -76,7 +77,8 @@ void initial_noc_routing(const vtr::vector<NocTrafficFlowId, std::vector<NocLink
 * If an empty vector is passed, this function uses a routing algorithm to route traffic flows.
  */
 void reinitialize_noc_routing(t_placer_costs& costs,
-                              const vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>>& new_traffic_flow_routes);
+                              const vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>>& new_traffic_flow_routes,
+                              const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
 
 /**
  * @brief Goes through all the cluster blocks that were moved
@@ -112,7 +114,8 @@ void reinitialize_noc_routing(t_placer_costs& costs,
  * here.
  */
 void find_affected_noc_routers_and_update_noc_costs(const t_pl_blocks_to_be_moved& blocks_affected,
-                                                    NocCostTerms& delta_c);
+                                                    NocCostTerms& delta_c,
+                                                    const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
 
 /**
  * @brief Updates static datastructures found in 'noc_place_utils.cpp'
@@ -162,7 +165,8 @@ void commit_noc_costs();
 std::vector<NocLinkId>& route_traffic_flow(NocTrafficFlowId traffic_flow_id,
                                            const NocStorage& noc_model,
                                            NocTrafficFlows& noc_traffic_flows_storage,
-                                           NocRouting& noc_flows_router);
+                                           NocRouting& noc_flows_router,
+                                           const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
 
 /**
  * @brief Updates the bandwidth usages of links found in a routed traffic flow.
@@ -217,7 +221,8 @@ void re_route_associated_traffic_flows(ClusterBlockId moved_router_block_id,
                                        NocTrafficFlows& noc_traffic_flows_storage,
                                        NocStorage& noc_model,
                                        NocRouting& noc_flows_router,
-                                       std::unordered_set<NocTrafficFlowId>& updated_traffic_flows);
+                                       std::unordered_set<NocTrafficFlowId>& updated_traffic_flows,
+                                       const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
 
 /**
  * @brief Used to re-route all the traffic flows associated to logical
@@ -232,7 +237,8 @@ void re_route_associated_traffic_flows(ClusterBlockId moved_router_block_id,
  * the moved blocks, their previous locations and their new locations
  * after being moved.
  */
-void revert_noc_traffic_flow_routes(const t_pl_blocks_to_be_moved& blocks_affected);
+void revert_noc_traffic_flow_routes(const t_pl_blocks_to_be_moved& blocks_affected,
+                                    const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
 
 /**
  * @brief Removes the route of a traffic flow and updates the links to indicate
@@ -251,7 +257,8 @@ void revert_noc_traffic_flow_routes(const t_pl_blocks_to_be_moved& blocks_affect
 void re_route_traffic_flow(NocTrafficFlowId traffic_flow_id,
                            NocTrafficFlows& noc_traffic_flows_storage,
                            NocStorage& noc_model,
-                           NocRouting& noc_flows_router);
+                           NocRouting& noc_flows_router,
+                           const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
 
 /**
  * @brief Recompute the NoC costs (aggregate bandwidth and latency) by

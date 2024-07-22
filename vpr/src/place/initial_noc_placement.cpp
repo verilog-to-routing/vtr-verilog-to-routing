@@ -235,7 +235,7 @@ static void noc_routers_anneal(const t_noc_opts& noc_opts,
             apply_move_blocks(blocks_affected);
 
             NocCostTerms noc_delta_c;
-            find_affected_noc_routers_and_update_noc_costs(blocks_affected, noc_delta_c);
+            find_affected_noc_routers_and_update_noc_costs(blocks_affected, noc_delta_c, block_locs);
             double delta_cost = calculate_noc_cost(noc_delta_c, costs.noc_cost_norm_factors, noc_opts);
 
             double prob = starting_prob - i_move * prob_step;
@@ -252,7 +252,7 @@ static void noc_routers_anneal(const t_noc_opts& noc_opts,
                 }
             } else { // The proposed move is rejected
                 revert_move_blocks(blocks_affected);
-                revert_noc_traffic_flow_routes(blocks_affected);
+                revert_noc_traffic_flow_routes(blocks_affected, block_locs);
             }
         }
     }
@@ -291,7 +291,7 @@ void initial_noc_placement(const t_noc_opts& noc_opts,
     place_noc_routers_randomly(unfixed_routers, placer_opts.seed, block_locs);
 
     // populate internal data structures to maintain route, bandwidth usage, and latencies
-    initial_noc_routing({});
+    initial_noc_routing({}, block_locs);
 
     // Run the simulated annealing optimizer for NoC routers
     noc_routers_anneal(noc_opts, block_locs);

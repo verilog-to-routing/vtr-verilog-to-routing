@@ -1406,7 +1406,7 @@ static e_move_result try_swap(const t_annealing_state* state,
         NocCostTerms noc_delta_c; // change in NoC cost
         /* Update the NoC datastructure and costs*/
         if (noc_opts.noc) {
-            find_affected_noc_routers_and_update_noc_costs(blocks_affected, noc_delta_c);
+            find_affected_noc_routers_and_update_noc_costs(blocks_affected, noc_delta_c, g_vpr_ctx.placement().block_locs);
 
             // Include the NoC delta costs in the total cost change for this swap
             delta_c += calculate_noc_cost(noc_delta_c, costs->noc_cost_norm_factors, noc_opts);
@@ -1512,21 +1512,18 @@ static e_move_result try_swap(const t_annealing_state* state,
             }
             /* Revert the traffic flow routes within the NoC*/
             if (noc_opts.noc) {
-                revert_noc_traffic_flow_routes(blocks_affected);
+                revert_noc_traffic_flow_routes(blocks_affected, g_vpr_ctx.placement().block_locs);
             }
         }
 
         move_outcome_stats.delta_cost_norm = delta_c;
-        move_outcome_stats.delta_bb_cost_norm = bb_delta_c
-                                                * costs->bb_cost_norm;
-        move_outcome_stats.delta_timing_cost_norm = timing_delta_c
-                                                    * costs->timing_cost_norm;
+        move_outcome_stats.delta_bb_cost_norm = bb_delta_c * costs->bb_cost_norm;
+        move_outcome_stats.delta_timing_cost_norm = timing_delta_c * costs->timing_cost_norm;
 
         move_outcome_stats.delta_bb_cost_abs = bb_delta_c;
         move_outcome_stats.delta_timing_cost_abs = timing_delta_c;
 
-        LOG_MOVE_STATS_OUTCOME(delta_c, bb_delta_c, timing_delta_c,
-                               (move_outcome ? "ACCEPTED" : "REJECTED"), "");
+        LOG_MOVE_STATS_OUTCOME(delta_c, bb_delta_c, timing_delta_c, (move_outcome ? "ACCEPTED" : "REJECTED"), "");
     }
     move_outcome_stats.outcome = move_outcome;
 
@@ -1607,15 +1604,13 @@ static void update_placement_cost_normalization_factors(t_placer_costs* costs, c
     /* Update the cost normalization factors */
     costs->update_norm_factors();
 
-    // update the noc normalization factors if the palcement includes the NoC
+    // update the noc normalization factors if the placement includes the NoC
     if (noc_opts.noc) {
         update_noc_normalization_factors(*costs);
     }
 
     // update the current total placement cost
     costs->cost = get_total_cost(costs, placer_opts, noc_opts);
-
-    return;
 }
 
 /**
