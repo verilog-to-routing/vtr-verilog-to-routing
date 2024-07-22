@@ -62,7 +62,8 @@ class CentroidMoveGenerator : public MoveGenerator {
                                t_propose_action& proposed_action,
                                float rlim,
                                const t_placer_opts& placer_opts,
-                               const PlacerCriticalities* /*criticalities*/) override;
+                               const PlacerCriticalities* /*criticalities*/,
+                               const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) override;
 
   private:
     /** A value in range [0, 1] that specifies how much the centroid location

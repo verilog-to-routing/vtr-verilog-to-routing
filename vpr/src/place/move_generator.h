@@ -59,7 +59,12 @@ class MoveGenerator {
      *  @param placer_opts: all the placer options
      *  @param criticalities: the placer criticalities, useful for timing directed moves
      */
-    virtual e_create_move propose_move(t_pl_blocks_to_be_moved& blocks_affected, t_propose_action& proposed_action, float rlim, const t_placer_opts& placer_opts, const PlacerCriticalities* criticalities) = 0;
+    virtual e_create_move propose_move(t_pl_blocks_to_be_moved& blocks_affected,
+                                       t_propose_action& proposed_action,
+                                       float rlim,
+                                       const t_placer_opts& placer_opts,
+                                       const PlacerCriticalities* criticalities,
+                                       const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) = 0;
 
     /**
      * @brief Recieves feedback about the outcome of the previously proposed move

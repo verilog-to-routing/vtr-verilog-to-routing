@@ -14,9 +14,18 @@ static bool get_bb_incrementally(ClusterNetId net_id,
                                  int ynew,
                                  int layer_new);
 
-static void get_bb_from_scratch_excluding_block(ClusterNetId net_id, t_bb& bb_coord_new, ClusterBlockId block_id, bool& skip_net);
+static void get_bb_from_scratch_excluding_block(ClusterNetId net_id,
+                                                t_bb& bb_coord_new,
+                                                ClusterBlockId block_id,
+                                                bool& skip_net,
+                                                const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
 
-e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, t_propose_action& proposed_action, float rlim, const t_placer_opts& placer_opts, const PlacerCriticalities* /*criticalities*/) {
+e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected,
+                                                t_propose_action& proposed_action,
+                                                float rlim,
+                                                const t_placer_opts& placer_opts,
+                                                const PlacerCriticalities* /*criticalities*/,
+                                                const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
     //Find a movable block based on blk_type
     ClusterBlockId b_from = propose_block_to_move(placer_opts,
                                                   proposed_action.logical_blk_type_index,
@@ -30,7 +39,6 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
         return e_create_move::ABORT;
     }
 
-    auto& place_ctx = g_vpr_ctx.placement();
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.device();
     auto& place_move_ctx = g_placer_ctx.mutable_move();
@@ -38,7 +46,7 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
     const int num_layers = device_ctx.grid.get_num_layers();
 
 
-    t_pl_loc from = place_ctx.block_locs[b_from].loc;
+    t_pl_loc from = block_locs[b_from].loc;
     int from_layer = from.layer;
     auto cluster_from_type = cluster_ctx.clb_nlist.block_type(b_from);
     auto grid_from_type = g_vpr_ctx.device().grid.get_physical_type({from.x, from.y, from_layer});
@@ -75,7 +83,7 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
             continue;
         if (cluster_ctx.clb_nlist.net_sinks(net_id).size() < SMALL_NET) {
             //calculate the bb from scratch
-            get_bb_from_scratch_excluding_block(net_id, coords, b_from, skip_net);
+            get_bb_from_scratch_excluding_block(net_id, coords, b_from, skip_net, block_locs);
             if (skip_net)
                 continue;
         } else {
@@ -90,9 +98,9 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
             bnum = cluster_ctx.clb_nlist.pin_block(pin_id);
             pnum = tile_pin_index(pin_id);
             VTR_ASSERT(pnum >= 0);
-            xold = place_ctx.block_locs[bnum].loc.x + physical_tile_type(bnum)->pin_width_offset[pnum];
-            yold = place_ctx.block_locs[bnum].loc.y + physical_tile_type(bnum)->pin_height_offset[pnum];
-            layer_old = place_ctx.block_locs[bnum].loc.layer;
+            xold = block_locs[bnum].loc.x + physical_tile_type(bnum)->pin_width_offset[pnum];
+            yold = block_locs[bnum].loc.y + physical_tile_type(bnum)->pin_height_offset[pnum];
+            layer_old = block_locs[bnum].loc.layer;
 
             xold = std::max(std::min(xold, (int)device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
             yold = std::max(std::min(yold, (int)device_ctx.grid.height() - 2), 1); //-2 for no perim channels
@@ -118,18 +126,11 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
                 layer_new = net_bb_coords.layer_min;
             }
             
-            // If the mvoing block is on the border of the bounding box, we cannot get
-            // the bounding box incrementatlly. In that case, bounding box should be calculated 
+            // If the moving block is on the border of the bounding box, we cannot get
+            // the bounding box incrementally. In that case, bounding box should be calculated
             // from scratch.
-            if (!get_bb_incrementally(net_id,
-                                      coords,
-                                      xold,
-                                      yold,
-                                      layer_old,
-                                      xnew,
-                                      ynew,
-                                      layer_new)) {
-                get_bb_from_scratch_excluding_block(net_id, coords, b_from, skip_net);
+            if (!get_bb_incrementally(net_id, coords, xold, yold, layer_old, xnew, ynew, layer_new)) {
+                get_bb_from_scratch_excluding_block(net_id, coords, b_from, skip_net, block_locs);
                 if (skip_net)
                     continue;
             }
@@ -197,7 +198,11 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
  * Currently assumes channels on both sides of the CLBs forming the   *
  * edges of the bounding box can be used.  Essentially, I am assuming *
  * the pins always lie on the outside of the bounding box.            */
-static void get_bb_from_scratch_excluding_block(ClusterNetId net_id, t_bb& bb_coord_new, ClusterBlockId block_id, bool& skip_net) {
+static void get_bb_from_scratch_excluding_block(ClusterNetId net_id,
+                                                t_bb& bb_coord_new,
+                                                ClusterBlockId block_id,
+                                                bool& skip_net,
+                                                const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
     //TODO: account for multiple physical pin instances per logical pin
 
     skip_net = true;
@@ -213,7 +218,6 @@ static void get_bb_from_scratch_excluding_block(ClusterNetId net_id, t_bb& bb_co
     int pnum;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_ctx = g_vpr_ctx.placement();
     auto& device_ctx = g_vpr_ctx.device();
 
     ClusterBlockId bnum = cluster_ctx.clb_nlist.net_driver_block(net_id);
@@ -222,9 +226,9 @@ static void get_bb_from_scratch_excluding_block(ClusterNetId net_id, t_bb& bb_co
     if (bnum != block_id) {
         skip_net = false;
         pnum = net_pin_to_tile_pin_index(net_id, 0);
-        int src_x = place_ctx.block_locs[bnum].loc.x + physical_tile_type(bnum)->pin_width_offset[pnum];
-        int src_y = place_ctx.block_locs[bnum].loc.y + physical_tile_type(bnum)->pin_height_offset[pnum];
-        int src_layer = place_ctx.block_locs[bnum].loc.layer;
+        int src_x = block_locs[bnum].loc.x + physical_tile_type(bnum)->pin_width_offset[pnum];
+        int src_y = block_locs[bnum].loc.y + physical_tile_type(bnum)->pin_height_offset[pnum];
+        int src_layer = block_locs[bnum].loc.layer;
 
         xmin = src_x;
         ymin = src_y;
@@ -241,7 +245,7 @@ static void get_bb_from_scratch_excluding_block(ClusterNetId net_id, t_bb& bb_co
         if (bnum == block_id)
             continue;
         skip_net = false;
-        const auto& block_loc = place_ctx.block_locs[bnum].loc;
+        const auto& block_loc = block_locs[bnum].loc;
         int x = block_loc.x + physical_tile_type(bnum)->pin_width_offset[pnum];
         int y = block_loc.y + physical_tile_type(bnum)->pin_height_offset[pnum];
         int layer = block_loc.layer;

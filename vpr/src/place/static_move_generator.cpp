@@ -43,13 +43,14 @@ e_create_move StaticMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
                                                 t_propose_action& proposed_action,
                                                 float rlim,
                                                 const t_placer_opts& placer_opts,
-                                                const PlacerCriticalities* criticalities) {
+                                                const PlacerCriticalities* criticalities,
+                                                const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
     float rand_num = vtr::frand() * total_prob;
 
     for (auto move_type : cumm_move_probs.keys()) {
         if (rand_num <= cumm_move_probs[move_type]) {
             proposed_action.move_type = move_type;
-            return all_moves[move_type]->propose_move(blocks_affected, proposed_action, rlim, placer_opts, criticalities);
+            return all_moves[move_type]->propose_move(blocks_affected, proposed_action, rlim, placer_opts, criticalities, block_locs);
         }
     }
 

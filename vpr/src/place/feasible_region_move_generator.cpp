@@ -5,7 +5,15 @@
 #include "place_constraints.h"
 #include "move_utils.h"
 
-e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, t_propose_action& proposed_action, float rlim, const t_placer_opts& placer_opts, const PlacerCriticalities* criticalities) {
+e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected,
+                                                        t_propose_action& proposed_action,
+                                                        float rlim,
+                                                        const t_placer_opts& placer_opts,
+                                                        const PlacerCriticalities* criticalities,
+                                                        const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& place_move_ctx = g_placer_ctx.mutable_move();
+
     ClusterNetId net_from;
     int pin_from;
     //Find a movable block based on blk_type
@@ -21,12 +29,8 @@ e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
         return e_create_move::ABORT;
     }
 
-    auto& place_ctx = g_vpr_ctx.placement();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_move_ctx = g_placer_ctx.mutable_move();
-
     //from block data
-    t_pl_loc from = place_ctx.block_locs[b_from].loc;
+    t_pl_loc from = block_locs[b_from].loc;
     auto cluster_from_type = cluster_ctx.clb_nlist.block_type(b_from);
     auto grid_from_type = g_vpr_ctx.device().grid.get_physical_type({from.x, from.y, from.layer});
     VTR_ASSERT(is_tile_compatible(grid_from_type, cluster_from_type));
@@ -50,8 +54,8 @@ e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
         ipin = cluster_ctx.clb_nlist.pin_net_index(pin_id);
         if (criticalities->criticality(net_id, ipin) > placer_opts.place_crit_limit) {
             bnum = cluster_ctx.clb_nlist.net_driver_block(net_id);
-            place_move_ctx.X_coord.push_back(place_ctx.block_locs[bnum].loc.x);
-            place_move_ctx.Y_coord.push_back(place_ctx.block_locs[bnum].loc.y);
+            place_move_ctx.X_coord.push_back(block_locs[bnum].loc.x);
+            place_move_ctx.Y_coord.push_back(block_locs[bnum].loc.y);
         }
     }
     if (!place_move_ctx.X_coord.empty()) {
@@ -69,7 +73,7 @@ e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
     //Get the most critical output of the node
     int xt, yt;
     ClusterBlockId b_output = cluster_ctx.clb_nlist.net_pin_block(net_from, pin_from);
-    t_pl_loc output_loc = place_ctx.block_locs[b_output].loc;
+    t_pl_loc output_loc = block_locs[b_output].loc;
     xt = output_loc.x;
     yt = output_loc.y;
 

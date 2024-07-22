@@ -381,7 +381,7 @@ void set_block_location(ClusterBlockId blk_id,
     }
 
     //Set the location of the block
-    place_ctx.block_locs[blk_id].loc = location;
+    block_locs[blk_id].loc = location;
 
     //Check if block is at an illegal location
     auto physical_tile = device_ctx.grid.get_physical_type({location.x, location.y, location.layer});
@@ -391,7 +391,7 @@ void set_block_location(ClusterBlockId blk_id,
         VPR_THROW(VPR_ERROR_PLACE, "Block %s subtile number (%d) is out of range. \n", block_name.c_str(), location.sub_tile);
     }
 
-    if (!is_sub_tile_compatible(physical_tile, logical_block, place_ctx.block_locs[blk_id].loc.sub_tile)) {
+    if (!is_sub_tile_compatible(physical_tile, logical_block, block_locs[blk_id].loc.sub_tile)) {
         VPR_THROW(VPR_ERROR_PLACE, "Attempt to place block %s with ID %d at illegal location (%d,%d,%d). \n",
                   block_name.c_str(),
                   blk_id,

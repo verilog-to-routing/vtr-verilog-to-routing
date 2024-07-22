@@ -1291,7 +1291,9 @@ static e_move_result try_swap(const t_annealing_state* state,
     //When manual move toggle button is active, the manual move window asks the user for input.
     if (manual_move_enabled) {
 #ifndef NO_GRAPHICS
-        create_move_outcome = manual_move_display_and_propose(manual_move_generator, blocks_affected, proposed_action.move_type, rlim, placer_opts, criticalities);
+        create_move_outcome = manual_move_display_and_propose(manual_move_generator, blocks_affected,
+                                                              proposed_action.move_type, rlim, placer_opts,
+                                                              criticalities, g_vpr_ctx.placement().block_locs);
 #else  //NO_GRAPHICS 
         //Cast to void to explicitly avoid warning.
         (void)manual_move_generator;
@@ -1302,7 +1304,7 @@ static e_move_result try_swap(const t_annealing_state* state,
         proposed_action.move_type = e_move_type::UNIFORM;
     } else {
         //Generate a new move (perturbation) used to explore the space of possible placements
-        create_move_outcome = move_generator.propose_move(blocks_affected, proposed_action, rlim, placer_opts, criticalities);
+        create_move_outcome = move_generator.propose_move(blocks_affected, proposed_action, rlim, placer_opts, criticalities, g_vpr_ctx.placement().block_locs);
     }
 
     if (proposed_action.logical_blk_type_index != -1) { //if the agent proposed the block type, then collect the block type stat

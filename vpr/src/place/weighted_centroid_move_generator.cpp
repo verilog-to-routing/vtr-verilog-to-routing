@@ -4,7 +4,12 @@
 #include "place_constraints.h"
 #include "move_utils.h"
 
-e_create_move WeightedCentroidMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, t_propose_action& proposed_action, float rlim, const t_placer_opts& placer_opts, const PlacerCriticalities* criticalities) {
+e_create_move WeightedCentroidMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected,
+                                                          t_propose_action& proposed_action,
+                                                          float rlim,
+                                                          const t_placer_opts& placer_opts,
+                                                          const PlacerCriticalities* criticalities,
+                                                          const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
     //Find a movable block based on blk_type
     ClusterBlockId b_from = propose_block_to_move(placer_opts,
                                                   proposed_action.logical_blk_type_index,
@@ -19,12 +24,11 @@ e_create_move WeightedCentroidMoveGenerator::propose_move(t_pl_blocks_to_be_move
     }
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_ctx = g_vpr_ctx.placement();
     auto& device_ctx = g_vpr_ctx.device();
 
     auto& place_move_ctx = g_placer_ctx.mutable_move();
 
-    t_pl_loc from = place_ctx.block_locs[b_from].loc;
+    t_pl_loc from = block_locs[b_from].loc;
     auto cluster_from_type = cluster_ctx.clb_nlist.block_type(b_from);
     auto grid_from_type = device_ctx.grid.get_physical_type({from.x, from.y, from.layer});
     VTR_ASSERT(is_tile_compatible(grid_from_type, cluster_from_type));

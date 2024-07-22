@@ -23,6 +23,7 @@ class StaticMoveGenerator : public MoveGenerator {
                                t_propose_action& proposed_action,
                                float rlim,
                                const t_placer_opts& placer_opts,
-                               const PlacerCriticalities* criticalities) override;
+                               const PlacerCriticalities* criticalities,
+                               const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) override;
 };
 #endif

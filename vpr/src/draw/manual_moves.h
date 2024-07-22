@@ -149,11 +149,19 @@ bool string_is_a_number(const std::string& block_id);
  * @param d_bounding_box: Delta bounding box for cost summary dialog function.
  * @param move_outcome: Move result from placement for cost summary dialog function.
  * 
- * Helper function used in place.cpp. The ManualMovesState variable are updated and the manual_move_cost_summary_dialog is called to display the cost members to the user in the UI and waits for the user to either ACCPET/REJECT the manual move. 
+ * Helper function used in place.cpp. The ManualMovesState variable are updated and
+ * the manual_move_cost_summary_dialog is called to display the cost members to the user
+ * in the UI and waits for the user to either ACCPET/REJECT the manual move.
  */
 e_move_result pl_do_manual_move(double d_cost, double d_timing, double d_bounding_box, e_move_result& move_outcome);
 
-e_create_move manual_move_display_and_propose(ManualMoveGenerator& manual_move_generator, t_pl_blocks_to_be_moved& blocks_affected, e_move_type& move_type, float rlim, const t_placer_opts& placer_opts, const PlacerCriticalities* criticalities);
+e_create_move manual_move_display_and_propose(ManualMoveGenerator& manual_move_generator,
+                                              t_pl_blocks_to_be_moved& blocks_affected,
+                                              e_move_type& move_type,
+                                              float rlim,
+                                              const t_placer_opts& placer_opts,
+                                              const PlacerCriticalities* criticalities,
+                                              const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
 
 #endif /*NO_GRAPHICS*/
 

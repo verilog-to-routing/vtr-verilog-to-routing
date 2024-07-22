@@ -7,9 +7,19 @@
 
 #define CRIT_MULT_FOR_W_MEDIAN 10
 
-static void get_bb_cost_for_net_excluding_block(ClusterNetId net_id, ClusterBlockId block_id, ClusterPinId moving_pin_id, const PlacerCriticalities* criticalities, t_bb_cost* coords, bool& skip_net);
+static void get_bb_cost_for_net_excluding_block(ClusterNetId net_id,
+                                                ClusterBlockId block_id,
+                                                ClusterPinId moving_pin_id,
+                                                const PlacerCriticalities* criticalities,
+                                                t_bb_cost* coords,
+                                                bool& skip_net);
 
-e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, t_propose_action& proposed_action, float rlim, const t_placer_opts& placer_opts, const PlacerCriticalities* criticalities) {
+e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected,
+                                                        t_propose_action& proposed_action,
+                                                        float rlim,
+                                                        const t_placer_opts& placer_opts,
+                                                        const PlacerCriticalities* criticalities,
+                                                        const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
     //Find a movable block based on blk_type
     ClusterBlockId b_from = propose_block_to_move(placer_opts,
                                                   proposed_action.logical_blk_type_index,
@@ -23,14 +33,13 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
         return e_create_move::ABORT;
     }
 
-    auto& place_ctx = g_vpr_ctx.placement();
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_move_ctx = g_placer_ctx.mutable_move();
 
     int num_layers = g_vpr_ctx.device().grid.get_num_layers();
 
 
-    t_pl_loc from = place_ctx.block_locs[b_from].loc;
+    t_pl_loc from = block_locs[b_from].loc;
     auto cluster_from_type = cluster_ctx.clb_nlist.block_type(b_from);
     auto grid_from_type = g_vpr_ctx.device().grid.get_physical_type({from.x, from.y, from.layer});
     VTR_ASSERT(is_tile_compatible(grid_from_type, cluster_from_type));

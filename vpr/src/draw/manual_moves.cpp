@@ -5,7 +5,11 @@
  * @brief 	Contains the function definitions needed for manual moves feature.
  *
  * Includes the graphics/gtk function for manual moves. The Manual Move Generator class is defined  manual_move_generator.h/cpp.
- * The manual move feature allows the user to select a move by choosing the block to move, x position, y position, subtile position. If the placer accepts the move, the user can accept or reject the move with respect to the delta cost, delta timing and delta bounding box cost displayed on the UI. The manual move feature interacts with placement through the ManualMoveGenerator class in the manual_move_generator.cpp/h files and in the place.cpp file by checking if the manual move toggle button in the UI is active or not, and calls the function needed. 
+ * The manual move feature allows the user to select a move by choosing the block to move, x position, y position, subtile position.
+ * If the placer accepts the move, the user can accept or reject the move with respect to the delta cost,
+ * delta timing and delta bounding box cost displayed on the UI. The manual move feature interacts with placement through
+ * the ManualMoveGenerator class in the manual_move_generator.cpp/h files and in the place.cpp file by checking
+ * if the manual move toggle button in the UI is active or not, and calls the function needed.
  */
 
 #include "manual_moves.h"
@@ -301,12 +305,18 @@ e_move_result pl_do_manual_move(double d_cost, double d_timing, double d_boundin
     return move_outcome;
 }
 
-e_create_move manual_move_display_and_propose(ManualMoveGenerator& manual_move_generator, t_pl_blocks_to_be_moved& blocks_affected, e_move_type& move_type, float rlim, const t_placer_opts& placer_opts, const PlacerCriticalities* criticalities) {
+e_create_move manual_move_display_and_propose(ManualMoveGenerator& manual_move_generator,
+                                              t_pl_blocks_to_be_moved& blocks_affected,
+                                              e_move_type& move_type,
+                                              float rlim,
+                                              const t_placer_opts& placer_opts,
+                                              const PlacerCriticalities* criticalities,
+                                              const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
     draw_manual_moves_window("");
     update_screen(ScreenUpdatePriority::MAJOR, " ", PLACEMENT, nullptr);
     move_type = e_move_type::MANUAL_MOVE;
     t_propose_action proposed_action{move_type, -1}; //no need to specify block type in manual move "propose_move" function
-    return manual_move_generator.propose_move(blocks_affected, proposed_action, rlim, placer_opts, criticalities);
+    return manual_move_generator.propose_move(blocks_affected, proposed_action, rlim, placer_opts, criticalities, block_locs);
 }
 
 #endif /*NO_GRAPHICS*/

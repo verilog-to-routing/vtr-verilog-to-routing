@@ -3,7 +3,14 @@
 #include "place_constraints.h"
 #include "move_utils.h"
 
-e_create_move CriticalUniformMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, t_propose_action& proposed_action, float rlim, const t_placer_opts& placer_opts, const PlacerCriticalities* /*criticalities*/) {
+e_create_move CriticalUniformMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected,
+                                                         t_propose_action& proposed_action,
+                                                         float rlim,
+                                                         const t_placer_opts& placer_opts,
+                                                         const PlacerCriticalities* /*criticalities*/,
+                                                         const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+
     ClusterNetId net_from;
     int pin_from;
     //Find a movable block based on blk_type
@@ -14,15 +21,12 @@ e_create_move CriticalUniformMoveGenerator::propose_move(t_pl_blocks_to_be_moved
                                                   &pin_from);
     VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "Critical Uniform Move Choose Block %d - rlim %f\n", size_t(b_from), rlim);
 
-    auto& place_ctx = g_vpr_ctx.placement();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-
     if (!b_from) { //No movable block found
         VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\tNo movable block found\n");
         return e_create_move::ABORT;
     }
 
-    t_pl_loc from = place_ctx.block_locs[b_from].loc;
+    t_pl_loc from = block_locs[b_from].loc;
     auto cluster_from_type = cluster_ctx.clb_nlist.block_type(b_from);
     auto grid_from_type = g_vpr_ctx.device().grid.get_physical_type({from.x, from.y, from.layer});
     VTR_ASSERT(is_tile_compatible(grid_from_type, cluster_from_type));
