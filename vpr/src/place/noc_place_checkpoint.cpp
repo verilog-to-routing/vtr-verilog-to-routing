@@ -13,26 +13,26 @@ NoCPlacementCheckpoint::NoCPlacementCheckpoint()
     router_locations_.clear();
 
     // Initializes checkpoint locations to invalid
-    for (const auto& router_bid : router_bids) {
+    for (const ClusterBlockId router_bid : router_bids) {
         router_locations_[router_bid] = t_pl_loc(OPEN, OPEN, OPEN, OPEN);
     }
 }
 
-void NoCPlacementCheckpoint::save_checkpoint(double cost) {
+void NoCPlacementCheckpoint::save_checkpoint(double cost, const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
     const auto& noc_ctx = g_vpr_ctx.noc();
-    const auto& place_ctx = g_vpr_ctx.placement();
 
     const std::vector<ClusterBlockId>& router_bids = noc_ctx.noc_traffic_flows_storage.get_router_clusters_in_netlist();
 
-    for (const auto& router_bid : router_bids) {
-        t_pl_loc loc = place_ctx.block_locs[router_bid].loc;
+    for (const ClusterBlockId router_bid : router_bids) {
+        t_pl_loc loc = block_locs[router_bid].loc;
         router_locations_[router_bid] = loc;
     }
     valid_ = true;
     cost_ = cost;
 }
 
-void NoCPlacementCheckpoint::restore_checkpoint(t_placer_costs& costs) {
+void NoCPlacementCheckpoint::restore_checkpoint(t_placer_costs& costs,
+                                                vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
     const auto& noc_ctx = g_vpr_ctx.noc();
     const auto& device_ctx = g_vpr_ctx.device();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
@@ -64,7 +64,7 @@ void NoCPlacementCheckpoint::restore_checkpoint(t_placer_costs& costs) {
         ClusterBlockId router_blk_id = router_loc.first;
         t_pl_loc location = router_loc.second;
 
-        set_block_location(router_blk_id, location);
+        set_block_location(router_blk_id, location, block_locs);
     }
 
     // Re-initialize routes and static variables that keep track of NoC-related costs

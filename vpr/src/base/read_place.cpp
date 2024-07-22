@@ -305,7 +305,7 @@ void read_place_body(std::ifstream& placement_file,
             loc.layer = block_layer;
 
             if (seen_blocks[blk_id] == 0) {
-                set_block_location(blk_id, loc);
+                set_block_location(blk_id, loc, place_ctx.block_locs);
             }
 
             //need to lock down blocks if it is a constraints file
@@ -327,7 +327,7 @@ void read_place_body(std::ifstream& placement_file,
     //For place files, check that all blocks have been read
     //For constraints files, not all blocks need to be read
     if (is_place_file) {
-        for (auto block_id : cluster_ctx.clb_nlist.blocks()) {
+        for (ClusterBlockId block_id : cluster_ctx.clb_nlist.blocks()) {
             if (seen_blocks[block_id] == 0) {
                 VPR_THROW(VPR_ERROR_PLACE, "Block %d has not been read from the place file. \n", block_id);
             }

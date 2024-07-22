@@ -137,7 +137,7 @@ void load_cluster_constraints();
  * Marking them as fixed indicates that they cannot be moved
  * during initial placement and simulated annealing.
  */
-void mark_fixed_blocks();
+void mark_fixed_blocks(vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
 
 /**
  * @brief Converts the floorplanning constraints from grid location to

@@ -347,8 +347,11 @@ void load_grid_blocks_from_block_locs();
  */
 void alloc_and_load_legal_placement_locations(std::vector<std::vector<std::vector<t_pl_loc>>>& legal_pos);
 
-///@brief Performs error checking to see if location is legal for block type, and sets the location and grid usage of the block if it is legal.
-void set_block_location(ClusterBlockId blk_id, const t_pl_loc& location);
+///@brief Performs error checking to see if location is legal for block type,
+/// and sets the location and grid usage of the block if it is legal.
+void set_block_location(ClusterBlockId blk_id,
+                        const t_pl_loc& location,
+                        vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
 
 /// @brief check if a specified location is within the device grid
 inline bool is_loc_on_chip(t_physical_tile_loc loc) {

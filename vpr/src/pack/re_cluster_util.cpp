@@ -85,7 +85,7 @@ void commit_mol_move(ClusterBlockId old_clb,
         g_vpr_ctx.mutable_placement().block_locs.resize(g_vpr_ctx.placement().block_locs.size() + 1);
         get_imacro_from_iblk(&imacro, old_clb, g_vpr_ctx.placement().pl_macros);
         set_imacro_for_iblk(&imacro, new_clb);
-        place_one_block(new_clb, device_ctx.pad_loc_type, nullptr, nullptr);
+        place_one_block(new_clb, device_ctx.pad_loc_type, nullptr, nullptr, g_vpr_ctx.mutable_placement().block_locs);
     }
 }
 

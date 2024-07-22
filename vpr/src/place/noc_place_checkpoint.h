@@ -38,14 +38,15 @@ class NoCPlacementCheckpoint {
      *
      *  @param cost: The placement cost associated with the current placement
      */
-    void save_checkpoint(double cost);
+    void save_checkpoint(double cost, const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
 
     /**
      * @brief Loads the save checkpoint into global placement data structues.
      *
      *  @param costs: Used to load NoC related costs for the checkpoint
      */
-    void restore_checkpoint(t_placer_costs& costs);
+    void restore_checkpoint(t_placer_costs& costs,
+                            vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
 
     /**
      * @brief Indicates whether the object is empty or it has already stored a

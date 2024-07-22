@@ -4,6 +4,7 @@
 #include "vpr_types.h"
 #include "place_macro.h"
 #include "partition_region.h"
+#include "vtr_vector_map.h"
 
 /* The maximum number of tries when trying to place a macro at a    *
  * random location before trying exhaustive placement - find the first     *
@@ -59,7 +60,8 @@ struct t_grid_empty_locs_block_type {
 bool try_place_macro_randomly(const t_pl_macro& pl_macro,
                               const PartitionRegion& pr,
                               t_logical_block_type_ptr block_type,
-                              enum e_pad_loc_type pad_loc_type);
+                              enum e_pad_loc_type pad_loc_type,
+                              vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
 
 /**
  * @brief Looks for a valid placement location for macro exhaustively once the maximum number of random locations have been tried.
@@ -75,7 +77,8 @@ bool try_place_macro_randomly(const t_pl_macro& pl_macro,
 bool try_place_macro_exhaustively(const t_pl_macro& pl_macro,
                                   const PartitionRegion& pr,
                                   t_logical_block_type_ptr block_type,
-                                  enum e_pad_loc_type pad_loc_type);
+                                  enum e_pad_loc_type pad_loc_type,
+                                  vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
 
 /**
  * @brief Places the macro if the head position passed in is legal, and all the resulting
@@ -86,7 +89,9 @@ bool try_place_macro_exhaustively(const t_pl_macro& pl_macro,
  *
  * @return true if macro was placed, false if not.
  */
-bool try_place_macro(const t_pl_macro& pl_macro, t_pl_loc head_pos);
+bool try_place_macro(const t_pl_macro& pl_macro,
+                     t_pl_loc head_pos,
+                     vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
 
 /**
  * @brief Checks whether the block is already placed
@@ -95,7 +100,8 @@ bool try_place_macro(const t_pl_macro& pl_macro, t_pl_loc head_pos);
  *
  * @return true if the block was placed, false if not.
  */
-bool is_block_placed(ClusterBlockId blk_id);
+bool is_block_placed(ClusterBlockId blk_id,
+                     const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
 
 /**
  * @brief Tries to find an initial placement location for each block considering floorplanning constraints
@@ -113,7 +119,8 @@ bool is_block_placed(ClusterBlockId blk_id);
  */
 void initial_placement(const t_placer_opts& placer_opts,
                        const char* constraints_file,
-                       const t_noc_opts& noc_opts);
+                       const t_noc_opts& noc_opts,
+                       vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
 
 /**
  * @brief Looks for a valid placement location for block.
@@ -125,5 +132,8 @@ void initial_placement(const t_placer_opts& placer_opts,
  * 
  * @return true if the block gets placed, false if not.
  */
-bool place_one_block(const ClusterBlockId& blk_id, enum e_pad_loc_type pad_loc_type, std::vector<t_grid_empty_locs_block_type>* blk_types_empty_locs_in_grid, vtr::vector<ClusterBlockId, t_block_score>* block_scores);
+bool place_one_block(const ClusterBlockId blk_id,
+                     enum e_pad_loc_type pad_loc_type,
+                     std::vector<t_grid_empty_locs_block_type>* blk_types_empty_locs_in_grid, vtr::vector<ClusterBlockId, t_block_score>* block_scores,
+                     vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
 #endif
