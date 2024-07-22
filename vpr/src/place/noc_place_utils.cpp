@@ -44,7 +44,8 @@ static std::unordered_set<NocLinkId> affected_noc_links;
  */
 static bool select_random_router_cluster(ClusterBlockId& b_from,
                                          t_pl_loc& from,
-                                         t_logical_block_type_ptr& cluster_from_type);
+                                         t_logical_block_type_ptr& cluster_from_type,
+                                         const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
 
 /**
  * @brief Given two traffic flow routes, finds links that appear
@@ -451,13 +452,12 @@ double comp_noc_congestion_cost() {
     return congestion_cost;
 }
 
-int check_noc_placement_costs(const t_placer_costs& costs, double error_tolerance, const t_noc_opts& noc_opts) {
+int check_noc_placement_costs(const t_placer_costs& costs,
+                              double error_tolerance,
+                              const t_noc_opts& noc_opts,
+                              const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
     int error = 0;
-    NocCostTerms cost_check{0.0, 0.0, 0.0, 0.0};
-
-    // get current router block locations
-    auto& place_ctx = g_vpr_ctx.placement();
-    const vtr::vector_map<ClusterBlockId, t_block_loc>& placed_cluster_block_locations = place_ctx.block_locs;
+    NocCostTerms cost_check{0.0, 0.0, 0.0, 0.0};;
 
     auto& noc_ctx = g_vpr_ctx.noc();
     const NocStorage& noc_model = noc_ctx.noc_model;
@@ -485,8 +485,8 @@ int check_noc_placement_costs(const t_placer_costs& costs, double error_toleranc
         ClusterBlockId logical_sink_router_block_id = curr_traffic_flow.sink_router_cluster_id;
 
         // get the ids of the hard router blocks where the logical router cluster blocks have been placed
-        NocRouterId source_router_block_id = noc_model.get_router_at_grid_location(placed_cluster_block_locations[logical_source_router_block_id].loc);
-        NocRouterId sink_router_block_id = noc_model.get_router_at_grid_location(placed_cluster_block_locations[logical_sink_router_block_id].loc);
+        NocRouterId source_router_block_id = noc_model.get_router_at_grid_location(block_locs[logical_source_router_block_id].loc);
+        NocRouterId sink_router_block_id = noc_model.get_router_at_grid_location(block_locs[logical_sink_router_block_id].loc);
 
         // route the current traffic flow
         temp_noc_routing_algorithm->route_flow(source_router_block_id, sink_router_block_id, traffic_flow_id, temp_found_noc_route, noc_model);
@@ -500,7 +500,7 @@ int check_noc_placement_costs(const t_placer_costs& costs, double error_toleranc
         cost_check.latency_overrun += curr_traffic_flow_latency_overrun_cost;
 
         // increase bandwidth utilization for the links that constitute the current flow's route
-        for (auto& link_id : temp_found_noc_route) {
+        for (NocLinkId link_id : temp_found_noc_route) {
             auto& link = temp_noc_link_storage[link_id];
             double curr_link_bw_util = link.get_bandwidth_usage();
             link.set_bandwidth_usage(curr_link_bw_util + curr_traffic_flow.traffic_flow_bandwidth);
@@ -789,12 +789,12 @@ bool check_for_router_swap(int user_supplied_noc_router_swap_percentage) {
     return (vtr::irand(99) < user_supplied_noc_router_swap_percentage);
 }
 
-static bool select_random_router_cluster(ClusterBlockId& b_from, t_pl_loc& from, t_logical_block_type_ptr& cluster_from_type) {
+static bool select_random_router_cluster(ClusterBlockId& b_from,
+                                         t_pl_loc& from,
+                                         t_logical_block_type_ptr& cluster_from_type,
+                                         const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
     // need to access all the router cluster blocks in the design
     auto& noc_ctx = g_vpr_ctx.noc();
-    //
-    auto& place_ctx = g_vpr_ctx.placement();
-    //
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     // get a reference to the collection of router cluster blocks in the design
@@ -812,11 +812,11 @@ static bool select_random_router_cluster(ClusterBlockId& b_from, t_pl_loc& from,
     b_from = router_clusters[random_cluster_block_index];
 
     //check if the block is movable
-    if (place_ctx.block_locs[b_from].is_fixed) {
+    if (block_locs[b_from].is_fixed) {
         return false;
     }
 
-    from = place_ctx.block_locs[b_from].loc;
+    from = block_locs[b_from].loc;
     cluster_from_type = cluster_ctx.clb_nlist.block_type(b_from);
     auto grid_from_type = g_vpr_ctx.device().grid.get_physical_type({from.x, from.y, from.layer});
     VTR_ASSERT(is_tile_compatible(grid_from_type, cluster_from_type));
@@ -824,17 +824,18 @@ static bool select_random_router_cluster(ClusterBlockId& b_from, t_pl_loc& from,
     return true;
 }
 
-e_create_move propose_router_swap(t_pl_blocks_to_be_moved& blocks_affected, float rlim) {
+e_create_move propose_router_swap(t_pl_blocks_to_be_moved& blocks_affected,
+                                  float rlim,
+                                  const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
     // block ID for the randomly selected router cluster
     ClusterBlockId b_from;
     // current location of the randomly selected router cluster
     t_pl_loc from;
     // logical block type of the randomly selected router cluster
     t_logical_block_type_ptr cluster_from_type;
-    bool random_select_success = false;
 
     // Randomly select a router cluster
-    random_select_success = select_random_router_cluster(b_from, from, cluster_from_type);
+    bool random_select_success = select_random_router_cluster(b_from, from, cluster_from_type, block_locs);
 
     // If a random router cluster could not be selected, no move can be proposed
     if (!random_select_success) {
@@ -858,11 +859,10 @@ e_create_move propose_router_swap(t_pl_blocks_to_be_moved& blocks_affected, floa
     return create_move;
 }
 
-void write_noc_placement_file(const std::string& file_name) {
+void write_noc_placement_file(const std::string& file_name,
+                              const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
     // we need the clustered netlist to get the names of all the NoC router cluster blocks
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    // we need to the placement context to determine the final placed locations of the NoC router cluster blocks
-    auto& placement_ctx = g_vpr_ctx.placement();
     // we need the NoC context to identify the physical router ids based on their locations on the device
     auto& noc_ctx = g_vpr_ctx.noc();
 
@@ -888,9 +888,6 @@ void write_noc_placement_file(const std::string& file_name) {
     // get a reference to the clustered netlist
     const ClusteredNetlist& cluster_block_netlist = cluster_ctx.clb_nlist;
 
-    // get a reference to the clustered block placement locations
-    const vtr::vector_map<ClusterBlockId, t_block_loc>& clustered_block_placed_locations = placement_ctx.block_locs;
-
     // go through all the cluster blocks and write out their information in the placement file
     for (const auto& single_cluster_id : router_clusters) {
         // check if the current cluster id is valid
@@ -903,7 +900,7 @@ void write_noc_placement_file(const std::string& file_name) {
         const std::string& cluster_name = cluster_block_netlist.block_name(single_cluster_id);
 
         //get the placement location of the current router cluster block
-        const t_block_loc& cluster_location = clustered_block_placed_locations[single_cluster_id];
+        const t_block_loc& cluster_location = block_locs[single_cluster_id];
 
         // now get the corresponding physical router block id the cluster is located on
         NocRouterId physical_router_cluster_is_placed_on = noc_model.get_router_at_grid_location(cluster_location.loc);

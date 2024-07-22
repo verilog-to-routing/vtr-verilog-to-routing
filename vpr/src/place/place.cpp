@@ -950,7 +950,7 @@ void try_place(const Netlist<>& net_list,
     print_placement_move_types_stats(move_type_stat);
 
     if (noc_opts.noc) {
-        write_noc_placement_file(noc_opts.noc_placement_file_name);
+        write_noc_placement_file(noc_opts.noc_placement_file_name, g_vpr_ctx.placement().block_locs);
     }
 
     free_placement_structs(placer_opts, noc_opts);
@@ -1298,7 +1298,7 @@ static e_move_result try_swap(const t_annealing_state* state,
 #endif //NO_GRAPHICS
     } else if (router_block_move) {
         // generate a move where two random router blocks are swapped
-        create_move_outcome = propose_router_swap(blocks_affected, rlim);
+        create_move_outcome = propose_router_swap(blocks_affected, rlim, g_vpr_ctx.placement().block_locs);
         proposed_action.move_type = e_move_type::UNIFORM;
     } else {
         //Generate a new move (perturbation) used to explore the space of possible placements
@@ -1809,14 +1809,9 @@ static void alloc_and_load_placement_structs(float place_cost_exp,
                                              const t_noc_opts& noc_opts,
                                              t_direct_inf* directs,
                                              int num_directs) {
-    int max_pins_per_clb;
-    unsigned int ipin;
-
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
-
-    const auto& cube_bb = place_ctx.cube_bb;
 
     auto& p_timing_ctx = g_placer_ctx.mutable_timing();
     auto& place_move_ctx = g_placer_ctx.mutable_move();
@@ -1827,7 +1822,7 @@ static void alloc_and_load_placement_structs(float place_cost_exp,
 
     init_placement_context();
 
-    max_pins_per_clb = 0;
+    int max_pins_per_clb = 0;
     for (const auto& type : device_ctx.physical_tile_types) {
         max_pins_per_clb = max(max_pins_per_clb, type.num_pins);
     }
@@ -1851,8 +1846,7 @@ static void alloc_and_load_placement_structs(float place_cost_exp,
         p_timing_ctx.net_timing_cost.resize(num_nets, 0.);
 
         for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-            for (ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size();
-                 ipin++) {
+            for (size_t ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ipin++) {
                 p_timing_ctx.connection_delay[net_id][ipin] = 0;
                 p_timing_ctx.proposed_connection_delay[net_id][ipin] = INVALID_DELAY;
 
@@ -1868,11 +1862,11 @@ static void alloc_and_load_placement_structs(float place_cost_exp,
 
     init_place_move_structs(num_nets);
 
-    if (cube_bb) {
+    if (place_ctx.cube_bb) {
         place_move_ctx.bb_coords.resize(num_nets, t_bb());
         place_move_ctx.bb_num_on_edges.resize(num_nets, t_bb());
     } else {
-        VTR_ASSERT_SAFE(!cube_bb);
+        VTR_ASSERT_SAFE(!place_ctx.cube_bb);
         place_move_ctx.layer_bb_num_on_edges.resize(num_nets, std::vector<t_2D_bb>(num_layers, t_2D_bb()));
         place_move_ctx.layer_bb_coords.resize(num_nets, std::vector<t_2D_bb>(num_layers, t_2D_bb()));
     }
@@ -1885,7 +1879,7 @@ static void alloc_and_load_placement_structs(float place_cost_exp,
 
     alloc_and_load_chan_w_factors_for_place_cost (place_cost_exp);
 
-    alloc_and_load_try_swap_structs(cube_bb);
+    alloc_and_load_try_swap_structs(place_ctx.cube_bb);
 
     place_ctx.pl_macros = alloc_and_load_placement_macros(directs, num_directs);
 
@@ -1972,7 +1966,7 @@ static void check_place(const t_placer_costs& costs,
 
     if (noc_opts.noc) {
         // check the NoC costs during placement if the user is using the NoC supported flow
-        error += check_noc_placement_costs(costs, ERROR_TOL, noc_opts);
+        error += check_noc_placement_costs(costs, ERROR_TOL, noc_opts, g_vpr_ctx.placement().block_locs);
         // make sure NoC routing configuration does not create any cycles in CDG
         error += (int)noc_routing_has_cycle();
     }
@@ -2127,11 +2121,10 @@ int check_macro_placement_consistency() {
     for (size_t imacro = 0; imacro < place_ctx.pl_macros.size(); imacro++) {
         auto head_iblk = pl_macros[imacro].members[0].blk_index;
 
-        for (size_t imember = 0; imember < pl_macros[imacro].members.size();
-             imember++) {
+        for (size_t imember = 0; imember < pl_macros[imacro].members.size(); imember++) {
             auto member_iblk = pl_macros[imacro].members[imember].blk_index;
 
-            // Compute the suppossed member's x,y,z location
+            // Compute the supposed member's x,y,z location
             t_pl_loc member_pos = place_ctx.block_locs[head_iblk].loc
                                   + pl_macros[imacro].members[imember].offset;
 
@@ -2144,8 +2137,7 @@ int check_macro_placement_consistency() {
             }
 
             // Then check the place_ctx.grid data structure
-            if (place_ctx.grid_blocks.block_at_location(member_pos)
-                != member_iblk) {
+            if (place_ctx.grid_blocks.block_at_location(member_pos) != member_iblk) {
                 VTR_LOG_ERROR(
                     "Block %zu in pl_macro #%zu is not placed in the proper orientation.\n",
                     size_t(member_iblk), imacro);
@@ -2277,9 +2269,8 @@ static void print_resources_utilization() {
 
     //Record the resource requirement
     std::map<t_logical_block_type_ptr, size_t> num_type_instances;
-    std::map<t_logical_block_type_ptr,
-             std::map<t_physical_tile_type_ptr, size_t>>
-        num_placed_instances;
+    std::map<t_logical_block_type_ptr, std::map<t_physical_tile_type_ptr, size_t>> num_placed_instances;
+
     for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks()) {
         auto block_loc = place_ctx.block_locs[blk_id];
         auto loc = block_loc.loc;
@@ -2290,10 +2281,8 @@ static void print_resources_utilization() {
         num_type_instances[logical_block]++;
         num_placed_instances[logical_block][physical_tile]++;
 
-        max_block_name = std::max<int>(max_block_name,
-                                       strlen(logical_block->name));
-        max_tile_name = std::max<int>(max_tile_name,
-                                      strlen(physical_tile->name));
+        max_block_name = std::max<int>(max_block_name, strlen(logical_block->name));
+        max_tile_name = std::max<int>(max_tile_name, strlen(physical_tile->name));
     }
 
     VTR_LOG("\n");

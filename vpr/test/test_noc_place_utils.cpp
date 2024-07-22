@@ -1952,7 +1952,7 @@ TEST_CASE("test_check_noc_placement_costs", "[noc_place_utils]") {
 
     SECTION("Case where check place works after initial placement") {
         // run the test function
-        int error = check_noc_placement_costs(costs, error_tolerance, noc_opts);
+        int error = check_noc_placement_costs(costs, error_tolerance, noc_opts, place_ctx.block_locs);
 
         // we expect error to be 0 here, meaning the found costs are within the error tolerance of the noc golden costs
         REQUIRE(error == 0);
@@ -1974,7 +1974,7 @@ TEST_CASE("test_check_noc_placement_costs", "[noc_place_utils]") {
         }
 
         // run the test function
-        int error = check_noc_placement_costs(costs, error_tolerance, noc_opts);
+        int error = check_noc_placement_costs(costs, error_tolerance, noc_opts, place_ctx.block_locs);
 
         // we expect error to be 4 here, meaning the found costs are not within the tolerance range
         REQUIRE(error == 4);

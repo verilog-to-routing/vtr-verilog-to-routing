@@ -356,7 +356,10 @@ double comp_noc_congestion_cost();
  * a non-zero values indicates the current NoC costs are above the error
  * tolerance.
  */
-int check_noc_placement_costs(const t_placer_costs& costs, double error_tolerance, const t_noc_opts& noc_opts);
+int check_noc_placement_costs(const t_placer_costs& costs,
+                              double error_tolerance,
+                              const t_noc_opts& noc_opts,
+                              const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
 
 /**
  * @brief Determines the aggregate bandwidth cost of a routed traffic flow.
@@ -526,7 +529,9 @@ bool check_for_router_swap(int user_supplied_noc_router_swap_percentage);
  * cluster block can travel (this is within the compressed block space) 
  * @return e_create_move Result of proposing the move
  */
-e_create_move propose_router_swap(t_pl_blocks_to_be_moved& blocks_affected, float rlim);
+e_create_move propose_router_swap(t_pl_blocks_to_be_moved& blocks_affected,
+                                  float rlim,
+                                  const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
 
 /**
  * @brief Writes out the locations of the router cluster blocks in the
@@ -544,7 +549,8 @@ e_create_move propose_router_swap(t_pl_blocks_to_be_moved& blocks_affected, floa
  * information.
  * 
  */
-void write_noc_placement_file(const std::string& file_name);
+void write_noc_placement_file(const std::string& file_name,
+                              const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
 
 /**
  * @brief This function checks whether the routing configuration for NoC traffic flows

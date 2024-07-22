@@ -21,7 +21,7 @@ void init_placement_context() {
     auto& place_ctx = g_vpr_ctx.mutable_placement();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    /* Intialize the lookup of CLB block positions */
+    /* Initialize the lookup of CLB block positions */
     place_ctx.block_locs.clear();
     place_ctx.block_locs.resize(cluster_ctx.clb_nlist.blocks().size());
 
