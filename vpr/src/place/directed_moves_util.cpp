@@ -26,9 +26,9 @@ void calculate_centroid_loc(ClusterBlockId b_from,
                             t_pl_loc& centroid,
                             const PlacerCriticalities* criticalities,
                             bool noc_attraction_enabled,
-                            float noc_attraction_weight) {
+                            float noc_attraction_weight,
+                            const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_ctx = g_vpr_ctx.placement();
 
     float acc_weight = 0;
     float acc_x = 0;
@@ -36,7 +36,7 @@ void calculate_centroid_loc(ClusterBlockId b_from,
     float acc_layer = 0;
     float weight = 1;
 
-    int from_block_layer_num = g_vpr_ctx.placement().block_locs[b_from].loc.layer;
+    int from_block_layer_num = block_locs[b_from].loc.layer;
     VTR_ASSERT(from_block_layer_num != OPEN);
 
     //iterate over the from block pins
@@ -75,7 +75,7 @@ void calculate_centroid_loc(ClusterBlockId b_from,
                     weight = 1;
                 }
 
-                t_physical_tile_loc tile_loc = get_coordinate_of_pin(sink_pin_id, place_ctx.block_locs);
+                t_physical_tile_loc tile_loc = get_coordinate_of_pin(sink_pin_id, block_locs);
 
                 acc_x += tile_loc.x * weight;
                 acc_y += tile_loc.y * weight;
@@ -95,7 +95,7 @@ void calculate_centroid_loc(ClusterBlockId b_from,
 
             ClusterPinId source_pin = cluster_ctx.clb_nlist.net_driver(net_id);
 
-            t_physical_tile_loc tile_loc = get_coordinate_of_pin(source_pin, place_ctx.block_locs);
+            t_physical_tile_loc tile_loc = get_coordinate_of_pin(source_pin, block_locs);
 
             acc_x += tile_loc.x * weight;
             acc_y += tile_loc.y * weight;
@@ -118,7 +118,7 @@ void calculate_centroid_loc(ClusterBlockId b_from,
             acc_weight *= (1.0f - noc_attraction_weight);
 
             for (ClusterBlockId router_blk_id : noc_routers) {
-                t_block_loc router_loc = place_ctx.block_locs[router_blk_id];
+                t_block_loc router_loc = block_locs[router_blk_id];
                 acc_x += router_loc.loc.x * single_noc_weight;
                 acc_y += router_loc.loc.y * single_noc_weight;
                 acc_weight += single_noc_weight;

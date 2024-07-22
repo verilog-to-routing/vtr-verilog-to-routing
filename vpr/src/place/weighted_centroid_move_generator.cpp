@@ -40,7 +40,7 @@ e_create_move WeightedCentroidMoveGenerator::propose_move(t_pl_blocks_to_be_move
     t_pl_loc to, centroid;
 
     /* Calculate the weighted centroid */
-    calculate_centroid_loc(b_from, true, centroid, criticalities);
+    calculate_centroid_loc(b_from, true, centroid, criticalities, block_locs);
 
     // Centroid location is not necessarily a valid location, and the downstream location expect a valid
     // layer for "to" location. So if the layer is not valid, we set it to the same layer as from loc.

@@ -17,7 +17,8 @@ enum e_reward_function {
 e_reward_function string_to_reward(const std::string& st);
 
 ///@brief Helper function that returns the x, y coordinates of a pin
-t_physical_tile_loc get_coordinate_of_pin(ClusterPinId pin, const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
+t_physical_tile_loc get_coordinate_of_pin(ClusterPinId pin,
+                                          const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
 
 /**
  * @brief Calculates the exact centroid location
@@ -46,13 +47,15 @@ void calculate_centroid_loc(ClusterBlockId b_from,
                             t_pl_loc& centroid,
                             const PlacerCriticalities* criticalities,
                             bool noc_attraction_enabled,
-                            float noc_attraction_weight);
+                            float noc_attraction_weight,
+                            const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
 
 inline void calculate_centroid_loc(ClusterBlockId b_from,
                                    bool timing_weights,
                                    t_pl_loc& centroid,
-                                   const PlacerCriticalities* criticalities) {
-    calculate_centroid_loc(b_from, timing_weights, centroid, criticalities, false, 0.0f);
+                                   const PlacerCriticalities* criticalities,
+                                   const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
+    calculate_centroid_loc(b_from, timing_weights, centroid, criticalities, false, 0.0f, block_locs);
 }
 
 #endif
