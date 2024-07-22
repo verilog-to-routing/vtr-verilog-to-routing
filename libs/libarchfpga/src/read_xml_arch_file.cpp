@@ -74,6 +74,7 @@ struct t_fc_override {
     std::string port_name;
     std::string seg_name;
     e_fc_value_type fc_value_type;
+    e_track_to_pin_dir seg_dir; 
     float fc_value;
 };
 
@@ -289,6 +290,7 @@ static void ProcessSwitchblockLocations(pugi::xml_node switchblock_locations,
                                         const pugiutil::loc_data& loc_data);
 
 static e_fc_value_type string_to_fc_value_type(const std::string& str, pugi::xml_node node, const pugiutil::loc_data& loc_data);
+static e_track_to_pin_dir string_to_segment_dir(const std::string& str, pugi::xml_node node, const pugiutil::loc_data& loc_data);
 static void ProcessChanWidthDistr(pugi::xml_node Node,
                                   t_arch* arch,
                                   const pugiutil::loc_data& loc_data);
@@ -1938,6 +1940,7 @@ static void Process_Fc(pugi::xml_node Node,
                 t_fc_specification fc_spec;
 
                 fc_spec.seg_index = iseg;
+                fc_spec.seg_dir = e_track_to_pin_dir::BOTH_DIR;
 
                 //Apply type and defaults
                 if (port.type == IN_PORT) {
@@ -1988,6 +1991,7 @@ static void Process_Fc(pugi::xml_node Node,
 
                         fc_spec.fc_value_type = fc_override.fc_value_type;
                         fc_spec.fc_value = fc_override.fc_value;
+                        fc_spec.seg_dir = fc_override.seg_dir;
 
                         default_overriden = true;
                     }
@@ -2022,6 +2026,7 @@ static t_fc_override Process_Fc_override(pugi::xml_node node, const pugiutil::lo
     bool seen_fc_type = false;
     bool seen_fc_value = false;
     bool seen_port_or_seg = false;
+    bool seen_seg_dir = false;
     for (auto attrib : node.attributes()) {
         if (attrib.name() == std::string("port_name")) {
             fc_override.port_name = attrib.value();
@@ -2035,6 +2040,9 @@ static t_fc_override Process_Fc_override(pugi::xml_node node, const pugiutil::lo
         } else if (attrib.name() == std::string("fc_val")) {
             fc_override.fc_value = vtr::atof(attrib.value());
             seen_fc_value = true;
+        } else if (attrib.name() == std::string("segment_dir")){
+            fc_override.seg_dir = string_to_segment_dir(attrib.value(), node, loc_data);
+            seen_seg_dir = true;
         } else {
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(node),
                            "Unexpected attribute '%s'", attrib.name());
@@ -2056,6 +2064,11 @@ static t_fc_override Process_Fc_override(pugi::xml_node node, const pugiutil::lo
                        "Missing expected attribute(s) 'port_name' and/or 'segment_name'");
     }
 
+    if(!seen_seg_dir){
+        //segment direction is not specified in the architecture file, so set it to the default value
+        fc_override.seg_dir = e_track_to_pin_dir::BOTH_DIR;
+    }
+
     return fc_override;
 }
 
@@ -2074,6 +2087,25 @@ static e_fc_value_type string_to_fc_value_type(const std::string& str, pugi::xml
 
     return fc_value_type;
 }
+
+static e_track_to_pin_dir string_to_segment_dir(const std::string& str, pugi::xml_node node, const pugiutil::loc_data& loc_data) {
+    e_track_to_pin_dir seg_dir = e_track_to_pin_dir::BOTH_DIR;
+
+    if (str == "INC") {
+        seg_dir = e_track_to_pin_dir::INC;
+    } else if (str == "DEC") {
+        seg_dir = e_track_to_pin_dir::DEC;
+    } else if (str == "BOTH"){
+        seg_dir = e_track_to_pin_dir::BOTH_DIR;
+    } else {
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(node),
+                       "Invalid segment direction '%s'. Must be 'INC' or 'DEC' or 'BOTH'.\n",
+                       str.c_str());
+    }
+
+    return seg_dir;
+}
+
 
 static void ProcessSwitchblockLocations(pugi::xml_node switchblock_locations,
                                         t_physical_tile_type* type,

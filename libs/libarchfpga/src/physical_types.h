@@ -535,12 +535,20 @@ enum class e_fc_value_type {
     ABSOLUTE    //Absolute Fc specification (i.e. absolute number of tracks)
 };
 
+//Fc_override can also choose the track direction that pin wants to connect to
+enum e_track_to_pin_dir {
+    INC, //incremental track
+    DEC, //decremental track
+    BOTH_DIR //will consider both incremental and decremental track
+};
+
 //Describes the Fc specification for a set of pins and a segment
 struct t_fc_specification {
     e_fc_type fc_type;             //What type of Fc
     e_fc_value_type fc_value_type; //How to interpret the Fc value
     float fc_value;                //The Fc value
     int seg_index;                 //The target segment index
+    e_track_to_pin_dir seg_dir;    // The target segment direction
     std::vector<int> pins;         //The block pins collectively effected by this Fc
 };
 
@@ -1515,6 +1523,9 @@ enum e_directionality {
     UNI_DIRECTIONAL,
     BI_DIRECTIONAL
 };
+
+
+
 /* X_AXIS: Data that describes an x-directed wire segment (CHANX)                     *
  * Y_AXIS: Data that describes an y-directed wire segment (CHANY)                     *     
  * BOTH_AXIS: Data that can be applied to both x-directed and y-directed wire segment */
