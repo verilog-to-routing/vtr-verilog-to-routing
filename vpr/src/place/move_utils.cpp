@@ -38,8 +38,11 @@ void report_aborted_moves() {
     }
 }
 
-e_create_move create_move(t_pl_blocks_to_be_moved& blocks_affected, ClusterBlockId b_from, t_pl_loc to) {
-    e_block_move_result outcome = find_affected_blocks(blocks_affected, b_from, to);
+e_create_move create_move(t_pl_blocks_to_be_moved& blocks_affected,
+                          ClusterBlockId b_from,
+                          t_pl_loc to,
+                          const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
+    e_block_move_result outcome = find_affected_blocks(blocks_affected, b_from, to, block_locs);
 
     if (outcome == e_block_move_result::INVERT) {
         //Try inverting the swap direction
@@ -51,9 +54,9 @@ e_create_move create_move(t_pl_blocks_to_be_moved& blocks_affected, ClusterBlock
             log_move_abort("inverted move no to block");
             outcome = e_block_move_result::ABORT;
         } else {
-            t_pl_loc from = place_ctx.block_locs[b_from].loc;
+            t_pl_loc from = block_locs[b_from].loc;
 
-            outcome = find_affected_blocks(blocks_affected, b_to, from);
+            outcome = find_affected_blocks(blocks_affected, b_to, from, block_locs);
 
             if (outcome == e_block_move_result::INVERT) {
                 log_move_abort("inverted move recursion");
@@ -71,7 +74,10 @@ e_create_move create_move(t_pl_blocks_to_be_moved& blocks_affected, ClusterBlock
     }
 }
 
-e_block_move_result find_affected_blocks(t_pl_blocks_to_be_moved& blocks_affected, ClusterBlockId b_from, t_pl_loc to) {
+e_block_move_result find_affected_blocks(t_pl_blocks_to_be_moved& blocks_affected,
+                                         ClusterBlockId b_from,
+                                         t_pl_loc to,
+                                         const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
     /* Finds and set ups the affected_blocks array.
      * Returns abort_swap. */
     VTR_ASSERT_SAFE(b_from);
@@ -81,7 +87,7 @@ e_block_move_result find_affected_blocks(t_pl_blocks_to_be_moved& blocks_affecte
 
     auto& place_ctx = g_vpr_ctx.placement();
 
-    t_pl_loc from = place_ctx.block_locs[b_from].loc;
+    t_pl_loc from = block_locs[b_from].loc;
 
     auto& pl_macros = place_ctx.pl_macros;
 
@@ -93,7 +99,7 @@ e_block_move_result find_affected_blocks(t_pl_blocks_to_be_moved& blocks_affecte
         t_pl_offset swap_offset = to - from;
 
         int imember_from = 0;
-        outcome = record_macro_swaps(blocks_affected, imacro_from, imember_from, swap_offset);
+        outcome = record_macro_swaps(blocks_affected, imacro_from, imember_from, swap_offset, block_locs);
 
         VTR_ASSERT_SAFE(outcome != e_block_move_result::VALID || imember_from == int(pl_macros[imacro_from].members.size()));
 
@@ -110,7 +116,7 @@ e_block_move_result find_affected_blocks(t_pl_blocks_to_be_moved& blocks_affecte
             outcome = e_block_move_result::INVERT;
         } else {
             // This is not a macro - I could use the from and to info from before
-            outcome = record_single_block_swap(blocks_affected, b_from, to);
+            outcome = record_single_block_swap(blocks_affected, b_from, to, block_locs);
         }
 
     } // Finish handling cases for blocks in macro and otherwise
@@ -118,7 +124,10 @@ e_block_move_result find_affected_blocks(t_pl_blocks_to_be_moved& blocks_affecte
     return outcome;
 }
 
-e_block_move_result record_single_block_swap(t_pl_blocks_to_be_moved& blocks_affected, ClusterBlockId b_from, t_pl_loc to) {
+e_block_move_result record_single_block_swap(t_pl_blocks_to_be_moved& blocks_affected,
+                                             ClusterBlockId b_from,
+                                             t_pl_loc to,
+                                             const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
     /* Find all the blocks affected when b_from is swapped with b_to.
      * Returns abort_swap.                  */
 
@@ -126,7 +135,7 @@ e_block_move_result record_single_block_swap(t_pl_blocks_to_be_moved& blocks_aff
 
     auto& place_ctx = g_vpr_ctx.mutable_placement();
 
-    if (place_ctx.block_locs[b_from].is_fixed) {
+    if (block_locs[b_from].is_fixed) {
         return e_block_move_result::ABORT;
     }
 
@@ -134,32 +143,32 @@ e_block_move_result record_single_block_swap(t_pl_blocks_to_be_moved& blocks_aff
 
     ClusterBlockId b_to = place_ctx.grid_blocks.block_at_location(to);
 
-    t_pl_loc curr_from = place_ctx.block_locs[b_from].loc;
+    t_pl_loc curr_from = block_locs[b_from].loc;
 
     e_block_move_result outcome = e_block_move_result::VALID;
 
     // Check whether the to_location is empty
     if (b_to == EMPTY_BLOCK_ID) {
         // Sets up the blocks moved
-        outcome = record_block_move(blocks_affected, b_from, to);
+        outcome = record_block_move(blocks_affected, b_from, to, block_locs);
 
     } else if (b_to != INVALID_BLOCK_ID) {
         // Check whether block to is compatible with from location
         if (b_to != EMPTY_BLOCK_ID && b_to != INVALID_BLOCK_ID) {
-            if (!(is_legal_swap_to_location(b_to, curr_from)) || place_ctx.block_locs[b_to].is_fixed) {
+            if (!(is_legal_swap_to_location(b_to, curr_from, block_locs)) || block_locs[b_to].is_fixed) {
                 return e_block_move_result::ABORT;
             }
         }
 
         // Sets up the blocks moved
-        outcome = record_block_move(blocks_affected, b_from, to);
+        outcome = record_block_move(blocks_affected, b_from, to, block_locs);
 
         if (outcome != e_block_move_result::VALID) {
             return outcome;
         }
 
-        t_pl_loc from = place_ctx.block_locs[b_from].loc;
-        outcome = record_block_move(blocks_affected, b_to, from);
+        t_pl_loc from = block_locs[b_from].loc;
+        outcome = record_block_move(blocks_affected, b_to, from, block_locs);
 
     } // Finish swapping the blocks and setting up blocks_affected
 
@@ -169,7 +178,11 @@ e_block_move_result record_single_block_swap(t_pl_blocks_to_be_moved& blocks_aff
 //Records all the block movements required to move the macro imacro_from starting at member imember_from
 //to a new position offset from its current position by swap_offset. The new location may be a
 //single (non-macro) block, or another macro.
-e_block_move_result record_macro_swaps(t_pl_blocks_to_be_moved& blocks_affected, const int imacro_from, int& imember_from, t_pl_offset swap_offset) {
+e_block_move_result record_macro_swaps(t_pl_blocks_to_be_moved& blocks_affected,
+                                       const int imacro_from,
+                                       int& imember_from,
+                                       t_pl_offset swap_offset,
+                                       const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
     auto& place_ctx = g_vpr_ctx.placement();
     auto& pl_macros = place_ctx.pl_macros;
 
@@ -180,7 +193,7 @@ e_block_move_result record_macro_swaps(t_pl_blocks_to_be_moved& blocks_affected,
         // cannot use the old from and to info
         ClusterBlockId curr_b_from = pl_macros[imacro_from].members[imember_from].blk_index;
 
-        t_pl_loc curr_from = place_ctx.block_locs[curr_b_from].loc;
+        t_pl_loc curr_from = block_locs[curr_b_from].loc;
 
         t_pl_loc curr_to = curr_from + swap_offset;
 
@@ -190,8 +203,8 @@ e_block_move_result record_macro_swaps(t_pl_blocks_to_be_moved& blocks_affected,
         // * match the correct block type
         //
         //Note that we need to explicitly check that the types match, since the device floorplan is not
-        //(neccessarily) translationally invariant for an arbitrary macro
-        if (!is_legal_swap_to_location(curr_b_from, curr_to)) {
+        //(necessarily) translationally invariant for an arbitrary macro
+        if (!is_legal_swap_to_location(curr_b_from, curr_to, block_locs)) {
             log_move_abort("macro_from swap to location illegal");
             outcome = e_block_move_result::ABORT;
         } else {
@@ -203,11 +216,11 @@ e_block_move_result record_macro_swaps(t_pl_blocks_to_be_moved& blocks_affected,
                 //To block is a macro
 
                 if (imacro_from == imacro_to) {
-                    outcome = record_macro_self_swaps(blocks_affected, imacro_from, swap_offset);
+                    outcome = record_macro_self_swaps(blocks_affected, imacro_from, swap_offset, block_locs);
                     imember_from = pl_macros[imacro_from].members.size();
                     break; //record_macro_self_swaps() handles this case completely, so we don't need to continue the loop
                 } else {
-                    outcome = record_macro_macro_swaps(blocks_affected, imacro_from, imember_from, imacro_to, b_to, swap_offset);
+                    outcome = record_macro_macro_swaps(blocks_affected, imacro_from, imember_from, imacro_to, b_to, swap_offset, block_locs);
                     if (outcome == e_block_move_result::INVERT_VALID) {
                         break; //The move was inverted and successfully proposed, don't need to continue the loop
                     }
@@ -215,7 +228,7 @@ e_block_move_result record_macro_swaps(t_pl_blocks_to_be_moved& blocks_affected,
                 }
             } else {
                 //To block is not a macro
-                outcome = record_single_block_swap(blocks_affected, curr_b_from, curr_to);
+                outcome = record_single_block_swap(blocks_affected, curr_b_from, curr_to, block_locs);
             }
         }
     } // Finish going through all the blocks in the macro
@@ -225,7 +238,13 @@ e_block_move_result record_macro_swaps(t_pl_blocks_to_be_moved& blocks_affected,
 //Records all the block movements required to move the macro imacro_from starting at member imember_from
 //to a new position offset from its current position by swap_offset. The new location must be where
 //blk_to is located and blk_to must be part of imacro_to.
-e_block_move_result record_macro_macro_swaps(t_pl_blocks_to_be_moved& blocks_affected, const int imacro_from, int& imember_from, const int imacro_to, ClusterBlockId blk_to, t_pl_offset swap_offset) {
+e_block_move_result record_macro_macro_swaps(t_pl_blocks_to_be_moved& blocks_affected,
+                                             const int imacro_from,
+                                             int& imember_from,
+                                             const int imacro_to,
+                                             ClusterBlockId blk_to,
+                                             t_pl_offset swap_offset,
+                                             const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
     //Adds the macro imacro_to to the set of affected block caused by swapping 'blk_to' to its
     //new position.
     //
@@ -242,7 +261,7 @@ e_block_move_result record_macro_macro_swaps(t_pl_blocks_to_be_moved& blocks_aff
     //allows these blocks to swap)
     if (place_ctx.pl_macros[imacro_to].members[0].blk_index != blk_to) {
         int imember_to = 0;
-        auto outcome = record_macro_swaps(blocks_affected, imacro_to, imember_to, -swap_offset);
+        auto outcome = record_macro_swaps(blocks_affected, imacro_to, imember_to, -swap_offset, block_locs);
         if (outcome == e_block_move_result::INVERT) {
             log_move_abort("invert recursion2");
             outcome = e_block_move_result::ABORT;
@@ -254,7 +273,7 @@ e_block_move_result record_macro_macro_swaps(t_pl_blocks_to_be_moved& blocks_aff
 
     //From/To blocks should be exactly the swap offset appart
     ClusterBlockId blk_from = place_ctx.pl_macros[imacro_from].members[imember_from].blk_index;
-    VTR_ASSERT_SAFE(place_ctx.block_locs[blk_from].loc + swap_offset == place_ctx.block_locs[blk_to].loc);
+    VTR_ASSERT_SAFE(block_locs[blk_from].loc + swap_offset == block_locs[blk_to].loc);
 
     //Continue walking along the overlapping parts of the from and to macros, recording
     //each block swap.
@@ -282,25 +301,25 @@ e_block_move_result record_macro_macro_swaps(t_pl_blocks_to_be_moved& blocks_aff
 
         ClusterBlockId b_from = place_ctx.pl_macros[imacro_from].members[imember_from].blk_index;
 
-        t_pl_loc curr_to = place_ctx.block_locs[b_from].loc + swap_offset;
-        t_pl_loc curr_from = place_ctx.block_locs[b_from].loc;
+        t_pl_loc curr_to = block_locs[b_from].loc + swap_offset;
+        t_pl_loc curr_from = block_locs[b_from].loc;
 
         ClusterBlockId b_to = place_ctx.pl_macros[imacro_to].members[imember_to].blk_index;
-        VTR_ASSERT_SAFE(curr_to == place_ctx.block_locs[b_to].loc);
+        VTR_ASSERT_SAFE(curr_to == block_locs[b_to].loc);
 
         // Check whether block to is compatible with from location
         if (b_to != EMPTY_BLOCK_ID && b_to != INVALID_BLOCK_ID) {
-            if (!(is_legal_swap_to_location(b_to, curr_from))) {
+            if (!(is_legal_swap_to_location(b_to, curr_from, block_locs))) {
                 return e_block_move_result::ABORT;
             }
         }
 
-        if (!is_legal_swap_to_location(b_from, curr_to)) {
+        if (!is_legal_swap_to_location(b_from, curr_to, block_locs)) {
             log_move_abort("macro_from swap to location illegal");
             return e_block_move_result::ABORT;
         }
 
-        auto outcome = record_single_block_swap(blocks_affected, b_from, curr_to);
+        auto outcome = record_single_block_swap(blocks_affected, b_from, curr_to, block_locs);
         if (outcome != e_block_move_result::VALID) {
             return outcome;
         }
@@ -311,7 +330,7 @@ e_block_move_result record_macro_macro_swaps(t_pl_blocks_to_be_moved& blocks_aff
         //
         //Swap the remainder of the 'to' macro to locations after the 'from' macro.
         //Note that we are swapping in the opposite direction so the swap offsets are inverted.
-        return record_macro_swaps(blocks_affected, imacro_to, imember_to, -swap_offset);
+        return record_macro_swaps(blocks_affected, imacro_to, imember_to, -swap_offset, block_locs);
     }
 
     return e_block_move_result::VALID;
@@ -326,22 +345,23 @@ e_block_move_result record_macro_macro_swaps(t_pl_blocks_to_be_moved& blocks_aff
 e_block_move_result record_macro_move(t_pl_blocks_to_be_moved& blocks_affected,
                                       std::vector<ClusterBlockId>& displaced_blocks,
                                       const int imacro,
-                                      t_pl_offset swap_offset) {
+                                      t_pl_offset swap_offset,
+                                      const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
     auto& place_ctx = g_vpr_ctx.placement();
 
     for (const t_pl_macro_member& member : place_ctx.pl_macros[imacro].members) {
-        t_pl_loc from = place_ctx.block_locs[member.blk_index].loc;
+        t_pl_loc from = block_locs[member.blk_index].loc;
 
         t_pl_loc to = from + swap_offset;
 
-        if (!is_legal_swap_to_location(member.blk_index, to)) {
+        if (!is_legal_swap_to_location(member.blk_index, to, block_locs)) {
             log_move_abort("macro move to location illegal");
             return e_block_move_result::ABORT;
         }
 
         ClusterBlockId blk_to = place_ctx.grid_blocks.block_at_location(to);
 
-        record_block_move(blocks_affected, member.blk_index, to);
+        record_block_move(blocks_affected, member.blk_index, to, block_locs);
 
         int imacro_to = -1;
         get_imacro_from_iblk(&imacro_to, blk_to, place_ctx.pl_macros);
@@ -355,17 +375,20 @@ e_block_move_result record_macro_move(t_pl_blocks_to_be_moved& blocks_affected,
 //Returns the set of macros affected by moving imacro by the specified offset
 //
 //The resulting 'macros' may contain duplicates
-e_block_move_result identify_macro_self_swap_affected_macros(std::vector<int>& macros, const int imacro, t_pl_offset swap_offset) {
+e_block_move_result identify_macro_self_swap_affected_macros(std::vector<int>& macros,
+                                                             const int imacro,
+                                                             t_pl_offset swap_offset,
+                                                             const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
     e_block_move_result outcome = e_block_move_result::VALID;
     auto& place_ctx = g_vpr_ctx.placement();
 
     for (size_t imember = 0; imember < place_ctx.pl_macros[imacro].members.size() && outcome == e_block_move_result::VALID; ++imember) {
         ClusterBlockId blk = place_ctx.pl_macros[imacro].members[imember].blk_index;
 
-        t_pl_loc from = place_ctx.block_locs[blk].loc;
+        t_pl_loc from = block_locs[blk].loc;
         t_pl_loc to = from + swap_offset;
 
-        if (!is_legal_swap_to_location(blk, to)) {
+        if (!is_legal_swap_to_location(blk, to, block_locs)) {
             log_move_abort("macro move to location illegal");
             return e_block_move_result::ABORT;
         }
@@ -379,7 +402,7 @@ e_block_move_result identify_macro_self_swap_affected_macros(std::vector<int>& m
             auto itr = std::find(macros.begin(), macros.end(), imacro_to);
             if (itr == macros.end()) {
                 macros.push_back(imacro_to);
-                outcome = identify_macro_self_swap_affected_macros(macros, imacro_to, swap_offset);
+                outcome = identify_macro_self_swap_affected_macros(macros, imacro_to, swap_offset, block_locs);
             }
         }
     }
@@ -388,7 +411,8 @@ e_block_move_result identify_macro_self_swap_affected_macros(std::vector<int>& m
 
 e_block_move_result record_macro_self_swaps(t_pl_blocks_to_be_moved& blocks_affected,
                                             const int imacro,
-                                            t_pl_offset swap_offset) {
+                                            t_pl_offset swap_offset,
+                                            const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
     auto& place_ctx = g_vpr_ctx.placement();
 
     //Reset any partial move
@@ -396,8 +420,7 @@ e_block_move_result record_macro_self_swaps(t_pl_blocks_to_be_moved& blocks_affe
 
     //Collect the macros affected
     std::vector<int> affected_macros;
-    auto outcome = identify_macro_self_swap_affected_macros(affected_macros, imacro,
-                                                            swap_offset);
+    auto outcome = identify_macro_self_swap_affected_macros(affected_macros, imacro, swap_offset, block_locs);
 
     if (outcome != e_block_move_result::VALID) {
         return outcome;
@@ -410,7 +433,7 @@ e_block_move_result record_macro_self_swaps(t_pl_blocks_to_be_moved& blocks_affe
 
     //Move all the affected macros by the offset
     for (int imacro_affected : affected_macros) {
-        outcome = record_macro_move(blocks_affected, displaced_blocks, imacro_affected, swap_offset);
+        outcome = record_macro_move(blocks_affected, displaced_blocks, imacro_affected, swap_offset, block_locs);
 
         if (outcome != e_block_move_result::VALID) {
             return outcome;
@@ -438,14 +461,16 @@ e_block_move_result record_macro_self_swaps(t_pl_blocks_to_be_moved& blocks_affe
     //Fit the displaced blocks into the empty locations
     auto loc_itr = empty_locs.begin();
     for (auto blk : non_macro_displaced_blocks) {
-        outcome = record_block_move(blocks_affected, blk, *loc_itr);
+        outcome = record_block_move(blocks_affected, blk, *loc_itr, block_locs);
         ++loc_itr;
     }
 
     return outcome;
 }
 
-bool is_legal_swap_to_location(ClusterBlockId blk, t_pl_loc to) {
+bool is_legal_swap_to_location(ClusterBlockId blk,
+                               t_pl_loc to,
+                               const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
     //Make sure that the swap_to location is valid
     //It must be:
     // * on chip, and
@@ -473,9 +498,9 @@ bool is_legal_swap_to_location(ClusterBlockId blk, t_pl_loc to) {
         return false;
     }
     // If the destination block is user constrained, abort this swap
-    auto b_to = place_ctx.grid_blocks.block_at_location(to);
+    ClusterBlockId b_to = place_ctx.grid_blocks.block_at_location(to);
     if (b_to != INVALID_BLOCK_ID && b_to != EMPTY_BLOCK_ID) {
-        if (place_ctx.block_locs[b_to].is_fixed) {
+        if (block_locs[b_to].is_fixed) {
             return false;
         }
     }
@@ -565,14 +590,15 @@ ClusterBlockId propose_block_to_move(const t_placer_opts& /* placer_opts */,
                                      int& logical_blk_type_index,
                                      bool highly_crit_block,
                                      ClusterNetId* net_from,
-                                     int* pin_from) {
+                                     int* pin_from,
+                                     const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
 #endif
     ClusterBlockId b_from = ClusterBlockId::INVALID();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     if (logical_blk_type_index == -1) { //If the block type is unspecified, choose any random block to be swapped with another random block
         if (highly_crit_block) {
-            b_from = pick_from_highly_critical_block(*net_from, *pin_from);
+            b_from = pick_from_highly_critical_block(*net_from, *pin_from, block_locs);
         } else {
             b_from = pick_from_block();
         }
@@ -583,7 +609,7 @@ ClusterBlockId propose_block_to_move(const t_placer_opts& /* placer_opts */,
         }
     } else { //If the block type is specified, choose a random block with blk_type to be swapped with another random block
         if (highly_crit_block) {
-            b_from = pick_from_highly_critical_block(*net_from, *pin_from, logical_blk_type_index);
+            b_from = pick_from_highly_critical_block(*net_from, *pin_from, logical_blk_type_index, block_locs);
         } else {
             b_from = pick_from_block(logical_blk_type_index);
         }
@@ -640,9 +666,10 @@ ClusterBlockId pick_from_block(const int logical_blk_type_index) {
 
 //Pick a random highly critical block to be swapped with another random block.
 //If none is found return ClusterBlockId::INVALID()
-ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from, int& pin_from) {
+ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from,
+                                               int& pin_from,
+                                               const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
     auto& place_move_ctx = g_placer_ctx.move();
-    auto& place_ctx = g_vpr_ctx.placement();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     //Initialize critical net and pin to be invalid
@@ -658,7 +685,7 @@ ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from, int& pin_
     std::pair<ClusterNetId, int> crit_pin = place_move_ctx.highly_crit_pins[vtr::irand(place_move_ctx.highly_crit_pins.size() - 1)];
     ClusterBlockId b_from = cluster_ctx.clb_nlist.net_driver_block(crit_pin.first);
 
-    if (place_ctx.block_locs[b_from].is_fixed) {
+    if (block_locs[b_from].is_fixed) {
         return ClusterBlockId::INVALID(); //Block is fixed, cannot move
     }
 
@@ -672,9 +699,11 @@ ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from, int& pin_
 
 //Pick a random highly critical block with a specified block type to be swapped with another random block.
 //If none is found return ClusterBlockId::INVALID()
-ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from, int& pin_from, const int logical_blk_type_index) {
+ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from,
+                                               int& pin_from,
+                                               const int logical_blk_type_index,
+                                               const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
     auto& place_move_ctx = g_placer_ctx.move();
-    auto& place_ctx = g_vpr_ctx.placement();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     //Initialize critical net and pin to be invalid
@@ -694,7 +723,7 @@ ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from, int& pin_
     //blk_type from propose move doesn't account for the EMPTY type
     auto b_from_type = cluster_ctx.clb_nlist.block_type(b_from);
     if (b_from_type->index == logical_blk_type_index) {
-        if (place_ctx.block_locs[b_from].is_fixed) {
+        if (block_locs[b_from].is_fixed) {
             return ClusterBlockId::INVALID(); //Block is fixed, cannot move
         }
 

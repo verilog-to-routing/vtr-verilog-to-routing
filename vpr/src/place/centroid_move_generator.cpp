@@ -41,11 +41,7 @@ e_create_move CentroidMoveGenerator::propose_move(t_pl_blocks_to_be_moved& block
                                                   const PlacerCriticalities* /*criticalities*/,
                                                   const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
     // Find a movable block based on blk_type
-    ClusterBlockId b_from = propose_block_to_move(placer_opts,
-                                                  proposed_action.logical_blk_type_index,
-                                                  false,
-                                                  nullptr,
-                                                  nullptr);
+    ClusterBlockId b_from = propose_block_to_move(placer_opts, proposed_action.logical_blk_type_index, false, nullptr, nullptr, block_locs);
 
     VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug,
                    "Centroid Move Choose Block %d - rlim %f\n",
@@ -84,7 +80,7 @@ e_create_move CentroidMoveGenerator::propose_move(t_pl_blocks_to_be_moved& block
         return e_create_move::ABORT;
     }
 
-    e_create_move create_move = ::create_move(blocks_affected, b_from, to);
+    e_create_move create_move = ::create_move(blocks_affected, b_from, to, block_locs);
 
     //Check that all the blocks affected by the move would still be in a legal floorplan region after the swap
     if (!floorplan_legal(blocks_affected)) {
@@ -135,7 +131,7 @@ void CentroidMoveGenerator::initialize_noc_groups(size_t high_fanout_net) {
     const auto router_block_type = cluster_ctx.clb_nlist.block_type(router_blk_ids[0]);
 
     // iterate over logical NoC routers and start a BFS
-    for (auto router_blk_id : router_blk_ids) {
+    for (ClusterBlockId router_blk_id : router_blk_ids) {
 
         if (block_visited[router_blk_id]) {
             continue;
@@ -181,7 +177,7 @@ void CentroidMoveGenerator::initialize_noc_groups(size_t high_fanout_net) {
                 }
 
                 if (cluster_ctx.clb_nlist.pin_type(pin_id) == PinType::DRIVER) {
-                    for (auto sink_pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
+                    for (ClusterPinId sink_pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
                         ClusterBlockId sink_block_id = cluster_ctx.clb_nlist.pin_block(sink_pin_id);
                         if (!block_visited[sink_block_id]) {
                             block_visited[sink_block_id] = true;

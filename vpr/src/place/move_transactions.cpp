@@ -4,16 +4,17 @@
 #include "place_util.h"
 
 //Records that block 'blk' should be moved to the specified 'to' location
-e_block_move_result record_block_move(t_pl_blocks_to_be_moved& blocks_affected, ClusterBlockId blk, t_pl_loc to) {
+e_block_move_result record_block_move(t_pl_blocks_to_be_moved& blocks_affected,
+                                      ClusterBlockId blk,
+                                      t_pl_loc to,
+                                      const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
     auto res = blocks_affected.moved_to.emplace(to);
     if (!res.second) {
         log_move_abort("duplicate block move to location");
         return e_block_move_result::ABORT;
     }
 
-    auto& place_ctx = g_vpr_ctx.mutable_placement();
-
-    t_pl_loc from = place_ctx.block_locs[blk].loc;
+    t_pl_loc from = block_locs[blk].loc;
 
     auto res2 = blocks_affected.moved_from.emplace(from);
     if (!res2.second) {
@@ -21,7 +22,7 @@ e_block_move_result record_block_move(t_pl_blocks_to_be_moved& blocks_affected, 
         return e_block_move_result::ABORT;
     }
 
-    VTR_ASSERT_SAFE(to.sub_tile < int(place_ctx.grid_blocks.num_blocks_at_location({to.x, to.y, to.layer})));
+    VTR_ASSERT_SAFE(to.sub_tile < int(g_vpr_ctx.placement().grid_blocks.num_blocks_at_location({to.x, to.y, to.layer})));
 
     // Sets up the blocks moved
     int imoved_blk = blocks_affected.num_moved_blocks;
@@ -34,8 +35,8 @@ e_block_move_result record_block_move(t_pl_blocks_to_be_moved& blocks_affected, 
 }
 
 //Moves the blocks in blocks_affected to their new locations
-void apply_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected) {
-    auto& place_ctx = g_vpr_ctx.mutable_placement();
+void apply_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected,
+                       vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
     auto& device_ctx = g_vpr_ctx.device();
 
     //Swap the blocks, but don't swap the nets or update place_ctx.grid_blocks
@@ -47,7 +48,7 @@ void apply_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected) {
         const t_pl_loc& new_loc = blocks_affected.moved_blocks[iblk].new_loc;
 
         // move the block to its new location
-        place_ctx.block_locs[blk].loc = new_loc;
+        block_locs[blk].loc = new_loc;
 
         // get physical tile type of the old location
         t_physical_tile_type_ptr old_type = device_ctx.grid.get_physical_type({old_loc.x,old_loc.y,old_loc.layer});
@@ -92,8 +93,8 @@ void commit_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected) {
 }
 
 //Moves the blocks in blocks_affected to their old locations
-void revert_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected) {
-    auto& place_ctx = g_vpr_ctx.mutable_placement();
+void revert_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected,
+                        vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
     auto& device_ctx = g_vpr_ctx.device();
 
     // Swap the blocks back, nets not yet swapped they don't need to be changed
@@ -104,7 +105,7 @@ void revert_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected) {
         const t_pl_loc& new_loc = blocks_affected.moved_blocks[iblk].new_loc;
 
         // return the block to where it was before the swap
-        place_ctx.block_locs[blk].loc = old_loc;
+        block_locs[blk].loc = old_loc;
 
         // get physical tile type of the old location
         t_physical_tile_type_ptr old_type = device_ctx.grid.get_physical_type({old_loc.x,old_loc.y,old_loc.layer});
@@ -116,7 +117,8 @@ void revert_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected) {
             place_sync_external_block_connections(blk);
         }
 
-        VTR_ASSERT_SAFE_MSG(place_ctx.grid_blocks.block_at_location(old_loc) == blk, "Grid blocks should only have been updated if swap committed (not reverted)");
+        VTR_ASSERT_SAFE_MSG(g_vpr_ctx.placement().grid_blocks.block_at_location(old_loc) == blk,
+                            "Grid blocks should only have been updated if swap committed (not reverted)");
     }
 }
 

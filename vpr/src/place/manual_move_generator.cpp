@@ -61,6 +61,6 @@ e_create_move ManualMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
         return e_create_move::ABORT;
     }
 
-    e_create_move create_move = ::create_move(blocks_affected, b_from, to);
+    e_create_move create_move = ::create_move(blocks_affected, b_from, to, block_locs);
     return create_move;
 }

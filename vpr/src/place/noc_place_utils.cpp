@@ -161,8 +161,7 @@ void find_affected_noc_routers_and_update_noc_costs(const t_pl_blocks_to_be_move
         // calculate the new aggregate bandwidth and latency costs for the affected traffic flow
         proposed_traffic_flow_costs[traffic_flow_id].aggregate_bandwidth = calculate_traffic_flow_aggregate_bandwidth_cost(traffic_flow_route, curr_traffic_flow);
         std::tie(proposed_traffic_flow_costs[traffic_flow_id].latency,
-                 proposed_traffic_flow_costs[traffic_flow_id].latency_overrun)
-            = calculate_traffic_flow_latency_cost(traffic_flow_route, noc_ctx.noc_model, curr_traffic_flow);
+                 proposed_traffic_flow_costs[traffic_flow_id].latency_overrun) = calculate_traffic_flow_latency_cost(traffic_flow_route, noc_ctx.noc_model, curr_traffic_flow);
 
         // compute how much the aggregate bandwidth and latency costs change with this swap
         delta_c.aggregate_bandwidth += proposed_traffic_flow_costs[traffic_flow_id].aggregate_bandwidth - traffic_flow_costs[traffic_flow_id].aggregate_bandwidth;
@@ -210,9 +209,6 @@ std::vector<NocLinkId>& route_traffic_flow(NocTrafficFlowId traffic_flow_id,
                                            NocTrafficFlows& noc_traffic_flows_storage,
                                            NocRouting& noc_flows_router,
                                            const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
-    // provides the positions where the affected blocks have moved to
-    auto& place_ctx = g_vpr_ctx.placement();
-
     // get the traffic flow with the current id
     const t_noc_traffic_flow& curr_traffic_flow = noc_traffic_flows_storage.get_single_noc_traffic_flow(traffic_flow_id);
 
@@ -856,7 +852,7 @@ e_create_move propose_router_swap(t_pl_blocks_to_be_moved& blocks_affected,
         return e_create_move::ABORT;
     }
 
-    e_create_move create_move = ::create_move(blocks_affected, b_from, to);
+    e_create_move create_move = ::create_move(blocks_affected, b_from, to, block_locs);
 
     //Check that all the blocks affected by the move would still be in a legal floorplan region after the swap
     if (!floorplan_legal(blocks_affected)) {

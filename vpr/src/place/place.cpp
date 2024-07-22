@@ -1340,7 +1340,7 @@ static e_move_result try_swap(const t_annealing_state* state,
          */
 
         /* Update the block positions */
-        apply_move_blocks(blocks_affected);
+        apply_move_blocks(blocks_affected, g_vpr_ctx.mutable_placement().block_locs);
 
         //Find all the nets affected by this swap and update the wiring costs.
         //This cost value doesn't depend on the timing info.
@@ -1478,7 +1478,7 @@ static e_move_result try_swap(const t_annealing_state* state,
             reset_move_nets(num_nets_affected);
 
             /* Restore the place_ctx.block_locs data structures to their state before the move. */
-            revert_move_blocks(blocks_affected);
+            revert_move_blocks(blocks_affected, g_vpr_ctx.mutable_placement().block_locs);
 
             if (place_algorithm == SLACK_TIMING_PLACE) {
                 /* Revert the timing delays and costs to pre-update values.       */
