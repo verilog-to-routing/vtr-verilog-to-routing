@@ -1534,8 +1534,6 @@ static e_move_result try_swap(const t_annealing_state* state,
     if (!router_block_move) {
         calculate_reward_and_process_outcome(placer_opts, move_outcome_stats,
                                              delta_c, timing_bb_factor, move_generator);
-    } else {
-//        std::cout << "Group move delta cost: " << delta_c << std::endl;
     }
 
 #ifdef VTR_ENABLE_DEBUG_LOGGING
@@ -1965,7 +1963,7 @@ static void check_place(const t_placer_costs& costs,
         // check the NoC costs during placement if the user is using the NoC supported flow
         error += check_noc_placement_costs(costs, ERROR_TOL, noc_opts, g_vpr_ctx.placement().block_locs);
         // make sure NoC routing configuration does not create any cycles in CDG
-        error += (int)noc_routing_has_cycle();
+        error += (int)noc_routing_has_cycle(g_vpr_ctx.placement().block_locs);
     }
 
     if (error == 0) {

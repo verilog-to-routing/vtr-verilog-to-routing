@@ -51,8 +51,6 @@ struct PlacerTimingContext : public Context {
     /**
      * @brief Net connection timing costs (i.e. criticality * delay)
      *        of committed block positions. See PlacerTimingCosts.
-     *
-     *
      */
     PlacerTimingCosts connection_timing_cost;
 
@@ -106,7 +104,7 @@ struct PlacerMoveContext : public Context {
     // [0..cluster_ctx.clb_nlist.nets().size()-1]. Store the number of blocks on each layer ()
     vtr::Matrix<int> num_sink_pin_layer;
 
-    // The first range limit calculated by the anneal
+    // The first range limit calculated by the annealer
     float first_rlim;
 
     // Scratch vectors that are used by different directed moves for temporary calculations (allocated here to save runtime)

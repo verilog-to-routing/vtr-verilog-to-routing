@@ -382,10 +382,8 @@ float comp_td_single_connection_delay(const PlaceDelayModel* delay_model, Cluste
          * In particular this approach does not accurately capture the effect
          * of fast carry-chain connections.
          */
-        delay_source_to_sink = delay_model->delay({source_x, source_y, source_layer},
-                                                  source_block_ipin,
-                                                  {sink_x, sink_y, sink_layer},
-                                                  sink_block_ipin);
+        delay_source_to_sink = delay_model->delay({source_x, source_y, source_layer}, source_block_ipin,
+                                                  {sink_x, sink_y, sink_layer}, sink_block_ipin);
         if (delay_source_to_sink < 0) {
             VPR_ERROR(VPR_ERROR_PLACE,
                       "in comp_td_single_connection_delay: Bad delay_source_to_sink value %g from %s (at %d,%d) to %s (at %d,%d)\n"
@@ -407,7 +405,7 @@ void comp_td_connection_delays(const PlaceDelayModel* delay_model) {
     auto& p_timing_ctx = g_placer_ctx.mutable_timing();
     auto& connection_delay = p_timing_ctx.connection_delay;
 
-    for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+    for (ClusterNetId net_id : cluster_ctx.clb_nlist.nets()) {
         for (size_t ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ++ipin) {
             connection_delay[net_id][ipin] = comp_td_single_connection_delay(delay_model, net_id, ipin);
         }

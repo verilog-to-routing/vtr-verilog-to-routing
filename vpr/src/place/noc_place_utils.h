@@ -572,7 +572,7 @@ void write_noc_placement_file(const std::string& file_name,
  *
  * @return bool Indicates whether NoC traffic flow routes form a cycle.
  */
-bool noc_routing_has_cycle();
+bool noc_routing_has_cycle(const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
 
 /**
  * @brief Check if the channel dependency graph created from the given traffic flow routes
@@ -580,7 +580,8 @@ bool noc_routing_has_cycle();
  * @param routes The user provided traffic flow routes.
  * @return True if there is any cycles in the channel dependency graph.
  */
-bool noc_routing_has_cycle(const vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>>& routes);
+bool noc_routing_has_cycle(const vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>>& routes,
+                           const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
 
 /**
  * @brief Invokes NoC SAT router and print new NoC cost terms after SAT router

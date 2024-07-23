@@ -297,7 +297,7 @@ void initial_noc_placement(const t_noc_opts& noc_opts,
     noc_routers_anneal(noc_opts, block_locs);
 
     // check if there is any cycles
-    bool has_cycle = noc_routing_has_cycle();
+    bool has_cycle = noc_routing_has_cycle(block_locs);
     if (has_cycle) {
         VPR_FATAL_ERROR(VPR_ERROR_PLACE,
                         "At least one cycle was found in NoC channel dependency graph. This may cause a deadlock "
