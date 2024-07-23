@@ -1969,8 +1969,6 @@ static std::vector<vtr::Matrix<std::pair<int,e_track_to_pin_dir>>> alloc_and_loa
 
                     VTR_ASSERT_MSG(Fc[itype][ipin][iseg].first >= 0, "Calculated absolute Fc must be positive");
                     VTR_ASSERT_MSG(Fc[itype][ipin][iseg].first % fac == 0, "Calculated absolute Fc must be divisible by 1 (bidir architecture) or 2 (unidir architecture)"); //Required by connection block construction code
-                    VTR_ASSERT_MSG(Fc[itype][ipin][iseg].second == e_track_to_pin_dir::BOTH_DIR && directionality == e_directionality::BI_DIRECTIONAL, "BI-directional segments can not specify segment direction in Fc_override");
-                    VTR_ASSERT_MSG(Fc[itype][ipin][iseg].second <= int(e_track_to_pin_dir::BOTH_DIR) && directionality == e_directionality::UNI_DIRECTIONAL, "Uni-directional segments valid directionalies are INC/DEC/BOTH_DIR");
                 }
             }
         }
@@ -3735,7 +3733,6 @@ static void load_uniform_connection_block_pattern(vtr::NdMatrix<int, 6>& tracks_
         int seg_dir = Fc[pin][seg_index].second;
 
         VTR_ASSERT(pin_fc % group_size == 0);
-        VTR_LOG("pin %d, side %d, width %d, height %d, layer %d, pin_fc %d\n", pin, side, width, height, layer, pin_fc);
 
         /* Bi-directional treats each track separately, uni-directional works with pairs of tracks */
         for (int j = 0; j < (pin_fc / group_size); ++j) {
@@ -3826,19 +3823,13 @@ static void load_uniform_connection_block_pattern(vtr::NdMatrix<int, 6>& tracks_
             }
 
             /* Assign the group of tracks for the Fc pattern */
-            if(seg_dir == e_track_to_pin_dir::BOTH_DIR){
-                for (int k = 0; k < group_size; ++k) {
-                    tracks_connected_to_pin[pin][width][height][layer][side][group_size * j + k] = (itrack + k) % max_chan_width;
-                    excess_tracks_selected[side][width][height][(itrack + k) % max_chan_width]++;
-                }
-            } 
-            else if (seg_dir == e_track_to_pin_dir::INC){
-                tracks_connected_to_pin[pin][width][height][layer][side][group_size * j] = (itrack) % max_chan_width;
-                excess_tracks_selected[side][width][height][(itrack) % max_chan_width]++;
-            }
-            else{
-                tracks_connected_to_pin[pin][width][height][layer][side][group_size * j + 1] = (itrack + 1) % max_chan_width;
-                excess_tracks_selected[side][width][height][(itrack + 1) % max_chan_width]++;
+            for (int k = 0; k < group_size; ++k) {
+                if (seg_dir == e_track_to_pin_dir::INC && k % 2 != 0) 
+                    continue; //skip odd track indicies which are decremental wires
+                if (seg_dir == e_track_to_pin_dir::DEC && k % 2 != 1)
+                    continue; //skip even track indicies which are incremental wires
+                tracks_connected_to_pin[pin][width][height][layer][side][group_size * j + k] = (itrack + k) % max_chan_width;
+                excess_tracks_selected[side][width][height][(itrack + k) % max_chan_width]++;
             }
         }
     }
