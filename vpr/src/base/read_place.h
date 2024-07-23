@@ -6,16 +6,17 @@
  * It takes in the current netlist file and grid dimensions to check that they match those that were used when placement was generated.
  * The verify_file_hashes bool is used to decide whether to give a warning or an error if the netlist files do not match.
  */
-void read_place(
-    const char* net_file,
-    const char* place_file,
-    bool verify_file_hashes,
-    const DeviceGrid& grid);
+std::string read_place(const char* net_file,
+                       const char* place_file,
+                       vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs,
+                       bool verify_file_hashes,
+                       const DeviceGrid& grid);
 
 /**
  * This function is used to read a constraints file that specifies the desired locations of blocks.
  */
-void read_constraints(const char* constraints_file);
+void read_constraints(const char* constraints_file,
+                      vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
 
 /**
  * This function prints out a place file.
@@ -27,9 +28,10 @@ void read_constraints(const char* constraints_file);
  *                       will not be included; this file is used as a placement constraints
  *                       file when running placement in order to place orphan clusters.
  */
-void print_place(const char* net_file,
-                 const char* net_id,
-                 const char* place_file,
-                 bool is_place_file = true);
+std::string print_place(const char* net_file,
+                        const char* net_id,
+                        const char* place_file,
+                        const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs,
+                        bool is_place_file = true);
 
 #endif

@@ -437,9 +437,8 @@ void try_place(const Netlist<>& net_list,
     auto [move_generator, move_generator2] = create_move_generators(placer_opts, move_lim, noc_opts.noc_centroid_weight);
 
     if (!placer_opts.write_initial_place_file.empty()) {
-        print_place(nullptr,
-                    nullptr,
-                    (placer_opts.write_initial_place_file + ".init.place").c_str());
+        print_place(nullptr, nullptr, (placer_opts.write_initial_place_file + ".init.place").c_str(),
+                    g_vpr_ctx.placement().block_locs);
     }
 
 #ifdef ENABLE_ANALYTIC_PLACE
@@ -633,7 +632,7 @@ void try_place(const Netlist<>& net_list,
         std::string filename = vtr::string_fmt("placement_%03d_%03d.place", 0,
                                                0);
         VTR_LOG("Saving initial placement to file: %s\n", filename.c_str());
-        print_place(nullptr, nullptr, filename.c_str());
+        print_place(nullptr, nullptr, filename.c_str(), g_vpr_ctx.placement().block_locs);
     }
 
     int first_move_lim = get_initial_move_lim(placer_opts, annealing_sched);
@@ -870,7 +869,7 @@ void try_place(const Netlist<>& net_list,
         std::string filename = vtr::string_fmt("placement_%03d_%03d.place",
                                                state.num_temps + 1, 0);
         VTR_LOG("Saving final placement to file: %s\n", filename.c_str());
-        print_place(nullptr, nullptr, filename.c_str());
+        print_place(nullptr, nullptr, filename.c_str(), g_vpr_ctx.placement().block_locs);
     }
 
     // TODO:
@@ -1095,16 +1094,12 @@ static void placement_inner_loop(const t_annealing_state* state,
         }
 
         if (placer_opts.placement_saves_per_temperature >= 1 && inner_iter > 0
-            && (inner_iter + 1)
-                       % (state->move_lim
-                          / placer_opts.placement_saves_per_temperature)
-                   == 0) {
+            && (inner_iter + 1) % (state->move_lim / placer_opts.placement_saves_per_temperature) == 0) {
             std::string filename = vtr::string_fmt("placement_%03d_%03d.place",
                                                    state->num_temps + 1, inner_placement_save_count);
-            VTR_LOG(
-                "Saving placement to file at temperature move %d / %d: %s\n",
-                inner_iter, state->move_lim, filename.c_str());
-            print_place(nullptr, nullptr, filename.c_str());
+            VTR_LOG("Saving placement to file at temperature move %d / %d: %s\n",
+                    inner_iter, state->move_lim, filename.c_str());
+            print_place(nullptr, nullptr, filename.c_str(), g_vpr_ctx.placement().block_locs);
             ++inner_placement_save_count;
         }
     }
@@ -1115,12 +1110,14 @@ static void placement_inner_loop(const t_annealing_state* state,
 
 /*only count non-global connections */
 static int count_connections() {
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+
     int count = 0;
 
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-        if (cluster_ctx.clb_nlist.net_is_ignored(net_id))
+    for (ClusterNetId net_id : cluster_ctx.clb_nlist.nets()) {
+        if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
             continue;
+        }
 
         count += cluster_ctx.clb_nlist.net_sinks(net_id).size();
     }

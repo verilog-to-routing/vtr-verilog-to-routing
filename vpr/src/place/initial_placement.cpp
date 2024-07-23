@@ -1005,7 +1005,7 @@ static void place_all_blocks([[maybe_unused]] const t_placer_opts& placer_opts,
 
         // read the constraint file if the user has provided one and this is not the first attempt
         if (strlen(constraints_file) != 0 && iter_no != 0) {
-            read_constraints(constraints_file);
+            read_constraints(constraints_file, block_locs);
         }
 
         //resize the vector to store unplaced block types empty locations
@@ -1223,7 +1223,7 @@ void initial_placement(const t_placer_opts& placer_opts,
 
     // read the constraint file and place fixed blocks
     if (strlen(constraints_file) != 0) {
-        read_constraints(constraints_file);
+        read_constraints(constraints_file, block_locs);
     }
 
     if (noc_opts.noc) {

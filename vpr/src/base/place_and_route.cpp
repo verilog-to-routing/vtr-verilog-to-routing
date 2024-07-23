@@ -348,7 +348,7 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
                             ScreenUpdatePriority::MINOR,
                             is_flat);
 
-            if (success && Fc_clipped == false) {
+            if (success && !Fc_clipped) {
                 final = current;
                 save_routing(best_routing,
                              route_ctx.clb_opins_used_locally,
@@ -357,8 +357,9 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
                 if (placer_opts.place_freq == PLACE_ALWAYS) {
                     auto& cluster_ctx = g_vpr_ctx.clustering();
                     // Cluster-based net_list is used for placement
-                    print_place(filename_opts.NetFile.c_str(), cluster_ctx.clb_nlist.netlist_id().c_str(),
-                                filename_opts.PlaceFile.c_str());
+                    std::string placement_id = print_place(filename_opts.NetFile.c_str(), cluster_ctx.clb_nlist.netlist_id().c_str(),
+                                                           filename_opts.PlaceFile.c_str(), g_vpr_ctx.placement().block_locs);
+                    g_vpr_ctx.mutable_placement().placement_id = placement_id;
                 }
             }
 
@@ -562,11 +563,11 @@ static float comp_width(t_chan* chan, float x, float separation) {
 /**
  * @brief After placement, logical pins for blocks, and nets must be updated to correspond with physical pins of type.
  *
- * This is required by blocks with capacity > 1 (e.g. typically IOs with multiple instaces in each placement
- * gride location). Since they may be swapped around during placement, we need to update which pins the various
+ * This is required by blocks with capacity > 1 (e.g. typically IOs with multiple instances in each placement
+ * grid location). Since they may be swapped around during placement, we need to update which pins the various
  * nets use.
  *
- * This updates both the external inter-block net connecitivity (i.e. the clustered netlist), and the intra-block
+ * This updates both the external inter-block net connectivity (i.e. the clustered netlist), and the intra-block
  * connectivity (since the internal pins used also change).
  *
  * This function should only be called once
