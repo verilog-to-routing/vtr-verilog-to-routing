@@ -347,12 +347,10 @@ static t_clb_opins_used alloc_and_load_clb_opins_used_locally() {
 
         if (is_io_type(type)) continue;
 
-        int pin_low = 0;
-        int pin_high = 0;
-        get_pin_range_for_block(blk_id, &pin_low, &pin_high);
+        const auto [pin_low, pin_high] = get_pin_range_for_block(blk_id);
 
         for (clb_pin = pin_low; clb_pin <= pin_high; clb_pin++) {
-            auto net = cluster_ctx.clb_nlist.block_net(blk_id, clb_pin);
+            ClusterNetId net = cluster_ctx.clb_nlist.block_net(blk_id, clb_pin);
 
             if (!net || (net && cluster_ctx.clb_nlist.net_sinks(net).size() == 0)) {
                 //There is no external net connected to this pin

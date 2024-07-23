@@ -383,14 +383,26 @@ struct PackingMultithreadingContext : public Context {
  * or related placer algorithm state.
  */
 struct PlacementContext : public Context {
+  private:
     ///@brief Clustered block placement locations
     vtr::vector_map<ClusterBlockId, t_block_loc> block_locs;
 
-    ///@brief Clustered pin placement mapping with physical pin
-    vtr::vector_map<ClusterPinId, int> physical_pins;
-
     ///@brief Clustered block associated with each grid location (i.e. inverse of block_locs)
     GridBlock grid_blocks;
+
+    bool loc_vars_are_accessible_ = true;
+
+  public:
+
+    const vtr::vector_map<ClusterBlockId, t_block_loc>& get_block_locs() const { VTR_ASSERT(loc_vars_are_accessible_); return block_locs; }
+    vtr::vector_map<ClusterBlockId, t_block_loc>& get_mutable_block_locs() { VTR_ASSERT(loc_vars_are_accessible_); return block_locs; }
+    const GridBlock& get_grid_blocks() const { VTR_ASSERT(loc_vars_are_accessible_); return grid_blocks; }
+    GridBlock& get_mutable_grid_blocks() { VTR_ASSERT(loc_vars_are_accessible_); return grid_blocks; }
+    void lock_loc_vars() { loc_vars_are_accessible_ = false; }
+    void unlock_loc_vars() { loc_vars_are_accessible_ = true; }
+
+    ///@brief Clustered pin placement mapping with physical pin
+    vtr::vector_map<ClusterPinId, int> physical_pins;
 
     ///@brief The pl_macros array stores all the placement macros (usually carry chains).
     std::vector<t_pl_macro> pl_macros;

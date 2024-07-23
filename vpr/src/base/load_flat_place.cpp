@@ -11,7 +11,7 @@ static void print_flat_cluster(FILE* fp, ClusterBlockId iblk,
                                std::vector<AtomBlockId>& atoms) {
 
     auto& atom_ctx = g_vpr_ctx.atom();
-    t_pl_loc loc = g_vpr_ctx.placement().block_locs[iblk].loc;
+    t_pl_loc loc = g_vpr_ctx.placement().get_block_locs()[iblk].loc;
     size_t bnum = size_t(iblk);
 
     for (auto atom : atoms) {
@@ -32,7 +32,7 @@ void print_flat_placement(const char* flat_place_file) {
     ClusterAtomsLookup atoms_lookup;
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    if (!g_vpr_ctx.placement().block_locs.empty()) {
+    if (!g_vpr_ctx.placement().get_block_locs().empty()) {
         fp = fopen(flat_place_file, "w");
         for (auto iblk : cluster_ctx.clb_nlist.blocks()) {
             auto atoms = atoms_lookup.atoms_in_cluster(iblk);

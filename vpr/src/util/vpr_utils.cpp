@@ -143,7 +143,7 @@ void sync_grid_to_blocks() {
 
     /* Go through each block */
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+    for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks()) {
         const auto& blk_loc = place_ctx.block_locs[blk_id].loc;
         int blk_x = place_ctx.block_locs[blk_id].loc.x;
         int blk_y = place_ctx.block_locs[blk_id].loc.y;
@@ -651,9 +651,7 @@ t_class_range get_class_range_for_block(const ParentBlockId blk_id, bool is_flat
     }
 }
 
-void get_pin_range_for_block(const ClusterBlockId blk_id,
-                             int* pin_low,
-                             int* pin_high) {
+std::pair<int, int> get_pin_range_for_block(const ClusterBlockId blk_id) {
     /* Assumes that the placement has been done so each block has a set of pins allocated to it */
     auto& place_ctx = g_vpr_ctx.placement();
 
@@ -666,8 +664,10 @@ void get_pin_range_for_block(const ClusterBlockId blk_id,
     int rel_pin_low = rel_capacity * (sub_tile.num_phy_pins / sub_tile_capacity);
     int rel_pin_high = (rel_capacity + 1) * (sub_tile.num_phy_pins / sub_tile_capacity) - 1;
 
-    *pin_low = sub_tile.sub_tile_to_tile_pin_indices[rel_pin_low];
-    *pin_high = sub_tile.sub_tile_to_tile_pin_indices[rel_pin_high];
+    int pin_low = sub_tile.sub_tile_to_tile_pin_indices[rel_pin_low];
+    int pin_high = sub_tile.sub_tile_to_tile_pin_indices[rel_pin_high];
+
+    return {pin_low, pin_high};
 }
 
 t_physical_tile_type_ptr find_tile_type_by_name(const std::string& name, const std::vector<t_physical_tile_type>& types) {

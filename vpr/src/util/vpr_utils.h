@@ -47,11 +47,15 @@ t_class_range get_class_range_for_block(const AtomBlockId atom_blk);
 
 t_class_range get_class_range_for_block(const ParentBlockId blk_id, bool is_flat);
 
-//Returns the physical pin range relative to a block id. This must be called after placement
-//as the block id is used to retrieve the information of the used physical tile.
-void get_pin_range_for_block(const ClusterBlockId blk_id,
-                             int* pin_low,
-                             int* pin_high);
+//
+/**
+ * @brief Returns the physical pin range relative to a block id. This must be called after placement
+ * as the block id is used to retrieve the information of the used physical tile.
+ *
+ * @param blk_id The unique ID of a clustered block whose pin range is desired.
+ * @return std::pair<int, int> --> (pin_low, pin_high)
+ */
+std::pair<int, int> get_pin_range_for_block(const ClusterBlockId blk_id);
 
 t_block_loc get_block_loc(const ParentBlockId& block_id, bool is_flat);
 
