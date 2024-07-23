@@ -10,12 +10,12 @@
 
 #include "place_delay_model.h"
 #include "place_timing_update.h"
-//Placement checkpoint
+
 /**
  * @brief Data structure that stores the placement state and saves it as a checkpoint.
  *
  * The placement checkpoints are very useful to solve the problem of critical 
- * delay oscillations, expecially very late in the annealer. 
+ * delay oscillations, especially very late in the annealer.
  *
  *   @param cost The weighted average of the wiring cost and the timing cost.
  *   @param block_locs saves the location of each block
@@ -24,31 +24,47 @@
  */
 class t_placement_checkpoint {
   private:
-    vtr::vector_map<ClusterBlockId, t_block_loc> block_locs;
-    float cpd;
-    bool valid = false;
-    t_placer_costs costs;
+    vtr::vector_map<ClusterBlockId, t_block_loc> block_locs_;
+    float cpd_;
+    bool valid_ = false;
+    t_placer_costs costs_;
 
   public:
     //save the block locations from placement context with the current placement cost and cpd
-    void save_placement(const t_placer_costs& placement_costs, const float& critical_path_delay);
+    void save_placement(const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs,
+                        const t_placer_costs& placement_costs,
+                        const float critical_path_delay);
 
     //restore the placement solution saved in the checkpoint and update the placement context accordingly
-    t_placer_costs restore_placement();
+    t_placer_costs restore_placement(vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs,
+                                     GridBlock& grid_blocks);
 
     //return the critical path delay of the saved checkpoint
-    float get_cp_cpd();
+    float get_cp_cpd() const;
 
     //return the WL cost of the saved checkpoint
-    double get_cp_bb_cost();
+    double get_cp_bb_cost() const;
 
     //return true if the checkpoint is valid
-    bool cp_is_valid();
+    bool cp_is_valid() const;
 };
 
-//save placement checkpoint if checkpointing is enabled and checkpoint conditions occured
-void save_placement_checkpoint_if_needed(t_placement_checkpoint& placement_checkpoint, std::shared_ptr<SetupTimingInfo> timing_info, t_placer_costs& costs, float cpd);
+//save placement checkpoint if checkpointing is enabled and checkpoint conditions occurred
+void save_placement_checkpoint_if_needed(const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs,
+                                         t_placement_checkpoint& placement_checkpoint,
+                                         const std::shared_ptr<SetupTimingInfo>& timing_info,
+                                         t_placer_costs& costs,
+                                         float cpd);
 
 //restore the checkpoint if it's better than the latest placement solution
-void restore_best_placement(t_placement_checkpoint& placement_checkpoint, std::shared_ptr<SetupTimingInfo>& timing_info, t_placer_costs& costs, std::unique_ptr<PlacerCriticalities>& placer_criticalities, std::unique_ptr<PlacerSetupSlacks>& placer_setup_slacks, std::unique_ptr<PlaceDelayModel>& place_delay_model, std::unique_ptr<NetPinTimingInvalidator>& pin_timing_invalidator, PlaceCritParams crit_params, const t_noc_opts& noc_opts);
+void restore_best_placement(vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs,
+                            GridBlock& grid_blocks,
+                            t_placement_checkpoint& placement_checkpoint,
+                            std::shared_ptr<SetupTimingInfo>& timing_info,
+                            t_placer_costs& costs,
+                            std::unique_ptr<PlacerCriticalities>& placer_criticalities,
+                            std::unique_ptr<PlacerSetupSlacks>& placer_setup_slacks,
+                            std::unique_ptr<PlaceDelayModel>& place_delay_model,
+                            std::unique_ptr<NetPinTimingInvalidator>& pin_timing_invalidator,
+                            PlaceCritParams crit_params, const t_noc_opts& noc_opts);
 #endif

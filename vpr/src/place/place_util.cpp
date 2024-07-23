@@ -272,45 +272,41 @@ double get_std_dev(int n, double sum_x_squared, double av_x) {
     return (std_dev > 0.) ? sqrt(std_dev) : 0.;
 }
 
-void load_grid_blocks_from_block_locs() {
+void load_grid_blocks_from_block_locs(GridBlock& grid_blocks,
+                                      const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_ctx = g_vpr_ctx.mutable_placement();
     auto& device_ctx = g_vpr_ctx.device();
 
-    zero_initialize_grid_blocks();
+    zero_initialize_grid_blocks(grid_blocks);
 
-    auto blocks = cluster_ctx.clb_nlist.blocks();
-    for (auto blk_id : blocks) {
-        t_pl_loc location;
-        location = place_ctx.block_locs[blk_id].loc;
+    for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks()) {
+        t_pl_loc location = block_locs[blk_id].loc;
 
         VTR_ASSERT(location.x < (int)device_ctx.grid.width());
         VTR_ASSERT(location.y < (int)device_ctx.grid.height());
 
-        place_ctx.grid_blocks.set_block_at_location(location, blk_id);
-        place_ctx.grid_blocks.set_usage({location.x, location.y, location.layer},
-                                        place_ctx.grid_blocks.get_usage({location.x, location.y, location.layer}) + 1);
+        grid_blocks.set_block_at_location(location, blk_id);
+        grid_blocks.set_usage({location.x, location.y, location.layer},
+                              grid_blocks.get_usage({location.x, location.y, location.layer}) + 1);
     }
 }
 
-void zero_initialize_grid_blocks() {
+void zero_initialize_grid_blocks(GridBlock& grid_blocks) {
     auto& device_ctx = g_vpr_ctx.device();
-    auto& place_ctx = g_vpr_ctx.mutable_placement();
 
     /* Initialize all occupancy to zero. */
-
     for (int layer_num = 0; layer_num < (int)device_ctx.grid.get_num_layers(); layer_num++) {
         for (int i = 0; i < (int)device_ctx.grid.width(); i++) {
             for (int j = 0; j < (int)device_ctx.grid.height(); j++) {
-                place_ctx.grid_blocks.set_usage({i, j, layer_num}, 0);
+                grid_blocks.set_usage({i, j, layer_num}, 0);
                 auto tile = device_ctx.grid.get_physical_type({i, j, layer_num});
 
                 for (const auto& sub_tile : tile->sub_tiles) {
                     auto capacity = sub_tile.capacity;
 
                     for (int k = 0; k < capacity.total(); k++) {
-                        if (place_ctx.grid_blocks.block_at_location({i, j, k + capacity.low, layer_num}) != INVALID_BLOCK_ID) {
-                            place_ctx.grid_blocks.set_block_at_location({i, j, k + capacity.low, layer_num}, EMPTY_BLOCK_ID);
+                        if (grid_blocks.block_at_location({i, j, k + capacity.low, layer_num}) != INVALID_BLOCK_ID) {
+                            grid_blocks.set_block_at_location({i, j, k + capacity.low, layer_num}, EMPTY_BLOCK_ID);
                         }
                     }
                 }

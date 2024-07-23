@@ -737,7 +737,8 @@ void try_place(const Netlist<>& net_list,
 
                 if (placer_opts.place_checkpointing
                     && agent_state == e_agent_state::LATE_IN_THE_ANNEAL) {
-                    save_placement_checkpoint_if_needed(placement_checkpoint,
+                    save_placement_checkpoint_if_needed(g_vpr_ctx.placement().block_locs,
+                                                        placement_checkpoint,
                                                         timing_info, costs, critical_path.delay());
                 }
             }
@@ -859,7 +860,9 @@ void try_place(const Netlist<>& net_list,
 
     //See if our latest checkpoint is better than the current placement solution
     if (placer_opts.place_checkpointing)
-        restore_best_placement(placement_checkpoint, timing_info, costs,
+        restore_best_placement(g_vpr_ctx.mutable_placement().block_locs,
+                               g_vpr_ctx.mutable_placement().grid_blocks,
+                               placement_checkpoint, timing_info, costs,
                                placer_criticalities, placer_setup_slacks, place_delay_model,
                                pin_timing_invalidator, crit_params, noc_opts);
 
