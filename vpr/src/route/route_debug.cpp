@@ -13,7 +13,7 @@ void enable_router_debug(
     bool active_iteration_debug = (router_opts.router_debug_iteration >= 0);
 
     bool match_net = (ParentNetId(router_opts.router_debug_net) == net || router_opts.router_debug_net == -1);
-    bool match_sink = (router_opts.router_debug_sink_rr == int(size_t((sink_rr))) || router_opts.router_debug_sink_rr < 0);
+    bool match_sink = (router_opts.router_debug_sink_rr == int(sink_rr) || router_opts.router_debug_sink_rr < 0);
     bool match_iteration = (router_opts.router_debug_iteration == router_iteration || router_opts.router_debug_iteration < 0);
 
     f_router_debug = active_net_debug || active_sink_debug || active_iteration_debug;
