@@ -3728,7 +3728,6 @@ static void load_uniform_connection_block_pattern(vtr::NdMatrix<int, 6>& tracks_
         int pin_fc = Fc[pin][seg_index];
 
         VTR_ASSERT(pin_fc % group_size == 0);
-        VTR_LOG("pin %d, side %d, width %d, height %d, layer %d, pin_fc %d\n", pin, side, width, height, layer, pin_fc);
 
         /* Bi-directional treats each track separately, uni-directional works with pairs of tracks */
         for (int j = 0; j < (pin_fc / group_size); ++j) {
