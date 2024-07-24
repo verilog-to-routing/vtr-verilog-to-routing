@@ -805,14 +805,15 @@ void CutSpreader::linear_spread_subarea(std::vector<ClusterBlockId>& cut_blks,
  */
 void CutSpreader::strict_legalize() {
     auto& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
-    auto& place_ctx = g_vpr_ctx.mutable_placement();
+    auto& place_ctx = g_vpr_ctx.placement();
+    auto& block_locs = place_ctx.get_block_locs();
     int max_x = g_vpr_ctx.device().grid.width();
     int max_y = g_vpr_ctx.device().grid.height();
 
     // clear the location of all blocks in place_ctx
     for (auto blk : clb_nlist.blocks()) {
-        if (!place_ctx.block_locs[blk].is_fixed && (ap->row_num[blk] != DONT_SOLVE || (imacro(blk) != NO_MACRO && ap->row_num[macro_head(blk)] != DONT_SOLVE))) {
-            unbind_tile(place_ctx.block_locs[blk].loc);
+        if (!block_locs[blk].is_fixed && (ap->row_num[blk] != DONT_SOLVE || (imacro(blk) != NO_MACRO && ap->row_num[macro_head(blk)] != DONT_SOLVE))) {
+            unbind_tile(block_locs[blk].loc);
         }
     }
 
@@ -821,7 +822,7 @@ void CutSpreader::strict_legalize() {
     // length of the macro they are in (for single blocks, priority = 1).
     // This prioritizes the placement of longest macros over single blocks
     std::priority_queue<std::pair<int, ClusterBlockId>> remaining;
-    for (auto blk : ap->solve_blks) {
+    for (ClusterBlockId blk : ap->solve_blks) {
         if (imacro(blk) != NO_MACRO) // blk is head block of a macro (only head blks are solved)
             remaining.emplace(place_ctx.pl_macros[imacro(blk)].members.size(), blk);
         else
@@ -962,12 +963,15 @@ void CutSpreader::strict_legalize() {
  */
 void CutSpreader::bind_tile(t_pl_loc sub_tile, ClusterBlockId blk) {
     auto& place_ctx = g_vpr_ctx.mutable_placement();
-    VTR_ASSERT(place_ctx.grid_blocks.block_at_location(sub_tile) == EMPTY_BLOCK_ID);
-    VTR_ASSERT(place_ctx.block_locs[blk].is_fixed == false);
-    place_ctx.grid_blocks.set_block_at_location(sub_tile, blk);
-    place_ctx.block_locs[blk].loc = sub_tile;
-    place_ctx.grid_blocks.set_usage({sub_tile.x, sub_tile.y, sub_tile.layer},
-                                    place_ctx.grid_blocks.get_usage({sub_tile.x, sub_tile.y, sub_tile.layer}) + 1);
+    auto& grid_blocks = place_ctx.get_mutable_grid_blocks();
+    auto& block_locs = place_ctx.get_mutable_block_locs();
+
+    VTR_ASSERT(grid_blocks.block_at_location(sub_tile) == EMPTY_BLOCK_ID);
+    VTR_ASSERT(block_locs[blk].is_fixed == false);
+    grid_blocks.set_block_at_location(sub_tile, blk);
+    block_locs[blk].loc = sub_tile;
+    grid_blocks.set_usage({sub_tile.x, sub_tile.y, sub_tile.layer},
+                          place_ctx.grid_blocks.get_usage({sub_tile.x, sub_tile.y, sub_tile.layer}) + 1);
     ap->blk_locs[blk].loc = sub_tile;
 }
 
@@ -977,13 +981,16 @@ void CutSpreader::bind_tile(t_pl_loc sub_tile, ClusterBlockId blk) {
  */
 void CutSpreader::unbind_tile(t_pl_loc sub_tile) {
     auto& place_ctx = g_vpr_ctx.mutable_placement();
-    VTR_ASSERT(place_ctx.grid_blocks.block_at_location(sub_tile) != EMPTY_BLOCK_ID);
-    ClusterBlockId blk = place_ctx.grid_blocks.block_at_location(sub_tile);
-    VTR_ASSERT(place_ctx.block_locs[blk].is_fixed == false);
-    place_ctx.block_locs[blk].loc = t_pl_loc{};
-    place_ctx.grid_blocks.set_block_at_location(sub_tile, EMPTY_BLOCK_ID);
-    place_ctx.grid_blocks.set_usage({sub_tile.x, sub_tile.y, sub_tile.layer},
-                                    place_ctx.grid_blocks.get_usage({sub_tile.x, sub_tile.y, sub_tile.layer}) - 1);
+    auto& grid_blocks = place_ctx.get_mutable_grid_blocks();
+    auto& block_locs = place_ctx.get_mutable_block_locs();
+
+    VTR_ASSERT(grid_blocks.block_at_location(sub_tile) != EMPTY_BLOCK_ID);
+    ClusterBlockId blk = grid_blocks.block_at_location(sub_tile);
+    VTR_ASSERT(block_locs[blk].is_fixed == false);
+    block_locs[blk].loc = t_pl_loc{};
+    grid_blocks.set_block_at_location(sub_tile, EMPTY_BLOCK_ID);
+    grid_blocks.set_usage({sub_tile.x, sub_tile.y, sub_tile.layer},
+                          place_ctx.grid_blocks.get_usage({sub_tile.x, sub_tile.y, sub_tile.layer}) - 1);
 }
 
 /*
@@ -992,10 +999,13 @@ void CutSpreader::unbind_tile(t_pl_loc sub_tile) {
  * the block in place_ctx.grid_blocks)
  */
 bool CutSpreader::is_placed(ClusterBlockId blk) {
-    auto& place_ctx = g_vpr_ctx.mutable_placement();
-    if (place_ctx.block_locs[blk].loc != t_pl_loc{}) {
-        auto loc = place_ctx.block_locs[blk].loc;
-        VTR_ASSERT(place_ctx.grid_blocks.block_at_location(loc) == blk);
+    auto& place_ctx = g_vpr_ctx.placement();
+    auto& grid_blocks = place_ctx.get_grid_blocks();
+    auto& block_locs = place_ctx.get_block_locs();
+
+    if (block_locs[blk].loc != t_pl_loc{}) {
+        auto loc = block_locs[blk].loc;
+        VTR_ASSERT(grid_blocks.block_at_location(loc) == blk);
         return true;
     }
     return false;

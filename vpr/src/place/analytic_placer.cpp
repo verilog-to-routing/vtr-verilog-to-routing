@@ -301,11 +301,11 @@ void AnalyticPlacer::build_legal_locations() {
 // initialize other data members
 void AnalyticPlacer::init() {
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
-    PlacementContext& place_ctx = g_vpr_ctx.mutable_placement();
+    auto& block_locs = g_vpr_ctx.placement().get_block_locs();
 
     for (auto blk_id : clb_nlist.blocks()) {
         blk_locs.insert(blk_id, BlockLocation{});
-        blk_locs[blk_id].loc = place_ctx.block_locs[blk_id].loc; // transfer of initial placement
+        blk_locs[blk_id].loc = block_locs[blk_id].loc; // transfer of initial placement
         row_num.insert(blk_id, DONT_SOLVE);                      // no blocks are moved by default, until they are setup in setup_solve_blks()
     }
 
@@ -320,7 +320,7 @@ void AnalyticPlacer::init() {
     };
 
     for (auto blk_id : clb_nlist.blocks()) {
-        if (!place_ctx.block_locs[blk_id].is_fixed && has_connections(blk_id))
+        if (!block_locs[blk_id].is_fixed && has_connections(blk_id))
             // not fixed and has connections
             // matrix equation is formulated based on connections, so requires at least one connection
             if (imacro(blk_id) == NO_MACRO || macro_head(blk_id) == blk_id) {
@@ -741,7 +741,7 @@ std::string AnalyticPlacer::print_overlap(vtr::Matrix<int>& overlap, FILE* fp) {
 void AnalyticPlacer::print_place(const char* place_file) {
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
-    PlacementContext& place_ctx = g_vpr_ctx.mutable_placement();
+    auto& block_locs = g_vpr_ctx.placement().get_block_locs();
 
     FILE* fp;
 
@@ -772,7 +772,7 @@ void AnalyticPlacer::print_place(const char* place_file) {
             "------------",
             "--------");
 
-    if (!place_ctx.block_locs.empty()) { //Only if placement exists
+    if (!block_locs.empty()) { //Only if placement exists
         for (auto blk_id : clb_nlist.blocks()) {
             fprintf(fp, "%-25s %-18s %-12s %-25s %-5d %-5d %-10d #%-13zu %-8s\n",
                     clb_nlist.block_name(blk_id).c_str(),
@@ -783,7 +783,7 @@ void AnalyticPlacer::print_place(const char* place_file) {
                     blk_locs[blk_id].loc.y,
                     blk_locs[blk_id].loc.sub_tile,
                     size_t(blk_id),
-                    (place_ctx.block_locs[blk_id].is_fixed ? "true" : "false"));
+                    (block_locs[blk_id].is_fixed ? "true" : "false"));
         }
         fprintf(fp, "\ntotal_HPWL: %d\n", total_hpwl());
         vtr::Matrix<int> overlap;

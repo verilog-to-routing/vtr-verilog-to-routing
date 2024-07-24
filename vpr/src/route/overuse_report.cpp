@@ -336,7 +336,7 @@ static void report_congested_nets(const Netlist<>& net_list,
                 } else {
                     cluster_block_id = convert_to_cluster_block_id(net_list.pin_block(sink_id));
                 }
-                auto cluster_loc = g_vpr_ctx.placement().block_locs[cluster_block_id];
+                auto cluster_loc = g_vpr_ctx.placement().get_block_locs()[cluster_block_id];
                 auto physical_type = g_vpr_ctx.device().grid.get_physical_type({x, y, layer_num});
                 int cluster_layer_num = cluster_loc.loc.layer;
                 int cluster_x = cluster_loc.loc.x - g_vpr_ctx.device().grid.get_physical_type({cluster_loc.loc.x, cluster_loc.loc.y, cluster_layer_num})->width;
