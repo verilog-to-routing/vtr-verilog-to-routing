@@ -1,11 +1,20 @@
 #include <cstdio>
 #include <cmath>
 #include <memory>
+#include <fstream>
+#include <iostream>
+#include <numeric>
+#include <chrono>
+#include <optional>
+
+#include "NetPinTimingInvalidator.h"
 #include "vtr_assert.h"
 #include "vtr_log.h"
 #include "vtr_util.h"
 #include "vtr_random.h"
+#include "vtr_geometry.h"
 #include "vtr_time.h"
+#include "vtr_math.h"
 #include "vtr_ndmatrix.h"
 
 #include "vpr_types.h"
@@ -18,6 +27,11 @@
 #include "placer_globals.h"
 #include "read_place.h"
 #include "draw.h"
+#include "place_and_route.h"
+#include "net_delay.h"
+#include "timing_place_lookup.h"
+#include "timing_place.h"
+#include "read_xml_arch_file.h"
 #include "echo_files.h"
 #include "place_macro.h"
 #include "histogram.h"
@@ -31,7 +45,10 @@
 #include "read_place.h"
 #include "place_constraints.h"
 #include "manual_moves.h"
+#include "buttons.h"
 
+#include "static_move_generator.h"
+#include "simpleRL_move_generator.h"
 #include "manual_move_generator.h"
 
 #include "PlacementDelayCalculator.h"
@@ -42,11 +59,13 @@
 #include "tatum/echo_writer.hpp"
 #include "tatum/TimingReporter.hpp"
 
+#include "placer_breakpoint.h"
 #include "RL_agent_util.h"
 #include "place_checkpoint.h"
 
 #include "clustered_netlist_utils.h"
 
+#include "cluster_placement.h"
 
 #include "noc_place_utils.h"
 

@@ -10,6 +10,7 @@
  */
 #include "move_transactions.h"
 #include "region.h"
+#include "clustered_netlist_utils.h"
 #include "partition_region.h"
 #include "place_macro.h"
 #include "grid_tile_lookup.h"

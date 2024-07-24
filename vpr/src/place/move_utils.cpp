@@ -1,6 +1,13 @@
 #include "move_utils.h"
+
+#include "place_util.h"
 #include "globals.h"
+
 #include "vtr_random.h"
+
+#include "draw_debug.h"
+#include "draw.h"
+
 #include "place_constraints.h"
 #include "placer_globals.h"
 
