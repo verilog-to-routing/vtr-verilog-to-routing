@@ -60,6 +60,7 @@ void routing_stats(const Netlist<>& net_list,
     auto& device_ctx = g_vpr_ctx.device();
     auto& rr_graph = device_ctx.rr_graph;
     auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& block_locs = g_vpr_ctx.placement().get_block_locs();
 
     int num_rr_switch = rr_graph.num_rr_switches();
 
@@ -93,8 +94,9 @@ void routing_stats(const Netlist<>& net_list,
     VTR_LOG("\tTotal logic block area (Warning, need to add pitch of routing to blocks with height > 3): %g\n", area);
 
     used_area = 0;
-    for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-        auto type = physical_tile_type(blk_id);
+    for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks()) {
+        t_pl_loc block_loc = block_locs[blk_id].loc;
+        auto type = physical_tile_type(block_loc);
         if (!is_io_type(type)) {
             if (type->area == UNDEFINED) {
                 used_area += grid_logic_tile_area * type->width * type->height;
@@ -111,8 +113,9 @@ void routing_stats(const Netlist<>& net_list,
         get_segment_usage_stats(segment_inf);
     }
 
-    if (full_stats == true)
+    if (full_stats) {
         print_wirelen_prob_dist(is_flat);
+    }
 }
 
 /**
@@ -427,9 +430,11 @@ void print_lambda() {
     float lambda;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& block_locs = g_vpr_ctx.placement().get_block_locs();
 
-    for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-        auto type = physical_tile_type(blk_id);
+    for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks()) {
+        t_pl_loc block_loc = block_locs[blk_id].loc;
+        auto type = physical_tile_type(block_loc);
         VTR_ASSERT(type != nullptr);
         if (!is_io_type(type)) {
             for (ipin = 0; ipin < type->num_pins; ipin++) {

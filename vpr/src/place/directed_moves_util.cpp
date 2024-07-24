@@ -11,9 +11,10 @@ t_physical_tile_loc get_coordinate_of_pin(ClusterPinId pin, const vtr::vector_ma
     ClusterBlockId block = cluster_ctx.clb_nlist.pin_block(pin);
 
     t_physical_tile_loc tile_loc;
-    tile_loc.x = block_locs[block].loc.x + physical_tile_type(block)->pin_width_offset[pnum];
-    tile_loc.y = block_locs[block].loc.y + physical_tile_type(block)->pin_height_offset[pnum];
-    tile_loc.layer_num = block_locs[block].loc.layer;
+    t_pl_loc block_loc = block_locs[block].loc;
+    tile_loc.x = block_loc.x + physical_tile_type(block_loc)->pin_width_offset[pnum];
+    tile_loc.y = block_loc.y + physical_tile_type(block_loc)->pin_height_offset[pnum];
+    tile_loc.layer_num = block_loc.layer;
 
     tile_loc.x = std::max(std::min(tile_loc.x, (int)grid.width() - 2), 1);  //-2 for no perim channels
     tile_loc.y = std::max(std::min(tile_loc.y, (int)grid.height() - 2), 1); //-2 for no perim channels

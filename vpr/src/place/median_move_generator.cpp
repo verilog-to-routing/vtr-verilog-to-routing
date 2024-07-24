@@ -59,8 +59,6 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
 
     t_bb coords(OPEN, OPEN, OPEN, OPEN, OPEN, OPEN);
     t_bb limit_coords;
-    ClusterBlockId bnum;
-    int pnum, xnew, xold, ynew, yold, layer_new, layer_old;
 
     //clear the vectors that saves X & Y coords
     //reused to save allocation time
@@ -86,8 +84,9 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
         if (cluster_ctx.clb_nlist.net_sinks(net_id).size() < SMALL_NET) {
             //calculate the bb from scratch
             get_bb_from_scratch_excluding_block(net_id, coords, b_from, skip_net, block_locs);
-            if (skip_net)
+            if (skip_net) {
                 continue;
+            }
         } else {
             t_bb union_bb;
             const bool& cube_bb = g_vpr_ctx.placement().cube_bb;
@@ -97,31 +96,36 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
 
             const auto& net_bb_coords = cube_bb ? place_move_ctx.bb_coords[net_id] : union_bb;
             //use the incremental update of the bb
-            bnum = cluster_ctx.clb_nlist.pin_block(pin_id);
-            pnum = tile_pin_index(pin_id);
+            ClusterBlockId bnum = cluster_ctx.clb_nlist.pin_block(pin_id);
+            int pnum = tile_pin_index(pin_id);
             VTR_ASSERT(pnum >= 0);
-            xold = block_locs[bnum].loc.x + physical_tile_type(bnum)->pin_width_offset[pnum];
-            yold = block_locs[bnum].loc.y + physical_tile_type(bnum)->pin_height_offset[pnum];
-            layer_old = block_locs[bnum].loc.layer;
+            t_pl_loc block_loc = block_locs[bnum].loc;
+            t_physical_tile_type_ptr block_physical_type = physical_tile_type(block_loc);
+            int xold = block_loc.x + block_physical_type->pin_width_offset[pnum];
+            int yold = block_loc.y + block_physical_type->pin_height_offset[pnum];
+            int layer_old = block_loc.layer;
 
             xold = std::max(std::min(xold, (int)device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
             yold = std::max(std::min(yold, (int)device_ctx.grid.height() - 2), 1); //-2 for no perim channels
             layer_old = std::max(std::min(layer_old, (int)device_ctx.grid.get_num_layers() - 1), 0);
 
-            //To calulate the bb incrementally while excluding the moving block
+            //To calculate the bb incrementally while excluding the moving block
             //assume that the moving block is moved to a non-critical coord of the bb
+            int xnew;
             if (net_bb_coords.xmin == xold) {
                 xnew = net_bb_coords.xmax;
             } else {
                 xnew = net_bb_coords.xmin;
             }
 
+            int ynew;
             if (net_bb_coords.ymin == yold) {
                 ynew = net_bb_coords.ymax;
             } else {
                 ynew = net_bb_coords.ymin;
             }
 
+            int layer_new;
             if (net_bb_coords.layer_min == layer_old) {
                 layer_new = net_bb_coords.layer_max;
             } else {
@@ -228,9 +232,10 @@ static void get_bb_from_scratch_excluding_block(ClusterNetId net_id,
     if (bnum != block_id) {
         skip_net = false;
         pnum = net_pin_to_tile_pin_index(net_id, 0);
-        int src_x = block_locs[bnum].loc.x + physical_tile_type(bnum)->pin_width_offset[pnum];
-        int src_y = block_locs[bnum].loc.y + physical_tile_type(bnum)->pin_height_offset[pnum];
-        int src_layer = block_locs[bnum].loc.layer;
+        const t_pl_loc& block_loc = block_locs[bnum].loc;
+        int src_x = block_loc.x + physical_tile_type(block_loc)->pin_width_offset[pnum];
+        int src_y = block_loc.y + physical_tile_type(block_loc)->pin_height_offset[pnum];
+        int src_layer = block_loc.layer;
 
         xmin = src_x;
         ymin = src_y;
@@ -248,8 +253,8 @@ static void get_bb_from_scratch_excluding_block(ClusterNetId net_id,
             continue;
         skip_net = false;
         const auto& block_loc = block_locs[bnum].loc;
-        int x = block_loc.x + physical_tile_type(bnum)->pin_width_offset[pnum];
-        int y = block_loc.y + physical_tile_type(bnum)->pin_height_offset[pnum];
+        int x = block_loc.x + physical_tile_type(block_loc)->pin_width_offset[pnum];
+        int y = block_loc.y + physical_tile_type(block_loc)->pin_height_offset[pnum];
         int layer = block_loc.layer;
 
         if (!first_block) {

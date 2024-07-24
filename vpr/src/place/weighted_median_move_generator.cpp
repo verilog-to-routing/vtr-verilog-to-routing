@@ -185,7 +185,6 @@ static bool get_bb_cost_for_net_excluding_block(ClusterNetId net_id,
     bool is_first_block = true;
     for (ClusterPinId pin_id : cluster_ctx.clb_nlist.net_pins(net_id)) {
         ClusterBlockId bnum = cluster_ctx.clb_nlist.pin_block(pin_id);
-        int layer = block_locs[bnum].loc.layer;
 
         if (pin_id != moving_pin_id) {
             skip_net = false;
@@ -205,8 +204,10 @@ static bool get_bb_cost_for_net_excluding_block(ClusterNetId net_id,
             float cost = criticalities->criticality(net_id, ipin);
 
             VTR_ASSERT(pnum >= 0);
-            int x = block_locs[bnum].loc.x + physical_tile_type(bnum)->pin_width_offset[pnum];
-            int y = block_locs[bnum].loc.y + physical_tile_type(bnum)->pin_height_offset[pnum];
+            const t_pl_loc block_loc = block_locs[bnum].loc;
+            int x = block_loc.x + physical_tile_type(block_loc)->pin_width_offset[pnum];
+            int y = block_loc.y + physical_tile_type(block_loc)->pin_height_offset[pnum];
+            int layer = block_loc.layer;
 
             x = std::max(std::min(x, (int)grid.width() - 2), 1);  //-2 for no perim channels
             y = std::max(std::min(y, (int)grid.height() - 2), 1); //-2 for no perim channels

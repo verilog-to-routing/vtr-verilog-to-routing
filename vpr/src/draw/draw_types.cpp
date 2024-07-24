@@ -21,7 +21,8 @@ ezgl::color t_draw_state::block_color(ClusterBlockId blk) const {
         if (block_locs.empty()) { //No placement, pick best match
             tile_type = pick_physical_type(cluster_ctx.clb_nlist.block_type(blk));
         } else { // Have placement, select physical tile implementing blk
-            tile_type = physical_tile_type(blk);
+            t_pl_loc block_loc = block_locs[blk].loc;
+            tile_type = physical_tile_type(block_loc);
         }
         VTR_ASSERT(tile_type != nullptr);
         return get_block_type_color(tile_type);

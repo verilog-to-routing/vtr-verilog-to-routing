@@ -384,8 +384,6 @@ struct PackingMultithreadingContext : public Context {
  */
 struct PlacementContext : public Context {
   private:
-
-
     bool loc_vars_are_accessible_ = true;
 
   public:

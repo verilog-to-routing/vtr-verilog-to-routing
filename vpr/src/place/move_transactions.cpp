@@ -57,7 +57,7 @@ void apply_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected,
 
         //if physical tile type of old location does not equal physical tile type of new location, sync the new physical pins
         if (old_type != new_type) {
-            place_sync_external_block_connections(blk);
+            place_sync_external_block_connections(blk, block_locs);
         }
     }
 }
@@ -114,7 +114,7 @@ void revert_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected,
 
         //if physical tile type of old location does not equal physical tile type of new location, sync the new physical pins
         if (old_type != new_type) {
-            place_sync_external_block_connections(blk);
+            place_sync_external_block_connections(blk, block_locs);
         }
 
         VTR_ASSERT_SAFE_MSG(g_vpr_ctx.placement().grid_blocks.block_at_location(old_loc) == blk,

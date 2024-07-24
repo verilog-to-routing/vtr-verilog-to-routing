@@ -151,7 +151,7 @@ void sync_grid_to_blocks() {
         int blk_z = block_locs[blk_id].loc.sub_tile;
         int blk_layer = block_locs[blk_id].loc.layer;
 
-        auto type = physical_tile_type(blk_id);
+        auto type = physical_tile_type(blk_loc);
 
         /* Check range of block coords */
         if (blk_x < 0 || blk_y < 0
@@ -516,29 +516,40 @@ bool is_empty_type(t_logical_block_type_ptr type) {
     return type == device_ctx.EMPTY_LOGICAL_BLOCK_TYPE;
 }
 
-t_physical_tile_type_ptr physical_tile_type(ClusterBlockId blk) {
-    auto& place_ctx = g_vpr_ctx.placement();
+t_physical_tile_type_ptr physical_tile_type(t_pl_loc loc) {
     auto& device_ctx = g_vpr_ctx.device();
 
-    auto block_loc = place_ctx.block_locs[blk].loc;
-
-    return device_ctx.grid.get_physical_type({block_loc.x, block_loc.y, block_loc.layer});
+    return device_ctx.grid.get_physical_type({loc.x, loc.y, loc.layer});
 }
+
+//t_physical_tile_type_ptr physical_tile_type(ClusterBlockId blk) {
+//    auto& place_ctx = g_vpr_ctx.placement();
+//    auto& device_ctx = g_vpr_ctx.device();
+//
+//    auto block_loc = place_ctx.block_locs[blk].loc;
+//
+//    return device_ctx.grid.get_physical_type({block_loc.x, block_loc.y, block_loc.layer});
+//}
 
 t_physical_tile_type_ptr physical_tile_type(AtomBlockId atom_blk) {
     auto& atom_look_up = g_vpr_ctx.atom().lookup;
+    auto& block_locs = g_vpr_ctx.placement().get_block_locs();
 
-    auto cluster_blk = atom_look_up.atom_clb(atom_blk);
+    ClusterBlockId cluster_blk = atom_look_up.atom_clb(atom_blk);
     VTR_ASSERT(cluster_blk != ClusterBlockId::INVALID());
 
-    return physical_tile_type(cluster_blk);
+    return physical_tile_type(block_locs[cluster_blk].loc);
 }
 
 t_physical_tile_type_ptr physical_tile_type(ParentBlockId blk_id, bool is_flat) {
+    auto& block_locs = g_vpr_ctx.placement().get_block_locs();
+
     if (is_flat) {
         return physical_tile_type(convert_to_atom_block_id(blk_id));
     } else {
-        return physical_tile_type(convert_to_cluster_block_id(blk_id));
+        ClusterBlockId cluster_blk_id = convert_to_cluster_block_id(blk_id);
+        t_pl_loc block_loc = block_locs[cluster_blk_id].loc;
+        return physical_tile_type(block_loc);
     }
 }
 
@@ -601,7 +612,8 @@ t_class_range get_class_range_for_block(const ClusterBlockId blk_id) {
     /* Assumes that the placement has been done so each block has a set of pins allocated to it */
     auto& place_ctx = g_vpr_ctx.placement();
 
-    auto type = physical_tile_type(blk_id);
+    t_pl_loc block_loc = place_ctx.get_block_locs()[blk_id].loc;
+    auto type = physical_tile_type(block_loc);
     auto sub_tile = type->sub_tiles[get_sub_tile_index(blk_id)];
     int sub_tile_capacity = sub_tile.capacity.total();
     auto class_range = sub_tile.class_range;
@@ -620,7 +632,7 @@ t_class_range get_class_range_for_block(const ClusterBlockId blk_id) {
 t_class_range get_class_range_for_block(const AtomBlockId atom_blk) {
     auto& atom_look_up = g_vpr_ctx.atom().lookup;
 
-    auto cluster_blk = atom_look_up.atom_clb(atom_blk);
+    ClusterBlockId cluster_blk = atom_look_up.atom_clb(atom_blk);
 
     t_physical_tile_type_ptr physical_tile;
     const t_sub_tile* sub_tile;
@@ -648,7 +660,8 @@ std::pair<int, int> get_pin_range_for_block(const ClusterBlockId blk_id) {
     /* Assumes that the placement has been done so each block has a set of pins allocated to it */
     auto& place_ctx = g_vpr_ctx.placement();
 
-    auto type = physical_tile_type(blk_id);
+    t_pl_loc block_loc = place_ctx.get_block_locs()[blk_id].loc;
+    auto type = physical_tile_type(block_loc);
     auto sub_tile = type->sub_tiles[get_sub_tile_index(blk_id)];
     int sub_tile_capacity = sub_tile.capacity.total();
 
@@ -696,6 +709,7 @@ int get_block_num_class(const ParentBlockId& block_id, bool is_flat) {
 }
 
 int get_block_pin_class_num(const ParentBlockId& block_id, const ParentPinId& pin_id, bool is_flat) {
+    auto& block_locs = g_vpr_ctx.placement().get_block_locs();
     int class_num;
 
     if (is_flat) {
@@ -703,8 +717,9 @@ int get_block_pin_class_num(const ParentBlockId& block_id, const ParentPinId& pi
         class_num = get_atom_pin_class_num(atom_pin_id);
     } else {
         ClusterBlockId cluster_block_id = convert_to_cluster_block_id(block_id);
+        t_pl_loc block_loc = block_locs[cluster_block_id].loc;
         ClusterPinId cluster_pin_id = convert_to_cluster_pin_id(pin_id);
-        auto type = physical_tile_type(cluster_block_id);
+        auto type = physical_tile_type(block_loc);
         int phys_pin = tile_pin_index(cluster_pin_id);
         class_num = get_class_num_from_pin_physical_num(type, phys_pin);
     }
@@ -2098,12 +2113,15 @@ void print_switch_usage() {
  * }
  */
 
-void place_sync_external_block_connections(ClusterBlockId iblk) {
+void place_sync_external_block_connections(ClusterBlockId iblk,
+                                           const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& clb_nlist = cluster_ctx.clb_nlist;
     auto& place_ctx = g_vpr_ctx.mutable_placement();
 
-    auto physical_tile = physical_tile_type(iblk);
+    t_pl_loc block_loc = block_locs[iblk].loc;
+
+    auto physical_tile = physical_tile_type(block_loc);
     auto logical_block = clb_nlist.block_type(iblk);
 
     int sub_tile_index = get_sub_tile_index(iblk);
@@ -2114,9 +2132,9 @@ void place_sync_external_block_connections(ClusterBlockId iblk) {
     int max_num_block_pins = sub_tile.num_phy_pins / sub_tile.capacity.total();
     /* Logical location and physical location is offset by z * max_num_block_pins */
 
-    int rel_capacity = place_ctx.block_locs[iblk].loc.sub_tile - sub_tile.capacity.low;
+    int rel_capacity = block_loc.sub_tile - sub_tile.capacity.low;
 
-    for (auto pin : clb_nlist.block_pins(iblk)) {
+    for (ClusterPinId pin : clb_nlist.block_pins(iblk)) {
         int logical_pin_index = clb_nlist.pin_logical_index(pin);
         int sub_tile_pin_index = get_sub_tile_physical_pin(sub_tile_index, physical_tile, logical_block, logical_pin_index);
 

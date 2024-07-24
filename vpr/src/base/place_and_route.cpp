@@ -575,8 +575,9 @@ static float comp_width(t_chan* chan, float x, float separation) {
 void post_place_sync() {
     /* Go through each block */
     auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& block_locs = g_vpr_ctx.placement().get_block_locs();
     // Cluster-based netlist is used for placement
-    for (auto block_id : cluster_ctx.clb_nlist.blocks()) {
-        place_sync_external_block_connections(block_id);
+    for (ClusterBlockId block_id : cluster_ctx.clb_nlist.blocks()) {
+        place_sync_external_block_connections(block_id, block_locs);
     }
 }

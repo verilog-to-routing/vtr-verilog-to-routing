@@ -477,6 +477,7 @@ void recompute_occupancy_from_scratch(const Netlist<>& net_list, bool is_flat) {
      */
     auto& route_ctx = g_vpr_ctx.mutable_routing();
     auto& device_ctx = g_vpr_ctx.device();
+    auto& block_locs = g_vpr_ctx.placement().get_block_locs();
 
     /* First set the occupancy of everything to zero. */
     for (RRNodeId inode : device_ctx.rr_graph.nodes())
@@ -503,8 +504,9 @@ void recompute_occupancy_from_scratch(const Netlist<>& net_list, bool is_flat) {
          * (CLB outputs used up by being directly wired to subblocks used only      *
          * locally).                                                                */
         for (auto blk_id : net_list.blocks()) {
-            auto cluster_blk_id = convert_to_cluster_block_id(blk_id);
-            for (int iclass = 0; iclass < (int)physical_tile_type(cluster_blk_id)->class_inf.size(); iclass++) {
+            ClusterBlockId cluster_blk_id = convert_to_cluster_block_id(blk_id);
+            t_pl_loc block_loc = block_locs[cluster_blk_id].loc;
+            for (int iclass = 0; iclass < (int)physical_tile_type(block_loc)->class_inf.size(); iclass++) {
                 int num_local_opins = route_ctx.clb_opins_used_locally[cluster_blk_id][iclass].size();
                 /* Will always be 0 for pads or SINK classes. */
                 for (int ipin = 0; ipin < num_local_opins; ipin++) {
@@ -522,20 +524,20 @@ static void check_locally_used_clb_opins(const t_clb_opins_used& clb_opins_used_
                                          bool is_flat) {
     /* Checks that enough OPINs on CLBs have been set aside (used up) to make a *
      * legal routing if subblocks connect to OPINs directly.                    */
-
-    int iclass, num_local_opins, ipin;
     t_rr_type rr_type;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
+    auto& block_locs = g_vpr_ctx.placement().get_block_locs();
 
-    for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-        for (iclass = 0; iclass < (int)physical_tile_type(blk_id)->class_inf.size(); iclass++) {
-            num_local_opins = clb_opins_used_locally[blk_id][iclass].size();
+    for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks()) {
+        t_pl_loc block_loc = block_locs[blk_id].loc;
+        for (int iclass = 0; iclass < (int)physical_tile_type(block_loc)->class_inf.size(); iclass++) {
+            int num_local_opins = clb_opins_used_locally[blk_id][iclass].size();
             /* Always 0 for pads and for SINK classes */
 
-            for (ipin = 0; ipin < num_local_opins; ipin++) {
+            for (int ipin = 0; ipin < num_local_opins; ipin++) {
                 RRNodeId inode = clb_opins_used_locally[blk_id][iclass][ipin];
                 check_node_and_range(RRNodeId(inode), route_type, is_flat); /* Node makes sense? */
 
@@ -550,11 +552,11 @@ static void check_locally_used_clb_opins(const t_clb_opins_used& clb_opins_used_
                 }
 
                 ipin = rr_graph.node_pin_num(RRNodeId(inode));
-                if (get_class_num_from_pin_physical_num(physical_tile_type(blk_id), ipin) != iclass) {
+                if (get_class_num_from_pin_physical_num(physical_tile_type(block_loc), ipin) != iclass) {
                     VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                                     "in check_locally_used_opins: block #%lu (%s):\n"
                                     "\tExpected class %d local OPIN has class %d -- rr_node #: %d.\n",
-                                    size_t(blk_id), cluster_ctx.clb_nlist.block_name(blk_id).c_str(), iclass, get_class_num_from_pin_physical_num(physical_tile_type(blk_id), ipin), inode);
+                                    size_t(blk_id), cluster_ctx.clb_nlist.block_name(blk_id).c_str(), iclass, get_class_num_from_pin_physical_num(physical_tile_type(block_loc), ipin), inode);
                 }
             }
         }

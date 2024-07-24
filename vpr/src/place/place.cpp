@@ -456,7 +456,7 @@ void try_place(const Netlist<>& net_list,
 
     // Update physical pin values
     for (ClusterBlockId block_id : cluster_ctx.clb_nlist.blocks()) {
-        place_sync_external_block_connections(block_id);
+        place_sync_external_block_connections(block_id, g_vpr_ctx.placement().block_locs);
     }
 
     const int width_fac = placer_opts.place_chan_width;
@@ -882,8 +882,8 @@ void try_place(const Netlist<>& net_list,
     //#endif
 
     // Update physical pin values
-    for (auto block_id : cluster_ctx.clb_nlist.blocks()) {
-        place_sync_external_block_connections(block_id);
+    for (ClusterBlockId block_id : cluster_ctx.clb_nlist.blocks()) {
+        place_sync_external_block_connections(block_id, g_vpr_ctx.placement().block_locs);
     }
 
     check_place(costs,
@@ -2029,8 +2029,7 @@ static int check_block_placement_consistency() {
     auto& place_ctx = g_vpr_ctx.placement();
     auto& device_ctx = g_vpr_ctx.device();
 
-    vtr::vector<ClusterBlockId, int> bdone(
-        cluster_ctx.clb_nlist.blocks().size(), 0);
+    vtr::vector<ClusterBlockId, int> bdone(cluster_ctx.clb_nlist.blocks().size(), 0);
 
     /* Step through device grid and placement. Check it against blocks */
     for (int layer_num = 0; layer_num < (int)device_ctx.grid.get_num_layers(); layer_num++) {
@@ -2041,20 +2040,21 @@ static int check_block_placement_consistency() {
                 if (place_ctx.grid_blocks.get_usage(tile_loc) > type->capacity) {
                     VTR_LOG_ERROR(
                         "%d blocks were placed at grid location (%d,%d,%d), but location capacity is %d.\n",
-                        place_ctx.grid_blocks.get_usage(tile_loc), i, j, layer_num,
-                        type->capacity);
+                        place_ctx.grid_blocks.get_usage(tile_loc), i, j, layer_num, type->capacity);
                     error++;
                 }
                 int usage_check = 0;
                 for (int k = 0; k < type->capacity; k++) {
-                    auto bnum = place_ctx.grid_blocks.block_at_location({i, j, k, layer_num});
-                    if (EMPTY_BLOCK_ID == bnum || INVALID_BLOCK_ID == bnum)
+                    ClusterBlockId bnum = place_ctx.grid_blocks.block_at_location({i, j, k, layer_num});
+                    if (EMPTY_BLOCK_ID == bnum || INVALID_BLOCK_ID == bnum) {
                         continue;
+                    }
 
                     auto logical_block = cluster_ctx.clb_nlist.block_type(bnum);
                     auto physical_tile = type;
+                    t_pl_loc block_loc = place_ctx.block_locs[bnum].loc;
 
-                    if (physical_tile_type(bnum) != physical_tile) {
+                    if (physical_tile_type(block_loc) != physical_tile) {
                         VTR_LOG_ERROR(
                             "Block %zu type (%s) does not match grid location (%zu,%zu, %d) type (%s).\n",
                             size_t(bnum), logical_block->name, i, j, layer_num, physical_tile->name);

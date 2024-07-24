@@ -334,11 +334,13 @@ static t_clb_opins_used alloc_and_load_clb_opins_used_locally() {
     int clb_pin, iclass;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& block_locs = g_vpr_ctx.placement().get_block_locs();
 
     clb_opins_used_locally.resize(cluster_ctx.clb_nlist.blocks().size());
 
-    for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-        auto type = physical_tile_type(blk_id);
+    for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks()) {
+        t_pl_loc block_loc = block_locs[blk_id].loc;
+        auto type = physical_tile_type(block_loc);
         auto sub_tile = type->sub_tiles[get_sub_tile_index(blk_id)];
 
         auto class_range = get_class_range_for_block(blk_id);
@@ -759,10 +761,12 @@ void reserve_locally_used_opins(HeapInterface* heap, float pres_fac, float acc_f
     auto& route_ctx = g_vpr_ctx.mutable_routing();
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
+    auto& block_locs = g_vpr_ctx.placement().get_block_locs();
 
     if (rip_up_local_opins) {
-        for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-            type = physical_tile_type(blk_id);
+        for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks()) {
+            t_pl_loc block_loc = block_locs[blk_id].loc;
+            type = physical_tile_type(block_loc);
             for (iclass = 0; iclass < (int)type->class_inf.size(); iclass++) {
                 num_local_opin = route_ctx.clb_opins_used_locally[blk_id][iclass].size();
 
@@ -783,8 +787,9 @@ void reserve_locally_used_opins(HeapInterface* heap, float pres_fac, float acc_f
     // Make sure heap is empty before we add nodes to the heap.
     heap->empty_heap();
 
-    for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-        type = physical_tile_type(blk_id);
+    for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks()) {
+        t_pl_loc block_loc = block_locs[blk_id].loc;
+        type = physical_tile_type(block_loc);
         for (iclass = 0; iclass < (int)type->class_inf.size(); iclass++) {
             num_local_opin = route_ctx.clb_opins_used_locally[blk_id][iclass].size();
 

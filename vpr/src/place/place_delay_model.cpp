@@ -370,12 +370,8 @@ float comp_td_single_connection_delay(const PlaceDelayModel* delay_model,
         int source_block_ipin = cluster_ctx.clb_nlist.pin_logical_index(source_pin);
         int sink_block_ipin = cluster_ctx.clb_nlist.pin_logical_index(sink_pin);
 
-        int source_x = block_locs[source_block].loc.x;
-        int source_y = block_locs[source_block].loc.y;
-        int source_layer = block_locs[source_block].loc.layer;
-        int sink_x = block_locs[sink_block].loc.x;
-        int sink_y = block_locs[sink_block].loc.y;
-        int sink_layer = block_locs[sink_block].loc.layer;
+        t_pl_loc source_block_loc = block_locs[source_block].loc;
+        t_pl_loc sink_block_loc = block_locs[sink_block].loc;
 
         /**
          * This heuristic only considers delta_x and delta_y, a much better
@@ -384,16 +380,16 @@ float comp_td_single_connection_delay(const PlaceDelayModel* delay_model,
          * In particular this approach does not accurately capture the effect
          * of fast carry-chain connections.
          */
-        delay_source_to_sink = delay_model->delay({source_x, source_y, source_layer}, source_block_ipin,
-                                                  {sink_x, sink_y, sink_layer}, sink_block_ipin);
+        delay_source_to_sink = delay_model->delay({source_block_loc.x, source_block_loc.y, source_block_loc.layer}, source_block_ipin,
+                                                  {sink_block_loc.x, sink_block_loc.y, sink_block_loc.layer}, sink_block_ipin);
         if (delay_source_to_sink < 0) {
             VPR_ERROR(VPR_ERROR_PLACE,
-                      "in comp_td_single_connection_delay: Bad delay_source_to_sink value %g from %s (at %d,%d) to %s (at %d,%d)\n"
+                      "in comp_td_single_connection_delay: Bad delay_source_to_sink value %g from %s (at %d,%d,%d) to %s (at %d,%d,%d)\n"
                       "in comp_td_single_connection_delay: Delay is less than 0\n",
-                      block_type_pin_index_to_name(physical_tile_type(source_block), source_block_ipin, false).c_str(),
-                      source_x, source_y,
-                      block_type_pin_index_to_name(physical_tile_type(sink_block), sink_block_ipin, false).c_str(),
-                      sink_x, sink_y,
+                      block_type_pin_index_to_name(physical_tile_type(source_block_loc), source_block_ipin, false).c_str(),
+                      source_block_loc.x, source_block_loc.y, source_block_loc.layer,
+                      block_type_pin_index_to_name(physical_tile_type(sink_block_loc), sink_block_ipin, false).c_str(),
+                      sink_block_loc.x, sink_block_loc.y, sink_block_loc.layer,
                       delay_source_to_sink);
         }
     }

@@ -28,7 +28,9 @@ bool is_empty_type(t_physical_tile_type_ptr type);
 bool is_empty_type(t_logical_block_type_ptr type);
 
 //Returns the corresponding physical type given the logical type as parameter
-t_physical_tile_type_ptr physical_tile_type(ClusterBlockId blk);
+t_physical_tile_type_ptr physical_tile_type(t_pl_loc loc);
+
+//t_physical_tile_type_ptr physical_tile_type(ClusterBlockId blk);
 
 t_physical_tile_type_ptr physical_tile_type(AtomBlockId atom_blk);
 
@@ -222,7 +224,7 @@ AtomBlockId find_memory_sibling(const t_pb* pb);
  * @param iblk cluster block ID to sync within the assigned physical tile
  *
  * This routine updates the physical pins vector of the place context after the placement step
- * to syncronize the pins related to the logical block with the actual connection interface of
+ * to synchronize the pins related to the logical block with the actual connection interface of
  * the belonging physical tile with the RR graph.
  *
  * This step is required as the logical block can be placed at any compatible sub tile locations
@@ -233,10 +235,11 @@ AtomBlockId find_memory_sibling(const t_pb* pb);
  * tile IO pins are selected.
  *
  * This routine uses the x,y and sub_tile coordinates of the clb netlist, and expects those to place each netlist block
- * at a legal location that can accomodate it.
+ * at a legal location that can accommodate it.
  * It does not check for overuse of locations, therefore it can be used with placements that have resource overuse.
  */
-void place_sync_external_block_connections(ClusterBlockId iblk);
+void place_sync_external_block_connections(ClusterBlockId iblk,
+                                           const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
 
 //Returns the physical pin of the tile, related to the given ClusterNedId, and the net pin index
 int net_pin_to_tile_pin_index(const ClusterNetId net_id, int net_pin_index);

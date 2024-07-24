@@ -831,8 +831,8 @@ void draw_placement_macros(ezgl::renderer* g) {
 
             xlow = std::min(xlow, x);
             ylow = std::min(ylow, y);
-            xhigh = std::max(xhigh, x + physical_tile_type(blk)->width);
-            yhigh = std::max(yhigh, y + physical_tile_type(blk)->height);
+            xhigh = std::max(xhigh, x + physical_tile_type(block_locs[blk].loc)->width);
+            yhigh = std::max(yhigh, y + physical_tile_type(block_locs[blk].loc)->height);
         }
 
         double draw_xlow = draw_coords->tile_x[xlow];
@@ -1420,6 +1420,7 @@ void draw_block_pin_util() {
 
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& block_locs = g_vpr_ctx.placement().get_block_locs();
 
     std::map<t_physical_tile_type_ptr, size_t> total_input_pins;
     std::map<t_physical_tile_type_ptr, size_t> total_output_pins;
@@ -1434,9 +1435,9 @@ void draw_block_pin_util() {
 
     auto blks = cluster_ctx.clb_nlist.blocks();
     vtr::vector<ClusterBlockId, float> pin_util(blks.size());
-    for (auto blk : blks) {
-        auto type = physical_tile_type(blk);
-
+    for (ClusterBlockId blk : blks) {
+        t_pl_loc block_loc = block_locs[blk].loc;
+        auto type = physical_tile_type(block_loc);
         if (draw_state->show_blk_pin_util == DRAW_BLOCK_PIN_UTIL_TOTAL) {
             pin_util[blk] = cluster_ctx.clb_nlist.block_pins(blk).size()
                             / float(total_input_pins[type] + total_output_pins[type]);
