@@ -323,7 +323,9 @@ static void process_nodes(const Netlist<>& net_list, std::ifstream& fp, ClusterN
             ptc = atoi(tokens[5 + offset].c_str());
             if (rr_graph.node_ptc_num(RRNodeId(inode)) != ptc) {
                 vpr_throw(VPR_ERROR_ROUTE, filename, lineno,
-                          "The ptc num of node %d does not match the rr graph, Running without flat routing; if this file was created with flat routing, re-run vpr with the --flat_routing option", inode);
+                          "The ptc num of node %d does not match the rr graph, Running without flat routing; "
+                          "if this file was created with flat routing, re-run vpr with the --flat_routing option",
+                          inode);
             }
 
             /*Process switches and pb pin info if it is ipin or opin type*/
@@ -340,7 +342,7 @@ static void process_nodes(const Netlist<>& net_list, std::ifstream& fp, ClusterN
                     std::tie(sub_tile, sub_tile_rel_cap) = get_sub_tile_from_pin_physical_num(physical_tile, pin_num);
                     int sub_tile_offset = sub_tile->capacity.low + sub_tile_rel_cap;
 
-                    ClusterBlockId iblock = place_ctx.grid_blocks.block_at_location({x - width_offset, y - height_offset, sub_tile_offset, layer_num});
+                    ClusterBlockId iblock = place_ctx.get_grid_blocks().block_at_location({x - width_offset, y - height_offset, sub_tile_offset, layer_num});
                     VTR_ASSERT(iblock);
 
                     const t_pb_graph_pin* pb_pin;
@@ -647,8 +649,8 @@ void print_route(const Netlist<>& net_list,
                         std::tie(sub_tile, sub_tile_rel_cap) = get_sub_tile_from_pin_physical_num(physical_tile, pin_num);
                         int sub_tile_offset = sub_tile->capacity.low + sub_tile_rel_cap;
 
-                        ClusterBlockId iblock = place_ctx.grid_blocks.block_at_location({ilow - xoffset, jlow - yoffset,
-                                                                                         sub_tile_offset, layer_num});
+                        ClusterBlockId iblock = place_ctx.get_grid_blocks().block_at_location({ilow - xoffset, jlow - yoffset,
+                                                                                               sub_tile_offset, layer_num});
                         VTR_ASSERT(iblock);
                         const t_pb_graph_pin* pb_pin;
                         if (is_pin_on_tile(physical_tile, pin_num)) {

@@ -821,7 +821,7 @@ void vpr_place(const Netlist<>& net_list, t_vpr_setup& vpr_setup, const t_arch& 
     print_place(filename_opts.NetFile.c_str(),
                 cluster_ctx.clb_nlist.netlist_id().c_str(),
                 filename_opts.PlaceFile.c_str(),
-                g_vpr_ctx.placement().block_locs);
+                g_vpr_ctx.placement().get_block_locs());
 }
 
 void vpr_load_placement(t_vpr_setup& vpr_setup, const t_arch& arch) {
@@ -836,7 +836,7 @@ void vpr_load_placement(t_vpr_setup& vpr_setup, const t_arch& arch) {
 
     //Load an existing placement from a file
     place_ctx.placement_id = read_place(filename_opts.NetFile.c_str(), filename_opts.PlaceFile.c_str(),
-                                        place_ctx.block_locs,
+                                        place_ctx.get_mutable_block_locs(),
                                         filename_opts.verify_file_digests, device_ctx.grid);
 
     //Ensure placement macros are loaded so that they can be drawn after placement (e.g. during routing)
@@ -1280,8 +1280,8 @@ static void free_atoms() {
 
 static void free_placement() {
     auto& place_ctx = g_vpr_ctx.mutable_placement();
-    place_ctx.block_locs.clear();
-    place_ctx.grid_blocks.clear();
+    place_ctx.get_mutable_block_locs().clear();
+    place_ctx.get_mutable_grid_blocks().clear();
 }
 
 static void free_routing() {

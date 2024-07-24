@@ -102,7 +102,7 @@ const t_model_ports* find_model_port(const t_model* model, const std::string& na
     }
 
     if (required) {
-        VPR_FATAL_ERROR(VPR_ERROR_ARCH, "Failed to find port '%s; on architecture modedl '%s'\n", name.c_str(), model->name);
+        VPR_FATAL_ERROR(VPR_ERROR_ARCH, "Failed to find port '%s; on architecture model '%s'\n", name.c_str(), model->name);
     }
 
     return nullptr;
@@ -124,18 +124,19 @@ void sync_grid_to_blocks() {
     auto& device_ctx = g_vpr_ctx.device();
     auto& device_grid = device_ctx.grid;
 
-    int num_layers = device_ctx.grid.get_num_layers();
+    const int num_layers = device_ctx.grid.get_num_layers();
+
+    auto& grid_blocks = place_ctx.get_mutable_grid_blocks();
+    auto& block_locs = place_ctx.get_block_locs();
 
     /* Reset usage and allocate blocks list if needed */
-    place_ctx.grid_blocks = GridBlock(device_grid.width(),
-                                      device_grid.height(),
-                                      device_ctx.grid.get_num_layers());
-    auto& grid_blocks = place_ctx.grid_blocks;
+    grid_blocks = GridBlock(device_grid.width(), device_grid.height(), device_ctx.grid.get_num_layers());
+
 
     for (int layer_num = 0; layer_num < num_layers; layer_num++) {
         for (int x = 0; x < (int)device_grid.width(); ++x) {
             for (int y = 0; y < (int)device_grid.height(); ++y) {
-                const auto& type = device_ctx.grid.get_physical_type({x, y, layer_num});
+                const t_physical_tile_type_ptr type = device_ctx.grid.get_physical_type({x, y, layer_num});
                 grid_blocks.initialized_grid_block_at_location({x, y, layer_num}, type->capacity);
             }
         }
@@ -144,11 +145,11 @@ void sync_grid_to_blocks() {
     /* Go through each block */
     auto& cluster_ctx = g_vpr_ctx.clustering();
     for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks()) {
-        const auto& blk_loc = place_ctx.block_locs[blk_id].loc;
-        int blk_x = place_ctx.block_locs[blk_id].loc.x;
-        int blk_y = place_ctx.block_locs[blk_id].loc.y;
-        int blk_z = place_ctx.block_locs[blk_id].loc.sub_tile;
-        int blk_layer = place_ctx.block_locs[blk_id].loc.layer;
+        const auto& blk_loc = block_locs[blk_id].loc;
+        int blk_x = block_locs[blk_id].loc.x;
+        int blk_y = block_locs[blk_id].loc.y;
+        int blk_z = block_locs[blk_id].loc.sub_tile;
+        int blk_layer = block_locs[blk_id].loc.layer;
 
         auto type = physical_tile_type(blk_id);
 
@@ -170,8 +171,8 @@ void sync_grid_to_blocks() {
         }
 
         /* Check already in use */
-        if ((EMPTY_BLOCK_ID != place_ctx.grid_blocks.block_at_location(blk_loc))
-            && (INVALID_BLOCK_ID != place_ctx.grid_blocks.block_at_location(blk_loc))) {
+        if ((EMPTY_BLOCK_ID != grid_blocks.block_at_location(blk_loc))
+            && (INVALID_BLOCK_ID != grid_blocks.block_at_location(blk_loc))) {
             VPR_FATAL_ERROR(VPR_ERROR_PLACE, "Location (%d, %d, %d, %d) is used more than once.\n",
                             blk_x, blk_y, blk_z, blk_layer);
         }
@@ -184,18 +185,10 @@ void sync_grid_to_blocks() {
         /* Set the block */
         for (int width = 0; width < type->width; ++width) {
             for (int height = 0; height < type->height; ++height) {
-                place_ctx.grid_blocks.set_block_at_location({blk_x + width,
-                                                             blk_y + height,
-                                                             blk_z,
-                                                             blk_layer},
-                                                            blk_id);
-                place_ctx.grid_blocks.set_usage({blk_x + width,
-                                                 blk_y + height,
-                                                 blk_layer},
-                                                place_ctx.grid_blocks.get_usage({blk_x + width,
-                                                                                 blk_y + height,
-                                                                                 blk_layer})
-                                                    + 1);
+                grid_blocks.set_block_at_location({blk_x + width, blk_y + height, blk_z, blk_layer}, blk_id);
+                grid_blocks.set_usage({blk_x + width, blk_y + height, blk_layer},
+                                      grid_blocks.get_usage({blk_x + width, blk_y + height, blk_layer}) + 1);
+
                 VTR_ASSERT(device_ctx.grid.get_width_offset({blk_x + width, blk_y + height, blk_layer}) == width);
                 VTR_ASSERT(device_ctx.grid.get_height_offset({blk_x + width, blk_y + height, blk_layer}) == height);
             }
@@ -692,7 +685,7 @@ t_block_loc get_block_loc(const ParentBlockId& block_id, bool is_flat) {
     }
 
     VTR_ASSERT(cluster_block_id != ClusterBlockId::INVALID());
-    auto blk_loc = place_ctx.block_locs[cluster_block_id];
+    auto blk_loc = place_ctx.get_block_locs()[cluster_block_id];
 
     return blk_loc;
 }

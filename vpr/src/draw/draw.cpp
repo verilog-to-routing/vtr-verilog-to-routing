@@ -1011,7 +1011,7 @@ static void highlight_blocks(double x, double y) {
     }
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_ctx = g_vpr_ctx.placement();
+    auto& block_locs = g_vpr_ctx.placement().get_block_locs();
 
     VTR_ASSERT(clb_index != EMPTY_BLOCK_ID);
 
@@ -1033,8 +1033,8 @@ static void highlight_blocks(double x, double y) {
                                     clb_index);
         sprintf(msg, "Block #%zu (%s) at (%d, %d) selected.", size_t(clb_index),
                 cluster_ctx.clb_nlist.block_name(clb_index).c_str(),
-                place_ctx.block_locs[clb_index].loc.x,
-                place_ctx.block_locs[clb_index].loc.y);
+                block_locs[clb_index].loc.x,
+                block_locs[clb_index].loc.y);
     }
 
     //If manual moves is activated, then user can select block from the grid.
@@ -1047,7 +1047,6 @@ static void highlight_blocks(double x, double y) {
 
     application.update_message(msg);
     application.refresh_drawing();
-    return;
 }
 
 ClusterBlockId get_cluster_block_id_from_xy_loc(double x, double y) {

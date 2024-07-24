@@ -230,7 +230,7 @@ void drawnets(ezgl::renderer* g) {
 
     ClusterBlockId b1, b2;
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_ctx = g_vpr_ctx.placement();
+    auto& block_locs = g_vpr_ctx.placement().get_block_locs();
 
     float transparency_factor;
     float NET_ALPHA = draw_state->net_alpha;
@@ -244,7 +244,7 @@ void drawnets(ezgl::renderer* g) {
     /* Draw the net as a star from the source to each sink. Draw from centers of *
      * blocks (or sub blocks in the case of IOs).                                */
 
-    for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+    for (ClusterNetId net_id : cluster_ctx.clb_nlist.nets()) {
         if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
             continue; /* Don't draw */
         }
@@ -256,7 +256,7 @@ void drawnets(ezgl::renderer* g) {
         b1 = cluster_ctx.clb_nlist.net_driver_block(net_id);
 
         //The layer of the net driver block
-        driver_block_layer_num = place_ctx.block_locs[b1].loc.layer;
+        driver_block_layer_num = block_locs[b1].loc.layer;
 
         //To only show nets that are connected to currently active layers on the screen
         if (!draw_state->draw_layer_display[driver_block_layer_num].visible) {
@@ -264,11 +264,11 @@ void drawnets(ezgl::renderer* g) {
         }
 
         ezgl::point2d driver_center = draw_coords->get_absolute_clb_bbox(b1, cluster_ctx.clb_nlist.block_type(b1)).center();
-        for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
+        for (ClusterPinId pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
             b2 = cluster_ctx.clb_nlist.pin_block(pin_id);
 
             //the layer of the pin block (net sinks)
-            sink_block_layer_num = place_ctx.block_locs[b2].loc.layer;
+            sink_block_layer_num =block_locs[b2].loc.layer;
 
             t_draw_layer_display element_visibility = get_element_visibility_and_transparency(driver_block_layer_num, sink_block_layer_num);
 
@@ -277,7 +277,7 @@ void drawnets(ezgl::renderer* g) {
             }
             transparency_factor = element_visibility.alpha;
 
-            //Take the higher of the 2 transparency values that the user can select from the UI
+            //Take the highest of the 2 transparency values that the user can select from the UI
             // Compare the current cross layer transparency to the overall Net transparency set by the user.
             g->set_color(draw_state->net_color[net_id], fmin(transparency_factor, draw_state->net_color[net_id].alpha * NET_ALPHA));
 
@@ -793,7 +793,7 @@ bool is_edge_valid_to_draw(RRNodeId current_node, RRNodeId prev_node) {
 }
 
 /* Draws any placement macros (e.g. carry chains, which require specific relative placements
- * between some blocks) if the Placement Macros (in the GUI) is seelected.
+ * between some blocks) if the Placement Macros (in the GUI) is selected.
  */
 void draw_placement_macros(ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
@@ -804,8 +804,9 @@ void draw_placement_macros(ezgl::renderer* g) {
     t_draw_coords* draw_coords = get_draw_coords_vars();
 
     auto& place_ctx = g_vpr_ctx.placement();
-    for (size_t imacro = 0; imacro < place_ctx.pl_macros.size(); ++imacro) {
-        const t_pl_macro* pl_macro = &place_ctx.pl_macros[imacro];
+    auto& block_locs = place_ctx.get_block_locs();
+
+    for (const t_pl_macro& pl_macro : place_ctx.pl_macros) {
 
         //TODO: for now we just draw the bounding box of the macro, which is incorrect for non-rectangular macros...
         int xlow = std::numeric_limits<int>::max();
@@ -815,19 +816,18 @@ void draw_placement_macros(ezgl::renderer* g) {
 
         int x_root = OPEN;
         int y_root = OPEN;
-        for (size_t imember = 0; imember < pl_macro->members.size();
-             ++imember) {
-            const t_pl_macro_member* member = &pl_macro->members[imember];
+        for (size_t imember = 0; imember < pl_macro.members.size(); ++imember) {
+            const t_pl_macro_member& member = pl_macro.members[imember];
 
-            ClusterBlockId blk = member->blk_index;
+            ClusterBlockId blk = member.blk_index;
 
             if (imember == 0) {
-                x_root = place_ctx.block_locs[blk].loc.x;
-                y_root = place_ctx.block_locs[blk].loc.y;
+                x_root = block_locs[blk].loc.x;
+                y_root = block_locs[blk].loc.y;
             }
 
-            int x = x_root + member->offset.x;
-            int y = y_root + member->offset.y;
+            int x = x_root + member.offset.x;
+            int y = y_root + member.offset.y;
 
             xlow = std::min(xlow, x);
             ylow = std::min(ylow, y);
@@ -1187,13 +1187,13 @@ void draw_crit_path_elements(const std::vector<tatum::TimingPath>& paths, const 
 }
 
 int get_timing_path_node_layer_num(tatum::NodeId node) {
-    auto& place_ctx = g_vpr_ctx.placement();
+    auto& block_locs = g_vpr_ctx.placement().get_block_locs();
     auto& atom_ctx = g_vpr_ctx.atom();
 
     AtomPinId atom_pin = atom_ctx.lookup.tnode_atom_pin(node);
     AtomBlockId atom_block = atom_ctx.nlist.pin_block(atom_pin);
     ClusterBlockId clb_block = atom_ctx.lookup.atom_clb(atom_block);
-    return place_ctx.block_locs[clb_block].loc.layer;
+    return block_locs[clb_block].loc.layer;
 }
 
 bool is_flyline_valid_to_draw(int src_layer, int sink_layer) {

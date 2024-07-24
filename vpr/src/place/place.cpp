@@ -486,7 +486,7 @@ void try_place(const Netlist<>& net_list,
         VTR_LOG("\n");
 
         //Update the point-to-point delays from the initial placement
-        comp_td_connection_delays(place_delay_model.get());
+        comp_td_connection_delays(place_delay_model.get(), g_vpr_ctx.placement().block_locs);
 
         /*
          * Initialize timing analysis
@@ -520,7 +520,7 @@ void try_place(const Netlist<>& net_list,
         crit_params.crit_exponent = first_crit_exponent;
         crit_params.crit_limit = placer_opts.place_crit_limit;
 
-        initialize_timing_info(crit_params, place_delay_model.get(),
+        initialize_timing_info(crit_params, place_delay_model.get(), g_vpr_ctx.placement().block_locs,
                                placer_criticalities.get(), placer_setup_slacks.get(),
                                pin_timing_invalidator.get(), timing_info.get(), &costs);
 
@@ -850,7 +850,7 @@ void try_place(const Netlist<>& net_list,
     crit_params.crit_limit = placer_opts.place_crit_limit;
 
     if (placer_opts.place_algorithm.is_timing_driven()) {
-        perform_full_timing_update(crit_params, place_delay_model.get(),
+        perform_full_timing_update(crit_params, place_delay_model.get(), g_vpr_ctx.placement().block_locs,
                                    placer_criticalities.get(), placer_setup_slacks.get(),
                                    pin_timing_invalidator.get(), timing_info.get(), &costs);
         VTR_LOG("post-quench CPD = %g (ns) \n",
@@ -998,7 +998,7 @@ static void outer_loop_update_timing_info(const t_placer_opts& placer_opts,
             crit_params.crit_limit = placer_opts.place_crit_limit;
 
             //Update all timing related classes
-            perform_full_timing_update(crit_params, delay_model, criticalities,
+            perform_full_timing_update(crit_params, delay_model, g_vpr_ctx.placement().block_locs, criticalities,
                                        setup_slacks, pin_timing_invalidator, timing_info, costs);
 
             *outer_crit_iter_count = 0;
@@ -1072,7 +1072,7 @@ static void placement_inner_loop(const t_annealing_state* state,
                 crit_params.crit_limit = placer_opts.place_crit_limit;
 
                 //Update all timing related classes
-                perform_full_timing_update(crit_params, delay_model,
+                perform_full_timing_update(crit_params, delay_model, g_vpr_ctx.placement().block_locs,
                                            criticalities, setup_slacks, pin_timing_invalidator,
                                            timing_info, costs);
             }
@@ -1484,8 +1484,8 @@ static e_move_result try_swap(const t_annealing_state* state,
                 /* Revert the timing delays and costs to pre-update values.       */
                 /* These routines must be called after reverting the block moves. */
                 //TODO: make this process incremental
-                comp_td_connection_delays(delay_model);
-                comp_td_costs(delay_model, *criticalities, &costs->timing_cost);
+                comp_td_connection_delays(delay_model, g_vpr_ctx.placement().block_locs);
+                comp_td_costs(delay_model, *criticalities, g_vpr_ctx.placement().block_locs, &costs->timing_cost);
 
                 /* Re-invalidate the affected sink pins since the proposed *
                  * move is rejected, and the same blocks are reverted to   *
@@ -1955,9 +1955,8 @@ static void check_place(const t_placer_costs& costs,
     int error = 0;
 
     error += check_placement_consistency();
-    error += check_placement_costs(costs, delay_model, criticalities,
-                                   place_algorithm);
-    error += check_placement_floorplanning();
+    error += check_placement_costs(costs, delay_model, criticalities, place_algorithm);
+    error += check_placement_floorplanning(g_vpr_ctx.placement().block_locs);
 
     if (noc_opts.noc) {
         // check the NoC costs during placement if the user is using the NoC supported flow
@@ -2003,7 +2002,7 @@ static int check_placement_costs(const t_placer_costs& costs,
     }
 
     if (place_algorithm.is_timing_driven()) {
-        comp_td_costs(delay_model, *criticalities, &timing_cost_check);
+        comp_td_costs(delay_model, *criticalities, g_vpr_ctx.placement().block_locs, &timing_cost_check);
         //VTR_LOG("timing_cost recomputed from scratch: %g\n", timing_cost_check);
         if (fabs(
                 timing_cost_check

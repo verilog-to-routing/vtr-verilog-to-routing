@@ -57,9 +57,10 @@ void restore_best_placement(vtr::vector_map<ClusterBlockId, t_block_loc>& block_
         //recompute timing from scratch
         placer_criticalities.get()->set_recompute_required();
         placer_setup_slacks.get()->set_recompute_required();
-        comp_td_connection_delays(place_delay_model.get());
+        comp_td_connection_delays(place_delay_model.get(), block_locs);
         perform_full_timing_update(crit_params,
                                    place_delay_model.get(),
+                                   block_locs,
                                    placer_criticalities.get(),
                                    placer_setup_slacks.get(),
                                    pin_timing_invalidator.get(),

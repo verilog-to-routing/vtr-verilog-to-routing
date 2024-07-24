@@ -384,15 +384,17 @@ struct PackingMultithreadingContext : public Context {
  */
 struct PlacementContext : public Context {
   private:
+
+
+    bool loc_vars_are_accessible_ = true;
+
+  public:
+
     ///@brief Clustered block placement locations
     vtr::vector_map<ClusterBlockId, t_block_loc> block_locs;
 
     ///@brief Clustered block associated with each grid location (i.e. inverse of block_locs)
     GridBlock grid_blocks;
-
-    bool loc_vars_are_accessible_ = true;
-
-  public:
 
     const vtr::vector_map<ClusterBlockId, t_block_loc>& get_block_locs() const { VTR_ASSERT(loc_vars_are_accessible_); return block_locs; }
     vtr::vector_map<ClusterBlockId, t_block_loc>& get_mutable_block_locs() { VTR_ASSERT(loc_vars_are_accessible_); return block_locs; }
@@ -400,6 +402,8 @@ struct PlacementContext : public Context {
     GridBlock& get_mutable_grid_blocks() { VTR_ASSERT(loc_vars_are_accessible_); return grid_blocks; }
     void lock_loc_vars() { loc_vars_are_accessible_ = false; }
     void unlock_loc_vars() { loc_vars_are_accessible_ = true; }
+
+
 
     ///@brief Clustered pin placement mapping with physical pin
     vtr::vector_map<ClusterPinId, int> physical_pins;

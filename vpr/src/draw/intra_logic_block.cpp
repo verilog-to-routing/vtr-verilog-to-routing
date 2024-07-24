@@ -260,7 +260,6 @@ static void draw_internal_load_coords(int type_descrip_index, t_pb_graph_node* p
             }
         }
     }
-    return;
 }
 
 /* Helper function which computes bounding box values for a sub-block. The coordinates
@@ -329,8 +328,6 @@ draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node* pb_graph_node
 
     *blk_width = child_width;
     *blk_height = child_height;
-
-    return;
 }
 
 #    ifndef NO_GRAPHICS
@@ -342,7 +339,7 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
     t_draw_coords* draw_coords = get_draw_coords_vars();
     t_draw_state* draw_state = get_draw_state_vars();
 
-    auto& place_ctx = g_vpr_ctx.placement();
+    auto& block_locs = g_vpr_ctx.placement().get_block_locs();
 
     t_selected_sub_block_info& sel_sub_info = get_selected_sub_block_info();
 
@@ -350,7 +347,7 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
     ezgl::rectangle temp = draw_coords->get_pb_bbox(clb_index, *pb->pb_graph_node);
     ezgl::rectangle abs_bbox = temp + parent_bbox.bottom_left();
 
-    int layer_num = place_ctx.block_locs[clb_index].loc.layer;
+    int layer_num = block_locs[clb_index].loc.layer;
     int transparency_factor = draw_state->draw_layer_display[layer_num].alpha;
 
     // if we've gone too far, don't draw anything
@@ -560,7 +557,7 @@ void draw_logical_connections(ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
 
     auto& atom_ctx = g_vpr_ctx.atom();
-    auto& place_ctx = g_vpr_ctx.placement();
+    auto& block_locs = g_vpr_ctx.placement().get_block_locs();
 
     g->set_line_dash(ezgl::line_dash::none);
 
@@ -578,7 +575,7 @@ void draw_logical_connections(ezgl::renderer* g) {
         AtomBlockId src_blk_id = atom_ctx.nlist.pin_block(driver_pin_id);
         ClusterBlockId src_clb = atom_ctx.lookup.atom_clb(src_blk_id);
 
-        int src_layer_num = place_ctx.block_locs[src_clb].loc.layer;
+        int src_layer_num = block_locs[src_clb].loc.layer;
         //To only show primitive nets that are connected to currently active layers on the screen
         if (!draw_state->draw_layer_display[src_layer_num].visible) {
             continue; /* Don't Draw */
@@ -593,7 +590,7 @@ void draw_logical_connections(ezgl::renderer* g) {
             AtomBlockId sink_blk_id = atom_ctx.nlist.pin_block(sink_pin_id);
             const t_pb_graph_node* sink_pb_gnode = atom_ctx.lookup.atom_pb_graph_node(sink_blk_id);
             ClusterBlockId sink_clb = atom_ctx.lookup.atom_clb(sink_blk_id);
-            int sink_layer_num = place_ctx.block_locs[sink_clb].loc.layer;
+            int sink_layer_num = block_locs[sink_clb].loc.layer;
 
             t_draw_layer_display element_visibility = get_element_visibility_and_transparency(src_layer_num, sink_layer_num);
 

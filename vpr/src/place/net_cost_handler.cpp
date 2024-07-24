@@ -613,8 +613,7 @@ static void update_td_delta_costs(const PlaceDelayModel* delay_model,
         /* Recompute all point to point connection delays for the net sinks. */
         for (size_t ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net).size();
              ipin++) {
-            float temp_delay = comp_td_single_connection_delay(delay_model, net,
-                                                               ipin);
+            float temp_delay = comp_td_single_connection_delay(delay_model, g_vpr_ctx.placement().block_locs, net, ipin);
             /* If the delay hasn't changed, do not mark this pin as affected */
             if (temp_delay == connection_delay[net][ipin]) {
                 continue;
@@ -640,8 +639,7 @@ static void update_td_delta_costs(const PlaceDelayModel* delay_model,
             /* Get the sink pin index in the net */
             int ipin = cluster_ctx.clb_nlist.pin_net_index(pin);
 
-            float temp_delay = comp_td_single_connection_delay(delay_model, net,
-                                                               ipin);
+            float temp_delay = comp_td_single_connection_delay(delay_model, g_vpr_ctx.placement().block_locs, net, ipin);
             /* If the delay hasn't changed, do not mark this pin as affected */
             if (temp_delay == connection_delay[net][ipin]) {
                 return;
@@ -651,8 +649,7 @@ static void update_td_delta_costs(const PlaceDelayModel* delay_model,
             proposed_connection_delay[net][ipin] = temp_delay;
 
             proposed_connection_timing_cost[net][ipin] = criticalities.criticality(net, ipin) * temp_delay;
-            delta_timing_cost += proposed_connection_timing_cost[net][ipin]
-                                 - connection_timing_cost[net][ipin];
+            delta_timing_cost += proposed_connection_timing_cost[net][ipin] - connection_timing_cost[net][ipin];
 
             /* Record this connection in blocks_affected.affected_pins */
             affected_pins.push_back(pin);
@@ -2084,7 +2081,7 @@ void recompute_costs_from_scratch(const t_placer_opts& placer_opts,
 
     if (placer_opts.place_algorithm.is_timing_driven()) {
         double new_timing_cost = 0.;
-        comp_td_costs(delay_model, *criticalities, &new_timing_cost);
+        comp_td_costs(delay_model, *criticalities, g_vpr_ctx.placement().block_locs, &new_timing_cost);
         check_and_print_cost(new_timing_cost, costs->timing_cost, "timing_cost");
         costs->timing_cost = new_timing_cost;
     } else {

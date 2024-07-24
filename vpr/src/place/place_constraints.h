@@ -21,7 +21,7 @@
  *
  * @return int The number of errors (inconsistencies in adherence to floorplanning constraints).
  */
-int check_placement_floorplanning();
+int check_placement_floorplanning(const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
 
 
 /**

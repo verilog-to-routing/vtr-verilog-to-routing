@@ -13,13 +13,12 @@
 #include "place_util.h"
 #include "re_cluster_util.h"
 
-int check_placement_floorplanning() {
+int check_placement_floorplanning(const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
     int error = 0;
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_ctx = g_vpr_ctx.placement();
 
-    for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-        auto loc = place_ctx.block_locs[blk_id].loc;
+    for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks()) {
+        t_pl_loc loc = block_locs[blk_id].loc;
         if (!cluster_floorplanning_legal(blk_id, loc)) {
             error++;
             VTR_LOG_ERROR("Block %zu is not in correct floorplanning region.\n", size_t(blk_id));

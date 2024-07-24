@@ -1186,7 +1186,7 @@ static void alloc_and_load_movable_blocks(const vtr::vector_map<ClusterBlockId, 
 
 
     // iterate over all clustered blocks and store block ids of movable ones
-    for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+    for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks()) {
         const auto& loc = block_locs[blk_id];
         if (!loc.is_fixed) {
             place_ctx.movable_blocks.push_back(blk_id);

@@ -352,9 +352,11 @@ std::unique_ptr<PlaceDelayModel> alloc_lookups_and_delay_model(const Netlist<>& 
  * Only estimate delay for signals routed through the inter-block routing network.
  * TODO: Do how should we compute the delay for globals. "Global signals are assumed to have zero delay."
  */
-float comp_td_single_connection_delay(const PlaceDelayModel* delay_model, ClusterNetId net_id, int ipin) {
+float comp_td_single_connection_delay(const PlaceDelayModel* delay_model,
+                                      const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs,
+                                      ClusterNetId net_id,
+                                      int ipin) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_ctx = g_vpr_ctx.placement();
 
     float delay_source_to_sink = 0.;
 
@@ -368,12 +370,12 @@ float comp_td_single_connection_delay(const PlaceDelayModel* delay_model, Cluste
         int source_block_ipin = cluster_ctx.clb_nlist.pin_logical_index(source_pin);
         int sink_block_ipin = cluster_ctx.clb_nlist.pin_logical_index(sink_pin);
 
-        int source_x = place_ctx.block_locs[source_block].loc.x;
-        int source_y = place_ctx.block_locs[source_block].loc.y;
-        int source_layer = place_ctx.block_locs[source_block].loc.layer;
-        int sink_x = place_ctx.block_locs[sink_block].loc.x;
-        int sink_y = place_ctx.block_locs[sink_block].loc.y;
-        int sink_layer = place_ctx.block_locs[sink_block].loc.layer;
+        int source_x = block_locs[source_block].loc.x;
+        int source_y = block_locs[source_block].loc.y;
+        int source_layer = block_locs[source_block].loc.layer;
+        int sink_x = block_locs[sink_block].loc.x;
+        int sink_y = block_locs[sink_block].loc.y;
+        int sink_layer = block_locs[sink_block].loc.layer;
 
         /**
          * This heuristic only considers delta_x and delta_y, a much better
@@ -400,14 +402,15 @@ float comp_td_single_connection_delay(const PlaceDelayModel* delay_model, Cluste
 }
 
 ///@brief Recompute all point to point delays, updating `connection_delay` matrix.
-void comp_td_connection_delays(const PlaceDelayModel* delay_model) {
+void comp_td_connection_delays(const PlaceDelayModel* delay_model,
+                               const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& p_timing_ctx = g_placer_ctx.mutable_timing();
     auto& connection_delay = p_timing_ctx.connection_delay;
 
     for (ClusterNetId net_id : cluster_ctx.clb_nlist.nets()) {
         for (size_t ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ++ipin) {
-            connection_delay[net_id][ipin] = comp_td_single_connection_delay(delay_model, net_id, ipin);
+            connection_delay[net_id][ipin] = comp_td_single_connection_delay(delay_model, block_locs, net_id, ipin);
         }
     }
 }

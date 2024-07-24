@@ -12,6 +12,7 @@
 ///@brief Initialize the timing information and structures in the placer.
 void initialize_timing_info(const PlaceCritParams& crit_params,
                             const PlaceDelayModel* delay_model,
+                            const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs,
                             PlacerCriticalities* criticalities,
                             PlacerSetupSlacks* setup_slacks,
                             NetPinTimingInvalidator* pin_timing_invalidator,
@@ -21,6 +22,7 @@ void initialize_timing_info(const PlaceCritParams& crit_params,
 ///@brief Updates every timing related classes, variables and structures.
 void perform_full_timing_update(const PlaceCritParams& crit_params,
                                 const PlaceDelayModel* delay_model,
+                                const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs,
                                 PlacerCriticalities* criticalities,
                                 PlacerSetupSlacks* setup_slacks,
                                 NetPinTimingInvalidator* pin_timing_invalidator,
@@ -37,13 +39,20 @@ void update_timing_classes(const PlaceCritParams& crit_params,
 ///@brief Updates the timing driven (td) costs.
 void update_timing_cost(const PlaceDelayModel* delay_model,
                         const PlacerCriticalities* criticalities,
+                        const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs,
                         double* timing_cost);
 
 ///@brief Incrementally updates timing cost based on the current delays and criticality estimates.
-void update_td_costs(const PlaceDelayModel* delay_model, const PlacerCriticalities& place_crit, double* timing_cost);
+void update_td_costs(const PlaceDelayModel* delay_model,
+                     const PlacerCriticalities& place_crit,
+                     const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs,
+                     double* timing_cost);
 
 ///@brief Recomputes timing cost from scratch based on the current delays and criticality estimates.
-void comp_td_costs(const PlaceDelayModel* delay_model, const PlacerCriticalities& place_crit, double* timing_cost);
+void comp_td_costs(const PlaceDelayModel* delay_model,
+                   const PlacerCriticalities& place_crit,
+                   const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs,
+                   double* timing_cost);
 
 /**
  * @brief Commit all the setup slack values from the PlacerSetupSlacks
