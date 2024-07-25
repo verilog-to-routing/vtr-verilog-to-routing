@@ -1,0 +1,92 @@
+name: NightlyTest
+
+on:
+  schedule:
+  - cron: '0 0 * * *' # daily
+
+# We want to cancel previous runs for a given PR or branch / ref if another CI
+# run is requested.
+# See: https://docs.github.com/en/actions/using-jobs/using-concurrency
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  # default compiler for all non-compatibility tests
+  MATRIX_EVAL: "CC=gcc-11 && CXX=g++-11"
+
+jobs:
+  Run-tests:
+    # Prevents from running on forks where no custom runners are available
+    if: ${{ github.repository_owner == 'verilog-to-routing' }}
+
+    timeout-minutes: 420
+
+    container: ubuntu:jammy
+
+    runs-on: [self-hosted, Linux, X64]
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {test: "vtr_reg_nightly_test1",      cores: "16", options: "",          cmake: "",                                                             extra_pkgs: ""}
+          - {test: "vtr_reg_nightly_test1_odin", cores: "16", options: "",          cmake: "-DWITH_ODIN=ON",                                               extra_pkgs: ""}
+          - {test: "vtr_reg_nightly_test2",      cores: "16", options: "",          cmake: "",                                                             extra_pkgs: ""}
+          - {test: "vtr_reg_nightly_test2_odin", cores: "16", options: "",          cmake: "-DWITH_ODIN=ON",                                               extra_pkgs: ""}
+          - {test: "vtr_reg_nightly_test3",      cores: "16", options: "",          cmake: "",                                                             extra_pkgs: ""}
+          - {test: "vtr_reg_nightly_test3_odin", cores: "16", options: "",          cmake: "-DWITH_ODIN=ON",                                               extra_pkgs: ""}
+          - {test: "vtr_reg_nightly_test4",      cores: "16", options: "",          cmake: "",                                                             extra_pkgs: ""}
+          - {test: "vtr_reg_nightly_test4_odin", cores: "16", options: "",          cmake: "-DWITH_ODIN=ON",                                               extra_pkgs: ""}
+          - {test: "vtr_reg_nightly_test5",      cores: "16", options: "",          cmake: "",                                                             extra_pkgs: ""}
+          - {test: "vtr_reg_nightly_test6",      cores: "16", options: "",          cmake: "",                                                             extra_pkgs: ""}
+          - {test: "vtr_reg_nightly_test7",      cores: "16", options: "",          cmake: "",                                                             extra_pkgs: ""}
+          - {test: "vtr_reg_strong",             cores: "16", options: "",          cmake: "-DVTR_ASSERT_LEVEL=3",                                         extra_pkgs: "libeigen3-dev"}
+          - {test: "vtr_reg_strong_odin",        cores: "16", options: "",          cmake: "-DVTR_ASSERT_LEVEL=3 -DWITH_ODIN=ON",                          extra_pkgs: "libeigen3-dev"}
+          - {test: "vtr_reg_strong_odin",        cores: "16", options: "-skip_qor", cmake: "-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=ON -DWITH_ODIN=ON", extra_pkgs: "libeigen3-dev"}
+          - {test: "vtr_reg_system_verilog",     cores: "16", options: "",          cmake: "-DYOSYS_F4PGA_PLUGINS=ON",                                     extra_pkgs: ""}
+          - {test: "odin_reg_strong",            cores: "16", options: "",          cmake: "-DWITH_ODIN=ON",                                               extra_pkgs: ""}
+          - {test: "parmys_reg_strong",          cores: "16", options: "",          cmake: "-DYOSYS_F4PGA_PLUGINS=ON",                                     extra_pkgs: ""}
+
+    env:
+      DEBIAN_FRONTEND: "noninteractive"
+
+    steps:
+
+      # TODO: This runnner is running on a self-hosted CPU. In order to upgrade
+      #       to v4, need to upgrade the machine to support node20.
+    - uses: actions/checkout@v3
+      with:
+        submodules: 'true'
+
+    - name: Setup
+      run: stdbuf -i0 -i0 -e0 ./.github/scripts/hostsetup.sh
+
+    - name: Install external libraries
+      run: apt install -y ${{ matrix.extra_pkgs }}
+      if: ${{ matrix.extra_pkgs }}
+
+    - name: Execute test script
+      run: stdbuf -i0 -o0 -e0 ./.github/scripts/run-vtr.sh
+      env:
+        VPR_NUM_WORKERS: 4
+        VTR_TEST: ${{ matrix.test }}
+        VTR_TEST_OPTIONS: ${{ matrix.options }}
+        VTR_CMAKE_PARAMS: ${{ matrix.cmake }}
+        NUM_CORES: ${{ matrix.cores }}
+
+    - name: Upload test results
+      # If the job was not cancelled, we want to save the result (this includes
+      # when the job fails). See warning here:
+      # https://docs.github.com/en/actions/learn-github-actions/expressions#always
+      if: ${{ !cancelled() }}
+      # TODO: This runnner is running on a self-hosted CPU. In order to upgrade
+      #       to v4, need to upgrade the machine to support node20.
+      uses: actions/upload-artifact@v3
+      with:
+        name: ${{matrix.test}}_test_results
+        path: |
+          **/results*.gz
+          **/plot_*.svg
+          **/qor_results*.tar.gz
+
