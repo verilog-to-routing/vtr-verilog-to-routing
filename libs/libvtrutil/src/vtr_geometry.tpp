@@ -59,6 +59,16 @@ void Point<T>::swap() {
 }
 
 template<class T>
+Point<T> Point<T>::operator+(const Point<T>& rhs) {
+    return {x_ + rhs.x_, y_ + rhs.y_};
+}
+
+template<class T>
+Point<T> Point<T>::operator-(const Point<T>& rhs) {
+    return {x_ - rhs.x_, y_ - rhs.y_};
+}
+
+template<class T>
 Point<T>& Point<T>::operator+=(const Point<T>& rhs) {
     x_ += rhs.x_;
     y_ += rhs.y_;

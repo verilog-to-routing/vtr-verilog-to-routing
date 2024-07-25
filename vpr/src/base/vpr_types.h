@@ -115,12 +115,18 @@ constexpr auto INVALID_BLOCK_ID = ClusterBlockId(-2);
 #    define UNDEFINED (-1)
 #endif
 
+///@brief Router lookahead types.
 enum class e_router_lookahead {
-    CLASSIC,        ///<VPR's classic lookahead (assumes uniform wire types)
-    MAP,            ///<Lookahead considering different wire types (see Oleg Petelin's MASc Thesis)
-    COMPRESSED_MAP, /// Similar to MAP, but use a sparse sampling of the chip
-    EXTENDED_MAP,   ///<Lookahead with a more extensive node sampling method
-    NO_OP           ///<A no-operation lookahead which always returns zero
+    ///@brief VPR's classic lookahead (assumes uniform wire types)
+    CLASSIC,
+    ///@brief Lookahead considering different wire types (see Oleg Petelin's MASc Thesis)
+    MAP,
+    ///@brief Similar to MAP, but use a sparse sampling of the chip
+    COMPRESSED_MAP,
+    ///@brief Lookahead with a more extensive node sampling method
+    EXTENDED_MAP,
+    ///@brief A no-operation lookahead which always returns zero
+    NO_OP
 };
 
 enum class e_route_bb_update {
