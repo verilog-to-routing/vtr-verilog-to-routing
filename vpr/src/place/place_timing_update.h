@@ -46,7 +46,7 @@ void update_timing_cost(const PlaceDelayModel* delay_model,
 ///@brief Incrementally updates timing cost based on the current delays and criticality estimates.
 void update_td_costs(const PlaceDelayModel* delay_model,
                      const PlacerCriticalities& place_crit,
-                     const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs,
+                     PlacerContext& placer_ctx,
                      double* timing_cost);
 
 ///@brief Recomputes timing cost from scratch based on the current delays and criticality estimates.

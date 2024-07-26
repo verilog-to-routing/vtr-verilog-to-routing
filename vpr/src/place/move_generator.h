@@ -4,7 +4,7 @@
 #include "move_utils.h"
 #include "timing_place.h"
 #include "directed_moves_util.h"
-#include "placer_globals.h"
+#include "placer_context.h"
 
 #include <limits>
 

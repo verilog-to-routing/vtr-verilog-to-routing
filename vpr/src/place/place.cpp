@@ -24,7 +24,6 @@
 
 #include "globals.h"
 #include "place.h"
-#include "placer_globals.h"
 #include "read_place.h"
 #include "draw.h"
 #include "place_and_route.h"

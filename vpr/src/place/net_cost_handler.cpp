@@ -25,7 +25,6 @@
  */
 #include "net_cost_handler.h"
 #include "globals.h"
-#include "placer_globals.h"
 #include "move_utils.h"
 #include "place_timing_update.h"
 #include "noc_place_utils.h"

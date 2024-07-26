@@ -2,7 +2,6 @@
 #include "globals.h"
 #include <algorithm>
 #include "place_constraints.h"
-#include "placer_globals.h"
 #include "move_utils.h"
 
 MedianMoveGenerator::MedianMoveGenerator(PlacerContext& placer_ctx)

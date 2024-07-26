@@ -2,9 +2,6 @@
  * @file placer_context.h
  * @brief Contains placer context/data structures referenced by various
  *        source files in vpr/src/place.
- *
- * All the variables and data structures in this file can be accessed via
- * a single global variable: g_placer_ctx. (see placer_globals.h/.cpp).
  */
 
 #pragma once

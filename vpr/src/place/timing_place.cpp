@@ -13,10 +13,10 @@
 #include "vpr_types.h"
 #include "vpr_utils.h"
 #include "globals.h"
-#include "placer_globals.h"
 #include "net_delay.h"
 #include "timing_place_lookup.h"
 #include "timing_place.h"
+#include "placer_context.h"
 
 #include "timing_info.h"
 

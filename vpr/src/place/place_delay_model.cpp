@@ -11,12 +11,11 @@
 #include "rr_graph2.h"
 
 #include "timing_place_lookup.h"
+#include "placer_context.h"
 
 #include "vtr_log.h"
 #include "vtr_math.h"
 #include "vpr_error.h"
-
-#include "placer_globals.h"
 
 #ifdef VTR_ENABLE_CAPNPROTO
 #    include "capnp/serialize.h"
