@@ -7,4 +7,4 @@
 #pragma once
 #include "placer_context.h"
 
-extern PlacerContext g_placer_ctx;
+//extern PlacerContext g_placer_ctx;

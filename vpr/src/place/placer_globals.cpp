@@ -5,4 +5,4 @@
 
 #include "placer_globals.h"
 
-PlacerContext g_placer_ctx;
+//PlacerContext g_placer_ctx;

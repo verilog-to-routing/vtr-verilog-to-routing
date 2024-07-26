@@ -16,12 +16,25 @@
  * around it
  */
 class MedianMoveGenerator : public MoveGenerator {
+  public:
+    MedianMoveGenerator() = delete;
+    explicit MedianMoveGenerator(PlacerContext& placer_ctx);
+
+  private:
     e_create_move propose_move(t_pl_blocks_to_be_moved& blocks_affected,
                                t_propose_action& proposed_action,
                                float rlim,
                                const t_placer_opts& placer_opts,
-                               const PlacerCriticalities* /*criticalities*/,
-                               const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) override;
+                               const PlacerCriticalities* /*criticalities*/) override;
+
+    bool get_bb_incrementally(ClusterNetId net_id, t_bb& bb_coord_new,
+                              int xold, int yold, int layer_old,
+                              int xnew, int ynew, int layer_new);
+
+    void get_bb_from_scratch_excluding_block(ClusterNetId net_id,
+                                             t_bb& bb_coord_new,
+                                             ClusterBlockId block_id,
+                                             bool& skip_net);
 };
 
 #endif

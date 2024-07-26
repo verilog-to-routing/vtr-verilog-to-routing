@@ -7,6 +7,9 @@
 
 #define CRIT_MULT_FOR_W_MEDIAN 10
 
+WeightedMedianMoveGenerator::WeightedMedianMoveGenerator(PlacerContext& placer_ctx)
+    : MoveGenerator(placer_ctx) {}
+
 static bool get_bb_cost_for_net_excluding_block(ClusterNetId net_id,
                                                 ClusterPinId moving_pin_id,
                                                 const PlacerCriticalities* criticalities,
@@ -17,10 +20,14 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
                                                         t_propose_action& proposed_action,
                                                         float rlim,
                                                         const t_placer_opts& placer_opts,
-                                                        const PlacerCriticalities* criticalities,
-                                                        const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
+                                                        const PlacerCriticalities* criticalities) {
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& placer_ctx = placer_ctx_.get();
+    auto& block_locs = placer_ctx.get_block_locs();
+    auto& place_move_ctx = placer_ctx.mutable_move();
+
     //Find a movable block based on blk_type
-    ClusterBlockId b_from = propose_block_to_move(placer_opts, proposed_action.logical_blk_type_index, false, nullptr, nullptr, block_locs);
+    ClusterBlockId b_from = propose_block_to_move(placer_opts, proposed_action.logical_blk_type_index, false, nullptr, nullptr, placer_ctx);
 
     VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "Weighted Median Move Choose Block %d - rlim %f\n", size_t(b_from), rlim);
 
@@ -29,8 +36,7 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
         return e_create_move::ABORT;
     }
 
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_move_ctx = g_placer_ctx.mutable_move();
+
 
     int num_layers = g_vpr_ctx.device().grid.get_num_layers();
 
@@ -270,3 +276,4 @@ static bool get_bb_cost_for_net_excluding_block(ClusterNetId net_id,
 
     return skip_net;
 }
+

@@ -216,37 +216,43 @@ class SimpleRLMoveGenerator : public MoveGenerator {
      */
     template<class T,
              class = typename std::enable_if<std::is_same<T, EpsilonGreedyAgent>::value || std::is_same<T, SoftmaxAgent>::value>::type>
-    explicit SimpleRLMoveGenerator(std::unique_ptr<T>& agent, float noc_attraction_weight, size_t high_fanout_thresh);
+    explicit SimpleRLMoveGenerator(PlacerContext& placer_ctx,
+                                   std::unique_ptr<T>& agent,
+                                   float noc_attraction_weight,
+                                   size_t high_fanout_thresh);
 
     // Updates affected_blocks with the proposed move, while respecting the current rlim
     e_create_move propose_move(t_pl_blocks_to_be_moved& blocks_affected,
                                t_propose_action& proposed_action,
                                float rlim,
                                const t_placer_opts& placer_opts,
-                               const PlacerCriticalities* criticalities,
-                               const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) override;
+                               const PlacerCriticalities* criticalities) override;
 
     // Receives feedback about the outcome of the previously proposed move
     void process_outcome(double reward, e_reward_function reward_fun) override;
 };
 
 template<class T, class>
-SimpleRLMoveGenerator::SimpleRLMoveGenerator(std::unique_ptr<T>& agent, float noc_attraction_weight, size_t high_fanout_thresh) {
+SimpleRLMoveGenerator::SimpleRLMoveGenerator(PlacerContext& placer_ctx,
+                                             std::unique_ptr<T>& agent,
+                                             float noc_attraction_weight,
+                                             size_t high_fanout_thresh)
+    : MoveGenerator(placer_ctx) {
     if (noc_attraction_weight > 0.0f) {
         all_moves.resize((int)e_move_type::NUMBER_OF_AUTO_MOVES);
     } else {
         all_moves.resize((int)e_move_type::NUMBER_OF_AUTO_MOVES - 1);
     }
 
-    all_moves[e_move_type::UNIFORM] = std::make_unique<UniformMoveGenerator>();
-    all_moves[e_move_type::MEDIAN] = std::make_unique<MedianMoveGenerator>();
-    all_moves[e_move_type::CENTROID] = std::make_unique<CentroidMoveGenerator>();
-    all_moves[e_move_type::W_CENTROID] = std::make_unique<WeightedCentroidMoveGenerator>();
-    all_moves[e_move_type::W_MEDIAN] = std::make_unique<WeightedMedianMoveGenerator>();
-    all_moves[e_move_type::CRIT_UNIFORM] = std::make_unique<CriticalUniformMoveGenerator>();
-    all_moves[e_move_type::FEASIBLE_REGION] = std::make_unique<FeasibleRegionMoveGenerator>();
+    all_moves[e_move_type::UNIFORM] = std::make_unique<UniformMoveGenerator>(placer_ctx);
+    all_moves[e_move_type::MEDIAN] = std::make_unique<MedianMoveGenerator>(placer_ctx);
+    all_moves[e_move_type::CENTROID] = std::make_unique<CentroidMoveGenerator>(placer_ctx);
+    all_moves[e_move_type::W_CENTROID] = std::make_unique<WeightedCentroidMoveGenerator>(placer_ctx);
+    all_moves[e_move_type::W_MEDIAN] = std::make_unique<WeightedMedianMoveGenerator>(placer_ctx);
+    all_moves[e_move_type::CRIT_UNIFORM] = std::make_unique<CriticalUniformMoveGenerator>(placer_ctx);
+    all_moves[e_move_type::FEASIBLE_REGION] = std::make_unique<FeasibleRegionMoveGenerator>(placer_ctx);
     if (noc_attraction_weight > 0.0f) {
-        all_moves[e_move_type::NOC_ATTRACTION_CENTROID] = std::make_unique<CentroidMoveGenerator>(noc_attraction_weight, high_fanout_thresh);
+        all_moves[e_move_type::NOC_ATTRACTION_CENTROID] = std::make_unique<CentroidMoveGenerator>(placer_ctx, noc_attraction_weight, high_fanout_thresh);
     }
 
     karmed_bandit_agent = std::move(agent);

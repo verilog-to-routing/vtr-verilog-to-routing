@@ -42,6 +42,10 @@ struct MoveTypeStat {
  */
 class MoveGenerator {
   public:
+    MoveGenerator(PlacerContext& placer_ctx)
+        : placer_ctx_(placer_ctx) {}
+
+    MoveGenerator() = delete;
     virtual ~MoveGenerator() = default;
 
     /**
@@ -63,8 +67,7 @@ class MoveGenerator {
                                        t_propose_action& proposed_action,
                                        float rlim,
                                        const t_placer_opts& placer_opts,
-                                       const PlacerCriticalities* criticalities,
-                                       const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) = 0;
+                                       const PlacerCriticalities* criticalities) = 0;
 
     /**
      * @brief Recieves feedback about the outcome of the previously proposed move
@@ -75,6 +78,9 @@ class MoveGenerator {
      *  @param reward_fun: the name of the reward function used
      */
     virtual void process_outcome(double /*reward*/, e_reward_function /*reward_fun*/) {}
+
+  protected:
+    std::reference_wrapper<PlacerContext> placer_ctx_;
 };
 
 #endif

@@ -4,6 +4,8 @@
 #include "move_transactions.h"
 #include "compressed_grid.h"
 
+class PlacerContext;
+
 /* Cut off for incremental bounding box updates.                          *
  * 4 is fastest -- I checked.                                             */
 /* To turn off incremental bounding box updates, set this to a huge value */
@@ -185,7 +187,7 @@ ClusterBlockId propose_block_to_move(const t_placer_opts& placer_opts,
                                      bool highly_crit_block,
                                      ClusterNetId* net_from,
                                      int* pin_from,
-                                     const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
+                                     const PlacerContext& placer_ctx);
 
 /**
  * Returns all movable clustered blocks with a specified logical block type.
@@ -217,7 +219,7 @@ ClusterBlockId pick_from_block(int logical_blk_type_index);
  */
 ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from,
                                                int& pin_from,
-                                               const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
+                                               const PlacerContext& placer_ctx);
 
 /**
  * @brief Find a block with a specific block type to be swapped with another block
@@ -229,7 +231,7 @@ ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from,
 ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from,
                                                int& pin_from,
                                                int logical_blk_type_index,
-                                               const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
+                                               const PlacerContext& placer_ctx);
 
 bool find_to_loc_uniform(t_logical_block_type_ptr type,
                          float rlim,

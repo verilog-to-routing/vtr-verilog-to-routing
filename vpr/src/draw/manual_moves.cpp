@@ -310,13 +310,12 @@ e_create_move manual_move_display_and_propose(ManualMoveGenerator& manual_move_g
                                               e_move_type& move_type,
                                               float rlim,
                                               const t_placer_opts& placer_opts,
-                                              const PlacerCriticalities* criticalities,
-                                              const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
+                                              const PlacerCriticalities* criticalities) {
     draw_manual_moves_window("");
     update_screen(ScreenUpdatePriority::MAJOR, " ", PLACEMENT, nullptr);
     move_type = e_move_type::MANUAL_MOVE;
     t_propose_action proposed_action{move_type, -1}; //no need to specify block type in manual move "propose_move" function
-    return manual_move_generator.propose_move(blocks_affected, proposed_action, rlim, placer_opts, criticalities, block_locs);
+    return manual_move_generator.propose_move(blocks_affected, proposed_action, rlim, placer_opts, criticalities);
 }
 
 #endif /*NO_GRAPHICS*/

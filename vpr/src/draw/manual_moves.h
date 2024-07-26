@@ -160,8 +160,7 @@ e_create_move manual_move_display_and_propose(ManualMoveGenerator& manual_move_g
                                               e_move_type& move_type,
                                               float rlim,
                                               const t_placer_opts& placer_opts,
-                                              const PlacerCriticalities* criticalities,
-                                              const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
+                                              const PlacerCriticalities* criticalities);
 
 #endif /*NO_GRAPHICS*/
 

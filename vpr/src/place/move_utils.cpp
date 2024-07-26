@@ -579,26 +579,18 @@ void enable_placer_debug(const t_placer_opts& placer_opts,
 }
 #endif
 
-#ifdef VTR_ENABLE_DEBUG_LOGGING
 ClusterBlockId propose_block_to_move(const t_placer_opts& placer_opts,
                                      int& logical_blk_type_index,
                                      bool highly_crit_block,
                                      ClusterNetId* net_from,
-                                     int* pin_from) {
-#else
-ClusterBlockId propose_block_to_move(const t_placer_opts& /* placer_opts */,
-                                     int& logical_blk_type_index,
-                                     bool highly_crit_block,
-                                     ClusterNetId* net_from,
                                      int* pin_from,
-                                     const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
-#endif
+                                     const PlacerContext& placer_ctx) {
     ClusterBlockId b_from = ClusterBlockId::INVALID();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     if (logical_blk_type_index == -1) { //If the block type is unspecified, choose any random block to be swapped with another random block
         if (highly_crit_block) {
-            b_from = pick_from_highly_critical_block(*net_from, *pin_from, block_locs);
+            b_from = pick_from_highly_critical_block(*net_from, *pin_from, placer_ctx);
         } else {
             b_from = pick_from_block();
         }
@@ -609,13 +601,15 @@ ClusterBlockId propose_block_to_move(const t_placer_opts& /* placer_opts */,
         }
     } else { //If the block type is specified, choose a random block with blk_type to be swapped with another random block
         if (highly_crit_block) {
-            b_from = pick_from_highly_critical_block(*net_from, *pin_from, logical_blk_type_index, block_locs);
+            b_from = pick_from_highly_critical_block(*net_from, *pin_from, logical_blk_type_index, placer_ctx);
         } else {
             b_from = pick_from_block(logical_blk_type_index);
         }
     }
 #ifdef VTR_ENABLE_DEBUG_LOGGING
     enable_placer_debug(placer_opts, b_from);
+#else
+    (void)placer_opts;
 #endif
 
     return b_from;
@@ -668,9 +662,10 @@ ClusterBlockId pick_from_block(const int logical_blk_type_index) {
 //If none is found return ClusterBlockId::INVALID()
 ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from,
                                                int& pin_from,
-                                               const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
-    auto& place_move_ctx = g_placer_ctx.move();
+                                               const PlacerContext& placer_ctx) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& place_move_ctx = placer_ctx.move();
+    auto& block_locs = placer_ctx.get_block_locs();
 
     //Initialize critical net and pin to be invalid
     net_from = ClusterNetId::INVALID();
@@ -702,9 +697,10 @@ ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from,
 ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from,
                                                int& pin_from,
                                                const int logical_blk_type_index,
-                                               const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
-    auto& place_move_ctx = g_placer_ctx.move();
+                                               const PlacerContext& placer_ctx) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& place_move_ctx = placer_ctx.move();
+    auto& block_locs = placer_ctx.get_block_locs();
 
     //Initialize critical net and pin to be invalid
     net_from = ClusterNetId::INVALID();

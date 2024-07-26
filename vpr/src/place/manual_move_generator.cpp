@@ -17,13 +17,20 @@
 #    include "draw.h"
 #endif //NO_GRAPHICS
 
+ManualMoveGenerator::ManualMoveGenerator(PlacerContext& placer_ctx)
+    : MoveGenerator(placer_ctx) {}
+
 //Manual Move Generator function
 e_create_move ManualMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected,
                                                 t_propose_action& /*proposed_action*/,
                                                 float /*rlim*/,
                                                 const t_placer_opts& /*placer_opts*/,
-                                                const PlacerCriticalities* /*criticalities*/,
-                                                const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
+                                                const PlacerCriticalities* /*criticalities*/) {
+    auto& place_ctx = g_vpr_ctx.placement();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& block_locs = placer_ctx_.get().get_block_locs();
+
     int block_id = -1;
     t_pl_loc to;
 
@@ -39,10 +46,6 @@ e_create_move ManualMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
     if (!b_from) {
         return e_create_move::ABORT; //No movable block was found
     }
-
-    auto& place_ctx = g_vpr_ctx.placement();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& device_ctx = g_vpr_ctx.device();
 
     //Gets the current location of the block to move.
     t_pl_loc from = block_locs[b_from].loc;
@@ -64,3 +67,4 @@ e_create_move ManualMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
     e_create_move create_move = ::create_move(blocks_affected, b_from, to, block_locs);
     return create_move;
 }
+

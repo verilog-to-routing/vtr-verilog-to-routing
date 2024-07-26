@@ -26,6 +26,7 @@
 
 ///@brief Forward declarations.
 class PlaceDelayModel;
+class PlacerContext;
 
 ///@brief Initialize the placer delay model.
 std::unique_ptr<PlaceDelayModel> alloc_lookups_and_delay_model(const Netlist<>& net_list,
@@ -46,7 +47,7 @@ float comp_td_single_connection_delay(const PlaceDelayModel* delay_model,
 
 ///@brief Recompute all point to point delays, updating `connection_delay` matrix.
 void comp_td_connection_delays(const PlaceDelayModel* delay_model,
-                               const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
+                               PlacerContext& placer_ctx);
 
 ///@brief Abstract interface to a placement delay model.
 class PlaceDelayModel {

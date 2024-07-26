@@ -19,10 +19,9 @@ e_create_move SimpleRLMoveGenerator::propose_move(t_pl_blocks_to_be_moved& block
                                                   t_propose_action& proposed_action,
                                                   float rlim,
                                                   const t_placer_opts& placer_opts,
-                                                  const PlacerCriticalities* criticalities,
-                                                  const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
+                                                  const PlacerCriticalities* criticalities) {
     proposed_action = karmed_bandit_agent->propose_action();
-    return all_moves[proposed_action.move_type]->propose_move(blocks_affected, proposed_action, rlim, placer_opts, criticalities, block_locs);
+    return all_moves[proposed_action.move_type]->propose_move(blocks_affected, proposed_action, rlim, placer_opts, criticalities);
 }
 
 void SimpleRLMoveGenerator::process_outcome(double reward, e_reward_function reward_fun) {

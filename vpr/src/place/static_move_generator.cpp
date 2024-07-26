@@ -12,16 +12,18 @@
 #include "vtr_random.h"
 #include "vtr_assert.h"
 
-StaticMoveGenerator::StaticMoveGenerator(const vtr::vector<e_move_type, float>& move_probs) {
+StaticMoveGenerator::StaticMoveGenerator(PlacerContext& placer_ctx,
+                                         const vtr::vector<e_move_type, float>& move_probs)
+    : MoveGenerator(placer_ctx) {
     all_moves.resize((int)e_move_type::NUMBER_OF_AUTO_MOVES);
 
-    all_moves[e_move_type::UNIFORM] = std::make_unique<UniformMoveGenerator>();
-    all_moves[e_move_type::MEDIAN] = std::make_unique<MedianMoveGenerator>();
-    all_moves[e_move_type::CENTROID] = std::make_unique<CentroidMoveGenerator>();
-    all_moves[e_move_type::W_CENTROID] = std::make_unique<WeightedCentroidMoveGenerator>();
-    all_moves[e_move_type::W_MEDIAN] = std::make_unique<WeightedMedianMoveGenerator>();
-    all_moves[e_move_type::CRIT_UNIFORM] = std::make_unique<CriticalUniformMoveGenerator>();
-    all_moves[e_move_type::FEASIBLE_REGION] = std::make_unique<FeasibleRegionMoveGenerator>();
+    all_moves[e_move_type::UNIFORM] = std::make_unique<UniformMoveGenerator>(placer_ctx);
+    all_moves[e_move_type::MEDIAN] = std::make_unique<MedianMoveGenerator>(placer_ctx);
+    all_moves[e_move_type::CENTROID] = std::make_unique<CentroidMoveGenerator>(placer_ctx);
+    all_moves[e_move_type::W_CENTROID] = std::make_unique<WeightedCentroidMoveGenerator>(placer_ctx);
+    all_moves[e_move_type::W_MEDIAN] = std::make_unique<WeightedMedianMoveGenerator>(placer_ctx);
+    all_moves[e_move_type::CRIT_UNIFORM] = std::make_unique<CriticalUniformMoveGenerator>(placer_ctx);
+    all_moves[e_move_type::FEASIBLE_REGION] = std::make_unique<FeasibleRegionMoveGenerator>(placer_ctx);
 
     initialize_move_prob(move_probs);
 }
@@ -43,14 +45,13 @@ e_create_move StaticMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
                                                 t_propose_action& proposed_action,
                                                 float rlim,
                                                 const t_placer_opts& placer_opts,
-                                                const PlacerCriticalities* criticalities,
-                                                const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
+                                                const PlacerCriticalities* criticalities) {
     float rand_num = vtr::frand() * total_prob;
 
     for (auto move_type : cumm_move_probs.keys()) {
         if (rand_num <= cumm_move_probs[move_type]) {
             proposed_action.move_type = move_type;
-            return all_moves[move_type]->propose_move(blocks_affected, proposed_action, rlim, placer_opts, criticalities, block_locs);
+            return all_moves[move_type]->propose_move(blocks_affected, proposed_action, rlim, placer_opts, criticalities);
         }
     }
 

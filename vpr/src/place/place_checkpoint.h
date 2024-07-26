@@ -57,8 +57,7 @@ void save_placement_checkpoint_if_needed(const vtr::vector_map<ClusterBlockId, t
                                          float cpd);
 
 //restore the checkpoint if it's better than the latest placement solution
-void restore_best_placement(vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs,
-                            GridBlock& grid_blocks,
+void restore_best_placement(PlacerContext& placer_ctx,
                             t_placement_checkpoint& placement_checkpoint,
                             std::shared_ptr<SetupTimingInfo>& timing_info,
                             t_placer_costs& costs,

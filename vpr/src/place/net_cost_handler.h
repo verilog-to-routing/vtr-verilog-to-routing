@@ -3,6 +3,9 @@
 #include "timing_place.h"
 #include "move_transactions.h"
 #include "place_util.h"
+#include "placer_context.h"
+
+#include <functional>
 
 
 /**
@@ -155,3 +158,5 @@ void init_try_swap_net_cost_structs(size_t num_nets, bool cube_bb);
  * @brief Free (layer_)ts_bb_edge_new, (layer_)ts_bb_coord_new, ts_layer_sink_pin_count, and ts_nets_to_update data structures.
  */
 void free_try_swap_net_cost_structs();
+
+void set_net_handlers_placer_ctx(PlacerContext& placer_ctx);

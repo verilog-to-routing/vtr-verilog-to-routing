@@ -15,12 +15,16 @@ vtr::vector<ClusterBlockId, NocGroupId> CentroidMoveGenerator::cluster_to_noc_gr
 std::map<ClusterBlockId, NocGroupId> CentroidMoveGenerator::noc_router_to_noc_group_;
 
 
-CentroidMoveGenerator::CentroidMoveGenerator()
-    : noc_attraction_w_(0.0f)
+CentroidMoveGenerator::CentroidMoveGenerator(PlacerContext& placer_ctx)
+    : MoveGenerator(placer_ctx)
+    , noc_attraction_w_(0.0f)
     , noc_attraction_enabled_(false) {}
 
-CentroidMoveGenerator::CentroidMoveGenerator(float noc_attraction_weight, size_t high_fanout_net)
-    : noc_attraction_w_(noc_attraction_weight)
+CentroidMoveGenerator::CentroidMoveGenerator(PlacerContext& placer_ctx,
+                                             float noc_attraction_weight,
+                                             size_t high_fanout_net)
+    : MoveGenerator(placer_ctx)
+    , noc_attraction_w_(noc_attraction_weight)
     , noc_attraction_enabled_(true) {
     VTR_ASSERT(noc_attraction_weight > 0.0 && noc_attraction_weight <= 1.0);
 
@@ -38,10 +42,14 @@ e_create_move CentroidMoveGenerator::propose_move(t_pl_blocks_to_be_moved& block
                                                   t_propose_action& proposed_action,
                                                   float rlim,
                                                   const t_placer_opts& placer_opts,
-                                                  const PlacerCriticalities* /*criticalities*/,
-                                                  const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
+                                                  const PlacerCriticalities* /*criticalities*/) {
+    auto& placer_ctx = placer_ctx_.get();
+    const auto& block_locs = placer_ctx.get_block_locs();
+    const auto& device_ctx = g_vpr_ctx.device();
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& place_move_ctx = placer_ctx.mutable_move();
     // Find a movable block based on blk_type
-    ClusterBlockId b_from = propose_block_to_move(placer_opts, proposed_action.logical_blk_type_index, false, nullptr, nullptr, block_locs);
+    ClusterBlockId b_from = propose_block_to_move(placer_opts, proposed_action.logical_blk_type_index, false, nullptr, nullptr, placer_ctx);
 
     VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug,
                    "Centroid Move Choose Block %d - rlim %f\n",
@@ -54,13 +62,11 @@ e_create_move CentroidMoveGenerator::propose_move(t_pl_blocks_to_be_moved& block
         return e_create_move::ABORT;
     }
 
-    const auto& device_ctx = g_vpr_ctx.device();
-    const auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_move_ctx = g_placer_ctx.mutable_move();
+
 
     t_pl_loc from = block_locs[b_from].loc;
-    auto cluster_from_type = cluster_ctx.clb_nlist.block_type(b_from);
-    auto grid_from_type = device_ctx.grid.get_physical_type({from.x, from.y, from.layer});
+    t_logical_block_type_ptr cluster_from_type = cluster_ctx.clb_nlist.block_type(b_from);
+    t_physical_tile_type_ptr grid_from_type = device_ctx.grid.get_physical_type({from.x, from.y, from.layer});
     VTR_ASSERT(is_tile_compatible(grid_from_type, cluster_from_type));
 
     t_range_limiters range_limiters{rlim,

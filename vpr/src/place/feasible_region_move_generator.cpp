@@ -5,19 +5,23 @@
 #include "place_constraints.h"
 #include "move_utils.h"
 
+FeasibleRegionMoveGenerator::FeasibleRegionMoveGenerator(PlacerContext& placer_ctx)
+    : MoveGenerator(placer_ctx) {}
+
 e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected,
                                                         t_propose_action& proposed_action,
                                                         float rlim,
                                                         const t_placer_opts& placer_opts,
-                                                        const PlacerCriticalities* criticalities,
-                                                        const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
+                                                        const PlacerCriticalities* criticalities) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_move_ctx = g_placer_ctx.mutable_move();
+    auto& placer_ctx = placer_ctx_.get();
+    auto& place_move_ctx = placer_ctx.mutable_move();
+    auto& block_locs = placer_ctx.get_block_locs();
 
     ClusterNetId net_from;
     int pin_from;
     //Find a movable block based on blk_type
-    ClusterBlockId b_from = propose_block_to_move(placer_opts, proposed_action.logical_blk_type_index, true, &net_from, &pin_from, block_locs);
+    ClusterBlockId b_from = propose_block_to_move(placer_opts, proposed_action.logical_blk_type_index, true, &net_from, &pin_from, placer_ctx);
     VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "Feasible Region Move Choose Block %di - rlim %f\n", size_t(b_from), rlim);
 
     if (!b_from) { //No movable block found
@@ -35,8 +39,6 @@ e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
     t_pl_loc to;
     // Currently, we don't change the layer for this move
     to.layer = from.layer;
-    int ipin;
-    ClusterBlockId bnum;
     int max_x, min_x, max_y, min_y;
 
     place_move_ctx.X_coord.clear();
@@ -47,9 +49,9 @@ e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
         if (cluster_ctx.clb_nlist.net_is_ignored(net_id))
             continue;
 
-        ipin = cluster_ctx.clb_nlist.pin_net_index(pin_id);
+        int ipin = cluster_ctx.clb_nlist.pin_net_index(pin_id);
         if (criticalities->criticality(net_id, ipin) > placer_opts.place_crit_limit) {
-            bnum = cluster_ctx.clb_nlist.net_driver_block(net_id);
+            ClusterBlockId bnum = cluster_ctx.clb_nlist.net_driver_block(net_id);
             place_move_ctx.X_coord.push_back(block_locs[bnum].loc.x);
             place_move_ctx.Y_coord.push_back(block_locs[bnum].loc.y);
         }

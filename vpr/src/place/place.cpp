@@ -70,6 +70,7 @@
 #include "noc_place_utils.h"
 
 #include "net_cost_handler.h"
+#include "placer_context.h"
 
 /*  define the RL agent's reward function factor constant. This factor controls the weight of bb cost *
  *  compared to the timing cost in the agent's reward function. The reward is calculated as           *
@@ -192,12 +193,15 @@ static void alloc_and_load_placement_structs(float place_cost_exp,
                                              const t_placer_opts& placer_opts,
                                              const t_noc_opts& noc_opts,
                                              t_direct_inf* directs,
-                                             int num_directs);
+                                             int num_directs,
+                                             PlacerContext& placer_ctx);
 
 static void alloc_and_load_try_swap_structs(const bool cube_bb);
 static void free_try_swap_structs();
 
-static void free_placement_structs(const t_placer_opts& placer_opts, const t_noc_opts& noc_opts);
+static void free_placement_structs(const t_placer_opts& placer_opts,
+                                   const t_noc_opts& noc_opts,
+                                   PlacerContext& placer_ctx);
 
 static e_move_result try_swap(const t_annealing_state* state,
                               t_placer_costs* costs,
@@ -215,18 +219,21 @@ static e_move_result try_swap(const t_annealing_state* state,
                               const t_place_algorithm& place_algorithm,
                               float timing_bb_factor,
                               bool manual_move_enabled,
-                              t_swap_stats& swap_stats);
+                              t_swap_stats& swap_stats,
+                              PlacerContext& placer_ctx);
 
 static void check_place(const t_placer_costs& costs,
                         const PlaceDelayModel* delay_model,
                         const PlacerCriticalities* criticalities,
                         const t_place_algorithm& place_algorithm,
-                        const t_noc_opts& noc_opts);
+                        const t_noc_opts& noc_opts,
+                        PlacerContext& placer_ctx);
 
 static int check_placement_costs(const t_placer_costs& costs,
                                  const PlaceDelayModel* delay_model,
                                  const PlacerCriticalities* criticalities,
-                                 const t_place_algorithm& place_algorithm);
+                                 const t_place_algorithm& place_algorithm,
+                                 PlacerContext& placer_ctx);
 
 static int check_placement_consistency();
 static int check_block_placement_consistency();
@@ -246,11 +253,13 @@ static float starting_t(const t_annealing_state* state,
                         const t_placer_opts& placer_opts,
                         const t_noc_opts& noc_opts,
                         MoveTypeStat& move_type_stat,
-                        t_swap_stats& swap_stats);
+                        t_swap_stats& swap_stats,
+                        PlacerContext& placer_ctx);
 
 static int count_connections();
 
-static void commit_td_cost(const t_pl_blocks_to_be_moved& blocks_affected);
+static void commit_td_cost(const t_pl_blocks_to_be_moved& blocks_affected,
+                           PlacerContext& placer_ctx);
 
 static void revert_td_cost(const t_pl_blocks_to_be_moved& blocks_affected);
 
@@ -259,7 +268,8 @@ static void invalidate_affected_connections(
     NetPinTimingInvalidator* pin_tedges_invalidator,
     TimingInfo* timing_info);
 
-static float analyze_setup_slack_cost(const PlacerSetupSlacks* setup_slacks);
+static float analyze_setup_slack_cost(const PlacerSetupSlacks* setup_slacks,
+                                      const PlacerContext& placer_ctx);
 
 static e_move_result assess_swap(double delta_c, double t);
 
@@ -279,7 +289,8 @@ static void outer_loop_update_timing_info(const t_placer_opts& placer_opts,
                                           PlacerCriticalities* criticalities,
                                           PlacerSetupSlacks* setup_slacks,
                                           NetPinTimingInvalidator* pin_timing_invalidator,
-                                          SetupTimingInfo* timing_info);
+                                          SetupTimingInfo* timing_info,
+                                          PlacerContext& placer_ctx);
 
 static void placement_inner_loop(const t_annealing_state* state,
                                  const t_placer_opts& placer_opts,
@@ -299,7 +310,8 @@ static void placement_inner_loop(const t_annealing_state* state,
                                  const t_place_algorithm& place_algorithm,
                                  MoveTypeStat& move_type_stat,
                                  float timing_bb_factor,
-                                 t_swap_stats& swap_stats);
+                                 t_swap_stats& swap_stats,
+                                 PlacerContext& placer_ctx);
 
 static void generate_post_place_timing_reports(const t_placer_opts& placer_opts,
                                                const t_analysis_opts& analysis_opts,
@@ -360,10 +372,6 @@ void try_place(const Netlist<>& net_list,
     auto& device_ctx = g_vpr_ctx.device();
     auto& atom_ctx = g_vpr_ctx.atom();
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_move_ctx = g_placer_ctx.mutable_move();
-
-    const auto& p_timing_ctx = g_placer_ctx.timing();
-    const auto& p_runtime_ctx = g_placer_ctx.runtime();
 
     auto& timing_ctx = g_vpr_ctx.timing();
     auto pre_place_timing_stats = timing_ctx.stats;
@@ -385,7 +393,6 @@ void try_place(const Netlist<>& net_list,
     std::shared_ptr<SetupTimingInfo> timing_info;
     std::shared_ptr<PlacementDelayCalculator> placement_delay_calc;
     std::unique_ptr<PlaceDelayModel> place_delay_model;
-    std::unique_ptr<ManualMoveGenerator> manual_move_generator = std::make_unique<ManualMoveGenerator>();
     std::unique_ptr<PlacerSetupSlacks> placer_setup_slacks;
     std::unique_ptr<PlacerCriticalities> placer_criticalities;
     std::unique_ptr<NetPinTimingInvalidator> pin_timing_invalidator;
@@ -415,7 +422,7 @@ void try_place(const Netlist<>& net_list,
 
     g_vpr_ctx.mutable_placement().cube_bb = is_cube_bb(placer_opts.place_bounding_box_mode,
                                                        device_ctx.rr_graph);
-    const auto& cube_bb = g_vpr_ctx.placement().cube_bb;
+    const bool cube_bb = g_vpr_ctx.placement().cube_bb;
 
     VTR_LOG("\n");
     VTR_LOG("Bounding box mode is %s\n", (cube_bb ? "Cube" : "Per-layer"));
@@ -423,7 +430,16 @@ void try_place(const Netlist<>& net_list,
 
     int move_lim = (int)(annealing_sched.inner_num * pow(net_list.blocks().size(), 1.3333));
 
-    alloc_and_load_placement_structs(placer_opts.place_cost_exp, placer_opts, noc_opts, directs, num_directs);
+
+    PlacerContext placer_ctx;
+    auto& place_move_ctx = placer_ctx.mutable_move();
+    const auto& p_timing_ctx = placer_ctx.timing();
+    const auto& p_runtime_ctx = placer_ctx.runtime();
+
+    alloc_and_load_placement_structs(placer_opts.place_cost_exp, placer_opts, noc_opts, directs, num_directs, placer_ctx);
+    set_net_handlers_placer_ctx(placer_ctx);
+
+    std::unique_ptr<ManualMoveGenerator> manual_move_generator = std::make_unique<ManualMoveGenerator>(placer_ctx);
 
     vtr::ScopedStartFinishTimer timer("Placement");
 
@@ -434,7 +450,7 @@ void try_place(const Netlist<>& net_list,
     initial_placement(placer_opts, placer_opts.constraints_file.c_str(), noc_opts, g_vpr_ctx.mutable_placement().block_locs);
 
     //create the move generator based on the chosen strategy
-    auto [move_generator, move_generator2] = create_move_generators(placer_opts, move_lim, noc_opts.noc_centroid_weight);
+    auto [move_generator, move_generator2] = create_move_generators(placer_ctx, placer_opts, move_lim, noc_opts.noc_centroid_weight);
 
     if (!placer_opts.write_initial_place_file.empty()) {
         print_place(nullptr, nullptr, (placer_opts.write_initial_place_file + ".init.place").c_str(),
@@ -486,7 +502,7 @@ void try_place(const Netlist<>& net_list,
         VTR_LOG("\n");
 
         //Update the point-to-point delays from the initial placement
-        comp_td_connection_delays(place_delay_model.get(), g_vpr_ctx.placement().block_locs);
+        comp_td_connection_delays(place_delay_model.get(), placer_ctx);
 
         /*
          * Initialize timing analysis
@@ -520,9 +536,9 @@ void try_place(const Netlist<>& net_list,
         crit_params.crit_exponent = first_crit_exponent;
         crit_params.crit_limit = placer_opts.place_crit_limit;
 
-        initialize_timing_info(crit_params, place_delay_model.get(), g_vpr_ctx.placement().block_locs,
-                               placer_criticalities.get(), placer_setup_slacks.get(),
-                               pin_timing_invalidator.get(), timing_info.get(), &costs);
+        initialize_timing_info(crit_params, place_delay_model.get(), placer_criticalities.get(),
+                               placer_setup_slacks.get(), pin_timing_invalidator.get(),
+                               timing_info.get(), &costs, placer_ctx);
 
         critical_path = timing_info->least_slack_critical_path();
 
@@ -587,7 +603,8 @@ void try_place(const Netlist<>& net_list,
                 place_delay_model.get(),
                 placer_criticalities.get(),
                 placer_opts.place_algorithm,
-                noc_opts);
+                noc_opts,
+                placer_ctx);
 
     //Initial placement statistics
     VTR_LOG("Initial placement cost: %g bb_cost: %g td_cost: %g\n", costs.cost,
@@ -683,7 +700,7 @@ void try_place(const Netlist<>& net_list,
                          placer_setup_slacks.get(), timing_info.get(), *move_generator,
                          *manual_move_generator, pin_timing_invalidator.get(),
                          blocks_affected, placer_opts, noc_opts, move_type_stat,
-                         swap_stats);
+                         swap_stats, placer_ctx);
 
     if (!placer_opts.move_stats_file.empty()) {
         f_move_stats_file = std::unique_ptr<FILE, decltype(&vtr::fclose)>(
@@ -712,7 +729,7 @@ void try_place(const Netlist<>& net_list,
     //Define the timing bb weight factor for the agent's reward function
     float timing_bb_factor = REWARD_BB_TIMING_RELATIVE_WEIGHT;
 
-    if (skip_anneal == false) {
+    if (!skip_anneal) {
         //Table header
         VTR_LOG("\n");
         print_place_status_header(noc_opts.noc);
@@ -725,7 +742,7 @@ void try_place(const Netlist<>& net_list,
                                           state.crit_exponent, &outer_crit_iter_count,
                                           place_delay_model.get(), placer_criticalities.get(),
                                           placer_setup_slacks.get(), pin_timing_invalidator.get(),
-                                          timing_info.get());
+                                          timing_info.get(), placer_ctx);
 
             if (placer_opts.place_algorithm.is_timing_driven()) {
                 critical_path = timing_info->least_slack_critical_path();
@@ -756,7 +773,7 @@ void try_place(const Netlist<>& net_list,
                                  blocks_affected, timing_info.get(),
                                  placer_opts.place_algorithm, move_type_stat,
                                  timing_bb_factor,
-                                 swap_stats);
+                                 swap_stats, placer_ctx);
 
             //move the update used move_generator to its original variable
             update_move_generator(move_generator, move_generator2, agent_state,
@@ -806,7 +823,7 @@ void try_place(const Netlist<>& net_list,
                                       state.crit_exponent, &outer_crit_iter_count,
                                       place_delay_model.get(), placer_criticalities.get(),
                                       placer_setup_slacks.get(), pin_timing_invalidator.get(),
-                                      timing_info.get());
+                                      timing_info.get(), placer_ctx);
 
         //move the appropriate move_generator to be the current used move generator
         assign_current_move_generator(move_generator, move_generator2,
@@ -823,7 +840,7 @@ void try_place(const Netlist<>& net_list,
                              blocks_affected, timing_info.get(),
                              placer_opts.place_quench_algorithm, move_type_stat,
                              timing_bb_factor,
-                             swap_stats);
+                             swap_stats, placer_ctx);
 
         //move the update used move_generator to its original variable
         update_move_generator(move_generator, move_generator2, agent_state,
@@ -850,17 +867,16 @@ void try_place(const Netlist<>& net_list,
     crit_params.crit_limit = placer_opts.place_crit_limit;
 
     if (placer_opts.place_algorithm.is_timing_driven()) {
-        perform_full_timing_update(crit_params, place_delay_model.get(), g_vpr_ctx.placement().block_locs,
-                                   placer_criticalities.get(), placer_setup_slacks.get(),
-                                   pin_timing_invalidator.get(), timing_info.get(), &costs);
+        perform_full_timing_update(crit_params, place_delay_model.get(), placer_criticalities.get(),
+                                   placer_setup_slacks.get(), pin_timing_invalidator.get(),
+                                   timing_info.get(), &costs, placer_ctx);
         VTR_LOG("post-quench CPD = %g (ns) \n",
                 1e9 * timing_info->least_slack_critical_path().delay());
     }
 
     //See if our latest checkpoint is better than the current placement solution
     if (placer_opts.place_checkpointing)
-        restore_best_placement(g_vpr_ctx.mutable_placement().block_locs,
-                               g_vpr_ctx.mutable_placement().grid_blocks,
+        restore_best_placement(placer_ctx,
                                placement_checkpoint, timing_info, costs,
                                placer_criticalities, placer_setup_slacks, place_delay_model,
                                pin_timing_invalidator, crit_params, noc_opts);
@@ -890,7 +906,8 @@ void try_place(const Netlist<>& net_list,
                 place_delay_model.get(),
                 placer_criticalities.get(),
                 placer_opts.place_algorithm,
-                noc_opts);
+                noc_opts,
+                placer_ctx);
 
     //Some stats
     VTR_LOG("\n");
@@ -955,7 +972,7 @@ void try_place(const Netlist<>& net_list,
         write_noc_placement_file(noc_opts.noc_placement_file_name, g_vpr_ctx.placement().block_locs);
     }
 
-    free_placement_structs(placer_opts, noc_opts);
+    free_placement_structs(placer_opts, noc_opts, placer_ctx);
     free_try_swap_arrays();
 
     print_timing_stats("Placement Quench", post_quench_timing_stats,
@@ -981,7 +998,8 @@ static void outer_loop_update_timing_info(const t_placer_opts& placer_opts,
                                           PlacerCriticalities* criticalities,
                                           PlacerSetupSlacks* setup_slacks,
                                           NetPinTimingInvalidator* pin_timing_invalidator,
-                                          SetupTimingInfo* timing_info) {
+                                          SetupTimingInfo* timing_info,
+                                          PlacerContext& placer_ctx) {
     if (placer_opts.place_algorithm.is_timing_driven()) {
         /*at each temperature change we update these values to be used     */
         /*for normalizing the tradeoff between timing and wirelength (bb)  */
@@ -998,8 +1016,8 @@ static void outer_loop_update_timing_info(const t_placer_opts& placer_opts,
             crit_params.crit_limit = placer_opts.place_crit_limit;
 
             //Update all timing related classes
-            perform_full_timing_update(crit_params, delay_model, g_vpr_ctx.placement().block_locs, criticalities,
-                                       setup_slacks, pin_timing_invalidator, timing_info, costs);
+            perform_full_timing_update(crit_params, delay_model, criticalities, setup_slacks,
+                                       pin_timing_invalidator, timing_info, costs, placer_ctx);
 
             *outer_crit_iter_count = 0;
         }
@@ -1029,7 +1047,8 @@ static void placement_inner_loop(const t_annealing_state* state,
                                  const t_place_algorithm& place_algorithm,
                                  MoveTypeStat& move_type_stat,
                                  float timing_bb_factor,
-                                 t_swap_stats& swap_stats) {
+                                 t_swap_stats& swap_stats,
+                                 PlacerContext& placer_ctx) {
     //How many times have we dumped placement to a file this temperature?
     int inner_placement_save_count = 0;
 
@@ -1043,7 +1062,7 @@ static void placement_inner_loop(const t_annealing_state* state,
                                              manual_move_generator, timing_info, pin_timing_invalidator,
                                              blocks_affected, delay_model, criticalities, setup_slacks,
                                              placer_opts, noc_opts, move_type_stat, place_algorithm,
-                                             timing_bb_factor, manual_move_enabled, swap_stats);
+                                             timing_bb_factor, manual_move_enabled, swap_stats, placer_ctx);
 
         if (swap_result == ACCEPTED) {
             /* Move was accepted.  Update statistics that are useful for the annealing schedule. */
@@ -1072,9 +1091,9 @@ static void placement_inner_loop(const t_annealing_state* state,
                 crit_params.crit_limit = placer_opts.place_crit_limit;
 
                 //Update all timing related classes
-                perform_full_timing_update(crit_params, delay_model, g_vpr_ctx.placement().block_locs,
-                                           criticalities, setup_slacks, pin_timing_invalidator,
-                                           timing_info, costs);
+                perform_full_timing_update(crit_params, delay_model, criticalities,
+                                           setup_slacks, pin_timing_invalidator,
+                                           timing_info, costs, placer_ctx);
             }
             inner_crit_iter_count++;
         }
@@ -1140,7 +1159,8 @@ static float starting_t(const t_annealing_state* state,
                         const t_placer_opts& placer_opts,
                         const t_noc_opts& noc_opts,
                         MoveTypeStat& move_type_stat,
-                        t_swap_stats& swap_stats) {
+                        t_swap_stats& swap_stats,
+                        PlacerContext& placer_ctx) {
     if (annealing_sched.type == USER_SCHED) {
         return (annealing_sched.init_t);
     }
@@ -1173,7 +1193,7 @@ static float starting_t(const t_annealing_state* state,
                                              manual_move_generator, timing_info, pin_timing_invalidator,
                                              blocks_affected, delay_model, criticalities, setup_slacks,
                                              placer_opts, noc_opts, move_type_stat, placer_opts.place_algorithm,
-                                             REWARD_BB_TIMING_RELATIVE_WEIGHT, manual_move_enabled, swap_stats);
+                                             REWARD_BB_TIMING_RELATIVE_WEIGHT, manual_move_enabled, swap_stats, placer_ctx);
 
         if (swap_result == ACCEPTED) {
             num_accepted++;
@@ -1243,7 +1263,8 @@ static e_move_result try_swap(const t_annealing_state* state,
                               const t_place_algorithm& place_algorithm,
                               float timing_bb_factor,
                               bool manual_move_enabled,
-                              t_swap_stats& swap_stats) {
+                              t_swap_stats& swap_stats,
+                              PlacerContext& placer_ctx) {
     /* Picks some block and moves it to another spot.  If this spot is   *
      * occupied, switch the blocks.  Assess the change in cost function. *
      * rlim is the range limiter.                                        *
@@ -1293,7 +1314,7 @@ static e_move_result try_swap(const t_annealing_state* state,
 #ifndef NO_GRAPHICS
         create_move_outcome = manual_move_display_and_propose(manual_move_generator, blocks_affected,
                                                               proposed_action.move_type, rlim, placer_opts,
-                                                              criticalities, g_vpr_ctx.placement().block_locs);
+                                                              criticalities);
 #else  //NO_GRAPHICS 
         //Cast to void to explicitly avoid warning.
         (void)manual_move_generator;
@@ -1304,7 +1325,7 @@ static e_move_result try_swap(const t_annealing_state* state,
         proposed_action.move_type = e_move_type::UNIFORM;
     } else {
         //Generate a new move (perturbation) used to explore the space of possible placements
-        create_move_outcome = move_generator.propose_move(blocks_affected, proposed_action, rlim, placer_opts, criticalities, g_vpr_ctx.placement().block_locs);
+        create_move_outcome = move_generator.propose_move(blocks_affected, proposed_action, rlim, placer_opts, criticalities);
     }
 
     if (proposed_action.logical_blk_type_index != -1) { //if the agent proposed the block type, then collect the block type stat
@@ -1362,7 +1383,7 @@ static e_move_result try_swap(const t_annealing_state* state,
 
             /* Update the connection_timing_cost and connection_delay *
              * values from the temporary values.                      */
-            commit_td_cost(blocks_affected);
+            commit_td_cost(blocks_affected, placer_ctx);
 
             /* Update timing information. Since we are analyzing setup slacks,   *
              * we only update those values and keep the criticalities stale      *
@@ -1375,11 +1396,11 @@ static e_move_result try_swap(const t_annealing_state* state,
             criticalities->disable_update();
             setup_slacks->enable_update();
             update_timing_classes(crit_params, timing_info, criticalities,
-                                  setup_slacks, pin_timing_invalidator);
+                                  setup_slacks, pin_timing_invalidator, placer_ctx);
 
             /* Get the setup slack analysis cost */
             //TODO: calculate a weighted average of the slack cost and wiring cost
-            delta_c = analyze_setup_slack_cost(setup_slacks) * costs->timing_cost_norm;
+            delta_c = analyze_setup_slack_cost(setup_slacks, placer_ctx) * costs->timing_cost_norm;
         } else if (place_algorithm == CRITICALITY_TIMING_PLACE) {
             /* Take delta_c as a combination of timing and wiring cost. In
              * addition to `timing_tradeoff`, we normalize the cost values */
@@ -1392,8 +1413,7 @@ static e_move_result try_swap(const t_annealing_state* state,
                            timing_delta_c,
                            costs->timing_cost_norm);
             delta_c = (1 - timing_tradeoff) * bb_delta_c * costs->bb_cost_norm
-                      + timing_tradeoff * timing_delta_c
-                            * costs->timing_cost_norm;
+                      + timing_tradeoff * timing_delta_c * costs->timing_cost_norm;
         } else {
             VTR_ASSERT_SAFE(place_algorithm == BOUNDING_BOX_PLACE);
             VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug,
@@ -1432,7 +1452,7 @@ static e_move_result try_swap(const t_annealing_state* state,
 
                 //Commit the setup slack information
                 //The timing delay and cost values should be committed already
-                commit_setup_slacks(setup_slacks);
+                commit_setup_slacks(setup_slacks, placer_ctx);
             }
 
             if (place_algorithm == CRITICALITY_TIMING_PLACE) {
@@ -1446,7 +1466,7 @@ static e_move_result try_swap(const t_annealing_state* state,
 
                 /* Update the connection_timing_cost and connection_delay *
                  * values from the temporary values.                      */
-                commit_td_cost(blocks_affected);
+                commit_td_cost(blocks_affected, placer_ctx);
             }
 
             /* Update net cost functions and reset flags. */
@@ -1478,14 +1498,14 @@ static e_move_result try_swap(const t_annealing_state* state,
             reset_move_nets(num_nets_affected);
 
             /* Restore the place_ctx.block_locs data structures to their state before the move. */
-            revert_move_blocks(blocks_affected, g_vpr_ctx.mutable_placement().block_locs);
+            revert_move_blocks(blocks_affected, placer_ctx.get_mutable_block_locs());
 
             if (place_algorithm == SLACK_TIMING_PLACE) {
                 /* Revert the timing delays and costs to pre-update values.       */
                 /* These routines must be called after reverting the block moves. */
                 //TODO: make this process incremental
-                comp_td_connection_delays(delay_model, g_vpr_ctx.placement().block_locs);
-                comp_td_costs(delay_model, *criticalities, g_vpr_ctx.placement().block_locs, &costs->timing_cost);
+                comp_td_connection_delays(delay_model, placer_ctx);
+                comp_td_costs(delay_model, *criticalities, placer_ctx, &costs->timing_cost);
 
                 /* Re-invalidate the affected sink pins since the proposed *
                  * move is rejected, and the same blocks are reverted to   *
@@ -1495,10 +1515,10 @@ static e_move_result try_swap(const t_annealing_state* state,
 
                 /* Revert the timing update */
                 update_timing_classes(crit_params, timing_info, criticalities,
-                                      setup_slacks, pin_timing_invalidator);
+                                      setup_slacks, pin_timing_invalidator, placer_ctx);
 
                 VTR_ASSERT_SAFE_MSG(
-                    verify_connection_setup_slacks(setup_slacks),
+                    verify_connection_setup_slacks(setup_slacks, placer_ctx),
                     "The current setup slacks should be identical to the values before the try swap timing info update.");
             }
 
@@ -1658,11 +1678,12 @@ static double get_total_cost(t_placer_costs* costs, const t_placer_opts& placer_
  * value suddenly got very good due to the block move, while a good slack value
  * got very bad, perhaps even worse than the original worse slack value.
  */
-static float analyze_setup_slack_cost(const PlacerSetupSlacks* setup_slacks) {
+static float analyze_setup_slack_cost(const PlacerSetupSlacks* setup_slacks,
+                                      const PlacerContext& placer_ctx) {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     const auto& clb_nlist = cluster_ctx.clb_nlist;
 
-    const auto& p_timing_ctx = g_placer_ctx.timing();
+    const auto& p_timing_ctx = placer_ctx.timing();
     const auto& connection_setup_slack = p_timing_ctx.connection_setup_slack;
 
     //Find the original/proposed setup slacks of pins with modified values
@@ -1728,11 +1749,12 @@ static e_move_result assess_swap(double delta_c, double t) {
  * All the connections have already been gathered by blocks_affected.affected_pins
  * after running the routine find_affected_nets_and_update_costs() in try_swap().
  */
-static void commit_td_cost(const t_pl_blocks_to_be_moved& blocks_affected) {
+static void commit_td_cost(const t_pl_blocks_to_be_moved& blocks_affected,
+                           PlacerContext& placer_ctx) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& clb_nlist = cluster_ctx.clb_nlist;
 
-    auto& p_timing_ctx = g_placer_ctx.mutable_timing();
+    auto& p_timing_ctx = placer_ctx.mutable_timing();
     auto& connection_delay = p_timing_ctx.connection_delay;
     auto& proposed_connection_delay = p_timing_ctx.proposed_connection_delay;
     auto& connection_timing_cost = p_timing_ctx.connection_timing_cost;
@@ -1803,13 +1825,11 @@ static void alloc_and_load_placement_structs(float place_cost_exp,
                                              const t_placer_opts& placer_opts,
                                              const t_noc_opts& noc_opts,
                                              t_direct_inf* directs,
-                                             int num_directs) {
+                                             int num_directs,
+                                             PlacerContext& placer_ctx) {
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
-
-    auto& p_timing_ctx = g_placer_ctx.mutable_timing();
-    auto& place_move_ctx = g_placer_ctx.mutable_move();
 
     size_t num_nets = cluster_ctx.clb_nlist.nets().size();
 
@@ -1826,21 +1846,18 @@ static void alloc_and_load_placement_structs(float place_cost_exp,
         /* Allocate structures associated with timing driven placement */
         /* [0..cluster_ctx.clb_nlist.nets().size()-1][1..num_pins-1]  */
 
-        p_timing_ctx.connection_delay = make_net_pins_matrix<float>(
-            (const Netlist<>&)cluster_ctx.clb_nlist, 0.f);
-        p_timing_ctx.proposed_connection_delay = make_net_pins_matrix<float>(
-            cluster_ctx.clb_nlist, 0.f);
+        auto& p_timing_ctx = placer_ctx.mutable_timing();
 
-        p_timing_ctx.connection_setup_slack = make_net_pins_matrix<float>(
-            cluster_ctx.clb_nlist, std::numeric_limits<float>::infinity());
+        p_timing_ctx.connection_delay = make_net_pins_matrix<float>((const Netlist<>&)cluster_ctx.clb_nlist, 0.f);
+        p_timing_ctx.proposed_connection_delay = make_net_pins_matrix<float>(cluster_ctx.clb_nlist, 0.f);
 
-        p_timing_ctx.connection_timing_cost = PlacerTimingCosts(
-            cluster_ctx.clb_nlist);
-        p_timing_ctx.proposed_connection_timing_cost = make_net_pins_matrix<
-            double>(cluster_ctx.clb_nlist, 0.);
+        p_timing_ctx.connection_setup_slack = make_net_pins_matrix<float>(cluster_ctx.clb_nlist, std::numeric_limits<float>::infinity());
+
+        p_timing_ctx.connection_timing_cost = PlacerTimingCosts(cluster_ctx.clb_nlist);
+        p_timing_ctx.proposed_connection_timing_cost = make_net_pins_matrix<double>(cluster_ctx.clb_nlist, 0.);
         p_timing_ctx.net_timing_cost.resize(num_nets, 0.);
 
-        for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+        for (ClusterNetId net_id : cluster_ctx.clb_nlist.nets()) {
             for (size_t ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ipin++) {
                 p_timing_ctx.connection_delay[net_id][ipin] = 0;
                 p_timing_ctx.proposed_connection_delay[net_id][ipin] = INVALID_DELAY;
@@ -1857,6 +1874,7 @@ static void alloc_and_load_placement_structs(float place_cost_exp,
 
     init_place_move_structs(num_nets);
 
+    auto& place_move_ctx = placer_ctx.mutable_move();
     if (place_ctx.cube_bb) {
         place_move_ctx.bb_coords.resize(num_nets, t_bb());
         place_move_ctx.bb_num_on_edges.resize(num_nets, t_bb());
@@ -1885,11 +1903,13 @@ static void alloc_and_load_placement_structs(float place_cost_exp,
 
 /* Frees the major structures needed by the placer (and not needed       *
  * elsewhere).   */
-static void free_placement_structs(const t_placer_opts& placer_opts, const t_noc_opts& noc_opts) {
-    auto& place_move_ctx = g_placer_ctx.mutable_move();
+static void free_placement_structs(const t_placer_opts& placer_opts,
+                                   const t_noc_opts& noc_opts,
+                                   PlacerContext& placer_ctx) {
+    auto& place_move_ctx = placer_ctx.mutable_move();
 
     if (placer_opts.place_algorithm.is_timing_driven()) {
-        auto& p_timing_ctx = g_placer_ctx.mutable_timing();
+        auto& p_timing_ctx = placer_ctx.mutable_timing();
 
         vtr::release_memory(p_timing_ctx.connection_timing_cost);
         vtr::release_memory(p_timing_ctx.connection_delay);
@@ -1945,7 +1965,8 @@ static void check_place(const t_placer_costs& costs,
                         const PlaceDelayModel* delay_model,
                         const PlacerCriticalities* criticalities,
                         const t_place_algorithm& place_algorithm,
-                        const t_noc_opts& noc_opts) {
+                        const t_noc_opts& noc_opts,
+                        PlacerContext& placer_ctx) {
     /* Checks that the placement has not confused our data structures. *
      * i.e. the clb and block structures agree about the locations of  *
      * every block, blocks are in legal spots, etc.  Also recomputes   *
@@ -1955,7 +1976,7 @@ static void check_place(const t_placer_costs& costs,
     int error = 0;
 
     error += check_placement_consistency();
-    error += check_placement_costs(costs, delay_model, criticalities, place_algorithm);
+    error += check_placement_costs(costs, delay_model, criticalities, place_algorithm, placer_ctx);
     error += check_placement_floorplanning(g_vpr_ctx.placement().block_locs);
 
     if (noc_opts.noc) {
@@ -1980,7 +2001,8 @@ static void check_place(const t_placer_costs& costs,
 static int check_placement_costs(const t_placer_costs& costs,
                                  const PlaceDelayModel* delay_model,
                                  const PlacerCriticalities* criticalities,
-                                 const t_place_algorithm& place_algorithm) {
+                                 const t_place_algorithm& place_algorithm,
+                                 PlacerContext& placer_ctx) {
     int error = 0;
     double bb_cost_check;
     double timing_cost_check;
@@ -2002,12 +2024,9 @@ static int check_placement_costs(const t_placer_costs& costs,
     }
 
     if (place_algorithm.is_timing_driven()) {
-        comp_td_costs(delay_model, *criticalities, g_vpr_ctx.placement().block_locs, &timing_cost_check);
+        comp_td_costs(delay_model, *criticalities, placer_ctx, &timing_cost_check);
         //VTR_LOG("timing_cost recomputed from scratch: %g\n", timing_cost_check);
-        if (fabs(
-                timing_cost_check
-                - costs.timing_cost)
-            > costs.timing_cost * ERROR_TOL) {
+        if (fabs(timing_cost_check - costs.timing_cost) > costs.timing_cost * ERROR_TOL) {
             VTR_LOG_ERROR(
                 "timing_cost_check: %g and timing_cost: %g differ in check_place.\n",
                 timing_cost_check, costs.timing_cost);
@@ -2018,8 +2037,7 @@ static int check_placement_costs(const t_placer_costs& costs,
 }
 
 static int check_placement_consistency() {
-    return check_block_placement_consistency()
-           + check_macro_placement_consistency();
+    return check_block_placement_consistency() + check_macro_placement_consistency();
 }
 
 static int check_block_placement_consistency() {

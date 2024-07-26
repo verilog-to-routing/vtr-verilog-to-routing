@@ -5,34 +5,28 @@
 #include "placer_globals.h"
 #include "move_utils.h"
 
-static bool get_bb_incrementally(ClusterNetId net_id,
-                                 t_bb& bb_coord_new,
-                                 int xold,
-                                 int yold,
-                                 int layer_old,
-                                 int xnew,
-                                 int ynew,
-                                 int layer_new);
-
-static void get_bb_from_scratch_excluding_block(ClusterNetId net_id,
-                                                t_bb& bb_coord_new,
-                                                ClusterBlockId block_id,
-                                                bool& skip_net,
-                                                const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
+MedianMoveGenerator::MedianMoveGenerator(PlacerContext& placer_ctx)
+    : MoveGenerator(placer_ctx) {}
 
 e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected,
                                                 t_propose_action& proposed_action,
                                                 float rlim,
                                                 const t_placer_opts& placer_opts,
-                                                const PlacerCriticalities* /*criticalities*/,
-                                                const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
+                                                const PlacerCriticalities* /*criticalities*/) {
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& placer_ctx = placer_ctx_.get();
+    auto& place_move_ctx = placer_ctx.mutable_move();
+    auto& block_locs = placer_ctx.get_block_locs();
+
+
     //Find a movable block based on blk_type
     ClusterBlockId b_from = propose_block_to_move(placer_opts,
                                                   proposed_action.logical_blk_type_index,
                                                   false,
                                                   nullptr,
                                                   nullptr,
-                                                  block_locs);
+                                                  placer_ctx);
 
     VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "Median Move Choose Block %d - rlim %f\n", size_t(b_from), rlim);
 
@@ -40,10 +34,6 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
         VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\tNo movable block found\n");
         return e_create_move::ABORT;
     }
-
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& place_move_ctx = g_placer_ctx.mutable_move();
 
     const int num_layers = device_ctx.grid.get_num_layers();
 
@@ -83,7 +73,7 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
             continue;
         if (cluster_ctx.clb_nlist.net_sinks(net_id).size() < SMALL_NET) {
             //calculate the bb from scratch
-            get_bb_from_scratch_excluding_block(net_id, coords, b_from, skip_net, block_locs);
+            get_bb_from_scratch_excluding_block(net_id, coords, b_from, skip_net);
             if (skip_net) {
                 continue;
             }
@@ -136,7 +126,7 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
             // the bounding box incrementally. In that case, bounding box should be calculated
             // from scratch.
             if (!get_bb_incrementally(net_id, coords, xold, yold, layer_old, xnew, ynew, layer_new)) {
-                get_bb_from_scratch_excluding_block(net_id, coords, b_from, skip_net, block_locs);
+                get_bb_from_scratch_excluding_block(net_id, coords, b_from, skip_net);
                 if (skip_net)
                     continue;
             }
@@ -204,12 +194,12 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
  * Currently assumes channels on both sides of the CLBs forming the   *
  * edges of the bounding box can be used.  Essentially, I am assuming *
  * the pins always lie on the outside of the bounding box.            */
-static void get_bb_from_scratch_excluding_block(ClusterNetId net_id,
-                                                t_bb& bb_coord_new,
-                                                ClusterBlockId block_id,
-                                                bool& skip_net,
-                                                const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
+void MedianMoveGenerator::get_bb_from_scratch_excluding_block(ClusterNetId net_id,
+                                                              t_bb& bb_coord_new,
+                                                              ClusterBlockId block_id,
+                                                              bool& skip_net) {
     //TODO: account for multiple physical pin instances per logical pin
+    auto& block_locs = placer_ctx_.get().get_block_locs();
 
     skip_net = true;
 
@@ -314,18 +304,18 @@ static void get_bb_from_scratch_excluding_block(ClusterNetId net_id,
  * the pins always lie on the outside of the bounding box.            *
  * The x and y coordinates are the pin's x and y coordinates.         */
 /* IO blocks are considered to be one cell in for simplicity.         */
-static bool get_bb_incrementally(ClusterNetId net_id,
-                                 t_bb& bb_coord_new,
-                                 int xold,
-                                 int yold,
-                                 int layer_old,
-                                 int xnew,
-                                 int ynew,
-                                 int layer_new) {
+bool MedianMoveGenerator::get_bb_incrementally(ClusterNetId net_id,
+                                               t_bb& bb_coord_new,
+                                               int xold,
+                                               int yold,
+                                               int layer_old,
+                                               int xnew,
+                                               int ynew,
+                                               int layer_new) {
     //TODO: account for multiple physical pin instances per logical pin
 
     auto& device_ctx = g_vpr_ctx.device();
-    auto& place_move_ctx = g_placer_ctx.move();
+    auto& place_move_ctx = placer_ctx_.get().move();
 
     xnew = std::max(std::min<int>(xnew, device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
     ynew = std::max(std::min<int>(ynew, device_ctx.grid.height() - 2), 1); //-2 for no perim channels

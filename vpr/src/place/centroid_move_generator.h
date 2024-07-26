@@ -24,7 +24,7 @@ class CentroidMoveGenerator : public MoveGenerator {
      * The move generator created by calling this constructor only consider
      * netlist connectivity for computing the centroid location.
      */
-    CentroidMoveGenerator();
+    explicit CentroidMoveGenerator(PlacerContext& placer_ctx);
 
     /**
      * The move generator created by calling this constructor considers both
@@ -39,7 +39,9 @@ class CentroidMoveGenerator : public MoveGenerator {
      * @param high_fanout_net All nets with a fanout larger than this number are
      * ignored when forming NoC groups.
      */
-    CentroidMoveGenerator(float noc_attraction_weight, size_t high_fanout_net);
+    CentroidMoveGenerator(PlacerContext& placer_ctx,
+                          float noc_attraction_weight,
+                          size_t high_fanout_net);
 
 
     /**
@@ -62,8 +64,7 @@ class CentroidMoveGenerator : public MoveGenerator {
                                t_propose_action& proposed_action,
                                float rlim,
                                const t_placer_opts& placer_opts,
-                               const PlacerCriticalities* /*criticalities*/,
-                               const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) override;
+                               const PlacerCriticalities* /*criticalities*/) override;
 
   private:
     /** A value in range [0, 1] that specifies how much the centroid location

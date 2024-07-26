@@ -3,14 +3,20 @@
 #include "place_constraints.h"
 #include "move_utils.h"
 
+UniformMoveGenerator::UniformMoveGenerator(PlacerContext& placer_ctx)
+    : MoveGenerator(placer_ctx) {}
+
 e_create_move UniformMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected,
                                                  t_propose_action& proposed_action,
                                                  float rlim,
                                                  const t_placer_opts& placer_opts,
-                                                 const PlacerCriticalities* /*criticalities*/,
-                                                 const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
+                                                 const PlacerCriticalities* /*criticalities*/) {
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& placer_ctx = placer_ctx_.get();
+    auto& block_locs = placer_ctx.get_block_locs();
+
     //Find a movable block based on blk_type
-    ClusterBlockId b_from = propose_block_to_move(placer_opts, proposed_action.logical_blk_type_index, false, nullptr, nullptr, block_locs);
+    ClusterBlockId b_from = propose_block_to_move(placer_opts, proposed_action.logical_blk_type_index, false, nullptr, nullptr, placer_ctx);
 
     VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "Uniform Move Choose Block %d - rlim %f\n", size_t(b_from), rlim);
 
@@ -18,8 +24,6 @@ e_create_move UniformMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks
         VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\tNo movable block found\n");
         return e_create_move::ABORT;
     }
-
-    auto& cluster_ctx = g_vpr_ctx.clustering();
 
     t_pl_loc from = block_locs[b_from].loc;
     auto cluster_from_type = cluster_ctx.clb_nlist.block_type(b_from);

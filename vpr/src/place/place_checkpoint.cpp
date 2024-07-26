@@ -1,5 +1,6 @@
 #include "place_checkpoint.h"
 #include "noc_place_utils.h"
+#include "placer_context.h"
 
 float t_placement_checkpoint::get_cp_cpd() const { return cpd_; }
 
@@ -34,8 +35,7 @@ void save_placement_checkpoint_if_needed(const vtr::vector_map<ClusterBlockId, t
     }
 }
 
-void restore_best_placement(vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs,
-                            GridBlock& grid_blocks,
+void restore_best_placement(PlacerContext& placer_ctx,
                             t_placement_checkpoint& placement_checkpoint,
                             std::shared_ptr<SetupTimingInfo>& timing_info,
                             t_placer_costs& costs,
@@ -52,20 +52,21 @@ void restore_best_placement(vtr::vector_map<ClusterBlockId, t_block_loc>& block_
      */
     if (placement_checkpoint.cp_is_valid() && timing_info->least_slack_critical_path().delay() > placement_checkpoint.get_cp_cpd() && costs.bb_cost * 1.05 > placement_checkpoint.get_cp_bb_cost()) {
         //restore the latest placement checkpoint
-        costs = placement_checkpoint.restore_placement(block_locs, grid_blocks);
+
+        costs = placement_checkpoint.restore_placement(placer_ctx.get_mutable_block_locs(), placer_ctx.get_mutable_grid_blocks());
 
         //recompute timing from scratch
         placer_criticalities.get()->set_recompute_required();
         placer_setup_slacks.get()->set_recompute_required();
-        comp_td_connection_delays(place_delay_model.get(), block_locs);
+        comp_td_connection_delays(place_delay_model.get(), placer_ctx);
         perform_full_timing_update(crit_params,
                                    place_delay_model.get(),
-                                   block_locs,
                                    placer_criticalities.get(),
                                    placer_setup_slacks.get(),
                                    pin_timing_invalidator.get(),
                                    timing_info.get(),
-                                   &costs);
+                                   &costs,
+                                   placer_ctx);
 
         /* If NoC is enabled, re-compute NoC costs and re-initialize NoC internal data structures.
          * If some routers have different locations than the last placement, NoC-related costs and
@@ -73,7 +74,7 @@ void restore_best_placement(vtr::vector_map<ClusterBlockId, t_block_loc>& block_
          * and need to be re-computed from scratch.
          */
         if (noc_opts.noc) {
-            reinitialize_noc_routing(costs, {}, block_locs);
+            reinitialize_noc_routing(costs, {}, placer_ctx.get_block_locs());
         }
 
         VTR_LOG("\nCheckpoint restored\n");
