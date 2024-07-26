@@ -462,7 +462,7 @@ void try_place(const Netlist<>& net_list,
     if (!placer_opts.write_initial_place_file.empty()) {
         print_place(nullptr,
                     nullptr,
-                    (placer_opts.write_initial_place_file + ".init.place").c_str());
+                    (placer_opts.write_initial_place_file).c_str());
     }
 
 #ifdef ENABLE_ANALYTIC_PLACE
