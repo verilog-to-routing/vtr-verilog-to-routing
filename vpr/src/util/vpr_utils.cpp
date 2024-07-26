@@ -553,13 +553,13 @@ t_physical_tile_type_ptr physical_tile_type(ParentBlockId blk_id, bool is_flat) 
     }
 }
 
-int get_sub_tile_index(ClusterBlockId blk) {
-    auto& place_ctx = g_vpr_ctx.placement();
+int get_sub_tile_index(ClusterBlockId blk,
+                       const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     auto logical_block = cluster_ctx.clb_nlist.block_type(blk);
-    auto block_loc = place_ctx.block_locs[blk];
+    auto block_loc = block_locs[blk];
     auto loc = block_loc.loc;
     int sub_tile_coordinate = loc.sub_tile;
 
@@ -577,6 +577,11 @@ int get_sub_tile_index(ClusterBlockId blk) {
     }
 
     VPR_THROW(VPR_ERROR_PLACE, "The Block Id %d has been placed in an impossible sub tile location.\n", blk);
+}
+
+int get_sub_tile_index(ClusterBlockId blk) {
+    auto& block_locs = g_vpr_ctx.placement().get_block_locs();
+    return get_sub_tile_index(blk, block_locs);
 }
 
 /* Each node in the pb_graph for a top-level pb_type can be uniquely identified
@@ -610,9 +615,9 @@ int get_unique_pb_graph_node_id(const t_pb_graph_node* pb_graph_node) {
 
 t_class_range get_class_range_for_block(const ClusterBlockId blk_id) {
     /* Assumes that the placement has been done so each block has a set of pins allocated to it */
-    auto& place_ctx = g_vpr_ctx.placement();
+    auto& block_locs = g_vpr_ctx.placement().get_block_locs();
 
-    t_pl_loc block_loc = place_ctx.get_block_locs()[blk_id].loc;
+    t_pl_loc block_loc = block_locs[blk_id].loc;
     auto type = physical_tile_type(block_loc);
     auto sub_tile = type->sub_tiles[get_sub_tile_index(blk_id)];
     int sub_tile_capacity = sub_tile.capacity.total();
@@ -620,7 +625,7 @@ t_class_range get_class_range_for_block(const ClusterBlockId blk_id) {
     int class_range_total = class_range.high - class_range.low + 1;
 
     VTR_ASSERT((class_range_total) % sub_tile_capacity == 0);
-    int rel_capacity = place_ctx.block_locs[blk_id].loc.sub_tile - sub_tile.capacity.low;
+    int rel_capacity = block_locs[blk_id].loc.sub_tile - sub_tile.capacity.low;
 
     t_class_range abs_class_range;
     abs_class_range.low = rel_capacity * (class_range_total / sub_tile_capacity) + class_range.low;
@@ -634,11 +639,7 @@ t_class_range get_class_range_for_block(const AtomBlockId atom_blk) {
 
     ClusterBlockId cluster_blk = atom_look_up.atom_clb(atom_blk);
 
-    t_physical_tile_type_ptr physical_tile;
-    const t_sub_tile* sub_tile;
-    int sub_tile_cap;
-    t_logical_block_type_ptr logical_block;
-    std::tie(physical_tile, sub_tile, sub_tile_cap, logical_block) = get_cluster_blk_physical_spec(cluster_blk);
+    auto [physical_tile, sub_tile, sub_tile_cap, logical_block] = get_cluster_blk_physical_spec(cluster_blk);
     const t_pb_graph_node* pb_graph_node = atom_look_up.atom_pb_graph_node(atom_blk);
     VTR_ASSERT(pb_graph_node != nullptr);
     return get_pb_graph_node_class_physical_range(physical_tile,
@@ -658,15 +659,15 @@ t_class_range get_class_range_for_block(const ParentBlockId blk_id, bool is_flat
 
 std::pair<int, int> get_pin_range_for_block(const ClusterBlockId blk_id) {
     /* Assumes that the placement has been done so each block has a set of pins allocated to it */
-    auto& place_ctx = g_vpr_ctx.placement();
+    auto& block_locs = g_vpr_ctx.placement().get_block_locs();
 
-    t_pl_loc block_loc = place_ctx.get_block_locs()[blk_id].loc;
+    t_pl_loc block_loc = block_locs[blk_id].loc;
     auto type = physical_tile_type(block_loc);
     auto sub_tile = type->sub_tiles[get_sub_tile_index(blk_id)];
     int sub_tile_capacity = sub_tile.capacity.total();
 
     VTR_ASSERT(sub_tile.num_phy_pins % sub_tile_capacity == 0);
-    int rel_capacity = place_ctx.block_locs[blk_id].loc.sub_tile - sub_tile.capacity.low;
+    int rel_capacity = block_loc.sub_tile - sub_tile.capacity.low;
     int rel_pin_low = rel_capacity * (sub_tile.num_phy_pins / sub_tile_capacity);
     int rel_pin_high = (rel_capacity + 1) * (sub_tile.num_phy_pins / sub_tile_capacity) - 1;
 
@@ -1343,7 +1344,7 @@ static void load_pin_id_to_pb_mapping_rec(t_pb* cur_pb, t_pb** pin_id_to_pb_mapp
  */
 void free_pin_id_to_pb_mapping(vtr::vector<ClusterBlockId, t_pb**>& pin_id_to_pb_mapping) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+    for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks()) {
         delete[] pin_id_to_pb_mapping[blk_id];
     }
     pin_id_to_pb_mapping.clear();
@@ -1351,8 +1352,8 @@ void free_pin_id_to_pb_mapping(vtr::vector<ClusterBlockId, t_pb**>& pin_id_to_pb
 
 std::tuple<t_physical_tile_type_ptr, const t_sub_tile*, int, t_logical_block_type_ptr> get_cluster_blk_physical_spec(ClusterBlockId cluster_blk_id) {
     auto& grid = g_vpr_ctx.device().grid;
-    auto& place_ctx = g_vpr_ctx.placement();
-    auto& loc = place_ctx.block_locs[cluster_blk_id].loc;
+    auto& block_locs = g_vpr_ctx.placement().get_block_locs();
+    auto& loc = block_locs[cluster_blk_id].loc;
     int cap = loc.sub_tile;
     const auto& physical_type = grid.get_physical_type({loc.x, loc.y, loc.layer});
     VTR_ASSERT(grid.get_width_offset({loc.x, loc.y, loc.layer}) == 0 && grid.get_height_offset(t_physical_tile_loc(loc.x, loc.y, loc.layer)) == 0);
@@ -1371,12 +1372,7 @@ std::vector<int> get_cluster_internal_class_pairs(const AtomLookup& atom_lookup,
                                                   ClusterBlockId cluster_block_id) {
     std::vector<int> class_num_vec;
 
-    t_physical_tile_type_ptr physical_tile;
-    const t_sub_tile* sub_tile;
-    int rel_cap;
-    t_logical_block_type_ptr logical_block;
-
-    std::tie(physical_tile, sub_tile, rel_cap, logical_block) = get_cluster_blk_physical_spec(cluster_block_id);
+    auto [physical_tile, sub_tile, rel_cap, logical_block] = get_cluster_blk_physical_spec(cluster_block_id);
     class_num_vec.reserve(physical_tile->primitive_class_inf.size());
 
     const auto& cluster_atoms = cluster_to_atoms(cluster_block_id);
@@ -1400,12 +1396,7 @@ std::vector<int> get_cluster_internal_pins(ClusterBlockId cluster_blk_id) {
 
     auto& cluster_net_list = g_vpr_ctx.clustering().clb_nlist;
 
-    t_physical_tile_type_ptr physical_tile;
-    const t_sub_tile* sub_tile;
-    int rel_cap;
-    t_logical_block_type_ptr logical_block;
-
-    std::tie(physical_tile, sub_tile, rel_cap, logical_block) = get_cluster_blk_physical_spec(cluster_blk_id);
+    auto [physical_tile, sub_tile, rel_cap, logical_block] = get_cluster_blk_physical_spec(cluster_blk_id);
     internal_pins.reserve(logical_block->pin_logical_num_to_pb_pin_mapping.size());
 
     std::list<const t_pb*> internal_pbs;
@@ -2124,7 +2115,7 @@ void place_sync_external_block_connections(ClusterBlockId iblk,
     auto physical_tile = physical_tile_type(block_loc);
     auto logical_block = clb_nlist.block_type(iblk);
 
-    int sub_tile_index = get_sub_tile_index(iblk);
+    int sub_tile_index = get_sub_tile_index(iblk, block_locs);
     auto sub_tile = physical_tile->sub_tiles[sub_tile_index];
 
     VTR_ASSERT(sub_tile.num_phy_pins % sub_tile.capacity.total() == 0);
@@ -2182,11 +2173,7 @@ int get_atom_pin_class_num(const AtomPinId atom_pin_id) {
     auto atom_blk_id = atom_net_list.pin_block(atom_pin_id);
     auto cluster_block_id = atom_look_up.atom_clb(atom_blk_id);
 
-    t_physical_tile_type_ptr physical_type;
-    const t_sub_tile* sub_tile;
-    int sub_tile_rel_cap;
-    t_logical_block_type_ptr logical_block;
-    std::tie(physical_type, sub_tile, sub_tile_rel_cap, logical_block) = get_cluster_blk_physical_spec(cluster_block_id);
+    auto [physical_type, sub_tile, sub_tile_rel_cap, logical_block] = get_cluster_blk_physical_spec(cluster_block_id);
     auto pb_graph_pin = atom_look_up.atom_pin_pb_graph_pin(atom_pin_id);
     int pin_physical_num = -1;
     pin_physical_num = get_pb_pin_physical_num(physical_type, sub_tile, logical_block, sub_tile_rel_cap, pb_graph_pin);
@@ -2208,7 +2195,7 @@ t_physical_tile_port find_tile_port_by_name(t_physical_tile_type_ptr type, const
 }
 
 void pretty_print_uint(const char* prefix, size_t value, int num_digits, int scientific_precision) {
-    //Print as integer if it will fit in the width, other wise scientific
+    //Print as integer if it will fit in the width, otherwise scientific
     if (value <= std::pow(10, num_digits) - 1) {
         //Direct
         VTR_LOG("%s%*zu", prefix, num_digits, value);

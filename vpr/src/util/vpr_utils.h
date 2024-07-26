@@ -37,6 +37,9 @@ t_physical_tile_type_ptr physical_tile_type(AtomBlockId atom_blk);
 t_physical_tile_type_ptr physical_tile_type(ParentBlockId blk_id, bool is_flat);
 
 //Returns the sub tile corresponding to the logical block location within a physical type
+int get_sub_tile_index(ClusterBlockId blk,
+                       const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
+
 int get_sub_tile_index(ClusterBlockId blk);
 
 int get_unique_pb_graph_node_id(const t_pb_graph_node* pb_graph_node);

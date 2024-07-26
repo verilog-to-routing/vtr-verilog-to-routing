@@ -400,7 +400,8 @@ void set_block_location(ClusterBlockId blk_id,
     place_ctx.grid_blocks.set_block_at_location(location, blk_id);
     place_ctx.grid_blocks.set_usage({location.x, location.y, location.layer},
                                     place_ctx.grid_blocks.get_usage({location.x, location.y, location.layer}) + 1);
-    place_sync_external_block_connections(blk_id, g_vpr_ctx.placement().block_locs);
+
+    place_sync_external_block_connections(blk_id, block_locs);
 }
 
 bool macro_can_be_placed(t_pl_macro pl_macro, t_pl_loc head_pos, bool check_all_legality) {
