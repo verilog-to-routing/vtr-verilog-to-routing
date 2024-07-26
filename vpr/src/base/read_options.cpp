@@ -1633,7 +1633,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     file_grp.add_argument(args.read_initial_place_file, "--read_initial_place_file")
-        .help("Writes out the the placement chosen by the initial placement algorithm to the specified file")
+        .help("Reads the initial placement and continues the rest of the placement process from there.")
         .metavar("INITIAL_PLACE_FILE")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
