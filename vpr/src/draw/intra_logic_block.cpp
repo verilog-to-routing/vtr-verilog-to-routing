@@ -175,11 +175,11 @@ void draw_internal_draw_subblk(ezgl::renderer* g) {
                     int num_sub_tiles = type->capacity;
                     for (int k = 0; k < num_sub_tiles; ++k) {
                         /* Don't draw if block is empty. */
-                        if (place_ctx.grid_blocks.block_at_location({i, j, k, layer_num}) == EMPTY_BLOCK_ID || place_ctx.grid_blocks.block_at_location({i, j, k, layer_num}) == INVALID_BLOCK_ID)
+                        if (place_ctx.get_grid_blocks().block_at_location({i, j, k, layer_num}) == EMPTY_BLOCK_ID || place_ctx.get_grid_blocks().block_at_location({i, j, k, layer_num}) == INVALID_BLOCK_ID)
                             continue;
 
                         /* Get block ID */
-                        ClusterBlockId bnum = place_ctx.grid_blocks.block_at_location({i, j, k, layer_num});
+                        ClusterBlockId bnum = place_ctx.get_grid_blocks().block_at_location({i, j, k, layer_num});
                         /* Safety check, that physical blocks exists in the CLB */
                         if (cluster_ctx.clb_nlist.block_pb(bnum) == nullptr)
                             continue;
@@ -289,7 +289,7 @@ draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node* pb_graph_node
     int capacity = device_ctx.physical_tile_types[type_descrip_index].capacity;
     // TODO: this is a hack - should be fixed for the layer_num
     const auto& type = device_ctx.grid.get_physical_type({1, 0, 0});
-    if (capacity > 1 && device_ctx.grid.width() > 0 && device_ctx.grid.height() > 0 && place_ctx.grid_blocks.get_usage({1, 0, 0}) != 0
+    if (capacity > 1 && device_ctx.grid.width() > 0 && device_ctx.grid.height() > 0 && place_ctx.get_grid_blocks().get_usage({1, 0, 0}) != 0
         && type_descrip_index == type->index) {
         // that should test for io blocks, and setting capacity_divisor > 1
         // will squish every thing down

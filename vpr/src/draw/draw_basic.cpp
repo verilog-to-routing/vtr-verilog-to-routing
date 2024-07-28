@@ -136,7 +136,7 @@ void drawplace(ezgl::renderer* g) {
 
                     for (int k = 0; k < num_sub_tiles; ++k) {
                         /* Look at the tile at start of large block */
-                        bnum = place_ctx.grid_blocks.block_at_location({i, j, k, layer_num});
+                        bnum = place_ctx.get_grid_blocks().block_at_location({i, j, k, layer_num});
                         /* Fill background for the clb. Do not fill if "show_blk_internal"
                          * is toggled.
                          */

@@ -1078,7 +1078,7 @@ ClusterBlockId get_cluster_block_id_from_xy_loc(double x, double y) {
                 // iterate over sub_blocks
                 const auto& type = device_ctx.grid.get_physical_type({i, j, layer_num});
                 for (int k = 0; k < type->capacity; ++k) {
-                    clb_index = place_ctx.grid_blocks.block_at_location({i, j, k, layer_num});
+                    clb_index = place_ctx.get_grid_blocks().block_at_location({i, j, k, layer_num});
                     if (clb_index != EMPTY_BLOCK_ID) {
                         clb_bbox = draw_coords->get_absolute_clb_bbox(clb_index,
                                                                       cluster_ctx.clb_nlist.block_type(clb_index));

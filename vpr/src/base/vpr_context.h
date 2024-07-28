@@ -389,15 +389,12 @@ struct PlacementContext : public Context {
 
   public:
 
-    ///@brief Clustered block associated with each grid location (i.e. inverse of block_locs)
-    GridBlock grid_blocks;
-
     const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs() const { VTR_ASSERT(loc_vars_are_accessible_); return place_loc_vars_.block_locs(); }
     vtr::vector_map<ClusterBlockId, t_block_loc>& mutable_block_locs() { VTR_ASSERT(loc_vars_are_accessible_); return place_loc_vars_.mutable_block_locs(); }
     const GridBlock& get_grid_blocks() const { VTR_ASSERT(loc_vars_are_accessible_); return place_loc_vars_.grid_blocks(); }
     GridBlock& get_mutable_grid_blocks() { VTR_ASSERT(loc_vars_are_accessible_); return place_loc_vars_.mutable_grid_blocks(); }
     vtr::vector_map<ClusterPinId, int>& mutable_physical_pins() { VTR_ASSERT(loc_vars_are_accessible_); return place_loc_vars_.mutable_physical_pins(); }
-//    const vtr::vector_map<ClusterPinId, int>& physical_pins() const { VTR_ASSERT(loc_vars_are_accessible_); return place_loc_vars_.physical_pins(); }
+    const vtr::vector_map<ClusterPinId, int>& physical_pins() const { VTR_ASSERT(loc_vars_are_accessible_); return place_loc_vars_.physical_pins(); }
     PlaceLocVars& mutable_place_loc_vars() { VTR_ASSERT(loc_vars_are_accessible_); return place_loc_vars_; }
     const PlaceLocVars& place_loc_vars() const { VTR_ASSERT(loc_vars_are_accessible_); return place_loc_vars_; }
 
@@ -407,7 +404,7 @@ struct PlacementContext : public Context {
 
 
     ///@brief Clustered pin placement mapping with physical pin
-    vtr::vector_map<ClusterPinId, int> physical_pins;
+    vtr::vector_map<ClusterPinId, int> physical_pins_;
 
     ///@brief The pl_macros array stores all the placement macros (usually carry chains).
     std::vector<t_pl_macro> pl_macros;

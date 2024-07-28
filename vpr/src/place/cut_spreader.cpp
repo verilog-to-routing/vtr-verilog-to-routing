@@ -971,7 +971,7 @@ void CutSpreader::bind_tile(t_pl_loc sub_tile, ClusterBlockId blk) {
     grid_blocks.set_block_at_location(sub_tile, blk);
     block_locs[blk].loc = sub_tile;
     grid_blocks.set_usage({sub_tile.x, sub_tile.y, sub_tile.layer},
-                          place_ctx.grid_blocks.get_usage({sub_tile.x, sub_tile.y, sub_tile.layer}) + 1);
+                          place_ctx.get_grid_blocks().get_usage({sub_tile.x, sub_tile.y, sub_tile.layer}) + 1);
     ap->blk_locs[blk].loc = sub_tile;
 }
 
@@ -990,7 +990,7 @@ void CutSpreader::unbind_tile(t_pl_loc sub_tile) {
     block_locs[blk].loc = t_pl_loc{};
     grid_blocks.set_block_at_location(sub_tile, EMPTY_BLOCK_ID);
     grid_blocks.set_usage({sub_tile.x, sub_tile.y, sub_tile.layer},
-                          place_ctx.grid_blocks.get_usage({sub_tile.x, sub_tile.y, sub_tile.layer}) - 1);
+                          place_ctx.get_grid_blocks().get_usage({sub_tile.x, sub_tile.y, sub_tile.layer}) - 1);
 }
 
 /*
@@ -1042,7 +1042,7 @@ bool CutSpreader::try_place_blk(ClusterBlockId blk,
     // then blk is placed in best_subtile
     if (exceeds_explore_limit && best_subtile != t_pl_loc{}) {
         // find the logic block bound to (placed on) best_subtile
-        ClusterBlockId bound_blk = place_ctx.grid_blocks.block_at_location(best_subtile);
+        ClusterBlockId bound_blk = place_ctx.get_grid_blocks().block_at_location(best_subtile);
         if (bound_blk != EMPTY_BLOCK_ID) {   // if best_subtile has a logic block
             unbind_tile(best_subtile);       // clear bound_block and best_subtile's placement info
             remaining.emplace(1, bound_blk); // put bound_blk back into remaining blocks to place
@@ -1053,7 +1053,7 @@ bool CutSpreader::try_place_blk(ClusterBlockId blk,
 
     // if exploration limit is not met or a candidate sub_tile is not found yet
     for (auto sub_t : subtiles_at_location[nx][ny]) {                              // for each available sub_tile at random location
-        ClusterBlockId bound_blk = place_ctx.grid_blocks.block_at_location(sub_t); // logic blk at [nx, ny]
+        ClusterBlockId bound_blk = place_ctx.get_grid_blocks().block_at_location(sub_t); // logic blk at [nx, ny]
         if (bound_blk == EMPTY_BLOCK_ID
             || ripup_radius_met
             || rand() % (20000) < 10) {
@@ -1137,7 +1137,7 @@ bool CutSpreader::try_place_macro(ClusterBlockId blk,
 
             // if the target location has a logic block, ensure it's not part of a macro
             // because a macro placed before the current one has higher priority (longer chain)
-            ClusterBlockId bound = place_ctx.grid_blocks.block_at_location(target);
+            ClusterBlockId bound = place_ctx.get_grid_blocks().block_at_location(target);
             if (bound != EMPTY_BLOCK_ID && imacro(bound) != NO_MACRO) {
                 placement_impossible = true;
                 break;
@@ -1156,7 +1156,7 @@ bool CutSpreader::try_place_macro(ClusterBlockId blk,
 
         if (!placement_impossible) { // if placement is possible, apply this placement
             for (auto& target : targets) {
-                ClusterBlockId bound = place_ctx.grid_blocks.block_at_location(target.second);
+                ClusterBlockId bound = place_ctx.get_grid_blocks().block_at_location(target.second);
                 if (bound != EMPTY_BLOCK_ID) {
                     // if target location has a logic block, displace it and put it in remaining queue to be placed later
                     unbind_tile(target.second);
