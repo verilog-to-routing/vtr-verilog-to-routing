@@ -231,7 +231,7 @@ static void noc_routers_anneal(const t_noc_opts& noc_opts,
         clear_move_blocks(blocks_affected);
         // Shrink the range limit over time
         float r_lim_decayed = 1.0f + (N_MOVES - i_move) * (max_r_lim / N_MOVES);
-        e_create_move create_move_outcome = propose_router_swap(blocks_affected, r_lim_decayed, block_locs);
+        e_create_move create_move_outcome = propose_router_swap(blocks_affected, r_lim_decayed, place_loc_vars);
 
         if (create_move_outcome != e_create_move::ABORT) {
             apply_move_blocks(blocks_affected, place_loc_vars);
@@ -245,7 +245,7 @@ static void noc_routers_anneal(const t_noc_opts& noc_opts,
 
             if (move_accepted) {
                 costs.cost += delta_cost;
-                commit_move_blocks(blocks_affected);
+                commit_move_blocks(blocks_affected, place_loc_vars.mutable_grid_blocks());
                 commit_noc_costs();
                 costs += noc_delta_c;
                 // check if the current placement is better than the stored checkpoint

@@ -1324,7 +1324,7 @@ static e_move_result try_swap(const t_annealing_state* state,
 #endif //NO_GRAPHICS
     } else if (router_block_move) {
         // generate a move where two random router blocks are swapped
-        create_move_outcome = propose_router_swap(blocks_affected, rlim, block_locs);
+        create_move_outcome = propose_router_swap(blocks_affected, rlim, placer_ctx.place_loc_vars());
         proposed_action.move_type = e_move_type::UNIFORM;
     } else {
         //Generate a new move (perturbation) used to explore the space of possible placements
@@ -1336,7 +1336,9 @@ static e_move_result try_swap(const t_annealing_state* state,
     }
     LOG_MOVE_STATS_PROPOSED(t, blocks_affected);
 
-    VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\t\tBefore move Place cost %e, bb_cost %e, timing cost %e\n", costs->cost, costs->bb_cost, costs->timing_cost);
+    VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug,
+                   "\t\tBefore move Place cost %e, bb_cost %e, timing cost %e\n",
+                   costs->cost, costs->bb_cost, costs->timing_cost);
 
     e_move_result move_outcome = e_move_result::ABORTED;
 
@@ -1477,7 +1479,7 @@ static e_move_result try_swap(const t_annealing_state* state,
                              g_vpr_ctx.placement().cube_bb);
 
             /* Update clb data structures since we kept the move. */
-            commit_move_blocks(blocks_affected);
+            commit_move_blocks(blocks_affected, placer_ctx.get_mutable_grid_blocks());
 
             if (proposed_action.logical_blk_type_index != -1) { //if the agent proposed the block type, then collect the block type stat
                 ++move_type_stat.accepted_moves[proposed_action.logical_blk_type_index][(int)proposed_action.move_type];

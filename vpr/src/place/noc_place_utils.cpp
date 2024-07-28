@@ -829,7 +829,7 @@ static bool select_random_router_cluster(ClusterBlockId& b_from,
 
 e_create_move propose_router_swap(t_pl_blocks_to_be_moved& blocks_affected,
                                   float rlim,
-                                  const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
+                                  const PlaceLocVars& place_loc_vars) {
     // block ID for the randomly selected router cluster
     ClusterBlockId b_from;
     // current location of the randomly selected router cluster
@@ -838,7 +838,7 @@ e_create_move propose_router_swap(t_pl_blocks_to_be_moved& blocks_affected,
     t_logical_block_type_ptr cluster_from_type;
 
     // Randomly select a router cluster
-    bool random_select_success = select_random_router_cluster(b_from, from, cluster_from_type, block_locs);
+    bool random_select_success = select_random_router_cluster(b_from, from, cluster_from_type, place_loc_vars.block_locs());
 
     // If a random router cluster could not be selected, no move can be proposed
     if (!random_select_success) {
@@ -852,7 +852,7 @@ e_create_move propose_router_swap(t_pl_blocks_to_be_moved& blocks_affected,
         return e_create_move::ABORT;
     }
 
-    e_create_move create_move = ::create_move(blocks_affected, b_from, to, block_locs);
+    e_create_move create_move = ::create_move(blocks_affected, b_from, to, place_loc_vars);
 
     //Check that all the blocks affected by the move would still be in a legal floorplan region after the swap
     if (!floorplan_legal(blocks_affected)) {

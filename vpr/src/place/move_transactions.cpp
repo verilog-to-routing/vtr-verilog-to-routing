@@ -7,14 +7,14 @@
 e_block_move_result record_block_move(t_pl_blocks_to_be_moved& blocks_affected,
                                       ClusterBlockId blk,
                                       t_pl_loc to,
-                                      const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
+                                      const PlaceLocVars& place_loc_vars) {
     auto res = blocks_affected.moved_to.emplace(to);
     if (!res.second) {
         log_move_abort("duplicate block move to location");
         return e_block_move_result::ABORT;
     }
 
-    t_pl_loc from = block_locs[blk].loc;
+    t_pl_loc from = place_loc_vars.block_locs()[blk].loc;
 
     auto res2 = blocks_affected.moved_from.emplace(from);
     if (!res2.second) {
@@ -22,7 +22,7 @@ e_block_move_result record_block_move(t_pl_blocks_to_be_moved& blocks_affected,
         return e_block_move_result::ABORT;
     }
 
-    VTR_ASSERT_SAFE(to.sub_tile < int(g_vpr_ctx.placement().grid_blocks.num_blocks_at_location({to.x, to.y, to.layer})));
+    VTR_ASSERT_SAFE(to.sub_tile < int(place_loc_vars.grid_blocks().num_blocks_at_location({to.x, to.y, to.layer})));
 
     // Sets up the blocks moved
     int imoved_blk = blocks_affected.num_moved_blocks;
@@ -64,8 +64,8 @@ void apply_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected,
 
 //Commits the blocks in blocks_affected to their new locations (updates inverse
 //lookups via place_ctx.grid_blocks)
-void commit_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected) {
-    auto& place_ctx = g_vpr_ctx.mutable_placement();
+void commit_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected,
+                        GridBlock& grid_blocks) {
 
     /* Swap physical location */
     for (int iblk = 0; iblk < blocks_affected.num_moved_blocks; ++iblk) {
@@ -75,19 +75,19 @@ void commit_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected) {
         const t_pl_loc& from = blocks_affected.moved_blocks[iblk].old_loc;
 
         //Remove from old location only if it hasn't already been updated by a previous block update
-        if (place_ctx.grid_blocks.block_at_location(from) == blk) {
-            place_ctx.grid_blocks.set_block_at_location(from, EMPTY_BLOCK_ID);
-            place_ctx.grid_blocks.set_usage({from.x, from.y, from.layer},
-                                            place_ctx.grid_blocks.get_usage({from.x, from.y, from.layer}) - 1);
+        if (grid_blocks.block_at_location(from) == blk) {
+            grid_blocks.set_block_at_location(from, EMPTY_BLOCK_ID);
+            grid_blocks.set_usage({from.x, from.y, from.layer},
+                                  grid_blocks.get_usage({from.x, from.y, from.layer}) - 1);
         }
 
         //Add to new location
-        if (place_ctx.grid_blocks.block_at_location(to) == EMPTY_BLOCK_ID) {
+        if (grid_blocks.block_at_location(to) == EMPTY_BLOCK_ID) {
             //Only need to increase usage if previously unused
-            place_ctx.grid_blocks.set_usage({to.x, to.y, to.layer},
-                                            place_ctx.grid_blocks.get_usage({to.x, to.y, to.layer}) + 1);
+            grid_blocks.set_usage({to.x, to.y, to.layer},
+                                  grid_blocks.get_usage({to.x, to.y, to.layer}) + 1);
         }
-        place_ctx.grid_blocks.set_block_at_location(to, blk);
+        grid_blocks.set_block_at_location(to, blk);
 
     } // Finish updating clb for all blocks
 }
@@ -117,7 +117,7 @@ void revert_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected,
             place_sync_external_block_connections(blk, place_loc_vars);
         }
 
-        VTR_ASSERT_SAFE_MSG(g_vpr_ctx.placement().grid_blocks.block_at_location(old_loc) == blk,
+        VTR_ASSERT_SAFE_MSG(place_loc_vars.grid_blocks().block_at_location(old_loc) == blk,
                             "Grid blocks should only have been updated if swap committed (not reverted)");
     }
 }

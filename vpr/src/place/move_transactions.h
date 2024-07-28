@@ -55,12 +55,13 @@ enum class e_block_move_result {
 e_block_move_result record_block_move(t_pl_blocks_to_be_moved& blocks_affected,
                                       ClusterBlockId blk,
                                       t_pl_loc to,
-                                      const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
+                                      const PlaceLocVars& place_loc_vars);
 
 void apply_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected,
                        PlaceLocVars& place_loc_vars);
 
-void commit_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected);
+void commit_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected,
+                        GridBlock& grid_blocks);
 
 void revert_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected,
                         PlaceLocVars& place_loc_vars);

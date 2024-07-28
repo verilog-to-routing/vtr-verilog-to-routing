@@ -538,7 +538,7 @@ bool check_for_router_swap(int user_supplied_noc_router_swap_percentage);
  */
 e_create_move propose_router_swap(t_pl_blocks_to_be_moved& blocks_affected,
                                   float rlim,
-                                  const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
+                                  const PlaceLocVars& place_loc_vars);
 
 /**
  * @brief Writes out the locations of the router cluster blocks in the

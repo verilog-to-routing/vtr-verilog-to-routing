@@ -37,7 +37,7 @@ e_create_move CriticalUniformMoveGenerator::propose_move(t_pl_blocks_to_be_moved
         return e_create_move::ABORT;
     }
 
-    e_create_move create_move = ::create_move(blocks_affected, b_from, to, block_locs);
+    e_create_move create_move = ::create_move(blocks_affected, b_from, to, placer_ctx.place_loc_vars());
 
     //Check that all the blocks affected by the move would still be in a legal floorplan region after the swap
     if (!floorplan_legal(blocks_affected)) {
