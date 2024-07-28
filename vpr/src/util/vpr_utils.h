@@ -67,7 +67,7 @@ t_block_loc get_block_loc(const ParentBlockId& block_id, bool is_flat);
 
 int get_block_num_class(const ParentBlockId& block_id, bool is_flat);
 
-int get_block_pin_class_num(const ParentBlockId& block_id, const ParentPinId& pin_id, bool is_flat);
+int get_block_pin_class_num(const ParentBlockId block_id, const ParentPinId pin_id, bool is_flat);
 
 template<typename T>
 inline ClusterNetId convert_to_cluster_net_id(T id) {
@@ -244,12 +244,6 @@ AtomBlockId find_memory_sibling(const t_pb* pb);
  */
 void place_sync_external_block_connections(ClusterBlockId iblk,
                                            PlaceLocVars& place_loc_vars);
-
-//Returns the physical pin of the tile, related to the given ClusterNedId, and the net pin index
-int net_pin_to_tile_pin_index(const ClusterNetId net_id, int net_pin_index);
-
-//Returns the physical pin of the tile, related to the given ClusterPinId
-int tile_pin_index(const ClusterPinId pin);
 
 int get_atom_pin_class_num(const AtomPinId atom_pin_id);
 

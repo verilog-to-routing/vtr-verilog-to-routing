@@ -23,6 +23,11 @@ class WeightedMedianMoveGenerator : public MoveGenerator {
                                float rlim,
                                const t_placer_opts& placer_opts,
                                const PlacerCriticalities* criticalities) override;
+
+    bool get_bb_cost_for_net_excluding_block(ClusterNetId net_id,
+                                             ClusterPinId moving_pin_id,
+                                             const PlacerCriticalities* criticalities,
+                                             t_bb_cost* coords);
 };
 
 #endif

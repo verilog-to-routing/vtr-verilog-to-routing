@@ -78,7 +78,7 @@ e_create_move CentroidMoveGenerator::propose_move(t_pl_blocks_to_be_moved& block
     t_pl_loc to, centroid;
 
     /* Calculate the centroid location*/
-    calculate_centroid_loc(b_from, false, centroid, nullptr, noc_attraction_enabled_, noc_attraction_w_, block_locs);
+    calculate_centroid_loc(b_from, false, centroid, nullptr, noc_attraction_enabled_, noc_attraction_w_, place_loc_vars);
 
     // Centroid location is not necessarily a valid location, and the downstream location expects a valid
     // layer for the centroid location. So if the layer is not valid, we set it to the same layer as from loc.

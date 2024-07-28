@@ -535,11 +535,11 @@ void t_cluster_placement_stats::flush_invalid_queue() {
 }
 
 bool t_cluster_placement_stats::in_flight_empty() {
-    return (in_flight.empty());
+    return in_flight.empty();
 }
 
 t_pb_type* t_cluster_placement_stats::in_flight_type() {
-    return (in_flight.begin()->second->pb_graph_node->pb_type);
+    return in_flight.begin()->second->pb_graph_node->pb_type;
 }
 
 void t_cluster_placement_stats::free_primitives() {
@@ -557,4 +557,13 @@ void t_cluster_placement_stats::free_primitives() {
             delete primitive.second;
         }
     }
+}
+
+int PlaceLocVars::net_pin_to_tile_pin_index(const ClusterNetId net_id, int net_pin_index) const {
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+
+    // Get the logical pin index of pin within it's logical block type
+    ClusterPinId pin_id = cluster_ctx.clb_nlist.net_pin(net_id, net_pin_index);
+
+    return this->tile_pin_index(pin_id);
 }

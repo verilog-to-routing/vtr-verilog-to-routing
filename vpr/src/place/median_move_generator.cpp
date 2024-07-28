@@ -86,7 +86,7 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
             const auto& net_bb_coords = cube_bb ? place_move_ctx.bb_coords[net_id] : union_bb;
             //use the incremental update of the bb
             ClusterBlockId bnum = cluster_ctx.clb_nlist.pin_block(pin_id);
-            int pnum = tile_pin_index(pin_id);
+            int pnum = place_loc_vars.tile_pin_index(pin_id);
             VTR_ASSERT(pnum >= 0);
             t_pl_loc block_loc = block_locs[bnum].loc;
             t_physical_tile_type_ptr block_physical_type = physical_tile_type(block_loc);
@@ -198,7 +198,8 @@ void MedianMoveGenerator::get_bb_from_scratch_excluding_block(ClusterNetId net_i
                                                               ClusterBlockId block_id,
                                                               bool& skip_net) {
     //TODO: account for multiple physical pin instances per logical pin
-    auto& block_locs = placer_ctx_.get().get_block_locs();
+    const auto& placer_ctx = placer_ctx_.get();
+    const auto& block_locs = placer_ctx.get_block_locs();
 
     skip_net = true;
 
@@ -220,7 +221,7 @@ void MedianMoveGenerator::get_bb_from_scratch_excluding_block(ClusterNetId net_i
 
     if (bnum != block_id) {
         skip_net = false;
-        pnum = net_pin_to_tile_pin_index(net_id, 0);
+        pnum = placer_ctx.place_loc_vars().net_pin_to_tile_pin_index(net_id, 0);
         const t_pl_loc& block_loc = block_locs[bnum].loc;
         int src_x = block_loc.x + physical_tile_type(block_loc)->pin_width_offset[pnum];
         int src_y = block_loc.y + physical_tile_type(block_loc)->pin_height_offset[pnum];
@@ -235,9 +236,9 @@ void MedianMoveGenerator::get_bb_from_scratch_excluding_block(ClusterNetId net_i
         first_block = true;
     }
 
-    for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
+    for (ClusterPinId pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
         bnum = cluster_ctx.clb_nlist.pin_block(pin_id);
-        pnum = tile_pin_index(pin_id);
+        pnum = placer_ctx.place_loc_vars().tile_pin_index(pin_id);
         if (bnum == block_id)
             continue;
         skip_net = false;

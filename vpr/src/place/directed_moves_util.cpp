@@ -2,16 +2,17 @@
 #include "directed_moves_util.h"
 #include "centroid_move_generator.h"
 
-t_physical_tile_loc get_coordinate_of_pin(ClusterPinId pin, const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& grid = device_ctx.grid;
-    auto& cluster_ctx = g_vpr_ctx.clustering();
+t_physical_tile_loc get_coordinate_of_pin(ClusterPinId pin,
+                                          const PlaceLocVars& place_loc_vars) {
+    const auto& device_ctx = g_vpr_ctx.device();
+    const auto& grid = device_ctx.grid;
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    int pnum = tile_pin_index(pin);
+    int pnum = place_loc_vars.tile_pin_index(pin);
     ClusterBlockId block = cluster_ctx.clb_nlist.pin_block(pin);
 
     t_physical_tile_loc tile_loc;
-    t_pl_loc block_loc = block_locs[block].loc;
+    t_pl_loc block_loc = place_loc_vars.block_locs()[block].loc;
     tile_loc.x = block_loc.x + physical_tile_type(block_loc)->pin_width_offset[pnum];
     tile_loc.y = block_loc.y + physical_tile_type(block_loc)->pin_height_offset[pnum];
     tile_loc.layer_num = block_loc.layer;
@@ -28,8 +29,9 @@ void calculate_centroid_loc(ClusterBlockId b_from,
                             const PlacerCriticalities* criticalities,
                             bool noc_attraction_enabled,
                             float noc_attraction_weight,
-                            const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
-    auto& cluster_ctx = g_vpr_ctx.clustering();
+                            const PlaceLocVars& place_loc_vars) {
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& block_locs = place_loc_vars.block_locs();
 
     float acc_weight = 0;
     float acc_x = 0;
@@ -76,7 +78,7 @@ void calculate_centroid_loc(ClusterBlockId b_from,
                     weight = 1;
                 }
 
-                t_physical_tile_loc tile_loc = get_coordinate_of_pin(sink_pin_id, block_locs);
+                t_physical_tile_loc tile_loc = get_coordinate_of_pin(sink_pin_id, place_loc_vars);
 
                 acc_x += tile_loc.x * weight;
                 acc_y += tile_loc.y * weight;
@@ -96,7 +98,7 @@ void calculate_centroid_loc(ClusterBlockId b_from,
 
             ClusterPinId source_pin = cluster_ctx.clb_nlist.net_driver(net_id);
 
-            t_physical_tile_loc tile_loc = get_coordinate_of_pin(source_pin, block_locs);
+            t_physical_tile_loc tile_loc = get_coordinate_of_pin(source_pin, place_loc_vars);
 
             acc_x += tile_loc.x * weight;
             acc_y += tile_loc.y * weight;

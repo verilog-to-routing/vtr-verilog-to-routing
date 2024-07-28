@@ -162,7 +162,7 @@ static bool is_loc_legal(const t_pl_loc& loc,
  */
 static std::vector<ClusterBlockId> find_centroid_loc(const t_pl_macro& pl_macro,
                                                      t_pl_loc& centroid,
-                                                     const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
+                                                     const PlaceLocVars& place_loc_vars);
 
 /**
  * @brief  Tries to find a nearest location to the centroid location if calculated centroid location is not legal or is occupied.
@@ -378,8 +378,9 @@ static bool find_centroid_neighbor(t_pl_loc& centroid_loc,
 
 static std::vector<ClusterBlockId> find_centroid_loc(const t_pl_macro& pl_macro,
                                                      t_pl_loc& centroid,
-                                                     const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
-    auto& cluster_ctx = g_vpr_ctx.clustering();
+                                                     const PlaceLocVars& place_loc_vars) {
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& block_locs = place_loc_vars.block_locs();
 
     float acc_weight = 0;
     float acc_x = 0;
@@ -428,7 +429,7 @@ static std::vector<ClusterBlockId> find_centroid_loc(const t_pl_macro& pl_macro,
                     continue;
                 }
 
-                t_physical_tile_loc tile_loc = get_coordinate_of_pin(sink_pin_id, block_locs);
+                t_physical_tile_loc tile_loc = get_coordinate_of_pin(sink_pin_id, place_loc_vars);
                 if (find_layer) {
                     VTR_ASSERT(tile_loc.layer_num != OPEN);
                     layer_count[tile_loc.layer_num]++;
@@ -448,7 +449,7 @@ static std::vector<ClusterBlockId> find_centroid_loc(const t_pl_macro& pl_macro,
                 continue;
             }
 
-            t_physical_tile_loc tile_loc = get_coordinate_of_pin(source_pin, block_locs);
+            t_physical_tile_loc tile_loc = get_coordinate_of_pin(source_pin, place_loc_vars);
             if (find_layer) {
                 VTR_ASSERT(tile_loc.layer_num != OPEN);
                 layer_count[tile_loc.layer_num]++;
@@ -486,7 +487,7 @@ static bool try_centroid_placement(const t_pl_macro& pl_macro,
     t_pl_loc centroid_loc(OPEN, OPEN, OPEN, OPEN);
     std::vector<ClusterBlockId> unplaced_blocks_to_update_their_score;
 
-    unplaced_blocks_to_update_their_score = find_centroid_loc(pl_macro, centroid_loc, block_locs);
+    unplaced_blocks_to_update_their_score = find_centroid_loc(pl_macro, centroid_loc, place_loc_vars);
 
     //no suggestion was available for this block type
     if (!is_loc_on_chip({centroid_loc.x, centroid_loc.y, centroid_loc.layer})) {

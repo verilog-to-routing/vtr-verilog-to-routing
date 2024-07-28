@@ -10,12 +10,6 @@
 WeightedMedianMoveGenerator::WeightedMedianMoveGenerator(PlacerContext& placer_ctx)
     : MoveGenerator(placer_ctx) {}
 
-static bool get_bb_cost_for_net_excluding_block(ClusterNetId net_id,
-                                                ClusterPinId moving_pin_id,
-                                                const PlacerCriticalities* criticalities,
-                                                t_bb_cost* coords,
-                                                const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
-
 e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected,
                                                         t_propose_action& proposed_action,
                                                         float rlim,
@@ -77,9 +71,10 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
          *
          * Note: skip_net true if the net is a feedback from the block to itself (all the net terminals are connected to the same block)
          */
-        bool skip_net = get_bb_cost_for_net_excluding_block(net_id, pin_id, criticalities, &coords, block_locs);
-        if (skip_net)
+        bool skip_net = get_bb_cost_for_net_excluding_block(net_id, pin_id, criticalities, &coords);
+        if (skip_net) {
             continue;
+        }
 
         // We need to insert the calculated edges in the X,Y vectors multiple times based on the criticality of the pin that caused each of them.
         // As all the criticalities are [0,1], we map it to [0,CRIT_MULT_FOR_W_MEDIAN] inserts in the vectors for each edge
@@ -164,11 +159,13 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
  *      - moving_pin_id: pin (which should be on this net) on a block that is being moved.
  *      - criticalities: the timing criticalities of all connections
  */
-static bool get_bb_cost_for_net_excluding_block(ClusterNetId net_id,
-                                                ClusterPinId moving_pin_id,
-                                                const PlacerCriticalities* criticalities,
-                                                t_bb_cost* coords,
-                                                const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
+bool WeightedMedianMoveGenerator::get_bb_cost_for_net_excluding_block(ClusterNetId net_id,
+                                         ClusterPinId moving_pin_id,
+                                         const PlacerCriticalities* criticalities,
+                                         t_bb_cost* coords) {
+    const auto& place_loc_vars = placer_ctx_.get().place_loc_vars();
+    const auto& block_locs = place_loc_vars.block_locs();
+
     bool skip_net = true;
 
     int xmin = 0;
@@ -195,7 +192,7 @@ static bool get_bb_cost_for_net_excluding_block(ClusterNetId net_id,
 
         if (pin_id != moving_pin_id) {
             skip_net = false;
-            int pnum = tile_pin_index(pin_id);
+            int pnum = place_loc_vars.tile_pin_index(pin_id);
             /**
              * Calculates the pin index of the correct pin to calculate the required connection
              *

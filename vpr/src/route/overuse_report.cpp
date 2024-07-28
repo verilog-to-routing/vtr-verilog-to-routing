@@ -353,7 +353,7 @@ static void report_congested_nets(const Netlist<>& net_list,
                         os << "  "
                            << "Hierarchical Type Name : " << pb_pin->parent_node->hierarchical_type_name() << "\n";
                     } else {
-                        os << "  " << g_vpr_ctx.placement().physical_pins_[convert_to_cluster_pin_id(sink_id)] << "\n";
+                        os << "  " << g_vpr_ctx.placement().physical_pins()[convert_to_cluster_pin_id(sink_id)] << "\n";
                     }
                 }
             }

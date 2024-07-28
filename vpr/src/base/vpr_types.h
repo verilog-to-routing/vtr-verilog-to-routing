@@ -922,7 +922,11 @@ class PlaceLocVars {
     inline const vtr::vector_map<ClusterPinId, int>& physical_pins() const { return physical_pins_; }
     inline vtr::vector_map<ClusterPinId, int>& mutable_physical_pins() { return physical_pins_; }
 
+    //Returns the physical pin of the tile, related to the given ClusterPinId
+    inline int tile_pin_index(const ClusterPinId pin) const { return physical_pins_[pin]; }
 
+     //Returns the physical pin of the tile, related to the given ClusterNedId, and the net pin index.
+    int net_pin_to_tile_pin_index(const ClusterNetId net_id, int net_pin_index) const;
 };
 
 ///@brief Names of various files

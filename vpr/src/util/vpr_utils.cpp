@@ -710,8 +710,10 @@ int get_block_num_class(const ParentBlockId& block_id, bool is_flat) {
     return get_tile_class_max_ptc(type, is_flat);
 }
 
-int get_block_pin_class_num(const ParentBlockId& block_id, const ParentPinId& pin_id, bool is_flat) {
-    auto& block_locs = g_vpr_ctx.placement().block_locs();
+int get_block_pin_class_num(const ParentBlockId block_id, const ParentPinId pin_id, bool is_flat) {
+    const auto& place_loc_vars = g_vpr_ctx.placement().place_loc_vars();
+    auto& block_locs = place_loc_vars.block_locs();
+
     int class_num;
 
     if (is_flat) {
@@ -722,7 +724,7 @@ int get_block_pin_class_num(const ParentBlockId& block_id, const ParentPinId& pi
         t_pl_loc block_loc = block_locs[cluster_block_id].loc;
         ClusterPinId cluster_pin_id = convert_to_cluster_pin_id(pin_id);
         auto type = physical_tile_type(block_loc);
-        int phys_pin = tile_pin_index(cluster_pin_id);
+        int phys_pin = place_loc_vars.tile_pin_index(cluster_pin_id);
         class_num = get_class_num_from_pin_physical_num(type, phys_pin);
     }
 
@@ -2151,21 +2153,6 @@ int max_pins_per_grid_tile() {
         max_pins = std::max(max_pins, pins_per_grid_tile);
     }
     return max_pins;
-}
-
-int net_pin_to_tile_pin_index(const ClusterNetId net_id, int net_pin_index) {
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-
-    // Get the logical pin index of pin within it's logical block type
-    auto pin_id = cluster_ctx.clb_nlist.net_pin(net_id, net_pin_index);
-
-    return tile_pin_index(pin_id);
-}
-
-int tile_pin_index(const ClusterPinId pin) {
-    auto& place_ctx = g_vpr_ctx.placement();
-
-    return place_ctx.physical_pins[pin];
 }
 
 int get_atom_pin_class_num(const AtomPinId atom_pin_id) {
