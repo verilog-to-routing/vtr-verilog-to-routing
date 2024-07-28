@@ -2376,7 +2376,7 @@ std::vector<int> get_cluster_netlist_intra_tile_classes_at_loc(int layer,
 
     const auto& place_ctx = g_vpr_ctx.placement();
     const auto& atom_lookup = g_vpr_ctx.atom().lookup;
-    const auto& grid_block = place_ctx.grid_blocks;
+    const auto& grid_block = place_ctx.get_grid_blocks();
 
     class_num_vec.reserve(physical_type->primitive_class_inf.size());
 
@@ -2406,8 +2406,8 @@ std::vector<int> get_cluster_netlist_intra_tile_pins_at_loc(const int layer,
                                                             const vtr::vector<ClusterBlockId, t_cluster_pin_chain>& pin_chains,
                                                             const vtr::vector<ClusterBlockId, std::unordered_set<int>>& pin_chains_num,
                                                             t_physical_tile_type_ptr physical_type) {
-    auto& place_ctx = g_vpr_ctx.placement();
-    auto grid_block = place_ctx.grid_blocks;
+    const auto& place_ctx = g_vpr_ctx.placement();
+    const auto& grid_block = place_ctx.get_grid_blocks();
 
     std::vector<int> pin_num_vec;
     pin_num_vec.reserve(get_tile_num_internal_pin(physical_type));

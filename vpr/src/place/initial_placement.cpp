@@ -861,7 +861,7 @@ bool try_place_macro(const t_pl_macro& pl_macro,
         return macro_placed;
     }
 
-    bool mac_can_be_placed = macro_can_be_placed(pl_macro, head_pos, false);
+    bool mac_can_be_placed = macro_can_be_placed(pl_macro, head_pos, /*check_all_legality=*/false, place_loc_vars);
 
     if (mac_can_be_placed) {
         // Place down the macro

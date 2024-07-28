@@ -626,7 +626,7 @@ static void power_usage_blocks(t_power_usage* power_usage) {
                     t_pb* pb = nullptr;
                     t_power_usage pb_power;
 
-                    ClusterBlockId iblk = place_ctx.grid_blocks.block_at_location({x, y, z, layer_num});
+                    ClusterBlockId iblk = place_ctx.get_grid_blocks().block_at_location({x, y, z, layer_num});
 
                     if (iblk != EMPTY_BLOCK_ID && iblk != INVALID_BLOCK_ID) {
                         pb = cluster_ctx.clb_nlist.block_pb(iblk);
@@ -642,7 +642,6 @@ static void power_usage_blocks(t_power_usage* power_usage) {
             }
         }
     }
-    return;
 }
 
 /**

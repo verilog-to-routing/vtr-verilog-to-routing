@@ -407,10 +407,13 @@ void set_block_location(ClusterBlockId blk_id,
     place_sync_external_block_connections(blk_id, placer_loc_vars);
 }
 
-bool macro_can_be_placed(t_pl_macro pl_macro, t_pl_loc head_pos, bool check_all_legality) {
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& place_ctx = g_vpr_ctx.placement();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
+bool macro_can_be_placed(const t_pl_macro& pl_macro,
+                         const t_pl_loc& head_pos,
+                         bool check_all_legality,
+                         const PlaceLocVars& place_loc_vars) {
+    const auto& device_ctx = g_vpr_ctx.device();
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& grid_blocks = place_loc_vars.grid_blocks();
 
     //Get block type of head member
     ClusterBlockId blk_id = pl_macro.members[0].blk_index;
@@ -462,7 +465,7 @@ bool macro_can_be_placed(t_pl_macro pl_macro, t_pl_loc head_pos, bool check_all_
         // Also check whether the member position is valid, and the member_z is allowed at that location on the grid
         if (member_pos.x < int(device_ctx.grid.width()) && member_pos.y < int(device_ctx.grid.height())
             && is_tile_compatible(device_ctx.grid.get_physical_type({member_pos.x, member_pos.y, member_pos.layer}), block_type)
-            && place_ctx.grid_blocks.block_at_location(member_pos) == EMPTY_BLOCK_ID) {
+            && grid_blocks.block_at_location(member_pos) == EMPTY_BLOCK_ID) {
             // Can still accommodate blocks here, check the next position
             continue;
         } else {

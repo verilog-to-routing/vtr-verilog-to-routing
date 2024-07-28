@@ -242,7 +242,7 @@ static void report_overused_ipin_opin(std::ostream& os,
 
     //Add block type for IPINs/OPINs in overused rr-node report
     const auto& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
-    const auto& grid_info = place_ctx.grid_blocks;
+    const auto& grid_info = place_ctx.get_grid_blocks();
 
     os << "Grid location: X = " << grid_x << ", Y = " << grid_y << '\n';
     os << "Number of blocks currently occupying this grid location = " << grid_info.get_usage({grid_x, grid_y, grid_layer}) << '\n';
