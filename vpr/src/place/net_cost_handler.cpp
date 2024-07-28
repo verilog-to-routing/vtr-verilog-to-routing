@@ -125,22 +125,27 @@ struct TSInfo {
     vtr::Matrix<int> ts_layer_sink_pin_count;
     /* [0...num_afftected_nets] -> net_id of the affected nets */
     std::vector<ClusterNetId> ts_nets_to_update;
+    // TSInfo(const TSInfo&) = delete;
+    // TSInfo(TSInfo&&) = delete;
 };
 
 /**
  * @brief This class is used to hide control flows needed to distinguish 2d and 3d placement
  */
 class BBUpdater {
-    bool cube_bb = false;
+    // BBUpdater(const BBUpdater&) = delete;
+    // BBUpdater(BBUpdater&&) = delete;
+
+  private:
+    bool m_cube_bb = false;
 
   public:
     void init(size_t num_nets, bool cube_bb);
     void get_non_updatable_bb(const ClusterNetId& net);
-    bool is_driver(const t_physical_tile_type_ptr& blk_type, const ClusterPinId& blk_pin);
     void update_bb(ClusterNetId net_id, t_physical_tile_loc pin_old_loc, t_physical_tile_loc pin_new_loc, bool is_driver);
-    double get_net_cost(const ClusterNetId& net_id);
-    void set_ts_bb_coord(const ClusterNetId& net_id);
-    void set_ts_edge(const ClusterNetId& net_id);
+    double get_net_cost(const ClusterNetId net_id);
+    void set_ts_bb_coord(const ClusterNetId net_id);
+    void set_ts_edge(const ClusterNetId net_id);
 };
 } // namespace
 
@@ -213,8 +218,8 @@ static void record_affected_net(const ClusterNetId net);
 static void update_net_info_on_pin_move(const t_place_algorithm& place_algorithm,
                                         const PlaceDelayModel* delay_model,
                                         const PlacerCriticalities* criticalities,
-                                        const ClusterBlockId& blk_id,
-                                        const ClusterPinId& pin_id,
+                                        const ClusterBlockId blk_id,
+                                        const ClusterPinId pin_id,
                                         const t_pl_moved_block& moving_blk_inf,
                                         std::vector<ClusterPinId>& affected_pins,
                                         double& timing_delta_c,
@@ -477,12 +482,12 @@ static void set_bb_delta_cost(double& bb_delta_c);
 /******************************* End of Function definitions ************************************/
 namespace {
 // Initialize the ts vectors
-void BBUpdater::init(size_t num_nets, bool cube_bb_in) {
+void BBUpdater::init(size_t num_nets, bool cube_bb) {
     const int num_layers = g_vpr_ctx.device().grid.get_num_layers();
 
-    cube_bb = cube_bb_in;
+    m_cube_bb = cube_bb;
     // Either 3D BB or per layer BB data structure are used, not both.
-    if (cube_bb) {
+    if (m_cube_bb) {
         ts_info.ts_bb_edge_new.resize(num_nets, t_bb());
         ts_info.ts_bb_coord_new.resize(num_nets, t_bb());
     } else {
@@ -497,18 +502,20 @@ void BBUpdater::init(size_t num_nets, bool cube_bb_in) {
 }
 
 void BBUpdater::get_non_updatable_bb(const ClusterNetId& net) {
-    if (cube_bb)
+    if (m_cube_bb) {
         ::get_non_updatable_bb(net,
                                ts_info.ts_bb_coord_new[net],
                                ts_info.ts_layer_sink_pin_count[size_t(net)]);
-    else
+    }
+    else {
         ::get_non_updatable_layer_bb(net,
                                      ts_info.layer_ts_bb_coord_new[net],
                                      ts_info.ts_layer_sink_pin_count[size_t(net)]);
+    }
 }
 
 void BBUpdater::update_bb(ClusterNetId net_id, t_physical_tile_loc pin_old_loc, t_physical_tile_loc pin_new_loc, bool is_driver) {
-    if (cube_bb)
+    if (m_cube_bb) {
         ::update_bb(net_id,
                     ts_info.ts_bb_edge_new[net_id],
                     ts_info.ts_bb_coord_new[net_id],
@@ -516,7 +523,8 @@ void BBUpdater::update_bb(ClusterNetId net_id, t_physical_tile_loc pin_old_loc, 
                     pin_old_loc,
                     pin_new_loc,
                     is_driver);
-    else
+    }
+    else {
         ::update_layer_bb(net_id,
                           ts_info.layer_ts_bb_edge_new[net_id],
                           ts_info.layer_ts_bb_coord_new[net_id],
@@ -524,27 +532,30 @@ void BBUpdater::update_bb(ClusterNetId net_id, t_physical_tile_loc pin_old_loc, 
                           pin_old_loc,
                           pin_new_loc,
                           is_driver);
+    }
 }
 
-double BBUpdater::get_net_cost(const ClusterNetId& net_id) {
-    if (cube_bb)
+double BBUpdater::get_net_cost(const ClusterNetId net_id) {
+    if (m_cube_bb) {
         return ::get_net_cost(net_id, ts_info.ts_bb_coord_new[net_id]);
-    else
+    }
+    else {
         return ::get_net_layer_bb_wire_cost(net_id, ts_info.layer_ts_bb_coord_new[net_id], ts_info.ts_layer_sink_pin_count[size_t(net_id)]);
+    }
 }
 
-void BBUpdater::set_ts_bb_coord(const ClusterNetId& net_id) {
+void BBUpdater::set_ts_bb_coord(const ClusterNetId net_id) {
     auto& place_move_ctx = g_placer_ctx.mutable_move();
-    if (cube_bb) {
+    if (m_cube_bb) {
         place_move_ctx.bb_coords[net_id] = ts_info.ts_bb_coord_new[net_id];
     } else {
         place_move_ctx.layer_bb_coords[net_id] = ts_info.layer_ts_bb_coord_new[net_id];
     }
 }
 
-void BBUpdater::set_ts_edge(const ClusterNetId& net_id) {
+void BBUpdater::set_ts_edge(const ClusterNetId net_id) {
     auto& place_move_ctx = g_placer_ctx.mutable_move();
-    if (cube_bb) {
+    if (m_cube_bb) {
         place_move_ctx.bb_num_on_edges[net_id] = ts_info.ts_bb_edge_new[net_id];
     } else {
         place_move_ctx.layer_bb_num_on_edges[net_id] = ts_info.layer_ts_bb_edge_new[net_id];
@@ -699,10 +710,8 @@ static void record_affected_net(const ClusterNetId net) {
     /* Record effected nets. */
     if (pl_net_cost.proposed_net_cost[net] < 0.) {
         /* Net not marked yet. */
-        size_t last_size = ts_info.ts_nets_to_update.size();
-        VTR_ASSERT(last_size < ts_info.ts_nets_to_update.capacity());
-        ts_info.ts_nets_to_update.resize(last_size + 1);
-        ts_info.ts_nets_to_update[last_size] = net;
+        VTR_ASSERT_SAFE(ts_info.ts_nets_to_update.size() < ts_info.ts_nets_to_update.capacity());
+        ts_info.ts_nets_to_update.push_back(net);
 
         /* Flag to say we've marked this net. */
         pl_net_cost.proposed_net_cost[net] = 1.;
@@ -712,8 +721,8 @@ static void record_affected_net(const ClusterNetId net) {
 static void update_net_info_on_pin_move(const t_place_algorithm& place_algorithm,
                                         const PlaceDelayModel* delay_model,
                                         const PlacerCriticalities* criticalities,
-                                        const ClusterBlockId& blk_id,
-                                        const ClusterPinId& pin_id,
+                                        const ClusterBlockId blk_id,
+                                        const ClusterPinId pin_id,
                                         const t_pl_moved_block& moving_blk_inf,
                                         std::vector<ClusterPinId>& affected_pins,
                                         double& timing_delta_c,
@@ -1892,7 +1901,7 @@ static double wirelength_crossing_count(size_t fanout) {
 }
 
 static void set_bb_delta_cost(double& bb_delta_c) {
-    for (const auto& ts_net: ts_info.ts_nets_to_update) {
+    for (const ClusterNetId ts_net: ts_info.ts_nets_to_update) {
         ClusterNetId net_id = ts_net;
 
         pl_net_cost.proposed_net_cost[net_id] = bb_updater.get_net_cost(net_id);
@@ -2028,7 +2037,7 @@ void update_move_nets() {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_move_ctx = g_placer_ctx.mutable_move();
 
-    for (const auto& ts_net : ts_info.ts_nets_to_update) {
+    for (const ClusterNetId ts_net : ts_info.ts_nets_to_update) {
         ClusterNetId net_id = ts_net;
 
         bb_updater.set_ts_bb_coord(net_id);
@@ -2051,7 +2060,7 @@ void update_move_nets() {
 
 void reset_move_nets() {
     /* Reset the net cost function flags first. */
-    for (const auto& ts_net : ts_info.ts_nets_to_update) {
+    for (const ClusterNetId ts_net : ts_info.ts_nets_to_update) {
         ClusterNetId net_id = ts_net;
         pl_net_cost.proposed_net_cost[net_id] = -1;
         pl_net_cost.bb_update_status[net_id] = NetUpdateState::NOT_UPDATED_YET;

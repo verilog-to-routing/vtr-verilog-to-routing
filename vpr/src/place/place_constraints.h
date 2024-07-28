@@ -100,16 +100,16 @@ void print_macro_constraint_error(const t_pl_macro& pl_macro);
 inline bool floorplan_legal(const t_pl_blocks_to_be_moved& blocks_affected) {
     bool floorplan_legal;
 
-    for (const auto& block : blocks_affected.moved_blocks) {
-        floorplan_legal = cluster_floorplanning_legal(block.block_num,
-                                                      block.new_loc);
+    for (const t_pl_moved_block& moved_block : blocks_affected.moved_blocks) {
+        floorplan_legal = cluster_floorplanning_legal(moved_block.block_num,
+                                                      moved_block.new_loc);
         if (!floorplan_legal) {
             VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug,
                            "\tMove aborted for block %zu, location tried was x: %d, y: %d, subtile: %d \n",
-                           size_t(block.block_num),
-                           block.new_loc.x,
-                           block.new_loc.y,
-                           block.new_loc.sub_tile);
+                           size_t(moved_block.block_num),
+                           moved_block.new_loc.x,
+                           moved_block.new_loc.y,
+                           moved_block.new_loc.sub_tile);
             return false;
         }
     }

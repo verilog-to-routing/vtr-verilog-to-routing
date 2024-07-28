@@ -878,7 +878,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
         commit_noc_costs();
 
         // clear the affected blocks
-        clear_move_blocks(blocks_affected);
+        blocks_affected.clear_move_blocks();
 
         // clear the routed traffic flows
         routed_traffic_flows.clear();
@@ -1026,7 +1026,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
     commit_noc_costs();
 
     // clear the affected blocks
-    clear_move_blocks(blocks_affected);
+    blocks_affected.clear_move_blocks();
 
     /*
      * Now we will run a test where one of the router clusters we will swap has no traffic flows associated with it. This will make sure whether the test
@@ -1127,7 +1127,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
     commit_noc_costs();
 
     // clear the affected blocks
-    clear_move_blocks(blocks_affected);
+    blocks_affected.clear_move_blocks();
 
     /*
      * Now we will run a test where both of the router clusters being swapped
@@ -1192,7 +1192,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
     commit_noc_costs();
 
     // clear the affected blocks
-    clear_move_blocks(blocks_affected);
+    blocks_affected.clear_move_blocks();
 
     // now verify the test function by comparing the link bandwidths in the noc model (should have been updated by the test function) to the golden set
     int number_of_links = golden_link_bandwidths.size();

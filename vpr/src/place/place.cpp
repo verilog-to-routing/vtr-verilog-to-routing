@@ -1378,9 +1378,8 @@ static e_move_result try_swap(const t_annealing_state* state,
         //
         //Also find all the pins affected by the swap, and calculates new connection
         //delays and timing costs and store them in proposed_* data structures.
-        find_affected_nets_and_update_costs(
-            place_algorithm, delay_model, criticalities, blocks_affected,
-            bb_delta_c, timing_delta_c);
+        find_affected_nets_and_update_costs(place_algorithm, delay_model, criticalities, 
+                                            blocks_affected, bb_delta_c, timing_delta_c);
 
         //For setup slack analysis, we first do a timing analysis to get the newest
         //slack values resulted from the proposed block moves. If the move turns out
@@ -1567,8 +1566,6 @@ static e_move_result try_swap(const t_annealing_state* state,
     if (!router_block_move) {
         calculate_reward_and_process_outcome(placer_opts, move_outcome_stats,
                                              delta_c, timing_bb_factor, move_generator);
-    } else {
-        //        std::cout << "Group move delta cost: " << delta_c << std::endl;
     }
 
 #ifdef VTR_ENABLE_DEBUG_LOGGING
@@ -1578,7 +1575,7 @@ static e_move_result try_swap(const t_annealing_state* state,
 #endif
 
     /* Clear the data structure containing block move info */
-    clear_move_blocks(blocks_affected);
+    blocks_affected.clear_move_blocks();
 
     //VTR_ASSERT(check_macro_placement_consistency() == 0);
 #if 0
