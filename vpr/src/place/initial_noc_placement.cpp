@@ -103,10 +103,11 @@ static void place_constrained_noc_router(ClusterBlockId router_blk_id,
 static void place_noc_routers_randomly(std::vector<ClusterBlockId>& unfixed_routers,
                                        int seed,
                                        PlaceLocVars& place_loc_vars) {
-    auto& place_ctx = g_vpr_ctx.placement();
-    auto& noc_ctx = g_vpr_ctx.noc();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& device_ctx = g_vpr_ctx.device();
+    const auto& compressed_grids = g_vpr_ctx.placement().compressed_block_grids;
+    const auto& noc_ctx = g_vpr_ctx.noc();
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& device_ctx = g_vpr_ctx.device();
+    const GridBlock& grid_blocks = place_loc_vars.grid_blocks();
 
     /*
      * Unconstrained NoC routers are placed randomly, then NoC cost is optimized using simulated annealing.
@@ -133,7 +134,7 @@ static void place_noc_routers_randomly(std::vector<ClusterBlockId>& unfixed_rout
     const auto router_block_type = cluster_ctx.clb_nlist.block_type(noc_ctx.noc_traffic_flows_storage.get_router_clusters_in_netlist()[0]);
 
     // Get the compressed grid for NoC
-    const auto& compressed_noc_grid = place_ctx.compressed_block_grids[router_block_type->index];
+    const auto& compressed_noc_grid = compressed_grids[router_block_type->index];
 
     // Iterate over shuffled physical routers to place logical routers
     // Since physical routers are shuffled, router placement would be random
@@ -147,7 +148,7 @@ static void place_noc_routers_randomly(std::vector<ClusterBlockId>& unfixed_rout
 
         t_pl_loc loc(router_phy_loc, sub_tile);
 
-        if (place_ctx.grid_blocks.is_sub_tile_empty(router_phy_loc, sub_tile)) {
+        if (grid_blocks.is_sub_tile_empty(router_phy_loc, sub_tile)) {
             // Pick one of the unplaced routers
             auto logical_router_bid = unfixed_routers.back();
             unfixed_routers.pop_back();
