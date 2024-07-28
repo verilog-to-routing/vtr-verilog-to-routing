@@ -128,7 +128,7 @@ void sync_grid_to_blocks() {
     const int num_layers = device_ctx.grid.get_num_layers();
 
     auto& grid_blocks = place_ctx.get_mutable_grid_blocks();
-    auto& block_locs = place_ctx.get_block_locs();
+    auto& block_locs = place_ctx.block_locs();
 
     /* Reset usage and allocate blocks list if needed */
     grid_blocks = GridBlock(device_grid.width(), device_grid.height(), device_ctx.grid.get_num_layers());
@@ -534,7 +534,7 @@ t_physical_tile_type_ptr physical_tile_type(t_pl_loc loc) {
 
 t_physical_tile_type_ptr physical_tile_type(AtomBlockId atom_blk) {
     auto& atom_look_up = g_vpr_ctx.atom().lookup;
-    auto& block_locs = g_vpr_ctx.placement().get_block_locs();
+    auto& block_locs = g_vpr_ctx.placement().block_locs();
 
     ClusterBlockId cluster_blk = atom_look_up.atom_clb(atom_blk);
     VTR_ASSERT(cluster_blk != ClusterBlockId::INVALID());
@@ -543,7 +543,7 @@ t_physical_tile_type_ptr physical_tile_type(AtomBlockId atom_blk) {
 }
 
 t_physical_tile_type_ptr physical_tile_type(ParentBlockId blk_id, bool is_flat) {
-    auto& block_locs = g_vpr_ctx.placement().get_block_locs();
+    auto& block_locs = g_vpr_ctx.placement().block_locs();
 
     if (is_flat) {
         return physical_tile_type(convert_to_atom_block_id(blk_id));
@@ -581,7 +581,7 @@ int get_sub_tile_index(ClusterBlockId blk,
 }
 
 int get_sub_tile_index(ClusterBlockId blk) {
-    auto& block_locs = g_vpr_ctx.placement().get_block_locs();
+    auto& block_locs = g_vpr_ctx.placement().block_locs();
     return get_sub_tile_index(blk, block_locs);
 }
 
@@ -616,7 +616,7 @@ int get_unique_pb_graph_node_id(const t_pb_graph_node* pb_graph_node) {
 
 t_class_range get_class_range_for_block(const ClusterBlockId blk_id) {
     /* Assumes that the placement has been done so each block has a set of pins allocated to it */
-    auto& block_locs = g_vpr_ctx.placement().get_block_locs();
+    auto& block_locs = g_vpr_ctx.placement().block_locs();
 
     t_pl_loc block_loc = block_locs[blk_id].loc;
     auto type = physical_tile_type(block_loc);
@@ -660,7 +660,7 @@ t_class_range get_class_range_for_block(const ParentBlockId blk_id, bool is_flat
 
 std::pair<int, int> get_pin_range_for_block(const ClusterBlockId blk_id) {
     /* Assumes that the placement has been done so each block has a set of pins allocated to it */
-    auto& block_locs = g_vpr_ctx.placement().get_block_locs();
+    auto& block_locs = g_vpr_ctx.placement().block_locs();
 
     t_pl_loc block_loc = block_locs[blk_id].loc;
     auto type = physical_tile_type(block_loc);
@@ -700,7 +700,7 @@ t_block_loc get_block_loc(const ParentBlockId& block_id, bool is_flat) {
     }
 
     VTR_ASSERT(cluster_block_id != ClusterBlockId::INVALID());
-    auto blk_loc = place_ctx.get_block_locs()[cluster_block_id];
+    auto blk_loc = place_ctx.block_locs()[cluster_block_id];
 
     return blk_loc;
 }
@@ -711,7 +711,7 @@ int get_block_num_class(const ParentBlockId& block_id, bool is_flat) {
 }
 
 int get_block_pin_class_num(const ParentBlockId& block_id, const ParentPinId& pin_id, bool is_flat) {
-    auto& block_locs = g_vpr_ctx.placement().get_block_locs();
+    auto& block_locs = g_vpr_ctx.placement().block_locs();
     int class_num;
 
     if (is_flat) {
@@ -1353,7 +1353,7 @@ void free_pin_id_to_pb_mapping(vtr::vector<ClusterBlockId, t_pb**>& pin_id_to_pb
 
 std::tuple<t_physical_tile_type_ptr, const t_sub_tile*, int, t_logical_block_type_ptr> get_cluster_blk_physical_spec(ClusterBlockId cluster_blk_id) {
     auto& grid = g_vpr_ctx.device().grid;
-    auto& block_locs = g_vpr_ctx.placement().get_block_locs();
+    auto& block_locs = g_vpr_ctx.placement().block_locs();
     auto& loc = block_locs[cluster_blk_id].loc;
     int cap = loc.sub_tile;
     const auto& physical_type = grid.get_physical_type({loc.x, loc.y, loc.layer});

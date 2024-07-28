@@ -110,7 +110,7 @@ void draw_highlight_blocks_color(t_logical_block_type_ptr type,
 
     t_draw_state* draw_state = get_draw_state_vars();
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& block_locs = g_vpr_ctx.placement().get_block_locs();
+    auto& block_locs = g_vpr_ctx.placement().block_locs();
 
     for (k = 0; k < type->pb_type->num_pins; k++) { /* Each pin on a CLB */
         ClusterNetId net_id = cluster_ctx.clb_nlist.block_net(blk_id, k);

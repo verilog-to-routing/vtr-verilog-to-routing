@@ -334,7 +334,7 @@ static t_clb_opins_used alloc_and_load_clb_opins_used_locally() {
     int clb_pin, iclass;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& block_locs = g_vpr_ctx.placement().get_block_locs();
+    auto& block_locs = g_vpr_ctx.placement().block_locs();
 
     clb_opins_used_locally.resize(cluster_ctx.clb_nlist.blocks().size());
 
@@ -761,7 +761,7 @@ void reserve_locally_used_opins(HeapInterface* heap, float pres_fac, float acc_f
     auto& route_ctx = g_vpr_ctx.mutable_routing();
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
-    auto& block_locs = g_vpr_ctx.placement().get_block_locs();
+    auto& block_locs = g_vpr_ctx.placement().block_locs();
 
     if (rip_up_local_opins) {
         for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks()) {

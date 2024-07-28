@@ -90,7 +90,7 @@ void checkpoint() {
 
     std::string placer_checkpoint_file = "placer_checkpoint.place";
     VTR_LOG("Attempting to checkpoint current placement to file: %s\n", placer_checkpoint_file.c_str());
-    print_place(nullptr, nullptr, placer_checkpoint_file.c_str(), g_vpr_ctx.placement().get_block_locs());
+    print_place(nullptr, nullptr, placer_checkpoint_file.c_str(), g_vpr_ctx.placement().block_locs());
 
     std::string router_checkpoint_file = "router_checkpoint.route";
     VTR_LOG("Attempting to checkpoint current routing to file: %s\n", router_checkpoint_file.c_str());

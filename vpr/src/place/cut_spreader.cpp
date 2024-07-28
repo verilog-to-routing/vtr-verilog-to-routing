@@ -806,7 +806,7 @@ void CutSpreader::linear_spread_subarea(std::vector<ClusterBlockId>& cut_blks,
 void CutSpreader::strict_legalize() {
     auto& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
     auto& place_ctx = g_vpr_ctx.placement();
-    auto& block_locs = place_ctx.get_block_locs();
+    auto& block_locs = place_ctx.block_locs();
     int max_x = g_vpr_ctx.device().grid.width();
     int max_y = g_vpr_ctx.device().grid.height();
 
@@ -964,7 +964,7 @@ void CutSpreader::strict_legalize() {
 void CutSpreader::bind_tile(t_pl_loc sub_tile, ClusterBlockId blk) {
     auto& place_ctx = g_vpr_ctx.mutable_placement();
     auto& grid_blocks = place_ctx.get_mutable_grid_blocks();
-    auto& block_locs = place_ctx.get_mutable_block_locs();
+    auto& block_locs = place_ctx.mutable_block_locs();
 
     VTR_ASSERT(grid_blocks.block_at_location(sub_tile) == EMPTY_BLOCK_ID);
     VTR_ASSERT(block_locs[blk].is_fixed == false);
@@ -982,7 +982,7 @@ void CutSpreader::bind_tile(t_pl_loc sub_tile, ClusterBlockId blk) {
 void CutSpreader::unbind_tile(t_pl_loc sub_tile) {
     auto& place_ctx = g_vpr_ctx.mutable_placement();
     auto& grid_blocks = place_ctx.get_mutable_grid_blocks();
-    auto& block_locs = place_ctx.get_mutable_block_locs();
+    auto& block_locs = place_ctx.mutable_block_locs();
 
     VTR_ASSERT(grid_blocks.block_at_location(sub_tile) != EMPTY_BLOCK_ID);
     ClusterBlockId blk = grid_blocks.block_at_location(sub_tile);
@@ -1001,7 +1001,7 @@ void CutSpreader::unbind_tile(t_pl_loc sub_tile) {
 bool CutSpreader::is_placed(ClusterBlockId blk) {
     auto& place_ctx = g_vpr_ctx.placement();
     auto& grid_blocks = place_ctx.get_grid_blocks();
-    auto& block_locs = place_ctx.get_block_locs();
+    auto& block_locs = place_ctx.block_locs();
 
     if (block_locs[blk].loc != t_pl_loc{}) {
         auto loc = block_locs[blk].loc;

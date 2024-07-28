@@ -60,7 +60,7 @@ void routing_stats(const Netlist<>& net_list,
     auto& device_ctx = g_vpr_ctx.device();
     auto& rr_graph = device_ctx.rr_graph;
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& block_locs = g_vpr_ctx.placement().get_block_locs();
+    auto& block_locs = g_vpr_ctx.placement().block_locs();
 
     int num_rr_switch = rr_graph.num_rr_switches();
 
@@ -430,7 +430,7 @@ void print_lambda() {
     float lambda;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& block_locs = g_vpr_ctx.placement().get_block_locs();
+    auto& block_locs = g_vpr_ctx.placement().block_locs();
 
     for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks()) {
         t_pl_loc block_loc = block_locs[blk_id].loc;

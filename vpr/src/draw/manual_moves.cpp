@@ -175,14 +175,14 @@ bool is_manual_move_legal(ClusterBlockId block_id, t_pl_loc to) {
     //If the destination block is user constrained, abort this swap
     auto b_to = place_ctx.get_grid_blocks().block_at_location(to);
     if (b_to != INVALID_BLOCK_ID && b_to != EMPTY_BLOCK_ID) {
-        if (place_ctx.get_block_locs()[b_to].is_fixed) {
+        if (place_ctx.block_locs()[b_to].is_fixed) {
             invalid_breakpoint_entry_window("Block is fixed");
             return false;
         }
     }
 
     //If the block requested is already in that location.
-    t_pl_loc current_block_loc = place_ctx.get_block_locs()[block_id].loc;
+    t_pl_loc current_block_loc = place_ctx.block_locs()[block_id].loc;
     if (to.x == current_block_loc.x && to.y == current_block_loc.y && to.sub_tile == current_block_loc.sub_tile) {
         invalid_breakpoint_entry_window("The block is currently in this location");
         return false;

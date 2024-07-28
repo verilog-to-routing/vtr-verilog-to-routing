@@ -358,7 +358,7 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
                     auto& cluster_ctx = g_vpr_ctx.clustering();
                     // Cluster-based net_list is used for placement
                     std::string placement_id = print_place(filename_opts.NetFile.c_str(), cluster_ctx.clb_nlist.netlist_id().c_str(),
-                                                           filename_opts.PlaceFile.c_str(), g_vpr_ctx.placement().get_block_locs());
+                                                           filename_opts.PlaceFile.c_str(), g_vpr_ctx.placement().block_locs());
                     g_vpr_ctx.mutable_placement().placement_id = placement_id;
                 }
             }

@@ -339,7 +339,7 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
     t_draw_coords* draw_coords = get_draw_coords_vars();
     t_draw_state* draw_state = get_draw_state_vars();
 
-    auto& block_locs = g_vpr_ctx.placement().get_block_locs();
+    auto& block_locs = g_vpr_ctx.placement().block_locs();
 
     t_selected_sub_block_info& sel_sub_info = get_selected_sub_block_info();
 
@@ -557,7 +557,7 @@ void draw_logical_connections(ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
 
     auto& atom_ctx = g_vpr_ctx.atom();
-    auto& block_locs = g_vpr_ctx.placement().get_block_locs();
+    auto& block_locs = g_vpr_ctx.placement().block_locs();
 
     g->set_line_dash(ezgl::line_dash::none);
 

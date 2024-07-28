@@ -477,7 +477,7 @@ void recompute_occupancy_from_scratch(const Netlist<>& net_list, bool is_flat) {
      */
     auto& route_ctx = g_vpr_ctx.mutable_routing();
     auto& device_ctx = g_vpr_ctx.device();
-    auto& block_locs = g_vpr_ctx.placement().get_block_locs();
+    auto& block_locs = g_vpr_ctx.placement().block_locs();
 
     /* First set the occupancy of everything to zero. */
     for (RRNodeId inode : device_ctx.rr_graph.nodes())
@@ -529,7 +529,7 @@ static void check_locally_used_clb_opins(const t_clb_opins_used& clb_opins_used_
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
-    auto& block_locs = g_vpr_ctx.placement().get_block_locs();
+    auto& block_locs = g_vpr_ctx.placement().block_locs();
 
     for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks()) {
         t_pl_loc block_loc = block_locs[blk_id].loc;

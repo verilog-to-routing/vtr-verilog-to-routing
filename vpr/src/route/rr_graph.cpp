@@ -803,7 +803,7 @@ static void add_intra_cluster_edges_rr_graph(RRGraphBuilder& rr_graph_builder,
     VTR_ASSERT(is_flat);
     /* This function should be called if placement is done! */
 
-    auto& block_locs = g_vpr_ctx.placement().get_block_locs();
+    auto& block_locs = g_vpr_ctx.placement().block_locs();
     auto& cluster_net_list = g_vpr_ctx.clustering().clb_nlist;
     int num_collapsed_nodes = 0;
     for (ClusterBlockId cluster_blk_id : cluster_net_list.blocks()) {
@@ -2180,7 +2180,7 @@ static void set_clusters_pin_chains(const ClusteredNetlist& clb_nlist,
                                     bool is_flat) {
     VTR_ASSERT(is_flat);
 
-    const auto& block_locs = g_vpr_ctx.placement().get_block_locs();
+    const auto& block_locs = g_vpr_ctx.placement().block_locs();
 
     for (ClusterBlockId cluster_blk_id : clb_nlist.blocks()) {
         t_pl_loc block_loc = block_locs[cluster_blk_id].loc;

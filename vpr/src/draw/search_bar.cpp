@@ -302,7 +302,7 @@ void highlight_cluster_block(ClusterBlockId clb_index) {
         draw_highlight_blocks_color(cluster_ctx.clb_nlist.block_type(clb_index), clb_index);
         sprintf(msg, "Block #%zu (%s) at (%d, %d) selected.",
                 size_t(clb_index), cluster_ctx.clb_nlist.block_name(clb_index).c_str(),
-                place_ctx.get_block_locs()[clb_index].loc.x, place_ctx.get_block_locs()[clb_index].loc.y);
+                place_ctx.block_locs()[clb_index].loc.x, place_ctx.block_locs()[clb_index].loc.y);
     }
 
     application.update_message(msg);

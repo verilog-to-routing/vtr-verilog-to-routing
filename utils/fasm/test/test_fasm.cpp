@@ -569,7 +569,7 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
 
     // Verify occupied grid LOCs
     const auto & place_ctx = g_vpr_ctx.placement();
-    for (const auto& loc: place_ctx.get_block_locs()) {
+    for (const auto& loc: place_ctx.block_locs()) {
 
         // Do not consider "IOB" tiles. They do not have fasm features
         // defined in the arch.

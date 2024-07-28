@@ -1011,7 +1011,7 @@ static void highlight_blocks(double x, double y) {
     }
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& block_locs = g_vpr_ctx.placement().get_block_locs();
+    auto& block_locs = g_vpr_ctx.placement().block_locs();
 
     VTR_ASSERT(clb_index != EMPTY_BLOCK_ID);
 

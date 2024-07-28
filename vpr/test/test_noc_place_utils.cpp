@@ -29,7 +29,7 @@ TEST_CASE("test_initial_noc_placement", "[noc_place_utils]") {
     // get global datastructures
     auto& noc_ctx = g_vpr_ctx.mutable_noc();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
-    auto& block_locs = place_ctx.get_mutable_block_locs();
+    auto& block_locs = place_ctx.mutable_block_locs();
 
     // start by deleting any global datastructures (this is so that we don't have corruption from previous tests)
     noc_ctx.noc_model.clear_noc();
@@ -227,7 +227,7 @@ TEST_CASE("test_initial_comp_cost_functions", "[noc_place_utils]") {
     // get global datastructures
     auto& noc_ctx = g_vpr_ctx.mutable_noc();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
-    auto& block_locs = place_ctx.get_mutable_block_locs();
+    auto& block_locs = place_ctx.mutable_block_locs();
 
     // start by deleting any global datastructures (this is so that we don't have corruption from previous tests)
     noc_ctx.noc_model.clear_noc();
@@ -502,7 +502,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
     // get global datastructures
     auto& noc_ctx = g_vpr_ctx.mutable_noc();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
-    auto& block_locs = place_ctx.get_mutable_block_locs();
+    auto& block_locs = place_ctx.mutable_block_locs();
 
     // start by deleting any global datastructures (this is so that we don't have corruption from previous tests)
     noc_ctx.noc_model.clear_noc();
@@ -1380,7 +1380,7 @@ TEST_CASE("test_revert_noc_traffic_flow_routes", "[noc_place_utils]") {
     // get global datastructures
     auto& noc_ctx = g_vpr_ctx.mutable_noc();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
-    auto& block_locs = place_ctx.get_mutable_block_locs();
+    auto& block_locs = place_ctx.mutable_block_locs();
 
     // start by deleting any global datastructures (this is so that we don't have corruption from previous tests)
     noc_ctx.noc_model.clear_noc();
@@ -1732,7 +1732,7 @@ TEST_CASE("test_check_noc_placement_costs", "[noc_place_utils]") {
     // get global datastructures
     auto& noc_ctx = g_vpr_ctx.mutable_noc();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
-    auto& block_locs = place_ctx.get_mutable_block_locs();
+    auto& block_locs = place_ctx.mutable_block_locs();
 
     // start by deleting any global datastructures (this is so that we don't have corruption from previous tests)
     noc_ctx.noc_model.clear_noc();

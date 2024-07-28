@@ -54,7 +54,7 @@ void write_vpr_floorplan_constraints(const char* file_name, int expand, bool sub
 
 void setup_vpr_floorplan_constraints_one_loc(VprConstraints& constraints, int expand, bool subtile) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& block_locs = g_vpr_ctx.placement().get_block_locs();
+    auto& block_locs = g_vpr_ctx.placement().block_locs();
 
     int part_id = 0;
     /*
@@ -94,7 +94,7 @@ void setup_vpr_floorplan_constraints_one_loc(VprConstraints& constraints, int ex
 
 void setup_vpr_floorplan_constraints_cutpoints(VprConstraints& constraints, int horizontal_cutpoints, int vertical_cutpoints) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& block_locs = g_vpr_ctx.placement().get_block_locs();
+    auto& block_locs = g_vpr_ctx.placement().block_locs();
     auto& device_ctx = g_vpr_ctx.device();
 
     const int n_layers = device_ctx.grid.get_num_layers();
