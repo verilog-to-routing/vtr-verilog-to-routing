@@ -557,7 +557,7 @@ static float comp_width(t_chan* chan, float x, float separation) {
             break;
     }
 
-    return (val);
+    return val;
 }
 
 /**
@@ -574,11 +574,11 @@ static float comp_width(t_chan* chan, float x, float separation) {
  */
 void post_place_sync() {
     /* Go through each block */
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    const auto& block_locs = g_vpr_ctx.placement().get_block_locs();
-    auto& physical_pins = g_vpr_ctx.mutable_placement().mutable_physical_pins();
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& place_loc_vars = g_vpr_ctx.mutable_placement().mutable_place_loc_vars();
+
     // Cluster-based netlist is used for placement
-    for (ClusterBlockId block_id : cluster_ctx.clb_nlist.blocks()) {
-        place_sync_external_block_connections(block_id, block_locs, physical_pins);
+    for (const ClusterBlockId block_id : cluster_ctx.clb_nlist.blocks()) {
+        place_sync_external_block_connections(block_id, place_loc_vars);
     }
 }

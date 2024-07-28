@@ -252,7 +252,7 @@ void load_cluster_constraints() {
     }
 }
 
-void mark_fixed_blocks(vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
+void mark_fixed_blocks(PlaceLocVars& place_loc_vars) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
 
@@ -270,8 +270,8 @@ void mark_fixed_blocks(vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs)
          * and mark it as fixed.
          */
         if (is_pr_size_one(pr, block_type, loc)) {
-            set_block_location(blk_id, loc, block_locs);
-            block_locs[blk_id].is_fixed = true;
+            set_block_location(blk_id, loc, place_loc_vars);
+            place_loc_vars.mutable_block_locs()[blk_id].is_fixed = true;
         }
     }
 }

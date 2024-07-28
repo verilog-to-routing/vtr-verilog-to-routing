@@ -916,11 +916,11 @@ class PlaceLocVars {
     inline const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs() const { return block_locs_; }
     inline vtr::vector_map<ClusterBlockId, t_block_loc>& mutable_block_locs() { return block_locs_; }
 
-    inline const GridBlock& mutable_grid_blocks() const { return grid_blocks_; }
+    inline const GridBlock& grid_blocks() const { return grid_blocks_; }
     inline GridBlock& mutable_grid_blocks() { return grid_blocks_; }
 
-    inline const vtr::vector_map<ClusterPinId, int>& mutable_physical_pins() const { return physical_pins_; }
-    inline vtr::vector_map<ClusterPinId, int>& physical_pins() { return physical_pins_; }
+    inline const vtr::vector_map<ClusterPinId, int>& physical_pins() const { return physical_pins_; }
+    inline vtr::vector_map<ClusterPinId, int>& mutable_physical_pins() { return physical_pins_; }
 
 
 };

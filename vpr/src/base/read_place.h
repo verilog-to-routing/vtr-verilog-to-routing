@@ -10,7 +10,7 @@ class PlacerContext;
  */
 std::string read_place(const char* net_file,
                        const char* place_file,
-                       PlacerContext& placer_ctx,
+                       PlaceLocVars& place_loc_vars,
                        bool verify_file_hashes,
                        const DeviceGrid& grid);
 
@@ -18,7 +18,7 @@ std::string read_place(const char* net_file,
  * This function is used to read a constraints file that specifies the desired locations of blocks.
  */
 void read_constraints(const char* constraints_file,
-                      PlacerContext& placer_ctx);
+                      PlaceLocVars& place_loc_vars);
 
 /**
  * This function prints out a place file.

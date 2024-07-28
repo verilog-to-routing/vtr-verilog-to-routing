@@ -838,7 +838,7 @@ void vpr_load_placement(t_vpr_setup& vpr_setup, const t_arch& arch) {
 
     //Load an existing placement from a file
     place_ctx.placement_id = read_place(filename_opts.NetFile.c_str(), filename_opts.PlaceFile.c_str(),
-                                        place_ctx.get_mutable_block_locs(),
+                                        place_ctx.mutable_place_loc_vars(),
                                         filename_opts.verify_file_digests, device_ctx.grid);
 
     //Ensure placement macros are loaded so that they can be drawn after placement (e.g. during routing)
@@ -863,7 +863,7 @@ RouteStatus vpr_route_flow(const Netlist<>& net_list,
         route_status = RouteStatus(true, -1);
     } else { //Do or load
 
-        // set the net_is_ignored flag for nets that that have route_model set to ideal in route constraints
+        // set the net_is_ignored flag for nets that have route_model set to ideal in route constraints
         apply_route_constraints(g_vpr_ctx.routing().constraints);
 
         int chan_width = router_opts.fixed_channel_width;

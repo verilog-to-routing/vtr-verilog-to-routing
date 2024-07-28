@@ -385,6 +385,7 @@ struct PackingMultithreadingContext : public Context {
 struct PlacementContext : public Context {
   private:
     bool loc_vars_are_accessible_ = true;
+    PlaceLocVars place_loc_vars_;
 
   public:
 
@@ -394,11 +395,15 @@ struct PlacementContext : public Context {
     ///@brief Clustered block associated with each grid location (i.e. inverse of block_locs)
     GridBlock grid_blocks;
 
-    const vtr::vector_map<ClusterBlockId, t_block_loc>& get_block_locs() const { VTR_ASSERT(loc_vars_are_accessible_); return block_locs; }
-    vtr::vector_map<ClusterBlockId, t_block_loc>& get_mutable_block_locs() { VTR_ASSERT(loc_vars_are_accessible_); return block_locs; }
-    const GridBlock& get_grid_blocks() const { VTR_ASSERT(loc_vars_are_accessible_); return grid_blocks; }
-    GridBlock& get_mutable_grid_blocks() { VTR_ASSERT(loc_vars_are_accessible_); return grid_blocks; }
-    vtr::vector_map<ClusterPinId, int>& mutable_physical_pins() { VTR_ASSERT(loc_vars_are_accessible_); return physical_pins; }
+    const vtr::vector_map<ClusterBlockId, t_block_loc>& get_block_locs() const { VTR_ASSERT(loc_vars_are_accessible_); return place_loc_vars_.block_locs(); }
+    vtr::vector_map<ClusterBlockId, t_block_loc>& get_mutable_block_locs() { VTR_ASSERT(loc_vars_are_accessible_); return place_loc_vars_.mutable_block_locs(); }
+    const GridBlock& get_grid_blocks() const { VTR_ASSERT(loc_vars_are_accessible_); return place_loc_vars_.grid_blocks(); }
+    GridBlock& get_mutable_grid_blocks() { VTR_ASSERT(loc_vars_are_accessible_); return place_loc_vars_.mutable_grid_blocks(); }
+    vtr::vector_map<ClusterPinId, int>& mutable_physical_pins() { VTR_ASSERT(loc_vars_are_accessible_); return place_loc_vars_.mutable_physical_pins(); }
+//    const vtr::vector_map<ClusterPinId, int>& physical_pins() const { VTR_ASSERT(loc_vars_are_accessible_); return place_loc_vars_.physical_pins(); }
+    PlaceLocVars& mutable_place_loc_vars() { VTR_ASSERT(loc_vars_are_accessible_); return place_loc_vars_; }
+    const PlaceLocVars& place_loc_vars() const { VTR_ASSERT(loc_vars_are_accessible_); return place_loc_vars_; }
+
     void lock_loc_vars() { loc_vars_are_accessible_ = false; }
     void unlock_loc_vars() { loc_vars_are_accessible_ = true; }
 

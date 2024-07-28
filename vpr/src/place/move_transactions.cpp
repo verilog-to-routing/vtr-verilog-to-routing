@@ -36,7 +36,7 @@ e_block_move_result record_block_move(t_pl_blocks_to_be_moved& blocks_affected,
 
 //Moves the blocks in blocks_affected to their new locations
 void apply_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected,
-                       PlacerContext& placer_ctx) {
+                       PlaceLocVars& place_loc_vars) {
     auto& device_ctx = g_vpr_ctx.device();
 
     //Swap the blocks, but don't swap the nets or update place_ctx.grid_blocks
@@ -48,7 +48,7 @@ void apply_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected,
         const t_pl_loc& new_loc = blocks_affected.moved_blocks[iblk].new_loc;
 
         // move the block to its new location
-        placer_ctx.get_mutable_block_locs()[blk].loc = new_loc;
+        place_loc_vars.mutable_block_locs()[blk].loc = new_loc;
 
         // get physical tile type of the old location
         t_physical_tile_type_ptr old_type = device_ctx.grid.get_physical_type({old_loc.x,old_loc.y,old_loc.layer});
@@ -57,7 +57,7 @@ void apply_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected,
 
         //if physical tile type of old location does not equal physical tile type of new location, sync the new physical pins
         if (old_type != new_type) {
-            place_sync_external_block_connections(blk, placer_ctx);
+            place_sync_external_block_connections(blk, place_loc_vars);
         }
     }
 }
@@ -94,7 +94,7 @@ void commit_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected) {
 
 //Moves the blocks in blocks_affected to their old locations
 void revert_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected,
-                        PlacerContext& placer_ctx) {
+                        PlaceLocVars& place_loc_vars) {
     auto& device_ctx = g_vpr_ctx.device();
 
     // Swap the blocks back, nets not yet swapped they don't need to be changed
@@ -105,7 +105,7 @@ void revert_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected,
         const t_pl_loc& new_loc = blocks_affected.moved_blocks[iblk].new_loc;
 
         // return the block to where it was before the swap
-        placer_ctx.get_mutable_block_locs()[blk].loc = old_loc;
+        place_loc_vars.mutable_block_locs()[blk].loc = old_loc;
 
         // get physical tile type of the old location
         t_physical_tile_type_ptr old_type = device_ctx.grid.get_physical_type({old_loc.x,old_loc.y,old_loc.layer});
@@ -114,7 +114,7 @@ void revert_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected,
 
         //if physical tile type of old location does not equal physical tile type of new location, sync the new physical pins
         if (old_type != new_type) {
-            place_sync_external_block_connections(blk, placer_ctx);
+            place_sync_external_block_connections(blk, place_loc_vars);
         }
 
         VTR_ASSERT_SAFE_MSG(g_vpr_ctx.placement().grid_blocks.block_at_location(old_loc) == blk,

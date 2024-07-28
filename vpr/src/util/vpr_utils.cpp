@@ -2106,10 +2106,11 @@ void print_switch_usage() {
  */
 
 void place_sync_external_block_connections(ClusterBlockId iblk,
-                                           const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs,
-                                           vtr::vector_map<ClusterPinId, int>& physical_pins) {
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& clb_nlist = cluster_ctx.clb_nlist;
+                                           PlaceLocVars& place_loc_vars) {
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& clb_nlist = cluster_ctx.clb_nlist;
+    const auto& block_locs = place_loc_vars.block_locs();
+    auto& physical_pins = place_loc_vars.mutable_physical_pins();
 
     t_pl_loc block_loc = block_locs[iblk].loc;
 

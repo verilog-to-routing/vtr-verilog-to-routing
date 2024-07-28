@@ -243,8 +243,7 @@ AtomBlockId find_memory_sibling(const t_pb* pb);
  * It does not check for overuse of locations, therefore it can be used with placements that have resource overuse.
  */
 void place_sync_external_block_connections(ClusterBlockId iblk,
-                                           const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs,
-                                           vtr::vector_map<ClusterPinId, int>& physical_pins);
+                                           PlaceLocVars& place_loc_vars);
 
 //Returns the physical pin of the tile, related to the given ClusterNedId, and the net pin index
 int net_pin_to_tile_pin_index(const ClusterNetId net_id, int net_pin_index);

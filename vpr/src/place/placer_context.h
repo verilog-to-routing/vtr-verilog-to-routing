@@ -7,6 +7,7 @@
 #pragma once
 #include "vpr_context.h"
 #include "vpr_net_pins_matrix.h"
+#include "vpr_types.h"
 #include "timing_place.h"
 
 /**
@@ -131,35 +132,30 @@ struct PlacerMoveContext : public Context {
  */
 class PlacerContext : public Context {
   public:
-    const PlacerTimingContext& timing() const { return timing_; }
-    PlacerTimingContext& mutable_timing() { return timing_; }
+    inline const PlacerTimingContext& timing() const { return timing_; }
+    inline PlacerTimingContext& mutable_timing() { return timing_; }
 
-    const PlacerRuntimeContext& runtime() const { return runtime_; }
-    PlacerRuntimeContext& mutable_runtime() { return runtime_; }
+    inline const PlacerRuntimeContext& runtime() const { return runtime_; }
+    inline PlacerRuntimeContext& mutable_runtime() { return runtime_; }
 
-    const PlacerMoveContext& move() const { return move_; }
-    PlacerMoveContext& mutable_move() { return move_; }
+    inline const PlacerMoveContext& move() const { return move_; }
+    inline PlacerMoveContext& mutable_move() { return move_; }
 
-    const vtr::vector_map<ClusterBlockId, t_block_loc>& get_block_locs() const { return block_locs_; }
-    vtr::vector_map<ClusterBlockId, t_block_loc>& get_mutable_block_locs() { return block_locs_; }
+    inline const vtr::vector_map<ClusterBlockId, t_block_loc>& get_block_locs() const { return loc_vars_.block_locs(); }
+    inline vtr::vector_map<ClusterBlockId, t_block_loc>& get_mutable_block_locs() { return loc_vars_.mutable_block_locs(); }
 
-    const GridBlock& get_grid_blocks() const { return grid_blocks_; }
-    GridBlock& get_mutable_grid_blocks() { return grid_blocks_; }
+    inline const GridBlock& get_grid_blocks() const { return loc_vars_.grid_blocks(); }
+    inline GridBlock& get_mutable_grid_blocks() { return loc_vars_.mutable_grid_blocks(); }
 
-    const vtr::vector_map<ClusterPinId, int>& physical_pins() const { return physical_pins_; }
-    vtr::vector_map<ClusterPinId, int>& mutable_physical_pins() { return physical_pins_; }
+    inline const vtr::vector_map<ClusterPinId, int>& physical_pins() const { return loc_vars_.physical_pins(); }
+    inline vtr::vector_map<ClusterPinId, int>& mutable_physical_pins() { return loc_vars_.mutable_physical_pins(); }
+
+    inline const PlaceLocVars& place_loc_vars() const { return loc_vars_; }
+    inline PlaceLocVars& mutable_place_loc_vars() { return loc_vars_; }
 
   private:
     PlacerTimingContext timing_;
     PlacerRuntimeContext runtime_;
     PlacerMoveContext move_;
-
-    ///@brief Clustered block placement locations
-    vtr::vector_map<ClusterBlockId, t_block_loc> block_locs_;
-
-    ///@brief Clustered block associated with each grid location (i.e. inverse of block_locs)
-    GridBlock grid_blocks_;
-
-    ///@brief Clustered pin placement mapping with physical pin
-    vtr::vector_map<ClusterPinId, int> physical_pins_;
+    PlaceLocVars loc_vars_;
 };

@@ -432,8 +432,10 @@ void try_place(const Netlist<>& net_list,
 
     PlacerContext placer_ctx;
     auto& place_move_ctx = placer_ctx.mutable_move();
+    auto& place_loc_vars = placer_ctx.mutable_place_loc_vars();
     const auto& p_timing_ctx = placer_ctx.timing();
     const auto& p_runtime_ctx = placer_ctx.runtime();
+
 
     alloc_and_load_placement_structs(placer_opts.place_cost_exp, placer_opts, noc_opts, directs, num_directs, placer_ctx);
     set_net_handlers_placer_ctx(placer_ctx);
@@ -446,7 +448,7 @@ void try_place(const Netlist<>& net_list,
         normalize_noc_cost_weighting_factor(const_cast<t_noc_opts&>(noc_opts));
     }
 
-    initial_placement(placer_opts, placer_opts.constraints_file.c_str(), noc_opts, g_vpr_ctx.mutable_placement().block_locs);
+    initial_placement(placer_opts, placer_opts.constraints_file.c_str(), noc_opts, place_loc_vars);
 
     //create the move generator based on the chosen strategy
     auto [move_generator, move_generator2] = create_move_generators(placer_ctx, placer_opts, move_lim, noc_opts.noc_centroid_weight);
@@ -470,8 +472,8 @@ void try_place(const Netlist<>& net_list,
 #endif /* ENABLE_ANALYTIC_PLACE */
 
     // Update physical pin values
-    for (ClusterBlockId block_id : cluster_ctx.clb_nlist.blocks()) {
-        place_sync_external_block_connections(block_id, g_vpr_ctx.placement().block_locs);
+    for (const ClusterBlockId block_id : cluster_ctx.clb_nlist.blocks()) {
+        place_sync_external_block_connections(block_id, place_loc_vars);
     }
 
     const int width_fac = placer_opts.place_chan_width;
@@ -897,8 +899,8 @@ void try_place(const Netlist<>& net_list,
     //#endif
 
     // Update physical pin values
-    for (ClusterBlockId block_id : cluster_ctx.clb_nlist.blocks()) {
-        place_sync_external_block_connections(block_id, g_vpr_ctx.placement().block_locs);
+    for (const ClusterBlockId block_id : cluster_ctx.clb_nlist.blocks()) {
+        place_sync_external_block_connections(block_id, place_loc_vars);
     }
 
     check_place(costs,
@@ -1360,7 +1362,7 @@ static e_move_result try_swap(const t_annealing_state* state,
          */
 
         /* Update the block positions */
-        apply_move_blocks(blocks_affected, g_vpr_ctx.mutable_placement().block_locs);
+        apply_move_blocks(blocks_affected, placer_ctx.mutable_place_loc_vars());
 
         //Find all the nets affected by this swap and update the wiring costs.
         //This cost value doesn't depend on the timing info.
@@ -1497,7 +1499,7 @@ static e_move_result try_swap(const t_annealing_state* state,
             reset_move_nets(num_nets_affected);
 
             /* Restore the place_ctx.block_locs data structures to their state before the move. */
-            revert_move_blocks(blocks_affected, placer_ctx.get_mutable_block_locs());
+            revert_move_blocks(blocks_affected, placer_ctx.mutable_place_loc_vars());
 
             if (place_algorithm == SLACK_TIMING_PLACE) {
                 /* Revert the timing delays and costs to pre-update values.       */
