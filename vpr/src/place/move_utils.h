@@ -142,7 +142,7 @@ e_block_move_result record_macro_macro_swaps(t_pl_blocks_to_be_moved& blocks_aff
                                              const int imacro_to,
                                              ClusterBlockId blk_to,
                                              t_pl_offset swap_offset,
-                                             const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
+                                             const PlaceLocVars& place_loc_vars);
 
 e_block_move_result record_macro_move(t_pl_blocks_to_be_moved& blocks_affected,
                                       std::vector<ClusterBlockId>& displaced_blocks,
@@ -235,9 +235,10 @@ ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from,
 
 bool find_to_loc_uniform(t_logical_block_type_ptr type,
                          float rlim,
-                         const t_pl_loc from,
+                         const t_pl_loc& from,
                          t_pl_loc& to,
-                         ClusterBlockId b_from);
+                         ClusterBlockId b_from,
+                         const PlaceLocVars& place_loc_vars);
 
 // Accessor f_placer_breakpoint_reached
 // return true when a placer breakpoint is reached
@@ -260,7 +261,12 @@ void set_placer_breakpoint_reached(bool);
  *  @param limit_coords: the region where I can move the block to
  *  @param to_loc: the new location that the function picked for the block
  */
-bool find_to_loc_median(t_logical_block_type_ptr blk_type, const t_pl_loc& from_loc, const t_bb* limit_coords, t_pl_loc& to_loc, ClusterBlockId b_from);
+bool find_to_loc_median(t_logical_block_type_ptr blk_type,
+                        const t_pl_loc& from_loc,
+                        const t_bb* limit_coords,
+                        t_pl_loc& to_loc,
+                        ClusterBlockId b_from,
+                        const PlaceLocVars& place_loc_vars);
 
 /**
  * @brief Find a legal swap to location for the given type in a range around a specific location.
@@ -281,7 +287,8 @@ bool find_to_loc_centroid(t_logical_block_type_ptr blk_type,
                           const t_pl_loc& centeroid,
                           const t_range_limiters& range_limiters,
                           t_pl_loc& to_loc,
-                          ClusterBlockId b_from);
+                          ClusterBlockId b_from,
+                          const PlaceLocVars& place_loc_vars);
 
 const std::string& move_type_to_string(e_move_type);
 
@@ -311,7 +318,8 @@ void compressed_grid_to_loc(t_logical_block_type_ptr blk_type,
  * is returned to indicate that there are no empty subtiles compatible with the given type..
  */
 int find_empty_compatible_subtile(t_logical_block_type_ptr type,
-                                  const t_physical_tile_loc& to_loc);
+                                  const t_physical_tile_loc& to_loc,
+                                  const GridBlock& grid_blocks);
 
 /**
  * @brief find compressed location in a compressed range for a specific type in the given layer (to_layer_num)
@@ -331,7 +339,8 @@ bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
                                              t_physical_tile_loc& to_loc,
                                              bool is_median,
                                              int to_layer_num,
-                                             bool search_for_empty);
+                                             bool search_for_empty,
+                                             const PlaceLocVars& place_loc_vars);
 
 /**
  * @brief Get the the compressed loc from the uncompressed loc (grid_loc)

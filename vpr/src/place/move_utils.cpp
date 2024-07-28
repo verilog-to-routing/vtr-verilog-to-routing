@@ -742,9 +742,10 @@ ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from,
 
 bool find_to_loc_uniform(t_logical_block_type_ptr type,
                          float rlim,
-                         const t_pl_loc from,
+                         const t_pl_loc& from,
                          t_pl_loc& to,
-                         ClusterBlockId b_from) {
+                         ClusterBlockId b_from,
+                         const PlaceLocVars& place_loc_vars) {
     //Finds a legal swap to location for the given type, starting from 'from.x' and 'from.y'
     //
     //Note that the range limit (rlim) is applied in a logical sense (i.e. 'compressed' grid space consisting
@@ -791,9 +792,10 @@ bool find_to_loc_uniform(t_logical_block_type_ptr type,
                                                     compressed_locs[to_layer_num],
                                                     search_range,
                                                     to_compressed_loc,
-                                                    false,
+                                                    /*is_median=*/false,
                                                     to_layer_num,
-                                                    false);
+                                                    /*search_for_empty=*/false,
+                                                    place_loc_vars);
 
     if (!legal) {
         //No valid position found
@@ -832,7 +834,8 @@ bool find_to_loc_median(t_logical_block_type_ptr blk_type,
                         const t_pl_loc& from_loc,
                         const t_bb* limit_coords,
                         t_pl_loc& to_loc,
-                        ClusterBlockId b_from) {
+                        ClusterBlockId b_from,
+                        const PlaceLocVars& place_loc_vars) {
     int num_layers = g_vpr_ctx.device().grid.get_num_layers();
     const int to_layer_num = to_loc.layer;
     VTR_ASSERT(to_layer_num != OPEN);
@@ -888,9 +891,10 @@ bool find_to_loc_median(t_logical_block_type_ptr blk_type,
                                                     from_compressed_locs[to_layer_num],
                                                     search_range,
                                                     to_compressed_loc,
-                                                    true,
+                                                    /*is_median=*/true,
                                                     to_layer_num,
-                                                    false);
+                                                    /*search_for_empty=*/false,
+                                                    place_loc_vars);
 
     if (!legal) {
         //No valid position found
@@ -921,7 +925,8 @@ bool find_to_loc_centroid(t_logical_block_type_ptr blk_type,
                           const t_pl_loc& centroid,
                           const t_range_limiters& range_limiters,
                           t_pl_loc& to_loc,
-                          ClusterBlockId b_from) {
+                          ClusterBlockId b_from,
+                          const PlaceLocVars& place_loc_vars) {
     //Retrieve the compressed block grid for this block type
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[blk_type->index];
     const int to_layer_num = centroid.layer;
@@ -974,9 +979,10 @@ bool find_to_loc_centroid(t_logical_block_type_ptr blk_type,
                                                     from_compressed_loc[to_layer_num],
                                                     search_range,
                                                     to_compressed_loc,
-                                                    false,
+                                                    /*is_median=*/false,
                                                     to_layer_num,
-                                                    false);
+                                                    /*search_for_empty=*/false,
+                                                    place_loc_vars);
 
     if (!legal) {
         //No valid position found
@@ -1037,9 +1043,9 @@ void compressed_grid_to_loc(t_logical_block_type_ptr blk_type,
 }
 
 int find_empty_compatible_subtile(t_logical_block_type_ptr type,
-                                  const t_physical_tile_loc& to_loc) {
+                                  const t_physical_tile_loc& to_loc,
+                                  const GridBlock& grid_blocks) {
     auto& device_ctx = g_vpr_ctx.device();
-    auto& place_ctx = g_vpr_ctx.placement();
 
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[type->index];
     int return_sub_tile = -1;
@@ -1047,10 +1053,11 @@ int find_empty_compatible_subtile(t_logical_block_type_ptr type,
     t_pl_loc to_uncompressed_loc;
     compressed_grid_to_loc(type, to_loc, to_uncompressed_loc);
     const t_physical_tile_loc to_phy_uncompressed_loc{to_uncompressed_loc.x, to_uncompressed_loc.y, to_uncompressed_loc.layer};
-    const auto& phy_type = device_ctx.grid.get_physical_type(to_phy_uncompressed_loc);
+    const t_physical_tile_type_ptr phy_type = device_ctx.grid.get_physical_type(to_phy_uncompressed_loc);
     const auto& compatible_sub_tiles = compressed_block_grid.compatible_sub_tiles_for_tile.at(phy_type->index);
-    for (const auto& sub_tile : compatible_sub_tiles) {
-        if (place_ctx.grid_blocks.is_sub_tile_empty(to_phy_uncompressed_loc, sub_tile)) {
+
+    for (const int sub_tile : compatible_sub_tiles) {
+        if (grid_blocks.is_sub_tile_empty(to_phy_uncompressed_loc, sub_tile)) {
             return_sub_tile = sub_tile;
             break;
         }
@@ -1066,7 +1073,8 @@ bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
                                              t_physical_tile_loc& to_loc,
                                              bool is_median,
                                              int to_layer_num,
-                                             bool search_for_empty) {
+                                             bool search_for_empty,
+                                             const PlaceLocVars& place_loc_vars) {
     //TODO For the time being, the blocks only moved in the same layer. This assertion should be removed after VPR is updated to move blocks between layers
     VTR_ASSERT(to_layer_num == from_loc.layer_num);
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[type->index];
@@ -1149,7 +1157,7 @@ bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
             if (from_loc.x == to_loc.x && from_loc.y == to_loc.y && from_loc.layer_num == to_layer_num) {
                 continue;                  //Same from/to location -- try again for new y-position
             } else if (search_for_empty) { // Check if the location has at least one empty sub-tile
-                legal = find_empty_compatible_subtile(type, to_loc) >= 0;
+                legal = find_empty_compatible_subtile(type, to_loc, place_loc_vars.grid_blocks()) >= 0;
             } else {
                 legal = true;
             }

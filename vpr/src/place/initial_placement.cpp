@@ -173,7 +173,10 @@ static std::vector<ClusterBlockId> find_centroid_loc(const t_pl_macro& pl_macro,
  *
  * @return true if the function can find any location near the centroid one, false otherwise.
  */
-static bool find_centroid_neighbor(t_pl_loc& centroid_loc, t_logical_block_type_ptr block_type, bool search_for_empty);
+static bool find_centroid_neighbor(t_pl_loc& centroid_loc,
+                                   t_logical_block_type_ptr block_type,
+                                   bool search_for_empty,
+                                   const PlaceLocVars& place_loc_vars);
 
 /**
  * @brief  tries to place a macro at a centroid location of its placed connections.
@@ -324,7 +327,10 @@ static bool is_loc_legal(const t_pl_loc& loc,
     return legal;
 }
 
-static bool find_centroid_neighbor(t_pl_loc& centroid_loc, t_logical_block_type_ptr block_type, bool search_for_empty) {
+static bool find_centroid_neighbor(t_pl_loc& centroid_loc,
+                                   t_logical_block_type_ptr block_type,
+                                   bool search_for_empty,
+                                   const PlaceLocVars& place_loc_vars) {
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[block_type->index];
     const int num_layers = g_vpr_ctx.device().grid.get_num_layers();
     const int centroid_loc_layer_num = centroid_loc.layer;
@@ -356,9 +362,10 @@ static bool find_centroid_neighbor(t_pl_loc& centroid_loc, t_logical_block_type_
                                                          {cx_from, cy_from, layer_from},
                                                          search_range,
                                                          to_compressed_loc,
-                                                         false,
+                                                         /*is_median=*/false,
                                                          centroid_loc_layer_num,
-                                                         search_for_empty);
+                                                         search_for_empty,
+                                                         place_loc_vars);
 
     if (!legal) {
         return false;
@@ -490,7 +497,7 @@ static bool try_centroid_placement(const t_pl_macro& pl_macro,
     //try to find a near location that meet these requirements
     bool neighbor_legal_loc = false;
     if (!is_loc_legal(centroid_loc, pr, block_type)) {
-        neighbor_legal_loc = find_centroid_neighbor(centroid_loc, block_type, false);
+        neighbor_legal_loc = find_centroid_neighbor(centroid_loc, block_type, false, place_loc_vars);
         if (!neighbor_legal_loc) { //no neighbor candidate found
             return false;
         }
@@ -680,9 +687,12 @@ bool try_place_macro_randomly(const t_pl_macro& pl_macro,
                                                      min_compressed_loc.y, max_compressed_loc.y,
                                                      selected_layer, selected_layer},
                                                     to_compressed_loc,
-                                                    false,
+                                                    /*is_median=*/false,
                                                     selected_layer,
-                                                    false);
+                                                    /*search_for_empty=*/false,
+                                                    place_loc_vars);
+
+
     if (!legal) {
         //No valid position found
         return false;

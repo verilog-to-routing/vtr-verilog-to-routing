@@ -21,10 +21,11 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
                                                         float rlim,
                                                         const t_placer_opts& placer_opts,
                                                         const PlacerCriticalities* criticalities) {
-    auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& placer_ctx = placer_ctx_.get();
-    auto& block_locs = placer_ctx.get_block_locs();
+    const auto& block_locs = placer_ctx.get_block_locs();
     auto& place_move_ctx = placer_ctx.mutable_move();
+    const auto& place_loc_vars = placer_ctx.place_loc_vars();
 
     //Find a movable block based on blk_type
     ClusterBlockId b_from = propose_block_to_move(placer_opts, proposed_action.logical_blk_type_index, false, nullptr, nullptr, placer_ctx);
@@ -134,11 +135,11 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
     w_median_point.y = (limit_coords.ymin + limit_coords.ymax) / 2;
     w_median_point.layer = ((limit_coords.layer_min + limit_coords.layer_max) / 2);
 
-    if (!find_to_loc_centroid(cluster_from_type, from, w_median_point, range_limiters, to, b_from)) {
+    if (!find_to_loc_centroid(cluster_from_type, from, w_median_point, range_limiters, to, b_from, place_loc_vars)) {
         return e_create_move::ABORT;
     }
 
-    e_create_move create_move = ::create_move(blocks_affected, b_from, to, placer_ctx.place_loc_vars());
+    e_create_move create_move = ::create_move(blocks_affected, b_from, to, place_loc_vars);
 
     //Check that all the blocks affected by the move would still be in a legal floorplan region after the swap
     if (!floorplan_legal(blocks_affected)) {

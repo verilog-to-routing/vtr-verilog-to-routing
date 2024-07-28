@@ -338,7 +338,7 @@ void alloc_and_load_legal_placement_locations(std::vector<std::vector<std::vecto
                     auto capacity = sub_tile.capacity;
 
                     for (int k = 0; k < capacity.total(); k++) {
-                        if (place_ctx.grid_blocks.block_at_location({i, j, k + capacity.low, layer_num}) == INVALID_BLOCK_ID) {
+                        if (place_ctx.get_grid_blocks().block_at_location({i, j, k + capacity.low, layer_num}) == INVALID_BLOCK_ID) {
                             continue;
                         }
                         // If this is the anchor position of a block, add it to the legal_pos.

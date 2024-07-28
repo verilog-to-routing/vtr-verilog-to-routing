@@ -15,10 +15,11 @@ e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
                                                         float rlim,
                                                         const t_placer_opts& placer_opts,
                                                         const PlacerCriticalities* criticalities) {
-    auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& placer_ctx = placer_ctx_.get();
     auto& place_move_ctx = placer_ctx.mutable_move();
-    auto& block_locs = placer_ctx.get_block_locs();
+    const auto& block_locs = placer_ctx.get_block_locs();
+    const auto& place_loc_vars = placer_ctx.place_loc_vars();
 
     ClusterNetId net_from;
     int pin_from;
@@ -117,7 +118,7 @@ e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
                                     placer_opts.place_dm_rlim};
 
     // Try to find a legal location inside the feasible region
-    if (!find_to_loc_median(cluster_from_type, from, &FR_coords, to, b_from)) {
+    if (!find_to_loc_median(cluster_from_type, from, &FR_coords, to, b_from, place_loc_vars)) {
         /** If there is no legal location in the feasible region, calculate the center of the FR and try to find a legal location 
          *  in a range around this center.
          */
@@ -126,11 +127,11 @@ e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
         center.y = (FR_coords.ymin + FR_coords.ymax) / 2;
         // TODO: Currently, we don't move blocks between different types of layers
         center.layer = from.layer;
-        if (!find_to_loc_centroid(cluster_from_type, from, center, range_limiters, to, b_from))
+        if (!find_to_loc_centroid(cluster_from_type, from, center, range_limiters, to, b_from, place_loc_vars))
             return e_create_move::ABORT;
     }
 
-    e_create_move create_move = ::create_move(blocks_affected, b_from, to, placer_ctx.place_loc_vars());
+    e_create_move create_move = ::create_move(blocks_affected, b_from, to, place_loc_vars);
 
     //Check that all the blocks affected by the move would still be in a legal floorplan region after the swap
     if (!floorplan_legal(blocks_affected)) {
