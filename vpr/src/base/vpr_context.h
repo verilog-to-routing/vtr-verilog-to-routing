@@ -389,8 +389,8 @@ struct PlacementContext : public Context {
 
   public:
 
-    ///@brief Clustered block placement locations
-    vtr::vector_map<ClusterBlockId, t_block_loc> block_locs;
+//    ///@brief Clustered block placement locations
+//    vtr::vector_map<ClusterBlockId, t_block_loc> block_locs;
 
     ///@brief Clustered block associated with each grid location (i.e. inverse of block_locs)
     GridBlock grid_blocks;

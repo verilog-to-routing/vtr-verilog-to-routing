@@ -234,9 +234,9 @@ static int check_placement_costs(const t_placer_costs& costs,
                                  const t_place_algorithm& place_algorithm,
                                  PlacerContext& placer_ctx);
 
-static int check_placement_consistency();
-static int check_block_placement_consistency();
-static int check_macro_placement_consistency();
+static int check_placement_consistency(const PlaceLocVars& place_loc_vars);
+static int check_block_placement_consistency(const PlaceLocVars& place_loc_vars);
+static int check_macro_placement_consistency(const PlaceLocVars& place_loc_vars);
 
 static float starting_t(const t_annealing_state* state,
                         t_placer_costs* costs,
@@ -338,7 +338,7 @@ static void print_place_status(const t_annealing_state& state,
                                bool noc_enabled,
                                const NocCostTerms& noc_cost_terms);
 
-static void print_resources_utilization();
+static void print_resources_utilization(const PlaceLocVars& place_loc_vars);
 
 static void print_placement_swaps_stats(const t_annealing_state& state, const t_swap_stats& swap_stats);
 
@@ -455,7 +455,7 @@ void try_place(const Netlist<>& net_list,
 
     if (!placer_opts.write_initial_place_file.empty()) {
         print_place(nullptr, nullptr, (placer_opts.write_initial_place_file + ".init.place").c_str(),
-                    g_vpr_ctx.placement().block_locs);
+                    placer_ctx.get_block_locs());
     }
 
 #ifdef ENABLE_ANALYTIC_PLACE
@@ -650,7 +650,7 @@ void try_place(const Netlist<>& net_list,
         std::string filename = vtr::string_fmt("placement_%03d_%03d.place", 0,
                                                0);
         VTR_LOG("Saving initial placement to file: %s\n", filename.c_str());
-        print_place(nullptr, nullptr, filename.c_str(), g_vpr_ctx.placement().block_locs);
+        print_place(nullptr, nullptr, filename.c_str(), place_loc_vars.block_locs());
     }
 
     int first_move_lim = get_initial_move_lim(placer_opts, annealing_sched);
@@ -754,7 +754,7 @@ void try_place(const Netlist<>& net_list,
 
                 if (placer_opts.place_checkpointing
                     && agent_state == e_agent_state::LATE_IN_THE_ANNEAL) {
-                    save_placement_checkpoint_if_needed(g_vpr_ctx.placement().block_locs,
+                    save_placement_checkpoint_if_needed(place_loc_vars.block_locs(),
                                                         placement_checkpoint,
                                                         timing_info, costs, critical_path.delay());
                 }
@@ -886,7 +886,7 @@ void try_place(const Netlist<>& net_list,
         std::string filename = vtr::string_fmt("placement_%03d_%03d.place",
                                                state.num_temps + 1, 0);
         VTR_LOG("Saving final placement to file: %s\n", filename.c_str());
-        print_place(nullptr, nullptr, filename.c_str(), g_vpr_ctx.placement().block_locs);
+        print_place(nullptr, nullptr, filename.c_str(), place_loc_vars.block_locs());
     }
 
     // TODO:
@@ -963,14 +963,14 @@ void try_place(const Netlist<>& net_list,
 
     update_screen(ScreenUpdatePriority::MAJOR, msg, PLACEMENT, timing_info);
     // Print out swap statistics
-    print_resources_utilization();
+    print_resources_utilization(place_loc_vars);
 
     print_placement_swaps_stats(state, swap_stats);
 
     print_placement_move_types_stats(move_type_stat);
 
     if (noc_opts.noc) {
-        write_noc_placement_file(noc_opts.noc_placement_file_name, g_vpr_ctx.placement().block_locs);
+        write_noc_placement_file(noc_opts.noc_placement_file_name, place_loc_vars.block_locs());
     }
 
     free_placement_structs(placer_opts, noc_opts, placer_ctx);
@@ -1119,7 +1119,7 @@ static void placement_inner_loop(const t_annealing_state* state,
                                                    state->num_temps + 1, inner_placement_save_count);
             VTR_LOG("Saving placement to file at temperature move %d / %d: %s\n",
                     inner_iter, state->move_lim, filename.c_str());
-            print_place(nullptr, nullptr, filename.c_str(), g_vpr_ctx.placement().block_locs);
+            print_place(nullptr, nullptr, filename.c_str(), placer_ctx.get_block_locs());
             ++inner_placement_save_count;
         }
     }
@@ -1272,6 +1272,8 @@ static e_move_result try_swap(const t_annealing_state* state,
      * Returns whether the swap is accepted, rejected or aborted.        *
      * Passes back the new value of the cost functions.                  */
 
+    const auto& block_locs = placer_ctx.get_block_locs();
+
     float rlim_escape_fraction = placer_opts.rlim_escape_fraction;
     float timing_tradeoff = placer_opts.timing_tradeoff;
 
@@ -1322,7 +1324,7 @@ static e_move_result try_swap(const t_annealing_state* state,
 #endif //NO_GRAPHICS
     } else if (router_block_move) {
         // generate a move where two random router blocks are swapped
-        create_move_outcome = propose_router_swap(blocks_affected, rlim, g_vpr_ctx.placement().block_locs);
+        create_move_outcome = propose_router_swap(blocks_affected, rlim, block_locs);
         proposed_action.move_type = e_move_type::UNIFORM;
     } else {
         //Generate a new move (perturbation) used to explore the space of possible placements
@@ -1427,7 +1429,7 @@ static e_move_result try_swap(const t_annealing_state* state,
         NocCostTerms noc_delta_c; // change in NoC cost
         /* Update the NoC datastructure and costs*/
         if (noc_opts.noc) {
-            find_affected_noc_routers_and_update_noc_costs(blocks_affected, noc_delta_c, g_vpr_ctx.placement().block_locs);
+            find_affected_noc_routers_and_update_noc_costs(blocks_affected, noc_delta_c, block_locs);
 
             // Include the NoC delta costs in the total cost change for this swap
             delta_c += calculate_noc_cost(noc_delta_c, costs->noc_cost_norm_factors, noc_opts);
@@ -1533,7 +1535,7 @@ static e_move_result try_swap(const t_annealing_state* state,
             }
             /* Revert the traffic flow routes within the NoC*/
             if (noc_opts.noc) {
-                revert_noc_traffic_flow_routes(blocks_affected, g_vpr_ctx.placement().block_locs);
+                revert_noc_traffic_flow_routes(blocks_affected, block_locs);
             }
         }
 
@@ -1549,7 +1551,7 @@ static e_move_result try_swap(const t_annealing_state* state,
     move_outcome_stats.outcome = move_outcome;
 
     // If we force a router block move then it was not proposed by the
-    // move generator so we should not calculate the reward and update
+    // move generator, so we should not calculate the reward and update
     // the move generators status since this outcome is not a direct
     // consequence of the move generator
     if (!router_block_move) {
@@ -1566,13 +1568,14 @@ static e_move_result try_swap(const t_annealing_state* state,
     /* Clear the data structure containing block move info */
     clear_move_blocks(blocks_affected);
 
-    //VTR_ASSERT(check_macro_placement_consistency() == 0);
 #if 0
     // Check that each accepted swap yields a valid placement. This will
     // greatly slow the placer, but can debug some issues.
     check_place(*costs, delay_model, criticalities, place_algorithm, noc_opts);
 #endif
-    VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\t\tAfter move Place cost %e, bb_cost %e, timing cost %e\n", costs->cost, costs->bb_cost, costs->timing_cost);
+    VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug,
+                   "\t\tAfter move Place cost %e, bb_cost %e, timing cost %e\n",
+                   costs->cost, costs->bb_cost, costs->timing_cost);
     return move_outcome;
 }
 
@@ -1977,15 +1980,15 @@ static void check_place(const t_placer_costs& costs,
 
     int error = 0;
 
-    error += check_placement_consistency();
+    error += check_placement_consistency(placer_ctx.place_loc_vars());
     error += check_placement_costs(costs, delay_model, criticalities, place_algorithm, placer_ctx);
-    error += check_placement_floorplanning(g_vpr_ctx.placement().block_locs);
+    error += check_placement_floorplanning(placer_ctx.get_block_locs());
 
     if (noc_opts.noc) {
         // check the NoC costs during placement if the user is using the NoC supported flow
-        error += check_noc_placement_costs(costs, ERROR_TOL, noc_opts, g_vpr_ctx.placement().block_locs);
+        error += check_noc_placement_costs(costs, ERROR_TOL, noc_opts, placer_ctx.get_block_locs());
         // make sure NoC routing configuration does not create any cycles in CDG
-        error += (int)noc_routing_has_cycle(g_vpr_ctx.placement().block_locs);
+        error += (int)noc_routing_has_cycle(placer_ctx.get_block_locs());
     }
 
     if (error == 0) {
@@ -2038,16 +2041,17 @@ static int check_placement_costs(const t_placer_costs& costs,
     return error;
 }
 
-static int check_placement_consistency() {
-    return check_block_placement_consistency() + check_macro_placement_consistency();
+static int check_placement_consistency(const PlaceLocVars& place_loc_vars) {
+    return check_block_placement_consistency(place_loc_vars) + check_macro_placement_consistency(place_loc_vars);
 }
 
-static int check_block_placement_consistency() {
-    int error = 0;
-
+static int check_block_placement_consistency(const PlaceLocVars& place_loc_vars) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_ctx = g_vpr_ctx.placement();
     auto& device_ctx = g_vpr_ctx.device();
+    const auto& block_locs = place_loc_vars.block_locs();
+    const auto& grid_blocks = place_loc_vars.grid_blocks();
+
+    int error = 0;
 
     vtr::vector<ClusterBlockId, int> bdone(cluster_ctx.clb_nlist.blocks().size(), 0);
 
@@ -2057,22 +2061,22 @@ static int check_block_placement_consistency() {
             for (int j = 0; j < (int)device_ctx.grid.height(); j++) {
                 const t_physical_tile_loc tile_loc(i, j, layer_num);
                 const auto& type = device_ctx.grid.get_physical_type(tile_loc);
-                if (place_ctx.grid_blocks.get_usage(tile_loc) > type->capacity) {
+                if (grid_blocks.get_usage(tile_loc) > type->capacity) {
                     VTR_LOG_ERROR(
                         "%d blocks were placed at grid location (%d,%d,%d), but location capacity is %d.\n",
-                        place_ctx.grid_blocks.get_usage(tile_loc), i, j, layer_num, type->capacity);
+                        grid_blocks.get_usage(tile_loc), i, j, layer_num, type->capacity);
                     error++;
                 }
                 int usage_check = 0;
                 for (int k = 0; k < type->capacity; k++) {
-                    ClusterBlockId bnum = place_ctx.grid_blocks.block_at_location({i, j, k, layer_num});
+                    ClusterBlockId bnum = grid_blocks.block_at_location({i, j, k, layer_num});
                     if (EMPTY_BLOCK_ID == bnum || INVALID_BLOCK_ID == bnum) {
                         continue;
                     }
 
                     auto logical_block = cluster_ctx.clb_nlist.block_type(bnum);
                     auto physical_tile = type;
-                    t_pl_loc block_loc = place_ctx.block_locs[bnum].loc;
+                    t_pl_loc block_loc = block_locs[bnum].loc;
 
                     if (physical_tile_type(block_loc) != physical_tile) {
                         VTR_LOG_ERROR(
@@ -2081,7 +2085,7 @@ static int check_block_placement_consistency() {
                         error++;
                     }
 
-                    auto& loc = place_ctx.block_locs[bnum].loc;
+                    auto& loc = block_locs[bnum].loc;
                     if (loc.x != i || loc.y != j || loc.layer != layer_num
                         || !is_sub_tile_compatible(physical_tile, logical_block,
                                                    loc.sub_tile)) {
@@ -2100,10 +2104,10 @@ static int check_block_placement_consistency() {
                     ++usage_check;
                     bdone[bnum]++;
                 }
-                if (usage_check != place_ctx.grid_blocks.get_usage(tile_loc)) {
+                if (usage_check != grid_blocks.get_usage(tile_loc)) {
                     VTR_LOG_ERROR(
                         "%d block(s) were placed at location (%d,%d,%d), but location contains %d block(s).\n",
-                        place_ctx.grid_blocks.get_usage(tile_loc),
+                        grid_blocks.get_usage(tile_loc),
                         tile_loc.x,
                         tile_loc.y,
                         tile_loc.layer_num,
@@ -2115,7 +2119,7 @@ static int check_block_placement_consistency() {
     }
 
     /* Check that every block exists in the device_ctx.grid and cluster_ctx.blocks arrays somewhere. */
-    for (auto blk_id : cluster_ctx.clb_nlist.blocks())
+    for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks())
         if (bdone[blk_id] != 1) {
             VTR_LOG_ERROR("Block %zu listed %d times in device context grid.\n",
                           size_t(blk_id), bdone[blk_id]);
@@ -2125,25 +2129,25 @@ static int check_block_placement_consistency() {
     return error;
 }
 
-int check_macro_placement_consistency() {
-    int error = 0;
-    auto& place_ctx = g_vpr_ctx.placement();
+int check_macro_placement_consistency(const PlaceLocVars& place_loc_vars) {
+    const auto& pl_macros = g_vpr_ctx.placement().pl_macros;
+    const auto& block_locs = place_loc_vars.block_locs();
+    const GridBlock grid_blocks = place_loc_vars.grid_blocks();
 
-    auto& pl_macros = place_ctx.pl_macros;
+    int error = 0;
 
     /* Check the pl_macro placement are legal - blocks are in the proper relative position. */
-    for (size_t imacro = 0; imacro < place_ctx.pl_macros.size(); imacro++) {
+    for (size_t imacro = 0; imacro < pl_macros.size(); imacro++) {
         auto head_iblk = pl_macros[imacro].members[0].blk_index;
 
         for (size_t imember = 0; imember < pl_macros[imacro].members.size(); imember++) {
             auto member_iblk = pl_macros[imacro].members[imember].blk_index;
 
             // Compute the supposed member's x,y,z location
-            t_pl_loc member_pos = place_ctx.block_locs[head_iblk].loc
-                                  + pl_macros[imacro].members[imember].offset;
+            t_pl_loc member_pos = block_locs[head_iblk].loc + pl_macros[imacro].members[imember].offset;
 
             // Check the place_ctx.block_locs data structure first
-            if (place_ctx.block_locs[member_iblk].loc != member_pos) {
+            if (block_locs[member_iblk].loc != member_pos) {
                 VTR_LOG_ERROR(
                     "Block %zu in pl_macro #%zu is not placed in the proper orientation.\n",
                     size_t(member_iblk), imacro);
@@ -2151,7 +2155,7 @@ int check_macro_placement_consistency() {
             }
 
             // Then check the place_ctx.grid data structure
-            if (place_ctx.grid_blocks.block_at_location(member_pos) != member_iblk) {
+            if (grid_blocks.block_at_location(member_pos) != member_iblk) {
                 VTR_LOG_ERROR(
                     "Block %zu in pl_macro #%zu is not placed in the proper orientation.\n",
                     size_t(member_iblk), imacro);
@@ -2159,6 +2163,7 @@ int check_macro_placement_consistency() {
             }
         } // Finish going through all the members
     }     // Finish going through all the macros
+
     return error;
 }
 
@@ -2273,10 +2278,10 @@ static void print_place_status(const t_annealing_state& state,
     fflush(stdout);
 }
 
-static void print_resources_utilization() {
-    auto& place_ctx = g_vpr_ctx.placement();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& device_ctx = g_vpr_ctx.device();
+static void print_resources_utilization(const PlaceLocVars& place_loc_vars) {
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& device_ctx = g_vpr_ctx.device();
+    const auto& block_locs = place_loc_vars.block_locs();
 
     int max_block_name = 0;
     int max_tile_name = 0;
@@ -2286,8 +2291,7 @@ static void print_resources_utilization() {
     std::map<t_logical_block_type_ptr, std::map<t_physical_tile_type_ptr, size_t>> num_placed_instances;
 
     for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks()) {
-        auto block_loc = place_ctx.block_locs[blk_id];
-        auto loc = block_loc.loc;
+        const t_pl_loc& loc = block_locs[blk_id].loc;
 
         auto physical_tile = device_ctx.grid.get_physical_type({loc.x, loc.y, loc.layer});
         auto logical_block = cluster_ctx.clb_nlist.block_type(blk_id);
@@ -2301,11 +2305,11 @@ static void print_resources_utilization() {
 
     VTR_LOG("\n");
     VTR_LOG("Placement resource usage:\n");
-    for (auto logical_block : num_type_instances) {
-        for (auto physical_tile : num_placed_instances[logical_block.first]) {
+    for (const auto [logical_block_type_ptr, _] : num_type_instances) {
+        for (const auto [physical_tile_type_ptr, num_instances] : num_placed_instances[logical_block_type_ptr]) {
             VTR_LOG("  %-*s implemented as %-*s: %d\n", max_block_name,
-                    logical_block.first->name, max_tile_name,
-                    physical_tile.first->name, physical_tile.second);
+                    logical_block_type_ptr->name, max_tile_name,
+                    physical_tile_type_ptr->name, num_instances);
         }
     }
     VTR_LOG("\n");
