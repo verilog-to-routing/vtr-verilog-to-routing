@@ -58,12 +58,12 @@ e_block_move_result record_block_move(t_pl_blocks_to_be_moved& blocks_affected,
                                       const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
 
 void apply_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected,
-                       vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
+                       PlacerContext& placer_ctx);
 
 void commit_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected);
 
 void revert_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected,
-                        vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
+                        PlacerContext& placer_ctx);
 
 void clear_move_blocks(t_pl_blocks_to_be_moved& blocks_affected);
 

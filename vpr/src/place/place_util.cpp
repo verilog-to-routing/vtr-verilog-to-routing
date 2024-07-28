@@ -17,16 +17,16 @@
  */
 static GridBlock init_grid_blocks();
 
-void init_placement_context() {
-    auto& place_ctx = g_vpr_ctx.mutable_placement();
+void init_placement_context(vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs,
+                            GridBlock& grid_blocks) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     /* Initialize the lookup of CLB block positions */
-    place_ctx.block_locs.clear();
-    place_ctx.block_locs.resize(cluster_ctx.clb_nlist.blocks().size());
+    block_locs.clear();
+    block_locs.resize(cluster_ctx.clb_nlist.blocks().size());
 
     /* Initialize the reverse lookup of CLB block positions */
-    place_ctx.grid_blocks = init_grid_blocks();
+    grid_blocks = init_grid_blocks();
 }
 
 static GridBlock init_grid_blocks() {
@@ -44,6 +44,7 @@ static GridBlock init_grid_blocks() {
             }
         }
     }
+
     return grid_blocks;
 }
 
@@ -363,17 +364,19 @@ void alloc_and_load_legal_placement_locations(std::vector<std::vector<std::vecto
 
 void set_block_location(ClusterBlockId blk_id,
                         const t_pl_loc& location,
-                        vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
-    auto& place_ctx = g_vpr_ctx.mutable_placement();
+                        PlacerContext& placer_ctx) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& block_locs = placer_ctx.get_mutable_block_locs();
+    auto& grid_blocks = placer_ctx.get_mutable_grid_blocks();
 
     const std::string& block_name = cluster_ctx.clb_nlist.block_name(blk_id);
 
     //Check if block location is out of range of grid dimensions
     if (location.x < 0 || location.x > int(device_ctx.grid.width() - 1)
         || location.y < 0 || location.y > int(device_ctx.grid.height() - 1)) {
-        VPR_THROW(VPR_ERROR_PLACE, "Block %s with ID %d is out of range at location (%d, %d). \n", block_name.c_str(), blk_id, location.x, location.y);
+        VPR_THROW(VPR_ERROR_PLACE, "Block %s with ID %d is out of range at location (%d, %d). \n",
+                  block_name.c_str(), blk_id, location.x, location.y);
     }
 
     //Set the location of the block
@@ -397,11 +400,11 @@ void set_block_location(ClusterBlockId blk_id,
     }
 
     //Mark the grid location and usage of the block
-    place_ctx.grid_blocks.set_block_at_location(location, blk_id);
-    place_ctx.grid_blocks.set_usage({location.x, location.y, location.layer},
-                                    place_ctx.grid_blocks.get_usage({location.x, location.y, location.layer}) + 1);
+    grid_blocks.set_block_at_location(location, blk_id);
+    grid_blocks.set_usage({location.x, location.y, location.layer},
+                          grid_blocks.get_usage({location.x, location.y, location.layer}) + 1);
 
-    place_sync_external_block_connections(blk_id, block_locs);
+    place_sync_external_block_connections(blk_id, placer_ctx);
 }
 
 bool macro_can_be_placed(t_pl_macro pl_macro, t_pl_loc head_pos, bool check_all_legality) {

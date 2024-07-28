@@ -1805,10 +1805,9 @@ static void revert_td_cost(const t_pl_blocks_to_be_moved& blocks_affected) {
  * Invalidate all the timing graph edges associated with these connections via
  * the NetPinTimingInvalidator class.
  */
-static void invalidate_affected_connections(
-    const t_pl_blocks_to_be_moved& blocks_affected,
-    NetPinTimingInvalidator* pin_tedges_invalidator,
-    TimingInfo* timing_info) {
+static void invalidate_affected_connections(const t_pl_blocks_to_be_moved& blocks_affected,
+                                            NetPinTimingInvalidator* pin_tedges_invalidator,
+                                            TimingInfo* timing_info) {
     VTR_ASSERT_SAFE(timing_info);
     VTR_ASSERT_SAFE(pin_tedges_invalidator);
 
@@ -1830,14 +1829,16 @@ static void alloc_and_load_placement_structs(float place_cost_exp,
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
 
+    place_ctx.lock_loc_vars();
+
     size_t num_nets = cluster_ctx.clb_nlist.nets().size();
 
     const int num_layers = device_ctx.grid.get_num_layers();
 
-    init_placement_context();
+    init_placement_context(placer_ctx.get_mutable_block_locs(), place_ctx.get_mutable_grid_blocks());
 
     int max_pins_per_clb = 0;
-    for (const auto& type : device_ctx.physical_tile_types) {
+    for (const t_physical_tile_type& type : device_ctx.physical_tile_types) {
         max_pins_per_clb = max(max_pins_per_clb, type.num_pins);
     }
 

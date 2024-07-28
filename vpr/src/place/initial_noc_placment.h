@@ -5,6 +5,8 @@
 #include "vpr_types.h"
 #include "vtr_vector_map.h"
 
+class PlacerContext;
+
 /**
  * @brief Randomly places NoC routers, then runs a quick simulated annealing
  * to minimize NoC costs.
@@ -13,6 +15,6 @@
  */
 void initial_noc_placement(const t_noc_opts& noc_opts,
                            const t_placer_opts& placer_opts,
-                           vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
+                           PlacerContext& placer_ctx);
 
 #endif //VTR_INITIAL_NOC_PLACMENT_H

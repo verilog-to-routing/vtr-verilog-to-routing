@@ -6,11 +6,15 @@
 
 #ifndef PLACE_UTIL_H
 #define PLACE_UTIL_H
+
 #include <string>
+
 #include "vpr_types.h"
 #include "vtr_util.h"
 #include "vtr_vector_map.h"
 #include "globals.h"
+
+#include "placer_context.h"
 
 // forward declaration of t_placer_costs so that it can be used an argument
 // in NocCostTerms constructor
@@ -303,7 +307,8 @@ class t_placer_statistics {
  *
  * Initialize both of them to empty states.
  */
-void init_placement_context();
+void init_placement_context(vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs,
+                            GridBlock& grid_blocks);
 
 /**
  * @brief Get the initial limit for inner loop block move attempt limit.
@@ -352,7 +357,7 @@ void alloc_and_load_legal_placement_locations(std::vector<std::vector<std::vecto
 /// and sets the location and grid usage of the block if it is legal.
 void set_block_location(ClusterBlockId blk_id,
                         const t_pl_loc& location,
-                        vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
+                        PlacerContext& placer_ctx);
 
 /// @brief check if a specified location is within the device grid
 inline bool is_loc_on_chip(t_physical_tile_loc loc) {

@@ -161,10 +161,9 @@ void propagate_place_constraints() {
     auto& place_ctx = g_vpr_ctx.placement();
     auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
 
-    for (auto pl_macro : place_ctx.pl_macros) {
+    for (const t_pl_macro& pl_macro : place_ctx.pl_macros) {
         if (is_macro_constrained(pl_macro)) {
-            /*
-             * Get the PartitionRegion for the head of the macro
+            /* Get the PartitionRegion for the head of the macro
              * based on the constraints of all blocks contained in the macro
              */
             PartitionRegion macro_head_pr = update_macro_head_pr(pl_macro);
@@ -472,7 +471,7 @@ int get_part_reg_size(const PartitionRegion& pr,
     const std::vector<Region>& regions = pr.get_regions();
     int num_tiles = 0;
 
-    for (const auto& region : regions) {
+    for (const Region& region : regions) {
         num_tiles += grid_tiles.region_tile_count(region, block_type);
     }
 

@@ -32,19 +32,20 @@ void NoCPlacementCheckpoint::save_checkpoint(double cost, const vtr::vector_map<
 }
 
 void NoCPlacementCheckpoint::restore_checkpoint(t_placer_costs& costs,
-                                                vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
+                                                PlacerContext& placer_ctx) {
     const auto& noc_ctx = g_vpr_ctx.noc();
     const auto& device_ctx = g_vpr_ctx.device();
-    auto& place_ctx = g_vpr_ctx.mutable_placement();
+    GridBlock& grid_blocks = placer_ctx.get_mutable_grid_blocks();
+    const auto& block_locs = placer_ctx.get_block_locs();
 
     // Get all physical routers
     const auto& noc_phy_routers = noc_ctx.noc_model.get_noc_routers();
 
     // Clear all physical routers in placement
-    for (const auto& phy_router : noc_phy_routers) {
-        auto phy_loc = phy_router.get_router_physical_location();
+    for (const NocRouter& phy_router : noc_phy_routers) {
+        t_physical_tile_loc phy_loc = phy_router.get_router_physical_location();
 
-        place_ctx.grid_blocks.set_usage(phy_loc, 0);
+        grid_blocks.set_usage(phy_loc, 0);
         auto tile = device_ctx.grid.get_physical_type(phy_loc);
 
         for (const auto& sub_tile : tile->sub_tiles) {
@@ -52,19 +53,16 @@ void NoCPlacementCheckpoint::restore_checkpoint(t_placer_costs& costs,
 
             for (int k = 0; k < capacity.total(); k++) {
                 const t_pl_loc loc(phy_loc, k + capacity.low);
-                if (place_ctx.grid_blocks.block_at_location(loc) != INVALID_BLOCK_ID) {
-                    place_ctx.grid_blocks.set_block_at_location(loc, EMPTY_BLOCK_ID);
+                if (grid_blocks.block_at_location(loc) != INVALID_BLOCK_ID) {
+                    grid_blocks.set_block_at_location(loc, EMPTY_BLOCK_ID);
                 }
             }
         }
     }
 
     // Place routers based on router_locations_
-    for (const auto& router_loc : router_locations_) {
-        ClusterBlockId router_blk_id = router_loc.first;
-        t_pl_loc location = router_loc.second;
-
-        set_block_location(router_blk_id, location, block_locs);
+    for (const auto& [router_blk_id, location] : router_locations_) {
+        set_block_location(router_blk_id, location, placer_ctx);
     }
 
     // Re-initialize routes and static variables that keep track of NoC-related costs

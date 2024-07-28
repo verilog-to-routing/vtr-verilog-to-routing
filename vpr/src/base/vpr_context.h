@@ -398,6 +398,7 @@ struct PlacementContext : public Context {
     vtr::vector_map<ClusterBlockId, t_block_loc>& get_mutable_block_locs() { VTR_ASSERT(loc_vars_are_accessible_); return block_locs; }
     const GridBlock& get_grid_blocks() const { VTR_ASSERT(loc_vars_are_accessible_); return grid_blocks; }
     GridBlock& get_mutable_grid_blocks() { VTR_ASSERT(loc_vars_are_accessible_); return grid_blocks; }
+    vtr::vector_map<ClusterPinId, int>& mutable_physical_pins() { VTR_ASSERT(loc_vars_are_accessible_); return physical_pins; }
     void lock_loc_vars() { loc_vars_are_accessible_ = false; }
     void unlock_loc_vars() { loc_vars_are_accessible_ = true; }
 

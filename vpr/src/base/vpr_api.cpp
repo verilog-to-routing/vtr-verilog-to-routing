@@ -832,7 +832,9 @@ void vpr_load_placement(t_vpr_setup& vpr_setup, const t_arch& arch) {
     const auto& filename_opts = vpr_setup.FileNameOpts;
 
     //Initialize placement data structures, which will be filled when loading placement
-    init_placement_context();
+    auto& block_locs = place_ctx.get_mutable_block_locs();
+    GridBlock& grid_blocks = place_ctx.get_mutable_grid_blocks();
+    init_placement_context(block_locs, grid_blocks);
 
     //Load an existing placement from a file
     place_ctx.placement_id = read_place(filename_opts.NetFile.c_str(), filename_opts.PlaceFile.c_str(),

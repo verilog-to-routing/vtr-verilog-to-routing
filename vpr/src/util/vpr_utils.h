@@ -5,17 +5,18 @@
 #include <string>
 
 #include "vpr_types.h"
+#include "vtr_vector.h"
+
 #include "atom_netlist.h"
 #include "clustered_netlist.h"
 #include "netlist.h"
-#include "vtr_vector.h"
-
 #include "arch_util.h"
 #include "physical_types_util.h"
 #include "rr_graph_utils.h"
 #include "vpr_constraints.h"
 
 class DeviceGrid;
+class PlacerContext;
 
 const t_model* find_model(const t_model* models, const std::string& name, bool required = true);
 const t_model_ports* find_model_port(const t_model* model, const std::string& name, bool required = true);
@@ -242,7 +243,8 @@ AtomBlockId find_memory_sibling(const t_pb* pb);
  * It does not check for overuse of locations, therefore it can be used with placements that have resource overuse.
  */
 void place_sync_external_block_connections(ClusterBlockId iblk,
-                                           const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
+                                           const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs,
+                                           vtr::vector_map<ClusterPinId, int>& physical_pins);
 
 //Returns the physical pin of the tile, related to the given ClusterNedId, and the net pin index
 int net_pin_to_tile_pin_index(const ClusterNetId net_id, int net_pin_index);

@@ -140,14 +140,14 @@ class PlacerContext : public Context {
     const PlacerMoveContext& move() const { return move_; }
     PlacerMoveContext& mutable_move() { return move_; }
 
-    const vtr::vector_map<ClusterBlockId, t_block_loc>& get_block_locs() const { return block_locs; }
-    vtr::vector_map<ClusterBlockId, t_block_loc>& get_mutable_block_locs() { return block_locs; }
+    const vtr::vector_map<ClusterBlockId, t_block_loc>& get_block_locs() const { return block_locs_; }
+    vtr::vector_map<ClusterBlockId, t_block_loc>& get_mutable_block_locs() { return block_locs_; }
 
-    const GridBlock& get_grid_blocks() const { return grid_blocks; }
-    GridBlock& get_mutable_grid_blocks() { return grid_blocks; }
+    const GridBlock& get_grid_blocks() const { return grid_blocks_; }
+    GridBlock& get_mutable_grid_blocks() { return grid_blocks_; }
 
-    const vtr::vector_map<ClusterPinId, int>& get_physical_pins() const { return physical_pins; }
-    vtr::vector_map<ClusterPinId, int>& get_mutable_physical_pins() { return physical_pins; }
+    const vtr::vector_map<ClusterPinId, int>& physical_pins() const { return physical_pins_; }
+    vtr::vector_map<ClusterPinId, int>& mutable_physical_pins() { return physical_pins_; }
 
   private:
     PlacerTimingContext timing_;
@@ -155,11 +155,11 @@ class PlacerContext : public Context {
     PlacerMoveContext move_;
 
     ///@brief Clustered block placement locations
-    vtr::vector_map<ClusterBlockId, t_block_loc> block_locs;
+    vtr::vector_map<ClusterBlockId, t_block_loc> block_locs_;
 
     ///@brief Clustered block associated with each grid location (i.e. inverse of block_locs)
-    GridBlock grid_blocks;
+    GridBlock grid_blocks_;
 
     ///@brief Clustered pin placement mapping with physical pin
-    vtr::vector_map<ClusterPinId, int> physical_pins;
+    vtr::vector_map<ClusterPinId, int> physical_pins_;
 };

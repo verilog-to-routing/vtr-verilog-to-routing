@@ -48,6 +48,7 @@
 #include "rr_graph_fwd.h"
 #include "rr_graph_cost.h"
 #include "rr_graph_type.h"
+#include "vtr_vector_map.h"
 
 /*******************************************************************************
  * Global data types and constants
@@ -898,6 +899,30 @@ class GridBlock {
 
   private:
     vtr::NdMatrix<t_grid_blocks, 3> grid_blocks_;
+};
+
+class PlaceLocVars {
+  private:
+    ///@brief Clustered block placement locations
+    vtr::vector_map<ClusterBlockId, t_block_loc> block_locs_;
+
+    ///@brief Clustered block associated with each grid location (i.e. inverse of block_locs)
+    GridBlock grid_blocks_;
+
+    ///@brief Clustered pin placement mapping with physical pin
+    vtr::vector_map<ClusterPinId, int> physical_pins_;
+
+  public:
+    inline const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs() const { return block_locs_; }
+    inline vtr::vector_map<ClusterBlockId, t_block_loc>& mutable_block_locs() { return block_locs_; }
+
+    inline const GridBlock& mutable_grid_blocks() const { return grid_blocks_; }
+    inline GridBlock& mutable_grid_blocks() { return grid_blocks_; }
+
+    inline const vtr::vector_map<ClusterPinId, int>& mutable_physical_pins() const { return physical_pins_; }
+    inline vtr::vector_map<ClusterPinId, int>& physical_pins() { return physical_pins_; }
+
+
 };
 
 ///@brief Names of various files

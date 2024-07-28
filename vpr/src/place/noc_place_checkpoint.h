@@ -18,6 +18,8 @@
 #include "vpr_types.h"
 #include "place_util.h"
 
+class PlacerContext;
+
 /**
  * @brief A NoC router placement checkpoint
  *
@@ -46,7 +48,7 @@ class NoCPlacementCheckpoint {
      *  @param costs: Used to load NoC related costs for the checkpoint
      */
     void restore_checkpoint(t_placer_costs& costs,
-                            vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
+                            PlacerContext& placer_ctx);
 
     /**
      * @brief Indicates whether the object is empty or it has already stored a

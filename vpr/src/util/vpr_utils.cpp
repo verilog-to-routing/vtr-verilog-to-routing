@@ -18,6 +18,7 @@
 #include "device_grid.h"
 #include "user_route_constraints.h"
 #include "re_cluster_util.h"
+#include "placer_context.h"
 
 /* This module contains subroutines that are used in several unrelated parts *
  * of VPR.  They are VPR-specific utility routines.                          */
@@ -2105,10 +2106,10 @@ void print_switch_usage() {
  */
 
 void place_sync_external_block_connections(ClusterBlockId iblk,
-                                           const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
+                                           const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs,
+                                           vtr::vector_map<ClusterPinId, int>& physical_pins) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& clb_nlist = cluster_ctx.clb_nlist;
-    auto& place_ctx = g_vpr_ctx.mutable_placement();
 
     t_pl_loc block_loc = block_locs[iblk].loc;
 
@@ -2131,11 +2132,11 @@ void place_sync_external_block_connections(ClusterBlockId iblk,
 
         int new_physical_pin_index = sub_tile.sub_tile_to_tile_pin_indices[sub_tile_pin_index + rel_capacity * max_num_block_pins];
 
-        auto result = place_ctx.physical_pins.find(pin);
-        if (result != place_ctx.physical_pins.end()) {
-            place_ctx.physical_pins[pin] = new_physical_pin_index;
+        auto result = physical_pins.find(pin);
+        if (result != physical_pins.end()) {
+            physical_pins[pin] = new_physical_pin_index;
         } else {
-            place_ctx.physical_pins.insert(pin, new_physical_pin_index);
+            physical_pins.insert(pin, new_physical_pin_index);
         }
     }
 }
