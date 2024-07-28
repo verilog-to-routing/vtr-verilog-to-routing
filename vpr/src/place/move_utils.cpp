@@ -1314,20 +1314,23 @@ std::string e_move_result_to_string(e_move_result move_outcome) {
     return move_result_to_string[move_outcome];
 }
 
-int find_free_layer(t_logical_block_type_ptr logical_block, const t_pl_loc& loc) {
+int find_free_layer(t_logical_block_type_ptr logical_block,
+                    const t_pl_loc& loc,
+                    const PlaceLocVars& place_loc_vars) {
     const auto& device_ctx = g_vpr_ctx.device();
-    const auto& place_ctx = g_vpr_ctx.placement();
+    const auto& compressed_grids = g_vpr_ctx.placement().compressed_block_grids;
+    const GridBlock& grid_blocks = place_loc_vars.grid_blocks();
 
     // TODO: Compatible layer vector should be shuffled first, and then iterated through
     int free_layer = loc.layer;
     VTR_ASSERT(loc.layer != OPEN);
     if (device_ctx.grid.get_num_layers() > 1) {
-        const auto& compatible_layers = place_ctx.compressed_block_grids[logical_block->index].get_layer_nums();
+        const auto& compatible_layers = compressed_grids[logical_block->index].get_layer_nums();
         if (compatible_layers.size() > 1) {
-            if (place_ctx.grid_blocks.block_at_location(loc) != EMPTY_BLOCK_ID) {
+            if (grid_blocks.block_at_location(loc) != EMPTY_BLOCK_ID) {
                 for (const auto& layer : compatible_layers) {
                     if (layer != free_layer) {
-                        if (place_ctx.grid_blocks.block_at_location(loc) == EMPTY_BLOCK_ID) {
+                        if (grid_blocks.block_at_location(loc) == EMPTY_BLOCK_ID) {
                             free_layer = layer;
                             break;
                         }

@@ -433,7 +433,9 @@ std::string e_move_result_to_string(e_move_result move_outcome);
  * @param loc
  * @return
  */
-int find_free_layer(t_logical_block_type_ptr logical_block, const t_pl_loc& loc);
+int find_free_layer(t_logical_block_type_ptr logical_block,
+                    const t_pl_loc& loc,
+                    const PlaceLocVars& place_loc_vars);
 
 int get_random_layer(t_logical_block_type_ptr logical_block);
 
