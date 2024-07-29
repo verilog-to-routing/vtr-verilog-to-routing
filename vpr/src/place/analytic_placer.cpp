@@ -128,7 +128,9 @@ constexpr int HEAP_STALLED_ITERATIONS_STOP = 15;
  * Currently only initializing AP configuration parameters
  * Placement & device info is accessed via g_vpr_ctx
  */
-AnalyticPlacer::AnalyticPlacer() {
+
+AnalyticPlacer::AnalyticPlacer(const PlaceLocVars& place_loc_vars)
+    : placer_loc_vars_ref_(place_loc_vars) {
     //Eigen::initParallel();
 
     // TODO: PlacerHeapCfg should be externally configured & supplied
@@ -301,7 +303,7 @@ void AnalyticPlacer::build_legal_locations() {
 // initialize other data members
 void AnalyticPlacer::init() {
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
-    auto& block_locs = g_vpr_ctx.placement().block_locs();
+    auto& block_locs = placer_loc_vars_ref_.block_locs();
 
     for (auto blk_id : clb_nlist.blocks()) {
         blk_locs.insert(blk_id, BlockLocation{});
@@ -741,7 +743,7 @@ std::string AnalyticPlacer::print_overlap(vtr::Matrix<int>& overlap, FILE* fp) {
 void AnalyticPlacer::print_place(const char* place_file) {
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
-    auto& block_locs = g_vpr_ctx.placement().block_locs();
+    auto& block_locs = placer_loc_vars_ref_.block_locs();
 
     FILE* fp;
 

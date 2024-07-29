@@ -722,8 +722,9 @@ void try_place(const Netlist<>& net_list,
 #ifdef ENABLE_ANALYTIC_PLACE
     // Analytic placer: When enabled, skip most of the annealing and go straight to quench
     // TODO: refactor goto label.
-    if (placer_opts.enable_analytic_placer)
+    if (placer_opts.enable_analytic_placer) {
         skip_anneal = true;
+    }
 #endif /* ENABLE_ANALYTIC_PLACE */
 
     //RL agent state definition
@@ -2142,7 +2143,7 @@ static int check_block_placement_consistency(const PlaceLocVars& place_loc_vars)
 int check_macro_placement_consistency(const PlaceLocVars& place_loc_vars) {
     const auto& pl_macros = g_vpr_ctx.placement().pl_macros;
     const auto& block_locs = place_loc_vars.block_locs();
-    const GridBlock grid_blocks = place_loc_vars.grid_blocks();
+    const auto& grid_blocks = place_loc_vars.grid_blocks();
 
     int error = 0;
 
