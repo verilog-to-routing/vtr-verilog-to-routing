@@ -53,7 +53,7 @@ void restore_best_placement(PlacerContext& placer_ctx,
     if (placement_checkpoint.cp_is_valid() && timing_info->least_slack_critical_path().delay() > placement_checkpoint.get_cp_cpd() && costs.bb_cost * 1.05 > placement_checkpoint.get_cp_bb_cost()) {
         //restore the latest placement checkpoint
 
-        costs = placement_checkpoint.restore_placement(placer_ctx.get_mutable_block_locs(), placer_ctx.get_mutable_grid_blocks());
+        costs = placement_checkpoint.restore_placement(placer_ctx.mutable_block_locs(), placer_ctx.mutable_grid_blocks());
 
         //recompute timing from scratch
         placer_criticalities.get()->set_recompute_required();
@@ -74,7 +74,7 @@ void restore_best_placement(PlacerContext& placer_ctx,
          * and need to be re-computed from scratch.
          */
         if (noc_opts.noc) {
-            reinitialize_noc_routing(costs, {}, placer_ctx.get_block_locs());
+            reinitialize_noc_routing(costs, {}, placer_ctx.block_locs());
         }
 
         VTR_LOG("\nCheckpoint restored\n");

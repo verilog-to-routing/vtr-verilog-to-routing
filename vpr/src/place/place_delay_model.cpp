@@ -401,7 +401,7 @@ void comp_td_connection_delays(const PlaceDelayModel* delay_model,
                                PlacerContext& placer_ctx) {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& p_timing_ctx = placer_ctx.mutable_timing();
-    auto& block_locs = placer_ctx.get_block_locs();
+    auto& block_locs = placer_ctx.block_locs();
     auto& connection_delay = p_timing_ctx.connection_delay;
 
     for (ClusterNetId net_id : cluster_ctx.clb_nlist.nets()) {

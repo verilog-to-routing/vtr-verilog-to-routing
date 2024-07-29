@@ -16,7 +16,7 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
     const auto& device_ctx = g_vpr_ctx.device();
     auto& placer_ctx = placer_ctx_.get();
     auto& place_move_ctx = placer_ctx.mutable_move();
-    const auto& block_locs = placer_ctx.get_block_locs();
+    const auto& block_locs = placer_ctx.block_locs();
     const auto& place_loc_vars = placer_ctx.place_loc_vars();
 
     //Find a movable block based on blk_type
@@ -199,7 +199,7 @@ void MedianMoveGenerator::get_bb_from_scratch_excluding_block(ClusterNetId net_i
                                                               bool& skip_net) {
     //TODO: account for multiple physical pin instances per logical pin
     const auto& placer_ctx = placer_ctx_.get();
-    const auto& block_locs = placer_ctx.get_block_locs();
+    const auto& block_locs = placer_ctx.block_locs();
 
     skip_net = true;
 

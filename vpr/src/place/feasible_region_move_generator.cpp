@@ -18,7 +18,7 @@ e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& placer_ctx = placer_ctx_.get();
     auto& place_move_ctx = placer_ctx.mutable_move();
-    const auto& block_locs = placer_ctx.get_block_locs();
+    const auto& block_locs = placer_ctx.block_locs();
     const auto& place_loc_vars = placer_ctx.place_loc_vars();
 
     ClusterNetId net_from;

@@ -44,7 +44,7 @@ e_create_move CentroidMoveGenerator::propose_move(t_pl_blocks_to_be_moved& block
                                                   const t_placer_opts& placer_opts,
                                                   const PlacerCriticalities* /*criticalities*/) {
     auto& placer_ctx = placer_ctx_.get();
-    const auto& block_locs = placer_ctx.get_block_locs();
+    const auto& block_locs = placer_ctx.block_locs();
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_move_ctx = placer_ctx.mutable_move();

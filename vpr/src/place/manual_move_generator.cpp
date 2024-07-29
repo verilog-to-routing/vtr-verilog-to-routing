@@ -29,7 +29,7 @@ e_create_move ManualMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
     auto& place_ctx = g_vpr_ctx.placement();
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.device();
-    auto& block_locs = placer_ctx_.get().get_block_locs();
+    auto& block_locs = placer_ctx_.get().block_locs();
 
     int block_id = -1;
     t_pl_loc to;

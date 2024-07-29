@@ -672,7 +672,7 @@ ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from,
                                                const PlacerContext& placer_ctx) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_move_ctx = placer_ctx.move();
-    auto& block_locs = placer_ctx.get_block_locs();
+    auto& block_locs = placer_ctx.block_locs();
 
     //Initialize critical net and pin to be invalid
     net_from = ClusterNetId::INVALID();
@@ -707,7 +707,7 @@ ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from,
                                                const PlacerContext& placer_ctx) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_move_ctx = placer_ctx.move();
-    auto& block_locs = placer_ctx.get_block_locs();
+    auto& block_locs = placer_ctx.block_locs();
 
     //Initialize critical net and pin to be invalid
     net_from = ClusterNetId::INVALID();

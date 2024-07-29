@@ -459,7 +459,7 @@ void try_place(const Netlist<>& net_list,
 
     if (!placer_opts.write_initial_place_file.empty()) {
         print_place(nullptr, nullptr, (placer_opts.write_initial_place_file + ".init.place").c_str(),
-                    placer_ctx.get_block_locs());
+                    placer_ctx.block_locs());
     }
 
 #ifdef ENABLE_ANALYTIC_PLACE
@@ -1126,7 +1126,7 @@ static void placement_inner_loop(const t_annealing_state* state,
                                                    state->num_temps + 1, inner_placement_save_count);
             VTR_LOG("Saving placement to file at temperature move %d / %d: %s\n",
                     inner_iter, state->move_lim, filename.c_str());
-            print_place(nullptr, nullptr, filename.c_str(), placer_ctx.get_block_locs());
+            print_place(nullptr, nullptr, filename.c_str(), placer_ctx.block_locs());
             ++inner_placement_save_count;
         }
     }
@@ -1279,7 +1279,7 @@ static e_move_result try_swap(const t_annealing_state* state,
      * Returns whether the swap is accepted, rejected or aborted.        *
      * Passes back the new value of the cost functions.                  */
 
-    const auto& block_locs = placer_ctx.get_block_locs();
+    const auto& block_locs = placer_ctx.block_locs();
 
     float rlim_escape_fraction = placer_opts.rlim_escape_fraction;
     float timing_tradeoff = placer_opts.timing_tradeoff;
@@ -1486,7 +1486,7 @@ static e_move_result try_swap(const t_annealing_state* state,
                              g_vpr_ctx.placement().cube_bb);
 
             /* Update clb data structures since we kept the move. */
-            commit_move_blocks(blocks_affected, placer_ctx.get_mutable_grid_blocks());
+            commit_move_blocks(blocks_affected, placer_ctx.mutable_grid_blocks());
 
             if (proposed_action.logical_blk_type_index != -1) { //if the agent proposed the block type, then collect the block type stat
                 ++move_type_stat.accepted_moves[proposed_action.logical_blk_type_index][(int)proposed_action.move_type];
@@ -1849,8 +1849,8 @@ static void alloc_and_load_placement_structs(float place_cost_exp,
 
     const int num_layers = device_ctx.grid.get_num_layers();
 
-    auto& block_locs = placer_ctx.get_mutable_block_locs();
-    auto& grid_blocks = placer_ctx.get_mutable_grid_blocks();
+    auto& block_locs = placer_ctx.mutable_block_locs();
+    auto& grid_blocks = placer_ctx.mutable_grid_blocks();
     init_placement_context(block_locs, grid_blocks);
 
     int max_pins_per_clb = 0;
@@ -1993,13 +1993,13 @@ static void check_place(const t_placer_costs& costs,
 
     error += check_placement_consistency(placer_ctx.place_loc_vars());
     error += check_placement_costs(costs, delay_model, criticalities, place_algorithm, placer_ctx);
-    error += check_placement_floorplanning(placer_ctx.get_block_locs());
+    error += check_placement_floorplanning(placer_ctx.block_locs());
 
     if (noc_opts.noc) {
         // check the NoC costs during placement if the user is using the NoC supported flow
-        error += check_noc_placement_costs(costs, ERROR_TOL, noc_opts, placer_ctx.get_block_locs());
+        error += check_noc_placement_costs(costs, ERROR_TOL, noc_opts, placer_ctx.block_locs());
         // make sure NoC routing configuration does not create any cycles in CDG
-        error += (int)noc_routing_has_cycle(placer_ctx.get_block_locs());
+        error += (int)noc_routing_has_cycle(placer_ctx.block_locs());
     }
 
     if (error == 0) {

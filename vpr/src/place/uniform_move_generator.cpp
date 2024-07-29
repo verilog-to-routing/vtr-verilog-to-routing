@@ -13,7 +13,7 @@ e_create_move UniformMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks
                                                  const PlacerCriticalities* /*criticalities*/) {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     const auto& placer_ctx = placer_ctx_.get();
-    const auto& block_locs = placer_ctx.get_block_locs();
+    const auto& block_locs = placer_ctx.block_locs();
     const auto& place_loc_vars = placer_ctx.place_loc_vars();
 
     //Find a movable block based on blk_type

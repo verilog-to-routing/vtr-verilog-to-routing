@@ -141,11 +141,11 @@ class PlacerContext : public Context {
     inline const PlacerMoveContext& move() const { return move_; }
     inline PlacerMoveContext& mutable_move() { return move_; }
 
-    inline const vtr::vector_map<ClusterBlockId, t_block_loc>& get_block_locs() const { return loc_vars_.block_locs(); }
-    inline vtr::vector_map<ClusterBlockId, t_block_loc>& get_mutable_block_locs() { return loc_vars_.mutable_block_locs(); }
+    inline const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs() const { return loc_vars_.block_locs(); }
+    inline vtr::vector_map<ClusterBlockId, t_block_loc>& mutable_block_locs() { return loc_vars_.mutable_block_locs(); }
 
-    inline const GridBlock& get_grid_blocks() const { return loc_vars_.grid_blocks(); }
-    inline GridBlock& get_mutable_grid_blocks() { return loc_vars_.mutable_grid_blocks(); }
+    inline const GridBlock& grid_blocks() const { return loc_vars_.grid_blocks(); }
+    inline GridBlock& mutable_grid_blocks() { return loc_vars_.mutable_grid_blocks(); }
 
     inline const vtr::vector_map<ClusterPinId, int>& physical_pins() const { return loc_vars_.physical_pins(); }
     inline vtr::vector_map<ClusterPinId, int>& mutable_physical_pins() { return loc_vars_.mutable_physical_pins(); }

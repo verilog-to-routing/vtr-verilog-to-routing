@@ -13,7 +13,7 @@ e_create_move CriticalUniformMoveGenerator::propose_move(t_pl_blocks_to_be_moved
                                                          const PlacerCriticalities* /*criticalities*/) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& placer_ctx = placer_ctx_.get();
-    const auto& block_locs = placer_ctx.get_block_locs();
+    const auto& block_locs = placer_ctx.block_locs();
 
     ClusterNetId net_from;
     int pin_from;

@@ -355,7 +355,7 @@ static double comp_td_connection_cost(const PlaceDelayModel* delay_model,
                                       ClusterNetId net,
                                       int ipin) {
     const auto& p_timing_ctx = placer_ctx.timing();
-    const auto& block_locs = placer_ctx.get_block_locs();
+    const auto& block_locs = placer_ctx.block_locs();
 
     VTR_ASSERT_SAFE_MSG(ipin > 0, "Shouldn't be calculating connection timing cost for driver pins");
 

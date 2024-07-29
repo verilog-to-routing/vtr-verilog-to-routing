@@ -503,7 +503,7 @@ static void update_net_bb(const ClusterNetId net,
                           const t_pl_moved_block& pl_moved_block) {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     const auto& placer_ctx = placer_ctx_ref->get();
-    const auto& block_locs = placer_ctx.get_block_locs();
+    const auto& block_locs = placer_ctx.block_locs();
 
     if (cluster_ctx.clb_nlist.net_sinks(net).size() < SMALL_NET) {
         //For small nets brute-force bounding box update is faster
@@ -544,7 +544,7 @@ static void update_net_layer_bb(const ClusterNetId net,
                                 const t_pl_moved_block& pl_moved_block) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     const auto& placer_ctx = placer_ctx_ref->get();
-    auto& block_locs = placer_ctx.get_block_locs();
+    auto& block_locs = placer_ctx.block_locs();
 
     if (cluster_ctx.clb_nlist.net_sinks(net).size() < SMALL_NET) {
         //For small nets brute-force bounding box update is faster
@@ -615,7 +615,7 @@ static void update_td_delta_costs(const PlaceDelayModel* delay_model,
      */
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& placer_ctx = placer_ctx_ref->get();
-    auto& block_locs = placer_ctx.get_block_locs();
+    auto& block_locs = placer_ctx.block_locs();
 
     const auto& connection_delay = placer_ctx.timing().connection_delay;
     auto& connection_timing_cost = placer_ctx.mutable_timing().connection_timing_cost;
@@ -737,7 +737,7 @@ static void get_non_updatable_bb(ClusterNetId net_id,
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.device();
     auto& placer_ctx = placer_ctx_ref->get();
-    auto& block_locs = placer_ctx.get_block_locs();
+    auto& block_locs = placer_ctx.block_locs();
 
     ClusterBlockId bnum = cluster_ctx.clb_nlist.net_driver_block(net_id);
     int pnum = placer_ctx.place_loc_vars().net_pin_to_tile_pin_index(net_id, 0);
@@ -810,7 +810,7 @@ static void get_non_updatable_layer_bb(ClusterNetId net_id,
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& placer_ctx = placer_ctx_ref->get();
-    auto& block_locs = placer_ctx.get_block_locs();
+    auto& block_locs = placer_ctx.block_locs();
 
     int num_layers = device_ctx.grid.get_num_layers();
     for (int layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); layer_num++) {
@@ -1501,7 +1501,7 @@ static void get_bb_from_scratch(ClusterNetId net_id,
     auto& device_ctx = g_vpr_ctx.device();
     auto& grid = device_ctx.grid;
     const auto& placer_ctx = placer_ctx_ref->get();
-    auto& block_locs = placer_ctx.get_block_locs();
+    auto& block_locs = placer_ctx.block_locs();
 
     ClusterBlockId bnum = cluster_ctx.clb_nlist.net_driver_block(net_id);
     t_pl_loc block_loc = block_locs[bnum].loc;
@@ -1622,7 +1622,7 @@ static void get_layer_bb_from_scratch(ClusterNetId net_id,
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& grid = device_ctx.grid;
     auto& placer_ctx = placer_ctx_ref->get();
-    auto& block_locs = placer_ctx.get_block_locs();
+    auto& block_locs = placer_ctx.block_locs();
 
     const int num_layers = device_ctx.grid.get_num_layers();
     std::vector<int> xmin(num_layers, OPEN);
