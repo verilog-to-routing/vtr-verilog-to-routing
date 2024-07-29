@@ -46,7 +46,7 @@ void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type
 
 //Initializes the drawing locations.
 //FIXME: Currently broken if no rr-graph is loaded
-void init_draw_coords(float clb_width);
+void init_draw_coords(float clb_width, const PlaceLocVars& place_loc_vars);
 
 /* Sets the static show_graphics and gr_automode variables to the    *
  * desired values.  They control if graphics are enabled and, if so, *
@@ -132,7 +132,7 @@ bool highlight_loc_with_specific_color(t_pl_loc curr_loc, ezgl::color& loc_color
  * block types than colour choices. This ensures we support any number of types, although the colours may repeat.*/
 ezgl::color get_block_type_color(t_physical_tile_type_ptr type);
 
-/* Lightens a color's luminance [0, 1] by an aboslute 'amount' */
+/* Lightens a color's luminance [0, 1] by an absolute 'amount' */
 ezgl::color lighten_color(ezgl::color color, float amount);
 
 void toggle_window_mode(GtkWidget* /*widget*/, ezgl::application* /*app*/);

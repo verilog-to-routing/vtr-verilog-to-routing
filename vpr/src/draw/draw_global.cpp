@@ -26,6 +26,11 @@ static t_draw_state draw_state;
  */
 static t_draw_coords draw_coords;
 
+/**
+ * @brief Stores a reference to a PlaceLocVars to be used in the graphics code.
+ */
+static std::optional<std::reference_wrapper<const PlaceLocVars>> place_loc_vars_ref;
+
 /*********************** Accessor Subroutines Definition ********************/
 
 /* This accessor function returns pointer to the global variable
@@ -38,6 +43,14 @@ t_draw_coords* get_draw_coords_vars() {
 /* Use this function to access draw_state. */
 t_draw_state* get_draw_state_vars() {
     return &draw_state;
+}
+
+void set_graphics_place_loc_vars_ref(const PlaceLocVars& place_loc_vars) {
+    place_loc_vars_ref = std::ref(place_loc_vars);
+}
+
+const PlaceLocVars& get_graphics_place_loc_vars_ref() {
+    return place_loc_vars_ref->get();
 }
 
 #endif // NO_GRAPHICS

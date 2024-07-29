@@ -570,15 +570,17 @@ void free_draw_structs() {
 #endif /* NO_GRAPHICS */
 }
 
-void init_draw_coords(float width_val) {
+void init_draw_coords(float width_val, const PlaceLocVars& place_loc_vars) {
 #ifndef NO_GRAPHICS
     /* Load the arrays containing the left and bottom coordinates of the clbs   *
      * forming the FPGA.  tile_width_val sets the width and height of a drawn    *
      * clb.                                                                     */
     t_draw_state* draw_state = get_draw_state_vars();
     t_draw_coords* draw_coords = get_draw_coords_vars();
-    auto& device_ctx = g_vpr_ctx.device();
+    const auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
+
+    set_graphics_place_loc_vars_ref(place_loc_vars);
 
     if (!draw_state->show_graphics && !draw_state->save_graphics
         && draw_state->graphics_commands.empty())
@@ -717,10 +719,7 @@ void act_on_key_press(ezgl::application* app, GdkEventKey* /*event*/, char* key_
 }
 
 void act_on_mouse_press(ezgl::application* app, GdkEventButton* event, double x, double y) {
-    //  std::cout << "User clicked the ";
-
     if (event->button == 1) {
-        //    std::cout << "left ";
 
         if (window_mode) {
             //click on any two points to form new window rectangle bound
@@ -780,12 +779,6 @@ void act_on_mouse_press(ezgl::application* app, GdkEventButton* event, double x,
             highlight_blocks(x, y);
         }
     }
-    //  else if (event->button == 2)
-    //    std::cout << "middle ";
-    //  else if (event->button == 3)
-    //    std::cout << "right ";
-
-    //  std::cout << "mouse button at coordinates (" << x << "," << y << ") " << std::endl;
 }
 
 void act_on_mouse_move(ezgl::application* app, GdkEventButton* /* event */, double x, double y) {

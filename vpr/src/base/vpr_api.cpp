@@ -1077,7 +1077,7 @@ RouteStatus vpr_load_routing(t_vpr_setup& vpr_setup,
                                     net_delay);
         timing_info->update();
     }
-    init_draw_coords(fixed_channel_width);
+    init_draw_coords(fixed_channel_width, g_vpr_ctx.placement().place_loc_vars());
 
     return RouteStatus(is_legal, fixed_channel_width);
 }
@@ -1116,7 +1116,7 @@ void vpr_create_rr_graph(t_vpr_setup& vpr_setup, const t_arch& arch, int chan_wi
                     &warnings,
                     is_flat);
     //Initialize drawing, now that we have an RR graph
-    init_draw_coords(chan_width_fac);
+    init_draw_coords(chan_width_fac, g_vpr_ctx.placement().place_loc_vars());
 }
 
 void vpr_init_graphics(const t_vpr_setup& vpr_setup, const t_arch& arch, bool is_flat) {

@@ -390,7 +390,7 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
                     &warnings,
                     is_flat);
 
-    init_draw_coords(final);
+    init_draw_coords(final, g_vpr_ctx.placement().place_loc_vars());
 
     /* Allocate and load additional rr_graph information needed only by the router. */
     alloc_and_load_rr_node_route_structs();

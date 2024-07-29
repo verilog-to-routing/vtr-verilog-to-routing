@@ -27,6 +27,10 @@ t_draw_coords* get_draw_coords_vars();
 
 t_draw_state* get_draw_state_vars();
 
+void set_graphics_place_loc_vars_ref(const PlaceLocVars& place_loc_vars);
+
+const PlaceLocVars& get_graphics_place_loc_vars_ref();
+
 #endif // NO_GRAPHICS
 
 #endif

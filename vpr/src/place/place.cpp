@@ -482,7 +482,7 @@ void try_place(const Netlist<>& net_list,
     }
 
     const int width_fac = placer_opts.place_chan_width;
-    init_draw_coords((float)width_fac);
+    init_draw_coords((float)width_fac, place_loc_vars);
 
     /* Allocated here because it goes into timing critical code where each memory allocation is expensive */
     IntraLbPbPinLookup pb_gpin_lookup(device_ctx.logical_block_types);

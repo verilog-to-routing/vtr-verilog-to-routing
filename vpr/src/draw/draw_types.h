@@ -397,7 +397,7 @@ struct t_draw_coords {
 
   private:
     float tile_width;
-    friend void init_draw_coords(float);
+    friend void init_draw_coords(float width_val, const PlaceLocVars& place_loc_vars);
 };
 
 #endif // NO_GRAPHICS
