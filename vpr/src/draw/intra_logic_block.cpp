@@ -152,7 +152,7 @@ void draw_internal_draw_subblk(ezgl::renderer* g) {
     }
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_ctx = g_vpr_ctx.placement();
+    const auto& grid_blocks = get_graphics_place_loc_vars_ref().grid_blocks();
 
     int total_layer_num = device_ctx.grid.get_num_layers();
 
@@ -175,14 +175,16 @@ void draw_internal_draw_subblk(ezgl::renderer* g) {
                     int num_sub_tiles = type->capacity;
                     for (int k = 0; k < num_sub_tiles; ++k) {
                         /* Don't draw if block is empty. */
-                        if (place_ctx.get_grid_blocks().block_at_location({i, j, k, layer_num}) == EMPTY_BLOCK_ID || place_ctx.get_grid_blocks().block_at_location({i, j, k, layer_num}) == INVALID_BLOCK_ID)
+                        if (grid_blocks.block_at_location({i, j, k, layer_num}) == EMPTY_BLOCK_ID || grid_blocks.block_at_location({i, j, k, layer_num}) == INVALID_BLOCK_ID) {
                             continue;
+                        }
 
                         /* Get block ID */
-                        ClusterBlockId bnum = place_ctx.get_grid_blocks().block_at_location({i, j, k, layer_num});
+                        ClusterBlockId bnum = grid_blocks.block_at_location({i, j, k, layer_num});
                         /* Safety check, that physical blocks exists in the CLB */
-                        if (cluster_ctx.clb_nlist.block_pb(bnum) == nullptr)
+                        if (cluster_ctx.clb_nlist.block_pb(bnum) == nullptr) {
                             continue;
+                        }
                         draw_internal_pb(bnum, cluster_ctx.clb_nlist.block_pb(bnum), ezgl::rectangle({0, 0}, 0, 0), cluster_ctx.clb_nlist.block_type(bnum), g);
                     }
                 }
@@ -271,7 +273,7 @@ draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node* pb_graph_node
     float sub_tile_x, sub_tile_y;
     float child_width, child_height;
     auto& device_ctx = g_vpr_ctx.device();
-    auto& place_ctx = g_vpr_ctx.placement();
+    const auto& grid_blocks = get_graphics_place_loc_vars_ref().grid_blocks();
 
     // get the bbox for this pb type
     ezgl::rectangle& pb_bbox = get_draw_coords_vars()->blk_info.at(type_descrip_index).get_pb_bbox_ref(*pb_graph_node);
@@ -289,7 +291,7 @@ draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node* pb_graph_node
     int capacity = device_ctx.physical_tile_types[type_descrip_index].capacity;
     // TODO: this is a hack - should be fixed for the layer_num
     const auto& type = device_ctx.grid.get_physical_type({1, 0, 0});
-    if (capacity > 1 && device_ctx.grid.width() > 0 && device_ctx.grid.height() > 0 && place_ctx.get_grid_blocks().get_usage({1, 0, 0}) != 0
+    if (capacity > 1 && device_ctx.grid.width() > 0 && device_ctx.grid.height() > 0 && grid_blocks.get_usage({1, 0, 0}) != 0
         && type_descrip_index == type->index) {
         // that should test for io blocks, and setting capacity_divisor > 1
         // will squish every thing down
@@ -339,7 +341,7 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
     t_draw_coords* draw_coords = get_draw_coords_vars();
     t_draw_state* draw_state = get_draw_state_vars();
 
-    auto& block_locs = g_vpr_ctx.placement().block_locs();
+    auto& block_locs = get_graphics_place_loc_vars_ref().block_locs();
 
     t_selected_sub_block_info& sel_sub_info = get_selected_sub_block_info();
 
@@ -557,7 +559,7 @@ void draw_logical_connections(ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
 
     auto& atom_ctx = g_vpr_ctx.atom();
-    auto& block_locs = g_vpr_ctx.placement().block_locs();
+    auto& block_locs = get_graphics_place_loc_vars_ref().block_locs();
 
     g->set_line_dash(ezgl::line_dash::none);
 

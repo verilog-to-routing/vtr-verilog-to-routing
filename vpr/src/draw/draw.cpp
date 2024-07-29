@@ -1004,7 +1004,7 @@ static void highlight_blocks(double x, double y) {
     }
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& block_locs = g_vpr_ctx.placement().block_locs();
+    auto& block_locs = get_graphics_place_loc_vars_ref().block_locs();
 
     VTR_ASSERT(clb_index != EMPTY_BLOCK_ID);
 
@@ -1048,7 +1048,7 @@ ClusterBlockId get_cluster_block_id_from_xy_loc(double x, double y) {
     ClusterBlockId clb_index = EMPTY_BLOCK_ID;
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_ctx = g_vpr_ctx.placement();
+    const auto& grid_blocks = get_graphics_place_loc_vars_ref().grid_blocks();
 
     /// determine block ///
     ezgl::rectangle clb_bbox;
@@ -1071,7 +1071,7 @@ ClusterBlockId get_cluster_block_id_from_xy_loc(double x, double y) {
                 // iterate over sub_blocks
                 const auto& type = device_ctx.grid.get_physical_type({i, j, layer_num});
                 for (int k = 0; k < type->capacity; ++k) {
-                    clb_index = place_ctx.get_grid_blocks().block_at_location({i, j, k, layer_num});
+                    clb_index = grid_blocks.block_at_location({i, j, k, layer_num});
                     if (clb_index != EMPTY_BLOCK_ID) {
                         clb_bbox = draw_coords->get_absolute_clb_bbox(clb_index,
                                                                       cluster_ctx.clb_nlist.block_type(clb_index));
