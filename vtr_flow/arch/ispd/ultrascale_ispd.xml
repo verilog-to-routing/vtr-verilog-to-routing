@@ -504,11 +504,12 @@
           </pb_type>
           <interconnect>
             <!-- Fracturable LUT connectivity: Based on Fig 3-1 of 'UltraScale Architecture CLB User Guide' UG574 (v1.5) -->
-            <direct name="I0" input="LUT6_2.I0" output="LUTX[0].I0 LUTX[1].I0"/>
-            <direct name="I1" input="LUT6_2.I1" output="LUTX[0].I1 LUTX[1].I1"/>
-            <direct name="I2" input="LUT6_2.I2" output="LUTX[0].I2 LUTX[1].I2"/>
-            <direct name="I3" input="LUT6_2.I3" output="LUTX[0].I3 LUTX[1].I3"/>
-            <direct name="I4" input="LUT6_2.I4" output="LUTX[0].I4 LUTX[1].I4"/>
+            <!-- UPDATED based on known legal external ISPD placements -->
+            <complete name="I0" input="LUT6_2.I0" output="LUTX[0].I0 LUTX[1].I0 LUTX[0].I1 LUTX[1].I1 LUTX[0].I2 LUTX[1].I2 LUTX[0].I3 LUTX[1].I3 LUTX[0].I4 LUTX[1].I4"/>
+            <complete name="I1" input="LUT6_2.I1" output="LUTX[0].I0 LUTX[1].I0 LUTX[0].I1 LUTX[1].I1 LUTX[0].I2 LUTX[1].I2 LUTX[0].I3 LUTX[1].I3 LUTX[0].I4 LUTX[1].I4"/>
+            <complete name="I2" input="LUT6_2.I2" output="LUTX[0].I0 LUTX[1].I0 LUTX[0].I1 LUTX[1].I1 LUTX[0].I2 LUTX[1].I2 LUTX[0].I3 LUTX[1].I3 LUTX[0].I4 LUTX[1].I4"/>
+            <complete name="I3" input="LUT6_2.I3" output="LUTX[0].I0 LUTX[1].I0 LUTX[0].I1 LUTX[1].I1 LUTX[0].I2 LUTX[1].I2 LUTX[0].I3 LUTX[1].I3 LUTX[0].I4 LUTX[1].I4"/>
+            <complete name="I4" input="LUT6_2.I4" output="LUTX[0].I0 LUTX[1].I0 LUTX[0].I1 LUTX[1].I1 LUTX[0].I2 LUTX[1].I2 LUTX[0].I3 LUTX[1].I3 LUTX[0].I4 LUTX[1].I4"/>
             <direct name="O6" input="LUTX[0].O" output="LUT6_2.O6"/>
             <direct name="O5" input="LUTX[1].O" output="LUT6_2.O5"/>
           </interconnect>
