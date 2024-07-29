@@ -260,7 +260,8 @@ static int count_connections();
 static void commit_td_cost(const t_pl_blocks_to_be_moved& blocks_affected,
                            PlacerContext& placer_ctx);
 
-static void revert_td_cost(const t_pl_blocks_to_be_moved& blocks_affected);
+static void revert_td_cost(const t_pl_blocks_to_be_moved& blocks_affected,
+                           PlacerTimingContext& p_timing_ctx);
 
 static void invalidate_affected_connections(
     const t_pl_blocks_to_be_moved& blocks_affected,
@@ -1536,7 +1537,7 @@ static e_move_result try_swap(const t_annealing_state* state,
 
             if (place_algorithm == CRITICALITY_TIMING_PLACE) {
                 /* Unstage the values stored in proposed_* data structures */
-                revert_td_cost(blocks_affected);
+                revert_td_cost(blocks_affected, placer_ctx.mutable_timing());
             }
 
             if (proposed_action.logical_blk_type_index != -1) { //if the agent proposed the block type, then collect the block type stat
@@ -1788,7 +1789,8 @@ static void commit_td_cost(const t_pl_blocks_to_be_moved& blocks_affected,
 
 //Reverts modifications to proposed_connection_delay and proposed_connection_timing_cost based on
 //the move proposed in blocks_affected
-static void revert_td_cost(const t_pl_blocks_to_be_moved& blocks_affected) {
+static void revert_td_cost(const t_pl_blocks_to_be_moved& blocks_affected,
+                           PlacerTimingContext& p_timing_ctx) {
 #ifndef VTR_ASSERT_SAFE_ENABLED
     static_cast<void>(blocks_affected);
 #else
@@ -1797,7 +1799,6 @@ static void revert_td_cost(const t_pl_blocks_to_be_moved& blocks_affected) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& clb_nlist = cluster_ctx.clb_nlist;
 
-    auto& p_timing_ctx = g_placer_ctx.mutable_timing();
     auto& proposed_connection_delay = p_timing_ctx.proposed_connection_delay;
     auto& proposed_connection_timing_cost = p_timing_ctx.proposed_connection_timing_cost;
 
