@@ -24,7 +24,13 @@ e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
     ClusterNetId net_from;
     int pin_from;
     //Find a movable block based on blk_type
-    ClusterBlockId b_from = propose_block_to_move(placer_opts, proposed_action.logical_blk_type_index, true, &net_from, &pin_from, placer_ctx);
+    ClusterBlockId b_from = propose_block_to_move(placer_opts,
+                                                  proposed_action.logical_blk_type_index,
+                                                  /*highly_crit_block=*/true,
+                                                  &net_from,
+                                                  &pin_from,
+                                                  placer_ctx);
+
     VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "Feasible Region Move Choose Block %di - rlim %f\n", size_t(b_from), rlim);
 
     if (!b_from) { //No movable block found

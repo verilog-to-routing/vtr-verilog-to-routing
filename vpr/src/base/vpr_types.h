@@ -1127,7 +1127,7 @@ class t_place_algorithm {
     e_place_algorithm algo = e_place_algorithm::CRITICALITY_TIMING_PLACE;
 };
 
-enum e_pad_loc_type {
+enum class e_pad_loc_type {
     FREE,
     RANDOM
 };

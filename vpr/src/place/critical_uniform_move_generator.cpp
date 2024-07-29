@@ -12,13 +12,20 @@ e_create_move CriticalUniformMoveGenerator::propose_move(t_pl_blocks_to_be_moved
                                                          const t_placer_opts& placer_opts,
                                                          const PlacerCriticalities* /*criticalities*/) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& placer_ctx = placer_ctx_.get();
+    const auto& placer_ctx = placer_ctx_.get();
     const auto& block_locs = placer_ctx.block_locs();
+    const auto& place_loc_vars = placer_ctx.place_loc_vars();
 
     ClusterNetId net_from;
     int pin_from;
     //Find a movable block based on blk_type
-    ClusterBlockId b_from = propose_block_to_move(placer_opts, proposed_action.logical_blk_type_index, true, &net_from, &pin_from, placer_ctx);
+    ClusterBlockId b_from = propose_block_to_move(placer_opts,
+                                                  proposed_action.logical_blk_type_index,
+                                                  /*highly_crit_block=*/true,
+                                                  &net_from,
+                                                  &pin_from,
+                                                  placer_ctx);
+
     VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "Critical Uniform Move Choose Block %d - rlim %f\n", size_t(b_from), rlim);
 
     if (!b_from) { //No movable block found
@@ -33,11 +40,11 @@ e_create_move CriticalUniformMoveGenerator::propose_move(t_pl_blocks_to_be_moved
 
     t_pl_loc to;
     to.layer = from.layer;
-    if (!find_to_loc_uniform(cluster_from_type, rlim, from, to, b_from, placer_ctx.place_loc_vars())) {
+    if (!find_to_loc_uniform(cluster_from_type, rlim, from, to, b_from, place_loc_vars)) {
         return e_create_move::ABORT;
     }
 
-    e_create_move create_move = ::create_move(blocks_affected, b_from, to, placer_ctx.place_loc_vars());
+    e_create_move create_move = ::create_move(blocks_affected, b_from, to, place_loc_vars);
 
     //Check that all the blocks affected by the move would still be in a legal floorplan region after the swap
     if (!floorplan_legal(blocks_affected)) {

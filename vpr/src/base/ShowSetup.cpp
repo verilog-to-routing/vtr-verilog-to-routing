@@ -526,10 +526,10 @@ static void ShowPlacerOpts(const t_placer_opts& PlacerOpts,
 
         VTR_LOG("PlacerOpts.pad_loc_type: ");
         switch (PlacerOpts.pad_loc_type) {
-            case FREE:
+            case e_pad_loc_type::FREE:
                 VTR_LOG("FREE\n");
                 break;
-            case RANDOM:
+            case e_pad_loc_type::RANDOM:
                 VTR_LOG("RANDOM\n");
                 break;
             default:

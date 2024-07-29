@@ -68,7 +68,7 @@ static void clear_all_grid_locs(PlaceLocVars& place_loc_avrs);
  */
 static bool place_macro(int macros_max_num_tries,
                         const t_pl_macro& pl_macro,
-                        enum e_pad_loc_type pad_loc_type,
+                        e_pad_loc_type pad_loc_type,
                         std::vector<t_grid_empty_locs_block_type>* blk_types_empty_locs_in_grid,
                         vtr::vector<ClusterBlockId, t_block_score>& block_scores,
                         PlaceLocVars& place_loc_avrs);
@@ -135,7 +135,7 @@ static std::vector<t_grid_empty_locs_block_type> init_blk_types_empty_locations(
  */
 static inline void fix_IO_block_types(const t_pl_macro& pl_macro,
                                       t_pl_loc loc,
-                                      enum e_pad_loc_type pad_loc_type,
+                                      e_pad_loc_type pad_loc_type,
                                       vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
 
 /**
@@ -193,7 +193,7 @@ static bool find_centroid_neighbor(t_pl_loc& centroid_loc,
 static bool try_centroid_placement(const t_pl_macro& pl_macro,
                                    const PartitionRegion& pr,
                                    t_logical_block_type_ptr block_type,
-                                   enum e_pad_loc_type pad_loc_type,
+                                   e_pad_loc_type pad_loc_type,
                                    vtr::vector<ClusterBlockId, t_block_score>& block_scores,
                                    PlaceLocVars& place_loc_avrs);
 
@@ -213,7 +213,7 @@ static bool try_centroid_placement(const t_pl_macro& pl_macro,
 static bool try_dense_placement(const t_pl_macro& pl_macro,
                                 const PartitionRegion& pr,
                                 t_logical_block_type_ptr block_type,
-                                enum e_pad_loc_type pad_loc_type,
+                                e_pad_loc_type pad_loc_type,
                                 std::vector<t_grid_empty_locs_block_type>* blk_types_empty_locs_in_grid,
                                 PlaceLocVars& place_loc_avrs);
 
@@ -225,7 +225,7 @@ static bool try_dense_placement(const t_pl_macro& pl_macro,
  */
 static void place_all_blocks(const t_placer_opts& placer_opts,
                              vtr::vector<ClusterBlockId, t_block_score>& block_scores,
-                             enum e_pad_loc_type pad_loc_type,
+                             e_pad_loc_type pad_loc_type,
                              const char* constraints_file,
                              PlaceLocVars& place_loc_avrs);
 
@@ -479,7 +479,7 @@ static std::vector<ClusterBlockId> find_centroid_loc(const t_pl_macro& pl_macro,
 static bool try_centroid_placement(const t_pl_macro& pl_macro,
                                    const PartitionRegion& pr,
                                    t_logical_block_type_ptr block_type,
-                                   enum e_pad_loc_type pad_loc_type,
+                                   e_pad_loc_type pad_loc_type,
                                    vtr::vector<ClusterBlockId, t_block_score>& block_scores,
                                    PlaceLocVars& place_loc_vars) {
     auto& block_locs = place_loc_vars.mutable_block_locs();
@@ -625,14 +625,14 @@ static std::vector<t_grid_empty_locs_block_type> init_blk_types_empty_locations(
 
 static inline void fix_IO_block_types(const t_pl_macro& pl_macro,
                                       t_pl_loc loc,
-                                      enum e_pad_loc_type pad_loc_type,
+                                      e_pad_loc_type pad_loc_type,
                                       vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
     const auto& device_ctx = g_vpr_ctx.device();
 
     //If the user marked the IO block pad_loc_type as RANDOM, that means it should be randomly
     //placed and then stay fixed to that location, which is why the macro members are marked as fixed.
     const auto& type = device_ctx.grid.get_physical_type({loc.x, loc.y, loc.layer});
-    if (is_io_type(type) && pad_loc_type == RANDOM) {
+    if (is_io_type(type) && pad_loc_type == e_pad_loc_type::RANDOM) {
         for (const t_pl_macro_member& pl_macro_member : pl_macro.members) {
             block_locs[pl_macro_member.blk_index].is_fixed = true;
         }
@@ -642,7 +642,7 @@ static inline void fix_IO_block_types(const t_pl_macro& pl_macro,
 bool try_place_macro_randomly(const t_pl_macro& pl_macro,
                               const PartitionRegion& pr,
                               t_logical_block_type_ptr block_type,
-                              enum e_pad_loc_type pad_loc_type,
+                              e_pad_loc_type pad_loc_type,
                               PlaceLocVars& place_loc_vars) {
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[block_type->index];
 
@@ -722,7 +722,7 @@ bool try_place_macro_randomly(const t_pl_macro& pl_macro,
 bool try_place_macro_exhaustively(const t_pl_macro& pl_macro,
                                   const PartitionRegion& pr,
                                   t_logical_block_type_ptr block_type,
-                                  enum e_pad_loc_type pad_loc_type,
+                                  e_pad_loc_type pad_loc_type,
                                   PlaceLocVars& place_loc_vars) {
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[block_type->index];
     auto& block_locs = place_loc_vars.mutable_block_locs();
@@ -812,7 +812,7 @@ bool try_place_macro_exhaustively(const t_pl_macro& pl_macro,
 static bool try_dense_placement(const t_pl_macro& pl_macro,
                                 const PartitionRegion& pr,
                                 t_logical_block_type_ptr block_type,
-                                enum e_pad_loc_type pad_loc_type,
+                                e_pad_loc_type pad_loc_type,
                                 std::vector<t_grid_empty_locs_block_type>* blk_types_empty_locs_in_grid,
                                 PlaceLocVars& place_loc_vars) {
     t_pl_loc loc;

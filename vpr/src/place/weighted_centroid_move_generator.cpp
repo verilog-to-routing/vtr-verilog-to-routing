@@ -20,7 +20,12 @@ e_create_move WeightedCentroidMoveGenerator::propose_move(t_pl_blocks_to_be_move
     const auto& place_loc_vars = placer_ctx.place_loc_vars();
 
     //Find a movable block based on blk_type
-    ClusterBlockId b_from = propose_block_to_move(placer_opts, proposed_action.logical_blk_type_index, false, nullptr, nullptr, placer_ctx);
+    ClusterBlockId b_from = propose_block_to_move(placer_opts,
+                                                  proposed_action.logical_blk_type_index,
+                                                  /*highly_crit_block=*/false,
+                                                  /*net_from=*/nullptr,
+                                                  /*pin_from=*/nullptr,
+                                                  placer_ctx);
 
     VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "Weighted Centroid Move Choose Block %d - rlim %f\n", size_t(b_from), rlim);
 

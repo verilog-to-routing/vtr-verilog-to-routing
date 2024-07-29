@@ -88,11 +88,11 @@ static void place_constrained_noc_router(ClusterBlockId router_blk_id,
 
     bool macro_placed = false;
     for (int i_try = 0; i_try < MAX_NUM_TRIES_TO_PLACE_MACROS_RANDOMLY && !macro_placed; i_try++) {
-        macro_placed = try_place_macro_randomly(pl_macro, pr, block_type, FREE, place_loc_vars);
+        macro_placed = try_place_macro_randomly(pl_macro, pr, block_type, e_pad_loc_type::FREE, place_loc_vars);
     }
 
     if (!macro_placed) {
-        macro_placed = try_place_macro_exhaustively(pl_macro, pr, block_type, FREE, place_loc_vars);
+        macro_placed = try_place_macro_exhaustively(pl_macro, pr, block_type, e_pad_loc_type::FREE, place_loc_vars);
     }
 
     if (!macro_placed) {
