@@ -471,7 +471,7 @@ void try_place(const Netlist<>& net_list,
      *  Most of anneal is disabled later by setting initial temperature to 0 and only further optimizes in quench
      */
     if (placer_opts.enable_analytic_placer) {
-        AnalyticPlacer{}.ap_place();
+        AnalyticPlacer{place_loc_vars}.ap_place();
     }
 
 #endif /* ENABLE_ANALYTIC_PLACE */
@@ -1792,7 +1792,8 @@ static void commit_td_cost(const t_pl_blocks_to_be_moved& blocks_affected,
 static void revert_td_cost(const t_pl_blocks_to_be_moved& blocks_affected,
                            PlacerTimingContext& p_timing_ctx) {
 #ifndef VTR_ASSERT_SAFE_ENABLED
-    static_cast<void>(blocks_affected);
+    (void)blocks_affected;
+    (void)p_timing_ctx;
 #else
     //Invalidate temp delay & timing cost values to match sanity checks in
     //comp_td_connection_cost()
