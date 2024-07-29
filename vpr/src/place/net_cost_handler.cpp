@@ -1868,7 +1868,7 @@ static void set_bb_delta_cost(const int num_affected_nets, double& bb_delta_c) {
     for (int inet_affected = 0; inet_affected < num_affected_nets;
          inet_affected++) {
         ClusterNetId net_id = ts_nets_to_update[inet_affected];
-        const auto& cube_bb = g_vpr_ctx.placement().cube_bb;
+        const auto cube_bb = g_vpr_ctx.placement().cube_bb;
 
         if (cube_bb) {
             proposed_net_cost[net_id] = get_net_cost(net_id,

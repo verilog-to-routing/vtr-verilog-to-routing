@@ -78,7 +78,7 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
             }
         } else {
             t_bb union_bb;
-            const bool& cube_bb = g_vpr_ctx.placement().cube_bb;
+            const bool cube_bb = g_vpr_ctx.placement().cube_bb;
             if (!cube_bb) {
                 union_bb = union_2d_bb(place_move_ctx.layer_bb_coords[net_id]);
             }
@@ -327,7 +327,7 @@ bool MedianMoveGenerator::get_bb_incrementally(ClusterNetId net_id,
 
     t_bb union_bb_edge;
     t_bb union_bb;
-    const bool& cube_bb = g_vpr_ctx.placement().cube_bb;
+    const bool cube_bb = g_vpr_ctx.placement().cube_bb;
     /* Calculating per-layer bounding box is more time consuming compared to cube bounding box. To speed up
     * this move, the bounding box used for this move is of the type cube bounding box even if the per-layer
     * bounding box is used by placement SA engine. 

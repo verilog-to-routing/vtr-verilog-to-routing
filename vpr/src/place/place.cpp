@@ -344,6 +344,12 @@ static void print_placement_swaps_stats(const t_annealing_state& state, const t_
 
 static void print_placement_move_types_stats(const MoveTypeStat& move_type_stat);
 
+/**
+ * @brief Copies the placement location variables into the global placement context.
+ * @param place_loc_vars The placement location variables to be copied.
+ */
+static void copy_locs_to_global_state(const PlaceLocVars& place_loc_vars);
+
 /*****************************************************************************/
 void try_place(const Netlist<>& net_list,
                const t_placer_opts& placer_opts,
@@ -419,8 +425,7 @@ void try_place(const Netlist<>& net_list,
         }
     }
 
-    g_vpr_ctx.mutable_placement().cube_bb = is_cube_bb(placer_opts.place_bounding_box_mode,
-                                                       device_ctx.rr_graph);
+    g_vpr_ctx.mutable_placement().cube_bb = is_cube_bb(placer_opts.place_bounding_box_mode, device_ctx.rr_graph);
     const bool cube_bb = g_vpr_ctx.placement().cube_bb;
 
     VTR_LOG("\n");
@@ -986,6 +991,8 @@ void try_place(const Netlist<>& net_list,
             p_runtime_ctx.f_update_td_costs_nets_elapsed_sec,
             p_runtime_ctx.f_update_td_costs_sum_nets_elapsed_sec,
             p_runtime_ctx.f_update_td_costs_total_elapsed_sec);
+
+    copy_locs_to_global_state(place_loc_vars);
 }
 
 /* Function to update the setup slacks and criticalities before the inner loop of the annealing/quench */
@@ -1586,7 +1593,7 @@ static bool is_cube_bb(const e_place_bounding_box_mode place_bb_mode,
     bool cube_bb;
     const int number_layers = g_vpr_ctx.device().grid.get_num_layers();
 
-    // If the FPGA has only layer, then we can only use cube bounding box
+    // If the FPGA has only one layer, then we can only use cube bounding box
     if (number_layers == 1) {
         cube_bb = true;
     } else {
@@ -2427,6 +2434,10 @@ static void calculate_reward_and_process_outcome(
     }
 }
 
-bool placer_needs_lookahead(const t_vpr_setup& vpr_setup) {
-    return (vpr_setup.PlacerOpts.place_algorithm.is_timing_driven());
+static void copy_locs_to_global_state(const PlaceLocVars& place_loc_vars) {
+    auto& place_ctx = g_vpr_ctx.mutable_placement();
+
+    place_ctx.unlock_loc_vars();
+
+    place_ctx.mutable_place_loc_vars() = place_loc_vars;
 }

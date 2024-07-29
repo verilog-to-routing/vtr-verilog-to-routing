@@ -789,7 +789,7 @@ bool vpr_place_flow(const Netlist<>& net_list, t_vpr_setup& vpr_setup, const t_a
 
 void vpr_place(const Netlist<>& net_list, t_vpr_setup& vpr_setup, const t_arch& arch) {
     bool is_flat = false;
-    if (placer_needs_lookahead(vpr_setup)) {
+    if (vpr_setup.PlacerOpts.place_algorithm.is_timing_driven()) {
         // Prime lookahead cache to avoid adding lookahead computation cost to
         // the placer timer.
         // Flat_routing is disabled in placement
