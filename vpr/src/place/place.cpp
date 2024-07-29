@@ -1842,7 +1842,9 @@ static void alloc_and_load_placement_structs(float place_cost_exp,
 
     const int num_layers = device_ctx.grid.get_num_layers();
 
-    init_placement_context(placer_ctx.get_mutable_block_locs(), place_ctx.get_mutable_grid_blocks());
+    auto& block_locs = placer_ctx.get_mutable_block_locs();
+    auto& grid_blocks = placer_ctx.get_mutable_grid_blocks();
+    init_placement_context(block_locs, grid_blocks);
 
     int max_pins_per_clb = 0;
     for (const t_physical_tile_type& type : device_ctx.physical_tile_types) {
@@ -1897,7 +1899,7 @@ static void alloc_and_load_placement_structs(float place_cost_exp,
         elem = OPEN;
     }
 
-    alloc_and_load_chan_w_factors_for_place_cost (place_cost_exp);
+    alloc_and_load_chan_w_factors_for_place_cost(place_cost_exp);
 
     alloc_and_load_try_swap_structs(place_ctx.cube_bb);
 

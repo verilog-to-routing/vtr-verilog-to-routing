@@ -401,8 +401,6 @@ struct PlacementContext : public Context {
     void lock_loc_vars() { loc_vars_are_accessible_ = false; }
     void unlock_loc_vars() { loc_vars_are_accessible_ = true; }
 
-
-
     ///@brief The pl_macros array stores all the placement macros (usually carry chains).
     std::vector<t_pl_macro> pl_macros;
 

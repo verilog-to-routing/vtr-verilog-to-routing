@@ -2155,8 +2155,7 @@ void alloc_and_load_chan_w_factors_for_place_cost(float place_cost_exp) {
     for (size_t high = 1; high < device_ctx.grid.height(); high++) {
         chanx_place_cost_fac[high][high] = device_ctx.chan_width.x_list[high];
         for (size_t low = 0; low < high; low++) {
-            chanx_place_cost_fac[high][low] = chanx_place_cost_fac[high - 1][low]
-                                              + device_ctx.chan_width.x_list[high];
+            chanx_place_cost_fac[high][low] = chanx_place_cost_fac[high - 1][low] + device_ctx.chan_width.x_list[high];
         }
     }
 
@@ -2195,8 +2194,7 @@ void alloc_and_load_chan_w_factors_for_place_cost(float place_cost_exp) {
     for (size_t high = 1; high < device_ctx.grid.width(); high++) {
         chany_place_cost_fac[high][high] = device_ctx.chan_width.y_list[high];
         for (size_t low = 0; low < high; low++) {
-            chany_place_cost_fac[high][low] = chany_place_cost_fac[high - 1][low]
-                                              + device_ctx.chan_width.y_list[high];
+            chany_place_cost_fac[high][low] = chany_place_cost_fac[high - 1][low] + device_ctx.chan_width.y_list[high];
         }
     }
 
