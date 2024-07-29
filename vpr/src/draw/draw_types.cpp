@@ -13,9 +13,8 @@
  *******************************************/
 ezgl::color t_draw_state::block_color(ClusterBlockId blk) const {
     if (use_default_block_color_[blk]) {
-
         auto& cluster_ctx = g_vpr_ctx.clustering();
-        auto& block_locs = get_graphics_place_loc_vars_ref().block_locs();
+        const auto& block_locs = get_graphics_place_loc_vars_ref().block_locs();
 
         t_physical_tile_type_ptr tile_type = nullptr;
         if (block_locs.empty()) { //No placement, pick best match

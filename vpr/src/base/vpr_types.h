@@ -926,7 +926,7 @@ class PlaceLocVars {
     inline int tile_pin_index(const ClusterPinId pin) const { return physical_pins_[pin]; }
 
      ///@brief Returns the physical pin of the tile, related to the given ClusterNedId, and the net pin index.
-    inline int net_pin_to_tile_pin_index(const ClusterNetId net_id, int net_pin_index) const;
+    int net_pin_to_tile_pin_index(const ClusterNetId net_id, int net_pin_index) const;
 };
 
 ///@brief Names of various files
