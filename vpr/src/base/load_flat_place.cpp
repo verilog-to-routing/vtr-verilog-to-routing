@@ -9,9 +9,10 @@ static void print_flat_cluster(FILE* fp, ClusterBlockId iblk,
 
 static void print_flat_cluster(FILE* fp, ClusterBlockId iblk,
                                std::vector<AtomBlockId>& atoms) {
+    const auto& atom_ctx = g_vpr_ctx.atom();
+    const auto& block_locs = g_vpr_ctx.placement().block_locs();
 
-    auto& atom_ctx = g_vpr_ctx.atom();
-    t_pl_loc loc = g_vpr_ctx.placement().block_locs()[iblk].loc;
+    t_pl_loc loc = block_locs[iblk].loc;
     size_t bnum = size_t(iblk);
 
     for (auto atom : atoms) {
@@ -26,7 +27,6 @@ static void print_flat_cluster(FILE* fp, ClusterBlockId iblk,
 
 /* prints a flat placement file */
 void print_flat_placement(const char* flat_place_file) {
-
     FILE* fp;
 
     ClusterAtomsLookup atoms_lookup;

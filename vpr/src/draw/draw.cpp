@@ -580,6 +580,9 @@ void init_draw_coords(float width_val, const PlaceLocVars& place_loc_vars) {
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
+    /* Store a reference to block location variables so that other drawing
+     * functions can access block location information without accessing
+     * the global placement state, which is inaccessible during placement.*/
     set_graphics_place_loc_vars_ref(place_loc_vars);
 
     if (!draw_state->show_graphics && !draw_state->save_graphics
