@@ -7,7 +7,7 @@
 /**
  * @brief enum represents the different reward functions
  */
-enum e_reward_function {
+enum class e_reward_function {
     BASIC,                  ///@ directly uses the change of the annealing cost function
     NON_PENALIZING_BASIC,   ///@ same as basic reward function but with 0 reward if it's a hill-climbing one
     RUNTIME_AWARE,          ///@ same as NON_PENALIZING_BASIC but with normalizing with the runtime factor of each move type

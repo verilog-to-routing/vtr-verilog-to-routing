@@ -319,12 +319,11 @@ static void generate_post_place_timing_reports(const t_placer_opts& placer_opts,
                                                bool is_flat);
 
 //calculate the agent's reward and the total process outcome
-static void calculate_reward_and_process_outcome(
-    const t_placer_opts& placer_opts,
-    const MoveOutcomeStats& move_outcome_stats,
-    const double& delta_c,
-    float timing_bb_factor,
-    MoveGenerator& move_generator);
+static void calculate_reward_and_process_outcome(const t_placer_opts& placer_opts,
+                                                 const MoveOutcomeStats& move_outcome_stats,
+                                                 double delta_c,
+                                                 float timing_bb_factor,
+                                                 MoveGenerator& move_generator);
 
 static void print_place_status_header(bool noc_enabled);
 
@@ -2023,7 +2022,7 @@ static int check_placement_costs(const t_placer_costs& costs,
     double bb_cost_check;
     double timing_cost_check;
 
-    const auto& cube_bb = g_vpr_ctx.placement().cube_bb;
+    const bool cube_bb = g_vpr_ctx.placement().cube_bb;
 
     if (cube_bb) {
         bb_cost_check = comp_bb_cost(CHECK);
@@ -2398,28 +2397,25 @@ static void print_placement_move_types_stats(const MoveTypeStat& move_type_stat)
     VTR_LOG("\n");
 }
 
-static void calculate_reward_and_process_outcome(
-    const t_placer_opts& placer_opts,
-    const MoveOutcomeStats& move_outcome_stats,
-    const double& delta_c,
-    float timing_bb_factor,
-    MoveGenerator& move_generator) {
-    std::string reward_fun_string = placer_opts.place_reward_fun;
+static void calculate_reward_and_process_outcome(const t_placer_opts& placer_opts,
+                                                 const MoveOutcomeStats& move_outcome_stats,
+                                                 double delta_c,
+                                                 float timing_bb_factor,
+                                                 MoveGenerator& move_generator) {
     static std::optional<e_reward_function> reward_fun;
     if (!reward_fun.has_value()) {
-        reward_fun = string_to_reward(reward_fun_string);
+        reward_fun = string_to_reward(placer_opts.place_reward_fun);
     }
 
-    if (reward_fun == BASIC) {
+    if (reward_fun == e_reward_function::BASIC) {
         move_generator.process_outcome(-1 * delta_c, reward_fun.value());
-    } else if (reward_fun == NON_PENALIZING_BASIC
-               || reward_fun == RUNTIME_AWARE) {
+    } else if (reward_fun == e_reward_function::NON_PENALIZING_BASIC || reward_fun == e_reward_function::RUNTIME_AWARE) {
         if (delta_c < 0) {
             move_generator.process_outcome(-1 * delta_c, reward_fun.value());
         } else {
             move_generator.process_outcome(0, reward_fun.value());
         }
-    } else if (reward_fun == WL_BIASED_RUNTIME_AWARE) {
+    } else if (reward_fun == e_reward_function::WL_BIASED_RUNTIME_AWARE) {
         if (delta_c < 0) {
             float reward = -1
                            * (move_outcome_stats.delta_cost_norm
