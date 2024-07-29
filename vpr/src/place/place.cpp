@@ -2436,8 +2436,11 @@ static void calculate_reward_and_process_outcome(
 
 static void copy_locs_to_global_state(const PlaceLocVars& place_loc_vars) {
     auto& place_ctx = g_vpr_ctx.mutable_placement();
+    auto& global_place_loc_vars = place_ctx.mutable_place_loc_vars();
 
     place_ctx.unlock_loc_vars();
 
-    place_ctx.mutable_place_loc_vars() = place_loc_vars;
+    global_place_loc_vars = place_loc_vars;
+
+    set_graphics_place_loc_vars_ref(global_place_loc_vars);
 }
