@@ -1,7 +1,6 @@
 #include "connection_router.h"
-
-#include <algorithm>
 #include "rr_graph.h"
+
 #include "binary_heap.h"
 #include "bucket.h"
 #include "rr_graph_fwd.h"
@@ -55,10 +54,12 @@ std::tuple<bool, bool, t_heap> ConnectionRouter<Heap>::timing_driven_route_conne
     std::tie(retry, cheapest) = timing_driven_route_connection_common_setup(rt_root, sink_node, cost_params, bounding_box);
 
     if (cheapest != nullptr) {
+        rcv_path_manager.update_route_tree_set(cheapest->path_data);
         update_cheapest(cheapest);
         t_heap out = *cheapest;
         heap_.free(cheapest);
         heap_.empty_heap();
+        rcv_path_manager.empty_heap();
         return std::make_tuple(true, /*retry=*/false, out);
     } else {
         reset_path_costs();
@@ -186,21 +187,15 @@ std::tuple<bool, bool, t_heap> ConnectionRouter<Heap>::timing_driven_route_conne
         return std::make_tuple(false, retry_with_full_bb, t_heap());
     }
 
+    rcv_path_manager.update_route_tree_set(cheapest->path_data);
     update_cheapest(cheapest);
 
     t_heap out = *cheapest;
     heap_.free(cheapest);
     heap_.empty_heap();
+    rcv_path_manager.empty_heap();
 
     return std::make_tuple(true, retry_with_full_bb, out);
-}
-
-static inline bool prune_node(float new_total_cost, float new_back_cost, float best_total_cost, float best_back_cost) {
-    if (best_total_cost <= new_total_cost)
-        return true;
-    if (best_back_cost <= new_back_cost)
-        return true;
-    return false;
 }
 
 //Finds a path to sink_node, starting from the elements currently in the heap.
@@ -212,9 +207,16 @@ template<typename Heap>
 t_heap* ConnectionRouter<Heap>::timing_driven_route_connection_from_heap(RRNodeId sink_node,
                                                                          const t_conn_cost_params& cost_params,
                                                                          const t_bb& bounding_box) {
+    VTR_ASSERT_SAFE(heap_.is_valid());
+
+    if (heap_.is_empty_heap()) { //No source
+        VTR_LOGV_DEBUG(router_debug_, "  Initial heap empty (no source)\n");
+    }
+
+    const auto& device_ctx = g_vpr_ctx.device();
+    auto& route_ctx = g_vpr_ctx.mutable_routing();
 
     t_heap* cheapest = nullptr;
-    // While the heap is not empty do
     while (!heap_.is_empty_heap()) {
         // cheapest t_heap in current route tree to be expanded on
         cheapest = heap_.get_heap_head();
@@ -224,28 +226,28 @@ t_heap* ConnectionRouter<Heap>::timing_driven_route_connection_from_heap(RRNodeI
                             rr_graph_);
 
         RRNodeId inode = cheapest->index;
+        VTR_LOGV_DEBUG(router_debug_, "  Popping node %d (cost: %g)\n",
+                       inode, cheapest->cost);
 
-        // Exit Condition
+        // Have we found the target?
         if (inode == sink_node) {
+            // If we're running RCV, the path will be stored in the path_data->path_rr vector
+            // This is then placed into the traceback so that the correct path is returned
+            // TODO: This can be eliminated by modifying the actual traceback function in route_timing
+            if (rcv_path_manager.is_enabled()) {
+                rcv_path_manager.insert_backwards_path_into_traceback(cheapest->path_data, cheapest->cost, cheapest->backward_path_cost, route_ctx);
+            }
+            VTR_LOGV_DEBUG(router_debug_, "  Found target %8d (%s)\n", inode, describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, inode, is_flat_).c_str());
             break;
         }
 
-        t_rr_node_route_inf* route_inf = &rr_node_route_inf_[inode];
-        float best_total_cost = route_inf->path_cost;
-        float best_back_cost = route_inf->backward_path_cost;
-        float new_total_cost = cheapest->cost;
-        float new_back_cost = cheapest->backward_path_cost;
-        // Pruning
-        if (prune_node(new_total_cost, new_back_cost, best_total_cost, best_back_cost)) {
-            heap_.free(cheapest);
-            cheapest = nullptr;
-            continue;
-        }
-        // Synchronization Point
-        update_cheapest(cheapest, route_inf);
-        // Adding nodes to heap
-        timing_driven_expand_neighbours(cheapest, cost_params, bounding_box, sink_node);
+        // If not, keep searching
+        timing_driven_expand_cheapest(cheapest,
+                                      sink_node,
+                                      cost_params,
+                                      bounding_box);
 
+        rcv_path_manager.free_path_struct(cheapest->path_data);
         heap_.free(cheapest);
         cheapest = nullptr;
     }
@@ -356,14 +358,6 @@ void ConnectionRouter<Heap>::timing_driven_expand_cheapest(t_heap* cheapest,
     float new_total_cost = cheapest->cost;
     float new_back_cost = cheapest->backward_path_cost;
 
-    if (prune_node(new_total_cost, new_back_cost, best_total_cost, best_back_cost))
-        return;
-
-    update_cheapest(cheapest, route_inf);
-
-    timing_driven_expand_neighbours(cheapest, cost_params, bounding_box,
-                                        target_node);
-
     /* I only re-expand a node if both the "known" backward cost is lower  *
      * in the new expansion (this is necessary to prevent loops from       *
      * forming in the routing and causing havoc) *and* the expected total  *
@@ -372,30 +366,30 @@ void ConnectionRouter<Heap>::timing_driven_expand_cheapest(t_heap* cheapest,
      * than one with higher cost.  Test whether or not I should disallow   *
      * re-expansion based on a higher total cost.                          */
 
-    // if (best_total_cost > new_total_cost && ((rcv_path_manager.is_enabled()) || best_back_cost > new_back_cost)) {
-    //     // Explore from this node, since the current/new partial path has the best cost
-    //     // found so far
-    //     VTR_LOGV_DEBUG(router_debug_, "    Better cost to %d\n", inode);
-    //     VTR_LOGV_DEBUG(router_debug_, "    New total cost: %g\n", new_total_cost);
-    //     VTR_LOGV_DEBUG(router_debug_, "    New back cost: %g\n", new_back_cost);
-    //     VTR_LOGV_DEBUG(router_debug_, "      Setting path costs for associated node %d (from %d edge %zu)\n",
-    //                    cheapest->index,
-    //                    static_cast<size_t>(rr_graph_->edge_src_node(cheapest->prev_edge())),
-    //                    static_cast<size_t>(cheapest->prev_edge()));
+    if (best_total_cost > new_total_cost && ((rcv_path_manager.is_enabled()) || best_back_cost > new_back_cost)) {
+        // Explore from this node, since the current/new partial path has the best cost
+        // found so far
+        VTR_LOGV_DEBUG(router_debug_, "    Better cost to %d\n", inode);
+        VTR_LOGV_DEBUG(router_debug_, "    New total cost: %g\n", new_total_cost);
+        VTR_LOGV_DEBUG(router_debug_, "    New back cost: %g\n", new_back_cost);
+        VTR_LOGV_DEBUG(router_debug_, "      Setting path costs for associated node %d (from %d edge %zu)\n",
+                       cheapest->index,
+                       static_cast<size_t>(rr_graph_->edge_src_node(cheapest->prev_edge())),
+                       static_cast<size_t>(cheapest->prev_edge()));
 
-    //     update_cheapest(cheapest, route_inf);
+        update_cheapest(cheapest, route_inf);
 
-    //     timing_driven_expand_neighbours(cheapest, cost_params, bounding_box,
-    //                                     target_node);
-    // } else {
-    //     // Post-heap prune, do not re-explore from the current/new partial path as it
-    //     // has worse cost than the best partial path to this node found so far
-    //     VTR_LOGV_DEBUG(router_debug_, "    Worse cost to %d\n", inode);
-    //     VTR_LOGV_DEBUG(router_debug_, "    Old total cost: %g\n", best_total_cost);
-    //     VTR_LOGV_DEBUG(router_debug_, "    Old back cost: %g\n", best_back_cost);
-    //     VTR_LOGV_DEBUG(router_debug_, "    New total cost: %g\n", new_total_cost);
-    //     VTR_LOGV_DEBUG(router_debug_, "    New back cost: %g\n", new_back_cost);
-    // }
+        timing_driven_expand_neighbours(cheapest, cost_params, bounding_box,
+                                        target_node);
+    } else {
+        // Post-heap prune, do not re-explore from the current/new partial path as it
+        // has worse cost than the best partial path to this node found so far
+        VTR_LOGV_DEBUG(router_debug_, "    Worse cost to %d\n", inode);
+        VTR_LOGV_DEBUG(router_debug_, "    Old total cost: %g\n", best_total_cost);
+        VTR_LOGV_DEBUG(router_debug_, "    Old back cost: %g\n", best_back_cost);
+        VTR_LOGV_DEBUG(router_debug_, "    New total cost: %g\n", new_total_cost);
+        VTR_LOGV_DEBUG(router_debug_, "    New back cost: %g\n", new_back_cost);
+    }
 }
 
 template<typename Heap>
@@ -469,22 +463,22 @@ void ConnectionRouter<Heap>::timing_driven_expand_neighbour(t_heap* current,
                                                             const t_bb& bounding_box,
                                                             RRNodeId target_node,
                                                             const t_bb& target_bb) {
-    // VTR_ASSERT(bounding_box.layer_max < g_vpr_ctx.device().grid.get_num_layers());
+    VTR_ASSERT(bounding_box.layer_max < g_vpr_ctx.device().grid.get_num_layers());
 
     // BB-pruning
     // Disable BB-pruning if RCV is enabled, as this can make it harder for circuits with high negative hold slack to resolve this
     // TODO: Only disable pruning if the net has negative hold slack, maybe go off budgets
     if (!inside_bb(to_node, bounding_box)
         && !rcv_path_manager.is_enabled()) {
-        // VTR_LOGV_DEBUG(router_debug_,
-        //                "      Pruned expansion of node %d edge %zu -> %d"
-        //                " (to node location %d,%d,%d x %d,%d,%d outside of expanded"
-        //                " net bounding box %d,%d,%d x %d,%d,%d)\n",
-        //                from_node, size_t(from_edge), size_t(to_node),
-        //                rr_graph_->node_xlow(to_node), rr_graph_->node_ylow(to_node), rr_graph_->node_layer(to_node),
-        //                rr_graph_->node_xhigh(to_node), rr_graph_->node_yhigh(to_node), rr_graph_->node_layer(to_node),
-        //                bounding_box.xmin, bounding_box.ymin, bounding_box.layer_min,
-        //                bounding_box.xmax, bounding_box.ymax, bounding_box.layer_max);
+        VTR_LOGV_DEBUG(router_debug_,
+                       "      Pruned expansion of node %d edge %zu -> %d"
+                       " (to node location %d,%d,%d x %d,%d,%d outside of expanded"
+                       " net bounding box %d,%d,%d x %d,%d,%d)\n",
+                       from_node, size_t(from_edge), size_t(to_node),
+                       rr_graph_->node_xlow(to_node), rr_graph_->node_ylow(to_node), rr_graph_->node_layer(to_node),
+                       rr_graph_->node_xhigh(to_node), rr_graph_->node_yhigh(to_node), rr_graph_->node_layer(to_node),
+                       bounding_box.xmin, bounding_box.ymin, bounding_box.layer_min,
+                       bounding_box.xmax, bounding_box.ymax, bounding_box.layer_max);
         return; /* Node is outside (expanded) bounding box. */
     }
 
@@ -508,46 +502,39 @@ void ConnectionRouter<Heap>::timing_driven_expand_neighbour(t_heap* current,
                 || to_yhigh > target_bb.ymax
                 || to_layer < target_bb.layer_min
                 || to_layer > target_bb.layer_max) {
-                // VTR_LOGV_DEBUG(router_debug_,
-                //                "      Pruned expansion of node %d edge %zu -> %d"
-                //                " (to node is IPIN at %d,%d,%d x %d,%d,%d which does not"
-                //                " lead to target block %d,%d,%d x %d,%d,%d)\n",
-                //                from_node, size_t(from_edge), size_t(to_node),
-                //                to_xlow, to_ylow, to_layer,
-                //                to_xhigh, to_yhigh, to_layer,
-                //                target_bb.xmin, target_bb.ymin, target_bb.layer_min,
-                //                target_bb.xmax, target_bb.ymax, target_bb.layer_max);
+                VTR_LOGV_DEBUG(router_debug_,
+                               "      Pruned expansion of node %d edge %zu -> %d"
+                               " (to node is IPIN at %d,%d,%d x %d,%d,%d which does not"
+                               " lead to target block %d,%d,%d x %d,%d,%d)\n",
+                               from_node, size_t(from_edge), size_t(to_node),
+                               to_xlow, to_ylow, to_layer,
+                               to_xhigh, to_yhigh, to_layer,
+                               target_bb.xmin, target_bb.ymin, target_bb.layer_min,
+                               target_bb.xmax, target_bb.ymax, target_bb.layer_max);
                 return;
             }
         }
     }
 
-    // VTR_LOGV_DEBUG(router_debug_, "      Expanding node %d edge %zu -> %d\n",
-    //                from_node, size_t(from_edge), size_t(to_node));
+    VTR_LOGV_DEBUG(router_debug_, "      Expanding node %d edge %zu -> %d\n",
+                   from_node, size_t(from_edge), size_t(to_node));
 
     // Check if the node exists in the route tree when RCV is enabled
     // Other pruning methods have been disabled when RCV is on, so this method is required to prevent "loops" from being created
-    // bool node_exists = false;
-    // if (rcv_path_manager.is_enabled()) {
-    //     node_exists = rcv_path_manager.node_exists_in_tree(current->path_data,
-    //                                                        to_node);
-    // }
+    bool node_exists = false;
+    if (rcv_path_manager.is_enabled()) {
+        node_exists = rcv_path_manager.node_exists_in_tree(current->path_data,
+                                                           to_node);
+    }
 
-    // if (!node_exists || !rcv_path_manager.is_enabled()) {
-    //     timing_driven_add_to_heap(cost_params,
-    //                               current,
-    //                               from_node,
-    //                               to_node,
-    //                               from_edge,
-    //                               target_node);
-    // }
-
-    timing_driven_add_to_heap(cost_params,
-                              current,
-                              from_node,
-                              to_node,
-                              from_edge,
-                              target_node);
+    if (!node_exists || !rcv_path_manager.is_enabled()) {
+        timing_driven_add_to_heap(cost_params,
+                                  current,
+                                  from_node,
+                                  to_node,
+                                  from_edge,
+                                  target_node);
+    }
 }
 
 // Add to_node to the heap, and also add any nodes which are connected by non-configurable edges
@@ -558,21 +545,21 @@ void ConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_params&
                                                        RRNodeId to_node,
                                                        const RREdgeId from_edge,
                                                        RRNodeId target_node) {
-    // const auto& device_ctx = g_vpr_ctx.device();
+    const auto& device_ctx = g_vpr_ctx.device();
     t_heap next;
 
     // Initalize RCV data struct if needed, otherwise it's set to nullptr
-    // rcv_path_manager.alloc_path_struct(next.path_data);
+    rcv_path_manager.alloc_path_struct(next.path_data);
 
     // Costs initialized to current
     next.cost = std::numeric_limits<float>::infinity(); //Not used directly
     next.backward_path_cost = current->backward_path_cost;
 
     // path_data variables are initialized to current values
-    // if (rcv_path_manager.is_enabled() && current->path_data) {
-    //     next.path_data->backward_cong = current->path_data->backward_cong;
-    //     next.path_data->backward_delay = current->path_data->backward_delay;
-    // }
+    if (rcv_path_manager.is_enabled() && current->path_data) {
+        next.path_data->backward_cong = current->path_data->backward_cong;
+        next.path_data->backward_delay = current->path_data->backward_delay;
+    }
 
     next.R_upstream = current->R_upstream;
 
@@ -589,74 +576,54 @@ void ConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_params&
     float new_total_cost = next.cost;
     float new_back_cost = next.backward_path_cost;
 
-    if (prune_node(new_total_cost, new_back_cost, best_total_cost, best_back_cost))
-        return;
+    if (new_total_cost < best_total_cost && ((rcv_path_manager.is_enabled()) || (new_back_cost < best_back_cost))) {
+        VTR_LOGV_DEBUG(router_debug_, "      Expanding to node %d (%s)\n", to_node,
+                       describe_rr_node(device_ctx.rr_graph,
+                                        device_ctx.grid,
+                                        device_ctx.rr_indexed_data,
+                                        to_node,
+                                        is_flat_)
+                           .c_str());
+        VTR_LOGV_DEBUG(router_debug_, "        New Total Cost %g New back Cost %g\n", new_total_cost, new_back_cost);
+        //Add node to the heap only if the cost via the current partial path is less than the
+        //best known cost, since there is no reason for the router to expand more expensive paths.
+        //
+        //Pre-heap prune to keep the heap small, by not putting paths which are known to be
+        //sub-optimal (at this point in time) into the heap.
+        t_heap* next_ptr = heap_.alloc();
 
-    t_heap* next_ptr = heap_.alloc();
+        // Use the already created next path structure pointer when RCV is enabled
+        if (rcv_path_manager.is_enabled()) rcv_path_manager.move(next_ptr->path_data, next.path_data);
 
-    //Record how we reached this node
-    next_ptr->cost = next.cost;
-    next_ptr->R_upstream = next.R_upstream;
-    next_ptr->backward_path_cost = next.backward_path_cost;
-    next_ptr->index = to_node;
-    next_ptr->set_prev_edge(from_edge);
+        //Record how we reached this node
+        next_ptr->cost = next.cost;
+        next_ptr->R_upstream = next.R_upstream;
+        next_ptr->backward_path_cost = next.backward_path_cost;
+        next_ptr->index = to_node;
+        next_ptr->set_prev_edge(from_edge);
 
-    heap_.add_to_heap(next_ptr);
+        if (rcv_path_manager.is_enabled() && current->path_data) {
+            next_ptr->path_data->path_rr = current->path_data->path_rr;
+            next_ptr->path_data->edge = current->path_data->edge;
+            next_ptr->path_data->path_rr.emplace_back(from_node);
+            next_ptr->path_data->edge.emplace_back(from_edge);
+        }
 
-    update_router_stats(router_stats_,
-                        true,
-                        to_node,
-                        rr_graph_);
+        heap_.add_to_heap(next_ptr);
+        update_router_stats(router_stats_,
+                            true,
+                            to_node,
+                            rr_graph_);
 
+    } else {
+        VTR_LOGV_DEBUG(router_debug_, "      Didn't expand to %d (%s)\n", to_node, describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, to_node, is_flat_).c_str());
+        VTR_LOGV_DEBUG(router_debug_, "        Prev Total Cost %g Prev back Cost %g \n", best_total_cost, best_back_cost);
+        VTR_LOGV_DEBUG(router_debug_, "        New Total Cost %g New back Cost %g \n", new_total_cost, new_back_cost);
+    }
 
-    // if (new_total_cost < best_total_cost && ((rcv_path_manager.is_enabled()) || (new_back_cost < best_back_cost))) {
-    //     VTR_LOGV_DEBUG(router_debug_, "      Expanding to node %d (%s)\n", to_node,
-    //                    describe_rr_node(device_ctx.rr_graph,
-    //                                     device_ctx.grid,
-    //                                     device_ctx.rr_indexed_data,
-    //                                     to_node,
-    //                                     is_flat_)
-    //                        .c_str());
-    //     VTR_LOGV_DEBUG(router_debug_, "        New Total Cost %g New back Cost %g\n", new_total_cost, new_back_cost);
-    //     //Add node to the heap only if the cost via the current partial path is less than the
-    //     //best known cost, since there is no reason for the router to expand more expensive paths.
-    //     //
-    //     //Pre-heap prune to keep the heap small, by not putting paths which are known to be
-    //     //sub-optimal (at this point in time) into the heap.
-    //     t_heap* next_ptr = heap_.alloc();
-
-    //     // Use the already created next path structure pointer when RCV is enabled
-    //     if (rcv_path_manager.is_enabled()) rcv_path_manager.move(next_ptr->path_data, next.path_data);
-
-    //     //Record how we reached this node
-    //     next_ptr->cost = next.cost;
-    //     next_ptr->R_upstream = next.R_upstream;
-    //     next_ptr->backward_path_cost = next.backward_path_cost;
-    //     next_ptr->index = to_node;
-    //     next_ptr->set_prev_edge(from_edge);
-
-    //     if (rcv_path_manager.is_enabled() && current->path_data) {
-    //         next_ptr->path_data->path_rr = current->path_data->path_rr;
-    //         next_ptr->path_data->edge = current->path_data->edge;
-    //         next_ptr->path_data->path_rr.emplace_back(from_node);
-    //         next_ptr->path_data->edge.emplace_back(from_edge);
-    //     }
-
-    //     heap_.add_to_heap(next_ptr);
-    //     update_router_stats(router_stats_,
-    //                         true,
-    //                         to_node,
-    //                         rr_graph_);
-
-    // } else {
-    //     VTR_LOGV_DEBUG(router_debug_, "      Didn't expand to %d (%s)\n", to_node, describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, to_node, is_flat_).c_str());
-    //     VTR_LOGV_DEBUG(router_debug_, "        Prev Total Cost %g Prev back Cost %g \n", best_total_cost, best_back_cost);
-    //     VTR_LOGV_DEBUG(router_debug_, "        New Total Cost %g New back Cost %g \n", new_total_cost, new_back_cost);
-    // }
-
-    // if (rcv_path_manager.is_enabled() && next.path_data != nullptr) {
-    //     rcv_path_manager.free_path_struct(next.path_data);
-    // }
+    if (rcv_path_manager.is_enabled() && next.path_data != nullptr) {
+        rcv_path_manager.free_path_struct(next.path_data);
+    }
 }
 
 #ifdef VTR_ASSERT_SAFE_ENABLED
@@ -696,8 +663,8 @@ float ConnectionRouter<Heap>::compute_node_cost_using_rcv(const t_conn_cost_para
     float expected_total_delay_cost;
     float expected_total_cong_cost;
 
-    float expected_total_cong = expected_cong + backwards_cong;
-    float expected_total_delay = expected_delay + backwards_delay;
+    float expected_total_cong = cost_params.astar_fac * expected_cong + backwards_cong;
+    float expected_total_delay = cost_params.astar_fac * expected_delay + backwards_delay;
 
     //If budgets specified calculate cost as described by RCV paper:
     //    R. Fung, V. Betz and W. Chow, "Slack Allocation and Routing to Improve FPGA Timing While
@@ -799,10 +766,10 @@ void ConnectionRouter<Heap>::evaluate_timing_driven_node_costs(t_heap* to,
     } else {
         //Reached by a non-configurable edge.
         //Therefore the from_node and to_node are part of the same non-configurable node set.
-// #ifdef VTR_ASSERT_SAFE_ENABLED
-//         VTR_ASSERT_SAFE_MSG(same_non_config_node_set(from_node, to_node),
-//                             "Non-configurably connected edges should be part of the same node set");
-// #endif
+#ifdef VTR_ASSERT_SAFE_ENABLED
+        VTR_ASSERT_SAFE_MSG(same_non_config_node_set(from_node, to_node),
+                            "Non-configurably connected edges should be part of the same node set");
+#endif
 
         //The congestion cost of all nodes in the set has already been accounted for (when
         //the current path first expanded a node in the set). Therefore do *not* re-add the congestion
@@ -830,36 +797,27 @@ void ConnectionRouter<Heap>::evaluate_timing_driven_node_costs(t_heap* to,
 
     float total_cost = 0.;
 
-    // const auto& device_ctx = g_vpr_ctx.device();
-    //Update total cost
-    float expected_cost = router_lookahead_.get_expected_cost(to_node,
-                                                              target_node,
-                                                              cost_params,
-                                                              to->R_upstream);
-    total_cost += to->backward_path_cost + cost_params.astar_fac * std::max(0.f, expected_cost - cost_params.astar_offset);
+    if (rcv_path_manager.is_enabled() && to->path_data != nullptr) {
+        to->path_data->backward_delay += cost_params.criticality * Tdel;
+        to->path_data->backward_cong += (1. - cost_params.criticality) * get_rr_cong_cost(to_node, cost_params.pres_fac);
 
-    // if (rcv_path_manager.is_enabled() && to->path_data != nullptr) {
-    //     to->path_data->backward_delay += cost_params.criticality * Tdel;
-    //     to->path_data->backward_cong += (1. - cost_params.criticality) * get_rr_cong_cost(to_node, cost_params.pres_fac);
-
-    //     total_cost = compute_node_cost_using_rcv(cost_params, to_node, target_node, to->path_data->backward_delay, to->path_data->backward_cong, to->R_upstream);
-    // } else {
-    //     const auto& device_ctx = g_vpr_ctx.device();
-    //     //Update total cost
-    //     float expected_cost = router_lookahead_.get_expected_cost(to_node,
-    //                                                               target_node,
-    //                                                               cost_params,
-    //                                                               to->R_upstream);
-    //     VTR_LOGV_DEBUG(router_debug_ && !std::isfinite(expected_cost),
-    //                    "        Lookahead from %s (%s) to %s (%s) is non-finite, expected_cost = %f, to->R_upstream = %f\n",
-    //                    rr_node_arch_name(to_node, is_flat_).c_str(),
-    //                    describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, to_node, is_flat_).c_str(),
-    //                    rr_node_arch_name(target_node, is_flat_).c_str(),
-    //                    describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, target_node, is_flat_).c_str(),
-    //                    expected_cost, to->R_upstream);
-    //     total_cost += to->backward_path_cost + cost_params.astar_fac * expected_cost;
-    // }
-
+        total_cost = compute_node_cost_using_rcv(cost_params, to_node, target_node, to->path_data->backward_delay, to->path_data->backward_cong, to->R_upstream);
+    } else {
+        const auto& device_ctx = g_vpr_ctx.device();
+        //Update total cost
+        float expected_cost = router_lookahead_.get_expected_cost(to_node,
+                                                                  target_node,
+                                                                  cost_params,
+                                                                  to->R_upstream);
+        VTR_LOGV_DEBUG(router_debug_ && !std::isfinite(expected_cost),
+                       "        Lookahead from %s (%s) to %s (%s) is non-finite, expected_cost = %f, to->R_upstream = %f\n",
+                       rr_node_arch_name(to_node, is_flat_).c_str(),
+                       describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, to_node, is_flat_).c_str(),
+                       rr_node_arch_name(target_node, is_flat_).c_str(),
+                       describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, target_node, is_flat_).c_str(),
+                       expected_cost, to->R_upstream);
+        total_cost += to->backward_path_cost + cost_params.astar_fac * expected_cost;
+    }
     to->cost = total_cost;
 }
 
@@ -953,8 +911,12 @@ void ConnectionRouter<Heap>::add_route_tree_node_to_heap(
 
     if (!rcv_path_manager.is_enabled()) {
         // tot_cost = backward_path_cost + cost_params.astar_fac * expected_cost;
-        float expected_cost = router_lookahead_.get_expected_cost(inode, target_node, cost_params, R_upstream);
-        float tot_cost = backward_path_cost + cost_params.astar_fac * std::max(0.f, expected_cost - cost_params.astar_offset);
+        float tot_cost = backward_path_cost
+                         + cost_params.astar_fac
+                               * router_lookahead_.get_expected_cost(inode,
+                                                                     target_node,
+                                                                     cost_params,
+                                                                     R_upstream);
         VTR_LOGV_DEBUG(router_debug_, "  Adding node %8d to heap from init route tree with cost %g (%s)\n",
                        inode,
                        tot_cost,
