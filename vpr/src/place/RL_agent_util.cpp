@@ -13,7 +13,7 @@ void create_move_generators(std::unique_ptr<MoveGenerator>& move_generator,
 
         VTR_LOG("Using static probabilities for choosing each move type\n");
         for (const auto move_type : placer_opts.place_static_move_prob.keys()) {
-            const std::string& move_name =  move_type_to_string(move_type);
+            const std::string& move_name = move_type_to_string(move_type);
             VTR_LOG("Probability of %s : %f \n",
                     move_name.c_str(),
                     placer_opts.place_static_move_prob[move_type]);
@@ -40,12 +40,12 @@ void create_move_generators(std::unique_ptr<MoveGenerator>& move_generator,
          *      only move type.                                                *
          *      This state is activated late in the anneal and in the Quench   */
 
-        std::vector<e_move_type> first_state_avail_moves {e_move_type::UNIFORM, e_move_type::MEDIAN, e_move_type::CENTROID};
+        std::vector<e_move_type> first_state_avail_moves{e_move_type::UNIFORM, e_move_type::MEDIAN, e_move_type::CENTROID};
         if (placer_opts.place_algorithm.is_timing_driven()) {
             first_state_avail_moves.push_back(e_move_type::W_CENTROID);
         }
 
-        std::vector<e_move_type> second_state_avail_moves {e_move_type::UNIFORM, e_move_type::MEDIAN, e_move_type::CENTROID};
+        std::vector<e_move_type> second_state_avail_moves{e_move_type::UNIFORM, e_move_type::MEDIAN, e_move_type::CENTROID};
         if (placer_opts.place_algorithm.is_timing_driven()) {
             second_state_avail_moves.insert(second_state_avail_moves.end(),
                                             {e_move_type::W_CENTROID, e_move_type::W_MEDIAN, e_move_type::CRIT_UNIFORM, e_move_type::FEASIBLE_REGION});

@@ -1,5 +1,6 @@
 #include "move_utils.h"
 
+#include "move_transactions.h"
 #include "place_util.h"
 #include "globals.h"
 
@@ -141,7 +142,7 @@ e_block_move_result record_single_block_swap(t_pl_blocks_to_be_moved& blocks_aff
     // Check whether the to_location is empty
     if (b_to == EMPTY_BLOCK_ID) {
         // Sets up the blocks moved
-        outcome = record_block_move(blocks_affected, b_from, to);
+        outcome = blocks_affected.record_block_move(b_from, to);
 
     } else if (b_to != INVALID_BLOCK_ID) {
         // Check whether block to is compatible with from location
@@ -152,14 +153,14 @@ e_block_move_result record_single_block_swap(t_pl_blocks_to_be_moved& blocks_aff
         }
 
         // Sets up the blocks moved
-        outcome = record_block_move(blocks_affected, b_from, to);
+        outcome = blocks_affected.record_block_move(b_from, to);
 
         if (outcome != e_block_move_result::VALID) {
             return outcome;
         }
 
         t_pl_loc from = place_ctx.block_locs[b_from].loc;
-        outcome = record_block_move(blocks_affected, b_to, from);
+        outcome = blocks_affected.record_block_move(b_to, from);
 
     } // Finish swapping the blocks and setting up blocks_affected
 
@@ -341,7 +342,7 @@ e_block_move_result record_macro_move(t_pl_blocks_to_be_moved& blocks_affected,
 
         ClusterBlockId blk_to = place_ctx.grid_blocks.block_at_location(to);
 
-        record_block_move(blocks_affected, member.blk_index, to);
+        blocks_affected.record_block_move(member.blk_index, to);
 
         int imacro_to = -1;
         get_imacro_from_iblk(&imacro_to, blk_to, place_ctx.pl_macros);
@@ -392,7 +393,7 @@ e_block_move_result record_macro_self_swaps(t_pl_blocks_to_be_moved& blocks_affe
     auto& place_ctx = g_vpr_ctx.placement();
 
     //Reset any partial move
-    clear_move_blocks(blocks_affected);
+    blocks_affected.clear_move_blocks();
 
     //Collect the macros affected
     std::vector<int> affected_macros;
@@ -431,14 +432,14 @@ e_block_move_result record_macro_self_swaps(t_pl_blocks_to_be_moved& blocks_affe
     std::copy_if(displaced_blocks.begin(), displaced_blocks.end(), std::back_inserter(non_macro_displaced_blocks), is_non_macro_block);
 
     //Based on the currently queued block moves, find the empty 'holes' left behind
-    auto empty_locs = determine_locations_emptied_by_move(blocks_affected);
+    auto empty_locs = blocks_affected.determine_locations_emptied_by_move();
 
     VTR_ASSERT_SAFE(empty_locs.size() >= non_macro_displaced_blocks.size());
 
     //Fit the displaced blocks into the empty locations
     auto loc_itr = empty_locs.begin();
     for (auto blk : non_macro_displaced_blocks) {
-        outcome = record_block_move(blocks_affected, blk, *loc_itr);
+        outcome = blocks_affected.record_block_move(blk, *loc_itr);
         ++loc_itr;
     }
 
@@ -481,27 +482,6 @@ bool is_legal_swap_to_location(ClusterBlockId blk, t_pl_loc to) {
     }
 
     return true;
-}
-
-//Examines the currently proposed move and determine any empty locations
-std::set<t_pl_loc> determine_locations_emptied_by_move(t_pl_blocks_to_be_moved& blocks_affected) {
-    std::set<t_pl_loc> moved_from;
-    std::set<t_pl_loc> moved_to;
-
-    for (int iblk = 0; iblk < blocks_affected.num_moved_blocks; ++iblk) {
-        //When a block is moved its old location becomes free
-        moved_from.emplace(blocks_affected.moved_blocks[iblk].old_loc);
-
-        //But any block later moved to a position fills it
-        moved_to.emplace(blocks_affected.moved_blocks[iblk].new_loc);
-    }
-
-    std::set<t_pl_loc> empty_locs;
-    std::set_difference(moved_from.begin(), moved_from.end(),
-                        moved_to.begin(), moved_to.end(),
-                        std::inserter(empty_locs, empty_locs.begin()));
-
-    return empty_locs;
 }
 
 #ifdef VTR_ENABLE_DEBUG_LOGGING
@@ -1230,7 +1210,7 @@ bool intersect_range_limit_with_floorplan_constraints(ClusterBlockId b_from,
     const auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
 
     // get the block floorplanning constraints specified in the compressed grid
-    const PartitionRegion& compressed_pr = floorplanning_ctx.compressed_cluster_constraints[b_from];
+    const PartitionRegion& compressed_pr = floorplanning_ctx.compressed_cluster_constraints[layer_num][b_from];
     const std::vector<Region>& compressed_regions = compressed_pr.get_regions();
     /*
      * If region size is greater than 1, the block is constrained to more than one rectangular region.
@@ -1240,10 +1220,12 @@ bool intersect_range_limit_with_floorplan_constraints(ClusterBlockId b_from,
      * complicated case to get correct functionality during place moves.
      */
     if (compressed_regions.size() == 1) {
-        Region range_reg;
-        range_reg.set_region_rect({search_range.xmin, search_range.ymin,
-                                   search_range.xmax, search_range.ymax,
-                                   layer_num});
+        if (compressed_regions[0].empty()) {
+            return false;
+        }
+
+        Region range_reg(search_range.xmin, search_range.ymin,
+                         search_range.xmax, search_range.ymax, layer_num);
 
         Region compressed_intersect_reg = intersection(compressed_regions[0], range_reg);
 
@@ -1252,15 +1234,15 @@ bool intersect_range_limit_with_floorplan_constraints(ClusterBlockId b_from,
                            "\tCouldn't find an intersection between floorplan constraints and search region\n");
             return false;
         } else {
-            const auto intersect_coord = compressed_intersect_reg.get_region_rect();
-            VTR_ASSERT(intersect_coord.layer_num == layer_num);
+            const vtr::Rect<int>& intersect_rect = compressed_intersect_reg.get_rect();
+            const auto [layer_low, layer_high] = compressed_intersect_reg.get_layer_range();
+            VTR_ASSERT(layer_low == layer_num && layer_high == layer_num);
 
-            delta_cx = intersect_coord.xmax -  intersect_coord.xmin;
-            search_range.xmin = intersect_coord.xmin;
-            search_range.ymin = intersect_coord.ymin;
-            search_range.xmax = intersect_coord.xmax;
-            search_range.ymax = intersect_coord.ymax;
-            search_range.layer_max = search_range.layer_min = layer_num;
+            delta_cx = intersect_rect.xmax() -  intersect_rect.xmin();
+            std::tie(search_range.xmin, search_range.ymin,
+                     search_range.xmax, search_range.ymax) = intersect_rect.coordinates();
+            search_range.layer_min = layer_low;
+            search_range.layer_max = layer_high;
         }
     }
 

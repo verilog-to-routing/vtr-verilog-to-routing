@@ -9,6 +9,7 @@
 #include "physical_types_util.h"
 
 #include "describe_rr_node.h"
+#include "rr_graph_utils.h"
 
 /*********************** Subroutines local to this module *******************/
 
@@ -389,16 +390,29 @@ void check_rr_node(const RRGraphView& rr_graph,
 
     switch (rr_type) {
         case SOURCE:
-        case SINK:
             if (type == nullptr) {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                                 "in check_rr_node: node %d (type %d) is at an illegal clb location (%d, %d).\n", inode, rr_type, xlow, ylow);
             }
+
             if (xlow != (xhigh - type->width + 1) || ylow != (yhigh - type->height + 1)) {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                                 "in check_rr_node: node %d (type %d) has endpoints (%d,%d) and (%d,%d)\n", inode, rr_type, xlow, ylow, xhigh, yhigh);
             }
             break;
+        case SINK: {
+            if (type == nullptr) {
+                VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                                "in check_rr_node: node %d (type %d) is at an illegal clb location (%d, %d).\n", inode, rr_type, xlow, ylow);
+            }
+
+            vtr::Rect<int> tile_bb = grid.get_tile_bb({xlow, ylow, layer_num});
+            if (xlow < tile_bb.xmin() || ylow < tile_bb.ymin() || xhigh > tile_bb.xmax() || yhigh > tile_bb.ymax()) {
+                VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                                "in check_rr_node: node %d (type %d) has endpoints (%d,%d) and (%d,%d), which is outside the bounds of the grid tile containing it.\n", inode, rr_type, xlow, ylow, xhigh, yhigh);
+            }
+            break;
+        }
         case IPIN:
         case OPIN:
             if (type == nullptr) {

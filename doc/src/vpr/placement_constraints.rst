@@ -28,6 +28,14 @@ A Placement Constraints File Example
 					<add_atom name_pattern="n4917"/>
 					<add_atom name_pattern="n6010"/>
 			</partition>
+
+            <partition name="Part2">
+					<add_region x_low="3" y_low="3" x_high="85" y_high="85"/> <!-- When the layer is not explicitly specified, layer 0 is assumed. -->
+                    <add_region x_low="8" y_low="5" x_high="142" y_high="29 layer_low="0" layer_high="1"/> <!-- In 3D architectures, the region can span across multiple layers. -->
+                    <add_region x_low="6" y_low="55" x_high="50" y_high="129 layer_low="2" layer_high="2"/> <!-- If the region only covers a non-zero layer, both layer_low and layer_high must be set the same value. -->
+					<add_atom name_pattern="n135"/>
+					<add_atom name_pattern="n7016"/>
+			</partition>
 		</partition_list>
 	</vpr_constraints>
 
@@ -75,7 +83,10 @@ The ``name_pattern`` can be the exact name of the atom from the input atom netli
 Region
 ^^^^^^
 
-An ``<add_region>`` tag is used to add a region to the partition. A ``region`` is a rectangular area on the chip. A partition can contain any number of independent regions - the regions within one partition must not overlap with each other (in order to ease processing when loading in the file). An ``<add_region>`` tag has the following attributes.
+An ``<add_region>`` tag is used to add a region to the partition. A ``region`` is a rectangular area or cubic volume
+on the chip. A partition can contain any number of independent regions - the regions within one partition **must not**
+overlap with each other (in order to ease processing when loading in the file).
+An ``<add_region>`` tag has the following attributes.
 
 :req_param x_low:
    The x value of the lower left point of the rectangle.
@@ -90,11 +101,30 @@ An ``<add_region>`` tag is used to add a region to the partition. A ``region`` i
    The y value of the upper right point of the rectangle.
 
 :opt_param subtile:
-   Each x, y location on the grid may contain multiple locations known as subtiles. This paramter is an optional value specifying the subtile location that the atom(s) of the partition shall be constrained to.
+   Each x, y location on the grid may contain multiple locations known as subtiles. This parameter is an optional value specifying the subtile location that the atom(s) of the partition shall be constrained to.
+
+:opt_param layer_low:
+    The lowest layer number that the region covers. The default value is 0.
+
+:opt_param layer_high:
+    The highest layer number that the region covers. The default value is 0.
 
 The optional ``subtile`` attribute is commonly used when constraining an atom to a specific location on the chip (e.g. an exact I/O location). It is legal to use with larger regions, but uncommon.
 
-If a user would like to specify an area on the chip with an unusual shape (e.g. L-shaped or T-shaped), they can simply add multiple ``<add_region>`` tags to cover the area specified.
+In 2D architectures, ``layer_low`` and ``layer_high`` can be safely ignored as their default value is 0.
+In 3D architectures, a region can span across multiple layers or be assigned to a specific layer.
+For assigning a region to a specific non-zero layer, the user should set both ``layer_low`` and ``layer_high`` to the
+desired layer number. If a layer range is to be covered by the region, the user set ``layer_low`` and ``layer_high`` to
+different values.
+
+If a user would like to specify an area on the chip with an unusual shape (e.g. L-shaped or T-shaped),
+they can simply add multiple ``<add_region>`` tags to cover the area specified.
+
+It is strongly recommended that different partitions do not overlap. The packing algorithm compares the number clustered
+blocks and the number of physical blocks in a region to decide pack atoms inside a partition more aggressively when
+there are not enough resources in a partition. Overlapping partitions causes some physical blocks to be counted in more
+than one partition.
+
 
 
 
