@@ -85,6 +85,7 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
                                     const int& num_directs,
                                     int* wire_to_rr_ipin_switch,
                                     const bool& shrink_boundary,
+                                    const bool& perimeter_cb,
                                     const bool& through_channel,
                                     const bool& opin2all_sides,
                                     const bool& concat_wire,
@@ -106,7 +107,7 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
     DeviceContext& device_ctx = g_vpr_ctx.mutable_device();
 
     /* Annotate the device grid on the boundry */
-    DeviceGridAnnotation device_grid_annotation(device_ctx.grid);
+    DeviceGridAnnotation device_grid_annotation(device_ctx.grid, perimeter_cb);
 
     /* The number of segments are in general small, reserve segments may not bring
      * significant memory efficiency */
@@ -169,6 +170,7 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
                                   segment_inf_x, segment_inf_y,
                                   device_grid_annotation,
                                   shrink_boundary,
+                                  perimeter_cb,
                                   through_channel,
                                   is_vib_arch);
 
@@ -188,6 +190,7 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
                                    delayless_rr_switch,
                                    device_grid_annotation,
                                    shrink_boundary,
+                                   perimeter_cb,
                                    through_channel,
                                    is_vib_arch);
 
@@ -262,6 +265,7 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
                          segment_inf, segment_inf_x, segment_inf_y,
                          Fc_in, Fc_out,
                          sb_type, Fs, sb_subtype, subFs,
+                         perimeter_cb,
                          opin2all_sides, concat_wire,
                          wire_opposite_side,
                          delayless_rr_switch,

@@ -117,6 +117,7 @@ void build_rr_graph_edges(const RRGraphView& rr_graph,
                           const int& Fs,
                           const e_switch_block_type& sb_subtype,
                           const int& subFs,
+                          const bool& perimeter_cb,
                           const bool& opin2all_sides,
                           const bool& concat_wire,
                           const bool& wire_opposite_side,
@@ -152,7 +153,7 @@ void build_rr_graph_edges(const RRGraphView& rr_graph,
     build_rr_graph_edges_for_source_nodes(rr_graph, rr_graph_builder, rr_node_driver_switches, grids, layer, num_edges_to_create);
     build_rr_graph_edges_for_sink_nodes(rr_graph, rr_graph_builder, rr_node_driver_switches, grids, layer, num_edges_to_create);
 
-    vtr::Point<size_t> gsb_range(grids.width() - 2, grids.height() - 2);
+    vtr::Point<size_t> gsb_range(grids.width() - 1, grids.height() - 1);
 
     /* Go Switch Block by Switch Block */
     for (size_t ix = 0; ix <= gsb_range.x(); ++ix) {
@@ -170,7 +171,7 @@ void build_rr_graph_edges(const RRGraphView& rr_graph,
             /* Create a GSB object */
             const RRGSB& rr_gsb = build_one_tileable_rr_gsb(grids, rr_graph,
                                                             device_chan_width, segment_inf_x, segment_inf_y,
-                                                            layer, gsb_coord);
+                                                            layer, gsb_coord, perimeter_cb);
 
             if (is_vib_arch) {
                 t_vib_map vib_map;

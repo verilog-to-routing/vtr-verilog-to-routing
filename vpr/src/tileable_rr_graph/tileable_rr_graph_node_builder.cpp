@@ -26,7 +26,8 @@
  ***********************************************************************/
 static size_t estimate_num_grid_rr_nodes_by_type(const DeviceGrid& grids,
                                                  const size_t& layer,
-                                                 const t_rr_type& node_type) {
+                                                 const t_rr_type& node_type,
+                                                 const bool& perimeter_cb) {
     size_t num_grid_rr_nodes = 0;
 
     for (size_t ix = 0; ix < grids.width(); ++ix) {
@@ -43,13 +44,13 @@ static size_t estimate_num_grid_rr_nodes_by_type(const DeviceGrid& grids,
                 continue;
             }
 
-            enum e_side io_side = NUM_SIDES;
+            std::vector<e_side> io_side = {TOP, RIGHT, BOTTOM, LEFT};
 
             /* If this is the block on borders, we consider IO side */
             if (true == is_io_type(grids.get_physical_type(tile_loc))) {
                 vtr::Point<size_t> io_device_size(grids.width() - 1, grids.height() - 1);
                 vtr::Point<size_t> grid_coordinate(ix, iy);
-                io_side = determine_io_grid_pin_side(io_device_size, grid_coordinate);
+                io_side = determine_io_grid_pin_side(io_device_size, grid_coordinate, perimeter_cb);
             }
 
             switch (node_type) {
@@ -215,16 +216,28 @@ static size_t estimate_num_chanx_rr_nodes(const DeviceGrid& grids,
                                           const std::vector<t_segment_inf>& segment_infs,
                                           const DeviceGridAnnotation& device_grid_annotation,
                                           const bool& shrink_boundary,
+                                          const bool& perimeter_cb,
                                           const bool& through_channel) {
     size_t num_chanx_rr_nodes = 0;
+    /* Default x-channel boundary box */
+    size_t start_x = 1;
+    size_t end_x = grids.width() - 1;
+    if (perimeter_cb) {
+      start_x = 0;
+      end_x = grids.width();
+    }
+    size_t max_seg_length = grids.width() - 2;
+    if (perimeter_cb) {
+      max_seg_length = grids.width();
+    }
 
     for (size_t iy = 0; iy < grids.height() - 1; ++iy) {
-        for (size_t ix = 1; ix < grids.width() - 1; ++ix) {
+        for (size_t ix = start_x; ix < end_x; ++ix) {
             vtr::Point<size_t> chanx_coord(ix, iy);
 
             /* Bypass if the routing channel does not exist when through channels are not allowed */
             if ((false == through_channel)
-                && (false == is_chanx_exist(grids, layer, chanx_coord))) {
+                && (false == is_chanx_exist(grids, layer, chanx_coord, perimeter_cb))) {
                 continue;
             }
             /* Bypass if the routing channel does not exist when a shrink boundary is considered */
@@ -239,7 +252,7 @@ static size_t estimate_num_chanx_rr_nodes(const DeviceGrid& grids,
              *  - the routing channel touch the RIGHT side a heterogeneous block
              *  - the routing channel touch the LEFT side of FPGA
              */
-            if (true == is_chanx_right_to_multi_height_grid(grids, layer, chanx_coord, through_channel)) {
+            if (true == is_chanx_right_to_multi_height_grid(grids, layer, chanx_coord, perimeter_cb, through_channel)) {
                 force_start = true;
             }
             if (shrink_boundary && device_grid_annotation.is_chanx_start(chanx_coord)) {
@@ -250,7 +263,7 @@ static size_t estimate_num_chanx_rr_nodes(const DeviceGrid& grids,
              *  - the routing channel touch the LEFT side a heterogeneous block
              *  - the routing channel touch the RIGHT side of FPGA
              */
-            if (true == is_chanx_left_to_multi_height_grid(grids, layer, chanx_coord, through_channel)) {
+            if (true == is_chanx_left_to_multi_height_grid(grids, layer, chanx_coord, perimeter_cb, through_channel)) {
                 force_end = true;
             }
             if (shrink_boundary && device_grid_annotation.is_chanx_end(chanx_coord)) {
@@ -258,7 +271,7 @@ static size_t estimate_num_chanx_rr_nodes(const DeviceGrid& grids,
             }
 
             /* Evaluate if the routing channel locates in the middle of a grid */
-            ChanNodeDetails chanx_details = build_unidir_chan_node_details(chan_width, grids.width() - 2, force_start, force_end, segment_infs);
+            ChanNodeDetails chanx_details = build_unidir_chan_node_details(chan_width, max_seg_length, force_start, force_end, segment_infs);
             /* When an INC_DIRECTION CHANX starts, we need a new rr_node */
             num_chanx_rr_nodes += chanx_details.get_num_starting_tracks(Direction::INC);
             /* When an DEC_DIRECTION CHANX ends, we need a new rr_node */
@@ -280,16 +293,28 @@ static size_t estimate_num_chany_rr_nodes(const DeviceGrid& grids,
                                           const std::vector<t_segment_inf>& segment_infs,
                                           const DeviceGridAnnotation& device_grid_annotation,
                                           const bool& shrink_boundary,
+                                          const bool& perimeter_cb,
                                           const bool& through_channel) {
     size_t num_chany_rr_nodes = 0;
+    /* Default x-channel boundary box */
+    size_t start_y = 1;
+    size_t end_y = grids.height() - 1;
+    if (perimeter_cb) {
+      start_y = 0;
+      end_y = grids.height();
+    }
+    size_t max_seg_length = grids.height() - 2;
+    if (perimeter_cb) {
+      max_seg_length = grids.height();
+    }
 
     for (size_t ix = 0; ix < grids.width() - 1; ++ix) {
-        for (size_t iy = 1; iy < grids.height() - 1; ++iy) {
+        for (size_t iy = start_y; iy < end_y; ++iy) {
             vtr::Point<size_t> chany_coord(ix, iy);
 
             /* Bypass if the routing channel does not exist when through channel are not allowed */
             if ((false == through_channel)
-                && (false == is_chany_exist(grids, layer, chany_coord))) {
+                && (false == is_chany_exist(grids, layer, chany_coord, perimeter_cb))) {
                 continue;
             }
 
@@ -305,7 +330,7 @@ static size_t estimate_num_chany_rr_nodes(const DeviceGrid& grids,
              *  - the routing channel touch the TOP side a heterogeneous block
              *  - the routing channel touch the BOTTOM side of FPGA
              */
-            if (true == is_chany_top_to_multi_width_grid(grids, layer, chany_coord, through_channel)) {
+            if (true == is_chany_top_to_multi_width_grid(grids, layer, chany_coord, perimeter_cb, through_channel)) {
                 force_start = true;
             }
             if (shrink_boundary && device_grid_annotation.is_chany_start(chany_coord)) {
@@ -316,14 +341,14 @@ static size_t estimate_num_chany_rr_nodes(const DeviceGrid& grids,
              *  - the routing channel touch the BOTTOM side a heterogeneous block
              *  - the routing channel touch the TOP side of FPGA
              */
-            if (true == is_chany_bottom_to_multi_width_grid(grids, layer, chany_coord, through_channel)) {
+            if (true == is_chany_bottom_to_multi_width_grid(grids, layer, chany_coord, perimeter_cb, through_channel)) {
                 force_end = true;
             }
             if (shrink_boundary && device_grid_annotation.is_chany_end(chany_coord)) {
                 force_end = true;
             }
 
-            ChanNodeDetails chany_details = build_unidir_chan_node_details(chan_width, grids.height() - 2, force_start, force_end, segment_infs);
+            ChanNodeDetails chany_details = build_unidir_chan_node_details(chan_width, max_seg_length, force_start, force_end, segment_infs);
             /* When an INC_DIRECTION CHANX starts, we need a new rr_node */
             num_chany_rr_nodes += chany_details.get_num_starting_tracks(Direction::INC);
             /* When an DEC_DIRECTION CHANX ends, we need a new rr_node */
@@ -345,22 +370,27 @@ static std::vector<size_t> estimate_num_rr_nodes(const DeviceGrid& grids,
                                                  const std::vector<t_segment_inf>& segment_inf_y,
                                                  const DeviceGridAnnotation& device_grid_annotation,
                                                  const bool& shrink_boundary,
+                                                 const bool& perimeter_cb,
                                                  const bool& through_channel,
                                                  const bool& is_vib_arch) {
+
     /* Reset the OPIN, IPIN, SOURCE, SINK counter to be zero */
     std::vector<size_t> num_rr_nodes_per_type(NUM_RR_TYPES, 0);
 
     /**
      * 1 Find number of rr nodes related to grids
      */
-    num_rr_nodes_per_type[OPIN] = estimate_num_grid_rr_nodes_by_type(grids, layer, OPIN);
-    num_rr_nodes_per_type[IPIN] = estimate_num_grid_rr_nodes_by_type(grids, layer, IPIN);
-    num_rr_nodes_per_type[SOURCE] = estimate_num_grid_rr_nodes_by_type(grids, layer, SOURCE);
-    num_rr_nodes_per_type[SINK] = estimate_num_grid_rr_nodes_by_type(grids, layer, SINK);
     if (is_vib_arch)
         num_rr_nodes_per_type[MEDIUM] = estimate_num_medium_rr_nodes(grids, vib_grid, layer);
     else
         num_rr_nodes_per_type[MEDIUM] = 0;
+
+    num_rr_nodes_per_type[OPIN] = estimate_num_grid_rr_nodes_by_type(grids, layer, OPIN, perimeter_cb);
+    num_rr_nodes_per_type[IPIN] = estimate_num_grid_rr_nodes_by_type(grids, layer, IPIN, perimeter_cb);
+    num_rr_nodes_per_type[SOURCE] = estimate_num_grid_rr_nodes_by_type(grids, layer, SOURCE, perimeter_cb);
+    num_rr_nodes_per_type[SINK] = estimate_num_grid_rr_nodes_by_type(grids, layer, SINK, perimeter_cb);
+
+
     /**
      * 2. Assign the segments for each routing channel,
      *    To be specific, for each routing track, we assign a routing segment.
@@ -381,12 +411,14 @@ static std::vector<size_t> estimate_num_rr_nodes(const DeviceGrid& grids,
                                                                segment_inf_x,
                                                                device_grid_annotation,
                                                                shrink_boundary,
+                                                               perimeter_cb,
                                                                through_channel);
     num_rr_nodes_per_type[CHANY] = estimate_num_chany_rr_nodes(grids, layer,
                                                                chan_width.y(),
                                                                segment_inf_y,
                                                                device_grid_annotation,
                                                                shrink_boundary,
+                                                               perimeter_cb,
                                                                through_channel);
 
     return num_rr_nodes_per_type;
@@ -409,6 +441,7 @@ void alloc_tileable_rr_graph_nodes(RRGraphBuilder& rr_graph_builder,
                                    const std::vector<t_segment_inf>& segment_inf_y,
                                    const DeviceGridAnnotation& device_grid_annotation,
                                    const bool& shrink_boundary,
+                                   const bool& perimeter_cb,
                                    const bool& through_channel,
                                    const bool& is_vib_arch) {
     VTR_ASSERT(0 == rr_graph_builder.rr_nodes().size());
@@ -421,6 +454,7 @@ void alloc_tileable_rr_graph_nodes(RRGraphBuilder& rr_graph_builder,
                                                                       segment_inf_y,
                                                                       device_grid_annotation,
                                                                       shrink_boundary,
+                                                                      perimeter_cb,
                                                                       through_channel,
                                                                       is_vib_arch);
 
@@ -448,10 +482,8 @@ static void load_one_grid_opin_nodes_basic_info(RRGraphBuilder& rr_graph_builder
                                                 const size_t& layer,
                                                 const vtr::Point<size_t>& grid_coordinate,
                                                 const DeviceGrid& grids,
-                                                const e_side& io_side,
+                                                const std::vector<e_side>& wanted_sides,
                                                 const RRSwitchId& delayless_switch) {
-    SideManager io_side_manager(io_side);
-
     /* Walk through the width height of each grid,
      * get pins and configure the rr_nodes
      */
@@ -459,13 +491,8 @@ static void load_one_grid_opin_nodes_basic_info(RRGraphBuilder& rr_graph_builder
     for (int width = 0; width < phy_tile_type->width; ++width) {
         for (int height = 0; height < phy_tile_type->height; ++height) {
             /* Walk through sides */
-            for (e_side side : SIDES) {
+            for (e_side side : wanted_sides) {
                 SideManager side_manager(side);
-                /* skip unwanted sides */
-                if ((true == is_io_type(phy_tile_type))
-                    && (side != io_side_manager.to_size_t()) && (NUM_SIDES != io_side)) {
-                    continue;
-                }
                 /* Find OPINs */
                 /* Configure pins by pins */
                 std::vector<int> opin_list = get_grid_side_pins(grids, layer, grid_coordinate.x(), grid_coordinate.y(), DRIVER, side_manager.get_side(),
@@ -513,10 +540,8 @@ static void load_one_grid_ipin_nodes_basic_info(RRGraphBuilder& rr_graph_builder
                                                 const size_t& layer,
                                                 const vtr::Point<size_t>& grid_coordinate,
                                                 const DeviceGrid& grids,
-                                                const e_side& io_side,
+                                                const std::vector<e_side>& wanted_sides,
                                                 const RRSwitchId& wire_to_ipin_switch) {
-    SideManager io_side_manager(io_side);
-
     /* Walk through the width and height of each grid,
      * get pins and configure the rr_nodes
      */
@@ -524,14 +549,8 @@ static void load_one_grid_ipin_nodes_basic_info(RRGraphBuilder& rr_graph_builder
     for (int width = 0; width < phy_tile_type->width; ++width) {
         for (int height = 0; height < phy_tile_type->height; ++height) {
             /* Walk through sides */
-            for (e_side side : SIDES) {
+            for (e_side side : wanted_sides) {
                 SideManager side_manager(side);
-                /* skip unwanted sides */
-                if ((true == is_io_type(phy_tile_type))
-                    && (side != io_side_manager.to_size_t()) && (NUM_SIDES != io_side)) {
-                    continue;
-                }
-
                 /* Find IPINs */
                 /* Configure pins by pins */
                 std::vector<int> ipin_list = get_grid_side_pins(grids, layer, grid_coordinate.x(), grid_coordinate.y(), RECEIVER, side_manager.get_side(), width, height);
@@ -578,10 +597,7 @@ static void load_one_grid_source_nodes_basic_info(RRGraphBuilder& rr_graph_build
                                                   const size_t& layer,
                                                   const vtr::Point<size_t>& grid_coordinate,
                                                   const DeviceGrid& grids,
-                                                  const e_side& io_side,
                                                   const RRSwitchId& delayless_switch) {
-    SideManager io_side_manager(io_side);
-
     /* Set a SOURCE rr_node for each DRIVER class */
     t_physical_tile_loc tile_loc(grid_coordinate.x(), grid_coordinate.y(), layer);
     t_physical_tile_type_ptr phy_tile_type = grids.get_physical_type(tile_loc);
@@ -630,10 +646,7 @@ static void load_one_grid_sink_nodes_basic_info(RRGraphBuilder& rr_graph_builder
                                                 const size_t& layer,
                                                 const vtr::Point<size_t>& grid_coordinate,
                                                 const DeviceGrid& grids,
-                                                const e_side& io_side,
                                                 const RRSwitchId& delayless_switch) {
-    SideManager io_side_manager(io_side);
-
     /* Set a SINK rr_node for each RECEIVER class */
     t_physical_tile_loc tile_loc(grid_coordinate.x(), grid_coordinate.y(), layer);
     t_physical_tile_type_ptr phy_tile_type = grids.get_physical_type(tile_loc);
@@ -717,6 +730,7 @@ static void load_grid_nodes_basic_info(RRGraphBuilder& rr_graph_builder,
                                        const size_t& layer,
                                        const RRSwitchId& wire_to_ipin_switch,
                                        const RRSwitchId& delayless_switch,
+                                        const bool& perimeter_cb
                                        const bool& is_vib_arch) {
     for (size_t iy = 0; iy < grids.height(); ++iy) {
         for (size_t ix = 0; ix < grids.width(); ++ix) {
@@ -733,16 +747,12 @@ static void load_grid_nodes_basic_info(RRGraphBuilder& rr_graph_builder,
             }
 
             vtr::Point<size_t> grid_coordinate(ix, iy);
-            enum e_side io_side = NUM_SIDES;
-
             std::vector<e_side> wanted_sides{TOP, RIGHT, BOTTOM, LEFT};
 
             /* If this is the block on borders, we consider IO side */
             if (true == is_io_type(grids.get_physical_type(tile_loc))) {
                 vtr::Point<size_t> io_device_size(grids.width() - 1, grids.height() - 1);
-                io_side = determine_io_grid_pin_side(io_device_size, grid_coordinate);
-                wanted_sides.clear();
-                wanted_sides.push_back(io_side);
+                wanted_sides = determine_io_grid_pin_side(io_device_size, grid_coordinate, perimeter_cb);
             }
 
             for (e_side side : wanted_sides) {
@@ -762,7 +772,6 @@ static void load_grid_nodes_basic_info(RRGraphBuilder& rr_graph_builder,
                                                   rr_rc_data,
                                                   layer, grid_coordinate,
                                                   grids,
-                                                  io_side,
                                                   delayless_switch);
 
             /* Configure sink rr_nodes for this grid */
@@ -771,7 +780,6 @@ static void load_grid_nodes_basic_info(RRGraphBuilder& rr_graph_builder,
                                                 rr_rc_data,
                                                 layer, grid_coordinate,
                                                 grids,
-                                                io_side,
                                                 delayless_switch);
 
             /* Configure opin rr_nodes for this grid */
@@ -780,7 +788,7 @@ static void load_grid_nodes_basic_info(RRGraphBuilder& rr_graph_builder,
                                                 rr_rc_data,
                                                 layer, grid_coordinate,
                                                 grids,
-                                                io_side,
+                                                wanted_sides,
                                                 delayless_switch);
 
             /* Configure ipin rr_nodes for this grid */
@@ -789,7 +797,7 @@ static void load_grid_nodes_basic_info(RRGraphBuilder& rr_graph_builder,
                                                 rr_rc_data,
                                                 layer, grid_coordinate,
                                                 grids,
-                                                io_side,
+                                                wanted_sides,
                                                 wire_to_ipin_switch);
         }
     }
@@ -998,18 +1006,30 @@ static void load_chanx_rr_nodes_basic_info(const RRGraphView& rr_graph,
                                            const t_unified_to_parallel_seg_index& segment_index_map,
                                            const DeviceGridAnnotation& device_grid_annotation,
                                            const bool& shrink_boundary,
+                                           const bool& perimeter_cb,
                                            const bool& through_channel) {
+    size_t start_x = 1;
+    size_t end_x = grids.width() - 1;
+    if (perimeter_cb) {
+      start_x = 0;
+      end_x = grids.width();
+    }
+    size_t max_seg_length = grids.width() - 2;
+    if (perimeter_cb) {
+      max_seg_length = grids.width();
+    }
+
     /* For X-direction Channel: CHANX */
     for (size_t iy = 0; iy < grids.height() - 1; ++iy) {
         /* Keep a vector of node_ids for the channels, because we will rotate them when walking through ix */
         std::vector<size_t> track_node_ids;
 
-        for (size_t ix = 1; ix < grids.width() - 1; ++ix) {
+        for (size_t ix = start_x; ix < end_x; ++ix) {
             vtr::Point<size_t> chanx_coord(ix, iy);
 
             /* Bypass if the routing channel does not exist when through channels are not allowed */
             if ((false == through_channel)
-                && (false == is_chanx_exist(grids, layer, chanx_coord))) {
+                && (false == is_chanx_exist(grids, layer, chanx_coord, perimeter_cb))) {
                 continue;
             }
             /* Bypass if the routing channel does not exist when a shrink boundary is considered */
@@ -1024,7 +1044,7 @@ static void load_chanx_rr_nodes_basic_info(const RRGraphView& rr_graph,
              *  - the routing channel touch the RIGHT side a heterogeneous block
              *  - the routing channel touch the LEFT side of FPGA
              */
-            if (true == is_chanx_right_to_multi_height_grid(grids, layer, chanx_coord, through_channel)) {
+            if (true == is_chanx_right_to_multi_height_grid(grids, layer, chanx_coord, perimeter_cb, through_channel)) {
                 force_start = true;
             }
             if (shrink_boundary && device_grid_annotation.is_chanx_start(chanx_coord)) {
@@ -1035,14 +1055,14 @@ static void load_chanx_rr_nodes_basic_info(const RRGraphView& rr_graph,
              *  - the routing channel touch the LEFT side a heterogeneous block
              *  - the routing channel touch the RIGHT side of FPGA
              */
-            if (true == is_chanx_left_to_multi_height_grid(grids, layer, chanx_coord, through_channel)) {
+            if (true == is_chanx_left_to_multi_height_grid(grids, layer, chanx_coord, perimeter_cb, through_channel)) {
                 force_end = true;
             }
             if (shrink_boundary && device_grid_annotation.is_chanx_end(chanx_coord)) {
                 force_end = true;
             }
 
-            ChanNodeDetails chanx_details = build_unidir_chan_node_details(chan_width, grids.width() - 2,
+            ChanNodeDetails chanx_details = build_unidir_chan_node_details(chan_width, max_seg_length,
                                                                            force_start, force_end, segment_infs);
             /* Force node_ids from the previous chanx */
             if (0 < track_node_ids.size()) {
@@ -1050,7 +1070,7 @@ static void load_chanx_rr_nodes_basic_info(const RRGraphView& rr_graph,
                  * Tracks on the borders are not regularly started and ended,
                  * which causes the node_rotation malfunction
                  */
-                ChanNodeDetails chanx_details_tt = build_unidir_chan_node_details(chan_width, grids.width() - 2,
+                ChanNodeDetails chanx_details_tt = build_unidir_chan_node_details(chan_width, max_seg_length,
                                                                                   false, false, segment_infs);
                 chanx_details_tt.set_track_node_ids(track_node_ids);
 
@@ -1066,7 +1086,7 @@ static void load_chanx_rr_nodes_basic_info(const RRGraphView& rr_graph,
                  *  track0 ----->+-----------------------------+----> track0
                  *               |                             |
                  */
-                if (true == is_chanx_exist(grids, layer, chanx_coord, through_channel)) {
+                if (true == is_chanx_exist(grids, layer, chanx_coord, perimeter_cb, through_channel)) {
                     /* Rotate the chanx_details by an offset of ix - 1, the distance to the most left channel */
                     /* For INC_DIRECTION, we use clockwise rotation
                      * node_id A ---->   -----> node_id D
@@ -1123,18 +1143,31 @@ static void load_chany_rr_nodes_basic_info(const RRGraphView& rr_graph,
                                            const t_unified_to_parallel_seg_index& seg_index_map,
                                            const DeviceGridAnnotation& device_grid_annotation,
                                            const bool& shrink_boundary,
+                                           const bool& perimeter_cb,
                                            const bool& through_channel) {
+    /* Default y-channel boundary box */
+    size_t start_y = 1;
+    size_t end_y = grids.height() - 1;
+    if (perimeter_cb) {
+      start_y = 0;
+      end_y = grids.height();
+    }
+    size_t max_seg_length = grids.height() - 2;
+    if (perimeter_cb) {
+      max_seg_length = grids.height();
+    }
+
     /* For Y-direction Channel: CHANY */
     for (size_t ix = 0; ix < grids.width() - 1; ++ix) {
         /* Keep a vector of node_ids for the channels, because we will rotate them when walking through ix */
         std::vector<size_t> track_node_ids;
 
-        for (size_t iy = 1; iy < grids.height() - 1; ++iy) {
+        for (size_t iy = start_y; iy < end_y; ++iy) {
             vtr::Point<size_t> chany_coord(ix, iy);
 
             /* Bypass if the routing channel does not exist when through channel are not allowed */
             if ((false == through_channel)
-                && (false == is_chany_exist(grids, layer, chany_coord))) {
+                && (false == is_chany_exist(grids, layer, chany_coord, perimeter_cb))) {
                 continue;
             }
             /* Bypass if the routing channel does not exist when a shrink boundary is considered */
@@ -1149,7 +1182,7 @@ static void load_chany_rr_nodes_basic_info(const RRGraphView& rr_graph,
              *  - the routing channel touch the TOP side a heterogeneous block
              *  - the routing channel touch the BOTTOM side of FPGA
              */
-            if (true == is_chany_top_to_multi_width_grid(grids, layer, chany_coord, through_channel)) {
+            if (true == is_chany_top_to_multi_width_grid(grids, layer, chany_coord, perimeter_cb, through_channel)) {
                 force_start = true;
             }
             if (shrink_boundary && device_grid_annotation.is_chany_start(chany_coord)) {
@@ -1160,14 +1193,14 @@ static void load_chany_rr_nodes_basic_info(const RRGraphView& rr_graph,
              *  - the routing channel touch the BOTTOM side a heterogeneous block
              *  - the routing channel touch the TOP side of FPGA
              */
-            if (true == is_chany_bottom_to_multi_width_grid(grids, layer, chany_coord, through_channel)) {
+            if (true == is_chany_bottom_to_multi_width_grid(grids, layer, chany_coord, perimeter_cb, through_channel)) {
                 force_end = true;
             }
             if (shrink_boundary && device_grid_annotation.is_chany_end(chany_coord)) {
                 force_end = true;
             }
 
-            ChanNodeDetails chany_details = build_unidir_chan_node_details(chan_width, grids.height() - 2,
+            ChanNodeDetails chany_details = build_unidir_chan_node_details(chan_width, max_seg_length,
                                                                            force_start, force_end, segment_infs);
             /* Force node_ids from the previous chany
              * This will not be applied when the routing channel is cut off (force to start)
@@ -1177,7 +1210,7 @@ static void load_chany_rr_nodes_basic_info(const RRGraphView& rr_graph,
                  * Tracks on the borders are not regularly started and ended,
                  * which causes the node_rotation malfunction
                  */
-                ChanNodeDetails chany_details_tt = build_unidir_chan_node_details(chan_width, grids.height() - 2,
+                ChanNodeDetails chany_details_tt = build_unidir_chan_node_details(chan_width, max_seg_length,
                                                                                   false, false, segment_infs);
 
                 chany_details_tt.set_track_node_ids(track_node_ids);
@@ -1195,7 +1228,7 @@ static void load_chany_rr_nodes_basic_info(const RRGraphView& rr_graph,
                  *               |                             |
                  * we should rotate only once at the bottom side of a grid
                  */
-                if (true == is_chany_exist(grids, layer, chany_coord, through_channel)) {
+                if (true == is_chany_exist(grids, layer, chany_coord, perimeter_cb, through_channel)) {
                     /* Rotate the chany_details by an offset of 1*/
                     /* For INC_DIRECTION, we use clockwise rotation
                      * node_id A ---->   -----> node_id D
@@ -1276,6 +1309,7 @@ void create_tileable_rr_graph_nodes(const RRGraphView& rr_graph,
                                     const RRSwitchId& delayless_switch,
                                     const DeviceGridAnnotation& device_grid_annotation,
                                     const bool& shrink_boundary,
+                                    const bool& perimeter_cb,
                                     const bool& through_channel,
                                     const bool& is_vib_arch) {
     /* Allocates and loads all the structures needed for fast lookups of the   *
@@ -1298,7 +1332,7 @@ void create_tileable_rr_graph_nodes(const RRGraphView& rr_graph,
                                rr_rc_data,
                                grids, vib_grid, layer,
                                wire_to_ipin_switch,
-                               delayless_switch,
+                               delayless_switch, perimeter_cb,
                                is_vib_arch);
 
     load_chanx_rr_nodes_basic_info(rr_graph,
@@ -1312,6 +1346,7 @@ void create_tileable_rr_graph_nodes(const RRGraphView& rr_graph,
                                    segment_index_map,
                                    device_grid_annotation,
                                    shrink_boundary,
+                                   perimeter_cb,
                                    through_channel);
 
     load_chany_rr_nodes_basic_info(rr_graph,
@@ -1326,6 +1361,7 @@ void create_tileable_rr_graph_nodes(const RRGraphView& rr_graph,
                                    segment_index_map,
                                    device_grid_annotation,
                                    shrink_boundary,
+                                   perimeter_cb,
                                    through_channel);
 
     reverse_dec_chan_rr_node_track_ids(rr_graph,

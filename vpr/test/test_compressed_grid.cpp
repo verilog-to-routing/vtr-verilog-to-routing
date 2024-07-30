@@ -228,7 +228,7 @@ TEST_CASE("test_compressed_grid", "[vpr_compressed_grid]") {
         REQUIRE(grid_loc == t_physical_tile_loc{17, 3, 0});
     }
 
-    SECTION("Closest mapped location in the compressed grids") {
+    SECTION("Round to the nearest mapped location in the compressed grid") {
         t_physical_tile_loc comp_loc = compressed_grids[large_logical_type.index].grid_loc_to_compressed_loc_approx({25, 33, 0});
         t_physical_tile_loc grid_loc = compressed_grids[large_logical_type.index].compressed_loc_to_grid_loc(comp_loc);
         REQUIRE(grid_loc == t_physical_tile_loc{25, 33, 0});
@@ -258,6 +258,74 @@ TEST_CASE("test_compressed_grid", "[vpr_compressed_grid]") {
         REQUIRE(grid_loc == t_physical_tile_loc{1, 1, 0});
 
         comp_loc = compressed_grids[small_logical_type.index].grid_loc_to_compressed_loc_approx({99, 99, 0});
+        grid_loc = compressed_grids[small_logical_type.index].compressed_loc_to_grid_loc(comp_loc);
+        REQUIRE(grid_loc == t_physical_tile_loc{98, 98, 0});
+    }
+
+    SECTION("Round down to the closest mapped location in the compressed grid") {
+        t_physical_tile_loc comp_loc = compressed_grids[large_logical_type.index].grid_loc_to_compressed_loc_approx_round_down({25, 33, 0});
+        t_physical_tile_loc grid_loc = compressed_grids[large_logical_type.index].compressed_loc_to_grid_loc(comp_loc);
+        REQUIRE(grid_loc == t_physical_tile_loc{25, 33, 0});
+
+        comp_loc = compressed_grids[large_logical_type.index].grid_loc_to_compressed_loc_approx_round_down({99, 10, 0});
+        grid_loc = compressed_grids[large_logical_type.index].compressed_loc_to_grid_loc(comp_loc);
+        REQUIRE(grid_loc == t_physical_tile_loc{76, 7, 0});
+
+        comp_loc = compressed_grids[large_logical_type.index].grid_loc_to_compressed_loc_approx_round_down({51, 79, 0});
+        grid_loc = compressed_grids[large_logical_type.index].compressed_loc_to_grid_loc(comp_loc);
+        REQUIRE(grid_loc == t_physical_tile_loc{42, 72, 0});
+
+        comp_loc = compressed_grids[tall_logical_type.index].grid_loc_to_compressed_loc_approx_round_down({1, 6, 0});
+        grid_loc = compressed_grids[tall_logical_type.index].compressed_loc_to_grid_loc(comp_loc);
+        REQUIRE(grid_loc == t_physical_tile_loc{7, 5, 0});
+
+        comp_loc = compressed_grids[tall_logical_type.index].grid_loc_to_compressed_loc_approx_round_down({81, 38, 0});
+        grid_loc = compressed_grids[tall_logical_type.index].compressed_loc_to_grid_loc(comp_loc);
+        REQUIRE(grid_loc == t_physical_tile_loc{77, 35, 0});
+
+        comp_loc = compressed_grids[tall_logical_type.index].grid_loc_to_compressed_loc_approx_round_down({34, 83, 0});
+        grid_loc = compressed_grids[tall_logical_type.index].compressed_loc_to_grid_loc(comp_loc);
+        REQUIRE(grid_loc == t_physical_tile_loc{27, 80, 0});
+
+        comp_loc = compressed_grids[small_logical_type.index].grid_loc_to_compressed_loc_approx_round_down({0, 0, 0});
+        grid_loc = compressed_grids[small_logical_type.index].compressed_loc_to_grid_loc(comp_loc);
+        REQUIRE(grid_loc == t_physical_tile_loc{1, 1, 0});
+
+        comp_loc = compressed_grids[small_logical_type.index].grid_loc_to_compressed_loc_approx_round_down({99, 99, 0});
+        grid_loc = compressed_grids[small_logical_type.index].compressed_loc_to_grid_loc(comp_loc);
+        REQUIRE(grid_loc == t_physical_tile_loc{98, 98, 0});
+    }
+
+    SECTION("Round up to the closest mapped location in the compressed grid") {
+        t_physical_tile_loc comp_loc = compressed_grids[large_logical_type.index].grid_loc_to_compressed_loc_approx_round_up({25, 33, 0});
+        t_physical_tile_loc grid_loc = compressed_grids[large_logical_type.index].compressed_loc_to_grid_loc(comp_loc);
+        REQUIRE(grid_loc == t_physical_tile_loc{25, 33, 0});
+
+        comp_loc = compressed_grids[large_logical_type.index].grid_loc_to_compressed_loc_approx_round_up({99, 10, 0});
+        grid_loc = compressed_grids[large_logical_type.index].compressed_loc_to_grid_loc(comp_loc);
+        REQUIRE(grid_loc == t_physical_tile_loc{76, 20, 0});
+
+        comp_loc = compressed_grids[large_logical_type.index].grid_loc_to_compressed_loc_approx_round_up({51, 79, 0});
+        grid_loc = compressed_grids[large_logical_type.index].compressed_loc_to_grid_loc(comp_loc);
+        REQUIRE(grid_loc == t_physical_tile_loc{59, 85, 0});
+
+        comp_loc = compressed_grids[tall_logical_type.index].grid_loc_to_compressed_loc_approx_round_up({1, 6, 0});
+        grid_loc = compressed_grids[tall_logical_type.index].compressed_loc_to_grid_loc(comp_loc);
+        REQUIRE(grid_loc == t_physical_tile_loc{7, 10, 0});
+
+        comp_loc = compressed_grids[tall_logical_type.index].grid_loc_to_compressed_loc_approx_round_up({81, 38, 0});
+        grid_loc = compressed_grids[tall_logical_type.index].compressed_loc_to_grid_loc(comp_loc);
+        REQUIRE(grid_loc == t_physical_tile_loc{87, 40, 0});
+
+        comp_loc = compressed_grids[tall_logical_type.index].grid_loc_to_compressed_loc_approx_round_up({34, 83, 0});
+        grid_loc = compressed_grids[tall_logical_type.index].compressed_loc_to_grid_loc(comp_loc);
+        REQUIRE(grid_loc == t_physical_tile_loc{37, 85, 0});
+
+        comp_loc = compressed_grids[small_logical_type.index].grid_loc_to_compressed_loc_approx_round_up({0, 0, 0});
+        grid_loc = compressed_grids[small_logical_type.index].compressed_loc_to_grid_loc(comp_loc);
+        REQUIRE(grid_loc == t_physical_tile_loc{1, 1, 0});
+
+        comp_loc = compressed_grids[small_logical_type.index].grid_loc_to_compressed_loc_approx_round_up({99, 99, 0});
         grid_loc = compressed_grids[small_logical_type.index].compressed_loc_to_grid_loc(comp_loc);
         REQUIRE(grid_loc == t_physical_tile_loc{98, 98, 0});
     }

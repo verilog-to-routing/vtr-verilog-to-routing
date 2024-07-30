@@ -46,7 +46,7 @@
 #include "route_common.h"
 #include "route_tree.h"
 #include "read_route.h"
-#include "binary_heap.h"
+#include "four_ary_heap.h"
 
 #include "old_traceback.h"
 
@@ -129,7 +129,7 @@ bool read_route(const char* route_file, const t_router_opts& router_opts, bool v
     fp.close();
 
     /*Correctly set up the clb opins*/
-    BinaryHeap small_heap;
+    FourAryHeap small_heap;
     small_heap.init_heap(device_ctx.grid);
     if (!flat_router) {
         reserve_locally_used_opins(&small_heap, router_opts.initial_pres_fac,

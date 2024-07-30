@@ -2096,6 +2096,7 @@ struct t_arch {
 
     /* Xifan Tang: options for tileable routing architectures */
     bool tileable;
+    bool perimeter_cb;
     bool shrink_boundary;
     bool through_channel;
     bool opin2all_sides;

@@ -45,3 +45,5 @@ target_link_libraries(libdecrypt
 )
 install(TARGETS libdecrypt DESTINATION bin)
 install(FILES ${LIB_HEADERS} DESTINATION include/libdecrypt)
+
+add_subdirectory(test)

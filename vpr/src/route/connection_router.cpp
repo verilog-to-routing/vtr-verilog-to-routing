@@ -2,24 +2,9 @@
 #include "rr_graph.h"
 
 #include "binary_heap.h"
+#include "four_ary_heap.h"
 #include "bucket.h"
 #include "rr_graph_fwd.h"
-
-/**
- * @brief This function is relevant when the architecture is 3D. If inter-layer connections are only from OPINs (determine by is_inter_layer_opin_connection),
- * then nodes (other that OPINs) which are on the other layer than sink's layer, don't need to be pushed back to the heap.
- * @param rr_nodes
- * @param rr_graph
- * @param from_node
- * @param sink_node
- * @param is_inter_layer_opin_connection It is true if the architecture is 3D and inter-layer connections are only from OPINs.
- * @return
- */
-static bool has_path_to_sink(const t_rr_graph_view& rr_nodes,
-                             const RRGraphView* rr_graph,
-                             RRNodeId from_node,
-                             RRNodeId sink_node,
-                             bool is_inter_layer_opin_connection);
 
 static bool relevant_node_to_target(const RRGraphView* rr_graph,
                                     RRNodeId node_to_add,
@@ -851,9 +836,6 @@ void ConnectionRouter<Heap>::add_route_tree_to_heap(
     /* Pre-order depth-first traversal */
     // IPINs and SINKS are not re_expanded
     if (rt_node.re_expand) {
-        if (target_node.is_valid() && !has_path_to_sink(rr_nodes_, rr_graph_, RRNodeId(rt_node.inode), RRNodeId(target_node), only_opin_inter_layer)) {
-            return;
-        }
         add_route_tree_node_to_heap(rt_node,
                                     target_node,
                                     cost_params,
@@ -981,7 +963,6 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
     int target_bin_x = grid_to_bin_x(rr_graph_->node_xlow(target_node), spatial_rt_lookup);
     int target_bin_y = grid_to_bin_y(rr_graph_->node_ylow(target_node), spatial_rt_lookup);
 
-    int nodes_added = 0;
     int chan_nodes_added = 0;
 
     t_bb highfanout_bb;
@@ -1020,23 +1001,15 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
                 if (!inside_bb(rr_node_to_add, net_bounding_box))
                     continue;
 
-                if (!has_path_to_sink(rr_nodes_, rr_graph_, RRNodeId(rt_node.inode), target_node, only_opin_inter_layer)) {
-                    continue;
-                }
                 // Put the node onto the heap
                 add_route_tree_node_to_heap(rt_node, target_node, cost_params, net_bounding_box);
 
                 // Expand HF BB to include the node (clip by original BB)
                 expand_highfanout_bounding_box(highfanout_bb, net_bounding_box, rr_node_to_add, rr_graph_);
 
-                if (is_flat_) {
-                    if (rr_graph_->node_type(rr_node_to_add) == CHANY || rr_graph_->node_type(rr_node_to_add) == CHANX) {
-                        chan_nodes_added++;
-                    }
-                } else {
+                if (rr_graph_->node_type(rr_node_to_add) == CHANY || rr_graph_->node_type(rr_node_to_add) == CHANX) {
                     chan_nodes_added++;
                 }
-                nodes_added++;
             }
 
             constexpr int SINGLE_BIN_MIN_NODES = 2;
@@ -1054,38 +1027,13 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
         if (done) break;
     }
 
-    if (nodes_added == 0) { //If the target bin, and it's surrounding bins were empty, just add the full route tree
+    if (chan_nodes_added == 0) { //If the target bin, and it's surrounding bins were empty, just add the full route tree
         add_route_tree_to_heap(rt_root, target_node, cost_params, net_bounding_box);
         return net_bounding_box;
     } else {
         //We found nearby routing, replace original bounding box to be localized around that routing
         adjust_highfanout_bounding_box(highfanout_bb, net_bounding_box);
         return highfanout_bb;
-    }
-}
-
-static inline bool has_path_to_sink(const t_rr_graph_view& rr_nodes,
-                                    const RRGraphView* rr_graph,
-                                    RRNodeId from_node,
-                                    RRNodeId sink_node,
-                                    bool is_inter_layer_opin_connection) {
-    int sink_layer = rr_graph->node_layer(sink_node);
-
-    if (rr_graph->node_layer(from_node) == sink_layer || rr_graph->node_type(from_node) == SOURCE || !is_inter_layer_opin_connection) {
-        return true;
-    } else if (rr_graph->node_type(from_node) == CHANX || rr_graph->node_type(from_node) == CHANY || rr_graph->node_type(from_node) == IPIN) {
-        return false;
-    } else {
-        VTR_ASSERT(rr_graph->node_type(from_node) == OPIN && is_inter_layer_opin_connection);
-        auto edges = rr_nodes.edge_range(from_node);
-
-        for (RREdgeId from_edge : edges) {
-            RRNodeId to_node = rr_nodes.edge_sink_node(from_edge);
-            if (rr_graph->node_layer(to_node) == sink_layer) {
-                return true;
-            }
-        }
-        return false;
     }
 }
 
@@ -1169,6 +1117,16 @@ std::unique_ptr<ConnectionRouterInterface> make_connection_router(e_heap_type he
     switch (heap_type) {
         case e_heap_type::BINARY_HEAP:
             return std::make_unique<ConnectionRouter<BinaryHeap>>(
+                grid,
+                router_lookahead,
+                rr_nodes,
+                rr_graph,
+                rr_rc_data,
+                rr_switch_inf,
+                rr_node_route_inf,
+                is_flat);
+        case e_heap_type::FOUR_ARY_HEAP:
+            return std::make_unique<ConnectionRouter<FourAryHeap>>(
                 grid,
                 router_lookahead,
                 rr_nodes,

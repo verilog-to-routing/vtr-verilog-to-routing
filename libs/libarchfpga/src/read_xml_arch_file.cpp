@@ -168,7 +168,7 @@ static void ProcessEquivalentSiteCustomConnection(pugi::xml_node Parent,
                                                   t_sub_tile* SubTile,
                                                   t_physical_tile_type* PhysicalTileType,
                                                   t_logical_block_type* LogicalBlockType,
-                                                  std::string site_name,
+                                                  const std::string& site_name,
                                                   const pugiutil::loc_data& loc_data);
 static void ProcessPinLocations(pugi::xml_node Locations,
                                 t_physical_tile_type* PhysicalTileType,
@@ -391,7 +391,7 @@ static bool attribute_to_bool(const pugi::xml_node node,
 
 static int find_switch_by_name(const t_arch& arch, const std::string& switch_name);
 
-e_side string_to_side(const std::string& side_str);
+static e_side string_to_side(const std::string& side_str);
 
 template<typename T>
 static T* get_type_by_name(const char* type_name, std::vector<T>& types);
@@ -1713,10 +1713,10 @@ static void ProcessPb_TypePort_Power(pugi::xml_node Parent, t_port* port, e_powe
 static void ProcessPb_TypePort(pugi::xml_node Parent, t_port* port, e_power_estimation_method power_method, const bool is_root_pb_type, const pugiutil::loc_data& loc_data) {
     std::vector<std::string> expected_attributes = {"name", "num_pins", "port_class"};
     if (is_root_pb_type) {
-        expected_attributes.push_back("equivalent");
+        expected_attributes.emplace_back("equivalent");
 
         if (Parent.name() == "input"s || Parent.name() == "clock"s) {
-            expected_attributes.push_back("is_non_clock_global");
+            expected_attributes.emplace_back("is_non_clock_global");
         }
     }
 
@@ -2580,6 +2580,7 @@ static void ProcessLayout(pugi::xml_node layout_tag, t_arch* arch, const pugiuti
     //expect_only_attributes(layout_tag, {}, loc_data);
 
     arch->tileable = get_attribute(layout_tag, "tileable", loc_data, ReqOpt::OPTIONAL).as_bool(false);
+    arch->perimeter_cb = get_attribute(layout_tag, "perimeter_cb", loc_data, ReqOpt::OPTIONAL).as_bool(false);
     arch->shrink_boundary = get_attribute(layout_tag, "shrink_boundary", loc_data, ReqOpt::OPTIONAL).as_bool(false);
     arch->through_channel = get_attribute(layout_tag, "through_channel", loc_data, ReqOpt::OPTIONAL).as_bool(false);
     arch->opin2all_sides = get_attribute(layout_tag, "opin2all_sides", loc_data, ReqOpt::OPTIONAL).as_bool(false);
@@ -2984,7 +2985,7 @@ static void ProcessDevice(pugi::xml_node Node, t_arch* arch, t_default_fc_spec& 
     //<connection_block> tag
     Cur = get_single_child(Node, "connection_block", loc_data);
     expect_only_attributes(Cur, {"input_switch_name", "input_inter_die_switch_name"}, loc_data);
-    arch->ipin_cblock_switch_name.push_back(get_attribute(Cur, "input_switch_name", loc_data).as_string());
+    arch->ipin_cblock_switch_name.emplace_back(get_attribute(Cur, "input_switch_name", loc_data).as_string());
     std::string inter_die_conn = get_attribute(Cur, "input_inter_die_switch_name", loc_data, ReqOpt::OPTIONAL).as_string("");
     if (inter_die_conn != "") {
         arch->ipin_cblock_switch_name.push_back(inter_die_conn);
@@ -3404,7 +3405,7 @@ static void ProcessEquivalentSiteCustomConnection(pugi::xml_node Parent,
                                                   t_sub_tile* SubTile,
                                                   t_physical_tile_type* PhysicalTileType,
                                                   t_logical_block_type* LogicalBlockType,
-                                                  std::string site_name,
+                                                  const std::string& site_name,
                                                   const pugiutil::loc_data& loc_data) {
     pugi::xml_node CurDirect;
 
@@ -3587,7 +3588,7 @@ static void ProcessPinLocations(pugi::xml_node Locations,
                 for (int h = 0; h < PhysicalTileType->height; ++h) {
                     for (e_side side : {TOP, RIGHT, BOTTOM, LEFT}) {
                         for (const auto& token : pin_locs->assignments[sub_tile_index][w][h][l][side]) {
-                            InstPort inst_port(token.c_str());
+                            InstPort inst_port(token);
 
                             //A pin specification should contain only the block name, and not any instance count information
                             //A pin specification may contain instance count, but should be in the range of capacity
@@ -3954,8 +3955,8 @@ static void ProcessSegments(pugi::xml_node Parent,
 
         if (!Segs[i].longline) {
             //Long line doesn't accpet <sb> or <cb> since it assumes full population
-            expected_subtags.push_back("sb");
-            expected_subtags.push_back("cb");
+            expected_subtags.emplace_back("sb");
+            expected_subtags.emplace_back("cb");
         }
 
         /* Get the type */
@@ -3964,17 +3965,18 @@ static void ProcessSegments(pugi::xml_node Parent,
             Segs[i].directionality = BI_DIRECTIONAL;
 
             //Bidir requires the following tags
-            expected_subtags.push_back("wire_switch");
-            expected_subtags.push_back("opin_switch");
+            expected_subtags.emplace_back("wire_switch");
+            expected_subtags.emplace_back("opin_switch");
         }
 
         else if (0 == strcmp(tmp, "unidir")) {
             Segs[i].directionality = UNI_DIRECTIONAL;
 
             //Unidir requires the following tags
-            expected_subtags.push_back("mux");
-            expected_subtags.push_back("bend");
-            expected_subtags.push_back("mux_inter_die");
+            expected_subtags.emplace_back("mux");
+            expected_subtags.emplace_back("bend");
+            expected_subtags.emplace_back("mux_inter_die");
+
         }
 
         else {
@@ -4243,8 +4245,6 @@ static void ProcessSwitchblocks(pugi::xml_node Parent, t_arch* arch, const pugiu
 
         Node = Node.next_sibling(Node.name());
     }
-
-    return;
 }
 
 static void ProcessCB_SB(pugi::xml_node Node, std::vector<bool>& list, const pugiutil::loc_data& loc_data) {
@@ -5005,7 +5005,7 @@ static int find_switch_by_name(const t_arch& arch, const std::string& switch_nam
     return OPEN;
 }
 
-e_side string_to_side(const std::string& side_str) {
+static e_side string_to_side(const std::string& side_str) {
     e_side side = NUM_SIDES;
     if (side_str.empty()) {
         side = NUM_SIDES;
@@ -6017,3 +6017,4 @@ static void ProcessVibBlockTypeLocs(t_vib_grid_def& grid_def,
         }
     }
 }
+

@@ -4,10 +4,8 @@ project(libencrypt)
 find_package(PkgConfig REQUIRED)
 pkg_search_module(OPENSSL REQUIRED openssl)
 
-file(READ "config.txt" PASSPHRASE_CONTENTS)
-string(REPLACE "\n" "\\n" PASSPHRASE_CONTENTS "${PASSPHRASE_CONTENTS}")
-set(PASS_PHRASE "${PASSPHRASE_CONTENTS}")
-add_compile_definitions(PASS_PHRASE="${PASS_PHRASE}")
+set(SESSION_KEY_SIZE 16)
+add_definitions(-DSESSION_KEY_SIZE=${SESSION_KEY_SIZE})
 
 if(OPENSSL_FOUND)
     include_directories(${OPENSSL_INCLUDE_DIRS})
@@ -26,14 +24,17 @@ foreach(_headerFile ${LIB_HEADERS})
 endforeach()
 list(REMOVE_DUPLICATES LIB_INCLUDE_DIRS)
 
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
 
+add_library(libencrypt ${LIB_HEADERS} ${LIB_SOURCES})
+
+set_target_properties(libencrypt PROPERTIES PREFIX "")
+
+target_link_libraries(libencrypt PRIVATE ${OPENSSL_LIBRARIES} libpugixml)
 
 # Add executable
 add_executable(encrypt main.cpp ${LIB_HEADERS} ${LIB_SOURCES} )
 
-target_include_directories(encrypt PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/src   
-)
 target_link_libraries(encrypt PRIVATE ${OPENSSL_LIBRARIES} libpugixml)
 
 #install(TARGETS libencrypt DESTINATION bin)
