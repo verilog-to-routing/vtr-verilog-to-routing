@@ -32,7 +32,7 @@ void Decryption::decryptFile() {
         "dummykey\n"
         "-----END RSA PRIVATE KEY-----\n"); // Replace with your private key string
 #endif
-    RSA* privateKey = loadPrivateKey(privateKeyString);
+    EVP_PKEY *privateKey = loadPrivateKey(privateKeyString);
     if (!privateKey) {
         return;
     }
@@ -42,7 +42,7 @@ void Decryption::decryptFile() {
     pugi::xml_parse_result result = encryptedDocLoaded.load_file(encryptedFile_.c_str());
     if (!result) {
         std::cerr << "XML parse error: " << result.description() << std::endl;
-        RSA_free(privateKey);
+        EVP_PKEY_free(privateKey);
         return;
     }
 
@@ -50,15 +50,11 @@ void Decryption::decryptFile() {
     std::string base64EncryptedSessionKeyLoaded = root.child_value("SessionKey");
     std::string base64EncryptedLoaded = root.child_value("Data");
 
-    // Base64 decode encrypted session key and data
-    std::string encryptedSessionKeyLoaded = base64_decode(base64EncryptedSessionKeyLoaded);
-    std::string encryptedLoaded = base64_decode(base64EncryptedLoaded);
-
     // Decrypt session key
-    std::string decryptedSessionKey = decryptSessionKey(encryptedSessionKeyLoaded, privateKey);
+    std::string decryptedSessionKey = decryptSessionKey(base64EncryptedSessionKeyLoaded, privateKey);
 
     // Decrypt XML string
-    std::string decrypted = decrypt(encryptedLoaded, privateKey);
+    std::string decrypted = decryptData(base64EncryptedLoaded, reinterpret_cast<const unsigned char*>(decryptedSessionKey.c_str()));
 
     // Write the decrypted data to a file
     // std::ofstream decryptedFile("decrypted.xml");
@@ -66,7 +62,7 @@ void Decryption::decryptFile() {
     // decryptedFile.close();
     
     decryptedContent_ = decrypted;
-    RSA_free(privateKey);
+    EVP_PKEY_free(privateKey);
 }
 
 /**
@@ -79,64 +75,13 @@ std::string Decryption::getDecryptedContent() const {
 }
 
 /**
- * @brief Decrypts the given ciphertext using the provided RSA key.
- * 
- * @param ciphertext The ciphertext to decrypt.
- * @param key The RSA key for decryption.
- * @return The decrypted plaintext.
- */
-std::string Decryption::decrypt(const std::string& ciphertext, RSA* key) {
-    int rsaLen = RSA_size(key);
-    int len = ciphertext.size();
-    std::string plaintext;
-
-    for (int i = 0; i < len; i += rsaLen) {
-        std::vector<unsigned char> buffer(rsaLen);
-        std::string substr = ciphertext.substr(i, rsaLen);
-
-        int result = RSA_private_decrypt(substr.size(), reinterpret_cast<const unsigned char*>(substr.data()), buffer.data(), key, RSA_PKCS1_OAEP_PADDING);
-        if (result == -1) {
-            std::cerr << "Decryption error: " << ERR_error_string(ERR_get_error(), NULL) << std::endl;
-            return "";
-        }
-
-        plaintext.append(reinterpret_cast<char*>(buffer.data()), result);
-    }
-
-    return plaintext;
-}
-
-/**
- * @brief Decodes the given base64-encoded string.
- * 
- * @param input The base64-encoded input string.
- * @return The decoded output string.
- */
-std::string Decryption::base64_decode(const std::string& input) {
-    BIO* b64 = BIO_new(BIO_f_base64());
-    BIO_set_flags(b64, BIO_FLAGS_BASE64_NO_NL);
-
-    BIO* bmem = BIO_new_mem_buf(input.data(), input.size());
-    b64 = BIO_push(b64, bmem);
-
-    std::string output;
-    output.resize(input.size());
-
-    int decoded_size = BIO_read(b64, &output[0], input.size());
-    output.resize(decoded_size);
-    BIO_free_all(b64);
-
-    return output;
-}
-
-/**
  * @brief Loads the private key from the given PEM string.
  * 
  * @param privateKeyString The PEM string representing the private key.
- * @return The loaded RSA private key.
+ * @return The loaded EVP private key.
  */
-RSA* Decryption::loadPrivateKey(const std::string& privateKeyString) {
-    RSA* key = nullptr;
+EVP_PKEY *Decryption::loadPrivateKey(const std::string& privateKeyString) {
+    EVP_PKEY *pkey = nullptr;
     BIO* privateKeyBio = BIO_new_mem_buf(privateKeyString.data(), privateKeyString.size());
 
     if (!privateKeyBio) {
@@ -144,42 +89,133 @@ RSA* Decryption::loadPrivateKey(const std::string& privateKeyString) {
         return nullptr;
     }
 
-    if (!PEM_read_bio_RSAPrivateKey(privateKeyBio, &key, NULL, (void*)passphrase.c_str())) {
+    char* passphrase_cstr = const_cast<char*>(passphrase.c_str());
+    if (!PEM_read_bio_PrivateKey(privateKeyBio, &pkey, NULL, passphrase_cstr)) {
         std::cerr << "Error reading private key" << std::endl;
         BIO_free(privateKeyBio);
         return nullptr;
     }
 
     BIO_free(privateKeyBio);
-    return key;
+    return pkey;
 }
 
 /**
- * @brief Decrypts the given encrypted session key using the provided RSA key.
+ * @brief 
+ * 
+ * @param encoded The base64-encoded input string.
+ * @return std::vector<unsigned char> The decoded dynamic array of characters.
+ */
+std::vector<unsigned char> Decryption::base64Decode(const std::string& encoded) {
+    BIO* bio = BIO_new_mem_buf(encoded.data(), -1);
+    BIO* b64 = BIO_new(BIO_f_base64());
+    BIO_set_flags(b64, BIO_FLAGS_BASE64_NO_NL);
+    bio = BIO_push(b64, bio);
+
+    std::vector<unsigned char> decoded(encoded.length());
+    int decodedLen = BIO_read(bio, decoded.data(), encoded.length());
+    decoded.resize(decodedLen);
+
+    BIO_free_all(bio);
+    return decoded;
+}
+
+/**
+ * @brief Decrypts the given encrypted session key using the provided EVP key.
  * 
  * @param encryptedSessionKey The encrypted session key.
- * @param key The RSA key for decryption.
+ * @param privateKey The EVP key for decryption.
  * @return The decrypted session key.
  */
-std::string Decryption::decryptSessionKey(const std::string& encryptedSessionKey, RSA* key) {
-    std::vector<unsigned char> decryptedSessionKey(RSA_size(key));
-    if (RSA_private_decrypt(encryptedSessionKey.size(), reinterpret_cast<const unsigned char*>(encryptedSessionKey.data()), decryptedSessionKey.data(), key, RSA_PKCS1_OAEP_PADDING) == -1) {
-        std::cerr << "Session key decryption error: " << ERR_error_string(ERR_get_error(), NULL) << std::endl;
+std::string Decryption::decryptSessionKey(const std::string& encryptedSessionKey, EVP_PKEY* privateKey) {
+    std::vector<unsigned char> decodedKey = base64Decode(encryptedSessionKey);
+
+    EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new(privateKey, NULL);
+    if (!ctx) {
+        std::cerr << "Failed to create EVP_PKEY_CTX" << std::endl;
         return "";
     }
 
-    return std::string(reinterpret_cast<char*>(decryptedSessionKey.data()), decryptedSessionKey.size());
+    if (EVP_PKEY_decrypt_init(ctx) <= 0) {
+        std::cerr << "EVP_PKEY_decrypt_init failed" << std::endl;
+        EVP_PKEY_CTX_free(ctx);
+        return "";
+    }
+
+    if (EVP_PKEY_CTX_set_rsa_padding(ctx, RSA_PKCS1_OAEP_PADDING) <= 0) {
+        std::cerr << "EVP_PKEY_CTX_set_rsa_padding failed" << std::endl;
+        EVP_PKEY_CTX_free(ctx);
+        return "";
+    }
+
+    size_t outLen;
+    if (EVP_PKEY_decrypt(ctx, NULL, &outLen, decodedKey.data(), decodedKey.size()) <= 0) {
+        std::cerr << "EVP_PKEY_decrypt (determine length) failed" << std::endl;
+        EVP_PKEY_CTX_free(ctx);
+        return "";
+    }
+
+    std::vector<unsigned char> out(outLen);
+    if (EVP_PKEY_decrypt(ctx, out.data(), &outLen, decodedKey.data(), decodedKey.size()) <= 0) {
+        std::cerr << "EVP_PKEY_decrypt failed" << std::endl;
+        EVP_PKEY_CTX_free(ctx);
+        return "";
+    }
+
+    EVP_PKEY_CTX_free(ctx);
+
+    return std::string(out.begin(), out.begin() + outLen);
 }
 
-// int main(int argc, char* argv[]) {
-//     if (argc < 2) {
-//         std::cerr << "Usage: " << argv[0] << " <encrypted file> <public key>\n";
-//         return -1;
-//     }
+/**
+ * @brief 
+ * 
+ * @param encryptedData The encrypted data to decrypt.
+ * @param sessionKey The session key for data decryption.
+ * @return std::string The decrypted plaintext.
+ */
+std::string Decryption::decryptData(const std::string& encryptedData, const unsigned char* sessionKey) {
+    std::vector<unsigned char> decodedData = base64Decode(encryptedData);
 
-//     std::string encryptedFile = argv[1];
+    // Extract the IV from the decoded data
+    unsigned char iv[EVP_MAX_IV_LENGTH];
+    int iv_len = EVP_CIPHER_iv_length(EVP_aes_128_cbc());
+    std::copy(decodedData.begin(), decodedData.begin() + iv_len, iv);
+    const unsigned char* ciphertext = decodedData.data() + iv_len;
+    size_t ciphertextLen = decodedData.size() - iv_len;
 
-//     Decryption decryption(encryptedFile);
+    EVP_CIPHER_CTX* ctx = EVP_CIPHER_CTX_new();
+    if (!ctx) {
+        std::cerr << "Failed to create EVP_CIPHER_CTX" << std::endl;
+        return "";
+    }
 
-//     return 0;
-// }
+    if (EVP_DecryptInit_ex(ctx, EVP_aes_128_cbc(), NULL, sessionKey, iv) != 1) {
+        std::cerr << "EVP_DecryptInit_ex failed" << std::endl;
+        EVP_CIPHER_CTX_free(ctx);
+        return "";
+    }
+
+    std::vector<unsigned char> plaintext(ciphertextLen + EVP_CIPHER_block_size(EVP_aes_128_cbc()));
+    int len = 0;
+    int plaintextLen = 0;
+
+    if (EVP_DecryptUpdate(ctx, plaintext.data(), &len, ciphertext, ciphertextLen) != 1) {
+        std::cerr << "EVP_DecryptUpdate failed" << std::endl;
+        EVP_CIPHER_CTX_free(ctx);
+        return "";
+    }
+    plaintextLen += len;
+
+    if (EVP_DecryptFinal_ex(ctx, plaintext.data() + plaintextLen, &len) != 1) {
+        std::cerr << "EVP_DecryptFinal_ex failed" << std::endl;
+        EVP_CIPHER_CTX_free(ctx);
+        return "";
+    }
+    plaintextLen += len;
+    plaintext.resize(plaintextLen);
+
+    EVP_CIPHER_CTX_free(ctx);
+
+    return std::string(plaintext.begin(), plaintext.end());
+}
