@@ -60,6 +60,10 @@ public:
 
     void unicode_art();
 
+    // Export the PartialPlacement to a file following the VIPER Flat Placement
+    // File Format: https://doi.org/10.1145/3665283.3665300
+    bool export_to_flat_placement_file(std::string file_name);
+
     inline void print_stats() {
         VTR_LOG("Number of moveable nodes: %zu\n", num_moveable_nodes);
         VTR_LOG("Number of fixed nodes: %zu\n", num_nodes - num_moveable_nodes);

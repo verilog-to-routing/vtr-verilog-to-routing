@@ -2,13 +2,14 @@
 #include "PartialPlacement.h"
 #include <cmath>
 #include <cstddef>
-#include <cstdint>
+#include <fstream>
+#include <ios>
 #include <limits>
 #include <map>
+#include <string>
 #include <unordered_set>
 #include <vector>
 #include "globals.h"
-#include "vpr_constraints_uxsdcxx.h"
 #include "vpr_context.h"
 #include "vpr_types.h"
 #include "vtr_assert.h"
@@ -267,3 +268,42 @@ void PartialPlacement::unicode_art(){
     VTR_LOG("unicode_art end\n");
     fflush(stderr);
 }
+
+bool PartialPlacement::export_to_flat_placement_file(std::string file_name) {
+    // https://doi.org/10.1145/3665283.3665300
+    // Primitive Name /t X /t Y /t Subtile /t Site
+    std::ofstream flat_placement_file;
+    flat_placement_file.open(file_name, std::ios::out);
+    if (!flat_placement_file) {
+        VTR_LOG_ERROR("Failed to open the flat placement file '%s' to export the PartialPlacement.\n",
+                file_name.c_str());
+        return false;
+    }
+
+    // FIXME: Are sites just unique IDs per molecule or do they need to start at
+    //        0 per tile?
+    size_t site_idx = 0;
+    for (size_t node_id = 0; node_id < num_nodes; node_id++) {
+        int mol_pos_x = std::floor(node_loc_x[node_id]);
+        int mol_pos_y = std::floor(node_loc_y[node_id]);
+        // FIXME: What is a subtile?
+        int mol_subtile = 0;
+        t_pack_molecule* mol = node_id_to_mol[node_id];
+        for (AtomBlockId block_id : mol->atom_block_ids) {
+            // Primitive's name
+            flat_placement_file << atom_netlist.block_name(block_id) << '\t';
+            // Primitive's cluster coordinates
+            flat_placement_file << mol_pos_x << '\t' << mol_pos_y << '\t';
+            flat_placement_file << mol_subtile << '\t';
+            // Primitive site index
+            flat_placement_file << site_idx << '\n';
+        }
+        // Increment the site index per molecule so each molecule has a unique
+        // index.
+        site_idx++;
+    }
+
+    flat_placement_file.close();
+    return true;
+}
+

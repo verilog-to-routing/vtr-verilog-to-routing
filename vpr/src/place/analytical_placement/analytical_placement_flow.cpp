@@ -101,6 +101,10 @@ void run_analytical_placement_flow() {
         }
         // p_placement.unicode_art();
     }
+
+    // Export to a flat placement file.
+    p_placement.export_to_flat_placement_file("flat_placement_file.txt");
+
     FullLegalizer().legalize(p_placement);
 }
 
