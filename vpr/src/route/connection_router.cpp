@@ -196,6 +196,29 @@ t_heap* ConnectionRouter<Heap>::timing_driven_route_connection_from_heap(RRNodeI
     const auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
+    // Get bounding box for sink node used in timing_driven_expand_neighbour
+    VTR_ASSERT_SAFE(sink_node != RRNodeId::INVALID());
+
+    t_bb target_bb;
+    if (rr_graph_->node_type(sink_node) == SINK) { // We need to get a bounding box for the sink's entire tile
+        vtr::Rect<int> tile_bb = grid_.get_tile_bb({rr_graph_->node_xlow(sink_node),
+                                                    rr_graph_->node_ylow(sink_node),
+                                                    rr_graph_->node_layer(sink_node)});
+
+        target_bb.xmin = tile_bb.xmin();
+        target_bb.ymin = tile_bb.ymin();
+        target_bb.xmax = tile_bb.xmax();
+        target_bb.ymax = tile_bb.ymax();
+    } else {
+        target_bb.xmin = rr_graph_->node_xlow(sink_node);
+        target_bb.ymin = rr_graph_->node_ylow(sink_node);
+        target_bb.xmax = rr_graph_->node_xhigh(sink_node);
+        target_bb.ymax = rr_graph_->node_yhigh(sink_node);
+    }
+
+    target_bb.layer_min = rr_graph_->node_layer(RRNodeId(sink_node));
+    target_bb.layer_max = rr_graph_->node_layer(RRNodeId(sink_node));
+
     t_heap* cheapest = nullptr;
     while (!heap_.is_empty_heap()) {
         // cheapest t_heap in current route tree to be expanded on
@@ -225,7 +248,8 @@ t_heap* ConnectionRouter<Heap>::timing_driven_route_connection_from_heap(RRNodeI
         timing_driven_expand_cheapest(cheapest,
                                       sink_node,
                                       cost_params,
-                                      bounding_box);
+                                      bounding_box,
+                                      target_bb);
 
         rcv_path_manager.free_path_struct(cheapest->path_data);
         heap_.free(cheapest);
@@ -308,7 +332,8 @@ vtr::vector<RRNodeId, t_heap> ConnectionRouter<Heap>::timing_driven_find_all_sho
         timing_driven_expand_cheapest(cheapest,
                                       target_node,
                                       cost_params,
-                                      bounding_box);
+                                      bounding_box,
+                                      t_bb());
 
         if (cheapest_paths[inode].index == RRNodeId::INVALID() || cheapest_paths[inode].cost >= cheapest->cost) {
             VTR_LOGV_DEBUG(router_debug_, "  Better cost to node %d: %g (was %g)\n", inode, cheapest->cost, cheapest_paths[inode].cost);
@@ -328,7 +353,8 @@ template<typename Heap>
 void ConnectionRouter<Heap>::timing_driven_expand_cheapest(t_heap* cheapest,
                                                            RRNodeId target_node,
                                                            const t_conn_cost_params& cost_params,
-                                                           const t_bb& bounding_box) {
+                                                           const t_bb& bounding_box,
+                                                           const t_bb& target_bb) {
     RRNodeId inode = cheapest->index;
 
     t_rr_node_route_inf* route_inf = &rr_node_route_inf_[inode];
@@ -360,7 +386,7 @@ void ConnectionRouter<Heap>::timing_driven_expand_cheapest(t_heap* cheapest,
         update_cheapest(cheapest, route_inf);
 
         timing_driven_expand_neighbours(cheapest, cost_params, bounding_box,
-                                        target_node);
+                                        target_node, target_bb);
     } else {
         // Post-heap prune, do not re-explore from the current/new partial path as it
         // has worse cost than the best partial path to this node found so far
@@ -376,18 +402,9 @@ template<typename Heap>
 void ConnectionRouter<Heap>::timing_driven_expand_neighbours(t_heap* current,
                                                              const t_conn_cost_params& cost_params,
                                                              const t_bb& bounding_box,
-                                                             RRNodeId target_node) {
+                                                             RRNodeId target_node,
+                                                             const t_bb& target_bb) {
     /* Puts all the rr_nodes adjacent to current on the heap. */
-
-    t_bb target_bb;
-    if (target_node != RRNodeId::INVALID()) {
-        target_bb.xmin = rr_graph_->node_xlow(RRNodeId(target_node));
-        target_bb.ymin = rr_graph_->node_ylow(RRNodeId(target_node));
-        target_bb.xmax = rr_graph_->node_xhigh(RRNodeId(target_node));
-        target_bb.ymax = rr_graph_->node_yhigh(RRNodeId(target_node));
-        target_bb.layer_min = rr_graph_->node_layer(RRNodeId(target_node));
-        target_bb.layer_max = rr_graph_->node_layer(RRNodeId(target_node));
-    }
 
     // For each node associated with the current heap element, expand all of it's neighbors
     RRNodeId from_node = current->index;

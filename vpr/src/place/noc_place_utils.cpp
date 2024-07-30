@@ -140,8 +140,8 @@ void find_affected_noc_routers_and_update_noc_costs(const t_pl_blocks_to_be_move
     affected_noc_links.clear();
 
     // go through the moved blocks and process them only if they are NoC routers
-    for (int iblk = 0; iblk < blocks_affected.num_moved_blocks; ++iblk) {
-        ClusterBlockId blk = blocks_affected.moved_blocks[iblk].block_num;
+    for (const auto& block : blocks_affected.moved_blocks) {
+        ClusterBlockId blk = block.block_num;
 
         // check if the current moved block is a noc router
         if (noc_traffic_flows_storage.check_if_cluster_block_has_traffic_flows(blk)) {
@@ -294,8 +294,8 @@ void revert_noc_traffic_flow_routes(const t_pl_blocks_to_be_moved& blocks_affect
     std::unordered_set<NocTrafficFlowId> reverted_traffic_flows;
 
     // go through the moved blocks and process them only if they are NoC routers
-    for (int iblk = 0; iblk < blocks_affected.num_moved_blocks; ++iblk) {
-        ClusterBlockId blk = blocks_affected.moved_blocks[iblk].block_num;
+    for (const auto& block : blocks_affected.moved_blocks) {
+        ClusterBlockId blk = block.block_num;
 
         // check if the current moved block is a noc router
         if (noc_traffic_flows_storage.check_if_cluster_block_has_traffic_flows(blk)) {
@@ -327,7 +327,7 @@ void re_route_traffic_flow(NocTrafficFlowId traffic_flow_id,
     // get the current traffic flow info
     const t_noc_traffic_flow& curr_traffic_flow = noc_traffic_flows_storage.get_single_noc_traffic_flow(traffic_flow_id);
 
-    /*  since the current traffic flow route will be 
+    /*  since the current traffic flow route will be
      * changed, first we need to decrement the bandwidth
      * usage of all links that are part of
      * the existing traffic flow route

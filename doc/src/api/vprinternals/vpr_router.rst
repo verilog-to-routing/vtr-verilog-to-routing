@@ -8,3 +8,4 @@ VPR Router
    :maxdepth: 1
 
    router_heap
+   router_lookahead

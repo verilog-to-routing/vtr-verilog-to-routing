@@ -1,5 +1,6 @@
 #include "move_utils.h"
 
+#include "move_transactions.h"
 #include "place_util.h"
 #include "globals.h"
 
@@ -149,7 +150,7 @@ e_block_move_result record_single_block_swap(t_pl_blocks_to_be_moved& blocks_aff
     // Check whether the to_location is empty
     if (b_to == EMPTY_BLOCK_ID) {
         // Sets up the blocks moved
-        outcome = record_block_move(blocks_affected, b_from, to, place_loc_vars);
+        outcome = blocks_affected.record_block_move(b_from, to, place_loc_vars);
 
     } else if (b_to != INVALID_BLOCK_ID) {
         // Check whether block to is compatible with from location
@@ -160,14 +161,14 @@ e_block_move_result record_single_block_swap(t_pl_blocks_to_be_moved& blocks_aff
         }
 
         // Sets up the blocks moved
-        outcome = record_block_move(blocks_affected, b_from, to, place_loc_vars);
+        outcome = blocks_affected.record_block_move(b_from, to, place_loc_vars);
 
         if (outcome != e_block_move_result::VALID) {
             return outcome;
         }
-
+        
         t_pl_loc from = block_locs[b_from].loc;
-        outcome = record_block_move(blocks_affected, b_to, from, place_loc_vars);
+        outcome = blocks_affected.record_block_move(b_to, from, place_loc_vars);
 
     } // Finish swapping the blocks and setting up blocks_affected
 
@@ -364,7 +365,7 @@ e_block_move_result record_macro_move(t_pl_blocks_to_be_moved& blocks_affected,
 
         ClusterBlockId blk_to = grid_blocks.block_at_location(to);
 
-        record_block_move(blocks_affected, member.blk_index, to, place_loc_vars);
+        blocks_affected.record_block_move(member.blk_index, to, place_loc_vars);
 
         int imacro_to = -1;
         get_imacro_from_iblk(&imacro_to, blk_to, pl_macros);
@@ -422,7 +423,7 @@ e_block_move_result record_macro_self_swaps(t_pl_blocks_to_be_moved& blocks_affe
     const auto& pl_macros = g_vpr_ctx.placement().pl_macros;
 
     //Reset any partial move
-    clear_move_blocks(blocks_affected);
+    blocks_affected.clear_move_blocks();
 
     //Collect the macros affected
     std::vector<int> affected_macros;
@@ -460,14 +461,14 @@ e_block_move_result record_macro_self_swaps(t_pl_blocks_to_be_moved& blocks_affe
     std::copy_if(displaced_blocks.begin(), displaced_blocks.end(), std::back_inserter(non_macro_displaced_blocks), is_non_macro_block);
 
     //Based on the currently queued block moves, find the empty 'holes' left behind
-    auto empty_locs = determine_locations_emptied_by_move(blocks_affected);
+    auto empty_locs = blocks_affected.determine_locations_emptied_by_move();
 
     VTR_ASSERT_SAFE(empty_locs.size() >= non_macro_displaced_blocks.size());
 
     //Fit the displaced blocks into the empty locations
     auto loc_itr = empty_locs.begin();
     for (auto blk : non_macro_displaced_blocks) {
-        outcome = record_block_move(blocks_affected, blk, *loc_itr, place_loc_vars);
+        outcome = blocks_affected.record_block_move(blk, *loc_itr, place_locs_vars);
         ++loc_itr;
     }
 
@@ -513,27 +514,6 @@ bool is_legal_swap_to_location(ClusterBlockId blk,
     }
 
     return true;
-}
-
-//Examines the currently proposed move and determine any empty locations
-std::set<t_pl_loc> determine_locations_emptied_by_move(t_pl_blocks_to_be_moved& blocks_affected) {
-    std::set<t_pl_loc> moved_from;
-    std::set<t_pl_loc> moved_to;
-
-    for (int iblk = 0; iblk < blocks_affected.num_moved_blocks; ++iblk) {
-        //When a block is moved its old location becomes free
-        moved_from.emplace(blocks_affected.moved_blocks[iblk].old_loc);
-
-        //But any block later moved to a position fills it
-        moved_to.emplace(blocks_affected.moved_blocks[iblk].new_loc);
-    }
-
-    std::set<t_pl_loc> empty_locs;
-    std::set_difference(moved_from.begin(), moved_from.end(),
-                        moved_to.begin(), moved_to.end(),
-                        std::inserter(empty_locs, empty_locs.begin()));
-
-    return empty_locs;
 }
 
 #ifdef VTR_ENABLE_DEBUG_LOGGING

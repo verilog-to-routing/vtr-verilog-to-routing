@@ -170,8 +170,6 @@ bool is_legal_swap_to_location(ClusterBlockId blk,
                                t_pl_loc to,
                                const PlaceLocVars& place_loc_vars);
 
-std::set<t_pl_loc> determine_locations_emptied_by_move(t_pl_blocks_to_be_moved& blocks_affected);
-
 /**
  * @brief Propose block for the RL agent based on required block type.
  *

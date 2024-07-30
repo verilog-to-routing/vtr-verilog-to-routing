@@ -397,7 +397,8 @@ static float route_connection_delay(
             VTR_ASSERT(sink_ptc != OPEN);
             RRNodeId sink_rr_node = device_ctx.rr_graph.node_lookup().find_node(layer_num, sink_x, sink_y, SINK, sink_ptc);
 
-            VTR_ASSERT(sink_rr_node != RRNodeId::INVALID());
+            if (sink_rr_node == RRNodeId::INVALID())
+                continue;
 
             if (!measure_directconnect && directconnect_exists(source_rr_node, sink_rr_node)) {
                 //Skip if we shouldn't measure direct connects and a direct connect exists
@@ -521,7 +522,8 @@ static void generic_compute_matrix_dijkstra_expansion(
                         VTR_ASSERT(sink_ptc != OPEN);
                         RRNodeId sink_rr_node = device_ctx.rr_graph.node_lookup().find_node(layer_num, sink_x, sink_y, SINK, sink_ptc);
 
-                        VTR_ASSERT(sink_rr_node != RRNodeId::INVALID());
+                        if (sink_rr_node == RRNodeId::INVALID())
+                            continue;
 
                         if (!measure_directconnect && directconnect_exists(source_rr_node, sink_rr_node)) {
                             //Skip if we shouldn't measure direct connects and a direct connect exists
