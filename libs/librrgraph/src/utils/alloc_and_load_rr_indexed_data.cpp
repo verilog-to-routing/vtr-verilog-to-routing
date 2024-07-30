@@ -350,6 +350,7 @@ static void load_rr_indexed_data_base_costs(const RRGraphView& rr_graph,
 
     rr_indexed_data[RRIndexedDataId(SOURCE_COST_INDEX)].base_cost = delay_normalization_fac;
     rr_indexed_data[RRIndexedDataId(SINK_COST_INDEX)].base_cost = 0.;
+    rr_indexed_data[RRIndexedDataId(MEDIUM_COST_INDEX)].base_cost = delay_normalization_fac;
     rr_indexed_data[RRIndexedDataId(OPIN_COST_INDEX)].base_cost = delay_normalization_fac;
     // If the SPEC_CPU flag is set, we need to make sure that all floating point numbers are perfectly representable in
     // binary format. Thus, we changed the IPIN_COST_INDEX base cost from 0.95 to 0.875.
