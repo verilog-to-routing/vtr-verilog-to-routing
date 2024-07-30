@@ -493,10 +493,10 @@ void try_place(const Netlist<>& net_list,
 
     if (placer_opts.place_algorithm.is_timing_driven()) {
         if (cube_bb) {
-            costs.bb_cost = comp_bb_cost(NORMAL);
+            costs.bb_cost = comp_bb_cost(e_cost_methods::NORMAL);
         } else {
             VTR_ASSERT_SAFE(!cube_bb);
-            costs.bb_cost = comp_layer_bb_cost(NORMAL);
+            costs.bb_cost = comp_layer_bb_cost(e_cost_methods::NORMAL);
         }
 
         first_crit_exponent = placer_opts.td_place_exp_first; /*this will be modified when rlim starts to change */
@@ -574,10 +574,10 @@ void try_place(const Netlist<>& net_list,
 
         /* Total cost is the same as wirelength cost normalized*/
         if (cube_bb) {
-            costs.bb_cost = comp_bb_cost(NORMAL);
+            costs.bb_cost = comp_bb_cost(e_cost_methods::NORMAL);
         } else {
             VTR_ASSERT_SAFE(!cube_bb);
-            costs.bb_cost = comp_layer_bb_cost(NORMAL);
+            costs.bb_cost = comp_layer_bb_cost(e_cost_methods::NORMAL);
         }
         costs.bb_cost_norm = 1 / costs.bb_cost;
 
@@ -2026,10 +2026,10 @@ static int check_placement_costs(const t_placer_costs& costs,
     const bool cube_bb = g_vpr_ctx.placement().cube_bb;
 
     if (cube_bb) {
-        bb_cost_check = comp_bb_cost(CHECK);
+        bb_cost_check = comp_bb_cost(e_cost_methods::CHECK);
     } else {
         VTR_ASSERT_SAFE(!cube_bb);
-        bb_cost_check = comp_layer_bb_cost(CHECK);
+        bb_cost_check = comp_layer_bb_cost(e_cost_methods::CHECK);
     }
 
     if (fabs(bb_cost_check - costs.bb_cost) > costs.bb_cost * ERROR_TOL) {

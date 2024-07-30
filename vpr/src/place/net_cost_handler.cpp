@@ -1950,7 +1950,7 @@ double comp_bb_cost(e_cost_methods method) {
         if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)) { /* Do only if not ignored. */
             /* Small nets don't use incremental updating on their bounding boxes, *
              * so they can use a fast bounding box calculator.                    */
-            if (cluster_ctx.clb_nlist.net_sinks(net_id).size() >= SMALL_NET && method == NORMAL) {
+            if (cluster_ctx.clb_nlist.net_sinks(net_id).size() >= SMALL_NET && method == e_cost_methods::NORMAL) {
                 get_bb_from_scratch(net_id,
                                     place_move_ctx.bb_coords[net_id],
                                     place_move_ctx.bb_num_on_edges[net_id],
@@ -1963,12 +1963,12 @@ double comp_bb_cost(e_cost_methods method) {
 
             pl_net_cost.net_cost[net_id] = get_net_cost(net_id, place_move_ctx.bb_coords[net_id]);
             cost += pl_net_cost.net_cost[net_id];
-            if (method == CHECK)
+            if (method == e_cost_methods::CHECK)
                 expected_wirelength += get_net_wirelength_estimate(net_id, place_move_ctx.bb_coords[net_id]);
         }
     }
 
-    if (method == CHECK) {
+    if (method == e_cost_methods::CHECK) {
         VTR_LOG("\n");
         VTR_LOG("BB estimate of min-dist (placement) wire length: %.0f\n",
                 expected_wirelength);
@@ -1987,7 +1987,7 @@ double comp_layer_bb_cost(e_cost_methods method) {
         if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)) { /* Do only if not ignored. */
             /* Small nets don't use incremental updating on their bounding boxes, *
              * so they can use a fast bounding box calculator.                    */
-            if (cluster_ctx.clb_nlist.net_sinks(net_id).size() >= SMALL_NET && method == NORMAL) {
+            if (cluster_ctx.clb_nlist.net_sinks(net_id).size() >= SMALL_NET && method == e_cost_methods::NORMAL) {
                 get_layer_bb_from_scratch(net_id,
                                           place_move_ctx.layer_bb_num_on_edges[net_id],
                                           place_move_ctx.layer_bb_coords[net_id],
@@ -2002,14 +2002,14 @@ double comp_layer_bb_cost(e_cost_methods method) {
                                                                       place_move_ctx.layer_bb_coords[net_id],
                                                                       place_move_ctx.num_sink_pin_layer[size_t(net_id)]);
             cost += pl_net_cost.net_cost[net_id];
-            if (method == CHECK)
+            if (method == e_cost_methods::CHECK)
                 expected_wirelength += get_net_wirelength_from_layer_bb(net_id,
                                                                         place_move_ctx.layer_bb_coords[net_id],
                                                                         place_move_ctx.num_sink_pin_layer[size_t(net_id)]);
         }
     }
 
-    if (method == CHECK) {
+    if (method == e_cost_methods::CHECK) {
         VTR_LOG("\n");
         VTR_LOG("BB estimate of min-dist (placement) wire length: %.0f\n",
                 expected_wirelength);

@@ -467,8 +467,8 @@ e_block_move_result record_macro_self_swaps(t_pl_blocks_to_be_moved& blocks_affe
 
     //Fit the displaced blocks into the empty locations
     auto loc_itr = empty_locs.begin();
-    for (auto blk : non_macro_displaced_blocks) {
-        outcome = blocks_affected.record_block_move(blk, *loc_itr, place_locs_vars);
+    for (ClusterBlockId blk : non_macro_displaced_blocks) {
+        outcome = blocks_affected.record_block_move(blk, *loc_itr, place_loc_vars);
         ++loc_itr;
     }
 

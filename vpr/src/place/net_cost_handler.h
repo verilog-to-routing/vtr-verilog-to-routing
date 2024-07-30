@@ -22,7 +22,7 @@ constexpr double ERROR_TOL = .01;
  * NORMAL: Compute cost efficiently using incremental techniques.
  * CHECK: Brute-force cost computation; useful to validate the more complex incremental cost update code.
  */
-enum e_cost_methods {
+enum class e_cost_methods {
     NORMAL,
     CHECK
 };
