@@ -14,11 +14,12 @@
 #include "vtr_vector_map.h"
 #include "globals.h"
 
-#include "placer_context.h"
+
 
 // forward declaration of t_placer_costs so that it can be used an argument
 // in NocCostTerms constructor
 class t_placer_costs;
+class PlaceLocVars;
 
 /**
  * @brief Data structure that stores different cost terms for NoC placement.

@@ -10,6 +10,9 @@
  * to minimize NoC costs.
  *
  *   @param noc_opts NoC-related options. Used to calculate NoC-related costs.
+ *   @param placer_opts Contain the placement algorithm options including the seed.
+ *   @param place_loc_vars Placement block location information. To be filled
+ *   with the location  where pl_macro is placed.
  */
 void initial_noc_placement(const t_noc_opts& noc_opts,
                            const t_placer_opts& placer_opts,

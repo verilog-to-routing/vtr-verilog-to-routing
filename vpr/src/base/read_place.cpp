@@ -1,9 +1,7 @@
 #include <cstdio>
 #include <cstring>
 #include <fstream>
-#include <algorithm>
 
-#include "vtr_assert.h"
 #include "vtr_util.h"
 #include "vtr_log.h"
 #include "vtr_digest.h"
@@ -16,7 +14,6 @@
 #include "read_place.h"
 #include "read_xml_arch_file.h"
 #include "place_util.h"
-#include "placer_context.h"
 
 static void read_place_header(std::ifstream& placement_file,
                               const char* net_file,

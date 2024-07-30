@@ -31,6 +31,8 @@ static bool accept_noc_swap(double delta_cost, double prob);
  * @brief Places a constrained NoC router within its partition region.
  *
  *   @param router_blk_id NoC router cluster block ID
+ *   @param place_loc_vars Placement block location information. To be
+ *   filled with the location where pl_macro is placed.
  */
 static void place_constrained_noc_router(ClusterBlockId router_blk_id,
                                          PlaceLocVars& place_loc_vars);
@@ -41,6 +43,8 @@ static void place_constrained_noc_router(ClusterBlockId router_blk_id,
  *   @param unfixed_routers Contains the cluster block ID for all unconstrained
  *   NoC routers.
  *   @param seed Used for shuffling NoC routers.
+ *   @param place_loc_vars Placement block location information. To be filled
+ *   with the location where pl_macro is placed.
  */
 static void place_noc_routers_randomly(std::vector<ClusterBlockId>& unfixed_routers,
                                        int seed,
@@ -50,6 +54,8 @@ static void place_noc_routers_randomly(std::vector<ClusterBlockId>& unfixed_rout
  * @brief Runs a simulated annealing optimizer for NoC routers.
  *
  *   @param noc_opts Contains weighting factors for NoC cost terms.
+ *   @param place_loc_vars Placement block location information.
+ *   To be filled with the location where pl_macro is placed.
  */
 static void noc_routers_anneal(const t_noc_opts& noc_opts,
                                PlaceLocVars& place_loc_vars);

@@ -1,7 +1,14 @@
 #ifndef READ_PLACE_H
 #define READ_PLACE_H
 
+#include "vtr_vector_map.h"
+
+#include <string>
+
+
 class PlacerContext;
+class ClusterBlockId;
+struct t_block_loc;
 
 /**
  * This function is for reading a place file when placement is skipped.
