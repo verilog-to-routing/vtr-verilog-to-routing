@@ -220,6 +220,7 @@ struct t_options {
 
     /* Timing-driven router options only */
     argparse::ArgValue<float> astar_fac;
+    argparse::ArgValue<float> astar_offset;
     argparse::ArgValue<float> router_profiler_astar_fac;
     argparse::ArgValue<float> max_criticality;
     argparse::ArgValue<float> criticality_exp;
