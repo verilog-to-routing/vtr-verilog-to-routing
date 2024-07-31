@@ -85,7 +85,10 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
                                     const int& num_directs,
                                     int* wire_to_rr_ipin_switch,
                                     const bool& shrink_boundary,
+                                    const bool& perimeter_cb,
                                     const bool& through_channel,
+                                    const bool& opin2all_sides,
+                                    const bool& concat_wire,
                                     const bool& wire_opposite_side,
                                     int* Warnings) {
     vtr::ScopedStartFinishTimer timer("Build tileable routing resource graph");
@@ -104,7 +107,7 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
     DeviceContext& device_ctx = g_vpr_ctx.mutable_device();
 
     /* Annotate the device grid on the boundry */
-    DeviceGridAnnotation device_grid_annotation(device_ctx.grid);
+    DeviceGridAnnotation device_grid_annotation(device_ctx.grid, perimeter_cb);
 
     /* The number of segments are in general small, reserve segments may not bring
      * significant memory efficiency */
@@ -163,6 +166,7 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
                                   segment_inf_x, segment_inf_y,
                                   device_grid_annotation,
                                   shrink_boundary,
+                                  perimeter_cb,
                                   through_channel);
 
     /************************
@@ -181,6 +185,7 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
                                    delayless_rr_switch,
                                    device_grid_annotation,
                                    shrink_boundary,
+                                   perimeter_cb,
                                    through_channel);
 
     /************************************************************************
@@ -254,6 +259,8 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
                          segment_inf, segment_inf_x, segment_inf_y,
                          Fc_in, Fc_out,
                          sb_type, Fs, sb_subtype, subFs,
+                         perimeter_cb,
+                         opin2all_sides, concat_wire,
                          wire_opposite_side);
 
     /************************************************************************
@@ -269,10 +276,12 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
     std::vector<t_clb_to_clb_directs> clb2clb_directs;
     for (int idirect = 0; idirect < num_directs; ++idirect) {
         arch_directs.push_back(directs[idirect]);
+        /* Sanity checks on rr switch id */
+        VTR_ASSERT(true == device_ctx.rr_graph.valid_switch(RRSwitchId(clb_to_clb_directs[idirect].switch_index)));
         clb2clb_directs.push_back(clb_to_clb_directs[idirect]);
     }
 
-    build_rr_graph_direct_connections(device_ctx.rr_graph, device_ctx.rr_graph_builder, device_ctx.grid, 0, delayless_rr_switch,
+    build_rr_graph_direct_connections(device_ctx.rr_graph, device_ctx.rr_graph_builder, device_ctx.grid, 0,
                                       arch_directs, clb2clb_directs);
 
     /* Allocate and load routing resource switches, which are derived from the switches from the architecture file,
@@ -311,7 +320,7 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
     }
 
     /* No clock network support yet; Does not support flatten rr_graph yet */
-    check_rr_graph(device_ctx.rr_graph, types, device_ctx.rr_indexed_data, grids, device_ctx.chan_width, GRAPH_UNIDIR, OPEN, false);
+    check_rr_graph(device_ctx.rr_graph, types, device_ctx.rr_indexed_data, grids, device_ctx.chan_width, GRAPH_UNIDIR, false);
 
     /************************************************************************
      * Free all temp stucts

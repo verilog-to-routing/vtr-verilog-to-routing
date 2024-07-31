@@ -86,7 +86,7 @@ void warn_model_missing_timing(const t_model* model, const char* file, uint32_t 
 
     for (t_model_ports* port = model->outputs; port != nullptr; port = port->next) {
         if (port->clock.empty()                          //Not sequential
-            && !comb_connected_outputs.count(port->name) //Not combinationally drivven
+            && !comb_connected_outputs.count(port->name) //Not combinationally driven
             && !port->is_clock                           //Not an output clock
         ) {
             VTR_LOGF_WARN(file, line,

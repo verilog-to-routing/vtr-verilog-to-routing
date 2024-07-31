@@ -27,6 +27,7 @@
 ////////////////////////////////////////////////////////////////////////
 
 #include "sat/bsat/satSolver.h"
+#include "sat/glucose2/AbcGlucose2.h"
 #include "misc/bar/bar.h"
 #include "aig/gia/gia.h"
 #include "cec.h"
@@ -80,7 +81,8 @@ struct Cec_ManSat_t_
     Gia_Man_t *      pAig;           // the AIG whose outputs are considered
     Vec_Int_t *      vStatus;        // status for each output
     // SAT solving
-    sat_solver *     pSat;           // recyclable SAT solver
+    sat_solver *     pSat;           // recyclable SAT solver (MiniSAT)
+    bmcg2_sat_solver*pSat2;          // recyclable SAT solver (Glucose)
     int              nSatVars;       // the counter of SAT variables
     int *            pSatVars;       // mapping of each node into its SAT var
     Vec_Ptr_t *      vUsedNodes;     // nodes whose SAT vars are assigned
@@ -153,6 +155,9 @@ struct Cec_ManFra_t_
     int              nAllProved;     // total number of proved nodes
     int              nAllDisproved;  // total number of disproved nodes
     int              nAllFailed;     // total number of failed nodes
+    int              nAllProvedS;    // total number of proved nodes
+    int              nAllDisprovedS; // total number of disproved nodes
+    int              nAllFailedS;    // total number of failed nodes
     // runtime stats
     abctime          timeSim;        // unsat
     abctime          timePat;        // unsat
@@ -201,7 +206,7 @@ extern int                  Cec_ManCountNonConstOutputs( Gia_Man_t * pAig );
 extern int                  Cec_ManCheckNonTrivialCands( Gia_Man_t * pAig );
 /*=== cecSolve.c ============================================================*/
 extern int                  Cec_ObjSatVarValue( Cec_ManSat_t * p, Gia_Obj_t * pObj );
-extern void                 Cec_ManSatSolve( Cec_ManPat_t * pPat, Gia_Man_t * pAig, Cec_ParSat_t * pPars, Vec_Int_t * vIdsOrig, Vec_Int_t * vMiterPairs, Vec_Int_t * vEquivPairs );
+extern void                 Cec_ManSatSolve( Cec_ManPat_t * pPat, Gia_Man_t * pAig, Cec_ParSat_t * pPars, Vec_Int_t * vIdsOrig, Vec_Int_t * vMiterPairs, Vec_Int_t * vEquivPairs, int f0Proved );
 extern void                 Cec_ManSatSolveCSat( Cec_ManPat_t * pPat, Gia_Man_t * pAig, Cec_ParSat_t * pPars );
 extern Vec_Str_t *          Cec_ManSatSolveSeq( Vec_Ptr_t * vPatts, Gia_Man_t * pAig, Cec_ParSat_t * pPars, int nRegs, int * pnPats );
 extern Vec_Int_t *          Cec_ManSatSolveMiter( Gia_Man_t * pAig, Cec_ParSat_t * pPars, Vec_Str_t ** pvStatus );
@@ -209,6 +214,8 @@ extern int                  Cec_ManSatCheckNode( Cec_ManSat_t * p, Gia_Obj_t * p
 extern int                  Cec_ManSatCheckNodeTwo( Cec_ManSat_t * p, Gia_Obj_t * pObj1, Gia_Obj_t * pObj2 );
 extern void                 Cec_ManSavePattern( Cec_ManSat_t * p, Gia_Obj_t * pObj1, Gia_Obj_t * pObj2 );
 extern Vec_Int_t *          Cec_ManSatReadCex( Cec_ManSat_t * p );
+/*=== cecSolveG.c ============================================================*/
+extern void                 CecG_ManSatSolve( Cec_ManPat_t * pPat, Gia_Man_t * pAig, Cec_ParSat_t * pPars, int f0Proved );
 /*=== ceFraeep.c ============================================================*/
 extern Gia_Man_t *          Cec_ManFraSpecReduction( Cec_ManFra_t * p );
 extern int                  Cec_ManFraClassesUpdate( Cec_ManFra_t * p, Cec_ManSim_t * pSim, Cec_ManPat_t * pPat, Gia_Man_t * pNew );

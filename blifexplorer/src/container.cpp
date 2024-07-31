@@ -929,25 +929,23 @@ void Container::showActivity()
 
 void Container::getActivityInformation()
 {
-    //right now it is a dummy function. the activity values are
-    //generated randomly
+    // Right now, it is a dummy function. The activity values are
+    // generated randomly.
     QHash<QString, nnode_t *>::const_iterator blockIterator = odinTable.constBegin();
 
     while(blockIterator != odinTable.constEnd()){
-         QString name = blockIterator.key();
-         LogicUnit* visNode = unithashtable[name];
-         //get all connections outgoing and advise them to
-         //represent the activity by color
-         QList<Wire*> outgoingWires = visNode->getOutCons();
-         foreach(Wire* wire, outgoingWires){
-             int act = qrand() % 255;
-             wire->setActivity(act);
-
-         }
+        QString name = blockIterator.key();
+        LogicUnit* visNode = unithashtable[name];
+        // Get all connections outgoing and advise them to
+        // represent the activity by color.
+        QList<Wire*> outgoingWires = visNode->getOutCons();
+        foreach(Wire* wire, outgoingWires){
+            int act = QRandomGenerator::global()->bounded(255); // Use QRandomGenerator
+            wire->setActivity(act);
+        }
         ++blockIterator;
     }
 }
-
 /*---------------------------------------------------------------------------------------------
  * (function: showSimulationStep)
  *-------------------------------------------------------------------------------------------*/

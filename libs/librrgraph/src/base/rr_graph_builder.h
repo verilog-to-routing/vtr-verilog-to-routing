@@ -119,10 +119,17 @@ class RRGraphBuilder {
     inline void set_node_type(RRNodeId id, t_rr_type type) {
         node_storage_.set_node_type(id, type);
     }
+
     /** @brief Create a new rr_node in the node storage and register it to the node look-up.
      *  Return a valid node id if succeed. Otherwise, return an invalid id.
      */
     RRNodeId create_node(int layer, int x, int y, t_rr_type type, int ptc, e_side side = NUM_SIDES); 
+
+    /** @brief Set the node name with a given valid id */
+    inline void set_node_name(RRNodeId id, std::string name) {
+        node_storage_.set_node_name(id, name);
+    }
+
     /**
      * @brief Add an existing rr_node in the node storage to the node look-up
      *
@@ -178,11 +185,6 @@ class RRGraphBuilder {
         node_storage_.set_node_coordinates(id, x1, y1, x2, y2);
     }
 
-    /** @brief Set the node layer (specifies which die the node is located at) */
-    inline void set_node_layer(RRNodeId id, short layer){
-        node_storage_.set_node_layer(id,layer);
-    }
-
     /** @brief The ptc_num carries different meanings for different node types
      * (true in VPR RRG that is currently supported, may not be true in customized RRG)
      * CHANX or CHANY: the track id in routing channels
@@ -195,6 +197,16 @@ class RRGraphBuilder {
 
     inline void set_node_ptc_num(RRNodeId id, int new_ptc_num) {
         node_storage_.set_node_ptc_num(id, new_ptc_num);
+    }
+
+    /** @brief set the layer number at which RRNodeId is located at */
+    inline void set_node_layer(RRNodeId id, int layer){
+        node_storage_.set_node_layer(id, layer);
+    }
+
+    /** @brief set the ptc twist increment number for TILEABLE rr graphs (for more information see rr_graph_storage.h twist increment comment) */
+    inline void set_node_ptc_twist_incr(RRNodeId id, int twist){
+        node_storage_.set_node_ptc_twist_incr(id, twist);
     }
 
     /** @brief set_node_pin_num() is designed for logic blocks, which are IPIN and OPIN nodes */
@@ -221,6 +233,15 @@ class RRGraphBuilder {
         node_storage_.set_node_class_num(id, new_class_num);
     }
 
+    /** @brief Add a list of ptc number in string (split by comma) to a given node. This function is used by rr graph reader only. Not suggested for internal builder!!! */
+    void set_node_ptc_nums(RRNodeId node, const std::string& ptc_str);
+
+    /** @brief With a given node, output ptc numbers into a string (use comma as delima). This function is used by rr graph writer only. Not suggested for internal builder!!! */
+    std::string node_ptc_nums_to_string(RRNodeId node) const;
+
+    /** @brief Identify if a node contains multiple ptc numbers. Mainly used by I/O reader only. Not suggest for internal builder */
+    bool node_contain_multiple_ptc(RRNodeId node) const;
+
     /** @brief Set the node direction; The node direction is only available of routing channel nodes, such as x-direction routing tracks (CHANX) and y-direction routing tracks (CHANY). For other nodes types, this value is not meaningful and should be set to NONE. */
     inline void set_node_direction(RRNodeId id, Direction new_direction) {
         node_storage_.set_node_direction(id, new_direction);
@@ -243,6 +264,11 @@ class RRGraphBuilder {
      *  Require build_in_edges() to be called first
      */
     std::vector<RREdgeId> node_in_edges(RRNodeId node) const;
+
+    /** @brief Set the node id for clock network virtual sink */
+    inline void set_virtual_clock_network_root_idx(RRNodeId virtual_clock_network_root_idx) {
+        node_storage_.set_virtual_clock_network_root_idx(virtual_clock_network_root_idx);
+    }
 
     /** @brief Reserve the lists of edges to be memory efficient.
      * This function is mainly used to reserve memory space inside RRGraph,
@@ -329,6 +355,17 @@ class RRGraphBuilder {
     inline void resize_nodes(size_t size) {
         node_storage_.resize(size);
     }
+    /** @brief This function resize node ptc nums. Only used by RR graph I/O reader and writers. Do not use for internal builder */
+    inline void resize_node_ptc_nums(size_t size) {
+        node_ptc_nums_.resize(size);
+    }
+
+
+    /** @brief This function resize node ptc twist increment; Since it is only used for tileable rr-graph, we don't put it in general resize function*/
+    inline void resize_ptc_twist_incr(size_t size){
+        node_storage_.resize(size);
+    }
+
     /** @brief This function resize rr_switch to accomidate size RR Switch. */
     inline void resize_switches(size_t size) {
         rr_switch_inf_.resize(size);

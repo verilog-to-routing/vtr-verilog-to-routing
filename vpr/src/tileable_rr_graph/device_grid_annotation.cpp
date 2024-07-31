@@ -2,9 +2,9 @@
 #include "vtr_log.h"
 #include "vpr_utils.h"
 
-DeviceGridAnnotation::DeviceGridAnnotation(const DeviceGrid& grid) {
+DeviceGridAnnotation::DeviceGridAnnotation(const DeviceGrid& grid, const bool& perimeter_cb) {
     alloc(grid);
-    init(grid);
+    init(grid, perimeter_cb);
 }
 
 void DeviceGridAnnotation::alloc(const DeviceGrid& grid) {
@@ -13,15 +13,27 @@ void DeviceGridAnnotation::alloc(const DeviceGrid& grid) {
     chany_existence_.resize({grid.width(), grid.height()}, false);
 }
 
-void DeviceGridAnnotation::init(const DeviceGrid& grid) {
+void DeviceGridAnnotation::init(const DeviceGrid& grid, const bool& perimeter_cb) {
     /* If shrink is not considered, perimeters are the borderlines */
+    size_t start_x = 1;
+    size_t end_x = grid.width() - 1;
+    if (perimeter_cb) {
+      start_x = 0;
+      end_x = grid.width();
+    }
     for (size_t iy = 0; iy < grid.height() - 1; ++iy) {
-        for (size_t ix = 1; ix < grid.width() - 1; ++ix) {
+        for (size_t ix = start_x; ix < end_x; ++ix) {
             chanx_existence_[ix][iy] = !is_empty_type(grid.get_physical_type({(int)ix, (int)iy + 1, 0}));
         }
     }
+    size_t start_y = 1;
+    size_t end_y = grid.height() - 1;
+    if (perimeter_cb) {
+      start_y = 0;
+      end_y = grid.height();
+    }
     for (size_t ix = 0; ix < grid.width() - 1; ++ix) {
-        for (size_t iy = 1; iy < grid.height() - 1; ++iy) {
+        for (size_t iy = start_y; iy < end_y; ++iy) {
             chany_existence_[ix][iy] = !is_empty_type(grid.get_physical_type({(int)ix, (int)iy, 0}));
         }
     }

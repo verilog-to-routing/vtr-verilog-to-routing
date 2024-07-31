@@ -349,12 +349,18 @@ int Cec_ManVerify( Gia_Man_t * pInit, Cec_ParCec_t * pPars )
         Gia_ManStop( p );
         return RetValue;
     }
+    if ( pInit->vSimsPi )
+    {
+        p->vSimsPi = Vec_WrdDup(pInit->vSimsPi); 
+        p->nSimWords = pInit->nSimWords;
+    }
     // sweep for equivalences
     Cec_ManFraSetDefaultParams( pParsFra );
     pParsFra->nItersMax    = 1000;
     pParsFra->nBTLimit     = pPars->nBTLimit;
     pParsFra->TimeLimit    = pPars->TimeLimit;
     pParsFra->fVerbose     = pPars->fVerbose;
+    pParsFra->fVeryVerbose = pPars->fVeryVerbose;
     pParsFra->fCheckMiter  = 1;
     pParsFra->fDualOut     = 1;
     pNew = Cec_ManSatSweeping( p, pParsFra, pPars->fSilent );
@@ -392,7 +398,7 @@ int Cec_ManVerify( Gia_Man_t * pInit, Cec_ParCec_t * pPars )
     {
         ABC_FREE( pNew->pReprs );
         ABC_FREE( pNew->pNexts );
-        Gia_AigerWrite( pNew, "gia_cec_undecided.aig", 0, 0 );
+        Gia_AigerWrite( pNew, "gia_cec_undecided.aig", 0, 0, 0 );
         Abc_Print( 1, "The result is written into file \"%s\".\n", "gia_cec_undecided.aig" );
     }
     if ( pPars->TimeLimit && (Abc_Clock() - clkTotal)/CLOCKS_PER_SEC >= pPars->TimeLimit )
@@ -452,6 +458,21 @@ int Cec_ManVerifyTwo( Gia_Man_t * p0, Gia_Man_t * p1, int fVerbose )
     Cec_ManCecSetDefaultParams( pPars );
     pPars->fVerbose = fVerbose;
     pMiter = Gia_ManMiter( p0, p1, 0, 1, 0, 0, pPars->fVerbose );
+    if ( pMiter == NULL )
+        return -1;
+    RetValue = Cec_ManVerify( pMiter, pPars );
+    p0->pCexComb = pMiter->pCexComb; pMiter->pCexComb = NULL;
+    Gia_ManStop( pMiter );
+    return RetValue;
+}
+int Cec_ManVerifyTwoInv( Gia_Man_t * p0, Gia_Man_t * p1, int fVerbose )
+{
+    Cec_ParCec_t ParsCec, * pPars = &ParsCec;
+    Gia_Man_t * pMiter;
+    int RetValue;
+    Cec_ManCecSetDefaultParams( pPars );
+    pPars->fVerbose = fVerbose;
+    pMiter = Gia_ManMiterInverse( p0, p1, 1, pPars->fVerbose );
     if ( pMiter == NULL )
         return -1;
     RetValue = Cec_ManVerify( pMiter, pPars );

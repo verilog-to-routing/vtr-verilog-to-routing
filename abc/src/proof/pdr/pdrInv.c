@@ -248,7 +248,7 @@ void Pdr_ManPrintClauses( Pdr_Man_t * p, int kStart )
     int i, k, Counter = 0;
     Vec_VecForEachLevelStart( p->vClauses, vArrayK, k, kStart )
     {
-        Vec_PtrSort( vArrayK, (int (*)(void))Pdr_SetCompare );
+        Vec_PtrSort( vArrayK, (int (*)(const void *, const void *))Pdr_SetCompare );
         Vec_PtrForEachEntry( Pdr_Set_t *, vArrayK, pCube, i )
         {
             Abc_Print( 1, "C=%4d. F=%4d ", Counter++, k );
@@ -370,7 +370,7 @@ void Pdr_ManDumpClauses( Pdr_Man_t * p, char * pFileName, int fProved )
         vCubes = Pdr_ManCollectCubes( p, kStart );
     else
         vCubes = Vec_PtrDup( p->vInfCubes );
-    Vec_PtrSort( vCubes, (int (*)(void))Pdr_SetCompare );
+    Vec_PtrSort( vCubes, (int (*)(const void *, const void *))Pdr_SetCompare );
 //    Pdr_ManDumpAig( p->pAig, vCubes );
     // count cubes
     Count = 0;
@@ -446,7 +446,7 @@ Vec_Str_t * Pdr_ManDumpString( Pdr_Man_t * p )
         vCubes = Pdr_ManCollectCubes( p, kStart );
     else
         vCubes = Vec_PtrDup( p->vInfCubes );
-    Vec_PtrSort( vCubes, (int (*)(void))Pdr_SetCompare );
+    Vec_PtrSort( vCubes, (int (*)(const void *, const void *))Pdr_SetCompare );
     // collect variable appearances
     vFlopCounts = p->pPars->fUseSupp ? Pdr_ManCountFlops( p, vCubes ) : NULL; 
     // output cubes
@@ -670,7 +670,7 @@ Vec_Str_t * Pdr_InvPrintStr( Vec_Int_t * vInv, Vec_Int_t * vCounts )
     Vec_Int_t * vMap = Pdr_InvMap( vCounts );
     int nVars = Vec_IntSize(vCounts) - Vec_IntCountZero(vCounts);
     int i, k, * pCube, * pList = Vec_IntArray(vInv);
-    char * pBuffer = ABC_ALLOC( char, nVars );
+    char * pBuffer = ABC_ALLOC( char, (size_t)(unsigned)nVars );
     for ( i = 0; i < nVars; i++ )
         pBuffer[i] = '-';
     Pdr_ForEachCube( pList, pCube, i )

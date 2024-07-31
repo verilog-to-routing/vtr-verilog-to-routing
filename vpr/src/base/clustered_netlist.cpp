@@ -3,13 +3,15 @@
 #include "vtr_assert.h"
 #include "vpr_error.h"
 
+#include <utility>
+
 /**
  * @file
  * @brief ClusteredNetlist Class Implementation
  */
 
 ClusteredNetlist::ClusteredNetlist(std::string name, std::string id)
-    : Netlist<ClusterBlockId, ClusterPortId, ClusterPinId, ClusterNetId>(name, id) {}
+    : Netlist<ClusterBlockId, ClusterPortId, ClusterPinId, ClusterNetId>(std::move(name), std::move(id)) {}
 
 /*
  *
@@ -26,14 +28,6 @@ t_logical_block_type_ptr ClusteredNetlist::block_type(const ClusterBlockId id) c
     VTR_ASSERT_SAFE(valid_block_id(id));
 
     return block_types_[id];
-}
-
-std::vector<ClusterBlockId> ClusteredNetlist::blocks_per_type(const t_logical_block_type blk_type) const {
-    if (blocks_per_type_.count(blk_type.index) == 0) {
-        std::vector<ClusterBlockId> empty_vector;
-        return empty_vector;
-    }
-    return blocks_per_type_.at(blk_type.index);
 }
 
 ClusterNetId ClusteredNetlist::block_net(const ClusterBlockId blk_id, const int logical_pin_index) const {
@@ -116,8 +110,6 @@ ClusterBlockId ClusteredNetlist::create_block(const char* name, t_pb* pb, t_logi
         block_pbs_.insert(blk_id, pb);
         block_types_.insert(blk_id, type);
 
-        blocks_per_type_[type->index].push_back(blk_id);
-
         //Allocate and initialize every potential pin of the block
         block_logical_pins_.insert(blk_id, std::vector<ClusterPinId>(get_max_num_pins(type), ClusterPinId::INVALID()));
     }
@@ -132,7 +124,7 @@ ClusterBlockId ClusteredNetlist::create_block(const char* name, t_pb* pb, t_logi
     return blk_id;
 }
 
-ClusterPortId ClusteredNetlist::create_port(const ClusterBlockId blk_id, const std::string name, BitIndex width, PortType type) {
+ClusterPortId ClusteredNetlist::create_port(const ClusterBlockId blk_id, const std::string& name, BitIndex width, PortType type) {
     ClusterPortId port_id = find_port(blk_id, name);
     if (!port_id) {
         port_id = Netlist::create_port(blk_id, name, width, type);
@@ -163,7 +155,7 @@ ClusterPinId ClusteredNetlist::create_pin(const ClusterPortId port_id, BitIndex 
     return pin_id;
 }
 
-ClusterNetId ClusteredNetlist::create_net(const std::string name) {
+ClusterNetId ClusteredNetlist::create_net(const std::string& name) {
     //Check if the net has already been created
     StringId name_id = create_string(name);
     ClusterNetId net_id = find_net(name_id);
@@ -178,14 +170,11 @@ ClusterNetId ClusteredNetlist::create_net(const std::string name) {
 }
 
 void ClusteredNetlist::remove_block_impl(const ClusterBlockId blk_id) {
-    //find the block type, so we can remove it from blocks_per_type_ data structure
-    auto blk_type = block_type(blk_id);
     //Remove & invalidate pointers
     free_pb(block_pbs_[blk_id]);
     delete block_pbs_[blk_id];
     block_pbs_.insert(blk_id, NULL);
     block_types_.insert(blk_id, NULL);
-    std::remove(blocks_per_type_[blk_type->index].begin(), blocks_per_type_[blk_type->index].end(), blk_id);
     block_logical_pins_.insert(blk_id, std::vector<ClusterPinId>());
 }
 
@@ -292,9 +281,9 @@ ClusterBlockId ClusteredNetlist::find_block_by_name_fragment(const std::string& 
     ClusterBlockId blk_id = ClusterBlockId::INVALID();
     std::regex name_to_match(name_pattern);
 
-    for (auto compatible_block_id = cluster_block_candidates.begin(); compatible_block_id != cluster_block_candidates.end(); compatible_block_id++) {
-        if (std::regex_match(Netlist::block_name(*compatible_block_id), name_to_match)) {
-            blk_id = *compatible_block_id;
+    for (auto cluster_block_candidate : cluster_block_candidates) {
+        if (std::regex_match(Netlist::block_name(cluster_block_candidate), name_to_match)) {
+            blk_id = cluster_block_candidate;
             break;
         }
     }

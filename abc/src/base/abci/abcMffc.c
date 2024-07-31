@@ -1141,7 +1141,7 @@ Vec_Ptr_t * Abc_NktMffcServer( Abc_Ntk_t * pNtk, int nInMax, int nOutMax )
     // sort by their MFFC size
     Vec_PtrForEachEntry( Abc_Obj_t *, vPivots, pObj, i )
         pObj->iTemp = Vec_IntSize((Vec_Int_t *)Vec_PtrEntry(vVolumes, Abc_ObjId(pObj)));
-    Vec_PtrSort( vPivots, (int (*)(void))Abc_NodeCompareVolumeDecrease ); 
+    Vec_PtrSort( vPivots, (int (*)(const void *, const void *))Abc_NodeCompareVolumeDecrease ); 
     // create marks
     vMarks = Vec_IntStart( Abc_NtkObjNumMax(pNtk) );
     Vec_PtrForEachEntry( Abc_Obj_t *, vPivots, pObj, i )

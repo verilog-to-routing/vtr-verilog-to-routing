@@ -388,7 +388,7 @@ static inline Ses_Store_t * Ses_StoreAlloc( int nBTLimit, int fMakeAIG, int fVer
     pStore->fMakeAIG           = fMakeAIG;
     pStore->fVerbose           = fVerbose;
     pStore->nBTLimit           = nBTLimit;
-    memset( pStore->pEntries, 0, SES_STORE_TABLE_SIZE );
+    memset( pStore->pEntries, 0, sizeof(pStore->pEntries) );
 
     pStore->pSat = sat_solver_new();
 
@@ -1034,7 +1034,7 @@ static word * Ses_ManDeriveTruth( Ses_Man_t * pSes, char * pSol, int fInvert )
     for ( i = 0; i < nGates; ++i )
     {
         f = *p++;
-        assert( *p++ == 2 );
+        assert( *p == 2 ), p++;
         j = *p++;
         k = *p++;
 
@@ -2983,8 +2983,8 @@ void Abc_ExactStoreTest( int fVerbose )
     Abc_Ntk_t * pNtk;
     Abc_Obj_t * pFanins[4];
     Vec_Ptr_t * vNames;
-    char pPerm[4];
-    int Cost;
+    char pPerm[4] = {0};
+    int Cost = 0;
 
     pNtk = Abc_NtkAlloc( ABC_NTK_LOGIC, ABC_FUNC_SOP, 1 );
     pNtk->pName = Extra_UtilStrsav( "exact" );

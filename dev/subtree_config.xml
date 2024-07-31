@@ -33,7 +33,7 @@
         name="capnproto"
         internal_path="libs/EXTERNAL/capnproto"
         external_url="https://github.com/capnproto/capnproto.git"
-        default_external_ref="v0.9.1"/>
+        default_external_ref="v1.0.2"/>
     <subtree
         name="libinterchange"
         internal_path="libs/EXTERNAL/libinterchange"
@@ -58,7 +58,7 @@
         name="yosys"
         internal_path="yosys"
         external_url="https://github.com/YosysHQ/yosys.git"
-        default_external_ref="yosys-0.26"/>
+        default_external_ref="yosys-0.32"/>
     <subtree
         name="parmys"
         internal_path="parmys"

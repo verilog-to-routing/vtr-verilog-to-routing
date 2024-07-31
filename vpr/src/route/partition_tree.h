@@ -3,14 +3,41 @@
 #include "connection_router.h"
 #include "router_stats.h"
 
-/** Routing iteration results per thread. (for a subset of the input netlist) */
-struct RouteIterResults {
-    /** Are there any connections impossible to route due to a disconnected rr_graph? */
-    bool is_routable = true;
-    /** Net IDs for which timing_driven_route_net() actually got called */
-    std::vector<ParentNetId> rerouted_nets;
-    /** RouterStats collected from my subset of nets */
-    RouterStats stats;
+#include <cmath>
+#include <fstream>
+#include <memory>
+#include <thread>
+
+#ifdef VPR_USE_TBB
+#    include <tbb/concurrent_vector.h>
+#endif
+
+/** Self-descriptive */
+enum class Axis { X,
+                  Y };
+
+/** Which side of a line? */
+enum class Side { LEFT = 0,
+                  RIGHT = 1 };
+
+/** Invert side */
+inline Side operator!(const Side& rhs) {
+    return Side(!size_t(rhs));
+}
+
+/** Part of a net in the context of the \ref DecompNetlistRouter. Sinks and routing resources
+ * routable/usable by the \ref ConnectionRouter are constrained to ones inside clipped_bb
+ * (\see inside_bb()) */
+class VirtualNet {
+  public:
+    /** The net in question (ID into a \ref Netlist). */
+    ParentNetId net_id;
+    /** The bounding box created by clipping the parent's bbox against a cutline. */
+    t_bb clipped_bb;
+    /** Times decomposed -- don't decompose vnets too deeply or it disturbs net ordering
+     * when it's eventually disabled --> makes routing more difficult.
+     * 1 means this vnet was just created by dividing a regular net */
+    int times_decomposed = 0;
 };
 
 /** Spatial partition tree for routing.
@@ -22,27 +49,23 @@ struct RouteIterResults {
  * by the cutline. Leaf nodes represent a final set of nets reached by partitioning.
  *
  * To route this in parallel, we first route the nets in the root node, then add
- * its left and right to a task queue, and repeat this for the whole tree.
- * 
- * The tree stores some routing results to be later combined, such as is_routable and
- * rerouted_nets. (TODO: do this per thread instead of per node) */
+ * its left and right to a task queue, and repeat this for the whole tree. */
 class PartitionTreeNode {
   public:
     /** Nets claimed by this node (intersected by cutline if branch, nets in final region if leaf) */
     std::vector<ParentNetId> nets;
+    /** Virtual nets assigned by the parent of this node (\see DecompNetlistRouter) */
+    std::vector<VirtualNet> vnets;
     /** Left subtree. */
     std::unique_ptr<PartitionTreeNode> left = nullptr;
     /** Right subtree. */
     std::unique_ptr<PartitionTreeNode> right = nullptr;
-    /** Are there any connections impossible to route due to a disconnected rr_graph? */
-    bool is_routable = false;
-    /** Net IDs for which timing_driven_route_net() actually got called */
-    std::vector<ParentNetId> rerouted_nets;
-
-    /* debug stuff */
-    int cutline_axis = -1;
-    int cutline_pos = -1;
-    std::vector<float> exec_times;
+    /* Axis of the cutline. */
+    Axis cutline_axis = Axis::X;
+    /* Position of the cutline. It's a float, because cutlines are considered to be "between" integral coordinates. */
+    float cutline_pos = std::numeric_limits<float>::quiet_NaN();
+    /* Bounding box of *this* node. (The cutline cuts this box) */
+    t_bb bb;
 };
 
 /** Holds the root PartitionTreeNode and exposes top level operations. */
@@ -64,3 +87,30 @@ class PartitionTree {
     std::unique_ptr<PartitionTreeNode> _root;
     std::unique_ptr<PartitionTreeNode> build_helper(const Netlist<>& netlist, const std::vector<ParentNetId>& nets, int x1, int y1, int x2, int y2);
 };
+
+#ifdef VPR_DEBUG_PARTITION_TREE
+/** Log PartitionTree-related messages. Can handle multiple threads. */
+class PartitionTreeDebug {
+  public:
+    static inline tbb::concurrent_vector<std::string> lines;
+    /** Add msg to the log buffer (with a thread ID header) */
+    static inline void log(std::string msg) {
+        auto thread_id = std::hash<std::thread::id>()(std::this_thread::get_id());
+        lines.push_back("[thread " + std::to_string(thread_id) + "] " + msg);
+    }
+    /** Write out the log buffer into a file */
+    static inline void write(std::string filename) {
+        std::ofstream f(filename);
+        for (auto& line : lines) {
+            f << line << std::endl;
+        }
+        f.close();
+    }
+};
+#else
+class PartitionTreeDebug {
+  public:
+    static inline void log(std::string /* msg */) {}
+    static inline void write(std::string /* filename */) {}
+};
+#endif

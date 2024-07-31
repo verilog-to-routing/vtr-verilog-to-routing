@@ -34,6 +34,168 @@ ABC_NAMESPACE_IMPL_START
 
 /**Function*************************************************************
 
+  Synopsis    [Parses signature given on the command line.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+void Acec_ParseSignatureMono( char * p, char * pStop, Vec_Int_t * vLevel )
+{
+    char * pTemp = p;
+    int Const = ABC_INFINITY;
+    int fMinus = pTemp[0] == '-';
+    if ( pTemp[0] == '+' || pTemp[0] == '-' || pTemp[0] == '(' ) 
+        pTemp++;
+    while ( pTemp < pStop )
+    {
+        if ( pTemp[0] == 'i' ) // input
+            Vec_IntPush( vLevel, -1-atoi(++pTemp) );
+        else if ( pTemp[0] == 'o' ) // output
+            Vec_IntPush( vLevel, atoi(++pTemp) );
+        else // coefficient
+        {
+            assert( Const == ABC_INFINITY );
+            Const = 1 + atoi(pTemp);
+        }
+        while ( pTemp[0] >= '0' && pTemp[0] <= '9' )
+            pTemp++;
+        assert( pTemp ==  pStop || pTemp[0] == '*' );
+        pTemp++;
+    }
+    assert( Const != ABC_INFINITY );
+    Vec_IntPush( vLevel, fMinus ? -Const : Const );
+}
+Vec_Wec_t * Acec_ParseSignatureOne( char * p, char * pStop )
+{
+    Vec_Wec_t * vMonos = Vec_WecAlloc( 10 );
+    char * pTemp = p, * pNext;
+    assert( p[0] == '(' && pStop[0] == ')' );
+    while ( pTemp[0] != ')' )
+    {
+        for ( pNext = pTemp+1; pNext < pStop; pNext++ )
+            if ( pNext[0] == '+' || pNext[0] == '-' )
+                break;
+        assert( pNext[0] == '+' || pNext[0] == '-' || pNext[0] == ')' );
+        Acec_ParseSignatureMono( pTemp, pNext, Vec_WecPushLevel(vMonos) );
+        pTemp = pNext;
+    }
+    return vMonos;
+}
+Vec_Wec_t * Acec_ParseDistribute( Vec_Wec_t * vM1, Vec_Wec_t * vM2, Vec_Wec_t * vAdd )
+{
+    Vec_Wec_t * vMonos = Vec_WecAlloc( 10 );
+    Vec_Int_t * vLevel1, * vLevel2, * vLevel;
+    int i, k, n, Entry;
+    Vec_WecForEachLevel( vM1, vLevel1, i )
+    Vec_WecForEachLevel( vM2, vLevel2, k )
+    {
+        vLevel = Vec_WecPushLevel(vMonos);
+        Vec_IntForEachEntryStop( vLevel1, Entry, n, Vec_IntSize(vLevel1)-1 )
+            Vec_IntPush(vLevel, Entry);
+        Vec_IntForEachEntryStop( vLevel2, Entry, n, Vec_IntSize(vLevel2)-1 )
+            Vec_IntPush(vLevel, Entry);
+        Vec_IntPush(vLevel, Vec_IntEntryLast(vLevel1)+Vec_IntEntryLast(vLevel2)-1);
+    }
+    Vec_WecForEachLevel( vAdd, vLevel1, k )
+    {
+        vLevel = Vec_WecPushLevel(vMonos);
+        Vec_IntForEachEntry( vLevel1, Entry, n )
+            Vec_IntPush(vLevel, Entry);
+    }
+    return vMonos;
+}
+Vec_Wec_t * Acec_ParseSignature( char * p )
+{
+    Vec_Wec_t * vAdd = NULL, * vTemp1, * vTemp2, * vRes;
+    if ( p[0] == '(' )
+    {
+        char * pStop = strstr(p, ")");
+        if ( pStop == NULL )
+            return NULL;
+        vTemp1 = Acec_ParseSignatureOne( p, pStop );
+        if ( pStop[1] == 0 )
+            return vTemp1;
+        if ( pStop[1] == '*' )
+        {
+            char * p2 = pStop + 2;
+            char * pStop2 = strstr(p2, ")");
+            if ( p2[0] != '(' )
+                return NULL;
+            if ( pStop2 == NULL )
+                return NULL;
+            vTemp2 = Acec_ParseSignatureOne( p2, pStop2 );
+            if ( pStop2[1] == 0 )
+            {
+                vRes = Acec_ParseDistribute( vTemp1, vTemp2, vAdd );
+                Vec_WecFree( vTemp1 );
+                Vec_WecFree( vTemp2 );
+                return vRes;
+            }
+            if ( pStop2[1] == '+' )
+            {
+                char * p3 = pStop2 + 2;
+                char * pStop3 = strstr(p3, ")");
+                if ( p3[0] != '(' )
+                    return NULL;
+                if ( pStop3 == NULL )
+                    return NULL;
+                vAdd = Acec_ParseSignatureOne( p3, pStop3 );
+                vRes = Acec_ParseDistribute( vTemp1, vTemp2, vAdd );
+                Vec_WecFree( vTemp1 );
+                Vec_WecFree( vTemp2 );
+                Vec_WecFree( vAdd );
+                return vRes;
+            }
+            assert( 0 );
+        }
+        assert( 0 );
+    }
+    else
+    {
+        int Len = strlen(p);
+        char * pCopy = ABC_ALLOC( char, Len+3 );
+        pCopy[0] = '(';
+        strcpy( pCopy+1, p );
+        pCopy[Len+1] = ')';
+        pCopy[Len+2] = '\0';
+        vRes = Acec_ParseSignatureOne( pCopy, pCopy + Len + 1 );
+        ABC_FREE( pCopy );
+        return vRes;
+    }
+    return NULL;
+}
+void Acec_PrintSignature( Vec_Wec_t * vMonos )
+{
+    Vec_Int_t * vLevel; int i, k, Entry;
+    printf( "Output signature with %d monomials:\n", Vec_WecSize(vMonos) );
+    Vec_WecForEachLevel( vMonos, vLevel, i )
+    {
+        printf( "  %s2^%d", Vec_IntEntryLast(vLevel) > 0 ? "+":"-", Abc_AbsInt(Vec_IntEntryLast(vLevel))-1 );
+        Vec_IntForEachEntryStop( vLevel, Entry, k, Vec_IntSize(vLevel)-1 )
+        {
+            printf( " * " );
+            if ( Entry < 0 )
+                printf( "i%d", -Entry-1 );
+            else 
+                printf( "o%d", Entry );
+        }
+        printf( "\n" );
+    }
+}
+void Acec_ParseSignatureTest()
+{
+    char * pSign = "(4*o1+2*o2+1*o3)*(4*i4+2*i5+1*i6)+(4*o4+2*o5+1*o6)";
+    Vec_Wec_t * vMonos = Acec_ParseSignature( pSign );
+    Acec_PrintSignature( vMonos );
+    Vec_WecFree( vMonos );
+}
+
+/**Function*************************************************************
+
   Synopsis    [Checks that items are unique and in order.]
 
   Description []
@@ -101,7 +263,7 @@ void Gia_PolynPrintMono( Vec_Int_t * vConst, Vec_Int_t * vMono, int Prev )
     Vec_IntForEachEntry( vConst, Entry, k )
         printf( "%s2^%d", Entry < 0 ? "-" : "+", Abc_AbsInt(Entry)-1 );
     Vec_IntForEachEntry( vMono, Entry, k )
-        printf( " * %d", Entry-1 );
+        printf( " * i%d", Entry-1 );
     printf( "\n" );
 }
 void Gia_PolynPrint( Vec_Wec_t * vPolyn )
@@ -121,7 +283,7 @@ void Gia_PolynPrintStats( Vec_Wec_t * vPolyn )
 {
     Vec_Int_t * vConst, * vCountsP, * vCountsN;
     int i, Entry, Max = 0;
-    printf( "Polynomial with %d monomials:\n", Vec_WecSize(vPolyn)/2 );
+    printf( "Input signature with %d monomials:\n", Vec_WecSize(vPolyn)/2 );
     for ( i = 0; i < Vec_WecSize(vPolyn)/2; i++ )
     {
         vConst = Vec_WecEntry( vPolyn, 2*i+0 );
@@ -140,10 +302,10 @@ void Gia_PolynPrintStats( Vec_Wec_t * vPolyn )
     }
     Vec_IntForEachEntry( vCountsN, Entry, i )
         if ( Entry )
-            printf( "-2^%d appears %d times\n", Abc_AbsInt(i)-1, Entry );
+            printf( "  -2^%d appears %d times\n", Abc_AbsInt(i)-1, Entry );
     Vec_IntForEachEntry( vCountsP, Entry, i )
         if ( Entry )
-            printf( "+2^%d appears %d times\n", Abc_AbsInt(i)-1, Entry );
+            printf( "  +2^%d appears %d times\n", Abc_AbsInt(i)-1, Entry );
     Vec_IntFree( vCountsP );
     Vec_IntFree( vCountsN );
 }
@@ -199,7 +361,7 @@ Vec_Wec_t * Gia_PolynGetResult( Hsh_VecMan_t * pHashC, Hsh_VecMan_t * pHashM, Ve
     Vec_WecForEachLevel( vSorted, vClass, i )
     {
         // sort monomials by the index of the first variable
-        qsort( Vec_IntArray(vClass), Vec_IntSize(vClass)/3, 12, (int (*)(const void *, const void *))Gia_PolynGetResultCompare );
+        qsort( Vec_IntArray(vClass), (size_t)(Vec_IntSize(vClass)/3), 12, (int (*)(const void *, const void *))Gia_PolynGetResultCompare );
         Vec_IntForEachEntryTriple( vClass, iConst, iMono, iFirst, k )
         {
             vArray = Hsh_VecReadEntry( pHashC, iConst );
@@ -474,7 +636,7 @@ static inline void Gia_PolynPrepare4( Vec_Int_t * vTempC[4], Vec_Int_t * vTempM[
     Vec_IntPushUniqueOrder( vTempM[3], iFan1 );
 }
 
-Vec_Wec_t * Gia_PolynBuildNew( Gia_Man_t * pGia, Vec_Int_t * vRootLits, int nExtra, Vec_Int_t * vLeaves, Vec_Int_t * vNodes, int fSigned, int fVerbose, int fVeryVerbose )
+Vec_Wec_t * Gia_PolynBuildNew( Gia_Man_t * pGia, Vec_Wec_t * vSign, Vec_Int_t * vRootLits, int nExtra, Vec_Int_t * vLeaves, Vec_Int_t * vNodes, int fSigned, int fVerbose, int fVeryVerbose )
 {
     abctime clk = Abc_Clock();
     Vec_Wec_t * vPolyn;
@@ -498,6 +660,44 @@ Vec_Wec_t * Gia_PolynBuildNew( Gia_Man_t * pGia, Vec_Int_t * vRootLits, int nExt
         printf( "Assigning %d outputs from %d to %d rank %d.\n", nExtra, Vec_IntSize(vRootLits)-nExtra, Vec_IntSize(vRootLits)-1, Vec_IntSize(vRootLits)-nExtra );
 
     // create output signature
+    if ( vSign )
+    {
+        Vec_Int_t * vLevel; int Entry, OutLit;
+        Vec_WecForEachLevel( vSign, vLevel, i )
+        {
+            OutLit = -1;
+            Vec_IntClear( vTempM[0] );
+            Vec_IntFill( vTempC[0], 1, Vec_IntEntryLast(vLevel) );
+            Vec_IntForEachEntryStop( vLevel, Entry, k, Vec_IntSize(vLevel)-1 )
+            {
+                if ( Entry < 0 ) // input
+                    Vec_IntPushUniqueOrder( vTempM[0], Vec_IntEntry(vLeaves, -1-Entry) );
+                else // output
+                {
+                    assert( OutLit == -1 ); // only one output literal is expected
+                    OutLit = Vec_IntEntry(vRootLits, Entry);
+                }
+            }
+            if ( OutLit == -1 )
+                nMonos += Gia_PolynBuildAdd( pHashC, pHashM, vCoefs, vLit2Mono, vTempC[0], vTempM[0] );   // mono without out
+            else if ( !Abc_LitIsCompl(OutLit) ) // positive literal
+            {
+                Vec_IntPushUniqueOrder( vTempM[0], Abc_Lit2Var(OutLit) );
+                nMonos += Gia_PolynBuildAdd( pHashC, pHashM, vCoefs, vLit2Mono, vTempC[0], vTempM[0] );   // mono with pos out
+            }
+            else // negative literal
+            {
+                // first monomial
+                nMonos += Gia_PolynBuildAdd( pHashC, pHashM, vCoefs, vLit2Mono, vTempC[0], vTempM[0] );   // mono without out
+                // second monomial
+                Vec_IntFill( vTempC[0], 1, -Vec_IntEntryLast(vLevel) );
+                Vec_IntPushUniqueOrder( vTempM[0], Abc_Lit2Var(OutLit) );
+                nMonos += Gia_PolynBuildAdd( pHashC, pHashM, vCoefs, vLit2Mono, vTempC[0], vTempM[0] );   // mono with neg out
+            }
+            nBuilds++;
+        }
+    }
+    else
     Vec_IntForEachEntry( vRootLits, iLit, i )
     {
         int Value = 1 + Abc_MinInt( i, Vec_IntSize(vRootLits)-nExtra );
@@ -601,14 +801,23 @@ Vec_Wec_t * Gia_PolynBuildNew( Gia_Man_t * pGia, Vec_Int_t * vRootLits, int nExt
   SeeAlso     []
 
 ***********************************************************************/
-void Gia_PolynBuild2Test( Gia_Man_t * pGia, int nExtra, int fSigned, int fVerbose, int fVeryVerbose )
+void Gia_PolynBuild2Test( Gia_Man_t * pGia, char * pSign, int nExtra, int fSigned, int fVerbose, int fVeryVerbose )
 {
     Vec_Wec_t * vPolyn;
     Vec_Int_t * vRootLits = Vec_IntAlloc( Gia_ManCoNum(pGia) );
     Vec_Int_t * vLeaves   = Vec_IntAlloc( Gia_ManCiNum(pGia) );
     Vec_Int_t * vNodes    = Vec_IntAlloc( Gia_ManAndNum(pGia) );
     Gia_Obj_t * pObj;
+    Vec_Wec_t * vMonos = NULL;
     int i;
+
+    if ( pSign != NULL && (vMonos = Acec_ParseSignature(pSign)) == NULL )
+    {
+        printf( "Canont parse the output signatures.\n" );
+        return;
+    }
+    if ( vMonos && fVerbose )
+        Acec_PrintSignature( vMonos );
 
     // print logic level
     if ( nExtra == -1 )
@@ -633,7 +842,7 @@ void Gia_PolynBuild2Test( Gia_Man_t * pGia, int nExtra, int fSigned, int fVerbos
         else if ( Gia_ObjIsCo(pObj) )
             Vec_IntPush( vRootLits, Gia_ObjFaninLit0p(pGia, pObj) );
 
-    vPolyn = Gia_PolynBuildNew( pGia, vRootLits, nExtra, vLeaves, vNodes, fSigned, fVerbose, fVeryVerbose );
+    vPolyn = Gia_PolynBuildNew( pGia, vMonos, vRootLits, nExtra, vLeaves, vNodes, fSigned, fVerbose, fVeryVerbose );
     //printf( "Polynomial has %d monomials.\n", Vec_WecSize(vPolyn)/2 );
     if ( fVerbose || fVeryVerbose )
         Gia_PolynPrintStats( vPolyn );
@@ -644,6 +853,7 @@ void Gia_PolynBuild2Test( Gia_Man_t * pGia, int nExtra, int fSigned, int fVerbos
     Vec_IntFree( vRootLits );
     Vec_IntFree( vLeaves );
     Vec_IntFree( vNodes );
+    Vec_WecFreeP( &vMonos );
 }
 
 ////////////////////////////////////////////////////////////////////////

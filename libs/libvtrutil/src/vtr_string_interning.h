@@ -11,7 +11,7 @@
  * 
  *  This string internment has an additional feature that is splitting the
  *  input string into "parts" based on '.', which happens to be the feature
- *  seperator for FASM.  This means the string "TILE.CLB.A" and "TILE.CLB.B"
+ *  separator for FASM.  This means the string "TILE.CLB.A" and "TILE.CLB.B"
  *  would be made up of the intern ids for {"TILE", "CLB", "A"} and
  *  {"TILE", "CLB", "B"} respectively, allowing some internal deduplication.
  * 
@@ -20,14 +20,14 @@
  * 
  *  Interned strings (interned_string) that come from the same internment
  *  object (string_internment) can safely be checked for equality and hashed
- *  without touching the underlying string.  Lexigraphical comprisions (e.g. <)
+ *  without touching the underlying string.  Lexigraphical comparisons (e.g. <)
  *  requires reconstructing the string.
  * 
  *  Basic usage:
  *  -# Create a string_internment
  *  -# Invoke string_internment::intern_string, which returns the
- *     interned_string object that is the interned string's unique idenfier.
- *     This idenfier can be checked for equality or hashed. If
+ *     interned_string object that is the interned string's unique identifier.
+ *     This identifier can be checked for equality or hashed. If
  *     string_internment::intern_string is called with the same string, a value
  *     equivalent interned_string object will be returned.
  *  -# If the original string is required, interned_string::get can be invoked

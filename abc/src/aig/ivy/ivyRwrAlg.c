@@ -371,7 +371,7 @@ int Ivy_ManFindAlgCut( Ivy_Obj_t * pRoot, Vec_Ptr_t * vFront, Vec_Ptr_t * vLeave
     if ( Vec_PtrSize(vFront) <= 2 )
         return 1;
     // sort the entries in increasing order
-    Vec_PtrSort( vFront, (int (*)(void))Ivy_ManFindAlgCutCompare );
+    Vec_PtrSort( vFront, (int (*)(const void *, const void *))Ivy_ManFindAlgCutCompare );
     // remove duplicates from vFront and save the nodes in vLeaves
     pPrev = Vec_PtrEntry(vFront, 0);
     Vec_PtrPush( vLeaves, pPrev );

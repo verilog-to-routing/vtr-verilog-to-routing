@@ -88,7 +88,7 @@ public:
     compiler::lex(content, statements, *this);
 
     auto parsed = orphanage.newOrphan<compiler::ParsedFile>();
-    compiler::parseFile(statements.getStatements(), parsed.get(), *this);
+    compiler::parseFile(statements.getStatements(), parsed.get(), *this, parser.fileIdsRequired);
     return parsed;
   }
 
@@ -148,7 +148,7 @@ private:
 namespace {
 
 struct SchemaFileHash {
-  inline bool operator()(const SchemaFile* f) const {
+  inline size_t operator()(const SchemaFile* f) const {
     return f->hashCode();
   }
 };
@@ -310,6 +310,10 @@ SchemaParser::ModuleImpl& SchemaParser::getModuleImpl(kj::Own<SchemaFile>&& file
 }
 
 SchemaLoader& SchemaParser::getLoader() {
+  return impl->compiler.getLoader();
+}
+
+const SchemaLoader& SchemaParser::getLoader() const {
   return impl->compiler.getLoader();
 }
 

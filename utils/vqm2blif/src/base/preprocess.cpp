@@ -1914,8 +1914,9 @@ void duplicate_and_split_multiclock_blocks(t_module* module, vector<t_node*>& mu
 
         char buf[50];
         snprintf(buf, sizeof(char)*50, DUMMY_NET_NAME_FORMAT, dummy_net_count);
-        new_net->name = (char*) vtr::malloc(strlen(buf)+1);
-        strncpy(new_net->name, buf, strlen(buf)+1);
+        size_t new_net_name_length = strlen(buf) + 1;
+        new_net->name = (char*) vtr::malloc(new_net_name_length * sizeof(char));
+        strncpy(new_net->name, buf, new_net_name_length);
         new_net->left = 0;
         new_net->right = 0;
         new_net->indexed = T_FALSE;

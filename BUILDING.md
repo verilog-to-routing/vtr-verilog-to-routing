@@ -3,6 +3,10 @@
 
 ## Setting up Your Environment
 
+If you cloned the repository you will need to set up the git submodules (if you downloaded and extracted a release, you can skip this step):
+
+    git submodule init
+    git submodule update
 
 VTR requires several system packages.  From the top-level directory, run the following script to install the required packages on a modern Debian or Ubuntu system:
 
@@ -42,7 +46,7 @@ If you download a different version of those tools, then those versions may not 
 
 To verfiy that VTR has been installed correctly run::
 
-    ./vtr_flow/scripts/run_vtr_task.py regression_tests/vtr_reg_basic/basic_timing
+    ./vtr_flow/scripts/run_vtr_task.py ./vtr_flow/tasks/regression_tests/vtr_reg_basic/basic_timing
 
 The expected output is::
     

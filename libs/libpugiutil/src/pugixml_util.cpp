@@ -9,9 +9,12 @@ namespace pugiutil {
 loc_data load_xml(pugi::xml_document& doc,      //Document object to be loaded with file contents
                   const std::string filename) { //Filename to load from
     //store the position of last '.' in the file name
-    int position = filename.find_last_of(".");
-    //store the characters after the '.' from the file_name string
-    std::string result = filename.substr(position);
+    size_t position = filename.find_last_of(".");
+    std::string result = "";
+    if (position != std::string::npos) {
+        //store the characters after the '.' from the file_name string
+        result = filename.substr(position);
+    }
     if (result == ".xmle") {
         Decryption E1(filename);
         std::string fn_file = E1.getDecryptedContent();
@@ -103,7 +106,7 @@ size_t count_children(const pugi::xml_node node,
         child = child.next_sibling(child_name.c_str());
     }
 
-    //Note that we don't do any error checking here since get_first_child does the existance check
+    //Note that we don't do any error checking here since get_first_child does the existence check
 
     return count;
 }
@@ -172,7 +175,7 @@ void expect_child_node_count(const pugi::xml_node node,
 //  child_names - expected attribute names
 //  loc_data - XML file location data
 void expect_only_children(const pugi::xml_node node,
-                          std::vector<std::string> child_names,
+                          const std::vector<std::string>& child_names,
                           const loc_data& loc_data) {
     for (auto child : node.children()) {
         std::string child_name = child.name();
@@ -183,7 +186,7 @@ void expect_only_children(const pugi::xml_node node,
             std::string msg = "Unexpected child '" + child_name + "'"
                               + " of node '" + node.name() + "'.";
 
-            if (child_names.size() > 0) {
+            if (!child_names.empty()) {
                 msg += " Expected (possibly) one of: ";
                 for (size_t i = 0; i < child_names.size(); i++) {
                     if (i != 0) {
@@ -210,7 +213,7 @@ void expect_only_children(const pugi::xml_node node,
 //  loc_data - XML file location data
 void expect_only_attributes(const pugi::xml_node node,
                             std::vector<std::string> attribute_names,
-                            std::string explanation,
+                            std::string_view explanation,
                             const loc_data& loc_data) {
     for (auto attrib : node.attributes()) {
         std::string attrib_name = attrib.name();
@@ -227,7 +230,7 @@ void expect_only_attributes(const pugi::xml_node node,
 
             msg += ".";
 
-            if (attribute_names.size() > 0) {
+            if (!attribute_names.empty()) {
                 msg += " Expected (possibly) one of: ";
                 for (size_t i = 0; i < attribute_names.size(); i++) {
                     if (i != 0) {
@@ -247,13 +250,13 @@ void expect_only_attributes(const pugi::xml_node node,
 }
 
 //Throws a well formatted error if any attribute other than those named in 'attribute_names' are found on 'node'.
-//Note this does not check whether the attribues in 'attribute_names' actually exist; for that use get_attribute().
+//Note this does not check whether the attributes in 'attribute_names' actually exist; for that use get_attribute().
 //
 //  node - The parent xml node
 //  attribute_names - expected attribute names
 //  loc_data - XML file location data
 void expect_only_attributes(const pugi::xml_node node,
-                            std::vector<std::string> attribute_names,
+                            const std::vector<std::string>& attribute_names,
                             const loc_data& loc_data) {
     expect_only_attributes(node, attribute_names, "", loc_data);
 }
@@ -276,7 +279,7 @@ size_t count_attributes(const pugi::xml_node node,
     return count;
 }
 
-//Gets a named property on an node and returns it.
+//Gets a named property on a node and returns it.
 //
 //  node - The xml node
 //  attr_name - The attribute name

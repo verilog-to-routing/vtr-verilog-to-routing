@@ -116,13 +116,16 @@ void build_rr_graph_edges(const RRGraphView& rr_graph,
                           const int& Fs,
                           const e_switch_block_type& sb_subtype,
                           const int& subFs,
+                          const bool& perimeter_cb,
+                          const bool& opin2all_sides,
+                          const bool& concat_wire,
                           const bool& wire_opposite_side) {
     size_t num_edges_to_create = 0;
     /* Create edges for SOURCE and SINK nodes for a tileable rr_graph */
     build_rr_graph_edges_for_source_nodes(rr_graph, rr_graph_builder, rr_node_driver_switches, grids, layer, num_edges_to_create);
     build_rr_graph_edges_for_sink_nodes(rr_graph, rr_graph_builder, rr_node_driver_switches, grids, layer, num_edges_to_create);
 
-    vtr::Point<size_t> gsb_range(grids.width() - 2, grids.height() - 2);
+    vtr::Point<size_t> gsb_range(grids.width() - 1, grids.height() - 1);
 
     /* Go Switch Block by Switch Block */
     for (size_t ix = 0; ix <= gsb_range.x(); ++ix) {
@@ -133,7 +136,7 @@ void build_rr_graph_edges(const RRGraphView& rr_graph,
             /* Create a GSB object */
             const RRGSB& rr_gsb = build_one_tileable_rr_gsb(grids, rr_graph,
                                                             device_chan_width, segment_inf_x, segment_inf_y,
-                                                            layer, gsb_coord);
+                                                            layer, gsb_coord, perimeter_cb);
 
             /* adapt the track_to_ipin_lookup for the GSB nodes */
             t_track2pin_map track2ipin_map; /* [0..track_gsb_side][0..num_tracks][ipin_indices] */
@@ -141,12 +144,12 @@ void build_rr_graph_edges(const RRGraphView& rr_graph,
 
             /* adapt the opin_to_track_map for the GSB nodes */
             t_pin2track_map opin2track_map; /* [0..gsb_side][0..num_opin_node][track_indices] */
-            opin2track_map = build_gsb_opin_to_track_map(rr_graph, rr_gsb, grids, segment_inf, Fc_out);
+            opin2track_map = build_gsb_opin_to_track_map(rr_graph, rr_gsb, grids, segment_inf, Fc_out, opin2all_sides);
 
             /* adapt the switch_block_conn for the GSB nodes */
             t_track2track_map sb_conn; /* [0..from_gsb_side][0..chan_width-1][track_indices] */
             sb_conn = build_gsb_track_to_track_map(rr_graph, rr_gsb,
-                                                   sb_type, Fs, sb_subtype, subFs, wire_opposite_side,
+                                                   sb_type, Fs, sb_subtype, subFs, concat_wire, wire_opposite_side,
                                                    segment_inf);
 
             /* Build edges for a GSB */
@@ -166,7 +169,6 @@ void build_rr_graph_direct_connections(const RRGraphView& rr_graph,
                                        RRGraphBuilder& rr_graph_builder,
                                        const DeviceGrid& grids,
                                        const size_t& layer,
-                                       const RRSwitchId& delayless_switch,
                                        const std::vector<t_direct_inf>& directs,
                                        const std::vector<t_clb_to_clb_directs>& clb_to_clb_directs) {
     for (size_t ix = 0; ix < grids.width(); ++ix) {
@@ -186,7 +188,6 @@ void build_rr_graph_direct_connections(const RRGraphView& rr_graph,
                                                  rr_graph_builder,
                                                  grids, layer,
                                                  from_grid_coordinate,
-                                                 delayless_switch,
                                                  directs, clb_to_clb_directs);
         }
     }

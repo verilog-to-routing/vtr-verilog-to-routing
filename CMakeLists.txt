@@ -23,7 +23,7 @@ set(VTR_IPO_BUILD "auto" CACHE STRING "Should VTR be compiled with interprocedur
 set_property(CACHE VTR_IPO_BUILD PROPERTY STRINGS auto on off)
 
 #Allow the user to configure how much assertion checking should occur
-set(VTR_ASSERT_LEVEL "2" CACHE STRING "VTR assertion checking level. 0: no assertions, 1: fast assertions, 2: regular assertions, 3: additional assertions with noticable run-time overhead, 4: all assertions (including those with significant run-time cost)")
+set(VTR_ASSERT_LEVEL "2" CACHE STRING "VTR assertion checking level. 0: no assertions, 1: fast assertions, 2: regular assertions, 3: additional assertions with noticeable run-time overhead, 4: all assertions (including those with significant run-time cost)")
 set_property(CACHE VTR_ASSERT_LEVEL PROPERTY STRINGS 0 1 2 3 4)
 
 option(VTR_ENABLE_STRICT_COMPILE "Specifies whether compiler warnings should be treated as errors (e.g. -Werror)" OFF)
@@ -40,10 +40,14 @@ set(VPR_USE_EZGL "auto" CACHE STRING "Specify whether vpr uses the graphics libr
 set_property(CACHE VPR_USE_EZGL PROPERTY STRINGS auto off on)
 option(VTR_ENABLE_CAPNPROTO "Enable capnproto binary serialization support in VPR." ON)
 
+#Allow the user to decide whether to compile the server module
+option(VPR_USE_SERVER "Specify whether vpr enables the server mode" ON)
+
 #Allow the user to enable/disable VPR analytic placement
 #VPR option --enable_analytic_placer is also required for Analytic Placement
 option(VPR_ANALYTIC_PLACE "Enable analytic placement in VPR." ON)
 option(VPR_ENABLE_INTERCHANGE "Enable FPGA interchange." ON)
+option(VPR_ENABLE_NOC_SAT_ROUTING "Enable NoC SAT routing." OFF)
 
 option(WITH_BLIFEXPLORER "Enable build with blifexplorer" OFF)
 
@@ -218,12 +222,12 @@ endforeach()
 set(FLEX_BISON_WARN_SUPPRESS_FLAGS "")
 set(FLEX_BISON_WARN_SUPPRESS_FLAGS_TO_CHECK
     "-Wno-redundant-decls"  #Flex/bison generate code with redundant declarations
-    "-Wno-switch-default"   #Flex/bison generate switch statments w/o default cases
+    "-Wno-switch-default"   #Flex/bison generate switch statements w/o default cases
     "-Wno-unused-parameter" #Flex produces functions with unused params in re-entrant mode
     "-Wno-missing-declarations" #Flex misses some declarations in re-entrant mode
     "-Wimplicit-fallthrough=0" #Bison produces some cases with explicit
     "-Wno-sign-compare" #Flex generates code which performs some signed/unsigned comparison
-    "-Wno-null-dereference" #Bison produces some cases with potenetial null derefs
+    "-Wno-null-dereference" #Bison produces some cases with potential null derefs
     )
 foreach(flag ${FLEX_BISON_WARN_SUPPRESS_FLAGS_TO_CHECK})
     CHECK_CXX_COMPILER_FLAG(${flag} CXX_COMPILER_SUPPORTS_${flag})
@@ -343,6 +347,14 @@ add_custom_target(get_titan_benchmarks
     COMMENT "Downloading (~1GB) and extracting Titan benchmarks (~10GB) into VTR source tree.")
 
 #
+# NoC MLP Benchmarks
+#
+add_custom_target(get_noc_mlp_benchmarks
+        COMMAND ./vtr_flow/scripts/download_noc_mlp.py --vtr_flow_dir ./vtr_flow
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMENT "Downloading (~100MB) and extracting NoC MLP benchmarks (~3.2GB) into VTR source tree.")
+
+#
 # ISPD Benchmarks
 #
 add_custom_target(get_ispd_benchmarks
@@ -411,11 +423,13 @@ if(${WITH_PARMYS}) # define cmake params to compile Yosys
         set(MAKE_PROGRAM "make")
     endif()
 
-    if(NOT DEFINED "${CMAKE_BUILD_PARALLEL_LEVEL}")
-        set(CUSTOM_BUILD_PARALLEL_LEVEL 16)
-    else()
-        set(CUSTOM_BUILD_PARALLEL_LEVEL "${CMAKE_BUILD_PARALLEL_LEVEL}")
-    endif()
+    # Commented out since a make file should not call another make command with
+    # threads. It should pass this information from the parent automatically.
+    # if(NOT DEFINED "${CMAKE_BUILD_PARALLEL_LEVEL}")
+    #     set(CUSTOM_BUILD_PARALLEL_LEVEL 16)
+    # else()
+    #     set(CUSTOM_BUILD_PARALLEL_LEVEL "${CMAKE_BUILD_PARALLEL_LEVEL}")
+    # endif()
     add_subdirectory(yosys)
 endif()
 

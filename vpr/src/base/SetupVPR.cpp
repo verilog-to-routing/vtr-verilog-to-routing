@@ -38,6 +38,8 @@ static void SetupAnnealSched(const t_options& Options,
 static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts);
 static void SetupNocOpts(const t_options& Options,
                          t_noc_opts* NocOpts);
+static void SetupServerOpts(const t_options& Options,
+                            t_server_opts* ServerOpts);
 static void SetupRoutingArch(const t_arch& Arch, t_det_routing_arch* RoutingArch);
 static void SetupTiming(const t_options& Options, const bool TimingEnabled, t_timing_inf* Timing);
 static void SetupSwitches(const t_arch& Arch,
@@ -99,6 +101,7 @@ void SetupVPR(const t_options* Options,
               t_router_opts* RouterOpts,
               t_analysis_opts* AnalysisOpts,
               t_noc_opts* NocOpts,
+              t_server_opts* ServerOpts,
               t_det_routing_arch* RoutingArch,
               std::vector<t_lb_type_rr_node>** PackerRRGraphs,
               std::vector<t_segment_inf>& Segments,
@@ -125,6 +128,7 @@ void SetupVPR(const t_options* Options,
     FileNameOpts->ArchFile = Options->ArchFile;
     FileNameOpts->CircuitFile = Options->CircuitFile;
     FileNameOpts->NetFile = Options->NetFile;
+    FileNameOpts->FlatPlaceFile = Options->FlatPlaceFile;
     FileNameOpts->PlaceFile = Options->PlaceFile;
     FileNameOpts->RouteFile = Options->RouteFile;
     FileNameOpts->ActFile = Options->ActFile;
@@ -133,6 +137,8 @@ void SetupVPR(const t_options* Options,
     FileNameOpts->out_file_prefix = Options->out_file_prefix;
     FileNameOpts->read_vpr_constraints_file = Options->read_vpr_constraints_file;
     FileNameOpts->write_vpr_constraints_file = Options->write_vpr_constraints_file;
+    FileNameOpts->write_constraints_file = Options->write_constraints_file;
+    FileNameOpts->write_flat_place_file = Options->write_flat_place_file;
     FileNameOpts->write_block_usage = Options->write_block_usage;
 
     FileNameOpts->verify_file_digests = Options->verify_file_digests;
@@ -144,6 +150,7 @@ void SetupVPR(const t_options* Options,
     SetupAnalysisOpts(*Options, *AnalysisOpts);
     SetupPowerOpts(*Options, PowerOpts, Arch);
     SetupNocOpts(*Options, NocOpts);
+    SetupServerOpts(*Options, ServerOpts);
 
     if (readArchFile == true) {
         vtr::ScopedStartFinishTimer t("Loading Architecture Description");
@@ -235,6 +242,7 @@ void SetupVPR(const t_options* Options,
     //Setup the default flow, if no specific stages specified
     //do all
     if (!Options->do_packing
+        && !Options->do_legalize
         && !Options->do_placement
         && !Options->do_routing
         && !Options->do_analysis) {
@@ -270,6 +278,11 @@ void SetupVPR(const t_options* Options,
 
         if (Options->do_packing) {
             PackerOpts->doPacking = STAGE_DO;
+        }
+
+        if (Options->do_legalize) {
+            PackerOpts->doPacking = STAGE_LOAD;
+            PackerOpts->load_flat_placement = true;
         }
     }
 
@@ -401,7 +414,7 @@ static void SetupRoutingArch(const t_arch& Arch,
     RoutingArch->Fs = Arch.Fs;
     RoutingArch->subFs = Arch.subFs;
     RoutingArch->directionality = BI_DIRECTIONAL;
-    if (Arch.Segments.size()) {
+    if (!Arch.Segments.empty()) {
         RoutingArch->directionality = Arch.Segments[0].directionality;
     }
 
@@ -410,8 +423,12 @@ static void SetupRoutingArch(const t_arch& Arch,
 
     /* Copy the tileable routing setting */
     RoutingArch->tileable = Arch.tileable;
+    RoutingArch->perimeter_cb = Arch.perimeter_cb;
     RoutingArch->shrink_boundary = Arch.shrink_boundary;
     RoutingArch->through_channel = Arch.through_channel;
+    RoutingArch->opin2all_sides = Arch.opin2all_sides;
+    RoutingArch->concat_wire = Arch.concat_wire;
+    RoutingArch->concat_pass_wire = Arch.concat_pass_wire;
 }
 
 static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts) {
@@ -426,6 +443,7 @@ static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts)
     RouterOpts->min_incremental_reroute_fanout = Options.min_incremental_reroute_fanout;
     RouterOpts->incr_reroute_delay_ripup = Options.incr_reroute_delay_ripup;
     RouterOpts->pres_fac_mult = Options.pres_fac_mult;
+    RouterOpts->max_pres_fac = Options.max_pres_fac;
     RouterOpts->route_type = Options.RouteType;
 
     RouterOpts->full_stats = Options.full_stats;
@@ -493,6 +511,7 @@ static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts)
     RouterOpts->generate_rr_node_overuse_report = Options.generate_rr_node_overuse_report;
     RouterOpts->flat_routing = Options.flat_routing;
     RouterOpts->has_choking_spot = Options.has_choking_spot;
+    RouterOpts->with_timing_analysis = Options.timing_analysis;
 }
 
 static void SetupAnnealSched(const t_options& Options,
@@ -634,6 +653,8 @@ static void SetupPlacerOpts(const t_options& Options, t_placer_opts* PlacerOpts)
 
     PlacerOpts->constraints_file = Options.constraints_file;
 
+    PlacerOpts->write_initial_place_file = Options.write_initial_place_file;
+
     PlacerOpts->pad_loc_type = Options.pad_loc_type;
 
     PlacerOpts->place_chan_width = Options.PlaceChanWidth;
@@ -671,9 +692,10 @@ static void SetupPlacerOpts(const t_options& Options, t_placer_opts* PlacerOpts)
     PlacerOpts->effort_scaling = Options.place_effort_scaling;
     PlacerOpts->timing_update_type = Options.timing_update_type;
     PlacerOpts->enable_analytic_placer = Options.enable_analytic_placer;
-    PlacerOpts->place_static_move_prob = Options.place_static_move_prob;
-    PlacerOpts->place_static_notiming_move_prob = Options.place_static_notiming_move_prob;
+    PlacerOpts->place_static_move_prob = vtr::vector<e_move_type, float>(Options.place_static_move_prob.value().begin(),
+                                                                         Options.place_static_move_prob.value().end());
     PlacerOpts->place_high_fanout_net = Options.place_high_fanout_net;
+    PlacerOpts->place_bounding_box_mode = Options.place_bounding_box_mode;
     PlacerOpts->RL_agent_placement = Options.RL_agent_placement;
     PlacerOpts->place_agent_multistate = Options.place_agent_multistate;
     PlacerOpts->place_checkpointing = Options.place_checkpointing;
@@ -690,6 +712,9 @@ static void SetupPlacerOpts(const t_options& Options, t_placer_opts* PlacerOpts)
     PlacerOpts->floorplan_num_vertical_partitions = Options.floorplan_num_vertical_partitions;
 
     PlacerOpts->seed = Options.Seed;
+
+    PlacerOpts->placer_debug_block = Options.placer_debug_block;
+    PlacerOpts->placer_debug_net = Options.placer_debug_net;
 }
 
 static void SetupAnalysisOpts(const t_options& Options, t_analysis_opts& analysis_opts) {
@@ -743,12 +768,29 @@ static void SetupNocOpts(const t_options& Options, t_noc_opts* NocOpts) {
     NocOpts->noc_flows_file = Options.noc_flows_file;
     NocOpts->noc_routing_algorithm = Options.noc_routing_algorithm;
     NocOpts->noc_placement_weighting = Options.noc_placement_weighting;
+    NocOpts->noc_aggregate_bandwidth_weighting = Options.noc_agg_bandwidth_weighting;
     NocOpts->noc_latency_constraints_weighting = Options.noc_latency_constraints_weighting;
     NocOpts->noc_latency_weighting = Options.noc_latency_weighting;
+    NocOpts->noc_congestion_weighting = Options.noc_congestion_weighting;
+    NocOpts->noc_centroid_weight = Options.noc_centroid_weight;
     NocOpts->noc_swap_percentage = Options.noc_swap_percentage;
+    NocOpts->noc_sat_routing_bandwidth_resolution = Options.noc_sat_routing_bandwidth_resolution;
+    NocOpts->noc_sat_routing_latency_overrun_weighting = Options.noc_sat_routing_latency_overrun_weighting_factor;
+    NocOpts->noc_sat_routing_congestion_weighting = Options.noc_sat_routing_congestion_weighting_factor;
+    if (Options.noc_sat_routing_num_workers.provenance() == argparse::Provenance::SPECIFIED) {
+        NocOpts->noc_sat_routing_num_workers = Options.noc_sat_routing_num_workers;
+    } else {
+        NocOpts->noc_sat_routing_num_workers = (int)Options.num_workers;
+    }
+    NocOpts->noc_sat_routing_log_search_progress = Options.noc_sat_routing_log_search_progress;
     NocOpts->noc_placement_file_name = Options.noc_placement_file_name;
 
-    return;
+
+}
+
+static void SetupServerOpts(const t_options& Options, t_server_opts* ServerOpts) {
+    ServerOpts->is_server_mode_enabled = Options.is_server_mode_enabled;
+    ServerOpts->port_num = Options.server_port_num;
 }
 
 static void find_ipin_cblock_switch_index(const t_arch& Arch, int& wire_to_arch_ipin_switch, int& wire_to_arch_ipin_switch_between_dice) {

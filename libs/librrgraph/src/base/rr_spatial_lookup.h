@@ -42,7 +42,7 @@ class RRSpatialLookup {
      * @brief Returns the index of the specified routing resource node.  
      *
      *   @param layer specified which FPGA die the node is located at (e.g. multi-die(3D) FPGA)
-     *   @param (x, y) are the grid location within the FPGA
+     *   @param (x, y) is the grid location within the FPGA
      *   @param rr_type specifies the type of resource,
      *   @param ptc gives a unique number of resources of that type (e.g. CHANX) at that (layer,x,y).
      *
@@ -76,10 +76,33 @@ class RRSpatialLookup {
                        e_side side = NUM_SIDES) const;
 
     /**
+     * @brief Returns unique indices of the routing resource nodes in the bounds (xlow, ylow) to (xhigh, yhigh).
+     *
+     *   @param layer specifies which FPGA die the node is located at (e.g. multi-die(3D) FPGA)
+     *   @param (xlow, ylow) is the lower left corner of the grid location range to search within the FPGA
+     *   @param (xhigh, yhigh) is the top right corner of the grid location range to search within the FPGA
+     *   @param rr_type specifies the type of resource,
+     *   @param ptc gives a unique number of resources of that type (e.g. CHANX) at that (layer,x,y).
+     *
+     *   @return nodes A vector of unique nodes within the given bounds which meet the given parameters
+     *
+     * @note This function works by calling find_node() at the coordinates bounded by (xlow, ylow) to (xhigh, yhigh).
+     *
+     */
+    std::vector<RRNodeId> find_nodes_in_range(int layer,
+                                              int xlow,
+                                              int ylow,
+                                              int xhigh,
+                                              int yhigh,
+                                              t_rr_type type,
+                                              int ptc,
+                                              e_side side = NUM_SIDES) const;
+
+    /**
      * @brief Returns the indices of the specified routing resource nodes, representing routing tracks in a channel.  
      *
      *   @param layer specified which FPGA die the node is located at (e.g. multi-die(3D) FPGA)
-     *   @param (x, y) are the coordinate of the routing channel within the FPGA
+     *   @param (x, y) is the coordinate of the routing channel within the FPGA
      *   @param rr_type specifies the type of routing channel, either x-direction or y-direction
      *
      * @note 
@@ -128,18 +151,19 @@ class RRSpatialLookup {
                        e_side side = SIDES[0]);
 
     /**
-     * @brief Register a node in the fast look-up 
+     * @brief Register a node in the fast spatial lookup
      *
      * @note You must have a valid node id to register the node in the lookup
      *
      *   @param layer specified which FPGA die the node is located at (e.g. multi-die(3D) FPGA)
-     *   @param (x, y) are the coordinate of the node to be indexable in the fast look-up
+     *   @param (x, y) is the coordinate of the node to be indexable in the fast spatial lookup
      *   @param type is the type of a node
-     *   @param ptc is a feature number of a node, which can be
-     *     - the class number of a common SINK/SOURCE node of grid, 
-     *     - pin index in a tile when type is OPIN/IPIN
+     *   @param ptc is a feature number of a node, which can be<BR>
+     *     - the class number of a common SINK/SOURCE node of grid,<BR>
+     *     - pin index in a tile when type is OPIN/IPIN<BR>
      *     - track index in a routing channel when type is CHANX/CHANY
-     *   @param side is the side of node on the tile, applicable to OPIN/IPIN 
+     *   @param side is the side of node on the tile, applicable to OPIN/IPIN; it is ignored for
+     * other types, and hence has a default set
      *
      * @note a node added with this call will not create a node in the rr_graph_storage node list
      * You MUST add the node in the rr_graph_storage so that the node is valid  
@@ -160,17 +184,41 @@ class RRSpatialLookup {
                   e_side side = SIDES[0]);
 
     /**
-     * @brief Mirror the last dimension of a look-up, i.e., a list of nodes, from a source coordinate to 
+     * @brief Remove a node in the fast spatial lookup.
+     *
+     * @param layer specified which FPGA die the node is located at (e.g. multi-die(3D) FPGA)
+     * @param (x, y) is the coordinate of the node
+     * @param type is the type of a node
+     * @param ptc is a feature number of a node, which can be<BR>
+     *     - the class number of a common SINK/SOURCE node of grid,<BR>
+     *     - pin index in a tile when type is OPIN/IPIN<BR>
+     *     - track index in a routing channel when type is CHANX/CHANY
+     * @param side is the side of node on the tile, applicable to OPIN/IPIN; it is ignored for
+     * other types, and hence has a default set
+     *
+     * @return success Whether the node was removed successfully. If the function returns false,
+     * the node was not in the lookup at the indices provided.
+     */
+    bool remove_node(RRNodeId node,
+                     int layer,
+                     int x,
+                     int y,
+                     t_rr_type type,
+                     int ptc,
+                     e_side side = SIDES[0]);
+
+    /**
+     * @brief Mirror the last dimension of a look-up, i.e., a list of nodes, from a source coordinate to
      * a destination coordinate.
      *
-     * This function is mostly need by SOURCE and SINK nodes which are indexable in multiple locations.
+     * This function is mostly needed by SOURCE nodes which are indexable in multiple locations.
      * Considering a bounding box (layer, x, y)->(layer, x + width, y + height) of a multi-height and multi-width grid,
-     * SOURCE and SINK nodes are indexable in any location inside the boundry.
+     * SOURCE nodes are indexable in any location inside the boundary.
      *
-     * An example of usage: 
+     * An example of usage:
      *
      *
-     * ``` 
+     * ```
      *   // Create a empty lookup
      *   RRSpatialLookup rr_lookup;
      *   // Adding other nodes ...
@@ -181,21 +229,21 @@ class RRSpatialLookup {
      *                          TOP);
      * ```
      *
-     * @note currently this function only accepts SOURCE/SINK nodes. May unlock for the other types 
+     * @note currently this function only accepts SOURCE nodes. May unlock for the other types
      * depending on needs
      */
     /*
-     * TODO: Consider to make a high-level API to duplicate the nodes for large blocks. 
+     * TODO: Consider to make a high-level API to duplicate the nodes for large blocks.
      * Then this API can become a private one
-     * For example, 
+     * For example,
      *
      *
      * ```
      *   expand_nodes(source_coordinate, bounding_box_coordinate, type, side);
      * ```
      *
-     * Alternatively, we can rework the ``find_node()`` API so that we always search the lowest (x,y) 
-     * corner when dealing with large blocks. But this may require the data structure to be dependent 
+     * Alternatively, we can rework the ``find_node()`` API so that we always search the lowest (x,y)
+     * corner when dealing with large blocks. But this may require the data structure to be dependent
      * on DeviceGrid information (it needs to identify if a grid has height > 1 as well as width > 1)
      */
     void mirror_nodes(const int layer,

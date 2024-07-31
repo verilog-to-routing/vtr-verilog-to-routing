@@ -2,6 +2,7 @@
 #include "vtr_log.h"
 #include "rr_graph_builder.h"
 #include "vtr_time.h"
+#include "vtr_tokenizer.h"
 #include <queue>
 #include <random>
 //#include <algorithm>
@@ -41,8 +42,12 @@ void RRGraphBuilder::add_node_to_all_locs(RRNodeId node) {
     t_rr_type node_type = node_storage_.node_type(node);
     short node_ptc_num = node_storage_.node_ptc_num(node);
     short node_layer = node_storage_.node_layer(node);
+    short node_twist = node_storage_.node_ptc_twist(node);
+    int node_offset = 0;
     for (int ix = node_storage_.node_xlow(node); ix <= node_storage_.node_xhigh(node); ix++) {
         for (int iy = node_storage_.node_ylow(node); iy <= node_storage_.node_yhigh(node); iy++) {
+            node_ptc_num += node_twist * node_offset;
+            node_offset++;
             switch (node_type) {
                 case SOURCE:
                 case SINK:
@@ -231,6 +236,45 @@ std::vector<RREdgeId> RRGraphBuilder::node_in_edges(RRNodeId node) const {
         return std::vector<RREdgeId>();
     }
     return node_in_edges_[node];
+}
+
+void RRGraphBuilder::set_node_ptc_nums(RRNodeId node, const std::string& ptc_str) {
+    VTR_ASSERT(size_t(node) < node_storage_.size());
+    std::vector<std::string> ptc_tokens = vtr::StringToken(ptc_str).split(",");
+    VTR_ASSERT(ptc_tokens.size() >= 1);
+    set_node_ptc_num(node, std::stoi(ptc_tokens[0]));
+    if (ptc_tokens.size() > 1) {
+        VTR_ASSERT(size_t(node) < node_ptc_nums_.size());
+        node_ptc_nums_[node].resize(ptc_tokens.size());
+        for (size_t iptc = 0; iptc < ptc_tokens.size(); iptc++) {
+          node_ptc_nums_[node][iptc] = std::stoi(ptc_tokens[iptc]);
+        }
+    }
+}
+
+std::string RRGraphBuilder::node_ptc_nums_to_string(RRNodeId node) const {
+    if (node_ptc_nums_.empty()) {
+        return std::to_string(size_t(node_storage_.node_ptc_num(node)));
+//        VTR_LOG("Node ptc single: %d -> string %s\n", node_storage_.node_ptc_num(node), ret.c_str()); 
+    }
+    VTR_ASSERT(size_t(node) < node_ptc_nums_.size());
+    if (node_ptc_nums_[node].empty()) {
+        return std::to_string(size_t(node_storage_.node_ptc_num(node)));
+    }
+    std::string ret;
+    for (size_t iptc = 0; iptc < node_ptc_nums_[node].size(); iptc++) {
+        ret += std::to_string(size_t(node_ptc_nums_[node][iptc])) + ",";
+    }
+    /* Remove the last comma */
+    ret.pop_back();
+    return ret;
+}
+
+bool RRGraphBuilder::node_contain_multiple_ptc(RRNodeId node) const {
+    if (node_ptc_nums_.empty()) {
+        return false;
+    }
+    return node_ptc_nums_[node].size() > 1;
 }
 
 void RRGraphBuilder::add_node_track_num(RRNodeId node, vtr::Point<size_t> node_offset, short track_id) {

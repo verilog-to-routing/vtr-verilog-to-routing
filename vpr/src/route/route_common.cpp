@@ -1,44 +1,13 @@
-#include <cstdio>
-#include <ctime>
-#include <cmath>
-#include <algorithm>
-#include <vector>
-#include <iostream>
+/** @file Impls for more router utils */
 
-#include "route_tree.h"
-#include "vtr_assert.h"
-#include "vtr_util.h"
-#include "vtr_log.h"
-#include "vtr_digest.h"
-#include "vtr_memory.h"
-
-#include "vpr_types.h"
-#include "vpr_error.h"
-#include "vpr_utils.h"
-
-#include "stats.h"
-#include "globals.h"
-#include "route_export.h"
-#include "route_common.h"
-#include "route_parallel.h"
-#include "route_timing.h"
-#include "place_and_route.h"
-#include "rr_graph.h"
-#include "rr_graph2.h"
-#include "read_xml_arch_file.h"
-#include "draw.h"
-#include "echo_files.h"
 #include "atom_netlist_utils.h"
-
-#include "route_profiling.h"
-
-#include "timing_util.h"
-#include "RoutingDelayCalculator.h"
-#include "timing_info.h"
-#include "tatum/echo_writer.hpp"
-#include "binary_heap.h"
-#include "bucket.h"
+#include "connection_router_interface.h"
 #include "draw_global.h"
+#include "place_and_route.h"
+#include "route_common.h"
+#include "route_export.h"
+#include "rr_graph.h"
+#include "re_cluster_util.h"
 
 /*  The numbering relation between the channels and clbs is:				*
  *																	        *
@@ -69,8 +38,9 @@
  *            chan_width_y[0]        chan_width_y[1]                        *
  *                                                                          */
 
-/******************** Subroutines local to route_common.c *******************/
+/******************** Subroutines local to route_common.cpp *******************/
 static vtr::vector<ParentNetId, std::vector<RRNodeId>> load_net_rr_terminals(const RRGraphView& rr_graph,
+                                                                             const DeviceGrid& grid,
                                                                              const Netlist<>& net_list,
                                                                              bool is_flat);
 
@@ -107,7 +77,7 @@ void save_routing(vtr::vector<ParentNetId, vtr::optional<RouteTree>>& best_routi
     saved_clb_opins_used_locally = clb_opins_used_locally;
 }
 
-/* Empties route_ctx.current_rt and copies over best_routing onto it.
+/* Empties route_ctx.route_trees and copies over best_routing onto it.
  * Also restores the locally used opin data. */
 void restore_routing(vtr::vector<ParentNetId, vtr::optional<RouteTree>>& best_routing,
                      t_clb_opins_used& clb_opins_used_locally,
@@ -150,178 +120,7 @@ void get_serial_num(const Netlist<>& net_list) {
     VTR_LOG("Serial number (magic cookie) for the routing is: %d\n", serial_num);
 }
 
-void try_graph(int width_fac,
-               const t_router_opts& router_opts,
-               t_det_routing_arch* det_routing_arch,
-               std::vector<t_segment_inf>& segment_inf,
-               t_chan_width_dist chan_width_dist,
-               t_direct_inf* directs,
-               int num_directs,
-               bool is_flat) {
-    auto& device_ctx = g_vpr_ctx.mutable_device();
-
-    t_graph_type graph_type;
-    t_graph_type graph_directionality;
-    if (router_opts.route_type == GLOBAL) {
-        graph_type = GRAPH_GLOBAL;
-        graph_directionality = GRAPH_BIDIR;
-    } else {
-        graph_type = (det_routing_arch->directionality == BI_DIRECTIONAL ? GRAPH_BIDIR : GRAPH_UNIDIR);
-        /* Branch on tileable routing */
-        if (det_routing_arch->directionality == UNI_DIRECTIONAL && det_routing_arch->tileable) {
-            graph_type = GRAPH_UNIDIR_TILEABLE;
-        }
-        graph_directionality = (det_routing_arch->directionality == BI_DIRECTIONAL ? GRAPH_BIDIR : GRAPH_UNIDIR);
-    }
-
-    /* Set the channel widths */
-    t_chan_width chan_width = init_chan(width_fac, chan_width_dist, graph_directionality);
-
-    /* Free any old routing graph, if one exists. */
-    free_rr_graph();
-
-    /* Set up the routing resource graph defined by this FPGA architecture. */
-    int warning_count;
-    create_rr_graph(graph_type,
-                    device_ctx.physical_tile_types,
-                    device_ctx.grid,
-                    chan_width,
-                    det_routing_arch,
-                    segment_inf,
-                    router_opts,
-                    directs, num_directs,
-                    &warning_count,
-                    is_flat);
-}
-
-bool try_route(const Netlist<>& net_list,
-               int width_fac,
-               const t_router_opts& router_opts,
-               const t_analysis_opts& analysis_opts,
-               t_det_routing_arch* det_routing_arch,
-               std::vector<t_segment_inf>& segment_inf,
-               NetPinsMatrix<float>& net_delay,
-               std::shared_ptr<SetupHoldTimingInfo> timing_info,
-               std::shared_ptr<RoutingDelayCalculator> delay_calc,
-               t_chan_width_dist chan_width_dist,
-               t_direct_inf* directs,
-               int num_directs,
-               ScreenUpdatePriority first_iteration_priority,
-               bool is_flat) {
-    /* Attempts a routing via an iterated maze router algorithm.  Width_fac *
-     * specifies the relative width of the channels, while the members of   *
-     * router_opts determine the value of the costs assigned to routing     *
-     * resource node, etc.  det_routing_arch describes the detailed routing *
-     * architecture (connection and switch boxes) of the FPGA; it is used   *
-     * only if a DETAILED routing has been selected.                        */
-
-    auto& device_ctx = g_vpr_ctx.mutable_device();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-
-    t_graph_type graph_type;
-    t_graph_type graph_directionality;
-    if (router_opts.route_type == GLOBAL) {
-        graph_type = GRAPH_GLOBAL;
-        graph_directionality = GRAPH_BIDIR;
-    } else {
-        graph_type = (det_routing_arch->directionality == BI_DIRECTIONAL ? GRAPH_BIDIR : GRAPH_UNIDIR);
-        /* Branch on tileable routing */
-        if (det_routing_arch->directionality == UNI_DIRECTIONAL && det_routing_arch->tileable) {
-            graph_type = GRAPH_UNIDIR_TILEABLE;
-        }
-        graph_directionality = (det_routing_arch->directionality == BI_DIRECTIONAL ? GRAPH_BIDIR : GRAPH_UNIDIR);
-    }
-
-    /* Set the channel widths */
-    t_chan_width chan_width = init_chan(width_fac, chan_width_dist, graph_directionality);
-
-    /* Set up the routing resource graph defined by this FPGA architecture. */
-    int warning_count;
-
-    create_rr_graph(graph_type,
-                    device_ctx.physical_tile_types,
-                    device_ctx.grid,
-                    chan_width,
-                    det_routing_arch,
-                    segment_inf,
-                    router_opts,
-                    directs,
-                    num_directs,
-                    &warning_count,
-                    is_flat);
-
-    //Initialize drawing, now that we have an RR graph
-    init_draw_coords(width_fac);
-
-    bool success = true;
-
-    /* Allocate and load additional rr_graph information needed only by the router. */
-    alloc_and_load_rr_node_route_structs();
-
-    init_route_structs(net_list,
-                       router_opts.bb_factor,
-                       router_opts.has_choking_spot,
-                       is_flat);
-
-    if (net_list.nets().empty()) {
-        VTR_LOG_WARN("No nets to route\n");
-    }
-
-    if (router_opts.router_algorithm == PARALLEL) {
-        VTR_LOG("Confirming router algorithm: PARALLEL.\n");
-
-#ifdef VPR_USE_TBB
-        auto& atom_ctx = g_vpr_ctx.atom();
-
-        IntraLbPbPinLookup intra_lb_pb_pin_lookup(device_ctx.logical_block_types);
-        ClusteredPinAtomPinsLookup netlist_pin_lookup(cluster_ctx.clb_nlist, atom_ctx.nlist, intra_lb_pb_pin_lookup);
-
-        success = try_parallel_route(net_list,
-                                     *det_routing_arch,
-                                     router_opts,
-                                     analysis_opts,
-                                     segment_inf,
-                                     net_delay,
-                                     netlist_pin_lookup,
-                                     timing_info,
-                                     delay_calc,
-                                     first_iteration_priority,
-                                     is_flat);
-
-        profiling::time_on_fanout_analysis();
-#else
-        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "VPR was not compiled with TBB support required for parallel routing\n");
-#endif
-
-    } else { /* TIMING_DRIVEN route */
-        VTR_LOG("Confirming router algorithm: TIMING_DRIVEN.\n");
-        auto& atom_ctx = g_vpr_ctx.atom();
-
-        IntraLbPbPinLookup intra_lb_pb_pin_lookup(device_ctx.logical_block_types);
-        ClusteredPinAtomPinsLookup netlist_pin_lookup(cluster_ctx.clb_nlist, atom_ctx.nlist, intra_lb_pb_pin_lookup);
-        success = try_timing_driven_route(net_list,
-                                          *det_routing_arch,
-                                          router_opts,
-                                          analysis_opts,
-                                          segment_inf,
-                                          net_delay,
-                                          netlist_pin_lookup,
-                                          timing_info,
-                                          delay_calc,
-                                          first_iteration_priority,
-                                          is_flat);
-
-        profiling::time_on_fanout_analysis();
-    }
-
-    return (success);
-}
-
 bool feasible_routing() {
-    /* This routine checks to see if this is a resource-feasible routing.      *
-     * That is, are all rr_node capacity limitations respected?  It assumes    *
-     * that the occupancy arrays are up to date when it is called.             */
-
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     auto& route_ctx = g_vpr_ctx.routing();
@@ -335,7 +134,7 @@ bool feasible_routing() {
     return (true);
 }
 
-//Returns all RR nodes in the current routing which are congested
+/** Returns all RR nodes in the current routing which are congested */
 std::vector<RRNodeId> collect_congested_rr_nodes() {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
@@ -372,10 +171,9 @@ vtr::vector<RRNodeId, std::set<ClusterNetId>> collect_rr_node_nets() {
     return rr_node_nets;
 }
 
+/** Updates pathfinder's occupancy by either adding or removing the
+ * usage of a resource node. */
 void pathfinder_update_single_node_occupancy(RRNodeId inode, int add_or_sub) {
-    /* Updates pathfinder's occupancy by either adding or removing the
-     * usage of a resource node. */
-
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
     int occ = route_ctx.rr_node_route_inf[inode].occ() + add_or_sub;
@@ -384,17 +182,38 @@ void pathfinder_update_single_node_occupancy(RRNodeId inode, int add_or_sub) {
     VTR_ASSERT(occ >= 0);
 }
 
+/** This routine recomputes the acc_cost (accumulated congestion cost) of each
+ * routing resource for the pathfinder algorithm after all nets have been routed.
+ * It updates the accumulated cost to by adding in the number of extra signals
+ * sharing a resource right now (i.e. after each complete iteration) times acc_fac.
+ * THIS ROUTINE ASSUMES THE OCCUPANCY VALUES IN RR_NODE ARE UP TO DATE.
+ * This routine also creates a new overuse info for the current routing iteration. */
 void pathfinder_update_acc_cost_and_overuse_info(float acc_fac, OveruseInfo& overuse_info) {
-    /* This routine recomputes the acc_cost (accumulated congestion cost) of each       *
-     * routing resource for the pathfinder algorithm after all nets have been routed.   *
-     * It updates the accumulated cost to by adding in the number of extra signals      *
-     * sharing a resource right now (i.e. after each complete iteration) times acc_fac. *
-     * THIS ROUTINE ASSUMES THE OCCUPANCY VALUES IN RR_NODE ARE UP TO DATE.             *
-     * This routine also creates a new overuse info for the current routing iteration.  */
-
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     auto& route_ctx = g_vpr_ctx.mutable_routing();
+
+#ifdef VPR_USE_TBB
+    tbb::combinable<size_t> overused_nodes(0), total_overuse(0), worst_overuse(0);
+    tbb::parallel_for_each(rr_graph.nodes().begin(), rr_graph.nodes().end(), [&](RRNodeId rr_id) {
+        int overuse = route_ctx.rr_node_route_inf[rr_id].occ() - rr_graph.node_capacity(rr_id);
+
+        // If overused, update the acc_cost and add this node to the overuse info
+        // If not, do nothing
+        if (overuse > 0) {
+            route_ctx.rr_node_route_inf[rr_id].acc_cost += overuse * acc_fac;
+
+            ++overused_nodes.local();
+            total_overuse.local() += overuse;
+            worst_overuse.local() = std::max(worst_overuse.local(), size_t(overuse));
+        }
+    });
+
+    // Update overuse info
+    overuse_info.overused_nodes = overused_nodes.combine(std::plus<size_t>());
+    overuse_info.total_overuse = total_overuse.combine(std::plus<size_t>());
+    overuse_info.worst_overuse = worst_overuse.combine([](size_t a, size_t b) { return std::max(a, b); });
+#else
     size_t overused_nodes = 0, total_overuse = 0, worst_overuse = 0;
 
     for (const RRNodeId& rr_id : rr_graph.nodes()) {
@@ -415,6 +234,7 @@ void pathfinder_update_acc_cost_and_overuse_info(float acc_fac, OveruseInfo& ove
     overuse_info.overused_nodes = overused_nodes;
     overuse_info.total_overuse = total_overuse;
     overuse_info.worst_overuse = worst_overuse;
+#endif
 }
 
 /** Update pathfinder cost of all nodes rooted at rt_node, including rt_node itself */
@@ -423,20 +243,6 @@ void pathfinder_update_cost_from_route_tree(const RouteTreeNode& root, int add_o
     for (auto& node : root.all_nodes()) {
         pathfinder_update_single_node_occupancy(node.inode, add_or_sub);
     }
-}
-
-float update_pres_fac(float new_pres_fac) {
-    /* This routine should take the new value of the present congestion factor *
-     * and propagate it to all the relevant data fields in the vpr flow.       *
-     * Currently, it only updates the pres_fac used by the drawing functions   */
-#ifndef NO_GRAPHICS
-
-    // Only updates the drawing pres_fac if graphics is enabled
-    get_draw_state_vars()->pres_fac = new_pres_fac;
-
-#endif // NO_GRAPHICS
-
-    return new_pres_fac;
 }
 
 /* Call this before you route any nets. It frees any old route trees and
@@ -454,6 +260,7 @@ void init_route_structs(const Netlist<>& net_list,
 
     //Various look-ups
     route_ctx.net_rr_terminals = load_net_rr_terminals(device_ctx.rr_graph,
+                                                       device_ctx.grid,
                                                        net_list,
                                                        is_flat);
 
@@ -482,7 +289,6 @@ void reset_path_costs(const std::vector<RRNodeId>& visited_rr_nodes) {
     for (auto node : visited_rr_nodes) {
         route_ctx.rr_node_route_inf[node].path_cost = std::numeric_limits<float>::infinity();
         route_ctx.rr_node_route_inf[node].backward_path_cost = std::numeric_limits<float>::infinity();
-        route_ctx.rr_node_route_inf[node].prev_node = RRNodeId::INVALID();
         route_ctx.rr_node_route_inf[node].prev_edge = RREdgeId::INVALID();
     }
 }
@@ -509,35 +315,6 @@ float get_rr_cong_cost(RRNodeId inode, float pres_fac) {
         }
     }
     return (cost);
-}
-
-/* Mark all the SINKs of this net as targets by setting their target flags  *
- * to the number of times the net must connect to each SINK.  Note that     *
- * this number can occasionally be greater than 1 -- think of connecting   *
- * the same net to two inputs of an and-gate (and-gate inputs are logically *
- * equivalent, so both will connect to the same SINK).                      */
-void mark_ends(const Netlist<>& net_list, ParentNetId net_id) {
-    unsigned int ipin;
-    RRNodeId inode;
-
-    auto& route_ctx = g_vpr_ctx.mutable_routing();
-
-    for (ipin = 1; ipin < net_list.net_pins(net_id).size(); ipin++) {
-        inode = route_ctx.net_rr_terminals[net_id][ipin];
-        route_ctx.rr_node_route_inf[inode].target_flag++;
-    }
-}
-
-void mark_remaining_ends(ParentNetId net_id, const std::vector<int>& remaining_sinks) {
-    // like mark_ends, but only performs it for the remaining sinks of a net
-    RRNodeId inode;
-
-    auto& route_ctx = g_vpr_ctx.mutable_routing();
-
-    for (int sink_pin : remaining_sinks) {
-        inode = route_ctx.net_rr_terminals[net_id][sink_pin];
-        ++route_ctx.rr_node_route_inf[inode].target_flag;
-    }
 }
 
 //Calculates how many (and allocates space for) OPINs which must be reserved to
@@ -604,12 +381,9 @@ static t_clb_opins_used alloc_and_load_clb_opins_used_locally() {
     return (clb_opins_used_locally);
 }
 
-/*the trace lists are only freed after use by the timing-driven placer */
-/*Do not  free them after use by the router, since stats, and draw  */
-/*routines use the trace values */
+/* Frees the temporary storage needed only during the routing. The
+ * final routing result is not freed. */
 void free_route_structs() {
-    /* Frees the temporary storage needed only during the routing.  The  *
-     * final routing result is not freed.                                */
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
     if (route_ctx.route_bb.size() != 0) {
@@ -648,12 +422,10 @@ void reset_rr_node_route_structs() {
     for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes()) {
         auto& node_inf = route_ctx.rr_node_route_inf[rr_id];
 
-        node_inf.prev_node = RRNodeId::INVALID();
         node_inf.prev_edge = RREdgeId::INVALID();
         node_inf.acc_cost = 1.0;
         node_inf.path_cost = std::numeric_limits<float>::infinity();
         node_inf.backward_path_cost = std::numeric_limits<float>::infinity();
-        node_inf.target_flag = 0;
         node_inf.set_occ(0);
     }
 }
@@ -662,6 +434,7 @@ void reset_rr_node_route_structs() {
  * index of the SOURCE of the net and all the SINKs of the net [clb_nlist.nets()][clb_nlist.net_pins()].    *
  * Entry [inet][pnum] stores the rr index corresponding to the SOURCE (opin) or SINK (ipin) of the pin.     */
 static vtr::vector<ParentNetId, std::vector<RRNodeId>> load_net_rr_terminals(const RRGraphView& rr_graph,
+                                                                             const DeviceGrid& grid,
                                                                              const Netlist<>& net_list,
                                                                              bool is_flat) {
     vtr::vector<ParentNetId, std::vector<RRNodeId>> net_rr_terminals;
@@ -678,12 +451,30 @@ static vtr::vector<ParentNetId, std::vector<RRNodeId>> load_net_rr_terminals(con
             t_block_loc blk_loc;
             blk_loc = get_block_loc(block_id, is_flat);
             int iclass = get_block_pin_class_num(block_id, pin_id, is_flat);
-            RRNodeId inode = rr_graph.node_lookup().find_node(blk_loc.loc.layer,
-                                                              blk_loc.loc.x,
-                                                              blk_loc.loc.y,
-                                                              (pin_count == 0 ? SOURCE : SINK), /* First pin is driver */
-                                                              iclass);
+            RRNodeId inode;
+            if (pin_count == 0) { /* First pin is driver */
+                inode = rr_graph.node_lookup().find_node(blk_loc.loc.layer,
+                                                         blk_loc.loc.x,
+                                                         blk_loc.loc.y,
+                                                         SOURCE,
+                                                         iclass);
+            } else {
+                vtr::Rect<int> tile_bb = grid.get_tile_bb({blk_loc.loc.x,
+                                                           blk_loc.loc.y,
+                                                           blk_loc.loc.layer});
+                std::vector<RRNodeId> sink_nodes = rr_graph.node_lookup().find_nodes_in_range(blk_loc.loc.layer,
+                                                                                              tile_bb.xmin(),
+                                                                                              tile_bb.ymin(),
+                                                                                              tile_bb.xmax(),
+                                                                                              tile_bb.ymax(),
+                                                                                              SINK,
+                                                                                              iclass);
+                VTR_ASSERT_SAFE(sink_nodes.size() == 1);
+                inode = sink_nodes[0];
+            }
+
             VTR_ASSERT(inode != RRNodeId::INVALID());
+
             net_rr_terminals[net_id][pin_count] = inode;
             pin_count++;
         }
@@ -741,7 +532,7 @@ load_net_terminal_groups(const RRGraphView& rr_graph,
                 /* TODO: net_terminal_groups cannot be fully RRNodeId - ified, because this code calls libarchfpga which 
                  * I think should not be aware of RRNodeIds. Fixing this requires some refactoring to lift the offending functions 
                  * into VPR. */
-                std::vector<int> new_group = {int(size_t(rr_node_num))};
+                std::vector<int> new_group = {int(rr_node_num)};
                 int new_group_num = net_terminal_groups[net_id].size();
                 net_terminal_groups[net_id].push_back(new_group);
                 net_terminal_group_num[net_id][pin_count] = new_group_num;
@@ -844,6 +635,8 @@ vtr::vector<ParentNetId, t_bb> load_route_bb(const Netlist<>& net_list,
         full_device_bounding_box.ymin = 0;
         full_device_bounding_box.xmax = device_ctx.grid.width() - 1;
         full_device_bounding_box.ymax = device_ctx.grid.height() - 1;
+        full_device_bounding_box.layer_min = 0;
+        full_device_bounding_box.layer_max = device_ctx.grid.get_num_layers() - 1;
     }
 
     auto nets = net_list.nets();
@@ -914,6 +707,8 @@ t_bb load_net_route_bb(const Netlist<>& net_list,
     int ymin = rr_graph.node_ylow(driver_rr);
     int xmax = rr_graph.node_xhigh(driver_rr);
     int ymax = rr_graph.node_yhigh(driver_rr);
+    int layer_min = rr_graph.node_layer(driver_rr);
+    int layer_max = rr_graph.node_layer(driver_rr);
 
     auto net_sinks = net_list.net_sinks(net_id);
     for (size_t ipin = 1; ipin < net_sinks.size() + 1; ++ipin) { //Start at 1 since looping through sinks
@@ -923,13 +718,22 @@ t_bb load_net_route_bb(const Netlist<>& net_list,
         VTR_ASSERT(rr_graph.node_xlow(sink_rr) <= rr_graph.node_xhigh(sink_rr));
         VTR_ASSERT(rr_graph.node_ylow(sink_rr) <= rr_graph.node_yhigh(sink_rr));
 
-        xmin = std::min<int>(xmin, rr_graph.node_xlow(sink_rr));
-        xmax = std::max<int>(xmax, rr_graph.node_xhigh(sink_rr));
-        ymin = std::min<int>(ymin, rr_graph.node_ylow(sink_rr));
-        ymax = std::max<int>(ymax, rr_graph.node_yhigh(sink_rr));
+        VTR_ASSERT(rr_graph.node_layer(sink_rr) >= 0);
+        VTR_ASSERT(rr_graph.node_layer(sink_rr) <= device_ctx.grid.get_num_layers() - 1);
+
+        vtr::Rect<int> tile_bb = device_ctx.grid.get_tile_bb({rr_graph.node_xlow(sink_rr),
+                                                              rr_graph.node_ylow(sink_rr),
+                                                              rr_graph.node_layer(sink_rr)});
+
+        xmin = std::min<int>(xmin, tile_bb.xmin());
+        xmax = std::max<int>(xmax, tile_bb.xmax());
+        ymin = std::min<int>(ymin, tile_bb.ymin());
+        ymax = std::max<int>(ymax, tile_bb.ymax());
+        layer_min = std::min<int>(layer_min, rr_graph.node_layer(sink_rr));
+        layer_max = std::max<int>(layer_max, rr_graph.node_layer(sink_rr));
     }
 
-    /* Want the channels on all 4 sides to be usuable, even if bb_factor = 0. */
+    /* Want the channels on all 4 sides to be usable, even if bb_factor = 0. */
     xmin -= 1;
     ymin -= 1;
 
@@ -942,6 +746,8 @@ t_bb load_net_route_bb(const Netlist<>& net_list,
     bb.xmax = std::min<int>(xmax + bb_factor, device_ctx.grid.width() - 1);
     bb.ymin = std::max<int>(ymin - bb_factor, 0);
     bb.ymax = std::min<int>(ymax + bb_factor, device_ctx.grid.height() - 1);
+    bb.layer_min = layer_min;
+    bb.layer_max = layer_max;
 
     return bb;
 }
@@ -1030,7 +836,7 @@ void reserve_locally_used_opins(HeapInterface* heap, float pres_fac, float acc_f
                 //Add the OPIN to the heap according to it's congestion cost
                 cost = get_rr_cong_cost(to_node, pres_fac);
                 add_node_to_heap(heap, route_ctx.rr_node_route_inf,
-                                 to_node, cost, RRNodeId::INVALID(), RREdgeId::INVALID(),
+                                 to_node, cost, RREdgeId::INVALID(),
                                  0., 0.);
             }
 
@@ -1126,8 +932,8 @@ void print_rr_node_route_inf() {
     for (size_t inode = 0; inode < route_ctx.rr_node_route_inf.size(); ++inode) {
         const auto& inf = route_ctx.rr_node_route_inf[RRNodeId(inode)];
         if (!std::isinf(inf.path_cost)) {
-            RRNodeId prev_node = inf.prev_node;
             RREdgeId prev_edge = inf.prev_edge;
+            RRNodeId prev_node = rr_graph.edge_src_node(prev_edge);
             auto switch_id = rr_graph.rr_nodes().edge_switch(prev_edge);
             VTR_LOG("rr_node: %d prev_node: %d prev_edge: %zu",
                     inode, prev_node, (size_t)prev_edge);
@@ -1162,8 +968,8 @@ void print_rr_node_route_inf_dot() {
     for (size_t inode = 0; inode < route_ctx.rr_node_route_inf.size(); ++inode) {
         const auto& inf = route_ctx.rr_node_route_inf[RRNodeId(inode)];
         if (!std::isinf(inf.path_cost)) {
-            RRNodeId prev_node = inf.prev_node;
             RREdgeId prev_edge = inf.prev_edge;
+            RRNodeId prev_node = rr_graph.edge_src_node(prev_edge);
             auto switch_id = rr_graph.rr_nodes().edge_switch(prev_edge);
 
             if (prev_node.is_valid() && prev_edge.is_valid()) {

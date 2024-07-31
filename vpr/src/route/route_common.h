@@ -1,14 +1,42 @@
-/************ Defines and types shared by all route files ********************/
 #pragma once
+
+/** @file Misc. router utils: some used by the connection router, some by other
+ * router files and some used globally. */
+
 #include <vector>
 #include "clustered_netlist.h"
-#include "vtr_vector.h"
-#include "heap_type.h"
 #include "rr_node_fwd.h"
 #include "router_stats.h"
 #include "globals.h"
 
-/******* Subroutines in route_common used only by other router modules ******/
+/** This routine checks to see if this is a resource-feasible routing.
+ * That is, are all rr_node capacity limitations respected?  It assumes
+ * that the occupancy arrays are up to date when it is called. */
+bool feasible_routing();
+
+/** Is \p inode inside this bounding box?
+ * In the context of the parallel router, an inode is inside a bounding box
+ * if its reference point is inside it, which is the drive point for a CHAN and
+ * (xlow, ylow, z) of anything else */
+inline bool inside_bb(RRNodeId inode, const t_bb& bb) {
+    auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
+
+    int x, y, z;
+    Direction dir = rr_graph.node_direction(inode);
+    if (dir == Direction::DEC) {
+        x = rr_graph.node_xhigh(inode);
+        y = rr_graph.node_yhigh(inode);
+        z = rr_graph.node_layer(inode);
+    } else {
+        x = rr_graph.node_xlow(inode);
+        y = rr_graph.node_ylow(inode);
+        z = rr_graph.node_layer(inode);
+    }
+
+    return x >= bb.xmin && x <= bb.xmax && y >= bb.ymin && y <= bb.ymax && z >= bb.layer_min && z <= bb.layer_max;
+}
+
 vtr::vector<ParentNetId, t_bb> load_route_bb(const Netlist<>& net_list,
                                              int bb_factor);
 
@@ -22,8 +50,6 @@ void pathfinder_update_acc_cost_and_overuse_info(float acc_fac, OveruseInfo& ove
 
 /** Update pathfinder cost of all nodes under root (including root) */
 void pathfinder_update_cost_from_route_tree(const RouteTreeNode& root, int add_or_sub);
-
-float update_pres_fac(float new_pres_fac);
 
 void reset_path_costs(const std::vector<RRNodeId>& visited_rr_nodes);
 
@@ -87,10 +113,6 @@ inline float get_single_rr_cong_cost(RRNodeId inode, float pres_fac) {
     return cost;
 }
 
-void mark_ends(const Netlist<>& net_list, ParentNetId net_id);
-
-void mark_remaining_ends(ParentNetId net_id, const std::vector<int>& remaining_sinks);
-
 void add_to_mod_list(RRNodeId inode, std::vector<RRNodeId>& modified_rr_node_inf);
 
 void init_route_structs(const Netlist<>& net_list,
@@ -137,7 +159,6 @@ t_heap* prepare_to_add_node_to_heap(
     const RouteInf& rr_node_route_inf,
     RRNodeId inode,
     float total_cost,
-    RRNodeId prev_node,
     RREdgeId prev_edge,
     float backward_path_cost,
     float R_upstream) {
@@ -148,7 +169,6 @@ t_heap* prepare_to_add_node_to_heap(
 
     hptr->index = inode;
     hptr->cost = total_cost;
-    hptr->set_prev_node(prev_node);
     hptr->set_prev_edge(prev_edge);
     hptr->backward_path_cost = backward_path_cost;
     hptr->R_upstream = R_upstream;
@@ -162,13 +182,12 @@ void add_node_to_heap(
     const RouteInf& rr_node_route_inf,
     RRNodeId inode,
     float total_cost,
-    RRNodeId prev_node,
     RREdgeId prev_edge,
     float backward_path_cost,
     float R_upstream) {
     t_heap* hptr = prepare_to_add_node_to_heap(
         heap,
-        rr_node_route_inf, inode, total_cost, prev_node,
+        rr_node_route_inf, inode, total_cost,
         prev_edge, backward_path_cost, R_upstream);
     if (hptr) {
         heap->add_to_heap(hptr);
@@ -184,13 +203,12 @@ void push_back_node(
     const RouteInf& rr_node_route_inf,
     RRNodeId inode,
     float total_cost,
-    RRNodeId prev_node,
     RREdgeId prev_edge,
     float backward_path_cost,
     float R_upstream) {
     t_heap* hptr = prepare_to_add_node_to_heap(
         heap,
-        rr_node_route_inf, inode, total_cost, prev_node, prev_edge,
+        rr_node_route_inf, inode, total_cost, prev_edge,
         backward_path_cost, R_upstream);
     if (hptr) {
         heap->push_back(hptr);

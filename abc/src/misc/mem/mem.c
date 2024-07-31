@@ -156,6 +156,22 @@ void Mem_FixedStop( Mem_Fixed_t * p, int fVerbose )
 
 /**Function*************************************************************
 
+  Synopsis    [Wrapper for Mem_FlexStop for use in Vec_AttAlloc]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+void Mem_FlexStop2( Mem_Flex_t * p )
+{
+     Mem_FlexStop( p, 0 );  
+}
+
+/**Function*************************************************************
+
   Synopsis    []
 
   Description []

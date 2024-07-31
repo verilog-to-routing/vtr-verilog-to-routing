@@ -14,7 +14,8 @@
  * retrieve information about them.  
  * 
  * The class also associates traffic flows to their logical source routers 
- * (start point) and logical sink routers (end point). This is useful if one wants to find traffic flows based on just the source or sink logical router.
+ * (start point) and logical sink routers (end point). This is useful if one
+ * wants to find traffic flows based on just the source or sink logical router.
  * The routes for the traffic flows are expected to change throughout placement
  * as routers will be moved within the chip. Therefore this class provides
  * a datastructure to keep track of which flows have been updated (re-routed).
@@ -153,7 +154,7 @@ class NocTrafficFlows {
      * @return int An integer that represents the number of unique traffic
      * flows within the NoC. 
      */
-    int get_number_of_traffic_flows(void) const;
+    int get_number_of_traffic_flows() const;
 
     /**
      * @brief Given a unique id of a traffic flow (t_noc_traffic_flow)
@@ -177,11 +178,11 @@ class NocTrafficFlows {
      * @param router_block_id A unique identifier that represents the
      * a router block in the clustered netlist. This router block will
      * be the source or sink router in the retrieved traffic flows.
-     * @return const std::vector<NocTrafficFlowId>* A vector of traffic 
+     * @return const std::vector<NocTrafficFlowId>& A vector of traffic
      * flows that have the input router block parameter as the source or sink
      * in the flow.
      */
-    const std::vector<NocTrafficFlowId>* get_traffic_flows_associated_to_router_block(ClusterBlockId router_block_id) const;
+    const std::vector<NocTrafficFlowId>& get_traffic_flows_associated_to_router_block(ClusterBlockId router_block_id) const;
 
     /**
      * @brief Gets the number of unique router blocks in the
@@ -191,7 +192,7 @@ class NocTrafficFlows {
      * @return int The total number of unique routers used in
      * the traffic flows provided by the user.
      */
-    int get_number_of_routers_used_in_traffic_flows(void);
+    int get_number_of_routers_used_in_traffic_flows();
 
     /**
      * @brief Gets the routed path of traffic flow. This cannot be
@@ -216,16 +217,25 @@ class NocTrafficFlows {
     std::vector<NocLinkId>& get_mutable_traffic_flow_route(NocTrafficFlowId traffic_flow_id);
 
     /**
+     * @brief Gets all routed paths for all traffic flows. This cannot be
+     * modified externally.
+     *
+     * @return vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>>& A reference
+     * to the provided container that includes all traffic flow routes.
+     */
+    const vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>>& get_all_traffic_flow_routes() const;
+
+    /**
      * @return a vector ([0..num_logical_router-1]) where each entry gives the clusterBlockId
      * of a logical NoC router. Used for fast lookups in the placer.
      */
-    const std::vector<ClusterBlockId>& get_router_clusters_in_netlist(void) const;
+    const std::vector<ClusterBlockId>& get_router_clusters_in_netlist() const;
 
     /**
      * @return provides access to all traffic flows' ids to allow a range-based
      * loop through all traffic flows, used in noc_place_utils.cpp functions.
      */
-    const std::vector<NocTrafficFlowId>& get_all_traffic_flow_id(void) const;
+    const std::vector<NocTrafficFlowId>& get_all_traffic_flow_id() const;
 
     // setters
 
@@ -255,7 +265,13 @@ class NocTrafficFlows {
      * at the sink router.
      * @param traffic_flow_priority The importance of a given traffic flow.
      */
-    void create_noc_traffic_flow(const std::string& source_router_module_name, const std::string& sink_router_module_name, ClusterBlockId source_router_cluster_id, ClusterBlockId sink_router_cluster_id, double traffic_flow_bandwidth, double traffic_flow_latency, int traffic_flow_priority);
+    void create_noc_traffic_flow(const std::string& source_router_module_name,
+                                 const std::string& sink_router_module_name,
+                                 ClusterBlockId source_router_cluster_id,
+                                 ClusterBlockId sink_router_cluster_id,
+                                 double traffic_flow_bandwidth,
+                                 double traffic_flow_latency,
+                                 int traffic_flow_priority);
 
     /**
      * @brief Copies the passed in router_cluster_id_in_netlist vector to the
@@ -278,14 +294,14 @@ class NocTrafficFlows {
      * 
      */
 
-    void finished_noc_traffic_flows_setup(void);
+    void finished_noc_traffic_flows_setup();
 
     /**
      * @brief Resets the class by clearing internal
      * datastructures.
      * 
      */
-    void clear_traffic_flows(void);
+    void clear_traffic_flows();
 
     /**
      * @brief Given a block from the clustered netlist, determine
@@ -315,6 +331,20 @@ class NocTrafficFlows {
      * traffic flow information   
      */
     void echo_noc_traffic_flows(char* file_name);
+
+
+    /**
+     * @brief Defines the latency constraint of a traffic flow
+     * when not provided by the user.
+     *
+     * This value has to be significantly larger than latencies
+     * seen within the NoC so that the net effect in the placement
+     * cost is 0 (the latency constraint has no effect since there is none).
+     * Since the traffic flow latencies will be in nanoseconds,
+     * setting this value to 1 second which is significantly larger
+     * than what will be seen in the NoC.
+     */
+    static constexpr double DEFAULT_MAX_TRAFFIC_FLOW_LATENCY = 1.;
 };
 
 #endif

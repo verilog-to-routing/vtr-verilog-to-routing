@@ -12,7 +12,7 @@
 
 /**
  * @file
- * @brief   This file include differents different geometry classes
+ * @brief   This file includes different geometry classes
  */
 
 namespace vtr {
@@ -95,6 +95,18 @@ class Point {
     ///@brief Swap x and y values
     void swap();
 
+    /// @brief + operator
+    Point<T> operator+(const Point<T>& rhs);
+
+    /// @brief - operator
+    Point<T> operator-(const Point<T>& rhs);
+
+    /// @brief += operator
+    Point<T>& operator+=(const Point<T>& rhs);
+
+    /// @brief -= operator
+    Point<T>& operator-=(const Point<T>& rhs);
+
   private:
     T x_;
     T y_;
@@ -147,6 +159,12 @@ class Rect {
     ///@brief Return the top right point
     Point<T> top_right() const;
 
+    /**
+     * @brief Return the bottom left and top right coordinates
+     * @return [xmin, ymin, xmax, ymax]
+     */
+    std::tuple<T, T, T, T> coordinates() const;
+
     ///@brief Return the rectangle width
     T width() const;
 
@@ -192,6 +210,12 @@ class Rect {
 
     ///@brief set ymax to a point
     void set_ymax(T ymax_val);
+
+    /// @brief += operator; translates all corners of the rectangle by rhs
+    Rect<T>& operator+=(const Point<T>& rhs);
+
+    /// @brief -= operator; translates all corners of the rectangle by -rhs
+    Rect<T>& operator-=(const Point<T>& rhs);
 
     ///@brief Equivalent to `*this = bounding_box(*this, other)`
     Rect<T>& expand_bounding_box(const Rect<T>& other);
@@ -305,7 +329,7 @@ class RectUnion {
     friend bool operator!= <>(const RectUnion<T>& lhs, const RectUnion<T>& rhs);
 
   private:
-    // Note that a union of rectanges may have holes and may not be contiguous
+    // Note that a union of rectangles may have holes and may not be contiguous
     std::vector<Rect<T>> rects_;
 };
 

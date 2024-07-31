@@ -60,6 +60,7 @@ grandfathered_files = [
     repo_path / "doc/_exts/rrgraphdomain/__init__.py",
     repo_path / "doc/_exts/sdcdomain/__init__.py",
     repo_path / "doc/_exts/archdomain/__init__.py",
+    repo_path / "doc/_exts/constraintsdomain/__init__.py",
     repo_path / "vpr/scripts/compare_timing_reports.py",
     repo_path / "vpr/scripts/profile/util.py",
     repo_path / "vpr/scripts/profile/parse_and_plot_detailed.py",
@@ -216,6 +217,9 @@ def main():
         cmd = ["pylint", path, "-s", "n"]
         if ignore_list:
             cmd.append("--disable=" + ",".join(ignore_list))
+        # Don't object to single-letter variable names (that's not in PEP8)
+        # see https://stackoverflow.com/q/21833872
+        cmd.append("--variable-rgx=[a-z][a-z0-9_]{0,40}$")
 
         # Run pylint and check output
         process = subprocess.run(cmd, check=False, stdout=subprocess.PIPE)

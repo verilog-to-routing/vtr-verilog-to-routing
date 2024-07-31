@@ -11,6 +11,18 @@
 %include "timing/vpr.route_min_chan_width.txt"
 %include "timing/vpr.route_relaxed_chan_width.txt"
 
-NoC_agg_bandwidth;vpr.out;NoC Placement Costs. noc_aggregate_bandwidth_cost: (.*), noc_latency_cost: .*, noc_latency_constraints_cost: .*,
-NoC_latency;vpr.out;NoC Placement Costs. noc_aggregate_bandwidth_cost: .*, noc_latency_cost: (.*), noc_latency_constraints_cost: .*,
-NoC_latency_constraints_cost;vpr.out;NoC Placement Costs. noc_aggregate_bandwidth_cost: .*, noc_latency_cost: .*, noc_latency_constraints_cost: (.*),
+NoC_agg_bandwidth;vpr.out;NoC Placement Costs. cost: .*, aggregate_bandwidth_cost: (.*), latency_cost: .*, n_met_latency_constraints: .*, latency_overrun_cost: .*, congestion_cost: .*, accum_congested_ratio: .*, n_congested_links: .*
+NoC_latency;vpr.out;NoC Placement Costs. cost: .*, aggregate_bandwidth_cost: .*, latency_cost: (.*), n_met_latency_constraints: .*, latency_overrun_cost: .*, congestion_cost: .*, accum_congested_ratio: .*, n_congested_links: .*
+NoC_n_met_latency_constraints;vpr.out;NoC Placement Costs. cost: .*, aggregate_bandwidth_cost: .*, latency_cost: .*, n_met_latency_constraints: (.*), latency_overrun_cost: .*, congestion_cost: .*, accum_congested_ratio: .*, n_congested_links: .*
+NoC_latency_overrun;vpr.out;NoC Placement Costs. cost: .*, aggregate_bandwidth_cost: .*, latency_cost: .*, n_met_latency_constraints: .*, latency_overrun_cost: (.*), congestion_cost: .*, accum_congested_ratio: .*, n_congested_links: .*
+NoC_congested_bw;vpr.out;NoC Placement Costs. cost: .*, aggregate_bandwidth_cost: .*, latency_cost: .*, n_met_latency_constraints: .*, latency_overrun_cost: .*, congestion_cost: (.*), accum_congested_ratio: .*, n_congested_links: .*
+NoC_congestion_ratio;vpr.out;NoC Placement Costs. cost: .*, aggregate_bandwidth_cost: .*, latency_cost: .*, n_met_latency_constraints: .*, latency_overrun_cost: .*, congestion_cost: .*, accum_congested_ratio: (.*), n_congested_links: .*
+NoC_n_congested_links;vpr.out;NoC Placement Costs. cost: .*, aggregate_bandwidth_cost: .*, latency_cost: .*, n_met_latency_constraints: .*, latency_overrun_cost: .*, congestion_cost: .*, accum_congested_ratio: .*, n_congested_links: (.*)
+SAT_agg_bandwidth;vpr.out;NoC Placement Costs after SAT routing. cost: .*, aggregate_bandwidth_cost: (.*), latency_cost: .*, n_met_latency_constraints: .*, latency_overrun_cost: .*, congestion_cost: .*, accum_congested_ratio: .*, n_congested_links: .*
+SAT_latency;vpr.out;NoC Placement Costs after SAT routing. cost: .*, aggregate_bandwidth_cost: .*, latency_cost: (.*), n_met_latency_constraints: .*, latency_overrun_cost: .*, congestion_cost: .*, accum_congested_ratio: .*, n_congested_links: .*
+SAT_n_met_latency_constraints;vpr.out;NoC Placement Costs after SAT routing. cost: .*, aggregate_bandwidth_cost: .*, latency_cost: .*, n_met_latency_constraints: (.*), latency_overrun_cost: .*, congestion_cost: .*, accum_congested_ratio: .*, n_congested_links: .*
+SAT_latency_overrun;vpr.out;NoC Placement Costs after SAT routing. cost: .*, aggregate_bandwidth_cost: .*, latency_cost: .*, n_met_latency_constraints: .*, latency_overrun_cost: (.*), congestion_cost: .*, accum_congested_ratio: .*, n_congested_links: .*
+SAT_congested_bw;vpr.out;NoC Placement Costs after SAT routing. cost: .*, aggregate_bandwidth_cost: .*, latency_cost: .*, n_met_latency_constraints: .*, latency_overrun_cost: .*, congestion_cost: (.*), accum_congested_ratio: .*, n_congested_links: .*
+SAT_congestion_ratio;vpr.out;NoC Placement Costs after SAT routing. cost: .*, aggregate_bandwidth_cost: .*, latency_cost: .*, n_met_latency_constraints: .*, latency_overrun_cost: .*, congestion_cost: .*, accum_congested_ratio: (.*), n_congested_links: .*
+SAT_n_congested_links;vpr.out;NoC Placement Costs after SAT routing. cost: .*, aggregate_bandwidth_cost: .*, latency_cost: .*, n_met_latency_constraints: .*, latency_overrun_cost: .*, congestion_cost: .*, accum_congested_ratio: .*, n_congested_links: (.*)
+

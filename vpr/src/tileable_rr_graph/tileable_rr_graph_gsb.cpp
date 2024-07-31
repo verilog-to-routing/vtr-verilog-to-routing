@@ -346,7 +346,7 @@ static void build_gsb_one_group_track_to_track_map(const RRGraphView& rr_graph,
                     continue;
                 }
                 /* Bypass those from_side is opposite to to_side if required */
-                if ((true == wire_opposite_side)
+                if (!wire_opposite_side
                     && (to_side_manager.get_opposite() == from_side)) {
                     continue;
                 }
@@ -441,6 +441,7 @@ t_track2track_map build_gsb_track_to_track_map(const RRGraphView& rr_graph,
                                                const int& Fs,
                                                const e_switch_block_type& sb_subtype,
                                                const int& subFs,
+                                               const bool& concat_wire,
                                                const bool& wire_opposite_side,
                                                const std::vector<t_segment_inf>& segment_inf) {
     t_track2track_map track2track_map; /* [0..gsb_side][0..chan_width][track_indices] */
@@ -513,7 +514,7 @@ t_track2track_map build_gsb_track_to_track_map(const RRGraphView& rr_graph,
     /* For Group 1: we build connections between end_tracks and start_tracks*/
     build_gsb_one_group_track_to_track_map(rr_graph, rr_gsb,
                                            sb_type, Fs,
-                                           true, /* End tracks should always to wired to start tracks */
+                                           concat_wire, /* End tracks should always to wired to start tracks */
                                            end_tracks, start_tracks,
                                            track2track_map);
 
@@ -622,7 +623,8 @@ RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
                                 const std::vector<t_segment_inf>& segment_inf_x,
                                 const std::vector<t_segment_inf>& segment_inf_y,
                                 const size_t& layer,
-                                const vtr::Point<size_t>& gsb_coordinate) {
+                                const vtr::Point<size_t>& gsb_coordinate,
+                                const bool& perimeter_cb) {
     /* Create an object to return */
     RRGSB rr_gsb;
 
@@ -657,7 +659,7 @@ RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
 
         switch (side) {
             case TOP: /* TOP = 0 */
-                /* For the bording, we should take special care */
+                /* For the border, we should take special care. */
                 if (gsb_coordinate.y() == grids.height() - 1) {
                     rr_gsb.clear_one_side(side_manager.get_side());
                     break;
@@ -687,7 +689,7 @@ RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
 
                 break;
             case RIGHT: /* RIGHT = 1 */
-                /* For the bording, we should take special care */
+                /* For the border, we should take special care. The rightmost column (W-1) does not have any right side routing channel. If perimeter connection block is not enabled, even the last second rightmost column (W-2) does not have any right side routing channel  */
                 if (gsb_coordinate.x() == grids.width() - 1) {
                     rr_gsb.clear_one_side(side_manager.get_side());
                     break;
@@ -717,8 +719,7 @@ RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
                                                                  OPIN, opin_grid_side[1]);
                 break;
             case BOTTOM: /* BOTTOM = 2*/
-                /* For the bording, we should take special care */
-                if (gsb_coordinate.y() == 0) {
+                if (!perimeter_cb && gsb_coordinate.y() == 0)  {
                     rr_gsb.clear_one_side(side_manager.get_side());
                     break;
                 }
@@ -747,8 +748,7 @@ RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
                                                                  OPIN, opin_grid_side[1]);
                 break;
             case LEFT: /* LEFT = 3 */
-                /* For the bording, we should take special care */
-                if (gsb_coordinate.x() == 0) {
+                if (!perimeter_cb && gsb_coordinate.x() == 0)  {
                     rr_gsb.clear_one_side(side_manager.get_side());
                     break;
                 }
@@ -844,7 +844,7 @@ RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
      * - The concept of top/bottom side of connection block in GSB domain:
      *
      *   ---------------+  +---------------------- ... ---------------------+  +----------------
-     *     Grid[x][y+1] |->| Y- Connection Block        Y- Connection Block |<-| Grid[x+1][y+1]
+     *     Grid[x][y]   |->| Y- Connection Block        Y- Connection Block |<-| Grid[x+1][y]
      *    RIGHT side    |  | LEFT side             ...  RIGHT side          |  | LEFT side
      *    --------------+  +---------------------- ... ---------------------+  +----------------
      *
@@ -868,10 +868,10 @@ RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
                 break;
             case RIGHT:
                 /* Consider the routing channel that is connected to the top side of the switch block */
-                chan_side = TOP;
+                chan_side = BOTTOM;
                 /* The input pins of the routing channel come from the left side of Grid[x+1][y+1] */
                 ix = rr_gsb.get_sb_x() + 1;
-                iy = rr_gsb.get_sb_y() + 1;
+                iy = rr_gsb.get_sb_y();
                 ipin_rr_node_grid_side = LEFT;
                 break;
             case BOTTOM:
@@ -884,10 +884,10 @@ RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
                 break;
             case LEFT:
                 /* Consider the routing channel that is connected to the top side of the switch block */
-                chan_side = TOP;
+                chan_side = BOTTOM;
                 /* The input pins of the routing channel come from the right side of Grid[x][y+1] */
                 ix = rr_gsb.get_sb_x();
-                iy = rr_gsb.get_sb_y() + 1;
+                iy = rr_gsb.get_sb_y();
                 ipin_rr_node_grid_side = RIGHT;
                 break;
             default:
@@ -937,11 +937,13 @@ void build_edges_for_one_tileable_rr_gsb(RRGraphBuilder& rr_graph_builder,
         for (size_t inode = 0; inode < rr_gsb.get_num_opin_nodes(gsb_side); ++inode) {
             const RRNodeId& opin_node = rr_gsb.get_opin_node(gsb_side, inode);
 
-            /* 1. create edges between OPINs and CHANX|CHANY, using opin2track_map */
-            /* add edges to the opin_node */
-            for (const RRNodeId& track_node : opin2track_map[gsb_side][inode]) {
-                rr_graph_builder.create_edge(opin_node, track_node, rr_node_driver_switches[track_node], false);
-                edge_count++;
+            for (size_t to_side = 0; to_side < opin2track_map[gsb_side][inode].size(); ++to_side) {
+                /* 1. create edges between OPINs and CHANX|CHANY, using opin2track_map */
+                /* add edges to the opin_node */
+                for (const RRNodeId& track_node : opin2track_map[gsb_side][inode][to_side]) {
+                    rr_graph_builder.create_edge(opin_node, track_node, rr_node_driver_switches[track_node], false);
+                    edge_count++;
+                }
             }
         }
 
@@ -1081,15 +1083,16 @@ static void build_gsb_one_opin_pin2track_map(const RRGraphView& rr_graph,
                                              const RRGSB& rr_gsb,
                                              const enum e_side& opin_side,
                                              const size_t& opin_node_id,
+                                             const enum e_side& chan_side,
                                              const std::vector<int>& Fc,
                                              const size_t& offset,
                                              const std::vector<t_segment_inf>& segment_inf,
                                              t_pin2track_map& opin2track_map) {
     /* Get a list of segment_ids*/
     std::vector<RRSegmentId> seg_list = rr_gsb.get_chan_segment_ids(opin_side);
-    enum e_side chan_side = opin_side;
     size_t chan_width = rr_gsb.get_chan_width(chan_side);
     SideManager opin_side_manager(opin_side);
+    SideManager chan_side_manager(chan_side);
 
     for (size_t iseg = 0; iseg < seg_list.size(); ++iseg) {
         /* Get a list of node that have the segment id */
@@ -1143,7 +1146,7 @@ static void build_gsb_one_opin_pin2track_map(const RRGraphView& rr_graph,
             size_t actual_itrack = itrack % actual_track_list.size();
             size_t track_index = actual_track_list[actual_itrack];
             const RRNodeId& track_rr_node_index = rr_gsb.get_chan_node(chan_side, track_index);
-            opin2track_map[opin_side_index][opin_node_id].push_back(track_rr_node_index);
+            opin2track_map[opin_side_index][opin_node_id][chan_side_manager.to_size_t()].push_back(track_rr_node_index);
             /* update track counter */
             track_cnt++;
             /* Stop when we have enough Fc: this may lead to some tracks have zero drivers.
@@ -1271,7 +1274,8 @@ t_pin2track_map build_gsb_opin_to_track_map(const RRGraphView& rr_graph,
                                             const RRGSB& rr_gsb,
                                             const DeviceGrid& grids,
                                             const std::vector<t_segment_inf>& segment_inf,
-                                            const std::vector<vtr::Matrix<int>>& Fc_out) {
+                                            const std::vector<vtr::Matrix<int>>& Fc_out,
+                                            const bool& opin2all_sides) {
     t_pin2track_map opin2track_map;
     /* Resize the matrix */
     opin2track_map.resize(rr_gsb.get_num_sides());
@@ -1314,6 +1318,9 @@ t_pin2track_map build_gsb_opin_to_track_map(const RRGraphView& rr_graph,
                     continue;
                 }
             }
+            if (rr_gsb.get_sb_x() == grids.width() - 1 || rr_gsb.get_sb_y() == grids.height() - 1) {
+                skip_conn2track = true;
+            }
 
             if (true == skip_conn2track) {
                 continue;
@@ -1321,10 +1328,21 @@ t_pin2track_map build_gsb_opin_to_track_map(const RRGraphView& rr_graph,
             VTR_ASSERT(opin_Fc_out.size() == segment_inf.size());
 
             /* Build track2ipin_map for this IPIN */
-            build_gsb_one_opin_pin2track_map(rr_graph, rr_gsb, opin_side, inode, opin_Fc_out,
-                                             /* Give an offset for the first track that this ipin will connect to */
-                                             offset[side_manager.to_size_t()],
-                                             segment_inf, opin2track_map);
+            opin2track_map[side][inode].resize(rr_gsb.get_num_sides());
+            if (opin2all_sides) {
+                for (size_t track_side = 0; track_side < rr_gsb.get_num_sides(); ++track_side) {
+                    SideManager track_side_mgr(track_side);
+                    build_gsb_one_opin_pin2track_map(rr_graph, rr_gsb, opin_side, inode, track_side_mgr.get_side(), opin_Fc_out,
+                                                     /* Give an offset for the first track that this ipin will connect to */
+                                                     offset[side_manager.to_size_t()],
+                                                     segment_inf, opin2track_map);
+                }
+            } else {
+                build_gsb_one_opin_pin2track_map(rr_graph, rr_gsb, opin_side, inode, opin_side, opin_Fc_out,
+                                                 /* Give an offset for the first track that this ipin will connect to */
+                                                 offset[side_manager.to_size_t()],
+                                                 segment_inf, opin2track_map);
+            }
             /* update offset: aim to rotate starting tracks by 1*/
             offset[side_manager.to_size_t()] += 1;
         }
@@ -1345,7 +1363,6 @@ void build_direct_connections_for_one_gsb(const RRGraphView& rr_graph,
                                           const DeviceGrid& grids,
                                           const size_t& layer,
                                           const vtr::Point<size_t>& from_grid_coordinate,
-                                          const RRSwitchId& delayless_switch,
                                           const std::vector<t_direct_inf>& directs,
                                           const std::vector<t_clb_to_clb_directs>& clb_to_clb_directs) {
     VTR_ASSERT(directs.size() == clb_to_clb_directs.size());
@@ -1436,7 +1453,7 @@ void build_direct_connections_for_one_gsb(const RRGraphView& rr_graph,
 
                 /* add edges to the opin_node */
                 VTR_ASSERT(opin_node_id && ipin_node_id);
-                rr_graph_builder.create_edge(opin_node_id, ipin_node_id, delayless_switch, false);
+                rr_graph_builder.create_edge(opin_node_id, ipin_node_id, RRSwitchId(clb_to_clb_directs[i].switch_index), false);
             }
         }
     }

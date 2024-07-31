@@ -21,6 +21,7 @@
 #include "rr_graph_utils.h"
 #include "rr_graph.h"
 #include "rr_graph_area.h"
+#include "rr_graph_utils.h"
 #include "rr_graph2.h"
 #include "rr_graph_sbox.h"
 #include "rr_graph_timing_params.h"
@@ -327,14 +328,14 @@ static void add_intra_tile_edges_rr_graph(RRGraphBuilder& rr_graph_builder,
  * @brief Add the intra-cluster edges
  * @param rr_graph_builder
  * @param num_collapsed_nodes Return the number of nodes that are removed due to collapsing
- * @param cluster_blk_id Cluser block id of the cluster that its edges are being added
+ * @param cluster_blk_id Cluster block id of the cluster that its edges are being added
  * @param i
  * @param j
  * @param cap Capacity number of the location that cluster is being mapped to
  * @param R_minW_nmos
  * @param R_minW_pmos
  * @param rr_edges_to_create
- * @param nodes_to_collapse Sotre the nodes in the cluster that needs to be collapsed
+ * @param nodes_to_collapse Store the nodes in the cluster that needs to be collapsed
  * @param grid
  * @param is_flat
  * @param load_rr_graph
@@ -398,7 +399,7 @@ static int add_edges_for_collapsed_nodes(RRGraphBuilder& rr_graph_builder,
                                          int j,
                                          bool load_rr_graph);
 /**
- * @note This funtion is used to add the fan-in edges of the given chain node to the chain's sink with the modified delay
+ * @note This function is used to add the fan-in edges of the given chain node to the chain's sink with the modified delay
  * @param rr_graph_builder
  * @param rr_edges_to_create
  * @param num_collapsed_pins
@@ -593,7 +594,7 @@ static void build_rr_graph(const t_graph_type graph_type,
                            t_chan_width nodes_per_chan,
                            const enum e_switch_block_type sb_type,
                            const int Fs,
-                           const std::vector<t_switchblock_inf> switchblocks,
+                           const std::vector<t_switchblock_inf>& switchblocks,
                            const std::vector<t_segment_inf>& segment_inf,
                            const int global_route_switch,
                            const int wire_to_arch_ipin_switch,
@@ -625,7 +626,7 @@ static void build_intra_cluster_rr_graph(const t_graph_type graph_type,
 void create_rr_graph(const t_graph_type graph_type,
                      const std::vector<t_physical_tile_type>& block_types,
                      const DeviceGrid& grid,
-                     const t_chan_width nodes_per_chan,
+                     const t_chan_width& nodes_per_chan,
                      t_det_routing_arch* det_routing_arch,
                      const std::vector<t_segment_inf>& segment_inf,
                      const t_router_opts& router_opts,
@@ -638,46 +639,46 @@ void create_rr_graph(const t_graph_type graph_type,
     bool echo_enabled = getEchoEnabled() && isEchoFileEnabled(E_ECHO_RR_GRAPH_INDEXED_DATA);
     const char* echo_file_name = getEchoFileName(E_ECHO_RR_GRAPH_INDEXED_DATA);
     bool load_rr_graph = !det_routing_arch->read_rr_graph_filename.empty();
-    if (load_rr_graph) {
-        if (device_ctx.read_rr_graph_filename != det_routing_arch->read_rr_graph_filename) {
-            free_rr_graph();
 
-            load_rr_file(&mutable_device_ctx.rr_graph_builder,
-                         &mutable_device_ctx.rr_graph,
-                         device_ctx.physical_tile_types,
-                         segment_inf,
-                         &mutable_device_ctx.rr_indexed_data,
-                         &mutable_device_ctx.rr_rc_data,
-                         grid,
-                         device_ctx.arch_switch_inf,
-                         graph_type,
-                         device_ctx.arch,
-                         &mutable_device_ctx.chan_width,
-                         router_opts.base_cost_type,
-                         device_ctx.virtual_clock_network_root_idx,
-                         &det_routing_arch->wire_to_rr_ipin_switch,
-                         &det_routing_arch->wire_to_arch_ipin_switch_between_dice,
-                         det_routing_arch->read_rr_graph_filename.c_str(),
-                         &det_routing_arch->read_rr_graph_filename,
-                         router_opts.read_rr_edge_metadata,
-                         router_opts.do_check_rr_graph,
-                         echo_enabled,
-                         echo_file_name,
-                         is_flat);
-            if (router_opts.reorder_rr_graph_nodes_algorithm != DONT_REORDER) {
-                mutable_device_ctx.rr_graph_builder.reorder_nodes(router_opts.reorder_rr_graph_nodes_algorithm,
-                                                                  router_opts.reorder_rr_graph_nodes_threshold,
-                                                                  router_opts.reorder_rr_graph_nodes_seed);
-            }
+    if (channel_widths_unchanged(device_ctx.chan_width, nodes_per_chan) && !device_ctx.rr_graph.empty()) {
+        //No change in channel width, so skip re-building RR graph
+        if (is_flat && !device_ctx.rr_graph_is_flat) {
+            VTR_LOG("RR graph channel widths unchanged, intra-cluster resources should be added...\n");
+        } else {
+            VTR_LOG("RR graph channel widths unchanged, skipping RR graph rebuild\n");
+            return;
         }
     } else {
-        if (channel_widths_unchanged(device_ctx.chan_width, nodes_per_chan) && !device_ctx.rr_graph.empty()) {
-            //No change in channel width, so skip re-building RR graph
-            if (is_flat && !device_ctx.rr_graph_is_flat) {
-                VTR_LOG("RR graph channel widths unchanged, intra-cluster resources should be added...\n");
-            } else {
-                VTR_LOG("RR graph channel widths unchanged, skipping RR graph rebuild\n");
-                return;
+        if (load_rr_graph) {
+            if (device_ctx.read_rr_graph_filename != det_routing_arch->read_rr_graph_filename) {
+                free_rr_graph();
+
+                load_rr_file(&mutable_device_ctx.rr_graph_builder,
+                             &mutable_device_ctx.rr_graph,
+                             device_ctx.physical_tile_types,
+                             segment_inf,
+                             &mutable_device_ctx.rr_indexed_data,
+                             &mutable_device_ctx.rr_rc_data,
+                             grid,
+                             device_ctx.arch_switch_inf,
+                             graph_type,
+                             device_ctx.arch,
+                             &mutable_device_ctx.chan_width,
+                             router_opts.base_cost_type,
+                             &det_routing_arch->wire_to_rr_ipin_switch,
+                             &det_routing_arch->wire_to_arch_ipin_switch_between_dice,
+                             det_routing_arch->read_rr_graph_filename.c_str(),
+                             &det_routing_arch->read_rr_graph_filename,
+                             router_opts.read_rr_edge_metadata,
+                             router_opts.do_check_rr_graph,
+                             echo_enabled,
+                             echo_file_name,
+                             is_flat);
+                if (router_opts.reorder_rr_graph_nodes_algorithm != DONT_REORDER) {
+                    mutable_device_ctx.rr_graph_builder.reorder_nodes(router_opts.reorder_rr_graph_nodes_algorithm,
+                                                                      router_opts.reorder_rr_graph_nodes_threshold,
+                                                                      router_opts.reorder_rr_graph_nodes_seed);
+                }
             }
         } else {
             free_rr_graph();
@@ -721,8 +722,11 @@ void create_rr_graph(const t_graph_type graph_type,
                                                directs, num_directs,
                                                &det_routing_arch->wire_to_rr_ipin_switch,
                                                det_routing_arch->shrink_boundary,                                  /* Shrink to the smallest boundary, no routing wires for empty zone */
+                                               det_routing_arch->perimeter_cb,                                  /* Now I/O or any programmable blocks on perimeter can have full cb access (both cbx and cby) */
                                                router_opts.trim_obs_channels || det_routing_arch->through_channel, /* Allow/Prohibit through tracks across multi-height and multi-width grids */
-                                               false,                                                              /* Do not allow passing tracks to be wired to the same routing channels */
+                                               det_routing_arch->opin2all_sides,                                   /* Allow opin of grid to directly drive routing tracks at all sides of a switch block */
+                                               det_routing_arch->concat_wire,                                      /* Allow end-point tracks to be wired to a starting point track on the opposite in a switch block. It means a wire can be continued in the same direction to another wire */
+                                               det_routing_arch->concat_pass_wire,                                 /* Allow passing tracks to be wired to the routing tracks in the same direction in a switch block. It means that a pass wire can jump in the same direction to another */
                                                Warnings);
             }
         }
@@ -752,6 +756,8 @@ void create_rr_graph(const t_graph_type graph_type,
 
     process_non_config_sets();
 
+    rr_set_sink_locs(device_ctx.rr_graph, mutable_device_ctx.rr_graph_builder, grid);
+
     verify_rr_node_indices(grid,
                            device_ctx.rr_graph,
                            device_ctx.rr_indexed_data,
@@ -762,7 +768,7 @@ void create_rr_graph(const t_graph_type graph_type,
 
     // Write out rr graph file if needed - Currently, writing the flat rr-graph is not supported since loading from a flat rr-graph is not supported.
     // When this function is called in any stage other than routing, the is_flat flag passed to this function is false, regardless of the flag passed
-    // through command line. So, the graph conrresponding to global resources will be created and written down to file if needed. During routing, if flat-routing
+    // through command line. So, the graph corresponding to global resources will be created and written down to file if needed. During routing, if flat-routing
     // is enabled, intra-cluster resources will be added to the graph, but this new bigger graph will not be written down.
     if (!det_routing_arch->write_rr_graph_filename.empty() && !is_flat) {
         write_rr_graph(&mutable_device_ctx.rr_graph_builder,
@@ -775,7 +781,6 @@ void create_rr_graph(const t_graph_type graph_type,
                        device_ctx.arch,
                        &mutable_device_ctx.chan_width,
                        det_routing_arch->write_rr_graph_filename.c_str(),
-                       device_ctx.virtual_clock_network_root_idx,
                        echo_enabled,
                        echo_file_name,
                        is_flat);
@@ -933,7 +938,7 @@ static void build_rr_graph(const t_graph_type graph_type,
                            t_chan_width nodes_per_chan,
                            const enum e_switch_block_type sb_type,
                            const int Fs,
-                           const std::vector<t_switchblock_inf> switchblocks,
+                           const std::vector<t_switchblock_inf>& switchblocks,
                            const std::vector<t_segment_inf>& segment_inf,
                            const int global_route_switch,
                            const int wire_to_arch_ipin_switch,
@@ -1000,16 +1005,16 @@ static void build_rr_graph(const t_graph_type graph_type,
         seg_details_y = alloc_and_load_global_route_seg_details(global_route_switch, &num_seg_details_y);
 
     } else {
-        /* Setup segments including distrubuting tracks and staggering.
+        /* Setup segments including distributing tracks and staggering.
          * If use_full_seg_groups is specified, max_chan_width may be
          * changed. Warning should be singled to caller if this happens. */
 
-        /* Need to setup segments along x & y axis seperately, due to different 
+        /* Need to setup segments along x & y axes separately, due to different
          * max_channel_widths and segment specifications. */
 
         size_t max_dim = std::max(grid.width(), grid.height()) - 2; //-2 for no perim channels
 
-        /*Get x & y segments seperately*/
+        /*Get x & y segments separately*/
         seg_details_x = alloc_and_load_seg_details(&max_chan_width_x,
                                                    max_dim, segment_inf_x,
                                                    use_full_seg_groups, directionality,
@@ -1075,7 +1080,7 @@ static void build_rr_graph(const t_graph_type graph_type,
         }
     }
 
-    /* get the number of 'sets' for each segment type -- unidirectial architectures have two tracks in a set, bidirectional have one */
+    /* get the number of 'sets' for each segment type -- unidirectional architectures have two tracks in a set, bidirectional have one */
     int total_sets = max_chan_width;
     int total_sets_x = max_chan_width_x;
     int total_sets_y = max_chan_width_y;
@@ -1130,7 +1135,7 @@ static void build_rr_graph(const t_graph_type graph_type,
                         "seg = %d (%s), Fc_out = %d, Fc_in = %d.\n",
                         type.name,
                         j,
-                        block_type_pin_index_to_name(&type, j).c_str(),
+                        block_type_pin_index_to_name(&type, j, is_flat).c_str(),
                         k,
                         segment_inf[k].name.c_str(),
                         Fc_out[i][j][k],
@@ -1333,9 +1338,10 @@ static void build_rr_graph(const t_graph_type graph_type,
         is_flat);
 
     // Verify no incremental node allocation.
-    /* AA: Note that in the case of dedicated networks, we are currently underestimating the additional node count due to the clock networks. 
-     * Thus, this below error is logged; it's not actually an error, the node estimation needs to get fixed for dedicated clock networks. */
-    if (rr_graph.num_nodes() > expected_node_count) {
+    // AA: Note that in the case of dedicated networks, we are currently underestimating the additional node count due to the clock networks. 
+    /* For now, the node count comparison is being skipped in the presence of clock networks.
+    * TODO: The node estimation needs to be fixed for dedicated clock networks. */
+    if (rr_graph.num_nodes() > expected_node_count && clock_modeling != DEDICATED_NETWORK) {
         VTR_LOG_ERROR("Expected no more than %zu nodes, have %zu nodes\n",
                       expected_node_count, rr_graph.num_nodes());
     }
@@ -1353,6 +1359,26 @@ static void build_rr_graph(const t_graph_type graph_type,
             if (rr_graph.node_type(RRNodeId(i)) == CHANY) {
                 int xlow = rr_graph.node_xlow(RRNodeId(i));
                 device_ctx.rr_graph_builder.set_node_capacity(RRNodeId(i), nodes_per_chan.y_list[xlow]);
+            }
+        }
+    }
+
+    /*Update rr_nodes ptc_twist_incr number if we are creating tileable graph*/
+    if (graph_type == GRAPH_UNIDIR_TILEABLE) {
+        device_ctx.rr_graph_builder.resize_ptc_twist_incr(num_rr_nodes);
+        for (int rr_node_id = 0; rr_node_id < num_rr_nodes; rr_node_id++) {
+            auto node_type = rr_graph.node_type(RRNodeId(rr_node_id));
+            auto node_dir = rr_graph.node_direction(RRNodeId(rr_node_id));
+            if (node_type != CHANX && node_type != CHANY) { //SRC/SINK/IPIN/OPIN
+                device_ctx.rr_graph_builder.set_node_ptc_twist_incr(RRNodeId(rr_node_id), 0);
+            } else {
+                //The current ptc twist increment number in UNDIR TILEABLE RRGraph is 2 and -2
+                //The assumption should be synced up with openFPGA branch
+                if (node_dir == Direction::INC) {
+                    device_ctx.rr_graph_builder.set_node_ptc_twist_incr(RRNodeId(rr_node_id), 2);
+                } else {
+                    device_ctx.rr_graph_builder.set_node_ptc_twist_incr(RRNodeId(rr_node_id), -2);
+                }
             }
         }
     }
@@ -1384,7 +1410,6 @@ static void build_rr_graph(const t_graph_type graph_type,
                    grid,
                    device_ctx.chan_width,
                    graph_type,
-                   device_ctx.virtual_clock_network_root_idx,
                    is_flat);
 
     /* Free all temp structs */
@@ -1455,8 +1480,6 @@ static void build_intra_cluster_rr_graph(const t_graph_type graph_type,
                                           is_flat,
                                           load_rr_graph);
 
-    /* AA: Note that in the case of dedicated networks, we are currently underestimating the additional node count due to the clock networks.
-     * Thus this below error is logged; it's not actually an error, the node estimation needs to get fixed for dedicated clock networks. */
     if (rr_graph.num_nodes() > expected_node_count) {
         VTR_LOG_ERROR("Expected no more than %zu nodes, have %zu nodes\n",
                       expected_node_count, rr_graph.num_nodes());
@@ -1479,7 +1502,6 @@ static void build_intra_cluster_rr_graph(const t_graph_type graph_type,
                    grid,
                    device_ctx.chan_width,
                    graph_type,
-                   device_ctx.virtual_clock_network_root_idx,
                    is_flat);
 }
 
@@ -2079,6 +2101,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
     num_edges = 0;
     /* Build channels */
     VTR_ASSERT(Fs % 3 == 0);
+
     for (int layer = 0; layer < grid.get_num_layers(); ++layer) {
         auto& device_ctx = g_vpr_ctx.device();
         /* Skip the current die if architecture file specifies that it doesn't require inter-cluster programmable resource routing */
@@ -2204,6 +2227,7 @@ static void alloc_and_load_intra_cluster_rr_graph(RRGraphBuilder& rr_graph_build
                                                   bool load_rr_graph) {
     t_rr_edge_info_set rr_edges_to_create;
     int num_edges = 0;
+
     for (int layer = 0; layer < grid.get_num_layers(); layer++) {
         for (int i = 0; i < (int)grid.width(); ++i) {
             for (int j = 0; j < (int)grid.height(); ++j) {
@@ -2532,7 +2556,7 @@ static void build_bidir_rr_opins(RRGraphBuilder& rr_graph_builder,
     if ((i == 0 && side != RIGHT)
         || (i == int(grid.width() - 1) && side != LEFT)
         || (j == 0 && side != TOP)
-        || (j == int(grid.width() - 1) && side != BOTTOM)) {
+        || (j == int(grid.height() - 1) && side != BOTTOM)) {
         return;
     }
 
@@ -3182,7 +3206,7 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
 }
 
 void uniquify_edges(t_rr_edge_info_set& rr_edges_to_create) {
-    std::sort(rr_edges_to_create.begin(), rr_edges_to_create.end());
+    std::stable_sort(rr_edges_to_create.begin(), rr_edges_to_create.end());
     rr_edges_to_create.erase(std::unique(rr_edges_to_create.begin(), rr_edges_to_create.end()), rr_edges_to_create.end());
 }
 
@@ -3692,6 +3716,11 @@ static void load_uniform_connection_block_pattern(vtr::NdMatrix<int, 6>& tracks_
         /* Bi-directional treats each track separately, uni-directional works with pairs of tracks */
         for (int j = 0; j < (Fc / group_size); ++j) {
             int max_chan_width = (((side == TOP) || (side == BOTTOM)) ? x_chan_width : y_chan_width);
+
+            // if the number of tracks we can assign is zero break from the loop
+            if (max_chan_width == 0) {
+                break;
+            }
             float step_size = (float)max_chan_width / (float)(Fc * num_phys_pins);
 
             VTR_ASSERT(Fc > 0);
@@ -4429,7 +4458,7 @@ static std::vector<bool> alloc_and_load_perturb_opins(const t_physical_tile_type
         }
 
         n = step_size / prime_factors[i];
-        n = n - (float)vtr::nint(n); /* fractinal part */
+        n = n - (float)vtr::nint(n); /* fractional part */
         if (fabs(n) < threshold) {
             perturb_opins[0] = true;
             break;
@@ -4476,7 +4505,7 @@ static RRNodeId pick_best_direct_connect_target_rr_node(const RRGraphView& rr_gr
                 }
 
                 //Include a partial unit of distance based on side alignment to ensure
-                //we preferr facing sides
+                //we prefer facing sides
                 if ((from_side == RIGHT && to_side == LEFT)
                     || (from_side == LEFT && to_side == RIGHT)
                     || (from_side == TOP && to_side == BOTTOM)

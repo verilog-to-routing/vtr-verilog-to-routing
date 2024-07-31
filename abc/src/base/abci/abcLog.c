@@ -227,7 +227,16 @@ int Abc_NtkReadLogFile( char * pFileName, Abc_Cex_t ** ppCex, int * pnFrames )
             ABC_FREE( pCex );
     }
     else
-        Vec_IntFree( vNums );
+    {                                                         
+        // corner case of seq circuit with no PIs             
+        int iFrameCex = (nFrames2 == -1) ? nFrames : nFrames2;
+        pCex = Abc_CexAlloc( 0, 0, iFrameCex + 1 );           
+        pCex->iFrame = iFrameCex;                             
+        pCex->iPo    = iPo;                                   
+        if ( ppCex )                                          
+            *ppCex = pCex;                                    
+        Vec_IntFree( vNums );                                 
+    }                                                         
     if ( pnFrames )
         *pnFrames = nFrames;
     return Status;

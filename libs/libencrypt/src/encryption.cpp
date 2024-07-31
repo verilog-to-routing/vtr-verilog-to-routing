@@ -1,110 +1,182 @@
 #include "encryption.h"
-#ifdef PASSPHRASE
-std::string passphrase_enc = PASSPHRASE; 
+
+#ifdef SESSION_KEY_SIZE
+unsigned sessionKeySize = SESSION_KEY_SIZE;
 #else
-std::string passphrase_enc = ""; // Set your PEM pass phrase here
+unsigned sessionKeySize = 16;
 #endif
+
+/**
+ * @brief Generates random session key
+ * 
+ * @param sessionKey A pointer to session key
+ * @param keySize Session key length (128 bits for AES-128)
+ */
+void Encryption::generateSessionKey(unsigned char* sessionKey, size_t keySize) {
+    if (RAND_bytes(sessionKey, keySize) != 1) {
+        std::cerr << "Error generating session key." << std::endl;
+        exit(1);
+    }
+}
+
 /**
  * @brief Loads a public key from a file.
  *
  * @param filename The name of the file containing the public key.
- * @return RSA* A pointer to the loaded public key.
+ * @return EVP_PKEY* A pointer to the loaded public key.
  *         Returns nullptr if the key file cannot be opened or there is an error reading the key.
  */
-RSA* Encryption::loadPublicKey(const std::string& filename) {
-
-    RSA* key = nullptr;
+EVP_PKEY* Encryption::loadPublicKey(const std::string& filename) {
+    EVP_PKEY *key = nullptr;
     FILE* keyFile = fopen(filename.c_str(), "r");
     if (!keyFile) {
         std::cerr << "Unable to open key file: " << filename << std::endl;
         return nullptr;
     }
 
-    if (!PEM_read_RSA_PUBKEY(keyFile, &key, NULL, (void*)passphrase_enc.c_str())) {
-        std::cerr << "Error reading public key from file: " << filename << std::endl;
+    // Create a BIO object from the file
+    BIO* keyBio = BIO_new_fp(keyFile, BIO_NOCLOSE);
+        if (!keyBio) {
+        std::cerr << "Error creating BIO from file" << std::endl;
         fclose(keyFile);
         return nullptr;
     }
 
+    // Use PEM_read_bio_PUBKEY 
+    key = PEM_read_bio_PUBKEY(keyBio, nullptr, nullptr, nullptr);
+
+    BIO_free(keyBio);
     fclose(keyFile);
+    if (!key) {
+        std::cerr << "Error reading public key from file: " << filename << std::endl;
+        return nullptr;
+    }
     return key;
 }
 
 /**
- * @brief Encrypts a session key using the provided public key.
- *
- * @param key The public key used for encryption.
- * @return std::string The encrypted session key.
- *         Returns an empty string if there is an error generating or encrypting the session key.
+ * @brief 
+ * 
+ * @param sessionKey Key to be encrypted
+ * @param keySize Session key length
+ * @param publicKey The public key used for encryption
+ * @return std::string Encrypted session key
  */
-std::string Encryption::encryptSessionKey(RSA* key) {
-    unsigned char sessionKey[128];
-    if (!RAND_bytes(sessionKey, sizeof(sessionKey))) {
-        std::cerr << "Error generating session key" << std::endl;
+std::string Encryption::encryptSessionKey(std::vector<unsigned char>& sessionKey, EVP_PKEY* publicKey) {
+    EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new(publicKey, NULL);
+    if (!ctx) {
+        std::cerr << "Failed to create EVP_PKEY_CTX" << std::endl;
         return "";
     }
 
-    std::vector<unsigned char> encryptedSessionKey(RSA_size(key));
-    if (RSA_public_encrypt(sizeof(sessionKey), sessionKey, encryptedSessionKey.data(), key, RSA_PKCS1_OAEP_PADDING) == -1) {
-        std::cerr << "Session key encryption error: " << ERR_error_string(ERR_get_error(), nullptr) << std::endl;
+    if (EVP_PKEY_encrypt_init(ctx) <= 0) {
+        std::cerr << "EVP_PKEY_encrypt_init failed" << std::endl;
+        EVP_PKEY_CTX_free(ctx);
         return "";
     }
 
-    return std::string(reinterpret_cast<char*>(encryptedSessionKey.data()), encryptedSessionKey.size());
+    if (EVP_PKEY_CTX_set_rsa_padding(ctx, RSA_PKCS1_OAEP_PADDING) <= 0) {
+        std::cerr << "EVP_PKEY_CTX_set_rsa_padding failed" << std::endl;
+        EVP_PKEY_CTX_free(ctx);
+        return "";
+    }
+
+    size_t outLen;
+    size_t keySize = sessionKey.size();
+    if (EVP_PKEY_encrypt(ctx, NULL, &outLen, sessionKey.data(), keySize) <= 0) {
+        std::cerr << "EVP_PKEY_encrypt (determine length) failed" << std::endl;
+        EVP_PKEY_CTX_free(ctx);
+        return "";
+    }
+
+    std::vector<unsigned char> out(outLen);
+    if (EVP_PKEY_encrypt(ctx, out.data(), &outLen, sessionKey.data(), keySize) <= 0) {
+        std::cerr << "EVP_PKEY_encrypt failed" << std::endl;
+        EVP_PKEY_CTX_free(ctx);
+        return "";
+    }
+
+    EVP_PKEY_CTX_free(ctx);
+
+    std::string base64EncryptedSessionKey = base64Encode(out.data(), out.size());
+    return base64EncryptedSessionKey;
 }
 
 /**
- * @brief Encrypts the given plaintext using the provided public key.
- *
+ * @brief 
+ * 
+ * @param buffer pointer to data to be encoded
+ * @param length data length
+ * @return std::string encoded data
+ */
+std::string Encryption::base64Encode(const unsigned char* buffer, size_t length) {
+    BIO* bio = BIO_new(BIO_s_mem());
+    BIO* b64 = BIO_new(BIO_f_base64());
+    BIO_set_flags(b64, BIO_FLAGS_BASE64_NO_NL);
+    BIO_push(b64, bio);
+    BIO_write(b64, buffer, length);
+    BIO_flush(b64);
+
+    BUF_MEM* bufferPtr;
+    BIO_get_mem_ptr(b64, &bufferPtr);
+
+    std::string encoded(bufferPtr->data, bufferPtr->length);
+    BIO_free_all(b64);
+    return encoded;
+}
+
+/**
+ * @brief 
+ * 
  * @param plaintext The plaintext to be encrypted.
- * @param key The public key used for encryption.
+ * @param sessionKey The session key used for encryption.
+ * @param iv Initialization vector.
  * @return std::string The encrypted ciphertext.
  *         Returns an empty string if there is an error during encryption.
  */
-std::string Encryption::encrypt(const std::string& plaintext, RSA* key) {
-    int rsaLen = RSA_size(key);
-    int blockLen = rsaLen - 42; // PKCS1_OAEP_PADDING reduces max data length
-    int len = plaintext.size();
-    std::string ciphertext;
-
-    for (int i = 0; i < len; i += blockLen) {
-        std::vector<unsigned char> buffer(rsaLen);
-        std::string substr = plaintext.substr(i, blockLen);
-
-        if (RSA_public_encrypt(substr.size(), reinterpret_cast<const unsigned char*>(substr.data()), buffer.data(), key, RSA_PKCS1_OAEP_PADDING) == -1) {
-            std::cerr << "Encryption error: " << ERR_error_string(ERR_get_error(), nullptr) << std::endl;
-            return "";
-        }
-
-        ciphertext.append(reinterpret_cast<char*>(buffer.data()), rsaLen);
+std::string Encryption::encryptData(const std::string& plaintext, std::vector<unsigned char>& sessionKey, const unsigned char* iv) {
+    EVP_CIPHER_CTX* ctx = EVP_CIPHER_CTX_new();
+    if (!ctx) {
+        std::cerr << "Failed to create EVP_CIPHER_CTX" << std::endl;
+        return "";
     }
 
-    return ciphertext;
-}
+    // Initialize the encryption operation with AES-128-CBC
+    if (EVP_EncryptInit_ex(ctx, EVP_aes_128_cbc(), NULL, sessionKey.data(), iv) != 1) {
+        std::cerr << "EVP_EncryptInit_ex failed" << std::endl;
+        EVP_CIPHER_CTX_free(ctx);
+        return "";
+    }
 
-/**
- * @brief Base64 encodes the given input string.
- *
- * @param input The input string to be encoded.
- * @return std::string The base64-encoded string.
- */
-std::string Encryption::base64_encode(const std::string& input) {
-    BIO* b64 = BIO_new(BIO_f_base64());
-    BIO_set_flags(b64, BIO_FLAGS_BASE64_NO_NL);
+    std::vector<unsigned char> ciphertext(plaintext.size() + EVP_CIPHER_block_size(EVP_aes_128_cbc()));
+    int len = 0;
+    int ciphertextLen = 0;
 
-    BIO* bmem = BIO_new(BIO_s_mem());
-    b64 = BIO_push(b64, bmem);
+    // Encrypt the data in chunks
+    if (EVP_EncryptUpdate(ctx, ciphertext.data(), &len, reinterpret_cast<const unsigned char*>(plaintext.data()), plaintext.size()) != 1) {
+        std::cerr << "EVP_EncryptUpdate failed" << std::endl;
+        EVP_CIPHER_CTX_free(ctx);
+        return "";
+    }
+    ciphertextLen += len;
 
-    BIO_write(b64, input.data(), input.size());
-    BIO_flush(b64);
+    // Finalize the encryption
+    if (EVP_EncryptFinal_ex(ctx, ciphertext.data() + ciphertextLen, &len) != 1) {
+        std::cerr << "EVP_EncryptFinal_ex failed" << std::endl;
+        EVP_CIPHER_CTX_free(ctx);
+        return "";
+    }
+    ciphertextLen += len;
+    ciphertext.resize(ciphertextLen);
 
-    BUF_MEM* bptr;
-    BIO_get_mem_ptr(b64, &bptr);
+    EVP_CIPHER_CTX_free(ctx);
 
-    std::string output(bptr->data, bptr->length);
-    BIO_free_all(b64);
+    // Combine IV and ciphertext into a single string
+    std::vector<unsigned char> combinedData(iv, iv + EVP_MAX_IV_LENGTH);
+    combinedData.insert(combinedData.end(), ciphertext.begin(), ciphertext.end());
 
-    return output;
+    // Base64 encode the combined data
+    return base64Encode(combinedData.data(), combinedData.size());
 }
 
 /**
@@ -116,9 +188,15 @@ std::string Encryption::base64_encode(const std::string& input) {
  */
 bool Encryption::encryptFile(const std::string& publicKeyFile, std::string& filePath ) {
 
-    // Load public key
-    RSA* publicKey = loadPublicKey(publicKeyFile);
+    OpenSSL_add_all_algorithms();
+    ERR_load_crypto_strings();
+    std::vector<unsigned char> sessionKey(sessionKeySize);
+    generateSessionKey(sessionKey.data(), sessionKey.size());
+
+    //load public key
+    EVP_PKEY* publicKey = loadPublicKey(publicKeyFile);
     if (!publicKey) {
+       std::cout << "Unable to open publicKey: " << filePath << std::endl;
         return false;
     }
 
@@ -126,7 +204,7 @@ bool Encryption::encryptFile(const std::string& publicKeyFile, std::string& file
     std::ifstream file(filePath, std::ios::binary);
     if (!file) {
         std::cerr << "Unable to open file: " << filePath << std::endl;
-        RSA_free(publicKey);
+        EVP_PKEY_free(publicKey);
         return false;
     }
 
@@ -134,29 +212,29 @@ bool Encryption::encryptFile(const std::string& publicKeyFile, std::string& file
     file.close();
 
     // Encrypt session key
-    std::string encryptedSessionKey = encryptSessionKey(publicKey);
+    std::string encryptedSessionKey = encryptSessionKey(sessionKey, publicKey);
     if (encryptedSessionKey.empty()) {
-        RSA_free(publicKey);
+        EVP_PKEY_free(publicKey);
         return false;
     }
 
-    // Base64 encode session key
-    std::string base64EncryptedSessionKey = base64_encode(encryptedSessionKey);
+    unsigned char iv[EVP_MAX_IV_LENGTH];
+    if (RAND_bytes(iv, sizeof(iv)) != 1) {
+        std::cerr << "Error generating IV." << std::endl;
+        EVP_PKEY_free(publicKey);
+        return false;
+    }
 
     // Encrypt file contents
-    std::string encrypted = encrypt(plaintext, publicKey);
-    RSA_free(publicKey);
-
-    // Base64 encode encrypted data
-    std::string base64Encrypted = base64_encode(encrypted);
+    std::string encrypted = encryptData(plaintext, sessionKey, iv);
 
     // Create an XML document for the encrypted data and session key
     pugi::xml_document encryptedDoc;
     auto root = encryptedDoc.append_child("EncryptedData");
     auto sessionKeyNode = root.append_child("SessionKey");
-    sessionKeyNode.append_child(pugi::node_pcdata).set_value(base64EncryptedSessionKey.c_str());
+    sessionKeyNode.append_child(pugi::node_pcdata).set_value(encryptedSessionKey.c_str());
     auto dataNode = root.append_child("Data");
-    dataNode.append_child(pugi::node_pcdata).set_value(base64Encrypted.c_str());
+    dataNode.append_child(pugi::node_pcdata).set_value(encrypted.c_str());
 
     
     size_t lastDotPos = filePath.find_last_of('.');
@@ -172,6 +250,8 @@ bool Encryption::encryptFile(const std::string& publicKeyFile, std::string& file
     encryptedDoc.save_file(encryptedFilePath.c_str(), "  ");
 
     std::cout << "File encrypted successfully. Encrypted file saved as: " << encryptedFilePath << std::endl;
+
+    EVP_PKEY_free(publicKey);
 
     return true;
 }

@@ -285,13 +285,13 @@ void arrangeQuoters_superFast_iVar5(unsigned* pInOut, unsigned* temp, int start,
     for(i=start-1;i>0;i-=shiftSize)
     {       
         tempPtr -= 1;       
-        memcpy(tempPtr, pInOut+i-iQ, blockSize);
+        memcpy(tempPtr, pInOut+i-iQ, (size_t)blockSize);
         tempPtr -= 1;
-        memcpy(tempPtr, pInOut+i-jQ, blockSize);
+        memcpy(tempPtr, pInOut+i-jQ, (size_t)blockSize);
         tempPtr -= 1;
-        memcpy(tempPtr, pInOut+i-kQ, blockSize);
+        memcpy(tempPtr, pInOut+i-kQ, (size_t)blockSize);
         tempPtr -= 1;
-        memcpy(tempPtr, pInOut+i-lQ, blockSize);        
+        memcpy(tempPtr, pInOut+i-lQ, (size_t)blockSize);        
     }   
     memcpy(pInOut, temp, start*sizeof(unsigned));
     updataInfo(iQ, jQ, 5, pCanonPerm, pCanonPhase);
@@ -462,13 +462,13 @@ void arrangeQuoters_superFast_moreThen5(word* pInOut, word* temp, int start,  in
     for(i=start-wordBlock;i>0;i-=shiftSize)
     {       
         tempPtr -= wordBlock;       
-        memcpy(tempPtr, pInOut+i-iQ*wordBlock, blockSize);
+        memcpy(tempPtr, pInOut+i-iQ*wordBlock, (size_t)blockSize);
         tempPtr -= wordBlock;
-        memcpy(tempPtr, pInOut+i-jQ*wordBlock, blockSize);
+        memcpy(tempPtr, pInOut+i-jQ*wordBlock, (size_t)blockSize);
         tempPtr -= wordBlock;
-        memcpy(tempPtr, pInOut+i-kQ*wordBlock, blockSize);
+        memcpy(tempPtr, pInOut+i-kQ*wordBlock, (size_t)blockSize);
         tempPtr -= wordBlock;
-        memcpy(tempPtr, pInOut+i-lQ*wordBlock, blockSize);      
+        memcpy(tempPtr, pInOut+i-lQ*wordBlock, (size_t)blockSize);      
     }   
     memcpy(pInOut, temp, start*sizeof(word));
     updataInfo(iQ, jQ, iVar, pCanonPerm, pCanonPhase);

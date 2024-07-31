@@ -91,7 +91,7 @@ Capability::Server::DispatchCallResult Capability::Server::internalUnimplemented
   return {
     KJ_EXCEPTION(UNIMPLEMENTED, "Requested interface not implemented.",
                  actualInterfaceName, requestedTypeId),
-    false
+    false, true
   };
 }
 
@@ -99,7 +99,7 @@ Capability::Server::DispatchCallResult Capability::Server::internalUnimplemented
     const char* interfaceName, uint64_t typeId, uint16_t methodId) {
   return {
     KJ_EXCEPTION(UNIMPLEMENTED, "Method not implemented.", interfaceName, typeId, methodId),
-    false
+    false, true
   };
 }
 
@@ -135,7 +135,7 @@ static inline uint firstSegmentSize(kj::Maybe<MessageSize> sizeHint) {
   }
 }
 
-class LocalResponse final: public ResponseHook, public kj::Refcounted {
+class LocalResponse final: public ResponseHook {
 public:
   LocalResponse(kj::Maybe<MessageSize> sizeHint)
       : message(firstSegmentSize(sizeHint)) {}
@@ -146,9 +146,9 @@ public:
 class LocalCallContext final: public CallContextHook, public ResponseHook, public kj::Refcounted {
 public:
   LocalCallContext(kj::Own<MallocMessageBuilder>&& request, kj::Own<ClientHook> clientRef,
-                   kj::Own<kj::PromiseFulfiller<void>> cancelAllowedFulfiller)
-      : request(kj::mv(request)), clientRef(kj::mv(clientRef)),
-        cancelAllowedFulfiller(kj::mv(cancelAllowedFulfiller)) {}
+                   ClientHook::CallHints hints, bool isStreaming)
+      : request(kj::mv(request)), clientRef(kj::mv(clientRef)), hints(hints),
+        isStreaming(isStreaming) {}
 
   AnyPointer::Reader getParams() override {
     KJ_IF_MAYBE(r, request) {
@@ -162,7 +162,7 @@ public:
   }
   AnyPointer::Builder getResults(kj::Maybe<MessageSize> sizeHint) override {
     if (response == nullptr) {
-      auto localResponse = kj::refcounted<LocalResponse>(sizeHint);
+      auto localResponse = kj::heap<LocalResponse>(sizeHint);
       responseBuilder = localResponse->message.getRoot<AnyPointer>();
       response = Response<AnyPointer>(responseBuilder.asReader(), kj::mv(localResponse));
     }
@@ -183,21 +183,30 @@ public:
   ClientHook::VoidPromiseAndPipeline directTailCall(kj::Own<RequestHook>&& request) override {
     KJ_REQUIRE(response == nullptr, "Can't call tailCall() after initializing the results struct.");
 
-    auto promise = request->send();
+    if (hints.onlyPromisePipeline) {
+      return {
+        kj::NEVER_DONE,
+        PipelineHook::from(request->sendForPipeline())
+      };
+    }
 
-    auto voidPromise = promise.then([this](Response<AnyPointer>&& tailResponse) {
-      response = kj::mv(tailResponse);
-    });
+    if (isStreaming) {
+      auto promise = request->sendStreaming();
+      return { kj::mv(promise), getDisabledPipeline() };
+    } else {
+      auto promise = request->send();
 
-    return { kj::mv(voidPromise), PipelineHook::from(kj::mv(promise)) };
+      auto voidPromise = promise.then([this](Response<AnyPointer>&& tailResponse) {
+        response = kj::mv(tailResponse);
+      });
+
+      return { kj::mv(voidPromise), PipelineHook::from(kj::mv(promise)) };
+    }
   }
   kj::Promise<AnyPointer::Pipeline> onTailCall() override {
     auto paf = kj::newPromiseAndFulfiller<AnyPointer::Pipeline>();
     tailCallPipelineFulfiller = kj::mv(paf.fulfiller);
     return kj::mv(paf.promise);
-  }
-  void allowCancellation() override {
-    cancelAllowedFulfiller->fulfill();
   }
   kj::Own<CallContextHook> addRef() override {
     return kj::addRef(*this);
@@ -208,39 +217,63 @@ public:
   AnyPointer::Builder responseBuilder = nullptr;  // only valid if `response` is non-null
   kj::Own<ClientHook> clientRef;
   kj::Maybe<kj::Own<kj::PromiseFulfiller<AnyPointer::Pipeline>>> tailCallPipelineFulfiller;
-  kj::Own<kj::PromiseFulfiller<void>> cancelAllowedFulfiller;
+  ClientHook::CallHints hints;
+  bool isStreaming;
 };
 
 class LocalRequest final: public RequestHook {
 public:
   inline LocalRequest(uint64_t interfaceId, uint16_t methodId,
-                      kj::Maybe<MessageSize> sizeHint, kj::Own<ClientHook> client)
+                      kj::Maybe<MessageSize> sizeHint, ClientHook::CallHints hints,
+                      kj::Own<ClientHook> client)
       : message(kj::heap<MallocMessageBuilder>(firstSegmentSize(sizeHint))),
-        interfaceId(interfaceId), methodId(methodId), client(kj::mv(client)) {}
+        interfaceId(interfaceId), methodId(methodId), hints(hints), client(kj::mv(client)) {}
 
   RemotePromise<AnyPointer> send() override {
+    bool isStreaming = false;
+    return sendImpl(isStreaming);
+  }
+
+  kj::Promise<void> sendStreaming() override {
+    // We don't do any special handling of streaming in RequestHook for local requests, because
+    // there is no latency to compensate for between the client and server in this case.  However,
+    // we record whether the call was streaming, so that it can be preserved as a streaming call
+    // if the local capability later resolves to a remote capability.
+    bool isStreaming = true;
+    return sendImpl(isStreaming).ignoreResult();
+  }
+
+  AnyPointer::Pipeline sendForPipeline() override {
     KJ_REQUIRE(message.get() != nullptr, "Already called send() on this request.");
 
-    auto cancelPaf = kj::newPromiseAndFulfiller<void>();
-
+    hints.onlyPromisePipeline = true;
+    bool isStreaming = false;
     auto context = kj::refcounted<LocalCallContext>(
-        kj::mv(message), client->addRef(), kj::mv(cancelPaf.fulfiller));
-    auto promiseAndPipeline = client->call(interfaceId, methodId, kj::addRef(*context));
+        kj::mv(message), client->addRef(), hints, isStreaming);
+    auto vpap = client->call(interfaceId, methodId, kj::addRef(*context), hints);
+    return AnyPointer::Pipeline(kj::mv(vpap.pipeline));
+  }
 
-    // We have to make sure the call is not canceled unless permitted.  We need to fork the promise
-    // so that if the client drops their copy, the promise isn't necessarily canceled.
-    auto forked = promiseAndPipeline.promise.fork();
+  const void* getBrand() override {
+    return nullptr;
+  }
 
-    // We daemonize one branch, but only after joining it with the promise that fires if
-    // cancellation is allowed.
-    forked.addBranch()
-        .attach(kj::addRef(*context))
-        .exclusiveJoin(kj::mv(cancelPaf.promise))
-        .detach([](kj::Exception&&) {});  // ignore exceptions
+  kj::Own<MallocMessageBuilder> message;
+
+private:
+  uint64_t interfaceId;
+  uint16_t methodId;
+  ClientHook::CallHints hints;
+  kj::Own<ClientHook> client;
+
+  RemotePromise<AnyPointer> sendImpl(bool isStreaming) {
+    KJ_REQUIRE(message.get() != nullptr, "Already called send() on this request.");
+
+    auto context = kj::refcounted<LocalCallContext>(kj::mv(message), client->addRef(), hints, isStreaming);
+    auto promiseAndPipeline = client->call(interfaceId, methodId, kj::addRef(*context), hints);
 
     // Now the other branch returns the response from the context.
-    auto promise = forked.addBranch().then(kj::mvCapture(context,
-        [](kj::Own<LocalCallContext>&& context) {
+    auto promise = promiseAndPipeline.promise.then([context=kj::mv(context)]() mutable {
       // force response allocation
       auto reader = context->getResults(MessageSize { 0, 0 }).asReader();
 
@@ -258,29 +291,12 @@ public:
       } else {
         return kj::mv(KJ_ASSERT_NONNULL(context->response));
       }
-    }));
+    });
 
     // We return the other branch.
     return RemotePromise<AnyPointer>(
         kj::mv(promise), AnyPointer::Pipeline(kj::mv(promiseAndPipeline.pipeline)));
   }
-
-  kj::Promise<void> sendStreaming() override {
-    // We don't do any special handling of streaming in RequestHook for local requests, because
-    // there is no latency to compensate for between the client and server in this case.
-    return send().ignoreResult();
-  }
-
-  const void* getBrand() override {
-    return nullptr;
-  }
-
-  kj::Own<MallocMessageBuilder> message;
-
-private:
-  uint64_t interfaceId;
-  uint16_t methodId;
-  kj::Own<ClientHook> client;
 };
 
 // =======================================================================================
@@ -385,65 +401,47 @@ public:
         promiseForClientResolution(promise.addBranch().fork()) {}
 
   Request<AnyPointer, AnyPointer> newCall(
-      uint64_t interfaceId, uint16_t methodId, kj::Maybe<MessageSize> sizeHint) override {
+      uint64_t interfaceId, uint16_t methodId, kj::Maybe<MessageSize> sizeHint,
+      CallHints hints) override {
     auto hook = kj::heap<LocalRequest>(
-        interfaceId, methodId, sizeHint, kj::addRef(*this));
+        interfaceId, methodId, sizeHint, hints, kj::addRef(*this));
     auto root = hook->message->getRoot<AnyPointer>();
     return Request<AnyPointer, AnyPointer>(root, kj::mv(hook));
   }
 
   VoidPromiseAndPipeline call(uint64_t interfaceId, uint16_t methodId,
-                              kj::Own<CallContextHook>&& context) override {
-    // This is a bit complicated.  We need to initiate this call later on.  When we initiate the
-    // call, we'll get a void promise for its completion and a pipeline object.  Right now, we have
-    // to produce a similar void promise and pipeline that will eventually be chained to those.
-    // The problem is, these are two independent objects, but they both depend on the result of
-    // one future call.
-    //
-    // So, we need to set up a continuation that will initiate the call later, then we need to
-    // fork the promise for that continuation in order to send the completion promise and the
-    // pipeline to their respective places.
-    //
-    // TODO(perf):  Too much reference counting?  Can we do better?  Maybe a way to fork
-    //   Promise<Tuple<T, U>> into Tuple<Promise<T>, Promise<U>>?
+                              kj::Own<CallContextHook>&& context, CallHints hints) override {
+    if (hints.noPromisePipelining) {
+      // Optimize for no pipelining.
+      auto promise = promiseForCallForwarding.addBranch()
+          .then([=,context=kj::mv(context)](kj::Own<ClientHook>&& client) mutable {
+        return client->call(interfaceId, methodId, kj::mv(context), hints).promise;
+      });
+      return VoidPromiseAndPipeline { kj::mv(promise), getDisabledPipeline() };
+    } else if (hints.onlyPromisePipeline) {
+      auto pipelinePromise = promiseForCallForwarding.addBranch()
+          .then([=,context=kj::mv(context)](kj::Own<ClientHook>&& client) mutable {
+        return client->call(interfaceId, methodId, kj::mv(context), hints).pipeline;
+      });
+      return VoidPromiseAndPipeline {
+        kj::NEVER_DONE,
+        kj::refcounted<QueuedPipeline>(kj::mv(pipelinePromise))
+      };
+    } else {
+      auto split = promiseForCallForwarding.addBranch()
+          .then([=,context=kj::mv(context)](kj::Own<ClientHook>&& client) mutable {
+        auto vpap = client->call(interfaceId, methodId, kj::mv(context), hints);
+        return kj::tuple(kj::mv(vpap.promise), kj::mv(vpap.pipeline));
+      }).split();
 
-    struct CallResultHolder: public kj::Refcounted {
-      // Essentially acts as a refcounted \VoidPromiseAndPipeline, so that we can create a promise
-      // for it and fork that promise.
+      kj::Promise<void> completionPromise = kj::mv(kj::get<0>(split));
+      kj::Promise<kj::Own<PipelineHook>> pipelinePromise = kj::mv(kj::get<1>(split));
 
-      VoidPromiseAndPipeline content;
-      // One branch of the fork will use content.promise, the other branch will use
-      // content.pipeline.  Neither branch will touch the other's piece.
+      auto pipeline = kj::refcounted<QueuedPipeline>(kj::mv(pipelinePromise));
 
-      inline CallResultHolder(VoidPromiseAndPipeline&& content): content(kj::mv(content)) {}
-
-      kj::Own<CallResultHolder> addRef() { return kj::addRef(*this); }
-    };
-
-    // Create a promise for the call initiation.
-    kj::ForkedPromise<kj::Own<CallResultHolder>> callResultPromise =
-        promiseForCallForwarding.addBranch().then(kj::mvCapture(context,
-        [=](kj::Own<CallContextHook>&& context, kj::Own<ClientHook>&& client){
-          return kj::refcounted<CallResultHolder>(
-              client->call(interfaceId, methodId, kj::mv(context)));
-        })).fork();
-
-    // Create a promise that extracts the pipeline from the call initiation, and construct our
-    // QueuedPipeline to chain to it.
-    auto pipelinePromise = callResultPromise.addBranch().then(
-        [](kj::Own<CallResultHolder>&& callResult){
-          return kj::mv(callResult->content.pipeline);
-        });
-    auto pipeline = kj::refcounted<QueuedPipeline>(kj::mv(pipelinePromise));
-
-    // Create a promise that simply chains to the void promise produced by the call initiation.
-    auto completionPromise = callResultPromise.addBranch().then(
-        [](kj::Own<CallResultHolder>&& callResult){
-          return kj::mv(callResult->content.promise);
-        });
-
-    // OK, now we can actually return our thing.
-    return VoidPromiseAndPipeline { kj::mv(completionPromise), kj::mv(pipeline) };
+      // OK, now we can actually return our thing.
+      return VoidPromiseAndPipeline { kj::mv(completionPromise), kj::mv(pipeline) };
+    }
   }
 
   kj::Maybe<ClientHook&> getResolved() override {
@@ -542,46 +540,62 @@ private:
 
 class LocalClient final: public ClientHook, public kj::Refcounted {
 public:
-  LocalClient(kj::Own<Capability::Server>&& serverParam)
-      : server(kj::mv(serverParam)) {
-    server->thisHook = this;
-    startResolveTask();
+  LocalClient(kj::Own<Capability::Server>&& serverParam, bool revocable = false) {
+    auto& serverRef = *server.emplace(kj::mv(serverParam));
+    serverRef.thisHook = this;
+    if (revocable) revoker.emplace();
+    startResolveTask(serverRef);
   }
   LocalClient(kj::Own<Capability::Server>&& serverParam,
-              _::CapabilityServerSetBase& capServerSet, void* ptr)
-      : server(kj::mv(serverParam)), capServerSet(&capServerSet), ptr(ptr) {
-    server->thisHook = this;
-    startResolveTask();
+              _::CapabilityServerSetBase& capServerSet, void* ptr,
+              bool revocable = false)
+      : capServerSet(&capServerSet), ptr(ptr) {
+    auto& serverRef = *server.emplace(kj::mv(serverParam));
+    serverRef.thisHook = this;
+    if (revocable) revoker.emplace();
+    startResolveTask(serverRef);
   }
 
   ~LocalClient() noexcept(false) {
-    server->thisHook = nullptr;
+    KJ_IF_MAYBE(s, server) {
+      s->get()->thisHook = nullptr;
+    }
+  }
+
+  void revoke(kj::Exception&& e) {
+    KJ_IF_MAYBE(s, server) {
+      KJ_ASSERT_NONNULL(revoker).cancel(e);
+      brokenException = kj::mv(e);
+      s->get()->thisHook = nullptr;
+      server = nullptr;
+    }
   }
 
   Request<AnyPointer, AnyPointer> newCall(
-      uint64_t interfaceId, uint16_t methodId, kj::Maybe<MessageSize> sizeHint) override {
+      uint64_t interfaceId, uint16_t methodId, kj::Maybe<MessageSize> sizeHint,
+      CallHints hints) override {
     KJ_IF_MAYBE(r, resolved) {
       // We resolved to a shortened path. New calls MUST go directly to the replacement capability
       // so that their ordering is consistent with callers who call getResolved() to get direct
       // access to the new capability. In particular it's important that we don't place these calls
       // in our streaming queue.
-      return r->get()->newCall(interfaceId, methodId, sizeHint);
+      return r->get()->newCall(interfaceId, methodId, sizeHint, hints);
     }
 
     auto hook = kj::heap<LocalRequest>(
-        interfaceId, methodId, sizeHint, kj::addRef(*this));
+        interfaceId, methodId, sizeHint, hints, kj::addRef(*this));
     auto root = hook->message->getRoot<AnyPointer>();
     return Request<AnyPointer, AnyPointer>(root, kj::mv(hook));
   }
 
   VoidPromiseAndPipeline call(uint64_t interfaceId, uint16_t methodId,
-                              kj::Own<CallContextHook>&& context) override {
+                              kj::Own<CallContextHook>&& context, CallHints hints) override {
     KJ_IF_MAYBE(r, resolved) {
       // We resolved to a shortened path. New calls MUST go directly to the replacement capability
       // so that their ordering is consistent with callers who call getResolved() to get direct
       // access to the new capability. In particular it's important that we don't place these calls
       // in our streaming queue.
-      return r->get()->call(interfaceId, methodId, kj::mv(context));
+      return r->get()->call(interfaceId, methodId, kj::mv(context), hints);
     }
 
     auto contextPtr = context.get();
@@ -603,22 +617,49 @@ public:
       }
     }).attach(kj::addRef(*this));
 
-    // We have to fork this promise for the pipeline to receive a copy of the answer.
-    auto forked = promise.fork();
+    if (hints.noPromisePipelining) {
+      // No need to set up pipelining..
 
-    auto pipelinePromise = forked.addBranch().then(kj::mvCapture(context->addRef(),
-        [=](kj::Own<CallContextHook>&& context) -> kj::Own<PipelineHook> {
+      // Make sure we release the params on return, since we would on the normal pipelining path.
+      // TODO(perf): Experiment with whether this is actually useful. It seems likely the params
+      //   will be released soon anyway, so maybe this is a waste?
+      promise = promise.then([context=kj::mv(context)]() mutable {
+        context->releaseParams();
+      });
+
+      // When we do apply pipelining, the use of `.fork()` has the side effect of eagerly
+      // evaluating the promise. To match the behavior here, we use `.eagerlyEvaluate()`.
+      // TODO(perf): Maybe we don't need to match behavior? It did break some tests but arguably
+      //   those tests are weird and not what a real program would do...
+      promise = promise.eagerlyEvaluate(nullptr);
+      return VoidPromiseAndPipeline { kj::mv(promise), getDisabledPipeline() };
+    }
+
+    kj::Promise<void> completionPromise = nullptr;
+    kj::Promise<void> pipelineBranch = nullptr;
+
+    if (hints.onlyPromisePipeline) {
+      pipelineBranch = kj::mv(promise);
+      completionPromise = kj::NEVER_DONE;
+    } else {
+      // We have to fork this promise for the pipeline to receive a copy of the answer.
+      auto forked = promise.fork();
+      pipelineBranch = forked.addBranch();
+      completionPromise = forked.addBranch().attach(context->addRef());
+    }
+
+    auto pipelinePromise = pipelineBranch
+        .then([=,context=context->addRef()]() mutable -> kj::Own<PipelineHook> {
           context->releaseParams();
           return kj::refcounted<LocalPipeline>(kj::mv(context));
-        }));
+        });
 
-    auto tailPipelinePromise = context->onTailCall().then([](AnyPointer::Pipeline&& pipeline) {
+    auto tailPipelinePromise = context->onTailCall()
+        .then([context = context->addRef()](AnyPointer::Pipeline&& pipeline) {
       return kj::mv(pipeline.hook);
     });
 
     pipelinePromise = pipelinePromise.exclusiveJoin(kj::mv(tailPipelinePromise));
-
-    auto completionPromise = forked.addBranch().attach(kj::mv(context));
 
     return VoidPromiseAndPipeline { kj::mv(completionPromise),
         kj::refcounted<QueuedPipeline>(kj::mv(pipelinePromise)) };
@@ -688,19 +729,30 @@ public:
   }
 
   kj::Maybe<int> getFd() override {
-    return server->getFd();
+    KJ_IF_MAYBE(s, server) {
+      return s->get()->getFd();
+    } else {
+      return nullptr;
+    }
   }
 
 private:
-  kj::Own<Capability::Server> server;
+  kj::Maybe<kj::Own<Capability::Server>> server;
   _::CapabilityServerSetBase* capServerSet = nullptr;
   void* ptr = nullptr;
 
   kj::Maybe<kj::ForkedPromise<void>> resolveTask;
   kj::Maybe<kj::Own<ClientHook>> resolved;
 
-  void startResolveTask() {
-    resolveTask = server->shortenPath().map([this](kj::Promise<Capability::Client> promise) {
+  kj::Maybe<kj::Canceler> revoker;
+  // If non-null, all promises must be wrapped in this revoker.
+
+  void startResolveTask(Capability::Server& serverRef) {
+    resolveTask = serverRef.shortenPath().map([this](kj::Promise<Capability::Client> promise) {
+      KJ_IF_MAYBE(r, revoker) {
+        promise = r->wrap(kj::mv(promise));
+      }
+
       return promise.then([this](Capability::Client&& cap) {
         auto hook = ClientHook::from(kj::mv(cap));
 
@@ -816,8 +868,24 @@ private:
       return kj::cp(*e);
     }
 
-    auto result = server->dispatchCall(interfaceId, methodId,
+    // `server` can't be null here since `brokenException` is null.
+    auto result = KJ_ASSERT_NONNULL(server)->dispatchCall(interfaceId, methodId,
                                        CallContext<AnyPointer, AnyPointer>(context));
+
+    KJ_IF_MAYBE(r, revoker) {
+      result.promise = r->wrap(kj::mv(result.promise));
+    }
+
+    if (!result.allowCancellation) {
+      // Make sure this call cannot be canceled by forking the promise and detaching one branch.
+      auto fork = result.promise.attach(kj::addRef(*this), context.addRef()).fork();
+      result.promise = fork.addBranch();
+      fork.addBranch().detach([](kj::Exception&&) {
+        // Exception from canceled call is silently discarded. The caller should have waited for
+        // it if they cared.
+      });
+    }
+
     if (result.isStreaming) {
       return result.promise
           .catch_([this](kj::Exception&& e) {
@@ -834,6 +902,19 @@ const uint LocalClient::BRAND = 0;
 
 kj::Own<ClientHook> Capability::Client::makeLocalClient(kj::Own<Capability::Server>&& server) {
   return kj::refcounted<LocalClient>(kj::mv(server));
+}
+
+kj::Own<ClientHook> Capability::Client::makeRevocableLocalClient(Capability::Server& server) {
+  auto result = kj::refcounted<LocalClient>(
+      kj::Own<Capability::Server>(&server, kj::NullDisposer::instance), true /* revocable */);
+  return result;
+}
+void Capability::Client::revokeLocalClient(ClientHook& hook) {
+  revokeLocalClient(hook, KJ_EXCEPTION(FAILED,
+      "capability was revoked (RevocableServer was destroyed)"));
+}
+void Capability::Client::revokeLocalClient(ClientHook& hook, kj::Exception&& e) {
+  kj::downcast<LocalClient>(hook).revoke(kj::mv(e));
 }
 
 kj::Own<ClientHook> newLocalPromiseClient(kj::Promise<kj::Own<ClientHook>>&& promise) {
@@ -906,6 +987,10 @@ public:
     return kj::cp(exception);
   }
 
+  AnyPointer::Pipeline sendForPipeline() override {
+    return AnyPointer::Pipeline(kj::refcounted<BrokenPipeline>(exception));
+  }
+
   const void* getBrand() override {
     return nullptr;
   }
@@ -923,12 +1008,13 @@ public:
         resolved(resolved), brand(brand) {}
 
   Request<AnyPointer, AnyPointer> newCall(
-      uint64_t interfaceId, uint16_t methodId, kj::Maybe<MessageSize> sizeHint) override {
+      uint64_t interfaceId, uint16_t methodId, kj::Maybe<MessageSize> sizeHint,
+      CallHints hints) override {
     return newBrokenRequest(kj::cp(exception), sizeHint);
   }
 
   VoidPromiseAndPipeline call(uint64_t interfaceId, uint16_t methodId,
-                              kj::Own<CallContextHook>&& context) override {
+                              kj::Own<CallContextHook>&& context, CallHints hints) override {
     return VoidPromiseAndPipeline { kj::cp(exception), kj::refcounted<BrokenPipeline>(exception) };
   }
 
@@ -991,6 +1077,27 @@ Request<AnyPointer, AnyPointer> newBrokenRequest(
   auto hook = kj::heap<BrokenRequest>(kj::mv(reason), sizeHint);
   auto root = hook->message.getRoot<AnyPointer>();
   return Request<AnyPointer, AnyPointer>(root, kj::mv(hook));
+}
+
+kj::Own<PipelineHook> getDisabledPipeline() {
+  class DisabledPipelineHook final: public PipelineHook {
+  public:
+    kj::Own<PipelineHook> addRef() override {
+      return kj::Own<PipelineHook>(this, kj::NullDisposer::instance);
+    }
+
+    kj::Own<ClientHook> getPipelinedCap(kj::ArrayPtr<const PipelineOp> ops) override {
+      return newBrokenCap(KJ_EXCEPTION(FAILED,
+          "caller specified noPromisePipelining hint, but then tried to pipeline"));
+    }
+
+    kj::Own<ClientHook> getPipelinedCap(kj::Array<PipelineOp>&& ops) override {
+      return newBrokenCap(KJ_EXCEPTION(FAILED,
+          "caller specified noPromisePipelining hint, but then tried to pipeline"));
+    }
+  };
+  static DisabledPipelineHook instance;
+  return instance.addRef();
 }
 
 // =======================================================================================

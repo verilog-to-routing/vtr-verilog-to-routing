@@ -259,7 +259,7 @@ int satoko_add_clause(solver_t *s, int *lits, int size)
     unsigned max_var;
     unsigned cref;
 
-    qsort((void *) lits, size, sizeof(unsigned), stk_uint_compare);
+    qsort((void *) lits, (size_t)size, sizeof(unsigned), stk_uint_compare);
     max_var = lit2var(lits[size - 1]);
     while (max_var >= vec_act_size(s->activity))
         satoko_add_variable(s, SATOKO_LIT_FALSE);

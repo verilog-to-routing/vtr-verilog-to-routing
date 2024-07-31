@@ -97,7 +97,7 @@ for (auto i: kj::indices(foo)) {
 
 `kj::downcast<T>(value)` is equivalent to `static_cast<T>(value)`, except that when compiled in debug mode with RTTI available, a runtime check (`dynamic_cast`) will be performed to verify that `value` really has type `T`. Use this in cases where you are casting a base type to a derived type, and you are confident that the object is actually an instance of the derived type. The debug-mode check will help you catch bugs.
 
-`kj::dynamicDowncastIfAvailable<T>(value)` is like `dynamic_cast<T*>(value)` with two differences. First, it returns `kj::Maybe<T&>` instead of `T*`. Second, if the program is compiled without RTTI enabled, the function always returns null. This function is intended to be used to implement optimizations, where the code can do something smarter if `value` happens to be of some specific type -- but if RTTI is not available, it is safe to skip the optimization. See [KJ idiomatic use of dynamic_cast](style-guide.md#dynamic_cast) for more background.
+`kj::dynamicDowncastIfAvailable<T>(value)` is like `dynamic_cast<T*>(value)` with two differences. First, it returns `kj::Maybe<T&>` instead of `T*`. Second, if the program is compiled without RTTI enabled, the function always returns null. This function is intended to be used to implement optimizations, where the code can do something smarter if `value` happens to be of some specific type -- but if RTTI is not available, it is safe to skip the optimization. See [KJ idiomatic use of dynamic_cast](../style-guide.md#dynamic_cast) for more background.
 
 ### Min/max, numeric limits, and special floats
 
@@ -120,7 +120,7 @@ These functions should almost never be used in high-level code. They are intende
 
 ## Ownership and memory management
 
-KJ style makes heavy use of [RAII](style-guide.md#raii-resource-acquisition-is-initialization). KJ-based code should never use `new` and `delete` directly. Instead, use the utilities in this section to manage memory in a RAII way.
+KJ style makes heavy use of [RAII](../style-guide.md#raii-resource-acquisition-is-initialization). KJ-based code should never use `new` and `delete` directly. Instead, use the utilities in this section to manage memory in a RAII way.
 
 ### Owned pointers, heap allocation, and disposers
 
@@ -135,7 +135,7 @@ However, a `kj::Own` does not necessarily refer to a heap object. A `kj::Own` is
 Some example uses of disposers include:
 
 * `kj::fakeOwn(ref)` returns a `kj::Own` that points to `ref` but doesn't actually destroy it. This is useful when you know for sure that `ref` will outlive the scope of the `kj::Own`, and therefore heap allocation is unnecessary. This is common in cases where, for example, the `kj::Own` is being passed into an object which itself will be destroyed before `ref` becomes invalid. It also makes sense when `ref` is actually a static value or global that lives forever.
-* `kj::refcounted<T>(args...)` allocates a `T` which uses reference counting. It returns a `kj::Own<T>` that represents one reference to the object. Additional references can be created by calling `kj::addRef(*ptr)`. The object is destroyed when no more `kj::Own`s exist pointing at it. Note that `T` must be a subclass of `kj::Refcounted`. If references may be shared across threads, then atomic refcounting must be used; use `kj::atomicRefcounted<T>(args...)` and inherit `kj::AtomicRefcounted`. Reference counting should be using sparingly; see [KJ idioms around reference counting](style-guide.md#reference-counting) for a discussion of when it should be used and why it is designed the way it is.
+* `kj::refcounted<T>(args...)` allocates a `T` which uses reference counting. It returns a `kj::Own<T>` that represents one reference to the object. Additional references can be created by calling `kj::addRef(*ptr)`. The object is destroyed when no more `kj::Own`s exist pointing at it. Note that `T` must be a subclass of `kj::Refcounted`. If references may be shared across threads, then atomic refcounting must be used; use `kj::atomicRefcounted<T>(args...)` and inherit `kj::AtomicRefcounted`. Reference counting should be using sparingly; see [KJ idioms around reference counting](../style-guide.md#reference-counting) for a discussion of when it should be used and why it is designed the way it is.
 * `kj::attachRef(ref, args...)` returns a `kj::Own` pointing to `ref` that actually owns `args...`, so that when the `kj::Own` goes out-of-scope, the other arguments are destroyed. Typically these arguments are themselves `kj::Own`s or other pass-by-move values that themselves own the object referenced by `ref`. `kj::attachVal(value, args...)` is similar, where `value` is a pass-by-move value rather than a reference; a copy of it will be allocated on the heap. Finally, `ownPtr.attach(args...)` returns a new `kj::Own` pointing to the same value that `ownPtr` pointed to, but such that `args...` are owned as well and will be destroyed together. Attachments are always destroyed after the thing they are attached to.
 * `kj::SpaceFor<T>` contains enough space for a value of type `T`, but does not construct the value until its `construct(args...)` method is called. That method returns an `kj::Own<T>`, whose disposer destroys the value. `kj::SpaceFor` is thus a safer way to perform manual construction compared to invoking `kj::ctor()` and `kj::dtor()`.
 
@@ -236,6 +236,8 @@ KJ_IF_MAYBE(j, maybeJ) {
 
 Note that `KJ_IF_MAYBE` forces you to think about the null case. This differs from `std::optional`, which can be dereferenced using `*`, resulting in undefined behavior if the value is null.
 
+Similarly, `map()` and `orDefault()` allow transforming and retrieving the stored value in a safe manner without complex control flows.
+
 Performance nuts will be interested to know that `kj::Maybe<T&>` and `kj::Maybe<Own<T>>` are both optimized such that they take no more space than their underlying pointer type, using a literal null pointer to indicate nullness. For other types of `T`, `kj::Maybe<T>` must maintain an extra boolean and so is somewhat larger than `T`.
 
 ### Variant types
@@ -278,7 +280,7 @@ typedef kj::OneOf<NotStarted, Running, Done> State;
 
 `kj::Function<ReturnType(ParamTypes...)>` represents a callable function with the given signature. A `kj::Function` can be initialized from any callable object, such as a lambda, function pointer, or anything with `operator()`. `kj::Function` is useful when you want to write an API that accepts a lambda callback, without defining the API itself as a template. `kj::Function` supports move semantics.
 
-`kj::ConstFunction` is like `kj::Function`, but is used to indicate that the function should be safe to call from multiple threads. (See [KJ idioms around constness and thread-safety](style-guide.md#constness).)
+`kj::ConstFunction` is like `kj::Function`, but is used to indicate that the function should be safe to call from multiple threads. (See [KJ idioms around constness and thread-safety](../style-guide.md#constness).)
 
 A special optimization type, `kj::FunctionParam`, is like `kj::Function` but designed to be used specifically as the type of a callback parameter to some other function where that callback is only called synchronously; i.e., the callback won't be called anymore after the outer function returns. Unlike `kj::Function`, a `kj::FunctionParam` can be constructed entirely on the stack, with no heap allocation.
 
@@ -300,7 +302,7 @@ KJ's tree-based containers use a b-tree design for better memory locality than t
 
 ## Debugging and Observability
 
-KJ believes that there is no such thing as bug-free code. Instead, we must expect that our code will go wrong, and try to extract as much information as possible when it does. To that end, KJ provides powerful assertion macros designed for observability. (Be sure also to read about [KJ's exception philosophy](style-guide.md#exceptions); this section describes the actual APIs involved.)
+KJ believes that there is no such thing as bug-free code. Instead, we must expect that our code will go wrong, and try to extract as much information as possible when it does. To that end, KJ provides powerful assertion macros designed for observability. (Be sure also to read about [KJ's exception philosophy](../style-guide.md#exceptions); this section describes the actual APIs involved.)
 
 ### Assertions
 
@@ -400,7 +402,7 @@ On Windows, two similar macros are available based on Windows API calling conven
 
 ### Alternate exception types
 
-As described in [KJ's exception philosophy](style-guide.md#exceptions), KJ supports a small set of exception types. Regular assertions throw `FAILED` exceptions. `KJ_SYSCALL` usually throws `FAILED`, but identifies certain error codes as `DISCONNECTED` or `OVERLOADED`. For example, `ECONNRESET` is clearly a `DISCONNECTED` exception.
+As described in [KJ's exception philosophy](../style-guide.md#exceptions), KJ supports a small set of exception types. Regular assertions throw `FAILED` exceptions. `KJ_SYSCALL` usually throws `FAILED`, but identifies certain error codes as `DISCONNECTED` or `OVERLOADED`. For example, `ECONNRESET` is clearly a `DISCONNECTED` exception.
 
 If you wish to manually construct and throw a different exception type, you may use `KJ_EXCEPTION`:
 
@@ -526,7 +528,7 @@ This section describes KJ APIs that control process execution and low-level inte
 
 `kj::Thread` creates a thread in which the lambda passed to `kj::Thread`'s constructor will be executed. `kj::Thread`'s destructor waits for the thread to exit before continuing, and rethrows any exception that had been thrown from the thread's main function -- unless the thread's `.detach()` method has been called, in which case `kj::Thread`'s destructor does nothing.
 
-`kj::MutexGuarded<T>` holds an instance of `T` that is protected by a mutex. In order to access the protected value, you must first create a lock. `.lockExclusive()` returns `kj::Locked<T>` which can be used to access the underlying value. `.lockShared()` returns `kj::Locked<const T>`, [using constness to enforce thread-safe read-only access](style-guide.md#constness) so that multiple threads can take the lock concurrently. In this way, KJ mutexes make it difficult to forget to take a lock before accessing the protected object.
+`kj::MutexGuarded<T>` holds an instance of `T` that is protected by a mutex. In order to access the protected value, you must first create a lock. `.lockExclusive()` returns `kj::Locked<T>` which can be used to access the underlying value. `.lockShared()` returns `kj::Locked<const T>`, [using constness to enforce thread-safe read-only access](../style-guide.md#constness) so that multiple threads can take the lock concurrently. In this way, KJ mutexes make it difficult to forget to take a lock before accessing the protected object.
 
 `kj::Locked<T>` has a method `.wait(cond)` which temporarily releases the lock and waits, taking the lock back as soon as `cond(value)` evaluates true. This provides a much cleaner and more readable interface than traditional conditional variables.
 
@@ -908,9 +910,11 @@ The opposite of forking promises is joining promises. There are two types of joi
 
 For an exclusive join, use `promise.exclusiveJoin(kj::mv(otherPromise))`. The two promises must return the same type. The result is a promise that returns whichever result is produced first, and cancels the other promise at that time. (To exclusively join more than two promises, call `.exclusiveJoin()` multiple times in a chain.)
 
-To perform an inclusive join, use `kj::joinPromises()`. This turns a `kj::Array<kj::Promise<T>>` into a `kj::Promise<kj::Array<T>>`. However, note that `kj::joinPromises()` has a couple common gotchas:
+To perform an inclusive join, use `kj::joinPromises()` or `kj::joinPromisesFailFast()`. These turn a `kj::Array<kj::Promise<T>>` into a `kj::Promise<kj::Array<T>>`. However, note that `kj::joinPromises()` has a couple common gotchas:
 * Trailing continuations on the promises passed to `kj::joinPromises()` are evaluated lazily after all the promises become ready. Use `.eagerlyEvaluate()` on each one to force trailing continuations to happen eagerly. (See earlier discussion under "Background Tasks".)
-* If any promise in the array rejects, the exception will be held until all other promises have completed (or rejected), and only then will the exception propagate. In practice we've found that most uses of `kj::joinPromises()` would prefer "exclusive" or "fail-fast" behavior in the case of an exception, but as of this writing we have not yet introduced a function that does this.
+* If any promise in the array rejects, the exception will be held until all other promises have completed (or rejected), and only then will the exception propagate. In practice we've found that most uses of `kj::joinPromises()` would prefer "exclusive" or "fail-fast" behavior in the case of an exception.
+
+`kj::joinPromisesFailFast()` addresses the gotchas described above: promise continuations are evaluated eagerly, and if any promise results in an exception, the join promise is immediately rejected with that exception.
 
 ### Threads
 
@@ -938,7 +942,40 @@ kj::Promise<int> promise =
 
 **CAUTION:** Fibers produce attractive-looking code, but have serious drawbacks. Every fiber must allocate a new call stack, which is typically rather large. The above example allocates a 64kb stack, which is the _minimum_ supported size. Some programs and libraries expect to be able to allocate megabytes of data on the stack. On modern Linux systems, a default stack size of 8MB is typical. Stack space is allocated lazily on page faults, but just setting up the memory mapping is much more expensive than a typical `malloc()`. If you create lots of fibers, you should use `kj::FiberPool` to reduce allocation costs -- but while this reduces allocation overhead, it will increase memory usage.
 
-Because of this, fibers should not be used just to make code look nice (C++20's `co_await`, which KJ will soon support, is a better way to do that). Instead, the main use case for fibers is to be able to call into existing libraries that are not designed to operate in an asynchronous way. For example, say you find a library that performs stream I/O, and lets you provide your own `read()`/`write()` implementations, but expects those implementations to operate in a blocking fashion. With fibers, you can use such a library within the asynchronous KJ event loop.
+Because of this, fibers should not be used just to make code look nice (C++20's `co_await`, described below, is a better way to do that). Instead, the main use case for fibers is to be able to call into existing libraries that are not designed to operate in an asynchronous way. For example, say you find a library that performs stream I/O, and lets you provide your own `read()`/`write()` implementations, but expects those implementations to operate in a blocking fashion. With fibers, you can use such a library within the asynchronous KJ event loop.
+
+### Coroutines
+
+C++20 brings us coroutines, which, like fibers, allow code to be written in a synchronous / blocking style while running inside the KJ event loop. Coroutines accomplish this with a different strategy than fibers: instead of running code on an alternate stack and switching stacks on suspension, coroutines save local variables and temporary objects in a heap-allocated "coroutine frame" and always unwind the stack on suspension.
+
+A C++ function is a KJ coroutine if it follows these two rules:
+- The function returns a `kj::Promise<T>`.
+- The function uses a `co_await` or `co_return` keyword in its implementation.
+
+```c++
+kj::Promise<int> aCoroutine() {
+  int i = co_await someAsyncFunc();
+  i += co_await anotherAsyncFunc();
+  co_return i;
+});
+
+// Call like any regular promise-returning function.
+auto promise = aCoroutine();
+```
+
+The promise returned by a coroutine owns the coroutine frame. If you destroy the promise, any objects alive in the frame will be destroyed, and the frame freed, thus cancellation works exactly as you'd expect.
+
+There are some caveats one should be aware of while writing coroutines:
+- Lambda captures **do not** live inside of the coroutine frame, meaning lambda objects must outlive any coroutine Promises they return, or else the coroutine will encounter dangling references to captured objects. This is a defect in the C++ standard: https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#Rcoro-capture. To safely use a capturing lambda as a coroutine, first wrap it using `kj::coCapture([captures]() { ... })`, then invoke that object.
+- Holding a mutex lock across a `co_await` is almost always a bad idea, with essentially the same problems as holding a lock while calling `promise.wait(waitScope)`. This would cause the coroutine to hold the lock for however many turns of the event loop is required to drive the coroutine to release the lock; if I/O is involved, this could cause significant problems. Additionally, a reentrant call to the coroutine on the same thread would deadlock. Instead, if a coroutine must temporarily hold a lock, always keep the lock in a new lexical scope without any `co_await`.
+- Attempting to define (and use) a variable-length array will cause a compile error, because the size of coroutine frames must be knowable at compile-time. The error message that clang emits for this, "Coroutines cannot handle non static allocas yet", suggests this may be relaxed in the future.
+
+As of this writing, KJ supports C++20 coroutines and Coroutines TS coroutines, the latter being an experimental precursor to C++20 coroutines. They are functionally the same thing, but enabled with different compiler/linker flags:
+
+- Enable C++20 coroutines by requesting that language standard from your compiler.
+- Enable Coroutines TS coroutines with `-fcoroutines-ts` in C++17 clang, and `/await` in MSVC.
+
+KJ prefers C++20 coroutines when both implementations are available.
 
 ### Unit testing tips
 
@@ -963,6 +1000,8 @@ KJ_ASSERT(promise.poll(waitScope));
 
 promise.wait(waitScope);
 ```
+
+Sometimes, you may need to ensure that some promise has completed that you don't have a reference to, so you can observe that some side effect has occurred. You can use `waitScope.poll()` to flush the event loop without waiting for a specific promise to complete.
 
 ## System I/O
 
@@ -1008,7 +1047,7 @@ KJ provides a time library in `kj/time.h` which uses the type system to enforce 
 
 `kj::Clock` is a simple interface whose `now()` method returns the current `kj::Date`. `kj::MonotonicClock` is a similar interface returning a `kj::TimePoint`, but with the guarantee that times returned always increase (whereas a `kj::Clock` might go "back in time" if the user manually modifies their system clock).
 
-`kj::systemCoarseCalendarClock()`, `kj::systemPreciseCalendarClock()`, `kj::systemCoarseMonotonicClock()`, `kj::systemPreciseMonotonicClock()` are global functions that return implementations of `kj::Clock` or `kJ::MonotonicClock` based on sytem time.
+`kj::systemCoarseCalendarClock()`, `kj::systemPreciseCalendarClock()`, `kj::systemCoarseMonotonicClock()`, `kj::systemPreciseMonotonicClock()` are global functions that return implementations of `kj::Clock` or `kJ::MonotonicClock` based on system time.
 
 `kj::Timer` provides an async (promise-based) interface to wait for a specified time to pass. A `kj::Timer` is provided via `kj::AsyncIoProvider`, constructed using `kj::setupAsyncIo()` (see earlier discussion on async I/O).
 

@@ -9,17 +9,26 @@
 
 static void get_bb_cost_for_net_excluding_block(ClusterNetId net_id, ClusterBlockId block_id, ClusterPinId moving_pin_id, const PlacerCriticalities* criticalities, t_bb_cost* coords, bool& skip_net);
 
-e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, e_move_type& /*move_type*/, t_logical_block_type& blk_type, float rlim, const t_placer_opts& placer_opts, const PlacerCriticalities* criticalities) {
+e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, t_propose_action& proposed_action, float rlim, const t_placer_opts& placer_opts, const PlacerCriticalities* criticalities) {
     //Find a movable block based on blk_type
-    ClusterBlockId b_from = propose_block_to_move(blk_type, false, NULL, NULL);
+    ClusterBlockId b_from = propose_block_to_move(placer_opts,
+                                                  proposed_action.logical_blk_type_index,
+                                                  false,
+                                                  nullptr,
+                                                  nullptr);
+    VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "Weighted Median Move Choose Block %d - rlim %f\n", size_t(b_from), rlim);
 
     if (!b_from) { //No movable block found
+        VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\tNo movable block found\n");
         return e_create_move::ABORT;
     }
 
     auto& place_ctx = g_vpr_ctx.placement();
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_move_ctx = g_placer_ctx.mutable_move();
+
+    int num_layers = g_vpr_ctx.device().grid.get_num_layers();
+
 
     t_pl_loc from = place_ctx.block_locs[b_from].loc;
     auto cluster_from_type = cluster_ctx.clb_nlist.block_type(b_from);
@@ -36,6 +45,8 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
     //reused to save allocation time
     place_move_ctx.X_coord.clear();
     place_move_ctx.Y_coord.clear();
+    place_move_ctx.layer_coord.clear();
+    std::vector<int> layer_blk_cnt(num_layers, 0);
 
     //true if the net is a feedback from the block to itself (all the net terminals are connected to the same block)
     bool skip_net;
@@ -66,14 +77,19 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
         place_move_ctx.X_coord.insert(place_move_ctx.X_coord.end(), ceil(coords.xmax.criticality * CRIT_MULT_FOR_W_MEDIAN), coords.xmax.edge);
         place_move_ctx.Y_coord.insert(place_move_ctx.Y_coord.end(), ceil(coords.ymin.criticality * CRIT_MULT_FOR_W_MEDIAN), coords.ymin.edge);
         place_move_ctx.Y_coord.insert(place_move_ctx.Y_coord.end(), ceil(coords.ymax.criticality * CRIT_MULT_FOR_W_MEDIAN), coords.ymax.edge);
+        place_move_ctx.layer_coord.insert(place_move_ctx.layer_coord.end(), ceil(coords.layer_min.criticality * CRIT_MULT_FOR_W_MEDIAN), coords.layer_min.edge);
+        place_move_ctx.layer_coord.insert(place_move_ctx.layer_coord.end(), ceil(coords.layer_max.criticality * CRIT_MULT_FOR_W_MEDIAN), coords.layer_max.edge);
     }
 
-    if ((place_move_ctx.X_coord.size() == 0) || (place_move_ctx.Y_coord.size() == 0))
+    if ((place_move_ctx.X_coord.empty()) || (place_move_ctx.Y_coord.empty()) || (place_move_ctx.layer_coord.empty())) {
+        VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\tMove aborted - X_coord or y_coord or layer_coord are empty\n");
         return e_create_move::ABORT;
+    }
 
     //calculate the weighted median region
-    std::sort(place_move_ctx.X_coord.begin(), place_move_ctx.X_coord.end());
-    std::sort(place_move_ctx.Y_coord.begin(), place_move_ctx.Y_coord.end());
+    std::stable_sort(place_move_ctx.X_coord.begin(), place_move_ctx.X_coord.end());
+    std::stable_sort(place_move_ctx.Y_coord.begin(), place_move_ctx.Y_coord.end());
+    std::stable_sort(place_move_ctx.layer_coord.begin(), place_move_ctx.layer_coord.end());
 
     if (place_move_ctx.X_coord.size() == 1) {
         limit_coords.xmin = place_move_ctx.X_coord[0];
@@ -91,16 +107,23 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
         limit_coords.ymax = place_move_ctx.Y_coord[floor((place_move_ctx.Y_coord.size() - 1) / 2) + 1];
     }
 
-    t_range_limiters range_limiters;
-    range_limiters.original_rlim = rlim;
-    range_limiters.dm_rlim = placer_opts.place_dm_rlim;
-    range_limiters.first_rlim = place_move_ctx.first_rlim;
+    if (place_move_ctx.layer_coord.size() == 1) {
+        limit_coords.layer_min = place_move_ctx.layer_coord[0];
+        limit_coords.layer_max = limit_coords.layer_min;
+    } else {
+        limit_coords.layer_min = place_move_ctx.layer_coord[floor((place_move_ctx.layer_coord.size() - 1) / 2)];
+        limit_coords.layer_max = place_move_ctx.layer_coord[floor((place_move_ctx.layer_coord.size() - 1) / 2) + 1];
+    }
+
+    t_range_limiters range_limiters{rlim,
+                                    place_move_ctx.first_rlim,
+                                    placer_opts.place_dm_rlim};
 
     t_pl_loc w_median_point;
     w_median_point.x = (limit_coords.xmin + limit_coords.xmax) / 2;
     w_median_point.y = (limit_coords.ymin + limit_coords.ymax) / 2;
-    // TODO: Currently, we don't move blocks between different types of layers
-    w_median_point.layer = from.layer;
+    w_median_point.layer = ((limit_coords.layer_min + limit_coords.layer_max) / 2);
+
     if (!find_to_loc_centroid(cluster_from_type, from, w_median_point, range_limiters, to, b_from)) {
         return e_create_move::ABORT;
     }
@@ -131,8 +154,8 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
  *      - criticalities: the timing criticalities of all connections
  */
 static void get_bb_cost_for_net_excluding_block(ClusterNetId net_id, ClusterBlockId, ClusterPinId moving_pin_id, const PlacerCriticalities* criticalities, t_bb_cost* coords, bool& skip_net) {
-    int pnum, x, y, xmin, xmax, ymin, ymax;
-    float xmin_cost, xmax_cost, ymin_cost, ymax_cost, cost;
+    int pnum, x, y, layer, xmin, xmax, ymin, ymax, layer_min, layer_max;
+    float xmin_cost, xmax_cost, ymin_cost, ymax_cost, layer_min_cost, layer_max_cost, cost;
 
     skip_net = true;
 
@@ -140,11 +163,16 @@ static void get_bb_cost_for_net_excluding_block(ClusterNetId net_id, ClusterBloc
     xmax = 0;
     ymin = 0;
     ymax = 0;
+    layer_min = 0;
+    layer_max = 0;
+
     cost = 0.0;
     xmin_cost = 0.0;
     xmax_cost = 0.0;
     ymin_cost = 0.0;
     ymax_cost = 0.0;
+    layer_min_cost = 0.;
+    layer_max_cost = 0.;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
@@ -156,6 +184,7 @@ static void get_bb_cost_for_net_excluding_block(ClusterNetId net_id, ClusterBloc
     int ipin;
     for (auto pin_id : cluster_ctx.clb_nlist.net_pins(net_id)) {
         bnum = cluster_ctx.clb_nlist.pin_block(pin_id);
+        layer = place_ctx.block_locs[bnum].loc.layer;
 
         if (pin_id != moving_pin_id) {
             skip_net = false;
@@ -189,6 +218,10 @@ static void get_bb_cost_for_net_excluding_block(ClusterNetId net_id, ClusterBloc
                 xmax_cost = cost;
                 ymax = y;
                 ymax_cost = cost;
+                layer_min = layer;
+                layer_min_cost = cost;
+                layer_max = layer;
+                layer_max_cost = cost;
                 is_first_block = false;
             } else {
                 if (x < xmin) {
@@ -206,6 +239,20 @@ static void get_bb_cost_for_net_excluding_block(ClusterNetId net_id, ClusterBloc
                     ymax = y;
                     ymax_cost = cost;
                 }
+
+                if (layer < layer_min) {
+                    layer_min = layer;
+                    layer_min_cost = cost;
+                } else if (layer > layer_max) {
+                    layer_max = layer;
+                    layer_max_cost = cost;
+                } else if (layer == layer_min) {
+                    if (cost > layer_min_cost)
+                        layer_min_cost = cost;
+                } else if (layer == layer_max) {
+                    if (cost > layer_max_cost)
+                        layer_max_cost = cost;
+                }
             }
         }
     }
@@ -215,4 +262,6 @@ static void get_bb_cost_for_net_excluding_block(ClusterNetId net_id, ClusterBloc
     coords->xmax = {xmax, xmax_cost};
     coords->ymin = {ymin, ymin_cost};
     coords->ymax = {ymax, ymax_cost};
+    coords->layer_min = {layer_min, layer_min_cost};
+    coords->layer_max = {layer_max, layer_max_cost};
 }

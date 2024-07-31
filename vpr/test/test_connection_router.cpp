@@ -1,6 +1,7 @@
 #include <tuple>
 #include "catch2/catch_test_macros.hpp"
 
+#include "route_net.h"
 #include "rr_graph_fwd.h"
 #include "vpr_api.h"
 #include "vpr_signal_handler.h"
@@ -34,6 +35,8 @@ static float do_one_route(RRNodeId source_node,
     bounding_box.xmax = device_ctx.grid.width() + 1;
     bounding_box.ymin = 0;
     bounding_box.ymax = device_ctx.grid.height() + 1;
+    bounding_box.layer_min = 0;
+    bounding_box.layer_max = device_ctx.grid.get_num_layers() - 1;
 
     t_conn_cost_params cost_params;
     cost_params.criticality = router_opts.max_criticality;
@@ -51,7 +54,7 @@ static float do_one_route(RRNodeId source_node,
                                                   segment_inf,
                                                   is_flat);
 
-    ConnectionRouter<BinaryHeap> router(
+    ConnectionRouter<FourAryHeap> router(
         device_ctx.grid,
         *router_lookahead,
         device_ctx.rr_graph.rr_nodes(),
@@ -73,8 +76,7 @@ static float do_one_route(RRNodeId source_node,
                                                                                                         cost_params,
                                                                                                         bounding_box,
                                                                                                         router_stats,
-                                                                                                        conn_params,
-                                                                                                        true);
+                                                                                                        conn_params);
 
     // Default delay is infinity, which indicates that a route was not found.
     float delay = std::numeric_limits<float>::infinity();

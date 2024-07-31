@@ -31,6 +31,7 @@ void alloc_tileable_rr_graph_nodes(RRGraphBuilder& rr_graph_builder,
                                    const std::vector<t_segment_inf>& segment_inf_y,
                                    const DeviceGridAnnotation& device_grid_annotation,
                                    const bool& shrink_boundary,
+                                   const bool& perimeter_cb,
                                    const bool& through_channel);
 
 void create_tileable_rr_graph_nodes(const RRGraphView& rr_graph,
@@ -48,6 +49,7 @@ void create_tileable_rr_graph_nodes(const RRGraphView& rr_graph,
                                     const RRSwitchId& delayless_switch,
                                     const DeviceGridAnnotation& device_grid_annotation,
                                     const bool& shrink_boundary,
+                                    const bool& perimeter_cb,
                                     const bool& through_channel);
 
 #endif

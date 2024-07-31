@@ -25,4 +25,4 @@ qor_parse_file=qor_rr_graph.txt
 # Pass requirements
 pass_requirements_file=pass_requirements_verify_rr_graph.txt
 
-script_params=-starting_stage vpr -verify_rr_graph -rr_graph_ext .xml -route_chan_width 22
+script_params=-starting_stage vpr -verify_rr_graph -rr_graph_ext .xml -route_chan_width 40

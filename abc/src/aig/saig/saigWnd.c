@@ -106,7 +106,7 @@ Vec_Ptr_t * Saig_ManWindowOutline( Aig_Man_t * p, Aig_Obj_t * pObj, int nDist )
     vNodes = Vec_PtrAlloc( 1000 );
     Aig_ManIncrementTravId( p );
     Saig_ManWindowOutline_rec( p, pObj, nDist, vNodes, pDists );
-    Vec_PtrSort( vNodes, (int (*)(void))Aig_ObjCompareIdIncrease );
+    Vec_PtrSort( vNodes, (int (*)(const void *, const void *))Aig_ObjCompareIdIncrease );
     // make sure LI/LO are labeled/unlabeled mutually
     Saig_ManForEachLiLo( p, pObjLi, pObjLo, i )
         assert( Aig_ObjIsTravIdCurrent(p, pObjLi) == 

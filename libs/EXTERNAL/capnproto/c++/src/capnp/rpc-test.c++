@@ -288,8 +288,8 @@ public:
         auto incomingMessage = kj::heap<IncomingRpcMessageImpl>(messageToFlatArray(message));
 
         auto connectionPtr = &connection;
-        connection.tasks->add(kj::evalLater(kj::mvCapture(incomingMessage,
-            [connectionPtr](kj::Own<IncomingRpcMessageImpl>&& message) {
+        connection.tasks->add(kj::evalLater(
+            [connectionPtr,message=kj::mv(incomingMessage)]() mutable {
           KJ_IF_MAYBE(p, connectionPtr->partner) {
             if (p->fulfillers.empty()) {
               p->messages.push(kj::mv(message));
@@ -300,7 +300,7 @@ public:
               p->fulfillers.pop();
             }
           }
-        })));
+        }));
       }
 
       size_t sizeInWords() override {
@@ -566,6 +566,42 @@ TEST(Rpc, Pipelining) {
   EXPECT_EQ(1, chainedCallCount);
 }
 
+KJ_TEST("RPC sendForPipeline()") {
+  TestContext context;
+
+  auto client = context.connect(test::TestSturdyRefObjectId::Tag::TEST_PIPELINE)
+      .castAs<test::TestPipeline>();
+
+  int chainedCallCount = 0;
+
+  auto request = client.getCapRequest();
+  request.setN(234);
+  request.setInCap(kj::heap<TestInterfaceImpl>(chainedCallCount));
+
+  auto pipeline = request.sendForPipeline();
+
+  auto pipelineRequest = pipeline.getOutBox().getCap().fooRequest();
+  pipelineRequest.setI(321);
+  auto pipelinePromise = pipelineRequest.send();
+
+  auto pipelineRequest2 = pipeline.getOutBox().getCap().castAs<test::TestExtends>().graultRequest();
+  auto pipelinePromise2 = pipelineRequest2.send();
+
+  pipeline = nullptr;  // Just to be annoying, drop the original pipeline.
+
+  EXPECT_EQ(0, context.restorer.callCount);
+  EXPECT_EQ(0, chainedCallCount);
+
+  auto response = pipelinePromise.wait(context.waitScope);
+  EXPECT_EQ("bar", response.getX());
+
+  auto response2 = pipelinePromise2.wait(context.waitScope);
+  checkTestMessage(response2);
+
+  EXPECT_EQ(3, context.restorer.callCount);
+  EXPECT_EQ(1, chainedCallCount);
+}
+
 KJ_TEST("RPC context.setPipeline") {
   TestContext context;
 
@@ -703,7 +739,6 @@ public:
       : callCount(callCount), cancelCount(cancelCount) {}
 
   kj::Promise<void> foo(FooContext context) override {
-    context.allowCancellation();
     ++callCount;
     return kj::Promise<void>(kj::NEVER_DONE)
         .attach(kj::defer([&cancelCount = cancelCount]() { ++cancelCount; }));
@@ -798,8 +833,8 @@ TEST(Rpc, TailCallCancelRace) {
   KJ_ASSERT(cancelCount == 1);
 }
 
-TEST(Rpc, Cancelation) {
-  // Tests allowCancellation().
+TEST(Rpc, Cancellation) {
+  // Tests cancellation.
 
   TestContext context;
 
@@ -1305,6 +1340,23 @@ KJ_TEST("method throws exception") {
   KJ_EXPECT(exception.getRemoteTrace() == nullptr);
 }
 
+KJ_TEST("method throws exception won't redundantly add remote exception prefix") {
+  TestContext context;
+
+  auto client = context.connect(test::TestSturdyRefObjectId::Tag::TEST_MORE_STUFF)
+      .castAs<test::TestMoreStuff>();
+
+  kj::Maybe<kj::Exception> maybeException;
+  client.throwRemoteExceptionRequest().send().ignoreResult()
+      .catch_([&](kj::Exception&& e) {
+    maybeException = kj::mv(e);
+  }).wait(context.waitScope);
+
+  auto exception = KJ_ASSERT_NONNULL(maybeException);
+  KJ_EXPECT(exception.getDescription() == "remote exception: test exception");
+  KJ_EXPECT(exception.getRemoteTrace() == nullptr);
+}
+
 KJ_TEST("method throws exception with trace encoder") {
   TestContext context;
 
@@ -1510,7 +1562,7 @@ KJ_TEST("export the same promise twice") {
   KJ_EXPECT(interceptCount == 3);
 
   // Now try sending a non-promise cap. We'll send all these requests at once before waiting on
-  // any of them since these will acutally complete.k
+  // any of them since these will actually complete.
   exportIsPromise = false;
   expectedExportNumber = 2;
   auto promise4 = sendReq(normalCap);

@@ -17,11 +17,6 @@
  * 2. A X-direction Connection block locates at the left side of the switch block
  * 2. A Y-direction Connection block locates at the top side of the switch block
  *
- *  +-------------+              +---------------------------------+
- *  |             |              |          Y-direction CB         |
- *  |    Grid     |              |              [x][y + 1]         |
- *  |  [x][y+1]   |              +---------------------------------+
- *  +-------------+
  *                                          TOP SIDE
  *  +-------------+              +---------------------------------+
  *  |             |              | OPIN_NODE CHAN_NODES OPIN_NODES |
@@ -38,6 +33,11 @@
  *  |             |              | OPIN_NODE CHAN_NODES OPIN_NODES |
  *  +-------------+              +---------------------------------+
  *                                             BOTTOM SIDE
+ *  +-------------+              +---------------------------------+
+ *  |    Grid     |              |          Y-direction CB         |
+ *  |  [x][y]     |              |              [x][y]             |
+ *  +-------------+              +---------------------------------+
+ *
  * num_sides: number of sides of this switch block
  * chan_rr_node: a collection of rr_nodes as routing tracks locating at each side of the Switch block <0..num_sides-1><0..chan_width-1>
  * chan_rr_node_direction: Indicate if this rr_node is an input or an output of the Switch block <0..num_sides-1><0..chan_width-1>
@@ -72,6 +72,8 @@ class RRGSB {
 
     /* Get the sides of CB ipins in the array */
     std::vector<enum e_side> get_cb_ipin_sides(const t_rr_type& cb_type) const;
+    /* Get the sides of CB opins in the array, OPINs can only be at the same sides of IPINs. Differently, they are inputs to a connection block */
+    std::vector<enum e_side> get_cb_opin_sides(const t_rr_type& cb_type) const;
 
     /* Get the direction of a rr_node at a given side and track_id */
     enum PORTS get_chan_node_direction(const e_side& side, const size_t& track_id) const;
@@ -107,9 +109,13 @@ class RRGSB {
 
     /* Get the number of OPIN rr_nodes on a side */
     size_t get_num_opin_nodes(const e_side& side) const;
+    /* Get the number of OPIN rr_nodes on a side of a connection block */
+    size_t get_num_cb_opin_nodes(const t_rr_type& cb_type, const e_side& side) const;
 
     /* get a rr_node at a given side and track_id */
     RRNodeId get_opin_node(const e_side& side, const size_t& node_id) const;
+    /* get a rr_node at a given side and track_id for a connection block */
+    RRNodeId get_cb_opin_node(const t_rr_type& cb_type, const e_side& side, const size_t& node_id) const;
 
     int get_cb_chan_node_index(const t_rr_type& cb_type, const RRNodeId& node) const;
 
@@ -184,6 +190,8 @@ class RRGSB {
     void sort_chan_node_in_edges(const RRGraphView& rr_graph);
     /* Sort all the incoming edges for input pin rr_node */
     void sort_ipin_node_in_edges(const RRGraphView& rr_graph);
+    /* Build the lists of opin node for connection blocks. This is required after adding all the nodes */
+    void build_cb_opin_nodes(const RRGraphView& rr_graph);
 
   public: /* Mutators: cleaners */
     void clear();
@@ -210,7 +218,6 @@ class RRGSB {
     void sort_ipin_node_in_edges(const RRGraphView& rr_graph,
                                  const e_side& chan_side,
                                  const size_t& ipin_id);
-
   private: /* internal functions */
     size_t get_track_id_first_short_connection(const RRGraphView& rr_graph, const e_side& node_side) const;
 
@@ -218,9 +225,11 @@ class RRGSB {
     bool validate_num_sides() const;
     bool validate_side(const e_side& side) const;
     bool validate_track_id(const e_side& side, const size_t& track_id) const;
+    bool validate_cb_opin_node_id(const t_rr_type& cb_type, const e_side& side, const size_t& node_id) const;
     bool validate_opin_node_id(const e_side& side, const size_t& node_id) const;
     bool validate_ipin_node_id(const e_side& side, const size_t& node_id) const;
     bool validate_cb_type(const t_rr_type& cb_type) const;
+    size_t get_cb_opin_type_id(const t_rr_type& cb_type) const;
 
   private: /* Internal Data */
     /* Coordinator */
@@ -255,6 +264,11 @@ class RRGSB {
 
     /* Logic Block Outputs data */
     std::vector<std::vector<RRNodeId>> opin_node_;
+    /* Logic block outputs which directly drive IPINs in connection block,
+     * CBX -> array[0], CBY -> array[1]
+     * Each CB may have OPINs from all sides
+     */
+    std::array<std::array<std::vector<RRNodeId>, NUM_SIDES>, 2> cb_opin_node_;
 };
 
 #endif

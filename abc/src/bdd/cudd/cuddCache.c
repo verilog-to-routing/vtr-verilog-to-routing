@@ -229,7 +229,7 @@ cuddCacheInsert(
 {
     int posn;
     unsigned hash;
-    register DdCache *entry;
+    DdCache *entry;
     ptruint uf, ug, uh;
     ptruint ufc, ugc, uhc;
 
@@ -283,7 +283,7 @@ cuddCacheInsert2(
 {
     int posn;
     unsigned hash;
-    register DdCache *entry;
+    DdCache *entry;
 
     hash = ddCHash2_(op,cuddF2L(f),cuddF2L(g));
 //    posn = ddCHash2(op,cuddF2L(f),cuddF2L(g),table->cacheShift);
@@ -328,7 +328,7 @@ cuddCacheInsert1(
 {
     int posn;
     unsigned hash;
-    register DdCache *entry;
+    DdCache *entry;
 
     hash = ddCHash2_(op,cuddF2L(f),cuddF2L(f));
 //    posn = ddCHash2(op,cuddF2L(f),cuddF2L(f),table->cacheShift);

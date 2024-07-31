@@ -1,0 +1,10 @@
+["test_name"]
+    regex = "Ref Name: (.+)"
+    key = true
+    default = "n/a"
+    auto-hide = false
+
+["architecture"]
+    regex = "Architecture: (.+)"
+    default = "n/a"
+

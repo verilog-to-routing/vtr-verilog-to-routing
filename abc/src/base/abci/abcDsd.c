@@ -67,7 +67,7 @@ Abc_Ntk_t * Abc_NtkDsdGlobal( Abc_Ntk_t * pNtk, int fVerbose, int fPrint, int fS
     DdManager * dd;
     Abc_Ntk_t * pNtkNew;
     assert( Abc_NtkIsStrash(pNtk) );
-    dd = (DdManager *)Abc_NtkBuildGlobalBdds( pNtk, 10000000, 1, 1, fVerbose );
+    dd = (DdManager *)Abc_NtkBuildGlobalBdds( pNtk, 10000000, 1, 1, 0, fVerbose );
     if ( dd == NULL )
         return NULL;
     if ( fVerbose )
@@ -175,11 +175,11 @@ void Abc_NtkDsdConstruct( Dsd_Manager_t * pManDsd, Abc_Ntk_t * pNtk, Abc_Ntk_t *
 
     // save the CI nodes in the DSD nodes
     Abc_AigConst1(pNtk)->pCopy = pNodeNew = Abc_NtkCreateNodeConst1(pNtkNew);
-    Dsd_NodeSetMark( Dsd_ManagerReadConst1(pManDsd), (int)(ABC_PTRINT_T)pNodeNew );
+    Dsd_NodeSetMark( Dsd_ManagerReadConst1(pManDsd), (word)(ABC_PTRINT_T)pNodeNew );
     Abc_NtkForEachCi( pNtk, pNode, i )
     {
         pNodeDsd = Dsd_ManagerReadInput( pManDsd, i );
-        Dsd_NodeSetMark( pNodeDsd, (int)(ABC_PTRINT_T)pNode->pCopy );
+        Dsd_NodeSetMark( pNodeDsd, (word)(ABC_PTRINT_T)pNode->pCopy );
     }
 
     // collect DSD nodes in DFS order (leaves and const1 are not collected)
@@ -298,7 +298,7 @@ printf( "\n" );
         }
     }
     pNodeNew->pData = bLocal;
-    Dsd_NodeSetMark( pNodeDsd, (int)(ABC_PTRINT_T)pNodeNew );
+    Dsd_NodeSetMark( pNodeDsd, (word)(ABC_PTRINT_T)pNodeNew );
     return pNodeNew;
 }
 
@@ -417,7 +417,7 @@ void Abc_NodeDecompDsdAndMux( Abc_Obj_t * pNode, Vec_Ptr_t * vNodes, Dsd_Manager
         Abc_ObjForEachFanin( pNode, pFanin, i )
         {
             pFaninDsd = Dsd_ManagerReadInput( pManDsd, i );
-            Dsd_NodeSetMark( pFaninDsd, (int)(ABC_PTRINT_T)pFanin );
+            Dsd_NodeSetMark( pFaninDsd, (word)(ABC_PTRINT_T)pFanin );
         }
 
         // construct the intermediate nodes

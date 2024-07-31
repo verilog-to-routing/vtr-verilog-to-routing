@@ -1,14 +1,18 @@
 #include "device_grid.h"
 
+#include <utility>
+
 DeviceGrid::DeviceGrid(std::string grid_name, vtr::NdMatrix<t_grid_tile, 3> grid)
-    : name_(grid_name)
-    , grid_(grid) {
+    : name_(std::move(grid_name))
+    , grid_(std::move(grid)) {
     count_instances();
 }
 
-DeviceGrid::DeviceGrid(std::string grid_name, vtr::NdMatrix<t_grid_tile, 3> grid, std::vector<t_logical_block_type_ptr> limiting_res)
-    : DeviceGrid(grid_name, grid) {
-    limiting_resources_ = limiting_res;
+DeviceGrid::DeviceGrid(std::string grid_name,
+                       vtr::NdMatrix<t_grid_tile, 3> grid,
+                       std::vector<t_logical_block_type_ptr> limiting_res)
+    : DeviceGrid(std::move(grid_name), std::move(grid)) {
+    limiting_resources_ = std::move(limiting_res);
 }
 
 size_t DeviceGrid::num_instances(t_physical_tile_type_ptr type, int layer_num) const {
