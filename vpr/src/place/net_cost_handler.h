@@ -147,3 +147,7 @@ void init_try_swap_net_cost_structs(size_t num_nets, bool cube_bb);
  * @brief Free (layer_)ts_bb_edge_new, (layer_)ts_bb_coord_new, ts_layer_sink_pin_count, and ts_nets_to_update data structures.
  */
 void free_try_swap_net_cost_structs();
+
+void get_cong_matrix(ClusterNetId net_id, const t_bb& bb);
+
+double get_cong_cost(double chan_width);

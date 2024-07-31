@@ -54,6 +54,9 @@ enum class NetUpdateState {
 
 const int MAX_FANOUT_CROSSING_COUNT = 50;
 
+double cong_matrix[400][400];
+double cong_matrix_new[400][400];
+
 /**
  * @brief Crossing counts for nets with different #'s of pins.  From
  * ICCAD 94 pp. 690 - 695 (with linear interpolation applied by me).
@@ -457,10 +460,6 @@ static double get_net_cost(ClusterNetId net_id, const t_bb& bb);
  * @return Wirelength estimate of the net
  */
 static double get_net_wirelength_estimate(ClusterNetId net_id, const t_bb& bb);
-
-static void get_cong_matrix(ClusterNetId net_id, const t_bb& bb);
-
-static double get_cong_cost(double chan_width)
 
 /**
  * @brief To mitigate round-off errors, every once in a while, the costs of nets are summed up from scratch.
@@ -1846,7 +1845,7 @@ static double get_net_wirelength_estimate(ClusterNetId net_id, const t_bb& bb) {
     return (ncost);
 }
 
-static void get_cong_matrix(ClusterNetId net_id, const t_bb& bb) {
+void get_cong_matrix(ClusterNetId net_id, const t_bb& bb) {
     /* Finds the cost due to one net by looking at its coordinate bounding  *
      * box.                                                                 */
     // auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -1865,7 +1864,7 @@ static void get_cong_matrix(ClusterNetId net_id, const t_bb& bb) {
 }
 
 
-static double get_cong_cost(double chan_width) {
+double get_cong_cost(double chan_width) {
     auto& device_ctx = g_vpr_ctx.device();
     double max = 0.0;
     double avg = 1e-4,var=0.0;

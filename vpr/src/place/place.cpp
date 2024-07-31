@@ -111,9 +111,6 @@ static int num_swap_accepted = 0;
 static int num_swap_aborted = 0;
 static int num_ts_called = 0;
 
-double cong_matrix[400][400];
-double cong_matrix_new[400][400];
-
 float congestion_tradeoff = 1.0;
 
 std::unique_ptr<FILE, decltype(&vtr::fclose)> f_move_stats_file(nullptr,
