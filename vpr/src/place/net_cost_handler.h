@@ -3,10 +3,8 @@
 #include "timing_place.h"
 #include "move_transactions.h"
 #include "place_util.h"
-#include "placer_context.h"
 
-#include <functional>
-
+class PlacerContext;
 
 /**
  * @brief The error tolerance due to round off for the total cost computation.

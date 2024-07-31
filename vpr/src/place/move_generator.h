@@ -1,12 +1,14 @@
 #ifndef VPR_MOVE_GENERATOR_H
 #define VPR_MOVE_GENERATOR_H
+
 #include "vpr_types.h"
 #include "move_utils.h"
 #include "timing_place.h"
 #include "directed_moves_util.h"
-#include "placer_context.h"
 
 #include <limits>
+
+class PlacerContext;
 
 struct MoveOutcomeStats {
     float delta_cost_norm = std::numeric_limits<float>::quiet_NaN();

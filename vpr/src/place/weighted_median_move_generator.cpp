@@ -1,9 +1,12 @@
 #include "weighted_median_move_generator.h"
+
 #include "globals.h"
+#include "place_constraints.h"
+#include "placer_context.h"
+#include "move_utils.h"
+
 #include <algorithm>
 #include <cmath>
-#include "place_constraints.h"
-#include "move_utils.h"
 
 #define CRIT_MULT_FOR_W_MEDIAN 10
 

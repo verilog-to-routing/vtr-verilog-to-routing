@@ -24,15 +24,18 @@
  * @date July 12, 2024
  */
 #include "net_cost_handler.h"
+
 #include "clustered_netlist_fwd.h"
 #include "globals.h"
 #include "physical_types.h"
+#include "placer_context.h"
 #include "move_utils.h"
 #include "place_timing_update.h"
 #include "noc_place_utils.h"
 #include "vtr_math.h"
 
 #include <optional>
+#include <functional>
 
 using std::max;
 using std::min;
@@ -209,9 +212,9 @@ static void record_affected_net(const ClusterNetId net);
  * @param place_algorithm Placement algorithm
  * @param delay_model Timing delay model used by placer
  * @param criticalities Connections timing criticalities
- * @param blk_id Block ID of that the moving pin blongs to.
+ * @param blk_id Block ID of that the moving pin belongs to.
  * @param pin_id Pin ID of the moving pin
- * @param moving_blk_inf Data structure that holds information, e.g., old location and new locatoin, about all moving blocks
+ * @param moving_blk_inf Data structure that holds information, e.g., old location and new location, about all moving blocks
  * @param affected_pins Netlist pins which are affected, in terms placement cost, by the proposed move.
  * @param timing_delta_c Timing cost change based on the proposed move
  * @param is_src_moving Is the moving pin the source of a net.

@@ -1,8 +1,11 @@
 #include "median_move_generator.h"
+
 #include "globals.h"
-#include <algorithm>
 #include "place_constraints.h"
+#include "placer_context.h"
 #include "move_utils.h"
+
+#include <algorithm>
 
 MedianMoveGenerator::MedianMoveGenerator(PlacerContext& placer_ctx)
     : MoveGenerator(placer_ctx) {}
@@ -22,9 +25,9 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
     //Find a movable block based on blk_type
     ClusterBlockId b_from = propose_block_to_move(placer_opts,
                                                   proposed_action.logical_blk_type_index,
-                                                  false,
-                                                  nullptr,
-                                                  nullptr,
+                                                  /*highly_crit_block=*/false,
+                                                  /*net_from=*/nullptr,
+                                                  /*pin_from=*/nullptr,
                                                   placer_ctx);
 
     VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "Median Move Choose Block %d - rlim %f\n", size_t(b_from), rlim);

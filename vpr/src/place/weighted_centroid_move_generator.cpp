@@ -1,7 +1,9 @@
 #include "weighted_centroid_move_generator.h"
+
 #include "globals.h"
 #include "directed_moves_util.h"
 #include "place_constraints.h"
+#include "placer_context.h"
 #include "move_utils.h"
 
 WeightedCentroidMoveGenerator::WeightedCentroidMoveGenerator(PlacerContext& placer_ctx)

@@ -3,6 +3,7 @@
 #include "globals.h"
 #include "directed_moves_util.h"
 #include "place_constraints.h"
+#include "placer_context.h"
 #include "move_utils.h"
 
 #include <queue>

@@ -123,7 +123,7 @@ class AnalyticPlacer {
      * To tune these parameters, change directly in constructor
      */
     AnalyticPlacer() = delete;
-    explicit AnalyticPlacer(const PlaceLocVars& place_loc_vars);
+    explicit AnalyticPlacer(PlaceLocVars& place_loc_vars);
 
     /*
      * @brief main function of analytic placement

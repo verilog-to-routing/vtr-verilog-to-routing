@@ -129,7 +129,7 @@ constexpr int HEAP_STALLED_ITERATIONS_STOP = 15;
  * Placement & device info is accessed via g_vpr_ctx
  */
 
-AnalyticPlacer::AnalyticPlacer(const PlaceLocVars& place_loc_vars)
+AnalyticPlacer::AnalyticPlacer(PlaceLocVars& place_loc_vars)
     : placer_loc_vars_ref_(place_loc_vars) {
     //Eigen::initParallel();
 
@@ -414,7 +414,7 @@ void AnalyticPlacer::setup_solve_blks(t_logical_block_type_ptr blkTypes) {
 void AnalyticPlacer::update_macros() {
     for (auto& macro : g_vpr_ctx.mutable_placement().pl_macros) {
         ClusterBlockId head_id = macro.members[0].blk_index;
-        bool mac_can_be_placed = macro_can_be_placed(macro, blk_locs[head_id].loc, true);
+        bool mac_can_be_placed = macro_can_be_placed(macro, blk_locs[head_id].loc, true, placer_loc_vars_ref_);
 
         //if macro can not be placed in this head pos, change the head pos
         if (!mac_can_be_placed) {
@@ -423,7 +423,7 @@ void AnalyticPlacer::update_macros() {
         }
 
         //macro should be placed successfully after changing the head position
-        VTR_ASSERT(macro_can_be_placed(macro, blk_locs[head_id].loc, true));
+        VTR_ASSERT(macro_can_be_placed(macro, blk_locs[head_id].loc, true, placer_loc_vars_ref_));
 
         //update other member's location based on head pos
         for (auto member = ++macro.members.begin(); member != macro.members.end(); ++member) {
