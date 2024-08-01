@@ -29,6 +29,7 @@ sudo apt install -y \
   libncurses5-dev \
   libx11-dev \
   libxft-dev \
+  libxml2-utils \
   libxml++2.6-dev \
   libreadline-dev \
   tcllib \

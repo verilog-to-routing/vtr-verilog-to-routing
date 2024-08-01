@@ -181,7 +181,7 @@ vtr::vector<RRNodeId, float> calculate_all_path_delays_from_rr_node(RRNodeId src
                                                   /*segment_inf=*/{},
                                                   is_flat);
 
-    ConnectionRouter<BinaryHeap> router(
+    ConnectionRouter<FourAryHeap> router(
         device_ctx.grid,
         *router_lookahead,
         device_ctx.rr_graph.rr_nodes(),
@@ -249,7 +249,7 @@ vtr::vector<RRNodeId, float> calculate_all_path_delays_from_rr_node(RRNodeId src
     return path_delays_to;
 }
 
-void alloc_routing_structs(t_chan_width chan_width,
+void alloc_routing_structs(const t_chan_width& chan_width,
                            const t_router_opts& router_opts,
                            t_det_routing_arch* det_routing_arch,
                            std::vector<t_segment_inf>& segment_inf,

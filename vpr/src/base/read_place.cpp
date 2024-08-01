@@ -92,8 +92,12 @@ void read_place_header(std::ifstream& placement_file,
     bool seen_netlist_id = false;
     bool seen_grid_dimensions = false;
 
+    // store the current position in file
+    // if an invalid line is read, we might need to return to the beginning of that line
+    std::streampos file_pos = placement_file.tellg();
+
     while (std::getline(placement_file, line) && (!seen_netlist_id || !seen_grid_dimensions)) { //Parse line-by-line
-        ++lineno;
+       ++lineno;
 
         std::vector<std::string> tokens = vtr::split(line);
 
@@ -103,9 +107,9 @@ void read_place_header(std::ifstream& placement_file,
         } else if (tokens[0][0] == '#') {
             continue; //Skip commented lines
 
-        } else if (tokens.size() == 4
-                   && tokens[0] == "Netlist_File:"
-                   && tokens[2] == "Netlist_ID:") {
+        } else if (tokens.size() == 4 &&
+                   tokens[0] == "Netlist_File:" &&
+                   tokens[2] == "Netlist_ID:") {
             //Check that the netlist used to generate this placement matches the one loaded
             //
             //NOTE: this is an optional check which causes no errors if this line is missing.
@@ -120,45 +124,76 @@ void read_place_header(std::ifstream& placement_file,
             std::string place_netlist_id = tokens[3];
             std::string place_netlist_file = tokens[1];
 
-            if (place_netlist_id != cluster_ctx.clb_nlist.netlist_id().c_str()) {
+            if (place_netlist_id != cluster_ctx.clb_nlist.netlist_id()) {
                 auto msg = vtr::string_fmt(
                     "The packed netlist file that generated placement (File: '%s' ID: '%s')"
                     " does not match current netlist (File: '%s' ID: '%s')",
                     place_netlist_file.c_str(), place_netlist_id.c_str(),
                     net_file, cluster_ctx.clb_nlist.netlist_id().c_str());
                 if (verify_file_digests) {
+                    msg += " To ignore the packed netlist mismatch, use '--verify_file_digests off' command line option.";
                     vpr_throw(VPR_ERROR_PLACE_F, place_file, lineno, msg.c_str());
                 } else {
                     VTR_LOGF_WARN(place_file, lineno, "%s\n", msg.c_str());
+                    VTR_LOG_WARN("The packed netlist mismatch is ignored because"
+                                 "--verify_file_digests command line option is off.");
                 }
             }
 
             seen_netlist_id = true;
 
-        } else if (tokens.size() == 7
-                   && tokens[0] == "Array"
-                   && tokens[1] == "size:"
-                   && tokens[3] == "x"
-                   && tokens[5] == "logic"
-                   && tokens[6] == "blocks") {
+        } else if (tokens.size() == 7 &&
+                   tokens[0] == "Array" &&
+                   tokens[1] == "size:" &&
+                   tokens[3] == "x" &&
+                   tokens[5] == "logic" &&
+                   tokens[6] == "blocks") {
             //Load the device grid dimensions
 
             size_t place_file_width = vtr::atou(tokens[2]);
             size_t place_file_height = vtr::atou(tokens[4]);
             if (grid.width() != place_file_width || grid.height() != place_file_height) {
-                vpr_throw(VPR_ERROR_PLACE_F, place_file, lineno,
-                          "Current FPGA size (%d x %d) is different from size when placement generated (%d x %d)",
-                          grid.width(), grid.height(), place_file_width, place_file_height);
+                auto msg = vtr::string_fmt(
+                    "Current FPGA size (%d x %d) is different from size when placement generated (%d x %d)",
+                    grid.width(), grid.height(), place_file_width, place_file_height);
+                if (verify_file_digests) {
+                    msg += " To ignore this size mismatch, use '--verify_file_digests off' command line option.";
+                    vpr_throw(VPR_ERROR_PLACE_F, place_file, lineno, msg.c_str());
+                } else {
+                    VTR_LOGF_WARN(place_file, lineno, "%s\n", msg.c_str());
+                    VTR_LOG_WARN("The FPGA size mismatch is ignored because"
+                                 "--verify_file_digests command line option is off.");
+                }
             }
 
             seen_grid_dimensions = true;
 
         } else {
             //Unrecognized
-            vpr_throw(VPR_ERROR_PLACE_F, place_file, lineno,
-                      "Invalid line '%s' in placement file header",
-                      line.c_str());
+            auto msg = vtr::string_fmt(
+                "Invalid line '%s' in placement file header. "
+                "Expected to see netlist filename and device size first.",
+                line.c_str());
+
+            if (verify_file_digests) {
+                msg += " To ignore this unexpected line, use '--verify_file_digests off' command line option.";
+                vpr_throw(VPR_ERROR_PLACE_F, place_file, lineno, msg.c_str());
+            } else {
+                VTR_LOGF_WARN(place_file, lineno, "%s\n", msg.c_str());
+                VTR_LOG_WARN("Unexpected line in the placement file header is ignored because"
+                             "--verify_file_digests command line option is off.");
+            }
+
+            if ((tokens.size() == 4 || (tokens.size() > 4 && tokens[4][0] == '#')) ||
+                (tokens.size() == 5 || (tokens.size() > 5 && tokens[5][0] == '#'))) {
+                placement_file.seekg(file_pos);
+                break;
+            }
         }
+
+        // store the current position in the file before reading the next line
+        // we might need to return to this position
+        file_pos = placement_file.tellg();
     }
 }
 
@@ -200,7 +235,8 @@ void read_place_body(std::ifstream& placement_file,
         } else if (tokens[0][0] == '#') {
             continue; //Skip commented lines
 
-        } else if ((tokens.size() == 4 || (tokens.size() > 4 && tokens[4][0] == '#')) || (tokens.size() == 5 || (tokens.size() > 5 && tokens[5][0] == '#'))) {
+        } else if ((tokens.size() == 4 || (tokens.size() > 4 && tokens[4][0] == '#')) ||
+                   (tokens.size() == 5 || (tokens.size() > 5 && tokens[5][0] == '#'))) {
             //Load the block location
             //
             // If the place file corresponds to a 3D architecture, it should contain 5 tokens of actual data, with an optional 6th (commented) token indicating VPR's internal block number.
@@ -250,7 +286,10 @@ void read_place_body(std::ifstream& placement_file,
 
             //Check if block is listed multiple times with conflicting locations in constraints file
             if (seen_blocks[blk_id] > 0) {
-                if (block_x != place_ctx.block_locs[blk_id].loc.x || block_y != place_ctx.block_locs[blk_id].loc.y || sub_tile_index != place_ctx.block_locs[blk_id].loc.sub_tile || block_layer != place_ctx.block_locs[blk_id].loc.layer) {
+                if (block_x != place_ctx.block_locs[blk_id].loc.x ||
+                    block_y != place_ctx.block_locs[blk_id].loc.y ||
+                    sub_tile_index != place_ctx.block_locs[blk_id].loc.sub_tile ||
+                    block_layer != place_ctx.block_locs[blk_id].loc.layer) {
                     std::string cluster_name = cluster_ctx.clb_nlist.block_name(blk_id);
                     VPR_THROW(VPR_ERROR_PLACE,
                               "The location of cluster %s (#%d) is specified %d times in the constraints file with conflicting locations. \n"
@@ -309,7 +348,8 @@ void read_place_body(std::ifstream& placement_file,
  */
 void print_place(const char* net_file,
                  const char* net_id,
-                 const char* place_file) {
+                 const char* place_file,
+                 bool is_place_file) {
     FILE* fp;
 
     auto& device_ctx = g_vpr_ctx.device();
@@ -318,17 +358,23 @@ void print_place(const char* net_file,
 
     fp = fopen(place_file, "w");
 
-    fprintf(fp, "Netlist_File: %s Netlist_ID: %s\n",
-            net_file,
-            net_id);
-    fprintf(fp, "Array size: %zu x %zu logic blocks\n\n", device_ctx.grid.width(), device_ctx.grid.height());
-    fprintf(fp, "#block name\tx\ty\tsubblk\tlayer\tblock number\n");
-    fprintf(fp, "#----------\t--\t--\t------\t-----\t------------\n");
+    if (is_place_file) {
+        fprintf(fp, "Netlist_File: %s Netlist_ID: %s\n",
+                net_file,
+                net_id);
+        fprintf(fp, "Array size: %zu x %zu logic blocks\n\n", device_ctx.grid.width(), device_ctx.grid.height());
+        fprintf(fp, "#block name\tx\ty\tsubblk\tlayer\tblock number\n");
+        fprintf(fp, "#----------\t--\t--\t------\t-----\t------------\n");
+    }
 
     if (!place_ctx.block_locs.empty()) { //Only if placement exists
         for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-            fprintf(fp, "%s\t", cluster_ctx.clb_nlist.block_name(blk_id).c_str());
-            if (strlen(cluster_ctx.clb_nlist.block_name(blk_id).c_str()) < 8)
+            // if block is not placed, skip (useful for printing legalizer output)
+            if (!is_place_file && (place_ctx.block_locs[blk_id].loc.x == INVALID_X)) {
+                continue;
+            }
+            fprintf(fp, "%s\t", cluster_ctx.clb_nlist.block_pb(blk_id)->name);
+            if (strlen(cluster_ctx.clb_nlist.block_pb(blk_id)->name) < 8)
                 fprintf(fp, "\t");
 
             fprintf(fp, "%d\t%d\t%d\t%d",

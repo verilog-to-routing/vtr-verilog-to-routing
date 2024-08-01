@@ -80,7 +80,7 @@ class AttractionInfo {
 
     int num_attraction_groups();
 
-    int get_att_group_pulls();
+    int get_att_group_pulls() const;
 
     void set_att_group_pulls(int num_pulls);
 
@@ -101,7 +101,7 @@ class AttractionInfo {
     int att_group_pulls = 1;
 };
 
-inline int AttractionInfo::get_att_group_pulls() {
+inline int AttractionInfo::get_att_group_pulls() const {
     return att_group_pulls;
 }
 

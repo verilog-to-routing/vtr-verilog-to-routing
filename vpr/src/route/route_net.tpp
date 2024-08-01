@@ -129,7 +129,7 @@ inline NetResultFlags route_net(ConnectionRouter *router,
     }
 
     // compare the criticality of different sink nodes
-    sort(begin(remaining_targets), end(remaining_targets), [&](int a, int b) {
+    std::stable_sort(begin(remaining_targets), end(remaining_targets), [&](int a, int b) {
         return pin_criticality[a] > pin_criticality[b];
     });
 
@@ -148,27 +148,54 @@ inline NetResultFlags route_net(ConnectionRouter *router,
 
     // Pre-route to clock source for clock nets (marked as global nets)
     if (net_list.net_is_global(net_id) && router_opts.two_stage_clock_routing) {
-        //VTR_ASSERT(router_opts.clock_modeling == DEDICATED_NETWORK);
-        RRNodeId sink_node(device_ctx.virtual_clock_network_root_idx);
+        auto& route_constraints = route_ctx.constraints;
+        std::string net_name = net_list.net_name(net_id);
 
-        enable_router_debug(router_opts, net_id, sink_node, itry, router);
+        // If there is no routing constraint for the current global net
+        // and the clock modelling is set to dedicated network or
+        //there is a routing constraint for the current net setting routing model
+        // to the dedicated network run the first stage router.
+        if ((!route_constraints.has_routing_constraint(net_name) && router_opts.clock_modeling == e_clock_modeling::DEDICATED_NETWORK)
+            || route_constraints.get_route_model_by_net_name(net_name) == e_clock_modeling::DEDICATED_NETWORK) {
+            std::string clock_network_name = "";
 
-        VTR_LOGV_DEBUG(f_router_debug, "Pre-routing global net %zu\n", size_t(net_id));
+            // If a user-specified routing constratins exists for the curret net get the clock network name
+            // from the constraints file, otherwise use the default clock network name
+            if (route_constraints.has_routing_constraint(net_name)) {
+                clock_network_name = route_constraints.get_routing_network_name_by_net_name(net_name);
+            } else {
+                auto& arch = device_ctx.arch;
+                clock_network_name = arch->default_clock_network_name;
+            }
 
-        // Set to the max timing criticality which should intern minimize clock insertion
-        // delay by selecting a direct route from the clock source to the virtual sink
-        cost_params.criticality = router_opts.max_criticality;
+            RRNodeId sink_node = rr_graph.virtual_clock_network_root_idx(clock_network_name.c_str());
 
-        return pre_route_to_clock_root(router,
-                                       net_id,
-                                       net_list,
-                                       sink_node,
-                                       cost_params,
-                                       router_opts.high_fanout_threshold,
-                                       tree,
-                                       spatial_route_tree_lookup,
-                                       router_stats,
-                                       is_flat);
+            enable_router_debug(router_opts, net_id, sink_node, itry, router);
+
+            VTR_LOGV_DEBUG(f_router_debug, "Pre-routing global net %zu\n", size_t(net_id));
+
+            // Set to the max timing criticality which should intern minimize clock insertion
+            // delay by selecting a direct route from the clock source to the virtual sink
+            cost_params.criticality = router_opts.max_criticality;
+
+            if (sink_node == RRNodeId::INVALID()) {
+                VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Cannot route net \"%s\" through given clock network. Unknown clock network name \"%s\"", net_name.c_str(), clock_network_name.c_str());
+            }
+
+            flags = pre_route_to_clock_root(router,
+                                            net_id,
+                                            net_list,
+                                            sink_node,
+                                            cost_params,
+                                            router_opts.high_fanout_threshold,
+                                            tree,
+                                            spatial_route_tree_lookup,
+                                            router_stats,
+                                            is_flat);
+
+            if (flags.success == false)
+                return flags;
+        }
     }
 
     if (budgeting_inf.if_set()) {
@@ -276,6 +303,7 @@ inline NetResultFlags pre_route_to_clock_root(ConnectionRouter *router,
     auto& m_route_ctx = g_vpr_ctx.mutable_routing();
 
     NetResultFlags out;
+    out.was_rerouted = true;
 
     bool high_fanout = is_high_fanout(net_list.net_sinks(net_id).size(), high_fanout_threshold);
 

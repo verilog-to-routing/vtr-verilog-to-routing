@@ -57,7 +57,7 @@ static float do_one_route(RRNodeId source_node,
                                                   segment_inf,
                                                   is_flat);
 
-    ConnectionRouter<BinaryHeap> router(
+    ConnectionRouter<FourAryHeap> router(
         device_ctx.grid,
         *router_lookahead,
         device_ctx.rr_graph.rr_nodes(),

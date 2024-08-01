@@ -1,17 +1,9 @@
 #ifndef NOC_PLACE_UTILS_H
 #define NOC_PLACE_UTILS_H
 
-#include "globals.h"
-#include "noc_routing.h"
-#include "place_util.h"
-#include "vtr_assert.h"
-#include "move_transactions.h"
-#include "vtr_log.h"
-#include "noc_routing_algorithm_creator.h"
+#include <string_view>
 #include "move_utils.h"
-#include "vtr_random.h"
-#include "place_constraints.h"
-#include "fstream"
+#include "place_util.h"
 
 // represent the maximum values of the NoC cost normalization factors //
 // we need to handle the case where the aggregate bandwidth is 0, so we set this to some arbitrary positive number that is greater than 1.e-9, since that is the range we expect the normalization factor to be (in Gbps)
@@ -47,23 +39,27 @@ struct TrafficFlowPlaceCost {
 };
 
 /**
- * @brief Routes all the traffic flows within the NoC and updates the link usage
- * for all links. This should be called after initial placement, where all the 
- * logical NoC router blocks have been placed for the first time and no traffic
- * flows have been routed yet. This function should also only be used once as
- * its intended use is to initialize the routes for all the traffic flows.
- * 
- * This is different from a complete re-route of the traffic flows as this
- * function assumes the traffic flows have not been routed yet, whereas a 
- * complete re-route function assumes the traffic flows have already been 
- * routed. This is why this function should only be used once.
- * 
+ * @brief Initializes the link bandwidth usage for all NoC links.
+ *
+ * If traffic flow routes are not passed to this function, it uses a NoC routing algorithm
+ * to route all traffic flows. The caller can prevent this function from routing traffic flows
+ * by passing routes for all traffic flows. This should be called after initial placement,
+ * where all the logical NoC router blocks have been placed for the first time and no traffic
+ * flows have been routed yet. In this case an empty vector should be passed to the function.
+ * This function can also be called after modification of traffic flow routes. For example,
+ * NoC SAT routing algorithm generates new traffic flow routes to avoid congestion. The routes
+ * generate by the SAT router should be passed to this function
+ *
+ *
+ * @param new_traffic_flow_routes Traffic flow routes used to initialize link bandwidth utilization.
+ * If an empty vector is passed, this function uses a routing algorithm to route traffic flows.
  */
-void initial_noc_routing(void);
+void initial_noc_routing(const vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>>& new_traffic_flow_routes);
 
 /**
- * @brief Zeros out all link bandwidth usage an re-routes traffic flows.
- * Initializes static variables in noc_place_utils.cpp that are used to
+ * @brief Re-initializes all link bandwidth usages by either re-routing
+ * all traffic flows or using the provided traffic flow routes. This functions
+ * also initializes static variables in noc_place_utils.cpp that are used to
  * keep track of NoC-related costs.
  *
  * This function should be called when a placement checkpoint is restored.
@@ -72,9 +68,15 @@ void initial_noc_routing(void);
  * traffic flow routes, and static variable in noc_place_utils.cpp are no
  * longer valid and need to be re-initialized.
  *
+ * This function should be called after NoC SAT routing algorithm returns its
+ * traffic flow routes.
+ *
  * @param costs Used to get aggregate bandwidth and latency costs.
+ * @param new_traffic_flow_routes Traffic flow routes used to initialize link bandwidth utilization.
+* If an empty vector is passed, this function uses a routing algorithm to route traffic flows.
  */
-void reinitialize_noc_routing(t_placer_costs& costs);
+void reinitialize_noc_routing(t_placer_costs& costs,
+                              const vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>>& new_traffic_flow_routes);
 
 /**
  * @brief Goes through all the cluster blocks that were moved
@@ -182,7 +184,10 @@ std::vector<NocLinkId>& route_traffic_flow(NocTrafficFlowId traffic_flow_id,
  * @param traffic_flow_bandwidth The bandwidth of a traffic flow. This will
  * be used to update bandwidth usage of the links.
  */
-void update_traffic_flow_link_usage(const std::vector<NocLinkId>& traffic_flow_route, NocStorage& noc_model, int inc_or_dec, double traffic_flow_bandwidth);
+void update_traffic_flow_link_usage(const std::vector<NocLinkId>& traffic_flow_route,
+                                    NocStorage& noc_model,
+                                    int inc_or_dec,
+                                    double traffic_flow_bandwidth);
 
 /**
  * @brief Goes through all the traffic flows associated to a moved
@@ -210,7 +215,8 @@ void update_traffic_flow_link_usage(const std::vector<NocLinkId>& traffic_flow_r
  */
 void re_route_associated_traffic_flows(ClusterBlockId moved_router_block_id,
                                        NocTrafficFlows& noc_traffic_flows_storage,
-                                       NocStorage& noc_model, NocRouting& noc_flows_router,
+                                       NocStorage& noc_model,
+                                       NocRouting& noc_flows_router,
                                        std::unordered_set<NocTrafficFlowId>& updated_traffic_flows);
 
 /**
@@ -301,7 +307,7 @@ void update_noc_normalization_factors(t_placer_costs& costs);
  * 
  * @return double The aggregate bandwidth cost of the NoC.
  */
-double comp_noc_aggregate_bandwidth_cost(void);
+double comp_noc_aggregate_bandwidth_cost();
 
 /**
  * @brief Calculates the latency cost of each traffic flow in the NoC
@@ -364,7 +370,8 @@ int check_noc_placement_costs(const t_placer_costs& costs, double error_toleranc
  * its priority.
  * @return The computed aggregate bandwidth for the provided traffic flow
  */
-double calculate_traffic_flow_aggregate_bandwidth_cost(const std::vector<NocLinkId>& traffic_flow_route, const t_noc_traffic_flow& traffic_flow_info);
+double calculate_traffic_flow_aggregate_bandwidth_cost(const std::vector<NocLinkId>& traffic_flow_route,
+                                                       const t_noc_traffic_flow& traffic_flow_info);
 
 /**
  * @brief Determines the latency cost of a routed traffic flow.
@@ -434,7 +441,7 @@ double calculate_noc_cost(const NocCostTerms& cost_terms,
  * 
  * @return The total number of traffic flows with latency constraints being met
  */
-int get_number_of_traffic_flows_with_latency_cons_met(void);
+int get_number_of_traffic_flows_with_latency_cons_met();
 
 /**
  * @brief Goes through all NoC links and counts the congested ones.
@@ -443,7 +450,7 @@ int get_number_of_traffic_flows_with_latency_cons_met(void);
  *
  * @return The total number of congested NoC links.
  */
-int get_number_of_congested_noc_links(void);
+int get_number_of_congested_noc_links();
 
 /**
  * @brief Goes through all NoC links and determines whether they
@@ -452,7 +459,7 @@ int get_number_of_congested_noc_links(void);
  *
  * @return The total congestion ratio
  */
-double get_total_congestion_bandwidth_ratio(void);
+double get_total_congestion_bandwidth_ratio();
 
 /**
  * @brief Goes through all NoC links and determines whether they
@@ -461,7 +468,6 @@ double get_total_congestion_bandwidth_ratio(void);
  * @return n links with highest congestion ratio
  */
 std::vector<NocLink> get_top_n_congested_links(int n);
-
 
 /**
  * @brief Goes through all NoC links and determines whether they
@@ -479,9 +485,8 @@ std::vector<double> get_top_n_congestion_ratios(int n);
  * initialize the datastructures here.
  * 
  * This should be called before starting the simulated annealing placement.
- * 
  */
-void allocate_and_load_noc_placement_structs(void);
+void allocate_and_load_noc_placement_structs();
 
 /**
  * @brief We delete the static datastructures which were created in
@@ -489,7 +494,7 @@ void allocate_and_load_noc_placement_structs(void);
  * 
  * This should be called after placement is finished.
  */
-void free_noc_placement_structs(void);
+void free_noc_placement_structs();
 
 /* Below are functions related to the feature that forces to the placer to swap router blocks for a certain percentage of the total number of swaps */
 
@@ -540,4 +545,50 @@ e_create_move propose_router_swap(t_pl_blocks_to_be_moved& blocks_affected, floa
  * 
  */
 void write_noc_placement_file(const std::string& file_name);
+
+/**
+ * @brief This function checks whether the routing configuration for NoC traffic flows
+ * can cause a deadlock in NoC. Assume we create a graph where NoC routers are vertices,
+ * and traffic flow routes represent edges. This graph is a sub-graph of the NoC topology
+ * as it contain a subset of its edges. If such a graph contains a cycle, we can argue
+ * that deadlock is possible.
+ *
+ * This functions performs a DFS over the mentioned graph and tries to find out whether
+ * the graph has any back edges, i.e. whether a node points to one of its ancestors
+ * during depth-first search traversal.
+ *
+ * @return bool Indicates whether NoC traffic flow routes form a cycle.
+ */
+bool noc_routing_has_cycle();
+
+/**
+ * @brief Check if the channel dependency graph created from the given traffic flow routes
+ * has any cycles.
+ * @param routes The user provided traffic flow routes.
+ * @return True if there is any cycles in the channel dependency graph.
+ */
+bool noc_routing_has_cycle(const vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>>& routes);
+
+/**
+ * @brief Invokes NoC SAT router and print new NoC cost terms after SAT router
+ * solved the NoC routing problem.
+ *
+ * @param costs To be updated with new NoC-related cost terms after traffic flow routes
+ * generated by the SAT router replace the old traffic flow routes.
+ * @param noc_opts Contains NoC-related cost weighting factor used in the SAT router.
+ * @param seed The initialization seed used in the SAT solver.
+ */
+#ifdef ENABLE_NOC_SAT_ROUTING
+void invoke_sat_router(t_placer_costs& costs, const t_noc_opts& noc_opts, int seed);
+#endif
+
+/**
+ * @brief Prints NoC related costs terms and metrics.
+ *
+ * @param header The string with which the report starts.
+ * @param costs Contains NoC-related cost terms.
+ * @param noc_opts Used to compute total NoC cost.
+ */
+void print_noc_costs(std::string_view header, const t_placer_costs& costs, const t_noc_opts& noc_opts);
+
 #endif

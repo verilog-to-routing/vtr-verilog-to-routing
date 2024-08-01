@@ -1,10 +1,6 @@
-#include <cstdio>
-#include <cstring>
 #include <unordered_set>
 #include <unordered_map>
-#include <fstream>
-#include <cstdlib>
-#include <sstream>
+#include <queue>
 
 #include "vtr_assert.h"
 #include "vtr_log.h"
@@ -15,19 +11,21 @@
 
 #include "read_xml_arch_file.h"
 #include "globals.h"
-#include "atom_netlist.h"
 #include "prepack.h"
 #include "pack_types.h"
 #include "pack.h"
-#include "read_blif.h"
 #include "cluster.h"
 #include "SetupGrid.h"
 #include "re_cluster.h"
+#include "noc_aware_cluster_util.h"
 
 /* #define DUMP_PB_GRAPH 1 */
 /* #define DUMP_BLIF_INPUT 1 */
 
-static bool try_size_device_grid(const t_arch& arch, const std::map<t_logical_block_type_ptr, size_t>& num_type_instances, float target_device_utilization, std::string device_layout_name);
+static bool try_size_device_grid(const t_arch& arch,
+                                 const std::map<t_logical_block_type_ptr, size_t>& num_type_instances,
+                                 float target_device_utilization,
+                                 const std::string& device_layout_name);
 
 /**
  * @brief Counts the total number of logic models that the architecture can implement.
@@ -58,7 +56,7 @@ bool try_pack(t_packer_opts* packer_opts,
     helper_ctx.num_models = count_models(user_models);
     helper_ctx.num_models += count_models(library_models);
 
-    is_clock = alloc_and_load_is_clock(packer_opts->global_clocks);
+    is_clock = alloc_and_load_is_clock();
     is_global.insert(is_clock.begin(), is_clock.end());
 
     size_t num_p_inputs = 0;
@@ -128,6 +126,10 @@ bool try_pack(t_packer_opts* packer_opts,
     int pack_iteration = 1;
     bool floorplan_regions_overfull = false;
 
+    // find all NoC router atoms
+    auto noc_atoms = find_noc_router_atoms();
+    update_noc_reachability_partitions(noc_atoms);
+
     while (true) {
         free_clustering_data(*packer_opts, clustering_data);
 
@@ -153,7 +155,7 @@ bool try_pack(t_packer_opts* packer_opts,
          * is not dense enough and there are floorplan constraints, it is presumed that the constraints are the cause
          * of the floorplan not fitting, so attraction groups are turned on for later iterations.
          */
-        bool floorplan_not_fitting = (floorplan_regions_overfull || g_vpr_ctx.mutable_floorplanning().constraints.get_num_partitions() > 0);
+        bool floorplan_not_fitting = (floorplan_regions_overfull || g_vpr_ctx.floorplanning().constraints.get_num_partitions() > 0);
 
         if (fits_on_device && !floorplan_regions_overfull) {
             break; //Done
@@ -297,10 +299,9 @@ float get_arch_switch_info(short switch_index, int switch_fanin, float& Tdel_swi
     return Tdel_switch + R_switch * Cout_switch;
 }
 
-std::unordered_set<AtomNetId> alloc_and_load_is_clock(bool global_clocks) {
+std::unordered_set<AtomNetId> alloc_and_load_is_clock() {
     /* Looks through all the atom blocks to find and mark all the clocks, by setting
      * the corresponding entry by adding the clock to is_clock.
-     * global_clocks is used
      * only for an error check.                                                */
 
     int num_clocks = 0;
@@ -319,19 +320,13 @@ std::unordered_set<AtomNetId> alloc_and_load_is_clock(bool global_clocks) {
         }
     }
 
-    /* If we have multiple clocks and we're supposed to declare them global, *
-     * print a warning message, since it looks like this circuit may have    *
-     * locally generated clocks.                                             */
-
-    if (num_clocks > 1 && global_clocks) {
-        VTR_LOG_WARN(
-            "All %d clocks will be treated as global.\n", num_clocks);
-    }
-
     return (is_clock);
 }
 
-static bool try_size_device_grid(const t_arch& arch, const std::map<t_logical_block_type_ptr, size_t>& num_type_instances, float target_device_utilization, std::string device_layout_name) {
+static bool try_size_device_grid(const t_arch& arch,
+                                 const std::map<t_logical_block_type_ptr, size_t>& num_type_instances,
+                                 float target_device_utilization,
+                                 const std::string& device_layout_name) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
     //Build the device

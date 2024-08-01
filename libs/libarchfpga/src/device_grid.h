@@ -6,6 +6,7 @@
 #include <cmath>
 #include "vtr_ndmatrix.h"
 #include "physical_types.h"
+#include "vtr_geometry.h"
 
 /**
  * @brief s_grid_tile is the minimum tile of the fpga
@@ -73,6 +74,18 @@ class DeviceGrid {
         return grid_[tile_loc.layer_num][tile_loc.x][tile_loc.y].height_offset;
     }
 
+    ///@brief Returns a rectangle which represents the bounding box of the tile at the given location.
+    inline vtr::Rect<int> get_tile_bb(const t_physical_tile_loc& tile_loc) const {
+        t_physical_tile_type_ptr tile_type = get_physical_type(tile_loc);
+
+        int tile_xlow = tile_loc.x - get_width_offset(tile_loc);
+        int tile_ylow = tile_loc.y - get_height_offset(tile_loc);
+        int tile_xhigh = tile_xlow + tile_type->width - 1;
+        int tile_yhigh = tile_ylow + tile_type->height - 1;
+
+        return {{tile_xlow, tile_ylow}, {tile_xhigh, tile_yhigh}};
+    }
+
     ///@brief Return the metadata of the tile at the specified location
     inline const t_metadata_dict* get_metadata(const t_physical_tile_loc& tile_loc) const {
         return grid_[tile_loc.layer_num][tile_loc.x][tile_loc.y].meta;
@@ -118,7 +131,7 @@ class DeviceGrid {
      * @note which can be used for indexing in the second dimension, allowing
      * @note traditional 2-d indexing to be used
      */
-    vtr::NdMatrix<t_grid_tile, 3> grid_; //This stores the grid of complex blocks. It is a a 3D matrix: [0..num_layers-1][0..grid.width()-1][0..grid_height()-1]
+    vtr::NdMatrix<t_grid_tile, 3> grid_; //This stores the grid of complex blocks. It is a 3D matrix: [0..num_layers-1][0..grid.width()-1][0..grid_height()-1]
 
     ///@brief instance_counts_ stores the number of each tile type on each layer. It is initialized in count_instances().
     std::vector<std::map<t_physical_tile_type_ptr, size_t>> instance_counts_; /* [layer_num][physical_tile_type_ptr] */

@@ -212,7 +212,7 @@ void manual_move_cost_summary_dialog() {
     gtk_window_set_transient_for((GtkWindow*)dialog, (GtkWindow*)draw_state->manual_moves_state.manual_move_window);
 
     //Create elements for the dialog and printing costs to the user.
-    GtkWidget* title_label = gtk_label_new(NULL);
+    GtkWidget* title_label = gtk_label_new(nullptr);
     gtk_label_set_markup((GtkLabel*)title_label, "<b>Move Costs and Outcomes</b>");
     std::string delta_cost = "Delta Cost: " + std::to_string(draw_state->manual_moves_state.manual_move_info.delta_cost) + "   ";
     GtkWidget* delta_cost_label = gtk_label_new(delta_cost.c_str());

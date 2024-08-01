@@ -35,3 +35,9 @@ RRSpatialLookup
    :project: librrgraph
    :members:
 
+rr_graph_utils
+---------------
+
+.. doxygenfile:: rr_graph_utils.h
+   :project: librrgraph
+   :sections: briefdescription detaileddescription func prototype user-defined public-func

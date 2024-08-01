@@ -481,8 +481,11 @@ void RouteTree::print(void) const {
 /** Add the most recently finished wire segment to the routing tree, and
  * update the Tdel, etc. numbers for the rest of the routing tree. hptr
  * is the heap pointer of the SINK that was reached, and target_net_pin_index
- * is the net pin index corresponding to the SINK that was reached. This routine
- * returns a tuple: RouteTreeNode of the branch it adds to the route tree and
+ * is the net pin index corresponding to the SINK that was reached. Usually target_net_pin_index
+ * is a non-negative integer indicating the netlist connection being routed, but it can be OPEN (-1)
+ * to indicate this is a routing path to a virtual sink which we use when routing to the source of 
+ * dedicated clock networks. 
+ * This routine returns a tuple: RouteTreeNode of the branch it adds to the route tree and
  * RouteTreeNode of the SINK it adds to the routing. */
 std::tuple<vtr::optional<const RouteTreeNode&>, vtr::optional<const RouteTreeNode&>>
 RouteTree::update_from_heap(t_heap* hptr, int target_net_pin_index, SpatialRouteTreeLookup* spatial_rt_lookup, bool is_flat) {
@@ -503,7 +506,7 @@ RouteTree::update_from_heap(t_heap* hptr, int target_net_pin_index, SpatialRoute
         update_route_tree_spatial_lookup_recur(*start_of_new_subtree_rt_node, *spatial_rt_lookup);
     }
 
-    if (_net_id.is_valid()) /* We don't have this lookup if the tree isn't associated with a net */
+    if (_net_id.is_valid() && target_net_pin_index != OPEN) /* We don't have this lookup if the tree isn't associated with a net */
         _is_isink_reached.set(target_net_pin_index, true);
 
     return {*start_of_new_subtree_rt_node, *sink_rt_node};

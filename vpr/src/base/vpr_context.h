@@ -32,6 +32,17 @@
 #include "noc_storage.h"
 #include "noc_traffic_flows.h"
 #include "noc_routing.h"
+#include "tatum/report/TimingPath.hpp"
+
+#ifndef NO_SERVER
+
+#include "gateio.h"
+#include "taskresolver.h"
+
+class SetupHoldTimingInfo;
+class PostClusterDelayCalculator;
+
+#endif /* NO_SERVER */
 
 /**
  * @brief A Context is collection of state relating to a particular part of VPR
@@ -225,14 +236,6 @@ struct DeviceContext : public Context {
     std::vector<std::unique_ptr<ClockConnection>> clock_connections;
 
     /**
-     * @brief rr_node idx that connects to the input of all clock network wires
-     *
-     * Useful for two stage clock routing
-     * XXX: currently only one place to source the clock networks so only storing
-     *      a single value
-     */
-    int virtual_clock_network_root_idx;
-    /**
      * @brief switch_fanin_remap is only used for printing out switch fanin stats
      *        (the -switch_stats option)
      *
@@ -345,13 +348,19 @@ struct ClusteringHelperContext : public Context {
     t_ext_pin_util_targets target_external_pin_util;
 
     // During clustering, a block is related to un-clustered primitives with nets.
-    // This relation has three types: low fanout, high fanout, and trasitive
+    // This relation has three types: low fanout, high fanout, and transitive
     // high_fanout_thresholds stores the threshold for nets to a block type to be considered high fanout
     t_pack_high_fanout_thresholds high_fanout_thresholds;
 
     // A vector of unordered_sets of AtomBlockIds that are inside each clustered block [0 .. num_clustered_blocks-1]
     // unordered_set for faster insertion/deletion during the iterative improvement process of packing
     vtr::vector<ClusterBlockId, std::unordered_set<AtomBlockId>> atoms_lookup;
+
+    /** Stores the NoC group ID of each atom block. Atom blocks that belong
+     * to different NoC groups can't be clustered with each other into the
+     * same clustered block.*/
+    vtr::vector<AtomBlockId, NocGroupId> atom_noc_grp_id;
+
     ~ClusteringHelperContext() {
         delete[] primitives_list;
     }
@@ -385,6 +394,12 @@ struct PlacementContext : public Context {
 
     ///@brief The pl_macros array stores all the placement macros (usually carry chains).
     std::vector<t_pl_macro> pl_macros;
+
+    ///@brief Stores ClusterBlockId of all movable clustered blocks (blocks that are not locked down to a single location)
+    std::vector<ClusterBlockId> movable_blocks;
+
+    ///@brief Stores ClusterBlockId of all movable clustered of each block type
+    std::vector<std::vector<ClusterBlockId>> movable_blocks_per_type;
 
     /**
      * @brief Compressed grid space for each block type
@@ -476,6 +491,11 @@ struct RoutingContext : public Context {
     vtr::Cache<std::tuple<e_router_lookahead, std::string, std::vector<t_segment_inf>>,
                RouterLookahead>
         cached_router_lookahead_;
+
+    /**
+     * @brief User specified routing constraints
+     */
+    UserRouteConstraints constraints;
 };
 
 /**
@@ -493,7 +513,7 @@ struct FloorplanningContext : public Context {
      *
      * The constraints are input into vpr and do not change.
      */
-    VprConstraints constraints;
+    UserPlaceConstraints constraints;
 
     /**
      * @brief Constraints for each cluster
@@ -506,13 +526,33 @@ struct FloorplanningContext : public Context {
      */
     vtr::vector<ClusterBlockId, PartitionRegion> cluster_constraints;
 
-    std::vector<Region> overfull_regions;
+    /**
+     * @brief Floorplanning constraints in the compressed grid coordinate system.
+     *
+     * Indexing -->  [0..grid.num_layers-1][0..numClusters-1]
+     *
+     * Each clustered block has a logical type with a corresponding compressed grid.
+     * Compressed floorplanning constraints are calculated by translating the grid locations
+     * of floorplanning regions to compressed grid locations. To ensure regions do not enlarge:
+     * - The bottom left corner is rounded up to the nearest compressed location.
+     * - The top right corner is rounded down to the nearest compressed location.
+     *
+     * When the floorplanning constraint spans across multiple layers, a compressed
+     * constraints is created for each a layer that the original constraint includes.
+     * This is because blocks of the same type might have different (x, y) locations
+     * in different layers, and as result, their compressed locations in each layer
+     * may correspond to a different physical (x, y) location.
+     *
+     */
+    std::vector<vtr::vector<ClusterBlockId, PartitionRegion>> compressed_cluster_constraints;
+
+    std::vector<PartitionRegion> overfull_partition_regions;
 };
 
 /**
  * @brief State of the Network on Chip (NoC)
  *
- * This should only contain data structures related to descrbing the
+ * This should only contain data structures related to describing the
  * NoC within the device.
  */
 struct NocContext : public Context {
@@ -548,6 +588,61 @@ struct NocContext : public Context {
      */
     std::unique_ptr<NocRouting> noc_flows_router;
 };
+
+#ifndef NO_SERVER
+/**
+ * @brief State relating to server mode
+ *
+ * This should contain only data structures that
+ * relate to the vpr server state.
+ */
+struct ServerContext : public Context {
+    /**
+     * @brief \ref server::GateIO.
+     */
+    server::GateIO gate_io;
+
+    /**
+     * @brief \ref server::TaskResolver.
+     */
+    server::TaskResolver task_resolver;
+
+    /**
+     * @brief Stores the critical path items.
+     *
+     * This value is used when rendering the critical path by the selected index.
+     * Once calculated upon request, it provides the value for a specific critical path
+     * to be rendered upon user request.
+     */
+    std::vector<tatum::TimingPath> crit_paths;
+
+    /**
+     * @brief Stores the selected critical path elements.
+     *
+     * This value is used to render the selected critical path elements upon client request.
+     * The std::map key plays role of path index, where the element indexes are stored as std::set.
+     */
+    std::map<std::size_t, std::set<std::size_t>> crit_path_element_indexes;
+
+    /**
+     * @brief Stores the flag indicating whether to draw the critical path contour.
+     *
+     * If True, the entire path will be rendered with some level of transparency, regardless of the selection of path elements. However, selected path elements will be drawn in full color.
+     * This feature is helpful in visual debugging, to see how the separate path elements are mapped into the whole path.
+     */
+    bool draw_crit_path_contour = false;
+
+    /**
+     * @brief Reference to the SetupHoldTimingInfo calculated during the routing stage.
+     */
+    std::shared_ptr<SetupHoldTimingInfo> timing_info;
+
+    /**
+     * @brief Reference to the PostClusterDelayCalculator calculated during the routing stage.
+     */
+    std::shared_ptr<PostClusterDelayCalculator> routing_delay_calc;
+};
+#endif /* NO_SERVER */
 
 /**
  * @brief This object encapsulates VPR's state.
@@ -632,6 +727,11 @@ class VprContext : public Context {
     const PackingMultithreadingContext& packing_multithreading() const { return packing_multithreading_; }
     PackingMultithreadingContext& mutable_packing_multithreading() { return packing_multithreading_; }
 
+#ifndef NO_SERVER
+    const ServerContext& server() const { return server_; }
+    ServerContext& mutable_server() { return server_; }
+#endif /* NO_SERVER */
+
   private:
     DeviceContext device_;
 
@@ -647,6 +747,10 @@ class VprContext : public Context {
     RoutingContext routing_;
     FloorplanningContext constraints_;
     NocContext noc_;
+
+#ifndef NO_SERVER
+    ServerContext server_;
+#endif /* NO_SERVER */
 
     PackingMultithreadingContext packing_multithreading_;
 };

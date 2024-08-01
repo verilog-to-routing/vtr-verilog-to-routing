@@ -19,7 +19,7 @@
  *      t_pb:
  *          Represents a clustered instance of a t_pb_graph_node containing netlist primitives
  *
- *  t_pb_type and t_pb_graph_node (and related types) describe the targetted FPGA architecture, while t_pb represents
+ *  t_pb_type and t_pb_graph_node (and related types) describe the targeted FPGA architecture, while t_pb represents
  *  the actual clustering of the user netlist.
  *
  *  For example:
@@ -82,7 +82,7 @@
  * cluster until a nullptr is returned. So, the number of repeated molecules is changed from 1 to 500,
  * effectively making the clusterer pack a cluster until a nullptr is returned.
  */
-#define ATTRACTION_GROUPS_MAX_REPEATED_MOLECULES 500
+static constexpr int ATTRACTION_GROUPS_MAX_REPEATED_MOLECULES = 500;
 
 std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& packer_opts,
                                                          const t_analysis_opts& analysis_opts,
@@ -243,6 +243,12 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
              * Since some of the primitives might fail legality, this structure temporarily
              * stores PartitionRegion information while the cluster is packed*/
             PartitionRegion temp_cluster_pr;
+            /*
+             * Stores the cluster's NoC group ID as more primitives are added to it.
+             * This is used to check if a candidate primitive is in the same NoC group
+             * as the atom blocks that have already been added to the primitive.
+             */
+            NocGroupId temp_cluster_noc_grp_id = NocGroupId::INVALID();
 
             start_new_cluster(helper_ctx.cluster_placement_stats, helper_ctx.primitives_list,
                               clb_index, istart,
@@ -257,7 +263,8 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                               packer_opts.enable_pin_feasibility_filter,
                               balance_block_type_utilization,
                               packer_opts.feasible_block_array_size,
-                              temp_cluster_pr);
+                              temp_cluster_pr,
+                              temp_cluster_noc_grp_id);
 
             //initial molecule in cluster has been processed
             cluster_stats.num_molecules_processed++;
@@ -356,6 +363,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                                  router_data,
                                  target_ext_pin_util,
                                  temp_cluster_pr,
+                                 temp_cluster_noc_grp_id,
                                  block_pack_status,
                                  clustering_data.unclustered_list_head,
                                  unclustered_list_head_size,

@@ -51,9 +51,11 @@ class NocLink {
 
     double bandwidth_usage; /*!< Represents the bandwidth of the data being transmitted on the link. Units in bits-per-second(bps)*/
     double bandwidth; /*!< Represents the maximum bits per second that can be transmitted over the link without causing congestion*/
+    double latency; /*!< The zero-load latency of this link in seconds.*/
 
   public:
-    NocLink(NocLinkId link_id, NocRouterId source_router, NocRouterId sink_router, double bw);
+    NocLink(NocLinkId link_id, NocRouterId source_router, NocRouterId sink_router,
+            double bw, double lat);
 
     // getters
 
@@ -62,39 +64,45 @@ class NocLink {
      * edge
      * @return A unique id (NocRouterId) that identifies the source router of the link
      */
-    NocRouterId get_source_router(void) const;
+    NocRouterId get_source_router() const;
 
     /**
      * @brief Provides the id of the router that has this link as an incoming
      * edge
      * @return A unique id (NocRouterId) that identifies the sink router of the link
      */
-    NocRouterId get_sink_router(void) const;
+    NocRouterId get_sink_router() const;
 
     /**
      * @brief Provides the size of the data (bandwidth) being currently transmitted using the link.
      * @return A numeric value of the bandwidth usage of the link
      */
-    double get_bandwidth_usage(void) const;
+    double get_bandwidth_usage() const;
 
     /**
      * @brief Returns the maximum bandwidth that the link can carry without congestion.
      * @return A numeric value of the bandwidth capacity of the link
      */
-    double get_bandwidth(void) const;
+    double get_bandwidth() const;
 
     /**
      * @brief Calculates the extent to which the current bandwidth utilization
      * exceeds the link capacity. Any positive value means the link is congested.
      * @return A numeric value of the bandwidth over-utilization in the link
      */
-    double get_congested_bandwidth(void) const;
+    double get_congested_bandwidth() const;
 
     /**
      * @brief Computes the congested bandwidth to bandwidth capacity ratio.
      * @return The congested bandwidth to bandwidth capacity of the link.
      */
     double get_congested_bandwidth_ratio() const;
+
+    /**
+     * @brief Returns the zero-load latency of the link.
+     * @return double Zero-load latency of the link.
+     */
+    double get_latency() const;
 
     /**
      * @brief Returns the unique link ID. The ID can be used to index
@@ -135,7 +143,6 @@ class NocLink {
      */
     void set_bandwidth(double new_bandwidth);
 
-    
     /**
      * @brief Returns the unique link ID. The ID can be used to index
      * vtr::vector<NoCLinkId, ...> instances.
