@@ -1,122 +1,98 @@
+
 #include "region.h"
 
-Region::Region() {
-    sub_tile = NO_SUBTILE;
+#include <algorithm>
+#include <limits>
 
-    //default rect for a region is (999, 999, -1, -1)
-    //these values indicate an empty rectangle, they are set as default values to help catch uninitialized use
-    region_bounds.set_xmin(999);
-    region_bounds.set_ymin(999);
-    region_bounds.set_xmax(-1);
-    region_bounds.set_ymax(-1);
-    layer_num = -1;
+Region::Region(const vtr::Rect<int>& rect, int layer_num_min, int layer_num_max)
+    : rect_(rect)
+    , layer_range_({layer_num_min, layer_num_max})
+    , sub_tile_(NO_SUBTILE) {}
+
+Region::Region(const vtr::Rect<int>& rect, int layer_num)
+    : Region(rect, layer_num, layer_num) {}
+
+Region::Region(int x_min, int y_min, int x_max, int y_max, int layer_num_min, int layer_num_max)
+    : rect_({x_min, y_min, x_max, y_max})
+    , layer_range_({layer_num_min, layer_num_max})
+    , sub_tile_(NO_SUBTILE) {}
+
+Region::Region(int x_min, int y_min, int x_max, int y_max, int layer_num)
+    : Region(x_min, y_min, x_max, y_max, layer_num, layer_num) {}
+
+void Region::set_layer_range(std::pair<int, int> layer_range) {
+    layer_range_ = layer_range;
 }
 
-RegionRectCoord Region::get_region_rect() const {
-    return RegionRectCoord(region_bounds, layer_num);
+void Region::set_rect(const vtr::Rect<int>& rect) {
+    rect_ = rect;
 }
 
-void Region::set_region_rect(const RegionRectCoord& rect_coord) {
-    region_bounds.set_xmin(rect_coord.xmin);
-    region_bounds.set_xmax(rect_coord.xmax);
-    region_bounds.set_ymin(rect_coord.ymin);
-    region_bounds.set_ymax(rect_coord.ymax);
-    layer_num = rect_coord.layer_num;
-}
-
-int Region::get_layer_num() const {
-    return layer_num;
-}
+Region::Region()
+    : rect_({std::numeric_limits<int>::max(), std::numeric_limits<int>::max(),
+             std::numeric_limits<int>::min(), std::numeric_limits<int>::min()})
+    , layer_range_(0, 0)
+    , sub_tile_(NO_SUBTILE) {}
 
 int Region::get_sub_tile() const {
-    return sub_tile;
+    return sub_tile_;
 }
 
-void Region::set_sub_tile(int _sub_tile) {
-    sub_tile = _sub_tile;
+void Region::set_sub_tile(int sub_tile) {
+    sub_tile_ = sub_tile;
 }
 
-bool Region::empty() {
-    return (region_bounds.xmax() < region_bounds.xmin()
-            || region_bounds.ymax() < region_bounds.ymin()
-            || layer_num < 0);
+bool Region::empty() const {
+    const auto [layer_low, layer_high] = layer_range_;
+    return (rect_.xmax() < rect_.xmin() || rect_.ymax() < rect_.ymin() ||
+            layer_high < layer_low);
 }
 
-bool Region::is_loc_in_reg(t_pl_loc loc) {
-    bool is_loc_in_reg = false;
-    int loc_layer_num = loc.layer;
+bool Region::is_loc_in_reg(t_pl_loc loc) const {
+    const int loc_layer_num = loc.layer;
+    const auto [layer_low, layer_high] = layer_range_;
 
-    if (layer_num != loc_layer_num) {
-        return is_loc_in_reg;
+    // the location is falls outside the layer range
+    if (loc_layer_num > layer_high || loc_layer_num < layer_low) {
+        return false;
     }
 
-    vtr::Point<int> loc_coord(loc.x, loc.y);
+    const vtr::Point<int> loc_coord(loc.x, loc.y);
 
     //check that loc x and y coordinates are within region bounds
-    bool in_rectangle = region_bounds.coincident(loc_coord);
+    bool in_rectangle = rect_.coincident(loc_coord);
 
     //if a subtile is specified for the region, the location subtile should match
-    if (in_rectangle && sub_tile == loc.sub_tile) {
-        is_loc_in_reg = true;
+    if (in_rectangle && sub_tile_ == loc.sub_tile) {
+        return true;
     }
 
     //if no subtile is specified for the region, it is enough for the location to be in the rectangle
-    if (in_rectangle && sub_tile == NO_SUBTILE) {
-        is_loc_in_reg = true;
+    if (in_rectangle && sub_tile_ == NO_SUBTILE) {
+        return true;
     }
 
-    return is_loc_in_reg;
-}
-
-bool do_regions_intersect(Region r1, Region r2) {
-    bool intersect = true;
-
-    const auto r1_reg_coord = r1.get_region_rect();
-    const auto r2_reg_coord = r2.get_region_rect();
-
-    vtr::Rect<int> r1_rect(r1_reg_coord.xmin, r1_reg_coord.ymin, r1_reg_coord.xmax, r1_reg_coord.ymax);
-    vtr::Rect<int> r2_rect(r2_reg_coord.xmin, r2_reg_coord.ymin, r2_reg_coord.xmax, r2_reg_coord.ymax);
-
-    int r1_layer_num = r1_reg_coord.layer_num;
-    int r2_layer_num = r2_reg_coord.layer_num;
-
-    vtr::Rect<int> intersect_rect;
-
-    if (r1_layer_num != r2_layer_num) {
-        return intersect;
-    }
-
-    intersect_rect = intersection(r1_rect, r2_rect);
-
-    /**
-     * if the intersection rectangle is empty or the subtile of the two regions does not match,
-     * the regions do not intersect
-     */
-    if (intersect_rect.empty() || r1.get_sub_tile() != r2.get_sub_tile()) {
-        return intersect = false;
-    }
-
-    return intersect;
+    return false;
 }
 
 Region intersection(const Region& r1, const Region& r2) {
-    Region intersect;
+    const vtr::Rect<int>& r1_rect = r1.get_rect();
+    const vtr::Rect<int>& r2_rect = r2.get_rect();
 
-    const auto r1_reg_coord = r1.get_region_rect();
-    const auto r2_reg_coord = r2.get_region_rect();
+    auto [r1_layer_low, r1_layer_high] = r1.get_layer_range();
+    auto [r2_layer_low, r2_layer_high] = r2.get_layer_range();
 
-    vtr::Rect<int> r1_rect(r1_reg_coord.xmin, r1_reg_coord.ymin, r1_reg_coord.xmax, r1_reg_coord.ymax);
-    vtr::Rect<int> r2_rect(r2_reg_coord.xmin, r2_reg_coord.ymin, r2_reg_coord.xmax, r2_reg_coord.ymax);
+    auto [intersect_layer_begin, intersect_layer_end] = std::make_pair(std::max(r1_layer_low, r2_layer_low),
+                                                                                std::min(r1_layer_high, r2_layer_high));
 
-    int r1_layer_num = r1_reg_coord.layer_num;
-    int r2_layer_num = r2_reg_coord.layer_num;
-
-    vtr::Rect<int> intersect_rect;
-
-    if (r1_layer_num != r2_layer_num) {
-        return intersect;
+    // check that the give layer range start from a lower layer and end at a higher or the same layer
+    // negative layer means that the given Region object is an empty region
+    if (intersect_layer_begin > intersect_layer_end || intersect_layer_begin < 0 || intersect_layer_end < 0) {
+        return {};
     }
 
+    Region intersect;
+    intersect.set_layer_range({intersect_layer_begin, intersect_layer_end});
     /*
      * If the subtiles of two regions match (i.e. they both have no subtile specified, or the same subtile specified),
      * the regions are intersected. The resulting intersection region will have a rectangle that reflects their overlap,
@@ -132,28 +108,29 @@ Region intersection(const Region& r1, const Region& r2) {
      */
     if (r1.get_sub_tile() == r2.get_sub_tile()) {
         intersect.set_sub_tile(r1.get_sub_tile());
-        intersect_rect = intersection(r1_rect, r2_rect);
-        intersect.set_region_rect({intersect_rect, r1_layer_num});
-
+        vtr::Rect<int> intersect_rect = intersection(r1_rect, r2_rect);
+        intersect.set_rect(intersect_rect);
+        return intersect;
     } else if (r1.get_sub_tile() == NO_SUBTILE && r2.get_sub_tile() != NO_SUBTILE) {
         intersect.set_sub_tile(r2.get_sub_tile());
-        intersect_rect = intersection(r1_rect, r2_rect);
-        intersect.set_region_rect({intersect_rect, r1_layer_num});
-
+        vtr::Rect<int> intersect_rect = intersection(r1_rect, r2_rect);
+        intersect.set_rect(intersect_rect);
+        return intersect;
     } else if (r1.get_sub_tile() != NO_SUBTILE && r2.get_sub_tile() == NO_SUBTILE) {
         intersect.set_sub_tile(r1.get_sub_tile());
-        intersect_rect = intersection(r1_rect, r2_rect);
-        intersect.set_region_rect({intersect_rect, r1_layer_num});
+        vtr::Rect<int> intersect_rect = intersection(r1_rect, r2_rect);
+        intersect.set_rect(intersect_rect);
+        return intersect;
     }
 
-    return intersect;
+    // subtiles are not compatible
+    return {};
 }
 
-void print_region(FILE* fp, Region region) {
-    const auto region_coord = region.get_region_rect();
-    const auto region_rect = vtr::Rect<int>(region_coord.xmin, region_coord.ymin, region_coord.xmax, region_coord.ymax);
+void print_region(FILE* fp, const Region& region) {
+    const auto [layer_begin, layer_end] = region.get_layer_range();
     fprintf(fp, "\tRegion: \n");
-    fprintf(fp, "\tlayer: %d\n", region.get_layer_num());
-    print_rect(fp, region_rect);
+    fprintf(fp, "\tlayer range: [%d, %d]\n", layer_begin, layer_end);
+    print_rect(fp, region.get_rect());
     fprintf(fp, "\tsubtile: %d\n\n", region.get_sub_tile());
 }

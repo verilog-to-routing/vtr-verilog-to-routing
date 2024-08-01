@@ -271,10 +271,10 @@ void MainWindow::fontSizeChanged(const QString &)
  *-------------------------------------------------------------------------------------------*/
 void MainWindow::sceneScaleChanged(int scale)
 {
-    double newScale = scale/100.0;
-    QMatrix oldMatrix = view->matrix();
-    view->resetMatrix();
-    view->translate(oldMatrix.dx(), oldMatrix.dy());
+    double newScale = scale / 100.0;
+    QTransform oldTransform = view->transform(); // Use transform() instead of matrix()
+    view->resetTransform(); // Changed from resetMatrix() to resetTransform()
+    view->translate(oldTransform.dx(), oldTransform.dy()); // Use dx() and dy() from QTransform
     view->scale(newScale, newScale);
 }
 
@@ -915,7 +915,7 @@ void MainWindow::openFileWithOdin(){
                                                    tr("Open BLIF"),
                                                    QDir::homePath(),
                                                    tr("BLIF files (*.blif);;All files (*.*)"),
-                                                   0,
+                                                nullptr, // No parent,
                                                    QFileDialog::DontUseNativeDialog);
 
     myContainer->setFilename(actBlifFilename);
@@ -925,10 +925,10 @@ void MainWindow::openFileWithOdin(){
         //An error occured
         QMessageBox msgBox(QMessageBox::Warning, tr("No Structure Found in File"),
                            "The file you tried to explore does not contain any structures or could not be opened. Please select another file."
-                           , 0, this);
-        msgBox.addButton(tr("Open &Again"), QMessageBox::AcceptRole);
-        msgBox.addButton(tr("&Continue"), QMessageBox::RejectRole);
-        if (msgBox.exec() == QMessageBox::AcceptRole)
+                           
+                           , QMessageBox::Open | QMessageBox::Cancel, this);
+        msgBox.setDefaultButton(QMessageBox::Open);
+        if (msgBox.exec() == QMessageBox::Open)
             openFileWithOdin();
 
     }else{

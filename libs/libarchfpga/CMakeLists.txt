@@ -57,7 +57,7 @@ target_link_libraries(read_arch libarchfpga)
 
 #Supress IPO link warnings if IPO is enabled
 get_target_property(READ_ARCH_USES_IPO read_arch INTERPROCEDURAL_OPTIMIZATION)
-if (READ_ARCH_USES_IPO)
+if(READ_ARCH_USES_IPO)
     set_property(TARGET read_arch APPEND PROPERTY LINK_FLAGS ${IPO_LINK_WARN_SUPRESS_FLAGS})
 endif()
 
@@ -70,3 +70,8 @@ install(FILES ${LIB_HEADERS} DESTINATION include/libarchfpga)
 file(GLOB_RECURSE TEST_SOURCES test/*.cpp)
 add_executable(test_archfpga ${TEST_SOURCES})
 target_link_libraries(test_archfpga Catch2::Catch2WithMain libarchfpga)
+
+add_test(NAME test_archfpga
+    COMMAND test_archfpga
+    --colour-mode ansi
+    )

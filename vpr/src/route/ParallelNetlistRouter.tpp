@@ -42,7 +42,7 @@ void ParallelNetlistRouter<HeapType>::route_partition_tree_node(tbb::task_group&
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
     /* Sort so net with most sinks is routed first. */
-    std::sort(node.nets.begin(), node.nets.end(), [&](ParentNetId id1, ParentNetId id2) -> bool {
+    std::stable_sort(node.nets.begin(), node.nets.end(), [&](ParentNetId id1, ParentNetId id2) -> bool {
         return _net_list.net_sinks(id1).size() > _net_list.net_sinks(id2).size();
     });
 

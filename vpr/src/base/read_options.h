@@ -12,6 +12,7 @@ struct t_options {
     argparse::ArgValue<std::string> ArchFile;
     argparse::ArgValue<std::string> CircuitName;
     argparse::ArgValue<std::string> NetFile;
+    argparse::ArgValue<std::string> FlatPlaceFile;
     argparse::ArgValue<std::string> PlaceFile;
     argparse::ArgValue<std::string> RouteFile;
     argparse::ArgValue<std::string> CircuitFile;
@@ -30,6 +31,8 @@ struct t_options {
     argparse::ArgValue<std::string> write_initial_place_file;
     argparse::ArgValue<std::string> read_vpr_constraints_file;
     argparse::ArgValue<std::string> write_vpr_constraints_file;
+    argparse::ArgValue<std::string> write_constraints_file;
+    argparse::ArgValue<std::string> write_flat_place_file;
 
     argparse::ArgValue<std::string> write_placement_delay_lookup;
     argparse::ArgValue<std::string> read_placement_delay_lookup;
@@ -44,6 +47,7 @@ struct t_options {
 
     /* Stage Options */
     argparse::ArgValue<bool> do_packing;
+    argparse::ArgValue<bool> do_legalize;
     argparse::ArgValue<bool> do_placement;
     argparse::ArgValue<bool> do_routing;
     argparse::ArgValue<bool> do_analysis;
@@ -74,6 +78,10 @@ struct t_options {
     argparse::ArgValue<std::string> suppress_warnings;
     argparse::ArgValue<bool> allow_dangling_combinational_nodes;
     argparse::ArgValue<bool> terminate_if_timing_fails;
+
+    /* Server options */
+    argparse::ArgValue<bool> is_server_mode_enabled;
+    argparse::ArgValue<int> server_port_num;
 
     /* Atom netlist options */
     argparse::ArgValue<bool> absorb_buffer_luts;
@@ -126,7 +134,6 @@ struct t_options {
     argparse::ArgValue<e_place_delta_delay_algorithm> place_delta_delay_matrix_calculation_method;
     argparse::ArgValue<bool> enable_analytic_placer;
     argparse::ArgValue<std::vector<float>> place_static_move_prob;
-    argparse::ArgValue<std::vector<float>> place_static_notiming_move_prob;
     argparse::ArgValue<int> place_high_fanout_net;
     argparse::ArgValue<e_place_bounding_box_mode> place_bounding_box_mode;
 
@@ -153,10 +160,17 @@ struct t_options {
     argparse::ArgValue<std::string> noc_flows_file;
     argparse::ArgValue<std::string> noc_routing_algorithm;
     argparse::ArgValue<double> noc_placement_weighting;
+    argparse::ArgValue<double> noc_agg_bandwidth_weighting;
     argparse::ArgValue<double> noc_latency_constraints_weighting;
     argparse::ArgValue<double> noc_latency_weighting;
     argparse::ArgValue<double> noc_congestion_weighting;
+    argparse::ArgValue<double> noc_centroid_weight;
     argparse::ArgValue<double> noc_swap_percentage;
+    argparse::ArgValue<int> noc_sat_routing_bandwidth_resolution;
+    argparse::ArgValue<int> noc_sat_routing_latency_overrun_weighting_factor;
+    argparse::ArgValue<int> noc_sat_routing_congestion_weighting_factor;
+    argparse::ArgValue<int> noc_sat_routing_num_workers;
+    argparse::ArgValue<bool> noc_sat_routing_log_search_progress;
     argparse::ArgValue<std::string> noc_placement_file_name;
 
     /* Timing-driven placement options only */
@@ -182,6 +196,7 @@ struct t_options {
     argparse::ArgValue<float> first_iter_pres_fac;
     argparse::ArgValue<float> initial_pres_fac;
     argparse::ArgValue<float> pres_fac_mult;
+    argparse::ArgValue<float> max_pres_fac;
     argparse::ArgValue<float> acc_fac;
     argparse::ArgValue<int> bb_factor;
     argparse::ArgValue<e_base_cost_type> base_cost_type;
@@ -248,7 +263,7 @@ struct t_options {
     argparse::ArgValue<std::string> write_timing_summary;
 };
 
-argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& args);
+argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_options& args);
 t_options read_options(int argc, const char** argv);
 void set_conditional_defaults(t_options& args);
 bool verify_args(const t_options& args);

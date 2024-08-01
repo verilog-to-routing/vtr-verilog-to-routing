@@ -59,6 +59,7 @@ uint64_t generateRandomId() {
 #else
   int fd;
   KJ_SYSCALL(fd = open("/dev/urandom", O_RDONLY));
+  KJ_DEFER(close(fd));
 
   ssize_t n;
   KJ_SYSCALL(n = read(fd, &result, sizeof(result)), "/dev/urandom");
@@ -69,7 +70,7 @@ uint64_t generateRandomId() {
 }
 
 void parseFile(List<Statement>::Reader statements, ParsedFile::Builder result,
-               ErrorReporter& errorReporter) {
+               ErrorReporter& errorReporter, bool requiresId) {
   CapnpParser parser(Orphanage::getForMessageContaining(result), errorReporter);
 
   kj::Vector<Orphan<Declaration>> decls(statements.size());
@@ -110,7 +111,7 @@ void parseFile(List<Statement>::Reader statements, ParsedFile::Builder result,
 
     // Don't report missing ID if there was a parse error, because quite often the parse error
     // prevents us from parsing the ID even though it is actually there.
-    if (!errorReporter.hadErrors()) {
+    if (requiresId && !errorReporter.hadErrors()) {
       errorReporter.addError(0, 0,
           kj::str("File does not declare an ID.  I've generated one for you.  Add this line to "
                   "your file: @0x", kj::hex(id), ";"));

@@ -68,7 +68,7 @@ void NoCPlacementCheckpoint::restore_checkpoint(t_placer_costs& costs) {
     }
 
     // Re-initialize routes and static variables that keep track of NoC-related costs
-    reinitialize_noc_routing(costs);
+    reinitialize_noc_routing(costs, {});
 }
 
 bool NoCPlacementCheckpoint::is_valid() const {

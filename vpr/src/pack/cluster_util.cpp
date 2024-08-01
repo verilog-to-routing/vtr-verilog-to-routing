@@ -76,29 +76,28 @@ static void echo_clusters(char* filename) {
         cluster_atoms[clb_index].push_back(atom_blk_id);
     }
 
-    for (auto i = cluster_atoms.begin(); i != cluster_atoms.end(); i++) {
-        std::string cluster_name;
-        cluster_name = cluster_ctx.clb_nlist.block_name(i->first);
-        fprintf(fp, "Cluster %s Id: %zu \n", cluster_name.c_str(), size_t(i->first));
+    for (auto& cluster_atom : cluster_atoms) {
+        const std::string& cluster_name = cluster_ctx.clb_nlist.block_name(cluster_atom.first);
+        fprintf(fp, "Cluster %s Id: %zu \n", cluster_name.c_str(), size_t(cluster_atom.first));
         fprintf(fp, "\tAtoms in cluster: \n");
 
-        int num_atoms = i->second.size();
+        int num_atoms = cluster_atom.second.size();
 
         for (auto j = 0; j < num_atoms; j++) {
-            AtomBlockId atom_id = i->second[j];
+            AtomBlockId atom_id = cluster_atom.second[j];
             fprintf(fp, "\t %s \n", atom_ctx.nlist.block_name(atom_id).c_str());
         }
     }
 
     fprintf(fp, "\nCluster Floorplanning Constraints:\n");
-    auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
+    const auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
 
     for (ClusterBlockId clb_id : cluster_ctx.clb_nlist.blocks()) {
-        std::vector<Region> reg = floorplanning_ctx.cluster_constraints[clb_id].get_partition_region();
-        if (reg.size() != 0) {
+        const std::vector<Region>& regions = floorplanning_ctx.cluster_constraints[clb_id].get_regions();
+        if (!regions.empty()) {
             fprintf(fp, "\nRegions in Cluster %zu:\n", size_t(clb_id));
-            for (unsigned int i = 0; i < reg.size(); i++) {
-                print_region(fp, reg[i]);
+            for (const auto& region : regions) {
+                print_region(fp, region);
             }
         }
     }
@@ -919,34 +918,30 @@ bool cleanup_pb(t_pb* pb) {
  * Otherwise, it returns the appropriate failed pack status based on which
  * legality check the molecule failed.
  */
-enum e_block_pack_status try_pack_molecule(t_cluster_placement_stats* cluster_placement_stats_ptr,
-                                           t_pack_molecule* molecule,
-                                           t_pb_graph_node** primitives_list,
-                                           t_pb* pb,
-                                           const int max_models,
-                                           const int max_cluster_size,
-                                           const ClusterBlockId clb_index,
-                                           const int detailed_routing_stage,
-                                           t_lb_router_data* router_data,
-                                           int verbosity,
-                                           bool enable_pin_feasibility_filter,
-                                           const int feasible_block_array_size,
-                                           t_ext_pin_util max_external_pin_util,
-                                           PartitionRegion& temp_cluster_pr) {
-    int molecule_size, failed_location;
-    int i;
-    enum e_block_pack_status block_pack_status;
+e_block_pack_status try_pack_molecule(t_cluster_placement_stats* cluster_placement_stats_ptr,
+                                      t_pack_molecule* molecule,
+                                      t_pb_graph_node** primitives_list,
+                                      t_pb* pb,
+                                      int max_models,
+                                      int max_cluster_size,
+                                      ClusterBlockId clb_index,
+                                      int detailed_routing_stage,
+                                      t_lb_router_data* router_data,
+                                      int verbosity,
+                                      bool enable_pin_feasibility_filter,
+                                      int feasible_block_array_size,
+                                      t_ext_pin_util max_external_pin_util,
+                                      PartitionRegion& temp_cluster_pr,
+                                      NocGroupId& temp_noc_grp_id,
+                                      int force_site) {
     t_pb* parent;
     t_pb* cur_pb;
 
-    auto& atom_ctx = g_vpr_ctx.atom();
+    const auto& atom_ctx = g_vpr_ctx.atom();
     auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
     parent = nullptr;
 
-    block_pack_status = BLK_STATUS_UNDEFINED;
-
-    molecule_size = get_array_size_of_molecule(molecule);
-    failed_location = 0;
+    const int molecule_size = get_array_size_of_molecule(molecule);
 
     if (verbosity > 3) {
         AtomBlockId root_atom = molecule->atom_block_ids[molecule->root];
@@ -969,62 +964,81 @@ enum e_block_pack_status try_pack_molecule(t_cluster_placement_stats* cluster_pl
         VTR_LOGV(verbosity > 4, "\t\t\tFAILED Placement Feasibility Filter: Only one long chain per cluster is allowed\n");
         //Record the failure of this molecule in the current pb stats
         record_molecule_failure(molecule, pb);
-        return BLK_FAILED_FEASIBLE;
+        return e_block_pack_status::BLK_FAILED_FEASIBLE;
     }
 
-    bool cluster_pr_needs_update = false;
     bool cluster_pr_update_check = false;
 
     //check if every atom in the molecule is legal in the cluster from a floorplanning perspective
     for (int i_mol = 0; i_mol < molecule_size; i_mol++) {
         //try to intersect with atom PartitionRegion if atom exists
         if (molecule->atom_block_ids[i_mol]) {
-            block_pack_status = atom_cluster_floorplanning_check(molecule->atom_block_ids[i_mol],
-                                                                 clb_index, verbosity,
-                                                                 temp_cluster_pr,
-                                                                 cluster_pr_needs_update);
-            if (block_pack_status == BLK_FAILED_FLOORPLANNING) {
+            bool cluster_pr_needs_update = false;
+            bool block_pack_floorplan_status = atom_cluster_floorplanning_check(molecule->atom_block_ids[i_mol],
+                                                                                clb_index, verbosity,
+                                                                                temp_cluster_pr,
+                                                                                cluster_pr_needs_update);
+
+            if (!block_pack_floorplan_status) {
                 //Record the failure of this molecule in the current pb stats
                 record_molecule_failure(molecule, pb);
-                return block_pack_status;
+                return e_block_pack_status::BLK_FAILED_FLOORPLANNING;
             }
-            if (cluster_pr_needs_update == true) {
+
+            if (cluster_pr_needs_update) {
                 cluster_pr_update_check = true;
             }
         }
     }
 
-    //change  status back to undefined before the while loop in case in was changed to BLK_PASSED in the above for loop
-    block_pack_status = BLK_STATUS_UNDEFINED;
+    // check if all atoms in the molecule can be added to the cluster without NoC group conflicts
+    for (int i_mol = 0; i_mol < molecule_size; i_mol++) {
+        if (molecule->atom_block_ids[i_mol]) {
+            bool block_pack_noc_grp_status = atom_cluster_noc_group_check(molecule->atom_block_ids[i_mol],
+                                                                          clb_index, verbosity,
+                                                                          temp_noc_grp_id);
 
-    while (block_pack_status != BLK_PASSED) {
+            if (!block_pack_noc_grp_status) {
+                //Record the failure of this molecule in the current pb stats
+                record_molecule_failure(molecule, pb);
+                return e_block_pack_status::BLK_FAILED_NOC_GROUP;
+            }
+        }
+    }
+
+    e_block_pack_status block_pack_status = e_block_pack_status::BLK_STATUS_UNDEFINED;
+
+    while (block_pack_status != e_block_pack_status::BLK_PASSED) {
         if (get_next_primitive_list(cluster_placement_stats_ptr, molecule,
-                                    primitives_list)) {
-            block_pack_status = BLK_PASSED;
+                                    primitives_list, force_site)) {
+            block_pack_status = e_block_pack_status::BLK_PASSED;
 
-            for (i = 0; i < molecule_size && block_pack_status == BLK_PASSED; i++) {
-                VTR_ASSERT((primitives_list[i] == nullptr) == (!molecule->atom_block_ids[i]));
-                failed_location = i + 1;
+            int failed_location = 0;
+
+            for (int i_mol = 0; i_mol < molecule_size && block_pack_status == e_block_pack_status::BLK_PASSED; i_mol++) {
+                VTR_ASSERT((primitives_list[i_mol] == nullptr) == (!molecule->atom_block_ids[i_mol]));
+                failed_location = i_mol + 1;
                 // try place atom block if it exists
-                if (molecule->atom_block_ids[i]) {
-                    block_pack_status = try_place_atom_block_rec(primitives_list[i],
-                                                                 molecule->atom_block_ids[i], pb, &parent,
+                if (molecule->atom_block_ids[i_mol]) {
+                    block_pack_status = try_place_atom_block_rec(primitives_list[i_mol],
+                                                                 molecule->atom_block_ids[i_mol], pb, &parent,
                                                                  max_models, max_cluster_size, clb_index,
                                                                  cluster_placement_stats_ptr, molecule, router_data,
                                                                  verbosity, feasible_block_array_size);
                 }
             }
 
-            if (enable_pin_feasibility_filter && block_pack_status == BLK_PASSED) {
+            if (enable_pin_feasibility_filter && block_pack_status == e_block_pack_status::BLK_PASSED) {
                 /* Check if pin usage is feasible for the current packing assignment */
                 reset_lookahead_pins_used(pb);
                 try_update_lookahead_pins_used(pb);
                 if (!check_lookahead_pins_used(pb, max_external_pin_util)) {
                     VTR_LOGV(verbosity > 4, "\t\t\tFAILED Pin Feasibility Filter\n");
-                    block_pack_status = BLK_FAILED_FEASIBLE;
+                    block_pack_status = e_block_pack_status::BLK_FAILED_FEASIBLE;
                 }
             }
-            if (block_pack_status == BLK_PASSED) {
+
+            if (block_pack_status == e_block_pack_status::BLK_PASSED) {
                 /*
                  * during the clustering step of `do_clustering`, `detailed_routing_stage` is incremented at each iteration until it a cluster
                  * is correctly generated or `detailed_routing_stage` assumes an invalid value (E_DETAILED_ROUTE_INVALID).
@@ -1064,15 +1078,15 @@ enum e_block_pack_status try_pack_molecule(t_cluster_placement_stats* cluster_pl
                     } while (do_detailed_routing_stage && mode_status.is_mode_issue());
                 }
 
-                if (do_detailed_routing_stage && is_routed == false) {
+                if (do_detailed_routing_stage && !is_routed) {
                     /* Cannot pack */
                     VTR_LOGV(verbosity > 4, "\t\t\tFAILED Detailed Routing Legality\n");
-                    block_pack_status = BLK_FAILED_ROUTE;
+                    block_pack_status = e_block_pack_status::BLK_FAILED_ROUTE;
                 } else {
                     /* Pack successful, commit
                      * TODO: SW Engineering note - may want to update cluster stats here too instead of doing it outside
                      */
-                    VTR_ASSERT(block_pack_status == BLK_PASSED);
+                    VTR_ASSERT(block_pack_status == e_block_pack_status::BLK_PASSED);
                     if (molecule->is_chain()) {
                         /* Chained molecules often take up lots of area and are important,
                          * if a chain is packed in, want to rename logic block to match chain name */
@@ -1099,12 +1113,10 @@ enum e_block_pack_status try_pack_molecule(t_cluster_placement_stats* cluster_pl
                     //update cluster PartitionRegion if atom with floorplanning constraints was added
                     if (cluster_pr_update_check) {
                         floorplanning_ctx.cluster_constraints[clb_index] = temp_cluster_pr;
-                        if (verbosity > 2) {
-                            VTR_LOG("\nUpdated PartitionRegion of cluster %d\n", clb_index);
-                        }
+                        VTR_LOGV(verbosity > 2, "\nUpdated PartitionRegion of cluster %d\n", clb_index);
                     }
 
-                    for (i = 0; i < molecule_size; i++) {
+                    for (int i = 0; i < molecule_size; i++) {
                         if (molecule->atom_block_ids[i]) {
                             /* invalidate all molecules that share atom block with current molecule */
 
@@ -1120,13 +1132,13 @@ enum e_block_pack_status try_pack_molecule(t_cluster_placement_stats* cluster_pl
                 }
             }
 
-            if (block_pack_status != BLK_PASSED) {
-                for (i = 0; i < failed_location; i++) {
+            if (block_pack_status != e_block_pack_status::BLK_PASSED) {
+                for (int i = 0; i < failed_location; i++) {
                     if (molecule->atom_block_ids[i]) {
                         remove_atom_from_target(router_data, molecule->atom_block_ids[i]);
                     }
                 }
-                for (i = 0; i < failed_location; i++) {
+                for (int i = 0; i < failed_location; i++) {
                     if (molecule->atom_block_ids[i]) {
                         revert_place_atom_block(molecule->atom_block_ids[i], router_data);
                     }
@@ -1145,7 +1157,7 @@ enum e_block_pack_status try_pack_molecule(t_cluster_placement_stats* cluster_pl
             }
         } else {
             VTR_LOGV(verbosity > 3, "\t\tFAILED No candidate primitives available\n");
-            block_pack_status = BLK_FAILED_FEASIBLE;
+            block_pack_status = e_block_pack_status::BLK_FAILED_FEASIBLE;
             break; /* no more candidate primitives available, this molecule will not pack, return fail */
         }
     }
@@ -1196,7 +1208,7 @@ enum e_block_pack_status try_place_atom_block_rec(const t_pb_graph_node* pb_grap
 
     my_parent = nullptr;
 
-    block_pack_status = BLK_PASSED;
+    block_pack_status = e_block_pack_status::BLK_PASSED;
 
     /* Discover parent */
     if (pb_graph_node->parent_pb_graph_node != cb->pb_graph_node) {
@@ -1232,7 +1244,10 @@ enum e_block_pack_status try_place_atom_block_rec(const t_pb_graph_node* pb_grap
             }
         }
     } else {
-        VTR_ASSERT(parent_pb->mode == pb_graph_node->pb_type->parent_mode->index);
+       /* if this is not the first child of this parent, must match existing parent mode */
+       if (parent_pb->mode != pb_graph_node->pb_type->parent_mode->index) {
+            return e_block_pack_status::BLK_FAILED_FEASIBLE;
+        }
     }
 
     const t_mode* mode = &parent_pb->pb_graph_node->pb_type->modes[parent_pb->mode];
@@ -1254,7 +1269,7 @@ enum e_block_pack_status try_place_atom_block_rec(const t_pb_graph_node* pb_grap
      * Early exit to flag failure
      */
     if (true == pb_type->parent_mode->disable_packing) {
-        return BLK_FAILED_FEASIBLE;
+        return e_block_pack_status::BLK_FAILED_FEASIBLE;
     }
 
     is_primitive = (pb_type->num_modes == 0);
@@ -1274,11 +1289,11 @@ enum e_block_pack_status try_place_atom_block_rec(const t_pb_graph_node* pb_grap
         add_atom_as_target(router_data, blk_id);
         if (!primitive_feasible(blk_id, pb)) {
             /* failed location feasibility check, revert pack */
-            block_pack_status = BLK_FAILED_FEASIBLE;
+            block_pack_status = e_block_pack_status::BLK_FAILED_FEASIBLE;
         }
 
         // if this block passed and is part of a chained molecule
-        if (block_pack_status == BLK_PASSED && molecule->is_chain()) {
+        if (block_pack_status == e_block_pack_status::BLK_PASSED && molecule->is_chain()) {
             auto molecule_root_block = molecule->atom_block_ids[molecule->root];
             // if this is the root block of the chain molecule check its placmeent feasibility
             if (blk_id == molecule_root_block) {
@@ -1286,14 +1301,14 @@ enum e_block_pack_status try_place_atom_block_rec(const t_pb_graph_node* pb_grap
             }
         }
 
-        VTR_LOGV(verbosity > 4 && block_pack_status == BLK_PASSED,
+        VTR_LOGV(verbosity > 4 && block_pack_status == e_block_pack_status::BLK_PASSED,
                  "\t\t\tPlaced atom '%s' (%s) at %s\n",
                  atom_ctx.nlist.block_name(blk_id).c_str(),
                  atom_ctx.nlist.block_model(blk_id)->name,
                  pb->hierarchical_type_name().c_str());
     }
 
-    if (block_pack_status != BLK_PASSED) {
+    if (block_pack_status != e_block_pack_status::BLK_PASSED) {
         free(pb->name);
         pb->name = nullptr;
     }
@@ -1305,11 +1320,11 @@ enum e_block_pack_status try_place_atom_block_rec(const t_pb_graph_node* pb_grap
  * If the atom and cluster both have non-empty PartitionRegions, and the intersection
  * of the PartitionRegions is empty, the atom cannot be packed in the cluster.
  */
-enum e_block_pack_status atom_cluster_floorplanning_check(const AtomBlockId blk_id,
-                                                          const ClusterBlockId clb_index,
-                                                          const int verbosity,
-                                                          PartitionRegion& temp_cluster_pr,
-                                                          bool& cluster_pr_needs_update) {
+bool atom_cluster_floorplanning_check(AtomBlockId blk_id,
+                                      ClusterBlockId clb_index,
+                                      int verbosity,
+                                      PartitionRegion& temp_cluster_pr,
+                                      bool& cluster_pr_needs_update) {
     auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
 
     /*check if the atom can go in the cluster by checking if the atom and cluster have intersecting PartitionRegions*/
@@ -1318,52 +1333,82 @@ enum e_block_pack_status atom_cluster_floorplanning_check(const AtomBlockId blk_
     PartitionId partid;
     partid = floorplanning_ctx.constraints.get_atom_partition(blk_id);
 
-    PartitionRegion atom_pr;
-    PartitionRegion cluster_pr;
-
     //if the atom does not belong to a partition, it can be put in the cluster
     //regardless of what the cluster's PartitionRegion is because it has no constraints
     if (partid == PartitionId::INVALID()) {
-        if (verbosity > 3) {
-            VTR_LOG("\t\t\t Intersect: Atom block %d has no floorplanning constraints, passed for cluster %d \n", blk_id, clb_index);
-        }
+        VTR_LOGV(verbosity > 3,
+                 "\t\t\t Intersect: Atom block %d has no floorplanning constraints, passed for cluster %d \n",
+                 blk_id, clb_index);
         cluster_pr_needs_update = false;
-        return BLK_PASSED;
+        return true;
     } else {
         //get pr of that partition
-        atom_pr = floorplanning_ctx.constraints.get_partition_pr(partid);
+        const PartitionRegion& atom_pr = floorplanning_ctx.constraints.get_partition_pr(partid);
 
         //intersect it with the pr of the current cluster
-        cluster_pr = floorplanning_ctx.cluster_constraints[clb_index];
+        PartitionRegion cluster_pr = floorplanning_ctx.cluster_constraints[clb_index];
 
-        if (cluster_pr.empty() == true) {
+        if (cluster_pr.empty()) {
             temp_cluster_pr = atom_pr;
             cluster_pr_needs_update = true;
-            if (verbosity > 3) {
-                VTR_LOG("\t\t\t Intersect: Atom block %d has floorplanning constraints, passed cluster %d which has empty PR\n", blk_id, clb_index);
-            }
-            return BLK_PASSED;
+            VTR_LOGV(verbosity > 3,
+                     "\t\t\t Intersect: Atom block %d has floorplanning constraints, passed cluster %d which has empty PR\n",
+                     blk_id, clb_index);
+            return true;
         } else {
             //update cluster_pr with the intersection of the cluster's PartitionRegion
             //and the atom's PartitionRegion
             update_cluster_part_reg(cluster_pr, atom_pr);
         }
 
-        if (cluster_pr.empty() == true) {
-            if (verbosity > 3) {
-                VTR_LOG("\t\t\t Intersect: Atom block %d failed floorplanning check for cluster %d \n", blk_id, clb_index);
-            }
+        // At this point, cluster_pr is the intersection of atom_pr and the clusters current pr
+        if (cluster_pr.empty()) {
+            VTR_LOGV(verbosity > 3,
+                     "\t\t\t Intersect: Atom block %d failed floorplanning check for cluster %d \n",
+                     blk_id, clb_index);
             cluster_pr_needs_update = false;
-            return BLK_FAILED_FLOORPLANNING;
+            return false;
         } else {
             //update the cluster's PartitionRegion with the intersecting PartitionRegion
             temp_cluster_pr = cluster_pr;
             cluster_pr_needs_update = true;
-            if (verbosity > 3) {
-                VTR_LOG("\t\t\t Intersect: Atom block %d passed cluster %d, cluster PR was updated with intersection result \n", blk_id, clb_index);
-            }
-            return BLK_PASSED;
+            VTR_LOGV(verbosity > 3,
+                    "\t\t\t Intersect: Atom block %d passed cluster %d, cluster PR was updated with intersection result \n",
+                    blk_id, clb_index);
+            return true;
         }
+    }
+}
+
+bool atom_cluster_noc_group_check(AtomBlockId blk_id,
+                                  ClusterBlockId clb_index,
+                                  int verbosity,
+                                  NocGroupId& temp_cluster_noc_grp_id) {
+    const auto& atom_noc_grp_ids = g_vpr_ctx.cl_helper().atom_noc_grp_id;
+    const NocGroupId atom_noc_grp_id = atom_noc_grp_ids.empty() ? NocGroupId::INVALID() : atom_noc_grp_ids[blk_id];
+
+    if (temp_cluster_noc_grp_id == NocGroupId::INVALID()) {
+        // the cluster does not have a NoC group
+        // assign the atom's NoC group to cluster
+        VTR_LOGV(verbosity > 3,
+                 "\t\t\t NoC Group: Atom block %d passed cluster %d, cluster's NoC group was updated with the atom's group %d\n",
+                 blk_id, clb_index, (size_t)atom_noc_grp_id);
+        temp_cluster_noc_grp_id = atom_noc_grp_id;
+        return true;
+    } else if (temp_cluster_noc_grp_id == atom_noc_grp_id) {
+        // the cluster has the same NoC group ID as the atom,
+        // so they are compatible
+        VTR_LOGV(verbosity > 3,
+                 "\t\t\t NoC Group: Atom block %d passed cluster %d, cluster's NoC group was compatible with the atom's group %d\n",
+                 blk_id, clb_index, (size_t)atom_noc_grp_id);
+        return true;
+    } else {
+        // the cluster belongs to a different NoC group than the atom's group,
+        // so they are incompatible
+        VTR_LOGV(verbosity > 3,
+                 "\t\t\t NoC Group: Atom block %d failed NoC group check for cluster %d. Cluster's NoC group: %d, atom's NoC group: %d\n",
+                 blk_id, clb_index, (size_t)temp_cluster_noc_grp_id, size_t(atom_noc_grp_id));
+        return false;
     }
 }
 
@@ -1502,6 +1547,7 @@ void try_fill_cluster(const t_packer_opts& packer_opts,
                       t_lb_router_data* router_data,
                       t_ext_pin_util target_ext_pin_util,
                       PartitionRegion& temp_cluster_pr,
+                      NocGroupId& temp_noc_grp_id,
                       e_block_pack_status& block_pack_status,
                       t_molecule_link* unclustered_list_head,
                       const int& unclustered_list_head_size,
@@ -1524,7 +1570,8 @@ void try_fill_cluster(const t_packer_opts& packer_opts,
                                           packer_opts.enable_pin_feasibility_filter,
                                           packer_opts.feasible_block_array_size,
                                           target_ext_pin_util,
-                                          temp_cluster_pr);
+                                          temp_cluster_pr,
+                                          temp_noc_grp_id);
 
     auto blk_id = next_molecule->atom_block_ids[next_molecule->root];
     VTR_ASSERT(blk_id);
@@ -1532,15 +1579,15 @@ void try_fill_cluster(const t_packer_opts& packer_opts,
     std::string blk_name = atom_ctx.nlist.block_name(blk_id);
     const t_model* blk_model = atom_ctx.nlist.block_model(blk_id);
 
-    if (block_pack_status != BLK_PASSED) {
+    if (block_pack_status != e_block_pack_status::BLK_PASSED) {
         if (packer_opts.pack_verbosity > 2) {
-            if (block_pack_status == BLK_FAILED_ROUTE) {
+            if (block_pack_status == e_block_pack_status::BLK_FAILED_ROUTE) {
                 VTR_LOG("\tNO_ROUTE: '%s' (%s)", blk_name.c_str(), blk_model->name);
                 VTR_LOGV(next_molecule->pack_pattern, " molecule %s molecule_size %zu",
                          next_molecule->pack_pattern->name, next_molecule->atom_block_ids.size());
                 VTR_LOG("\n");
                 fflush(stdout);
-            } else if (block_pack_status == BLK_FAILED_FLOORPLANNING) {
+            } else if (block_pack_status == e_block_pack_status::BLK_FAILED_FLOORPLANNING) {
                 VTR_LOG("\tFAILED_FLOORPLANNING_CONSTRAINTS_CHECK: '%s' (%s)", blk_name.c_str(), blk_model->name);
                 VTR_LOG("\n");
             } else {
@@ -2036,7 +2083,7 @@ void start_new_cluster(t_cluster_placement_stats* cluster_placement_stats,
                        const int num_models,
                        const int max_cluster_size,
                        const t_arch* arch,
-                       std::string device_layout_name,
+                       const std::string& device_layout_name,
                        std::vector<t_lb_type_rr_node>* lb_type_rr_graphs,
                        t_lb_router_data** router_data,
                        const int detailed_routing_stage,
@@ -2046,7 +2093,8 @@ void start_new_cluster(t_cluster_placement_stats* cluster_placement_stats,
                        bool enable_pin_feasibility_filter,
                        bool balance_block_type_utilization,
                        const int feasible_block_array_size,
-                       PartitionRegion& temp_cluster_pr) {
+                       PartitionRegion& temp_cluster_pr,
+                       NocGroupId& temp_noc_grp_id) {
     /* Given a starting seed block, start_new_cluster determines the next cluster type to use
      * It expands the FPGA if it cannot find a legal cluster for the atom block
      */
@@ -2108,7 +2156,7 @@ void start_new_cluster(t_cluster_placement_stats* cluster_placement_stats,
         *router_data = alloc_and_load_router_data(&lb_type_rr_graphs[type->index], type);
 
         //Try packing into each mode
-        e_block_pack_status pack_result = BLK_STATUS_UNDEFINED;
+        e_block_pack_status pack_result = e_block_pack_status::BLK_STATUS_UNDEFINED;
         for (int j = 0; j < type->pb_graph_head->pb_type->num_modes && !success; j++) {
             pb->mode = j;
 
@@ -2128,9 +2176,10 @@ void start_new_cluster(t_cluster_placement_stats* cluster_placement_stats,
                                             enable_pin_feasibility_filter,
                                             feasible_block_array_size,
                                             FULL_EXTERNAL_PIN_UTIL,
-                                            temp_cluster_pr);
+                                            temp_cluster_pr,
+                                            temp_noc_grp_id);
 
-            success = (pack_result == BLK_PASSED);
+            success = (pack_result == e_block_pack_status::BLK_PASSED);
         }
 
         if (success) {
@@ -3432,7 +3481,7 @@ void update_molecule_chain_info(t_pack_molecule* chain_molecule, const t_pb_grap
 enum e_block_pack_status check_chain_root_placement_feasibility(const t_pb_graph_node* pb_graph_node,
                                                                 const t_pack_molecule* molecule,
                                                                 const AtomBlockId blk_id) {
-    enum e_block_pack_status block_pack_status = BLK_PASSED;
+    enum e_block_pack_status block_pack_status = e_block_pack_status::BLK_PASSED;
     auto& atom_ctx = g_vpr_ctx.atom();
 
     bool is_long_chain = molecule->chain_info->is_long_chain;
@@ -3460,19 +3509,19 @@ enum e_block_pack_status check_chain_root_placement_feasibility(const t_pb_graph
             // the chosen primitive should be a valid starting point for the chain
             // long chains should only be placed at the top of the chain tieOff = 0
             if (pb_graph_node != chain_root_pins[chain_id][0]->parent_node) {
-                block_pack_status = BLK_FAILED_FEASIBLE;
+                block_pack_status = e_block_pack_status::BLK_FAILED_FEASIBLE;
             }
             // the chain doesn't have an assigned chain_id yet
         } else {
-            block_pack_status = BLK_FAILED_FEASIBLE;
+            block_pack_status = e_block_pack_status::BLK_FAILED_FEASIBLE;
             for (const auto& chain : chain_root_pins) {
-                for (size_t tieOff = 0; tieOff < chain.size(); tieOff++) {
+                for (auto tieOff : chain) {
                     // check if this chosen primitive is one of the possible
                     // starting points for this chain.
-                    if (pb_graph_node == chain[tieOff]->parent_node) {
+                    if (pb_graph_node == tieOff->parent_node) {
                         // this location matches with the one of the dedicated chain
                         // input from outside logic block, therefore it is feasible
-                        block_pack_status = BLK_PASSED;
+                        block_pack_status = e_block_pack_status::BLK_PASSED;
                         break;
                     }
                     // long chains should only be placed at the top of the chain tieOff = 0
@@ -3624,7 +3673,7 @@ void update_le_count(const t_pb* pb, const t_logical_block_type_ptr logic_block_
  * This function returns true if the given physical block has
  * a primitive matching the given blif model and is used
  */
-bool pb_used_for_blif_model(const t_pb* pb, std::string blif_model_name) {
+bool pb_used_for_blif_model(const t_pb* pb, const std::string& blif_model_name) {
     auto pb_graph_node = pb->pb_graph_node;
     auto pb_type = pb_graph_node->pb_type;
     auto mode = &pb_type->modes[pb->mode];

@@ -68,7 +68,7 @@ inline RouteIterResults SerialNetlistRouter<HeapType>::route_netlist(int itry, f
 
     /* Sort so net with most sinks is routed first */
     auto sorted_nets = std::vector<ParentNetId>(_net_list.nets().begin(), _net_list.nets().end());
-    std::sort(sorted_nets.begin(), sorted_nets.end(), [&](ParentNetId id1, ParentNetId id2) -> bool {
+    std::stable_sort(sorted_nets.begin(), sorted_nets.end(), [&](ParentNetId id1, ParentNetId id2) -> bool {
         return _net_list.net_sinks(id1).size() > _net_list.net_sinks(id2).size();
     });
 

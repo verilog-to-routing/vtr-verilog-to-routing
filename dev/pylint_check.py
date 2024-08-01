@@ -60,6 +60,7 @@ grandfathered_files = [
     repo_path / "doc/_exts/rrgraphdomain/__init__.py",
     repo_path / "doc/_exts/sdcdomain/__init__.py",
     repo_path / "doc/_exts/archdomain/__init__.py",
+    repo_path / "doc/_exts/constraintsdomain/__init__.py",
     repo_path / "vpr/scripts/compare_timing_reports.py",
     repo_path / "vpr/scripts/profile/util.py",
     repo_path / "vpr/scripts/profile/parse_and_plot_detailed.py",

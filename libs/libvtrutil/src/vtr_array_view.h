@@ -207,21 +207,15 @@ class array_view_id : private array_view<V> {
      * to iterate through the keys with a range-based for loop
      *
      */
-    class key_iterator : public std::iterator<std::bidirectional_iterator_tag, key_type> {
+    class key_iterator {
       public:
-        /**
-         * @brief Intermediate type my_iter
-         *
-         * We use the intermediate type my_iter to avoid a potential ambiguity for which
-         * clang generates errors and warnings
-         */
-        using my_iter = typename std::iterator<std::bidirectional_iterator_tag, K>;
-        using typename my_iter::iterator;
-        using typename my_iter::pointer;
-        using typename my_iter::reference;
-        using typename my_iter::value_type;
+        using iterator_category = std::bidirectional_iterator_tag;
+        using difference_type = std::ptrdiff_t;
+        using value_type = key_type;
+        using pointer = key_type*;
+        using reference = key_type&;
 
-        key_iterator(key_iterator::value_type init)
+        key_iterator(value_type init)
             : value_(init) {}
 
         /**
@@ -233,13 +227,13 @@ class array_view_id : private array_view<V> {
          */
 
         ///@brief increment the iterator
-        key_iterator operator++() {
+        key_iterator& operator++() {
             value_ = value_type(size_t(value_) + 1);
             return *this;
         }
 
         ///@brief decrement the iterator
-        key_iterator operator--() {
+        key_iterator& operator--() {
             value_ = value_type(size_t(value_) - 1);
             return *this;
         }
@@ -250,8 +244,8 @@ class array_view_id : private array_view<V> {
         ///@brief -> operator
         pointer operator->() { return &value_; }
 
-        friend bool operator==(const key_iterator lhs, const key_iterator rhs) { return lhs.value_ == rhs.value_; }
-        friend bool operator!=(const key_iterator lhs, const key_iterator rhs) { return !(lhs == rhs); }
+        friend bool operator==(const key_iterator& lhs, const key_iterator& rhs) { return lhs.value_ == rhs.value_; }
+        friend bool operator!=(const key_iterator& lhs, const key_iterator& rhs) { return !(lhs == rhs); }
 
       private:
         value_type value_;

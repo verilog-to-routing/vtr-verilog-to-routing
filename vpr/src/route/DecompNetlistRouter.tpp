@@ -128,7 +128,7 @@ void DecompNetlistRouter<HeapType>::route_partition_tree_node(tbb::task_group& g
      * nets use their own #fanouts. */
     std::vector<size_t> order(node.nets.size() + node.vnets.size());
     std::iota(order.begin(), order.end(), 0);
-    std::sort(order.begin(), order.end(), [&](size_t i, size_t j) -> bool {
+    std::stable_sort(order.begin(), order.end(), [&](size_t i, size_t j) -> bool {
         ParentNetId id1 = i < node.nets.size() ? node.nets[i] : node.vnets[i - node.nets.size()].net_id;
         ParentNetId id2 = j < node.nets.size() ? node.nets[j] : node.vnets[j - node.nets.size()].net_id;
         return _net_list.net_sinks(id1).size() > _net_list.net_sinks(id2).size();

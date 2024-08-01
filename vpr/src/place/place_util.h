@@ -98,18 +98,18 @@ class t_placer_costs {
 
   public: //Mutator
     /**
-    * @brief Mutator: updates the norm factors in the outer loop iteration.
-    *
-    * At each temperature change we update these values to be used
-    * for normalizing the trade-off between timing and wirelength (bb)
-    */
+     * @brief Mutator: updates the norm factors in the outer loop iteration.
+     *
+     * At each temperature change we update these values to be used
+     * for normalizing the trade-off between timing and wirelength (bb)
+     */
     void update_norm_factors();
 
     /**
-    * @brief Accumulates NoC cost difference terms
-    *
-    * @param noc_delta_cost Cost difference for NoC-related costs terms
-    */
+     * @brief Accumulates NoC cost difference terms
+     *
+     * @param noc_delta_cost Cost difference for NoC-related costs terms
+     */
     t_placer_costs& operator+=(const NocCostTerms& noc_delta_cost);
 
   private:
@@ -193,15 +193,15 @@ class t_annealing_state {
 
   public: //Mutator
     /**
-    * @brief Update the annealing state according to the annealing schedule selected.
-    *
-    *   USER_SCHED:  A manual fixed schedule with fixed alpha and exit criteria.
-    *   AUTO_SCHED:  A more sophisticated schedule where alpha varies based on success ratio.
-    *   DUSTY_SCHED: This schedule jumps backward and slows down in response to success ratio.
-    *                See doc/src/vpr/dusty_sa.rst for more details.
-    *
-    * @return True->continues the annealing. False->exits the annealing.
-    */
+     * @brief Update the annealing state according to the annealing schedule selected.
+     *
+     *   USER_SCHED:  A manual fixed schedule with fixed alpha and exit criteria.
+     *   AUTO_SCHED:  A more sophisticated schedule where alpha varies based on success ratio.
+     *   DUSTY_SCHED: This schedule jumps backward and slows down in response to success ratio.
+     *                See doc/src/vpr/dusty_sa.rst for more details.
+     *
+     * @return True->continues the annealing. False->exits the annealing.
+     */
     bool outer_loop_update(float success_rate,
                            const t_placer_costs& costs,
                            const t_placer_opts& placer_opts,
@@ -209,35 +209,35 @@ class t_annealing_state {
 
   private: //Mutator
     /**
-    * @brief Update the range limiter to keep acceptance prob. near 0.44.
-    *
-    * Use a floating point rlim to allow gradual transitions at low temps.
-    * The range is bounded by 1 (FINAL_RLIM) and the grid size (UPPER_RLIM).
-    */
+     * @brief Update the range limiter to keep acceptance prob. near 0.44.
+     *
+     * Use a floating point rlim to allow gradual transitions at low temps.
+     * The range is bounded by 1 (FINAL_RLIM) and the grid size (UPPER_RLIM).
+     */
     inline void update_rlim(float success_rate);
 
     /**
-    * @brief Update the criticality exponent.
-    *
-    * When rlim shrinks towards the FINAL_RLIM value (indicating
-    * that we are fine-tuning a more optimized placement), we can
-    * focus more on a smaller number of critical connections.
-    * To achieve this, we make the crit_exponent sharper, so that
-    * critical connections would become more critical than before.
-    *
-    * We calculate how close rlim is to its final value comparing
-    * to its initial value. Then, we apply the same scaling factor
-    * on the crit_exponent so that it lands on the suitable value
-    * between td_place_exp_first and td_place_exp_last. The scaling
-    * factor is calculated and applied linearly.
-    */
+     * @brief Update the criticality exponent.
+     *
+     * When rlim shrinks towards the FINAL_RLIM value (indicating
+     * that we are fine-tuning a more optimized placement), we can
+     * focus more on a smaller number of critical connections.
+     * To achieve this, we make the crit_exponent sharper, so that
+     * critical connections would become more critical than before.
+     *
+     * We calculate how close rlim is to its final value comparing
+     * to its initial value. Then, we apply the same scaling factor
+     * on the crit_exponent so that it lands on the suitable value
+     * between td_place_exp_first and td_place_exp_last. The scaling
+     * factor is calculated and applied linearly.
+     */
     inline void update_crit_exponent(const t_placer_opts& placer_opts);
 
     /**
-    * @brief Update the move limit based on the success rate.
-    *
-    * The value is bounded between 1 and move_lim_max.
-    */
+     * @brief Update the move limit based on the success rate.
+     *
+     * The value is bounded between 1 and move_lim_max.
+     */
     inline void update_move_lim(float success_target, float success_rate);
 };
 
@@ -383,5 +383,4 @@ inline bool is_loc_on_chip(t_physical_tile_loc loc) {
  *        require to check for all legality constraints.
  */
 bool macro_can_be_placed(t_pl_macro pl_macro, t_pl_loc head_pos, bool check_all_legality);
-
 #endif

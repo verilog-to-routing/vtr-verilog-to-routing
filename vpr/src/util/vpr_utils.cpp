@@ -1,14 +1,12 @@
-#include <cstring>
 #include <unordered_set>
 #include <regex>
 #include <algorithm>
 #include <sstream>
-#include <string.h>
+#include <cstring>
 
 #include "vtr_assert.h"
 #include "vtr_log.h"
 #include "vtr_memory.h"
-#include "vtr_random.h"
 
 #include "vpr_types.h"
 #include "vpr_error.h"
@@ -17,10 +15,8 @@
 #include "globals.h"
 #include "vpr_utils.h"
 #include "cluster_placement.h"
-#include "place_macro.h"
-#include "pack_types.h"
 #include "device_grid.h"
-#include "timing_fail_error.h"
+#include "user_route_constraints.h"
 #include "re_cluster_util.h"
 
 /* This module contains subroutines that are used in several unrelated parts *
@@ -28,7 +24,7 @@
 
 /* This defines the maximum string length that could be parsed by functions  *
  * in vpr_utils.                                                             */
-#define MAX_STRING_LEN 128
+static constexpr size_t MAX_STRING_LEN = 512;
 
 /******************** File-scope variables declarations **********************/
 
@@ -438,8 +434,8 @@ static AtomPinId find_atom_pin_for_pb_route_id(ClusterBlockId clb, int pb_route_
     return AtomPinId::INVALID();
 }
 
-/* Return the net pin which drive the CLB input connected to sink_pb_pin_id, or nullptr if none (i.e. driven internally)
- *   clb: Block in which the the sink pin is located on
+/* Return the net pin which drives the CLB input connected to sink_pb_pin_id, or nullptr if none (i.e. driven internally)
+ *   clb: Block on which the sink pin is located
  *   sink_pb_pin_id: The physical pin index of the sink pin on the block
  *
  *  Returns a tuple containing
@@ -531,10 +527,9 @@ t_physical_tile_type_ptr physical_tile_type(ClusterBlockId blk) {
     auto& place_ctx = g_vpr_ctx.placement();
     auto& device_ctx = g_vpr_ctx.device();
 
-    auto block_loc = place_ctx.block_locs[blk];
-    auto loc = block_loc.loc;
+    auto block_loc = place_ctx.block_locs[blk].loc;
 
-    return device_ctx.grid.get_physical_type({loc.x, loc.y, loc.layer});
+    return device_ctx.grid.get_physical_type({block_loc.x, block_loc.y, block_loc.layer});
 }
 
 t_physical_tile_type_ptr physical_tile_type(AtomBlockId atom_blk) {
@@ -1376,8 +1371,8 @@ std::vector<int> get_cluster_internal_class_pairs(const AtomLookup& atom_lookup,
     std::tie(physical_tile, sub_tile, rel_cap, logical_block) = get_cluster_blk_physical_spec(cluster_block_id);
     class_num_vec.reserve(physical_tile->primitive_class_inf.size());
 
-    const auto& cluster_atoms = *cluster_to_atoms(cluster_block_id);
-    for (auto atom_blk_id : cluster_atoms) {
+    const auto& cluster_atoms = cluster_to_atoms(cluster_block_id);
+    for (AtomBlockId atom_blk_id : cluster_atoms) {
         auto atom_pb_graph_node = atom_lookup.atom_pb_graph_node(atom_blk_id);
         auto class_range = get_pb_graph_node_class_physical_range(physical_tile,
                                                                   sub_tile,
@@ -2154,20 +2149,6 @@ int max_pins_per_grid_tile() {
     return max_pins;
 }
 
-t_physical_tile_type_ptr get_physical_tile_type(const ClusterBlockId blk) {
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_ctx = g_vpr_ctx.placement();
-    if (place_ctx.block_locs.empty()) { //No placement, pick best match
-        return pick_physical_type(cluster_ctx.clb_nlist.block_type(blk));
-    } else { //Have placement, select physical tile implementing blk
-        auto& device_ctx = g_vpr_ctx.device();
-
-        t_pl_loc loc = place_ctx.block_locs[blk].loc;
-
-        return device_ctx.grid.get_physical_type({loc.x, loc.y, loc.layer});
-    }
-}
-
 int net_pin_to_tile_pin_index(const ClusterNetId net_id, int net_pin_index) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
@@ -2275,17 +2256,21 @@ std::vector<const t_pb_graph_node*> get_all_pb_graph_node_primitives(const t_pb_
     return primitives;
 }
 
-bool is_inter_cluster_node(t_physical_tile_type_ptr physical_tile,
-                           t_rr_type node_type,
-                           int node_ptc) {
+bool is_inter_cluster_node(const RRGraphView& rr_graph_view,
+                           RRNodeId node_id) {
+    auto node_type = rr_graph_view.node_type(node_id);
     if (node_type == CHANX || node_type == CHANY) {
         return true;
     } else {
-        VTR_ASSERT(node_type == IPIN || node_type == SINK || node_type == OPIN || node_type == SOURCE);
+        int x_low = rr_graph_view.node_xlow(node_id);
+        int y_low = rr_graph_view.node_ylow(node_id);
+        int layer = rr_graph_view.node_layer(node_id);
+        int node_ptc = rr_graph_view.node_ptc_num(node_id);
+        const t_physical_tile_type_ptr physical_tile = g_vpr_ctx.device().grid.get_physical_type({x_low, y_low, layer});
         if (node_type == IPIN || node_type == OPIN) {
             return is_pin_on_tile(physical_tile, node_ptc);
         } else {
-            VTR_ASSERT(node_type == SINK || node_type == SOURCE);
+            VTR_ASSERT_DEBUG(node_type == SINK || node_type == SOURCE);
             return is_class_on_tile(physical_tile, node_ptc);
         }
     }
@@ -2504,6 +2489,32 @@ void add_pb_child_to_list(std::list<const t_pb*>& pb_list, const t_pb* parent_pb
             // any atom block
             if (child_pb->parent_pb != nullptr) {
                 pb_list.push_back(child_pb);
+            }
+        }
+    }
+}
+
+void apply_route_constraints(const UserRouteConstraints& route_constraints) {
+    ClusteringContext& mutable_cluster_ctx = g_vpr_ctx.mutable_clustering();
+
+    // Iterate through all the nets 
+    for (auto net_id : mutable_cluster_ctx.clb_nlist.nets()) {
+        // Get the name of the current net
+        std::string net_name = mutable_cluster_ctx.clb_nlist.net_name(net_id);
+
+        // Check if a routing constraint is specified for the current net
+        if (route_constraints.has_routing_constraint(net_name)) {
+            // Mark the net as 'global' if there is a routing constraint for this net
+            // as the routing constraints are used to set the net as global
+            // and specify the routing model for it
+            mutable_cluster_ctx.clb_nlist.set_net_is_global(net_id, true);
+
+            // Mark the net as 'ignored' if the route model is 'ideal'
+            if (route_constraints.get_route_model_by_net_name(net_name) == e_clock_modeling::IDEAL_CLOCK) {
+                mutable_cluster_ctx.clb_nlist.set_net_is_ignored(net_id, true);
+            } else {
+                // Set the 'ignored' flag to false otherwise
+                mutable_cluster_ctx.clb_nlist.set_net_is_ignored(net_id, false);
             }
         }
     }

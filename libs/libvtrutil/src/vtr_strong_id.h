@@ -200,6 +200,9 @@ class StrongId {
     /// @brief Allow explicit conversion to size_t (e.g. my_vector[size_t(strong_id)])
     explicit constexpr operator std::size_t() const { return static_cast<std::size_t>(id_); }
 
+    /// @brief Allow explicit conversion to int (int(RRNodeId::INVALID()) == -1)
+    explicit constexpr operator int() const { return static_cast<int>(id_); }
+
     /// @brief To enable hashing Ids
     friend std::hash<StrongId<tag, T, sentinel>>;
 

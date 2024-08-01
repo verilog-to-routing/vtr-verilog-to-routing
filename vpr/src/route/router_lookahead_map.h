@@ -6,6 +6,9 @@
 #include "router_lookahead.h"
 #include "router_lookahead_map_utils.h"
 
+/**
+ * @brief Current VPR RouterLookahead implementation.
+ */
 class MapLookahead : public RouterLookahead {
   public:
     explicit MapLookahead(const t_det_routing_arch& det_routing_arch, bool is_flat);

@@ -360,11 +360,11 @@ Use the options below to override this default naming behaviour.
 
 .. option:: --read_vpr_constraints <file>
 
-    Reads the :ref:`floorplanning constraints <vpr_constraints_file>` that packing and placement must respect from the specified XML file.
+    Reads the :ref:`VPR constraints <vpr_constraints>` that the flow must respect from the specified XML file.
 
 .. option:: --write_vpr_constraints <file>
 
-    Writes out new :ref:`floorplanning constraints <vpr_constraints_file>` based on current placement to the specified XML file.
+    Writes out new :ref:`floorplanning constraints <placement_constraints>` based on the current placement to the specified XML file.
 
 .. option:: --read_router_lookahead <file>
 
@@ -1163,6 +1163,14 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
 
     **Default:** ``1.3``
 
+.. option:: --max_pres_fac <float>
+
+    Sets the maximum present overuse penalty factor that can ever result during routing. Should always be less than 1e25 or so to prevent overflow. 
+    Smaller values may help prevent circuitous routing in difficult routing problems, but may increase 
+    the number of routing iterations needed and hence runtime.
+
+    **Default:** ``1000.0``
+
 .. option:: --acc_fac <float>
 
     Specifies the accumulated overuse factor (historical congestion cost factor).
@@ -1295,6 +1303,23 @@ The following options are only valid when the router is in timing-driven mode (t
     Sets how aggressive the directed search used by the timing-driven router is.
 
     Values between 1 and 2 are reasonable, with higher values trading some quality for reduced CPU time.
+
+    **Default:** ``1.2``
+
+.. option:: --astar_offset <float>
+
+    Sets how aggressive the directed search used by the timing-driven router is.
+    It is a subtractive adjustment to the lookahead heuristic.
+
+    Values between 0 and 1e-9 are resonable; higher values may increase quality at the expense of run-time.
+
+    **Default:** ``0.0``
+
+.. option:: --router_profiler_astar_fac <float>
+    
+    Controls the directedness of the timing-driven router's exploration when doing router delay profiling of an architecture.
+    The router delay profiling step is currently used to calculate the place delay matrix lookup.
+    Values between 1 and 2 are resonable; higher values trade some quality for reduced run-time.
 
     **Default:** ``1.2``
 
@@ -1807,6 +1832,27 @@ The following options are used to enable power estimation in VPR.
         ...
 
     Instructions on generating this file are provided in :ref:`power_estimation`.
+
+Server Mode Options
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+If VPR is in server mode, it listens on a socket for commands from a client. Currently, this is used to enable interactive timing analysis and visualization of timing paths in the VPR UI under the control of a separate client.
+
+The following options are used to enable server mode in VPR.
+
+.. seealso:: :ref:`server_mode` for more details.
+
+.. option:: --server
+
+    Run in server mode. Accept single client application connection and respond to client requests
+
+    **Default:** ``off``
+
+.. option:: --port PORT
+
+    Server port number.
+
+    **Default:** ``60555``
 
 Command-line Auto Completion
 ----------------------------

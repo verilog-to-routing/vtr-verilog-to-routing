@@ -136,5 +136,8 @@ target_link_libraries(test_vtrutil
                         libvtrutil
                         Catch2::Catch2WithMain)
 
-add_test(NAME test_vtrutil COMMAND test_vtrutil --colour-mode ansi)
+add_test(NAME test_vtrutil
+    COMMAND test_vtrutil
+    --colour-mode ansi
+    )
             

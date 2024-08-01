@@ -155,7 +155,8 @@ bool route(const Netlist<>& net_list,
     VTR_ASSERT(router_lookahead != nullptr);
 
     /* Routing parameters */
-    float pres_fac = update_draw_pres_fac(router_opts.first_iter_pres_fac); /* Typically 0 -> ignore cong. */
+    float pres_fac = router_opts.first_iter_pres_fac;
+    update_draw_pres_fac(pres_fac); /* Typically 0 -> ignore cong. */
     int bb_fac = router_opts.bb_factor;
 
     /* When routing conflicts are detected the bounding boxes are scaled
@@ -227,7 +228,7 @@ bool route(const Netlist<>& net_list,
     int itry_since_last_convergence = -1;
 
     // This heap is used for reserve_locally_used_opins.
-    BinaryHeap small_heap;
+    FourAryHeap small_heap;
     small_heap.init_heap(device_ctx.grid);
 
     // When RCV is enabled the router will not stop unless negative hold slack is 0
@@ -357,7 +358,8 @@ bool route(const Netlist<>& net_list,
             //Decrease pres_fac so that critical connections will take more direct routes
             //Note that we use first_iter_pres_fac here (typically zero), and switch to
             //use initial_pres_fac on the next iteration.
-            pres_fac = update_draw_pres_fac(router_opts.first_iter_pres_fac);
+            pres_fac = router_opts.first_iter_pres_fac;
+            update_draw_pres_fac(pres_fac);
 
             //Reduce timing tolerances to re-route more delay-suboptimal signals
             connections_inf.set_connection_criticality_tolerance(0.7);
@@ -374,7 +376,8 @@ bool route(const Netlist<>& net_list,
             //after the first routing convergence. Since that is often zero,
             //we want to set pres_fac to a reasonable (i.e. typically non-zero)
             //value afterwards -- so it grows when multiplied by pres_fac_mult
-            pres_fac = update_draw_pres_fac(router_opts.initial_pres_fac);
+            pres_fac = router_opts.initial_pres_fac;
+            update_draw_pres_fac(pres_fac);
         }
 
         //Have we converged the maximum number of times, did not make any changes, or does it seem
@@ -437,12 +440,13 @@ bool route(const Netlist<>& net_list,
 
         //Update pres_fac
         if (itry == 1) {
-            pres_fac = update_draw_pres_fac(router_opts.initial_pres_fac);
+            pres_fac = router_opts.initial_pres_fac;
+            update_draw_pres_fac(pres_fac);
         } else {
             pres_fac *= router_opts.pres_fac_mult;
-            pres_fac = std::min(pres_fac, 1000.f);
-            /* Avoid overflow for high iteration counts, even if acc_cost is big */
-            pres_fac = update_draw_pres_fac(std::min(pres_fac, static_cast<float>(HUGE_POSITIVE_FLOAT / 1e5)));
+            pres_fac = std::min(pres_fac, router_opts.max_pres_fac);
+            /* Set the maximum pres_fac to the value passed by the command line argument */
+            update_draw_pres_fac(pres_fac);
 
             // Increase short path criticality if it's having a hard time resolving hold violations due to congestion
             if (budgeting_inf.if_set()) {

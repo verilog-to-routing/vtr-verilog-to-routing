@@ -6,12 +6,14 @@
 #ifndef CLUSTER_PLACEMENT_H
 #define CLUSTER_PLACEMENT_H
 #include "arch_types.h"
+#include "vpr_types.h"
 
 t_cluster_placement_stats* alloc_and_load_cluster_placement_stats();
 bool get_next_primitive_list(
     t_cluster_placement_stats* cluster_placement_stats,
     const t_pack_molecule* molecule,
-    t_pb_graph_node** primitives_list);
+    t_pb_graph_node** primitives_list,
+    int force_site = -1);
 void commit_primitive(t_cluster_placement_stats* cluster_placement_stats,
                       const t_pb_graph_node* primitive);
 void set_mode_cluster_placement_stats(const t_pb_graph_node* complex_block,

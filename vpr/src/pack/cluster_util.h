@@ -19,8 +19,8 @@
  * @brief This file includes useful structs and functions for building and modifying clustering
  */
 
-#define AAPACK_MAX_HIGH_FANOUT_EXPLORE 10 /* For high-fanout nets that are ignored, consider a maximum of this many sinks, must be less than packer_opts.feasible_block_array_size */
-#define AAPACK_MAX_TRANSITIVE_EXPLORE 40  /* When investigating transitive fanout connections in packing, consider a maximum of this many molecules, must be less than packer_opts.feasible_block_array_size */
+constexpr int AAPACK_MAX_HIGH_FANOUT_EXPLORE = 10; /* For high-fanout nets that are ignored, consider a maximum of this many sinks, must be less than packer_opts.feasible_block_array_size */
+constexpr int AAPACK_MAX_TRANSITIVE_EXPLORE = 40;  /* When investigating transitive fanout connections in packing, consider a maximum of this many molecules, must be less than packer_opts.feasible_block_array_size */
 
 //Constant allowing all cluster pins to be used
 const t_ext_pin_util FULL_EXTERNAL_PIN_UTIL(1., 1.);
@@ -200,20 +200,22 @@ void rebuild_attraction_groups(AttractionInfo& attraction_groups);
 
 void record_molecule_failure(t_pack_molecule* molecule, t_pb* pb);
 
-enum e_block_pack_status try_pack_molecule(t_cluster_placement_stats* cluster_placement_stats_ptr,
-                                           t_pack_molecule* molecule,
-                                           t_pb_graph_node** primitives_list,
-                                           t_pb* pb,
-                                           const int max_models,
-                                           const int max_cluster_size,
-                                           const ClusterBlockId clb_index,
-                                           const int detailed_routing_stage,
-                                           t_lb_router_data* router_data,
-                                           int verbosity,
-                                           bool enable_pin_feasibility_filter,
-                                           const int feasible_block_array_size,
-                                           t_ext_pin_util max_external_pin_util,
-                                           PartitionRegion& temp_cluster_pr);
+e_block_pack_status try_pack_molecule(t_cluster_placement_stats* cluster_placement_stats_ptr,
+                                      t_pack_molecule* molecule,
+                                      t_pb_graph_node** primitives_list,
+                                      t_pb* pb,
+                                      int max_models,
+                                      int max_cluster_size,
+                                      ClusterBlockId clb_index,
+                                      int detailed_routing_stage,
+                                      t_lb_router_data* router_data,
+                                      int verbosity,
+                                      bool enable_pin_feasibility_filter,
+                                      int feasible_block_array_size,
+                                      t_ext_pin_util max_external_pin_util,
+                                      PartitionRegion& temp_cluster_pr,
+                                      NocGroupId& temp_noc_grp_id,
+                                      int force_site = -1);
 
 void try_fill_cluster(const t_packer_opts& packer_opts,
                       t_cluster_placement_stats* cur_cluster_placement_stats_ptr,
@@ -237,6 +239,7 @@ void try_fill_cluster(const t_packer_opts& packer_opts,
                       t_lb_router_data* router_data,
                       t_ext_pin_util target_ext_pin_util,
                       PartitionRegion& temp_cluster_pr,
+                      NocGroupId& temp_noc_grp_id,
                       e_block_pack_status& block_pack_status,
                       t_molecule_link* unclustered_list_head,
                       const int& unclustered_list_head_size,
@@ -278,11 +281,48 @@ enum e_block_pack_status try_place_atom_block_rec(const t_pb_graph_node* pb_grap
                                                   int verbosity,
                                                   const int feasible_block_array_size);
 
-enum e_block_pack_status atom_cluster_floorplanning_check(const AtomBlockId blk_id,
-                                                          const ClusterBlockId clb_index,
-                                                          const int verbosity,
-                                                          PartitionRegion& temp_cluster_pr,
-                                                          bool& cluster_pr_needs_update);
+
+/**
+ * @brief Checks whether an atom block can be added to a clustered block
+ * without violating floorplanning constraints. It also updates the
+ * clustered block's floorplanning region by taking the intersection of
+ * its current region and the floorplanning region of the given atom block.
+ *
+ * @param blk_id A unique ID for the candidate atom block to be added to the growing cluster.
+ * @param clb_index A unique ID for the clustered block that the atom block wants to be added to.
+ * @param verbosity Controls the detail level of log information printed by this function.
+ * @param temp_cluster_pr The floorplanning regions of the clustered block. This function may
+ * update the given region.
+ * @param cluster_pr_needs_update Indicates whether the floorplanning region of the clustered block
+ * have updated.
+ * @return True if adding the given atom block to the clustered block does not violated any
+ * floorplanning constraints.
+ */
+bool atom_cluster_floorplanning_check(AtomBlockId blk_id,
+                                      ClusterBlockId clb_index,
+                                      int verbosity,
+                                      PartitionRegion& temp_cluster_pr,
+                                      bool& cluster_pr_needs_update);
+/**
+ * @brief Checks if an atom block can be added to a clustered block without
+ * violating NoC group constraints. For passing this check, either both clustered
+ * and atom blocks must belong to the same NoC group, or at least one of them should
+ * not belong to any NoC group. If the atom block is associated with a NoC group while
+ * the clustered block does not belong to any NoC groups, the NoC group ID of the atom block
+ * is assigned to the clustered block when the atom is added to it.
+ * block
+ *
+ * @param blk_id A unique ID for the candidate atom block to be added to the growing cluster.
+ * @param clb_index A unique ID for the clustered block that the atom block wants to be added to.
+ * @param verbosity Controls the detail level of log information printed by this function.
+ * @param temp_cluster_noc_grp_id The NoC group ID of the clustered block. This function may update
+ * this ID.
+ * @return True if adding the atom block the cluster does not violate NoC group constraints.
+ */
+bool atom_cluster_noc_group_check(AtomBlockId blk_id,
+                                  ClusterBlockId clb_index,
+                                  int verbosity,
+                                  NocGroupId& temp_cluster_noc_grp_id);
 
 void revert_place_atom_block(const AtomBlockId blk_id, t_lb_router_data* router_data);
 
@@ -331,7 +371,7 @@ void start_new_cluster(t_cluster_placement_stats* cluster_placement_stats,
                        const int num_models,
                        const int max_cluster_size,
                        const t_arch* arch,
-                       std::string device_layout_name,
+                       const std::string& device_layout_name,
                        std::vector<t_lb_type_rr_node>* lb_type_rr_graphs,
                        t_lb_router_data** router_data,
                        const int detailed_routing_stage,
@@ -341,7 +381,8 @@ void start_new_cluster(t_cluster_placement_stats* cluster_placement_stats,
                        bool enable_pin_feasibility_filter,
                        bool balance_block_type_utilization,
                        const int feasible_block_array_size,
-                       PartitionRegion& temp_cluster_pr);
+                       PartitionRegion& temp_cluster_pr,
+                       NocGroupId& temp_noc_grp_id);
 
 t_pack_molecule* get_highest_gain_molecule(t_pb* cur_pb,
                                            AttractionInfo& attraction_groups,
@@ -442,7 +483,7 @@ t_logical_block_type_ptr identify_logic_block_type(std::map<const t_model*, std:
 
 t_pb_type* identify_le_block_type(t_logical_block_type_ptr logic_block_type);
 
-bool pb_used_for_blif_model(const t_pb* pb, std::string blif_model_name);
+bool pb_used_for_blif_model(const t_pb* pb, const std::string& blif_model_name);
 
 void print_le_count(std::vector<int>& le_count, const t_pb_type* le_pb_type);
 
