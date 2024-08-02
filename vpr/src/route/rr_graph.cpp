@@ -747,7 +747,7 @@ void create_rr_graph(const t_graph_type graph_type,
         short delayless_switch = OPEN;
         if (load_rr_graph) {
             const auto& rr_switches = device_ctx.rr_graph.rr_switch();
-            for (int switch_id = 0; switch_id < rr_switches.size(); switch_id++){
+            for (int switch_id = 0; switch_id < static_cast<int>(rr_switches.size()); switch_id++){
                 const auto& rr_switch = rr_switches[RRSwitchId(switch_id)];
                 if (rr_switch.name.find("delayless") != std::string::npos) {
                     delayless_switch = static_cast<short>(switch_id);
@@ -762,7 +762,7 @@ void create_rr_graph(const t_graph_type graph_type,
                                      grid,
                                      block_types,
                                      device_ctx.rr_graph,
-                                     det_routing_arch->delayless_switch,
+                                     delayless_switch,
                                      det_routing_arch->R_minW_nmos,
                                      det_routing_arch->R_minW_pmos,
                                      mutable_device_ctx.rr_graph_builder,
@@ -794,7 +794,7 @@ void create_rr_graph(const t_graph_type graph_type,
     // When this function is called in any stage other than routing, the is_flat flag passed to this function is false, regardless of the flag passed
     // through command line. So, the graph corresponding to global resources will be created and written down to file if needed. During routing, if flat-routing
     // is enabled, intra-cluster resources will be added to the graph, but this new bigger graph will not be written down.
-    if (!det_routing_arch->write_rr_graph_filename.empty() && !is_flat) {
+    if (!det_routing_arch->write_rr_graph_filename.empty()) {
         write_rr_graph(&mutable_device_ctx.rr_graph_builder,
                        &mutable_device_ctx.rr_graph,
                        device_ctx.physical_tile_types,
