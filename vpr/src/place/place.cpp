@@ -150,7 +150,7 @@ std::unique_ptr<FILE, decltype(&vtr::fclose)> f_move_stats_file(nullptr,
                         t,                                                                     \
                         int(b_from), int(b_to),                                                \
                         from_type->name, (to_type ? to_type->name : "EMPTY"),                  \
-                        affected_blocks.num_moved_blocks);                                     \
+                        affected_blocks.moved_blocks.size());                                  \
             }                                                                                  \
         } while (false)
 
@@ -1325,8 +1325,8 @@ static e_move_result try_swap(const t_annealing_state* state,
     if (manual_move_enabled) {
 #ifndef NO_GRAPHICS
         create_move_outcome = manual_move_display_and_propose(manual_move_generator, blocks_affected, proposed_action.move_type, rlim, placer_opts, criticalities);
-#else  //NO_GRAPHICS 
-        //Cast to void to explicitly avoid warning.
+#else  //NO_GRAPHICS
+       //Cast to void to explicitly avoid warning.
         (void)manual_move_generator;
 #endif //NO_GRAPHICS
     } else if (router_block_move) {
@@ -1378,9 +1378,8 @@ static e_move_result try_swap(const t_annealing_state* state,
         //
         //Also find all the pins affected by the swap, and calculates new connection
         //delays and timing costs and store them in proposed_* data structures.
-        int num_nets_affected = find_affected_nets_and_update_costs(
-            place_algorithm, delay_model, criticalities, blocks_affected,
-            bb_delta_c, timing_delta_c);
+        find_affected_nets_and_update_costs(place_algorithm, delay_model, criticalities, 
+                                            blocks_affected, bb_delta_c, timing_delta_c);
 
         //For setup slack analysis, we first do a timing analysis to get the newest
         //slack values resulted from the proposed block moves. If the move turns out
@@ -1481,8 +1480,7 @@ static e_move_result try_swap(const t_annealing_state* state,
             }
 
             /* Update net cost functions and reset flags. */
-            update_move_nets(num_nets_affected,
-                             g_vpr_ctx.placement().cube_bb);
+            update_move_nets();
 
             /* Update clb data structures since we kept the move. */
             commit_move_blocks(blocks_affected);
@@ -1506,7 +1504,7 @@ static e_move_result try_swap(const t_annealing_state* state,
             VTR_ASSERT_SAFE(move_outcome == REJECTED);
 
             /* Reset the net cost function flags first. */
-            reset_move_nets(num_nets_affected);
+            reset_move_nets();
 
             /* Restore the place_ctx.block_locs data structures to their state before the move. */
             revert_move_blocks(blocks_affected);
@@ -1568,8 +1566,6 @@ static e_move_result try_swap(const t_annealing_state* state,
     if (!router_block_move) {
         calculate_reward_and_process_outcome(placer_opts, move_outcome_stats,
                                              delta_c, timing_bb_factor, move_generator);
-    } else {
-//        std::cout << "Group move delta cost: " << delta_c << std::endl;
     }
 
 #ifdef VTR_ENABLE_DEBUG_LOGGING
@@ -1579,7 +1575,7 @@ static e_move_result try_swap(const t_annealing_state* state,
 #endif
 
     /* Clear the data structure containing block move info */
-    clear_move_blocks(blocks_affected);
+    blocks_affected.clear_move_blocks();
 
     //VTR_ASSERT(check_macro_placement_consistency() == 0);
 #if 0
@@ -1627,9 +1623,9 @@ static bool is_cube_bb(const e_place_bounding_box_mode place_bb_mode,
  * loop iteration of the placement. At each temperature change, these
  * values are updated so that we can balance the tradeoff between the
  * different placement cost components (timing, wirelength and NoC).
- * Depending on the placement mode the corresponding normalization factors are 
+ * Depending on the placement mode the corresponding normalization factors are
  * updated.
- * 
+ *
  * @param costs Contains the normalization factors which need to be updated
  * @param placer_opts Determines the placement mode
  * @param noc_opts Determines if placement includes the NoC
@@ -1652,7 +1648,7 @@ static void update_placement_cost_normalization_factors(t_placer_costs* costs, c
 /**
  * @brief Compute the total normalized cost for a given placement. This
  * computation will vary depending on the placement modes.
- * 
+ *
  * @param costs The current placement cost components and their normalization
  * factors
  * @param placer_opts Determines the placement mode
@@ -1916,7 +1912,7 @@ static void alloc_and_load_placement_structs(float place_cost_exp,
         elem = OPEN;
     }
 
-    alloc_and_load_chan_w_factors_for_place_cost (place_cost_exp);
+    alloc_and_load_chan_w_factors_for_place_cost(place_cost_exp);
 
     alloc_and_load_try_swap_structs(cube_bb);
 
@@ -1956,7 +1952,7 @@ static void free_placement_structs(const t_placer_opts& placer_opts, const t_noc
 
     place_move_ctx.num_sink_pin_layer.clear();
 
-    free_chan_w_factors_for_place_cost ();
+    free_chan_w_factors_for_place_cost();
 
     free_try_swap_structs();
 
@@ -2185,7 +2181,7 @@ int check_macro_placement_consistency() {
                 error++;
             }
         } // Finish going through all the members
-    }     // Finish going through all the macros
+    } // Finish going through all the macros
     return error;
 }
 
@@ -2373,9 +2369,8 @@ static void print_placement_move_types_stats(const MoveTypeStat& move_type_stat)
 
     int total_moves = 0;
     for (size_t i = 0; i < move_type_stat.blk_type_moves.size(); ++i) {
-        total_moves +=  move_type_stat.blk_type_moves.get(i);
+        total_moves += move_type_stat.blk_type_moves.get(i);
     }
-
 
     auto& device_ctx = g_vpr_ctx.device();
     int count = 0;
