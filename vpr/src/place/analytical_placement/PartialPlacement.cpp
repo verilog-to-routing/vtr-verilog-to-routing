@@ -185,7 +185,7 @@ bool PartialPlacement::is_valid_node(size_t node_id){
     if (node_loc_y[node_id] >= grid_height) {
         result = false;
         VTR_LOG("Too Large! node_id %zu's y value is %f, height is %zu\n", node_id, node_loc_y[node_id], grid_width);
-    }else if(node_loc_x[node_id] < 0) {
+    }else if(node_loc_y[node_id] < 0) {
         result = false;
         VTR_LOG("Too Small! node_id %zu's y value is %f\n", node_id, node_loc_y[node_id]);
     }

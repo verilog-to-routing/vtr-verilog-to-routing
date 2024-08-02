@@ -12,6 +12,7 @@
 // FIXME: Should also store the graph in node space (nets and such). Iterating
 //        over the atom netlist is not very stable (nor efficient).
 //        This may require making our own Netlist.
+//          - This netlist should probably be a separate class.
 
 class PartialPlacement {
 public:
@@ -33,7 +34,7 @@ public:
         return mol_to_node_id[mol];
     }
 
-    inline bool is_moveable_node(size_t node_id) {
+    inline bool is_moveable_node(size_t node_id) const {
         return node_id < num_moveable_nodes;
     }
 
