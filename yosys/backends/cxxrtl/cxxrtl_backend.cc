@@ -24,6 +24,7 @@
 #include "kernel/celltypes.h"
 #include "kernel/mem.h"
 #include "kernel/log.h"
+#include "kernel/fmt.h"
 
 USING_YOSYS_NAMESPACE
 PRIVATE_NAMESPACE_BEGIN
@@ -217,7 +218,7 @@ bool is_internal_cell(RTLIL::IdString type)
 
 bool is_effectful_cell(RTLIL::IdString type)
 {
-	return type.isPublic();
+	return type.in(ID($print), ID($check));
 }
 
 bool is_cxxrtl_blackbox_cell(const RTLIL::Cell *cell)
@@ -281,6 +282,7 @@ struct FlowGraph {
 			CONNECT,
 			CELL_SYNC,
 			CELL_EVAL,
+			EFFECT_SYNC,
 			PROCESS_SYNC,
 			PROCESS_CASE,
 			MEM_RDPORT,
@@ -290,6 +292,7 @@ struct FlowGraph {
 		Type type;
 		RTLIL::SigSig connect = {};
 		const RTLIL::Cell *cell = nullptr;
+		std::vector<const RTLIL::Cell*> cells;
 		const RTLIL::Process *process = nullptr;
 		const Mem *mem = nullptr;
 		int portidx;
@@ -477,6 +480,15 @@ struct FlowGraph {
 		return node;
 	}
 
+	Node *add_effect_sync_node(std::vector<const RTLIL::Cell*> cells)
+	{
+		Node *node = new Node;
+		node->type = Node::Type::EFFECT_SYNC;
+		node->cells = cells;
+		nodes.push_back(node);
+		return node;
+	}
+
 	// Processes
 	void add_case_rule_defs_uses(Node *node, const RTLIL::CaseRule *case_)
 	{
@@ -616,6 +628,20 @@ std::string escape_cxx_string(const std::string &input)
 	return output;
 }
 
+std::string basename(const std::string &filepath)
+{
+#ifdef _WIN32
+	const std::string dir_seps = "\\/";
+#else
+	const std::string dir_seps = "/";
+#endif
+	size_t sep_pos = filepath.find_last_of(dir_seps);
+	if (sep_pos != std::string::npos)
+		return filepath.substr(sep_pos + 1);
+	else
+		return filepath;
+}
+
 template<class T>
 std::string get_hdl_name(T *object)
 {
@@ -681,6 +707,7 @@ struct CxxrtlWorker {
 	bool split_intf = false;
 	std::string intf_filename;
 	std::string design_ns = "cxxrtl_design";
+	std::string print_output = "std::cout";
 	std::ostream *impl_f = nullptr;
 	std::ostream *intf_f = nullptr;
 
@@ -1189,6 +1216,144 @@ struct CxxrtlWorker {
 		}
 	}
 
+	void dump_print(const RTLIL::Cell *cell)
+	{
+		Fmt fmt;
+		fmt.parse_rtlil(cell);
+
+		f << indent << "if (";
+		dump_sigspec_rhs(cell->getPort(ID::EN));
+		f << " == value<1>{1u}) {\n";
+		inc_indent();
+			dict<std::string, RTLIL::SigSpec> fmt_args;
+			f << indent << "struct : public lazy_fmt {\n";
+			inc_indent();
+				f << indent << "std::string operator() () const override {\n";
+				inc_indent();
+					fmt.emit_cxxrtl(f, indent, [&](const RTLIL::SigSpec &sig) {
+						if (sig.size() == 0)
+							f << "value<0>()";
+						else {
+							std::string arg_name = "arg" + std::to_string(fmt_args.size());
+							fmt_args[arg_name] = sig;
+							f << arg_name;
+						}
+					}, "performer");
+				dec_indent();
+				f << indent << "}\n";
+				f << indent << "struct performer *performer;\n";
+				for (auto arg : fmt_args)
+					f << indent << "value<" << arg.second.size() << "> " << arg.first << ";\n";
+			dec_indent();
+			f << indent << "} formatter;\n";
+			f << indent << "formatter.performer = performer;\n";
+			for (auto arg : fmt_args) {
+				f << indent << "formatter." << arg.first << " = ";
+				dump_sigspec_rhs(arg.second);
+				f << ";\n";
+			}
+			f << indent << "if (performer) {\n";
+			inc_indent();
+				f << indent << "static const metadata_map attributes = ";
+				dump_metadata_map(cell->attributes);
+				f << ";\n";
+				f << indent << "performer->on_print(formatter, attributes);\n";
+			dec_indent();
+			f << indent << "} else {\n";
+			inc_indent();
+				f << indent << print_output << " << formatter();\n";
+			dec_indent();
+			f << indent << "}\n";
+		dec_indent();
+		f << indent << "}\n";
+	}
+
+	void dump_effect(const RTLIL::Cell *cell)
+	{
+		Fmt fmt;
+		fmt.parse_rtlil(cell);
+
+		f << indent << "if (";
+		dump_sigspec_rhs(cell->getPort(ID::EN));
+		f << ") {\n";
+		inc_indent();
+			dict<std::string, RTLIL::SigSpec> fmt_args;
+			f << indent << "struct : public lazy_fmt {\n";
+			inc_indent();
+				f << indent << "std::string operator() () const override {\n";
+				inc_indent();
+					fmt.emit_cxxrtl(f, indent, [&](const RTLIL::SigSpec &sig) {
+						if (sig.size() == 0)
+							f << "value<0>()";
+						else {
+							std::string arg_name = "arg" + std::to_string(fmt_args.size());
+							fmt_args[arg_name] = sig;
+							f << arg_name;
+						}
+					}, "performer");
+				dec_indent();
+				f << indent << "}\n";
+				f << indent << "struct performer *performer;\n";
+				for (auto arg : fmt_args)
+					f << indent << "value<" << arg.second.size() << "> " << arg.first << ";\n";
+			dec_indent();
+			f << indent << "} formatter;\n";
+			f << indent << "formatter.performer = performer;\n";
+			for (auto arg : fmt_args) {
+				f << indent << "formatter." << arg.first << " = ";
+				dump_sigspec_rhs(arg.second);
+				f << ";\n";
+			}
+			if (cell->hasPort(ID::A)) {
+				f << indent << "bool condition = (bool)";
+				dump_sigspec_rhs(cell->getPort(ID::A));
+				f << ";\n";
+			}
+			f << indent << "if (performer) {\n";
+			inc_indent();
+				f << indent << "static const metadata_map attributes = ";
+				dump_metadata_map(cell->attributes);
+				f << ";\n";
+				if (cell->type == ID($print)) {
+					f << indent << "performer->on_print(formatter, attributes);\n";
+				} else if (cell->type == ID($check)) {
+					std::string flavor = cell->getParam(ID::FLAVOR).decode_string();
+					f << indent << "performer->on_check(";
+					if (flavor == "assert")
+						f << "flavor::ASSERT";
+					else if (flavor == "assume")
+						f << "flavor::ASSUME";
+					else if (flavor == "live")
+						f << "flavor::ASSERT_EVENTUALLY";
+					else if (flavor == "fair")
+						f << "flavor::ASSUME_EVENTUALLY";
+					else if (flavor == "cover")
+						f << "flavor::COVER";
+					else log_assert(false);
+					f << ", condition, formatter, attributes);\n";
+				} else log_assert(false);
+			dec_indent();
+			f << indent << "} else {\n";
+			inc_indent();
+				if (cell->type == ID($print)) {
+					f << indent << print_output << " << formatter();\n";
+				} else if (cell->type == ID($check)) {
+					std::string flavor = cell->getParam(ID::FLAVOR).decode_string();
+					if (flavor == "assert" || flavor == "assume") {
+						f << indent << "if (!condition) {\n";
+						inc_indent();
+							f << indent << "std::cerr << formatter();\n";
+						dec_indent();
+						f << indent << "}\n";
+						f << indent << "CXXRTL_ASSERT(condition && \"Check failed\");\n";
+					}
+				} else log_assert(false);
+			dec_indent();
+			f << indent << "}\n";
+		dec_indent();
+		f << indent << "}\n";
+	}
+
 	void dump_cell_eval(const RTLIL::Cell *cell, bool for_debug = false)
 	{
 		std::vector<const RTLIL::Cell*> inlined_cells;
@@ -1202,6 +1367,38 @@ struct CxxrtlWorker {
 			f << " = ";
 			dump_cell_expr(cell, for_debug);
 			f << ";\n";
+		// Effectful cells
+		} else if (is_effectful_cell(cell->type)) {
+			log_assert(!for_debug);
+
+			// Sync effectful cells are grouped into EFFECT_SYNC nodes in the FlowGraph.
+			log_assert(!cell->getParam(ID::TRG_ENABLE).as_bool() || (cell->getParam(ID::TRG_ENABLE).as_bool() && cell->getParam(ID::TRG_WIDTH).as_int() == 0));
+
+			if (!cell->getParam(ID::TRG_ENABLE).as_bool()) { // async effectful cell
+				f << indent << "auto " << mangle(cell) << "_next = ";
+				dump_sigspec_rhs(cell->getPort(ID::EN));
+				f << ".concat(";
+				if (cell->type == ID($print))
+					dump_sigspec_rhs(cell->getPort(ID::ARGS));
+				else if (cell->type == ID($check))
+					dump_sigspec_rhs(cell->getPort(ID::A));
+				else log_assert(false);
+				f << ").val();\n";
+
+				f << indent << "if (" << mangle(cell) << " != " << mangle(cell) << "_next) {\n";
+				inc_indent();
+					dump_effect(cell);
+					f << indent << mangle(cell) << " = " << mangle(cell) << "_next;\n";
+				dec_indent();
+				f << indent << "}\n";
+			} else { // initial effectful cell
+				f << indent << "if (!" << mangle(cell) << ") {\n";
+				inc_indent();
+					dump_effect(cell);
+					f << indent << mangle(cell) << " = value<1>{1u};\n";
+				dec_indent();
+				f << indent << "}\n";
+			}
 		// Flip-flops
 		} else if (is_ff_cell(cell->type)) {
 			log_assert(!for_debug);
@@ -1298,7 +1495,7 @@ struct CxxrtlWorker {
 				f << indent;
 				dump_sigspec_lhs(cell->getPort(ID::Q));
 				f << " = ";
-				dump_sigspec_lhs(cell->getPort(ID::Q));
+				dump_sigspec_rhs(cell->getPort(ID::Q));
 				f << ".update(";
 				dump_const(RTLIL::Const(RTLIL::S1, cell->getParam(ID::WIDTH).as_int()));
 				f << ", ";
@@ -1310,7 +1507,7 @@ struct CxxrtlWorker {
 				f << indent;
 				dump_sigspec_lhs(cell->getPort(ID::Q));
 				f << " = ";
-				dump_sigspec_lhs(cell->getPort(ID::Q));
+				dump_sigspec_rhs(cell->getPort(ID::Q));
 				f << ".update(";
 				dump_const(RTLIL::Const(RTLIL::S0, cell->getParam(ID::WIDTH).as_int()));
 				f << ", ";
@@ -1382,11 +1579,11 @@ struct CxxrtlWorker {
 			};
 			if (buffered_inputs) {
 				// If we have any buffered inputs, there's no chance of converging immediately.
-				f << indent << mangle(cell) << access << "eval();\n";
+				f << indent << mangle(cell) << access << "eval(performer);\n";
 				f << indent << "converged = false;\n";
 				assign_from_outputs(/*cell_converged=*/false);
 			} else {
-				f << indent << "if (" << mangle(cell) << access << "eval()) {\n";
+				f << indent << "if (" << mangle(cell) << access << "eval(performer)) {\n";
 				inc_indent();
 					assign_from_outputs(/*cell_converged=*/true);
 				dec_indent();
@@ -1578,6 +1775,47 @@ struct CxxrtlWorker {
 				f << indent << "}\n";
 			}
 		}
+	}
+
+	void dump_cell_effect_sync(std::vector<const RTLIL::Cell*> &cells)
+	{
+		log_assert(!cells.empty());
+		const auto &trg = cells[0]->getPort(ID::TRG);
+		const auto &trg_polarity = cells[0]->getParam(ID::TRG_POLARITY);
+
+		f << indent << "if (";
+		for (int i = 0; i < trg.size(); i++) {
+			RTLIL::SigBit trg_bit = trg[i];
+			trg_bit = sigmaps[trg_bit.wire->module](trg_bit);
+			log_assert(trg_bit.wire);
+
+			if (i != 0)
+				f << " || ";
+
+			if (trg_polarity[i] == State::S1)
+				f << "posedge_";
+			else
+				f << "negedge_";
+			f << mangle(trg_bit);
+		}
+		f << ") {\n";
+		inc_indent();
+			std::sort(cells.begin(), cells.end(), [](const RTLIL::Cell *a, const RTLIL::Cell *b) {
+				return a->getParam(ID::PRIORITY).as_int() > b->getParam(ID::PRIORITY).as_int();
+			});
+			for (auto cell : cells) {
+				log_assert(cell->getParam(ID::TRG_ENABLE).as_bool());
+				log_assert(cell->getPort(ID::TRG) == trg);
+				log_assert(cell->getParam(ID::TRG_POLARITY) == trg_polarity);
+
+				std::vector<const RTLIL::Cell*> inlined_cells;
+				collect_cell_eval(cell, /*for_debug=*/false, inlined_cells);
+				dump_inlined_cells(inlined_cells);
+				dump_effect(cell);
+			}
+		dec_indent();
+
+		f << indent << "}\n";
 	}
 
 	void dump_mem_rdport(const Mem *mem, int portidx, bool for_debug = false)
@@ -1899,6 +2137,10 @@ struct CxxrtlWorker {
 				}
 			}
 			for (auto cell : module->cells()) {
+				// Async and initial effectful cells have additional state, which must be reset as well.
+				if (is_effectful_cell(cell->type))
+					if (!cell->getParam(ID::TRG_ENABLE).as_bool() || cell->getParam(ID::TRG_WIDTH).as_int() == 0)
+						f << indent << mangle(cell) << " = {};\n";
 				if (is_internal_cell(cell->type))
 					continue;
 				f << indent << mangle(cell);
@@ -1945,6 +2187,9 @@ struct CxxrtlWorker {
 							break;
 						case FlowGraph::Node::Type::CELL_EVAL:
 							dump_cell_eval(node.cell);
+							break;
+						case FlowGraph::Node::Type::EFFECT_SYNC:
+							dump_cell_effect_sync(node.cells);
 							break;
 						case FlowGraph::Node::Type::PROCESS_CASE:
 							dump_process_case(node.process);
@@ -2009,23 +2254,63 @@ struct CxxrtlWorker {
 				if (wire_type.type == WireType::MEMBER && edge_wires[wire])
 					f << indent << "prev_" << mangle(wire) << " = " << mangle(wire) << ";\n";
 				if (wire_type.is_buffered())
-					f << indent << "if (" << mangle(wire) << ".commit()) changed = true;\n";
+					f << indent << "if (" << mangle(wire) << ".commit(observer)) changed = true;\n";
 			}
 			if (!module->get_bool_attribute(ID(cxxrtl_blackbox))) {
 				for (auto &mem : mod_memories[module]) {
 					if (!writable_memories.count({module, mem.memid}))
 						continue;
-					f << indent << "if (" << mangle(&mem) << ".commit()) changed = true;\n";
+					f << indent << "if (" << mangle(&mem) << ".commit(observer)) changed = true;\n";
 				}
 				for (auto cell : module->cells()) {
 					if (is_internal_cell(cell->type))
 						continue;
 					const char *access = is_cxxrtl_blackbox_cell(cell) ? "->" : ".";
-					f << indent << "if (" << mangle(cell) << access << "commit()) changed = true;\n";
+					f << indent << "if (" << mangle(cell) << access << "commit(observer)) changed = true;\n";
 				}
 			}
 			f << indent << "return changed;\n";
 		dec_indent();
+	}
+
+	void dump_metadata_map(const dict<RTLIL::IdString, RTLIL::Const> &metadata_map)
+	{
+		if (metadata_map.empty()) {
+			f << "metadata_map()";
+			return;
+		}
+		f << "metadata_map({\n";
+		inc_indent();
+			for (auto metadata_item : metadata_map) {
+				if (!metadata_item.first.isPublic())
+					continue;
+				if (metadata_item.second.size() > 64 && (metadata_item.second.flags & RTLIL::CONST_FLAG_STRING) == 0) {
+					f << indent << "/* attribute " << metadata_item.first.str().substr(1) << " is over 64 bits wide */\n";
+					continue;
+				}
+				f << indent << "{ " << escape_cxx_string(metadata_item.first.str().substr(1)) << ", ";
+				// In Yosys, a real is a type of string.
+				if (metadata_item.second.flags & RTLIL::CONST_FLAG_REAL) {
+					f << std::showpoint << std::stod(metadata_item.second.decode_string()) << std::noshowpoint;
+				} else if (metadata_item.second.flags & RTLIL::CONST_FLAG_STRING) {
+					f << escape_cxx_string(metadata_item.second.decode_string());
+				} else if (metadata_item.second.flags & RTLIL::CONST_FLAG_SIGNED) {
+					f << "INT64_C(" << metadata_item.second.as_int(/*is_signed=*/true) << ")";
+				} else {
+					f << "UINT64_C(" << metadata_item.second.as_int(/*is_signed=*/false) << ")";
+				}
+				f << " },\n";
+			}
+		dec_indent();
+		f << indent << "})";
+	}
+
+	void dump_debug_attrs(const RTLIL::AttrObject *object)
+	{
+		dict<RTLIL::IdString, RTLIL::Const> attributes = object->attributes;
+		// Inherently necessary to get access to the object, so a waste of space to emit.
+		attributes.erase(ID::hdlname);
+		dump_metadata_map(attributes);
 	}
 
 	void dump_debug_info_method(RTLIL::Module *module)
@@ -2113,7 +2398,9 @@ struct CxxrtlWorker {
 							}
 							f << "debug_item::" << flag;
 						}
-						f << "));\n";
+						f << "), ";
+						dump_debug_attrs(wire);
+						f << ");\n";
 						count_member_wires++;
 						break;
 					}
@@ -2128,7 +2415,9 @@ struct CxxrtlWorker {
 							f << "debug_eval_outline";
 						else
 							f << "debug_alias()";
-						f << ", " << mangle(aliasee) << ", " << wire->start_offset << "));\n";
+						f << ", " << mangle(aliasee) << ", " << wire->start_offset << "), ";
+						dump_debug_attrs(aliasee);
+						f << ");\n";
 						count_alias_wires++;
 						break;
 					}
@@ -2138,14 +2427,18 @@ struct CxxrtlWorker {
 						dump_const(debug_wire_type.sig_subst.as_const());
 						f << ";\n";
 						f << indent << "items.add(path + " << escape_cxx_string(get_hdl_name(wire));
-						f << ", debug_item(const_" << mangle(wire) << ", " << wire->start_offset << "));\n";
+						f << ", debug_item(const_" << mangle(wire) << ", " << wire->start_offset << "), ";
+						dump_debug_attrs(wire);
+						f << ");\n";
 						count_const_wires++;
 						break;
 					}
 					case WireType::OUTLINE: {
 						// Localized or inlined, but rematerializable wire
 						f << indent << "items.add(path + " << escape_cxx_string(get_hdl_name(wire));
-						f << ", debug_item(debug_eval_outline, " << mangle(wire) << ", " << wire->start_offset << "));\n";
+						f << ", debug_item(debug_eval_outline, " << mangle(wire) << ", " << wire->start_offset << "), ";
+						dump_debug_attrs(wire);
+						f << ");\n";
 						count_inline_wires++;
 						break;
 					}
@@ -2162,7 +2455,13 @@ struct CxxrtlWorker {
 						continue;
 					f << indent << "items.add(path + " << escape_cxx_string(mem.packed ? get_hdl_name(mem.cell) : get_hdl_name(mem.mem));
 					f << ", debug_item(" << mangle(&mem) << ", ";
-					f << mem.start_offset << "));\n";
+					f << mem.start_offset << "), ";
+					if (mem.packed) {
+						dump_debug_attrs(mem.cell);
+					} else {
+						dump_debug_attrs(mem.mem);
+					}
+					f << ");\n";
 				}
 				for (auto cell : module->cells()) {
 					if (is_internal_cell(cell->type))
@@ -2190,33 +2489,6 @@ struct CxxrtlWorker {
 		}
 	}
 
-	void dump_metadata_map(const dict<RTLIL::IdString, RTLIL::Const> &metadata_map)
-	{
-		if (metadata_map.empty()) {
-			f << "metadata_map()";
-			return;
-		}
-		f << "metadata_map({\n";
-		inc_indent();
-			for (auto metadata_item : metadata_map) {
-				if (!metadata_item.first.begins_with("\\"))
-					continue;
-				f << indent << "{ " << escape_cxx_string(metadata_item.first.str().substr(1)) << ", ";
-				if (metadata_item.second.flags & RTLIL::CONST_FLAG_REAL) {
-					f << std::showpoint << std::stod(metadata_item.second.decode_string()) << std::noshowpoint;
-				} else if (metadata_item.second.flags & RTLIL::CONST_FLAG_STRING) {
-					f << escape_cxx_string(metadata_item.second.decode_string());
-				} else {
-					f << metadata_item.second.as_int(/*is_signed=*/metadata_item.second.flags & RTLIL::CONST_FLAG_SIGNED);
-					if (!(metadata_item.second.flags & RTLIL::CONST_FLAG_SIGNED))
-						f << "u";
-				}
-				f << " },\n";
-			}
-		dec_indent();
-		f << indent << "})";
-	}
-
 	void dump_module_intf(RTLIL::Module *module)
 	{
 		dump_attrs(module);
@@ -2234,20 +2506,27 @@ struct CxxrtlWorker {
 				dump_reset_method(module);
 				f << indent << "}\n";
 				f << "\n";
-				f << indent << "bool eval() override {\n";
+				// No default argument, to prevent unintentional `return bb_foo::eval();` calls that drop performer.
+				f << indent << "bool eval(performer *performer) override {\n";
 				dump_eval_method(module);
 				f << indent << "}\n";
 				f << "\n";
-				f << indent << "bool commit() override {\n";
+				f << indent << "template<class ObserverT>\n";
+				f << indent << "bool commit(ObserverT &observer) {\n";
 				dump_commit_method(module);
 				f << indent << "}\n";
 				f << "\n";
+				f << indent << "bool commit() override {\n";
+				f << indent << indent << "observer observer;\n";
+				f << indent << indent << "return commit<>(observer);\n";
+				f << indent << "}\n";
 				if (debug_info) {
+					f << "\n";
 					f << indent << "void debug_info(debug_items &items, std::string path = \"\") override {\n";
 					dump_debug_info_method(module);
 					f << indent << "}\n";
-					f << "\n";
 				}
+				f << "\n";
 				f << indent << "static std::unique_ptr<" << mangle(module);
 				f << template_params(module, /*is_decl=*/false) << "> ";
 				f << "create(std::string name, metadata_map parameters, metadata_map attributes);\n";
@@ -2291,6 +2570,15 @@ struct CxxrtlWorker {
 					f << "\n";
 				bool has_cells = false;
 				for (auto cell : module->cells()) {
+					// Async and initial effectful cells have additional state, which requires storage.
+					if (is_effectful_cell(cell->type)) {
+						if (cell->getParam(ID::TRG_ENABLE).as_bool() && cell->getParam(ID::TRG_WIDTH).as_int() == 0)
+							f << indent << "value<1> " << mangle(cell) << ";\n"; // async initial cell
+						if (!cell->getParam(ID::TRG_ENABLE).as_bool() && cell->type == ID($print))
+							f << indent << "value<" << (1 + cell->getParam(ID::ARGS_WIDTH).as_int()) << "> " << mangle(cell) << ";\n"; // {EN, ARGS}
+						if (!cell->getParam(ID::TRG_ENABLE).as_bool() && cell->type == ID($check))
+							f << indent << "value<2> " << mangle(cell) << ";\n"; // {EN, A}
+					}
 					if (is_internal_cell(cell->type))
 						continue;
 					dump_attrs(cell);
@@ -2319,8 +2607,18 @@ struct CxxrtlWorker {
 				f << indent << "};\n";
 				f << "\n";
 				f << indent << "void reset() override;\n";
-				f << indent << "bool eval() override;\n";
-				f << indent << "bool commit() override;\n";
+				f << "\n";
+				f << indent << "bool eval(performer *performer = nullptr) override;\n";
+				f << "\n";
+				f << indent << "template<class ObserverT>\n";
+				f << indent << "bool commit(ObserverT &observer) {\n";
+				dump_commit_method(module);
+				f << indent << "}\n";
+				f << "\n";
+				f << indent << "bool commit() override {\n";
+				f << indent << indent << "observer observer;\n";
+				f << indent << indent << "return commit<>(observer);\n";
+				f << indent << "}\n";
 				if (debug_info) {
 					if (debug_eval) {
 						f << "\n";
@@ -2349,27 +2647,23 @@ struct CxxrtlWorker {
 		dump_reset_method(module);
 		f << indent << "}\n";
 		f << "\n";
-		f << indent << "bool " << mangle(module) << "::eval() {\n";
+		f << indent << "bool " << mangle(module) << "::eval(performer *performer) {\n";
 		dump_eval_method(module);
 		f << indent << "}\n";
-		f << "\n";
-		f << indent << "bool " << mangle(module) << "::commit() {\n";
-		dump_commit_method(module);
-		f << indent << "}\n";
-		f << "\n";
 		if (debug_info) {
 			if (debug_eval) {
+				f << "\n";
 				f << indent << "void " << mangle(module) << "::debug_eval() {\n";
 				dump_debug_eval_method(module);
 				f << indent << "}\n";
-				f << "\n";
 			}
+			f << "\n";
 			f << indent << "CXXRTL_EXTREMELY_COLD\n";
 			f << indent << "void " << mangle(module) << "::debug_info(debug_items &items, std::string path) {\n";
 			dump_debug_info_method(module);
 			f << indent << "}\n";
-			f << "\n";
 		}
+		f << "\n";
 	}
 
 	void dump_design(RTLIL::Design *design)
@@ -2409,7 +2703,7 @@ struct CxxrtlWorker {
 			f << "#define " << include_guard << "\n";
 			f << "\n";
 			if (top_module != nullptr && debug_info) {
-				f << "#include <backends/cxxrtl/cxxrtl_capi.h>\n";
+				f << "#include <cxxrtl/capi/cxxrtl_capi.h>\n";
 				f << "\n";
 				f << "#ifdef __cplusplus\n";
 				f << "extern \"C\" {\n";
@@ -2427,7 +2721,7 @@ struct CxxrtlWorker {
 			}
 			f << "#ifdef __cplusplus\n";
 			f << "\n";
-			f << "#include <backends/cxxrtl/cxxrtl.h>\n";
+			f << "#include <cxxrtl/cxxrtl.h>\n";
 			f << "\n";
 			f << "using namespace cxxrtl;\n";
 			f << "\n";
@@ -2444,17 +2738,17 @@ struct CxxrtlWorker {
 		}
 
 		if (split_intf)
-			f << "#include \"" << intf_filename << "\"\n";
+			f << "#include \"" << basename(intf_filename) << "\"\n";
 		else
-			f << "#include <backends/cxxrtl/cxxrtl.h>\n";
+			f << "#include <cxxrtl/cxxrtl.h>\n";
 		f << "\n";
 		f << "#if defined(CXXRTL_INCLUDE_CAPI_IMPL) || \\\n";
 		f << "    defined(CXXRTL_INCLUDE_VCD_CAPI_IMPL)\n";
-		f << "#include <backends/cxxrtl/cxxrtl_capi.cc>\n";
+		f << "#include <cxxrtl/capi/cxxrtl_capi.cc>\n";
 		f << "#endif\n";
 		f << "\n";
 		f << "#if defined(CXXRTL_INCLUDE_VCD_CAPI_IMPL)\n";
-		f << "#include <backends/cxxrtl/cxxrtl_vcd_capi.cc>\n";
+		f << "#include <cxxrtl/capi/cxxrtl_capi_vcd.cc>\n";
 		f << "#endif\n";
 		f << "\n";
 		f << "using namespace cxxrtl_yosys;\n";
@@ -2601,6 +2895,16 @@ struct CxxrtlWorker {
 						register_edge_signal(sigmap, cell->getPort(ID::CLK),
 							cell->parameters[ID::CLK_POLARITY].as_bool() ? RTLIL::STp : RTLIL::STn);
 				}
+
+				// Effectful cells may be triggered on posedge/negedge events.
+				if (is_effectful_cell(cell->type) && cell->getParam(ID::TRG_ENABLE).as_bool()) {
+					for (size_t i = 0; i < (size_t)cell->getParam(ID::TRG_WIDTH).as_int(); i++) {
+						RTLIL::SigBit trg = cell->getPort(ID::TRG).extract(i, 1);
+						if (is_valid_clock(trg))
+							register_edge_signal(sigmap, trg,
+								cell->parameters[ID::TRG_POLARITY][i] == RTLIL::S1 ? RTLIL::STp : RTLIL::STn);
+					}
+				}
 			}
 
 			for (auto &mem : memories) {
@@ -2734,8 +3038,12 @@ struct CxxrtlWorker {
 			// Discover nodes reachable from primary outputs (i.e. members) and collect reachable wire users.
 			pool<FlowGraph::Node*, hash_ptr_ops> worklist;
 			for (auto node : flow.nodes) {
-				if (node->type == FlowGraph::Node::Type::CELL_EVAL && is_effectful_cell(node->cell->type))
-					worklist.insert(node); // node has effects
+				if (node->type == FlowGraph::Node::Type::CELL_EVAL && !is_internal_cell(node->cell->type))
+					worklist.insert(node); // node evaluates a submodule
+				else if (node->type == FlowGraph::Node::Type::CELL_EVAL && is_effectful_cell(node->cell->type))
+					worklist.insert(node); // node has async effects
+				else if (node->type == FlowGraph::Node::Type::EFFECT_SYNC)
+					worklist.insert(node); // node has sync effects
 				else if (node->type == FlowGraph::Node::Type::MEM_WRPORTS)
 					worklist.insert(node); // node is memory write
 				else if (node->type == FlowGraph::Node::Type::PROCESS_SYNC && is_memwr_process(node->process))
@@ -2792,9 +3100,23 @@ struct CxxrtlWorker {
 			}
 
 			// Emit reachable nodes in eval().
+			// Accumulate sync effectful cells per trigger condition.
+			dict<std::pair<RTLIL::SigSpec, RTLIL::Const>, std::vector<const RTLIL::Cell*>> effect_sync_cells;
 			for (auto node : node_order)
-				if (live_nodes[node])
-					schedule[module].push_back(*node);
+				if (live_nodes[node]) {
+					if (node->type == FlowGraph::Node::Type::CELL_EVAL &&
+							is_effectful_cell(node->cell->type) &&
+							node->cell->getParam(ID::TRG_ENABLE).as_bool() &&
+							node->cell->getParam(ID::TRG_WIDTH).as_int() != 0)
+						effect_sync_cells[make_pair(node->cell->getPort(ID::TRG), node->cell->getParam(ID::TRG_POLARITY))].push_back(node->cell);
+					else
+						schedule[module].push_back(*node);
+				}
+
+			for (auto &it : effect_sync_cells) {
+				auto node = flow.add_effect_sync_node(it.second);
+				schedule[module].push_back(*node);
+			}
 
 			// For maximum performance, the state of the simulation (which is the same as the set of its double buffered
 			// wires, since using a singly buffered wire for any kind of state introduces a race condition) should contain
@@ -3098,7 +3420,9 @@ struct CxxrtlBackend : public Backend {
 		log("      value<8> p_i_data;\n");
 		log("      wire<8> p_o_data;\n");
 		log("\n");
-		log("      bool eval() override;\n");
+		log("      bool eval(performer *performer) override;\n");
+		log("      template<class ObserverT>\n");
+		log("      bool commit(ObserverT &observer);\n");
 		log("      bool commit() override;\n");
 		log("\n");
 		log("      static std::unique_ptr<bb_p_debug>\n");
@@ -3111,11 +3435,11 @@ struct CxxrtlBackend : public Backend {
 		log("    namespace cxxrtl_design {\n");
 		log("\n");
 		log("    struct stderr_debug : public bb_p_debug {\n");
-		log("      bool eval() override {\n");
+		log("      bool eval(performer *performer) override {\n");
 		log("        if (posedge_p_clk() && p_en)\n");
 		log("          fprintf(stderr, \"debug: %%02x\\n\", p_i_data.data[0]);\n");
 		log("        p_o_data.next = p_i_data;\n");
-		log("        return bb_p_debug::eval();\n");
+		log("        return bb_p_debug::eval(performer);\n");
 		log("      }\n");
 		log("    };\n");
 		log("\n");
@@ -3212,6 +3536,11 @@ struct CxxrtlBackend : public Backend {
 		log("    -namespace <ns-name>\n");
 		log("        place the generated code into namespace <ns-name>. if not specified,\n");
 		log("        \"cxxrtl_design\" is used.\n");
+		log("\n");
+		log("    -print-output <stream>\n");
+		log("        $print cells in the generated code direct their output to <stream>.\n");
+		log("        must be one of \"std::cout\", \"std::cerr\". if not specified,\n");
+		log("        \"std::cout\" is used. explicitly provided performer overrides this.\n");
 		log("\n");
 		log("    -nohierarchy\n");
 		log("        use design hierarchy as-is. in most designs, a top module should be\n");
@@ -3349,6 +3678,14 @@ struct CxxrtlBackend : public Backend {
 			}
 			if (args[argidx] == "-namespace" && argidx+1 < args.size()) {
 				worker.design_ns = args[++argidx];
+				continue;
+			}
+			if (args[argidx] == "-print-output" && argidx+1 < args.size()) {
+				worker.print_output = args[++argidx];
+				if (!(worker.print_output == "std::cout" || worker.print_output == "std::cerr")) {
+					log_cmd_error("Invalid output stream \"%s\".\n", worker.print_output.c_str());
+					worker.print_output = "std::cout";
+				}
 				continue;
 			}
 			break;

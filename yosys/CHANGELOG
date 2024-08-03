@@ -2,6 +2,116 @@
 List of major changes and improvements between releases
 =======================================================
 
+Yosys 0.37 .. Yosys 0.38
+--------------------------
+ * New commands and options
+    - Added option "-tech" to "opt_lut" pass.
+    - Added option "-nokeep_prints" to "hierarchy" pass.
+    - Added option "-nolower" to "async2sync" and "clk2fflogic" pass.
+    - Added option "-lower" to "chformal" pass.
+
+ * Various
+    - Added $check cell to represent assertions with messages.
+    - Allow capturing $print cell output in CXXRTL.
+    - Added API to overwrite existing pass from plugin.
+    - Follow the XDG Base Directory Specification for storing history files.
+    - Without a known top module, derive all deferred modules (hierarchy pass).
+    - Detect and error out on combinational loops in write_aiger.
+
+ * Verific support
+    - Added option "-no-split-complex-ports" to "verific -import".
+
+Yosys 0.36 .. Yosys 0.37
+--------------------------
+ * New commands and options
+    - Added option "-nodisplay" to read_verilog.
+
+ * SystemVerilog
+    - Correct hierarchical path names for structs and unions.
+
+ * Various
+    - Print hierarchy for failed assertions in "sim" pass.
+    - Add "--present-only" option to "yosys-witness" to omit unused signals.
+    - Implement a generic record/replay interface for CXXRTL.
+    - Improved readability of emitted code with "write_verilog".
+
+Yosys 0.35 .. Yosys 0.36
+--------------------------
+ * New commands and options
+    - Added option "--" to pass arguments down to tcl when using -c option.
+    - Added ability on MacOS and Windows to pass options after arguments on cli.
+    - Added option "-cmp2softlogic" to synth_lattice.
+    - Added option "-lowpower" to "booth" pass.
+
+ * QuickLogic support
+    - Added "K6N10f" support.
+    - Added "-nodsp", "-nocarry", "-nobram" and "-bramtypes" options to 
+      "synth_quicklogic" pass.
+    - Added "ql_bram_merge" pass to merge 18K BRAM cells into TDP36K.
+    - Added "ql_bram_types" pass to change TDP36K depending on configuration.
+    - Added "ql_dsp_io_regs" pass to update QL_DSP2 depending on configuration.
+    - Added "ql_dsp_macc" pass to infer multiplier-accumulator DSP cells.
+    - Added "ql_dsp_simd" pass to merge DSP pairs to operate in SIMD mode.
+
+ * ECP5,iCE40 and Gowin support
+    - Enabled abc9 by default, added "-noabc9" option to disable.
+
+ * MachXO3 support
+    - Quality of results improvements.
+    - Enabled "booth" pass by default for it in "synth_lattice".
+
+ * Various
+    - Improved "peepopt" by adding shiftadd pattern support.
+    - Added "--incremental" mode to smtbmc.
+
+Yosys 0.34 .. Yosys 0.35
+--------------------------
+ * Various
+    - Improvements on "peepopt" shiftmul matcher.
+    - Improvements on "ram_style" attributes handling.
+
+ * Verific support
+    - Improved static elaboration for VHDL and mixed HDL designs.
+    - Expose "hdlname" attribute with original module name.
+    - Expose "architecture" attribute with VHDL architecture name.
+
+Yosys 0.33 .. Yosys 0.34
+--------------------------
+ * New commands and options
+    - Added option "-assert" to "sim" pass.
+    - Added option "-noinitstate" to "sim" pass.
+    - Added option "-dont_use" to "abc" pass.
+    - Added "dft_tag" pass to create tagging logic for data flow tracking.
+    - Added "future" pass to resolve future sampled value functions.
+    - Added "booth" pass to map $mul cells to Booth multipliers.
+    - Added option "-booth" to "synth" pass.
+
+ * SystemVerilog
+    - Added support for assignments within expressions, e.g., `x[y++] = z;` or
+      `x = (y *= 2) - 1;`.
+
+ * Verific support
+    - "src" attribute contain full location info.
+    - module parameters are kept after import.
+    - accurate access order semantics in memory inference.
+    - better "bind" support for mixed language projects.
+
+ * Various
+    - "show" command displays dot instead of box for wire aliases.
+
+Yosys 0.32 .. Yosys 0.33
+--------------------------
+ * Various
+    - Added "$print" cell, produced by "$display" and "$write"
+      Verilog tasks.
+    - Added "$print" cell handling in CXXRTL.
+
+ * Lattice FPGA support
+    - Added generic "synth_lattice" pass (for now MachXO2/XO3/XO3D)
+    - Removed "synth_machxo2" pass
+    - Pass "ecp5_gsr" renamed to "lattice_gsr"
+    - "synth_machxo2" equivalent is "synth_lattice -family xo2"
+
 Yosys 0.31 .. Yosys 0.32
 --------------------------
  * Verific support
