@@ -252,7 +252,7 @@ void load_cluster_constraints() {
     }
 }
 
-void mark_fixed_blocks(PlaceLocVars& place_loc_vars) {
+void mark_fixed_blocks(BlkLocRegistry& place_loc_vars) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
 

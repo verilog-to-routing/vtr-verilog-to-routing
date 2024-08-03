@@ -42,7 +42,7 @@ void report_aborted_moves() {
 e_create_move create_move(t_pl_blocks_to_be_moved& blocks_affected,
                           ClusterBlockId b_from,
                           t_pl_loc to,
-                          const PlaceLocVars& place_loc_vars) {
+                          const BlkLocRegistry& place_loc_vars) {
     const auto& block_locs = place_loc_vars.block_locs();
     const GridBlock& grid_blocks = place_loc_vars.grid_blocks();
     e_block_move_result outcome = find_affected_blocks(blocks_affected, b_from, to, place_loc_vars);
@@ -78,7 +78,7 @@ e_create_move create_move(t_pl_blocks_to_be_moved& blocks_affected,
 e_block_move_result find_affected_blocks(t_pl_blocks_to_be_moved& blocks_affected,
                                          ClusterBlockId b_from,
                                          t_pl_loc to,
-                                         const PlaceLocVars& place_loc_vars) {
+                                         const BlkLocRegistry& place_loc_vars) {
     /* Finds and set ups the affected_blocks array.
      * Returns abort_swap. */
     VTR_ASSERT_SAFE(b_from);
@@ -128,7 +128,7 @@ e_block_move_result find_affected_blocks(t_pl_blocks_to_be_moved& blocks_affecte
 e_block_move_result record_single_block_swap(t_pl_blocks_to_be_moved& blocks_affected,
                                              ClusterBlockId b_from,
                                              t_pl_loc to,
-                                             const PlaceLocVars& place_loc_vars) {
+                                             const BlkLocRegistry& place_loc_vars) {
     /* Find all the blocks affected when b_from is swapped with b_to.
      * Returns abort_swap.                  */
     VTR_ASSERT_SAFE(b_from);
@@ -183,7 +183,7 @@ e_block_move_result record_macro_swaps(t_pl_blocks_to_be_moved& blocks_affected,
                                        const int imacro_from,
                                        int& imember_from,
                                        t_pl_offset swap_offset,
-                                       const PlaceLocVars& place_loc_vars) {
+                                       const BlkLocRegistry& place_loc_vars) {
     const auto& pl_macros = g_vpr_ctx.placement().pl_macros;
     const auto& block_locs = place_loc_vars.block_locs();
     const GridBlock& grid_blocks = place_loc_vars.grid_blocks();
@@ -246,7 +246,7 @@ e_block_move_result record_macro_macro_swaps(t_pl_blocks_to_be_moved& blocks_aff
                                              const int imacro_to,
                                              ClusterBlockId blk_to,
                                              t_pl_offset swap_offset,
-                                             const PlaceLocVars& place_loc_vars) {
+                                             const BlkLocRegistry& place_loc_vars) {
     //Adds the macro imacro_to to the set of affected block caused by swapping 'blk_to' to its
     //new position.
     //
@@ -349,7 +349,7 @@ e_block_move_result record_macro_move(t_pl_blocks_to_be_moved& blocks_affected,
                                       std::vector<ClusterBlockId>& displaced_blocks,
                                       const int imacro,
                                       t_pl_offset swap_offset,
-                                      const PlaceLocVars& place_loc_vars) {
+                                      const BlkLocRegistry& place_loc_vars) {
     const auto& pl_macros = g_vpr_ctx.placement().pl_macros;
     const auto& block_locs = place_loc_vars.block_locs();
     const GridBlock& grid_blocks = place_loc_vars.grid_blocks();
@@ -383,7 +383,7 @@ e_block_move_result record_macro_move(t_pl_blocks_to_be_moved& blocks_affected,
 e_block_move_result identify_macro_self_swap_affected_macros(std::vector<int>& macros,
                                                              const int imacro,
                                                              t_pl_offset swap_offset,
-                                                             const PlaceLocVars& place_loc_vars) {
+                                                             const BlkLocRegistry& place_loc_vars) {
     const auto& pl_macros = g_vpr_ctx.placement().pl_macros;
     const auto& block_locs = place_loc_vars.block_locs();
     const GridBlock& grid_blocks = place_loc_vars.grid_blocks();
@@ -420,7 +420,7 @@ e_block_move_result identify_macro_self_swap_affected_macros(std::vector<int>& m
 e_block_move_result record_macro_self_swaps(t_pl_blocks_to_be_moved& blocks_affected,
                                             const int imacro,
                                             t_pl_offset swap_offset,
-                                            const PlaceLocVars& place_loc_vars) {
+                                            const BlkLocRegistry& place_loc_vars) {
     const auto& pl_macros = g_vpr_ctx.placement().pl_macros;
 
     //Reset any partial move
@@ -478,7 +478,7 @@ e_block_move_result record_macro_self_swaps(t_pl_blocks_to_be_moved& blocks_affe
 
 bool is_legal_swap_to_location(ClusterBlockId blk,
                                t_pl_loc to,
-                               const PlaceLocVars& place_loc_vars) {
+                               const BlkLocRegistry& place_loc_vars) {
     //Make sure that the swap_to location is valid
     //It must be:
     // * on chip, and
@@ -726,7 +726,7 @@ bool find_to_loc_uniform(t_logical_block_type_ptr type,
                          const t_pl_loc& from,
                          t_pl_loc& to,
                          ClusterBlockId b_from,
-                         const PlaceLocVars& place_loc_vars) {
+                         const BlkLocRegistry& place_loc_vars) {
     //Finds a legal swap to location for the given type, starting from 'from.x' and 'from.y'
     //
     //Note that the range limit (rlim) is applied in a logical sense (i.e. 'compressed' grid space consisting
@@ -816,7 +816,7 @@ bool find_to_loc_median(t_logical_block_type_ptr blk_type,
                         const t_bb* limit_coords,
                         t_pl_loc& to_loc,
                         ClusterBlockId b_from,
-                        const PlaceLocVars& place_loc_vars) {
+                        const BlkLocRegistry& place_loc_vars) {
     int num_layers = g_vpr_ctx.device().grid.get_num_layers();
     const int to_layer_num = to_loc.layer;
     VTR_ASSERT(to_layer_num != OPEN);
@@ -907,7 +907,7 @@ bool find_to_loc_centroid(t_logical_block_type_ptr blk_type,
                           const t_range_limiters& range_limiters,
                           t_pl_loc& to_loc,
                           ClusterBlockId b_from,
-                          const PlaceLocVars& place_loc_vars) {
+                          const BlkLocRegistry& place_loc_vars) {
     //Retrieve the compressed block grid for this block type
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[blk_type->index];
     const int to_layer_num = centroid.layer;
@@ -1055,7 +1055,7 @@ bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
                                              bool is_median,
                                              int to_layer_num,
                                              bool search_for_empty,
-                                             const PlaceLocVars& place_loc_vars) {
+                                             const BlkLocRegistry& place_loc_vars) {
     //TODO For the time being, the blocks only moved in the same layer. This assertion should be removed after VPR is updated to move blocks between layers
     VTR_ASSERT(to_layer_num == from_loc.layer_num);
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[type->index];
@@ -1297,7 +1297,7 @@ std::string e_move_result_to_string(e_move_result move_outcome) {
 
 int find_free_layer(t_logical_block_type_ptr logical_block,
                     const t_pl_loc& loc,
-                    const PlaceLocVars& place_loc_vars) {
+                    const BlkLocRegistry& place_loc_vars) {
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& compressed_grids = g_vpr_ctx.placement().compressed_block_grids;
     const GridBlock& grid_blocks = place_loc_vars.grid_blocks();

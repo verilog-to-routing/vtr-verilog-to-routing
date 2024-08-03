@@ -19,7 +19,7 @@
 // forward declaration of t_placer_costs so that it can be used an argument
 // in NocCostTerms constructor
 class t_placer_costs;
-class PlaceLocVars;
+class BlkLocRegistry;
 
 /**
  * @brief Data structure that stores different cost terms for NoC placement.
@@ -358,7 +358,7 @@ void alloc_and_load_legal_placement_locations(std::vector<std::vector<std::vecto
 /// and sets the location and grid usage of the block if it is legal.
 void set_block_location(ClusterBlockId blk_id,
                         const t_pl_loc& location,
-                        PlaceLocVars& placer_loc_vars);
+                        BlkLocRegistry& placer_loc_vars);
 
 /// @brief check if a specified location is within the device grid
 inline bool is_loc_on_chip(t_physical_tile_loc loc) {
@@ -395,5 +395,5 @@ inline bool is_loc_on_chip(t_physical_tile_loc loc) {
 bool macro_can_be_placed(const t_pl_macro& pl_macro,
                          const t_pl_loc& head_pos,
                          bool check_all_legality,
-                         const PlaceLocVars& place_loc_vars);
+                         const BlkLocRegistry& place_loc_vars);
 #endif

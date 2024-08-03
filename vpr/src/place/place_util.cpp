@@ -364,7 +364,7 @@ void alloc_and_load_legal_placement_locations(std::vector<std::vector<std::vecto
 
 void set_block_location(ClusterBlockId blk_id,
                         const t_pl_loc& location,
-                        PlaceLocVars& placer_loc_vars) {
+                        BlkLocRegistry& placer_loc_vars) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& block_locs = placer_loc_vars.mutable_block_locs();
@@ -410,7 +410,7 @@ void set_block_location(ClusterBlockId blk_id,
 bool macro_can_be_placed(const t_pl_macro& pl_macro,
                          const t_pl_loc& head_pos,
                          bool check_all_legality,
-                         const PlaceLocVars& place_loc_vars) {
+                         const BlkLocRegistry& place_loc_vars) {
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     const auto& grid_blocks = place_loc_vars.grid_blocks();

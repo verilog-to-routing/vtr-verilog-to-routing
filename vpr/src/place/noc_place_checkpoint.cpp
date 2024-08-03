@@ -32,7 +32,7 @@ void NoCPlacementCheckpoint::save_checkpoint(double cost, const vtr::vector_map<
 }
 
 void NoCPlacementCheckpoint::restore_checkpoint(t_placer_costs& costs,
-                                                PlaceLocVars& place_loc_vars) {
+                                                BlkLocRegistry& place_loc_vars) {
     const auto& noc_ctx = g_vpr_ctx.noc();
     const auto& device_ctx = g_vpr_ctx.device();
     GridBlock& grid_blocks = place_loc_vars.mutable_grid_blocks();

@@ -234,9 +234,9 @@ static int check_placement_costs(const t_placer_costs& costs,
                                  const t_place_algorithm& place_algorithm,
                                  PlacerContext& placer_ctx);
 
-static int check_placement_consistency(const PlaceLocVars& place_loc_vars);
-static int check_block_placement_consistency(const PlaceLocVars& place_loc_vars);
-static int check_macro_placement_consistency(const PlaceLocVars& place_loc_vars);
+static int check_placement_consistency(const BlkLocRegistry& place_loc_vars);
+static int check_block_placement_consistency(const BlkLocRegistry& place_loc_vars);
+static int check_macro_placement_consistency(const BlkLocRegistry& place_loc_vars);
 
 static float starting_t(const t_annealing_state* state,
                         t_placer_costs* costs,
@@ -338,7 +338,7 @@ static void print_place_status(const t_annealing_state& state,
                                bool noc_enabled,
                                const NocCostTerms& noc_cost_terms);
 
-static void print_resources_utilization(const PlaceLocVars& place_loc_vars);
+static void print_resources_utilization(const BlkLocRegistry& place_loc_vars);
 
 static void print_placement_swaps_stats(const t_annealing_state& state, const t_swap_stats& swap_stats);
 
@@ -348,7 +348,7 @@ static void print_placement_move_types_stats(const MoveTypeStat& move_type_stat)
  * @brief Copies the placement location variables into the global placement context.
  * @param place_loc_vars The placement location variables to be copied.
  */
-static void copy_locs_to_global_state(const PlaceLocVars& place_loc_vars);
+static void copy_locs_to_global_state(const BlkLocRegistry& place_loc_vars);
 
 /*****************************************************************************/
 void try_place(const Netlist<>& net_list,
@@ -2052,11 +2052,11 @@ static int check_placement_costs(const t_placer_costs& costs,
     return error;
 }
 
-static int check_placement_consistency(const PlaceLocVars& place_loc_vars) {
+static int check_placement_consistency(const BlkLocRegistry& place_loc_vars) {
     return check_block_placement_consistency(place_loc_vars) + check_macro_placement_consistency(place_loc_vars);
 }
 
-static int check_block_placement_consistency(const PlaceLocVars& place_loc_vars) {
+static int check_block_placement_consistency(const BlkLocRegistry& place_loc_vars) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.device();
     const auto& block_locs = place_loc_vars.block_locs();
@@ -2140,7 +2140,7 @@ static int check_block_placement_consistency(const PlaceLocVars& place_loc_vars)
     return error;
 }
 
-int check_macro_placement_consistency(const PlaceLocVars& place_loc_vars) {
+int check_macro_placement_consistency(const BlkLocRegistry& place_loc_vars) {
     const auto& pl_macros = g_vpr_ctx.placement().pl_macros;
     const auto& block_locs = place_loc_vars.block_locs();
     const auto& grid_blocks = place_loc_vars.grid_blocks();
@@ -2289,7 +2289,7 @@ static void print_place_status(const t_annealing_state& state,
     fflush(stdout);
 }
 
-static void print_resources_utilization(const PlaceLocVars& place_loc_vars) {
+static void print_resources_utilization(const BlkLocRegistry& place_loc_vars) {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& block_locs = place_loc_vars.block_locs();
@@ -2430,7 +2430,7 @@ static void calculate_reward_and_process_outcome(const t_placer_opts& placer_opt
     }
 }
 
-static void copy_locs_to_global_state(const PlaceLocVars& place_loc_vars) {
+static void copy_locs_to_global_state(const BlkLocRegistry& place_loc_vars) {
     auto& place_ctx = g_vpr_ctx.mutable_placement();
 
     // the placement location variables should be unlocked before being accessed

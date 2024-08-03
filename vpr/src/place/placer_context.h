@@ -150,12 +150,12 @@ class PlacerContext : public Context {
     inline const vtr::vector_map<ClusterPinId, int>& physical_pins() const { return loc_vars_.physical_pins(); }
     inline vtr::vector_map<ClusterPinId, int>& mutable_physical_pins() { return loc_vars_.mutable_physical_pins(); }
 
-    inline const PlaceLocVars& place_loc_vars() const { return loc_vars_; }
-    inline PlaceLocVars& mutable_place_loc_vars() { return loc_vars_; }
+    inline const BlkLocRegistry& place_loc_vars() const { return loc_vars_; }
+    inline BlkLocRegistry& mutable_place_loc_vars() { return loc_vars_; }
 
   private:
     PlacerTimingContext timing_;
     PlacerRuntimeContext runtime_;
     PlacerMoveContext move_;
-    PlaceLocVars loc_vars_;
+    BlkLocRegistry loc_vars_;
 };

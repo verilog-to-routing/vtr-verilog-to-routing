@@ -16,6 +16,6 @@
  */
 void initial_noc_placement(const t_noc_opts& noc_opts,
                            const t_placer_opts& placer_opts,
-                           PlaceLocVars& place_loc_vars);
+                           BlkLocRegistry& place_loc_vars);
 
 #endif //VTR_INITIAL_NOC_PLACMENT_H

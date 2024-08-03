@@ -829,7 +829,7 @@ static bool select_random_router_cluster(ClusterBlockId& b_from,
 
 e_create_move propose_router_swap(t_pl_blocks_to_be_moved& blocks_affected,
                                   float rlim,
-                                  const PlaceLocVars& place_loc_vars) {
+                                  const BlkLocRegistry& place_loc_vars) {
     // block ID for the randomly selected router cluster
     ClusterBlockId b_from;
     // current location of the randomly selected router cluster

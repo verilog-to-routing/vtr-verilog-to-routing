@@ -35,7 +35,7 @@ static bool accept_noc_swap(double delta_cost, double prob);
  *   filled with the location where pl_macro is placed.
  */
 static void place_constrained_noc_router(ClusterBlockId router_blk_id,
-                                         PlaceLocVars& place_loc_vars);
+                                         BlkLocRegistry& place_loc_vars);
 
 /**
  * @brief Randomly places unconstrained NoC routers.
@@ -48,7 +48,7 @@ static void place_constrained_noc_router(ClusterBlockId router_blk_id,
  */
 static void place_noc_routers_randomly(std::vector<ClusterBlockId>& unfixed_routers,
                                        int seed,
-                                       PlaceLocVars& place_loc_vars);
+                                       BlkLocRegistry& place_loc_vars);
 
 /**
  * @brief Runs a simulated annealing optimizer for NoC routers.
@@ -58,7 +58,7 @@ static void place_noc_routers_randomly(std::vector<ClusterBlockId>& unfixed_rout
  *   To be filled with the location where pl_macro is placed.
  */
 static void noc_routers_anneal(const t_noc_opts& noc_opts,
-                               PlaceLocVars& place_loc_vars);
+                               BlkLocRegistry& place_loc_vars);
 
 static bool accept_noc_swap(double delta_cost, double prob) {
     if (delta_cost <= 0.0) {
@@ -78,7 +78,7 @@ static bool accept_noc_swap(double delta_cost, double prob) {
 }
 
 static void place_constrained_noc_router(ClusterBlockId router_blk_id,
-                                         PlaceLocVars& place_loc_vars) {
+                                         BlkLocRegistry& place_loc_vars) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     const auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
 
@@ -108,7 +108,7 @@ static void place_constrained_noc_router(ClusterBlockId router_blk_id,
 
 static void place_noc_routers_randomly(std::vector<ClusterBlockId>& unfixed_routers,
                                        int seed,
-                                       PlaceLocVars& place_loc_vars) {
+                                       BlkLocRegistry& place_loc_vars) {
     const auto& compressed_grids = g_vpr_ctx.placement().compressed_block_grids;
     const auto& noc_ctx = g_vpr_ctx.noc();
     const auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -180,7 +180,7 @@ static void place_noc_routers_randomly(std::vector<ClusterBlockId>& unfixed_rout
 }
 
 static void noc_routers_anneal(const t_noc_opts& noc_opts,
-                               PlaceLocVars& place_loc_vars) {
+                               BlkLocRegistry& place_loc_vars) {
     auto& noc_ctx = g_vpr_ctx.noc();
     const auto& block_locs = place_loc_vars.block_locs();
 
@@ -272,7 +272,7 @@ static void noc_routers_anneal(const t_noc_opts& noc_opts,
 
 void initial_noc_placement(const t_noc_opts& noc_opts,
                            const t_placer_opts& placer_opts,
-                           PlaceLocVars& place_loc_vars) {
+                           BlkLocRegistry& place_loc_vars) {
 	vtr::ScopedStartFinishTimer timer("Initial NoC Placement");
     auto& noc_ctx = g_vpr_ctx.noc();
     const auto& block_locs = place_loc_vars.block_locs();

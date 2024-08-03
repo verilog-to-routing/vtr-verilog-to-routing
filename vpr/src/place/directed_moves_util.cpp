@@ -3,7 +3,7 @@
 #include "centroid_move_generator.h"
 
 t_physical_tile_loc get_coordinate_of_pin(ClusterPinId pin,
-                                          const PlaceLocVars& place_loc_vars) {
+                                          const BlkLocRegistry& place_loc_vars) {
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& grid = device_ctx.grid;
     const auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -29,7 +29,7 @@ void calculate_centroid_loc(ClusterBlockId b_from,
                             const PlacerCriticalities* criticalities,
                             bool noc_attraction_enabled,
                             float noc_attraction_weight,
-                            const PlaceLocVars& place_loc_vars) {
+                            const BlkLocRegistry& place_loc_vars) {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     const auto& block_locs = place_loc_vars.block_locs();
 

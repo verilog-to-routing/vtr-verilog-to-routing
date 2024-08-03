@@ -18,7 +18,7 @@ size_t t_pl_blocks_to_be_moved::get_size_and_increment() {
 //Records that block 'blk' should be moved to the specified 'to' location
 e_block_move_result t_pl_blocks_to_be_moved::record_block_move(ClusterBlockId blk,
                                                                t_pl_loc to,
-                                                               const PlaceLocVars& place_loc_vars) {
+                                                               const BlkLocRegistry& place_loc_vars) {
     auto [to_it, to_success] = moved_to.emplace(to);
     if (!to_success) {
         log_move_abort("duplicate block move to location");
@@ -68,7 +68,7 @@ std::set<t_pl_loc> t_pl_blocks_to_be_moved::determine_locations_emptied_by_move(
 
 //Moves the blocks in blocks_affected to their new locations
 void apply_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected,
-                       PlaceLocVars& place_loc_vars) {
+                       BlkLocRegistry& place_loc_vars) {
     auto& device_ctx = g_vpr_ctx.device();
 
     //Swap the blocks, but don't swap the nets or update place_ctx.grid_blocks
@@ -126,7 +126,7 @@ void commit_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected,
 
 //Moves the blocks in blocks_affected to their old locations
 void revert_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected,
-                        PlaceLocVars& place_loc_vars) {
+                        BlkLocRegistry& place_loc_vars) {
     auto& device_ctx = g_vpr_ctx.device();
 
     // Swap the blocks back, nets not yet swapped they don't need to be changed

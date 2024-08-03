@@ -570,7 +570,7 @@ void free_draw_structs() {
 #endif /* NO_GRAPHICS */
 }
 
-void init_draw_coords(float width_val, const PlaceLocVars& place_loc_vars) {
+void init_draw_coords(float width_val, const BlkLocRegistry& place_loc_vars) {
 #ifndef NO_GRAPHICS
     /* Load the arrays containing the left and bottom coordinates of the clbs   *
      * forming the FPGA.  tile_width_val sets the width and height of a drawn    *

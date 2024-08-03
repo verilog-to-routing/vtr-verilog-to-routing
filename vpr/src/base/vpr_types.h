@@ -907,7 +907,7 @@ class GridBlock {
     vtr::NdMatrix<t_grid_blocks, 3> grid_blocks_;
 };
 
-class PlaceLocVars {
+class BlkLocRegistry {
   private:
     ///@brief Clustered block placement locations
     vtr::vector_map<ClusterBlockId, t_block_loc> block_locs_;

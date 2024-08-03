@@ -2108,7 +2108,7 @@ void print_switch_usage() {
  */
 
 void place_sync_external_block_connections(ClusterBlockId iblk,
-                                           PlaceLocVars& place_loc_vars) {
+                                           BlkLocRegistry& place_loc_vars) {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     const auto& clb_nlist = cluster_ctx.clb_nlist;
     const auto& block_locs = place_loc_vars.block_locs();

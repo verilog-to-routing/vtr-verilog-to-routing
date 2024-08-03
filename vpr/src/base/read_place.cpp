@@ -22,13 +22,13 @@ static void read_place_header(std::ifstream& placement_file,
                               const DeviceGrid& grid);
 
 static std::string read_place_body(std::ifstream& placement_file,
-                                   PlaceLocVars& place_loc_vars,
+                                   BlkLocRegistry& place_loc_vars,
                                    const char* place_file,
                                    bool is_place_file);
 
 std::string read_place(const char* net_file,
                        const char* place_file,
-                       PlaceLocVars& place_loc_vars,
+                       BlkLocRegistry& place_loc_vars,
                        bool verify_file_digests,
                        const DeviceGrid& grid) {
     std::ifstream fstream(place_file);
@@ -53,7 +53,7 @@ std::string read_place(const char* net_file,
 }
 
 void read_constraints(const char* constraints_file,
-                      PlaceLocVars& place_loc_vars) {
+                      BlkLocRegistry& place_loc_vars) {
     std::ifstream fstream(constraints_file);
     if (!fstream) {
         VPR_FATAL_ERROR(VPR_ERROR_PLACE_F,
@@ -206,7 +206,7 @@ static void read_place_header(std::ifstream& placement_file,
  * or a constraints file (is_place_file = false).
  */
 static std::string read_place_body(std::ifstream& placement_file,
-                                   PlaceLocVars& place_loc_vars,
+                                   BlkLocRegistry& place_loc_vars,
                                    const char* place_file,
                                    bool is_place_file) {
     auto& cluster_ctx = g_vpr_ctx.clustering();

@@ -396,7 +396,7 @@ struct PlacementContext : public Context {
      * @brief Stores block location information, which is subject to change during the
      * placement stage.
      */
-    PlaceLocVars place_loc_vars_;
+    BlkLocRegistry place_loc_vars_;
 
   public:
 
@@ -406,8 +406,8 @@ struct PlacementContext : public Context {
     GridBlock& get_mutable_grid_blocks() { VTR_ASSERT_SAFE(loc_vars_are_accessible_); return place_loc_vars_.mutable_grid_blocks(); }
     vtr::vector_map<ClusterPinId, int>& mutable_physical_pins() { VTR_ASSERT_SAFE(loc_vars_are_accessible_); return place_loc_vars_.mutable_physical_pins(); }
     const vtr::vector_map<ClusterPinId, int>& physical_pins() const { VTR_ASSERT_SAFE(loc_vars_are_accessible_); return place_loc_vars_.physical_pins(); }
-    PlaceLocVars& mutable_place_loc_vars() { VTR_ASSERT_SAFE(loc_vars_are_accessible_); return place_loc_vars_; }
-    const PlaceLocVars& place_loc_vars() const { VTR_ASSERT_SAFE(loc_vars_are_accessible_); return place_loc_vars_; }
+    BlkLocRegistry& mutable_place_loc_vars() { VTR_ASSERT_SAFE(loc_vars_are_accessible_); return place_loc_vars_; }
+    const BlkLocRegistry& place_loc_vars() const { VTR_ASSERT_SAFE(loc_vars_are_accessible_); return place_loc_vars_; }
 
     /**
      * @brief Makes place_loc_vars_ inaccessible through the getter methods.

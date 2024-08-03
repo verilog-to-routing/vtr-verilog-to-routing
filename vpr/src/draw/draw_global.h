@@ -37,13 +37,13 @@ t_draw_state* get_draw_state_vars();
  *
  * @param place_loc_vars The PlaceLocVars that the reference will point to.
  */
-void set_graphics_place_loc_vars_ref(const PlaceLocVars& place_loc_vars);
+void set_graphics_place_loc_vars_ref(const BlkLocRegistry& place_loc_vars);
 
 /**
  * @brief Returns the reference to placement block location variables.
  * @return A const reference to placement block location variables.
  */
-const PlaceLocVars& get_graphics_place_loc_vars_ref();
+const BlkLocRegistry& get_graphics_place_loc_vars_ref();
 
 #endif // NO_GRAPHICS
 
