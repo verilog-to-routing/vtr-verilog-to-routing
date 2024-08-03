@@ -20,7 +20,7 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
     auto& placer_ctx = placer_ctx_.get();
     auto& place_move_ctx = placer_ctx.mutable_move();
     const auto& block_locs = placer_ctx.block_locs();
-    const auto& place_loc_vars = placer_ctx.place_loc_vars();
+    const auto& place_loc_vars = placer_ctx.blk_loc_registry();
 
     //Find a movable block based on blk_type
     ClusterBlockId b_from = propose_block_to_move(placer_opts,
@@ -224,7 +224,7 @@ void MedianMoveGenerator::get_bb_from_scratch_excluding_block(ClusterNetId net_i
 
     if (bnum != block_id) {
         skip_net = false;
-        pnum = placer_ctx.place_loc_vars().net_pin_to_tile_pin_index(net_id, 0);
+        pnum = placer_ctx.blk_loc_registry().net_pin_to_tile_pin_index(net_id, 0);
         const t_pl_loc& block_loc = block_locs[bnum].loc;
         int src_x = block_loc.x + physical_tile_type(block_loc)->pin_width_offset[pnum];
         int src_y = block_loc.y + physical_tile_type(block_loc)->pin_height_offset[pnum];
@@ -241,7 +241,7 @@ void MedianMoveGenerator::get_bb_from_scratch_excluding_block(ClusterNetId net_i
 
     for (ClusterPinId pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
         bnum = cluster_ctx.clb_nlist.pin_block(pin_id);
-        pnum = placer_ctx.place_loc_vars().tile_pin_index(pin_id);
+        pnum = placer_ctx.blk_loc_registry().tile_pin_index(pin_id);
         if (bnum == block_id)
             continue;
         skip_net = false;

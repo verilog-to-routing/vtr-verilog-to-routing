@@ -396,18 +396,18 @@ struct PlacementContext : public Context {
      * @brief Stores block location information, which is subject to change during the
      * placement stage.
      */
-    BlkLocRegistry place_loc_vars_;
+    BlkLocRegistry blk_loc_registry_;
 
   public:
 
-    const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs() const { VTR_ASSERT_SAFE(loc_vars_are_accessible_); return place_loc_vars_.block_locs(); }
-    vtr::vector_map<ClusterBlockId, t_block_loc>& mutable_block_locs() { VTR_ASSERT_SAFE(loc_vars_are_accessible_); return place_loc_vars_.mutable_block_locs(); }
-    const GridBlock& get_grid_blocks() const { VTR_ASSERT_SAFE(loc_vars_are_accessible_); return place_loc_vars_.grid_blocks(); }
-    GridBlock& get_mutable_grid_blocks() { VTR_ASSERT_SAFE(loc_vars_are_accessible_); return place_loc_vars_.mutable_grid_blocks(); }
-    vtr::vector_map<ClusterPinId, int>& mutable_physical_pins() { VTR_ASSERT_SAFE(loc_vars_are_accessible_); return place_loc_vars_.mutable_physical_pins(); }
-    const vtr::vector_map<ClusterPinId, int>& physical_pins() const { VTR_ASSERT_SAFE(loc_vars_are_accessible_); return place_loc_vars_.physical_pins(); }
-    BlkLocRegistry& mutable_place_loc_vars() { VTR_ASSERT_SAFE(loc_vars_are_accessible_); return place_loc_vars_; }
-    const BlkLocRegistry& place_loc_vars() const { VTR_ASSERT_SAFE(loc_vars_are_accessible_); return place_loc_vars_; }
+    const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs() const { VTR_ASSERT_SAFE(loc_vars_are_accessible_); return blk_loc_registry_.block_locs(); }
+    vtr::vector_map<ClusterBlockId, t_block_loc>& mutable_block_locs() { VTR_ASSERT_SAFE(loc_vars_are_accessible_); return blk_loc_registry_.mutable_block_locs(); }
+    const GridBlock& get_grid_blocks() const { VTR_ASSERT_SAFE(loc_vars_are_accessible_); return blk_loc_registry_.grid_blocks(); }
+    GridBlock& get_mutable_grid_blocks() { VTR_ASSERT_SAFE(loc_vars_are_accessible_); return blk_loc_registry_.mutable_grid_blocks(); }
+    vtr::vector_map<ClusterPinId, int>& mutable_physical_pins() { VTR_ASSERT_SAFE(loc_vars_are_accessible_); return blk_loc_registry_.mutable_physical_pins(); }
+    const vtr::vector_map<ClusterPinId, int>& physical_pins() const { VTR_ASSERT_SAFE(loc_vars_are_accessible_); return blk_loc_registry_.physical_pins(); }
+    BlkLocRegistry& mutable_blk_loc_registry() { VTR_ASSERT_SAFE(loc_vars_are_accessible_); return blk_loc_registry_; }
+    const BlkLocRegistry& blk_loc_registry() const { VTR_ASSERT_SAFE(loc_vars_are_accessible_); return blk_loc_registry_; }
 
     /**
      * @brief Makes place_loc_vars_ inaccessible through the getter methods.

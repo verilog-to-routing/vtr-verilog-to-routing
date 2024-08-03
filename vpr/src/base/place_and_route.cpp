@@ -390,7 +390,7 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
                     &warnings,
                     is_flat);
 
-    init_draw_coords(final, g_vpr_ctx.placement().place_loc_vars());
+    init_draw_coords(final, g_vpr_ctx.placement().blk_loc_registry());
 
     /* Allocate and load additional rr_graph information needed only by the router. */
     alloc_and_load_rr_node_route_structs();
@@ -575,7 +575,7 @@ static float comp_width(t_chan* chan, float x, float separation) {
 void post_place_sync() {
     /* Go through each block */
     const auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_loc_vars = g_vpr_ctx.mutable_placement().mutable_place_loc_vars();
+    auto& place_loc_vars = g_vpr_ctx.mutable_placement().mutable_blk_loc_registry();
 
     // Cluster-based netlist is used for placement
     for (const ClusterBlockId block_id : cluster_ctx.clb_nlist.blocks()) {

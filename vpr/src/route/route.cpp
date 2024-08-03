@@ -64,7 +64,7 @@ bool route(const Netlist<>& net_list,
                     is_flat);
 
     //Initialize drawing, now that we have an RR graph
-    init_draw_coords(width_fac, g_vpr_ctx.placement().place_loc_vars());
+    init_draw_coords(width_fac, g_vpr_ctx.placement().blk_loc_registry());
 
     /* Allocate and load additional rr_graph information needed only by the router. */
     alloc_and_load_rr_node_route_structs();

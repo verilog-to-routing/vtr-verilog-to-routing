@@ -711,7 +711,7 @@ int get_block_num_class(const ParentBlockId& block_id, bool is_flat) {
 }
 
 int get_block_pin_class_num(const ParentBlockId block_id, const ParentPinId pin_id, bool is_flat) {
-    const auto& place_loc_vars = g_vpr_ctx.placement().place_loc_vars();
+    const auto& place_loc_vars = g_vpr_ctx.placement().blk_loc_registry();
     auto& block_locs = place_loc_vars.block_locs();
 
     int class_num;

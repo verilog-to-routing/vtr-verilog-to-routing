@@ -19,7 +19,7 @@ e_create_move WeightedCentroidMoveGenerator::propose_move(t_pl_blocks_to_be_move
     auto& placer_ctx = placer_ctx_.get();
     const auto& block_locs = placer_ctx.block_locs();
     auto& place_move_ctx = placer_ctx.mutable_move();
-    const auto& place_loc_vars = placer_ctx.place_loc_vars();
+    const auto& place_loc_vars = placer_ctx.blk_loc_registry();
 
     //Find a movable block based on blk_type
     ClusterBlockId b_from = propose_block_to_move(placer_opts,

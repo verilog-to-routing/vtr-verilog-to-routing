@@ -141,21 +141,21 @@ class PlacerContext : public Context {
     inline const PlacerMoveContext& move() const { return move_; }
     inline PlacerMoveContext& mutable_move() { return move_; }
 
-    inline const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs() const { return loc_vars_.block_locs(); }
-    inline vtr::vector_map<ClusterBlockId, t_block_loc>& mutable_block_locs() { return loc_vars_.mutable_block_locs(); }
+    inline const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs() const { return blk_loc_registry_.block_locs(); }
+    inline vtr::vector_map<ClusterBlockId, t_block_loc>& mutable_block_locs() { return blk_loc_registry_.mutable_block_locs(); }
 
-    inline const GridBlock& grid_blocks() const { return loc_vars_.grid_blocks(); }
-    inline GridBlock& mutable_grid_blocks() { return loc_vars_.mutable_grid_blocks(); }
+    inline const GridBlock& grid_blocks() const { return blk_loc_registry_.grid_blocks(); }
+    inline GridBlock& mutable_grid_blocks() { return blk_loc_registry_.mutable_grid_blocks(); }
 
-    inline const vtr::vector_map<ClusterPinId, int>& physical_pins() const { return loc_vars_.physical_pins(); }
-    inline vtr::vector_map<ClusterPinId, int>& mutable_physical_pins() { return loc_vars_.mutable_physical_pins(); }
+    inline const vtr::vector_map<ClusterPinId, int>& physical_pins() const { return blk_loc_registry_.physical_pins(); }
+    inline vtr::vector_map<ClusterPinId, int>& mutable_physical_pins() { return blk_loc_registry_.mutable_physical_pins(); }
 
-    inline const BlkLocRegistry& place_loc_vars() const { return loc_vars_; }
-    inline BlkLocRegistry& mutable_place_loc_vars() { return loc_vars_; }
+    inline const BlkLocRegistry& blk_loc_registry() const { return blk_loc_registry_; }
+    inline BlkLocRegistry& mutable_blk_loc_registry() { return blk_loc_registry_; }
 
   private:
     PlacerTimingContext timing_;
     PlacerRuntimeContext runtime_;
     PlacerMoveContext move_;
-    BlkLocRegistry loc_vars_;
+    BlkLocRegistry blk_loc_registry_;
 };

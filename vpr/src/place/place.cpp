@@ -437,7 +437,7 @@ void try_place(const Netlist<>& net_list,
 
     PlacerContext placer_ctx;
     auto& place_move_ctx = placer_ctx.mutable_move();
-    auto& place_loc_vars = placer_ctx.mutable_place_loc_vars();
+    auto& place_loc_vars = placer_ctx.mutable_blk_loc_registry();
     const auto& p_timing_ctx = placer_ctx.timing();
     const auto& p_runtime_ctx = placer_ctx.runtime();
 
@@ -1332,7 +1332,7 @@ static e_move_result try_swap(const t_annealing_state* state,
 #endif //NO_GRAPHICS
     } else if (router_block_move) {
         // generate a move where two random router blocks are swapped
-        create_move_outcome = propose_router_swap(blocks_affected, rlim, placer_ctx.place_loc_vars());
+        create_move_outcome = propose_router_swap(blocks_affected, rlim, placer_ctx.blk_loc_registry());
         proposed_action.move_type = e_move_type::UNIFORM;
     } else {
         //Generate a new move (perturbation) used to explore the space of possible placements
@@ -1374,7 +1374,7 @@ static e_move_result try_swap(const t_annealing_state* state,
          */
 
         /* Update the block positions */
-        apply_move_blocks(blocks_affected, placer_ctx.mutable_place_loc_vars());
+        apply_move_blocks(blocks_affected, placer_ctx.mutable_blk_loc_registry());
 
         //Find all the nets affected by this swap and update the wiring costs.
         //This cost value doesn't depend on the timing info.
@@ -1509,7 +1509,7 @@ static e_move_result try_swap(const t_annealing_state* state,
             reset_move_nets();
 
             /* Restore the place_ctx.block_locs data structures to their state before the move. */
-            revert_move_blocks(blocks_affected, placer_ctx.mutable_place_loc_vars());
+            revert_move_blocks(blocks_affected, placer_ctx.mutable_blk_loc_registry());
 
             if (place_algorithm == SLACK_TIMING_PLACE) {
                 /* Revert the timing delays and costs to pre-update values.       */
@@ -1991,7 +1991,7 @@ static void check_place(const t_placer_costs& costs,
 
     int error = 0;
 
-    error += check_placement_consistency(placer_ctx.place_loc_vars());
+    error += check_placement_consistency(placer_ctx.blk_loc_registry());
     error += check_placement_costs(costs, delay_model, criticalities, place_algorithm, placer_ctx);
     error += check_placement_floorplanning(placer_ctx.block_locs());
 
@@ -2437,7 +2437,7 @@ static void copy_locs_to_global_state(const BlkLocRegistry& place_loc_vars) {
     place_ctx.unlock_loc_vars();
 
     // copy the local location variables into the global state
-    auto& global_place_loc_vars = place_ctx.mutable_place_loc_vars();
+    auto& global_place_loc_vars = place_ctx.mutable_blk_loc_registry();
     global_place_loc_vars = place_loc_vars;
 
 #ifndef NO_GRAPHICS

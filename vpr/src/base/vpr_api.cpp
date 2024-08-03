@@ -838,7 +838,7 @@ void vpr_load_placement(t_vpr_setup& vpr_setup, const t_arch& arch) {
 
     //Load an existing placement from a file
     place_ctx.placement_id = read_place(filename_opts.NetFile.c_str(), filename_opts.PlaceFile.c_str(),
-                                        place_ctx.mutable_place_loc_vars(),
+                                        place_ctx.mutable_blk_loc_registry(),
                                         filename_opts.verify_file_digests, device_ctx.grid);
 
     //Ensure placement macros are loaded so that they can be drawn after placement (e.g. during routing)
@@ -1077,7 +1077,7 @@ RouteStatus vpr_load_routing(t_vpr_setup& vpr_setup,
                                     net_delay);
         timing_info->update();
     }
-    init_draw_coords(fixed_channel_width, g_vpr_ctx.placement().place_loc_vars());
+    init_draw_coords(fixed_channel_width, g_vpr_ctx.placement().blk_loc_registry());
 
     return RouteStatus(is_legal, fixed_channel_width);
 }
@@ -1116,7 +1116,7 @@ void vpr_create_rr_graph(t_vpr_setup& vpr_setup, const t_arch& arch, int chan_wi
                     &warnings,
                     is_flat);
     //Initialize drawing, now that we have an RR graph
-    init_draw_coords(chan_width_fac, g_vpr_ctx.placement().place_loc_vars());
+    init_draw_coords(chan_width_fac, g_vpr_ctx.placement().blk_loc_registry());
 }
 
 void vpr_init_graphics(const t_vpr_setup& vpr_setup, const t_arch& arch, bool is_flat) {

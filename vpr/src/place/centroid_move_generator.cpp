@@ -49,7 +49,7 @@ e_create_move CentroidMoveGenerator::propose_move(t_pl_blocks_to_be_moved& block
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     const auto& place_move_ctx = placer_ctx.move();
-    const auto& place_loc_vars = placer_ctx.place_loc_vars();
+    const auto& place_loc_vars = placer_ctx.blk_loc_registry();
 
     // Find a movable block based on blk_type
     ClusterBlockId b_from = propose_block_to_move(placer_opts,
