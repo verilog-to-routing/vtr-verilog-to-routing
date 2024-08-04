@@ -306,6 +306,14 @@ static std::string read_place_body(std::ifstream& placement_file,
             loc.layer = block_layer;
 
             if (seen_blocks[blk_id] == 0) {
+                if (is_place_file && block_locs[blk_id].is_fixed) {
+                    const t_pl_loc& constraint_loc = block_locs[blk_id].loc;
+                    if (loc != constraint_loc) {
+                        VPR_THROW(VPR_ERROR_PLACE,
+                        "The new location assigned to cluster #%d is (%d,%d,%d,%d), which is inconsistent with the location specified in the constraint file (%d,%d,%d,%d).",
+                        blk_id, loc.x, loc.y, loc.layer, loc.sub_tile, constraint_loc.x, constraint_loc.y, constraint_loc.layer, constraint_loc.sub_tile);
+                    }
+                }
                 set_block_location(blk_id, loc, place_loc_vars);
             }
 

@@ -459,8 +459,7 @@ void try_place(const Netlist<>& net_list,
     auto [move_generator, move_generator2] = create_move_generators(placer_ctx, placer_opts, move_lim, noc_opts.noc_centroid_weight);
 
     if (!placer_opts.write_initial_place_file.empty()) {
-        print_place(nullptr, nullptr, (placer_opts.write_initial_place_file + ".init.place").c_str(),
-                    placer_ctx.block_locs());
+        print_place(nullptr, nullptr, placer_opts.write_initial_place_file.c_str(), placer_ctx.block_locs());
     }
 
 #ifdef ENABLE_ANALYTIC_PLACE

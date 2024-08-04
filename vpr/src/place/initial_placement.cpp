@@ -1260,17 +1260,24 @@ void initial_placement(const t_placer_opts& placer_opts,
         read_constraints(constraints_file, place_loc_vars);
     }
 
-    if (noc_opts.noc) {
-        // NoC routers are placed before other blocks
-        initial_noc_placement(noc_opts, placer_opts, place_loc_vars);
-        propagate_place_constraints();
+
+
+    if(!placer_opts.read_initial_place_file.empty()) {
+        const auto& grid = g_vpr_ctx.device().grid;
+        read_place(nullptr, placer_opts.read_initial_place_file.c_str(), place_loc_vars, false, grid);
+    } else {
+        if (noc_opts.noc) {
+            // NoC routers are placed before other blocks
+            initial_noc_placement(noc_opts, placer_opts, place_loc_vars);
+            propagate_place_constraints();
+        }
+
+        //Assign scores to blocks and placement macros according to how difficult they are to place
+        vtr::vector<ClusterBlockId, t_block_score> block_scores = assign_block_scores();
+
+        //Place all blocks
+        place_all_blocks(placer_opts, block_scores, placer_opts.pad_loc_type, constraints_file, place_loc_vars);
     }
-
-    //Assign scores to blocks and placement macros according to how difficult they are to place
-    vtr::vector<ClusterBlockId, t_block_score> block_scores = assign_block_scores();
-
-    //Place all blocks
-    place_all_blocks(placer_opts, block_scores, placer_opts.pad_loc_type, constraints_file, place_loc_vars);
 
     alloc_and_load_movable_blocks(block_locs);
 
