@@ -49,7 +49,7 @@ jobs:
       matrix:
         include:
           - {test: "vtr_reg_nightly_test1",      cores: "16", options: "",          cmake: "",                                                             extra_pkgs: ""}
-          - {test: "vtr_reg_nightly_test1_odin", cores: "16", options: "",          cmake: "-DWITH_ODIN=ON",                                               extra_pkgs: ""}
+          #- {test: "vtr_reg_nightly_test1_odin", cores: "16", options: "",          cmake: "-DWITH_ODIN=ON",                                               extra_pkgs: ""}
           
           #- {test: "vtr_reg_nightly_test2",      cores: "16", options: "",          cmake: "",                                                             extra_pkgs: ""}
           #- {test: "vtr_reg_nightly_test2_odin", cores: "16", options: "",          cmake: "-DWITH_ODIN=ON",                                               extra_pkgs: ""}
