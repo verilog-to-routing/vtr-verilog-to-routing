@@ -22,13 +22,13 @@ static void read_place_header(std::ifstream& placement_file,
                               const DeviceGrid& grid);
 
 static std::string read_place_body(std::ifstream& placement_file,
-                                   BlkLocRegistry& place_loc_vars,
+                                   BlkLocRegistry& blk_loc_registry,
                                    const char* place_file,
                                    bool is_place_file);
 
 std::string read_place(const char* net_file,
                        const char* place_file,
-                       BlkLocRegistry& place_loc_vars,
+                       BlkLocRegistry& blk_loc_registry,
                        bool verify_file_digests,
                        const DeviceGrid& grid) {
     std::ifstream fstream(place_file);
@@ -44,7 +44,7 @@ std::string read_place(const char* net_file,
     VTR_LOG("\n");
 
     read_place_header(fstream, net_file, place_file, verify_file_digests, grid);
-    std::string placement_id = read_place_body(fstream, place_loc_vars, place_file, is_place_file);
+    std::string placement_id = read_place_body(fstream, blk_loc_registry, place_file, is_place_file);
 
     VTR_LOG("Successfully read %s.\n", place_file);
     VTR_LOG("\n");
@@ -53,7 +53,7 @@ std::string read_place(const char* net_file,
 }
 
 void read_constraints(const char* constraints_file,
-                      BlkLocRegistry& place_loc_vars) {
+                      BlkLocRegistry& blk_loc_registry) {
     std::ifstream fstream(constraints_file);
     if (!fstream) {
         VPR_FATAL_ERROR(VPR_ERROR_PLACE_F,
@@ -66,7 +66,7 @@ void read_constraints(const char* constraints_file,
     VTR_LOG("Reading %s.\n", constraints_file);
     VTR_LOG("\n");
 
-    read_place_body(fstream, place_loc_vars, constraints_file, is_place_file);
+    read_place_body(fstream, blk_loc_registry, constraints_file, is_place_file);
 
     VTR_LOG("Successfully read constraints file %s.\n", constraints_file);
     VTR_LOG("\n");
@@ -206,12 +206,12 @@ static void read_place_header(std::ifstream& placement_file,
  * or a constraints file (is_place_file = false).
  */
 static std::string read_place_body(std::ifstream& placement_file,
-                                   BlkLocRegistry& place_loc_vars,
+                                   BlkLocRegistry& blk_loc_registry,
                                    const char* place_file,
                                    bool is_place_file) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& atom_ctx = g_vpr_ctx.atom();
-    auto& block_locs = place_loc_vars.mutable_block_locs();
+    auto& block_locs = blk_loc_registry.mutable_block_locs();
 
     std::string line;
     int lineno = 0;
@@ -314,7 +314,7 @@ static std::string read_place_body(std::ifstream& placement_file,
                         blk_id, loc.x, loc.y, loc.layer, loc.sub_tile, constraint_loc.x, constraint_loc.y, constraint_loc.layer, constraint_loc.sub_tile);
                     }
                 }
-                set_block_location(blk_id, loc, place_loc_vars);
+                set_block_location(blk_id, loc, blk_loc_registry);
             }
 
             //need to lock down blocks if it is a constraints file

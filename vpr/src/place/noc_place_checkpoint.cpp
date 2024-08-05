@@ -32,11 +32,11 @@ void NoCPlacementCheckpoint::save_checkpoint(double cost, const vtr::vector_map<
 }
 
 void NoCPlacementCheckpoint::restore_checkpoint(t_placer_costs& costs,
-                                                BlkLocRegistry& place_loc_vars) {
+                                                BlkLocRegistry& blk_loc_registry) {
     const auto& noc_ctx = g_vpr_ctx.noc();
     const auto& device_ctx = g_vpr_ctx.device();
-    GridBlock& grid_blocks = place_loc_vars.mutable_grid_blocks();
-    const auto& block_locs = place_loc_vars.block_locs();
+    GridBlock& grid_blocks = blk_loc_registry.mutable_grid_blocks();
+    const auto& block_locs = blk_loc_registry.block_locs();
 
     // Get all physical routers
     const auto& noc_phy_routers = noc_ctx.noc_model.get_noc_routers();
@@ -62,7 +62,7 @@ void NoCPlacementCheckpoint::restore_checkpoint(t_placer_costs& costs,
 
     // Place routers based on router_locations_
     for (const auto& [router_blk_id, location] : router_locations_) {
-        set_block_location(router_blk_id, location, place_loc_vars);
+        set_block_location(router_blk_id, location, blk_loc_registry);
     }
 
     // Re-initialize routes and static variables that keep track of NoC-related costs

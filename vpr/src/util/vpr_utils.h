@@ -243,7 +243,7 @@ AtomBlockId find_memory_sibling(const t_pb* pb);
  * It does not check for overuse of locations, therefore it can be used with placements that have resource overuse.
  */
 void place_sync_external_block_connections(ClusterBlockId iblk,
-                                           BlkLocRegistry& place_loc_vars);
+                                           BlkLocRegistry& blk_loc_registry);
 
 int get_atom_pin_class_num(const AtomPinId atom_pin_id);
 

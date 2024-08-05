@@ -410,10 +410,10 @@ void set_block_location(ClusterBlockId blk_id,
 bool macro_can_be_placed(const t_pl_macro& pl_macro,
                          const t_pl_loc& head_pos,
                          bool check_all_legality,
-                         const BlkLocRegistry& place_loc_vars) {
+                         const BlkLocRegistry& blk_loc_registry) {
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& cluster_ctx = g_vpr_ctx.clustering();
-    const auto& grid_blocks = place_loc_vars.grid_blocks();
+    const auto& grid_blocks = blk_loc_registry.grid_blocks();
 
     //Get block type of head member
     ClusterBlockId blk_id = pl_macro.members[0].blk_index;

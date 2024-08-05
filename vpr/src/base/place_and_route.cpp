@@ -575,10 +575,10 @@ static float comp_width(t_chan* chan, float x, float separation) {
 void post_place_sync() {
     /* Go through each block */
     const auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_loc_vars = g_vpr_ctx.mutable_placement().mutable_blk_loc_registry();
+    auto& blk_loc_registry = g_vpr_ctx.mutable_placement().mutable_blk_loc_registry();
 
     // Cluster-based netlist is used for placement
     for (const ClusterBlockId block_id : cluster_ctx.clb_nlist.blocks()) {
-        place_sync_external_block_connections(block_id, place_loc_vars);
+        place_sync_external_block_connections(block_id, blk_loc_registry);
     }
 }

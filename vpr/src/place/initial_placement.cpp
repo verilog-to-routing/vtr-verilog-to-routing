@@ -37,20 +37,20 @@ static constexpr int SORT_WEIGHT_PER_TILES_OUTSIDE_OF_PR = 100;
  * @brief Set chosen grid locations to EMPTY block id before each placement iteration
  *   
  *   @param unplaced_blk_types_index Block types that their grid locations must be cleared.
- *   @param place_loc_vars Placement block location information. To be filled with the location
+ *   @param blk_loc_registry Placement block location information. To be filled with the location
  *   where pl_macro is placed.
  */
 static void clear_block_type_grid_locs(const std::unordered_set<int>& unplaced_blk_types_index,
-                                       BlkLocRegistry& place_loc_vars);
+                                       BlkLocRegistry& blk_loc_registry);
 
 /**
  * @brief Initializes the grid to empty. It also initialized the location for
  * all blocks to unplaced.
  *
- * @param place_loc_vars Placement block location information. To be filled with the location
+ * @param blk_loc_registry Placement block location information. To be filled with the location
  * where pl_macro is placed.
  */
-static void clear_all_grid_locs(BlkLocRegistry& place_loc_vars);
+static void clear_all_grid_locs(BlkLocRegistry& blk_loc_registry);
 
 /**
  * @brief Control routine for placing a macro.
@@ -67,7 +67,7 @@ static void clear_all_grid_locs(BlkLocRegistry& place_loc_vars);
  *   @param pad_loc_type Used to check whether an io block needs to be marked as fixed.
  *   @param blk_types_empty_locs_in_grid First location (lowest y) and number of remaining blocks in each column for the blk_id type.
  *   @param block_scores The block_scores (ranking of what to place next) for unplaced blocks connected to this macro should be updated.
- *   @param place_loc_vars Placement block location information. To be filled with the location
+ *   @param blk_loc_registry Placement block location information. To be filled with the location
  *   where pl_macro is placed.
  * 
  * @return true if macro was placed, false if not.
@@ -77,7 +77,7 @@ static bool place_macro(int macros_max_num_tries,
                         e_pad_loc_type pad_loc_type,
                         std::vector<t_grid_empty_locs_block_type>* blk_types_empty_locs_in_grid,
                         vtr::vector<ClusterBlockId, t_block_score>& block_scores,
-                        BlkLocRegistry& place_loc_vars);
+                        BlkLocRegistry& blk_loc_registry);
 
 /*
  * Assign scores to each block based on macro size and floorplanning constraints.
@@ -91,7 +91,7 @@ static vtr::vector<ClusterBlockId, t_block_score> assign_block_scores();
  *
  *   @param first_macro_loc The first available location that can place the macro blocks.
  *   @param pl_macro The macro to be placed.
- *   @param place_loc_vars Placement block location information. To be filled with the location
+ *   @param blk_loc_registry Placement block location information. To be filled with the location
  *   where pl_macro is placed.
  *
  * @return y coordinate of the location that macro head should be placed
@@ -166,14 +166,14 @@ static bool is_loc_legal(const t_pl_loc& loc,
  *
  *   @param pl_macro The macro to be placed.
  *   @param centroid specified location (x,y,subtile) for the pl_macro head member.
- *   @param place_loc_vars Placement block location information. To be filled with the location
+ *   @param blk_loc_registry Placement block location information. To be filled with the location
  *   where pl_macro is placed.
  *
  * @return a vector of blocks that are connected to this block but not yet placed so their scores can later be updated.
  */
 static std::vector<ClusterBlockId> find_centroid_loc(const t_pl_macro& pl_macro,
                                                      t_pl_loc& centroid,
-                                                     const BlkLocRegistry& place_loc_vars);
+                                                     const BlkLocRegistry& blk_loc_registry);
 
 /**
  * @brief  Tries to find a nearest location to the centroid location if calculated centroid location is not legal or is occupied.
@@ -181,7 +181,7 @@ static std::vector<ClusterBlockId> find_centroid_loc(const t_pl_macro& pl_macro,
  *   @param centroid_loc Calculated location in try_centroid_placement function for the block.
  *   @param block_type Logical block type of the macro blocks.
  *   @param search_for_empty If set, the function tries to find an empty location.
- *   @param place_loc_vars Placement block location information. To be filled with the location
+ *   @param blk_loc_registry Placement block location information. To be filled with the location
  *   where pl_macro is placed.
  *
  * @return true if the function can find any location near the centroid one, false otherwise.
@@ -189,7 +189,7 @@ static std::vector<ClusterBlockId> find_centroid_loc(const t_pl_macro& pl_macro,
 static bool find_centroid_neighbor(t_pl_loc& centroid_loc,
                                    t_logical_block_type_ptr block_type,
                                    bool search_for_empty,
-                                   const BlkLocRegistry& place_loc_vars);
+                                   const BlkLocRegistry& blk_loc_registry);
 
 /**
  * @brief  tries to place a macro at a centroid location of its placed connections.
@@ -200,7 +200,7 @@ static bool find_centroid_neighbor(t_pl_loc& centroid_loc,
  *   @param block_type Logical block type of the macro blocks.
  *   @param pad_loc_type Used to check whether an io block needs to be marked as fixed.
  *   @param block_scores The block_scores (ranking of what to place next) for unplaced blocks connected to this macro are updated in this routine.
- *   @param place_loc_vars Placement block location information. To be filled with the location
+ *   @param blk_loc_registry Placement block location information. To be filled with the location
  *   where pl_macro is placed.
  *
  * @return true if the macro gets placed, false if not.
@@ -210,7 +210,7 @@ static bool try_centroid_placement(const t_pl_macro& pl_macro,
                                    t_logical_block_type_ptr block_type,
                                    e_pad_loc_type pad_loc_type,
                                    vtr::vector<ClusterBlockId, t_block_score>& block_scores,
-                                   BlkLocRegistry& place_loc_vars);
+                                   BlkLocRegistry& blk_loc_registry);
 
 /**
  * @brief Looks for a valid placement location for macro in second iteration, tries to place as many macros as possible in one column 
@@ -222,7 +222,7 @@ static bool try_centroid_placement(const t_pl_macro& pl_macro,
  *   @param block_type Logical block type of the macro blocks.
  *   @param pad_loc_type Used to check whether an io block needs to be marked as fixed.
  *   @param blk_types_empty_locs_in_grid first location (lowest y) and number of remaining blocks in each column for the blk_id type
- *   @param place_loc_vars Placement block location information. To be filled with the location
+ *   @param blk_loc_registry Placement block location information. To be filled with the location
  *   where pl_macro is placed.
  *
  * @return true if the macro gets placed, false if not.
@@ -232,21 +232,21 @@ static bool try_dense_placement(const t_pl_macro& pl_macro,
                                 t_logical_block_type_ptr block_type,
                                 e_pad_loc_type pad_loc_type,
                                 std::vector<t_grid_empty_locs_block_type>* blk_types_empty_locs_in_grid,
-                                BlkLocRegistry& place_loc_vars);
+                                BlkLocRegistry& blk_loc_registry);
 
 /**
  * @brief Tries for MAX_INIT_PLACE_ATTEMPTS times to place all blocks considering their floorplanning constraints and the device size
  *   
  *   @param pad_loc_type Used to check whether an io block needs to be marked as fixed.
  *   @param constraints_file Used to read block locations if any constraints is available.
- *   @param place_loc_vars Placement block location information. To be filled with the location
+ *   @param blk_loc_registry Placement block location information. To be filled with the location
  *   where pl_macro is placed.
  */
 static void place_all_blocks(const t_placer_opts& placer_opts,
                              vtr::vector<ClusterBlockId, t_block_score>& block_scores,
                              e_pad_loc_type pad_loc_type,
                              const char* constraints_file,
-                             BlkLocRegistry& place_loc_vars);
+                             BlkLocRegistry& blk_loc_registry);
 
 /**
  * @brief If any blocks remain unplaced after all initial placement iterations, this routine
@@ -349,7 +349,7 @@ static bool is_loc_legal(const t_pl_loc& loc,
 static bool find_centroid_neighbor(t_pl_loc& centroid_loc,
                                    t_logical_block_type_ptr block_type,
                                    bool search_for_empty,
-                                   const BlkLocRegistry& place_loc_vars) {
+                                   const BlkLocRegistry& blk_loc_registry) {
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[block_type->index];
     const int num_layers = g_vpr_ctx.device().grid.get_num_layers();
     const int centroid_loc_layer_num = centroid_loc.layer;
@@ -384,7 +384,7 @@ static bool find_centroid_neighbor(t_pl_loc& centroid_loc,
                                                          /*is_median=*/false,
                                                          centroid_loc_layer_num,
                                                          search_for_empty,
-                                                         place_loc_vars);
+                                                         blk_loc_registry);
 
     if (!legal) {
         return false;
@@ -397,9 +397,9 @@ static bool find_centroid_neighbor(t_pl_loc& centroid_loc,
 
 static std::vector<ClusterBlockId> find_centroid_loc(const t_pl_macro& pl_macro,
                                                      t_pl_loc& centroid,
-                                                     const BlkLocRegistry& place_loc_vars) {
+                                                     const BlkLocRegistry& blk_loc_registry) {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
-    const auto& block_locs = place_loc_vars.block_locs();
+    const auto& block_locs = blk_loc_registry.block_locs();
 
     float acc_weight = 0;
     float acc_x = 0;
@@ -448,7 +448,7 @@ static std::vector<ClusterBlockId> find_centroid_loc(const t_pl_macro& pl_macro,
                     continue;
                 }
 
-                t_physical_tile_loc tile_loc = get_coordinate_of_pin(sink_pin_id, place_loc_vars);
+                t_physical_tile_loc tile_loc = get_coordinate_of_pin(sink_pin_id, blk_loc_registry);
                 if (find_layer) {
                     VTR_ASSERT(tile_loc.layer_num != OPEN);
                     layer_count[tile_loc.layer_num]++;
@@ -468,7 +468,7 @@ static std::vector<ClusterBlockId> find_centroid_loc(const t_pl_macro& pl_macro,
                 continue;
             }
 
-            t_physical_tile_loc tile_loc = get_coordinate_of_pin(source_pin, place_loc_vars);
+            t_physical_tile_loc tile_loc = get_coordinate_of_pin(source_pin, blk_loc_registry);
             if (find_layer) {
                 VTR_ASSERT(tile_loc.layer_num != OPEN);
                 layer_count[tile_loc.layer_num]++;
@@ -500,13 +500,13 @@ static bool try_centroid_placement(const t_pl_macro& pl_macro,
                                    t_logical_block_type_ptr block_type,
                                    e_pad_loc_type pad_loc_type,
                                    vtr::vector<ClusterBlockId, t_block_score>& block_scores,
-                                   BlkLocRegistry& place_loc_vars) {
-    auto& block_locs = place_loc_vars.mutable_block_locs();
+                                   BlkLocRegistry& blk_loc_registry) {
+    auto& block_locs = blk_loc_registry.mutable_block_locs();
 
     t_pl_loc centroid_loc(OPEN, OPEN, OPEN, OPEN);
     std::vector<ClusterBlockId> unplaced_blocks_to_update_their_score;
 
-    unplaced_blocks_to_update_their_score = find_centroid_loc(pl_macro, centroid_loc, place_loc_vars);
+    unplaced_blocks_to_update_their_score = find_centroid_loc(pl_macro, centroid_loc, blk_loc_registry);
 
     //no suggestion was available for this block type
     if (!is_loc_on_chip({centroid_loc.x, centroid_loc.y, centroid_loc.layer})) {
@@ -517,7 +517,7 @@ static bool try_centroid_placement(const t_pl_macro& pl_macro,
     //try to find a near location that meet these requirements
     bool neighbor_legal_loc = false;
     if (!is_loc_legal(centroid_loc, pr, block_type)) {
-        neighbor_legal_loc = find_centroid_neighbor(centroid_loc, block_type, false, place_loc_vars);
+        neighbor_legal_loc = find_centroid_neighbor(centroid_loc, block_type, false, blk_loc_registry);
         if (!neighbor_legal_loc) { //no neighbor candidate found
             return false;
         }
@@ -543,7 +543,7 @@ static bool try_centroid_placement(const t_pl_macro& pl_macro,
     VTR_ASSERT(width_offset == 0);
     VTR_ASSERT(height_offset == 0);
 
-    bool legal = try_place_macro(pl_macro, centroid_loc, place_loc_vars);
+    bool legal = try_place_macro(pl_macro, centroid_loc, blk_loc_registry);
 
     if (legal) {
         fix_IO_block_types(pl_macro, centroid_loc, pad_loc_type, block_locs);
@@ -662,7 +662,7 @@ bool try_place_macro_randomly(const t_pl_macro& pl_macro,
                               const PartitionRegion& pr,
                               t_logical_block_type_ptr block_type,
                               e_pad_loc_type pad_loc_type,
-                              BlkLocRegistry& place_loc_vars) {
+                              BlkLocRegistry& blk_loc_registry) {
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[block_type->index];
 
     /*
@@ -710,7 +710,7 @@ bool try_place_macro_randomly(const t_pl_macro& pl_macro,
                                                     /*is_median=*/false,
                                                     selected_layer,
                                                     /*search_for_empty=*/false,
-                                                    place_loc_vars);
+                                                    blk_loc_registry);
 
 
     if (!legal) {
@@ -728,10 +728,10 @@ bool try_place_macro_randomly(const t_pl_macro& pl_macro,
     VTR_ASSERT(width_offset == 0);
     VTR_ASSERT(height_offset == 0);
 
-    legal = try_place_macro(pl_macro, loc, place_loc_vars);
+    legal = try_place_macro(pl_macro, loc, blk_loc_registry);
 
     if (legal) {
-        auto& block_locs = place_loc_vars.mutable_block_locs();
+        auto& block_locs = blk_loc_registry.mutable_block_locs();
         fix_IO_block_types(pl_macro, loc, pad_loc_type, block_locs);
     }
 
@@ -742,10 +742,10 @@ bool try_place_macro_exhaustively(const t_pl_macro& pl_macro,
                                   const PartitionRegion& pr,
                                   t_logical_block_type_ptr block_type,
                                   e_pad_loc_type pad_loc_type,
-                                  BlkLocRegistry& place_loc_vars) {
+                                  BlkLocRegistry& blk_loc_registry) {
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[block_type->index];
-    auto& block_locs = place_loc_vars.mutable_block_locs();
-    const GridBlock& grid_blocks = place_loc_vars.grid_blocks();
+    auto& block_locs = blk_loc_registry.mutable_block_locs();
+    const GridBlock& grid_blocks = blk_loc_registry.grid_blocks();
 
     const std::vector<Region>& regions = pr.get_regions();
 
@@ -792,7 +792,7 @@ bool try_place_macro_exhaustively(const t_pl_macro& pl_macro,
 
                         to_loc.sub_tile = subtile;
                         if (grid_blocks.block_at_location(to_loc) == EMPTY_BLOCK_ID) {
-                            placed = try_place_macro(pl_macro, to_loc, place_loc_vars);
+                            placed = try_place_macro(pl_macro, to_loc, blk_loc_registry);
 
                             if (placed) {
                                 fix_IO_block_types(pl_macro, to_loc, pad_loc_type, block_locs);
@@ -807,7 +807,7 @@ bool try_place_macro_exhaustively(const t_pl_macro& pl_macro,
                                 for (int st = st_low; st <= st_high && !placed; st++) {
                                     to_loc.sub_tile = st;
                                     if (grid_blocks.block_at_location(to_loc) == EMPTY_BLOCK_ID) {
-                                        placed = try_place_macro(pl_macro, to_loc, place_loc_vars);
+                                        placed = try_place_macro(pl_macro, to_loc, blk_loc_registry);
                                         if (placed) {
                                             fix_IO_block_types(pl_macro, to_loc, pad_loc_type, block_locs);
                                         }
@@ -833,7 +833,7 @@ static bool try_dense_placement(const t_pl_macro& pl_macro,
                                 t_logical_block_type_ptr block_type,
                                 e_pad_loc_type pad_loc_type,
                                 std::vector<t_grid_empty_locs_block_type>* blk_types_empty_locs_in_grid,
-                                BlkLocRegistry& place_loc_vars) {
+                                BlkLocRegistry& blk_loc_registry) {
     t_pl_loc loc;
     int column_index = get_blk_type_first_loc(loc, pl_macro, blk_types_empty_locs_in_grid);
 
@@ -849,10 +849,10 @@ static bool try_dense_placement(const t_pl_macro& pl_macro,
     VTR_ASSERT(width_offset == 0);
     VTR_ASSERT(height_offset == 0);
 
-    bool legal = try_place_macro(pl_macro, loc, place_loc_vars);
+    bool legal = try_place_macro(pl_macro, loc, blk_loc_registry);
 
     if (legal) {
-        auto& block_locs = place_loc_vars.mutable_block_locs();
+        auto& block_locs = blk_loc_registry.mutable_block_locs();
         fix_IO_block_types(pl_macro, loc, pad_loc_type, block_locs);
     }
 
@@ -864,9 +864,9 @@ static bool try_dense_placement(const t_pl_macro& pl_macro,
 
 bool try_place_macro(const t_pl_macro& pl_macro,
                      t_pl_loc head_pos,
-                     BlkLocRegistry& place_loc_vars) {
+                     BlkLocRegistry& blk_loc_registry) {
     bool f_placer_debug = g_vpr_ctx.placement().f_placer_debug;
-    const GridBlock& grid_blocks = place_loc_vars.grid_blocks();
+    const GridBlock& grid_blocks = blk_loc_registry.grid_blocks();
 
     VTR_LOGV_DEBUG(f_placer_debug, "\t\t\t\tTry to place the macro at %dx%dx%dx%d\n",
                    head_pos.x,
@@ -881,7 +881,7 @@ bool try_place_macro(const t_pl_macro& pl_macro,
         return macro_placed;
     }
 
-    bool mac_can_be_placed = macro_can_be_placed(pl_macro, head_pos, /*check_all_legality=*/false, place_loc_vars);
+    bool mac_can_be_placed = macro_can_be_placed(pl_macro, head_pos, /*check_all_legality=*/false, blk_loc_registry);
 
     if (mac_can_be_placed) {
         // Place down the macro
@@ -890,7 +890,7 @@ bool try_place_macro(const t_pl_macro& pl_macro,
         for (const t_pl_macro_member& pl_macro_member : pl_macro.members) {
             t_pl_loc member_pos = head_pos + pl_macro_member.offset;
             ClusterBlockId iblk = pl_macro_member.blk_index;
-            set_block_location(iblk, member_pos, place_loc_vars);
+            set_block_location(iblk, member_pos, blk_loc_registry);
         } // Finish placing all the members in the macro
     }
 
@@ -902,8 +902,8 @@ static bool place_macro(int macros_max_num_tries,
                         enum e_pad_loc_type pad_loc_type,
                         std::vector<t_grid_empty_locs_block_type>* blk_types_empty_locs_in_grid,
                         vtr::vector<ClusterBlockId, t_block_score>& block_scores,
-                        BlkLocRegistry& place_loc_vars) {
-    const auto& block_locs = place_loc_vars.block_locs();
+                        BlkLocRegistry& blk_loc_registry) {
+    const auto& block_locs = blk_loc_registry.block_locs();
     ClusterBlockId blk_id = pl_macro.members[0].blk_index;
     VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\t\tHead of the macro is Block %d\n", size_t(blk_id));
 
@@ -931,18 +931,18 @@ static bool place_macro(int macros_max_num_tries,
     //We need to place densely in second iteration to be able to find a legal initial placement solution
     if (blk_types_empty_locs_in_grid != nullptr && !blk_types_empty_locs_in_grid->empty()) {
         VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\t\t\tTry dense placement\n");
-        macro_placed = try_dense_placement(pl_macro, pr, block_type, pad_loc_type, blk_types_empty_locs_in_grid, place_loc_vars);
+        macro_placed = try_dense_placement(pl_macro, pr, block_type, pad_loc_type, blk_types_empty_locs_in_grid, blk_loc_registry);
     }
 
     if (!macro_placed) {
         VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\t\t\tTry centroid placement\n");
-        macro_placed = try_centroid_placement(pl_macro, pr, block_type, pad_loc_type, block_scores, place_loc_vars);
+        macro_placed = try_centroid_placement(pl_macro, pr, block_type, pad_loc_type, block_scores, blk_loc_registry);
     }
     VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\t\t\tMacro is placed: %d\n", macro_placed);
     // If macro is not placed yet, try to place the macro randomly for the max number of random tries
     for (int itry = 0; itry < macros_max_num_tries && !macro_placed; itry++) {
         VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\t\t\tTry random place iter: %d\n", itry);
-        macro_placed = try_place_macro_randomly(pl_macro, pr, block_type, pad_loc_type, place_loc_vars);
+        macro_placed = try_place_macro_randomly(pl_macro, pr, block_type, pad_loc_type, blk_loc_registry);
     } // Finished all tries
 
     if (!macro_placed) {
@@ -954,7 +954,7 @@ static bool place_macro(int macros_max_num_tries,
 
         // Exhaustive placement of carry macros
         VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\t\t\tTry exhaustive placement\n");
-        macro_placed = try_place_macro_exhaustively(pl_macro, pr, block_type, pad_loc_type, place_loc_vars);
+        macro_placed = try_place_macro_exhaustively(pl_macro, pr, block_type, pad_loc_type, blk_loc_registry);
     }
     return macro_placed;
 }
@@ -1009,7 +1009,7 @@ static void place_all_blocks(const t_placer_opts& placer_opts,
                              vtr::vector<ClusterBlockId, t_block_score>& block_scores,
                              enum e_pad_loc_type pad_loc_type,
                              const char* constraints_file,
-                             BlkLocRegistry& place_loc_vars) {
+                             BlkLocRegistry& blk_loc_registry) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
     auto& device_ctx = g_vpr_ctx.device();
@@ -1032,12 +1032,12 @@ static void place_all_blocks(const t_placer_opts& placer_opts,
 
     for (auto iter_no = 0; iter_no < MAX_INIT_PLACE_ATTEMPTS; iter_no++) {
         //clear grid for a new placement iteration
-        clear_block_type_grid_locs(unplaced_blk_type_in_curr_itr, place_loc_vars);
+        clear_block_type_grid_locs(unplaced_blk_type_in_curr_itr, blk_loc_registry);
         unplaced_blk_type_in_curr_itr.clear();
 
         // read the constraint file if the user has provided one and this is not the first attempt
         if (strlen(constraints_file) != 0 && iter_no != 0) {
-            read_constraints(constraints_file, place_loc_vars);
+            read_constraints(constraints_file, blk_loc_registry);
         }
 
         //resize the vector to store unplaced block types empty locations
@@ -1069,7 +1069,7 @@ static void place_all_blocks(const t_placer_opts& placer_opts,
 
             blocks_placed_since_heap_update++;
 
-            bool block_placed = place_one_block(blk_id, pad_loc_type, &blk_types_empty_locs_in_grid[blk_id_type->index], &block_scores, place_loc_vars);
+            bool block_placed = place_one_block(blk_id, pad_loc_type, &blk_types_empty_locs_in_grid[blk_id_type->index], &block_scores, blk_loc_registry);
 
             //update heap based on update_heap_freq calculated above
             if (blocks_placed_since_heap_update % (update_heap_freq) == 0) {
@@ -1107,11 +1107,11 @@ static void place_all_blocks(const t_placer_opts& placer_opts,
 }
 
 static void clear_block_type_grid_locs(const std::unordered_set<int>& unplaced_blk_types_index,
-                                       BlkLocRegistry& place_loc_vars) {
+                                       BlkLocRegistry& blk_loc_registry) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& grid_blocks = place_loc_vars.mutable_grid_blocks();
-    auto& block_locs = place_loc_vars.mutable_block_locs();
+    auto& grid_blocks = blk_loc_registry.mutable_grid_blocks();
+    auto& block_locs = blk_loc_registry.mutable_block_locs();
 
     bool clear_all_block_types = false;
 
@@ -1152,7 +1152,7 @@ static void clear_block_type_grid_locs(const std::unordered_set<int>& unplaced_b
     }
 }
 
-static void clear_all_grid_locs(BlkLocRegistry& place_loc_vars) {
+static void clear_all_grid_locs(BlkLocRegistry& blk_loc_registry) {
     auto& device_ctx = g_vpr_ctx.device();
 
     std::unordered_set<int> blk_types_to_be_cleared;
@@ -1166,16 +1166,16 @@ static void clear_all_grid_locs(BlkLocRegistry& place_loc_vars) {
         }
     }
 
-    clear_block_type_grid_locs(blk_types_to_be_cleared, place_loc_vars);
+    clear_block_type_grid_locs(blk_types_to_be_cleared, blk_loc_registry);
 }
 
 bool place_one_block(const ClusterBlockId blk_id,
                      enum e_pad_loc_type pad_loc_type,
                      std::vector<t_grid_empty_locs_block_type>* blk_types_empty_locs_in_grid,
                      vtr::vector<ClusterBlockId, t_block_score>* block_scores,
-                     BlkLocRegistry& place_loc_vars) {
+                     BlkLocRegistry& blk_loc_registry) {
     const std::vector<t_pl_macro>& pl_macros = g_vpr_ctx.placement().pl_macros;
-    const auto& block_locs = place_loc_vars.block_locs();
+    const auto& block_locs = blk_loc_registry.block_locs();
 
     //Check if block has already been placed
     if (is_block_placed(blk_id, block_locs)) {
@@ -1191,7 +1191,7 @@ bool place_one_block(const ClusterBlockId blk_id,
     if (imacro != -1) { //If the block belongs to a macro, pass that macro to the placement routines
         VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\tBelongs to a macro %d\n", imacro);
         const t_pl_macro& pl_macro = pl_macros[imacro];
-        placed_macro = place_macro(MAX_NUM_TRIES_TO_PLACE_MACROS_RANDOMLY, pl_macro, pad_loc_type, blk_types_empty_locs_in_grid, *block_scores, place_loc_vars);
+        placed_macro = place_macro(MAX_NUM_TRIES_TO_PLACE_MACROS_RANDOMLY, pl_macro, pad_loc_type, blk_types_empty_locs_in_grid, *block_scores, blk_loc_registry);
     } else {
         //If it does not belong to a macro, create a macro with the one block and then pass to the placement routines
         //This is done so that the initial placement flow can be the same whether the block belongs to a macro or not
@@ -1200,7 +1200,7 @@ bool place_one_block(const ClusterBlockId blk_id,
         macro_member.offset = t_pl_offset(0, 0, 0, 0);
         t_pl_macro pl_macro;
         pl_macro.members.push_back(macro_member);
-        placed_macro = place_macro(MAX_NUM_TRIES_TO_PLACE_MACROS_RANDOMLY, pl_macro, pad_loc_type, blk_types_empty_locs_in_grid, *block_scores, place_loc_vars);
+        placed_macro = place_macro(MAX_NUM_TRIES_TO_PLACE_MACROS_RANDOMLY, pl_macro, pad_loc_type, blk_types_empty_locs_in_grid, *block_scores, blk_loc_registry);
     }
 
     return placed_macro;
@@ -1233,14 +1233,14 @@ static void alloc_and_load_movable_blocks(const vtr::vector_map<ClusterBlockId, 
 void initial_placement(const t_placer_opts& placer_opts,
                        const char* constraints_file,
                        const t_noc_opts& noc_opts,
-                       BlkLocRegistry& place_loc_vars) {
+                       BlkLocRegistry& blk_loc_registry) {
     vtr::ScopedStartFinishTimer timer("Initial Placement");
-    auto& block_locs = place_loc_vars.mutable_block_locs();
+    auto& block_locs = blk_loc_registry.mutable_block_locs();
 
     /* Initialize the grid blocks to empty.
      * Initialize all the blocks to unplaced.
      */
-    clear_all_grid_locs(place_loc_vars);
+    clear_all_grid_locs(blk_loc_registry);
 
     /* Go through cluster blocks to calculate the tightest placement
      * floorplan constraint for each constrained block
@@ -1249,7 +1249,7 @@ void initial_placement(const t_placer_opts& placer_opts,
 
     /*Mark the blocks that have already been locked to one spot via floorplan constraints
      * as fixed, so they do not get moved during initial placement or later during the simulated annealing stage of placement*/
-    mark_fixed_blocks(place_loc_vars);
+    mark_fixed_blocks(blk_loc_registry);
 
     // Compute and store compressed floorplanning constraints
     alloc_and_load_compressed_cluster_constraints();
@@ -1257,18 +1257,18 @@ void initial_placement(const t_placer_opts& placer_opts,
 
     // read the constraint file and place fixed blocks
     if (strlen(constraints_file) != 0) {
-        read_constraints(constraints_file, place_loc_vars);
+        read_constraints(constraints_file, blk_loc_registry);
     }
 
 
 
     if(!placer_opts.read_initial_place_file.empty()) {
         const auto& grid = g_vpr_ctx.device().grid;
-        read_place(nullptr, placer_opts.read_initial_place_file.c_str(), place_loc_vars, false, grid);
+        read_place(nullptr, placer_opts.read_initial_place_file.c_str(), blk_loc_registry, false, grid);
     } else {
         if (noc_opts.noc) {
             // NoC routers are placed before other blocks
-            initial_noc_placement(noc_opts, placer_opts, place_loc_vars);
+            initial_noc_placement(noc_opts, placer_opts, blk_loc_registry);
             propagate_place_constraints();
         }
 
@@ -1276,7 +1276,7 @@ void initial_placement(const t_placer_opts& placer_opts,
         vtr::vector<ClusterBlockId, t_block_score> block_scores = assign_block_scores();
 
         //Place all blocks
-        place_all_blocks(placer_opts, block_scores, placer_opts.pad_loc_type, constraints_file, place_loc_vars);
+        place_all_blocks(placer_opts, block_scores, placer_opts.pad_loc_type, constraints_file, blk_loc_registry);
     }
 
     alloc_and_load_movable_blocks(block_locs);

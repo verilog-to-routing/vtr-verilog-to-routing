@@ -711,8 +711,8 @@ int get_block_num_class(const ParentBlockId& block_id, bool is_flat) {
 }
 
 int get_block_pin_class_num(const ParentBlockId block_id, const ParentPinId pin_id, bool is_flat) {
-    const auto& place_loc_vars = g_vpr_ctx.placement().blk_loc_registry();
-    auto& block_locs = place_loc_vars.block_locs();
+    const auto& blk_loc_registry = g_vpr_ctx.placement().blk_loc_registry();
+    auto& block_locs = blk_loc_registry.block_locs();
 
     int class_num;
 
@@ -724,7 +724,7 @@ int get_block_pin_class_num(const ParentBlockId block_id, const ParentPinId pin_
         t_pl_loc block_loc = block_locs[cluster_block_id].loc;
         ClusterPinId cluster_pin_id = convert_to_cluster_pin_id(pin_id);
         auto type = physical_tile_type(block_loc);
-        int phys_pin = place_loc_vars.tile_pin_index(cluster_pin_id);
+        int phys_pin = blk_loc_registry.tile_pin_index(cluster_pin_id);
         class_num = get_class_num_from_pin_physical_num(type, phys_pin);
     }
 
@@ -2108,11 +2108,11 @@ void print_switch_usage() {
  */
 
 void place_sync_external_block_connections(ClusterBlockId iblk,
-                                           BlkLocRegistry& place_loc_vars) {
+                                           BlkLocRegistry& blk_loc_registry) {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     const auto& clb_nlist = cluster_ctx.clb_nlist;
-    const auto& block_locs = place_loc_vars.block_locs();
-    auto& physical_pins = place_loc_vars.mutable_physical_pins();
+    const auto& block_locs = blk_loc_registry.block_locs();
+    auto& physical_pins = blk_loc_registry.mutable_physical_pins();
 
     t_pl_loc block_loc = block_locs[iblk].loc;
 

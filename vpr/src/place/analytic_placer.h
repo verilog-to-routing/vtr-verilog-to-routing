@@ -123,7 +123,7 @@ class AnalyticPlacer {
      * To tune these parameters, change directly in constructor
      */
     AnalyticPlacer() = delete;
-    explicit AnalyticPlacer(BlkLocRegistry& place_loc_vars);
+    explicit AnalyticPlacer(BlkLocRegistry& blk_loc_registry);
 
     /*
      * @brief main function of analytic placement

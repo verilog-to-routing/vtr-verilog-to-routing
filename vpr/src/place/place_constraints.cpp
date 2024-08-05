@@ -252,7 +252,7 @@ void load_cluster_constraints() {
     }
 }
 
-void mark_fixed_blocks(BlkLocRegistry& place_loc_vars) {
+void mark_fixed_blocks(BlkLocRegistry& blk_loc_registry) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
 
@@ -270,8 +270,8 @@ void mark_fixed_blocks(BlkLocRegistry& place_loc_vars) {
          * and mark it as fixed.
          */
         if (is_pr_size_one(pr, block_type, loc)) {
-            set_block_location(blk_id, loc, place_loc_vars);
-            place_loc_vars.mutable_block_locs()[blk_id].is_fixed = true;
+            set_block_location(blk_id, loc, blk_loc_registry);
+            blk_loc_registry.mutable_block_locs()[blk_id].is_fixed = true;
         }
     }
 }

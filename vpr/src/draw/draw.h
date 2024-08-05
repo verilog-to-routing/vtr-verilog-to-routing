@@ -46,7 +46,7 @@ void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type
 
 //Initializes the drawing locations.
 //FIXME: Currently broken if no rr-graph is loaded
-void init_draw_coords(float clb_width, const BlkLocRegistry& place_loc_vars);
+void init_draw_coords(float clb_width, const BlkLocRegistry& blk_loc_registry);
 
 /* Sets the static show_graphics and gr_automode variables to the    *
  * desired values.  They control if graphics are enabled and, if so, *
