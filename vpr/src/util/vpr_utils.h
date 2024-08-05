@@ -31,8 +31,6 @@ bool is_empty_type(t_logical_block_type_ptr type);
 //Returns the corresponding physical type given the logical type as parameter
 t_physical_tile_type_ptr physical_tile_type(t_pl_loc loc);
 
-//t_physical_tile_type_ptr physical_tile_type(ClusterBlockId blk);
-
 t_physical_tile_type_ptr physical_tile_type(AtomBlockId atom_blk);
 
 t_physical_tile_type_ptr physical_tile_type(ParentBlockId blk_id, bool is_flat);

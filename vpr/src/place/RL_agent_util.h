@@ -42,7 +42,7 @@ void assign_current_move_generator(std::unique_ptr<MoveGenerator>& move_generato
                                    std::unique_ptr<MoveGenerator>& current_move_generator);
 
 /**
- * @brief move the updated current_move_generator to its original move_Generator structure based on he placer_options and the agent state
+ * @brief move the updated current_move_generator to its original move_Generator structure based on the placer_options and the agent state
  */
 void update_move_generator(std::unique_ptr<MoveGenerator>& move_generator,
                            std::unique_ptr<MoveGenerator>& move_generator2,

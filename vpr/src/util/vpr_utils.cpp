@@ -523,15 +523,6 @@ t_physical_tile_type_ptr physical_tile_type(t_pl_loc loc) {
     return device_ctx.grid.get_physical_type({loc.x, loc.y, loc.layer});
 }
 
-//t_physical_tile_type_ptr physical_tile_type(ClusterBlockId blk) {
-//    auto& place_ctx = g_vpr_ctx.placement();
-//    auto& device_ctx = g_vpr_ctx.device();
-//
-//    auto block_loc = place_ctx.block_locs[blk].loc;
-//
-//    return device_ctx.grid.get_physical_type({block_loc.x, block_loc.y, block_loc.layer});
-//}
-
 t_physical_tile_type_ptr physical_tile_type(AtomBlockId atom_blk) {
     auto& atom_look_up = g_vpr_ctx.atom().lookup;
     auto& block_locs = g_vpr_ctx.placement().block_locs();
