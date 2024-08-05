@@ -198,9 +198,7 @@ static void alloc_and_load_placement_structs(float place_cost_exp,
 static void alloc_and_load_try_swap_structs(const bool cube_bb);
 static void free_try_swap_structs();
 
-static void free_placement_structs(const t_placer_opts& placer_opts,
-                                   const t_noc_opts& noc_opts,
-                                   PlacerContext& placer_ctx);
+static void free_placement_structs(const t_noc_opts& noc_opts);
 
 static e_move_result try_swap(const t_annealing_state* state,
                               t_placer_costs* costs,
@@ -979,7 +977,7 @@ void try_place(const Netlist<>& net_list,
         write_noc_placement_file(noc_opts.noc_placement_file_name, blk_loc_registry.block_locs());
     }
 
-    free_placement_structs(placer_opts, noc_opts, placer_ctx);
+    free_placement_structs(noc_opts);
     free_try_swap_arrays();
 
     print_timing_stats("Placement Quench", post_quench_timing_stats,
@@ -1919,34 +1917,10 @@ static void alloc_and_load_placement_structs(float place_cost_exp,
 
 /* Frees the major structures needed by the placer (and not needed       *
  * elsewhere).   */
-static void free_placement_structs(const t_placer_opts& placer_opts,
-                                   const t_noc_opts& noc_opts,
-                                   PlacerContext& placer_ctx) {
-    auto& place_move_ctx = placer_ctx.mutable_move();
-
-    if (placer_opts.place_algorithm.is_timing_driven()) {
-        auto& p_timing_ctx = placer_ctx.mutable_timing();
-
-        vtr::release_memory(p_timing_ctx.connection_timing_cost);
-        vtr::release_memory(p_timing_ctx.connection_delay);
-        vtr::release_memory(p_timing_ctx.connection_setup_slack);
-        vtr::release_memory(p_timing_ctx.proposed_connection_timing_cost);
-        vtr::release_memory(p_timing_ctx.proposed_connection_delay);
-        vtr::release_memory(p_timing_ctx.net_timing_cost);
-    }
-
+static void free_placement_structs(const t_noc_opts& noc_opts) {
     free_placement_macros_structs();
 
     free_place_move_structs();
-
-    vtr::release_memory(place_move_ctx.bb_coords);
-    vtr::release_memory(place_move_ctx.bb_num_on_edges);
-    vtr::release_memory(place_move_ctx.bb_coords);
-
-    vtr::release_memory(place_move_ctx.layer_bb_num_on_edges);
-    vtr::release_memory(place_move_ctx.layer_bb_coords);
-
-    place_move_ctx.num_sink_pin_layer.clear();
 
     free_chan_w_factors_for_place_cost();
 
