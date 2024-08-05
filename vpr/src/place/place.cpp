@@ -188,14 +188,14 @@ void print_clb_placement(const char* fname);
 static bool is_cube_bb(const e_place_bounding_box_mode place_bb_mode,
                        const RRGraphView& rr_graph);
 
-static void alloc_and_load_placement_structs(float place_cost_exp,
-                                             const t_placer_opts& placer_opts,
-                                             const t_noc_opts& noc_opts,
-                                             t_direct_inf* directs,
-                                             int num_directs,
-                                             PlacerContext& placer_ctx);
+static NetCostHandler alloc_and_load_placement_structs(float place_cost_exp,
+                                                       const t_placer_opts& placer_opts,
+                                                       const t_noc_opts& noc_opts,
+                                                       t_direct_inf* directs,
+                                                       int num_directs,
+                                                       PlacerContext& placer_ctx);
 
-static void alloc_and_load_try_swap_structs(const bool cube_bb);
+static NetCostHandler alloc_and_load_try_swap_structs(const bool cube_bb);
 static void free_try_swap_structs();
 
 static void free_placement_structs(const t_placer_opts& placer_opts,
@@ -219,7 +219,8 @@ static e_move_result try_swap(const t_annealing_state* state,
                               float timing_bb_factor,
                               bool manual_move_enabled,
                               t_swap_stats& swap_stats,
-                              PlacerContext& placer_ctx);
+                              PlacerContext& placer_ctx,
+                              NetCostHandler& net_cost_handler);
 
 static void check_place(const t_placer_costs& costs,
                         const PlaceDelayModel* delay_model,
@@ -253,7 +254,8 @@ static float starting_t(const t_annealing_state* state,
                         const t_noc_opts& noc_opts,
                         MoveTypeStat& move_type_stat,
                         t_swap_stats& swap_stats,
-                        PlacerContext& placer_ctx);
+                        PlacerContext& placer_ctx,
+                        NetCostHandler& net_cost_handler);
 
 static int count_connections();
 
@@ -311,7 +313,8 @@ static void placement_inner_loop(const t_annealing_state* state,
                                  MoveTypeStat& move_type_stat,
                                  float timing_bb_factor,
                                  t_swap_stats& swap_stats,
-                                 PlacerContext& placer_ctx);
+                                 PlacerContext& placer_ctx,
+                                 NetCostHandler& net_cost_handler);
 
 static void generate_post_place_timing_reports(const t_placer_opts& placer_opts,
                                                const t_analysis_opts& analysis_opts,
@@ -443,7 +446,8 @@ void try_place(const Netlist<>& net_list,
     const auto& p_runtime_ctx = placer_ctx.runtime();
 
 
-    alloc_and_load_placement_structs(placer_opts.place_cost_exp, placer_opts, noc_opts, directs, num_directs, placer_ctx);
+    NetCostHandler net_cost_handler = alloc_and_load_placement_structs(placer_opts.place_cost_exp, placer_opts,
+                                                                       noc_opts, directs, num_directs, placer_ctx);
     set_net_handlers_placer_ctx(placer_ctx);
 
     std::unique_ptr<ManualMoveGenerator> manual_move_generator = std::make_unique<ManualMoveGenerator>(placer_ctx);
@@ -706,7 +710,7 @@ void try_place(const Netlist<>& net_list,
                          placer_setup_slacks.get(), timing_info.get(), *move_generator,
                          *manual_move_generator, pin_timing_invalidator.get(),
                          blocks_affected, placer_opts, noc_opts, move_type_stat,
-                         swap_stats, placer_ctx);
+                         swap_stats, placer_ctx, net_cost_handler);
 
     if (!placer_opts.move_stats_file.empty()) {
         f_move_stats_file = std::unique_ptr<FILE, decltype(&vtr::fclose)>(
@@ -780,7 +784,7 @@ void try_place(const Netlist<>& net_list,
                                  blocks_affected, timing_info.get(),
                                  placer_opts.place_algorithm, move_type_stat,
                                  timing_bb_factor,
-                                 swap_stats, placer_ctx);
+                                 swap_stats, placer_ctx, net_cost_handler);
 
             //move the update used move_generator to its original variable
             update_move_generator(move_generator, move_generator2, agent_state,
@@ -847,7 +851,7 @@ void try_place(const Netlist<>& net_list,
                              blocks_affected, timing_info.get(),
                              placer_opts.place_quench_algorithm, move_type_stat,
                              timing_bb_factor,
-                             swap_stats, placer_ctx);
+                             swap_stats, placer_ctx, net_cost_handler);
 
         //move the update used move_generator to its original variable
         update_move_generator(move_generator, move_generator2, agent_state,
@@ -1057,7 +1061,8 @@ static void placement_inner_loop(const t_annealing_state* state,
                                  MoveTypeStat& move_type_stat,
                                  float timing_bb_factor,
                                  t_swap_stats& swap_stats,
-                                 PlacerContext& placer_ctx) {
+                                 PlacerContext& placer_ctx,
+                                 NetCostHandler& net_cost_handler) {
     //How many times have we dumped placement to a file this temperature?
     int inner_placement_save_count = 0;
 
@@ -1071,7 +1076,8 @@ static void placement_inner_loop(const t_annealing_state* state,
                                              manual_move_generator, timing_info, pin_timing_invalidator,
                                              blocks_affected, delay_model, criticalities, setup_slacks,
                                              placer_opts, noc_opts, move_type_stat, place_algorithm,
-                                             timing_bb_factor, manual_move_enabled, swap_stats, placer_ctx);
+                                             timing_bb_factor, manual_move_enabled, swap_stats,
+                                             placer_ctx, net_cost_handler);
 
         if (swap_result == ACCEPTED) {
             /* Move was accepted.  Update statistics that are useful for the annealing schedule. */
@@ -1169,7 +1175,8 @@ static float starting_t(const t_annealing_state* state,
                         const t_noc_opts& noc_opts,
                         MoveTypeStat& move_type_stat,
                         t_swap_stats& swap_stats,
-                        PlacerContext& placer_ctx) {
+                        PlacerContext& placer_ctx,
+                        NetCostHandler& net_cost_handler) {
     if (annealing_sched.type == USER_SCHED) {
         return (annealing_sched.init_t);
     }
@@ -1202,7 +1209,8 @@ static float starting_t(const t_annealing_state* state,
                                              manual_move_generator, timing_info, pin_timing_invalidator,
                                              blocks_affected, delay_model, criticalities, setup_slacks,
                                              placer_opts, noc_opts, move_type_stat, placer_opts.place_algorithm,
-                                             REWARD_BB_TIMING_RELATIVE_WEIGHT, manual_move_enabled, swap_stats, placer_ctx);
+                                             REWARD_BB_TIMING_RELATIVE_WEIGHT, manual_move_enabled, swap_stats,
+                                             placer_ctx, net_cost_handler);
 
         if (swap_result == ACCEPTED) {
             num_accepted++;
@@ -1273,7 +1281,8 @@ static e_move_result try_swap(const t_annealing_state* state,
                               float timing_bb_factor,
                               bool manual_move_enabled,
                               t_swap_stats& swap_stats,
-                              PlacerContext& placer_ctx) {
+                              PlacerContext& placer_ctx,
+                              NetCostHandler& net_cost_handler) {
     /* Picks some block and moves it to another spot.  If this spot is   *
      * occupied, switch the blocks.  Assess the change in cost function. *
      * rlim is the range limiter.                                        *
@@ -1381,8 +1390,8 @@ static e_move_result try_swap(const t_annealing_state* state,
         //
         //Also find all the pins affected by the swap, and calculates new connection
         //delays and timing costs and store them in proposed_* data structures.
-        find_affected_nets_and_update_costs(place_algorithm, delay_model, criticalities, 
-                                            blocks_affected, bb_delta_c, timing_delta_c);
+        net_cost_handler.find_affected_nets_and_update_costs(place_algorithm, delay_model, criticalities,
+                                                             blocks_affected, bb_delta_c, timing_delta_c);
 
         //For setup slack analysis, we first do a timing analysis to get the newest
         //slack values resulted from the proposed block moves. If the move turns out
@@ -1482,7 +1491,7 @@ static e_move_result try_swap(const t_annealing_state* state,
             }
 
             /* Update net cost functions and reset flags. */
-            update_move_nets();
+            net_cost_handler.update_move_nets();
 
             /* Update clb data structures since we kept the move. */
             commit_move_blocks(blocks_affected, placer_ctx.mutable_grid_blocks());
@@ -1833,12 +1842,12 @@ static void invalidate_affected_connections(const t_pl_blocks_to_be_moved& block
 
 /* Allocates the major structures needed only by the placer, primarily for *
  * computing costs quickly and such.                                       */
-static void alloc_and_load_placement_structs(float place_cost_exp,
-                                             const t_placer_opts& placer_opts,
-                                             const t_noc_opts& noc_opts,
-                                             t_direct_inf* directs,
-                                             int num_directs,
-                                             PlacerContext& placer_ctx) {
+static NetCostHandler alloc_and_load_placement_structs(float place_cost_exp,
+                                                       const t_placer_opts& placer_opts,
+                                                       const t_noc_opts& noc_opts,
+                                                       t_direct_inf* directs,
+                                                       int num_directs,
+                                                       PlacerContext& placer_ctx) {
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
@@ -1908,13 +1917,13 @@ static void alloc_and_load_placement_structs(float place_cost_exp,
 
     alloc_and_load_chan_w_factors_for_place_cost(place_cost_exp);
 
-    alloc_and_load_try_swap_structs(place_ctx.cube_bb);
-
     place_ctx.pl_macros = alloc_and_load_placement_macros(directs, num_directs);
 
     if (noc_opts.noc) {
         allocate_and_load_noc_placement_structs();
     }
+
+    return alloc_and_load_try_swap_structs(place_ctx.cube_bb);
 }
 
 /* Frees the major structures needed by the placer (and not needed       *
@@ -1957,17 +1966,16 @@ static void free_placement_structs(const t_placer_opts& placer_opts,
     }
 }
 
-static void alloc_and_load_try_swap_structs(const bool cube_bb) {
+static NetCostHandler alloc_and_load_try_swap_structs(const bool cube_bb) {
     /* Allocate the local bb_coordinate storage, etc. only once. */
     /* Allocate with size cluster_ctx.clb_nlist.nets().size() for any number of nets affected. */
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    size_t num_nets = cluster_ctx.clb_nlist.nets().size();
-
-    init_try_swap_net_cost_structs(num_nets, cube_bb);
-
     auto& place_ctx = g_vpr_ctx.mutable_placement();
     place_ctx.compressed_block_grids = create_compressed_block_grids();
+
+    size_t num_nets = cluster_ctx.clb_nlist.nets().size();
+    return {num_nets, cube_bb};
 }
 
 static void free_try_swap_structs() {
