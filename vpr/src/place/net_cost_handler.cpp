@@ -1799,7 +1799,7 @@ void NetCostHandler::find_affected_nets_and_update_costs(const t_place_algorithm
     set_bb_delta_cost_(bb_delta_c);
 }
 
-double comp_bb_cost(e_cost_methods method) {
+double NetCostHandler::comp_bb_cost(e_cost_methods method) {
     double cost = 0;
     double expected_wirelength = 0.0;
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -1836,7 +1836,7 @@ double comp_bb_cost(e_cost_methods method) {
     return cost;
 }
 
-double comp_layer_bb_cost(e_cost_methods method) {
+double NetCostHandler::comp_layer_bb_cost(e_cost_methods method) {
     double cost = 0;
     double expected_wirelength = 0.0;
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -1904,7 +1904,7 @@ void NetCostHandler::update_move_nets() {
     }
 }
 
-void reset_move_nets() {
+void NetCostHandler::reset_move_nets() {
     /* Reset the net cost function flags first. */
     for (const ClusterNetId ts_net : ts_info.ts_nets_to_update) {
         ClusterNetId net_id = ts_net;
@@ -1913,11 +1913,11 @@ void reset_move_nets() {
     }
 }
 
-void recompute_costs_from_scratch(const t_placer_opts& placer_opts,
-                                  const t_noc_opts& noc_opts,
-                                  const PlaceDelayModel* delay_model,
-                                  const PlacerCriticalities* criticalities,
-                                  t_placer_costs* costs) {
+void NetCostHandler::recompute_costs_from_scratch(const t_placer_opts& placer_opts,
+                                                  const t_noc_opts& noc_opts,
+                                                  const PlaceDelayModel* delay_model,
+                                                  const PlacerCriticalities* criticalities,
+                                                  t_placer_costs* costs) {
     auto& placer_ctx = placer_ctx_ref->get();
 
     auto check_and_print_cost = [](double new_cost,
@@ -1979,7 +1979,7 @@ void recompute_costs_from_scratch(const t_placer_opts& placer_opts,
     }
 }
 
-void alloc_and_load_chan_w_factors_for_place_cost(float place_cost_exp) {
+void NetCostHandler::alloc_and_load_chan_w_factors_for_place_cost_(float place_cost_exp) {
     /* Allocates and loads the chanx_place_cost_fac and chany_place_cost_fac *
      * arrays with the inverse of the average number of tracks per channel   *
      * between [subhigh] and [sublow].  This is only useful for the cost     *
@@ -2077,27 +2077,18 @@ void alloc_and_load_chan_w_factors_for_place_cost(float place_cost_exp) {
         }
 }
 
-void free_chan_w_factors_for_place_cost() {
+void NetCostHandler::free_chan_w_factors_for_place_cost() {
     chanx_place_cost_fac.clear();
     chany_place_cost_fac.clear();
 }
 
-void init_place_move_structs(size_t num_nets) {
-    pl_net_cost.net_cost.resize(num_nets, -1.);
-    pl_net_cost.proposed_net_cost.resize(num_nets, -1.);
-    /* Used to store costs for moves not yet made and to indicate when a net's   *
-     * cost has been recomputed. proposed_net_cost[inet] < 0 means net's cost hasn't *
-     * been recomputed.                                                          */
-    pl_net_cost.bb_update_status.resize(num_nets, NetUpdateState::NOT_UPDATED_YET);
-}
-
-void free_place_move_structs() {
+void NetCostHandler::free_place_move_structs() {
     vtr::release_memory(pl_net_cost.net_cost);
     vtr::release_memory(pl_net_cost.proposed_net_cost);
     vtr::release_memory(pl_net_cost.bb_update_status);
 }
 
-void free_try_swap_net_cost_structs() {
+void NetCostHandler::free_try_swap_net_cost_structs() {
     vtr::release_memory(ts_info.ts_bb_edge_new);
     vtr::release_memory(ts_info.ts_bb_coord_new);
     vtr::release_memory(ts_info.layer_ts_bb_edge_new);
@@ -2106,8 +2097,17 @@ void free_try_swap_net_cost_structs() {
     vtr::release_memory(ts_info.ts_nets_to_update);
 }
 
-NetCostHandler::NetCostHandler(size_t num_nets, bool cube_bb)
-    : bb_updater_(num_nets, cube_bb) {}
+NetCostHandler::NetCostHandler(size_t num_nets, bool cube_bb, float place_cost_exp)
+    : bb_updater_(num_nets, cube_bb) {
+    pl_net_cost.net_cost.resize(num_nets, -1.);
+    pl_net_cost.proposed_net_cost.resize(num_nets, -1.);
+    /* Used to store costs for moves not yet made and to indicate when a net's   *
+     * cost has been recomputed. proposed_net_cost[inet] < 0 means net's cost hasn't *
+     * been recomputed.                                                          */
+    pl_net_cost.bb_update_status.resize(num_nets, NetUpdateState::NOT_UPDATED_YET);
+
+    alloc_and_load_chan_w_factors_for_place_cost_(place_cost_exp);
+}
 
 NetCostHandler::BBUpdater::BBUpdater(size_t num_nets, bool cube_bb) :
     cube_bb_(cube_bb) {

@@ -25,87 +25,6 @@ enum class e_cost_methods {
     CHECK
 };
 
-/**
- * @brief Finds the bb cost from scratch (based on 3D BB).
- * Done only when the placement has been radically changed
- * (i.e. after initial placement). Otherwise find the cost
- * change incrementally. If method check is NORMAL, we find
- * bounding boxes that are updatable for the larger nets.
- * If method is CHECK, all bounding boxes are found via the
- * non_updateable_bb routine, to provide a cost which can be
- * used to check the correctness of the other routine.
- * @param method
- * @return The bounding box cost of the placement, computed by the 3D method.
- */
-double comp_bb_cost(e_cost_methods method);
-
-/**
- * @brief Finds the bb cost from scratch (based on per-layer BB).
- * Done only when the placement has been radically changed
- * (i.e. after initial placement). Otherwise find the cost change
- * incrementally.  If method check is NORMAL, we find bounding boxes
- * that are updateable for the larger nets.  If method is CHECK, all
- * bounding boxes are found via the non_updateable_bb routine, to provide
- * a cost which can be used to check the correctness of the other routine.
- * @param method
- * @return The placement bounding box cost, computed by the per layer method.
- */
-double comp_layer_bb_cost(e_cost_methods method);
-
-/**
- * @brief Reset the net cost function flags (proposed_net_cost and bb_updated_before)
- * @param num_nets_affected
- */
-void reset_move_nets();
-
-/**
- * @brief re-calculates different terms of the cost function (wire-length, timing, NoC) and update "costs" accordingly. It is important to note that
- * in this function bounding box and connection delays are not calculated from scratch. However, it iterates over all nets and connections and updates
- * their costs by a complete summation, rather than incrementally.
- * @param placer_opts
- * @param noc_opts
- * @param delay_model
- * @param criticalities
- * @param costs passed by reference and computed by this routine (i.e. returned by reference)
- */
-void recompute_costs_from_scratch(const t_placer_opts& placer_opts,
-                                  const t_noc_opts& noc_opts,
-                                  const PlaceDelayModel* delay_model,
-                                  const PlacerCriticalities* criticalities,
-                                  t_placer_costs* costs);
-
-/**
- * @brief Allocates and loads the chanx_place_cost_fac and chany_place_cost_fac
- * arrays with the inverse of the average number of tracks per channel
- * between [subhigh] and [sublow].
- * @param place_cost_exp It is an exponent to which you take the average inverse channel
- * capacity; a higher value would favour wider channels more over narrower channels during placement (usually we use 1).
- */
-void alloc_and_load_chan_w_factors_for_place_cost(float place_cost_exp);
-
-/**
- * @brief Frees the chanx_place_cost_fac and chany_place_cost_fac arrays.
- */
-void free_chan_w_factors_for_place_cost();
-
-/**
- * @brief Resize net_cost, proposed_net_cost, and  bb_updated_before data structures to accommodate all nets.
- * @param num_nets Number of nets in the netlist (clustered currently) that the placement engine uses.
- */
-void init_place_move_structs(size_t num_nets);
-
-/**
- * @brief Free net_cost, proposed_net_cost, and  bb_updated_before data structures.
- */
-void free_place_move_structs();
-
-
-
-/**
- * @brief Free (layer_)ts_bb_edge_new, (layer_)ts_bb_coord_new, ts_layer_sink_pin_count, and ts_nets_to_update data structures.
- */
-void free_try_swap_net_cost_structs();
-
 void set_net_handlers_placer_ctx(PlacerContext& placer_ctx);
 
 
@@ -118,13 +37,14 @@ class NetCostHandler {
     NetCostHandler& operator=(NetCostHandler&&) = delete;
 
     /**
-    * @brief Resize temporary swap data structures needed to determine which nets are affected by a move and data needed per net
-    * about where their terminals are in order to quickly (incrementally) update their wirelength costs. These data structures are
-    * (layer_)ts_bb_edge_new, (layer_)ts_bb_coord_new, ts_layer_sink_pin_count, and ts_nets_to_update.
-    * @param num_nets Number of nets in the netlist used by the placement engine (currently clustered netlist)
-    * @param cube_bb True if the 3D bounding box should be used, false otherwise.
-    */
-    NetCostHandler(size_t num_nets, bool cube_bb);
+     * @brief Resize temporary swap data structures needed to determine which nets are affected by a move and data needed per net
+     * about where their terminals are in order to quickly (incrementally) update their wirelength costs. These data structures are
+     * (layer_)ts_bb_edge_new, (layer_)ts_bb_coord_new, ts_layer_sink_pin_count, and ts_nets_to_update.
+     * @param num_nets Number of nets in the netlist used by the placement engine (currently clustered netlist)
+     * @param cube_bb True if the 3D bounding box should be used, false otherwise.
+     * @param place_cost_exp It is an exponent to which you take the average inverse channel
+     */
+    NetCostHandler(size_t num_nets, bool cube_bb, float place_cost_exp);
 
     /**
     * @brief Find all the nets and pins affected by this swap and update costs.
@@ -147,12 +67,6 @@ class NetCostHandler {
     * The change in the timing cost is stored in `timing_delta_c`.
     * ts_nets_to_update is also extended with the latest net.
     *
-    * @param place_algorithm
-    * @param delay_model
-    * @param criticalities
-    * @param blocks_affected
-    * @param bb_delta_c
-    * @param timing_delta_c
     * @return The number of affected nets.
     */
     void find_affected_nets_and_update_costs(const t_place_algorithm& place_algorithm,
@@ -163,10 +77,73 @@ class NetCostHandler {
                                              double& timing_delta_c);
 
     /**
-    * @brief update net cost data structures (in placer context and net_cost in .cpp file) and reset flags (proposed_net_cost and bb_updated_before).
-    * @param num_nets_affected The number of nets affected by the move. It is used to determine the index up to which elements in ts_nets_to_update are valid.
-    */
+     * @brief Finds the bb cost from scratch (based on 3D BB).
+     * Done only when the placement has been radically changed
+     * (i.e. after initial placement). Otherwise find the cost
+     * change incrementally. If method check is NORMAL, we find
+     * bounding boxes that are updatable for the larger nets.
+     * If method is CHECK, all bounding boxes are found via the
+     * non_updateable_bb routine, to provide a cost which can be
+     * used to check the correctness of the other routine.
+     * @param method The method used to calculate placement cost.
+     * @return The bounding box cost of the placement, computed by the 3D method.
+     */
+    double comp_bb_cost(e_cost_methods method);
+
+    /**
+     * @brief Finds the bb cost from scratch (based on per-layer BB).
+     * Done only when the placement has been radically changed
+     * (i.e. after initial placement). Otherwise find the cost change
+     * incrementally.  If method check is NORMAL, we find bounding boxes
+     * that are updateable for the larger nets.  If method is CHECK, all
+     * bounding boxes are found via the non_updateable_bb routine, to provide
+     * a cost which can be used to check the correctness of the other routine.
+     * @param method The method used to calculate placement cost.
+     * @return The placement bounding box cost, computed by the per layer method.
+     */
+    double comp_layer_bb_cost(e_cost_methods method);
+
+    /**
+     * @brief Reset the net cost function flags (proposed_net_cost and bb_updated_before)
+     */
+    void reset_move_nets();
+
+    /**
+     * @brief update net cost data structures (in placer context and net_cost in .cpp file) and reset flags (proposed_net_cost and bb_updated_before).
+     * @param num_nets_affected The number of nets affected by the move. It is used to determine the index up to which elements in ts_nets_to_update are valid.
+     */
     void update_move_nets();
+
+    /**
+     * @brief re-calculates different terms of the cost function (wire-length, timing, NoC) and update "costs" accordingly. It is important to note that
+     * in this function bounding box and connection delays are not calculated from scratch. However, it iterates over all nets and connections and updates
+     * their costs by a complete summation, rather than incrementally.
+     * @param placer_opts
+     * @param noc_opts
+     * @param delay_model
+     * @param criticalities
+     * @param costs passed by reference and computed by this routine (i.e. returned by reference)
+     */
+    void recompute_costs_from_scratch(const t_placer_opts& placer_opts,
+                                      const t_noc_opts& noc_opts,
+                                      const PlaceDelayModel* delay_model,
+                                      const PlacerCriticalities* criticalities,
+                                      t_placer_costs* costs);
+
+    /**
+     * @brief Frees the chanx_place_cost_fac and chany_place_cost_fac arrays.
+     */
+    void free_chan_w_factors_for_place_cost();
+
+    /**
+     * @brief Free net_cost, proposed_net_cost, and  bb_updated_before data structures.
+     */
+    void free_place_move_structs();
+
+    /**
+     * @brief Free (layer_)ts_bb_edge_new, (layer_)ts_bb_coord_new, ts_layer_sink_pin_count, and ts_nets_to_update data structures.
+     */
+    void free_try_swap_net_cost_structs();
 
   private:
     /**
@@ -241,5 +218,14 @@ class NetCostHandler {
     * @param bb_delta_c Cost difference after and before moving the block
     */
     void set_bb_delta_cost_(double& bb_delta_c);
+
+    /**
+     * @brief Allocates and loads the chanx_place_cost_fac and chany_place_cost_fac
+     * arrays with the inverse of the average number of tracks per channel
+     * between [subhigh] and [sublow].
+     * @param place_cost_exp It is an exponent to which you take the average inverse channel
+     * capacity; a higher value would favour wider channels more over narrower channels during placement (usually we use 1).
+     */
+    void alloc_and_load_chan_w_factors_for_place_cost_(float place_cost_exp);
 
 };

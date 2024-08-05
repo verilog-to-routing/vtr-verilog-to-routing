@@ -195,12 +195,13 @@ static NetCostHandler alloc_and_load_placement_structs(float place_cost_exp,
                                                        int num_directs,
                                                        PlacerContext& placer_ctx);
 
-static NetCostHandler alloc_and_load_try_swap_structs(const bool cube_bb);
-static void free_try_swap_structs();
+static NetCostHandler alloc_and_load_try_swap_structs(const bool cube_bb, float place_cost_exp);
+static void free_try_swap_structs(NetCostHandler& net_cost_handler);
 
 static void free_placement_structs(const t_placer_opts& placer_opts,
                                    const t_noc_opts& noc_opts,
-                                   PlacerContext& placer_ctx);
+                                   PlacerContext& placer_ctx,
+                                   NetCostHandler& net_cost_handler);
 
 static e_move_result try_swap(const t_annealing_state* state,
                               t_placer_costs* costs,
@@ -227,13 +228,15 @@ static void check_place(const t_placer_costs& costs,
                         const PlacerCriticalities* criticalities,
                         const t_place_algorithm& place_algorithm,
                         const t_noc_opts& noc_opts,
-                        PlacerContext& placer_ctx);
+                        PlacerContext& placer_ctx,
+                        NetCostHandler& net_cost_handler);
 
 static int check_placement_costs(const t_placer_costs& costs,
                                  const PlaceDelayModel* delay_model,
                                  const PlacerCriticalities* criticalities,
                                  const t_place_algorithm& place_algorithm,
-                                 PlacerContext& placer_ctx);
+                                 PlacerContext& placer_ctx,
+                                 NetCostHandler& net_cost_handler);
 
 static int check_placement_consistency(const BlkLocRegistry& blk_loc_registry);
 static int check_block_placement_consistency(const BlkLocRegistry& blk_loc_registry);
@@ -497,10 +500,10 @@ void try_place(const Netlist<>& net_list,
 
     if (placer_opts.place_algorithm.is_timing_driven()) {
         if (cube_bb) {
-            costs.bb_cost = comp_bb_cost(e_cost_methods::NORMAL);
+            costs.bb_cost = net_cost_handler.comp_bb_cost(e_cost_methods::NORMAL);
         } else {
             VTR_ASSERT_SAFE(!cube_bb);
-            costs.bb_cost = comp_layer_bb_cost(e_cost_methods::NORMAL);
+            costs.bb_cost = net_cost_handler.comp_layer_bb_cost(e_cost_methods::NORMAL);
         }
 
         first_crit_exponent = placer_opts.td_place_exp_first; /*this will be modified when rlim starts to change */
@@ -578,10 +581,10 @@ void try_place(const Netlist<>& net_list,
 
         /* Total cost is the same as wirelength cost normalized*/
         if (cube_bb) {
-            costs.bb_cost = comp_bb_cost(e_cost_methods::NORMAL);
+            costs.bb_cost = net_cost_handler.comp_bb_cost(e_cost_methods::NORMAL);
         } else {
             VTR_ASSERT_SAFE(!cube_bb);
-            costs.bb_cost = comp_layer_bb_cost(e_cost_methods::NORMAL);
+            costs.bb_cost = net_cost_handler.comp_layer_bb_cost(e_cost_methods::NORMAL);
         }
         costs.bb_cost_norm = 1 / costs.bb_cost;
 
@@ -614,7 +617,8 @@ void try_place(const Netlist<>& net_list,
                 placer_criticalities.get(),
                 placer_opts.place_algorithm,
                 noc_opts,
-                placer_ctx);
+                placer_ctx,
+                net_cost_handler);
 
     //Initial placement statistics
     VTR_LOG("Initial placement cost: %g bb_cost: %g td_cost: %g\n", costs.cost,
@@ -918,7 +922,8 @@ void try_place(const Netlist<>& net_list,
                 placer_criticalities.get(),
                 placer_opts.place_algorithm,
                 noc_opts,
-                placer_ctx);
+                placer_ctx,
+                net_cost_handler);
 
     //Some stats
     VTR_LOG("\n");
@@ -983,7 +988,7 @@ void try_place(const Netlist<>& net_list,
         write_noc_placement_file(noc_opts.noc_placement_file_name, blk_loc_registry.block_locs());
     }
 
-    free_placement_structs(placer_opts, noc_opts, placer_ctx);
+    free_placement_structs(placer_opts, noc_opts, placer_ctx, net_cost_handler);
     free_try_swap_arrays();
 
     print_timing_stats("Placement Quench", post_quench_timing_stats,
@@ -1121,8 +1126,8 @@ static void placement_inner_loop(const t_annealing_state* state,
         ++(*moves_since_cost_recompute);
         if (*moves_since_cost_recompute > MAX_MOVES_BEFORE_RECOMPUTE) {
             //VTR_LOG("recomputing costs from scratch, old bb_cost is %g\n", costs->bb_cost);
-            recompute_costs_from_scratch(placer_opts, noc_opts, delay_model,
-                                         criticalities, costs);
+            net_cost_handler.recompute_costs_from_scratch(placer_opts, noc_opts, delay_model,
+                                                          criticalities, costs);
             //VTR_LOG("new_bb_cost is %g\n", costs->bb_cost);
             *moves_since_cost_recompute = 0;
         }
@@ -1515,7 +1520,7 @@ static e_move_result try_swap(const t_annealing_state* state,
             VTR_ASSERT_SAFE(move_outcome == REJECTED);
 
             /* Reset the net cost function flags first. */
-            reset_move_nets();
+            net_cost_handler.reset_move_nets();
 
             /* Restore the place_ctx.block_locs data structures to their state before the move. */
             revert_move_blocks(blocks_affected, placer_ctx.mutable_blk_loc_registry());
@@ -1897,8 +1902,6 @@ static NetCostHandler alloc_and_load_placement_structs(float place_cost_exp,
         }
     }
 
-    init_place_move_structs(num_nets);
-
     auto& place_move_ctx = placer_ctx.mutable_move();
     if (place_ctx.cube_bb) {
         place_move_ctx.bb_coords.resize(num_nets, t_bb());
@@ -1915,22 +1918,21 @@ static NetCostHandler alloc_and_load_placement_structs(float place_cost_exp,
         elem = OPEN;
     }
 
-    alloc_and_load_chan_w_factors_for_place_cost(place_cost_exp);
-
     place_ctx.pl_macros = alloc_and_load_placement_macros(directs, num_directs);
 
     if (noc_opts.noc) {
         allocate_and_load_noc_placement_structs();
     }
 
-    return alloc_and_load_try_swap_structs(place_ctx.cube_bb);
+    return alloc_and_load_try_swap_structs(place_ctx.cube_bb, place_cost_exp);
 }
 
 /* Frees the major structures needed by the placer (and not needed       *
  * elsewhere).   */
 static void free_placement_structs(const t_placer_opts& placer_opts,
                                    const t_noc_opts& noc_opts,
-                                   PlacerContext& placer_ctx) {
+                                   PlacerContext& placer_ctx,
+                                   NetCostHandler& net_cost_handler) {
     auto& place_move_ctx = placer_ctx.mutable_move();
 
     if (placer_opts.place_algorithm.is_timing_driven()) {
@@ -1946,7 +1948,7 @@ static void free_placement_structs(const t_placer_opts& placer_opts,
 
     free_placement_macros_structs();
 
-    free_place_move_structs();
+    net_cost_handler.free_place_move_structs();
 
     vtr::release_memory(place_move_ctx.bb_coords);
     vtr::release_memory(place_move_ctx.bb_num_on_edges);
@@ -1957,16 +1959,16 @@ static void free_placement_structs(const t_placer_opts& placer_opts,
 
     place_move_ctx.num_sink_pin_layer.clear();
 
-    free_chan_w_factors_for_place_cost();
+    net_cost_handler.free_chan_w_factors_for_place_cost();
 
-    free_try_swap_structs();
+    free_try_swap_structs(net_cost_handler);
 
     if (noc_opts.noc) {
         free_noc_placement_structs();
     }
 }
 
-static NetCostHandler alloc_and_load_try_swap_structs(const bool cube_bb) {
+static NetCostHandler alloc_and_load_try_swap_structs(const bool cube_bb, float place_cost_exp) {
     /* Allocate the local bb_coordinate storage, etc. only once. */
     /* Allocate with size cluster_ctx.clb_nlist.nets().size() for any number of nets affected. */
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -1975,11 +1977,11 @@ static NetCostHandler alloc_and_load_try_swap_structs(const bool cube_bb) {
     place_ctx.compressed_block_grids = create_compressed_block_grids();
 
     size_t num_nets = cluster_ctx.clb_nlist.nets().size();
-    return {num_nets, cube_bb};
+    return {num_nets, cube_bb, place_cost_exp};
 }
 
-static void free_try_swap_structs() {
-    free_try_swap_net_cost_structs();
+static void free_try_swap_structs(NetCostHandler& net_cost_handler) {
+    net_cost_handler.free_try_swap_net_cost_structs();
 
     auto& place_ctx = g_vpr_ctx.mutable_placement();
     vtr::release_memory(place_ctx.compressed_block_grids);
@@ -1990,7 +1992,8 @@ static void check_place(const t_placer_costs& costs,
                         const PlacerCriticalities* criticalities,
                         const t_place_algorithm& place_algorithm,
                         const t_noc_opts& noc_opts,
-                        PlacerContext& placer_ctx) {
+                        PlacerContext& placer_ctx,
+                        NetCostHandler& net_cost_handler) {
     /* Checks that the placement has not confused our data structures. *
      * i.e. the clb and block structures agree about the locations of  *
      * every block, blocks are in legal spots, etc.  Also recomputes   *
@@ -2000,7 +2003,7 @@ static void check_place(const t_placer_costs& costs,
     int error = 0;
 
     error += check_placement_consistency(placer_ctx.blk_loc_registry());
-    error += check_placement_costs(costs, delay_model, criticalities, place_algorithm, placer_ctx);
+    error += check_placement_costs(costs, delay_model, criticalities, place_algorithm, placer_ctx, net_cost_handler);
     error += check_placement_floorplanning(placer_ctx.block_locs());
 
     if (noc_opts.noc) {
@@ -2026,7 +2029,8 @@ static int check_placement_costs(const t_placer_costs& costs,
                                  const PlaceDelayModel* delay_model,
                                  const PlacerCriticalities* criticalities,
                                  const t_place_algorithm& place_algorithm,
-                                 PlacerContext& placer_ctx) {
+                                 PlacerContext& placer_ctx,
+                                 NetCostHandler& net_cost_handler) {
     int error = 0;
     double bb_cost_check;
     double timing_cost_check;
@@ -2034,10 +2038,10 @@ static int check_placement_costs(const t_placer_costs& costs,
     const bool cube_bb = g_vpr_ctx.placement().cube_bb;
 
     if (cube_bb) {
-        bb_cost_check = comp_bb_cost(e_cost_methods::CHECK);
+        bb_cost_check = net_cost_handler.comp_bb_cost(e_cost_methods::CHECK);
     } else {
         VTR_ASSERT_SAFE(!cube_bb);
-        bb_cost_check = comp_layer_bb_cost(e_cost_methods::CHECK);
+        bb_cost_check = net_cost_handler.comp_layer_bb_cost(e_cost_methods::CHECK);
     }
 
     if (fabs(bb_cost_check - costs.bb_cost) > costs.bb_cost * ERROR_TOL) {
