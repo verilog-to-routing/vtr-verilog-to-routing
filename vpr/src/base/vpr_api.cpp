@@ -1477,6 +1477,7 @@ void vpr_analysis(const Netlist<>& net_list,
                   bool is_flat) {
     auto& route_ctx = g_vpr_ctx.routing();
     auto& atom_ctx = g_vpr_ctx.atom();
+    const auto& blk_loc_registry = g_vpr_ctx.placement().blk_loc_registry();
 
     if (route_ctx.route_trees.empty()) {
         VPR_FATAL_ERROR(VPR_ERROR_ANALYSIS, "No routing loaded -- can not perform post-routing analysis");
@@ -1497,8 +1498,7 @@ void vpr_analysis(const Netlist<>& net_list,
         //Load the net delays
 
         NetPinsMatrix<float> net_delay = make_net_pins_matrix<float>(net_list);
-        load_net_delay_from_routing(net_list,
-                                    net_delay);
+        load_net_delay_from_routing(net_list, net_delay);
 
         //Do final timing analysis
         auto analysis_delay_calc = std::make_shared<AnalysisDelayCalculator>(atom_ctx.nlist, atom_ctx.lookup, net_delay, vpr_setup.RouterOpts.flat_routing);
@@ -1513,10 +1513,10 @@ void vpr_analysis(const Netlist<>& net_list,
 
         //Timing stats
         VTR_LOG("\n");
-        generate_hold_timing_stats(/*prefix=*/"", *timing_info,
-                                   *analysis_delay_calc, vpr_setup.AnalysisOpts, vpr_setup.RouterOpts.flat_routing);
-        generate_setup_timing_stats(/*prefix=*/"", *timing_info,
-                                    *analysis_delay_calc, vpr_setup.AnalysisOpts, vpr_setup.RouterOpts.flat_routing);
+        generate_hold_timing_stats(/*prefix=*/"", *timing_info, *analysis_delay_calc,
+                                   vpr_setup.AnalysisOpts, vpr_setup.RouterOpts.flat_routing, blk_loc_registry);
+        generate_setup_timing_stats(/*prefix=*/"", *timing_info, *analysis_delay_calc,
+                                    vpr_setup.AnalysisOpts, vpr_setup.RouterOpts.flat_routing, blk_loc_registry);
 
         //Write the post-synthesis netlist
         if (vpr_setup.AnalysisOpts.gen_post_synthesis_netlist) {

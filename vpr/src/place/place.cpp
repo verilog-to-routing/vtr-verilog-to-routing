@@ -317,7 +317,8 @@ static void generate_post_place_timing_reports(const t_placer_opts& placer_opts,
                                                const t_analysis_opts& analysis_opts,
                                                const SetupTimingInfo& timing_info,
                                                const PlacementDelayCalculator& delay_calc,
-                                               bool is_flat);
+                                               bool is_flat,
+                                               const BlkLocRegistry& blk_loc_registry);
 
 //calculate the agent's reward and the total process outcome
 static void calculate_reward_and_process_outcome(const t_placer_opts& placer_opts,
@@ -437,7 +438,7 @@ void try_place(const Netlist<>& net_list,
 
     PlacerContext placer_ctx;
     auto& place_move_ctx = placer_ctx.mutable_move();
-    auto& place_loc_vars = placer_ctx.mutable_blk_loc_registry();
+    auto& blk_loc_registry = placer_ctx.mutable_blk_loc_registry();
     const auto& p_timing_ctx = placer_ctx.timing();
     const auto& p_runtime_ctx = placer_ctx.runtime();
 
@@ -453,7 +454,7 @@ void try_place(const Netlist<>& net_list,
         normalize_noc_cost_weighting_factor(const_cast<t_noc_opts&>(noc_opts));
     }
 
-    initial_placement(placer_opts, placer_opts.constraints_file.c_str(), noc_opts, place_loc_vars);
+    initial_placement(placer_opts, placer_opts.constraints_file.c_str(), noc_opts, blk_loc_registry);
 
     //create the move generator based on the chosen strategy
     auto [move_generator, move_generator2] = create_move_generators(placer_ctx, placer_opts, move_lim, noc_opts.noc_centroid_weight);
@@ -470,18 +471,18 @@ void try_place(const Netlist<>& net_list,
      *  Most of anneal is disabled later by setting initial temperature to 0 and only further optimizes in quench
      */
     if (placer_opts.enable_analytic_placer) {
-        AnalyticPlacer{place_loc_vars}.ap_place();
+        AnalyticPlacer{blk_loc_registry}.ap_place();
     }
 
 #endif /* ENABLE_ANALYTIC_PLACE */
 
     // Update physical pin values
     for (const ClusterBlockId block_id : cluster_ctx.clb_nlist.blocks()) {
-        place_sync_external_block_connections(block_id, place_loc_vars);
+        place_sync_external_block_connections(block_id, blk_loc_registry);
     }
 
     const int width_fac = placer_opts.place_chan_width;
-    init_draw_coords((float)width_fac, place_loc_vars);
+    init_draw_coords((float)width_fac, blk_loc_registry);
 
     /* Allocated here because it goes into timing critical code where each memory allocation is expensive */
     IntraLbPbPinLookup pb_gpin_lookup(device_ctx.logical_block_types);
@@ -654,7 +655,7 @@ void try_place(const Netlist<>& net_list,
         std::string filename = vtr::string_fmt("placement_%03d_%03d.place", 0,
                                                0);
         VTR_LOG("Saving initial placement to file: %s\n", filename.c_str());
-        print_place(nullptr, nullptr, filename.c_str(), place_loc_vars.block_locs());
+        print_place(nullptr, nullptr, filename.c_str(), blk_loc_registry.block_locs());
     }
 
     int first_move_lim = get_initial_move_lim(placer_opts, annealing_sched);
@@ -759,7 +760,7 @@ void try_place(const Netlist<>& net_list,
 
                 if (placer_opts.place_checkpointing
                     && agent_state == e_agent_state::LATE_IN_THE_ANNEAL) {
-                    save_placement_checkpoint_if_needed(place_loc_vars.block_locs(),
+                    save_placement_checkpoint_if_needed(blk_loc_registry.block_locs(),
                                                         placement_checkpoint,
                                                         timing_info, costs, critical_path.delay());
                 }
@@ -891,7 +892,7 @@ void try_place(const Netlist<>& net_list,
         std::string filename = vtr::string_fmt("placement_%03d_%03d.place",
                                                state.num_temps + 1, 0);
         VTR_LOG("Saving final placement to file: %s\n", filename.c_str());
-        print_place(nullptr, nullptr, filename.c_str(), place_loc_vars.block_locs());
+        print_place(nullptr, nullptr, filename.c_str(), blk_loc_registry.block_locs());
     }
 
     // TODO:
@@ -905,7 +906,7 @@ void try_place(const Netlist<>& net_list,
 
     // Update physical pin values
     for (const ClusterBlockId block_id : cluster_ctx.clb_nlist.blocks()) {
-        place_sync_external_block_connections(block_id, place_loc_vars);
+        place_sync_external_block_connections(block_id, blk_loc_registry);
     }
 
     check_place(costs,
@@ -940,8 +941,8 @@ void try_place(const Netlist<>& net_list,
                 *timing_info, debug_tnode);
         }
 
-        generate_post_place_timing_reports(placer_opts, analysis_opts,
-                                           *timing_info, *placement_delay_calc, is_flat);
+        generate_post_place_timing_reports(placer_opts, analysis_opts, *timing_info,
+                                           *placement_delay_calc, is_flat, blk_loc_registry);
 
         /* Print critical path delay metrics */
         VTR_LOG("\n");
@@ -968,14 +969,14 @@ void try_place(const Netlist<>& net_list,
 
     update_screen(ScreenUpdatePriority::MAJOR, msg, PLACEMENT, timing_info);
     // Print out swap statistics
-    print_resources_utilization(place_loc_vars);
+    print_resources_utilization(blk_loc_registry);
 
     print_placement_swaps_stats(state, swap_stats);
 
     print_placement_move_types_stats(move_type_stat);
 
     if (noc_opts.noc) {
-        write_noc_placement_file(noc_opts.noc_placement_file_name, place_loc_vars.block_locs());
+        write_noc_placement_file(noc_opts.noc_placement_file_name, blk_loc_registry.block_locs());
     }
 
     free_placement_structs(placer_opts, noc_opts, placer_ctx);
@@ -992,7 +993,7 @@ void try_place(const Netlist<>& net_list,
             p_runtime_ctx.f_update_td_costs_sum_nets_elapsed_sec,
             p_runtime_ctx.f_update_td_costs_total_elapsed_sec);
 
-    copy_locs_to_global_state(place_loc_vars);
+    copy_locs_to_global_state(blk_loc_registry);
 }
 
 /* Function to update the setup slacks and criticalities before the inner loop of the annealing/quench */
@@ -2051,15 +2052,15 @@ static int check_placement_costs(const t_placer_costs& costs,
     return error;
 }
 
-static int check_placement_consistency(const BlkLocRegistry& place_loc_vars) {
-    return check_block_placement_consistency(place_loc_vars) + check_macro_placement_consistency(place_loc_vars);
+static int check_placement_consistency(const BlkLocRegistry& blk_loc_registry) {
+    return check_block_placement_consistency(blk_loc_registry) + check_macro_placement_consistency(blk_loc_registry);
 }
 
-static int check_block_placement_consistency(const BlkLocRegistry& place_loc_vars) {
+static int check_block_placement_consistency(const BlkLocRegistry& blk_loc_registry) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.device();
-    const auto& block_locs = place_loc_vars.block_locs();
-    const auto& grid_blocks = place_loc_vars.grid_blocks();
+    const auto& block_locs = blk_loc_registry.block_locs();
+    const auto& grid_blocks = blk_loc_registry.grid_blocks();
 
     int error = 0;
 
@@ -2139,10 +2140,10 @@ static int check_block_placement_consistency(const BlkLocRegistry& place_loc_var
     return error;
 }
 
-int check_macro_placement_consistency(const BlkLocRegistry& place_loc_vars) {
+int check_macro_placement_consistency(const BlkLocRegistry& blk_loc_registry) {
     const auto& pl_macros = g_vpr_ctx.placement().pl_macros;
-    const auto& block_locs = place_loc_vars.block_locs();
-    const auto& grid_blocks = place_loc_vars.grid_blocks();
+    const auto& block_locs = blk_loc_registry.block_locs();
+    const auto& grid_blocks = blk_loc_registry.grid_blocks();
 
     int error = 0;
 
@@ -2204,12 +2205,13 @@ static void generate_post_place_timing_reports(const t_placer_opts& placer_opts,
                                                const t_analysis_opts& analysis_opts,
                                                const SetupTimingInfo& timing_info,
                                                const PlacementDelayCalculator& delay_calc,
-                                               bool is_flat) {
+                                               bool is_flat,
+                                               const BlkLocRegistry& blk_loc_registry) {
     auto& timing_ctx = g_vpr_ctx.timing();
     auto& atom_ctx = g_vpr_ctx.atom();
 
-    VprTimingGraphResolver resolver(atom_ctx.nlist, atom_ctx.lookup,
-                                    *timing_ctx.graph, delay_calc, is_flat);
+    VprTimingGraphResolver resolver(atom_ctx.nlist, atom_ctx.lookup, *timing_ctx.graph,
+                                    delay_calc, is_flat, blk_loc_registry);
     resolver.set_detail_level(analysis_opts.timing_report_detail);
 
     tatum::TimingReporter timing_reporter(resolver, *timing_ctx.graph,
@@ -2288,10 +2290,10 @@ static void print_place_status(const t_annealing_state& state,
     fflush(stdout);
 }
 
-static void print_resources_utilization(const BlkLocRegistry& place_loc_vars) {
+static void print_resources_utilization(const BlkLocRegistry& blk_loc_registry) {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     const auto& device_ctx = g_vpr_ctx.device();
-    const auto& block_locs = place_loc_vars.block_locs();
+    const auto& block_locs = blk_loc_registry.block_locs();
 
     int max_block_name = 0;
     int max_tile_name = 0;
@@ -2429,18 +2431,18 @@ static void calculate_reward_and_process_outcome(const t_placer_opts& placer_opt
     }
 }
 
-static void copy_locs_to_global_state(const BlkLocRegistry& place_loc_vars) {
+static void copy_locs_to_global_state(const BlkLocRegistry& blk_loc_registry) {
     auto& place_ctx = g_vpr_ctx.mutable_placement();
 
     // the placement location variables should be unlocked before being accessed
     place_ctx.unlock_loc_vars();
 
     // copy the local location variables into the global state
-    auto& global_place_loc_vars = place_ctx.mutable_blk_loc_registry();
-    global_place_loc_vars = place_loc_vars;
+    auto& global_blk_loc_registry = place_ctx.mutable_blk_loc_registry();
+    global_blk_loc_registry = blk_loc_registry;
 
 #ifndef NO_GRAPHICS
     // update the graphics' reference to placement location variables
-    set_graphics_blk_loc_registry_ref(global_place_loc_vars);
+    set_graphics_blk_loc_registry_ref(global_blk_loc_registry);
 #endif
 }
