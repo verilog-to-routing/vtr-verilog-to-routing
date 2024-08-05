@@ -120,16 +120,21 @@ class NetCostHandler {
      */
     void free_chan_w_factors_for_place_cost();
 
-    /**
-     * @brief Free net_cost, proposed_net_cost, and  bb_updated_before data structures.
-     */
-    void free_place_move_structs();
-
   private:
     bool cube_bb_ = false;
     PlacerContext& placer_ctx_;
 
     std::function<double(e_cost_methods method)> comp_bb_cost_functor_;
+
+    /**
+     * @brief for the states of the bounding box.
+     * Stored as char for memory efficiency.
+     */
+    enum class NetUpdateState {
+        NOT_UPDATED_YET,
+        UPDATED_ONCE,
+        GOT_FROM_SCRATCH
+    };
 
 
     /**
@@ -147,6 +152,30 @@ class NetCostHandler {
     vtr::Matrix<int> ts_layer_sink_pin_count_;
     /* [0...num_afftected_nets] -> net_id of the affected nets */
     std::vector<ClusterNetId> ts_nets_to_update_;
+
+
+    /**
+     * @brief For each of the vectors in this struct, there is one entry per cluster level net:
+     * [0...cluster_ctx.clb_nlist.nets().size()-1].
+     * net_cost and proposed_net_cost: Cost of a net, and a temporary cost of a net used during move assessment.
+     * We also use negative cost values in proposed_net_cost as a flag to indicate that
+     * the cost of a net has not yet been updated.
+     * bb_update_status: Flag array to indicate whether the specific bounding box has been updated
+     * in this particular swap or not. If it has been updated before, the code
+     * must use the updated data, instead of the out-of-date data passed into the
+     * subroutine, particularly used in try_swap(). The value NOT_UPDATED_YET
+     * indicates that the net has not been updated before, UPDATED_ONCE indicated
+     * that the net has been updated once, if it is going to be updated again, the
+     * values from the previous update must be used. GOT_FROM_SCRATCH is only
+     * applicable for nets larger than SMALL_NETS and it indicates that the
+     * particular bounding box is not incrementally updated, and hence the
+     * bounding box is got from scratch, so the bounding box would definitely be
+     * right, DO NOT update again.
+     */
+    vtr::vector<ClusterNetId, double> net_cost_;
+    vtr::vector<ClusterNetId, double> proposed_net_cost_;
+    vtr::vector<ClusterNetId, NetUpdateState> bb_update_status_;
+
 
   private:
     /**
@@ -402,5 +431,12 @@ class NetCostHandler {
      * @param net ID of a net affected by a move
      */
      void record_affected_net_(const ClusterNetId net);
+
+     /**
+     * @brief To mitigate round-off errors, every once in a while, the costs of nets are summed up from scratch.
+     * This functions is called to do that for bb cost. It doesn't calculate the BBs from scratch, it would only add the costs again.
+     * @return Total bb (wirelength) cost for the placement
+     */
+     double recompute_bb_cost_();
 
 };

@@ -1935,8 +1935,6 @@ static void free_placement_structs(const t_placer_opts& placer_opts,
 
     free_placement_macros_structs();
 
-    net_cost_handler.free_place_move_structs();
-
     vtr::release_memory(place_move_ctx.bb_coords);
     vtr::release_memory(place_move_ctx.bb_num_on_edges);
     vtr::release_memory(place_move_ctx.bb_coords);
