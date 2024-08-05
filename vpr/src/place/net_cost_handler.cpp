@@ -134,11 +134,6 @@ static struct PLNetCost pl_net_cost;
 
 static struct TSInfo ts_info;
 
-static std::optional<std::reference_wrapper<PlacerContext>> placer_ctx_ref;
-
-void set_net_handlers_placer_ctx(PlacerContext& placer_ctx) {
-    placer_ctx_ref = std::ref(placer_ctx);
-}
 
 /**
  * @param net
@@ -149,25 +144,7 @@ static bool driven_by_moved_block(const ClusterNetId net,
                                   const std::vector<t_pl_moved_block>& moved_blocks);
 
 
-/**
- * @brief Calculate the new connection delay and timing cost of all the
- * sink pins affected by moving a specific pin to a new location. Also
- * calculates the total change in the timing cost.
- * @param delay_model
- * @param criticalities
- * @param net
- * @param pin
- * @param affected_pins Updated by this routine to store the sink pins whose delays are changed due to moving the block
- * @param delta_timing_cost Computed by this routine and returned by reference.
- * @param is_src_moving True if "pin" is a sink pin and its driver is among the moving blocks
- */
-static void update_td_delta_costs(const PlaceDelayModel* delay_model,
-                                  const PlacerCriticalities& criticalities,
-                                  const ClusterNetId net,
-                                  const ClusterPinId pin,
-                                  std::vector<ClusterPinId>& affected_pins,
-                                  double& delta_timing_cost,
-                                  bool is_src_moving);
+
 
 /**
  * @brief if "net" is not already stored as an affected net, add it in ts_nets_to_update.
@@ -175,111 +152,7 @@ static void update_td_delta_costs(const PlaceDelayModel* delay_model,
  */
 static void record_affected_net(const ClusterNetId net);
 
-/**
- * @brief Update the 3D bounding box of "net_id" incrementally based on the old and new locations of a pin on that net
- * @details Updates the bounding box of a net by storing its coordinates in the bb_coord_new data structure and the
- * number of blocks on each edge in the bb_edge_new data structure. This routine should only be called for large nets,
- * since it has some overhead relative to just doing a brute force bounding box calculation. The bounding box coordinate
- * and edge information for inet must be valid before this routine is called. Currently assumes channels on both sides of
- * the CLBs forming the edges of the bounding box can be used.  Essentially, I am assuming the pins always lie on the
- * outside of the bounding box. The x and y coordinates are the pin's x and y coordinates. IO blocks are considered to be one
- * cell in for simplicity.
- * @param bb_edge_new Number of blocks on the edges of the bounding box
- * @param bb_coord_new Coordinates of the bounding box
- * @param num_sink_pin_layer_new Number of sinks of the given net on each layer
- * @param pin_old_loc The old location of the moving pin
- * @param pin_new_loc The new location of the moving pin
- * @param src_pin Is the moving pin driving the net
- */
-static void update_bb(ClusterNetId net_id,
-                      t_bb& bb_edge_new,
-                      t_bb& bb_coord_new,
-                      vtr::NdMatrixProxy<int, 1> num_sink_pin_layer_new,
-                      t_physical_tile_loc pin_old_loc,
-                      t_physical_tile_loc pin_new_loc,
-                      bool src_pin);
 
-/**
- * @brief Calculate the 3D bounding box of "net_id" from scratch (based on the block locations stored in place_ctx) and
- * store them in bb_coord_new
- * @param net_id ID of the net for which the bounding box is requested
- * @param bb_coord_new Computed by this function and returned by reference.
- * @param num_sink_pin_layer Store the number of sink pins of "net_id" on each layer
- */
-static void get_non_updatable_bb(ClusterNetId net_id,
-                                 t_bb& bb_coord_new,
-                                 vtr::NdMatrixProxy<int, 1> num_sink_pin_layer);
-
-/**
- * @brief Calculate the per-layer bounding box of "net_id" from scratch (based on the block locations stored in place_ctx) and
- * store them in bb_coord_new
- * @param net_id ID of the net for which the bounding box is requested
- * @param bb_coord_new Computed by this function and returned by reference.
- * @param num_sink_layer Store the number of sink pins of "net_id" on each layer
- */
-static void get_non_updatable_layer_bb(ClusterNetId net_id,
-                                       std::vector<t_2D_bb>& bb_coord_new,
-                                       vtr::NdMatrixProxy<int, 1> num_sink_layer);
-
-/**
- * @brief Update the per-layer bounding box of "net_id" incrementally based on the old and new locations of a pin on that net
- * @details Updates the bounding box of a net by storing its coordinates in the bb_coord_new data structure and
- * the number of blocks on each edge in the bb_edge_new data structure. This routine should only  be called for
- * large nets, since it has some overhead relative to just doing a brute force bounding box calculation.
- * The bounding box coordinate and edge information for inet must be valid before  this routine is called.
- * Currently assumes channels on both sides of the CLBs forming the   edges of the bounding box can be used.
- * Essentially, I am assuming the pins always lie on the outside of the bounding box. The x and y coordinates
- * are the pin's x and y coordinates. IO blocks are considered to be one cell in for simplicity.
- * @param bb_edge_new Number of blocks on the edges of the bounding box
- * @param bb_coord_new Coordinates of the bounding box
- * @param num_sink_pin_layer_new Number of sinks of the given net on each layer
- * @param pin_old_loc The old location of the moving pin
- * @param pin_new_loc The new location of the moving pin
- * @param is_output_pin Is the moving pin of the type output
- */
-static void update_layer_bb(ClusterNetId net_id,
-                            std::vector<t_2D_bb>& bb_edge_new,
-                            std::vector<t_2D_bb>& bb_coord_new,
-                            vtr::NdMatrixProxy<int, 1> bb_pin_sink_count_new,
-                            t_physical_tile_loc pin_old_loc,
-                            t_physical_tile_loc pin_new_loc,
-                            bool is_output_pin);
-
-/**
-* @brief This function is called in update_layer_bb to update the net's bounding box incrementally if
-* the pin under consideration change layer.
- * @param net_id ID of the net which the moving pin belongs to
- * @param pin_old_loc Old location of the moving pin
- * @param pin_new_loc New location of the moving pin
- * @param curr_bb_edge The current known number of blocks of the net on bounding box edges
- * @param curr_bb_coord The current known boudning box of the net
- * @param bb_pin_sink_count_new The updated number of net's sinks on each layer
- * @param bb_edge_new The new bb edge calculated by this function
- * @param bb_coord_new The new bb calculated by this function
- */
-static inline void update_bb_layer_changed(ClusterNetId net_id,
-                                           const t_physical_tile_loc& pin_old_loc,
-                                           const t_physical_tile_loc& pin_new_loc,
-                                           const std::vector<t_2D_bb>& curr_bb_edge,
-                                           const std::vector<t_2D_bb>& curr_bb_coord,
-                                           vtr::NdMatrixProxy<int, 1> bb_pin_sink_count_new,
-                                           std::vector<t_2D_bb>& bb_edge_new,
-                                           std::vector<t_2D_bb>& bb_coord_new);
-
-/**
- * @brief Calculate the per-layer BB of a large net from scratch and update coord, edge, and num_sink_pin_layer data structures.
- * @details This routine finds the bounding box of each net from scratch when the bounding box is of type per-layer (i.e. from
- * only the block location information). It updates the coordinate, number of pins on each edge information, and the
- * number of sinks on each layer. It should only be called when the bounding box information is not valid.
- * @param net_id ID of the net which the moving pin belongs to
- * @param coords Bounding box coordinates of the net. It is calculated in this function
- * @param num_on_edges Net's number of blocks on the edges of the bounding box. It is calculated in this function.
- * @param num_sink_pin_layer Net's number of sinks on each layer, calculated in this function.
- */
-static void get_layer_bb_from_scratch(ClusterNetId net_id,
-                                      std::vector<t_2D_bb>& num_on_edges,
-                                      std::vector<t_2D_bb>& coords,
-                                      vtr::NdMatrixProxy<int, 1> layer_pin_sink_count);
 
 /**
  * @brief Given the per-layer BB, calculate the wire-length cost of the net on each layer
@@ -303,26 +176,7 @@ static double get_net_wirelength_from_layer_bb(ClusterNetId /* net_id */,
                                                const std::vector<t_2D_bb>& bb,
                                                const vtr::NdMatrixProxy<int, 1> layer_pin_sink_count);
 
-/**
- * @brief This function is called in update_layer_bb to update the net's bounding box incrementally if
- * the pin under consideration is not changing layer.
- * @param net_id ID of the net which the moving pin belongs to
- * @param pin_old_loc Old location of the moving pin
- * @param pin_new_loc New location of the moving pin
- * @param curr_bb_edge The current known number of blocks of the net on bounding box edges
- * @param curr_bb_coord The current known boudning box of the net
- * @param bb_pin_sink_count_new The updated number of net's sinks on each layer
- * @param bb_edge_new The new bb edge calculated by this function
- * @param bb_coord_new The new bb calculated by this function
- */
-static inline void update_bb_same_layer(ClusterNetId net_id,
-                                        const t_physical_tile_loc& pin_old_loc,
-                                        const t_physical_tile_loc& pin_new_loc,
-                                        const std::vector<t_2D_bb>& curr_bb_edge,
-                                        const std::vector<t_2D_bb>& curr_bb_coord,
-                                        vtr::NdMatrixProxy<int, 1> bb_pin_sink_count_new,
-                                        std::vector<t_2D_bb>& bb_edge_new,
-                                        std::vector<t_2D_bb>& bb_coord_new);
+
 
 /**
  * @brief If the moving pin is of type type SINK, update bb_pin_sink_count_new which stores the number of sink pins on each layer of "net_id"
@@ -338,29 +192,7 @@ static void update_bb_pin_sink_count(const t_physical_tile_loc& pin_old_loc,
                                      vtr::NdMatrixProxy<int, 1> bb_pin_sink_count_new,
                                      bool is_output_pin);
 
-/**
- * @brief Update the data structure for large nets that keep track of
- * the number of blocks on each edge of the bounding box. If the moving block
- * is the only block on one of the edges, the bounding box is calculated from scratch.
- * Since this function is used for large nets, it updates the bounding box incrementally.
- * @param net_id ID of the net which the moving pin belongs to
- * @param bb_edge_new The new bb edge calculated by this function
- * @param bb_coord_new The new bb calculated by this function
- * @param bb_layer_pin_sink_count The updated number of net's sinks on each layer
- * @param old_num_block_on_edge The current known number of blocks of the net on bounding box edges
- * @param old_edge_coord The current known boudning box of the net
- * @param new_num_block_on_edge The new bb calculated by this function
- * @param new_edge_coord The new bb edge calculated by this function
- *
- */
-static inline void update_bb_edge(ClusterNetId net_id,
-                                  std::vector<t_2D_bb>& bb_edge_new,
-                                  std::vector<t_2D_bb>& bb_coord_new,
-                                  vtr::NdMatrixProxy<int, 1> bb_layer_pin_sink_count,
-                                  const int& old_num_block_on_edge,
-                                  const int& old_edge_coord,
-                                  int& new_num_block_on_edge,
-                                  int& new_edge_coord);
+
 
 /**
  * @brief When BB is being updated incrementally, the pin is moving to a new layer, and the BB is of the type "per-layer,
@@ -376,21 +208,6 @@ static void add_block_to_bb(const t_physical_tile_loc& new_pin_loc,
                             const t_2D_bb& bb_coord_old,
                             t_2D_bb& bb_edge_new,
                             t_2D_bb& bb_coord_new);
-
-/**
- * @brief Calculate the 3D BB of a large net from scratch and update coord, edge, and num_sink_pin_layer data structures.
- * @details This routine finds the bounding box of each net from scratch (i.e. from only the block location information).  It updates both the
- * coordinate and number of pins on each edge information. It should only be called when the bounding box
- * information is not valid.
- * @param net_id ID of the net which the moving pin belongs to
- * @param coords Bounding box coordinates of the net. It is calculated in this function
- * @param num_on_edges Net's number of blocks on the edges of the bounding box. It is calculated in this function.
- * @param num_sink_pin_layer Net's number of sinks on each layer, calculated in this function.
- */
-static void get_bb_from_scratch(ClusterNetId net_id,
-                                t_bb& coords,
-                                t_bb& num_on_edges,
-                                vtr::NdMatrixProxy<int, 1> num_sink_pin_layer);
 
 /**
  * @brief Given the 3D BB, calculate the wire-length cost of the net
@@ -448,18 +265,17 @@ void NetCostHandler::update_net_bb_(const ClusterNetId net,
                                     const ClusterPinId blk_pin,
                                     const t_pl_moved_block& pl_moved_block) {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
-    const auto& placer_ctx = placer_ctx_ref->get();
-    const auto& block_locs = placer_ctx.block_locs();
+    const auto& block_locs = placer_ctx_.block_locs();
 
     if (cluster_ctx.clb_nlist.net_sinks(net).size() < SMALL_NET) {
         //For small nets brute-force bounding box update is faster
 
         if (pl_net_cost.bb_update_status[net] == NetUpdateState::NOT_UPDATED_YET) { //Only once per-net
-            bb_updater_.get_non_updatable_bb(net);
+            get_non_updatable_bb_(net);
         }
     } else {
         //For large nets, update bounding box incrementally
-        int iblk_pin = placer_ctx.blk_loc_registry().tile_pin_index(blk_pin);
+        int iblk_pin = placer_ctx_.blk_loc_registry().tile_pin_index(blk_pin);
 
         t_pl_loc block_loc = block_locs[blk].loc;
         t_physical_tile_type_ptr blk_type = physical_tile_type(block_loc);
@@ -468,24 +284,24 @@ void NetCostHandler::update_net_bb_(const ClusterNetId net,
         bool is_driver = cluster_ctx.clb_nlist.pin_type(blk_pin) == PinType::DRIVER;
 
         //Incremental bounding box update
-        bb_updater_.update_bb(net,
-                              {pl_moved_block.old_loc.x + pin_width_offset,
-                               pl_moved_block.old_loc.y + pin_height_offset,
-                               pl_moved_block.old_loc.layer},
-                              {pl_moved_block.new_loc.x + pin_width_offset,
-                               pl_moved_block.new_loc.y + pin_height_offset,
-                               pl_moved_block.new_loc.layer},
-                              is_driver);
+        update_bb_(net,
+                   {pl_moved_block.old_loc.x + pin_width_offset,
+                    pl_moved_block.old_loc.y + pin_height_offset,
+                    pl_moved_block.old_loc.layer},
+                   {pl_moved_block.new_loc.x + pin_width_offset,
+                    pl_moved_block.new_loc.y + pin_height_offset,
+                    pl_moved_block.new_loc.layer},
+                   is_driver);
     }
 }
 
-static void update_td_delta_costs(const PlaceDelayModel* delay_model,
-                                  const PlacerCriticalities& criticalities,
-                                  const ClusterNetId net,
-                                  const ClusterPinId pin,
-                                  std::vector<ClusterPinId>& affected_pins,
-                                  double& delta_timing_cost,
-                                  bool is_src_moving) {
+void NetCostHandler::update_td_delta_costs_(const PlaceDelayModel* delay_model,
+                                            const PlacerCriticalities& criticalities,
+                                            const ClusterNetId net,
+                                            const ClusterPinId pin,
+                                            std::vector<ClusterPinId>& affected_pins,
+                                            double& delta_timing_cost,
+                                            bool is_src_moving) {
     /**
      * Assumes that the blocks have been moved to the proposed new locations.
      * Otherwise, the routine comp_td_single_connection_delay() will not be
@@ -512,13 +328,12 @@ static void update_td_delta_costs(const PlaceDelayModel* delay_model,
      * for incremental static timing analysis (incremental STA).
      */
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& placer_ctx = placer_ctx_ref->get();
-    auto& block_locs = placer_ctx.block_locs();
+    auto& block_locs = placer_ctx_.block_locs();
 
-    const auto& connection_delay = placer_ctx.timing().connection_delay;
-    auto& connection_timing_cost = placer_ctx.mutable_timing().connection_timing_cost;
-    auto& proposed_connection_delay = placer_ctx.mutable_timing().proposed_connection_delay;
-    auto& proposed_connection_timing_cost = placer_ctx.mutable_timing().proposed_connection_timing_cost;
+    const auto& connection_delay = placer_ctx_.timing().connection_delay;
+    auto& connection_timing_cost = placer_ctx_.mutable_timing().connection_timing_cost;
+    auto& proposed_connection_delay = placer_ctx_.mutable_timing().proposed_connection_delay;
+    auto& proposed_connection_timing_cost = placer_ctx_.mutable_timing().proposed_connection_timing_cost;
 
     if (cluster_ctx.clb_nlist.pin_type(pin) == PinType::DRIVER) {
         /* This pin is a net driver on a moved block. */
@@ -610,27 +425,26 @@ void NetCostHandler::update_net_info_on_pin_move_(const t_place_algorithm& place
 
     if (place_algorithm.is_timing_driven()) {
         /* Determine the change in connection delay and timing cost. */
-        update_td_delta_costs(delay_model,
-                              *criticalities,
-                              net_id,
-                              pin_id,
-                              affected_pins,
-                              timing_delta_c,
-                              is_src_moving);
+        update_td_delta_costs_(delay_model,
+                               *criticalities,
+                               net_id,
+                               pin_id,
+                               affected_pins,
+                               timing_delta_c,
+                               is_src_moving);
     }
 }
 
-static void get_non_updatable_bb(ClusterNetId net_id,
+void NetCostHandler::get_non_updatable_bb_(ClusterNetId net_id,
                                  t_bb& bb_coord_new,
                                  vtr::NdMatrixProxy<int, 1> num_sink_pin_layer) {
     //TODO: account for multiple physical pin instances per logical pin
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.device();
-    auto& placer_ctx = placer_ctx_ref->get();
-    auto& block_locs = placer_ctx.block_locs();
+    auto& block_locs = placer_ctx_.block_locs();
 
     ClusterBlockId bnum = cluster_ctx.clb_nlist.net_driver_block(net_id);
-    int pnum = placer_ctx.blk_loc_registry().net_pin_to_tile_pin_index(net_id, 0);
+    int pnum = placer_ctx_.blk_loc_registry().net_pin_to_tile_pin_index(net_id, 0);
 
     t_pl_loc block_loc = block_locs[bnum].loc;
     int x = block_loc.x + physical_tile_type(block_loc)->pin_width_offset[pnum];
@@ -651,7 +465,7 @@ static void get_non_updatable_bb(ClusterNetId net_id,
     for (ClusterPinId pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
         bnum = cluster_ctx.clb_nlist.pin_block(pin_id);
         block_loc = block_locs[bnum].loc;
-        pnum = placer_ctx.blk_loc_registry().tile_pin_index(pin_id);
+        pnum = placer_ctx_.blk_loc_registry().tile_pin_index(pin_id);
         x = block_loc.x + physical_tile_type(block_loc)->pin_width_offset[pnum];
         y = block_loc.y + physical_tile_type(block_loc)->pin_height_offset[pnum];
         layer = block_loc.layer;
@@ -693,14 +507,13 @@ static void get_non_updatable_bb(ClusterNetId net_id,
     bb_coord_new.layer_max = max(min<int>(layer_max, device_ctx.grid.get_num_layers() - 1), 0);
 }
 
-static void get_non_updatable_layer_bb(ClusterNetId net_id,
-                                       std::vector<t_2D_bb>& bb_coord_new,
-                                       vtr::NdMatrixProxy<int, 1> num_sink_layer) {
+void NetCostHandler::get_non_updatable_layer_bb_(ClusterNetId net_id,
+                                                std::vector<t_2D_bb>& bb_coord_new,
+                                                vtr::NdMatrixProxy<int, 1> num_sink_layer) {
     //TODO: account for multiple physical pin instances per logical pin
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& placer_ctx = placer_ctx_ref->get();
-    auto& block_locs = placer_ctx.block_locs();
+    auto& block_locs = placer_ctx_.block_locs();
 
     int num_layers = device_ctx.grid.get_num_layers();
     for (int layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); layer_num++) {
@@ -709,7 +522,7 @@ static void get_non_updatable_layer_bb(ClusterNetId net_id,
 
     ClusterBlockId bnum = cluster_ctx.clb_nlist.net_driver_block(net_id);
     t_pl_loc block_loc = block_locs[bnum].loc;
-    int pnum = placer_ctx.blk_loc_registry().net_pin_to_tile_pin_index(net_id, 0);
+    int pnum = placer_ctx_.blk_loc_registry().net_pin_to_tile_pin_index(net_id, 0);
 
     int src_x = block_locs[bnum].loc.x + physical_tile_type(block_loc)->pin_width_offset[pnum];
     int src_y = block_locs[bnum].loc.y + physical_tile_type(block_loc)->pin_height_offset[pnum];
@@ -722,7 +535,7 @@ static void get_non_updatable_layer_bb(ClusterNetId net_id,
     for (ClusterPinId pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
         bnum = cluster_ctx.clb_nlist.pin_block(pin_id);
         block_loc = block_locs[bnum].loc;
-        pnum = placer_ctx.blk_loc_registry().tile_pin_index(pin_id);
+        pnum = placer_ctx_.blk_loc_registry().tile_pin_index(pin_id);
         int x = block_locs[bnum].loc.x + physical_tile_type(block_loc)->pin_width_offset[pnum];
         int y = block_locs[bnum].loc.y + physical_tile_type(block_loc)->pin_height_offset[pnum];
 
@@ -757,7 +570,7 @@ static void get_non_updatable_layer_bb(ClusterNetId net_id,
     }
 }
 
-static void update_bb(ClusterNetId net_id,
+void NetCostHandler::update_bb_(ClusterNetId net_id,
                       t_bb& bb_edge_new,
                       t_bb& bb_coord_new,
                       vtr::NdMatrixProxy<int, 1> num_sink_pin_layer_new,
@@ -768,8 +581,7 @@ static void update_bb(ClusterNetId net_id,
     const t_bb *curr_bb_edge, *curr_bb_coord;
 
     auto& device_ctx = g_vpr_ctx.device();
-    auto& placer_ctx = placer_ctx_ref->get();
-    auto& place_move_ctx = placer_ctx.move();
+    auto& place_move_ctx = placer_ctx_.move();
 
     const int num_layers = device_ctx.grid.get_num_layers();
 
@@ -807,7 +619,7 @@ static void update_bb(ClusterNetId net_id,
 
         if (pin_old_loc.x == curr_bb_coord->xmax) { /* Old position at xmax. */
             if (curr_bb_edge->xmax == 1) {
-                get_bb_from_scratch(net_id, bb_coord_new, bb_edge_new, num_sink_pin_layer_new);
+                get_bb_from_scratch_(net_id, bb_coord_new, bb_edge_new, num_sink_pin_layer_new);
                 pl_net_cost.bb_update_status[net_id] = NetUpdateState::GOT_FROM_SCRATCH;
                 return;
             } else {
@@ -839,7 +651,7 @@ static void update_bb(ClusterNetId net_id,
 
         if (pin_old_loc.x == curr_bb_coord->xmin) { /* Old position at xmin. */
             if (curr_bb_edge->xmin == 1) {
-                get_bb_from_scratch(net_id, bb_coord_new, bb_edge_new, num_sink_pin_layer_new);
+                get_bb_from_scratch_(net_id, bb_coord_new, bb_edge_new, num_sink_pin_layer_new);
                 pl_net_cost.bb_update_status[net_id] = NetUpdateState::GOT_FROM_SCRATCH;
                 return;
             } else {
@@ -880,7 +692,7 @@ static void update_bb(ClusterNetId net_id,
 
         if (pin_old_loc.y == curr_bb_coord->ymax) { /* Old position at ymax. */
             if (curr_bb_edge->ymax == 1) {
-                get_bb_from_scratch(net_id, bb_coord_new, bb_edge_new, num_sink_pin_layer_new);
+                get_bb_from_scratch_(net_id, bb_coord_new, bb_edge_new, num_sink_pin_layer_new);
                 pl_net_cost.bb_update_status[net_id] = NetUpdateState::GOT_FROM_SCRATCH;
                 return;
             } else {
@@ -912,7 +724,7 @@ static void update_bb(ClusterNetId net_id,
 
         if (pin_old_loc.y == curr_bb_coord->ymin) { /* Old position at ymin. */
             if (curr_bb_edge->ymin == 1) {
-                get_bb_from_scratch(net_id, bb_coord_new, bb_edge_new, num_sink_pin_layer_new);
+                get_bb_from_scratch_(net_id, bb_coord_new, bb_edge_new, num_sink_pin_layer_new);
                 pl_net_cost.bb_update_status[net_id] = NetUpdateState::GOT_FROM_SCRATCH;
                 return;
             } else {
@@ -962,7 +774,7 @@ static void update_bb(ClusterNetId net_id,
         if (pin_new_loc.layer_num < pin_old_loc.layer_num) {
             if (pin_old_loc.layer_num == curr_bb_coord->layer_max) {
                 if (curr_bb_edge->layer_max == 1) {
-                    get_bb_from_scratch(net_id, bb_coord_new, bb_edge_new, num_sink_pin_layer_new);
+                    get_bb_from_scratch_(net_id, bb_coord_new, bb_edge_new, num_sink_pin_layer_new);
                     pl_net_cost.bb_update_status[net_id] = NetUpdateState::GOT_FROM_SCRATCH;
                     return;
                 } else {
@@ -988,7 +800,7 @@ static void update_bb(ClusterNetId net_id,
         } else if (pin_new_loc.layer_num > pin_old_loc.layer_num) {
             if (pin_old_loc.layer_num == curr_bb_coord->layer_min) {
                 if (curr_bb_edge->layer_min == 1) {
-                    get_bb_from_scratch(net_id, bb_coord_new, bb_edge_new, num_sink_pin_layer_new);
+                    get_bb_from_scratch_(net_id, bb_coord_new, bb_edge_new, num_sink_pin_layer_new);
                     pl_net_cost.bb_update_status[net_id] = NetUpdateState::GOT_FROM_SCRATCH;
                     return;
                 } else {
@@ -1030,7 +842,7 @@ static void update_bb(ClusterNetId net_id,
     }
 }
 
-static void update_layer_bb(ClusterNetId net_id,
+void NetCostHandler::update_layer_bb_(ClusterNetId net_id,
                             std::vector<t_2D_bb>& bb_edge_new,
                             std::vector<t_2D_bb>& bb_coord_new,
                             vtr::NdMatrixProxy<int, 1> bb_pin_sink_count_new,
@@ -1038,8 +850,7 @@ static void update_layer_bb(ClusterNetId net_id,
                             t_physical_tile_loc pin_new_loc,
                             bool is_output_pin) {
     auto& device_ctx = g_vpr_ctx.device();
-    auto& placer_ctx = placer_ctx_ref->get();
-    auto& place_move_ctx = placer_ctx.move();
+    auto& place_move_ctx = placer_ctx_.move();
 
     pin_new_loc.x = max(min<int>(pin_new_loc.x, device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
     pin_new_loc.y = max(min<int>(pin_new_loc.y, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
@@ -1082,7 +893,7 @@ static void update_layer_bb(ClusterNetId net_id,
     bb_coord_new = *curr_bb_coord;
 
     if (layer_changed) {
-        update_bb_layer_changed(net_id,
+        update_bb_layer_changed_(net_id,
                                 pin_old_loc,
                                 pin_new_loc,
                                 *curr_bb_edge,
@@ -1091,7 +902,7 @@ static void update_layer_bb(ClusterNetId net_id,
                                 bb_edge_new,
                                 bb_coord_new);
     } else {
-        update_bb_same_layer(net_id,
+        update_bb_same_layer_(net_id,
                              pin_old_loc,
                              pin_new_loc,
                              *curr_bb_edge,
@@ -1106,7 +917,7 @@ static void update_layer_bb(ClusterNetId net_id,
     }
 }
 
-static inline void update_bb_same_layer(ClusterNetId net_id,
+inline void NetCostHandler::update_bb_same_layer_(ClusterNetId net_id,
                                         const t_physical_tile_loc& pin_old_loc,
                                         const t_physical_tile_loc& pin_new_loc,
                                         const std::vector<t_2D_bb>& curr_bb_edge,
@@ -1125,7 +936,7 @@ static inline void update_bb_same_layer(ClusterNetId net_id,
 
     if (x_new < x_old) {
         if (x_old == curr_bb_coord[layer_num].xmax) {
-            update_bb_edge(net_id,
+            update_bb_edge_(net_id,
                            bb_edge_new,
                            bb_coord_new,
                            bb_pin_sink_count_new,
@@ -1148,7 +959,7 @@ static inline void update_bb_same_layer(ClusterNetId net_id,
 
     } else if (x_new > x_old) {
         if (x_old == curr_bb_coord[layer_num].xmin) {
-            update_bb_edge(net_id,
+            update_bb_edge_(net_id,
                            bb_edge_new,
                            bb_coord_new,
                            bb_pin_sink_count_new,
@@ -1172,7 +983,7 @@ static inline void update_bb_same_layer(ClusterNetId net_id,
 
     if (y_new < y_old) {
         if (y_old == curr_bb_coord[layer_num].ymax) {
-            update_bb_edge(net_id,
+            update_bb_edge_(net_id,
                            bb_edge_new,
                            bb_coord_new,
                            bb_pin_sink_count_new,
@@ -1195,7 +1006,7 @@ static inline void update_bb_same_layer(ClusterNetId net_id,
 
     } else if (y_new > y_old) {
         if (y_old == curr_bb_coord[layer_num].ymin) {
-            update_bb_edge(net_id,
+            update_bb_edge_(net_id,
                            bb_edge_new,
                            bb_coord_new,
                            bb_pin_sink_count_new,
@@ -1218,7 +1029,7 @@ static inline void update_bb_same_layer(ClusterNetId net_id,
     }
 }
 
-static inline void update_bb_layer_changed(ClusterNetId net_id,
+inline void NetCostHandler::update_bb_layer_changed_(ClusterNetId net_id,
                                            const t_physical_tile_loc& pin_old_loc,
                                            const t_physical_tile_loc& pin_new_loc,
                                            const std::vector<t_2D_bb>& curr_bb_edge,
@@ -1240,7 +1051,7 @@ static inline void update_bb_layer_changed(ClusterNetId net_id,
     "old_layer". Then, "add_block_to_bb" is called to update the bounding box on the new layer.
     */
     if (x_old == curr_bb_coord[old_layer_num].xmax) {
-        update_bb_edge(net_id,
+        update_bb_edge_(net_id,
                        bb_edge_new,
                        bb_coord_new,
                        bb_pin_sink_count_new,
@@ -1252,7 +1063,7 @@ static inline void update_bb_layer_changed(ClusterNetId net_id,
             return;
         }
     } else if (x_old == curr_bb_coord[old_layer_num].xmin) {
-        update_bb_edge(net_id,
+        update_bb_edge_(net_id,
                        bb_edge_new,
                        bb_coord_new,
                        bb_pin_sink_count_new,
@@ -1266,7 +1077,7 @@ static inline void update_bb_layer_changed(ClusterNetId net_id,
     }
 
     if (y_old == curr_bb_coord[old_layer_num].ymax) {
-        update_bb_edge(net_id,
+        update_bb_edge_(net_id,
                        bb_edge_new,
                        bb_coord_new,
                        bb_pin_sink_count_new,
@@ -1278,7 +1089,7 @@ static inline void update_bb_layer_changed(ClusterNetId net_id,
             return;
         }
     } else if (y_old == curr_bb_coord[old_layer_num].ymin) {
-        update_bb_edge(net_id,
+        update_bb_edge_(net_id,
                        bb_edge_new,
                        bb_coord_new,
                        bb_pin_sink_count_new,
@@ -1313,7 +1124,7 @@ static void update_bb_pin_sink_count(const t_physical_tile_loc& pin_old_loc,
     }
 }
 
-static inline void update_bb_edge(ClusterNetId net_id,
+inline void NetCostHandler::update_bb_edge_(ClusterNetId net_id,
                                   std::vector<t_2D_bb>& bb_edge_new,
                                   std::vector<t_2D_bb>& bb_coord_new,
                                   vtr::NdMatrixProxy<int, 1> bb_layer_pin_sink_count,
@@ -1322,7 +1133,7 @@ static inline void update_bb_edge(ClusterNetId net_id,
                                   int& new_num_block_on_edge,
                                   int& new_edge_coord) {
     if (old_num_block_on_edge == 1) {
-        get_layer_bb_from_scratch(net_id,
+        get_layer_bb_from_scratch_(net_id,
                                   bb_edge_new,
                                   bb_coord_new,
                                   bb_layer_pin_sink_count);
@@ -1377,19 +1188,18 @@ static void add_block_to_bb(const t_physical_tile_loc& new_pin_loc,
     }
 }
 
-static void get_bb_from_scratch(ClusterNetId net_id,
+void NetCostHandler::get_bb_from_scratch_(ClusterNetId net_id,
                                 t_bb& coords,
                                 t_bb& num_on_edges,
                                 vtr::NdMatrixProxy<int, 1> num_sink_pin_layer) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.device();
     auto& grid = device_ctx.grid;
-    const auto& placer_ctx = placer_ctx_ref->get();
-    auto& block_locs = placer_ctx.block_locs();
+    auto& block_locs = placer_ctx_.block_locs();
 
     ClusterBlockId bnum = cluster_ctx.clb_nlist.net_driver_block(net_id);
     t_pl_loc block_loc = block_locs[bnum].loc;
-    int pnum = placer_ctx.blk_loc_registry().net_pin_to_tile_pin_index(net_id, 0);
+    int pnum = placer_ctx_.blk_loc_registry().net_pin_to_tile_pin_index(net_id, 0);
     VTR_ASSERT_SAFE(pnum >= 0);
     int x = block_loc.x + physical_tile_type(block_loc)->pin_width_offset[pnum];
     int y = block_loc.y + physical_tile_type(block_loc)->pin_height_offset[pnum];
@@ -1420,7 +1230,7 @@ static void get_bb_from_scratch(ClusterNetId net_id,
     for (ClusterPinId pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
         bnum = cluster_ctx.clb_nlist.pin_block(pin_id);
         block_loc = block_locs[bnum].loc;
-        pnum = placer_ctx.blk_loc_registry().tile_pin_index(pin_id);
+        pnum = placer_ctx_.blk_loc_registry().tile_pin_index(pin_id);
         x = block_locs[bnum].loc.x + physical_tile_type(block_loc)->pin_width_offset[pnum];
         y = block_locs[bnum].loc.y + physical_tile_type(block_loc)->pin_height_offset[pnum];
         pin_layer = block_locs[bnum].loc.layer;
@@ -1497,15 +1307,14 @@ static void get_bb_from_scratch(ClusterNetId net_id,
     num_on_edges.layer_max = layer_max_edge;
 }
 
-static void get_layer_bb_from_scratch(ClusterNetId net_id,
+void NetCostHandler::get_layer_bb_from_scratch_(ClusterNetId net_id,
                                       std::vector<t_2D_bb>& num_on_edges,
                                       std::vector<t_2D_bb>& coords,
                                       vtr::NdMatrixProxy<int, 1> layer_pin_sink_count) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& grid = device_ctx.grid;
-    auto& placer_ctx = placer_ctx_ref->get();
-    auto& block_locs = placer_ctx.block_locs();
+    auto& block_locs = placer_ctx_.block_locs();
 
     const int num_layers = device_ctx.grid.get_num_layers();
     std::vector<int> xmin(num_layers, OPEN);
@@ -1522,7 +1331,7 @@ static void get_layer_bb_from_scratch(ClusterNetId net_id,
 
     ClusterBlockId bnum = cluster_ctx.clb_nlist.net_driver_block(net_id);
     t_pl_loc block_loc = block_locs[bnum].loc;
-    int pnum_src = placer_ctx.blk_loc_registry().net_pin_to_tile_pin_index(net_id, 0);
+    int pnum_src = placer_ctx_.blk_loc_registry().net_pin_to_tile_pin_index(net_id, 0);
     VTR_ASSERT_SAFE(pnum_src >= 0);
     int x_src = block_loc.x + physical_tile_type(block_loc)->pin_width_offset[pnum_src];
     int y_src = block_loc.y + physical_tile_type(block_loc)->pin_height_offset[pnum_src];
@@ -1547,7 +1356,7 @@ static void get_layer_bb_from_scratch(ClusterNetId net_id,
     for (ClusterPinId pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
         bnum = cluster_ctx.clb_nlist.pin_block(pin_id);
         block_loc = block_locs[bnum].loc;
-        int pnum = placer_ctx.blk_loc_registry().tile_pin_index(pin_id);
+        int pnum = placer_ctx_.blk_loc_registry().tile_pin_index(pin_id);
         int layer = block_locs[bnum].loc.layer;
         VTR_ASSERT_SAFE(layer >= 0 && layer < num_layers);
         num_sink_pin_layer[layer]++;
@@ -1751,7 +1560,7 @@ void NetCostHandler::set_bb_delta_cost_(double& bb_delta_c) {
     for (const ClusterNetId ts_net: ts_info.ts_nets_to_update) {
         ClusterNetId net_id = ts_net;
 
-        pl_net_cost.proposed_net_cost[net_id] = bb_updater_.get_net_cost(net_id);
+        pl_net_cost.proposed_net_cost[net_id] = get_net_cost_(net_id);
 
         bb_delta_c += pl_net_cost.proposed_net_cost[net_id] - pl_net_cost.net_cost[net_id];
     }
@@ -1803,20 +1612,19 @@ double NetCostHandler::comp_bb_cost(e_cost_methods method) {
     double cost = 0;
     double expected_wirelength = 0.0;
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& placer_ctx = placer_ctx_ref->get();
-    auto& place_move_ctx = placer_ctx.mutable_move();
+    auto& place_move_ctx = placer_ctx_.mutable_move();
 
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {       /* for each net ... */
         if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)) { /* Do only if not ignored. */
             /* Small nets don't use incremental updating on their bounding boxes, *
              * so they can use a fast bounding box calculator.                    */
             if (cluster_ctx.clb_nlist.net_sinks(net_id).size() >= SMALL_NET && method == e_cost_methods::NORMAL) {
-                get_bb_from_scratch(net_id,
+                get_bb_from_scratch_(net_id,
                                     place_move_ctx.bb_coords[net_id],
                                     place_move_ctx.bb_num_on_edges[net_id],
                                     place_move_ctx.num_sink_pin_layer[size_t(net_id)]);
             } else {
-                get_non_updatable_bb(net_id,
+                get_non_updatable_bb_(net_id,
                                      place_move_ctx.bb_coords[net_id],
                                      place_move_ctx.num_sink_pin_layer[size_t(net_id)]);
             }
@@ -1840,20 +1648,19 @@ double NetCostHandler::comp_layer_bb_cost(e_cost_methods method) {
     double cost = 0;
     double expected_wirelength = 0.0;
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& placer_ctx = placer_ctx_ref->get();
-    auto& place_move_ctx = placer_ctx.mutable_move();
+    auto& place_move_ctx = placer_ctx_.mutable_move();
 
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {       /* for each net ... */
         if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)) { /* Do only if not ignored. */
             /* Small nets don't use incremental updating on their bounding boxes, *
              * so they can use a fast bounding box calculator.                    */
             if (cluster_ctx.clb_nlist.net_sinks(net_id).size() >= SMALL_NET && method == e_cost_methods::NORMAL) {
-                get_layer_bb_from_scratch(net_id,
+                get_layer_bb_from_scratch_(net_id,
                                           place_move_ctx.layer_bb_num_on_edges[net_id],
                                           place_move_ctx.layer_bb_coords[net_id],
                                           place_move_ctx.num_sink_pin_layer[size_t(net_id)]);
             } else {
-                get_non_updatable_layer_bb(net_id,
+                get_non_updatable_layer_bb_(net_id,
                                            place_move_ctx.layer_bb_coords[net_id],
                                            place_move_ctx.num_sink_pin_layer[size_t(net_id)]);
             }
@@ -1880,20 +1687,19 @@ double NetCostHandler::comp_layer_bb_cost(e_cost_methods method) {
 void NetCostHandler::update_move_nets() {
     /* update net cost functions and reset flags. */
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& placer_ctx = placer_ctx_ref->get();
-    auto& place_move_ctx = placer_ctx.mutable_move();
+    auto& place_move_ctx = placer_ctx_.mutable_move();
 
     for (const ClusterNetId ts_net : ts_info.ts_nets_to_update) {
         ClusterNetId net_id = ts_net;
 
-        bb_updater_.set_ts_bb_coord(net_id);
+        set_ts_bb_coord_(net_id);
 
         for (int layer_num = 0; layer_num < g_vpr_ctx.device().grid.get_num_layers(); layer_num++) {
             place_move_ctx.num_sink_pin_layer[size_t(net_id)][layer_num] = ts_info.ts_layer_sink_pin_count[size_t(net_id)][layer_num];
         }
 
         if (cluster_ctx.clb_nlist.net_sinks(net_id).size() >= SMALL_NET) {
-            bb_updater_.set_ts_edge(net_id);
+            set_ts_edge_(net_id);
         }
 
         pl_net_cost.net_cost[net_id] = pl_net_cost.proposed_net_cost[net_id];
@@ -1918,8 +1724,6 @@ void NetCostHandler::recompute_costs_from_scratch(const t_placer_opts& placer_op
                                                   const PlaceDelayModel* delay_model,
                                                   const PlacerCriticalities* criticalities,
                                                   t_placer_costs* costs) {
-    auto& placer_ctx = placer_ctx_ref->get();
-
     auto check_and_print_cost = [](double new_cost,
                                    double old_cost,
                                    const std::string& cost_name) -> void {
@@ -1937,7 +1741,7 @@ void NetCostHandler::recompute_costs_from_scratch(const t_placer_opts& placer_op
 
     if (placer_opts.place_algorithm.is_timing_driven()) {
         double new_timing_cost = 0.;
-        comp_td_costs(delay_model, *criticalities, placer_ctx, &new_timing_cost);
+        comp_td_costs(delay_model, *criticalities, placer_ctx_, &new_timing_cost);
         check_and_print_cost(new_timing_cost, costs->timing_cost, "timing_cost");
         costs->timing_cost = new_timing_cost;
     } else {
@@ -2097,20 +1901,9 @@ void NetCostHandler::free_try_swap_net_cost_structs() {
     vtr::release_memory(ts_info.ts_nets_to_update);
 }
 
-NetCostHandler::NetCostHandler(size_t num_nets, bool cube_bb, float place_cost_exp)
-    : bb_updater_(num_nets, cube_bb) {
-    pl_net_cost.net_cost.resize(num_nets, -1.);
-    pl_net_cost.proposed_net_cost.resize(num_nets, -1.);
-    /* Used to store costs for moves not yet made and to indicate when a net's   *
-     * cost has been recomputed. proposed_net_cost[inet] < 0 means net's cost hasn't *
-     * been recomputed.                                                          */
-    pl_net_cost.bb_update_status.resize(num_nets, NetUpdateState::NOT_UPDATED_YET);
-
-    alloc_and_load_chan_w_factors_for_place_cost_(place_cost_exp);
-}
-
-NetCostHandler::BBUpdater::BBUpdater(size_t num_nets, bool cube_bb) :
-    cube_bb_(cube_bb) {
+NetCostHandler::NetCostHandler(PlacerContext& placer_ctx, size_t num_nets, bool cube_bb, float place_cost_exp)
+    : cube_bb_(cube_bb)
+    , placer_ctx_(placer_ctx) {
     const int num_layers = g_vpr_ctx.device().grid.get_num_layers();
 
     // Either 3D BB or per layer BB data structure are used, not both.
@@ -2126,24 +1919,34 @@ NetCostHandler::BBUpdater::BBUpdater(size_t num_nets, bool cube_bb) :
     ts_info.ts_layer_sink_pin_count.resize({num_nets, size_t(num_layers)}, OPEN);
 
     ts_info.ts_nets_to_update.resize(num_nets, ClusterNetId::INVALID());
+
+    pl_net_cost.net_cost.resize(num_nets, -1.);
+    pl_net_cost.proposed_net_cost.resize(num_nets, -1.);
+    /* Used to store costs for moves not yet made and to indicate when a net's   *
+     * cost has been recomputed. proposed_net_cost[inet] < 0 means net's cost hasn't *
+     * been recomputed.                                                          */
+    pl_net_cost.bb_update_status.resize(num_nets, NetUpdateState::NOT_UPDATED_YET);
+
+    alloc_and_load_chan_w_factors_for_place_cost_(place_cost_exp);
 }
 
-void NetCostHandler::BBUpdater::get_non_updatable_bb(const ClusterNetId net) {
+
+void NetCostHandler::get_non_updatable_bb_(const ClusterNetId net) {
     if (cube_bb_) {
-        ::get_non_updatable_bb(net,
-                               ts_info.ts_bb_coord_new[net],
-                               ts_info.ts_layer_sink_pin_count[size_t(net)]);
+        get_non_updatable_bb_(net,
+                              ts_info.ts_bb_coord_new[net],
+                              ts_info.ts_layer_sink_pin_count[size_t(net)]);
     }
     else {
-        ::get_non_updatable_layer_bb(net,
-                                     ts_info.layer_ts_bb_coord_new[net],
-                                     ts_info.ts_layer_sink_pin_count[size_t(net)]);
+        get_non_updatable_layer_bb_(net,
+                                    ts_info.layer_ts_bb_coord_new[net],
+                                    ts_info.ts_layer_sink_pin_count[size_t(net)]);
     }
 }
 
-void NetCostHandler::BBUpdater::update_bb(ClusterNetId net_id, t_physical_tile_loc pin_old_loc, t_physical_tile_loc pin_new_loc, bool is_driver) {
+void NetCostHandler::update_bb_(ClusterNetId net_id, t_physical_tile_loc pin_old_loc, t_physical_tile_loc pin_new_loc, bool is_driver) {
     if (cube_bb_) {
-        ::update_bb(net_id,
+        update_bb_(net_id,
                     ts_info.ts_bb_edge_new[net_id],
                     ts_info.ts_bb_coord_new[net_id],
                     ts_info.ts_layer_sink_pin_count[size_t(net_id)],
@@ -2152,7 +1955,7 @@ void NetCostHandler::BBUpdater::update_bb(ClusterNetId net_id, t_physical_tile_l
                     is_driver);
     }
     else {
-        ::update_layer_bb(net_id,
+        update_layer_bb_(net_id,
                           ts_info.layer_ts_bb_edge_new[net_id],
                           ts_info.layer_ts_bb_coord_new[net_id],
                           ts_info.ts_layer_sink_pin_count[size_t(net_id)],
@@ -2162,7 +1965,7 @@ void NetCostHandler::BBUpdater::update_bb(ClusterNetId net_id, t_physical_tile_l
     }
 }
 
-double NetCostHandler::BBUpdater::get_net_cost(const ClusterNetId net_id) {
+double NetCostHandler::get_net_cost_(const ClusterNetId net_id) {
     if (cube_bb_) {
         return ::get_net_cost(net_id, ts_info.ts_bb_coord_new[net_id]);
     }
@@ -2171,8 +1974,8 @@ double NetCostHandler::BBUpdater::get_net_cost(const ClusterNetId net_id) {
     }
 }
 
-void NetCostHandler::BBUpdater::set_ts_bb_coord(const ClusterNetId net_id) {
-    auto& place_move_ctx = placer_ctx_ref->get().mutable_move();
+void NetCostHandler::set_ts_bb_coord_(const ClusterNetId net_id) {
+    auto& place_move_ctx = placer_ctx_.mutable_move();
     if (cube_bb_) {
         place_move_ctx.bb_coords[net_id] = ts_info.ts_bb_coord_new[net_id];
     } else {
@@ -2180,8 +1983,8 @@ void NetCostHandler::BBUpdater::set_ts_bb_coord(const ClusterNetId net_id) {
     }
 }
 
-void NetCostHandler::BBUpdater::set_ts_edge(const ClusterNetId net_id) {
-    auto& place_move_ctx = placer_ctx_ref->get().mutable_move();
+void NetCostHandler::set_ts_edge_(const ClusterNetId net_id) {
+    auto& place_move_ctx = placer_ctx_.mutable_move();
     if (cube_bb_) {
         place_move_ctx.bb_num_on_edges[net_id] = ts_info.ts_bb_edge_new[net_id];
     } else {
