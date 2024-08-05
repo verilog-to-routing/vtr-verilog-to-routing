@@ -19,5 +19,6 @@ device_limiting_resources;Equal()
 device_name;Equal()
 
 #Run-time
-pack_time;RangeAbs(0.10,10.0,2)
+#pack_time;RangeAbs(0.10,10.0,2) -> Yosys32 compatible 
+pack_time;RangeAbs(0.08,10.0,2)
 place_time;RangeAbs(0.10,10.0,2)
