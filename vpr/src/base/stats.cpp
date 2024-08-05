@@ -1,12 +1,9 @@
-#include <cstdio>
-#include <cstring>
 #include <cmath>
 #include <set>
 
 #include "route_tree.h"
 #include "vtr_assert.h"
 #include "vtr_log.h"
-#include "vtr_math.h"
 #include "vtr_ndmatrix.h"
 
 #include "vpr_types.h"
@@ -55,11 +52,10 @@ void routing_stats(const Netlist<>& net_list,
                    enum e_directionality directionality,
                    int wire_to_ipin_switch,
                    bool is_flat) {
-    float area, used_area;
-
     auto& device_ctx = g_vpr_ctx.device();
     auto& rr_graph = device_ctx.rr_graph;
     auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& block_locs = g_vpr_ctx.placement().block_locs();
 
     int num_rr_switch = rr_graph.num_rr_switches();
 
@@ -69,7 +65,7 @@ void routing_stats(const Netlist<>& net_list,
 
     VTR_LOG("Logic area (in minimum width transistor areas, excludes I/Os and empty grid tiles)...\n");
 
-    area = 0;
+    float area = 0;
     for (int layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); layer_num++) {
         for (int i = 0; i < (int)device_ctx.grid.width(); i++) {
             for (int j = 0; j < (int)device_ctx.grid.height(); j++) {
@@ -92,9 +88,10 @@ void routing_stats(const Netlist<>& net_list,
     /* Todo: need to add pitch of routing to blocks with height > 3 */
     VTR_LOG("\tTotal logic block area (Warning, need to add pitch of routing to blocks with height > 3): %g\n", area);
 
-    used_area = 0;
-    for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-        auto type = physical_tile_type(blk_id);
+    float used_area = 0;
+    for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks()) {
+        t_pl_loc block_loc = block_locs[blk_id].loc;
+        auto type = physical_tile_type(block_loc);
         if (!is_io_type(type)) {
             if (type->area == UNDEFINED) {
                 used_area += grid_logic_tile_area * type->width * type->height;
@@ -111,8 +108,9 @@ void routing_stats(const Netlist<>& net_list,
         get_segment_usage_stats(segment_inf);
     }
 
-    if (full_stats == true)
+    if (full_stats) {
         print_wirelen_prob_dist(is_flat);
+    }
 }
 
 /**
@@ -120,26 +118,20 @@ void routing_stats(const Netlist<>& net_list,
  *        and net length in the routing.
  */
 void length_and_bends_stats(const Netlist<>& net_list, bool is_flat) {
-    int bends, total_bends, max_bends;
-    int length, total_length, max_length;
-    int segments, total_segments, max_segments;
-    float av_bends, av_length, av_segments;
-    int num_global_nets, num_clb_opins_reserved, num_absorbed_nets;
-
-    bool is_absorbed;
-
-    max_bends = 0;
-    total_bends = 0;
-    max_length = 0;
-    total_length = 0;
-    max_segments = 0;
-    total_segments = 0;
-    num_global_nets = 0;
-    num_clb_opins_reserved = 0;
-    num_absorbed_nets = 0;
+    int max_bends = 0;
+    int total_bends = 0;
+    int max_length = 0;
+    int total_length = 0;
+    int max_segments = 0;
+    int total_segments = 0;
+    int num_global_nets = 0;
+    int num_clb_opins_reserved = 0;
+    int num_absorbed_nets = 0;
 
     for (auto net_id : net_list.nets()) {
         if (!net_list.net_is_ignored(net_id) && net_list.net_sinks(net_id).size() != 0) { /* Globals don't count. */
+            int bends, length, segments;
+            bool is_absorbed;
             get_num_bends_and_length(net_id, &bends, &length, &segments, &is_absorbed);
 
             total_bends += bends;
@@ -162,12 +154,12 @@ void length_and_bends_stats(const Netlist<>& net_list, bool is_flat) {
         }
     }
 
-    av_bends = (float)total_bends / (float)((int)net_list.nets().size() - num_global_nets);
+    float av_bends = (float)total_bends / (float)((int)net_list.nets().size() - num_global_nets);
     VTR_LOG("\n");
     VTR_LOG("Average number of bends per net: %#g  Maximum # of bends: %d\n", av_bends, max_bends);
     VTR_LOG("\n");
 
-    av_length = (float)total_length / (float)((int)net_list.nets().size() - num_global_nets);
+    float av_length = (float)total_length / (float)((int)net_list.nets().size() - num_global_nets);
     VTR_LOG("Number of global nets: %d\n", num_global_nets);
     VTR_LOG("Number of routed nets (nonglobal): %d\n", (int)net_list.nets().size() - num_global_nets);
     VTR_LOG("Wire length results (in units of 1 clb segments)...\n");
@@ -175,7 +167,7 @@ void length_and_bends_stats(const Netlist<>& net_list, bool is_flat) {
     VTR_LOG("\tMaximum net length: %d\n", max_length);
     VTR_LOG("\n");
 
-    av_segments = (float)total_segments / (float)((int)net_list.nets().size() - num_global_nets);
+    float av_segments = (float)total_segments / (float)((int)net_list.nets().size() - num_global_nets);
     VTR_LOG("Wire length results in terms of physical segments...\n");
     VTR_LOG("\tTotal wiring segments used: %d, average wire segments per net: %#g\n", total_segments, av_segments);
     VTR_LOG("\tMaximum segments used by a net: %d\n", max_segments);
@@ -422,17 +414,17 @@ void print_wirelen_prob_dist(bool is_flat) {
  * (i.e. the clock when it is marked global).
  */
 void print_lambda() {
-    int ipin;
     int num_inputs_used = 0;
-    float lambda;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& block_locs = g_vpr_ctx.placement().block_locs();
 
-    for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-        auto type = physical_tile_type(blk_id);
+    for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks()) {
+        t_pl_loc block_loc = block_locs[blk_id].loc;
+        auto type = physical_tile_type(block_loc);
         VTR_ASSERT(type != nullptr);
         if (!is_io_type(type)) {
-            for (ipin = 0; ipin < type->num_pins; ipin++) {
+            for (int ipin = 0; ipin < type->num_pins; ipin++) {
                 if (get_pin_type_from_pin_physical_num(type, ipin) == RECEIVER) {
                     ClusterNetId net_id = cluster_ctx.clb_nlist.block_net(blk_id, ipin);
                     if (net_id != ClusterNetId::INVALID())                 /* Pin is connected? */
@@ -443,7 +435,7 @@ void print_lambda() {
         }
     }
 
-    lambda = (float)num_inputs_used / (float)cluster_ctx.clb_nlist.blocks().size();
+    float lambda = (float)num_inputs_used / (float)cluster_ctx.clb_nlist.blocks().size();
     VTR_LOG("Average lambda (input pins used per clb) is: %g\n", lambda);
 }
 

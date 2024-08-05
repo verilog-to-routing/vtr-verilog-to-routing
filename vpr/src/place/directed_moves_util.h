@@ -7,7 +7,7 @@
 /**
  * @brief enum represents the different reward functions
  */
-enum e_reward_function {
+enum class e_reward_function {
     BASIC,                  ///@ directly uses the change of the annealing cost function
     NON_PENALIZING_BASIC,   ///@ same as basic reward function but with 0 reward if it's a hill-climbing one
     RUNTIME_AWARE,          ///@ same as NON_PENALIZING_BASIC but with normalizing with the runtime factor of each move type
@@ -17,7 +17,8 @@ enum e_reward_function {
 e_reward_function string_to_reward(const std::string& st);
 
 ///@brief Helper function that returns the x, y coordinates of a pin
-void get_coordinate_of_pin(ClusterPinId pin, t_physical_tile_loc& tile_loc);
+t_physical_tile_loc get_coordinate_of_pin(ClusterPinId pin,
+                                          const BlkLocRegistry& blk_loc_registry);
 
 /**
  * @brief Calculates the exact centroid location
@@ -46,13 +47,15 @@ void calculate_centroid_loc(ClusterBlockId b_from,
                             t_pl_loc& centroid,
                             const PlacerCriticalities* criticalities,
                             bool noc_attraction_enabled,
-                            float noc_attraction_weight);
+                            float noc_attraction_weight,
+                            const BlkLocRegistry& blk_loc_registry);
 
 inline void calculate_centroid_loc(ClusterBlockId b_from,
                                    bool timing_weights,
                                    t_pl_loc& centroid,
-                                   const PlacerCriticalities* criticalities) {
-    calculate_centroid_loc(b_from, timing_weights, centroid, criticalities, false, 0.0f);
+                                   const PlacerCriticalities* criticalities,
+                                   const BlkLocRegistry& blk_loc_registry) {
+    calculate_centroid_loc(b_from, timing_weights, centroid, criticalities, false, 0.0f, blk_loc_registry);
 }
 
 #endif

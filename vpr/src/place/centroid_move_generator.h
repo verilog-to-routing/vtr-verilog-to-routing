@@ -24,7 +24,7 @@ class CentroidMoveGenerator : public MoveGenerator {
      * The move generator created by calling this constructor only consider
      * netlist connectivity for computing the centroid location.
      */
-    CentroidMoveGenerator();
+    explicit CentroidMoveGenerator(PlacerContext& placer_ctx);
 
     /**
      * The move generator created by calling this constructor considers both
@@ -39,7 +39,9 @@ class CentroidMoveGenerator : public MoveGenerator {
      * @param high_fanout_net All nets with a fanout larger than this number are
      * ignored when forming NoC groups.
      */
-    CentroidMoveGenerator(float noc_attraction_weight, size_t high_fanout_net);
+    CentroidMoveGenerator(PlacerContext& placer_ctx,
+                          float noc_attraction_weight,
+                          size_t high_fanout_net);
 
 
     /**
