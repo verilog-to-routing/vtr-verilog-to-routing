@@ -123,7 +123,7 @@ class TimingTags {
                 friend bool operator!=(Iterator a, Iterator b) { return a.p_ != b.p_; }
 
                 reference operator*() { return *p_; }
-                const reference operator*() const { return *p_; } //Required for MSVC (gcc/clang are fine with only the non-cost version)
+                reference operator*() const { return *p_; } //Required for MSVC (gcc/clang are fine with only the non-cost version)
                 pointer operator->() { return p_; }
                 reference operator[](size_t n) { return *(p_ + n); }
 
