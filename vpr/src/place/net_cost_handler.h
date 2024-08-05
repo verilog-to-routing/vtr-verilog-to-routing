@@ -130,33 +130,28 @@ class NetCostHandler {
      */
     void free_try_swap_net_cost_structs();
 
-//  private:
-    /**
-     * @brief This class is used to hide control flows needed to distinguish 2d and 3d placement
-     */
-//    class BBUpdater {
-//      public:
-//        BBUpdater() = delete;
-//        BBUpdater(const BBUpdater&) = delete;
-//        BBUpdater(BBUpdater&&) = delete;
-//        BBUpdater& operator=(const BBUpdater&) = delete;
-//        BBUpdater& operator=(BBUpdater&&) = delete;
-//
-//        BBUpdater(PlacerContext& placer_ctx_, size_t num_nets, bool cube_bb);
-//
-//      private:
-//
-//        PlacerContext& placer_ctx_;
-//
-//      public:
-//
-//    };
-
   private:
     bool cube_bb_ = false;
     PlacerContext& placer_ctx_;
 
     std::function<double(e_cost_methods method)> comp_bb_cost_functor_;
+
+
+    /**
+     * @brief The wire length estimation is based on the bounding box of the net. In the case of the 2D architecture,
+     * we use a 3D BB with the z-dimension (layer) set to 1. In the case of 3D architecture, there 2 types of bounding box:
+     * 3D and per-layer. The type is determined at the beginning of the placement and stored in the placement context.
+     * If the bonding box is of the type 3D, ts_bb_coord_new and ts_bb_edge_new are used. Otherwise, layer_ts_bb_edge_new and
+     * layer_ts_bb_coord_new are used.
+     */
+    /* [0...cluster_ctx.clb_nlist.nets().size()-1] -> 3D bounding box*/
+    vtr::vector<ClusterNetId, t_bb> ts_bb_coord_new_, ts_bb_edge_new_;
+    /* [0...cluster_ctx.clb_nlist.nets().size()-1][0...num_layers-1] -> 2D bonding box on a layer*/
+    vtr::vector<ClusterNetId, std::vector<t_2D_bb>> layer_ts_bb_edge_new_, layer_ts_bb_coord_new_;
+    /* [0...cluster_ctx.clb_nlist.nets().size()-1][0...num_layers-1] -> number of sink pins on a layer*/
+    vtr::Matrix<int> ts_layer_sink_pin_count_;
+    /* [0...num_afftected_nets] -> net_id of the affected nets */
+    std::vector<ClusterNetId> ts_nets_to_update_;
 
   private:
     /**
@@ -406,5 +401,11 @@ class NetCostHandler {
 
      double comp_per_layer_bb_cost_(e_cost_methods method);
      double comp_3d_bb_cost_(e_cost_methods method);
+
+     /**
+     * @brief if "net" is not already stored as an affected net, add it in ts_nets_to_update.
+     * @param net ID of a net affected by a move
+     */
+     void record_affected_net_(const ClusterNetId net);
 
 };

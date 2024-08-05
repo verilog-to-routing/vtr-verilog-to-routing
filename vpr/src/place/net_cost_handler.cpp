@@ -106,33 +106,16 @@ struct PLNetCost {
 
 /* The following arrays are used by the try_swap function for speed.   */
 
-/**
- * @brief The wire length estimation is based on the bounding box of the net. In the case of the 2D architecture,
- * we use a 3D BB with the z-dimension (layer) set to 1. In the case of 3D architecture, there 2 types of bounding box:
- * 3D and per-layer. The type is determined at the beginning of the placement and stored in the placement context.
- * If the bonding box is of the type 3D, ts_bb_coord_new and ts_bb_edge_new are used. Otherwise, layer_ts_bb_edge_new and
- * layer_ts_bb_coord_new are used.
- */
 
-struct TSInfo {
-    /* [0...cluster_ctx.clb_nlist.nets().size()-1] -> 3D bounding box*/
-    vtr::vector<ClusterNetId, t_bb> ts_bb_coord_new, ts_bb_edge_new;
-    /* [0...cluster_ctx.clb_nlist.nets().size()-1][0...num_layers-1] -> 2D bonding box on a layer*/
-    vtr::vector<ClusterNetId, std::vector<t_2D_bb>> layer_ts_bb_edge_new, layer_ts_bb_coord_new;
-    /* [0...cluster_ctx.clb_nlist.nets().size()-1][0...num_layers-1] -> number of sink pins on a layer*/
-    vtr::Matrix<int> ts_layer_sink_pin_count;
-    /* [0...num_afftected_nets] -> net_id of the affected nets */
-    std::vector<ClusterNetId> ts_nets_to_update;
-    // TSInfo(const TSInfo&) = delete;
-    // TSInfo(TSInfo&&) = delete;
-};
+
+//struct TSInfo {
+//
+//};
 
 
 } // namespace
 
 static struct PLNetCost pl_net_cost;
-
-static struct TSInfo ts_info;
 
 
 /**
@@ -142,17 +125,6 @@ static struct TSInfo ts_info;
  */
 static bool driven_by_moved_block(const ClusterNetId net,
                                   const std::vector<t_pl_moved_block>& moved_blocks);
-
-
-
-
-/**
- * @brief if "net" is not already stored as an affected net, add it in ts_nets_to_update.
- * @param net ID of a net affected by a move
- */
-static void record_affected_net(const ClusterNetId net);
-
-
 
 /**
  * @brief Given the per-layer BB, calculate the wire-length cost of the net on each layer
@@ -385,12 +357,12 @@ void NetCostHandler::update_td_delta_costs_(const PlaceDelayModel* delay_model,
 }
 
 ///@brief Record effected nets.
-static void record_affected_net(const ClusterNetId net) {
+void NetCostHandler::record_affected_net_(const ClusterNetId net) {
     /* Record effected nets. */
     if (pl_net_cost.proposed_net_cost[net] < 0.) {
         /* Net not marked yet. */
-        VTR_ASSERT_SAFE(ts_info.ts_nets_to_update.size() < ts_info.ts_nets_to_update.capacity());
-        ts_info.ts_nets_to_update.push_back(net);
+        VTR_ASSERT_SAFE(ts_nets_to_update_.size() < ts_nets_to_update_.capacity());
+        ts_nets_to_update_.push_back(net);
 
         /* Flag to say we've marked this net. */
         pl_net_cost.proposed_net_cost[net] = 1.;
@@ -418,7 +390,7 @@ void NetCostHandler::update_net_info_on_pin_move_(const t_place_algorithm& place
     }
 
     /* Record effected nets */
-    record_affected_net(net_id);
+    record_affected_net_(net_id);
 
     /* Update the net bounding boxes. */
     update_net_bb_(net_id, blk_id, pin_id, moving_blk_inf);
@@ -1557,7 +1529,7 @@ static double wirelength_crossing_count(size_t fanout) {
 }
 
 void NetCostHandler::set_bb_delta_cost_(double& bb_delta_c) {
-    for (const ClusterNetId ts_net: ts_info.ts_nets_to_update) {
+    for (const ClusterNetId ts_net: ts_nets_to_update_) {
         ClusterNetId net_id = ts_net;
 
         pl_net_cost.proposed_net_cost[net_id] = get_net_cost_(net_id);
@@ -1576,7 +1548,7 @@ void NetCostHandler::find_affected_nets_and_update_costs(const t_place_algorithm
     VTR_ASSERT_SAFE(timing_delta_c == 0.);
     auto& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
 
-    ts_info.ts_nets_to_update.resize(0);
+    ts_nets_to_update_.resize(0);
 
     /* Go through all the blocks moved. */
     for (const auto& block : blocks_affected.moved_blocks) {
@@ -1693,13 +1665,13 @@ void NetCostHandler::update_move_nets() {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_move_ctx = placer_ctx_.mutable_move();
 
-    for (const ClusterNetId ts_net : ts_info.ts_nets_to_update) {
+    for (const ClusterNetId ts_net : ts_nets_to_update_) {
         ClusterNetId net_id = ts_net;
 
         set_ts_bb_coord_(net_id);
 
         for (int layer_num = 0; layer_num < g_vpr_ctx.device().grid.get_num_layers(); layer_num++) {
-            place_move_ctx.num_sink_pin_layer[size_t(net_id)][layer_num] = ts_info.ts_layer_sink_pin_count[size_t(net_id)][layer_num];
+            place_move_ctx.num_sink_pin_layer[size_t(net_id)][layer_num] = ts_layer_sink_pin_count_[size_t(net_id)][layer_num];
         }
 
         if (cluster_ctx.clb_nlist.net_sinks(net_id).size() >= SMALL_NET) {
@@ -1716,7 +1688,7 @@ void NetCostHandler::update_move_nets() {
 
 void NetCostHandler::reset_move_nets() {
     /* Reset the net cost function flags first. */
-    for (const ClusterNetId ts_net : ts_info.ts_nets_to_update) {
+    for (const ClusterNetId ts_net : ts_nets_to_update_) {
         ClusterNetId net_id = ts_net;
         pl_net_cost.proposed_net_cost[net_id] = -1;
         pl_net_cost.bb_update_status[net_id] = NetUpdateState::NOT_UPDATED_YET;
@@ -1897,12 +1869,12 @@ void NetCostHandler::free_place_move_structs() {
 }
 
 void NetCostHandler::free_try_swap_net_cost_structs() {
-    vtr::release_memory(ts_info.ts_bb_edge_new);
-    vtr::release_memory(ts_info.ts_bb_coord_new);
-    vtr::release_memory(ts_info.layer_ts_bb_edge_new);
-    vtr::release_memory(ts_info.layer_ts_bb_coord_new);
-    ts_info.ts_layer_sink_pin_count.clear();
-    vtr::release_memory(ts_info.ts_nets_to_update);
+    vtr::release_memory(ts_bb_edge_new_);
+    vtr::release_memory(ts_bb_coord_new_);
+    vtr::release_memory(layer_ts_bb_edge_new_);
+    vtr::release_memory(layer_ts_bb_coord_new_);
+    ts_layer_sink_pin_count_.clear();
+    vtr::release_memory(ts_nets_to_update_);
 }
 
 NetCostHandler::NetCostHandler(PlacerContext& placer_ctx, size_t num_nets, bool cube_bb, float place_cost_exp)
@@ -1912,19 +1884,19 @@ NetCostHandler::NetCostHandler(PlacerContext& placer_ctx, size_t num_nets, bool 
 
     // Either 3D BB or per layer BB data structure are used, not both.
     if (cube_bb_) {
-        ts_info.ts_bb_edge_new.resize(num_nets, t_bb());
-        ts_info.ts_bb_coord_new.resize(num_nets, t_bb());
+        ts_bb_edge_new_.resize(num_nets, t_bb());
+        ts_bb_coord_new_.resize(num_nets, t_bb());
         comp_bb_cost_functor_ =  std::bind(&NetCostHandler::comp_3d_bb_cost_, this, std::placeholders::_1);
     } else {
-        ts_info.layer_ts_bb_edge_new.resize(num_nets, std::vector<t_2D_bb>(num_layers, t_2D_bb()));
-        ts_info.layer_ts_bb_coord_new.resize(num_nets, std::vector<t_2D_bb>(num_layers, t_2D_bb()));
+        layer_ts_bb_edge_new_.resize(num_nets, std::vector<t_2D_bb>(num_layers, t_2D_bb()));
+        layer_ts_bb_coord_new_.resize(num_nets, std::vector<t_2D_bb>(num_layers, t_2D_bb()));
         comp_bb_cost_functor_ =  std::bind(&NetCostHandler::comp_per_layer_bb_cost_, this, std::placeholders::_1);
     }
 
     /* This initializes the whole matrix to OPEN which is an invalid value*/
-    ts_info.ts_layer_sink_pin_count.resize({num_nets, size_t(num_layers)}, OPEN);
+    ts_layer_sink_pin_count_.resize({num_nets, size_t(num_layers)}, OPEN);
 
-    ts_info.ts_nets_to_update.resize(num_nets, ClusterNetId::INVALID());
+    ts_nets_to_update_.resize(num_nets, ClusterNetId::INVALID());
 
     pl_net_cost.net_cost.resize(num_nets, -1.);
     pl_net_cost.proposed_net_cost.resize(num_nets, -1.);
@@ -1940,31 +1912,31 @@ NetCostHandler::NetCostHandler(PlacerContext& placer_ctx, size_t num_nets, bool 
 void NetCostHandler::get_non_updatable_bb_(const ClusterNetId net) {
     if (cube_bb_) {
         get_non_updatable_bb_(net,
-                              ts_info.ts_bb_coord_new[net],
-                              ts_info.ts_layer_sink_pin_count[size_t(net)]);
+                              ts_bb_coord_new_[net],
+                              ts_layer_sink_pin_count_[size_t(net)]);
     }
     else {
         get_non_updatable_layer_bb_(net,
-                                    ts_info.layer_ts_bb_coord_new[net],
-                                    ts_info.ts_layer_sink_pin_count[size_t(net)]);
+                                    layer_ts_bb_coord_new_[net],
+                                    ts_layer_sink_pin_count_[size_t(net)]);
     }
 }
 
 void NetCostHandler::update_bb_(ClusterNetId net_id, t_physical_tile_loc pin_old_loc, t_physical_tile_loc pin_new_loc, bool is_driver) {
     if (cube_bb_) {
         update_bb_(net_id,
-                    ts_info.ts_bb_edge_new[net_id],
-                    ts_info.ts_bb_coord_new[net_id],
-                    ts_info.ts_layer_sink_pin_count[size_t(net_id)],
+                    ts_bb_edge_new_[net_id],
+                    ts_bb_coord_new_[net_id],
+                    ts_layer_sink_pin_count_[size_t(net_id)],
                     pin_old_loc,
                     pin_new_loc,
                     is_driver);
     }
     else {
         update_layer_bb_(net_id,
-                          ts_info.layer_ts_bb_edge_new[net_id],
-                          ts_info.layer_ts_bb_coord_new[net_id],
-                          ts_info.ts_layer_sink_pin_count[size_t(net_id)],
+                          layer_ts_bb_edge_new_[net_id],
+                          layer_ts_bb_coord_new_[net_id],
+                          ts_layer_sink_pin_count_[size_t(net_id)],
                           pin_old_loc,
                           pin_new_loc,
                           is_driver);
@@ -1973,27 +1945,27 @@ void NetCostHandler::update_bb_(ClusterNetId net_id, t_physical_tile_loc pin_old
 
 double NetCostHandler::get_net_cost_(const ClusterNetId net_id) {
     if (cube_bb_) {
-        return ::get_net_cost(net_id, ts_info.ts_bb_coord_new[net_id]);
+        return ::get_net_cost(net_id, ts_bb_coord_new_[net_id]);
     }
     else {
-        return ::get_net_layer_bb_wire_cost(net_id, ts_info.layer_ts_bb_coord_new[net_id], ts_info.ts_layer_sink_pin_count[size_t(net_id)]);
+        return ::get_net_layer_bb_wire_cost(net_id, layer_ts_bb_coord_new_[net_id], ts_layer_sink_pin_count_[size_t(net_id)]);
     }
 }
 
 void NetCostHandler::set_ts_bb_coord_(const ClusterNetId net_id) {
     auto& place_move_ctx = placer_ctx_.mutable_move();
     if (cube_bb_) {
-        place_move_ctx.bb_coords[net_id] = ts_info.ts_bb_coord_new[net_id];
+        place_move_ctx.bb_coords[net_id] = ts_bb_coord_new_[net_id];
     } else {
-        place_move_ctx.layer_bb_coords[net_id] = ts_info.layer_ts_bb_coord_new[net_id];
+        place_move_ctx.layer_bb_coords[net_id] = layer_ts_bb_coord_new_[net_id];
     }
 }
 
 void NetCostHandler::set_ts_edge_(const ClusterNetId net_id) {
     auto& place_move_ctx = placer_ctx_.mutable_move();
     if (cube_bb_) {
-        place_move_ctx.bb_num_on_edges[net_id] = ts_info.ts_bb_edge_new[net_id];
+        place_move_ctx.bb_num_on_edges[net_id] = ts_bb_edge_new_[net_id];
     } else {
-        place_move_ctx.layer_bb_num_on_edges[net_id] = ts_info.layer_ts_bb_edge_new[net_id];
+        place_move_ctx.layer_bb_num_on_edges[net_id] = layer_ts_bb_edge_new_[net_id];
     }
 }
