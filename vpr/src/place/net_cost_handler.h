@@ -75,7 +75,7 @@ class NetCostHandler {
                                              double& timing_delta_c);
 
     /**
-     * @brief Finds the bb cost from scratch (based on 3D BB).
+     * @brief Finds the bb cost from scratch.
      * Done only when the placement has been radically changed
      * (i.e. after initial placement). Otherwise find the cost
      * change incrementally. If method check is NORMAL, we find
@@ -84,22 +84,9 @@ class NetCostHandler {
      * non_updateable_bb routine, to provide a cost which can be
      * used to check the correctness of the other routine.
      * @param method The method used to calculate placement cost.
-     * @return The bounding box cost of the placement, computed by the 3D method.
+     * @return The bounding box cost of the placement.
      */
     double comp_bb_cost(e_cost_methods method);
-
-    /**
-     * @brief Finds the bb cost from scratch (based on per-layer BB).
-     * Done only when the placement has been radically changed
-     * (i.e. after initial placement). Otherwise find the cost change
-     * incrementally.  If method check is NORMAL, we find bounding boxes
-     * that are updateable for the larger nets.  If method is CHECK, all
-     * bounding boxes are found via the non_updateable_bb routine, to provide
-     * a cost which can be used to check the correctness of the other routine.
-     * @param method The method used to calculate placement cost.
-     * @return The placement bounding box cost, computed by the per layer method.
-     */
-    double comp_layer_bb_cost(e_cost_methods method);
 
     /**
      * @brief Reset the net cost function flags (proposed_net_cost and bb_updated_before)
@@ -168,6 +155,8 @@ class NetCostHandler {
   private:
     bool cube_bb_ = false;
     PlacerContext& placer_ctx_;
+
+    std::function<double(e_cost_methods method)> comp_bb_cost_functor_;
 
   private:
     /**
@@ -414,5 +403,8 @@ class NetCostHandler {
                                              vtr::NdMatrixProxy<int, 1> bb_pin_sink_count_new,
                                              std::vector<t_2D_bb>& bb_edge_new,
                                              std::vector<t_2D_bb>& bb_coord_new);
+
+     double comp_per_layer_bb_cost_(e_cost_methods method);
+     double comp_3d_bb_cost_(e_cost_methods method);
 
 };

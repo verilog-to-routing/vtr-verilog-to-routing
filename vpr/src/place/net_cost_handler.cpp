@@ -1609,6 +1609,10 @@ void NetCostHandler::find_affected_nets_and_update_costs(const t_place_algorithm
 }
 
 double NetCostHandler::comp_bb_cost(e_cost_methods method) {
+    return comp_bb_cost_functor_(method);
+}
+
+double NetCostHandler::comp_3d_bb_cost_(e_cost_methods method) {
     double cost = 0;
     double expected_wirelength = 0.0;
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -1644,7 +1648,7 @@ double NetCostHandler::comp_bb_cost(e_cost_methods method) {
     return cost;
 }
 
-double NetCostHandler::comp_layer_bb_cost(e_cost_methods method) {
+double NetCostHandler::comp_per_layer_bb_cost_(e_cost_methods method) {
     double cost = 0;
     double expected_wirelength = 0.0;
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -1910,9 +1914,11 @@ NetCostHandler::NetCostHandler(PlacerContext& placer_ctx, size_t num_nets, bool 
     if (cube_bb_) {
         ts_info.ts_bb_edge_new.resize(num_nets, t_bb());
         ts_info.ts_bb_coord_new.resize(num_nets, t_bb());
+        comp_bb_cost_functor_ =  std::bind(&NetCostHandler::comp_3d_bb_cost_, this, std::placeholders::_1);
     } else {
         ts_info.layer_ts_bb_edge_new.resize(num_nets, std::vector<t_2D_bb>(num_layers, t_2D_bb()));
         ts_info.layer_ts_bb_coord_new.resize(num_nets, std::vector<t_2D_bb>(num_layers, t_2D_bb()));
+        comp_bb_cost_functor_ =  std::bind(&NetCostHandler::comp_per_layer_bb_cost_, this, std::placeholders::_1);
     }
 
     /* This initializes the whole matrix to OPEN which is an invalid value*/

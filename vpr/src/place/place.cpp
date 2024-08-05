@@ -497,12 +497,7 @@ void try_place(const Netlist<>& net_list,
     /* Gets initial cost and loads bounding boxes. */
 
     if (placer_opts.place_algorithm.is_timing_driven()) {
-        if (cube_bb) {
-            costs.bb_cost = net_cost_handler.comp_bb_cost(e_cost_methods::NORMAL);
-        } else {
-            VTR_ASSERT_SAFE(!cube_bb);
-            costs.bb_cost = net_cost_handler.comp_layer_bb_cost(e_cost_methods::NORMAL);
-        }
+        costs.bb_cost = net_cost_handler.comp_bb_cost(e_cost_methods::NORMAL);
 
         first_crit_exponent = placer_opts.td_place_exp_first; /*this will be modified when rlim starts to change */
 
@@ -578,12 +573,7 @@ void try_place(const Netlist<>& net_list,
         VTR_ASSERT(placer_opts.place_algorithm == BOUNDING_BOX_PLACE);
 
         /* Total cost is the same as wirelength cost normalized*/
-        if (cube_bb) {
-            costs.bb_cost = net_cost_handler.comp_bb_cost(e_cost_methods::NORMAL);
-        } else {
-            VTR_ASSERT_SAFE(!cube_bb);
-            costs.bb_cost = net_cost_handler.comp_layer_bb_cost(e_cost_methods::NORMAL);
-        }
+        costs.bb_cost = net_cost_handler.comp_bb_cost(e_cost_methods::NORMAL);
         costs.bb_cost_norm = 1 / costs.bb_cost;
 
         /* Timing cost and normalization factors are not used */
@@ -2029,17 +2019,9 @@ static int check_placement_costs(const t_placer_costs& costs,
                                  PlacerContext& placer_ctx,
                                  NetCostHandler& net_cost_handler) {
     int error = 0;
-    double bb_cost_check;
     double timing_cost_check;
 
-    const bool cube_bb = g_vpr_ctx.placement().cube_bb;
-
-    if (cube_bb) {
-        bb_cost_check = net_cost_handler.comp_bb_cost(e_cost_methods::CHECK);
-    } else {
-        VTR_ASSERT_SAFE(!cube_bb);
-        bb_cost_check = net_cost_handler.comp_layer_bb_cost(e_cost_methods::CHECK);
-    }
+    double bb_cost_check = net_cost_handler.comp_bb_cost(e_cost_methods::CHECK);
 
     if (fabs(bb_cost_check - costs.bb_cost) > costs.bb_cost * ERROR_TOL) {
         VTR_LOG_ERROR(
