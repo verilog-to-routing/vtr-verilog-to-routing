@@ -316,9 +316,9 @@ void zero_initialize_grid_blocks(GridBlock& grid_blocks) {
     }
 }
 
-void alloc_and_load_legal_placement_locations(std::vector<std::vector<std::vector<t_pl_loc>>>& legal_pos) {
+void alloc_and_load_legal_placement_locations(std::vector<std::vector<std::vector<t_pl_loc>>>& legal_pos,
+                                              const GridBlock& grid_blocks) {
     auto& device_ctx = g_vpr_ctx.device();
-    auto& place_ctx = g_vpr_ctx.placement();
 
     //alloc the legal placement positions
     int num_tile_types = device_ctx.physical_tile_types.size();
@@ -338,7 +338,7 @@ void alloc_and_load_legal_placement_locations(std::vector<std::vector<std::vecto
                     auto capacity = sub_tile.capacity;
 
                     for (int k = 0; k < capacity.total(); k++) {
-                        if (place_ctx.get_grid_blocks().block_at_location({i, j, k + capacity.low, layer_num}) == INVALID_BLOCK_ID) {
+                        if (grid_blocks.block_at_location({i, j, k + capacity.low, layer_num}) == INVALID_BLOCK_ID) {
                             continue;
                         }
                         // If this is the anchor position of a block, add it to the legal_pos.

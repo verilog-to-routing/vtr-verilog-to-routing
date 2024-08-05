@@ -833,7 +833,7 @@ void vpr_load_placement(t_vpr_setup& vpr_setup, const t_arch& arch) {
 
     //Initialize placement data structures, which will be filled when loading placement
     auto& block_locs = place_ctx.mutable_block_locs();
-    GridBlock& grid_blocks = place_ctx.get_mutable_grid_blocks();
+    GridBlock& grid_blocks = place_ctx.mutable_grid_blocks();
     init_placement_context(block_locs, grid_blocks);
 
     //Load an existing placement from a file
@@ -1283,7 +1283,7 @@ static void free_atoms() {
 static void free_placement() {
     auto& place_ctx = g_vpr_ctx.mutable_placement();
     place_ctx.mutable_block_locs().clear();
-    place_ctx.get_mutable_grid_blocks().clear();
+    place_ctx.mutable_grid_blocks().clear();
 }
 
 static void free_routing() {

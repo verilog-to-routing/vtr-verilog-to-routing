@@ -352,7 +352,8 @@ void load_grid_blocks_from_block_locs(GridBlock& grid_blocks,
  *              of the proper tile type and sub_tile type
  *
  */
-void alloc_and_load_legal_placement_locations(std::vector<std::vector<std::vector<t_pl_loc>>>& legal_pos);
+void alloc_and_load_legal_placement_locations(std::vector<std::vector<std::vector<t_pl_loc>>>& legal_pos,
+                                              const GridBlock& grid_blocks);
 
 ///@brief Performs error checking to see if location is legal for block type,
 /// and sets the location and grid usage of the block if it is legal.

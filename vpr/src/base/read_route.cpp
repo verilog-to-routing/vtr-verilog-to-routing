@@ -222,7 +222,7 @@ static void process_nodes(const Netlist<>& net_list, std::ifstream& fp, ClusterN
     auto& device_ctx = g_vpr_ctx.mutable_device();
     const auto& rr_graph = device_ctx.rr_graph;
     auto& route_ctx = g_vpr_ctx.mutable_routing();
-    const auto& grid_blocks = g_vpr_ctx.placement().get_grid_blocks();
+    const auto& grid_blocks = g_vpr_ctx.placement().grid_blocks();
 
     t_trace* head_ptr = nullptr;
     t_trace* tptr = nullptr;
@@ -569,7 +569,7 @@ static bool check_rr_graph_connectivity(RRNodeId prev_node, RRNodeId node) {
 void print_route(const Netlist<>& net_list,
                  FILE* fp,
                  bool is_flat) {
-    const auto& grid_blocks = g_vpr_ctx.placement().get_grid_blocks();
+    const auto& grid_blocks = g_vpr_ctx.placement().grid_blocks();
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     auto& route_ctx = g_vpr_ctx.mutable_routing();

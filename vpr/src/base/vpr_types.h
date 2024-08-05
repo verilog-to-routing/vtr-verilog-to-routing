@@ -908,6 +908,14 @@ class GridBlock {
 };
 
 class BlkLocRegistry {
+  public:
+    BlkLocRegistry() = default;
+    ~BlkLocRegistry() = default;
+    BlkLocRegistry(const BlkLocRegistry&) = delete;
+    BlkLocRegistry& operator=(const BlkLocRegistry&) = default;
+    BlkLocRegistry(BlkLocRegistry&&) = delete;
+    BlkLocRegistry& operator=(BlkLocRegistry&&) = delete;
+
   private:
     ///@brief Clustered block placement locations
     vtr::vector_map<ClusterBlockId, t_block_loc> block_locs_;

@@ -295,8 +295,9 @@ void AnalyticPlacer::build_solve_type(t_logical_block_type_ptr run, int iter) {
 // (stored in legal_pos). For a type of sub_tile_t found in tile_t, legal_pos[tile_t][sub_tile_t]
 // gives a vector containing all positions (t_pl_loc type) for this sub_tile_t.
 void AnalyticPlacer::build_legal_locations() {
+    const auto& grid_blocks = placer_loc_vars_ref_.grid_blocks();
     // invoking same function used in initial_placement.cpp (can ignore function name)
-    alloc_and_load_legal_placement_locations(legal_pos);
+    alloc_and_load_legal_placement_locations(legal_pos, grid_blocks);
 }
 
 // transfer initial placement from g_vpr_ctx to AnalyticPlacer data members, such as: blk_locs, place_blks
