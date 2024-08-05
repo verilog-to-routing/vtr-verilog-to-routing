@@ -23,6 +23,7 @@
 #include <cstring>
 #include <cmath>
 #include <map>
+#include <string>
 
 #include "vtr_assert.h"
 #include "vtr_memory.h"
@@ -211,16 +212,13 @@ float calc_buffer_stage_effort(int N, float final_stage_size) {
  *  - LUT_size: The number of LUT inputs
  *  - truth_table: The logic terms saved from the BLIF file
  */
-char* alloc_SRAM_values_from_truth_table(int LUT_size,
-                                         const AtomNetlist::TruthTable& truth_table) {
+std::string alloc_SRAM_values_from_truth_table(int LUT_size,
+                                               const AtomNetlist::TruthTable& truth_table) {
     size_t num_SRAM_bits = 1 << LUT_size;
 
     //SRAM value stored as a string of '0' and '1' characters
     // Initialize to all zeros
-    char* SRAM_values = new char[num_SRAM_bits + 1];
-    for (size_t i = 0; i < num_SRAM_bits + 1; i++)
-        SRAM_values[i] = '0';
-    SRAM_values[num_SRAM_bits] = '\0';
+    std::string SRAM_values(num_SRAM_bits, '0');
 
     if (truth_table.empty()) {
         for (size_t i = 0; i < num_SRAM_bits; i++) {
