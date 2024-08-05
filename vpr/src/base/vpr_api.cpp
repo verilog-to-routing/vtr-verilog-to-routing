@@ -817,11 +817,13 @@ void vpr_place(const Netlist<>& net_list, t_vpr_setup& vpr_setup, const t_arch& 
 
     auto& filename_opts = vpr_setup.FileNameOpts;
     auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& block_locs = g_vpr_ctx.placement().block_locs();
+    auto& placement_id = g_vpr_ctx.mutable_placement().placement_id;
 
-    print_place(filename_opts.NetFile.c_str(),
-                cluster_ctx.clb_nlist.netlist_id().c_str(),
-                filename_opts.PlaceFile.c_str(),
-                g_vpr_ctx.placement().block_locs());
+    placement_id = print_place(filename_opts.NetFile.c_str(),
+                               cluster_ctx.clb_nlist.netlist_id().c_str(),
+                               filename_opts.PlaceFile.c_str(),
+                               block_locs);
 }
 
 void vpr_load_placement(t_vpr_setup& vpr_setup, const t_arch& arch) {
