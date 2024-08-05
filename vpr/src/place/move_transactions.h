@@ -58,7 +58,7 @@ struct t_pl_blocks_to_be_moved {
 
     e_block_move_result record_block_move(ClusterBlockId blk,
                                           t_pl_loc to,
-                                          const BlkLocRegistry& place_loc_vars);
+                                          const BlkLocRegistry& blk_loc_registry);
     
     std::set<t_pl_loc> determine_locations_emptied_by_move();
 
@@ -71,12 +71,12 @@ struct t_pl_blocks_to_be_moved {
 
 
 void apply_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected,
-                       BlkLocRegistry& place_loc_vars);
+                       BlkLocRegistry& blk_loc_registry);
 
 void commit_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected,
                         GridBlock& grid_blocks);
 
 void revert_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected,
-                        BlkLocRegistry& place_loc_vars);
+                        BlkLocRegistry& blk_loc_registry);
 
 #endif

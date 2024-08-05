@@ -2441,6 +2441,6 @@ static void copy_locs_to_global_state(const BlkLocRegistry& place_loc_vars) {
 
 #ifndef NO_GRAPHICS
     // update the graphics' reference to placement location variables
-    set_graphics_place_loc_vars_ref(global_place_loc_vars);
+    set_graphics_blk_loc_registry_ref(global_place_loc_vars);
 #endif
 }

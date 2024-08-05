@@ -35,15 +35,15 @@ t_draw_state* get_draw_state_vars();
  * global stage in place_ctx until the end of placement. After the placement is
  * done, the reference should point to the global state stored in place_ctx.
  *
- * @param place_loc_vars The PlaceLocVars that the reference will point to.
+ * @param blk_loc_registry The PlaceLocVars that the reference will point to.
  */
-void set_graphics_place_loc_vars_ref(const BlkLocRegistry& place_loc_vars);
+void set_graphics_blk_loc_registry_ref(const BlkLocRegistry& blk_loc_registry);
 
 /**
  * @brief Returns the reference to placement block location variables.
  * @return A const reference to placement block location variables.
  */
-const BlkLocRegistry& get_graphics_place_loc_vars_ref();
+const BlkLocRegistry& get_graphics_blk_loc_registry_ref();
 
 #endif // NO_GRAPHICS
 

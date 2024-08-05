@@ -103,7 +103,7 @@ void drawplace(ezgl::renderer* g) {
     t_draw_coords* draw_coords = get_draw_coords_vars();
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    const auto& grid_blocks = get_graphics_place_loc_vars_ref().grid_blocks();
+    const auto& grid_blocks = get_graphics_blk_loc_registry_ref().grid_blocks();
 
     ClusterBlockId bnum;
     int num_sub_tiles;
@@ -230,7 +230,7 @@ void drawnets(ezgl::renderer* g) {
 
     ClusterBlockId b1, b2;
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& block_locs = get_graphics_place_loc_vars_ref().block_locs();
+    auto& block_locs = get_graphics_blk_loc_registry_ref().block_locs();
 
     float transparency_factor;
     float NET_ALPHA = draw_state->net_alpha;
@@ -804,7 +804,7 @@ void draw_placement_macros(ezgl::renderer* g) {
     t_draw_coords* draw_coords = get_draw_coords_vars();
 
     auto& place_ctx = g_vpr_ctx.placement();
-    auto& block_locs = get_graphics_place_loc_vars_ref().block_locs();
+    auto& block_locs = get_graphics_blk_loc_registry_ref().block_locs();
 
     for (const t_pl_macro& pl_macro : place_ctx.pl_macros) {
 
@@ -1187,7 +1187,7 @@ void draw_crit_path_elements(const std::vector<tatum::TimingPath>& paths, const 
 }
 
 int get_timing_path_node_layer_num(tatum::NodeId node) {
-    auto& block_locs = get_graphics_place_loc_vars_ref().block_locs();
+    auto& block_locs = get_graphics_blk_loc_registry_ref().block_locs();
     auto& atom_ctx = g_vpr_ctx.atom();
 
     AtomPinId atom_pin = atom_ctx.lookup.tnode_atom_pin(node);
@@ -1420,7 +1420,7 @@ void draw_block_pin_util() {
 
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& block_locs = get_graphics_place_loc_vars_ref().block_locs();
+    auto& block_locs = get_graphics_blk_loc_registry_ref().block_locs();
 
     std::map<t_physical_tile_type_ptr, size_t> total_input_pins;
     std::map<t_physical_tile_type_ptr, size_t> total_output_pins;

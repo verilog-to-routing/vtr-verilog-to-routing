@@ -29,7 +29,7 @@ static t_draw_coords draw_coords;
 /**
  * @brief Stores a reference to a PlaceLocVars to be used in the graphics code.
  */
-static std::optional<std::reference_wrapper<const BlkLocRegistry>> place_loc_vars_ref;
+static std::optional<std::reference_wrapper<const BlkLocRegistry>> blk_loc_registry_ref;
 
 /*********************** Accessor Subroutines Definition ********************/
 
@@ -45,12 +45,12 @@ t_draw_state* get_draw_state_vars() {
     return &draw_state;
 }
 
-void set_graphics_place_loc_vars_ref(const BlkLocRegistry& place_loc_vars) {
-    place_loc_vars_ref = std::ref(place_loc_vars);
+void set_graphics_blk_loc_registry_ref(const BlkLocRegistry& blk_loc_registry) {
+    blk_loc_registry_ref = std::ref(blk_loc_registry);
 }
 
-const BlkLocRegistry& get_graphics_place_loc_vars_ref() {
-    return place_loc_vars_ref->get();
+const BlkLocRegistry& get_graphics_blk_loc_registry_ref() {
+    return blk_loc_registry_ref->get();
 }
 
 #endif // NO_GRAPHICS

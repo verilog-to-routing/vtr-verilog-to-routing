@@ -396,5 +396,5 @@ inline bool is_loc_on_chip(t_physical_tile_loc loc) {
 bool macro_can_be_placed(const t_pl_macro& pl_macro,
                          const t_pl_loc& head_pos,
                          bool check_all_legality,
-                         const BlkLocRegistry& place_loc_vars);
+                         const BlkLocRegistry& blk_loc_registry);
 #endif

@@ -385,7 +385,7 @@ struct PackingMultithreadingContext : public Context {
 struct PlacementContext : public Context {
   private:
     /**
-     * Determines if place_loc_vars_ can be accessed by calling getter methods.
+     * Determines if blk_loc_registry_ can be accessed by calling getter methods.
      * This flag should be set to false at the beginning of the placement stage,
      * and set to true at the end of placement. This ensures that variables that
      * are subject to change during placement are kept local to the placement stage.
@@ -410,7 +410,7 @@ struct PlacementContext : public Context {
     const BlkLocRegistry& blk_loc_registry() const { VTR_ASSERT_SAFE(loc_vars_are_accessible_); return blk_loc_registry_; }
 
     /**
-     * @brief Makes place_loc_vars_ inaccessible through the getter methods.
+     * @brief Makes blk_loc_registry_ inaccessible through the getter methods.
      *
      * This method should be called at the beginning of the placement stage to
      * guarantee that the placement stage code does not access block location variables
@@ -419,7 +419,7 @@ struct PlacementContext : public Context {
     void lock_loc_vars() { VTR_ASSERT_SAFE(loc_vars_are_accessible_); loc_vars_are_accessible_ = false; }
 
     /**
-     * @brief Makes place_loc_vars_ accessible through the getter methods.
+     * @brief Makes blk_loc_registry_ accessible through the getter methods.
      *
      * This method should be called at the end of the placement stage to
      * make the block location information accessible for subsequent stages.

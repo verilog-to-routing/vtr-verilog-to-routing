@@ -129,8 +129,8 @@ constexpr int HEAP_STALLED_ITERATIONS_STOP = 15;
  * Placement & device info is accessed via g_vpr_ctx
  */
 
-AnalyticPlacer::AnalyticPlacer(BlkLocRegistry& place_loc_vars)
-    : placer_loc_vars_ref_(place_loc_vars) {
+AnalyticPlacer::AnalyticPlacer(BlkLocRegistry& blk_loc_registry)
+    : placer_loc_vars_ref_(blk_loc_registry) {
     //Eigen::initParallel();
 
     // TODO: PlacerHeapCfg should be externally configured & supplied

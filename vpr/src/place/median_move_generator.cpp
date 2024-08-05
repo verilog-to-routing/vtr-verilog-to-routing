@@ -20,7 +20,7 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
     auto& placer_ctx = placer_ctx_.get();
     auto& place_move_ctx = placer_ctx.mutable_move();
     const auto& block_locs = placer_ctx.block_locs();
-    const auto& place_loc_vars = placer_ctx.blk_loc_registry();
+    const auto& blk_loc_registry = placer_ctx.blk_loc_registry();
 
     //Find a movable block based on blk_type
     ClusterBlockId b_from = propose_block_to_move(placer_opts,
@@ -89,7 +89,7 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
             const auto& net_bb_coords = cube_bb ? place_move_ctx.bb_coords[net_id] : union_bb;
             //use the incremental update of the bb
             ClusterBlockId bnum = cluster_ctx.clb_nlist.pin_block(pin_id);
-            int pnum = place_loc_vars.tile_pin_index(pin_id);
+            int pnum = blk_loc_registry.tile_pin_index(pin_id);
             VTR_ASSERT(pnum >= 0);
             t_pl_loc block_loc = block_locs[bnum].loc;
             t_physical_tile_type_ptr block_physical_type = physical_tile_type(block_loc);
@@ -172,11 +172,11 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
     median_point.y = (limit_coords.ymin + limit_coords.ymax) / 2;
     median_point.layer = (limit_coords.layer_min + limit_coords.layer_max) / 2;
 
-    if (!find_to_loc_centroid(cluster_from_type, from, median_point, range_limiters, to, b_from, place_loc_vars)) {
+    if (!find_to_loc_centroid(cluster_from_type, from, median_point, range_limiters, to, b_from, blk_loc_registry)) {
         return e_create_move::ABORT;
     }
 
-    e_create_move create_move = ::create_move(blocks_affected, b_from, to, place_loc_vars);
+    e_create_move create_move = ::create_move(blocks_affected, b_from, to, blk_loc_registry);
 
     //Check that all the blocks affected by the move would still be in a legal floorplan region after the swap
     if (!floorplan_legal(blocks_affected)) {

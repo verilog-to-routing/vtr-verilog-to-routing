@@ -42,10 +42,10 @@ void report_aborted_moves() {
 e_create_move create_move(t_pl_blocks_to_be_moved& blocks_affected,
                           ClusterBlockId b_from,
                           t_pl_loc to,
-                          const BlkLocRegistry& place_loc_vars) {
-    const auto& block_locs = place_loc_vars.block_locs();
-    const GridBlock& grid_blocks = place_loc_vars.grid_blocks();
-    e_block_move_result outcome = find_affected_blocks(blocks_affected, b_from, to, place_loc_vars);
+                          const BlkLocRegistry& blk_loc_registry) {
+    const auto& block_locs = blk_loc_registry.block_locs();
+    const GridBlock& grid_blocks = blk_loc_registry.grid_blocks();
+    e_block_move_result outcome = find_affected_blocks(blocks_affected, b_from, to, blk_loc_registry);
 
     if (outcome == e_block_move_result::INVERT) {
         //Try inverting the swap direction
@@ -58,7 +58,7 @@ e_create_move create_move(t_pl_blocks_to_be_moved& blocks_affected,
         } else {
             t_pl_loc from = block_locs[b_from].loc;
 
-            outcome = find_affected_blocks(blocks_affected, b_to, from, place_loc_vars);
+            outcome = find_affected_blocks(blocks_affected, b_to, from, blk_loc_registry);
 
             if (outcome == e_block_move_result::INVERT) {
                 log_move_abort("inverted move recursion");

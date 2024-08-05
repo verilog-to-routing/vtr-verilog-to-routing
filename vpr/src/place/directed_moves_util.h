@@ -18,7 +18,7 @@ e_reward_function string_to_reward(const std::string& st);
 
 ///@brief Helper function that returns the x, y coordinates of a pin
 t_physical_tile_loc get_coordinate_of_pin(ClusterPinId pin,
-                                          const BlkLocRegistry& place_loc_vars);
+                                          const BlkLocRegistry& blk_loc_registry);
 
 /**
  * @brief Calculates the exact centroid location
@@ -48,14 +48,14 @@ void calculate_centroid_loc(ClusterBlockId b_from,
                             const PlacerCriticalities* criticalities,
                             bool noc_attraction_enabled,
                             float noc_attraction_weight,
-                            const BlkLocRegistry& place_loc_vars);
+                            const BlkLocRegistry& blk_loc_registry);
 
 inline void calculate_centroid_loc(ClusterBlockId b_from,
                                    bool timing_weights,
                                    t_pl_loc& centroid,
                                    const PlacerCriticalities* criticalities,
-                                   const BlkLocRegistry& place_loc_vars) {
-    calculate_centroid_loc(b_from, timing_weights, centroid, criticalities, false, 0.0f, place_loc_vars);
+                                   const BlkLocRegistry& blk_loc_registry) {
+    calculate_centroid_loc(b_from, timing_weights, centroid, criticalities, false, 0.0f, blk_loc_registry);
 }
 
 #endif

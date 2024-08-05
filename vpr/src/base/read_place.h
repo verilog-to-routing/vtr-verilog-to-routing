@@ -17,7 +17,7 @@ struct t_block_loc;
  */
 std::string read_place(const char* net_file,
                        const char* place_file,
-                       BlkLocRegistry& place_loc_vars,
+                       BlkLocRegistry& blk_loc_registry,
                        bool verify_file_hashes,
                        const DeviceGrid& grid);
 
@@ -25,7 +25,7 @@ std::string read_place(const char* net_file,
  * This function is used to read a constraints file that specifies the desired locations of blocks.
  */
 void read_constraints(const char* constraints_file,
-                      BlkLocRegistry& place_loc_vars);
+                      BlkLocRegistry& blk_loc_registry);
 
 /**
  * This function prints out a place file.

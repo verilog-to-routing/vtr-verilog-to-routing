@@ -152,7 +152,7 @@ void draw_internal_draw_subblk(ezgl::renderer* g) {
     }
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    const auto& grid_blocks = get_graphics_place_loc_vars_ref().grid_blocks();
+    const auto& grid_blocks = get_graphics_blk_loc_registry_ref().grid_blocks();
 
     int total_layer_num = device_ctx.grid.get_num_layers();
 
@@ -273,7 +273,7 @@ draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node* pb_graph_node
     float sub_tile_x, sub_tile_y;
     float child_width, child_height;
     auto& device_ctx = g_vpr_ctx.device();
-    const auto& grid_blocks = get_graphics_place_loc_vars_ref().grid_blocks();
+    const auto& grid_blocks = get_graphics_blk_loc_registry_ref().grid_blocks();
 
     // get the bbox for this pb type
     ezgl::rectangle& pb_bbox = get_draw_coords_vars()->blk_info.at(type_descrip_index).get_pb_bbox_ref(*pb_graph_node);
@@ -341,7 +341,7 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
     t_draw_coords* draw_coords = get_draw_coords_vars();
     t_draw_state* draw_state = get_draw_state_vars();
 
-    auto& block_locs = get_graphics_place_loc_vars_ref().block_locs();
+    auto& block_locs = get_graphics_blk_loc_registry_ref().block_locs();
 
     t_selected_sub_block_info& sel_sub_info = get_selected_sub_block_info();
 
@@ -559,7 +559,7 @@ void draw_logical_connections(ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
 
     auto& atom_ctx = g_vpr_ctx.atom();
-    auto& block_locs = get_graphics_place_loc_vars_ref().block_locs();
+    auto& block_locs = get_graphics_blk_loc_registry_ref().block_locs();
 
     g->set_line_dash(ezgl::line_dash::none);
 
@@ -652,7 +652,7 @@ void find_pin_index_at_model_scope(const AtomPinId pin_id, const AtomBlockId blk
                 int atom_port_index = atom_ctx.nlist.pin_port_bit(pin_id);
 
                 //The index of this pin in the model is the pins counted so-far
-                //(i.e. accross previous ports) plus the index in the port
+                //(i.e. across previous ports) plus the index in the port
                 *pin_index = pin_cnt + atom_port_index;
             }
 

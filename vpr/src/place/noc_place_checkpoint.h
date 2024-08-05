@@ -46,7 +46,7 @@ class NoCPlacementCheckpoint {
      *  @param costs: Used to load NoC related costs for the checkpoint
      */
     void restore_checkpoint(t_placer_costs& costs,
-                            BlkLocRegistry& place_loc_vars);
+                            BlkLocRegistry& blk_loc_registry);
 
     /**
      * @brief Indicates whether the object is empty or it has already stored a

@@ -283,7 +283,7 @@ void auto_zoom_rr_node(RRNodeId rr_node_id) {
 void highlight_cluster_block(ClusterBlockId clb_index) {
     char msg[vtr::bufsize];
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    const auto& block_locs = get_graphics_place_loc_vars_ref().block_locs();
+    const auto& block_locs = get_graphics_blk_loc_registry_ref().block_locs();
 
     /// determine block ///
     ezgl::rectangle clb_bbox;

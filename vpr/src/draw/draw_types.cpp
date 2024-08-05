@@ -14,7 +14,7 @@
 ezgl::color t_draw_state::block_color(ClusterBlockId blk) const {
     if (use_default_block_color_[blk]) {
         auto& cluster_ctx = g_vpr_ctx.clustering();
-        const auto& block_locs = get_graphics_place_loc_vars_ref().block_locs();
+        const auto& block_locs = get_graphics_blk_loc_registry_ref().block_locs();
 
         t_physical_tile_type_ptr tile_type = nullptr;
         if (block_locs.empty()) { //No placement, pick best match
@@ -87,7 +87,7 @@ float t_draw_coords::get_tile_height() {
 }
 
 ezgl::rectangle t_draw_coords::get_pb_bbox(ClusterBlockId clb_index, const t_pb_graph_node& pb_gnode) {
-    auto& block_locs = get_graphics_place_loc_vars_ref().block_locs();
+    auto& block_locs = get_graphics_blk_loc_registry_ref().block_locs();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     return get_pb_bbox(block_locs[clb_index].loc.layer,
@@ -152,7 +152,7 @@ ezgl::rectangle t_draw_coords::get_absolute_pb_bbox(const ClusterBlockId clb_ind
 }
 
 ezgl::rectangle t_draw_coords::get_absolute_clb_bbox(const ClusterBlockId clb_index, const t_logical_block_type_ptr block_type) {
-    auto& block_locs = get_graphics_place_loc_vars_ref().block_locs();
+    auto& block_locs = get_graphics_blk_loc_registry_ref().block_locs();
 
     t_pl_loc loc = block_locs[clb_index].loc;
     return get_pb_bbox(loc.layer, loc.x, loc.y, loc.sub_tile, block_type);

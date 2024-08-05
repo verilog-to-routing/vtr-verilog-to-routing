@@ -110,7 +110,7 @@ void report_aborted_moves();
 e_create_move create_move(t_pl_blocks_to_be_moved& blocks_affected,
                           ClusterBlockId b_from,
                           t_pl_loc to,
-                          const BlkLocRegistry& place_loc_vars);
+                          const BlkLocRegistry& blk_loc_registry);
 
 /**
  * @brief Find the blocks that will be affected by a move of b_from to to_loc
@@ -123,18 +123,18 @@ e_create_move create_move(t_pl_blocks_to_be_moved& blocks_affected,
 e_block_move_result find_affected_blocks(t_pl_blocks_to_be_moved& blocks_affected,
                                          ClusterBlockId b_from,
                                          t_pl_loc to,
-                                         const BlkLocRegistry& place_loc_vars);
+                                         const BlkLocRegistry& blk_loc_registry);
 
 e_block_move_result record_single_block_swap(t_pl_blocks_to_be_moved& blocks_affected,
                                              ClusterBlockId b_from,
                                              t_pl_loc to,
-                                             const BlkLocRegistry& place_loc_vars);
+                                             const BlkLocRegistry& blk_loc_registry);
 
 e_block_move_result record_macro_swaps(t_pl_blocks_to_be_moved& blocks_affected,
                                        const int imacro_from,
                                        int& imember_from,
                                        t_pl_offset swap_offset,
-                                       const BlkLocRegistry& place_loc_vars);
+                                       const BlkLocRegistry& blk_loc_registry);
 
 e_block_move_result record_macro_macro_swaps(t_pl_blocks_to_be_moved& blocks_affected,
                                              const int imacro_from,
@@ -142,23 +142,23 @@ e_block_move_result record_macro_macro_swaps(t_pl_blocks_to_be_moved& blocks_aff
                                              const int imacro_to,
                                              ClusterBlockId blk_to,
                                              t_pl_offset swap_offset,
-                                             const BlkLocRegistry& place_loc_vars);
+                                             const BlkLocRegistry& blk_loc_registry);
 
 e_block_move_result record_macro_move(t_pl_blocks_to_be_moved& blocks_affected,
                                       std::vector<ClusterBlockId>& displaced_blocks,
                                       const int imacro,
                                       t_pl_offset swap_offset,
-                                      const BlkLocRegistry& place_loc_vars);
+                                      const BlkLocRegistry& blk_loc_registry);
 
 e_block_move_result identify_macro_self_swap_affected_macros(std::vector<int>& macros,
                                                              const int imacro,
                                                              t_pl_offset swap_offset,
-                                                             const BlkLocRegistry& place_loc_vars);
+                                                             const BlkLocRegistry& blk_loc_registry);
 
 e_block_move_result record_macro_self_swaps(t_pl_blocks_to_be_moved& blocks_affected,
                                             const int imacro,
                                             t_pl_offset swap_offset,
-                                            const BlkLocRegistry& place_loc_vars);
+                                            const BlkLocRegistry& blk_loc_registry);
 
 /**
  * @brief Check whether the "to" location is legal for the given "blk"
@@ -168,7 +168,7 @@ e_block_move_result record_macro_self_swaps(t_pl_blocks_to_be_moved& blocks_affe
  */
 bool is_legal_swap_to_location(ClusterBlockId blk,
                                t_pl_loc to,
-                               const BlkLocRegistry& place_loc_vars);
+                               const BlkLocRegistry& blk_loc_registry);
 
 /**
  * @brief Propose block for the RL agent based on required block type.
@@ -236,7 +236,7 @@ bool find_to_loc_uniform(t_logical_block_type_ptr type,
                          const t_pl_loc& from,
                          t_pl_loc& to,
                          ClusterBlockId b_from,
-                         const BlkLocRegistry& place_loc_vars);
+                         const BlkLocRegistry& blk_loc_registry);
 
 // Accessor f_placer_breakpoint_reached
 // return true when a placer breakpoint is reached
@@ -264,7 +264,7 @@ bool find_to_loc_median(t_logical_block_type_ptr blk_type,
                         const t_bb* limit_coords,
                         t_pl_loc& to_loc,
                         ClusterBlockId b_from,
-                        const BlkLocRegistry& place_loc_vars);
+                        const BlkLocRegistry& blk_loc_registry);
 
 /**
  * @brief Find a legal swap to location for the given type in a range around a specific location.
@@ -286,7 +286,7 @@ bool find_to_loc_centroid(t_logical_block_type_ptr blk_type,
                           const t_range_limiters& range_limiters,
                           t_pl_loc& to_loc,
                           ClusterBlockId b_from,
-                          const BlkLocRegistry& place_loc_vars);
+                          const BlkLocRegistry& blk_loc_registry);
 
 const std::string& move_type_to_string(e_move_type);
 
@@ -338,7 +338,7 @@ bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
                                              bool is_median,
                                              int to_layer_num,
                                              bool search_for_empty,
-                                             const BlkLocRegistry& place_loc_vars);
+                                             const BlkLocRegistry& blk_loc_registry);
 
 /**
  * @brief Get the the compressed loc from the uncompressed loc (grid_loc)
@@ -433,7 +433,7 @@ std::string e_move_result_to_string(e_move_result move_outcome);
  */
 int find_free_layer(t_logical_block_type_ptr logical_block,
                     const t_pl_loc& loc,
-                    const BlkLocRegistry& place_loc_vars);
+                    const BlkLocRegistry& blk_loc_registry);
 
 int get_random_layer(t_logical_block_type_ptr logical_block);
 

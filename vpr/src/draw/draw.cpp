@@ -570,7 +570,7 @@ void free_draw_structs() {
 #endif /* NO_GRAPHICS */
 }
 
-void init_draw_coords(float width_val, const BlkLocRegistry& place_loc_vars) {
+void init_draw_coords(float width_val, const BlkLocRegistry& blk_loc_registry) {
 #ifndef NO_GRAPHICS
     /* Load the arrays containing the left and bottom coordinates of the clbs   *
      * forming the FPGA.  tile_width_val sets the width and height of a drawn    *
@@ -583,7 +583,7 @@ void init_draw_coords(float width_val, const BlkLocRegistry& place_loc_vars) {
     /* Store a reference to block location variables so that other drawing
      * functions can access block location information without accessing
      * the global placement state, which is inaccessible during placement.*/
-    set_graphics_place_loc_vars_ref(place_loc_vars);
+    set_graphics_blk_loc_registry_ref(blk_loc_registry);
 
     if (!draw_state->show_graphics && !draw_state->save_graphics
         && draw_state->graphics_commands.empty())
@@ -642,7 +642,7 @@ void init_draw_coords(float width_val, const BlkLocRegistry& place_loc_vars) {
                                                  * draw_height});
 #else
     (void)width_val;
-    (void)place_loc_vars;
+    (void)blk_loc_registry;
 #endif /* NO_GRAPHICS */
 }
 
@@ -1008,7 +1008,7 @@ static void highlight_blocks(double x, double y) {
     }
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& block_locs = get_graphics_place_loc_vars_ref().block_locs();
+    auto& block_locs = get_graphics_blk_loc_registry_ref().block_locs();
 
     VTR_ASSERT(clb_index != EMPTY_BLOCK_ID);
 
@@ -1052,7 +1052,7 @@ ClusterBlockId get_cluster_block_id_from_xy_loc(double x, double y) {
     ClusterBlockId clb_index = EMPTY_BLOCK_ID;
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    const auto& grid_blocks = get_graphics_place_loc_vars_ref().grid_blocks();
+    const auto& grid_blocks = get_graphics_blk_loc_registry_ref().grid_blocks();
 
     /// determine block ///
     ezgl::rectangle clb_bbox;
