@@ -4,6 +4,8 @@
 #include "move_transactions.h"
 #include "place_util.h"
 
+#include <functional>
+
 class PlacerContext;
 
 /**
@@ -115,11 +117,6 @@ class NetCostHandler {
                                       const PlacerCriticalities* criticalities,
                                       t_placer_costs* costs);
 
-    /**
-     * @brief Frees the chanx_place_cost_fac and chany_place_cost_fac arrays.
-     */
-    void free_chan_w_factors_for_place_cost();
-
   private:
     bool cube_bb_ = false;
     PlacerContext& placer_ctx_;
@@ -175,6 +172,18 @@ class NetCostHandler {
     vtr::vector<ClusterNetId, double> net_cost_;
     vtr::vector<ClusterNetId, double> proposed_net_cost_;
     vtr::vector<ClusterNetId, NetUpdateState> bb_update_status_;
+
+    /**
+     * @brief Matrices below are used to precompute the inverse of the average
+     * number of tracks per channel between [subhigh] and [sublow].  Access
+     * them as chan?_place_cost_fac[subhigh][sublow].  They are used to
+     * speed up the computation of the cost function that takes the length
+     * of the net bounding box in each dimension, divided by the average
+     * number of tracks in that direction; for other cost functions they
+     * will never be used.
+     */
+    vtr::NdMatrix<float, 2> chanx_place_cost_fac_; // [0...device_ctx.grid.width()-2]
+    vtr::NdMatrix<float, 2> chany_place_cost_fac_; // [0...device_ctx.grid.height()-2]
 
 
   private:
@@ -438,5 +447,24 @@ class NetCostHandler {
      * @return Total bb (wirelength) cost for the placement
      */
      double recompute_bb_cost_();
+
+     /**
+     * @brief Given the 3D BB, calculate the wire-length cost of the net
+     * @param net_id ID of the net which cost is requested
+     * @param bb Bounding box of the net
+     * @return Wirelength cost of the net
+     */
+     double get_net_cost_(ClusterNetId net_id, const t_bb& bb);
+
+     /**
+     * @brief Given the per-layer BB, calculate the wire-length cost of the net on each layer
+     * and return the sum of the costs
+     * @param net_id ID of the net which cost is requested
+     * @param bb Per-layer bounding box of the net
+     * @return Wirelength cost of the net
+     */
+     double get_net_layer_bb_wire_cost_(ClusterNetId /* net_id */,
+                                        const std::vector<t_2D_bb>& bb,
+                                        const vtr::NdMatrixProxy<int, 1> layer_pin_sink_count);
 
 };
