@@ -195,7 +195,7 @@ static NetCostHandler alloc_and_load_placement_structs(const t_placer_opts& plac
                                                        PlacerContext& placer_ctx);
 
 static NetCostHandler alloc_and_load_try_swap_structs(PlacerContext& placer_ctx, const bool cube_bb, float place_cost_exp);
-static void free_try_swap_structs(NetCostHandler& net_cost_handler);
+static void free_try_swap_structs();
 
 static void free_placement_structs(const t_placer_opts& placer_opts,
                                    const t_noc_opts& noc_opts,
@@ -1948,7 +1948,7 @@ static void free_placement_structs(const t_placer_opts& placer_opts,
 
     net_cost_handler.free_chan_w_factors_for_place_cost();
 
-    free_try_swap_structs(net_cost_handler);
+    free_try_swap_structs();
 
     if (noc_opts.noc) {
         free_noc_placement_structs();
@@ -1967,9 +1967,7 @@ static NetCostHandler alloc_and_load_try_swap_structs(PlacerContext& placer_ctx,
     return {placer_ctx, num_nets, cube_bb, place_cost_exp};
 }
 
-static void free_try_swap_structs(NetCostHandler& net_cost_handler) {
-    net_cost_handler.free_try_swap_net_cost_structs();
-
+static void free_try_swap_structs() {
     auto& place_ctx = g_vpr_ctx.mutable_placement();
     vtr::release_memory(place_ctx.compressed_block_grids);
 }

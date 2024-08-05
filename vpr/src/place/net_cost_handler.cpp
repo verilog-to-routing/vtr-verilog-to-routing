@@ -104,15 +104,6 @@ struct PLNetCost {
     vtr::vector<ClusterNetId, NetUpdateState> bb_update_status;
 };
 
-/* The following arrays are used by the try_swap function for speed.   */
-
-
-
-//struct TSInfo {
-//
-//};
-
-
 } // namespace
 
 static struct PLNetCost pl_net_cost;
@@ -1866,15 +1857,6 @@ void NetCostHandler::free_place_move_structs() {
     vtr::release_memory(pl_net_cost.net_cost);
     vtr::release_memory(pl_net_cost.proposed_net_cost);
     vtr::release_memory(pl_net_cost.bb_update_status);
-}
-
-void NetCostHandler::free_try_swap_net_cost_structs() {
-    vtr::release_memory(ts_bb_edge_new_);
-    vtr::release_memory(ts_bb_coord_new_);
-    vtr::release_memory(layer_ts_bb_edge_new_);
-    vtr::release_memory(layer_ts_bb_coord_new_);
-    ts_layer_sink_pin_count_.clear();
-    vtr::release_memory(ts_nets_to_update_);
 }
 
 NetCostHandler::NetCostHandler(PlacerContext& placer_ctx, size_t num_nets, bool cube_bb, float place_cost_exp)

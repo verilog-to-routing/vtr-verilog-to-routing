@@ -125,11 +125,6 @@ class NetCostHandler {
      */
     void free_place_move_structs();
 
-    /**
-     * @brief Free (layer_)ts_bb_edge_new, (layer_)ts_bb_coord_new, ts_layer_sink_pin_count, and ts_nets_to_update data structures.
-     */
-    void free_try_swap_net_cost_structs();
-
   private:
     bool cube_bb_ = false;
     PlacerContext& placer_ctx_;
