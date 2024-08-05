@@ -188,8 +188,7 @@ void print_clb_placement(const char* fname);
 static bool is_cube_bb(const e_place_bounding_box_mode place_bb_mode,
                        const RRGraphView& rr_graph);
 
-static NetCostHandler alloc_and_load_placement_structs(float place_cost_exp,
-                                                       const t_placer_opts& placer_opts,
+static NetCostHandler alloc_and_load_placement_structs(const t_placer_opts& placer_opts,
                                                        const t_noc_opts& noc_opts,
                                                        t_direct_inf* directs,
                                                        int num_directs,
@@ -449,8 +448,8 @@ void try_place(const Netlist<>& net_list,
     const auto& p_runtime_ctx = placer_ctx.runtime();
 
 
-    NetCostHandler net_cost_handler = alloc_and_load_placement_structs(placer_opts.place_cost_exp, placer_opts,
-                                                                       noc_opts, directs, num_directs, placer_ctx);
+    NetCostHandler net_cost_handler = alloc_and_load_placement_structs(placer_opts, noc_opts, directs,
+                                                                       num_directs, placer_ctx);
     set_net_handlers_placer_ctx(placer_ctx);
 
     std::unique_ptr<ManualMoveGenerator> manual_move_generator = std::make_unique<ManualMoveGenerator>(placer_ctx);
@@ -1847,8 +1846,7 @@ static void invalidate_affected_connections(const t_pl_blocks_to_be_moved& block
 
 /* Allocates the major structures needed only by the placer, primarily for *
  * computing costs quickly and such.                                       */
-static NetCostHandler alloc_and_load_placement_structs(float place_cost_exp,
-                                                       const t_placer_opts& placer_opts,
+static NetCostHandler alloc_and_load_placement_structs(const t_placer_opts& placer_opts,
                                                        const t_noc_opts& noc_opts,
                                                        t_direct_inf* directs,
                                                        int num_directs,
@@ -1924,7 +1922,7 @@ static NetCostHandler alloc_and_load_placement_structs(float place_cost_exp,
         allocate_and_load_noc_placement_structs();
     }
 
-    return alloc_and_load_try_swap_structs(place_ctx.cube_bb, place_cost_exp);
+    return alloc_and_load_try_swap_structs(place_ctx.cube_bb, placer_opts.place_cost_exp);
 }
 
 /* Frees the major structures needed by the placer (and not needed       *
