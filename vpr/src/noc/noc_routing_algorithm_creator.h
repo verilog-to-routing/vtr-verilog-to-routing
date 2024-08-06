@@ -38,7 +38,8 @@ class NocRoutingAlgorithmCreator {
      * NoC routing algorithm
      * @return std::unique_ptr<NocRouting> A reference to the created NoC routing algorithm
      */
-    static std::unique_ptr<NocRouting> create_routing_algorithm(const std::string& routing_algorithm_name);
+    static std::unique_ptr<NocRouting> create_routing_algorithm(const std::string& routing_algorithm_name,
+                                                                const NocStorage& noc_model);
 };
 
 #endif

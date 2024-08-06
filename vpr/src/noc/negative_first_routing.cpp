@@ -6,6 +6,7 @@ NegativeFirstRouting::~NegativeFirstRouting() = default;
 const std::vector<TurnModelRouting::Direction>& NegativeFirstRouting::get_legal_directions(NocRouterId /*src_router_id*/,
                                                                                            NocRouterId curr_router_id,
                                                                                            NocRouterId dst_router_id,
+                                                                                           TurnModelRouting::Direction /*prev_dir*/,
                                                                                            const NocStorage& noc_model) {
     // get current and destination NoC routers
     const auto& curr_router = noc_model.get_single_noc_router(curr_router_id);
@@ -29,11 +30,16 @@ const std::vector<TurnModelRouting::Direction>& NegativeFirstRouting::get_legal_
 
     // check whether moving west keeps us on a minimal route
     if (dst_router_pos.x < curr_router_pos.x) {
-        returned_legal_direction.push_back(TurnModelRouting::Direction::LEFT);
+        returned_legal_direction.push_back(TurnModelRouting::Direction::WEST);
     }
 
     // check whether moving south keeps us on a minimal route
     if (dst_router_pos.y < curr_router_pos.y) {
+        returned_legal_direction.push_back(TurnModelRouting::Direction::SOUTH);
+    }
+
+    // check whether moving below keeps us on a minimal route
+    if (dst_router_pos.layer_num < curr_router_pos.layer_num) {
         returned_legal_direction.push_back(TurnModelRouting::Direction::DOWN);
     }
 
@@ -50,96 +56,47 @@ const std::vector<TurnModelRouting::Direction>& NegativeFirstRouting::get_legal_
 
     // check whether moving east keeps us on a minimal route
     if (dst_router_pos.x > curr_router_pos.x) {
-        returned_legal_direction.push_back(TurnModelRouting::Direction::RIGHT);
+        returned_legal_direction.push_back(TurnModelRouting::Direction::EAST);
     }
 
     // check whether moving north keeps us on a minimal route
     if (dst_router_pos.y > curr_router_pos.y) {
+        returned_legal_direction.push_back(TurnModelRouting::Direction::NORTH);
+    }
+
+    // check whether moving above keeps us on a minimal route
+    if (dst_router_pos.layer_num > curr_router_pos.layer_num) {
         returned_legal_direction.push_back(TurnModelRouting::Direction::UP);
     }
 
     return returned_legal_direction;
 }
 
-TurnModelRouting::Direction NegativeFirstRouting::select_next_direction(const std::vector<TurnModelRouting::Direction>& legal_directions,
-                                                                        NocRouterId src_router_id,
-                                                                        NocRouterId dst_router_id,
-                                                                        NocRouterId curr_router_id,
-                                                                        NocTrafficFlowId traffic_flow_id,
-                                                                        const NocStorage& noc_model) {
-    // get current and destination NoC routers
-    const auto& curr_router = noc_model.get_single_noc_router(curr_router_id);
-    const auto& dst_router = noc_model.get_single_noc_router(dst_router_id);
-
-    // get the position of current and destination NoC routers
-    const auto curr_router_pos = curr_router.get_router_physical_location();
-    const auto dst_router_pos = dst_router.get_router_physical_location();
-
-    // if there is only one legal direction, take it
-    if (legal_directions.size() == 1) {
-        return legal_directions[0];
-    }
-
-    /* If the function reaches this point,
-     * the destination routed is located at SW or NE of
-     * the current router. We adopt a similar approach to
-     * WestFirstRouting to select between south/north and west/east.
-     */
-
-    // compute the hash value
-    uint32_t hash_val = get_hash_value(src_router_id, dst_router_id, curr_router_id, traffic_flow_id);
-    // get the maximum value that can be represented by size_t
-    const uint32_t max_uint32_t_val = std::numeric_limits<uint32_t>::max();
-
-    // get the distance from the current router to the destination in each coordination
-    int delta_x = abs(dst_router_pos.x - curr_router_pos.x);
-    int delta_y = abs(dst_router_pos.y - curr_router_pos.y);
-
-    // compute the probability of going to north/south direction
-    uint32_t ns_probability = delta_y * (max_uint32_t_val / (delta_x + delta_y));
-
-    TurnModelRouting::Direction selected_direction = TurnModelRouting::Direction::INVALID;
-
-    if (hash_val < ns_probability) {
-        selected_direction = select_vertical_direction(legal_directions);
-    } else {
-        selected_direction = select_horizontal_direction(legal_directions);
-    }
-
-    return selected_direction;
-}
-
-bool NegativeFirstRouting::is_turn_legal(const std::array<std::reference_wrapper<const NocRouter>, 3>& noc_routers) const {
-    const int x1 = noc_routers[0].get().get_router_grid_position_x();
-    const int y1 = noc_routers[0].get().get_router_grid_position_y();
-
-    const int x2 = noc_routers[1].get().get_router_grid_position_x();
-    const int y2 = noc_routers[1].get().get_router_grid_position_y();
-
-    const int x3 = noc_routers[2].get().get_router_grid_position_x();
-    const int y3 = noc_routers[2].get().get_router_grid_position_y();
+bool NegativeFirstRouting::is_turn_legal(const std::array<std::reference_wrapper<const NocRouter>, 3>& noc_routers,
+                                         const NocStorage& noc_model) const {
+    const auto[x1, y1, z1] = noc_routers[0].get().get_router_physical_location();
+    const auto[x2, y2, z2] = noc_routers[1].get().get_router_physical_location();
+    const auto[x3, y3, z3] = noc_routers[2].get().get_router_physical_location();
 
     // check if the given routers can be traversed one after another
-    VTR_ASSERT(x2 == x1 || y2 == y1);
-    VTR_ASSERT(x3 == x2 || y3 == y2);
+    VTR_ASSERT(vtr::exactly_k_conditions(2, x1 == x2, y1 == y2, z1 == z2));
+    VTR_ASSERT(vtr::exactly_k_conditions(2, x2 == x3, y2 == y3, z2 == z3));
 
     // going back to the first router is not allowed
-    if (x1 == x3 && y1 == y3) {
+    if (x1 == x3 && y1 == y3 && z1 == z3) {
         return false;
     }
 
-    /* In negative-first routing algorithm, a traffic flow
-     * can't take a downward turn if it is travelling toward right direction.
-     */
-    if (x2 > x1 && y3 < y2) {
-        return false;
-    }
-
-    /* In negative-first routing algorithm, a traffic flow
-     * can't take a left turn if it is travelling upwards.
-     */
-    if (y2 > y1 && x3 < x2) {
-        return false;
+    // In negative-first routing algorithm, these 6 90-degree turns are prohibited.
+    if (noc_model.is_noc_3d()) {
+        if ((x2 > x1 && y3 < y2) || (y2 > y1 && x3 < x2) || (z2 > z1 && x3 < x2) ||
+            (x2 > x1 && z3 < z2) || (z2 > z1 && y3 < y2) || (y2 > y1 && z3 < z2)) {
+            return false;
+        }
+    } else {
+        if ((x2 > x1 && y3 < y2) || (y2 > y1 && x3 < x2)) {
+            return false;
+        }
     }
 
     return true;

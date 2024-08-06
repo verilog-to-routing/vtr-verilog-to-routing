@@ -64,7 +64,7 @@ NocRouter& NocStorage::get_single_mutable_noc_router(NocRouterId id) {
 }
 
 // get link properties
-    const NocLink& NocStorage::get_single_noc_link(NocLinkId id) const {
+const NocLink& NocStorage::get_single_noc_link(NocLinkId id) const {
     return link_storage[id];
 }
 
@@ -97,6 +97,10 @@ NocRouterId NocStorage::get_router_at_grid_location(const t_pl_loc& hard_router_
     VTR_ASSERT(hard_router_block != grid_location_to_router_id.end());
 
     return hard_router_block->second;
+}
+
+bool NocStorage::is_noc_3d() const {
+    return multi_layer_noc_;
 }
 
 // setters for the NoC
@@ -230,16 +234,23 @@ void NocStorage::finished_building_noc() {
      */
 
     auto router_latency_it = std::adjacent_find(router_storage.begin(), router_storage.end(),
-                                                [](const NocRouter& a, const NocRouter& b) {
+                                                [](const NocRouter& a, const NocRouter& b) -> bool {
                                                     return a.get_latency() != b.get_latency();
                                                 });
     detailed_router_latency_ = (router_latency_it != router_storage.end());
 
     auto link_latency_it = std::adjacent_find(link_storage.begin(), link_storage.end(),
-                                              [](const NocLink& a, const NocLink& b) {
+                                              [](const NocLink& a, const NocLink& b) -> bool {
                                                   return a.get_latency() != b.get_latency();
                                               });
     detailed_link_latency_ = (link_latency_it != link_storage.end());
+
+    auto router_layer_it = std::adjacent_find(router_storage.begin(), router_storage.end(),
+                                              [](const NocRouter& a, const NocRouter& b) -> bool {
+                                                  return a.get_router_layer_position() != b.get_router_layer_position();
+                                              });
+
+    multi_layer_noc_ = (router_layer_it != router_storage.end());
 }
 
 void NocStorage::clear_noc() {

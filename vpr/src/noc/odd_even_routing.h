@@ -18,8 +18,10 @@
  * in odd columns, while EN and ES turns are not allowed in even columns.
  */
 
-class OddEvenRouting : public TurnModelRouting{
+class OddEvenRouting : public TurnModelRouting {
   public:
+    OddEvenRouting(const NocStorage& noc_model);
+
     ~OddEvenRouting() override;
 
   private:
@@ -27,16 +29,21 @@ class OddEvenRouting : public TurnModelRouting{
     const std::vector<TurnModelRouting::Direction>& get_legal_directions(NocRouterId src_router_id,
                                                                          NocRouterId curr_router_id,
                                                                          NocRouterId dst_router_id,
+                                                                         TurnModelRouting::Direction prev_dir,
                                                                          const NocStorage& noc_model) override;
 
-    TurnModelRouting::Direction select_next_direction(const std::vector<TurnModelRouting::Direction>& legal_directions,
-                                                      NocRouterId src_router_id,
-                                                      NocRouterId dst_router_id,
-                                                      NocRouterId curr_router_id,
-                                                      NocTrafficFlowId traffic_flow_id,
-                                                      const NocStorage& noc_model) override;
+    bool is_turn_legal(const std::array<std::reference_wrapper<const NocRouter>, 3>& noc_routers,
+                       const NocStorage& noc_model) const override;
 
-    bool is_turn_legal(const std::array<std::reference_wrapper<const NocRouter>, 3>& noc_routers) const override;
+    inline void route_2d(t_physical_tile_loc comp_src_loc,
+                         t_physical_tile_loc comp_curr_loc,
+                         t_physical_tile_loc comp_dst_loc,
+                         TurnModelRouting::Direction prev_dir);
+
+    inline void route_3d(t_physical_tile_loc comp_src_loc,
+                         t_physical_tile_loc comp_curr_loc,
+                         t_physical_tile_loc comp_dst_loc,
+                         TurnModelRouting::Direction prev_dir);
 
     /**
      * Checks whether the given umber is odd.
@@ -51,6 +58,9 @@ class OddEvenRouting : public TurnModelRouting{
      * @return True if the passed number of even, otherwise false.
      */
     static inline bool is_even(int number);
+
+  private:
+    vtr::vector<NocRouterId, t_physical_tile_loc> compressed_noc_locs_;
 };
 
 #endif //VTR_ODD_EVEN_ROUTING_H
