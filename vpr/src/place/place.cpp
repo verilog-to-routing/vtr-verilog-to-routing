@@ -1912,7 +1912,7 @@ static NetCostHandler alloc_and_load_placement_structs(const t_placer_opts& plac
 
     place_ctx.compressed_block_grids = create_compressed_block_grids();
 
-    return {placer_ctx, num_nets, place_ctx.cube_bb, placer_opts.place_cost_exp};
+    return {placer_opts, placer_ctx, num_nets, place_ctx.cube_bb};
 }
 
 /* Frees the major structures needed by the placer (and not needed       *

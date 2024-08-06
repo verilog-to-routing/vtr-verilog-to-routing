@@ -44,7 +44,7 @@ class NetCostHandler {
      * @param cube_bb True if the 3D bounding box should be used, false otherwise.
      * @param place_cost_exp It is an exponent to which you take the average inverse channel
      */
-    NetCostHandler(PlacerContext& placer_ctx, size_t num_nets, bool cube_bb, float place_cost_exp);
+    NetCostHandler(const t_placer_opts& placer_opts, PlacerContext& placer_ctx, size_t num_nets, bool cube_bb);
 
     /**
      * @brief Finds the bb cost from scratch.
@@ -120,6 +120,7 @@ class NetCostHandler {
   private:
     bool cube_bb_ = false;
     PlacerContext& placer_ctx_;
+    const t_placer_opts& placer_opts_;
 
     std::function<double(e_cost_methods method)> comp_bb_cost_functor_;
 

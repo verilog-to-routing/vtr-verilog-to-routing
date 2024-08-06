@@ -129,9 +129,13 @@ static double wirelength_crossing_count(size_t fanout);
 /******************************* End of Function definitions ************************************/
 
 
-NetCostHandler::NetCostHandler(PlacerContext& placer_ctx, size_t num_nets, bool cube_bb, float place_cost_exp)
+NetCostHandler::NetCostHandler(const t_placer_opts& placer_opts,
+                               PlacerContext& placer_ctx,
+                               size_t num_nets,
+                               bool cube_bb)
     : cube_bb_(cube_bb)
-    , placer_ctx_(placer_ctx) {
+    , placer_ctx_(placer_ctx)
+    , placer_opts_(placer_opts) {
     const int num_layers = g_vpr_ctx.device().grid.get_num_layers();
 
     // Either 3D BB or per layer BB data structure are used, not both.
@@ -159,7 +163,7 @@ NetCostHandler::NetCostHandler(PlacerContext& placer_ctx, size_t num_nets, bool 
      * been recomputed. */
     bb_update_status_.resize(num_nets, NetUpdateState::NOT_UPDATED_YET);
 
-    alloc_and_load_chan_w_factors_for_place_cost_(place_cost_exp);
+    alloc_and_load_chan_w_factors_for_place_cost_(placer_opts_.place_cost_exp);
 }
 
 void NetCostHandler::alloc_and_load_chan_w_factors_for_place_cost_(float place_cost_exp) {
@@ -1500,11 +1504,9 @@ double NetCostHandler::get_net_cost_(ClusterNetId net_id, const t_bb& bb) {
 double NetCostHandler::get_net_layer_bb_wire_cost_(ClusterNetId /* net_id */,
                                                    const std::vector<t_2D_bb>& bb,
                                                    const vtr::NdMatrixProxy<int, 1> layer_pin_sink_count) {
-    /* Finds the cost due to one net by looking at its coordinate bounding  *
-     * box.                                                                 */
+    // Finds the cost due to one net by looking at its coordinate bounding box.
 
     double ncost = 0.;
-    double crossing = 0.;
     int num_layers = g_vpr_ctx.device().grid.get_num_layers();
 
     for (int layer_num = 0; layer_num < num_layers; layer_num++) {
@@ -1512,12 +1514,10 @@ double NetCostHandler::get_net_layer_bb_wire_cost_(ClusterNetId /* net_id */,
         if (layer_pin_sink_count[layer_num] == 0) {
             continue;
         }
-        /*
-        adjust the bounding box half perimeter by the wirelength correction
-        factor based on terminal count, which is 1 for the source + the number
-        of sinks on this layer.
-        */
-        crossing = wirelength_crossing_count(layer_pin_sink_count[layer_num] + 1);
+        /* Adjust the bounding box half perimeter by the wirelength correction
+         * factor based on terminal count, which is 1 for the source + the number
+         * of sinks on this layer. */
+        double crossing = wirelength_crossing_count(layer_pin_sink_count[layer_num] + 1);
 
         /* Could insert a check for xmin == xmax.  In that case, assume  *
          * connection will be made with no bends and hence no x-cost.    *
@@ -1533,7 +1533,7 @@ double NetCostHandler::get_net_layer_bb_wire_cost_(ClusterNetId /* net_id */,
                  * chany_place_cost_fac_[bb[layer_num].xmax][bb[layer_num].xmin - 1];
     }
 
-    return (ncost);
+    return ncost;
 }
 
 static double get_net_wirelength_estimate(ClusterNetId net_id, const t_bb& bb) {
@@ -1562,15 +1562,14 @@ static double get_net_wirelength_from_layer_bb(ClusterNetId /* net_id */,
      * its coordinate bounding box.                                         */
 
     double ncost = 0.;
-    double crossing = 0.;
-    int num_layers = g_vpr_ctx.device().grid.get_num_layers();
+    const int num_layers = g_vpr_ctx.device().grid.get_num_layers();
 
     for (int layer_num = 0; layer_num < num_layers; layer_num++) {
         VTR_ASSERT_SAFE(layer_pin_sink_count[layer_num] != OPEN);
         if (layer_pin_sink_count[layer_num] == 0) {
             continue;
         }
-        crossing = wirelength_crossing_count(layer_pin_sink_count[layer_num] + 1);
+        double crossing = wirelength_crossing_count(layer_pin_sink_count[layer_num] + 1);
 
         /* Could insert a check for xmin == xmax.  In that case, assume  *
          * connection will be made with no bends and hence no x-cost.    *
@@ -1580,11 +1579,10 @@ static double get_net_wirelength_from_layer_bb(ClusterNetId /* net_id */,
          * channel capacity.   Do this for x, then y direction and add.  */
 
         ncost += (bb[layer_num].xmax - bb[layer_num].xmin + 1) * crossing;
-
         ncost += (bb[layer_num].ymax - bb[layer_num].ymin + 1) * crossing;
     }
 
-    return (ncost);
+    return ncost;
 }
 
 double NetCostHandler::recompute_bb_cost_() {
@@ -1636,10 +1634,9 @@ void NetCostHandler::find_affected_nets_and_update_costs(const t_place_algorithm
     ts_nets_to_update_.resize(0);
 
     /* Go through all the blocks moved. */
-    for (const auto& block : blocks_affected.moved_blocks) {
-        const auto& moving_block_inf = block;
+    for (const t_pl_moved_block& moving_block : blocks_affected.moved_blocks) {
         auto& affected_pins = blocks_affected.affected_pins;
-        ClusterBlockId blk = block.block_num;
+        ClusterBlockId blk = moving_block.block_num;
 
         /* Go through all the pins in the moved block. */
         for (ClusterPinId blk_pin : clb_nlist.block_pins(blk)) {
@@ -1653,7 +1650,7 @@ void NetCostHandler::find_affected_nets_and_update_costs(const t_place_algorithm
                                          criticalities,
                                          blk,
                                          blk_pin,
-                                         moving_block_inf,
+                                         moving_block,
                                          affected_pins,
                                          timing_delta_c,
                                          is_src_moving);

@@ -30,7 +30,7 @@ struct t_pl_moved_block {
  * placement.                                                   *
  * Store the information on the blocks to be moved in a swap during     *
  * placement, in the form of array of structs instead of struct with    *
- * arrays for cache effifiency                                          *
+ * arrays for cache efficiency                                          *
  *
  * moved blocks: a list of moved blocks data structure with     *
  *               information on the move.                       *
