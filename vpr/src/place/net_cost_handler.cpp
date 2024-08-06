@@ -128,6 +128,213 @@ static double wirelength_crossing_count(size_t fanout);
 
 /******************************* End of Function definitions ************************************/
 
+
+NetCostHandler::NetCostHandler(PlacerContext& placer_ctx, size_t num_nets, bool cube_bb, float place_cost_exp)
+    : cube_bb_(cube_bb)
+    , placer_ctx_(placer_ctx) {
+    const int num_layers = g_vpr_ctx.device().grid.get_num_layers();
+
+    // Either 3D BB or per layer BB data structure are used, not both.
+    if (cube_bb_) {
+        ts_bb_edge_new_.resize(num_nets, t_bb());
+        ts_bb_coord_new_.resize(num_nets, t_bb());
+        comp_bb_cost_functor_ =  std::bind(&NetCostHandler::comp_3d_bb_cost_, this, std::placeholders::_1);
+    } else {
+        layer_ts_bb_edge_new_.resize(num_nets, std::vector<t_2D_bb>(num_layers, t_2D_bb()));
+        layer_ts_bb_coord_new_.resize(num_nets, std::vector<t_2D_bb>(num_layers, t_2D_bb()));
+        comp_bb_cost_functor_ =  std::bind(&NetCostHandler::comp_per_layer_bb_cost_, this, std::placeholders::_1);
+    }
+
+    /* This initializes the whole matrix to OPEN which is an invalid value*/
+    ts_layer_sink_pin_count_.resize({num_nets, size_t(num_layers)}, OPEN);
+
+    ts_nets_to_update_.resize(num_nets, ClusterNetId::INVALID());
+
+    // negative net costs mean the cost is not valid.
+    net_cost_.resize(num_nets, -1.);
+    proposed_net_cost_.resize(num_nets, -1.);
+
+    /* Used to store costs for moves not yet made and to indicate when a net's
+     * cost has been recomputed. proposed_net_cost[inet] < 0 means net's cost hasn't
+     * been recomputed. */
+    bb_update_status_.resize(num_nets, NetUpdateState::NOT_UPDATED_YET);
+
+    alloc_and_load_chan_w_factors_for_place_cost_(place_cost_exp);
+}
+
+void NetCostHandler::alloc_and_load_chan_w_factors_for_place_cost_(float place_cost_exp) {
+    /* Allocates and loads the chanx_place_cost_fac and chany_place_cost_fac *
+     * arrays with the inverse of the average number of tracks per channel   *
+     * between [subhigh] and [sublow].  This is only useful for the cost     *
+     * function that takes the length of the net bounding box in each        *
+     * dimension divided by the average number of tracks in that direction.  *
+     * For other cost functions, you don't have to bother calling this       *
+     * routine; when using the cost function described above, however, you   *
+     * must always call this routine after you call init_chan and before     *
+     * you do any placement cost determination. The place_cost_exp factor    *
+     * specifies to what power the width of the channel should be taken --   *
+     * larger numbers make narrower channels more expensive.                 */
+
+    auto& device_ctx = g_vpr_ctx.device();
+
+    const size_t grid_height = device_ctx.grid.height();
+    const size_t grid_width = device_ctx.grid.width();
+
+    /* Access arrays below as chan?_place_cost_fac[subhigh][sublow]. Since subhigh must be greater than or
+     * equal to sublow, we will only access the lower half of a matrix, but we allocate the whole matrix anyway
+     * for simplicity, so we can use the vtr utility matrix functions. */
+    chanx_place_cost_fac_.resize({grid_height, grid_height + 1});
+    chany_place_cost_fac_.resize({grid_width, grid_width + 1});
+
+    // First compute the number of tracks between channel high and channel low, inclusive.
+    chanx_place_cost_fac_[0][0] = device_ctx.chan_width.x_list[0];
+
+    for (size_t high = 1; high < grid_height; high++) {
+        chanx_place_cost_fac_[high][high] = device_ctx.chan_width.x_list[high];
+        for (size_t low = 0; low < high; low++) {
+            chanx_place_cost_fac_[high][low] = chanx_place_cost_fac_[high - 1][low] + device_ctx.chan_width.x_list[high];
+        }
+    }
+
+    /* Now compute the inverse of the average number of tracks per channel *
+     * between high and low.  The cost function divides by the average     *
+     * number of tracks per channel, so by storing the inverse I convert   *
+     * this to a faster multiplication.  Take this final number to the     *
+     * place_cost_exp power -- numbers other than one mean this is no      *
+     * longer a simple "average number of tracks"; it is some power of     *
+     * that, allowing greater penalization of narrow channels.             */
+    for (size_t high = 0; high < grid_height; high++)
+        for (size_t low = 0; low <= high; low++) {
+            /* Since we will divide the wiring cost by the average channel *
+             * capacity between high and low, having only 0 width channels *
+             * will result in infinite wiring capacity normalization       *
+             * factor, and extremely bad placer behaviour. Hence we change *
+             * this to a small (1 track) channel capacity instead.         */
+            if (chanx_place_cost_fac_[high][low] == 0.0f) {
+                VTR_LOG_WARN("CHANX place cost fac is 0 at %d %d\n", high, low);
+                chanx_place_cost_fac_[high][low] = 1.0f;
+            }
+
+            chanx_place_cost_fac_[high][low] = (high - low + 1.) / chanx_place_cost_fac_[high][low];
+            chanx_place_cost_fac_[high][low] = pow((double)chanx_place_cost_fac_[high][low], (double)place_cost_exp);
+        }
+
+    /* Now do the same thing for the y-directed channels.  First get the
+     * number of tracks between channel high and channel low, inclusive. */
+    chany_place_cost_fac_[0][0] = device_ctx.chan_width.y_list[0];
+
+    for (size_t high = 1; high < grid_width; high++) {
+        chany_place_cost_fac_[high][high] = device_ctx.chan_width.y_list[high];
+        for (size_t low = 0; low < high; low++) {
+            chany_place_cost_fac_[high][low] = chany_place_cost_fac_[high - 1][low] + device_ctx.chan_width.y_list[high];
+        }
+    }
+
+    /* Now compute the inverse of the average number of tracks per channel
+     * between high and low.  Take to specified power. */
+    for (size_t high = 0; high < grid_width; high++)
+        for (size_t low = 0; low <= high; low++) {
+            /* Since we will divide the wiring cost by the average channel *
+             * capacity between high and low, having only 0 width channels *
+             * will result in infinite wiring capacity normalization       *
+             * factor, and extremely bad placer behaviour. Hence we change *
+             * this to a small (1 track) channel capacity instead.         */
+            if (chany_place_cost_fac_[high][low] == 0.0f) {
+                VTR_LOG_WARN("CHANY place cost fac is 0 at %d %d\n", high, low);
+                chany_place_cost_fac_[high][low] = 1.0f;
+            }
+
+            chany_place_cost_fac_[high][low] = (high - low + 1.) / chany_place_cost_fac_[high][low];
+            chany_place_cost_fac_[high][low] = pow((double)chany_place_cost_fac_[high][low], (double)place_cost_exp);
+        }
+}
+
+double NetCostHandler::comp_bb_cost(e_cost_methods method) {
+    return comp_bb_cost_functor_(method);
+}
+
+double NetCostHandler::comp_3d_bb_cost_(e_cost_methods method) {
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& place_move_ctx = placer_ctx_.mutable_move();
+
+    double cost = 0;
+    double expected_wirelength = 0.0;
+
+    for (ClusterNetId net_id : cluster_ctx.clb_nlist.nets()) {       /* for each net ... */
+        if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)) { /* Do only if not ignored. */
+            /* Small nets don't use incremental updating on their bounding boxes, *
+             * so they can use a fast bounding box calculator.                    */
+            if (cluster_ctx.clb_nlist.net_sinks(net_id).size() >= SMALL_NET && method == e_cost_methods::NORMAL) {
+                get_bb_from_scratch_(net_id,
+                                     place_move_ctx.bb_coords[net_id],
+                                     place_move_ctx.bb_num_on_edges[net_id],
+                                     place_move_ctx.num_sink_pin_layer[size_t(net_id)]);
+            } else {
+                get_non_updatable_bb_(net_id,
+                                      place_move_ctx.bb_coords[net_id],
+                                      place_move_ctx.num_sink_pin_layer[size_t(net_id)]);
+            }
+
+            net_cost_[net_id] = get_net_cost_(net_id, place_move_ctx.bb_coords[net_id]);
+            cost += net_cost_[net_id];
+            if (method == e_cost_methods::CHECK) {
+                expected_wirelength += get_net_wirelength_estimate(net_id, place_move_ctx.bb_coords[net_id]);
+            }
+        }
+    }
+
+    if (method == e_cost_methods::CHECK) {
+        VTR_LOG("\n");
+        VTR_LOG("BB estimate of min-dist (placement) wire length: %.0f\n",
+                expected_wirelength);
+    }
+
+    return cost;
+}
+
+double NetCostHandler::comp_per_layer_bb_cost_(e_cost_methods method) {
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& place_move_ctx = placer_ctx_.mutable_move();
+
+    double cost = 0;
+    double expected_wirelength = 0.0;
+
+    for (ClusterNetId net_id : cluster_ctx.clb_nlist.nets()) {       /* for each net ... */
+        if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)) { /* Do only if not ignored. */
+            /* Small nets don't use incremental updating on their bounding boxes, *
+             * so they can use a fast bounding box calculator.                    */
+            if (cluster_ctx.clb_nlist.net_sinks(net_id).size() >= SMALL_NET && method == e_cost_methods::NORMAL) {
+                get_layer_bb_from_scratch_(net_id,
+                                           place_move_ctx.layer_bb_num_on_edges[net_id],
+                                           place_move_ctx.layer_bb_coords[net_id],
+                                           place_move_ctx.num_sink_pin_layer[size_t(net_id)]);
+            } else {
+                get_non_updatable_layer_bb_(net_id,
+                                            place_move_ctx.layer_bb_coords[net_id],
+                                            place_move_ctx.num_sink_pin_layer[size_t(net_id)]);
+            }
+
+            net_cost_[net_id] = get_net_layer_bb_wire_cost_(net_id,
+                                                            place_move_ctx.layer_bb_coords[net_id],
+                                                            place_move_ctx.num_sink_pin_layer[size_t(net_id)]);
+            cost += net_cost_[net_id];
+            if (method == e_cost_methods::CHECK) {
+                expected_wirelength += get_net_wirelength_from_layer_bb(net_id,
+                                                                        place_move_ctx.layer_bb_coords[net_id],
+                                                                        place_move_ctx.num_sink_pin_layer[size_t(net_id)]);
+            }
+        }
+    }
+
+    if (method == e_cost_methods::CHECK) {
+        VTR_LOG("\n");
+        VTR_LOG("BB estimate of min-dist (placement) wire length: %.0f\n",
+                expected_wirelength);
+    }
+
+    return cost;
+}
+
 //Returns true if 'net' is driven by one of the blocks in 'blocks_affected'
 static bool driven_by_moved_block(const ClusterNetId net,
                                   const std::vector<t_pl_moved_block>& moved_blocks) {
@@ -321,8 +528,8 @@ void NetCostHandler::update_net_info_on_pin_move_(const t_place_algorithm& place
 }
 
 void NetCostHandler::get_non_updatable_bb_(ClusterNetId net_id,
-                                 t_bb& bb_coord_new,
-                                 vtr::NdMatrixProxy<int, 1> num_sink_pin_layer) {
+                                           t_bb& bb_coord_new,
+                                           vtr::NdMatrixProxy<int, 1> num_sink_pin_layer) {
     //TODO: account for multiple physical pin instances per logical pin
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.device();
@@ -1074,9 +1281,9 @@ static void add_block_to_bb(const t_physical_tile_loc& new_pin_loc,
 }
 
 void NetCostHandler::get_bb_from_scratch_(ClusterNetId net_id,
-                                t_bb& coords,
-                                t_bb& num_on_edges,
-                                vtr::NdMatrixProxy<int, 1> num_sink_pin_layer) {
+                                          t_bb& coords,
+                                          t_bb& num_on_edges,
+                                          vtr::NdMatrixProxy<int, 1> num_sink_pin_layer) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.device();
     auto& grid = device_ctx.grid;
@@ -1173,8 +1380,7 @@ void NetCostHandler::get_bb_from_scratch_(ClusterNetId net_id,
         num_sink_pin_layer[pin_layer]++;
     }
 
-    /* Copy the coordinates and number on edges information into the proper   *
-     * structures.                                                            */
+    // Copy the coordinates and number on edges information into the proper structures.
     coords.xmin = xmin;
     coords.xmax = xmax;
     coords.ymin = ymin;
@@ -1212,7 +1418,6 @@ void NetCostHandler::get_layer_bb_from_scratch_(ClusterNetId net_id,
     std::vector<int> ymax_edge(num_layers, OPEN);
 
     std::vector<int> num_sink_pin_layer(num_layers, 0);
-
 
     ClusterBlockId bnum = cluster_ctx.clb_nlist.net_driver_block(net_id);
     t_pl_loc block_loc = block_locs[bnum].loc;
@@ -1304,11 +1509,10 @@ void NetCostHandler::get_layer_bb_from_scratch_(ClusterNetId net_id,
 }
 
 double NetCostHandler::get_net_cost_(ClusterNetId net_id, const t_bb& bb) {
-    /* Finds the cost due to one net by looking at its coordinate bounding  *
-     * box.                                                                 */
+    // Finds the cost due to one net by looking at its coordinate bounding box.
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    double crossing = wirelength_crossing_count( cluster_ctx.clb_nlist.net_pins(net_id).size());
+    double crossing = wirelength_crossing_count(cluster_ctx.clb_nlist.net_pins(net_id).size());
 
     /* Could insert a check for xmin == xmax.  In that case, assume  *
      * connection will be made with no bends and hence no x-cost.    *
@@ -1321,7 +1525,7 @@ double NetCostHandler::get_net_cost_(ClusterNetId net_id, const t_bb& bb) {
     ncost = (bb.xmax - bb.xmin + 1) * crossing * chanx_place_cost_fac_[bb.ymax][bb.ymin - 1];
     ncost += (bb.ymax - bb.ymin + 1) * crossing * chany_place_cost_fac_[bb.xmax][bb.xmin - 1];
 
-    return (ncost);
+    return ncost;
 }
 
 double NetCostHandler::get_net_layer_bb_wire_cost_(ClusterNetId /* net_id */,
@@ -1492,86 +1696,6 @@ void NetCostHandler::find_affected_nets_and_update_costs(const t_place_algorithm
     set_bb_delta_cost_(bb_delta_c);
 }
 
-double NetCostHandler::comp_bb_cost(e_cost_methods method) {
-    return comp_bb_cost_functor_(method);
-}
-
-double NetCostHandler::comp_3d_bb_cost_(e_cost_methods method) {
-    double cost = 0;
-    double expected_wirelength = 0.0;
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_move_ctx = placer_ctx_.mutable_move();
-
-    for (auto net_id : cluster_ctx.clb_nlist.nets()) {       /* for each net ... */
-        if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)) { /* Do only if not ignored. */
-            /* Small nets don't use incremental updating on their bounding boxes, *
-             * so they can use a fast bounding box calculator.                    */
-            if (cluster_ctx.clb_nlist.net_sinks(net_id).size() >= SMALL_NET && method == e_cost_methods::NORMAL) {
-                get_bb_from_scratch_(net_id,
-                                    place_move_ctx.bb_coords[net_id],
-                                    place_move_ctx.bb_num_on_edges[net_id],
-                                    place_move_ctx.num_sink_pin_layer[size_t(net_id)]);
-            } else {
-                get_non_updatable_bb_(net_id,
-                                     place_move_ctx.bb_coords[net_id],
-                                     place_move_ctx.num_sink_pin_layer[size_t(net_id)]);
-            }
-
-            net_cost_[net_id] = get_net_cost_(net_id, place_move_ctx.bb_coords[net_id]);
-            cost += net_cost_[net_id];
-            if (method == e_cost_methods::CHECK)
-                expected_wirelength += get_net_wirelength_estimate(net_id, place_move_ctx.bb_coords[net_id]);
-        }
-    }
-
-    if (method == e_cost_methods::CHECK) {
-        VTR_LOG("\n");
-        VTR_LOG("BB estimate of min-dist (placement) wire length: %.0f\n",
-                expected_wirelength);
-    }
-    return cost;
-}
-
-double NetCostHandler::comp_per_layer_bb_cost_(e_cost_methods method) {
-    double cost = 0;
-    double expected_wirelength = 0.0;
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_move_ctx = placer_ctx_.mutable_move();
-
-    for (auto net_id : cluster_ctx.clb_nlist.nets()) {       /* for each net ... */
-        if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)) { /* Do only if not ignored. */
-            /* Small nets don't use incremental updating on their bounding boxes, *
-             * so they can use a fast bounding box calculator.                    */
-            if (cluster_ctx.clb_nlist.net_sinks(net_id).size() >= SMALL_NET && method == e_cost_methods::NORMAL) {
-                get_layer_bb_from_scratch_(net_id,
-                                          place_move_ctx.layer_bb_num_on_edges[net_id],
-                                          place_move_ctx.layer_bb_coords[net_id],
-                                          place_move_ctx.num_sink_pin_layer[size_t(net_id)]);
-            } else {
-                get_non_updatable_layer_bb_(net_id,
-                                           place_move_ctx.layer_bb_coords[net_id],
-                                           place_move_ctx.num_sink_pin_layer[size_t(net_id)]);
-            }
-
-            net_cost_[net_id] = get_net_layer_bb_wire_cost_(net_id,
-                                                           place_move_ctx.layer_bb_coords[net_id],
-                                                           place_move_ctx.num_sink_pin_layer[size_t(net_id)]);
-            cost += net_cost_[net_id];
-            if (method == e_cost_methods::CHECK)
-                expected_wirelength += get_net_wirelength_from_layer_bb(net_id,
-                                                                        place_move_ctx.layer_bb_coords[net_id],
-                                                                        place_move_ctx.num_sink_pin_layer[size_t(net_id)]);
-        }
-    }
-
-    if (method == e_cost_methods::CHECK) {
-        VTR_LOG("\n");
-        VTR_LOG("BB estimate of min-dist (placement) wire length: %.0f\n",
-                expected_wirelength);
-    }
-    return cost;
-}
-
 void NetCostHandler::update_move_nets() {
     /* update net cost functions and reset flags. */
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -1670,130 +1794,6 @@ void NetCostHandler::recompute_costs_from_scratch(const t_placer_opts& placer_op
         costs->noc_cost_terms.congestion = new_noc_cost.congestion;
     }
 }
-
-void NetCostHandler::alloc_and_load_chan_w_factors_for_place_cost_(float place_cost_exp) {
-    /* Allocates and loads the chanx_place_cost_fac and chany_place_cost_fac *
-     * arrays with the inverse of the average number of tracks per channel   *
-     * between [subhigh] and [sublow].  This is only useful for the cost     *
-     * function that takes the length of the net bounding box in each        *
-     * dimension divided by the average number of tracks in that direction.  *
-     * For other cost functions, you don't have to bother calling this       *
-     * routine; when using the cost function described above, however, you   *
-     * must always call this routine after you call init_chan and before     *
-     * you do any placement cost determination.  The place_cost_exp factor   *
-     * specifies to what power the width of the channel should be taken --   *
-     * larger numbers make narrower channels more expensive.                 */
-
-    auto& device_ctx = g_vpr_ctx.device();
-
-    /*
-    Access arrays below as chan?_place_cost_fac[subhigh][sublow]. Since subhigh must be greater than or
-    equal to sublow, we will only access the lower half of a matrix, but we allocate the whole matrix anyway
-    for simplicity so we can use the vtr utility matrix functions.
-    */
-
-    chanx_place_cost_fac_.resize({device_ctx.grid.height(), device_ctx.grid.height() + 1});
-    chany_place_cost_fac_.resize({device_ctx.grid.width(), device_ctx.grid.width() + 1});
-
-    /* First compute the number of tracks between channel high and channel *
-     * low, inclusive, in an efficient manner.                             */
-
-    chanx_place_cost_fac_[0][0] = device_ctx.chan_width.x_list[0];
-
-    for (size_t high = 1; high < device_ctx.grid.height(); high++) {
-        chanx_place_cost_fac_[high][high] = device_ctx.chan_width.x_list[high];
-        for (size_t low = 0; low < high; low++) {
-            chanx_place_cost_fac_[high][low] = chanx_place_cost_fac_[high - 1][low] + device_ctx.chan_width.x_list[high];
-        }
-    }
-
-    /* Now compute the inverse of the average number of tracks per channel *
-     * between high and low.  The cost function divides by the average     *
-     * number of tracks per channel, so by storing the inverse I convert   *
-     * this to a faster multiplication.  Take this final number to the     *
-     * place_cost_exp power -- numbers other than one mean this is no      *
-     * longer a simple "average number of tracks"; it is some power of     *
-     * that, allowing greater penalization of narrow channels.             */
-
-    for (size_t high = 0; high < device_ctx.grid.height(); high++)
-        for (size_t low = 0; low <= high; low++) {
-            /* Since we will divide the wiring cost by the average channel *
-             * capacity between high and low, having only 0 width channels *
-             * will result in infinite wiring capacity normalization       *
-             * factor, and extremely bad placer behaviour. Hence we change *
-             * this to a small (1 track) channel capacity instead.         */
-            if (chanx_place_cost_fac_[high][low] == 0.0f) {
-                VTR_LOG_WARN("CHANX place cost fac is 0 at %d %d\n", high, low);
-                chanx_place_cost_fac_[high][low] = 1.0f;
-            }
-
-            chanx_place_cost_fac_[high][low] = (high - low + 1.) / chanx_place_cost_fac_[high][low];
-            chanx_place_cost_fac_[high][low] = pow((double)chanx_place_cost_fac_[high][low], (double)place_cost_exp);
-        }
-
-    /* Now do the same thing for the y-directed channels.  First get the  *
-     * number of tracks between channel high and channel low, inclusive.  */
-
-    chany_place_cost_fac_[0][0] = device_ctx.chan_width.y_list[0];
-
-    for (size_t high = 1; high < device_ctx.grid.width(); high++) {
-        chany_place_cost_fac_[high][high] = device_ctx.chan_width.y_list[high];
-        for (size_t low = 0; low < high; low++) {
-            chany_place_cost_fac_[high][low] = chany_place_cost_fac_[high - 1][low] + device_ctx.chan_width.y_list[high];
-        }
-    }
-
-    /* Now compute the inverse of the average number of tracks per channel *
-     * between high and low.  Take to specified power.                     */
-
-    for (size_t high = 0; high < device_ctx.grid.width(); high++)
-        for (size_t low = 0; low <= high; low++) {
-            /* Since we will divide the wiring cost by the average channel *
-             * capacity between high and low, having only 0 width channels *
-             * will result in infinite wiring capacity normalization       *
-             * factor, and extremely bad placer behaviour. Hence we change *
-             * this to a small (1 track) channel capacity instead.         */
-            if (chany_place_cost_fac_[high][low] == 0.0f) {
-                VTR_LOG_WARN("CHANY place cost fac is 0 at %d %d\n", high, low);
-                chany_place_cost_fac_[high][low] = 1.0f;
-            }
-
-            chany_place_cost_fac_[high][low] = (high - low + 1.) / chany_place_cost_fac_[high][low];
-            chany_place_cost_fac_[high][low] = pow((double)chany_place_cost_fac_[high][low], (double)place_cost_exp);
-        }
-}
-
-NetCostHandler::NetCostHandler(PlacerContext& placer_ctx, size_t num_nets, bool cube_bb, float place_cost_exp)
-    : cube_bb_(cube_bb)
-    , placer_ctx_(placer_ctx) {
-    const int num_layers = g_vpr_ctx.device().grid.get_num_layers();
-
-    // Either 3D BB or per layer BB data structure are used, not both.
-    if (cube_bb_) {
-        ts_bb_edge_new_.resize(num_nets, t_bb());
-        ts_bb_coord_new_.resize(num_nets, t_bb());
-        comp_bb_cost_functor_ =  std::bind(&NetCostHandler::comp_3d_bb_cost_, this, std::placeholders::_1);
-    } else {
-        layer_ts_bb_edge_new_.resize(num_nets, std::vector<t_2D_bb>(num_layers, t_2D_bb()));
-        layer_ts_bb_coord_new_.resize(num_nets, std::vector<t_2D_bb>(num_layers, t_2D_bb()));
-        comp_bb_cost_functor_ =  std::bind(&NetCostHandler::comp_per_layer_bb_cost_, this, std::placeholders::_1);
-    }
-
-    /* This initializes the whole matrix to OPEN which is an invalid value*/
-    ts_layer_sink_pin_count_.resize({num_nets, size_t(num_layers)}, OPEN);
-
-    ts_nets_to_update_.resize(num_nets, ClusterNetId::INVALID());
-
-    net_cost_.resize(num_nets, -1.);
-    proposed_net_cost_.resize(num_nets, -1.);
-    /* Used to store costs for moves not yet made and to indicate when a net's   *
-     * cost has been recomputed. proposed_net_cost[inet] < 0 means net's cost hasn't *
-     * been recomputed.                                                          */
-    bb_update_status_.resize(num_nets, NetUpdateState::NOT_UPDATED_YET);
-
-    alloc_and_load_chan_w_factors_for_place_cost_(place_cost_exp);
-}
-
 
 void NetCostHandler::get_non_updatable_bb_(const ClusterNetId net) {
     if (cube_bb_) {

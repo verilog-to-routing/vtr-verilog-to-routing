@@ -16,7 +16,7 @@ constexpr double ERROR_TOL = .01;
 
 /**
  * @brief The method used to calculate placement cost
- * @details For comp_cost.  NORMAL means use the method that generates updatable bounding boxes for speed.
+ * @details For comp_cost. NORMAL means use the method that generates updatable bounding boxes for speed.
  * CHECK means compute all bounding boxes from scratch using a very simple routine to allow checks
  * of the other costs.
  * NORMAL: Compute cost efficiently using incremental techniques.
@@ -47,6 +47,20 @@ class NetCostHandler {
     NetCostHandler(PlacerContext& placer_ctx, size_t num_nets, bool cube_bb, float place_cost_exp);
 
     /**
+     * @brief Finds the bb cost from scratch.
+     * Done only when the placement has been radically changed
+     * (i.e. after initial placement). Otherwise find the cost
+     * change incrementally. If method check is NORMAL, we find
+     * bounding boxes that are updatable for the larger nets.
+     * If method is CHECK, all bounding boxes are found via the
+     * non_updateable_bb routine, to provide a cost which can be
+     * used to check the correctness of the other routine.
+     * @param method The method used to calculate placement cost.
+     * @return The bounding box cost of the placement.
+     */
+    double comp_bb_cost(e_cost_methods method);
+
+    /**
     * @brief Find all the nets and pins affected by this swap and update costs.
     *
     * Find all the nets affected by this swap and update the bounding box (wiring)
@@ -75,20 +89,6 @@ class NetCostHandler {
                                              t_pl_blocks_to_be_moved& blocks_affected,
                                              double& bb_delta_c,
                                              double& timing_delta_c);
-
-    /**
-     * @brief Finds the bb cost from scratch.
-     * Done only when the placement has been radically changed
-     * (i.e. after initial placement). Otherwise find the cost
-     * change incrementally. If method check is NORMAL, we find
-     * bounding boxes that are updatable for the larger nets.
-     * If method is CHECK, all bounding boxes are found via the
-     * non_updateable_bb routine, to provide a cost which can be
-     * used to check the correctness of the other routine.
-     * @param method The method used to calculate placement cost.
-     * @return The bounding box cost of the placement.
-     */
-    double comp_bb_cost(e_cost_methods method);
 
     /**
      * @brief Reset the net cost function flags (proposed_net_cost and bb_updated_before)
@@ -144,15 +144,15 @@ class NetCostHandler {
     /* [0...cluster_ctx.clb_nlist.nets().size()-1] -> 3D bounding box*/
     vtr::vector<ClusterNetId, t_bb> ts_bb_coord_new_, ts_bb_edge_new_;
     /* [0...cluster_ctx.clb_nlist.nets().size()-1][0...num_layers-1] -> 2D bonding box on a layer*/
-    vtr::vector<ClusterNetId, std::vector<t_2D_bb>> layer_ts_bb_edge_new_, layer_ts_bb_coord_new_;
+    vtr::vector<ClusterNetId, std::vector<t_2D_bb>> layer_ts_bb_coord_new_, layer_ts_bb_edge_new_;
     /* [0...cluster_ctx.clb_nlist.nets().size()-1][0...num_layers-1] -> number of sink pins on a layer*/
     vtr::Matrix<int> ts_layer_sink_pin_count_;
-    /* [0...num_afftected_nets] -> net_id of the affected nets */
+    /* [0...num_affected_nets] -> net_id of the affected nets */
     std::vector<ClusterNetId> ts_nets_to_update_;
 
 
     /**
-     * @brief For each of the vectors in this struct, there is one entry per cluster level net:
+     * @brief In each of these vectors, there is one entry per cluster level net:
      * [0...cluster_ctx.clb_nlist.nets().size()-1].
      * net_cost and proposed_net_cost: Cost of a net, and a temporary cost of a net used during move assessment.
      * We also use negative cost values in proposed_net_cost as a flag to indicate that
@@ -228,11 +228,10 @@ class NetCostHandler {
     void set_bb_delta_cost_(double& bb_delta_c);
 
     /**
-     * @brief Allocates and loads the chanx_place_cost_fac and chany_place_cost_fac
-     * arrays with the inverse of the average number of tracks per channel
-     * between [subhigh] and [sublow].
-     * @param place_cost_exp It is an exponent to which you take the average inverse channel
-     * capacity; a higher value would favour wider channels more over narrower channels during placement (usually we use 1).
+     * @brief Allocates and loads the chanx_place_cost_fac and chany_place_cost_fac arrays with the inverse of
+     * the average number of tracks per channelbetween [subhigh] and [sublow].
+     * @param place_cost_exp It is an exponent to which you take the average inverse channel capacity;
+     * a higher value would favour wider channels more over narrower channels during placement (usually we use 1).
      */
     void alloc_and_load_chan_w_factors_for_place_cost_(float place_cost_exp);
 
@@ -290,8 +289,8 @@ class NetCostHandler {
 
     /**
      * @brief Calculate the 3D BB of a large net from scratch and update coord, edge, and num_sink_pin_layer data structures.
-     * @details This routine finds the bounding box of each net from scratch (i.e. from only the block location information).  It updates both the
-     * coordinate and number of pins on each edge information. It should only be called when the bounding box
+     * @details This routine finds the bounding box of each net from scratch (i.e. from only the block location information).
+     * It updates both the coordinate and number of pins on each edge information. It should only be called when the bounding box
      * information is not valid.
      * @param net_id ID of the net which the moving pin belongs to
      * @param coords Bounding box coordinates of the net. It is calculated in this function
