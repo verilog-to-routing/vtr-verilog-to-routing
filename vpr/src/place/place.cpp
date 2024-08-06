@@ -1112,8 +1112,7 @@ static void placement_inner_loop(const t_annealing_state* state,
         ++(*moves_since_cost_recompute);
         if (*moves_since_cost_recompute > MAX_MOVES_BEFORE_RECOMPUTE) {
             //VTR_LOG("recomputing costs from scratch, old bb_cost is %g\n", costs->bb_cost);
-            net_cost_handler.recompute_costs_from_scratch(placer_opts, noc_opts, delay_model,
-                                                          criticalities, costs);
+            net_cost_handler.recompute_costs_from_scratch(noc_opts, delay_model, criticalities, costs);
             //VTR_LOG("new_bb_cost is %g\n", costs->bb_cost);
             *moves_since_cost_recompute = 0;
         }
@@ -1381,8 +1380,8 @@ static e_move_result try_swap(const t_annealing_state* state,
         //
         //Also find all the pins affected by the swap, and calculates new connection
         //delays and timing costs and store them in proposed_* data structures.
-        net_cost_handler.find_affected_nets_and_update_costs(place_algorithm, delay_model, criticalities,
-                                                             blocks_affected, bb_delta_c, timing_delta_c);
+        net_cost_handler.find_affected_nets_and_update_costs(delay_model, criticalities, blocks_affected,
+                                                             bb_delta_c, timing_delta_c);
 
         //For setup slack analysis, we first do a timing analysis to get the newest
         //slack values resulted from the proposed block moves. If the move turns out

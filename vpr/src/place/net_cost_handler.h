@@ -83,8 +83,7 @@ class NetCostHandler {
     *
     * @return The number of affected nets.
     */
-    void find_affected_nets_and_update_costs(const t_place_algorithm& place_algorithm,
-                                             const PlaceDelayModel* delay_model,
+    void find_affected_nets_and_update_costs(const PlaceDelayModel* delay_model,
                                              const PlacerCriticalities* criticalities,
                                              t_pl_blocks_to_be_moved& blocks_affected,
                                              double& bb_delta_c,
@@ -105,14 +104,12 @@ class NetCostHandler {
      * @brief re-calculates different terms of the cost function (wire-length, timing, NoC) and update "costs" accordingly. It is important to note that
      * in this function bounding box and connection delays are not calculated from scratch. However, it iterates over all nets and connections and updates
      * their costs by a complete summation, rather than incrementally.
-     * @param placer_opts
      * @param noc_opts
      * @param delay_model
      * @param criticalities
      * @param costs passed by reference and computed by this routine (i.e. returned by reference)
      */
-    void recompute_costs_from_scratch(const t_placer_opts& placer_opts,
-                                      const t_noc_opts& noc_opts,
+    void recompute_costs_from_scratch(const t_noc_opts& noc_opts,
                                       const PlaceDelayModel* delay_model,
                                       const PlacerCriticalities* criticalities,
                                       t_placer_costs* costs);
@@ -201,20 +198,16 @@ class NetCostHandler {
     /**
     * @brief Call suitable function based on the bounding box type to update the bounding box of the net connected to pin_id. Also,
     * call the function to update timing information if the placement algorithm is timing-driven.
-    * @param place_algorithm Placement algorithm
     * @param delay_model Timing delay model used by placer
     * @param criticalities Connections timing criticalities
-    * @param blk_id Block ID of that the moving pin belongs to.
     * @param pin_id Pin ID of the moving pin
     * @param moving_blk_inf Data structure that holds information, e.g., old location and new location, about all moving blocks
     * @param affected_pins Netlist pins which are affected, in terms placement cost, by the proposed move.
     * @param timing_delta_c Timing cost change based on the proposed move
     * @param is_src_moving Is the moving pin the source of a net.
     */
-    void update_net_info_on_pin_move_(const t_place_algorithm& place_algorithm,
-                                      const PlaceDelayModel* delay_model,
+    void update_net_info_on_pin_move_(const PlaceDelayModel* delay_model,
                                       const PlacerCriticalities* criticalities,
-                                      const ClusterBlockId blk_id,
                                       const ClusterPinId pin_id,
                                       const t_pl_moved_block& moving_blk_inf,
                                       std::vector<ClusterPinId>& affected_pins,
