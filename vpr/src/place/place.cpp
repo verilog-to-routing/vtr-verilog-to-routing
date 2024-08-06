@@ -194,7 +194,6 @@ static NetCostHandler alloc_and_load_placement_structs(const t_placer_opts& plac
                                                        int num_directs,
                                                        PlacerContext& placer_ctx);
 
-static NetCostHandler alloc_and_load_try_swap_structs(PlacerContext& placer_ctx, const bool cube_bb, float place_cost_exp);
 static void free_try_swap_structs();
 
 static void free_placement_structs(const t_placer_opts& placer_opts,
@@ -1910,7 +1909,10 @@ static NetCostHandler alloc_and_load_placement_structs(const t_placer_opts& plac
         allocate_and_load_noc_placement_structs();
     }
 
-    return alloc_and_load_try_swap_structs(placer_ctx, place_ctx.cube_bb, placer_opts.place_cost_exp);
+
+    place_ctx.compressed_block_grids = create_compressed_block_grids();
+
+    return {placer_ctx, num_nets, place_ctx.cube_bb, placer_opts.place_cost_exp};
 }
 
 /* Frees the major structures needed by the placer (and not needed       *
@@ -1947,18 +1949,6 @@ static void free_placement_structs(const t_placer_opts& placer_opts,
     if (noc_opts.noc) {
         free_noc_placement_structs();
     }
-}
-
-static NetCostHandler alloc_and_load_try_swap_structs(PlacerContext& placer_ctx, const bool cube_bb, float place_cost_exp) {
-    /* Allocate the local bb_coordinate storage, etc. only once. */
-    /* Allocate with size cluster_ctx.clb_nlist.nets().size() for any number of nets affected. */
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-
-    auto& place_ctx = g_vpr_ctx.mutable_placement();
-    place_ctx.compressed_block_grids = create_compressed_block_grids();
-
-    size_t num_nets = cluster_ctx.clb_nlist.nets().size();
-    return {placer_ctx, num_nets, cube_bb, place_cost_exp};
 }
 
 static void free_try_swap_structs() {
