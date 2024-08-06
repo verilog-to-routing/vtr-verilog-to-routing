@@ -120,6 +120,7 @@ class NetCostHandler {
     const t_placer_opts& placer_opts_;
 
     std::function<double(e_cost_methods method)> comp_bb_cost_functor_;
+    std::function<void(ClusterNetId net_id, t_physical_tile_loc pin_old_loc, t_physical_tile_loc pin_new_loc, bool is_driver)> update_bb_functor_;
 
     /**
      * @brief for the states of the bounding box.
@@ -251,8 +252,6 @@ class NetCostHandler {
 
     void get_non_updatable_bb_(const ClusterNetId net);
 
-    void update_bb_(ClusterNetId net_id, t_physical_tile_loc pin_old_loc, t_physical_tile_loc pin_new_loc, bool is_driver);
-
     double get_net_cost_(const ClusterNetId net_id);
 
     void set_ts_bb_coord_(const ClusterNetId net_id);
@@ -328,12 +327,9 @@ class NetCostHandler {
      * @param src_pin Is the moving pin driving the net
      */
     void update_bb_(ClusterNetId net_id,
-                          t_bb& bb_edge_new,
-                          t_bb& bb_coord_new,
-                          vtr::NdMatrixProxy<int, 1> num_sink_pin_layer_new,
-                          t_physical_tile_loc pin_old_loc,
-                          t_physical_tile_loc pin_new_loc,
-                          bool src_pin);
+                    t_physical_tile_loc pin_old_loc,
+                    t_physical_tile_loc pin_new_loc,
+                    bool src_pin);
 
     /**
      * @brief Update the per-layer bounding box of "net_id" incrementally based on the old and new locations of a pin on that net
@@ -352,12 +348,9 @@ class NetCostHandler {
      * @param is_output_pin Is the moving pin of the type output
      */
     void update_layer_bb_(ClusterNetId net_id,
-                                std::vector<t_2D_bb>& bb_edge_new,
-                                std::vector<t_2D_bb>& bb_coord_new,
-                                vtr::NdMatrixProxy<int, 1> bb_pin_sink_count_new,
-                                t_physical_tile_loc pin_old_loc,
-                                t_physical_tile_loc pin_new_loc,
-                                bool is_output_pin);
+                          t_physical_tile_loc pin_old_loc,
+                          t_physical_tile_loc pin_new_loc,
+                          bool is_output_pin);
 
     /**
      * @brief Update the data structure for large nets that keep track of

@@ -143,10 +143,14 @@ NetCostHandler::NetCostHandler(const t_placer_opts& placer_opts,
         ts_bb_edge_new_.resize(num_nets, t_bb());
         ts_bb_coord_new_.resize(num_nets, t_bb());
         comp_bb_cost_functor_ =  std::bind(&NetCostHandler::comp_3d_bb_cost_, this, std::placeholders::_1);
+        update_bb_functor_ = std::bind(&NetCostHandler::update_bb_, this, std::placeholders::_1, std::placeholders::_2,
+                                       std::placeholders::_3, std::placeholders::_4);
     } else {
         layer_ts_bb_edge_new_.resize(num_nets, std::vector<t_2D_bb>(num_layers, t_2D_bb()));
         layer_ts_bb_coord_new_.resize(num_nets, std::vector<t_2D_bb>(num_layers, t_2D_bb()));
         comp_bb_cost_functor_ =  std::bind(&NetCostHandler::comp_per_layer_bb_cost_, this, std::placeholders::_1);
+        update_bb_functor_ = std::bind(&NetCostHandler::update_layer_bb_, this, std::placeholders::_1, std::placeholders::_2,
+                                       std::placeholders::_3, std::placeholders::_4);
     }
 
     /* This initializes the whole matrix to OPEN which is an invalid value*/
@@ -363,14 +367,14 @@ void NetCostHandler::update_net_bb_(const ClusterNetId net,
         bool is_driver = cluster_ctx.clb_nlist.pin_type(blk_pin) == PinType::DRIVER;
 
         //Incremental bounding box update
-        update_bb_(net,
-                   {pl_moved_block.old_loc.x + pin_width_offset,
-                    pl_moved_block.old_loc.y + pin_height_offset,
-                    pl_moved_block.old_loc.layer},
-                   {pl_moved_block.new_loc.x + pin_width_offset,
-                    pl_moved_block.new_loc.y + pin_height_offset,
-                    pl_moved_block.new_loc.layer},
-                   is_driver);
+        update_bb_functor_(net,
+                           {pl_moved_block.old_loc.x + pin_width_offset,
+                            pl_moved_block.old_loc.y + pin_height_offset,
+                            pl_moved_block.old_loc.layer},
+                           {pl_moved_block.new_loc.x + pin_width_offset,
+                            pl_moved_block.new_loc.y + pin_height_offset,
+                            pl_moved_block.new_loc.layer},
+                           is_driver);
     }
 }
 
@@ -649,12 +653,9 @@ void NetCostHandler::get_non_updatable_layer_bb_(ClusterNetId net_id,
 }
 
 void NetCostHandler::update_bb_(ClusterNetId net_id,
-                      t_bb& bb_edge_new,
-                      t_bb& bb_coord_new,
-                      vtr::NdMatrixProxy<int, 1> num_sink_pin_layer_new,
-                      t_physical_tile_loc pin_old_loc,
-                      t_physical_tile_loc pin_new_loc,
-                      bool src_pin) {
+                                t_physical_tile_loc pin_old_loc,
+                                t_physical_tile_loc pin_new_loc,
+                                bool src_pin) {
     //TODO: account for multiple physical pin instances per logical pin
     const t_bb *curr_bb_edge, *curr_bb_coord;
 
@@ -662,6 +663,10 @@ void NetCostHandler::update_bb_(ClusterNetId net_id,
     auto& place_move_ctx = placer_ctx_.move();
 
     const int num_layers = device_ctx.grid.get_num_layers();
+
+    t_bb& bb_edge_new = ts_bb_edge_new_[net_id];
+    t_bb& bb_coord_new = ts_bb_coord_new_[net_id];
+    vtr::NdMatrixProxy<int, 1> num_sink_pin_layer_new = ts_layer_sink_pin_count_[size_t(net_id)];
 
     pin_new_loc.x = max(min<int>(pin_new_loc.x, device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
     pin_new_loc.y = max(min<int>(pin_new_loc.y, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
@@ -921,12 +926,9 @@ void NetCostHandler::update_bb_(ClusterNetId net_id,
 }
 
 void NetCostHandler::update_layer_bb_(ClusterNetId net_id,
-                            std::vector<t_2D_bb>& bb_edge_new,
-                            std::vector<t_2D_bb>& bb_coord_new,
-                            vtr::NdMatrixProxy<int, 1> bb_pin_sink_count_new,
-                            t_physical_tile_loc pin_old_loc,
-                            t_physical_tile_loc pin_new_loc,
-                            bool is_output_pin) {
+                                      t_physical_tile_loc pin_old_loc,
+                                      t_physical_tile_loc pin_new_loc,
+                                      bool is_output_pin) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& place_move_ctx = placer_ctx_.move();
 
@@ -934,6 +936,10 @@ void NetCostHandler::update_layer_bb_(ClusterNetId net_id,
     pin_new_loc.y = max(min<int>(pin_new_loc.y, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
     pin_old_loc.x = max(min<int>(pin_old_loc.x, device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
     pin_old_loc.y = max(min<int>(pin_old_loc.y, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
+
+    std::vector<t_2D_bb>& bb_edge_new = layer_ts_bb_edge_new_[net_id];
+    std::vector<t_2D_bb>& bb_coord_new = layer_ts_bb_coord_new_[net_id];
+    vtr::NdMatrixProxy<int, 1> bb_pin_sink_count_new = ts_layer_sink_pin_count_[size_t(net_id)];
 
     /* Check if the net had been updated before. */
     if (bb_update_status_[net_id] == NetUpdateState::GOT_FROM_SCRATCH) {
@@ -1753,32 +1759,10 @@ void NetCostHandler::get_non_updatable_bb_(const ClusterNetId net) {
     }
 }
 
-void NetCostHandler::update_bb_(ClusterNetId net_id, t_physical_tile_loc pin_old_loc, t_physical_tile_loc pin_new_loc, bool is_driver) {
-    if (cube_bb_) {
-        update_bb_(net_id,
-                   ts_bb_edge_new_[net_id],
-                   ts_bb_coord_new_[net_id],
-                   ts_layer_sink_pin_count_[size_t(net_id)],
-                   pin_old_loc,
-                   pin_new_loc,
-                   is_driver);
-    }
-    else {
-        update_layer_bb_(net_id,
-                         layer_ts_bb_edge_new_[net_id],
-                         layer_ts_bb_coord_new_[net_id],
-                         ts_layer_sink_pin_count_[size_t(net_id)],
-                         pin_old_loc,
-                         pin_new_loc,
-                         is_driver);
-    }
-}
-
 double NetCostHandler::get_net_cost_(const ClusterNetId net_id) {
     if (cube_bb_) {
         return get_net_cost_(net_id, ts_bb_coord_new_[net_id]);
-    }
-    else {
+    } else {
         return get_net_layer_bb_wire_cost_(net_id, layer_ts_bb_coord_new_[net_id], ts_layer_sink_pin_count_[size_t(net_id)]);
     }
 }
