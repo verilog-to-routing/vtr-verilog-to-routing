@@ -2,14 +2,12 @@
  * @file placer_context.h
  * @brief Contains placer context/data structures referenced by various
  *        source files in vpr/src/place.
- *
- * All the variables and data structures in this file can be accessed via
- * a single global variable: g_placer_ctx. (see placer_globals.h/.cpp).
  */
 
 #pragma once
 #include "vpr_context.h"
 #include "vpr_net_pins_matrix.h"
+#include "vpr_types.h"
 #include "timing_place.h"
 
 /**
@@ -51,8 +49,6 @@ struct PlacerTimingContext : public Context {
     /**
      * @brief Net connection timing costs (i.e. criticality * delay)
      *        of committed block positions. See PlacerTimingCosts.
-     *
-     *
      */
     PlacerTimingCosts connection_timing_cost;
 
@@ -106,7 +102,7 @@ struct PlacerMoveContext : public Context {
     // [0..cluster_ctx.clb_nlist.nets().size()-1]. Store the number of blocks on each layer ()
     vtr::Matrix<int> num_sink_pin_layer;
 
-    // The first range limit calculated by the anneal
+    // The first range limit calculated by the annealer
     float first_rlim;
 
     // Scratch vectors that are used by different directed moves for temporary calculations (allocated here to save runtime)
@@ -136,17 +132,30 @@ struct PlacerMoveContext : public Context {
  */
 class PlacerContext : public Context {
   public:
-    const PlacerTimingContext& timing() const { return timing_; }
-    PlacerTimingContext& mutable_timing() { return timing_; }
+    inline const PlacerTimingContext& timing() const { return timing_; }
+    inline PlacerTimingContext& mutable_timing() { return timing_; }
 
-    const PlacerRuntimeContext& runtime() const { return runtime_; }
-    PlacerRuntimeContext& mutable_runtime() { return runtime_; }
+    inline const PlacerRuntimeContext& runtime() const { return runtime_; }
+    inline PlacerRuntimeContext& mutable_runtime() { return runtime_; }
 
-    const PlacerMoveContext& move() const { return move_; }
-    PlacerMoveContext& mutable_move() { return move_; }
+    inline const PlacerMoveContext& move() const { return move_; }
+    inline PlacerMoveContext& mutable_move() { return move_; }
+
+    inline const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs() const { return blk_loc_registry_.block_locs(); }
+    inline vtr::vector_map<ClusterBlockId, t_block_loc>& mutable_block_locs() { return blk_loc_registry_.mutable_block_locs(); }
+
+    inline const GridBlock& grid_blocks() const { return blk_loc_registry_.grid_blocks(); }
+    inline GridBlock& mutable_grid_blocks() { return blk_loc_registry_.mutable_grid_blocks(); }
+
+    inline const vtr::vector_map<ClusterPinId, int>& physical_pins() const { return blk_loc_registry_.physical_pins(); }
+    inline vtr::vector_map<ClusterPinId, int>& mutable_physical_pins() { return blk_loc_registry_.mutable_physical_pins(); }
+
+    inline const BlkLocRegistry& blk_loc_registry() const { return blk_loc_registry_; }
+    inline BlkLocRegistry& mutable_blk_loc_registry() { return blk_loc_registry_; }
 
   private:
     PlacerTimingContext timing_;
     PlacerRuntimeContext runtime_;
     PlacerMoveContext move_;
+    BlkLocRegistry blk_loc_registry_;
 };

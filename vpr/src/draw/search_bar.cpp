@@ -283,7 +283,7 @@ void auto_zoom_rr_node(RRNodeId rr_node_id) {
 void highlight_cluster_block(ClusterBlockId clb_index) {
     char msg[vtr::bufsize];
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_ctx = g_vpr_ctx.placement();
+    const auto& block_locs = get_graphics_blk_loc_registry_ref().block_locs();
 
     /// determine block ///
     ezgl::rectangle clb_bbox;
@@ -300,7 +300,9 @@ void highlight_cluster_block(ClusterBlockId clb_index) {
     } else {
         /* Highlight block and fan-in/fan-outs. */
         draw_highlight_blocks_color(cluster_ctx.clb_nlist.block_type(clb_index), clb_index);
-        sprintf(msg, "Block #%zu (%s) at (%d, %d) selected.", size_t(clb_index), cluster_ctx.clb_nlist.block_name(clb_index).c_str(), place_ctx.block_locs[clb_index].loc.x, place_ctx.block_locs[clb_index].loc.y);
+        sprintf(msg, "Block #%zu (%s) at (%d, %d) selected.",
+                size_t(clb_index), cluster_ctx.clb_nlist.block_name(clb_index).c_str(),
+                block_locs[clb_index].loc.x, block_locs[clb_index].loc.y);
     }
 
     application.update_message(msg);

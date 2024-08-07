@@ -21,7 +21,7 @@
  *
  * @return int The number of errors (inconsistencies in adherence to floorplanning constraints).
  */
-int check_placement_floorplanning();
+int check_placement_floorplanning(const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
 
 
 /**
@@ -137,7 +137,7 @@ void load_cluster_constraints();
  * Marking them as fixed indicates that they cannot be moved
  * during initial placement and simulated annealing.
  */
-void mark_fixed_blocks();
+void mark_fixed_blocks(BlkLocRegistry& blk_loc_registry);
 
 /**
  * @brief Converts the floorplanning constraints from grid location to

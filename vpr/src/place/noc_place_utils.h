@@ -54,7 +54,8 @@ struct TrafficFlowPlaceCost {
  * @param new_traffic_flow_routes Traffic flow routes used to initialize link bandwidth utilization.
  * If an empty vector is passed, this function uses a routing algorithm to route traffic flows.
  */
-void initial_noc_routing(const vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>>& new_traffic_flow_routes);
+void initial_noc_routing(const vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>>& new_traffic_flow_routes,
+                         const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
 
 /**
  * @brief Re-initializes all link bandwidth usages by either re-routing
@@ -76,7 +77,8 @@ void initial_noc_routing(const vtr::vector<NocTrafficFlowId, std::vector<NocLink
 * If an empty vector is passed, this function uses a routing algorithm to route traffic flows.
  */
 void reinitialize_noc_routing(t_placer_costs& costs,
-                              const vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>>& new_traffic_flow_routes);
+                              const vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>>& new_traffic_flow_routes,
+                              const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
 
 /**
  * @brief Goes through all the cluster blocks that were moved
@@ -112,7 +114,8 @@ void reinitialize_noc_routing(t_placer_costs& costs,
  * here.
  */
 void find_affected_noc_routers_and_update_noc_costs(const t_pl_blocks_to_be_moved& blocks_affected,
-                                                    NocCostTerms& delta_c);
+                                                    NocCostTerms& delta_c,
+                                                    const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
 
 /**
  * @brief Updates static datastructures found in 'noc_place_utils.cpp'
@@ -162,7 +165,8 @@ void commit_noc_costs();
 std::vector<NocLinkId>& route_traffic_flow(NocTrafficFlowId traffic_flow_id,
                                            const NocStorage& noc_model,
                                            NocTrafficFlows& noc_traffic_flows_storage,
-                                           NocRouting& noc_flows_router);
+                                           NocRouting& noc_flows_router,
+                                           const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
 
 /**
  * @brief Updates the bandwidth usages of links found in a routed traffic flow.
@@ -217,7 +221,8 @@ void re_route_associated_traffic_flows(ClusterBlockId moved_router_block_id,
                                        NocTrafficFlows& noc_traffic_flows_storage,
                                        NocStorage& noc_model,
                                        NocRouting& noc_flows_router,
-                                       std::unordered_set<NocTrafficFlowId>& updated_traffic_flows);
+                                       std::unordered_set<NocTrafficFlowId>& updated_traffic_flows,
+                                       const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
 
 /**
  * @brief Used to re-route all the traffic flows associated to logical
@@ -232,7 +237,8 @@ void re_route_associated_traffic_flows(ClusterBlockId moved_router_block_id,
  * the moved blocks, their previous locations and their new locations
  * after being moved.
  */
-void revert_noc_traffic_flow_routes(const t_pl_blocks_to_be_moved& blocks_affected);
+void revert_noc_traffic_flow_routes(const t_pl_blocks_to_be_moved& blocks_affected,
+                                    const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
 
 /**
  * @brief Removes the route of a traffic flow and updates the links to indicate
@@ -251,7 +257,8 @@ void revert_noc_traffic_flow_routes(const t_pl_blocks_to_be_moved& blocks_affect
 void re_route_traffic_flow(NocTrafficFlowId traffic_flow_id,
                            NocTrafficFlows& noc_traffic_flows_storage,
                            NocStorage& noc_model,
-                           NocRouting& noc_flows_router);
+                           NocRouting& noc_flows_router,
+                           const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
 
 /**
  * @brief Recompute the NoC costs (aggregate bandwidth and latency) by
@@ -356,7 +363,10 @@ double comp_noc_congestion_cost();
  * a non-zero values indicates the current NoC costs are above the error
  * tolerance.
  */
-int check_noc_placement_costs(const t_placer_costs& costs, double error_tolerance, const t_noc_opts& noc_opts);
+int check_noc_placement_costs(const t_placer_costs& costs,
+                              double error_tolerance,
+                              const t_noc_opts& noc_opts,
+                              const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
 
 /**
  * @brief Determines the aggregate bandwidth cost of a routed traffic flow.
@@ -526,7 +536,9 @@ bool check_for_router_swap(int user_supplied_noc_router_swap_percentage);
  * cluster block can travel (this is within the compressed block space) 
  * @return e_create_move Result of proposing the move
  */
-e_create_move propose_router_swap(t_pl_blocks_to_be_moved& blocks_affected, float rlim);
+e_create_move propose_router_swap(t_pl_blocks_to_be_moved& blocks_affected,
+                                  float rlim,
+                                  const BlkLocRegistry& blk_loc_registry);
 
 /**
  * @brief Writes out the locations of the router cluster blocks in the
@@ -544,7 +556,8 @@ e_create_move propose_router_swap(t_pl_blocks_to_be_moved& blocks_affected, floa
  * information.
  * 
  */
-void write_noc_placement_file(const std::string& file_name);
+void write_noc_placement_file(const std::string& file_name,
+                              const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
 
 /**
  * @brief This function checks whether the routing configuration for NoC traffic flows
@@ -559,7 +572,7 @@ void write_noc_placement_file(const std::string& file_name);
  *
  * @return bool Indicates whether NoC traffic flow routes form a cycle.
  */
-bool noc_routing_has_cycle();
+bool noc_routing_has_cycle(const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
 
 /**
  * @brief Check if the channel dependency graph created from the given traffic flow routes
@@ -567,7 +580,8 @@ bool noc_routing_has_cycle();
  * @param routes The user provided traffic flow routes.
  * @return True if there is any cycles in the channel dependency graph.
  */
-bool noc_routing_has_cycle(const vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>>& routes);
+bool noc_routing_has_cycle(const vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>>& routes,
+                           const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
 
 /**
  * @brief Invokes NoC SAT router and print new NoC cost terms after SAT router
