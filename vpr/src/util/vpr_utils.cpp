@@ -2063,50 +2063,6 @@ void print_switch_usage() {
     delete[] inward_switch_inf;
 }
 
-/*
- * Motivation:
- *     to see what portion of long wires are utilized
- *     potentially a good measure for router look ahead quality
- */
-/*
- * void print_usage_by_wire_length() {
- * map<int, int> used_wire_count;
- * map<int, int> total_wire_count;
- * auto& device_ctx = g_vpr_ctx.device();
- * for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes()){
- * if (rr_graph.node_type(rr_id) == CHANX || rr_graph.node_type(rr_id) == CHANY) {
- * //int length = abs(rr_graph.node_xhigh(rr_id) + rr_graph.node_yhigh(rr_id)
- * //             - rr_graph.node_xlow(rr_id) - rr_graph.node_ylow(rr_id));
- * int length = device_ctx.rr_nodes[(size_t)rr_id].get_length();
- * if (rr_node_route_inf[(size_t)rr_id].occ() > 0) {
- * if (used_wire_count.count(length) == 0)
- * used_wire_count[length] = 0;
- * used_wire_count[length] ++;
- * }
- * if (total_wire_count.count(length) == 0)
- * total_wire_count[length] = 0;
- * total_wire_count[length] ++;
- * }
- * }
- * int total_wires = 0;
- * map<int, int>::iterator itr;
- * for (itr = total_wire_count.begin(); itr != total_wire_count.end(); itr++) {
- * total_wires += itr->second;
- * }
- * VTR_LOG("\n\t-=-=-=-=-=-=-=-=-=-=- wire usage stats -=-=-=-=-=-=-=-=-=-=-\n");
- * for (itr = total_wire_count.begin(); itr != total_wire_count.end(); itr++)
- * VTR_LOG("\ttotal number: wire of length %d, ratio to all length of wires: %g\n", itr->first, ((float)itr->second) / total_wires);
- * for (itr = used_wire_count.begin(); itr != used_wire_count.end(); itr++) {
- * float ratio_to_same_type_total = ((float)itr->second) / total_wire_count[itr->first];
- * float ratio_to_all_type_total = ((float)itr->second) / total_wires;
- * VTR_LOG("\t\tratio to same type of wire: %g\tratio to all types of wire: %g\n", ratio_to_same_type_total, ratio_to_all_type_total);
- * }
- * VTR_LOG("\n\t-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n\n");
- * used_wire_count.clear();
- * total_wire_count.clear();
- * }
- */
-
 void place_sync_external_block_connections(ClusterBlockId iblk,
                                            BlkLocRegistry& blk_loc_registry) {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
