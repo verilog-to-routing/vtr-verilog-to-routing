@@ -408,20 +408,20 @@
         "Multiplier": 4,
         "Memory": 242,
         "generic logic size": 4,
-        "Longest Path": 836,
+        "Longest Path": 843,
         "Average Path": 4,
-        "Estimated LUTs": 8063,
+        "Estimated LUTs": 8043,
         "Total Node": 4065,
-        "Wires": 14711,
-        "Wire Bits": 20573,
+        "Wires": 14732,
+        "Wire Bits": 20401,
         "Public Wires": 877,
         "Public Wire Bits": 877,
-        "Total Cells": 17365,
-        "MUX": 6898,
+        "Total Cells": 17372,
+        "MUX": 6882,
         "XOR": 454,
-        "OR": 2549,
-        "AND": 1966,
-        "NOT": 926,
+        "OR": 2559,
+        "AND": 1970,
+        "NOT": 935,
         "DFFs": [
             "$_DFF_N_ 1",
             "$_DFF_P_ 3386"
@@ -920,7 +920,7 @@
         "test_name": "vexriscv/BrieyWithMemoryInit/k6_frac_N10_frac_chain_mem32K_40nm",
         "exit": 1,
         "errors": [
-            "BrieyWithMemoryInit.v:0 Can not open file `BrieyWithMemoryInit.v_toplevel_axi_ram_ram_symbol0.bin` for \\$readmemb."
+            "BrieyWithMemoryInit.v:11987 Can not open file `BrieyWithMemoryInit.v_toplevel_axi_ram_ram_symbol0.bin` for \\$readmemb."
         ]
     },
     "vexriscv/MuraxCfu/k6_frac_N10_frac_chain_mem32K_40nm": {
@@ -1066,16 +1066,16 @@
         "generic logic size": 4,
         "Longest Path": 314,
         "Average Path": 4,
-        "Estimated LUTs": 3260,
+        "Estimated LUTs": 3240,
         "Total Node": 1609,
         "Wires": 5542,
-        "Wire Bits": 8491,
+        "Wire Bits": 8275,
         "Public Wires": 421,
         "Public Wire Bits": 421,
-        "Total Cells": 6839,
-        "MUX": 2597,
+        "Total Cells": 6824,
+        "MUX": 2581,
         "XOR": 144,
-        "OR": 1089,
+        "OR": 1090,
         "AND": 870,
         "NOT": 382,
         "DFFs": [
@@ -1229,17 +1229,17 @@
         "generic logic size": 4,
         "Longest Path": 325,
         "Average Path": 3,
-        "Estimated LUTs": 3602,
+        "Estimated LUTs": 3582,
         "Total Node": 1645,
-        "Wires": 5930,
-        "Wire Bits": 8949,
+        "Wires": 5925,
+        "Wire Bits": 8729,
         "Public Wires": 464,
         "Public Wire Bits": 464,
-        "Total Cells": 7342,
-        "MUX": 3103,
+        "Total Cells": 7324,
+        "MUX": 3087,
         "XOR": 144,
-        "OR": 1044,
-        "AND": 916,
+        "OR": 1043,
+        "AND": 915,
         "NOT": 348,
         "DFFs": [
             "$_DFF_N_ 1",
@@ -1545,7 +1545,7 @@
         "test_name": "vexriscv/MuraxWithRamInit/k6_frac_N10_frac_chain_mem32K_40nm",
         "exit": 1,
         "errors": [
-            "MuraxWithRamInit.v:0 Can not open file `MuraxWithRamInit.v_toplevel_system_ram_ram_symbol0.bin` for \\$readmemb."
+            "MuraxWithRamInit.v:1616 Can not open file `MuraxWithRamInit.v_toplevel_system_ram_ram_symbol0.bin` for \\$readmemb."
         ]
     },
     "vexriscv/VexRiscvFull/k6_frac_N10_frac_chain_mem32K_40nm": {
@@ -1591,8 +1591,8 @@
         "Average Path": 4,
         "Estimated LUTs": 4666,
         "Total Node": 1960,
-        "Wires": 8363,
-        "Wire Bits": 11546,
+        "Wires": 8366,
+        "Wire Bits": 11552,
         "Public Wires": 584,
         "Public Wire Bits": 584,
         "Total Cells": 9681,
@@ -1818,16 +1818,16 @@
         "Average Path": 3,
         "Estimated LUTs": 6611,
         "Total Node": 2574,
-        "Wires": 10968,
-        "Wire Bits": 15106,
+        "Wires": 10967,
+        "Wire Bits": 15099,
         "Public Wires": 583,
         "Public Wire Bits": 583,
-        "Total Cells": 13096,
+        "Total Cells": 13098,
         "MUX": 5888,
         "XOR": 331,
-        "OR": 1994,
-        "AND": 1246,
-        "NOT": 674,
+        "OR": 1996,
+        "AND": 1247,
+        "NOT": 673,
         "DFFs": [
             "$_DFF_P_ 2303"
         ],
@@ -1866,15 +1866,15 @@
         "Estimated LUTs": 7117,
         "Total Node": 3035,
         "Wires": 11995,
-        "Wire Bits": 16363,
+        "Wire Bits": 16356,
         "Public Wires": 699,
         "Public Wire Bits": 699,
-        "Total Cells": 14058,
+        "Total Cells": 14060,
         "MUX": 6209,
         "XOR": 392,
-        "OR": 2170,
-        "AND": 1324,
-        "NOT": 727,
+        "OR": 2172,
+        "AND": 1325,
+        "NOT": 726,
         "DFFs": [
             "$_DFF_P_ 2455"
         ],
@@ -2220,16 +2220,16 @@
         "Average Path": 4,
         "Estimated LUTs": 8969,
         "Total Node": 2639,
-        "Wires": 13227,
-        "Wire Bits": 18782,
+        "Wires": 13233,
+        "Wire Bits": 18788,
         "Public Wires": 674,
         "Public Wire Bits": 674,
-        "Total Cells": 16338,
+        "Total Cells": 16344,
         "MUX": 6669,
         "XOR": 1029,
-        "OR": 2804,
-        "AND": 1917,
-        "NOT": 779,
+        "OR": 2808,
+        "AND": 1918,
+        "NOT": 780,
         "DFFs": [
             "$_DFF_P_ 2391"
         ],
@@ -2360,8 +2360,8 @@
         "Average Path": 5,
         "Estimated LUTs": 1535,
         "Total Node": 673,
-        "Wires": 2398,
-        "Wire Bits": 3931,
+        "Wires": 2397,
+        "Wire Bits": 3929,
         "Public Wires": 253,
         "Public Wire Bits": 253,
         "Total Cells": 3009,
@@ -2426,56 +2426,56 @@
         "test_name": "vexriscv/VexRiscvThreeStagesBar/k6_frac_N10_frac_chain_mem32K_40nm",
         "exit": 1,
         "errors": [
-            "VexRiscvThreeStagesBar.v:0 Can not open file `VexRiscvThreeStagesBar.v_toplevel_RegFilePlugin_regFile.bin` for \\$readmemb."
+            "VexRiscvThreeStagesBar.v:851 Can not open file `VexRiscvThreeStagesBar.v_toplevel_RegFilePlugin_regFile.bin` for \\$readmemb."
         ]
     },
     "vexriscv/VexRiscvThreeStages/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "vexriscv/VexRiscvThreeStages/k6_frac_N10_frac_chain_mem32K_40nm",
         "exit": 1,
         "errors": [
-            "VexRiscvThreeStages.v:0 Can not open file `VexRiscvThreeStages.v_toplevel_RegFilePlugin_regFile.bin` for \\$readmemb."
+            "VexRiscvThreeStages.v:858 Can not open file `VexRiscvThreeStages.v_toplevel_RegFilePlugin_regFile.bin` for \\$readmemb."
         ]
     },
     "vexriscv/VexRiscvThreeStagesMDfast/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "vexriscv/VexRiscvThreeStagesMDfast/k6_frac_N10_frac_chain_mem32K_40nm",
         "exit": 1,
         "errors": [
-            "VexRiscvThreeStagesMDfast.v:0 Can not open file `VexRiscvThreeStagesMDfast.v_toplevel_RegFilePlugin_regFile.bin` for \\$readmemb."
+            "VexRiscvThreeStagesMDfast.v:998 Can not open file `VexRiscvThreeStagesMDfast.v_toplevel_RegFilePlugin_regFile.bin` for \\$readmemb."
         ]
     },
     "vexriscv/VexRiscvThreeStagesMD/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "vexriscv/VexRiscvThreeStagesMD/k6_frac_N10_frac_chain_mem32K_40nm",
         "exit": 1,
         "errors": [
-            "VexRiscvThreeStagesMD.v:0 Can not open file `VexRiscvThreeStagesMD.v_toplevel_RegFilePlugin_regFile.bin` for \\$readmemb."
+            "VexRiscvThreeStagesMD.v:1009 Can not open file `VexRiscvThreeStagesMD.v_toplevel_RegFilePlugin_regFile.bin` for \\$readmemb."
         ]
     },
     "vexriscv/VexRiscvTwoStagesBar/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "vexriscv/VexRiscvTwoStagesBar/k6_frac_N10_frac_chain_mem32K_40nm",
         "exit": 1,
         "errors": [
-            "VexRiscvTwoStagesBar.v:0 Can not open file `VexRiscvTwoStagesBar.v_toplevel_RegFilePlugin_regFile.bin` for \\$readmemb."
+            "VexRiscvTwoStagesBar.v:790 Can not open file `VexRiscvTwoStagesBar.v_toplevel_RegFilePlugin_regFile.bin` for \\$readmemb."
         ]
     },
     "vexriscv/VexRiscvTwoStages/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "vexriscv/VexRiscvTwoStages/k6_frac_N10_frac_chain_mem32K_40nm",
         "exit": 1,
         "errors": [
-            "VexRiscvTwoStages.v:0 Can not open file `VexRiscvTwoStages.v_toplevel_RegFilePlugin_regFile.bin` for \\$readmemb."
+            "VexRiscvTwoStages.v:801 Can not open file `VexRiscvTwoStages.v_toplevel_RegFilePlugin_regFile.bin` for \\$readmemb."
         ]
     },
     "vexriscv/VexRiscvTwoStagesMDfast/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "vexriscv/VexRiscvTwoStagesMDfast/k6_frac_N10_frac_chain_mem32K_40nm",
         "exit": 1,
         "errors": [
-            "VexRiscvTwoStagesMDfast.v:0 Can not open file `VexRiscvTwoStagesMDfast.v_toplevel_RegFilePlugin_regFile.bin` for \\$readmemb."
+            "VexRiscvTwoStagesMDfast.v:935 Can not open file `VexRiscvTwoStagesMDfast.v_toplevel_RegFilePlugin_regFile.bin` for \\$readmemb."
         ]
     },
     "vexriscv/VexRiscvTwoStagesMD/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "vexriscv/VexRiscvTwoStagesMD/k6_frac_N10_frac_chain_mem32K_40nm",
         "exit": 1,
         "errors": [
-            "VexRiscvTwoStagesMD.v:0 Can not open file `VexRiscvTwoStagesMD.v_toplevel_RegFilePlugin_regFile.bin` for \\$readmemb."
+            "VexRiscvTwoStagesMD.v:946 Can not open file `VexRiscvTwoStagesMD.v_toplevel_RegFilePlugin_regFile.bin` for \\$readmemb."
         ]
     },
     "DEFAULT": {

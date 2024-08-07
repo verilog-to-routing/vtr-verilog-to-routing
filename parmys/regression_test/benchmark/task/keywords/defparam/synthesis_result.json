@@ -31,9 +31,6 @@
         "errors": [
             "defparam_string.v:0 Can't find object for defparam `simple_op.msg`!"
         ],
-        "warnings": [
-            "defparam_string.v:0 System task `$display' outside initial block is unsupported."
-        ],
         "max_rss(MiB)": 11.4,
         "exec_time(ms)": 3.1,
         "elaboration_time(ms)": 0.4,

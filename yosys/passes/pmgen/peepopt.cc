@@ -24,11 +24,11 @@ USING_YOSYS_NAMESPACE
 PRIVATE_NAMESPACE_BEGIN
 
 bool did_something;
-dict<SigBit, State> initbits;
-pool<SigBit> rminitbits;
+
+// scratchpad configurations for pmgen
+int shiftadd_max_ratio;
 
 #include "passes/pmgen/peepopt_pm.h"
-#include "generate.h"
 
 struct PeepoptPass : public Pass {
 	PeepoptPass() : Pass("peepopt", "collection of peephole optimizers") { }
@@ -40,37 +40,39 @@ struct PeepoptPass : public Pass {
 		log("\n");
 		log("This pass applies a collection of peephole optimizers to the current design.\n");
 		log("\n");
+		log("This pass employs the following rules:\n");
+		log("\n");
+		log("   * muldiv - Replace (A*B)/B with A\n");
+		log("\n");
+		log("   * shiftmul - Replace A>>(B*C) with A'>>(B<<K) where C and K are constants\n");
+		log("                and A' is derived from A by appropriately inserting padding\n");
+		log("                into the signal. (right variant)\n");
+		log("\n");
+		log("                Analogously, replace A<<(B*C) with appropriate selection of\n");
+		log("                output bits from A<<(B<<K). (left variant)\n");
+		log("\n");
+		log("   * shiftadd - Replace A>>(B+D) with (A'>>D)>>(B) where D is constant and\n");
+		log("                A' is derived from A by padding or cutting inaccessible bits.\n");
+		log("                Scratchpad: 'peepopt.shiftadd.max_data_multiple' (default: 2)\n");
+		log("                limits the amount of padding to a multiple of the data, \n");
+		log("                to avoid high resource usage from large temporary MUX trees.\n");
+		log("\n");
 	}
 	void execute(std::vector<std::string> args, RTLIL::Design *design) override
 	{
-		std::string genmode;
-
 		log_header(design, "Executing PEEPOPT pass (run peephole optimizers).\n");
 
 		size_t argidx;
 		for (argidx = 1; argidx < args.size(); argidx++)
 		{
-			if (args[argidx] == "-generate" && argidx+1 < args.size()) {
-				genmode = args[++argidx];
-				continue;
-			}
 			break;
 		}
 		extra_args(args, argidx, design);
 
-		if (!genmode.empty())
-		{
-			initbits.clear();
-			rminitbits.clear();
-
-			if (genmode == "shiftmul")
-				GENERATE_PATTERN(peepopt_pm, shiftmul);
-			else if (genmode == "muldiv")
-				GENERATE_PATTERN(peepopt_pm, muldiv);
-			else
-				log_abort();
-			return;
-		}
+		// limit the padding from shiftadd to a multiple of the input data
+		// during techmap it creates (#data + #padding) * log(shift) $_MUX_ cells
+		// 2x implies there is a constant shift larger than the input-data which should be extremely rare
+		shiftadd_max_ratio = design->scratchpad_get_int("peepopt.shiftadd.max_data_multiple", 2);
 
 		for (auto module : design->selected_modules())
 		{
@@ -79,47 +81,15 @@ struct PeepoptPass : public Pass {
 			while (did_something)
 			{
 				did_something = false;
-				initbits.clear();
-				rminitbits.clear();
 
 				peepopt_pm pm(module);
 
-				for (auto w : module->wires()) {
-					auto it = w->attributes.find(ID::init);
-					if (it != w->attributes.end()) {
-						SigSpec sig = pm.sigmap(w);
-						Const val = it->second;
-						int len = std::min(GetSize(sig), GetSize(val));
-						for (int i = 0; i < len; i++) {
-							if (sig[i].wire == nullptr)
-								continue;
-							if (val[i] != State::S0 && val[i] != State::S1)
-								continue;
-							initbits[sig[i]] = val[i];
-						}
-					}
-				}
-
 				pm.setup(module->selected_cells());
 
-				pm.run_shiftmul();
+				pm.run_shiftadd();
+				pm.run_shiftmul_right();
+				pm.run_shiftmul_left();
 				pm.run_muldiv();
-
-				for (auto w : module->wires()) {
-					auto it = w->attributes.find(ID::init);
-					if (it != w->attributes.end()) {
-						SigSpec sig = pm.sigmap(w);
-						Const &val = it->second;
-						int len = std::min(GetSize(sig), GetSize(val));
-						for (int i = 0; i < len; i++) {
-							if (rminitbits.count(sig[i]))
-								val[i] = State::Sx;
-						}
-					}
-				}
-
-				initbits.clear();
-				rminitbits.clear();
 			}
 		}
 	}
