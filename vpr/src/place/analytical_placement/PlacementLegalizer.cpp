@@ -6,10 +6,10 @@
 #include <limits>
 #include <queue>
 #include <stack>
-#include <unordered_map>
 #include <unordered_set>
 #include <vector>
 #include "PartialPlacement.h"
+#include "ap_netlist.h"
 #include "device_grid.h"
 #include "globals.h"
 #include "physical_types.h"
@@ -19,6 +19,7 @@
 #include "vtr_ndmatrix.h"
 #include "vtr_strong_id.h"
 #include "vtr_vector.h"
+#include "vtr_vector_map.h"
 
 namespace {
 
@@ -29,7 +30,8 @@ typedef vtr::StrongId<place_tile_id_tag, size_t> PlaceTileId;
 // Struct to contain sub-tile information
 struct PlaceSubTile {
     // Atoms currently placed in this sub_tile
-    std::unordered_set<size_t> atoms_in_site;
+    // FIXME: Change this variable name.
+    std::unordered_set<APBlockId> atoms_in_site;
 };
 
 // Struct to contain tile information
@@ -95,15 +97,15 @@ struct PlaceTile {
     }
 
     // Add an atom to a given sub_tile.
-    void add_atom_to_sub_tile(size_t node_id, size_t sub_tile_idx) {
+    void add_atom_to_sub_tile(APBlockId blk_id, size_t sub_tile_idx) {
         PlaceSubTile& sub_tile = get_sub_tile(sub_tile_idx);
-        sub_tile.atoms_in_site.insert(node_id);
+        sub_tile.atoms_in_site.insert(blk_id);
     }
 
     // Remove an atom from the given sub_tile.
-    void remove_atom_from_sub_tile(size_t node_id, size_t sub_tile_idx) {
+    void remove_atom_from_sub_tile(APBlockId blk_id, size_t sub_tile_idx) {
         PlaceSubTile& sub_tile = get_sub_tile(sub_tile_idx);
-        sub_tile.atoms_in_site.erase(node_id);
+        sub_tile.atoms_in_site.erase(blk_id);
     }
 
     // Clear all of the atoms from the tile.
@@ -130,7 +132,7 @@ class PlaceTileGraph {
     };
     // Lookup table to quickly get the location of the given atom.
     // TODO: Maybe this can be made a vector.
-    std::unordered_map<size_t, PlaceGraphPos> atom_node_id_pos;
+    vtr::vector_map<APBlockId, PlaceGraphPos> atom_blk_id_pos;
     // Set of tiles with any nodes in their overfilled sub_tile. This is used
     // to make finding all the overfilled tiles much faster.
     std::unordered_set<PlaceTileId> overfilled_tile_ids;
@@ -216,27 +218,27 @@ public:
     }
 
     // Get the tile that contains the given node_id
-    PlaceTileId get_containing_tile(size_t node_id) {
+    PlaceTileId get_containing_tile(APBlockId blk_id) {
         // TODO: Make assert debug.
-        VTR_ASSERT(atom_node_id_pos.find(node_id) != atom_node_id_pos.end());
-        return atom_node_id_pos[node_id].tile_id;
+        VTR_ASSERT(atom_blk_id_pos.find(blk_id) != atom_blk_id_pos.end());
+        return atom_blk_id_pos[blk_id].tile_id;
     }
 
     // Get the sub_tile_idx that contains the given node_id
-    size_t get_containing_sub_tile_idx(size_t node_id) {
+    size_t get_containing_sub_tile_idx(APBlockId blk_id) {
         // TODO: Make assert debug.
-        VTR_ASSERT(atom_node_id_pos.find(node_id) != atom_node_id_pos.end());
-        return atom_node_id_pos[node_id].sub_tile_index;
+        VTR_ASSERT(atom_blk_id_pos.find(blk_id) != atom_blk_id_pos.end());
+        return atom_blk_id_pos[blk_id].sub_tile_index;
     }
 
     // Helper method to add an atom to a sub_tile.
-    void add_atom_to_sub_tile(size_t node_id, PlaceTileId tile_id, size_t sub_tile_idx) {
+    void add_atom_to_sub_tile(APBlockId blk_id, PlaceTileId tile_id, size_t sub_tile_idx) {
         // TODO: Make assert debug.
-        VTR_ASSERT(atom_node_id_pos.find(node_id) == atom_node_id_pos.end());
+        VTR_ASSERT(atom_blk_id_pos.find(blk_id) == atom_blk_id_pos.end());
         // Add the atom to the sub_tile and update the position information.
         PlaceTile& place_tile = tiles[tile_id];
-        place_tile.add_atom_to_sub_tile(node_id, sub_tile_idx);
-        atom_node_id_pos[node_id] = PlaceGraphPos({place_tile.tile_index, sub_tile_idx});
+        place_tile.add_atom_to_sub_tile(blk_id, sub_tile_idx);
+        atom_blk_id_pos.insert(blk_id, PlaceGraphPos({place_tile.tile_index, sub_tile_idx}));
 
         // If anything is ever inserted into the overflow sub-tile, the tile
         // is now overfilled.
@@ -245,22 +247,22 @@ public:
     }
 
     // Helper method to add an atom to the overflow sub_tile of a tile.
-    void add_atom_to_overflow(size_t node_id, PlaceTileId tile_id) {
-        add_atom_to_sub_tile(node_id, tile_id, PlaceTile::overflow_sub_tile_idx);
+    void add_atom_to_overflow(APBlockId blk_id, PlaceTileId tile_id) {
+        add_atom_to_sub_tile(blk_id, tile_id, PlaceTile::overflow_sub_tile_idx);
     }
 
     // Helper method to move an atom to the target sub_tile.
     // NOTE: It is assumed that the atom is already somewhere in the graph.
-    void move_atom_to_sub_tile(size_t node_id, PlaceTileId target_tile_id, size_t target_sub_tile_idx) {
+    void move_atom_to_sub_tile(APBlockId blk_id, PlaceTileId target_tile_id, size_t target_sub_tile_idx) {
         // TODO: Make assert debug.
-        VTR_ASSERT(atom_node_id_pos.find(node_id) != atom_node_id_pos.end());
+        VTR_ASSERT(atom_blk_id_pos.find(blk_id) != atom_blk_id_pos.end());
         // Remove the atom from its original tile,sub-tile
-        PlaceGraphPos& atom_pos = atom_node_id_pos[node_id];
+        PlaceGraphPos& atom_pos = atom_blk_id_pos[blk_id];
         PlaceTile& from_tile = tiles[atom_pos.tile_id];
-        from_tile.remove_atom_from_sub_tile(node_id, atom_pos.sub_tile_index);
+        from_tile.remove_atom_from_sub_tile(blk_id, atom_pos.sub_tile_index);
         // Add the atom to its new tile,sub-tile
         PlaceTile& target_tile = tiles[target_tile_id];
-        target_tile.add_atom_to_sub_tile(node_id, target_sub_tile_idx);
+        target_tile.add_atom_to_sub_tile(blk_id, target_sub_tile_idx);
         // Update the storage
         atom_pos.tile_id = target_tile.tile_index;
         atom_pos.sub_tile_index = target_sub_tile_idx;
@@ -275,8 +277,8 @@ public:
     }
 
     // Helper metod to move an atom to the overflow sub_tile of the target tile.
-    void move_atom_to_overflow(size_t node_id, PlaceTileId tile_id) {
-        move_atom_to_sub_tile(node_id, tile_id, PlaceTile::overflow_sub_tile_idx);
+    void move_atom_to_overflow(APBlockId blk_id, PlaceTileId tile_id) {
+        move_atom_to_sub_tile(blk_id, tile_id, PlaceTile::overflow_sub_tile_idx);
     }
 
     // Get a list of overfilled tiles (tiles which have any atoms in the
@@ -291,7 +293,7 @@ public:
         for (PlaceTile& tile : tiles) {
             tile.clear();
         }
-        atom_node_id_pos.clear();
+        atom_blk_id_pos.clear();
     }
 };
 
@@ -330,11 +332,11 @@ class SimpleArchModel {
     // Helper method to add an atom to a given tile.
     // NOTE: This was made private since removing / adding an atom from/to the
     //       tile graph does not make sense during operation of the legalizer.
-    void add_atom_to_tile(size_t node_id, PlaceTileId tile_id) {
+    void add_atom_to_tile(APBlockId blk_id, PlaceTileId tile_id) {
         if (get_space_in_tile(tile_id) > 0)
-            tile_graph.add_atom_to_sub_tile(node_id, tile_id, 0);
+            tile_graph.add_atom_to_sub_tile(blk_id, tile_id, 0);
         else
-            tile_graph.add_atom_to_overflow(node_id, tile_id);
+            tile_graph.add_atom_to_overflow(blk_id, tile_id);
     }
 
 public:
@@ -357,54 +359,52 @@ public:
 
     // Gets all of the moveable nodes in a given tile (regardless of if they are
     // in the overflow or not.
-    std::vector<size_t> get_all_moveable_nodes(const PlaceTileId tile_id, const PartialPlacement& p_placement) {
+    std::vector<APBlockId> get_all_moveable_blocks(const PlaceTileId tile_id, const APNetlist& netlist) {
         // FIXME: If this becomes a bottleneck, it may be a good idea to store
         //        this information in the class.
         // TODO: Vaughns comment on the overflow subtile being part of the subtiles
         //       would make this cleaner.
         const PlaceTile& place_tile = tile_graph.get_place_tile(tile_id);
-        std::vector<size_t> all_nodes;
+        std::vector<APBlockId> all_nodes;
         for (const PlaceSubTile& sub_tile : place_tile.sub_tiles) {
             const auto& atoms_in_site = sub_tile.atoms_in_site;
-            for (size_t node_id : atoms_in_site) {
-                if (!p_placement.is_moveable_node(node_id))
-                    continue;
-                all_nodes.push_back(node_id);
+            for (APBlockId blk_id : atoms_in_site) {
+                if (netlist.block_type(blk_id) == APBlockType::MOVEABLE)
+                    all_nodes.push_back(blk_id);
             }
         }
         const auto& overflow_atoms = place_tile.overflow_sub_tile.atoms_in_site;
-        for (size_t node_id : overflow_atoms) {
-            if (!p_placement.is_moveable_node(node_id))
-                continue;
-            all_nodes.push_back(node_id);
+        for (APBlockId blk_id : overflow_atoms) {
+            if (netlist.block_type(blk_id) == APBlockType::MOVEABLE)
+                all_nodes.push_back(blk_id);
         }
         return all_nodes;
     }
 
     // Gets the number of atoms in the overflow sub_tile.
-    size_t get_num_overflowing_nodes(const PlaceTileId tile_id) const {
+    size_t get_num_overflowing_blocks(const PlaceTileId tile_id) const {
         const PlaceTile& tile = tile_graph.get_place_tile(tile_id);
         return tile.overflow_sub_tile.atoms_in_site.size();
     }
 
     // Move an atom to the given tile.
-    void move_atom_to_tile(size_t node_id, PlaceTileId target_tile_id) {
+    void move_atom_to_tile(APBlockId blk_id, PlaceTileId target_tile_id) {
         // Simple model just moves nodes.
         // Get the old position.
-        PlaceTileId source_tile_id = tile_graph.get_containing_tile(node_id);
-        size_t old_sub_tile_idx = tile_graph.get_containing_sub_tile_idx(node_id);
+        PlaceTileId source_tile_id = tile_graph.get_containing_tile(blk_id);
+        size_t old_sub_tile_idx = tile_graph.get_containing_sub_tile_idx(blk_id);
         // Move the atom
         if (get_space_in_tile(target_tile_id) > 0)
-            tile_graph.move_atom_to_sub_tile(node_id, target_tile_id, 0);
+            tile_graph.move_atom_to_sub_tile(blk_id, target_tile_id, 0);
         else
-            tile_graph.move_atom_to_overflow(node_id, target_tile_id);
+            tile_graph.move_atom_to_overflow(blk_id, target_tile_id);
         // Fix-up the from tile:
         //  - if the atom was not from the overflow, move something from the
         //    overflow (if anything) into the sub_tile
         const PlaceTile& source_tile = tile_graph.get_place_tile(source_tile_id);
         if (!PlaceTile::is_overflow_sub_tile(old_sub_tile_idx) &&
             source_tile.overflow_sub_tile.atoms_in_site.size() > 0) {
-            size_t atom_to_move = *source_tile.overflow_sub_tile.atoms_in_site.begin();
+            APBlockId atom_to_move = *source_tile.overflow_sub_tile.atoms_in_site.begin();
             tile_graph.move_atom_to_sub_tile(atom_to_move, source_tile_id, 0);
         }
     }
@@ -417,7 +417,7 @@ public:
         (void)p_placement;
         // For the simple model, by definition, the overuse of a tile is the
         // number of nodes in the overflow sub-tile.
-        return static_cast<float>(get_num_overflowing_nodes(tile_id));
+        return static_cast<float>(get_num_overflowing_blocks(tile_id));
     }
 
     // Gets how much the tile is being underused by nodes of the same type as node_id.
@@ -438,7 +438,7 @@ public:
     }
 
     // Import the atom locations from the partial placement into the tile graph.
-    void import_node_locations(const PartialPlacement& p_placement) {
+    void import_node_locations(const PartialPlacement& p_placement, const APNetlist& netlist) {
         // Insert the fixed nodes first. It is the task of the architecture model
         // to ensure that fixed nodes do not get moved beyond where they are allowed.
         // The reason for this design decision is that the fixed_blocks may not
@@ -447,41 +447,47 @@ public:
         // For the simple model, this just means keeping them in the same tile.
         // For other models, they may have felixibility with which sub-tile to put
         // them on.
-        for (size_t node_id = p_placement.num_moveable_nodes; node_id < p_placement.num_nodes; node_id++) {
-            int tile_x = std::floor(p_placement.node_loc_x[node_id]);
-            int tile_y = std::floor(p_placement.node_loc_y[node_id]);
+        for (APBlockId blk_id : netlist.blocks()) {
+            if (netlist.block_type(blk_id) != APBlockType::FIXED)
+                continue;
+            int tile_x = std::floor(p_placement.block_x_locs[blk_id]);
+            int tile_y = std::floor(p_placement.block_y_locs[blk_id]);
             PlaceTileId tile_id = tile_graph.get_place_tile_id(tile_x, tile_y);
-            add_atom_to_tile(node_id, tile_id);
+            add_atom_to_tile(blk_id, tile_id);
             // Cannot allow any of the fixed nodes to go into the overflow
             // sub tile. This would imply that the fixed nodes cannot fit in
             // this tile.
             // This may need to be made into an if condition to gracefully error.
-            VTR_ASSERT(!PlaceTile::is_overflow_sub_tile(tile_graph.get_containing_sub_tile_idx(node_id)));
+            VTR_ASSERT(!PlaceTile::is_overflow_sub_tile(tile_graph.get_containing_sub_tile_idx(blk_id)));
         }
         // Insert the moveable nodes.
-        for (size_t node_id = 0; node_id < p_placement.num_moveable_nodes; node_id++) {
-            int tile_x = std::floor(p_placement.node_loc_x[node_id]);
-            int tile_y = std::floor(p_placement.node_loc_y[node_id]);
+        for (APBlockId blk_id : netlist.blocks()) {
+            if (netlist.block_type(blk_id) == APBlockType::FIXED)
+                continue;
+            int tile_x = std::floor(p_placement.block_x_locs[blk_id]);
+            int tile_y = std::floor(p_placement.block_y_locs[blk_id]);
             PlaceTileId tile_id = tile_graph.get_place_tile_id(tile_x, tile_y);
-            add_atom_to_tile(node_id, tile_id);
+            add_atom_to_tile(blk_id, tile_id);
         }
     }
 
     // Export the atom locations from the tile graph into the partial placement.
-    void export_node_locations(PartialPlacement& p_placement) {
+    void export_node_locations(PartialPlacement& p_placement, const APNetlist& netlist) {
         // TODO: Look into only updating the nodes that actually moved.
-        for (size_t node_id = 0; node_id < p_placement.num_moveable_nodes; node_id++) {
-            const PlaceTileId tile_id = tile_graph.get_containing_tile(node_id);
+        for (APBlockId blk_id : netlist.blocks()) {
+            if (netlist.block_type(blk_id) == APBlockType::FIXED)
+                continue;
+            const PlaceTileId tile_id = tile_graph.get_containing_tile(blk_id);
             const PlaceTile& place_tile = tile_graph.get_place_tile(tile_id);
-            double node_x = p_placement.node_loc_x[node_id];
-            double node_y = p_placement.node_loc_y[node_id];
-            double offset_x = node_x - std::floor(node_x);
-            double offset_y = node_y - std::floor(node_y);
+            double blk_loc_x = p_placement.block_x_locs[blk_id];
+            double blk_loc_y = p_placement.block_y_locs[blk_id];
+            double offset_x = blk_loc_x - std::floor(blk_loc_x);
+            double offset_y = blk_loc_y - std::floor(blk_loc_y);
             // FIXME: The solver will likely put many nodes right on top of one
             //        another. The legalizer should spready them out a bit to
             //        help it converge faster.
-            p_placement.node_loc_x[node_id] = static_cast<double>(place_tile.x) + offset_x;
-            p_placement.node_loc_y[node_id] = static_cast<double>(place_tile.y) + offset_y;
+            p_placement.block_x_locs[blk_id] = static_cast<double>(place_tile.x) + offset_x;
+            p_placement.block_y_locs[blk_id] = static_cast<double>(place_tile.y) + offset_y;
             // FIXME: The sub-tile information should also be stored in the
             //        PartialPlacement object.
             // tile_graph.get_containing_sub_tile_idx(node_id);
@@ -517,32 +523,34 @@ static inline size_t getDemand(PlaceTileId tile_id, const SimpleArchModel &arch_
 
 // Helper method to get the closest node in the src tile to the sink tile.
 // NOTE: This is from the original solved position of the node in the src tile.
-static inline size_t getClosestNode(const PartialPlacement& p_placement,
-                                    SimpleArchModel& arch_model,
-                                    PlaceTileId src_tile_id,
-                                    PlaceTileId sink_tile_id,
-                                    double &smallest_block_dist) {
+static inline APBlockId getClosestBlock(const PartialPlacement& p_placement,
+                                        SimpleArchModel& arch_model,
+                                        const APNetlist& netlist,
+                                        PlaceTileId src_tile_id,
+                                        PlaceTileId sink_tile_id,
+                                        double &smallest_block_dist) {
     const PlaceTile& sink_tile = arch_model.get_place_tile(sink_tile_id);
     double sink_tile_x = sink_tile.x;
     double sink_tile_y = sink_tile.y;
 
-    std::vector<size_t> all_moveable_nodes = arch_model.get_all_moveable_nodes(src_tile_id, p_placement);
-    VTR_ASSERT(!all_moveable_nodes.empty());
-    size_t closest_node_id = 0;
+    std::vector<APBlockId> all_moveable_blocks = arch_model.get_all_moveable_blocks(src_tile_id, netlist);
+    VTR_ASSERT(!all_moveable_blocks.empty());
+    APBlockId closest_node_id;
     smallest_block_dist = std::numeric_limits<double>::infinity();
-    for (size_t node_id : all_moveable_nodes) {
+    for (APBlockId blk_id : all_moveable_blocks) {
         // NOTE: Slight change from original implementation. Not getting tile pos.
         // FIXME: This distance calculation is a bit odd.
-        double orig_node_x = p_placement.node_loc_x[node_id];
-        double orig_node_y = p_placement.node_loc_y[node_id];
+        double orig_node_x = p_placement.block_x_locs[blk_id];
+        double orig_node_y = p_placement.block_y_locs[blk_id];
         double dx = orig_node_x - sink_tile_x;
         double dy = orig_node_y - sink_tile_y;
         double block_dist = (dx * dx) + (dy * dy);
         if (block_dist < smallest_block_dist) {
-            closest_node_id = node_id;
+            closest_node_id = blk_id;
             smallest_block_dist = block_dist;
         }
     }
+    VTR_ASSERT(closest_node_id.is_valid());
     return closest_node_id;
 }
 
@@ -550,12 +558,13 @@ static inline size_t getClosestNode(const PartialPlacement& p_placement,
 // sink tile.
 static inline double computeCost(const PartialPlacement& p_placement,
                                  SimpleArchModel& arch_model,
+                                 const APNetlist& netlist,
                                  double psi,
                                  PlaceTileId src_tile_id,
                                  PlaceTileId sink_tile_id) {
     // If the src tile is empty, then there is nothing to move.
     // FIXME: This can also be made WAY more efficient!
-    if (arch_model.get_all_moveable_nodes(src_tile_id, p_placement).empty())
+    if (arch_model.get_all_moveable_blocks(src_tile_id, netlist).empty())
         return std::numeric_limits<double>::infinity();
 
     // Get the weight, which is proportional to the size of the set that
@@ -568,7 +577,7 @@ static inline double computeCost(const PartialPlacement& p_placement,
     // the sink tile.
     // NOTE: This assumes no diagonal movements.
     double quad_mvmt;
-    getClosestNode(p_placement, arch_model, src_tile_id, sink_tile_id, quad_mvmt);
+    getClosestBlock(p_placement, arch_model, netlist, src_tile_id, sink_tile_id, quad_mvmt);
 
     // If the movement is larger than psi, return infinity
     if (quad_mvmt >= psi)
@@ -581,6 +590,7 @@ static inline double computeCost(const PartialPlacement& p_placement,
 // Helper method to get the paths to flow nodes between tiles.
 static inline void getPaths(const PartialPlacement& p_placement,
                             SimpleArchModel& arch_model,
+                            const APNetlist& netlist,
                             double psi,
                             PlaceTileId starting_tile_id,
                             std::vector<std::vector<PlaceTileId>>& paths) {
@@ -610,7 +620,7 @@ static inline void getPaths(const PartialPlacement& p_placement,
         for (PlaceTileId neighbor_tile_id : neighbor_tile_ids) {
             if (tile_visited[neighbor_tile_id])
                 continue;
-            double cost = computeCost(p_placement, arch_model, psi, tail_tile_id, neighbor_tile_id);
+            double cost = computeCost(p_placement, arch_model, netlist, psi, tail_tile_id, neighbor_tile_id);
             if (cost < std::numeric_limits<double>::infinity()) {
                 std::vector<PlaceTileId> p_copy(p);
                 tile_cost[neighbor_tile_id] = tile_cost[tail_tile_id] + cost;
@@ -641,6 +651,7 @@ static inline void getPaths(const PartialPlacement& p_placement,
 // Helper method to move cells along a given path.
 static inline void moveCells(const PartialPlacement& p_placement,
                              SimpleArchModel& arch_model,
+                             const APNetlist& netlist,
                              double psi,
                              std::vector<PlaceTileId>& path) {
     VTR_ASSERT(!path.empty());
@@ -650,7 +661,7 @@ static inline void moveCells(const PartialPlacement& p_placement,
     size_t path_size = path.size();
     for (size_t path_index = 1; path_index < path_size; path_index++) {
         PlaceTileId sink_tile_id = path[path_index];
-        double cost = computeCost(p_placement, arch_model, psi, src_tile_id, sink_tile_id);
+        double cost = computeCost(p_placement, arch_model, netlist, psi, src_tile_id, sink_tile_id);
         if (cost == std::numeric_limits<double>::infinity())
             return;
         //  continue;
@@ -667,8 +678,8 @@ static inline void moveCells(const PartialPlacement& p_placement,
         // the whole list which is wasteful).
         // TODO: Verify this.
         double smallest_block_dist;
-        size_t closest_node_id = getClosestNode(p_placement, arch_model, src_tile_id, sink_tile_id, smallest_block_dist);
-        arch_model.move_atom_to_tile(closest_node_id, sink_tile_id);
+        APBlockId closest_blk_id = getClosestBlock(p_placement, arch_model, netlist, src_tile_id, sink_tile_id, smallest_block_dist);
+        arch_model.move_atom_to_tile(closest_blk_id, sink_tile_id);
 
         sink_tile_id = src_tile_id;
     }
@@ -689,12 +700,12 @@ void FlowBasedLegalizer::legalize(PartialPlacement &p_placement) {
 
     // Import the node locations into the Tile Graph according to the architecture
     // model.
-    arch_model.import_node_locations(p_placement);
+    arch_model.import_node_locations(p_placement, netlist);
 
     // Run the flow-based spreader.
     size_t flowBasedIter = 0;
     while (true) {
-        if (flowBasedIter > 1000) {
+        if (flowBasedIter > 100) {
             VTR_LOG("HIT MAX ITERATION!!!\n");
             break;
         }
@@ -720,7 +731,7 @@ void FlowBasedLegalizer::legalize(PartialPlacement &p_placement) {
             //  NOTE: The paths are sorted by increasing cost within the
             //        getPaths method.
             std::vector<std::vector<PlaceTileId>> paths;
-            getPaths(p_placement, arch_model, psi, tile_id, paths);
+            getPaths(p_placement, arch_model, netlist, psi, tile_id, paths);
 
             // VTR_LOG("\tNum paths: %zu\n", paths.size());
             for (std::vector<PlaceTileId>& path : paths) {
@@ -729,7 +740,7 @@ void FlowBasedLegalizer::legalize(PartialPlacement &p_placement) {
                 // Move cells over the paths.
                 //  NOTE: This will modify the tiles. (actual block positions
                 //        will not change (yet)).
-                moveCells(p_placement, arch_model, psi, path);
+                moveCells(p_placement, arch_model, netlist, psi, path);
             }
         }
 
@@ -740,7 +751,7 @@ void FlowBasedLegalizer::legalize(PartialPlacement &p_placement) {
     VTR_LOG("Flow-Based Legalizer finished in %zu iterations.\n", flowBasedIter + 1);
 
     // Export the legalized placement to the partial placement.
-    arch_model.export_node_locations(p_placement);
+    arch_model.export_node_locations(p_placement, netlist);
 }
 
 void FullLegalizer::legalize(PartialPlacement& p_placement) {

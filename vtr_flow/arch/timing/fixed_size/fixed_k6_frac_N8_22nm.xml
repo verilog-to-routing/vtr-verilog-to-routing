@@ -132,6 +132,20 @@ Scaling assumptions from 40nm to 22nm: delay constant area drop (22/40)^2 but si
   <!-- ODIN II specific config ends -->
   <!-- Physical descriptions begin -->
   <layout>
+    <!--The smallest device needed to run the MCNC benchmarks.-->
+    <fixed_layout name="min_mcnc_device" width="23" height="23">
+      <!--Perimeter of 'io' blocks with 'EMPTY' blocks at corners-->
+      <perimeter type="io" priority="100"/>
+      <corners type="EMPTY" priority="101"/>
+      <!--Fill with 'clb'-->
+      <fill type="clb" priority="10"/>
+      <!--Column of 'mult_36' with 'EMPTY' blocks wherever a 'mult_36' does not fit. Vertical offset by 1 for perimeter.-->
+      <col type="mult_36" startx="6" starty="1" repeatx="8" priority="20"/>
+      <col type="EMPTY" startx="6" repeatx="8" starty="1" priority="19"/>
+      <!--Column of 'memory' with 'EMPTY' blocks wherever a 'memory' does not fit. Vertical offset by 1 for perimeter.-->
+      <col type="memory" startx="2" starty="1" repeatx="8" priority="20"/>
+      <col type="EMPTY" startx="2" repeatx="8" starty="1" priority="19"/>
+    </fixed_layout>
     <fixed_layout name="unnamed_device" width="17" height="17">
       <!--Perimeter of 'io' blocks with 'EMPTY' blocks at corners-->
       <perimeter type="io" priority="100"/>

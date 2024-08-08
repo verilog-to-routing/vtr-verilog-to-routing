@@ -58,6 +58,7 @@ include(CheckCXXSymbolExists)
 
 #Collect the source files
 # FIXME: We really need to imrove this CMake file...
+#   - Just use src/*/*/*.cpp -VB
 file(GLOB_RECURSE EXEC_SOURCES src/main.cpp)
 file(GLOB_RECURSE LIB_SOURCES src/*/*.cpp src/place/analytical_placement/*.cpp)
 file(GLOB_RECURSE LIB_HEADERS src/*/*.h src/place/analytical_placement/*.h)
