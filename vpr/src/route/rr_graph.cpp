@@ -671,6 +671,12 @@ static void build_intra_cluster_rr_graph(const t_graph_type graph_type,
                                          bool is_flat,
                                          bool load_rr_graph);
 
+/**
+ * Return the ID for delayess switch. If the RR graph is loaded from a file, then the assumption
+ * is that the returned ID should be a RR switch ID not architecture ID.
+ * @param det_routing_arch Contain the information from architecture file
+ * @param load_rr_graph Indicate whether the RR graph is loaded from a file
+ */
 static short get_delayless_switch_id (t_det_routing_arch* det_routing_arch, 
                                         bool load_rr_graph);
 
