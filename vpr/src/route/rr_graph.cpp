@@ -272,7 +272,7 @@ static void connect_src_sink_to_pins(RRGraphBuilder& rr_graph_builder,
                                      t_rr_edge_info_set& rr_edges_to_create,
                                      const int delayless_switch,
                                      t_physical_tile_type_ptr physical_type_ptr,
-                                     bool is_remapped);
+                                     bool switches_remapped);
 
 static void alloc_and_load_tile_rr_graph(RRGraphBuilder& rr_graph_builder,
                                          std::map<int, t_arch_switch_inf>& arch_sw_inf_map,
@@ -381,7 +381,7 @@ static void add_pb_edges(RRGraphBuilder& rr_graph_builder,
                          int layer,
                          int i,
                          int j,
-                         bool is_remapped);
+                         bool switches_remapped);
 
 /**
  * Edges going in/out of collapse nodes are not added by the normal routine. This function add those edges
@@ -2039,7 +2039,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
     *Fc_clipped = false;
 
     /* This function is called to build the general routing graph resoruces. Thus, the edges are not remapped yet.*/
-    bool is_remapped = false;
+    bool switches_remapped = false;
 
     int num_edges = 0;
     /* Connection SINKS and SOURCES to their pins - Initializing IPINs/OPINs. */
@@ -2074,7 +2074,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
                                              rr_edges_to_create,
                                              delayless_switch,
                                              physical_tile,
-                                             is_remapped);
+                                             switches_remapped);
 
                     //Create the actual SOURCE->OPIN, IPIN->SINK edges
                     uniquify_edges(rr_edges_to_create);
@@ -2477,7 +2477,7 @@ static void connect_src_sink_to_pins(RRGraphBuilder& rr_graph_builder,
                                      t_rr_edge_info_set& rr_edges_to_create,
                                      const int delayless_switch,
                                      t_physical_tile_type_ptr physical_type_ptr,
-                                     bool is_remapped) {
+                                     bool switches_remapped) {
     for (auto class_num : class_num_vec) {
         const auto& pin_list = get_pin_list_from_class_physical_num(physical_type_ptr, class_num);
         auto class_type = get_class_type_from_class_physical_num(physical_type_ptr, class_num);
@@ -2497,11 +2497,11 @@ static void connect_src_sink_to_pins(RRGraphBuilder& rr_graph_builder,
             auto pin_type = get_pin_type_from_pin_physical_num(physical_type_ptr, pin_num);
             if (class_type == DRIVER) {
                 VTR_ASSERT(pin_type == DRIVER);
-                rr_edges_to_create.emplace_back(class_rr_node_id, pin_rr_node_id, delayless_switch, is_remapped);
+                rr_edges_to_create.emplace_back(class_rr_node_id, pin_rr_node_id, delayless_switch, switches_remapped);
             } else {
                 VTR_ASSERT(class_type == RECEIVER);
                 VTR_ASSERT(pin_type == RECEIVER);
-                rr_edges_to_create.emplace_back(pin_rr_node_id, class_rr_node_id, delayless_switch, is_remapped);
+                rr_edges_to_create.emplace_back(pin_rr_node_id, class_rr_node_id, delayless_switch, switches_remapped);
             }
         }
     }
@@ -2745,7 +2745,7 @@ static void add_pb_edges(RRGraphBuilder& rr_graph_builder,
                          int layer,
                          int i,
                          int j,
-                         bool is_remapped) {
+                         bool switches_remapped) {
     auto pin_num_range = get_pb_pins(physical_type,
                                      sub_tile,
                                      logical_block,
@@ -2799,7 +2799,7 @@ static void add_pb_edges(RRGraphBuilder& rr_graph_builder,
                                               pin_physical_num,
                                               conn_pin_physical_num);
 
-            if (is_remapped) {
+            if (switches_remapped) {
                 auto& all_sw_inf = g_vpr_ctx.mutable_device().all_sw_inf;
                 float delay = g_vpr_ctx.device().all_sw_inf.at(sw_idx).Tdel();
                 bool is_new_sw;
@@ -2807,10 +2807,10 @@ static void add_pb_edges(RRGraphBuilder& rr_graph_builder,
                                                                         all_sw_inf,
                                                                         R_minW_nmos,
                                                                         R_minW_pmos,
-                                                                        is_remapped,
+                                                                        switches_remapped,
                                                                         delay);
             }
-            rr_edges_to_create.emplace_back(parent_pin_node_id, conn_pin_node_id, sw_idx, is_remapped);
+            rr_edges_to_create.emplace_back(parent_pin_node_id, conn_pin_node_id, sw_idx, switches_remapped);
         }
     }
 }
