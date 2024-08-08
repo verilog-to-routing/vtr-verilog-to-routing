@@ -383,6 +383,9 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
         if (!pack_success) {
             return false; //Unimplementable
         }
+        if (!vpr_setup.PlacerOpts.doPlacement) {
+            return true; // skip unnecessary placer setup
+        }
     }
 
     // For the time being, we decided to create the flat graph after placement is done. Thus, the is_flat parameter for this function
@@ -602,11 +605,11 @@ bool vpr_pack_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
             // generate a .net file by legalizing an input flat placement file
             if (packer_opts.load_flat_placement) {
 
-                //Load and legalizer flat placement file
-                vpr_load_flat_placement(vpr_setup, arch);
-
-                //Load the result from the .net file
-                vpr_load_packing(vpr_setup, arch);
+                //Load and legalize flat placement file
+                status = vpr_load_flat_placement(vpr_setup, arch);
+                if (!status) {
+                    return status;
+                }
 
             } else {
 
