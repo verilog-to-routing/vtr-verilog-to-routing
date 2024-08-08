@@ -1544,7 +1544,7 @@ static short get_delayless_switch_id (t_det_routing_arch* det_routing_arch,
     short delayless_switch;
     if (load_rr_graph) {
         const auto& rr_switches = device_ctx.rr_graph.rr_switch();
-        for (int switch_id = 0; switch_id < static_cast<int>(rr_switches.size()); switch_id++){
+        for (size_t switch_id = 0; switch_id < rr_switches.size(); switch_id++){
             const auto& rr_switch = rr_switches[RRSwitchId(switch_id)];
             if (rr_switch.name.find("delayless") != std::string::npos) {
                 delayless_switch = static_cast<short>(switch_id);
@@ -2067,7 +2067,8 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
     /* If Fc gets clipped, this will be flagged to true */
     *Fc_clipped = false;
 
-    /* This function is called to build the general routing graph resoruces. Thus, the edges are not remapped yet.*/
+    /* This function is called to build the general routing graph resoruces. Thus, 
+    the edges are not remapped yet.*/
     bool switches_remapped = false;
 
     int num_edges = 0;
@@ -3008,11 +3009,13 @@ static void add_chain_node_fan_in_edges(RRGraphBuilder& rr_graph_builder,
                                                                       is_rr_sw_id,
                                                                       delay);
 
-            if (is_new_sw) {
-                if (!load_rr_graph) {
-                    auto& switch_fanin_remap = g_vpr_ctx.mutable_device().switch_fanin_remap;
-                    switch_fanin_remap.push_back({{UNDEFINED, size_t(sw_id)}});
-                }
+            /*If the switch found inside the cluster has not seen before and RR graph is not read from a file, 
+            we need to add this switch to switch_fanin_remap data strcutre which is used later to remap switch IDs
+            from architecture ID to RR graph switch ID. The reason why we don't this when RR graph is read from a file
+            is that in that case, the switch IDs of edges are alreay RR graph switch IDs. */
+            if (is_new_sw && !load_rr_graph) {
+                auto& switch_fanin_remap = g_vpr_ctx.mutable_device().switch_fanin_remap;
+                switch_fanin_remap.push_back({{UNDEFINED, size_t(sw_id)}});
             }
 
             rr_edges_to_create.emplace_back(src_pair.first, sink_rr_node_id, sw_id, is_rr_sw_id);
