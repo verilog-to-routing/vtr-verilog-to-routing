@@ -1192,7 +1192,8 @@ void initial_placement(const t_placer_opts& placer_opts,
     propagate_place_constraints();
 
     /*Mark the blocks that have already been locked to one spot via floorplan constraints
-     * as fixed, so they do not get moved during initial placement or later during the simulated annealing stage of placement*/
+     * as fixed, so they do not get moved during initial placement or later during the simulated annealing stage of placement
+     */
     mark_fixed_blocks();
 
     // Compute and store compressed floorplanning constraints
@@ -1204,17 +1205,22 @@ void initial_placement(const t_placer_opts& placer_opts,
         read_constraints(constraints_file);
     }
 
-    if (noc_opts.noc) {
-        // NoC routers are placed before other blocks
-        initial_noc_placement(noc_opts, placer_opts);
-        propagate_place_constraints();
+    if(!placer_opts.read_initial_place_file.empty()) {
+        const auto& grid = g_vpr_ctx.device().grid;
+        read_place(nullptr, placer_opts.read_initial_place_file.c_str(), false, grid);
+    } else {
+        if (noc_opts.noc) {
+            // NoC routers are placed before other blocks
+            initial_noc_placement(noc_opts, placer_opts);
+            propagate_place_constraints();
+        }
+
+        //Assign scores to blocks and placement macros according to how difficult they are to place
+        vtr::vector<ClusterBlockId, t_block_score> block_scores = assign_block_scores();
+
+        //Place all blocks
+        place_all_blocks(placer_opts, block_scores, placer_opts.pad_loc_type, constraints_file);
     }
-
-    //Assign scores to blocks and placement macros according to how difficult they are to place
-    vtr::vector<ClusterBlockId, t_block_score> block_scores = assign_block_scores();
-
-    //Place all blocks
-    place_all_blocks(placer_opts, block_scores, placer_opts.pad_loc_type, constraints_file);
 
     alloc_and_load_movable_blocks();
 

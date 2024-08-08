@@ -1236,6 +1236,7 @@ struct t_placer_opts {
     enum e_pad_loc_type pad_loc_type;
     std::string constraints_file;
     std::string write_initial_place_file;
+    std::string read_initial_place_file;
     enum pfreq place_freq;
     int recompute_crit_iter;
     int inner_loop_recompute_divider;
