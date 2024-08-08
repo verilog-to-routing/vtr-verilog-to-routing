@@ -54,6 +54,9 @@ enum class NetUpdateState {
 
 const int MAX_FANOUT_CROSSING_COUNT = 50;
 
+double cong_matrix[400][400];
+double cong_matrix_new[400][400];
+
 /**
  * @brief Crossing counts for nets with different #'s of pins.  From
  * ICCAD 94 pp. 690 - 695 (with linear interpolation applied by me).
@@ -1842,6 +1845,59 @@ static double get_net_wirelength_estimate(ClusterNetId net_id, const t_bb& bb) {
     return (ncost);
 }
 
+void get_cong_matrix(ClusterNetId net_id, const t_bb& bb) {
+    /* Finds the cost due to one net by looking at its coordinate bounding  *
+     * box.                                                                 */
+    // auto& cluster_ctx = g_vpr_ctx.clustering();
+
+    /* Could insert a check for xmin == xmax.  In that case, assume  *
+     * connection will be made with no bends and hence no x-cost.    *
+     * Same thing for y-cost.                                        */
+
+    /* Cost = wire length along channel * cross_count / average      *
+     * channel capacity.   Do this for x, then y direction and add.  */
+    for(int i=bb.xmin;i<bb.xmax;i++){
+        for(int j=bb.ymin;j<bb.ymax;j++){
+            cong_matrix[i][j] +=  get_net_wirelength_estimate(net_id,bb)/double((bb.xmax - bb.xmin + 1)*(bb.ymax - bb.ymin + 1));
+        }
+    }
+}
+
+
+double get_cong_cost(double chan_width) {
+    auto& device_ctx = g_vpr_ctx.device();
+    double max = 0.0;
+    double avg = 1e-4,var=0.0;
+    double num = 0.0;
+    double max_width = chan_width;
+    for(int i=0;i<int(device_ctx.grid.width());i++){
+        for(int j=0;j<int(device_ctx.grid.height());j++){
+            if(max<cong_matrix_new[i][j]){
+                max = cong_matrix_new[i][j];
+            }
+        }
+    }
+
+    for(int i=0;i<int(device_ctx.grid.width());i++){
+        for(int j=0;j<int(device_ctx.grid.height());j++){
+            if(cong_matrix_new[i][j]>max_width){
+                avg+=cong_matrix_new[i][j]-max_width;
+                num+=1.0;
+            }
+        }
+    }
+
+    for(int i=0;i<int(device_ctx.grid.width());i++){
+        for(int j=0;j<int(device_ctx.grid.height());j++){
+            double var_var=cong_matrix_new[i][j]-avg;
+            var_var = var_var*var_var;
+            var += var_var;
+        }
+    }
+    var = var/double((device_ctx.grid.width()*device_ctx.grid.height()));
+    return avg;
+}
+
 static double get_net_wirelength_from_layer_bb(ClusterNetId /* net_id */,
                                                const std::vector<t_2D_bb>& bb,
                                                const vtr::NdMatrixProxy<int, 1> layer_pin_sink_count) {
@@ -1954,11 +2010,21 @@ void find_affected_nets_and_update_costs(
     set_bb_delta_cost(bb_delta_c);
 }
 
-double comp_bb_cost(e_cost_methods method) {
+double comp_bb_cost(e_cost_methods method, const t_place_algorithm& place_algorithm) {
     double cost = 0;
     double expected_wirelength = 0.0;
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_move_ctx = g_placer_ctx.mutable_move();
+    auto& device_ctx = g_vpr_ctx.device();
+    // VTR_LOG("\n\n\nwidth = %d and height= %d\n\n\n",device_ctx.grid.width(), device_ctx.grid.height());
+    if(place_algorithm == CONGESTION_AWARE_PLACE){
+        for(int i = 0; i < int(device_ctx.grid.width()); i++){
+            for(int j = 0; j < int(device_ctx.grid.height()); j++){
+                cong_matrix[i][j] = 0.0;
+                // cong_matrix_new[i][j] = 0.0;
+            }
+        }
+    }
 
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {       /* for each net ... */
         if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)) { /* Do only if not ignored. */
@@ -1976,10 +2042,32 @@ double comp_bb_cost(e_cost_methods method) {
                                      place_move_ctx.num_sink_pin_layer[size_t(net_id)]);
             }
 
+            if(place_algorithm == CONGESTION_AWARE_PLACE){
+                get_cong_matrix(net_id, place_move_ctx.bb_coords[net_id]);
+            }
+
             pl_net_cost.net_cost[net_id] = get_net_cost(net_id, place_move_ctx.bb_coords[net_id]);
             cost += pl_net_cost.net_cost[net_id];
             if (method == CHECK)
                 expected_wirelength += get_net_wirelength_estimate(net_id, place_move_ctx.bb_coords[net_id]);
+        }
+    }
+
+    if(place_algorithm == CONGESTION_AWARE_PLACE){
+        for(int i = 0; i < int(device_ctx.grid.width()); i++){
+            for(int j = 0; j < int(device_ctx.grid.height()); j++){
+                cong_matrix_new[i][j] = cong_matrix[i][j];
+            }
+        }
+    }
+
+    // cost = get_cong_cost();
+    if(place_algorithm == CONGESTION_AWARE_PLACE){
+        for(int i=0;i<int(device_ctx.grid.width());i++){
+            for(int j=0;j<int(device_ctx.grid.height());j++){
+                VTR_LOG("%4.0f\t",cong_matrix[i][j]);
+            }
+            VTR_LOG("\n");
         }
     }
 
@@ -2084,8 +2172,13 @@ void recompute_costs_from_scratch(const t_placer_opts& placer_opts,
     };
 
     double new_bb_cost = recompute_bb_cost();
+    double new_cong_cost = 0.0;
+    if(placer_opts.place_algorithm == CONGESTION_AWARE_PLACE){
+        new_cong_cost = get_cong_cost(placer_opts.congestion_tradeoff);
+    }
     check_and_print_cost(new_bb_cost, costs->bb_cost, "bb_cost");
     costs->bb_cost = new_bb_cost;
+    costs->cong_cost = new_cong_cost;
 
     if (placer_opts.place_algorithm.is_timing_driven()) {
         double new_timing_cost = 0.;
