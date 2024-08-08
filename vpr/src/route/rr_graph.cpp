@@ -264,6 +264,18 @@ static void connect_tile_src_sink_to_pins(RRGraphBuilder& rr_graph_builder,
                                           const int delayless_switch,
                                           t_physical_tile_type_ptr physical_type_ptr);
 
+/**
+ * Add the edges between IPIN to SINK and SOURCE to OPIN to rr_edges_to_create
+ * @param rr_graph_builder RR Graph Bulder object which contain the RR Graph storage
+ * @param class_num_vec Class physical numbers to add the edges connected to them
+ * @param layer The layer number of the block to add the SINK/SRC connections of it.
+ * @param i The x location of the block to add the SINK/SRC connections of it.
+ * @param j The y location of the block to add the SINK/SRC connections of it
+ * @param rr_edges_to_create An object which store all of the edges created in this function.
+ * @param delayless_switch Switch ID of the delayless switch.
+ * @param physical_type_ptr A pointer to the physical type of the block for which the edges are created.
+ * @param switches_remapped A flag to indicate whether edge switch IDs are remapped 
+ */
 static void connect_src_sink_to_pins(RRGraphBuilder& rr_graph_builder,
                                      const std::vector<int>& class_num_vec,
                                      const int layer,
@@ -659,6 +671,9 @@ static void build_intra_cluster_rr_graph(const t_graph_type graph_type,
                                          bool is_flat,
                                          bool load_rr_graph);
 
+static short get_delayless_switch_id (t_det_routing_arch* det_routing_arch, 
+                                        bool load_rr_graph);
+
 /******************* Subroutine definitions *******************************/
 
 void create_rr_graph(const t_graph_type graph_type,
@@ -744,19 +759,7 @@ void create_rr_graph(const t_graph_type graph_type,
     }
 
     if (is_flat) {
-        short delayless_switch = OPEN;
-        if (load_rr_graph) {
-            const auto& rr_switches = device_ctx.rr_graph.rr_switch();
-            for (int switch_id = 0; switch_id < static_cast<int>(rr_switches.size()); switch_id++){
-                const auto& rr_switch = rr_switches[RRSwitchId(switch_id)];
-                if (rr_switch.name.find("delayless") != std::string::npos) {
-                    delayless_switch = static_cast<short>(switch_id);
-                    break;
-                }
-            }
-        } else {
-            delayless_switch = det_routing_arch->delayless_switch;
-        }
+        short delayless_switch = get_delayless_switch_id(det_routing_arch, load_rr_graph);
         VTR_ASSERT(delayless_switch != OPEN);
         build_intra_cluster_rr_graph(graph_type,
                                      grid,
@@ -1527,6 +1530,26 @@ static void build_intra_cluster_rr_graph(const t_graph_type graph_type,
                    device_ctx.chan_width,
                    graph_type,
                    is_flat);
+}
+
+static short get_delayless_switch_id (t_det_routing_arch* det_routing_arch,
+                                        bool load_rr_graph) {
+    const auto& device_ctx = g_vpr_ctx.device();
+    short delayless_switch;
+    if (load_rr_graph) {
+        const auto& rr_switches = device_ctx.rr_graph.rr_switch();
+        for (int switch_id = 0; switch_id < static_cast<int>(rr_switches.size()); switch_id++){
+            const auto& rr_switch = rr_switches[RRSwitchId(switch_id)];
+            if (rr_switch.name.find("delayless") != std::string::npos) {
+                delayless_switch = static_cast<short>(switch_id);
+                break;
+            }
+        }
+    } else {
+        delayless_switch = det_routing_arch->delayless_switch;
+    }
+
+    return delayless_switch;
 }
 
 void build_tile_rr_graph(RRGraphBuilder& rr_graph_builder,
