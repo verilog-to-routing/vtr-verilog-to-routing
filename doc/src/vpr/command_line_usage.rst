@@ -1306,6 +1306,15 @@ The following options are only valid when the router is in timing-driven mode (t
 
     **Default:** ``1.2``
 
+.. option:: --astar_offset <float>
+
+    Sets how aggressive the directed search used by the timing-driven router is.
+    It is a subtractive adjustment to the lookahead heuristic.
+
+    Values between 0 and 1e-9 are resonable; higher values may increase quality at the expense of run-time.
+
+    **Default:** ``0.0``
+
 .. option:: --router_profiler_astar_fac <float>
     
     Controls the directedness of the timing-driven router's exploration when doing router delay profiling of an architecture.
