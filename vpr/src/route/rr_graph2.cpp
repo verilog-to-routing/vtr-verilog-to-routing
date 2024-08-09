@@ -300,7 +300,8 @@ t_seg_details* alloc_and_load_seg_details(int* max_chan_width,
      *     as they will not be staggered by different segment start points.     */
 
     int cur_track, ntracks, itrack, length, j, index;
-    int arch_wire_switch, arch_opin_switch, fac, num_sets, tmp;
+    int fac, num_sets, tmp;
+    int arch_wire_switch, arch_opin_switch, arch_wire_switch_dec, arch_opin_switch_dec;
     int arch_opin_between_dice_switch;
     int group_start, first_track;
     std::unique_ptr<int[]> sets_per_seg_type;
@@ -352,8 +353,10 @@ t_seg_details* alloc_and_load_seg_details(int* max_chan_width,
 
         arch_wire_switch = segment_inf[i].arch_wire_switch;
         arch_opin_switch = segment_inf[i].arch_opin_switch;
+        arch_wire_switch_dec = segment_inf[i].arch_wire_switch_dec;
+        arch_opin_switch_dec = segment_inf[i].arch_opin_switch_dec;
         arch_opin_between_dice_switch = segment_inf[i].arch_opin_between_dice_switch;
-        VTR_ASSERT((arch_wire_switch == arch_opin_switch) || (directionality != UNI_DIRECTIONAL));
+        VTR_ASSERT((arch_wire_switch == arch_opin_switch && arch_wire_switch_dec == arch_opin_switch_dec) || (directionality != UNI_DIRECTIONAL));
 
         /* Set up the tracks of same type */
         group_start = 0;
@@ -416,8 +419,6 @@ t_seg_details* alloc_and_load_seg_details(int* max_chan_width,
             seg_details[cur_track].Cmetal = segment_inf[i].Cmetal;
             //seg_details[cur_track].Cmetal_per_m = segment_inf[i].Cmetal_per_m;
 
-            seg_details[cur_track].arch_wire_switch = arch_wire_switch;
-            seg_details[cur_track].arch_opin_switch = arch_opin_switch;
             seg_details[cur_track].arch_opin_between_dice_switch = arch_opin_between_dice_switch;
 
             if (BI_DIRECTIONAL == directionality) {
@@ -425,6 +426,18 @@ t_seg_details* alloc_and_load_seg_details(int* max_chan_width,
             } else {
                 VTR_ASSERT(UNI_DIRECTIONAL == directionality);
                 seg_details[cur_track].direction = (itrack % 2) ? Direction::DEC : Direction::INC;
+            }
+
+            //check for directionality to set the wire_switch and opin_switch
+            //if not specified in the architecture file, we will use a same mux for both directions
+            if (seg_details[cur_track].direction == Direction::INC || seg_details[cur_track].direction == Direction::BIDIR || arch_wire_switch_dec == -1){
+                seg_details[cur_track].arch_opin_switch = arch_opin_switch;
+                seg_details[cur_track].arch_wire_switch = arch_wire_switch;
+            }
+            else {
+                VTR_ASSERT(seg_details[cur_track].direction == Direction::DEC);
+                seg_details[cur_track].arch_opin_switch = arch_opin_switch_dec;
+                seg_details[cur_track].arch_wire_switch = arch_wire_switch_dec;
             }
 
             seg_details[cur_track].index = i;
