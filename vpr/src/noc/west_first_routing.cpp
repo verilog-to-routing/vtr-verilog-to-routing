@@ -57,9 +57,9 @@ const std::vector<TurnModelRouting::Direction>& WestFirstRouting::get_legal_dire
             }
 
             if (dst_router_pos.y > curr_router_pos.y) {
-                returned_legal_direction.push_back(TurnModelRouting::Direction::UP);
+                returned_legal_direction.push_back(TurnModelRouting::Direction::NORTH);
             } else if (dst_router_pos.y < curr_router_pos.y) {
-                returned_legal_direction.push_back(TurnModelRouting::Direction::DOWN);
+                returned_legal_direction.push_back(TurnModelRouting::Direction::SOUTH);
             }
         }
     }

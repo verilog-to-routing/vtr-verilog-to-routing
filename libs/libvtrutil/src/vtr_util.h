@@ -48,6 +48,22 @@ std::string join(Container container, std::string_view delim);
 template<typename T>
 std::string join(std::initializer_list<T> list, std::string_view delim);
 
+/**
+ * @brief Checks if exactly `k` conditions are true.
+ *
+ * @tparam Conditions A variadic template parameter pack representing the types of the conditions,
+ *         which should all be convertible to `bool`.
+ * @param k The exact number of conditions that should evaluate to true.
+ * @param conditions A variable number of boolean expressions or conditions to evaluate.
+ * @return `true` if exactly `k` of the provided conditions are true; otherwise `false`.
+ *
+ * @example
+ * @code
+ * bool result = exactly_k_conditions(2, true, false, true); // Returns true
+ * result = exactly_k_conditions(1, true, false, false);     // Returns true
+ * result = exactly_k_conditions(3, true, true, false);      // Returns false
+ * @endcode
+ */
 template<typename... Conditions>
 bool exactly_k_conditions(int k, Conditions... conditions);
 

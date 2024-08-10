@@ -198,11 +198,11 @@ static void noc_routers_anneal(const t_noc_opts& noc_opts) {
     const auto& compressed_noc_grid = get_compressed_noc_grid();
     const size_t n_noc_layers = compressed_noc_grid.get_layer_nums().size();
 
-    /* Maximum distance in each direction that a router can travel in a move
-     * It is assumed that NoC routers are organized in a square grid.
-     * Each router can initially move within the entire grid with a single swap.
-     * For 3D NoCs, it is assumed that each layer has the same number of routers,
-     * and each layer NoC routers are laid out in a square grid. */
+    /* Maximum distance in each direction that a router can travel in a move.
+     * The calculation below assumes that NoC routers are organized in a square grid;
+     * if it is a 3D architecture it also assumes each layer has the same number of routers.
+     * Breaking that assumption is OK, but the calculation may not compute the best initial range limit in that case.
+     * Each router can initially move within the entire grid with a single swap.*/
     const size_t n_physical_routers = noc_ctx.noc_model.get_noc_routers().size();
     const float max_r_lim = ceilf(sqrtf((float)n_physical_routers / (float)n_noc_layers));
 

@@ -7,6 +7,7 @@
 #include <map>
 
 OddEvenRouting::OddEvenRouting(const NocStorage& noc_model) {
+    // used to store unique x, y, and layer values in ascending order
     std::set<int> unique_x, unique_y, unique_z;
 
     for (const NocRouter& router : noc_model.get_noc_routers()) {
@@ -16,7 +17,8 @@ OddEvenRouting::OddEvenRouting(const NocStorage& noc_model) {
         unique_z.insert(loc.layer_num);
     }
 
-    auto create_compressed_map = [](const std::set<int> unique_vals) -> std::map<int, int> {
+    // maps values in unique_vals (stored in ascending order) to consecutive integer values starting at 0
+    auto create_compressed_map = [](const std::set<int>& unique_vals) -> std::map<int, int> {
         std::map<int, int> compressed_map;
         int compressed_val = 0;
         for (int val : unique_vals) {
@@ -36,8 +38,8 @@ OddEvenRouting::OddEvenRouting(const NocStorage& noc_model) {
         t_physical_tile_loc loc = router.get_router_physical_location();
 
         t_physical_tile_loc compressed_loc{compressed_x_map[loc.x],
-                                           compressed_x_map[loc.y],
-                                           compressed_x_map[loc.layer_num]};
+                                           compressed_y_map[loc.y],
+                                           compressed_z_map[loc.layer_num]};
 
         compressed_noc_locs_[id] = compressed_loc;
     }
@@ -62,9 +64,9 @@ const std::vector<TurnModelRouting::Direction>& OddEvenRouting::get_legal_direct
     returned_legal_direction.clear();
 
     if (noc_model.is_noc_3d()) {
-        route_3d(compressed_src_loc, compressed_curr_loc, compressed_dst_loc, prev_dir);
+        determine_legal_directions_2d(compressed_src_loc, compressed_curr_loc, compressed_dst_loc, prev_dir);
     } else {    // 2D NoC
-        route_2d(compressed_src_loc, compressed_curr_loc, compressed_dst_loc, prev_dir);
+        determine_legal_directions_3d(compressed_src_loc, compressed_curr_loc, compressed_dst_loc, prev_dir);
     }
 
     return returned_legal_direction;
@@ -144,10 +146,10 @@ bool OddEvenRouting::is_turn_legal(const std::array<std::reference_wrapper<const
     return true;
 }
 
-void OddEvenRouting::route_2d(t_physical_tile_loc comp_src_loc,
-                              t_physical_tile_loc comp_curr_loc,
-                              t_physical_tile_loc comp_dst_loc,
-                              TurnModelRouting::Direction prev_dir) {
+void OddEvenRouting::determine_legal_directions_2d(t_physical_tile_loc comp_src_loc,
+                                                   t_physical_tile_loc comp_curr_loc,
+                                                   t_physical_tile_loc comp_dst_loc,
+                                                   TurnModelRouting::Direction prev_dir) {
 
     // calculate the distance between the current router and the destination
     const int diff_x = comp_dst_loc.x - comp_curr_loc.x;
@@ -196,10 +198,10 @@ void OddEvenRouting::route_2d(t_physical_tile_loc comp_src_loc,
 
 }
 
-void OddEvenRouting::route_3d(t_physical_tile_loc comp_src_loc,
-                              t_physical_tile_loc comp_curr_loc,
-                              t_physical_tile_loc comp_dst_loc,
-                              TurnModelRouting::Direction prev_dir) {
+void OddEvenRouting::determine_legal_directions_3d(t_physical_tile_loc comp_src_loc,
+                                                   t_physical_tile_loc comp_curr_loc,
+                                                   t_physical_tile_loc comp_dst_loc,
+                                                   TurnModelRouting::Direction prev_dir) {
     // calculate the distance between the current router and the destination
     const int diff_x = comp_dst_loc.x - comp_curr_loc.x;
     const int diff_y = comp_dst_loc.y - comp_curr_loc.y;

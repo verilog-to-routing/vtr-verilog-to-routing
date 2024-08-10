@@ -249,7 +249,7 @@ static void process_mesh_topology(pugi::xml_node mesh_topology_tag,
                        "The parameters for the mesh topology have to be positive values.");
     }
 
-    if (mesh_region_start_x == ATTRIBUTE_CONVERSION_FAILURE || mesh_region_end_layer == ATTRIBUTE_CONVERSION_FAILURE) {
+    if (mesh_region_start_layer == ATTRIBUTE_CONVERSION_FAILURE || mesh_region_end_layer == ATTRIBUTE_CONVERSION_FAILURE) {
         VTR_LOGF_WARN(loc_data.filename_c_str(), loc_data.line(mesh_topology_tag),
                       "Optional 'startlayer' and 'endlayer' attributes were not set for the <mesh> tag. "
                       "The default value of zero is used for both of them.\n");
