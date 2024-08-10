@@ -498,3 +498,40 @@ NocCostTerms& NocCostTerms::operator+=(const NocCostTerms& noc_delta_cost) {
 
     return *this;
 }
+
+void place_sync_external_block_connections(ClusterBlockId iblk,
+                                           BlkLocRegistry& blk_loc_registry) {
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& clb_nlist = cluster_ctx.clb_nlist;
+    const auto& block_locs = blk_loc_registry.block_locs();
+    auto& physical_pins = blk_loc_registry.mutable_physical_pins();
+
+    t_pl_loc block_loc = block_locs[iblk].loc;
+
+    auto physical_tile = physical_tile_type(block_loc);
+    auto logical_block = clb_nlist.block_type(iblk);
+
+    int sub_tile_index = get_sub_tile_index(iblk, block_locs);
+    auto sub_tile = physical_tile->sub_tiles[sub_tile_index];
+
+    VTR_ASSERT(sub_tile.num_phy_pins % sub_tile.capacity.total() == 0);
+
+    int max_num_block_pins = sub_tile.num_phy_pins / sub_tile.capacity.total();
+    /* Logical location and physical location is offset by z * max_num_block_pins */
+
+    int rel_capacity = block_loc.sub_tile - sub_tile.capacity.low;
+
+    for (ClusterPinId pin : clb_nlist.block_pins(iblk)) {
+        int logical_pin_index = clb_nlist.pin_logical_index(pin);
+        int sub_tile_pin_index = get_sub_tile_physical_pin(sub_tile_index, physical_tile, logical_block, logical_pin_index);
+
+        int new_physical_pin_index = sub_tile.sub_tile_to_tile_pin_indices[sub_tile_pin_index + rel_capacity * max_num_block_pins];
+
+        auto result = physical_pins.find(pin);
+        if (result != physical_pins.end()) {
+            physical_pins[pin] = new_physical_pin_index;
+        } else {
+            physical_pins.insert(pin, new_physical_pin_index);
+        }
+    }
+}
