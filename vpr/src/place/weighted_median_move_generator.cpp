@@ -10,8 +10,8 @@
 
 #define CRIT_MULT_FOR_W_MEDIAN 10
 
-WeightedMedianMoveGenerator::WeightedMedianMoveGenerator(PlacerContext& placer_ctx)
-    : MoveGenerator(placer_ctx) {}
+WeightedMedianMoveGenerator::WeightedMedianMoveGenerator(PlacerState& placer_state)
+    : MoveGenerator(placer_state) {}
 
 e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected,
                                                         t_propose_action& proposed_action,
@@ -19,10 +19,10 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
                                                         const t_placer_opts& placer_opts,
                                                         const PlacerCriticalities* criticalities) {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& placer_ctx = placer_ctx_.get();
-    const auto& block_locs = placer_ctx.block_locs();
-    auto& place_move_ctx = placer_ctx.mutable_move();
-    const auto& blk_loc_registry = placer_ctx.blk_loc_registry();
+    auto& placer_state = placer_state_.get();
+    const auto& block_locs = placer_state.block_locs();
+    auto& place_move_ctx = placer_state.mutable_move();
+    const auto& blk_loc_registry = placer_state.blk_loc_registry();
 
     //Find a movable block based on blk_type
     ClusterBlockId b_from = propose_block_to_move(placer_opts,
@@ -30,7 +30,7 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
                                                   /*highly_crit_block=*/false,
                                                   /*net_from=*/nullptr,
                                                   /*pin_from=*/nullptr,
-                                                  placer_ctx);
+                                                  placer_state);
 
     VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "Weighted Median Move Choose Block %d - rlim %f\n", size_t(b_from), rlim);
 
@@ -156,7 +156,7 @@ bool WeightedMedianMoveGenerator::get_bb_cost_for_net_excluding_block(ClusterNet
                                          ClusterPinId moving_pin_id,
                                          const PlacerCriticalities* criticalities,
                                          t_bb_cost* coords) {
-    const auto& blk_loc_registry = placer_ctx_.get().blk_loc_registry();
+    const auto& blk_loc_registry = placer_state_.get().blk_loc_registry();
     const auto& block_locs = blk_loc_registry.block_locs();
 
     bool skip_net = true;

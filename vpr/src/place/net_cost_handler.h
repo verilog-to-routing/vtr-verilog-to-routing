@@ -4,7 +4,7 @@
 #include "move_transactions.h"
 #include "place_util.h"
 
-class PlacerContext;
+class PlacerState;
 
 /**
  * @brief The error tolerance due to round off for the total cost computation.
@@ -156,4 +156,4 @@ void init_try_swap_net_cost_structs(size_t num_nets, bool cube_bb);
  */
 void free_try_swap_net_cost_structs();
 
-void set_net_handlers_placer_ctx(PlacerContext& placer_ctx);
+void set_net_handlers_placer_state(PlacerState& placer_state);

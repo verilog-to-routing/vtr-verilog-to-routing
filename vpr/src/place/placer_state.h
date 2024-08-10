@@ -113,7 +113,7 @@ struct PlacerMoveContext : public Context {
     std::vector<int> Y_coord;
     std::vector<int> layer_coord;
 
-    // Container to save the highly critical pins (higher than a timing criticality limit setted by commandline option)
+    // Container to save the highly critical pins (higher than a timing criticality limit set by commandline option)
     std::vector<std::pair<ClusterNetId, int>> highly_crit_pins;
 };
 
@@ -130,7 +130,7 @@ struct PlacerMoveContext : public Context {
  * See the class VprContext in `vpr_context.h` for descriptions on
  * how to use this class due to similar implementation style.
  */
-class PlacerContext : public Context {
+class PlacerState : public Context {
   public:
     inline const PlacerTimingContext& timing() const { return timing_; }
     inline PlacerTimingContext& mutable_timing() { return timing_; }

@@ -4,8 +4,8 @@
 #include "placer_state.h"
 #include "move_utils.h"
 
-CriticalUniformMoveGenerator::CriticalUniformMoveGenerator(PlacerContext& placer_ctx)
-    : MoveGenerator(placer_ctx) {}
+CriticalUniformMoveGenerator::CriticalUniformMoveGenerator(PlacerState& placer_state)
+    : MoveGenerator(placer_state) {}
 
 e_create_move CriticalUniformMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected,
                                                          t_propose_action& proposed_action,
@@ -13,9 +13,9 @@ e_create_move CriticalUniformMoveGenerator::propose_move(t_pl_blocks_to_be_moved
                                                          const t_placer_opts& placer_opts,
                                                          const PlacerCriticalities* /*criticalities*/) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    const auto& placer_ctx = placer_ctx_.get();
-    const auto& block_locs = placer_ctx.block_locs();
-    const auto& blk_loc_registry = placer_ctx.blk_loc_registry();
+    const auto& placer_state = placer_state_.get();
+    const auto& block_locs = placer_state.block_locs();
+    const auto& blk_loc_registry = placer_state.blk_loc_registry();
 
     ClusterNetId net_from;
     int pin_from;
@@ -25,7 +25,7 @@ e_create_move CriticalUniformMoveGenerator::propose_move(t_pl_blocks_to_be_moved
                                                   /*highly_crit_block=*/true,
                                                   &net_from,
                                                   &pin_from,
-                                                  placer_ctx);
+                                                  placer_state);
 
     VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "Critical Uniform Move Choose Block %d - rlim %f\n", size_t(b_from), rlim);
 

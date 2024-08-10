@@ -17,7 +17,7 @@
 class CriticalUniformMoveGenerator : public MoveGenerator {
   public:
     CriticalUniformMoveGenerator() = delete;
-    explicit CriticalUniformMoveGenerator(PlacerContext& placer_ctx);
+    explicit CriticalUniformMoveGenerator(PlacerState& placer_state);
 
   private:
     e_create_move propose_move(t_pl_blocks_to_be_moved& blocks_affected,

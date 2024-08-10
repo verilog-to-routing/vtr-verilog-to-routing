@@ -18,7 +18,7 @@ class StaticMoveGenerator : public MoveGenerator {
 
   public:
     StaticMoveGenerator() = delete;
-    StaticMoveGenerator(PlacerContext& placer_ctx,
+    StaticMoveGenerator(PlacerState& placer_state,
                         const vtr::vector<e_move_type, float>& move_probs);
 
     e_create_move propose_move(t_pl_blocks_to_be_moved& blocks_affected,

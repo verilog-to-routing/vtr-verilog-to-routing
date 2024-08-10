@@ -16,7 +16,7 @@
 #include "vpr_constraints.h"
 
 class DeviceGrid;
-class PlacerContext;
+class PlacerState;
 
 const t_model* find_model(const t_model* models, const std::string& name, bool required = true);
 const t_model_ports* find_model_port(const t_model* model, const std::string& name, bool required = true);

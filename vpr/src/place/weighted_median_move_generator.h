@@ -15,7 +15,7 @@
 class WeightedMedianMoveGenerator : public MoveGenerator {
   public:
     WeightedMedianMoveGenerator() = delete;
-    explicit WeightedMedianMoveGenerator(PlacerContext& placer_ctx);
+    explicit WeightedMedianMoveGenerator(PlacerState& placer_state);
 
   private:
     e_create_move propose_move(t_pl_blocks_to_be_moved& blocks_affected,

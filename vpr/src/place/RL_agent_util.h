@@ -16,7 +16,7 @@ enum class e_agent_state {
  * type selected in placer_opts.
  * It returns a unique pointer for each move generator in move_generator and move_generator2
  *
- * @param placer_ctx Move generators store a reference to the placer context to avoid global state access.
+ * @param placer_state Move generators store a reference to the placer context to avoid global state access.
  * @param placer_opts Contains information about the placement algorithm and its parameters.
  * @param move_lim represents the num of moves per temp.
  * @param noc_attraction_weight The attraction weight by which the NoC-biased centroid move adjust the computed location
@@ -26,7 +26,7 @@ enum class e_agent_state {
  * in the first and second states of the agent.
  *
  */
-std::pair<std::unique_ptr<MoveGenerator>, std::unique_ptr<MoveGenerator>> create_move_generators(PlacerContext& placer_ctx,
+std::pair<std::unique_ptr<MoveGenerator>, std::unique_ptr<MoveGenerator>> create_move_generators(PlacerState& placer_state,
                                                                                                  const t_placer_opts& placer_opts,
                                                                                                  int move_lim,
                                                                                                  double noc_attraction_weight);

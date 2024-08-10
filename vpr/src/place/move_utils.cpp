@@ -572,13 +572,13 @@ ClusterBlockId propose_block_to_move(const t_placer_opts& placer_opts,
                                      bool highly_crit_block,
                                      ClusterNetId* net_from,
                                      int* pin_from,
-                                     const PlacerContext& placer_ctx) {
+                                     const PlacerState& placer_state) {
     ClusterBlockId b_from = ClusterBlockId::INVALID();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     if (logical_blk_type_index == -1) { //If the block type is unspecified, choose any random block to be swapped with another random block
         if (highly_crit_block) {
-            b_from = pick_from_highly_critical_block(*net_from, *pin_from, placer_ctx);
+            b_from = pick_from_highly_critical_block(*net_from, *pin_from, placer_state);
         } else {
             b_from = pick_from_block();
         }
@@ -589,7 +589,7 @@ ClusterBlockId propose_block_to_move(const t_placer_opts& placer_opts,
         }
     } else { //If the block type is specified, choose a random block with blk_type to be swapped with another random block
         if (highly_crit_block) {
-            b_from = pick_from_highly_critical_block(*net_from, *pin_from, logical_blk_type_index, placer_ctx);
+            b_from = pick_from_highly_critical_block(*net_from, *pin_from, logical_blk_type_index, placer_state);
         } else {
             b_from = pick_from_block(logical_blk_type_index);
         }
@@ -650,10 +650,10 @@ ClusterBlockId pick_from_block(const int logical_blk_type_index) {
 //If none is found return ClusterBlockId::INVALID()
 ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from,
                                                int& pin_from,
-                                               const PlacerContext& placer_ctx) {
+                                               const PlacerState& placer_state) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_move_ctx = placer_ctx.move();
-    auto& block_locs = placer_ctx.block_locs();
+    auto& place_move_ctx = placer_state.move();
+    auto& block_locs = placer_state.block_locs();
 
     //Initialize critical net and pin to be invalid
     net_from = ClusterNetId::INVALID();
@@ -685,10 +685,10 @@ ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from,
 ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from,
                                                int& pin_from,
                                                const int logical_blk_type_index,
-                                               const PlacerContext& placer_ctx) {
+                                               const PlacerState& placer_state) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_move_ctx = placer_ctx.move();
-    auto& block_locs = placer_ctx.block_locs();
+    auto& place_move_ctx = placer_state.move();
+    auto& block_locs = placer_state.block_locs();
 
     //Initialize critical net and pin to be invalid
     net_from = ClusterNetId::INVALID();

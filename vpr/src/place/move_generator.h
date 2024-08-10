@@ -8,7 +8,7 @@
 
 #include <limits>
 
-class PlacerContext;
+class PlacerState;
 
 struct MoveOutcomeStats {
     float delta_cost_norm = std::numeric_limits<float>::quiet_NaN();
@@ -44,8 +44,8 @@ struct MoveTypeStat {
  */
 class MoveGenerator {
   public:
-    MoveGenerator(PlacerContext& placer_ctx)
-        : placer_ctx_(placer_ctx) {}
+    MoveGenerator(PlacerState& placer_state)
+        : placer_state_(placer_state) {}
 
     MoveGenerator() = delete;
     virtual ~MoveGenerator() = default;
@@ -82,7 +82,7 @@ class MoveGenerator {
     virtual void process_outcome(double /*reward*/, e_reward_function /*reward_fun*/) {}
 
   protected:
-    std::reference_wrapper<PlacerContext> placer_ctx_;
+    std::reference_wrapper<PlacerState> placer_state_;
 };
 
 #endif
