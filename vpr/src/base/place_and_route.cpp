@@ -34,6 +34,7 @@
 #include "route_common.h"
 #include "place_macro.h"
 #include "power.h"
+#include "place_util.h"
 
 #include "RoutingDelayCalculator.h"
 #include "timing_info.h"
