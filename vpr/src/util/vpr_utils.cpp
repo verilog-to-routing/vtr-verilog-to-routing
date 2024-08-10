@@ -18,7 +18,7 @@
 #include "device_grid.h"
 #include "user_route_constraints.h"
 #include "re_cluster_util.h"
-#include "placer_context.h"
+#include "placer_state.h"
 
 /* This module contains subroutines that are used in several unrelated parts *
  * of VPR.  They are VPR-specific utility routines.                          */

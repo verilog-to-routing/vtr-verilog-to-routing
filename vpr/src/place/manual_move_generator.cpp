@@ -12,7 +12,7 @@
 
 #include "manual_move_generator.h"
 #include "manual_moves.h"
-#include "placer_context.h"
+#include "placer_state.h"
 
 #ifndef NO_GRAPHICS
 #    include "draw.h"
