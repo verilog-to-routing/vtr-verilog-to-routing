@@ -364,11 +364,11 @@ void alloc_and_load_legal_placement_locations(std::vector<std::vector<std::vecto
 
 void set_block_location(ClusterBlockId blk_id,
                         const t_pl_loc& location,
-                        BlkLocRegistry& placer_loc_vars) {
+                        BlkLocRegistry& blk_loc_registry) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& block_locs = placer_loc_vars.mutable_block_locs();
-    auto& grid_blocks = placer_loc_vars.mutable_grid_blocks();
+    auto& block_locs = blk_loc_registry.mutable_block_locs();
+    auto& grid_blocks = blk_loc_registry.mutable_grid_blocks();
 
     const std::string& block_name = cluster_ctx.clb_nlist.block_name(blk_id);
 
@@ -404,7 +404,7 @@ void set_block_location(ClusterBlockId blk_id,
     grid_blocks.set_usage({location.x, location.y, location.layer},
                           grid_blocks.get_usage({location.x, location.y, location.layer}) + 1);
 
-    place_sync_external_block_connections(blk_id, placer_loc_vars);
+    place_sync_external_block_connections(blk_id, blk_loc_registry);
 }
 
 bool macro_can_be_placed(const t_pl_macro& pl_macro,

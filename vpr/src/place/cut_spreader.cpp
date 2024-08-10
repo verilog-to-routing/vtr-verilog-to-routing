@@ -805,7 +805,7 @@ void CutSpreader::linear_spread_subarea(std::vector<ClusterBlockId>& cut_blks,
  */
 void CutSpreader::strict_legalize() {
     auto& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
-    const auto& block_locs = ap->placer_loc_vars_ref_.block_locs();
+    const auto& block_locs = ap->blk_loc_registry_ref_.block_locs();
     const auto& pl_macros = g_vpr_ctx.placement().pl_macros;
     int max_x = g_vpr_ctx.device().grid.width();
     int max_y = g_vpr_ctx.device().grid.height();
@@ -962,8 +962,8 @@ void CutSpreader::strict_legalize() {
  * Place blk on sub_tile location by modifying place_ctx.grid_blocks, place_ctx.block_locs, and ap->blk_locs[blk].loc
  */
 void CutSpreader::bind_tile(t_pl_loc sub_tile, ClusterBlockId blk) {
-    auto& grid_blocks = ap->placer_loc_vars_ref_.mutable_grid_blocks();
-    auto& block_locs = ap->placer_loc_vars_ref_.mutable_block_locs();
+    auto& grid_blocks = ap->blk_loc_registry_ref_.mutable_grid_blocks();
+    auto& block_locs = ap->blk_loc_registry_ref_.mutable_block_locs();
 
     VTR_ASSERT(grid_blocks.block_at_location(sub_tile) == EMPTY_BLOCK_ID);
     VTR_ASSERT(block_locs[blk].is_fixed == false);
@@ -979,8 +979,8 @@ void CutSpreader::bind_tile(t_pl_loc sub_tile, ClusterBlockId blk) {
  * Remove placement at sub_tile location by clearing place_ctx.block_locs and place_Ctx.grid_blocks
  */
 void CutSpreader::unbind_tile(t_pl_loc sub_tile) {
-    auto& grid_blocks = ap->placer_loc_vars_ref_.mutable_grid_blocks();
-    auto& block_locs = ap->placer_loc_vars_ref_.mutable_block_locs();
+    auto& grid_blocks = ap->blk_loc_registry_ref_.mutable_grid_blocks();
+    auto& block_locs = ap->blk_loc_registry_ref_.mutable_block_locs();
 
     VTR_ASSERT(grid_blocks.block_at_location(sub_tile) != EMPTY_BLOCK_ID);
     ClusterBlockId blk = grid_blocks.block_at_location(sub_tile);
@@ -997,8 +997,8 @@ void CutSpreader::unbind_tile(t_pl_loc sub_tile) {
  * the block in place_ctx.grid_blocks)
  */
 bool CutSpreader::is_placed(ClusterBlockId blk) {
-    const auto& grid_blocks = ap->placer_loc_vars_ref_.grid_blocks();
-    const auto& block_locs = ap->placer_loc_vars_ref_.block_locs();
+    const auto& grid_blocks = ap->blk_loc_registry_ref_.grid_blocks();
+    const auto& block_locs = ap->blk_loc_registry_ref_.block_locs();
 
     if (block_locs[blk].loc != t_pl_loc{}) {
         auto loc = block_locs[blk].loc;
@@ -1032,7 +1032,7 @@ bool CutSpreader::try_place_blk(ClusterBlockId blk,
                                 int& best_inp_len,
                                 t_pl_loc& best_subtile,
                                 std::priority_queue<std::pair<int, ClusterBlockId>>& remaining) {
-    const auto& grid_blocks = ap->placer_loc_vars_ref_.grid_blocks();
+    const auto& grid_blocks = ap->blk_loc_registry_ref_.grid_blocks();
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
 
     // iteration at current radius has exceeded exploration limit, and a candidate sub_tile (best_subtile) is found
@@ -1111,7 +1111,7 @@ bool CutSpreader::try_place_macro(ClusterBlockId blk,
                                   int ny,
                                   std::priority_queue<std::pair<int, ClusterBlockId>>& remaining) {
     const auto& pl_macros = g_vpr_ctx.placement().pl_macros;
-    const auto& grid_blocks = ap->placer_loc_vars_ref_.grid_blocks();
+    const auto& grid_blocks = ap->blk_loc_registry_ref_.grid_blocks();
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
 
     for (auto sub_t : subtiles_at_location[nx][ny]) {

@@ -1,7 +1,11 @@
 /**
- * @file placer_context.h
- * @brief Contains placer context/data structures referenced by various
- *        source files in vpr/src/place.
+ * @file placer_state.h
+ * @brief Contains placer state/data structures referenced by various source files in vpr/src/place.
+ * A PlacerState object contains the placement state which is subject to change during the placement stage.
+ * During the placement stage, one or multiple local PlacerState objects are created. At the end of the placement stage,
+ * one of these object is copied to global placement context (PlacementContext). The PlacementContext,
+ * which is declared in vpr_context.h, contains the placement solution. The PlacementContext should not be used before
+ * the end of the placement stage.
  */
 
 #pragma once
@@ -157,5 +161,11 @@ class PlacerState : public Context {
     PlacerTimingContext timing_;
     PlacerRuntimeContext runtime_;
     PlacerMoveContext move_;
+
+    /**
+     * @brief Contains: 1) The location where each clustered block is placed at.
+     *                  2) Which clustered blocks are located at a given location
+     *                  3) The mapping between the clustered block pins and physical tile pins.
+     */
     BlkLocRegistry blk_loc_registry_;
 };

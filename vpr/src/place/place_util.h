@@ -358,7 +358,7 @@ void alloc_and_load_legal_placement_locations(std::vector<std::vector<std::vecto
 /// and sets the location and grid usage of the block if it is legal.
 void set_block_location(ClusterBlockId blk_id,
                         const t_pl_loc& location,
-                        BlkLocRegistry& placer_loc_vars);
+                        BlkLocRegistry& blk_loc_registry);
 
 /// @brief check if a specified location is within the device grid
 inline bool is_loc_on_chip(t_physical_tile_loc loc) {

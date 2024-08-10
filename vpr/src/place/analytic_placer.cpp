@@ -130,7 +130,7 @@ constexpr int HEAP_STALLED_ITERATIONS_STOP = 15;
  */
 
 AnalyticPlacer::AnalyticPlacer(BlkLocRegistry& blk_loc_registry)
-    : placer_loc_vars_ref_(blk_loc_registry) {
+    : blk_loc_registry_ref_(blk_loc_registry) {
     //Eigen::initParallel();
 
     // TODO: PlacerHeapCfg should be externally configured & supplied
@@ -295,7 +295,7 @@ void AnalyticPlacer::build_solve_type(t_logical_block_type_ptr run, int iter) {
 // (stored in legal_pos). For a type of sub_tile_t found in tile_t, legal_pos[tile_t][sub_tile_t]
 // gives a vector containing all positions (t_pl_loc type) for this sub_tile_t.
 void AnalyticPlacer::build_legal_locations() {
-    const auto& grid_blocks = placer_loc_vars_ref_.grid_blocks();
+    const auto& grid_blocks = blk_loc_registry_ref_.grid_blocks();
     // invoking same function used in initial_placement.cpp (can ignore function name)
     alloc_and_load_legal_placement_locations(legal_pos, grid_blocks);
 }
@@ -304,7 +304,7 @@ void AnalyticPlacer::build_legal_locations() {
 // initialize other data members
 void AnalyticPlacer::init() {
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
-    auto& block_locs = placer_loc_vars_ref_.block_locs();
+    auto& block_locs = blk_loc_registry_ref_.block_locs();
 
     for (auto blk_id : clb_nlist.blocks()) {
         blk_locs.insert(blk_id, BlockLocation{});
@@ -415,7 +415,7 @@ void AnalyticPlacer::setup_solve_blks(t_logical_block_type_ptr blkTypes) {
 void AnalyticPlacer::update_macros() {
     for (auto& macro : g_vpr_ctx.mutable_placement().pl_macros) {
         ClusterBlockId head_id = macro.members[0].blk_index;
-        bool mac_can_be_placed = macro_can_be_placed(macro, blk_locs[head_id].loc, true, placer_loc_vars_ref_);
+        bool mac_can_be_placed = macro_can_be_placed(macro, blk_locs[head_id].loc, true, blk_loc_registry_ref_);
 
         //if macro can not be placed in this head pos, change the head pos
         if (!mac_can_be_placed) {
@@ -424,7 +424,7 @@ void AnalyticPlacer::update_macros() {
         }
 
         //macro should be placed successfully after changing the head position
-        VTR_ASSERT(macro_can_be_placed(macro, blk_locs[head_id].loc, true, placer_loc_vars_ref_));
+        VTR_ASSERT(macro_can_be_placed(macro, blk_locs[head_id].loc, true, blk_loc_registry_ref_));
 
         //update other member's location based on head pos
         for (auto member = ++macro.members.begin(); member != macro.members.end(); ++member) {
@@ -744,7 +744,7 @@ std::string AnalyticPlacer::print_overlap(vtr::Matrix<int>& overlap, FILE* fp) {
 void AnalyticPlacer::print_place(const char* place_file) {
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
-    auto& block_locs = placer_loc_vars_ref_.block_locs();
+    auto& block_locs = blk_loc_registry_ref_.block_locs();
 
     FILE* fp;
 
