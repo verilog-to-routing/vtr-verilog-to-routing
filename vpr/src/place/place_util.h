@@ -346,11 +346,10 @@ void load_grid_blocks_from_block_locs(GridBlock& grid_blocks,
 /**
  * @brief Builds (alloc and load) legal_pos that holds all the legal locations for placement
  *
- *   @param legal_pos
- *              a lookup of all subtiles by sub_tile type
- *              legal_pos[0..device_ctx.num_block_types-1][0..num_sub_tiles - 1] = std::vector<t_pl_loc> of all the legal locations
- *              of the proper tile type and sub_tile type
- *
+ * @param legal_pos a lookup of all subtiles by sub_tile type
+ * legal_pos[0..device_ctx.num_block_types-1][0..num_sub_tiles - 1] = std::vector<t_pl_loc> of all the legal locations
+ * of the proper tile type and sub_tile type
+ * @param grid_blocks A mapping from grid location to block IDs placed there.
  */
 void alloc_and_load_legal_placement_locations(std::vector<std::vector<std::vector<t_pl_loc>>>& legal_pos,
                                               const GridBlock& grid_blocks);
@@ -392,6 +391,8 @@ inline bool is_loc_on_chip(t_physical_tile_loc loc) {
  *        Analytic placer does not require to check block's capacity or
  *        floorplanning constraints. However, initial placement or SA-based approach
  *        require to check for all legality constraints.
+ * @param blk_loc_registry Placement block location information.
+ *
  */
 bool macro_can_be_placed(const t_pl_macro& pl_macro,
                          const t_pl_loc& head_pos,

@@ -24,6 +24,17 @@ class WeightedMedianMoveGenerator : public MoveGenerator {
                                const t_placer_opts& placer_opts,
                                const PlacerCriticalities* criticalities) override;
 
+    /**
+     * @brief Finds the bounding box and the cost of each side of the bounding box,
+     * which is defined as the criticality of the connection that led to the bounding box extending
+     * that far. If more than one terminal leads to a bounding box edge, w pick the cost using the criticality of the first one.
+     *
+     * @param net_id The net we are considering
+     * @param moving_pin_id pin (which should be on this net) on a block that is being moved.
+     * @param criticalities the timing criticalities of all connections
+     * @param coords the bounding box and the edge costs to be filled by this method
+     * @return bool Whether this net should be skipped in calculation or not
+     */
     bool get_bb_cost_for_net_excluding_block(ClusterNetId net_id,
                                              ClusterPinId moving_pin_id,
                                              const PlacerCriticalities* criticalities,

@@ -16,11 +16,10 @@
  *
  * The placement checkpoints are very useful to solve the problem of critical 
  * delay oscillations, especially very late in the annealer.
- *
- *   @param cost The weighted average of the wiring cost and the timing cost.
- *   @param block_locs saves the location of each block
- *   @param cpd Saves the critical path delay of the current checkpoint
- *   @param valid a flag to show whether the current checkpoint is initialized or not
+ *   @param block_locs_ saves the location of each block
+ *   @param cpd_ Saves the critical path delay of the current checkpoint
+ *   @param valid_ a flag to show whether the current checkpoint is initialized or not
+ *   @param costs_ The weighted average of the wiring cost and the timing cost.
  */
 class t_placement_checkpoint {
   private:
@@ -30,12 +29,22 @@ class t_placement_checkpoint {
     t_placer_costs costs_;
 
   public:
-    //save the block locations from placement context with the current placement cost and cpd
+    /**
+     * @brief Saves the given block locations and their corresponding placement cost and CPD
+     * @param block_locs The block locations to be saved.
+     * @param placement_costs Different cost terms associated with the given placement.
+     * @param critical_path_delay The critical path delay associated with the given placement.
+     */
     void save_placement(const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs,
                         const t_placer_costs& placement_costs,
                         const float critical_path_delay);
 
-    //restore the placement solution saved in the checkpoint and update the placement context accordingly
+    /**
+     * @brief Restores the placement solution saved in the checkpoint and update the placement context accordingly
+     * @param block_locs To be filled with the saved placement.
+     * @param grid_blocks To be filled with grid location to clustered block mapping of the saved placement.
+     * @return Different cost terms associated with the saved placement.
+     */
     t_placer_costs restore_placement(vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs,
                                      GridBlock& grid_blocks);
 

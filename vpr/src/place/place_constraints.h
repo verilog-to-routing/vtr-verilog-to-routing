@@ -19,10 +19,10 @@
  * @brief Check that placement of each block is within the floorplan constraint region
  * of that block (if the block has any constraints).
  *
+ * @param block_locs Contains the location where each clustered block is placed.
  * @return int The number of errors (inconsistencies in adherence to floorplanning constraints).
  */
 int check_placement_floorplanning(const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
-
 
 /**
  * @brief Check if the block has floorplanning constraints.
@@ -134,7 +134,11 @@ void load_cluster_constraints();
  * @brief Marks blocks as fixed if they have a constraint region that
  * specifies exactly one x, y, subtile location as legal.
  *
- * Marking them as fixed indicates that they cannot be moved
+ * @param blk_loc_registry Placement block location information. Used to set
+ * the location of clustered block constrained to a single location and mark them
+ * as fixed.
+ *
+ * @note Marking such constrained blocks as fixed indicates that they cannot be moved
  * during initial placement and simulated annealing.
  */
 void mark_fixed_blocks(BlkLocRegistry& blk_loc_registry);

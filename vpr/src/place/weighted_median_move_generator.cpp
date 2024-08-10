@@ -152,21 +152,6 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
     return create_move;
 }
 
-/**
- * This routine finds the bounding box and the cost of each side of the bounding box,
- * which is defined as the criticality of the connection that led to the bounding box extending 
- * that far. If more than one terminal leads to a bounding box edge, w pick the cost using the criticality of the first one. 
- * This is helpful in computing weighted median moves. 
- *
- * Outputs:
- *      - coords: the bounding box and the edge costs
- *      - skip_net: returns whether this net should be skipped in calculation or not
- *
- * Inputs:
- *      - net_id: The net we are considering
- *      - moving_pin_id: pin (which should be on this net) on a block that is being moved.
- *      - criticalities: the timing criticalities of all connections
- */
 bool WeightedMedianMoveGenerator::get_bb_cost_for_net_excluding_block(ClusterNetId net_id,
                                          ClusterPinId moving_pin_id,
                                          const PlacerCriticalities* criticalities,

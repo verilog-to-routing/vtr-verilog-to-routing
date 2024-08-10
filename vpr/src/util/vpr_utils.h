@@ -28,7 +28,11 @@ bool is_clb_external_pin(ClusterBlockId blk_id, int pb_pin_id);
 bool is_empty_type(t_physical_tile_type_ptr type);
 bool is_empty_type(t_logical_block_type_ptr type);
 
-//Returns the corresponding physical type given the logical type as parameter
+/**
+ * @brief Returns the corresponding physical type given the location in the grid.
+ * @param loc The block location in the grid.
+ * @return The physical tile type of the given location.
+ */
 t_physical_tile_type_ptr physical_tile_type(t_pl_loc loc);
 
 t_physical_tile_type_ptr physical_tile_type(AtomBlockId atom_blk);
