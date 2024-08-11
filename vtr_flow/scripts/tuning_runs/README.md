@@ -2,7 +2,7 @@ A script used to run tuning experiments with multiple parameters.
 
 Steps to use:
 =============
-    1) edit the first section of the script by setting `params_dict` dictionary to the parameters that you want to sweep and the corresponding values that you want to try. If you want the resulting spreadheet to include specific metrics, set `keep_metrics_only` variable to `True` and the metrics that you care about in `parsed_metrics`. If you want the full parsed result sheet, set `keep_metrics_only` to `False`
+    1) edit the first section of the script by setting `PARAMS_DICT` dictionary to the parameters that you want to sweep and the corresponding values that you want to try. If you want the resulting spreadheet to include specific metrics, set `KEEP_METRICS_ONLY` variable to `True` and the metrics that you care about in `parsed_metrics`. If you want the full parsed result sheet, set `KEEP_METRICS_ONLY` to `False`
 
     2) run the script as follows:
 '''
