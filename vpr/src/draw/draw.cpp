@@ -638,7 +638,7 @@ void init_draw_coords(float clb_width, const BlkLocRegistry& blk_loc_registry) {
         {(1. + VISIBLE_MARGIN) * draw_width, (1. + VISIBLE_MARGIN)
                                                  * draw_height});
 #else
-    (void)width_val;
+    (void)clb_width;
     (void)blk_loc_registry;
 #endif /* NO_GRAPHICS */
 }
