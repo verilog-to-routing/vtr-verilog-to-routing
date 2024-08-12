@@ -15,16 +15,7 @@ class LookaheadProfiler {
   public:
     LookaheadProfiler();
 
-    void record(int iteration,
-                int target_net_pin_index,
-                RRNodeId source_inode,
-                RRNodeId sink_inode,
-                RRNodeId curr_inode,
-                size_t nodes_from_sink,
-                const t_conn_cost_params& cost_params,
-                const RouterLookahead& router_lookahead,
-                const ParentNetId& net_id,
-                const Netlist<>& net_list);
+    void record(int iteration, int target_net_pin_index, const t_conn_cost_params& cost_params, const RouterLookahead& router_lookahead, const ParentNetId& net_id, const Netlist<>& net_list, std::vector<RRNodeId> branch_inodes);
 
   private:
     std::ofstream lookahead_verifier_csv;
@@ -33,7 +24,5 @@ class LookaheadProfiler {
     std::unordered_map<RRNodeId, std::string> cluster_block_types;
     std::unordered_map<RRNodeId, std::pair<std::string, std::string>> tile_dimensions;
 };
-
-extern LookaheadProfiler lookahead_profiler;
 
 #endif //VTR_LOOKAHEAD_PROFILER_H

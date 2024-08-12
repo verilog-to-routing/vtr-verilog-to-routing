@@ -412,7 +412,8 @@ float CompressedMapLookahead::get_expected_cost(RRNodeId current_node, RRNodeId 
 
     if (from_rr_type == CHANX || from_rr_type == CHANY || from_rr_type == SOURCE || from_rr_type == OPIN) {
         // Get the total cost using the combined delay and congestion costs
-        std::tie(delay_cost, cong_cost) = get_expected_delay_and_cong(current_node, target_node, params, R_upstream, false);
+        std::tie(delay_cost, cong_cost) = get_expected_delay_and_cong(current_node, target_node, params, R_upstream);
+        scale_delay_and_cong_by_criticality(delay_cost, cong_cost, params);
         return delay_cost + cong_cost;
     } else if (from_rr_type == IPIN) { /* Change if you're allowing route-throughs */
         return (device_ctx.rr_indexed_data[RRIndexedDataId(SINK_COST_INDEX)].base_cost);
@@ -421,7 +422,7 @@ float CompressedMapLookahead::get_expected_cost(RRNodeId current_node, RRNodeId 
     }
 }
 
-std::pair<float, float> CompressedMapLookahead::get_expected_delay_and_cong(RRNodeId from_node, RRNodeId to_node, const t_conn_cost_params& params, float, bool ignore_criticality) const {
+std::pair<float, float> CompressedMapLookahead::get_expected_delay_and_cong(RRNodeId from_node, RRNodeId to_node, const t_conn_cost_params& params, float) const {
     auto& device_ctx = g_vpr_ctx.device();
     auto& rr_graph = device_ctx.rr_graph;
 
@@ -455,11 +456,6 @@ std::pair<float, float> CompressedMapLookahead::get_expected_delay_and_cong(RRNo
                                                                                          to_layer_num,
                                                                                          get_wire_cost_entry_compressed_lookahead);
 
-        if (!ignore_criticality) {
-            expected_delay_cost *= params.criticality;
-            expected_cong_cost *= (1 - params.criticality);
-        }
-
         VTR_ASSERT_SAFE_MSG(std::isfinite(expected_delay_cost),
                             vtr::string_fmt("Lookahead failed to estimate cost from %s: %s",
                                             rr_node_arch_name(from_node, is_flat_).c_str(),
@@ -470,7 +466,6 @@ std::pair<float, float> CompressedMapLookahead::get_expected_delay_and_cong(RRNo
                                                              is_flat_)
                                                 .c_str())
                                 .c_str());
-
     } else if (from_type == CHANX || from_type == CHANY) {
         //When estimating costs from a wire, we directly look-up the result in the wire lookahead (f_wire_cost_map)
 
@@ -499,11 +494,6 @@ std::pair<float, float> CompressedMapLookahead::get_expected_delay_and_cong(RRNo
                                                              is_flat_)
                                                 .c_str())
                                 .c_str());
-
-        if (!ignore_criticality) {
-            expected_delay_cost = cost_entry.delay * params.criticality;
-            expected_cong_cost = cost_entry.congestion * (1 - params.criticality);
-        }
     } else if (from_type == IPIN) { /* Change if you're allowing route-throughs */
         return std::make_pair(0., device_ctx.rr_indexed_data[RRIndexedDataId(SINK_COST_INDEX)].base_cost);
     } else { /* Change this if you want to investigate route-throughs */

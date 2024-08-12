@@ -37,6 +37,7 @@
 #ifndef NO_SERVER
 
 #include "gateio.h"
+#    include "lookahead_profiler.h"
 #include "taskresolver.h"
 
 class SetupHoldTimingInfo;
@@ -496,6 +497,8 @@ struct RoutingContext : public Context {
      * @brief User specified routing constraints
      */
     UserRouteConstraints constraints;
+
+    LookaheadProfiler lookahead_profiler;
 };
 
 /**

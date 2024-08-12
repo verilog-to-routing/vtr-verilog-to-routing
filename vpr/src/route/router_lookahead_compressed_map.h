@@ -27,7 +27,7 @@ class CompressedMapLookahead : public RouterLookahead {
   protected:
     float get_expected_cost(RRNodeId node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const override;
 
-    std::pair<float, float> get_expected_delay_and_cong(RRNodeId from_node, RRNodeId to_node, const t_conn_cost_params& params, float R_upstream, bool ignore_criticality) const override;
+    std::pair<float, float> get_expected_delay_and_cong(RRNodeId from_node, RRNodeId to_node, const t_conn_cost_params& params, float R_upstream) const override;
 
     void compute(const std::vector<t_segment_inf>& segment_inf) override;
 

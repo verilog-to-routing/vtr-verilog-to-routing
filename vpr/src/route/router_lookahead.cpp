@@ -61,13 +61,19 @@ std::unique_ptr<RouterLookahead> make_router_lookahead(const t_det_routing_arch&
     return router_lookahead;
 }
 
+void RouterLookahead::scale_delay_and_cong_by_criticality(float& delay, float& cong, const t_conn_cost_params& params) const {
+    delay *= params.criticality;
+    cong *= 1. - params.criticality;
+}
+
 float ClassicLookahead::get_expected_cost(RRNodeId current_node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const {
-    auto [delay_cost, cong_cost] = get_expected_delay_and_cong(current_node, target_node, params, R_upstream, false);
+    auto [delay_cost, cong_cost] = get_expected_delay_and_cong(current_node, target_node, params, R_upstream);
+    scale_delay_and_cong_by_criticality(delay_cost, cong_cost, params);
 
     return delay_cost + cong_cost;
 }
 
-std::pair<float, float> ClassicLookahead::get_expected_delay_and_cong(RRNodeId node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream, bool ignore_criticality) const {
+std::pair<float, float> ClassicLookahead::get_expected_delay_and_cong(RRNodeId node, RRNodeId target_node, const t_conn_cost_params& /*params*/, float R_upstream) const {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
@@ -96,11 +102,7 @@ std::pair<float, float> ClassicLookahead::get_expected_delay_and_cong(RRNodeId n
                      + R_upstream * (num_segs_same_dir * same_data.C_load + num_segs_ortho_dir * ortho_data.C_load)
                      + ipin_data.T_linear;
 
-        if (ignore_criticality) {
-            return std::make_pair(Tdel, cong_cost);
-        } else {
-            return std::make_pair(params.criticality * Tdel, (1 - params.criticality) * cong_cost);
-        }
+        return std::make_pair(Tdel, cong_cost);
     } else if (rr_type == IPIN) { /* Change if you're allowing route-throughs */
         return std::make_pair(0., device_ctx.rr_indexed_data[RRIndexedDataId(SINK_COST_INDEX)].base_cost);
 
@@ -113,7 +115,7 @@ float NoOpLookahead::get_expected_cost(RRNodeId /*current_node*/, RRNodeId /*tar
     return 0.;
 }
 
-std::pair<float, float> NoOpLookahead::get_expected_delay_and_cong(RRNodeId, RRNodeId, const t_conn_cost_params&, float, bool /*ignore_criticality*/) const {
+std::pair<float, float> NoOpLookahead::get_expected_delay_and_cong(RRNodeId, RRNodeId, const t_conn_cost_params&, float) const {
     return std::make_pair(0., 0.);
 }
 
