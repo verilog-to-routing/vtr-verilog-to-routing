@@ -28,6 +28,8 @@ static t_draw_coords draw_coords;
 
 /**
  * @brief Stores a reference to a PlaceLocVars to be used in the graphics code.
+ * @details This reference let us pass in a currently-being-optimized placement state,
+ * rather than using the global placement state in placement context that is valid only once placement is done
  */
 static std::optional<std::reference_wrapper<const BlkLocRegistry>> blk_loc_registry_ref;
 

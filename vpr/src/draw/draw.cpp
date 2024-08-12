@@ -570,11 +570,8 @@ void free_draw_structs() {
 #endif /* NO_GRAPHICS */
 }
 
-void init_draw_coords(float width_val, const BlkLocRegistry& blk_loc_registry) {
+void init_draw_coords(float clb_width, const BlkLocRegistry& blk_loc_registry) {
 #ifndef NO_GRAPHICS
-    /* Load the arrays containing the left and bottom coordinates of the clbs   *
-     * forming the FPGA.  tile_width_val sets the width and height of a drawn    *
-     * clb.                                                                     */
     t_draw_state* draw_state = get_draw_state_vars();
     t_draw_coords* draw_coords = get_draw_coords_vars();
     const auto& device_ctx = g_vpr_ctx.device();
@@ -598,7 +595,7 @@ void init_draw_coords(float width_val, const BlkLocRegistry& blk_loc_registry) {
             draw_state->draw_rr_node[inode].node_highlighted = false;
         }
     }
-    draw_coords->tile_width = width_val;
+    draw_coords->tile_width = clb_width;
     draw_coords->pin_size = 0.3;
     for (const auto& type : device_ctx.physical_tile_types) {
         auto num_pins = type.num_pins;
