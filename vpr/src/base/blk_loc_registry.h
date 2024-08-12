@@ -4,9 +4,19 @@
 #include "clustered_netlist_fwd.h"
 #include "vtr_vector_map.h"
 #include "vpr_types.h"
+#include "grid_block.h"
 
 struct t_block_loc;
 
+/**
+ * @class BlkLocRegistry contains information about the placement of clustered blocks.
+ * More specifically:
+ *      1) block_locs stores the location where each clustered blocks is placed at.
+ *      2) grid_blocks stores which blocks (if any) are placed at a given location.
+ *      3) physical_pins stores the mapping between the pins of a clustered block and
+ *      the pins of the physical tile where the clustered blocks is placed.
+ *
+ */
 class BlkLocRegistry {
   public:
     BlkLocRegistry() = default;

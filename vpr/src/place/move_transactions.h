@@ -5,6 +5,7 @@
 #include "clustered_netlist_utils.h"
 
 class BlkLocRegistry;
+class GridBlock;
 
 enum class e_block_move_result {
     VALID,       //Move successful

@@ -3,6 +3,7 @@
 
 #include "globals.h"
 #include "place_util.h"
+#include "grid_block.h"
 #include "vtr_assert.h"
 
 t_pl_blocks_to_be_moved::t_pl_blocks_to_be_moved(size_t max_blocks){
