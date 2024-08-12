@@ -186,16 +186,6 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
     return create_move;
 }
 
-/* Finds the bounding box of a net and stores its coordinates in the  *
- * bb_coord_new data structure. It excludes the moving block sent in  *
- * function arguments in block_id. It also returns whether this net   *
- * should be excluded from median calculation or not.                 *
- * This routine should only be called for small nets, since it does   *
- * not determine enough information for the bounding box to be        *
- * updated incrementally later.                                       *
- * Currently assumes channels on both sides of the CLBs forming the   *
- * edges of the bounding box can be used.  Essentially, I am assuming *
- * the pins always lie on the outside of the bounding box.            */
 void MedianMoveGenerator::get_bb_from_scratch_excluding_block(ClusterNetId net_id,
                                                               t_bb& bb_coord_new,
                                                               ClusterBlockId block_id,
@@ -294,19 +284,6 @@ void MedianMoveGenerator::get_bb_from_scratch_excluding_block(ClusterNetId net_i
     bb_coord_new.layer_max = std::max(std::min<int>(layer_max, device_ctx.grid.get_num_layers() - 1), 0);
 }
 
-/*
- * Calculates the bounding box of a net by storing its coordinates    *
- * in the bb_coord_new data structure. It uses information from       *
- * PlaceMoveContext to calculate the bb incrementally. This routine   *
- * should only be called for large nets, since it has some overhead   *
- * relative to just doing a brute force bounding box calculation.     *
- * The bounding box coordinate and edge information for inet must be  *
- * valid before this routine is called.                               *
- * Currently assumes channels on both sides of the CLBs forming the   *
- * edges of the bounding box can be used. Essentially, I am assuming *
- * the pins always lie on the outside of the bounding box.            *
- * The x and y coordinates are the pin's x and y coordinates.         */
-/* IO blocks are considered to be one cell in for simplicity.         */
 bool MedianMoveGenerator::get_bb_incrementally(ClusterNetId net_id,
                                                t_bb& bb_coord_new,
                                                int xold,

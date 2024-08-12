@@ -14,7 +14,6 @@ enum class e_agent_state {
  *
  * This function creates 2 move generators to be used by the annealer. The type of the move generators created here depends on the 
  * type selected in placer_opts.
- * It returns a unique pointer for each move generator in move_generator and move_generator2
  *
  * @param placer_state Move generators store a reference to the placer context to avoid global state access.
  * @param placer_opts Contains information about the placement algorithm and its parameters.

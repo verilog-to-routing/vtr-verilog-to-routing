@@ -303,11 +303,11 @@ void AnalyticPlacer::build_legal_locations() {
 // initialize other data members
 void AnalyticPlacer::init() {
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
-    auto& block_locs = blk_loc_registry_ref_.block_locs();
+    auto& init_block_locs = blk_loc_registry_ref_.block_locs();
 
     for (auto blk_id : clb_nlist.blocks()) {
         blk_locs.insert(blk_id, BlockLocation{});
-        blk_locs[blk_id].loc = block_locs[blk_id].loc; // transfer of initial placement
+        blk_locs[blk_id].loc = init_block_locs[blk_id].loc; // transfer of initial placement
         row_num.insert(blk_id, DONT_SOLVE);                      // no blocks are moved by default, until they are setup in setup_solve_blks()
     }
 
@@ -322,7 +322,7 @@ void AnalyticPlacer::init() {
     };
 
     for (auto blk_id : clb_nlist.blocks()) {
-        if (!block_locs[blk_id].is_fixed && has_connections(blk_id))
+        if (!init_block_locs[blk_id].is_fixed && has_connections(blk_id))
             // not fixed and has connections
             // matrix equation is formulated based on connections, so requires at least one connection
             if (imacro(blk_id) == NO_MACRO || macro_head(blk_id) == blk_id) {
