@@ -59,7 +59,7 @@ def parse_results(input_path):
     full_res_csv_path = os.path.join(largest_run_path, "full_res.csv")
 
     if not os.path.exists(os.path.join(largest_run_path, "parse_results.txt")):
-        print(f"parse_results.txt not found.")
+        print("File parse_results.txt not found.")
         sys.exit(1)
 
     # Read the parse_results.txt file and write to full_res.csv
@@ -94,16 +94,16 @@ def parse_results(input_path):
 
     # Generate avg_seed.csv if --seed column exists
     generate_avg_seed_csv(full_res_csv_path, largest_run_path)
-    print(f"Generated average seed results")
+    print("Generated average seed results")
 
     # Generate gmean_res.csv
     generate_geomean_res_csv(
         os.path.join(largest_run_path, "avg_seed.csv"), largest_run_path
     )
-    print(f"Generated geometric average results over all the circuits")
+    print("Generated geometric average results over all the circuits")
 
     generate_xlsx(largest_run_path)
-    print(f"Generated xlsx that merges all the result csv files")
+    print("Generated xlsx that merges all the result csv files")
 
 
 def generate_xlsx(largest_run_path):
