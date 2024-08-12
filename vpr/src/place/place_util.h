@@ -336,9 +336,6 @@ int get_initial_move_lim(const t_placer_opts& placer_opts, const t_annealing_sch
  */
 double get_std_dev(int n, double sum_x_squared, double av_x);
 
-///@brief Initialize usage to 0 and blockID to EMPTY_BLOCK_ID for all place_ctx.grid_block locations
-void zero_initialize_grid_blocks(GridBlock& grid_blocks);
-
 ///@brief a utility to calculate grid_blocks given the updated block_locs (used in restore_checkpoint)
 void load_grid_blocks_from_block_locs(GridBlock& grid_blocks,
                                       const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);

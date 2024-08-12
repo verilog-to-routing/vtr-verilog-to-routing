@@ -70,6 +70,11 @@ class GridBlock {
         grid_blocks_.clear();
     }
 
+    /**
+     * @brief Initialize usage to 0 and blockID to INVALID for all grid block locations
+     */
+    void zero_initialize();
+
   private:
     vtr::NdMatrix<t_grid_blocks, 3> grid_blocks_;
 };
