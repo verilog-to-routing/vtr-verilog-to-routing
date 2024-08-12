@@ -2476,17 +2476,6 @@ static void connect_tile_src_sink_to_pins(RRGraphBuilder& rr_graph_builder,
                 continue;
             }
             auto pin_type = get_pin_type_from_pin_physical_num(physical_type_ptr, pin_num);
-            /*int sw_id = -1;
-             * if (is_primitive || pin_type == RECEIVER) {
-             * VTR_ASSERT(logical_block != nullptr);
-             * float primitive_comb_delay = get_pin_primitive_comb_delay(physical_type_ptr,
-             * logical_block,
-             * pin_num);
-             * sw_id = find_create_intra_cluster_sw_arch_idx(arch_sw_inf_map,
-             * primitive_comb_delay);
-             * } else {
-             * sw_id = delayless_switch;
-             * }*/
             if (class_type == DRIVER) {
                 VTR_ASSERT(pin_type == DRIVER);
                 rr_edges_to_create.emplace_back(class_rr_node_id, pin_rr_node_id, delayless_switch, false);
@@ -3008,15 +2997,6 @@ static void add_chain_node_fan_in_edges(RRGraphBuilder& rr_graph_builder,
                                                                       R_minW_pmos,
                                                                       is_rr_sw_id,
                                                                       delay);
-
-            /*If the switch found inside the cluster has not seen before and RR graph is not read from a file, 
-            we need to add this switch to switch_fanin_remap data strcutre which is used later to remap switch IDs
-            from architecture ID to RR graph switch ID. The reason why we don't this when RR graph is read from a file
-            is that in that case, the switch IDs of edges are alreay RR graph switch IDs. */
-            if (is_new_sw && !load_rr_graph) {
-                auto& switch_fanin_remap = g_vpr_ctx.mutable_device().switch_fanin_remap;
-                switch_fanin_remap.push_back({{UNDEFINED, size_t(sw_id)}});
-            }
 
             rr_edges_to_create.emplace_back(src_pair.first, sink_rr_node_id, sw_id, is_rr_sw_id);
         }
@@ -4975,6 +4955,18 @@ static std::pair<bool, int> find_create_intra_cluster_sw(RRGraphBuilder& rr_grap
             // We assume that the delay of internal switches is not dependent on their fan-in
             // If this assumption proven to not be accurate, the implementation needs to be changed.
             VTR_ASSERT(arch_sw.fixed_Tdel());
+
+            t_rr_switch_inf new_rr_switch_inf = create_rr_switch_from_arch_switch(create_internal_arch_sw(delay), 
+                                                                                    R_minW_nmos, 
+                                                                                    R_minW_pmos);
+            RRSwitchId rr_switch_id = rr_graph.add_rr_switch(new_rr_switch_inf);
+
+            /*If the switch found inside the cluster has not seen before and RR graph is not read from a file, 
+            we need to add this switch to switch_fanin_remap data strcutre which is used later to remap switch IDs
+            from architecture ID to RR graph switch ID. The reason why we don't this when RR graph is read from a file
+            is that in that case, the switch IDs of edges are alreay RR graph switch IDs. */
+            auto& switch_fanin_remap = g_vpr_ctx.mutable_device().switch_fanin_remap;
+            switch_fanin_remap.push_back({{UNDEFINED, size_t(rr_switch_id)}});
 
             return std::make_pair(true, new_key_num);
         } else {
