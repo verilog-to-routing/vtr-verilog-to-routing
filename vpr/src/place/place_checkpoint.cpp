@@ -1,6 +1,7 @@
 #include "place_checkpoint.h"
 #include "noc_place_utils.h"
 #include "placer_state.h"
+#include "grid_block.h"
 
 float t_placement_checkpoint::get_cp_cpd() const { return cpd_; }
 
@@ -20,7 +21,7 @@ void t_placement_checkpoint::save_placement(const vtr::vector_map<ClusterBlockId
 t_placer_costs t_placement_checkpoint::restore_placement(vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs,
                                                          GridBlock& grid_blocks) {
     block_locs = block_locs_;
-    load_grid_blocks_from_block_locs(grid_blocks, block_locs);
+    grid_blocks.load_from_block_locs(block_locs);
     return costs_;
 }
 

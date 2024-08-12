@@ -19,6 +19,7 @@
 #include "user_route_constraints.h"
 #include "re_cluster_util.h"
 #include "placer_state.h"
+#include "grid_block.h"
 
 /* This module contains subroutines that are used in several unrelated parts *
  * of VPR.  They are VPR-specific utility routines.                          */

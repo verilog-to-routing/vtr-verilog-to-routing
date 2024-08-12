@@ -25,6 +25,23 @@ void GridBlock::zero_initialize() {
     }
 }
 
+void GridBlock::load_from_block_locs(const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& device_ctx = g_vpr_ctx.device();
+
+    zero_initialize();
+
+    for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks()) {
+        t_pl_loc location = block_locs[blk_id].loc;
+
+        VTR_ASSERT(location.x < (int)device_ctx.grid.width());
+        VTR_ASSERT(location.y < (int)device_ctx.grid.height());
+
+        set_block_at_location(location, blk_id);
+        increment_usage({location.x, location.y, location.layer});
+    }
+}
+
 int GridBlock::increment_usage(const t_physical_tile_loc& loc) {
     int curr_usage = get_usage(loc);
     int updated_usage = set_usage(loc, curr_usage + 1);
@@ -38,3 +55,5 @@ int GridBlock::decrement_usage(const t_physical_tile_loc& loc) {
 
     return updated_usage;
 }
+
+

@@ -273,23 +273,6 @@ double get_std_dev(int n, double sum_x_squared, double av_x) {
     return (std_dev > 0.) ? sqrt(std_dev) : 0.;
 }
 
-void load_grid_blocks_from_block_locs(GridBlock& grid_blocks,
-                                      const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& device_ctx = g_vpr_ctx.device();
-
-    grid_blocks.zero_initialize();
-
-    for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks()) {
-        t_pl_loc location = block_locs[blk_id].loc;
-
-        VTR_ASSERT(location.x < (int)device_ctx.grid.width());
-        VTR_ASSERT(location.y < (int)device_ctx.grid.height());
-
-        grid_blocks.set_block_at_location(location, blk_id);
-        grid_blocks.increment_usage({location.x, location.y, location.layer});
-    }
-}
 
 void alloc_and_load_legal_placement_locations(std::vector<std::vector<std::vector<t_pl_loc>>>& legal_pos) {
     auto& device_ctx = g_vpr_ctx.device();

@@ -12,6 +12,7 @@
 #    include "globals.h"
 #    include "vtr_log.h"
 #    include "place_util.h"
+#    include "grid_block.h"
 
 // sentinel for base case in CutSpreader (i.e. only 1 block left in region)
 constexpr std::pair<int, int> BASE_CASE = {-2, -2};

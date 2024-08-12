@@ -75,6 +75,12 @@ class GridBlock {
      */
     void zero_initialize();
 
+    /**
+     * @brief Initializes the GridBlock object with the given block_locs.
+     * @param block_locs Stores the location of each clustered block.
+     */
+    void load_from_block_locs(const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
+
     int increment_usage(const t_physical_tile_loc& loc);
 
     int decrement_usage(const t_physical_tile_loc& loc);

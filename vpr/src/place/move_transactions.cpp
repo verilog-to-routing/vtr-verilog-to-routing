@@ -2,7 +2,6 @@
 #include "move_utils.h"
 
 #include "globals.h"
-#include "place_util.h"
 #include "grid_block.h"
 #include "vtr_assert.h"
 

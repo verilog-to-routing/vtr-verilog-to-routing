@@ -256,10 +256,12 @@ void set_placer_breakpoint_reached(bool);
  * if it was able to find a compatible location and false otherwise.
  * It is similar to find_to_loc_uniform but searching in a defined range instead of searching in a range around the current block location.
  *
- *  @param blk_type: the type of the moving block
- *  @param from_loc: the original location of the moving block
- *  @param limit_coords: the region where I can move the block to
- *  @param to_loc: the new location that the function picked for the block
+ *  @param blk_type the type of the moving block
+ *  @param from_loc the original location of the moving block
+ *  @param limit_coords the region where I can move the block to
+ *  @param to_loc the new location that the function picked for the block
+ *  @param b_from The unique ID of the clustered block whose median location is to be computed.
+ *  @param blk_loc_registry Information about clustered block locations.
  */
 bool find_to_loc_median(t_logical_block_type_ptr blk_type,
                         const t_pl_loc& from_loc,
@@ -313,6 +315,7 @@ void compressed_grid_to_loc(t_logical_block_type_ptr blk_type,
  *
  * @param type logical block type
  * @param to_loc The location to be checked
+ * @param grid_blocks A mapping from grid locations to clustered blocks placed there.
  *
  * @return int The subtile number if there is an empty compatible subtile, otherwise -1
  * is returned to indicate that there are no empty subtiles compatible with the given type..
@@ -428,10 +431,6 @@ std::string e_move_result_to_string(e_move_result move_outcome);
  * @brif Iterate over all layers that have a physical tile at the x-y location specified by "loc" that can accommodate "logical_block".
  * If the location in the layer specified by "layer_num" is empty, return that layer. Otherwise,
  * return a layer that is not occupied at that location. If there isn't any, again, return the layer of loc.
- *
- * @param logical_block
- * @param loc
- * @return
  */
 int find_free_layer(t_logical_block_type_ptr logical_block,
                     const t_pl_loc& loc,
