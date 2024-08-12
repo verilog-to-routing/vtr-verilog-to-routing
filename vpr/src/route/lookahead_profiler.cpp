@@ -66,10 +66,9 @@ void LookaheadProfiler::record(int iteration,
     if (iteration < 1)
         return;
 
-    RRNodeId source_inode = branch_inodes.back();
+    RRNodeId source_inode = branch_inodes.back(); // Not necessarily an actual SOURCE node.
     RRNodeId sink_inode = branch_inodes.front();
 
-    VTR_ASSERT(rr_graph.node_type(source_inode) == SOURCE);
     VTR_ASSERT(rr_graph.node_type(sink_inode) == SINK);
 
     /* Get sink node attributes (atom block name, atom block model, cluster type, tile dimensions) */

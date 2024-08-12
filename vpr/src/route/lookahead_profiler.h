@@ -27,10 +27,10 @@ class LookaheadProfiler {
      * @param router_lookahead
      * @param net_id
      * @param net_list
-     * @param branch_inodes A path from a sink to its source, as a vector of nodes.
+     * @param branch_inodes A backwards path of nodes, starting at a sink.
      *
      * @warning
-     * branch_inodes must be a backwards path, from a sink node to a source node.
+     * branch_inodes must be a backwards path, starting at a sink node.
      */
     void record(int iteration,
                 int target_net_pin_index,
