@@ -1,8 +1,10 @@
 
-#ifndef VTR_INITIAL_NOC_PLACMENT_H
-#define VTR_INITIAL_NOC_PLACMENT_H
+#ifndef VTR_INITIAL_NOC_PLACEMENT_H
+#define VTR_INITIAL_NOC_PLACEMENT_H
 
-#include "vpr_types.h"
+struct t_noc_opts;
+struct t_placer_opts;
+class BlkLocRegistry;
 
 /**
  * @brief Randomly places NoC routers, then runs a quick simulated annealing
@@ -17,4 +19,4 @@ void initial_noc_placement(const t_noc_opts& noc_opts,
                            const t_placer_opts& placer_opts,
                            BlkLocRegistry& blk_loc_registry);
 
-#endif //VTR_INITIAL_NOC_PLACMENT_H
+#endif //VTR_INITIAL_NOC_PLACEMENT_H

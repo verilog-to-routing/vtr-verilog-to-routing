@@ -1,10 +1,12 @@
 #ifndef VPR_MOVE_UTILS_H
 #define VPR_MOVE_UTILS_H
+
 #include "vpr_types.h"
 #include "move_transactions.h"
 #include "compressed_grid.h"
 
 class PlacerState;
+class BlkLocRegistry;
 
 /* Cut off for incremental bounding box updates.                          *
  * 4 is fastest -- I checked.                                             */

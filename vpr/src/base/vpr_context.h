@@ -33,6 +33,7 @@
 #include "noc_traffic_flows.h"
 #include "noc_routing.h"
 #include "tatum/report/TimingPath.hpp"
+#include "blk_loc_registry.h"
 
 #ifndef NO_SERVER
 

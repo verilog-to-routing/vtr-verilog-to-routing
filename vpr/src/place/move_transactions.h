@@ -1,7 +1,10 @@
 #ifndef VPR_MOVE_TRANSACTIONS_H
 #define VPR_MOVE_TRANSACTIONS_H
+
 #include "vpr_types.h"
 #include "clustered_netlist_utils.h"
+
+class BlkLocRegistry;
 
 enum class e_block_move_result {
     VALID,       //Move successful
@@ -30,7 +33,7 @@ struct t_pl_moved_block {
  * placement.                                                   *
  * Store the information on the blocks to be moved in a swap during     *
  * placement, in the form of array of structs instead of struct with    *
- * arrays for cache effifiency                                          *
+ * arrays for cache efficiency                                          *
  *
  * moved blocks: a list of moved blocks data structure with     *
  *               information on the move.                       *

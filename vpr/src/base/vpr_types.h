@@ -907,41 +907,6 @@ class GridBlock {
     vtr::NdMatrix<t_grid_blocks, 3> grid_blocks_;
 };
 
-class BlkLocRegistry {
-  public:
-    BlkLocRegistry() = default;
-    ~BlkLocRegistry() = default;
-    BlkLocRegistry(const BlkLocRegistry&) = delete;
-    BlkLocRegistry& operator=(const BlkLocRegistry&) = default;
-    BlkLocRegistry(BlkLocRegistry&&) = delete;
-    BlkLocRegistry& operator=(BlkLocRegistry&&) = delete;
-
-  private:
-    ///@brief Clustered block placement locations
-    vtr::vector_map<ClusterBlockId, t_block_loc> block_locs_;
-
-    ///@brief Clustered block associated with each grid location (i.e. inverse of block_locs)
-    GridBlock grid_blocks_;
-
-    ///@brief Clustered pin placement mapping with physical pin
-    vtr::vector_map<ClusterPinId, int> physical_pins_;
-
-  public:
-    inline const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs() const { return block_locs_; }
-    inline vtr::vector_map<ClusterBlockId, t_block_loc>& mutable_block_locs() { return block_locs_; }
-
-    inline const GridBlock& grid_blocks() const { return grid_blocks_; }
-    inline GridBlock& mutable_grid_blocks() { return grid_blocks_; }
-
-    inline const vtr::vector_map<ClusterPinId, int>& physical_pins() const { return physical_pins_; }
-    inline vtr::vector_map<ClusterPinId, int>& mutable_physical_pins() { return physical_pins_; }
-
-    ///@brief Returns the physical pin of the tile, related to the given ClusterPinId
-    inline int tile_pin_index(const ClusterPinId pin) const { return physical_pins_[pin]; }
-
-     ///@brief Returns the physical pin of the tile, related to the given ClusterNedId, and the net pin index.
-    int net_pin_to_tile_pin_index(const ClusterNetId net_id, int net_pin_index) const;
-};
 
 ///@brief Names of various files
 struct t_file_name_opts {
