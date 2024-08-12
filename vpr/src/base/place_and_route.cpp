@@ -580,6 +580,6 @@ void post_place_sync() {
 
     // Cluster-based netlist is used for placement
     for (const ClusterBlockId block_id : cluster_ctx.clb_nlist.blocks()) {
-        place_sync_external_block_connections(block_id, blk_loc_registry);
+        blk_loc_registry.place_sync_external_block_connections(block_id);
     }
 }

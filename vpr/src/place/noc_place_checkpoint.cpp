@@ -60,7 +60,7 @@ void NoCPlacementCheckpoint::restore_checkpoint(t_placer_costs& costs,
 
     // Place routers based on router_locations_
     for (const auto& [router_blk_id, location] : router_locations_) {
-        set_block_location(router_blk_id, location, blk_loc_registry);
+        blk_loc_registry.set_block_location(router_blk_id, location);
     }
 
     // Re-initialize routes and static variables that keep track of NoC-related costs

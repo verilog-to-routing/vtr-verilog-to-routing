@@ -890,7 +890,7 @@ bool try_place_macro(const t_pl_macro& pl_macro,
         for (const t_pl_macro_member& pl_macro_member : pl_macro.members) {
             t_pl_loc member_pos = head_pos + pl_macro_member.offset;
             ClusterBlockId iblk = pl_macro_member.blk_index;
-            set_block_location(iblk, member_pos, blk_loc_registry);
+            blk_loc_registry.set_block_location(iblk, member_pos);
         } // Finish placing all the members in the macro
     }
 

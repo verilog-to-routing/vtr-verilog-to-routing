@@ -51,6 +51,35 @@ class BlkLocRegistry {
 
     ///@brief Returns the physical pin of the tile, related to the given ClusterNedId, and the net pin index.
     int net_pin_to_tile_pin_index(const ClusterNetId net_id, int net_pin_index) const;
+
+    /**
+     * @brief Performs error checking to see if location is legal for block type,
+     * and sets the location and grid usage of the block if it is legal.
+     * @param blk_id The unique ID of the clustered block whose location is to set.
+     * @param location The location where the clustered block should placed at.
+     */
+    void set_block_location(ClusterBlockId blk_id, const t_pl_loc& location);
+
+    /**
+     * @brief Syncs the logical block pins corresponding to the input iblk with the corresponding chosen physical tile
+     * @param iblk cluster block ID to sync within the assigned physical tile
+     *
+     * This routine updates the physical pins vector of the place context after the placement step
+     * to synchronize the pins related to the logical block with the actual connection interface of
+     * the belonging physical tile with the RR graph.
+     *
+     * This step is required as the logical block can be placed at any compatible sub tile locations
+     * within a physical tile.
+     * Given that it is possible to have equivalent logical blocks within a specific sub tile, with
+     * a different subset of IO pins, the various pins offsets must be correctly computed and assigned
+     * to the physical pins vector, so that, when the net RR terminals are computed, the correct physical
+     * tile IO pins are selected.
+     *
+     * This routine uses the x,y and sub_tile coordinates of the clb netlist, and expects those to place each netlist block
+     * at a legal location that can accommodate it.
+     * It does not check for overuse of locations, therefore it can be used with placements that have resource overuse.
+     */
+    void place_sync_external_block_connections(ClusterBlockId iblk);
 };
 
 #endif //VTR_BLK_LOC_REGISTRY_H

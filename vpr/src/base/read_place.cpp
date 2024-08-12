@@ -314,7 +314,7 @@ static std::string read_place_body(std::ifstream& placement_file,
                         blk_id, loc.x, loc.y, loc.layer, loc.sub_tile, constraint_loc.x, constraint_loc.y, constraint_loc.layer, constraint_loc.sub_tile);
                     }
                 }
-                set_block_location(blk_id, loc, blk_loc_registry);
+                blk_loc_registry.set_block_location(blk_id, loc);
             }
 
             //need to lock down blocks if it is a constraints file

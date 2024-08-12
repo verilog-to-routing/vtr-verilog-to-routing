@@ -356,51 +356,6 @@ void alloc_and_load_legal_placement_locations(std::vector<std::vector<std::vecto
     legal_pos.shrink_to_fit();
 }
 
-void set_block_location(ClusterBlockId blk_id,
-                        const t_pl_loc& location,
-                        BlkLocRegistry& blk_loc_registry) {
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& block_locs = blk_loc_registry.mutable_block_locs();
-    auto& grid_blocks = blk_loc_registry.mutable_grid_blocks();
-
-    const std::string& block_name = cluster_ctx.clb_nlist.block_name(blk_id);
-
-    //Check if block location is out of range of grid dimensions
-    if (location.x < 0 || location.x > int(device_ctx.grid.width() - 1)
-        || location.y < 0 || location.y > int(device_ctx.grid.height() - 1)) {
-        VPR_THROW(VPR_ERROR_PLACE, "Block %s with ID %d is out of range at location (%d, %d). \n",
-                  block_name.c_str(), blk_id, location.x, location.y);
-    }
-
-    //Set the location of the block
-    block_locs[blk_id].loc = location;
-
-    //Check if block is at an illegal location
-    auto physical_tile = device_ctx.grid.get_physical_type({location.x, location.y, location.layer});
-    auto logical_block = cluster_ctx.clb_nlist.block_type(blk_id);
-
-    if (location.sub_tile >= physical_tile->capacity || location.sub_tile < 0) {
-        VPR_THROW(VPR_ERROR_PLACE, "Block %s subtile number (%d) is out of range. \n", block_name.c_str(), location.sub_tile);
-    }
-
-    if (!is_sub_tile_compatible(physical_tile, logical_block, block_locs[blk_id].loc.sub_tile)) {
-        VPR_THROW(VPR_ERROR_PLACE, "Attempt to place block %s with ID %d at illegal location (%d,%d,%d). \n",
-                  block_name.c_str(),
-                  blk_id,
-                  location.x,
-                  location.y,
-                  location.layer);
-    }
-
-    //Mark the grid location and usage of the block
-    grid_blocks.set_block_at_location(location, blk_id);
-    grid_blocks.set_usage({location.x, location.y, location.layer},
-                          grid_blocks.get_usage({location.x, location.y, location.layer}) + 1);
-
-    place_sync_external_block_connections(blk_id, blk_loc_registry);
-}
-
 bool macro_can_be_placed(const t_pl_macro& pl_macro,
                          const t_pl_loc& head_pos,
                          bool check_all_legality,
@@ -491,41 +446,4 @@ NocCostTerms& NocCostTerms::operator+=(const NocCostTerms& noc_delta_cost) {
     congestion += noc_delta_cost.congestion;
 
     return *this;
-}
-
-void place_sync_external_block_connections(ClusterBlockId iblk,
-                                           BlkLocRegistry& blk_loc_registry) {
-    const auto& cluster_ctx = g_vpr_ctx.clustering();
-    const auto& clb_nlist = cluster_ctx.clb_nlist;
-    const auto& block_locs = blk_loc_registry.block_locs();
-    auto& physical_pins = blk_loc_registry.mutable_physical_pins();
-
-    t_pl_loc block_loc = block_locs[iblk].loc;
-
-    auto physical_tile = physical_tile_type(block_loc);
-    auto logical_block = clb_nlist.block_type(iblk);
-
-    int sub_tile_index = get_sub_tile_index(iblk, block_locs);
-    auto sub_tile = physical_tile->sub_tiles[sub_tile_index];
-
-    VTR_ASSERT(sub_tile.num_phy_pins % sub_tile.capacity.total() == 0);
-
-    int max_num_block_pins = sub_tile.num_phy_pins / sub_tile.capacity.total();
-    /* Logical location and physical location is offset by z * max_num_block_pins */
-
-    int rel_capacity = block_loc.sub_tile - sub_tile.capacity.low;
-
-    for (ClusterPinId pin : clb_nlist.block_pins(iblk)) {
-        int logical_pin_index = clb_nlist.pin_logical_index(pin);
-        int sub_tile_pin_index = get_sub_tile_physical_pin(sub_tile_index, physical_tile, logical_block, logical_pin_index);
-
-        int new_physical_pin_index = sub_tile.sub_tile_to_tile_pin_indices[sub_tile_pin_index + rel_capacity * max_num_block_pins];
-
-        auto result = physical_pins.find(pin);
-        if (result != physical_pins.end()) {
-            physical_pins[pin] = new_physical_pin_index;
-        } else {
-            physical_pins.insert(pin, new_physical_pin_index);
-        }
-    }
 }

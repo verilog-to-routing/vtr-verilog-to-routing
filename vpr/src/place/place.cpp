@@ -475,7 +475,7 @@ void try_place(const Netlist<>& net_list,
 
     // Update physical pin values
     for (const ClusterBlockId block_id : cluster_ctx.clb_nlist.blocks()) {
-        place_sync_external_block_connections(block_id, blk_loc_registry);
+        blk_loc_registry.place_sync_external_block_connections(block_id);
     }
 
     const int width_fac = placer_opts.place_chan_width;
@@ -903,7 +903,7 @@ void try_place(const Netlist<>& net_list,
 
     // Update physical pin values
     for (const ClusterBlockId block_id : cluster_ctx.clb_nlist.blocks()) {
-        place_sync_external_block_connections(block_id, blk_loc_registry);
+        blk_loc_registry.place_sync_external_block_connections(block_id);
     }
 
     check_place(costs,
