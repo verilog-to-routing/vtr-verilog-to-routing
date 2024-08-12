@@ -174,7 +174,7 @@ bool is_manual_move_legal(ClusterBlockId block_id, t_pl_loc to) {
 
     //If the destination block is user constrained, abort this swap
     ClusterBlockId b_to = grid_blocks.block_at_location(to);
-    if (b_to != EMPTY_BLOCK_ID) {
+    if (b_to) {
         if (get_graphics_blk_loc_registry_ref().block_locs()[b_to].is_fixed) {
             invalid_breakpoint_entry_window("Block is fixed");
             return false;

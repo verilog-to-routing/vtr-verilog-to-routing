@@ -162,7 +162,7 @@ t_draw_layer_display get_element_visibility_and_transparency(int src_layer, int 
  * @param x
  * @param y
  * @return returns the ClusterBlockId of the clb at the specified (x,y) location (in world coordinates) as seen by looking downwards from the top of a 3D FPGA.
- *         Chooses the clb on the top visible layer if there are overlapping blocks. Returns EMPTY_BLOCK_ID (-1) otherwise,if clb is not found on any visible layer.
+ *         Chooses the clb on the top visible layer if there are overlapping blocks. Returns INVALID(-1) otherwise,if clb is not found on any visible layer.
  */
 ClusterBlockId get_cluster_block_id_from_xy_loc(double x, double y);
 

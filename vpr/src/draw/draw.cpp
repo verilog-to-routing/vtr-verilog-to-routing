@@ -1003,14 +1003,14 @@ static void highlight_blocks(double x, double y) {
 
     char msg[vtr::bufsize];
     ClusterBlockId clb_index = get_cluster_block_id_from_xy_loc(x, y);
-    if (clb_index == EMPTY_BLOCK_ID || clb_index == ClusterBlockId::INVALID()) {
+    if (clb_index == ClusterBlockId::INVALID()) {
         return; /* Nothing was found on any layer*/
     }
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& block_locs = get_graphics_blk_loc_registry_ref().block_locs();
 
-    VTR_ASSERT(clb_index != EMPTY_BLOCK_ID);
+    VTR_ASSERT(clb_index != ClusterBlockId::INVALID());
 
     ezgl::rectangle clb_bbox = draw_coords->get_absolute_clb_bbox(clb_index, cluster_ctx.clb_nlist.block_type(clb_index));
     // note: this will clear the selected sub-block if show_blk_internal is 0,
@@ -1049,7 +1049,7 @@ static void highlight_blocks(double x, double y) {
 ClusterBlockId get_cluster_block_id_from_xy_loc(double x, double y) {
     t_draw_coords* draw_coords = get_draw_coords_vars();
     t_draw_state* draw_state = get_draw_state_vars();
-    ClusterBlockId clb_index = EMPTY_BLOCK_ID;
+    auto clb_index = ClusterBlockId::INVALID();
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
     const auto& grid_blocks = get_graphics_blk_loc_registry_ref().grid_blocks();
@@ -1076,20 +1076,20 @@ ClusterBlockId get_cluster_block_id_from_xy_loc(double x, double y) {
                 const auto& type = device_ctx.grid.get_physical_type({i, j, layer_num});
                 for (int k = 0; k < type->capacity; ++k) {
                     clb_index = grid_blocks.block_at_location({i, j, k, layer_num});
-                    if (clb_index != EMPTY_BLOCK_ID) {
+                    if (clb_index) {
                         clb_bbox = draw_coords->get_absolute_clb_bbox(clb_index,
                                                                       cluster_ctx.clb_nlist.block_type(clb_index));
                         if (clb_bbox.contains({x, y})) {
                             return clb_index; // we've found the clb
                         } else {
-                            clb_index = EMPTY_BLOCK_ID;
+                            clb_index = ClusterBlockId::INVALID();
                         }
                     }
                 }
             }
         }
     }
-    // Searched all layers and found no clb at specified location, returning clb_index = EMPTY_BLOCK_ID.
+    // Searched all layers and found no clb at specified location, returning clb_index = ClusterBlockId::INVALID().
     return clb_index;
 }
 

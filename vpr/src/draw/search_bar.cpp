@@ -288,7 +288,7 @@ void highlight_cluster_block(ClusterBlockId clb_index) {
     /// determine block ///
     ezgl::rectangle clb_bbox;
 
-    VTR_ASSERT(clb_index != EMPTY_BLOCK_ID);
+    VTR_ASSERT(clb_index != ClusterBlockId::INVALID());
 
     ezgl::point2d point_in_clb = clb_bbox.bottom_left();
     highlight_sub_block(point_in_clb, clb_index, cluster_ctx.clb_nlist.block_pb(clb_index));

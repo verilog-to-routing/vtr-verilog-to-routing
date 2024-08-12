@@ -7,9 +7,6 @@
 
 #include <vector>
 
-/* Defining macros for the placement_ctx t_grid_blocks. Assumes that ClusterBlockId's won't exceed positive 32-bit integers */
-constexpr auto EMPTY_BLOCK_ID = ClusterBlockId(-1);
-
 ///@brief Stores the clustered blocks placed at a particular grid location
 struct t_grid_blocks {
     int usage; ///<How many valid blocks are in use at this location
@@ -29,7 +26,7 @@ struct t_grid_blocks {
      * as the z-dimensional offset in the grid indexing.
      */
     inline bool subtile_empty(size_t isubtile) const {
-        return blocks[isubtile] == EMPTY_BLOCK_ID;
+        return blocks[isubtile] == ClusterBlockId::INVALID();
     }
 };
 
@@ -42,7 +39,7 @@ class GridBlock {
     }
 
     inline void initialized_grid_block_at_location(const t_physical_tile_loc& loc, int num_sub_tiles) {
-        grid_blocks_[loc.layer_num][loc.x][loc.y].blocks.resize(num_sub_tiles, EMPTY_BLOCK_ID);
+        grid_blocks_[loc.layer_num][loc.x][loc.y].blocks.resize(num_sub_tiles, ClusterBlockId::INVALID());
     }
 
     inline void set_block_at_location(const t_pl_loc& loc, ClusterBlockId blk_id) {

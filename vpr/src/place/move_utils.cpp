@@ -149,7 +149,7 @@ e_block_move_result record_single_block_swap(t_pl_blocks_to_be_moved& blocks_aff
     e_block_move_result outcome = e_block_move_result::VALID;
 
     // Check whether the to_location is empty
-    if (b_to == EMPTY_BLOCK_ID) {
+    if (b_to == ClusterBlockId::INVALID()) {
         // Sets up the blocks moved
         outcome = blocks_affected.record_block_move(b_from, to, blk_loc_registry);
     } else {
@@ -309,7 +309,7 @@ e_block_move_result record_macro_macro_swaps(t_pl_blocks_to_be_moved& blocks_aff
         VTR_ASSERT_SAFE(curr_to == block_locs[b_to].loc);
 
         // Check whether block to is compatible with from location
-        if (b_to != EMPTY_BLOCK_ID) {
+        if (b_to != ClusterBlockId::INVALID()) {
             if (!(is_legal_swap_to_location(b_to, curr_from, blk_loc_registry))) {
                 return e_block_move_result::ABORT;
             }
@@ -506,7 +506,7 @@ bool is_legal_swap_to_location(ClusterBlockId blk,
     }
     // If the destination block is user constrained, abort this swap
     ClusterBlockId b_to = grid_blocks.block_at_location(to);
-    if (b_to != EMPTY_BLOCK_ID) {
+    if (b_to) {
         if (block_locs[b_to].is_fixed) {
             return false;
         }
@@ -1306,10 +1306,10 @@ int find_free_layer(t_logical_block_type_ptr logical_block,
     if (device_ctx.grid.get_num_layers() > 1) {
         const auto& compatible_layers = compressed_grids[logical_block->index].get_layer_nums();
         if (compatible_layers.size() > 1) {
-            if (grid_blocks.block_at_location(loc) != EMPTY_BLOCK_ID) {
+            if (grid_blocks.block_at_location(loc)) {
                 for (const auto& layer : compatible_layers) {
                     if (layer != free_layer) {
-                        if (grid_blocks.block_at_location(loc) == EMPTY_BLOCK_ID) {
+                        if (grid_blocks.block_at_location(loc) == ClusterBlockId::INVALID()) {
                             free_layer = layer;
                             break;
                         }

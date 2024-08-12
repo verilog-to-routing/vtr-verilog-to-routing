@@ -13,7 +13,7 @@
  * @brief Initialize `grid_blocks`, the inverse structure of `block_locs`.
  *
  * The container at each grid block location should have a length equal to the
- * subtile capacity of that block. Unused subtile would be marked EMPTY_BLOCK_ID.
+ * subtile capacity of that block. Unused subtile would be marked ClusterBlockId::INVALID().
  */
 static GridBlock init_grid_blocks();
 
@@ -306,7 +306,7 @@ void zero_initialize_grid_blocks(GridBlock& grid_blocks) {
                     auto capacity = sub_tile.capacity;
 
                     for (int k = 0; k < capacity.total(); k++) {
-                        grid_blocks.set_block_at_location({i, j, k + capacity.low, layer_num}, EMPTY_BLOCK_ID);
+                        grid_blocks.set_block_at_location({i, j, k + capacity.low, layer_num}, ClusterBlockId::INVALID());
                     }
                 }
             }
@@ -459,7 +459,7 @@ bool macro_can_be_placed(const t_pl_macro& pl_macro,
         // Also check whether the member position is valid, and the member_z is allowed at that location on the grid
         if (member_pos.x < int(device_ctx.grid.width()) && member_pos.y < int(device_ctx.grid.height())
             && is_tile_compatible(device_ctx.grid.get_physical_type({member_pos.x, member_pos.y, member_pos.layer}), block_type)
-            && grid_blocks.block_at_location(member_pos) == EMPTY_BLOCK_ID) {
+            && grid_blocks.block_at_location(member_pos) == ClusterBlockId::INVALID()) {
             // Can still accommodate blocks here, check the next position
             continue;
         } else {

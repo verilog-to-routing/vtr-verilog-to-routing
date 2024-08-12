@@ -172,7 +172,7 @@ void sync_grid_to_blocks() {
         }
 
         /* Check already in use */
-        if (EMPTY_BLOCK_ID != grid_blocks.block_at_location(blk_loc)) {
+        if (grid_blocks.block_at_location(blk_loc)) {
             VPR_FATAL_ERROR(VPR_ERROR_PLACE, "Location (%d, %d, %d, %d) is used more than once.\n",
                             blk_x, blk_y, blk_z, blk_layer);
         }
@@ -2284,7 +2284,7 @@ std::vector<int> get_cluster_netlist_intra_tile_classes_at_loc(int layer,
             continue;
         }
         auto cluster_blk_id = grid_block.block_at_location({i, j, abs_cap, layer});
-        VTR_ASSERT(cluster_blk_id != ClusterBlockId::INVALID() || cluster_blk_id != EMPTY_BLOCK_ID);
+        VTR_ASSERT(cluster_blk_id != ClusterBlockId::INVALID());
 
         auto primitive_classes = get_cluster_internal_class_pairs(atom_lookup,
                                                                   cluster_blk_id);
@@ -2317,7 +2317,7 @@ std::vector<int> get_cluster_netlist_intra_tile_pins_at_loc(const int layer,
             continue;
         }
         auto cluster_blk_id = grid_block.block_at_location({i, j, abs_cap, layer});
-        VTR_ASSERT(cluster_blk_id != ClusterBlockId::INVALID() && cluster_blk_id != EMPTY_BLOCK_ID);
+        VTR_ASSERT(cluster_blk_id != ClusterBlockId::INVALID());
 
         cluster_internal_pins = get_cluster_internal_pins(cluster_blk_id);
         const auto& cluster_pin_chains = pin_chains_num[cluster_blk_id];

@@ -175,7 +175,7 @@ void draw_internal_draw_subblk(ezgl::renderer* g) {
                     int num_sub_tiles = type->capacity;
                     for (int k = 0; k < num_sub_tiles; ++k) {
                         /* Don't draw if block is empty. */
-                        if (grid_blocks.block_at_location({i, j, k, layer_num}) == EMPTY_BLOCK_ID) {
+                        if (!grid_blocks.block_at_location({i, j, k, layer_num})) {
                             continue;
                         }
 
