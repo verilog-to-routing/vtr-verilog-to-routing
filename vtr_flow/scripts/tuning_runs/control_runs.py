@@ -164,7 +164,7 @@ def parse_script_params(script_params):
 
 def generate_avg_seed_csv(full_res_csv_path, output_dir):
     """Generate the average results over the seeds"""
-    df = pd.read_csv(full_res_csv_path)
+    df: Optional[pd.DataFrame] = pd.read_csv(full_res_csv_path)
     assert isinstance(df, pd.DataFrame)
 
     if KEEP_METRICS_ONLY:
