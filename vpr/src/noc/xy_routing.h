@@ -116,7 +116,7 @@ class XYRouting : public TurnModelRouting {
     const std::vector<TurnModelRouting::Direction> south_direction {TurnModelRouting::Direction::SOUTH};
     const std::vector<TurnModelRouting::Direction> up_direction {TurnModelRouting::Direction::UP};
     const std::vector<TurnModelRouting::Direction> down_direction {TurnModelRouting::Direction::DOWN};
-    const std::vector<TurnModelRouting::Direction> no_direction;
+    const std::vector<TurnModelRouting::Direction> no_direction {};
 
 };
 
