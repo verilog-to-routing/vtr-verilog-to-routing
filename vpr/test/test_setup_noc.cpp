@@ -449,6 +449,7 @@ TEST_CASE("test_create_noc_routers", "[vpr_setup_noc]") {
             // we will have 6 logical routers that will take up the bottom and middle physical routers of the mesh
             temp_router->device_x_position = list_of_routers[router_id - 1].tile_centroid_x;
             temp_router->device_y_position = list_of_routers[router_id - 1].tile_centroid_y;
+            temp_router->device_layer_position = list_of_routers[router_id - 1].layer_position;
             temp_router->id = router_id;
             noc_info.router_list.push_back(*temp_router);
         }
@@ -476,6 +477,7 @@ TEST_CASE("test_create_noc_routers", "[vpr_setup_noc]") {
             // now check that the proper physical router was assigned to
             REQUIRE(test_router.get_router_grid_position_x() == list_of_routers[router_id - 1].grid_width_position);
             REQUIRE(test_router.get_router_grid_position_y() == list_of_routers[router_id - 1].grid_height_position);
+            REQUIRE(test_router.get_router_layer_position() == list_of_routers[router_id - 1].layer_position);
         }
     }
     SECTION("Test create routers when logical routers match to exactly one physical router. The number of routers is exactly the same as on the FPGA.") {
@@ -489,6 +491,8 @@ TEST_CASE("test_create_noc_routers", "[vpr_setup_noc]") {
             // we will have 6 logical routers that will take up the bottom and middle physical routers of the mesh
             temp_router->device_x_position = list_of_routers[router_id - 1].tile_centroid_x;
             temp_router->device_y_position = list_of_routers[router_id - 1].tile_centroid_y;
+            temp_router->device_layer_position = list_of_routers[router_id - 1].layer_position;
+
             temp_router->id = router_id;
             noc_info.router_list.push_back(*temp_router);
         }
@@ -516,6 +520,7 @@ TEST_CASE("test_create_noc_routers", "[vpr_setup_noc]") {
             // now check that the proper physical router was assigned to
             REQUIRE(test_router.get_router_grid_position_x() == list_of_routers[router_id - 1].grid_width_position);
             REQUIRE(test_router.get_router_grid_position_y() == list_of_routers[router_id - 1].grid_height_position);
+            REQUIRE(test_router.get_router_layer_position() == list_of_routers[router_id - 1].layer_position);
         }
     }
     SECTION("Test create routers when a logical router can be matched to two physical routers. The number of routers is exactly the same as on the FPGA.") {
@@ -529,6 +534,7 @@ TEST_CASE("test_create_noc_routers", "[vpr_setup_noc]") {
             // we will have 6 logical routers that will take up the bottom and middle physical routers of the mesh
             temp_router->device_x_position = list_of_routers[router_id - 1].tile_centroid_x;
             temp_router->device_y_position = list_of_routers[router_id - 1].tile_centroid_y;
+            temp_router->device_layer_position = list_of_routers[router_id - 1].layer_position;
             temp_router->id = router_id;
             noc_info.router_list.push_back(*temp_router);
         }
@@ -543,11 +549,12 @@ TEST_CASE("test_create_noc_routers", "[vpr_setup_noc]") {
         delete temp_router;
 
         // call the router creation
-        REQUIRE_THROWS_WITH(create_noc_routers(noc_info, &noc_model, list_of_routers), "Router with ID:'9' has the same distance to physical router tiles located at position (4,8) and (8,8). Therefore, no router assignment could be made.");
+        REQUIRE_THROWS_WITH(create_noc_routers(noc_info, &noc_model, list_of_routers),
+                            "Router with ID:'9' has the same distance to physical router tiles located at position (4,8) and (8,8). Therefore, no router assignment could be made.");
     }
     SECTION("Test create routers when a physical router can be matched to two logical routers. The number of routers is exactly the same as on the FPGA.") {
         // start by creating all the logical routers
-        // this is similiar to the user provided a config file
+        // this is similar to the user provided a config file
         temp_router = new t_router;
 
         NocRouterId noc_router_id;
@@ -556,6 +563,7 @@ TEST_CASE("test_create_noc_routers", "[vpr_setup_noc]") {
             // we will have 6 logical routers that will take up the bottom and middle physical routers of the mesh
             temp_router->device_x_position = list_of_routers[router_id - 1].tile_centroid_x;
             temp_router->device_y_position = list_of_routers[router_id - 1].tile_centroid_y;
+            temp_router->device_layer_position = list_of_routers[router_id - 1].layer_position;
             temp_router->id = router_id;
             noc_info.router_list.push_back(*temp_router);
         }
@@ -570,7 +578,8 @@ TEST_CASE("test_create_noc_routers", "[vpr_setup_noc]") {
         delete temp_router;
 
         // call the router creation
-        REQUIRE_THROWS_WITH(create_noc_routers(noc_info, &noc_model, list_of_routers), "Routers with IDs:'9' and '5' are both closest to physical router tile located at (4,4) and the physical router could not be assigned multiple times.");
+        REQUIRE_THROWS_WITH(create_noc_routers(noc_info, &noc_model, list_of_routers),
+                            "Routers with IDs:'9' and '5' are both closest to physical router tile located at (4,4) and the physical router could not be assigned multiple times.");
     }
 }
 TEST_CASE("test_create_noc_links", "[vpr_setup_noc]") {
@@ -625,6 +634,7 @@ TEST_CASE("test_create_noc_links", "[vpr_setup_noc]") {
         // we will have 9 logical routers that will take up all physical routers
         temp_router->device_x_position = list_of_routers[router_id - 1].tile_centroid_x;
         temp_router->device_y_position = list_of_routers[router_id - 1].tile_centroid_y;
+        temp_router->device_layer_position = list_of_routers[router_id - 1].layer_position;
         temp_router->id = router_id;
         noc_info.router_list.push_back(*temp_router);
 
@@ -755,6 +765,7 @@ TEST_CASE("test_setup_noc", "[vpr_setup_noc]") {
         // we will have 9 logical routers that will take up all physical routers
         temp_router->device_x_position = list_of_routers[router_id - 1].tile_centroid_x;
         temp_router->device_y_position = list_of_routers[router_id - 1].tile_centroid_y;
+        temp_router->device_layer_position = list_of_routers[router_id - 1].layer_position;
         temp_router->id = router_id;
         noc_info.router_list.push_back(*temp_router);
     }
@@ -907,7 +918,7 @@ TEST_CASE("test_setup_noc", "[vpr_setup_noc]") {
 
         for (int i = 0; i < test_grid_width; i++) {
             for (int j = 0; j < test_grid_height; j++) {
-                // make sure the current tyle is not a router
+                // make sure the current tile is not a router
                 if (test_grid[0][i][j].type == nullptr) {
                     // assign the non-router tile as empty
                     test_grid[0][i][j].type = &empty_tile;
@@ -1158,7 +1169,7 @@ TEST_CASE("test_setup_noc", "[vpr_setup_noc]") {
 
         for (int i = 0; i < test_grid_width; i++) {
             for (int j = 0; j < test_grid_height; j++) {
-                // make sure the current tyle is not a router
+                // make sure the current tile is not a router
                 if (test_grid[0][i][j].type == nullptr) {
                     // assign the non-router tile as empty
                     test_grid[0][i][j].type = &empty_tile;
