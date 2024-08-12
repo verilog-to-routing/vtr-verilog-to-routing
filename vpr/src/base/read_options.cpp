@@ -2626,6 +2626,14 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("map")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    route_timing_grp.add_argument<bool, ParseOnOff>(args.router_lookahead_profiler, "--router_lookahead_profiler")
+        .help(
+            "For every routed sink, records the cost, delay, and congestion estimated by the router lookahead and the "
+            "actual cost, delay, and congestion, from every node along each route to the sink. These results, along with many "
+            "other attributes of the node, are recorded into lookahead_verifier_info.csv.")
+        .default_value("off")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     route_timing_grp.add_argument(args.router_max_convergence_count, "--router_max_convergence_count")
         .help(
             "Controls how many times the router is allowed to converge to a legal routing before halting."

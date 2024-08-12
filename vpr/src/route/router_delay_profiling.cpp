@@ -121,7 +121,14 @@ bool RouterDelayProfiler::calculate_delay(RRNodeId source_node,
         VTR_ASSERT(cheapest.index == sink_node);
 
         vtr::optional<const RouteTreeNode&> rt_node_of_sink;
-        std::tie(std::ignore, rt_node_of_sink) = tree.update_from_heap(&cheapest, OPEN, nullptr, is_flat_, router_.get_router_lookahead(), cost_params, -1, net_list_, conn_params.net_id_);
+        std::tie(std::ignore, rt_node_of_sink) = tree.update_from_heap(&cheapest,
+                                                                       OPEN,
+                                                                       nullptr,
+                                                                       is_flat_,
+                                                                       router_.get_router_lookahead(),
+                                                                       cost_params,
+                                                                       net_list_,
+                                                                       conn_params.net_id_);
 
         //find delay
         *net_delay = rt_node_of_sink->Tdel;
@@ -208,7 +215,14 @@ vtr::vector<RRNodeId, float> calculate_all_path_delays_from_rr_node(RRNodeId src
             //Build the routing tree to get the delay
             tree = RouteTree(RRNodeId(src_rr_node));
             vtr::optional<const RouteTreeNode&> rt_node_of_sink;
-            std::tie(std::ignore, rt_node_of_sink) = tree.update_from_heap(&shortest_paths[sink_rr_node], OPEN, nullptr, router_opts.flat_routing, router.get_router_lookahead(), cost_params, -1, net_list, conn_params.net_id_);
+            std::tie(std::ignore, rt_node_of_sink) = tree.update_from_heap(&shortest_paths[sink_rr_node],
+                                                                           OPEN,
+                                                                           nullptr,
+                                                                           router_opts.flat_routing,
+                                                                           router.get_router_lookahead(),
+                                                                           cost_params,
+                                                                           net_list,
+                                                                           conn_params.net_id_);
 
             VTR_ASSERT(rt_node_of_sink->inode == RRNodeId(sink_rr_node));
 

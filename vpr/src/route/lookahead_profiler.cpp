@@ -11,36 +11,14 @@
 #include "vpr_utils.h"
 #include "re_cluster_util.h"
 
-LookaheadProfiler::LookaheadProfiler() {
+LookaheadProfiler::LookaheadProfiler()
+    : is_empty(true) {
     lookahead_verifier_csv.open("lookahead_verifier_info.csv", std::ios::out);
 
     if (!lookahead_verifier_csv.is_open()) {
-        VTR_LOG_ERROR("Could not open lookahead_verifier_info.csv", "error");
+        VTR_LOG_WARN("Could not open lookahead_verifier_info.csv");
+        return;
     }
-
-    lookahead_verifier_csv
-        << "iteration no."
-        << ",source node"
-        << ",sink node"
-        << ",sink block name"
-        << ",sink atom block model"
-        << ",sink cluster block type"
-        << ",sink cluster tile height"
-        << ",sink cluster tile width"
-        << ",current node"
-        << ",node type"
-        << ",node length"
-        << ",num. nodes from sink"
-        << ",delta x"
-        << ",delta y"
-        << ",actual cost"
-        << ",actual delay"
-        << ",actual congestion"
-        << ",predicted cost"
-        << ",predicted delay"
-        << ",predicted congestion"
-        << ",criticality"
-        << std::endl;
 }
 
 void LookaheadProfiler::record(int iteration,
@@ -53,6 +31,37 @@ void LookaheadProfiler::record(int iteration,
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     auto& route_ctx = g_vpr_ctx.routing();
+
+    if (!lookahead_verifier_csv.is_open())
+        return;
+
+    if (is_empty) {
+        lookahead_verifier_csv
+            << "iteration no."
+            << ",source node"
+            << ",sink node"
+            << ",sink block name"
+            << ",sink atom block model"
+            << ",sink cluster block type"
+            << ",sink cluster tile height"
+            << ",sink cluster tile width"
+            << ",current node"
+            << ",node type"
+            << ",node length"
+            << ",num. nodes from sink"
+            << ",delta x"
+            << ",delta y"
+            << ",actual cost"
+            << ",actual delay"
+            << ",actual congestion"
+            << ",predicted cost"
+            << ",predicted delay"
+            << ",predicted congestion"
+            << ",criticality"
+            << std::endl;
+
+        is_empty = false;
+    }
 
     if (iteration < 1)
         return;

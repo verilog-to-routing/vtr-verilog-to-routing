@@ -238,6 +238,7 @@ struct t_options {
     argparse::ArgValue<int> router_debug_sink_rr;
     argparse::ArgValue<int> router_debug_iteration;
     argparse::ArgValue<e_router_lookahead> router_lookahead_type;
+    argparse::ArgValue<bool> router_lookahead_profiler;
     argparse::ArgValue<int> router_max_convergence_count;
     argparse::ArgValue<float> router_reconvergence_cpd_threshold;
     argparse::ArgValue<bool> router_update_lower_bound_delays;

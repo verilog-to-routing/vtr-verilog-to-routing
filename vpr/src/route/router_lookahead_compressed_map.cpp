@@ -422,7 +422,7 @@ float CompressedMapLookahead::get_expected_cost(RRNodeId current_node, RRNodeId 
     }
 }
 
-std::pair<float, float> CompressedMapLookahead::get_expected_delay_and_cong(RRNodeId from_node, RRNodeId to_node, const t_conn_cost_params& params, float) const {
+std::pair<float, float> CompressedMapLookahead::get_expected_delay_and_cong(RRNodeId from_node, RRNodeId to_node, const t_conn_cost_params& /*params*/, float) const {
     auto& device_ctx = g_vpr_ctx.device();
     auto& rr_graph = device_ctx.rr_graph;
 

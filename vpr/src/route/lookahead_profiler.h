@@ -1,7 +1,3 @@
-//
-// Created by shrevena on 08/06/24.
-//
-
 #ifndef VTR_LOOKAHEAD_PROFILER_H
 #define VTR_LOOKAHEAD_PROFILER_H
 
@@ -15,10 +11,17 @@ class LookaheadProfiler {
   public:
     LookaheadProfiler();
 
-    void record(int iteration, int target_net_pin_index, const t_conn_cost_params& cost_params, const RouterLookahead& router_lookahead, const ParentNetId& net_id, const Netlist<>& net_list, std::vector<RRNodeId> branch_inodes);
+    void record(int iteration,
+                int target_net_pin_index,
+                const t_conn_cost_params& cost_params,
+                const RouterLookahead& router_lookahead,
+                const ParentNetId& net_id,
+                const Netlist<>& net_list,
+                std::vector<RRNodeId> branch_inodes);
 
   private:
     std::ofstream lookahead_verifier_csv;
+    bool is_empty;
     std::unordered_map<RRNodeId, std::string> atom_block_names;
     std::unordered_map<RRNodeId, std::string> atom_block_models;
     std::unordered_map<RRNodeId, std::string> cluster_block_types;

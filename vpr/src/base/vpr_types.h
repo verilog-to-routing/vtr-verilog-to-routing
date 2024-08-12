@@ -1458,6 +1458,7 @@ struct t_router_opts {
     int router_debug_sink_rr;
     int router_debug_iteration;
     e_router_lookahead lookahead_type;
+    bool router_lookahead_profiling;
     int max_convergence_count;
     float reconvergence_cpd_threshold;
     e_router_initial_timing initial_timing;
