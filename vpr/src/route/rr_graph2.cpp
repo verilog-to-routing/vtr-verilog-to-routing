@@ -836,7 +836,7 @@ int get_unidir_opin_connections(RRGraphBuilder& rr_graph_builder,
         rr_edges_to_create.emplace_back(from_rr_node, inc_inode_index, to_switch, false);
         ++num_edges;
 
-        to_switch = (opin_layer == track_layer) ? seg_details[inc_track].arch_opin_switch() : seg_details[dec_track].arch_opin_between_dice_switch();
+        to_switch = (opin_layer == track_layer) ? seg_details[dec_track].arch_opin_switch() : seg_details[dec_track].arch_opin_between_dice_switch();
         rr_edges_to_create.emplace_back(from_rr_node, dec_inode_index, to_switch, false);
         ++num_edges;
     }
@@ -1295,35 +1295,23 @@ static void add_classes_spatial_lookup(RRGraphBuilder& rr_graph_builder,
 
     for (auto class_num : class_num_vec) {
         auto class_type = get_class_type_from_class_physical_num(physical_type_ptr, class_num);
+        e_rr_type node_type = SINK;
         if (class_type == DRIVER) {
-            rr_graph_builder.node_lookup().add_node(RRNodeId(*index), layer, root_x, root_y, SOURCE, class_num);
+            node_type = SOURCE;
         } else {
             VTR_ASSERT(class_type == RECEIVER);
-
-            rr_graph_builder.node_lookup().add_node(RRNodeId(*index), layer, root_x, root_y, SINK, class_num);
         }
-        ++(*index);
-    }
 
-    //Copy the SOURCE/SINK nodes to all offset positions for blocks with width > 1 and/or height > 1
-    // This ensures that look-ups on non-root locations will still find the correct SOURCE/SINK
-    for (int x_offset = 0; x_offset < block_width; x_offset++) {
-        for (int y_offset = 0; y_offset < block_height; y_offset++) {
-            if (x_offset == 0 && y_offset == 0) {
-                // Node is already added
-                continue;
+        for (int x_offset = 0; x_offset < block_width; x_offset++) {
+            for (int y_offset = 0; y_offset < block_height; y_offset++) {
+                int curr_x = root_x + x_offset;
+                int curr_y = root_y + y_offset;
+
+                rr_graph_builder.node_lookup().add_node(RRNodeId(*index), layer, curr_x, curr_y, node_type, class_num);
             }
-            int curr_x = root_x + x_offset;
-            int curr_y = root_y + y_offset;
-            rr_graph_builder.node_lookup().mirror_nodes(layer, vtr::Point<int>(root_x, root_y),
-                                                        vtr::Point<int>(curr_x, curr_y),
-                                                        SOURCE,
-                                                        SIDES[0]);
-            rr_graph_builder.node_lookup().mirror_nodes(layer, vtr::Point<int>(root_x, root_y),
-                                                        vtr::Point<int>(curr_x, curr_y),
-                                                        SINK,
-                                                        SIDES[0]);
         }
+
+        ++(*index);
     }
 }
 
@@ -1491,7 +1479,7 @@ bool verify_rr_node_indices(const DeviceGrid& grid,
                                           describe_rr_node(rr_graph, grid, rr_indexed_data, inode, is_flat).c_str());
                             }
                         } else if (rr_graph.node_type(inode) == SOURCE || rr_graph.node_type(inode) == SINK) {
-                            //Sources have co-ordintes covering the entire block they are in
+                            // Sources have co-ordinates covering the entire block they are in, but not sinks
                             if (!rr_graph.x_in_node_range(x, inode)) {
                                 VPR_ERROR(VPR_ERROR_ROUTE, "RR node x positions do not agree between rr_nodes (%d <-> %d) and rr_node_indices (%d): %s",
                                           rr_graph.node_xlow(inode),
@@ -1507,7 +1495,6 @@ bool verify_rr_node_indices(const DeviceGrid& grid,
                                           y,
                                           describe_rr_node(rr_graph, grid, rr_indexed_data, inode, is_flat).c_str());
                             }
-
                         } else {
                             VTR_ASSERT(rr_graph.node_type(inode) == IPIN || rr_graph.node_type(inode) == OPIN);
                             /* As we allow a pin to be indexable on multiple sides,

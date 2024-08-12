@@ -21,6 +21,7 @@
 #include "rr_graph_utils.h"
 #include "rr_graph.h"
 #include "rr_graph_area.h"
+#include "rr_graph_utils.h"
 #include "rr_graph2.h"
 #include "rr_graph_sbox.h"
 #include "rr_graph_timing_params.h"
@@ -762,6 +763,8 @@ void create_rr_graph(const t_graph_type graph_type,
 
     process_non_config_sets();
 
+    rr_set_sink_locs(device_ctx.rr_graph, mutable_device_ctx.rr_graph_builder, grid);
+
     verify_rr_node_indices(grid,
                            device_ctx.rr_graph,
                            device_ctx.rr_indexed_data,
@@ -1139,7 +1142,7 @@ static void build_rr_graph(const t_graph_type graph_type,
                         "seg = %d (%s), Fc_out = %d, Fc_in = %d.\n",
                         type.name,
                         j,
-                        block_type_pin_index_to_name(&type, j).c_str(),
+                        block_type_pin_index_to_name(&type, j, is_flat).c_str(),
                         k,
                         segment_inf[k].name.c_str(),
                         Fc_out[i][j][k],

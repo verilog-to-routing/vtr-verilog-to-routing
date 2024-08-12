@@ -1,5 +1,4 @@
 #include "re_cluster_util.h"
-
 #include "clustered_netlist_utils.h"
 #include "cluster_util.h"
 #include "cluster_router.h"
@@ -7,7 +6,6 @@
 #include "place_macro.h"
 #include "initial_placement.h"
 #include "read_netlist.h"
-
 
 // The name suffix of the new block (if exists)
 // This suffix is useful in preventing duplicate high-level cluster block names

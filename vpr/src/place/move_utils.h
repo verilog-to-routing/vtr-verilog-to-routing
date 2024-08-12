@@ -7,7 +7,7 @@
 /* Cut off for incremental bounding box updates.                          *
  * 4 is fastest -- I checked.                                             */
 /* To turn off incremental bounding box updates, set this to a huge value */
-#define SMALL_NET 4
+constexpr size_t SMALL_NET = 4;
 
 /* This is for the placement swap routines. A swap attempt could be       *
  * rejected, accepted or aborted (due to the limitations placed on the    *
@@ -95,6 +95,14 @@ void report_aborted_moves();
 
 e_create_move create_move(t_pl_blocks_to_be_moved& blocks_affected, ClusterBlockId b_from, t_pl_loc to);
 
+/**
+ * @brief Find the blocks that will be affected by a move of b_from to to_loc
+ * @param blocks_affected Loaded by this routine and returned via reference; it lists the blocks etc. moved
+ * @param b_from Id of the cluster-level block to be moved
+ * @param to Where b_from will be moved to
+ * @return e_block_move_result ABORT if either of the the moving blocks are already stored, or either of the blocks are fixed, to location is not
+ * compatible, etc. INVERT if the "from" block is a single block and the "to" block is a macro. VALID otherwise.
+ */
 e_block_move_result find_affected_blocks(t_pl_blocks_to_be_moved& blocks_affected, ClusterBlockId b_from, t_pl_loc to);
 
 e_block_move_result record_single_block_swap(t_pl_blocks_to_be_moved& blocks_affected, ClusterBlockId b_from, t_pl_loc to);
@@ -109,9 +117,13 @@ e_block_move_result record_macro_move(t_pl_blocks_to_be_moved& blocks_affected,
 e_block_move_result identify_macro_self_swap_affected_macros(std::vector<int>& macros, const int imacro, t_pl_offset swap_offset);
 e_block_move_result record_macro_self_swaps(t_pl_blocks_to_be_moved& blocks_affected, const int imacro, t_pl_offset swap_offset);
 
+/**
+ * @brief Check whether the "to" location is legal for the given "blk"
+ * @param blk
+ * @param to
+ * @return True if this would be a legal move, false otherwise
+ */
 bool is_legal_swap_to_location(ClusterBlockId blk, t_pl_loc to);
-
-std::set<t_pl_loc> determine_locations_emptied_by_move(t_pl_blocks_to_be_moved& blocks_affected);
 
 /**
  * @brief Propose block for the RL agent based on required block type.
@@ -128,6 +140,13 @@ ClusterBlockId propose_block_to_move(const t_placer_opts& placer_opts,
                                      bool highly_crit_block,
                                      ClusterNetId* net_from,
                                      int* pin_from);
+
+/**
+ * Returns all movable clustered blocks with a specified logical block type.
+ * @param blk_type Specifies the logical block block type.
+ * @return A const reference to a vector containing all movable blocks with the specified logical block type.
+ */
+const std::vector<ClusterBlockId>& movable_blocks_per_type(const t_logical_block_type& blk_type);
 
 /**
  * @brief Select a random block to be swapped with another block

@@ -348,7 +348,7 @@ struct ClusteringHelperContext : public Context {
     t_ext_pin_util_targets target_external_pin_util;
 
     // During clustering, a block is related to un-clustered primitives with nets.
-    // This relation has three types: low fanout, high fanout, and trasitive
+    // This relation has three types: low fanout, high fanout, and transitive
     // high_fanout_thresholds stores the threshold for nets to a block type to be considered high fanout
     t_pack_high_fanout_thresholds high_fanout_thresholds;
 
@@ -394,6 +394,12 @@ struct PlacementContext : public Context {
 
     ///@brief The pl_macros array stores all the placement macros (usually carry chains).
     std::vector<t_pl_macro> pl_macros;
+
+    ///@brief Stores ClusterBlockId of all movable clustered blocks (blocks that are not locked down to a single location)
+    std::vector<ClusterBlockId> movable_blocks;
+
+    ///@brief Stores ClusterBlockId of all movable clustered of each block type
+    std::vector<std::vector<ClusterBlockId>> movable_blocks_per_type;
 
     /**
      * @brief Compressed grid space for each block type
@@ -523,15 +529,24 @@ struct FloorplanningContext : public Context {
     /**
      * @brief Floorplanning constraints in the compressed grid coordinate system.
      *
+     * Indexing -->  [0..grid.num_layers-1][0..numClusters-1]
+     *
      * Each clustered block has a logical type with a corresponding compressed grid.
      * Compressed floorplanning constraints are calculated by translating the grid locations
      * of floorplanning regions to compressed grid locations. To ensure regions do not enlarge:
      * - The bottom left corner is rounded up to the nearest compressed location.
      * - The top right corner is rounded down to the nearest compressed location.
+     *
+     * When the floorplanning constraint spans across multiple layers, a compressed
+     * constraints is created for each a layer that the original constraint includes.
+     * This is because blocks of the same type might have different (x, y) locations
+     * in different layers, and as result, their compressed locations in each layer
+     * may correspond to a different physical (x, y) location.
+     *
      */
-    vtr::vector<ClusterBlockId, PartitionRegion> compressed_cluster_constraints;
+    std::vector<vtr::vector<ClusterBlockId, PartitionRegion>> compressed_cluster_constraints;
 
-    std::vector<Region> overfull_regions;
+    std::vector<PartitionRegion> overfull_partition_regions;
 };
 
 /**

@@ -748,7 +748,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
         } while (swap_router_block_one == swap_router_block_two);
 
         //set up the moved blocks datastructure for the test function
-        blocks_affected.num_moved_blocks = 2;
+        blocks_affected.moved_blocks.resize(2);
 
         blocks_affected.moved_blocks[0].block_num = swap_router_block_one;
         blocks_affected.moved_blocks[0].old_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_x(),
@@ -878,7 +878,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
         commit_noc_costs();
 
         // clear the affected blocks
-        clear_move_blocks(blocks_affected);
+        blocks_affected.clear_move_blocks();
 
         // clear the routed traffic flows
         routed_traffic_flows.clear();
@@ -903,7 +903,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
 
     // now perform the swap
     //set up the moved blocks datastructure for the test function
-    blocks_affected.num_moved_blocks = 2;
+    blocks_affected.moved_blocks.resize(2);
 
     blocks_affected.moved_blocks[0].block_num = swap_router_block_one;
 
@@ -1026,7 +1026,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
     commit_noc_costs();
 
     // clear the affected blocks
-    clear_move_blocks(blocks_affected);
+    blocks_affected.clear_move_blocks();
 
     /*
      * Now we will run a test where one of the router clusters we will swap has no traffic flows associated with it. This will make sure whether the test
@@ -1039,7 +1039,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
 
     // now perform the swap
     //set up the moved blocks datastructure for the test function
-    blocks_affected.num_moved_blocks = 2;
+    blocks_affected.moved_blocks.resize(2);
 
     blocks_affected.moved_blocks[0].block_num = swap_router_block_one;
 
@@ -1127,7 +1127,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
     commit_noc_costs();
 
     // clear the affected blocks
-    clear_move_blocks(blocks_affected);
+    blocks_affected.clear_move_blocks();
 
     /*
      * Now we will run a test where both of the router clusters being swapped
@@ -1142,7 +1142,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
 
     // now perform the swap
     //set up the moved blocks datastructure for the test function
-    blocks_affected.num_moved_blocks = 2;
+    blocks_affected.moved_blocks.resize(2);
 
     blocks_affected.moved_blocks[0].block_num = swap_router_block_one;
 
@@ -1192,7 +1192,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
     commit_noc_costs();
 
     // clear the affected blocks
-    clear_move_blocks(blocks_affected);
+    blocks_affected.clear_move_blocks();
 
     // now verify the test function by comparing the link bandwidths in the noc model (should have been updated by the test function) to the golden set
     int number_of_links = golden_link_bandwidths.size();
@@ -1584,7 +1584,7 @@ TEST_CASE("test_revert_noc_traffic_flow_routes", "[noc_place_utils]") {
 
     //set up the moved blocks datastructure for the test function
     // this is needed for the test function (it needs to know what blocks were swapped, so it can undo it)
-    blocks_affected.num_moved_blocks = 2;
+    blocks_affected.moved_blocks.resize(2);
 
     blocks_affected.moved_blocks[0].block_num = swap_router_block_one;
     blocks_affected.moved_blocks[0].old_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_x(),
