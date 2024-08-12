@@ -18,7 +18,7 @@ void LookaheadProfiler::record(int iteration,
                                const RouterLookahead& router_lookahead,
                                const ParentNetId& net_id,
                                const Netlist<>& net_list,
-                               std::vector<RRNodeId> branch_inodes) {
+                               const std::vector<RRNodeId>& branch_inodes) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     auto& route_ctx = g_vpr_ctx.routing();

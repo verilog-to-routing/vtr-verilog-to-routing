@@ -37,8 +37,9 @@
 #ifndef NO_SERVER
 
 #include "gateio.h"
-#    include "lookahead_profiler.h"
 #include "taskresolver.h"
+
+#    include "lookahead_profiler.h"
 
 class SetupHoldTimingInfo;
 class PostClusterDelayCalculator;

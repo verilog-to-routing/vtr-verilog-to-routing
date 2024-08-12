@@ -43,9 +43,10 @@ class RouterDelayProfiler {
      */
     float get_min_delay(int physical_tile_type_idx, int from_layer, int to_layer, int dx, int dy) const;
 
-    const Netlist<>& get_net_list() {
-        return net_list_;
-    }
+    /**
+     * @brief Get a const reference to the netlist.
+     */
+    const Netlist<>& get_net_list() const;
 
   private:
     const Netlist<>& net_list_;

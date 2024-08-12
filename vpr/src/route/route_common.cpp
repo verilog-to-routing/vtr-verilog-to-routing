@@ -839,9 +839,15 @@ void reserve_locally_used_opins(HeapInterface* heap, float pres_fac, float acc_f
 
                 //Add the OPIN to the heap according to it's congestion cost
                 cost = get_rr_cong_cost(to_node, pres_fac);
-                add_node_to_heap(heap, route_ctx.rr_node_route_inf,
-                                 to_node, cost, RREdgeId::INVALID(),
-                                 0., 0., 0., 0.);
+                add_node_to_heap(heap,
+                                 route_ctx.rr_node_route_inf,
+                                 to_node,
+                                 cost,
+                                 RREdgeId::INVALID(),
+                                 0.,
+                                 0.,
+                                 0.,
+                                 0.);
             }
 
             for (ipin = 0; ipin < num_local_opin; ipin++) {

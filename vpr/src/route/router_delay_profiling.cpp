@@ -149,6 +149,9 @@ bool RouterDelayProfiler::calculate_delay(RRNodeId source_node,
 float RouterDelayProfiler::get_min_delay(int physical_tile_type_idx, int from_layer, int to_layer, int dx, int dy) const {
     return min_delays_[physical_tile_type_idx][from_layer][to_layer][dx][dy];
 }
+const Netlist<>& RouterDelayProfiler::get_net_list() const {
+    return net_list_;
+}
 
 //Returns the shortest path delay from src_node to all RR nodes in the RR graph, or NaN if no path exists
 vtr::vector<RRNodeId, float> calculate_all_path_delays_from_rr_node(RRNodeId src_rr_node,

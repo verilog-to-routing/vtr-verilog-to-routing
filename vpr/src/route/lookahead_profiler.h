@@ -38,7 +38,7 @@ class LookaheadProfiler {
                 const RouterLookahead& router_lookahead,
                 const ParentNetId& net_id,
                 const Netlist<>& net_list,
-                std::vector<RRNodeId> branch_inodes);
+                const std::vector<RRNodeId>& branch_inodes);
 
   private:
     ///@breif The output filestream.

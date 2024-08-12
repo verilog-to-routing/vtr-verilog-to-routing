@@ -924,9 +924,15 @@ void ConnectionRouter<Heap>::add_route_tree_node_to_heap(
                        tot_cost,
                        describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, inode, is_flat_).c_str());
 
-        push_back_node(&heap_, rr_node_route_inf_,
-                       inode, tot_cost, RREdgeId::INVALID(),
-                       backward_path_cost, backward_path_delay, backward_path_congestion, R_upstream);
+        push_back_node(&heap_,
+                       rr_node_route_inf_,
+                       inode,
+                       tot_cost,
+                       RREdgeId::INVALID(),
+                       backward_path_cost,
+                       backward_path_delay,
+                       backward_path_congestion,
+                       R_upstream);
     } else {
         float expected_total_cost = compute_node_cost_using_rcv(cost_params, inode, target_node, rt_node.Tdel, 0, R_upstream);
 

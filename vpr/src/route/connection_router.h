@@ -127,6 +127,7 @@ class ConnectionRouter : public ConnectionRouterInterface {
     // Ensure route budgets have been calculated before enabling this
     void set_rcv_enabled(bool enable) final;
 
+    // Get a const reference to the router's lookahead
     const RouterLookahead& get_router_lookahead() const {
         return router_lookahead_;
     }

@@ -1,25 +1,25 @@
 /*
-* The router lookahead provides an estimate of the cost from an intermediate node to the target node
-* during directed (A*-like) routing.
-*
-* The VPR 7.0 lookahead (route/route_timing.c ==> get_timing_driven_expected_cost) lower-bounds the remaining delay and
-* congestion by assuming that a minimum number of wires, of the same type as the current node being expanded, can be used
-* to complete the route. While this method is efficient, it can run into trouble with architectures that use
-* multiple interconnected wire types.
-*
-* The lookahead in this file performs undirected Dijkstra searches to evaluate many paths through the routing network,
-* starting from all the different wire types in the routing architecture. This ensures the lookahead captures the
-* effect of inter-wire connectivity. This information is then reduced into a delta_x delta_y based lookup table for
-* reach source wire type (f_cost_map). This is used for estimates from CHANX/CHANY -> SINK nodes. See Section 3.2.4
-* in Oleg Petelin's MASc thesis (2016) for more discussion.
-*
-* To handle estimates starting from SOURCE/OPIN's the lookahead also creates a small side look-up table of the wire types
-* which are reachable from each physical tile type's SOURCEs/OPINs (f_src_opin_delays). This is used for
-* SRC/OPIN -> CHANX/CHANY estimates.
-*
-* In the case of SRC/OPIN -> SINK estimates the results from the two look-ups are added together (and the minimum taken
-* if there are multiple possibilities).
-*/
+ * The router lookahead provides an estimate of the cost from an intermediate node to the target node
+ * during directed (A*-like) routing.
+ *
+ * The VPR 7.0 lookahead (route/route_timing.c ==> get_timing_driven_expected_cost) lower-bounds the remaining delay and
+ * congestion by assuming that a minimum number of wires, of the same type as the current node being expanded, can be used
+ * to complete the route. While this method is efficient, it can run into trouble with architectures that use
+ * multiple interconnected wire types.
+ *
+ * The lookahead in this file performs undirected Dijkstra searches to evaluate many paths through the routing network,
+ * starting from all the different wire types in the routing architecture. This ensures the lookahead captures the
+ * effect of inter-wire connectivity. This information is then reduced into a delta_x delta_y based lookup table for
+ * reach source wire type (f_cost_map). This is used for estimates from CHANX/CHANY -> SINK nodes. See Section 3.2.4
+ * in Oleg Petelin's MASc thesis (2016) for more discussion.
+ *
+ * To handle estimates starting from SOURCE/OPIN's the lookahead also creates a small side look-up table of the wire types
+ * which are reachable from each physical tile type's SOURCEs/OPINs (f_src_opin_delays). This is used for
+ * SRC/OPIN -> CHANX/CHANY estimates.
+ *
+ * In the case of SRC/OPIN -> SINK estimates the results from the two look-ups are added together (and the minimum taken
+ * if there are multiple possibilities).
+ */
 
 #include <cmath>
 #include <vector>
@@ -51,8 +51,8 @@
 static constexpr int VALID_NEIGHBOR_NUMBER = 3;
 
 /* when a list of delay/congestion entries at a coordinate in Cost_Entry is boiled down to a single
-* representative entry, this enum is passed-in to specify how that representative entry should be
-* calculated */
+ * representative entry, this enum is passed-in to specify how that representative entry should be
+ * calculated */
 enum e_representative_entry_method {
     FIRST = 0, //the first cost that was recorded
     SMALLEST,  //the smallest-delay cost recorded
@@ -69,9 +69,9 @@ t_wire_cost_map f_wire_cost_map;
 /******** File-Scope Functions ********/
 
 /***
-* @brief Fill f_wire_cost_map. It is a look-up table from CHANX/CHANY (to SINKs) for various distances
-* @param segment_inf
-*/
+ * @brief Fill f_wire_cost_map. It is a look-up table from CHANX/CHANY (to SINKs) for various distances
+ * @param segment_inf
+ */
 static util::Cost_Entry get_wire_cost_entry(e_rr_type rr_type,
                                             int seg_index,
                                             int from_layer_num,
@@ -82,50 +82,50 @@ static util::Cost_Entry get_wire_cost_entry(e_rr_type rr_type,
 static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segment_inf);
 
 /***
-* @brief Compute the cost from pin to sinks of tiles - Compute the minimum cost to get to each tile sink from pins on the cluster
-* @param intra_tile_pin_primitive_pin_delay
-* @param tile_min_cost
-* @param det_routing_arch
-* @param device_ctx
-*/
+ * @brief Compute the cost from pin to sinks of tiles - Compute the minimum cost to get to each tile sink from pins on the cluster
+ * @param intra_tile_pin_primitive_pin_delay
+ * @param tile_min_cost
+ * @param det_routing_arch
+ * @param device_ctx
+ */
 static void compute_tiles_lookahead(std::unordered_map<int, util::t_ipin_primitive_sink_delays>& intra_tile_pin_primitive_pin_delay,
                                     std::unordered_map<int, std::unordered_map<int, util::Cost_Entry>>& tile_min_cost,
                                     const t_det_routing_arch& det_routing_arch,
                                     const DeviceContext& device_ctx);
 /***
-* @brief Compute the cose from tile pins to tile sinks
-* @param intra_tile_pin_primitive_pin_delay [physical_tile_type_idx][from_pin_ptc_num][sink_ptc_num] -> cost
-* @param physical_tile
-* @param det_routing_arch
-* @param delayless_switch
-*/
+ * @brief Compute the cose from tile pins to tile sinks
+ * @param intra_tile_pin_primitive_pin_delay [physical_tile_type_idx][from_pin_ptc_num][sink_ptc_num] -> cost
+ * @param physical_tile
+ * @param det_routing_arch
+ * @param delayless_switch
+ */
 static void compute_tile_lookahead(std::unordered_map<int, util::t_ipin_primitive_sink_delays>& intra_tile_pin_primitive_pin_delay,
                                    t_physical_tile_type_ptr physical_tile,
                                    const t_det_routing_arch& det_routing_arch,
                                    const int delayless_switch);
 
 /***
-* @brief Compute the minimum cost to get to the sinks from pins on the cluster
-* @param tile_min_cost [physical_tile_idx][sink_ptc_num] -> min_cost
-* @param physical_tile
-* @param intra_tile_pin_primitive_pin_delay [physical_tile_type_idx][from_pin_ptc_num][sink_ptc_num] -> cost
-*/
+ * @brief Compute the minimum cost to get to the sinks from pins on the cluster
+ * @param tile_min_cost [physical_tile_idx][sink_ptc_num] -> min_cost
+ * @param physical_tile
+ * @param intra_tile_pin_primitive_pin_delay [physical_tile_type_idx][from_pin_ptc_num][sink_ptc_num] -> cost
+ */
 static void store_min_cost_to_sinks(std::unordered_map<int, std::unordered_map<int, util::Cost_Entry>>& tile_min_cost,
                                     t_physical_tile_type_ptr physical_tile,
                                     const std::unordered_map<int, util::t_ipin_primitive_sink_delays>& intra_tile_pin_primitive_pin_delay);
 
 /**
-* @brief Iterate over the first (channel type) and second (segment type) dimensions of f_wire_cost_map to get the minimum cost for each dx and dy_
-* @param internal_opin_global_cost_map This map is populated in this function. [dx][dy] -> cost
-*/
+ * @brief Iterate over the first (channel type) and second (segment type) dimensions of f_wire_cost_map to get the minimum cost for each dx and dy_
+ * @param internal_opin_global_cost_map This map is populated in this function. [dx][dy] -> cost
+ */
 static void min_chann_global_cost_map(vtr::NdMatrix<util::Cost_Entry, 4>& distance_min_cost);
 
 /**
-* @brief // Given the src/opin map of each physical tile type, iterate over all OPINs/sources of a type and create
-* the minimum cost map across all of them for each tile type.
-* @param src_opin_delays
-* @param distance_min_cost
-*/
+ * @brief // Given the src/opin map of each physical tile type, iterate over all OPINs/sources of a type and create
+ * the minimum cost map across all of them for each tile type.
+ * @param src_opin_delays
+ * @param distance_min_cost
+ */
 static void min_opin_distance_cost_map(const util::t_src_opin_delays& src_opin_delays, vtr::NdMatrix<util::Cost_Entry, 5>& distance_min_cost);
 
 // Read the file and fill intra_tile_pin_primitive_pin_delay and tile_min_cost
@@ -144,17 +144,17 @@ static void fill_in_missing_lookahead_entries(int segment_index, e_rr_type chan_
 static util::Cost_Entry get_nearby_cost_entry(int from_layer_num, int x, int y, int to_layer_num, int segment_index, int chan_index);
 
 /**
-* @brief Fill in the missing entry in router lookahead map
-* If there is a missing entry in the router lookahead, search among its neighbors in a 3x3 window. If there are `VALID_NEIGHBOR_NUMBER` valid entries,
-* take the average of them and fill in the missing entry.
-* @param from_layer_num The layer num of the source node
-* @param missing_dx Dx of the missing input
-* @param missing_dy Dy of the missing input
-* @param to_layer_num The layer num of the destination point
-* @param segment_index The segment index of the source node
-* @param chan_index The channel index of the source node
-* @return The cost for the missing entry
-*/
+ * @brief Fill in the missing entry in router lookahead map
+ * If there is a missing entry in the router lookahead, search among its neighbors in a 3x3 window. If there are `VALID_NEIGHBOR_NUMBER` valid entries,
+ * take the average of them and fill in the missing entry.
+ * @param from_layer_num The layer num of the source node
+ * @param missing_dx Dx of the missing input
+ * @param missing_dy Dy of the missing input
+ * @param to_layer_num The layer num of the destination point
+ * @param segment_index The segment index of the source node
+ * @param chan_index The channel index of the source node
+ * @return The cost for the missing entry
+ */
 static util::Cost_Entry get_nearby_cost_entry_average_neighbour(int from_layer_num,
                                                                 int missing_dx,
                                                                 int missing_dy,
@@ -527,11 +527,11 @@ static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segm
                 }
 
                 /* boil down the cost list in routing_cost_map at each coordinate to a representative cost entry and store it in the lookahead
-                * cost map */
+                 * cost map */
                 set_lookahead_map_costs(from_layer_num, segment_inf.seg_index, chan_type, routing_cost_map);
 
                 /* fill in missing entries in the lookahead cost map by copying the closest cost entries (cost map was computed based on
-                * a reference coordinate > (0,0) so some entries that represent a cross-chip distance have not been computed) */
+                 * a reference coordinate > (0,0) so some entries that represent a cross-chip distance have not been computed) */
                 fill_in_missing_lookahead_entries(segment_inf.seg_index, chan_type);
             }
         }
@@ -585,7 +585,7 @@ static void fill_in_missing_lookahead_entries(int segment_index, e_rr_type chan_
 /* returns a cost entry in the f_wire_cost_map that is near the specified coordinates (and preferably towards (0,0)) */
 static util::Cost_Entry get_nearby_cost_entry(int from_layer_num, int x, int y, int to_layer_num, int segment_index, int chan_index) {
     /* compute the slope from x,y to 0,0 and then move towards 0,0 by one unit to get the coordinates
-    * of the cost entry to be copied */
+     * of the cost entry to be copied */
 
     //VTR_ASSERT(x > 0 || y > 0); //Asertion fails in practise. TODO: debug
 
@@ -796,12 +796,12 @@ static void min_chann_global_cost_map(vtr::NdMatrix<util::Cost_Entry, 4>& distan
 
 static void min_opin_distance_cost_map(const util::t_src_opin_delays& src_opin_delays, vtr::NdMatrix<util::Cost_Entry, 5>& distance_min_cost) {
     /**
-    * This function calculates and stores the minimum cost to reach a point on layer `n_sink`, which is `dx` and `dy` further from the current point
-    * on layer `n_source` and is located on physical tile type `t`. To compute this cost, the function iterates over all output pins of tile `t`,
-    * and for each pin, iterates over all segment types accessible by it. It then determines and stores the minimum cost to the destination point.
-    * "src_opin_delays" stores the routing segments accessible by each OPIN of each physical type on each layer. After getting the accessible segment types,
-    * "get_wire_cost_entry" is called to get the cost from that segment type to the destination point.
-    */
+     * This function calculates and stores the minimum cost to reach a point on layer `n_sink`, which is `dx` and `dy` further from the current point
+     * on layer `n_source` and is located on physical tile type `t`. To compute this cost, the function iterates over all output pins of tile `t`,
+     * and for each pin, iterates over all segment types accessible by it. It then determines and stores the minimum cost to the destination point.
+     * "src_opin_delays" stores the routing segments accessible by each OPIN of each physical type on each layer. After getting the accessible segment types,
+     * "get_wire_cost_entry" is called to get the cost from that segment type to the destination point.
+     */
     int num_tile_types = g_vpr_ctx.device().physical_tile_types.size();
     int num_layers = g_vpr_ctx.device().grid.get_num_layers();
     int width = (int)g_vpr_ctx.device().grid.width();
