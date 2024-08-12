@@ -349,10 +349,8 @@ void load_grid_blocks_from_block_locs(GridBlock& grid_blocks,
  * @param legal_pos a lookup of all subtiles by sub_tile type
  * legal_pos[0..device_ctx.num_block_types-1][0..num_sub_tiles - 1] = std::vector<t_pl_loc> of all the legal locations
  * of the proper tile type and sub_tile type
- * @param grid_blocks A mapping from grid location to block IDs placed there.
  */
-void alloc_and_load_legal_placement_locations(std::vector<std::vector<std::vector<t_pl_loc>>>& legal_pos,
-                                              const GridBlock& grid_blocks);
+void alloc_and_load_legal_placement_locations(std::vector<std::vector<std::vector<t_pl_loc>>>& legal_pos);
 
 ///@brief Performs error checking to see if location is legal for block type,
 /// and sets the location and grid usage of the block if it is legal.

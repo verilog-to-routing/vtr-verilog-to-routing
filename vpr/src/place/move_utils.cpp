@@ -152,14 +152,12 @@ e_block_move_result record_single_block_swap(t_pl_blocks_to_be_moved& blocks_aff
     if (b_to == EMPTY_BLOCK_ID) {
         // Sets up the blocks moved
         outcome = blocks_affected.record_block_move(b_from, to, blk_loc_registry);
-
-    } else if (b_to != INVALID_BLOCK_ID) {
+    } else {
         // Check whether block to is compatible with from location
-        if (b_to != EMPTY_BLOCK_ID && b_to != INVALID_BLOCK_ID) {
-            if (!(is_legal_swap_to_location(b_to, curr_from, blk_loc_registry)) || block_locs[b_to].is_fixed) {
-                return e_block_move_result::ABORT;
-            }
+        if (!(is_legal_swap_to_location(b_to, curr_from, blk_loc_registry)) || block_locs[b_to].is_fixed) {
+            return e_block_move_result::ABORT;
         }
+
 
         // Sets up the blocks moved
         outcome = blocks_affected.record_block_move(b_from, to, blk_loc_registry);
@@ -311,7 +309,7 @@ e_block_move_result record_macro_macro_swaps(t_pl_blocks_to_be_moved& blocks_aff
         VTR_ASSERT_SAFE(curr_to == block_locs[b_to].loc);
 
         // Check whether block to is compatible with from location
-        if (b_to != EMPTY_BLOCK_ID && b_to != INVALID_BLOCK_ID) {
+        if (b_to != EMPTY_BLOCK_ID) {
             if (!(is_legal_swap_to_location(b_to, curr_from, blk_loc_registry))) {
                 return e_block_move_result::ABORT;
             }
@@ -508,7 +506,7 @@ bool is_legal_swap_to_location(ClusterBlockId blk,
     }
     // If the destination block is user constrained, abort this swap
     ClusterBlockId b_to = grid_blocks.block_at_location(to);
-    if (b_to != INVALID_BLOCK_ID && b_to != EMPTY_BLOCK_ID) {
+    if (b_to != EMPTY_BLOCK_ID) {
         if (block_locs[b_to].is_fixed) {
             return false;
         }

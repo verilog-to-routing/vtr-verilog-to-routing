@@ -306,9 +306,7 @@ void zero_initialize_grid_blocks(GridBlock& grid_blocks) {
                     auto capacity = sub_tile.capacity;
 
                     for (int k = 0; k < capacity.total(); k++) {
-                        if (grid_blocks.block_at_location({i, j, k + capacity.low, layer_num}) != INVALID_BLOCK_ID) {
-                            grid_blocks.set_block_at_location({i, j, k + capacity.low, layer_num}, EMPTY_BLOCK_ID);
-                        }
+                        grid_blocks.set_block_at_location({i, j, k + capacity.low, layer_num}, EMPTY_BLOCK_ID);
                     }
                 }
             }
@@ -316,8 +314,7 @@ void zero_initialize_grid_blocks(GridBlock& grid_blocks) {
     }
 }
 
-void alloc_and_load_legal_placement_locations(std::vector<std::vector<std::vector<t_pl_loc>>>& legal_pos,
-                                              const GridBlock& grid_blocks) {
+void alloc_and_load_legal_placement_locations(std::vector<std::vector<std::vector<t_pl_loc>>>& legal_pos) {
     auto& device_ctx = g_vpr_ctx.device();
 
     //alloc the legal placement positions
@@ -338,9 +335,6 @@ void alloc_and_load_legal_placement_locations(std::vector<std::vector<std::vecto
                     auto capacity = sub_tile.capacity;
 
                     for (int k = 0; k < capacity.total(); k++) {
-                        if (grid_blocks.block_at_location({i, j, k + capacity.low, layer_num}) == INVALID_BLOCK_ID) {
-                            continue;
-                        }
                         // If this is the anchor position of a block, add it to the legal_pos.
                         // Otherwise, don't, so large blocks aren't added multiple times.
                         if (device_ctx.grid.get_width_offset({i, j, layer_num}) == 0 && device_ctx.grid.get_height_offset({i, j, layer_num}) == 0) {

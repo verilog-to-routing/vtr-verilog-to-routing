@@ -2054,7 +2054,7 @@ static int check_block_placement_consistency(const BlkLocRegistry& blk_loc_regis
                 int usage_check = 0;
                 for (int k = 0; k < type->capacity; k++) {
                     ClusterBlockId bnum = grid_blocks.block_at_location({i, j, k, layer_num});
-                    if (EMPTY_BLOCK_ID == bnum || INVALID_BLOCK_ID == bnum) {
+                    if (EMPTY_BLOCK_ID == bnum) {
                         continue;
                     }
 

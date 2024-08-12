@@ -172,8 +172,7 @@ void sync_grid_to_blocks() {
         }
 
         /* Check already in use */
-        if ((EMPTY_BLOCK_ID != grid_blocks.block_at_location(blk_loc))
-            && (INVALID_BLOCK_ID != grid_blocks.block_at_location(blk_loc))) {
+        if (EMPTY_BLOCK_ID != grid_blocks.block_at_location(blk_loc)) {
             VPR_FATAL_ERROR(VPR_ERROR_PLACE, "Location (%d, %d, %d, %d) is used more than once.\n",
                             blk_x, blk_y, blk_z, blk_layer);
         }

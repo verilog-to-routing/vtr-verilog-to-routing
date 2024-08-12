@@ -53,9 +53,7 @@ void NoCPlacementCheckpoint::restore_checkpoint(t_placer_costs& costs,
 
             for (int k = 0; k < capacity.total(); k++) {
                 const t_pl_loc loc(phy_loc, k + capacity.low);
-                if (grid_blocks.block_at_location(loc) != INVALID_BLOCK_ID) {
-                    grid_blocks.set_block_at_location(loc, EMPTY_BLOCK_ID);
-                }
+                grid_blocks.set_block_at_location(loc, EMPTY_BLOCK_ID);
             }
         }
     }

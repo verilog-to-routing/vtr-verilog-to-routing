@@ -140,8 +140,6 @@ void drawplace(ezgl::renderer* g) {
                         /* Fill background for the clb. Do not fill if "show_blk_internal"
                          * is toggled.
                          */
-                        if (bnum == INVALID_BLOCK_ID)
-                            continue;
 
                         //Determine the block color and logical type
                         ezgl::color block_color;
@@ -192,7 +190,7 @@ void drawplace(ezgl::renderer* g) {
 
                         if (draw_state->draw_block_text) {
                             /* Draw text if the space has parts of the netlist */
-                            if (bnum != EMPTY_BLOCK_ID && bnum != INVALID_BLOCK_ID) {
+                            if (bnum != EMPTY_BLOCK_ID) {
                                 std::string name = cluster_ctx.clb_nlist.block_name(
                                                        bnum)
                                                    + vtr::string_fmt(" (#%zu)", size_t(bnum));

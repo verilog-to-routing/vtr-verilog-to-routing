@@ -9,7 +9,6 @@
 
 /* Defining macros for the placement_ctx t_grid_blocks. Assumes that ClusterBlockId's won't exceed positive 32-bit integers */
 constexpr auto EMPTY_BLOCK_ID = ClusterBlockId(-1);
-constexpr auto INVALID_BLOCK_ID = ClusterBlockId(-2);
 
 ///@brief Stores the clustered blocks placed at a particular grid location
 struct t_grid_blocks {

@@ -1134,9 +1134,7 @@ static void clear_block_type_grid_locs(const std::unordered_set<int>& unplaced_b
                 if (clear_all_block_types || unplaced_blk_types_index.count(itype)) {
                     grid_blocks.set_usage({i, j, layer_num}, 0);
                     for (int k = 0; k < device_ctx.physical_tile_types[itype].capacity; k++) {
-                        if (grid_blocks.block_at_location({i, j, k, layer_num}) != INVALID_BLOCK_ID) {
-                            grid_blocks.set_block_at_location({i, j, k, layer_num}, EMPTY_BLOCK_ID);
-                        }
+                        grid_blocks.set_block_at_location({i, j, k, layer_num}, EMPTY_BLOCK_ID);
                     }
                 }
             }
