@@ -6,6 +6,7 @@ import itertools
 import os
 import sys
 import csv
+from typing import Optional
 import pandas as pd
 import numpy as np
 from scipy import stats
