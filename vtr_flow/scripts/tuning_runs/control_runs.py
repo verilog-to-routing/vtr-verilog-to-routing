@@ -6,7 +6,6 @@ import itertools
 import os
 import sys
 import csv
-from typing import Optional
 import pandas as pd
 import numpy as np
 from scipy import stats
@@ -165,14 +164,16 @@ def parse_script_params(script_params):
 
 def generate_avg_seed_csv(full_res_csv_path, output_dir):
     """Generate the average results over the seeds"""
-    df: Optional[pd.DataFrame] = pd.read_csv(full_res_csv_path)
+    df = pd.read_csv(full_res_csv_path)
     assert isinstance(df, pd.DataFrame)
 
     if KEEP_METRICS_ONLY:
         col_to_keep = ["circuit", "arch"]
         col_to_keep.extend(list(PARAMS_DICT.keys()))
         col_to_keep.extend(PARSED_METRICS)
-        df = df.drop(columns=[col for col in df.columns if col not in col_to_keep])
+        df = df.drop(
+            columns=[col for col in df.columns if col not in col_to_keep]
+        )  # pylint: disable=no-member
 
     # Check if '--seed' column is present
     if "--seed" in df.columns:
@@ -204,6 +205,7 @@ def generate_geomean_res_csv(full_res_csv_path, output_dir):
     param_columns = [key for key in PARAMS_DICT if key != "--seed"]
     non_param_columns = [col for col in df.columns if col not in param_columns]
 
+    # pylint: disable=no-member
     geomean_df = (
         df.groupby(param_columns)
         .agg(
