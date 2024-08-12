@@ -287,8 +287,7 @@ void load_grid_blocks_from_block_locs(GridBlock& grid_blocks,
         VTR_ASSERT(location.y < (int)device_ctx.grid.height());
 
         grid_blocks.set_block_at_location(location, blk_id);
-        grid_blocks.set_usage({location.x, location.y, location.layer},
-                              grid_blocks.get_usage({location.x, location.y, location.layer}) + 1);
+        grid_blocks.increment_usage({location.x, location.y, location.layer});
     }
 }
 

@@ -74,8 +74,7 @@ void BlkLocRegistry::set_block_location(ClusterBlockId blk_id, const t_pl_loc& l
 
     //Mark the grid location and usage of the block
     grid_blocks_.set_block_at_location(location, blk_id);
-    grid_blocks_.set_usage({location.x, location.y, location.layer},
-                          grid_blocks_.get_usage({location.x, location.y, location.layer}) + 1);
+    grid_blocks_.increment_usage({location.x, location.y, location.layer});
 
     place_sync_external_block_connections(blk_id);
 }

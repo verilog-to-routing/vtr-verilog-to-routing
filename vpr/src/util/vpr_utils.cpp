@@ -186,8 +186,7 @@ void sync_grid_to_blocks() {
         for (int width = 0; width < type->width; ++width) {
             for (int height = 0; height < type->height; ++height) {
                 grid_blocks.set_block_at_location({blk_x + width, blk_y + height, blk_z, blk_layer}, blk_id);
-                grid_blocks.set_usage({blk_x + width, blk_y + height, blk_layer},
-                                      grid_blocks.get_usage({blk_x + width, blk_y + height, blk_layer}) + 1);
+                grid_blocks.increment_usage({blk_x + width, blk_y + height, blk_layer});
 
                 VTR_ASSERT(device_ctx.grid.get_width_offset({blk_x + width, blk_y + height, blk_layer}) == width);
                 VTR_ASSERT(device_ctx.grid.get_height_offset({blk_x + width, blk_y + height, blk_layer}) == height);

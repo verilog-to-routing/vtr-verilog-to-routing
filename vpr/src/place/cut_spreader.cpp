@@ -969,8 +969,7 @@ void CutSpreader::bind_tile(t_pl_loc sub_tile, ClusterBlockId blk) {
     VTR_ASSERT(block_locs[blk].is_fixed == false);
     grid_blocks.set_block_at_location(sub_tile, blk);
     block_locs[blk].loc = sub_tile;
-    grid_blocks.set_usage({sub_tile.x, sub_tile.y, sub_tile.layer},
-                          grid_blocks.get_usage({sub_tile.x, sub_tile.y, sub_tile.layer}) + 1);
+    grid_blocks.increment_usage({sub_tile.x, sub_tile.y, sub_tile.layer});
     ap->blk_locs[blk].loc = sub_tile;
 }
 
@@ -987,8 +986,7 @@ void CutSpreader::unbind_tile(t_pl_loc sub_tile) {
     VTR_ASSERT(block_locs[blk].is_fixed == false);
     block_locs[blk].loc = t_pl_loc{};
     grid_blocks.set_block_at_location(sub_tile, ClusterBlockId::INVALID());
-    grid_blocks.set_usage({sub_tile.x, sub_tile.y, sub_tile.layer},
-                          grid_blocks.get_usage({sub_tile.x, sub_tile.y, sub_tile.layer}) - 1);
+    grid_blocks.decrement_usage({sub_tile.x, sub_tile.y, sub_tile.layer});
 }
 
 /*

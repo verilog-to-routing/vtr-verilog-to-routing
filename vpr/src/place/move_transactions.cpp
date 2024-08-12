@@ -110,15 +110,13 @@ void commit_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected,
         //Remove from old location only if it hasn't already been updated by a previous block update
         if (grid_blocks.block_at_location(from) == blk) {
             grid_blocks.set_block_at_location(from, ClusterBlockId::INVALID());
-            grid_blocks.set_usage({from.x, from.y, from.layer},
-                                  grid_blocks.get_usage({from.x, from.y, from.layer}) - 1);
+            grid_blocks.decrement_usage({from.x, from.y, from.layer});
         }
 
         //Add to new location
         if (grid_blocks.block_at_location(to) == ClusterBlockId::INVALID()) {
             //Only need to increase usage if previously unused
-            grid_blocks.set_usage({to.x, to.y, to.layer},
-                                  grid_blocks.get_usage({to.x, to.y, to.layer}) + 1);
+            grid_blocks.increment_usage({to.x, to.y, to.layer});
         }
         grid_blocks.set_block_at_location(to, blk);
 

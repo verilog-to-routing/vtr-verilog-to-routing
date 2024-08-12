@@ -75,6 +75,10 @@ class GridBlock {
      */
     void zero_initialize();
 
+    int increment_usage(const t_physical_tile_loc& loc);
+
+    int decrement_usage(const t_physical_tile_loc& loc);
+
   private:
     vtr::NdMatrix<t_grid_blocks, 3> grid_blocks_;
 };

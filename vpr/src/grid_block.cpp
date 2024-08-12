@@ -24,3 +24,17 @@ void GridBlock::zero_initialize() {
         }
     }
 }
+
+int GridBlock::increment_usage(const t_physical_tile_loc& loc) {
+    int curr_usage = get_usage(loc);
+    int updated_usage = set_usage(loc, curr_usage + 1);
+
+    return updated_usage;
+}
+
+int GridBlock::decrement_usage(const t_physical_tile_loc& loc) {
+    int curr_usage = get_usage(loc);
+    int updated_usage = set_usage(loc, curr_usage - 1);
+
+    return updated_usage;
+}
