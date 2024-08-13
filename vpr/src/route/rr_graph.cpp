@@ -677,8 +677,8 @@ static void build_intra_cluster_rr_graph(const t_graph_type graph_type,
  * @param det_routing_arch Contain the information from architecture file
  * @param load_rr_graph Indicate whether the RR graph is loaded from a file
  */
-static short get_delayless_switch_id (t_det_routing_arch* det_routing_arch, 
-                                        bool load_rr_graph);
+static int get_delayless_switch_id(t_det_routing_arch* det_routing_arch, 
+                                    bool load_rr_graph);
 
 /******************* Subroutine definitions *******************************/
 
@@ -765,7 +765,7 @@ void create_rr_graph(const t_graph_type graph_type,
     }
 
     if (is_flat) {
-        short delayless_switch = get_delayless_switch_id(det_routing_arch, load_rr_graph);
+        int delayless_switch = get_delayless_switch_id(det_routing_arch, load_rr_graph);
         VTR_ASSERT(delayless_switch != OPEN);
         build_intra_cluster_rr_graph(graph_type,
                                      grid,
@@ -1538,21 +1538,21 @@ static void build_intra_cluster_rr_graph(const t_graph_type graph_type,
                    is_flat);
 }
 
-static short get_delayless_switch_id (t_det_routing_arch* det_routing_arch,
-                                        bool load_rr_graph) {
+static int get_delayless_switch_id(t_det_routing_arch* det_routing_arch,
+                                    bool load_rr_graph) {
     const auto& device_ctx = g_vpr_ctx.device();
-    short delayless_switch;
+    int delayless_switch = OPEN;
     if (load_rr_graph) {
         const auto& rr_switches = device_ctx.rr_graph.rr_switch();
         for (size_t switch_id = 0; switch_id < rr_switches.size(); switch_id++){
             const auto& rr_switch = rr_switches[RRSwitchId(switch_id)];
             if (rr_switch.name.find("delayless") != std::string::npos) {
-                delayless_switch = static_cast<short>(switch_id);
+                delayless_switch = static_cast<int>(switch_id);
                 break;
             }
         }
     } else {
-        delayless_switch = det_routing_arch->delayless_switch;
+        delayless_switch = static_cast<int>(det_routing_arch->delayless_switch);
     }
 
     return delayless_switch;
