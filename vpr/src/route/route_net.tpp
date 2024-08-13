@@ -356,8 +356,8 @@ inline NetResultFlags pre_route_to_clock_root(ConnectionRouter& router,
      * points. Therefore, we can set the net pin index of the sink node to      *
      * OPEN (meaning illegal) as it is not meaningful for this sink.            */
     vtr::optional<const RouteTreeNode&> new_branch, new_sink;
-    std::tie(new_branch, new_sink) = tree.update_from_heap(&cheapest,
-                                                           OPEN,
+    std::tie(new_branch, new_sink) = tree.update_from_heap(/*hptr=*/&cheapest,
+                                                           /*target_net_pin_index=*/OPEN,
                                                            ((high_fanout) ? &spatial_rt_lookup : nullptr),
                                                            is_flat,
                                                            router.get_router_lookahead(),

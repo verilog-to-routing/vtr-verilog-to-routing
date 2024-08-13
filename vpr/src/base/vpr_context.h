@@ -39,12 +39,13 @@
 #include "gateio.h"
 #include "taskresolver.h"
 
-#    include "lookahead_profiler.h"
-
 class SetupHoldTimingInfo;
 class PostClusterDelayCalculator;
 
 #endif /* NO_SERVER */
+
+// Forward declaration
+class LookaheadProfiler;
 
 /**
  * @brief A Context is collection of state relating to a particular part of VPR
@@ -499,6 +500,9 @@ struct RoutingContext : public Context {
      */
     UserRouteConstraints constraints;
 
+    /**
+     * @brief Writes out information used to profile the accuracy of the router lookahead.
+     */
     LookaheadProfiler lookahead_profiler;
 };
 

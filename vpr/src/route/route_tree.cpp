@@ -501,7 +501,15 @@ RouteTree::update_from_heap(t_heap* hptr,
 
     //Create a new subtree from the target in hptr to existing routing
     vtr::optional<RouteTreeNode&> start_of_new_subtree_rt_node, sink_rt_node;
-    std::tie(start_of_new_subtree_rt_node, sink_rt_node) = add_subtree_from_heap(hptr, target_net_pin_index, is_flat, router_lookahead, cost_params, itry, net_list, net_id, profile_lookahead);
+    std::tie(start_of_new_subtree_rt_node, sink_rt_node) = add_subtree_from_heap(hptr,
+                                                                                 target_net_pin_index,
+                                                                                 is_flat,
+                                                                                 router_lookahead,
+                                                                                 cost_params,
+                                                                                 itry,
+                                                                                 net_list,
+                                                                                 net_id,
+                                                                                 profile_lookahead);
 
     if (!start_of_new_subtree_rt_node)
         return {vtr::nullopt, *sink_rt_node};

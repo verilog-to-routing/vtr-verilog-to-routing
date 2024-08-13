@@ -425,7 +425,6 @@ class Graphs:
             avg_error_df.plot.bar(title=title, xlabel=column, ylabel=y_label, legend=False)
 
         self.write_exclusions_info()
-        print(os.path.join(curr_dir, file_name))
         plt.savefig(os.path.join(curr_dir, file_name), dpi=300, bbox_inches="tight")
         plt.close()
 

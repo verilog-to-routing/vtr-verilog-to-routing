@@ -2,7 +2,6 @@
 #define VTR_LOOKAHEAD_PROFILER_H
 
 #include <fstream>
-#include <thread>
 
 #include "connection_router_interface.h"
 #include "router_lookahead.h"
@@ -16,7 +15,11 @@
 class LookaheadProfiler {
   public:
     LookaheadProfiler()
-        : is_empty(true) {}
+        : is_empty_(true)
+        , toggle_warn_(true) {}
+
+    LookaheadProfiler(const LookaheadProfiler&) = delete;
+    LookaheadProfiler& operator=(const LookaheadProfiler&) = delete;
 
     /**
      * @brief Record information on nodes on a path from a source to a sink.
@@ -41,18 +44,20 @@ class LookaheadProfiler {
                 const std::vector<RRNodeId>& branch_inodes);
 
   private:
-    ///@breif The output filestream.
-    std::ofstream lookahead_verifier_csv;
+    ///@brief The output filestream.
+    std::ofstream lookahead_verifier_csv_;
     ///@brief Whether the output file is empty/not yet opened.
-    bool is_empty;
+    bool is_empty_;
+    ///@brief Whether to creat a warning if the output csv is not open. Used to avoid repeated warnings.
+    bool toggle_warn_;
     ///@brief A map from sink node IDs to the names of their atom blocks.
-    std::unordered_map<RRNodeId, std::string> atom_block_names;
+    std::unordered_map<RRNodeId, std::string> atom_block_names_;
     ///@brief A map from sink node IDs to the names of the models of their atom blocks.
-    std::unordered_map<RRNodeId, std::string> atom_block_models;
+    std::unordered_map<RRNodeId, std::string> atom_block_models_;
     ///@brief A map from sink node IDs to the names of the types of their clusters.
-    std::unordered_map<RRNodeId, std::string> cluster_block_types;
+    std::unordered_map<RRNodeId, std::string> cluster_block_types_;
     ///@brief A map from sink node IDs to the dimensions of their tiles (width, height).
-    std::unordered_map<RRNodeId, std::pair<std::string, std::string>> tile_dimensions;
+    std::unordered_map<RRNodeId, std::pair<std::string, std::string>> tile_dimensions_;
 };
 
 #endif //VTR_LOOKAHEAD_PROFILER_H

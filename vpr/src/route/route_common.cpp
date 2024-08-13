@@ -843,11 +843,11 @@ void reserve_locally_used_opins(HeapInterface* heap, float pres_fac, float acc_f
                                  route_ctx.rr_node_route_inf,
                                  to_node,
                                  cost,
-                                 RREdgeId::INVALID(),
-                                 0.,
-                                 0.,
-                                 0.,
-                                 0.);
+                                 /*prev_edge=*/RREdgeId::INVALID(),
+                                 /*backward_path_cost=*/0.,
+                                 /*backward_path_delay=*/0.,
+                                 /*backward_path_congestion=*/0.,
+                                 /*R_upstream=*/0.);
             }
 
             for (ipin = 0; ipin < num_local_opin; ipin++) {

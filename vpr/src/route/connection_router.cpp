@@ -239,7 +239,12 @@ t_heap* ConnectionRouter<Heap>::timing_driven_route_connection_from_heap(RRNodeI
             // This is then placed into the traceback so that the correct path is returned
             // TODO: This can be eliminated by modifying the actual traceback function in route_timing
             if (rcv_path_manager.is_enabled()) {
-                rcv_path_manager.insert_backwards_path_into_traceback(cheapest->path_data, cheapest->cost, cheapest->backward_path_cost, cheapest->backward_path_delay, cheapest->backward_path_congestion, route_ctx);
+                rcv_path_manager.insert_backwards_path_into_traceback(cheapest->path_data,
+                                                                      cheapest->cost,
+                                                                      cheapest->backward_path_cost,
+                                                                      cheapest->backward_path_delay,
+                                                                      cheapest->backward_path_congestion,
+                                                                      route_ctx);
             }
             VTR_LOGV_DEBUG(router_debug_, "  Found target %8d (%s)\n", inode, describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, inode, is_flat_).c_str());
             break;
@@ -661,7 +666,6 @@ float ConnectionRouter<Heap>::compute_node_cost_using_rcv(const t_conn_cost_para
     // TODO: This function is not tested for is_flat == true
     VTR_ASSERT(is_flat_ != true);
     std::tie(expected_delay, expected_cong) = router_lookahead_.get_expected_delay_and_cong(to_node, target_node, cost_params, R_upstream);
-    router_lookahead_.scale_delay_and_cong_by_criticality(expected_delay, expected_cong, cost_params);
 
     float expected_total_delay_cost;
     float expected_total_cong_cost;
@@ -928,7 +932,7 @@ void ConnectionRouter<Heap>::add_route_tree_node_to_heap(
                        rr_node_route_inf_,
                        inode,
                        tot_cost,
-                       RREdgeId::INVALID(),
+                       /*prev_edge=*/RREdgeId::INVALID(),
                        backward_path_cost,
                        backward_path_delay,
                        backward_path_congestion,

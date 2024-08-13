@@ -181,7 +181,10 @@ float ExtendedMapLookahead::get_chan_ipin_delays(RRNodeId to_node) const {
 //
 //  The from_node can be of one of the following types: CHANX, CHANY, SOURCE, OPIN
 //  The to_node is always a SINK
-std::pair<float, float> ExtendedMapLookahead::get_expected_delay_and_cong(RRNodeId from_node, RRNodeId to_node, const t_conn_cost_params& params, float) const {
+std::pair<float, float> ExtendedMapLookahead::get_expected_delay_and_cong_ignore_criticality(RRNodeId from_node,
+                                                                                             RRNodeId to_node,
+                                                                                             const t_conn_cost_params& params,
+                                                                                             float /*R_upstream*/) const {
     if (from_node == to_node) {
         return std::make_pair(0., 0.);
     }
@@ -237,8 +240,8 @@ std::pair<float, float> ExtendedMapLookahead::get_expected_delay_and_cong(RRNode
     float site_pin_delay = this->get_chan_ipin_delays(to_node);
     expected_delay += site_pin_delay;
 
-    float expected_delay_cost = expected_delay * params.criticality;
-    float expected_cong_cost = expected_congestion * (1. - params.criticality);
+    float expected_delay_cost = params.criticality * expected_delay;
+    float expected_cong_cost = (1.f - params.criticality) * expected_congestion;
 
     float expected_cost = expected_delay_cost + expected_cong_cost;
 
@@ -594,7 +597,6 @@ float ExtendedMapLookahead::get_expected_cost(
 
         // Get the total cost using the combined delay and congestion costs
         std::tie(delay_cost, cong_cost) = get_expected_delay_and_cong(current_node, target_node, params, R_upstream);
-        scale_delay_and_cong_by_criticality(delay_cost, cong_cost, params);
         return delay_cost + cong_cost;
     } else if (rr_type == IPIN) { /* Change if you're allowing route-throughs */
         // This is to return only the cost between the IPIN and SINK. No need to

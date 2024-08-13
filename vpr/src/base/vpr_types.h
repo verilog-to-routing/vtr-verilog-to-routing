@@ -1740,16 +1740,20 @@ constexpr bool is_src_sink(e_rr_type type) { return (type == SOURCE || type == S
  * @brief Extra information about each rr_node needed only during routing
  *        (i.e. during the maze expansion).
  *
- *   @param prev_edge  ID of the edge (globally unique edge ID in the RR Graph)
- *                     that was used to reach this node from the previous node.
- *                     If there is no predecessor, prev_edge = NO_PREVIOUS.
- *   @param acc_cost   Accumulated cost term from previous Pathfinder iterations.
- *   @param path_cost  Total cost of the path up to and including this node +
- *                     the expected cost to the target if the timing_driven router
- *                     is being used.
- *   @param backward_path_cost  Total cost of the path up to and including this
- *                     node.
- *   @param occ        The current occupancy of the associated rr node
+ *   @param prev_edge   ID of the edge (globally unique edge ID in the RR Graph)
+ *                      that was used to reach this node from the previous node.
+ *                      If there is no predecessor, prev_edge = NO_PREVIOUS.
+ *   @param acc_cost    Accumulated cost term from previous Pathfinder iterations.
+ *   @param path_cost   Total cost of the path up to and including this node +
+ *                      the expected cost to the target if the timing_driven router
+ *                      is being used.
+ *   @param backward_path_cost          Total cost of the path up to and including
+ *                                      this node. Recorded for LookaheadProfiler.
+ *   @param backward_path_delay         Total delay in the path up to and including
+ *                                      this node. Recorded for LookaheadProfiler.
+ *   @param backward_path_congestion    Total congestion in the path up to and
+ *                                      including this node.
+ *   @param occ         The current occupancy of the associated rr node
  */
 struct t_rr_node_route_inf {
     RREdgeId prev_edge;
