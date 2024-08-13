@@ -172,8 +172,9 @@ def generate_avg_seed_csv(full_res_csv_path, output_dir):
         col_to_keep.extend(list(PARAMS_DICT.keys()))
         col_to_keep.extend(PARSED_METRICS)
         df = df.drop(
+            # pylint: disable=no-member
             columns=[col for col in df.columns if col not in col_to_keep]
-        )  # pylint: disable=no-member
+        )
 
     # Check if '--seed' column is present
     if "--seed" in df.columns:
