@@ -1357,13 +1357,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
                 segment->name.c_str(), name);
         }
     }
-    inline void set_segment_length(int length, const t_segment_inf*& segment) final {
-        if (segment->length != length) {
-            report_error(
-                "Architecture file does not match RR graph's length: arch uses %d, RR graph uses %d",
-                segment->length, length);
-        }
-    }
+    inline void set_segment_length(int /*length*/, const t_segment_inf*& /*segment*/) final {}
     inline uxsd::enum_segment_res_type get_segment_res_type(const t_segment_inf*& segment) final {
         return to_uxsd_segment_res_type(segment->res_type);
     }
