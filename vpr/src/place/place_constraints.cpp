@@ -13,7 +13,6 @@
 #include "place_util.h"
 #include "re_cluster_util.h"
 
-/*checks that each block's location is compatible with its floorplanning constraints if it has any*/
 int check_placement_floorplanning() {
     int error = 0;
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -30,11 +29,9 @@ int check_placement_floorplanning() {
     return error;
 }
 
-/*returns true if cluster has floorplanning constraints, false if it doesn't*/
 bool is_cluster_constrained(ClusterBlockId blk_id) {
     auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
-    PartitionRegion pr;
-    pr = floorplanning_ctx.cluster_constraints[blk_id];
+    const PartitionRegion& pr = floorplanning_ctx.cluster_constraints[blk_id];
     return (!pr.empty());
 }
 
@@ -42,8 +39,8 @@ bool is_macro_constrained(const t_pl_macro& pl_macro) {
     bool is_macro_constrained = false;
     bool is_member_constrained = false;
 
-    for (size_t imember = 0; imember < pl_macro.members.size(); imember++) {
-        ClusterBlockId iblk = pl_macro.members[imember].blk_index;
+    for (const auto& member : pl_macro.members) {
+        ClusterBlockId iblk = member.blk_index;
         is_member_constrained = is_cluster_constrained(iblk);
 
         if (is_member_constrained) {
@@ -56,41 +53,39 @@ bool is_macro_constrained(const t_pl_macro& pl_macro) {
 }
 
 /*Returns PartitionRegion of where the head of the macro could go*/
-PartitionRegion update_macro_head_pr(const t_pl_macro& pl_macro, const PartitionRegion& grid_pr) {
+PartitionRegion update_macro_head_pr(const t_pl_macro& pl_macro) {
     PartitionRegion macro_head_pr;
     bool is_member_constrained = false;
     int num_constrained_members = 0;
     auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
 
-    for (size_t imember = 0; imember < pl_macro.members.size(); imember++) {
-        ClusterBlockId iblk = pl_macro.members[imember].blk_index;
+    for (const auto& member : pl_macro.members) {
+        ClusterBlockId iblk = member.blk_index;
         is_member_constrained = is_cluster_constrained(iblk);
 
         if (is_member_constrained) {
             num_constrained_members++;
-            //PartitionRegion of the constrained block
-            PartitionRegion block_pr;
+
             //PartitionRegion of the constrained block modified for the head according to the offset
             PartitionRegion modified_pr;
 
-            block_pr = floorplanning_ctx.cluster_constraints[iblk];
-            std::vector<Region> block_regions = block_pr.get_partition_region();
+            //PartitionRegion of the constrained block
+            const PartitionRegion& block_pr = floorplanning_ctx.cluster_constraints[iblk];
+            const std::vector<Region>& block_regions = block_pr.get_regions();
 
-            for (unsigned int i = 0; i < block_regions.size(); i++) {
-                Region modified_reg;
-                auto offset = pl_macro.members[imember].offset;
+            for (const Region& block_region : block_regions) {
 
-                const auto block_reg_coord = block_regions[i].get_region_rect();
+                auto offset = member.offset;
 
-                modified_reg.set_region_rect({block_reg_coord.xmin - offset.x,
-                                              block_reg_coord.ymin - offset.y,
-                                              block_reg_coord.xmax - offset.x,
-                                              block_reg_coord.ymax - offset.y,
-                                              block_reg_coord.layer_num});
+                vtr::Rect<int> block_reg_rect = block_region.get_rect();
+                const auto [layer_low, layer_high] = block_region.get_layer_range();
+                block_reg_rect -= vtr::Point<int>(offset.x, offset.y);
+
+                Region modified_reg(block_reg_rect, layer_low, layer_high);
 
                 //check that subtile is not an invalid value before changing, otherwise it just stays -1
-                if (block_regions[i].get_sub_tile() != NO_SUBTILE) {
-                    modified_reg.set_sub_tile(block_regions[i].get_sub_tile() - offset.sub_tile);
+                if (block_region.get_sub_tile() != NO_SUBTILE) {
+                    modified_reg.set_sub_tile(block_region.get_sub_tile() - offset.sub_tile);
                 }
 
                 modified_pr.add_to_part_region(modified_reg);
@@ -104,6 +99,7 @@ PartitionRegion update_macro_head_pr(const t_pl_macro& pl_macro, const Partition
         }
     }
 
+    const PartitionRegion& grid_pr = get_device_partition_region();
     //intersect to ensure the head pr does not go outside of grid dimensions
     macro_head_pr = intersection(macro_head_pr, grid_pr);
 
@@ -115,28 +111,28 @@ PartitionRegion update_macro_head_pr(const t_pl_macro& pl_macro, const Partition
     return macro_head_pr;
 }
 
-PartitionRegion update_macro_member_pr(PartitionRegion& head_pr, const t_pl_offset& offset, const PartitionRegion& grid_pr, const t_pl_macro& pl_macro) {
-    std::vector<Region> block_regions = head_pr.get_partition_region();
+PartitionRegion update_macro_member_pr(const PartitionRegion& head_pr,
+                                       const t_pl_offset& offset,
+                                       const t_pl_macro& pl_macro,
+                                       const PartitionRegion& grid_pr) {
+    const std::vector<Region>& block_regions = head_pr.get_regions();
     PartitionRegion macro_pr;
 
-    for (unsigned int i = 0; i < block_regions.size(); i++) {
-        Region modified_reg;
+    for (const Region& block_region : block_regions) {
+        vtr::Rect<int> block_reg_rect = block_region.get_rect();
+        const auto [layer_low, layer_high] = block_region.get_layer_range();
+        block_reg_rect += vtr::Point<int>(offset.x, offset.y);
 
-        const auto block_reg_coord = block_regions[i].get_region_rect();
-
-        modified_reg.set_region_rect({block_reg_coord.xmin + offset.x,
-                                      block_reg_coord.ymin + offset.y,
-                                      block_reg_coord.xmax + offset.x,
-                                      block_reg_coord.ymax + offset.y,
-                                      block_reg_coord.layer_num});
+        Region modified_reg(block_reg_rect, layer_low, layer_high);
 
         //check that subtile is not an invalid value before changing, otherwise it just stays -1
-        if (block_regions[i].get_sub_tile() != NO_SUBTILE) {
-            modified_reg.set_sub_tile(block_regions[i].get_sub_tile() + offset.sub_tile);
+        if (block_region.get_sub_tile() != NO_SUBTILE) {
+            modified_reg.set_sub_tile(block_region.get_sub_tile() + offset.sub_tile);
         }
 
         macro_pr.add_to_part_region(modified_reg);
     }
+
 
     //intersect to ensure the macro pr does not go outside of grid dimensions
     macro_pr = intersection(macro_pr, grid_pr);
@@ -154,9 +150,9 @@ void print_macro_constraint_error(const t_pl_macro& pl_macro) {
     VTR_LOG(
         "Feasible floorplanning constraints could not be calculated for the placement macro. \n"
         "The placement macro contains the following blocks: \n");
-    for (unsigned int i = 0; i < pl_macro.members.size(); i++) {
-        std::string blk_name = cluster_ctx.clb_nlist.block_name((pl_macro.members[i].blk_index));
-        VTR_LOG("Block %s (#%zu) ", blk_name.c_str(), size_t(pl_macro.members[i].blk_index));
+    for (const auto& member : pl_macro.members) {
+        std::string blk_name = cluster_ctx.clb_nlist.block_name((member.blk_index));
+        VTR_LOG("Block %s (#%zu) ", blk_name.c_str(), size_t(member.blk_index));
     }
     VTR_LOG("\n");
     VPR_ERROR(VPR_ERROR_PLACE, " \n Check that the above-mentioned placement macro blocks have compatible floorplan constraints.\n");
@@ -165,21 +161,6 @@ void print_macro_constraint_error(const t_pl_macro& pl_macro) {
 void propagate_place_constraints() {
     auto& place_ctx = g_vpr_ctx.placement();
     auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
-    auto& device_ctx = g_vpr_ctx.device();
-
-    int num_layers = device_ctx.grid.get_num_layers();
-    Region grid_reg;
-    PartitionRegion grid_pr;
-
-    for (int layer_num = 0; layer_num < num_layers; layer_num++) {
-        //Create a PartitionRegion with grid dimensions
-        //Will be used to check that updated PartitionRegions are within grid bounds
-        int width = device_ctx.grid.width() - 1;
-        int height = device_ctx.grid.height() - 1;
-
-        grid_reg.set_region_rect({0, 0, width, height, layer_num});
-        grid_pr.add_to_part_region(grid_reg);
-    }
 
     for (auto pl_macro : place_ctx.pl_macros) {
         if (is_macro_constrained(pl_macro)) {
@@ -187,7 +168,7 @@ void propagate_place_constraints() {
              * Get the PartitionRegion for the head of the macro
              * based on the constraints of all blocks contained in the macro
              */
-            PartitionRegion macro_head_pr = update_macro_head_pr(pl_macro, grid_pr);
+            PartitionRegion macro_head_pr = update_macro_head_pr(pl_macro);
 
             //Update PartitionRegions of all members of the macro
             for (size_t imember = 0; imember < pl_macro.members.size(); imember++) {
@@ -197,7 +178,8 @@ void propagate_place_constraints() {
                 if (imember == 0) { //Update head PR
                     floorplanning_ctx.cluster_constraints[iblk] = macro_head_pr;
                 } else { //Update macro member PR
-                    PartitionRegion macro_pr = update_macro_member_pr(macro_head_pr, offset, grid_pr, pl_macro);
+                    const PartitionRegion& grid_pr = get_device_partition_region();
+                    PartitionRegion macro_pr = update_macro_member_pr(macro_head_pr, offset, pl_macro, grid_pr);
                     floorplanning_ctx.cluster_constraints[iblk] = macro_pr;
                 }
             }
@@ -246,13 +228,13 @@ void load_cluster_constraints() {
     floorplanning_ctx.cluster_constraints.resize(cluster_ctx.clb_nlist.blocks().size());
 
     for (auto cluster_id : cluster_ctx.clb_nlist.blocks()) {
-        std::unordered_set<AtomBlockId>* atoms = cluster_to_atoms(cluster_id);
+        const std::unordered_set<AtomBlockId>& atoms = cluster_to_atoms(cluster_id);
         PartitionRegion empty_pr;
         floorplanning_ctx.cluster_constraints[cluster_id] = empty_pr;
 
-        //if there are any constrainted atoms in the cluster,
+        //if there are any constrained atoms in the cluster,
         //we update the cluster's PartitionRegion
-        for (auto atom : *atoms) {
+        for (AtomBlockId atom : atoms) {
             PartitionId partid = floorplanning_ctx.constraints.get_atom_partition(atom);
 
             if (partid != PartitionId::INVALID()) {
@@ -298,6 +280,66 @@ void mark_fixed_blocks() {
     }
 }
 
+void alloc_and_load_compressed_cluster_constraints() {
+    auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    // used to access the compressed grid
+    const auto& place_ctx = g_vpr_ctx.placement();
+    const int n_layers = g_vpr_ctx.device().grid.get_num_layers();
+
+    floorplanning_ctx.compressed_cluster_constraints.resize(n_layers);
+    for (int l = 0; l < n_layers; l++) {
+        floorplanning_ctx.compressed_cluster_constraints[l].resize(cluster_ctx.clb_nlist.blocks().size());
+    }
+
+    for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks()) {
+        if (!is_cluster_constrained(blk_id)) {
+            continue;
+        }
+
+        const PartitionRegion& pr = floorplanning_ctx.cluster_constraints[blk_id];
+        auto block_type = cluster_ctx.clb_nlist.block_type(blk_id);
+        // Get the compressed grid for NoC
+        const auto& compressed_grid = place_ctx.compressed_block_grids[block_type->index];
+
+
+
+        for (const Region& region : pr.get_regions()) {
+            const auto [layer_low, layer_high] = region.get_layer_range();
+            const vtr::Rect<int>& rect = region.get_rect();
+
+            for (int l = layer_low; l <= layer_high; l++) {
+                PartitionRegion compressed_pr;
+
+                if (compressed_grid.compressed_to_grid_x[l].empty() || compressed_grid.compressed_to_grid_y[l].empty()) {
+                    continue;
+                }
+
+                t_physical_tile_loc min_loc{rect.xmin(), rect.ymin(), l};
+                t_physical_tile_loc max_loc{rect.xmax(), rect.ymax(), l};
+                t_physical_tile_loc compressed_min_loc = compressed_grid.grid_loc_to_compressed_loc_approx_round_up(min_loc);
+                t_physical_tile_loc compressed_max_loc = compressed_grid.grid_loc_to_compressed_loc_approx_round_down(max_loc);
+
+                Region compressed_region(compressed_min_loc.x, compressed_min_loc.y,
+                                         compressed_max_loc.x, compressed_max_loc.y, l);
+                compressed_region.set_sub_tile(region.get_sub_tile());
+
+                compressed_pr.add_to_part_region(compressed_region);
+
+                floorplanning_ctx.compressed_cluster_constraints[l][blk_id] = compressed_pr;
+            }
+        }
+
+        for (int l = 0 ; l < n_layers; l++) {
+            if (floorplanning_ctx.compressed_cluster_constraints[l][blk_id].empty()) {
+                floorplanning_ctx.compressed_cluster_constraints[l][blk_id].add_to_part_region(Region{});
+            }
+        }
+
+    }
+
+}
+
 /*
  * Returns 0, 1, or 2 depending on the number of tiles covered.
  * Will not return a value above 2 because as soon as num_tiles is above 1,
@@ -309,58 +351,61 @@ void mark_fixed_blocks() {
  */
 int region_tile_cover(const Region& reg, t_logical_block_type_ptr block_type, t_pl_loc& loc) {
     auto& device_ctx = g_vpr_ctx.device();
-    const auto reg_coord = reg.get_region_rect();
-    const int layer_num = reg.get_layer_num();
+
+    const auto [xmin, ymin, xmax, ymax] = reg.get_rect().coordinates();
+    const auto [layer_low, layer_high] = reg.get_layer_range();
     int num_tiles = 0;
 
-    for (int x = reg_coord.xmin; x <= reg_coord.xmax; x++) {
-        for (int y = reg_coord.ymin; y <= reg_coord.ymax; y++) {
-            const auto& tile = device_ctx.grid.get_physical_type({x, y, reg_coord.layer_num});
+    for (int x = xmin; x <= xmax; x++) {
+        for (int y = ymin; y <= ymax; y++) {
+            for (int l = layer_low; l <= layer_high; l++) {
+                const auto& tile = device_ctx.grid.get_physical_type({x, y, l});
 
-            /*
-             * If the tile at the grid location is not compatible with the cluster block
-             * type, do not count this tile for num_tiles
-             */
-            if (!is_tile_compatible(tile, block_type)) {
-                continue;
-            }
-
-            /*
-             * If the region passed has a specific subtile set, increment
-             * the number of tiles set the location using the x, y, subtile
-             * values if the subtile is compatible at this location
-             */
-            if (reg.get_sub_tile() != NO_SUBTILE) {
-                if (is_sub_tile_compatible(tile, block_type, reg.get_sub_tile())) {
-                    num_tiles++;
-                    loc.x = x;
-                    loc.y = y;
-                    loc.sub_tile = reg.get_sub_tile();
-                    loc.layer = layer_num;
-                    if (num_tiles > 1) {
-                        return num_tiles;
-                    }
+                /*
+                 * If the tile at the grid location is not compatible with the cluster block
+                 * type, do not count this tile for num_tiles
+                 */
+                if (!is_tile_compatible(tile, block_type)) {
+                    continue;
                 }
 
                 /*
-                 * If the region passed in does not have a subtile set, set the
-                 * subtile to the first possible slot found at this location.
+                 * If the region passed has a specific subtile set, increment
+                 * the number of tiles set the location using the x, y, subtile
+                 * values if the subtile is compatible at this location
                  */
-            } else if (reg.get_sub_tile() == NO_SUBTILE) {
-                int num_compatible_st = 0;
-
-                for (int z = 0; z < tile->capacity; z++) {
-                    if (is_sub_tile_compatible(tile, block_type, z)) {
+                if (reg.get_sub_tile() != NO_SUBTILE) {
+                    if (is_sub_tile_compatible(tile, block_type, reg.get_sub_tile())) {
                         num_tiles++;
-                        num_compatible_st++;
-                        if (num_compatible_st == 1) { //set loc.sub_tile to the first compatible subtile value found
-                            loc.x = x;
-                            loc.y = y;
-                            loc.sub_tile = z;
-                            loc.layer = layer_num;
-                        }
+                        loc.x = x;
+                        loc.y = y;
+                        loc.sub_tile = reg.get_sub_tile();
+                        loc.layer = l;
                         if (num_tiles > 1) {
                             return num_tiles;
+                        }
+                    }
+
+                    /*
+                     * If the region passed in does not have a subtile set, set the
+                     * subtile to the first possible slot found at this location.
+                     */
+                } else if (reg.get_sub_tile() == NO_SUBTILE) {
+                    int num_compatible_st = 0;
+
+                    for (int z = 0; z < tile->capacity; z++) {
+                        if (is_sub_tile_compatible(tile, block_type, z)) {
+                            num_tiles++;
+                            num_compatible_st++;
+                            if (num_compatible_st == 1) { //set loc.sub_tile to the first compatible subtile value found
+                                loc.x = x;
+                                loc.y = y;
+                                loc.sub_tile = z;
+                                loc.layer = l;
+                            }
+                            if (num_tiles > 1) {
+                                return num_tiles;
+                            }
                         }
                     }
                 }
@@ -372,33 +417,25 @@ int region_tile_cover(const Region& reg, t_logical_block_type_ptr block_type, t_
 }
 
 /*
- * Used when marking fixed blocks to check whether the ParitionRegion associated with a block
+ * Used when marking fixed blocks to check whether the PartitionRegion associated with a block
  * covers one tile. If it covers one tile, it is marked as fixed. If it covers 0 tiles or
  * more than one tile, it will not be marked as fixed. As soon as it is known that the
  * PartitionRegion covers more than one tile, there is no need to check further regions
  * and the routine will return false.
  */
-bool is_pr_size_one(PartitionRegion& pr, t_logical_block_type_ptr block_type, t_pl_loc& loc) {
+bool is_pr_size_one(const PartitionRegion& pr, t_logical_block_type_ptr block_type, t_pl_loc& loc) {
     auto& device_ctx = g_vpr_ctx.device();
-    std::vector<Region> regions = pr.get_partition_region();
-    bool pr_size_one;
-    int pr_size = 0;
-    int reg_size;
-    int num_layers = device_ctx.grid.get_num_layers();
+    const int num_layers = device_ctx.grid.get_num_layers();
 
-    std::vector<Region> intersect_reg(num_layers);
-    for (int layer_num = 0; layer_num < num_layers; ++layer_num) {
-        intersect_reg[layer_num].set_region_rect({0,
-                                                  0,
-                                                  (int)device_ctx.grid.width() - 1,
-                                                  (int)device_ctx.grid.height() - 1,
-                                                  layer_num});
-    }
-    std::vector<Region> current_reg(num_layers);
+    Region intersect_reg(0, 0,
+                         (int)device_ctx.grid.width() - 1, (int)device_ctx.grid.height(),
+                         0, num_layers - 1);
+
+    const std::vector<Region>& regions = pr.get_regions();
+    int pr_size = 0;
 
     for (unsigned int i = 0; i < regions.size(); i++) {
-        reg_size = region_tile_cover(regions[i], block_type, loc);
-        int layer_num = regions[i].get_layer_num();
+        const int reg_size = region_tile_cover(regions[i], block_type, loc);
 
         /*
          * If multiple regions in the PartitionRegion all have size 1,
@@ -410,46 +447,45 @@ bool is_pr_size_one(PartitionRegion& pr, t_logical_block_type_ptr block_type, t_
          * not incremented (unless this is the first size 1 region encountered).
          */
         if (reg_size == 1) {
-            //get the exact x, y, subtile location covered by the current region (regions[i])
-            current_reg[layer_num].set_region_rect({loc.x, loc.y, loc.x, loc.y, layer_num});
-            current_reg[layer_num].set_sub_tile(loc.sub_tile);
-            intersect_reg[layer_num] = intersection(intersect_reg[layer_num], current_reg[layer_num]);
+            //get the exact x, y, subtile location covered by the current region
+            Region current_reg(loc.x, loc.y, loc.x, loc.y, loc.layer);
+            current_reg.set_sub_tile(loc.sub_tile);
+            intersect_reg = intersection(intersect_reg, current_reg);
 
             if (i == 0 || intersect_reg.empty()) {
-                pr_size = pr_size + reg_size;
+                pr_size += reg_size;
                 if (pr_size > 1) {
                     break;
                 }
             }
         } else {
-            pr_size = pr_size + reg_size;
+            pr_size += reg_size;
             if (pr_size > 1) {
                 break;
             }
         }
     }
 
-    if (pr_size == 1) {
-        pr_size_one = true;
-    } else { //pr_size = 0 or pr_size > 1
-        pr_size_one = false;
-    }
-
-    return pr_size_one;
+    return (pr_size == 1);
 }
 
-int get_part_reg_size(PartitionRegion& pr, t_logical_block_type_ptr block_type, GridTileLookup& grid_tiles) {
-    std::vector<Region> part_reg = pr.get_partition_region();
+int get_part_reg_size(const PartitionRegion& pr,
+                      t_logical_block_type_ptr block_type,
+                      const GridTileLookup& grid_tiles) {
+    const std::vector<Region>& regions = pr.get_regions();
     int num_tiles = 0;
 
-    for (unsigned int i_reg = 0; i_reg < part_reg.size(); i_reg++) {
-        num_tiles += grid_tiles.region_tile_count(part_reg[i_reg], block_type);
+    for (const auto& region : regions) {
+        num_tiles += grid_tiles.region_tile_count(region, block_type);
     }
 
     return num_tiles;
 }
 
-double get_floorplan_score(ClusterBlockId blk_id, PartitionRegion& pr, t_logical_block_type_ptr block_type, GridTileLookup& grid_tiles) {
+double get_floorplan_score(ClusterBlockId blk_id,
+                           const PartitionRegion& pr,
+                           t_logical_block_type_ptr block_type,
+                           const GridTileLookup& grid_tiles) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     int num_pr_tiles = get_part_reg_size(pr, block_type, grid_tiles);

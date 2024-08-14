@@ -202,6 +202,7 @@ std::unique_ptr<PlaceDelayModel> compute_place_delay_model(const t_placer_opts& 
                                                                           router_opts.read_router_lookahead,
                                                                           segment_inf,
                                                                           is_flat);
+
     RouterDelayProfiler route_profiler(net_list, router_lookahead, is_flat);
 
     int longest_length = get_longest_segment_length(segment_inf);
@@ -405,7 +406,8 @@ static float route_connection_delay(
             VTR_ASSERT(sink_ptc != OPEN);
             RRNodeId sink_rr_node = device_ctx.rr_graph.node_lookup().find_node(to_layer_num, sink_x, sink_y, SINK, sink_ptc);
 
-            VTR_ASSERT(sink_rr_node != RRNodeId::INVALID());
+            if (sink_rr_node == RRNodeId::INVALID())
+                continue;
 
             if (!measure_directconnect && directconnect_exists(source_rr_node, sink_rr_node)) {
                 //Skip if we shouldn't measure direct connects and a direct connect exists
@@ -529,7 +531,8 @@ static void generic_compute_matrix_dijkstra_expansion(
                         VTR_ASSERT(sink_ptc != OPEN);
                         RRNodeId sink_rr_node = device_ctx.rr_graph.node_lookup().find_node(to_layer_num, sink_x, sink_y, SINK, sink_ptc);
 
-                        VTR_ASSERT(sink_rr_node != RRNodeId::INVALID());
+                        if (sink_rr_node == RRNodeId::INVALID())
+                            continue;
 
                         if (!measure_directconnect && directconnect_exists(source_rr_node, sink_rr_node)) {
                             //Skip if we shouldn't measure direct connects and a direct connect exists
@@ -895,7 +898,7 @@ float delay_reduce(std::vector<float>& delays, e_reducer reducer) {
         auto itr = std::max_element(delays.begin(), delays.end());
         delay = *itr;
     } else if (reducer == e_reducer::MEDIAN) {
-        std::sort(delays.begin(), delays.end());
+        std::stable_sort(delays.begin(), delays.end());
         delay = vtr::median(delays.begin(), delays.end());
     } else if (reducer == e_reducer::ARITHMEAN) {
         delay = vtr::arithmean(delays.begin(), delays.end());
@@ -1224,7 +1227,8 @@ void OverrideDelayModel::compute_override_delay_model(
     RouterDelayProfiler& route_profiler,
     const t_router_opts& router_opts) {
     t_router_opts router_opts2 = router_opts;
-    router_opts2.astar_fac = 0.;
+    router_opts2.astar_fac = 0.f;
+    router_opts2.astar_offset = 0.f;
 
     //Look at all the direct connections that exist, and add overrides to delay model
     auto& device_ctx = g_vpr_ctx.device();

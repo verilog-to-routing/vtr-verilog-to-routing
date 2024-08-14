@@ -4,7 +4,14 @@
 #include "noc_place_utils.h"
 #include "noc_place_checkpoint.h"
 #include "place_constraints.h"
+
+#include "sat_routing.h"
+
 #include "vtr_math.h"
+#include "vtr_time.h"
+
+#include <limits>
+#include <queue>
 
 /**
  * @brief Evaluates whether a NoC router swap should be accepted or not.
@@ -104,6 +111,11 @@ static void place_noc_routers_randomly(std::vector<ClusterBlockId>& unfixed_rout
      * only once.
      */
 
+    // check if all NoC routers have already been placed
+    if (unfixed_routers.empty()) {
+        return;
+    }
+
     // Make a copy of NoC physical routers because we want to change its order
     vtr::vector<NocRouterId, NocRouter> noc_phy_routers = noc_ctx.noc_model.get_noc_routers();
 
@@ -188,7 +200,6 @@ static void noc_routers_anneal(const t_noc_opts& noc_opts) {
     const double starting_prob = 0.5;
     const double prob_step = starting_prob / N_MOVES;
 
-
     // The checkpoint stored the placement with the lowest cost.
     NoCPlacementCheckpoint checkpoint;
 
@@ -209,7 +220,7 @@ static void noc_routers_anneal(const t_noc_opts& noc_opts) {
     // Generate and evaluate router moves
     for (int i_move = 0; i_move < N_MOVES; i_move++) {
         e_create_move create_move_outcome = e_create_move::ABORT;
-        clear_move_blocks(blocks_affected);
+        blocks_affected.clear_move_blocks();
         // Shrink the range limit over time
         float r_lim_decayed = 1.0f + (N_MOVES - i_move) * (max_r_lim / N_MOVES);
         create_move_outcome = propose_router_swap(blocks_affected, r_lim_decayed);
@@ -245,12 +256,12 @@ static void noc_routers_anneal(const t_noc_opts& noc_opts) {
     }
 }
 
-void initial_noc_placement(const t_noc_opts& noc_opts, int seed) {
+void initial_noc_placement(const t_noc_opts& noc_opts, const t_placer_opts& placer_opts) {
+	vtr::ScopedStartFinishTimer timer("Initial NoC Placement");
     auto& noc_ctx = g_vpr_ctx.noc();
 
     // Get all the router clusters
     const std::vector<ClusterBlockId>& router_blk_ids = noc_ctx.noc_traffic_flows_storage.get_router_clusters_in_netlist();
-
     // Holds all the routers that are not fixed into a specific location by constraints
     std::vector<ClusterBlockId> unfixed_routers;
 
@@ -269,10 +280,10 @@ void initial_noc_placement(const t_noc_opts& noc_opts, int seed) {
     }
 
     // Place unconstrained NoC routers randomly
-    place_noc_routers_randomly(unfixed_routers, seed);
+    place_noc_routers_randomly(unfixed_routers, placer_opts.seed);
 
     // populate internal data structures to maintain route, bandwidth usage, and latencies
-    initial_noc_routing();
+    initial_noc_routing({});
 
     // Run the simulated annealing optimizer for NoC routers
     noc_routers_anneal(noc_opts);

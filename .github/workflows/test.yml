@@ -1,85 +1,39 @@
 name: Test
 
 on:
+  # We want to run the CI when anything is pushed to master.
+  # Since master is a protected branch this only happens when a PR is merged.
+  # This is a double check in case the PR was stale and had some issues.
   push:
+    branches:
+      - master
+    paths-ignore: # Prevents from running if only docs are updated
+      - 'doc/**'
+      - '**/*README*'
+      - '**.md'
+      - '**.rst'
   pull_request:
+    paths-ignore: # Prevents from running if only docs are updated
+      - 'doc/**'
+      - '**/*README*'
+      - '**.md'
+      - '**.rst'
   workflow_dispatch:
   schedule:
   - cron: '0 0 * * *' # daily
+
+# We want to cancel previous runs for a given PR or branch / ref if another CI
+# run is requested.
+# See: https://docs.github.com/en/actions/using-jobs/using-concurrency
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 env:
   # default compiler for all non-compatibility tests
   MATRIX_EVAL: "CC=gcc-11 && CXX=g++-11"
 
 jobs:
-
-
-  Run-tests:
-    # Prevents from running on forks where no custom runners are available
-    if: ${{ github.repository_owner == 'verilog-to-routing' }}
-
-    timeout-minutes: 420
-    
-    container: ubuntu:jammy
-
-    runs-on: [self-hosted, Linux, X64]
-
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - {test: "vtr_reg_nightly_test1",      cores: "16", options: "",          cmake: "",                                                             extra_pkgs: ""}
-          - {test: "vtr_reg_nightly_test1_odin", cores: "16", options: "",          cmake: "-DWITH_ODIN=ON",                                               extra_pkgs: ""}
-          - {test: "vtr_reg_nightly_test2",      cores: "16", options: "",          cmake: "",                                                             extra_pkgs: ""}
-          - {test: "vtr_reg_nightly_test2_odin", cores: "16", options: "",          cmake: "-DWITH_ODIN=ON",                                               extra_pkgs: ""}
-          - {test: "vtr_reg_nightly_test3",      cores: "16", options: "",          cmake: "",                                                             extra_pkgs: ""}
-          - {test: "vtr_reg_nightly_test3_odin", cores: "16", options: "",          cmake: "-DWITH_ODIN=ON",                                               extra_pkgs: ""}
-          - {test: "vtr_reg_nightly_test4",      cores: "16", options: "",          cmake: "",                                                             extra_pkgs: ""}
-          - {test: "vtr_reg_nightly_test4_odin", cores: "16", options: "",          cmake: "-DWITH_ODIN=ON",                                               extra_pkgs: ""}
-          - {test: "vtr_reg_nightly_test5",      cores: "16", options: "",          cmake: "",                                                             extra_pkgs: ""}
-          - {test: "vtr_reg_nightly_test6",      cores: "16", options: "",          cmake: "",                                                             extra_pkgs: ""}
-          - {test: "vtr_reg_nightly_test7",      cores: "16", options: "",          cmake: "",                                                             extra_pkgs: ""}
-          - {test: "vtr_reg_strong",             cores: "16", options: "",          cmake: "-DVTR_ASSERT_LEVEL=3",                                         extra_pkgs: "libeigen3-dev"}
-          - {test: "vtr_reg_strong_odin",        cores: "16", options: "",          cmake: "-DVTR_ASSERT_LEVEL=3 -DWITH_ODIN=ON",                          extra_pkgs: "libeigen3-dev"}
-          - {test: "vtr_reg_strong_odin",        cores: "16", options: "-skip_qor", cmake: "-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=ON -DWITH_ODIN=ON", extra_pkgs: "libeigen3-dev"}
-          - {test: "vtr_reg_system_verilog",     cores: "16", options: "",          cmake: "-DYOSYS_F4PGA_PLUGINS=ON",                                     extra_pkgs: ""}
-          - {test: "odin_reg_strong",            cores: "16", options: "",          cmake: "-DWITH_ODIN=ON",                                               extra_pkgs: ""}
-          - {test: "parmys_reg_strong",          cores: "16", options: "",          cmake: "-DYOSYS_F4PGA_PLUGINS=ON",                                     extra_pkgs: ""}
-
-    env:
-      DEBIAN_FRONTEND: "noninteractive"
-
-    steps:
-
-    - uses: actions/checkout@v3
-      with:
-        submodules: 'true'
-
-    - name: Setup
-      run: stdbuf -i0 -i0 -e0 ./.github/scripts/hostsetup.sh
-
-    - name: Install external libraries
-      run: apt install -y ${{ matrix.extra_pkgs }}
-      if: ${{ matrix.extra_pkgs }}
-
-    - name: Execute test script
-      run: stdbuf -i0 -o0 -e0 ./.github/scripts/run-vtr.sh
-      env:
-        VPR_NUM_WORKERS: 4
-        VTR_TEST: ${{ matrix.test }}
-        VTR_TEST_OPTIONS: ${{ matrix.options }}
-        VTR_CMAKE_PARAMS: ${{ matrix.cmake }}
-        NUM_CORES: ${{ matrix.cores }}
-
-    - uses: actions/upload-artifact@v3
-      if: ${{ always() }}
-      with:
-        path: |
-          **/results*.gz
-          **/plot_*.svg
-          **/qor_results*.tar.gz
-
-
   Build:
     name: 'B: Building VtR'
     runs-on: ubuntu-22.04
@@ -92,10 +46,10 @@ jobs:
         - { build_type: 'debug',   verbose: '1' }
     steps:
 
-    - uses: actions/setup-python@v4
+    - uses: actions/setup-python@v5
       with:
         python-version: 3.10.10
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         submodules: 'true'
     - run: ./.github/scripts/install_dependencies.sh
@@ -122,10 +76,10 @@ jobs:
     name: 'F: ${{ matrix.name }}'
     steps:
 
-    - uses: actions/setup-python@v4
+    - uses: actions/setup-python@v5
       with:
         python-version: 3.10.10
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - run: ./.github/scripts/install_dependencies.sh
 
     - name: Test
@@ -137,10 +91,10 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
 
-    - uses: actions/setup-python@v4
+    - uses: actions/setup-python@v5
       with:
         python-version: 3.10.10
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         submodules: 'true'
     - run: ./.github/scripts/install_dependencies.sh
@@ -156,10 +110,10 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
 
-    - uses: actions/setup-python@v4
+    - uses: actions/setup-python@v5
       with:
         python-version: 3.10.10
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         submodules: 'true'
     - run: ./.github/scripts/install_dependencies.sh
@@ -184,57 +138,62 @@ jobs:
         include: [
           {
             name: 'Basic',
-            params: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on',
+            params: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on',
             suite: 'vtr_reg_basic'
           },
           {
             name: 'Basic_odin',
-            params: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DWITH_PARMYS=OFF -DWITH_ODIN=on',
+            params: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DWITH_PARMYS=OFF -DWITH_ODIN=on',
             suite: 'vtr_reg_basic_odin'
           },
           {
             name: 'Basic with NO_GRAPHICS',
-            params: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVPR_USE_EZGL=off',
+            params: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVPR_USE_EZGL=off',
+            suite: 'vtr_reg_basic'
+          },
+          {
+            name: 'Basic with NO_SERVER',
+            params: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVPR_USE_EZGL=on -DVPR_USE_SERVER=off',
             suite: 'vtr_reg_basic'
           },
           {
             name: 'Basic with CAPNPROTO disabled',
-            params: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVTR_ENABLE_CAPNPROTO=off',
+            params: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVTR_ENABLE_CAPNPROTO=off',
             suite: 'vtr_reg_basic'
           },
           {
             name: 'Basic with VTR_ENABLE_DEBUG_LOGGING',
-            params: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVTR_ENABLE_DEBUG_LOGGING=on',
+            params: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVTR_ENABLE_DEBUG_LOGGING=on',
             suite: 'vtr_reg_basic'
           },
           {
             name: 'Basic_odin with VTR_ENABLE_DEBUG_LOGGING',
-            params: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVTR_ENABLE_DEBUG_LOGGING=on -DWITH_PARMYS=OFF -DWITH_ODIN=on',
+            params: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVTR_ENABLE_DEBUG_LOGGING=on -DWITH_PARMYS=OFF -DWITH_ODIN=on',
             suite: 'vtr_reg_basic_odin'
           },
           {
             name: 'Strong',
-            params: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on',
+            params: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on',
             suite: 'vtr_reg_strong'
           },
           {
             name: 'Strong_odin',
-            params: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DWITH_PARMYS=OFF -DWITH_ODIN=on',
+            params: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DWITH_PARMYS=OFF -DWITH_ODIN=on',
             suite: 'vtr_reg_strong_odin'
           },
           {
             name: 'Valgrind Memory',
-            params: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DWITH_ODIN=on',
+            params: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DWITH_ODIN=on',
             suite: 'vtr_reg_valgrind_small'
           }
         ]
     name: 'R: ${{ matrix.name }}'
     steps:
 
-    - uses: actions/setup-python@v4
+    - uses: actions/setup-python@v5
       with:
         python-version: 3.10.10
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         submodules: 'true'
     - run: ./.github/scripts/install_dependencies.sh
@@ -250,18 +209,20 @@ jobs:
         ./run_reg_test.py ${{ matrix.suite }} -show_failures -j2
 
     - name: Upload regression run files
-      uses: actions/upload-artifact@v3
+      if: ${{ !cancelled() }}
+      uses: actions/upload-artifact@v4
       with:
         name: ${{matrix.name}}_run_files
         path: |
           vtr_flow/**/*.out
-          vtr_flow/**/*.blif
+          # vtr_flow/**/*.blif  # Removed since it was taking too much space and was hardly used.
           vtr_flow/**/*.p
           vtr_flow/**/*.net
           vtr_flow/**/*.r
 
     - name: Upload regression results
-      uses: actions/upload-artifact@v3
+      if: ${{ !cancelled() }}
+      uses: actions/upload-artifact@v4
       with:
         name: ${{matrix.name}}_results
         path: |
@@ -286,10 +247,10 @@ jobs:
     name: 'S: ${{ matrix.name }}'
     steps:
 
-    - uses: actions/setup-python@v4
+    - uses: actions/setup-python@v5
       with:
         python-version: 3.10.10
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         submodules: 'true'
 
@@ -320,10 +281,10 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
 
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: 3.10.10
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: 'true'
       - run: ./.github/scripts/install_dependencies.sh
@@ -345,10 +306,10 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
 
-    - uses: actions/setup-python@v4
+    - uses: actions/setup-python@v5
       with:
         python-version: 3.10.10
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         submodules: 'true'
     - run: ./.github/scripts/install_dependencies.sh
@@ -371,10 +332,10 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
 
-    - uses: actions/setup-python@v4
+    - uses: actions/setup-python@v5
       with:
         python-version: 3.10.10
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         submodules: 'true'
     - run: ./.github/scripts/install_dependencies.sh
@@ -396,9 +357,9 @@ jobs:
       matrix:
         include:
         - { name: 'GCC 9 (Ubuntu Jammy - 22.04)',     eval: 'CC=gcc-9 && CXX=g++-9',           }
-        - { name: 'GCC 10 (Ubuntu Jammy - 22.04)',  eval: 'CC=gcc-10 && CXX=g++-10',         }
-        - { name: 'GCC 11 (Ubuntu Jammy - 22.04)',                  eval: 'CC=gcc-11 && CXX=g++-11',         }
-        - { name: 'GCC 12 (Ubuntu Jammy - 22.04)',                  eval: 'CC=gcc-12 && CXX=g++-12',         }
+        - { name: 'GCC 10 (Ubuntu Jammy - 22.04)',    eval: 'CC=gcc-10 && CXX=g++-10',         }
+        - { name: 'GCC 11 (Ubuntu Jammy - 22.04)',    eval: 'CC=gcc-11 && CXX=g++-11',         }
+        - { name: 'GCC 12 (Ubuntu Jammy - 22.04)',    eval: 'CC=gcc-12 && CXX=g++-12',         }
         - { name: 'Clang 11 (Ubuntu Jammy - 22.04)',  eval: 'CC=clang-11 && CXX=clang++-11',   }
         - { name: 'Clang 12 (Ubuntu Jammy - 22.04)',  eval: 'CC=clang-12 && CXX=clang++-12',   }
         - { name: 'Clang 13 (Ubuntu Jammy - 22.04)',  eval: 'CC=clang-13 && CXX=clang++-13',   }
@@ -406,10 +367,10 @@ jobs:
     name: 'B: ${{ matrix.name }}'
     steps:
 
-    - uses: actions/setup-python@v4
+    - uses: actions/setup-python@v5
       with:
         python-version: 3.10.10
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         submodules: 'true'
     - run: ./.github/scripts/install_dependencies.sh
@@ -424,7 +385,6 @@ jobs:
       run: |
         export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
         ./.github/scripts/build.sh
-
 
   Coverity:
     name: 'Coverity Scan'
@@ -442,10 +402,10 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
 
-    - uses: actions/setup-python@v4
+    - uses: actions/setup-python@v5
       with:
         python-version: 3.10.10
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         submodules: 'true'
     - run: ./.github/scripts/install_dependencies.sh

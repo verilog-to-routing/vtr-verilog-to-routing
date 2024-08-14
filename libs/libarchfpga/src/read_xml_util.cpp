@@ -43,7 +43,7 @@ InstPort make_inst_port(pugi::xml_attribute attr, pugi::xml_node node, const pug
 void bad_tag(const pugi::xml_node node,
              const pugiutil::loc_data& loc_data,
              const pugi::xml_node parent_node,
-             const std::vector<std::string> expected_tags) {
+             const std::vector<std::string>& expected_tags) {
     std::string msg = "Unexpected tag ";
     msg += "<";
     msg += node.name();
@@ -76,7 +76,7 @@ void bad_tag(const pugi::xml_node node,
 void bad_attribute(const pugi::xml_attribute attr,
                    const pugi::xml_node node,
                    const pugiutil::loc_data& loc_data,
-                   const std::vector<std::string> expected_attributes) {
+                   const std::vector<std::string>& expected_attributes) {
     std::string msg = "Unexpected attribute ";
     msg += "'";
     msg += attr.name();
@@ -109,7 +109,7 @@ void bad_attribute(const pugi::xml_attribute attr,
 void bad_attribute_value(const pugi::xml_attribute attr,
                          const pugi::xml_node node,
                          const pugiutil::loc_data& loc_data,
-                         const std::vector<std::string> expected_values) {
+                         const std::vector<std::string>& expected_values) {
     std::string msg = "Invalid value '";
     msg += attr.value();
     msg += "'";

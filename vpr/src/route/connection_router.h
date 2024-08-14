@@ -184,14 +184,16 @@ class ConnectionRouter : public ConnectionRouterInterface {
         t_heap* cheapest,
         RRNodeId target_node,
         const t_conn_cost_params& cost_params,
-        const t_bb& bounding_box);
+        const t_bb& bounding_box,
+        const t_bb& target_bb);
 
     // Expand each neighbor of the current node.
     void timing_driven_expand_neighbours(
         t_heap* current,
         const t_conn_cost_params& cost_params,
         const t_bb& bounding_box,
-        RRNodeId target_node);
+        RRNodeId target_node,
+        const t_bb& target_bb);
 
     // Conditionally adds to_node to the router heap (via path from from_node
     // via from_edge).

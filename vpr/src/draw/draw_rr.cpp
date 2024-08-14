@@ -549,6 +549,9 @@ void draw_rr_pin(RRNodeId inode, const ezgl::color& color, ezgl::renderer* g) {
     char str[vtr::bufsize];
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
+    if (!is_inter_cluster_node(rr_graph, inode)) {
+        return;
+    }
 
     int ipin = rr_graph.node_pin_num(RRNodeId(inode));
 
@@ -581,6 +584,9 @@ void draw_rr_src_sink(RRNodeId inode, ezgl::color color, ezgl::renderer* g) {
 
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
+    if (!is_inter_cluster_node(rr_graph, inode)) {
+        return;
+    }
 
     int transparency_factor = get_rr_node_transparency(inode);
 
@@ -816,7 +822,7 @@ void draw_rr_costs(ezgl::renderer* g, const vtr::vector<RRNodeId, float>& rr_cos
         }
         return rr_costs[lhs_node] < rr_costs[rhs_node];
     };
-    std::sort(nodes.begin(), nodes.end(), cmp_ascending_cost);
+    std::stable_sort(nodes.begin(), nodes.end(), cmp_ascending_cost);
 
     for (RRNodeId inode : nodes) {
         float cost = rr_costs[inode];

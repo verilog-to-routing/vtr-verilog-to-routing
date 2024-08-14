@@ -88,6 +88,7 @@ bool RouterDelayProfiler::calculate_delay(RRNodeId source_node,
     t_conn_cost_params cost_params;
     cost_params.criticality = 1.;
     cost_params.astar_fac = router_opts.router_profiler_astar_fac;
+    cost_params.astar_offset = router_opts.astar_offset;
     cost_params.bend_cost = router_opts.bend_cost;
 
     route_budgets budgeting_inf(net_list_, is_flat_);
@@ -162,6 +163,7 @@ vtr::vector<RRNodeId, float> calculate_all_path_delays_from_rr_node(RRNodeId src
     t_conn_cost_params cost_params;
     cost_params.criticality = 1.;
     cost_params.astar_fac = router_opts.astar_fac;
+    cost_params.astar_offset = router_opts.astar_offset;
     cost_params.bend_cost = router_opts.bend_cost;
     /* This function is called during placement. Thus, the flat routing option should be disabled. */
     //TODO: Placement is run with is_flat=false. However, since is_flat is passed, det_routing_arch should
@@ -173,7 +175,7 @@ vtr::vector<RRNodeId, float> calculate_all_path_delays_from_rr_node(RRNodeId src
                                                   /*segment_inf=*/{},
                                                   is_flat);
 
-    ConnectionRouter<BinaryHeap> router(
+    ConnectionRouter<FourAryHeap> router(
         device_ctx.grid,
         *router_lookahead,
         device_ctx.rr_graph.rr_nodes(),
@@ -241,7 +243,7 @@ vtr::vector<RRNodeId, float> calculate_all_path_delays_from_rr_node(RRNodeId src
     return path_delays_to;
 }
 
-void alloc_routing_structs(t_chan_width chan_width,
+void alloc_routing_structs(const t_chan_width& chan_width,
                            const t_router_opts& router_opts,
                            t_det_routing_arch* det_routing_arch,
                            std::vector<t_segment_inf>& segment_inf,

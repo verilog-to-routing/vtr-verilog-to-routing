@@ -3,7 +3,6 @@
 
 #include "move_generator.h"
 
-
 //enum represents the available agent states
 enum class e_agent_state {
     EARLY_IN_THE_ANNEAL,
@@ -21,7 +20,8 @@ enum class e_agent_state {
 void create_move_generators(std::unique_ptr<MoveGenerator>& move_generator,
                             std::unique_ptr<MoveGenerator>& move_generator2,
                             const t_placer_opts& placer_opts,
-                            int move_lim);
+                            int move_lim,
+                            float noc_attraction_weight);
 
 /**
  * @brief copy one of the available move_generators to be the current move_generator that would be used in the placement based on the placer_options and the agent state

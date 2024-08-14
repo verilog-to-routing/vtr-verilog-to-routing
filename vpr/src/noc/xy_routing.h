@@ -105,6 +105,7 @@ class XYRouting : public TurnModelRouting {
                                                       NocTrafficFlowId traffic_flow_id,
                                                       const NocStorage& noc_model) override;
 
+    bool is_turn_legal(const std::array<std::reference_wrapper<const NocRouter>, 3>& noc_routers) const override;
 
   private:
     const std::vector<TurnModelRouting::Direction> x_axis_directions {TurnModelRouting::Direction::LEFT, TurnModelRouting::Direction::RIGHT};

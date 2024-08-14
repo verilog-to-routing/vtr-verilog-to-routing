@@ -4,8 +4,38 @@
 
 #include <stack>
 
-ChannelDependencyGraph::ChannelDependencyGraph(size_t n_links,
-                                               const vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>>& traffic_flow_routes) {
+ChannelDependencyGraph::ChannelDependencyGraph(const NocStorage& noc_model,
+                                               const NocTrafficFlows& traffic_flow_storage,
+                                               const vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>>& traffic_flow_routes,
+                                               const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
+    VTR_ASSERT((size_t)traffic_flow_storage.get_number_of_traffic_flows() == traffic_flow_routes.size());
+
+    for (auto traffic_flow_id : traffic_flow_storage.get_all_traffic_flow_id()) {
+        const auto& traffic_flow = traffic_flow_storage.get_single_noc_traffic_flow(traffic_flow_id);
+        const auto& traffic_flow_route = traffic_flow_routes[traffic_flow_id];
+
+        // get the source and destination logical router blocks in the current traffic flow
+        ClusterBlockId logical_source_router_block_id = traffic_flow.source_router_cluster_id;
+        ClusterBlockId logical_sink_router_block_id = traffic_flow.sink_router_cluster_id;
+
+        // get the ids of the hard router blocks where the logical router cluster blocks have been placed
+        NocRouterId src_router_id = noc_model.get_router_at_grid_location(block_locs[logical_source_router_block_id].loc);
+        NocRouterId dst_router_id = noc_model.get_router_at_grid_location(block_locs[logical_sink_router_block_id].loc);
+
+        const NocLink& first_link = noc_model.get_single_noc_link(traffic_flow_route.front());
+        VTR_ASSERT(first_link.get_source_router() == src_router_id);
+        const NocLink& last_link = noc_model.get_single_noc_link(traffic_flow_route.back());
+        VTR_ASSERT(last_link.get_sink_router() == dst_router_id);
+
+        for (size_t i = 0; i < traffic_flow_route.size() - 1; i++) {
+            const NocLink& noc_link1 = noc_model.get_single_noc_link(traffic_flow_route[i]);
+            const NocLink& noc_link2 = noc_model.get_single_noc_link(traffic_flow_route[i + 1]);
+            VTR_ASSERT(noc_link1.get_sink_router() == noc_link2.get_source_router());
+        }
+    }
+
+    const size_t n_links = noc_model.get_noc_links().size();
+
     adjacency_list_.clear();
     // In channel dependency graph, vertices represent NoC links.
     // reserve enough space so that all vertices can store their outgoing neighbors

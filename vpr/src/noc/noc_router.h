@@ -53,12 +53,17 @@ class NocRouter {
      * that the physical router is located*/
     int router_layer_position;
 
+    /** The zero-load latency of this NoC router. */
+    double router_latency;
+
     /** A unique identifier that represents a router block in the 
      * clustered netlist that is placed on the physical router*/
     ClusterBlockId router_block_ref;
 
   public:
-    NocRouter(int id, int grid_position_x, int grid_position_y, int layer_position);
+    NocRouter(int id,
+              int grid_position_x, int grid_position_y, int layer_position,
+              double latency);
 
     // getters
 
@@ -66,37 +71,43 @@ class NocRouter {
      * @brief Gets the unique id assigned by the user for the physical router
      * @return A numerical value (integer) that represents the physical router id
      */
-    int get_router_user_id(void) const;
+    int get_router_user_id() const;
 
     /**
      * @brief Gets the horizontal position on the FPGA device that the physical router is located
      * @return A numerical value (integer) that represents horizontal position of the physical router
      */
-    int get_router_grid_position_x(void) const;
+    int get_router_grid_position_x() const;
 
     /**
      * @brief Gets the vertical position on the FPGA device that the physical router is located
      * @return A numerical value (integer) that represents vertical position of the physical router
      */
-    int get_router_grid_position_y(void) const;
+    int get_router_grid_position_y() const;
 
     /**
      * @brief Gets the layer number of the die the the physical router is located
      * @return A numerical value (integer) that represents layer position of the physical router
      */
-    int get_router_layer_position(void) const;
+    int get_router_layer_position() const;
 
     /**
      * @brief Gets the physical location where the the physical router is located
      * @return t_physical_tile_loc that contains x-y coordinates and the layer number
      */
-    t_physical_tile_loc get_router_physical_location(void) const;
+    t_physical_tile_loc get_router_physical_location() const;
+
+    /**
+     * @brief Gets the zero-load latency of this NoC router.
+     * @return The zero-load latency in seconds.
+     */
+    double get_latency() const;
 
     /**
      * @brief Gets the unique id of the router block that is current placed on the physical router
      * @return A ClusterBlockId that identifies a router block in the clustered netlist
      */
-    ClusterBlockId get_router_block_ref(void) const;
+    ClusterBlockId get_router_block_ref() const;
 
     // setters
     /**

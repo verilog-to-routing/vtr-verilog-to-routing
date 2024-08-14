@@ -280,6 +280,8 @@ public:
 
   kj::Promise<void> throwException(ThrowExceptionContext context) override;
 
+  kj::Promise<void> throwRemoteException(ThrowRemoteExceptionContext context) override;
+
 private:
   int& callCount;
   int& handleCount;
@@ -336,7 +338,6 @@ public:
   }
 
   kj::Promise<void> doStreamJ(DoStreamJContext context) override {
-    context.allowCancellation();
     jSum += context.getParams().getJ();
 
     if (jShouldThrow) {

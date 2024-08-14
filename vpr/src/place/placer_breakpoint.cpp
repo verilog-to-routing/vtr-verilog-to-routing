@@ -8,7 +8,7 @@ std::map<int, std::string> available_move_types = {
 
 #    ifndef NO_GRAPHICS
 //transforms the vector moved_blocks to a vector of ints and adds it in glob_breakpoint_state
-void transform_blocks_affected(t_pl_blocks_to_be_moved blocksAffected) {
+void transform_blocks_affected(const t_pl_blocks_to_be_moved& blocksAffected) {
     get_bp_state_globals()->get_glob_breakpoint_state()->blocks_affected_by_move.clear();
     for (size_t i = 0; i < blocksAffected.moved_blocks.size(); i++) {
         //size_t conversion is required since block_num is of type ClusterBlockId and can't be cast to an int. And this vector has to be of type int to be recognized in expr_eval class

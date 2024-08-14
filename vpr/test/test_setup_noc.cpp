@@ -38,14 +38,11 @@ TEST_CASE("test_identify_and_store_noc_router_tile_positions", "[vpr_setup_noc]"
     router_tile.height = 2;
     router_tile.width = 2;
 
-    // name of the router physical tile
-    //std::string router_tile_name_string("router");
-
     // results from the test function
     std::vector<t_noc_router_tile_position> list_of_routers;
 
     // make sure the test result is not corrupted
-    REQUIRE(list_of_routers.size() == 0);
+    REQUIRE(list_of_routers.empty());
 
     SECTION("All routers are seperated by one or more grid spaces") {
         // in this test, the routers will be on the 4 corners of the FPGA
@@ -120,7 +117,7 @@ TEST_CASE("test_identify_and_store_noc_router_tile_positions", "[vpr_setup_noc]"
 
         for (int i = 0; i < test_grid_width; i++) {
             for (int j = 0; j < test_grid_height; j++) {
-                // make sure the current tyle is not a router
+                // make sure the current tile is not a router
                 if (test_grid[0][i][j].type == nullptr) {
                     // assign the non-router tile as empty
                     test_grid[0][i][j].type = &empty_tile;
@@ -134,9 +131,9 @@ TEST_CASE("test_identify_and_store_noc_router_tile_positions", "[vpr_setup_noc]"
         DeviceGrid test_device = DeviceGrid(device_grid_name, test_grid);
 
         // call the test function
-        identify_and_store_noc_router_tile_positions(test_device, list_of_routers, std::string(router_tile_name));
+        list_of_routers = identify_and_store_noc_router_tile_positions(test_device, router_tile_name);
 
-        // check that the physocal router tile positions were correctly determined
+        // check that the physical router tile positions were correctly determined
         // make sure that only 4 router tiles were found
         REQUIRE(list_of_routers.size() == 4);
 
@@ -251,9 +248,9 @@ TEST_CASE("test_identify_and_store_noc_router_tile_positions", "[vpr_setup_noc]"
         DeviceGrid test_device = DeviceGrid(device_grid_name, test_grid);
 
         // call the test function
-        identify_and_store_noc_router_tile_positions(test_device, list_of_routers, std::string(router_tile_name));
+        list_of_routers = identify_and_store_noc_router_tile_positions(test_device, router_tile_name);
 
-        // check that the physocal router tile positions were correctly determined
+        // check that the physical router tile positions were correctly determined
         // make sure that only 4 router tiles were found
         REQUIRE(list_of_routers.size() == 4);
 
@@ -354,7 +351,7 @@ TEST_CASE("test_identify_and_store_noc_router_tile_positions", "[vpr_setup_noc]"
 
         for (int i = 0; i < test_grid_width; i++) {
             for (int j = 0; j < test_grid_height; j++) {
-                // make sure the current tyle is not a router
+                // make sure the current tile is not a router
                 if (test_grid[0][i][j].type == nullptr) {
                     // assign the non-router tile as empty
                     test_grid[0][i][j].type = &empty_tile;
@@ -368,9 +365,9 @@ TEST_CASE("test_identify_and_store_noc_router_tile_positions", "[vpr_setup_noc]"
         DeviceGrid test_device = DeviceGrid(device_grid_name, test_grid);
 
         // call the test function
-        identify_and_store_noc_router_tile_positions(test_device, list_of_routers, std::string(router_tile_name));
+        list_of_routers = identify_and_store_noc_router_tile_positions(test_device, router_tile_name);
 
-        // check that the physocal router tile positions were correctly determined
+        // check that the physical router tile positions were correctly determined
         // make sure that only 4 router tiles were found
         REQUIRE(list_of_routers.size() == 4);
 
@@ -418,17 +415,17 @@ TEST_CASE("test_create_noc_routers", "[vpr_setup_noc]") {
      * - router 8: (4,8)
      * - router 9: (8,8)
      */
-    list_of_routers.push_back({0, 0, 0, 0.5, 1});
-    list_of_routers.push_back({4, 0, 0, 4.5, 1});
-    list_of_routers.push_back({8, 0, 0, 8.5, 1});
+    list_of_routers.emplace_back(0, 0, 0, 0.5, 1);
+    list_of_routers.emplace_back(4, 0, 0, 4.5, 1);
+    list_of_routers.emplace_back(8, 0, 0, 8.5, 1);
 
-    list_of_routers.push_back({0, 4, 0, 0.5, 5});
-    list_of_routers.push_back({4, 4, 0, 4.5, 5});
-    list_of_routers.push_back({8, 4, 0, 8.5, 5});
+    list_of_routers.emplace_back(0, 4, 0, 0.5, 5);
+    list_of_routers.emplace_back(4, 4, 0, 4.5, 5);
+    list_of_routers.emplace_back(8, 4, 0, 8.5, 5);
 
-    list_of_routers.push_back({0, 8, 0, 0.5, 9});
-    list_of_routers.push_back({4, 8, 0, 4.5, 9});
-    list_of_routers.push_back({8, 8, 0, 8.5, 9});
+    list_of_routers.emplace_back(0, 8, 0, 0.5, 9);
+    list_of_routers.emplace_back(4, 8, 0, 4.5, 9);
+    list_of_routers.emplace_back(8, 8, 0, 8.5, 9);
 
     // create the noc model (to store the routers)
     NocStorage noc_model;
@@ -437,13 +434,13 @@ TEST_CASE("test_create_noc_routers", "[vpr_setup_noc]") {
     t_noc_inf noc_info;
 
     // pointer to each logical router
-    t_router* temp_router = NULL;
+    t_router* temp_router = nullptr;
 
-    const vtr::vector<NocRouterId, NocRouter>* noc_routers = NULL;
+    const vtr::vector<NocRouterId, NocRouter>* noc_routers = nullptr;
 
     SECTION("Test create routers when logical routers match to exactly one physical router. The number of routers is less than whats on the FPGA.") {
         // start by creating all the logical routers
-        // this is similiar to the user provided a config file
+        // this is similar to the user provided a config file
         temp_router = new t_router;
 
         NocRouterId noc_router_id;
@@ -481,9 +478,9 @@ TEST_CASE("test_create_noc_routers", "[vpr_setup_noc]") {
             REQUIRE(test_router.get_router_grid_position_y() == list_of_routers[router_id - 1].grid_height_position);
         }
     }
-    SECTION("Test create routers when logical routers match to exactly one physical router. The number of routers is exacrly the same as on the FPGA.") {
+    SECTION("Test create routers when logical routers match to exactly one physical router. The number of routers is exactly the same as on the FPGA.") {
         // start by creating all the logical routers
-        // this is similiar to the user provided a config file
+        // this is similar to the user provided a config file
         temp_router = new t_router;
 
         NocRouterId noc_router_id;
@@ -523,7 +520,7 @@ TEST_CASE("test_create_noc_routers", "[vpr_setup_noc]") {
     }
     SECTION("Test create routers when a logical router can be matched to two physical routers. The number of routers is exactly the same as on the FPGA.") {
         // start by creating all the logical routers
-        // this is similiar to the user provided a config file
+        // this is similar to the user provided a config file
         temp_router = new t_router;
 
         NocRouterId noc_router_id;
@@ -595,17 +592,17 @@ TEST_CASE("test_create_noc_links", "[vpr_setup_noc]") {
      * - router 8: (4,8)
      * - router 9: (8,8)
      */
-    list_of_routers.push_back({0, 0, 0, 0.5, 1});
-    list_of_routers.push_back({4, 0, 0, 4.5, 1});
-    list_of_routers.push_back({8, 0, 0, 8.5, 1});
+    list_of_routers.emplace_back(0, 0, 0, 0.5, 1);
+    list_of_routers.emplace_back(4, 0, 0, 4.5, 1);
+    list_of_routers.emplace_back(8, 0, 0, 8.5, 1);
 
-    list_of_routers.push_back({0, 4, 0, 0.5, 5});
-    list_of_routers.push_back({4, 4, 0, 4.5, 5});
-    list_of_routers.push_back({8, 4, 0, 8.5, 5});
+    list_of_routers.emplace_back(0, 4, 0, 0.5, 5);
+    list_of_routers.emplace_back(4, 4, 0, 4.5, 5);
+    list_of_routers.emplace_back(8, 4, 0, 8.5, 5);
 
-    list_of_routers.push_back({0, 8, 0, 0.5, 9});
-    list_of_routers.push_back({4, 8, 0, 4.5, 9});
-    list_of_routers.push_back({8, 8, 0, 8.5, 9});
+    list_of_routers.emplace_back(0, 8, 0, 0.5, 9);
+    list_of_routers.emplace_back(4, 8, 0, 4.5, 9);
+    list_of_routers.emplace_back(8, 8, 0, 8.5, 9);
 
     // create the noc model (to store the routers)
     NocStorage noc_model;
@@ -618,10 +615,10 @@ TEST_CASE("test_create_noc_links", "[vpr_setup_noc]") {
     t_noc_inf noc_info;
 
     // pointer to each logical router
-    t_router* temp_router = NULL;
+    t_router* temp_router = nullptr;
 
     // start by creating all the logical routers
-    // this is similiar to the user provided a config file
+    // this is similar to the user provided a config file
     temp_router = new t_router;
 
     for (int router_id = 1; router_id < 10; router_id++) {
@@ -635,7 +632,8 @@ TEST_CASE("test_create_noc_links", "[vpr_setup_noc]") {
         noc_model.add_router(router_id,
                              list_of_routers[router_id - 1].grid_width_position,
                              list_of_routers[router_id - 1].grid_height_position,
-                             list_of_routers[router_id - 1].layer_position);
+                             list_of_routers[router_id - 1].layer_position,
+                             1.0);
     }
 
     delete temp_router;
@@ -676,7 +674,7 @@ TEST_CASE("test_create_noc_links", "[vpr_setup_noc]") {
     noc_info.router_list[8].connection_list.push_back(8);
 
     // call the function to test
-    create_noc_links(&noc_info, &noc_model);
+    create_noc_links(noc_info, &noc_model);
 
     NocRouterId current_source_router_id;
     NocRouterId current_destination_router_id;
@@ -689,7 +687,7 @@ TEST_CASE("test_create_noc_links", "[vpr_setup_noc]") {
 
         router_connection = noc_info.router_list[router_id - 1].connection_list.begin();
 
-        for (auto noc_link = noc_model.get_noc_router_connections(current_source_router_id).begin(); noc_link != noc_model.get_noc_router_connections(current_source_router_id).end(); noc_link++) {
+        for (auto noc_link = noc_model.get_noc_router_outgoing_links(current_source_router_id).begin(); noc_link != noc_model.get_noc_router_outgoing_links(current_source_router_id).end(); noc_link++) {
             // get the connecting link
             const NocLink& connecting_link = noc_model.get_single_noc_link(*noc_link);
 
@@ -711,10 +709,10 @@ TEST_CASE("test_setup_noc", "[vpr_setup_noc]") {
     t_noc_inf noc_info;
 
     // pointer to each logical router
-    t_router* temp_router = NULL;
+    t_router* temp_router = nullptr;
 
     // start by creating all the logical routers
-    // this is similiar to the user provided a config file
+    // this is similar to the user provided a config file
     temp_router = new t_router;
 
     // datastructure to hold the list of physical tiles
@@ -741,17 +739,17 @@ TEST_CASE("test_setup_noc", "[vpr_setup_noc]") {
      * - router 8: (4,8)
      * - router 9: (8,8)
      */
-    list_of_routers.push_back({0, 0, 0, 0.5, 1});
-    list_of_routers.push_back({4, 0, 0, 4.5, 1});
-    list_of_routers.push_back({8, 0, 0, 8.5, 1});
+    list_of_routers.emplace_back(0, 0, 0, 0.5, 1);
+    list_of_routers.emplace_back(4, 0, 0, 4.5, 1);
+    list_of_routers.emplace_back(8, 0, 0, 8.5, 1);
 
-    list_of_routers.push_back({0, 4, 0, 0.5, 5});
-    list_of_routers.push_back({4, 4, 0, 4.5, 5});
-    list_of_routers.push_back({8, 4, 0, 8.5, 5});
+    list_of_routers.emplace_back(0, 4, 0, 0.5, 5);
+    list_of_routers.emplace_back(4, 4, 0, 4.5, 5);
+    list_of_routers.emplace_back(8, 4, 0, 8.5, 5);
 
-    list_of_routers.push_back({0, 8, 0, 0.5, 9});
-    list_of_routers.push_back({4, 8, 0, 4.5, 9});
-    list_of_routers.push_back({8, 8, 0, 8.5, 9});
+    list_of_routers.emplace_back(0, 8, 0, 0.5, 9);
+    list_of_routers.emplace_back(4, 8, 0, 4.5, 9);
+    list_of_routers.emplace_back(8, 8, 0, 8.5, 9);
 
     for (int router_id = 1; router_id < 10; router_id++) {
         // we will have 9 logical routers that will take up all physical routers
@@ -801,7 +799,7 @@ TEST_CASE("test_setup_noc", "[vpr_setup_noc]") {
     //assign the noc_info to the arch
     arch.noc = &noc_info;
 
-    // the architecture file has been setup to include the noc topology and we set the parameters below
+    // the architecture file has been setup to include the noc topology, and we set the parameters below
     noc_info.link_bandwidth = 67.8;
     noc_info.link_latency = 56.7;
     noc_info.router_latency = 2.3;
@@ -923,7 +921,7 @@ TEST_CASE("test_setup_noc", "[vpr_setup_noc]") {
 
         REQUIRE_THROWS_WITH(setup_noc(arch), "The Provided NoC topology information in the architecture file has more number of routers than what is available in the FPGA device.");
     }
-    SECTION("Test setup_noc when there are no  physical NoC routers on the FPGA.") {
+    SECTION("Test setup_noc when there are no physical NoC routers on the FPGA.") {
         // test device grid name
         std::string device_grid_name = "test";
 
@@ -958,7 +956,7 @@ TEST_CASE("test_setup_noc", "[vpr_setup_noc]") {
 
         for (int i = 0; i < test_grid_width; i++) {
             for (int j = 0; j < test_grid_height; j++) {
-                // make sure the current tyle is not a router
+                // make sure the current tile is not a router
                 if (test_grid[0][i][j].type == nullptr) {
                     // assign the non-router tile as empty
                     test_grid[0][i][j].type = &empty_tile;
@@ -973,6 +971,270 @@ TEST_CASE("test_setup_noc", "[vpr_setup_noc]") {
         device_ctx.grid = DeviceGrid(device_grid_name, test_grid);
 
         REQUIRE_THROWS_WITH(setup_noc(arch), "No physical NoC routers were found on the FPGA device. Either the provided name for the physical router tile was incorrect or the FPGA device has no routers.");
+    }
+    SECTION("Test setup_noc when there are overrides for NoC-wide latency and bandwidth values.") {
+        // test device grid name
+        std::string device_grid_name = "test";
+
+        // creating a reference for the empty tile name and router name
+        char empty_tile_name[6] = "empty";
+        char router_tile_name[7] = "router";
+
+        // assign the name used when describing a router tile in the FPGA architecture description file
+        arch.noc->noc_router_tile_name.assign(router_tile_name);
+
+        // device grid parameters
+        int test_grid_width = 10;
+        int test_grid_height = 10;
+
+        // create the test device grid (10x10)
+        auto test_grid = vtr::NdMatrix<t_grid_tile, 3>({1, 10, 10});
+
+        // create an empty physical tile and assign its parameters
+        t_physical_tile_type empty_tile;
+        empty_tile.name = empty_tile_name;
+        empty_tile.height = 1;
+        empty_tile.width = 1;
+
+        // create a router tile and assign its parameters
+        // the router will take up 4 grid spaces and be named "router"
+        t_physical_tile_type router_tile;
+        router_tile.name = router_tile_name;
+        router_tile.height = 2;
+        router_tile.width = 2;
+
+        // (0, 0)
+        test_grid[0][0][0].type = &router_tile;
+        test_grid[0][0][0].height_offset = 0;
+        test_grid[0][0][0].width_offset = 0;
+
+        test_grid[0][1][0].type = &router_tile;
+        test_grid[0][1][0].height_offset = 0;
+        test_grid[0][1][0].width_offset = 1;
+
+        test_grid[0][0][1].type = &router_tile;
+        test_grid[0][0][1].height_offset = 1;
+        test_grid[0][0][1].width_offset = 0;
+
+        test_grid[0][1][1].type = &router_tile;
+        test_grid[0][1][1].height_offset = 1;
+        test_grid[0][1][1].width_offset = 1;
+
+        // (0, 4)
+        test_grid[0][0][4].type = &router_tile;
+        test_grid[0][0][4].height_offset = 0;
+        test_grid[0][0][4].width_offset = 0;
+
+        test_grid[0][1][4].type = &router_tile;
+        test_grid[0][1][4].height_offset = 0;
+        test_grid[0][1][4].width_offset = 1;
+
+        test_grid[0][0][5].type = &router_tile;
+        test_grid[0][0][5].height_offset = 1;
+        test_grid[0][0][5].width_offset = 0;
+
+        test_grid[0][1][5].type = &router_tile;
+        test_grid[0][1][5].height_offset = 1;
+        test_grid[0][1][5].width_offset = 1;
+
+        // (0, 8)
+        test_grid[0][0][8].type = &router_tile;
+        test_grid[0][0][8].height_offset = 0;
+        test_grid[0][0][8].width_offset = 0;
+
+        test_grid[0][1][8].type = &router_tile;
+        test_grid[0][1][8].height_offset = 0;
+        test_grid[0][1][8].width_offset = 1;
+
+        test_grid[0][0][9].type = &router_tile;
+        test_grid[0][0][9].height_offset = 1;
+        test_grid[0][0][9].width_offset = 0;
+
+        test_grid[0][1][9].type = &router_tile;
+        test_grid[0][1][9].height_offset = 1;
+        test_grid[0][1][9].width_offset = 1;
+
+        // (4, 0)
+        test_grid[0][4][0].type = &router_tile;
+        test_grid[0][4][0].height_offset = 0;
+        test_grid[0][4][0].width_offset = 0;
+
+        test_grid[0][5][0].type = &router_tile;
+        test_grid[0][5][0].height_offset = 0;
+        test_grid[0][5][0].width_offset = 1;
+
+        test_grid[0][4][1].type = &router_tile;
+        test_grid[0][4][1].height_offset = 1;
+        test_grid[0][4][1].width_offset = 0;
+
+        test_grid[0][5][1].type = &router_tile;
+        test_grid[0][5][1].height_offset = 1;
+        test_grid[0][5][1].width_offset = 1;
+
+        // (4, 4)
+        test_grid[0][4][4].type = &router_tile;
+        test_grid[0][4][4].height_offset = 0;
+        test_grid[0][4][4].width_offset = 0;
+
+        test_grid[0][5][4].type = &router_tile;
+        test_grid[0][5][4].height_offset = 0;
+        test_grid[0][5][4].width_offset = 1;
+
+        test_grid[0][4][5].type = &router_tile;
+        test_grid[0][4][5].height_offset = 1;
+        test_grid[0][4][5].width_offset = 0;
+
+        test_grid[0][5][5].type = &router_tile;
+        test_grid[0][5][5].height_offset = 1;
+        test_grid[0][5][5].width_offset = 1;
+
+        // (4, 8)
+        test_grid[0][4][8].type = &router_tile;
+        test_grid[0][4][8].height_offset = 0;
+        test_grid[0][4][8].width_offset = 0;
+
+        test_grid[0][5][8].type = &router_tile;
+        test_grid[0][5][8].height_offset = 0;
+        test_grid[0][5][8].width_offset = 1;
+
+        test_grid[0][4][9].type = &router_tile;
+        test_grid[0][4][9].height_offset = 1;
+        test_grid[0][4][9].width_offset = 0;
+
+        test_grid[0][5][9].type = &router_tile;
+        test_grid[0][5][9].height_offset = 1;
+        test_grid[0][5][9].width_offset = 1;
+
+        // (8, 0)
+        test_grid[0][8][0].type = &router_tile;
+        test_grid[0][8][0].height_offset = 0;
+        test_grid[0][8][0].width_offset = 0;
+
+        test_grid[0][9][0].type = &router_tile;
+        test_grid[0][9][0].height_offset = 0;
+        test_grid[0][9][0].width_offset = 1;
+
+        test_grid[0][8][1].type = &router_tile;
+        test_grid[0][8][1].height_offset = 1;
+        test_grid[0][8][1].width_offset = 0;
+
+        test_grid[0][9][1].type = &router_tile;
+        test_grid[0][9][1].height_offset = 1;
+        test_grid[0][9][1].width_offset = 1;
+
+        // (8, 4)
+        test_grid[0][8][4].type = &router_tile;
+        test_grid[0][8][4].height_offset = 0;
+        test_grid[0][8][4].width_offset = 0;
+
+        test_grid[0][9][4].type = &router_tile;
+        test_grid[0][9][4].height_offset = 0;
+        test_grid[0][9][4].width_offset = 1;
+
+        test_grid[0][8][5].type = &router_tile;
+        test_grid[0][8][5].height_offset = 1;
+        test_grid[0][8][5].width_offset = 0;
+
+        test_grid[0][9][5].type = &router_tile;
+        test_grid[0][9][5].height_offset = 1;
+        test_grid[0][9][5].width_offset = 1;
+
+        // (8, 8)
+        test_grid[0][8][8].type = &router_tile;
+        test_grid[0][8][8].height_offset = 0;
+        test_grid[0][8][8].width_offset = 0;
+
+        test_grid[0][9][8].type = &router_tile;
+        test_grid[0][9][8].height_offset = 0;
+        test_grid[0][9][8].width_offset = 1;
+
+        test_grid[0][8][9].type = &router_tile;
+        test_grid[0][8][9].height_offset = 1;
+        test_grid[0][8][9].width_offset = 0;
+
+        test_grid[0][9][9].type = &router_tile;
+        test_grid[0][9][9].height_offset = 1;
+        test_grid[0][9][9].width_offset = 1;
+
+        for (int i = 0; i < test_grid_width; i++) {
+            for (int j = 0; j < test_grid_height; j++) {
+                // make sure the current tyle is not a router
+                if (test_grid[0][i][j].type == nullptr) {
+                    // assign the non-router tile as empty
+                    test_grid[0][i][j].type = &empty_tile;
+                    test_grid[0][i][j].width_offset = 0;
+                    test_grid[0][i][j].height_offset = 0;
+                }
+            }
+        }
+
+        std::random_device device;
+        std::mt19937 rand_num_gen(device());
+        std::uniform_int_distribution<std::mt19937::result_type> dist(1, 9);
+
+        constexpr double LINK_LATENCY_OVERRIDE = 142.2;
+        constexpr double LINK_BANDWIDTH_OVERRIDE = 727.4;
+        constexpr double ROUTER_LATENCY_OVERRIDE = 151.6;
+        REQUIRE(LINK_LATENCY_OVERRIDE != noc_info.link_latency);
+        REQUIRE(LINK_BANDWIDTH_OVERRIDE != noc_info.link_bandwidth);
+        REQUIRE(ROUTER_LATENCY_OVERRIDE != noc_info.router_latency);
+
+        // add router latency overrides
+        for (int i = 0; i < 3; i++) {
+            int noc_router_user_id = dist(rand_num_gen);
+            noc_info.router_latency_overrides.insert({noc_router_user_id, ROUTER_LATENCY_OVERRIDE});
+        }
+
+        // add link latency overrides
+        for (int i = 0; i < 3; i++) {
+            int noc_router_user_id = dist(rand_num_gen);
+            size_t n_connections = noc_info.router_list[noc_router_user_id - 1].connection_list.size();
+            int selected_connection = dist(rand_num_gen) % n_connections;
+            int neighbor_router_user_id = noc_info.router_list[noc_router_user_id - 1].connection_list[selected_connection];
+            noc_info.link_latency_overrides.insert({{noc_router_user_id, neighbor_router_user_id}, LINK_LATENCY_OVERRIDE});
+        }
+
+        // add link bandwidth overrides
+        for (int i = 0; i < 3; i++) {
+            int noc_router_user_id = dist(rand_num_gen);
+            size_t n_connections = noc_info.router_list[noc_router_user_id - 1].connection_list.size();
+            int selected_connection = dist(rand_num_gen) % n_connections;
+            int neighbor_router_user_id = noc_info.router_list[noc_router_user_id - 1].connection_list[selected_connection];
+            noc_info.link_bandwidth_overrides.insert({{noc_router_user_id, neighbor_router_user_id}, LINK_BANDWIDTH_OVERRIDE});
+        }
+
+        device_ctx.grid = DeviceGrid(device_grid_name, test_grid);
+
+        REQUIRE_NOTHROW(setup_noc(arch));
+
+        const auto& noc_model = g_vpr_ctx.noc().noc_model;
+
+        // check NoC router latencies
+        for (const auto& noc_router : noc_model.get_noc_routers()) {
+            int router_user_id = noc_router.get_router_user_id();
+            auto it = noc_info.router_latency_overrides.find(router_user_id);
+            double expected_latency = (it != noc_info.router_latency_overrides.end()) ? it->second : noc_info.router_latency;
+            REQUIRE(expected_latency == noc_router.get_latency());
+        }
+
+        // check NoC link latencies and bandwidth
+        for (const auto& noc_link : noc_model.get_noc_links()) {
+            NocRouterId src_router_id = noc_link.get_source_router();
+            NocRouterId dst_router_id = noc_link.get_sink_router();
+            int src_user_id = noc_model.convert_router_id(src_router_id);
+            int dst_user_id = noc_model.convert_router_id(dst_router_id);
+
+            auto lat_it = noc_info.link_latency_overrides.find({src_user_id, dst_user_id});
+            double expected_latency = (lat_it != noc_info.link_latency_overrides.end()) ? lat_it->second : noc_info.link_latency;
+            REQUIRE(expected_latency == noc_link.get_latency());
+
+            auto bw_it = noc_info.link_bandwidth_overrides.find({src_user_id, dst_user_id});
+            double expected_bandwidth = (bw_it != noc_info.link_bandwidth_overrides.end()) ? bw_it->second : noc_info.link_bandwidth;
+            REQUIRE(expected_bandwidth == noc_link.get_bandwidth());
+        }
+
+        // remove noc storage
+        g_vpr_ctx.mutable_noc().noc_model.clear_noc();
     }
 }
 

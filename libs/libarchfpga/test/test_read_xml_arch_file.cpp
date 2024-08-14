@@ -2,8 +2,8 @@
 #include "catch2/catch_test_macros.hpp"
 #include "catch2/matchers/catch_matchers_all.hpp"
 
-// testting statuc functions so include whole source file it is in
-#include "read_xml_arch_file.cpp"
+// testing static functions so include whole source file it is in
+#include "read_xml_arch_file_noc_tag.cpp"
 
 // for comparing floats
 #include "vtr_math.h"
@@ -25,7 +25,7 @@ TEST_CASE("Updating router info in arch", "[NoC Arch Tests]") {
 
         it = test_router_list.find(router_id);
 
-        // check first that the router was newly added to the router databse
+        // check first that the router was newly added to the router database
         REQUIRE(it != test_router_list.end());
 
         // no verify the components of the router parameter
@@ -39,7 +39,7 @@ TEST_CASE("Updating router info in arch", "[NoC Arch Tests]") {
 
         it = test_router_list.find(router_id);
 
-        // check first that the router was newly added to the router databse
+        // check first that the router was newly added to the router database
         REQUIRE(it != test_router_list.end());
 
         // no verify the components of the router parameter
@@ -56,7 +56,7 @@ TEST_CASE("Updating router info in arch", "[NoC Arch Tests]") {
 
         it = test_router_list.find(router_id);
 
-        // check first that the router was newly added to the router databse
+        // check first that the router was newly added to the router database
         REQUIRE(it != test_router_list.end());
 
         // no verify the components of the router parameter
@@ -75,7 +75,7 @@ TEST_CASE("Updating router info in arch", "[NoC Arch Tests]") {
 
         it = test_router_list.find(router_id);
 
-        // check first that the router was newly added to the router databse
+        // check first that the router was newly added to the router database
         REQUIRE(it != test_router_list.end());
 
         // no verify the components of the router parameter
@@ -172,7 +172,7 @@ TEST_CASE("Verifying mesh topology creation", "[NoC Arch Tests]") {
         mesh_end_x = 4;
         mesh_end_y = 4;
 
-        // create the golden golden results
+        // create the golden results
         double golden_results_x[9];
         double golden_results_y[9];
 
