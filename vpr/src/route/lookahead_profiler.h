@@ -21,6 +21,13 @@ class LookaheadProfiler {
     LookaheadProfiler& operator=(const LookaheadProfiler&) = delete;
 
     /**
+     * @brief Enable or disable the LookaheadProfiler.
+     *
+     * @param should_enable Whether the profiler should be enabled.
+     */
+    void enable(bool should_enable);
+
+    /**
      * @brief Record information on nodes on a path from a source to a sink.
      *
      * @param iteration The router iteration.
@@ -42,7 +49,14 @@ class LookaheadProfiler {
                 const Netlist<>& net_list,
                 const std::vector<RRNodeId>& branch_inodes);
 
+    /**
+     * @brief Clear the profiler's private caches to free memory.
+     */
+    void clear();
+
   private:
+    ///@brief Whether to record lookahead info.
+    bool enabled_;
     ///@brief The output filestream.
     std::ofstream lookahead_verifier_csv_;
     ///@brief Whether the output file is empty/not yet opened.

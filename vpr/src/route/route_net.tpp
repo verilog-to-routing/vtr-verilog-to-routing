@@ -190,8 +190,7 @@ inline NetResultFlags route_net(ConnectionRouter& router,
                                             spatial_route_tree_lookup,
                                             router_stats,
                                             is_flat,
-                                            itry,
-                                            router_opts);
+                                            itry);
 
             if (flags.success == false)
                 return flags;
@@ -299,8 +298,7 @@ inline NetResultFlags pre_route_to_clock_root(ConnectionRouter& router,
                                               SpatialRouteTreeLookup& spatial_rt_lookup,
                                               RouterStats& router_stats,
                                               bool is_flat,
-                                              int itry,
-                                              const t_router_opts& router_opts) {
+                                              int itry) {
     const auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
     auto& m_route_ctx = g_vpr_ctx.mutable_routing();
@@ -364,8 +362,7 @@ inline NetResultFlags pre_route_to_clock_root(ConnectionRouter& router,
                                                            cost_params,
                                                            net_list,
                                                            conn_params.net_id_,
-                                                           itry,
-                                                           router_opts.router_lookahead_profiling);
+                                                           itry);
 
     VTR_ASSERT_DEBUG(!high_fanout || validate_route_tree_spatial_lookup(tree.root(), spatial_rt_lookup));
 
@@ -501,8 +498,7 @@ inline NetResultFlags route_sink(ConnectionRouter& router,
                                                            cost_params,
                                                            net_list,
                                                            conn_params.net_id_,
-                                                           itry,
-                                                           router_opts.router_lookahead_profiling);
+                                                           itry);
 
     VTR_ASSERT_DEBUG(!high_fanout || validate_route_tree_spatial_lookup(tree.root(), spatial_rt_lookup));
 

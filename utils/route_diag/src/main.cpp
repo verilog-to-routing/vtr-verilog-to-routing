@@ -137,7 +137,7 @@ static void do_one_route(const Netlist<>& net_list,
                                                                        router.get_router_lookahead(),
                                                                        cost_params,
                                                                        net_list,
-                                                                       conn_params.net_id_);
+                                                                       conn_params.net_id_, 0);
 
         //find delay
         float net_delay = rt_node_of_sink.value().Tdel;

@@ -363,11 +363,10 @@ class RouteTree {
                      SpatialRouteTreeLookup* spatial_rt_lookup,
                      bool is_flat,
                      const RouterLookahead& router_lookahead,
-                     t_conn_cost_params cost_params,
+                     const t_conn_cost_params cost_params,
                      const Netlist<>& net_list,
                      const ParentNetId& net_id,
-                     int itry = -1,
-                     bool profile_lookahead = false);
+                     const int itry);
 
     /** Reload timing values (R_upstream, C_downstream, Tdel).
      * Can take a RouteTreeNode& to do an incremental update.
@@ -508,8 +507,7 @@ class RouteTree {
                           const t_conn_cost_params cost_params,
                           const int itry,
                           const Netlist<>& net_list,
-                          const ParentNetId& net_id,
-                          bool profile_lookahead);
+                          const ParentNetId& net_id);
 
     void add_non_configurable_nodes(RouteTreeNode* rt_node,
                                     bool reached_by_non_configurable_edge,

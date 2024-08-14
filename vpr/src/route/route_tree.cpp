@@ -494,8 +494,7 @@ RouteTree::update_from_heap(t_heap* hptr,
                             const t_conn_cost_params cost_params,
                             const Netlist<>& net_list,
                             const ParentNetId& net_id,
-                            const int itry,
-                            bool profile_lookahead) {
+                            const int itry) {
     /* Lock the route tree for writing. At least on Linux this shouldn't have an impact on single-threaded code */
     std::unique_lock<std::mutex> write_lock(_write_mutex);
 
@@ -508,8 +507,7 @@ RouteTree::update_from_heap(t_heap* hptr,
                                                                                  cost_params,
                                                                                  itry,
                                                                                  net_list,
-                                                                                 net_id,
-                                                                                 profile_lookahead);
+                                                                                 net_id);
 
     if (!start_of_new_subtree_rt_node)
         return {vtr::nullopt, *sink_rt_node};
@@ -539,8 +537,7 @@ RouteTree::add_subtree_from_heap(t_heap* hptr,
                                  const t_conn_cost_params cost_params,
                                  const int itry,
                                  const Netlist<>& net_list,
-                                 const ParentNetId& net_id,
-                                 bool profile_lookahead) {
+                                 const ParentNetId& net_id) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     auto& route_ctx = g_vpr_ctx.routing();
@@ -574,15 +571,13 @@ RouteTree::add_subtree_from_heap(t_heap* hptr,
     }
     new_branch_iswitches.push_back(new_iswitch);
 
-    if (profile_lookahead) {
-        g_vpr_ctx.mutable_routing().lookahead_profiler.record(itry,
-                                                              target_net_pin_index,
-                                                              cost_params,
-                                                              router_lookahead,
-                                                              net_id,
-                                                              net_list,
-                                                              new_branch_inodes);
-    }
+    g_vpr_ctx.mutable_routing().lookahead_profiler.record(itry,
+                                                          target_net_pin_index,
+                                                          cost_params,
+                                                          router_lookahead,
+                                                          net_id,
+                                                          net_list,
+                                                          new_branch_inodes);
 
     /* Build the new tree branch starting from the existing node we found */
     RouteTreeNode* last_node = _rr_node_to_rt_node[new_inode];

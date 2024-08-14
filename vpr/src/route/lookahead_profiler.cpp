@@ -8,6 +8,10 @@
 #include "vtr_error.h"
 #include "vtr_log.h"
 
+void LookaheadProfiler::enable(bool should_enable) {
+    enabled_ = should_enable;
+}
+
 void LookaheadProfiler::record(int iteration,
                                int target_net_pin_index,
                                const t_conn_cost_params& cost_params,
@@ -18,6 +22,9 @@ void LookaheadProfiler::record(int iteration,
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     auto& route_ctx = g_vpr_ctx.routing();
+
+    if (!enabled_)
+        return;
 
     // If csv file hasn't been opened, open it and write out column headers
     if (is_empty_) {
@@ -158,4 +165,11 @@ void LookaheadProfiler::record(int iteration,
         lookahead_verifier_csv_ << cost_params.criticality;     // criticality
         lookahead_verifier_csv_ << "\n";
     }
+}
+
+void LookaheadProfiler::clear() {
+    net_pin_blocks_.clear();
+    sink_atom_block_.clear();
+    sink_cluster_block_.clear();
+    tile_types_.clear();
 }
