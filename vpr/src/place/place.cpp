@@ -2101,14 +2101,15 @@ static int check_block_placement_consistency() {
                         || !is_sub_tile_compatible(physical_tile, logical_block,
                                                    loc.sub_tile)) {
                         VTR_LOG_ERROR(
-                            "Block %zu's location is (%d,%d,%d) but found in grid at (%zu,%zu,%d,%d).\n",
+                            "Block %zu's location is (%d,%d,%d,%d) but found in grid at (%d,%d,%d,%d).\n",
                             size_t(bnum),
                             loc.x,
                             loc.y,
                             loc.sub_tile,
-                            tile_loc.x,
-                            tile_loc.y,
-                            tile_loc.layer_num,
+                            loc.layer,
+                            i,
+                            j,
+                            k,
                             layer_num);
                         error++;
                     }
