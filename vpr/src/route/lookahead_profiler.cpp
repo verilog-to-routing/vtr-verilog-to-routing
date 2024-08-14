@@ -1,7 +1,3 @@
-//
-// Created by shrevena on 08/06/24.
-//
-
 #include <sstream>
 
 #include "globals.h"
@@ -31,7 +27,7 @@ void LookaheadProfiler::record(int iteration,
             VTR_LOG_ERROR("Could not open lookahead_verifier_info.csv");
             throw vtr::VtrError("Could not open lookahead_verifier_info.csv",
                                 "lookahead_profiler.cpp",
-                                32);
+                                28);
         }
 
         lookahead_verifier_csv_
@@ -62,14 +58,10 @@ void LookaheadProfiler::record(int iteration,
     }
 
     if (!lookahead_verifier_csv_.is_open()) {
-        if (toggle_warn_) {
-            VTR_LOG_WARN("lookahead_verifier_info.csv is not open");
-            toggle_warn_ = false;
-        }
-
-        return;
-    } else {
-        toggle_warn_ = true;
+        VTR_LOG_ERROR("lookahead_verifier_info.csv is not open.");
+        throw vtr::VtrError("lookahead_verifier_info.csv is not open.",
+                            "lookahead_profiler.cpp",
+                            62);
     }
 
     // The default value in RouteTree::update_from_heap() is -1; only calls which descend from route_net()
@@ -77,42 +69,36 @@ void LookaheadProfiler::record(int iteration,
     if (iteration < 1)
         return;
 
-    RRNodeId source_inode = branch_inodes.back(); // Not necessarily an actual SOURCE node.
+    RRNodeId source_inode = branch_inodes.back(); // Not necessarily a SOURCE node.
     RRNodeId sink_inode = branch_inodes.front();
 
     VTR_ASSERT(rr_graph.node_type(sink_inode) == SINK);
+    VTR_ASSERT(net_id != ParentNetId::INVALID());
+    VTR_ASSERT(target_net_pin_index != OPEN);
 
     /* Get sink node attributes (atom block name, atom block model, cluster type, tile dimensions) */
 
-    if (atom_block_names_.find(sink_inode) == atom_block_names_.end()) {
-        if (net_id != ParentNetId::INVALID() && target_net_pin_index != OPEN) {
-            atom_block_names_[sink_inode] = net_list.block_name(net_list.net_pin_block(net_id, target_net_pin_index));
+    if (net_pin_blocks_.find(sink_inode) == net_pin_blocks_.end()) {
+        net_pin_blocks_[sink_inode] = net_list.net_pin_block(net_id, target_net_pin_index);
 
-            AtomBlockId atom_block_id = g_vpr_ctx.atom().nlist.find_block(atom_block_names_[sink_inode]);
-            atom_block_models_[sink_inode] = g_vpr_ctx.atom().nlist.block_model(atom_block_id)->name;
+        AtomBlockId atom_block_id = g_vpr_ctx.atom().nlist.find_block(net_list.block_name(net_pin_blocks_[sink_inode]));
+        sink_atom_block_[sink_inode] = g_vpr_ctx.atom().nlist.block_model(atom_block_id);
 
-            ClusterBlockId cluster_block_id = atom_to_cluster(atom_block_id);
+        ClusterBlockId cluster_block_id = atom_to_cluster(atom_block_id);
+        sink_cluster_block_[sink_inode] = g_vpr_ctx.clustering().clb_nlist.block_type(cluster_block_id);
 
-            cluster_block_types_[sink_inode] = g_vpr_ctx.clustering().clb_nlist.block_type(cluster_block_id)->name;
-
-            auto tile_type = physical_tile_type(cluster_block_id);
-            tile_dimensions_[sink_inode] = std::pair(std::to_string(tile_type->width), std::to_string(tile_type->height));
-        } else {
-            atom_block_names_[sink_inode] = "--";
-            atom_block_models_[sink_inode] = "--";
-            cluster_block_types_[sink_inode] = "--";
-            tile_dimensions_[sink_inode] = {"--", "--"};
-        }
+        tile_types_[sink_inode] = physical_tile_type(cluster_block_id);
     }
 
-    VTR_ASSERT_SAFE(atom_block_models_.find(sink_inode) != atom_block_models_.end());
-    VTR_ASSERT_SAFE(cluster_block_types_.find(sink_inode) != cluster_block_types_.end());
-    VTR_ASSERT_SAFE(tile_dimensions_.find(sink_inode) != tile_dimensions_.end());
+    VTR_ASSERT_SAFE(sink_atom_block_.find(sink_inode) != sink_atom_block_.end());
+    VTR_ASSERT_SAFE(sink_cluster_block_.find(sink_inode) != sink_cluster_block_.end());
+    VTR_ASSERT_SAFE(tile_types_.find(sink_inode) != tile_types_.end());
 
-    const std::string& block_name = atom_block_names_[sink_inode];
-    const std::string& atom_block_model = atom_block_models_[sink_inode];
-    const std::string& cluster_block_type = cluster_block_types_[sink_inode];
-    const auto& [tile_width, tile_height] = tile_dimensions_[sink_inode];
+    const std::string& block_name = net_list.block_name(net_pin_blocks_[sink_inode]);
+    const std::string atom_block_model = sink_atom_block_[sink_inode]->name;
+    const std::string cluster_block_type = sink_cluster_block_[sink_inode]->name;
+    const std::string tile_width = std::to_string(tile_types_[sink_inode]->width);
+    const std::string tile_height = std::to_string(tile_types_[sink_inode]->height);
 
     /* Iterate through the given path and record information for each node */
     for (size_t nodes_from_sink = 2; nodes_from_sink < branch_inodes.size(); ++nodes_from_sink) { // Distance one node away is always 0. (IPIN->SINK)

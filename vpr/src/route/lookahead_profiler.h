@@ -15,8 +15,7 @@
 class LookaheadProfiler {
   public:
     LookaheadProfiler()
-        : is_empty_(true)
-        , toggle_warn_(true) {}
+        : is_empty_(true) {}
 
     LookaheadProfiler(const LookaheadProfiler&) = delete;
     LookaheadProfiler& operator=(const LookaheadProfiler&) = delete;
@@ -48,16 +47,14 @@ class LookaheadProfiler {
     std::ofstream lookahead_verifier_csv_;
     ///@brief Whether the output file is empty/not yet opened.
     bool is_empty_;
-    ///@brief Whether to creat a warning if the output csv is not open. Used to avoid repeated warnings.
-    bool toggle_warn_;
-    ///@brief A map from sink node IDs to the names of their atom blocks.
-    std::unordered_map<RRNodeId, std::string> atom_block_names_;
-    ///@brief A map from sink node IDs to the names of the models of their atom blocks.
-    std::unordered_map<RRNodeId, std::string> atom_block_models_;
-    ///@brief A map from sink node IDs to the names of the types of their clusters.
-    std::unordered_map<RRNodeId, std::string> cluster_block_types_;
-    ///@brief A map from sink node IDs to the dimensions of their tiles (width, height).
-    std::unordered_map<RRNodeId, std::pair<std::string, std::string>> tile_dimensions_;
+    ///@brief A map from sink node IDs to their atom blocks' IDs.
+    std::unordered_map<RRNodeId, ParentBlockId> net_pin_blocks_;
+    ///@brief A map from sink node IDs to a pointer to the model of their atom blocks.
+    std::unordered_map<RRNodeId, const t_model*> sink_atom_block_;
+    ///@brief A map from sink node IDs to a pointer to their cluster blocks.
+    std::unordered_map<RRNodeId, t_logical_block_type_ptr> sink_cluster_block_;
+    ///@brief A map from sink node IDs to a pointer to their tiles' types.
+    std::unordered_map<RRNodeId, t_physical_tile_type_ptr> tile_types_;
 };
 
 #endif //VTR_LOOKAHEAD_PROFILER_H
