@@ -1347,6 +1347,9 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     inline const char* get_segment_name(const t_segment_inf*& segment) final {
         return segment->name.c_str();
     }
+    inline int get_segment_length(const t_segment_inf*& segment) final {
+        return segment->length;
+    }
     inline void set_segment_name(const char* name, const t_segment_inf*& segment) final {
         if (segment->name != name) {
             report_error(
@@ -1354,6 +1357,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
                 segment->name.c_str(), name);
         }
     }
+    inline void set_segment_length(int /*length*/, const t_segment_inf*& /*segment*/) final {}
     inline uxsd::enum_segment_res_type get_segment_res_type(const t_segment_inf*& segment) final {
         return to_uxsd_segment_res_type(segment->res_type);
     }
