@@ -1,122 +1,157 @@
 #!/usr/bin/env python3
 
+# pylint: disable=too-many-lines
+# pylint: disable=invalid-name
+
+"""
+Parses data from lookahead_verifier_info.csv file(s) generated when running VPR with
+--router_lookahead_profiler on.
+"""
+
 import os
 import shutil
 import sys
+import argparse
+from enum import Enum
+from pathlib import Path
+from concurrent.futures import ThreadPoolExecutor
+from multiprocessing import Lock
 import pandas as pd
 from sklearn.metrics import mean_squared_error
 import matplotlib.pyplot as plt
 import distinctipy as dp
 from colour import Color
-from enum import Enum
 import seaborn as sns
-import argparse
-from pathlib import Path
-from multiprocessing import Lock
-from concurrent.futures import ThreadPoolExecutor
-
-# Output directory
-output_dir = "./vtr_flow/tasks/lookahead_verifier_output"
-# The graph types (pie, heatmap, bar, scatter) that will be created
-graph_types: list
-# The components that will be used for graphs (cost, delay, congestion)
-components: list
-# Whether to create graphs of absolute error
-absolute_output: bool
-# Whether to create graphs of signed error
-signed_output: bool
-# Whether to create csv with all data extracted/calculated
-csv_data: bool
-# Whether to create graphs using data from first iterations
-first_it_output: bool
-# Whether to create graphs using data from all iterations
-all_it_output: bool
-# Do not overwrite existing files
-no_replace: bool
-# Print to terminal
-should_print: bool
-# The percent threshold to the be upper limit for the error of the data used to create pie graphs
-percent_error_threshold: float
-# Exclusions in the form exclusions[column_name] = [(boolean_op, value), (boolean_op, value), ...]
-exclusions = {}
-
-# Column names. IMPORTANT: Up until "criticality", these column names must match
-# those that are written out by LookaheadProfiler.
-column_names = [
-    "iteration no.",
-    "source node",
-    "sink node",
-    "sink block name",
-    "sink atom block model",
-    "sink cluster block type",
-    "sink cluster tile height",
-    "sink cluster tile width",
-    "current node",
-    "node type",
-    "node length",
-    "num. nodes from sink",
-    "delta x",
-    "delta y",
-    "actual cost",
-    "actual delay",
-    "actual congestion",
-    "predicted cost",
-    "predicted delay",
-    "predicted congestion",
-    "criticality",
-    "cost error",
-    "cost absolute error",
-    "cost % error",
-    "delay error",
-    "delay absolute error",
-    "delay % error",
-    "congestion error",
-    "congestion absolute error",
-    "congestion % error",
-    "test name"
-]
-
-# Lock and Pool for multithreading
-lock = Lock()
-pool = ThreadPoolExecutor(1)
 
 
-# Check if a component is valid, otherwise raise exception
+# pylint: disable=too-many-instance-attributes
+# pylint: disable=too-few-public-methods
+class GlobalVars:
+    """Global parameters and lists accessed across many functions."""
+
+    # pylint: disable=too-many-arguments
+    def __init__(self,
+                 graph_types: list,
+                 components: list,
+                 absolute_output: bool,
+                 signed_output: bool,
+                 csv_data: bool,
+                 first_it_output: bool,
+                 all_it_output: bool,
+                 no_replace: bool,
+                 should_print: bool,
+                 percent_error_threshold: float,
+                 exclusions: dict,
+                 pool: ThreadPoolExecutor):
+        # Output directory
+        self.output_dir = "./vtr_flow/tasks/lookahead_verifier_output"
+        # The graph types (pie, heatmap, bar, scatter) that will be created
+        self.graph_types = graph_types
+        # The components that will be used for graphs (cost, delay, congestion)
+        self.components = components
+        # Whether to create graphs of absolute error
+        self.absolute_output = absolute_output
+        # Whether to create graphs of signed error
+        self.signed_output = signed_output
+        # Whether to create csv with all data extracted/calculated
+        self.csv_data = csv_data
+        # Whether to create graphs using data from first iterations
+        self.first_it_output = first_it_output
+        # Whether to create graphs using data from all iterations
+        self.all_it_output = all_it_output
+        # Do not overwrite existing files
+        self.no_replace = no_replace
+        # Print to terminal
+        self.should_print = should_print
+        # The percent threshold to the be upper limit for the error of the data used to create pie
+        # graphs
+        self.percent_error_threshold = percent_error_threshold
+        # Exclusions in the form:
+        # exclusions[column_name] = [(boolean_op, value), (boolean_op, value), ...]
+        self.exclusions = exclusions
+
+        # Column names. IMPORTANT: Up until "criticality", these column names must match
+        # those that are written out by LookaheadProfiler.
+        self.column_names = [
+            "iteration no.",
+            "source node",
+            "sink node",
+            "sink block name",
+            "sink atom block model",
+            "sink cluster block type",
+            "sink cluster tile height",
+            "sink cluster tile width",
+            "current node",
+            "node type",
+            "node length",
+            "num. nodes from sink",
+            "delta x",
+            "delta y",
+            "actual cost",
+            "actual delay",
+            "actual congestion",
+            "predicted cost",
+            "predicted delay",
+            "predicted congestion",
+            "criticality",
+            "cost error",
+            "cost absolute error",
+            "cost % error",
+            "delay error",
+            "delay absolute error",
+            "delay % error",
+            "congestion error",
+            "congestion absolute error",
+            "congestion % error",
+            "test name"
+        ]
+
+        # Lock and Pool for multithreading
+        self.lock = Lock()
+        self.pool = pool
+
+
 def check_valid_component(comp: str):
-    if not (comp == "cost" or comp == "delay" or comp == "congestion"):
+    """Check if a component is valid, otherwise raise exception"""
+
+    if comp not in ["cost", "delay", "congestion"]:
         raise Exception("ComponentType")
 
 
-# Check if a column name is valid, otherwise raise exception
-def check_valid_column(column: str):
-    if column not in column_names:
+def check_valid_column(column: str, gv: GlobalVars):
+    """Check if a column name is valid, otherwise raise exception"""
+
+    if column not in gv.column_names:
         raise Exception("ColumnName")
 
 
-# Check if a DataFrame is valid, otherwise raise exception
-def check_valid_df(df: pd.DataFrame):
-    if df.columns.to_list() != column_names:
+def check_valid_df(df: pd.DataFrame, gv: GlobalVars):
+    """Check if a DataFrame is valid, otherwise raise exception"""
+
+    if df.columns.to_list() != gv.column_names:
         raise Exception("IncompleteDataFrame")
 
 
-# Create a directory
-def make_dir(directory: str, clean: bool):
-    lock.acquire()
+def make_dir(directory: str, clean: bool, gv: GlobalVars):
+    """Create a directory"""
+
+    gv.lock.acquire()
 
     if os.path.exists(directory):
         if clean:
             shutil.rmtree(directory)
         else:
-            lock.release()
+            gv.lock.release()
             return
 
     os.makedirs(directory)
 
-    lock.release()
+    gv.lock.release()
 
 
-# Convert column names with spaces to (shorter) path names with underscores
 def column_file_name(column_name: str) -> str:
+    """Convert column names with spaces to (shorter) path names with underscores"""
+
     file_name = ""
 
     if len(column_name.split()) > 2:
@@ -138,9 +173,11 @@ def column_file_name(column_name: str) -> str:
     return file_name
 
 
-# For lists which include "--", make sure this comes at the top of the list, followed
-# by the rest of the list sorted normally.
 def custom_sort(column: list) -> list:
+    """For lists which include "--", make sure this comes at the top of the list, followed by the
+    rest of the list sorted normally.
+    """
+
     try:
         list(map(int, column))
     except ValueError:
@@ -157,19 +194,28 @@ def custom_sort(column: list) -> list:
 
 
 class ScatterPlotType(Enum):
+    """Two scatter plot types, PREDICTION (actual vs. prediction) and ERROR
+    (actual vs. error)
+    """
+
     PREDICTION = 0
     ERROR = 1
 
 
+# pylint: disable=too-many-instance-attributes
 class Graphs:
-    def __init__(self, df: pd.DataFrame, results_folder: str, test_name: str):
+    """Attributes and methods for creating plots and graphs from given data"""
+
+    def __init__(
+            self, df: pd.DataFrame, results_folder: str, test_name: str, gv: GlobalVars
+    ):
         self.__df = df.copy()
         self.__df.insert(len(self.__df.columns), "color", "#0000ff")
 
         # Create a DataFrame with only data from first iteration
         self.__df_first_it = self.__df[self.__df["iteration no."].isin([1])][:]
 
-        self.__directory = os.path.join(output_dir, results_folder)
+        self.__directory = os.path.join(gv.output_dir, results_folder)
 
         self.__sub_dirs = [
             os.path.join(self.__directory, "actual_vs_prediction"),
@@ -181,7 +227,7 @@ class Graphs:
             os.path.join(self.__directory, "proportion_under_threshold"),
         ]
         for directory in self.__sub_dirs:
-            make_dir(directory, False)
+            make_dir(directory, False, gv)
 
         self.__test_name = test_name
 
@@ -194,6 +240,7 @@ class Graphs:
             "node length",
             "test name",
         ]
+
         # The standard columns to use to split data by for bar graphs and pie charts
         self.__standard_bar_columns = [
             "num. nodes from sink",
@@ -211,11 +258,13 @@ class Graphs:
                              "node type",
                              "test name"]
 
-    # Write list of exclusions onto output png
-    def write_exclusions_info(self):
-        if len(exclusions):
+    # pylint: disable=no-self-use
+    def write_exclusions_info(self, gv: GlobalVars):
+        """Write list of exclusions onto output png."""
+
+        if len(gv.exclusions):
             excl_msg = "Exclusions: "
-            for key, val in exclusions.items():
+            for key, val in gv.exclusions.items():
                 for item in val:
                     excl_msg += key + " " + item[0] + " " + item[1] + ", "
 
@@ -223,20 +272,41 @@ class Graphs:
 
             plt.figtext(0, -0.08, excl_msg, horizontalalignment="left", fontsize="x-small")
 
-    # Create a scatter plot displaying actual [comp] vs. either predicted [comp] or error
-    # comp: The component (cost, delay, or congestion)
-    # plot_type: PREDICTION or ERROR (vs. actual [comp])
-    # legend_column: The DF column to use to color the plot
-    # first_it_only: Whether to create a graph only using self.__df_first_it
+    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-locals
+    # pylint: disable=too-many-branches
+    # pylint: disable=too-many-statements
     def make_scatter_plot(
-            self, comp: str, plot_type: ScatterPlotType, legend_column: str, first_it_only: bool
+            self,
+            comp: str,
+            plot_type: ScatterPlotType,
+            legend_column: str,
+            first_it_only: bool,
+            gv: GlobalVars
     ):
-        if (not first_it_output and first_it_only) or (not all_it_output and not first_it_only):
+        """Create a scatter plot displaying actual [comp] vs. either predicted [comp] or error.
+
+        :param comp: The component (cost, delay, or congestion).
+        :type comp: str
+        :param plot_type: PREDICTION or ERROR (vs. actual [comp]).
+        :type plot_type: ScatterPlotType
+        :param legend_column: The column to use to color the plot.
+        :type legend_column: str
+        :param first_it_only: Whether to create a graph only using data from first iteration.
+        :type first_it_only: bool
+        :param gv:
+        :type gv: GlobalVars
+        """
+
+        if (
+                (not gv.first_it_output and first_it_only) or
+                (not gv.all_it_output and not first_it_only)
+        ):
             return
 
         # Check that the component and column name are valid
         check_valid_component(comp)
-        check_valid_column(legend_column)
+        check_valid_column(legend_column, gv)
 
         # Determine the graph title, directory, and file name
         title, curr_dir = "", ""
@@ -263,10 +333,10 @@ class Graphs:
 
         file_name = "color_" + column_file_name(legend_column) + "_" + comp + file_name + ".png"
 
-        if no_replace and os.path.exists(os.path.join(curr_dir, file_name)):
+        if gv.no_replace and os.path.exists(os.path.join(curr_dir, file_name)):
             return
 
-        make_dir(curr_dir, False)
+        make_dir(curr_dir, False, gv)
 
         # Determine colors for legend
         num_colors = self.__df[legend_column].nunique() + 1
@@ -294,7 +364,7 @@ class Graphs:
                 ]
 
         # Create graph
-        fig, ax = plt.subplots()
+        _, ax = plt.subplots()
         for elem in custom_sort(list(curr_df[legend_column].unique())):
             section = curr_df[curr_df[legend_column].isin([elem])][:]
             section = section.reset_index(drop=True)
@@ -325,18 +395,24 @@ class Graphs:
             ax.plot(curr_df[f"actual {comp}"], [0.0] * len(curr_df), color="black")
             plt.ylabel(f"{comp} error")
 
-        self.write_exclusions_info()
+        self.write_exclusions_info(gv)
         plt.savefig(os.path.join(curr_dir, file_name), dpi=300, bbox_inches="tight")
         plt.close()
 
-        if should_print:
+        if gv.should_print:
             print("Created ", os.path.join(curr_dir, file_name), sep="")
 
-    # Make all scatter plots in self.__standard_scatter_columns
-    # test_name_plot: whether to create plots wherein legend is by test name. This option
-    # is useful when creating graphs for an entire benchmark, but not specific circuits
-    # (tests).
-    def make_standard_scatter_plots(self, test_name_plot: bool):
+    def make_standard_scatter_plots(self, test_name_plot: bool, gv: GlobalVars):
+        """
+        Make all scatter plots in self.__standard_scatter_columns
+
+        :param test_name_plot: whether to create plots wherein legend is by test name. This option
+        is useful when creating graphs for an entire benchmark, but not specific circuits (tests).
+        :type test_name_plot: bool
+        :param gv:
+        :type gv: GlobalVars
+        """
+
         scatter_types = [ScatterPlotType.PREDICTION, ScatterPlotType.ERROR]
 
         if test_name_plot:
@@ -344,32 +420,53 @@ class Graphs:
         else:
             legend_columns = self.__standard_scatter_columns[0:-1]
 
-        for comp in components:
+        for comp in gv.components:
             for plot_type in scatter_types:
                 for col in legend_columns:
                     for first_it in [True, False]:
                         if first_it and col == "iteration no.":
                             continue
 
-                        pool.submit(self.make_scatter_plot, comp, plot_type, col, first_it)
+                        gv.pool.submit(self.make_scatter_plot, comp, plot_type, col, first_it, gv)
 
-    # Create a bar graph displaying average error
-    # comp: The component (cost, delay, or congestion)
-    # column: The DF column to use to split data (i.e. create each bar)
-    # first_it_only: Whether to create a graph only using self.__df_first_it
-    # use_absolute: Whether to produce a graph using absolute error, as opposed to signed error
-    def make_bar_graph(self, comp: str, column: str, first_it_only: bool, use_absolute: bool):
+    # pylint: disable=too-many-locals
+    def make_bar_graph(self,
+                       comp: str,
+                       column: str,
+                       first_it_only: bool,
+                       use_absolute: bool,
+                       gv: GlobalVars):
+        """
+        Create a bar graph displaying average error.
+
+        :param comp: The component (cost, delay, or congestion).
+        :type comp: str
+        :param column: The column to use to split data (i.e. create each bar).
+        :type column: str
+        :param first_it_only: Whether to create a graph only using data from first iteration.
+        :type first_it_only: bool
+        :param use_absolute: Whether to produce a graph using absolute error, as opposed to signed
+        error.
+        :type use_absolute: bool
+        :param gv:
+        :type gv: GlobalVars
+        """
+
         if (
-                (not absolute_output and use_absolute)
-                or (not signed_output and not use_absolute)
-                or (not first_it_output and first_it_only)
-                or (not all_it_output and not first_it_only)
+                (not gv.absolute_output and use_absolute)
+                or (not gv.signed_output and not use_absolute)
+        ):
+            return
+
+        if (
+                (not gv.first_it_output and first_it_only)
+                or (not gv.all_it_output and not first_it_only)
         ):
             return
 
         # Check that the component and column name are valid
         check_valid_component(comp)
-        check_valid_column(column)
+        check_valid_column(column, gv)
 
         # Determine the graph title, directory, and file name
         title = "Average " + comp
@@ -399,10 +496,10 @@ class Graphs:
 
         file_name = "by_" + column_file_name(column) + "_" + comp + file_name + ".png"
 
-        if no_replace and os.path.exists(os.path.join(curr_dir, file_name)):
+        if gv.no_replace and os.path.exists(os.path.join(curr_dir, file_name)):
             return
 
-        make_dir(curr_dir, False)
+        make_dir(curr_dir, False, gv)
 
         # Get DF with average error for each "type" encountered in column
         avg_error = {}
@@ -424,50 +521,80 @@ class Graphs:
         else:
             avg_error_df.plot.bar(title=title, xlabel=column, ylabel=y_label, legend=False)
 
-        self.write_exclusions_info()
+        self.write_exclusions_info(gv)
         plt.savefig(os.path.join(curr_dir, file_name), dpi=300, bbox_inches="tight")
         plt.close()
 
-        if should_print:
+        if gv.should_print:
             print("Created ", os.path.join(curr_dir, file_name), sep="")
 
-    # Make all bar graphs in self.__standard_bar_columns
-    # test_name_plot: whether to create graph where data is split by test name. This option
-    # is useful when creating graphs for an entire benchmark, but not specific circuits
-    # (tests).
-    def make_standard_bar_graphs(self, test_name_plot: bool):
+    def make_standard_bar_graphs(self, test_name_plot: bool, gv: GlobalVars):
+        """
+        Make all bar graphs in self.__standard_bar_columns
+
+        :param test_name_plot: Whether to create graph where data is split by test name. This option
+        is useful when creating graphs for an entire benchmark, but not specific circuits (tests).
+        :type test_name_plot: bool
+        :param gv:
+        :type gv: GlobalVars
+        """
+
         if test_name_plot:
             columns = self.__standard_bar_columns
         else:
             columns = self.__standard_bar_columns[0:-1]
 
-        for comp in components:
+        for comp in gv.components:
             for col in columns:
                 for use_abs in [True, False]:
                     for first_it in [True, False]:
-                        pool.submit(self.make_bar_graph, comp, col, use_abs, first_it)
+                        gv.pool.submit(self.make_bar_graph, comp, col, use_abs, first_it, gv)
 
-    # Create a heatmap comparing two quantitative columns
-    # comp: The component (cost, delay, or congestion)
-    # x_column: The column to be used for the x-axis
-    # y_column: The column to be used for the y-axis
-    # first_it_only: Whether to create a graph only using self.__df_first_it
-    # use_absolute: Whether to produce a graph using absolute error, as opposed to signed error
+    # pylint: disable=too-many-locals
     def make_heatmap(
-            self, comp: str, x_column: str, y_column: str, first_it_only: bool, use_absolute: bool
+            self,
+            comp: str,
+            x_column: str,
+            y_column: str,
+            first_it_only: bool,
+            use_absolute: bool,
+            gv: GlobalVars
     ):
+        """
+        Create a heatmap comparing two quantitative columns.
+
+        :param comp: The component (cost, delay, or congestion).
+        :type comp: str
+        :param x_column: The column to be used for the x-axis.
+        :type x_column: str
+        :param y_column: The column to be used for the y-axis.
+        :type y_column: str
+        :param first_it_only: Whether to create a graph only using data from first iteration.
+        :type first_it_only: bool
+        :param use_absolute: Whether to produce a graph using absolute error, as opposed to signed
+        error.
+        :type use_absolute: bool
+        :param gv:
+        :type gv: GlobalVars
+        """
+
+        # pylint: disable=too-many-boolean-expressions
         if (
-                (not absolute_output and use_absolute)
-                or (not signed_output and not use_absolute)
-                or (not first_it_output and first_it_only)
-                or (not all_it_output and not first_it_only)
+                (not gv.absolute_output and use_absolute)
+                or (not gv.signed_output and not use_absolute)
+        ):
+            return
+
+        if (
+                (not gv.first_it_output and first_it_only)
+                or (not gv.all_it_output and not first_it_only)
         ):
             return
 
         # Check that the component and column names are valid
         check_valid_component(comp)
-        check_valid_column(x_column)
-        check_valid_column(y_column)
+        check_valid_column(x_column, gv)
+        check_valid_column(y_column, gv)
 
         # Determine the graph title, directory, and file name
         title = "Average " + comp
@@ -506,10 +633,10 @@ class Graphs:
                 + ".png"
         )
 
-        if no_replace and os.path.exists(os.path.join(curr_dir, file_name)):
+        if gv.no_replace and os.path.exists(os.path.join(curr_dir, file_name)):
             return
 
-        make_dir(curr_dir, False)
+        make_dir(curr_dir, False, gv)
 
         # Get DF with average error for each "coordinate" in the heatmap
         df_avgs = pd.DataFrame(columns=[x_column, y_column, scale_column])
@@ -540,44 +667,69 @@ class Graphs:
         else:
             ax = sns.heatmap(df_avgs, cmap="rocket_r")
 
-        self.write_exclusions_info()
+        self.write_exclusions_info(gv)
         ax.set_title(title, y=1.08)
         plt.savefig(os.path.join(curr_dir, file_name), dpi=300, bbox_inches="tight")
         plt.close()
 
-        if should_print:
+        if gv.should_print:
             print("Created ", os.path.join(curr_dir, file_name), sep="")
 
-    # Make "standard" heatmaps: (sink cluster tile width and sink cluster tile height) and
-    # (delta_x and delta_y)
-    def make_standard_heatmaps(self):
-        for comp in components:
+    def make_standard_heatmaps(self, gv: GlobalVars):
+        """Make "standard" heatmaps: (sink cluster tile width and sink cluster tile height) and
+        (delta_x and delta_y)
+        """
+
+        for comp in gv.components:
             for first_it in [True, False]:
                 for use_abs in [True, False]:
-                    pool.submit(self.make_heatmap,
-                                comp,
-                                "sink cluster tile width",
-                                "sink cluster tile height",
-                                first_it,
-                                use_abs,
-                                )
-                    pool.submit(self.make_heatmap, comp, "delta x", "delta y", first_it, use_abs)
+                    gv.pool.submit(self.make_heatmap,
+                                   comp,
+                                   "sink cluster tile width",
+                                   "sink cluster tile height",
+                                   first_it,
+                                   use_abs,
+                                   gv)
+                    gv.pool.submit(self.make_heatmap,
+                                   comp,
+                                   "delta x",
+                                   "delta y",
+                                   first_it,
+                                   use_abs,
+                                   gv)
 
-    # Create a pie chart showing the proportion of cases where error is under percent_error_threshold
-    # comp: The component (cost, delay, or congestion)
-    # column: The column to split data by
-    # first_it_only: Whether to create a graph only using self.__df_first_it
-    # weighted: Whether to weight each section of the pie graph by the % error of that section
-    def make_pie_chart(self, comp: str, column: str, first_it_only: bool, weighted: bool):
-        if (not first_it_output and first_it_only) or (not all_it_output and not first_it_only):
+    # pylint: disable=too-many-locals
+    def make_pie_chart(
+            self, comp: str, column: str, first_it_only: bool, weighted: bool, gv: GlobalVars
+    ):
+        """
+        Create a pie chart showing the proportion of cases where error is under
+        percent_error_threshold.
+
+        :param comp: The component (cost, delay, or congestion).
+        :type comp: str
+        :param column: The column to split data by.
+        :type column: str
+        :param first_it_only: Whether to create a graph only using data from first iteration.
+        :type first_it_only: bool
+        :param weighted: Whether to weight each section of the pie graph by the % error of that
+        section.
+        :type weighted: bool
+        :param gv:
+        :type gv: GlobalVars
+        """
+        if (
+                (not gv.first_it_output and first_it_only) or
+                (not gv.all_it_output and not first_it_only)
+        ):
             return
 
         # Check that the component and column names are valid
         check_valid_component(comp)
-        check_valid_column(column)
+        check_valid_column(column, gv)
 
         # Determine the graph title, directory, and file name
-        title = f"Num. Mispredicts Under {percent_error_threshold:.1f}% {comp} Error"
+        title = f"Num. Mispredicts Under {gv.percent_error_threshold:.1f}% {comp} Error"
 
         if weighted:
             title += ", Weighted by % Error,"
@@ -609,13 +761,13 @@ class Graphs:
 
         file_name += ".png"
 
-        if no_replace and os.path.exists(os.path.join(curr_dir, file_name)):
+        if gv.no_replace and os.path.exists(os.path.join(curr_dir, file_name)):
             return
 
-        make_dir(curr_dir, False)
+        make_dir(curr_dir, False, gv)
 
         # Constrict DF to columns whose error is under threshold
-        curr_df = curr_df[curr_df[f"{comp} % error"] < percent_error_threshold]
+        curr_df = curr_df[curr_df[f"{comp} % error"] < gv.percent_error_threshold]
 
         # Determine colors for sections
         num_colors = self.__df[column].nunique() + 1
@@ -640,52 +792,65 @@ class Graphs:
         # Create pie chart
         pie_df.plot.pie(y=" ", labeldistance=None, colors=colors)
 
-        self.write_exclusions_info()
+        self.write_exclusions_info(gv)
         plt.title(title, fontsize=8)
         plt.legend(loc="upper left", bbox_to_anchor=(1.08, 1), title=column)
         plt.savefig(os.path.join(curr_dir, file_name), dpi=300, bbox_inches="tight")
         plt.close()
 
-        if should_print:
+        if gv.should_print:
             print("Created ", os.path.join(curr_dir, file_name), sep='')
 
-    # Make all pie chars in self.__standard_bar_columns
-    # test_name_plot: whether to create graph where data is split by test name. This option
-    # is useful when creating graphs for an entire benchmark, but not specific circuits
-    # (tests).
-    def make_standard_pie_charts(self, test_name_plot: bool):
+    def make_standard_pie_charts(self, test_name_plot: bool, gv: GlobalVars):
+        """
+        Make all pie chars in self.__standard_bar_columns.
+
+        :param test_name_plot: Whether to create graph where data is split by test name. This option
+        is useful when creating graphs for an entire benchmark, but not specific circuits(tests).
+        :type test_name_plot: bool
+        :param gv:
+        :type gv: GlobalVars
+        """
+
         if test_name_plot:
             columns = self.__standard_bar_columns
         else:
             columns = self.__standard_bar_columns[:-1]
 
-        for comp in components:
+        for comp in gv.components:
             for col in columns:
                 for first_it in [True, False]:
                     for weighted in [True, False]:
-                        pool.submit(self.make_pie_chart, comp, col, first_it, weighted)
+                        gv.pool.submit(self.make_pie_chart, comp, col, first_it, weighted, gv)
 
-    # Make "standard" graphs of all types.
-    # test_name_plot: whether to create plots where data is split by test name. This option
-    # is useful when creating plots for an entire benchmark, but not specific circuits
-    # (tests).
-    def make_standard_plots(self, test_name_plot: bool):
-        if "pie" in graph_types:
-            self.make_standard_pie_charts(test_name_plot)
+    def make_standard_plots(self, test_name_plot: bool, gv: GlobalVars):
+        """
+        Make "standard" graphs of all types
 
-        if "heatmap" in graph_types:
-            self.make_standard_heatmaps()
+        :param test_name_plot: Whether to create plots where data is split by test name. This option
+        is useful when creating plots for an entire benchmark, but not specific circuits (tests).
+        :type test_name_plot: bool
+        :param gv:
+        :type gv: GlobalVars
+        """
 
-        if "bar" in graph_types:
-            self.make_standard_bar_graphs(test_name_plot)
+        if "pie" in gv.graph_types:
+            self.make_standard_pie_charts(test_name_plot, gv)
 
-        if "scatter" in graph_types:
-            self.make_standard_scatter_plots(test_name_plot)
+        if "heatmap" in gv.graph_types:
+            self.make_standard_heatmaps(gv)
+
+        if "bar" in gv.graph_types:
+            self.make_standard_bar_graphs(test_name_plot, gv)
+
+        if "scatter" in gv.graph_types:
+            self.make_standard_scatter_plots(test_name_plot, gv)
 
 
-# Print to terminal and write to lookahead_stats_summary.txt
-def print_and_write(string, directory: str):
-    if should_print:
+def print_and_write(string, directory: str, gv: GlobalVars):
+    """Print to terminal and write to lookahead_stats_summary.txt."""
+
+    if gv.should_print:
         print(string, sep="")
 
     orig_out = sys.stdout
@@ -697,77 +862,114 @@ def print_and_write(string, directory: str):
     sys.stdout = orig_out
 
 
-# Print stats for a given component
-# df: The DataFrame with all info
-# comp: cost, delay, or congestion
-# directory: output directory
-def print_stats(df: pd.DataFrame, comp: str, directory: str):
+def print_stats(df: pd.DataFrame, comp: str, directory: str, gv: GlobalVars):
+    """
+    Print stats for a given component.
+
+    :param df: The DataFrame with all info.
+    :type df: pd.DataFrame
+    :param comp: cost, delay, or congestion.
+    :type comp: str
+    :param directory: The output directory.
+    :type directory: str
+    :param gv:
+    :type gv: GlobalVars
+    """
+
     check_valid_component(comp)
 
-    print_and_write("\n#### BACKWARDS PATH " + comp.upper() + " ####", directory)
-    print_and_write("Mean error: " + str(df[f"{comp} error"].mean()), directory)
-    print_and_write("Mean absolute error: " + str(df[f"{comp} absolute error"].mean()), directory)
-    print_and_write("Median error: " + str(df[f"{comp} error"].median()), directory)
-    print_and_write("Highest error: " + str(df[f"{comp} error"].max()), directory)
-    print_and_write("Lowest error: " + str(df[f"{comp} error"].min()), directory)
+    print_and_write("\n#### BACKWARDS PATH " + comp.upper() + " ####", directory, gv)
+    print_and_write("Mean error: " + str(df[f"{comp} error"].mean()), directory, gv)
+    print_and_write("Mean absolute error: " + str(df[f"{comp} absolute error"].mean()),
+                    directory,
+                    gv)
+    print_and_write("Median error: " + str(df[f"{comp} error"].median()), directory, gv)
+    print_and_write("Highest error: " + str(df[f"{comp} error"].max()), directory, gv)
+    print_and_write("Lowest error: " + str(df[f"{comp} error"].min()), directory, gv)
     print_and_write(
         "Mean squared error: "
         + str(mean_squared_error(df[f"actual {comp}"], df[f"predicted {comp}"])),
         directory,
+        gv
     )
 
 
-# Write out stats for all components
-# df: The DataFrame with all info
-# directory: output directory
-def print_df_info(df: pd.DataFrame, directory: str):
-    print_and_write(df, directory)
+def print_df_info(df: pd.DataFrame, directory: str, gv: GlobalVars):
+    """
+    Write out stats for all components.
 
-    for comp in components:
-        print_stats(df, comp, directory)
+    :param df: The DataFrame with all info.
+    :type df: pd.DataFrame
+    :param directory: The output directory.
+    :type directory: str
+    :param gv:
+    :type gv: GlobalVars
+    """
+
+    print_and_write(df, directory, gv)
+
+    for comp in gv.components:
+        print_stats(df, comp, directory, gv)
 
 
-# Write out stats for the first iteration only, and for all iterations, as well
-# as the csv_file containing the entire DataFrame
-# df: The DataFrame with all info
-# directory: output directory
-def record_df_info(df: pd.DataFrame, directory: str):
-    check_valid_df(df)
+def record_df_info(df: pd.DataFrame, directory: str, gv: GlobalVars):
+    """
+    Write out stats for the first iteration only, and for all iterations, as well as the csv_file
+    containing the entire DataFrame.
+
+    :param df: The DataFrame with all info.
+    :type df: pd.DataFrame
+    :param directory: The output directory.
+    :type directory: str
+    :param gv:
+    :type gv: GlobalVars
+    """
+
+    check_valid_df(df, gv)
 
     df_first_iteration = df[df["iteration no."].isin([1])][:]
 
     print_and_write(
-        "\nFIRST ITERATION RESULTS ----------------------------------------------------------------------\n",
+        "\nFIRST ITERATION RESULTS "
+        "----------------------------------------------------------------------\n",
         directory,
+        gv
     )
 
-    print_df_info(df_first_iteration, directory)
+    print_df_info(df_first_iteration, directory, gv)
 
     print_and_write(
-        "\nALL ITERATIONS RESULTS -----------------------------------------------------------------------\n",
+        "\nALL ITERATIONS RESULTS "
+        "-----------------------------------------------------------------------\n",
         directory,
+        gv
     )
 
-    print_df_info(df, directory)
+    print_df_info(df, directory, gv)
 
     print_and_write(
-        "\n----------------------------------------------------------------------------------------------\n",
+        "\n-------------------------------------------------------------------------------------\n",
         directory,
+        gv
     )
 
     def make_csv(df_out: pd.DataFrame, file_name: str):
         df_out.to_csv(file_name, index=False)
 
     # Write out the csv
-    if csv_data and (not os.path.exists(os.path.join(directory, "data.csv")) or not no_replace):
-        pool.submit(make_csv, df, os.path.join(directory, "data.csv"))
+    if (
+            gv.csv_data and
+            (not os.path.exists(os.path.join(directory, "data.csv")) or not gv.no_replace)
+    ):
+        gv.pool.submit(make_csv, df, os.path.join(directory, "data.csv"))
 
-        if should_print:
+        if gv.should_print:
             print("Created ", os.path.join(directory, "data.csv"), sep="")
 
 
-# Calculate error columns from given csv file
 def create_error_columns(df: pd.DataFrame):
+    """Calculate and insert error columns from given csv file"""
+
     df["cost error"] = df["predicted cost"] - df["actual cost"]
     df["cost absolute error"] = abs(df["cost error"])
     df["cost % error"] = 100.0 * ((df["predicted cost"] / df["actual cost"]) - 1.0)
@@ -785,14 +987,20 @@ def create_error_columns(df: pd.DataFrame):
     df.fillna(0.0, inplace=True)
 
 
-def main():
-    # Parse arguments
+# pylint: disable=too-many-locals
+# pylint: disable=too-many-branches
+# pylint: disable=too-many-statements
+def parse_args():
+    """Parse arguments and load global variables"""
+
     description = (
-            "Parses data from lookahead_verifier_info.csv file(s) generated when running VPR on this branch. "
-            + "Create one or more csv files with, in the first column, the circuit/test name, and in the second "
-            + "column, the corresponding path to its lookahead info csv file. Give it a unique name, and pass "
-            + "it in as csv_files_list."
+        "Parses data from lookahead_verifier_info.csv file(s) generated when running VPR with "
+        "--router_lookahead_profiler on. Create one or more csv files (ideally, one per "
+        "benchmark with, in the first column, the circuit/test name, and in the second column, "
+        "the corresponding path to its lookahead info csv file. Give it a unique name "
+        "(ideally, the benchmark name), and pass it in as csv_files_list."
     )
+
     parser = argparse.ArgumentParser(prog="ParseLookaheadData", description=description, epilog="")
 
     parser.add_argument(
@@ -823,8 +1031,8 @@ def main():
         default="",
         metavar="COMPONENT",
         nargs="+",
-        help="produce results investigating this backwards-path component (cost, delay, congestion, "
-             "all)",
+        help="produce results investigating this backwards-path component (cost, delay, "
+             "congestion, all)",
         choices=["cost", "delay", "congestion", "all"],
     )
 
@@ -837,14 +1045,21 @@ def main():
     )
 
     parser.add_argument(
-        "--first-it", action="store_true", help="produce results using data from first iteration"
+        "--first-it",
+        action="store_true",
+        help="produce results using data from first iteration"
     )
 
     parser.add_argument(
-        "--all-it", action="store_true", help="produce results using data from all iterations"
+        "--all-it",
+        action="store_true",
+        help="produce results using data from all iterations"
     )
 
-    parser.add_argument("--csv-data", action="store_true", help="create csv file with all data")
+    parser.add_argument(
+        "--csv-data", action="store_true", help="create csv file with all data"
+    )
+
     parser.add_argument(
         "--all",
         action="store_true",
@@ -852,8 +1067,8 @@ def main():
     )
 
     parser.add_argument("--exclude", type=str, default="", metavar="EXCLUSION", nargs="+",
-                        help="exclude cells that meet a given condition, in the form \"column_name [comparison "
-                             "operator] value\"")
+                        help="exclude cells that meet a given condition, in the form \"column_name "
+                             "[comparison operator] value\"")
 
     parser.add_argument(
         "--collect",
@@ -861,8 +1076,9 @@ def main():
         default="",
         metavar="FOLDER_NAME",
         nargs=1,
-        help="instead of producing results from individual input csv files, collect data from all input"
-             "files, and produce results for this collection (note: FOLDER_NAME should not be a path)",
+        help="instead of producing results from individual input csv files, collect data from all "
+             "input files, and produce results for this collection (note: FOLDER_NAME should not "
+             "be a path)",
     )
 
     parser.add_argument(
@@ -895,16 +1111,7 @@ def main():
     )
 
     args = parser.parse_args()
-
-    global pool
     pool = ThreadPoolExecutor(max_workers=args.j)
-
-    global graph_types
-    global components
-    global absolute_output
-    global signed_output
-    global first_it_output
-    global all_it_output
 
     if args.all:
         graph_types = ["bar", "scatter", "heatmap", "pie"]
@@ -920,14 +1127,16 @@ def main():
 
         if len(graph_types) == 0:
             print(
-                "Warning: no graphs will be produced. Use -g to select graph types (bar, scatter, heatmap, pie, all).")
+                "Warning: no graphs will be produced. Use -g to select graph types (bar, scatter, "
+                "heatmap, pie, all).")
 
         components = args.components
         if "all" in components:
             components = ["cost", "delay", "congestion"]
 
         if len(components) == 0:
-            print("Warning: no graphs will be produced. Use -c to select components (cost, delay, congestion, all).")
+            print("Warning: no graphs will be produced. Use -c to select components (cost, delay, "
+                  "congestion, all).")
 
         absolute_output = args.absolute
         signed_output = args.signed
@@ -941,19 +1150,21 @@ def main():
         if not first_it_output and not all_it_output:
             print("Warning: no graphs will be produced. Use --first_it and/or --all_it.")
 
-    global csv_data
-    csv_data = args.csv_data
+    gv = GlobalVars(
+        graph_types,
+        components,
+        absolute_output,
+        signed_output,
+        args.csv_data,
+        first_it_output,
+        all_it_output,
+        not args.replace,
+        args.print,
+        args.threshold,
+        {},
+        pool
+    )
 
-    global percent_error_threshold
-    percent_error_threshold = args.threshold
-
-    global no_replace
-    no_replace = not args.replace
-
-    global should_print
-    should_print = args.print
-
-    global exclusions
     for excl in args.exclude:
         operators = ["==", "!=", ">=", "<=", ">", "<"]
         key, val, op = "", "", ""
@@ -965,22 +1176,163 @@ def main():
 
         key, val = key.strip(), val.strip()
 
-        if len(key) == 0 or len(val) == 0 or key not in column_names:
+        if len(key) == 0 or len(val) == 0 or key not in gv.column_names:
             print("Invalid entry in --exclusions:", excl)
-            exit()
+            sys.exit()
 
-        if key not in exclusions:
-            exclusions[key] = []
+        if key not in gv.exclusions:
+            gv.exclusions[key] = []
 
         try:
             int(val)
-            exclusions[key].append((op, val))
+            gv.exclusions[key].append((op, val))
         except ValueError:
-            exclusions[key].append((op, "\"" + val + "\""))
+            gv.exclusions[key].append((op, "\"" + val + "\""))
 
-    make_dir(output_dir, False)
+    return args, gv
 
-    df_complete = pd.DataFrame(columns=column_names)  # The DF containing info across all given csv files
+
+def create_complete_outputs(
+        args, df_complete: pd.DataFrame, gv: GlobalVars
+):
+    """Where applicable, create output files (summary, plots) for all given data"""
+
+    results_folder = args.collect[0]
+    results_folder_path = os.path.join(gv.output_dir, results_folder)
+    if len(args.dir_app) > 0:
+        results_folder_path += f"{args.dir_app[0]}"
+
+    make_dir(results_folder_path, False, gv)
+
+    df_complete = df_complete.reset_index(drop=True)
+
+    record_df_info(df_complete, results_folder_path, gv)
+
+    global_plots = Graphs(df_complete, os.path.join(results_folder, "plots"), "All Tests", gv)
+    global_plots.make_standard_plots(True, gv)
+
+
+# pylint: disable=too-many-arguments
+def create_benchmark_outputs(
+        args,
+        df_benchmark: pd.DataFrame,
+        df_complete: pd.DataFrame,
+        gv: GlobalVars,
+        output_folder: str,
+        tests: list
+):
+    """Where applicable, create output files (summary, plots) for a given benchmark"""
+
+    if len(tests) == 1:
+        return df_complete
+
+    results_folder = os.path.join(output_folder, "__all__")
+    results_folder_path = os.path.join(gv.output_dir, results_folder)
+    make_dir(results_folder_path, False, gv)
+
+    df_benchmark = df_benchmark.reset_index(drop=True)
+
+    if args.collect != "":
+        df_complete = pd.concat([df_complete, df_benchmark])
+        return df_complete
+
+    print_and_write("Global results:\n", results_folder_path, gv)
+    record_df_info(df_benchmark, results_folder_path, gv)
+
+    global_plots = Graphs(
+        df_benchmark,
+        os.path.join(results_folder, "plots"),
+        f"All Tests ({output_folder})",
+        gv
+    )
+    global_plots.make_standard_plots(True, gv)
+
+    return df_complete
+
+
+# pylint disable=too-many-arguments
+def create_circuit_outputs(
+        args,
+        df_benchmark: pd.DataFrame,
+        file_path: str,
+        gv: GlobalVars,
+        output_folder: str,
+        test_name: str
+):
+    """Where applicable, create output files (summary, plots) for a given circuit (test)"""
+
+    if not os.path.isfile(file_path):
+        print("ERROR:", file_path, "could not be found")
+        return df_benchmark
+
+    if gv.should_print:
+        print("Reading data at " + file_path)
+
+    results_folder = os.path.join(output_folder, test_name)
+    results_folder_path = os.path.join(gv.output_dir, results_folder)
+    make_dir(results_folder_path, False, gv)
+    # Read csv with lookahead data (or, a csv previously created by this script)
+    df = pd.read_csv(file_path)
+    df = df.reset_index(drop=True)
+    df = df.drop(columns=["cost error",
+                          "cost absolute error",
+                          "cost % error",
+                          "delay error",
+                          "delay absolute error",
+                          "delay % error",
+                          "congestion error",
+                          "congestion absolute error",
+                          "congestion % error",
+                          "test name"], errors="ignore")
+
+    # Determine exclusions, and remove them from df
+    for key, val in gv.exclusions.items():
+        for item in val:
+            ldict = {}
+            code_line = (
+                f"df = df.drop(index=df[df[\"{key}\"] {item[0]} {item[1]}]"
+                ".index.values.tolist())"
+            )
+            # pylint: disable=exec-used
+            exec(code_line, locals(), ldict)
+            df = ldict["df"]
+            df = df.reset_index(drop=True)
+
+    # Calculate error columns and add test name column
+    create_error_columns(df)
+    df.insert(len(df.columns), "test name", test_name)
+
+    # Add current DF to DF for entire benchmark
+    df_benchmark = pd.concat([df_benchmark, df])
+
+    # If --collect option used, skip creating files for individual circuits
+    if args.collect != "":
+        return df_benchmark
+
+    # Write out stats summary and csv file
+    print_and_write("Test: " + test_name, results_folder_path, gv)
+    record_df_info(df, results_folder_path, gv)
+
+    # Create plots
+    curr_plots = Graphs(df, os.path.join(results_folder, "plots"), test_name, gv)
+    curr_plots.make_standard_plots(False, gv)
+
+    if gv.should_print:
+        print(
+            "\n----------------------------------------------------------------------------"
+        )
+
+    return df_benchmark
+
+
+# pylint: disable=missing-function-docstring
+def main():
+    args, gv = parse_args()
+
+    make_dir(gv.output_dir, False, gv)
+
+    # The DF containing info across all given csv files
+    df_complete = pd.DataFrame(columns=gv.column_names)
 
     csv_files_list = args.csv_files_list
     for file_list in csv_files_list:
@@ -995,102 +1347,29 @@ def main():
         if len(tests) < 1:
             continue
 
-        df_benchmark = pd.DataFrame(columns=column_names)  # The DF containing all info for this benchmark
+        # The DF containing all info for this benchmark
+        df_benchmark = pd.DataFrame(columns=gv.column_names)
 
         for test_name, file_path in tests:
-            if not os.path.isfile(file_path):
-                print("ERROR:", file_path, "could not be found")
-                continue
-
-            if should_print:
-                print("Reading data at " + file_path)
-
-            results_folder = os.path.join(output_folder, test_name)
-            results_folder_path = os.path.join(output_dir, results_folder)
-            make_dir(results_folder_path, False)
-
-            # Read csv with lookahead data (or, a csv previously created by this script)
-            df = pd.read_csv(file_path)
-            df = df.reset_index(drop=True)
-            df = df.drop(columns=["cost error",
-                                  "cost absolute error",
-                                  "cost % error",
-                                  "delay error",
-                                  "delay absolute error",
-                                  "delay % error",
-                                  "congestion error",
-                                  "congestion absolute error",
-                                  "congestion % error",
-                                  "test name"], errors="ignore")
-
-            # Determine exclusions, and remove them from df
-            for key, val in exclusions.items():
-                for item in val:
-                    ldict = {}
-                    code_line = f"df = df.drop(index=df[df[\"{key}\"] {item[0]} {item[1]}].index.values.tolist())"
-                    exec(code_line, locals(), ldict)
-                    df = ldict["df"]
-                    df = df.reset_index(drop=True)
-
-            # Calculate error columns and add test name column
-            create_error_columns(df)
-            df.insert(len(df.columns), "test name", test_name)
-
-            # Add current DF to DF for entire benchmark
-            df_benchmark = pd.concat([df_benchmark, df])
-
-            # If --collect option used, skip creating files for individual circuits
-            if args.collect != "":
-                continue
-
-            # Write out stats summary and csv file
-            print_and_write("Test: " + test_name, results_folder_path)
-            record_df_info(df, results_folder_path)
-
-            # Create plots
-            curr_plots = Graphs(df, os.path.join(results_folder, "plots"), test_name)
-            curr_plots.make_standard_plots(False)
-
-            if should_print:
-                print(
-                    "\n----------------------------------------------------------------------------------------------"
-                )
+            # Create output files for this circuit/test
+            df_benchmark = create_circuit_outputs(args,
+                                                  df_benchmark,
+                                                  file_path,
+                                                  gv,
+                                                  output_folder,
+                                                  test_name)
 
         # Create output files for entire benchmark
-
-        if len(tests) == 1:
-            continue
-
-        results_folder = os.path.join(output_folder, "__all__")
-        results_folder_path = os.path.join(output_dir, results_folder)
-        make_dir(results_folder_path, False)
-
-        df_benchmark = df_benchmark.reset_index(drop=True)
-        if args.collect != "":
-            df_complete = pd.concat([df_complete, df_benchmark])
-            continue
-
-        print_and_write("Global results:\n", results_folder_path)
-        record_df_info(df_benchmark, results_folder_path)
-
-        global_plots = Graphs(df_benchmark, os.path.join(results_folder, "plots"), f"All Tests ({output_folder})")
-        global_plots.make_standard_plots(True)
+        df_complete = create_benchmark_outputs(args,
+                                               df_benchmark,
+                                               df_complete,
+                                               gv,
+                                               output_folder,
+                                               tests)
 
     # If --collect used, create output files for all csv files provided
-
     if args.collect != "":
-        results_folder = args.collect[0]
-        results_folder_path = os.path.join(output_dir, results_folder)
-        if len(args.dir_app) > 0:
-            results_folder_path += f"{args.dir_app[0]}"
-        make_dir(results_folder_path, False)
-
-        df_complete = df_complete.reset_index(drop=True)
-
-        record_df_info(df_complete, results_folder_path)
-
-        global_plots = Graphs(df_complete, os.path.join(results_folder, "plots"), "All Tests")
-        global_plots.make_standard_plots(True)
+        create_complete_outputs(args, df_complete, gv)
 
 
 if __name__ == "__main__":
