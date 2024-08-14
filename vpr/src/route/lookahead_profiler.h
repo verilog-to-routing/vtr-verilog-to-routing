@@ -15,17 +15,20 @@
 class LookaheadProfiler {
   public:
     LookaheadProfiler()
-        : is_empty_(true) {}
+        : enabled_(false) {}
 
     LookaheadProfiler(const LookaheadProfiler&) = delete;
     LookaheadProfiler& operator=(const LookaheadProfiler&) = delete;
 
     /**
-     * @brief Enable or disable the LookaheadProfiler.
+     * @brief Set the name of the output file.
      *
-     * @param should_enable Whether the profiler should be enabled.
+     * @note
+     * Passing in an empty string will disable the profiler.
+     *
+     * @param file_name The name of the output csv file.
      */
-    void enable(bool should_enable);
+    void set_file_name(const std::string& file_name);
 
     /**
      * @brief Record information on nodes on a path from a source to a sink.
@@ -59,8 +62,8 @@ class LookaheadProfiler {
     bool enabled_;
     ///@brief The output filestream.
     std::ofstream lookahead_verifier_csv_;
-    ///@brief Whether the output file is empty/not yet opened.
-    bool is_empty_;
+    ///@brief The output file name.
+    std::string file_name_;
     ///@brief A map from sink node IDs to their atom blocks' IDs.
     std::unordered_map<RRNodeId, ParentBlockId> net_pin_blocks_;
     ///@brief A map from sink node IDs to a pointer to the model of their atom blocks.

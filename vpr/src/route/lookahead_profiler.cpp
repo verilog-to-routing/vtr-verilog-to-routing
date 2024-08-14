@@ -8,8 +8,42 @@
 #include "vtr_error.h"
 #include "vtr_log.h"
 
-void LookaheadProfiler::enable(bool should_enable) {
-    enabled_ = should_enable;
+void LookaheadProfiler::set_file_name(const std::string& file_name) {
+    enabled_ = !file_name.empty();
+    if (!enabled_)
+        return;
+
+    lookahead_verifier_csv_.open(file_name, std::ios::out);
+
+    if (!lookahead_verifier_csv_.is_open()) {
+        std::string message = "Could not open " + file_name;
+        VTR_LOG_ERROR(message.c_str());
+        throw vtr::VtrError(message, "lookahead_profiler.cpp", 21);
+    }
+
+    lookahead_verifier_csv_
+        << "iteration no."
+        << ",source node"
+        << ",sink node"
+        << ",sink block name"
+        << ",sink atom block model"
+        << ",sink cluster block type"
+        << ",sink cluster tile height"
+        << ",sink cluster tile width"
+        << ",current node"
+        << ",node type"
+        << ",node length"
+        << ",num. nodes from sink"
+        << ",delta x"
+        << ",delta y"
+        << ",actual cost"
+        << ",actual delay"
+        << ",actual congestion"
+        << ",predicted cost"
+        << ",predicted delay"
+        << ",predicted congestion"
+        << ",criticality"
+        << "\n";
 }
 
 void LookaheadProfiler::record(int iteration,
@@ -26,49 +60,9 @@ void LookaheadProfiler::record(int iteration,
     if (!enabled_)
         return;
 
-    // If csv file hasn't been opened, open it and write out column headers
-    if (is_empty_) {
-        lookahead_verifier_csv_.open("lookahead_verifier_info.csv", std::ios::out);
-
-        if (!lookahead_verifier_csv_.is_open()) {
-            VTR_LOG_ERROR("Could not open lookahead_verifier_info.csv");
-            throw vtr::VtrError("Could not open lookahead_verifier_info.csv",
-                                "lookahead_profiler.cpp",
-                                28);
-        }
-
-        lookahead_verifier_csv_
-            << "iteration no."
-            << ",source node"
-            << ",sink node"
-            << ",sink block name"
-            << ",sink atom block model"
-            << ",sink cluster block type"
-            << ",sink cluster tile height"
-            << ",sink cluster tile width"
-            << ",current node"
-            << ",node type"
-            << ",node length"
-            << ",num. nodes from sink"
-            << ",delta x"
-            << ",delta y"
-            << ",actual cost"
-            << ",actual delay"
-            << ",actual congestion"
-            << ",predicted cost"
-            << ",predicted delay"
-            << ",predicted congestion"
-            << ",criticality"
-            << "\n";
-
-        is_empty_ = false;
-    }
-
     if (!lookahead_verifier_csv_.is_open()) {
-        VTR_LOG_ERROR("lookahead_verifier_info.csv is not open.");
-        throw vtr::VtrError("lookahead_verifier_info.csv is not open.",
-                            "lookahead_profiler.cpp",
-                            62);
+        VTR_LOG_ERROR("Output file is not open.");
+        throw vtr::VtrError("Output file is not open.", "lookahead_profiler.cpp", 65);
     }
 
     // The default value in RouteTree::update_from_heap() is -1; only calls which descend from route_net()

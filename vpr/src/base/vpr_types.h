@@ -1458,7 +1458,6 @@ struct t_router_opts {
     int router_debug_sink_rr;
     int router_debug_iteration;
     e_router_lookahead lookahead_type;
-    bool router_lookahead_profiling;
     int max_convergence_count;
     float reconvergence_cpd_threshold;
     e_router_initial_timing initial_timing;
@@ -1472,6 +1471,8 @@ struct t_router_opts {
 
     std::string write_intra_cluster_router_lookahead;
     std::string read_intra_cluster_router_lookahead;
+
+    std::string lookahead_profiling_output;
 
     e_heap_type router_heap;
     bool exit_after_first_routing_iteration;

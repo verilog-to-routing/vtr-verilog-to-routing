@@ -473,7 +473,6 @@ static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts)
     RouterOpts->router_debug_sink_rr = Options.router_debug_sink_rr;
     RouterOpts->router_debug_iteration = Options.router_debug_iteration;
     RouterOpts->lookahead_type = Options.router_lookahead_type;
-    RouterOpts->router_lookahead_profiling = Options.router_lookahead_profiler;
     RouterOpts->max_convergence_count = Options.router_max_convergence_count;
     RouterOpts->reconvergence_cpd_threshold = Options.router_reconvergence_cpd_threshold;
     RouterOpts->initial_timing = Options.router_initial_timing;
@@ -486,6 +485,8 @@ static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts)
 
     RouterOpts->write_intra_cluster_router_lookahead = Options.write_intra_cluster_router_lookahead;
     RouterOpts->read_intra_cluster_router_lookahead = Options.read_intra_cluster_router_lookahead;
+
+    RouterOpts->lookahead_profiling_output = Options.lookahead_profiling_output;
 
     RouterOpts->router_heap = Options.router_heap;
     RouterOpts->exit_after_first_routing_iteration = Options.exit_after_first_routing_iteration;

@@ -222,7 +222,7 @@ bool route(const Netlist<>& net_list,
         is_flat);
 
     // Enable lookahead profiling if command-line option used
-    route_ctx.lookahead_profiler.enable(router_opts.router_lookahead_profiling);
+    route_ctx.lookahead_profiler.set_file_name(router_opts.lookahead_profiling_output);
 
     RouterStats router_stats;
     float prev_iter_cumm_time = 0;

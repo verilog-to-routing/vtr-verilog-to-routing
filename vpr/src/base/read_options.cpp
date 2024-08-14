@@ -1673,6 +1673,13 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .help("Writes the intra-cluster lookahead data to the specified file.")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    file_grp.add_argument(args.lookahead_profiling_output, "--profile_router_lookahead")
+        .help(
+            "For every routed sink, record the cost, delay, and congestion estimated by the router lookahead and the "
+            "actual cost, delay, and congestion, from every node along each route to the sink. These results, along with many "
+            "other attributes of the node, are recorded into the file name provided. File extension must be .csv.")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     file_grp.add_argument(args.read_placement_delay_lookup, "--read_placement_delay_lookup")
         .help(
             "Reads the placement delay lookup from the specified file instead of computing it.")
@@ -2624,14 +2631,6 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             " kinds of connections, but note that the time and memory necessary to compute the\n"
             " extended lookahead map are greater than the basic lookahead map.\n")
         .default_value("map")
-        .show_in(argparse::ShowIn::HELP_ONLY);
-
-    route_timing_grp.add_argument<bool, ParseOnOff>(args.router_lookahead_profiler, "--router_lookahead_profiler")
-        .help(
-            "For every routed sink, records the cost, delay, and congestion estimated by the router lookahead and the "
-            "actual cost, delay, and congestion, from every node along each route to the sink. These results, along with many "
-            "other attributes of the node, are recorded into lookahead_verifier_info.csv.")
-        .default_value("off")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_timing_grp.add_argument(args.router_max_convergence_count, "--router_max_convergence_count")
