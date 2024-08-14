@@ -1187,12 +1187,13 @@ void initial_placement(const t_placer_opts& placer_opts,
     clear_all_grid_locs();
 
     /* Go through cluster blocks to calculate the tightest placement
-    * floorplan constraint for each constrained block
-    */
+     * floorplan constraint for each constrained block
+     */
     propagate_place_constraints();
 
     /*Mark the blocks that have already been locked to one spot via floorplan constraints
-    * as fixed, so they do not get moved during initial placement or later during the simulated annealing stage of placement*/
+     * as fixed, so they do not get moved during initial placement or later during the simulated annealing stage of placement
+     */
     mark_fixed_blocks();
 
     // Compute and store compressed floorplanning constraints
