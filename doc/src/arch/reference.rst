@@ -2036,6 +2036,12 @@ The ``<segment>`` tag and its contents are described below.
 
     Tag must be included and ``name`` must be the same as the name you give in ``<switch type="mux" name="...``
 
+.. arch:tag:: <mux_inter_die name="string"/>
+
+    :req_param name: Name of the mux switch type used to drive this segment type when the driver (block outputs and other wires) is located on a different die than the segment. This information is utilized during rr-graph construction.
+
+    Tag must be included and ``name`` must be the same as the name you give in ``<switch type="mux" name="...``
+
 .. arch:tag:: <wire_switch name="string"/>
 
     :req_param name: Name of the switch type used by other wires to drive this type of segment by default. This information is used during rr-graph construction, and a custom switch block can override this switch type for specific connections if desired.
