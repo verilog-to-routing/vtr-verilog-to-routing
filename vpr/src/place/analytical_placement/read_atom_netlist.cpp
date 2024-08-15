@@ -7,11 +7,10 @@
 #include "partition.h"
 #include "partition_region.h"
 #include "prepack.h"
-#include "region.h"
-#include "vpr_constraints.h"
 #include "vpr_context.h"
 #include "vpr_types.h"
 #include "vtr_assert.h"
+#include "vtr_geometry.h"
 #include "vtr_log.h"
 #include "vtr_time.h"
 #include <unordered_map>
@@ -35,7 +34,7 @@ static void prepack_atom_netlist(AtomContext& mutable_atom_ctx) {
     free_list_of_pack_patterns(list_of_pack_patterns);
 }
 
-APNetlist read_atom_netlist(AtomContext& mutable_atom_ctx, const VprConstraints& constraints) {
+APNetlist read_atom_netlist(AtomContext& mutable_atom_ctx, const UserPlaceConstraints& constraints) {
     vtr::ScopedStartFinishTimer timer("Read Atom Netlist to AP Netlist");
 
     // Prepack the atom netlist into molecules.
@@ -102,13 +101,13 @@ APNetlist read_atom_netlist(AtomContext& mutable_atom_ctx, const VprConstraints&
             VTR_ASSERT(ap_netlist.block_type(ap_blk_id) == APBlockType::MOVEABLE);
             const PartitionRegion& partition_pr = constraints.get_partition_pr(part_id);
             VTR_ASSERT(partition_pr.get_regions().size() == 1 && "Each partition should contain only one region!");
-            RegionRectCoord region_rect = partition_pr.get_regions()[0].get_region_rect();
-            VTR_ASSERT(region_rect.xmin == region_rect.xmax && "Expect each region to be a single point in x!");
-            VTR_ASSERT(region_rect.ymin == region_rect.ymax && "Expect each region to be a single point in y!");
+            const vtr::Rect<int>& region_rect = partition_pr.get_regions()[0].get_rect();
+            VTR_ASSERT(region_rect.xmin() == region_rect.xmax() && "Expect each region to be a single point in x!");
+            VTR_ASSERT(region_rect.ymin() == region_rect.ymax() && "Expect each region to be a single point in y!");
             // FIXME: Here we are assuming the user is not using the optional
             //        arguments to fix the sub_tile and layer_num. This should be
             //        expressed! Do not merge unless this is done.
-            APFixedBlockLoc loc = {region_rect.xmin, region_rect.ymin, -1, -1};
+            APFixedBlockLoc loc = {region_rect.xmin(), region_rect.ymin(), -1, -1};
             ap_netlist.set_block_loc(ap_blk_id, loc);
         }
     }

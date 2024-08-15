@@ -2,8 +2,8 @@
 #pragma once
 
 class AtomContext;
-class VprConstraints;
+class UserPlaceConstraints;
 class APNetlist;
 
-APNetlist read_atom_netlist(AtomContext& mutable_atom_ctx, const VprConstraints& constraints);
+APNetlist read_atom_netlist(AtomContext& mutable_atom_ctx, const UserPlaceConstraints& constraints);
 

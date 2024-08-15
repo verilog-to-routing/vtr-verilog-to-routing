@@ -8,7 +8,7 @@
 #include "PlacementLegalizer.h"
 #include "globals.h"
 #include "read_atom_netlist.h"
-#include "vpr_constraints.h"
+#include "user_place_constraints.h"
 #include "vpr_context.h"
 #include "vtr_assert.h"
 #include "vtr_time.h"
@@ -19,7 +19,7 @@ void run_analytical_placement_flow() {
     // The global state used/modified by this flow.
     AtomContext& mutable_atom_ctx = g_vpr_ctx.mutable_atom();
     const DeviceContext& device_ctx = g_vpr_ctx.device();
-    const VprConstraints& constraints = g_vpr_ctx.floorplanning().constraints;
+    const UserPlaceConstraints& constraints = g_vpr_ctx.floorplanning().constraints;
 
     // Create the ap netlist from the atom netlist.
     // FIXME: Resolve name.
