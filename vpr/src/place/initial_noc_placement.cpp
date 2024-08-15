@@ -241,7 +241,7 @@ static void noc_routers_anneal(const t_noc_opts& noc_opts) {
     // Generate and evaluate router moves
     for (int i_move = 0; i_move < N_MOVES; i_move++) {
         e_create_move create_move_outcome = e_create_move::ABORT;
-        clear_move_blocks(blocks_affected);
+        blocks_affected.clear_move_blocks();
         // Shrink the range limit over time
         float r_lim_decayed = 1.0f + (N_MOVES - i_move) * (max_r_lim / N_MOVES);
         create_move_outcome = propose_router_swap(blocks_affected, r_lim_decayed);

@@ -115,12 +115,18 @@ constexpr auto INVALID_BLOCK_ID = ClusterBlockId(-2);
 #    define UNDEFINED (-1)
 #endif
 
+///@brief Router lookahead types.
 enum class e_router_lookahead {
-    CLASSIC,        ///<VPR's classic lookahead (assumes uniform wire types)
-    MAP,            ///<Lookahead considering different wire types (see Oleg Petelin's MASc Thesis)
-    COMPRESSED_MAP, /// Similar to MAP, but use a sparse sampling of the chip
-    EXTENDED_MAP,   ///<Lookahead with a more extensive node sampling method
-    NO_OP           ///<A no-operation lookahead which always returns zero
+    ///@brief VPR's classic lookahead (assumes uniform wire types)
+    CLASSIC,
+    ///@brief Lookahead considering different wire types (see Oleg Petelin's MASc Thesis)
+    MAP,
+    ///@brief Similar to MAP, but use a sparse sampling of the chip
+    COMPRESSED_MAP,
+    ///@brief Lookahead with a more extensive node sampling method
+    EXTENDED_MAP,
+    ///@brief A no-operation lookahead which always returns zero
+    NO_OP
 };
 
 enum class e_route_bb_update {
@@ -1230,6 +1236,7 @@ struct t_placer_opts {
     enum e_pad_loc_type pad_loc_type;
     std::string constraints_file;
     std::string write_initial_place_file;
+    std::string read_initial_place_file;
     enum pfreq place_freq;
     int recompute_crit_iter;
     int inner_loop_recompute_divider;
@@ -1337,6 +1344,8 @@ struct t_placer_opts {
  *             an essentially breadth-first search, astar_fac = 1 is near   *
  *             the usual astar algorithm and astar_fac > 1 are more         *
  *             aggressive.                                                  *
+ * astar_offset: Offset that is subtracted from the lookahead (expected     *
+ *               future costs) in the timing-driven router.                 *
  * max_criticality: The maximum criticality factor (from 0 to 1) any sink   *
  *                  will ever have (i.e. clip criticality to this number).  *
  * criticality_exp: Set criticality to (path_length(sink) / longest_path) ^ *
@@ -1425,6 +1434,7 @@ struct t_router_opts {
     enum e_router_algorithm router_algorithm;
     enum e_base_cost_type base_cost_type;
     float astar_fac;
+    float astar_offset;
     float router_profiler_astar_fac;
     float max_criticality;
     float criticality_exp;
@@ -1918,5 +1928,11 @@ void free_pack_molecules(t_pack_molecule* list_of_pack_molecules);
  * @brief Free the linked lists to placement locations based on status of primitive inside placement stats data structure.
  */
 void free_cluster_placement_stats(t_cluster_placement_stats* cluster_placement_stats);
+
+struct pair_hash {
+    std::size_t operator()(const std::pair<ClusterBlockId, ClusterBlockId>& p) const noexcept {
+        return std::hash<ClusterBlockId>()(p.first) ^ (std::hash<ClusterBlockId>()(p.second) << 1);
+    }
+};
 
 #endif

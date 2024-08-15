@@ -92,17 +92,22 @@ class Point {
     ///@brief Swap x and y values
     void swap();
 
-    /// @brief += operator
-    Point<T>& operator+= (const Point<T>& rhs);
+    /// @brief + operator
+    Point<T> operator+(const Point<T>& rhs);
+
+    /// @brief - operator
+    Point<T> operator-(const Point<T>& rhs);
 
     /// @brief += operator
-    Point<T>& operator-= (const Point<T>& rhs);
+    Point<T>& operator+=(const Point<T>& rhs);
+
+    /// @brief -= operator
+    Point<T>& operator-=(const Point<T>& rhs);
 
   private:
     T x_;
     T y_;
 };
-
 
 /**
  * @brief A 2D rectangle
@@ -203,11 +208,11 @@ class Rect {
     ///@brief set ymax to a point
     void set_ymax(T ymax_val);
 
-    /// @brief += operator
-    Rect<T>& operator+= (const Point<T>& rhs);
+    /// @brief += operator; translates all corners of the rectangle by rhs
+    Rect<T>& operator+=(const Point<T>& rhs);
 
-    /// @brief -= operator
-    Rect<T>& operator-= (const Point<T>& rhs);
+    /// @brief -= operator; translates all corners of the rectangle by -rhs
+    Rect<T>& operator-=(const Point<T>& rhs);
 
     ///@brief Equivalent to `*this = bounding_box(*this, other)`
     Rect<T>& expand_bounding_box(const Rect<T>& other);

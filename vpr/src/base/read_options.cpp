@@ -1632,6 +1632,11 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .metavar("INITIAL_PLACE_FILE")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    file_grp.add_argument(args.read_initial_place_file, "--read_initial_place_file")
+        .help("Reads the initial placement and continues the rest of the placement process from there.")
+        .metavar("INITIAL_PLACE_FILE")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     file_grp.add_argument(args.read_vpr_constraints_file, "--read_vpr_constraints")
         .help("Reads the floorplanning constraints that packing and placement must respect from the specified XML file.")
         .show_in(argparse::ShowIn::HELP_ONLY);
@@ -2497,6 +2502,14 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             "Controls the directedness of the timing-driven router's exploration."
             " Values between 1 and 2 are resonable; higher values trade some quality for reduced run-time")
         .default_value("1.2")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    route_timing_grp.add_argument(args.astar_offset, "--astar_offset")
+        .help(
+            "Controls the directedness of the timing-driven router's exploration."
+            " It is a subtractive adjustment to the lookahead heuristic."
+            " Values between 0 and 1e-9 are resonable; higher values may increase quality at the expense of run-time.")
+        .default_value("0.0")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_timing_grp.add_argument(args.router_profiler_astar_fac, "--router_profiler_astar_fac")

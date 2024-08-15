@@ -434,8 +434,8 @@ static AtomPinId find_atom_pin_for_pb_route_id(ClusterBlockId clb, int pb_route_
     return AtomPinId::INVALID();
 }
 
-/* Return the net pin which drive the CLB input connected to sink_pb_pin_id, or nullptr if none (i.e. driven internally)
- *   clb: Block in which the the sink pin is located on
+/* Return the net pin which drives the CLB input connected to sink_pb_pin_id, or nullptr if none (i.e. driven internally)
+ *   clb: Block on which the sink pin is located
  *   sink_pb_pin_id: The physical pin index of the sink pin on the block
  *
  *  Returns a tuple containing

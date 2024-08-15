@@ -382,6 +382,7 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
 
     if (TIMING_DRIVEN == RouterOpts.router_algorithm) {
         VTR_LOG("RouterOpts.astar_fac: %f\n", RouterOpts.astar_fac);
+        VTR_LOG("RouterOpts.astar_offset: %f\n", RouterOpts.astar_offset);
         VTR_LOG("RouterOpts.router_profiler_astar_fac: %f\n", RouterOpts.router_profiler_astar_fac);
         VTR_LOG("RouterOpts.criticality_exp: %f\n", RouterOpts.criticality_exp);
         VTR_LOG("RouterOpts.max_criticality: %f\n", RouterOpts.max_criticality);
@@ -608,7 +609,7 @@ static void ShowPlacerOpts(const t_placer_opts& PlacerOpts,
 }
 
 static void ShowNetlistOpts(const t_netlist_opts& NetlistOpts) {
-    VTR_LOG("NetlistOpts.abosrb_buffer_luts            : %s\n", (NetlistOpts.absorb_buffer_luts) ? "true" : "false");
+    VTR_LOG("NetlistOpts.absorb_buffer_luts            : %s\n", (NetlistOpts.absorb_buffer_luts) ? "true" : "false");
     VTR_LOG("NetlistOpts.sweep_dangling_primary_ios    : %s\n", (NetlistOpts.sweep_dangling_primary_ios) ? "true" : "false");
     VTR_LOG("NetlistOpts.sweep_dangling_nets           : %s\n", (NetlistOpts.sweep_dangling_nets) ? "true" : "false");
     VTR_LOG("NetlistOpts.sweep_dangling_blocks         : %s\n", (NetlistOpts.sweep_dangling_blocks) ? "true" : "false");
