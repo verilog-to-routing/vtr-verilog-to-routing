@@ -162,8 +162,8 @@ void LookaheadProfiler::record(int iteration,
 }
 
 void LookaheadProfiler::clear() {
-    net_pin_blocks_.clear();
-    sink_atom_block_.clear();
-    sink_cluster_block_.clear();
-    tile_types_.clear();
+    vtr::release_memory(net_pin_blocks_);
+    vtr::release_memory(sink_atom_block_);
+    vtr::release_memory(sink_cluster_block_);
+    vtr::release_memory(tile_types_);
 }
