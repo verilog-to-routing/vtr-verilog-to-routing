@@ -48,6 +48,7 @@
 #include <unordered_map>
 #include <stdexcept>
 #include <climits>
+#include <cstdint>
 #include <algorithm>
 #include <array>
 
