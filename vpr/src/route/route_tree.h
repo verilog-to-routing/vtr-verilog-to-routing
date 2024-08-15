@@ -366,7 +366,7 @@ class RouteTree {
                      const t_conn_cost_params cost_params,
                      const Netlist<>& net_list,
                      const ParentNetId& net_id,
-                     const int itry);
+                     const int itry = -1);
 
     /** Reload timing values (R_upstream, C_downstream, Tdel).
      * Can take a RouteTreeNode& to do an incremental update.

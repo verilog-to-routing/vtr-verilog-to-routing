@@ -94,7 +94,7 @@ static float do_one_route(RRNodeId source_node,
                                                                        router.get_router_lookahead(),
                                                                        cost_params,
                                                                        net_list,
-                                                                       conn_params.net_id_, 0);
+                                                                       conn_params.net_id_);
         delay = rt_node_of_sink.value().Tdel;
     }
 

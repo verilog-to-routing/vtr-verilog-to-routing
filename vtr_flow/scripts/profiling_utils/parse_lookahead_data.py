@@ -1389,8 +1389,7 @@ def main():
     q = deque()
     for func, params in gv.processes:
         while len(q) >= args.j:
-            proc = q.popleft()
-            proc.join()
+            q.popleft().join()
 
         proc = Process(target=func, args=params)
         proc.start()

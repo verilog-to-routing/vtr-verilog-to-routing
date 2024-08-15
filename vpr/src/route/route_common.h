@@ -191,11 +191,15 @@ void add_node_to_heap(
     float backward_path_delay,
     float backward_path_congestion,
     float R_upstream) {
-    t_heap* hptr = prepare_to_add_node_to_heap(
-        heap,
-        rr_node_route_inf, inode, total_cost,
-        prev_edge, backward_path_cost, backward_path_delay,
-        backward_path_congestion, R_upstream);
+    t_heap* hptr = prepare_to_add_node_to_heap(heap,
+                                               rr_node_route_inf,
+                                               inode,
+                                               total_cost,
+                                               prev_edge,
+                                               backward_path_cost,
+                                               backward_path_delay,
+                                               backward_path_congestion,
+                                               R_upstream);
     if (hptr) {
         heap->add_to_heap(hptr);
     }
@@ -215,10 +219,15 @@ void push_back_node(
     float backward_path_delay,
     float backward_path_congestion,
     float R_upstream) {
-    t_heap* hptr = prepare_to_add_node_to_heap(
-        heap,
-        rr_node_route_inf, inode, total_cost, prev_edge,
-        backward_path_cost, backward_path_delay, backward_path_congestion, R_upstream);
+    t_heap* hptr = prepare_to_add_node_to_heap(heap,
+                                               rr_node_route_inf,
+                                               inode,
+                                               total_cost,
+                                               prev_edge,
+                                               backward_path_cost,
+                                               backward_path_delay,
+                                               backward_path_congestion,
+                                               R_upstream);
     if (hptr) {
         heap->push_back(hptr);
     }

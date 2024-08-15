@@ -128,7 +128,7 @@ bool RouterDelayProfiler::calculate_delay(RRNodeId source_node,
                                                                        router_.get_router_lookahead(),
                                                                        cost_params,
                                                                        net_list_,
-                                                                       conn_params.net_id_, 0);
+                                                                       conn_params.net_id_);
 
         //find delay
         *net_delay = rt_node_of_sink->Tdel;
@@ -225,7 +225,7 @@ vtr::vector<RRNodeId, float> calculate_all_path_delays_from_rr_node(RRNodeId src
                                                                            router.get_router_lookahead(),
                                                                            cost_params,
                                                                            net_list,
-                                                                           conn_params.net_id_, 0);
+                                                                           conn_params.net_id_);
 
             VTR_ASSERT(rt_node_of_sink->inode == RRNodeId(sink_rr_node));
 
