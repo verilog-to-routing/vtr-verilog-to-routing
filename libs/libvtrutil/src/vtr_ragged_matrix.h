@@ -238,11 +238,11 @@ class FlatRaggedMatrix {
             return !(*this == other);
         }
 
-        int operator-(const RowLengthIterator& other) {
+        difference_type operator-(const RowLengthIterator& other) {
             return irow_ - other.irow_;
         }
 
-        size_t operator*() {
+        value_type operator*() {
             //Call the callback to get the row length
             return callback_(Index0(irow_));
         }
