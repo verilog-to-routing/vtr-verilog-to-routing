@@ -604,26 +604,24 @@ float ExtendedMapLookahead::get_expected_cost(
     }
 }
 
+void ExtendedMapLookahead::read(const std::string& file) {
 #ifndef VTR_ENABLE_CAPNPROTO
-
-void ExtendedMapLookahead::read(const std::string& file) {
-    VPR_THROW(VPR_ERROR_ROUTE, "MapLookahead::read not implemented");
-}
-void ExtendedMapLookahead::write(const std::string& file) const {
-    VPR_THROW(VPR_ERROR_ROUTE, "MapLookahead::write not implemented");
-}
-
-#else
-
-void ExtendedMapLookahead::read(const std::string& file) {
     cost_map_.read(file);
 
     this->src_opin_delays = util::compute_router_src_opin_lookahead(is_flat_);
 
     this->chan_ipins_delays = util::compute_router_chan_ipin_lookahead();
-}
-void ExtendedMapLookahead::write(const std::string& file) const {
-    cost_map_.write(file);
+#else  // VTR_ENABLE_CAPNPROTO
+    (void)file;
+    VPR_THROW(VPR_ERROR_ROUTE, "MapLookahead::read not implemented");
+#endif // VTR_ENABLE_CAPNPROTO
 }
 
-#endif
+void ExtendedMapLookahead::write(const std::string& file) const {
+#ifndef VTR_ENABLE_CAPNPROTO
+    cost_map_.write(file);
+#else  // VTR_ENABLE_CAPNPROTO
+    (void)file;
+    VPR_THROW(VPR_ERROR_ROUTE, "MapLookahead::write not implemented");
+#endif // VTR_ENABLE_CAPNPROTO
+}

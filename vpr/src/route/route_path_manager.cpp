@@ -45,7 +45,6 @@ void PathManager::insert_backwards_path_into_traceback(t_heap_path* path_data, f
     for (unsigned i = 1; i < path_data->edge.size() - 1; i++) {
         RRNodeId node_2 = path_data->path_rr[i];
         RREdgeId edge = path_data->edge[i - 1];
-        route_ctx.rr_node_route_inf[node_2].prev_node = path_data->path_rr[i - 1];
         route_ctx.rr_node_route_inf[node_2].prev_edge = edge;
         route_ctx.rr_node_route_inf[node_2].path_cost = cost;
         route_ctx.rr_node_route_inf[node_2].backward_path_cost = backward_path_cost;

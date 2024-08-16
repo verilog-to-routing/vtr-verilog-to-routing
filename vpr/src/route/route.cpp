@@ -155,7 +155,8 @@ bool route(const Netlist<>& net_list,
     VTR_ASSERT(router_lookahead != nullptr);
 
     /* Routing parameters */
-    float pres_fac = update_draw_pres_fac(router_opts.first_iter_pres_fac); /* Typically 0 -> ignore cong. */
+    float pres_fac = router_opts.first_iter_pres_fac;
+    update_draw_pres_fac(pres_fac); /* Typically 0 -> ignore cong. */
     int bb_fac = router_opts.bb_factor;
 
     /* When routing conflicts are detected the bounding boxes are scaled
@@ -227,7 +228,7 @@ bool route(const Netlist<>& net_list,
     int itry_since_last_convergence = -1;
 
     // This heap is used for reserve_locally_used_opins.
-    BinaryHeap small_heap;
+    FourAryHeap small_heap;
     small_heap.init_heap(device_ctx.grid);
 
     // When RCV is enabled the router will not stop unless negative hold slack is 0
@@ -357,7 +358,8 @@ bool route(const Netlist<>& net_list,
             //Decrease pres_fac so that critical connections will take more direct routes
             //Note that we use first_iter_pres_fac here (typically zero), and switch to
             //use initial_pres_fac on the next iteration.
-            pres_fac = update_draw_pres_fac(router_opts.first_iter_pres_fac);
+            pres_fac = router_opts.first_iter_pres_fac;
+            update_draw_pres_fac(pres_fac);
 
             //Reduce timing tolerances to re-route more delay-suboptimal signals
             connections_inf.set_connection_criticality_tolerance(0.7);
@@ -374,7 +376,8 @@ bool route(const Netlist<>& net_list,
             //after the first routing convergence. Since that is often zero,
             //we want to set pres_fac to a reasonable (i.e. typically non-zero)
             //value afterwards -- so it grows when multiplied by pres_fac_mult
-            pres_fac = update_draw_pres_fac(router_opts.initial_pres_fac);
+            pres_fac = router_opts.initial_pres_fac;
+            update_draw_pres_fac(pres_fac);
         }
 
         //Have we converged the maximum number of times, did not make any changes, or does it seem
@@ -437,12 +440,13 @@ bool route(const Netlist<>& net_list,
 
         //Update pres_fac
         if (itry == 1) {
-            pres_fac = update_draw_pres_fac(router_opts.initial_pres_fac);
+            pres_fac = router_opts.initial_pres_fac;
+            update_draw_pres_fac(pres_fac);
         } else {
             pres_fac *= router_opts.pres_fac_mult;
-
-            /* Avoid overflow for high iteration counts, even if acc_cost is big */
-            pres_fac = update_draw_pres_fac(std::min(pres_fac, static_cast<float>(HUGE_POSITIVE_FLOAT / 1e5)));
+            pres_fac = std::min(pres_fac, router_opts.max_pres_fac);
+            /* Set the maximum pres_fac to the value passed by the command line argument */
+            update_draw_pres_fac(pres_fac);
 
             // Increase short path criticality if it's having a hard time resolving hold violations due to congestion
             if (budgeting_inf.if_set()) {
@@ -559,6 +563,9 @@ bool route(const Netlist<>& net_list,
         // profiling::time_on_criticality_analysis();
     }
 
+    /* Write out partition tree logs (no-op if debug option not set) */
+    PartitionTreeDebug::write("partition_tree.log");
+
     if (success) {
         VTR_LOG("Restoring best routing\n");
 
@@ -601,9 +608,11 @@ bool route(const Netlist<>& net_list,
     VTR_ASSERT(router_stats.heap_pushes >= router_stats.intra_cluster_node_pushes);
     VTR_ASSERT(router_stats.heap_pops >= router_stats.intra_cluster_node_pops);
     VTR_LOG(
-        "Router Stats: total_nets_routed: %zu total_connections_routed: %zu total_heap_pushes: %zu total_heap_pops: %zu "
+        "Router Stats: total_nets_routed: %zu total_connections_routed: %zu total_heap_pushes: %zu total_heap_pops: %zu ",
+        router_stats.nets_routed, router_stats.connections_routed, router_stats.heap_pushes, router_stats.heap_pops);
+#ifdef VTR_ENABLE_DEBUG_LOGGING
+    VTR_LOG(
         "total_internal_heap_pushes: %zu total_internal_heap_pops: %zu total_external_heap_pushes: %zu total_external_heap_pops: %zu ",
-        router_stats.nets_routed, router_stats.connections_routed, router_stats.heap_pushes, router_stats.heap_pops,
         router_stats.intra_cluster_node_pushes, router_stats.intra_cluster_node_pops,
         router_stats.inter_cluster_node_pushes, router_stats.inter_cluster_node_pops);
     for (int node_type_idx = 0; node_type_idx < t_rr_type::NUM_RR_TYPES; node_type_idx++) {
@@ -612,13 +621,8 @@ bool route(const Netlist<>& net_list,
         VTR_LOG("total_internal_%s_pushes: %zu ", rr_node_typename[node_type_idx], router_stats.intra_cluster_node_type_cnt_pushes[node_type_idx]);
         VTR_LOG("total_internal_%s_pops: %zu ", rr_node_typename[node_type_idx], router_stats.intra_cluster_node_type_cnt_pops[node_type_idx]);
         VTR_LOG("rt_node_%s_pushes: %zu ", rr_node_typename[node_type_idx], router_stats.rt_node_pushes[node_type_idx]);
-        VTR_LOG("rt_node_%s_high_fanout_pushes: %zu ", rr_node_typename[node_type_idx], router_stats.rt_node_high_fanout_pushes[node_type_idx]);
-        VTR_LOG("rt_node_%s_entire_tree_pushes: %zu ", rr_node_typename[node_type_idx], router_stats.rt_node_entire_tree_pushes[node_type_idx]);
     }
-
-    VTR_LOG("total_number_of_adding_all_rt: %zu ", router_stats.add_all_rt);
-    VTR_LOG("total_number_of_adding_high_fanout_rt: %zu ", router_stats.add_high_fanout_rt);
-    VTR_LOG("total_number_of_adding_all_rt_from_calling_high_fanout_rt: %zu ", router_stats.add_all_rt_from_high_fanout);
+#endif
     VTR_LOG("\n");
 
     return success;

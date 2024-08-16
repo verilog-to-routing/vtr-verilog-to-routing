@@ -90,6 +90,7 @@
 #include "route_tree_fwd.h"
 #include "vtr_assert.h"
 #include "spatial_route_tree_lookup.h"
+#include "vtr_dynamic_bitset.h"
 #include "vtr_optional.h"
 #include "vtr_range.h"
 #include "vtr_vec_id_set.h"
@@ -432,10 +433,10 @@ class RouteTree {
         using pointer = int*;
         using reference = int&;
 
-        constexpr IsinkIterator(const std::vector<bool>& bitset, size_t x)
+        constexpr IsinkIterator(const vtr::dynamic_bitset<>& bitset, size_t x)
             : _bitset(bitset)
             , _x(x) {
-            if (_x < _bitset.size() && _bitset[_x] != sink_state) /* Iterate forward to a valid state */
+            if (_x < _bitset.size() && _bitset.get(_x) != sink_state) /* Iterate forward to a valid state */
                 ++(*this);
         }
         constexpr value_type operator*() const {
@@ -443,7 +444,7 @@ class RouteTree {
         }
         inline IsinkIterator& operator++() {
             _x++;
-            for (; _x < _bitset.size() && _bitset[_x] != sink_state; _x++)
+            for (; _x < _bitset.size() && _bitset.get(_x) != sink_state; _x++)
                 ;
             return *this;
         }
@@ -457,7 +458,7 @@ class RouteTree {
 
       private:
         /** Ref to the bitset */
-        const std::vector<bool>& _bitset;
+        const vtr::dynamic_bitset<>& _bitset;
         /** Current position */
         size_t _x;
     };
@@ -468,8 +469,10 @@ class RouteTree {
     /** Get a lookup which contains the "isink reached state".
      * It's a 1-indexed! bitset of "pin indices". True if the nth sink has been reached, false otherwise.
      * If you call it before prune() and after routing, there's no guarantee on whether the reached sinks
-     * are reached legally. */
-    constexpr const std::vector<bool>& get_is_isink_reached(void) const { return _is_isink_reached; }
+     * are reached legally.
+     * Another catch is that vtr::dynamic_bitsets don't know their size, so keep tree.num_sinks()+1
+     * as a limit when iterating over this. */
+    constexpr const vtr::dynamic_bitset<>& get_is_isink_reached(void) const { return _is_isink_reached; }
 
     /** Get reached isinks: 1-indexed pin indices enumerating the sinks in this net.
      * "Reached" means "reached legally" if you call this after prune() and not before any routing.
@@ -629,7 +632,7 @@ class RouteTree {
      * We work with these indices, because they are used in a bunch of lookups in
      * the router. Looking these back up from sink RR nodes would require looking
      * up its RouteTreeNode and then the net_pin_index from that. */
-    std::vector<bool> _is_isink_reached;
+    vtr::dynamic_bitset<> _is_isink_reached;
 
     /** Number of sinks in this tree's net. Useful for iteration. */
     size_t _num_sinks;

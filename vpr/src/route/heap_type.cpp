@@ -1,6 +1,7 @@
 #include "heap_type.h"
 
 #include "binary_heap.h"
+#include "four_ary_heap.h"
 #include "bucket.h"
 #include "rr_graph_fwd.h"
 #include "vpr_error.h"
@@ -29,7 +30,6 @@ HeapStorage::alloc() {
     temp_ptr->R_upstream = 0.;
     temp_ptr->index = RRNodeId::INVALID();
     temp_ptr->path_data = nullptr;
-    temp_ptr->set_prev_node(RRNodeId::INVALID());
     temp_ptr->set_prev_edge(RREdgeId::INVALID());
     return (temp_ptr);
 }
@@ -63,6 +63,8 @@ std::unique_ptr<HeapInterface> make_heap(e_heap_type heap_type) {
     switch (heap_type) {
         case e_heap_type::BINARY_HEAP:
             return std::make_unique<BinaryHeap>();
+        case e_heap_type::FOUR_ARY_HEAP:
+            return std::make_unique<FourAryHeap>();
         case e_heap_type::BUCKET_HEAP_APPROXIMATION:
             return std::make_unique<Bucket>();
         default:

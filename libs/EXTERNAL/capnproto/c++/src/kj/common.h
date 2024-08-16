@@ -60,12 +60,18 @@
 #define KJ_HAS_COMPILER_FEATURE(x) 0
 #endif
 
+#if defined(_MSVC_LANG) && !defined(__clang__)
+#define KJ_CPP_STD _MSVC_LANG
+#else
+#define KJ_CPP_STD __cplusplus
+#endif
+
 KJ_BEGIN_HEADER
 
 #ifndef KJ_NO_COMPILER_CHECK
 // Technically, __cplusplus should be 201402L for C++14, but GCC 4.9 -- which is supported -- still
 // had it defined to 201300L even with -std=c++14.
-#if __cplusplus < 201300L && !__CDT_PARSER__ && !_MSC_VER
+#if KJ_CPP_STD < 201300L && !__CDT_PARSER__
   #error "This code requires C++14. Either your compiler does not support it or it is not enabled."
   #ifdef __GNUC__
     // Compiler claims compatibility with GCC, so presumably supports -std.
@@ -77,7 +83,7 @@ KJ_BEGIN_HEADER
   #if __clang__
     #if __clang_major__ < 5
       #warning "This library requires at least Clang 5.0."
-    #elif __cplusplus >= 201402L && !__has_include(<initializer_list>)
+    #elif KJ_CPP_STD >= 201402L && !__has_include(<initializer_list>)
       #warning "Your compiler supports C++14 but your C++ standard library does not.  If your "\
                "system has libc++ installed (as should be the case on e.g. Mac OSX), try adding "\
                "-stdlib=libc++ to your CXXFLAGS."
@@ -99,9 +105,11 @@ KJ_BEGIN_HEADER
 #endif
 
 #include <stddef.h>
+#include <cstring>
 #include <initializer_list>
+#include <string.h>
 
-#if __linux__ && __cplusplus > 201200L
+#if __linux__ && KJ_CPP_STD > 201200L
 // Hack around stdlib bug with C++14 that exists on some Linux systems.
 // Apparently in this mode the C library decides not to define gets() but the C++ library still
 // tries to import it into the std namespace. This bug has been fixed at the source but is still
@@ -109,10 +117,19 @@ KJ_BEGIN_HEADER
 #undef _GLIBCXX_HAVE_GETS
 #endif
 
-#if defined(_MSC_VER)
+#if _WIN32
+// Windows likes to define macros for min() and max(). We just can't deal with this.
+// If windows.h was included already, undef these.
+#undef min
+#undef max
+// If windows.h was not included yet, define the macro that prevents min() and max() from being
+// defined.
 #ifndef NOMINMAX
 #define NOMINMAX 1
 #endif
+#endif
+
+#if defined(_MSC_VER)
 #include <intrin.h>  // __popcnt
 #endif
 
@@ -174,7 +191,22 @@ typedef unsigned char byte;
 #define KJ_DISALLOW_COPY(classname) \
   classname(const classname&) = delete; \
   classname& operator=(const classname&) = delete
-// Deletes the implicit copy constructor and assignment operator.
+// Deletes the implicit copy constructor and assignment operator. This inhibits the compiler from
+// generating the implicit move constructor and assignment operator for this class, but allows the
+// code author to supply them, if they make sense to implement.
+//
+// This macro should not be your first choice. Instead, prefer using KJ_DISALLOW_COPY_AND_MOVE, and only use
+// this macro when you have determined that you must implement move semantics for your type.
+
+#define KJ_DISALLOW_COPY_AND_MOVE(classname) \
+  classname(const classname&) = delete; \
+  classname& operator=(const classname&) = delete; \
+  classname(classname&&) = delete; \
+  classname& operator=(classname&&) = delete
+// Deletes the implicit copy and move constructors and assignment operators. This is useful in cases
+// where the code author wants to provide an additional compile-time guard against subsequent
+// maintainers casually adding move operations. This is particularly useful when implementing RAII
+// classes that are intended to be completely immobile.
 
 #ifdef __GNUC__
 #define KJ_LIKELY(condition) __builtin_expect(condition, true)
@@ -249,7 +281,7 @@ typedef unsigned char byte;
 #define KJ_UNUSED_MEMBER
 #endif
 
-#if __cplusplus > 201703L || (__clang__  && __clang_major__ >= 9 && __cplusplus >= 201103L)
+#if KJ_CPP_STD > 201703L || (__clang__  && __clang_major__ >= 9 && KJ_CPP_STD >= 201103L)
 // Technically this was only added to C++20 but Clang allows it for >= C++11 and spelunking the
 // attributes manual indicates it first came in with Clang 9.
 #define KJ_NO_UNIQUE_ADDRESS [[no_unique_address]]
@@ -271,10 +303,14 @@ typedef unsigned char byte;
 #elif __GNUC__
 #define KJ_DEPRECATED(reason) \
     __attribute__((deprecated))
-#define KJ_UNAVAILABLE(reason)
+#define KJ_UNAVAILABLE(reason) = delete
+// If the `unavailable` attribute is not supproted, just mark the method deleted, which at least
+// makes it a compile-time error to try to call it. Note that on Clang, marking a method deleted
+// *and* unavailable unfortunately defeats the purpose of the unavailable annotation, as the
+// generic "deleted" error is reported instead.
 #else
 #define KJ_DEPRECATED(reason)
-#define KJ_UNAVAILABLE(reason)
+#define KJ_UNAVAILABLE(reason) = delete
 // TODO(msvc): Again, here, MSVC prefers a prefix, __declspec(deprecated).
 #endif
 
@@ -293,8 +329,12 @@ KJ_NORETURN(void unreachable());
 
 }  // namespace _ (private)
 
+#if _MSC_VER && !defined(__clang__) && (!defined(_MSVC_TRADITIONAL) || _MSVC_TRADITIONAL)
+#define KJ_MSVC_TRADITIONAL_CPP 1
+#endif
+
 #ifdef KJ_DEBUG
-#if _MSC_VER && !defined(__clang__)
+#if KJ_MSVC_TRADITIONAL_CPP
 #define KJ_IREQUIRE(condition, ...) \
     if (KJ_LIKELY(condition)); else ::kj::_::inlineRequireFailure( \
         __FILE__, __LINE__, #condition, "" #__VA_ARGS__, __VA_ARGS__)
@@ -407,6 +447,15 @@ KJ_NORETURN(void unreachable());
 
 // =======================================================================================
 // Template metaprogramming helpers.
+
+#define KJ_HAS_TRIVIAL_CONSTRUCTOR __is_trivially_constructible
+#if __GNUC__ && !__clang__
+#define KJ_HAS_NOTHROW_CONSTRUCTOR __has_nothrow_constructor
+#define KJ_HAS_TRIVIAL_DESTRUCTOR __has_trivial_destructor
+#else
+#define KJ_HAS_NOTHROW_CONSTRUCTOR __is_nothrow_constructible
+#define KJ_HAS_TRIVIAL_DESTRUCTOR __is_trivially_destructible
+#endif
 
 template <typename T> struct NoInfer_ { typedef T Type; };
 template <typename T> using NoInfer = typename NoInfer_<T>::Type;
@@ -559,6 +608,19 @@ T refIfLvalue(T&&);
 template <typename T, typename U> struct IsSameType_ { static constexpr bool value = false; };
 template <typename T> struct IsSameType_<T, T> { static constexpr bool value = true; };
 template <typename T, typename U> constexpr bool isSameType() { return IsSameType_<T, U>::value; }
+
+template <typename T> constexpr bool isIntegral() { return false; }
+template <> constexpr bool isIntegral<char>() { return true; }
+template <> constexpr bool isIntegral<signed char>() { return true; }
+template <> constexpr bool isIntegral<short>() { return true; }
+template <> constexpr bool isIntegral<int>() { return true; }
+template <> constexpr bool isIntegral<long>() { return true; }
+template <> constexpr bool isIntegral<long long>() { return true; }
+template <> constexpr bool isIntegral<unsigned char>() { return true; }
+template <> constexpr bool isIntegral<unsigned short>() { return true; }
+template <> constexpr bool isIntegral<unsigned int>() { return true; }
+template <> constexpr bool isIntegral<unsigned long>() { return true; }
+template <> constexpr bool isIntegral<unsigned long long>() { return true; }
 
 template <typename T>
 struct CanConvert_ {
@@ -1011,8 +1073,7 @@ inline void dtor(T& location) {
 // forces the caller to handle the null case in order to satisfy the compiler, thus reliably
 // preventing null pointer dereferences at runtime.
 //
-// Maybe<T> can be implicitly constructed from T and from nullptr.  Additionally, it can be
-// implicitly constructed from T*, in which case the pointer is checked for nullness at runtime.
+// Maybe<T> can be implicitly constructed from T and from nullptr.
 // To read the value of a Maybe<T>, do:
 //
 //    KJ_IF_MAYBE(value, someFuncReturningMaybe()) {
@@ -1259,6 +1320,63 @@ inline T* readMaybe(T* ptr) { return ptr; }
 }  // namespace _ (private)
 
 #define KJ_IF_MAYBE(name, exp) if (auto name = ::kj::_::readMaybe(exp))
+
+#if __GNUC__ || __clang__
+// These two macros provide a friendly syntax to extract the value of a Maybe or return early.
+//
+// Use KJ_UNWRAP_OR_RETURN if you just want to return a simple value when the Maybe is null:
+//
+//     int foo(Maybe<int> maybe) {
+//       int value = KJ_UNWRAP_OR_RETURN(maybe, -1);
+//       // ... use value ...
+//     }
+//
+// For functions returning void, omit the second parameter to KJ_UNWRAP_OR_RETURN:
+//
+//     void foo(Maybe<int> maybe) {
+//       int value = KJ_UNWRAP_OR_RETURN(maybe);
+//       // ... use value ...
+//     }
+//
+// Use KJ_UNWRAP_OR if you want to execute a block with multiple statements.
+//
+//     int foo(Maybe<int> maybe) {
+//       int value = KJ_UNWRAP_OR(maybe, {
+//         KJ_LOG(ERROR, "problem!!!");
+//         return -1;
+//       });
+//       // ... use value ...
+//     }
+//
+// The block MUST return at the end or you will get a compiler error
+//
+// Unfortunately, these macros seem impossible to express without using GCC's non-standard
+// "statement expressions" extension. IIFEs don't do the trick here because a lambda cannot
+// return out of the parent scope. These macros should therefore only be used in projects that
+// target GCC or GCC-compatible compilers.
+//
+// `__GNUC__` is not defined when using LLVM's MSVC-compatible compiler driver `clang-cl` (even
+// though clang supports the required extension), hence the additional `|| __clang__`.
+
+#define KJ_UNWRAP_OR_RETURN(value, ...) \
+  (*({ \
+    auto _kj_result = ::kj::_::readMaybe(value); \
+    if (!_kj_result) { \
+      return __VA_ARGS__; \
+    } \
+    kj::mv(_kj_result); \
+  }))
+
+#define KJ_UNWRAP_OR(value, block) \
+  (*({ \
+    auto _kj_result = ::kj::_::readMaybe(value); \
+    if (!_kj_result) { \
+      block; \
+      asm("KJ_UNWRAP_OR_block_is_missing_return_statement\n"); \
+    } \
+    kj::mv(_kj_result); \
+  }))
+#endif
 
 template <typename T>
 class Maybe {
@@ -1683,6 +1801,29 @@ public:
     KJ_IREQUIRE(start <= end && end <= size_, "Out-of-bounds ArrayPtr::slice().");
     return ArrayPtr(ptr + start, end - start);
   }
+  inline bool startsWith(const ArrayPtr<const T>& other) const {
+    return other.size() <= size_ && slice(0, other.size()) == other;
+  }
+  inline bool endsWith(const ArrayPtr<const T>& other) const {
+    return other.size() <= size_ && slice(size_ - other.size(), size_) == other;
+  }
+
+  inline Maybe<size_t> findFirst(const T& match) const {
+    for (size_t i = 0; i < size_; i++) {
+      if (ptr[i] == match) {
+        return i;
+      }
+    }
+    return nullptr;
+  }
+  inline Maybe<size_t> findLast(const T& match) const {
+    for (size_t i = size_; i--;) {
+      if (ptr[i] == match) {
+        return i;
+      }
+    }
+    return nullptr;
+  }
 
   inline ArrayPtr<PropagateConst<T, byte>> asBytes() const {
     // Reinterpret the array as a byte array. This is explicitly legal under C++ aliasing
@@ -1700,12 +1841,18 @@ public:
 
   inline bool operator==(const ArrayPtr& other) const {
     if (size_ != other.size_) return false;
+    if (isIntegral<RemoveConst<T>>()) {
+      if (size_ == 0) return true;
+      return memcmp(ptr, other.ptr, size_ * sizeof(T)) == 0;
+    }
     for (size_t i = 0; i < size_; i++) {
       if (ptr[i] != other[i]) return false;
     }
     return true;
   }
+#if !__cpp_impl_three_way_comparison
   inline bool operator!=(const ArrayPtr& other) const { return !(*this == other); }
+#endif
 
   template <typename U>
   inline bool operator==(const ArrayPtr<U>& other) const {
@@ -1715,8 +1862,10 @@ public:
     }
     return true;
   }
+#if !__cpp_impl_three_way_comparison
   template <typename U>
   inline bool operator!=(const ArrayPtr<U>& other) const { return !(*this == other); }
+#endif
 
   template <typename... Attachments>
   Array<T> attach(Attachments&&... attachments) const KJ_WARN_UNUSED_RESULT;
@@ -1729,6 +1878,49 @@ private:
   T* ptr;
   size_t size_;
 };
+
+template <>
+inline Maybe<size_t> ArrayPtr<const char>::findFirst(const char& c) const {
+  const char* pos = reinterpret_cast<const char*>(memchr(ptr, c, size_));
+  if (pos == nullptr) {
+    return nullptr;
+  } else {
+    return pos - ptr;
+  }
+}
+
+template <>
+inline Maybe<size_t> ArrayPtr<char>::findFirst(const char& c) const {
+  char* pos = reinterpret_cast<char*>(memchr(ptr, c, size_));
+  if (pos == nullptr) {
+    return nullptr;
+  } else {
+    return pos - ptr;
+  }
+}
+
+template <>
+inline Maybe<size_t> ArrayPtr<const byte>::findFirst(const byte& c) const {
+  const byte* pos = reinterpret_cast<const byte*>(memchr(ptr, c, size_));
+  if (pos == nullptr) {
+    return nullptr;
+  } else {
+    return pos - ptr;
+  }
+}
+
+template <>
+inline Maybe<size_t> ArrayPtr<byte>::findFirst(const byte& c) const {
+  byte* pos = reinterpret_cast<byte*>(memchr(ptr, c, size_));
+  if (pos == nullptr) {
+    return nullptr;
+  } else {
+    return pos - ptr;
+  }
+}
+
+// glibc has a memrchr() for reverse search but it's non-standard, so we don't bother optimizing
+// findLast(), which isn't used much anyway.
 
 template <typename T>
 inline constexpr ArrayPtr<T> arrayPtr(T* ptr KJ_LIFETIMEBOUND, size_t size) {
@@ -1799,29 +1991,48 @@ namespace _ {  // private
 template <typename Func>
 class Deferred {
 public:
-  inline Deferred(Func&& func): func(kj::fwd<Func>(func)), canceled(false) {}
-  inline ~Deferred() noexcept(false) { if (!canceled) func(); }
+  Deferred(Func&& func): maybeFunc(kj::fwd<Func>(func)) {}
+  ~Deferred() noexcept(false) {
+    run();
+  }
   KJ_DISALLOW_COPY(Deferred);
 
-  // This move constructor is usually optimized away by the compiler.
-  inline Deferred(Deferred&& other): func(kj::fwd<Func>(other.func)), canceled(false) {
-    other.canceled = true;
+  Deferred(Deferred&&) = default;
+  // Since we use a kj::Maybe, the default move constructor does exactly what we want it to do.
+
+  void run() {
+    // Move `maybeFunc` to the local scope so that even if we throw, we destroy the functor we had.
+    auto maybeLocalFunc = kj::mv(maybeFunc);
+    KJ_IF_MAYBE(func, maybeLocalFunc) {
+      (*func)();
+    }
   }
+
+  void cancel() {
+    maybeFunc = nullptr;
+  }
+
 private:
-  Func func;
-  bool canceled;
+  kj::Maybe<Func> maybeFunc;
+  // Note that `Func` may actually be an lvalue reference because `kj::defer` takes its argument via
+  // universal reference. `kj::Maybe` has specializations for lvalue reference types, so this works
+  // out.
 };
 
 }  // namespace _ (private)
 
 template <typename Func>
 _::Deferred<Func> defer(Func&& func) {
-  // Returns an object which will invoke the given functor in its destructor.  The object is not
-  // copyable but is movable with the semantics you'd expect.  Since the return type is private,
-  // you need to assign to an `auto` variable.
+  // Returns an object which will invoke the given functor in its destructor. The object is not
+  // copyable but is move-constructable with the semantics you'd expect. Since the return type is
+  // private, you need to assign to an `auto` variable.
   //
   // The KJ_DEFER macro provides slightly more convenient syntax for the common case where you
   // want some code to run at current scope exit.
+  //
+  // KJ_DEFER does not support move-assignment for its returned objects. If you need to reuse the
+  // variable for your deferred function object, then you will want to write your own class for that
+  // purpose.
 
   return _::Deferred<Func>(kj::fwd<Func>(func));
 }

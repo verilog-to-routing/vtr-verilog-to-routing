@@ -3,28 +3,35 @@
 // This file provides the inline proxy implemenation for t_rr_node.
 // See the t_rr_node class comment for additional details.
 
-#include "rr_node_types.h"
+#include <cstddef>
+#include <iterator>
 #include "rr_node.h"
 #include "rr_graph_storage.h"
 
-class node_idx_iterator : public std::iterator<std::bidirectional_iterator_tag, const t_rr_node> {
+class node_idx_iterator {
   public:
+    using iterator_category = std::bidirectional_iterator_tag;
+    using difference_type = std::ptrdiff_t;
+    using value_type = const t_rr_node;
+    using pointer = value_type*;
+    using reference = value_type&;
+
     node_idx_iterator(t_rr_node value)
         : value_(value) {}
 
-    iterator operator++() {
+    node_idx_iterator& operator++() {
         value_.next_node();
         return *this;
     }
-    iterator operator--() {
+    node_idx_iterator& operator--() {
         value_.prev_node();
         return *this;
     }
     reference operator*() const { return value_; }
     pointer operator->() const { return &value_; }
 
-    friend bool operator==(const node_idx_iterator lhs, const node_idx_iterator rhs) { return lhs.value_.id() == rhs.value_.id(); }
-    friend bool operator!=(const node_idx_iterator lhs, const node_idx_iterator rhs) { return !(lhs == rhs); }
+    friend bool operator==(const node_idx_iterator& lhs, const node_idx_iterator& rhs) { return lhs.value_.id() == rhs.value_.id(); }
+    friend bool operator!=(const node_idx_iterator& lhs, const node_idx_iterator& rhs) { return !(lhs == rhs); }
 
   private:
     t_rr_node value_;

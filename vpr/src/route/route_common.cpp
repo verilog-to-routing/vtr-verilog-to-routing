@@ -7,6 +7,7 @@
 #include "route_common.h"
 #include "route_export.h"
 #include "rr_graph.h"
+#include "re_cluster_util.h"
 
 /*  The numbering relation between the channels and clbs is:				*
  *																	        *
@@ -39,6 +40,7 @@
 
 /******************** Subroutines local to route_common.cpp *******************/
 static vtr::vector<ParentNetId, std::vector<RRNodeId>> load_net_rr_terminals(const RRGraphView& rr_graph,
+                                                                             const DeviceGrid& grid,
                                                                              const Netlist<>& net_list,
                                                                              bool is_flat);
 
@@ -190,6 +192,28 @@ void pathfinder_update_acc_cost_and_overuse_info(float acc_fac, OveruseInfo& ove
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     auto& route_ctx = g_vpr_ctx.mutable_routing();
+
+#ifdef VPR_USE_TBB
+    tbb::combinable<size_t> overused_nodes(0), total_overuse(0), worst_overuse(0);
+    tbb::parallel_for_each(rr_graph.nodes().begin(), rr_graph.nodes().end(), [&](RRNodeId rr_id) {
+        int overuse = route_ctx.rr_node_route_inf[rr_id].occ() - rr_graph.node_capacity(rr_id);
+
+        // If overused, update the acc_cost and add this node to the overuse info
+        // If not, do nothing
+        if (overuse > 0) {
+            route_ctx.rr_node_route_inf[rr_id].acc_cost += overuse * acc_fac;
+
+            ++overused_nodes.local();
+            total_overuse.local() += overuse;
+            worst_overuse.local() = std::max(worst_overuse.local(), size_t(overuse));
+        }
+    });
+
+    // Update overuse info
+    overuse_info.overused_nodes = overused_nodes.combine(std::plus<size_t>());
+    overuse_info.total_overuse = total_overuse.combine(std::plus<size_t>());
+    overuse_info.worst_overuse = worst_overuse.combine([](size_t a, size_t b) { return std::max(a, b); });
+#else
     size_t overused_nodes = 0, total_overuse = 0, worst_overuse = 0;
 
     for (const RRNodeId& rr_id : rr_graph.nodes()) {
@@ -210,6 +234,7 @@ void pathfinder_update_acc_cost_and_overuse_info(float acc_fac, OveruseInfo& ove
     overuse_info.overused_nodes = overused_nodes;
     overuse_info.total_overuse = total_overuse;
     overuse_info.worst_overuse = worst_overuse;
+#endif
 }
 
 /** Update pathfinder cost of all nodes rooted at rt_node, including rt_node itself */
@@ -235,6 +260,7 @@ void init_route_structs(const Netlist<>& net_list,
 
     //Various look-ups
     route_ctx.net_rr_terminals = load_net_rr_terminals(device_ctx.rr_graph,
+                                                       device_ctx.grid,
                                                        net_list,
                                                        is_flat);
 
@@ -263,7 +289,6 @@ void reset_path_costs(const std::vector<RRNodeId>& visited_rr_nodes) {
     for (auto node : visited_rr_nodes) {
         route_ctx.rr_node_route_inf[node].path_cost = std::numeric_limits<float>::infinity();
         route_ctx.rr_node_route_inf[node].backward_path_cost = std::numeric_limits<float>::infinity();
-        route_ctx.rr_node_route_inf[node].prev_node = RRNodeId::INVALID();
         route_ctx.rr_node_route_inf[node].prev_edge = RREdgeId::INVALID();
     }
 }
@@ -290,34 +315,6 @@ float get_rr_cong_cost(RRNodeId inode, float pres_fac) {
         }
     }
     return (cost);
-}
-
-/* Mark all the SINKs of this net as targets by setting their target flags  *
- * to the number of times the net must connect to each SINK.  Note that     *
- * this number can occasionally be greater than 1 -- think of connecting   *
- * the same net to two inputs of an and-gate (and-gate inputs are logically *
- * equivalent, so both will connect to the same SINK).                      */
-void mark_ends(const Netlist<>& net_list, ParentNetId net_id) {
-    unsigned int ipin;
-    RRNodeId inode;
-
-    auto& route_ctx = g_vpr_ctx.mutable_routing();
-
-    for (ipin = 1; ipin < net_list.net_pins(net_id).size(); ipin++) {
-        inode = route_ctx.net_rr_terminals[net_id][ipin];
-        route_ctx.rr_node_route_inf[inode].target_flag++;
-    }
-}
-
-/** like mark_ends, but only performs it for the remaining sinks of a net */
-void mark_remaining_ends(ParentNetId net_id) {
-    auto& route_ctx = g_vpr_ctx.mutable_routing();
-    const auto& tree = route_ctx.route_trees[net_id].value();
-
-    for (int sink_pin : tree.get_remaining_isinks()) {
-        RRNodeId inode = route_ctx.net_rr_terminals[net_id][sink_pin];
-        ++route_ctx.rr_node_route_inf[inode].target_flag;
-    }
 }
 
 //Calculates how many (and allocates space for) OPINs which must be reserved to
@@ -425,12 +422,10 @@ void reset_rr_node_route_structs() {
     for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes()) {
         auto& node_inf = route_ctx.rr_node_route_inf[rr_id];
 
-        node_inf.prev_node = RRNodeId::INVALID();
         node_inf.prev_edge = RREdgeId::INVALID();
         node_inf.acc_cost = 1.0;
         node_inf.path_cost = std::numeric_limits<float>::infinity();
         node_inf.backward_path_cost = std::numeric_limits<float>::infinity();
-        node_inf.target_flag = 0;
         node_inf.set_occ(0);
     }
 }
@@ -439,6 +434,7 @@ void reset_rr_node_route_structs() {
  * index of the SOURCE of the net and all the SINKs of the net [clb_nlist.nets()][clb_nlist.net_pins()].    *
  * Entry [inet][pnum] stores the rr index corresponding to the SOURCE (opin) or SINK (ipin) of the pin.     */
 static vtr::vector<ParentNetId, std::vector<RRNodeId>> load_net_rr_terminals(const RRGraphView& rr_graph,
+                                                                             const DeviceGrid& grid,
                                                                              const Netlist<>& net_list,
                                                                              bool is_flat) {
     vtr::vector<ParentNetId, std::vector<RRNodeId>> net_rr_terminals;
@@ -455,12 +451,30 @@ static vtr::vector<ParentNetId, std::vector<RRNodeId>> load_net_rr_terminals(con
             t_block_loc blk_loc;
             blk_loc = get_block_loc(block_id, is_flat);
             int iclass = get_block_pin_class_num(block_id, pin_id, is_flat);
-            RRNodeId inode = rr_graph.node_lookup().find_node(blk_loc.loc.layer,
-                                                              blk_loc.loc.x,
-                                                              blk_loc.loc.y,
-                                                              (pin_count == 0 ? SOURCE : SINK), /* First pin is driver */
-                                                              iclass);
+            RRNodeId inode;
+            if (pin_count == 0) { /* First pin is driver */
+                inode = rr_graph.node_lookup().find_node(blk_loc.loc.layer,
+                                                         blk_loc.loc.x,
+                                                         blk_loc.loc.y,
+                                                         SOURCE,
+                                                         iclass);
+            } else {
+                vtr::Rect<int> tile_bb = grid.get_tile_bb({blk_loc.loc.x,
+                                                           blk_loc.loc.y,
+                                                           blk_loc.loc.layer});
+                std::vector<RRNodeId> sink_nodes = rr_graph.node_lookup().find_nodes_in_range(blk_loc.loc.layer,
+                                                                                              tile_bb.xmin(),
+                                                                                              tile_bb.ymin(),
+                                                                                              tile_bb.xmax(),
+                                                                                              tile_bb.ymax(),
+                                                                                              SINK,
+                                                                                              iclass);
+                VTR_ASSERT_SAFE(sink_nodes.size() == 1);
+                inode = sink_nodes[0];
+            }
+
             VTR_ASSERT(inode != RRNodeId::INVALID());
+
             net_rr_terminals[net_id][pin_count] = inode;
             pin_count++;
         }
@@ -518,7 +532,7 @@ load_net_terminal_groups(const RRGraphView& rr_graph,
                 /* TODO: net_terminal_groups cannot be fully RRNodeId - ified, because this code calls libarchfpga which 
                  * I think should not be aware of RRNodeIds. Fixing this requires some refactoring to lift the offending functions 
                  * into VPR. */
-                std::vector<int> new_group = {int(size_t(rr_node_num))};
+                std::vector<int> new_group = {int(rr_node_num)};
                 int new_group_num = net_terminal_groups[net_id].size();
                 net_terminal_groups[net_id].push_back(new_group);
                 net_terminal_group_num[net_id][pin_count] = new_group_num;
@@ -707,15 +721,19 @@ t_bb load_net_route_bb(const Netlist<>& net_list,
         VTR_ASSERT(rr_graph.node_layer(sink_rr) >= 0);
         VTR_ASSERT(rr_graph.node_layer(sink_rr) <= device_ctx.grid.get_num_layers() - 1);
 
-        xmin = std::min<int>(xmin, rr_graph.node_xlow(sink_rr));
-        xmax = std::max<int>(xmax, rr_graph.node_xhigh(sink_rr));
-        ymin = std::min<int>(ymin, rr_graph.node_ylow(sink_rr));
-        ymax = std::max<int>(ymax, rr_graph.node_yhigh(sink_rr));
+        vtr::Rect<int> tile_bb = device_ctx.grid.get_tile_bb({rr_graph.node_xlow(sink_rr),
+                                                              rr_graph.node_ylow(sink_rr),
+                                                              rr_graph.node_layer(sink_rr)});
+
+        xmin = std::min<int>(xmin, tile_bb.xmin());
+        xmax = std::max<int>(xmax, tile_bb.xmax());
+        ymin = std::min<int>(ymin, tile_bb.ymin());
+        ymax = std::max<int>(ymax, tile_bb.ymax());
         layer_min = std::min<int>(layer_min, rr_graph.node_layer(sink_rr));
         layer_max = std::max<int>(layer_max, rr_graph.node_layer(sink_rr));
     }
 
-    /* Want the channels on all 4 sides to be usuable, even if bb_factor = 0. */
+    /* Want the channels on all 4 sides to be usable, even if bb_factor = 0. */
     xmin -= 1;
     ymin -= 1;
 
@@ -818,7 +836,7 @@ void reserve_locally_used_opins(HeapInterface* heap, float pres_fac, float acc_f
                 //Add the OPIN to the heap according to it's congestion cost
                 cost = get_rr_cong_cost(to_node, pres_fac);
                 add_node_to_heap(heap, route_ctx.rr_node_route_inf,
-                                 to_node, cost, RRNodeId::INVALID(), RREdgeId::INVALID(),
+                                 to_node, cost, RREdgeId::INVALID(),
                                  0., 0.);
             }
 
@@ -914,8 +932,8 @@ void print_rr_node_route_inf() {
     for (size_t inode = 0; inode < route_ctx.rr_node_route_inf.size(); ++inode) {
         const auto& inf = route_ctx.rr_node_route_inf[RRNodeId(inode)];
         if (!std::isinf(inf.path_cost)) {
-            RRNodeId prev_node = inf.prev_node;
             RREdgeId prev_edge = inf.prev_edge;
+            RRNodeId prev_node = rr_graph.edge_src_node(prev_edge);
             auto switch_id = rr_graph.rr_nodes().edge_switch(prev_edge);
             VTR_LOG("rr_node: %d prev_node: %d prev_edge: %zu",
                     inode, prev_node, (size_t)prev_edge);
@@ -950,8 +968,8 @@ void print_rr_node_route_inf_dot() {
     for (size_t inode = 0; inode < route_ctx.rr_node_route_inf.size(); ++inode) {
         const auto& inf = route_ctx.rr_node_route_inf[RRNodeId(inode)];
         if (!std::isinf(inf.path_cost)) {
-            RRNodeId prev_node = inf.prev_node;
             RREdgeId prev_edge = inf.prev_edge;
+            RRNodeId prev_node = rr_graph.edge_src_node(prev_edge);
             auto switch_id = rr_graph.rr_nodes().edge_switch(prev_edge);
 
             if (prev_node.is_valid() && prev_edge.is_valid()) {

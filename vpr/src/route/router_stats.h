@@ -45,12 +45,6 @@ struct RouterStats {
 
     // For debugging purposes
     size_t rt_node_pushes[t_rr_type::NUM_RR_TYPES] = {0};
-    size_t rt_node_high_fanout_pushes[t_rr_type::NUM_RR_TYPES] = {0};
-    size_t rt_node_entire_tree_pushes[t_rr_type::NUM_RR_TYPES] = {0};
-
-    size_t add_all_rt_from_high_fanout = 0;
-    size_t add_high_fanout_rt = 0;
-    size_t add_all_rt = 0;
 
     /** Add rhs's stats to mine */
     void combine(RouterStats& rhs) {
@@ -68,12 +62,7 @@ struct RouterStats {
             intra_cluster_node_type_cnt_pushes[node_type_idx] += rhs.intra_cluster_node_type_cnt_pushes[node_type_idx];
             intra_cluster_node_type_cnt_pops[node_type_idx] += rhs.intra_cluster_node_type_cnt_pops[node_type_idx];
             rt_node_pushes[node_type_idx] += rhs.rt_node_pushes[node_type_idx];
-            rt_node_high_fanout_pushes[node_type_idx] += rhs.rt_node_high_fanout_pushes[node_type_idx];
-            rt_node_entire_tree_pushes[node_type_idx] += rhs.rt_node_entire_tree_pushes[node_type_idx];
         }
-        add_all_rt += rhs.add_all_rt;
-        add_all_rt_from_high_fanout += rhs.add_all_rt_from_high_fanout;
-        add_high_fanout_rt += rhs.add_high_fanout_rt;
     }
 };
 

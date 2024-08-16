@@ -28,6 +28,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <set>
+#include <string_view>
 #include "arch_types.h"
 #include "atom_netlist_fwd.h"
 #include "clustered_netlist_fwd.h"
@@ -89,11 +90,9 @@ enum class ScreenUpdatePriority {
 /* Values large enough to be way out of range for any data, but small enough
  * to allow a small number to be added to them without going out of range. */
 #define HUGE_POSITIVE_FLOAT 1.e30
-#define HUGE_NEGATIVE_FLOAT -1.e30
 
 /* Used to avoid floating-point errors when comparing values close to 0 */
 #define EPSILON 1.e-15
-#define NEGATIVE_EPSILON -1.e-15
 
 #define FIRST_ITER_WIRELENTH_LIMIT 0.85 /* If used wirelength exceeds this value in first iteration of routing, do not route */
 
@@ -110,19 +109,24 @@ constexpr auto INVALID_BLOCK_ID = ClusterBlockId(-2);
  * and maps it to the complex logic blocks found in the architecture
  ******************************************************************************/
 
-#define NO_CLUSTER -1
-#define NEVER_CLUSTER -2
-#define NOT_VALID -10000 /* Marks gains that aren't valid */
+#define NOT_VALID (-10000) /* Marks gains that aren't valid */
 /* Ensure no gain can ever be this negative! */
 #ifndef UNDEFINED
-#    define UNDEFINED -1
+#    define UNDEFINED (-1)
 #endif
 
+///@brief Router lookahead types.
 enum class e_router_lookahead {
-    CLASSIC,      ///<VPR's classic lookahead (assumes uniform wire types)
-    MAP,          ///<Lookahead considering different wire types (see Oleg Petelin's MASc Thesis)
-    EXTENDED_MAP, ///<Lookahead with a more extensive node sampling method
-    NO_OP         ///<A no-operation lookahead which always returns zero
+    ///@brief VPR's classic lookahead (assumes uniform wire types)
+    CLASSIC,
+    ///@brief Lookahead considering different wire types (see Oleg Petelin's MASc Thesis)
+    MAP,
+    ///@brief Similar to MAP, but use a sparse sampling of the chip
+    COMPRESSED_MAP,
+    ///@brief Lookahead with a more extensive node sampling method
+    EXTENDED_MAP,
+    ///@brief A no-operation lookahead which always returns zero
+    NO_OP
 };
 
 enum class e_route_bb_update {
@@ -169,11 +173,12 @@ enum class e_cluster_seed {
     BLEND2
 };
 
-enum e_block_pack_status {
+enum class e_block_pack_status {
     BLK_PASSED,
     BLK_FAILED_FEASIBLE,
     BLK_FAILED_ROUTE,
     BLK_FAILED_FLOORPLANNING,
+    BLK_FAILED_NOC_GROUP,
     BLK_STATUS_UNDEFINED
 };
 
@@ -194,16 +199,21 @@ class t_ext_pin_util_targets {
   public:
     t_ext_pin_util_targets() = default;
     t_ext_pin_util_targets(float default_in_util, float default_out_util);
+    t_ext_pin_util_targets(const std::vector<std::string>& specs);
+    t_ext_pin_util_targets& operator=(t_ext_pin_util_targets&& other) noexcept;
 
     ///@brief Returns the input pin util of the specified block (or default if unspecified)
-    t_ext_pin_util get_pin_util(std::string block_type_name) const;
+    t_ext_pin_util get_pin_util(std::string_view block_type_name) const;
+
+    ///@brief Returns a string describing input/output pin utilization targets
+    std::string to_string() const;
 
   public:
     /**
      * @brief Sets the pin util for the specified block type
      * @return true if non-default was previously set
      */
-    void set_block_pin_util(std::string block_type_name, t_ext_pin_util target);
+    void set_block_pin_util(const std::string& block_type_name, t_ext_pin_util target);
 
     /**
      * @brief Sets the default pin util
@@ -213,22 +223,28 @@ class t_ext_pin_util_targets {
 
   private:
     t_ext_pin_util defaults_;
-    std::map<std::string, t_ext_pin_util> overrides_;
+    std::map<std::string, t_ext_pin_util, std::less<>> overrides_;
 };
 
 class t_pack_high_fanout_thresholds {
   public:
     t_pack_high_fanout_thresholds() = default;
-    t_pack_high_fanout_thresholds(int threshold);
+    explicit t_pack_high_fanout_thresholds(int threshold);
+    explicit t_pack_high_fanout_thresholds(const std::vector<std::string>& specs);
+    t_pack_high_fanout_thresholds& operator=(t_pack_high_fanout_thresholds&& other) noexcept;
 
-    int get_threshold(std::string block_type_name) const;
+    ///@brief Returns the high fanout threshold of the specifi  ed block
+    int get_threshold(std::string_view block_type_name) const;
+
+    ///@brief Returns a string describing high fanout thresholds for different block types
+    std::string to_string() const;
 
   public:
     /**
      * @brief Sets the pin util for the specified block type
      * @return true if non-default was previously set
      */
-    void set(std::string block_type_name, int threshold);
+    void set(const std::string& block_type_name, int threshold);
 
     /**
      * @brief Sets the default pin util
@@ -238,7 +254,7 @@ class t_pack_high_fanout_thresholds {
 
   private:
     int default_;
-    std::map<std::string, int> overrides_;
+    std::map<std::string, int, std::less<>> overrides_;
 };
 
 /* these are defined later, but need to declare here because it is used */
@@ -538,9 +554,8 @@ enum class e_timing_update_type {
  ****************************************************************************/
 
 /* Values of number of placement available move types */
-#define NUM_PL_MOVE_TYPES 7
-#define NUM_PL_NONTIMING_MOVE_TYPES 3
-#define NUM_PL_1ST_STATE_MOVE_TYPES 4
+constexpr int NUM_PL_MOVE_TYPES = 7;
+constexpr int NUM_PL_NONTIMING_MOVE_TYPES = 3;
 
 /* Timing data structures end */
 enum sched_type {
@@ -706,6 +721,9 @@ struct hash<t_pl_offset> {
 };
 } // namespace std
 
+/// @brief Sentinel value for indicating that a block does not have a valid x location, used to check whether a block has been placed
+static constexpr int INVALID_X = -1;
+
 /**
  * @brief A placement location coordinate
  *
@@ -723,6 +741,11 @@ struct t_pl_loc {
         , y(yloc)
         , sub_tile(sub_tile_loc)
         , layer(layer_num) {}
+    t_pl_loc(const t_physical_tile_loc& phy_loc, int sub_tile_loc)
+        : x(phy_loc.x)
+        , y(phy_loc.y)
+        , sub_tile(sub_tile_loc)
+        , layer(phy_loc.layer_num) {}
 
     int x = OPEN;
     int y = OPEN;
@@ -889,6 +912,7 @@ struct t_file_name_opts {
     std::string CircuitName;
     std::string CircuitFile;
     std::string NetFile;
+    std::string FlatPlaceFile;
     std::string PlaceFile;
     std::string RouteFile;
     std::string FPGAInterchangePhysicalFile;
@@ -898,6 +922,8 @@ struct t_file_name_opts {
     std::string out_file_prefix;
     std::string read_vpr_constraints_file;
     std::string write_vpr_constraints_file;
+    std::string write_constraints_file;
+    std::string write_flat_place_file;
     std::string write_block_usage;
     bool verify_file_digests;
 };
@@ -962,6 +988,7 @@ struct t_packer_opts {
     bool use_attraction_groups;
     int pack_num_moves;
     std::string pack_move_type;
+    bool load_flat_placement;
 };
 
 /**
@@ -1113,6 +1140,7 @@ enum e_place_effort_scaling {
 };
 
 enum class PlaceDelayModelType {
+    SIMPLE,
     DELTA,          ///<Delta x/y based delay model
     DELTA_OVERRIDE, ///<Delta x/y based delay model with special case delay overrides
 };
@@ -1136,6 +1164,8 @@ enum class e_place_delta_delay_algorithm {
     ASTAR_ROUTE,
     DIJKSTRA_EXPANSION,
 };
+
+enum class e_move_type;
 
 /**
  * @brief Various options for the placer.
@@ -1206,6 +1236,7 @@ struct t_placer_opts {
     enum e_pad_loc_type pad_loc_type;
     std::string constraints_file;
     std::string write_initial_place_file;
+    std::string read_initial_place_file;
     enum pfreq place_freq;
     int recompute_crit_iter;
     int inner_loop_recompute_divider;
@@ -1235,8 +1266,7 @@ struct t_placer_opts {
 
     std::string write_placement_delay_lookup;
     std::string read_placement_delay_lookup;
-    std::vector<float> place_static_move_prob;
-    std::vector<float> place_static_notiming_move_prob;
+    vtr::vector<e_move_type, float> place_static_move_prob;
     bool RL_agent_placement;
     bool place_agent_multistate;
     bool place_checkpointing;
@@ -1314,6 +1344,8 @@ struct t_placer_opts {
  *             an essentially breadth-first search, astar_fac = 1 is near   *
  *             the usual astar algorithm and astar_fac > 1 are more         *
  *             aggressive.                                                  *
+ * astar_offset: Offset that is subtracted from the lookahead (expected     *
+ *               future costs) in the timing-driven router.                 *
  * max_criticality: The maximum criticality factor (from 0 to 1) any sink   *
  *                  will ever have (i.e. clip criticality to this number).  *
  * criticality_exp: Set criticality to (path_length(sink) / longest_path) ^ *
@@ -1327,6 +1359,7 @@ struct t_placer_opts {
 
 enum e_router_algorithm {
     PARALLEL,
+    PARALLEL_DECOMP,
     TIMING_DRIVEN,
 };
 
@@ -1388,6 +1421,7 @@ struct t_router_opts {
     float first_iter_pres_fac;
     float initial_pres_fac;
     float pres_fac_mult;
+    float max_pres_fac;
     float acc_fac;
     float bend_cost;
     int max_router_iterations;
@@ -1400,6 +1434,7 @@ struct t_router_opts {
     enum e_router_algorithm router_algorithm;
     enum e_base_cost_type base_cost_type;
     float astar_fac;
+    float astar_offset;
     float router_profiler_astar_fac;
     float max_criticality;
     float criticality_exp;
@@ -1476,14 +1511,22 @@ struct t_analysis_opts {
 
 // used to store NoC specific options, when supplied as an input by the user
 struct t_noc_opts {
-    bool noc;                                 ///<options to turn on hard NoC modeling & optimization
-    std::string noc_flows_file;               ///<name of the file that contains all the traffic flow information to be sent over the NoC in this design
-    std::string noc_routing_algorithm;        ///<controls the routing algorithm used to route packets within the NoC
-    double noc_placement_weighting;           ///<controls the significance of the NoC placement cost relative to the total placement cost range:[0-inf)
-    double noc_latency_constraints_weighting; ///<controls the significance of meeting the traffic flow contraints range:[0-inf)
-    double noc_latency_weighting;             ///<controls the significance of the traffic flow latencies relative to the other NoC placement costs range:[0-inf)
-    int noc_swap_percentage;                  ///<controls the number of NoC router block swap attemps relative to the total number of swaps attempted by the placer range:[0-100]
-    std::string noc_placement_file_name;      ///<is the name of the output file that contains the NoC placement information
+    bool noc;                                      ///<options to turn on hard NoC modeling & optimization
+    std::string noc_flows_file;                    ///<name of the file that contains all the traffic flow information to be sent over the NoC in this design
+    std::string noc_routing_algorithm;             ///<controls the routing algorithm used to route packets within the NoC
+    double noc_placement_weighting;                ///<controls the significance of the NoC placement cost relative to the total placement cost range:[0-inf)
+    double noc_aggregate_bandwidth_weighting;      ///<controls the significance of aggregate used bandwidth relative to other NoC placement costs:[0:-inf)
+    double noc_latency_constraints_weighting;      ///<controls the significance of meeting the traffic flow constraints range:[0-inf)
+    double noc_latency_weighting;                  ///<controls the significance of the traffic flow latencies relative to the other NoC placement costs range:[0-inf)
+    double noc_congestion_weighting;               ///<controls the significance of the link congestions relative to the other NoC placement costs range:[0-inf)
+    double noc_centroid_weight;                    ///<controls how much the centroid location is adjusted towards NoC routers in NoC-biased centroid move:[0, 1]
+    int noc_swap_percentage;                       ///<controls the number of NoC router block swap attempts relative to the total number of swaps attempted by the placer range:[0-100]
+    int noc_sat_routing_bandwidth_resolution;      ///<if this number is N, the SAT formulation models link utilization in increments of 1/N
+    int noc_sat_routing_latency_overrun_weighting; ///<controls the importance of reducing traffic flow latency overrun in SAT routing [0-inf)
+    int noc_sat_routing_congestion_weighting;      ///<controls the importance of reducing the number of congested NoC links in SAT routing [0-inf)
+    int noc_sat_routing_num_workers;               ///<the number of parallel worker threads that the SAT solver can use to explore the solution space
+    bool noc_sat_routing_log_search_progress;      ///<indicates whether the detailed log of the SAT solver's search progress in printed
+    std::string noc_placement_file_name;           ///<is the name of the output file that contains the NoC placement information
 };
 
 /**
@@ -1661,7 +1704,7 @@ class t_chan_seg_details {
 
   private:
     //The only unique information about a channel segment is it's start/end
-    //and length.  All other information is shared accross segment types,
+    //and length.  All other information is shared across segment types,
     //so we use a flyweight to the t_seg_details which defines that info.
     //
     //To preserve the illusion of uniqueness we wrap all t_seg_details members
@@ -1696,10 +1739,7 @@ constexpr bool is_src_sink(e_rr_type type) { return (type == SOURCE || type == S
  * @brief Extra information about each rr_node needed only during routing
  *        (i.e. during the maze expansion).
  *
- *   @param prev_node  Index of the previous node (on the lowest cost path known
- *                     to reach this node); used to generate the traceback.
- *                     If there is no predecessor, prev_node = NO_PREVIOUS.
- *   @param prev_edge  Index of the edge (from 0 to num_edges-1 of prev_node)
+ *   @param prev_edge  ID of the edge (globally unique edge ID in the RR Graph)
  *                     that was used to reach this node from the previous node.
  *                     If there is no predecessor, prev_edge = NO_PREVIOUS.
  *   @param acc_cost   Accumulated cost term from previous Pathfinder iterations.
@@ -1708,19 +1748,14 @@ constexpr bool is_src_sink(e_rr_type type) { return (type == SOURCE || type == S
  *                     is being used.
  *   @param backward_path_cost  Total cost of the path up to and including this
  *                     node.
- *   @param target_flag  Is this node a target (sink) for the current routing?
- *                     Number of times this node must be reached to fully route.
  *   @param occ        The current occupancy of the associated rr node
  */
 struct t_rr_node_route_inf {
-    RRNodeId prev_node;
     RREdgeId prev_edge;
 
     float acc_cost;
     float path_cost;
     float backward_path_cost;
-
-    short target_flag;
 
   public: //Accessors
     short occ() const { return occ_; }
@@ -1823,6 +1858,12 @@ struct t_TokenPair {
 
 struct t_lb_type_rr_node; /* Defined in pack_types.h */
 
+/// @brief Stores settings for VPR server mode
+struct t_server_opts {
+    bool is_server_mode_enabled = false;
+    int port_num = -1;
+};
+
 ///@brief Store settings for VPR
 struct t_vpr_setup {
     bool TimingEnabled;             ///<Is VPR timing enabled
@@ -1836,6 +1877,7 @@ struct t_vpr_setup {
     t_router_opts RouterOpts;       ///<router options
     t_analysis_opts AnalysisOpts;   ///<Analysis options
     t_noc_opts NocOpts;             ///<Options for the NoC
+    t_server_opts ServerOpts;       ///<Server options
     t_det_routing_arch RoutingArch; ///<routing architecture
     std::vector<t_lb_type_rr_node>* PackerRRGraph;
     std::vector<t_segment_inf> Segments; ///<wires in routing architecture
@@ -1886,5 +1928,11 @@ void free_pack_molecules(t_pack_molecule* list_of_pack_molecules);
  * @brief Free the linked lists to placement locations based on status of primitive inside placement stats data structure.
  */
 void free_cluster_placement_stats(t_cluster_placement_stats* cluster_placement_stats);
+
+struct pair_hash {
+    std::size_t operator()(const std::pair<ClusterBlockId, ClusterBlockId>& p) const noexcept {
+        return std::hash<ClusterBlockId>()(p.first) ^ (std::hash<ClusterBlockId>()(p.second) << 1);
+    }
+};
 
 #endif

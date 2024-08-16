@@ -280,7 +280,7 @@ TEST(Capability, TailCall) {
 }
 
 TEST(Capability, AsyncCancelation) {
-  // Tests allowCancellation().
+  // Tests cancellation.
 
   kj::EventLoop loop;
   kj::WaitScope waitScope(loop);
@@ -1304,10 +1304,8 @@ KJ_TEST("Streaming calls can be canceled") {
 
   auto promise4 = cap.finishStreamRequest().send();
 
-  // Cancel the streaming calls.
-  promise1 = nullptr;
+  // Cancel the doStreamJ() request.
   promise2 = nullptr;
-  promise3 = nullptr;
 
   KJ_EXPECT(server.iSum == 0);
   KJ_EXPECT(server.jSum == 0);
@@ -1321,10 +1319,9 @@ KJ_TEST("Streaming calls can be canceled") {
 
   KJ_EXPECT(!promise4.poll(waitScope));
 
-  // The call to doStreamJ() opted into cancellation so the next call to doStreamI() happens
-  // immediately.
+  // The call to doStreamJ() was canceled, so the next call to doStreamI() happens immediately.
   KJ_EXPECT(server.iSum == 579);
-  KJ_EXPECT(server.jSum == 321);
+  KJ_EXPECT(server.jSum == 0);
 
   KJ_ASSERT_NONNULL(server.fulfiller)->fulfill();
 
@@ -1332,7 +1329,7 @@ KJ_TEST("Streaming calls can be canceled") {
 
   auto result = promise4.wait(waitScope);
   KJ_EXPECT(result.getTotalI() == 579);
-  KJ_EXPECT(result.getTotalJ() == 321);
+  KJ_EXPECT(result.getTotalJ() == 0);
 }
 
 KJ_TEST("Streaming call throwing cascades to following calls") {
@@ -1391,6 +1388,35 @@ KJ_TEST("Streaming call throwing cascades to following calls") {
   KJ_EXPECT_THROW_RECOVERABLE_MESSAGE("throw requested", promise2.wait(waitScope));
   KJ_EXPECT_THROW_RECOVERABLE_MESSAGE("throw requested", promise3.wait(waitScope));
   KJ_EXPECT_THROW_RECOVERABLE_MESSAGE("throw requested", promise4.ignoreResult().wait(waitScope));
+}
+
+KJ_TEST("RevocableServer") {
+  kj::EventLoop loop;
+  kj::WaitScope waitScope(loop);
+
+  class ServerImpl: public test::TestMembrane::Server {
+  public:
+    kj::Promise<void> waitForever(WaitForeverContext context) override {
+      return kj::NEVER_DONE;
+    }
+  };
+
+  ServerImpl server;
+
+  RevocableServer<test::TestMembrane> revocable(server);
+
+  auto promise = revocable.getClient().waitForeverRequest().send();
+  KJ_EXPECT(!promise.poll(waitScope));
+
+  revocable.revoke();
+
+  KJ_EXPECT_THROW_RECOVERABLE_MESSAGE(
+      "capability was revoked",
+      promise.ignoreResult().wait(waitScope));
+
+  KJ_EXPECT_THROW_RECOVERABLE_MESSAGE(
+      "capability was revoked",
+      revocable.getClient().waitForeverRequest().send().ignoreResult().wait(waitScope));
 }
 
 }  // namespace

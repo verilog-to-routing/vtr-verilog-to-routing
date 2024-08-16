@@ -66,14 +66,20 @@ TwoPartyVatNetwork::TwoPartyVatNetwork(
 TwoPartyVatNetwork::TwoPartyVatNetwork(kj::AsyncIoStream& stream, rpc::twoparty::Side side,
                                        ReaderOptions receiveOptions,
                                        const kj::MonotonicClock& clock)
-    : TwoPartyVatNetwork(kj::Own<MessageStream>(kj::heap<AsyncIoMessageStream>(stream)),
-                         0, side, receiveOptions, clock) {}
+    : TwoPartyVatNetwork(
+          kj::Own<MessageStream>(kj::heap<BufferedMessageStream>(
+              stream, IncomingRpcMessage::getShortLivedCallback())),
+          0, side, receiveOptions, clock) {}
 
 TwoPartyVatNetwork::TwoPartyVatNetwork(kj::AsyncCapabilityStream& stream, uint maxFdsPerMessage,
                                        rpc::twoparty::Side side, ReaderOptions receiveOptions,
                                        const kj::MonotonicClock& clock)
-    : TwoPartyVatNetwork(kj::Own<MessageStream>(kj::heap<AsyncCapabilityMessageStream>(stream)),
-                         maxFdsPerMessage, side, receiveOptions, clock) {}
+    : TwoPartyVatNetwork(
+          kj::Own<MessageStream>(kj::heap<BufferedMessageStream>(
+              stream, IncomingRpcMessage::getShortLivedCallback())),
+          maxFdsPerMessage, side, receiveOptions, clock) {}
+
+TwoPartyVatNetwork::~TwoPartyVatNetwork() noexcept(false) {};
 
 MessageStream& TwoPartyVatNetwork::getStream() {
   KJ_SWITCH_ONEOF(stream) {
@@ -148,19 +154,44 @@ public:
       return;
     }
 
-    network.currentQueueSize += size * sizeof(capnp::word);
-    ++network.currentQueueCount;
-    auto deferredSizeUpdate = kj::defer([&network = network, size]() mutable {
-      network.currentQueueSize -= size * sizeof(capnp::word);
-      --network.currentQueueCount;
-    });
-
     auto sendTime = network.clock.now();
-    network.previousWrite = KJ_ASSERT_NONNULL(network.previousWrite, "already shut down")
-        .then([this, sendTime]() {
-      return kj::evalNow([&]() {
+    if (network.queuedMessages.size() == 0) {
+      // Optimistically set sendTime when there's no messages in the queue. Without this, sending
+      // a message after a long delay could cause getOutgoingMessageWaitTime() to return excessively
+      // long wait times if it is called during the time period after send() is called,
+      // but before the write occurs, as we increment currentQueueCount synchronously, but
+      // asynchronously update currentOutgoingMessageSendTime.
+      network.currentOutgoingMessageSendTime = sendTime;
+    }
+
+    // Instead of sending each new message as soon as possible, we attempt to batch together small
+    // messages by delaying when we send them using evalLast. This allows us to group together
+    // related small messages, reducing the number of syscalls we make.
+    auto& previousWrite = KJ_ASSERT_NONNULL(network.previousWrite, "already shut down");
+    bool alreadyPendingSend = !network.queuedMessages.empty();
+    network.currentQueueSize += message.sizeInWords() * sizeof(word);
+    network.queuedMessages.add(kj::addRef(*this));
+    if (alreadyPendingSend) {
+      // The first send sets up an evalLast that will clear out pendingMessages when it's sent.
+      // If pendingMessages is non-empty, then there must already be a callback waiting to send
+      // them.
+      return;
+    }
+
+    // On the other hand, if pendingMessages was empty, then we should set up the delayed write.
+    network.previousWrite = previousWrite.then([this, sendTime]() {
+      return kj::evalLast([this, sendTime]() -> kj::Promise<void> {
         network.currentOutgoingMessageSendTime = sendTime;
-        return network.getStream().writeMessage(fds, message);
+        // Swap out the connection's pending messages and write all of them together.
+        auto ownMessages = kj::mv(network.queuedMessages);
+        network.currentQueueSize = 0;
+        auto messages =
+          kj::heapArray<MessageAndFds>(ownMessages.size());
+        for (int i = 0; i < messages.size(); ++i) {
+          messages[i].segments = ownMessages[i]->message.getSegmentsForOutput();
+          messages[i].fds = ownMessages[i]->fds;
+        }
+        return network.getStream().writeMessages(messages).attach(kj::mv(ownMessages), kj::mv(messages));
       }).catch_([this](kj::Exception&& e) {
         // Since no one checks write failures, we need to propagate them into read failures,
         // otherwise we might get stuck sending all messages into a black hole and wondering why
@@ -171,7 +202,7 @@ public:
         }
         kj::throwRecoverableException(kj::mv(e));
       });
-    }).attach(kj::addRef(*this), kj::mv(deferredSizeUpdate))
+    }).attach(kj::addRef(*this))
       // Note that it's important that the eagerlyEvaluate() come *after* the attach() because
       // otherwise the message (and any capabilities in it) will not be released until a new
       // message is written! (Kenton once spent all afternoon tracking this down...)
@@ -189,7 +220,7 @@ private:
 };
 
 kj::Duration TwoPartyVatNetwork::getOutgoingMessageWaitTime() {
-  if (currentQueueCount > 0) {
+  if (queuedMessages.size() > 0) {
     return clock.now() - currentOutgoingMessageSendTime;
   } else {
     return 0 * kj::SECONDS;
@@ -310,31 +341,46 @@ kj::Promise<void> TwoPartyVatNetwork::shutdown() {
 
 // =======================================================================================
 
-TwoPartyServer::TwoPartyServer(Capability::Client bootstrapInterface)
-    : bootstrapInterface(kj::mv(bootstrapInterface)), tasks(*this) {}
+TwoPartyServer::TwoPartyServer(Capability::Client bootstrapInterface,
+    kj::Maybe<kj::Function<kj::String(const kj::Exception&)>> traceEncoder)
+    : bootstrapInterface(kj::mv(bootstrapInterface)),
+      traceEncoder(kj::mv(traceEncoder)),
+      tasks(*this) {}
 
 struct TwoPartyServer::AcceptedConnection {
   kj::Own<kj::AsyncIoStream> connection;
   TwoPartyVatNetwork network;
   RpcSystem<rpc::twoparty::VatId> rpcSystem;
 
-  explicit AcceptedConnection(Capability::Client bootstrapInterface,
+  explicit AcceptedConnection(TwoPartyServer& parent,
                               kj::Own<kj::AsyncIoStream>&& connectionParam)
       : connection(kj::mv(connectionParam)),
         network(*connection, rpc::twoparty::Side::SERVER),
-        rpcSystem(makeRpcServer(network, kj::mv(bootstrapInterface))) {}
+        rpcSystem(makeRpcServer(network, kj::cp(parent.bootstrapInterface))) {
+    init(parent);
+  }
 
-  explicit AcceptedConnection(Capability::Client bootstrapInterface,
+  explicit AcceptedConnection(TwoPartyServer& parent,
                               kj::Own<kj::AsyncCapabilityStream>&& connectionParam,
                               uint maxFdsPerMessage)
       : connection(kj::mv(connectionParam)),
         network(kj::downcast<kj::AsyncCapabilityStream>(*connection),
                 maxFdsPerMessage, rpc::twoparty::Side::SERVER),
-        rpcSystem(makeRpcServer(network, kj::mv(bootstrapInterface))) {}
+        rpcSystem(makeRpcServer(network, kj::cp(parent.bootstrapInterface))) {
+    init(parent);
+  }
+
+  void init(TwoPartyServer& parent) {
+    KJ_IF_MAYBE(t, parent.traceEncoder) {
+      rpcSystem.setTraceEncoder([&func = *t](const kj::Exception& e) {
+        return func(e);
+      });
+    }
+  }
 };
 
 void TwoPartyServer::accept(kj::Own<kj::AsyncIoStream>&& connection) {
-  auto connectionState = kj::heap<AcceptedConnection>(bootstrapInterface, kj::mv(connection));
+  auto connectionState = kj::heap<AcceptedConnection>(*this, kj::mv(connection));
 
   // Run the connection until disconnect.
   auto promise = connectionState->network.onDisconnect();
@@ -344,7 +390,7 @@ void TwoPartyServer::accept(kj::Own<kj::AsyncIoStream>&& connection) {
 void TwoPartyServer::accept(
     kj::Own<kj::AsyncCapabilityStream>&& connection, uint maxFdsPerMessage) {
   auto connectionState = kj::heap<AcceptedConnection>(
-      bootstrapInterface, kj::mv(connection), maxFdsPerMessage);
+      *this, kj::mv(connection), maxFdsPerMessage);
 
   // Run the connection until disconnect.
   auto promise = connectionState->network.onDisconnect();
@@ -352,7 +398,7 @@ void TwoPartyServer::accept(
 }
 
 kj::Promise<void> TwoPartyServer::accept(kj::AsyncIoStream& connection) {
-  auto connectionState = kj::heap<AcceptedConnection>(bootstrapInterface,
+  auto connectionState = kj::heap<AcceptedConnection>(*this,
       kj::Own<kj::AsyncIoStream>(&connection, kj::NullDisposer::instance));
 
   // Run the connection until disconnect.
@@ -362,7 +408,7 @@ kj::Promise<void> TwoPartyServer::accept(kj::AsyncIoStream& connection) {
 
 kj::Promise<void> TwoPartyServer::accept(
     kj::AsyncCapabilityStream& connection, uint maxFdsPerMessage) {
-  auto connectionState = kj::heap<AcceptedConnection>(bootstrapInterface,
+  auto connectionState = kj::heap<AcceptedConnection>(*this,
       kj::Own<kj::AsyncCapabilityStream>(&connection, kj::NullDisposer::instance),
       maxFdsPerMessage);
 

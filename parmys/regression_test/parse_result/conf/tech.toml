@@ -1,0 +1,42 @@
+#include head.toml
+
+["input_blif"]
+    regex = "Input BLIF file: (.+)"
+    default = "n/a"
+
+#include basic.toml
+
+["elaboration_time(ms)"]
+    regex = "Elaboration Time: (\d+|\d+.\d+)ms"
+    # timing can be very off due to how fast odin runs
+    range = [ 0.0, 100.0 ]
+    # we cutoff anything bellow 1 second  as it is subject to noise
+    cutoff = 1000.0
+    default = -1
+
+["optimization_time(ms)"]
+    regex = "Optimization Time: (\d+|\d+.\d+)ms"
+    # timing can be very off due to how fast odin runs
+    range = [ 0.0, 100.0 ]
+    # we cutoff anything bellow 1 second  as it is subject to noise
+    cutoff = 1000.0
+    default = -1
+
+["techmap_time(ms)"]
+    regex = "Techmap Time: (\d+|\d+.\d+)ms"
+    # timing can be very off due to how fast odin runs
+    range = [ 0.0, 100.0 ]
+    # we cutoff anything bellow 1 second  as it is subject to noise
+    cutoff = 1000.0
+    default = -1
+
+["synthesis_time(ms)"]
+    regex = "Total Synthesis Time: (\d+|\d+.\d+)ms"
+    # timing can be very off due to how fast odin runs
+    range = [ 0.0, 100.0 ]
+    # we cutoff anything bellow 1 second  as it is subject to noise
+    cutoff = 1000.0
+    default = -1
+
+#include node.toml
+#include net.toml

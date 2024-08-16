@@ -6,7 +6,7 @@
 #include "globals.h"
 #include "atom_netlist.h"
 #include "draw_floorplanning.h"
-#include "vpr_constraints.h"
+#include "user_place_constraints.h"
 #include "draw_color.h"
 #include "draw.h"
 #include "draw_rr.h"
@@ -45,7 +45,10 @@
 #        include <X11/keysym.h>
 #    endif
 
-static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* current_pb, const t_pb* pb_to_draw, const ezgl::rectangle& parent_bbox, const t_logical_block_type_ptr type, ezgl::color color, ezgl::renderer* g);
+static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* current_pb,
+                             const t_pb* pb_to_draw, const ezgl::rectangle& parent_bbox,
+                             const t_logical_block_type_ptr type, ezgl::color color,
+                             ezgl::renderer* g);
 
 const std::vector<ezgl::color> kelly_max_contrast_colors_no_black = {
     //ezgl::color(242, 243, 244), //white: skip white since it doesn't contrast well with VPR's light background
@@ -83,62 +86,65 @@ static void highlight_partition(ezgl::renderer* g, int partitionID, int alpha) {
     auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
     auto constraints = floorplanning_ctx.constraints;
     t_draw_coords* draw_coords = get_draw_coords_vars();
+    t_draw_state* draw_state = get_draw_state_vars();
 
-    auto partition = constraints.get_partition((PartitionId)partitionID);
-    auto& partition_region = partition.get_part_region();
-    auto regions = partition_region.get_partition_region();
+    const auto& partition = constraints.get_partition((PartitionId)partitionID);
+    const auto& partition_region = partition.get_part_region();
+    const auto& regions = partition_region.get_regions();
 
     bool name_drawn = false;
     ezgl::color partition_color = kelly_max_contrast_colors_no_black[partitionID % (kelly_max_contrast_colors_no_black.size())];
-    g->set_color(partition_color, alpha);
 
-    // The units of space in the constraints xml file will be refered to as "tile units"
-    // The units of space that'll be used by ezgl to draw will be refered to as "on screen units"
+    // The units of space in the constraints xml file will be referred to as "tile units"
+    // The units of space that'll be used by ezgl to draw will be referred to as "on screen units"
 
     // Find the coordinates of the region by retrieving from the xml file
     // which tiles are at the corner of the region, then translate that to on
     // the on screen units for ezgl to use.
 
     for (int region = 0; (size_t)region < regions.size(); region++) {
-        const auto reg_coord = regions[region].get_region_rect();
+        const vtr::Rect<int>& reg_coord = regions[region].get_rect();
+        const auto [layer_low, layer_high] = regions[region].get_layer_range();
 
-        //TODO: 0 should be replaced with the actual z value of the region when graph is 3D
-        ezgl::rectangle top_right = draw_coords->get_absolute_clb_bbox(reg_coord.layer_num,
-                                                                       reg_coord.xmax,
-                                                                       reg_coord.ymax,
-                                                                       0);
-        ezgl::rectangle bottom_left = draw_coords->get_absolute_clb_bbox(reg_coord.layer_num,
-                                                                         reg_coord.xmin,
-                                                                         reg_coord.ymin,
-                                                                         0);
+        for (int layer = layer_low; layer <= layer_high; layer++) {
+            if (!draw_state->draw_layer_display[layer].visible) {
+                continue;
+            }
 
-        ezgl::rectangle on_screen_rect(bottom_left.bottom_left(), top_right.top_right());
+            int alpha_layer_part = alpha * draw_state->draw_layer_display[layer].alpha / 255;
+            g->set_color(partition_color, alpha_layer_part);
 
-        if (!name_drawn) {
-            g->set_font_size(10);
-            std::string partition_name = partition.get_name();
+            ezgl::rectangle top_right = draw_coords->get_absolute_clb_bbox(layer, reg_coord.xmax(), reg_coord.ymax(), 0);
+            ezgl::rectangle bottom_left = draw_coords->get_absolute_clb_bbox(layer, reg_coord.xmin(), reg_coord.ymin(), 0);
 
-            g->set_color(partition_color, 230);
+            ezgl::rectangle on_screen_rect(bottom_left.bottom_left(), top_right.top_right());
 
-            g->draw_text(
-                on_screen_rect.center(),
-                partition_name.c_str(),
-                on_screen_rect.width() - 10,
-                on_screen_rect.height() - 10);
+            if (!name_drawn) {
+                g->set_font_size(10);
+                const std::string& partition_name = partition.get_name();
 
-            name_drawn = true;
+                g->set_color(partition_color, 230);
 
-            g->set_color(partition_color, alpha);
+                g->draw_text(
+                    on_screen_rect.center(),
+                    partition_name,
+                    on_screen_rect.width() - 10,
+                    on_screen_rect.height() - 10);
+
+                name_drawn = true;
+
+                g->set_color(partition_color, alpha);
+            }
+
+            g->fill_rectangle(on_screen_rect);
         }
-
-        g->fill_rectangle(on_screen_rect);
     }
 }
 
 //Iterates through all partitions and draws each region of each partition
 void highlight_all_regions(ezgl::renderer* g) {
     auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
-    auto constraints = floorplanning_ctx.constraints;
+    const auto& constraints = floorplanning_ctx.constraints;
     auto num_partitions = constraints.get_num_partitions();
 
     //keeps track of what alpha level each partition is
@@ -154,23 +160,22 @@ void highlight_all_regions(ezgl::renderer* g) {
     }
 }
 
-// Draws atoms that're constrained to a partition in the colour of their respective partition.
+// Draws atoms that are constrained to a partition in the colour of their respective partition.
 void draw_constrained_atoms(ezgl::renderer* g) {
     auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
-    auto constraints = floorplanning_ctx.constraints;
-    auto num_partitions = constraints.get_num_partitions();
+    const auto& constraints = floorplanning_ctx.constraints;
+    int num_partitions = constraints.get_num_partitions();
     auto& atom_ctx = g_vpr_ctx.atom();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     for (int partitionID = 0; partitionID < num_partitions; partitionID++) {
         auto atoms = constraints.get_part_atoms((PartitionId)partitionID);
 
-        for (size_t j = 0; j < atoms.size(); j++) {
-            AtomBlockId const& const_atom = atoms[j];
-            if (atom_ctx.lookup.atom_pb(const_atom) != nullptr) {
-                const t_pb* pb = atom_ctx.lookup.atom_pb(const_atom);
+        for (const AtomBlockId atom_id : atoms) {
+            if (atom_ctx.lookup.atom_pb(atom_id) != nullptr) {
+                const t_pb* pb = atom_ctx.lookup.atom_pb(atom_id);
                 auto color = kelly_max_contrast_colors_no_black[partitionID % (kelly_max_contrast_colors_no_black.size())];
-                ClusterBlockId clb_index = atom_ctx.lookup.atom_clb(atoms[j]);
+                ClusterBlockId clb_index = atom_ctx.lookup.atom_clb(atom_id);
                 auto type = cluster_ctx.clb_nlist.block_type(clb_index);
 
                 draw_internal_pb(clb_index, cluster_ctx.clb_nlist.block_pb(clb_index), pb, ezgl::rectangle({0, 0}, 0, 0), type, color, g);
@@ -180,7 +185,12 @@ void draw_constrained_atoms(ezgl::renderer* g) {
 }
 
 //Recursive function to find where the constrained atom is and draws it
-static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* current_pb, const t_pb* pb_to_draw, const ezgl::rectangle& parent_bbox, const t_logical_block_type_ptr type, ezgl::color color, ezgl::renderer* g) {
+static void draw_internal_pb(const ClusterBlockId clb_index,
+                             t_pb* current_pb,
+                             const t_pb* pb_to_draw,
+                             const ezgl::rectangle& parent_bbox,
+                             const t_logical_block_type_ptr type,
+                             ezgl::color color, ezgl::renderer* g) {
     t_draw_coords* draw_coords = get_draw_coords_vars();
     t_draw_state* draw_state = get_draw_state_vars();
 
@@ -232,7 +242,7 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* current_pb, c
 
             g->draw_text(
                 abs_bbox.center(),
-                blk_tag.c_str(),
+                blk_tag,
                 abs_bbox.width() + 10,
                 abs_bbox.height() + 10);
 
@@ -297,29 +307,28 @@ void highlight_selected_partition(GtkWidget* widget) {
 }
 
 //Fills in the legend
-static GtkTreeModel* create_and_fill_model(void) {
+static GtkTreeModel* create_and_fill_model() {
     auto& atom_ctx = g_vpr_ctx.atom();
     auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
-    auto constraints = floorplanning_ctx.constraints;
-    auto num_partitions = constraints.get_num_partitions();
+    const auto& constraints = floorplanning_ctx.constraints;
+    int num_partitions = constraints.get_num_partitions();
 
     GtkTreeStore* store = gtk_tree_store_new(NUM_COLS, G_TYPE_STRING);
 
     for (int partitionID = 0; partitionID < num_partitions; partitionID++) {
         auto atoms = constraints.get_part_atoms((PartitionId)partitionID);
-        auto partition = constraints.get_partition((PartitionId)partitionID);
+        const auto& partition = constraints.get_partition((PartitionId)partitionID);
 
         std::string partition_name(partition.get_name()
                                    + " (" + std::to_string(atoms.size()) + " primitives)");
 
         GtkTreeIter iter, child_iter;
-        gtk_tree_store_append(store, &iter, NULL);
+        gtk_tree_store_append(store, &iter, nullptr);
         gtk_tree_store_set(store, &iter,
                            COL_NAME, partition_name.c_str(),
                            -1);
 
-        for (size_t j = 0; j < atoms.size(); j++) {
-            AtomBlockId const& const_atom = atoms[j];
+        for (AtomBlockId const_atom : atoms) {
             std::string atom_name = (atom_ctx.lookup.atom_pb(const_atom))->name;
             gtk_tree_store_append(store, &child_iter, &iter);
             gtk_tree_store_set(store, &child_iter,

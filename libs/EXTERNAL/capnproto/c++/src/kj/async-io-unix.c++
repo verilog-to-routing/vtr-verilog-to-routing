@@ -26,6 +26,12 @@
 #define _GNU_SOURCE
 #endif
 
+#ifndef _FILE_OFFSET_BITS
+#define _FILE_OFFSET_BITS 64
+// Request 64-bit off_t for sendfile(). (The code will still work if we get 32-bit off_t as long
+// as actual files are under 4GB.)
+#endif
+
 #include "async-io.h"
 #include "async-io-internal.h"
 #include "async-unix.h"
@@ -50,13 +56,18 @@
 #include <poll.h>
 #include <limits.h>
 #include <sys/ioctl.h>
+#include <kj/filesystem.h>
+
+#if __linux__
+#include <sys/sendfile.h>
+#endif
 
 #if !defined(SO_PEERCRED) && defined(LOCAL_PEERCRED)
 #include <sys/ucred.h>
 #endif
 
-#if !defined(SOL_LOCAL) && (__FreeBSD__ || __DragonflyBSD__)
-// On DragonFly or FreeBSD < 12.2 you're supposed to use 0 for SOL_LOCAL.
+#if !defined(SOL_LOCAL) && (__FreeBSD__ || __DragonflyBSD__ || __APPLE__)
+// On DragonFly, FreeBSD < 12.2 and older Darwin you're supposed to use 0 for SOL_LOCAL.
 #define SOL_LOCAL 0
 #endif
 
@@ -137,10 +148,10 @@ private:
 
 class AsyncStreamFd: public OwnedFileDescriptor, public AsyncCapabilityStream {
 public:
-  AsyncStreamFd(UnixEventPort& eventPort, int fd, uint flags)
+  AsyncStreamFd(UnixEventPort& eventPort, int fd, uint flags, uint observerFlags)
       : OwnedFileDescriptor(fd, flags),
         eventPort(eventPort),
-        observer(eventPort, fd, UnixEventPort::FdObserver::OBSERVE_READ_WRITE) {}
+        observer(eventPort, fd, observerFlags) {}
   virtual ~AsyncStreamFd() noexcept(false) {}
 
   Promise<size_t> tryRead(void* buffer, size_t minBytes, size_t maxBytes) override {
@@ -163,7 +174,8 @@ public:
                         (ReadResult result) mutable {
       for (auto i: kj::zeroTo(result.capCount)) {
         streamBuffer[i] = kj::heap<AsyncStreamFd>(eventPort, fdBuffer[i].release(),
-            LowLevelAsyncIoProvider::TAKE_OWNERSHIP | LowLevelAsyncIoProvider::ALREADY_CLOEXEC);
+            LowLevelAsyncIoProvider::TAKE_OWNERSHIP | LowLevelAsyncIoProvider::ALREADY_CLOEXEC,
+            UnixEventPort::FdObserver::OBSERVE_READ_WRITE);
       }
       return result;
     });
@@ -227,6 +239,240 @@ public:
     auto promise = writeInternal(data, moreData, fds);
     return promise.attach(kj::mv(fds), kj::mv(streams));
   }
+
+  Maybe<Promise<uint64_t>> tryPumpFrom(
+      AsyncInputStream& input, uint64_t amount = kj::maxValue) override {
+#if __linux__ && !__ANDROID__
+    KJ_IF_MAYBE(sock, kj::dynamicDowncastIfAvailable<AsyncStreamFd>(input)) {
+      return pumpFromOther(*sock, amount);
+    }
+#endif
+
+#if __linux__
+    KJ_IF_MAYBE(file, kj::dynamicDowncastIfAvailable<FileInputStream>(input)) {
+      KJ_IF_MAYBE(fd, file->getUnderlyingFile().getFd()) {
+        return pumpFromFile(*file, *fd, amount, 0);
+      }
+    }
+#endif
+
+    return nullptr;
+  }
+
+#if __linux__
+  // TODO(someday): Support sendfile on other OS's... unfortunately, it works differently on
+  //   different systems.
+
+private:
+  Promise<uint64_t> pumpFromFile(FileInputStream& input, int fileFd,
+                                 uint64_t amount, uint64_t soFar) {
+    while (soFar < amount) {
+      off_t offset = input.getOffset();
+      ssize_t n;
+
+      // Although sendfile()'s last argument has type size_t, on Linux it seems to cause EINVAL
+      // if we pass an amount that is greater than UINT32_MAX, so make sure to clamp to that. In
+      // practice, of course, we'll be limited to the socket buffer size.
+      size_t requested = kj::min(amount - soFar, (uint32_t)kj::maxValue);
+
+      KJ_SYSCALL_HANDLE_ERRORS(n = sendfile(fd, fileFd, &offset, requested)) {
+        case EINVAL:
+        case ENOSYS:
+          // Fall back to regular pump
+          return unoptimizedPumpTo(input, *this, amount, soFar);
+
+        case EAGAIN:
+          return observer.whenBecomesWritable()
+              .then([this, &input, fileFd, amount, soFar]() {
+            return pumpFromFile(input, fileFd, amount, soFar);
+          });
+
+        default:
+          KJ_FAIL_SYSCALL("sendfile", error);
+      }
+
+      if (n == 0) break;
+
+      input.seek(offset);  // NOTE: sendfile() updated `offset` in-place.
+      soFar += n;
+    }
+
+    return soFar;
+  }
+
+public:
+#endif  // __linux__
+
+#if __linux__ && !__ANDROID__
+// Linux's splice() syscall lets us optimize pumping of bytes between file descriptors.
+//
+// TODO(someday): splice()-based pumping hangs in unit tests on Android for some reason. We should
+//   figure out why, but for now I'm just disabling it...
+
+private:
+  Maybe<Promise<uint64_t>> pumpFromOther(AsyncStreamFd& input, uint64_t amount) {
+    // The input is another AsyncStreamFd, so perhaps we can do an optimized pump with splice().
+
+    // Before we resort to a bunch of syscalls, let's try to see if the pump is small and able to
+    // be fully satisfied immediately. This optimizes for the case of small streams, e.g. a short
+    // HTTP body.
+
+    byte buffer[4096];
+    size_t pos = 0;
+    size_t initialAmount = kj::min(sizeof(buffer), amount);
+
+    bool eof = false;
+
+    // Read into the buffer until it's full or there are no bytes available. Note that we'd expect
+    // one call to read() will pull as much data out of the socket as possible (up to our buffer
+    // size), so you might think the loop is unnecessary. The reason we want to do a second read(),
+    // though, is to find out if we're at EOF or merely waiting for more data. In the EOF case,
+    // we can end the pump early without splicing.
+    while (pos < initialAmount) {
+      ssize_t n;
+      KJ_NONBLOCKING_SYSCALL(n = ::read(input.fd, buffer + pos, initialAmount - pos));
+      if (n <= 0) {
+        eof = n == 0;
+        break;
+      }
+      pos += n;
+    }
+
+    // Write the bytes that we just read back out to the output.
+    {
+      ssize_t n;
+      KJ_NONBLOCKING_SYSCALL(n = ::write(fd, buffer, pos));
+      if (n < 0) n = 0;  // treat EAGAIN as "zero bytes written"
+      if (size_t(n) < pos) {
+        // Oh crap, the output buffer is full. This should be rare. But, now we're going to have
+        // to copy the remaining bytes into the heap to do an async write.
+        auto leftover = kj::heapArray<byte>(buffer + n, pos - n);
+        auto promise = write(leftover.begin(), leftover.size());
+        promise = promise.attach(kj::mv(leftover));
+        if (eof || pos == amount) {
+          return promise.then([pos]() -> uint64_t { return pos; });
+        } else {
+          return promise.then([&input, this, pos, amount]() {
+            return splicePumpFrom(input, pos, amount);
+          });
+        }
+      }
+    }
+
+    if (eof || pos == amount) {
+      // We finished the pump in one go, so don't splice.
+      return Promise<uint64_t>(uint64_t(pos));
+    } else {
+      // Use splice for the rest of the pump.
+      return splicePumpFrom(input, pos, amount);
+    }
+  }
+
+  static constexpr size_t MAX_SPLICE_LEN = 1 << 20;
+  // Maximum value we'll pass for the `len` argument of `splice()`. Linux does not like it when we
+  // use `kj::maxValue` here so we clamp it. Note that the actual value of this constant is
+  // irrelevanta as long as it is more than the pipe buffer size (typically 64k) and less than
+  // whatever value makes Linux unhappy. All actual operations will be clamped to the buffer size.
+  // (And if the buffer size is for some reason larger than this, that's OK too, we just won't
+  // end up using the whole buffer.)
+
+  Promise<uint64_t> splicePumpFrom(AsyncStreamFd& input, uint64_t readSoFar, uint64_t limit) {
+    // splice() requires that either its input or its output is a pipe. But chances are neither
+    // `input.fd` nor `this->fd` is a pipe -- in most use cases they are sockets. In order to take
+    // advantage of splice(), then, we need to allocate a pipe to act as the middleman, so we can
+    // splice() from the input to the pipe, and then from the pipe to the output.
+    //
+    // You might wonder why this pipe middleman is required. Why can't splice() go directly from
+    // a socket to a socket? Linus Torvalds attempts to explain here:
+    //     https://yarchive.net/comp/linux/splice.html
+    //
+    // The short version is that the pipe itself is equivalent to an in-memory buffer. In a naive
+    // pump implementation, we allocate a buffer, read() into it and write() out. With splice(),
+    // we allocate a kernelspace buffer by allocating a pipe, then we splice() into the pipe and
+    // splice() back out.
+
+    // Linux normally allocates pipe buffers of 64k (16 pages of 4k each). However, when
+    // /proc/sys/fs/pipe-user-pages-soft is hit, then Linux will start allocating 4k (1 page)
+    // buffers instead, and will give an error if we try to increase it.
+    //
+    // The soft limit defaults to 16384 pages, which we'd hit after 1024 pipes -- totally possible
+    // in a big server. 64k is a nice buffer size, but even 4k is better than not using splice, so
+    // we'll live with whatever buffer size the kernel gives us.
+    //
+    // There is a second, "hard" limit, /proc/sys/fs/pipe-user-pages-hard, at which point Linux
+    // will start refusing to allocate pipes at all. In this case we fall back to an unoptimized
+    // pump. However, this limit defaults to unlimited, so this won't ever happen unless someone
+    // has manually changed the limit. That's probably dangerous since if the app allocates pipes
+    // anywhere else in its codebase, it probably doesn't have any fallbacks in those places, so
+    // things will break anyway... to avoid that we'd need to self-regulate the number of pipes
+    // we allocate here to avoid coming close to the hard limit, but that's a lot of effort so I'm
+    // not going to bother!
+
+    int pipeFds[2];
+    KJ_SYSCALL_HANDLE_ERRORS(pipe2(pipeFds, O_NONBLOCK | O_CLOEXEC)) {
+      case ENFILE:
+        // Probably hit the limit on pipe buffers, fall back to unoptimized pump.
+        return unoptimizedPumpTo(input, *this, limit, readSoFar);
+      default:
+        KJ_FAIL_SYSCALL("pipe2()", error);
+    }
+
+    AutoCloseFd pipeIn(pipeFds[0]), pipeOut(pipeFds[1]);
+
+    return splicePumpLoop(input, pipeFds[0], pipeFds[1], readSoFar, limit, 0)
+        .attach(kj::mv(pipeIn), kj::mv(pipeOut));
+  }
+
+  Promise<uint64_t> splicePumpLoop(AsyncStreamFd& input, int pipeIn, int pipeOut,
+                                   uint64_t readSoFar, uint64_t limit, size_t bufferedAmount) {
+    for (;;) {
+      while (bufferedAmount > 0) {
+        // First flush out whatever is in the pipe buffer.
+        ssize_t n;
+        KJ_NONBLOCKING_SYSCALL(n = splice(pipeIn, nullptr, fd, nullptr,
+            MAX_SPLICE_LEN, SPLICE_F_MOVE | SPLICE_F_NONBLOCK));
+        if (n > 0) {
+          KJ_ASSERT(n <= bufferedAmount, "splice pipe larger than bufferedAmount?");
+          bufferedAmount -= n;
+        } else {
+          KJ_ASSERT(n < 0, "splice pipe empty before bufferedAmount reached?", bufferedAmount);
+          return observer.whenBecomesWritable()
+              .then([this, &input, pipeIn, pipeOut, readSoFar, limit, bufferedAmount]() {
+            return splicePumpLoop(input, pipeIn, pipeOut, readSoFar, limit, bufferedAmount);
+          });
+        }
+      }
+
+      // Now the pipe buffer is empty, so we can try to read some more.
+      {
+        if (readSoFar >= limit) {
+          // Hit the limit, we're done.
+          KJ_ASSERT(readSoFar == limit);
+          return readSoFar;
+        }
+
+        ssize_t n;
+        KJ_NONBLOCKING_SYSCALL(n = splice(input.fd, nullptr, pipeOut, nullptr,
+            kj::min(limit - readSoFar, MAX_SPLICE_LEN), SPLICE_F_MOVE | SPLICE_F_NONBLOCK));
+        if (n == 0) {
+          // EOF.
+          return readSoFar;
+        } else if (n < 0) {
+          // No data available, wait.
+          return input.observer.whenBecomesReadable()
+              .then([this, &input, pipeIn, pipeOut, readSoFar, limit]() {
+            return splicePumpLoop(input, pipeIn, pipeOut, readSoFar, limit, 0);
+          });
+        }
+
+        readSoFar += n;
+        bufferedAmount = n;
+      }
+    }
+  }
+
+public:
+#endif  // __linux__ && !__ANDROID__
 
   Promise<void> whenWriteDisconnected() override {
     KJ_IF_MAYBE(p, writeDisconnectedPromise) {
@@ -634,6 +880,10 @@ private:
   }
 };
 
+#if __linux__ && !__ANDROID__
+constexpr size_t AsyncStreamFd::MAX_SPLICE_LEN;
+#endif  // __linux__ && !__ANDROID__
+
 // =======================================================================================
 
 class SocketAddress {
@@ -949,58 +1199,6 @@ private:
   } addr;
 
   struct LookupParams;
-  class LookupReader;
-};
-
-class SocketAddress::LookupReader {
-  // Reads SocketAddresses off of a pipe coming from another thread that is performing
-  // getaddrinfo.
-
-public:
-  LookupReader(kj::Own<Thread>&& thread, kj::Own<AsyncInputStream>&& input,
-               _::NetworkFilter& filter)
-      : thread(kj::mv(thread)), input(kj::mv(input)), filter(filter) {}
-
-  ~LookupReader() {
-    if (thread) thread->detach();
-  }
-
-  Promise<Array<SocketAddress>> read() {
-    return input->tryRead(&current, sizeof(current), sizeof(current)).then(
-        [this](size_t n) -> Promise<Array<SocketAddress>> {
-      if (n < sizeof(current)) {
-        thread = nullptr;
-        // getaddrinfo()'s docs seem to say it will never return an empty list, but let's check
-        // anyway.
-        KJ_REQUIRE(addresses.size() > 0, "DNS lookup returned no permitted addresses.") { break; }
-        return addresses.releaseAsArray();
-      } else {
-        // getaddrinfo() can return multiple copies of the same address for several reasons.
-        // A major one is that we don't give it a socket type (SOCK_STREAM vs. SOCK_DGRAM), so
-        // it may return two copies of the same address, one for each type, unless it explicitly
-        // knows that the service name given is specific to one type.  But we can't tell it a type,
-        // because we don't actually know which one the user wants, and if we specify SOCK_STREAM
-        // while the user specified a UDP service name then they'll get a resolution error which
-        // is lame.  (At least, I think that's how it works.)
-        //
-        // So we instead resort to de-duping results.
-        if (alreadySeen.insert(current).second) {
-          if (current.parseAllowedBy(filter)) {
-            addresses.add(current);
-          }
-        }
-        return read();
-      }
-    });
-  }
-
-private:
-  kj::Own<Thread> thread;
-  kj::Own<AsyncInputStream> input;
-  _::NetworkFilter& filter;
-  SocketAddress current;
-  kj::Vector<SocketAddress> addresses;
-  std::set<SocketAddress> alreadySeen;
 };
 
 struct SocketAddress::LookupParams {
@@ -1018,84 +1216,97 @@ Promise<Array<SocketAddress>> SocketAddress::lookupHost(
   //   Maybe use the various platform-specific asynchronous DNS libraries?  Please do not implement
   //   a custom DNS resolver...
 
-  int fds[2];
-#if __linux__ && !__BIONIC__
-  KJ_SYSCALL(pipe2(fds, O_NONBLOCK | O_CLOEXEC));
-#else
-  KJ_SYSCALL(pipe(fds));
-#endif
-
-  auto input = lowLevel.wrapInputFd(fds[0], NEW_FD_FLAGS);
-
-  int outFd = fds[1];
-
+  auto paf = newPromiseAndCrossThreadFulfiller<Array<SocketAddress>>();
   LookupParams params = { kj::mv(host), kj::mv(service) };
 
-  auto thread = heap<Thread>(kj::mvCapture(params, [outFd,portHint](LookupParams&& params) {
-    FdOutputStream output((AutoCloseFd(outFd)));
+  auto thread = heap<Thread>(
+      [fulfiller=kj::mv(paf.fulfiller),params=kj::mv(params),portHint]() mutable {
+    // getaddrinfo() can return multiple copies of the same address for several reasons.
+    // A major one is that we don't give it a socket type (SOCK_STREAM vs. SOCK_DGRAM), so
+    // it may return two copies of the same address, one for each type, unless it explicitly
+    // knows that the service name given is specific to one type.  But we can't tell it a type,
+    // because we don't actually know which one the user wants, and if we specify SOCK_STREAM
+    // while the user specified a UDP service name then they'll get a resolution error which
+    // is lame.  (At least, I think that's how it works.)
+    //
+    // So we instead resort to de-duping results.
+    std::set<SocketAddress> result;
 
-    struct addrinfo* list;
-    int status = getaddrinfo(
-        params.host == "*" ? nullptr : params.host.cStr(),
-        params.service == nullptr ? nullptr : params.service.cStr(),
-        nullptr, &list);
-    if (status == 0) {
-      KJ_DEFER(freeaddrinfo(list));
+    KJ_IF_MAYBE(exception, kj::runCatchingExceptions([&]() {
+      struct addrinfo hints;
+      memset(&hints, 0, sizeof(hints));
+      hints.ai_family = AF_UNSPEC;
+#if __BIONIC__
+      // AI_V4MAPPED causes getaddrinfo() to fail on Bionic libc (Android).
+      hints.ai_flags = AI_ADDRCONFIG;
+#else
+      hints.ai_flags = AI_V4MAPPED | AI_ADDRCONFIG;
+#endif
+      struct addrinfo* list;
+      int status = getaddrinfo(
+          params.host == "*" ? nullptr : params.host.cStr(),
+          params.service == nullptr ? nullptr : params.service.cStr(),
+          &hints, &list);
+      if (status == 0) {
+        KJ_DEFER(freeaddrinfo(list));
 
-      struct addrinfo* cur = list;
-      while (cur != nullptr) {
-        if (params.service == nullptr) {
-          switch (cur->ai_addr->sa_family) {
-            case AF_INET:
-              ((struct sockaddr_in*)cur->ai_addr)->sin_port = htons(portHint);
-              break;
-            case AF_INET6:
-              ((struct sockaddr_in6*)cur->ai_addr)->sin6_port = htons(portHint);
-              break;
-            default:
-              break;
+        struct addrinfo* cur = list;
+        while (cur != nullptr) {
+          if (params.service == nullptr) {
+            switch (cur->ai_addr->sa_family) {
+              case AF_INET:
+                ((struct sockaddr_in*)cur->ai_addr)->sin_port = htons(portHint);
+                break;
+              case AF_INET6:
+                ((struct sockaddr_in6*)cur->ai_addr)->sin6_port = htons(portHint);
+                break;
+              default:
+                break;
+            }
           }
-        }
 
-        SocketAddress addr;
-        if (params.host == "*") {
-          // Set up a wildcard SocketAddress.  Only use the port number returned by getaddrinfo().
-          addr.wildcard = true;
-          addr.addrlen = sizeof(addr.addr.inet6);
-          addr.addr.inet6.sin6_family = AF_INET6;
-          switch (cur->ai_addr->sa_family) {
-            case AF_INET:
-              addr.addr.inet6.sin6_port = ((struct sockaddr_in*)cur->ai_addr)->sin_port;
-              break;
-            case AF_INET6:
-              addr.addr.inet6.sin6_port = ((struct sockaddr_in6*)cur->ai_addr)->sin6_port;
-              break;
-            default:
-              addr.addr.inet6.sin6_port = portHint;
-              break;
+          SocketAddress addr;
+          if (params.host == "*") {
+            // Set up a wildcard SocketAddress.  Only use the port number returned by getaddrinfo().
+            addr.wildcard = true;
+            addr.addrlen = sizeof(addr.addr.inet6);
+            addr.addr.inet6.sin6_family = AF_INET6;
+            switch (cur->ai_addr->sa_family) {
+              case AF_INET:
+                addr.addr.inet6.sin6_port = ((struct sockaddr_in*)cur->ai_addr)->sin_port;
+                break;
+              case AF_INET6:
+                addr.addr.inet6.sin6_port = ((struct sockaddr_in6*)cur->ai_addr)->sin6_port;
+                break;
+              default:
+                addr.addr.inet6.sin6_port = portHint;
+                break;
+            }
+          } else {
+            addr.addrlen = cur->ai_addrlen;
+            memcpy(&addr.addr.generic, cur->ai_addr, cur->ai_addrlen);
           }
-        } else {
-          addr.addrlen = cur->ai_addrlen;
-          memcpy(&addr.addr.generic, cur->ai_addr, cur->ai_addrlen);
+          result.insert(addr);
+          cur = cur->ai_next;
         }
-        KJ_ASSERT_CAN_MEMCPY(SocketAddress);
-        output.write(&addr, sizeof(addr));
-        cur = cur->ai_next;
+      } else if (status == EAI_SYSTEM) {
+        KJ_FAIL_SYSCALL("getaddrinfo", errno, params.host, params.service) {
+          return;
+        }
+      } else {
+        KJ_FAIL_REQUIRE("DNS lookup failed.",
+                        params.host, params.service, gai_strerror(status)) {
+          return;
+        }
       }
-    } else if (status == EAI_SYSTEM) {
-      KJ_FAIL_SYSCALL("getaddrinfo", errno, params.host, params.service) {
-        return;
-      }
+    })) {
+      fulfiller->reject(kj::mv(*exception));
     } else {
-      KJ_FAIL_REQUIRE("DNS lookup failed.",
-                      params.host, params.service, gai_strerror(status)) {
-        return;
-      }
+      fulfiller->fulfill(KJ_MAP(addr, result) { return addr; });
     }
-  }));
+  });
 
-  auto reader = heap<LookupReader>(kj::mv(thread), kj::mv(input), filter);
-  return reader->read().attach(kj::mv(reader));
+  return kj::mv(paf.promise);
 }
 
 // =======================================================================================
@@ -1155,7 +1366,8 @@ public:
         }
 
         AuthenticatedStream result;
-        result.stream = heap<AsyncStreamFd>(eventPort, ownFd.release(), NEW_FD_FLAGS);
+        result.stream = heap<AsyncStreamFd>(eventPort, ownFd.release(), NEW_FD_FLAGS,
+                                            UnixEventPort::FdObserver::OBSERVE_READ_WRITE);
         if (authenticated) {
           result.peerIdentity = SocketAddress(reinterpret_cast<struct sockaddr*>(&addr), addrlen)
               .getIdentity(lowLevel, filter, *result.stream);
@@ -1263,27 +1475,28 @@ public:
 class LowLevelAsyncIoProviderImpl final: public LowLevelAsyncIoProvider {
 public:
   LowLevelAsyncIoProviderImpl()
-      : eventLoop(eventPort), waitScope(eventLoop) {}
+      : eventPort(), eventLoop(eventPort), waitScope(eventLoop) {}
 
   inline WaitScope& getWaitScope() { return waitScope; }
 
   Own<AsyncInputStream> wrapInputFd(int fd, uint flags = 0) override {
-    return heap<AsyncStreamFd>(eventPort, fd, flags);
+    return heap<AsyncStreamFd>(eventPort, fd, flags, UnixEventPort::FdObserver::OBSERVE_READ);
   }
   Own<AsyncOutputStream> wrapOutputFd(int fd, uint flags = 0) override {
-    return heap<AsyncStreamFd>(eventPort, fd, flags);
+    return heap<AsyncStreamFd>(eventPort, fd, flags, UnixEventPort::FdObserver::OBSERVE_WRITE);
   }
   Own<AsyncIoStream> wrapSocketFd(int fd, uint flags = 0) override {
-    return heap<AsyncStreamFd>(eventPort, fd, flags);
+    return heap<AsyncStreamFd>(eventPort, fd, flags, UnixEventPort::FdObserver::OBSERVE_READ_WRITE);
   }
   Own<AsyncCapabilityStream> wrapUnixSocketFd(Fd fd, uint flags = 0) override {
-    return heap<AsyncStreamFd>(eventPort, fd, flags);
+    return heap<AsyncStreamFd>(eventPort, fd, flags, UnixEventPort::FdObserver::OBSERVE_READ_WRITE);
   }
   Promise<Own<AsyncIoStream>> wrapConnectingSocketFd(
       int fd, const struct sockaddr* addr, uint addrlen, uint flags = 0) override {
     // It's important that we construct the AsyncStreamFd first, so that `flags` are honored,
     // especially setting nonblocking mode and taking ownership.
-    auto result = heap<AsyncStreamFd>(eventPort, fd, flags);
+    auto result = heap<AsyncStreamFd>(eventPort, fd, flags,
+                                      UnixEventPort::FdObserver::OBSERVE_READ_WRITE);
 
     // Unfortunately connect() doesn't fit the mold of KJ_NONBLOCKING_SYSCALL, since it indicates
     // non-blocking using EINPROGRESS.
@@ -1294,7 +1507,8 @@ public:
           // Fine.
           break;
         } else if (error != EINTR) {
-          KJ_FAIL_SYSCALL("connect()", error) { break; }
+          auto address = SocketAddress(addr, addrlen).toString();
+          KJ_FAIL_SYSCALL("connect()", error, address) { break; }
           return Own<AsyncIoStream>();
         }
       } else {
@@ -1304,7 +1518,7 @@ public:
     }
 
     auto connected = result->waitConnected();
-    return connected.then(kj::mvCapture(result, [fd](Own<AsyncIoStream>&& stream) {
+    return connected.then([fd,stream=kj::mv(result)]() mutable -> Own<AsyncIoStream> {
       int err;
       socklen_t errlen = sizeof(err);
       KJ_SYSCALL(getsockopt(fd, SOL_SOCKET, SO_ERROR, &err, &errlen));
@@ -1312,7 +1526,7 @@ public:
         KJ_FAIL_SYSCALL("connect()", err) { break; }
       }
       return kj::mv(stream);
-    }));
+    });
   }
   Own<ConnectionReceiver> wrapListenSocketFd(
       int fd, NetworkFilter& filter, uint flags = 0) override {
@@ -1356,29 +1570,31 @@ public:
   }
 
   Own<ConnectionReceiver> listen() override {
-    if (addrs.size() > 1) {
-      KJ_LOG(WARNING, "Bind address resolved to multiple addresses.  Only the first address will "
-          "be used.  If this is incorrect, specify the address numerically.  This may be fixed "
-          "in the future.", addrs[0].toString());
+    auto makeReceiver = [&](SocketAddress& addr) {
+      int fd = addr.socket(SOCK_STREAM);
+
+      {
+        KJ_ON_SCOPE_FAILURE(close(fd));
+
+        // We always enable SO_REUSEADDR because having to take your server down for five minutes
+        // before it can restart really sucks.
+        int optval = 1;
+        KJ_SYSCALL(setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)));
+
+        addr.bind(fd);
+
+        // TODO(someday):  Let queue size be specified explicitly in string addresses.
+        KJ_SYSCALL(::listen(fd, SOMAXCONN));
+      }
+
+      return lowLevel.wrapListenSocketFd(fd, filter, NEW_FD_FLAGS);
+    };
+
+    if (addrs.size() == 1) {
+      return makeReceiver(addrs[0]);
+    } else {
+      return newAggregateConnectionReceiver(KJ_MAP(addr, addrs) { return makeReceiver(addr); });
     }
-
-    int fd = addrs[0].socket(SOCK_STREAM);
-
-    {
-      KJ_ON_SCOPE_FAILURE(close(fd));
-
-      // We always enable SO_REUSEADDR because having to take your server down for five minutes
-      // before it can restart really sucks.
-      int optval = 1;
-      KJ_SYSCALL(setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)));
-
-      addrs[0].bind(fd);
-
-      // TODO(someday):  Let queue size be specified explicitly in string addresses.
-      KJ_SYSCALL(::listen(fd, SOMAXCONN));
-    }
-
-    return lowLevel.wrapListenSocketFd(fd, filter, NEW_FD_FLAGS);
   }
 
   Own<DatagramPort> bindDatagramPort() override {
@@ -1530,9 +1746,9 @@ public:
       : lowLevel(parent.lowLevel), filter(allow, deny, parent.filter) {}
 
   Promise<Own<NetworkAddress>> parseAddress(StringPtr addr, uint portHint = 0) override {
-    return evalLater(mvCapture(heapString(addr), [this,portHint](String&& addr) {
+    return evalNow([&]() {
       return SocketAddress::parse(lowLevel, addr, portHint, filter);
-    })).then([this](Array<SocketAddress> addresses) -> Own<NetworkAddress> {
+    }).then([this](Array<SocketAddress> addresses) -> Own<NetworkAddress> {
       return heap<NetworkAddressImpl>(lowLevel, filter, kj::mv(addresses));
     });
   }
@@ -1814,13 +2030,12 @@ public:
 
     auto pipe = lowLevel.wrapSocketFd(fds[0], NEW_FD_FLAGS);
 
-    auto thread = heap<Thread>(kj::mvCapture(startFunc,
-        [threadFd](Function<void(AsyncIoProvider&, AsyncIoStream&, WaitScope&)>&& startFunc) {
+    auto thread = heap<Thread>([threadFd,startFunc=kj::mv(startFunc)]() mutable {
       LowLevelAsyncIoProviderImpl lowLevel;
       auto stream = lowLevel.wrapSocketFd(threadFd, NEW_FD_FLAGS);
       AsyncIoProviderImpl ioProvider(lowLevel);
       startFunc(ioProvider, *stream, lowLevel.getWaitScope());
-    }));
+    });
 
     return { kj::mv(thread), kj::mv(pipe) };
   }

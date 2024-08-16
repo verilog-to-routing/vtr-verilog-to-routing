@@ -59,6 +59,9 @@ public:
   // the same ByteStreamFactory. Since destruction of a KJ stream signals EOF, we need to propagate
   // that by destroying our underlying stream.
   // TODO(cleanup): When KJ streams evolve an end() method, this can go away.
+
+  virtual kj::Promise<void> directExplicitEnd() = 0;
+  // Like directEnd() but used in cases where an explicit end() call actually was made.
 };
 
 class ByteStreamFactory::SubstreamImpl final: public StreamServerBase {
@@ -69,9 +72,10 @@ public:
                 kj::AsyncOutputStream& stream,
                 capnp::ByteStream::SubstreamCallback::Client callback,
                 uint64_t limit,
+                kj::Maybe<kj::Own<kj::TlsStarterCallback>> tlsStarter,
                 kj::PromiseFulfillerPair<void> paf = kj::newPromiseAndFulfiller<void>())
       : factory(factory),
-        state(Streaming {parent, kj::mv(ownParent), stream, kj::mv(callback)}),
+        state(Streaming {parent, kj::mv(ownParent), stream, kj::mv(callback), kj::mv(tlsStarter)}),
         limit(limit),
         resolveFulfiller(kj::mv(paf.fulfiller)),
         resolvePromise(paf.promise.fork()) {}
@@ -131,6 +135,32 @@ public:
         state = Ended();
       }
     }
+  }
+
+  kj::Promise<void> directExplicitEnd() override {
+    KJ_SWITCH_ONEOF(state) {
+      KJ_CASE_ONEOF(redirected, Redirected) {
+        // Ugh I guess we need to send a real end() request here.
+        return redirected.replacement.endRequest(MessageSize {2, 0}).send().ignoreResult();
+      }
+      KJ_CASE_ONEOF(e, Ended) {
+        // whatever
+        return kj::READY_NOW;
+      }
+      KJ_CASE_ONEOF(b, Borrowed) {
+        // ... whatever.
+        return kj::READY_NOW;
+      }
+      KJ_CASE_ONEOF(streaming, Streaming) {
+        auto req = streaming.callback.endedRequest(MessageSize {4, 0});
+        req.setByteCount(completed);
+        auto promise = req.send().ignoreResult();
+        streaming.parent.returnStream(completed);
+        state = Ended();
+        return promise;
+      }
+    }
+    KJ_UNREACHABLE;
   }
 
   // ---------------------------------------------------------------------------
@@ -200,6 +230,10 @@ public:
         KJ_FAIL_REQUIRE("can't call other methods while stream is borrowed");
       }
       KJ_CASE_ONEOF(streaming, Streaming) {
+        // Revoke the TLS starter when stream is ended. This will ensure any startTls calls
+        // cannot be falsely invoked after the stream is destroyed.
+        auto drop = kj::mv(streaming.tlsStarter);
+
         auto req = streaming.callback.endedRequest(MessageSize {4, 0});
         req.setByteCount(completed);
         auto result = req.send().ignoreResult();
@@ -209,6 +243,10 @@ public:
       }
     }
     KJ_UNREACHABLE;
+  }
+
+  kj::Promise<void> startTls(StartTlsContext context) override {
+    KJ_UNIMPLEMENTED("A substream does not support TLS initiation");
   }
 
   kj::Promise<void> getSubstream(GetSubstreamContext context) override {
@@ -233,7 +271,8 @@ public:
         context.releaseParams();
         auto results = context.getResults(MessageSize { 2, 1 });
         results.setSubstream(factory.streamSet.add(kj::heap<SubstreamImpl>(
-            factory, *this, thisCap(), streaming.stream, kj::mv(callback), kj::mv(limit))));
+            factory, *this, thisCap(), streaming.stream, kj::mv(callback), kj::mv(limit),
+            kj::mv(streaming.tlsStarter))));
         state = Borrowed { kj::mv(streaming) };
         return kj::READY_NOW;
       }
@@ -249,6 +288,7 @@ private:
     capnp::ByteStream::Client ownParent;
     kj::AsyncOutputStream& stream;
     capnp::ByteStream::SubstreamCallback::Client callback;
+    kj::Maybe<kj::Own<kj::TlsStarterCallback>> tlsStarter;
   };
   struct Borrowed {
     Streaming originalState;
@@ -291,6 +331,15 @@ public:
   CapnpToKjStreamAdapter(ByteStreamFactory& factory,
                          kj::Own<kj::AsyncOutputStream> inner)
       : factory(factory),
+        state(kj::heap<PathProber>(*this, kj::mv(inner))) {
+    state.get<kj::Own<PathProber>>()->startProbing();
+  }
+
+  CapnpToKjStreamAdapter(ByteStreamFactory& factory,
+                         kj::Own<kj::AsyncOutputStream> inner,
+                         kj::Maybe<kj::Own<kj::TlsStarterCallback>> starter)
+      : factory(factory),
+        tlsStarter(kj::mv(starter)),
         state(kj::heap<PathProber>(*this, kj::mv(inner))) {
     state.get<kj::Own<PathProber>>()->startProbing();
   }
@@ -360,6 +409,32 @@ public:
     }
   }
 
+  kj::Promise<void> directExplicitEnd() override {
+    KJ_SWITCH_ONEOF(state) {
+      KJ_CASE_ONEOF(prober, kj::Own<PathProber>) {
+        state = Ended();
+        return kj::READY_NOW;
+      }
+      KJ_CASE_ONEOF(kjStream, kj::Own<kj::AsyncOutputStream>) {
+        state = Ended();
+        return kj::READY_NOW;
+      }
+      KJ_CASE_ONEOF(capnpStream, capnp::ByteStream::Client) {
+        // Ugh I guess we need to send a real end() request here.
+        return capnpStream.endRequest(MessageSize {2, 0}).send().ignoreResult();
+      }
+      KJ_CASE_ONEOF(b, Borrowed) {
+        // Fine, ignore.
+        return kj::READY_NOW;
+      }
+      KJ_CASE_ONEOF(e, Ended) {
+        // Fine, ignore.
+        return kj::READY_NOW;
+      }
+    }
+    KJ_UNREACHABLE;
+  }
+
   // ---------------------------------------------------------------------------
   // PathProber
 
@@ -418,7 +493,7 @@ public:
         // We already completed a path-shortening. Probably SubstreamCallbackImpl::ended() was
         // eventually called, meaning the substream was ended without redirecting back to us. So,
         // we're at EOF.
-        return uint64_t(0);
+        return kj::constPromise<uint64_t, 0>();
       }
     }
 
@@ -430,7 +505,7 @@ public:
       // works because pumps do not propagate EOF -- the destination can still receive further
       // writes and pumps. Basically our probing pump becomes a no-op, and then we revert to having
       // each write() RPC directly call write() on the inner stream.
-      return size_t(0);
+      return kj::constPromise<size_t, 0>();
     }
 
     kj::Promise<uint64_t> pumpTo(kj::AsyncOutputStream& output, uint64_t amount) override {
@@ -442,7 +517,7 @@ public:
         return kj::mv(*promise);
       } else {
         // There is no shorter path. As with tryRead(), we pretend we get immediate EOF.
-        return uint64_t(0);
+        return kj::constPromise<uint64_t, 0>();
       }
     }
 
@@ -552,6 +627,10 @@ protected:
   }
 
   kj::Promise<void> end(EndContext context) override {
+    // Revoke the TLS starter when stream is ended. This will ensure any startTls calls
+    // cannot be falsely invoked after the stream is destroyed.
+    auto drop = kj::mv(tlsStarter);
+
     KJ_SWITCH_ONEOF(state) {
       KJ_CASE_ONEOF(prober, kj::Own<PathProber>) {
         return prober->whenReady().then([this, context]() mutable {
@@ -582,6 +661,30 @@ protected:
     KJ_UNREACHABLE;
   }
 
+  kj::Promise<void> startTls(StartTlsContext context) override {
+    auto params = context.getParams();
+    KJ_IF_MAYBE(s, tlsStarter) {
+      KJ_SWITCH_ONEOF(state) {
+        KJ_CASE_ONEOF(prober, kj::Own<PathProber>) {
+          return KJ_ASSERT_NONNULL(*s->get())(params.getExpectedServerHostname());
+        }
+        KJ_CASE_ONEOF(kjStream, kj::Own<kj::AsyncOutputStream>) {
+          return KJ_ASSERT_NONNULL(*s->get())(params.getExpectedServerHostname());
+        }
+        KJ_CASE_ONEOF(capnpStream, capnp::ByteStream::Client) {
+          return KJ_ASSERT_NONNULL(*s->get())(params.getExpectedServerHostname());
+        }
+        KJ_CASE_ONEOF(e, Ended) {
+          KJ_FAIL_REQUIRE("cannot call startTls on a bytestream that was ended");
+        }
+        KJ_CASE_ONEOF(b, Borrowed) {
+          KJ_FAIL_REQUIRE("can't call startTls while stream is borrowed");
+        }
+      }
+    }
+    KJ_UNREACHABLE;
+  }
+
   kj::Promise<void> getSubstream(GetSubstreamContext context) override {
     KJ_SWITCH_ONEOF(state) {
       KJ_CASE_ONEOF(prober, kj::Own<PathProber>) {
@@ -598,7 +701,8 @@ protected:
 
         auto results = context.initResults(MessageSize {2, 1});
         results.setSubstream(factory.streamSet.add(kj::heap<SubstreamImpl>(
-            factory, *this, thisCap(), *kjStream, kj::mv(callback), kj::mv(limit))));
+            factory, *this, thisCap(), *kjStream, kj::mv(callback), kj::mv(limit),
+            kj::mv(tlsStarter))));
         state = Borrowed { kj::mv(kjStream) };
         return kj::READY_NOW;
       }
@@ -623,6 +727,7 @@ protected:
 
 private:
   ByteStreamFactory& factory;
+  kj::Maybe<kj::Own<kj::TlsStarterCallback>> tlsStarter;
 
   struct Borrowed { kj::Own<kj::AsyncOutputStream> stream; };
   struct Ended {};
@@ -690,22 +795,36 @@ private:
 
 // =======================================================================================
 
-class ByteStreamFactory::KjToCapnpStreamAdapter final: public kj::AsyncOutputStream {
+class ByteStreamFactory::KjToCapnpStreamAdapter final: public ExplicitEndOutputStream {
 public:
-  KjToCapnpStreamAdapter(ByteStreamFactory& factory, capnp::ByteStream::Client innerParam)
+  KjToCapnpStreamAdapter(ByteStreamFactory& factory, capnp::ByteStream::Client innerParam,
+                         bool explicitEnd)
       : factory(factory),
         inner(kj::mv(innerParam)),
-        findShorterPathTask(findShorterPath(inner).fork()) {}
+        findShorterPathTask(findShorterPath(inner).fork()),
+        explicitEnd(explicitEnd) {}
 
   ~KjToCapnpStreamAdapter() noexcept(false) {
-    // HACK: KJ streams are implicitly ended on destruction, but the RPC stream needs a call. We
-    //   use a detached promise for now, which is probably OK since capabilities are refcounted and
-    //   asynchronously destroyed anyway.
-    // TODO(cleanup): Fix this when KJ streads add an explicit end() method.
+    if (!explicitEnd) {
+      // HACK: KJ streams are implicitly ended on destruction, but the RPC stream needs a call. We
+      //   use a detached promise for now, which is probably OK since capabilities are refcounted and
+      //   asynchronously destroyed anyway.
+      // TODO(cleanup): Fix this when KJ streads add an explicit end() method.
+      KJ_IF_MAYBE(o, optimized) {
+        o->directEnd();
+      } else {
+        inner.endRequest(MessageSize {2, 0}).send().detach([](kj::Exception&&){});
+      }
+    }
+  }
+
+  kj::Promise<void> end() override {
+    KJ_REQUIRE(explicitEnd, "not expecting explicit end");
+
     KJ_IF_MAYBE(o, optimized) {
-      o->directEnd();
+      return o->directExplicitEnd();
     } else {
-      inner.endRequest(MessageSize {2, 0}).send().detach([](kj::Exception&&){});
+      return inner.endRequest(MessageSize {2, 0}).send().ignoreResult();
     }
   }
 
@@ -832,6 +951,9 @@ private:
   //    possible.
   // 2. Implements whenWriteDisconnected().
 
+  bool explicitEnd;
+  // Did the creator promise to explicitly call end()?
+
   kj::Promise<void> findShorterPath(capnp::ByteStream::Client& capnpClient) {
     // If the capnp stream turns out to resolve back to this process, shorten the path.
     // Also, implement whenWriteDisconnected() based on this.
@@ -938,7 +1060,7 @@ private:
         }
       }
       KJ_CASE_ONEOF(capnpStream, capnp::ByteStream::Client*) {
-        // Pumping from some other kind of steram. Optimize the pump by reading from the input
+        // Pumping from some other kind of stream. Optimize the pump by reading from the input
         // directly into outgoing RPC messages.
         size_t size = kj::min(remaining, 8192);
         auto req = capnpStream->writeRequest(MessageSize { 8 + size / sizeof(word) });
@@ -1022,8 +1144,19 @@ capnp::ByteStream::Client ByteStreamFactory::kjToCapnp(kj::Own<kj::AsyncOutputSt
   return streamSet.add(kj::heap<CapnpToKjStreamAdapter>(*this, kj::mv(kjStream)));
 }
 
+capnp::ByteStream::Client ByteStreamFactory::kjToCapnp(
+    kj::Own<kj::AsyncOutputStream> kjStream, kj::Maybe<kj::Own<kj::TlsStarterCallback>> tlsStarter) {
+  return streamSet.add(
+      kj::heap<CapnpToKjStreamAdapter>(*this, kj::mv(kjStream), kj::mv(tlsStarter)));
+}
+
 kj::Own<kj::AsyncOutputStream> ByteStreamFactory::capnpToKj(capnp::ByteStream::Client capnpStream) {
-  return kj::heap<KjToCapnpStreamAdapter>(*this, kj::mv(capnpStream));
+  return kj::heap<KjToCapnpStreamAdapter>(*this, kj::mv(capnpStream), false);
+}
+
+kj::Own<ExplicitEndOutputStream> ByteStreamFactory::capnpToKjExplicitEnd(
+    capnp::ByteStream::Client capnpStream) {
+  return kj::heap<KjToCapnpStreamAdapter>(*this, kj::mv(capnpStream), true);
 }
 
 }  // namespace capnp

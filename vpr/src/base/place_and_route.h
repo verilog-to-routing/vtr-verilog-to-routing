@@ -36,11 +36,13 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
                                   t_det_routing_arch* det_routing_arch,
                                   std::vector<t_segment_inf>& segment_inf,
                                   NetPinsMatrix<float>& net_delay,
-                                  std::shared_ptr<SetupHoldTimingInfo> timing_info,
-                                  std::shared_ptr<RoutingDelayCalculator> delay_calc,
+                                  const std::shared_ptr<SetupHoldTimingInfo>& timing_info,
+                                  const std::shared_ptr<RoutingDelayCalculator>& delay_calc,
                                   bool is_flat);
 
-t_chan_width init_chan(int cfactor, t_chan_width_dist chan_width_dist, t_graph_type graph_directionality);
+t_chan_width init_chan(int cfactor,
+                       const t_chan_width_dist& chan_width_dist,
+                       t_graph_type graph_directionality);
 
 void post_place_sync();
 

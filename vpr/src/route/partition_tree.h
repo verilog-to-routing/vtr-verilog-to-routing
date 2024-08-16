@@ -25,6 +25,21 @@ inline Side operator!(const Side& rhs) {
     return Side(!size_t(rhs));
 }
 
+/** Part of a net in the context of the \ref DecompNetlistRouter. Sinks and routing resources
+ * routable/usable by the \ref ConnectionRouter are constrained to ones inside clipped_bb
+ * (\see inside_bb()) */
+class VirtualNet {
+  public:
+    /** The net in question (ID into a \ref Netlist). */
+    ParentNetId net_id;
+    /** The bounding box created by clipping the parent's bbox against a cutline. */
+    t_bb clipped_bb;
+    /** Times decomposed -- don't decompose vnets too deeply or it disturbs net ordering
+     * when it's eventually disabled --> makes routing more difficult.
+     * 1 means this vnet was just created by dividing a regular net */
+    int times_decomposed = 0;
+};
+
 /** Spatial partition tree for routing.
  *
  * This divides the netlist into a tree of regions, so that nets with non-overlapping
@@ -34,14 +49,13 @@ inline Side operator!(const Side& rhs) {
  * by the cutline. Leaf nodes represent a final set of nets reached by partitioning.
  *
  * To route this in parallel, we first route the nets in the root node, then add
- * its left and right to a task queue, and repeat this for the whole tree.
- * 
- * The tree stores some routing results to be later combined, such as is_routable and
- * rerouted_nets. (TODO: do this per thread instead of per node) */
+ * its left and right to a task queue, and repeat this for the whole tree. */
 class PartitionTreeNode {
   public:
     /** Nets claimed by this node (intersected by cutline if branch, nets in final region if leaf) */
     std::vector<ParentNetId> nets;
+    /** Virtual nets assigned by the parent of this node (\see DecompNetlistRouter) */
+    std::vector<VirtualNet> vnets;
     /** Left subtree. */
     std::unique_ptr<PartitionTreeNode> left = nullptr;
     /** Right subtree. */

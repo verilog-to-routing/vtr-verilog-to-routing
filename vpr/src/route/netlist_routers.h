@@ -17,6 +17,7 @@
 
 #include "NetPinTimingInvalidator.h"
 #include "binary_heap.h"
+#include "four_ary_heap.h"
 #include "bucket.h"
 #include "clustered_netlist_utils.h"
 #include "connection_based_routing_fwd.h"
@@ -67,6 +68,7 @@ class NetlistRouter {
 #include "SerialNetlistRouter.h"
 #ifdef VPR_USE_TBB
 #    include "ParallelNetlistRouter.h"
+#    include "DecompNetlistRouter.h"
 #endif
 
 template<typename HeapType>
@@ -115,6 +117,24 @@ inline std::unique_ptr<NetlistRouter> make_netlist_router_with_heap(
 #else
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "VPR isn't compiled with TBB support required for parallel routing");
 #endif
+    } else if (router_opts.router_algorithm == e_router_algorithm::PARALLEL_DECOMP) {
+#ifdef VPR_USE_TBB
+        return std::make_unique<DecompNetlistRouter<HeapType>>(
+            net_list,
+            router_lookahead,
+            router_opts,
+            connections_inf,
+            net_delay,
+            netlist_pin_lookup,
+            timing_info,
+            pin_timing_invalidator,
+            budgeting_inf,
+            routing_predictor,
+            choking_spots,
+            is_flat);
+#else
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "VPR isn't compiled with TBB support required for parallel routing");
+#endif
     } else {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Unknown router algorithm %d", router_opts.router_algorithm);
     }
@@ -136,6 +156,20 @@ inline std::unique_ptr<NetlistRouter> make_netlist_router(
     bool is_flat) {
     if (router_opts.router_heap == e_heap_type::BINARY_HEAP) {
         return make_netlist_router_with_heap<BinaryHeap>(
+            net_list,
+            router_lookahead,
+            router_opts,
+            connections_inf,
+            net_delay,
+            netlist_pin_lookup,
+            timing_info,
+            pin_timing_invalidator,
+            budgeting_inf,
+            routing_predictor,
+            choking_spots,
+            is_flat);
+    } else if (router_opts.router_heap == e_heap_type::FOUR_ARY_HEAP) {
+        return make_netlist_router_with_heap<FourAryHeap>(
             net_list,
             router_lookahead,
             router_opts,

@@ -1,0 +1,43 @@
+##############################################
+# Configuration file for running experiments
+##############################################
+
+# Path to directory of circuits to useks
+circuits_dir=benchmarks/noc/Synthetic_Designs/blif_files/
+
+# Path to directory of architectures to use
+archs_dir=arch/noc/mesh_noc_topology
+
+# Path to directory of NoC Traffic Patterns to use
+noc_traffics_dir=benchmarks/noc/Synthetic_Designs/traffic_flow_files/
+
+# Traffic flow files are added per circuit.
+# By default, the task performs a cartesian product between circuits and traffic flow files.
+# Since each circuit is compatible with specific traffic flow files, we need to specify
+# traffic flow files for each circuit separately.
+noc_traffic_list_type=per_circuit
+
+# Add circuits and traffic flows to list to sweep
+circuit_list_add=simple_2_noc_1D_chain.blif
+noc_traffic_list_add=simple_2_noc_1D_chain.flows
+
+circuit_list_add=simple_4_noc_1D_chain.blif
+noc_traffic_list_add=simple_4_noc_1D_chain.flows
+
+circuit_list_add=simple_8_noc_1D_chain.blif
+noc_traffic_list_add=simple_8_noc_1D_chain.flows
+
+# Add architectures to list to sweep
+arch_list_add=stratixiv_arch.timing_with_a_embedded_3X3_mesh_noc_topology_2.xml
+
+# Parse info and how to parse
+parse_file=vpr_noc.txt
+
+# How to parse QoR info
+qor_parse_file=qor_noc_spec.txt
+
+# Pass requirements
+#pass_requirements_file=
+
+# Script parameters
+script_params_common =-starting_stage vpr --noc on --noc_routing_algorithm xy_routing --device "EP4SGX110"

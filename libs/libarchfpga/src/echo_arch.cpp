@@ -13,6 +13,10 @@
 
 using vtr::t_linked_vptr;
 
+/// @brief indices to lookup IPIN connection block switch name
+constexpr int ipin_cblock_switch_index_within_die = 0;
+constexpr int ipin_cblock_switch_index_between_dice = 1;
+
 void PrintArchInfo(FILE* Echo, const t_arch* arch);
 static void PrintPb_types_rec(FILE* Echo, const t_pb_type* pb_type, int level);
 static void PrintPb_types_recPower(FILE* Echo,
@@ -231,10 +235,14 @@ void PrintArchInfo(FILE* Echo, const t_arch* arch) {
             break;
     }
 
-    fprintf(Echo, "\tInput Connect Block Switch Name Within a Same Die: %s\n", arch->ipin_cblock_switch_name[0].c_str());
+    fprintf(Echo, "\tInput Connect Block Switch Name Within a Same Die: %s\n", arch->ipin_cblock_switch_name[ipin_cblock_switch_index_within_die].c_str());
+
     //if there is more than one layer available, print the connection block switch name that is used for connection between two dice
-    if (arch->grid_layouts.size() > 1) {
-        fprintf(Echo, "\tInput Connect Block Switch Name Between Two Dice: %s\n", arch->ipin_cblock_switch_name[1].c_str());
+    for (const auto& layout : arch->grid_layouts) {
+        int num_layers = (int)layout.layers.size();
+        if (num_layers > 1) {
+            fprintf(Echo, "\tInput Connect Block Switch Name Between Two Dice: %s\n", arch->ipin_cblock_switch_name[ipin_cblock_switch_index_between_dice].c_str());
+        }
     }
 
     fprintf(Echo, "*************************************************\n\n");
@@ -287,9 +295,12 @@ void PrintArchInfo(FILE* Echo, const t_arch* arch) {
             fprintf(Echo, "\t\t\t\ttype unidir mux_name for within die connections: %s\n",
                     arch->Switches[seg.arch_wire_switch].name.c_str());
             //if there is more than one layer available, print the segment switch name that is used for connection between two dice
-            if (arch->grid_layouts.size() > 1) {
-                fprintf(Echo, "\t\t\t\ttype unidir mux_name for between two dice connections: %s\n",
-                        arch->Switches[seg.arch_opin_between_dice_switch].name.c_str());
+            for (const auto& layout : arch->grid_layouts) {
+                int num_layers = (int)layout.layers.size();
+                if (num_layers > 1) {
+                    fprintf(Echo, "\t\t\t\ttype unidir mux_name for between two dice connections: %s\n",
+                            arch->Switches[seg.arch_opin_between_dice_switch].name.c_str());
+                }
             }
         } else { //Should be bidir
             fprintf(Echo, "\t\t\t\ttype bidir wire_switch %s arch_opin_switch %s\n",

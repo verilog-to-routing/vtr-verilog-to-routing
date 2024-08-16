@@ -21,6 +21,7 @@
 #include "rr_graph_utils.h"
 #include "rr_graph.h"
 #include "rr_graph_area.h"
+#include "rr_graph_utils.h"
 #include "rr_graph2.h"
 #include "rr_graph_sbox.h"
 #include "rr_graph_timing_params.h"
@@ -263,6 +264,18 @@ static void connect_tile_src_sink_to_pins(RRGraphBuilder& rr_graph_builder,
                                           const int delayless_switch,
                                           t_physical_tile_type_ptr physical_type_ptr);
 
+/**
+ * Add the edges between IPIN to SINK and SOURCE to OPIN to rr_edges_to_create
+ * @param rr_graph_builder RR Graph Bulder object which contain the RR Graph storage
+ * @param class_num_vec Class physical numbers to add the edges connected to them
+ * @param layer The layer number of the block to add the SINK/SRC connections of it.
+ * @param i The x location of the block to add the SINK/SRC connections of it.
+ * @param j The y location of the block to add the SINK/SRC connections of it
+ * @param rr_edges_to_create An object which store all of the edges created in this function.
+ * @param delayless_switch Switch ID of the delayless switch.
+ * @param physical_type_ptr A pointer to the physical type of the block for which the edges are created.
+ * @param switches_remapped A flag to indicate whether edge switch IDs are remapped 
+ */
 static void connect_src_sink_to_pins(RRGraphBuilder& rr_graph_builder,
                                      const std::vector<int>& class_num_vec,
                                      const int layer,
@@ -270,7 +283,8 @@ static void connect_src_sink_to_pins(RRGraphBuilder& rr_graph_builder,
                                      const int j,
                                      t_rr_edge_info_set& rr_edges_to_create,
                                      const int delayless_switch,
-                                     t_physical_tile_type_ptr physical_type_ptr);
+                                     t_physical_tile_type_ptr physical_type_ptr,
+                                     bool switches_remapped);
 
 static void alloc_and_load_tile_rr_graph(RRGraphBuilder& rr_graph_builder,
                                          std::map<int, t_arch_switch_inf>& arch_sw_inf_map,
@@ -336,14 +350,14 @@ static void add_intra_tile_edges_rr_graph(RRGraphBuilder& rr_graph_builder,
  * @brief Add the intra-cluster edges
  * @param rr_graph_builder
  * @param num_collapsed_nodes Return the number of nodes that are removed due to collapsing
- * @param cluster_blk_id Cluser block id of the cluster that its edges are being added
+ * @param cluster_blk_id Cluster block id of the cluster that its edges are being added
  * @param i
  * @param j
  * @param cap Capacity number of the location that cluster is being mapped to
  * @param R_minW_nmos
  * @param R_minW_pmos
  * @param rr_edges_to_create
- * @param nodes_to_collapse Sotre the nodes in the cluster that needs to be collapsed
+ * @param nodes_to_collapse Store the nodes in the cluster that needs to be collapsed
  * @param grid
  * @param is_flat
  * @param load_rr_graph
@@ -373,11 +387,13 @@ static void add_pb_edges(RRGraphBuilder& rr_graph_builder,
                          t_logical_block_type_ptr logical_block,
                          const t_pb* pb,
                          const t_cluster_pin_chain& nodes_to_collapse,
+                         float R_minW_nmos,
+                         float R_minW_pmos,
                          int rel_cap,
                          int layer,
                          int i,
                          int j,
-                         bool is_remapped);
+                         bool switches_remapped);
 
 /**
  * Edges going in/out of collapse nodes are not added by the normal routine. This function add those edges
@@ -407,7 +423,7 @@ static int add_edges_for_collapsed_nodes(RRGraphBuilder& rr_graph_builder,
                                          int j,
                                          bool load_rr_graph);
 /**
- * @note This funtion is used to add the fan-in edges of the given chain node to the chain's sink with the modified delay
+ * @note This function is used to add the fan-in edges of the given chain node to the chain's sink with the modified delay
  * @param rr_graph_builder
  * @param rr_edges_to_create
  * @param num_collapsed_pins
@@ -628,7 +644,7 @@ static void build_rr_graph(const t_graph_type graph_type,
                            t_chan_width nodes_per_chan,
                            const enum e_switch_block_type sb_type,
                            const int Fs,
-                           const std::vector<t_switchblock_inf> switchblocks,
+                           const std::vector<t_switchblock_inf>& switchblocks,
                            const std::vector<t_segment_inf>& segment_inf,
                            const int global_route_switch,
                            const int wire_to_arch_ipin_switch,
@@ -655,12 +671,21 @@ static void build_intra_cluster_rr_graph(const t_graph_type graph_type,
                                          bool is_flat,
                                          bool load_rr_graph);
 
+/**
+ * Return the ID for delayess switch. If the RR graph is loaded from a file, then the assumption
+ * is that the returned ID should be a RR switch ID not architecture ID.
+ * @param det_routing_arch Contain the information from architecture file
+ * @param load_rr_graph Indicate whether the RR graph is loaded from a file
+ */
+static int get_delayless_switch_id(t_det_routing_arch* det_routing_arch, 
+                                    bool load_rr_graph);
+
 /******************* Subroutine definitions *******************************/
 
 void create_rr_graph(const t_graph_type graph_type,
                      const std::vector<t_physical_tile_type>& block_types,
                      const DeviceGrid& grid,
-                     const t_chan_width nodes_per_chan,
+                     const t_chan_width& nodes_per_chan,
                      t_det_routing_arch* det_routing_arch,
                      const std::vector<t_segment_inf>& segment_inf,
                      const t_router_opts& router_opts,
@@ -699,7 +724,6 @@ void create_rr_graph(const t_graph_type graph_type,
                              device_ctx.arch,
                              &mutable_device_ctx.chan_width,
                              router_opts.base_cost_type,
-                             device_ctx.virtual_clock_network_root_idx,
                              &det_routing_arch->wire_to_rr_ipin_switch,
                              &det_routing_arch->wire_to_arch_ipin_switch_between_dice,
                              det_routing_arch->read_rr_graph_filename.c_str(),
@@ -741,11 +765,13 @@ void create_rr_graph(const t_graph_type graph_type,
     }
 
     if (is_flat) {
+        int delayless_switch = get_delayless_switch_id(det_routing_arch, load_rr_graph);
+        VTR_ASSERT(delayless_switch != OPEN);
         build_intra_cluster_rr_graph(graph_type,
                                      grid,
                                      block_types,
                                      device_ctx.rr_graph,
-                                     det_routing_arch->delayless_switch,
+                                     delayless_switch,
                                      det_routing_arch->R_minW_nmos,
                                      det_routing_arch->R_minW_pmos,
                                      mutable_device_ctx.rr_graph_builder,
@@ -763,6 +789,8 @@ void create_rr_graph(const t_graph_type graph_type,
 
     process_non_config_sets();
 
+    rr_set_sink_locs(device_ctx.rr_graph, mutable_device_ctx.rr_graph_builder, grid);
+
     verify_rr_node_indices(grid,
                            device_ctx.rr_graph,
                            device_ctx.rr_indexed_data,
@@ -773,7 +801,7 @@ void create_rr_graph(const t_graph_type graph_type,
 
     // Write out rr graph file if needed - Currently, writing the flat rr-graph is not supported since loading from a flat rr-graph is not supported.
     // When this function is called in any stage other than routing, the is_flat flag passed to this function is false, regardless of the flag passed
-    // through command line. So, the graph conrresponding to global resources will be created and written down to file if needed. During routing, if flat-routing
+    // through command line. So, the graph corresponding to global resources will be created and written down to file if needed. During routing, if flat-routing
     // is enabled, intra-cluster resources will be added to the graph, but this new bigger graph will not be written down.
     if (!det_routing_arch->write_rr_graph_filename.empty() && !is_flat) {
         write_rr_graph(&mutable_device_ctx.rr_graph_builder,
@@ -786,7 +814,6 @@ void create_rr_graph(const t_graph_type graph_type,
                        device_ctx.arch,
                        &mutable_device_ctx.chan_width,
                        det_routing_arch->write_rr_graph_filename.c_str(),
-                       device_ctx.virtual_clock_network_root_idx,
                        echo_enabled,
                        echo_file_name,
                        is_flat);
@@ -944,7 +971,7 @@ static void build_rr_graph(const t_graph_type graph_type,
                            t_chan_width nodes_per_chan,
                            const enum e_switch_block_type sb_type,
                            const int Fs,
-                           const std::vector<t_switchblock_inf> switchblocks,
+                           const std::vector<t_switchblock_inf>& switchblocks,
                            const std::vector<t_segment_inf>& segment_inf,
                            const int global_route_switch,
                            const int wire_to_arch_ipin_switch,
@@ -1011,16 +1038,16 @@ static void build_rr_graph(const t_graph_type graph_type,
         seg_details_y = alloc_and_load_global_route_seg_details(global_route_switch, &num_seg_details_y);
 
     } else {
-        /* Setup segments including distrubuting tracks and staggering.
+        /* Setup segments including distributing tracks and staggering.
          * If use_full_seg_groups is specified, max_chan_width may be
          * changed. Warning should be singled to caller if this happens. */
 
-        /* Need to setup segments along x & y axis seperately, due to different 
+        /* Need to setup segments along x & y axes separately, due to different
          * max_channel_widths and segment specifications. */
 
         size_t max_dim = std::max(grid.width(), grid.height()) - 2; //-2 for no perim channels
 
-        /*Get x & y segments seperately*/
+        /*Get x & y segments separately*/
         seg_details_x = alloc_and_load_seg_details(&max_chan_width_x,
                                                    max_dim, segment_inf_x,
                                                    use_full_seg_groups, directionality,
@@ -1086,7 +1113,7 @@ static void build_rr_graph(const t_graph_type graph_type,
         }
     }
 
-    /* get the number of 'sets' for each segment type -- unidirectial architectures have two tracks in a set, bidirectional have one */
+    /* get the number of 'sets' for each segment type -- unidirectional architectures have two tracks in a set, bidirectional have one */
     int total_sets = max_chan_width;
     int total_sets_x = max_chan_width_x;
     int total_sets_y = max_chan_width_y;
@@ -1141,7 +1168,7 @@ static void build_rr_graph(const t_graph_type graph_type,
                         "seg = %d (%s), Fc_out = %d, Fc_in = %d.\n",
                         type.name,
                         j,
-                        block_type_pin_index_to_name(&type, j).c_str(),
+                        block_type_pin_index_to_name(&type, j, is_flat).c_str(),
                         k,
                         segment_inf[k].name.c_str(),
                         Fc_out[i][j][k],
@@ -1344,9 +1371,10 @@ static void build_rr_graph(const t_graph_type graph_type,
         is_flat);
 
     // Verify no incremental node allocation.
-    /* AA: Note that in the case of dedicated networks, we are currently underestimating the additional node count due to the clock networks. 
-     * Thus, this below error is logged; it's not actually an error, the node estimation needs to get fixed for dedicated clock networks. */
-    if (rr_graph.num_nodes() > expected_node_count) {
+    // AA: Note that in the case of dedicated networks, we are currently underestimating the additional node count due to the clock networks. 
+    /* For now, the node count comparison is being skipped in the presence of clock networks.
+    * TODO: The node estimation needs to be fixed for dedicated clock networks. */
+    if (rr_graph.num_nodes() > expected_node_count && clock_modeling != DEDICATED_NETWORK) {
         VTR_LOG_ERROR("Expected no more than %zu nodes, have %zu nodes\n",
                       expected_node_count, rr_graph.num_nodes());
     }
@@ -1415,7 +1443,6 @@ static void build_rr_graph(const t_graph_type graph_type,
                    grid,
                    device_ctx.chan_width,
                    graph_type,
-                   device_ctx.virtual_clock_network_root_idx,
                    is_flat);
 
     /* Free all temp structs */
@@ -1486,8 +1513,6 @@ static void build_intra_cluster_rr_graph(const t_graph_type graph_type,
                                           is_flat,
                                           load_rr_graph);
 
-    /* AA: Note that in the case of dedicated networks, we are currently underestimating the additional node count due to the clock networks.
-     * Thus this below error is logged; it's not actually an error, the node estimation needs to get fixed for dedicated clock networks. */
     if (rr_graph.num_nodes() > expected_node_count) {
         VTR_LOG_ERROR("Expected no more than %zu nodes, have %zu nodes\n",
                       expected_node_count, rr_graph.num_nodes());
@@ -1510,8 +1535,27 @@ static void build_intra_cluster_rr_graph(const t_graph_type graph_type,
                    grid,
                    device_ctx.chan_width,
                    graph_type,
-                   device_ctx.virtual_clock_network_root_idx,
                    is_flat);
+}
+
+static int get_delayless_switch_id(t_det_routing_arch* det_routing_arch,
+                                    bool load_rr_graph) {
+    const auto& device_ctx = g_vpr_ctx.device();
+    int delayless_switch = OPEN;
+    if (load_rr_graph) {
+        const auto& rr_switches = device_ctx.rr_graph.rr_switch();
+        for (size_t switch_id = 0; switch_id < rr_switches.size(); switch_id++){
+            const auto& rr_switch = rr_switches[RRSwitchId(switch_id)];
+            if (rr_switch.name.find("delayless") != std::string::npos) {
+                delayless_switch = static_cast<int>(switch_id);
+                break;
+            }
+        }
+    } else {
+        delayless_switch = static_cast<int>(det_routing_arch->delayless_switch);
+    }
+
+    return delayless_switch;
 }
 
 void build_tile_rr_graph(RRGraphBuilder& rr_graph_builder,
@@ -2023,6 +2067,10 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
     /* If Fc gets clipped, this will be flagged to true */
     *Fc_clipped = false;
 
+    /* This function is called to build the general routing graph resoruces. Thus, 
+    the edges are not remapped yet.*/
+    bool switches_remapped = false;
+
     int num_edges = 0;
     /* Connection SINKS and SOURCES to their pins - Initializing IPINs/OPINs. */
     for (int layer = 0; layer < grid.get_num_layers(); ++layer) {
@@ -2055,7 +2103,8 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
                                              j,
                                              rr_edges_to_create,
                                              delayless_switch,
-                                             physical_tile);
+                                             physical_tile,
+                                             switches_remapped);
 
                     //Create the actual SOURCE->OPIN, IPIN->SINK edges
                     uniquify_edges(rr_edges_to_create);
@@ -2272,7 +2321,8 @@ static void alloc_and_load_intra_cluster_rr_graph(RRGraphBuilder& rr_graph_build
                                              j,
                                              rr_edges_to_create,
                                              delayless_switch,
-                                             physical_tile);
+                                             physical_tile,
+                                             load_rr_graph);
 
                     //Create the actual SOURCE->OPIN, IPIN->SINK edges
                     uniquify_edges(rr_edges_to_create);
@@ -2426,17 +2476,6 @@ static void connect_tile_src_sink_to_pins(RRGraphBuilder& rr_graph_builder,
                 continue;
             }
             auto pin_type = get_pin_type_from_pin_physical_num(physical_type_ptr, pin_num);
-            /*int sw_id = -1;
-             * if (is_primitive || pin_type == RECEIVER) {
-             * VTR_ASSERT(logical_block != nullptr);
-             * float primitive_comb_delay = get_pin_primitive_comb_delay(physical_type_ptr,
-             * logical_block,
-             * pin_num);
-             * sw_id = find_create_intra_cluster_sw_arch_idx(arch_sw_inf_map,
-             * primitive_comb_delay);
-             * } else {
-             * sw_id = delayless_switch;
-             * }*/
             if (class_type == DRIVER) {
                 VTR_ASSERT(pin_type == DRIVER);
                 rr_edges_to_create.emplace_back(class_rr_node_id, pin_rr_node_id, delayless_switch, false);
@@ -2456,7 +2495,8 @@ static void connect_src_sink_to_pins(RRGraphBuilder& rr_graph_builder,
                                      const int j,
                                      t_rr_edge_info_set& rr_edges_to_create,
                                      const int delayless_switch,
-                                     t_physical_tile_type_ptr physical_type_ptr) {
+                                     t_physical_tile_type_ptr physical_type_ptr,
+                                     bool switches_remapped) {
     for (auto class_num : class_num_vec) {
         const auto& pin_list = get_pin_list_from_class_physical_num(physical_type_ptr, class_num);
         auto class_type = get_class_type_from_class_physical_num(physical_type_ptr, class_num);
@@ -2476,11 +2516,11 @@ static void connect_src_sink_to_pins(RRGraphBuilder& rr_graph_builder,
             auto pin_type = get_pin_type_from_pin_physical_num(physical_type_ptr, pin_num);
             if (class_type == DRIVER) {
                 VTR_ASSERT(pin_type == DRIVER);
-                rr_edges_to_create.emplace_back(class_rr_node_id, pin_rr_node_id, delayless_switch, false);
+                rr_edges_to_create.emplace_back(class_rr_node_id, pin_rr_node_id, delayless_switch, switches_remapped);
             } else {
                 VTR_ASSERT(class_type == RECEIVER);
                 VTR_ASSERT(pin_type == RECEIVER);
-                rr_edges_to_create.emplace_back(pin_rr_node_id, class_rr_node_id, delayless_switch, false);
+                rr_edges_to_create.emplace_back(pin_rr_node_id, class_rr_node_id, delayless_switch, switches_remapped);
             }
         }
     }
@@ -2565,7 +2605,7 @@ static void build_bidir_rr_opins(RRGraphBuilder& rr_graph_builder,
     if ((i == 0 && side != RIGHT)
         || (i == int(grid.width() - 1) && side != LEFT)
         || (j == 0 && side != TOP)
-        || (j == int(grid.width() - 1) && side != BOTTOM)) {
+        || (j == int(grid.height() - 1) && side != BOTTOM)) {
         return;
     }
 
@@ -2684,6 +2724,8 @@ static void build_cluster_internal_edges(RRGraphBuilder& rr_graph_builder,
                      logical_block,
                      pb,
                      nodes_to_collapse,
+                     R_minW_nmos,
+                     R_minW_pmos,
                      rel_cap,
                      layer,
                      i,
@@ -2716,11 +2758,13 @@ static void add_pb_edges(RRGraphBuilder& rr_graph_builder,
                          t_logical_block_type_ptr logical_block,
                          const t_pb* pb,
                          const t_cluster_pin_chain& nodes_to_collapse,
+                         float R_minW_nmos,
+                         float R_minW_pmos,
                          int rel_cap,
                          int layer,
                          int i,
                          int j,
-                         bool is_remapped) {
+                         bool switches_remapped) {
     auto pin_num_range = get_pb_pins(physical_type,
                                      sub_tile,
                                      logical_block,
@@ -2774,26 +2818,18 @@ static void add_pb_edges(RRGraphBuilder& rr_graph_builder,
                                               pin_physical_num,
                                               conn_pin_physical_num);
 
-            if (is_remapped) {
-                bool found = false;
+            if (switches_remapped) {
+                auto& all_sw_inf = g_vpr_ctx.mutable_device().all_sw_inf;
                 float delay = g_vpr_ctx.device().all_sw_inf.at(sw_idx).Tdel();
-                const auto& rr_switches = rr_graph_builder.rr_switch();
-                for (int sw_id = 0; sw_id < (int)rr_switches.size(); sw_id++) {
-                    const auto& rr_switch = rr_switches[RRSwitchId(sw_id)];
-                    if (rr_switch.intra_tile) {
-                        if (rr_switch.Tdel == delay) {
-                            sw_idx = sw_id;
-                            found = true;
-                            break;
-                        }
-                    }
-                }
-                // If the graph is loaded from a file, we expect that all sw types are already listed there since currently, we are not doing any further
-                // Optimization. If the optimization done when the rr graph file was generated is different from the current optimization, in the case that
-                // these optimizations create different RR switches, this VTR ASSERT can be removed.
-                VTR_ASSERT(found);
+                bool is_new_sw;
+                std::tie(is_new_sw, sw_idx) = find_create_intra_cluster_sw(rr_graph_builder,
+                                                                        all_sw_inf,
+                                                                        R_minW_nmos,
+                                                                        R_minW_pmos,
+                                                                        switches_remapped,
+                                                                        delay);
             }
-            rr_edges_to_create.emplace_back(parent_pin_node_id, conn_pin_node_id, sw_idx, is_remapped);
+            rr_edges_to_create.emplace_back(parent_pin_node_id, conn_pin_node_id, sw_idx, switches_remapped);
         }
     }
 }
@@ -2961,22 +2997,6 @@ static void add_chain_node_fan_in_edges(RRGraphBuilder& rr_graph_builder,
                                                                       R_minW_pmos,
                                                                       is_rr_sw_id,
                                                                       delay);
-
-            if (!is_rr_sw_id && is_new_sw) {
-                // Currently we assume that if rr graph is read from a file, we shouldn't get into this block
-                VTR_ASSERT(!load_rr_graph);
-                // The internal edges are added after switch_fanin_remap is initialized; thus, if a new arch_sw is added,
-                // switch _fanin_remap should be updated.
-                t_rr_switch_inf rr_sw_inf = create_rr_switch_from_arch_switch(create_internal_arch_sw(delay),
-                                                                              R_minW_nmos,
-                                                                              R_minW_pmos);
-                auto rr_sw_id = rr_graph_builder.add_rr_switch(rr_sw_inf);
-                // If rr graph is loaded from a file, switch_fanin_remap is going to be empty
-                if (!load_rr_graph) {
-                    auto& switch_fanin_remap = g_vpr_ctx.mutable_device().switch_fanin_remap;
-                    switch_fanin_remap.push_back({{UNDEFINED, size_t(rr_sw_id)}});
-                }
-            }
 
             rr_edges_to_create.emplace_back(src_pair.first, sink_rr_node_id, sw_id, is_rr_sw_id);
         }
@@ -3213,7 +3233,7 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
 }
 
 void uniquify_edges(t_rr_edge_info_set& rr_edges_to_create) {
-    std::sort(rr_edges_to_create.begin(), rr_edges_to_create.end());
+    std::stable_sort(rr_edges_to_create.begin(), rr_edges_to_create.end());
     rr_edges_to_create.erase(std::unique(rr_edges_to_create.begin(), rr_edges_to_create.end()), rr_edges_to_create.end());
 }
 
@@ -3723,6 +3743,11 @@ static void load_uniform_connection_block_pattern(vtr::NdMatrix<int, 6>& tracks_
         /* Bi-directional treats each track separately, uni-directional works with pairs of tracks */
         for (int j = 0; j < (Fc / group_size); ++j) {
             int max_chan_width = (((side == TOP) || (side == BOTTOM)) ? x_chan_width : y_chan_width);
+
+            // if the number of tracks we can assign is zero break from the loop
+            if (max_chan_width == 0) {
+                break;
+            }
             float step_size = (float)max_chan_width / (float)(Fc * num_phys_pins);
 
             VTR_ASSERT(Fc > 0);
@@ -4460,7 +4485,7 @@ static std::vector<bool> alloc_and_load_perturb_opins(const t_physical_tile_type
         }
 
         n = step_size / prime_factors[i];
-        n = n - (float)vtr::nint(n); /* fractinal part */
+        n = n - (float)vtr::nint(n); /* fractional part */
         if (fabs(n) < threshold) {
             perturb_opins[0] = true;
             break;
@@ -4507,7 +4532,7 @@ static RRNodeId pick_best_direct_connect_target_rr_node(const RRGraphView& rr_gr
                 }
 
                 //Include a partial unit of distance based on side alignment to ensure
-                //we preferr facing sides
+                //we prefer facing sides
                 if ((from_side == RIGHT && to_side == LEFT)
                     || (from_side == LEFT && to_side == RIGHT)
                     || (from_side == TOP && to_side == BOTTOM)
@@ -4930,6 +4955,18 @@ static std::pair<bool, int> find_create_intra_cluster_sw(RRGraphBuilder& rr_grap
             // We assume that the delay of internal switches is not dependent on their fan-in
             // If this assumption proven to not be accurate, the implementation needs to be changed.
             VTR_ASSERT(arch_sw.fixed_Tdel());
+
+            t_rr_switch_inf new_rr_switch_inf = create_rr_switch_from_arch_switch(create_internal_arch_sw(delay), 
+                                                                                    R_minW_nmos, 
+                                                                                    R_minW_pmos);
+            RRSwitchId rr_switch_id = rr_graph.add_rr_switch(new_rr_switch_inf);
+
+            /*If the switch found inside the cluster has not seen before and RR graph is not read from a file, 
+            we need to add this switch to switch_fanin_remap data strcutre which is used later to remap switch IDs
+            from architecture ID to RR graph switch ID. The reason why we don't this when RR graph is read from a file
+            is that in that case, the switch IDs of edges are alreay RR graph switch IDs. */
+            auto& switch_fanin_remap = g_vpr_ctx.mutable_device().switch_fanin_remap;
+            switch_fanin_remap.push_back({{UNDEFINED, size_t(rr_switch_id)}});
 
             return std::make_pair(true, new_key_num);
         } else {

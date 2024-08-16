@@ -479,8 +479,11 @@ void RouteTree::print(void) const {
 /** Add the most recently finished wire segment to the routing tree, and
  * update the Tdel, etc. numbers for the rest of the routing tree. hptr
  * is the heap pointer of the SINK that was reached, and target_net_pin_index
- * is the net pin index corresponding to the SINK that was reached. This routine
- * returns a tuple: RouteTreeNode of the branch it adds to the route tree and
+ * is the net pin index corresponding to the SINK that was reached. Usually target_net_pin_index
+ * is a non-negative integer indicating the netlist connection being routed, but it can be OPEN (-1)
+ * to indicate this is a routing path to a virtual sink which we use when routing to the source of 
+ * dedicated clock networks. 
+ * This routine returns a tuple: RouteTreeNode of the branch it adds to the route tree and
  * RouteTreeNode of the SINK it adds to the routing. */
 std::tuple<vtr::optional<const RouteTreeNode&>, vtr::optional<const RouteTreeNode&>>
 RouteTree::update_from_heap(t_heap* hptr, int target_net_pin_index, SpatialRouteTreeLookup* spatial_rt_lookup, bool is_flat) {
@@ -501,8 +504,8 @@ RouteTree::update_from_heap(t_heap* hptr, int target_net_pin_index, SpatialRoute
         update_route_tree_spatial_lookup_recur(*start_of_new_subtree_rt_node, *spatial_rt_lookup);
     }
 
-    if (_net_id.is_valid()) /* We don't have this lookup if the tree isn't associated with a net */
-        _is_isink_reached[target_net_pin_index] = true;
+    if (_net_id.is_valid() && target_net_pin_index != OPEN) /* We don't have this lookup if the tree isn't associated with a net */
+        _is_isink_reached.set(target_net_pin_index, true);
 
     return {*start_of_new_subtree_rt_node, *sink_rt_node};
 }
@@ -532,7 +535,7 @@ RouteTree::add_subtree_from_heap(t_heap* hptr, int target_net_pin_index, bool is
      * new_branch_inodes: [sink, nodeN-1, nodeN-2, ... node 1] of length N
      * and new_branch_iswitches: [N-1->sink, N-2->N-1, ... 2->1, 1->found_node] of length N */
     RREdgeId edge = hptr->prev_edge();
-    RRNodeId new_inode = RRNodeId(hptr->prev_node());
+    RRNodeId new_inode = rr_graph.edge_src_node(edge);
     RRSwitchId new_iswitch = RRSwitchId(rr_graph.rr_nodes().edge_switch(edge));
 
     /* build a path, looking up rr nodes and switches from rr_node_route_inf */
@@ -541,7 +544,7 @@ RouteTree::add_subtree_from_heap(t_heap* hptr, int target_net_pin_index, bool is
         new_branch_inodes.push_back(new_inode);
         new_branch_iswitches.push_back(new_iswitch);
         edge = route_ctx.rr_node_route_inf[new_inode].prev_edge;
-        new_inode = RRNodeId(route_ctx.rr_node_route_inf[new_inode].prev_node);
+        new_inode = rr_graph.edge_src_node(edge);
         new_iswitch = RRSwitchId(rr_graph.rr_nodes().edge_switch(edge));
     }
     new_branch_iswitches.push_back(new_iswitch);
@@ -711,11 +714,11 @@ RouteTree::prune_x(RouteTreeNode& rt_node, CBRR& connections_inf, bool force_pru
             //Valid path to sink
 
             //Record sink as reached
-            _is_isink_reached[rt_node.net_pin_index] = true;
+            _is_isink_reached.set(rt_node.net_pin_index, true);
             return rt_node; // Not pruned
         } else {
             //Record as not reached
-            _is_isink_reached[rt_node.net_pin_index] = false;
+            _is_isink_reached.set(rt_node.net_pin_index, false);
             return vtr::nullopt; // Pruned
         }
     } else if (all_children_pruned) {

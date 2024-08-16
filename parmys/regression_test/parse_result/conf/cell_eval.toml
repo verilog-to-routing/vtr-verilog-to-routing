@@ -1,0 +1,99 @@
+["TBUF"]
+    regex = "\$$_TBUF_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["OAI4"]
+    regex = "\$$_OAI4_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["AOI4"]
+    regex = "\$$_AOI4_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["OAI3"]
+    regex = "\$$_OAI3_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["AOI3"]
+    regex = "\$$_AOI3_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["MUX16"]
+    regex = "\$$_MUX16_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["MUX8"]
+    regex = "\$$_MUX8_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["MUX4"]
+    regex = "\$$_MUX4_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["NMUX"]
+    regex = "\$$_NMUX_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["MUX"]
+    regex = "\$$_MUX_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["ORNOT"]
+    regex = "\$$_ORNOT_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["ANDNOT"]
+    regex = "\$$_ANDNOT_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["XNOR"]
+    regex = "\$$_XNOR_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["XOR"]
+    regex = "\$$_XOR_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["NOR"]
+    regex = "\$$_NOR_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["OR"]
+    regex = "\$$_OR_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["NAND"]
+    regex = "\$$_NAND_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["AND"]
+    regex = "\$$_AND_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["NOT"]
+    regex = "\$$_NOT_ (\d+)"
+    default = 0
+    hide-if = 0
+
+["BUF"]
+    regex = "\$$_BUF_ (\d+)"
+    default = 0
+    hide-if = 0

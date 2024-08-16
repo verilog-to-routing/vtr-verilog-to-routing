@@ -16,6 +16,8 @@ void handle_assert(const char* expr, const char* file, unsigned int line, const 
         fprintf(stderr, " (%s)", msg);
     }
     fprintf(stderr, ".\n");
+    fflush(stdout);
+    fflush(stderr);
     std::abort();
 }
 

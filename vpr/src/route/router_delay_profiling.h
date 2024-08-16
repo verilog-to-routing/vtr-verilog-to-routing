@@ -3,6 +3,7 @@
 
 #include "vpr_types.h"
 #include "binary_heap.h"
+#include "four_ary_heap.h"
 #include "connection_router.h"
 
 #include <vector>
@@ -31,10 +32,22 @@ class RouterDelayProfiler {
                          float* net_delay,
                          int layer_num);
 
+    /**
+     * @param physical_tile_type_idx
+     * @param from_layer
+     * @param to_layer
+     * @param dx
+     * @param dy
+     * @return Return the minimum delay across all output pins (OPINs) on the physical tile identified by "physical_tile_idx" from an
+     * instance of the physical type on the "from_layer" to an input pin (IPIN) that is dx and dy away at its location on "to_layer".
+     */
+    float get_min_delay(int physical_tile_type_idx, int from_layer, int to_layer, int dx, int dy) const;
+
   private:
     const Netlist<>& net_list_;
     RouterStats router_stats_;
-    ConnectionRouter<BinaryHeap> router_;
+    ConnectionRouter<FourAryHeap> router_;
+    vtr::NdMatrix<float, 5> min_delays_; // [physical_type_idx][from_layer][to_layer][dx][dy]
     bool is_flat_;
 };
 
@@ -42,7 +55,7 @@ vtr::vector<RRNodeId, float> calculate_all_path_delays_from_rr_node(RRNodeId src
                                                                     const t_router_opts& router_opts,
                                                                     bool is_flat);
 
-void alloc_routing_structs(t_chan_width chan_width,
+void alloc_routing_structs(const t_chan_width& chan_width,
                            const t_router_opts& router_opts,
                            t_det_routing_arch* det_routing_arch,
                            std::vector<t_segment_inf>& segment_inf,

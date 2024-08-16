@@ -1,0 +1,16 @@
+#VPR metrics at fixed channel width
+
+#Area metrics
+logic_block_area_total;Range(0.5,1.6)
+logic_block_area_used;Range(0.5,1.6)
+routing_area_total;Range(0.5,1.6)
+routing_area_per_tile;Range(0.5,1.6)
+
+#Run-time metrics
+crit_path_route_time;RangeAbs(0.10,10.0,2)
+
+#Peak memory
+#We set a 100MiB minimum threshold since the memory 
+#alloctor (e.g. TBB vs glibc) can cause a difference
+#particularly on small benchmarks
+max_vpr_mem;RangeAbs(0.8,1.203,102400)

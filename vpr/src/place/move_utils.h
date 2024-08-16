@@ -7,7 +7,7 @@
 /* Cut off for incremental bounding box updates.                          *
  * 4 is fastest -- I checked.                                             */
 /* To turn off incremental bounding box updates, set this to a huge value */
-#define SMALL_NET 4
+constexpr size_t SMALL_NET = 4;
 
 /* This is for the placement swap routines. A swap attempt could be       *
  * rejected, accepted or aborted (due to the limitations placed on the    *
@@ -27,6 +27,7 @@ enum class e_move_type {
     W_MEDIAN,
     CRIT_UNIFORM,
     FEASIBLE_REGION,
+    NOC_ATTRACTION_CENTROID,
     NUMBER_OF_AUTO_MOVES,
     MANUAL_MOVE = NUMBER_OF_AUTO_MOVES,
     INVALID_MOVE
@@ -69,6 +70,8 @@ struct t_bb_cost {
     t_edge_cost xmax = {0, 0.0};
     t_edge_cost ymin = {0, 0.0};
     t_edge_cost ymax = {0, 0.0};
+    t_edge_cost layer_min = {0, 0.};
+    t_edge_cost layer_max = {0, 0.};
 };
 
 /**
@@ -85,13 +88,21 @@ struct t_range_limiters {
 };
 
 //Records a reasons for an aborted move
-void log_move_abort(const std::string& reason);
+void log_move_abort(std::string_view reason);
 
 //Prints a breif report about aborted move reasons and counts
 void report_aborted_moves();
 
 e_create_move create_move(t_pl_blocks_to_be_moved& blocks_affected, ClusterBlockId b_from, t_pl_loc to);
 
+/**
+ * @brief Find the blocks that will be affected by a move of b_from to to_loc
+ * @param blocks_affected Loaded by this routine and returned via reference; it lists the blocks etc. moved
+ * @param b_from Id of the cluster-level block to be moved
+ * @param to Where b_from will be moved to
+ * @return e_block_move_result ABORT if either of the the moving blocks are already stored, or either of the blocks are fixed, to location is not
+ * compatible, etc. INVERT if the "from" block is a single block and the "to" block is a macro. VALID otherwise.
+ */
 e_block_move_result find_affected_blocks(t_pl_blocks_to_be_moved& blocks_affected, ClusterBlockId b_from, t_pl_loc to);
 
 e_block_move_result record_single_block_swap(t_pl_blocks_to_be_moved& blocks_affected, ClusterBlockId b_from, t_pl_loc to);
@@ -106,9 +117,13 @@ e_block_move_result record_macro_move(t_pl_blocks_to_be_moved& blocks_affected,
 e_block_move_result identify_macro_self_swap_affected_macros(std::vector<int>& macros, const int imacro, t_pl_offset swap_offset);
 e_block_move_result record_macro_self_swaps(t_pl_blocks_to_be_moved& blocks_affected, const int imacro, t_pl_offset swap_offset);
 
+/**
+ * @brief Check whether the "to" location is legal for the given "blk"
+ * @param blk
+ * @param to
+ * @return True if this would be a legal move, false otherwise
+ */
 bool is_legal_swap_to_location(ClusterBlockId blk, t_pl_loc to);
-
-std::set<t_pl_loc> determine_locations_emptied_by_move(t_pl_blocks_to_be_moved& blocks_affected);
 
 /**
  * @brief Propose block for the RL agent based on required block type.
@@ -125,6 +140,13 @@ ClusterBlockId propose_block_to_move(const t_placer_opts& placer_opts,
                                      bool highly_crit_block,
                                      ClusterNetId* net_from,
                                      int* pin_from);
+
+/**
+ * Returns all movable clustered blocks with a specified logical block type.
+ * @param blk_type Specifies the logical block block type.
+ * @return A const reference to a vector containing all movable blocks with the specified logical block type.
+ */
+const std::vector<ClusterBlockId>& movable_blocks_per_type(const t_logical_block_type& blk_type);
 
 /**
  * @brief Select a random block to be swapped with another block
@@ -222,24 +244,41 @@ const std::string& move_type_to_string(e_move_type);
 void compressed_grid_to_loc(t_logical_block_type_ptr blk_type,
                             t_physical_tile_loc compressed_loc,
                             t_pl_loc& to_loc);
+
+/**
+ * @brief Tries to find an compatible empty subtile with the given type at
+ * the given location. If such a subtile could be found, the subtile number
+ * is returned. Otherwise, -1 is returned to indicate that there are no
+ * compatible subtiles at the given location.
+ *
+ * @param type logical block type
+ * @param to_loc The location to be checked
+ *
+ * @return int The subtile number if there is an empty compatible subtile, otherwise -1
+ * is returned to indicate that there are no empty subtiles compatible with the given type..
+ */
+int find_empty_compatible_subtile(t_logical_block_type_ptr type,
+                                  const t_physical_tile_loc& to_loc);
+
 /**
  * @brief find compressed location in a compressed range for a specific type in the given layer (to_layer_num)
  * 
  * type: defines the moving block type
- * min_cx, max_cx: the minimum and maximum x coordinates of the range in the compressed grid
- * min_cy, max_cx: the minimum and maximum y coordinates of the range in the compressed grid
- * cx_from, cy_from: the x and y coordinates of the old location 
- * cx_to, cy_to: the x and y coordinates of the new location on the compressed grid
+ * search_range: the minimum and maximum coordinates of the search range in the compressed grid
+ * from_loc: the coordinates of the old location
+ * to_loc: the coordinates of the new location on the compressed grid
  * is_median: true if this is called from find_to_loc_median
  * to_layer_num: the layer number of the new location (set by the caller)
+ * search_for_empty: indicates that the returned location must be empty
  */
 bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
-                                             const int delta_cx,
+                                             int delta_cx,
                                              const t_physical_tile_loc& from_loc,
                                              t_bb search_range,
                                              t_physical_tile_loc& to_loc,
                                              bool is_median,
-                                             int to_layer_num);
+                                             int to_layer_num,
+                                             bool search_for_empty);
 
 /**
  * @brief Get the the compressed loc from the uncompressed loc (grid_loc)
@@ -316,8 +355,7 @@ t_bb get_compressed_grid_bounded_search_range(const t_compressed_block_grid& com
  * The intersection takes place in the layer (die) specified by layer_num.
  *
  */
-bool intersect_range_limit_with_floorplan_constraints(t_logical_block_type_ptr type,
-                                                      ClusterBlockId b_from,
+bool intersect_range_limit_with_floorplan_constraints(ClusterBlockId b_from,
                                                       t_bb& search_range,
                                                       int& delta_cx,
                                                       int layer_num);
@@ -325,7 +363,7 @@ bool intersect_range_limit_with_floorplan_constraints(t_logical_block_type_ptr t
 std::string e_move_result_to_string(e_move_result move_outcome);
 
 /**
- * @brif Iterate over all layers that have a physical tile at the x-y location specified by "loc" that can accomodate "logical_block".
+ * @brif Iterate over all layers that have a physical tile at the x-y location specified by "loc" that can accommodate "logical_block".
  * If the location in the layer specified by "layer_num" is empty, return that layer. Otherwise,
  * return a layer that is not occupied at that location. If there isn't any, again, return the layer of loc.
  *
