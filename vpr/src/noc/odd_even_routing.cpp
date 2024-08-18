@@ -64,9 +64,9 @@ const std::vector<TurnModelRouting::Direction>& OddEvenRouting::get_legal_direct
     returned_legal_direction.clear();
 
     if (noc_model.is_noc_3d()) {
-        determine_legal_directions_2d(compressed_src_loc, compressed_curr_loc, compressed_dst_loc, prev_dir);
-    } else {    // 2D NoC
         determine_legal_directions_3d(compressed_src_loc, compressed_curr_loc, compressed_dst_loc, prev_dir);
+    } else {    // 2D NoC
+        determine_legal_directions_2d(compressed_src_loc, compressed_curr_loc, compressed_dst_loc, prev_dir);
     }
 
     return returned_legal_direction;
