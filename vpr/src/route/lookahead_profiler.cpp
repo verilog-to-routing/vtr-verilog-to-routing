@@ -55,14 +55,14 @@ void LookaheadProfiler::record(int iteration,
                                const ParentNetId& net_id,
                                const Netlist<>& net_list,
                                const std::vector<RRNodeId>& branch_inodes) {
-    auto& device_ctx = g_vpr_ctx.device();
-    const auto& rr_graph = device_ctx.rr_graph;
-    auto& route_ctx = g_vpr_ctx.routing();
-
     if (!enabled_)
         return;
 
 #ifdef PROFILE_LOOKAHEAD
+    auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
+    auto& route_ctx = g_vpr_ctx.routing();
+
     if (!lookahead_verifier_csv_.is_open()) {
         throw vtr::VtrError("Output file is not open.", "lookahead_profiler.cpp", 67);
     }
