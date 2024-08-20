@@ -11,6 +11,9 @@
  * @brief A class which records information used to profile the router lookahead: most importantly,
  * the actual cost (delay and congestion) from nodes to the sink to which they have been routed, as
  * well as the lookahead's estimation of this cost.
+ *
+ * @warning
+ * To use the LookaheadProfiler, you must build VPR with #define PROFILE_LOOKAHEAD.
  */
 class LookaheadProfiler {
   public:

@@ -53,8 +53,13 @@ void PathManager::insert_backwards_path_into_traceback(t_heap_path* path_data,
         route_ctx.rr_node_route_inf[node_2].prev_edge = edge;
         route_ctx.rr_node_route_inf[node_2].path_cost = cost;
         route_ctx.rr_node_route_inf[node_2].backward_path_cost = backward_path_cost;
+#ifdef PROFILE_LOOKAHEAD
         route_ctx.rr_node_route_inf[node_2].backward_path_delay = backward_path_delay;
         route_ctx.rr_node_route_inf[node_2].backward_path_congestion = backward_path_congestion;
+#else
+        (void)backward_path_delay;
+        (void)backward_path_congestion;
+#endif
     }
 }
 

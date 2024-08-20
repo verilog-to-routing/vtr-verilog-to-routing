@@ -2,6 +2,7 @@
 #define _CONNECTION_ROUTER_H
 
 #include "connection_router_interface.h"
+#include "lookahead_profiler.h"
 #include "rr_graph_storage.h"
 #include "route_common.h"
 #include "router_lookahead.h"
@@ -153,8 +154,10 @@ class ConnectionRouter : public ConnectionRouterInterface {
         route_inf->prev_edge = cheapest->prev_edge();
         route_inf->path_cost = cheapest->cost;
         route_inf->backward_path_cost = cheapest->backward_path_cost;
+#ifdef PROFILE_LOOKAHEAD
         route_inf->backward_path_delay = cheapest->backward_path_delay;
         route_inf->backward_path_congestion = cheapest->backward_path_congestion;
+#endif
     }
 
     /** Common logic from timing_driven_route_connection_from_route_tree and

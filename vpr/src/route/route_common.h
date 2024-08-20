@@ -173,8 +173,13 @@ t_heap* prepare_to_add_node_to_heap(
     hptr->cost = total_cost;
     hptr->set_prev_edge(prev_edge);
     hptr->backward_path_cost = backward_path_cost;
+#ifdef PROFILE_LOOKAHEAD
     hptr->backward_path_delay = backward_path_delay;
     hptr->backward_path_congestion = backward_path_congestion;
+#else
+    (void)backward_path_delay;
+    (void)backward_path_congestion;
+#endif
     hptr->R_upstream = R_upstream;
     return hptr;
 }

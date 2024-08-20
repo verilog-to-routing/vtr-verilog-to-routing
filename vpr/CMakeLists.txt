@@ -51,6 +51,16 @@ else()
     message(STATUS "Server mode is disabled${SERVER_DISABILED_REASON}")
 endif()
 
+#Handle router lookahead profiler setup
+set(ROUTER_DEFINES "")
+
+if (VPR_PROFILE_LOOKAHEAD)
+    list(APPEND ROUTER_DEFINES "-DPROFILE_LOOKAHEAD")
+    message(STATUS "Router lookahead profiler enabled")
+else ()
+    message(STATUS "Router lookahead profiler disabled")
+endif ()
+
 #
 # Build Configuration
 #
@@ -163,7 +173,7 @@ if (VPR_USE_EZGL STREQUAL "on")
 
 endif()
 
-target_compile_definitions(libvpr PUBLIC ${GRAPHICS_DEFINES} ${SERVER_DEFINES})
+target_compile_definitions(libvpr PUBLIC ${GRAPHICS_DEFINES} ${SERVER_DEFINES} ${ROUTER_DEFINES})
 
 if(${VTR_ENABLE_CAPNPROTO})
     target_link_libraries(libvpr libvtrcapnproto)

@@ -1749,11 +1749,7 @@ constexpr bool is_src_sink(e_rr_type type) { return (type == SOURCE || type == S
  *                      the expected cost to the target if the timing_driven router
  *                      is being used.
  *   @param backward_path_cost          Total cost of the path up to and including
- *                                      this node. Recorded for LookaheadProfiler.
- *   @param backward_path_delay         Total delay in the path up to and including
- *                                      this node. Recorded for LookaheadProfiler.
- *   @param backward_path_congestion    Total congestion in the path up to and
- *                                      including this node.
+ *                                      this node.
  *   @param occ         The current occupancy of the associated rr node
  */
 struct t_rr_node_route_inf {
@@ -1762,8 +1758,12 @@ struct t_rr_node_route_inf {
     float acc_cost;
     float path_cost;
     float backward_path_cost;
+#ifdef PROFILE_LOOKAHEAD
+    ///@brief Total delay in the path up to and including this node.
     float backward_path_delay;
+    ///@brief Total congestion in the path up to and including this node.
     float backward_path_congestion;
+#endif
 
   public: //Accessors
     short occ() const { return occ_; }

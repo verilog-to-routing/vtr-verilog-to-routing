@@ -18,10 +18,12 @@ struct t_heap {
     ///@brief The "known" cost of the path up to and including this node. Used only by the timing-driven router. In this case, the
     ///.cost member contains not only the known backward cost but also an expected cost to the target.
     float backward_path_cost = 0.;
+#ifdef PROFILE_LOOKAHEAD
     ///@brief The "known" delay in the path up to and including this node. Recorded for LookaheadProfiler during routing.
     float backward_path_delay = 0.;
     ///@brief The "known" congestion in the path up to and including this node. Recorded for LookaheadProfiler during routing.
     float backward_path_congestion = 0.;
+#endif
     ///@brief Used only by the timing-driven router. Stores the upstream resistance to ground from this node, including the resistance
     /// of the node itself (device_ctx.rr_nodes[index].R).
     float R_upstream = 0.;

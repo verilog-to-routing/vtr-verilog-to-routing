@@ -13,12 +13,11 @@ void LookaheadProfiler::set_file_name(const std::string& file_name) {
     if (!enabled_)
         return;
 
+#ifdef PROFILE_LOOKAHEAD
     lookahead_verifier_csv_.open(file_name, std::ios::out);
 
     if (!lookahead_verifier_csv_.is_open()) {
-        std::string message = "Could not open " + file_name;
-        VTR_LOG_ERROR(message.c_str());
-        throw vtr::VtrError(message, "lookahead_profiler.cpp", 21);
+        throw vtr::VtrError("Could not open " + file_name, "lookahead_profiler.cpp", 21);
     }
 
     lookahead_verifier_csv_
@@ -44,6 +43,9 @@ void LookaheadProfiler::set_file_name(const std::string& file_name) {
         << ",predicted congestion"
         << ",criticality"
         << "\n";
+#else
+    throw vtr::VtrError("Profiler enabled, but PROFILE_LOOKAHEAD not defined.", "lookahead_profiler.cpp", 47);
+#endif
 }
 
 void LookaheadProfiler::record(int iteration,
@@ -60,9 +62,9 @@ void LookaheadProfiler::record(int iteration,
     if (!enabled_)
         return;
 
+#ifdef PROFILE_LOOKAHEAD
     if (!lookahead_verifier_csv_.is_open()) {
-        VTR_LOG_ERROR("Output file is not open.");
-        throw vtr::VtrError("Output file is not open.", "lookahead_profiler.cpp", 65);
+        throw vtr::VtrError("Output file is not open.", "lookahead_profiler.cpp", 67);
     }
 
     // The default value in RouteTree::update_from_heap() is -1; only calls which descend from route_net()
@@ -159,6 +161,16 @@ void LookaheadProfiler::record(int iteration,
         lookahead_verifier_csv_ << cost_params.criticality;     // criticality
         lookahead_verifier_csv_ << "\n";
     }
+#else
+    throw vtr::VtrError("Profiler enabled, but PROFILE_LOOKAHEAD not defined.", "lookahead_profiler.cpp", 165);
+    (void)iteration;
+    (void)target_net_pin_index;
+    (void)cost_params;
+    (void)router_lookahead;
+    (void)net_id;
+    (void)net_list;
+    (void)branch_inodes;
+#endif
 }
 
 void LookaheadProfiler::clear() {
