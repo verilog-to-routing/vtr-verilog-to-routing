@@ -33,6 +33,7 @@
 #include "noc_traffic_flows.h"
 #include "noc_routing.h"
 #include "tatum/report/TimingPath.hpp"
+#include "blk_loc_registry.h"
 
 #ifndef NO_SERVER
 
@@ -386,14 +387,48 @@ struct PackingMultithreadingContext : public Context {
  * or related placer algorithm state.
  */
 struct PlacementContext : public Context {
-    ///@brief Clustered block placement locations
-    vtr::vector_map<ClusterBlockId, t_block_loc> block_locs;
+  private:
+    /**
+     * Determines if blk_loc_registry_ can be accessed by calling getter methods.
+     * This flag should be set to false at the beginning of the placement stage,
+     * and set to true at the end of placement. This ensures that variables that
+     * are subject to change during placement are kept local to the placement stage.
+     */
+    bool loc_vars_are_accessible_ = true;
 
-    ///@brief Clustered pin placement mapping with physical pin
-    vtr::vector_map<ClusterPinId, int> physical_pins;
+    /**
+     * @brief Stores block location information, which is subject to change during the
+     * placement stage.
+     */
+    BlkLocRegistry blk_loc_registry_;
 
-    ///@brief Clustered block associated with each grid location (i.e. inverse of block_locs)
-    GridBlock grid_blocks;
+  public:
+
+    const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs() const { VTR_ASSERT_SAFE(loc_vars_are_accessible_); return blk_loc_registry_.block_locs(); }
+    vtr::vector_map<ClusterBlockId, t_block_loc>& mutable_block_locs() { VTR_ASSERT_SAFE(loc_vars_are_accessible_); return blk_loc_registry_.mutable_block_locs(); }
+    const GridBlock& grid_blocks() const { VTR_ASSERT_SAFE(loc_vars_are_accessible_); return blk_loc_registry_.grid_blocks(); }
+    GridBlock& mutable_grid_blocks() { VTR_ASSERT_SAFE(loc_vars_are_accessible_); return blk_loc_registry_.mutable_grid_blocks(); }
+    vtr::vector_map<ClusterPinId, int>& mutable_physical_pins() { VTR_ASSERT_SAFE(loc_vars_are_accessible_); return blk_loc_registry_.mutable_physical_pins(); }
+    const vtr::vector_map<ClusterPinId, int>& physical_pins() const { VTR_ASSERT_SAFE(loc_vars_are_accessible_); return blk_loc_registry_.physical_pins(); }
+    BlkLocRegistry& mutable_blk_loc_registry() { VTR_ASSERT_SAFE(loc_vars_are_accessible_); return blk_loc_registry_; }
+    const BlkLocRegistry& blk_loc_registry() const { VTR_ASSERT_SAFE(loc_vars_are_accessible_); return blk_loc_registry_; }
+
+    /**
+     * @brief Makes blk_loc_registry_ inaccessible through the getter methods.
+     *
+     * This method should be called at the beginning of the placement stage to
+     * guarantee that the placement stage code does not access block location variables
+     * stored in the global state.
+     */
+    void lock_loc_vars() { VTR_ASSERT_SAFE(loc_vars_are_accessible_); loc_vars_are_accessible_ = false; }
+
+    /**
+     * @brief Makes blk_loc_registry_ accessible through the getter methods.
+     *
+     * This method should be called at the end of the placement stage to
+     * make the block location information accessible for subsequent stages.
+     */
+    void unlock_loc_vars() { VTR_ASSERT_SAFE(!loc_vars_are_accessible_); loc_vars_are_accessible_ = true; }
 
     ///@brief The pl_macros array stores all the placement macros (usually carry chains).
     std::vector<t_pl_macro> pl_macros;

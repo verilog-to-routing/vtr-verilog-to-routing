@@ -122,7 +122,8 @@ class AnalyticPlacer {
      * @brief Constructor of AnalyticPlacer, currently initializes AnalyticPlacerCfg for the analytic placer
      * To tune these parameters, change directly in constructor
      */
-    AnalyticPlacer();
+    AnalyticPlacer() = delete;
+    explicit AnalyticPlacer(BlkLocRegistry& blk_loc_registry);
 
     /*
      * @brief main function of analytic placement
@@ -179,6 +180,9 @@ class AnalyticPlacer {
 
     // Lookup from blockID to block location
     vtr::vector_map<ClusterBlockId, BlockLocation> blk_locs;
+
+    // reference to the placement location variables
+    BlkLocRegistry& blk_loc_registry_ref_;
 
     /*
      * The set of blks of different types to be placed by AnalyticPlacement process,

@@ -532,9 +532,9 @@ struct ParseFixPins {
     ConvertedValue<e_pad_loc_type> from_str(const std::string& str) {
         ConvertedValue<e_pad_loc_type> conv_value;
         if (str == "free")
-            conv_value.set_value(FREE);
+            conv_value.set_value(e_pad_loc_type::FREE);
         else if (str == "random")
-            conv_value.set_value(RANDOM);
+            conv_value.set_value(e_pad_loc_type::RANDOM);
         else {
             std::stringstream msg;
             msg << "Invalid conversion from '" << str << "' to e_router_algorithm (expected one of: " << argparse::join(default_choices(), ", ") << ")";
@@ -545,10 +545,10 @@ struct ParseFixPins {
 
     ConvertedValue<std::string> to_str(e_pad_loc_type val) {
         ConvertedValue<std::string> conv_value;
-        if (val == FREE)
+        if (val == e_pad_loc_type::FREE)
             conv_value.set_value("free");
         else {
-            VTR_ASSERT(val == RANDOM);
+            VTR_ASSERT(val == e_pad_loc_type::RANDOM);
             conv_value.set_value("random");
         }
         return conv_value;
