@@ -90,7 +90,7 @@ void LookaheadProfiler::record(int iteration,
         ClusterBlockId cluster_block_id = atom_to_cluster(atom_block_id);
         sink_cluster_block_[sink_inode] = g_vpr_ctx.clustering().clb_nlist.block_type(cluster_block_id);
 
-        tile_types_[sink_inode] = physical_tile_type(cluster_block_id);
+        tile_types_[sink_inode] = physical_tile_type(atom_block_id);
     }
 
     VTR_ASSERT_SAFE(sink_atom_block_.find(sink_inode) != sink_atom_block_.end());
