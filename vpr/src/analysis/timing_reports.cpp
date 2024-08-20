@@ -12,13 +12,18 @@
 
 #include "VprTimingGraphResolver.h"
 
-void generate_setup_timing_stats(const std::string& prefix, const SetupTimingInfo& timing_info, const AnalysisDelayCalculator& delay_calc, const t_analysis_opts& analysis_opts, bool is_flat) {
+void generate_setup_timing_stats(const std::string& prefix,
+                                 const SetupTimingInfo& timing_info,
+                                 const AnalysisDelayCalculator& delay_calc,
+                                 const t_analysis_opts& analysis_opts,
+                                 bool is_flat,
+                                 const BlkLocRegistry& blk_loc_registry) {
     auto& timing_ctx = g_vpr_ctx.timing();
     auto& atom_ctx = g_vpr_ctx.atom();
 
     print_setup_timing_summary(*timing_ctx.constraints, *timing_info.setup_analyzer(), "Final ", analysis_opts.write_timing_summary);
 
-    VprTimingGraphResolver resolver(atom_ctx.nlist, atom_ctx.lookup, *timing_ctx.graph, delay_calc, is_flat);
+    VprTimingGraphResolver resolver(atom_ctx.nlist, atom_ctx.lookup, *timing_ctx.graph, delay_calc, is_flat, blk_loc_registry);
     resolver.set_detail_level(analysis_opts.timing_report_detail);
 
     tatum::TimingReporter timing_reporter(resolver, *timing_ctx.graph, *timing_ctx.constraints);
@@ -32,13 +37,18 @@ void generate_setup_timing_stats(const std::string& prefix, const SetupTimingInf
     timing_reporter.report_unconstrained_setup(prefix + "report_unconstrained_timing.setup.rpt", *timing_info.setup_analyzer());
 }
 
-void generate_hold_timing_stats(const std::string& prefix, const HoldTimingInfo& timing_info, const AnalysisDelayCalculator& delay_calc, const t_analysis_opts& analysis_opts, bool is_flat) {
+void generate_hold_timing_stats(const std::string& prefix,
+                                const HoldTimingInfo& timing_info,
+                                const AnalysisDelayCalculator& delay_calc,
+                                const t_analysis_opts& analysis_opts,
+                                bool is_flat,
+                                const BlkLocRegistry& blk_loc_registry) {
     auto& timing_ctx = g_vpr_ctx.timing();
     auto& atom_ctx = g_vpr_ctx.atom();
 
     print_hold_timing_summary(*timing_ctx.constraints, *timing_info.hold_analyzer(), "Final ");
 
-    VprTimingGraphResolver resolver(atom_ctx.nlist, atom_ctx.lookup, *timing_ctx.graph, delay_calc, is_flat);
+    VprTimingGraphResolver resolver(atom_ctx.nlist, atom_ctx.lookup, *timing_ctx.graph, delay_calc, is_flat, blk_loc_registry);
     resolver.set_detail_level(analysis_opts.timing_report_detail);
 
     tatum::TimingReporter timing_reporter(resolver, *timing_ctx.graph, *timing_ctx.constraints);

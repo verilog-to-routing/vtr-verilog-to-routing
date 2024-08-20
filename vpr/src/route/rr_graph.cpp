@@ -832,11 +832,11 @@ static void add_intra_cluster_edges_rr_graph(RRGraphBuilder& rr_graph_builder,
     VTR_ASSERT(is_flat);
     /* This function should be called if placement is done! */
 
-    auto& place_ctx = g_vpr_ctx.placement();
+    auto& block_locs = g_vpr_ctx.placement().block_locs();
     auto& cluster_net_list = g_vpr_ctx.clustering().clb_nlist;
     int num_collapsed_nodes = 0;
-    for (auto cluster_blk_id : cluster_net_list.blocks()) {
-        auto block_loc = place_ctx.block_locs[cluster_blk_id].loc;
+    for (ClusterBlockId cluster_blk_id : cluster_net_list.blocks()) {
+        t_pl_loc block_loc = block_locs[cluster_blk_id].loc;
         int i = block_loc.x;
         int j = block_loc.y;
         int layer = block_loc.layer;
@@ -2234,17 +2234,12 @@ static void set_clusters_pin_chains(const ClusteredNetlist& clb_nlist,
                                     bool is_flat) {
     VTR_ASSERT(is_flat);
 
-    const auto& place_ctx = g_vpr_ctx.placement();
+    const auto& block_locs = g_vpr_ctx.placement().block_locs();
 
-    t_physical_tile_type_ptr physical_type;
-    t_logical_block_type_ptr logical_block;
-    const t_sub_tile* sub_tile;
-    int rel_cap;
-
-    for (auto cluster_blk_id : clb_nlist.blocks()) {
-        auto block_loc = place_ctx.block_locs[cluster_blk_id].loc;
+    for (ClusterBlockId cluster_blk_id : clb_nlist.blocks()) {
+        t_pl_loc block_loc = block_locs[cluster_blk_id].loc;
         int abs_cap = block_loc.sub_tile;
-        std::tie(physical_type, sub_tile, rel_cap, logical_block) = get_cluster_blk_physical_spec(cluster_blk_id);
+        const auto [physical_type, sub_tile, rel_cap, logical_block] = get_cluster_blk_physical_spec(cluster_blk_id);
 
         auto cluster_pins = get_cluster_block_pins(physical_type,
                                                    cluster_blk_id,

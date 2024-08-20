@@ -1,12 +1,14 @@
 #ifndef VPR_MOVE_GENERATOR_H
 #define VPR_MOVE_GENERATOR_H
+
 #include "vpr_types.h"
 #include "move_utils.h"
 #include "timing_place.h"
 #include "directed_moves_util.h"
-#include "placer_globals.h"
 
 #include <limits>
+
+class PlacerState;
 
 struct MoveOutcomeStats {
     float delta_cost_norm = std::numeric_limits<float>::quiet_NaN();
@@ -42,6 +44,10 @@ struct MoveTypeStat {
  */
 class MoveGenerator {
   public:
+    MoveGenerator(PlacerState& placer_state)
+        : placer_state_(placer_state) {}
+
+    MoveGenerator() = delete;
     virtual ~MoveGenerator() = default;
 
     /**
@@ -59,7 +65,11 @@ class MoveGenerator {
      *  @param placer_opts: all the placer options
      *  @param criticalities: the placer criticalities, useful for timing directed moves
      */
-    virtual e_create_move propose_move(t_pl_blocks_to_be_moved& blocks_affected, t_propose_action& proposed_action, float rlim, const t_placer_opts& placer_opts, const PlacerCriticalities* criticalities) = 0;
+    virtual e_create_move propose_move(t_pl_blocks_to_be_moved& blocks_affected,
+                                       t_propose_action& proposed_action,
+                                       float rlim,
+                                       const t_placer_opts& placer_opts,
+                                       const PlacerCriticalities* criticalities) = 0;
 
     /**
      * @brief Recieves feedback about the outcome of the previously proposed move
@@ -70,6 +80,9 @@ class MoveGenerator {
      *  @param reward_fun: the name of the reward function used
      */
     virtual void process_outcome(double /*reward*/, e_reward_function /*reward_fun*/) {}
+
+  protected:
+    std::reference_wrapper<PlacerState> placer_state_;
 };
 
 #endif
