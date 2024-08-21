@@ -110,14 +110,17 @@ void draw_highlight_blocks_color(t_logical_block_type_ptr type,
 
     t_draw_state* draw_state = get_draw_state_vars();
     auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& block_locs = get_graphics_blk_loc_registry_ref().block_locs();
 
     for (k = 0; k < type->pb_type->num_pins; k++) { /* Each pin on a CLB */
         ClusterNetId net_id = cluster_ctx.clb_nlist.block_net(blk_id, k);
 
-        if (net_id == ClusterNetId::INVALID())
+        if (net_id == ClusterNetId::INVALID()) {
             continue;
+        }
 
-        auto physical_tile = physical_tile_type(blk_id);
+        t_pl_loc block_loc = block_locs[blk_id].loc;
+        auto physical_tile = physical_tile_type(block_loc);
         int physical_pin = get_physical_pin(physical_tile, type, k);
 
         auto class_type = get_pin_type_from_pin_physical_num(physical_tile, physical_pin);

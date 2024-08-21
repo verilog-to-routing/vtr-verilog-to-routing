@@ -623,7 +623,11 @@ All the following lines have the format::
 
     block_name    x        y   subtile_number
 
-The ``block_name`` is the name of this block, as given in the input .net formatted netlist.
+The ``block_name`` can refer to either:
+
+- The name of a clustered block, as given in the input .net formatted netlist.
+- The name of a primitive within a clustered block.
+
 ``x`` and ``y`` are the row and column in which the block is placed, respectively.
 
 .. note:: The blocks in a placement file can be listed in any order.

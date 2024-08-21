@@ -7,6 +7,7 @@
 #include <vector>
 #include <array>
 #include <map>
+#include <cstdint>
 #include "vtr_range.h"
 #include "vtr_ndmatrix.h"
 
