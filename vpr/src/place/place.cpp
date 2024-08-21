@@ -324,13 +324,6 @@ static void generate_post_place_timing_reports(const t_placer_opts& placer_opts,
                                                bool is_flat,
                                                const BlkLocRegistry& blk_loc_registry);
 
-//calculate the agent's reward and the total process outcome
-static void calculate_reward_and_process_outcome(const t_placer_opts& placer_opts,
-                                                 const MoveOutcomeStats& move_outcome_stats,
-                                                 double delta_c,
-                                                 float timing_bb_factor,
-                                                 MoveGenerator& move_generator);
-
 static void print_place_status_header(bool noc_enabled);
 
 static void print_place_status(const t_annealing_state& state,
@@ -1563,8 +1556,7 @@ static e_move_result try_swap(const t_annealing_state* state,
     // the move generators status since this outcome is not a direct
     // consequence of the move generator
     if (!router_block_move) {
-        calculate_reward_and_process_outcome(placer_opts, move_outcome_stats,
-                                             delta_c, timing_bb_factor, move_generator);
+        move_generator.calculate_reward_and_process_outcome(move_outcome_stats, delta_c, timing_bb_factor);
     }
 
 #ifdef VTR_ENABLE_DEBUG_LOGGING
@@ -2346,39 +2338,6 @@ static void print_placement_move_types_stats(const MoveTypeStat& move_type_stat)
         VTR_LOG("\n");
     }
     VTR_LOG("\n");
-}
-
-static void calculate_reward_and_process_outcome(const t_placer_opts& placer_opts,
-                                                 const MoveOutcomeStats& move_outcome_stats,
-                                                 double delta_c,
-                                                 float timing_bb_factor,
-                                                 MoveGenerator& move_generator) {
-    static std::optional<e_reward_function> reward_fun;
-    if (!reward_fun.has_value()) {
-        reward_fun = string_to_reward(placer_opts.place_reward_fun);
-    }
-
-    if (reward_fun == e_reward_function::BASIC) {
-        move_generator.process_outcome(-1 * delta_c, reward_fun.value());
-    } else if (reward_fun == e_reward_function::NON_PENALIZING_BASIC || reward_fun == e_reward_function::RUNTIME_AWARE) {
-        if (delta_c < 0) {
-            move_generator.process_outcome(-1 * delta_c, reward_fun.value());
-        } else {
-            move_generator.process_outcome(0, reward_fun.value());
-        }
-    } else if (reward_fun == e_reward_function::WL_BIASED_RUNTIME_AWARE) {
-        if (delta_c < 0) {
-            float reward = -1
-                           * (move_outcome_stats.delta_cost_norm
-                              + (0.5 - timing_bb_factor)
-                                    * move_outcome_stats.delta_timing_cost_norm
-                              + timing_bb_factor
-                                    * move_outcome_stats.delta_bb_cost_norm);
-            move_generator.process_outcome(reward, reward_fun.value());
-        } else {
-            move_generator.process_outcome(0, reward_fun.value());
-        }
-    }
 }
 
 static void copy_locs_to_global_state(const BlkLocRegistry& blk_loc_registry) {

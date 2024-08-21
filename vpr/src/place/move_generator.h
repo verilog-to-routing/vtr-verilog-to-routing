@@ -82,6 +82,13 @@ class MoveGenerator {
      */
     virtual void process_outcome(double /*reward*/, e_reward_function /*reward_fun*/) {}
 
+    /**
+     * @brief Calculates the agent's reward and the total process outcome
+     */
+    void calculate_reward_and_process_outcome(const MoveOutcomeStats& move_outcome_stats,
+                                              double delta_c,
+                                              float timing_bb_factor);
+
   protected:
     std::reference_wrapper<PlacerState> placer_state_;
     e_reward_function reward_func_;
