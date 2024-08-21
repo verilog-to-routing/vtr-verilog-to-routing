@@ -2,7 +2,7 @@
 #include "move_utils.h"
 
 #include "globals.h"
-#include "place_util.h"
+#include "grid_block.h"
 #include "vtr_assert.h"
 
 t_pl_blocks_to_be_moved::t_pl_blocks_to_be_moved(size_t max_blocks){
@@ -89,7 +89,7 @@ void apply_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected,
 
         //if physical tile type of old location does not equal physical tile type of new location, sync the new physical pins
         if (old_type != new_type) {
-            place_sync_external_block_connections(blk, blk_loc_registry);
+            blk_loc_registry.place_sync_external_block_connections(blk);
         }
     }
 }
@@ -108,16 +108,14 @@ void commit_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected,
 
         //Remove from old location only if it hasn't already been updated by a previous block update
         if (grid_blocks.block_at_location(from) == blk) {
-            grid_blocks.set_block_at_location(from, EMPTY_BLOCK_ID);
-            grid_blocks.set_usage({from.x, from.y, from.layer},
-                                  grid_blocks.get_usage({from.x, from.y, from.layer}) - 1);
+            grid_blocks.set_block_at_location(from, ClusterBlockId::INVALID());
+            grid_blocks.decrement_usage({from.x, from.y, from.layer});
         }
 
         //Add to new location
-        if (grid_blocks.block_at_location(to) == EMPTY_BLOCK_ID) {
+        if (grid_blocks.block_at_location(to) == ClusterBlockId::INVALID()) {
             //Only need to increase usage if previously unused
-            grid_blocks.set_usage({to.x, to.y, to.layer},
-                                  grid_blocks.get_usage({to.x, to.y, to.layer}) + 1);
+            grid_blocks.increment_usage({to.x, to.y, to.layer});
         }
         grid_blocks.set_block_at_location(to, blk);
 
@@ -146,7 +144,7 @@ void revert_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected,
 
         //if physical tile type of old location does not equal physical tile type of new location, sync the new physical pins
         if (old_type != new_type) {
-            place_sync_external_block_connections(blk, blk_loc_registry);
+            blk_loc_registry.place_sync_external_block_connections(blk);
         }
 
         VTR_ASSERT_SAFE_MSG(blk_loc_registry.grid_blocks().block_at_location(old_loc) == blk,

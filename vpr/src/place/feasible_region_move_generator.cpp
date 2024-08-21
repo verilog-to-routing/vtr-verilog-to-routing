@@ -2,14 +2,14 @@
 
 #include "globals.h"
 #include "place_constraints.h"
-#include "placer_context.h"
+#include "placer_state.h"
 #include "move_utils.h"
 
 #include <algorithm>
 #include <cmath>
 
-FeasibleRegionMoveGenerator::FeasibleRegionMoveGenerator(PlacerContext& placer_ctx)
-    : MoveGenerator(placer_ctx) {}
+FeasibleRegionMoveGenerator::FeasibleRegionMoveGenerator(PlacerState& placer_state)
+    : MoveGenerator(placer_state) {}
 
 e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected,
                                                         t_propose_action& proposed_action,
@@ -17,10 +17,10 @@ e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
                                                         const t_placer_opts& placer_opts,
                                                         const PlacerCriticalities* criticalities) {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& placer_ctx = placer_ctx_.get();
-    auto& place_move_ctx = placer_ctx.mutable_move();
-    const auto& block_locs = placer_ctx.block_locs();
-    const auto& blk_loc_registry = placer_ctx.blk_loc_registry();
+    auto& placer_state = placer_state_.get();
+    auto& place_move_ctx = placer_state.mutable_move();
+    const auto& block_locs = placer_state.block_locs();
+    const auto& blk_loc_registry = placer_state.blk_loc_registry();
 
     ClusterNetId net_from;
     int pin_from;
@@ -30,7 +30,7 @@ e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
                                                   /*highly_crit_block=*/true,
                                                   &net_from,
                                                   &pin_from,
-                                                  placer_ctx);
+                                                  placer_state);
 
     VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "Feasible Region Move Choose Block %di - rlim %f\n", size_t(b_from), rlim);
 

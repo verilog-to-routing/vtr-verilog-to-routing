@@ -6,7 +6,7 @@
 
 #include <functional>
 
-class PlacerContext;
+class PlacerState;
 
 /**
  * @brief The error tolerance due to round off for the total cost computation.
@@ -44,7 +44,7 @@ class NetCostHandler {
      * @param cube_bb True if the 3D bounding box should be used, false otherwise.
      * @param place_cost_exp It is an exponent to which you take the average inverse channel
      */
-    NetCostHandler(const t_placer_opts& placer_opts, PlacerContext& placer_ctx, size_t num_nets, bool cube_bb);
+    NetCostHandler(const t_placer_opts& placer_opts, PlacerState& placer_state, size_t num_nets, bool cube_bb);
 
     /**
      * @brief Finds the bb cost from scratch.
@@ -116,7 +116,7 @@ class NetCostHandler {
 
   private:
     bool cube_bb_ = false;
-    PlacerContext& placer_ctx_;
+    PlacerState& placer_state_;
     const t_placer_opts& placer_opts_;
 
     std::function<double(e_cost_methods method)> comp_bb_cost_functor_;
@@ -131,7 +131,6 @@ class NetCostHandler {
         UPDATED_ONCE,
         GOT_FROM_SCRATCH
     };
-
 
     /**
      * @brief The wire length estimation is based on the bounding box of the net. In the case of the 2D architecture,

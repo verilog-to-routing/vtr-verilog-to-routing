@@ -3,7 +3,7 @@
 #include "globals.h"
 #include "directed_moves_util.h"
 #include "place_constraints.h"
-#include "placer_context.h"
+#include "placer_state.h"
 #include "move_utils.h"
 
 #include <queue>
@@ -16,15 +16,15 @@ vtr::vector<ClusterBlockId, NocGroupId> CentroidMoveGenerator::cluster_to_noc_gr
 std::map<ClusterBlockId, NocGroupId> CentroidMoveGenerator::noc_router_to_noc_group_;
 
 
-CentroidMoveGenerator::CentroidMoveGenerator(PlacerContext& placer_ctx)
-    : MoveGenerator(placer_ctx)
+CentroidMoveGenerator::CentroidMoveGenerator(PlacerState& placer_state)
+    : MoveGenerator(placer_state)
     , noc_attraction_w_(0.0f)
     , noc_attraction_enabled_(false) {}
 
-CentroidMoveGenerator::CentroidMoveGenerator(PlacerContext& placer_ctx,
+CentroidMoveGenerator::CentroidMoveGenerator(PlacerState& placer_state,
                                              float noc_attraction_weight,
                                              size_t high_fanout_net)
-    : MoveGenerator(placer_ctx)
+    : MoveGenerator(placer_state)
     , noc_attraction_w_(noc_attraction_weight)
     , noc_attraction_enabled_(true) {
     VTR_ASSERT(noc_attraction_weight > 0.0 && noc_attraction_weight <= 1.0);
@@ -44,12 +44,12 @@ e_create_move CentroidMoveGenerator::propose_move(t_pl_blocks_to_be_moved& block
                                                   float rlim,
                                                   const t_placer_opts& placer_opts,
                                                   const PlacerCriticalities* /*criticalities*/) {
-    auto& placer_ctx = placer_ctx_.get();
-    const auto& block_locs = placer_ctx.block_locs();
+    auto& placer_state = placer_state_.get();
+    const auto& block_locs = placer_state.block_locs();
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& cluster_ctx = g_vpr_ctx.clustering();
-    const auto& place_move_ctx = placer_ctx.move();
-    const auto& blk_loc_registry = placer_ctx.blk_loc_registry();
+    const auto& place_move_ctx = placer_state.move();
+    const auto& blk_loc_registry = placer_state.blk_loc_registry();
 
     // Find a movable block based on blk_type
     ClusterBlockId b_from = propose_block_to_move(placer_opts,
@@ -57,7 +57,7 @@ e_create_move CentroidMoveGenerator::propose_move(t_pl_blocks_to_be_moved& block
                                                   /*highly_crit_block=*/false,
                                                   /*net_from=*/nullptr,
                                                   /*pin_from=*/nullptr,
-                                                  placer_ctx);
+                                                  placer_state);
 
     VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug,
                    "Centroid Move Choose Block %d - rlim %f\n",

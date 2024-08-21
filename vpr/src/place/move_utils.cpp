@@ -10,7 +10,7 @@
 #include "draw.h"
 
 #include "place_constraints.h"
-#include "placer_context.h"
+#include "placer_state.h"
 
 //f_placer_breakpoint_reached is used to stop the placer when a breakpoint is reached. When this flag is true, it stops the placer after the current perturbation. Thus, when a breakpoint is reached, this flag is set to true.
 //Note: The flag is only effective if compiled with VTR_ENABLE_DEBUG_LOGGING
@@ -149,17 +149,15 @@ e_block_move_result record_single_block_swap(t_pl_blocks_to_be_moved& blocks_aff
     e_block_move_result outcome = e_block_move_result::VALID;
 
     // Check whether the to_location is empty
-    if (b_to == EMPTY_BLOCK_ID) {
+    if (b_to == ClusterBlockId::INVALID()) {
         // Sets up the blocks moved
         outcome = blocks_affected.record_block_move(b_from, to, blk_loc_registry);
-
-    } else if (b_to != INVALID_BLOCK_ID) {
+    } else {
         // Check whether block to is compatible with from location
-        if (b_to != EMPTY_BLOCK_ID && b_to != INVALID_BLOCK_ID) {
-            if (!(is_legal_swap_to_location(b_to, curr_from, blk_loc_registry)) || block_locs[b_to].is_fixed) {
-                return e_block_move_result::ABORT;
-            }
+        if (!(is_legal_swap_to_location(b_to, curr_from, blk_loc_registry)) || block_locs[b_to].is_fixed) {
+            return e_block_move_result::ABORT;
         }
+
 
         // Sets up the blocks moved
         outcome = blocks_affected.record_block_move(b_from, to, blk_loc_registry);
@@ -311,7 +309,7 @@ e_block_move_result record_macro_macro_swaps(t_pl_blocks_to_be_moved& blocks_aff
         VTR_ASSERT_SAFE(curr_to == block_locs[b_to].loc);
 
         // Check whether block to is compatible with from location
-        if (b_to != EMPTY_BLOCK_ID && b_to != INVALID_BLOCK_ID) {
+        if (b_to != ClusterBlockId::INVALID()) {
             if (!(is_legal_swap_to_location(b_to, curr_from, blk_loc_registry))) {
                 return e_block_move_result::ABORT;
             }
@@ -508,7 +506,7 @@ bool is_legal_swap_to_location(ClusterBlockId blk,
     }
     // If the destination block is user constrained, abort this swap
     ClusterBlockId b_to = grid_blocks.block_at_location(to);
-    if (b_to != INVALID_BLOCK_ID && b_to != EMPTY_BLOCK_ID) {
+    if (b_to) {
         if (block_locs[b_to].is_fixed) {
             return false;
         }
@@ -572,13 +570,13 @@ ClusterBlockId propose_block_to_move(const t_placer_opts& placer_opts,
                                      bool highly_crit_block,
                                      ClusterNetId* net_from,
                                      int* pin_from,
-                                     const PlacerContext& placer_ctx) {
+                                     const PlacerState& placer_state) {
     ClusterBlockId b_from = ClusterBlockId::INVALID();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     if (logical_blk_type_index == -1) { //If the block type is unspecified, choose any random block to be swapped with another random block
         if (highly_crit_block) {
-            b_from = pick_from_highly_critical_block(*net_from, *pin_from, placer_ctx);
+            b_from = pick_from_highly_critical_block(*net_from, *pin_from, placer_state);
         } else {
             b_from = pick_from_block();
         }
@@ -589,7 +587,7 @@ ClusterBlockId propose_block_to_move(const t_placer_opts& placer_opts,
         }
     } else { //If the block type is specified, choose a random block with blk_type to be swapped with another random block
         if (highly_crit_block) {
-            b_from = pick_from_highly_critical_block(*net_from, *pin_from, logical_blk_type_index, placer_ctx);
+            b_from = pick_from_highly_critical_block(*net_from, *pin_from, logical_blk_type_index, placer_state);
         } else {
             b_from = pick_from_block(logical_blk_type_index);
         }
@@ -650,10 +648,10 @@ ClusterBlockId pick_from_block(const int logical_blk_type_index) {
 //If none is found return ClusterBlockId::INVALID()
 ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from,
                                                int& pin_from,
-                                               const PlacerContext& placer_ctx) {
+                                               const PlacerState& placer_state) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_move_ctx = placer_ctx.move();
-    auto& block_locs = placer_ctx.block_locs();
+    auto& place_move_ctx = placer_state.move();
+    auto& block_locs = placer_state.block_locs();
 
     //Initialize critical net and pin to be invalid
     net_from = ClusterNetId::INVALID();
@@ -685,10 +683,10 @@ ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from,
 ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from,
                                                int& pin_from,
                                                const int logical_blk_type_index,
-                                               const PlacerContext& placer_ctx) {
+                                               const PlacerState& placer_state) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_move_ctx = placer_ctx.move();
-    auto& block_locs = placer_ctx.block_locs();
+    auto& place_move_ctx = placer_state.move();
+    auto& block_locs = placer_state.block_locs();
 
     //Initialize critical net and pin to be invalid
     net_from = ClusterNetId::INVALID();
@@ -1308,10 +1306,10 @@ int find_free_layer(t_logical_block_type_ptr logical_block,
     if (device_ctx.grid.get_num_layers() > 1) {
         const auto& compatible_layers = compressed_grids[logical_block->index].get_layer_nums();
         if (compatible_layers.size() > 1) {
-            if (grid_blocks.block_at_location(loc) != EMPTY_BLOCK_ID) {
+            if (grid_blocks.block_at_location(loc)) {
                 for (const auto& layer : compatible_layers) {
                     if (layer != free_layer) {
-                        if (grid_blocks.block_at_location(loc) == EMPTY_BLOCK_ID) {
+                        if (grid_blocks.block_at_location(loc) == ClusterBlockId::INVALID()) {
                             free_layer = layer;
                             break;
                         }

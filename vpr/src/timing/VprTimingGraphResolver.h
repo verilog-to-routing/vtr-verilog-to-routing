@@ -37,6 +37,7 @@ class VprTimingGraphResolver : public tatum::TimingGraphNameResolver {
     const AnalysisDelayCalculator& delay_calc_;
     e_timing_report_detail detail_level_ = e_timing_report_detail::NETLIST;
     bool is_flat_;
+    ///@brief contains information about the placement of clustered blocks.
     const BlkLocRegistry& blk_loc_registry_;
 };
 

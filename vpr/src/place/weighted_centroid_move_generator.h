@@ -15,7 +15,7 @@
 class WeightedCentroidMoveGenerator : public MoveGenerator {
   public:
     WeightedCentroidMoveGenerator() = delete;
-    explicit WeightedCentroidMoveGenerator(PlacerContext& placer_ctx);
+    explicit WeightedCentroidMoveGenerator(PlacerState& placer_state);
 
   private:
     e_create_move propose_move(t_pl_blocks_to_be_moved& blocks_affected,

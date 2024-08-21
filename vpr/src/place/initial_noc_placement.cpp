@@ -1,5 +1,7 @@
 
 #include "initial_noc_placment.h"
+
+#include "vpr_types.h"
 #include "initial_placement.h"
 #include "noc_place_utils.h"
 #include "noc_place_checkpoint.h"

@@ -558,12 +558,3 @@ void t_cluster_placement_stats::free_primitives() {
         }
     }
 }
-
-int BlkLocRegistry::net_pin_to_tile_pin_index(const ClusterNetId net_id, int net_pin_index) const {
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-
-    // Get the logical pin index of pin within its logical block type
-    ClusterPinId pin_id = cluster_ctx.clb_nlist.net_pin(net_id, net_pin_index);
-
-    return this->tile_pin_index(pin_id);
-}

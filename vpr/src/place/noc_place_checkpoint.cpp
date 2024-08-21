@@ -53,16 +53,14 @@ void NoCPlacementCheckpoint::restore_checkpoint(t_placer_costs& costs,
 
             for (int k = 0; k < capacity.total(); k++) {
                 const t_pl_loc loc(phy_loc, k + capacity.low);
-                if (grid_blocks.block_at_location(loc) != INVALID_BLOCK_ID) {
-                    grid_blocks.set_block_at_location(loc, EMPTY_BLOCK_ID);
-                }
+                grid_blocks.set_block_at_location(loc, ClusterBlockId::INVALID());
             }
         }
     }
 
     // Place routers based on router_locations_
     for (const auto& [router_blk_id, location] : router_locations_) {
-        set_block_location(router_blk_id, location, blk_loc_registry);
+        blk_loc_registry.set_block_location(router_blk_id, location);
     }
 
     // Re-initialize routes and static variables that keep track of NoC-related costs

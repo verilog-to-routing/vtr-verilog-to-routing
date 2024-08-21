@@ -791,7 +791,7 @@ bool try_place_macro_exhaustively(const t_pl_macro& pl_macro,
                         int subtile = regions[reg].get_sub_tile();
 
                         to_loc.sub_tile = subtile;
-                        if (grid_blocks.block_at_location(to_loc) == EMPTY_BLOCK_ID) {
+                        if (grid_blocks.block_at_location(to_loc) == ClusterBlockId::INVALID()) {
                             placed = try_place_macro(pl_macro, to_loc, blk_loc_registry);
 
                             if (placed) {
@@ -806,7 +806,7 @@ bool try_place_macro_exhaustively(const t_pl_macro& pl_macro,
 
                                 for (int st = st_low; st <= st_high && !placed; st++) {
                                     to_loc.sub_tile = st;
-                                    if (grid_blocks.block_at_location(to_loc) == EMPTY_BLOCK_ID) {
+                                    if (grid_blocks.block_at_location(to_loc) == ClusterBlockId::INVALID()) {
                                         placed = try_place_macro(pl_macro, to_loc, blk_loc_registry);
                                         if (placed) {
                                             fix_IO_block_types(pl_macro, to_loc, pad_loc_type, block_locs);
@@ -877,7 +877,7 @@ bool try_place_macro(const t_pl_macro& pl_macro,
     bool macro_placed = false;
 
     // If that location is occupied, do nothing.
-    if (grid_blocks.block_at_location(head_pos) != EMPTY_BLOCK_ID) {
+    if (grid_blocks.block_at_location(head_pos)) {
         return macro_placed;
     }
 
@@ -890,7 +890,7 @@ bool try_place_macro(const t_pl_macro& pl_macro,
         for (const t_pl_macro_member& pl_macro_member : pl_macro.members) {
             t_pl_loc member_pos = head_pos + pl_macro_member.offset;
             ClusterBlockId iblk = pl_macro_member.blk_index;
-            set_block_location(iblk, member_pos, blk_loc_registry);
+            blk_loc_registry.set_block_location(iblk, member_pos);
         } // Finish placing all the members in the macro
     }
 
@@ -1134,9 +1134,7 @@ static void clear_block_type_grid_locs(const std::unordered_set<int>& unplaced_b
                 if (clear_all_block_types || unplaced_blk_types_index.count(itype)) {
                     grid_blocks.set_usage({i, j, layer_num}, 0);
                     for (int k = 0; k < device_ctx.physical_tile_types[itype].capacity; k++) {
-                        if (grid_blocks.block_at_location({i, j, k, layer_num}) != INVALID_BLOCK_ID) {
-                            grid_blocks.set_block_at_location({i, j, k, layer_num}, EMPTY_BLOCK_ID);
-                        }
+                        grid_blocks.set_block_at_location({i, j, k, layer_num}, ClusterBlockId::INVALID());
                     }
                 }
             }

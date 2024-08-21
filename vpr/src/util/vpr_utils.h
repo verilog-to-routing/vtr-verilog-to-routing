@@ -16,7 +16,7 @@
 #include "vpr_constraints.h"
 
 class DeviceGrid;
-class PlacerContext;
+class PlacerState;
 
 const t_model* find_model(const t_model* models, const std::string& name, bool required = true);
 const t_model_ports* find_model_port(const t_model* model, const std::string& name, bool required = true);
@@ -28,10 +28,12 @@ bool is_clb_external_pin(ClusterBlockId blk_id, int pb_pin_id);
 bool is_empty_type(t_physical_tile_type_ptr type);
 bool is_empty_type(t_logical_block_type_ptr type);
 
-//Returns the corresponding physical type given the logical type as parameter
+/**
+ * @brief Returns the corresponding physical type given the location in the grid.
+ * @param loc The block location in the grid.
+ * @return The physical tile type of the given location.
+ */
 t_physical_tile_type_ptr physical_tile_type(t_pl_loc loc);
-
-//t_physical_tile_type_ptr physical_tile_type(ClusterBlockId blk);
 
 t_physical_tile_type_ptr physical_tile_type(AtomBlockId atom_blk);
 
@@ -222,28 +224,6 @@ void print_switch_usage();
 void print_usage_by_wire_length();
 
 AtomBlockId find_memory_sibling(const t_pb* pb);
-
-/**
- * @brief Syncs the logical block pins corresponding to the input iblk with the corresponding chosen physical tile
- * @param iblk cluster block ID to sync within the assigned physical tile
- *
- * This routine updates the physical pins vector of the place context after the placement step
- * to synchronize the pins related to the logical block with the actual connection interface of
- * the belonging physical tile with the RR graph.
- *
- * This step is required as the logical block can be placed at any compatible sub tile locations
- * within a physical tile.
- * Given that it is possible to have equivalent logical blocks within a specific sub tile, with
- * a different subset of IO pins, the various pins offsets must be correctly computed and assigned
- * to the physical pins vector, so that, when the net RR terminals are computed, the correct physical
- * tile IO pins are selected.
- *
- * This routine uses the x,y and sub_tile coordinates of the clb netlist, and expects those to place each netlist block
- * at a legal location that can accommodate it.
- * It does not check for overuse of locations, therefore it can be used with placements that have resource overuse.
- */
-void place_sync_external_block_connections(ClusterBlockId iblk,
-                                           BlkLocRegistry& blk_loc_registry);
 
 int get_atom_pin_class_num(const AtomPinId atom_pin_id);
 

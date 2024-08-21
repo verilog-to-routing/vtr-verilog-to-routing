@@ -127,7 +127,7 @@ class PlacerCriticalities {
      */
     void update_criticalities(const SetupTimingInfo* timing_info,
                               const PlaceCritParams& crit_params,
-                              PlacerContext& placer_ctx);
+                              PlacerState& placer_state);
 
     ///@bried Enable the recompute_required flag to enforce from scratch update.
     void set_recompute_required();

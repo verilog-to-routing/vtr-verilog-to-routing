@@ -6,7 +6,7 @@
 #include <string>
 
 
-class PlacerContext;
+class PlacerState;
 class ClusterBlockId;
 struct t_block_loc;
 

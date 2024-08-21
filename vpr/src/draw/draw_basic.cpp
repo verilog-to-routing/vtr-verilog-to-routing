@@ -140,8 +140,6 @@ void drawplace(ezgl::renderer* g) {
                         /* Fill background for the clb. Do not fill if "show_blk_internal"
                          * is toggled.
                          */
-                        if (bnum == INVALID_BLOCK_ID)
-                            continue;
 
                         //Determine the block color and logical type
                         ezgl::color block_color;
@@ -160,7 +158,7 @@ void drawplace(ezgl::renderer* g) {
                         }
                         // No color specified at this location; use the block color.
                         if (!current_loc_is_highlighted) {
-                            if (bnum != EMPTY_BLOCK_ID) {
+                            if (bnum) {
                                 block_color = draw_state->block_color(bnum);
                             } else {
                                 block_color = get_block_type_color(type);
@@ -184,15 +182,14 @@ void drawplace(ezgl::renderer* g) {
 
                         g->set_color(ezgl::BLACK, transparency_factor);
 
-                        g->set_line_dash(
-                            (EMPTY_BLOCK_ID == bnum) ? ezgl::line_dash::asymmetric_5_3 : ezgl::line_dash::none);
+                        g->set_line_dash((bnum == ClusterBlockId::INVALID()) ? ezgl::line_dash::asymmetric_5_3 : ezgl::line_dash::none);
                         if (draw_state->draw_block_outlines) {
                             g->draw_rectangle(abs_clb_bbox);
                         }
 
                         if (draw_state->draw_block_text) {
                             /* Draw text if the space has parts of the netlist */
-                            if (bnum != EMPTY_BLOCK_ID && bnum != INVALID_BLOCK_ID) {
+                            if (bnum) {
                                 std::string name = cluster_ctx.clb_nlist.block_name(
                                                        bnum)
                                                    + vtr::string_fmt(" (#%zu)", size_t(bnum));

@@ -270,7 +270,7 @@ void mark_fixed_blocks(BlkLocRegistry& blk_loc_registry) {
          * and mark it as fixed.
          */
         if (is_pr_size_one(pr, block_type, loc)) {
-            set_block_location(blk_id, loc, blk_loc_registry);
+            blk_loc_registry.set_block_location(blk_id, loc);
             blk_loc_registry.mutable_block_locs()[blk_id].is_fixed = true;
         }
     }

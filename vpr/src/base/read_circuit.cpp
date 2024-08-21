@@ -4,10 +4,8 @@
 #include "atom_netlist.h"
 #include "atom_netlist_utils.h"
 #include "echo_files.h"
-
 #include "vtr_assert.h"
 #include "vtr_log.h"
-#include "vtr_util.h"
 #include "vtr_path.h"
 #include "vtr_time.h"
 
@@ -145,34 +143,31 @@ static void process_circuit(AtomNetlist& netlist,
 }
 
 static void show_circuit_stats(const AtomNetlist& netlist) {
+    // Count the block statistics
     std::map<std::string, size_t> block_type_counts;
-
-    //Count the block statistics
+    std::map<std::string, size_t> lut_size_counts;
     for (auto blk_id : netlist.blocks()) {
+        // For each model, count the number of occurrences in the netlist.
         const t_model* blk_model = netlist.block_model(blk_id);
+        ++block_type_counts[blk_model->name];
+        // If this block is a LUT, also count the occurences of this size of LUT
+        // for more logging information.
         if (blk_model->name == std::string(MODEL_NAMES)) {
-            //LUT
-            size_t lut_size = 0;
+            // May have zero (no input LUT) or one input port
             auto in_ports = netlist.block_input_ports(blk_id);
-
-            //May have zero (no input LUT) or one input port
+            VTR_ASSERT(in_ports.size() <= 1 && "Expected number of input ports for LUT to be 0 or 1");
+            size_t lut_size = 0;
             if (in_ports.size() == 1) {
+                // Use the number of pins in the input port to determine the
+                // size of the LUT.
                 auto port_id = *in_ports.begin();
-
-                //Figure out the LUT size
-                lut_size = netlist.port_width(port_id);
-
-            } else {
-                VTR_ASSERT(in_ports.size() == 0);
+                lut_size = netlist.port_pins(port_id).size();
             }
-
-            ++block_type_counts[std::to_string(lut_size) + "-LUT"];
-        } else {
-            //Other types
-            ++block_type_counts[blk_model->name];
+            ++lut_size_counts[std::to_string(lut_size) + "-LUT"];
         }
     }
-    //Count the net statistics
+
+    // Count the net statistics
     std::map<std::string, double> net_stats;
     for (auto net_id : netlist.nets()) {
         double fanout = netlist.net_sinks(net_id).size();
@@ -189,21 +184,32 @@ static void show_circuit_stats(const AtomNetlist& netlist) {
     }
     net_stats["Avg Fanout"] /= netlist.nets().size();
 
-    //Determine the maximum length of a type name for nice formatting
+    // Determine the maximum length of a type name for nice formatting
     size_t max_block_type_len = 0;
     for (const auto& kv : block_type_counts) {
         max_block_type_len = std::max(max_block_type_len, kv.first.size());
+    }
+    size_t max_lut_size_len = 0;
+    for (const auto& kv : lut_size_counts) {
+        max_lut_size_len = std::max(max_lut_size_len, kv.first.size());
     }
     size_t max_net_type_len = 0;
     for (const auto& kv : net_stats) {
         max_net_type_len = std::max(max_net_type_len, kv.first.size());
     }
 
-    //Print the statistics
+    // Print the statistics
     VTR_LOG("Circuit Statistics:\n");
     VTR_LOG("  Blocks: %zu\n", netlist.blocks().size());
     for (const auto& kv : block_type_counts) {
         VTR_LOG("    %-*s: %7zu\n", max_block_type_len, kv.first.c_str(), kv.second);
+        // If this block is a LUT, print the different sizes of LUTs in the
+        // design.
+        if (kv.first == std::string(MODEL_NAMES)) {
+            for (const auto& lut_kv : lut_size_counts) {
+                VTR_LOG("        %-*s: %7zu\n", max_lut_size_len, lut_kv.first.c_str(), lut_kv.second);
+            }
+        }
     }
     VTR_LOG("  Nets  : %zu\n", netlist.nets().size());
     for (const auto& kv : net_stats) {

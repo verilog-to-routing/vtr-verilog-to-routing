@@ -95,12 +95,6 @@ enum class ScreenUpdatePriority {
 /* Used to avoid floating-point errors when comparing values close to 0 */
 #define EPSILON 1.e-15
 
-#define FIRST_ITER_WIRELENTH_LIMIT 0.85 /* If used wirelength exceeds this value in first iteration of routing, do not route */
-
-/* Defining macros for the placement_ctx t_grid_blocks. Assumes that ClusterBlockId's won't exceed positive 32-bit integers */
-constexpr auto EMPTY_BLOCK_ID = ClusterBlockId(-1);
-constexpr auto INVALID_BLOCK_ID = ClusterBlockId(-2);
-
 /*
  * Files
  */
@@ -838,109 +832,6 @@ struct t_block_loc {
     t_pl_loc loc;
 
     bool is_fixed = false;
-};
-
-///@brief Stores the clustered blocks placed at a particular grid location
-struct t_grid_blocks {
-    int usage; ///<How many valid blocks are in use at this location
-
-    /**
-     * @brief The clustered blocks associated with this grid location.
-     *
-     * Index range: [0..device_ctx.grid[x_loc][y_loc].type->capacity]
-     */
-    std::vector<ClusterBlockId> blocks;
-
-    /**
-     * @brief Test if a subtile at a grid location is occupied by a block.
-     *
-     * Returns true if the subtile corresponds to the passed-in id is not
-     * occupied by a block at this grid location. The subtile id serves
-     * as the z-dimensional offset in the grid indexing.
-     */
-    inline bool subtile_empty(size_t isubtile) const {
-        return blocks[isubtile] == EMPTY_BLOCK_ID;
-    }
-};
-
-class GridBlock {
-  public:
-    GridBlock() = default;
-
-    GridBlock(size_t width, size_t height, size_t layers) {
-        grid_blocks_.resize({layers, width, height});
-    }
-
-    inline void initialized_grid_block_at_location(const t_physical_tile_loc& loc, int num_sub_tiles) {
-        grid_blocks_[loc.layer_num][loc.x][loc.y].blocks.resize(num_sub_tiles, EMPTY_BLOCK_ID);
-    }
-
-    inline void set_block_at_location(const t_pl_loc& loc, ClusterBlockId blk_id) {
-        grid_blocks_[loc.layer][loc.x][loc.y].blocks[loc.sub_tile] = blk_id;
-    }
-
-    inline ClusterBlockId block_at_location(const t_pl_loc& loc) const {
-        return grid_blocks_[loc.layer][loc.x][loc.y].blocks[loc.sub_tile];
-    }
-
-    inline size_t num_blocks_at_location(const t_physical_tile_loc& loc) const {
-        return grid_blocks_[loc.layer_num][loc.x][loc.y].blocks.size();
-    }
-
-    inline int set_usage(const t_physical_tile_loc loc, int usage) {
-        return grid_blocks_[loc.layer_num][loc.x][loc.y].usage = usage;
-    }
-
-    inline int get_usage(const t_physical_tile_loc loc) const {
-        return grid_blocks_[loc.layer_num][loc.x][loc.y].usage;
-    }
-
-    inline bool is_sub_tile_empty(const t_physical_tile_loc loc, int sub_tile) const {
-        return grid_blocks_[loc.layer_num][loc.x][loc.y].subtile_empty(sub_tile);
-    }
-
-    inline void clear() {
-        grid_blocks_.clear();
-    }
-
-  private:
-    vtr::NdMatrix<t_grid_blocks, 3> grid_blocks_;
-};
-
-class BlkLocRegistry {
-  public:
-    BlkLocRegistry() = default;
-    ~BlkLocRegistry() = default;
-    BlkLocRegistry(const BlkLocRegistry&) = delete;
-    BlkLocRegistry& operator=(const BlkLocRegistry&) = default;
-    BlkLocRegistry(BlkLocRegistry&&) = delete;
-    BlkLocRegistry& operator=(BlkLocRegistry&&) = delete;
-
-  private:
-    ///@brief Clustered block placement locations
-    vtr::vector_map<ClusterBlockId, t_block_loc> block_locs_;
-
-    ///@brief Clustered block associated with each grid location (i.e. inverse of block_locs)
-    GridBlock grid_blocks_;
-
-    ///@brief Clustered pin placement mapping with physical pin
-    vtr::vector_map<ClusterPinId, int> physical_pins_;
-
-  public:
-    inline const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs() const { return block_locs_; }
-    inline vtr::vector_map<ClusterBlockId, t_block_loc>& mutable_block_locs() { return block_locs_; }
-
-    inline const GridBlock& grid_blocks() const { return grid_blocks_; }
-    inline GridBlock& mutable_grid_blocks() { return grid_blocks_; }
-
-    inline const vtr::vector_map<ClusterPinId, int>& physical_pins() const { return physical_pins_; }
-    inline vtr::vector_map<ClusterPinId, int>& mutable_physical_pins() { return physical_pins_; }
-
-    ///@brief Returns the physical pin of the tile, related to the given ClusterPinId
-    inline int tile_pin_index(const ClusterPinId pin) const { return physical_pins_[pin]; }
-
-     ///@brief Returns the physical pin of the tile, related to the given ClusterNedId, and the net pin index.
-    int net_pin_to_tile_pin_index(const ClusterNetId net_id, int net_pin_index) const;
 };
 
 ///@brief Names of various files

@@ -1,7 +1,11 @@
 /**
- * @file placer_context.h
- * @brief Contains placer context/data structures referenced by various
- *        source files in vpr/src/place.
+ * @file placer_state.h
+ * @brief Contains placer state/data structures referenced by various source files in vpr/src/place.
+ * A PlacerState object contains the placement state which is subject to change during the placement stage.
+ * During the placement stage, one or multiple local PlacerState objects are created. At the end of the placement stage,
+ * one of these object is copied to global placement context (PlacementContext). The PlacementContext,
+ * which is declared in vpr_context.h, contains the placement solution. The PlacementContext should not be used before
+ * the end of the placement stage.
  */
 
 #pragma once
@@ -113,7 +117,7 @@ struct PlacerMoveContext : public Context {
     std::vector<int> Y_coord;
     std::vector<int> layer_coord;
 
-    // Container to save the highly critical pins (higher than a timing criticality limit setted by commandline option)
+    // Container to save the highly critical pins (higher than a timing criticality limit set by commandline option)
     std::vector<std::pair<ClusterNetId, int>> highly_crit_pins;
 };
 
@@ -130,7 +134,7 @@ struct PlacerMoveContext : public Context {
  * See the class VprContext in `vpr_context.h` for descriptions on
  * how to use this class due to similar implementation style.
  */
-class PlacerContext : public Context {
+class PlacerState : public Context {
   public:
     inline const PlacerTimingContext& timing() const { return timing_; }
     inline PlacerTimingContext& mutable_timing() { return timing_; }
@@ -157,5 +161,11 @@ class PlacerContext : public Context {
     PlacerTimingContext timing_;
     PlacerRuntimeContext runtime_;
     PlacerMoveContext move_;
+
+    /**
+     * @brief Contains: 1) The location where each clustered block is placed at.
+     *                  2) Which clustered blocks are located at a given location
+     *                  3) The mapping between the clustered block pins and physical tile pins.
+     */
     BlkLocRegistry blk_loc_registry_;
 };

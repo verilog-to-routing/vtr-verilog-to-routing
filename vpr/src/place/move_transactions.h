@@ -1,7 +1,11 @@
 #ifndef VPR_MOVE_TRANSACTIONS_H
 #define VPR_MOVE_TRANSACTIONS_H
+
 #include "vpr_types.h"
 #include "clustered_netlist_utils.h"
+
+class BlkLocRegistry;
+class GridBlock;
 
 enum class e_block_move_result {
     VALID,       //Move successful

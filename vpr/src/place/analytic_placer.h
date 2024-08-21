@@ -182,7 +182,7 @@ class AnalyticPlacer {
     vtr::vector_map<ClusterBlockId, BlockLocation> blk_locs;
 
     // reference to the placement location variables
-    BlkLocRegistry& placer_loc_vars_ref_;
+    BlkLocRegistry& blk_loc_registry_ref_;
 
     /*
      * The set of blks of different types to be placed by AnalyticPlacement process,

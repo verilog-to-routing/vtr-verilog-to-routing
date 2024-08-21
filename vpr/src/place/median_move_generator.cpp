@@ -2,13 +2,13 @@
 
 #include "globals.h"
 #include "place_constraints.h"
-#include "placer_context.h"
+#include "placer_state.h"
 #include "move_utils.h"
 
 #include <algorithm>
 
-MedianMoveGenerator::MedianMoveGenerator(PlacerContext& placer_ctx)
-    : MoveGenerator(placer_ctx) {}
+MedianMoveGenerator::MedianMoveGenerator(PlacerState& placer_state)
+    : MoveGenerator(placer_state) {}
 
 e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected,
                                                 t_propose_action& proposed_action,
@@ -17,10 +17,10 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
                                                 const PlacerCriticalities* /*criticalities*/) {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     const auto& device_ctx = g_vpr_ctx.device();
-    auto& placer_ctx = placer_ctx_.get();
-    auto& place_move_ctx = placer_ctx.mutable_move();
-    const auto& block_locs = placer_ctx.block_locs();
-    const auto& blk_loc_registry = placer_ctx.blk_loc_registry();
+    auto& placer_state = placer_state_.get();
+    auto& place_move_ctx = placer_state.mutable_move();
+    const auto& block_locs = placer_state.block_locs();
+    const auto& blk_loc_registry = placer_state.blk_loc_registry();
 
     //Find a movable block based on blk_type
     ClusterBlockId b_from = propose_block_to_move(placer_opts,
@@ -28,7 +28,7 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
                                                   /*highly_crit_block=*/false,
                                                   /*net_from=*/nullptr,
                                                   /*pin_from=*/nullptr,
-                                                  placer_ctx);
+                                                  placer_state);
 
     VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "Median Move Choose Block %d - rlim %f\n", size_t(b_from), rlim);
 
@@ -186,23 +186,13 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
     return create_move;
 }
 
-/* Finds the bounding box of a net and stores its coordinates in the  *
- * bb_coord_new data structure. It excludes the moving block sent in  *
- * function arguments in block_id. It also returns whether this net   *
- * should be excluded from median calculation or not.                 *
- * This routine should only be called for small nets, since it does   *
- * not determine enough information for the bounding box to be        *
- * updated incrementally later.                                       *
- * Currently assumes channels on both sides of the CLBs forming the   *
- * edges of the bounding box can be used.  Essentially, I am assuming *
- * the pins always lie on the outside of the bounding box.            */
 void MedianMoveGenerator::get_bb_from_scratch_excluding_block(ClusterNetId net_id,
                                                               t_bb& bb_coord_new,
                                                               ClusterBlockId block_id,
                                                               bool& skip_net) {
     //TODO: account for multiple physical pin instances per logical pin
-    const auto& placer_ctx = placer_ctx_.get();
-    const auto& block_locs = placer_ctx.block_locs();
+    const auto& placer_state = placer_state_.get();
+    const auto& block_locs = placer_state.block_locs();
 
     skip_net = true;
 
@@ -224,7 +214,7 @@ void MedianMoveGenerator::get_bb_from_scratch_excluding_block(ClusterNetId net_i
 
     if (bnum != block_id) {
         skip_net = false;
-        pnum = placer_ctx.blk_loc_registry().net_pin_to_tile_pin_index(net_id, 0);
+        pnum = placer_state.blk_loc_registry().net_pin_to_tile_pin_index(net_id, 0);
         const t_pl_loc& block_loc = block_locs[bnum].loc;
         int src_x = block_loc.x + physical_tile_type(block_loc)->pin_width_offset[pnum];
         int src_y = block_loc.y + physical_tile_type(block_loc)->pin_height_offset[pnum];
@@ -241,7 +231,7 @@ void MedianMoveGenerator::get_bb_from_scratch_excluding_block(ClusterNetId net_i
 
     for (ClusterPinId pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
         bnum = cluster_ctx.clb_nlist.pin_block(pin_id);
-        pnum = placer_ctx.blk_loc_registry().tile_pin_index(pin_id);
+        pnum = placer_state.blk_loc_registry().tile_pin_index(pin_id);
         if (bnum == block_id)
             continue;
         skip_net = false;
@@ -294,19 +284,6 @@ void MedianMoveGenerator::get_bb_from_scratch_excluding_block(ClusterNetId net_i
     bb_coord_new.layer_max = std::max(std::min<int>(layer_max, device_ctx.grid.get_num_layers() - 1), 0);
 }
 
-/*
- * Calculates the bounding box of a net by storing its coordinates    *
- * in the bb_coord_new data structure. It uses information from       *
- * PlaceMoveContext to calculate the bb incrementally. This routine   *
- * should only be called for large nets, since it has some overhead   *
- * relative to just doing a brute force bounding box calculation.     *
- * The bounding box coordinate and edge information for inet must be  *
- * valid before this routine is called.                               *
- * Currently assumes channels on both sides of the CLBs forming the   *
- * edges of the bounding box can be used. Essentially, I am assuming *
- * the pins always lie on the outside of the bounding box.            *
- * The x and y coordinates are the pin's x and y coordinates.         */
-/* IO blocks are considered to be one cell in for simplicity.         */
 bool MedianMoveGenerator::get_bb_incrementally(ClusterNetId net_id,
                                                t_bb& bb_coord_new,
                                                int xold,
@@ -318,7 +295,7 @@ bool MedianMoveGenerator::get_bb_incrementally(ClusterNetId net_id,
     //TODO: account for multiple physical pin instances per logical pin
 
     auto& device_ctx = g_vpr_ctx.device();
-    auto& place_move_ctx = placer_ctx_.get().move();
+    auto& place_move_ctx = placer_state_.get().move();
 
     xnew = std::max(std::min<int>(xnew, device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
     ynew = std::max(std::min<int>(ynew, device_ctx.grid.height() - 2), 1); //-2 for no perim channels

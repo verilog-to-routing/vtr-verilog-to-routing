@@ -151,7 +151,7 @@ bool string_is_a_number(const std::string& block_id);
  * 
  * Helper function used in place.cpp. The ManualMovesState variable are updated and
  * the manual_move_cost_summary_dialog is called to display the cost members to the user
- * in the UI and waits for the user to either ACCPET/REJECT the manual move.
+ * in the UI and waits for the user to either ACCEPT/REJECT the manual move.
  */
 e_move_result pl_do_manual_move(double d_cost, double d_timing, double d_bounding_box, e_move_result& move_outcome);
 

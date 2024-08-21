@@ -28,7 +28,7 @@
 #include "clustered_netlist_fwd.h"
 #include "globals.h"
 #include "physical_types.h"
-#include "placer_context.h"
+#include "placer_state.h"
 #include "move_utils.h"
 #include "place_timing_update.h"
 #include "noc_place_utils.h"
@@ -70,7 +70,7 @@ static bool driven_by_moved_block(const ClusterNetId net,
  * @param bb Bounding box of the net
  * @return Wirelength estimate of the net
  */
-static double get_net_wirelength_from_layer_bb(ClusterNetId /* net_id */,
+static double get_net_wirelength_from_layer_bb(ClusterNetId /*net_id*/,
                                                const std::vector<t_2D_bb>& bb,
                                                const vtr::NdMatrixProxy<int, 1> layer_pin_sink_count);
 
@@ -130,11 +130,11 @@ static double wirelength_crossing_count(size_t fanout);
 
 
 NetCostHandler::NetCostHandler(const t_placer_opts& placer_opts,
-                               PlacerContext& placer_ctx,
+                               PlacerState& placer_state,
                                size_t num_nets,
                                bool cube_bb)
     : cube_bb_(cube_bb)
-    , placer_ctx_(placer_ctx)
+    , placer_state_(placer_state)
     , placer_opts_(placer_opts) {
     const int num_layers = g_vpr_ctx.device().grid.get_num_layers();
 
@@ -263,7 +263,7 @@ double NetCostHandler::comp_bb_cost(e_cost_methods method) {
 
 double NetCostHandler::comp_3d_bb_cost_(e_cost_methods method) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_move_ctx = placer_ctx_.mutable_move();
+    auto& place_move_ctx = placer_state_.mutable_move();
 
     double cost = 0;
     double expected_wirelength = 0.0;
@@ -302,7 +302,7 @@ double NetCostHandler::comp_3d_bb_cost_(e_cost_methods method) {
 
 double NetCostHandler::comp_per_layer_bb_cost_(e_cost_methods method) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_move_ctx = placer_ctx_.mutable_move();
+    auto& place_move_ctx = placer_state_.mutable_move();
 
     double cost = 0;
     double expected_wirelength = 0.0;
@@ -348,7 +348,7 @@ void NetCostHandler::update_net_bb_(const ClusterNetId net,
                                     const ClusterPinId blk_pin,
                                     const t_pl_moved_block& pl_moved_block) {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
-    const auto& block_locs = placer_ctx_.block_locs();
+    const auto& block_locs = placer_state_.block_locs();
 
     if (cluster_ctx.clb_nlist.net_sinks(net).size() < SMALL_NET) {
         //For small nets brute-force bounding box update is faster
@@ -358,7 +358,7 @@ void NetCostHandler::update_net_bb_(const ClusterNetId net,
         }
     } else {
         //For large nets, update bounding box incrementally
-        int iblk_pin = placer_ctx_.blk_loc_registry().tile_pin_index(blk_pin);
+        int iblk_pin = placer_state_.blk_loc_registry().tile_pin_index(blk_pin);
 
         t_pl_loc block_loc = block_locs[blk].loc;
         t_physical_tile_type_ptr blk_type = physical_tile_type(block_loc);
@@ -411,12 +411,12 @@ void NetCostHandler::update_td_delta_costs_(const PlaceDelayModel* delay_model,
      * for incremental static timing analysis (incremental STA).
      */
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& block_locs = placer_ctx_.block_locs();
+    auto& block_locs = placer_state_.block_locs();
 
-    const auto& connection_delay = placer_ctx_.timing().connection_delay;
-    auto& connection_timing_cost = placer_ctx_.mutable_timing().connection_timing_cost;
-    auto& proposed_connection_delay = placer_ctx_.mutable_timing().proposed_connection_delay;
-    auto& proposed_connection_timing_cost = placer_ctx_.mutable_timing().proposed_connection_timing_cost;
+    const auto& connection_delay = placer_state_.timing().connection_delay;
+    auto& connection_timing_cost = placer_state_.mutable_timing().connection_timing_cost;
+    auto& proposed_connection_delay = placer_state_.mutable_timing().proposed_connection_delay;
+    auto& proposed_connection_timing_cost = placer_state_.mutable_timing().proposed_connection_timing_cost;
 
     if (cluster_ctx.clb_nlist.pin_type(pin) == PinType::DRIVER) {
         /* This pin is a net driver on a moved block. */
@@ -524,10 +524,10 @@ void NetCostHandler::get_non_updatable_bb_(ClusterNetId net_id,
     //TODO: account for multiple physical pin instances per logical pin
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.device();
-    auto& block_locs = placer_ctx_.block_locs();
+    auto& block_locs = placer_state_.block_locs();
 
     ClusterBlockId bnum = cluster_ctx.clb_nlist.net_driver_block(net_id);
-    int pnum = placer_ctx_.blk_loc_registry().net_pin_to_tile_pin_index(net_id, 0);
+    int pnum = placer_state_.blk_loc_registry().net_pin_to_tile_pin_index(net_id, 0);
 
     t_pl_loc block_loc = block_locs[bnum].loc;
     int x = block_loc.x + physical_tile_type(block_loc)->pin_width_offset[pnum];
@@ -548,7 +548,7 @@ void NetCostHandler::get_non_updatable_bb_(ClusterNetId net_id,
     for (ClusterPinId pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
         bnum = cluster_ctx.clb_nlist.pin_block(pin_id);
         block_loc = block_locs[bnum].loc;
-        pnum = placer_ctx_.blk_loc_registry().tile_pin_index(pin_id);
+        pnum = placer_state_.blk_loc_registry().tile_pin_index(pin_id);
         x = block_loc.x + physical_tile_type(block_loc)->pin_width_offset[pnum];
         y = block_loc.y + physical_tile_type(block_loc)->pin_height_offset[pnum];
         layer = block_loc.layer;
@@ -596,14 +596,14 @@ void NetCostHandler::get_non_updatable_layer_bb_(ClusterNetId net_id,
     //TODO: account for multiple physical pin instances per logical pin
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& block_locs = placer_ctx_.block_locs();
+    auto& block_locs = placer_state_.block_locs();
 
     const int num_layers = device_ctx.grid.get_num_layers();
     VTR_ASSERT_DEBUG(bb_coord_new.size() == num_layers);
 
     ClusterBlockId bnum = cluster_ctx.clb_nlist.net_driver_block(net_id);
     t_pl_loc block_loc = block_locs[bnum].loc;
-    int pnum = placer_ctx_.blk_loc_registry().net_pin_to_tile_pin_index(net_id, 0);
+    int pnum = placer_state_.blk_loc_registry().net_pin_to_tile_pin_index(net_id, 0);
 
     int src_x = block_locs[bnum].loc.x + physical_tile_type(block_loc)->pin_width_offset[pnum];
     int src_y = block_locs[bnum].loc.y + physical_tile_type(block_loc)->pin_height_offset[pnum];
@@ -616,7 +616,7 @@ void NetCostHandler::get_non_updatable_layer_bb_(ClusterNetId net_id,
     for (ClusterPinId pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
         bnum = cluster_ctx.clb_nlist.pin_block(pin_id);
         block_loc = block_locs[bnum].loc;
-        pnum = placer_ctx_.blk_loc_registry().tile_pin_index(pin_id);
+        pnum = placer_state_.blk_loc_registry().tile_pin_index(pin_id);
         int x = block_locs[bnum].loc.x + physical_tile_type(block_loc)->pin_width_offset[pnum];
         int y = block_locs[bnum].loc.y + physical_tile_type(block_loc)->pin_height_offset[pnum];
 
@@ -660,7 +660,7 @@ void NetCostHandler::update_bb_(ClusterNetId net_id,
     const t_bb *curr_bb_edge, *curr_bb_coord;
 
     auto& device_ctx = g_vpr_ctx.device();
-    auto& place_move_ctx = placer_ctx_.move();
+    auto& place_move_ctx = placer_state_.move();
 
     const int num_layers = device_ctx.grid.get_num_layers();
 
@@ -930,7 +930,7 @@ void NetCostHandler::update_layer_bb_(ClusterNetId net_id,
                                       t_physical_tile_loc pin_new_loc,
                                       bool is_output_pin) {
     auto& device_ctx = g_vpr_ctx.device();
-    auto& place_move_ctx = placer_ctx_.move();
+    auto& place_move_ctx = placer_state_.move();
 
     pin_new_loc.x = max(min<int>(pin_new_loc.x, device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
     pin_new_loc.y = max(min<int>(pin_new_loc.y, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
@@ -1279,11 +1279,12 @@ void NetCostHandler::get_bb_from_scratch_(ClusterNetId net_id,
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.device();
     auto& grid = device_ctx.grid;
-    auto& block_locs = placer_ctx_.block_locs();
+    auto& block_locs = placer_state_.block_locs();
 
     ClusterBlockId bnum = cluster_ctx.clb_nlist.net_driver_block(net_id);
     t_pl_loc block_loc = block_locs[bnum].loc;
-    int pnum = placer_ctx_.blk_loc_registry().net_pin_to_tile_pin_index(net_id, 0);
+    int pnum = placer_state_.blk_loc_registry().net_pin_to_tile_pin_index(net_id, 0);
+
     VTR_ASSERT_SAFE(pnum >= 0);
     int x = block_loc.x + physical_tile_type(block_loc)->pin_width_offset[pnum];
     int y = block_loc.y + physical_tile_type(block_loc)->pin_height_offset[pnum];
@@ -1314,7 +1315,7 @@ void NetCostHandler::get_bb_from_scratch_(ClusterNetId net_id,
     for (ClusterPinId pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
         bnum = cluster_ctx.clb_nlist.pin_block(pin_id);
         block_loc = block_locs[bnum].loc;
-        pnum = placer_ctx_.blk_loc_registry().tile_pin_index(pin_id);
+        pnum = placer_state_.blk_loc_registry().tile_pin_index(pin_id);
         x = block_locs[bnum].loc.x + physical_tile_type(block_loc)->pin_width_offset[pnum];
         y = block_locs[bnum].loc.y + physical_tile_type(block_loc)->pin_height_offset[pnum];
         pin_layer = block_locs[bnum].loc.layer;
@@ -1397,7 +1398,7 @@ void NetCostHandler::get_layer_bb_from_scratch_(ClusterNetId net_id,
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& grid = device_ctx.grid;
-    auto& block_locs = placer_ctx_.block_locs();
+    auto& block_locs = placer_state_.block_locs();
 
     const int num_layers = device_ctx.grid.get_num_layers();
     VTR_ASSERT_DEBUG(coords.size() == num_layers);
@@ -1405,7 +1406,7 @@ void NetCostHandler::get_layer_bb_from_scratch_(ClusterNetId net_id,
 
     ClusterBlockId bnum = cluster_ctx.clb_nlist.net_driver_block(net_id);
     t_pl_loc block_loc = block_locs[bnum].loc;
-    int pnum_src = placer_ctx_.blk_loc_registry().net_pin_to_tile_pin_index(net_id, 0);
+    int pnum_src = placer_state_.blk_loc_registry().net_pin_to_tile_pin_index(net_id, 0);
     VTR_ASSERT_SAFE(pnum_src >= 0);
     int x_src = block_loc.x + physical_tile_type(block_loc)->pin_width_offset[pnum_src];
     int y_src = block_loc.y + physical_tile_type(block_loc)->pin_height_offset[pnum_src];
@@ -1425,7 +1426,7 @@ void NetCostHandler::get_layer_bb_from_scratch_(ClusterNetId net_id,
     for (ClusterPinId pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
         bnum = cluster_ctx.clb_nlist.pin_block(pin_id);
         block_loc = block_locs[bnum].loc;
-        int pnum = placer_ctx_.blk_loc_registry().tile_pin_index(pin_id);
+        int pnum = placer_state_.blk_loc_registry().tile_pin_index(pin_id);
         int layer = block_locs[bnum].loc.layer;
         VTR_ASSERT_SAFE(layer >= 0 && layer < num_layers);
         layer_pin_sink_count[layer]++;
@@ -1651,7 +1652,7 @@ void NetCostHandler::find_affected_nets_and_update_costs(const PlaceDelayModel* 
 void NetCostHandler::update_move_nets() {
     /* update net cost functions and reset flags. */
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_move_ctx = placer_ctx_.mutable_move();
+    auto& place_move_ctx = placer_state_.mutable_move();
 
     for (const ClusterNetId ts_net : ts_nets_to_update_) {
         ClusterNetId net_id = ts_net;
@@ -1704,7 +1705,7 @@ void NetCostHandler::recompute_costs_from_scratch(const t_noc_opts& noc_opts,
 
     if (placer_opts_.place_algorithm.is_timing_driven()) {
         double new_timing_cost = 0.;
-        comp_td_costs(delay_model, *criticalities, placer_ctx_, &new_timing_cost);
+        comp_td_costs(delay_model, *criticalities, placer_state_, &new_timing_cost);
         check_and_print_cost(new_timing_cost, costs->timing_cost, "timing_cost");
         costs->timing_cost = new_timing_cost;
     } else {
@@ -1768,7 +1769,7 @@ double NetCostHandler::get_net_cost_(const ClusterNetId net_id) {
 }
 
 void NetCostHandler::set_ts_bb_coord_(const ClusterNetId net_id) {
-    auto& place_move_ctx = placer_ctx_.mutable_move();
+    auto& place_move_ctx = placer_state_.mutable_move();
     if (cube_bb_) {
         place_move_ctx.bb_coords[net_id] = ts_bb_coord_new_[net_id];
     } else {
@@ -1777,7 +1778,7 @@ void NetCostHandler::set_ts_bb_coord_(const ClusterNetId net_id) {
 }
 
 void NetCostHandler::set_ts_edge_(const ClusterNetId net_id) {
-    auto& place_move_ctx = placer_ctx_.mutable_move();
+    auto& place_move_ctx = placer_state_.mutable_move();
     if (cube_bb_) {
         place_move_ctx.bb_num_on_edges[net_id] = ts_bb_edge_new_[net_id];
     } else {

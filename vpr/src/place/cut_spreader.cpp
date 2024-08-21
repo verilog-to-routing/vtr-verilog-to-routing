@@ -12,6 +12,7 @@
 #    include "globals.h"
 #    include "vtr_log.h"
 #    include "place_util.h"
+#    include "grid_block.h"
 
 // sentinel for base case in CutSpreader (i.e. only 1 block left in region)
 constexpr std::pair<int, int> BASE_CASE = {-2, -2};
@@ -805,7 +806,7 @@ void CutSpreader::linear_spread_subarea(std::vector<ClusterBlockId>& cut_blks,
  */
 void CutSpreader::strict_legalize() {
     auto& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
-    const auto& block_locs = ap->placer_loc_vars_ref_.block_locs();
+    const auto& block_locs = ap->blk_loc_registry_ref_.block_locs();
     const auto& pl_macros = g_vpr_ctx.placement().pl_macros;
     int max_x = g_vpr_ctx.device().grid.width();
     int max_y = g_vpr_ctx.device().grid.height();
@@ -962,15 +963,14 @@ void CutSpreader::strict_legalize() {
  * Place blk on sub_tile location by modifying place_ctx.grid_blocks, place_ctx.block_locs, and ap->blk_locs[blk].loc
  */
 void CutSpreader::bind_tile(t_pl_loc sub_tile, ClusterBlockId blk) {
-    auto& grid_blocks = ap->placer_loc_vars_ref_.mutable_grid_blocks();
-    auto& block_locs = ap->placer_loc_vars_ref_.mutable_block_locs();
+    auto& grid_blocks = ap->blk_loc_registry_ref_.mutable_grid_blocks();
+    auto& block_locs = ap->blk_loc_registry_ref_.mutable_block_locs();
 
-    VTR_ASSERT(grid_blocks.block_at_location(sub_tile) == EMPTY_BLOCK_ID);
+    VTR_ASSERT(grid_blocks.block_at_location(sub_tile) == ClusterBlockId::INVALID());
     VTR_ASSERT(block_locs[blk].is_fixed == false);
     grid_blocks.set_block_at_location(sub_tile, blk);
     block_locs[blk].loc = sub_tile;
-    grid_blocks.set_usage({sub_tile.x, sub_tile.y, sub_tile.layer},
-                          grid_blocks.get_usage({sub_tile.x, sub_tile.y, sub_tile.layer}) + 1);
+    grid_blocks.increment_usage({sub_tile.x, sub_tile.y, sub_tile.layer});
     ap->blk_locs[blk].loc = sub_tile;
 }
 
@@ -979,16 +979,15 @@ void CutSpreader::bind_tile(t_pl_loc sub_tile, ClusterBlockId blk) {
  * Remove placement at sub_tile location by clearing place_ctx.block_locs and place_Ctx.grid_blocks
  */
 void CutSpreader::unbind_tile(t_pl_loc sub_tile) {
-    auto& grid_blocks = ap->placer_loc_vars_ref_.mutable_grid_blocks();
-    auto& block_locs = ap->placer_loc_vars_ref_.mutable_block_locs();
+    auto& grid_blocks = ap->blk_loc_registry_ref_.mutable_grid_blocks();
+    auto& block_locs = ap->blk_loc_registry_ref_.mutable_block_locs();
 
-    VTR_ASSERT(grid_blocks.block_at_location(sub_tile) != EMPTY_BLOCK_ID);
+    VTR_ASSERT(grid_blocks.block_at_location(sub_tile) != ClusterBlockId::INVALID());
     ClusterBlockId blk = grid_blocks.block_at_location(sub_tile);
     VTR_ASSERT(block_locs[blk].is_fixed == false);
     block_locs[blk].loc = t_pl_loc{};
-    grid_blocks.set_block_at_location(sub_tile, EMPTY_BLOCK_ID);
-    grid_blocks.set_usage({sub_tile.x, sub_tile.y, sub_tile.layer},
-                          grid_blocks.get_usage({sub_tile.x, sub_tile.y, sub_tile.layer}) - 1);
+    grid_blocks.set_block_at_location(sub_tile, ClusterBlockId::INVALID());
+    grid_blocks.decrement_usage({sub_tile.x, sub_tile.y, sub_tile.layer});
 }
 
 /*
@@ -997,8 +996,8 @@ void CutSpreader::unbind_tile(t_pl_loc sub_tile) {
  * the block in place_ctx.grid_blocks)
  */
 bool CutSpreader::is_placed(ClusterBlockId blk) {
-    const auto& grid_blocks = ap->placer_loc_vars_ref_.grid_blocks();
-    const auto& block_locs = ap->placer_loc_vars_ref_.block_locs();
+    const auto& grid_blocks = ap->blk_loc_registry_ref_.grid_blocks();
+    const auto& block_locs = ap->blk_loc_registry_ref_.block_locs();
 
     if (block_locs[blk].loc != t_pl_loc{}) {
         auto loc = block_locs[blk].loc;
@@ -1032,7 +1031,7 @@ bool CutSpreader::try_place_blk(ClusterBlockId blk,
                                 int& best_inp_len,
                                 t_pl_loc& best_subtile,
                                 std::priority_queue<std::pair<int, ClusterBlockId>>& remaining) {
-    const auto& grid_blocks = ap->placer_loc_vars_ref_.grid_blocks();
+    const auto& grid_blocks = ap->blk_loc_registry_ref_.grid_blocks();
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
 
     // iteration at current radius has exceeded exploration limit, and a candidate sub_tile (best_subtile) is found
@@ -1040,7 +1039,7 @@ bool CutSpreader::try_place_blk(ClusterBlockId blk,
     if (exceeds_explore_limit && best_subtile != t_pl_loc{}) {
         // find the logic block bound to (placed on) best_subtile
         ClusterBlockId bound_blk = grid_blocks.block_at_location(best_subtile);
-        if (bound_blk != EMPTY_BLOCK_ID) {   // if best_subtile has a logic block
+        if (bound_blk) {   // if best_subtile has a logic block
             unbind_tile(best_subtile);       // clear bound_block and best_subtile's placement info
             remaining.emplace(1, bound_blk); // put bound_blk back into remaining blocks to place
         }
@@ -1051,7 +1050,7 @@ bool CutSpreader::try_place_blk(ClusterBlockId blk,
     // if exploration limit is not met or a candidate sub_tile is not found yet
     for (auto sub_t : subtiles_at_location[nx][ny]) {                              // for each available sub_tile at random location
         ClusterBlockId bound_blk = grid_blocks.block_at_location(sub_t); // logic blk at [nx, ny]
-        if (bound_blk == EMPTY_BLOCK_ID
+        if (bound_blk == ClusterBlockId::INVALID()
             || ripup_radius_met
             || rand() % (20000) < 10) {
             /* conditions when a sub_tile at nx, ny is considered:
@@ -1061,7 +1060,7 @@ bool CutSpreader::try_place_blk(ClusterBlockId blk,
              *     OR
              *     2) a 0.05% chance of acceptance.
              */
-            if (bound_blk != EMPTY_BLOCK_ID && imacro(bound_blk) != NO_MACRO)
+            if (bound_blk && imacro(bound_blk) != NO_MACRO)
                 // do not sub_tiles when the block placed on it is part of a macro, as they have higher priority
                 continue;
             if (!exceeds_explore_limit) { // if still in exploration phase, find best_subtile with smallest best_inp_len
@@ -1084,7 +1083,7 @@ bool CutSpreader::try_place_blk(ClusterBlockId blk,
                 }
                 break;
             } else { // exploration phase passed and still no best_subtile yet, choose the next compatible sub_tile
-                if (bound_blk != EMPTY_BLOCK_ID) {
+                if (bound_blk) {
                     remaining.emplace(1, bound_blk);
                     unbind_tile(sub_t); // remove bound_blk and place blk on sub_t
                 }
@@ -1111,7 +1110,7 @@ bool CutSpreader::try_place_macro(ClusterBlockId blk,
                                   int ny,
                                   std::priority_queue<std::pair<int, ClusterBlockId>>& remaining) {
     const auto& pl_macros = g_vpr_ctx.placement().pl_macros;
-    const auto& grid_blocks = ap->placer_loc_vars_ref_.grid_blocks();
+    const auto& grid_blocks = ap->blk_loc_registry_ref_.grid_blocks();
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
 
     for (auto sub_t : subtiles_at_location[nx][ny]) {
@@ -1136,7 +1135,7 @@ bool CutSpreader::try_place_macro(ClusterBlockId blk,
             // if the target location has a logic block, ensure it's not part of a macro
             // because a macro placed before the current one has higher priority (longer chain)
             ClusterBlockId bound = grid_blocks.block_at_location(target);
-            if (bound != EMPTY_BLOCK_ID && imacro(bound) != NO_MACRO) {
+            if (bound && imacro(bound) != NO_MACRO) {
                 placement_impossible = true;
                 break;
             }
@@ -1155,7 +1154,7 @@ bool CutSpreader::try_place_macro(ClusterBlockId blk,
         if (!placement_impossible) { // if placement is possible, apply this placement
             for (auto& target : targets) {
                 ClusterBlockId bound = grid_blocks.block_at_location(target.second);
-                if (bound != EMPTY_BLOCK_ID) {
+                if (bound) {
                     // if target location has a logic block, displace it and put it in remaining queue to be placed later
                     unbind_tile(target.second);
                     remaining.emplace(1, bound);

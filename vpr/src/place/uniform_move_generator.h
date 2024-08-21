@@ -11,7 +11,7 @@
 class UniformMoveGenerator : public MoveGenerator {
   public:
     UniformMoveGenerator() = delete;
-    explicit UniformMoveGenerator(PlacerContext& placer_ctx);
+    explicit UniformMoveGenerator(PlacerState& placer_state);
 
   private:
     e_create_move propose_move(t_pl_blocks_to_be_moved& blocks_affected,
