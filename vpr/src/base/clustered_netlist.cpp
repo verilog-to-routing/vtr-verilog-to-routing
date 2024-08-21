@@ -144,7 +144,8 @@ ClusterPortId ClusteredNetlist::create_port(const ClusterBlockId blk_id, const s
 ClusterPinId ClusteredNetlist::create_pin(const ClusterPortId port_id, BitIndex port_bit, const ClusterNetId net_id, const PinType pin_type_, int pin_index, bool is_const) {
     ClusterPinId pin_id = Netlist::create_pin(port_id, port_bit, net_id, pin_type_, is_const);
 
-    pin_logical_index_.push_back(pin_index);
+    // insert
+    pin_logical_index_.insert(pin_id, pin_index); 
 
     ClusterBlockId block_id = port_block(port_id);
     block_logical_pins_[block_id][pin_index] = pin_id;
