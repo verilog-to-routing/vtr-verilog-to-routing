@@ -441,7 +441,7 @@ void try_place(const Netlist<>& net_list,
     NetCostHandler net_cost_handler = alloc_and_load_placement_structs(placer_opts, noc_opts,
                                                                        directs, num_directs, placer_state);
 
-    std::unique_ptr<ManualMoveGenerator> manual_move_generator = std::make_unique<ManualMoveGenerator>(placer_state);
+    ManualMoveGenerator manual_move_generator(placer_state);
 
     vtr::ScopedStartFinishTimer timer("Placement");
 
@@ -690,7 +690,7 @@ void try_place(const Netlist<>& net_list,
     state.t = starting_t(&state, &costs, annealing_sched,
                          place_delay_model.get(), placer_criticalities.get(),
                          placer_setup_slacks.get(), timing_info.get(), *move_generator,
-                         *manual_move_generator, pin_timing_invalidator.get(),
+                         manual_move_generator, pin_timing_invalidator.get(),
                          blocks_affected, placer_opts, noc_opts, move_type_stat,
                          swap_stats, placer_state, net_cost_handler);
 
@@ -762,7 +762,7 @@ void try_place(const Netlist<>& net_list,
                                  &stats, &costs, &moves_since_cost_recompute,
                                  pin_timing_invalidator.get(), place_delay_model.get(),
                                  placer_criticalities.get(), placer_setup_slacks.get(),
-                                 *current_move_generator, *manual_move_generator,
+                                 *current_move_generator, manual_move_generator,
                                  blocks_affected, timing_info.get(),
                                  placer_opts.place_algorithm, move_type_stat,
                                  timing_bb_factor,
@@ -829,7 +829,7 @@ void try_place(const Netlist<>& net_list,
                              &stats, &costs, &moves_since_cost_recompute,
                              pin_timing_invalidator.get(), place_delay_model.get(),
                              placer_criticalities.get(), placer_setup_slacks.get(),
-                             *current_move_generator, *manual_move_generator,
+                             *current_move_generator, manual_move_generator,
                              blocks_affected, timing_info.get(),
                              placer_opts.place_quench_algorithm, move_type_stat,
                              timing_bb_factor,
