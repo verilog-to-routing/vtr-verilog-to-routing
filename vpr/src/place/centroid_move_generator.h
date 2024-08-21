@@ -27,7 +27,8 @@ class CentroidMoveGenerator : public MoveGenerator {
      * @param placer_state A mutable reference to the placement state which will
      * be stored in this object.
      */
-    explicit CentroidMoveGenerator(PlacerState& placer_state);
+    CentroidMoveGenerator(PlacerState& placer_state,
+                          e_reward_function reward_function);
 
     /**
      * The move generator created by calling this constructor considers both
@@ -45,6 +46,7 @@ class CentroidMoveGenerator : public MoveGenerator {
      * ignored when forming NoC groups.
      */
     CentroidMoveGenerator(PlacerState& placer_state,
+                          e_reward_function reward_function,
                           float noc_attraction_weight,
                           size_t high_fanout_net);
 

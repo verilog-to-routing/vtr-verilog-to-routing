@@ -27,7 +27,7 @@
 class ManualMoveGenerator : public MoveGenerator {
   public:
     ManualMoveGenerator() = delete;
-    explicit ManualMoveGenerator(PlacerState& placer_state);
+    ManualMoveGenerator(PlacerState& placer_state);
 
     //Evaluates if move is successful and legal or unable to do.
     e_create_move propose_move(t_pl_blocks_to_be_moved& blocks_affected,

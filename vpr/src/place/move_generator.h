@@ -44,8 +44,9 @@ struct MoveTypeStat {
  */
 class MoveGenerator {
   public:
-    MoveGenerator(PlacerState& placer_state)
-        : placer_state_(placer_state) {}
+    MoveGenerator(PlacerState& placer_state, e_reward_function reward_function)
+        : placer_state_(placer_state)
+        , reward_func_(reward_function) {}
 
     MoveGenerator() = delete;
     virtual ~MoveGenerator() = default;
@@ -83,6 +84,7 @@ class MoveGenerator {
 
   protected:
     std::reference_wrapper<PlacerState> placer_state_;
+    e_reward_function reward_func_;
 };
 
 #endif
