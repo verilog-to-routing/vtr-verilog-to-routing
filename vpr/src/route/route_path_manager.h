@@ -28,7 +28,7 @@ struct t_heap_path {
 };
 
 // Forward declaration of RoutingContext needed for traceback insertion
-class RoutingContext;
+struct RoutingContext;
 
 /* A class to manage the extra data required for RCV
  * It manages a set containing all the nodes that currently exist in the route tree
