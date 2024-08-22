@@ -1,18 +1,16 @@
 #ifndef CLUSTER_UTIL_H
 #define CLUSTER_UTIL_H
 
-#include "globals.h"
-#include "atom_netlist.h"
+#include <vector>
 #include "pack_types.h"
-#include "echo_files.h"
-#include "vpr_utils.h"
-#include "constraints_report.h"
+#include "vtr_vector.h"
 
-#include "concrete_timing_info.h"
-#include "PreClusterDelayCalculator.h"
-#include "PreClusterTimingGraphResolver.h"
-#include "tatum/echo_writer.hpp"
-#include "tatum/TimingReporter.hpp"
+class AtomNetId;
+class ClusterBlockId;
+class PreClusterDelayCalculator;
+class Prepacker;
+class SetupTimingInfo;
+class t_pack_molecule;
 
 /**
  * @file
@@ -113,7 +111,7 @@ void check_clustering();
 //calculate the initial timing at the start of packing stage
 void calc_init_packing_timing(const t_packer_opts& packer_opts,
                               const t_analysis_opts& analysis_opts,
-                              const std::unordered_map<AtomBlockId, t_pb_graph_node*>& expected_lowest_cost_pb_gnode,
+                              const Prepacker& prepacker,
                               std::shared_ptr<PreClusterDelayCalculator>& clustering_delay_calc,
                               std::shared_ptr<SetupTimingInfo>& timing_info,
                               vtr::vector<AtomBlockId, float>& atom_criticality);
@@ -150,7 +148,7 @@ void remove_molecule_from_pb_stats_candidates(t_pack_molecule* molecule,
 void alloc_and_init_clustering(const t_molecule_stats& max_molecule_stats,
                                t_cluster_placement_stats** cluster_placement_stats,
                                t_pb_graph_node*** primitives_list,
-                               t_pack_molecule* molecules_head,
+                               const Prepacker& prepacker,
                                t_clustering_data& clustering_data,
                                std::unordered_map<AtomNetId, int>& net_output_feeds_driving_block_input,
                                int& unclustered_list_head_size,
@@ -437,13 +435,7 @@ t_pack_molecule* get_molecule_for_cluster(t_pb* cur_pb,
                                           const int& unclustered_list_head_size,
                                           std::map<const t_model*, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types);
 
-void mark_all_molecules_valid(t_pack_molecule* molecule_head);
-
-int count_molecules(t_pack_molecule* molecule_head);
-
-t_molecule_stats calc_molecule_stats(const t_pack_molecule* molecule);
-
-t_molecule_stats calc_max_molecules_stats(const t_pack_molecule* molecule_head);
+t_molecule_stats calc_molecule_stats(const t_pack_molecule* molecule, const AtomNetlist& atom_nlist);
 
 std::vector<AtomBlockId> initialize_seed_atoms(const e_cluster_seed seed_type,
                                                const t_molecule_stats& max_molecule_stats,
@@ -453,7 +445,6 @@ t_pack_molecule* get_highest_gain_seed_molecule(int& seed_index, const std::vect
 
 float get_molecule_gain(t_pack_molecule* molecule, std::map<AtomBlockId, float>& blk_gain, AttractGroupId cluster_attraction_group_id, AttractionInfo& attraction_groups, int num_molecule_failures);
 
-int compare_molecule_gain(const void* a, const void* b);
 int net_sinks_reachable_in_cluster(const t_pb_graph_pin* driver_pb_gpin, const int depth, const AtomNetId net_id);
 
 void print_seed_gains(const char* fname, const std::vector<AtomBlockId>& seed_atoms, const vtr::vector<AtomBlockId, float>& atom_gain, const vtr::vector<AtomBlockId, float>& atom_criticality);

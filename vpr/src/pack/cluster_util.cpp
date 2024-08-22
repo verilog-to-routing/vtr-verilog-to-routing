@@ -1,9 +1,17 @@
 #include "cluster_util.h"
+#include <algorithm>
 
+#include "PreClusterTimingGraphResolver.h"
+#include "PreClusterDelayCalculator.h"
+#include "atom_netlist.h"
 #include "cluster_router.h"
 #include "cluster_placement.h"
+#include "concrete_timing_info.h"
 #include "output_clustering.h"
-
+#include "prepack.h"
+#include "tatum/TimingReporter.hpp"
+#include "tatum/echo_writer.hpp"
+#include "vpr_context.h"
 #include "vtr_math.h"
 #include "SetupGrid.h"
 
@@ -175,7 +183,7 @@ void check_clustering() {
 //calculate the initial timing at the start of packing stage
 void calc_init_packing_timing(const t_packer_opts& packer_opts,
                               const t_analysis_opts& analysis_opts,
-                              const std::unordered_map<AtomBlockId, t_pb_graph_node*>& expected_lowest_cost_pb_gnode,
+                              const Prepacker& prepacker,
                               std::shared_ptr<PreClusterDelayCalculator>& clustering_delay_calc,
                               std::shared_ptr<SetupTimingInfo>& timing_info,
                               vtr::vector<AtomBlockId, float>& atom_criticality) {
@@ -184,7 +192,7 @@ void calc_init_packing_timing(const t_packer_opts& packer_opts,
     /*
      * Initialize the timing analyzer
      */
-    clustering_delay_calc = std::make_shared<PreClusterDelayCalculator>(atom_ctx.nlist, atom_ctx.lookup, packer_opts.inter_cluster_net_delay, expected_lowest_cost_pb_gnode);
+    clustering_delay_calc = std::make_shared<PreClusterDelayCalculator>(atom_ctx.nlist, atom_ctx.lookup, packer_opts.inter_cluster_net_delay, prepacker);
     timing_info = make_setup_timing_info(clustering_delay_calc, packer_opts.timing_update_type);
 
     //Calculate the initial timing
@@ -496,18 +504,14 @@ void add_molecule_to_pb_stats_candidates(t_pack_molecule* molecule,
 void alloc_and_init_clustering(const t_molecule_stats& max_molecule_stats,
                                t_cluster_placement_stats** cluster_placement_stats,
                                t_pb_graph_node*** primitives_list,
-                               t_pack_molecule* molecules_head,
+                               const Prepacker& prepacker,
                                t_clustering_data& clustering_data,
                                std::unordered_map<AtomNetId, int>& net_output_feeds_driving_block_input,
                                int& unclustered_list_head_size,
                                int num_molecules) {
     /* Allocates the main data structures used for clustering and properly *
      * initializes them.                                                   */
-
-    t_molecule_link* next_ptr;
-    t_pack_molecule* cur_molecule;
-    t_pack_molecule** molecule_array;
-    int max_molecule_size;
+    const AtomContext& atom_ctx = g_vpr_ctx.atom();
 
     /* alloc and load list of molecules to pack */
     clustering_data.unclustered_list_head = new t_molecule_link[max_molecule_stats.num_used_ext_inputs + 1];
@@ -518,36 +522,32 @@ void alloc_and_init_clustering(const t_molecule_stats& max_molecule_stats,
         clustering_data.unclustered_list_head[i].next = nullptr;
     }
 
-    molecule_array = new t_pack_molecule*[num_molecules];
-    cur_molecule = molecules_head;
-    for (int i = 0; i < num_molecules; i++) {
-        VTR_ASSERT(cur_molecule != nullptr);
-        molecule_array[i] = cur_molecule;
-        cur_molecule = cur_molecule->next;
-    }
-    VTR_ASSERT(cur_molecule == nullptr);
-    qsort((void*)molecule_array, num_molecules, sizeof(t_pack_molecule*),
-          compare_molecule_gain);
+    // Create a sorted list of molecules, sorted on increasing molecule base gain.
+    std::vector<t_pack_molecule*> molecules_vector = prepacker.get_molecules_vector();
+    VTR_ASSERT(molecules_vector.size() == (size_t)num_molecules);
+    std::stable_sort(molecules_vector.begin(),
+                     molecules_vector.end(),
+                     [](t_pack_molecule* a, t_pack_molecule* b) {
+                        return a->base_gain < b->base_gain;
+                     });
 
     clustering_data.memory_pool = new t_molecule_link[num_molecules];
-    next_ptr = clustering_data.memory_pool;
+    t_molecule_link* next_ptr = clustering_data.memory_pool;
 
-    for (int i = 0; i < num_molecules; i++) {
+    for (t_pack_molecule* mol : molecules_vector) {
         //Figure out how many external inputs are used by this molecule
-        t_molecule_stats molecule_stats = calc_molecule_stats(molecule_array[i]);
+        t_molecule_stats molecule_stats = calc_molecule_stats(mol, atom_ctx.nlist);
         int ext_inps = molecule_stats.num_used_ext_inputs;
 
         //Insert the molecule into the unclustered lists by number of external inputs
-        next_ptr->moleculeptr = molecule_array[i];
+        next_ptr->moleculeptr = mol;
         next_ptr->next = clustering_data.unclustered_list_head[ext_inps].next;
         clustering_data.unclustered_list_head[ext_inps].next = next_ptr;
 
         next_ptr++;
     }
-    delete[] molecule_array;
 
     /* load net info */
-    auto& atom_ctx = g_vpr_ctx.atom();
     for (AtomNetId net : atom_ctx.nlist.nets()) {
         AtomPinId driver_pin = atom_ctx.nlist.net_driver(net);
         AtomBlockId driver_block = atom_ctx.nlist.pin_block(driver_pin);
@@ -568,16 +568,9 @@ void alloc_and_init_clustering(const t_molecule_stats& max_molecule_stats,
      * primitive_list is referenced by index, for example a atom block in index 2 of a molecule matches to a primitive in index 2 in primitive_list
      * this array must be the size of the biggest molecule
      */
-    max_molecule_size = 1;
-    cur_molecule = molecules_head;
-    while (cur_molecule != nullptr) {
-        if (cur_molecule->num_blocks > max_molecule_size) {
-            max_molecule_size = cur_molecule->num_blocks;
-        }
-        cur_molecule = cur_molecule->next;
-    }
+    size_t max_molecule_size = prepacker.get_max_molecule_size();
     *primitives_list = new t_pb_graph_node*[max_molecule_size];
-    for (int i = 0; i < max_molecule_size; i++)
+    for (size_t i = 0; i < max_molecule_size; i++)
         (*primitives_list)[i] = nullptr;
 }
 
@@ -1120,8 +1113,8 @@ e_block_pack_status try_pack_molecule(t_cluster_placement_stats* cluster_placeme
                         if (molecule->atom_block_ids[i]) {
                             /* invalidate all molecules that share atom block with current molecule */
 
-                            auto rng = atom_ctx.atom_molecules.equal_range(molecule->atom_block_ids[i]);
-                            for (const auto& kv : vtr::make_range(rng.first, rng.second)) {
+                            auto mol_rng = atom_ctx.prepacker.get_atom_molecules(molecule->atom_block_ids[i]);
+                            for (const auto& kv : mol_rng) {
                                 t_pack_molecule* cur_molecule = kv.second;
                                 cur_molecule->valid = false;
                             }
@@ -2324,8 +2317,8 @@ void add_cluster_molecule_candidates_by_connectivity_and_timing(t_pb* cur_pb,
 
     for (AtomBlockId blk_id : cur_pb->pb_stats->marked_blocks) {
         if (atom_ctx.lookup.atom_clb(blk_id) == ClusterBlockId::INVALID()) {
-            auto rng = atom_ctx.atom_molecules.equal_range(blk_id);
-            for (const auto& kv : vtr::make_range(rng.first, rng.second)) {
+            auto mol_rng = atom_ctx.prepacker.get_atom_molecules(blk_id);
+            for (const auto& kv : mol_rng) {
                 t_pack_molecule* molecule = kv.second;
                 if (molecule->valid) {
                     bool success = check_free_primitives_for_molecule_atoms(molecule, cluster_placement_stats_ptr);
@@ -2362,8 +2355,8 @@ void add_cluster_molecule_candidates_by_highfanout_connectivity(t_pb* cur_pb,
         AtomBlockId blk_id = atom_ctx.nlist.pin_block(pin_id);
 
         if (atom_ctx.lookup.atom_clb(blk_id) == ClusterBlockId::INVALID()) {
-            auto rng = atom_ctx.atom_molecules.equal_range(blk_id);
-            for (const auto& kv : vtr::make_range(rng.first, rng.second)) {
+            auto mol_rng = atom_ctx.prepacker.get_atom_molecules(blk_id);
+            for (const auto& kv : mol_rng) {
                 t_pack_molecule* molecule = kv.second;
                 if (molecule->valid) {
                     bool success = check_free_primitives_for_molecule_atoms(molecule, cluster_placement_stats_ptr);
@@ -2451,8 +2444,8 @@ void add_cluster_molecule_candidates_by_attraction_group(t_pb* cur_pb,
             //Only consider molecules that are unpacked and of the correct type
             if (atom_ctx.lookup.atom_clb(atom_id) == ClusterBlockId::INVALID()
                 && std::find(candidate_types.begin(), candidate_types.end(), cluster_type) != candidate_types.end()) {
-                auto rng = atom_ctx.atom_molecules.equal_range(atom_id);
-                for (const auto& kv : vtr::make_range(rng.first, rng.second)) {
+                auto mol_rng = atom_ctx.prepacker.get_atom_molecules(atom_id);
+                for (const auto& kv : mol_rng) {
                     t_pack_molecule* molecule = kv.second;
                     if (molecule->valid) {
                         bool success = check_free_primitives_for_molecule_atoms(molecule, cluster_placement_stats_ptr);
@@ -2486,8 +2479,8 @@ void add_cluster_molecule_candidates_by_attraction_group(t_pb* cur_pb,
         //Only consider molecules that are unpacked and of the correct type
         if (atom_ctx.lookup.atom_clb(blk_id) == ClusterBlockId::INVALID()
             && std::find(candidate_types.begin(), candidate_types.end(), cluster_type) != candidate_types.end()) {
-            auto rng = atom_ctx.atom_molecules.equal_range(blk_id);
-            for (const auto& kv : vtr::make_range(rng.first, rng.second)) {
+            auto mol_rng = atom_ctx.prepacker.get_atom_molecules(blk_id);
+            for (const auto& kv : mol_rng) {
                 t_pack_molecule* molecule = kv.second;
                 if (molecule->valid) {
                     bool success = check_free_primitives_for_molecule_atoms(molecule, cluster_placement_stats_ptr);
@@ -2604,25 +2597,9 @@ t_pack_molecule* get_molecule_for_cluster(t_pb* cur_pb,
     return best_molecule;
 }
 
-void mark_all_molecules_valid(t_pack_molecule* molecule_head) {
-    for (auto cur_molecule = molecule_head; cur_molecule != nullptr; cur_molecule = cur_molecule->next) {
-        cur_molecule->valid = true;
-    }
-}
-
-int count_molecules(t_pack_molecule* molecule_head) {
-    int num_molecules = 0;
-    for (auto cur_molecule = molecule_head; cur_molecule != nullptr; cur_molecule = cur_molecule->next) {
-        ++num_molecules;
-    }
-    return num_molecules;
-}
-
 //Calculates molecule statistics for a single molecule
-t_molecule_stats calc_molecule_stats(const t_pack_molecule* molecule) {
+t_molecule_stats calc_molecule_stats(const t_pack_molecule* molecule, const AtomNetlist& atom_nlist) {
     t_molecule_stats molecule_stats;
-
-    auto& atom_ctx = g_vpr_ctx.atom();
 
     //Calculate the number of available pins on primitives within the molecule
     for (auto blk : molecule->atom_block_ids) {
@@ -2630,7 +2607,7 @@ t_molecule_stats calc_molecule_stats(const t_pack_molecule* molecule) {
 
         ++molecule_stats.num_blocks; //Record number of valid blocks in molecule
 
-        const t_model* model = atom_ctx.nlist.block_model(blk);
+        const t_model* model = atom_nlist.block_model(blk);
 
         for (const t_model_ports* input_port = model->inputs; input_port != nullptr; input_port = input_port->next) {
             molecule_stats.num_input_pins += input_port->size;
@@ -2647,12 +2624,12 @@ t_molecule_stats calc_molecule_stats(const t_pack_molecule* molecule) {
     for (auto blk : molecule->atom_block_ids) {
         if (!blk) continue;
 
-        for (auto pin : atom_ctx.nlist.block_pins(blk)) {
-            auto net = atom_ctx.nlist.pin_net(pin);
+        for (auto pin : atom_nlist.block_pins(blk)) {
+            auto net = atom_nlist.pin_net(pin);
 
-            auto pin_type = atom_ctx.nlist.pin_type(pin);
+            auto pin_type = atom_nlist.pin_type(pin);
             if (pin_type == PinType::SINK) {
-                auto driver_blk = atom_ctx.nlist.net_driver_block(net);
+                auto driver_blk = atom_nlist.net_driver_block(net);
 
                 if (molecule_atoms.count(driver_blk)) {
                     //Pin driven by a block within the molecule
@@ -2666,8 +2643,8 @@ t_molecule_stats calc_molecule_stats(const t_pack_molecule* molecule) {
                 VTR_ASSERT(pin_type == PinType::DRIVER);
 
                 bool net_leaves_molecule = false;
-                for (auto sink_pin : atom_ctx.nlist.net_sinks(net)) {
-                    auto sink_blk = atom_ctx.nlist.pin_block(sink_pin);
+                for (auto sink_pin : atom_nlist.net_sinks(net)) {
+                    auto sink_blk = atom_nlist.pin_block(sink_pin);
 
                     if (!molecule_atoms.count(sink_blk)) {
                         //There is at least one sink outside of the current molecule
@@ -2689,33 +2666,10 @@ t_molecule_stats calc_molecule_stats(const t_pack_molecule* molecule) {
     return molecule_stats;
 }
 
-//Calculates maximum molecule statistics accross all molecules in linked list
-t_molecule_stats calc_max_molecules_stats(const t_pack_molecule* molecule_head) {
-    t_molecule_stats max_molecules_stats;
-
-    for (auto cur_molecule = molecule_head; cur_molecule != nullptr; cur_molecule = cur_molecule->next) {
-        //Calculate per-molecule statistics
-        t_molecule_stats cur_molecule_stats = calc_molecule_stats(cur_molecule);
-
-        //Record the maximums (member-wise) over all molecules
-        max_molecules_stats.num_blocks = std::max(max_molecules_stats.num_blocks, cur_molecule_stats.num_blocks);
-
-        max_molecules_stats.num_pins = std::max(max_molecules_stats.num_pins, cur_molecule_stats.num_pins);
-        max_molecules_stats.num_input_pins = std::max(max_molecules_stats.num_input_pins, cur_molecule_stats.num_input_pins);
-        max_molecules_stats.num_output_pins = std::max(max_molecules_stats.num_output_pins, cur_molecule_stats.num_output_pins);
-
-        max_molecules_stats.num_used_ext_pins = std::max(max_molecules_stats.num_used_ext_pins, cur_molecule_stats.num_used_ext_pins);
-        max_molecules_stats.num_used_ext_inputs = std::max(max_molecules_stats.num_used_ext_inputs, cur_molecule_stats.num_used_ext_inputs);
-        max_molecules_stats.num_used_ext_outputs = std::max(max_molecules_stats.num_used_ext_outputs, cur_molecule_stats.num_used_ext_outputs);
-    }
-
-    return max_molecules_stats;
-}
-
 std::vector<AtomBlockId> initialize_seed_atoms(const e_cluster_seed seed_type,
                                                const t_molecule_stats& max_molecule_stats,
                                                const vtr::vector<AtomBlockId, float>& atom_criticality) {
-    auto& atom_ctx = g_vpr_ctx.atom();
+    const AtomContext& atom_ctx = g_vpr_ctx.atom();
 
     //Put all atoms in seed list
     std::vector<AtomBlockId> seed_atoms(atom_ctx.nlist.blocks().begin(), atom_ctx.nlist.blocks().end());
@@ -2733,11 +2687,11 @@ std::vector<AtomBlockId> initialize_seed_atoms(const e_cluster_seed seed_type,
         //By number of used molecule input pins
         for (auto blk : atom_ctx.nlist.blocks()) {
             int max_molecule_inputs = 0;
-            auto molecule_rng = atom_ctx.atom_molecules.equal_range(blk);
-            for (const auto& kv : vtr::make_range(molecule_rng.first, molecule_rng.second)) {
+            auto mol_rng = atom_ctx.prepacker.get_atom_molecules(blk);
+            for (const auto& kv : mol_rng) {
                 const t_pack_molecule* blk_mol = kv.second;
 
-                const t_molecule_stats molecule_stats = calc_molecule_stats(blk_mol);
+                const t_molecule_stats molecule_stats = calc_molecule_stats(blk_mol, atom_ctx.nlist);
 
                 //Keep the max over all molecules associated with the atom
                 max_molecule_inputs = std::max(max_molecule_inputs, molecule_stats.num_used_ext_inputs);
@@ -2754,11 +2708,11 @@ std::vector<AtomBlockId> initialize_seed_atoms(const e_cluster_seed seed_type,
             float seed_blend_fac = 0.5;
             float max_blend_gain = 0;
 
-            auto molecule_rng = atom_ctx.atom_molecules.equal_range(blk);
-            for (const auto& kv : vtr::make_range(molecule_rng.first, molecule_rng.second)) {
+            auto mol_rng = atom_ctx.prepacker.get_atom_molecules(blk);
+            for (const auto& kv : mol_rng) {
                 const t_pack_molecule* blk_mol = kv.second;
 
-                const t_molecule_stats molecule_stats = calc_molecule_stats(blk_mol);
+                const t_molecule_stats molecule_stats = calc_molecule_stats(blk_mol, atom_ctx.nlist);
 
                 VTR_ASSERT(max_molecule_stats.num_used_ext_inputs > 0);
 
@@ -2777,11 +2731,11 @@ std::vector<AtomBlockId> initialize_seed_atoms(const e_cluster_seed seed_type,
 
         for (auto blk : atom_ctx.nlist.blocks()) {
             int max_molecule_pins = 0;
-            auto molecule_rng = atom_ctx.atom_molecules.equal_range(blk);
-            for (const auto& kv : vtr::make_range(molecule_rng.first, molecule_rng.second)) {
+            auto mol_rng = atom_ctx.prepacker.get_atom_molecules(blk);
+            for (const auto& kv : mol_rng) {
                 const t_pack_molecule* mol = kv.second;
 
-                const t_molecule_stats molecule_stats = calc_molecule_stats(mol);
+                const t_molecule_stats molecule_stats = calc_molecule_stats(mol, atom_ctx.nlist);
 
                 //Keep the max over all molecules associated with the atom
                 int molecule_pins = 0;
@@ -2803,11 +2757,11 @@ std::vector<AtomBlockId> initialize_seed_atoms(const e_cluster_seed seed_type,
     } else if (seed_type == e_cluster_seed::BLEND2) {
         for (auto blk : atom_ctx.nlist.blocks()) {
             float max_gain = 0;
-            auto molecule_rng = atom_ctx.atom_molecules.equal_range(blk);
-            for (const auto& kv : vtr::make_range(molecule_rng.first, molecule_rng.second)) {
+            auto mol_rng = atom_ctx.prepacker.get_atom_molecules(blk);
+            for (const auto& kv : mol_rng) {
                 const t_pack_molecule* mol = kv.second;
 
-                const t_molecule_stats molecule_stats = calc_molecule_stats(mol);
+                const t_molecule_stats molecule_stats = calc_molecule_stats(mol, atom_ctx.nlist);
 
                 float pin_ratio = vtr::safe_ratio<float>(molecule_stats.num_pins, max_molecule_stats.num_pins);
                 float input_pin_ratio = vtr::safe_ratio<float>(molecule_stats.num_input_pins, max_molecule_stats.num_input_pins);
@@ -2880,8 +2834,8 @@ t_pack_molecule* get_highest_gain_seed_molecule(int& seed_index, const std::vect
 
             // Iterate over all the molecules associated with the selected atom
             // and select the one with the highest gain
-            auto rng = atom_ctx.atom_molecules.equal_range(blk_id);
-            for (const auto& kv : vtr::make_range(rng.first, rng.second)) {
+            auto mol_rng = atom_ctx.prepacker.get_atom_molecules(blk_id);
+            for (const auto& kv : mol_rng) {
                 t_pack_molecule* molecule = kv.second;
                 if (molecule->valid) {
                     if (best == nullptr || (best->base_gain) < (molecule->base_gain)) {
@@ -2959,24 +2913,6 @@ float get_molecule_gain(t_pack_molecule* molecule, std::map<AtomBlockId, float>&
     }
 
     return gain;
-}
-
-int compare_molecule_gain(const void* a, const void* b) {
-    float base_gain_a, base_gain_b, diff;
-    const t_pack_molecule *molecule_a, *molecule_b;
-    molecule_a = (*(const t_pack_molecule* const*)a);
-    molecule_b = (*(const t_pack_molecule* const*)b);
-
-    base_gain_a = molecule_a->base_gain;
-    base_gain_b = molecule_b->base_gain;
-    diff = base_gain_a - base_gain_b;
-    if (diff > 0) {
-        return 1;
-    }
-    if (diff < 0) {
-        return -1;
-    }
-    return 0;
 }
 
 /* Determine if speculatively packed cur_pb is pin feasible
@@ -3368,8 +3304,8 @@ void load_transitive_fanout_candidates(ClusterBlockId clb_index,
                                 } else {
                                     pb_stats->gain[blk_id] += 0.001;
                                 }
-                                auto rng = atom_ctx.atom_molecules.equal_range(blk_id);
-                                for (const auto& kv : vtr::make_range(rng.first, rng.second)) {
+                                auto mol_rng = atom_ctx.prepacker.get_atom_molecules(blk_id);
+                                for (const auto& kv : mol_rng) {
                                     t_pack_molecule* molecule = kv.second;
                                     if (molecule->valid) {
                                         transitive_fanout_candidates.insert({molecule->atom_block_ids[molecule->root], molecule});

@@ -1556,8 +1556,8 @@ void revalid_molecules(const t_pb* pb) {
             atom_ctx.lookup.set_atom_clb(blk_id, ClusterBlockId::INVALID());
             atom_ctx.lookup.set_atom_pb(blk_id, nullptr);
 
-            auto rng = atom_ctx.atom_molecules.equal_range(blk_id);
-            for (const auto& kv : vtr::make_range(rng.first, rng.second)) {
+            auto mol_rng = atom_ctx.prepacker.get_atom_molecules(blk_id);
+            for (const auto& kv : mol_rng) {
                 t_pack_molecule* cur_molecule = kv.second;
                 if (cur_molecule->valid == false) {
                     int i;
