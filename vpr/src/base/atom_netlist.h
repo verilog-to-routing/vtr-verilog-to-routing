@@ -165,7 +165,7 @@ class AtomNetlist : public Netlist<AtomBlockId, AtomPortId, AtomPinId, AtomNetId
      */
 
     /**
-     * @brief Create or return an existing block in the netlist
+     * @brief Create or return an existing block in the netlist. If the block already exists, its associated data (model and truth table) will be overwritten.
      *
      *   @param name          The unique name of the block
      *   @param model         The primitive type of the block
@@ -176,7 +176,7 @@ class AtomNetlist : public Netlist<AtomBlockId, AtomPortId, AtomPinId, AtomNetId
     AtomBlockId create_block(const std::string& name, const t_model* model, const TruthTable& truth_table = TruthTable());
 
     /**
-     * @brief Create or return an existing port in the netlist
+     * @brief Create or return an existing port in the netlist. If the port already exists, its associated data (model) will be overwritten.
      *
      *   @param blk_id      The block the port is associated with
      *   @param model_port  The model port the port is associated with
@@ -184,7 +184,7 @@ class AtomNetlist : public Netlist<AtomBlockId, AtomPortId, AtomPinId, AtomNetId
     AtomPortId create_port(const AtomBlockId blk_id, const t_model_ports* model_port);
 
     /**
-     * @brief Create or return an existing pin in the netlist
+     * @brief Create or return an existing pin in the netlist.
      *
      *   @param port_id    The port this pin is associated with
      *   @param port_bit   The bit index of the pin in the port

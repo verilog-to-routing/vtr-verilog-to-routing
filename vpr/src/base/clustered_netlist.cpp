@@ -107,6 +107,7 @@ ClusterBlockId ClusteredNetlist::create_block(const char* name, t_pb* pb, t_logi
     if (blk_id == ClusterBlockId::INVALID()) {
         blk_id = Netlist::create_block(name);
 
+        // Push back new data or overwrite existing data
         block_pbs_.insert(blk_id, pb);
         block_types_.insert(blk_id, type);
 
@@ -144,7 +145,7 @@ ClusterPortId ClusteredNetlist::create_port(const ClusterBlockId blk_id, const s
 ClusterPinId ClusteredNetlist::create_pin(const ClusterPortId port_id, BitIndex port_bit, const ClusterNetId net_id, const PinType pin_type_, int pin_index, bool is_const) {
     ClusterPinId pin_id = Netlist::create_pin(port_id, port_bit, net_id, pin_type_, is_const);
 
-    // insert
+    // Push back new data or overwrite existing data
     pin_logical_index_.insert(pin_id, pin_index); 
 
     ClusterBlockId block_id = port_block(port_id);

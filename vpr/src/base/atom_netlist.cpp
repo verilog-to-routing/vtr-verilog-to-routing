@@ -141,7 +141,7 @@ AtomBlockId AtomNetlist::create_block(const std::string& name, const t_model* mo
     AtomBlockId blk_id = Netlist::create_block(name);
 
     //Initialize the data
-    // Use insert instead of push_back
+    // Push back new data or overwrite existing data 
     block_models_.insert(blk_id, model);
     block_truth_tables_.insert(blk_id, truth_table);
 
@@ -175,7 +175,7 @@ AtomPortId AtomNetlist::create_port(const AtomBlockId blk_id, const t_model_port
     if (!port_id) {
         port_id = Netlist::create_port(blk_id, model_port->name, model_port->size, type);
 
-        // Use insert instead of push_back
+        // Push back new data or overwrite existing data 
         port_models_.insert(port_id, model_port);
         associate_port_with_block(port_id, port_type(port_id), blk_id);
     }
