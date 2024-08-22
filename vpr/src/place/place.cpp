@@ -273,7 +273,7 @@ static void invalidate_affected_connections(
 
 static float analyze_setup_slack_cost(const PlacerSetupSlacks* setup_slacks);
 
-static e_move_result assess_swap(double delta_c, double t,double cong_delta_c,double cost,const t_placer_opts& placer_opts);
+static e_move_result assess_swap(double delta_c, double t, double cong_delta_c, double cost, const t_placer_opts& placer_opts);
 
 static void update_placement_cost_normalization_factors(t_placer_costs* costs, const t_placer_opts& placer_opts, const t_noc_opts& noc_opts);
 
@@ -2140,24 +2140,16 @@ static int check_block_placement_consistency() {
                 if (physical_tile_type(bnum) != physical_tile) {
                     VTR_LOG_ERROR(
                         "Block %zu type (%s) does not match grid location (%zu,%zu, %d) type (%s).\n",
-                            size_t(bnum), logical_block->name, i, j, layer_num, physical_tile->name);
+                        size_t(bnum), logical_block->name, i, j, layer_num, physical_tile->name);
                     error++;
                 }
 
                 auto& loc = place_ctx.block_locs[bnum].loc;
                 if (loc.x != i || loc.y != j || loc.layer != layer_num
-                    || !is_sub_tile_compatible(physical_tile, logical_block,
-                                               loc.sub_tile)) {
+                    || !is_sub_tile_compatible(physical_tile, logical_block, loc.sub_tile)) {
                     VTR_LOG_ERROR(
                         "Block %zu's location is (%d,%d,%d) but found in grid at (%zu,%zu,%d,%d).\n",
-                            size_t(bnum),
-                            loc.x,
-                            loc.y,
-                            loc.sub_tile,
-                            tile_loc.x,
-                            tile_loc.y,
-                            tile_loc.layer_num,
-                            layer_num);
+                        size_t(bnum), loc.x, loc.y, loc.sub_tile, tile_loc.x, tile_loc.y, tile_loc.layer_num, layer_num);
                     error++;
                 }
                 ++usage_check;
@@ -2166,11 +2158,7 @@ static int check_block_placement_consistency() {
             if (usage_check != place_ctx.grid_blocks.get_usage(tile_loc)) {
                 VTR_LOG_ERROR(
                     "%d block(s) were placed at location (%d,%d,%d), but location contains %d block(s).\n",
-                        place_ctx.grid_blocks.get_usage(tile_loc),
-                        tile_loc.x,
-                        tile_loc.y,
-                        tile_loc.layer_num,
-                        usage_check);
+                    place_ctx.grid_blocks.get_usage(tile_loc), tile_loc.x, tile_loc.y, tile_loc.layer_num, usage_check);
                 error++;
             }
         }

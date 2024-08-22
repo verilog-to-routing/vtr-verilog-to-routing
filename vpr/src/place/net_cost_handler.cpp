@@ -54,8 +54,8 @@ enum class NetUpdateState {
 
 const int MAX_FANOUT_CROSSING_COUNT = 50;
 
-vtr::NdMatrix<double, 2> cong_matrix;
-vtr::NdMatrix<double, 2> cong_matrix_new;
+static vtr::NdMatrix<float, 2> cong_matrix;
+static vtr::NdMatrix<float, 2> cong_matrix_new;
 
 /**
  * @brief Crossing counts for nets with different #'s of pins.  From

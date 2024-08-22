@@ -2250,7 +2250,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             "Trade-off control the bouding value for the contestion matrix.\n"
             " a value near routing channel width can be a good value.\n"
             " a high value let the VPR to ignore the congestion aware placement and continue its own course of action.\n")
-        .default_value("1.0")
+        .default_value("0.5")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_timing_grp.add_argument(args.RecomputeCritIter, "--recompute_crit_iter")
