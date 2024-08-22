@@ -616,7 +616,7 @@ The io pad is set to inpad mode and is driven by the inpad:
 
 Placement File Format (.place)
 ------------------------------
-The placement file format is used to specify the position of blocks in an FPGA design. It includes information about the netlist and architecture files, the size of the logic block array, and the placement details of each block.
+The placement file format is used to specify the position of cluster-level blocks in an FPGA design. It includes information about the netlist and architecture files, the size of the logic block array, and the placement details of each block in the CLB netlist..
 
 The first line of the placement file lists the netlist (.net) and architecture (.xml) files used to create this placement.
 This information is used to ensure you are warned if you accidentally route this placement with a different architecture or netlist file later. 
@@ -624,7 +624,7 @@ The second line of the file gives the size of the logic block array used by this
 
 All subsequent lines follow this format:
 
-    block_name    x    y    subblk    [layer_number]    block_number
+    block_name    x    y    subblk    [layer_number]    [#block_number]
 
 - **block_name**: Refers to either:
   - The name of a clustered block, as given in the input .net formatted netlist.
@@ -632,19 +632,16 @@ All subsequent lines follow this format:
 
 - **x** and **y**: Represent the row and column in which the block is placed, respectively.
 
-- **subblk**: Specifies which of several possible subtile locations in row **x** and column **y** contains this block, especially when the block capacity is greater than 1. The subtile number should be in the range `0` to `(grid[i][j].capacity - 1)`. The subtile numbers for a particular **x, y** location do not have to be used in order.
+- **subblk**: Specifies which of several possible subtile locations in row **x** and column **y** contains this block, which is useful when the tile capacity is greater than 1. The subtile number should be in the range `0` to `(grid[i][j].capacity - 1)`. The subtile numbers for a particular **x, y** location do not have to be used in order.
 
 - **layer_number**: Indicates the layer (or die) on which the block is placed. If omitted, the block is assumed to be placed on layer `0` (a single die system). In 3D FPGA architectures, multiple dies can be stacked, with the bottom die considered as layer `0`.
 
-
 .. note:: The blocks in a placement file can be listed in any order.
 
-Since we can have more than one block in a row or column when the block capacity is set to be greater than 1 in the architecture file, the subtile number specifies which of the several possible subtile locations in row x and column y contains this block.
-Note that the subtile number used should be in the range 0 to (grid[i][j].capacity - 1). The subtile numbers for a particular x,y location do not have to be used in order.
+If a layer_number is provided, it specifies the layer (or die) on which the block is placed. If the layer_number is omitted, the block is assumed to be placed on layer 0 (a single die system). In 3D FPGA architectures, multiple dies can be stacked on top of each other, with the bottom die considered as layer 0. A # character on a line indicates that all text after the # to the end of a line is a comment.
 
-If a layer_number is provided, it specifies the layer (or die) on which the block is placed. If the layer_number is omitted, the block is assumed to be placed on layer 0 (a single die system). In 3D FPGA architectures, multiple dies can be stacked on top of each other, with the bottom die considered as layer 0.
 
-The placement files output by VPR also include (as a comment) a sixth field: the block_number. This is the internal index used by VPR to identify a block -- it may be useful to know this index if you are modifying VPR and trying to debug something.
+.. note:: A `#` character on a line indicates that all text after the `#` to the end of a line is a comment.
 
 .. _fig_fpga_coord_system:
 
