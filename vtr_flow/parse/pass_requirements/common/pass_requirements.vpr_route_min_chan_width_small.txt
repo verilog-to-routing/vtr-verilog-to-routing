@@ -11,7 +11,7 @@ min_chan_width_routing_area_total;Range(0.5,1.6)
 min_chan_width_routing_area_per_tile;Range(0.5,1.6)
 
 #Run-time metrics
-min_chan_width_route_time;RangeAbs(0.10,15.0,5)
+min_chan_width_route_time;RangeAbs(0.05,15.0,4)
 
 
 #Peak memory
