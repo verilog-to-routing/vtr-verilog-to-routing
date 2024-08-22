@@ -398,7 +398,7 @@ struct ParsePlaceAlgorithm {
             conv_value.set_value(CRITICALITY_TIMING_PLACE);
         } else if (str == "slack_timing") {
             conv_value.set_value(SLACK_TIMING_PLACE);
-        } else if (str == "congestion_aware"){
+        } else if (str == "congestion_aware") {
             conv_value.set_value(CONGESTION_AWARE_PLACE);
         } else {
             std::stringstream msg;
@@ -2075,7 +2075,6 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value({"100"})
         .show_in(argparse::ShowIn::HELP_ONLY);
 
-
     place_grp.add_argument(args.place_high_fanout_net, "--place_high_fanout_net")
         .help(
             "Sets the assumed high fanout net during placement. "
@@ -2244,7 +2243,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             " 0.0 focuses completely on wirelength, 1.0 completely on timing")
         .default_value("0.5")
         .show_in(argparse::ShowIn::HELP_ONLY);
-    
+
     place_timing_grp.add_argument(args.CongestionTradeoff, "--congest_tradeoff")
         .help(
             "Trade-off control the bouding value for the contestion matrix.\n"
@@ -2913,13 +2912,13 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("0.25")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
-	noc_grp.add_argument<double>(args.noc_centroid_weight, "--noc_centroid_weight")
+    noc_grp.add_argument<double>(args.noc_centroid_weight, "--noc_centroid_weight")
         .help(
             "Sets the minimum fraction of swaps attempted by the placer that are NoC blocks."
             "This value is an integer ranging from 0-100. 0 means NoC blocks will be moved at the same rate as other blocks. 100 means all swaps attempted by the placer are NoC router blocks.")
         .default_value("0")
         .show_in(argparse::ShowIn::HELP_ONLY);
-        
+
     noc_grp.add_argument<double>(args.noc_swap_percentage, "--noc_swap_percentage")
         .help(
             "Sets the minimum fraction of swaps attempted by the placer that are NoC blocks. "
@@ -2971,8 +2970,9 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
     auto& server_grp = parser.add_argument_group("server options");
 
     server_grp.add_argument<bool, ParseOnOff>(args.is_server_mode_enabled, "--server")
-        .help("Run in server mode."
-              "Accept client application connection and respond to requests." )
+        .help(
+            "Run in server mode."
+            "Accept client application connection and respond to requests.")
         .action(argparse::Action::STORE_TRUE)
         .default_value("off");
 

@@ -361,7 +361,7 @@ void try_place(const Netlist<>& net_list,
      * width of the widest channel.  Place_cost_exp says what exponent the   *
      * width should be taken to when calculating costs.  This allows a       *
      * greater bias for anisotropic architectures.                           */
-    
+
     /*
      * Currently, the functions that require is_flat as their parameter and are called during placement should
      * receive is_flat as false. For example, if the RR graph of router lookahead is built here, it should be as
@@ -498,13 +498,13 @@ void try_place(const Netlist<>& net_list,
 
     if (placer_opts.place_algorithm.is_timing_driven()) {
         if (cube_bb) {
-            costs.bb_cost = comp_bb_cost(NORMAL,placer_opts.place_algorithm);
+            costs.bb_cost = comp_bb_cost(NORMAL, placer_opts.place_algorithm);
         } else {
             VTR_ASSERT_SAFE(!cube_bb);
             costs.bb_cost = comp_layer_bb_cost(NORMAL);
         }
 
-        if(placer_opts.place_algorithm == CONGESTION_AWARE_PLACE){
+        if (placer_opts.place_algorithm == CONGESTION_AWARE_PLACE) {
             costs.cong_cost = get_cong_cost(placer_opts.congestion_tradeoff);
         }
         // costs.cong_cost_norm = 1/ costs.cong_cost;
@@ -541,7 +541,7 @@ void try_place(const Netlist<>& net_list,
         placer_criticalities = std::make_unique<PlacerCriticalities>(
             cluster_ctx.clb_nlist, netlist_pin_lookup);
 
-         pin_timing_invalidator = make_net_pin_timing_invalidator(
+        pin_timing_invalidator = make_net_pin_timing_invalidator(
             placer_opts.timing_update_type,
             net_list,
             netlist_pin_lookup,
@@ -587,15 +587,15 @@ void try_place(const Netlist<>& net_list,
 
         /* Total cost is the same as wirelength cost normalized*/
         if (cube_bb) {
-            costs.bb_cost = comp_bb_cost(NORMAL,placer_opts.place_algorithm);
+            costs.bb_cost = comp_bb_cost(NORMAL, placer_opts.place_algorithm);
         } else {
             VTR_ASSERT_SAFE(!cube_bb);
             costs.bb_cost = comp_layer_bb_cost(NORMAL);
         }
         costs.bb_cost_norm = 1 / costs.bb_cost;
-        if(placer_opts.place_algorithm == CONGESTION_AWARE_PLACE){
+        if (placer_opts.place_algorithm == CONGESTION_AWARE_PLACE) {
             costs.cong_cost = get_cong_cost(placer_opts.congestion_tradeoff);
-            costs.cong_cost_norm = 1/ costs.cong_cost;
+            costs.cong_cost_norm = 1 / costs.cong_cost;
         }
         /* Timing cost and normalization factors are not used */
         costs.timing_cost = INVALID_COST;
@@ -716,15 +716,15 @@ void try_place(const Netlist<>& net_list,
     /* Set the temperature low to ensure that initial placement quality will be preserved */
     first_t = EPSILON;
 
-    t_annealing_state state(annealing_sched, 
-                            first_t, 
+    t_annealing_state state(annealing_sched,
+                            first_t,
                             first_rlim,
-                            first_move_lim, 
+                            first_move_lim,
                             first_crit_exponent,
                             device_ctx.grid.get_num_layers());
 
     /* Update the starting temperature for placement annealing to a more appropriate value */
-    if(placer_opts.place_algorithm == CONGESTION_AWARE_PLACE){
+    if (placer_opts.place_algorithm == CONGESTION_AWARE_PLACE) {
         congestion_tradeoff = 1.0;
     }
     state.t = starting_t(&state, &costs, annealing_sched,
@@ -732,11 +732,11 @@ void try_place(const Netlist<>& net_list,
                          placer_setup_slacks.get(), timing_info.get(), *move_generator,
                          *manual_move_generator, pin_timing_invalidator.get(),
                          blocks_affected, placer_opts, noc_opts, move_type_stat);
-                        
-    if(placer_opts.place_algorithm == CONGESTION_AWARE_PLACE){
+
+    if (placer_opts.place_algorithm == CONGESTION_AWARE_PLACE) {
         congestion_tradeoff = 0.1;
     }
-    double starting_tempreture = state.t ;
+    double starting_tempreture = state.t;
     if (!placer_opts.move_stats_file.empty()) {
         f_move_stats_file = std::unique_ptr<FILE, decltype(&vtr::fclose)>(
             vtr::fopen(placer_opts.move_stats_file.c_str(), "w"),
@@ -772,7 +772,7 @@ void try_place(const Netlist<>& net_list,
 
         /* Outer loop of the simulated annealing begins */
         do {
-            if(get_cong_cost(placer_opts.congestion_tradeoff)<=20 && congest_flag==false && placer_opts.place_algorithm == CONGESTION_AWARE_PLACE){
+            if (get_cong_cost(placer_opts.congestion_tradeoff) <= 20 && congest_flag == false && placer_opts.place_algorithm == CONGESTION_AWARE_PLACE) {
                 congest_flag = true;
                 congestion_tradeoff = 1.0;
                 state.t = starting_tempreture;
@@ -1351,7 +1351,7 @@ static e_move_result try_swap(const t_annealing_state* state,
     if (manual_move_enabled) {
 #ifndef NO_GRAPHICS
         create_move_outcome = manual_move_display_and_propose(manual_move_generator, blocks_affected, proposed_action.move_type, rlim, placer_opts, criticalities);
-#else  //NO_GRAPHICS
+#else  //NO_GRAPHICS \
        //Cast to void to explicitly avoid warning.
         (void)manual_move_generator;
 #endif //NO_GRAPHICS
@@ -1404,7 +1404,7 @@ static e_move_result try_swap(const t_annealing_state* state,
         //
         //Also find all the pins affected by the swap, and calculates new connection
         //delays and timing costs and store them in proposed_* data structures.
-        find_affected_nets_and_update_costs(place_algorithm, delay_model, criticalities, 
+        find_affected_nets_and_update_costs(place_algorithm, delay_model, criticalities,
                                             blocks_affected, bb_delta_c, timing_delta_c);
 
         //For setup slack analysis, we first do a timing analysis to get the newest
@@ -1453,9 +1453,7 @@ static e_move_result try_swap(const t_annealing_state* state,
         } else if (place_algorithm == CONGESTION_AWARE_PLACE) {
             /* Take delta_c as a combination of timing and wiring cost. In
              * addition to `timing_tradeoff`, we normalize the cost values */
-            delta_c =(1 - congestion_tradeoff)*(cong_delta_c * costs->cong_cost_norm)+ ((1 - timing_tradeoff) * bb_delta_c * costs->bb_cost_norm
-                      + timing_tradeoff * timing_delta_c
-                            * costs->timing_cost_norm);
+            delta_c = (1 - congestion_tradeoff) * (cong_delta_c * costs->cong_cost_norm) + ((1 - timing_tradeoff) * bb_delta_c * costs->bb_cost_norm + timing_tradeoff * timing_delta_c * costs->timing_cost_norm);
         } else {
             VTR_ASSERT_SAFE(place_algorithm == BOUNDING_BOX_PLACE);
             VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug,
@@ -1475,9 +1473,9 @@ static e_move_result try_swap(const t_annealing_state* state,
         }
 
         /* 1 -> move accepted, 0 -> rejected. */
-        if(placer_opts.place_algorithm == CONGESTION_AWARE_PLACE){
+        if (placer_opts.place_algorithm == CONGESTION_AWARE_PLACE) {
             move_outcome = assess_swap(delta_c, state->t, cong_delta_c, get_cong_cost(placer_opts.congestion_tradeoff), placer_opts);
-        } else{
+        } else {
             move_outcome = assess_swap(delta_c, state->t, 0.0, 0.0, placer_opts);
         }
 
@@ -1702,11 +1700,11 @@ static double get_total_cost(t_placer_costs* costs, const t_placer_opts& placer_
         total_cost = costs->bb_cost * costs->bb_cost_norm;
     } else if (placer_opts.place_algorithm == CONGESTION_AWARE_PLACE) {
         // in timing mode we include both wirelength and timing costs
-        total_cost =(1-congestion_tradeoff) * (costs->cong_cost * costs->cong_cost_norm) + ((1 - placer_opts.timing_tradeoff) * (costs->bb_cost * costs->bb_cost_norm) + (placer_opts.timing_tradeoff) * (costs->timing_cost * costs->timing_cost_norm));
+        total_cost = (1 - congestion_tradeoff) * (costs->cong_cost * costs->cong_cost_norm) + ((1 - placer_opts.timing_tradeoff) * (costs->bb_cost * costs->bb_cost_norm) + (placer_opts.timing_tradeoff) * (costs->timing_cost * costs->timing_cost_norm));
     } else if (placer_opts.place_algorithm.is_timing_driven()) {
         // in timing mode we include both wirelength and timing costs
         total_cost = (1 - placer_opts.timing_tradeoff) * (costs->bb_cost * costs->bb_cost_norm) + (placer_opts.timing_tradeoff) * (costs->timing_cost * costs->timing_cost_norm);
-    }  
+    }
 
     if (noc_opts.noc) {
         // in noc mode we include noc aggregate bandwidth and noc latency
@@ -1789,7 +1787,7 @@ static e_move_result assess_swap(double delta_c, double t, double cong_delta_c, 
     float fnum = vtr::frand();
     float prob_fac = std::exp(-delta_c / t);
     float prob_fac_cong = std::exp(-cong_delta_c / t);
-    if (prob_fac > fnum && (prob_fac_cong>fnum || placer_opts.place_algorithm != CONGESTION_AWARE_PLACE)) {
+    if (prob_fac > fnum && (prob_fac_cong > fnum || placer_opts.place_algorithm != CONGESTION_AWARE_PLACE)) {
         VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\t\tMove is accepted(hill climbing)\n");
         return ACCEPTED;
     }
@@ -2125,43 +2123,43 @@ static int check_block_placement_consistency() {
                     VTR_LOG_ERROR(
                         "%d blocks were placed at grid location (%d,%d,%d), but location capacity is %d.\n",
                         place_ctx.grid_blocks.get_usage(tile_loc), i, j, layer_num,
-                    type->capacity);
-                error++;
-            }
-            int usage_check = 0;
-            for (int k = 0; k < type->capacity; k++) {
-                auto bnum = place_ctx.grid_blocks.block_at_location({i, j, k, layer_num});
-                if (EMPTY_BLOCK_ID == bnum || INVALID_BLOCK_ID == bnum)
-                    continue;
-
-                auto logical_block = cluster_ctx.clb_nlist.block_type(bnum);
-                auto physical_tile = type;
-
-                if (physical_tile_type(bnum) != physical_tile) {
-                    VTR_LOG_ERROR(
-                        "Block %zu type (%s) does not match grid location (%zu,%zu, %d) type (%s).\n",
-                        size_t(bnum), logical_block->name, i, j, layer_num, physical_tile->name);
+                        type->capacity);
                     error++;
                 }
+                int usage_check = 0;
+                for (int k = 0; k < type->capacity; k++) {
+                    auto bnum = place_ctx.grid_blocks.block_at_location({i, j, k, layer_num});
+                    if (EMPTY_BLOCK_ID == bnum || INVALID_BLOCK_ID == bnum)
+                        continue;
 
-                auto& loc = place_ctx.block_locs[bnum].loc;
-                if (loc.x != i || loc.y != j || loc.layer != layer_num
-                    || !is_sub_tile_compatible(physical_tile, logical_block, loc.sub_tile)) {
+                    auto logical_block = cluster_ctx.clb_nlist.block_type(bnum);
+                    auto physical_tile = type;
+
+                    if (physical_tile_type(bnum) != physical_tile) {
+                        VTR_LOG_ERROR(
+                            "Block %zu type (%s) does not match grid location (%zu,%zu, %d) type (%s).\n",
+                            size_t(bnum), logical_block->name, i, j, layer_num, physical_tile->name);
+                        error++;
+                    }
+
+                    auto& loc = place_ctx.block_locs[bnum].loc;
+                    if (loc.x != i || loc.y != j || loc.layer != layer_num
+                        || !is_sub_tile_compatible(physical_tile, logical_block, loc.sub_tile)) {
+                        VTR_LOG_ERROR(
+                            "Block %zu's location is (%d,%d,%d) but found in grid at (%zu,%zu,%d,%d).\n",
+                            size_t(bnum), loc.x, loc.y, loc.sub_tile, tile_loc.x, tile_loc.y, tile_loc.layer_num, layer_num);
+                        error++;
+                    }
+                    ++usage_check;
+                    bdone[bnum]++;
+                }
+                if (usage_check != place_ctx.grid_blocks.get_usage(tile_loc)) {
                     VTR_LOG_ERROR(
-                        "Block %zu's location is (%d,%d,%d) but found in grid at (%zu,%zu,%d,%d).\n",
-                        size_t(bnum), loc.x, loc.y, loc.sub_tile, tile_loc.x, tile_loc.y, tile_loc.layer_num, layer_num);
+                        "%d block(s) were placed at location (%d,%d,%d), but location contains %d block(s).\n",
+                        place_ctx.grid_blocks.get_usage(tile_loc), tile_loc.x, tile_loc.y, tile_loc.layer_num, usage_check);
                     error++;
                 }
-                ++usage_check;
-                bdone[bnum]++;
             }
-            if (usage_check != place_ctx.grid_blocks.get_usage(tile_loc)) {
-                VTR_LOG_ERROR(
-                    "%d block(s) were placed at location (%d,%d,%d), but location contains %d block(s).\n",
-                    place_ctx.grid_blocks.get_usage(tile_loc), tile_loc.x, tile_loc.y, tile_loc.layer_num, usage_check);
-                error++;
-            }
-        }
         }
     }
 
@@ -2211,7 +2209,7 @@ int check_macro_placement_consistency() {
                 error++;
             }
         } // Finish going through all the members
-    } // Finish going through all the macros
+    }     // Finish going through all the macros
     return error;
 }
 
@@ -2464,10 +2462,10 @@ static void calculate_reward_and_process_outcome(
     } else if (reward_fun == WL_BIASED_RUNTIME_AWARE) {
         if (delta_c < 0) {
             float reward = -1
-                        * (move_outcome_stats.delta_cost_norm
-                            + (0.5 - timing_bb_factor)
+                           * (move_outcome_stats.delta_cost_norm
+                              + (0.5 - timing_bb_factor)
                                     * move_outcome_stats.delta_timing_cost_norm
-                            + timing_bb_factor
+                              + timing_bb_factor
                                     * move_outcome_stats.delta_bb_cost_norm);
             move_generator.process_outcome(reward, reward_fun.value());
         } else {

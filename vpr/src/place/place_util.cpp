@@ -50,7 +50,7 @@ static GridBlock init_grid_blocks() {
 void t_placer_costs::update_norm_factors() {
     if (place_algorithm.is_timing_driven()) {
         bb_cost_norm = 1 / bb_cost;
-        if (cong_cost) cong_cost_norm = 1/ cong_cost;
+        if (cong_cost) cong_cost_norm = 1 / cong_cost;
         //Prevent the norm factor from going to infinity
         timing_cost_norm = std::min(1 / timing_cost, MAX_INV_TIMING_COST);
     } else {

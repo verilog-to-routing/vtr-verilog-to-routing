@@ -1094,7 +1094,7 @@ class t_place_algorithm {
 
     ///@brief Check if the algorithm belongs to the timing driven category.
     inline bool is_timing_driven() const {
-        return algo == CRITICALITY_TIMING_PLACE || algo == SLACK_TIMING_PLACE || algo== CONGESTION_AWARE_PLACE;
+        return algo == CRITICALITY_TIMING_PLACE || algo == SLACK_TIMING_PLACE || algo == CONGESTION_AWARE_PLACE;
     }
 
     ///@brief Accessor: returns the underlying e_place_algorithm enum value.
