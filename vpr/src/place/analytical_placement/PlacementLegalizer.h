@@ -1,7 +1,9 @@
 
 #pragma once
 
+#include <unordered_map>
 #include "PartialPlacement.h"
+#include "ap_netlist_fwd.h"
 
 class APNetlist;
 
@@ -23,6 +25,8 @@ class FlowBasedLegalizer : public PlacementLegalizer {
     using PlacementLegalizer::PlacementLegalizer;
 public:
     void legalize(PartialPlacement &p_placement) final;
+    std::unordered_map<const t_model*, size_t> demand_vector_index;
+    vtr::vector<APBlockId, std::vector<int>> demand_vector; 
 };
 
 class FullLegalizer : public PlacementLegalizer {
