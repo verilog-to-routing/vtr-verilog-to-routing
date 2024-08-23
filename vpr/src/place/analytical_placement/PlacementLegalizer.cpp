@@ -31,53 +31,14 @@ struct place_tile_id_tag {};
 typedef vtr::StrongId<place_tile_id_tag, size_t> PlaceTileId;
 
 
-void print_n_tabs(int n){
-    for (int i  = 0; i < n; i++){
-        VTR_LOG("\t");
-    }
-}
-static void print_pb_type(t_pb_type* p, int layer, std::set<t_model*>& unique_models){
-    if (p->model != nullptr) {
-        unique_models.insert(p->model);
-    }
-    print_n_tabs(layer);
-    VTR_LOG("Type %s with %d modes and repeat %d\n", p->name, p->num_modes, p->num_pb);
-    if(p->model != nullptr) {
-        print_n_tabs(layer);
-        VTR_LOG("model name: %s\n", p->model->name);
-    }
-    print_n_tabs(layer);
-    VTR_LOG("{\n");
-    for (int i = 0; i < p->num_modes; i++){
-        print_n_tabs(layer+1);
-        VTR_LOG("mode name: %s\n", p->modes[i].name); 
-        print_n_tabs(layer+1);
-        VTR_LOG("{\n");
-        for(int j = 0; j < p->modes[i].num_pb_type_children; j++){
-            print_pb_type(&(p->modes[i].pb_type_children[j]), layer+2, unique_models);
-        } 
-        print_n_tabs(layer+1);
-        VTR_LOG("}\n");
-    }
-    print_n_tabs(layer);
-    VTR_LOG("}\n");
-    if(p->num_modes == 0 && p->model != nullptr) {
-        print_n_tabs(layer);
-        VTR_LOG("model name: %s\n", p->model->name);
-    }
-    if(p->num_modes == 0 && p->model == nullptr) {
-        print_n_tabs(layer);
-        VTR_LOG("zero mode but no model");
-    }
-}
-
 // Struct to contain sub-tile information
 struct PlaceSubTile {
     // Atoms currently placed in this sub_tile
     // FIXME: Change this variable name.
-    // This is not considering the mode so it is a strickly overestimate. 
+    // This is not considering mode.
     // Also, this is assuming that the primitive nodes are unique. There is only one path to 
     //  a primitive node. If not, we need to hash the path and include the primitive node in the value.
+    //  By observing the current assertions, this is true
     std::unordered_map<t_pb_type*, int> type_capacity;
     std::unordered_set<APBlockId> atoms_in_site;
 };
@@ -234,15 +195,7 @@ public:
                 tile_grid[x][y] = place_tile.tile_index;
             }
         }
-        // VTR_LOG("num of root %d\n", unique_pb_type_pointer.size());
-        
-        // std::set<t_model*> unique_model;
-        // for (auto p : unique_pb_type_pointer){
-        //     print_pb_type(p, 0, unique_model);
-        // }
-        // for (auto m : unique_model) {
-        //     VTR_LOG("unique model: %s\n",m->name);
-        // }
+
         // Connect the tiles through neighbors.
         for (size_t x = 0; x < grid_width; x++) {
             for (size_t y = 0; y < grid_height; y++) {
@@ -857,16 +810,6 @@ void FlowBasedLegalizer::legalize(PartialPlacement &p_placement) {
     //        each iteration.
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     SimpleArchModel arch_model(device_ctx, demand_vector_index, demand_vector);
-    // for (size_t i = 0; i < arch_model.get_num_tiles(); i++) {
-    //     PlaceTile tile = arch_model.get_place_tile((PlaceTileId)i);
-    //     VTR_LOG("Tile %d\n", i);
-    //     for (int j = 0; j < tile.physical_tile_type.capacity; j++){
-    //         VTR_LOG("Subtile %d\n", j);
-    //         for (auto p : tile.sub_tiles[j].type_capacity){
-    //             VTR_LOG("Mode: %s, Type: %s, Capacity: %d\n", p.first->parent_mode->name, p.first->name, p.second);
-    //         }
-    //     }
-    // }
 
     // Import the node locations into the Tile Graph according to the architecture
     // model.
