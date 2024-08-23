@@ -1,5 +1,5 @@
 # ORCA Special Edition
-This version of VTR is modified by @xilai based on the official version `5a6249a0cd84b2315a9f0fbd767ef26b903761a5`. I changed the default compiler, updated Python packages, and updated Yosys and Parmys to fit our purpose. This is tested on ORCA.
+This version of VTR is modified by @xilai based on the official version `79a5bc8d163ce15aa195a84459f6350690e1fbf5`. I changed the default compiler, updated Python packages, and updated Yosys and Parmys to fit our purpose. This is tested on ORCA.
 
 ## Setup
 1. Install build tools and Python packages. On July 22, 2023, I updated the build tools on ORCA, so if anyone needs to install them on ORCA, there's no need to do it again. (You still need to install python packages)
