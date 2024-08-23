@@ -4,6 +4,7 @@
 #include "timing_place_lookup.h"
 
 #include <fstream>
+#include <memory>
 
 namespace {
 
@@ -87,7 +88,7 @@ void copy_file(const std::string& src_fname, const std::string& dst_fname) {
     size_t size = src_file.tellg();
     src_file.seekg(0, std::ios_base::beg);
 
-    auto buf = std::unique_ptr<uint8_t>(new uint8_t[size]);
+    auto buf = std::make_unique<uint8_t[]>(size);
     src_file.read((char*)buf.get(), size);
     dst_file.write((char*)buf.get(), size);
 }
