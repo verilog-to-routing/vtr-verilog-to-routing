@@ -29,7 +29,7 @@ k6_N10_mem32K_40nm/ch_intrinsics                OK
 ```
 
 ## Special Notes
-- F4PGA is currently incompatible with the latest version of Yosys (see issue [here](https://github.com/chipsalliance/yosys-f4pga-plugins/issues/552)); manually downgraded to v0.38. Upgrade when the issue is fixed.
+- F4PGA is currently incompatible with the latest version of Yosys (see issue [here](https://github.com/chipsalliance/yosys-f4pga-plugins/issues/552)); manually downgraded to match the [previous fork](https://github.com/abdelfattah-lab/vtr-verilog-to-routing)'s version. Upgrade when the issue is fixed.
 
 # Verilog to Routing (VTR)
 [![Gitpod Ready-to-Code](https://img.shields.io/badge/Gitpod-Ready--to--Code-blue?logo=gitpod)](https://gitpod.io/#https://github.com/verilog-to-routing/vtr-verilog-to-routing.git)
