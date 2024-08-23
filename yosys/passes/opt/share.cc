@@ -1032,7 +1032,7 @@ struct ShareWorker
 		}
 
 		bool found_scc = !toposort.sort();
-		topo_cell_drivers = toposort.get_database();
+		topo_cell_drivers = std::move(toposort.database);
 
 		if (found_scc && toposort.analyze_loops)
 			for (auto &loop : toposort.loops) {

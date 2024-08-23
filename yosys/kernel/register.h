@@ -70,7 +70,6 @@ struct Pass
 
 	virtual void on_register();
 	virtual void on_shutdown();
-	virtual bool replace_existing_pass() const { return false; }
 };
 
 struct ScriptPass : Pass

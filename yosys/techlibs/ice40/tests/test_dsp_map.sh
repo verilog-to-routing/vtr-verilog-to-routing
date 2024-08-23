@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 set -ex
 
 for iter in {1..100}

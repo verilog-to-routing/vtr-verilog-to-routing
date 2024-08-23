@@ -17,7 +17,7 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #
 
-import os, sys, getopt, re, bisect, json
+import os, sys, getopt, re, bisect
 ##yosys-sys-path##
 from smtio import SmtIo, SmtOpts, MkVcd
 from ywio import ReadWitness, WriteWitness, WitnessValues
@@ -56,7 +56,6 @@ binarymode = False
 keep_going = False
 check_witness = False
 detect_loops = False
-incremental = None
 so = SmtOpts()
 
 
@@ -186,9 +185,6 @@ def help():
         check if states are unique in temporal induction counter examples
         (this feature is experimental and incomplete)
 
-    --incremental
-        run in incremental mode (experimental)
-
 """ + so.helpmsg())
 
 def usage():
@@ -200,7 +196,7 @@ try:
     opts, args = getopt.getopt(sys.argv[1:], so.shortopts + "t:higcm:", so.longopts +
             ["help", "final-only", "assume-skipped=", "smtc=", "cex=", "aig=", "aig-noheader", "yw=", "btorwit=", "presat",
              "dump-vcd=", "dump-yw=", "dump-vlogtb=", "vlogtb-top=", "dump-smtc=", "dump-all", "noinfo", "append=",
-             "smtc-init", "smtc-top=", "noinit", "binary", "keep-going", "check-witness", "detect-loops", "incremental"])
+             "smtc-init", "smtc-top=", "noinit", "binary", "keep-going", "check-witness", "detect-loops"])
 except:
     usage()
 
@@ -286,9 +282,6 @@ for o, a in opts:
         check_witness = True
     elif o == "--detect-loops":
         detect_loops = True
-    elif o == "--incremental":
-        from smtbmc_incremental import Incremental
-        incremental = Incremental()
     elif so.handle(o, a):
         pass
     else:
@@ -297,7 +290,7 @@ for o, a in opts:
 if len(args) != 1:
     usage()
 
-if sum([tempind, gentrace, covermode, incremental is not None]) > 1:
+if sum([tempind, gentrace, covermode]) > 1:
     usage()
 
 constr_final_start = None
@@ -451,10 +444,8 @@ if noinfo and vcdfile is None and vlogtbfile is None and outconstr is None:
     smt.produce_models = False
 
 def print_msg(msg):
-    if incremental:
-        incremental.print_msg(msg)
-    else:
-        print("%s %s" % (smt.timestamp(), msg), flush=True)
+    print("%s %s" % (smt.timestamp(), msg))
+    sys.stdout.flush()
 
 print_msg("Solver: %s" % (so.solver))
 
@@ -649,9 +640,10 @@ if aimfile is not None:
                 num_steps = max(num_steps, step+2)
             step += 1
 
-def ywfile_constraints(inywfile, constr_assumes, map_steps=None, skip_x=False):
-    if map_steps is None:
-        map_steps = {}
+if inywfile is not None:
+    if not got_topt:
+        skip_steps = 0
+        num_steps = 0
 
     with open(inywfile, "r") as f:
         inyw = ReadWitness(f)
@@ -670,14 +662,10 @@ def ywfile_constraints(inywfile, constr_assumes, map_steps=None, skip_x=False):
         addr_re = re.compile(r'\\\[[0-9]+\]$')
         bits_re = re.compile(r'[01?]*$')
 
-        max_t = -1
-
         for t, step in inyw.steps():
             present_signals, missing = step.present_signals(inyw.sigmap)
             for sig in present_signals:
                 bits = step[sig]
-                if skip_x:
-                    bits = bits.replace('x', '?')
                 if not bits_re.match(bits):
                     raise ValueError("unsupported bit value in Yosys witness file")
 
@@ -696,7 +684,7 @@ def ywfile_constraints(inywfile, constr_assumes, map_steps=None, skip_x=False):
                         if common_end <= common_offset:
                             continue
 
-                        smt_expr = smt.witness_net_expr(topmod, f"s{map_steps.get(t, t)}", wire)
+                        smt_expr = smt.witness_net_expr(topmod, f"s{t}", wire)
 
                         if not smt_bool:
                             slice_high = common_end - offset - 1
@@ -726,7 +714,7 @@ def ywfile_constraints(inywfile, constr_assumes, map_steps=None, skip_x=False):
                         for mem in smt_mems[sig.memory_path]:
                             width, size, bv = mem["width"], mem["size"], mem["statebv"]
 
-                            smt_expr = smt.net_expr(topmod, f"s{map_steps.get(t, t)}", mem["smtpath"])
+                            smt_expr = smt.net_expr(topmod, f"s{t}", mem["smtpath"])
 
                             if bv:
                                 word_low = sig.memory_addr * width
@@ -750,21 +738,11 @@ def ywfile_constraints(inywfile, constr_assumes, map_steps=None, skip_x=False):
 
                             smt_constr = "(= %s #b%s)" % (smt_expr, bit_slice)
                             constr_assumes[t].append((inywfile, smt_constr))
-            max_t = t
 
-        return max_t
-
-if inywfile is not None:
-    if not got_topt:
-        skip_steps = 0
-        num_steps = 0
-
-    max_t = ywfile_constraints(inywfile, constr_assumes)
-
-    if not got_topt:
-        if not check_witness:
-            skip_steps = max(skip_steps, max_t)
-        num_steps = max(num_steps, max_t+1)
+            if not got_topt:
+                if not check_witness:
+                    skip_steps = max(skip_steps, t)
+                num_steps = max(num_steps, t+1)
 
 if btorwitfile is not None:
     with open(btorwitfile, "r") as f:
@@ -863,7 +841,7 @@ if btorwitfile is not None:
         skip_steps = step
         num_steps = step+1
 
-def collect_mem_trace_data(steps, vcd=None):
+def collect_mem_trace_data(steps_start, steps_stop, vcd=None):
     mem_trace_data = dict()
 
     for mempath in sorted(smt.hiermems(topmod)):
@@ -871,16 +849,16 @@ def collect_mem_trace_data(steps, vcd=None):
 
         expr_id = list()
         expr_list = list()
-        for seq, i in enumerate(steps):
+        for i in range(steps_start, steps_stop):
             for j in range(rports):
-                expr_id.append(('R', seq, j, 'A'))
-                expr_id.append(('R', seq, j, 'D'))
+                expr_id.append(('R', i-steps_start, j, 'A'))
+                expr_id.append(('R', i-steps_start, j, 'D'))
                 expr_list.append(smt.mem_expr(topmod, "s%d" % i, mempath, "R%dA" % j))
                 expr_list.append(smt.mem_expr(topmod, "s%d" % i, mempath, "R%dD" % j))
             for j in range(wports):
-                expr_id.append(('W', seq, j, 'A'))
-                expr_id.append(('W', seq, j, 'D'))
-                expr_id.append(('W', seq, j, 'M'))
+                expr_id.append(('W', i-steps_start, j, 'A'))
+                expr_id.append(('W', i-steps_start, j, 'D'))
+                expr_id.append(('W', i-steps_start, j, 'M'))
                 expr_list.append(smt.mem_expr(topmod, "s%d" % i, mempath, "W%dA" % j))
                 expr_list.append(smt.mem_expr(topmod, "s%d" % i, mempath, "W%dD" % j))
                 expr_list.append(smt.mem_expr(topmod, "s%d" % i, mempath, "W%dM" % j))
@@ -965,14 +943,14 @@ def collect_mem_trace_data(steps, vcd=None):
                 netpath[-1] += "<%0*x>" % ((len(addr)+3) // 4, int_addr)
                 vcd.add_net([topmod] + netpath, width)
 
-            for seq, i in enumerate(steps):
+            for i in range(steps_start, steps_stop):
                 if i not in mem_trace_data:
                     mem_trace_data[i] = list()
-                mem_trace_data[i].append((netpath, int_addr, "".join(tdata[seq])))
+                mem_trace_data[i].append((netpath, int_addr, "".join(tdata[i-steps_start])))
 
     return mem_trace_data
 
-def write_vcd_trace(steps, index, seq_time=False):
+def write_vcd_trace(steps_start, steps_stop, index):
     filename = vcdfile.replace("%", index)
     print_msg("Writing trace to VCD file: %s" % (filename))
 
@@ -993,10 +971,10 @@ def write_vcd_trace(steps, index, seq_time=False):
                     vcd.add_clock([topmod] + netpath, edge)
                 path_list.append(netpath)
 
-        mem_trace_data = collect_mem_trace_data(steps, vcd)
+        mem_trace_data = collect_mem_trace_data(steps_start, steps_stop, vcd)
 
-        for seq, i in enumerate(steps):
-            vcd.set_time(seq if seq_time else i)
+        for i in range(steps_start, steps_stop):
+            vcd.set_time(i)
             value_list = smt.get_net_bin_list(topmod, path_list, "s%d" % i)
             for path, value in zip(path_list, value_list):
                 vcd.set_net([topmod] + path, value)
@@ -1004,14 +982,7 @@ def write_vcd_trace(steps, index, seq_time=False):
                 for path, addr, value in mem_trace_data[i]:
                     vcd.set_net([topmod] + path, value)
 
-        if seq_time:
-            end_time = len(steps)
-        elif steps:
-            end_time = steps[-1] + 1
-        else:
-            end_time = 0
-
-        vcd.set_time(end_time)
+        vcd.set_time(steps_stop)
 
 def detect_state_loop(steps_start, steps_stop):
     print_msg(f"Checking for loops in found induction counter example")
@@ -1056,7 +1027,7 @@ def escape_identifier(identifier):
 
 
 
-def write_vlogtb_trace(steps, index):
+def write_vlogtb_trace(steps_start, steps_stop, index):
     filename = vlogtbfile.replace("%", index)
     print_msg("Writing trace to Verilog testbench: %s" % (filename))
 
@@ -1121,7 +1092,7 @@ def write_vlogtb_trace(steps, index):
         print("  initial begin", file=f)
 
         regs = sorted(smt.hiernets(vlogtb_topmod, regs_only=True))
-        regvals = smt.get_net_bin_list(vlogtb_topmod, regs, vlogtb_state.replace("@@step_idx@@", str(steps[0])))
+        regvals = smt.get_net_bin_list(vlogtb_topmod, regs, vlogtb_state.replace("@@step_idx@@", str(steps_start)))
 
         print("`ifndef VERILATOR", file=f)
         print("    #1;", file=f)
@@ -1136,7 +1107,7 @@ def write_vlogtb_trace(steps, index):
         anyconsts = sorted(smt.hieranyconsts(vlogtb_topmod))
         for info in anyconsts:
             if info[3] is not None:
-                modstate = smt.net_expr(vlogtb_topmod, vlogtb_state.replace("@@step_idx@@", str(steps[0])), info[0])
+                modstate = smt.net_expr(vlogtb_topmod, vlogtb_state.replace("@@step_idx@@", str(steps_start)), info[0])
                 value = smt.bv2bin(smt.get("(|%s| %s)" % (info[1], modstate)))
                 print("    UUT.%s = %d'b%s;" % (".".join(escape_identifier(info[0] + [info[3]])), len(value), value), file=f);
 
@@ -1146,7 +1117,7 @@ def write_vlogtb_trace(steps, index):
 
             addr_expr_list = list()
             data_expr_list = list()
-            for i in steps:
+            for i in range(steps_start, steps_stop):
                 for j in range(rports):
                     addr_expr_list.append(smt.mem_expr(vlogtb_topmod, vlogtb_state.replace("@@step_idx@@", str(i)), mempath, "R%dA" % j))
                     data_expr_list.append(smt.mem_expr(vlogtb_topmod, vlogtb_state.replace("@@step_idx@@", str(i)), mempath, "R%dD" % j))
@@ -1167,7 +1138,7 @@ def write_vlogtb_trace(steps, index):
         print("", file=f)
         anyseqs = sorted(smt.hieranyseqs(vlogtb_topmod))
 
-        for i in steps:
+        for i in range(steps_start, steps_stop):
             pi_names = [[name] for name, _ in primary_inputs if name not in clock_inputs]
             pi_values = smt.get_net_bin_list(vlogtb_topmod, pi_names, vlogtb_state.replace("@@step_idx@@", str(i)))
 
@@ -1199,14 +1170,14 @@ def write_vlogtb_trace(steps, index):
                 print("  end", file=f)
                 print("  always @(posedge clock) begin", file=f)
 
-        print("    genclock <= cycle < %d;" % (steps[-1]), file=f)
+        print("    genclock <= cycle < %d;" % (steps_stop-1), file=f)
         print("    cycle <= cycle + 1;", file=f)
         print("  end", file=f)
 
         print("endmodule", file=f)
 
 
-def write_constr_trace(steps, index):
+def write_constr_trace(steps_start, steps_stop, index):
     filename = outconstr.replace("%", index)
     print_msg("Writing trace to constraints file: %s" % (filename))
 
@@ -1223,7 +1194,7 @@ def write_constr_trace(steps, index):
             constr_prefix = smtctop[1] + "."
 
     if smtcinit:
-        steps = [steps[-1]]
+        steps_start = steps_stop - 1
 
     with open(filename, "w") as f:
         primary_inputs = list()
@@ -1232,13 +1203,13 @@ def write_constr_trace(steps, index):
             width = smt.modinfo[constr_topmod].wsize[name]
             primary_inputs.append((name, width))
 
-        if steps[0] == 0 or smtcinit:
+        if steps_start == 0 or smtcinit:
             print("initial", file=f)
         else:
-            print("state %d" % steps[0], file=f)
+            print("state %d" % steps_start, file=f)
 
         regnames = sorted(smt.hiernets(constr_topmod, regs_only=True))
-        regvals = smt.get_net_list(constr_topmod, regnames, constr_state.replace("@@step_idx@@", str(steps[0])))
+        regvals = smt.get_net_list(constr_topmod, regnames, constr_state.replace("@@step_idx@@", str(steps_start)))
 
         for name, val in zip(regnames, regvals):
             print("assume (= [%s%s] %s)" % (constr_prefix, ".".join(name), val), file=f)
@@ -1249,7 +1220,7 @@ def write_constr_trace(steps, index):
 
             addr_expr_list = list()
             data_expr_list = list()
-            for i in steps:
+            for i in range(steps_start, steps_stop):
                 for j in range(rports):
                     addr_expr_list.append(smt.mem_expr(constr_topmod, constr_state.replace("@@step_idx@@", str(i)), mempath, "R%dA" % j))
                     data_expr_list.append(smt.mem_expr(constr_topmod, constr_state.replace("@@step_idx@@", str(i)), mempath, "R%dD" % j))
@@ -1265,7 +1236,7 @@ def write_constr_trace(steps, index):
             for addr, data in addr_data.items():
                 print("assume (= (select [%s%s] %s) %s)" % (constr_prefix, ".".join(mempath), addr, data), file=f)
 
-        for k in steps:
+        for k in range(steps_start, steps_stop):
             if not smtcinit:
                 print("", file=f)
                 print("state %d" % k, file=f)
@@ -1276,14 +1247,11 @@ def write_constr_trace(steps, index):
             for name, val in zip(pi_names, pi_values):
                 print("assume (= [%s%s] %s)" % (constr_prefix, ".".join(name), val), file=f)
 
-def write_yw_trace(steps, index, allregs=False, filename=None):
-    if filename is None:
-        if outywfile is None:
-            return
-        filename = outywfile.replace("%", index)
-        print_msg("Writing trace to Yosys witness file: %s" % (filename))
+def write_yw_trace(steps_start, steps_stop, index, allregs=False):
+    filename = outywfile.replace("%", index)
+    print_msg("Writing trace to Yosys witness file: %s" % (filename))
 
-    mem_trace_data = collect_mem_trace_data(steps)
+    mem_trace_data = collect_mem_trace_data(steps_start, steps_stop)
 
     with open(filename, "w") as f:
         inits, seqs, clocks, mems = smt.hierwitness(topmod, allregs)
@@ -1327,28 +1295,18 @@ def write_yw_trace(steps, index, allregs=False, filename=None):
                 sig = yw.add_sig(word_path, overlap_start, overlap_end - overlap_start, True)
                 mem_init_values.append((sig, overlap_bits.replace("x", "?")))
 
-        exprs = []
-        all_sigs = []
-
-        for i, k in enumerate(steps):
+        for k in range(steps_start, steps_stop):
             step_values = WitnessValues()
 
-            if not i:
+            if k == steps_start:
                 for sig, value in mem_init_values:
                     step_values[sig] = value
                 sigs = inits + seqs
             else:
                 sigs = seqs
 
-            exprs.extend(smt.witness_net_expr(topmod, f"s{k}", sig) for sig in sigs)
-
-            all_sigs.append(sigs)
-
-        bvs = iter(smt.get_list(exprs))
-
-        for sigs in all_sigs:
             for sig in sigs:
-                value = smt.bv2bin(next(bvs))
+                value = smt.bv2bin(smt.get(smt.witness_net_expr(topmod, f"s{k}", sig)))
                 step_values[sig["sig"]] = value
             yw.step(step_values)
 
@@ -1356,24 +1314,17 @@ def write_yw_trace(steps, index, allregs=False, filename=None):
 
 
 def write_trace(steps_start, steps_stop, index, allregs=False):
-    if steps_stop is None:
-        steps = steps_start
-        seq_time = True
-    else:
-        steps = list(range(steps_start, steps_stop))
-        seq_time = False
-
     if vcdfile is not None:
-        write_vcd_trace(steps, index, seq_time=seq_time)
+        write_vcd_trace(steps_start, steps_stop, index)
 
     if vlogtbfile is not None:
-        write_vlogtb_trace(steps, index)
+        write_vlogtb_trace(steps_start, steps_stop, index)
 
     if outconstr is not None:
-        write_constr_trace(steps, index)
+        write_constr_trace(steps_start, steps_stop, index)
 
     if outywfile is not None:
-        write_yw_trace(steps, index, allregs)
+        write_yw_trace(steps_start, steps_stop, index, allregs)
 
 
 def print_failed_asserts_worker(mod, state, path, extrainfo, infomap, infokey=()):
@@ -1645,11 +1596,7 @@ def smt_check_sat(expected=["sat", "unsat"]):
         smt_forall_assert()
     return smt.check_sat(expected=expected)
 
-
-if incremental:
-    incremental.mainloop()
-
-elif tempind:
+if tempind:
     retstatus = "FAILED"
     skip_counter = step_size
     for step in range(num_steps, -1, -1):
@@ -2007,6 +1954,5 @@ else:  # not tempind, covermode
 smt.write("(exit)")
 smt.wait()
 
-if not incremental:
-    print_msg("Status: %s" % retstatus)
-    sys.exit(0 if retstatus == "PASSED" else 1)
+print_msg("Status: %s" % retstatus)
+sys.exit(0 if retstatus == "PASSED" else 1)

@@ -4,7 +4,6 @@ OBJS += passes/techmap/techmap.o
 OBJS += passes/techmap/simplemap.o
 OBJS += passes/techmap/dfflibmap.o
 OBJS += passes/techmap/maccmap.o
-OBJS += passes/techmap/booth.o
 OBJS += passes/techmap/libparse.o
 
 ifeq ($(ENABLE_ABC),1)

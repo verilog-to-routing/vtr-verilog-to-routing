@@ -51,51 +51,40 @@
 
 #if !defined(_WIN32) || defined(__MINGW32__)
 #  include <unistd.h>
-#endif
-
-USING_YOSYS_NAMESPACE
-
+#else
 char *optarg;
-int optind = 1, optcur = 1, optopt = 0;
+int optind = 1, optcur = 1;
 int getopt(int argc, char **argv, const char *optstring)
 {
-	if (optind >= argc)
+	if (optind >= argc || argv[optind][0] != '-')
 		return -1;
-
-	if (argv[optind][0] != '-' || argv[optind][1] == 0) {
-		optopt = 1;
-		optarg = argv[optind++];
-		return optopt;
-	}
 
 	bool takes_arg = false;
-	optopt = argv[optind][optcur];
-
-	if (optopt == '-') {
-		++optind;
-		return -1;
-	}
-
+	int opt = argv[optind][optcur];
 	for (int i = 0; optstring[i]; i++)
-		if (optopt == optstring[i] && optstring[i + 1] == ':')
+		if (opt == optstring[i] && optstring[i + 1] == ':')
 			takes_arg = true;
 
 	if (!takes_arg) {
 		if (argv[optind][++optcur] == 0)
 			optind++, optcur = 1;
-		return optopt;
+		return opt;
 	}
 
 	if (argv[optind][++optcur]) {
 		optarg = argv[optind++] + optcur;
 		optcur = 1;
-		return optopt;
+		return opt;
 	}
 
 	optarg = argv[++optind];
 	optind++, optcur = 1;
-	return optopt;
+	return opt;
 }
+#endif
+
+
+USING_YOSYS_NAMESPACE
 
 #ifdef EMSCRIPTEN
 #  include <sys/stat.h>
@@ -226,7 +215,6 @@ int main(int argc, char **argv)
 	std::string backend_command = "auto";
 	std::vector<std::string> vlog_defines;
 	std::vector<std::string> passes_commands;
-	std::vector<std::string> frontend_files;
 	std::vector<std::string> plugin_filenames;
 	std::string output_filename = "";
 	std::string scriptfile = "";
@@ -242,6 +230,14 @@ int main(int argc, char **argv)
 	bool run_tcl_shell = false;
 	bool mode_v = false;
 	bool mode_q = false;
+
+#if defined(YOSYS_ENABLE_READLINE) || defined(YOSYS_ENABLE_EDITLINE)
+	if (getenv("HOME") != NULL) {
+		yosys_history_file = stringf("%s/.yosys_history", getenv("HOME"));
+		read_history(yosys_history_file.c_str());
+		yosys_history_offset = where_history();
+	}
+#endif
 
 	if (argc == 2 && (!strcmp(argv[1], "-h") || !strcmp(argv[1], "-help") || !strcmp(argv[1], "--help")))
 	{
@@ -513,9 +509,6 @@ int main(int argc, char **argv)
 		case 'C':
 			run_tcl_shell = true;
 			break;
-		case '\001':
-			frontend_files.push_back(optarg);
-			break;
 		default:
 			fprintf(stderr, "Run '%s -h' for help.\n", argv[0]);
 			exit(1);
@@ -529,36 +522,6 @@ int main(int argc, char **argv)
 
 	if (print_banner)
 		yosys_banner();
-
-#if defined(YOSYS_ENABLE_READLINE) || defined(YOSYS_ENABLE_EDITLINE)
-	std::string state_dir;
-	#if defined(_WIN32)
-		if (getenv("HOMEDRIVE") != NULL && getenv("HOMEPATH") != NULL) {
-			state_dir = stringf("%s%s/.local/state", getenv("HOMEDRIVE"), getenv("HOMEPATH"));
-		} else {
-			log_debug("$HOMEDRIVE and/or $HOMEPATH is empty. No history file will be created.\n");
-		}
-	#else
-		if (getenv("XDG_STATE_HOME") == NULL || getenv("XDG_STATE_HOME")[0] == '\0') {
-			if (getenv("HOME") != NULL) {
-				state_dir = stringf("%s/.local/state", getenv("HOME"));
-			} else {
-				log_debug("$HOME is empty. No history file will be created.\n");
-			}
-		} else {
-			state_dir = stringf("%s", getenv("XDG_STATE_HOME"));
-		}
-	#endif
-
-	if (!state_dir.empty()) {
-		std::string yosys_dir = state_dir + "/yosys";
-		create_directory(yosys_dir);
-
-		yosys_history_file = yosys_dir + "/history";
-		read_history(yosys_history_file.c_str());
-		yosys_history_offset = where_history();
-	}
-#endif
 
 	if (print_stats)
 		log_hasher = new SHA1;
@@ -591,8 +554,6 @@ int main(int argc, char **argv)
 	for (auto &fn : plugin_filenames)
 		load_plugin(fn, {});
 
-	log_suppressed();
-
 	if (!vlog_defines.empty()) {
 		std::string vdef_cmd = "read -define";
 		for (auto vdef : vlog_defines)
@@ -600,33 +561,17 @@ int main(int argc, char **argv)
 		run_pass(vdef_cmd);
 	}
 
-	if (scriptfile.empty() || !scriptfile_tcl) {
-		// Without a TCL script, arguments following '--' are also treated as frontend files
-		for (int i = optind; i < argc; ++i)
-			frontend_files.push_back(argv[i]);
-	}
-
-	for (auto it = frontend_files.begin(); it != frontend_files.end(); ++it) {
-		if (run_frontend((*it).c_str(), frontend_command))
+	while (optind < argc)
+		if (run_frontend(argv[optind++], frontend_command))
 			run_shell = false;
-	}
 
 	if (!topmodule.empty())
 		run_pass("hierarchy -top " + topmodule);
+
 	if (!scriptfile.empty()) {
 		if (scriptfile_tcl) {
 #ifdef YOSYS_ENABLE_TCL
-			int tcl_argc = argc - optind;
-			std::vector<Tcl_Obj*> script_args;
-			Tcl_Interp *interp = yosys_get_tcl_interp();
-			for (int i = optind; i < argc; ++i)
-				script_args.push_back(Tcl_NewStringObj(argv[i], strlen(argv[i])));
-
-			Tcl_ObjSetVar2(interp, Tcl_NewStringObj("argc", 4), NULL, Tcl_NewIntObj(tcl_argc), 0);
-			Tcl_ObjSetVar2(interp, Tcl_NewStringObj("argv", 4), NULL, Tcl_NewListObj(tcl_argc, script_args.data()), 0);
-			Tcl_ObjSetVar2(interp, Tcl_NewStringObj("argv0", 5), NULL, Tcl_NewStringObj(scriptfile.c_str(), scriptfile.length()), 0);
-
-			if (Tcl_EvalFile(interp, scriptfile.c_str()) != TCL_OK)
+			if (Tcl_EvalFile(yosys_get_tcl_interp(), scriptfile.c_str()) != TCL_OK)
 				log_error("TCL interpreter returned an error: %s\n", Tcl_GetStringResult(yosys_get_tcl_interp()));
 #else
 			log_error("Can't exectue TCL script: this version of yosys is not built with TCL support enabled.\n");

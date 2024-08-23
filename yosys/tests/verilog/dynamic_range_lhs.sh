@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 run() {
     alt=$1
@@ -15,7 +15,7 @@ run() {
         -p "read_verilog dynamic_range_lhs.v" \
         -p "proc" \
         -p "equiv_make gold gate equiv" \
-        -p "equiv_simple -undef" \
+        -p "equiv_simple" \
         -p "equiv_status -assert"
 }
 

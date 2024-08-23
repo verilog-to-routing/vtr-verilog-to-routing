@@ -16,6 +16,5 @@ hierarchy
 proc
 flatten
 opt -full
-async2sync
 select -module top
 sat -verify -seq 1 -tempinduct -prove-asserts -show-all

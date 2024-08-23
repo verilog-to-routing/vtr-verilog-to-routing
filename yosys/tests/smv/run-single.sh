@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 cat > $1.tpl <<EOT
 %module main

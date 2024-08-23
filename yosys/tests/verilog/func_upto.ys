@@ -3,6 +3,5 @@ hierarchy -top top
 proc
 flatten
 opt -full
-async2sync
 select -module top
 sat -verify -seq 1 -prove-asserts -enable_undef

@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 set -ex
 sed 's/SB_MAC16/SB_MAC16_UUT/; /SB_MAC16_UUT/,/endmodule/ p; d;' < ../cells_sim.v > test_dsp_model_uut.v
 if [ ! -f "test_dsp_model_ref.v" ]; then

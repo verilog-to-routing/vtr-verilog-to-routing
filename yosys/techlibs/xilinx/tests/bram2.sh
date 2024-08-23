@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 set -ex
 unisims=/opt/Xilinx/Vivado/2014.4/data/verilog/src/unisims

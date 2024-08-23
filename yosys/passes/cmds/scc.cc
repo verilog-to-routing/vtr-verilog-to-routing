@@ -27,6 +27,7 @@
 #include "kernel/log.h"
 #include <stdlib.h>
 #include <stdio.h>
+#include <set>
 
 USING_YOSYS_NAMESPACE
 PRIVATE_NAMESPACE_BEGIN
@@ -38,18 +39,18 @@ struct SccWorker
 	SigMap sigmap;
 	CellTypes ct, specifyCells;
 
-	pool<RTLIL::Cell*> workQueue;
-	dict<RTLIL::Cell*, pool<RTLIL::Cell*>> cellToNextCell;
-	dict<RTLIL::Cell*, RTLIL::SigSpec> cellToPrevSig, cellToNextSig;
+	std::set<RTLIL::Cell*> workQueue;
+	std::map<RTLIL::Cell*, std::set<RTLIL::Cell*>> cellToNextCell;
+	std::map<RTLIL::Cell*, RTLIL::SigSpec> cellToPrevSig, cellToNextSig;
 
-	dict<RTLIL::Cell*, std::pair<int, int>> cellLabels;
-	dict<RTLIL::Cell*, int> cellDepth;
-	pool<RTLIL::Cell*> cellsOnStack;
+	std::map<RTLIL::Cell*, std::pair<int, int>> cellLabels;
+	std::map<RTLIL::Cell*, int> cellDepth;
+	std::set<RTLIL::Cell*> cellsOnStack;
 	std::vector<RTLIL::Cell*> cellStack;
 	int labelCounter;
 
-	dict<RTLIL::Cell*, int> cell2scc;
-	std::vector<pool<RTLIL::Cell*>> sccList;
+	std::map<RTLIL::Cell*, int> cell2scc;
+	std::vector<std::set<RTLIL::Cell*>> sccList;
 
 	void run(RTLIL::Cell *cell, int depth, int maxDepth)
 	{
@@ -84,7 +85,7 @@ struct SccWorker
 			else
 			{
 				log("Found an SCC:");
-				pool<RTLIL::Cell*> scc;
+				std::set<RTLIL::Cell*> scc;
 				while (cellsOnStack.count(cell) > 0) {
 					RTLIL::Cell *c = cellStack.back();
 					cellStack.pop_back();
@@ -198,11 +199,11 @@ struct SccWorker
 
 		for (auto cell : workQueue)
 		{
-			sigToNextCells.find(cellToNextSig[cell], cellToNextCell[cell]);
+			cellToNextCell[cell] = sigToNextCells.find(cellToNextSig[cell]);
 
 			if (!nofeedbackMode && cellToNextCell[cell].count(cell)) {
 				log("Found an SCC:");
-				pool<RTLIL::Cell*> scc;
+				std::set<RTLIL::Cell*> scc;
 				log(" %s", RTLIL::id2cstr(cell->name));
 				cell2scc[cell] = sccList.size();
 				scc.insert(cell);
@@ -230,7 +231,7 @@ struct SccWorker
 	{
 		for (int i = 0; i < int(sccList.size()); i++)
 		{
-			pool<RTLIL::Cell*> &cells = sccList[i];
+			std::set<RTLIL::Cell*> &cells = sccList[i];
 			RTLIL::SigSpec prevsig, nextsig, sig;
 
 			for (auto cell : cells) {
@@ -294,7 +295,7 @@ struct SccPass : public Pass {
 	}
 	void execute(std::vector<std::string> args, RTLIL::Design *design) override
 	{
-		dict<std::string, std::string> setAttr;
+		std::map<std::string, std::string> setAttr;
 		bool allCellTypes = false;
 		bool selectMode = false;
 		bool nofeedbackMode = false;

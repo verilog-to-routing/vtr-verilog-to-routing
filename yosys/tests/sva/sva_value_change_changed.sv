@@ -8,11 +8,9 @@ module top (
 		$changed(b)
 	);
 
-	wire x = 'x;
-
 `ifndef FAIL
 	assume property (
-		b !== x ##1 $changed(b)
+		b !== 'x ##1 $changed(b)
 	);
 `endif
 

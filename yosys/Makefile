@@ -1,6 +1,6 @@
 
-# CONFIG := clang
 CONFIG := gcc
+# CONFIG := gcc
 # CONFIG := afl-gcc
 # CONFIG := emcc
 # CONFIG := wasi
@@ -141,7 +141,7 @@ LDLIBS += -lrt
 endif
 endif
 
-YOSYS_VER := 0.38
+YOSYS_VER := 0.32
 
 # Note: We arrange for .gitcommit to contain the (short) commit hash in
 # tarballs generated with git-archive(1) using .gitattributes. The git repo
@@ -157,7 +157,7 @@ endif
 OBJS = kernel/version_$(GIT_REV).o
 
 bumpversion:
-#	sed -i "/^YOSYS_VER := / s/+[0-9][0-9]*$$/+`git log --oneline a5c7f69.. | wc -l`/;" Makefile
+#	sed -i "/^YOSYS_VER := / s/+[0-9][0-9]*$$/+`git log --oneline f3c6b41.. | wc -l`/;" Makefile
 
 # set 'ABCREV = default' to use abc/ as it is
 #
@@ -165,7 +165,7 @@ bumpversion:
 # is just a symlink to your actual ABC working directory, as 'make mrproper'
 # will remove the 'abc' directory and you do not want to accidentally
 # delete your work on ABC..
-ABCREV = 896e5e7
+ABCREV = bb64142
 ABCPULL = 1
 ABCURL ?= https://github.com/YosysHQ/abc
 ABCMKARGS = CC="$(CXX)" CXX="$(CXX)" ABC_USE_LIBSTDCXX=1 ABC_USE_NAMESPACE=abc VERBOSE=$(Q)
@@ -321,11 +321,11 @@ AR = $(WASI_SDK)/bin/ar
 RANLIB = $(WASI_SDK)/bin/ranlib
 WASIFLAGS := --sysroot $(WASI_SDK)/share/wasi-sysroot $(WASIFLAGS)
 endif
-CXXFLAGS := $(WASIFLAGS) -std=$(CXXSTD) -Os -D_WASI_EMULATED_PROCESS_CLOCKS $(filter-out -fPIC,$(CXXFLAGS))
+CXXFLAGS := $(WASIFLAGS) -std=$(CXXSTD) -Os $(filter-out -fPIC,$(CXXFLAGS))
 LDFLAGS := $(WASIFLAGS) -Wl,-z,stack-size=1048576 $(filter-out -rdynamic,$(LDFLAGS))
-LDLIBS := -lwasi-emulated-process-clocks $(filter-out -lrt,$(LDLIBS))
+LDLIBS := $(filter-out -lrt,$(LDLIBS))
 ABCMKARGS += AR="$(AR)" RANLIB="$(RANLIB)"
-ABCMKARGS += ARCHFLAGS="$(WASIFLAGS) -D_WASI_EMULATED_PROCESS_CLOCKS -DABC_USE_STDINT_H -DABC_NO_DYNAMIC_LINKING -DABC_NO_RLIMIT -Wno-c++11-narrowing"
+ABCMKARGS += ARCHFLAGS="$(WASIFLAGS) -DABC_USE_STDINT_H -DABC_NO_DYNAMIC_LINKING -DABC_NO_RLIMIT -Wno-c++11-narrowing"
 ABCMKARGS += OPTFLAGS="-Os"
 EXE = .wasm
 
@@ -357,7 +357,7 @@ CXXFLAGS := $(filter-out -fPIC,$(CXXFLAGS))
 LDFLAGS := $(filter-out -rdynamic,$(LDFLAGS)) -s
 LDLIBS := $(filter-out -lrt,$(LDLIBS))
 ABCMKARGS += ARCHFLAGS="-DABC_USE_STDINT_H -DWIN32_NO_DLL -DHAVE_STRUCT_TIMESPEC -fpermissive -w"
-ABCMKARGS += LIBS="-lpthread -lshlwapi -s" ABC_USE_NO_READLINE=0 CC="i686-w64-mingw32-gcc" CXX="$(CXX)"
+ABCMKARGS += LIBS="-lpthread -s" ABC_USE_NO_READLINE=0 CC="i686-w64-mingw32-gcc" CXX="$(CXX)"
 EXE = .exe
 
 else ifeq ($(CONFIG),msys2-64)
@@ -368,7 +368,7 @@ CXXFLAGS := $(filter-out -fPIC,$(CXXFLAGS))
 LDFLAGS := $(filter-out -rdynamic,$(LDFLAGS)) -s
 LDLIBS := $(filter-out -lrt,$(LDLIBS))
 ABCMKARGS += ARCHFLAGS="-DABC_USE_STDINT_H -DWIN32_NO_DLL -DHAVE_STRUCT_TIMESPEC -fpermissive -w"
-ABCMKARGS += LIBS="-lpthread -lshlwapi -s" ABC_USE_NO_READLINE=0 CC="x86_64-w64-mingw32-gcc" CXX="$(CXX)"
+ABCMKARGS += LIBS="-lpthread -s" ABC_USE_NO_READLINE=0 CC="x86_64-w64-mingw32-gcc" CXX="$(CXX)"
 EXE = .exe
 
 else ifneq ($(CONFIG),none)
@@ -606,35 +606,31 @@ Q =
 S =
 endif
 
+$(eval $(call add_include_file,kernel/yosys.h))
+$(eval $(call add_include_file,kernel/hashlib.h))
+$(eval $(call add_include_file,kernel/log.h))
+$(eval $(call add_include_file,kernel/rtlil.h))
 $(eval $(call add_include_file,kernel/binding.h))
+$(eval $(call add_include_file,kernel/register.h))
 $(eval $(call add_include_file,kernel/cellaigs.h))
-$(eval $(call add_include_file,kernel/celledges.h))
 $(eval $(call add_include_file,kernel/celltypes.h))
+$(eval $(call add_include_file,kernel/celledges.h))
 $(eval $(call add_include_file,kernel/consteval.h))
 $(eval $(call add_include_file,kernel/constids.inc))
-$(eval $(call add_include_file,kernel/cost.h))
+$(eval $(call add_include_file,kernel/sigtools.h))
+$(eval $(call add_include_file,kernel/modtools.h))
+$(eval $(call add_include_file,kernel/macc.h))
+$(eval $(call add_include_file,kernel/utils.h))
+$(eval $(call add_include_file,kernel/satgen.h))
+$(eval $(call add_include_file,kernel/qcsat.h))
 $(eval $(call add_include_file,kernel/ff.h))
 $(eval $(call add_include_file,kernel/ffinit.h))
-$(eval $(call add_include_file,kernel/ffmerge.h))
-$(eval $(call add_include_file,kernel/fmt.h))
 ifeq ($(ENABLE_ZLIB),1)
 $(eval $(call add_include_file,kernel/fstdata.h))
 endif
-$(eval $(call add_include_file,kernel/hashlib.h))
-$(eval $(call add_include_file,kernel/json.h))
-$(eval $(call add_include_file,kernel/log.h))
-$(eval $(call add_include_file,kernel/macc.h))
-$(eval $(call add_include_file,kernel/modtools.h))
 $(eval $(call add_include_file,kernel/mem.h))
-$(eval $(call add_include_file,kernel/qcsat.h))
-$(eval $(call add_include_file,kernel/register.h))
-$(eval $(call add_include_file,kernel/rtlil.h))
-$(eval $(call add_include_file,kernel/satgen.h))
-$(eval $(call add_include_file,kernel/sigtools.h))
-$(eval $(call add_include_file,kernel/timinginfo.h))
-$(eval $(call add_include_file,kernel/utils.h))
-$(eval $(call add_include_file,kernel/yosys.h))
 $(eval $(call add_include_file,kernel/yw.h))
+$(eval $(call add_include_file,kernel/json.h))
 $(eval $(call add_include_file,libs/ezsat/ezsat.h))
 $(eval $(call add_include_file,libs/ezsat/ezminisat.h))
 ifeq ($(ENABLE_ZLIB),1)
@@ -647,16 +643,21 @@ $(eval $(call add_include_file,frontends/ast/ast.h))
 $(eval $(call add_include_file,frontends/ast/ast_binding.h))
 $(eval $(call add_include_file,frontends/blif/blifparse.h))
 $(eval $(call add_include_file,backends/rtlil/rtlil_backend.h))
-$(eval $(call add_include_file,backends/cxxrtl/runtime/cxxrtl/cxxrtl.h))
-$(eval $(call add_include_file,backends/cxxrtl/runtime/cxxrtl/cxxrtl_vcd.h))
-$(eval $(call add_include_file,backends/cxxrtl/runtime/cxxrtl/capi/cxxrtl_capi.cc))
-$(eval $(call add_include_file,backends/cxxrtl/runtime/cxxrtl/capi/cxxrtl_capi.h))
-$(eval $(call add_include_file,backends/cxxrtl/runtime/cxxrtl/capi/cxxrtl_capi_vcd.cc))
-$(eval $(call add_include_file,backends/cxxrtl/runtime/cxxrtl/capi/cxxrtl_capi_vcd.h))
+$(eval $(call add_include_file,backends/cxxrtl/cxxrtl.h))
+$(eval $(call add_include_file,backends/cxxrtl/cxxrtl_vcd.h))
+$(eval $(call add_include_file,backends/cxxrtl/cxxrtl_capi.cc))
+$(eval $(call add_include_file,backends/cxxrtl/cxxrtl_capi.h))
+$(eval $(call add_include_file,backends/cxxrtl/cxxrtl_vcd_capi.cc))
+$(eval $(call add_include_file,backends/cxxrtl/cxxrtl_vcd_capi.h))
 
 OBJS += kernel/driver.o kernel/register.o kernel/rtlil.o kernel/log.o kernel/calc.o kernel/yosys.o
 OBJS += kernel/binding.o
-OBJS += kernel/cellaigs.o kernel/celledges.o kernel/satgen.o kernel/qcsat.o kernel/mem.o kernel/ffmerge.o kernel/ff.o kernel/yw.o kernel/json.o kernel/fmt.o
+ifeq ($(ENABLE_ABC),1)
+ifneq ($(ABCEXTERNAL),)
+kernel/yosys.o: CXXFLAGS += -DABCEXTERNAL='"$(ABCEXTERNAL)"'
+endif
+endif
+OBJS += kernel/cellaigs.o kernel/celledges.o kernel/satgen.o kernel/qcsat.o kernel/mem.o kernel/ffmerge.o kernel/ff.o kernel/yw.o kernel/json.o
 ifeq ($(ENABLE_ZLIB),1)
 OBJS += kernel/fstdata.o
 endif
@@ -668,18 +669,17 @@ endif
 
 kernel/log.o: CXXFLAGS += -DYOSYS_SRC='"$(YOSYS_SRC)"'
 kernel/yosys.o: CXXFLAGS += -DYOSYS_DATDIR='"$(DATDIR)"' -DYOSYS_PROGRAM_PREFIX='"$(PROGRAM_PREFIX)"'
-ifeq ($(ENABLE_ABC),1)
-ifneq ($(ABCEXTERNAL),)
-kernel/yosys.o: CXXFLAGS += -DABCEXTERNAL='"$(ABCEXTERNAL)"'
-endif
-endif
 
 OBJS += libs/bigint/BigIntegerAlgorithms.o libs/bigint/BigInteger.o libs/bigint/BigIntegerUtils.o
 OBJS += libs/bigint/BigUnsigned.o libs/bigint/BigUnsignedInABase.o
 
 OBJS += libs/sha1/sha1.o
 
+ifneq ($(SMALL),1)
+
 OBJS += libs/json11/json11.o
+
+OBJS += libs/subcircuit/subcircuit.o
 
 OBJS += libs/ezsat/ezsat.o
 OBJS += libs/ezsat/ezminisat.o
@@ -695,10 +695,6 @@ OBJS += libs/fst/fastlz.o
 OBJS += libs/fst/lz4.o
 endif
 
-ifneq ($(SMALL),1)
-
-OBJS += libs/subcircuit/subcircuit.o
-
 include $(YOSYS_SRC)/frontends/*/Makefile.inc
 include $(YOSYS_SRC)/passes/*/Makefile.inc
 include $(YOSYS_SRC)/backends/*/Makefile.inc
@@ -707,9 +703,6 @@ include $(YOSYS_SRC)/techlibs/*/Makefile.inc
 else
 
 include $(YOSYS_SRC)/frontends/verilog/Makefile.inc
-ifeq ($(ENABLE_VERIFIC),1)
-include $(YOSYS_SRC)/frontends/verific/Makefile.inc
-endif
 include $(YOSYS_SRC)/frontends/rtlil/Makefile.inc
 include $(YOSYS_SRC)/frontends/ast/Makefile.inc
 include $(YOSYS_SRC)/frontends/blif/Makefile.inc
@@ -883,15 +876,12 @@ endif
 	+cd tests/arch/gowin && bash run-test.sh $(SEEDOPT)
 	+cd tests/arch/intel_alm && bash run-test.sh $(SEEDOPT)
 	+cd tests/arch/nexus && bash run-test.sh $(SEEDOPT)
-	+cd tests/arch/quicklogic/pp3 && bash run-test.sh $(SEEDOPT)
-	+cd tests/arch/quicklogic/qlf_k6n10f && bash run-test.sh $(SEEDOPT)
+	+cd tests/arch/quicklogic && bash run-test.sh $(SEEDOPT)
 	+cd tests/arch/gatemate && bash run-test.sh $(SEEDOPT)
 	+cd tests/rpc && bash run-test.sh
 	+cd tests/memfile && bash run-test.sh
 	+cd tests/verilog && bash run-test.sh
 	+cd tests/xprop && bash run-test.sh $(SEEDOPT)
-	+cd tests/fmt && bash run-test.sh
-	+cd tests/cxxrtl && bash run-test.sh
 	@echo ""
 	@echo "  Passed \"make test\"."
 	@echo ""

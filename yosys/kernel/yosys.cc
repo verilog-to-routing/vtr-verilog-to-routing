@@ -175,6 +175,48 @@ int ceil_log2(int x)
 #endif
 }
 
+std::string stringf(const char *fmt, ...)
+{
+	std::string string;
+	va_list ap;
+
+	va_start(ap, fmt);
+	string = vstringf(fmt, ap);
+	va_end(ap);
+
+	return string;
+}
+
+std::string vstringf(const char *fmt, va_list ap)
+{
+	std::string string;
+	char *str = NULL;
+
+#if defined(_WIN32 )|| defined(__CYGWIN__)
+	int sz = 64, rc;
+	while (1) {
+		va_list apc;
+		va_copy(apc, ap);
+		str = (char*)realloc(str, sz);
+		rc = vsnprintf(str, sz, fmt, apc);
+		va_end(apc);
+		if (rc >= 0 && rc < sz)
+			break;
+		sz *= 2;
+	}
+#else
+	if (vasprintf(&str, fmt, ap) < 0)
+		str = NULL;
+#endif
+
+	if (str != NULL) {
+		string = str;
+		free(str);
+	}
+
+	return string;
+}
+
 int readsome(std::istream &f, char *s, int n)
 {
 	int rc = int(f.readsome(s, n));
@@ -436,25 +478,6 @@ std::string make_temp_dir(std::string template_str)
 #endif
 }
 
-bool check_directory_exists(const std::string& dirname)
-{
-#if defined(_WIN32)
-	struct _stat info;
-	if (_stat(dirname.c_str(), &info) != 0)
-	{
-		return false;
-	}
-	return (info.st_mode & _S_IFDIR) != 0;
-#else
-	struct stat info;
-	if (stat(dirname.c_str(), &info) != 0)
-	{
-		return false;
-	}
-	return (info.st_mode & S_IFDIR) != 0;
-#endif
-}
-
 #ifdef _WIN32
 bool check_file_exists(std::string filename, bool)
 {
@@ -498,48 +521,6 @@ void remove_directory(std::string dirname)
 	free(namelist);
 	rmdir(dirname.c_str());
 #endif
-}
-
-bool create_directory(const std::string& dirname)
-{
-#if defined(_WIN32)
-	int ret = _mkdir(dirname.c_str());
-#else
-	mode_t mode = 0755;
-	int ret = mkdir(dirname.c_str(), mode);
-#endif
-	if (ret == 0)
-		return true;
-
-	switch (errno)
-	{
-	case ENOENT:
-		// parent didn't exist, try to create it
-		{
-			std::string::size_type pos = dirname.find_last_of('/');
-			if (pos == std::string::npos)
-#if defined(_WIN32)
-				pos = dirname.find_last_of('\\');
-			if (pos == std::string::npos)
-#endif
-				return false;
-			if (!create_directory( dirname.substr(0, pos) ))
-				return false;
-		}
-		// now, try to create again
-#if defined(_WIN32)
-		return 0 == _mkdir(dirname.c_str());
-#else
-		return 0 == mkdir(dirname.c_str(), mode);
-#endif
-
-	case EEXIST:
-		// done!
-		return check_directory_exists(dirname);
-
-	default:
-		return false;
-	}
 }
 
 std::string escape_filename_spaces(const std::string& filename)
@@ -842,10 +823,10 @@ static int tcl_yosys_cmd(ClientData, Tcl_Interp *interp, int argc, const char *a
 
 int yosys_tcl_iterp_init(Tcl_Interp *interp)
 {
-	if (Tcl_Init(interp)!=TCL_OK)
+    if (Tcl_Init(interp)!=TCL_OK)
 		log_warning("Tcl_Init() call failed - %s\n",Tcl_ErrnoMsg(Tcl_GetErrno()));
 	Tcl_CreateCommand(interp, "yosys", tcl_yosys_cmd, NULL, NULL);
-	return TCL_OK ;
+    return TCL_OK ;
 }
 
 void yosys_tcl_activate_repl()
@@ -1414,12 +1395,8 @@ void shell(RTLIL::Design *design)
 		if ((command = fgets(command_buffer, 4096, stdin)) == NULL)
 			break;
 #endif
-		if (command[strspn(command, " \t\r\n")] == 0) {
-#if defined(YOSYS_ENABLE_READLINE) || defined(YOSYS_ENABLE_EDITLINE)
-			free(command);
-#endif
+		if (command[strspn(command, " \t\r\n")] == 0)
 			continue;
-		}
 #if defined(YOSYS_ENABLE_READLINE) || defined(YOSYS_ENABLE_EDITLINE)
 		add_history(command);
 #endif
@@ -1441,17 +1418,10 @@ void shell(RTLIL::Design *design)
 			log_reset_stack();
 		}
 		design->check();
-#if defined(YOSYS_ENABLE_READLINE) || defined(YOSYS_ENABLE_EDITLINE)
-		if (command)
-			free(command);
-#endif
 	}
 	if (command == NULL)
 		printf("exit\n");
-#if defined(YOSYS_ENABLE_READLINE) || defined(YOSYS_ENABLE_EDITLINE)
-	else
-		free(command);
-#endif
+
 	recursion_counter--;
 	log_cmd_error_throw = false;
 }

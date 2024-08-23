@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 trap 'echo "ERROR in sv_implicit_ports.sh" >&2; exit 1' ERR
 

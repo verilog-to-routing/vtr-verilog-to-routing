@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 fail() {
 	echo "$1" >&2

@@ -17,7 +17,6 @@ output reg b
 endmodule
 EOT
 proc
-async2sync
 sat -verify -prove-asserts
 
 
@@ -43,7 +42,6 @@ output b, c
 endmodule
 EOT
 proc
-async2sync
 sat -verify -prove-asserts
 
 

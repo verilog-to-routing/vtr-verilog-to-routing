@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 set -ex
 if [ -z $ISE_DIR ]; then
 	ISE_DIR=/opt/Xilinx/ISE/14.7

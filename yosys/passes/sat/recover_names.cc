@@ -26,9 +26,15 @@
 
 #include <algorithm>
 #include <queue>
-#include <cinttypes>
 
 USING_YOSYS_NAMESPACE
+
+template<> struct hashlib::hash_ops<uint64_t> : hashlib::hash_int_ops
+{
+	static inline unsigned int hash(uint64_t a) {
+		return mkhash((unsigned int)(a), (unsigned int)(a >> 32));
+	}
+};
 
 PRIVATE_NAMESPACE_BEGIN
 
@@ -447,7 +453,7 @@ struct RecoverNamesWorker {
     pool<IdString> comb_whiteboxes, buffer_types;
 
     // class -> (gold, (gate, inverted))
-    dict<equiv_cls_t, std::pair<pool<IdBit>, dict<IdBit, bool>>> cls2bits;
+    dict<equiv_cls_t, std::pair<pool<IdBit>, dict<IdBit, bool>>> cls2bits; 
 
     void analyse_boxes()
     {
@@ -624,7 +630,7 @@ struct RecoverNamesWorker {
         	if (pop == 1 || pop == (8*sizeof(equiv_cls_t) - 1))
         		continue;
 
-        	log_debug("equivalence class: %016" PRIx64 "\n", cls.first);
+        	log_debug("equivalence class: %016lx\n", cls.first);
             const pool<IdBit> &gold_bits = cls2bits.at(cls.first).first;
             const pool<InvBit> &gate_bits = cls2bits.at(cls.first).second;
             if (gold_bits.empty() || gate_bits.empty())

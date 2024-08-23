@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 set -ex
 ../../yosys -q -o async_syn.v -r uut -p 'synth; rename uut syn' async.v
 ../../yosys -q -o async_prp.v -r uut -p 'prep; rename uut prp' async.v

@@ -60,7 +60,7 @@ struct EquivSimpleWorker
 		for (auto &conn : cell->connections())
 			if (yosys_celltypes.cell_input(cell->type, conn.first))
 				for (auto bit : sigmap(conn.second)) {
-					if (RTLIL::builtin_ff_cell_types().count(cell->type)) {
+					if (cell->type.in(ID($dff), ID($_DFF_P_), ID($_DFF_N_), ID($ff), ID($_FF_))) {
 						if (!conn.first.in(ID::CLK, ID::C))
 							next_seed.insert(bit);
 					} else
@@ -133,9 +133,11 @@ struct EquivSimpleWorker
 
 			for (auto bit_a : seed_a)
 				find_input_cone(next_seed_a, full_cells_cone_a, full_bits_cone_a, no_stop_cells, no_stop_bits, nullptr, bit_a);
+			next_seed_a.clear();
 
 			for (auto bit_b : seed_b)
 				find_input_cone(next_seed_b, full_cells_cone_b, full_bits_cone_b, no_stop_cells, no_stop_bits, nullptr, bit_b);
+			next_seed_b.clear();
 
 			pool<Cell*> short_cells_cone_a, short_cells_cone_b;
 			pool<SigBit> short_bits_cone_a, short_bits_cone_b;
@@ -143,12 +145,10 @@ struct EquivSimpleWorker
 
 			if (short_cones)
 			{
-				next_seed_a.clear();
 				for (auto bit_a : seed_a)
 					find_input_cone(next_seed_a, short_cells_cone_a, short_bits_cone_a, full_cells_cone_b, full_bits_cone_b, &input_bits, bit_a);
 				next_seed_a.swap(seed_a);
 
-				next_seed_b.clear();
 				for (auto bit_b : seed_b)
 					find_input_cone(next_seed_b, short_cells_cone_b, short_bits_cone_b, full_cells_cone_a, full_bits_cone_a, &input_bits, bit_b);
 				next_seed_b.swap(seed_b);
@@ -364,7 +364,7 @@ struct EquivSimplePass : public Pass {
 					unproven_cells_counter, GetSize(unproven_equiv_cells), log_id(module));
 
 			for (auto cell : module->cells()) {
-				if (!ct.cell_known(cell->type))
+				if (!ct.cell_known(cell->type) && !cell->type.in(ID($dff), ID($_DFF_P_), ID($_DFF_N_), ID($ff), ID($_FF_)))
 					continue;
 				for (auto &conn : cell->connections())
 					if (yosys_celltypes.cell_output(cell->type, conn.first))

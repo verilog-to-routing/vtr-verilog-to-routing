@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 set -e
 for x in *.v; do
   echo "Running $x.."
