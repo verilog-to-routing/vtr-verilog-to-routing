@@ -1,6 +1,6 @@
 
-CONFIG := clang
-# CONFIG := gcc
+# CONFIG := clang
+CONFIG := gcc
 # CONFIG := afl-gcc
 # CONFIG := emcc
 # CONFIG := wasi
