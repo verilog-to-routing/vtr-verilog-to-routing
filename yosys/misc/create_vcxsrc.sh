@@ -30,7 +30,6 @@ popd
 	tail -n +$((n+1)) "$vcxsrc"/YosysVS/YosysVS.vcxproj
 } > "$vcxsrc"/YosysVS/YosysVS.vcxproj.new
 
-sed -i 's,</AdditionalIncludeDirectories>,</AdditionalIncludeDirectories>\n      <LanguageStandard>stdcpp17</LanguageStandard>\n      <AdditionalOptions>/Zc:__cplusplus %(AdditionalOptions)</AdditionalOptions>,g' "$vcxsrc"/YosysVS/YosysVS.vcxproj.new
 mv "$vcxsrc"/YosysVS/YosysVS.vcxproj.new "$vcxsrc"/YosysVS/YosysVS.vcxproj
 
 mkdir -p "$vcxsrc"/yosys
@@ -47,7 +46,7 @@ Open "Git Bash" in this directory and run:
 	mv yosys yosys.bak
 	git clone https://github.com/YosysHQ/yosys.git yosys
 	cd yosys
-	git checkout -B main $(git rev-parse HEAD | cut -c1-10)
+	git checkout -B master $(git rev-parse HEAD | cut -c1-10)
 	unzip ../genfiles.zip
 EOT
 

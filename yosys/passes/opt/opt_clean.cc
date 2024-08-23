@@ -35,12 +35,10 @@ struct keep_cache_t
 {
 	Design *design;
 	dict<Module*, bool> cache;
-	bool purge_mode = false;
 
-	void reset(Design *design = nullptr, bool purge_mode = false)
+	void reset(Design *design = nullptr)
 	{
 		this->design = design;
-		this->purge_mode = purge_mode;
 		cache.clear();
 	}
 
@@ -88,9 +86,6 @@ struct keep_cache_t
 			return true;
 
 		if (cell->has_keep_attr())
-			return true;
-
-		if (!purge_mode && cell->type == ID($scopeinfo))
 			return true;
 
 		if (cell->module && cell->module->design)
@@ -241,8 +236,6 @@ int count_nontrivial_wire_attrs(RTLIL::Wire *w)
 {
 	int count = w->attributes.size();
 	count -= w->attributes.count(ID::src);
-	count -= w->attributes.count(ID::hdlname);
-	count -= w->attributes.count(ID(scopename));
 	count -= w->attributes.count(ID::unused_bits);
 	return count;
 }
@@ -442,6 +435,13 @@ bool rmunused_module_signals(RTLIL::Module *module, bool purge_mode, bool verbos
 		} else
 		if (!raw_used_signals.check_any(s1)) {
 			// delete wires that aren't used by anything directly
+			goto delete_this_wire;
+		} else
+		if (!used_signals.check_any(s2)) {
+			// this path shouldn't be possible: this wire is used directly (otherwise it would get cleaned up above), and indirectly
+			// used wires are a superset of those used directly
+			log_assert(false);
+			// delete wires that aren't used by anything indirectly, even though other wires may alias it
 			goto delete_this_wire;
 		}
 
@@ -661,7 +661,7 @@ struct OptCleanPass : public Pass {
 		}
 		extra_args(args, argidx, design);
 
-		keep_cache.reset(design, purge_mode);
+		keep_cache.reset(design);
 
 		ct_reg.setup_internals_mem();
 		ct_reg.setup_internals_anyinit();

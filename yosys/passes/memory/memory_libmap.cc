@@ -2229,9 +2229,6 @@ struct MemoryLibMapPass : public Pass {
 		Library lib = parse_library(lib_files, defines);
 
 		for (auto module : design->selected_modules()) {
-			if (module->has_processes_warn())
-				continue;
-
 			MapWorker worker(module);
 			auto mems = Mem::get_selected_memories(module);
 			for (auto &mem : mems)

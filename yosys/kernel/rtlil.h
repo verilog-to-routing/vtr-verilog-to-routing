@@ -17,11 +17,10 @@
  *
  */
 
+#include "kernel/yosys.h"
+
 #ifndef RTLIL_H
 #define RTLIL_H
-
-#include "kernel/yosys_common.h"
-#include "kernel/yosys.h"
 
 YOSYS_NAMESPACE_BEGIN
 
@@ -713,7 +712,7 @@ struct RTLIL::Const
 	inline unsigned int hash() const {
 		unsigned int h = mkhash_init;
 		for (auto b : bits)
-			h = mkhash(h, b);
+			mkhash(h, b);
 		return h;
 	}
 };

@@ -543,13 +543,13 @@ struct EvalPass : public Pass {
 
 				int pos = 0;
 				for (auto &c : tabsigs.chunks()) {
-					tab_line.push_back(log_signal(RTLIL::SigSpec(tabvals).extract(pos, c.width), false));
+					tab_line.push_back(log_signal(RTLIL::SigSpec(tabvals).extract(pos, c.width)));
 					pos += c.width;
 				}
 
 				pos = 0;
 				for (auto &c : signal.chunks()) {
-					tab_line.push_back(log_signal(value.extract(pos, c.width), false));
+					tab_line.push_back(log_signal(value.extract(pos, c.width)));
 					pos += c.width;
 				}
 

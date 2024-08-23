@@ -1070,7 +1070,7 @@ bool dump_cell_expr(std::ostream &f, std::string indent, RTLIL::Cell *cell)
 		f << stringf(";\n");
 		return true;
 	}
-
+	
 	if (cell->type == ID($_BUF_)) {
 		f << stringf("%s" "assign ", indent.c_str());
 		dump_sigspec(f, cell->getPort(ID::Y));
@@ -1871,13 +1871,6 @@ bool dump_cell_expr(std::ostream &f, std::string indent, RTLIL::Cell *cell)
 
 void dump_cell(std::ostream &f, std::string indent, RTLIL::Cell *cell)
 {
-	// To keep the output compatible with other tools we ignore $scopeinfo
-	// cells that exist only to hold metadata. If in the future that metadata
-	// should be exposed as part of the write_verilog output it should be
-	// opt-in and/or represented as something else than a $scopeinfo cell.
-	if (cell->type == ID($scopeinfo))
-		return;
-
 	// Handled by dump_memory
 	if (cell->is_mem_cell())
 		return;
@@ -2014,29 +2007,22 @@ void dump_sync_effect(std::ostream &f, std::string indent, const RTLIL::SigSpec 
 
 void dump_conn(std::ostream &f, std::string indent, const RTLIL::SigSpec &left, const RTLIL::SigSpec &right)
 {
-	bool all_chunks_wires = true;
-	for (auto &chunk : left.chunks())
-		if (chunk.is_wire() && reg_wires.count(chunk.wire->name))
-			all_chunks_wires = false;
-	if (!simple_lhs && all_chunks_wires) {
-		f << stringf("%s" "assign ", indent.c_str());
-		dump_sigspec(f, left);
-		f << stringf(" = ");
-		dump_sigspec(f, right);
-		f << stringf(";\n");
-	} else {
+	if (simple_lhs) {
 		int offset = 0;
 		for (auto &chunk : left.chunks()) {
-			if (chunk.is_wire() && reg_wires.count(chunk.wire->name))
-				f << stringf("%s" "always%s\n%s  ", indent.c_str(), systemverilog ? "_comb" : " @*", indent.c_str());
-			else
-				f << stringf("%s" "assign ", indent.c_str());
+			f << stringf("%s" "assign ", indent.c_str());
 			dump_sigspec(f, chunk);
 			f << stringf(" = ");
 			dump_sigspec(f, right.extract(offset, GetSize(chunk)));
 			f << stringf(";\n");
 			offset += GetSize(chunk);
 		}
+	} else {
+		f << stringf("%s" "assign ", indent.c_str());
+		dump_sigspec(f, left);
+		f << stringf(" = ");
+		dump_sigspec(f, right);
+		f << stringf(";\n");
 	}
 }
 
@@ -2283,15 +2269,11 @@ void dump_module(std::ostream &f, std::string indent, RTLIL::Module *module)
 					active_initdata[sig[i]] = val[i];
 		}
 
-	bool has_sync_rules = false;
-	for (auto process : module->processes)
-		if (!process.second->syncs.empty())
-			has_sync_rules = true;
-	if (has_sync_rules)
-		log_warning("Module %s contains RTLIL processes with sync rules. Such RTLIL "
-				"processes can't always be mapped directly to Verilog always blocks. "
-				"unintended changes in simulation behavior are possible! Use \"proc\" "
-				"to convert processes to logic networks and registers.\n", log_id(module));
+	if (!module->processes.empty())
+		log_warning("Module %s contains unmapped RTLIL processes. RTLIL processes\n"
+				"can't always be mapped directly to Verilog always blocks. Unintended\n"
+				"changes in simulation behavior are possible! Use \"proc\" to convert\n"
+				"processes to logic networks and registers.\n", log_id(module));
 
 	f << stringf("\n");
 	for (auto it = module->processes.begin(); it != module->processes.end(); ++it)

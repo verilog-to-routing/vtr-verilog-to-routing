@@ -558,12 +558,8 @@ struct MemorySharePass : public Pass {
 		extra_args(args, argidx, design);
 		MemoryShareWorker msw(design, flag_widen, flag_sat);
 
-		for (auto module : design->selected_modules()) {
-			if (module->has_processes_warn())
-				continue;
-
+		for (auto module : design->selected_modules())
 			msw(module);
-		}
 	}
 } MemorySharePass;
 

@@ -784,8 +784,9 @@ struct HelpPass : public Pass {
 		fprintf(f, ".. raw:: latex\n\n    \\begin{comment}\n\n");
 
 		// render html
-		fprintf(f, ".. cmd:def:: %s\n", cmd.c_str());
-		fprintf(f, "    :title: %s\n\n", title.c_str());
+		fprintf(f, ":code:`yosys> help %s`\n", cmd.c_str());
+		fprintf(f, "--------------------------------------------------------------------------------\n\n");
+		fprintf(f, ".. container:: cmdref\n");
 		std::stringstream ss;
 		std::string textcp = text;
 		ss << text;
@@ -990,45 +991,5 @@ struct MinisatSatSolver : public SatSolver {
 		return new ezMiniSAT();
 	}
 } MinisatSatSolver;
-
-struct LicensePass : public Pass {
-	LicensePass() : Pass("license", "print license terms") { }
-	void help() override
-	{
-		log("\n");
-		log("    license\n");
-		log("\n");
-		log("This command produces the following notice.\n");
-		notice();
-	}
-	void execute(std::vector<std::string>, RTLIL::Design*) override
-	{
-		notice();
-	}
-	void notice()
-	{
-		log("\n");
-		log(" /----------------------------------------------------------------------------\\\n");
-		log(" |                                                                            |\n");
-		log(" |  yosys -- Yosys Open SYnthesis Suite                                       |\n");
-		log(" |                                                                            |\n");
-		log(" |  Copyright (C) 2012 - 2024  Claire Xenia Wolf <claire@yosyshq.com>         |\n");
-		log(" |                                                                            |\n");
-		log(" |  Permission to use, copy, modify, and/or distribute this software for any  |\n");
-		log(" |  purpose with or without fee is hereby granted, provided that the above    |\n");
-		log(" |  copyright notice and this permission notice appear in all copies.         |\n");
-		log(" |                                                                            |\n");
-		log(" |  THE SOFTWARE IS PROVIDED \"AS IS\" AND THE AUTHOR DISCLAIMS ALL WARRANTIES  |\n");
-		log(" |  WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF          |\n");
-		log(" |  MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR   |\n");
-		log(" |  ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES    |\n");
-		log(" |  WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN     |\n");
-		log(" |  ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF   |\n");
-		log(" |  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.            |\n");
-		log(" |                                                                            |\n");
-		log(" \\----------------------------------------------------------------------------/\n");
-		log("\n");
-	}
-} LicensePass;
 
 YOSYS_NAMESPACE_END

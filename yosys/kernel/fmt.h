@@ -53,24 +53,22 @@ struct VerilogFmtArg {
 // Must be kept in sync with `struct fmt_part` in backends/cxxrtl/runtime/cxxrtl/cxxrtl.h!
 struct FmtPart {
 	enum {
-		LITERAL  	= 0,
+		STRING  	= 0,
 		INTEGER 	= 1,
-		STRING    = 2,
-		UNICHAR   = 3,
-		VLOG_TIME = 4,
+		CHARACTER = 2,
+		VLOG_TIME = 3,
 	} type;
 
-	// LITERAL type
+	// STRING type
 	std::string str;
 
-	// INTEGER/STRING/UNICHAR types
+	// INTEGER/CHARACTER types
 	RTLIL::SigSpec sig;
 
-	// INTEGER/STRING/VLOG_TIME types
+	// INTEGER/CHARACTER/VLOG_TIME types
 	enum {
 		RIGHT	= 0,
 		LEFT	= 1,
-		NUMERIC	= 2,
 	} justify = RIGHT;
 	char padding = '\0';
 	size_t width = 0;
@@ -78,14 +76,7 @@ struct FmtPart {
 	// INTEGER type
 	unsigned base = 10;
 	bool signed_ = false;
-	enum {
-		MINUS		= 0,
-		PLUS_MINUS	= 1,
-		SPACE_MINUS	= 2,
-	} sign = MINUS;
-	bool hex_upper = false;
-	bool show_base = false;
-	bool group = false;
+	bool plus = false;
 
 	// VLOG_TIME type
 	bool realtime = false;
@@ -95,7 +86,7 @@ struct Fmt {
 public:
 	std::vector<FmtPart> parts;
 
-	void append_literal(const std::string &str);
+	void append_string(const std::string &str);
 
 	void parse_rtlil(const RTLIL::Cell *cell);
 	void emit_rtlil(RTLIL::Cell *cell) const;

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -e
+set -ex
 
 prefix=${1%.ok}
 prefix=${prefix%.sv}
@@ -58,33 +58,16 @@ generate_sby() {
 }
 
 if [ -f $prefix.ys ]; then
-	set -x
 	$PWD/../../yosys -q -e "Assert .* failed." -s $prefix.ys
 elif [ -f $prefix.sv ]; then
 	generate_sby pass > ${prefix}_pass.sby
 	generate_sby fail > ${prefix}_fail.sby
-
-	# Check that SBY is up to date enough for this yosys version
-	if sby --help | grep -q -e '--status'; then
-		set -x
-		sby --yosys $PWD/../../yosys -f ${prefix}_pass.sby
-		sby --yosys $PWD/../../yosys -f ${prefix}_fail.sby
-	else
-		echo "sva test '${prefix}' requires an up to date SBY, skipping"
-	fi
+	sby --yosys $PWD/../../yosys -f ${prefix}_pass.sby
+	sby --yosys $PWD/../../yosys -f ${prefix}_fail.sby
 else
 	generate_sby pass > ${prefix}.sby
-
-	# Check that SBY is up to date enough for this yosys version
-	if sby --help | grep -q -e '--status'; then
-		set -x
-		sby --yosys $PWD/../../yosys -f ${prefix}.sby
-	else
-		echo "sva test '${prefix}' requires an up to date SBY, skipping"
-	fi
+	sby --yosys $PWD/../../yosys -f ${prefix}.sby
 fi
-
-{ set +x; } &>/dev/null
 
 touch $prefix.ok
 

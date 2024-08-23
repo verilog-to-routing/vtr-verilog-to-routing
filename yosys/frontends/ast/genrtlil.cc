@@ -790,7 +790,7 @@ struct AST_INTERNAL::ProcessGenerator
 				Fmt fmt;
 				fmt.parse_verilog(args, /*sformat_like=*/false, default_base, /*task_name=*/ast->str, current_module->name);
 				if (ast->str.substr(0, 8) == "$display")
-					fmt.append_literal("\n");
+					fmt.append_string("\n");
 				fmt.emit_rtlil(cell);
 			} else if (!ast->str.empty()) {
 				log_file_error(ast->filename, ast->location.first_line, "Found unsupported invocation of system task `%s'!\n", ast->str.c_str());
@@ -1045,7 +1045,7 @@ void AstNode::detectSignWidthWorker(int &width_hint, bool &sign_hint, bool *foun
 			if (children.size() > 1)
 				range = children[1];
 		} else if (id_ast->type == AST_STRUCT_ITEM || id_ast->type == AST_STRUCT || id_ast->type == AST_UNION) {
-			AstNode *tmp_range = make_index_range(id_ast);
+			AstNode *tmp_range = make_struct_member_range(this, id_ast);
 			this_width = tmp_range->range_left - tmp_range->range_right + 1;
 			delete tmp_range;
 		} else
@@ -1584,7 +1584,7 @@ RTLIL::SigSpec AstNode::genRTLIL(int width_hint, bool sign_hint)
 			chunk.width = wire->width;
 			chunk.offset = 0;
 
-			if ((member_node = get_struct_member())) {
+			if ((member_node = get_struct_member(this))) {
 				// Clamp wire chunk to range of member within struct/union.
 				chunk.width = member_node->range_left - member_node->range_right + 1;
 				chunk.offset = member_node->range_right;
@@ -2224,7 +2224,7 @@ RTLIL::SigSpec AstNode::genRTLIL(int width_hint, bool sign_hint)
 				else
 					input_error("FATAL.\n");
 			} else {
-				input_error("Unknown elaboration system task '%s'.\n", str.c_str());
+				input_error("Unknown elabortoon system task '%s'.\n", str.c_str());
 			}
 		} break;
 

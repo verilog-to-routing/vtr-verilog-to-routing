@@ -22,9 +22,9 @@
 
 USING_YOSYS_NAMESPACE
 
-void Fmt::append_literal(const std::string &str) {
+void Fmt::append_string(const std::string &str) {
 	FmtPart part = {};
-	part.type = FmtPart::LITERAL;
+	part.type = FmtPart::STRING;
 	part.str = str;
 	parts.push_back(part);
 }
@@ -42,11 +42,11 @@ void Fmt::parse_rtlil(const RTLIL::Cell *cell) {
 		} else if (fmt.substr(i, 2) == "{{") {
 			part.str += '{';
 			++i;
-		} else if (fmt[i] == '}') {
+		} else if (fmt[i] == '}')
 			log_assert(false && "Unexpected '}' in format string");
-		} else if (fmt[i] == '{') {
+		else if (fmt[i] == '{') {
 			if (!part.str.empty()) {
-				part.type = FmtPart::LITERAL;
+				part.type = FmtPart::STRING;
 				parts.push_back(part);
 				part = {};
 			}
@@ -74,24 +74,19 @@ void Fmt::parse_rtlil(const RTLIL::Cell *cell) {
 			part.sig = args.extract(0, arg_size);
 			args.remove(0, arg_size);
 
-			if (fmt[i] == 'U') {
-				part.type = FmtPart::UNICHAR;
-				++i;
-				goto success;
-			}
-
 			if (fmt[i] == '>')
 				part.justify = FmtPart::RIGHT;
 			else if (fmt[i] == '<')
 				part.justify = FmtPart::LEFT;
-			else if (fmt[i] == '=')
-				part.justify = FmtPart::NUMERIC;
 			else
 				log_assert(false && "Unexpected justification in format substitution");
 			if (++i == fmt.size())
 				log_assert(false && "Unexpected end in format substitution");
 
-			part.padding = fmt[i];
+			if (fmt[i] == '0' || fmt[i] == ' ')
+				part.padding = fmt[i];
+			else
+				log_assert(false && "Unexpected padding in format substitution");
 			if (++i == fmt.size())
 				log_assert(false && "Unexpected end in format substitution");
 
@@ -112,12 +107,8 @@ void Fmt::parse_rtlil(const RTLIL::Cell *cell) {
 				} else if (fmt[i] == 'h') {
 					part.type = FmtPart::INTEGER;
 					part.base = 16;
-				} else if (fmt[i] == 'H') {
-					part.type = FmtPart::INTEGER;
-					part.base = 16;
-					part.hex_upper = true;
 				} else if (fmt[i] == 'c') {
-					part.type = FmtPart::STRING;
+					part.type = FmtPart::CHARACTER;
 				} else if (fmt[i] == 't') {
 					part.type = FmtPart::VLOG_TIME;
 				} else if (fmt[i] == 'r') {
@@ -133,29 +124,10 @@ void Fmt::parse_rtlil(const RTLIL::Cell *cell) {
 				log_assert(false && "Unexpected end in format substitution");
 
 			if (part.type == FmtPart::INTEGER) {
-				if (fmt[i] == '-') {
-					part.sign = FmtPart::MINUS;
+				if (fmt[i] == '+') {
+					part.plus = true;
 					if (++i == fmt.size())
 						log_assert(false && "Unexpected end in format substitution");
-				} else if (fmt[i] == '+') {
-					part.sign = FmtPart::PLUS_MINUS;
-					if (++i == fmt.size())
-						log_assert(false && "Unexpected end in format substitution");
-				} else if (fmt[i] == ' ') {
-					part.sign = FmtPart::SPACE_MINUS;
-					if (++i == fmt.size())
-						log_assert(false && "Unexpected end in format substitution");
-				} else {
-					// also accept no sign character and treat like MINUS for compatibility
-				}
-
-				if (fmt[i] == '#') {
-					part.show_base = true;
-					++i;
-				}
-				if (fmt[i] == '_') {
-					part.group = true;
-					++i;
 				}
 
 				if (fmt[i] == 'u')
@@ -168,7 +140,6 @@ void Fmt::parse_rtlil(const RTLIL::Cell *cell) {
 					log_assert(false && "Unexpected end in format substitution");
 			}
 
-		success:
 			if (fmt[i] != '}')
 				log_assert(false && "Expected '}' after format substitution");
 
@@ -179,7 +150,7 @@ void Fmt::parse_rtlil(const RTLIL::Cell *cell) {
 		}
 	}
 	if (!part.str.empty()) {
-		part.type = FmtPart::LITERAL;
+		part.type = FmtPart::STRING;
 		parts.push_back(part);
 	}
 }
@@ -190,7 +161,7 @@ void Fmt::emit_rtlil(RTLIL::Cell *cell) const {
 
 	for (auto &part : parts) {
 		switch (part.type) {
-			case FmtPart::LITERAL:
+			case FmtPart::STRING:
 				for (char c : part.str) {
 					if (c == '{')
 						fmt += "{{";
@@ -201,15 +172,10 @@ void Fmt::emit_rtlil(RTLIL::Cell *cell) const {
 				}
 				break;
 
-			case FmtPart::UNICHAR:
-				log_assert(part.sig.size() <= 32);
-				fmt += "{U}";
-				break;
-
 			case FmtPart::VLOG_TIME:
 				log_assert(part.sig.size() == 0);
 				YS_FALLTHROUGH
-			case FmtPart::STRING:
+			case FmtPart::CHARACTER:
 				log_assert(part.sig.size() % 8 == 0);
 				YS_FALLTHROUGH
 			case FmtPart::INTEGER:
@@ -221,8 +187,6 @@ void Fmt::emit_rtlil(RTLIL::Cell *cell) const {
 					fmt += '>';
 				else if (part.justify == FmtPart::LEFT)
 					fmt += '<';
-				else if (part.justify == FmtPart::NUMERIC)
-					fmt += '=';
 				else log_abort();
 				log_assert(part.width == 0 || part.padding != '\0');
 				fmt += part.padding != '\0' ? part.padding : ' ';
@@ -233,18 +197,13 @@ void Fmt::emit_rtlil(RTLIL::Cell *cell) const {
 						case  2: fmt += 'b'; break;
 						case  8: fmt += 'o'; break;
 						case 10: fmt += 'd'; break;
-						case 16: fmt += part.hex_upper ? 'H' : 'h'; break;
+						case 16: fmt += 'h'; break;
 						default: log_abort();
 					}
-					switch (part.sign) {
-						case FmtPart::MINUS:       fmt += '-'; break;
-						case FmtPart::PLUS_MINUS:  fmt += '+'; break;
-						case FmtPart::SPACE_MINUS: fmt += ' '; break;
-					}
-					fmt += part.show_base ? "#" : "";
-					fmt += part.group ? "_" : "";
+					if (part.plus)
+						fmt += '+';
 					fmt += part.signed_ ? 's' : 'u';
-				} else if (part.type == FmtPart::STRING) {
+				} else if (part.type == FmtPart::CHARACTER) {
 					fmt += 'c';
 				} else if (part.type == FmtPart::VLOG_TIME) {
 					if (part.realtime)
@@ -340,12 +299,12 @@ void Fmt::apply_verilog_automatic_sizing_and_add(FmtPart &part)
 		part.width = places;
 
 		if (part.justify == FmtPart::RIGHT) {
-			append_literal(gap);
+			append_string(gap);
 			parts.push_back(part);
 		} else {
 			part.justify = FmtPart::RIGHT;
 			parts.push_back(part);
-			append_literal(gap);
+			append_string(gap);
 		}
 	}
 }
@@ -396,7 +355,7 @@ void Fmt::parse_verilog(const std::vector<VerilogFmtArg> &args, bool sformat_lik
 							part.str += module_name.str();
 						} else {
 							if (!part.str.empty()) {
-								part.type = FmtPart::LITERAL;
+								part.type = FmtPart::STRING;
 								parts.push_back(part);
 								part = {};
 							}
@@ -416,7 +375,7 @@ void Fmt::parse_verilog(const std::vector<VerilogFmtArg> &args, bool sformat_lik
 									part.justify = FmtPart::LEFT;
 								} else if (fmt[i] == '+') {
 									// always show sign; not in IEEE 1800-2017 or verilator but iverilog has it
-									part.sign = FmtPart::PLUS_MINUS;
+									part.plus = true;
 								} else break;
 							}
 							if (i == fmt.size()) {
@@ -449,11 +408,11 @@ void Fmt::parse_verilog(const std::vector<VerilogFmtArg> &args, bool sformat_lik
 									part.type = FmtPart::INTEGER;
 									part.base = 16;
 								} else if (fmt[i] == 'c' || fmt[i] == 'C') {
-									part.type = FmtPart::STRING;
+									part.type = FmtPart::CHARACTER;
 									part.sig.extend_u0(8);
 									// %10c and %010c not fully defined in IEEE 1800-2017 and do different things in iverilog
 								} else if (fmt[i] == 's' || fmt[i] == 'S') {
-									part.type = FmtPart::STRING;
+									part.type = FmtPart::CHARACTER;
 									if ((part.sig.size() % 8) != 0)
 										part.sig.extend_u0((part.sig.size() + 7) / 8 * 8);
 									// %10s and %010s not fully defined in IEEE 1800-2017 and do the same thing in iverilog
@@ -476,20 +435,12 @@ void Fmt::parse_verilog(const std::vector<VerilogFmtArg> &args, bool sformat_lik
 								log_file_error(fmtarg->filename, fmtarg->first_line, "System task `%s' called with incomplete format specifier in argument %zu.\n", task_name.c_str(), fmtarg - args.begin() + 1);
 							}
 
-							if (part.padding == '\0') {
-								if (has_leading_zero && part.justify == FmtPart::RIGHT) {
-									part.padding = '0';
-									part.justify = FmtPart::NUMERIC;
-								} else {
-									part.padding = ' ';
-								}
-							}
+							if (part.padding == '\0')
+								part.padding = (has_leading_zero && part.justify == FmtPart::RIGHT) ? '0' : ' ';
 
-							if (part.type == FmtPart::INTEGER && part.base != 10 && part.sign != FmtPart::MINUS)
+							if (part.type == FmtPart::INTEGER && part.base != 10 && part.plus)
 								log_file_error(fmtarg->filename, fmtarg->first_line, "System task `%s' called with invalid format specifier in argument %zu.\n", task_name.c_str(), fmtarg - args.begin() + 1);
 
-							if (part.base != 10)
-								part.signed_ = false;
 							if (part.type == FmtPart::INTEGER && !has_leading_zero)
 								apply_verilog_automatic_sizing_and_add(part);
 							else
@@ -498,12 +449,12 @@ void Fmt::parse_verilog(const std::vector<VerilogFmtArg> &args, bool sformat_lik
 						}
 					}
 					if (!part.str.empty()) {
-						part.type = FmtPart::LITERAL;
+						part.type = FmtPart::STRING;
 						parts.push_back(part);
 					}
 				} else {
 					FmtPart part = {};
-					part.type = FmtPart::LITERAL;
+					part.type = FmtPart::STRING;
 					part.str = arg->str;
 					parts.push_back(part);
 				}
@@ -523,7 +474,7 @@ std::vector<VerilogFmtArg> Fmt::emit_verilog() const
 
 	for (auto &part : parts) {
 		switch (part.type) {
-			case FmtPart::LITERAL:
+			case FmtPart::STRING:
 				for (char c : part.str) {
 					if (c == '%')
 						fmt.str += "%%";
@@ -540,13 +491,14 @@ std::vector<VerilogFmtArg> Fmt::emit_verilog() const
 				args.push_back(arg);
 
 				fmt.str += '%';
-				if (part.sign == FmtPart::PLUS_MINUS || part.sign == FmtPart::SPACE_MINUS)
-					fmt.str += '+'; // treat space/minus as plus/minus
+				if (part.plus)
+					fmt.str += '+';
 				if (part.justify == FmtPart::LEFT)
 					fmt.str += '-';
 				if (part.width == 0) {
 					fmt.str += '0';
 				} else if (part.width > 0) {
+					log_assert(part.padding == ' ' || part.padding == '0');
 					if (part.base != 10 || part.padding == '0')
 						fmt.str += '0';
 					fmt.str += std::to_string(part.width);
@@ -555,13 +507,13 @@ std::vector<VerilogFmtArg> Fmt::emit_verilog() const
 					case  2: fmt.str += 'b'; break;
 					case  8: fmt.str += 'o'; break;
 					case 10: fmt.str += 'd'; break;
-					case 16: fmt.str += 'h'; break; // treat uppercase hex as lowercase
+					case 16: fmt.str += 'h'; break;
 					default: log_abort();
 				}
 				break;
 			}
 
-			case FmtPart::STRING: {
+			case FmtPart::CHARACTER: {
 				VerilogFmtArg arg;
 				arg.type = VerilogFmtArg::INTEGER;
 				arg.sig = part.sig;
@@ -572,6 +524,7 @@ std::vector<VerilogFmtArg> Fmt::emit_verilog() const
 					fmt.str += '-';
 				if (part.sig.size() == 8) {
 					if (part.width > 0) {
+						log_assert(part.padding == '0' || part.padding == ' ');
 						if (part.padding == '0')
 							fmt.str += part.padding;
 						fmt.str += std::to_string(part.width);
@@ -580,20 +533,11 @@ std::vector<VerilogFmtArg> Fmt::emit_verilog() const
 				} else {
 					log_assert(part.sig.size() % 8 == 0);
 					if (part.width > 0) {
+						log_assert(part.padding == ' '); // no zero padding
 						fmt.str += std::to_string(part.width);
 					}
 					fmt.str += 's';
 				}
-				break;
-			}
-
-			case FmtPart::UNICHAR: {
-				VerilogFmtArg arg;
-				arg.type = VerilogFmtArg::INTEGER;
-				arg.sig = part.sig.extract(0, 7); // only ASCII
-				args.push_back(arg);
-
-				fmt.str += "%c";
 				break;
 			}
 
@@ -605,11 +549,11 @@ std::vector<VerilogFmtArg> Fmt::emit_verilog() const
 				args.push_back(arg);
 
 				fmt.str += '%';
-				log_assert(part.sign == FmtPart::MINUS || part.sign == FmtPart::PLUS_MINUS);
-				if (part.sign == FmtPart::PLUS_MINUS)
+				if (part.plus)
 					fmt.str += '+';
 				if (part.justify == FmtPart::LEFT)
 					fmt.str += '-';
+				log_assert(part.padding == ' ' || part.padding == '0');
 				if (part.padding == '0' && part.width > 0)
 					fmt.str += '0';
 				fmt.str += std::to_string(part.width);
@@ -655,35 +599,24 @@ void Fmt::emit_cxxrtl(std::ostream &os, std::string indent, std::function<void(c
 		os << indent << "buf += fmt_part { ";
 		os << "fmt_part::";
 		switch (part.type) {
-			case FmtPart::LITERAL:   os << "LITERAL";   break;
-			case FmtPart::INTEGER:   os << "INTEGER";   break;
 			case FmtPart::STRING:    os << "STRING";    break;
-			case FmtPart::UNICHAR:   os << "UNICHAR";   break;
+			case FmtPart::INTEGER:   os << "INTEGER";   break;
+			case FmtPart::CHARACTER: os << "CHARACTER"; break;
 			case FmtPart::VLOG_TIME: os << "VLOG_TIME"; break;
 		}
 		os << ", ";
 		os << escape_cxx_string(part.str) << ", ";
 		os << "fmt_part::";
 		switch (part.justify) {
-			case FmtPart::LEFT:    os << "LEFT";    break;
-			case FmtPart::RIGHT:   os << "RIGHT";   break;
-			case FmtPart::NUMERIC: os << "NUMERIC"; break;
+			case FmtPart::LEFT:  os << "LEFT";  break;
+			case FmtPart::RIGHT: os << "RIGHT"; break;
 		}
 		os << ", ";
 		os << "(char)" << (int)part.padding << ", ";
 		os << part.width << ", ";
 		os << part.base << ", ";
 		os << part.signed_ << ", ";
-		os << "fmt_part::";
-		switch (part.sign) {
-			case FmtPart::MINUS:       os << "MINUS";       break;
-			case FmtPart::PLUS_MINUS:  os << "PLUS_MINUS";  break;
-			case FmtPart::SPACE_MINUS: os << "SPACE_MINUS"; break;
-		}
-		os << ", ";
-		os << part.hex_upper << ", ";
-		os << part.show_base << ", ";
-		os << part.group << ", ";
+		os << part.plus << ", ";
 		os << part.realtime;
 		os << " }.render(";
 		emit_sig(part.sig);
@@ -698,62 +631,19 @@ std::string Fmt::render() const
 
 	for (auto &part : parts) {
 		switch (part.type) {
-			case FmtPart::LITERAL:
+			case FmtPart::STRING:
 				str += part.str;
 				break;
 
-			case FmtPart::UNICHAR: {
-				RTLIL::Const value = part.sig.as_const();
-				uint32_t codepoint = value.as_int();
-				if (codepoint >= 0x10000)
-					str += (char)(0xf0 |  (codepoint >> 18));
-				else if (codepoint >= 0x800)
-					str += (char)(0xe0 |  (codepoint >> 12));
-				else if (codepoint >= 0x80)
-					str += (char)(0xc0 |  (codepoint >>  6));
-				else
-					str += (char)codepoint;
-				if (codepoint >= 0x10000)
-					str += (char)(0x80 | ((codepoint >> 12) & 0x3f));
-				if (codepoint >= 0x800)
-					str += (char)(0x80 | ((codepoint >>  6) & 0x3f));
-				if (codepoint >= 0x80)
-					str += (char)(0x80 | ((codepoint >>  0) & 0x3f));
-				break;
-			}
-
 			case FmtPart::INTEGER:
-			case FmtPart::STRING:
+			case FmtPart::CHARACTER:
 			case FmtPart::VLOG_TIME: {
 				std::string buf;
-				std::string prefix;
 				if (part.type == FmtPart::INTEGER) {
 					RTLIL::Const value = part.sig.as_const();
-					bool has_x = false, all_x = true, has_z = false, all_z = true;
-					for (State bit : value) {
-						if (bit == State::Sx)
-							has_x = true;
-						else
-							all_x = false;
-						if (bit == State::Sz)
-							has_z = true;
-						else
-							all_z = false;
-					}
-
-					if (!has_z && !has_x && part.signed_ && value[value.size() - 1]) {
-						prefix = "-";
-						value = RTLIL::const_neg(value, {}, part.signed_, {}, value.size() + 1);
-					} else {
-						switch (part.sign) {
-							case FmtPart::MINUS:       break;
-							case FmtPart::PLUS_MINUS:  prefix = "+"; break;
-							case FmtPart::SPACE_MINUS: prefix = " "; break;
-						}
-					}
 
 					if (part.base != 10) {
-						size_t minimum_size = 1;
+						size_t minimum_size = 0;
 						for (size_t index = 0; index < (size_t)value.size(); index++)
 							if (value[index] != State::S0)
 								minimum_size = index + 1;
@@ -761,28 +651,10 @@ std::string Fmt::render() const
 					}
 
 					if (part.base == 2) {
-						if (part.show_base)
-							prefix += "0b";
-						for (size_t index = 0; index < (size_t)value.size(); index++) {
-							if (part.group && index > 0 && index % 4 == 0)
-								buf += '_';
-							RTLIL::State bit = value[index];
-							if (bit == State::Sx)
-								buf += 'x';
-							else if (bit == State::Sz)
-								buf += 'z';
-							else if (bit == State::S1)
-								buf += '1';
-							else /* if (bit == State::S0) */
-								buf += '0';
-						}
+						buf = value.as_string();
 					} else if (part.base == 8 || part.base == 16) {
-						if (part.show_base)
-							prefix += (part.base == 16) ? (part.hex_upper ? "0X" : "0x") : "0o";
 						size_t step = (part.base == 16) ? 4 : 3;
 						for (size_t index = 0; index < (size_t)value.size(); index += step) {
-							if (part.group && index > 0 && index % (4 * step) == 0)
-								buf += '_';
 							RTLIL::Const subvalue = value.extract(index, min(step, value.size() - index));
 							bool has_x = false, all_x = true, has_z = false, all_z = true;
 							for (State bit : subvalue) {
@@ -804,11 +676,21 @@ std::string Fmt::render() const
 							else if (has_z)
 								buf += 'Z';
 							else
-								buf += (part.hex_upper ? "0123456789ABCDEF" : "0123456789abcdef")[subvalue.as_int()];
+								buf += "0123456789abcdef"[subvalue.as_int()];
 						}
+						std::reverse(buf.begin(), buf.end());
 					} else if (part.base == 10) {
-						if (part.show_base)
-							prefix += "0d";
+						bool has_x = false, all_x = true, has_z = false, all_z = true;
+						for (State bit : value) {
+							if (bit == State::Sx)
+								has_x = true;
+							else
+								all_x = false;
+							if (bit == State::Sz)
+								has_z = true;
+							else
+								all_z = false;
+						}
 						if (all_x)
 							buf += 'x';
 						else if (all_z)
@@ -818,29 +700,25 @@ std::string Fmt::render() const
 						else if (has_z)
 							buf += 'Z';
 						else {
-							log_assert(value.is_fully_def());
-							if (value.is_fully_zero())
+							bool negative = part.signed_ && value[value.size() - 1];
+							RTLIL::Const absvalue;
+							if (negative)
+								absvalue = RTLIL::const_neg(value, {}, part.signed_, {}, value.size() + 1);
+							else
+								absvalue = value;
+							log_assert(absvalue.is_fully_def());
+							if (absvalue.is_fully_zero())
 								buf += '0';
-							size_t index = 0;
-							while (!value.is_fully_zero())	{
-								if (part.group && index > 0 && index % 3 == 0)
-									buf += '_';
-								buf += '0' + RTLIL::const_mod(value, 10, false, false, 4).as_int();
-								value = RTLIL::const_div(value, 10, false, false, value.size());
-								index++;
+							while (!absvalue.is_fully_zero())	{
+								buf += '0' + RTLIL::const_mod(absvalue, 10, false, false, 4).as_int();
+								absvalue = RTLIL::const_div(absvalue, 10, false, false, absvalue.size());
 							}
+							if (negative || part.plus)
+								buf += negative ? '-' : '+';
+							std::reverse(buf.begin(), buf.end());
 						}
 					} else log_abort();
-					if (part.justify == FmtPart::NUMERIC && part.group && part.padding == '0') {
-						int group_size = part.base == 10 ? 3 : 4;
-						while (prefix.size() + buf.size() < part.width) {
-							if (buf.size() % (group_size + 1) == group_size)
-								buf += '_';
-							buf += '0';
-						}
-					}
-					std::reverse(buf.begin(), buf.end());
-				} else if (part.type == FmtPart::STRING) {
+				} else if (part.type == FmtPart::CHARACTER) {
 					buf = part.sig.as_const().decode_string();
 				} else if (part.type == FmtPart::VLOG_TIME) {
 					// We only render() during initial, so time is always zero.
@@ -848,29 +726,17 @@ std::string Fmt::render() const
 				}
 
 				log_assert(part.width == 0 || part.padding != '\0');
-				if (prefix.size() + buf.size() < part.width) {
-					size_t pad_width = part.width - prefix.size() - buf.size();
-					switch (part.justify) {
-						case FmtPart::LEFT:
-							str += prefix;
-							str += buf;
-							str += std::string(pad_width, part.padding);
-							break;
-						case FmtPart::RIGHT:
-							str += std::string(pad_width, part.padding);
-							str += prefix;
-							str += buf;
-							break;
-						case FmtPart::NUMERIC:
-							str += prefix;
-							str += std::string(pad_width, part.padding);
-							str += buf;
-							break;
+				if (part.justify == FmtPart::RIGHT && buf.size() < part.width) {
+					size_t pad_width = part.width - buf.size();
+					if (part.padding == '0' && (!buf.empty() && (buf.front() == '+' || buf.front() == '-'))) {
+						str += buf.front();
+						buf.erase(0, 1);
 					}
-				} else {
-					str += prefix;
-					str += buf;
+					str += std::string(pad_width, part.padding);
 				}
+				str += buf;
+				if (part.justify == FmtPart::LEFT && buf.size() < part.width)
+					str += std::string(part.width - buf.size(), part.padding);
 				break;
 			}
 		}

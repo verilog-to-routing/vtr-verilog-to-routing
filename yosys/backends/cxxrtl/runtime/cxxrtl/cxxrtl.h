@@ -625,11 +625,11 @@ struct value : public expr_base<value<Bits>> {
 		value<Bits + 1> remainder;
 		value<Bits + 1> dividend = sext<Bits + 1>();
 		value<Bits + 1> divisor = other.template sext<Bits + 1>();
-		if (is_neg()) dividend = dividend.neg();
-		if (other.is_neg()) divisor = divisor.neg();
+		if (dividend.is_neg()) dividend = dividend.neg();
+		if (divisor.is_neg()) divisor = divisor.neg();
 		std::tie(quotient, remainder) = dividend.udivmod(divisor);
-		if (is_neg() != other.is_neg()) quotient = quotient.neg();
-		if (is_neg()) remainder = remainder.neg();
+		if (dividend.is_neg() != divisor.is_neg()) quotient = quotient.neg();
+		if (dividend.is_neg()) remainder = remainder.neg();
 		return {quotient.template trunc<Bits>(), remainder.template trunc<Bits>()};
 	}
 };
@@ -941,55 +941,6 @@ struct metadata {
 		assert(value_type == DOUBLE);
 		return double_value;
 	}
-
-	// Internal CXXRTL use only.
-	static std::map<std::string, metadata> deserialize(const char *ptr) {
-		std::map<std::string, metadata> result;
-		std::string name;
-		// Grammar:
-		// string   ::= [^\0]+ \0
-		// metadata ::= [uid] .{8} | s <string>
-		// map      ::= ( <string> <metadata> )* \0
-		for (;;) {
-			if (*ptr) {
-				name += *ptr++;
-			} else if (!name.empty()) {
-				ptr++;
-				auto get_u64 = [&]() {
-					uint64_t result = 0;
-					for (size_t count = 0; count < 8; count++)
-						result = (result << 8) | *ptr++;
-					return result;
-				};
-				char type = *ptr++;
-				if (type == 'u') {
-					uint64_t value = get_u64();
-					result.emplace(name, value);
-				} else if (type == 'i') {
-					int64_t value = (int64_t)get_u64();
-					result.emplace(name, value);
-				} else if (type == 'd') {
-					double dvalue;
-					uint64_t uvalue = get_u64();
-					static_assert(sizeof(dvalue) == sizeof(uvalue), "double must be 64 bits in size");
-					memcpy(&dvalue, &uvalue, sizeof(dvalue));
-					result.emplace(name, dvalue);
-				} else if (type == 's') {
-					std::string value;
-					while (*ptr)
-						value += *ptr++;
-					ptr++;
-					result.emplace(name, value);
-				} else {
-					assert(false && "Unknown type specifier");
-					return result;
-				}
-				name.clear();
-			} else {
-				return result;
-			}
-		}
-	}
 };
 
 typedef std::map<std::string, metadata> metadata_map;
@@ -1059,24 +1010,22 @@ struct observer {
 // Default member initializers would make this a non-aggregate-type in C++11, so they are commented out.
 struct fmt_part {
 	enum {
-		LITERAL   = 0,
+		STRING    = 0,
 		INTEGER   = 1,
-		STRING    = 2,
-		UNICHAR   = 3,
-		VLOG_TIME = 4,
+		CHARACTER = 2,
+		VLOG_TIME = 3,
 	} type;
 
-	// LITERAL type
+	// STRING type
 	std::string str;
 
-	// INTEGER/STRING/UNICHAR types
+	// INTEGER/CHARACTER types
 	// + value<Bits> val;
 
-	// INTEGER/STRING/VLOG_TIME types
+	// INTEGER/CHARACTER/VLOG_TIME types
 	enum {
 		RIGHT	= 0,
 		LEFT	= 1,
-		NUMERIC	= 2,
 	} justify; // = RIGHT;
 	char padding; // = '\0';
 	size_t width; // = 0;
@@ -1084,14 +1033,7 @@ struct fmt_part {
 	// INTEGER type
 	unsigned base; // = 10;
 	bool signed_; // = false;
-	enum {
-		MINUS		= 0,
-		PLUS_MINUS	= 1,
-		SPACE_MINUS	= 2,
-	} sign; // = MINUS;
-	bool hex_upper; // = false;
-	bool show_base; // = false;
-	bool group; // = false;
+	bool plus; // = false;
 
 	// VLOG_TIME type
 	bool realtime; // = false;
@@ -1107,12 +1049,11 @@ struct fmt_part {
 		// We might want to replace some of these bit() calls with direct
 		// chunk access if it turns out to be slow enough to matter.
 		std::string buf;
-		std::string prefix;
 		switch (type) {
-			case LITERAL:
+			case STRING:
 				return str;
 
-			case STRING: {
+			case CHARACTER: {
 				buf.reserve(Bits/8);
 				for (int i = 0; i < Bits; i += 8) {
 					char ch = 0;
@@ -1126,76 +1067,35 @@ struct fmt_part {
 				break;
 			}
 
-			case UNICHAR: {
-				uint32_t codepoint = val.template get<uint32_t>();
-				if (codepoint >= 0x10000)
-					buf += (char)(0xf0 |  (codepoint >> 18));
-				else if (codepoint >= 0x800)
-					buf += (char)(0xe0 |  (codepoint >> 12));
-				else if (codepoint >= 0x80)
-					buf += (char)(0xc0 |  (codepoint >>  6));
-				else
-					buf += (char)codepoint;
-				if (codepoint >= 0x10000)
-					buf += (char)(0x80 | ((codepoint >> 12) & 0x3f));
-				if (codepoint >= 0x800)
-					buf += (char)(0x80 | ((codepoint >>  6) & 0x3f));
-				if (codepoint >= 0x80)
-					buf += (char)(0x80 | ((codepoint >>  0) & 0x3f));
-				break;
-			}
-
 			case INTEGER: {
-				bool negative = signed_ && val.is_neg();
-				if (negative) {
-					prefix = "-";
-					val = val.neg();
-				} else {
-					switch (sign) {
-						case MINUS:       break;
-						case PLUS_MINUS:  prefix = "+"; break;
-						case SPACE_MINUS: prefix = " "; break;
-					}
-				}
-
-				size_t val_width = Bits;
+				size_t width = Bits;
 				if (base != 10) {
-					val_width = 1;
+					width = 0;
 					for (size_t index = 0; index < Bits; index++)
 						if (val.bit(index))
-							val_width = index + 1;
+							width = index + 1;
 				}
 
 				if (base == 2) {
-					if (show_base)
-						prefix += "0b";
-					for (size_t index = 0; index < val_width; index++) {
-						if (group && index > 0 && index % 4 == 0)
-							buf += '_';
-						buf += (val.bit(index) ? '1' : '0');
-					}
+					for (size_t i = width; i > 0; i--)
+						buf += (val.bit(i - 1) ? '1' : '0');
 				} else if (base == 8 || base == 16) {
-					if (show_base)
-						prefix += (base == 16) ? (hex_upper ? "0X" : "0x") : "0o";
 					size_t step = (base == 16) ? 4 : 3;
-					for (size_t index = 0; index < val_width; index += step) {
-						if (group && index > 0 && index % (4 * step) == 0)
-							buf += '_';
+					for (size_t index = 0; index < width; index += step) {
 						uint8_t value = val.bit(index) | (val.bit(index + 1) << 1) | (val.bit(index + 2) << 2);
 						if (step == 4)
 							value |= val.bit(index + 3) << 3;
-						buf += (hex_upper ? "0123456789ABCDEF" : "0123456789abcdef")[value];
+						buf += "0123456789abcdef"[value];
 					}
+					std::reverse(buf.begin(), buf.end());
 				} else if (base == 10) {
-					if (show_base)
-						prefix += "0d";
+					bool negative = signed_ && val.is_neg();
+					if (negative)
+						val = val.neg();
 					if (val.is_zero())
 						buf += '0';
 					value<(Bits > 4 ? Bits : 4)> xval = val.template zext<(Bits > 4 ? Bits : 4)>();
-					size_t index = 0;
 					while (!xval.is_zero()) {
-						if (group && index > 0 && index % 3 == 0)
-							buf += '_';
 						value<(Bits > 4 ? Bits : 4)> quotient, remainder;
 						if (Bits >= 4)
 							std::tie(quotient, remainder) = xval.udivmod(value<(Bits > 4 ? Bits : 4)>{10u});
@@ -1203,18 +1103,11 @@ struct fmt_part {
 							std::tie(quotient, remainder) = std::make_pair(value<(Bits > 4 ? Bits : 4)>{0u}, xval);
 						buf += '0' + remainder.template trunc<4>().template get<uint8_t>();
 						xval = quotient;
-						index++;
 					}
+					if (negative || plus)
+						buf += negative ? '-' : '+';
+					std::reverse(buf.begin(), buf.end());
 				} else assert(false && "Unsupported base for fmt_part");
-				if (justify == NUMERIC && group && padding == '0') {
-					int group_size = base == 10 ? 3 : 4;
-					while (prefix.size() + buf.size() < width) {
-						if (buf.size() % (group_size + 1) == group_size)
-							buf += '_';
-						buf += '0';
-					}
-				}
-				std::reverse(buf.begin(), buf.end());
 				break;
 			}
 
@@ -1230,29 +1123,17 @@ struct fmt_part {
 
 		std::string str;
 		assert(width == 0 || padding != '\0');
-		if (prefix.size() + buf.size() < width) {
-			size_t pad_width = width - prefix.size() - buf.size();
-			switch (justify) {
-				case LEFT:
-					str += prefix;
-					str += buf;
-					str += std::string(pad_width, padding);
-					break;
-				case RIGHT:
-					str += std::string(pad_width, padding);
-					str += prefix;
-					str += buf;
-					break;
-				case NUMERIC:
-					str += prefix;
-					str += std::string(pad_width, padding);
-					str += buf;
-					break;
-				}
-		} else {
-			str += prefix;
-			str += buf;
+		if (justify == RIGHT && buf.size() < width) {
+			size_t pad_width = width - buf.size();
+			if (padding == '0' && (buf.front() == '+' || buf.front() == '-')) {
+				str += buf.front();
+				buf.erase(0, 1);
+			}
+			str += std::string(pad_width, padding);
 		}
+		str += buf;
+		if (justify == LEFT && buf.size() < width)
+			str += std::string(width - buf.size(), padding);
 		return str;
 	}
 };
@@ -1295,7 +1176,7 @@ struct debug_item : ::cxxrtl_object {
 
 	template<size_t Bits>
 	debug_item(value<Bits> &item, size_t lsb_offset = 0, uint32_t flags_ = 0) {
-		static_assert(Bits == 0 || sizeof(item) == value<Bits>::chunks * sizeof(chunk_t),
+		static_assert(sizeof(item) == value<Bits>::chunks * sizeof(chunk_t),
 		              "value<Bits> is not compatible with C layout");
 		type    = VALUE;
 		flags   = flags_;
@@ -1311,7 +1192,7 @@ struct debug_item : ::cxxrtl_object {
 
 	template<size_t Bits>
 	debug_item(const value<Bits> &item, size_t lsb_offset = 0) {
-		static_assert(Bits == 0 || sizeof(item) == value<Bits>::chunks * sizeof(chunk_t),
+		static_assert(sizeof(item) == value<Bits>::chunks * sizeof(chunk_t),
 		              "value<Bits> is not compatible with C layout");
 		type    = VALUE;
 		flags   = DRIVEN_COMB;
@@ -1327,9 +1208,8 @@ struct debug_item : ::cxxrtl_object {
 
 	template<size_t Bits>
 	debug_item(wire<Bits> &item, size_t lsb_offset = 0, uint32_t flags_ = 0) {
-		static_assert(Bits == 0 ||
-		              (sizeof(item.curr) == value<Bits>::chunks * sizeof(chunk_t) &&
-		               sizeof(item.next) == value<Bits>::chunks * sizeof(chunk_t)),
+		static_assert(sizeof(item.curr) == value<Bits>::chunks * sizeof(chunk_t) &&
+		              sizeof(item.next) == value<Bits>::chunks * sizeof(chunk_t),
 		              "wire<Bits> is not compatible with C layout");
 		type    = WIRE;
 		flags   = flags_;
@@ -1345,7 +1225,7 @@ struct debug_item : ::cxxrtl_object {
 
 	template<size_t Width>
 	debug_item(memory<Width> &item, size_t zero_offset = 0) {
-		static_assert(Width == 0 || sizeof(item.data[0]) == value<Width>::chunks * sizeof(chunk_t),
+		static_assert(sizeof(item.data[0]) == value<Width>::chunks * sizeof(chunk_t),
 		              "memory<Width> is not compatible with C layout");
 		type    = MEMORY;
 		flags   = 0;
@@ -1361,7 +1241,7 @@ struct debug_item : ::cxxrtl_object {
 
 	template<size_t Bits>
 	debug_item(debug_alias, const value<Bits> &item, size_t lsb_offset = 0) {
-		static_assert(Bits == 0 || sizeof(item) == value<Bits>::chunks * sizeof(chunk_t),
+		static_assert(sizeof(item) == value<Bits>::chunks * sizeof(chunk_t),
 		              "value<Bits> is not compatible with C layout");
 		type    = ALIAS;
 		flags   = DRIVEN_COMB;
@@ -1377,9 +1257,8 @@ struct debug_item : ::cxxrtl_object {
 
 	template<size_t Bits>
 	debug_item(debug_alias, const wire<Bits> &item, size_t lsb_offset = 0) {
-		static_assert(Bits == 0 ||
-		              (sizeof(item.curr) == value<Bits>::chunks * sizeof(chunk_t) &&
-		               sizeof(item.next) == value<Bits>::chunks * sizeof(chunk_t)),
+		static_assert(sizeof(item.curr) == value<Bits>::chunks * sizeof(chunk_t) &&
+		              sizeof(item.next) == value<Bits>::chunks * sizeof(chunk_t),
 		              "wire<Bits> is not compatible with C layout");
 		type    = ALIAS;
 		flags   = DRIVEN_COMB;
@@ -1395,7 +1274,7 @@ struct debug_item : ::cxxrtl_object {
 
 	template<size_t Bits>
 	debug_item(debug_outline &group, const value<Bits> &item, size_t lsb_offset = 0) {
-		static_assert(Bits == 0 || sizeof(item) == value<Bits>::chunks * sizeof(chunk_t),
+		static_assert(sizeof(item) == value<Bits>::chunks * sizeof(chunk_t),
 		              "value<Bits> is not compatible with C layout");
 		type    = OUTLINE;
 		flags   = DRIVEN_COMB;
@@ -1439,26 +1318,17 @@ namespace cxxrtl {
 using debug_attrs = ::_cxxrtl_attr_set;
 
 struct debug_items {
-	// Debug items may be composed of multiple parts, but the attributes are shared between all of them.
-	// There are additional invariants, not all of which are not checked by this code:
-	// - Memories and non-memories cannot be mixed together.
-	// - Bit indices (considering `lsb_at` and `width`) must not overlap.
-	// - Row indices (considering `depth` and `zero_at`) must be the same.
-	// - The `INPUT` and `OUTPUT` flags must be the same for all parts.
-	// Other than that, the parts can be quite different, e.g. it is OK to mix a value, a wire, an alias,
-	// and an outline, in the debug information for a single name in four parts.
 	std::map<std::string, std::vector<debug_item>> table;
 	std::map<std::string, std::unique_ptr<debug_attrs>> attrs_table;
 
-	void add(const std::string &path, debug_item &&item, metadata_map &&item_attrs = {}) {
-		assert((path.empty() || path[path.size() - 1] != ' ') && path.find("  ") == std::string::npos);
-		std::unique_ptr<debug_attrs> &attrs = attrs_table[path];
+	void add(const std::string &name, debug_item &&item, metadata_map &&item_attrs = {}) {
+		std::unique_ptr<debug_attrs> &attrs = attrs_table[name];
 		if (attrs.get() == nullptr)
 			attrs = std::unique_ptr<debug_attrs>(new debug_attrs);
 		for (auto attr : item_attrs)
 			attrs->map.insert(attr);
 		item.attrs = attrs.get();
-		std::vector<debug_item> &parts = table[path];
+		std::vector<debug_item> &parts = table[name];
 		parts.emplace_back(item);
 		std::sort(parts.begin(), parts.end(),
 			[](const debug_item &a, const debug_item &b) {
@@ -1466,82 +1336,35 @@ struct debug_items {
 			});
 	}
 
-	// This overload exists to reduce excessive stack slot allocation in `CXXRTL_EXTREMELY_COLD void debug_info()`.
-	template<class... T>
-	void add(const std::string &base_path, const char *path, const char *serialized_item_attrs, T&&... args) {
-		add(base_path + path, debug_item(std::forward<T>(args)...), metadata::deserialize(serialized_item_attrs));
-	}
-
-	size_t count(const std::string &path) const {
-		if (table.count(path) == 0)
+	size_t count(const std::string &name) const {
+		if (table.count(name) == 0)
 			return 0;
-		return table.at(path).size();
+		return table.at(name).size();
 	}
 
-	const std::vector<debug_item> &at(const std::string &path) const {
-		return table.at(path);
+	const std::vector<debug_item> &parts_at(const std::string &name) const {
+		return table.at(name);
 	}
 
-	// Like `at()`, but operates only on single-part debug items.
-	const debug_item &operator [](const std::string &path) const {
-		const std::vector<debug_item> &parts = table.at(path);
+	const debug_item &at(const std::string &name) const {
+		const std::vector<debug_item> &parts = table.at(name);
 		assert(parts.size() == 1);
 		return parts.at(0);
 	}
 
-	bool is_memory(const std::string &path) const {
-		return at(path).at(0).type == debug_item::MEMORY;
+	const debug_item &operator [](const std::string &name) const {
+		return at(name);
 	}
 
-	const metadata_map &attrs(const std::string &path) const {
-		return attrs_table.at(path)->map;
-	}
-};
-
-// Only `module` scopes are defined. The type is implicit, since Yosys does not currently support
-// any other scope types.
-struct debug_scope {
-	std::string module_name;
-	std::unique_ptr<debug_attrs> module_attrs;
-	std::unique_ptr<debug_attrs> cell_attrs;
-};
-
-struct debug_scopes {
-	std::map<std::string, debug_scope> table;
-
-	void add(const std::string &path, const std::string &module_name, metadata_map &&module_attrs, metadata_map &&cell_attrs) {
-		assert((path.empty() || path[path.size() - 1] != ' ') && path.find("  ") == std::string::npos);
-		assert(table.count(path) == 0);
-		debug_scope &scope = table[path];
-		scope.module_name = module_name;
-		scope.module_attrs = std::unique_ptr<debug_attrs>(new debug_attrs { module_attrs });
-		scope.cell_attrs = std::unique_ptr<debug_attrs>(new debug_attrs { cell_attrs });
-	}
-
-	// This overload exists to reduce excessive stack slot allocation in `CXXRTL_EXTREMELY_COLD void debug_info()`.
-	void add(const std::string &base_path, const char *path, const char *module_name, const char *serialized_module_attrs, const char *serialized_cell_attrs) {
-		add(base_path + path, module_name, metadata::deserialize(serialized_module_attrs), metadata::deserialize(serialized_cell_attrs));
-	}
-
-	size_t contains(const std::string &path) const {
-		return table.count(path);
-	}
-
-	const debug_scope &operator [](const std::string &path) const {
-		return table.at(path);
+	const metadata_map &attrs(const std::string &name) const {
+		return attrs_table.at(name)->map;
 	}
 };
 
-// Tag class to disambiguate the default constructor used by the toplevel module that calls `reset()`,
+// Tag class to disambiguate the default constructor used by the toplevel module that calls reset(),
 // and the constructor of interior modules that should not call it.
 struct interior {};
 
-// The core API of the `module` class consists of only four virtual methods: `reset()`, `eval()`,
-// `commit`, and `debug_info()`. (The virtual destructor is made necessary by C++.) Every other method
-// is a convenience method, and exists solely to simplify some common pattern for C++ API consumers.
-// No behavior may be added to such convenience methods that other parts of CXXRTL can rely on, since
-// there is no guarantee they will be called (and, for example, other CXXRTL libraries will often call
-// the `eval()` and `commit()` directly instead, as well as being exposed in the C API).
 struct module {
 	module() {}
 	virtual ~module() {}
@@ -1557,14 +1380,8 @@ struct module {
 
 	virtual void reset() = 0;
 
-	// The `eval()` callback object, `performer`, is included in the virtual call signature since
-	// the generated code has broadly identical performance properties.
 	virtual bool eval(performer *performer = nullptr) = 0;
-
-	// The `commit()` callback object, `observer`, is not included in the virtual call signature since
-	// the generated code is severely pessimized by it. To observe commit events, the non-virtual
-	// `commit(observer *)` overload must be called directly on a `module` subclass.
-	virtual bool commit() = 0;
+	virtual bool commit() = 0; // commit observer isn't available since it avoids virtual calls
 
 	size_t step(performer *performer = nullptr) {
 		size_t deltas = 0;
@@ -1576,16 +1393,8 @@ struct module {
 		return deltas;
 	}
 
-	virtual void debug_info(debug_items *items, debug_scopes *scopes, std::string path, metadata_map &&cell_attrs = {}) {
-		(void)items, (void)scopes, (void)path, (void)cell_attrs;
-	}
-
-	// Compatibility method.
-#if __has_attribute(deprecated)
-	__attribute__((deprecated("Use `debug_info(&items, /*scopes=*/nullptr, path);` instead.")))
-#endif
-	void debug_info(debug_items &items, std::string path) {
-		debug_info(&items, /*scopes=*/nullptr, path);
+	virtual void debug_info(debug_items &items, std::string path = "") {
+		(void)items, (void)path;
 	}
 };
 

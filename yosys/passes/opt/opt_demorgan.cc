@@ -183,7 +183,7 @@ struct OptDemorganPass : public Pass {
 	{
 		log_header(design, "Executing OPT_DEMORGAN pass (push inverters through $reduce_* cells).\n");
 
-		int argidx = 1;
+		int argidx = 0;
 		extra_args(args, argidx, design);
 
 		unsigned int cells_changed = 0;

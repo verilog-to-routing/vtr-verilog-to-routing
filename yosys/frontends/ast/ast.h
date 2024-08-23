@@ -17,7 +17,12 @@
  *
  *  ---
  *
- *  This is support code for the Verilog frontend at frontends/verilog
+ *  This is the AST frontend library.
+ *
+ *  The AST frontend library is not a frontend on it's own but provides a
+ *  generic abstract syntax tree (AST) abstraction for HDL code and can be
+ *  used by HDL frontends. See "ast.h" for an overview of the API and the
+ *  Verilog frontend for an usage example.
  *
  */
 
@@ -197,17 +202,9 @@ namespace AST
 		// set for IDs typed to an enumeration, not used
 		bool is_enum;
 
-		// Declared range for array dimension.
-		struct dimension_t {
-			int range_right;     // lsb in [msb:lsb]
-			int range_width;     // msb - lsb + 1
-			bool range_swapped;  // if the declared msb < lsb, msb and lsb above are swapped
-		};
-		// Packed and unpacked dimensions for arrays.
-		// Unpacked dimensions go first, to follow the order of indexing.
-		std::vector<dimension_t> dimensions;
-		// Number of unpacked dimensions.
-		int unpacked_dimensions;
+		// if this is a multirange memory then this vector contains offset and length of each dimension
+		std::vector<int> multirange_dimensions;
+		std::vector<bool> multirange_swapped; // true if range is swapped
 
 		// this is set by simplify and used during RTLIL generation
 		AstNode *id2ast;
@@ -374,10 +371,6 @@ namespace AST
 		// localized fixups after modifying children/attributes of a particular node
 		void fixup_hierarchy_flags(bool force_descend = false);
 
-		// helpers for indexing
-		AstNode *make_index_range(AstNode *node, bool unpacked_range = false);
-		AstNode *get_struct_member() const;
-
 		// helper to print errors from simplify/genrtlil code
 		[[noreturn]] void input_error(const char *format, ...) const YS_ATTRIBUTE(format(printf, 2, 3));
 	};
@@ -422,6 +415,10 @@ namespace AST
 
 	// Helper for setting the src attribute.
 	void set_src_attr(RTLIL::AttrObject *obj, const AstNode *ast);
+
+	// struct helper exposed from simplify for genrtlil
+	AstNode *make_struct_member_range(AstNode *node, AstNode *member_node);
+	AstNode *get_struct_member(const AstNode *node);
 
 	// generate standard $paramod... derived module name; parameters should be
 	// in the order they are declared in the instantiated module

@@ -278,7 +278,7 @@ struct OptLutInsPass : public Pass {
 				module->remove(cell);
 		}
 	}
-} OptLutInsPass;
+} XilinxDffOptPass;
 
 PRIVATE_NAMESPACE_END
 

@@ -46,9 +46,6 @@ struct MemoryNarrowPass : public Pass {
 		extra_args(args, argidx, design);
 
 		for (auto module : design->selected_modules()) {
-			if (module->has_processes_warn())
-				continue;
-
 			for (auto &mem : Mem::get_selected_memories(module))
 			{
 				bool wide = false;

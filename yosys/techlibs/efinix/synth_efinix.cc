@@ -161,13 +161,9 @@ struct SynthEfinixPass : public ScriptPass
 		if (check_label("map_ram"))
 		{
 			std::string args = "";
-			if (help_mode)
-				args += " [-no-auto-block]";
-			else {
-				if (nobram)
-					args += " -no-auto-block";
-			}
-			run("memory_libmap -lib +/efinix/brams.txt" + args, "(-no-auto-block if -nobram)");
+			if (nobram)
+				args += " -no-auto-block";
+			run("memory_libmap -lib +/efinix/brams.txt" + args);
 			run("techmap -map +/efinix/brams_map.v");
 		}
 

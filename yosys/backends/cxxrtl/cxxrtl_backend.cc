@@ -25,7 +25,6 @@
 #include "kernel/mem.h"
 #include "kernel/log.h"
 #include "kernel/fmt.h"
-#include "kernel/scopeinfo.h"
 
 USING_YOSYS_NAMESPACE
 PRIVATE_NAMESPACE_BEGIN
@@ -606,30 +605,22 @@ std::vector<std::string> split_by(const std::string &str, const std::string &sep
 	return result;
 }
 
-std::string escape_c_string(const std::string &input)
+std::string escape_cxx_string(const std::string &input)
 {
-	std::string output;
-	output.push_back('"');
+	std::string output = "\"";
 	for (auto c : input) {
 		if (::isprint(c)) {
 			if (c == '\\')
 				output.push_back('\\');
 			output.push_back(c);
 		} else {
-			char l = c & 0x3, m = (c >> 3) & 0x3, h = (c >> 6) & 0x3;
-			output.append("\\");
-			output.push_back('0' + h);
-			output.push_back('0' + m);
-			output.push_back('0' + l);
+			char l = c & 0xf, h = (c >> 4) & 0xf;
+			output.append("\\x");
+			output.push_back((h < 10 ? '0' + h : 'a' + h - 10));
+			output.push_back((l < 10 ? '0' + l : 'a' + l - 10));
 		}
 	}
 	output.push_back('"');
-	return output;
-}
-
-std::string escape_cxx_string(const std::string &input)
-{
-	std::string output = escape_c_string(input);
 	if (output.find('\0') != std::string::npos) {
 		output.insert(0, "std::string {");
 		output.append(stringf(", %zu}", input.size()));
@@ -1138,7 +1129,7 @@ struct CxxrtlWorker {
 		f << indent << "// cell " << cell->name.str() << " syncs\n";
 		for (auto conn : cell->connections())
 			if (cell->output(conn.first))
-				if (is_cxxrtl_sync_port(cell, conn.first) && !conn.second.empty()) {
+				if (is_cxxrtl_sync_port(cell, conn.first)) {
 					f << indent;
 					dump_sigspec_lhs(conn.second, for_debug);
 					f << " = " << mangle(cell) << access << mangle_wire_name(conn.first) << ".curr;\n";
@@ -1527,9 +1518,8 @@ struct CxxrtlWorker {
 		} else if (is_internal_cell(cell->type)) {
 			log_cmd_error("Unsupported internal cell `%s'.\n", cell->type.c_str());
 		// User cells
-		} else if (for_debug) {
-			// Outlines are called on demand when computing the value of a debug item. Nothing to do here.
 		} else {
+			log_assert(!for_debug);
 			log_assert(cell->known());
 			bool buffered_inputs = false;
 			const char *access = is_cxxrtl_blackbox_cell(cell) ? "->" : ".";
@@ -2283,97 +2273,48 @@ struct CxxrtlWorker {
 		dec_indent();
 	}
 
-	void dump_serialized_metadata(const dict<RTLIL::IdString, RTLIL::Const> &metadata_map) {
-		// Creating thousands metadata_map objects using initializer lists in a single function results in one of:
-		// 1. Megabytes of stack usage (with __attribute__((optnone))).
-		// 2. Minutes of compile time (without __attribute__((optnone))).
-		// So, don't create them.
-		std::string data;
-		auto put_u64 = [&](uint64_t value) {
-			for (size_t count = 0; count < 8; count++) {
-				data += (char)(value >> 56);
-				value <<= 8;
-			}
-		};
-		for (auto metadata_item : metadata_map) {
-			if (!metadata_item.first.isPublic())
-				continue;
-			if (metadata_item.second.size() > 64 && (metadata_item.second.flags & RTLIL::CONST_FLAG_STRING) == 0) {
-				f << indent << "/* attribute " << metadata_item.first.str().substr(1) << " is over 64 bits wide */\n";
-				continue;
-			}
-			data += metadata_item.first.str().substr(1) + '\0';
-			// In Yosys, a real is a type of string.
-			if (metadata_item.second.flags & RTLIL::CONST_FLAG_REAL) {
-				double dvalue = std::stod(metadata_item.second.decode_string());
-				uint64_t uvalue;
-				static_assert(sizeof(dvalue) == sizeof(uvalue), "double must be 64 bits in size");
-				memcpy(&uvalue, &dvalue, sizeof(uvalue));
-				data += 'd';
-				put_u64(uvalue);
-			} else if (metadata_item.second.flags & RTLIL::CONST_FLAG_STRING) {
-				data += 's';
-				data += metadata_item.second.decode_string();
-				data += '\0';
-			} else if (metadata_item.second.flags & RTLIL::CONST_FLAG_SIGNED) {
-				data += 'i';
-				put_u64((uint64_t)metadata_item.second.as_int(/*is_signed=*/true));
-			} else {
-				data += 'u';
-				put_u64(metadata_item.second.as_int(/*is_signed=*/false));
-			}
-		}
-		f << escape_c_string(data);
-	}
-
-	void dump_metadata_map(const dict<RTLIL::IdString, RTLIL::Const> &metadata_map) {
+	void dump_metadata_map(const dict<RTLIL::IdString, RTLIL::Const> &metadata_map)
+	{
 		if (metadata_map.empty()) {
 			f << "metadata_map()";
-		} else {
-			f << "metadata_map({\n";
-			inc_indent();
-				for (auto metadata_item : metadata_map) {
-					if (!metadata_item.first.isPublic())
-						continue;
-					if (metadata_item.second.size() > 64 && (metadata_item.second.flags & RTLIL::CONST_FLAG_STRING) == 0) {
-						f << indent << "/* attribute " << metadata_item.first.str().substr(1) << " is over 64 bits wide */\n";
-						continue;
-					}
-					f << indent << "{ " << escape_cxx_string(metadata_item.first.str().substr(1)) << ", ";
-					// In Yosys, a real is a type of string.
-					if (metadata_item.second.flags & RTLIL::CONST_FLAG_REAL) {
-						f << std::showpoint << std::stod(metadata_item.second.decode_string()) << std::noshowpoint;
-					} else if (metadata_item.second.flags & RTLIL::CONST_FLAG_STRING) {
-						f << escape_cxx_string(metadata_item.second.decode_string());
-					} else if (metadata_item.second.flags & RTLIL::CONST_FLAG_SIGNED) {
-						f << "INT64_C(" << metadata_item.second.as_int(/*is_signed=*/true) << ")";
-					} else {
-						f << "UINT64_C(" << metadata_item.second.as_int(/*is_signed=*/false) << ")";
-					}
-					f << " },\n";
-				}
-			dec_indent();
-			f << indent << "})";
+			return;
 		}
+		f << "metadata_map({\n";
+		inc_indent();
+			for (auto metadata_item : metadata_map) {
+				if (!metadata_item.first.isPublic())
+					continue;
+				if (metadata_item.second.size() > 64 && (metadata_item.second.flags & RTLIL::CONST_FLAG_STRING) == 0) {
+					f << indent << "/* attribute " << metadata_item.first.str().substr(1) << " is over 64 bits wide */\n";
+					continue;
+				}
+				f << indent << "{ " << escape_cxx_string(metadata_item.first.str().substr(1)) << ", ";
+				// In Yosys, a real is a type of string.
+				if (metadata_item.second.flags & RTLIL::CONST_FLAG_REAL) {
+					f << std::showpoint << std::stod(metadata_item.second.decode_string()) << std::noshowpoint;
+				} else if (metadata_item.second.flags & RTLIL::CONST_FLAG_STRING) {
+					f << escape_cxx_string(metadata_item.second.decode_string());
+				} else if (metadata_item.second.flags & RTLIL::CONST_FLAG_SIGNED) {
+					f << "INT64_C(" << metadata_item.second.as_int(/*is_signed=*/true) << ")";
+				} else {
+					f << "UINT64_C(" << metadata_item.second.as_int(/*is_signed=*/false) << ")";
+				}
+				f << " },\n";
+			}
+		dec_indent();
+		f << indent << "})";
 	}
 
-	void dump_debug_attrs(const RTLIL::AttrObject *object, bool serialize = true)
+	void dump_debug_attrs(const RTLIL::AttrObject *object)
 	{
 		dict<RTLIL::IdString, RTLIL::Const> attributes = object->attributes;
 		// Inherently necessary to get access to the object, so a waste of space to emit.
 		attributes.erase(ID::hdlname);
-		// Internal Yosys attribute that should be removed but isn't.
-		attributes.erase(ID::module_not_derived);
-		if (serialize) {
-			dump_serialized_metadata(attributes);
-		} else {
-			dump_metadata_map(attributes);
-		}
+		dump_metadata_map(attributes);
 	}
 
 	void dump_debug_info_method(RTLIL::Module *module)
 	{
-		size_t count_scopes = 0;
 		size_t count_public_wires = 0;
 		size_t count_member_wires = 0;
 		size_t count_undriven = 0;
@@ -2386,195 +2327,153 @@ struct CxxrtlWorker {
 		size_t count_skipped_wires = 0;
 		inc_indent();
 			f << indent << "assert(path.empty() || path[path.size() - 1] == ' ');\n";
-			f << indent << "if (scopes) {\n";
-			inc_indent();
-				// The module is responsible for adding its own scope.
-				f << indent << "scopes->add(path.empty() ? path : path.substr(0, path.size() - 1), ";
-				f << escape_cxx_string(get_hdl_name(module)) << ", ";
-				dump_debug_attrs(module, /*serialize=*/false);
-				f << ", std::move(cell_attrs));\n";
-				count_scopes++;
-				// If there were any submodules that were flattened, the module is also responsible for adding them.
-				for (auto cell : module->cells()) {
-					if (cell->type != ID($scopeinfo)) continue;
-					if (cell->getParam(ID::TYPE).decode_string() == "module") {
-						auto module_attrs = scopeinfo_attributes(cell, ScopeinfoAttrs::Module);
-						auto cell_attrs = scopeinfo_attributes(cell, ScopeinfoAttrs::Cell);
-						cell_attrs.erase(ID::module_not_derived);
-						f << indent << "scopes->add(path, " << escape_cxx_string(get_hdl_name(cell)) << ", ";
-						f << escape_cxx_string(cell->get_string_attribute(ID(module))) << ", ";
-						dump_serialized_metadata(module_attrs);
-						f << ", ";
-						dump_serialized_metadata(cell_attrs);
-						f << ");\n";
-					} else log_assert(false && "Unknown $scopeinfo type");
-					count_scopes++;
-				}
-			dec_indent();
-			f << indent << "}\n";
-			f << indent << "if (items) {\n";
-			inc_indent();
-				for (auto wire : module->wires()) {
-					const auto &debug_wire_type = debug_wire_types[wire];
-					if (!wire->name.isPublic())
-						continue;
-					count_public_wires++;
-					switch (debug_wire_type.type) {
-						case WireType::BUFFERED:
-						case WireType::MEMBER: {
-							// Member wire
-							std::vector<std::string> flags;
+			for (auto wire : module->wires()) {
+				const auto &debug_wire_type = debug_wire_types[wire];
+				if (!wire->name.isPublic())
+					continue;
+				count_public_wires++;
+				switch (debug_wire_type.type) {
+					case WireType::BUFFERED:
+					case WireType::MEMBER: {
+						// Member wire
+						std::vector<std::string> flags;
 
-							if (wire->port_input && wire->port_output)
-								flags.push_back("INOUT");
-							else if (wire->port_output)
-								flags.push_back("OUTPUT");
-							else if (wire->port_input)
-								flags.push_back("INPUT");
+						if (wire->port_input && wire->port_output)
+							flags.push_back("INOUT");
+						else if (wire->port_output)
+							flags.push_back("OUTPUT");
+						else if (wire->port_input)
+							flags.push_back("INPUT");
 
-							bool has_driven_sync = false;
-							bool has_driven_comb = false;
-							bool has_undriven = false;
-							if (!module->get_bool_attribute(ID(cxxrtl_blackbox))) {
-								for (auto bit : SigSpec(wire))
-									if (!bit_has_state.count(bit))
-										has_undriven = true;
-									else if (bit_has_state[bit])
-										has_driven_sync = true;
-									else
-										has_driven_comb = true;
-							} else if (wire->port_output) {
-								switch (cxxrtl_port_type(module, wire->name)) {
-									case CxxrtlPortType::SYNC:
-										has_driven_sync = true;
-										break;
-									case CxxrtlPortType::COMB:
-										has_driven_comb = true;
-										break;
-									case CxxrtlPortType::UNKNOWN:
-										has_driven_sync = has_driven_comb = true;
-										break;
-								}
-							} else {
-								has_undriven = true;
+						bool has_driven_sync = false;
+						bool has_driven_comb = false;
+						bool has_undriven = false;
+						if (!module->get_bool_attribute(ID(cxxrtl_blackbox))) {
+							for (auto bit : SigSpec(wire))
+								if (!bit_has_state.count(bit))
+									has_undriven = true;
+								else if (bit_has_state[bit])
+									has_driven_sync = true;
+								else
+									has_driven_comb = true;
+						} else if (wire->port_output) {
+							switch (cxxrtl_port_type(module, wire->name)) {
+								case CxxrtlPortType::SYNC:
+									has_driven_sync = true;
+									break;
+								case CxxrtlPortType::COMB:
+									has_driven_comb = true;
+									break;
+								case CxxrtlPortType::UNKNOWN:
+									has_driven_sync = has_driven_comb = true;
+									break;
 							}
-							if (has_undriven)
-								flags.push_back("UNDRIVEN");
-							if (!has_driven_sync && !has_driven_comb && has_undriven)
-								count_undriven++;
-							if (has_driven_sync)
-								flags.push_back("DRIVEN_SYNC");
-							if (has_driven_sync && !has_driven_comb && !has_undriven)
-								count_driven_sync++;
-							if (has_driven_comb)
-								flags.push_back("DRIVEN_COMB");
-							if (!has_driven_sync && has_driven_comb && !has_undriven)
-								count_driven_comb++;
-							if (has_driven_sync + has_driven_comb + has_undriven > 1)
-								count_mixed_driver++;
-
-							f << indent << "items->add(path, " << escape_cxx_string(get_hdl_name(wire)) << ", ";
-							dump_debug_attrs(wire);
-							f << ", " << mangle(wire);
-							if (wire->start_offset != 0 || !flags.empty()) {
-								f << ", " << wire->start_offset;
-								bool first = true;
-								for (auto flag : flags) {
-									if (first) {
-										first = false;
-										f << ", ";
-									} else {
-										f << "|";
-									}
-									f << "debug_item::" << flag;
-								}
-							}
-							f << ");\n";
-							count_member_wires++;
-							break;
-						}
-						case WireType::ALIAS: {
-							// Alias of a member wire
-							const RTLIL::Wire *aliasee = debug_wire_type.sig_subst.as_wire();
-							f << indent << "items->add(path, " << escape_cxx_string(get_hdl_name(wire)) << ", ";
-							dump_debug_attrs(aliasee);
-							f << ", ";
-							// If the aliasee is an outline, then the alias must be an outline, too; otherwise downstream
-							// tooling has no way to find out about the outline.
-							if (debug_wire_types[aliasee].is_outline())
-								f << "debug_eval_outline";
-							else
-								f << "debug_alias()";
-							f << ", " << mangle(aliasee);
-							if (wire->start_offset != 0)
-								f << ", " << wire->start_offset;
-							f << ");\n";
-							count_alias_wires++;
-							break;
-						}
-						case WireType::CONST: {
-							// Wire tied to a constant
-							f << indent << "static const value<" << wire->width << "> const_" << mangle(wire) << " = ";
-							dump_const(debug_wire_type.sig_subst.as_const());
-							f << ";\n";
-							f << indent << "items->add(path, " << escape_cxx_string(get_hdl_name(wire)) << ", ";
-							dump_debug_attrs(wire);
-							f << ", const_" << mangle(wire);
-							if (wire->start_offset != 0)
-								f << ", " << wire->start_offset;
-							f << ");\n";
-							count_const_wires++;
-							break;
-						}
-						case WireType::OUTLINE: {
-							// Localized or inlined, but rematerializable wire
-							f << indent << "items->add(path, " << escape_cxx_string(get_hdl_name(wire)) << ", ";
-							dump_debug_attrs(wire);
-							f << ", debug_eval_outline, " << mangle(wire);
-							if (wire->start_offset != 0)
-								f << ", " << wire->start_offset;
-							f << ");\n";
-							count_inline_wires++;
-							break;
-						}
-						default: {
-							// Localized or inlined wire with no debug information
-							count_skipped_wires++;
-							break;
-						}
-					}
-				}
-				if (!module->get_bool_attribute(ID(cxxrtl_blackbox))) {
-					for (auto &mem : mod_memories[module]) {
-						if (!mem.memid.isPublic())
-							continue;
-						f << indent << "items->add(path, " << escape_cxx_string(mem.packed ? get_hdl_name(mem.cell) : get_hdl_name(mem.mem)) << ", ";
-						if (mem.packed) {
-							dump_debug_attrs(mem.cell);
 						} else {
-							dump_debug_attrs(mem.mem);
+							has_undriven = true;
 						}
-						f << ", " << mangle(&mem) << ", ";
-						f << mem.start_offset << ");\n";
+						if (has_undriven)
+							flags.push_back("UNDRIVEN");
+						if (!has_driven_sync && !has_driven_comb && has_undriven)
+							count_undriven++;
+						if (has_driven_sync)
+							flags.push_back("DRIVEN_SYNC");
+						if (has_driven_sync && !has_driven_comb && !has_undriven)
+							count_driven_sync++;
+						if (has_driven_comb)
+							flags.push_back("DRIVEN_COMB");
+						if (!has_driven_sync && has_driven_comb && !has_undriven)
+							count_driven_comb++;
+						if (has_driven_sync + has_driven_comb + has_undriven > 1)
+							count_mixed_driver++;
+
+						f << indent << "items.add(path + " << escape_cxx_string(get_hdl_name(wire));
+						f << ", debug_item(" << mangle(wire) << ", " << wire->start_offset;
+						bool first = true;
+						for (auto flag : flags) {
+							if (first) {
+								first = false;
+								f << ", ";
+							} else {
+								f << "|";
+							}
+							f << "debug_item::" << flag;
+						}
+						f << "), ";
+						dump_debug_attrs(wire);
+						f << ");\n";
+						count_member_wires++;
+						break;
+					}
+					case WireType::ALIAS: {
+						// Alias of a member wire
+						const RTLIL::Wire *aliasee = debug_wire_type.sig_subst.as_wire();
+						f << indent << "items.add(path + " << escape_cxx_string(get_hdl_name(wire));
+						f << ", debug_item(";
+						// If the aliasee is an outline, then the alias must be an outline, too; otherwise downstream
+						// tooling has no way to find out about the outline.
+						if (debug_wire_types[aliasee].is_outline())
+							f << "debug_eval_outline";
+						else
+							f << "debug_alias()";
+						f << ", " << mangle(aliasee) << ", " << wire->start_offset << "), ";
+						dump_debug_attrs(aliasee);
+						f << ");\n";
+						count_alias_wires++;
+						break;
+					}
+					case WireType::CONST: {
+						// Wire tied to a constant
+						f << indent << "static const value<" << wire->width << "> const_" << mangle(wire) << " = ";
+						dump_const(debug_wire_type.sig_subst.as_const());
+						f << ";\n";
+						f << indent << "items.add(path + " << escape_cxx_string(get_hdl_name(wire));
+						f << ", debug_item(const_" << mangle(wire) << ", " << wire->start_offset << "), ";
+						dump_debug_attrs(wire);
+						f << ");\n";
+						count_const_wires++;
+						break;
+					}
+					case WireType::OUTLINE: {
+						// Localized or inlined, but rematerializable wire
+						f << indent << "items.add(path + " << escape_cxx_string(get_hdl_name(wire));
+						f << ", debug_item(debug_eval_outline, " << mangle(wire) << ", " << wire->start_offset << "), ";
+						dump_debug_attrs(wire);
+						f << ");\n";
+						count_inline_wires++;
+						break;
+					}
+					default: {
+						// Localized or inlined wire with no debug information
+						count_skipped_wires++;
+						break;
 					}
 				}
-			dec_indent();
-			f << indent << "}\n";
+			}
 			if (!module->get_bool_attribute(ID(cxxrtl_blackbox))) {
+				for (auto &mem : mod_memories[module]) {
+					if (!mem.memid.isPublic())
+						continue;
+					f << indent << "items.add(path + " << escape_cxx_string(mem.packed ? get_hdl_name(mem.cell) : get_hdl_name(mem.mem));
+					f << ", debug_item(" << mangle(&mem) << ", ";
+					f << mem.start_offset << "), ";
+					if (mem.packed) {
+						dump_debug_attrs(mem.cell);
+					} else {
+						dump_debug_attrs(mem.mem);
+					}
+					f << ");\n";
+				}
 				for (auto cell : module->cells()) {
 					if (is_internal_cell(cell->type))
 						continue;
 					const char *access = is_cxxrtl_blackbox_cell(cell) ? "->" : ".";
-					f << indent << mangle(cell) << access;
-					f << "debug_info(items, scopes, path + " << escape_cxx_string(get_hdl_name(cell) + ' ') << ", ";
-					dump_debug_attrs(cell, /*serialize=*/false);
-					f << ");\n";
+					f << indent << mangle(cell) << access << "debug_info(items, ";
+					f << "path + " << escape_cxx_string(get_hdl_name(cell) + ' ') << ");\n";
 				}
 			}
 		dec_indent();
 
 		log_debug("Debug information statistics for module `%s':\n", log_id(module));
-		log_debug("  Scopes: %zu", count_scopes);
 		log_debug("  Public wires: %zu, of which:\n", count_public_wires);
 		log_debug("    Member wires: %zu, of which:\n", count_member_wires);
 		log_debug("      Undriven:     %zu (incl. inputs)\n", count_undriven);
@@ -2612,18 +2511,18 @@ struct CxxrtlWorker {
 				dump_eval_method(module);
 				f << indent << "}\n";
 				f << "\n";
-				f << indent << "virtual bool commit(observer &observer) {\n";
+				f << indent << "template<class ObserverT>\n";
+				f << indent << "bool commit(ObserverT &observer) {\n";
 				dump_commit_method(module);
 				f << indent << "}\n";
 				f << "\n";
 				f << indent << "bool commit() override {\n";
 				f << indent << indent << "observer observer;\n";
-				f << indent << indent << "return commit(observer);\n";
+				f << indent << indent << "return commit<>(observer);\n";
 				f << indent << "}\n";
 				if (debug_info) {
 					f << "\n";
-					f << indent << "void debug_info(debug_items *items, debug_scopes *scopes, "
-					            << "std::string path, metadata_map &&cell_attrs = {}) override {\n";
+					f << indent << "void debug_info(debug_items &items, std::string path = \"\") override {\n";
 					dump_debug_info_method(module);
 					f << indent << "}\n";
 				}
@@ -2732,8 +2631,7 @@ struct CxxrtlWorker {
 							}
 					}
 					f << "\n";
-					f << indent << "void debug_info(debug_items *items, debug_scopes *scopes, "
-					            << "std::string path, metadata_map &&cell_attrs = {}) override;\n";
+					f << indent << "void debug_info(debug_items &items, std::string path = \"\") override;\n";
 				}
 			dec_indent();
 			f << indent << "}; // struct " << mangle(module) << "\n";
@@ -2761,8 +2659,7 @@ struct CxxrtlWorker {
 			}
 			f << "\n";
 			f << indent << "CXXRTL_EXTREMELY_COLD\n";
-			f << indent << "void " << mangle(module) << "::debug_info(debug_items *items, debug_scopes *scopes, "
-			            << "std::string path, metadata_map &&cell_attrs) {\n";
+			f << indent << "void " << mangle(module) << "::debug_info(debug_items &items, std::string path) {\n";
 			dump_debug_info_method(module);
 			f << indent << "}\n";
 		}
@@ -3263,7 +3160,6 @@ struct CxxrtlWorker {
 						debug_wire_type = wire_type; // wire is a member
 
 					if (!debug_alias) continue;
-					if (wire->port_input || wire->port_output) continue; // preserve input/output metadata in flags
 					const RTLIL::Wire *it = wire;
 					while (flow.is_inlinable(it)) {
 						log_assert(flow.wire_comb_defs[it].size() == 1);
@@ -3525,7 +3421,8 @@ struct CxxrtlBackend : public Backend {
 		log("      wire<8> p_o_data;\n");
 		log("\n");
 		log("      bool eval(performer *performer) override;\n");
-		log("      virtual bool commit(observer &observer);\n");
+		log("      template<class ObserverT>\n");
+		log("      bool commit(ObserverT &observer);\n");
 		log("      bool commit() override;\n");
 		log("\n");
 		log("      static std::unique_ptr<bb_p_debug>\n");

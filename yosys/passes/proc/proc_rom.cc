@@ -66,11 +66,6 @@ struct RomWorker
 			}
 		}
 
-		if (lhs.empty()) {
-			log_debug("rejecting switch: lhs empty\n");
-			return;
-		}
-
 		int swsigbits = 0;
 		for (int i = 0; i < GetSize(sw->signal); i++)
 			if (sw->signal[i] != State::S0)

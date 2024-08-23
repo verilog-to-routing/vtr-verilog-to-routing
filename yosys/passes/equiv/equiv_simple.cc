@@ -339,8 +339,6 @@ struct EquivSimplePass : public Pass {
 		CellTypes ct;
 		ct.setup_internals();
 		ct.setup_stdcells();
-		ct.setup_internals_ff();
-		ct.setup_stdcells_mem();
 
 		for (auto module : design->selected_modules())
 		{

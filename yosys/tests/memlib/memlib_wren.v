@@ -1,11 +1,4 @@
-module RAM_WREN #(
-	parameter ABITS=4,
-	parameter WIDTH=8,
-	parameter PORT_A_WR_EN_WIDTH=1,
-	parameter PORT_A_WR_BE_WIDTH=0,
-	parameter OPTION_BYTESIZE=WIDTH,
-	parameter WB=OPTION_BYTESIZE
-)(
+module RAM_WREN (
 	input PORT_A_CLK,
 	input [ABITS-1:0] PORT_A_ADDR,
 	input [WIDTH-1:0] PORT_A_WR_DATA,
@@ -13,6 +6,13 @@ module RAM_WREN #(
 	input [PORT_A_WR_EN_WIDTH-1:0] PORT_A_WR_EN,
 	input [PORT_A_WR_BE_WIDTH-1:0] PORT_A_WR_BE
 );
+
+parameter ABITS=4;
+parameter WIDTH=8;
+parameter PORT_A_WR_EN_WIDTH=1;
+parameter PORT_A_WR_BE_WIDTH=0;
+parameter OPTION_BYTESIZE=WIDTH;
+parameter WB=OPTION_BYTESIZE;
 
 reg [WIDTH-1:0] mem [0:2**ABITS-1];
 

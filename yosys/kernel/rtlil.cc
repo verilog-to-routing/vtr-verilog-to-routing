@@ -1769,15 +1769,6 @@ namespace {
 				return;
 			}
 
-			if (cell->type == ID($scopeinfo)) {
-				param(ID::TYPE);
-				check_expected();
-				std::string scope_type = cell->getParam(ID::TYPE).decode_string();
-				if (scope_type != "module" && scope_type != "struct")
-					error(__LINE__);
-				return;
-			}
-
 			if (cell->type == ID($_BUF_))    { port(ID::A,1); port(ID::Y,1); check_expected(); return; }
 			if (cell->type == ID($_NOT_))    { port(ID::A,1); port(ID::Y,1); check_expected(); return; }
 			if (cell->type == ID($_AND_))    { port(ID::A,1); port(ID::B,1); port(ID::Y,1); check_expected(); return; }
@@ -2517,6 +2508,7 @@ DEF_METHOD(Or,       max(sig_a.size(), sig_b.size()), ID($or))
 DEF_METHOD(Xor,      max(sig_a.size(), sig_b.size()), ID($xor))
 DEF_METHOD(Xnor,     max(sig_a.size(), sig_b.size()), ID($xnor))
 DEF_METHOD(Shift,    sig_a.size(), ID($shift))
+DEF_METHOD(Shiftx,   sig_a.size(), ID($shiftx))
 DEF_METHOD(Lt,       1, ID($lt))
 DEF_METHOD(Le,       1, ID($le))
 DEF_METHOD(Eq,       1, ID($eq))
@@ -2559,28 +2551,6 @@ DEF_METHOD(Shl,      sig_a.size(), ID($shl))
 DEF_METHOD(Shr,      sig_a.size(), ID($shr))
 DEF_METHOD(Sshl,     sig_a.size(), ID($sshl))
 DEF_METHOD(Sshr,     sig_a.size(), ID($sshr))
-#undef DEF_METHOD
-
-#define DEF_METHOD(_func, _y_size, _type) \
-	RTLIL::Cell* RTLIL::Module::add ## _func(RTLIL::IdString name, const RTLIL::SigSpec &sig_a, const RTLIL::SigSpec &sig_b, const RTLIL::SigSpec &sig_y, bool is_signed, const std::string &src) { \
-		RTLIL::Cell *cell = addCell(name, _type);           \
-		cell->parameters[ID::A_SIGNED] = false;             \
-		cell->parameters[ID::B_SIGNED] = is_signed;         \
-		cell->parameters[ID::A_WIDTH] = sig_a.size();       \
-		cell->parameters[ID::B_WIDTH] = sig_b.size();       \
-		cell->parameters[ID::Y_WIDTH] = sig_y.size();       \
-		cell->setPort(ID::A, sig_a);                        \
-		cell->setPort(ID::B, sig_b);                        \
-		cell->setPort(ID::Y, sig_y);                        \
-		cell->set_src_attribute(src);                       \
-		return cell;                                        \
-	} \
-	RTLIL::SigSpec RTLIL::Module::_func(RTLIL::IdString name, const RTLIL::SigSpec &sig_a, const RTLIL::SigSpec &sig_b, bool is_signed, const std::string &src) { \
-		RTLIL::SigSpec sig_y = addWire(NEW_ID, _y_size);         \
-		add ## _func(name, sig_a, sig_b, sig_y, is_signed, src); \
-		return sig_y;                                            \
-	}
-DEF_METHOD(Shiftx,      sig_a.size(), ID($shiftx))
 #undef DEF_METHOD
 
 #define DEF_METHOD(_func, _type, _pmux) \
@@ -4456,36 +4426,9 @@ RTLIL::SigSpec RTLIL::SigSpec::extract(int offset, int length) const
 	log_assert(offset >= 0);
 	log_assert(length >= 0);
 	log_assert(offset + length <= width_);
-
+	unpack();
 	cover("kernel.rtlil.sigspec.extract_pos");
-
-	if (packed()) {
-		SigSpec extracted;
-		extracted.width_ = length;
-
-		auto it = chunks_.begin();
-		for (; offset; offset -= it->width, it++) {
-			if (offset < it->width) {
-				int chunk_length = min(it->width - offset, length);
-				extracted.chunks_.emplace_back(it->extract(offset, chunk_length));
-				length -= chunk_length;
-				it++;
-				break;
-			}
-		}
-		for (; length; length -= it->width, it++) {
-			if (length >= it->width) {
-				extracted.chunks_.emplace_back(*it);
-			} else {
-				extracted.chunks_.emplace_back(it->extract(0, length));
-				break;
-			}
-		}
-
-		return extracted;
-	} else {
-		return std::vector<RTLIL::SigBit>(bits_.begin() + offset, bits_.begin() + offset + length);
-	}
+	return std::vector<RTLIL::SigBit>(bits_.begin() + offset, bits_.begin() + offset + length);
 }
 
 void RTLIL::SigSpec::append(const RTLIL::SigSpec &signal)
