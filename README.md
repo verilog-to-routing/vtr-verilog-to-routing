@@ -1,5 +1,5 @@
 # ORCA Special Edition
-This version of VTR is modified by @xilai based on the official version `5a6249a0cd84b2315a9f0fbd767ef26b903761a5`. I changed the default compiler, updated Python packages, and updated Yosys and Parmys to fit our purpose. This is tested on ORCA.
+This version of VTR is modified by @xilai based on the official version `79a5bc8d163ce15aa195a84459f6350690e1fbf5`. I changed the default compiler, updated Python packages, and updated Yosys and Parmys to fit our purpose. This is tested on ORCA.
 
 ## Setup
 1. Install build tools and Python packages. On July 22, 2023, I updated the build tools on ORCA, so if anyone needs to install them on ORCA, there's no need to do it again. (You still need to install python packages)
@@ -27,6 +27,9 @@ k6_N10_mem32K_40nm/diffeq1              OK
 k6_N10_mem32K_40nm/ch_intrinsics                OK
 k6_N10_mem32K_40nm/ch_intrinsics                OK
 ```
+
+## Special Notes
+- F4PGA is currently incompatible with the latest version of Yosys (see issue [here](https://github.com/chipsalliance/yosys-f4pga-plugins/issues/552)); manually downgraded to v0.38. Upgrade when the issue is fixed.
 
 # Verilog to Routing (VTR)
 [![Gitpod Ready-to-Code](https://img.shields.io/badge/Gitpod-Ready--to--Code-blue?logo=gitpod)](https://gitpod.io/#https://github.com/verilog-to-routing/vtr-verilog-to-routing.git)
