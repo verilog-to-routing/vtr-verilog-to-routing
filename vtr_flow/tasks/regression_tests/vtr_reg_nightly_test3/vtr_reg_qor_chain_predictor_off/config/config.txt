@@ -9,6 +9,11 @@ circuits_dir=benchmarks/verilog
 # Path to directory of architectures to use
 archs_dir=arch/timing
 
+# Turned off the largest circuits since they sometimes cause the runtime of this
+# test to take too long.
+# circuit_list_add=LU32PEEng.v
+# circuit_list_add=mcml.v
+
 # Add circuits to list to sweep
 circuit_list_add=arm_core.v
 circuit_list_add=bgm.v
@@ -18,8 +23,6 @@ circuit_list_add=ch_intrinsics.v
 circuit_list_add=diffeq1.v
 circuit_list_add=diffeq2.v
 circuit_list_add=LU8PEEng.v
-#circuit_list_add=LU32PEEng.v
-#circuit_list_add=mcml.v
 circuit_list_add=mkDelayWorker32B.v
 circuit_list_add=mkPktMerge.v
 circuit_list_add=mkSMAdapter4B.v

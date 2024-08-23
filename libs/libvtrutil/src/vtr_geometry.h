@@ -109,7 +109,6 @@ class Point {
     T y_;
 };
 
-
 /**
  * @brief A 2D rectangle
  *
