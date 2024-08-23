@@ -2,6 +2,7 @@
 """
     Module to run the VTR Flow
 """
+
 import sys
 from pathlib import Path
 import argparse
@@ -11,11 +12,10 @@ import socket
 from datetime import datetime
 from collections import OrderedDict
 import os
-
+import os
 # pylint: disable=wrong-import-position, import-error
 sys.path.insert(0, str(Path(__file__).resolve().parent / "python_libs"))
 import vtr
-
 # pylint: enable=wrong-import-position, import-error
 
 BASIC_VERBOSITY = 1
@@ -23,6 +23,8 @@ BASIC_VERBOSITY = 1
 VTR_STAGES = ["odin", "parmys", "abc", "ace", "vpr"]
 
 # pylint: disable=too-few-public-methods
+
+
 class VtrStageArgparseAction(argparse.Action):
     """
     Class to parse the VTR stages to begin and end at.
@@ -369,6 +371,18 @@ def vtr_command_argparser(prog=None):
         help="Specify a parser for the Yosys synthesizer [default (Verilog-2005), surelog (UHDM), "
         + "system-verilog]. The script used the Yosys conventional Verilog"
         + " parser if this argument is not specified.",
+    )
+    parmys.add_argument(
+        "-top",
+        default=None,
+        dest="topmodule",
+        help="Specify the name of the module in the design that should be considered as top",
+    )
+    parmys.add_argument(
+        '-search',
+        default=os.getcwd(),
+        dest='searchpath',
+        help='search path for verilog files'
     )
     #
     # VPR arguments
@@ -732,7 +746,8 @@ def process_parmys_args(args):
     """
     parmys_args = OrderedDict()
     parmys_args["parser"] = args.parser
-
+    parmys_args["topmodule"] = args.topmodule
+    parmys_args['searchpath'] = args.searchpath
     return parmys_args
 
 

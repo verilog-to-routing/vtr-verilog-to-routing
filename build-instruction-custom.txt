@@ -1,0 +1,35 @@
+All changes have already been made, and only run this command to compile the code:
+# first (create a new virtual environment and) install python libs in requirements.txt
+# build with new Parmys + Yosys frontend
+make CMAKE_PARAMS="-DWITH_PARMYS=ON -DYOSYS_F4PGA_PLUGINS=ON -DYOSYS_PARMYS_PLUGIN=ON"
+
+
+
+
+
+@change log:
+requirements.txt:
+    update click to newer version as the bug has alerady been fixed
+yosys/Makefile:
+    change default compiler to gcc as clang does not work well on ORCA
+libs/EXTERNAL/CMakeLists.txt:
+    update to fix system verilog parser bug
+    update Surelog to version 0f9cf823158bf626c8ebbbb29d7685bd7b1592fc
+    update f4pga-plugins to version 73038124b0a2943fe9d591c43f46292bcbf82105
+vtr_flow/scripts/run_vtr_flow.py, vtr_flow/scripts/python_libs/vtr/parmys/parmys.py:
+    add support for top module and search path
+
+
+
+
+
+
+@other misc for reminder:
+
+alias:
+vtrc: activate vtr conda env
+vtrf: run_vtr_flow
+vtrt: run_vtr_task
+
+flow:
+vtrf <circuit_file> <architecture_file>
