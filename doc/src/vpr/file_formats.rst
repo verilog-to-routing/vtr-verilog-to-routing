@@ -636,9 +636,9 @@ All subsequent lines follow this format:
 
 - **layer_number**: Indicates the layer (or die) on which the block is placed. If omitted, the block is assumed to be placed on layer `0` (a single die system). In 3D FPGA architectures, multiple dies can be stacked, with the bottom die considered as layer `0`.
 
-.. note:: The blocks in a placement file can be listed in any order.
+The placement files output by VPR also include (as a comment) an extra field: the id (number) of the block in the CLB netlist. This is the internal index used by VPR to identify a CLB level block -- it may be useful to know this index if you are modifying VPR and trying to debug something.
 
-If a layer_number is provided, it specifies the layer (or die) on which the block is placed. If the layer_number is omitted, the block is assumed to be placed on layer 0 (a single die system). In 3D FPGA architectures, multiple dies can be stacked on top of each other, with the bottom die considered as layer 0. A # character on a line indicates that all text after the # to the end of a line is a comment.
+.. note:: The blocks in a placement file can be listed in any order.
 
 
 .. note:: A `#` character on a line indicates that all text after the `#` to the end of a line is a comment.
