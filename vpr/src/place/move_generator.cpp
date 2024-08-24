@@ -24,8 +24,10 @@ void MoveGenerator::calculate_reward_and_process_outcome(const MoveOutcomeStats&
                                     * move_outcome_stats.delta_bb_cost_norm);
             process_outcome(reward, reward_func_);
         } else {
-            VTR_ASSERT_SAFE(reward_func_ == e_reward_function::UNDEFINED_REWARD);
-            VPR_ERROR(VPR_ERROR_PLACE, "Undefined reward function!\n");
+            process_outcome(0, reward_func_);
         }
+    } else {
+        VTR_ASSERT_SAFE(reward_func_ == e_reward_function::UNDEFINED_REWARD);
+        VPR_ERROR(VPR_ERROR_PLACE, "Undefined reward function!\n");
     }
 }
