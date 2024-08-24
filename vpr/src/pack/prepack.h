@@ -1,7 +1,10 @@
 /*
- * Prepacking: Group together technology-mapped netlist blocks before packing.  This gives hints to the packer on what groups of blocks to keep together during packing.
- * Primary use 1) "Forced" packs (eg LUT+FF pair)
- * 2) Carry-chains
+ * Prepacking: Group together technology-mapped netlist blocks before packing.
+ * This gives hints to the packer on what groups of blocks to keep together
+ * during packing.
+ *
+ * Primary uses: 1) "Forced" packs (eg LUT+FF pair)
+ *               2) Carry-chains
  */
 
 #ifndef PREPACK_H
@@ -11,6 +14,7 @@
 #include <map>
 #include <unordered_map>
 #include "vpr_types.h"
+#include "vtr_assert.h"
 #include "vtr_range.h"
 
 class AtomNetlist;
@@ -22,11 +26,17 @@ struct t_logical_block_type;
  * @brief Class that performs prepacking.
  *
  * This class maintains the prepacking state, allowing the use of molecules
- * (prepacked atoms) while this object exists.
+ * (prepacked atoms) while this object exists. After prepacking, every atom will
+ * be part of a molecule (with a large number being part of single-atom
+ * molecules.
+ *
+ * Molecules currently come from pack patterns in the architecture file. For
+ * example, a 3-bit carry chain in most architectures would turn into a molecule
+ * containing the 3 atoms forming the carry chain.
  *
  * To use the prepacker, call the init method with a complete atom netlist.
- * Then maintain this object (do not reset or destroy it) so long as the molecules
- * are needed:
+ * Then maintain this object (do not reset or destroy it) so long as the
+ * molecules are needed.
  *
  * // Initialize device and atom netlist
  * // ...
@@ -66,9 +76,14 @@ public:
      *
      *  @param blk_id       The atom block to get the molecules of.
      */
-    inline vtr::Range<atom_molecules_const_iterator> get_atom_molecules(AtomBlockId blk_id) const {
-        auto rng = atom_molecules.equal_range(blk_id);
-        return vtr::make_range(rng.first, rng.second);
+    inline t_pack_molecule* get_atom_molecule(AtomBlockId blk_id) const {
+        // Internally the prepacker maintains multiple molecules per atom, since
+        // some atoms may be part of multiple pack patterns; however, the
+        // prepacker should merge these eventually into one single molecule.
+        // TODO: If this can be 100% verified, this should be turned into a
+        //       debug assert.
+        VTR_ASSERT(atom_molecules.count(blk_id) == 1);
+        return atom_molecules.find(blk_id)->second;
     }
 
     /**
@@ -111,6 +126,13 @@ public:
 
     /**
      * @brief Marks all of the molecules as valid.
+     *
+     * Within clustering, the valid flag of a molecule is used to signify if any
+     * of the atoms in the molecule has been packed into a cluster yet or not.
+     * If any atom in the molecule has been packed, the flag will be false.
+     *
+     * This method is used before clustering to mark all the molecules as
+     * unpacked.
      */
     inline void mark_all_molecules_valid() {
         t_pack_molecule* molecule_head = list_of_pack_molecules;
@@ -125,7 +147,7 @@ public:
     t_molecule_stats calc_max_molecule_stats(const AtomNetlist& netlist) const;
 
     /**
-     * @brief Gets the largest number of blocks that any molecule has.
+     * @brief Gets the largest number of blocks (atoms) that any molecule contains.
      */
     inline size_t get_max_molecule_size() const {
         size_t max_molecule_size = 1;
@@ -152,10 +174,12 @@ private:
      * @brief A linked list of all the packing molecules that are loaded in
      *        prepacking stage.
      *
-     * Is is useful in freeing the pack molecules at the destructor of the Atom
-     * context using free_pack_molecules.
+     * All of the molecules in the prepacker are allocated into this linked list
+     * and must be freed eventually.
      *
-     * TODO: Instead of pointers, we should use some form of ID.
+     * TODO: Should use a vtr::vector instead of a linked list for storage. Then
+     *       instead of pointers, IDs can be used to manipulate the molecules
+     *       which would be safer.
      */
     t_pack_molecule* list_of_pack_molecules = nullptr;
 

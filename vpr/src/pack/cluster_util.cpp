@@ -1112,12 +1112,8 @@ e_block_pack_status try_pack_molecule(t_cluster_placement_stats* cluster_placeme
                     for (int i = 0; i < molecule_size; i++) {
                         if (molecule->atom_block_ids[i]) {
                             /* invalidate all molecules that share atom block with current molecule */
-
-                            auto mol_rng = atom_ctx.prepacker.get_atom_molecules(molecule->atom_block_ids[i]);
-                            for (const auto& kv : mol_rng) {
-                                t_pack_molecule* cur_molecule = kv.second;
-                                cur_molecule->valid = false;
-                            }
+                            t_pack_molecule* cur_molecule = atom_ctx.prepacker.get_atom_molecule(molecule->atom_block_ids[i]);
+                            cur_molecule->valid = false;
 
                             commit_primitive(cluster_placement_stats_ptr, primitives_list[i]);
                         }
@@ -2317,15 +2313,12 @@ void add_cluster_molecule_candidates_by_connectivity_and_timing(t_pb* cur_pb,
 
     for (AtomBlockId blk_id : cur_pb->pb_stats->marked_blocks) {
         if (atom_ctx.lookup.atom_clb(blk_id) == ClusterBlockId::INVALID()) {
-            auto mol_rng = atom_ctx.prepacker.get_atom_molecules(blk_id);
-            for (const auto& kv : mol_rng) {
-                t_pack_molecule* molecule = kv.second;
-                if (molecule->valid) {
-                    bool success = check_free_primitives_for_molecule_atoms(molecule, cluster_placement_stats_ptr);
-                    if (success) {
-                        add_molecule_to_pb_stats_candidates(molecule,
-                                                            cur_pb->pb_stats->gain, cur_pb, feasible_block_array_size, attraction_groups);
-                    }
+            t_pack_molecule* molecule = atom_ctx.prepacker.get_atom_molecule(blk_id);
+            if (molecule->valid) {
+                bool success = check_free_primitives_for_molecule_atoms(molecule, cluster_placement_stats_ptr);
+                if (success) {
+                    add_molecule_to_pb_stats_candidates(molecule,
+                                                        cur_pb->pb_stats->gain, cur_pb, feasible_block_array_size, attraction_groups);
                 }
             }
         }
@@ -2355,16 +2348,13 @@ void add_cluster_molecule_candidates_by_highfanout_connectivity(t_pb* cur_pb,
         AtomBlockId blk_id = atom_ctx.nlist.pin_block(pin_id);
 
         if (atom_ctx.lookup.atom_clb(blk_id) == ClusterBlockId::INVALID()) {
-            auto mol_rng = atom_ctx.prepacker.get_atom_molecules(blk_id);
-            for (const auto& kv : mol_rng) {
-                t_pack_molecule* molecule = kv.second;
-                if (molecule->valid) {
-                    bool success = check_free_primitives_for_molecule_atoms(molecule, cluster_placement_stats_ptr);
-                    if (success) {
-                        add_molecule_to_pb_stats_candidates(molecule,
-                                                            cur_pb->pb_stats->gain, cur_pb, std::min(feasible_block_array_size, AAPACK_MAX_HIGH_FANOUT_EXPLORE), attraction_groups);
-                        count++;
-                    }
+            t_pack_molecule* molecule = atom_ctx.prepacker.get_atom_molecule(blk_id);
+            if (molecule->valid) {
+                bool success = check_free_primitives_for_molecule_atoms(molecule, cluster_placement_stats_ptr);
+                if (success) {
+                    add_molecule_to_pb_stats_candidates(molecule,
+                                                        cur_pb->pb_stats->gain, cur_pb, std::min(feasible_block_array_size, AAPACK_MAX_HIGH_FANOUT_EXPLORE), attraction_groups);
+                    count++;
                 }
             }
         }
@@ -2444,15 +2434,12 @@ void add_cluster_molecule_candidates_by_attraction_group(t_pb* cur_pb,
             //Only consider molecules that are unpacked and of the correct type
             if (atom_ctx.lookup.atom_clb(atom_id) == ClusterBlockId::INVALID()
                 && std::find(candidate_types.begin(), candidate_types.end(), cluster_type) != candidate_types.end()) {
-                auto mol_rng = atom_ctx.prepacker.get_atom_molecules(atom_id);
-                for (const auto& kv : mol_rng) {
-                    t_pack_molecule* molecule = kv.second;
-                    if (molecule->valid) {
-                        bool success = check_free_primitives_for_molecule_atoms(molecule, cluster_placement_stats_ptr);
-                        if (success) {
-                            add_molecule_to_pb_stats_candidates(molecule,
-                                                                cur_pb->pb_stats->gain, cur_pb, feasible_block_array_size, attraction_groups);
-                        }
+                t_pack_molecule* molecule = atom_ctx.prepacker.get_atom_molecule(atom_id);
+                if (molecule->valid) {
+                    bool success = check_free_primitives_for_molecule_atoms(molecule, cluster_placement_stats_ptr);
+                    if (success) {
+                        add_molecule_to_pb_stats_candidates(molecule,
+                                                            cur_pb->pb_stats->gain, cur_pb, feasible_block_array_size, attraction_groups);
                     }
                 }
             }
@@ -2479,15 +2466,12 @@ void add_cluster_molecule_candidates_by_attraction_group(t_pb* cur_pb,
         //Only consider molecules that are unpacked and of the correct type
         if (atom_ctx.lookup.atom_clb(blk_id) == ClusterBlockId::INVALID()
             && std::find(candidate_types.begin(), candidate_types.end(), cluster_type) != candidate_types.end()) {
-            auto mol_rng = atom_ctx.prepacker.get_atom_molecules(blk_id);
-            for (const auto& kv : mol_rng) {
-                t_pack_molecule* molecule = kv.second;
-                if (molecule->valid) {
-                    bool success = check_free_primitives_for_molecule_atoms(molecule, cluster_placement_stats_ptr);
-                    if (success) {
-                        add_molecule_to_pb_stats_candidates(molecule,
-                                                            cur_pb->pb_stats->gain, cur_pb, feasible_block_array_size, attraction_groups);
-                    }
+            t_pack_molecule* molecule = atom_ctx.prepacker.get_atom_molecule(blk_id);
+            if (molecule->valid) {
+                bool success = check_free_primitives_for_molecule_atoms(molecule, cluster_placement_stats_ptr);
+                if (success) {
+                    add_molecule_to_pb_stats_candidates(molecule,
+                                                        cur_pb->pb_stats->gain, cur_pb, feasible_block_array_size, attraction_groups);
                 }
             }
         }
@@ -2686,18 +2670,9 @@ std::vector<AtomBlockId> initialize_seed_atoms(const e_cluster_seed seed_type,
     } else if (seed_type == e_cluster_seed::MAX_INPUTS) {
         //By number of used molecule input pins
         for (auto blk : atom_ctx.nlist.blocks()) {
-            int max_molecule_inputs = 0;
-            auto mol_rng = atom_ctx.prepacker.get_atom_molecules(blk);
-            for (const auto& kv : mol_rng) {
-                const t_pack_molecule* blk_mol = kv.second;
-
-                const t_molecule_stats molecule_stats = calc_molecule_stats(blk_mol, atom_ctx.nlist);
-
-                //Keep the max over all molecules associated with the atom
-                max_molecule_inputs = std::max(max_molecule_inputs, molecule_stats.num_used_ext_inputs);
-            }
-
-            atom_gains[blk] = max_molecule_inputs;
+            const t_pack_molecule* blk_mol = atom_ctx.prepacker.get_atom_molecule(blk);
+            const t_molecule_stats molecule_stats = calc_molecule_stats(blk_mol, atom_ctx.nlist);
+            atom_gains[blk] = molecule_stats.num_used_ext_inputs;
         }
 
     } else if (seed_type == e_cluster_seed::BLEND) {
@@ -2706,96 +2681,72 @@ std::vector<AtomBlockId> initialize_seed_atoms(const e_cluster_seed seed_type,
             /* Score seed gain of each block as a weighted sum of timing criticality,
              * number of tightly coupled blocks connected to it, and number of external inputs */
             float seed_blend_fac = 0.5;
-            float max_blend_gain = 0;
 
-            auto mol_rng = atom_ctx.prepacker.get_atom_molecules(blk);
-            for (const auto& kv : mol_rng) {
-                const t_pack_molecule* blk_mol = kv.second;
+            const t_pack_molecule* blk_mol = atom_ctx.prepacker.get_atom_molecule(blk);
+            const t_molecule_stats molecule_stats = calc_molecule_stats(blk_mol, atom_ctx.nlist);
+            VTR_ASSERT(max_molecule_stats.num_used_ext_inputs > 0);
 
-                const t_molecule_stats molecule_stats = calc_molecule_stats(blk_mol, atom_ctx.nlist);
-
-                VTR_ASSERT(max_molecule_stats.num_used_ext_inputs > 0);
-
-                float blend_gain = (seed_blend_fac * atom_criticality[blk]
-                                    + (1 - seed_blend_fac) * (molecule_stats.num_used_ext_inputs / max_molecule_stats.num_used_ext_inputs));
-                blend_gain *= (1 + 0.2 * (molecule_stats.num_blocks - 1));
-
-                //Keep the max over all molecules associated with the atom
-                max_blend_gain = std::max(max_blend_gain, blend_gain);
-            }
-            atom_gains[blk] = max_blend_gain;
+            float blend_gain = (seed_blend_fac * atom_criticality[blk]
+                                + (1 - seed_blend_fac) * (molecule_stats.num_used_ext_inputs / max_molecule_stats.num_used_ext_inputs));
+            blend_gain *= (1 + 0.2 * (molecule_stats.num_blocks - 1));
+            atom_gains[blk] = blend_gain;
         }
 
     } else if (seed_type == e_cluster_seed::MAX_PINS || seed_type == e_cluster_seed::MAX_INPUT_PINS) {
         //By pins per molecule (i.e. available pins on primitives, not pins in use)
 
         for (auto blk : atom_ctx.nlist.blocks()) {
-            int max_molecule_pins = 0;
-            auto mol_rng = atom_ctx.prepacker.get_atom_molecules(blk);
-            for (const auto& kv : mol_rng) {
-                const t_pack_molecule* mol = kv.second;
+            const t_pack_molecule* mol = atom_ctx.prepacker.get_atom_molecule(blk);
+            const t_molecule_stats molecule_stats = calc_molecule_stats(mol, atom_ctx.nlist);
 
-                const t_molecule_stats molecule_stats = calc_molecule_stats(mol, atom_ctx.nlist);
-
-                //Keep the max over all molecules associated with the atom
-                int molecule_pins = 0;
-                if (seed_type == e_cluster_seed::MAX_PINS) {
-                    //All pins
-                    molecule_pins = molecule_stats.num_pins;
-                } else {
-                    VTR_ASSERT(seed_type == e_cluster_seed::MAX_INPUT_PINS);
-                    //Input pins only
-                    molecule_pins = molecule_stats.num_input_pins;
-                }
-
-                //Keep the max over all molecules associated with the atom
-                max_molecule_pins = std::max(max_molecule_pins, molecule_pins);
+            int molecule_pins = 0;
+            if (seed_type == e_cluster_seed::MAX_PINS) {
+                //All pins
+                molecule_pins = molecule_stats.num_pins;
+            } else {
+                VTR_ASSERT(seed_type == e_cluster_seed::MAX_INPUT_PINS);
+                //Input pins only
+                molecule_pins = molecule_stats.num_input_pins;
             }
-            atom_gains[blk] = max_molecule_pins;
+
+            atom_gains[blk] = molecule_pins;
         }
 
     } else if (seed_type == e_cluster_seed::BLEND2) {
         for (auto blk : atom_ctx.nlist.blocks()) {
-            float max_gain = 0;
-            auto mol_rng = atom_ctx.prepacker.get_atom_molecules(blk);
-            for (const auto& kv : mol_rng) {
-                const t_pack_molecule* mol = kv.second;
+            const t_pack_molecule* mol = atom_ctx.prepacker.get_atom_molecule(blk);
+            const t_molecule_stats molecule_stats = calc_molecule_stats(mol, atom_ctx.nlist);
 
-                const t_molecule_stats molecule_stats = calc_molecule_stats(mol, atom_ctx.nlist);
+            float pin_ratio = vtr::safe_ratio<float>(molecule_stats.num_pins, max_molecule_stats.num_pins);
+            float input_pin_ratio = vtr::safe_ratio<float>(molecule_stats.num_input_pins, max_molecule_stats.num_input_pins);
+            float output_pin_ratio = vtr::safe_ratio<float>(molecule_stats.num_output_pins, max_molecule_stats.num_output_pins);
+            float used_ext_pin_ratio = vtr::safe_ratio<float>(molecule_stats.num_used_ext_pins, max_molecule_stats.num_used_ext_pins);
+            float used_ext_input_pin_ratio = vtr::safe_ratio<float>(molecule_stats.num_used_ext_inputs, max_molecule_stats.num_used_ext_inputs);
+            float used_ext_output_pin_ratio = vtr::safe_ratio<float>(molecule_stats.num_used_ext_outputs, max_molecule_stats.num_used_ext_outputs);
+            float num_blocks_ratio = vtr::safe_ratio<float>(molecule_stats.num_blocks, max_molecule_stats.num_blocks);
+            float criticality = atom_criticality[blk];
 
-                float pin_ratio = vtr::safe_ratio<float>(molecule_stats.num_pins, max_molecule_stats.num_pins);
-                float input_pin_ratio = vtr::safe_ratio<float>(molecule_stats.num_input_pins, max_molecule_stats.num_input_pins);
-                float output_pin_ratio = vtr::safe_ratio<float>(molecule_stats.num_output_pins, max_molecule_stats.num_output_pins);
-                float used_ext_pin_ratio = vtr::safe_ratio<float>(molecule_stats.num_used_ext_pins, max_molecule_stats.num_used_ext_pins);
-                float used_ext_input_pin_ratio = vtr::safe_ratio<float>(molecule_stats.num_used_ext_inputs, max_molecule_stats.num_used_ext_inputs);
-                float used_ext_output_pin_ratio = vtr::safe_ratio<float>(molecule_stats.num_used_ext_outputs, max_molecule_stats.num_used_ext_outputs);
-                float num_blocks_ratio = vtr::safe_ratio<float>(molecule_stats.num_blocks, max_molecule_stats.num_blocks);
-                float criticality = atom_criticality[blk];
+            constexpr float PIN_WEIGHT = 0.;
+            constexpr float INPUT_PIN_WEIGHT = 0.5;
+            constexpr float OUTPUT_PIN_WEIGHT = 0.;
+            constexpr float USED_PIN_WEIGHT = 0.;
+            constexpr float USED_INPUT_PIN_WEIGHT = 0.2;
+            constexpr float USED_OUTPUT_PIN_WEIGHT = 0.;
+            constexpr float BLOCKS_WEIGHT = 0.2;
+            constexpr float CRITICALITY_WEIGHT = 0.1;
 
-                constexpr float PIN_WEIGHT = 0.;
-                constexpr float INPUT_PIN_WEIGHT = 0.5;
-                constexpr float OUTPUT_PIN_WEIGHT = 0.;
-                constexpr float USED_PIN_WEIGHT = 0.;
-                constexpr float USED_INPUT_PIN_WEIGHT = 0.2;
-                constexpr float USED_OUTPUT_PIN_WEIGHT = 0.;
-                constexpr float BLOCKS_WEIGHT = 0.2;
-                constexpr float CRITICALITY_WEIGHT = 0.1;
+            float gain = PIN_WEIGHT * pin_ratio
+                         + INPUT_PIN_WEIGHT * input_pin_ratio
+                         + OUTPUT_PIN_WEIGHT * output_pin_ratio
 
-                float gain = PIN_WEIGHT * pin_ratio
-                             + INPUT_PIN_WEIGHT * input_pin_ratio
-                             + OUTPUT_PIN_WEIGHT * output_pin_ratio
+                         + USED_PIN_WEIGHT * used_ext_pin_ratio
+                         + USED_INPUT_PIN_WEIGHT * used_ext_input_pin_ratio
+                         + USED_OUTPUT_PIN_WEIGHT * used_ext_output_pin_ratio
 
-                             + USED_PIN_WEIGHT * used_ext_pin_ratio
-                             + USED_INPUT_PIN_WEIGHT * used_ext_input_pin_ratio
-                             + USED_OUTPUT_PIN_WEIGHT * used_ext_output_pin_ratio
+                         + BLOCKS_WEIGHT * num_blocks_ratio
+                         + CRITICALITY_WEIGHT * criticality;
 
-                             + BLOCKS_WEIGHT * num_blocks_ratio
-                             + CRITICALITY_WEIGHT * criticality;
-
-                max_gain = std::max(max_gain, gain);
-            }
-
-            atom_gains[blk] = max_gain;
+            atom_gains[blk] = gain;
         }
 
     } else {
@@ -2832,15 +2783,10 @@ t_pack_molecule* get_highest_gain_seed_molecule(int& seed_index, const std::vect
         if (atom_ctx.lookup.atom_clb(blk_id) == ClusterBlockId::INVALID()) {
             t_pack_molecule* best = nullptr;
 
-            // Iterate over all the molecules associated with the selected atom
-            // and select the one with the highest gain
-            auto mol_rng = atom_ctx.prepacker.get_atom_molecules(blk_id);
-            for (const auto& kv : mol_rng) {
-                t_pack_molecule* molecule = kv.second;
-                if (molecule->valid) {
-                    if (best == nullptr || (best->base_gain) < (molecule->base_gain)) {
-                        best = molecule;
-                    }
+            t_pack_molecule* molecule = atom_ctx.prepacker.get_atom_molecule(blk_id);
+            if (molecule->valid) {
+                if (best == nullptr || (best->base_gain) < (molecule->base_gain)) {
+                    best = molecule;
                 }
             }
             VTR_ASSERT(best != nullptr);
@@ -3304,12 +3250,9 @@ void load_transitive_fanout_candidates(ClusterBlockId clb_index,
                                 } else {
                                     pb_stats->gain[blk_id] += 0.001;
                                 }
-                                auto mol_rng = atom_ctx.prepacker.get_atom_molecules(blk_id);
-                                for (const auto& kv : mol_rng) {
-                                    t_pack_molecule* molecule = kv.second;
-                                    if (molecule->valid) {
-                                        transitive_fanout_candidates.insert({molecule->atom_block_ids[molecule->root], molecule});
-                                    }
+                                t_pack_molecule* molecule = atom_ctx.prepacker.get_atom_molecule(blk_id);
+                                if (molecule->valid) {
+                                    transitive_fanout_candidates.insert({molecule->atom_block_ids[molecule->root], molecule});
                                 }
                             }
                         }
