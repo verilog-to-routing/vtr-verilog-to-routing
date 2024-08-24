@@ -11,11 +11,9 @@
 #define PREPACK_H
 
 #include <algorithm>
-#include <map>
-#include <unordered_map>
 #include "vpr_types.h"
 #include "vtr_assert.h"
-#include "vtr_range.h"
+#include "vtr_vector.h"
 
 class AtomNetlist;
 class AtomBlockId;
@@ -28,7 +26,7 @@ struct t_logical_block_type;
  * This class maintains the prepacking state, allowing the use of molecules
  * (prepacked atoms) while this object exists. After prepacking, every atom will
  * be part of a molecule (with a large number being part of single-atom
- * molecules.
+ * molecules).
  *
  * Molecules currently come from pack patterns in the architecture file. For
  * example, a 3-bit carry chain in most architectures would turn into a molecule
@@ -50,7 +48,6 @@ struct t_logical_block_type;
  *
  */
 class Prepacker {
-    using atom_molecules_const_iterator = std::multimap<AtomBlockId, t_pack_molecule*>::const_iterator;
 public:
     // The constructor is default, the init method performs prepacking.
     Prepacker() = default;
@@ -72,18 +69,16 @@ public:
     void init(const AtomNetlist& atom_nlist, const std::vector<t_logical_block_type> &logical_block_types);
 
     /**
-     * @brief Get the cluster molecules containing the given atom block.
+     * @brief Get the cluster molecule containing the given atom block.
      *
-     *  @param blk_id       The atom block to get the molecules of.
+     *  @param blk_id       The atom block to get the molecule of.
      */
     inline t_pack_molecule* get_atom_molecule(AtomBlockId blk_id) const {
-        // Internally the prepacker maintains multiple molecules per atom, since
-        // some atoms may be part of multiple pack patterns; however, the
-        // prepacker should merge these eventually into one single molecule.
-        // TODO: If this can be 100% verified, this should be turned into a
-        //       debug assert.
-        VTR_ASSERT(atom_molecules.count(blk_id) == 1);
-        return atom_molecules.find(blk_id)->second;
+        // Safety debug to ensure the blk is valid and has a molecule entry.
+        VTR_ASSERT_SAFE(blk_id.is_valid() && (size_t)blk_id < atom_molecules.size());
+        // Safety debug to ensure the molecule is valid
+        VTR_ASSERT_DEBUG(atom_molecules[blk_id] != nullptr);
+        return atom_molecules[blk_id];
     }
 
     /**
@@ -93,11 +88,11 @@ public:
      *  @param blk_id       The atom block to get the pb graph node of.
      */
     inline t_pb_graph_node* get_expected_lowest_cost_pb_gnode(AtomBlockId blk_id) const {
-        auto iter = expected_lowest_cost_pb_gnode.find(blk_id);
-        VTR_ASSERT(iter != expected_lowest_cost_pb_gnode.end());
-        t_pb_graph_node* pb_gnode = iter->second;
-        VTR_ASSERT(pb_gnode != nullptr);
-        return pb_gnode;
+        // Safety debug to ensure the blk is valid and has an entry.
+        VTR_ASSERT_SAFE(blk_id.is_valid() && (size_t)blk_id < expected_lowest_cost_pb_gnode.size());
+        // Ensure the entry is valid.
+        VTR_ASSERT(expected_lowest_cost_pb_gnode[blk_id] != nullptr);
+        return expected_lowest_cost_pb_gnode[blk_id];
     }
 
     /**
@@ -186,14 +181,13 @@ private:
     /**
      * @brief The molecules associated with each atom block.
      *
-     * This map is loaded in the prepacking stage and freed at the very end of
-     * vpr flow run. The pointers in this multimap is shared with
-     * list_of_pack_molecules.
+     * This vector is loaded in the init method and cleared in the reset method.
+     * The pointers in this vector are shared with list_of_pack_molecules.
      */
-    std::multimap<AtomBlockId, t_pack_molecule*> atom_molecules;
+    vtr::vector<AtomBlockId, t_pack_molecule*> atom_molecules;
 
-    /// @brief A map for the expected lowest cost physical block graph node.
-    std::unordered_map<AtomBlockId, t_pb_graph_node*> expected_lowest_cost_pb_gnode;
+    /// @brief A vector of the expected lowest cost physical block graph node.
+    vtr::vector<AtomBlockId, t_pb_graph_node*> expected_lowest_cost_pb_gnode;
 
     /// @brief A list of the pack patterns used for prepacking. I think the
     ///        molecules keep pointers to this vector, so this needs to remain

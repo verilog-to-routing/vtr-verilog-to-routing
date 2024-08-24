@@ -29,6 +29,7 @@
 #include "vtr_assert.h"
 #include "vtr_range.h"
 #include "vtr_util.h"
+#include "vtr_vector.h"
 
 /*****************************************/
 /*Local Function Declaration			 */
@@ -40,7 +41,7 @@ static void free_list_of_pack_patterns(std::vector<t_pack_patterns>& list_of_pac
 static void free_pack_pattern(t_pack_patterns* pack_pattern);
 
 static t_pack_molecule* alloc_and_load_pack_molecules(t_pack_patterns* list_of_pack_patterns,
-                                                      std::unordered_map<AtomBlockId, t_pb_graph_node*>& expected_lowest_cost_pb_gnode,
+                                                      vtr::vector<AtomBlockId, t_pb_graph_node*>& expected_lowest_cost_pb_gnode,
                                                       const int num_packing_patterns,
                                                       std::multimap<AtomBlockId, t_pack_molecule*>& atom_molecules,
                                                       const AtomNetlist& atom_nlist,
@@ -800,7 +801,7 @@ static void backward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expans
  *     ie. a single linear chain that can be split across multiple complex blocks
  */
 static t_pack_molecule* alloc_and_load_pack_molecules(t_pack_patterns* list_of_pack_patterns,
-                                                      std::unordered_map<AtomBlockId, t_pb_graph_node*>& expected_lowest_cost_pb_gnode,
+                                                      vtr::vector<AtomBlockId, t_pb_graph_node*>& expected_lowest_cost_pb_gnode,
                                                       const int num_packing_patterns,
                                                       std::multimap<AtomBlockId, t_pack_molecule*>& atom_molecules,
                                                       const AtomNetlist& atom_nlist,
@@ -1705,15 +1706,30 @@ static void free_pack_molecules(t_pack_molecule* list_of_pack_molecules) {
 
 void Prepacker::init(const AtomNetlist& atom_nlist, const std::vector<t_logical_block_type>& logical_block_types) {
     VTR_ASSERT(list_of_pack_molecules == nullptr && "Prepacker cannot be initialized twice.");
+
     // Allocate the pack patterns from the logical block types.
     list_of_pack_patterns = alloc_and_load_pack_patterns(logical_block_types);
     // Use the pack patterns to allocate and load the pack molecules.
+    std::multimap<AtomBlockId, t_pack_molecule*> atom_molecules_multimap;
+    expected_lowest_cost_pb_gnode.resize(atom_nlist.blocks().size(), nullptr);
     list_of_pack_molecules = alloc_and_load_pack_molecules(list_of_pack_patterns.data(),
                                                            expected_lowest_cost_pb_gnode,
                                                            list_of_pack_patterns.size(),
-                                                           atom_molecules,
+                                                           atom_molecules_multimap,
                                                            atom_nlist,
                                                            logical_block_types);
+
+    // The multimap is a legacy thing. Since blocks can be part of multiple pack
+    // patterns, during prepacking a block may be contained within multiple
+    // molecules. However, by the end of prepacking, molecules should be
+    // combined such that each block is contained in one and only one molecule.
+    atom_molecules.resize(atom_nlist.blocks().size(), nullptr);
+    for (AtomBlockId blk_id : atom_nlist.blocks()) {
+        // Every atom block should be packed into a single molecule (no more
+        // or less).
+        VTR_ASSERT(atom_molecules_multimap.count(blk_id) == 1);
+        atom_molecules[blk_id] = atom_molecules_multimap.find(blk_id)->second;
+    }
 }
 
 t_molecule_stats Prepacker::calc_max_molecule_stats(const AtomNetlist& atom_nlist) const {
