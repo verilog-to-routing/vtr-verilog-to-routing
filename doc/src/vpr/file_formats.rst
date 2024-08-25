@@ -616,27 +616,32 @@ The io pad is set to inpad mode and is driven by the inpad:
 
 Placement File Format (.place)
 ------------------------------
+The placement file format is used to specify the position of cluster-level blocks in an FPGA design. It includes information about the netlist and architecture files, the size of the logic block array, and the placement details of each block in the CLB netlist..
+
 The first line of the placement file lists the netlist (.net) and architecture (.xml) files used to create this placement.
-This information is used to ensure you are warned if you accidentally route this placement with a different architecture or netlist file later.
+This information is used to ensure you are warned if you accidentally route this placement with a different architecture or netlist file later. 
 The second line of the file gives the size of the logic block array used by this placement.
-All the following lines have the format::
 
-    block_name    x        y   subtile_number
+All subsequent lines follow this format:
 
-The ``block_name`` can refer to either:
+    block_name    x    y    subblk    [layer_number]    [#block_number]
 
-- The name of a clustered block, as given in the input .net formatted netlist.
-- The name of a primitive within a clustered block.
+- **block_name**: Refers to either:
+  - The name of a clustered block, as given in the input .net formatted netlist.
+  - The name of a primitive within a clustered block.
 
-``x`` and ``y`` are the row and column in which the block is placed, respectively.
+- **x** and **y**: Represent the row and column in which the block is placed, respectively.
+
+- **subblk**: Specifies which of several possible subtile locations in row **x** and column **y** contains this block, which is useful when the tile capacity is greater than 1. The subtile number should be in the range `0` to `(grid[i][j].capacity - 1)`. The subtile numbers for a particular **x, y** location do not have to be used in order.
+
+- **layer_number**: Indicates the layer (or die) on which the block is placed. If omitted, the block is assumed to be placed on layer `0` (a single die system). In 3D FPGA architectures, multiple dies can be stacked, with the bottom die considered as layer `0`.
+
+The placement files output by VPR also include (as a comment) an extra field: the id (number) of the block in the CLB netlist. This is the internal index used by VPR to identify a CLB level block -- it may be useful to know this index if you are modifying VPR and trying to debug something.
 
 .. note:: The blocks in a placement file can be listed in any order.
 
-Since we can have more than one block in a row or column when the block capacity is set to be greater than 1 in the architecture file, the subtile number specifies which of the several possible subtile locations in row x and column y contains this block.
-Note that the subtile number used should be in the range 0 to (grid[i][j].capacity - 1). The subtile numbers for a particular x,y location do not have to be used in order.
 
-The placement files output by VPR also include (as a comment) a fifth field:  the block number.
-This is the internal index used by VPR to identify a block -- it may be useful to know this index if you are modifying VPR and trying to debug something.
+.. note:: A `#` character on a line indicates that all text after the `#` to the end of a line is a comment.
 
 .. _fig_fpga_coord_system:
 
@@ -653,10 +658,10 @@ All pads either have x equal to ``0`` or ``nx + 1`` or y equal to ``0`` or ``ny 
 
 Placement File Format Example
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-An example placement file is:
+
 
 .. code-block:: none
-    :caption: Example placement file.
+    :caption: Example 2D Placement File
     :linenos:
 
     Netlist file: xor5.net   Architecture file: sample.xml
@@ -673,6 +678,23 @@ An example placement file is:
     xor5        1       2       0       #6
     [1]         1       1       0       #7
 
+.. code-block:: none
+    :caption: Example 3D Placement File with Layer Column
+    :linenos:
+
+    Netlist file: xor5.net   Architecture file: sample.xml
+    Array size: 2 x 2 logic blocks
+
+    #block name x       y       subblk  layer  block number
+    #---------- --      --      ------- ------ -----------
+    a           0       1       0       0      #0  -- NB: block number is a comment.
+    b           1       0       0       1      #1
+    c           0       2       1       0      #2
+    d           1       3       0       1      #3
+    e           1       3       1       0      #4
+    out:xor5    0       2       0       1      #5
+    xor5        1       2       0       0      #6
+    [1]         1       1       0       1      #7
 
 .. _vpr_route_file:
 
