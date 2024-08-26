@@ -109,21 +109,22 @@ endif ()
 set_target_properties(libvpr PROPERTIES PREFIX "") #Avoid extra 'lib' prefix
 
 #Specify link-time dependencies
+find_package(ZLIB)
 target_link_libraries(libvpr
-                        libvtrutil
-                        libarchfpga
-                        libsdcparse
-                        libblifparse
-                        libtatum
-                        libargparse
-                        libpugixml
-                        librrgraph
+                      libvtrutil
+                      libarchfpga
+                      libsdcparse
+                      libblifparse
+                      libtatum
+                      libargparse
+                      libpugixml
+                      librrgraph
+                      ZLIB::ZLIB
 )
 
 if(VPR_USE_SERVER)
     target_link_libraries(libvpr
                           sockpp-static
-                          -lz
     )
 endif()
 

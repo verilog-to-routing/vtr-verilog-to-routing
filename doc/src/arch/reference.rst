@@ -2058,6 +2058,13 @@ The ``<segment>`` tag and its contents are described below.
 
     .. note:: For unidirectional segments, either <mux> tag or both <mux_inc> and <mux_dec> should be defined in the architecture file. If only the <mux> tag is defined, we assume that the same mux drives both incremental and decremental wires within this segment.     
 
+.. arch:tag:: <mux_inter_die name="string"/>
+
+    :req_param name: Name of the mux switch type used to drive this segment type when the driver (block outputs and other wires) is located on a different die than the segment. This information is utilized during rr-graph construction.
+
+    Tag must be included and ``name`` must be the same as the name you give in ``<switch type="mux" name="...``
+
+
 .. arch:tag:: <wire_switch name="string"/>
 
     :req_param name: Name of the switch type used by other wires to drive this type of segment by default. This information is used during rr-graph construction, and a custom switch block can override this switch type for specific connections if desired.

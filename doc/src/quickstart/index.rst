@@ -2,7 +2,7 @@
 VTR Quick Start
 ###############
 
-This is a quick introduction to VTR which covers how to run VTR and some if its associated tools (:ref:`VPR`, :ref:`odin_ii`, :ref:`ABC`).
+This is a quick introduction to VTR which covers how to run VTR and some of its associated tools (:ref:`VPR`, :ref:`odin_ii`, :ref:`ABC`).
 
 Setting Up VTR
 ==============
@@ -10,14 +10,14 @@ Setting Up VTR
 Download VTR
 ------------
 
-The first step is to `download VTR <https://verilogtorouting.org/download/>`_ and extract VTR on your local machine.
+The first step is to `download VTR <https://verilogtorouting.org/download/>`_ and extract it on your local machine.
 
 .. note:: Developers planning to modify VTR should clone the `VTR git repository <https://github.com/verilog-to-routing/vtr-verilog-to-routing/>`_.
 
 
 Environment Setup
 -----------------
-If you cloned the repository you will need to set up the git submodules (if you downloaded and extracted a release, you can skip this step):
+If you cloned the repository, you will need to set up the git submodules (if you downloaded and extracted a release, you can skip this step):
 
 .. code-block:: bash
 
@@ -77,12 +77,12 @@ For more details on building VTR on various operating systems/platforms see :doc
 Running VPR
 ===========
 
-Lets now try taking a simple pre-synthesized circuit (consisting of LUTs and Flip-Flops) and use the VPR tool to implement it on a specific FPGA architecture.
+Let's now try taking a simple pre-synthesized circuit (consisting of LUTs and Flip-Flops) and use the VPR tool to implement it on a specific FPGA architecture.
 
 Running VPR on a Pre-Synthesized Circuit
 ----------------------------------------
 
-First, lets make a directory in our home directory where we can work:
+First, let's make a directory in our home directory where we can work:
 
 .. code-block:: bash
 
@@ -211,13 +211,13 @@ Running the VTR Flow
 In the previous section we have implemented a pre-synthesized circuit onto a pre-existing FPGA architecture using VPR, and visualized the result.
 We now turn to how we can implement *our own circuit* on a pre-existing FPGA architecture.
 
-To do this we begin by describing a circuit behaviourly using the Verilog Hardware Description Language (HDL).
+To do this, we begin by describing a circuit behaviourally using the Verilog Hardware Description Language (HDL).
 This allows us to quickly and consisely define the circuit's behaviour.
 We will then use the VTR Flow to synthesize the behavioural Verilog description it into a circuit netlist, and implement it onto an FPGA.
 
 Example Circuit
 ---------------
-We will use the following simple example circuit, which causes it's output to toggle on and off:
+We will use the following simple example circuit, which causes its output to toggle on and off:
 
 .. literalinclude:: blink.v
     :language: verilog
@@ -230,7 +230,7 @@ If the count is below ``16`` it drives the output (``o_led``) high, otherwise it
 
 Manually Running the VTR Flow
 -----------------------------
-Lets start by making a fresh directory for us to work in:
+Let's start by making a fresh directory for us to work in:
 
 .. code-block:: bash
 
@@ -241,7 +241,7 @@ Next we need to run the three main sets of tools:
 
 * :ref:`odin_ii` performs 'synthesis' which converts our behavioural Verilog (``.v`` file) into a circuit netlist (``.blif`` file) consisting of logic equations and FPGA architecture primitives (Flip-Flops, adders etc.),
 * :ref:`ABC` performs 'logic optimization' which simplifies the circuit logic, and 'technology mapping' which converts logic equations into the Look-Up-Tables (LUTs) available on an FPGA, and
-* :ref:`VPR` which performs packing, placement and routing of the circuit to implement it on the targetted FPGA architecture.
+* :ref:`VPR` which performs packing, placement and routing of the circuit to implement it on the targeted FPGA architecture.
 
 .. _synthesizing_with_odin_ii:
 Synthesizing with ODIN II
@@ -249,7 +249,7 @@ Synthesizing with ODIN II
 
 First we'll run ODIN II on our Verilog file to synthesize it into a circuit netlist, providing the options:
 
- * ``-a $VTR_ROOT/vtr_flow/arch/timing/EArch.xml`` which specifies what FPGA architecture we are targetting,
+ * ``-a $VTR_ROOT/vtr_flow/arch/timing/EArch.xml`` which specifies what FPGA architecture we are targeting,
  * ``-V $VTR_ROOT/doc/src/quickstart/blink.v`` which specifies the verilog file we want to synthesize, and
  * ``-o blink.odin.blif`` which specifies the name of the generated ``.blif`` circuit netlist.
 
@@ -400,7 +400,7 @@ Automatically Running the VTR Flow
 Running each stage of the flow manually is time consuming (and potentially error prone).
 For convenience, VTR provides a script (:ref:`run_vtr_flow`) which automates this process.
 
-First, make sure you sure you have activated the Python virtual environment created at the beginning of this tutorial:
+First, make sure you have activated the Python virtual environment created at the beginning of this tutorial:
 
 .. code-block:: bash
 
