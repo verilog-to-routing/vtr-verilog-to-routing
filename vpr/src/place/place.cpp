@@ -84,9 +84,6 @@ static constexpr float REWARD_BB_TIMING_RELATIVE_WEIGHT = 0.4;
 #    include "draw_color.h"
 #endif
 
-using std::max;
-using std::min;
-
 /************** Types and defines local to place.c ***************************/
 /* This defines the maximum number of swap attempts before invoking the   *
  * once-in-a-while placement legality check as well as floating point     *
@@ -676,7 +673,7 @@ void try_place(const Netlist<>& net_list,
     move_type_stat.rejected_moves.resize({device_ctx.logical_block_types.size(), (int)e_move_type::NUMBER_OF_AUTO_MOVES}, 0);
 
     /* Get the first range limiter */
-    float first_rlim = (float)max(device_ctx.grid.width() - 1, device_ctx.grid.height() - 1);
+    float first_rlim = (float)std::max(device_ctx.grid.width() - 1, device_ctx.grid.height() - 1);
     place_move_ctx.first_rlim = first_rlim;
 
     t_annealing_state state(annealing_sched,
@@ -1846,7 +1843,7 @@ static NetCostHandler alloc_and_load_placement_structs(const t_placer_opts& plac
 
     int max_pins_per_clb = 0;
     for (const t_physical_tile_type& type : device_ctx.physical_tile_types) {
-        max_pins_per_clb = max(max_pins_per_clb, type.num_pins);
+        max_pins_per_clb = std::max(max_pins_per_clb, type.num_pins);
     }
 
     if (placer_opts.place_algorithm.is_timing_driven()) {
