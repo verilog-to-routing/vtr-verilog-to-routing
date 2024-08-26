@@ -128,7 +128,9 @@ constexpr int HEAP_STALLED_ITERATIONS_STOP = 15;
  * Currently only initializing AP configuration parameters
  * Placement & device info is accessed via g_vpr_ctx
  */
-AnalyticPlacer::AnalyticPlacer() {
+
+AnalyticPlacer::AnalyticPlacer(BlkLocRegistry& blk_loc_registry)
+    : blk_loc_registry_ref_(blk_loc_registry) {
     //Eigen::initParallel();
 
     // TODO: PlacerHeapCfg should be externally configured & supplied
@@ -301,11 +303,11 @@ void AnalyticPlacer::build_legal_locations() {
 // initialize other data members
 void AnalyticPlacer::init() {
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
-    PlacementContext& place_ctx = g_vpr_ctx.mutable_placement();
+    auto& init_block_locs = blk_loc_registry_ref_.block_locs();
 
     for (auto blk_id : clb_nlist.blocks()) {
         blk_locs.insert(blk_id, BlockLocation{});
-        blk_locs[blk_id].loc = place_ctx.block_locs[blk_id].loc; // transfer of initial placement
+        blk_locs[blk_id].loc = init_block_locs[blk_id].loc; // transfer of initial placement
         row_num.insert(blk_id, DONT_SOLVE);                      // no blocks are moved by default, until they are setup in setup_solve_blks()
     }
 
@@ -320,7 +322,7 @@ void AnalyticPlacer::init() {
     };
 
     for (auto blk_id : clb_nlist.blocks()) {
-        if (!place_ctx.block_locs[blk_id].is_fixed && has_connections(blk_id))
+        if (!init_block_locs[blk_id].is_fixed && has_connections(blk_id))
             // not fixed and has connections
             // matrix equation is formulated based on connections, so requires at least one connection
             if (imacro(blk_id) == NO_MACRO || macro_head(blk_id) == blk_id) {
@@ -412,7 +414,7 @@ void AnalyticPlacer::setup_solve_blks(t_logical_block_type_ptr blkTypes) {
 void AnalyticPlacer::update_macros() {
     for (auto& macro : g_vpr_ctx.mutable_placement().pl_macros) {
         ClusterBlockId head_id = macro.members[0].blk_index;
-        bool mac_can_be_placed = macro_can_be_placed(macro, blk_locs[head_id].loc, true);
+        bool mac_can_be_placed = macro_can_be_placed(macro, blk_locs[head_id].loc, true, blk_loc_registry_ref_);
 
         //if macro can not be placed in this head pos, change the head pos
         if (!mac_can_be_placed) {
@@ -421,7 +423,7 @@ void AnalyticPlacer::update_macros() {
         }
 
         //macro should be placed successfully after changing the head position
-        VTR_ASSERT(macro_can_be_placed(macro, blk_locs[head_id].loc, true));
+        VTR_ASSERT(macro_can_be_placed(macro, blk_locs[head_id].loc, true, blk_loc_registry_ref_));
 
         //update other member's location based on head pos
         for (auto member = ++macro.members.begin(); member != macro.members.end(); ++member) {
@@ -741,7 +743,7 @@ std::string AnalyticPlacer::print_overlap(vtr::Matrix<int>& overlap, FILE* fp) {
 void AnalyticPlacer::print_place(const char* place_file) {
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
-    PlacementContext& place_ctx = g_vpr_ctx.mutable_placement();
+    auto& block_locs = blk_loc_registry_ref_.block_locs();
 
     FILE* fp;
 
@@ -772,7 +774,7 @@ void AnalyticPlacer::print_place(const char* place_file) {
             "------------",
             "--------");
 
-    if (!place_ctx.block_locs.empty()) { //Only if placement exists
+    if (!block_locs.empty()) { //Only if placement exists
         for (auto blk_id : clb_nlist.blocks()) {
             fprintf(fp, "%-25s %-18s %-12s %-25s %-5d %-5d %-10d #%-13zu %-8s\n",
                     clb_nlist.block_name(blk_id).c_str(),
@@ -783,7 +785,7 @@ void AnalyticPlacer::print_place(const char* place_file) {
                     blk_locs[blk_id].loc.y,
                     blk_locs[blk_id].loc.sub_tile,
                     size_t(blk_id),
-                    (place_ctx.block_locs[blk_id].is_fixed ? "true" : "false"));
+                    (block_locs[blk_id].is_fixed ? "true" : "false"));
         }
         fprintf(fp, "\ntotal_HPWL: %d\n", total_hpwl());
         vtr::Matrix<int> overlap;

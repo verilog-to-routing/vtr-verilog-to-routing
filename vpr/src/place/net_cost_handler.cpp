@@ -24,14 +24,18 @@
  * @date July 12, 2024
  */
 #include "net_cost_handler.h"
+
 #include "clustered_netlist_fwd.h"
 #include "globals.h"
 #include "physical_types.h"
-#include "placer_globals.h"
+#include "placer_state.h"
 #include "move_utils.h"
 #include "place_timing_update.h"
 #include "noc_place_utils.h"
 #include "vtr_math.h"
+
+#include <optional>
+#include <functional>
 
 using std::max;
 using std::min;
@@ -46,13 +50,7 @@ enum class NetUpdateState {
     GOT_FROM_SCRATCH
 };
 
-/**
- * @brief The error tolerance due to round off for the total cost computation.
- * When we check it from scratch vs. incrementally. 0.01 means that there is a 1% error tolerance.
- */
-#define ERROR_TOL .01
-
-const int MAX_FANOUT_CROSSING_COUNT = 50;
+static constexpr int MAX_FANOUT_CROSSING_COUNT = 50;
 
 /**
  * @brief Crossing counts for nets with different #'s of pins.  From
@@ -155,6 +153,12 @@ static struct TSInfo ts_info;
 
 static BBUpdater bb_updater;
 
+static std::optional<std::reference_wrapper<PlacerState>> placer_state_ref;
+
+void set_net_handlers_placer_state(PlacerState& placer_state) {
+    placer_state_ref = std::ref(placer_state);
+}
+
 /**
  * @param net
  * @param moved_blocks
@@ -171,9 +175,9 @@ static bool driven_by_moved_block(const ClusterNetId net,
  * @param blk_pin
  * @param pl_moved_block
  */
-static void update_net_bb(const ClusterNetId& net,
-                          const ClusterBlockId& blk,
-                          const ClusterPinId& blk_pin,
+static void update_net_bb(const ClusterNetId net,
+                          const ClusterBlockId blk,
+                          const ClusterPinId blk_pin,
                           const t_pl_moved_block& pl_moved_block);
 
 /**
@@ -208,9 +212,9 @@ static void record_affected_net(const ClusterNetId net);
  * @param place_algorithm Placement algorithm
  * @param delay_model Timing delay model used by placer
  * @param criticalities Connections timing criticalities
- * @param blk_id Block ID of that the moving pin blongs to.
+ * @param blk_id Block ID of that the moving pin belongs to.
  * @param pin_id Pin ID of the moving pin
- * @param moving_blk_inf Data structure that holds information, e.g., old location and new locatoin, about all moving blocks
+ * @param moving_blk_inf Data structure that holds information, e.g., old location and new location, about all moving blocks
  * @param affected_pins Netlist pins which are affected, in terms placement cost, by the proposed move.
  * @param timing_delta_c Timing cost change based on the proposed move
  * @param is_src_moving Is the moving pin the source of a net.
@@ -545,7 +549,7 @@ double BBUpdater::get_net_cost(const ClusterNetId net_id) {
 }
 
 void BBUpdater::set_ts_bb_coord(const ClusterNetId net_id) {
-    auto& place_move_ctx = g_placer_ctx.mutable_move();
+    auto& place_move_ctx = placer_state_ref->get().mutable_move();
     if (m_cube_bb) {
         place_move_ctx.bb_coords[net_id] = ts_info.ts_bb_coord_new[net_id];
     } else {
@@ -554,7 +558,7 @@ void BBUpdater::set_ts_bb_coord(const ClusterNetId net_id) {
 }
 
 void BBUpdater::set_ts_edge(const ClusterNetId net_id) {
-    auto& place_move_ctx = g_placer_ctx.mutable_move();
+    auto& place_move_ctx = placer_state_ref->get().mutable_move();
     if (m_cube_bb) {
         place_move_ctx.bb_num_on_edges[net_id] = ts_info.ts_bb_edge_new[net_id];
     } else {
@@ -568,8 +572,7 @@ static bool driven_by_moved_block(const ClusterNetId net,
                                   const std::vector<t_pl_moved_block>& moved_blocks) {
     auto& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
     bool is_driven_by_move_blk = false;
-    ClusterBlockId net_driver_block = clb_nlist.net_driver_block(
-        net);
+    ClusterBlockId net_driver_block = clb_nlist.net_driver_block(net);
 
     for (const auto& block : moved_blocks) {
         if (net_driver_block == block.block_num) {
@@ -581,11 +584,13 @@ static bool driven_by_moved_block(const ClusterNetId net,
     return is_driven_by_move_blk;
 }
 
-static void update_net_bb(const ClusterNetId& net,
-                          const ClusterBlockId& blk,
-                          const ClusterPinId& blk_pin,
+static void update_net_bb(const ClusterNetId net,
+                          const ClusterBlockId blk,
+                          const ClusterPinId blk_pin,
                           const t_pl_moved_block& pl_moved_block) {
-    auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& placer_state = placer_state_ref->get();
+    const auto& block_locs = placer_state.block_locs();
 
     if (cluster_ctx.clb_nlist.net_sinks(net).size() < SMALL_NET) {
         //For small nets brute-force bounding box update is faster
@@ -595,9 +600,10 @@ static void update_net_bb(const ClusterNetId& net,
         }
     } else {
         //For large nets, update bounding box incrementally
-        int iblk_pin = tile_pin_index(blk_pin);
+        int iblk_pin = placer_state.blk_loc_registry().tile_pin_index(blk_pin);
 
-        t_physical_tile_type_ptr blk_type = physical_tile_type(blk);
+        t_pl_loc block_loc = block_locs[blk].loc;
+        t_physical_tile_type_ptr blk_type = physical_tile_type(block_loc);
         int pin_width_offset = blk_type->pin_width_offset[iblk_pin];
         int pin_height_offset = blk_type->pin_height_offset[iblk_pin];
         bool is_driver = cluster_ctx.clb_nlist.pin_type(blk_pin) == PinType::DRIVER;
@@ -647,19 +653,20 @@ static void update_td_delta_costs(const PlaceDelayModel* delay_model,
      * for incremental static timing analysis (incremental STA).
      */
     auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& placer_state = placer_state_ref->get();
+    auto& block_locs = placer_state.block_locs();
 
-    const auto& connection_delay = g_placer_ctx.timing().connection_delay;
-    auto& connection_timing_cost = g_placer_ctx.mutable_timing().connection_timing_cost;
-    auto& proposed_connection_delay = g_placer_ctx.mutable_timing().proposed_connection_delay;
-    auto& proposed_connection_timing_cost = g_placer_ctx.mutable_timing().proposed_connection_timing_cost;
+    const auto& connection_delay = placer_state.timing().connection_delay;
+    auto& connection_timing_cost = placer_state.mutable_timing().connection_timing_cost;
+    auto& proposed_connection_delay = placer_state.mutable_timing().proposed_connection_delay;
+    auto& proposed_connection_timing_cost = placer_state.mutable_timing().proposed_connection_timing_cost;
 
     if (cluster_ctx.clb_nlist.pin_type(pin) == PinType::DRIVER) {
         /* This pin is a net driver on a moved block. */
         /* Recompute all point to point connection delays for the net sinks. */
         for (size_t ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net).size();
              ipin++) {
-            float temp_delay = comp_td_single_connection_delay(delay_model, net,
-                                                               ipin);
+            float temp_delay = comp_td_single_connection_delay(delay_model, block_locs, net, ipin);
             /* If the delay hasn't changed, do not mark this pin as affected */
             if (temp_delay == connection_delay[net][ipin]) {
                 continue;
@@ -685,8 +692,7 @@ static void update_td_delta_costs(const PlaceDelayModel* delay_model,
             /* Get the sink pin index in the net */
             int ipin = cluster_ctx.clb_nlist.pin_net_index(pin);
 
-            float temp_delay = comp_td_single_connection_delay(delay_model, net,
-                                                               ipin);
+            float temp_delay = comp_td_single_connection_delay(delay_model, block_locs, net, ipin);
             /* If the delay hasn't changed, do not mark this pin as affected */
             if (temp_delay == connection_delay[net][ipin]) {
                 return;
@@ -696,8 +702,7 @@ static void update_td_delta_costs(const PlaceDelayModel* delay_model,
             proposed_connection_delay[net][ipin] = temp_delay;
 
             proposed_connection_timing_cost[net][ipin] = criticalities.criticality(net, ipin) * temp_delay;
-            delta_timing_cost += proposed_connection_timing_cost[net][ipin]
-                                 - connection_timing_cost[net][ipin];
+            delta_timing_cost += proposed_connection_timing_cost[net][ipin] - connection_timing_cost[net][ipin];
 
             /* Record this connection in blocks_affected.affected_pins */
             affected_pins.push_back(pin);
@@ -760,42 +765,37 @@ static void get_non_updatable_bb(ClusterNetId net_id,
                                  t_bb& bb_coord_new,
                                  vtr::NdMatrixProxy<int, 1> num_sink_pin_layer) {
     //TODO: account for multiple physical pin instances per logical pin
-
-    int xmax, ymax, layer_max, xmin, ymin, layer_min, x, y, layer;
-    int pnum;
-
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_ctx = g_vpr_ctx.placement();
     auto& device_ctx = g_vpr_ctx.device();
+    auto& placer_state = placer_state_ref->get();
+    auto& block_locs = placer_state.block_locs();
 
     ClusterBlockId bnum = cluster_ctx.clb_nlist.net_driver_block(net_id);
-    pnum = net_pin_to_tile_pin_index(net_id, 0);
+    int pnum = placer_state.blk_loc_registry().net_pin_to_tile_pin_index(net_id, 0);
 
-    x = place_ctx.block_locs[bnum].loc.x
-        + physical_tile_type(bnum)->pin_width_offset[pnum];
-    y = place_ctx.block_locs[bnum].loc.y
-        + physical_tile_type(bnum)->pin_height_offset[pnum];
-    layer = place_ctx.block_locs[bnum].loc.layer;
+    t_pl_loc block_loc = block_locs[bnum].loc;
+    int x = block_loc.x + physical_tile_type(block_loc)->pin_width_offset[pnum];
+    int y = block_loc.y + physical_tile_type(block_loc)->pin_height_offset[pnum];
+    int layer = block_loc.layer;
 
-    xmin = x;
-    ymin = y;
-    layer_min = layer;
-    xmax = x;
-    ymax = y;
-    layer_max = layer;
+    int xmin = x;
+    int ymin = y;
+    int layer_min = layer;
+    int xmax = x;
+    int ymax = y;
+    int layer_max = layer;
 
     for (int layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); layer_num++) {
         num_sink_pin_layer[layer_num] = 0;
     }
 
-    for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
+    for (ClusterPinId pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
         bnum = cluster_ctx.clb_nlist.pin_block(pin_id);
-        pnum = tile_pin_index(pin_id);
-        x = place_ctx.block_locs[bnum].loc.x
-            + physical_tile_type(bnum)->pin_width_offset[pnum];
-        y = place_ctx.block_locs[bnum].loc.y
-            + physical_tile_type(bnum)->pin_height_offset[pnum];
-        layer = place_ctx.block_locs[bnum].loc.layer;
+        block_loc = block_locs[bnum].loc;
+        pnum = placer_state.blk_loc_registry().tile_pin_index(pin_id);
+        x = block_loc.x + physical_tile_type(block_loc)->pin_width_offset[pnum];
+        y = block_loc.y + physical_tile_type(block_loc)->pin_height_offset[pnum];
+        layer = block_loc.layer;
 
         if (x < xmin) {
             xmin = x;
@@ -838,40 +838,36 @@ static void get_non_updatable_layer_bb(ClusterNetId net_id,
                                        std::vector<t_2D_bb>& bb_coord_new,
                                        vtr::NdMatrixProxy<int, 1> num_sink_layer) {
     //TODO: account for multiple physical pin instances per logical pin
-
     auto& device_ctx = g_vpr_ctx.device();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& placer_state = placer_state_ref->get();
+    auto& block_locs = placer_state.block_locs();
+
     int num_layers = device_ctx.grid.get_num_layers();
     for (int layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); layer_num++) {
         num_sink_layer[layer_num] = 0;
     }
 
-    int pnum;
-
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_ctx = g_vpr_ctx.placement();
-
     ClusterBlockId bnum = cluster_ctx.clb_nlist.net_driver_block(net_id);
-    pnum = net_pin_to_tile_pin_index(net_id, 0);
+    t_pl_loc block_loc = block_locs[bnum].loc;
+    int pnum = placer_state.blk_loc_registry().net_pin_to_tile_pin_index(net_id, 0);
 
-    int src_x = place_ctx.block_locs[bnum].loc.x
-                + physical_tile_type(bnum)->pin_width_offset[pnum];
-    int src_y = place_ctx.block_locs[bnum].loc.y
-                + physical_tile_type(bnum)->pin_height_offset[pnum];
+    int src_x = block_locs[bnum].loc.x + physical_tile_type(block_loc)->pin_width_offset[pnum];
+    int src_y = block_locs[bnum].loc.y + physical_tile_type(block_loc)->pin_height_offset[pnum];
 
     std::vector<int> xmin(num_layers, src_x);
     std::vector<int> ymin(num_layers, src_y);
     std::vector<int> xmax(num_layers, src_x);
     std::vector<int> ymax(num_layers, src_y);
 
-    for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
+    for (ClusterPinId pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
         bnum = cluster_ctx.clb_nlist.pin_block(pin_id);
-        pnum = tile_pin_index(pin_id);
-        int x = place_ctx.block_locs[bnum].loc.x
-                + physical_tile_type(bnum)->pin_width_offset[pnum];
-        int y = place_ctx.block_locs[bnum].loc.y
-                + physical_tile_type(bnum)->pin_height_offset[pnum];
+        block_loc = block_locs[bnum].loc;
+        pnum = placer_state.blk_loc_registry().tile_pin_index(pin_id);
+        int x = block_locs[bnum].loc.x + physical_tile_type(block_loc)->pin_width_offset[pnum];
+        int y = block_locs[bnum].loc.y + physical_tile_type(block_loc)->pin_height_offset[pnum];
 
-        int layer_num = place_ctx.block_locs[bnum].loc.layer;
+        int layer_num = block_locs[bnum].loc.layer;
         num_sink_layer[layer_num]++;
         if (x < xmin[layer_num]) {
             xmin[layer_num] = x;
@@ -913,7 +909,8 @@ static void update_bb(ClusterNetId net_id,
     const t_bb *curr_bb_edge, *curr_bb_coord;
 
     auto& device_ctx = g_vpr_ctx.device();
-    auto& place_move_ctx = g_placer_ctx.move();
+    auto& placer_state = placer_state_ref->get();
+    auto& place_move_ctx = placer_state.move();
 
     const int num_layers = device_ctx.grid.get_num_layers();
 
@@ -1182,7 +1179,8 @@ static void update_layer_bb(ClusterNetId net_id,
                             t_physical_tile_loc pin_new_loc,
                             bool is_output_pin) {
     auto& device_ctx = g_vpr_ctx.device();
-    auto& place_move_ctx = g_placer_ctx.move();
+    auto& placer_state = placer_state_ref->get();
+    auto& place_move_ctx = placer_state.move();
 
     pin_new_loc.x = max(min<int>(pin_new_loc.x, device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
     pin_new_loc.y = max(min<int>(pin_new_loc.y, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
@@ -1524,53 +1522,49 @@ static void get_bb_from_scratch(ClusterNetId net_id,
                                 t_bb& coords,
                                 t_bb& num_on_edges,
                                 vtr::NdMatrixProxy<int, 1> num_sink_pin_layer) {
-    int pnum, x, y, pin_layer, xmin, xmax, ymin, ymax, layer_min, layer_max;
-    int xmin_edge, xmax_edge, ymin_edge, ymax_edge, layer_min_edge, layer_max_edge;
-
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_ctx = g_vpr_ctx.placement();
     auto& device_ctx = g_vpr_ctx.device();
     auto& grid = device_ctx.grid;
+    const auto& placer_state = placer_state_ref->get();
+    auto& block_locs = placer_state.block_locs();
 
     ClusterBlockId bnum = cluster_ctx.clb_nlist.net_driver_block(net_id);
-    pnum = net_pin_to_tile_pin_index(net_id, 0);
+    t_pl_loc block_loc = block_locs[bnum].loc;
+    int pnum = placer_state.blk_loc_registry().net_pin_to_tile_pin_index(net_id, 0);
     VTR_ASSERT_SAFE(pnum >= 0);
-    x = place_ctx.block_locs[bnum].loc.x
-        + physical_tile_type(bnum)->pin_width_offset[pnum];
-    y = place_ctx.block_locs[bnum].loc.y
-        + physical_tile_type(bnum)->pin_height_offset[pnum];
-    pin_layer = place_ctx.block_locs[bnum].loc.layer;
+    int x = block_loc.x + physical_tile_type(block_loc)->pin_width_offset[pnum];
+    int y = block_loc.y + physical_tile_type(block_loc)->pin_height_offset[pnum];
+    int pin_layer = block_loc.layer;
 
     x = max(min<int>(x, grid.width() - 2), 1);
     y = max(min<int>(y, grid.height() - 2), 1);
     pin_layer = max(min<int>(pin_layer, grid.get_num_layers() - 1), 0);
 
-    xmin = x;
-    ymin = y;
-    layer_min = pin_layer;
-    xmax = x;
-    ymax = y;
-    layer_max = pin_layer;
+    int xmin = x;
+    int ymin = y;
+    int layer_min = pin_layer;
+    int xmax = x;
+    int ymax = y;
+    int layer_max = pin_layer;
 
-    xmin_edge = 1;
-    ymin_edge = 1;
-    layer_min_edge = 1;
-    xmax_edge = 1;
-    ymax_edge = 1;
-    layer_max_edge = 1;
+    int xmin_edge = 1;
+    int ymin_edge = 1;
+    int layer_min_edge = 1;
+    int xmax_edge = 1;
+    int ymax_edge = 1;
+    int layer_max_edge = 1;
 
     for (int layer_num = 0; layer_num < grid.get_num_layers(); layer_num++) {
         num_sink_pin_layer[layer_num] = 0;
     }
 
-    for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
+    for (ClusterPinId pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
         bnum = cluster_ctx.clb_nlist.pin_block(pin_id);
-        pnum = tile_pin_index(pin_id);
-        x = place_ctx.block_locs[bnum].loc.x
-            + physical_tile_type(bnum)->pin_width_offset[pnum];
-        y = place_ctx.block_locs[bnum].loc.y
-            + physical_tile_type(bnum)->pin_height_offset[pnum];
-        pin_layer = place_ctx.block_locs[bnum].loc.layer;
+        block_loc = block_locs[bnum].loc;
+        pnum = placer_state.blk_loc_registry().tile_pin_index(pin_id);
+        x = block_locs[bnum].loc.x + physical_tile_type(block_loc)->pin_width_offset[pnum];
+        y = block_locs[bnum].loc.y + physical_tile_type(block_loc)->pin_height_offset[pnum];
+        pin_layer = block_locs[bnum].loc.layer;
 
         /* Code below counts IO blocks as being within the 1..grid.width()-2, 1..grid.height()-2 clb array. *
          * This is because channels do not go out of the 0..grid.width()-2, 0..grid.height()-2 range, and   *
@@ -1649,6 +1643,11 @@ static void get_layer_bb_from_scratch(ClusterNetId net_id,
                                       std::vector<t_2D_bb>& coords,
                                       vtr::NdMatrixProxy<int, 1> layer_pin_sink_count) {
     auto& device_ctx = g_vpr_ctx.device();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& grid = device_ctx.grid;
+    auto& placer_state = placer_state_ref->get();
+    auto& block_locs = placer_state.block_locs();
+
     const int num_layers = device_ctx.grid.get_num_layers();
     std::vector<int> xmin(num_layers, OPEN);
     std::vector<int> xmax(num_layers, OPEN);
@@ -1661,17 +1660,13 @@ static void get_layer_bb_from_scratch(ClusterNetId net_id,
 
     std::vector<int> num_sink_pin_layer(num_layers, 0);
 
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_ctx = g_vpr_ctx.placement();
-    auto& grid = device_ctx.grid;
 
     ClusterBlockId bnum = cluster_ctx.clb_nlist.net_driver_block(net_id);
-    int pnum_src = net_pin_to_tile_pin_index(net_id, 0);
+    t_pl_loc block_loc = block_locs[bnum].loc;
+    int pnum_src = placer_state.blk_loc_registry().net_pin_to_tile_pin_index(net_id, 0);
     VTR_ASSERT_SAFE(pnum_src >= 0);
-    int x_src = place_ctx.block_locs[bnum].loc.x
-                + physical_tile_type(bnum)->pin_width_offset[pnum_src];
-    int y_src = place_ctx.block_locs[bnum].loc.y
-                + physical_tile_type(bnum)->pin_height_offset[pnum_src];
+    int x_src = block_loc.x + physical_tile_type(block_loc)->pin_width_offset[pnum_src];
+    int y_src = block_loc.y + physical_tile_type(block_loc)->pin_height_offset[pnum_src];
 
     x_src = max(min<int>(x_src, grid.width() - 2), 1);
     y_src = max(min<int>(y_src, grid.height() - 2), 1);
@@ -1690,16 +1685,15 @@ static void get_layer_bb_from_scratch(ClusterNetId net_id,
         ymax_edge[layer_num] = 1;
     }
 
-    for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
+    for (ClusterPinId pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
         bnum = cluster_ctx.clb_nlist.pin_block(pin_id);
-        int pnum = tile_pin_index(pin_id);
-        int layer = place_ctx.block_locs[bnum].loc.layer;
+        block_loc = block_locs[bnum].loc;
+        int pnum = placer_state.blk_loc_registry().tile_pin_index(pin_id);
+        int layer = block_locs[bnum].loc.layer;
         VTR_ASSERT_SAFE(layer >= 0 && layer < num_layers);
         num_sink_pin_layer[layer]++;
-        int x = place_ctx.block_locs[bnum].loc.x
-                + physical_tile_type(bnum)->pin_width_offset[pnum];
-        int y = place_ctx.block_locs[bnum].loc.y
-                + physical_tile_type(bnum)->pin_height_offset[pnum];
+        int x = block_loc.x + physical_tile_type(block_loc)->pin_width_offset[pnum];
+        int y = block_loc.y + physical_tile_type(block_loc)->pin_height_offset[pnum];
 
         /* Code below counts IO blocks as being within the 1..grid.width()-2, 1..grid.height()-2 clb array. *
          * This is because channels do not go out of the 0..grid.width()-2, 0..grid.height()-2 range, and   *
@@ -1759,12 +1753,9 @@ static void get_layer_bb_from_scratch(ClusterNetId net_id,
 static double get_net_cost(ClusterNetId net_id, const t_bb& bb) {
     /* Finds the cost due to one net by looking at its coordinate bounding  *
      * box.                                                                 */
-
-    double ncost, crossing;
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    crossing = wirelength_crossing_count(
-        cluster_ctx.clb_nlist.net_pins(net_id).size());
+    double crossing = wirelength_crossing_count( cluster_ctx.clb_nlist.net_pins(net_id).size());
 
     /* Could insert a check for xmin == xmax.  In that case, assume  *
      * connection will be made with no bends and hence no x-cost.    *
@@ -1773,11 +1764,9 @@ static double get_net_cost(ClusterNetId net_id, const t_bb& bb) {
     /* Cost = wire length along channel * cross_count / average      *
      * channel capacity.   Do this for x, then y direction and add.  */
 
-    ncost = (bb.xmax - bb.xmin + 1) * crossing
-            * chanx_place_cost_fac[bb.ymax][bb.ymin - 1];
-
-    ncost += (bb.ymax - bb.ymin + 1) * crossing
-             * chany_place_cost_fac[bb.xmax][bb.xmin - 1];
+    double ncost;
+    ncost = (bb.xmax - bb.xmin + 1) * crossing * chanx_place_cost_fac[bb.ymax][bb.ymin - 1];
+    ncost += (bb.ymax - bb.ymin + 1) * crossing * chany_place_cost_fac[bb.xmax][bb.xmin - 1];
 
     return (ncost);
 }
@@ -1822,11 +1811,9 @@ static double get_net_layer_bb_wire_cost(ClusterNetId /* net_id */,
 }
 
 static double get_net_wirelength_estimate(ClusterNetId net_id, const t_bb& bb) {
-    double ncost, crossing;
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    crossing = wirelength_crossing_count(
-        cluster_ctx.clb_nlist.net_pins(net_id).size());
+    double crossing = wirelength_crossing_count(cluster_ctx.clb_nlist.net_pins(net_id).size());
 
     /* Could insert a check for xmin == xmax.  In that case, assume  *
      * connection will be made with no bends and hence no x-cost.    *
@@ -1835,11 +1822,12 @@ static double get_net_wirelength_estimate(ClusterNetId net_id, const t_bb& bb) {
     /* Cost = wire length along channel * cross_count / average      *
      * channel capacity.   Do this for x, then y direction and add.  */
 
+    double ncost;
     ncost = (bb.xmax - bb.xmin + 1) * crossing;
 
     ncost += (bb.ymax - bb.ymin + 1) * crossing;
 
-    return (ncost);
+    return ncost;
 }
 
 static double get_net_wirelength_from_layer_bb(ClusterNetId /* net_id */,
@@ -1958,14 +1946,14 @@ double comp_bb_cost(e_cost_methods method) {
     double cost = 0;
     double expected_wirelength = 0.0;
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_move_ctx = g_placer_ctx.mutable_move();
+    auto& placer_state = placer_state_ref->get();
+    auto& place_move_ctx = placer_state.mutable_move();
 
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {       /* for each net ... */
         if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)) { /* Do only if not ignored. */
             /* Small nets don't use incremental updating on their bounding boxes, *
              * so they can use a fast bounding box calculator.                    */
-            if (cluster_ctx.clb_nlist.net_sinks(net_id).size() >= SMALL_NET
-                && method == NORMAL) {
+            if (cluster_ctx.clb_nlist.net_sinks(net_id).size() >= SMALL_NET && method == e_cost_methods::NORMAL) {
                 get_bb_from_scratch(net_id,
                                     place_move_ctx.bb_coords[net_id],
                                     place_move_ctx.bb_num_on_edges[net_id],
@@ -1978,12 +1966,12 @@ double comp_bb_cost(e_cost_methods method) {
 
             pl_net_cost.net_cost[net_id] = get_net_cost(net_id, place_move_ctx.bb_coords[net_id]);
             cost += pl_net_cost.net_cost[net_id];
-            if (method == CHECK)
+            if (method == e_cost_methods::CHECK)
                 expected_wirelength += get_net_wirelength_estimate(net_id, place_move_ctx.bb_coords[net_id]);
         }
     }
 
-    if (method == CHECK) {
+    if (method == e_cost_methods::CHECK) {
         VTR_LOG("\n");
         VTR_LOG("BB estimate of min-dist (placement) wire length: %.0f\n",
                 expected_wirelength);
@@ -1995,14 +1983,14 @@ double comp_layer_bb_cost(e_cost_methods method) {
     double cost = 0;
     double expected_wirelength = 0.0;
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_move_ctx = g_placer_ctx.mutable_move();
+    auto& placer_state = placer_state_ref->get();
+    auto& place_move_ctx = placer_state.mutable_move();
 
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {       /* for each net ... */
         if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)) { /* Do only if not ignored. */
             /* Small nets don't use incremental updating on their bounding boxes, *
              * so they can use a fast bounding box calculator.                    */
-            if (cluster_ctx.clb_nlist.net_sinks(net_id).size() >= SMALL_NET
-                && method == NORMAL) {
+            if (cluster_ctx.clb_nlist.net_sinks(net_id).size() >= SMALL_NET && method == e_cost_methods::NORMAL) {
                 get_layer_bb_from_scratch(net_id,
                                           place_move_ctx.layer_bb_num_on_edges[net_id],
                                           place_move_ctx.layer_bb_coords[net_id],
@@ -2017,14 +2005,14 @@ double comp_layer_bb_cost(e_cost_methods method) {
                                                                       place_move_ctx.layer_bb_coords[net_id],
                                                                       place_move_ctx.num_sink_pin_layer[size_t(net_id)]);
             cost += pl_net_cost.net_cost[net_id];
-            if (method == CHECK)
+            if (method == e_cost_methods::CHECK)
                 expected_wirelength += get_net_wirelength_from_layer_bb(net_id,
                                                                         place_move_ctx.layer_bb_coords[net_id],
                                                                         place_move_ctx.num_sink_pin_layer[size_t(net_id)]);
         }
     }
 
-    if (method == CHECK) {
+    if (method == e_cost_methods::CHECK) {
         VTR_LOG("\n");
         VTR_LOG("BB estimate of min-dist (placement) wire length: %.0f\n",
                 expected_wirelength);
@@ -2035,7 +2023,8 @@ double comp_layer_bb_cost(e_cost_methods method) {
 void update_move_nets() {
     /* update net cost functions and reset flags. */
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_move_ctx = g_placer_ctx.mutable_move();
+    auto& placer_state = placer_state_ref->get();
+    auto& place_move_ctx = placer_state.mutable_move();
 
     for (const ClusterNetId ts_net : ts_info.ts_nets_to_update) {
         ClusterNetId net_id = ts_net;
@@ -2072,9 +2061,11 @@ void recompute_costs_from_scratch(const t_placer_opts& placer_opts,
                                   const PlaceDelayModel* delay_model,
                                   const PlacerCriticalities* criticalities,
                                   t_placer_costs* costs) {
+    auto& placer_state = placer_state_ref->get();
+
     auto check_and_print_cost = [](double new_cost,
                                    double old_cost,
-                                   const std::string& cost_name) {
+                                   const std::string& cost_name) -> void {
         if (!vtr::isclose(new_cost, old_cost, ERROR_TOL, 0.)) {
             std::string msg = vtr::string_fmt(
                 "in recompute_costs_from_scratch: new_%s = %g, old %s = %g, ERROR_TOL = %g\n",
@@ -2089,7 +2080,7 @@ void recompute_costs_from_scratch(const t_placer_opts& placer_opts,
 
     if (placer_opts.place_algorithm.is_timing_driven()) {
         double new_timing_cost = 0.;
-        comp_td_costs(delay_model, *criticalities, &new_timing_cost);
+        comp_td_costs(delay_model, *criticalities, placer_state, &new_timing_cost);
         check_and_print_cost(new_timing_cost, costs->timing_cost, "timing_cost");
         costs->timing_cost = new_timing_cost;
     } else {
@@ -2163,8 +2154,7 @@ void alloc_and_load_chan_w_factors_for_place_cost(float place_cost_exp) {
     for (size_t high = 1; high < device_ctx.grid.height(); high++) {
         chanx_place_cost_fac[high][high] = device_ctx.chan_width.x_list[high];
         for (size_t low = 0; low < high; low++) {
-            chanx_place_cost_fac[high][low] = chanx_place_cost_fac[high - 1][low]
-                                              + device_ctx.chan_width.x_list[high];
+            chanx_place_cost_fac[high][low] = chanx_place_cost_fac[high - 1][low] + device_ctx.chan_width.x_list[high];
         }
     }
 
@@ -2203,8 +2193,7 @@ void alloc_and_load_chan_w_factors_for_place_cost(float place_cost_exp) {
     for (size_t high = 1; high < device_ctx.grid.width(); high++) {
         chany_place_cost_fac[high][high] = device_ctx.chan_width.y_list[high];
         for (size_t low = 0; low < high; low++) {
-            chany_place_cost_fac[high][low] = chany_place_cost_fac[high - 1][low]
-                                              + device_ctx.chan_width.y_list[high];
+            chany_place_cost_fac[high][low] = chany_place_cost_fac[high - 1][low] + device_ctx.chan_width.y_list[high];
         }
     }
 

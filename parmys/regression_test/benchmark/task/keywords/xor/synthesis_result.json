@@ -51,21 +51,21 @@
         "test_name": "xor/replicate_xor_int_wide/no_arch",
         "exit": 1,
         "errors": [
-            "Assert `new_cell->children.at(0)->type == AST_CELLTYPE' failed in frontends/ast/simplify.cc:2710."
+            "Assert `new_cell->children.at(0)->type == AST_CELLTYPE' failed in frontends/ast/simplify.cc:2686."
         ]
     },
     "xor/replicate_xor_ultra_wide/no_arch": {
         "test_name": "xor/replicate_xor_ultra_wide/no_arch",
         "exit": 1,
         "errors": [
-            "Assert `new_cell->children.at(0)->type == AST_CELLTYPE' failed in frontends/ast/simplify.cc:2710."
+            "Assert `new_cell->children.at(0)->type == AST_CELLTYPE' failed in frontends/ast/simplify.cc:2686."
         ]
     },
     "xor/replicate_xor_wide/no_arch": {
         "test_name": "xor/replicate_xor_wide/no_arch",
         "exit": 1,
         "errors": [
-            "Assert `new_cell->children.at(0)->type == AST_CELLTYPE' failed in frontends/ast/simplify.cc:2710."
+            "Assert `new_cell->children.at(0)->type == AST_CELLTYPE' failed in frontends/ast/simplify.cc:2686."
         ]
     },
     "xor/xor_indexed_port/no_arch": {

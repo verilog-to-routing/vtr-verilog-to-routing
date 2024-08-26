@@ -792,7 +792,7 @@ bool vpr_place_flow(const Netlist<>& net_list, t_vpr_setup& vpr_setup, const t_a
 
 void vpr_place(const Netlist<>& net_list, t_vpr_setup& vpr_setup, const t_arch& arch) {
     bool is_flat = false;
-    if (placer_needs_lookahead(vpr_setup)) {
+    if (vpr_setup.PlacerOpts.place_algorithm.is_timing_driven()) {
         // Prime lookahead cache to avoid adding lookahead computation cost to
         // the placer timer.
         // Flat_routing is disabled in placement
@@ -820,10 +820,13 @@ void vpr_place(const Netlist<>& net_list, t_vpr_setup& vpr_setup, const t_arch& 
 
     auto& filename_opts = vpr_setup.FileNameOpts;
     auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& block_locs = g_vpr_ctx.placement().block_locs();
+    auto& placement_id = g_vpr_ctx.mutable_placement().placement_id;
 
-    print_place(filename_opts.NetFile.c_str(),
-                cluster_ctx.clb_nlist.netlist_id().c_str(),
-                filename_opts.PlaceFile.c_str());
+    placement_id = print_place(filename_opts.NetFile.c_str(),
+                               cluster_ctx.clb_nlist.netlist_id().c_str(),
+                               filename_opts.PlaceFile.c_str(),
+                               block_locs);
 }
 
 void vpr_load_placement(t_vpr_setup& vpr_setup, const t_arch& arch) {
@@ -834,10 +837,14 @@ void vpr_load_placement(t_vpr_setup& vpr_setup, const t_arch& arch) {
     const auto& filename_opts = vpr_setup.FileNameOpts;
 
     //Initialize placement data structures, which will be filled when loading placement
-    init_placement_context();
+    auto& block_locs = place_ctx.mutable_block_locs();
+    GridBlock& grid_blocks = place_ctx.mutable_grid_blocks();
+    init_placement_context(block_locs, grid_blocks);
 
     //Load an existing placement from a file
-    read_place(filename_opts.NetFile.c_str(), filename_opts.PlaceFile.c_str(), filename_opts.verify_file_digests, device_ctx.grid);
+    place_ctx.placement_id = read_place(filename_opts.NetFile.c_str(), filename_opts.PlaceFile.c_str(),
+                                        place_ctx.mutable_blk_loc_registry(),
+                                        filename_opts.verify_file_digests, device_ctx.grid);
 
     //Ensure placement macros are loaded so that they can be drawn after placement (e.g. during routing)
     place_ctx.pl_macros = alloc_and_load_placement_macros(arch.Directs, arch.num_directs);
@@ -861,7 +868,7 @@ RouteStatus vpr_route_flow(const Netlist<>& net_list,
         route_status = RouteStatus(true, -1);
     } else { //Do or load
 
-        // set the net_is_ignored flag for nets that that have route_model set to ideal in route constraints
+        // set the net_is_ignored flag for nets that have route_model set to ideal in route constraints
         apply_route_constraints(g_vpr_ctx.routing().constraints);
 
         int chan_width = router_opts.fixed_channel_width;
@@ -1075,7 +1082,7 @@ RouteStatus vpr_load_routing(t_vpr_setup& vpr_setup,
                                     net_delay);
         timing_info->update();
     }
-    init_draw_coords(fixed_channel_width);
+    init_draw_coords(fixed_channel_width, g_vpr_ctx.placement().blk_loc_registry());
 
     return RouteStatus(is_legal, fixed_channel_width);
 }
@@ -1114,7 +1121,7 @@ void vpr_create_rr_graph(t_vpr_setup& vpr_setup, const t_arch& arch, int chan_wi
                     &warnings,
                     is_flat);
     //Initialize drawing, now that we have an RR graph
-    init_draw_coords(chan_width_fac);
+    init_draw_coords(chan_width_fac, g_vpr_ctx.placement().blk_loc_registry());
 }
 
 void vpr_init_graphics(const t_vpr_setup& vpr_setup, const t_arch& arch, bool is_flat) {
@@ -1280,8 +1287,8 @@ static void free_atoms() {
 
 static void free_placement() {
     auto& place_ctx = g_vpr_ctx.mutable_placement();
-    place_ctx.block_locs.clear();
-    place_ctx.grid_blocks.clear();
+    place_ctx.mutable_block_locs().clear();
+    place_ctx.mutable_grid_blocks().clear();
 }
 
 static void free_routing() {
@@ -1475,6 +1482,7 @@ void vpr_analysis(const Netlist<>& net_list,
                   bool is_flat) {
     auto& route_ctx = g_vpr_ctx.routing();
     auto& atom_ctx = g_vpr_ctx.atom();
+    const auto& blk_loc_registry = g_vpr_ctx.placement().blk_loc_registry();
 
     if (route_ctx.route_trees.empty()) {
         VPR_FATAL_ERROR(VPR_ERROR_ANALYSIS, "No routing loaded -- can not perform post-routing analysis");
@@ -1495,8 +1503,7 @@ void vpr_analysis(const Netlist<>& net_list,
         //Load the net delays
 
         NetPinsMatrix<float> net_delay = make_net_pins_matrix<float>(net_list);
-        load_net_delay_from_routing(net_list,
-                                    net_delay);
+        load_net_delay_from_routing(net_list, net_delay);
 
         //Do final timing analysis
         auto analysis_delay_calc = std::make_shared<AnalysisDelayCalculator>(atom_ctx.nlist, atom_ctx.lookup, net_delay, vpr_setup.RouterOpts.flat_routing);
@@ -1511,10 +1518,10 @@ void vpr_analysis(const Netlist<>& net_list,
 
         //Timing stats
         VTR_LOG("\n");
-        generate_hold_timing_stats(/*prefix=*/"", *timing_info,
-                                   *analysis_delay_calc, vpr_setup.AnalysisOpts, vpr_setup.RouterOpts.flat_routing);
-        generate_setup_timing_stats(/*prefix=*/"", *timing_info,
-                                    *analysis_delay_calc, vpr_setup.AnalysisOpts, vpr_setup.RouterOpts.flat_routing);
+        generate_hold_timing_stats(/*prefix=*/"", *timing_info, *analysis_delay_calc,
+                                   vpr_setup.AnalysisOpts, vpr_setup.RouterOpts.flat_routing, blk_loc_registry);
+        generate_setup_timing_stats(/*prefix=*/"", *timing_info, *analysis_delay_calc,
+                                    vpr_setup.AnalysisOpts, vpr_setup.RouterOpts.flat_routing, blk_loc_registry);
 
         //Write the post-synthesis netlist
         if (vpr_setup.AnalysisOpts.gen_post_synthesis_netlist) {

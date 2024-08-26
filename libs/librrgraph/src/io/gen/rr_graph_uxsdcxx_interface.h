@@ -4,9 +4,9 @@
  * https://github.com/duck2/uxsdcxx
  * Modify only if your build process doesn't involve regenerating this file.
  *
- * Cmdline: /home/talaeikh/uxsdcxx/uxsdcxx.py /home/talaeikh/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
- * Input file: /home/talaeikh/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
- * md5sum of input file: 9c14a0ddd3c6bc1e690ca6abf467bae6
+ * Cmdline: uxsdcxx/uxsdcxx.py /home/mohagh18/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
+ * Input file: /home/mohagh18/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
+ * md5sum of input file: 65eddcc840064bbb91d7f4cf0b8bf821
  */
 
 #include <functional>
@@ -245,11 +245,14 @@ public:
 	 *     <xs:element minOccurs="0" name="timing" type="segment_timing" />
 	 *   </xs:all>
 	 *   <xs:attribute name="id" type="xs:int" use="required" />
+	 *   <xs:attribute name="length" type="xs:int" />
 	 *   <xs:attribute name="name" type="xs:string" use="required" />
 	 *   <xs:attribute name="res_type" type="segment_res_type" />
 	 * </xs:complexType>
 	*/
 	virtual inline int get_segment_id(typename ContextTypes::SegmentReadContext &ctx) = 0;
+	virtual inline int get_segment_length(typename ContextTypes::SegmentReadContext &ctx) = 0;
+	virtual inline void set_segment_length(int length, typename ContextTypes::SegmentWriteContext &ctx) = 0;
 	virtual inline const char * get_segment_name(typename ContextTypes::SegmentReadContext &ctx) = 0;
 	virtual inline void set_segment_name(const char * name, typename ContextTypes::SegmentWriteContext &ctx) = 0;
 	virtual inline enum_segment_res_type get_segment_res_type(typename ContextTypes::SegmentReadContext &ctx) = 0;

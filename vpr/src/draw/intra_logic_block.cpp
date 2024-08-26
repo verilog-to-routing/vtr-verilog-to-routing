@@ -152,7 +152,7 @@ void draw_internal_draw_subblk(ezgl::renderer* g) {
     }
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_ctx = g_vpr_ctx.placement();
+    const auto& grid_blocks = get_graphics_blk_loc_registry_ref().grid_blocks();
 
     int total_layer_num = device_ctx.grid.get_num_layers();
 
@@ -175,14 +175,16 @@ void draw_internal_draw_subblk(ezgl::renderer* g) {
                     int num_sub_tiles = type->capacity;
                     for (int k = 0; k < num_sub_tiles; ++k) {
                         /* Don't draw if block is empty. */
-                        if (place_ctx.grid_blocks.block_at_location({i, j, k, layer_num}) == EMPTY_BLOCK_ID || place_ctx.grid_blocks.block_at_location({i, j, k, layer_num}) == INVALID_BLOCK_ID)
+                        if (!grid_blocks.block_at_location({i, j, k, layer_num})) {
                             continue;
+                        }
 
                         /* Get block ID */
-                        ClusterBlockId bnum = place_ctx.grid_blocks.block_at_location({i, j, k, layer_num});
+                        ClusterBlockId bnum = grid_blocks.block_at_location({i, j, k, layer_num});
                         /* Safety check, that physical blocks exists in the CLB */
-                        if (cluster_ctx.clb_nlist.block_pb(bnum) == nullptr)
+                        if (cluster_ctx.clb_nlist.block_pb(bnum) == nullptr) {
                             continue;
+                        }
                         draw_internal_pb(bnum, cluster_ctx.clb_nlist.block_pb(bnum), ezgl::rectangle({0, 0}, 0, 0), cluster_ctx.clb_nlist.block_type(bnum), g);
                     }
                 }
@@ -260,7 +262,6 @@ static void draw_internal_load_coords(int type_descrip_index, t_pb_graph_node* p
             }
         }
     }
-    return;
 }
 
 /* Helper function which computes bounding box values for a sub-block. The coordinates
@@ -272,7 +273,7 @@ draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node* pb_graph_node
     float sub_tile_x, sub_tile_y;
     float child_width, child_height;
     auto& device_ctx = g_vpr_ctx.device();
-    auto& place_ctx = g_vpr_ctx.placement();
+    const auto& grid_blocks = get_graphics_blk_loc_registry_ref().grid_blocks();
 
     // get the bbox for this pb type
     ezgl::rectangle& pb_bbox = get_draw_coords_vars()->blk_info.at(type_descrip_index).get_pb_bbox_ref(*pb_graph_node);
@@ -290,7 +291,7 @@ draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node* pb_graph_node
     int capacity = device_ctx.physical_tile_types[type_descrip_index].capacity;
     // TODO: this is a hack - should be fixed for the layer_num
     const auto& type = device_ctx.grid.get_physical_type({1, 0, 0});
-    if (capacity > 1 && device_ctx.grid.width() > 0 && device_ctx.grid.height() > 0 && place_ctx.grid_blocks.get_usage({1, 0, 0}) != 0
+    if (capacity > 1 && device_ctx.grid.width() > 0 && device_ctx.grid.height() > 0 && grid_blocks.get_usage({1, 0, 0}) != 0
         && type_descrip_index == type->index) {
         // that should test for io blocks, and setting capacity_divisor > 1
         // will squish every thing down
@@ -329,8 +330,6 @@ draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node* pb_graph_node
 
     *blk_width = child_width;
     *blk_height = child_height;
-
-    return;
 }
 
 #    ifndef NO_GRAPHICS
@@ -342,7 +341,7 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
     t_draw_coords* draw_coords = get_draw_coords_vars();
     t_draw_state* draw_state = get_draw_state_vars();
 
-    auto& place_ctx = g_vpr_ctx.placement();
+    auto& block_locs = get_graphics_blk_loc_registry_ref().block_locs();
 
     t_selected_sub_block_info& sel_sub_info = get_selected_sub_block_info();
 
@@ -350,7 +349,7 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
     ezgl::rectangle temp = draw_coords->get_pb_bbox(clb_index, *pb->pb_graph_node);
     ezgl::rectangle abs_bbox = temp + parent_bbox.bottom_left();
 
-    int layer_num = place_ctx.block_locs[clb_index].loc.layer;
+    int layer_num = block_locs[clb_index].loc.layer;
     int transparency_factor = draw_state->draw_layer_display[layer_num].alpha;
 
     // if we've gone too far, don't draw anything
@@ -560,7 +559,7 @@ void draw_logical_connections(ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
 
     auto& atom_ctx = g_vpr_ctx.atom();
-    auto& place_ctx = g_vpr_ctx.placement();
+    auto& block_locs = get_graphics_blk_loc_registry_ref().block_locs();
 
     g->set_line_dash(ezgl::line_dash::none);
 
@@ -578,7 +577,7 @@ void draw_logical_connections(ezgl::renderer* g) {
         AtomBlockId src_blk_id = atom_ctx.nlist.pin_block(driver_pin_id);
         ClusterBlockId src_clb = atom_ctx.lookup.atom_clb(src_blk_id);
 
-        int src_layer_num = place_ctx.block_locs[src_clb].loc.layer;
+        int src_layer_num = block_locs[src_clb].loc.layer;
         //To only show primitive nets that are connected to currently active layers on the screen
         if (!draw_state->draw_layer_display[src_layer_num].visible) {
             continue; /* Don't Draw */
@@ -593,7 +592,7 @@ void draw_logical_connections(ezgl::renderer* g) {
             AtomBlockId sink_blk_id = atom_ctx.nlist.pin_block(sink_pin_id);
             const t_pb_graph_node* sink_pb_gnode = atom_ctx.lookup.atom_pb_graph_node(sink_blk_id);
             ClusterBlockId sink_clb = atom_ctx.lookup.atom_clb(sink_blk_id);
-            int sink_layer_num = place_ctx.block_locs[sink_clb].loc.layer;
+            int sink_layer_num = block_locs[sink_clb].loc.layer;
 
             t_draw_layer_display element_visibility = get_element_visibility_and_transparency(src_layer_num, sink_layer_num);
 
@@ -653,7 +652,7 @@ void find_pin_index_at_model_scope(const AtomPinId pin_id, const AtomBlockId blk
                 int atom_port_index = atom_ctx.nlist.pin_port_bit(pin_id);
 
                 //The index of this pin in the model is the pins counted so-far
-                //(i.e. accross previous ports) plus the index in the port
+                //(i.e. across previous ports) plus the index in the port
                 *pin_index = pin_cnt + atom_port_index;
             }
 
