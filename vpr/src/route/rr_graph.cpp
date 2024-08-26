@@ -94,8 +94,25 @@ std::set<int> get_layers_pin_is_connected_to(const t_physical_tile_type_ptr type
 ///@brief given a specific layer number and type, it returns layers which have same pin_index connected to the given layer
 std::set<int> get_layers_connected_to_pin(const t_physical_tile_type_ptr type, int to_layer, int pin_index);
 
+///@brief checks whether the channel width has been changed or not
 bool channel_widths_unchanged(const t_chan_width& current, const t_chan_width& proposed);
 
+/**
+ * @brief This routine calculate pin connections to tracks for a specific type on the Fc value defined for each pin in the architecture file.
+ *        For each type, it will loop through all segments and calculate how many connections should be made, returns the connections for all pins of that type.   
+ * 
+ *   @param pin_type Specifies whether the routine should connect tracks to *INPUT* pins or connect *OUTPUT* pins to tracks.
+ *   @param Fc Actual Fc value described in the architecture file for all pins of the specific phyiscal type ([0..number_of_pins-1][0..number_of_segments-1]).
+ *   @param Type Physical type information, such as total number of pins, block width, block height, and etc. 
+ *   @param type_layer Layer indicies on which the physical type located.
+ *   @param perturb_switch_pattern Specifies whether connections should be distributed unevenly across the channel or not.
+ *   @param directionality Segment directionality, should be either *UNI-DIRECTIONAL* or *BI-DIRECTIONAL* 
+ *   @param seg_inf Segments informations, such as length, frequency, and etc.
+ *   @param sets_per_seg_type Number of available sets within the channel_width of each segment type
+ * 
+ * @return an 5D matrix which keeps the track indicies connected to each pin ([0..num_pins-1][0..width-1][0..height-1][0..layer-1][0..sides-1]).
+ * 
+ */
 static vtr::NdMatrix<std::vector<int>, 5> alloc_and_load_pin_to_track_map(const e_pin_type pin_type,
                                                                           const vtr::Matrix<int>& Fc,
                                                                           const t_physical_tile_type_ptr Type,
@@ -104,7 +121,24 @@ static vtr::NdMatrix<std::vector<int>, 5> alloc_and_load_pin_to_track_map(const 
                                                                           const e_directionality directionality,
                                                                           const std::vector<t_segment_inf>& seg_inf,
                                                                           const int* sets_per_seg_type);
-
+/**
+ * @brief This routine calculate pin connections to tracks for a specific type and a specific segment based on the Fc value 
+ * defined for each pin in the architecture file. This routine is called twice for each combination of block type and segment 
+ * type: 1) connecting tracks to input pins 2) connecting output pins to tracks.  
+ * 
+ *   @param pin_type Specifies whether the routine should connect tracks to *INPUT* pins or connect *OUTPUT* pins to tracks.
+ *   @param Fc Actual Fc value described in the architecture file for all pins of the specific phyiscal type ([0..number_of_pins-1][0..number_of_segments-1]).
+ *   @param seg_type_tracks Number of tracks that is avaliable for the specific segment.
+ *   @param seg_index The segment index that the function is trying to connect to pins.
+ *   @param max_Fc Used to allocate max possible space for simplicity.
+ *   @param Type Physical type information, such as total number of pins, block width, block height, and etc. 
+ *   @param type_layer Layer indicies on which the physical type located.
+ *   @param perturb_switch_pattern Specifies whether connections should be distributed unevenly across the channel or not.
+ *   @param directionality Segment directionality, should be either *UNI-DIRECTIONAL* or *BI-DIRECTIONAL* 
+ * 
+ * @return an 6D matrix which keeps the track indicies connected to each pin ([0..num_pins-1][0..width-1][0..height-1][0..layer-1][0..sides-1][0..Fc-1]).
+ * 
+ */
 static vtr::NdMatrix<int, 6> alloc_and_load_pin_to_seg_type(const e_pin_type pin_type,
                                                             const vtr::Matrix<int>& Fc,
                                                             const int seg_type_tracks,
@@ -297,6 +331,20 @@ static void alloc_and_load_tile_rr_graph(RRGraphBuilder& rr_graph_builder,
                                          const int delayless_switch);
 
 static float pattern_fmod(float a, float b);
+
+
+/**
+ * @brief Loads the tracks_connected_to_pin array with an even distribution of switches across the tracks for each pin.
+ * 
+ *   @param tracks_connected_to_pin The funtion loads up this data structure with a track index for each pin ([0..num_pins-1][0..width-1][0..height-1][0..layer-1][0..sides-1][0..Fc-1]]).                        
+ *   @param pin_locations Physical pin informations, such as pin_index in the physical type, side, and etc.
+ *   @param Fc Actual Fc value described in the architecture file for all pins of the specific phyiscal type ([0..number_of_pins-1][0..number_of_segments-1]).
+ *   @param seg_index The segment index that the function is trying to connect to pins.
+ *   @param x_chan_width Number of tracks in x-axis.
+ *   @param y_chan_width Number of tracks in y-axis.
+ *   @param directionality Segment directionality, should be either *UNI-DIRECTIONAL* or *BI-DIRECTIONAL* 
+ * 
+ */
 static void load_uniform_connection_block_pattern(vtr::NdMatrix<int, 6>& tracks_connected_to_pin,
                                                   const std::vector<t_pin_loc>& pin_locations,
                                                   const vtr::Matrix<int>& Fc,
@@ -305,6 +353,18 @@ static void load_uniform_connection_block_pattern(vtr::NdMatrix<int, 6>& tracks_
                                                   const int y_chan_width,
                                                   const enum e_directionality directionality);
 
+/**
+ * @brief Loads the tracks_connected_to_pin array with an unevenly distributed set of switches across the channel.
+ * 
+ *   @param tracks_connected_to_pin The funtion loads up this data structure with a track index for each pin ([0..num_pins-1][0..width-1][0..height-1][0..layer-1][0..sides-1][0..Fc-1]]).                        
+ *   @param pin_locations Physical pin informations, such as pin_index in the physical type, side, and etc.
+ *   @param x_chan_width Number of tracks in x-axis.
+ *   @param y_chan_width Number of tracks in y-axis.
+ *   @param Fc Actual Fc value described in the architecture file for all pins of the specific phyiscal type ([0..number_of_pins-1][0..number_of_segments-1]).
+ *   @param seg_index The segment index that the function is trying to connect to pins.
+ *   @param directionality Segment directionality, should be either *UNI-DIRECTIONAL* or *BI-DIRECTIONAL* 
+ * 
+ */
 static void load_perturbed_connection_block_pattern(vtr::NdMatrix<int, 6>& tracks_connected_to_pin,
                                                     const std::vector<t_pin_loc>& pin_locations,
                                                     const int x_chan_width,
@@ -1276,8 +1336,8 @@ static void build_rr_graph(const t_graph_type graph_type,
     /* START IPIN MAP */
     /* Create ipin map lookups */
 
-    t_pin_to_track_lookup ipin_to_track_map_x(types.size()); /* [0..device_ctx.physical_tile_types.size()-1][0..num_pins-1][0..width][0..height][0..3][0..Fc-1] */
-    t_pin_to_track_lookup ipin_to_track_map_y(types.size()); /* [0..device_ctx.physical_tile_types.size()-1][0..max_chan_width-1][0..width][0..height][0..3] */
+    t_pin_to_track_lookup ipin_to_track_map_x(types.size()); /* [0..device_ctx.physical_tile_types.size()-1][0..num_pins-1][0..width-1][0..height-1][0..layers-1][0..sides-1][0..Fc-1] */
+    t_pin_to_track_lookup ipin_to_track_map_y(types.size()); /* [0..device_ctx.physical_tile_types.size()-1][0..num_pins-1][0..width-1][0..height-1][0..layers-1][0..sides-1][0..Fc-1] */
 
     t_track_to_pin_lookup track_to_pin_lookup_x(types.size());
     t_track_to_pin_lookup track_to_pin_lookup_y(types.size());
@@ -3338,13 +3398,6 @@ static vtr::NdMatrix<int, 6> alloc_and_load_pin_to_seg_type(const e_pin_type pin
      * Probably not enough memory to worry about, esp. as it's temporary.
      * If pin ipin on side iside does not exist or is of the wrong type,
      * tracks_connected_to_pin[ipin][iside][0] = OPEN.                               */
-
-    /* AA: I think we're currently not doing anything with the ability to specify different Fc values
-     * for each segment. Cause we're passing in max_Fc into this function by finding the max_Fc for that
-     * segment type by going through Fc[ipin][iseg] (this is a matrix for each type btw, not the overall
-     * Fc[itype][ipin][iseg]  matrix). Probably should update this to allow finer control over cb along with
-     * allowing different specification of the segment parallel_axis.
-     */
 
     auto& grid = g_vpr_ctx.device().grid;
 
