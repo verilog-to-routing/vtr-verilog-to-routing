@@ -191,9 +191,6 @@ static NetCostHandler alloc_and_load_placement_structs(const t_placer_opts& plac
                                                        int num_directs,
                                                        PlacerState& placer_state);
 
-
-static void free_try_swap_structs();
-
 static void free_placement_structs(const t_noc_opts& noc_opts);
 
 static e_move_result try_swap(const t_annealing_state* state,
@@ -276,8 +273,6 @@ static e_move_result assess_swap(double delta_c, double t);
 static void update_placement_cost_normalization_factors(t_placer_costs* costs, const t_placer_opts& placer_opts, const t_noc_opts& noc_opts);
 
 static double get_total_cost(t_placer_costs* costs, const t_placer_opts& placer_opts, const t_noc_opts& noc_opts);
-
-static void free_try_swap_arrays();
 
 static void outer_loop_update_timing_info(const t_placer_opts& placer_opts,
                                           const t_noc_opts& noc_opts,
@@ -965,7 +960,6 @@ void try_place(const Netlist<>& net_list,
     }
 
     free_placement_structs(noc_opts);
-    free_try_swap_arrays();
 
     print_timing_stats("Placement Quench", post_quench_timing_stats,
                        pre_quench_timing_stats);
@@ -1910,16 +1904,12 @@ static NetCostHandler alloc_and_load_placement_structs(const t_placer_opts& plac
 static void free_placement_structs(const t_noc_opts& noc_opts) {
     free_placement_macros_structs();
 
-    free_try_swap_structs();
+    auto& place_ctx = g_vpr_ctx.mutable_placement();
+    vtr::release_memory(place_ctx.compressed_block_grids);
 
     if (noc_opts.noc) {
         free_noc_placement_structs();
     }
-}
-
-static void free_try_swap_structs() {
-    auto& place_ctx = g_vpr_ctx.mutable_placement();
-    vtr::release_memory(place_ctx.compressed_block_grids);
 }
 
 static void check_place(const t_placer_costs& costs,
@@ -2135,10 +2125,6 @@ void print_clb_placement(const char* fname) {
     fclose(fp);
 }
 #endif
-
-static void free_try_swap_arrays() {
-    g_vpr_ctx.mutable_placement().compressed_block_grids.clear();
-}
 
 static void generate_post_place_timing_reports(const t_placer_opts& placer_opts,
                                                const t_analysis_opts& analysis_opts,
