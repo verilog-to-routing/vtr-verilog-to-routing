@@ -54,7 +54,7 @@ void write_vpr_floorplan_constraints(const char* file_name, int expand, bool sub
 
 void setup_vpr_floorplan_constraints_one_loc(VprConstraints& constraints, int expand, bool subtile) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_ctx = g_vpr_ctx.placement();
+    auto& block_locs = g_vpr_ctx.placement().block_locs();
 
     int part_id = 0;
     /*
@@ -69,7 +69,7 @@ void setup_vpr_floorplan_constraints_one_loc(VprConstraints& constraints, int ex
         Partition part;
         part.set_name(part_name);
 
-        const auto& loc = place_ctx.block_locs[blk_id].loc;
+        const auto& loc = block_locs[blk_id].loc;
 
         PartitionRegion pr;
         Region reg(loc.x - expand, loc.y - expand,
@@ -94,7 +94,7 @@ void setup_vpr_floorplan_constraints_one_loc(VprConstraints& constraints, int ex
 
 void setup_vpr_floorplan_constraints_cutpoints(VprConstraints& constraints, int horizontal_cutpoints, int vertical_cutpoints) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_ctx = g_vpr_ctx.placement();
+    auto& block_locs = g_vpr_ctx.placement().block_locs();
     auto& device_ctx = g_vpr_ctx.device();
 
     const int n_layers = device_ctx.grid.get_num_layers();
@@ -159,8 +159,8 @@ void setup_vpr_floorplan_constraints_cutpoints(VprConstraints& constraints, int 
      */
     for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks()) {
         const std::unordered_set<AtomBlockId>& atoms = cluster_to_atoms(blk_id);
-        int x = place_ctx.block_locs[blk_id].loc.x;
-        int y = place_ctx.block_locs[blk_id].loc.y;
+        int x = block_locs[blk_id].loc.x;
+        int y = block_locs[blk_id].loc.y;
         int width = device_ctx.grid.width();
         int height = device_ctx.grid.height();
         VTR_ASSERT(x >= 0 && x < width);

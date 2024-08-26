@@ -1,6 +1,24 @@
 name: NightlyTest
 
 on:
+  # We want to run the CI when anything is pushed to master.
+  # Since master is a protected branch this only happens when a PR is merged.
+  # This is a double check in case the PR was stale and had some issues.
+  push:
+    branches:
+      - master
+    paths-ignore: # Prevents from running if only docs are updated
+      - 'doc/**'
+      - '**/*README*'
+      - '**.md'
+      - '**.rst'
+  pull_request:
+    paths-ignore: # Prevents from running if only docs are updated
+      - 'doc/**'
+      - '**/*README*'
+      - '**.md'
+      - '**.rst'
+  workflow_dispatch:
   schedule:
   - cron: '0 0 * * *' # daily
 
@@ -44,9 +62,9 @@ jobs:
           - {test: "vtr_reg_strong",             cores: "16", options: "",          cmake: "-DVTR_ASSERT_LEVEL=3",                                         extra_pkgs: "libeigen3-dev"}
           - {test: "vtr_reg_strong_odin",        cores: "16", options: "",          cmake: "-DVTR_ASSERT_LEVEL=3 -DWITH_ODIN=ON",                          extra_pkgs: "libeigen3-dev"}
           - {test: "vtr_reg_strong_odin",        cores: "16", options: "-skip_qor", cmake: "-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=ON -DWITH_ODIN=ON", extra_pkgs: "libeigen3-dev"}
-          - {test: "vtr_reg_system_verilog",     cores: "16", options: "",          cmake: "-DYOSYS_F4PGA_PLUGINS=ON",                                     extra_pkgs: ""}
+          # - {test: "vtr_reg_system_verilog",     cores: "16", options: "",          cmake: "-DYOSYS_F4PGA_PLUGINS=ON",                                     extra_pkgs: ""} # Test turned off -> F4PGA conflicts with Yosys (version 42)
           - {test: "odin_reg_strong",            cores: "16", options: "",          cmake: "-DWITH_ODIN=ON",                                               extra_pkgs: ""}
-          - {test: "parmys_reg_strong",          cores: "16", options: "",          cmake: "-DYOSYS_F4PGA_PLUGINS=ON",                                     extra_pkgs: ""}
+          - {test: "parmys_reg_strong",          cores: "16", options: "",          cmake: "-DYOSYS_F4PGA_PLUGINS=OFF",                                     extra_pkgs: ""}
 
     env:
       DEBIAN_FRONTEND: "noninteractive"

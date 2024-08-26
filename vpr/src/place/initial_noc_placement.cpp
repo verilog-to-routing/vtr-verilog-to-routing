@@ -1,5 +1,7 @@
 
 #include "initial_noc_placment.h"
+
+#include "vpr_types.h"
 #include "initial_placement.h"
 #include "noc_place_utils.h"
 #include "noc_place_checkpoint.h"
@@ -31,8 +33,11 @@ static bool accept_noc_swap(double delta_cost, double prob);
  * @brief Places a constrained NoC router within its partition region.
  *
  *   @param router_blk_id NoC router cluster block ID
+ *   @param blk_loc_registry Placement block location information. To be
+ *   filled with the location where pl_macro is placed.
  */
-static void place_constrained_noc_router(ClusterBlockId router_blk_id);
+static void place_constrained_noc_router(ClusterBlockId router_blk_id,
+                                         BlkLocRegistry& blk_loc_registry);
 
 /**
  * @brief Randomly places unconstrained NoC routers.
@@ -40,16 +45,22 @@ static void place_constrained_noc_router(ClusterBlockId router_blk_id);
  *   @param unfixed_routers Contains the cluster block ID for all unconstrained
  *   NoC routers.
  *   @param seed Used for shuffling NoC routers.
+ *   @param blk_loc_registry Placement block location information. To be filled
+ *   with the location where pl_macro is placed.
  */
 static void place_noc_routers_randomly(std::vector<ClusterBlockId>& unfixed_routers,
-                                       int seed);
+                                       int seed,
+                                       BlkLocRegistry& blk_loc_registry);
 
 /**
  * @brief Runs a simulated annealing optimizer for NoC routers.
  *
  *   @param noc_opts Contains weighting factors for NoC cost terms.
+ *   @param blk_loc_registry Placement block location information.
+ *   To be filled with the location where pl_macro is placed.
  */
-static void noc_routers_anneal(const t_noc_opts& noc_opts);
+static void noc_routers_anneal(const t_noc_opts& noc_opts,
+                               BlkLocRegistry& blk_loc_registry);
 
 static bool accept_noc_swap(double delta_cost, double prob) {
     if (delta_cost <= 0.0) {
@@ -68,7 +79,8 @@ static bool accept_noc_swap(double delta_cost, double prob) {
     }
 }
 
-static void place_constrained_noc_router(ClusterBlockId router_blk_id) {
+static void place_constrained_noc_router(ClusterBlockId router_blk_id,
+                                         BlkLocRegistry& blk_loc_registry) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     const auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
 
@@ -84,11 +96,11 @@ static void place_constrained_noc_router(ClusterBlockId router_blk_id) {
 
     bool macro_placed = false;
     for (int i_try = 0; i_try < MAX_NUM_TRIES_TO_PLACE_MACROS_RANDOMLY && !macro_placed; i_try++) {
-        macro_placed = try_place_macro_randomly(pl_macro, pr, block_type, FREE);
+        macro_placed = try_place_macro_randomly(pl_macro, pr, block_type, e_pad_loc_type::FREE, blk_loc_registry);
     }
 
     if (!macro_placed) {
-        macro_placed = try_place_macro_exhaustively(pl_macro, pr, block_type, FREE);
+        macro_placed = try_place_macro_exhaustively(pl_macro, pr, block_type, e_pad_loc_type::FREE, blk_loc_registry);
     }
 
     if (!macro_placed) {
@@ -96,11 +108,14 @@ static void place_constrained_noc_router(ClusterBlockId router_blk_id) {
     }
 }
 
-static void place_noc_routers_randomly(std::vector<ClusterBlockId>& unfixed_routers, int seed) {
-    auto& place_ctx = g_vpr_ctx.placement();
-    auto& noc_ctx = g_vpr_ctx.noc();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& device_ctx = g_vpr_ctx.device();
+static void place_noc_routers_randomly(std::vector<ClusterBlockId>& unfixed_routers,
+                                       int seed,
+                                       BlkLocRegistry& blk_loc_registry) {
+    const auto& compressed_grids = g_vpr_ctx.placement().compressed_block_grids;
+    const auto& noc_ctx = g_vpr_ctx.noc();
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& device_ctx = g_vpr_ctx.device();
+    const GridBlock& grid_blocks = blk_loc_registry.grid_blocks();
 
     /*
      * Unconstrained NoC routers are placed randomly, then NoC cost is optimized using simulated annealing.
@@ -127,11 +142,11 @@ static void place_noc_routers_randomly(std::vector<ClusterBlockId>& unfixed_rout
     const auto router_block_type = cluster_ctx.clb_nlist.block_type(noc_ctx.noc_traffic_flows_storage.get_router_clusters_in_netlist()[0]);
 
     // Get the compressed grid for NoC
-    const auto& compressed_noc_grid = place_ctx.compressed_block_grids[router_block_type->index];
+    const auto& compressed_noc_grid = compressed_grids[router_block_type->index];
 
     // Iterate over shuffled physical routers to place logical routers
     // Since physical routers are shuffled, router placement would be random
-    for (const auto& phy_router : noc_phy_routers) {
+    for (const NocRouter& phy_router : noc_phy_routers) {
         t_physical_tile_loc router_phy_loc = phy_router.get_router_physical_location();
 
         // Find a compatible sub-tile
@@ -141,7 +156,7 @@ static void place_noc_routers_randomly(std::vector<ClusterBlockId>& unfixed_rout
 
         t_pl_loc loc(router_phy_loc, sub_tile);
 
-        if (place_ctx.grid_blocks.is_sub_tile_empty(router_phy_loc, sub_tile)) {
+        if (grid_blocks.is_sub_tile_empty(router_phy_loc, sub_tile)) {
             // Pick one of the unplaced routers
             auto logical_router_bid = unfixed_routers.back();
             unfixed_routers.pop_back();
@@ -153,7 +168,7 @@ static void place_noc_routers_randomly(std::vector<ClusterBlockId>& unfixed_rout
             t_pl_macro pl_macro;
             pl_macro.members.push_back(macro_member);
 
-            bool legal = try_place_macro(pl_macro, loc);
+            bool legal = try_place_macro(pl_macro, loc, blk_loc_registry);
             if (!legal) {
                 VPR_FATAL_ERROR(VPR_ERROR_PLACE, "Could not place a router cluster into an empty physical router.");
             }
@@ -166,8 +181,10 @@ static void place_noc_routers_randomly(std::vector<ClusterBlockId>& unfixed_rout
     } // end for of random router placement
 }
 
-static void noc_routers_anneal(const t_noc_opts& noc_opts) {
+static void noc_routers_anneal(const t_noc_opts& noc_opts,
+                               BlkLocRegistry& blk_loc_registry) {
     auto& noc_ctx = g_vpr_ctx.noc();
+    const auto& block_locs = blk_loc_registry.block_locs();
 
     // Only NoC related costs are considered
     t_placer_costs costs;
@@ -219,17 +236,16 @@ static void noc_routers_anneal(const t_noc_opts& noc_opts) {
 
     // Generate and evaluate router moves
     for (int i_move = 0; i_move < N_MOVES; i_move++) {
-        e_create_move create_move_outcome = e_create_move::ABORT;
-        clear_move_blocks(blocks_affected);
+        blocks_affected.clear_move_blocks();
         // Shrink the range limit over time
         float r_lim_decayed = 1.0f + (N_MOVES - i_move) * (max_r_lim / N_MOVES);
-        create_move_outcome = propose_router_swap(blocks_affected, r_lim_decayed);
+        e_create_move create_move_outcome = propose_router_swap(blocks_affected, r_lim_decayed, blk_loc_registry);
 
         if (create_move_outcome != e_create_move::ABORT) {
-            apply_move_blocks(blocks_affected);
+            apply_move_blocks(blocks_affected, blk_loc_registry);
 
             NocCostTerms noc_delta_c;
-            find_affected_noc_routers_and_update_noc_costs(blocks_affected, noc_delta_c);
+            find_affected_noc_routers_and_update_noc_costs(blocks_affected, noc_delta_c, block_locs);
             double delta_cost = calculate_noc_cost(noc_delta_c, costs.noc_cost_norm_factors, noc_opts);
 
             double prob = starting_prob - i_move * prob_step;
@@ -237,28 +253,31 @@ static void noc_routers_anneal(const t_noc_opts& noc_opts) {
 
             if (move_accepted) {
                 costs.cost += delta_cost;
-                commit_move_blocks(blocks_affected);
+                commit_move_blocks(blocks_affected, blk_loc_registry.mutable_grid_blocks());
                 commit_noc_costs();
                 costs += noc_delta_c;
                 // check if the current placement is better than the stored checkpoint
                 if (costs.cost < checkpoint.get_cost() || !checkpoint.is_valid()) {
-                    checkpoint.save_checkpoint(costs.cost);
+                    checkpoint.save_checkpoint(costs.cost, block_locs);
                 }
             } else { // The proposed move is rejected
-                revert_move_blocks(blocks_affected);
-                revert_noc_traffic_flow_routes(blocks_affected);
+                revert_move_blocks(blocks_affected, blk_loc_registry);
+                revert_noc_traffic_flow_routes(blocks_affected, block_locs);
             }
         }
     }
 
     if (checkpoint.get_cost() < costs.cost) {
-        checkpoint.restore_checkpoint(costs);
+        checkpoint.restore_checkpoint(costs, blk_loc_registry);
     }
 }
 
-void initial_noc_placement(const t_noc_opts& noc_opts, const t_placer_opts& placer_opts) {
+void initial_noc_placement(const t_noc_opts& noc_opts,
+                           const t_placer_opts& placer_opts,
+                           BlkLocRegistry& blk_loc_registry) {
 	vtr::ScopedStartFinishTimer timer("Initial NoC Placement");
     auto& noc_ctx = g_vpr_ctx.noc();
+    const auto& block_locs = blk_loc_registry.block_locs();
 
     // Get all the router clusters
     const std::vector<ClusterBlockId>& router_blk_ids = noc_ctx.noc_traffic_flows_storage.get_router_clusters_in_netlist();
@@ -266,30 +285,30 @@ void initial_noc_placement(const t_noc_opts& noc_opts, const t_placer_opts& plac
     std::vector<ClusterBlockId> unfixed_routers;
 
     // Check for floorplanning constraints and place constrained NoC routers
-    for (auto router_blk_id : router_blk_ids) {
+    for (ClusterBlockId router_blk_id : router_blk_ids) {
         // The block is fixed and was placed in mark_fixed_blocks()
-        if (is_block_placed((router_blk_id))) {
+        if (is_block_placed(router_blk_id, block_locs)) {
             continue;
         }
 
         if (is_cluster_constrained(router_blk_id)) {
-            place_constrained_noc_router(router_blk_id);
+            place_constrained_noc_router(router_blk_id, blk_loc_registry);
         } else {
             unfixed_routers.push_back(router_blk_id);
         }
     }
 
     // Place unconstrained NoC routers randomly
-    place_noc_routers_randomly(unfixed_routers, placer_opts.seed);
+    place_noc_routers_randomly(unfixed_routers, placer_opts.seed, blk_loc_registry);
 
     // populate internal data structures to maintain route, bandwidth usage, and latencies
-    initial_noc_routing({});
+    initial_noc_routing({}, block_locs);
 
     // Run the simulated annealing optimizer for NoC routers
-    noc_routers_anneal(noc_opts);
+    noc_routers_anneal(noc_opts, blk_loc_registry);
 
     // check if there is any cycles
-    bool has_cycle = noc_routing_has_cycle();
+    bool has_cycle = noc_routing_has_cycle(block_locs);
     if (has_cycle) {
         VPR_FATAL_ERROR(VPR_ERROR_PLACE,
                         "At least one cycle was found in NoC channel dependency graph. This may cause a deadlock "

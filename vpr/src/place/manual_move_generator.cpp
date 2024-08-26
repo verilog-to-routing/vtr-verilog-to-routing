@@ -2,18 +2,36 @@
  * @file 	manual_move_generator.cpp
  * @author	Paula Perdomo
  * @date 	2021-07-19
- * @brief 	Contains the ManualMoveGenerator class memeber definitions. The ManualMoveGenerator class inherits from the MoveGenerator class. The class contains a propose_move function that checks if the block requested to move by the user exists and determines whether the manual move is VALID/ABORTED by the placer. If the manual move is determined VALID, the move is created. A manual move is ABORTED if the block requested is not found or movable and if there aren't any compatible subtiles. 
+ * @brief 	Contains the ManualMoveGenerator class member definitions.
+ * The ManualMoveGenerator class inherits from the MoveGenerator class.
+ * The class contains a propose_move function that checks if the block requested
+ * to move by the user exists and determines whether the manual move is VALID/ABORTED
+ * by the placer. If the manual move is determined VALID, the move is created.
+ * A manual move is ABORTED if the block requested is not found or movable and if there aren't any compatible subtiles.
  */
 
 #include "manual_move_generator.h"
 #include "manual_moves.h"
+#include "placer_state.h"
 
 #ifndef NO_GRAPHICS
 #    include "draw.h"
 #endif //NO_GRAPHICS
 
+ManualMoveGenerator::ManualMoveGenerator(PlacerState& placer_state)
+    : MoveGenerator(placer_state) {}
+
 //Manual Move Generator function
-e_create_move ManualMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, t_propose_action& /*proposed_action*/, float /*rlim*/, const t_placer_opts& /*placer_opts*/, const PlacerCriticalities* /*criticalities*/) {
+e_create_move ManualMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected,
+                                                t_propose_action& /*proposed_action*/,
+                                                float /*rlim*/,
+                                                const t_placer_opts& /*placer_opts*/,
+                                                const PlacerCriticalities* /*criticalities*/) {
+    auto& place_ctx = g_vpr_ctx.placement();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& block_locs = placer_state_.get().block_locs();
+
     int block_id = -1;
     t_pl_loc to;
 
@@ -30,12 +48,8 @@ e_create_move ManualMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
         return e_create_move::ABORT; //No movable block was found
     }
 
-    auto& place_ctx = g_vpr_ctx.placement();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& device_ctx = g_vpr_ctx.device();
-
     //Gets the current location of the block to move.
-    t_pl_loc from = place_ctx.block_locs[b_from].loc;
+    t_pl_loc from = block_locs[b_from].loc;
     auto cluster_from_type = cluster_ctx.clb_nlist.block_type(b_from);
     auto grid_from_type = device_ctx.grid.get_physical_type({from.x, from.y, from.layer});
     VTR_ASSERT(is_tile_compatible(grid_from_type, cluster_from_type));
@@ -51,6 +65,7 @@ e_create_move ManualMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
         return e_create_move::ABORT;
     }
 
-    e_create_move create_move = ::create_move(blocks_affected, b_from, to);
+    e_create_move create_move = ::create_move(blocks_affected, b_from, to, place_ctx.blk_loc_registry());
     return create_move;
 }
+

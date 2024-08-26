@@ -182,8 +182,6 @@ std::unique_ptr<PlaceDelayModel> compute_place_delay_model(const t_placer_opts& 
                                                            bool is_flat) {
     vtr::ScopedStartFinishTimer timer("Computing placement delta delay look-up");
 
-    init_placement_context();
-
     t_chan_width chan_width = setup_chan_width(router_opts, chan_width_dist);
 
     alloc_routing_structs(chan_width, router_opts, det_routing_arch, segment_inf,
@@ -327,14 +325,15 @@ std::vector<int> get_best_classes(enum e_pin_type pintype, t_physical_tile_type_
 }
 
 static int get_longest_segment_length(std::vector<t_segment_inf>& segment_inf) {
-    int length;
+    int length = 0;
 
-    length = 0;
-    for (size_t i = 0; i < segment_inf.size(); i++) {
-        if (segment_inf[i].length > length)
-            length = segment_inf[i].length;
+    for (const t_segment_inf &seg_info : segment_inf) {
+        if (seg_info.length > length) {
+            length = seg_info.length;
+        }
     }
-    return (length);
+
+    return length;
 }
 
 static t_chan_width setup_chan_width(const t_router_opts& router_opts,
@@ -1190,7 +1189,8 @@ void OverrideDelayModel::compute_override_delay_model(
     RouterDelayProfiler& route_profiler,
     const t_router_opts& router_opts) {
     t_router_opts router_opts2 = router_opts;
-    router_opts2.astar_fac = 0.;
+    router_opts2.astar_fac = 0.f;
+    router_opts2.astar_offset = 0.f;
 
     //Look at all the direct connections that exist, and add overrides to delay model
     auto& device_ctx = g_vpr_ctx.device();

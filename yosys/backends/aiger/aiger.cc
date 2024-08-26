@@ -54,6 +54,8 @@ struct AigerWriter
 
 	vector<pair<int, int>> aig_gates;
 	vector<int> aig_latchin, aig_latchinit, aig_outputs;
+	vector<SigBit> bit2aig_stack;
+	size_t next_loop_check = 1024;
 	int aig_m = 0, aig_i = 0, aig_l = 0, aig_o = 0, aig_a = 0;
 	int aig_b = 0, aig_c = 0, aig_j = 0, aig_f = 0;
 
@@ -65,6 +67,8 @@ struct AigerWriter
 	int initstate_ff = 0;
 
 	dict<SigBit, int> ywmap_clocks;
+	vector<Cell *> ywmap_asserts;
+	vector<Cell *> ywmap_assumes;
 
 	int mkgate(int a0, int a1)
 	{
@@ -80,6 +84,23 @@ struct AigerWriter
 			log_assert(it->second >= 0);
 			return it->second;
 		}
+
+		if (bit2aig_stack.size() == next_loop_check) {
+			for (size_t i = 0; i < next_loop_check; ++i)
+			{
+				SigBit report_bit = bit2aig_stack[i];
+				if (report_bit != bit)
+					continue;
+				for (size_t j = i; j < next_loop_check; ++j) {
+					report_bit = bit2aig_stack[j];
+					if (report_bit.is_wire() && report_bit.wire->name.isPublic())
+						break;
+				}
+				log_error("Found combinational logic loop while processing signal %s.\n", log_signal(report_bit));
+			}
+			next_loop_check *= 2;
+		}
+		bit2aig_stack.push_back(bit);
 
 		// NB: Cannot use iterator returned from aig_map.insert()
 		//     since this function is called recursively
@@ -100,6 +121,8 @@ struct AigerWriter
 		if (initstate_bits.count(bit)) {
 			a = initstate_ff;
 		}
+
+		bit2aig_stack.pop_back();
 
 		if (bit == State::Sx || bit == State::Sz)
 			log_error("Design contains 'x' or 'z' bits. Use 'setundef' to replace those constants.\n");
@@ -248,6 +271,7 @@ struct AigerWriter
 				unused_bits.erase(A);
 				unused_bits.erase(EN);
 				asserts.push_back(make_pair(A, EN));
+				ywmap_asserts.push_back(cell);
 				continue;
 			}
 
@@ -258,6 +282,7 @@ struct AigerWriter
 				unused_bits.erase(A);
 				unused_bits.erase(EN);
 				assumes.push_back(make_pair(A, EN));
+				ywmap_assumes.push_back(cell);
 				continue;
 			}
 
@@ -298,6 +323,9 @@ struct AigerWriter
 				}
 				continue;
 			}
+
+			if (cell->type == ID($scopeinfo))
+				continue;
 
 			log_error("Unsupported cell type: %s (%s)\n", log_id(cell->type), log_id(cell));
 		}
@@ -828,6 +856,19 @@ struct AigerWriter
 		for (auto &it : init_lines)
 			json.value(it.second);
 		json.end_array();
+
+		json.name("asserts");
+		json.begin_array();
+		for (Cell *cell : ywmap_asserts)
+			json.value(witness_path(cell));
+		json.end_array();
+
+		json.name("assumes");
+		json.begin_array();
+		for (Cell *cell : ywmap_assumes)
+			json.value(witness_path(cell));
+		json.end_array();
+
 		json.end_object();
 	}
 
