@@ -17,6 +17,7 @@
 
 class DeviceGrid;
 class PlacerState;
+class Prepacker;
 
 const t_model* find_model(const t_model* models, const std::string& name, bool required = true);
 const t_model_ports* find_model_port(const t_model* model, const std::string& name, bool required = true);
@@ -192,6 +193,7 @@ int get_max_nets_in_pb_type(const t_pb_type* pb_type);
 bool primitive_type_feasible(AtomBlockId blk_id, const t_pb_type* cur_pb_type);
 t_pb_graph_pin* get_pb_graph_node_pin_from_model_port_pin(const t_model_ports* model_port, const int model_pin, const t_pb_graph_node* pb_graph_node);
 const t_pb_graph_pin* find_pb_graph_pin(const AtomNetlist& netlist, const AtomLookup& netlist_lookup, const AtomPinId pin_id);
+t_pb_graph_pin* get_pb_graph_node_pin_from_pb_graph_node(t_pb_graph_node* pb_graph_node, int ipin);
 t_pb_graph_pin* get_pb_graph_node_pin_from_block_pin(ClusterBlockId iblock, int ipin);
 vtr::vector<ClusterBlockId, t_pb**> alloc_and_load_pin_id_to_pb_mapping();
 void free_pin_id_to_pb_mapping(vtr::vector<ClusterBlockId, t_pb**>& pin_id_to_pb_mapping);
@@ -218,7 +220,7 @@ void parse_direct_pin_name(char* src_string, int line, int* start_pin_index, int
 
 void free_pb_stats(t_pb* pb);
 void free_pb(t_pb* pb);
-void revalid_molecules(const t_pb* pb);
+void revalid_molecules(const t_pb* pb, const Prepacker& prepacker);
 
 void print_switch_usage();
 void print_usage_by_wire_length();
