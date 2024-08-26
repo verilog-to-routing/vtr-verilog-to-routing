@@ -332,8 +332,6 @@ static void print_resources_utilization(const BlkLocRegistry& blk_loc_registry);
 
 static void print_placement_swaps_stats(const t_annealing_state& state, const t_swap_stats& swap_stats);
 
-static void print_placement_move_types_stats(const MoveTypeStat& move_type_stat);
-
 /**
  * @brief Copies the placement location variables into the global placement context.
  * @param blk_loc_registry The placement location variables to be copied.
@@ -953,7 +951,7 @@ void try_place(const Netlist<>& net_list,
 
     print_placement_swaps_stats(state, swap_stats);
 
-    print_placement_move_types_stats(move_type_stat);
+    move_type_stat.print_placement_move_types_stats();
 
     if (noc_opts.noc) {
         write_noc_placement_file(noc_opts.noc_placement_file_name, blk_loc_registry.block_locs());
@@ -2269,58 +2267,6 @@ static void print_placement_swaps_stats(const t_annealing_state& state, const t_
             swap_stats.num_swap_rejected, 100 * reject_rate);
     VTR_LOG("\tSwaps aborted: %*d (%4.1f %%)\n", num_swap_print_digits,
             swap_stats.num_swap_aborted, 100 * abort_rate);
-}
-
-static void print_placement_move_types_stats(const MoveTypeStat& move_type_stat) {
-    VTR_LOG("\n\nPlacement perturbation distribution by block and move type: \n");
-
-    VTR_LOG(
-        "------------------ ----------------- ---------------- ---------------- --------------- ------------ \n");
-    VTR_LOG(
-        "    Block Type         Move Type       (%%) of Total      Accepted(%%)     Rejected(%%)    Aborted(%%)\n");
-    VTR_LOG(
-        "------------------ ----------------- ---------------- ---------------- --------------- ------------ \n");
-
-    int total_moves = 0;
-    for (size_t i = 0; i < move_type_stat.blk_type_moves.size(); ++i) {
-        total_moves += move_type_stat.blk_type_moves.get(i);
-    }
-
-    auto& device_ctx = g_vpr_ctx.device();
-    int count = 0;
-    int num_of_avail_moves = move_type_stat.blk_type_moves.size() / device_ctx.logical_block_types.size();
-
-    //Print placement information for each block type
-    for (const auto& itype : device_ctx.logical_block_types) {
-        //Skip non-existing block types in the netlist
-        if (itype.index == 0 || movable_blocks_per_type(itype).empty()) {
-            continue;
-        }
-
-        count = 0;
-        for (int imove = 0; imove < num_of_avail_moves; imove++) {
-            const auto& move_name = move_type_to_string(e_move_type(imove));
-            int moves = move_type_stat.blk_type_moves[itype.index][imove];
-            if (moves != 0) {
-                int accepted = move_type_stat.accepted_moves[itype.index][imove];
-                int rejected = move_type_stat.rejected_moves[itype.index][imove];
-                int aborted = moves - (accepted + rejected);
-                if (count == 0) {
-                    VTR_LOG("%-18.20s", itype.name);
-                } else {
-                    VTR_LOG("                  ");
-                }
-                VTR_LOG(
-                    " %-22.20s %-16.2f %-15.2f %-14.2f %-13.2f\n",
-                    move_name.c_str(), 100.0f * (float)moves / (float)total_moves,
-                    100.0f * (float)accepted / (float)moves, 100.0f * (float)rejected / (float)moves,
-                    100.0f * (float)aborted / (float)moves);
-            }
-            count++;
-        }
-        VTR_LOG("\n");
-    }
-    VTR_LOG("\n");
 }
 
 static void copy_locs_to_global_state(const BlkLocRegistry& blk_loc_registry) {

@@ -34,6 +34,8 @@ struct MoveTypeStat {
     vtr::NdMatrix<int, 2> blk_type_moves;
     vtr::NdMatrix<int, 2> accepted_moves;
     vtr::NdMatrix<int, 2> rejected_moves;
+
+    void print_placement_move_types_stats();
 };
 
 /**
@@ -49,6 +51,8 @@ class MoveGenerator {
         , reward_func_(reward_function) {}
 
     MoveGenerator() = delete;
+    MoveGenerator(const MoveGenerator&) = delete;
+    MoveGenerator& operator=(const MoveGenerator&) = delete;
     virtual ~MoveGenerator() = default;
 
     /**
