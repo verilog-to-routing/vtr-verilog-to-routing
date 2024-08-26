@@ -1569,11 +1569,14 @@ enum e_Fc_type {
  *                   at the end of build_rr_graph                            *
  * @param arch_wire_switch_dec: Same as arch_wire_switch but used only for   *
  *                   decremental tracks if it is specified in the            *
- *                   architecture file.                                      *
+ *                   architecture file. If -1, this value was not set in     *
+ *                   the architecture file and arch_wire_switch should be    *
+ *                   used for "DEC_DIR" wire segments.                       *
  * @param arch_opin_switch_dec: Same as arch_opin_switch but used only for   *
  *                   decremental tracks if it is specified in the            *
- *                   architecture file                                       * 
- *                                                                           *
+ *                   architecture file. If -1, this value was not set in     * 
+ *                   the architecture file and arch_opin_switch should be    *
+ *                   used for "DEC_DIR" wire segments.                       * 
  * @param arch_opin_between_dice_switch: Index of the switch type that       *
  *                   connects output pins (OPINs) *to* this segment from     *
  *                   *another die (layer)*. Note that this index is in       *
