@@ -4,9 +4,10 @@
 #
 # Cmdline: uxsdcxx/uxsdcap.py /home/mohagh18/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
 # Input file: /home/mohagh18/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
-# md5sum of input file: d49109912d87d46b65ec8f26555efa18
 
-@0x98c6716e0227baf6;
+# md5sum of input file: 65eddcc840064bbb91d7f4cf0b8bf821
+
+@0xe787bf7696810419;
 using Cxx = import "/capnp/c++.capnp";
 $Cxx.namespace("ucap");
 
@@ -130,9 +131,10 @@ struct SegmentTiming {
 
 struct Segment {
 	id @0 :Int32;
-	name @1 :Text;
-	resType @2 :SegmentResType;
-	timing @3 :SegmentTiming;
+	length @1 :Int32;
+	name @2 :Text;
+	resType @3 :SegmentResType;
+	timing @4 :SegmentTiming;
 }
 
 struct Segments {

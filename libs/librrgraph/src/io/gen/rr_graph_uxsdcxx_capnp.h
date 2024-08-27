@@ -6,7 +6,8 @@
  *
  * Cmdline: uxsdcxx/uxsdcap.py /home/mohagh18/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
  * Input file: /home/mohagh18/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
- * md5sum of input file: d49109912d87d46b65ec8f26555efa18
+
+ * md5sum of input file: 65eddcc840064bbb91d7f4cf0b8bf821
  */
 
 #include <functional>
@@ -605,6 +606,7 @@ inline void load_segment_capnp_type(const ucap::Segment::Reader &root, T &out, C
 	(void)report_error;
 	(void)stack;
 
+	out.set_segment_length(root.getLength(), context);
 	out.set_segment_name(root.getName().cStr(), context);
 	out.set_segment_res_type(conv_enum_segment_res_type(root.getResType(), report_error), context);
 	stack->push_back(std::make_pair("getTiming", 0));
@@ -1105,6 +1107,8 @@ inline void write_segments_capnp_type(T &in, ucap::Segments::Builder &root, Cont
 		auto segments_segment = segments_segments[i];
 		auto child_context = in.get_segments_segment(i, context);
 		segments_segment.setId(in.get_segment_id(child_context));
+		if((bool)in.get_segment_length(child_context))
+			segments_segment.setLength(in.get_segment_length(child_context));
 		segments_segment.setName(in.get_segment_name(child_context));
 		if((bool)in.get_segment_res_type(child_context))
 			segments_segment.setResType(conv_to_enum_segment_res_type(in.get_segment_res_type(child_context)));

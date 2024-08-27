@@ -222,7 +222,7 @@ static void process_nodes(const Netlist<>& net_list, std::ifstream& fp, ClusterN
     auto& device_ctx = g_vpr_ctx.mutable_device();
     const auto& rr_graph = device_ctx.rr_graph;
     auto& route_ctx = g_vpr_ctx.mutable_routing();
-    auto& place_ctx = g_vpr_ctx.placement();
+    const auto& grid_blocks = g_vpr_ctx.placement().grid_blocks();
 
     t_trace* head_ptr = nullptr;
     t_trace* tptr = nullptr;
@@ -323,7 +323,9 @@ static void process_nodes(const Netlist<>& net_list, std::ifstream& fp, ClusterN
             ptc = atoi(tokens[5 + offset].c_str());
             if (rr_graph.node_ptc_num(RRNodeId(inode)) != ptc) {
                 vpr_throw(VPR_ERROR_ROUTE, filename, lineno,
-                          "The ptc num of node %d does not match the rr graph, Running without flat routing; if this file was created with flat routing, re-run vpr with the --flat_routing option", inode);
+                          "The ptc num of node %d does not match the rr graph, Running without flat routing; "
+                          "if this file was created with flat routing, re-run vpr with the --flat_routing option",
+                          inode);
             }
 
             /*Process switches and pb pin info if it is ipin or opin type*/
@@ -335,12 +337,10 @@ static void process_nodes(const Netlist<>& net_list, std::ifstream& fp, ClusterN
                     int width_offset = device_ctx.grid.get_width_offset({x, y, layer_num});
                     int height_offset = device_ctx.grid.get_height_offset({x, y, layer_num});
                     auto physical_tile = device_ctx.grid.get_physical_type({x, y, layer_num});
-                    const t_sub_tile* sub_tile;
-                    int sub_tile_rel_cap;
-                    std::tie(sub_tile, sub_tile_rel_cap) = get_sub_tile_from_pin_physical_num(physical_tile, pin_num);
+                    auto [sub_tile, sub_tile_rel_cap] = get_sub_tile_from_pin_physical_num(physical_tile, pin_num);
                     int sub_tile_offset = sub_tile->capacity.low + sub_tile_rel_cap;
 
-                    ClusterBlockId iblock = place_ctx.grid_blocks.block_at_location({x - width_offset, y - height_offset, sub_tile_offset, layer_num});
+                    ClusterBlockId iblock = grid_blocks.block_at_location({x - width_offset, y - height_offset, sub_tile_offset, layer_num});
                     VTR_ASSERT(iblock);
 
                     const t_pb_graph_pin* pb_pin;
@@ -570,7 +570,7 @@ static bool check_rr_graph_connectivity(RRNodeId prev_node, RRNodeId node) {
 void print_route(const Netlist<>& net_list,
                  FILE* fp,
                  bool is_flat) {
-    auto& place_ctx = g_vpr_ctx.placement();
+    const auto& grid_blocks = g_vpr_ctx.placement().grid_blocks();
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     auto& route_ctx = g_vpr_ctx.mutable_routing();
@@ -643,13 +643,11 @@ void print_route(const Netlist<>& net_list,
                         int pin_num = rr_graph.node_pin_num(inode);
                         int xoffset = device_ctx.grid.get_width_offset({ilow, jlow, layer_num});
                         int yoffset = device_ctx.grid.get_height_offset({ilow, jlow, layer_num});
-                        const t_sub_tile* sub_tile;
-                        int sub_tile_rel_cap;
-                        std::tie(sub_tile, sub_tile_rel_cap) = get_sub_tile_from_pin_physical_num(physical_tile, pin_num);
+                        auto [sub_tile, sub_tile_rel_cap] = get_sub_tile_from_pin_physical_num(physical_tile, pin_num);
                         int sub_tile_offset = sub_tile->capacity.low + sub_tile_rel_cap;
 
-                        ClusterBlockId iblock = place_ctx.grid_blocks.block_at_location({ilow - xoffset, jlow - yoffset,
-                                                                                         sub_tile_offset, layer_num});
+                        ClusterBlockId iblock = grid_blocks.block_at_location({ilow - xoffset, jlow - yoffset,
+                                                                               sub_tile_offset, layer_num});
                         VTR_ASSERT(iblock);
                         const t_pb_graph_pin* pb_pin;
                         if (is_pin_on_tile(physical_tile, pin_num)) {

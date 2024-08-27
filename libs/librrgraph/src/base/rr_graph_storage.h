@@ -15,8 +15,9 @@
 #include "vtr_memory.h"
 #include "vtr_strong_id_range.h"
 #include "vtr_array_view.h"
-#include<iostream>
+#include <iostream>
 #include <optional>
+#include <cstdint>
 
 /* Main structure describing one routing resource node.  Everything in       *
  * this structure should describe the graph -- information needed only       *

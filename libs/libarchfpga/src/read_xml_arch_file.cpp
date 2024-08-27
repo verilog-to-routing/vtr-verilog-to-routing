@@ -3766,6 +3766,10 @@ static void ProcessSegments(pugi::xml_node Parent,
             //Unidir requires the following tags
             expected_subtags.emplace_back("mux");
             expected_subtags.emplace_back("mux_inter_die");
+            //with the following two tags, we can allow the architecture file to define
+            //different muxes with different delays for wires with different directions
+            expected_subtags.emplace_back("mux_inc");
+            expected_subtags.emplace_back("mux_dec");
         }
 
         else {
@@ -3796,28 +3800,78 @@ static void ProcessSegments(pugi::xml_node Parent,
         /* Get the wire and opin switches, or mux switch if unidir */
         if (UNI_DIRECTIONAL == Segs[i].directionality) {
             //Get the switch name for same die wire and track connections
-            SubElem = get_single_child(Node, "mux", loc_data);
-            tmp = get_attribute(SubElem, "name", loc_data).value();
+            SubElem = get_single_child(Node, "mux", loc_data, ReqOpt::OPTIONAL);
+            tmp = get_attribute(SubElem, "name", loc_data, ReqOpt::OPTIONAL).as_string(nullptr);
 
-            /* Match names */
-            for (j = 0; j < NumSwitches; ++j) {
-                if (0 == strcmp(tmp, Switches[j].name.c_str())) {
-                    break; /* End loop so j is where we want it */
+            //check if <mux> tag is defined in the architecture, otherwise we should look for <mux_inc> and <mux_dec>
+            if(tmp){
+                /* Match names */
+                for (j = 0; j < NumSwitches; ++j) {
+                    if (0 == strcmp(tmp, Switches[j].name.c_str())) {
+                        break; /* End loop so j is where we want it */
+                    }
+                }
+                if (j >= NumSwitches) {
+                    archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem),
+                                "'%s' is not a valid mux name.\n", tmp);
+                }
+
+                /* Unidir muxes must have the same switch
+                * for wire and opin fanin since there is
+                * really only the mux in unidir. */
+                Segs[i].arch_wire_switch = j;
+                Segs[i].arch_opin_switch = j;
+            }
+            else { //if a general mux is not defined, we should look for specific mux for each direction in the architecture file
+                SubElem = get_single_child(Node, "mux_inc", loc_data, ReqOpt::OPTIONAL);
+                tmp = get_attribute(SubElem, "name", loc_data, ReqOpt::OPTIONAL).as_string(nullptr);
+                if(!tmp){
+                    archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem),
+                                "if mux is not specified in a wire segment, both mux_inc and mux_dec should be specified");
+                } else{
+                    /* Match names */
+                    for (j = 0; j < NumSwitches; ++j) {
+                        if (0 == strcmp(tmp, Switches[j].name.c_str())) {
+                            break; /* End loop so j is where we want it */
+                        }
+                    }
+                    if (j >= NumSwitches) {
+                        archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem),
+                                    "'%s' is not a valid mux name.\n", tmp);
+                    }
+
+                    /* Unidir muxes must have the same switch
+                    * for wire and opin fanin since there is
+                    * really only the mux in unidir. */
+                    Segs[i].arch_wire_switch = j;
+                    Segs[i].arch_opin_switch = j;
+                }
+
+                SubElem = get_single_child(Node, "mux_dec", loc_data, ReqOpt::OPTIONAL);
+                tmp = get_attribute(SubElem, "name", loc_data, ReqOpt::OPTIONAL).as_string(nullptr);
+                if(!tmp){
+                    archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem),
+                                "if mux is not specified in a wire segment, both mux_inc and mux_dec should be specified");
+                } else{
+                    /* Match names */
+                    for (j = 0; j < NumSwitches; ++j) {
+                        if (0 == strcmp(tmp, Switches[j].name.c_str())) {
+                            break; /* End loop so j is where we want it */
+                        }
+                    }
+                    if (j >= NumSwitches) {
+                        archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem),
+                                    "'%s' is not a valid mux name.\n", tmp);
+                    }
+
+                    /* Unidir muxes must have the same switch
+                    * for wire and opin fanin since there is
+                    * really only the mux in unidir. */
+                    Segs[i].arch_wire_switch_dec = j;
+                    Segs[i].arch_opin_switch_dec = j;
                 }
             }
-            if (j >= NumSwitches) {
-                archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem),
-                               "'%s' is not a valid mux name.\n", tmp);
-            }
-
-            /* Unidir muxes must have the same switch
-             * for wire and opin fanin since there is
-             * really only the mux in unidir. */
-            Segs[i].arch_wire_switch = j;
-            Segs[i].arch_opin_switch = j;
-
         }
-
         else {
             VTR_ASSERT(BI_DIRECTIONAL == Segs[i].directionality);
             SubElem = get_single_child(Node, "wire_switch", loc_data);

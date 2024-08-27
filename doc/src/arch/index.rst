@@ -4,7 +4,7 @@ FPGA Architecture Description
 =============================
 
 VTR uses an XML-based architecture description language to describe the targeted FPGA architecture.
-This flexible description langauge allows the user to describe a large number of hypothetical and commercial-like FPGA architectures.
+This flexible description language allows the user to describe a large number of hypothetical and commercial-like FPGA architectures.
 
 See the :ref:`arch_tutorial` for an introduction to the architecture description langauge.
 For a detailed reference on the supported options see the :ref:`arch_reference`.

@@ -6,7 +6,8 @@
  *
  * Cmdline: uxsdcxx/uxsdcxx.py /home/mohagh18/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
  * Input file: /home/mohagh18/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
- * md5sum of input file: d49109912d87d46b65ec8f26555efa18
+
+ * md5sum of input file: 65eddcc840064bbb91d7f4cf0b8bf821
  */
 
 #include <functional>
@@ -245,11 +246,14 @@ public:
 	 *     <xs:element minOccurs="0" name="timing" type="segment_timing" />
 	 *   </xs:all>
 	 *   <xs:attribute name="id" type="xs:int" use="required" />
+	 *   <xs:attribute name="length" type="xs:int" />
 	 *   <xs:attribute name="name" type="xs:string" use="required" />
 	 *   <xs:attribute name="res_type" type="segment_res_type" />
 	 * </xs:complexType>
 	*/
 	virtual inline int get_segment_id(typename ContextTypes::SegmentReadContext &ctx) = 0;
+	virtual inline int get_segment_length(typename ContextTypes::SegmentReadContext &ctx) = 0;
+	virtual inline void set_segment_length(int length, typename ContextTypes::SegmentWriteContext &ctx) = 0;
 	virtual inline const char * get_segment_name(typename ContextTypes::SegmentReadContext &ctx) = 0;
 	virtual inline void set_segment_name(const char * name, typename ContextTypes::SegmentWriteContext &ctx) = 0;
 	virtual inline enum_segment_res_type get_segment_res_type(typename ContextTypes::SegmentReadContext &ctx) = 0;

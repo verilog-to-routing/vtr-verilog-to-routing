@@ -15,7 +15,16 @@
  * Returns its choices by filling in affected_blocks.
  */
 class CriticalUniformMoveGenerator : public MoveGenerator {
-    e_create_move propose_move(t_pl_blocks_to_be_moved& blocks_affected, t_propose_action& proposed_action, float rlim, const t_placer_opts& /*placer_opts*/, const PlacerCriticalities* /*criticalities*/) override;
+  public:
+    CriticalUniformMoveGenerator() = delete;
+    explicit CriticalUniformMoveGenerator(PlacerState& placer_state);
+
+  private:
+    e_create_move propose_move(t_pl_blocks_to_be_moved& blocks_affected,
+                               t_propose_action& proposed_action,
+                               float rlim,
+                               const t_placer_opts& /*placer_opts*/,
+                               const PlacerCriticalities* /*criticalities*/) override;
 };
 
 #endif

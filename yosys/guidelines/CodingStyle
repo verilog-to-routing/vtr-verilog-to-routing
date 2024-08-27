@@ -19,13 +19,13 @@ Formatting of code
   blank lines.
 
 - Otherwise stick to the Linux Kernel Coding Style:
-    https://www.kernel.org/doc/Documentation/CodingStyle
+    https://www.kernel.org/doc/Documentation/process/coding-style.rst
 
 
 C++ Language
 -------------
 
-Yosys is written in C++11.
+Yosys is written in C++17.
 
 In general Yosys uses "int" instead of "size_t". To avoid compiler
 warnings for implicit type casts, always use "GetSize(foobar)" instead
