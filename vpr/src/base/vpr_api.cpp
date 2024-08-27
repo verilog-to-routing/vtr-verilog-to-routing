@@ -603,11 +603,10 @@ bool vpr_pack_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
             if (packer_opts.load_flat_placement) {
 
                 //Load and legalizer flat placement file
-                vpr_load_flat_placement(vpr_setup, arch);
-
-                //Load the result from the .net file
-                vpr_load_packing(vpr_setup, arch);
-
+                status = vpr_load_flat_placement(vpr_setup, arch);
+                if (!status) {
+                    return status;
+                }
             } else {
 
                 //Load a previous packing from the .net file
@@ -729,14 +728,28 @@ bool vpr_load_flat_placement(t_vpr_setup& vpr_setup, const t_arch& arch) {
     }
 
     // load and legalize flat placement file, print .net and fix clusters files
-    bool status = load_flat_placement(vpr_setup, arch);
-    if (!status) {
-        return status;
+    // this function returns the number of orphan clusters created, or -1 for failure
+    int status = load_flat_placement(vpr_setup, arch);
+    if (status < 0) {
+        return false;
     }
 
     // echo flat placement (orphan clusters will have -1 for X, Y, subtile coordinates)
     if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_FLAT_PLACE)) {
         print_flat_placement(getEchoFileName(E_ECHO_FLAT_PLACE));
+    }
+
+    // if there are no orphan clusters and we are not running place
+    // and route, print files here to avoid unnecessary setup
+    if ((0 == status) && !vpr_setup.PlacerOpts.doPlacement) {
+        auto& filename_opts = vpr_setup.FileNameOpts;
+        if (!filename_opts.write_flat_place_file.empty()) {
+            print_flat_placement(filename_opts.write_flat_place_file.c_str());
+        }
+        print_place(filename_opts.NetFile.c_str(),
+                    g_vpr_ctx.clustering().clb_nlist.netlist_id().c_str(),
+                    filename_opts.PlaceFile.c_str(),
+                    g_vpr_ctx.placement().block_locs());
     }
 
     // reset the device grid
