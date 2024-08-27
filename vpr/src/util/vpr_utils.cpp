@@ -1556,30 +1556,27 @@ void revalid_molecules(const t_pb* pb) {
             atom_ctx.lookup.set_atom_clb(blk_id, ClusterBlockId::INVALID());
             atom_ctx.lookup.set_atom_pb(blk_id, nullptr);
 
-            auto rng = atom_ctx.atom_molecules.equal_range(blk_id);
-            for (const auto& kv : vtr::make_range(rng.first, rng.second)) {
-                t_pack_molecule* cur_molecule = kv.second;
-                if (cur_molecule->valid == false) {
-                    int i;
-                    for (i = 0; i < get_array_size_of_molecule(cur_molecule); i++) {
-                        if (cur_molecule->atom_block_ids[i]) {
-                            if (atom_ctx.lookup.atom_clb(cur_molecule->atom_block_ids[i]) != ClusterBlockId::INVALID()) {
-                                break;
-                            }
+            t_pack_molecule* cur_molecule = atom_ctx.prepacker.get_atom_molecule(blk_id);
+            if (cur_molecule->valid == false) {
+                int i;
+                for (i = 0; i < get_array_size_of_molecule(cur_molecule); i++) {
+                    if (cur_molecule->atom_block_ids[i]) {
+                        if (atom_ctx.lookup.atom_clb(cur_molecule->atom_block_ids[i]) != ClusterBlockId::INVALID()) {
+                            break;
                         }
                     }
-                    /* All atom blocks are open for this molecule, place back in queue */
-                    if (i == get_array_size_of_molecule(cur_molecule)) {
-                        cur_molecule->valid = true;
-                        // when invalidating a molecule check if it's a chain molecule
-                        // that is part of a long chain. If so, check if this molecule
-                        // have modified the chain_id value based on the stale packing
-                        // then reset the chain id and the first packed molecule pointer
-                        // this is packing is being reset
-                        if (cur_molecule->is_chain() && cur_molecule->chain_info->is_long_chain && cur_molecule->chain_info->first_packed_molecule == cur_molecule) {
-                            cur_molecule->chain_info->first_packed_molecule = nullptr;
-                            cur_molecule->chain_info->chain_id = -1;
-                        }
+                }
+                /* All atom blocks are open for this molecule, place back in queue */
+                if (i == get_array_size_of_molecule(cur_molecule)) {
+                    cur_molecule->valid = true;
+                    // when invalidating a molecule check if it's a chain molecule
+                    // that is part of a long chain. If so, check if this molecule
+                    // have modified the chain_id value based on the stale packing
+                    // then reset the chain id and the first packed molecule pointer
+                    // this is packing is being reset
+                    if (cur_molecule->is_chain() && cur_molecule->chain_info->is_long_chain && cur_molecule->chain_info->first_packed_molecule == cur_molecule) {
+                        cur_molecule->chain_info->first_packed_molecule = nullptr;
+                        cur_molecule->chain_info->chain_id = -1;
                     }
                 }
             }
