@@ -37,8 +37,7 @@ void do_vpr_flow(const char* input_unc_opt, const char* output_unc_opt) {
 
     auto& atom_ctx = g_vpr_ctx.mutable_atom();
 
-    free_pack_molecules(atom_ctx.list_of_pack_molecules.release());
-    atom_ctx.atom_molecules.clear();
+    atom_ctx.prepacker.reset();
 
     REQUIRE(flow_succeeded == true);
 }
