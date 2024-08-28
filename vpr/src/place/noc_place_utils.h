@@ -53,8 +53,10 @@ struct TrafficFlowPlaceCost {
  *
  * @param new_traffic_flow_routes Traffic flow routes used to initialize link bandwidth utilization.
  * If an empty vector is passed, this function uses a routing algorithm to route traffic flows.
+ * @param block_locs Contains the location where each clustered block is placed at.
  */
-void initial_noc_routing(const vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>>& new_traffic_flow_routes);
+void initial_noc_routing(const vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>>& new_traffic_flow_routes,
+                         const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
 
 /**
  * @brief Re-initializes all link bandwidth usages by either re-routing
@@ -73,10 +75,12 @@ void initial_noc_routing(const vtr::vector<NocTrafficFlowId, std::vector<NocLink
  *
  * @param costs Used to get aggregate bandwidth and latency costs.
  * @param new_traffic_flow_routes Traffic flow routes used to initialize link bandwidth utilization.
-* If an empty vector is passed, this function uses a routing algorithm to route traffic flows.
+ * If an empty vector is passed, this function uses a routing algorithm to route traffic flows.
+ * @param block_locs Contains the location where each clustered block is placed at.
  */
 void reinitialize_noc_routing(t_placer_costs& costs,
-                              const vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>>& new_traffic_flow_routes);
+                              const vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>>& new_traffic_flow_routes,
+                              const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
 
 /**
  * @brief Goes through all the cluster blocks that were moved
@@ -105,14 +109,14 @@ void reinitialize_noc_routing(t_placer_costs& costs,
  * the moved blocks, their previous locations and their new locations
  * after being moved.
  * @param noc_aggregate_bandwidth_delta_c The change in the overall
- * NoC aggregate bandwidth cost caused by a placer move is stored
- * here.
+ * NoC aggregate bandwidth cost caused by a placer move is stored here.
  * @param noc_latency_delta_c The change in the overall
- * NoC latency cost caused by a placer move is stored
- * here.
+ * NoC latency cost caused by a placer move is stored here.
+ * @param block_locs Contains the location where each clustered block is placed at.
  */
 void find_affected_noc_routers_and_update_noc_costs(const t_pl_blocks_to_be_moved& blocks_affected,
-                                                    NocCostTerms& delta_c);
+                                                    NocCostTerms& delta_c,
+                                                    const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
 
 /**
  * @brief Updates static datastructures found in 'noc_place_utils.cpp'
@@ -157,12 +161,14 @@ void commit_noc_costs();
  * within the NoC. Used to get the current traffic flow information.
  * @param noc_flows_router The packet routing algorithm used to route traffic
  * flows within the NoC.
+ * @param block_locs Contains the location where each clustered block is placed at.
  * @return std::vector<NocLinkId>& The found route for the traffic flow.
  */
 std::vector<NocLinkId>& route_traffic_flow(NocTrafficFlowId traffic_flow_id,
                                            const NocStorage& noc_model,
                                            NocTrafficFlows& noc_traffic_flows_storage,
-                                           NocRouting& noc_flows_router);
+                                           NocRouting& noc_flows_router,
+                                           const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
 
 /**
  * @brief Updates the bandwidth usages of links found in a routed traffic flow.
@@ -212,12 +218,14 @@ void update_traffic_flow_link_usage(const std::vector<NocLinkId>& traffic_flow_r
  * flows within the NoC.
  * @param updated_traffic_flows Keeps track of traffic flows that have been
  * re-routed. Used to prevent re-routing the same traffic flow multiple times.
+ * @param block_locs Contains the location where each clustered block is placed at.
  */
 void re_route_associated_traffic_flows(ClusterBlockId moved_router_block_id,
                                        NocTrafficFlows& noc_traffic_flows_storage,
                                        NocStorage& noc_model,
                                        NocRouting& noc_flows_router,
-                                       std::unordered_set<NocTrafficFlowId>& updated_traffic_flows);
+                                       std::unordered_set<NocTrafficFlowId>& updated_traffic_flows,
+                                       const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
 
 /**
  * @brief Used to re-route all the traffic flows associated to logical
@@ -231,8 +239,10 @@ void re_route_associated_traffic_flows(ClusterBlockId moved_router_block_id,
  * the current placement iteration. This includes the cluster ids of
  * the moved blocks, their previous locations and their new locations
  * after being moved.
+ * @param block_locs Contains the location where each clustered block is placed at.
  */
-void revert_noc_traffic_flow_routes(const t_pl_blocks_to_be_moved& blocks_affected);
+void revert_noc_traffic_flow_routes(const t_pl_blocks_to_be_moved& blocks_affected,
+                                    const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
 
 /**
  * @brief Removes the route of a traffic flow and updates the links to indicate
@@ -247,11 +257,13 @@ void revert_noc_traffic_flow_routes(const t_pl_blocks_to_be_moved& blocks_affect
  * to route traffic flows within the NoC.
  * @param noc_flows_router The packet routing algorithm used to route traffic
  * flows within the NoC.
+ * @param block_locs Contains the location where each clustered block is placed at.
  */
 void re_route_traffic_flow(NocTrafficFlowId traffic_flow_id,
                            NocTrafficFlows& noc_traffic_flows_storage,
                            NocStorage& noc_model,
-                           NocRouting& noc_flows_router);
+                           NocRouting& noc_flows_router,
+                           const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
 
 /**
  * @brief Recompute the NoC costs (aggregate bandwidth and latency) by
@@ -355,8 +367,12 @@ double comp_noc_congestion_cost();
  * indicates that the current NoC costs are within the error tolerance and
  * a non-zero values indicates the current NoC costs are above the error
  * tolerance.
+ * @param block_locs Contains the location where each clustered block is placed at.
  */
-int check_noc_placement_costs(const t_placer_costs& costs, double error_tolerance, const t_noc_opts& noc_opts);
+int check_noc_placement_costs(const t_placer_costs& costs,
+                              double error_tolerance,
+                              const t_noc_opts& noc_opts,
+                              const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
 
 /**
  * @brief Determines the aggregate bandwidth cost of a routed traffic flow.
@@ -526,7 +542,9 @@ bool check_for_router_swap(int user_supplied_noc_router_swap_percentage);
  * cluster block can travel (this is within the compressed block space) 
  * @return e_create_move Result of proposing the move
  */
-e_create_move propose_router_swap(t_pl_blocks_to_be_moved& blocks_affected, float rlim);
+e_create_move propose_router_swap(t_pl_blocks_to_be_moved& blocks_affected,
+                                  float rlim,
+                                  const BlkLocRegistry& blk_loc_registry);
 
 /**
  * @brief Writes out the locations of the router cluster blocks in the
@@ -542,9 +560,10 @@ e_create_move propose_router_swap(t_pl_blocks_to_be_moved& blocks_affected, floa
  * 
  * @param file_name The name of the output file that contain the NoC placement
  * information.
- * 
+ * @param block_locs Contains the location where each clustered block is placed at.
  */
-void write_noc_placement_file(const std::string& file_name);
+void write_noc_placement_file(const std::string& file_name,
+                              const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
 
 /**
  * @brief This function checks whether the routing configuration for NoC traffic flows
@@ -557,17 +576,21 @@ void write_noc_placement_file(const std::string& file_name);
  * the graph has any back edges, i.e. whether a node points to one of its ancestors
  * during depth-first search traversal.
  *
+ * @param block_locs Contains the location where each clustered block is placed at.
+ *
  * @return bool Indicates whether NoC traffic flow routes form a cycle.
  */
-bool noc_routing_has_cycle();
+bool noc_routing_has_cycle(const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
 
 /**
  * @brief Check if the channel dependency graph created from the given traffic flow routes
  * has any cycles.
  * @param routes The user provided traffic flow routes.
+ * @param block_locs Contains the location where each clustered block is placed at.
  * @return True if there is any cycles in the channel dependency graph.
  */
-bool noc_routing_has_cycle(const vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>>& routes);
+bool noc_routing_has_cycle(const vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>>& routes,
+                           const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
 
 /**
  * @brief Invokes NoC SAT router and print new NoC cost terms after SAT router

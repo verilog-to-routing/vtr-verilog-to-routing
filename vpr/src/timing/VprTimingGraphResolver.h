@@ -6,13 +6,16 @@
 #include "atom_lookup.h"
 #include "AnalysisDelayCalculator.h"
 
+class BlkLocRegistry;
+
 class VprTimingGraphResolver : public tatum::TimingGraphNameResolver {
   public:
     VprTimingGraphResolver(const AtomNetlist& netlist,
                            const AtomLookup& netlist_lookup,
                            const tatum::TimingGraph& timing_graph,
                            const AnalysisDelayCalculator& delay_calc,
-                           bool is_flat);
+                           bool is_flat,
+                           const BlkLocRegistry& blk_loc_registry);
 
     std::string node_name(tatum::NodeId node) const override;
     std::string node_type_name(tatum::NodeId node) const override;
@@ -34,6 +37,8 @@ class VprTimingGraphResolver : public tatum::TimingGraphNameResolver {
     const AnalysisDelayCalculator& delay_calc_;
     e_timing_report_detail detail_level_ = e_timing_report_detail::NETLIST;
     bool is_flat_;
+    ///@brief contains information about the placement of clustered blocks.
+    const BlkLocRegistry& blk_loc_registry_;
 };
 
 #endif

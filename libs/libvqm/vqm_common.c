@@ -559,7 +559,7 @@ void add_node(char* type, char *name, t_array_ref **ports, t_parse_info* parse_i
 				new_assoc->associated_net = net;
 				new_assoc->port_index = counter;
 				new_assoc->port_name = (char *) malloc(strlen(association->port_name)+1);
-				strcpy(new_assoc->port_name, (char*)malloc(strlen(association->port_name)));
+				strcpy(new_assoc->port_name, association->port_name);
 				new_assoc->wire_index = wire_index;
 				wire_index += change;
 				m_ports->array_size = insert_element_at_index((intptr_t) new_assoc, m_ports, counter);

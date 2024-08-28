@@ -16,6 +16,4 @@ void try_place(const Netlist<>& net_list,
                int num_directs,
                bool is_flat);
 
-bool placer_needs_lookahead(const t_vpr_setup& vpr_setup);
-
 #endif

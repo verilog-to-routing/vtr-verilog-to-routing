@@ -125,7 +125,9 @@ class PlacerCriticalities {
      * If out of sync, then the criticalities cannot be incrementally updated on
      * during the next timing analysis iteration.
      */
-    void update_criticalities(const SetupTimingInfo* timing_info, const PlaceCritParams& crit_params);
+    void update_criticalities(const SetupTimingInfo* timing_info,
+                              const PlaceCritParams& crit_params,
+                              PlacerState& placer_state);
 
     ///@bried Enable the recompute_required flag to enforce from scratch update.
     void set_recompute_required();
@@ -362,7 +364,7 @@ class PlacerTimingCosts {
         //Walk through the netlist to determine how many connections there are.
         size_t iconn = 0;
         for (ClusterNetId net : nets) {
-            //The placer always skips 'ignored' nets so they don't effect timing
+            //The placer always skips 'ignored' nets, so they don't affect timing
             //costs, so we also skip them here
             if (nlist.net_is_ignored(net)) {
                 net_start_indicies_[net] = OPEN;
@@ -442,7 +444,7 @@ class PlacerTimingCosts {
          *
          * Useful for client code operating on the cost values (e.g. difference between costs).
          */
-        operator double() {
+        operator double() const {
             return connection_cost_;
         }
 
@@ -467,6 +469,10 @@ class PlacerTimingCosts {
             return ConnectionProxy(timing_costs_, net_sink_costs_[ipin]);
         }
 
+        const ConnectionProxy operator[](size_t ipin) const {
+            return ConnectionProxy(timing_costs_, net_sink_costs_[ipin]);
+        }
+
       private:
         PlacerTimingCosts* timing_costs_;
         double* net_sink_costs_;
@@ -478,6 +484,13 @@ class PlacerTimingCosts {
 
         double* net_connection_costs = &connection_costs_[net_start_indicies_[net_id]];
         return NetProxy(this, net_connection_costs);
+    }
+
+    NetProxy operator[](ClusterNetId net_id) const {
+        VTR_ASSERT_SAFE(net_start_indicies_[net_id] >= 0);
+
+        const double* net_connection_costs = &connection_costs_[net_start_indicies_[net_id]];
+        return NetProxy(const_cast<PlacerTimingCosts*>(this), const_cast<double*>(net_connection_costs));
     }
 
     void clear() {
