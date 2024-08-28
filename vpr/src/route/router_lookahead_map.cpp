@@ -381,7 +381,10 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong_default(RRNode
 /******** Function Definitions ********/
 /* queries the lookahead_map (should have been computed prior to routing) to get the expected cost
 * from the specified source to the specified target */
-std::pair<float, float> MapLookahead::get_expected_delay_and_cong_ignore_criticality(RRNodeId from_node, RRNodeId to_node, const t_conn_cost_params& /*params*/, float /*R_upstream*/) const {
+std::pair<float, float> MapLookahead::get_expected_delay_and_cong_ignore_criticality(RRNodeId from_node,
+                                                                                     RRNodeId to_node,
+                                                                                     const t_conn_cost_params& /*params*/,
+                                                                                     float /*R_upstream*/) const {
     return (is_flat_) ? get_expected_delay_and_cong_flat_router(from_node, to_node)
                       : get_expected_delay_and_cong_default(from_node, to_node);
 }

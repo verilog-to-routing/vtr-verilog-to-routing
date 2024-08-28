@@ -19,6 +19,9 @@ struct t_heap {
     ///.cost member contains not only the known backward cost but also an expected cost to the target.
     float backward_path_cost = 0.;
 #ifdef PROFILE_LOOKAHEAD
+    // This data is needed for the LookaheadProfiler, when enabled. It is only conditionally
+    // compiled since there may be many instances of this struct and it is in hot code.
+
     ///@brief The "known" delay in the path up to and including this node. Recorded for LookaheadProfiler during routing.
     float backward_path_delay = 0.;
     ///@brief The "known" congestion in the path up to and including this node. Recorded for LookaheadProfiler during routing.

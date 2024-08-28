@@ -55,6 +55,24 @@ void LookaheadProfiler::record(int iteration,
                                const ParentNetId& net_id,
                                const Netlist<>& net_list,
                                const std::vector<RRNodeId>& branch_inodes) {
+    /**
+     * This function records data into the output file created in set_file_name(). If that file name was
+     * an empty string, this function returns. If the output file is not open, VPR will throw an error.
+     *
+     * First, we get the RRNodeIds of the sink and source nodes (assumed to be the beginning and end of
+     * branch_inodes, respectively.
+     *
+     * Next, using net_id, net_list, and target_net_pin_index, we obtain the name of the atom block,
+     * the name of the type of atom block, the name of the type of cluster block, and the tile dimensions
+     * where the sink node is located.
+     *
+     * We then iterate through all other nodes in branch_inodes and calculate the expected and actual cost,
+     * congestion, and delay from the current node to the sink node, as well as the current node type and
+     * length, and the xy-deltas to the sink node.
+     *
+     * Finally, all this information is written to the output .csv file.
+     */
+
     if (!enabled_)
         return;
 
@@ -162,7 +180,7 @@ void LookaheadProfiler::record(int iteration,
         lookahead_verifier_csv_ << "\n";
     }
 #else
-    throw vtr::VtrError("Profiler enabled, but PROFILE_LOOKAHEAD not defined.", "lookahead_profiler.cpp", 165);
+    throw vtr::VtrError("Profiler enabled, but PROFILE_LOOKAHEAD not defined.", "lookahead_profiler.cpp", 183);
     (void)iteration;
     (void)target_net_pin_index;
     (void)cost_params;

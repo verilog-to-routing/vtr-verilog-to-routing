@@ -77,8 +77,6 @@ class PathManager {
     void insert_backwards_path_into_traceback(t_heap_path* path_data,
                                               float cost,
                                               float backward_path_cost,
-                                              float backward_path_delay,
-                                              float backward_path_congestion,
                                               RoutingContext& route_ctx);
 
     // Dynamically create a t_heap_path structure to be used in the heap

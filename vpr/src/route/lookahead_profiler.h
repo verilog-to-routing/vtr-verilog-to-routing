@@ -13,7 +13,7 @@
  * well as the lookahead's estimation of this cost.
  *
  * @warning
- * To use the LookaheadProfiler, you must build VPR with #define PROFILE_LOOKAHEAD.
+ * To use the LookaheadProfiler, you must build VPR with CMAKE_PARAMS="-DVPR_PROFILE_LOOKAHEAD=on".
  */
 class LookaheadProfiler {
   public:
@@ -38,10 +38,13 @@ class LookaheadProfiler {
      *
      * @param iteration The router iteration.
      * @param target_net_pin_index Target pin of this sink in the net.
-     * @param cost_params
-     * @param router_lookahead
-     * @param net_id
-     * @param net_list
+     * @param cost_params Passed into router_lookahead's methods to obtain expected cost,
+     * delay, and congestion.
+     * @param router_lookahead Its methods are called to obtain the expected cost, delay,
+     * and congestion to the node represented by target_net_pin_index from all other nodes
+     * in branch_inodes.
+     * @param net_id Used to obtain atom and cluster block IDs.
+     * @param net_list Used to obtain atom and cluster block IDs.
      * @param branch_inodes A backwards path of nodes, starting at a sink.
      *
      * @warning

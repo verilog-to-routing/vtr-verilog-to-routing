@@ -1400,6 +1400,8 @@ struct t_router_opts {
     std::string write_intra_cluster_router_lookahead;
     std::string read_intra_cluster_router_lookahead;
 
+    ///@brief The name of the output .csv file when PROFILE_LOOKAHEAD and --profile_router_lookahead are used.
+    ///If the string is empty, there will be no output.
     std::string lookahead_profiling_output;
 
     e_heap_type router_heap;
@@ -1687,6 +1689,9 @@ struct t_rr_node_route_inf {
     float path_cost;
     float backward_path_cost;
 #ifdef PROFILE_LOOKAHEAD
+    // This data is needed for the LookaheadProfiler, when enabled. It is only conditionally
+    // compiled since this struct is a hot and large data structure.
+
     ///@brief Total delay in the path up to and including this node.
     float backward_path_delay;
     ///@brief Total congestion in the path up to and including this node.

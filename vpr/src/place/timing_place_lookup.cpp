@@ -110,6 +110,22 @@ static void generic_compute_matrix_iterative_astar(
     const std::set<std::string>& allowed_types,
     bool /***/);
 
+/**
+ * @brief Compute delta delay matrix using Djikstra's algorithm to find shortest paths from a IPIN at the
+ * source location to OPINs within (start_x, start_y) to (end_x, end_y).
+ *
+ * @param route_profiler Only used to call get_net_list(), which is passed into
+ * calculate_all_path_delays_from_rr_node(), which is needed for the LookaheadProfiler.
+ * @param matrix The matrix to be filled.
+ * @param layer_num The layer of the source and sink nodes to be sampled.
+ * @param (source_x, source_y) The coordinates of the tile to sample an IPIN at.
+ * @param (start_x, start_y, end_x, end_y) The bounds within which OPINs should be sampled.
+ * @param router_opts
+ * @param measure_directconnect Whether to measure/include direct connects.
+ * @param allowed_types The allowed tile type names for the source location. If this vector is empty, all
+ * names are allowed. If the source tile type is not allowed, the matrix is filled with EMPTY_DELTA.
+ * @param is_flat Whether flat routing is being used.
+ */
 static void generic_compute_matrix_dijkstra_expansion(
     RouterDelayProfiler& route_profiler,
     vtr::Matrix<std::vector<float>>& matrix,

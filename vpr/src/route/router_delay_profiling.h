@@ -56,6 +56,9 @@ class RouterDelayProfiler {
     bool is_flat_;
 };
 
+/**
+ * @brief Returns the shortest path delay from src_node to all RR nodes in the RR graph, or NaN if no path exists.
+ */
 vtr::vector<RRNodeId, float> calculate_all_path_delays_from_rr_node(RRNodeId src_rr_node,
                                                                     const t_router_opts& router_opts,
                                                                     bool is_flat,

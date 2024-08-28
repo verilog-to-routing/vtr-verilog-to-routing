@@ -239,21 +239,10 @@ t_heap* ConnectionRouter<Heap>::timing_driven_route_connection_from_heap(RRNodeI
             // This is then placed into the traceback so that the correct path is returned
             // TODO: This can be eliminated by modifying the actual traceback function in route_timing
             if (rcv_path_manager.is_enabled()) {
-#ifdef PROFILE_LOOKAHEAD
                 rcv_path_manager.insert_backwards_path_into_traceback(cheapest->path_data,
                                                                       cheapest->cost,
                                                                       cheapest->backward_path_cost,
-                                                                      cheapest->backward_path_delay,
-                                                                      cheapest->backward_path_congestion,
                                                                       route_ctx);
-#else
-                rcv_path_manager.insert_backwards_path_into_traceback(cheapest->path_data,
-                                                                      cheapest->cost,
-                                                                      cheapest->backward_path_cost,
-                                                                      /*backward_path_delay=*/0.f,
-                                                                      /*backward_path_congestion=*/0.f,
-                                                                      route_ctx);
-#endif
             }
             VTR_LOGV_DEBUG(router_debug_, "  Found target %8d (%s)\n", inode, describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, inode, is_flat_).c_str());
             break;
@@ -947,17 +936,7 @@ void ConnectionRouter<Heap>::add_route_tree_node_to_heap(
                        tot_cost,
                        describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, inode, is_flat_).c_str());
 
-#ifdef PROFILE_LOOKAHEAD
-        push_back_node(&heap_,
-                       rr_node_route_inf_,
-                       inode,
-                       tot_cost,
-                       /*prev_edge=*/RREdgeId::INVALID(),
-                       backward_path_cost,
-                       backward_path_delay,
-                       backward_path_congestion,
-                       R_upstream);
-#else
+#ifndef PROFILE_LOOKAHEAD
         push_back_node(&heap_,
                        rr_node_route_inf_,
                        inode,
@@ -966,6 +945,16 @@ void ConnectionRouter<Heap>::add_route_tree_node_to_heap(
                        backward_path_cost,
                        /*backward_path_delay=*/0.f,
                        /*backward_path_congestion=*/0.f,
+                       R_upstream);
+#else
+        push_back_node(&heap_,
+                       rr_node_route_inf_,
+                       inode,
+                       tot_cost,
+                       /*prev_edge=*/RREdgeId::INVALID(),
+                       backward_path_cost,
+                       backward_path_delay,
+                       backward_path_congestion,
                        R_upstream);
 #endif
     } else {

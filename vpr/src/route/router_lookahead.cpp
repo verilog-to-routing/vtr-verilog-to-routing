@@ -78,7 +78,10 @@ float ClassicLookahead::get_expected_cost(RRNodeId current_node, RRNodeId target
     return delay_cost + cong_cost;
 }
 
-std::pair<float, float> ClassicLookahead::get_expected_delay_and_cong_ignore_criticality(RRNodeId node, RRNodeId target_node, const t_conn_cost_params& /*params*/, float R_upstream) const {
+std::pair<float, float> ClassicLookahead::get_expected_delay_and_cong_ignore_criticality(RRNodeId node,
+                                                                                         RRNodeId target_node,
+                                                                                         const t_conn_cost_params& /*params*/,
+                                                                                         float R_upstream) const {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
