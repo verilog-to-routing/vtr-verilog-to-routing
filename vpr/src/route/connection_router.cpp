@@ -379,7 +379,9 @@ void ConnectionRouter<Heap>::timing_driven_expand_cheapest(t_heap* cheapest,
         VTR_LOGV_DEBUG(router_debug_, "    Better cost to %d\n", inode);
         VTR_LOGV_DEBUG(router_debug_, "    New total cost: %g\n", new_total_cost);
         VTR_LOGV_DEBUG(router_debug_, "    New back cost: %g\n", new_back_cost);
-        VTR_LOGV_DEBUG(router_debug_ && (rr_nodes_.node_type(RRNodeId(cheapest->index)) != t_rr_type::SOURCE), "      Setting path costs for associated node %d (from %d edge %zu)\n",
+        VTR_LOGV_DEBUG(router_debug_ && (rr_nodes_.node_type(RRNodeId(cheapest->index)) != t_rr_type::SOURCE) && 
+                        (rr_nodes_.node_type(RRNodeId(cheapest->index)) != t_rr_type::OPIN), 
+                        "      Setting path costs for associated node %d (from %d edge %zu)\n",
                        cheapest->index,
                        static_cast<size_t>(rr_graph_->edge_src_node(cheapest->prev_edge())),
                        static_cast<size_t>(cheapest->prev_edge()));
