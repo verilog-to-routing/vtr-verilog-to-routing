@@ -33,46 +33,28 @@
  *      The output of clustering is 400 t_pb of type BLE which represent the clustered user netlist.
  *      Each of the 400 t_pb will reference one of the 4 BLE-type t_pb_graph_nodes.
  */
+#include "cluster.h"
+
+#include <algorithm>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
 #include <map>
-#include <algorithm>
-#include <fstream>
 
+#include "PreClusterDelayCalculator.h"
+#include "atom_netlist.h"
+#include "cluster_router.h"
+#include "cluster_util.h"
+#include "constraints_report.h"
+#include "globals.h"
+#include "pack_types.h"
+#include "prepack.h"
+#include "timing_info.h"
+#include "vpr_types.h"
+#include "vpr_utils.h"
 #include "vtr_assert.h"
 #include "vtr_log.h"
-#include "vtr_math.h"
-#include "vtr_memory.h"
-
-#include "vpr_types.h"
-#include "vpr_error.h"
-
-#include "globals.h"
-#include "atom_netlist.h"
-#include "pack_types.h"
-#include "cluster.h"
-#include "cluster_util.h"
-#include "output_clustering.h"
-#include "SetupGrid.h"
-#include "read_xml_arch_file.h"
-#include "vpr_utils.h"
-#include "cluster_placement.h"
-#include "echo_files.h"
-#include "cluster_router.h"
-#include "lb_type_rr_graph.h"
-
-#include "timing_info.h"
-#include "timing_reports.h"
-#include "PreClusterDelayCalculator.h"
-#include "PreClusterTimingGraphResolver.h"
-#include "tatum/echo_writer.hpp"
-#include "tatum/report/graphviz_dot_writer.hpp"
-#include "tatum/TimingReporter.hpp"
-
-#include "re_cluster_util.h"
-#include "constraints_report.h"
 
 /*
  * When attraction groups are created, the purpose is to pack more densely by adding more molecules
@@ -87,10 +69,9 @@ static constexpr int ATTRACTION_GROUPS_MAX_REPEATED_MOLECULES = 500;
 std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& packer_opts,
                                                          const t_analysis_opts& analysis_opts,
                                                          const t_arch* arch,
-                                                         t_pack_molecule* molecule_head,
+                                                         Prepacker& prepacker,
                                                          const std::unordered_set<AtomNetId>& is_clock,
                                                          const std::unordered_set<AtomNetId>& is_global,
-                                                         const std::unordered_map<AtomBlockId, t_pb_graph_node*>& expected_lowest_cost_pb_gnode,
                                                          bool allow_unrelated_clustering,
                                                          bool balance_block_type_utilization,
                                                          std::vector<t_lb_type_rr_node>* lb_type_rr_graphs,
@@ -173,11 +154,11 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
     helper_ctx.max_cluster_size = 0;
     max_pb_depth = 0;
 
-    const t_molecule_stats max_molecule_stats = calc_max_molecules_stats(molecule_head);
+    const t_molecule_stats max_molecule_stats = prepacker.calc_max_molecule_stats(atom_ctx.nlist);
 
-    mark_all_molecules_valid(molecule_head);
+    prepacker.mark_all_molecules_valid();
 
-    cluster_stats.num_molecules = count_molecules(molecule_head);
+    cluster_stats.num_molecules = prepacker.get_num_molecules();
 
     get_max_cluster_size_and_pb_depth(helper_ctx.max_cluster_size, max_pb_depth);
 
@@ -193,7 +174,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
 	check_for_duplicate_inputs ();
 #endif
     alloc_and_init_clustering(max_molecule_stats,
-                              &(helper_ctx.cluster_placement_stats), &(helper_ctx.primitives_list), molecule_head,
+                              &(helper_ctx.cluster_placement_stats), &(helper_ctx.primitives_list), prepacker,
                               clustering_data, net_output_feeds_driving_block_input,
                               unclustered_list_head_size, cluster_stats.num_molecules);
 
@@ -213,7 +194,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
     vtr::vector<AtomBlockId, float> atom_criticality(atom_ctx.nlist.blocks().size(), 0.);
 
     if (packer_opts.timing_driven) {
-        calc_init_packing_timing(packer_opts, analysis_opts, expected_lowest_cost_pb_gnode,
+        calc_init_packing_timing(packer_opts, analysis_opts, prepacker,
                                  clustering_delay_calc, timing_info, atom_criticality);
     }
 

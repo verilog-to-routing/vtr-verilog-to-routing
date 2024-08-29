@@ -4,6 +4,7 @@
 
 #include "tatum/Time.hpp"
 #include "tatum/delay_calc/DelayCalculator.hpp"
+#include "tatum/TimingGraph.hpp"
 
 #include "vpr_error.h"
 #include "vpr_utils.h"
@@ -11,17 +12,18 @@
 #include "atom_netlist.h"
 #include "atom_lookup.h"
 #include "physical_types.h"
+#include "prepack.h"
 
 class PreClusterDelayCalculator : public tatum::DelayCalculator {
   public:
     PreClusterDelayCalculator(const AtomNetlist& netlist,
                               const AtomLookup& netlist_lookup,
                               float intercluster_net_delay,
-                              std::unordered_map<AtomBlockId, t_pb_graph_node*> expected_lowest_cost_pb_gnode)
+                              const Prepacker& prepacker)
         : netlist_(netlist)
         , netlist_lookup_(netlist_lookup)
         , inter_cluster_net_delay_(intercluster_net_delay)
-        , block_to_pb_gnode_(expected_lowest_cost_pb_gnode) {
+        , prepacker_(prepacker) {
         //nop
     }
 
@@ -132,11 +134,7 @@ class PreClusterDelayCalculator : public tatum::DelayCalculator {
     const t_pb_graph_pin* find_pb_graph_pin(const AtomPinId pin) const {
         AtomBlockId blk = netlist_.pin_block(pin);
 
-        auto iter = block_to_pb_gnode_.find(blk);
-        VTR_ASSERT(iter != block_to_pb_gnode_.end());
-
-        const t_pb_graph_node* pb_gnode = iter->second;
-        VTR_ASSERT(pb_gnode);
+        const t_pb_graph_node* pb_gnode = prepacker_.get_expected_lowest_cost_pb_gnode(blk);
 
         AtomPortId port = netlist_.pin_port(pin);
         const t_model_ports* model_port = netlist_.port_model(port);
@@ -165,7 +163,7 @@ class PreClusterDelayCalculator : public tatum::DelayCalculator {
     const AtomNetlist& netlist_;
     const AtomLookup& netlist_lookup_;
     const float inter_cluster_net_delay_;
-    const std::unordered_map<AtomBlockId, t_pb_graph_node*> block_to_pb_gnode_;
+    const Prepacker& prepacker_;
 };
 
 #endif
