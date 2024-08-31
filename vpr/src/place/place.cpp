@@ -974,6 +974,18 @@ void try_place(const Netlist<>& net_list,
 #endif //ENABLE_NOC_SAT_ROUTING
     }
 
+
+    initial_noc_routing({});
+
+    costs.noc_cost_terms.aggregate_bandwidth = comp_noc_aggregate_bandwidth_cost();
+    std::tie(costs.noc_cost_terms.latency, costs.noc_cost_terms.latency_overrun) = comp_noc_latency_cost();
+    costs.noc_cost_terms.congestion = comp_noc_congestion_cost();
+
+    // initialize all the noc normalization factors
+    update_noc_normalization_factors(costs);
+
+    print_noc_costs("\nNoC Placement Costs", costs, noc_opts);
+
     update_screen(ScreenUpdatePriority::MAJOR, msg, PLACEMENT, timing_info);
     // Print out swap statistics
     print_resources_utilization();
@@ -1918,9 +1930,9 @@ static void alloc_and_load_placement_structs(float place_cost_exp,
 
     place_ctx.pl_macros = alloc_and_load_placement_macros(directs, num_directs);
 
-    if (noc_opts.noc) {
+//    if (noc_opts.noc) {
         allocate_and_load_noc_placement_structs();
-    }
+//    }
 }
 
 /* Frees the major structures needed by the placer (and not needed       *

@@ -541,7 +541,7 @@ void vpr_setup_clock_networks(t_vpr_setup& vpr_setup, const t_arch& Arch) {
  */
 void vpr_setup_noc(const t_vpr_setup& vpr_setup, const t_arch& arch) {
     // check if the user provided the option to model the noc
-    if (vpr_setup.NocOpts.noc) {
+//    if (vpr_setup.NocOpts.noc) {
         // create the NoC model based on the user description from the arch file
         setup_noc(arch);
         // read and store the noc traffic flow information
@@ -556,7 +556,7 @@ void vpr_setup_noc(const t_vpr_setup& vpr_setup, const t_arch& arch) {
         t_draw_state* draw_state = get_draw_state_vars();
         draw_state->show_noc_button = true;
 #endif
-    }
+//    }
 }
 
 /**
