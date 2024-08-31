@@ -6,12 +6,14 @@ VprTimingGraphResolver::VprTimingGraphResolver(const AtomNetlist& netlist,
                                                const AtomLookup& netlist_lookup,
                                                const tatum::TimingGraph& timing_graph,
                                                const AnalysisDelayCalculator& delay_calc,
-                                               bool is_flat)
+                                               bool is_flat,
+                                               const BlkLocRegistry& blk_loc_registry)
     : netlist_(netlist)
     , netlist_lookup_(netlist_lookup)
     , timing_graph_(timing_graph)
     , delay_calc_(delay_calc)
-    , is_flat_(is_flat) {}
+    , is_flat_(is_flat)
+    , blk_loc_registry_(blk_loc_registry) {}
 
 std::string VprTimingGraphResolver::node_name(tatum::NodeId node) const {
     AtomPinId pin = netlist_lookup_.tnode_atom_pin(node);
@@ -31,12 +33,13 @@ std::string VprTimingGraphResolver::node_type_name(tatum::NodeId node) const {
         //Detailed report consist of the aggregated reported with a breakdown of inter-block routing
         //Annotate primitive grid location, if known
         auto& atom_ctx = g_vpr_ctx.atom();
-        auto& place_ctx = g_vpr_ctx.placement();
+        auto& block_locs = blk_loc_registry_.block_locs();
         ClusterBlockId cb = atom_ctx.lookup.atom_clb(blk);
-        if (cb && place_ctx.block_locs.count(cb)) {
-            int x = place_ctx.block_locs[cb].loc.x;
-            int y = place_ctx.block_locs[cb].loc.y;
-            name += " at (" + std::to_string(x) + "," + std::to_string(y) + ")";
+        if (cb && block_locs.count(cb)) {
+            int x = block_locs[cb].loc.x;
+            int y = block_locs[cb].loc.y;
+            int layer = block_locs[cb].loc.layer;
+            name += " at (" + std::to_string(x) + ", " + std::to_string(y) + ", " + std::to_string(layer) + ")";
         }
         if (detail_level() == e_timing_report_detail::DEBUG) {
             name += " tnode(" + std::to_string(size_t(node)) + ")";

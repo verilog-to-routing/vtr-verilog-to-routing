@@ -1568,7 +1568,16 @@ enum e_Fc_type {
  *                   relation to the switches from the architecture file,    *
  *                   not the expanded list of switches that is built         *
  *                   at the end of build_rr_graph                            *
- *                                                                           *
+ * @param arch_wire_switch_dec: Same as arch_wire_switch but used only for   *
+ *                   decremental tracks if it is specified in the            *
+ *                   architecture file. If -1, this value was not set in     *
+ *                   the architecture file and arch_wire_switch should be    *
+ *                   used for "DEC_DIR" wire segments.                       *
+ * @param arch_opin_switch_dec: Same as arch_opin_switch but used only for   *
+ *                   decremental tracks if it is specified in the            *
+ *                   architecture file. If -1, this value was not set in     * 
+ *                   the architecture file and arch_opin_switch should be    *
+ *                   used for "DEC_DIR" wire segments.                       * 
  * @param arch_opin_between_dice_switch: Index of the switch type that       *
  *                   connects output pins (OPINs) *to* this segment from     *
  *                   *another die (layer)*. Note that this index is in       *
@@ -1586,14 +1595,14 @@ enum e_Fc_type {
  * Cmetal: Capacitance of a routing track, per unit logic block length.      *
  * Rmetal: Resistance of a routing track, per unit logic block length.       *
  * (UDSD by AY) drivers: How do signals driving a routing track connect to   *
- *                       the track?  
+ *                       the track?                                          *
  * seg_index: The index of the segment as stored in the appropriate Segs list*
  *            Upon loading the architecture, we use this field to keep track *
  *            the segment's index in the unified segment_inf vector. This is *
  *            useful when building the rr_graph for different Y & X channels *
- *            in terms of track distribution and segment type.                *
+ *            in terms of track distribution and segment type.               *
  * res_type: Determines the routing network to which the segment belongs.    *
- *           Possible values are:
+ *           Possible values are:                                            *
  *              - GENERAL: The segment is part of the general routing        *
  *                         resources.                                        *
  *              - GCLK: The segment is part of the global routing network.   *
@@ -1607,6 +1616,8 @@ struct t_segment_inf {
     int length;
     short arch_wire_switch;
     short arch_opin_switch;
+    short arch_wire_switch_dec = -1;
+    short arch_opin_switch_dec = -1;
     short arch_opin_between_dice_switch = -1;
     float frac_cb;
     float frac_sb;

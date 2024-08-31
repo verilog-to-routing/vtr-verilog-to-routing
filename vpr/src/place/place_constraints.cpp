@@ -13,13 +13,12 @@
 #include "place_util.h"
 #include "re_cluster_util.h"
 
-int check_placement_floorplanning() {
+int check_placement_floorplanning(const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
     int error = 0;
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_ctx = g_vpr_ctx.placement();
 
-    for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-        auto loc = place_ctx.block_locs[blk_id].loc;
+    for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks()) {
+        t_pl_loc loc = block_locs[blk_id].loc;
         if (!cluster_floorplanning_legal(blk_id, loc)) {
             error++;
             VTR_LOG_ERROR("Block %zu is not in correct floorplanning region.\n", size_t(blk_id));
@@ -162,10 +161,9 @@ void propagate_place_constraints() {
     auto& place_ctx = g_vpr_ctx.placement();
     auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
 
-    for (auto pl_macro : place_ctx.pl_macros) {
+    for (const t_pl_macro& pl_macro : place_ctx.pl_macros) {
         if (is_macro_constrained(pl_macro)) {
-            /*
-             * Get the PartitionRegion for the head of the macro
+            /* Get the PartitionRegion for the head of the macro
              * based on the constraints of all blocks contained in the macro
              */
             PartitionRegion macro_head_pr = update_macro_head_pr(pl_macro);
@@ -254,12 +252,11 @@ void load_cluster_constraints() {
     }
 }
 
-void mark_fixed_blocks() {
+void mark_fixed_blocks(BlkLocRegistry& blk_loc_registry) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_ctx = g_vpr_ctx.mutable_placement();
     auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
 
-    for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+    for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks()) {
         if (!is_cluster_constrained(blk_id)) {
             continue;
         }
@@ -273,9 +270,8 @@ void mark_fixed_blocks() {
          * and mark it as fixed.
          */
         if (is_pr_size_one(pr, block_type, loc)) {
-            set_block_location(blk_id, loc);
-
-            place_ctx.block_locs[blk_id].is_fixed = true;
+            blk_loc_registry.set_block_location(blk_id, loc);
+            blk_loc_registry.mutable_block_locs()[blk_id].is_fixed = true;
         }
     }
 }
@@ -475,7 +471,7 @@ int get_part_reg_size(const PartitionRegion& pr,
     const std::vector<Region>& regions = pr.get_regions();
     int num_tiles = 0;
 
-    for (const auto& region : regions) {
+    for (const Region& region : regions) {
         num_tiles += grid_tiles.region_tile_count(region, block_type);
     }
 

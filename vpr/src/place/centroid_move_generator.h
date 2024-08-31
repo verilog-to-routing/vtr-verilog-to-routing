@@ -21,10 +21,13 @@
 class CentroidMoveGenerator : public MoveGenerator {
   public:
     /**
-     * The move generator created by calling this constructor only consider
+     * The move generator created by calling this constructor only considers
      * netlist connectivity for computing the centroid location.
+     *
+     * @param placer_state A mutable reference to the placement state which will
+     * be stored in this object.
      */
-    CentroidMoveGenerator();
+    explicit CentroidMoveGenerator(PlacerState& placer_state);
 
     /**
      * The move generator created by calling this constructor considers both
@@ -33,13 +36,17 @@ class CentroidMoveGenerator : public MoveGenerator {
      * in the graph representing the clustered netlist. When finding connected
      * components, none of the nets whose fanout is larger than high_fanout_net
      * are traversed.
+     * @param placer_state A mutable reference to the placement state which will
+     * be stored in this object.
      * @param noc_attraction_weight Specifies how much the computed centroid
      * is adjusted towards the location of NoC routers in the same NoC group as
      * the clustered block to be moved.
      * @param high_fanout_net All nets with a fanout larger than this number are
      * ignored when forming NoC groups.
      */
-    CentroidMoveGenerator(float noc_attraction_weight, size_t high_fanout_net);
+    CentroidMoveGenerator(PlacerState& placer_state,
+                          float noc_attraction_weight,
+                          size_t high_fanout_net);
 
 
     /**

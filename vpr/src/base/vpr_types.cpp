@@ -452,15 +452,6 @@ void t_pb::set_atom_pin_bit_index(const t_pb_graph_pin* gpin, BitIndex atom_pin_
     pin_rotations_[gpin] = atom_pin_bit_idx;
 }
 
-void free_pack_molecules(t_pack_molecule* list_of_pack_molecules) {
-    t_pack_molecule* cur_pack_molecule = list_of_pack_molecules;
-    while (cur_pack_molecule != nullptr) {
-        cur_pack_molecule = list_of_pack_molecules->next;
-        delete list_of_pack_molecules;
-        list_of_pack_molecules = cur_pack_molecule;
-    }
-}
-
 /**
  * Free linked lists found in cluster_placement_stats_list
  */
@@ -535,11 +526,11 @@ void t_cluster_placement_stats::flush_invalid_queue() {
 }
 
 bool t_cluster_placement_stats::in_flight_empty() {
-    return (in_flight.empty());
+    return in_flight.empty();
 }
 
 t_pb_type* t_cluster_placement_stats::in_flight_type() {
-    return (in_flight.begin()->second->pb_graph_node->pb_type);
+    return in_flight.begin()->second->pb_graph_node->pb_type;
 }
 
 void t_cluster_placement_stats::free_primitives() {

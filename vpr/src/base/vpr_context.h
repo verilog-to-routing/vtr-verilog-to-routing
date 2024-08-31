@@ -5,6 +5,7 @@
 #include <vector>
 #include <mutex>
 
+#include "prepack.h"
 #include "vpr_types.h"
 #include "vtr_ndmatrix.h"
 #include "vtr_optional.h"
@@ -33,6 +34,7 @@
 #include "noc_traffic_flows.h"
 #include "noc_routing.h"
 #include "tatum/report/TimingPath.hpp"
+#include "blk_loc_registry.h"
 
 #ifndef NO_SERVER
 
@@ -71,34 +73,17 @@ struct AtomContext : public Context {
     /********************************************************************
      * Atom Netlist
      ********************************************************************/
-    /**
-     * @brief constructor
-     *
-     * In the constructor initialize the list of pack molecules to nullptr and defines a custom deletor for it
-     */
-    AtomContext()
-        : list_of_pack_molecules(nullptr, free_pack_molecules) {}
-
-    ///@brief Atom netlist
+    /// @brief Atom netlist
     AtomNetlist nlist;
 
-    ///@brief Mappings to/from the Atom Netlist to physically described .blif models
+    /// @brief Mappings to/from the Atom Netlist to physically described .blif models
     AtomLookup lookup;
 
-    /**
-     * @brief The molecules associated with each atom block.
-     *
-     * This map is loaded in the pre-packing stage and freed at the very end of vpr flow run.
-     * The pointers in this multimap is shared with list_of_pack_molecules.
-     */
-    std::multimap<AtomBlockId, t_pack_molecule*> atom_molecules;
-
-    /**
-     * @brief A linked list of all the packing molecules that are loaded in pre-packing stage.
-     *
-     * Is is useful in freeing the pack molecules at the destructor of the Atom context using free_pack_molecules.
-     */
-    std::unique_ptr<t_pack_molecule, decltype(&free_pack_molecules)> list_of_pack_molecules;
+    /// @brief Prepacker object which performs prepacking and stores the pack
+    ///        molecules. Has a method to get the pack molecule of an AtomBlock.
+    /// TODO: This is mainly only used in the clusterer. It can probably be
+    ///       removed from the AtomContext entirely.
+    Prepacker prepacker;
 };
 
 /**
@@ -385,14 +370,48 @@ struct PackingMultithreadingContext : public Context {
  * or related placer algorithm state.
  */
 struct PlacementContext : public Context {
-    ///@brief Clustered block placement locations
-    vtr::vector_map<ClusterBlockId, t_block_loc> block_locs;
+  private:
+    /**
+     * Determines if blk_loc_registry_ can be accessed by calling getter methods.
+     * This flag should be set to false at the beginning of the placement stage,
+     * and set to true at the end of placement. This ensures that variables that
+     * are subject to change during placement are kept local to the placement stage.
+     */
+    bool loc_vars_are_accessible_ = true;
 
-    ///@brief Clustered pin placement mapping with physical pin
-    vtr::vector_map<ClusterPinId, int> physical_pins;
+    /**
+     * @brief Stores block location information, which is subject to change during the
+     * placement stage.
+     */
+    BlkLocRegistry blk_loc_registry_;
 
-    ///@brief Clustered block associated with each grid location (i.e. inverse of block_locs)
-    GridBlock grid_blocks;
+  public:
+
+    const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs() const { VTR_ASSERT_SAFE(loc_vars_are_accessible_); return blk_loc_registry_.block_locs(); }
+    vtr::vector_map<ClusterBlockId, t_block_loc>& mutable_block_locs() { VTR_ASSERT_SAFE(loc_vars_are_accessible_); return blk_loc_registry_.mutable_block_locs(); }
+    const GridBlock& grid_blocks() const { VTR_ASSERT_SAFE(loc_vars_are_accessible_); return blk_loc_registry_.grid_blocks(); }
+    GridBlock& mutable_grid_blocks() { VTR_ASSERT_SAFE(loc_vars_are_accessible_); return blk_loc_registry_.mutable_grid_blocks(); }
+    vtr::vector_map<ClusterPinId, int>& mutable_physical_pins() { VTR_ASSERT_SAFE(loc_vars_are_accessible_); return blk_loc_registry_.mutable_physical_pins(); }
+    const vtr::vector_map<ClusterPinId, int>& physical_pins() const { VTR_ASSERT_SAFE(loc_vars_are_accessible_); return blk_loc_registry_.physical_pins(); }
+    BlkLocRegistry& mutable_blk_loc_registry() { VTR_ASSERT_SAFE(loc_vars_are_accessible_); return blk_loc_registry_; }
+    const BlkLocRegistry& blk_loc_registry() const { VTR_ASSERT_SAFE(loc_vars_are_accessible_); return blk_loc_registry_; }
+
+    /**
+     * @brief Makes blk_loc_registry_ inaccessible through the getter methods.
+     *
+     * This method should be called at the beginning of the placement stage to
+     * guarantee that the placement stage code does not access block location variables
+     * stored in the global state.
+     */
+    void lock_loc_vars() { VTR_ASSERT_SAFE(loc_vars_are_accessible_); loc_vars_are_accessible_ = false; }
+
+    /**
+     * @brief Makes blk_loc_registry_ accessible through the getter methods.
+     *
+     * This method should be called at the end of the placement stage to
+     * make the block location information accessible for subsequent stages.
+     */
+    void unlock_loc_vars() { VTR_ASSERT_SAFE(!loc_vars_are_accessible_); loc_vars_are_accessible_ = true; }
 
     ///@brief The pl_macros array stores all the placement macros (usually carry chains).
     std::vector<t_pl_macro> pl_macros;
