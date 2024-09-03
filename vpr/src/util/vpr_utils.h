@@ -212,7 +212,10 @@ t_pin_range get_pb_pins(t_physical_tile_type_ptr physical_type,
 float compute_primitive_base_cost(const t_pb_graph_node* primitive);
 int num_ext_inputs_atom_block(AtomBlockId blk_id);
 
-void alloc_and_load_idirect_from_blk_pin(t_direct_inf* directs, int num_directs, int*** idirect_from_blk_pin, int*** direct_type_from_blk_pin);
+void alloc_and_load_idirect_from_blk_pin(t_direct_inf* directs,
+                                         int num_directs,
+                                         std::vector<std::vector<int>>& idirect_from_blk_pin,
+                                         std::vector<std::vector<int>>& direct_type_from_blk_pin);
 
 void parse_direct_pin_name(char* src_string, int line, int* start_pin_index, int* end_pin_index, char* pb_type_name, char* port_name);
 

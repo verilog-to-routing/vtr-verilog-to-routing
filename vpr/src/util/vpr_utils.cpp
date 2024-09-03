@@ -55,13 +55,32 @@ static void alloc_and_load_blk_pin_from_port_pin();
  * Then, check that whether start_pin_index and end_pin_index are specified. If    *
  * they are, mark down the pins from start_pin_index to end_pin_index, inclusive.  *
  * Otherwise, mark down all the pins in that port.                                 */
-static void mark_direct_of_ports(int idirect, int direct_type, char* pb_type_name, char* port_name, int end_pin_index, int start_pin_index, char* src_string, int line, int** idirect_from_blk_pin, int** direct_type_from_blk_pin);
+static void mark_direct_of_ports(int idirect,
+                                 int direct_type,
+                                 char* pb_type_name,
+                                 char* port_name,
+                                 int end_pin_index,
+                                 int start_pin_index,
+                                 char* src_string,
+                                 int line,
+                                 std::vector<std::vector<int>>& idirect_from_blk_pin,
+                                 std::vector<std::vector<int>>& direct_type_from_blk_pin);
 
 static void get_blk_pin_from_port_pin(int blk_type_index, int sub_tile, int port, int port_pin, int* blk_pin);
 /* Mark the pin entry in idirect_from_blk_pin with idirect and the pin entry in    *
  * direct_type_from_blk_pin with direct_type from start_pin_index to               *
  * end_pin_index.                                                                  */
-static void mark_direct_of_pins(int start_pin_index, int end_pin_index, int itype, int isub_tile, int iport, int** idirect_from_blk_pin, int idirect, int** direct_type_from_blk_pin, int direct_type, int line, char* src_string);
+static void mark_direct_of_pins(int start_pin_index,
+                                int end_pin_index,
+                                int itype,
+                                int isub_tile,
+                                int iport,
+                                std::vector<std::vector<int>>& idirect_from_blk_pin,
+                                int idirect,
+                                std::vector<std::vector<int>>& direct_type_from_blk_pin,
+                                int direct_type,
+                                int line,
+                                char* src_string);
 
 static void load_pb_graph_pin_lookup_from_index_rec(t_pb_graph_pin** pb_graph_pin_lookup_from_index, t_pb_graph_node* pb_graph_node);
 
@@ -1762,7 +1781,17 @@ void parse_direct_pin_name(char* src_string, int line, int* start_pin_index, int
     }
 }
 
-static void mark_direct_of_pins(int start_pin_index, int end_pin_index, int itype, int isub_tile, int iport, int** idirect_from_blk_pin, int idirect, int** direct_type_from_blk_pin, int direct_type, int line, char* src_string) {
+static void mark_direct_of_pins(int start_pin_index,
+                                int end_pin_index,
+                                int itype,
+                                int isub_tile,
+                                int iport,
+                                std::vector<std::vector<int>>& idirect_from_blk_pin,
+                                int idirect,
+                                std::vector<std::vector<int>>& direct_type_from_blk_pin,
+                                int direct_type,
+                                int line,
+                                char* src_string) {
     /* Mark the pin entry in idirect_from_blk_pin with idirect and the pin entry in    *
      * direct_type_from_blk_pin with direct_type from start_pin_index to               *
      * end_pin_index.                                                                  */
@@ -1802,7 +1831,16 @@ static void mark_direct_of_pins(int start_pin_index, int end_pin_index, int ityp
     } // Finish marking all the pins
 }
 
-static void mark_direct_of_ports(int idirect, int direct_type, char* pb_type_name, char* port_name, int end_pin_index, int start_pin_index, char* src_string, int line, int** idirect_from_blk_pin, int** direct_type_from_blk_pin) {
+static void mark_direct_of_ports(int idirect,
+                                 int direct_type,
+                                 char* pb_type_name,
+                                 char* port_name,
+                                 int end_pin_index,
+                                 int start_pin_index,
+                                 char* src_string,
+                                 int line,
+                                 std::vector<std::vector<int>>& idirect_from_blk_pin,
+                                 std::vector<std::vector<int>>& direct_type_from_blk_pin) {
     /* Go through all the ports in all the blocks to find the port that has the same   *
      * name as port_name and belongs to the block type that has the name pb_type_name. *
      * Then, check that whether start_pin_index and end_pin_index are specified. If    *
@@ -1852,7 +1890,10 @@ static void mark_direct_of_ports(int idirect, int direct_type, char* pb_type_nam
     }                 // Finish going through all the blocks
 }
 
-void alloc_and_load_idirect_from_blk_pin(t_direct_inf* directs, int num_directs, int*** idirect_from_blk_pin, int*** direct_type_from_blk_pin) {
+void alloc_and_load_idirect_from_blk_pin(t_direct_inf* directs,
+                                         int num_directs,
+                                         std::vector<std::vector<int>>& idirect_from_blk_pin,
+                                         std::vector<std::vector<int>>& direct_type_from_blk_pin) {
     /* Allocates and loads idirect_from_blk_pin and direct_type_from_blk_pin arrays.    *
      *                                                                                  *
      * For a bus (multiple bits) direct connection, all the pins in the bus are marked. *
@@ -1860,43 +1901,39 @@ void alloc_and_load_idirect_from_blk_pin(t_direct_inf* directs, int num_directs,
      * idirect_from_blk_pin array allow us to quickly find pins that could be in a      *
      * direct connection. Values stored is the index of the possible direct connection  *
      * as specified in the arch file, OPEN (-1) is stored for pins that could not be    *
-     * part of a direct chain conneciton.                                               *
+     * part of a direct chain connection.                                               *
      *                                                                                  *
      * direct_type_from_blk_pin array stores the value SOURCE if the pin is the         *
      * from_pin, SINK if the pin is the to_pin in the direct connection as specified in *
      * the arch file, OPEN (-1) is stored for pins that could not be part of a direct   *
-     * chain conneciton.                                                                *
+     * chain connection.                                                                *
      *                                                                                  *
      * Stores the pointers to the two 2D arrays in the addresses passed in.             *
      *                                                                                  *
      * The two arrays are freed by the caller(s).                                       */
 
     int iblk_pin, idirect, num_type_pins;
-    int **temp_idirect_from_blk_pin, **temp_direct_type_from_blk_pin;
 
     char to_pb_type_name[MAX_STRING_LEN + 1], to_port_name[MAX_STRING_LEN + 1],
         from_pb_type_name[MAX_STRING_LEN + 1], from_port_name[MAX_STRING_LEN + 1];
+
     int to_start_pin_index = -1, to_end_pin_index = -1;
     int from_start_pin_index = -1, from_end_pin_index = -1;
     auto& device_ctx = g_vpr_ctx.device();
 
     /* Allocate and initialize the values to OPEN (-1). */
-    temp_idirect_from_blk_pin = new int*[device_ctx.physical_tile_types.size()];
-    temp_direct_type_from_blk_pin = new int*[device_ctx.physical_tile_types.size()];
+    idirect_from_blk_pin.resize(device_ctx.physical_tile_types.size());
+    direct_type_from_blk_pin.resize(device_ctx.physical_tile_types.size());
     for (const auto& type : device_ctx.physical_tile_types) {
-        if (is_empty_type(&type)) continue;
+        if (is_empty_type(&type)) {
+            continue;
+        }
 
         int itype = type.index;
         num_type_pins = type.num_pins;
 
-        temp_idirect_from_blk_pin[itype] = new int[num_type_pins];
-        temp_direct_type_from_blk_pin[itype] = new int[num_type_pins];
-
-        /* Initialize values to OPEN */
-        for (iblk_pin = 0; iblk_pin < num_type_pins; iblk_pin++) {
-            temp_idirect_from_blk_pin[itype][iblk_pin] = OPEN;
-            temp_direct_type_from_blk_pin[itype][iblk_pin] = OPEN;
-        }
+        idirect_from_blk_pin[itype].resize(num_type_pins, OPEN);
+        direct_type_from_blk_pin[itype].resize(num_type_pins, OPEN);
     }
 
     /* Load the values */
@@ -1919,19 +1956,16 @@ void alloc_and_load_idirect_from_blk_pin(t_direct_inf* directs, int num_directs,
         mark_direct_of_ports(idirect, SOURCE, from_pb_type_name, from_port_name,
                              from_end_pin_index, from_start_pin_index, directs[idirect].from_pin,
                              directs[idirect].line,
-                             temp_idirect_from_blk_pin, temp_direct_type_from_blk_pin);
+                             idirect_from_blk_pin, direct_type_from_blk_pin);
 
         // Then, find blocks with the same name as to_pb_type_name and from_port_name
         mark_direct_of_ports(idirect, SINK, to_pb_type_name, to_port_name,
                              to_end_pin_index, to_start_pin_index, directs[idirect].to_pin,
                              directs[idirect].line,
-                             temp_idirect_from_blk_pin, temp_direct_type_from_blk_pin);
+                             idirect_from_blk_pin, direct_type_from_blk_pin);
 
     } // Finish going through all the directs
 
-    /* Returns the pointer to the 2D arrays by reference. */
-    *idirect_from_blk_pin = temp_idirect_from_blk_pin;
-    *direct_type_from_blk_pin = temp_direct_type_from_blk_pin;
 }
 
 /*
