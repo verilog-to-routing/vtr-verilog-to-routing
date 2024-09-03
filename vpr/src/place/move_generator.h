@@ -35,6 +35,9 @@ struct MoveTypeStat {
     vtr::NdMatrix<int, 2> accepted_moves;
     vtr::NdMatrix<int, 2> rejected_moves;
 
+    /**
+     * @brief Prints placement perturbation distribution by block and move type.
+     */
     void print_placement_move_types_stats();
 };
 
@@ -42,7 +45,6 @@ struct MoveTypeStat {
  * @brief a base class for move generators
  *
  * This class represents the base class for all move generators.
- * All its functions are virtual functions.
  */
 class MoveGenerator {
   public:
@@ -88,6 +90,12 @@ class MoveGenerator {
 
     /**
      * @brief Calculates the agent's reward and the total process outcome
+     *
+     * @param move_outcome_stats Contains information about how much each cost term
+     * changes by this move and whether the move is accepted.
+     * @param delta_c The total change in cost by this move.
+     * @param timing_bb_factor This factor controls the weight of bb cost
+     *  compared to the timing cost in the agent's reward function.
      */
     void calculate_reward_and_process_outcome(const MoveOutcomeStats& move_outcome_stats,
                                               double delta_c,

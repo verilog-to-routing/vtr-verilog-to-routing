@@ -75,7 +75,6 @@
  *  compared to the timing cost in the agent's reward function. The reward is calculated as           *
  * -1*(1.5-REWARD_BB_TIMING_RELATIVE_WEIGHT)*timing_cost + (1+REWARD_BB_TIMING_RELATIVE_WEIGHT)*bb_cost)
  */
-
 static constexpr float REWARD_BB_TIMING_RELATIVE_WEIGHT = 0.4;
 
 #ifdef VTR_ENABLE_DEBUG_LOGGING

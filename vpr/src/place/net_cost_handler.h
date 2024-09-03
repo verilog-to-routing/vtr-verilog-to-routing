@@ -95,18 +95,22 @@ class NetCostHandler {
     void reset_move_nets();
 
     /**
-     * @brief update net cost data structures (in placer context and net_cost in .cpp file) and reset flags (proposed_net_cost and bb_updated_before).
-     * @param num_nets_affected The number of nets affected by the move. It is used to determine the index up to which elements in ts_nets_to_update are valid.
+     * @brief Update net cost data structures (in placer context and net_cost in .cpp file)
+     * and reset flags (proposed_net_cost and bb_updated_before).
+     * @param num_nets_affected The number of nets affected by the move.
+     * It is used to determine the index up to which elements in ts_nets_to_update are valid.
      */
     void update_move_nets();
 
     /**
-     * @brief re-calculates different terms of the cost function (wire-length, timing, NoC) and update "costs" accordingly. It is important to note that
-     * in this function bounding box and connection delays are not calculated from scratch. However, it iterates over all nets and connections and updates
-     * their costs by a complete summation, rather than incrementally.
-     * @param noc_opts
-     * @param delay_model
-     * @param criticalities
+     * @brief Re-calculates different terms of the cost function (wire-length, timing, NoC)
+     * and update "costs" accordingly. It is important to note that in this function bounding box
+     * and connection delays are not calculated from scratch. However, it iterates over all nets
+     * and connections and updates their costs by a complete summation, rather than incrementally.
+     * @param noc_opts Contains NoC cost weighting factors.
+     * @param delay_model Placement delay model. Used to compute timing cost.
+     * @param criticalities Contains the clustered netlist connection criticalities.
+     * Used to computed timing cost .
      * @param costs passed by reference and computed by this routine (i.e. returned by reference)
      */
     void recompute_costs_from_scratch(const t_noc_opts& noc_opts,
@@ -115,11 +119,15 @@ class NetCostHandler {
                                       t_placer_costs* costs);
 
   private:
+    ///@brief Specifies whether the bounding box is computed using cube method or per-layer method.
     bool cube_bb_ = false;
+    ///@brief A reference to the placer's state to be updated by this object.
     PlacerState& placer_state_;
+    ///@brief Contains some parameter that determine how the placement cost is computed.
     const t_placer_opts& placer_opts_;
-
+    ///@brief Points to the proper method for computing the bounding box cost from scratch.
     std::function<double(e_cost_methods method)> comp_bb_cost_functor_;
+    ///@brief Points to the proper method for updating the bounding box of a net.
     std::function<void(ClusterNetId net_id, t_physical_tile_loc pin_old_loc, t_physical_tile_loc pin_new_loc, bool is_driver)> update_bb_functor_;
 
     /**
