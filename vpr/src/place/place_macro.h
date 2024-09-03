@@ -133,9 +133,12 @@
 
 #ifndef PLACE_MACRO_H
 #define PLACE_MACRO_H
+
 #include <vector>
 
 #include "physical_types.h"
+#include "clustered_netlist_fwd.h"
+#include "vpr_types.h"
 
 /* These are the placement macro structure.
  * It is in the form of array of structs instead of
@@ -159,12 +162,12 @@ struct t_pl_macro {
     std::vector<t_pl_macro_member> members;
 };
 
-/* These are the function declarations. */
+
 std::vector<t_pl_macro> alloc_and_load_placement_macros(t_direct_inf* directs, int num_directs);
 
-void get_imacro_from_iblk(int* imacro, ClusterBlockId iblk, const std::vector<t_pl_macro>& macros);
+int get_imacro_from_iblk(ClusterBlockId iblk, const std::vector<t_pl_macro>& macros);
 
-void set_imacro_for_iblk(int* imacro, ClusterBlockId iblk);
+void set_imacro_for_iblk(int imacro, ClusterBlockId iblk);
 
 void free_placement_macros_structs();
 

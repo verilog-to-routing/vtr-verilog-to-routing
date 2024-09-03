@@ -1082,8 +1082,7 @@ static void place_all_blocks(const t_placer_opts& placer_opts,
                 //add current block to list to ensure it will be placed sooner in the next iteration in initial placement
                 number_of_unplaced_blks_in_curr_itr++;
                 block_scores[blk_id].failed_to_place_in_prev_attempts++;
-                int imacro;
-                get_imacro_from_iblk(&imacro, blk_id, place_ctx.pl_macros);
+                int imacro = get_imacro_from_iblk(blk_id, place_ctx.pl_macros);
                 if (imacro != -1) { //the block belongs to macro that contain a chain, we need to turn on dense placement in next iteration for that type of block
                     unplaced_blk_type_in_curr_itr.insert(blk_id_type->index);
                 }
@@ -1183,8 +1182,7 @@ bool place_one_block(const ClusterBlockId blk_id,
     bool placed_macro = false;
 
     //Lookup to see if the block is part of a macro
-    int imacro;
-    get_imacro_from_iblk(&imacro, blk_id, pl_macros);
+    int imacro = get_imacro_from_iblk(blk_id, pl_macros);
 
     if (imacro != -1) { //If the block belongs to a macro, pass that macro to the placement routines
         VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\tBelongs to a macro %d\n", imacro);

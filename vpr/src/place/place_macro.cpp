@@ -28,7 +28,7 @@ static std::vector<std::vector<int>> f_idirect_from_blk_pin;
 /* f_direct_type_from_blk_pin array stores the value SOURCE if the pin is the       *
  * from_pin, SINK if the pin is the to_pin in the direct connection as specified in *
  * the arch file, OPEN (-1) is stored for pins that could not be part of a direct   *
- * chain conneciton.                                                                *
+ * chain connection.                                                                *
  * [0...device_ctx.num_block_types-1][0...num_pins-1]                               */
 static std::vector<std::vector<int>> f_direct_type_from_blk_pin;
 
@@ -39,11 +39,10 @@ static vtr::vector_map<ClusterBlockId, int> f_imacro_from_iblk;
 
 /******************** Subroutine declarations ********************************/
 
-static void find_all_the_macro(int* num_of_macro,
-                               std::vector<ClusterBlockId>& pl_macro_member_blk_num_of_this_blk,
-                               std::vector<int>& pl_macro_idirect,
-                               std::vector<int>& pl_macro_num_members,
-                               std::vector<std::vector<ClusterBlockId>>& pl_macro_member_blk_num);
+static int find_all_the_macro(std::vector<ClusterBlockId>& pl_macro_member_blk_num_of_this_blk,
+                              std::vector<int>& pl_macro_idirect,
+                              std::vector<int>& pl_macro_num_members,
+                              std::vector<std::vector<ClusterBlockId>>& pl_macro_member_blk_num);
 
 static void alloc_and_load_imacro_from_iblk(const std::vector<t_pl_macro>& macros);
 
@@ -58,11 +57,10 @@ static void validate_macros(const std::vector<t_pl_macro>& macros);
 static bool try_combine_macros(std::vector<std::vector<ClusterBlockId>>& pl_macro_member_blk_num, int matching_macro, int latest_macro);
 /******************** Subroutine definitions *********************************/
 
-static void find_all_the_macro(int* num_of_macro,
-                               std::vector<ClusterBlockId>& pl_macro_member_blk_num_of_this_blk,
-                               std::vector<int>& pl_macro_idirect,
-                               std::vector<int>& pl_macro_num_members,
-                               std::vector<std::vector<ClusterBlockId>>& pl_macro_member_blk_num) {
+static int find_all_the_macro(std::vector<ClusterBlockId>& pl_macro_member_blk_num_of_this_blk,
+                              std::vector<int>& pl_macro_idirect,
+                              std::vector<int>& pl_macro_num_members,
+                              std::vector<std::vector<ClusterBlockId>>& pl_macro_member_blk_num) {
     /* Compute required size:                                                *
      * Go through all the pins with possible direct connections in           *
      * f_idirect_from_blk_pin. Count the number of heads (which is the same  *
@@ -194,7 +192,7 @@ static void find_all_the_macro(int* num_of_macro,
     }                 // Finish going through all blocks.
 
     // Now, all the data is readily stored in the temporary data structures.
-    *num_of_macro = num_macro;
+    return num_macro;
 }
 
 static bool try_combine_macros(std::vector<std::vector<ClusterBlockId>>& pl_macro_member_blk_num, int matching_macro, int latest_macro) {
@@ -326,7 +324,6 @@ std::vector<t_pl_macro> alloc_and_load_placement_macros(t_direct_inf* directs, i
      * The placement macro array is freed by the caller(s).            */
 
     /* Declaration of local variables */
-    int num_macro;
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     /* Allocate maximum memory for temporary variables. */
@@ -345,9 +342,8 @@ std::vector<t_pl_macro> alloc_and_load_placement_macros(t_direct_inf* directs, i
      * as the number macros) and also the length of each macro               *
      * Head - blocks with to_pin OPEN and from_pin connected                 *
      * Tail - blocks with to_pin connected and from_pin OPEN                 */
-    num_macro = 0;
-    find_all_the_macro(&num_macro, pl_macro_member_blk_num_of_this_blk,
-                       pl_macro_idirect, pl_macro_num_members, pl_macro_member_blk_num);
+    int num_macro = find_all_the_macro(pl_macro_member_blk_num_of_this_blk,
+                                       pl_macro_idirect, pl_macro_num_members, pl_macro_member_blk_num);
 
     /* Allocate the memories for the macro. */
     std::vector<t_pl_macro> macros(num_macro);
@@ -375,7 +371,8 @@ std::vector<t_pl_macro> alloc_and_load_placement_macros(t_direct_inf* directs, i
     return macros;
 }
 
-void get_imacro_from_iblk(int* imacro, ClusterBlockId iblk, const std::vector<t_pl_macro>& macros) {
+
+int get_imacro_from_iblk(ClusterBlockId iblk, const std::vector<t_pl_macro>& macros) {
     /* This mapping is needed for fast lookup's whether the block with index *
      * iblk belongs to a placement macro or not.                             *
      *                                                                       *
@@ -387,19 +384,22 @@ void get_imacro_from_iblk(int* imacro, ClusterBlockId iblk, const std::vector<t_
         alloc_and_load_imacro_from_iblk(macros);
     }
 
+    int imacro;
     if (iblk) {
         /* Return the imacro for the block. */
-        *imacro = f_imacro_from_iblk[iblk];
+        imacro = f_imacro_from_iblk[iblk];
     } else {
-        *imacro = OPEN; //No valid block, so no valid macro
+        imacro = OPEN; //No valid block, so no valid macro
     }
+
+    return imacro;
 }
 
-void set_imacro_for_iblk(int* imacro, ClusterBlockId blk_id) {
+void set_imacro_for_iblk(int imacro, ClusterBlockId blk_id) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     f_imacro_from_iblk.resize(cluster_ctx.clb_nlist.blocks().size());
-    f_imacro_from_iblk.insert(blk_id, *imacro);
+    f_imacro_from_iblk.insert(blk_id, imacro);
 }
 
 /* Allocates and loads imacro_from_iblk array. */
@@ -424,11 +424,6 @@ static void alloc_and_load_imacro_from_iblk(const std::vector<t_pl_macro>& macro
 
 void free_placement_macros_structs() {
     /* This function frees up all the static data structures used. */
-
-    // This frees up the two arrays and set the pointers to NULL
-    auto& device_ctx = g_vpr_ctx.device();
-    unsigned int itype;
-
     vtr::release_memory(f_idirect_from_blk_pin);
     vtr::release_memory(f_direct_type_from_blk_pin);
 }

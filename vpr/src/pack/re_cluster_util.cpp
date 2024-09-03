@@ -81,10 +81,9 @@ void commit_mol_move(ClusterBlockId old_clb,
 
     //place the new cluster if this function called during placement (after the initial placement is done)
     if (!during_packing && new_clb_created) {
-        int imacro;
         g_vpr_ctx.mutable_placement().mutable_block_locs().resize(g_vpr_ctx.placement().block_locs().size() + 1);
-        get_imacro_from_iblk(&imacro, old_clb, g_vpr_ctx.placement().pl_macros);
-        set_imacro_for_iblk(&imacro, new_clb);
+        int imacro = get_imacro_from_iblk(old_clb, g_vpr_ctx.placement().pl_macros);
+        set_imacro_for_iblk(imacro, new_clb);
         place_one_block(new_clb, device_ctx.pad_loc_type, nullptr, nullptr, g_vpr_ctx.mutable_placement().mutable_blk_loc_registry());
     }
 }

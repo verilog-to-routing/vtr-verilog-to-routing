@@ -108,8 +108,7 @@ struct EquationSystem {
 // returns index in placementCtx.pl_macros,
 // returns NO_MACRO if blk not in any macros
 int imacro(ClusterBlockId blk) {
-    int macro_index;
-    get_imacro_from_iblk(&macro_index, blk, g_vpr_ctx.mutable_placement().pl_macros);
+    int macro_index = get_imacro_from_iblk(blk, g_vpr_ctx.mutable_placement().pl_macros);
     return macro_index;
 }
 

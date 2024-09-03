@@ -1912,7 +1912,7 @@ void alloc_and_load_idirect_from_blk_pin(t_direct_inf* directs,
      *                                                                                  *
      * The two arrays are freed by the caller(s).                                       */
 
-    int iblk_pin, idirect, num_type_pins;
+    int idirect, num_type_pins;
 
     char to_pb_type_name[MAX_STRING_LEN + 1], to_port_name[MAX_STRING_LEN + 1],
         from_pb_type_name[MAX_STRING_LEN + 1], from_port_name[MAX_STRING_LEN + 1];

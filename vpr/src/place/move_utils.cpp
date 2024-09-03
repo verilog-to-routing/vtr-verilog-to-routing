@@ -87,12 +87,11 @@ e_block_move_result find_affected_blocks(t_pl_blocks_to_be_moved& blocks_affecte
     const GridBlock& grid_blocks = blk_loc_registry.grid_blocks();
     const auto& pl_macros = g_vpr_ctx.placement().pl_macros;
 
-    int imacro_from;
     e_block_move_result outcome = e_block_move_result::VALID;
 
     t_pl_loc from = block_locs[b_from].loc;
 
-    get_imacro_from_iblk(&imacro_from, b_from, pl_macros);
+    int imacro_from = get_imacro_from_iblk(b_from, pl_macros);
     if (imacro_from != -1) {
         // b_from is part of a macro, I need to swap the whole macro
 
@@ -106,8 +105,7 @@ e_block_move_result find_affected_blocks(t_pl_blocks_to_be_moved& blocks_affecte
 
     } else {
         ClusterBlockId b_to = grid_blocks.block_at_location(to);
-        int imacro_to = -1;
-        get_imacro_from_iblk(&imacro_to, b_to, pl_macros);
+        int imacro_to = get_imacro_from_iblk(b_to, pl_macros);
 
         if (imacro_to != -1) {
             //To block is a macro but from is a single block.
@@ -209,8 +207,7 @@ e_block_move_result record_macro_swaps(t_pl_blocks_to_be_moved& blocks_affected,
             outcome = e_block_move_result::ABORT;
         } else {
             ClusterBlockId b_to = grid_blocks.block_at_location(curr_to);
-            int imacro_to = -1;
-            get_imacro_from_iblk(&imacro_to, b_to, pl_macros);
+            int imacro_to = get_imacro_from_iblk(b_to, pl_macros);
 
             if (imacro_to != -1) {
                 //To block is a macro
@@ -366,8 +363,7 @@ e_block_move_result record_macro_move(t_pl_blocks_to_be_moved& blocks_affected,
 
         blocks_affected.record_block_move(member.blk_index, to, blk_loc_registry);
 
-        int imacro_to = -1;
-        get_imacro_from_iblk(&imacro_to, blk_to, pl_macros);
+        int imacro_to = get_imacro_from_iblk(blk_to, pl_macros);
         if (blk_to && imacro_to != imacro) { //Block displaced only if exists and not part of current macro
             displaced_blocks.push_back(blk_to);
         }
@@ -401,8 +397,7 @@ e_block_move_result identify_macro_self_swap_affected_macros(std::vector<int>& m
 
         ClusterBlockId blk_to = grid_blocks.block_at_location(to);
 
-        int imacro_to = -1;
-        get_imacro_from_iblk(&imacro_to, blk_to, pl_macros);
+        int imacro_to = get_imacro_from_iblk(blk_to, pl_macros);
 
         if (imacro_to != -1) {
             auto itr = std::find(macros.begin(), macros.end(), imacro_to);
@@ -447,8 +442,7 @@ e_block_move_result record_macro_self_swaps(t_pl_blocks_to_be_moved& blocks_affe
     }
 
     auto is_non_macro_block = [&](ClusterBlockId blk) {
-        int imacro_blk = -1;
-        get_imacro_from_iblk(&imacro_blk, blk, pl_macros);
+        int imacro_blk = get_imacro_from_iblk(blk, pl_macros);
 
         if (std::find(affected_macros.begin(), affected_macros.end(), imacro_blk) != affected_macros.end()) {
             return false;
