@@ -34,6 +34,8 @@
 #include "noc_place_utils.h"
 #include "vtr_math.h"
 
+#include <array>
+
 using std::max;
 using std::min;
 
@@ -47,32 +49,14 @@ static constexpr int MAX_FANOUT_CROSSING_COUNT = 50;
  * for higher fanout nets. Each entry is the correction factor for the
  * fanout index-1
  */
-static const float cross_count[MAX_FANOUT_CROSSING_COUNT] = {/* [0..49] */ 1.0, 1.0, 1.0, 1.0828,
-                                                             1.1536, 1.2206, 1.2823, 1.3385, 1.3991, 1.4493, 1.4974, 1.5455, 1.5937,
-                                                             1.6418, 1.6899, 1.7304, 1.7709, 1.8114, 1.8519, 1.8924, 1.9288, 1.9652,
-                                                             2.0015, 2.0379, 2.0743, 2.1061, 2.1379, 2.1698, 2.2016, 2.2334, 2.2646,
-                                                             2.2958, 2.3271, 2.3583, 2.3895, 2.4187, 2.4479, 2.4772, 2.5064, 2.5356,
-                                                             2.5610, 2.5864, 2.6117, 2.6371, 2.6625, 2.6887, 2.7148, 2.7410, 2.7671,
-                                                             2.7933};
+constexpr std::array<float, MAX_FANOUT_CROSSING_COUNT> cross_count = {1.0000, 1.0000, 1.0000, 1.0828, 1.1536, 1.2206, 1.2823, 1.3385,
+                                                                      1.3991, 1.4493, 1.4974, 1.5455, 1.5937, 1.6418, 1.6899, 1.7304,
+                                                                      1.7709, 1.8114, 1.8519, 1.8924, 1.9288, 1.9652, 2.0015, 2.0379,
+                                                                      2.0743, 2.1061, 2.1379, 2.1698, 2.2016, 2.2334, 2.2646, 2.2958,
+                                                                      2.3271, 2.3583, 2.3895, 2.4187, 2.4479, 2.4772, 2.5064, 2.5356,
+                                                                      2.5610, 2.5864, 2.6117, 2.6371, 2.6625, 2.6887, 2.7148, 2.7410,
+                                                                      2.7671, 2.7933};
 
-/**
- * @param net The unique identifier of the net of interest.
- * @param moved_blocks A vector of moving clustered blocks.
- * @return True if the driver block of the net is among the moving blocks.
- */
-static bool driven_by_moved_block(const ClusterNetId net,
-                                  const std::vector<t_pl_moved_block>& moved_blocks);
-
-/**
- * @brief Given the per-layer BB, calculate the wire-length estimate of the net on each layer
- * and return the sum of the lengths
- * @param net_id ID of the net which wirelength estimate is requested
- * @param bb Bounding box of the net
- * @return Wirelength estimate of the net
- */
-static double get_net_wirelength_from_layer_bb(ClusterNetId /*net_id*/,
-                                               const std::vector<t_2D_bb>& bb,
-                                               const vtr::NdMatrixProxy<int, 1> layer_pin_sink_count);
 
 
 
@@ -327,9 +311,7 @@ double NetCostHandler::comp_per_layer_bb_cost_(e_cost_methods method) {
                                                             place_move_ctx.num_sink_pin_layer[size_t(net_id)]);
             cost += net_cost_[net_id];
             if (method == e_cost_methods::CHECK) {
-                expected_wirelength += get_net_wirelength_from_layer_bb(net_id,
-                                                                        place_move_ctx.layer_bb_coords[net_id],
-                                                                        place_move_ctx.num_sink_pin_layer[size_t(net_id)]);
+                expected_wirelength += get_net_wirelength_from_layer_bb_(net_id);
             }
         }
     }
@@ -1545,11 +1527,13 @@ static double get_net_wirelength_estimate(ClusterNetId net_id, const t_bb& bb) {
     return ncost;
 }
 
-static double get_net_wirelength_from_layer_bb(ClusterNetId /* net_id */,
-                                               const std::vector<t_2D_bb>& bb,
-                                               const vtr::NdMatrixProxy<int, 1> layer_pin_sink_count) {
+double NetCostHandler::get_net_wirelength_from_layer_bb_(ClusterNetId net_id) {
     /* WMF: Finds the estimate of wirelength due to one net by looking at   *
      * its coordinate bounding box.                                         */
+
+    const auto& move_ctx = placer_state_.move();
+    const std::vector<t_2D_bb>& bb = move_ctx.layer_bb_coords[net_id];
+    const auto& layer_pin_sink_count = move_ctx.num_sink_pin_layer[size_t(net_id)];
 
     double ncost = 0.;
     const int num_layers = g_vpr_ctx.device().grid.get_num_layers();
@@ -1632,7 +1616,7 @@ void NetCostHandler::find_affected_nets_and_update_costs(const PlaceDelayModel* 
             bool is_src_moving = false;
             if (clb_nlist.pin_type(blk_pin) == PinType::SINK) {
                 ClusterNetId net_id = clb_nlist.pin_net(blk_pin);
-                is_src_moving = driven_by_moved_block(net_id, blocks_affected.moved_blocks);
+                is_src_moving = blocks_affected.driven_by_moved_block(net_id);
             }
             update_net_info_on_pin_move_(delay_model,
                                          criticalities,
@@ -1784,21 +1768,4 @@ void NetCostHandler::set_ts_edge_(const ClusterNetId net_id) {
     } else {
         place_move_ctx.layer_bb_num_on_edges[net_id] = layer_ts_bb_edge_new_[net_id];
     }
-}
-
-
-static bool driven_by_moved_block(const ClusterNetId net,
-                                  const std::vector<t_pl_moved_block>& moved_blocks) {
-    auto& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
-    bool is_driven_by_move_blk = false;
-    ClusterBlockId net_driver_block = clb_nlist.net_driver_block(net);
-
-    for (const t_pl_moved_block& block : moved_blocks) {
-        if (net_driver_block == block.block_num) {
-            is_driven_by_move_blk = true;
-            break;
-        }
-    }
-
-    return is_driven_by_move_blk;
 }

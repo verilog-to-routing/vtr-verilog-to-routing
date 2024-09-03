@@ -460,4 +460,12 @@ class NetCostHandler {
                                         const std::vector<t_2D_bb>& bb,
                                         const vtr::NdMatrixProxy<int, 1> layer_pin_sink_count);
 
+    /**
+    * @brief Given the per-layer BB, calculate the wire-length estimate of the net on each layer
+    * and return the sum of the lengths
+    * @param net_id ID of the net which wirelength estimate is requested
+    * @return Wirelength estimate of the net
+    */
+    double get_net_wirelength_from_layer_bb_(ClusterNetId net_id);
+
 };
