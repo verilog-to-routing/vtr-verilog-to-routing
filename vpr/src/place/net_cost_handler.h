@@ -259,7 +259,7 @@ class NetCostHandler {
 
     void get_non_updatable_bb_(const ClusterNetId net);
 
-    double get_net_cost_(const ClusterNetId net_id);
+    double get_net_bb_cost_(const ClusterNetId net_id);
 
     void set_ts_bb_coord_(const ClusterNetId net_id);
 
@@ -272,9 +272,9 @@ class NetCostHandler {
      * @param bb_coord_new Computed by this function and returned by reference.
      * @param num_sink_pin_layer Store the number of sink pins of "net_id" on each layer
      */
-    void get_non_updatable_bb_(ClusterNetId net_id,
-                               t_bb& bb_coord_new,
-                               vtr::NdMatrixProxy<int, 1> num_sink_pin_layer);
+    void get_non_updatable_cube_bb_(ClusterNetId net_id,
+                                    t_bb& bb_coord_new,
+                                    vtr::NdMatrixProxy<int, 1> num_sink_pin_layer);
 
     /**
      * @brief Calculate the per-layer bounding box of "net_id" from scratch (based on the block locations stored in place_ctx) and
@@ -283,9 +283,9 @@ class NetCostHandler {
      * @param bb_coord_new Computed by this function and returned by reference.
      * @param num_sink_layer Store the number of sink pins of "net_id" on each layer
      */
-    void get_non_updatable_layer_bb_(ClusterNetId net_id,
-                                    std::vector<t_2D_bb>& bb_coord_new,
-                                    vtr::NdMatrixProxy<int, 1> num_sink_layer);
+    void get_non_updatable_per_layer_bb_(ClusterNetId net_id,
+                                         std::vector<t_2D_bb>& bb_coord_new,
+                                         vtr::NdMatrixProxy<int, 1> num_sink_layer);
 
     /**
      * @brief Calculate the 3D BB of a large net from scratch and update coord, edge, and num_sink_pin_layer data structures.
@@ -426,7 +426,7 @@ class NetCostHandler {
                                              std::vector<t_2D_bb>& bb_coord_new);
 
      double comp_per_layer_bb_cost_(e_cost_methods method);
-     double comp_3d_bb_cost_(e_cost_methods method);
+     double comp_cube_bb_cost_(e_cost_methods method);
 
      /**
      * @brief if "net" is not already stored as an affected net, add it in ts_nets_to_update.
@@ -447,7 +447,7 @@ class NetCostHandler {
      * @param bb Bounding box of the net
      * @return Wirelength cost of the net
      */
-     double get_net_cost_(ClusterNetId net_id, const t_bb& bb);
+     double get_net_cube_bb_cost_(ClusterNetId net_id, const t_bb& bb);
 
      /**
      * @brief Given the per-layer BB, calculate the wire-length cost of the net on each layer
@@ -456,9 +456,9 @@ class NetCostHandler {
      * @param bb Per-layer bounding box of the net
      * @return Wirelength cost of the net
      */
-     double get_net_layer_bb_wire_cost_(ClusterNetId /* net_id */,
-                                        const std::vector<t_2D_bb>& bb,
-                                        const vtr::NdMatrixProxy<int, 1> layer_pin_sink_count);
+     double get_net_per_layer_bb_cost_(ClusterNetId /* net_id */,
+                                       const std::vector<t_2D_bb>& bb,
+                                       const vtr::NdMatrixProxy<int, 1> layer_pin_sink_count);
 
     /**
     * @brief Given the per-layer BB, calculate the wire-length estimate of the net on each layer
