@@ -176,8 +176,8 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
   public: //Public Mutators
     /**
      * @brief Create a new block in the netlist or return an existing block.
-     *        If a block with the specified name already exists, its associated data
-     *        will be overwritten.
+     *        If a block with the specified name already exists, the existing block's ID is returned,
+     *        and no new block is created.
      *
      *   @param name   The unique name of the block
      *   @param pb     The physical representation of the block
@@ -188,7 +188,7 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
     /**
      * @brief Create a new port in the netlist or return an existing port.
      *        If a port with the specified name already exists for the given block,
-     *        its associated data will be overwritten.
+     *        the existing port's ID is returned, and no new port is created.
      *
      *   @param blk_id   The block the port is associated with
      *   @param name     The name of the port (must match the name of a port in the block's model)
@@ -198,7 +198,8 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
     ClusterPortId create_port(const ClusterBlockId blk_id, const std::string& name, BitIndex width, PortType type);
     /**
      * @brief Create a new pin in the netlist or return an existing pin.
-     *        If a pin with the specified ID already exists, its associated data will be overwritten.
+     *        If a pin with the specified ID already exists, the existing pin's ID is returned,
+     *        and no new pin is created.
      *
      *   @param port_id    The port this pin is associated with
      *   @param port_bit   The bit index of the pin in the port
