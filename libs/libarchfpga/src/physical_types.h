@@ -1831,9 +1831,9 @@ struct t_rr_switch_inf {
  *       particular placement macro.                                        *
  */
 struct t_direct_inf {
-    char* name;
-    char* from_pin;
-    char* to_pin;
+    std::string name;
+    std::string from_pin;
+    std::string to_pin;
     int x_offset;
     int y_offset;
     int sub_tile_offset;
@@ -2031,8 +2031,7 @@ struct t_arch {
     std::vector<t_segment_inf> Segments;
     t_arch_switch_inf* Switches = nullptr;
     int num_switches;
-    t_direct_inf* Directs = nullptr;
-    int num_directs = 0;
+    std::vector<t_direct_inf> Directs;
 
     t_model* models = nullptr;
     t_model* model_library = nullptr;

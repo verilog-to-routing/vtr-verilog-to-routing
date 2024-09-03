@@ -303,7 +303,7 @@ static bool try_combine_macros(std::vector<std::vector<ClusterBlockId>>& pl_macr
     return true;
 }
 
-std::vector<t_pl_macro> alloc_and_load_placement_macros(t_direct_inf* directs, int num_directs) {
+std::vector<t_pl_macro> alloc_and_load_placement_macros(const std::vector<t_direct_inf>& directs) {
     /* This function allocates and loads the macros placement macros   *
      * and returns the total number of macros in 2 steps.              *
      *   1) Allocate temporary data structure for maximum possible     *
@@ -333,8 +333,7 @@ std::vector<t_pl_macro> alloc_and_load_placement_macros(t_direct_inf* directs, i
     std::vector<ClusterBlockId> pl_macro_member_blk_num_of_this_blk(cluster_ctx.clb_nlist.blocks().size());
 
     /* Sets up the required variables. */
-    alloc_and_load_idirect_from_blk_pin(directs, num_directs,
-                                        f_idirect_from_blk_pin, f_direct_type_from_blk_pin);
+    alloc_and_load_idirect_from_blk_pin(directs, f_idirect_from_blk_pin, f_direct_type_from_blk_pin);
 
     /* Compute required size:                                                *
      * Go through all the pins with possible direct connections in           *

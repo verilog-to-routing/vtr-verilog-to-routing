@@ -191,8 +191,7 @@ static bool is_cube_bb(const e_place_bounding_box_mode place_bb_mode,
 static void alloc_and_load_placement_structs(float place_cost_exp,
                                              const t_placer_opts& placer_opts,
                                              const t_noc_opts& noc_opts,
-                                             t_direct_inf* directs,
-                                             int num_directs,
+                                             const std::vector<t_direct_inf>& directs,
                                              PlacerState& placer_state);
 
 static void alloc_and_load_try_swap_structs(const bool cube_bb);
@@ -359,8 +358,7 @@ void try_place(const Netlist<>& net_list,
                t_chan_width_dist chan_width_dist,
                t_det_routing_arch* det_routing_arch,
                std::vector<t_segment_inf>& segment_inf,
-               t_direct_inf* directs,
-               int num_directs,
+               const std::vector<t_direct_inf>& directs,
                bool is_flat) {
     /* Does almost all the work of placing a circuit.  Width_fac gives the   *
      * width of the widest channel.  Place_cost_exp says what exponent the   *
@@ -415,7 +413,6 @@ void try_place(const Netlist<>& net_list,
                                                           det_routing_arch,
                                                           segment_inf,
                                                           directs,
-                                                          num_directs,
                                                           is_flat);
 
         if (isEchoFileEnabled(E_ECHO_PLACEMENT_DELTA_DELAY_MODEL)) {
@@ -440,7 +437,7 @@ void try_place(const Netlist<>& net_list,
     const auto& p_runtime_ctx = placer_state.runtime();
 
 
-    alloc_and_load_placement_structs(placer_opts.place_cost_exp, placer_opts, noc_opts, directs, num_directs, placer_state);
+    alloc_and_load_placement_structs(placer_opts.place_cost_exp, placer_opts, noc_opts, directs, placer_state);
     set_net_handlers_placer_state(placer_state);
 
     std::unique_ptr<ManualMoveGenerator> manual_move_generator = std::make_unique<ManualMoveGenerator>(placer_state);
@@ -1833,8 +1830,7 @@ static void invalidate_affected_connections(const t_pl_blocks_to_be_moved& block
 static void alloc_and_load_placement_structs(float place_cost_exp,
                                              const t_placer_opts& placer_opts,
                                              const t_noc_opts& noc_opts,
-                                             t_direct_inf* directs,
-                                             int num_directs,
+                                             const std::vector<t_direct_inf>& directs,
                                              PlacerState& placer_state) {
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -1907,7 +1903,7 @@ static void alloc_and_load_placement_structs(float place_cost_exp,
 
     alloc_and_load_try_swap_structs(place_ctx.cube_bb);
 
-    place_ctx.pl_macros = alloc_and_load_placement_macros(directs, num_directs);
+    place_ctx.pl_macros = alloc_and_load_placement_macros(directs);
 
     if (noc_opts.noc) {
         allocate_and_load_noc_placement_structs();

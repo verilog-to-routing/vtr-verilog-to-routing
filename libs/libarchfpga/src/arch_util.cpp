@@ -157,12 +157,7 @@ void free_arch(t_arch* arch) {
 
     free_arch_models(arch->models);
 
-    for (int i = 0; i < arch->num_directs; ++i) {
-        vtr::free(arch->Directs[i].name);
-        vtr::free(arch->Directs[i].from_pin);
-        vtr::free(arch->Directs[i].to_pin);
-    }
-    vtr::free(arch->Directs);
+    vtr::release_memory(arch->Directs);
 
     vtr::free(arch->architecture_id);
 

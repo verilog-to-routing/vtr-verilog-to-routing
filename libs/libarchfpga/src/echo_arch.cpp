@@ -332,10 +332,10 @@ void PrintArchInfo(FILE* Echo, const t_arch* arch) {
     //Direct List
     fprintf(Echo, "*************************************************\n");
     fprintf(Echo, "Direct List:\n");
-    for (i = 0; i < arch->num_directs; i++) {
+    for (i = 0; i < (int)arch->Directs.size(); i++) {
         fprintf(Echo, "\tDirect[%d]: name %s from_pin %s to_pin %s\n", i + 1,
-                arch->Directs[i].name, arch->Directs[i].from_pin,
-                arch->Directs[i].to_pin);
+                arch->Directs[i].name.c_str(), arch->Directs[i].from_pin.c_str(),
+                arch->Directs[i].to_pin.c_str());
         fprintf(Echo, "\t\t\t\t x_offset %d y_offset %d z_offset %d\n",
                 arch->Directs[i].x_offset, arch->Directs[i].y_offset,
                 arch->Directs[i].sub_tile_offset);
@@ -347,7 +347,7 @@ void PrintArchInfo(FILE* Echo, const t_arch* arch) {
         fprintf(Echo, "*************************************************\n");
         fprintf(Echo, "NoC Router Connection List:\n");
 
-        for (auto noc_router : arch->noc->router_list) {
+        for (const auto& noc_router : arch->noc->router_list) {
             fprintf(Echo, "NoC router %d is connected to:\t", noc_router.id);
             for (auto noc_conn_id : noc_router.connection_list) {
                 fprintf(Echo, "%d\t", noc_conn_id);

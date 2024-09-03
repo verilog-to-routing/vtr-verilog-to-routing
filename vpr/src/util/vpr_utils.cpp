@@ -61,7 +61,7 @@ static void mark_direct_of_ports(int idirect,
                                  char* port_name,
                                  int end_pin_index,
                                  int start_pin_index,
-                                 char* src_string,
+                                 const char* src_string,
                                  int line,
                                  std::vector<std::vector<int>>& idirect_from_blk_pin,
                                  std::vector<std::vector<int>>& direct_type_from_blk_pin);
@@ -80,7 +80,7 @@ static void mark_direct_of_pins(int start_pin_index,
                                 std::vector<std::vector<int>>& direct_type_from_blk_pin,
                                 int direct_type,
                                 int line,
-                                char* src_string);
+                                const char* src_string);
 
 static void load_pb_graph_pin_lookup_from_index_rec(t_pb_graph_pin** pb_graph_pin_lookup_from_index, t_pb_graph_node* pb_graph_node);
 
@@ -1701,13 +1701,12 @@ static void alloc_and_load_blk_pin_from_port_pin() {
  *                                                                                     *
  ***************************************************************************************/
 
-void parse_direct_pin_name(char* src_string, int line, int* start_pin_index, int* end_pin_index, char* pb_type_name, char* port_name) {
+void parse_direct_pin_name(const char* src_string, int line, int* start_pin_index, int* end_pin_index, char* pb_type_name, char* port_name) {
     /* Parses out the pb_type_name and port_name from the direct passed in.   *
      * If the start_pin_index and end_pin_index is specified, parse them too. *
      * Return the values parsed by reference.                                 */
 
     char source_string[MAX_STRING_LEN + 1];
-    char* find_format = nullptr;
     int ichar, match_count;
 
     if (vtr::split(src_string).size() > 1) {
@@ -1716,7 +1715,7 @@ void parse_direct_pin_name(char* src_string, int line, int* start_pin_index, int
     }
 
     // parse out the pb_type and port name, possibly pin_indices
-    find_format = strstr(src_string, "[");
+    const char* find_format = strstr(src_string, "[");
     if (find_format == nullptr) {
         /* Format "pb_type_name.port_name" */
         *start_pin_index = *end_pin_index = -1;
@@ -1791,7 +1790,7 @@ static void mark_direct_of_pins(int start_pin_index,
                                 std::vector<std::vector<int>>& direct_type_from_blk_pin,
                                 int direct_type,
                                 int line,
-                                char* src_string) {
+                                const char* src_string) {
     /* Mark the pin entry in idirect_from_blk_pin with idirect and the pin entry in    *
      * direct_type_from_blk_pin with direct_type from start_pin_index to               *
      * end_pin_index.                                                                  */
@@ -1837,7 +1836,7 @@ static void mark_direct_of_ports(int idirect,
                                  char* port_name,
                                  int end_pin_index,
                                  int start_pin_index,
-                                 char* src_string,
+                                 const char* src_string,
                                  int line,
                                  std::vector<std::vector<int>>& idirect_from_blk_pin,
                                  std::vector<std::vector<int>>& direct_type_from_blk_pin) {
@@ -1890,8 +1889,7 @@ static void mark_direct_of_ports(int idirect,
     }                 // Finish going through all the blocks
 }
 
-void alloc_and_load_idirect_from_blk_pin(t_direct_inf* directs,
-                                         int num_directs,
+void alloc_and_load_idirect_from_blk_pin(const std::vector<t_direct_inf>& directs,
                                          std::vector<std::vector<int>>& idirect_from_blk_pin,
                                          std::vector<std::vector<int>>& direct_type_from_blk_pin) {
     /* Allocates and loads idirect_from_blk_pin and direct_type_from_blk_pin arrays.    *
@@ -1911,9 +1909,6 @@ void alloc_and_load_idirect_from_blk_pin(t_direct_inf* directs,
      * Stores the pointers to the two 2D arrays in the addresses passed in.             *
      *                                                                                  *
      * The two arrays are freed by the caller(s).                                       */
-
-    int idirect, num_type_pins;
-
     char to_pb_type_name[MAX_STRING_LEN + 1], to_port_name[MAX_STRING_LEN + 1],
         from_pb_type_name[MAX_STRING_LEN + 1], from_port_name[MAX_STRING_LEN + 1];
 
@@ -1930,7 +1925,7 @@ void alloc_and_load_idirect_from_blk_pin(t_direct_inf* directs,
         }
 
         int itype = type.index;
-        num_type_pins = type.num_pins;
+        int num_type_pins = type.num_pins;
 
         idirect_from_blk_pin[itype].resize(num_type_pins, OPEN);
         direct_type_from_blk_pin[itype].resize(num_type_pins, OPEN);
@@ -1938,13 +1933,13 @@ void alloc_and_load_idirect_from_blk_pin(t_direct_inf* directs,
 
     /* Load the values */
     // Go through directs and find pins with possible direct connections
-    for (idirect = 0; idirect < num_directs; idirect++) {
+    for (size_t idirect = 0; idirect < directs.size(); idirect++) {
         // Parse out the pb_type and port name, possibly pin_indices from from_pin
-        parse_direct_pin_name(directs[idirect].from_pin, directs[idirect].line,
+        parse_direct_pin_name(directs[idirect].from_pin.c_str(), directs[idirect].line,
                               &from_end_pin_index, &from_start_pin_index, from_pb_type_name, from_port_name);
 
         // Parse out the pb_type and port name, possibly pin_indices from to_pin
-        parse_direct_pin_name(directs[idirect].to_pin, directs[idirect].line,
+        parse_direct_pin_name(directs[idirect].to_pin.c_str(), directs[idirect].line,
                               &to_end_pin_index, &to_start_pin_index, to_pb_type_name, to_port_name);
 
         /* Now I have all the data that I need, I could go through all the block pins   *
@@ -1954,13 +1949,13 @@ void alloc_and_load_idirect_from_blk_pin(t_direct_inf* directs,
 
         // Find blocks with the same name as from_pb_type_name and from_port_name
         mark_direct_of_ports(idirect, SOURCE, from_pb_type_name, from_port_name,
-                             from_end_pin_index, from_start_pin_index, directs[idirect].from_pin,
+                             from_end_pin_index, from_start_pin_index, directs[idirect].from_pin.c_str(),
                              directs[idirect].line,
                              idirect_from_blk_pin, direct_type_from_blk_pin);
 
         // Then, find blocks with the same name as to_pb_type_name and from_port_name
         mark_direct_of_ports(idirect, SINK, to_pb_type_name, to_port_name,
-                             to_end_pin_index, to_start_pin_index, directs[idirect].to_pin,
+                             to_end_pin_index, to_start_pin_index, directs[idirect].to_pin.c_str(),
                              directs[idirect].line,
                              idirect_from_blk_pin, direct_type_from_blk_pin);
 

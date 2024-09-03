@@ -137,8 +137,7 @@ static void build_bidir_rr_opins(RRGraphBuilder& rr_graph_builder,
                                  const t_chan_details& chan_details_x,
                                  const t_chan_details& chan_details_y,
                                  const DeviceGrid& grid,
-                                 const t_direct_inf* directs,
-                                 const int num_directs,
+                                 const std::vector<t_direct_inf>& directs,
                                  const t_clb_to_clb_directs* clb_to_clb_directs,
                                  const int num_seg_types);
 
@@ -158,8 +157,7 @@ static void build_unidir_rr_opins(RRGraphBuilder& rr_graph_builder,
                                   t_rr_edge_info_set& created_rr_edges,
                                   bool* Fc_clipped,
                                   const t_unified_to_parallel_seg_index& seg_index_map,
-                                  const t_direct_inf* directs,
-                                  const int num_directs,
+                                  const std::vector<t_direct_inf>& directs,
                                   const t_clb_to_clb_directs* clb_to_clb_directs,
                                   const int num_seg_types,
                                   int& edge_count);
@@ -173,8 +171,7 @@ static int get_opin_direct_connections(RRGraphBuilder& rr_graph_builder,
                                        int opin,
                                        RRNodeId from_rr_node,
                                        t_rr_edge_info_set& rr_edges_to_create,
-                                       const t_direct_inf* directs,
-                                       const int num_directs,
+                                       const std::vector<t_direct_inf>& directs,
                                        const t_clb_to_clb_directs* clb_to_clb_directs);
 
 static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder& rr_graph_builder,
@@ -202,8 +199,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
                                                                   const int delayless_switch,
                                                                   const enum e_directionality directionality,
                                                                   bool* Fc_clipped,
-                                                                  const t_direct_inf* directs,
-                                                                  const int num_directs,
+                                                                  const std::vector<t_direct_inf>& directs,
                                                                   const t_clb_to_clb_directs* clb_to_clb_directs,
                                                                   bool is_global_graph,
                                                                   const enum e_clock_modeling clock_modeling,
@@ -531,7 +527,7 @@ static void rr_graph_externals(const std::vector<t_segment_inf>& segment_inf,
                                int wire_to_rr_ipin_switch,
                                enum e_base_cost_type base_cost_type);
 
-static t_clb_to_clb_directs* alloc_and_load_clb_to_clb_directs(const t_direct_inf* directs, const int num_directs, const int delayless_switch);
+static t_clb_to_clb_directs* alloc_and_load_clb_to_clb_directs(const std::vector<t_direct_inf>& directs, const int delayless_switch);
 
 static t_seg_details* alloc_and_load_global_route_seg_details(const int global_route_switch,
                                                               int* num_seg_details = nullptr);
@@ -654,8 +650,7 @@ static void build_rr_graph(const t_graph_type graph_type,
                            const float R_minW_pmos,
                            const enum e_base_cost_type base_cost_type,
                            const enum e_clock_modeling clock_modeling,
-                           const t_direct_inf* directs,
-                           const int num_directs,
+                           const std::vector<t_direct_inf>& directs,
                            int* wire_to_rr_ipin_switch,
                            bool is_flat,
                            int* Warnings);
@@ -689,8 +684,7 @@ void create_rr_graph(const t_graph_type graph_type,
                      t_det_routing_arch* det_routing_arch,
                      const std::vector<t_segment_inf>& segment_inf,
                      const t_router_opts& router_opts,
-                     const t_direct_inf* directs,
-                     const int num_directs,
+                     const std::vector<t_direct_inf>& directs,
                      int* Warnings,
                      bool is_flat) {
     const auto& device_ctx = g_vpr_ctx.device();
@@ -757,7 +751,7 @@ void create_rr_graph(const t_graph_type graph_type,
                            det_routing_arch->R_minW_pmos,
                            router_opts.base_cost_type,
                            router_opts.clock_modeling,
-                           directs, num_directs,
+                           directs,
                            &det_routing_arch->wire_to_rr_ipin_switch,
                            is_flat,
                            Warnings);
@@ -981,8 +975,7 @@ static void build_rr_graph(const t_graph_type graph_type,
                            const float R_minW_pmos,
                            const enum e_base_cost_type base_cost_type,
                            const enum e_clock_modeling clock_modeling,
-                           const t_direct_inf* directs,
-                           const int num_directs,
+                           const std::vector<t_direct_inf>& directs,
                            int* wire_to_rr_ipin_switch,
                            bool is_flat,
                            int* Warnings) {
@@ -1011,8 +1004,8 @@ static void build_rr_graph(const t_graph_type graph_type,
     const auto& rr_graph = device_ctx.rr_graph;
 
     t_clb_to_clb_directs* clb_to_clb_directs = nullptr;
-    if (num_directs > 0) {
-        clb_to_clb_directs = alloc_and_load_clb_to_clb_directs(directs, num_directs, delayless_switch);
+    if (!directs.empty()) {
+        clb_to_clb_directs = alloc_and_load_clb_to_clb_directs(directs, delayless_switch);
     }
 
     /* START SEG_DETAILS */
@@ -1350,7 +1343,6 @@ static void build_rr_graph(const t_graph_type graph_type,
 
     auto update_chan_width = alloc_and_load_rr_graph(
         device_ctx.rr_graph_builder,
-
         device_ctx.rr_graph_builder.rr_nodes(), device_ctx.rr_graph, segment_inf.size(),
         segment_inf_x.size(),
         segment_index_map,
@@ -1365,7 +1357,8 @@ static void build_rr_graph(const t_graph_type graph_type,
         delayless_switch,
         directionality,
         &Fc_clipped,
-        directs, num_directs, clb_to_clb_directs,
+        directs,
+        clb_to_clb_directs,
         is_global_graph,
         clock_modeling,
         is_flat);
@@ -2043,8 +2036,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
                                                                   const int delayless_switch,
                                                                   const enum e_directionality directionality,
                                                                   bool* Fc_clipped,
-                                                                  const t_direct_inf* directs,
-                                                                  const int num_directs,
+                                                                  const std::vector<t_direct_inf>& directs,
                                                                   const t_clb_to_clb_directs* clb_to_clb_directs,
                                                                   bool is_global_graph,
                                                                   const enum e_clock_modeling clock_modeling,
@@ -2129,14 +2121,14 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
                                              opin_to_track_map, Fc_out, rr_edges_to_create, chan_details_x,
                                              chan_details_y,
                                              grid,
-                                             directs, num_directs, clb_to_clb_directs, num_seg_types);
+                                             directs, clb_to_clb_directs, num_seg_types);
                     } else {
                         VTR_ASSERT(UNI_DIRECTIONAL == directionality);
                         bool clipped;
                         build_unidir_rr_opins(rr_graph_builder, rr_graph, layer, i, j, side, grid, Fc_out, chan_width,
                                               chan_details_x, chan_details_y, Fc_xofs, Fc_yofs,
                                               rr_edges_to_create, &clipped, seg_index_map,
-                                              directs, num_directs, clb_to_clb_directs, num_seg_types,
+                                              directs, clb_to_clb_directs, num_seg_types,
                                               rr_edges_before_directs);
                         if (clipped) {
                             *Fc_clipped = true;
@@ -2592,8 +2584,7 @@ static void build_bidir_rr_opins(RRGraphBuilder& rr_graph_builder,
                                  const t_chan_details& chan_details_x,
                                  const t_chan_details& chan_details_y,
                                  const DeviceGrid& grid,
-                                 const t_direct_inf* directs,
-                                 const int num_directs,
+                                 const std::vector<t_direct_inf>& directs,
                                  const t_clb_to_clb_directs* clb_to_clb_directs,
                                  const int num_seg_types) {
     //Don't connect pins which are not adjacent to channels around the perimeter
@@ -2642,7 +2633,7 @@ static void build_bidir_rr_opins(RRGraphBuilder& rr_graph_builder,
         /* Add in direct connections */
         get_opin_direct_connections(rr_graph_builder, rr_graph, layer, i, j, side, pin_index,
                                     node_index, rr_edges_to_create,
-                                    directs, num_directs, clb_to_clb_directs);
+                                    directs, clb_to_clb_directs);
     }
 }
 
@@ -4038,8 +4029,7 @@ static void build_unidir_rr_opins(RRGraphBuilder& rr_graph_builder,
                                   t_rr_edge_info_set& rr_edges_to_create,
                                   bool* Fc_clipped,
                                   const t_unified_to_parallel_seg_index& seg_index_map,
-                                  const t_direct_inf* directs,
-                                  const int num_directs,
+                                  const std::vector<t_direct_inf>& directs,
                                   const t_clb_to_clb_directs* clb_to_clb_directs,
                                   const int num_seg_types,
                                   int& rr_edge_count) {
@@ -4140,7 +4130,7 @@ static void build_unidir_rr_opins(RRGraphBuilder& rr_graph_builder,
 
         /* Add in direct connections */
         get_opin_direct_connections(rr_graph_builder, rr_graph, layer, i, j, side, pin_index, opin_node_index, rr_edges_to_create,
-                                    directs, num_directs, clb_to_clb_directs);
+                                    directs, clb_to_clb_directs);
     }
 }
 
@@ -4149,8 +4139,7 @@ static void build_unidir_rr_opins(RRGraphBuilder& rr_graph_builder,
  * This data structure supplements the the info in the "directs" data structure
  * TODO: The function that does this parsing in placement is poorly done because it lacks generality on heterogeniety, should replace with this one
  */
-static t_clb_to_clb_directs* alloc_and_load_clb_to_clb_directs(const t_direct_inf* directs, const int num_directs, int delayless_switch) {
-    int i;
+static t_clb_to_clb_directs* alloc_and_load_clb_to_clb_directs(const std::vector<t_direct_inf>& directs, int delayless_switch) {
     t_clb_to_clb_directs* clb_to_clb_directs;
     char *tile_name, *port_name;
     int start_pin_index, end_pin_index;
@@ -4159,12 +4148,13 @@ static t_clb_to_clb_directs* alloc_and_load_clb_to_clb_directs(const t_direct_in
 
     auto& device_ctx = g_vpr_ctx.device();
 
+    const int num_directs = directs.size();
     clb_to_clb_directs = new t_clb_to_clb_directs[num_directs];
 
     tile_name = nullptr;
     port_name = nullptr;
 
-    for (i = 0; i < num_directs; i++) {
+    for (int i = 0; i < num_directs; i++) {
         //clb_to_clb_directs[i].from_clb_type;
         clb_to_clb_directs[i].from_clb_pin_start_index = 0;
         clb_to_clb_directs[i].from_clb_pin_end_index = 0;
@@ -4173,12 +4163,12 @@ static t_clb_to_clb_directs* alloc_and_load_clb_to_clb_directs(const t_direct_in
         clb_to_clb_directs[i].to_clb_pin_end_index = 0;
         clb_to_clb_directs[i].switch_index = 0;
 
-        tile_name = new char[strlen(directs[i].from_pin) + strlen(directs[i].to_pin)];
-        port_name = new char[strlen(directs[i].from_pin) + strlen(directs[i].to_pin)];
+        tile_name = new char[directs[i].from_pin.length() + directs[i].to_pin.length()];
+        port_name = new char[directs[i].from_pin.length() + directs[i].to_pin.length()];
 
         // Load from pins
         // Parse out the pb_type name, port name, and pin range
-        parse_direct_pin_name(directs[i].from_pin, directs[i].line, &start_pin_index, &end_pin_index, tile_name, port_name);
+        parse_direct_pin_name(directs[i].from_pin.c_str(), directs[i].line, &start_pin_index, &end_pin_index, tile_name, port_name);
 
         // Figure out which type, port, and pin is used
         for (const auto& type : device_ctx.physical_tile_types) {
@@ -4209,7 +4199,7 @@ static t_clb_to_clb_directs* alloc_and_load_clb_to_clb_directs(const t_direct_in
 
         // Load to pins
         // Parse out the pb_type name, port name, and pin range
-        parse_direct_pin_name(directs[i].to_pin, directs[i].line, &start_pin_index, &end_pin_index, tile_name, port_name);
+        parse_direct_pin_name(directs[i].to_pin.c_str(), directs[i].line, &start_pin_index, &end_pin_index, tile_name, port_name);
 
         // Figure out which type, port, and pin is used
         for (const auto& type : device_ctx.physical_tile_types) {
@@ -4240,7 +4230,7 @@ static t_clb_to_clb_directs* alloc_and_load_clb_to_clb_directs(const t_direct_in
 
         if (abs(clb_to_clb_directs[i].from_clb_pin_start_index - clb_to_clb_directs[i].from_clb_pin_end_index) != abs(clb_to_clb_directs[i].to_clb_pin_start_index - clb_to_clb_directs[i].to_clb_pin_end_index)) {
             vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), directs[i].line,
-                      "Range mismatch from %s to %s.\n", directs[i].from_pin, directs[i].to_pin);
+                      "Range mismatch from %s to %s.\n", directs[i].from_pin.c_str(), directs[i].to_pin.c_str());
         }
 
         //Set the switch index
@@ -4271,8 +4261,7 @@ static int get_opin_direct_connections(RRGraphBuilder& rr_graph_builder,
                                        int opin,
                                        RRNodeId from_rr_node,
                                        t_rr_edge_info_set& rr_edges_to_create,
-                                       const t_direct_inf* directs,
-                                       const int num_directs,
+                                       const std::vector<t_direct_inf>& directs,
                                        const t_clb_to_clb_directs* clb_to_clb_directs) {
     auto& device_ctx = g_vpr_ctx.device();
 
@@ -4287,9 +4276,9 @@ static int get_opin_direct_connections(RRGraphBuilder& rr_graph_builder,
     }
 
     //Capacity location determined by pin number relative to pins per capacity instance
-    int z, relative_opin;
-    std::tie(z, relative_opin) = get_capacity_location_from_physical_pin(curr_type, opin);
+    auto [z, relative_opin] = get_capacity_location_from_physical_pin(curr_type, opin);
     VTR_ASSERT(z >= 0 && z < curr_type->capacity);
+    const int num_directs = directs.size();
 
     /* Iterate through all direct connections */
     for (int i = 0; i < num_directs; i++) {

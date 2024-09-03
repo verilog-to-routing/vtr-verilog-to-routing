@@ -163,7 +163,7 @@ struct t_pl_macro {
 };
 
 
-std::vector<t_pl_macro> alloc_and_load_placement_macros(t_direct_inf* directs, int num_directs);
+std::vector<t_pl_macro> alloc_and_load_placement_macros(const std::vector<t_direct_inf>& directs);
 
 int get_imacro_from_iblk(ClusterBlockId iblk, const std::vector<t_pl_macro>& macros);
 

@@ -323,7 +323,12 @@ static void ProcessSwitches(pugi::xml_node Node,
                             const bool timing_enabled,
                             const pugiutil::loc_data& loc_data);
 static void ProcessSwitchTdel(pugi::xml_node Node, const bool timing_enabled, const int switch_index, t_arch_switch_inf* Switches, const pugiutil::loc_data& loc_data);
-static void ProcessDirects(pugi::xml_node Parent, t_direct_inf** Directs, int* NumDirects, const t_arch_switch_inf* Switches, const int NumSwitches, const pugiutil::loc_data& loc_data);
+
+static std::vector<t_direct_inf> ProcessDirects(pugi::xml_node Parent,
+                                                const t_arch_switch_inf* Switches,
+                                                const int NumSwitches,
+                                                const pugiutil::loc_data& loc_data);
+
 static void ProcessClockMetalLayers(pugi::xml_node parent,
                                     std::unordered_map<std::string, t_metal_layer>& metal_layers,
                                     pugiutil::loc_data& loc_data);
@@ -471,9 +476,7 @@ void XmlReadArch(const char* ArchFile,
         /* Process directs */
         Next = get_single_child(architecture, "directlist", loc_data, ReqOpt::OPTIONAL);
         if (Next) {
-            ProcessDirects(Next, &(arch->Directs), &(arch->num_directs),
-                           arch->Switches, arch->num_switches,
-                           loc_data);
+            arch->Directs = ProcessDirects(Next, arch->Switches, arch->num_switches, loc_data);
         }
 
         /* Process Clock Networks */
@@ -4273,45 +4276,34 @@ static void ProcessSwitchTdel(pugi::xml_node Node, const bool timing_enabled, co
     }
 }
 
-static void ProcessDirects(pugi::xml_node Parent, t_direct_inf** Directs, int* NumDirects, const t_arch_switch_inf* Switches, const int NumSwitches, const pugiutil::loc_data& loc_data) {
-    int i, j;
-    const char* direct_name;
-    const char* from_pin_name;
-    const char* to_pin_name;
-    const char* switch_name;
-
-    pugi::xml_node Node;
-
+static std::vector<t_direct_inf> ProcessDirects(pugi::xml_node Parent,
+                                                const t_arch_switch_inf* Switches,
+                                                const int NumSwitches,
+                                                const pugiutil::loc_data& loc_data) {
     /* Count the children and check they are direct connections */
     expect_only_children(Parent, {"direct"}, loc_data);
-    *NumDirects = count_children(Parent, "direct", loc_data);
-
-    /* Alloc direct list */
-    *Directs = nullptr;
-    if (*NumDirects > 0) {
-        *Directs = (t_direct_inf*)vtr::malloc(*NumDirects * sizeof(t_direct_inf));
-        memset(*Directs, 0, (*NumDirects * sizeof(t_direct_inf)));
-    }
+    int num_directs = count_children(Parent, "direct", loc_data);
+    std::vector<t_direct_inf> directs(num_directs);
 
     /* Load the directs. */
-    Node = get_first_child(Parent, "direct", loc_data);
-    for (i = 0; i < *NumDirects; ++i) {
+    pugi::xml_node Node = get_first_child(Parent, "direct", loc_data);
+    for (int i = 0; i < num_directs; ++i) {
         expect_only_attributes(Node, {"name", "from_pin", "to_pin", "x_offset", "y_offset", "z_offset", "switch_name", "from_side", "to_side"}, loc_data);
 
-        direct_name = get_attribute(Node, "name", loc_data).value();
+        const char* direct_name = get_attribute(Node, "name", loc_data).value();
         /* Check for direct name collisions */
-        for (j = 0; j < i; ++j) {
-            if (0 == strcmp((*Directs)[j].name, direct_name)) {
+        for (int j = 0; j < i; ++j) {
+            if (directs[j].name == direct_name) {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
                                "Two directs with the same name '%s' were found.\n",
                                direct_name);
             }
         }
-        (*Directs)[i].name = vtr::strdup(direct_name);
+        directs[i].name = direct_name;
 
         /* Figure out the source pin and sink pin name */
-        from_pin_name = get_attribute(Node, "from_pin", loc_data).value();
-        to_pin_name = get_attribute(Node, "to_pin", loc_data).value();
+        const char* from_pin_name = get_attribute(Node, "from_pin", loc_data).value();
+        const char* to_pin_name = get_attribute(Node, "to_pin", loc_data).value();
 
         /* Check that to_pin and the from_pin are not the same */
         if (0 == strcmp(to_pin_name, from_pin_name)) {
@@ -4319,22 +4311,23 @@ static void ProcessDirects(pugi::xml_node Parent, t_direct_inf** Directs, int* N
                            "The source pin and sink pin are the same: %s.\n",
                            to_pin_name);
         }
-        (*Directs)[i].from_pin = vtr::strdup(from_pin_name);
-        (*Directs)[i].to_pin = vtr::strdup(to_pin_name);
+        directs[i].from_pin = from_pin_name;
+        directs[i].to_pin = to_pin_name;
 
-        (*Directs)[i].x_offset = get_attribute(Node, "x_offset", loc_data).as_int(0);
-        (*Directs)[i].y_offset = get_attribute(Node, "y_offset", loc_data).as_int(0);
-        (*Directs)[i].sub_tile_offset = get_attribute(Node, "z_offset", loc_data).as_int(0);
+        directs[i].x_offset = get_attribute(Node, "x_offset", loc_data).as_int(0);
+        directs[i].y_offset = get_attribute(Node, "y_offset", loc_data).as_int(0);
+        directs[i].sub_tile_offset = get_attribute(Node, "z_offset", loc_data).as_int(0);
 
         std::string from_side_str = get_attribute(Node, "from_side", loc_data, ReqOpt::OPTIONAL).value();
-        (*Directs)[i].from_side = string_to_side(from_side_str);
+        directs[i].from_side = string_to_side(from_side_str);
         std::string to_side_str = get_attribute(Node, "to_side", loc_data, ReqOpt::OPTIONAL).value();
-        (*Directs)[i].to_side = string_to_side(to_side_str);
+        directs[i].to_side = string_to_side(to_side_str);
 
         //Set the optional switch type
-        switch_name = get_attribute(Node, "switch_name", loc_data, ReqOpt::OPTIONAL).as_string(nullptr);
+        const char* switch_name = get_attribute(Node, "switch_name", loc_data, ReqOpt::OPTIONAL).as_string(nullptr);
         if (switch_name != nullptr) {
             //Look-up the user defined switch
+            int j;
             for (j = 0; j < NumSwitches; j++) {
                 if (0 == strcmp(switch_name, Switches[j].name.c_str())) {
                     break; //Found the switch
@@ -4344,21 +4337,23 @@ static void ProcessDirects(pugi::xml_node Parent, t_direct_inf** Directs, int* N
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
                                "Could not find switch named '%s' in switch list.\n", switch_name);
             }
-            (*Directs)[i].switch_type = j; //Save the correct switch index
+            directs[i].switch_type = j; //Save the correct switch index
         } else {
             //If not defined, use the delayless switch by default
             //TODO: find a better way of indicating this.  Ideally, we would
             //specify the delayless switch index here, but it does not appear
             //to be defined at this point.
-            (*Directs)[i].switch_type = -1;
+            directs[i].switch_type = -1;
         }
 
-        (*Directs)[i].line = loc_data.line(Node);
+        directs[i].line = loc_data.line(Node);
         /* Should I check that the direct chain offset is not greater than the chip? How? */
 
         /* Get next direct element */
         Node = Node.next_sibling(Node.name());
     }
+
+    return directs;
 }
 
 static void ProcessClockMetalLayers(pugi::xml_node parent,

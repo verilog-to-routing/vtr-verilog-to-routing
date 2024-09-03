@@ -812,7 +812,6 @@ void vpr_place(const Netlist<>& net_list, t_vpr_setup& vpr_setup, const t_arch& 
               &vpr_setup.RoutingArch,
               vpr_setup.Segments,
               arch.Directs,
-              arch.num_directs,
               is_flat);
 
     auto& filename_opts = vpr_setup.FileNameOpts;
@@ -844,7 +843,7 @@ void vpr_load_placement(t_vpr_setup& vpr_setup, const t_arch& arch) {
                                         filename_opts.verify_file_digests, device_ctx.grid);
 
     //Ensure placement macros are loaded so that they can be drawn after placement (e.g. during routing)
-    place_ctx.pl_macros = alloc_and_load_placement_macros(arch.Directs, arch.num_directs);
+    place_ctx.pl_macros = alloc_and_load_placement_macros(arch.Directs);
 }
 
 RouteStatus vpr_route_flow(const Netlist<>& net_list,
@@ -1014,7 +1013,6 @@ RouteStatus vpr_route_fixed_W(const Netlist<>& net_list,
                    delay_calc,
                    arch.Chans,
                    arch.Directs,
-                   arch.num_directs,
                    ScreenUpdatePriority::MAJOR,
                    is_flat);
 
@@ -1114,7 +1112,7 @@ void vpr_create_rr_graph(t_vpr_setup& vpr_setup, const t_arch& arch, int chan_wi
                     det_routing_arch,
                     vpr_setup.Segments,
                     router_opts,
-                    arch.Directs, arch.num_directs,
+                    arch.Directs,
                     &warnings,
                     is_flat);
     //Initialize drawing, now that we have an RR graph
