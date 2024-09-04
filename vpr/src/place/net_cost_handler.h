@@ -132,7 +132,6 @@ class NetCostHandler {
 
     /**
      * @brief for the states of the bounding box.
-     * Stored as char for memory efficiency.
      */
     enum class NetUpdateState {
         NOT_UPDATED_YET,
@@ -231,7 +230,7 @@ class NetCostHandler {
 
     /**
      * @brief Allocates and loads the chanx_place_cost_fac and chany_place_cost_fac arrays with the inverse of
-     * the average number of tracks per channelbetween [subhigh] and [sublow].
+     * the average number of tracks per channel between [subhigh] and [sublow].
      * @param place_cost_exp It is an exponent to which you take the average inverse channel capacity;
      * a higher value would favour wider channels more over narrower channels during placement (usually we use 1).
      */
@@ -452,11 +451,11 @@ class NetCostHandler {
      /**
      * @brief Given the per-layer BB, calculate the wire-length cost of the net on each layer
      * and return the sum of the costs
-     * @param net_id ID of the net which cost is requested
+     * @param net_id ID of the net which cost is requested. Currently unused
      * @param bb Per-layer bounding box of the net
      * @return Wirelength cost of the net
      */
-     double get_net_per_layer_bb_cost_(ClusterNetId /* net_id */,
+     double get_net_per_layer_bb_cost_(ClusterNetId net_id,
                                        const std::vector<t_2D_bb>& bb,
                                        const vtr::NdMatrixProxy<int, 1> layer_pin_sink_count);
 
