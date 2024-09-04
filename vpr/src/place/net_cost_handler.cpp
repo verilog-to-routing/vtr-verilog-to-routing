@@ -591,7 +591,7 @@ void NetCostHandler::get_non_updatable_per_layer_bb_(ClusterNetId net_id,
     int src_y = block_locs[bnum].loc.y + physical_tile_type(block_loc)->pin_height_offset[pnum];
 
     for (int layer_num = 0; layer_num < num_layers; layer_num++) {
-        bb_coord_new[layer_num] = t_2D_bb{src_x, src_y, src_x, src_y, layer_num};
+        bb_coord_new[layer_num] = t_2D_bb{src_x, src_x, src_y, src_y, layer_num};
         num_sink_layer[layer_num] = 0;
     }
 
@@ -1400,7 +1400,7 @@ void NetCostHandler::get_layer_bb_from_scratch_(ClusterNetId net_id,
     // when per-layer bounding box is used, we want the bounding box on each layer to also include
     // the location of source since the connection on each layer starts from that location.
     for (int layer_num = 0; layer_num < num_layers; layer_num++) {
-        coords[layer_num] = t_2D_bb{x_src, y_src, x_src, y_src, layer_num};
+        coords[layer_num] = t_2D_bb{x_src, x_src, y_src, y_src, layer_num};
         num_on_edges[layer_num] = t_2D_bb{1, 1, 1, 1, layer_num};
         layer_pin_sink_count[layer_num] = 0;
     }

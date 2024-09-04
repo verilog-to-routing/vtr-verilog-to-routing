@@ -618,19 +618,21 @@ struct t_bb {
  */
 struct t_2D_bb {
     t_2D_bb() = default;
-    t_2D_bb(int xmin_, int ymin_, int xmax_, int ymax_, int layer_num_)
+    t_2D_bb(int xmin_, int xmax_, int ymin_, int ymax_, int layer_num_)
         : xmin(xmin_)
-        , ymin(ymin_)
         , xmax(xmax_)
+        , ymin(ymin_)
         , ymax(ymax_)
         , layer_num(layer_num_) {
         VTR_ASSERT(xmax_ >= xmin_);
         VTR_ASSERT(ymax_ >= ymin_);
         VTR_ASSERT(layer_num_ >= 0);
     }
+
+
     int xmin = OPEN;
-    int ymin = OPEN;
     int xmax = OPEN;
+    int ymin = OPEN;
     int ymax = OPEN;
     int layer_num = OPEN;
 };
