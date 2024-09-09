@@ -2050,8 +2050,6 @@ void print_switch_usage() {
     delete[] inward_switch_inf;
 }
 
-
-
 int max_pins_per_grid_tile() {
     auto& device_ctx = g_vpr_ctx.device();
     int max_pins = 0;

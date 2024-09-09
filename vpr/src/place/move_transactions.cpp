@@ -165,3 +165,19 @@ void t_pl_blocks_to_be_moved::clear_move_blocks() {
 
     affected_pins.clear();
 }
+
+bool t_pl_blocks_to_be_moved::driven_by_moved_block(const ClusterNetId net) const {
+    auto& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
+
+    bool is_driven_by_move_blk = false;
+    ClusterBlockId net_driver_block = clb_nlist.net_driver_block(net);
+
+    for (const t_pl_moved_block& block : moved_blocks) {
+        if (net_driver_block == block.block_num) {
+            is_driven_by_move_blk = true;
+            break;
+        }
+    }
+
+    return is_driven_by_move_blk;
+}
