@@ -1886,11 +1886,6 @@ static NetCostHandler alloc_and_load_placement_structs(const t_placer_opts& plac
 
     place_ctx.pl_macros = alloc_and_load_placement_macros(directs, num_directs);
 
-    if (noc_opts.noc) {
-        allocate_and_load_noc_placement_structs();
-    }
-
-
     place_ctx.compressed_block_grids = create_compressed_block_grids();
 
     return {placer_opts, placer_state, num_nets, place_ctx.cube_bb};
@@ -1903,10 +1898,6 @@ static void free_placement_structs(const t_noc_opts& noc_opts) {
 
     auto& place_ctx = g_vpr_ctx.mutable_placement();
     vtr::release_memory(place_ctx.compressed_block_grids);
-
-    if (noc_opts.noc) {
-        free_noc_placement_structs();
-    }
 }
 
 static void check_place(const t_placer_costs& costs,

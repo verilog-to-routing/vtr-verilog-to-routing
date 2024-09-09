@@ -123,8 +123,7 @@ class NocTrafficFlows {
      * traffic flows have been added. This datastructure should be used
      * to store the path found whenever a traffic flow needs to be routed/
      * re-routed. Also, this datastructure should be used to access the routed
-     * path of a traffic flow. 
-     * 
+     * path of a traffic flow.
      */
     vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> traffic_flow_routes;
 

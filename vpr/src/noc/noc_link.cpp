@@ -19,10 +19,6 @@ NocRouterId NocLink::get_sink_router() const {
     return sink_router;
 }
 
-double NocLink::get_bandwidth_usage() const {
-    return bandwidth_usage;
-}
-
 //setters
 void NocLink::set_source_router(NocRouterId source) {
     source_router = source;
@@ -32,9 +28,7 @@ void NocLink::set_sink_router(NocRouterId sink) {
     sink_router = sink;
 }
 
-void NocLink::set_bandwidth_usage(double new_bandwidth_usage) {
-    bandwidth_usage = new_bandwidth_usage;
-}
+
 
 void NocLink::set_bandwidth(double new_bandwidth) {
     bandwidth = new_bandwidth;
@@ -48,7 +42,7 @@ double NocLink::get_congested_bandwidth() const {
     double congested_bandwidth = bandwidth_usage - bandwidth;
     congested_bandwidth = std::max(congested_bandwidth, 0.0);
 
-    VTR_ASSERT(congested_bandwidth >= 0.0);
+    VTR_ASSERT_SAFE(congested_bandwidth >= 0.0);
     return congested_bandwidth;
 }
 
