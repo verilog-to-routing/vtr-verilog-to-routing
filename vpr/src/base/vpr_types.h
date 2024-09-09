@@ -1850,11 +1850,6 @@ typedef vtr::vector<ClusterBlockId, std::vector<std::vector<RRNodeId>>> t_clb_op
 typedef std::vector<std::map<int, int>> t_arch_switch_fanin;
 
 /**
- * @brief Free the linked list that saves all the packing molecules.
- */
-void free_pack_molecules(t_pack_molecule* list_of_pack_molecules);
-
-/**
  * @brief Free the linked lists to placement locations based on status of primitive inside placement stats data structure.
  */
 void free_cluster_placement_stats(t_cluster_placement_stats* cluster_placement_stats);

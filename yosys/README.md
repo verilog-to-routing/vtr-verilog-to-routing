@@ -1,7 +1,7 @@
 ```
 yosys -- Yosys Open SYnthesis Suite
 
-Copyright (C) 2012 - 2020  Claire Xenia Wolf <claire@yosyshq.com>
+Copyright (C) 2012 - 2024  Claire Xenia Wolf <claire@yosyshq.com>
 
 Permission to use, copy, modify, and/or distribute this software for any
 purpose with or without fee is hereby granted, provided that the above
@@ -71,7 +71,7 @@ Many Linux distributions also provide Yosys binaries, some more up to date than 
 Building from Source
 ====================
 
-You need a C++ compiler with C++11 support (up-to-date CLANG or GCC is
+You need a C++ compiler with C++17 support (up-to-date CLANG or GCC is
 recommended) and some standard tools such as GNU Flex, GNU Bison, and GNU Make.
 TCL, readline and libffi are optional (see ``ENABLE_*`` settings in Makefile).
 Xdot (graphviz) is used by the ``show`` command in yosys to display schematics.
@@ -105,10 +105,16 @@ For Cygwin use the following command to install all prerequisites, or select the
 
 	setup-x86_64.exe -q --packages=bison,flex,gcc-core,gcc-g++,git,libffi-devel,libreadline-devel,make,pkg-config,python3,tcl-devel,boost-build,zlib-devel
 
-To configure the build system to use a specific compiler, use one of
+The environment variable `CXX` can be used to control the C++ compiler used, or
+run one of the following:
 
 	$ make config-clang
 	$ make config-gcc
+
+Note that these will result in `make` ignoring the `CXX` environment variable,
+unless `CXX` is assigned in the call to make, e.g.
+
+  $ make CXX=$CXX
 
 For other compilers and build configurations it might be
 necessary to make some changes to the config section of the
@@ -587,10 +593,18 @@ from SystemVerilog:
 - enums are supported (including inside packages)
 	- but are currently not strongly typed
 
-- packed structs and unions are supported.
+- packed structs and unions are supported
+	- arrays of packed structs/unions are currently not supported
+	- structure literals are currently not supported
+
+- multidimensional arrays are supported
+	- array assignment of unpacked arrays is currently not supported
+	- array literals are currently not supported
 
 - SystemVerilog interfaces (SVIs) are supported. Modports for specifying whether
   ports are inputs or outputs are supported.
+
+- Assignments within expressions are supported.
 
 
 Building the documentation
@@ -602,10 +616,12 @@ Simply visit https://yosys.readthedocs.io/en/latest/ instead.
 In addition to those packages listed above for building Yosys from source, the
 following are used for building the website: 
 
-	$ sudo apt-get install pdf2svg faketime
+	$ sudo apt install pdf2svg faketime
 
 PDFLaTeX, included with most LaTeX distributions, is also needed during the
-build process for the website.
+build process for the website.  Or, run the following:
+
+	$ sudo apt install texlive-latex-base texlive-latex-extra latexmk
 
 The Python package, Sphinx, is needed along with those listed in
 `docs/source/requirements.txt`:

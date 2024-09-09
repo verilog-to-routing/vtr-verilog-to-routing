@@ -481,18 +481,58 @@ void MemMapping::dump_config(MemConfig &cfg) {
 	}
 }
 
+std::pair<bool, Const> search_for_attribute(Mem mem, IdString attr) {
+	// priority of attributes:
+	// 1. attributes on memory itself
+	// 2. attributes on a read or write port
+	// 3. attributes on data signal of a read or write port
+	// 4. attributes on address signal of a read or write port
+
+	if (mem.has_attribute(attr))
+		return std::make_pair(true, mem.attributes.at(attr));
+
+	for (auto &port: mem.rd_ports)
+		if (port.has_attribute(attr))
+			return std::make_pair(true, port.attributes.at(attr));
+	for (auto &port: mem.wr_ports)
+		if (port.has_attribute(attr))
+			return std::make_pair(true, port.attributes.at(attr));
+
+	for (auto &port: mem.rd_ports)
+		for (SigBit bit: port.data)
+			if (bit.is_wire() && bit.wire->has_attribute(attr))
+				return std::make_pair(true, bit.wire->attributes.at(attr));
+	for (auto &port: mem.wr_ports)
+		for (SigBit bit: port.data)
+			if (bit.is_wire() && bit.wire->has_attribute(attr))
+				return std::make_pair(true, bit.wire->attributes.at(attr));
+
+	for (auto &port: mem.rd_ports)
+		for (SigBit bit: port.addr)
+			if (bit.is_wire() && bit.wire->has_attribute(attr))
+				return std::make_pair(true, bit.wire->attributes.at(attr));
+	for (auto &port: mem.wr_ports)
+		for (SigBit bit: port.addr)
+			if (bit.is_wire() && bit.wire->has_attribute(attr))
+				return std::make_pair(true, bit.wire->attributes.at(attr));
+	
+	return std::make_pair(false, Const());
+}
+
 // Go through memory attributes to determine user-requested mapping style.
 void MemMapping::determine_style() {
 	kind = RamKind::Auto;
 	style = "";
-	if (mem.get_bool_attribute(ID::lram)) {
+	auto find_attr = search_for_attribute(mem, ID::lram);
+	if (find_attr.first && find_attr.second.as_bool()) {
 		kind = RamKind::Huge;
 		log("found attribute 'lram' on memory %s.%s, forced mapping to huge RAM\n", log_id(mem.module->name), log_id(mem.memid));
 		return;
 	}
 	for (auto attr: {ID::ram_block, ID::rom_block, ID::ram_style, ID::rom_style, ID::ramstyle, ID::romstyle, ID::syn_ramstyle, ID::syn_romstyle}) {
-		if (mem.has_attribute(attr)) {
-			Const val = mem.attributes.at(attr);
+		find_attr = search_for_attribute(mem, attr);
+		if (find_attr.first) {
+			Const val = find_attr.second;
 			if (val == 1) {
 				kind = RamKind::NotLogic;
 				log("found attribute '%s = 1' on memory %s.%s, disabled mapping to FF\n", log_id(attr), log_id(mem.module->name), log_id(mem.memid));
@@ -526,8 +566,11 @@ void MemMapping::determine_style() {
 			return;
 		}
 	}
-	if (mem.get_bool_attribute(ID::logic_block))
-		kind = RamKind::Logic;
+	for (auto attr: {ID::logic_block, ID::no_ram}){
+		find_attr = search_for_attribute(mem, attr);
+		if (find_attr.first && find_attr.second.as_bool())
+			kind = RamKind::Logic;
+	}
 }
 
 // Determine whether the memory can be mapped entirely to soft logic.
@@ -647,7 +690,7 @@ bool apply_clock(MemConfig &cfg, const PortVariant &def, SigBit clk, bool clk_po
 
 // Perform write port assignment, validating clock options as we go.
 void MemMapping::assign_wr_ports() {
-	log_reject(stringf("Assigning write ports... (candidate configs: %lu)", cfgs.size()));
+	log_reject(stringf("Assigning write ports... (candidate configs: %zu)", (size_t) cfgs.size()));
 	for (auto &port: mem.wr_ports) {
 		if (!port.clk_enable) {
 			// Async write ports not supported.
@@ -667,7 +710,7 @@ void MemMapping::assign_wr_ports() {
 				if (used >= GetSize(pg.names)) {
 					log_reject(*cfg.def, pg, "not enough unassigned ports remaining");
 					continue;
-					}
+				}
 				for (int pvi = 0; pvi < GetSize(pg.variants); pvi++) {
 					auto &def = pg.variants[pvi];
 					// Make sure the target is a write port.
@@ -696,7 +739,7 @@ void MemMapping::assign_wr_ports() {
 
 // Perform read port assignment, validating clock and rden options as we go.
 void MemMapping::assign_rd_ports() {
-	log_reject(stringf("Assigning read ports... (candidate configs: %lu)", cfgs.size()));
+	log_reject(stringf("Assigning read ports... (candidate configs: %zu)", (size_t) cfgs.size()));
 	for (int pidx = 0; pidx < GetSize(mem.rd_ports); pidx++) {
 		auto &port = mem.rd_ports[pidx];
 		MemConfigs new_cfgs;
@@ -857,7 +900,7 @@ void MemMapping::assign_rd_ports() {
 
 // Validate transparency restrictions, determine where to add soft transparency logic.
 void MemMapping::handle_trans() {
-	log_reject(stringf("Handling transparency... (candidate configs: %lu)", cfgs.size()));
+	log_reject(stringf("Handling transparency... (candidate configs: %zu)", (size_t) cfgs.size()));
 	if (mem.emulate_read_first_ok()) {
 		MemConfigs new_cfgs;
 		for (auto &cfg: cfgs) {
@@ -2114,7 +2157,7 @@ struct MemoryLibMapPass : public Pass {
 		log("    memory_libmap -lib <library_file> [-D <condition>] [selection]\n");
 		log("\n");
 		log("This pass takes a description of available RAM cell types and maps\n");
-		log("all selected memories to one of them, or leaves them  to be mapped to FFs.\n");
+		log("all selected memories to one of them, or leaves them to be mapped to FFs.\n");
 		log("\n");
 		log("  -lib <library_file>\n");
 		log("    Selects a library file containing RAM cell definitions. This option\n");
@@ -2186,6 +2229,9 @@ struct MemoryLibMapPass : public Pass {
 		Library lib = parse_library(lib_files, defines);
 
 		for (auto module : design->selected_modules()) {
+			if (module->has_processes_warn())
+				continue;
+
 			MapWorker worker(module);
 			auto mems = Mem::get_selected_memories(module);
 			for (auto &mem : mems)

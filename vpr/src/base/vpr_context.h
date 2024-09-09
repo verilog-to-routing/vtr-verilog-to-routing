@@ -5,6 +5,7 @@
 #include <vector>
 #include <mutex>
 
+#include "prepack.h"
 #include "vpr_types.h"
 #include "vtr_ndmatrix.h"
 #include "vtr_optional.h"
@@ -72,34 +73,17 @@ struct AtomContext : public Context {
     /********************************************************************
      * Atom Netlist
      ********************************************************************/
-    /**
-     * @brief constructor
-     *
-     * In the constructor initialize the list of pack molecules to nullptr and defines a custom deletor for it
-     */
-    AtomContext()
-        : list_of_pack_molecules(nullptr, free_pack_molecules) {}
-
-    ///@brief Atom netlist
+    /// @brief Atom netlist
     AtomNetlist nlist;
 
-    ///@brief Mappings to/from the Atom Netlist to physically described .blif models
+    /// @brief Mappings to/from the Atom Netlist to physically described .blif models
     AtomLookup lookup;
 
-    /**
-     * @brief The molecules associated with each atom block.
-     *
-     * This map is loaded in the pre-packing stage and freed at the very end of vpr flow run.
-     * The pointers in this multimap is shared with list_of_pack_molecules.
-     */
-    std::multimap<AtomBlockId, t_pack_molecule*> atom_molecules;
-
-    /**
-     * @brief A linked list of all the packing molecules that are loaded in pre-packing stage.
-     *
-     * Is is useful in freeing the pack molecules at the destructor of the Atom context using free_pack_molecules.
-     */
-    std::unique_ptr<t_pack_molecule, decltype(&free_pack_molecules)> list_of_pack_molecules;
+    /// @brief Prepacker object which performs prepacking and stores the pack
+    ///        molecules. Has a method to get the pack molecule of an AtomBlock.
+    /// TODO: This is mainly only used in the clusterer. It can probably be
+    ///       removed from the AtomContext entirely.
+    Prepacker prepacker;
 };
 
 /**

@@ -1,6 +1,6 @@
 #ifndef CLUSTER_H
 #define CLUSTER_H
-#include <unordered_map>
+
 #include <unordered_set>
 #include <map>
 #include <vector>
@@ -11,13 +11,14 @@
 #include "attraction_groups.h"
 #include "cluster_util.h"
 
+class Prepacker;
+
 std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& packer_opts,
                                                          const t_analysis_opts& analysis_opts,
                                                          const t_arch* arch,
-                                                         t_pack_molecule* molecule_head,
+                                                         Prepacker& prepacker,
                                                          const std::unordered_set<AtomNetId>& is_clock,
                                                          const std::unordered_set<AtomNetId>& is_global,
-                                                         const std::unordered_map<AtomBlockId, t_pb_graph_node*>& expected_lowest_cost_pb_gnode,
                                                          bool allow_unrelated_clustering,
                                                          bool balance_block_type_utilization,
                                                          std::vector<t_lb_type_rr_node>* lb_type_rr_graphs,
