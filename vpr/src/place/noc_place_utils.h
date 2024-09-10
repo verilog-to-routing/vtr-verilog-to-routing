@@ -187,6 +187,44 @@ class NocCostHandler {
     double comp_noc_congestion_cost();
 
     /**
+     * @brief Given a placement state the NoC costs are re-computed
+     * from scratch and compared to the current NoC placement costs.
+     * This involves finding new routes for all traffic
+     * flows and then computing the aggregate bandwidth and latency costs
+     * for the traffic flows using the newly found routes. Then the
+     * overall NoC costs are computed by accumulating the newly found traffic flow
+     * costs.
+     *
+     * THe newly computed NoC costs are compared to the current NoC costs to
+     * check if they are within an error tolerance. If the comparison is
+     * larger than the error tolerance then an error is thrown and it indicates
+     * that the incremental NoC costs updates are incorrect.
+     *
+     * This function is similar to 'recompute_noc_costs' but the traffic flow
+     * routes and costs are computed as well. As a result this function is very
+     * expensive and should be used in larger intervals (number of moves) within
+     * the placer.
+     *
+     * @param costs Contains the current NoC aggregate bandwidth and latency costs
+     * which are computed incrementally after each logical router move during
+     * placement.
+     * @param error_tolerance The maximum allowable difference between the current
+     * NoC costs and the newly computed NoC costs.
+     * @param noc_opts Contains information necessary to compute the NoC costs
+     * from scratch. For example this would include the routing algorithm and
+     * weights for the difference components of the NoC costs.
+     * @return An integer which represents the status of the comparison. 0
+     * indicates that the current NoC costs are within the error tolerance and
+     * a non-zero values indicates the current NoC costs are above the error
+     * tolerance.
+     * @param block_locs Contains the location where each clustered block is placed at.
+     */
+    int check_noc_placement_costs(const t_placer_costs& costs,
+                                  double error_tolerance,
+                                  const t_noc_opts& noc_opts,
+                                  const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
+
+    /**
      * @brief Goes through all NoC links and determines whether they
      * are congested or not. Then finds n links that are most congested.
      *
@@ -219,6 +257,17 @@ class NocCostHandler {
      * @return The total congestion ratio
      */
     double get_total_congestion_bandwidth_ratio();
+
+    /**
+     * @brief Prints NoC related costs terms and metrics.
+     *
+     * @param header The string with which the report starts.
+     * @param costs Contains NoC-related cost terms.
+     * @param noc_opts Used to compute total NoC cost.
+     */
+    void print_noc_costs(std::string_view header,
+                         const t_placer_costs& costs,
+                         const t_noc_opts& noc_opts);
 
   private:
     /**
@@ -276,6 +325,23 @@ class NocCostHandler {
                                            const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
 
     /**
+     * @brief Used to re-route all the traffic flows associated to logical
+     * router blocks that were supposed to be moved during placement but are
+     * back to their original positions.
+     *
+     * The routing function is called to find the original traffic flow route
+     * again.
+     *
+     * @param blocks_affected Contains all the blocks that were moved in
+     * the current placement iteration. This includes the cluster ids of
+     * the moved blocks, their previous locations and their new locations
+     * after being moved.
+     * @param block_locs Contains the location where each clustered block is placed at.
+     */
+    void revert_noc_traffic_flow_routes(const t_pl_blocks_to_be_moved& blocks_affected,
+                                        const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
+
+    /**
      * @brief Removes the route of a traffic flow and updates the links to indicate
      * that the traffic flow does not use them. And then finds
      * a new route for the traffic flow and updates the links in the new route to
@@ -295,6 +361,17 @@ class NocCostHandler {
                                NocStorage& noc_model,
                                NocRouting& noc_flows_router,
                                const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
+
+    /**
+     * @brief Determines the congestion cost a NoC link. The cost
+     * is calculating by measuring how much the current bandwidth
+     * going through the link exceeds the link's bandwidth capacity.
+     *
+     * @param link The NoC link for which the congestion cost is
+     * to be computed
+     * @return The computed congestion cost for the given NoC link.
+     */
+    double calculate_link_congestion_cost(const NocLink& link);
 
 
 
@@ -366,22 +443,7 @@ std::vector<NocLinkId>& route_traffic_flow(NocTrafficFlowId traffic_flow_id,
                                            const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
 
 
-/**
- * @brief Used to re-route all the traffic flows associated to logical
- * router blocks that were supposed to be moved during placement but are
- * back to their original positions. 
- * 
- * The routing function is called to find the original traffic flow route
- * again.
- * 
- * @param blocks_affected Contains all the blocks that were moved in
- * the current placement iteration. This includes the cluster ids of
- * the moved blocks, their previous locations and their new locations
- * after being moved.
- * @param block_locs Contains the location where each clustered block is placed at.
- */
-void revert_noc_traffic_flow_routes(const t_pl_blocks_to_be_moved& blocks_affected,
-                                    const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
+
 
 
 
@@ -397,45 +459,6 @@ void revert_noc_traffic_flow_routes(const t_pl_blocks_to_be_moved& blocks_affect
  */
 void update_noc_normalization_factors(t_placer_costs& costs);
 
-
-
-/**
- * @brief Given a placement state the NoC costs are re-computed
- * from scratch and compared to the current NoC placement costs.
- * This involves finding new routes for all traffic 
- * flows and then computing the aggregate bandwidth and latency costs
- * for the traffic flows using the newly found routes. Then the 
- * overall NoC costs are computed by accumulating the newly found traffic flow
- * costs. 
- * 
- * THe newly computed NoC costs are compared to the current NoC costs to
- * check if they are within an error tolerance. If the comparison is
- * larger than the error tolerance then an error is thrown and it indicates
- * that the incremental NoC costs updates are incorrect. 
- * 
- * This function is similar to 'recompute_noc_costs' but the traffic flow
- * routes and costs are computed as well. As a result this function is very
- * expensive and should be used in larger intervals (number of moves) within
- * the placer.
- * 
- * @param costs Contains the current NoC aggregate bandwidth and latency costs
- * which are computed incrementally after each logical router move during
- * placement.
- * @param error_tolerance The maximum allowable difference between the current
- * NoC costs and the newly computed NoC costs. 
- * @param noc_opts Contains information necessary to compute the NoC costs
- * from scratch. For example this would include the routing algorithm and
- * weights for the difference components of the NoC costs.
- * @return An integer which represents the status of the comparison. 0
- * indicates that the current NoC costs are within the error tolerance and
- * a non-zero values indicates the current NoC costs are above the error
- * tolerance.
- * @param block_locs Contains the location where each clustered block is placed at.
- */
-int check_noc_placement_costs(const t_placer_costs& costs,
-                              double error_tolerance,
-                              const t_noc_opts& noc_opts,
-                              const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
 
 /**
  * @brief Determines the aggregate bandwidth cost of a routed traffic flow.
@@ -474,16 +497,7 @@ std::pair<double, double> calculate_traffic_flow_latency_cost(const std::vector<
                                                               const NocStorage& noc_model,
                                                               const t_noc_traffic_flow& traffic_flow_info);
 
-/**
- * @brief Determines the congestion cost a NoC link. The cost
- * is calculating by measuring how much the current bandwidth
- * going through the link exceeds the link's bandwidth capacity.
- *
- * @param link The NoC link for which the congestion cost is
- * to be computed
- * @return The computed congestion cost for the given NoC link.
- */
-double calculate_link_congestion_cost(const NocLink& link);
+
 
 /**
  * @brief The user passes weighting factors for aggregate latency
@@ -617,13 +631,5 @@ bool noc_routing_has_cycle(const vtr::vector<NocTrafficFlowId, std::vector<NocLi
 void invoke_sat_router(t_placer_costs& costs, const t_noc_opts& noc_opts, int seed);
 #endif
 
-/**
- * @brief Prints NoC related costs terms and metrics.
- *
- * @param header The string with which the report starts.
- * @param costs Contains NoC-related cost terms.
- * @param noc_opts Used to compute total NoC cost.
- */
-void print_noc_costs(std::string_view header, const t_placer_costs& costs, const t_noc_opts& noc_opts);
 
 #endif
