@@ -60,7 +60,8 @@ static void place_noc_routers_randomly(std::vector<ClusterBlockId>& unfixed_rout
  *   To be filled with the location where pl_macro is placed.
  */
 static void noc_routers_anneal(const t_noc_opts& noc_opts,
-                               BlkLocRegistry& blk_loc_registry);
+                               BlkLocRegistry& blk_loc_registry,
+                               NocCostHandler& noc_cost_handler);
 
 /**
  * @brief Returns the compressed grid of NoC.
@@ -202,7 +203,8 @@ static void place_noc_routers_randomly(std::vector<ClusterBlockId>& unfixed_rout
 }
 
 static void noc_routers_anneal(const t_noc_opts& noc_opts,
-                               BlkLocRegistry& blk_loc_registry) {
+                               BlkLocRegistry& blk_loc_registry,
+                               NocCostHandler& noc_cost_handler) {
     auto& noc_ctx = g_vpr_ctx.noc();
     const auto& block_locs = blk_loc_registry.block_locs();
 
@@ -210,9 +212,9 @@ static void noc_routers_anneal(const t_noc_opts& noc_opts,
     t_placer_costs costs;
 
     // Initialize NoC-related costs
-    costs.noc_cost_terms.aggregate_bandwidth = comp_noc_aggregate_bandwidth_cost();
-    std::tie(costs.noc_cost_terms.latency, costs.noc_cost_terms.latency_overrun) = comp_noc_latency_cost();
-    costs.noc_cost_terms.congestion = comp_noc_congestion_cost();
+    costs.noc_cost_terms.aggregate_bandwidth = noc_cost_handler.comp_noc_aggregate_bandwidth_cost();
+    std::tie(costs.noc_cost_terms.latency, costs.noc_cost_terms.latency_overrun) = noc_cost_handler.comp_noc_latency_cost();
+    costs.noc_cost_terms.congestion = noc_cost_handler.comp_noc_congestion_cost();
     update_noc_normalization_factors(costs);
     costs.cost = calculate_noc_cost(costs.noc_cost_terms, costs.noc_cost_norm_factors, noc_opts);
 
@@ -270,7 +272,7 @@ static void noc_routers_anneal(const t_noc_opts& noc_opts,
             apply_move_blocks(blocks_affected, blk_loc_registry);
 
             NocCostTerms noc_delta_c;
-            find_affected_noc_routers_and_update_noc_costs(blocks_affected, noc_delta_c, block_locs);
+            noc_cost_handler.find_affected_noc_routers_and_update_noc_costs(blocks_affected, noc_delta_c, block_locs);
             double delta_cost = calculate_noc_cost(noc_delta_c, costs.noc_cost_norm_factors, noc_opts);
 
             double prob = starting_prob - i_move * prob_step;
@@ -279,7 +281,7 @@ static void noc_routers_anneal(const t_noc_opts& noc_opts,
             if (move_accepted) {
                 costs.cost += delta_cost;
                 commit_move_blocks(blocks_affected, blk_loc_registry.mutable_grid_blocks());
-                commit_noc_costs();
+                noc_cost_handler.commit_noc_costs();
                 costs += noc_delta_c;
                 // check if the current placement is better than the stored checkpoint
                 if (costs.cost < checkpoint.get_cost() || !checkpoint.is_valid()) {
@@ -287,7 +289,7 @@ static void noc_routers_anneal(const t_noc_opts& noc_opts,
                 }
             } else { // The proposed move is rejected
                 revert_move_blocks(blocks_affected, blk_loc_registry);
-                revert_noc_traffic_flow_routes(blocks_affected, block_locs);
+                noc_cost_handler.revert_noc_traffic_flow_routes(blocks_affected, block_locs);
             }
         }
     }
@@ -299,7 +301,8 @@ static void noc_routers_anneal(const t_noc_opts& noc_opts,
 
 void initial_noc_placement(const t_noc_opts& noc_opts,
                            const t_placer_opts& placer_opts,
-                           BlkLocRegistry& blk_loc_registry) {
+                           BlkLocRegistry& blk_loc_registry,
+                           NocCostHandler& noc_cost_handler) {
 	vtr::ScopedStartFinishTimer timer("Initial NoC Placement");
     auto& noc_ctx = g_vpr_ctx.noc();
     const auto& block_locs = blk_loc_registry.block_locs();
@@ -327,10 +330,10 @@ void initial_noc_placement(const t_noc_opts& noc_opts,
     place_noc_routers_randomly(unfixed_routers, placer_opts.seed, blk_loc_registry);
 
     // populate internal data structures to maintain route, bandwidth usage, and latencies
-    initial_noc_routing({}, block_locs);
+    noc_cost_handler.initial_noc_routing({}, block_locs);
 
     // Run the simulated annealing optimizer for NoC routers
-    noc_routers_anneal(noc_opts, blk_loc_registry);
+    noc_routers_anneal(noc_opts, blk_loc_registry, noc_cost_handler);
 
     // check if there is any cycles
     bool has_cycle = noc_routing_has_cycle(block_locs);
