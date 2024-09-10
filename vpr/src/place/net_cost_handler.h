@@ -32,9 +32,9 @@ class NetCostHandler {
   public:
     NetCostHandler() = delete;
     NetCostHandler(const NetCostHandler&) = delete;
-    NetCostHandler(NetCostHandler&&) = delete;
     NetCostHandler& operator=(const NetCostHandler&) = delete;
-    NetCostHandler& operator=(NetCostHandler&&) = delete;
+    NetCostHandler(NetCostHandler&&) = default;
+    NetCostHandler& operator=(NetCostHandler&&) = default;
 
     /**
      * @brief Resize temporary swap data structures needed to determine which nets are affected by a move and data needed per net

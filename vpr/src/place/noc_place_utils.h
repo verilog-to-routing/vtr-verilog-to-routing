@@ -24,6 +24,7 @@ constexpr double MIN_EXPECTED_NOC_CONGESTION_COST = 1.e-3;
 constexpr double INVALID_NOC_COST_TERM = -1.0;
 
 class NocCostHandler {
+  public:
     NocCostHandler();
 
     /**
@@ -126,6 +127,23 @@ class NocCostHandler {
      * accepted.
      */
     void commit_noc_costs();
+
+    /**
+     * @brief Used to re-route all the traffic flows associated to logical
+     * router blocks that were supposed to be moved during placement but are
+     * back to their original positions.
+     *
+     * The routing function is called to find the original traffic flow route
+     * again.
+     *
+     * @param blocks_affected Contains all the blocks that were moved in
+     * the current placement iteration. This includes the cluster ids of
+     * the moved blocks, their previous locations and their new locations
+     * after being moved.
+     * @param block_locs Contains the location where each clustered block is placed at.
+     */
+    void revert_noc_traffic_flow_routes(const t_pl_blocks_to_be_moved& blocks_affected,
+                                        const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
 
     /**
      * @brief Recompute the NoC costs (aggregate bandwidth and latency) by
@@ -324,22 +342,6 @@ class NocCostHandler {
                                            std::unordered_set<NocTrafficFlowId>& updated_traffic_flows,
                                            const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
 
-    /**
-     * @brief Used to re-route all the traffic flows associated to logical
-     * router blocks that were supposed to be moved during placement but are
-     * back to their original positions.
-     *
-     * The routing function is called to find the original traffic flow route
-     * again.
-     *
-     * @param blocks_affected Contains all the blocks that were moved in
-     * the current placement iteration. This includes the cluster ids of
-     * the moved blocks, their previous locations and their new locations
-     * after being moved.
-     * @param block_locs Contains the location where each clustered block is placed at.
-     */
-    void revert_noc_traffic_flow_routes(const t_pl_blocks_to_be_moved& blocks_affected,
-                                        const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
 
     /**
      * @brief Removes the route of a traffic flow and updates the links to indicate
