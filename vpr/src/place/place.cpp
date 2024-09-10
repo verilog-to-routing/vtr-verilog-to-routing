@@ -443,7 +443,8 @@ void try_place(const Netlist<>& net_list,
         normalize_noc_cost_weighting_factor(const_cast<t_noc_opts&>(noc_opts));
     }
 
-    initial_placement(placer_opts, placer_opts.constraints_file.c_str(), noc_opts, blk_loc_registry);
+    initial_placement(placer_opts, placer_opts.constraints_file.c_str(),
+                      noc_opts, blk_loc_registry, noc_cost_handler);
 
     //create the move generator based on the chosen strategy
     auto [move_generator, move_generator2] = create_move_generators(placer_state, placer_opts, move_lim, noc_opts.noc_centroid_weight);

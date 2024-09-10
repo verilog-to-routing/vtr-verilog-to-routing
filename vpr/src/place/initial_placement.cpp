@@ -13,12 +13,11 @@
 #include "move_utils.h"
 #include "region.h"
 #include "directed_moves_util.h"
+#include "noc_place_utils.h"
 #include "echo_files.h"
 
-
-#include <ctime>
 #include <cmath>
-#include <iomanip>
+#include <optional>
 
 #ifdef VERBOSE
 void print_clb_placement(const char* fname);
@@ -1231,7 +1230,8 @@ static void alloc_and_load_movable_blocks(const vtr::vector_map<ClusterBlockId, 
 void initial_placement(const t_placer_opts& placer_opts,
                        const char* constraints_file,
                        const t_noc_opts& noc_opts,
-                       BlkLocRegistry& blk_loc_registry) {
+                       BlkLocRegistry& blk_loc_registry,
+                       std::optional<NocCostHandler>& noc_cost_handler) {
     vtr::ScopedStartFinishTimer timer("Initial Placement");
     auto& block_locs = blk_loc_registry.mutable_block_locs();
 
@@ -1266,7 +1266,7 @@ void initial_placement(const t_placer_opts& placer_opts,
     } else {
         if (noc_opts.noc) {
             // NoC routers are placed before other blocks
-            initial_noc_placement(noc_opts, placer_opts, blk_loc_registry);
+            initial_noc_placement(noc_opts, placer_opts, blk_loc_registry, noc_cost_handler.value());
             propagate_place_constraints();
         }
 
