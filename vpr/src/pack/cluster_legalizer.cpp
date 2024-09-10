@@ -499,6 +499,7 @@ try_place_atom_block_rec(const t_pb_graph_node* pb_graph_node,
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
     AtomContext& mutable_atom_ctx = g_vpr_ctx.mutable_atom();
 
+    VTR_ASSERT_SAFE(cb != nullptr);
     e_block_pack_status block_pack_status = e_block_pack_status::BLK_PASSED;
 
     /* Discover parent */
@@ -516,6 +517,7 @@ try_place_atom_block_rec(const t_pb_graph_node* pb_graph_node,
     }
 
     /* Create siblings if siblings are not allocated */
+    VTR_ASSERT(parent_pb != nullptr);
     if (parent_pb->child_pbs == nullptr) {
         VTR_ASSERT(parent_pb->name == nullptr);
         parent_pb->name = vtr::strdup(atom_ctx.nlist.block_name(blk_id).c_str());
@@ -533,8 +535,8 @@ try_place_atom_block_rec(const t_pb_graph_node* pb_graph_node,
             }
         }
     } else {
-       /* if this is not the first child of this parent, must match existing parent mode */
-       if (parent_pb->mode != pb_graph_node->pb_type->parent_mode->index) {
+        /* if this is not the first child of this parent, must match existing parent mode */
+        if (parent_pb->mode != pb_graph_node->pb_type->parent_mode->index) {
             return e_block_pack_status::BLK_FAILED_FEASIBLE;
         }
     }
@@ -548,6 +550,7 @@ try_place_atom_block_rec(const t_pb_graph_node* pb_graph_node,
     }
     VTR_ASSERT(i < mode->num_pb_type_children);
     t_pb* pb = &parent_pb->child_pbs[i][pb_graph_node->placement_index];
+    VTR_ASSERT_SAFE(pb != nullptr);
     *parent = pb; /* this pb is parent of it's child that called this function */
     VTR_ASSERT(pb->pb_graph_node == pb_graph_node);
     if (pb->pb_stats == nullptr) {
@@ -1364,6 +1367,15 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(t_pack_molecule* molecul
                     commit_primitive(cluster_placement_stats_ptr, primitives_list[i]);
 
                     atom_cluster_[atom_blk_id] = cluster_id;
+
+                    // Update the num child blocks in pb
+                    const t_pb* atom_pb = atom_ctx.lookup.atom_pb(atom_blk_id);
+                    VTR_ASSERT_SAFE(atom_pb != nullptr);
+                    t_pb* cur_pb = atom_pb->parent_pb;
+                    while (cur_pb != nullptr) {
+                        cur_pb->pb_stats->num_child_blocks_in_pb++;
+                        cur_pb = cur_pb->parent_pb;
+                    }
                 }
 
                 // Update the lookahead pins used.

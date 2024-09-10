@@ -416,6 +416,10 @@ private:
 
     /// @brief Stats keeper for placement information during packing/clustering.
     /// TODO: This should be a vector.
+    /// FIXME: This keeps the stats for each cluster type. This is fine within
+    ///        the clusterer, however it yields a limitation where two clusters
+    ///        of the same type cannot be constructed at the same time. This
+    ///        should stored per cluster.
     t_cluster_placement_stats* cluster_placement_stats_ = nullptr;
 
     /// @brief The utilization of external input/output pins during packing

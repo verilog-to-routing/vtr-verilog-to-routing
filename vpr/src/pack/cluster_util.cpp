@@ -973,7 +973,6 @@ void update_cluster_stats(const t_pack_molecule* molecule,
                 cb = cur_pb;
             }
             cur_pb->pb_stats->num_feasible_blocks = NOT_VALID;
-            cur_pb->pb_stats->num_child_blocks_in_pb++;
 
             if (atom_grp_id != AttractGroupId::INVALID()) {
                 /* TODO: Allow clusters to have more than one attraction group. */
