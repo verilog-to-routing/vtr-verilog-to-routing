@@ -245,7 +245,7 @@ static void noc_routers_anneal(const t_noc_opts& noc_opts,
     const double prob_step = starting_prob / N_MOVES;
 
     // The checkpoint stored the placement with the lowest cost.
-    NoCPlacementCheckpoint checkpoint;
+    NoCPlacementCheckpoint checkpoint(noc_cost_handler);
 
     /* Algorithm overview:
      * In each iteration, one logical NoC router and a physical NoC router are selected randomly.

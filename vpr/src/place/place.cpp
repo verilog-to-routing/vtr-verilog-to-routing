@@ -191,7 +191,7 @@ alloc_and_load_placement_structs(const t_placer_opts& placer_opts,
                                  int num_directs,
                                  PlacerState& placer_state);
 
-static void free_placement_structs(const t_noc_opts& noc_opts);
+static void free_placement_structs();
 
 static e_move_result try_swap(const t_annealing_state* state,
                               t_placer_costs* costs,
@@ -873,7 +873,7 @@ void try_place(const Netlist<>& net_list,
         restore_best_placement(placer_state,
                                placement_checkpoint, timing_info, costs,
                                placer_criticalities, placer_setup_slacks, place_delay_model,
-                               pin_timing_invalidator, crit_params, noc_opts);
+                               pin_timing_invalidator, crit_params, noc_cost_handler);
 
     if (placer_opts.placement_saves_per_temperature >= 1) {
         std::string filename = vtr::string_fmt("placement_%03d_%03d.place",
@@ -969,7 +969,7 @@ void try_place(const Netlist<>& net_list,
         write_noc_placement_file(noc_opts.noc_placement_file_name, blk_loc_registry.block_locs());
     }
 
-    free_placement_structs(noc_opts);
+    free_placement_structs();
 
     print_timing_stats("Placement Quench", post_quench_timing_stats,
                        pre_quench_timing_stats);
@@ -1916,7 +1916,7 @@ alloc_and_load_placement_structs(const t_placer_opts& placer_opts,
 
 /* Frees the major structures needed by the placer (and not needed       *
  * elsewhere).   */
-static void free_placement_structs(const t_noc_opts& noc_opts) {
+static void free_placement_structs() {
     free_placement_macros_structs();
 
     auto& place_ctx = g_vpr_ctx.mutable_placement();
