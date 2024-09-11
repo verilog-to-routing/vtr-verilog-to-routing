@@ -175,6 +175,9 @@ class NocCostHandler {
      */
     void recompute_noc_costs(NocCostTerms& new_cost);
 
+    void recompute_costs_from_scratch(const t_noc_opts& noc_opts,
+                                      t_placer_costs& costs);
+
     /**
      * @brief Calculates the aggregate bandwidth of each traffic flow in the NoC
      * and initializes local variables that keep track of the traffic flow

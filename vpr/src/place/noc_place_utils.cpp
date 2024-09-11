@@ -5,12 +5,14 @@
 #include "vtr_log.h"
 #include "vtr_assert.h"
 #include "vtr_random.h"
+#include "vtr_math.h"
 
 #include "channel_dependency_graph.h"
 #include "noc_routing_algorithm_creator.h"
 #include "noc_routing.h"
 #include "place_constraints.h"
 #include "move_transactions.h"
+
 
 #ifdef ENABLE_NOC_SAT_ROUTING
 #include "sat_routing.h"
@@ -357,6 +359,52 @@ void NocCostHandler::recompute_noc_costs(NocCostTerms& new_cost) {
     // Iterate over all NoC links and accumulate their congestion costs
     for (auto& link_id : noc_ctx.noc_model.get_noc_links()) {
         new_cost.congestion += link_congestion_costs[link_id];
+    }
+}
+
+void NocCostHandler::recompute_costs_from_scratch(const t_noc_opts& noc_opts, t_placer_costs& costs) {
+    auto check_and_print_cost = [](double new_cost,
+                                   double old_cost,
+                                   const std::string& cost_name) -> void {
+        if (!vtr::isclose(new_cost, old_cost, ERROR_TOL, 0.)) {
+            std::string msg = vtr::string_fmt(
+                "in recompute_costs_from_scratch: new_%s = %g, old %s = %g, ERROR_TOL = %g\n",
+                cost_name.c_str(), new_cost, cost_name.c_str(), old_cost, ERROR_TOL);
+            VPR_ERROR(VPR_ERROR_PLACE, msg.c_str());
+        }
+    };
+
+    if (noc_opts.noc) {
+        NocCostTerms new_noc_cost;
+        recompute_noc_costs(new_noc_cost);
+
+        check_and_print_cost(new_noc_cost.aggregate_bandwidth,
+                             costs.noc_cost_terms.aggregate_bandwidth,
+                             "noc_aggregate_bandwidth");
+        costs.noc_cost_terms.aggregate_bandwidth = new_noc_cost.aggregate_bandwidth;
+
+        // only check if the recomputed cost and the current noc latency cost are within the error tolerance if the cost is above 1 picosecond.
+        // Otherwise, there is no need to check (we expect the latency cost to be above the threshold of 1 picosecond)
+        if (new_noc_cost.latency > MIN_EXPECTED_NOC_LATENCY_COST) {
+            check_and_print_cost(new_noc_cost.latency,
+                                 costs.noc_cost_terms.latency,
+                                 "noc_latency_cost");
+        }
+        costs.noc_cost_terms.latency = new_noc_cost.latency;
+
+        if (new_noc_cost.latency_overrun > MIN_EXPECTED_NOC_LATENCY_COST) {
+            check_and_print_cost(new_noc_cost.latency_overrun,
+                                 costs.noc_cost_terms.latency_overrun,
+                                 "noc_latency_overrun_cost");
+        }
+        costs.noc_cost_terms.latency_overrun = new_noc_cost.latency_overrun;
+
+        if (new_noc_cost.congestion > MIN_EXPECTED_NOC_CONGESTION_COST) {
+            check_and_print_cost(new_noc_cost.congestion,
+                                 costs.noc_cost_terms.congestion,
+                                 "noc_congestion_cost");
+        }
+        costs.noc_cost_terms.congestion = new_noc_cost.congestion;
     }
 }
 
@@ -954,6 +1002,7 @@ void NocCostHandler::print_noc_costs(std::string_view header,
         get_total_congestion_bandwidth_ratio(),
         get_number_of_congested_noc_links());
 }
+
 
 static std::vector<NocLinkId> find_affected_links_by_flow_reroute(std::vector<NocLinkId>& prev_links,
                                                                   std::vector<NocLinkId>& curr_links) {

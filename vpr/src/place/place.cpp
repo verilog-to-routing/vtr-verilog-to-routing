@@ -1106,9 +1106,12 @@ static void placement_inner_loop(const t_annealing_state* state,
          */
         ++(*moves_since_cost_recompute);
         if (*moves_since_cost_recompute > MAX_MOVES_BEFORE_RECOMPUTE) {
-            //VTR_LOG("recomputing costs from scratch, old bb_cost is %g\n", costs->bb_cost);
-            net_cost_handler.recompute_costs_from_scratch(noc_opts, delay_model, criticalities, costs);
-            //VTR_LOG("new_bb_cost is %g\n", costs->bb_cost);
+            net_cost_handler.recompute_costs_from_scratch(delay_model, criticalities, *costs);
+
+            if (noc_cost_handler.has_value()) {
+                noc_cost_handler->recompute_costs_from_scratch(noc_opts, *costs);
+            }
+
             *moves_since_cost_recompute = 0;
         }
 

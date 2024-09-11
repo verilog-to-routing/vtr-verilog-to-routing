@@ -14,7 +14,11 @@
 #include "vtr_vector_map.h"
 #include "globals.h"
 
-
+/**
+ * @brief The error tolerance due to round off for the total cost computation.
+ * When we check it from scratch vs. incrementally. 0.01 means that there is a 1% error tolerance.
+ */
+constexpr double ERROR_TOL = .01;
 
 // forward declaration of t_placer_costs so that it can be used an argument
 // in NocCostTerms constructor
