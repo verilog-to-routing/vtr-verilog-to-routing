@@ -202,7 +202,15 @@ Draw selected critical path elements example
 
   .. note:: If status is not 1, the field ***DATA*** contains error string.
 
+IPA Client for Testing VPR Server Mode Functionality
+====================================================
 
+To test VPR server functionality, you can use a special client application called **IPAClient**, which is available in a public Git repository:  
+`https://github.com/w0lek/IPAClient <https://github.com/w0lek/IPAClient>`_.
+
+This UI application is designed to generate requests for VPR in server mode and display the responses in a readable format, acting as a result viewer.
+
+More details on how to build and use **IPAClient** can be found in the `README <https://github.com/w0lek/IPAClient/blob/main/README.md>`_.
 
 
 
