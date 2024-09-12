@@ -194,48 +194,48 @@ void add_node_to_heap(
     }
 }
 
-/* Puts an rr_node on the heap with the same condition as add_node_to_heap,
- * but do not fix heap property yet as that is more efficiently done from
- * bottom up with build_heap    */
-template<typename T, typename RouteInf>
-void push_back_node(
-    T* heap,
-    const RouteInf& rr_node_route_inf,
-    RRNodeId inode,
-    float total_cost,
-    RREdgeId prev_edge,
-    float backward_path_cost,
-    float R_upstream) {
-    t_heap* hptr = prepare_to_add_node_to_heap(
-        heap,
-        rr_node_route_inf, inode, total_cost, prev_edge,
-        backward_path_cost, R_upstream);
-    if (hptr) {
-        heap->push_back(hptr);
-    }
-}
+// /* Puts an rr_node on the heap with the same condition as add_node_to_heap,
+//  * but do not fix heap property yet as that is more efficiently done from
+//  * bottom up with build_heap    */
+// template<typename T, typename RouteInf>
+// void push_back_node(
+//     T* heap,
+//     const RouteInf& rr_node_route_inf,
+//     RRNodeId inode,
+//     float total_cost,
+//     RREdgeId prev_edge,
+//     float backward_path_cost,
+//     float R_upstream) {
+//     t_heap* hptr = prepare_to_add_node_to_heap(
+//         heap,
+//         rr_node_route_inf, inode, total_cost, prev_edge,
+//         backward_path_cost, R_upstream);
+//     if (hptr) {
+//         heap->push_back(hptr);
+//     }
+// }
 
-/* Puts an rr_node on the heap with the same condition as node_to_heap,
- * but do not fix heap property yet as that is more efficiently done from
- * bottom up with build_heap. Certain information is also added     */
-template<typename T>
-void push_back_node_with_info(
-    T* heap,
-    RRNodeId inode,
-    float total_cost,
-    float backward_path_cost,
-    float R_upstream,
-    float backward_path_delay,
-    PathManager* rcv_path_manager) {
-    t_heap* hptr = heap->alloc();
-    rcv_path_manager->alloc_path_struct(hptr->path_data);
+// /* Puts an rr_node on the heap with the same condition as node_to_heap,
+//  * but do not fix heap property yet as that is more efficiently done from
+//  * bottom up with build_heap. Certain information is also added     */
+// template<typename T>
+// void push_back_node_with_info(
+//     T* heap,
+//     RRNodeId inode,
+//     float total_cost,
+//     float backward_path_cost,
+//     float R_upstream,
+//     float backward_path_delay,
+//     PathManager* rcv_path_manager) {
+//     t_heap* hptr = heap->alloc();
+//     rcv_path_manager->alloc_path_struct(hptr->path_data);
 
-    hptr->index = inode;
-    hptr->cost = total_cost;
-    hptr->backward_path_cost = backward_path_cost;
-    hptr->R_upstream = R_upstream;
+//     hptr->index = inode;
+//     hptr->cost = total_cost;
+//     hptr->backward_path_cost = backward_path_cost;
+//     hptr->R_upstream = R_upstream;
 
-    hptr->path_data->backward_delay = backward_path_delay;
+//     hptr->path_data->backward_delay = backward_path_delay;
 
-    heap->push_back(hptr);
-}
+//     heap->push_back(hptr);
+// }

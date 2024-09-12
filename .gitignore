@@ -154,3 +154,9 @@ tags
 cmake-build-debug
 cmake-build-release
 /.metadata/
+
+#
+# Clangd
+#
+.cache
+compile_commands.json
