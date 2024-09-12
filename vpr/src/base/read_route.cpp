@@ -497,9 +497,9 @@ static void format_coordinates(int& layer_num, int& x, int& y, std::string coord
         y = coords[1];
     } else {
         VTR_ASSERT(coords.size() == 3);
-        layer_num = coords[0];
-        x = coords[1];
-        y = coords[2];
+        x = coords[0];
+        y = coords[1];
+        layer_num = coords[2];
     }
 }
 
