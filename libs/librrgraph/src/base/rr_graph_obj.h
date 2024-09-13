@@ -510,7 +510,7 @@ class RRGraph {
     /* Find the edges connecting two nodes */
     std::vector<RREdgeId> find_edges(const RRNodeId& src_node, const RRNodeId& sink_node) const;
     /* Find a node with given features from internal fast look-up */
-    RRNodeId find_node(const short& x, const short& y, const t_rr_type& type, const int& ptc, const e_side& side = NUM_SIDES) const;
+    RRNodeId find_node(const short& x, const short& y, const t_rr_type& type, const int& ptc, const e_side& side = NUM_2D_SIDES) const;
     /* Find the number of routing tracks in a routing channel with a given coordinate */
     short chan_num_tracks(const short& x, const short& y, const t_rr_type& type) const;
 
@@ -828,7 +828,7 @@ class RRGraph {
     bool dirty_ = false;
 
     /* Fast look-up to search a node by its type, coordinator and ptc_num 
-     * Indexing of fast look-up: [0..xmax][0..ymax][0..NUM_TYPES-1][0..ptc_max][0..NUM_SIDES-1] 
+     * Indexing of fast look-up: [0..xmax][0..ymax][0..NUM_TYPES-1][0..ptc_max][0..NUM_2D_SIDES-1]
      */
     typedef std::vector<std::vector<std::vector<std::vector<std::vector<RRNodeId>>>>> NodeLookup;
     mutable NodeLookup node_lookup_;
