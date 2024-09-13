@@ -373,8 +373,8 @@ void ConnectionRouter<Heap>::timing_driven_expand_cheapest(RRNodeId from_node,
         // element for the corresponding node.
         node_t current;
         current.backward_path_cost = rr_node_route_inf_[from_node].backward_path_cost;
-        current.R_upstream = rr_node_route_inf_[from_node].R_upstream;
         current.prev_edge = rr_node_route_inf_[from_node].prev_edge;
+        current.R_upstream = rr_node_R_upstream[from_node];
 
         VTR_LOGV_DEBUG(router_debug_, "    Better cost to %d\n", from_node);
         VTR_LOGV_DEBUG(router_debug_, "    New total cost: %g\n", new_total_cost);
@@ -887,7 +887,7 @@ void ConnectionRouter<Heap>::add_route_tree_node_to_heap(
         rr_node_route_inf_[inode].path_cost = tot_cost;
         rr_node_route_inf_[inode].prev_edge = RREdgeId::INVALID();
         rr_node_route_inf_[inode].backward_path_cost = backward_path_cost;
-        rr_node_route_inf_[inode].R_upstream = R_upstream;
+        rr_node_R_upstream[inode] = R_upstream;
         heap_.push_back(tot_cost, inode);
 
         // push_back_node(&heap_, rr_node_route_inf_,
@@ -900,7 +900,7 @@ void ConnectionRouter<Heap>::add_route_tree_node_to_heap(
         rr_node_route_inf_[inode].path_cost = expected_total_cost;
         rr_node_route_inf_[inode].prev_edge = RREdgeId::INVALID();
         rr_node_route_inf_[inode].backward_path_cost = backward_path_cost;
-        rr_node_route_inf_[inode].R_upstream = R_upstream;
+        rr_node_R_upstream[inode] = R_upstream;
 
         rcv_path_manager.alloc_path_struct(rcv_path_data[inode]);
         rcv_path_data[inode]->backward_delay = rt_node.Tdel;

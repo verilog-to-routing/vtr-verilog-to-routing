@@ -60,6 +60,7 @@ class ConnectionRouter : public ConnectionRouterInterface {
         heap_.init_heap(grid);
         // heap_.set_prune_limit(rr_nodes_.size(), kHeapPruneFactor * rr_nodes_.size());
         only_opin_inter_layer = (grid.get_num_layers() > 1) && inter_layer_connections_limited_to_opin(*rr_graph);
+        rr_node_R_upstream.resize(rr_node_route_inf.size());
         rcv_path_data.resize(rr_node_route_inf.size());
     }
 
@@ -81,6 +82,9 @@ class ConnectionRouter : public ConnectionRouterInterface {
         for (const auto& node : modified_rr_node_inf_) {
             rcv_path_data[node] = nullptr;
         }
+        // Note: R_upstream of each node is intentionally not reset here.
+        // For the reasons and details, please refer to the `Update R_upstream`
+        // in `evaluate_timing_driven_node_costs` in `connection_router.cpp`.
     }
 
     /** Finds a path from the route tree rooted at rt_root to sink_node.
@@ -310,6 +314,11 @@ class ConnectionRouter : public ConnectionRouterInterface {
 
     // Timing
     std::chrono::microseconds sssp_total_time{0};
+
+    // Used only by the timing-driven router. Stores the upstream resistance to ground from this node, including the resistance
+    // of the node itself (device_ctx.rr_nodes[index].R). Since the `t_heap` is hardly used for heap node structure in the
+    // connection router anymore, the `R_upstream` field of the `t_heap` is kept inside the connection router class instead.
+    vtr::vector<RRNodeId, float> rr_node_R_upstream;
 
     // The path manager for RCV, keeps track of the route tree as a set, also manages the allocation of the heap types
     PathManager rcv_path_manager;
