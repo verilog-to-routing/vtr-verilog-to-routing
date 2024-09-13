@@ -480,7 +480,7 @@ struct ArchReader {
         type.pin_height_offset.resize(type.num_pins, 0);
 
         type.pinloc.resize({1, 1, 4}, std::vector<bool>(type.num_pins, false));
-        for (e_side side : {TOP, RIGHT, BOTTOM, LEFT}) {
+        for (e_side side : TOTAL_2D_SIDES) {
             for (int pin = 0; pin < type.num_pins; pin++) {
                 type.pinloc[0][0][side][pin] = true;
                 type.pin_width_offset[pin] = 0;
