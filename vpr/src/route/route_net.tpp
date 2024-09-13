@@ -487,8 +487,8 @@ inline NetResultFlags route_sink(ConnectionRouter& router,
         update_screen(ScreenUpdatePriority::MAJOR, msg.c_str(), ROUTING, nullptr);
     }
 
-    if (budgeting_inf.if_set() && cheapest.path_data != nullptr && cost_params.delay_budget) {
-        if (cheapest.path_data->backward_delay < cost_params.delay_budget->min_delay) {
+    if (budgeting_inf.if_set() && cheapest.rcv_path_backward_delay != std::numeric_limits<float>::infinity() && cost_params.delay_budget) {
+        if (cheapest.rcv_path_backward_delay < cost_params.delay_budget->min_delay) {
             budgeting_inf.set_should_reroute(net_id, true);
         }
     }

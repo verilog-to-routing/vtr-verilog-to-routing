@@ -23,8 +23,8 @@ struct t_heap {
     float R_upstream = 0.;
     ///@brief The RR node index associated with the costs/R_upstream values.
     RRNodeId index = RRNodeId::INVALID();
-    ///@brief Structure to handle extra RCV structures. Managed by PathManager class.
-    t_heap_path* path_data;
+    ///@brief The delay of the partial path plus the path from route tree to source. Needed by RCV. Set to infinity if RCV is disabled
+    float rcv_path_backward_delay = std::numeric_limits<float>::infinity();
 
     /**
      * @brief Get the next t_heap item in the linked list.

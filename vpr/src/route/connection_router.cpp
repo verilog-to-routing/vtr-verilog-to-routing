@@ -43,8 +43,9 @@ std::tuple<bool, bool, t_heap> ConnectionRouter<Heap>::timing_driven_route_conne
         t_heap out; // only the `index`, `prev_edge()`, and `path_data` fields of `out` are used after this function returns
         out.index = sink_node;
         out.set_prev_edge(rr_node_route_inf_[sink_node].prev_edge);
-        // rcv_path_manager.move(out.path_data, rcv_path_data[sink_node]);
-        out.path_data = rcv_path_data[sink_node];
+        if (rcv_path_manager.is_enabled()) {
+            out.rcv_path_backward_delay = rcv_path_data[sink_node]->backward_delay;
+        }
         heap_.empty_heap();
         rcv_path_manager.empty_heap();
         return std::make_tuple(true, /*retry=*/false, out);
@@ -173,8 +174,9 @@ std::tuple<bool, bool, t_heap> ConnectionRouter<Heap>::timing_driven_route_conne
     t_heap out;
     out.index = sink_node;
     out.set_prev_edge(rr_node_route_inf_[sink_node].prev_edge);
-    // rcv_path_manager.move(out.path_data, rcv_path_data[sink_node]);
-    out.path_data = rcv_path_data[sink_node];
+    if (rcv_path_manager.is_enabled()) {
+        out.rcv_path_backward_delay = rcv_path_data[sink_node]->backward_delay;
+    }
     heap_.empty_heap();
     rcv_path_manager.empty_heap();
 
@@ -259,8 +261,6 @@ void ConnectionRouter<Heap>::timing_driven_route_connection_from_heap(RRNodeId s
                                       cost_params,
                                       bounding_box,
                                       target_bb);
-
-        // rcv_path_manager.free_path_struct(rcv_path_data[inode]); // TODO: double-check the correctness
     }
 
     // Stop measuring time after the barrier and the heap is reset.
@@ -343,8 +343,6 @@ vtr::vector<RRNodeId, t_heap> ConnectionRouter<Heap>::timing_driven_find_all_sho
         } else {
             VTR_LOGV_DEBUG(router_debug_, "  Worse cost to node %d: %g (better %g)\n", inode, new_total_cost, cheapest_paths[inode].cost);
         }
-
-        // rcv_path_manager.free_path_struct(cheapest->path_data); // TODO: double-check the correctness
     }
 
     return cheapest_paths;
@@ -377,7 +375,6 @@ void ConnectionRouter<Heap>::timing_driven_expand_cheapest(RRNodeId from_node,
         current.backward_path_cost = rr_node_route_inf_[from_node].backward_path_cost;
         current.R_upstream = rr_node_route_inf_[from_node].R_upstream;
         current.prev_edge = rr_node_route_inf_[from_node].prev_edge;
-        // rcv_path_manager.move(current.path_data, rcv_path_data[from_node]);
 
         VTR_LOGV_DEBUG(router_debug_, "    Better cost to %d\n", from_node);
         VTR_LOGV_DEBUG(router_debug_, "    New total cost: %g\n", new_total_cost);

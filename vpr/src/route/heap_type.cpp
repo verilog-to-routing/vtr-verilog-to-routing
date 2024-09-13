@@ -29,7 +29,7 @@ HeapStorage::alloc() {
     temp_ptr->backward_path_cost = 0.;
     temp_ptr->R_upstream = 0.;
     temp_ptr->index = RRNodeId::INVALID();
-    temp_ptr->path_data = nullptr;
+    temp_ptr->rcv_path_backward_delay = std::numeric_limits<float>::infinity();
     temp_ptr->set_prev_edge(RREdgeId::INVALID());
     return (temp_ptr);
 }
