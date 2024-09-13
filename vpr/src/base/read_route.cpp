@@ -459,8 +459,9 @@ static void process_global_blocks(const Netlist<>& net_list, std::ifstream& fp, 
 
             if (block_loc.loc.x != x || block_loc.loc.y != y) {
                 vpr_throw(VPR_ERROR_ROUTE, filename, lineno,
-                          "The placement coordinates (%d, %d) of %d block does not match given (%d, %d)",
-                          x, y, block_loc.loc.x, block_loc.loc.y);
+                          "The placement coordinates (%d,%d,%d) of %zu block does not match given (%d,%d,%d)",
+                          x, y, layer_num, size_t(bnum),
+                          block_loc.loc.x, block_loc.loc.y, block_loc.loc.layer);
             }
 
             auto pin_class = get_class_range_for_block(bnum, is_flat);
@@ -496,9 +497,9 @@ static void format_coordinates(int& layer_num, int& x, int& y, std::string coord
         y = coords[1];
     } else {
         VTR_ASSERT(coords.size() == 3);
-        layer_num = coords[0];
-        x = coords[1];
-        y = coords[2];
+        x = coords[0];
+        y = coords[1];
+        layer_num = coords[2];
     }
 }
 
@@ -597,12 +598,12 @@ void print_route(const Netlist<>& net_list,
                     int layer_num = rr_graph.node_layer(inode);
 
                     fprintf(fp, "Node:\t%zu\t%6s (%d,%d,%d) ", size_t(inode),
-                            rr_graph.node_type_string(inode), layer_num, ilow, jlow);
+                            rr_graph.node_type_string(inode), ilow, jlow, layer_num);
 
                     if ((ilow != rr_graph.node_xhigh(inode))
                         || (jlow != rr_graph.node_yhigh(inode)))
-                        fprintf(fp, "to (%d,%d) ", rr_graph.node_xhigh(inode),
-                                rr_graph.node_yhigh(inode));
+                        fprintf(fp, "to (%d,%d,%d) ", rr_graph.node_xhigh(inode),
+                                rr_graph.node_yhigh(inode), layer_num);
 
                     switch (rr_type) {
                         case IPIN:
@@ -683,11 +684,12 @@ void print_route(const Netlist<>& net_list,
                 int iclass = get_block_pin_class_num(block_id, pin_id, is_flat);
                 t_block_loc blk_loc;
                 blk_loc = get_block_loc(block_id, is_flat);
-                fprintf(fp, "Block %s (#%zu) at (%d,%d), Pin class %d.\n",
+                fprintf(fp, "Block %s (#%zu) at (%d,%d,%d), Pin class %d.\n",
                         net_list.block_name(block_id).c_str(),
                         size_t(block_id),
                         blk_loc.loc.x,
                         blk_loc.loc.y,
+                        blk_loc.loc.layer,
                         iclass);
             }
         }

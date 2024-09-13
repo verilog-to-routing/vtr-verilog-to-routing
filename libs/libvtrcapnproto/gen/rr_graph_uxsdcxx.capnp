@@ -4,6 +4,7 @@
 #
 # Cmdline: uxsdcxx/uxsdcap.py /home/mohagh18/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
 # Input file: /home/mohagh18/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
+
 # md5sum of input file: 65eddcc840064bbb91d7f4cf0b8bf821
 
 @0xe787bf7696810419;
@@ -47,6 +48,7 @@ enum NodeDirection {
 	incDir @1;
 	decDir @2;
 	biDir @3;
+	none @4;
 }
 
 enum NodeClkResType {

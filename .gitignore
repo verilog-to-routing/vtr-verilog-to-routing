@@ -144,6 +144,7 @@ tags
 #
 .vscode
 .history
+.cache
 #eclipse project
 .project
 

@@ -1,22 +1,18 @@
 #include <unordered_set>
-#include <unordered_map>
-#include <queue>
 
+#include "vpr_context.h"
 #include "vtr_assert.h"
 #include "vtr_log.h"
-#include "vtr_math.h"
 
 #include "vpr_error.h"
 #include "vpr_types.h"
 
-#include "read_xml_arch_file.h"
 #include "globals.h"
 #include "prepack.h"
 #include "pack_types.h"
 #include "pack.h"
 #include "cluster.h"
 #include "SetupGrid.h"
-#include "re_cluster.h"
 #include "noc_aware_cluster_util.h"
 
 /* #define DUMP_PB_GRAPH 1 */
@@ -42,14 +38,13 @@ bool try_pack(t_packer_opts* packer_opts,
               const t_model* library_models,
               float interc_delay,
               std::vector<t_lb_type_rr_node>* lb_type_rr_graphs) {
-    auto& helper_ctx = g_vpr_ctx.mutable_cl_helper();
-    auto& atom_ctx = g_vpr_ctx.atom();
-    auto& atom_mutable_ctx = g_vpr_ctx.mutable_atom();
+    AtomContext& atom_mutable_ctx = g_vpr_ctx.mutable_atom();
+    const AtomContext& atom_ctx = g_vpr_ctx.atom();
+    ClusteringHelperContext& helper_ctx = g_vpr_ctx.mutable_cl_helper();
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
 
     std::unordered_set<AtomNetId> is_clock, is_global;
-    std::unordered_map<AtomBlockId, t_pb_graph_node*> expected_lowest_cost_pb_gnode; //The molecules associated with each atom block
     t_clustering_data clustering_data;
-    std::vector<t_pack_patterns> list_of_packing_patterns;
     VTR_LOG("Begin packing '%s'.\n", packer_opts->circuit_file_name.c_str());
 
     /* determine number of models in the architecture */
@@ -75,21 +70,9 @@ bool try_pack(t_packer_opts* packer_opts,
     VTR_LOG("\ttotal blocks: %zu, total nets: %zu, total inputs: %zu, total outputs: %zu\n",
             atom_ctx.nlist.blocks().size(), atom_ctx.nlist.nets().size(), num_p_inputs, num_p_outputs);
 
+    // Run the prepacker, packing the atoms into molecules.
     VTR_LOG("Begin prepacking.\n");
-    list_of_packing_patterns = alloc_and_load_pack_patterns();
-
-    //To ensure the list of packing patterns gets freed in case of an error, we create
-    //a unique_ptr with custom deleter which will free the list at the end of the current
-    //scope.
-    auto list_of_packing_patterns_deleter = [](std::vector<t_pack_patterns>* ptr) {
-        free_list_of_pack_patterns(*ptr);
-    };
-    std::unique_ptr<std::vector<t_pack_patterns>, decltype(list_of_packing_patterns_deleter)> list_of_packing_patterns_cleanup_guard(&list_of_packing_patterns,
-                                                                                                                                     list_of_packing_patterns_deleter);
-
-    atom_mutable_ctx.list_of_pack_molecules.reset(alloc_and_load_pack_molecules(list_of_packing_patterns.data(),
-                                                                                expected_lowest_cost_pb_gnode,
-                                                                                list_of_packing_patterns.size()));
+    atom_mutable_ctx.prepacker.init(atom_ctx.nlist, device_ctx.logical_block_types);
 
     /* We keep attraction groups off in the first iteration,  and
      * only turn on in later iterations if some floorplan regions turn out to be overfull.
@@ -137,10 +120,10 @@ bool try_pack(t_packer_opts* packer_opts,
         helper_ctx.num_used_type_instances = do_clustering(
             *packer_opts,
             *analysis_opts,
-            arch, atom_mutable_ctx.list_of_pack_molecules.get(),
+            arch,
+            atom_mutable_ctx.prepacker,
             is_clock,
             is_global,
-            expected_lowest_cost_pb_gnode,
             allow_unrelated_clustering,
             balance_block_type_util,
             lb_type_rr_graphs,
@@ -304,7 +287,6 @@ std::unordered_set<AtomNetId> alloc_and_load_is_clock() {
      * the corresponding entry by adding the clock to is_clock.
      * only for an error check.                                                */
 
-    int num_clocks = 0;
     std::unordered_set<AtomNetId> is_clock;
 
     /* Want to identify all the clock nets.  */
@@ -315,7 +297,6 @@ std::unordered_set<AtomNetId> alloc_and_load_is_clock() {
             auto net_id = atom_ctx.nlist.pin_net(pin_id);
             if (!is_clock.count(net_id)) {
                 is_clock.insert(net_id);
-                num_clocks++;
             }
         }
     }
