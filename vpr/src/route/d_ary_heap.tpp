@@ -15,6 +15,14 @@ class customized_d_ary_priority_queue {
     typedef typename Container::const_reference const_reference;
 
     Compare comp_;
+    /**
+     * @details
+     * heap_ is indexed from [1..heap_size]; the 0th element is unused. This simplifies arithmetic
+     * in first_child_index() and parent_index() functions.
+     *
+     * @todo
+     * If an 8-ary heap is implemented, experiment with starting at index 0
+     */
     Container heap_;
 
   private:
@@ -50,6 +58,7 @@ class customized_d_ary_priority_queue {
 
     inline size_t largest_child_index_partial(const size_t first_child, const size_t num_children /*must < `D`*/) {
         if constexpr (D == 2) {
+            (void) num_children;
             return first_child;
         } else {
             switch (num_children) {
@@ -68,10 +77,6 @@ class customized_d_ary_priority_queue {
                 }
             }
         }
-    }
-
-    inline void make_customized_heap() {
-        std::make_heap(heap_.begin() + 1, heap_.end(), comp_);
     }
 
     inline void pop_customized_heap() {
@@ -123,7 +128,7 @@ class customized_d_ary_priority_queue {
                                                 const Container& cont = Container())
         : comp_(compare)
         , heap_(cont) {
-        heap_.resize(1);
+        heap_.resize(1); // FIXME: currently do not support `make_heap` from cont (heap_)
     }
 
     inline bool empty() const {

@@ -2,9 +2,6 @@
 
 #include <algorithm>
 #include "rr_graph.h"
-#include "binary_heap.h"
-#include "four_ary_heap.h"
-#include "bucket.h"
 #include "rr_graph_fwd.h"
 
 static bool relevant_node_to_target(const RRGraphView* rr_graph,
@@ -227,10 +224,10 @@ void ConnectionRouter<Heap>::timing_driven_route_connection_from_heap(RRNodeId s
     // Start measuring time before the barrier
     std::chrono::steady_clock::time_point begin_time = std::chrono::steady_clock::now();
 
-    float new_total_cost;
-    RRNodeId inode;
-    while (heap_.try_pop(new_total_cost, inode)) {
+    HeapNode cheapest;
+    while (heap_.try_pop(cheapest)) {
         // inode with cheapest total cost in current route tree to be expanded on
+        const auto& [ new_total_cost, inode ] = cheapest;
         update_router_stats(router_stats_,
                             false,
                             inode,
@@ -309,10 +306,10 @@ vtr::vector<RRNodeId, t_heap> ConnectionRouter<Heap>::timing_driven_find_all_sho
         VTR_LOGV_DEBUG(router_debug_, "  Initial heap empty (no source)\n");
     }
 
-    float new_total_cost;
-    RRNodeId inode;
-    while (heap_.try_pop(new_total_cost, inode)) {
+    HeapNode cheapest;
+    while (heap_.try_pop(cheapest)) {
         // inode with cheapest total cost in current route tree to be expanded on
+        const auto& [ new_total_cost, inode ] = cheapest;
         update_router_stats(router_stats_,
                             false,
                             inode,
@@ -378,7 +375,7 @@ void ConnectionRouter<Heap>::timing_driven_expand_cheapest(RRNodeId from_node,
 
         VTR_LOGV_DEBUG(router_debug_, "    Better cost to %d\n", from_node);
         VTR_LOGV_DEBUG(router_debug_, "    New total cost: %g\n", new_total_cost);
-        VTR_LOGV_DEBUG(router_debug_ && (current.prev_edge != RREdgeId::INVALID()), 
+        VTR_LOGV_DEBUG(router_debug_ && (current.prev_edge != RREdgeId::INVALID()),
                        "      Setting path costs for associated node %d (from %d edge %zu)\n",
                        from_node,
                        static_cast<size_t>(rr_graph_->edge_src_node(current.prev_edge)),
@@ -595,7 +592,7 @@ void ConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_params&
             rcv_path_data[to_node]->edge.push_back(from_edge);
         }
 
-        heap_.add_to_heap(new_total_cost, to_node);
+        heap_.add_to_heap({new_total_cost, to_node});
         update_router_stats(router_stats_,
                             true,
                             to_node,
@@ -889,7 +886,7 @@ void ConnectionRouter<Heap>::add_route_tree_node_to_heap(
         rr_node_route_inf_[inode].prev_edge = RREdgeId::INVALID();
         rr_node_route_inf_[inode].backward_path_cost = backward_path_cost;
         rr_node_R_upstream[inode] = R_upstream;
-        heap_.push_back(tot_cost, inode);
+        heap_.push_back({tot_cost, inode});
 
         // push_back_node(&heap_, rr_node_route_inf_,
         //                inode, tot_cost, RREdgeId::INVALID(),
@@ -906,7 +903,7 @@ void ConnectionRouter<Heap>::add_route_tree_node_to_heap(
         rcv_path_manager.alloc_path_struct(rcv_path_data[inode]);
         rcv_path_data[inode]->backward_delay = rt_node.Tdel;
 
-        heap_.push_back(expected_total_cost, inode);
+        heap_.push_back({expected_total_cost, inode});
 
         // push_back_node_with_info(&heap_, inode, expected_total_cost,
         //                          backward_path_cost, R_upstream, rt_node.Tdel, &rcv_path_manager);
@@ -1124,16 +1121,6 @@ std::unique_ptr<ConnectionRouterInterface> make_connection_router(e_heap_type he
                 is_flat);
         case e_heap_type::FOUR_ARY_HEAP:
             return std::make_unique<ConnectionRouter<FourAryHeap>>(
-                grid,
-                router_lookahead,
-                rr_nodes,
-                rr_graph,
-                rr_rc_data,
-                rr_switch_inf,
-                rr_node_route_inf,
-                is_flat);
-        case e_heap_type::BUCKET_HEAP_APPROXIMATION:
-            return std::make_unique<ConnectionRouter<Bucket>>(
                 grid,
                 router_lookahead,
                 rr_nodes,

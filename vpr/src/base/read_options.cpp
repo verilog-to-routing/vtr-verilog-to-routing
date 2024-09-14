@@ -1063,8 +1063,6 @@ struct ParseRouterHeap {
             conv_value.set_value(e_heap_type::BINARY_HEAP);
         else if (str == "four_ary")
             conv_value.set_value(e_heap_type::FOUR_ARY_HEAP);
-        else if (str == "bucket")
-            conv_value.set_value(e_heap_type::BUCKET_HEAP_APPROXIMATION);
         else {
             std::stringstream msg;
             msg << "Invalid conversion from '" << str << "' to e_heap_type (expected one of: " << argparse::join(default_choices(), ", ") << ")";
@@ -1077,11 +1075,9 @@ struct ParseRouterHeap {
         ConvertedValue<std::string> conv_value;
         if (val == e_heap_type::BINARY_HEAP)
             conv_value.set_value("binary");
-        else if (val == e_heap_type::FOUR_ARY_HEAP)
-            conv_value.set_value("four_ary");
         else {
-            VTR_ASSERT(val == e_heap_type::BUCKET_HEAP_APPROXIMATION);
-            conv_value.set_value("bucket");
+            VTR_ASSERT(val == e_heap_type::FOUR_ARY_HEAP);
+            conv_value.set_value("four_ary");
         }
         return conv_value;
     }

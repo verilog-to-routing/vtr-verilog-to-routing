@@ -1,82 +1,80 @@
 #ifndef _VTR_D_ARY_HEAP_H
 #define _VTR_D_ARY_HEAP_H
 
-#include <cstdint>
-#include <tuple>
 #include <vector>
 
 #include "device_grid.h"
-#include "rr_graph_fwd.h"
+#include "heap_type.h"
 #include "d_ary_heap.tpp"
 
-using pq_prio_t = float;
-using pq_index_t = uint32_t;
-
-inline pq_index_t cast_RRNodeId_to_pq_index_t(RRNodeId node) {
-    static_assert(sizeof(RRNodeId) == sizeof(pq_index_t));
-    return static_cast<pq_index_t>(std::size_t(node));
-}
-
-class DAryHeap {
+/**
+ * @brief Min-heap with D child nodes per parent.
+ *
+ * @note
+ * Currently, DAryHeap only has two children, BinaryHeap and FourAryHeap. On small circuits,
+ * these heaps have negligible differences in runtime, but on larger heaps, runtime is lower when
+ * using FourAryHeap. On Koios large benchmarks, the runtime is ~5% better on FourAryHeap compared
+ * to BinaryHeap. This is likely because FourAryHeap has lower tree height, and as we can fit 8
+ * heap node (each is 8 bytes) on a cache line (commonly 64 bytes on modern architectures), each
+ * heap operation (the comparison among sibling nodes) tends to benefit from the caches.
+*/
+template<unsigned D>
+class DAryHeap : public HeapInterface {
   public:
-    using pq_pair_t = std::tuple<pq_prio_t /*priority*/, pq_index_t>;
-    struct pq_compare {
-        bool operator()(const pq_pair_t& u, const pq_pair_t& v) {
-            return std::get<0>(u) > std::get<0>(v);
-        }
-    };
-    using pq_io_t = customized_d_ary_priority_queue<4, pq_pair_t, std::vector<pq_pair_t>, pq_compare>;
+    using priority_queue = customized_d_ary_priority_queue<D, HeapNode, std::vector<HeapNode>, HeapNodeComparator>;
 
     DAryHeap() {
-        pq_ = new pq_io_t();
+        pq_ = new priority_queue();
     }
 
-    ~DAryHeap(){
+    ~DAryHeap() {
         delete pq_;
     }
 
     void init_heap(const DeviceGrid& grid) {
         size_t target_heap_size = (grid.width() - 1) * (grid.height() - 1);
-        pq_->reserve(target_heap_size);
+        pq_->reserve(target_heap_size); // reserve the memory for the heap structure
     }
 
-    bool try_pop(pq_prio_t &prio, RRNodeId &node) {
+    bool try_pop(HeapNode& heap_node) {
         if (pq_->empty()) {
             return false;
         } else {
-            pq_index_t node_id;
-            std::tie(prio, node_id) = pq_->top();
-            static_assert(sizeof(RRNodeId) == sizeof(pq_index_t));
-            node = RRNodeId(node_id);
+            heap_node = pq_->top();
             pq_->pop();
             return true;
         }
     }
 
-    void add_to_heap(const pq_prio_t& prio, const RRNodeId& node) {
-        pq_->push({prio, cast_RRNodeId_to_pq_index_t(node)});
+    void add_to_heap(const HeapNode& heap_node) {
+        pq_->push(heap_node);
     }
 
-    void push_back(const pq_prio_t& prio, const RRNodeId& node) {
-        pq_->push({prio, cast_RRNodeId_to_pq_index_t(node)});
+    void push_back(const HeapNode& heap_node) {
+        pq_->push(heap_node); // FIXME: add to heap without maintaining the heap property
     }
 
-    bool is_empty_heap() const {
-        return (bool)(pq_->empty());
+    void build_heap() {
+        // FIXME: restore the heap property after pushing back nodes
     }
 
     bool is_valid() const {
-        return true;
+        return true; // FIXME: checking if the heap property is maintained or not
     }
 
     void empty_heap() {
         pq_->clear();
     }
 
-    void build_heap() {}
+    bool is_empty_heap() const {
+        return (bool)(pq_->empty());
+    }
 
   private:
-    pq_io_t* pq_;
+    priority_queue* pq_;
 };
+
+using BinaryHeap = DAryHeap<2>;
+using FourAryHeap = DAryHeap<4>;
 
 #endif /* _VTR_D_ARY_HEAP_H */

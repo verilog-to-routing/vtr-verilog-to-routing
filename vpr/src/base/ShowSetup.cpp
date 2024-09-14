@@ -462,9 +462,6 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
             case e_heap_type::FOUR_ARY_HEAP:
                 VTR_LOG("FOUR_ARY_HEAP\n");
                 break;
-            case e_heap_type::BUCKET_HEAP_APPROXIMATION:
-                VTR_LOG("BUCKET_HEAP_APPROXIMATION\n");
-                break;
             default:
                 VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown router_heap\n");
         }

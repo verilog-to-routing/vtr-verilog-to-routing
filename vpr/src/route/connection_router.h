@@ -307,7 +307,7 @@ class ConnectionRouter : public ConnectionRouterInterface {
     std::vector<RRNodeId> modified_rr_node_inf_;
     RouterStats* router_stats_;
     const ConnectionParameters* conn_params_;
-    DAryHeap heap_;
+    HeapImplementation heap_;
     bool router_debug_;
 
     bool only_opin_inter_layer;

@@ -780,7 +780,7 @@ void reserve_locally_used_opins(HeapInterface* heap, float pres_fac, float acc_f
     int num_local_opin, iconn, num_edges;
     int iclass, ipin;
     float cost;
-    t_heap* heap_head_ptr;
+    HeapNode heap_head_node;
     t_physical_tile_type_ptr type;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -838,22 +838,21 @@ void reserve_locally_used_opins(HeapInterface* heap, float pres_fac, float acc_f
 
                 //Add the OPIN to the heap according to it's congestion cost
                 cost = get_rr_cong_cost(to_node, pres_fac);
-                add_node_to_heap(heap, route_ctx.rr_node_route_inf,
-                                 to_node, cost, RREdgeId::INVALID(),
-                                 0., 0.);
+                if (cost < route_ctx.rr_node_route_inf[to_node].path_cost) {
+                    heap->add_to_heap({cost, to_node});
+                }
             }
 
             for (ipin = 0; ipin < num_local_opin; ipin++) {
                 //Pop the nodes off the heap. We get them from the heap so we
                 //reserve those pins with lowest congestion cost first.
-                heap_head_ptr = heap->get_heap_head();
-                RRNodeId inode(heap_head_ptr->index);
+                VTR_ASSERT(heap->try_pop(heap_head_node));
+                const RRNodeId& inode = heap_head_node.node;
 
                 VTR_ASSERT(rr_graph.node_type(inode) == OPIN);
 
                 adjust_one_rr_occ_and_acc_cost(inode, 1, acc_fac);
                 route_ctx.clb_opins_used_locally[blk_id][iclass][ipin] = inode;
-                heap->free(heap_head_ptr);
             }
 
             heap->empty_heap();
