@@ -180,6 +180,7 @@ static int get_opin_direct_connections(RRGraphBuilder& rr_graph_builder,
 static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder& rr_graph_builder,
                                                                   t_rr_graph_storage& L_rr_node,
                                                                   const RRGraphView& rr_graph,
+                                                                  const t_router_opts& router_opts,
                                                                   const int num_seg_types,
                                                                   const int num_seg_types_x,
                                                                   const t_unified_to_parallel_seg_index& seg_index_map,
@@ -642,6 +643,7 @@ static void build_rr_graph(const t_graph_type graph_type,
                            const std::vector<t_physical_tile_type>& types,
                            const DeviceGrid& grid,
                            t_chan_width nodes_per_chan,
+                           t_router_opts router_opts,
                            const enum e_switch_block_type sb_type,
                            const int Fs,
                            const std::vector<t_switchblock_inf>& switchblocks,
@@ -745,6 +747,7 @@ void create_rr_graph(const t_graph_type graph_type,
                            block_types,
                            grid,
                            nodes_per_chan,
+                           router_opts,
                            det_routing_arch->switch_block_type,
                            det_routing_arch->Fs,
                            det_routing_arch->switchblocks,
@@ -969,6 +972,7 @@ static void build_rr_graph(const t_graph_type graph_type,
                            const std::vector<t_physical_tile_type>& types,
                            const DeviceGrid& grid,
                            t_chan_width nodes_per_chan,
+                           t_router_opts router_opts,
                            const enum e_switch_block_type sb_type,
                            const int Fs,
                            const std::vector<t_switchblock_inf>& switchblocks,
@@ -1351,7 +1355,7 @@ static void build_rr_graph(const t_graph_type graph_type,
     auto update_chan_width = alloc_and_load_rr_graph(
         device_ctx.rr_graph_builder,
 
-        device_ctx.rr_graph_builder.rr_nodes(), device_ctx.rr_graph, segment_inf.size(),
+        device_ctx.rr_graph_builder.rr_nodes(), device_ctx.rr_graph, router_opts, segment_inf.size(),
         segment_inf_x.size(),
         segment_index_map,
         chan_details_x, chan_details_y,
@@ -2021,6 +2025,7 @@ static std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const std::vector<
 static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder& rr_graph_builder,
                                                                   t_rr_graph_storage& L_rr_node,
                                                                   const RRGraphView& rr_graph,
+                                                                  const t_router_opts& router_opts,
                                                                   const int num_seg_types,
                                                                   const int num_seg_types_x,
                                                                   const t_unified_to_parallel_seg_index& seg_index_map,
@@ -2071,6 +2076,9 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
     the edges are not remapped yet.*/
     bool switches_remapped = false;
 
+    // Define verbosity locally using router_opts
+    const int verbosity = router_opts.route_verbosity;
+
     int num_edges = 0;
     /* Connection SINKS and SOURCES to their pins - Initializing IPINs/OPINs. */
     for (int layer = 0; layer < grid.get_num_layers(); ++layer) {
@@ -2116,7 +2124,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
         }
     }
 
-    VTR_LOG("SOURCE->OPIN and IPIN->SINK edge count:%d\n", num_edges);
+    VTR_LOGV(verbosity > 1,"SOURCE->OPIN and IPIN->SINK edge count:%d\n", num_edges);
     num_edges = 0;
     /* Build opins */
     int rr_edges_before_directs = 0;
@@ -2153,8 +2161,8 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
         }
     }
 
-    VTR_LOG("OPIN->CHANX/CHANY edge count before creating direct connections: %d\n", rr_edges_before_directs);
-    VTR_LOG("OPIN->CHANX/CHANY edge count after creating direct connections: %d\n", num_edges);
+    VTR_LOGV(verbosity > 1,"OPIN->CHANX/CHANY edge count before creating direct connections: %d\n", rr_edges_before_directs);
+    VTR_LOGV(verbosity > 1,"OPIN->CHANX/CHANY edge count after creating direct connections: %d\n", num_edges);
 
     num_edges = 0;
     /* Build channels */
