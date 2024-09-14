@@ -218,6 +218,7 @@ struct t_options {
     argparse::ArgValue<int> reorder_rr_graph_nodes_seed;
     argparse::ArgValue<bool> flat_routing;
     argparse::ArgValue<bool> has_choking_spot;
+    argparse::ArgValue<int> route_verbosity;
 
     /* Timing-driven router options only */
     argparse::ArgValue<float> astar_fac;

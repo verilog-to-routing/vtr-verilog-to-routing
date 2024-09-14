@@ -2207,7 +2207,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
             }
         }
     }
-    VTR_LOG("CHAN->CHAN type edge count:%d\n", num_edges);
+    VTR_LOGV(verbosity > 1,"CHAN->CHAN type edge count:%d\n", num_edges);
     num_edges = 0;
     std::function<void(t_chan_width*)> update_chan_width = [](t_chan_width*) noexcept {};
     if (clock_modeling == DEDICATED_NETWORK) {
