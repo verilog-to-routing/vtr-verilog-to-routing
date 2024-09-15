@@ -1414,6 +1414,8 @@ struct t_router_opts {
     bool flat_routing;
     bool has_choking_spot;
 
+    int custom_3d_sb_fanin_fanout = 1;
+
     bool with_timing_analysis;
 
     // Options related to rr_node reordering, for testing and possible cache optimization

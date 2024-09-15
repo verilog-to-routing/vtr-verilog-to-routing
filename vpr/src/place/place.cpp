@@ -1572,27 +1572,21 @@ static bool is_cube_bb(const e_place_bounding_box_mode place_bb_mode,
     bool cube_bb;
     const int number_layers = g_vpr_ctx.device().grid.get_num_layers();
 
-    // If the FPGA has only one layer, then we can only use cube bounding box
-    if (number_layers == 1) {
+    if (place_bb_mode == AUTO_BB) {
+        // If the auto_bb is used, we analyze the RR graph to see whether is there any inter-layer connection that is not
+        // originated from OPIN. If there is any, cube BB is chosen, otherwise, per-layer bb is chosen.
+        if (number_layers > 1 && inter_layer_connections_limited_to_opin(rr_graph)) {
+            cube_bb = false;
+        } else {
+            cube_bb = true;
+        }
+    } else if (place_bb_mode == CUBE_BB) {
+        // The user has specifically asked for CUBE_BB
         cube_bb = true;
     } else {
-        VTR_ASSERT(number_layers > 1);
-        if (place_bb_mode == AUTO_BB) {
-            // If the auto_bb is used, we analyze the RR graph to see whether is there any inter-layer connection that is not
-            // originated from OPIN. If there is any, cube BB is chosen, otherwise, per-layer bb is chosen.
-            if (inter_layer_connections_limited_to_opin(rr_graph)) {
-                cube_bb = false;
-            } else {
-                cube_bb = true;
-            }
-        } else if (place_bb_mode == CUBE_BB) {
-            // The user has specifically asked for CUBE_BB
-            cube_bb = true;
-        } else {
-            // The user has specifically asked for PER_LAYER_BB
-            VTR_ASSERT_SAFE(place_bb_mode == PER_LAYER_BB);
-            cube_bb = false;
-        }
+        // The user has specifically asked for PER_LAYER_BB
+        VTR_ASSERT_SAFE(place_bb_mode == PER_LAYER_BB);
+        cube_bb = false;
     }
 
     return cube_bb;
@@ -2027,14 +2021,15 @@ static int check_block_placement_consistency(const BlkLocRegistry& blk_loc_regis
                         || !is_sub_tile_compatible(physical_tile, logical_block,
                                                    loc.sub_tile)) {
                         VTR_LOG_ERROR(
-                            "Block %zu's location is (%d,%d,%d) but found in grid at (%zu,%zu,%d,%d).\n",
+                            "Block %zu's location is (%d,%d,%d,%d) but found in grid at (%d,%d,%d,%d).\n",
                             size_t(bnum),
                             loc.x,
                             loc.y,
                             loc.sub_tile,
-                            tile_loc.x,
-                            tile_loc.y,
-                            tile_loc.layer_num,
+                            loc.layer,
+                            i,
+                            j,
+                            k,
                             layer_num);
                         error++;
                     }
