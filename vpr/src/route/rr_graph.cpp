@@ -180,7 +180,6 @@ static int get_opin_direct_connections(RRGraphBuilder& rr_graph_builder,
 static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder& rr_graph_builder,
                                                                   t_rr_graph_storage& L_rr_node,
                                                                   const RRGraphView& rr_graph,
-                                                                  const t_router_opts& router_opts,
                                                                   const int num_seg_types,
                                                                   const int num_seg_types_x,
                                                                   const t_unified_to_parallel_seg_index& seg_index_map,
@@ -209,7 +208,8 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
                                                                   const t_clb_to_clb_directs* clb_to_clb_directs,
                                                                   bool is_global_graph,
                                                                   const enum e_clock_modeling clock_modeling,
-                                                                  bool is_flat);
+                                                                  bool is_flat,
+                                                                  const int route_verbosity);
 
 static void alloc_and_load_intra_cluster_rr_graph(RRGraphBuilder& rr_graph_builder,
                                                   const DeviceGrid& grid,
@@ -666,7 +666,6 @@ static void build_rr_graph(const t_graph_type graph_type,
                            const std::vector<t_physical_tile_type>& types,
                            const DeviceGrid& grid,
                            t_chan_width nodes_per_chan,
-                           t_router_opts router_opts,
                            const enum e_switch_block_type sb_type,
                            const int Fs,
                            const std::vector<t_switchblock_inf>& switchblocks,
@@ -684,7 +683,8 @@ static void build_rr_graph(const t_graph_type graph_type,
                            const int num_directs,
                            int* wire_to_rr_ipin_switch,
                            bool is_flat,
-                           int* Warnings);
+                           int* Warnings,
+                           const t_router_opts& router_opts);
 
 static void build_intra_cluster_rr_graph(const t_graph_type graph_type,
                                          const DeviceGrid& grid,
@@ -771,7 +771,6 @@ void create_rr_graph(const t_graph_type graph_type,
                            block_types,
                            grid,
                            nodes_per_chan,
-                           router_opts,
                            det_routing_arch->switch_block_type,
                            det_routing_arch->Fs,
                            det_routing_arch->switchblocks,
@@ -788,7 +787,9 @@ void create_rr_graph(const t_graph_type graph_type,
                            directs, num_directs,
                            &det_routing_arch->wire_to_rr_ipin_switch,
                            is_flat,
-                           Warnings);
+                           Warnings,
+                           router_opts
+                           );
         }
     }
 
@@ -997,7 +998,6 @@ static void build_rr_graph(const t_graph_type graph_type,
                            const std::vector<t_physical_tile_type>& types,
                            const DeviceGrid& grid,
                            t_chan_width nodes_per_chan,
-                           t_router_opts router_opts,
                            const enum e_switch_block_type sb_type,
                            const int Fs,
                            const std::vector<t_switchblock_inf>& switchblocks,
@@ -1015,7 +1015,8 @@ static void build_rr_graph(const t_graph_type graph_type,
                            const int num_directs,
                            int* wire_to_rr_ipin_switch,
                            bool is_flat,
-                           int* Warnings) {
+                           int* Warnings,
+                           const t_router_opts& router_opts) {
     vtr::ScopedStartFinishTimer timer("Build routing resource graph");
 
     /* Reset warning flag */
@@ -1396,7 +1397,7 @@ static void build_rr_graph(const t_graph_type graph_type,
     auto update_chan_width = alloc_and_load_rr_graph(
         device_ctx.rr_graph_builder,
 
-        device_ctx.rr_graph_builder.rr_nodes(), device_ctx.rr_graph, router_opts, segment_inf.size(),
+        device_ctx.rr_graph_builder.rr_nodes(), device_ctx.rr_graph, segment_inf.size(),
         segment_inf_x.size(),
         segment_index_map,
         chan_details_x, chan_details_y,
@@ -1414,7 +1415,8 @@ static void build_rr_graph(const t_graph_type graph_type,
         directs, num_directs, clb_to_clb_directs,
         is_global_graph,
         clock_modeling,
-        is_flat);
+        is_flat,
+        router_opts.route_verbosity);
 
     // Verify no incremental node allocation.
     // AA: Note that in the case of dedicated networks, we are currently underestimating the additional node count due to the clock networks. 
@@ -2069,7 +2071,6 @@ static std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const std::vector<
 static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder& rr_graph_builder,
                                                                   t_rr_graph_storage& L_rr_node,
                                                                   const RRGraphView& rr_graph,
-                                                                  const t_router_opts& router_opts,
                                                                   const int num_seg_types,
                                                                   const int num_seg_types_x,
                                                                   const t_unified_to_parallel_seg_index& seg_index_map,
@@ -2098,7 +2099,8 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
                                                                   const t_clb_to_clb_directs* clb_to_clb_directs,
                                                                   bool is_global_graph,
                                                                   const enum e_clock_modeling clock_modeling,
-                                                                  bool /*is_flat*/) {
+                                                                  bool /*is_flat*/,
+                                                                  const int route_verbosity) {
     //We take special care when creating RR graph edges (there are typically many more
     //edges than nodes in an RR graph).
     //
@@ -2122,7 +2124,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
     bool switches_remapped = false;
 
     // Define verbosity locally using router_opts
-    const int verbosity = router_opts.route_verbosity;
+    const int verbosity = route_verbosity;
 
     int num_edges = 0;
     /* Connection SINKS and SOURCES to their pins - Initializing IPINs/OPINs. */
@@ -2285,7 +2287,6 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
             }
         }
     }
-
 
     if(grid.get_num_layers() > 1 && sb_conn_map != nullptr){
         uniquify_edges(des_3d_rr_edges_to_create);
