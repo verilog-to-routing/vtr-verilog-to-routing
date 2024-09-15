@@ -25,7 +25,18 @@ constexpr double INVALID_NOC_COST_TERM = -1.0;
 
 class NocCostHandler {
   public:
-    NocCostHandler();
+    /**
+     * @param block_locs Contains the location where each clustered block is placed at.
+     */
+    explicit NocCostHandler(const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
+
+    NocCostHandler() = delete;
+    NocCostHandler(const NocCostHandler&) = delete;
+    NocCostHandler& operator=(const NocCostHandler&) = delete;
+    NocCostHandler(NocCostHandler&&) = default;
+    NocCostHandler& operator=(NocCostHandler&&) = default;
+
+    bool points_to_same_block_locs(const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) const;
 
     /**
      * @brief Initializes the link bandwidth usage for all NoC links.
@@ -42,10 +53,8 @@ class NocCostHandler {
      *
      * @param new_traffic_flow_routes Traffic flow routes used to initialize link bandwidth utilization.
      * If an empty vector is passed, this function uses a routing algorithm to route traffic flows.
-     * @param block_locs Contains the location where each clustered block is placed at.
      */
-    void initial_noc_routing(const vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>>& new_traffic_flow_routes,
-                             const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
+    void initial_noc_routing(const vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>>& new_traffic_flow_routes);
 
     /**
      * @brief Re-initializes all link bandwidth usages by either re-routing
@@ -65,11 +74,9 @@ class NocCostHandler {
      * @param costs Used to get aggregate bandwidth and latency costs.
      * @param new_traffic_flow_routes Traffic flow routes used to initialize link bandwidth utilization.
      * If an empty vector is passed, this function uses a routing algorithm to route traffic flows.
-     * @param block_locs Contains the location where each clustered block is placed at.
      */
     void reinitialize_noc_routing(t_placer_costs& costs,
-                                  const vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>>& new_traffic_flow_routes,
-                                  const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
+                                  const vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>>& new_traffic_flow_routes);
 
     /**
      * @brief Goes through all the cluster blocks that were moved
@@ -101,11 +108,9 @@ class NocCostHandler {
      * NoC aggregate bandwidth cost caused by a placer move is stored here.
      * @param noc_latency_delta_c The change in the overall
      * NoC latency cost caused by a placer move is stored here.
-     * @param block_locs Contains the location where each clustered block is placed at.
      */
     void find_affected_noc_routers_and_update_noc_costs(const t_pl_blocks_to_be_moved& blocks_affected,
-                                                        NocCostTerms& delta_c,
-                                                        const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
+                                                        NocCostTerms& delta_c);
 
     /**
      * @brief Updates static datastructures found in 'noc_place_utils.cpp'
@@ -166,12 +171,9 @@ class NocCostHandler {
      * placement to ensure the NoC costs do not deviate too far off
      * from their correct values.
      *
-     * @param new_noc_aggregate_bandwidth_cost Will store the newly computed
-     * NoC aggregate bandwidth cost for the current placement state.
-     * @param new_noc_latency_cost Will store the newly computed
-     * NoC latency cost for the current placement state.
+     * @return NoC cost terms computed from scratch.
      */
-    void recompute_noc_costs(NocCostTerms& new_cost);
+    NocCostTerms recompute_noc_costs();
 
     void recompute_costs_from_scratch(const t_noc_opts& noc_opts,
                                       t_placer_costs& costs);
@@ -236,12 +238,10 @@ class NocCostHandler {
      * indicates that the current NoC costs are within the error tolerance and
      * a non-zero values indicates the current NoC costs are above the error
      * tolerance.
-     * @param block_locs Contains the location where each clustered block is placed at.
      */
     int check_noc_placement_costs(const t_placer_costs& costs,
                                   double error_tolerance,
-                                  const t_noc_opts& noc_opts,
-                                  const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
+                                  const t_noc_opts& noc_opts);
 
     /**
      * @brief Goes through all NoC links and determines whether they
@@ -296,11 +296,9 @@ class NocCostHandler {
      * the graph has any back edges, i.e. whether a node points to one of its ancestors
      * during depth-first search traversal.
      *
-     * @param block_locs Contains the location where each clustered block is placed at.
-     *
      * @return bool Indicates whether NoC traffic flow routes form a cycle.
      */
-    bool noc_routing_has_cycle(const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
+    bool noc_routing_has_cycle();
 
     /**
      * @brief Prints NoC related costs terms and metrics.
@@ -336,14 +334,12 @@ class NocCostHandler {
      * within the NoC. Used to get the current traffic flow information.
      * @param noc_flows_router The packet routing algorithm used to route traffic
      * flows within the NoC.
-     * @param block_locs Contains the location where each clustered block is placed at.
      * @return std::vector<NocLinkId>& The found route for the traffic flow.
      */
     std::vector<NocLinkId>& route_traffic_flow(NocTrafficFlowId traffic_flow_id,
                                                const NocStorage& noc_model,
                                                const NocTrafficFlows& noc_traffic_flows_storage,
-                                               NocRouting& noc_flows_router,
-                                               const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
+                                               NocRouting& noc_flows_router);
 
     /**
      * @brief Updates the bandwidth usages of links found in a routed traffic flow.
@@ -390,14 +386,12 @@ class NocCostHandler {
      * flows within the NoC.
      * @param updated_traffic_flows Keeps track of traffic flows that have been
      * re-routed. Used to prevent re-routing the same traffic flow multiple times.
-     * @param block_locs Contains the location where each clustered block is placed at.
      */
     void re_route_associated_traffic_flows(ClusterBlockId moved_router_block_id,
                                            const NocTrafficFlows& noc_traffic_flows_storage,
                                            const NocStorage& noc_model,
                                            NocRouting& noc_flows_router,
-                                           std::unordered_set<NocTrafficFlowId>& updated_traffic_flows,
-                                           const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
+                                           std::unordered_set<NocTrafficFlowId>& updated_traffic_flows);
 
 
     /**
@@ -413,13 +407,11 @@ class NocCostHandler {
      * to route traffic flows within the NoC.
      * @param noc_flows_router The packet routing algorithm used to route traffic
      * flows within the NoC.
-     * @param block_locs Contains the location where each clustered block is placed at.
      */
     void re_route_traffic_flow(NocTrafficFlowId traffic_flow_id,
                                const NocTrafficFlows& noc_traffic_flows_storage,
                                const NocStorage& noc_model,
-                               NocRouting& noc_flows_router,
-                               const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
+                               NocRouting& noc_flows_router);
 
     /**
      * @brief Determines the congestion cost a NoC link. The cost
@@ -449,6 +441,8 @@ class NocCostHandler {
         double latency = INVALID_NOC_COST_TERM;
         double latency_overrun = INVALID_NOC_COST_TERM;
     };
+
+    const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs_ref;
 
     /* Proposed and actual cost of a noc traffic flow used for each move assessment */
     vtr::vector<NocTrafficFlowId, TrafficFlowPlaceCost> traffic_flow_costs, proposed_traffic_flow_costs;

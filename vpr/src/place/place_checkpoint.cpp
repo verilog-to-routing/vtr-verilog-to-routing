@@ -75,7 +75,8 @@ void restore_best_placement(PlacerState& placer_state,
          * and need to be re-computed from scratch.
          */
         if (noc_cost_handler.has_value()) {
-            noc_cost_handler->reinitialize_noc_routing(costs, {}, placer_state.block_locs());
+            VTR_ASSERT(noc_cost_handler->points_to_same_block_locs(placer_state.block_locs()));
+            noc_cost_handler->reinitialize_noc_routing(costs, {});
         }
 
         VTR_LOG("\nCheckpoint restored\n");

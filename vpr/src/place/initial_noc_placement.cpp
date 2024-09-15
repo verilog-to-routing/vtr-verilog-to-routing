@@ -271,7 +271,7 @@ static void noc_routers_anneal(const t_noc_opts& noc_opts,
             apply_move_blocks(blocks_affected, blk_loc_registry);
 
             NocCostTerms noc_delta_c;
-            noc_cost_handler.find_affected_noc_routers_and_update_noc_costs(blocks_affected, noc_delta_c, block_locs);
+            noc_cost_handler.find_affected_noc_routers_and_update_noc_costs(blocks_affected, noc_delta_c);
             double delta_cost = calculate_noc_cost(noc_delta_c, costs.noc_cost_norm_factors, noc_opts);
 
             double prob = starting_prob - i_move * prob_step;
@@ -329,13 +329,13 @@ void initial_noc_placement(const t_noc_opts& noc_opts,
     place_noc_routers_randomly(unfixed_routers, placer_opts.seed, blk_loc_registry);
 
     // populate internal data structures to maintain route, bandwidth usage, and latencies
-    noc_cost_handler.initial_noc_routing({}, block_locs);
+    noc_cost_handler.initial_noc_routing({});
 
     // Run the simulated annealing optimizer for NoC routers
     noc_routers_anneal(noc_opts, blk_loc_registry, noc_cost_handler);
 
     // check if there is any cycles
-    bool has_cycle = noc_cost_handler.noc_routing_has_cycle(block_locs);
+    bool has_cycle = noc_cost_handler.noc_routing_has_cycle();
     if (has_cycle) {
         VPR_FATAL_ERROR(VPR_ERROR_PLACE,
                         "At least one cycle was found in NoC channel dependency graph. This may cause a deadlock "

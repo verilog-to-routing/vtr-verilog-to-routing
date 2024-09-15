@@ -1280,8 +1280,6 @@ static e_move_result try_swap(const t_annealing_state* state,
      * Returns whether the swap is accepted, rejected or aborted.        *
      * Passes back the new value of the cost functions.                  */
 
-    const auto& block_locs = placer_state.block_locs();
-
     float rlim_escape_fraction = placer_opts.rlim_escape_fraction;
     float timing_tradeoff = placer_opts.timing_tradeoff;
 
@@ -1439,7 +1437,7 @@ static e_move_result try_swap(const t_annealing_state* state,
         /* Update the NoC datastructure and costs*/
         if (noc_opts.noc) {
             VTR_ASSERT_SAFE(noc_cost_handler.has_value());
-            noc_cost_handler->find_affected_noc_routers_and_update_noc_costs(blocks_affected, noc_delta_c, block_locs);
+            noc_cost_handler->find_affected_noc_routers_and_update_noc_costs(blocks_affected, noc_delta_c);
 
             // Include the NoC delta costs in the total cost change for this swap
             delta_c += calculate_noc_cost(noc_delta_c, costs->noc_cost_norm_factors, noc_opts);
@@ -1911,10 +1909,10 @@ alloc_and_load_placement_structs(const t_placer_opts& placer_opts,
 
     std::optional<NocCostHandler> noc_cost_handler;
     if (noc_opts.noc) {
-        noc_cost_handler = NocCostHandler();
+        noc_cost_handler.emplace(placer_state.block_locs());
     }
 
-    return {NetCostHandler{placer_opts, placer_state, num_nets, place_ctx.cube_bb}, noc_cost_handler};
+    return {NetCostHandler{placer_opts, placer_state, num_nets, place_ctx.cube_bb}, std::move(noc_cost_handler)};
 }
 
 /* Frees the major structures needed by the placer (and not needed       *
@@ -1948,9 +1946,9 @@ static void check_place(const t_placer_costs& costs,
 
     if (noc_opts.noc) {
         // check the NoC costs during placement if the user is using the NoC supported flow
-        error += noc_cost_handler->check_noc_placement_costs(costs, ERROR_TOL, noc_opts, placer_state.block_locs());
+        error += noc_cost_handler->check_noc_placement_costs(costs, ERROR_TOL, noc_opts);
         // make sure NoC routing configuration does not create any cycles in CDG
-        error += (int)noc_cost_handler->noc_routing_has_cycle(placer_state.block_locs());
+        error += (int)noc_cost_handler->noc_routing_has_cycle();
     }
 
     if (error == 0) {
