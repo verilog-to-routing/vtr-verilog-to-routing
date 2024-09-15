@@ -1413,6 +1413,8 @@ struct t_router_opts {
     bool flat_routing;
     bool has_choking_spot;
 
+    int custom_3d_sb_fanin_fanout = 1;
+
     bool with_timing_analysis;
 
     // Options related to rr_node reordering, for testing and possible cache optimization
@@ -1847,11 +1849,6 @@ class RouteStatus {
 typedef vtr::vector<ClusterBlockId, std::vector<std::vector<RRNodeId>>> t_clb_opins_used; //[0..num_blocks-1][0..class-1][0..used_pins-1]
 
 typedef std::vector<std::map<int, int>> t_arch_switch_fanin;
-
-/**
- * @brief Free the linked list that saves all the packing molecules.
- */
-void free_pack_molecules(t_pack_molecule* list_of_pack_molecules);
 
 /**
  * @brief Free the linked lists to placement locations based on status of primitive inside placement stats data structure.

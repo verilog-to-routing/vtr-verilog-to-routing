@@ -6,6 +6,7 @@
  *
  * Cmdline: uxsdcxx/uxsdcxx.py /home/mohagh18/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
  * Input file: /home/mohagh18/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
+
  * md5sum of input file: 65eddcc840064bbb91d7f4cf0b8bf821
  */
 
@@ -29,7 +30,7 @@ enum class enum_pin_type {UXSD_INVALID = 0, OPEN, OUTPUT, INPUT};
 
 enum class enum_node_type {UXSD_INVALID = 0, CHANX, CHANY, SOURCE, SINK, OPIN, IPIN};
 
-enum class enum_node_direction {UXSD_INVALID = 0, INC_DIR, DEC_DIR, BI_DIR};
+enum class enum_node_direction {UXSD_INVALID = 0, INC_DIR, DEC_DIR, BI_DIR, NONE};
 
 enum class enum_node_clk_res_type {UXSD_INVALID = 0, VIRTUAL_SINK};
 

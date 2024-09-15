@@ -1556,30 +1556,27 @@ void revalid_molecules(const t_pb* pb) {
             atom_ctx.lookup.set_atom_clb(blk_id, ClusterBlockId::INVALID());
             atom_ctx.lookup.set_atom_pb(blk_id, nullptr);
 
-            auto rng = atom_ctx.atom_molecules.equal_range(blk_id);
-            for (const auto& kv : vtr::make_range(rng.first, rng.second)) {
-                t_pack_molecule* cur_molecule = kv.second;
-                if (cur_molecule->valid == false) {
-                    int i;
-                    for (i = 0; i < get_array_size_of_molecule(cur_molecule); i++) {
-                        if (cur_molecule->atom_block_ids[i]) {
-                            if (atom_ctx.lookup.atom_clb(cur_molecule->atom_block_ids[i]) != ClusterBlockId::INVALID()) {
-                                break;
-                            }
+            t_pack_molecule* cur_molecule = atom_ctx.prepacker.get_atom_molecule(blk_id);
+            if (cur_molecule->valid == false) {
+                int i;
+                for (i = 0; i < get_array_size_of_molecule(cur_molecule); i++) {
+                    if (cur_molecule->atom_block_ids[i]) {
+                        if (atom_ctx.lookup.atom_clb(cur_molecule->atom_block_ids[i]) != ClusterBlockId::INVALID()) {
+                            break;
                         }
                     }
-                    /* All atom blocks are open for this molecule, place back in queue */
-                    if (i == get_array_size_of_molecule(cur_molecule)) {
-                        cur_molecule->valid = true;
-                        // when invalidating a molecule check if it's a chain molecule
-                        // that is part of a long chain. If so, check if this molecule
-                        // have modified the chain_id value based on the stale packing
-                        // then reset the chain id and the first packed molecule pointer
-                        // this is packing is being reset
-                        if (cur_molecule->is_chain() && cur_molecule->chain_info->is_long_chain && cur_molecule->chain_info->first_packed_molecule == cur_molecule) {
-                            cur_molecule->chain_info->first_packed_molecule = nullptr;
-                            cur_molecule->chain_info->chain_id = -1;
-                        }
+                }
+                /* All atom blocks are open for this molecule, place back in queue */
+                if (i == get_array_size_of_molecule(cur_molecule)) {
+                    cur_molecule->valid = true;
+                    // when invalidating a molecule check if it's a chain molecule
+                    // that is part of a long chain. If so, check if this molecule
+                    // have modified the chain_id value based on the stale packing
+                    // then reset the chain id and the first packed molecule pointer
+                    // this is packing is being reset
+                    if (cur_molecule->is_chain() && cur_molecule->chain_info->is_long_chain && cur_molecule->chain_info->first_packed_molecule == cur_molecule) {
+                        cur_molecule->chain_info->first_packed_molecule = nullptr;
+                        cur_molecule->chain_info->chain_id = -1;
                     }
                 }
             }
@@ -2204,7 +2201,7 @@ RRNodeId get_pin_rr_node_id(const RRSpatialLookup& rr_spatial_lookup,
     std::vector<int> x_offset;
     std::vector<int> y_offset;
     std::vector<e_side> pin_sides;
-    std::tie(x_offset, y_offset, pin_sides) = get_pin_coordinates(physical_tile, pin_physical_num, std::vector<e_side>(SIDES.begin(), SIDES.end()));
+    std::tie(x_offset, y_offset, pin_sides) = get_pin_coordinates(physical_tile, pin_physical_num, std::vector<e_side>(TOTAL_2D_SIDES.begin(), TOTAL_2D_SIDES.end()));
     VTR_ASSERT(!x_offset.empty());
     RRNodeId node_id = RRNodeId::INVALID();
     for (int coord_idx = 0; coord_idx < (int)pin_sides.size(); coord_idx++) {
