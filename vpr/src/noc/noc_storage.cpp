@@ -205,7 +205,7 @@ bool NocStorage::remove_link(NocRouterId src_router_id, NocRouterId sink_router_
 
         link_storage[link_to_be_removed_id].set_source_router(NocRouterId::INVALID());
         link_storage[link_to_be_removed_id].set_sink_router(NocRouterId::INVALID());
-        link_storage[link_to_be_removed_id].set_bandwidth_usage(-1);
+//        link_storage[link_to_be_removed_id].set_bandwidth_usage(-1);
 
     }
 

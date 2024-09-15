@@ -6,7 +6,6 @@ NocLink::NocLink(NocLinkId link_id, NocRouterId source, NocRouterId sink,
     : id(link_id)
     , source_router(source)
     , sink_router(sink)
-    , bandwidth_usage(0.0)
     , bandwidth(bw)
     , latency(lat) { }
 
@@ -38,21 +37,21 @@ double NocLink::get_bandwidth() const {
     return bandwidth;
 }
 
-double NocLink::get_congested_bandwidth() const {
-    double congested_bandwidth = bandwidth_usage - bandwidth;
-    congested_bandwidth = std::max(congested_bandwidth, 0.0);
-
-    VTR_ASSERT_SAFE(congested_bandwidth >= 0.0);
-    return congested_bandwidth;
-}
-
-double NocLink::get_congested_bandwidth_ratio() const {
-    double congested_bw = get_congested_bandwidth();
-    double congested_bw_ratio = congested_bw / get_bandwidth();
-
-    VTR_ASSERT(congested_bw_ratio >= 0.0);
-    return congested_bw_ratio;
-}
+//double NocLink::get_congested_bandwidth() const {
+//    double congested_bandwidth = bandwidth_usage - bandwidth;
+//    congested_bandwidth = std::max(congested_bandwidth, 0.0);
+//
+//    VTR_ASSERT_SAFE(congested_bandwidth >= 0.0);
+//    return congested_bandwidth;
+//}
+//
+//double NocLink::get_congested_bandwidth_ratio() const {
+//    double congested_bw = get_congested_bandwidth();
+//    double congested_bw_ratio = congested_bw / get_bandwidth();
+//
+//    VTR_ASSERT(congested_bw_ratio >= 0.0);
+//    return congested_bw_ratio;
+//}
 
 double NocLink::get_latency() const {
     return latency;

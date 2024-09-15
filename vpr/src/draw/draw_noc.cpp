@@ -98,7 +98,7 @@ void draw_noc_usage(vtr::vector<NocLinkId, ezgl::color>& noc_link_colors) {
             // if we are here then the link was not updated previously, so assign the color here
 
             //get the current link bandwidth usage (ratio calculation)
-            double link_bandwidth_usage_ratio = (noc_link.get_bandwidth_usage()) / noc_link.get_bandwidth();
+            double link_bandwidth_usage_ratio = 0.0;//(noc_link.get_bandwidth_usage()) / noc_link.get_bandwidth();
 
             // check if the link is being overused and if it is then cap it at 1.0
             if (link_bandwidth_usage_ratio > 1.0) {
