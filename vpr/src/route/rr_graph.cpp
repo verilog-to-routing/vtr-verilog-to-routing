@@ -684,7 +684,7 @@ static void build_rr_graph(const t_graph_type graph_type,
                            int* wire_to_rr_ipin_switch,
                            bool is_flat,
                            int* Warnings,
-                           const t_router_opts& router_opts);
+                           const int route_verbosity);
 
 static void build_intra_cluster_rr_graph(const t_graph_type graph_type,
                                          const DeviceGrid& grid,
@@ -788,8 +788,7 @@ void create_rr_graph(const t_graph_type graph_type,
                            &det_routing_arch->wire_to_rr_ipin_switch,
                            is_flat,
                            Warnings,
-                           router_opts
-                           );
+                           router_opts.route_verbosity);
         }
     }
 
@@ -1016,7 +1015,7 @@ static void build_rr_graph(const t_graph_type graph_type,
                            int* wire_to_rr_ipin_switch,
                            bool is_flat,
                            int* Warnings,
-                           const t_router_opts& router_opts) {
+                           const int route_verbosity) {
     vtr::ScopedStartFinishTimer timer("Build routing resource graph");
 
     /* Reset warning flag */
@@ -1416,7 +1415,7 @@ static void build_rr_graph(const t_graph_type graph_type,
         is_global_graph,
         clock_modeling,
         is_flat,
-        router_opts.route_verbosity);
+        route_verbosity);
 
     // Verify no incremental node allocation.
     // AA: Note that in the case of dedicated networks, we are currently underestimating the additional node count due to the clock networks. 
@@ -2123,9 +2122,6 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
     the edges are not remapped yet.*/
     bool switches_remapped = false;
 
-    // Define verbosity locally using router_opts
-    const int verbosity = route_verbosity;
-
     int num_edges = 0;
     /* Connection SINKS and SOURCES to their pins - Initializing IPINs/OPINs. */
     for (int layer = 0; layer < grid.get_num_layers(); ++layer) {
@@ -2171,7 +2167,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
         }
     }
 
-    VTR_LOGV(verbosity > 1,"SOURCE->OPIN and IPIN->SINK edge count:%d\n", num_edges);
+    VTR_LOGV(route_verbosity > 1,"SOURCE->OPIN and IPIN->SINK edge count:%d\n", num_edges);
     num_edges = 0;
     /* Build opins */
     int rr_edges_before_directs = 0;
@@ -2208,8 +2204,8 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
         }
     }
 
-    VTR_LOGV(verbosity > 1,"OPIN->CHANX/CHANY edge count before creating direct connections: %d\n", rr_edges_before_directs);
-    VTR_LOGV(verbosity > 1,"OPIN->CHANX/CHANY edge count after creating direct connections: %d\n", num_edges);
+    VTR_LOGV(route_verbosity > 1,"OPIN->CHANX/CHANY edge count before creating direct connections: %d\n", rr_edges_before_directs);
+    VTR_LOGV(route_verbosity > 1,"OPIN->CHANX/CHANY edge count after creating direct connections: %d\n", num_edges);
 
     num_edges = 0;
     /* Build channels */
@@ -2296,7 +2292,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
     }
 
 
-    VTR_LOGV(verbosity > 1,"CHAN->CHAN type edge count:%d\n", num_edges);
+    VTR_LOGV(route_verbosity > 1,"CHAN->CHAN type edge count:%d\n", num_edges);
 
     num_edges = 0;
     std::function<void(t_chan_width*)> update_chan_width = [](t_chan_width*) noexcept {};
