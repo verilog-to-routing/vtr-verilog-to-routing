@@ -1544,7 +1544,7 @@ static e_move_result try_swap(const t_annealing_state* state,
             }
             /* Revert the traffic flow routes within the NoC*/
             if (noc_opts.noc) {
-                noc_cost_handler->revert_noc_traffic_flow_routes(blocks_affected, block_locs);
+                noc_cost_handler->revert_noc_traffic_flow_routes(blocks_affected);
             }
         }
 

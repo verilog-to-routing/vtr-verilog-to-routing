@@ -140,10 +140,8 @@ class NocCostHandler {
      * the current placement iteration. This includes the cluster ids of
      * the moved blocks, their previous locations and their new locations
      * after being moved.
-     * @param block_locs Contains the location where each clustered block is placed at.
      */
-    void revert_noc_traffic_flow_routes(const t_pl_blocks_to_be_moved& blocks_affected,
-                                        const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
+    void revert_noc_traffic_flow_routes(const t_pl_blocks_to_be_moved& blocks_affected);
 
     /**
      * @brief Recompute the NoC costs (aggregate bandwidth and latency) by
@@ -465,6 +463,7 @@ class NocCostHandler {
     std::unordered_set<NocLinkId> affected_noc_links;
 
     vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> traffic_flow_routes;
+    vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> traffic_flow_routes_backup;
 
     ///Represents the bandwidth of the data being transmitted on the link. Units in bits-per-second(bps)
     vtr::vector<NocLinkId, double> link_bandwidth_usages;

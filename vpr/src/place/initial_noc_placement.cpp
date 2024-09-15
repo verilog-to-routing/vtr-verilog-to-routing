@@ -288,7 +288,7 @@ static void noc_routers_anneal(const t_noc_opts& noc_opts,
                 }
             } else { // The proposed move is rejected
                 revert_move_blocks(blocks_affected, blk_loc_registry);
-                noc_cost_handler.revert_noc_traffic_flow_routes(blocks_affected, block_locs);
+                noc_cost_handler.revert_noc_traffic_flow_routes(blocks_affected);
             }
         }
     }

@@ -57,6 +57,7 @@ NocCostHandler::NocCostHandler() {
     proposed_traffic_flow_costs.resize(number_of_traffic_flows, {INVALID_NOC_COST_TERM, INVALID_NOC_COST_TERM});
 
     traffic_flow_routes.resize(number_of_traffic_flows, {});
+    traffic_flow_routes_backup.resize(number_of_traffic_flows, {});
 
     int number_of_noc_links = noc_ctx.noc_model.get_number_of_noc_links();
 
@@ -285,8 +286,7 @@ void NocCostHandler::re_route_associated_traffic_flows(ClusterBlockId moved_bloc
     }
 }
 
-void NocCostHandler::revert_noc_traffic_flow_routes(const t_pl_blocks_to_be_moved& blocks_affected,
-                                                    const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
+void NocCostHandler::revert_noc_traffic_flow_routes(const t_pl_blocks_to_be_moved& blocks_affected) {
     auto& noc_ctx = g_vpr_ctx.noc();
     const NocTrafficFlows& noc_traffic_flows_storage = noc_ctx.noc_traffic_flows_storage;
 
@@ -309,8 +309,8 @@ void NocCostHandler::revert_noc_traffic_flow_routes(const t_pl_blocks_to_be_move
             for (NocTrafficFlowId traffic_flow_id : assoc_traffic_flows) {
                 // first check to see whether we have already reverted the current traffic flow and only revert it if we haven't already.
                 if (reverted_traffic_flows.find(traffic_flow_id) == reverted_traffic_flows.end()) {
-                    // Revert the traffic flow route by re-routing it
-                    re_route_traffic_flow(traffic_flow_id, noc_traffic_flows_storage, noc_ctx.noc_model, *noc_ctx.noc_flows_router, block_locs);
+                    // Revert the traffic flow route by restoring the backup
+                    std::swap(traffic_flow_routes[traffic_flow_id], traffic_flow_routes_backup[traffic_flow_id]);
 
                     // make sure we do not revert this traffic flow again
                     reverted_traffic_flows.insert(traffic_flow_id);
@@ -335,6 +335,9 @@ void NocCostHandler::re_route_traffic_flow(NocTrafficFlowId traffic_flow_id,
      */
     const std::vector<NocLinkId>& curr_traffic_flow_route = traffic_flow_routes[traffic_flow_id];
     update_traffic_flow_link_usage(curr_traffic_flow_route, -1, curr_traffic_flow.traffic_flow_bandwidth);
+
+    // move the current route to a backup container in case it needs to be reverted
+    std::swap(traffic_flow_routes[traffic_flow_id], traffic_flow_routes_backup[traffic_flow_id]);
 
     // now get the re-routed traffic flow route and increment all the link usages with this reverted route
     std::vector<NocLinkId>& re_routed_traffic_flow_route = route_traffic_flow(traffic_flow_id, noc_model, noc_traffic_flows_storage, noc_flows_router, block_locs);
