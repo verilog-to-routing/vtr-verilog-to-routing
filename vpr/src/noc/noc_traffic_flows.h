@@ -125,7 +125,7 @@ class NocTrafficFlows {
      * re-routed. Also, this datastructure should be used to access the routed
      * path of a traffic flow.
      */
-    vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> traffic_flow_routes;
+//    vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> traffic_flow_routes;
 
     // private functions
 
@@ -202,7 +202,7 @@ class NocTrafficFlows {
      * @return std::vector<NocLinkId>& A reference to the provided
      * traffic flow's routed path.
      */
-    const std::vector<NocLinkId>& get_traffic_flow_route(NocTrafficFlowId traffic_flow_id) const;
+//    const std::vector<NocLinkId>& get_traffic_flow_route(NocTrafficFlowId traffic_flow_id) const;
 
     /**
      * @brief Gets the routed path of a traffic flow. The path
@@ -213,7 +213,7 @@ class NocTrafficFlows {
      * @return std::vector<NocLinkId>& A reference to the provided
      * traffic flow's vector of links used from the src to dst.
      */
-    std::vector<NocLinkId>& get_mutable_traffic_flow_route(NocTrafficFlowId traffic_flow_id);
+//    std::vector<NocLinkId>& get_mutable_traffic_flow_route(NocTrafficFlowId traffic_flow_id);
 
     /**
      * @brief Gets all routed paths for all traffic flows. This cannot be
@@ -222,7 +222,7 @@ class NocTrafficFlows {
      * @return vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>>& A reference
      * to the provided container that includes all traffic flow routes.
      */
-    const vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>>& get_all_traffic_flow_routes() const;
+//    const vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>>& get_all_traffic_flow_routes() const;
 
     /**
      * @return a vector ([0..num_logical_router-1]) where each entry gives the clusterBlockId

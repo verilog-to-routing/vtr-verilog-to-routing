@@ -262,6 +262,14 @@ class NocCostHandler {
     std::vector<double> get_top_n_congestion_ratios(int n);
 
     /**
+     * @brief Goes through all the traffic flows and determines whether the
+     * latency constraints have been met for each traffic flow.
+     *
+     * @return The total number of traffic flows with latency constraints being met
+     */
+    int get_number_of_traffic_flows_with_latency_cons_met();
+
+    /**
      * @brief Goes through all NoC links and counts the congested ones.
      * A congested NoC link is a link whose used bandwidth exceeds its
      * bandwidth capacity.
@@ -280,6 +288,23 @@ class NocCostHandler {
     double get_total_congestion_bandwidth_ratio();
 
     /**
+     * @brief This function checks whether the routing configuration for NoC traffic flows
+     * can cause a deadlock in NoC. Assume we create a graph where NoC routers are vertices,
+     * and traffic flow routes represent edges. This graph is a sub-graph of the NoC topology
+     * as it contain a subset of its edges. If such a graph contains a cycle, we can argue
+     * that deadlock is possible.
+     *
+     * This functions performs a DFS over the mentioned graph and tries to find out whether
+     * the graph has any back edges, i.e. whether a node points to one of its ancestors
+     * during depth-first search traversal.
+     *
+     * @param block_locs Contains the location where each clustered block is placed at.
+     *
+     * @return bool Indicates whether NoC traffic flow routes form a cycle.
+     */
+    bool noc_routing_has_cycle(const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
+
+    /**
      * @brief Prints NoC related costs terms and metrics.
      *
      * @param header The string with which the report starts.
@@ -291,6 +316,37 @@ class NocCostHandler {
                          const t_noc_opts& noc_opts);
 
   private:
+    /**
+     * @brief Routes a given traffic flow within the NoC based on where the
+     * logical cluster blocks in the traffic flow are currently placed. The
+     * found route is stored and returned externally.
+     *
+     * First, the hard routers blocks that represent the placed location of
+     * the router cluster blocks are identified. Then the traffic flow
+     * is routed and updated.
+     *
+     * Note that this function does not update the link bandwidth utilization.
+     * update_traffic_flow_link_usage() should be called after this function
+     * to update the link utilization for the new route. If the flow is re-routed
+     * because either its source or destination are moved, update_traffic_flow_link_usage()
+     * should be used to reduce the bandwidth utilization for the old route.
+     *
+     * @param traffic_flow_id Represents the traffic flow that needs to be routed
+     * @param noc_model Contains all the links and routers within the NoC. Used
+     * to route traffic flows within the NoC.
+     * @param noc_traffic_flows_storage Contains all the traffic flow information
+     * within the NoC. Used to get the current traffic flow information.
+     * @param noc_flows_router The packet routing algorithm used to route traffic
+     * flows within the NoC.
+     * @param block_locs Contains the location where each clustered block is placed at.
+     * @return std::vector<NocLinkId>& The found route for the traffic flow.
+     */
+    std::vector<NocLinkId>& route_traffic_flow(NocTrafficFlowId traffic_flow_id,
+                                               const NocStorage& noc_model,
+                                               const NocTrafficFlows& noc_traffic_flows_storage,
+                                               NocRouting& noc_flows_router,
+                                               const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
+
     /**
      * @brief Updates the bandwidth usages of links found in a routed traffic flow.
      * The link bandwidth usages are either incremented or decremented by the
@@ -339,8 +395,8 @@ class NocCostHandler {
      * @param block_locs Contains the location where each clustered block is placed at.
      */
     void re_route_associated_traffic_flows(ClusterBlockId moved_router_block_id,
-                                           NocTrafficFlows& noc_traffic_flows_storage,
-                                           NocStorage& noc_model,
+                                           const NocTrafficFlows& noc_traffic_flows_storage,
+                                           const NocStorage& noc_model,
                                            NocRouting& noc_flows_router,
                                            std::unordered_set<NocTrafficFlowId>& updated_traffic_flows,
                                            const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
@@ -362,8 +418,8 @@ class NocCostHandler {
      * @param block_locs Contains the location where each clustered block is placed at.
      */
     void re_route_traffic_flow(NocTrafficFlowId traffic_flow_id,
-                               NocTrafficFlows& noc_traffic_flows_storage,
-                               NocStorage& noc_model,
+                               const NocTrafficFlows& noc_traffic_flows_storage,
+                               const NocStorage& noc_model,
                                NocRouting& noc_flows_router,
                                const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
 
@@ -533,13 +589,7 @@ double calculate_noc_cost(const NocCostTerms& cost_terms,
                           const NocCostTerms& norm_factors,
                           const t_noc_opts& noc_opts);
 
-/**
- * @brief Goes through all the traffic flows and determines whether the
- * latency constraints have been met for each traffic flow. 
- * 
- * @return The total number of traffic flows with latency constraints being met
- */
-int get_number_of_traffic_flows_with_latency_cons_met();
+
 
 
 
@@ -596,22 +646,7 @@ e_create_move propose_router_swap(t_pl_blocks_to_be_moved& blocks_affected,
 void write_noc_placement_file(const std::string& file_name,
                               const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
 
-/**
- * @brief This function checks whether the routing configuration for NoC traffic flows
- * can cause a deadlock in NoC. Assume we create a graph where NoC routers are vertices,
- * and traffic flow routes represent edges. This graph is a sub-graph of the NoC topology
- * as it contain a subset of its edges. If such a graph contains a cycle, we can argue
- * that deadlock is possible.
- *
- * This functions performs a DFS over the mentioned graph and tries to find out whether
- * the graph has any back edges, i.e. whether a node points to one of its ancestors
- * during depth-first search traversal.
- *
- * @param block_locs Contains the location where each clustered block is placed at.
- *
- * @return bool Indicates whether NoC traffic flow routes form a cycle.
- */
-bool noc_routing_has_cycle(const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
+
 
 /**
  * @brief Check if the channel dependency graph created from the given traffic flow routes

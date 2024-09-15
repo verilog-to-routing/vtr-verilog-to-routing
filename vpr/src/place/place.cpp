@@ -1950,7 +1950,7 @@ static void check_place(const t_placer_costs& costs,
         // check the NoC costs during placement if the user is using the NoC supported flow
         error += noc_cost_handler->check_noc_placement_costs(costs, ERROR_TOL, noc_opts, placer_state.block_locs());
         // make sure NoC routing configuration does not create any cycles in CDG
-        error += (int)noc_routing_has_cycle(placer_state.block_locs());
+        error += (int)noc_cost_handler->noc_routing_has_cycle(placer_state.block_locs());
     }
 
     if (error == 0) {

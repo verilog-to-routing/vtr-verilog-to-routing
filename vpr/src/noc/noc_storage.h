@@ -170,13 +170,13 @@ class NocStorage {
      */
     int layer_num_grid_locs;
 
-    // prevent "copying" of this object
-    NocStorage(const NocStorage&) = delete;
-    void operator=(const NocStorage&) = delete;
-
   public:
     // default constructor (clear all the elements in the vectors)
     NocStorage();
+
+    // prevent "copying" of this object
+    NocStorage(const NocStorage&) = delete;
+    void operator=(const NocStorage&) = delete;
 
     // getters for the NoC
 
