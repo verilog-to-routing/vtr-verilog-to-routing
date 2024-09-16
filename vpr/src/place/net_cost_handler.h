@@ -1,3 +1,9 @@
+/**
+ * @file net_cost_handler.h
+ * @brief This file contains the declaration of NetCostHandler class used to update placement cost when a new move is proposed/committed.
+ * For more details on the overall algorithm, refer to the comment at the top of the net_cost_handler.cpp
+ */
+
 #pragma once
 
 #include "place_delay_model.h"
@@ -38,9 +44,10 @@ class NetCostHandler {
     NetCostHandler& operator=(NetCostHandler&&) = delete;
 
     /**
-     * @brief Resize temporary swap data structures needed to determine which nets are affected by a move and data needed per net
-     * about where their terminals are in order to quickly (incrementally) update their wirelength costs. These data structures are
-     * (layer_)ts_bb_edge_new, (layer_)ts_bb_coord_new, ts_layer_sink_pin_count, and ts_nets_to_update.
+     * @brief Initializes a NetCostHandler object, which contains temporary swap data structures needed to determine which nets
+     * are affected by a move and data needed per net about where their terminals are in order to quickly (incrementally) update
+     * their wirelength costs. These data structures are (layer_)ts_bb_edge_new, (layer_)ts_bb_coord_new, ts_layer_sink_pin_count,
+     * and ts_nets_to_update.
      * @param num_nets Number of nets in the netlist used by the placement engine (currently clustered netlist)
      * @param cube_bb True if the 3D bounding box should be used, false otherwise.
      * @param place_cost_exp It is an exponent to which you take the average inverse channel
@@ -423,7 +430,20 @@ class NetCostHandler {
                                              std::vector<t_2D_bb>& bb_edge_new,
                                              std::vector<t_2D_bb>& bb_coord_new);
 
+     /**
+      * @brief Computes the bounding box from scratch using 2D bounding boxes (per-layer mode)
+      * @param method The method used to calculate placement cost. Specifies whether the cost is
+      * computed from scratch or incrementally.
+      * @return Computed bounding box cost.
+      */
      double comp_per_layer_bb_cost_(e_cost_methods method);
+
+     /**
+      * @brief Computes the bounding box from scratch using 3D bounding boxes (cube mode)
+      * @param method The method used to calculate placement cost. Specifies whether the cost is
+      * computed from scratch or incrementally.
+      * @return Computed bounding box cost.
+      */
      double comp_cube_bb_cost_(e_cost_methods method);
 
      /**

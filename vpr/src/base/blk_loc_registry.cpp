@@ -4,6 +4,9 @@
 #include "move_transactions.h"
 #include "globals.h"
 
+BlkLocRegistry::BlkLocRegistry()
+    : expected_transaction_(e_expected_transaction::APPLY) {}
+
 const vtr::vector_map<ClusterBlockId, t_block_loc>& BlkLocRegistry::block_locs() const {
     return  block_locs_;
 }
@@ -118,6 +121,8 @@ void BlkLocRegistry::place_sync_external_block_connections(ClusterBlockId iblk) 
 void BlkLocRegistry::apply_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected) {
     auto& device_ctx = g_vpr_ctx.device();
 
+    VTR_ASSERT_DEBUG(expected_transaction_ == e_expected_transaction::APPLY);
+
     // Swap the blocks, but don't swap the nets or update place_ctx.grid_blocks
     // yet since we don't know whether the swap will be accepted
     for (const t_pl_moved_block& moved_block : blocks_affected.moved_blocks) {
@@ -139,9 +144,13 @@ void BlkLocRegistry::apply_move_blocks(const t_pl_blocks_to_be_moved& blocks_aff
             place_sync_external_block_connections(blk);
         }
     }
+
+    expected_transaction_ = e_expected_transaction::COMMIT_REVERT;
 }
 
 void BlkLocRegistry::commit_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected) {
+    VTR_ASSERT_DEBUG(expected_transaction_ == e_expected_transaction::COMMIT_REVERT);
+
     // Swap physical location
     for (const t_pl_moved_block& moved_block : blocks_affected.moved_blocks) {
         ClusterBlockId blk = moved_block.block_num;
@@ -163,10 +172,14 @@ void BlkLocRegistry::commit_move_blocks(const t_pl_blocks_to_be_moved& blocks_af
         grid_blocks_.set_block_at_location(to, blk);
 
     } // Finish updating clb for all blocks
+
+    expected_transaction_ = e_expected_transaction::APPLY;
 }
 
 void BlkLocRegistry::revert_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected) {
     auto& device_ctx = g_vpr_ctx.device();
+
+    VTR_ASSERT_DEBUG(expected_transaction_ == e_expected_transaction::COMMIT_REVERT);
 
     // Swap the blocks back, nets not yet swapped they don't need to be changed
     for (const t_pl_moved_block& moved_block : blocks_affected.moved_blocks) {
@@ -191,4 +204,6 @@ void BlkLocRegistry::revert_move_blocks(const t_pl_blocks_to_be_moved& blocks_af
         VTR_ASSERT_SAFE_MSG(grid_blocks_.block_at_location(old_loc) == blk,
                             "Grid blocks should only have been updated if swap committed (not reverted)");
     }
+
+    expected_transaction_ = e_expected_transaction::APPLY;
 }
