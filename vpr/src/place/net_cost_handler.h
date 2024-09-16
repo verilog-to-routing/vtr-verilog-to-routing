@@ -137,9 +137,9 @@ class NetCostHandler {
     std::function<double(e_cost_methods method)> comp_bb_cost_functor_;
     ///@brief Points to the proper method for updating the bounding box of a net.
     std::function<void(ClusterNetId net_id, t_physical_tile_loc pin_old_loc, t_physical_tile_loc pin_new_loc, bool is_driver)> update_bb_functor_;
-
+    ///@brief Points to the proper method for getting the bounding box cost of a net
     std::function<double(ClusterNetId)> get_net_bb_cost_functor_;
-
+    ///@brief Points to the proper method for getting the non-updatable bounding box of a net
     std::function<void(const ClusterNetId net)> get_non_updatable_bb_functor_;
 
     /**
@@ -268,10 +268,18 @@ class NetCostHandler {
                                 double& delta_timing_cost,
                                 bool is_src_moving);
 
-
-
+    /**
+     * @brief Updates the bounding box coordinates of a net in the placer state
+     * with coordinates stored in the `ts` bounding box coordinates container.
+     * @param net_id ID of the net whose bounding box coordinates it to be updated.
+     */
     void set_ts_bb_coord_(const ClusterNetId net_id);
 
+    /**
+     * @brief Updates the number of pins on each boundary of the bounding box for a net
+     * in the placer state with the number of pins stores in the 'ts' num_on_edges containers.
+     * @param net_id ID of the net whose number of pins on each BB edge is to be updated.
+     */
     void set_ts_edge_(const ClusterNetId net_id);
 
     /**

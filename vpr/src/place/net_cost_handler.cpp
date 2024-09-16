@@ -583,7 +583,7 @@ void NetCostHandler::get_non_updatable_per_layer_bb_(ClusterNetId net_id, bool u
     vtr::NdMatrixProxy<int, 1> num_sink_layer = use_ts ? ts_layer_sink_pin_count_[size_t(net_id)] : move_ctx.num_sink_pin_layer[size_t(net_id)];
 
     const int num_layers = device_ctx.grid.get_num_layers();
-    VTR_ASSERT_DEBUG(bb_coord_new.size() == num_layers);
+    VTR_ASSERT_DEBUG(bb_coord_new.size() == (size_t)num_layers);
 
     ClusterBlockId bnum = cluster_ctx.clb_nlist.net_driver_block(net_id);
     t_pl_loc block_loc = block_locs[bnum].loc;
@@ -1388,8 +1388,8 @@ void NetCostHandler::get_layer_bb_from_scratch_(ClusterNetId net_id,
     auto& block_locs = placer_state_.block_locs();
 
     const int num_layers = device_ctx.grid.get_num_layers();
-    VTR_ASSERT_DEBUG(coords.size() == num_layers);
-    VTR_ASSERT_DEBUG(num_on_edges.size() == num_layers);
+    VTR_ASSERT_DEBUG(coords.size() == (size_t)num_layers);
+    VTR_ASSERT_DEBUG(num_on_edges.size() == (size_t)num_layers);
 
     ClusterBlockId bnum = cluster_ctx.clb_nlist.net_driver_block(net_id);
     t_pl_loc block_loc = block_locs[bnum].loc;
