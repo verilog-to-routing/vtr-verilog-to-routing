@@ -168,15 +168,6 @@ enum class e_cluster_seed {
     BLEND2
 };
 
-enum class e_block_pack_status {
-    BLK_PASSED,
-    BLK_FAILED_FEASIBLE,
-    BLK_FAILED_ROUTE,
-    BLK_FAILED_FLOORPLANNING,
-    BLK_FAILED_NOC_GROUP,
-    BLK_STATUS_UNDEFINED
-};
-
 struct t_ext_pin_util {
     t_ext_pin_util() = default;
     t_ext_pin_util(float in, float out)

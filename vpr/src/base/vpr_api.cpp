@@ -15,6 +15,8 @@
 #include <cstring>
 #include <cmath>
 
+#include "cluster_util.h"
+#include "vpr_context.h"
 #include "vtr_assert.h"
 #include "vtr_math.h"
 #include "vtr_log.h"
@@ -359,9 +361,7 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
 
     fflush(stdout);
 
-    auto& helper_ctx = g_vpr_ctx.mutable_cl_helper();
     auto& device_ctx = g_vpr_ctx.mutable_device();
-    helper_ctx.lb_type_rr_graphs = vpr_setup->PackerRRGraph;
     device_ctx.pad_loc_type = vpr_setup->PlacerOpts.pad_loc_type;
 }
 
@@ -613,11 +613,12 @@ bool vpr_pack_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
                 //Load a previous packing from the .net file
                 vpr_load_packing(vpr_setup, arch);
 
-                //Load cluster_constraints data structure here since loading pack file
-                load_cluster_constraints();
             }
 
         }
+
+        // Load cluster_constraints data structure.
+        load_cluster_constraints();
 
         /* Sanity check the resulting netlist */
         check_netlist(packer_opts.pack_verbosity);
@@ -696,6 +697,7 @@ void vpr_load_packing(t_vpr_setup& vpr_setup, const t_arch& arch) {
                    "Must have valid .net filename to load packing");
 
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
+    const AtomContext& atom_ctx = g_vpr_ctx.atom();
 
     /* Ensure we have a clean start with void net remapping information */
     cluster_ctx.post_routing_clb_pin_nets.clear();
@@ -706,8 +708,11 @@ void vpr_load_packing(t_vpr_setup& vpr_setup, const t_arch& arch) {
                                          vpr_setup.FileNameOpts.verify_file_digests,
                                          vpr_setup.PackerOpts.pack_verbosity);
 
+    /* Load the mapping between clusters and their atoms */
+    init_clb_atoms_lookup(cluster_ctx.atoms_lookup, atom_ctx, cluster_ctx.clb_nlist);
+
     process_constant_nets(g_vpr_ctx.mutable_atom().nlist,
-                          g_vpr_ctx.atom().lookup,
+                          atom_ctx.lookup,
                           cluster_ctx.clb_nlist,
                           vpr_setup.constant_net_method,
                           vpr_setup.PackerOpts.pack_verbosity);
