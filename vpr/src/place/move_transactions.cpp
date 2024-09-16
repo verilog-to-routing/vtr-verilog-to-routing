@@ -94,8 +94,7 @@ void apply_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected,
     }
 }
 
-//Commits the blocks in blocks_affected to their new locations (updates inverse
-//lookups via place_ctx.grid_blocks)
+//Commits the blocks in blocks_affected to their new locations (updates inverse lookups in grid_blocks)
 void commit_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected,
                         GridBlock& grid_blocks) {
 
@@ -138,9 +137,9 @@ void revert_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected,
         blk_loc_registry.mutable_block_locs()[blk].loc = old_loc;
 
         // get physical tile type of the old location
-        t_physical_tile_type_ptr old_type = device_ctx.grid.get_physical_type({old_loc.x,old_loc.y,old_loc.layer});
+        t_physical_tile_type_ptr old_type = device_ctx.grid.get_physical_type({old_loc.x, old_loc.y, old_loc.layer});
         // get physical tile type of the new location
-        t_physical_tile_type_ptr new_type = device_ctx.grid.get_physical_type({new_loc.x,new_loc.y, new_loc.layer});
+        t_physical_tile_type_ptr new_type = device_ctx.grid.get_physical_type({new_loc.x, new_loc.y, new_loc.layer});
 
         //if physical tile type of old location does not equal physical tile type of new location, sync the new physical pins
         if (old_type != new_type) {

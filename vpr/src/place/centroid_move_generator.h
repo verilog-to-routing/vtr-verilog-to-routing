@@ -26,6 +26,8 @@ class CentroidMoveGenerator : public MoveGenerator {
      *
      * @param placer_state A mutable reference to the placement state which will
      * be stored in this object.
+     * @param reward_function Specifies the reward function to update q-tables
+     * of the RL agent.
      */
     CentroidMoveGenerator(PlacerState& placer_state,
                           e_reward_function reward_function);

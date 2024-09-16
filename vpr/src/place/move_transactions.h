@@ -60,6 +60,9 @@ struct t_pl_blocks_to_be_moved {
     void clear_move_blocks();
 
     /**
+     * @brief Determines if the given net is driven by at least of the
+     * moved blocks.
+     *
      * @param net The unique identifier of the net of interest.
      * @return True if the driver block of the net is among the moving blocks.
      */

@@ -754,8 +754,8 @@ void try_place(const Netlist<>& net_list,
                                  *current_move_generator, manual_move_generator,
                                  blocks_affected, timing_info.get(),
                                  placer_opts.place_algorithm, move_type_stat,
-                                 timing_bb_factor,
-                                 swap_stats, placer_state, net_cost_handler);
+                                 timing_bb_factor, swap_stats,
+                                 placer_state, net_cost_handler);
 
             //move the update used move_generator to its original variable
             update_move_generator(move_generator, move_generator2, agent_state,
