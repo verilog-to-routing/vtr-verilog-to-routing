@@ -4,6 +4,9 @@
 #include <sstream>
 #include <cstring>
 
+#include "pack_types.h"
+#include "prepack.h"
+#include "vpr_context.h"
 #include "vtr_assert.h"
 #include "vtr_log.h"
 #include "vtr_memory.h"
@@ -17,7 +20,6 @@
 #include "cluster_placement.h"
 #include "device_grid.h"
 #include "user_route_constraints.h"
-#include "re_cluster_util.h"
 #include "placer_state.h"
 #include "grid_block.h"
 
@@ -1124,14 +1126,11 @@ const t_pb_graph_pin* find_pb_graph_pin(const AtomNetlist& netlist, const AtomLo
     return get_pb_graph_node_pin_from_model_port_pin(model_port, ipin, pb_gnode);
 }
 
-t_pb_graph_pin* get_pb_graph_node_pin_from_block_pin(ClusterBlockId iblock, int ipin) {
+t_pb_graph_pin* get_pb_graph_node_pin_from_pb_graph_node(t_pb_graph_node* pb_graph_node,
+                                                         int ipin) {
     int i, count;
-    const t_pb_type* pb_type;
-    t_pb_graph_node* pb_graph_node;
-    auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    pb_graph_node = cluster_ctx.clb_nlist.block_pb(iblock)->pb_graph_node;
-    pb_type = pb_graph_node->pb_type;
+    const t_pb_type* pb_type = pb_graph_node->pb_type;
 
     /* If this is post-placed, then the ipin may have been shuffled up by the z * num_pins,
      * bring it back down to 0..num_pins-1 range for easier analysis */
@@ -1167,6 +1166,13 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_block_pin(ClusterBlockId iblock, int 
     }
     VTR_ASSERT(0);
     return nullptr;
+}
+
+t_pb_graph_pin* get_pb_graph_node_pin_from_block_pin(ClusterBlockId iblock, int ipin) {
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+
+    t_pb_graph_node* pb_graph_node = cluster_ctx.clb_nlist.block_pb(iblock)->pb_graph_node;
+    return get_pb_graph_node_pin_from_pb_graph_node(pb_graph_node, ipin);
 }
 
 const t_port* find_pb_graph_port(const t_pb_graph_node* pb_gnode, const std::string& port_name) {
@@ -1363,12 +1369,13 @@ std::tuple<t_physical_tile_type_ptr, const t_sub_tile*, int, t_logical_block_typ
 
 std::vector<int> get_cluster_internal_class_pairs(const AtomLookup& atom_lookup,
                                                   ClusterBlockId cluster_block_id) {
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
     std::vector<int> class_num_vec;
 
     auto [physical_tile, sub_tile, rel_cap, logical_block] = get_cluster_blk_physical_spec(cluster_block_id);
     class_num_vec.reserve(physical_tile->primitive_class_inf.size());
 
-    const auto& cluster_atoms = cluster_to_atoms(cluster_block_id);
+    const auto& cluster_atoms = cluster_ctx.atoms_lookup[cluster_block_id];
     for (AtomBlockId atom_blk_id : cluster_atoms) {
         auto atom_pb_graph_node = atom_lookup.atom_pb_graph_node(atom_blk_id);
         auto class_range = get_pb_graph_node_class_physical_range(physical_tile,
@@ -1532,7 +1539,7 @@ void free_pb(t_pb* pb) {
     free_pb_stats(pb);
 }
 
-void revalid_molecules(const t_pb* pb) {
+void revalid_molecules(const t_pb* pb, const Prepacker& prepacker) {
     const t_pb_type* pb_type = pb->pb_graph_node->pb_type;
 
     if (pb_type->blif_model == nullptr) {
@@ -1540,7 +1547,7 @@ void revalid_molecules(const t_pb* pb) {
         for (int i = 0; i < pb_type->modes[mode].num_pb_type_children && pb->child_pbs != nullptr; i++) {
             for (int j = 0; j < pb_type->modes[mode].pb_type_children[i].num_pb && pb->child_pbs[i] != nullptr; j++) {
                 if (pb->child_pbs[i][j].name != nullptr || pb->child_pbs[i][j].child_pbs != nullptr) {
-                    revalid_molecules(&pb->child_pbs[i][j]);
+                    revalid_molecules(&pb->child_pbs[i][j], prepacker);
                 }
             }
         }
@@ -1556,7 +1563,7 @@ void revalid_molecules(const t_pb* pb) {
             atom_ctx.lookup.set_atom_clb(blk_id, ClusterBlockId::INVALID());
             atom_ctx.lookup.set_atom_pb(blk_id, nullptr);
 
-            t_pack_molecule* cur_molecule = atom_ctx.prepacker.get_atom_molecule(blk_id);
+            t_pack_molecule* cur_molecule = prepacker.get_atom_molecule(blk_id);
             if (cur_molecule->valid == false) {
                 int i;
                 for (i = 0; i < get_array_size_of_molecule(cur_molecule); i++) {

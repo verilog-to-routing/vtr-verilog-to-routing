@@ -7,17 +7,15 @@
 #include "vpr_constraints_serializer.h"
 #include "vpr_constraints_uxsdcxx.h"
 
-#include "vtr_time.h"
+#include "vpr_context.h"
 
 #include "globals.h"
 #include "pugixml.hpp"
-#include "pugixml_util.hpp"
-#include "clustered_netlist_utils.h"
 
 #include <fstream>
+#include <unordered_set>
 #include "vpr_constraints_writer.h"
 #include "region.h"
-#include "re_cluster_util.h"
 
 /**
  * @brief Create a partition with the given name and a single region.
@@ -30,7 +28,6 @@ static Partition create_partition(const std::string& part_name, const Region& re
 
 void write_vpr_floorplan_constraints(const char* file_name, int expand, bool subtile, int horizontal_partitions, int vertical_partitions) {
     VprConstraints constraints;
-
     if (horizontal_partitions != 0 && vertical_partitions != 0) {
         setup_vpr_floorplan_constraints_cutpoints(constraints, horizontal_partitions, vertical_partitions);
     } else {
@@ -83,8 +80,7 @@ void setup_vpr_floorplan_constraints_one_loc(VprConstraints& constraints, int ex
         part.set_part_region(pr);
         constraints.mutable_place_constraints().add_partition(part);
 
-        const std::unordered_set<AtomBlockId>& atoms = cluster_to_atoms(blk_id);
-
+        const std::unordered_set<AtomBlockId>& atoms = cluster_ctx.atoms_lookup[blk_id];
         for (AtomBlockId atom_id : atoms) {
             constraints.mutable_place_constraints().add_constrained_atom(atom_id, partid);
         }
@@ -92,7 +88,9 @@ void setup_vpr_floorplan_constraints_one_loc(VprConstraints& constraints, int ex
     }
 }
 
-void setup_vpr_floorplan_constraints_cutpoints(VprConstraints& constraints, int horizontal_cutpoints, int vertical_cutpoints) {
+void setup_vpr_floorplan_constraints_cutpoints(VprConstraints& constraints,
+                                               int horizontal_cutpoints,
+                                               int vertical_cutpoints) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& block_locs = g_vpr_ctx.placement().block_locs();
     auto& device_ctx = g_vpr_ctx.device();
@@ -158,7 +156,7 @@ void setup_vpr_floorplan_constraints_cutpoints(VprConstraints& constraints, int 
      * appropriate region accordingly
      */
     for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks()) {
-        const std::unordered_set<AtomBlockId>& atoms = cluster_to_atoms(blk_id);
+        const std::unordered_set<AtomBlockId>& atoms = cluster_ctx.atoms_lookup[blk_id];
         int x = block_locs[blk_id].loc.x;
         int y = block_locs[blk_id].loc.y;
         int width = device_ctx.grid.width();

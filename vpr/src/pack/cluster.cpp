@@ -44,11 +44,10 @@
 
 #include "PreClusterDelayCalculator.h"
 #include "atom_netlist.h"
-#include "cluster_router.h"
+#include "cluster_legalizer.h"
 #include "cluster_util.h"
 #include "constraints_report.h"
 #include "globals.h"
-#include "pack_types.h"
 #include "prepack.h"
 #include "timing_info.h"
 #include "vpr_types.h"
@@ -70,13 +69,14 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                                                          const t_analysis_opts& analysis_opts,
                                                          const t_arch* arch,
                                                          Prepacker& prepacker,
+                                                         ClusterLegalizer& cluster_legalizer,
                                                          const std::unordered_set<AtomNetId>& is_clock,
                                                          const std::unordered_set<AtomNetId>& is_global,
                                                          bool allow_unrelated_clustering,
                                                          bool balance_block_type_utilization,
-                                                         std::vector<t_lb_type_rr_node>* lb_type_rr_graphs,
                                                          AttractionInfo& attraction_groups,
                                                          bool& floorplan_regions_overfull,
+                                                         const t_pack_high_fanout_thresholds& high_fanout_thresholds,
                                                          t_clustering_data& clustering_data) {
     /* Does the actual work of clustering multiple netlist blocks *
      * into clusters.                                                  */
@@ -102,7 +102,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
     t_cluster_progress_stats cluster_stats;
 
     //int num_molecules, num_molecules_processed, mols_since_last_print, blocks_since_last_analysis,
-    int num_blocks_hill_added, max_pb_depth, detailed_routing_stage;
+    int num_blocks_hill_added;
 
     const int verbosity = packer_opts.pack_verbosity;
 
@@ -116,17 +116,11 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
 
     enum e_block_pack_status block_pack_status;
 
-    t_cluster_placement_stats* cur_cluster_placement_stats_ptr;
-    t_lb_router_data* router_data = nullptr;
+    t_cluster_placement_stats* cur_cluster_placement_stats_ptr = nullptr;
     t_pack_molecule *istart, *next_molecule, *prev_molecule;
 
     auto& atom_ctx = g_vpr_ctx.atom();
     auto& device_ctx = g_vpr_ctx.mutable_device();
-    auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
-    auto& helper_ctx = g_vpr_ctx.mutable_cl_helper();
-
-    helper_ctx.enable_pin_feasibility_filter = packer_opts.enable_pin_feasibility_filter;
-    helper_ctx.feasible_block_array_size = packer_opts.feasible_block_array_size;
 
     std::shared_ptr<PreClusterDelayCalculator> clustering_delay_calc;
     std::shared_ptr<SetupTimingInfo> timing_info;
@@ -141,18 +135,14 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
     // Index 2 holds the number of LEs that are used for registers only.
     std::vector<int> le_count(3, 0);
 
-    helper_ctx.total_clb_num = 0;
+    int total_clb_num = 0;
 
     /* TODO: This is memory inefficient, fix if causes problems */
     /* Store stats on nets used by packed block, useful for determining transitively connected blocks
      * (eg. [A1, A2, ..]->[B1, B2, ..]->C implies cluster [A1, A2, ...] and C have a weak link) */
-    vtr::vector<ClusterBlockId, std::vector<AtomNetId>> clb_inter_blk_nets(atom_ctx.nlist.blocks().size());
+    vtr::vector<LegalizationClusterId, std::vector<AtomNetId>> clb_inter_blk_nets(atom_ctx.nlist.blocks().size());
 
     istart = nullptr;
-
-    /* determine bound on cluster size and primitive input size */
-    helper_ctx.max_cluster_size = 0;
-    max_pb_depth = 0;
 
     const t_molecule_stats max_molecule_stats = prepacker.calc_max_molecule_stats(atom_ctx.nlist);
 
@@ -160,11 +150,10 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
 
     cluster_stats.num_molecules = prepacker.get_num_molecules();
 
-    get_max_cluster_size_and_pb_depth(helper_ctx.max_cluster_size, max_pb_depth);
-
     if (packer_opts.hill_climbing_flag) {
-        clustering_data.hill_climbing_inputs_avail = new int[helper_ctx.max_cluster_size + 1];
-        for (int i = 0; i < helper_ctx.max_cluster_size + 1; i++)
+        size_t max_cluster_size = cluster_legalizer.get_max_cluster_size();
+        clustering_data.hill_climbing_inputs_avail = new int[max_cluster_size + 1];
+        for (size_t i = 0; i < max_cluster_size + 1; i++)
             clustering_data.hill_climbing_inputs_avail[i] = 0;
     } else {
         clustering_data.hill_climbing_inputs_avail = nullptr; /* if used, die hard */
@@ -173,8 +162,9 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
 #if 0
 	check_for_duplicate_inputs ();
 #endif
+
     alloc_and_init_clustering(max_molecule_stats,
-                              &(helper_ctx.cluster_placement_stats), &(helper_ctx.primitives_list), prepacker,
+                              prepacker,
                               clustering_data, net_output_feeds_driving_block_input,
                               unclustered_list_head_size, cluster_stats.num_molecules);
 
@@ -187,9 +177,6 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
     cluster_stats.blocks_since_last_analysis = 0;
     num_blocks_hill_added = 0;
 
-    VTR_ASSERT(helper_ctx.max_cluster_size < MAX_SHORT);
-    /* Limit maximum number of elements for each cluster */
-
     //Default criticalities set to zero (e.g. if not timing driven)
     vtr::vector<AtomBlockId, float> atom_criticality(atom_ctx.nlist.blocks().size(), 0.);
 
@@ -199,11 +186,17 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
     }
 
     // Assign gain scores to atoms and sort them based on the scores.
-    auto seed_atoms = initialize_seed_atoms(packer_opts.cluster_seed_type, max_molecule_stats, atom_criticality);
+    auto seed_atoms = initialize_seed_atoms(packer_opts.cluster_seed_type,
+                                            max_molecule_stats,
+                                            prepacker,
+                                            atom_criticality);
 
     /* index of next most timing critical block */
     int seed_index = 0;
-    istart = get_highest_gain_seed_molecule(seed_index, seed_atoms);
+    istart = get_highest_gain_seed_molecule(seed_index,
+                                            seed_atoms,
+                                            prepacker,
+                                            cluster_legalizer);
 
     print_pack_status_header();
 
@@ -214,61 +207,58 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
     while (istart != nullptr) {
         bool is_cluster_legal = false;
         int saved_seed_index = seed_index;
-        for (detailed_routing_stage = (int)E_DETAILED_ROUTE_AT_END_ONLY; !is_cluster_legal && detailed_routing_stage != (int)E_DETAILED_ROUTE_INVALID; detailed_routing_stage++) {
-            // Use the total number created clusters so far as the ID for the new cluster
-            ClusterBlockId clb_index(helper_ctx.total_clb_num);
+        // The basic algorithm:
+        // 1) Try to put all the molecules in that you can without doing the
+        //    full intra-lb route. Then do full legalization at the end.
+        // 2) If the legalization at the end fails, try again, but this time
+        //    do full legalization for each molecule added to the cluster.
+        const ClusterLegalizationStrategy legalization_strategies[] = {ClusterLegalizationStrategy::SKIP_INTRA_LB_ROUTE,
+                                                                       ClusterLegalizationStrategy::FULL};
+        for (const ClusterLegalizationStrategy strategy : legalization_strategies) {
+            // If the cluster is legal, no need to try a stronger cluster legalizer
+            // mode.
+            if (is_cluster_legal)
+                break;
+            // Set the legalization strategy of the cluster legalizer.
+            cluster_legalizer.set_legalization_strategy(strategy);
 
-            VTR_LOGV(verbosity > 2, "Complex block %d:\n", helper_ctx.total_clb_num);
+            LegalizationClusterId legalization_cluster_id;
 
-            /*Used to store cluster's PartitionRegion as primitives are added to it.
-             * Since some of the primitives might fail legality, this structure temporarily
-             * stores PartitionRegion information while the cluster is packed*/
-            PartitionRegion temp_cluster_pr;
-            /*
-             * Stores the cluster's NoC group ID as more primitives are added to it.
-             * This is used to check if a candidate primitive is in the same NoC group
-             * as the atom blocks that have already been added to the primitive.
-             */
-            NocGroupId temp_cluster_noc_grp_id = NocGroupId::INVALID();
+            VTR_LOGV(verbosity > 2, "Complex block %d:\n", total_clb_num);
 
-            start_new_cluster(helper_ctx.cluster_placement_stats, helper_ctx.primitives_list,
-                              clb_index, istart,
+            start_new_cluster(cluster_legalizer,
+                              legalization_cluster_id,
+                              istart,
                               num_used_type_instances,
                               packer_opts.target_device_utilization,
-                              helper_ctx.num_models, helper_ctx.max_cluster_size,
                               arch, packer_opts.device_layout,
-                              lb_type_rr_graphs, &router_data,
-                              detailed_routing_stage, &cluster_ctx.clb_nlist,
                               primitive_candidate_block_types,
                               verbosity,
-                              packer_opts.enable_pin_feasibility_filter,
-                              balance_block_type_utilization,
-                              packer_opts.feasible_block_array_size,
-                              temp_cluster_pr,
-                              temp_cluster_noc_grp_id);
+                              balance_block_type_utilization);
 
             //initial molecule in cluster has been processed
             cluster_stats.num_molecules_processed++;
             cluster_stats.mols_since_last_print++;
-            print_pack_status(helper_ctx.total_clb_num,
+            print_pack_status(total_clb_num,
                               cluster_stats.num_molecules,
                               cluster_stats.num_molecules_processed,
                               cluster_stats.mols_since_last_print,
                               device_ctx.grid.width(),
                               device_ctx.grid.height(),
-                              attraction_groups);
+                              attraction_groups,
+                              cluster_legalizer);
 
             VTR_LOGV(verbosity > 2,
-                     "Complex block %d: '%s' (%s) ", helper_ctx.total_clb_num,
-                     cluster_ctx.clb_nlist.block_name(clb_index).c_str(),
-                     cluster_ctx.clb_nlist.block_type(clb_index)->name);
+                     "Complex block %d: '%s' (%s) ", total_clb_num,
+                     cluster_legalizer.get_cluster_pb(legalization_cluster_id)->name,
+                     cluster_legalizer.get_cluster_type(legalization_cluster_id)->name);
             VTR_LOGV(verbosity > 2, ".");
             //Progress dot for seed-block
             fflush(stdout);
 
-            t_ext_pin_util target_ext_pin_util = helper_ctx.target_external_pin_util.get_pin_util(cluster_ctx.clb_nlist.block_type(clb_index)->name);
-            int high_fanout_threshold = helper_ctx.high_fanout_thresholds.get_threshold(cluster_ctx.clb_nlist.block_type(clb_index)->name);
-            update_cluster_stats(istart, clb_index,
+            int high_fanout_threshold = high_fanout_thresholds.get_threshold(cluster_legalizer.get_cluster_type(legalization_cluster_id)->name);
+            update_cluster_stats(istart,
+                                 cluster_legalizer,
                                  is_clock,  //Set of clock nets
                                  is_global, //Set of global nets (currently all clocks)
                                  packer_opts.global_clocks,
@@ -278,16 +268,16 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                                  *timing_info,
                                  attraction_groups,
                                  net_output_feeds_driving_block_input);
-            helper_ctx.total_clb_num++;
+            total_clb_num++;
 
             if (packer_opts.timing_driven) {
                 cluster_stats.blocks_since_last_analysis++;
                 /*it doesn't make sense to do a timing analysis here since there*
                  *is only one atom block clustered it would not change anything      */
             }
-            cur_cluster_placement_stats_ptr = &(helper_ctx.cluster_placement_stats[cluster_ctx.clb_nlist.block_type(clb_index)->index]);
+            cur_cluster_placement_stats_ptr = cluster_legalizer.get_cluster_placement_stats(legalization_cluster_id);
             cluster_stats.num_unrelated_clustering_attempts = 0;
-            next_molecule = get_molecule_for_cluster(cluster_ctx.clb_nlist.block_pb(clb_index),
+            next_molecule = get_molecule_for_cluster(cluster_legalizer.get_cluster_pb(legalization_cluster_id),
                                                      attraction_groups,
                                                      allow_unrelated_clustering,
                                                      packer_opts.prioritize_transitive_connectivity,
@@ -295,8 +285,10 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                                                      packer_opts.feasible_block_array_size,
                                                      &cluster_stats.num_unrelated_clustering_attempts,
                                                      cur_cluster_placement_stats_ptr,
+                                                     prepacker,
+                                                     cluster_legalizer,
                                                      clb_inter_blk_nets,
-                                                     clb_index,
+                                                     legalization_cluster_id,
                                                      verbosity,
                                                      clustering_data.unclustered_list_head,
                                                      unclustered_list_head_size,
@@ -322,18 +314,16 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
             while (next_molecule != nullptr && num_repeated_molecules < max_num_repeated_molecules) {
                 prev_molecule = next_molecule;
 
-                try_fill_cluster(packer_opts,
+                try_fill_cluster(cluster_legalizer,
+                                 prepacker,
+                                 packer_opts,
                                  cur_cluster_placement_stats_ptr,
                                  prev_molecule,
                                  next_molecule,
                                  num_repeated_molecules,
-                                 helper_ctx.primitives_list,
                                  cluster_stats,
-                                 helper_ctx.total_clb_num,
-                                 helper_ctx.num_models,
-                                 helper_ctx.max_cluster_size,
-                                 clb_index,
-                                 detailed_routing_stage,
+                                 total_clb_num,
+                                 legalization_cluster_id,
                                  attraction_groups,
                                  clb_inter_blk_nets,
                                  allow_unrelated_clustering,
@@ -341,10 +331,6 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                                  is_clock,
                                  is_global,
                                  timing_info,
-                                 router_data,
-                                 target_ext_pin_util,
-                                 temp_cluster_pr,
-                                 temp_cluster_noc_grp_id,
                                  block_pack_status,
                                  clustering_data.unclustered_list_head,
                                  unclustered_list_head_size,
@@ -352,16 +338,41 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                                  primitive_candidate_block_types);
             }
 
-            is_cluster_legal = check_cluster_legality(verbosity, detailed_routing_stage, router_data);
+            if (strategy == ClusterLegalizationStrategy::FULL) {
+                // If the legalizer fully legalized for every molecule added,
+                // the cluster should be legal.
+                is_cluster_legal = true;
+            } else {
+                // If the legalizer did not check everything for every molecule,
+                // need to check that the full cluster is legal (need to perform
+                // intra-lb routing).
+                is_cluster_legal = cluster_legalizer.check_cluster_legality(legalization_cluster_id);
+            }
 
             if (is_cluster_legal) {
-                istart = save_cluster_routing_and_pick_new_seed(packer_opts, helper_ctx.total_clb_num, seed_atoms, num_blocks_hill_added, clustering_data.intra_lb_routing, seed_index, cluster_stats, router_data);
-                store_cluster_info_and_free(packer_opts, clb_index, logic_block_type, le_pb_type, le_count, clb_inter_blk_nets);
+                // Pick new seed.
+                istart = get_highest_gain_seed_molecule(seed_index,
+                                                        seed_atoms,
+                                                        prepacker,
+                                                        cluster_legalizer);
+                // Update cluster stats.
+                if (packer_opts.timing_driven && num_blocks_hill_added > 0)
+                    cluster_stats.blocks_since_last_analysis += num_blocks_hill_added;
+
+                store_cluster_info_and_free(packer_opts, legalization_cluster_id, logic_block_type, le_pb_type, le_count, cluster_legalizer, clb_inter_blk_nets);
+                // Since the cluster will no longer be added to beyond this point,
+                // clean the cluster of any data not strictly necessary for
+                // creating the clustered netlist.
+                cluster_legalizer.clean_cluster(legalization_cluster_id);
             } else {
-                free_data_and_requeue_used_mols_if_illegal(clb_index, saved_seed_index, num_used_type_instances, helper_ctx.total_clb_num, seed_index);
+                // If the cluster is not legal, requeue used mols.
+                num_used_type_instances[cluster_legalizer.get_cluster_type(legalization_cluster_id)]--;
+                total_clb_num--;
+                seed_index = saved_seed_index;
+                // Destroy the illegal cluster.
+                cluster_legalizer.destroy_cluster(legalization_cluster_id);
+                cluster_legalizer.compress();
             }
-            free_router_data(router_data);
-            router_data = nullptr;
         }
     }
 
@@ -371,7 +382,12 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
     }
 
     //check_floorplan_regions(floorplan_regions_overfull);
-    floorplan_regions_overfull = floorplan_constraints_regions_overfull();
+    floorplan_regions_overfull = floorplan_constraints_regions_overfull(cluster_legalizer);
+
+    // Ensure that we have kept track of the number of clusters correctly.
+    // TODO: The total_clb_num variable could probably just be replaced by
+    //       clusters().size().
+    VTR_ASSERT(cluster_legalizer.clusters().size() == (size_t)total_clb_num);
 
     return num_used_type_instances;
 }

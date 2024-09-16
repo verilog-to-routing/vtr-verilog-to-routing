@@ -7,7 +7,6 @@
 #include "route_common.h"
 #include "route_export.h"
 #include "rr_graph.h"
-#include "re_cluster_util.h"
 
 /*  The numbering relation between the channels and clbs is:				*
  *																	        *

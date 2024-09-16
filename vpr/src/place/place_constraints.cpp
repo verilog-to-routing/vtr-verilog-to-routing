@@ -11,7 +11,7 @@
 #include "globals.h"
 #include "place_constraints.h"
 #include "place_util.h"
-#include "re_cluster_util.h"
+#include "vpr_context.h"
 
 int check_placement_floorplanning(const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
     int error = 0;
@@ -221,12 +221,12 @@ bool cluster_floorplanning_legal(ClusterBlockId blk_id, const t_pl_loc& loc) {
 
 void load_cluster_constraints() {
     auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
 
     floorplanning_ctx.cluster_constraints.resize(cluster_ctx.clb_nlist.blocks().size());
 
     for (auto cluster_id : cluster_ctx.clb_nlist.blocks()) {
-        const std::unordered_set<AtomBlockId>& atoms = cluster_to_atoms(cluster_id);
+        const std::unordered_set<AtomBlockId>& atoms = cluster_ctx.atoms_lookup[cluster_id];
         PartitionRegion empty_pr;
         floorplanning_ctx.cluster_constraints[cluster_id] = empty_pr;
 
