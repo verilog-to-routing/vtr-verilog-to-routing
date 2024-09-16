@@ -505,7 +505,9 @@ void NetCostHandler::get_non_updatable_cube_bb_(ClusterNetId net_id, bool use_ts
     const auto& block_locs = placer_state_.block_locs();
     auto& move_ctx = placer_state_.mutable_move();
 
+    // the bounding box coordinates that is going to be updated by this function
     t_bb& bb_coord_new = use_ts ? ts_bb_coord_new_[net_id] : move_ctx.bb_coords[net_id];
+    // the number of sink pins of "net_id" on each layer
     vtr::NdMatrixProxy<int, 1> num_sink_pin_layer = use_ts ? ts_layer_sink_pin_count_[size_t(net_id)] : move_ctx.num_sink_pin_layer[size_t(net_id)];
 
     ClusterBlockId bnum = cluster_ctx.clb_nlist.net_driver_block(net_id);
@@ -1482,6 +1484,8 @@ double NetCostHandler::get_net_cube_bb_cost_(ClusterNetId net_id, bool use_ts) {
 
 double NetCostHandler::get_net_per_layer_bb_cost_(ClusterNetId net_id , bool use_ts) {
     const auto& move_ctx = placer_state_.move();
+
+    // Per-layer bounding box of the net
     const std::vector<t_2D_bb>& bb = use_ts ? layer_ts_bb_coord_new_[net_id] : move_ctx.layer_bb_coords[net_id];
     const vtr::NdMatrixProxy<int, 1> layer_pin_sink_count = use_ts ? ts_layer_sink_pin_count_[size_t(net_id)] : move_ctx.num_sink_pin_layer[size_t(net_id)];
 

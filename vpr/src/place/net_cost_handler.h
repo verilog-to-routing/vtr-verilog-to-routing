@@ -283,11 +283,11 @@ class NetCostHandler {
     void set_ts_edge_(const ClusterNetId net_id);
 
     /**
-     * @brief Calculate the 3D bounding box of "net_id" from scratch (based on the block locations stored in place_ctx) and
-     * store them in bb_coord_new
+     * @brief Calculate the 3D bounding box of "net_id" from scratch (based on the block locations
+     * stored in placer_state_.blk_loc_registry) and store them in bb_coord_new
      * @param net_id ID of the net for which the bounding box is requested
-     * @param bb_coord_new Computed by this function and returned by reference.
-     * @param num_sink_pin_layer Store the number of sink pins of "net_id" on each layer
+     * @param use_ts Specifies whether the `ts` bounding box is updated or
+     * the one stored in placer_state_
      */
     void get_non_updatable_cube_bb_(ClusterNetId net_id, bool use_ts);
 
@@ -295,10 +295,10 @@ class NetCostHandler {
      * @brief Calculate the per-layer bounding box of "net_id" from scratch (based on the block locations stored in place_ctx) and
      * store them in bb_coord_new
      * @param net_id ID of the net for which the bounding box is requested
-     * @param bb_coord_new Computed by this function and returned by reference.
-     * @param num_sink_layer Store the number of sink pins of "net_id" on each layer
+     * @param use_ts Specifies whether the `ts` bounding box is updated or
+     * the one stored in placer_state_
      */
-    void get_non_updatable_per_layer_bb_(ClusterNetId net_id, bool use_sink);
+    void get_non_updatable_per_layer_bb_(ClusterNetId net_id, bool use_ts);
 
     /**
      * @brief Calculate the 3D BB of a large net from scratch and update coord, edge, and num_sink_pin_layer data structures.
@@ -478,7 +478,8 @@ class NetCostHandler {
       * @brief Given the per-layer BB, calculate the wire-length cost of the net on each layer
       * and return the sum of the costs
       * @param net_id ID of the net which cost is requested. Currently unused
-      * @param bb Per-layer bounding box of the net
+      * @param use_ts Specifies whether the 'ts` bounding box is used to compute the
+      * cost or the one stored in placer_state_
       * @return Wirelength cost of the net
       */
      double get_net_per_layer_bb_cost_(ClusterNetId net_id, bool use_ts);
