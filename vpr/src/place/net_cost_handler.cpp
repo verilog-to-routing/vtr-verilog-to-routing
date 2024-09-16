@@ -646,8 +646,11 @@ void NetCostHandler::update_bb_(ClusterNetId net_id,
 
     const int num_layers = device_ctx.grid.get_num_layers();
 
+    // Number of blocks on the edges of the bounding box
     t_bb& bb_edge_new = ts_bb_edge_new_[net_id];
+    // Coordinates of the bounding box
     t_bb& bb_coord_new = ts_bb_coord_new_[net_id];
+    // Number of sinks of the given net on each layer
     vtr::NdMatrixProxy<int, 1> num_sink_pin_layer_new = ts_layer_sink_pin_count_[size_t(net_id)];
 
     pin_new_loc.x = max(min<int>(pin_new_loc.x, device_ctx.grid.width() - 2), 1);  //-2 for no perim channels

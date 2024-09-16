@@ -326,9 +326,7 @@ class NetCostHandler {
      * the CLBs forming the edges of the bounding box can be used.  Essentially, I am assuming the pins always lie on the
      * outside of the bounding box. The x and y coordinates are the pin's x and y coordinates. IO blocks are considered to be one
      * cell in for simplicity.
-     * @param bb_edge_new Number of blocks on the edges of the bounding box
-     * @param bb_coord_new Coordinates of the bounding box
-     * @param num_sink_pin_layer_new Number of sinks of the given net on each layer
+     * @param net_id ID of the net which the moving pin belongs to
      * @param pin_old_loc The old location of the moving pin
      * @param pin_new_loc The new location of the moving pin
      * @param src_pin Is the moving pin driving the net
@@ -369,7 +367,7 @@ class NetCostHandler {
      * @param bb_coord_new The new bb calculated by this function
      * @param bb_layer_pin_sink_count The updated number of net's sinks on each layer
      * @param old_num_block_on_edge The current known number of blocks of the net on bounding box edges
-     * @param old_edge_coord The current known boudning box of the net
+     * @param old_edge_coord The current known bounding box of the net
      * @param new_num_block_on_edge The new bb calculated by this function
      * @param new_edge_coord The new bb edge calculated by this function
      *
@@ -390,7 +388,7 @@ class NetCostHandler {
      * @param pin_old_loc Old location of the moving pin
      * @param pin_new_loc New location of the moving pin
      * @param curr_bb_edge The current known number of blocks of the net on bounding box edges
-     * @param curr_bb_coord The current known boudning box of the net
+     * @param curr_bb_coord The current known bounding box of the net
      * @param bb_pin_sink_count_new The updated number of net's sinks on each layer
      * @param bb_edge_new The new bb edge calculated by this function
      * @param bb_coord_new The new bb calculated by this function
@@ -411,7 +409,7 @@ class NetCostHandler {
      * @param pin_old_loc Old location of the moving pin
      * @param pin_new_loc New location of the moving pin
      * @param curr_bb_edge The current known number of blocks of the net on bounding box edges
-     * @param curr_bb_coord The current known boudning box of the net
+     * @param curr_bb_coord The current known bounding box of the net
      * @param bb_pin_sink_count_new The updated number of net's sinks on each layer
      * @param bb_edge_new The new bb edge calculated by this function
      * @param bb_coord_new The new bb calculated by this function

@@ -7,6 +7,7 @@
 #include "grid_block.h"
 
 struct t_block_loc;
+struct t_pl_blocks_to_be_moved;
 
 /**
  * @class BlkLocRegistry contains information about the placement of clustered blocks.
@@ -80,6 +81,24 @@ class BlkLocRegistry {
      * It does not check for overuse of locations, therefore it can be used with placements that have resource overuse.
      */
     void place_sync_external_block_connections(ClusterBlockId iblk);
+
+    /**
+     * @brief Moves the blocks in blocks_affected to their new locations
+     * @param blocks_affected Clustered blocks affected by a swap and their old and new locations.
+     */
+    void apply_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected);
+
+    /**
+     * @brief Commits the blocks in blocks_affected to their new locations (updates inverse lookups in grid_blocks)
+     * @param blocks_affected Clustered blocks affected by a swap and their old and new locations.
+     */
+    void commit_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected);
+
+    /**
+     * @brief Moves the blocks in blocks_affected to their old locations
+     * @param blocks_affected Clustered blocks affected by a swap and their old and new locations.
+     */
+    void revert_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected);
 };
 
 #endif //VTR_BLK_LOC_REGISTRY_H

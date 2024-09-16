@@ -82,14 +82,4 @@ struct t_pl_blocks_to_be_moved {
     std::vector<ClusterPinId> affected_pins;
 };
 
-
-void apply_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected,
-                       BlkLocRegistry& blk_loc_registry);
-
-void commit_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected,
-                        GridBlock& grid_blocks);
-
-void revert_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected,
-                        BlkLocRegistry& blk_loc_registry);
-
 #endif

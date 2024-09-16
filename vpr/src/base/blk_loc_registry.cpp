@@ -1,5 +1,7 @@
 
 #include "blk_loc_registry.h"
+
+#include "move_transactions.h"
 #include "globals.h"
 
 const vtr::vector_map<ClusterBlockId, t_block_loc>& BlkLocRegistry::block_locs() const {
@@ -110,5 +112,83 @@ void BlkLocRegistry::place_sync_external_block_connections(ClusterBlockId iblk) 
         } else {
             physical_pins_.insert(pin, new_physical_pin_index);
         }
+    }
+}
+
+void BlkLocRegistry::apply_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected) {
+    auto& device_ctx = g_vpr_ctx.device();
+
+    // Swap the blocks, but don't swap the nets or update place_ctx.grid_blocks
+    // yet since we don't know whether the swap will be accepted
+    for (const t_pl_moved_block& moved_block : blocks_affected.moved_blocks) {
+        ClusterBlockId blk = moved_block.block_num;
+
+        const t_pl_loc& old_loc = moved_block.old_loc;
+        const t_pl_loc& new_loc = moved_block.new_loc;
+
+        // move the block to its new location
+        block_locs_[blk].loc = new_loc;
+
+        // get physical tile type of the old location
+        t_physical_tile_type_ptr old_type = device_ctx.grid.get_physical_type({old_loc.x,old_loc.y,old_loc.layer});
+        // get physical tile type of the new location
+        t_physical_tile_type_ptr new_type = device_ctx.grid.get_physical_type({new_loc.x,new_loc.y, new_loc.layer});
+
+        // if physical tile type of old location does not equal physical tile type of new location, sync the new physical pins
+        if (old_type != new_type) {
+            place_sync_external_block_connections(blk);
+        }
+    }
+}
+
+void BlkLocRegistry::commit_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected) {
+    // Swap physical location
+    for (const t_pl_moved_block& moved_block : blocks_affected.moved_blocks) {
+        ClusterBlockId blk = moved_block.block_num;
+
+        const t_pl_loc& to = moved_block.new_loc;
+        const t_pl_loc& from = moved_block.old_loc;
+
+        // Remove from old location only if it hasn't already been updated by a previous block update
+        if (grid_blocks_.block_at_location(from) == blk) {
+            grid_blocks_.set_block_at_location(from, ClusterBlockId::INVALID());
+            grid_blocks_.decrement_usage({from.x, from.y, from.layer});
+        }
+
+        // Add to new location
+        if (grid_blocks_.block_at_location(to) == ClusterBlockId::INVALID()) {
+            //Only need to increase usage if previously unused
+            grid_blocks_.increment_usage({to.x, to.y, to.layer});
+        }
+        grid_blocks_.set_block_at_location(to, blk);
+
+    } // Finish updating clb for all blocks
+}
+
+void BlkLocRegistry::revert_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected) {
+    auto& device_ctx = g_vpr_ctx.device();
+
+    // Swap the blocks back, nets not yet swapped they don't need to be changed
+    for (const t_pl_moved_block& moved_block : blocks_affected.moved_blocks) {
+        ClusterBlockId blk = moved_block.block_num;
+
+        const t_pl_loc& old_loc = moved_block.old_loc;
+        const t_pl_loc& new_loc = moved_block.new_loc;
+
+        // return the block to where it was before the swap
+        block_locs_[blk].loc = old_loc;
+
+        // get physical tile type of the old location
+        t_physical_tile_type_ptr old_type = device_ctx.grid.get_physical_type({old_loc.x, old_loc.y, old_loc.layer});
+        // get physical tile type of the new location
+        t_physical_tile_type_ptr new_type = device_ctx.grid.get_physical_type({new_loc.x, new_loc.y, new_loc.layer});
+
+        // if physical tile type of old location does not equal physical tile type of new location, sync the new physical pins
+        if (old_type != new_type) {
+            place_sync_external_block_connections(blk);
+        }
+
+        VTR_ASSERT_SAFE_MSG(grid_blocks_.block_at_location(old_loc) == blk,
+                            "Grid blocks should only have been updated if swap committed (not reverted)");
     }
 }
