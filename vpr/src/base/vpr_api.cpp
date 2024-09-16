@@ -15,6 +15,7 @@
 #include <cstring>
 #include <cmath>
 
+#include "cluster_util.h"
 #include "vpr_context.h"
 #include "vtr_assert.h"
 #include "vtr_math.h"
@@ -616,7 +617,7 @@ bool vpr_pack_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
 
         }
 
-        // Load cluster_constraints data structure here since loading pack file
+        // Load cluster_constraints data structure.
         load_cluster_constraints();
 
         /* Sanity check the resulting netlist */
@@ -708,11 +709,7 @@ void vpr_load_packing(t_vpr_setup& vpr_setup, const t_arch& arch) {
                                          vpr_setup.PackerOpts.pack_verbosity);
 
     /* Load the mapping between clusters and their atoms */
-    cluster_ctx.atoms_lookup.resize(cluster_ctx.clb_nlist.blocks().size());
-    for (AtomBlockId atom_blk_id : atom_ctx.nlist.blocks()) {
-        ClusterBlockId atom_cluster_blk_id = atom_ctx.lookup.atom_clb(atom_blk_id);
-        cluster_ctx.atoms_lookup[atom_cluster_blk_id].insert(atom_blk_id);
-    }
+    init_clb_atoms_lookup(cluster_ctx.atoms_lookup, atom_ctx, cluster_ctx.clb_nlist);
 
     process_constant_nets(g_vpr_ctx.mutable_atom().nlist,
                           atom_ctx.lookup,

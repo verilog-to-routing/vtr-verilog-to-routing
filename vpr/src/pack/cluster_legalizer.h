@@ -1,7 +1,19 @@
+/**
+ * @file
+ * @author  Alex Singer
+ * @date    September 2024
+ * @brief   The declaration of the Cluster Legalizer class.
+ *
+ * This file declares a class called the ClusterLegalizer which encapsulates all
+ * logic for creating legal clusters from prepacked molecules. This class is
+ * designed to be self-contained to the point that it is able to be called
+ * externally to the Packer in VPR.
+ */
+
 #pragma once
 
-#include <set>
 #include <unordered_map>
+#include <vector>
 #include "atom_netlist_fwd.h"
 #include "noc_data_types.h"
 #include "partition_region.h"
@@ -49,12 +61,15 @@ struct LegalizationCluster {
     /// @brief A list of the molecules in the cluster. By design, a cluster will
     ///        only contain molecules which have been previously legalized into
     ///        the cluster using a legalization strategy.
-    std::set<t_pack_molecule*> molecules;
+    std::vector<t_pack_molecule*> molecules;
 
     /// @brief The logical block of this cluster.
     /// TODO: We should be more careful with how this is allocated. Instead of
     ///       pointers, we really should use IDs and store them in a standard
-    ///       container.
+    ///       container. Currently this is being allocated with the new keyword
+    ///       and freed when the cluster is destroyed; however this is used
+    ///       externally to the class and it can be dangerous to pass around
+    ///       a pointer to this object.
     t_pb* pb;
 
     /// @brief The logical block type this cluster represents.
@@ -79,7 +94,7 @@ struct LegalizationCluster {
 };
 
 /*
- * @brief A manager class which manages the legalization of cluster. As clusters
+ * @brief A manager class which manages the legalization of clusters. As clusters
  *        are created, this class will legalize for each molecule added. It also
  *        provides methods which are helpful for clustering.
  *
@@ -99,13 +114,15 @@ struct LegalizationCluster {
  * look something like this. Note, this example is simplified and the result
  * of the packings should be checked and handled.
  *
- * ClusterLegalizer legalizer(...);
+ * ClusterLegalizer legalizer(...,
+ *                            ClusterLegalizationStrategy::SKIP_INTRA_LB_ROUTE,
+ *                            ...);
  *
  * std::tie(status, new_cluster_id) = legalizer.start_new_cluster(seed_mol,
  *                                                                cluster_type,
  *                                                                mode);
  * for mol in molecules_to_add:
- *      // Cheaper additions, but may pack a molecule that wouldnt route.
+ *      // Cheaper additions, but may pack a molecule that wouldn't route.
  *      status = legalizer.add_mol_to_cluster(mol, new_cluster_id);
  *      if (status != e_block_pack_status::BLK_PASSED)
  *          break;
@@ -114,6 +131,8 @@ struct LegalizationCluster {
  * if (!legalizer.check_cluster_legality(new_cluster_id))
  *      // Destroy the illegal cluster.
  *      legalizer.destroy_cluster(new_cluster_id);
+ *      // Clean-up the internal bookeeping of the class (required after
+ *      // destroying a cluster).
  *      legalizer.compress();
  *      // Handle how to try again (maybe use FULL strategy).
  *
@@ -121,9 +140,11 @@ struct LegalizationCluster {
  * This strategy will fully route the internal connections of the clusters for
  * each molecule added. This is much more expensive to run; however, will ensure
  * that the cluster is fully legalized while it is being created. An example
- * of how to sue this strategy would look something like this:
+ * of how to use this strategy would look something like this:
  *
- * Clusterlegalizer legalizer(...);
+ * Clusterlegalizer legalizer(...,
+ *                            ClusterLegalizationStrategy::FULL,
+ *                            ...);
  *
  * std::tie(pack_result, new_cluster_id) = legalizer.start_new_cluster(seed_mol,
  *                                                                     cluster_type,
@@ -174,6 +195,46 @@ public:
      * @brief Initialize the ClusterLegalizer class.
      *
      * Allocates internal state.
+     *
+     *  @param atom_netlist     The complete atom netlist. Used to allocate
+     *                          internal structures to the correct size.
+     *  @param prepacker        The prepacker object used to prepack the atoms
+     *                          into molecules. A reference to this object is
+     *                          stored internally to be used to lookup the
+     *                          molecules of atoms.
+     *  @param logical_block_types Used to allocate internal objects. Used to
+     *                             get the max number of primitives in any block
+     *                             type.
+     *  @param lb_type_rr_graphs The routing resource graph internal to the
+     *                           different cluster types. A reference is stored
+     *                           in the class to be used to allocate and load
+     *                           the router data.
+     *  @param num_models       The total number of models in the architecture.
+     *                          This is the sum of the number of the user and
+     *                          library models. Used internally to allocate data
+     *                          structures.
+     *  @param target_external_pin_util_str A string used to initialize the
+     *                                      target external pin utilization of
+     *                                      each cluster type.
+     *  @param high_fanout_thresholds An object that stores the thresholds for
+     *                                a net to be considered high fanout for
+     *                                different block types.
+     *  @param cluster_legalization_strategy The legalization strategy to be
+     *                                       used when creating clusters and
+     *                                       adding molecules to clusters.
+     *                                       Controls the checks that are performed.
+     *  @param enable_pin_feasibility_filter A flag to turn on/off the check for
+     *                                       pin usage feasibility.
+     *  @param feasible_block_array_size The largest number of feasible blocks
+     *                                   that can be stored in a cluster. Used
+     *                                   to allocate an internal structure.
+     *  @param log_verbosity     Controls how verbose the log messages will
+     *                           be within this class.
+     *
+     *  TODO: A lot of these arguments are only used to allocate C-style arrays
+     *        since the original author was avoiding dynamic allocations. It may
+     *        be more space efficient (and cleaner) to make these dynamic arrays
+     *        and not pass these arguments in.
      */
     ClusterLegalizer(const AtomNetlist& atom_netlist,
                      const Prepacker& prepacker,
@@ -211,7 +272,12 @@ public:
     /*
      * @brief Add an unclustered molecule to the given legalization cluster.
      *
-     * If the addition was unsuccessful, the molecule will remain unclustered.
+     * The ClusterLegalizationStrategy (set either in the constructor or by the
+     * set_cluster_legalization_strategy method) decides what checks are
+     * performed when adding a molecule to the cluster.
+     *
+     * If the addition was unsuccessful (i.e. a check fails), the molecule will
+     * remain unclustered.
      *
      *  @param molecule         The molecule to add to the cluster.
      *  @param cluster_id       The ID of the cluster to add the molecule to.
@@ -234,8 +300,8 @@ public:
     void destroy_cluster(LegalizationClusterId cluster_id);
 
     /*
-     * @brief Compress the internal storage of clusters. Should be called after
-     *        a cluster is destroyed.
+     * @brief Compress the internal storage of clusters. Should be called
+     *        eventually after one or more clusters are destroyed.
      *
      * Similar to the Netlist compress method. Will invalidate all Legalization
      * Cluster IDs.
@@ -246,7 +312,7 @@ public:
     void compress();
 
     /*
-     * @brief A list of all cluster IDs in the legalizer.
+     * @brief A range of all cluster IDs in the legalizer.
      *
      * If the legalizer has been compressed (or no clusters have been destroyed)
      * then all cluster IDs in this list will be valid and represent a non-empty
@@ -288,14 +354,15 @@ public:
     void clean_cluster(LegalizationClusterId cluster_id);
 
     /*
-     * @brief Verify that all atoms have been clustered into a cluster.
+     * @brief Verify that all atoms have been clustered into some cluster.
      *
      * This will not verify if all the clusters are fully legal.
      */
     void verify();
 
     /*
-     * @brief Finalize the clustering.
+     * @brief Finalize the clustering. Required for generating a Clustered
+     *        Netlist.
      *
      * Before generating a Clustered Netlist, each cluster needs to allocate and
      * load a pb_route. This method will generate a pb_route for each cluster
@@ -339,6 +406,14 @@ public:
     }
 
     /// @brief Gets the cluster placement stats of the given cluster.
+    ///
+    /// The cluster placement stats are statistics used to monitor which atoms
+    /// have been physically clustered into the pb (more specifically what site
+    /// they will go). This can be used externally to the legalizer to detect
+    /// if an atom could physically go into a cluster (exists_free_primitive_for_atom_block).
+    ///
+    /// TODO: Releasing the whole stats can be dangerous. Ideally there should
+    ///       just be a method to see if an atom could physically go in a cluster.
     inline t_cluster_placement_stats* get_cluster_placement_stats(LegalizationClusterId cluster_id) const {
         VTR_ASSERT_SAFE(cluster_id.is_valid() && (size_t)cluster_id < legalization_clusters_.size());
         return &(cluster_placement_stats_[get_cluster_type(cluster_id)->index]);
@@ -358,6 +433,9 @@ public:
     }
 
     /// @bried Gets the max size a cluster could physically be.
+    ///
+    /// This is the maximum number of primitives any cluster could ever have
+    /// in the architecture.
     inline size_t get_max_cluster_size() const {
         return max_cluster_size_;
     }
@@ -411,7 +489,10 @@ private:
 
     /// @brief Stores the NoC group ID of each atom block. Atom blocks that
     ///        belong to different NoC groups can't be clustered with each other
-    ///        into the same clustered block.
+    ///        into the same clustered block. Under some optimization settings
+    ///        to improve placement locality / NoC usage. Atoms with different
+    ///        NoC group IDs belong to logic that is disjoint except through
+    ///        NoC traffic.
     vtr::vector<AtomBlockId, NocGroupId> atom_noc_grp_id_;
 
     /// @brief Stats keeper for placement information during packing/clustering.
@@ -422,8 +503,8 @@ private:
     ///        should stored per cluster.
     t_cluster_placement_stats* cluster_placement_stats_ = nullptr;
 
-    /// @brief The utilization of external input/output pins during packing
-    ///        (between 0 and 1).
+    /// @brief The maximum fractional utilization of cluster external
+    ///        input/output pins during packing (between 0 and 1).
     t_ext_pin_util_targets target_external_pin_util_;
 
     /// @brief The max size of any molecule. This is used to allocate a dynamic
@@ -431,8 +512,8 @@ private:
     ///        expensive to calculate from the prepacker.
     size_t max_molecule_size_;
 
-    /// @brief The max size a cluster could physically be. This is used to
-    ///        allocate dynamic arrays.
+    /// @brief The max number of primitives a cluster could physically have.
+    ///        This is used to allocate dynamic arrays.
     size_t max_cluster_size_;
 
     /// @brief A vector of routing resource nodes within each logical block type

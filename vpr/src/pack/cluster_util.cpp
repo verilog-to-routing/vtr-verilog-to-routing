@@ -7,6 +7,7 @@
 #include "atom_netlist.h"
 #include "cluster_legalizer.h"
 #include "cluster_placement.h"
+#include "clustered_netlist.h"
 #include "concrete_timing_info.h"
 #include "output_clustering.h"
 #include "prepack.h"
@@ -72,7 +73,6 @@ static void echo_clusters(char* filename, const ClusterLegalizer& cluster_legali
     fclose(fp);
 }
 
-//calculate the initial timing at the start of packing stage
 void calc_init_packing_timing(const t_packer_opts& packer_opts,
                               const t_analysis_opts& analysis_opts,
                               const Prepacker& prepacker,
@@ -125,7 +125,6 @@ void calc_init_packing_timing(const t_packer_opts& packer_opts,
     }
 }
 
-//Free the clustering data structures
 void free_clustering_data(const t_packer_opts& packer_opts,
                           t_clustering_data& clustering_data) {
 
@@ -136,7 +135,6 @@ void free_clustering_data(const t_packer_opts& packer_opts,
     delete[] clustering_data.memory_pool;
 }
 
-//check the clustering and output it
 void check_and_output_clustering(ClusterLegalizer& cluster_legalizer,
                                  const t_packer_opts& packer_opts,
                                  const std::unordered_set<AtomNetId>& is_clock,
@@ -156,7 +154,6 @@ void check_and_output_clustering(ClusterLegalizer& cluster_legalizer,
                       true /*from_legalizer*/);
 }
 
-/*print the header for the clustering progress table*/
 void print_pack_status_header() {
     VTR_LOG("Starting Clustering - Clustering Progress: \n");
     VTR_LOG("-------------------   --------------------------   ---------\n");
@@ -164,7 +161,6 @@ void print_pack_status_header() {
     VTR_LOG("-------------------   --------------------------   ---------\n");
 }
 
-/*incrementally print progress updates during clustering*/
 void print_pack_status(int num_clb,
                        int tot_num_molecules,
                        int num_molecules_processed,
@@ -203,11 +199,6 @@ void print_pack_status(int num_clb,
     }
 }
 
-/*
- * Periodically rebuild the attraction groups to reflect which atoms in them
- * are still available for new clusters (i.e. remove the atoms that have already
- * been packed from the attraction group).
- */
 void rebuild_attraction_groups(AttractionInfo& attraction_groups,
                                const ClusterLegalizer& cluster_legalizer) {
 
@@ -226,7 +217,6 @@ void rebuild_attraction_groups(AttractionInfo& attraction_groups,
     }
 }
 
-/* Determine if atom block is in pb */
 bool is_atom_blk_in_pb(const AtomBlockId blk_id, const t_pb* pb) {
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
 
@@ -240,9 +230,6 @@ bool is_atom_blk_in_pb(const AtomBlockId blk_id, const t_pb* pb) {
     return false;
 }
 
-/* Remove blk from list of feasible blocks sorted according to gain
- * Useful for removing blocks that are repeatedly failing. If a block
- * has been found to be illegal, we don't repeatedly consider it.*/
 void remove_molecule_from_pb_stats_candidates(t_pack_molecule* molecule,
                                               t_pb* pb) {
     int molecule_index;
@@ -268,7 +255,6 @@ void remove_molecule_from_pb_stats_candidates(t_pack_molecule* molecule,
     pb->pb_stats->num_feasible_blocks--;
 }
 
-/* Add blk to list of feasible blocks sorted according to gain */
 void add_molecule_to_pb_stats_candidates(t_pack_molecule* molecule,
                                          std::map<AtomBlockId, float>& gain,
                                          t_pb* pb,
@@ -402,14 +388,6 @@ t_pack_molecule* get_molecule_by_num_ext_inputs(const int ext_inps,
                                                 const enum e_removal_policy remove_flag,
                                                 t_cluster_placement_stats* cluster_placement_stats_ptr,
                                                 t_molecule_link* unclustered_list_head) {
-    /* This routine returns an atom block which has not been clustered, has  *
-     * no connection to the current cluster, satisfies the cluster     *
-     * clock constraints, is a valid subblock inside the cluster, does not exceed the cluster subblock units available,
-     * and has ext_inps external inputs.  Remove_flag      *
-     * controls whether or not blocks that have already been clustered *
-     * are removed from the unclustered_list data structures.  NB:     *
-     * to get a atom block regardless of clock constraints just set clocks_ *
-     * avail > 0.                                                      */
 
     t_molecule_link *ptr, *prev_ptr;
     int i;
@@ -455,12 +433,7 @@ t_pack_molecule* get_free_molecule_with_most_ext_inputs_for_cluster(t_pb* cur_pb
                                                                     t_cluster_placement_stats* cluster_placement_stats_ptr,
                                                                     t_molecule_link* unclustered_list_head,
                                                                     const int& unclustered_list_head_size) {
-    /* This routine is used to find new blocks for clustering when there are no feasible       *
-     * blocks with any attraction to the current cluster (i.e. it finds       *
-     * blocks which are unconnected from the current cluster).  It returns    *
-     * the atom block with the largest number of used inputs that satisfies the    *
-     * clocking and number of inputs constraints.  If no suitable atom block is    *
-     * found, the routine returns nullptr.
+    /*
      * TODO: Analyze if this function is useful in more detail, also, should probably not include clock in input count
      */
 
@@ -786,13 +759,6 @@ void mark_and_update_partial_gain(const AtomNetId net_id,
                                   const std::unordered_set<AtomNetId>& is_global,
                                   const int high_fanout_net_threshold,
                                   std::unordered_map<AtomNetId, int>& net_output_feeds_driving_block_input) {
-    /* Updates the marked data structures, and if gain_flag is GAIN,  *
-     * the gain when an atom block is added to a cluster.  The        *
-     * sharinggain is the number of inputs that a atom block shares with   *
-     * blocks that are already in the cluster. Hillgain is the        *
-     * reduction in number of pins-required by adding a atom block to the  *
-     * cluster. The timinggain is the criticality of the most critical*
-     * atom net between this atom block and an atom block in the cluster.             */
 
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
     t_pb* cur_pb = atom_ctx.lookup.atom_pb(clustered_blk_id)->parent_pb;
@@ -869,9 +835,6 @@ void mark_and_update_partial_gain(const AtomNetId net_id,
 
 /*****************************************/
 void update_total_gain(float alpha, float beta, bool timing_driven, bool connection_driven, t_pb* pb, AttractionInfo& attraction_groups) {
-    /*Updates the total  gain array to reflect the desired tradeoff between*
-     *input sharing (sharinggain) and path_length minimization (timinggain)
-     *input each time a new molecule is added to the cluster.*/
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
     t_pb* cur_pb = pb;
 
@@ -940,10 +903,6 @@ void update_cluster_stats(const t_pack_molecule* molecule,
                           const SetupTimingInfo& timing_info,
                           AttractionInfo& attraction_groups,
                           std::unordered_map<AtomNetId, int>& net_output_feeds_driving_block_input) {
-    /* Routine that is called each time a new molecule is added to the cluster.
-     * Makes calls to update cluster stats such as the gain map for atoms, used pins, and clock structures,
-     * in order to reflect the new content of the cluster.
-     * Also keeps track of which attraction group the cluster belongs to. */
 
     int molecule_size;
     int iblock;
@@ -1057,9 +1016,6 @@ void start_new_cluster(ClusterLegalizer& cluster_legalizer,
                        const std::map<const t_model*, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
                        int verbosity,
                        bool balance_block_type_utilization) {
-    /* Given a starting seed block, start_new_cluster determines the next cluster type to use
-     * It expands the FPGA if it cannot find a legal cluster for the atom block
-     */
 
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
     DeviceContext& mutable_device_ctx = g_vpr_ctx.mutable_device();
@@ -1159,14 +1115,6 @@ void start_new_cluster(ClusterLegalizer& cluster_legalizer,
     }
 }
 
-/*
- * Get candidate molecule to pack into currently open cluster
- * Molecule selection priority:
- * 1. Find unpacked molecules based on criticality and strong connectedness (connected by low fanout nets) with current cluster
- * 2. Find unpacked molecules based on transitive connections (eg. 2 hops away) with current cluster
- * 3. Find unpacked molecules based on weak connectedness (connected by high fanout nets) with current cluster
- * 4. Find unpacked molecules based on attraction group of the current cluster (if the cluster has an attraction group)
- */
 t_pack_molecule* get_highest_gain_molecule(t_pb* cur_pb,
                                            AttractionInfo& attraction_groups,
                                            const enum e_gain_type gain_mode,
@@ -1271,7 +1219,6 @@ t_pack_molecule* get_highest_gain_molecule(t_pb* cur_pb,
     return molecule;
 }
 
-/* Add molecules with strong connectedness to the current cluster to the list of feasible blocks. */
 void add_cluster_molecule_candidates_by_connectivity_and_timing(t_pb* cur_pb,
                                                                 t_cluster_placement_stats* cluster_placement_stats_ptr,
                                                                 const Prepacker& prepacker,
@@ -1297,7 +1244,6 @@ void add_cluster_molecule_candidates_by_connectivity_and_timing(t_pb* cur_pb,
     }
 }
 
-/* Add molecules based on weak connectedness (connected by high fanout nets) with current cluster */
 void add_cluster_molecule_candidates_by_highfanout_connectivity(t_pb* cur_pb,
                                                                 t_cluster_placement_stats* cluster_placement_stats_ptr,
                                                                 const Prepacker& prepacker,
@@ -1336,14 +1282,6 @@ void add_cluster_molecule_candidates_by_highfanout_connectivity(t_pb* cur_pb,
     cur_pb->pb_stats->tie_break_high_fanout_net = AtomNetId::INVALID(); /* Mark off that this high fanout net has been considered */
 }
 
-/*
- * If the current cluster being packed has an attraction group associated with it
- * (i.e. there are atoms in it that belong to an attraction group), this routine adds molecules
- * from the associated attraction group to the list of feasible blocks for the cluster.
- * Attraction groups can be very large, so we only add some randomly selected molecules for efficiency
- * if the number of atoms in the group is greater than 500. Therefore, the molecules added to the candidates
- * will vary each time you call this function.
- */
 void add_cluster_molecule_candidates_by_attraction_group(t_pb* cur_pb,
                                                          t_cluster_placement_stats* cluster_placement_stats_ptr,
                                                          const Prepacker& prepacker,
@@ -1455,7 +1393,6 @@ void add_cluster_molecule_candidates_by_attraction_group(t_pb* cur_pb,
     }
 }
 
-/* Add molecules based on transitive connections (eg. 2 hops away) with current cluster*/
 void add_cluster_molecule_candidates_by_transitive_connectivity(t_pb* cur_pb,
                                                                 t_cluster_placement_stats* cluster_placement_stats_ptr,
                                                                 const Prepacker& prepacker,
@@ -1490,7 +1427,6 @@ void add_cluster_molecule_candidates_by_transitive_connectivity(t_pb* cur_pb,
     }
 }
 
-/*Check whether a free primitive exists for each atom block in the molecule*/
 bool check_free_primitives_for_molecule_atoms(t_pack_molecule* molecule,
                                               t_cluster_placement_stats* cluster_placement_stats_ptr,
                                               const ClusterLegalizer& cluster_legalizer) {
@@ -1568,7 +1504,6 @@ t_pack_molecule* get_molecule_for_cluster(t_pb* cur_pb,
     return best_molecule;
 }
 
-//Calculates molecule statistics for a single molecule
 t_molecule_stats calc_molecule_stats(const t_pack_molecule* molecule, const AtomNetlist& atom_nlist) {
     t_molecule_stats molecule_stats;
 
@@ -1787,12 +1722,6 @@ t_pack_molecule* get_highest_gain_seed_molecule(int& seed_index,
     return nullptr;
 }
 
-/* get gain of packing molecule into current cluster
- * gain is equal to:
- * total_block_gain
- * + molecule_base_gain*some_factor
- * - introduced_input_nets_of_unrelated_blocks_pulled_in_by_molecule*some_other_factor
- */
 float get_molecule_gain(t_pack_molecule* molecule, std::map<AtomBlockId, float>& blk_gain, AttractGroupId cluster_attraction_group_id, AttractionInfo& attraction_groups, int num_molecule_failures) {
     float gain;
     int i;
@@ -1850,13 +1779,6 @@ float get_molecule_gain(t_pack_molecule* molecule, std::map<AtomBlockId, float>&
     return gain;
 }
 
-/**
- * Score unclustered atoms that are two hops away from current cluster
- * For example, consider a cluster that has a FF feeding an adder in another
- * cluster. Since this FF is feeding an adder that is packed in another cluster
- * this function should find other FFs that are feeding other inputs of this adder
- * since they are two hops away from the FF packed in this cluster
- */
 void load_transitive_fanout_candidates(LegalizationClusterId legalization_cluster_id,
                                        t_pb_stats* pb_stats,
                                        const Prepacker& prepacker,
@@ -1963,10 +1885,6 @@ void print_seed_gains(const char* fname, const std::vector<AtomBlockId>& seed_at
     fclose(fp);
 }
 
-/**
- * This function update the pb_type_count data structure by incrementing
- * the number of used pb_types in the given packed cluster t_pb
- */
 size_t update_pb_type_count(const t_pb* pb, std::map<t_pb_type*, int>& pb_type_count, size_t depth) {
     size_t max_depth = depth;
 
@@ -2010,10 +1928,6 @@ void print_pb_type_count_recurr(t_pb_type* pb_type, size_t max_name_chars, size_
     }
 }
 
-/**
- * This function identifies the logic block type which is
- * defined by the block type which has a lut primitive
- */
 t_logical_block_type_ptr identify_logic_block_type(std::map<const t_model*, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types) {
     std::string lut_name = ".names";
 
@@ -2026,12 +1940,6 @@ t_logical_block_type_ptr identify_logic_block_type(std::map<const t_model*, std:
     return nullptr;
 }
 
-/**
- * This function returns the pb_type that is similar to Logic Element (LE) in an FPGA
- * The LE is defined as a physical block that contains a LUT primitive and
- * is found by searching a cluster type to find the first pb_type (from the top
- * of the hierarchy clb->LE) that has more than one instance within the cluster.
- */
 t_pb_type* identify_le_block_type(t_logical_block_type_ptr logic_block_type) {
     // if there is no CLB-like cluster, then there is no LE pb_block
     if (!logic_block_type)
@@ -2056,9 +1964,6 @@ t_pb_type* identify_le_block_type(t_logical_block_type_ptr logic_block_type) {
     return nullptr;
 }
 
-/**
- * This function updates the le_count data structure from the given packed cluster
- */
 void update_le_count(const t_pb* pb, const t_logical_block_type_ptr logic_block_type, const t_pb_type* le_pb_type, std::vector<int>& le_count) {
     // if this cluster doesn't contain LEs or there
     // are no les in this architecture, ignore it
@@ -2098,10 +2003,6 @@ void update_le_count(const t_pb* pb, const t_logical_block_type_ptr logic_block_
     }
 }
 
-/**
- * This function returns true if the given physical block has
- * a primitive matching the given blif model and is used
- */
 bool pb_used_for_blif_model(const t_pb* pb, const std::string& blif_model_name) {
     auto pb_graph_node = pb->pb_graph_node;
     auto pb_type = pb_graph_node->pb_type;
@@ -2129,9 +2030,6 @@ bool pb_used_for_blif_model(const t_pb* pb, const std::string& blif_model_name) 
     return false;
 }
 
-/**
- * Print the LE count data strurture
- */
 void print_le_count(std::vector<int>& le_count, const t_pb_type* le_pb_type) {
     VTR_LOG("\nLogic Element (%s) detailed count:\n", le_pb_type->name);
     VTR_LOG("  Total number of Logic Elements used : %d\n", le_count[0] + le_count[1] + le_count[2]);
@@ -2140,11 +2038,6 @@ void print_le_count(std::vector<int>& le_count, const t_pb_type* le_pb_type) {
     VTR_LOG("  LEs used for registers only         : %d\n\n", le_count[2]);
 }
 
-/**
- * Given a pointer to a pb in a cluster, this routine returns
- * a pointer to the top-level pb of the given pb.
- * This is needed when updating the gain for a cluster.
- */
 t_pb* get_top_level_pb(t_pb* pb) {
     t_pb* top_level_pb = pb;
 
@@ -2158,20 +2051,17 @@ t_pb* get_top_level_pb(t_pb* pb) {
     return top_level_pb;
 }
 
-void init_clb_atoms_lookup(vtr::vector<ClusterBlockId, std::unordered_set<AtomBlockId>>& atoms_lookup) {
-    const AtomContext& atom_ctx = g_vpr_ctx.atom();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-
-    atoms_lookup.resize(cluster_ctx.clb_nlist.blocks().size());
-
-    for (auto atom_blk_id : atom_ctx.nlist.blocks()) {
+void init_clb_atoms_lookup(vtr::vector<ClusterBlockId, std::unordered_set<AtomBlockId>>& atoms_lookup,
+                           const AtomContext& atom_ctx,
+                           const ClusteredNetlist& clb_nlist) {
+    // Resize the atoms lookup to the number of clusters.
+    atoms_lookup.resize(clb_nlist.blocks().size());
+    for (AtomBlockId atom_blk_id : atom_ctx.nlist.blocks()) {
+        // Get the CLB that this atom is packed into.
         ClusterBlockId clb_index = atom_ctx.lookup.atom_clb(atom_blk_id);
-
-        /* if this data structure is being built alongside the clustered netlist    */
-        /* e.g. when ingesting and legalizing a flat placement solution, some atoms */
-        /* may not yet be mapped to a valid clb_index                               */
-        if (clb_index != ClusterBlockId::INVALID()) {
-            atoms_lookup[clb_index].insert(atom_blk_id);
-        }
+        // Every atom block should be in a cluster.
+        VTR_ASSERT_SAFE(clb_index.is_valid());
+        // Insert this clb into the lookup's set.
+        atoms_lookup[clb_index].insert(atom_blk_id);
     }
 }

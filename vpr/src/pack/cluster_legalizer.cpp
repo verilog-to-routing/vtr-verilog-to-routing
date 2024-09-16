@@ -4,7 +4,7 @@
  * @date    September 2024
  * @brief   The implementation of the Cluster Legalizer class.
  *
- * Most of the code in this file was original part of cluster_util.cpp and was
+ * Most of the code in this file was originally part of cluster_util.cpp and was
  * highly integrated with the clusterer in VPR. All code that was used for
  * legalizing the clusters was moved into this file and all the functionality
  * was moved into the ClusterLegalizer class.
@@ -40,6 +40,8 @@
 
 /*
  * @brief Gets the max cluster size that any logical block can have.
+ *
+ * This is the maximum number of primitives any cluster can contain.
  */
 static size_t calc_max_cluster_size(const std::vector<t_logical_block_type>& logical_block_types) {
     size_t max_cluster_size = 0;
@@ -63,11 +65,6 @@ static void alloc_and_load_pb_stats(t_pb* pb, const int feasible_block_array_siz
 
     pb->pb_stats = new t_pb_stats;
 
-    /* If statement below is for speed.  If nets are reasonably low-fanout,  *
-     * only a relatively small number of blocks will be marked, and updating *
-     * only those atom block structures will be fastest.  If almost all blocks    *
-     * have been touched it should be faster to just run through them all    *
-     * in order (less addressing and better cache locality).                 */
     pb->pb_stats->input_pins_used = std::vector<std::unordered_map<size_t, AtomNetId>>(pb->pb_graph_node->num_input_pin_class);
     pb->pb_stats->output_pins_used = std::vector<std::unordered_map<size_t, AtomNetId>>(pb->pb_graph_node->num_output_pin_class);
     pb->pb_stats->lookahead_input_pins_used = std::vector<std::vector<AtomNetId>>(pb->pb_graph_node->num_input_pin_class);
@@ -304,10 +301,10 @@ static bool check_cluster_noc_group(AtomBlockId atom_blk_id,
 }
 
 /**
- * This function takes the root block of a chain molecule and a proposed
- * placement primitive for this block. The function then checks if this
- * chain root block has a placement constraint (such as being driven from
- * outside the cluster) and returns the status of the placement accordingly.
+ * @brief This function takes the root block of a chain molecule and a proposed
+ *        placement primitive for this block. The function then checks if this
+ *        chain root block has a placement constraint (such as being driven from
+ *        outside the cluster) and returns the status of the placement accordingly.
  */
 static enum e_block_pack_status check_chain_root_placement_feasibility(const t_pb_graph_node* pb_graph_node,
                                                                 const t_pack_molecule* molecule,
@@ -368,7 +365,7 @@ static enum e_block_pack_status check_chain_root_placement_feasibility(const t_p
 
 /*
  * @brief Check that the two atom blocks blk_id and sibling_blk_id (which should
- *        both be memory slices) are feasible, in the sence that they have
+ *        both be memory slices) are feasible, in the sense that they have
  *        precicely the same net connections (with the exception of nets in data
  *        port classes).
  *
@@ -480,7 +477,7 @@ static bool primitive_feasible(const AtomBlockId blk_id, t_pb* cur_pb) {
 }
 
 /**
- * Try place atom block into current primitive location
+ * @brief Try to place atom block into current primitive location
  */
 static enum e_block_pack_status
 try_place_atom_block_rec(const t_pb_graph_node* pb_graph_node,
@@ -613,7 +610,10 @@ try_place_atom_block_rec(const t_pb_graph_node* pb_graph_node,
     return block_pack_status;
 }
 
-/* Resets nets used at different pin classes for determining pin feasibility */
+/*
+ * @brief Resets nets used at different pin classes for determining pin
+ *        feasibility.
+ */
 static void reset_lookahead_pins_used(t_pb* cur_pb) {
     const t_pb_type* pb_type = cur_pb->pb_graph_node->pb_type;
     if (cur_pb->pb_stats == nullptr) {
@@ -674,7 +674,7 @@ static int net_sinks_reachable_in_cluster(const t_pb_graph_pin* driver_pb_gpin, 
 }
 
 /**
- * Returns the pb_graph_pin of the atom pin defined by the driver_pin_id in the driver_pb
+ * @brief Returns the pb_graph_pin of the atom pin defined by the driver_pin_id in the driver_pb
  */
 static t_pb_graph_pin* get_driver_pb_graph_pin(const t_pb* driver_pb, const AtomPinId driver_pin_id) {
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
@@ -701,12 +701,12 @@ static t_pb_graph_pin* get_driver_pb_graph_pin(const t_pb* driver_pb, const Atom
 }
 
 /**
- * Given a pin and its assigned net, mark all pin classes that are affected.
- * Check if connecting this pin to it's driver pin or to all sink pins will
- * require leaving a pb_block starting from the parent pb_block of the
- * primitive till the root block (depth = 0). If leaving a pb_block is
- * required add this net to the pin class (to increment the number of used
- * pins from this class) that should be used to leave the pb_block.
+ * @brief Given a pin and its assigned net, mark all pin classes that are affected.
+ *        Check if connecting this pin to it's driver pin or to all sink pins will
+ *        require leaving a pb_block starting from the parent pb_block of the
+ *        primitive till the root block (depth = 0). If leaving a pb_block is
+ *        required add this net to the pin class (to increment the number of used
+ *        pins from this class) that should be used to leave the pb_block.
  */
 static void compute_and_mark_lookahead_pins_used_for_pin(const t_pb_graph_pin* pb_graph_pin,
                                                          const t_pb* primitive_pb,
@@ -834,7 +834,9 @@ static void compute_and_mark_lookahead_pins_used_for_pin(const t_pb_graph_pin* p
 }
 
 
-/* Determine if pins of speculatively packed pb are legal */
+/*
+ * @brief Determine if pins of speculatively packed pb are legal
+ */
 static void compute_and_mark_lookahead_pins_used(const AtomBlockId blk_id,
                                                  const vtr::vector_map<AtomBlockId, LegalizationClusterId>& atom_cluster) {
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
@@ -851,7 +853,9 @@ static void compute_and_mark_lookahead_pins_used(const AtomBlockId blk_id,
     }
 }
 
-/* Determine if speculatively packed cur_pb is pin feasible
+/*
+ * @brief Determine if speculatively packed cur_pb is pin feasible
+ *
  * Runtime is actually not that bad for this.  It's worst case O(k^2) where k is the
  * number of pb_graph pins.  Can use hash tables or make incremental if becomes an issue.
  */
@@ -881,7 +885,10 @@ static void try_update_lookahead_pins_used(t_pb* cur_pb,
     }
 }
 
-/* Check if the number of available inputs/outputs for a pin class is sufficient for speculatively packed blocks */
+/*
+ * @brief Check if the number of available inputs/outputs for a pin class is
+ *        sufficient for speculatively packed blocks.
+ */
 static bool check_lookahead_pins_used(t_pb* cur_pb, t_ext_pin_util max_external_pin_util) {
     const t_pb_type* pb_type = cur_pb->pb_graph_node->pb_type;
 
@@ -943,11 +950,11 @@ static bool check_lookahead_pins_used(t_pb* cur_pb, t_ext_pin_util max_external_
 }
 
 /**
- * This function takes a chain molecule, and the pb_graph_node that is chosen
- * for packing the molecule's root block. Using the given root_primitive, this
- * function will identify which chain id this molecule is being mapped to and
- * will update the chain id value inside the chain info data structure of this
- * molecule
+ * @brief This function takes a chain molecule, and the pb_graph_node that is
+ *        chosen for packing the molecule's root block. Using the given
+ *        root_primitive, this function will identify which chain id this
+ *        molecule is being mapped to and will update the chain id value inside
+ *        the chain info data structure of this molecule.
  */
 static void update_molecule_chain_info(t_pack_molecule* chain_molecule, const t_pb_graph_node* root_primitive) {
     VTR_ASSERT(chain_molecule->chain_info->chain_id == -1 && chain_molecule->chain_info->is_long_chain);
@@ -969,7 +976,8 @@ static void update_molecule_chain_info(t_pack_molecule* chain_molecule, const t_
     VTR_ASSERT(false);
 }
 
-/* Revert trial atom block iblock and free up memory space accordingly
+/*
+ * @brief Revert trial atom block iblock and free up memory space accordingly.
  */
 static void revert_place_atom_block(const AtomBlockId blk_id,
                                     t_lb_router_data* router_data,
@@ -1021,7 +1029,9 @@ static void revert_place_atom_block(const AtomBlockId blk_id,
     mutable_atom_ctx.lookup.set_atom_pb(blk_id, nullptr);
 }
 
-/* Speculation successful, commit input/output pins used */
+/*
+ * @brief Speculation successful, commit input/output pins used.
+ */
 static void commit_lookahead_pins_used(t_pb* cur_pb) {
     const t_pb_type* pb_type = cur_pb->pb_graph_node->pb_type;
 
@@ -1055,7 +1065,7 @@ static void commit_lookahead_pins_used(t_pb* cur_pb) {
 }
 
 /**
- * Cleans up a pb after unsuccessful molecule packing
+ * @brief Cleans up a pb after unsuccessful molecule packing
  *
  * Recursively frees pbs from a t_pb tree. The given root pb itself is not
  * deleted.
@@ -1135,7 +1145,7 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(t_pack_molecule* molecul
     VTR_ASSERT_DEBUG(cluster.pb != nullptr);
     VTR_ASSERT_DEBUG(cluster.type != nullptr);
 
-    // TODO: Remove these global accesses.
+    // TODO: Remove these global accesses to the contexts.
     // AtomContext used for:
     //  - printing verbose statements
     //  - Looking up the primitive pb
@@ -1349,7 +1359,7 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(t_pack_molecule* molecul
                 cluster.noc_grp_id = new_cluster_noc_grp_id;
 
                 // Insert the molecule into the cluster for bookkeeping.
-                cluster.molecules.insert(molecule);
+                cluster.molecules.push_back(molecule);
 
                 for (int i = 0; i < molecule_size; i++) {
                     AtomBlockId atom_blk_id = molecule->atom_block_ids[i];
@@ -1653,10 +1663,13 @@ ClusterLegalizer::ClusterLegalizer(const AtomNetlist& atom_netlist,
     feasible_block_array_size_ = feasible_block_array_size;
     log_verbosity_ = log_verbosity;
     // Get the target external pin utilization
-    // NOTE: This is really silly, but this can potentially fail. If it does
-    //       it is important that everything is allocated. If not, when it fails
-    //       it will call the reset method when only parts of the class are
-    //       allocated which may cause havoc...
+    // NOTE: This has to be initialized last due to the fact that VPR_FATA_ERROR
+    //       may be called within the constructor of t_ext_pin_util_targets. If
+    //       this occurs, an excpetion is thrown which will drain the stack. If
+    //       the cluster legalizer object is stored on the stack, this can call
+    //       the destructor prematurely (before certain structures are allocated).
+    //       Therefore, this is created at the end, when the class is in a state
+    //       where it can be destroyed.
     target_external_pin_util_ = t_ext_pin_util_targets(target_external_pin_util_str);
 }
 

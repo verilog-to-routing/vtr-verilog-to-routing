@@ -200,6 +200,10 @@ bool try_pack(t_packer_opts* packer_opts,
                 t_ext_pin_util pin_util(1.0, 1.0);
                 // TODO: This line assumes the logic block name is "clb" which
                 //       may not be the case. This may need to be investigated.
+                //       Probably we should do this update of ext_pin_util for
+                //       all types that were overused. Or if that is hard, just
+                //       do it for all block types. Doing it only for a clb
+                //       string is dangerous -VB.
                 cluster_legalizer.get_target_external_pin_util().set_block_pin_util("clb", pin_util);
             }
 
