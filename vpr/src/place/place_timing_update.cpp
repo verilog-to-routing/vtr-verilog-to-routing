@@ -298,7 +298,7 @@ void update_td_costs(const PlaceDelayModel* delay_model,
 
 #ifdef VTR_ASSERT_DEBUG_ENABLED
     double check_timing_cost = 0.;
-    comp_td_costs(delay_model, place_crit, &check_timing_cost);
+    comp_td_costs(delay_model, place_crit, placer_state, &check_timing_cost);
     VTR_ASSERT_DEBUG_MSG(check_timing_cost == *timing_cost,
                          "Total timing cost calculated incrementally in update_td_costs() is "
                          "not consistent with value calculated from scratch in comp_td_costs()");
