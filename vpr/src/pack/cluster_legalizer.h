@@ -24,6 +24,7 @@
 #include "vtr_vector_map.h"
 
 class Prepacker;
+class t_cluster_placement_stats;
 class t_pb_graph_node;
 struct t_lb_router_data;
 
@@ -91,6 +92,11 @@ struct LegalizationCluster {
     ///        Contains information about the atoms in the cluster and how they
     ///        can be routed within.
     t_lb_router_data* router_data;
+
+    /// @brief The stats on where the different atoms in the cluster are currently
+    ///        placed in the cluster. This is used when the legalizer decides
+    ///        what sites it should try to put a new molecule into.
+    t_cluster_placement_stats* placement_stats;
 };
 
 /*
@@ -377,6 +383,21 @@ public:
      */
     void reset();
 
+    /*
+     * @brief Checks if the given molecule is compatible with the given cluster.
+     *
+     * A molecule is compatible with a cluster if there exists a free primitive
+     * (a primitive that is not currently occupied by other atoms) of the correct
+     * type to accomodate each type of atom in the molecule.
+     *
+     * This is a quick check to see if a molecule can go in the given cluster.
+     * "This is a necessary but not sufficient test for a molecule to be able to
+     * go in a cluster. By calling it you can save runtime for impossible cases
+     * vs. calling the full checks.
+     */
+    bool is_molecule_compatible(t_pack_molecule* molecule,
+                                LegalizationClusterId cluster_id) const;
+
     /// @brief Gets the top-level pb of the given cluster.
     inline t_pb* get_cluster_pb(LegalizationClusterId cluster_id) const {
         VTR_ASSERT_SAFE(cluster_id.is_valid() && (size_t)cluster_id < legalization_clusters_.size());
@@ -403,20 +424,6 @@ public:
     inline LegalizationClusterId get_atom_cluster(AtomBlockId blk_id) const {
         VTR_ASSERT_SAFE(blk_id.is_valid() && (size_t)blk_id < atom_cluster_.size());
         return atom_cluster_[blk_id];
-    }
-
-    /// @brief Gets the cluster placement stats of the given cluster.
-    ///
-    /// The cluster placement stats are statistics used to monitor which atoms
-    /// have been physically clustered into the pb (more specifically what site
-    /// they will go). This can be used externally to the legalizer to detect
-    /// if an atom could physically go into a cluster (exists_free_primitive_for_atom_block).
-    ///
-    /// TODO: Releasing the whole stats can be dangerous. Ideally there should
-    ///       just be a method to see if an atom could physically go in a cluster.
-    inline t_cluster_placement_stats* get_cluster_placement_stats(LegalizationClusterId cluster_id) const {
-        VTR_ASSERT_SAFE(cluster_id.is_valid() && (size_t)cluster_id < legalization_clusters_.size());
-        return &(cluster_placement_stats_[get_cluster_type(cluster_id)->index]);
     }
 
     /// @brief Returns true if the given atom block has been packed into a
@@ -494,14 +501,6 @@ private:
     ///        NoC group IDs belong to logic that is disjoint except through
     ///        NoC traffic.
     vtr::vector<AtomBlockId, NocGroupId> atom_noc_grp_id_;
-
-    /// @brief Stats keeper for placement information during packing/clustering.
-    /// TODO: This should be a vector.
-    /// FIXME: This keeps the stats for each cluster type. This is fine within
-    ///        the clusterer, however it yields a limitation where two clusters
-    ///        of the same type cannot be constructed at the same time. This
-    ///        should stored per cluster.
-    t_cluster_placement_stats* cluster_placement_stats_ = nullptr;
 
     /// @brief The maximum fractional utilization of cluster external
     ///        input/output pins during packing (between 0 and 1).
