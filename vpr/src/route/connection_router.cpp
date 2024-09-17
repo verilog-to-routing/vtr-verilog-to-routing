@@ -147,7 +147,7 @@ std::tuple<bool, bool, t_heap> ConnectionRouter<Heap>::timing_driven_route_conne
     if (cheapest == nullptr) {
         //Found no path, that may be due to an unlucky choice of existing route tree sub-set,
         //try again with the full route tree to be sure this is not an artifact of high-fanout routing
-        VTR_LOG_WARN("No routing path found in high-fanout mode for net connection (to sink_rr %d), retrying with full route tree\n", sink_node);
+        VTR_LOG_WARN("No routing path found in high-fanout mode for net %zu connection (to sink_rr %d), retrying with full route tree\n", size_t(conn_params.net_id_), sink_node);
 
         //Reset any previously recorded node costs so timing_driven_route_connection()
         //starts over from scratch.
@@ -379,10 +379,11 @@ void ConnectionRouter<Heap>::timing_driven_expand_cheapest(t_heap* cheapest,
         VTR_LOGV_DEBUG(router_debug_, "    Better cost to %d\n", inode);
         VTR_LOGV_DEBUG(router_debug_, "    New total cost: %g\n", new_total_cost);
         VTR_LOGV_DEBUG(router_debug_, "    New back cost: %g\n", new_back_cost);
-        VTR_LOGV_DEBUG(router_debug_ && (rr_nodes_.node_type(RRNodeId(cheapest->index)) != t_rr_type::SOURCE), "      Setting path costs for associated node %d (from %d edge %zu)\n",
-                       cheapest->index,
-                       static_cast<size_t>(rr_graph_->edge_src_node(cheapest->prev_edge())),
-                       static_cast<size_t>(cheapest->prev_edge()));
+        VTR_LOGV_DEBUG(router_debug_ && (cheapest->prev_edge() != RREdgeId::INVALID()), 
+                    "      Setting path costs for associated node %d (from %d edge %zu)\n",
+                    cheapest->index,
+                    static_cast<size_t>(rr_graph_->edge_src_node(cheapest->prev_edge())),
+                    static_cast<size_t>(cheapest->prev_edge()));
 
         update_cheapest(cheapest, route_inf);
 
@@ -977,6 +978,8 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
     int target_bin_x = grid_to_bin_x(rr_graph_->node_xlow(target_node), spatial_rt_lookup);
     int target_bin_y = grid_to_bin_y(rr_graph_->node_ylow(target_node), spatial_rt_lookup);
 
+    auto target_layer = rr_graph_->node_layer(target_node);
+
     int chan_nodes_added = 0;
 
     t_bb highfanout_bb;
@@ -984,12 +987,13 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
     highfanout_bb.xmax = rr_graph_->node_xhigh(target_node);
     highfanout_bb.ymin = rr_graph_->node_ylow(target_node);
     highfanout_bb.ymax = rr_graph_->node_yhigh(target_node);
-    highfanout_bb.layer_min = rr_graph_->node_layer(target_node);
-    highfanout_bb.layer_max = rr_graph_->node_layer(target_node);
+    highfanout_bb.layer_min = target_layer;
+    highfanout_bb.layer_max = target_layer;
 
     //Add existing routing starting from the target bin.
     //If the target's bin has insufficient existing routing add from the surrounding bins
     bool done = false;
+    bool found_node_on_same_layer = false;
     for (int dx : {0, -1, +1}) {
         size_t bin_x = target_bin_x + dx;
 
@@ -1015,6 +1019,10 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
                 if (!inside_bb(rr_node_to_add, net_bounding_box))
                     continue;
 
+                auto rt_node_layer_num = rr_graph_->node_layer(rr_node_to_add);
+                if (rt_node_layer_num == target_layer)
+                    found_node_on_same_layer = true;
+
                 // Put the node onto the heap
                 add_route_tree_node_to_heap(rt_node, target_node, cost_params, net_bounding_box);
 
@@ -1027,7 +1035,7 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
             }
 
             constexpr int SINGLE_BIN_MIN_NODES = 2;
-            if (dx == 0 && dy == 0 && chan_nodes_added > SINGLE_BIN_MIN_NODES) {
+            if (dx == 0 && dy == 0 && chan_nodes_added > SINGLE_BIN_MIN_NODES && found_node_on_same_layer) {
                 //Target bin contained at least minimum amount of routing
                 //
                 //We require at least SINGLE_BIN_MIN_NODES to be added.
@@ -1041,7 +1049,7 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
         if (done) break;
     }
 
-    if (chan_nodes_added == 0) { //If the target bin, and it's surrounding bins were empty, just add the full route tree
+    if (chan_nodes_added == 0 || !found_node_on_same_layer) { //If the target bin, and it's surrounding bins were empty, just add the full route tree
         add_route_tree_to_heap(rt_root, target_node, cost_params, net_bounding_box);
         return net_bounding_box;
     } else {

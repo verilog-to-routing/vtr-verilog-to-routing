@@ -191,9 +191,6 @@ TEST_CASE("connection_router", "[vpr]") {
     free_routing_structs();
     vpr_free_all(arch,
                  vpr_setup);
-
-    auto& atom_ctx = g_vpr_ctx.mutable_atom();
-    atom_ctx.prepacker.reset();
 }
 
 } // namespace
