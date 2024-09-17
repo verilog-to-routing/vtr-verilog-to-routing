@@ -1637,6 +1637,19 @@ ClusterLegalizer::ClusterLegalizer(const AtomNetlist& atom_netlist,
     // Verify that the inputs are valid.
     VTR_ASSERT_SAFE(lb_type_rr_graphs != nullptr);
 
+    // Get the target external pin utilization
+    // NOTE: This has to be initialized first due to the fact that VPR_FATA_ERROR
+    //       may be called within the constructor of t_ext_pin_util_targets. If
+    //       this occurs, the destructor may or may not be called (honestly I have
+    //       no idea why it does or does not, but it changes based on how VPR
+    //       is compiled...). If the destructor is not called, it is important
+    //       that nothing was allocated before this line is called. If the
+    //       destructor is called, we just need to be careful of double freeing
+    //       (check if the allocated member variables are nullptr).
+    // FIXME: This can be fixed by removing all allocations from the constructor
+    //        (see cluster_placement_stats_).
+    target_external_pin_util_ = t_ext_pin_util_targets(target_external_pin_util_str);
+
     // Resize the atom_cluster lookup to make the accesses much cheaper.
     atom_cluster_.resize(atom_netlist.blocks().size(), LegalizationClusterId::INVALID());
     // Allocate the cluster_placement_stats
@@ -1662,15 +1675,6 @@ ClusterLegalizer::ClusterLegalizer(const AtomNetlist& atom_netlist,
     enable_pin_feasibility_filter_ = enable_pin_feasibility_filter;
     feasible_block_array_size_ = feasible_block_array_size;
     log_verbosity_ = log_verbosity;
-    // Get the target external pin utilization
-    // NOTE: This has to be initialized last due to the fact that VPR_FATA_ERROR
-    //       may be called within the constructor of t_ext_pin_util_targets. If
-    //       this occurs, an excpetion is thrown which will drain the stack. If
-    //       the cluster legalizer object is stored on the stack, this can call
-    //       the destructor prematurely (before certain structures are allocated).
-    //       Therefore, this is created at the end, when the class is in a state
-    //       where it can be destroyed.
-    target_external_pin_util_ = t_ext_pin_util_targets(target_external_pin_util_str);
 }
 
 void ClusterLegalizer::reset() {
@@ -1776,6 +1780,7 @@ ClusterLegalizer::~ClusterLegalizer() {
         destroy_cluster(cluster_id);
     }
     // Free the cluster_placement_stats
-    free_cluster_placement_stats(cluster_placement_stats_);
+    if (cluster_placement_stats_ != nullptr)
+        free_cluster_placement_stats(cluster_placement_stats_);
 }
 
