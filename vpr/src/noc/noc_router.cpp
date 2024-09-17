@@ -31,12 +31,7 @@ int NocRouter::get_router_layer_position() const {
 }
 
 t_physical_tile_loc NocRouter::get_router_physical_location() const {
-    const int x = get_router_grid_position_x();
-    const int y = get_router_grid_position_y();
-    const int layer = get_router_layer_position();
-    t_physical_tile_loc phy_loc{x, y, layer};
-
-    return phy_loc;
+    return {router_grid_position_x, router_grid_position_y, router_layer_position};
 }
 
 double NocRouter::get_latency() const {
