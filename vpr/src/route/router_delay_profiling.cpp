@@ -97,7 +97,7 @@ bool RouterDelayProfiler::calculate_delay(RRNodeId source_node,
     RouterStats router_stats;
 
     bool found_path;
-    t_heap cheapest;
+    RTExploredNode cheapest;
     ConnectionParameters conn_params(ParentNetId::INVALID(),
                                      -1,
                                      false,
@@ -186,7 +186,7 @@ vtr::vector<RRNodeId, float> calculate_all_path_delays_from_rr_node(RRNodeId src
         is_flat);
     RouterStats router_stats;
     ConnectionParameters conn_params(ParentNetId::INVALID(), OPEN, false, std::unordered_map<RRNodeId, int>());
-    vtr::vector<RRNodeId, t_heap> shortest_paths = router.timing_driven_find_all_shortest_paths_from_route_tree(tree.root(),
+    vtr::vector<RRNodeId, RTExploredNode> shortest_paths = router.timing_driven_find_all_shortest_paths_from_route_tree(tree.root(),
                                                                                                                 cost_params,
                                                                                                                 bounding_box,
                                                                                                                 router_stats,

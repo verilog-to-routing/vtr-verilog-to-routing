@@ -313,7 +313,7 @@ inline NetResultFlags pre_route_to_clock_root(ConnectionRouter& router,
     router.clear_modified_rr_node_info();
 
     bool found_path, retry_with_full_bb;
-    t_heap cheapest;
+    RTExploredNode cheapest;
     ConnectionParameters conn_params(net_id,
                                      -1,
                                      false,
@@ -428,7 +428,7 @@ inline NetResultFlags route_sink(ConnectionRouter& router,
     router.clear_modified_rr_node_info();
 
     bool found_path;
-    t_heap cheapest;
+    RTExploredNode cheapest;
 
     bool net_is_global = net_list.net_is_global(net_id);
     bool high_fanout = is_high_fanout(net_list.net_sinks(net_id).size(), router_opts.high_fanout_threshold);
