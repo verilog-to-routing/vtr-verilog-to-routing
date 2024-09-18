@@ -337,6 +337,15 @@ RRNodeId get_start_node(int layer, int start_x, int start_y, int target_x, int t
  */
 std::pair<int, int> get_xy_deltas(RRNodeId from_node, RRNodeId to_node);
 
+/**
+ * @brief Computes the adjusted position of an RR graph node.
+ * This function does not modify the position of the given node.
+ * It only returns the computed adjusted position.
+ * @param rr The ID of the node whose adjusted position is desired.
+ * @return The adjusted position (x, y).
+ */
+std::pair<int, int> get_adjusted_rr_position(RRNodeId rr);
+
 t_routing_cost_map get_routing_cost_map(int longest_seg_length,
                                         int from_layer_num,
                                         const e_rr_type& chan_type,

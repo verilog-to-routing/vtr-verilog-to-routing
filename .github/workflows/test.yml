@@ -162,6 +162,11 @@ jobs:
             suite: 'vtr_reg_basic'
           },
           {
+            name: 'Basic with PROFILE_LOOKAHEAD',
+            params: '-DVTR_ASSERT_LEVEL=3 -DVPR_PROFILE_LOOKAHEAD=on',
+            suite: 'vtr_reg_basic'
+          },
+          {
             name: 'Basic with CAPNPROTO disabled',
             params: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVTR_ENABLE_CAPNPROTO=off',
             suite: 'vtr_reg_basic'

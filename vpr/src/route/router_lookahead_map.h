@@ -14,7 +14,8 @@ class MapLookahead : public RouterLookahead {
     explicit MapLookahead(const t_det_routing_arch& det_routing_arch, bool is_flat);
 
   private:
-    float get_expected_cost_flat_router(RRNodeId current_node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const;
+    std::pair<float, float> get_expected_delay_and_cong_flat_router(RRNodeId current_node, RRNodeId target_node) const;
+    std::pair<float, float> get_expected_delay_and_cong_default(RRNodeId current_node, RRNodeId target_node) const;
     //Look-up table from SOURCE/OPIN to CHANX/CHANY of various types
     util::t_src_opin_delays src_opin_delays;
     // Lookup table from a tile pins to the primitive classes inside that tile
@@ -30,7 +31,10 @@ class MapLookahead : public RouterLookahead {
 
   protected:
     float get_expected_cost(RRNodeId current_node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const override;
-    std::pair<float, float> get_expected_delay_and_cong(RRNodeId from_node, RRNodeId to_node, const t_conn_cost_params& params, float R_upstream) const override;
+    std::pair<float, float> get_expected_delay_and_cong_ignore_criticality(RRNodeId from_node,
+                                                                           RRNodeId to_node,
+                                                                           const t_conn_cost_params& params,
+                                                                           float R_upstream) const override;
 
     void compute(const std::vector<t_segment_inf>& segment_inf) override;
     void compute_intra_tile() override;

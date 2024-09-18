@@ -221,6 +221,9 @@ bool route(const Netlist<>& net_list,
         choking_spots,
         is_flat);
 
+    // Enable lookahead profiling if command-line option used
+    route_ctx.lookahead_profiler.set_file_name(router_opts.lookahead_profiling_output);
+
     RouterStats router_stats;
     float prev_iter_cumm_time = 0;
     vtr::Timer iteration_timer;
@@ -562,6 +565,9 @@ bool route(const Netlist<>& net_list,
         if (router_opts.fanout_analysis) profiling::time_on_fanout_analysis();
         // profiling::time_on_criticality_analysis();
     }
+
+    // Clear data accumulated in LookaheadProfiler
+    route_ctx.lookahead_profiler.clear();
 
     /* Write out partition tree logs (no-op if debug option not set) */
     PartitionTreeDebug::write("partition_tree.log");

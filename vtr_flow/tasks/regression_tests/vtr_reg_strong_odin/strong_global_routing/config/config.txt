@@ -26,4 +26,4 @@ qor_parse_file=qor_standard.txt
 pass_requirements_file=pass_requirements.txt
 
 # Script parameters
-script_params_common = -start odin --route_type global
+script_params_common = -start odin --route_type global --seed 3

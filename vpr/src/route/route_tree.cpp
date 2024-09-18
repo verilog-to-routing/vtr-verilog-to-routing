@@ -486,13 +486,28 @@ void RouteTree::print(void) const {
  * This routine returns a tuple: RouteTreeNode of the branch it adds to the route tree and
  * RouteTreeNode of the SINK it adds to the routing. */
 std::tuple<vtr::optional<const RouteTreeNode&>, vtr::optional<const RouteTreeNode&>>
-RouteTree::update_from_heap(t_heap* hptr, int target_net_pin_index, SpatialRouteTreeLookup* spatial_rt_lookup, bool is_flat) {
+RouteTree::update_from_heap(t_heap* hptr,
+                            int target_net_pin_index,
+                            SpatialRouteTreeLookup* spatial_rt_lookup,
+                            bool is_flat,
+                            const RouterLookahead& router_lookahead,
+                            const t_conn_cost_params& cost_params,
+                            const Netlist<>& net_list,
+                            const ParentNetId& net_id,
+                            const int itry) {
     /* Lock the route tree for writing. At least on Linux this shouldn't have an impact on single-threaded code */
     std::unique_lock<std::mutex> write_lock(_write_mutex);
 
     //Create a new subtree from the target in hptr to existing routing
     vtr::optional<RouteTreeNode&> start_of_new_subtree_rt_node, sink_rt_node;
-    std::tie(start_of_new_subtree_rt_node, sink_rt_node) = add_subtree_from_heap(hptr, target_net_pin_index, is_flat);
+    std::tie(start_of_new_subtree_rt_node, sink_rt_node) = add_subtree_from_heap(hptr,
+                                                                                 target_net_pin_index,
+                                                                                 is_flat,
+                                                                                 router_lookahead,
+                                                                                 cost_params,
+                                                                                 itry,
+                                                                                 net_list,
+                                                                                 net_id);
 
     if (!start_of_new_subtree_rt_node)
         return {vtr::nullopt, *sink_rt_node};
@@ -515,7 +530,14 @@ RouteTree::update_from_heap(t_heap* hptr, int target_net_pin_index, SpatialRoute
  * to the SINK indicated by hptr. Returns the first (most upstream) new rt_node,
  * and the rt_node of the new SINK. Traverses up from SINK  */
 std::tuple<vtr::optional<RouteTreeNode&>, vtr::optional<RouteTreeNode&>>
-RouteTree::add_subtree_from_heap(t_heap* hptr, int target_net_pin_index, bool is_flat) {
+RouteTree::add_subtree_from_heap(t_heap* hptr,
+                                 int target_net_pin_index,
+                                 bool is_flat,
+                                 const RouterLookahead& router_lookahead,
+                                 const t_conn_cost_params& cost_params,
+                                 const int itry,
+                                 const Netlist<>& net_list,
+                                 const ParentNetId& net_id) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     auto& route_ctx = g_vpr_ctx.routing();
@@ -548,6 +570,14 @@ RouteTree::add_subtree_from_heap(t_heap* hptr, int target_net_pin_index, bool is
         new_iswitch = RRSwitchId(rr_graph.rr_nodes().edge_switch(edge));
     }
     new_branch_iswitches.push_back(new_iswitch);
+
+    g_vpr_ctx.mutable_routing().lookahead_profiler.record(itry,
+                                                          target_net_pin_index,
+                                                          cost_params,
+                                                          router_lookahead,
+                                                          net_id,
+                                                          net_list,
+                                                          new_branch_inodes);
 
     /* Build the new tree branch starting from the existing node we found */
     RouteTreeNode* last_node = _rr_node_to_rt_node[new_inode];

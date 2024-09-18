@@ -1,9 +1,15 @@
 prettytable
 lxml
 psutil
+scikit-learn
+matplotlib
+distinctipy
+colour
+seaborn
 pandas
 numpy
 scipy
+
 # Python linter and formatter
 click==8.0.2 # Our version of black needs an older version of click (https://stackoverflow.com/questions/71673404/importerror-cannot-import-name-unicodefun-from-click)
 black==21.4b0

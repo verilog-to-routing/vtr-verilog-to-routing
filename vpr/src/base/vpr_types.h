@@ -1391,6 +1391,10 @@ struct t_router_opts {
     std::string write_intra_cluster_router_lookahead;
     std::string read_intra_cluster_router_lookahead;
 
+    ///@brief The name of the output .csv file when PROFILE_LOOKAHEAD and --profile_router_lookahead are used.
+    ///If the string is empty, there will be no output.
+    std::string lookahead_profiling_output;
+
     e_heap_type router_heap;
     bool exit_after_first_routing_iteration;
 
@@ -1660,16 +1664,16 @@ constexpr bool is_src_sink(e_rr_type type) { return (type == SOURCE || type == S
  * @brief Extra information about each rr_node needed only during routing
  *        (i.e. during the maze expansion).
  *
- *   @param prev_edge  ID of the edge (globally unique edge ID in the RR Graph)
- *                     that was used to reach this node from the previous node.
- *                     If there is no predecessor, prev_edge = NO_PREVIOUS.
- *   @param acc_cost   Accumulated cost term from previous Pathfinder iterations.
- *   @param path_cost  Total cost of the path up to and including this node +
- *                     the expected cost to the target if the timing_driven router
- *                     is being used.
- *   @param backward_path_cost  Total cost of the path up to and including this
- *                     node.
- *   @param occ        The current occupancy of the associated rr node
+ *   @param prev_edge   ID of the edge (globally unique edge ID in the RR Graph)
+ *                      that was used to reach this node from the previous node.
+ *                      If there is no predecessor, prev_edge = NO_PREVIOUS.
+ *   @param acc_cost    Accumulated cost term from previous Pathfinder iterations.
+ *   @param path_cost   Total cost of the path up to and including this node +
+ *                      the expected cost to the target if the timing_driven router
+ *                      is being used.
+ *   @param backward_path_cost          Total cost of the path up to and including
+ *                                      this node.
+ *   @param occ         The current occupancy of the associated rr node
  */
 struct t_rr_node_route_inf {
     RREdgeId prev_edge;
@@ -1677,6 +1681,15 @@ struct t_rr_node_route_inf {
     float acc_cost;
     float path_cost;
     float backward_path_cost;
+#ifdef PROFILE_LOOKAHEAD
+    // This data is needed for the LookaheadProfiler, when enabled. It is only conditionally
+    // compiled since this struct is a hot and large data structure.
+
+    ///@brief Total delay in the path up to and including this node.
+    float backward_path_delay;
+    ///@brief Total congestion in the path up to and including this node.
+    float backward_path_congestion;
+#endif
 
   public: //Accessors
     short occ() const { return occ_; }

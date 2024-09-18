@@ -42,6 +42,9 @@ option(VTR_ENABLE_CAPNPROTO "Enable capnproto binary serialization support in VP
 #Allow the user to decide whether to compile the server module
 option(VPR_USE_SERVER "Specify whether vpr enables the server mode" ON)
 
+#Allow the user to decide whether to profile the router lookahead
+option(VPR_PROFILE_LOOKAHEAD "Specify whether to enable the router LookaheadProfiler" OFF)
+
 #Allow the user to enable/disable VPR analytic placement
 #VPR option --enable_analytic_placer is also required for Analytic Placement
 option(VPR_ANALYTIC_PLACE "Enable analytic placement in VPR." ON)

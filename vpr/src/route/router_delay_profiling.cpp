@@ -119,7 +119,14 @@ bool RouterDelayProfiler::calculate_delay(RRNodeId source_node,
         VTR_ASSERT(cheapest.index == sink_node);
 
         vtr::optional<const RouteTreeNode&> rt_node_of_sink;
-        std::tie(std::ignore, rt_node_of_sink) = tree.update_from_heap(&cheapest, OPEN, nullptr, is_flat_);
+        std::tie(std::ignore, rt_node_of_sink) = tree.update_from_heap(/*hptr=*/&cheapest,
+                                                                       /*target_net_pin_index=*/OPEN,
+                                                                       /*spatial_rt_lookup=*/nullptr,
+                                                                       is_flat_,
+                                                                       router_.get_router_lookahead(),
+                                                                       cost_params,
+                                                                       net_list_,
+                                                                       conn_params.net_id_);
 
         //find delay
         *net_delay = rt_node_of_sink->Tdel;
@@ -141,10 +148,14 @@ float RouterDelayProfiler::get_min_delay(int physical_tile_type_idx, int from_la
     return min_delays_[physical_tile_type_idx][from_layer][to_layer][dx][dy];
 }
 
-//Returns the shortest path delay from src_node to all RR nodes in the RR graph, or NaN if no path exists
+const Netlist<>& RouterDelayProfiler::get_net_list() const {
+    return net_list_;
+}
+
 vtr::vector<RRNodeId, float> calculate_all_path_delays_from_rr_node(RRNodeId src_rr_node,
                                                                     const t_router_opts& router_opts,
-                                                                    bool is_flat) {
+                                                                    bool is_flat,
+                                                                    const Netlist<>& net_list) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
@@ -205,7 +216,14 @@ vtr::vector<RRNodeId, float> calculate_all_path_delays_from_rr_node(RRNodeId src
             //Build the routing tree to get the delay
             tree = RouteTree(RRNodeId(src_rr_node));
             vtr::optional<const RouteTreeNode&> rt_node_of_sink;
-            std::tie(std::ignore, rt_node_of_sink) = tree.update_from_heap(&shortest_paths[sink_rr_node], OPEN, nullptr, router_opts.flat_routing);
+            std::tie(std::ignore, rt_node_of_sink) = tree.update_from_heap(/*hptr=*/&shortest_paths[sink_rr_node],
+                                                                           /*target_net_pin_index=*/OPEN,
+                                                                           /*spatial_rt_lookup=*/nullptr,
+                                                                           router_opts.flat_routing,
+                                                                           router.get_router_lookahead(),
+                                                                           cost_params,
+                                                                           net_list,
+                                                                           conn_params.net_id_);
 
             VTR_ASSERT(rt_node_of_sink->inode == RRNodeId(sink_rr_node));
 

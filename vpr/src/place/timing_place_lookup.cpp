@@ -113,6 +113,22 @@ static void generic_compute_matrix_iterative_astar(
     const std::set<std::string>& allowed_types,
     bool /***/);
 
+/**
+ * @brief Compute delta delay matrix using Djikstra's algorithm to find shortest paths from a IPIN at the
+ * source location to OPINs within (start_x, start_y) to (end_x, end_y).
+ *
+ * @param route_profiler Only used to call get_net_list(), which is passed into
+ * calculate_all_path_delays_from_rr_node(), which is needed for the LookaheadProfiler.
+ * @param matrix The matrix to be filled.
+ * @param layer_num The layer of the source and sink nodes to be sampled.
+ * @param (source_x, source_y) The coordinates of the tile to sample an IPIN at.
+ * @param (start_x, start_y, end_x, end_y) The bounds within which OPINs should be sampled.
+ * @param router_opts
+ * @param measure_directconnect Whether to measure/include direct connects.
+ * @param allowed_types The allowed tile type names for the source location. If this vector is empty, all
+ * names are allowed. If the source tile type is not allowed, the matrix is filled with EMPTY_DELTA.
+ * @param is_flat Whether flat routing is being used.
+ */
 static void generic_compute_matrix_dijkstra_expansion(
     RouterDelayProfiler& route_profiler,
     vtr::Matrix<std::vector<float>>& matrix,
@@ -448,7 +464,7 @@ static void add_delay_to_matrix(
 }
 
 static void generic_compute_matrix_dijkstra_expansion(
-    RouterDelayProfiler& /*route_profiler*/,
+    RouterDelayProfiler& route_profiler,
     vtr::Matrix<std::vector<float>>& matrix,
     int from_layer_num,
     int to_layer_num,
@@ -497,7 +513,7 @@ static void generic_compute_matrix_dijkstra_expansion(
         RRNodeId source_rr_node = device_ctx.rr_graph.node_lookup().find_node(from_layer_num, source_x, source_y, SOURCE, driver_ptc);
 
         VTR_ASSERT(source_rr_node != RRNodeId::INVALID());
-        auto delays = calculate_all_path_delays_from_rr_node(source_rr_node, router_opts, is_flat);
+        auto delays = calculate_all_path_delays_from_rr_node(source_rr_node, router_opts, is_flat, route_profiler.get_net_list());
 
         bool path_to_all_sinks = true;
         for (int sink_x = start_x; sink_x <= end_x; sink_x++) {

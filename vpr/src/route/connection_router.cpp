@@ -239,7 +239,10 @@ t_heap* ConnectionRouter<Heap>::timing_driven_route_connection_from_heap(RRNodeI
             // This is then placed into the traceback so that the correct path is returned
             // TODO: This can be eliminated by modifying the actual traceback function in route_timing
             if (rcv_path_manager.is_enabled()) {
-                rcv_path_manager.insert_backwards_path_into_traceback(cheapest->path_data, cheapest->cost, cheapest->backward_path_cost, route_ctx);
+                rcv_path_manager.insert_backwards_path_into_traceback(cheapest->path_data,
+                                                                      cheapest->cost,
+                                                                      cheapest->backward_path_cost,
+                                                                      route_ctx);
             }
             VTR_LOGV_DEBUG(router_debug_, "  Found target %8d (%s)\n", inode, describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, inode, is_flat_).c_str());
             break;
@@ -553,6 +556,10 @@ void ConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_params&
     // Costs initialized to current
     next.cost = std::numeric_limits<float>::infinity(); //Not used directly
     next.backward_path_cost = current->backward_path_cost;
+#ifdef PROFILE_LOOKAHEAD
+    next.backward_path_delay = current->backward_path_delay;
+    next.backward_path_congestion = current->backward_path_congestion;
+#endif
 
     // path_data variables are initialized to current values
     if (rcv_path_manager.is_enabled() && current->path_data) {
@@ -598,6 +605,10 @@ void ConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_params&
         next_ptr->cost = next.cost;
         next_ptr->R_upstream = next.R_upstream;
         next_ptr->backward_path_cost = next.backward_path_cost;
+#ifdef PROFILE_LOOKAHEAD
+        next_ptr->backward_path_delay = next.backward_path_delay;
+        next_ptr->backward_path_congestion = next.backward_path_congestion;
+#endif
         next_ptr->index = to_node;
         next_ptr->set_prev_edge(from_edge);
 
@@ -785,6 +796,10 @@ void ConnectionRouter<Heap>::evaluate_timing_driven_node_costs(t_heap* to,
     //Update the backward cost (upstream already included)
     to->backward_path_cost += (1. - cost_params.criticality) * cong_cost; //Congestion cost
     to->backward_path_cost += cost_params.criticality * Tdel;             //Delay cost
+#ifdef PROFILE_LOOKAHEAD
+    to->backward_path_delay += Tdel;
+    to->backward_path_congestion += cong_cost;
+#endif
 
     if (cost_params.bend_cost != 0.) {
         t_rr_type from_type = rr_graph_->node_type(from_node);
@@ -833,6 +848,10 @@ void ConnectionRouter<Heap>::empty_heap_annotating_node_route_inf() {
 
         rr_node_route_inf_[tmp->index].path_cost = tmp->cost;
         rr_node_route_inf_[tmp->index].backward_path_cost = tmp->backward_path_cost;
+#ifdef PROFILE_LOOKAHEAD
+        rr_node_route_inf_[tmp->index].backward_path_delay = tmp->backward_path_delay;
+        rr_node_route_inf_[tmp->index].backward_path_congestion = tmp->backward_path_congestion;
+#endif
         modified_rr_node_inf_.push_back(tmp->index);
 
         rcv_path_manager.free_path_struct(tmp->path_data);
@@ -893,6 +912,10 @@ void ConnectionRouter<Heap>::add_route_tree_node_to_heap(
     const auto& device_ctx = g_vpr_ctx.device();
     const RRNodeId inode = rt_node.inode;
     float backward_path_cost = cost_params.criticality * rt_node.Tdel;
+#ifdef PROFILE_LOOKAHEAD
+    float backward_path_delay = rt_node.Tdel;
+    float backward_path_congestion = 0.0;
+#endif
     float R_upstream = rt_node.R_upstream;
 
     /* Don't push to heap if not in bounding box: no-op for serial router, important for parallel router */
@@ -914,9 +937,27 @@ void ConnectionRouter<Heap>::add_route_tree_node_to_heap(
                        tot_cost,
                        describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, inode, is_flat_).c_str());
 
-        push_back_node(&heap_, rr_node_route_inf_,
-                       inode, tot_cost, RREdgeId::INVALID(),
-                       backward_path_cost, R_upstream);
+#ifndef PROFILE_LOOKAHEAD
+        push_back_node(&heap_,
+                       rr_node_route_inf_,
+                       inode,
+                       tot_cost,
+                       /*prev_edge=*/RREdgeId::INVALID(),
+                       backward_path_cost,
+                       /*backward_path_delay=*/0.f,
+                       /*backward_path_congestion=*/0.f,
+                       R_upstream);
+#else
+        push_back_node(&heap_,
+                       rr_node_route_inf_,
+                       inode,
+                       tot_cost,
+                       /*prev_edge=*/RREdgeId::INVALID(),
+                       backward_path_cost,
+                       backward_path_delay,
+                       backward_path_congestion,
+                       R_upstream);
+#endif
     } else {
         float expected_total_cost = compute_node_cost_using_rcv(cost_params, inode, target_node, rt_node.Tdel, 0, R_upstream);
 

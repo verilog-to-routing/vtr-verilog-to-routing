@@ -87,7 +87,14 @@ static float do_one_route(RRNodeId source_node,
 
         // Get the delay
         vtr::optional<const RouteTreeNode&> rt_node_of_sink;
-        std::tie(std::ignore, rt_node_of_sink) = tree.update_from_heap(&cheapest, OPEN, nullptr, router_opts.flat_routing);
+        std::tie(std::ignore, rt_node_of_sink) = tree.update_from_heap(/*hptr=*/&cheapest,
+                                                                       /*target_net_pin_index=*/OPEN,
+                                                                       /*spatial_rt_lookup=*/nullptr,
+                                                                       router_opts.flat_routing,
+                                                                       router.get_router_lookahead(),
+                                                                       cost_params,
+                                                                       net_list,
+                                                                       conn_params.net_id_);
         delay = rt_node_of_sink.value().Tdel;
     }
 

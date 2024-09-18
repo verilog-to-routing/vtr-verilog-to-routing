@@ -15,15 +15,66 @@ class RouterLookahead {
   public:
     /**
      * @brief Get expected cost from node to target_node.
-     * @attention Either compute or read methods must be invoked before invoking get_expected_cost.
+     *
+     * @attention Either compute or read methods must be invoked (to set up the lookahead data structures) before invoking get_expected_cost.
+     *
      * @param node The source node from which the cost to the target node is obtained.
      * @param target_node The target node to which the cost is obtained.
      * @param params Contain the router parameter such as connection criticality, etc. Used to calculate the cost based on the delay and congestion costs.
      * @param R_upstream Upstream resistance to get to the "node".
+     *
      * @return
      */
     virtual float get_expected_cost(RRNodeId node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const = 0;
-    virtual std::pair<float, float> get_expected_delay_and_cong(RRNodeId node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const = 0;
+
+    /**
+     * @brief Get expected (delay, congestion) from node to target_node.
+     *
+     * @attention Either compute or read methods must be invoked (to set up the lookahead data structures) before invoking
+     * get_expected_delay_and_cong_ignore_criticality.
+     *
+     * @param node The source node from which the cost to the target node is obtained.
+     * @param target_node The target node to which the cost is obtained.
+     * @param params Contains the router parameter such as connection criticality, etc.
+     * @param R_upstream Upstream resistance to get to the "node".
+     *
+     * @return (delay, congestion)
+     *
+     * @warning (delay, congestion) are NOT multiplied by (params.criticality, 1. - params.criticality), respectively.
+     * scale_delay_and_cong_by_criticality should be called after this function before adding these to calculate the
+     * expected total cost.
+     */
+    virtual std::pair<float, float> get_expected_delay_and_cong_ignore_criticality(RRNodeId node,
+                                                                                   RRNodeId target_node,
+                                                                                   const t_conn_cost_params& params,
+                                                                                   float R_upstream) const
+        = 0;
+
+    /**
+     * @brief Multiply delay by params.criticality and cong by (1. - params.criticality). Used in conjunction with
+     * get_expected_delay_and_cong_ignore_criticality to calculate the total expected cost.
+     *
+     * @param delay
+     * @param cong
+     * @param criticality
+     */
+    void scale_delay_and_cong_by_criticality(float& delay, float& cong, float criticality) const;
+
+    /**
+     * @brief Get expected (delay, congestion), scaled by congestion, from node to target_node.
+     *
+     * @note
+     * This function simply calls get_expected_delay_and_cong_ignore_criticality() followed by
+     * scale_delay_and_cong_by_criticality().
+     *
+     * @param node The source node from which the cost to the target node is obtained.
+     * @param target_node The target node to which the cost is obtained.
+     * @param params Contains the router parameter such as connection criticality, etc.
+     * @param R_upstream Upstream resistance to get to the "node".
+     *
+     * @return (delay, congestion)
+     */
+    std::pair<float, float> get_expected_delay_and_cong(RRNodeId node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const;
 
     /**
      * @brief Compute router lookahead (if needed)
@@ -123,7 +174,10 @@ const RouterLookahead* get_cached_router_lookahead(const t_det_routing_arch& det
 class ClassicLookahead : public RouterLookahead {
   public:
     float get_expected_cost(RRNodeId node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const override;
-    std::pair<float, float> get_expected_delay_and_cong(RRNodeId node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const override;
+    std::pair<float, float> get_expected_delay_and_cong_ignore_criticality(RRNodeId node,
+                                                                           RRNodeId target_node,
+                                                                           const t_conn_cost_params& params,
+                                                                           float R_upstream) const override;
 
     void compute(const std::vector<t_segment_inf>& /*segment_inf*/) override {
     }
@@ -159,7 +213,7 @@ class ClassicLookahead : public RouterLookahead {
 class NoOpLookahead : public RouterLookahead {
   protected:
     float get_expected_cost(RRNodeId node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const override;
-    std::pair<float, float> get_expected_delay_and_cong(RRNodeId node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const override;
+    std::pair<float, float> get_expected_delay_and_cong_ignore_criticality(RRNodeId node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const override;
 
     void compute(const std::vector<t_segment_inf>& /*segment_inf*/) override {
     }

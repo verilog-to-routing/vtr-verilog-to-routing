@@ -145,14 +145,30 @@ float get_cost_from_lookahead(const RouterLookahead& router_lookahead,
                               const t_conn_cost_params cost_params,
                               bool is_flat);
 
-/* Creates a new t_heap object to be placed on the heap, if the new cost    *
- * given is lower than the current path_cost to this channel segment.  The  *
- * index of its predecessor is stored to make traceback easy.  The index of *
- * the edge used to get from its predecessor to it is also stored to make   *
- * timing analysis, etc.                                                    *
- *                                                                          *
- * Returns t_heap suitable for adding to heap or nullptr if node is more    *
- * expensive than previously explored path.                                 */
+/**
+ * @brief Creates a new t_heap object to be placed on the heap, if the new cost
+ * given is lower than the current path_cost to this channel segment. The index
+ * of its predecessor is stored to make traceback easy. The index of the edge
+ * used to get from its predecessor to it is also stored to make timing analysis,
+ * etc.
+ *
+ * @tparam T
+ * @tparam RouteInf
+ * @param heap
+ * @param rr_node_route_inf
+ * @param inode
+ * @param total_cost
+ * @param prev_edge
+ * @param backward_path_cost
+ * @param backward_path_delay The known backward path delay used to calculate
+ * backward_path_cost. Only used for RouterLookahead, when enabled.
+ * @param backward_path_congestion The known backward path congestion used to
+ * calculate backward_path_cost. Only used for RouterLookahead, when enabled.
+ * @param R_upstream
+ *
+ * @return t_heap suitable for adding to heap or nullptr if node is more expensive
+ * than previously explored path.
+ */
 template<typename T, typename RouteInf>
 t_heap* prepare_to_add_node_to_heap(
     T* heap,
@@ -161,6 +177,8 @@ t_heap* prepare_to_add_node_to_heap(
     float total_cost,
     RREdgeId prev_edge,
     float backward_path_cost,
+    float backward_path_delay,
+    float backward_path_congestion,
     float R_upstream) {
     if (total_cost >= rr_node_route_inf[inode].path_cost)
         return nullptr;
@@ -171,6 +189,13 @@ t_heap* prepare_to_add_node_to_heap(
     hptr->cost = total_cost;
     hptr->set_prev_edge(prev_edge);
     hptr->backward_path_cost = backward_path_cost;
+#ifndef PROFILE_LOOKAHEAD
+    (void)backward_path_delay;
+    (void)backward_path_congestion;
+#else
+    hptr->backward_path_delay = backward_path_delay;
+    hptr->backward_path_congestion = backward_path_congestion;
+#endif
     hptr->R_upstream = R_upstream;
     return hptr;
 }
@@ -184,11 +209,18 @@ void add_node_to_heap(
     float total_cost,
     RREdgeId prev_edge,
     float backward_path_cost,
+    float backward_path_delay,
+    float backward_path_congestion,
     float R_upstream) {
-    t_heap* hptr = prepare_to_add_node_to_heap(
-        heap,
-        rr_node_route_inf, inode, total_cost,
-        prev_edge, backward_path_cost, R_upstream);
+    t_heap* hptr = prepare_to_add_node_to_heap(heap,
+                                               rr_node_route_inf,
+                                               inode,
+                                               total_cost,
+                                               prev_edge,
+                                               backward_path_cost,
+                                               backward_path_delay,
+                                               backward_path_congestion,
+                                               R_upstream);
     if (hptr) {
         heap->add_to_heap(hptr);
     }
@@ -205,11 +237,18 @@ void push_back_node(
     float total_cost,
     RREdgeId prev_edge,
     float backward_path_cost,
+    float backward_path_delay,
+    float backward_path_congestion,
     float R_upstream) {
-    t_heap* hptr = prepare_to_add_node_to_heap(
-        heap,
-        rr_node_route_inf, inode, total_cost, prev_edge,
-        backward_path_cost, R_upstream);
+    t_heap* hptr = prepare_to_add_node_to_heap(heap,
+                                               rr_node_route_inf,
+                                               inode,
+                                               total_cost,
+                                               prev_edge,
+                                               backward_path_cost,
+                                               backward_path_delay,
+                                               backward_path_congestion,
+                                               R_upstream);
     if (hptr) {
         heap->push_back(hptr);
     }

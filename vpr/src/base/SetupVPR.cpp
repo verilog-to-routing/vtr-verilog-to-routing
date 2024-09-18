@@ -486,6 +486,8 @@ static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts)
     RouterOpts->write_intra_cluster_router_lookahead = Options.write_intra_cluster_router_lookahead;
     RouterOpts->read_intra_cluster_router_lookahead = Options.read_intra_cluster_router_lookahead;
 
+    RouterOpts->lookahead_profiling_output = Options.lookahead_profiling_output;
+
     RouterOpts->router_heap = Options.router_heap;
     RouterOpts->exit_after_first_routing_iteration = Options.exit_after_first_routing_iteration;
 

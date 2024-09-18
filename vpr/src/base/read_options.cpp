@@ -1673,6 +1673,14 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .help("Writes the intra-cluster lookahead data to the specified file.")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    file_grp.add_argument(args.lookahead_profiling_output, "--profile_router_lookahead")
+        .help(
+            "For every routed sink, record the cost, delay, and congestion estimated by the router lookahead and the "
+            "actual cost, delay, and congestion, from every node along each route to the sink. These results, along with many "
+            "other attributes of the node, are recorded into the file name provided. Used to assist in debugging or validating "
+            "the router lookahead. File extension must be .csv.")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     file_grp.add_argument(args.read_placement_delay_lookup, "--read_placement_delay_lookup")
         .help(
             "Reads the placement delay lookup from the specified file instead of computing it.")

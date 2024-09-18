@@ -44,6 +44,8 @@ struct t_options {
     argparse::ArgValue<std::string> write_intra_cluster_router_lookahead;
     argparse::ArgValue<std::string> read_intra_cluster_router_lookahead;
 
+    argparse::ArgValue<std::string> lookahead_profiling_output;
+
     argparse::ArgValue<std::string> write_block_usage;
 
     /* Stage Options */
