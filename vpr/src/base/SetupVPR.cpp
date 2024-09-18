@@ -435,6 +435,7 @@ static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts)
     RouterOpts->pres_fac_mult = Options.pres_fac_mult;
     RouterOpts->max_pres_fac = Options.max_pres_fac;
     RouterOpts->route_type = Options.RouteType;
+    RouterOpts->route_verbosity = Options.route_verbosity;
 
     RouterOpts->full_stats = Options.full_stats;
 
