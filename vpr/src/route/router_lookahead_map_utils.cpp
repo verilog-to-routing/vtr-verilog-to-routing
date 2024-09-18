@@ -409,7 +409,7 @@ t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat) {
 
                     if (sample_loc.x == OPEN && sample_loc.y == OPEN && sample_loc.layer_num == OPEN) {
                         //No untried instances of the current tile type left
-                        VTR_LOG_WARN("Found no %sample locations for %s in %s\n",
+                        VTR_LOG_WARN("Found no %ssample locations for %s in %s\n",
                                      (num_sampled_locs == 0) ? "" : "more ",
                                      rr_node_typename[rr_type],
                                      device_ctx.physical_tile_types[itile].name);

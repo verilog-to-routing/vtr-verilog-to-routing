@@ -2491,6 +2491,11 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("false")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+
+    route_grp.add_argument<int>(args.route_verbosity, "--route_verbosity")
+        .help("Controls the verbosity of routing's output. Higher values produce more output (useful for debugging routing problems)")
+        .default_value("1")
+        .show_in(argparse::ShowIn::HELP_ONLY);
     route_grp.add_argument(args.custom_3d_sb_fanin_fanout, "--custom_3d_sb_fanin_fanout")
             .help(
                     "Specifies the number of tracks that can drive a 3D switch block connection"
@@ -2677,7 +2682,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_timing_grp.add_argument(args.router_first_iteration_timing_report_file, "--router_first_iter_timing_report")
-        .help("Name of the post first routing iteration timing report file (not generated if unspecfied)")
+        .help("Name of the post first routing iteration timing report file (not generated if unspecified)")
         .default_value("")
         .show_in(argparse::ShowIn::HELP_ONLY);
 

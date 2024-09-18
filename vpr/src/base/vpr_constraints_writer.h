@@ -25,6 +25,8 @@
 #ifndef VPR_SRC_BASE_VPR_CONSTRAINTS_WRITER_H_
 #define VPR_SRC_BASE_VPR_CONSTRAINTS_WRITER_H_
 
+class VprConstraints;
+
 /**
  * @brief Write out floorplan constraints to an XML file based on current placement
  *
@@ -35,7 +37,11 @@
  *   @param subtile     Specifies whether to write out the constraint regions with or without
  *                      subtile values.
  */
-void write_vpr_floorplan_constraints(const char* file_name, int expand, bool subtile, int horizontal_partitions, int vertical_partitions);
+void write_vpr_floorplan_constraints(const char* file_name,
+                                     int expand,
+                                     bool subtile,
+                                     int horizontal_partitions,
+                                     int vertical_partitions);
 
 /**
  * @brief Populates VprConstraints by creating a partition for each clustered block.
@@ -50,7 +56,9 @@ void write_vpr_floorplan_constraints(const char* file_name, int expand, bool sub
  *   @param subtile     Specifies whether to write out the constraint regions with or without
  *                      subtile values.
  */
-void setup_vpr_floorplan_constraints_one_loc(VprConstraints& constraints, int expand, bool subtile);
+void setup_vpr_floorplan_constraints_one_loc(VprConstraints& constraints,
+                                             int expand,
+                                             bool subtile);
 
 /**
  * @brief Populates VprConstraints by dividing the grid into multiple partitions.
@@ -62,6 +70,8 @@ void setup_vpr_floorplan_constraints_one_loc(VprConstraints& constraints, int ex
  * @param horizontal_cutpoints The number of horizontal cut-lines.
  * @param vertical_cutpoints The number of vertical cut_lines.
  */
-void setup_vpr_floorplan_constraints_cutpoints(VprConstraints& constraints, int horizontal_cutpoints, int vertical_cutpoints);
+void setup_vpr_floorplan_constraints_cutpoints(VprConstraints& constraints,
+                                               int horizontal_cutpoints,
+                                               int vertical_cutpoints);
 
 #endif /* VPR_SRC_BASE_VPR_CONSTRAINTS_WRITER_H_ */

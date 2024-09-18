@@ -168,15 +168,6 @@ enum class e_cluster_seed {
     BLEND2
 };
 
-enum class e_block_pack_status {
-    BLK_PASSED,
-    BLK_FAILED_FEASIBLE,
-    BLK_FAILED_ROUTE,
-    BLK_FAILED_FLOORPLANNING,
-    BLK_FAILED_NOC_GROUP,
-    BLK_STATUS_UNDEFINED
-};
-
 struct t_ext_pin_util {
     t_ext_pin_util() = default;
     t_ext_pin_util(float in, float out)
@@ -1387,6 +1378,7 @@ struct t_router_opts {
     int router_debug_iteration;
     e_router_lookahead lookahead_type;
     int max_convergence_count;
+    int route_verbosity;
     float reconvergence_cpd_threshold;
     e_router_initial_timing initial_timing;
     bool update_lower_bound_delays;
