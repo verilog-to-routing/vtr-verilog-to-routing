@@ -51,6 +51,7 @@ static GridBlock init_grid_blocks() {
 void t_placer_costs::update_norm_factors() {
     if (place_algorithm.is_timing_driven()) {
         bb_cost_norm = 1 / bb_cost;
+        if (cong_cost) cong_cost_norm = 1 / cong_cost;
         //Prevent the norm factor from going to infinity
         timing_cost_norm = std::min(1 / timing_cost, MAX_INV_TIMING_COST);
     } else {
@@ -231,6 +232,7 @@ void t_placer_statistics::reset() {
     av_cost = 0.;
     av_bb_cost = 0.;
     av_timing_cost = 0.;
+    av_cong_cost = 0.;
     sum_of_squares = 0.;
     success_sum = 0;
     success_rate = 0.;
@@ -243,6 +245,7 @@ void t_placer_statistics::single_swap_update(const t_placer_costs& costs) {
     av_cost += costs.cost;
     av_bb_cost += costs.bb_cost;
     av_timing_cost += costs.timing_cost;
+    av_cong_cost += costs.cong_cost;
     sum_of_squares += (costs.cost) * (costs.cost);
 }
 
@@ -252,10 +255,12 @@ void t_placer_statistics::calc_iteration_stats(const t_placer_costs& costs, int 
         av_cost = costs.cost;
         av_bb_cost = costs.bb_cost;
         av_timing_cost = costs.timing_cost;
+        av_cong_cost = costs.cong_cost;
     } else {
         av_cost /= success_sum;
         av_bb_cost /= success_sum;
         av_timing_cost /= success_sum;
+        av_cong_cost /= success_sum;
     }
     success_rate = success_sum / float(move_lim);
     std_dev = get_std_dev(success_sum, sum_of_squares, av_cost);

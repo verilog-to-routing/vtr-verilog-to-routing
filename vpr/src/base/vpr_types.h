@@ -971,7 +971,8 @@ struct t_annealing_sched {
 enum e_place_algorithm {
     BOUNDING_BOX_PLACE,
     CRITICALITY_TIMING_PLACE,
-    SLACK_TIMING_PLACE
+    SLACK_TIMING_PLACE,
+    CONGESTION_AWARE_PLACE
 };
 
 enum e_place_bounding_box_mode {
@@ -1021,7 +1022,7 @@ class t_place_algorithm {
 
     ///@brief Check if the algorithm belongs to the timing driven category.
     inline bool is_timing_driven() const {
-        return algo == CRITICALITY_TIMING_PLACE || algo == SLACK_TIMING_PLACE;
+        return algo == CRITICALITY_TIMING_PLACE || algo == SLACK_TIMING_PLACE || algo == CONGESTION_AWARE_PLACE;
     }
 
     ///@brief Accessor: returns the underlying e_place_algorithm enum value.
@@ -1159,6 +1160,7 @@ struct t_placer_opts {
     t_place_algorithm place_algorithm;
     t_place_algorithm place_quench_algorithm;
     float timing_tradeoff;
+    float congestion_tradeoff;
     float place_cost_exp;
     int place_chan_width;
     enum e_pad_loc_type pad_loc_type;

@@ -92,6 +92,8 @@ class t_placer_costs {
     double timing_cost = 0.;
     double bb_cost_norm = 0.;
     double timing_cost_norm = 0.;
+    double cong_cost = 0.;
+    double cong_cost_norm = 0.;
 
     NocCostTerms noc_cost_terms;
     NocCostTerms noc_cost_norm_factors;
@@ -281,6 +283,7 @@ class t_placer_statistics {
     double av_cost;
     double av_bb_cost;
     double av_timing_cost;
+    double av_cong_cost;
     double sum_of_squares;
     int success_sum;
     float success_rate;

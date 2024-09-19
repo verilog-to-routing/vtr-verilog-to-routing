@@ -52,6 +52,9 @@ enum class NetUpdateState {
 
 static constexpr int MAX_FANOUT_CROSSING_COUNT = 50;
 
+static vtr::NdMatrix<float, 2> cong_matrix;
+static vtr::NdMatrix<float, 2> cong_matrix_new;
+
 /**
  * @brief Crossing counts for nets with different #'s of pins.  From
  * ICCAD 94 pp. 690 - 695 (with linear interpolation applied by me).
@@ -300,8 +303,8 @@ static void update_layer_bb(ClusterNetId net_id,
                             bool is_output_pin);
 
 /**
-* @brief This function is called in update_layer_bb to update the net's bounding box incrementally if
-* the pin under consideration change layer.
+ * @brief This function is called in update_layer_bb to update the net's bounding box incrementally if
+ * the pin under consideration change layer.
  * @param net_id ID of the net which the moving pin belongs to
  * @param pin_old_loc Old location of the moving pin
  * @param pin_new_loc New location of the moving pin
@@ -510,8 +513,7 @@ void BBUpdater::get_non_updatable_bb(const ClusterNetId& net) {
         ::get_non_updatable_bb(net,
                                ts_info.ts_bb_coord_new[net],
                                ts_info.ts_layer_sink_pin_count[size_t(net)]);
-    }
-    else {
+    } else {
         ::get_non_updatable_layer_bb(net,
                                      ts_info.layer_ts_bb_coord_new[net],
                                      ts_info.ts_layer_sink_pin_count[size_t(net)]);
@@ -527,8 +529,7 @@ void BBUpdater::update_bb(ClusterNetId net_id, t_physical_tile_loc pin_old_loc, 
                     pin_old_loc,
                     pin_new_loc,
                     is_driver);
-    }
-    else {
+    } else {
         ::update_layer_bb(net_id,
                           ts_info.layer_ts_bb_edge_new[net_id],
                           ts_info.layer_ts_bb_coord_new[net_id],
@@ -542,8 +543,7 @@ void BBUpdater::update_bb(ClusterNetId net_id, t_physical_tile_loc pin_old_loc, 
 double BBUpdater::get_net_cost(const ClusterNetId net_id) {
     if (m_cube_bb) {
         return ::get_net_cost(net_id, ts_info.ts_bb_coord_new[net_id]);
-    }
-    else {
+    } else {
         return ::get_net_layer_bb_wire_cost(net_id, ts_info.layer_ts_bb_coord_new[net_id], ts_info.ts_layer_sink_pin_count[size_t(net_id)]);
     }
 }
@@ -1376,10 +1376,10 @@ static inline void update_bb_layer_changed(ClusterNetId net_id,
     VTR_ASSERT_SAFE(old_layer_num != new_layer_num);
 
     /*
-    This funcitn is called when BB per layer is used and when the moving block is moving from one layer to another.
-    Thus, we need to update bounding box on both "from" and "to" layer. Here, we update the bounding box on "from" or
-    "old_layer". Then, "add_block_to_bb" is called to update the bounding box on the new layer.
-    */
+     * This funcitn is called when BB per layer is used and when the moving block is moving from one layer to another.
+     * Thus, we need to update bounding box on both "from" and "to" layer. Here, we update the bounding box on "from" or
+     * "old_layer". Then, "add_block_to_bb" is called to update the bounding box on the new layer.
+     */
     if (x_old == curr_bb_coord[old_layer_num].xmax) {
         update_bb_edge(net_id,
                        bb_edge_new,
@@ -1484,10 +1484,10 @@ static void add_block_to_bb(const t_physical_tile_loc& new_pin_loc,
     int y_new = new_pin_loc.y;
 
     /*
-    This function is called to only update the bounding box on the new layer from a block
-    moving to this layer from another layer. Thus, we only need to assess the effect of this
-    new block on the edges.
-    */
+     * This function is called to only update the bounding box on the new layer from a block
+     * moving to this layer from another layer. Thus, we only need to assess the effect of this
+     * new block on the edges.
+     */
 
     if (x_new > bb_coord_old.xmax) {
         bb_edge_new.xmax = 1;
@@ -1787,10 +1787,10 @@ static double get_net_layer_bb_wire_cost(ClusterNetId /* net_id */,
             continue;
         }
         /*
-        adjust the bounding box half perimeter by the wirelength correction
-        factor based on terminal count, which is 1 for the source + the number
-        of sinks on this layer.
-        */
+         * adjust the bounding box half perimeter by the wirelength correction
+         * factor based on terminal count, which is 1 for the source + the number
+         * of sinks on this layer.
+         */
         crossing = wirelength_crossing_count(layer_pin_sink_count[layer_num] + 1);
 
         /* Could insert a check for xmin == xmax.  In that case, assume  *
@@ -1828,6 +1828,58 @@ static double get_net_wirelength_estimate(ClusterNetId net_id, const t_bb& bb) {
     ncost += (bb.ymax - bb.ymin + 1) * crossing;
 
     return ncost;
+}
+
+void get_cong_matrix(ClusterNetId net_id, const t_bb& bb) {
+    /* Finds the cost due to one net by looking at its coordinate bounding  *
+     * box.                                                                 */
+    // auto& cluster_ctx = g_vpr_ctx.clustering();
+
+    /* Could insert a check for xmin == xmax.  In that case, assume  *
+     * connection will be made with no bends and hence no x-cost.    *
+     * Same thing for y-cost.                                        */
+
+    /* Cost = wire length along channel * cross_count / average      *
+     * channel capacity.   Do this for x, then y direction and add.  */
+    for (int i = bb.xmin; i < bb.xmax; i++) {
+        for (int j = bb.ymin; j < bb.ymax; j++) {
+            cong_matrix[i][j] += get_net_wirelength_estimate(net_id, bb) / double((bb.xmax - bb.xmin + 1) * (bb.ymax - bb.ymin + 1));
+        }
+    }
+}
+
+double get_cong_cost(double chan_width) {
+    auto& device_ctx = g_vpr_ctx.device();
+    double max = 0.0;
+    double avg = 1e-4, var = 0.0;
+    double num = 0.0;
+    double max_width = chan_width;
+    for (int i = 0; i < int(device_ctx.grid.width()); i++) {
+        for (int j = 0; j < int(device_ctx.grid.height()); j++) {
+            if (max < cong_matrix_new[i][j]) {
+                max = cong_matrix_new[i][j];
+            }
+        }
+    }
+
+    for (int i = 0; i < int(device_ctx.grid.width()); i++) {
+        for (int j = 0; j < int(device_ctx.grid.height()); j++) {
+            if (cong_matrix_new[i][j] > max_width) {
+                avg += cong_matrix_new[i][j] - max_width;
+                num += 1.0;
+            }
+        }
+    }
+
+    for (int i = 0; i < int(device_ctx.grid.width()); i++) {
+        for (int j = 0; j < int(device_ctx.grid.height()); j++) {
+            double var_var = cong_matrix_new[i][j] - avg;
+            var_var = var_var * var_var;
+            var += var_var;
+        }
+    }
+    var = var / double((device_ctx.grid.width() * device_ctx.grid.height()));
+    return avg;
 }
 
 static double get_net_wirelength_from_layer_bb(ClusterNetId /* net_id */,
@@ -1889,7 +1941,7 @@ static double wirelength_crossing_count(size_t fanout) {
 }
 
 static void set_bb_delta_cost(double& bb_delta_c) {
-    for (const ClusterNetId ts_net: ts_info.ts_nets_to_update) {
+    for (const ClusterNetId ts_net : ts_info.ts_nets_to_update) {
         ClusterNetId net_id = ts_net;
 
         pl_net_cost.proposed_net_cost[net_id] = bb_updater.get_net_cost(net_id);
@@ -1942,12 +1994,22 @@ void find_affected_nets_and_update_costs(
     set_bb_delta_cost(bb_delta_c);
 }
 
-double comp_bb_cost(e_cost_methods method) {
+double comp_bb_cost(e_cost_methods method, const t_place_algorithm& place_algorithm) {
     double cost = 0;
     double expected_wirelength = 0.0;
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& placer_state = placer_state_ref->get();
     auto& place_move_ctx = placer_state.mutable_move();
+    auto& device_ctx = g_vpr_ctx.device();
+    // VTR_LOG("\n\n\nwidth = %d and height= %d\n\n\n",device_ctx.grid.width(), device_ctx.grid.height());
+    if (place_algorithm == CONGESTION_AWARE_PLACE) {
+        for (int i = 0; i < int(device_ctx.grid.width()); i++) {
+            for (int j = 0; j < int(device_ctx.grid.height()); j++) {
+                cong_matrix[i][j] = 0.0;
+                // cong_matrix_new[i][j] = 0.0;
+            }
+        }
+    }
 
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {       /* for each net ... */
         if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)) { /* Do only if not ignored. */
@@ -1964,10 +2026,32 @@ double comp_bb_cost(e_cost_methods method) {
                                      place_move_ctx.num_sink_pin_layer[size_t(net_id)]);
             }
 
+            if (place_algorithm == CONGESTION_AWARE_PLACE) {
+                get_cong_matrix(net_id, place_move_ctx.bb_coords[net_id]);
+            }
+
             pl_net_cost.net_cost[net_id] = get_net_cost(net_id, place_move_ctx.bb_coords[net_id]);
             cost += pl_net_cost.net_cost[net_id];
             if (method == e_cost_methods::CHECK)
                 expected_wirelength += get_net_wirelength_estimate(net_id, place_move_ctx.bb_coords[net_id]);
+        }
+    }
+
+    if (place_algorithm == CONGESTION_AWARE_PLACE) {
+        for (int i = 0; i < int(device_ctx.grid.width()); i++) {
+            for (int j = 0; j < int(device_ctx.grid.height()); j++) {
+                cong_matrix_new[i][j] = cong_matrix[i][j];
+            }
+        }
+    }
+
+    // cost = get_cong_cost();
+    if (place_algorithm == CONGESTION_AWARE_PLACE) {
+        for (int i = 0; i < int(device_ctx.grid.width()); i++) {
+            for (int j = 0; j < int(device_ctx.grid.height()); j++) {
+                VTR_LOG("%4.0f\t", cong_matrix[i][j]);
+            }
+            VTR_LOG("\n");
         }
     }
 
@@ -2075,8 +2159,13 @@ void recompute_costs_from_scratch(const t_placer_opts& placer_opts,
     };
 
     double new_bb_cost = recompute_bb_cost();
+    double new_cong_cost = 0.0;
+    if (placer_opts.place_algorithm == CONGESTION_AWARE_PLACE) {
+        new_cong_cost = get_cong_cost(placer_opts.congestion_tradeoff);
+    }
     check_and_print_cost(new_bb_cost, costs->bb_cost, "bb_cost");
     costs->bb_cost = new_bb_cost;
+    costs->cong_cost = new_cong_cost;
 
     if (placer_opts.place_algorithm.is_timing_driven()) {
         double new_timing_cost = 0.;
@@ -2138,10 +2227,10 @@ void alloc_and_load_chan_w_factors_for_place_cost(float place_cost_exp) {
     auto& device_ctx = g_vpr_ctx.device();
 
     /*
-    Access arrays below as chan?_place_cost_fac[subhigh][sublow]. Since subhigh must be greater than or
-    equal to sublow, we will only access the lower half of a matrix, but we allocate the whole matrix anyway
-    for simplicity so we can use the vtr utility matrix functions.
-    */
+     * Access arrays below as chan?_place_cost_fac[subhigh][sublow]. Since subhigh must be greater than or
+     * equal to sublow, we will only access the lower half of a matrix, but we allocate the whole matrix anyway
+     * for simplicity so we can use the vtr utility matrix functions.
+     */
 
     chanx_place_cost_fac.resize({device_ctx.grid.height(), device_ctx.grid.height() + 1});
     chany_place_cost_fac.resize({device_ctx.grid.width(), device_ctx.grid.width() + 1});

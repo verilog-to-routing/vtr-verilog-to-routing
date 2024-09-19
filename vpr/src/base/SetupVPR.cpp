@@ -665,6 +665,7 @@ static void SetupPlacerOpts(const t_options& Options, t_placer_opts* PlacerOpts)
     PlacerOpts->recompute_crit_iter = Options.RecomputeCritIter;
 
     PlacerOpts->timing_tradeoff = Options.PlaceTimingTradeoff;
+    PlacerOpts->congestion_tradeoff = Options.CongestionTradeoff;
 
     /* Depends on PlacerOpts->place_algorithm */
     PlacerOpts->delay_offset = Options.place_delay_offset;
@@ -786,8 +787,6 @@ static void SetupNocOpts(const t_options& Options, t_noc_opts* NocOpts) {
     }
     NocOpts->noc_sat_routing_log_search_progress = Options.noc_sat_routing_log_search_progress;
     NocOpts->noc_placement_file_name = Options.noc_placement_file_name;
-
-
 }
 
 static void SetupServerOpts(const t_options& Options, t_server_opts* ServerOpts) {

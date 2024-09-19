@@ -398,6 +398,8 @@ struct ParsePlaceAlgorithm {
             conv_value.set_value(CRITICALITY_TIMING_PLACE);
         } else if (str == "slack_timing") {
             conv_value.set_value(SLACK_TIMING_PLACE);
+        } else if (str == "congestion_aware") {
+            conv_value.set_value(CONGESTION_AWARE_PLACE);
         } else {
             std::stringstream msg;
             msg << "Invalid conversion from '" << str << "' to e_place_algorithm (expected one of: " << argparse::join(default_choices(), ", ") << ")";
@@ -419,6 +421,8 @@ struct ParsePlaceAlgorithm {
             conv_value.set_value("bounding_box");
         } else if (val == CRITICALITY_TIMING_PLACE) {
             conv_value.set_value("criticality_timing");
+        } else if (val == CONGESTION_AWARE_PLACE) {
+            conv_value.set_value("congestion_aware");
         } else {
             VTR_ASSERT(val == SLACK_TIMING_PLACE);
             conv_value.set_value("slack_timing");
@@ -427,7 +431,7 @@ struct ParsePlaceAlgorithm {
     }
 
     std::vector<std::string> default_choices() {
-        return {"bounding_box", "criticality_timing", "slack_timing"};
+        return {"bounding_box", "criticality_timing", "slack_timing", "congestion_aware"};
     }
 };
 
@@ -1398,6 +1402,8 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             "           Sets the routing congestion drawing state\n"
             "      * exit <int>\n"
             "           Exits VPR with specified exit code\n"
+            "      * set_congestion <int>\n"
+            "           Sets the routing congestion drawing state\n"
             "\n"
             "   Example:\n"
             "     'save_graphics place.png; \\\n"
@@ -2007,9 +2013,10 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             "Controls which placement algorithm is used. Valid options:\n"
             " * bounding_box: Focuses purely on minimizing the bounding box wirelength of the circuit. Turns off timing analysis if specified.\n"
             " * criticality_timing: Focuses on minimizing both the wirelength and the connection timing costs (criticality * delay).\n"
-            " * slack_timing: Focuses on improving the circuit slack values to reduce critical path delay.\n")
+            " * slack_timing: Focuses on improving the circuit slack values to reduce critical path delay.\n"
+            " * congestion_aware: Focuses on improving routability.\n")
         .default_value("criticality_timing")
-        .choices({"bounding_box", "criticality_timing", "slack_timing"})
+        .choices({"bounding_box", "criticality_timing", "slack_timing", "congestion_aware"})
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument<e_place_algorithm, ParsePlaceAlgorithm>(args.PlaceQuenchAlgorithm, "--place_quench_algorithm")
@@ -2019,9 +2026,10 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             "Valid options:\n"
             " * bounding_box: Focuses purely on minimizing the bounding box wirelength of the circuit. Turns off timing analysis if specified.\n"
             " * criticality_timing: Focuses on minimizing both the wirelength and the connection timing costs (criticality * delay).\n"
-            " * slack_timing: Focuses on improving the circuit slack values to reduce critical path delay.\n")
+            " * slack_timing: Focuses on improving the circuit slack values to reduce critical path delay.\n"
+            " * congestion_aware: Focuses on improving routability.\n")
         .default_value("criticality_timing")
-        .choices({"bounding_box", "criticality_timing", "slack_timing"})
+        .choices({"bounding_box", "criticality_timing", "slack_timing", "congestion_aware"})
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.PlaceChanWidth, "--place_chan_width")
@@ -2071,7 +2079,6 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .nargs('+')
         .default_value({"100"})
         .show_in(argparse::ShowIn::HELP_ONLY);
-
 
     place_grp.add_argument(args.place_high_fanout_net, "--place_high_fanout_net")
         .help(
@@ -2239,6 +2246,14 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .help(
             "Trade-off control between delay and wirelength during placement."
             " 0.0 focuses completely on wirelength, 1.0 completely on timing")
+        .default_value("0.5")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_timing_grp.add_argument(args.CongestionTradeoff, "--congest_tradeoff")
+        .help(
+            "Trade-off control the bouding value for the contestion matrix.\n"
+            " a value near routing channel width can be a good value.\n"
+            " a high value let the VPR to ignore the congestion aware placement and continue its own course of action.\n")
         .default_value("0.5")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
@@ -2910,13 +2925,13 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("0.25")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
-	noc_grp.add_argument<double>(args.noc_centroid_weight, "--noc_centroid_weight")
+    noc_grp.add_argument<double>(args.noc_centroid_weight, "--noc_centroid_weight")
         .help(
             "Sets the minimum fraction of swaps attempted by the placer that are NoC blocks."
             "This value is an integer ranging from 0-100. 0 means NoC blocks will be moved at the same rate as other blocks. 100 means all swaps attempted by the placer are NoC router blocks.")
         .default_value("0")
         .show_in(argparse::ShowIn::HELP_ONLY);
-        
+
     noc_grp.add_argument<double>(args.noc_swap_percentage, "--noc_swap_percentage")
         .help(
             "Sets the minimum fraction of swaps attempted by the placer that are NoC blocks. "
@@ -2968,8 +2983,9 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
     auto& server_grp = parser.add_argument_group("server options");
 
     server_grp.add_argument<bool, ParseOnOff>(args.is_server_mode_enabled, "--server")
-        .help("Run in server mode."
-              "Accept client application connection and respond to requests." )
+        .help(
+            "Run in server mode."
+            "Accept client application connection and respond to requests.")
         .action(argparse::Action::STORE_TRUE)
         .default_value("off");
 
