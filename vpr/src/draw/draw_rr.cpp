@@ -563,7 +563,7 @@ void draw_rr_pin(RRNodeId inode, const ezgl::color& color, ezgl::renderer* g) {
     /* As nodes may appear on more than one side, walk through the possible nodes
      * - draw the pin on each side that it appears
      */
-    for (const e_side& pin_side : SIDES) {
+    for (const e_side& pin_side : TOTAL_2D_SIDES) {
         if (!rr_graph.is_node_on_specific_side(RRNodeId(inode), pin_side)) {
             continue;
         }
@@ -719,7 +719,7 @@ RRNodeId draw_check_rr_node_hit(float click_x, float click_y) {
                 int height_offset = device_ctx.grid.get_height_offset({i, j, layer_num});
                 int ipin = rr_graph.node_pin_num(inode);
                 float xcen, ycen;
-                for (const e_side& iside : SIDES) {
+                for (const e_side& iside : TOTAL_2D_SIDES) {
                     // If pin exists on this side of the block, then get pin coordinates
                     if (type->pinloc[width_offset][height_offset][size_t(iside)][ipin]) {
                         draw_get_rr_pin_coords(inode, &xcen, &ycen, iside);
@@ -926,7 +926,8 @@ void draw_get_rr_pin_coords(const t_rr_node& node, float* xcen, float* ycen, con
 
         default:
             vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                      "in draw_get_rr_pin_coords: Unexpected side.\n");
+                      "in draw_get_rr_pin_coords: Unexpected side %s.\n",
+                      TOTAL_2D_SIDE_STRINGS[pin_side]);
             break;
     }
 

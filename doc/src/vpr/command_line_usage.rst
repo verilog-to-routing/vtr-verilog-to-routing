@@ -1292,6 +1292,13 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
     * `swns` - setup Worst Negative Slack (sWNS) [ns]
     * `stns` - Setup Total Negative Slack (sTNS) [ns]
 
+.. option:: --route_verbosity <int>
+
+    Controls the verbosity of routing output.
+    High values produce more detailed output, which can be useful for debugging or understanding the routing process.
+
+    **Default**: ``1``
+
 .. _timing_driven_router_options:
 
 Timing-Driven Router Options

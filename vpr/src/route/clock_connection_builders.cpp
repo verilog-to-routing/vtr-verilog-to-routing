@@ -283,7 +283,7 @@ void ClockToPinsConnection::create_switches(const ClockRRGraphBuilder& clock_gra
                 continue;
             }
 
-            for (e_side side : SIDES) {
+            for (e_side side : TOTAL_2D_SIDES) {
                 //Don't connect pins which are not adjacent to channels around the perimeter
                 if ((x == 0 && side != RIGHT) || (x == (int)grid.width() - 1 && side != LEFT) || (y == 0 && side != TOP) || (y == (int)grid.height() - 1 && side != BOTTOM)) {
                     continue;
