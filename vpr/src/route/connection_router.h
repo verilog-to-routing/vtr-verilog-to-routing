@@ -45,7 +45,6 @@ class ConnectionRouter : public ConnectionRouterInterface {
         , router_stats_(nullptr)
         , router_debug_(false) {
         heap_.init_heap(grid);
-        // heap_.set_prune_limit(rr_nodes_.size(), kHeapPruneFactor * rr_nodes_.size());
         only_opin_inter_layer = (grid.get_num_layers() > 1) && inter_layer_connections_limited_to_opin(*rr_graph);
         rr_node_R_upstream.resize(rr_node_route_inf.size());
         rcv_path_data.resize(rr_node_route_inf.size());

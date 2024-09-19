@@ -272,7 +272,7 @@ struct RouteBudgetsAlgorithm {
     }
 
     std::vector<std::string> default_choices() {
-        return {"minimax", "scale_delay", "disable"};
+        return {"minimax", "yoyo", "scale_delay", "disable"};
     }
 };
 

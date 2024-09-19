@@ -82,3 +82,4 @@ regression_tests/vtr_reg_strong_odin/koios_test
 regression_tests/vtr_reg_strong_odin/koios_test_no_hb
 regression_tests/vtr_reg_strong_odin/strong_timing_fail
 regression_tests/vtr_reg_strong_odin/strong_timing_no_fail
+regression_tests/vtr_reg_strong_odin/strong_yoyo_budgets
