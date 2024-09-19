@@ -202,6 +202,8 @@ Draw selected critical path elements example
 
   .. note:: If status is not 1, the field ***DATA*** contains error string.
 
+.. _ipa_client_for_testing_vpr_server_mode_functionality:
+
 IPA Client for Testing VPR Server Mode Functionality
 ====================================================
 
