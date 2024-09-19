@@ -2,11 +2,11 @@
 # https://github.com/duck2/uxsdcxx
 # Modify only if your build process doesn't involve regenerating this file.
 #
-# Cmdline: /home/talaeikh/uxsdcxx/uxsdcap.py /home/talaeikh/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
-# Input file: /home/talaeikh/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
-# md5sum of input file: 9c14a0ddd3c6bc1e690ca6abf467bae6
+# Cmdline: uxsdcxx/uxsdcap.py /home/mohagh18/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
+# Input file: /home/mohagh18/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
+# md5sum of input file: 65eddcc840064bbb91d7f4cf0b8bf821
 
-@0xa136dd28cdc8783b;
+@0xe787bf7696810419;
 using Cxx = import "/capnp/c++.capnp";
 $Cxx.namespace("ucap");
 
@@ -129,9 +129,10 @@ struct SegmentTiming {
 
 struct Segment {
 	id @0 :Int32;
-	name @1 :Text;
-	resType @2 :SegmentResType;
-	timing @3 :SegmentTiming;
+	length @1 :Int32;
+	name @2 :Text;
+	resType @3 :SegmentResType;
+	timing @4 :SegmentTiming;
 }
 
 struct Segments {

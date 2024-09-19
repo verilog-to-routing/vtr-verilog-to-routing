@@ -4,15 +4,23 @@
 #include "move_transactions.h"
 #include "place_util.h"
 
+class PlacerState;
+
 /**
- * @brief The method used to calculate palcement cost
- * @details For comp_cost.  NORMAL means use the method that generates updateable bounding boxes for speed.
+ * @brief The error tolerance due to round off for the total cost computation.
+ * When we check it from scratch vs. incrementally. 0.01 means that there is a 1% error tolerance.
+ */
+constexpr double ERROR_TOL = .01;
+
+/**
+ * @brief The method used to calculate placement cost
+ * @details For comp_cost.  NORMAL means use the method that generates updatable bounding boxes for speed.
  * CHECK means compute all bounding boxes from scratch using a very simple routine to allow checks
  * of the other costs.
  * NORMAL: Compute cost efficiently using incremental techniques.
  * CHECK: Brute-force cost computation; useful to validate the more complex incremental cost update code.
  */
-enum e_cost_methods {
+enum class e_cost_methods {
     NORMAL,
     CHECK
 };
@@ -151,3 +159,5 @@ void free_try_swap_net_cost_structs();
 void get_cong_matrix(ClusterNetId net_id, const t_bb& bb);
 
 double get_cong_cost(double chan_width);
+
+void set_net_handlers_placer_state(PlacerState& placer_state);

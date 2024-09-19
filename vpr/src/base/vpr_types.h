@@ -48,6 +48,7 @@
 #include "rr_graph_fwd.h"
 #include "rr_graph_cost.h"
 #include "rr_graph_type.h"
+#include "vtr_vector_map.h"
 
 /*******************************************************************************
  * Global data types and constants
@@ -93,12 +94,6 @@ enum class ScreenUpdatePriority {
 
 /* Used to avoid floating-point errors when comparing values close to 0 */
 #define EPSILON 1.e-15
-
-#define FIRST_ITER_WIRELENTH_LIMIT 0.85 /* If used wirelength exceeds this value in first iteration of routing, do not route */
-
-/* Defining macros for the placement_ctx t_grid_blocks. Assumes that ClusterBlockId's won't exceed positive 32-bit integers */
-constexpr auto EMPTY_BLOCK_ID = ClusterBlockId(-1);
-constexpr auto INVALID_BLOCK_ID = ClusterBlockId(-2);
 
 /*
  * Files
@@ -839,73 +834,6 @@ struct t_block_loc {
     bool is_fixed = false;
 };
 
-///@brief Stores the clustered blocks placed at a particular grid location
-struct t_grid_blocks {
-    int usage; ///<How many valid blocks are in use at this location
-
-    /**
-     * @brief The clustered blocks associated with this grid location.
-     *
-     * Index range: [0..device_ctx.grid[x_loc][y_loc].type->capacity]
-     */
-    std::vector<ClusterBlockId> blocks;
-
-    /**
-     * @brief Test if a subtile at a grid location is occupied by a block.
-     *
-     * Returns true if the subtile corresponds to the passed-in id is not
-     * occupied by a block at this grid location. The subtile id serves
-     * as the z-dimensional offset in the grid indexing.
-     */
-    inline bool subtile_empty(size_t isubtile) const {
-        return blocks[isubtile] == EMPTY_BLOCK_ID;
-    }
-};
-
-class GridBlock {
-  public:
-    GridBlock() = default;
-
-    GridBlock(size_t width, size_t height, size_t layers) {
-        grid_blocks_.resize({layers, width, height});
-    }
-
-    inline void initialized_grid_block_at_location(const t_physical_tile_loc& loc, int num_sub_tiles) {
-        grid_blocks_[loc.layer_num][loc.x][loc.y].blocks.resize(num_sub_tiles, EMPTY_BLOCK_ID);
-    }
-
-    inline void set_block_at_location(const t_pl_loc& loc, ClusterBlockId blk_id) {
-        grid_blocks_[loc.layer][loc.x][loc.y].blocks[loc.sub_tile] = blk_id;
-    }
-
-    inline ClusterBlockId block_at_location(const t_pl_loc& loc) const {
-        return grid_blocks_[loc.layer][loc.x][loc.y].blocks[loc.sub_tile];
-    }
-
-    inline size_t num_blocks_at_location(const t_physical_tile_loc& loc) const {
-        return grid_blocks_[loc.layer_num][loc.x][loc.y].blocks.size();
-    }
-
-    inline int set_usage(const t_physical_tile_loc loc, int usage) {
-        return grid_blocks_[loc.layer_num][loc.x][loc.y].usage = usage;
-    }
-
-    inline int get_usage(const t_physical_tile_loc loc) const {
-        return grid_blocks_[loc.layer_num][loc.x][loc.y].usage;
-    }
-
-    inline bool is_sub_tile_empty(const t_physical_tile_loc loc, int sub_tile) const {
-        return grid_blocks_[loc.layer_num][loc.x][loc.y].subtile_empty(sub_tile);
-    }
-
-    inline void clear() {
-        grid_blocks_.clear();
-    }
-
-  private:
-    vtr::NdMatrix<t_grid_blocks, 3> grid_blocks_;
-};
-
 ///@brief Names of various files
 struct t_file_name_opts {
     std::string ArchFile;
@@ -1105,7 +1033,7 @@ class t_place_algorithm {
     e_place_algorithm algo = e_place_algorithm::CRITICALITY_TIMING_PLACE;
 };
 
-enum e_pad_loc_type {
+enum class e_pad_loc_type {
     FREE,
     RANDOM
 };
@@ -1238,6 +1166,7 @@ struct t_placer_opts {
     enum e_pad_loc_type pad_loc_type;
     std::string constraints_file;
     std::string write_initial_place_file;
+    std::string read_initial_place_file;
     enum pfreq place_freq;
     int recompute_crit_iter;
     int inner_loop_recompute_divider;
@@ -1345,6 +1274,8 @@ struct t_placer_opts {
  *             an essentially breadth-first search, astar_fac = 1 is near   *
  *             the usual astar algorithm and astar_fac > 1 are more         *
  *             aggressive.                                                  *
+ * astar_offset: Offset that is subtracted from the lookahead (expected     *
+ *               future costs) in the timing-driven router.                 *
  * max_criticality: The maximum criticality factor (from 0 to 1) any sink   *
  *                  will ever have (i.e. clip criticality to this number).  *
  * criticality_exp: Set criticality to (path_length(sink) / longest_path) ^ *
@@ -1435,6 +1366,7 @@ struct t_router_opts {
     enum e_router_algorithm router_algorithm;
     enum e_base_cost_type base_cost_type;
     float astar_fac;
+    float astar_offset;
     float router_profiler_astar_fac;
     float max_criticality;
     float criticality_exp;
@@ -1934,11 +1866,6 @@ class RouteStatus {
 typedef vtr::vector<ClusterBlockId, std::vector<std::vector<RRNodeId>>> t_clb_opins_used; //[0..num_blocks-1][0..class-1][0..used_pins-1]
 
 typedef std::vector<std::map<int, int>> t_arch_switch_fanin;
-
-/**
- * @brief Free the linked list that saves all the packing molecules.
- */
-void free_pack_molecules(t_pack_molecule* list_of_pack_molecules);
 
 /**
  * @brief Free the linked lists to placement locations based on status of primitive inside placement stats data structure.

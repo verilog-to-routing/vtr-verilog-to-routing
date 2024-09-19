@@ -434,6 +434,7 @@ static void SetupRoutingArch(const t_arch& Arch,
 static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts) {
     RouterOpts->do_check_rr_graph = Options.check_rr_graph;
     RouterOpts->astar_fac = Options.astar_fac;
+    RouterOpts->astar_offset = Options.astar_offset;
     RouterOpts->router_profiler_astar_fac = Options.router_profiler_astar_fac;
     RouterOpts->bb_factor = Options.bb_factor;
     RouterOpts->criticality_exp = Options.criticality_exp;
@@ -654,6 +655,8 @@ static void SetupPlacerOpts(const t_options& Options, t_placer_opts* PlacerOpts)
     PlacerOpts->constraints_file = Options.constraints_file;
 
     PlacerOpts->write_initial_place_file = Options.write_initial_place_file;
+
+    PlacerOpts->read_initial_place_file = Options.read_initial_place_file;
 
     PlacerOpts->pad_loc_type = Options.pad_loc_type;
 

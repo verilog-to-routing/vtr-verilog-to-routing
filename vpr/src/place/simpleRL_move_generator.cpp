@@ -112,7 +112,7 @@ std::vector<int> KArmedBanditAgent::get_available_logical_blk_types_() {
 
 void KArmedBanditAgent::process_outcome(double reward, e_reward_function reward_fun) {
     ++num_action_chosen_[last_action_];
-    if (reward_fun == RUNTIME_AWARE || reward_fun == WL_BIASED_RUNTIME_AWARE) {
+    if (reward_fun == e_reward_function::RUNTIME_AWARE || reward_fun == e_reward_function::WL_BIASED_RUNTIME_AWARE) {
         e_move_type move_type = action_to_move_type_(last_action_);
         reward /= time_elapsed_[move_type];
     }
