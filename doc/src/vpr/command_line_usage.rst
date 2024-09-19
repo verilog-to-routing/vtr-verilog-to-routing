@@ -1854,7 +1854,7 @@ The following options are used to enable server mode in VPR.
 
     **Default:** ``60555``
 
-.. seealso:: :ref:`ipa_client_for_testing_vpr_server_mode_functionality` Client implementation for testing VPR server mode.
+.. seealso:: :ref:`ipa_client_for_testing_vpr_server_mode_functionality`
 
 Command-line Auto Completion
 ----------------------------
