@@ -755,7 +755,6 @@ bool find_to_loc_uniform(t_logical_block_type_ptr type,
     t_physical_tile_loc to_compressed_loc;
     bool legal = false;
 
-    //TODO: constraints should be adapted to 3D architecture
     if (is_cluster_constrained(b_from)) {
         bool intersect = intersect_range_limit_with_floorplan_constraints(b_from,
                                                                           search_range,
@@ -1156,7 +1155,7 @@ std::vector<t_physical_tile_loc> get_compressed_loc(const t_compressed_block_gri
 
     const auto& compatible_layers = compressed_block_grid.get_layer_nums();
 
-    for (const auto& layer_num : compatible_layers) {
+    for (const int layer_num : compatible_layers) {
         // This would cause a problem if two blocks of the same types are on different x/y locations of different layers
         compressed_locs[layer_num] = compressed_block_grid.grid_loc_to_compressed_loc({grid_loc.x, grid_loc.y, layer_num});
     }
@@ -1171,7 +1170,7 @@ std::vector<t_physical_tile_loc> get_compressed_loc_approx(const t_compressed_bl
 
     const auto& compatible_layers = compressed_block_grid.get_layer_nums();
 
-    for (const auto& layer_num : compatible_layers) {
+    for (const int layer_num : compatible_layers) {
         compressed_locs[layer_num] = compressed_block_grid.grid_loc_to_compressed_loc_approx({grid_loc.x, grid_loc.y, layer_num});
     }
 

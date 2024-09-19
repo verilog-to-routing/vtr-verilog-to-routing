@@ -38,35 +38,11 @@ class WestFirstRouting : public TurnModelRouting {
     const std::vector<TurnModelRouting::Direction>& get_legal_directions(NocRouterId src_router_id,
                                                                          NocRouterId curr_router_id,
                                                                          NocRouterId dst_router_id,
+                                                                         TurnModelRouting::Direction prev_dir,
                                                                          const NocStorage& noc_model) override;
 
-    /**
-     * @brief Selects a direction from legal directions. The traffic flow
-     * travels in that direction. When there are both horizontal and
-     * vertical directions available, this method selects one of the available
-     * directions randomly. The chance of horizontal and vertical directions
-     * are weighted by the horizontal and vertical distance between the
-     * current NoC router and the destination router.
-     *
-     * @param legal_directions Legal directions that the traffic flow can follow.
-     * Legal directions are usually a subset of all possible directions to ensure
-     * deadlock freedom.
-     * @param src_router_id  A unique ID identifying the source NoC router.
-     * @param dst_router_id  A unique ID identifying the destination NoC router.
-     * @param curr_router_id A unique ID identifying the current NoC router.
-     * @param noc_model A model of the NoC. This might be used by the derived class
-     * to determine the position of NoC routers.
-     *
-     * @return Direction The direction to travel next
-     */
-    TurnModelRouting::Direction select_next_direction(const std::vector<TurnModelRouting::Direction>& legal_directions,
-                                                      NocRouterId src_router_id,
-                                                      NocRouterId dst_router_id,
-                                                      NocRouterId curr_router_id,
-                                                      NocTrafficFlowId traffic_flow_id,
-                                                      const NocStorage& noc_model) override;
-
-    bool is_turn_legal(const std::array<std::reference_wrapper<const NocRouter>, 3>& noc_routers) const override;
+    bool is_turn_legal(const std::array<std::reference_wrapper<const NocRouter>, 3>& noc_routers,
+                       const NocStorage& noc_model) const override;
 };
 
 #endif //VTR_WEST_FIRST_ROUTING_H

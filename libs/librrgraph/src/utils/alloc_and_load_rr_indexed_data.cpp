@@ -678,9 +678,10 @@ static void calculate_average_switch(const RRGraphView& rr_graph, int inode, dou
     }
 
     if (num_switches > 0) {
-        avg_switch_R /= num_switches;
-        avg_switch_T /= num_switches;
-        avg_switch_Cinternal /= num_switches;
+        double inv_num_switches = 1.0 / num_switches;
+        avg_switch_R *= inv_num_switches;
+        avg_switch_T *= inv_num_switches;
+        avg_switch_Cinternal *= inv_num_switches;
     }
 
     VTR_ASSERT(std::isfinite(avg_switch_R));

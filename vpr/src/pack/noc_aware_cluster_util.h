@@ -17,8 +17,12 @@
  */
 
 #include <vector>
+#include "noc_data_types.h"
+#include "vtr_vector.h"
 
-#include "vpr_types.h"
+class AtomNetlist;
+class AtomBlockId;
+class t_pack_high_fanout_thresholds;
 
 /**
  * @brief Iterates over all atom blocks and check whether
@@ -26,7 +30,7 @@
  *
  * @return The atom block IDs of the NoC router blocks in the netlist.
  */
-std::vector<AtomBlockId> find_noc_router_atoms();
+std::vector<AtomBlockId> find_noc_router_atoms(const AtomNetlist& atom_netlist);
 
 
 /**
@@ -37,6 +41,9 @@ std::vector<AtomBlockId> find_noc_router_atoms();
  *
  * @param noc_atoms The atom block IDs of the NoC router blocks in the netlist.
  */
-void update_noc_reachability_partitions(const std::vector<AtomBlockId>& noc_atoms);
+void update_noc_reachability_partitions(const std::vector<AtomBlockId>& noc_atoms,
+                                        const AtomNetlist& atom_netlist,
+                                        const t_pack_high_fanout_thresholds& high_fanout_threshold,
+                                        vtr::vector<AtomBlockId, NocGroupId>& atom_noc_grp_id);
 
 #endif

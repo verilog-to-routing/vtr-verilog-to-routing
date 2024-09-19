@@ -199,6 +199,9 @@ class RRGraphView {
      */
     inline int node_length(RRNodeId node) const {
         VTR_ASSERT(node_type(node) == CHANX || node_type(node) == CHANY);
+        if(node_direction(node) == Direction::NONE){
+            return 0; //length zero wire
+        }
         int length = 1 + node_xhigh(node) - node_xlow(node) + node_yhigh(node) - node_ylow(node);
         VTR_ASSERT_SAFE(length > 0);
         return length;
@@ -264,11 +267,11 @@ class RRGraphView {
         int node_layer_num = node_layer(node);
         if (node_type(node) == OPIN || node_type(node) == IPIN) {
             coordinate_string += "side: ("; //add the side of the routing resource node
-            for (const e_side& node_side : SIDES) {
+            for (const e_side& node_side : TOTAL_2D_SIDES) {
                 if (!is_node_on_specific_side(node, node_side)) {
                     continue;
                 }
-                coordinate_string += std::string(SIDE_STRING[node_side]) + ","; //add the side of the routing resource node
+                coordinate_string += std::string(TOTAL_2D_SIDE_STRINGS[node_side]) + ","; //add the side of the routing resource node
             }
             coordinate_string += ")"; //add the side of the routing resource node
             // For OPINs and IPINs the starting and ending coordinate are identical, so we can just arbitrarily assign the start to larger values

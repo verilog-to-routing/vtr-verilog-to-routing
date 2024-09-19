@@ -29,8 +29,7 @@ class RouterDelayProfiler {
     bool calculate_delay(RRNodeId source_node,
                          RRNodeId sink_node,
                          const t_router_opts& router_opts,
-                         float* net_delay,
-                         int layer_num);
+                         float* net_delay);
 
     /**
      * @param physical_tile_type_idx

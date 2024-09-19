@@ -16,6 +16,7 @@ circuit_list_add=complex_64_noc_nearest_neighbor.blif
 
 # Add architectures to list to sweep
 arch_list_add=3d_10x10_noc_base_stratixiv_up.xml
+arch_list_add=3d_full_OPIN_inter_die_3dnoc_stratixiv_arch.timing.xml
 
 # Add NoC Traffic Patterns to list to sweep
 noc_traffic_list_add=complex_64_noc_nearest_neighbor.flows
