@@ -170,8 +170,9 @@ void alloc_and_init_clustering(const t_molecule_stats& max_molecule_stats,
  */
 t_pack_molecule* get_molecule_by_num_ext_inputs(const int ext_inps,
                                                 const enum e_removal_policy remove_flag,
-                                                t_cluster_placement_stats* cluster_placement_stats_ptr,
-                                                t_molecule_link* unclustered_list_head);
+                                                t_molecule_link* unclustered_list_head,
+                                                LegalizationClusterId legalization_cluster_id,
+                                                const ClusterLegalizer& cluster_legalizer);
 
 /* @brief This routine is used to find new blocks for clustering when there are
  *        no feasible blocks with any attraction to the current cluster (i.e.
@@ -181,9 +182,10 @@ t_pack_molecule* get_molecule_by_num_ext_inputs(const int ext_inps,
  *        suitable atom block is found, the routine returns nullptr.
  */
 t_pack_molecule* get_free_molecule_with_most_ext_inputs_for_cluster(t_pb* cur_pb,
-                                                                    t_cluster_placement_stats* cluster_placement_stats_ptr,
                                                                     t_molecule_link* unclustered_list_head,
-                                                                    const int& unclustered_list_head_size);
+                                                                    const int& unclustered_list_head_size,
+                                                                    LegalizationClusterId legalization_cluster_id,
+                                                                    const ClusterLegalizer& cluster_legalizer);
 
 /*
  * @brief Print the header for the clustering progress table.
@@ -219,7 +221,6 @@ void rebuild_attraction_groups(AttractionInfo& attraction_groups,
 void try_fill_cluster(ClusterLegalizer& cluster_legalizer,
                       const Prepacker& prepacker,
                       const t_packer_opts& packer_opts,
-                      t_cluster_placement_stats* cur_cluster_placement_stats_ptr,
                       t_pack_molecule*& prev_molecule,
                       t_pack_molecule*& next_molecule,
                       int& num_same_molecules,
@@ -343,7 +344,6 @@ void start_new_cluster(ClusterLegalizer& cluster_legalizer,
 t_pack_molecule* get_highest_gain_molecule(t_pb* cur_pb,
                                            AttractionInfo& attraction_groups,
                                            const enum e_gain_type gain_mode,
-                                           t_cluster_placement_stats* cluster_placement_stats_ptr,
                                            const Prepacker& prepacker,
                                            const ClusterLegalizer& cluster_legalizer,
                                            vtr::vector<LegalizationClusterId, std::vector<AtomNetId>>& clb_inter_blk_nets,
@@ -358,7 +358,7 @@ t_pack_molecule* get_highest_gain_molecule(t_pb* cur_pb,
  *        list of feasible blocks.
  */
 void add_cluster_molecule_candidates_by_connectivity_and_timing(t_pb* cur_pb,
-                                                                t_cluster_placement_stats* cluster_placement_stats_ptr,
+                                                                LegalizationClusterId legalization_cluster_id,
                                                                 const Prepacker& prepacker,
                                                                 const ClusterLegalizer& cluster_legalizer,
                                                                 const int feasible_block_array_size,
@@ -369,7 +369,7 @@ void add_cluster_molecule_candidates_by_connectivity_and_timing(t_pb* cur_pb,
  *        nets) with current cluster.
  */
 void add_cluster_molecule_candidates_by_highfanout_connectivity(t_pb* cur_pb,
-                                                                t_cluster_placement_stats* cluster_placement_stats_ptr,
+                                                                LegalizationClusterId legalization_cluster_id,
                                                                 const Prepacker& prepacker,
                                                                 const ClusterLegalizer& cluster_legalizer,
                                                                 const int feasible_block_array_size,
@@ -387,7 +387,6 @@ void add_cluster_molecule_candidates_by_highfanout_connectivity(t_pb* cur_pb,
  * call this function.
  */
 void add_cluster_molecule_candidates_by_attraction_group(t_pb* cur_pb,
-                                                         t_cluster_placement_stats* cluster_placement_stats_ptr,
                                                          const Prepacker& prepacker,
                                                          const ClusterLegalizer& cluster_legalizer,
                                                          AttractionInfo& attraction_groups,
@@ -400,7 +399,6 @@ void add_cluster_molecule_candidates_by_attraction_group(t_pb* cur_pb,
  *        current cluster.
  */
 void add_cluster_molecule_candidates_by_transitive_connectivity(t_pb* cur_pb,
-                                                                t_cluster_placement_stats* cluster_placement_stats_ptr,
                                                                 const Prepacker& prepacker,
                                                                 const ClusterLegalizer& cluster_legalizer,
                                                                 vtr::vector<LegalizationClusterId, std::vector<AtomNetId>>& clb_inter_blk_nets,
@@ -409,14 +407,6 @@ void add_cluster_molecule_candidates_by_transitive_connectivity(t_pb* cur_pb,
                                                                 const int feasible_block_array_size,
                                                                 AttractionInfo& attraction_groups);
 
-/*
- * @brief Check whether a free primitive exists for each atom block in the
- *        molecule.
- */
-bool check_free_primitives_for_molecule_atoms(t_pack_molecule* molecule,
-                                              t_cluster_placement_stats* cluster_placement_stats_ptr,
-                                              const ClusterLegalizer& cluster_legalizer);
-
 t_pack_molecule* get_molecule_for_cluster(t_pb* cur_pb,
                                           AttractionInfo& attraction_groups,
                                           const bool allow_unrelated_clustering,
@@ -424,7 +414,6 @@ t_pack_molecule* get_molecule_for_cluster(t_pb* cur_pb,
                                           const int transitive_fanout_threshold,
                                           const int feasible_block_array_size,
                                           int* num_unrelated_clustering_attempts,
-                                          t_cluster_placement_stats* cluster_placement_stats_ptr,
                                           const Prepacker& prepacker,
                                           const ClusterLegalizer& cluster_legalizer,
                                           vtr::vector<LegalizationClusterId, std::vector<AtomNetId>>& clb_inter_blk_nets,

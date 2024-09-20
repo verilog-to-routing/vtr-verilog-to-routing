@@ -386,32 +386,19 @@ void alloc_and_init_clustering(const t_molecule_stats& max_molecule_stats,
 
 t_pack_molecule* get_molecule_by_num_ext_inputs(const int ext_inps,
                                                 const enum e_removal_policy remove_flag,
-                                                t_cluster_placement_stats* cluster_placement_stats_ptr,
-                                                t_molecule_link* unclustered_list_head) {
+                                                t_molecule_link* unclustered_list_head,
+                                                LegalizationClusterId legalization_cluster_id,
+                                                const ClusterLegalizer& cluster_legalizer) {
 
-    t_molecule_link *ptr, *prev_ptr;
-    int i;
-    bool success;
-
-    prev_ptr = &unclustered_list_head[ext_inps];
-    ptr = unclustered_list_head[ext_inps].next;
+    t_molecule_link* prev_ptr = &unclustered_list_head[ext_inps];
+    t_molecule_link* ptr = unclustered_list_head[ext_inps].next;
     while (ptr != nullptr) {
         /* TODO: Get better candidate atom block in future, eg. return most timing critical or some other smarter metric */
         if (ptr->moleculeptr->valid) {
-            success = true;
-            for (i = 0; i < get_array_size_of_molecule(ptr->moleculeptr); i++) {
-                if (ptr->moleculeptr->atom_block_ids[i]) {
-                    auto blk_id = ptr->moleculeptr->atom_block_ids[i];
-                    if (!exists_free_primitive_for_atom_block(cluster_placement_stats_ptr, blk_id)) {
-                        /* TODO: I should be using a better filtering check especially when I'm
-                         * dealing with multiple clock/multiple global reset signals where the clock/reset
-                         * packed in matters, need to do later when I have the circuits to check my work */
-                        success = false;
-                        break;
-                    }
-                }
-            }
-            if (success == true) {
+            /* TODO: I should be using a better filtering check especially when I'm
+             * dealing with multiple clock/multiple global reset signals where the clock/reset
+             * packed in matters, need to do later when I have the circuits to check my work */
+            if (cluster_legalizer.is_molecule_compatible(ptr->moleculeptr, legalization_cluster_id)) {
                 return ptr->moleculeptr;
             }
             prev_ptr = ptr;
@@ -430,9 +417,10 @@ t_pack_molecule* get_molecule_by_num_ext_inputs(const int ext_inps,
 
 /*****************************************/
 t_pack_molecule* get_free_molecule_with_most_ext_inputs_for_cluster(t_pb* cur_pb,
-                                                                    t_cluster_placement_stats* cluster_placement_stats_ptr,
                                                                     t_molecule_link* unclustered_list_head,
-                                                                    const int& unclustered_list_head_size) {
+                                                                    const int& unclustered_list_head_size,
+                                                                    LegalizationClusterId legalization_cluster_id,
+                                                                    const ClusterLegalizer& cluster_legalizer) {
     /*
      * TODO: Analyze if this function is useful in more detail, also, should probably not include clock in input count
      */
@@ -450,7 +438,11 @@ t_pack_molecule* get_free_molecule_with_most_ext_inputs_for_cluster(t_pb* cur_pb
     }
 
     for (int ext_inps = inputs_avail; ext_inps >= 0; ext_inps--) {
-        molecule = get_molecule_by_num_ext_inputs(ext_inps, LEAVE_CLUSTERED, cluster_placement_stats_ptr, unclustered_list_head);
+        molecule = get_molecule_by_num_ext_inputs(ext_inps,
+                                                  LEAVE_CLUSTERED,
+                                                  unclustered_list_head,
+                                                  legalization_cluster_id,
+                                                  cluster_legalizer);
         if (molecule != nullptr) {
             break;
         }
@@ -532,7 +524,6 @@ void update_connection_gain_values(const AtomNetId net_id,
 void try_fill_cluster(ClusterLegalizer& cluster_legalizer,
                       const Prepacker& prepacker,
                       const t_packer_opts& packer_opts,
-                      t_cluster_placement_stats* cur_cluster_placement_stats_ptr,
                       t_pack_molecule*& prev_molecule,
                       t_pack_molecule*& next_molecule,
                       int& num_same_molecules,
@@ -590,7 +581,6 @@ void try_fill_cluster(ClusterLegalizer& cluster_legalizer,
                                                  packer_opts.transitive_fanout_threshold,
                                                  packer_opts.feasible_block_array_size,
                                                  &cluster_stats.num_unrelated_clustering_attempts,
-                                                 cur_cluster_placement_stats_ptr,
                                                  prepacker,
                                                  cluster_legalizer,
                                                  clb_inter_blk_nets,
@@ -648,7 +638,6 @@ void try_fill_cluster(ClusterLegalizer& cluster_legalizer,
                                              packer_opts.transitive_fanout_threshold,
                                              packer_opts.feasible_block_array_size,
                                              &cluster_stats.num_unrelated_clustering_attempts,
-                                             cur_cluster_placement_stats_ptr,
                                              prepacker,
                                              cluster_legalizer,
                                              clb_inter_blk_nets,
@@ -1118,7 +1107,6 @@ void start_new_cluster(ClusterLegalizer& cluster_legalizer,
 t_pack_molecule* get_highest_gain_molecule(t_pb* cur_pb,
                                            AttractionInfo& attraction_groups,
                                            const enum e_gain_type gain_mode,
-                                           t_cluster_placement_stats* cluster_placement_stats_ptr,
                                            const Prepacker& prepacker,
                                            const ClusterLegalizer& cluster_legalizer,
                                            vtr::vector<LegalizationClusterId, std::vector<AtomNetId>>& clb_inter_blk_nets,
@@ -1140,7 +1128,7 @@ t_pack_molecule* get_highest_gain_molecule(t_pb* cur_pb,
     // 1. Find unpacked molecules based on criticality and strong connectedness (connected by low fanout nets) with current cluster
     if (cur_pb->pb_stats->num_feasible_blocks == NOT_VALID) {
         add_cluster_molecule_candidates_by_connectivity_and_timing(cur_pb,
-                                                                   cluster_placement_stats_ptr,
+                                                                   legalization_cluster_id,
                                                                    prepacker,
                                                                    cluster_legalizer,
                                                                    feasible_block_array_size,
@@ -1151,7 +1139,6 @@ t_pack_molecule* get_highest_gain_molecule(t_pb* cur_pb,
         // 2. Find unpacked molecules based on transitive connections (eg. 2 hops away) with current cluster
         if (cur_pb->pb_stats->num_feasible_blocks == 0 && cur_pb->pb_stats->explore_transitive_fanout) {
             add_cluster_molecule_candidates_by_transitive_connectivity(cur_pb,
-                                                                       cluster_placement_stats_ptr,
                                                                        prepacker,
                                                                        cluster_legalizer,
                                                                        clb_inter_blk_nets,
@@ -1164,7 +1151,7 @@ t_pack_molecule* get_highest_gain_molecule(t_pb* cur_pb,
         // 3. Find unpacked molecules based on weak connectedness (connected by high fanout nets) with current cluster
         if (cur_pb->pb_stats->num_feasible_blocks == 0 && cur_pb->pb_stats->tie_break_high_fanout_net) {
             add_cluster_molecule_candidates_by_highfanout_connectivity(cur_pb,
-                                                                       cluster_placement_stats_ptr,
+                                                                       legalization_cluster_id,
                                                                        prepacker,
                                                                        cluster_legalizer,
                                                                        feasible_block_array_size,
@@ -1174,7 +1161,7 @@ t_pack_molecule* get_highest_gain_molecule(t_pb* cur_pb,
         // 3. Find unpacked molecules based on weak connectedness (connected by high fanout nets) with current cluster
         if (cur_pb->pb_stats->num_feasible_blocks == 0 && cur_pb->pb_stats->tie_break_high_fanout_net) {
             add_cluster_molecule_candidates_by_highfanout_connectivity(cur_pb,
-                                                                       cluster_placement_stats_ptr,
+                                                                       legalization_cluster_id,
                                                                        prepacker,
                                                                        cluster_legalizer,
                                                                        feasible_block_array_size,
@@ -1184,7 +1171,6 @@ t_pack_molecule* get_highest_gain_molecule(t_pb* cur_pb,
         // 2. Find unpacked molecules based on transitive connections (eg. 2 hops away) with current cluster
         if (cur_pb->pb_stats->num_feasible_blocks == 0 && cur_pb->pb_stats->explore_transitive_fanout) {
             add_cluster_molecule_candidates_by_transitive_connectivity(cur_pb,
-                                                                       cluster_placement_stats_ptr,
                                                                        prepacker,
                                                                        cluster_legalizer,
                                                                        clb_inter_blk_nets,
@@ -1198,7 +1184,6 @@ t_pack_molecule* get_highest_gain_molecule(t_pb* cur_pb,
     // 4. Find unpacked molecules based on attraction group of the current cluster (if the cluster has an attraction group)
     if (cur_pb->pb_stats->num_feasible_blocks == 0) {
         add_cluster_molecule_candidates_by_attraction_group(cur_pb,
-                                                            cluster_placement_stats_ptr,
                                                             prepacker,
                                                             cluster_legalizer,
                                                             attraction_groups,
@@ -1220,7 +1205,7 @@ t_pack_molecule* get_highest_gain_molecule(t_pb* cur_pb,
 }
 
 void add_cluster_molecule_candidates_by_connectivity_and_timing(t_pb* cur_pb,
-                                                                t_cluster_placement_stats* cluster_placement_stats_ptr,
+                                                                LegalizationClusterId legalization_cluster_id,
                                                                 const Prepacker& prepacker,
                                                                 const ClusterLegalizer& cluster_legalizer,
                                                                 const int feasible_block_array_size,
@@ -1234,8 +1219,7 @@ void add_cluster_molecule_candidates_by_connectivity_and_timing(t_pb* cur_pb,
         if (!cluster_legalizer.is_atom_clustered(blk_id)) {
             t_pack_molecule* molecule = prepacker.get_atom_molecule(blk_id);
             if (molecule->valid) {
-                bool success = check_free_primitives_for_molecule_atoms(molecule, cluster_placement_stats_ptr, cluster_legalizer);
-                if (success) {
+                if (cluster_legalizer.is_molecule_compatible(molecule, legalization_cluster_id)) {
                     add_molecule_to_pb_stats_candidates(molecule,
                                                         cur_pb->pb_stats->gain, cur_pb, feasible_block_array_size, attraction_groups);
                 }
@@ -1245,7 +1229,7 @@ void add_cluster_molecule_candidates_by_connectivity_and_timing(t_pb* cur_pb,
 }
 
 void add_cluster_molecule_candidates_by_highfanout_connectivity(t_pb* cur_pb,
-                                                                t_cluster_placement_stats* cluster_placement_stats_ptr,
+                                                                LegalizationClusterId legalization_cluster_id,
                                                                 const Prepacker& prepacker,
                                                                 const ClusterLegalizer& cluster_legalizer,
                                                                 const int feasible_block_array_size,
@@ -1254,8 +1238,6 @@ void add_cluster_molecule_candidates_by_highfanout_connectivity(t_pb* cur_pb,
      * to consider, use one of the ignored high fanout net to fill up lightly
      * related blocks */
     const AtomNetlist& atom_nlist = g_vpr_ctx.atom().nlist;
-
-    reset_tried_but_unused_cluster_placements(cluster_placement_stats_ptr);
 
     AtomNetId net_id = cur_pb->pb_stats->tie_break_high_fanout_net;
 
@@ -1270,8 +1252,7 @@ void add_cluster_molecule_candidates_by_highfanout_connectivity(t_pb* cur_pb,
         if (!cluster_legalizer.is_atom_clustered(blk_id)) {
             t_pack_molecule* molecule = prepacker.get_atom_molecule(blk_id);
             if (molecule->valid) {
-                bool success = check_free_primitives_for_molecule_atoms(molecule, cluster_placement_stats_ptr, cluster_legalizer);
-                if (success) {
+                if (cluster_legalizer.is_molecule_compatible(molecule, legalization_cluster_id)) {
                     add_molecule_to_pb_stats_candidates(molecule,
                                                         cur_pb->pb_stats->gain, cur_pb, std::min(feasible_block_array_size, AAPACK_MAX_HIGH_FANOUT_EXPLORE), attraction_groups);
                     count++;
@@ -1283,7 +1264,6 @@ void add_cluster_molecule_candidates_by_highfanout_connectivity(t_pb* cur_pb,
 }
 
 void add_cluster_molecule_candidates_by_attraction_group(t_pb* cur_pb,
-                                                         t_cluster_placement_stats* cluster_placement_stats_ptr,
                                                          const Prepacker& prepacker,
                                                          const ClusterLegalizer& cluster_legalizer,
                                                          AttractionInfo& attraction_groups,
@@ -1349,8 +1329,7 @@ void add_cluster_molecule_candidates_by_attraction_group(t_pb* cur_pb,
                 && std::find(candidate_types.begin(), candidate_types.end(), cluster_type) != candidate_types.end()) {
                 t_pack_molecule* molecule = prepacker.get_atom_molecule(atom_id);
                 if (molecule->valid) {
-                    bool success = check_free_primitives_for_molecule_atoms(molecule, cluster_placement_stats_ptr, cluster_legalizer);
-                    if (success) {
+                    if (cluster_legalizer.is_molecule_compatible(molecule, legalization_cluster_id)) {
                         add_molecule_to_pb_stats_candidates(molecule,
                                                             cur_pb->pb_stats->gain, cur_pb, feasible_block_array_size, attraction_groups);
                     }
@@ -1381,10 +1360,7 @@ void add_cluster_molecule_candidates_by_attraction_group(t_pb* cur_pb,
             && std::find(candidate_types.begin(), candidate_types.end(), cluster_type) != candidate_types.end()) {
             t_pack_molecule* molecule = prepacker.get_atom_molecule(blk_id);
             if (molecule->valid) {
-                bool success = check_free_primitives_for_molecule_atoms(molecule,
-                                                                        cluster_placement_stats_ptr,
-                                                                        cluster_legalizer);
-                if (success) {
+                if (cluster_legalizer.is_molecule_compatible(molecule, legalization_cluster_id)) {
                     add_molecule_to_pb_stats_candidates(molecule,
                                                         cur_pb->pb_stats->gain, cur_pb, feasible_block_array_size, attraction_groups);
                 }
@@ -1394,7 +1370,6 @@ void add_cluster_molecule_candidates_by_attraction_group(t_pb* cur_pb,
 }
 
 void add_cluster_molecule_candidates_by_transitive_connectivity(t_pb* cur_pb,
-                                                                t_cluster_placement_stats* cluster_placement_stats_ptr,
                                                                 const Prepacker& prepacker,
                                                                 const ClusterLegalizer& cluster_legalizer,
                                                                 vtr::vector<LegalizationClusterId, std::vector<AtomNetId>>& clb_inter_blk_nets,
@@ -1416,36 +1391,12 @@ void add_cluster_molecule_candidates_by_transitive_connectivity(t_pb* cur_pb,
     for (const auto& transitive_candidate : cur_pb->pb_stats->transitive_fanout_candidates) {
         t_pack_molecule* molecule = transitive_candidate.second;
         if (molecule->valid) {
-            bool success = check_free_primitives_for_molecule_atoms(molecule,
-                                                                    cluster_placement_stats_ptr,
-                                                                    cluster_legalizer);
-            if (success) {
+            if (cluster_legalizer.is_molecule_compatible(molecule, legalization_cluster_id)) {
                 add_molecule_to_pb_stats_candidates(molecule,
                                                     cur_pb->pb_stats->gain, cur_pb, std::min(feasible_block_array_size, AAPACK_MAX_TRANSITIVE_EXPLORE), attraction_groups);
             }
         }
     }
-}
-
-bool check_free_primitives_for_molecule_atoms(t_pack_molecule* molecule,
-                                              t_cluster_placement_stats* cluster_placement_stats_ptr,
-                                              const ClusterLegalizer& cluster_legalizer) {
-    bool success = true;
-
-    for (int i_atom = 0; i_atom < get_array_size_of_molecule(molecule); i_atom++) {
-        if (molecule->atom_block_ids[i_atom]) {
-            VTR_ASSERT(!cluster_legalizer.is_atom_clustered(molecule->atom_block_ids[i_atom]));
-            auto blk_id2 = molecule->atom_block_ids[i_atom];
-            if (!exists_free_primitive_for_atom_block(cluster_placement_stats_ptr, blk_id2)) {
-                /* TODO (Jason Luu): debating whether to check if placement exists for molecule
-                 * (more robust) or individual atom blocks (faster)*/
-                success = false;
-                break;
-            }
-        }
-    }
-
-    return success;
 }
 
 /*****************************************/
@@ -1456,7 +1407,6 @@ t_pack_molecule* get_molecule_for_cluster(t_pb* cur_pb,
                                           const int transitive_fanout_threshold,
                                           const int feasible_block_array_size,
                                           int* num_unrelated_clustering_attempts,
-                                          t_cluster_placement_stats* cluster_placement_stats_ptr,
                                           const Prepacker& prepacker,
                                           const ClusterLegalizer& cluster_legalizer,
                                           vtr::vector<LegalizationClusterId, std::vector<AtomNetId>>& clb_inter_blk_nets,
@@ -1475,7 +1425,7 @@ t_pack_molecule* get_molecule_for_cluster(t_pb* cur_pb,
     /* If cannot pack into primitive, try packing into cluster */
 
     auto best_molecule = get_highest_gain_molecule(cur_pb, attraction_groups,
-                                                   NOT_HILL_CLIMBING, cluster_placement_stats_ptr,
+                                                   NOT_HILL_CLIMBING,
                                                    prepacker, cluster_legalizer, clb_inter_blk_nets,
                                                    legalization_cluster_id, prioritize_transitive_connectivity,
                                                    transitive_fanout_threshold, feasible_block_array_size, primitive_candidate_block_types);
@@ -1488,9 +1438,10 @@ t_pack_molecule* get_molecule_for_cluster(t_pb* cur_pb,
         if (best_molecule == nullptr) {
             if (*num_unrelated_clustering_attempts == 0) {
                 best_molecule = get_free_molecule_with_most_ext_inputs_for_cluster(cur_pb,
-                                                                                   cluster_placement_stats_ptr,
                                                                                    unclustered_list_head,
-                                                                                   unclustered_list_head_size);
+                                                                                   unclustered_list_head_size,
+                                                                                   legalization_cluster_id,
+                                                                                   cluster_legalizer);
                 (*num_unrelated_clustering_attempts)++;
                 VTR_LOGV(best_molecule && verbosity > 2, "\tFound unrelated molecule to cluster\n");
             }
