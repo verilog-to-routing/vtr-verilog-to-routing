@@ -983,7 +983,7 @@ The following options are only valid when the placement engine is in timing-driv
 
     Controls how the timing-driven placer estimates delays.
 
-     * ``simple`` The placement delay estimator is built from the router lookahead. This is more CPU-efficient and still as accurate as the ``delta` model.
+     * ``simple`` The placement delay estimator is built from the router lookahead. This takes less CPU time to build and it and still as accurate as the ``delta` model.
      * ``delta`` The router is used to profile delay from various locations in the grid for various differences in position.
      * ``delta_override`` Like ``delta`` but also includes special overrides to ensure effects of direct connects between blocks are accounted for.
        This is potentially more accurate but is more complex and depending on the architecture (e.g. number of direct connects) may increase place run-time.
