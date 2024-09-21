@@ -5,6 +5,7 @@
 #include "channel_dependency_graph.h"
 
 #include <random>
+#include <iostream>
 
 namespace {
 
@@ -232,6 +233,8 @@ TEST_CASE("test_route_flow", "[vpr_noc_odd_even_routing]") {
 
         NocTrafficFlows traffic_flow_storage;
 
+        std::cout << "Before for loop" << std::endl;
+
         for (int i = 0; i < 100; i++) {
             auto src_blk_id = (ClusterBlockId)dist(rand_num_gen);
 
@@ -240,20 +243,28 @@ TEST_CASE("test_route_flow", "[vpr_noc_odd_even_routing]") {
                 dst_blk_id = (ClusterBlockId)dist(rand_num_gen);
             } while (src_blk_id == dst_blk_id);
 
+            std::cout << "before call i: " << i << std::endl;
             traffic_flow_storage.create_noc_traffic_flow("dummy_name_1", "dummy_name_2", src_blk_id, dst_blk_id, 1, 1, 1);
+            std::cout << "after call i: " << i << std::endl;
         }
 
+
+        std::cout << "before finished "<< std::endl;
         traffic_flow_storage.finished_noc_traffic_flows_setup();
+        std::cout << "after finished "<< std::endl;
 
         vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> traffic_flow_routes(traffic_flow_storage.get_number_of_traffic_flows());
 
         for (const auto& [id, traffic_flow] : traffic_flow_storage.get_all_traffic_flows().pairs()) {
 
+            std::cout << (size_t)id << " " << (size_t)traffic_flow.source_router_cluster_id << " " << (size_t)traffic_flow.sink_router_cluster_id << std::endl;
             NocRouterId src_router_id = noc_model.get_router_at_grid_location(block_locs[traffic_flow.source_router_cluster_id].loc);
             NocRouterId dst_router_id = noc_model.get_router_at_grid_location(block_locs[traffic_flow.sink_router_cluster_id].loc);
 
+            std::cout <<"before route" << std::endl;
             REQUIRE_NOTHROW(routing_algorithm.route_flow(src_router_id, dst_router_id,
                                                          id, traffic_flow_routes[id], noc_model));
+            std::cout <<"after route" << std::endl;
         }
 
         ChannelDependencyGraph cdg(noc_model, traffic_flow_storage, traffic_flow_routes, block_locs);
