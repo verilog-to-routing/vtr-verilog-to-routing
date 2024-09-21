@@ -222,7 +222,7 @@ static void check_place(const t_placer_costs& costs,
                         const t_noc_opts& noc_opts,
                         PlacerState& placer_state,
                         NetCostHandler& net_cost_handler,
-                        std::optional<NocCostHandler>& noc_cost_handler);
+                        const std::optional<NocCostHandler>& noc_cost_handler);
 
 static int check_placement_costs(const t_placer_costs& costs,
                                  const PlaceDelayModel* delay_model,
@@ -1439,7 +1439,7 @@ static e_move_result try_swap(const t_annealing_state* state,
         }
 
         NocCostTerms noc_delta_c; // change in NoC cost
-        /* Update the NoC datastructure and costs*/
+        /* Update the NoC data structure and costs*/
         if (noc_opts.noc) {
             VTR_ASSERT_SAFE(noc_cost_handler.has_value());
             noc_cost_handler->find_affected_noc_routers_and_update_noc_costs(blocks_affected, noc_delta_c);
@@ -1626,6 +1626,7 @@ static bool is_cube_bb(const e_place_bounding_box_mode place_bb_mode,
  * @param costs Contains the normalization factors which need to be updated
  * @param placer_opts Determines the placement mode
  * @param noc_opts Determines if placement includes the NoC
+ * @param noc_cost_handler Computes normalization factors for NoC-related cost terms
  */
 static void update_placement_cost_normalization_factors(t_placer_costs* costs,
                                                         const t_placer_opts& placer_opts,
@@ -1933,7 +1934,7 @@ static void check_place(const t_placer_costs& costs,
                         const t_noc_opts& noc_opts,
                         PlacerState& placer_state,
                         NetCostHandler& net_cost_handler,
-                        std::optional<NocCostHandler>& noc_cost_handler) {
+                        const std::optional<NocCostHandler>& noc_cost_handler) {
     /* Checks that the placement has not confused our data structures. *
      * i.e. the clb and block structures agree about the locations of  *
      * every block, blocks are in legal spots, etc.  Also recomputes   *

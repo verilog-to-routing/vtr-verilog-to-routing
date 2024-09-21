@@ -155,10 +155,10 @@ class NocCostHandler {
      *
      * @return NoC cost terms computed from scratch.
      */
-    NocCostTerms recompute_noc_costs();
+    NocCostTerms recompute_noc_costs() const;
 
     void recompute_costs_from_scratch(const t_noc_opts& noc_opts,
-                                      t_placer_costs& costs);
+                                      t_placer_costs& costs) const;
 
     /**
      * @brief Updates all the cost normalization factors relevant to the NoC.
@@ -235,7 +235,7 @@ class NocCostHandler {
      */
     int check_noc_placement_costs(const t_placer_costs& costs,
                                   double error_tolerance,
-                                  const t_noc_opts& noc_opts);
+                                  const t_noc_opts& noc_opts) const;
 
     /**
      * @brief Goes through all NoC links and determines whether they
@@ -259,7 +259,7 @@ class NocCostHandler {
      *
      * @return The total number of traffic flows with latency constraints being met
      */
-    int get_number_of_traffic_flows_with_latency_cons_met();
+    int get_number_of_traffic_flows_with_latency_cons_met() const;
 
     /**
      * @brief Goes through all NoC links and counts the congested ones.
@@ -268,7 +268,7 @@ class NocCostHandler {
      *
      * @return The total number of congested NoC links.
      */
-    int get_number_of_congested_noc_links();
+    int get_number_of_congested_noc_links() const;
 
     /**
      * @brief Goes through all NoC links and determines whether they
@@ -277,7 +277,7 @@ class NocCostHandler {
      *
      * @return The total congestion ratio
      */
-    double get_total_congestion_bandwidth_ratio();
+    double get_total_congestion_bandwidth_ratio() const;
 
     /**
      * @brief This function checks whether the routing configuration for NoC traffic flows
@@ -292,7 +292,7 @@ class NocCostHandler {
      *
      * @return bool Indicates whether NoC traffic flow routes form a cycle.
      */
-    bool noc_routing_has_cycle();
+    bool noc_routing_has_cycle() const;
 
     /**
      * @brief Prints NoC related costs terms and metrics.
@@ -303,7 +303,7 @@ class NocCostHandler {
      */
     void print_noc_costs(std::string_view header,
                          const t_placer_costs& costs,
-                         const t_noc_opts& noc_opts);
+                         const t_noc_opts& noc_opts) const;
 
   private:
     /**
@@ -416,7 +416,7 @@ class NocCostHandler {
      * to be computed
      * @return The computed congestion cost for the given NoC link.
      */
-    double calculate_link_congestion_cost(const NocLink& link);
+    double calculate_link_congestion_cost(const NocLink& link) const;
 
 
 
@@ -506,40 +506,6 @@ class NocCostHandler {
     vtr::vector<NocLinkId, double> link_bandwidth_usages;
 };
 
-
-
-/**
- * @brief Routes a given traffic flow within the NoC based on where the
- * logical cluster blocks in the traffic flow are currently placed. The
- * found route is stored and returned externally.
- * 
- * First, the hard routers blocks that represent the placed location of
- * the router cluster blocks are identified. Then the traffic flow
- * is routed and updated.
- *
- * Note that this function does not update the link bandwidth utilization.
- * update_traffic_flow_link_usage() should be called after this function
- * to update the link utilization for the new route. If the flow is re-routed
- * because either its source or destination are moved, update_traffic_flow_link_usage()
- * should be used to reduce the bandwidth utilization for the old route.
- * 
- * @param traffic_flow_id Represents the traffic flow that needs to be routed
- * @param noc_model Contains all the links and routers within the NoC. Used
- * to route traffic flows within the NoC.
- * @param noc_traffic_flows_storage Contains all the traffic flow information
- * within the NoC. Used to get the current traffic flow information.
- * @param noc_flows_router The packet routing algorithm used to route traffic
- * flows within the NoC.
- * @param block_locs Contains the location where each clustered block is placed at.
- * @return std::vector<NocLinkId>& The found route for the traffic flow.
- */
-std::vector<NocLinkId>& route_traffic_flow(NocTrafficFlowId traffic_flow_id,
-                                           const NocStorage& noc_model,
-                                           NocTrafficFlows& noc_traffic_flows_storage,
-                                           NocRouting& noc_flows_router,
-                                           const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
-
-
 /**
  * @brief Determines the aggregate bandwidth cost of a routed traffic flow.
  * The cost is calculated as the number of links in the traffic flow multiplied
@@ -607,8 +573,6 @@ void normalize_noc_cost_weighting_factor(t_noc_opts& noc_opts);
 double calculate_noc_cost(const NocCostTerms& cost_terms,
                           const NocCostTerms& norm_factors,
                           const t_noc_opts& noc_opts);
-
-
 
 
 

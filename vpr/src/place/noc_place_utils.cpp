@@ -343,7 +343,7 @@ void NocCostHandler::re_route_traffic_flow(NocTrafficFlowId traffic_flow_id,
     update_traffic_flow_link_usage(re_routed_traffic_flow_route, 1, curr_traffic_flow.traffic_flow_bandwidth);
 }
 
-NocCostTerms NocCostHandler::recompute_noc_costs() {
+NocCostTerms NocCostHandler::recompute_noc_costs() const {
     auto& noc_ctx = g_vpr_ctx.noc();
 
     // reset the cost variables first
@@ -364,7 +364,7 @@ NocCostTerms NocCostHandler::recompute_noc_costs() {
     return new_cost;
 }
 
-void NocCostHandler::recompute_costs_from_scratch(const t_noc_opts& noc_opts, t_placer_costs& costs) {
+void NocCostHandler::recompute_costs_from_scratch(const t_noc_opts& noc_opts, t_placer_costs& costs) const {
     auto check_and_print_cost = [](double new_cost,
                                    double old_cost,
                                    const std::string& cost_name) -> void {
@@ -507,7 +507,7 @@ double NocCostHandler::comp_noc_congestion_cost() {
 
 int NocCostHandler::check_noc_placement_costs(const t_placer_costs& costs,
                                               double error_tolerance,
-                                              const t_noc_opts& noc_opts) {
+                                              const t_noc_opts& noc_opts) const {
     int error = 0;
     NocCostTerms cost_check{0.0, 0.0, 0.0, 0.0};;
 
@@ -668,7 +668,7 @@ std::pair<double, double> calculate_traffic_flow_latency_cost(const std::vector<
     return {latency, latency_overrun};
 }
 
-double NocCostHandler::calculate_link_congestion_cost(const NocLink& link) {
+double NocCostHandler::calculate_link_congestion_cost(const NocLink& link) const {
     double bandwidth = link.get_bandwidth();
     double bandwidth_usage = link_bandwidth_usages[link];
 
@@ -723,10 +723,10 @@ double calculate_noc_cost(const NocCostTerms& cost_terms,
     return cost;
 }
 
-int NocCostHandler::get_number_of_traffic_flows_with_latency_cons_met() {
+int NocCostHandler::get_number_of_traffic_flows_with_latency_cons_met() const {
     // used to get traffic flow route information
     auto& noc_ctx = g_vpr_ctx.noc();
-    // datastructure that stores all the traffic flow routes
+    // data structure that stores all the traffic flow routes
     const NocTrafficFlows& noc_traffic_flows_storage = noc_ctx.noc_traffic_flows_storage;
 
     int count_of_achieved_latency_cons = 0;
@@ -757,7 +757,7 @@ int NocCostHandler::get_number_of_traffic_flows_with_latency_cons_met() {
     return count_of_achieved_latency_cons;
 }
 
-int NocCostHandler::get_number_of_congested_noc_links() {
+int NocCostHandler::get_number_of_congested_noc_links() const {
     // get NoC links
     auto& noc_links = g_vpr_ctx.noc().noc_model.get_noc_links();
 
@@ -775,7 +775,7 @@ int NocCostHandler::get_number_of_congested_noc_links() {
     return num_congested_links;
 }
 
-double NocCostHandler::get_total_congestion_bandwidth_ratio() {
+double NocCostHandler::get_total_congestion_bandwidth_ratio() const {
     // get NoC links
     auto& noc_links = g_vpr_ctx.noc().noc_model.get_noc_links();
 
@@ -934,7 +934,7 @@ void write_noc_placement_file(const std::string& file_name,
     noc_placement_file.close();
 }
 
-bool NocCostHandler::noc_routing_has_cycle() {
+bool NocCostHandler::noc_routing_has_cycle() const {
     bool has_cycle = ::noc_routing_has_cycle(traffic_flow_routes, block_locs_ref);
 
     return has_cycle;
@@ -977,7 +977,7 @@ void invoke_sat_router(t_placer_costs& costs, const t_noc_opts& noc_opts, int se
 
 void NocCostHandler::print_noc_costs(std::string_view header,
                                      const t_placer_costs& costs,
-                                     const t_noc_opts& noc_opts) {
+                                     const t_noc_opts& noc_opts) const {
     VTR_LOG("%s. "
         "cost: %g, "
         "aggregate_bandwidth_cost: %g, "
