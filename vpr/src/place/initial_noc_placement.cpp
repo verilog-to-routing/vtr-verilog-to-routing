@@ -62,6 +62,26 @@ static void place_noc_routers_randomly(std::vector<ClusterBlockId>& unfixed_rout
 static void noc_routers_anneal(const t_noc_opts& noc_opts,
                                BlkLocRegistry& blk_loc_registry);
 
+/**
+ * @brief Returns the compressed grid of NoC.
+ * @return const t_compressed_block_grid& The compressed grid of NoC.
+ */
+static const t_compressed_block_grid& get_compressed_noc_grid();
+
+static const t_compressed_block_grid& get_compressed_noc_grid() {
+    auto& noc_ctx = g_vpr_ctx.noc();
+    auto& place_ctx = g_vpr_ctx.placement();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+
+    // Get the logical block type for router
+    const t_logical_block_type_ptr router_block_type = cluster_ctx.clb_nlist.block_type(noc_ctx.noc_traffic_flows_storage.get_router_clusters_in_netlist()[0]);
+
+    // Get the compressed grid for NoC
+    const auto& compressed_noc_grid = place_ctx.compressed_block_grids[router_block_type->index];
+
+    return compressed_noc_grid;
+}
+
 static bool accept_noc_swap(double delta_cost, double prob) {
     if (delta_cost <= 0.0) {
         return true;
@@ -158,7 +178,7 @@ static void place_noc_routers_randomly(std::vector<ClusterBlockId>& unfixed_rout
 
         if (grid_blocks.is_sub_tile_empty(router_phy_loc, sub_tile)) {
             // Pick one of the unplaced routers
-            auto logical_router_bid = unfixed_routers.back();
+            ClusterBlockId logical_router_bid = unfixed_routers.back();
             unfixed_routers.pop_back();
 
             // Create a macro with a single member
@@ -196,11 +216,16 @@ static void noc_routers_anneal(const t_noc_opts& noc_opts,
     update_noc_normalization_factors(costs);
     costs.cost = calculate_noc_cost(costs.noc_cost_terms, costs.noc_cost_norm_factors, noc_opts);
 
-    // Maximum distance in each direction that a router can travel in a move
-    // It is assumed that NoC routers are organized in a square grid.
-    // Each router can initially move within the entire grid with a single swap.
+    const auto& compressed_noc_grid = get_compressed_noc_grid();
+    const size_t n_noc_layers = compressed_noc_grid.get_layer_nums().size();
+
+    /* Maximum distance in each direction that a router can travel in a move.
+     * The calculation below assumes that NoC routers are organized in a square grid;
+     * if it is a 3D architecture it also assumes each layer has the same number of routers.
+     * Breaking that assumption is OK, but the calculation may not compute the best initial range limit in that case.
+     * Each router can initially move within the entire grid with a single swap.*/
     const size_t n_physical_routers = noc_ctx.noc_model.get_noc_routers().size();
-    const float max_r_lim = ceilf(sqrtf((float)n_physical_routers));
+    const float max_r_lim = ceilf(sqrtf((float)n_physical_routers / (float)n_noc_layers));
 
     // At most, two routers are swapped
     t_pl_blocks_to_be_moved blocks_affected(2);
@@ -285,7 +310,7 @@ void initial_noc_placement(const t_noc_opts& noc_opts,
     std::vector<ClusterBlockId> unfixed_routers;
 
     // Check for floorplanning constraints and place constrained NoC routers
-    for (ClusterBlockId router_blk_id : router_blk_ids) {
+    for (const ClusterBlockId router_blk_id : router_blk_ids) {
         // The block is fixed and was placed in mark_fixed_blocks()
         if (is_block_placed(router_blk_id, block_locs)) {
             continue;

@@ -116,7 +116,6 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
 
     enum e_block_pack_status block_pack_status;
 
-    t_cluster_placement_stats* cur_cluster_placement_stats_ptr = nullptr;
     t_pack_molecule *istart, *next_molecule, *prev_molecule;
 
     auto& atom_ctx = g_vpr_ctx.atom();
@@ -275,7 +274,6 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                 /*it doesn't make sense to do a timing analysis here since there*
                  *is only one atom block clustered it would not change anything      */
             }
-            cur_cluster_placement_stats_ptr = cluster_legalizer.get_cluster_placement_stats(legalization_cluster_id);
             cluster_stats.num_unrelated_clustering_attempts = 0;
             next_molecule = get_molecule_for_cluster(cluster_legalizer.get_cluster_pb(legalization_cluster_id),
                                                      attraction_groups,
@@ -284,7 +282,6 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                                                      packer_opts.transitive_fanout_threshold,
                                                      packer_opts.feasible_block_array_size,
                                                      &cluster_stats.num_unrelated_clustering_attempts,
-                                                     cur_cluster_placement_stats_ptr,
                                                      prepacker,
                                                      cluster_legalizer,
                                                      clb_inter_blk_nets,
@@ -317,7 +314,6 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                 try_fill_cluster(cluster_legalizer,
                                  prepacker,
                                  packer_opts,
-                                 cur_cluster_placement_stats_ptr,
                                  prev_molecule,
                                  next_molecule,
                                  num_repeated_molecules,

@@ -829,10 +829,11 @@ struct t_physical_pin {
 
 /**
  * @brief Describes The location of a physical tile
- * @param layer_num The die number of the physical tile. If the FPGA only has one die, or the physical tile is located
- *                  on the base die, layer_num is equal to zero. If it is one the die above base die, it is one, etc.
  * @param x The x location of the physical tile on the given die
  * @param y The y location of the physical tile on the given die
+ * @param layer_num The die number of the physical tile. If the FPGA only has one die, or the physical tile is located
+ *                  on the base die, layer_num is equal to zero. If the physical tile is location on the die immediately
+ *                  above the base die, the layer_num is 1 and so on.
  */
 struct t_physical_tile_loc {
     int x = OPEN;
@@ -1292,7 +1293,6 @@ class t_pb_graph_node {
     int total_pb_pins; /* only valid for top-level */
 
     void* temp_scratch_pad;                                     /* temporary data, useful for keeping track of things when traversing data structure */
-    t_cluster_placement_primitive* cluster_placement_primitive; /* pointer to indexing structure useful during packing stage */
 
     int* input_pin_class_size;  /* Stores the number of pins that belong to a particular input pin class */
     int num_input_pin_class;    /* number of input pin classes that this pb_graph_node has */
@@ -1982,10 +1982,12 @@ struct t_router {
 
     /** A value representing the approximate horizontal position on the FPGA device where the router
      * tile is located*/
-    double device_x_position = -1;
+    float device_x_position = -1;
     /** A value representing the approximate vertical position on the FPGA device where the router
      * tile is located*/
-    double device_y_position = -1;
+    float device_y_position = -1;
+    /** A value representing the exact layer in the FPGA device where the router tile is located.*/
+    int device_layer_position = -1;
 
     /** A list of router ids that are connected to the current router*/
     std::vector<int> connection_list;

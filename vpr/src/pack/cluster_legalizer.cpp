@@ -1171,8 +1171,7 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(t_pack_molecule* molecul
     // molecules to be placed in this cluster. To avoid possibly creating cluster level
     // blocks that have incompatible placement constraints or form very long placement
     // macros that limit placement flexibility.
-    t_cluster_placement_stats* cluster_placement_stats_ptr = &(cluster_placement_stats_[cluster.type->index]);
-    if (cluster_placement_stats_ptr->has_long_chain && molecule->is_chain() && molecule->chain_info->is_long_chain) {
+    if (cluster.placement_stats->has_long_chain && molecule->is_chain() && molecule->chain_info->is_long_chain) {
         VTR_LOGV(log_verbosity_ > 4, "\t\t\tFAILED Placement Feasibility Filter: Only one long chain per cluster is allowed\n");
         //Record the failure of this molecule in the current pb stats
         record_molecule_failure(molecule, cluster.pb);
@@ -1230,7 +1229,7 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(t_pack_molecule* molecul
     std::vector<t_pb_graph_node*> primitives_list(max_molecule_size_, nullptr);
     e_block_pack_status block_pack_status = e_block_pack_status::BLK_STATUS_UNDEFINED;
     while (block_pack_status != e_block_pack_status::BLK_PASSED) {
-        if (!get_next_primitive_list(cluster_placement_stats_ptr,
+        if (!get_next_primitive_list(cluster.placement_stats,
                                      molecule,
                                      primitives_list.data())) {
             VTR_LOGV(log_verbosity_ > 3, "\t\tFAILED No candidate primitives available\n");
@@ -1257,7 +1256,7 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(t_pack_molecule* molecul
                                                          max_cluster_size_,
                                                          cluster_id,
                                                          atom_cluster_,
-                                                         cluster_placement_stats_ptr,
+                                                         cluster.placement_stats,
                                                          molecule,
                                                          cluster.router_data,
                                                          log_verbosity_,
@@ -1341,7 +1340,7 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(t_pack_molecule* molecul
                     // molecules will be packed to the same chain id and can reach each other using
                     // the chain direct links between clusters
                     if (molecule->chain_info->is_long_chain) {
-                        cluster_placement_stats_ptr->has_long_chain = true;
+                        cluster.placement_stats->has_long_chain = true;
                         if (molecule->chain_info->chain_id == -1) {
                             update_molecule_chain_info(molecule, primitives_list[molecule->root]);
                         }
@@ -1374,7 +1373,7 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(t_pack_molecule* molecul
                     //       confusing.
                     cur_molecule->valid = false;
 
-                    commit_primitive(cluster_placement_stats_ptr, primitives_list[i]);
+                    commit_primitive(cluster.placement_stats, primitives_list[i]);
 
                     atom_cluster_[atom_blk_id] = cluster_id;
 
@@ -1419,6 +1418,11 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(t_pack_molecule* molecul
             VTR_LOGV(log_verbosity_ > 3, "\t\tPASSED pack molecule\n");
         }
     }
+
+    // Reset the cluster placement stats after packing a molecule.
+    // TODO: Not sure if this has to go here, but it makes sense to do it.
+    reset_tried_but_unused_cluster_placements(cluster.placement_stats);
+
     return block_pack_status;
 }
 
@@ -1434,8 +1438,7 @@ ClusterLegalizer::start_new_cluster(t_pack_molecule* molecule,
     VTR_ASSERT_SAFE(molecule_cluster_.find(molecule) == molecule_cluster_.end() ||
                     !molecule_cluster_[molecule].is_valid());
     // Safety asserts to ensure that the API was initialized properly.
-    VTR_ASSERT_DEBUG(cluster_placement_stats_ != nullptr &&
-                     lb_type_rr_graphs_ != nullptr);
+    VTR_ASSERT_DEBUG(lb_type_rr_graphs_ != nullptr);
 
     const AtomNetlist& atom_nlist = g_vpr_ctx.atom().nlist;
 
@@ -1450,10 +1453,8 @@ ClusterLegalizer::start_new_cluster(t_pack_molecule* molecule,
     t_lb_router_data* router_data = alloc_and_load_router_data(&lb_type_rr_graphs_[cluster_type->index],
                                                                cluster_type);
 
-    // Reset the cluster placement stats
-    t_cluster_placement_stats* cluster_placement_stats_ptr = &(cluster_placement_stats_[cluster_type->index]);
-    reset_cluster_placement_stats(cluster_placement_stats_ptr);
-    set_mode_cluster_placement_stats(cluster_pb->pb_graph_node, cluster_pb->mode);
+    // Allocate and load the cluster's placement stats
+    t_cluster_placement_stats* cluster_placement_stats = alloc_and_load_cluster_placement_stats(cluster_type, cluster_mode);
 
     // Create the new cluster
     LegalizationCluster new_cluster;
@@ -1462,6 +1463,7 @@ ClusterLegalizer::start_new_cluster(t_pack_molecule* molecule,
     new_cluster.pr = PartitionRegion();
     new_cluster.noc_grp_id = NocGroupId::INVALID();
     new_cluster.type = cluster_type;
+    new_cluster.placement_stats = cluster_placement_stats;
 
     // Try to pack the molecule into the new_cluster.
     // When starting a new cluster, we set the external pin utilization to full
@@ -1491,6 +1493,7 @@ ClusterLegalizer::start_new_cluster(t_pack_molecule* molecule,
         free_pb(new_cluster.pb);
         delete new_cluster.pb;
         free_router_data(new_cluster.router_data);
+        free_cluster_placement_stats(new_cluster.placement_stats);
         new_cluster_id = LegalizationClusterId::INVALID();
     }
 
@@ -1506,12 +1509,12 @@ e_block_pack_status ClusterLegalizer::add_mol_to_cluster(t_pack_molecule* molecu
     VTR_ASSERT(molecule_cluster_.find(molecule) == molecule_cluster_.end() ||
                !molecule_cluster_[molecule].is_valid());
     // Safety asserts to ensure that the API was initialized properly.
-    VTR_ASSERT_DEBUG(cluster_placement_stats_ != nullptr &&
-                     lb_type_rr_graphs_ != nullptr);
+    VTR_ASSERT_DEBUG(lb_type_rr_graphs_ != nullptr);
 
     // Get the cluster.
     LegalizationCluster& cluster = legalization_clusters_[cluster_id];
-    VTR_ASSERT(cluster.router_data != nullptr && "Cannot add molecule to cleaned cluster!");
+    VTR_ASSERT(cluster.router_data != nullptr && cluster.placement_stats != nullptr
+                && "Cannot add molecule to cleaned cluster!");
     // Set the target_external_pin_util.
     t_ext_pin_util target_ext_pin_util = target_external_pin_util_.get_pin_util(cluster.type->name);
     // Try to pack the molecule into the cluster.
@@ -1561,6 +1564,8 @@ void ClusterLegalizer::destroy_cluster(LegalizationClusterId cluster_id) {
     free_router_data(cluster.router_data);
     cluster.router_data = nullptr;
     cluster.pr = PartitionRegion();
+    free_cluster_placement_stats(cluster.placement_stats);
+    cluster.placement_stats = nullptr;
 
     // Mark the cluster as invalid.
     legalization_cluster_ids_[cluster_id] = LegalizationClusterId::INVALID();
@@ -1597,7 +1602,8 @@ void ClusterLegalizer::clean_cluster(LegalizationClusterId cluster_id) {
     VTR_ASSERT_SAFE(cluster_id.is_valid() && (size_t)cluster_id < legalization_clusters_.size());
     // Get the cluster.
     LegalizationCluster& cluster = legalization_clusters_[cluster_id];
-    VTR_ASSERT(cluster.router_data != nullptr && "Should not clean an already cleaned cluster!");
+    VTR_ASSERT(cluster.router_data != nullptr && cluster.placement_stats != nullptr
+                && "Should not clean an already cleaned cluster!");
     // Free the pb stats.
     free_pb_stats_recursive(cluster.pb);
     // Load the pb_route so we can free the cluster router data.
@@ -1608,6 +1614,9 @@ void ClusterLegalizer::clean_cluster(LegalizationClusterId cluster_id) {
     // Free the router data.
     free_router_data(cluster.router_data);
     cluster.router_data = nullptr;
+    // Free the cluster placement stats.
+    free_cluster_placement_stats(cluster.placement_stats);
+    cluster.placement_stats = nullptr;
 }
 
 // TODO: This is fine for the current implementation of the legalizer. But if
@@ -1637,10 +1646,12 @@ ClusterLegalizer::ClusterLegalizer(const AtomNetlist& atom_netlist,
     // Verify that the inputs are valid.
     VTR_ASSERT_SAFE(lb_type_rr_graphs != nullptr);
 
+    // Get the target external pin utilization
+    // NOTE: Be careful with this constructor, it may throw a VPR_FATAL_ERROR.
+    target_external_pin_util_ = t_ext_pin_util_targets(target_external_pin_util_str);
+
     // Resize the atom_cluster lookup to make the accesses much cheaper.
     atom_cluster_.resize(atom_netlist.blocks().size(), LegalizationClusterId::INVALID());
-    // Allocate the cluster_placement_stats
-    cluster_placement_stats_ = alloc_and_load_cluster_placement_stats();
     // Pre-compute the max size of any molecule.
     max_molecule_size_ = prepacker.get_max_molecule_size();
     // Calculate the max cluster size
@@ -1662,15 +1673,6 @@ ClusterLegalizer::ClusterLegalizer(const AtomNetlist& atom_netlist,
     enable_pin_feasibility_filter_ = enable_pin_feasibility_filter;
     feasible_block_array_size_ = feasible_block_array_size;
     log_verbosity_ = log_verbosity;
-    // Get the target external pin utilization
-    // NOTE: This has to be initialized last due to the fact that VPR_FATA_ERROR
-    //       may be called within the constructor of t_ext_pin_util_targets. If
-    //       this occurs, an excpetion is thrown which will drain the stack. If
-    //       the cluster legalizer object is stored on the stack, this can call
-    //       the destructor prematurely (before certain structures are allocated).
-    //       Therefore, this is created at the end, when the class is in a state
-    //       where it can be destroyed.
-    target_external_pin_util_ = t_ext_pin_util_targets(target_external_pin_util_str);
 }
 
 void ClusterLegalizer::reset() {
@@ -1683,9 +1685,6 @@ void ClusterLegalizer::reset() {
     compress();
     // Reset the molecule_cluster map
     molecule_cluster_.clear();
-    // Reset the cluster placement stats.
-    free_cluster_placement_stats(cluster_placement_stats_);
-    cluster_placement_stats_ = alloc_and_load_cluster_placement_stats();
 }
 
 void ClusterLegalizer::verify() {
@@ -1756,6 +1755,39 @@ void ClusterLegalizer::verify() {
     }
 }
 
+bool ClusterLegalizer::is_molecule_compatible(t_pack_molecule* molecule,
+                                              LegalizationClusterId cluster_id) const {
+    VTR_ASSERT_SAFE(molecule != nullptr);
+    VTR_ASSERT_SAFE(cluster_id.is_valid() && (size_t)cluster_id < legalization_clusters_.size());
+    // Go through each atom in the molecule and check if there exists a free
+    // primitive for that atom block.
+    // TODO: This should probably also check if there are enough free primitives
+    //       to support the given molecule. For example, a molecule of two FFs,
+    //       but the cluster only has one free FF. This was something that Jason
+    //       Luu was debating. Checking if placement exists for full molecule
+    //       would be more robust, but checking individual atoms is faster.
+    const LegalizationCluster& cluster = legalization_clusters_[cluster_id];
+
+    for (AtomBlockId atom_blk_id : molecule->atom_block_ids) {
+        // FIXME: Why is it possible that molecules contain invalid block IDs?
+        //        This should be fixed!
+        if (!atom_blk_id.is_valid())
+            continue;
+        // FIXME: This assert does not make sense. Can still check this even
+        //        if the atom was clustered.
+        VTR_ASSERT(!is_atom_clustered(atom_blk_id));
+        if (!exists_free_primitive_for_atom_block(cluster.placement_stats,
+                                                  atom_blk_id)) {
+            return false;
+        }
+    }
+    // If every atom in the molecule has a free primitive it could theoretically
+    // be placed in, then it is compatible.
+    // TODO: Maybe add some more quick checks to save time, such as PR or NoC
+    //       groups.
+    return true;
+}
+
 void ClusterLegalizer::finalize() {
     for (LegalizationClusterId cluster_id : legalization_cluster_ids_) {
         if (!cluster_id.is_valid())
@@ -1775,7 +1807,5 @@ ClusterLegalizer::~ClusterLegalizer() {
             continue;
         destroy_cluster(cluster_id);
     }
-    // Free the cluster_placement_stats
-    free_cluster_placement_stats(cluster_placement_stats_);
 }
 
