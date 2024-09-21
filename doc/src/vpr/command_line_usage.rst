@@ -979,7 +979,7 @@ The following options are only valid when the placement engine is in timing-driv
 
     **Default:** ``8.0``
 
-.. option:: --place_delay_model {delta, delta_override}
+.. option:: --place_delay_model {simple, delta, delta_override}
 
     Controls how the timing-driven placer estimates delays.
 
