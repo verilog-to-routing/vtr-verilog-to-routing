@@ -273,7 +273,10 @@ static float analyze_setup_slack_cost(const PlacerSetupSlacks* setup_slacks,
 
 static e_move_result assess_swap(double delta_c, double t);
 
-static void update_placement_cost_normalization_factors(t_placer_costs* costs, const t_placer_opts& placer_opts, const t_noc_opts& noc_opts);
+static void update_placement_cost_normalization_factors(t_placer_costs* costs,
+                                                        const t_placer_opts& placer_opts,
+                                                        const t_noc_opts& noc_opts,
+                                                        const std::optional<NocCostHandler>& noc_cost_handler);
 
 static double get_total_cost(t_placer_costs* costs, const t_placer_opts& placer_opts, const t_noc_opts& noc_opts);
 
@@ -288,7 +291,8 @@ static void outer_loop_update_timing_info(const t_placer_opts& placer_opts,
                                           PlacerSetupSlacks* setup_slacks,
                                           NetPinTimingInvalidator* pin_timing_invalidator,
                                           SetupTimingInfo* timing_info,
-                                          PlacerState& placer_state);
+                                          PlacerState& placer_state,
+                                          const std::optional<NocCostHandler>& noc_cost_handler);
 
 static void placement_inner_loop(const t_annealing_state* state,
                                  const t_placer_opts& placer_opts,
@@ -580,7 +584,7 @@ void try_place(const Netlist<>& net_list,
         costs.noc_cost_terms.congestion = noc_cost_handler->comp_noc_congestion_cost();
 
         // initialize all the noc normalization factors
-        update_noc_normalization_factors(costs);
+        noc_cost_handler->update_noc_normalization_factors(costs);
     }
 
     // set the starting total placement cost
@@ -735,7 +739,7 @@ void try_place(const Netlist<>& net_list,
                                           state.crit_exponent, &outer_crit_iter_count,
                                           place_delay_model.get(), placer_criticalities.get(),
                                           placer_setup_slacks.get(), pin_timing_invalidator.get(),
-                                          timing_info.get(), placer_state);
+                                          timing_info.get(), placer_state, noc_cost_handler);
 
             if (placer_opts.place_algorithm.is_timing_driven()) {
                 critical_path = timing_info->least_slack_critical_path();
@@ -816,7 +820,7 @@ void try_place(const Netlist<>& net_list,
                                       state.crit_exponent, &outer_crit_iter_count,
                                       place_delay_model.get(), placer_criticalities.get(),
                                       placer_setup_slacks.get(), pin_timing_invalidator.get(),
-                                      timing_info.get(), placer_state);
+                                      timing_info.get(), placer_state, noc_cost_handler);
 
         //move the appropriate move_generator to be the current used move generator
         assign_current_move_generator(move_generator, move_generator2,
@@ -997,7 +1001,8 @@ static void outer_loop_update_timing_info(const t_placer_opts& placer_opts,
                                           PlacerSetupSlacks* setup_slacks,
                                           NetPinTimingInvalidator* pin_timing_invalidator,
                                           SetupTimingInfo* timing_info,
-                                          PlacerState& placer_state) {
+                                          PlacerState& placer_state,
+                                          const std::optional<NocCostHandler>& noc_cost_handler) {
     if (placer_opts.place_algorithm.is_timing_driven()) {
         /*at each temperature change we update these values to be used     */
         /*for normalizing the tradeoff between timing and wirelength (bb)  */
@@ -1023,7 +1028,7 @@ static void outer_loop_update_timing_info(const t_placer_opts& placer_opts,
     }
 
     /* Update the cost normalization factors */
-    update_placement_cost_normalization_factors(costs, placer_opts, noc_opts);
+    update_placement_cost_normalization_factors(costs, placer_opts, noc_opts, noc_cost_handler);
 }
 
 /* Function which contains the inner loop of the simulated annealing */
@@ -1622,13 +1627,16 @@ static bool is_cube_bb(const e_place_bounding_box_mode place_bb_mode,
  * @param placer_opts Determines the placement mode
  * @param noc_opts Determines if placement includes the NoC
  */
-static void update_placement_cost_normalization_factors(t_placer_costs* costs, const t_placer_opts& placer_opts, const t_noc_opts& noc_opts) {
+static void update_placement_cost_normalization_factors(t_placer_costs* costs,
+                                                        const t_placer_opts& placer_opts,
+                                                        const t_noc_opts& noc_opts,
+                                                        const std::optional<NocCostHandler>& noc_cost_handler) {
     /* Update the cost normalization factors */
     costs->update_norm_factors();
 
     // update the noc normalization factors if the placement includes the NoC
     if (noc_opts.noc) {
-        update_noc_normalization_factors(*costs);
+        noc_cost_handler->update_noc_normalization_factors(*costs);
     }
 
     // update the current total placement cost

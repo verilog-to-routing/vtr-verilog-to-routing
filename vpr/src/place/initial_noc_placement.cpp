@@ -214,7 +214,7 @@ static void noc_routers_anneal(const t_noc_opts& noc_opts,
     costs.noc_cost_terms.aggregate_bandwidth = noc_cost_handler.comp_noc_aggregate_bandwidth_cost();
     std::tie(costs.noc_cost_terms.latency, costs.noc_cost_terms.latency_overrun) = noc_cost_handler.comp_noc_latency_cost();
     costs.noc_cost_terms.congestion = noc_cost_handler.comp_noc_congestion_cost();
-    update_noc_normalization_factors(costs);
+    noc_cost_handler.update_noc_normalization_factors(costs);
     costs.cost = calculate_noc_cost(costs.noc_cost_terms, costs.noc_cost_norm_factors, noc_opts);
 
     const auto& compressed_noc_grid = get_compressed_noc_grid();

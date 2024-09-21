@@ -5,24 +5,6 @@
 #include "move_utils.h"
 #include "place_util.h"
 
-// represent the maximum values of the NoC cost normalization factors //
-// we need to handle the case where the aggregate bandwidth is 0, so we set this to some arbitrary positive number that is greater than 1.e-9, since that is the range we expect the normalization factor to be (in Gbps)
-constexpr double MAX_INV_NOC_AGGREGATE_BANDWIDTH_COST = 1.;
-// we expect the latency costs to be in the pico-second range, and we don't expect it to go lower than that. So if the latency costs go below the pico-second range we trim the normalization value to be no higher than 1/ps
-// This should be updated if the delays become lower
-constexpr double MAX_INV_NOC_LATENCY_COST = 1.e12;
-// we don't expect the noc_latency cost to ever go below 1 pico second.
-// So this value represents the lowest possible latency cost.
-constexpr double MIN_EXPECTED_NOC_LATENCY_COST = 1.e-12;
-// the congestion cost for a link is measured as the proportion of the overloaded BW to the link capacity
-// We assume that when a link congested, it is overloaded with at least 0.1% of its BW capacity
-constexpr double MAX_INV_NOC_CONGESTION_COST = 1.e3;
-// If a link is overloaded by less than 0.1% of the link bandwidth capacity,
-// we assume it is not congested.
-constexpr double MIN_EXPECTED_NOC_CONGESTION_COST = 1.e-3;
-
-constexpr double INVALID_NOC_COST_TERM = -1.0;
-
 class NocCostHandler {
   public:
     /**
@@ -177,6 +159,18 @@ class NocCostHandler {
 
     void recompute_costs_from_scratch(const t_noc_opts& noc_opts,
                                       t_placer_costs& costs);
+
+    /**
+     * @brief Updates all the cost normalization factors relevant to the NoC.
+     * Handles exceptional cases so that the normalization factors do not
+     * reach INF.
+     * This is intended to be used to initialize the normalization factors of
+     * the NoC and also at the outer loop iteration of placement to
+     * balance the NoC costs with other placement cost parameters.
+     *
+     * @param costs Contains the normalization factors which need to be updated
+     */
+    void update_noc_normalization_factors(t_placer_costs& costs) const;
 
     /**
      * @brief Calculates the aggregate bandwidth of each traffic flow in the NoC
@@ -428,6 +422,48 @@ class NocCostHandler {
 
   private:
     /**
+     * @brief Represents the maximum values of the NoC cost normalization factors
+     * @details We need to handle the case where the aggregate bandwidth is 0,
+     * so we set this to some arbitrary positive number that is greater than 1.e-9,
+     * since that is the range we expect the normalization factor to be (in Gbps)
+     */
+    static constexpr double MAX_INV_NOC_AGGREGATE_BANDWIDTH_COST = 1.;
+
+    /**
+     * @brief Represents the lowest possible latency cost.
+     * @details We don't expect the noc_latency cost to ever go below 1 pico second.
+     */
+    static constexpr double MIN_EXPECTED_NOC_LATENCY_COST = 1.e-12;
+
+    /**
+     * @brief Represents the maximum possible 1/latency value.
+     * @details We expect the latency costs to be in the nano-second range, and we don't expect it to go lower than that.
+     * So if the latency costs go below the pico-second range we trim the normalization value to be no higher than 1/ps
+     * This should be updated if the delays become lower.
+     */
+    static constexpr double MAX_INV_NOC_LATENCY_COST = 1.e12;
+
+
+    /**
+     * @brief Represents the minimum link bandwidth over-utilization for that link to be considered congested.
+     * @details If a link is overloaded by less than 0.1% of the link bandwidth capacity,
+     * we assume it is not congested.
+     */
+    static constexpr double MIN_EXPECTED_NOC_CONGESTION_COST = 1.e-3;
+
+    /**
+     * @brief Represents the maximum value of  1/link bandwidth over-utilization for that link to be considered congested.
+     * @details The congestion cost for a link is measured as the proportion of the overloaded BW to the link capacity.
+     * We assume that when a link congested, it is overloaded with at least 0.1% of its BW capacity
+     */
+    static constexpr double MAX_INV_NOC_CONGESTION_COST = 1.e3;
+
+    /**
+     * @brief Represents an invalid congestion cost value.
+     */
+    static constexpr double INVALID_NOC_COST_TERM = -1.0;
+
+    /**
      * @brief Each traffic flow cost consists of two components:
      *        1) traffic flow aggregate bandwidth (sum over all used links of the traffic flow bandwidth)
      *        2) traffic flow latency (currently unloaded/best-case latency of the flow)
@@ -502,23 +538,6 @@ std::vector<NocLinkId>& route_traffic_flow(NocTrafficFlowId traffic_flow_id,
                                            NocTrafficFlows& noc_traffic_flows_storage,
                                            NocRouting& noc_flows_router,
                                            const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
-
-
-
-
-
-
-/**
- * @brief Updates all the cost normalization factors relevant to the NoC.
- * Handles exceptional cases so that the normalization factors do not
- * reach INF.
- * This is intended to be used to initialize the normalization factors of
- * the NoC and also at the outer loop iteration of placement to 
- * balance the NoC costs with other placement cost parameters.
- * 
- * @param costs Contains the normalization factors which need to be updated
- */
-void update_noc_normalization_factors(t_placer_costs& costs);
 
 
 /**

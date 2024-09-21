@@ -409,7 +409,7 @@ void NocCostHandler::recompute_costs_from_scratch(const t_noc_opts& noc_opts, t_
     }
 }
 
-void update_noc_normalization_factors(t_placer_costs& costs) {
+void NocCostHandler::update_noc_normalization_factors(t_placer_costs& costs) const {
     //Prevent the norm factors from going to infinity
     costs.noc_cost_norm_factors.aggregate_bandwidth = std::min(1 / costs.noc_cost_terms.aggregate_bandwidth, MAX_INV_NOC_AGGREGATE_BANDWIDTH_COST);
     costs.noc_cost_norm_factors.latency = std::min(1 / costs.noc_cost_terms.latency, MAX_INV_NOC_LATENCY_COST);
@@ -434,7 +434,7 @@ void update_noc_normalization_factors(t_placer_costs& costs) {
 double NocCostHandler::comp_noc_aggregate_bandwidth_cost() {
     // used to get traffic flow route information
     auto& noc_ctx = g_vpr_ctx.noc();
-    // datastructure that stores all the traffic flow routes
+    // data structure that stores all the traffic flow routes
     const NocTrafficFlows& noc_traffic_flows_storage = noc_ctx.noc_traffic_flows_storage;
 
     double noc_aggregate_bandwidth_cost = 0.;
