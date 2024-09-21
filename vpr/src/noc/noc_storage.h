@@ -379,6 +379,10 @@ class NocStorage {
      * tile that this router represents.
      * @param grid_position_y The vertical position on the FPGA of the physical
      * tile that this router represents.
+     * @param layer_position The layer where the physical tile that this router
+     * represents is located.
+     * @param latency The zero-load latency that a traffic flow will experience
+     * when it is routed through this router.
      */
     void add_router(int id,
                     int grid_position_x, int grid_position_y, int layer_position,

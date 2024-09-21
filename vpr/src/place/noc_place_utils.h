@@ -456,6 +456,13 @@ class NocCostHandler {
     /* Keeps track of NoC links whose bandwidth usage have been updated at each attempted placement move*/
     std::unordered_set<NocLinkId> affected_noc_links;
 
+    /**
+     * @brief Stores the routes that were found by the routing algorithm for
+     * all traffic flows within the NoC. This data structure should be used
+     * to store the path found whenever a traffic flow needs to be routed/
+     * re-routed. Also, this data structure should be used to access the routed
+     * path of a traffic flow.
+     */
     vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> traffic_flow_routes;
     vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> traffic_flow_routes_backup;
 

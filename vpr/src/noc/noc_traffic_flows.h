@@ -117,16 +117,6 @@ class NocTrafficFlows {
      */
     bool built_traffic_flows;
 
-    /**
-     * @brief Stores the routes that were found by the routing algorithm for
-     * all traffic flows within the NoC. This is initialized after all the
-     * traffic flows have been added. This datastructure should be used
-     * to store the path found whenever a traffic flow needs to be routed/
-     * re-routed. Also, this datastructure should be used to access the routed
-     * path of a traffic flow.
-     */
-//    vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> traffic_flow_routes;
-
     // private functions
 
     /**
@@ -192,37 +182,6 @@ class NocTrafficFlows {
      * the traffic flows provided by the user.
      */
     int get_number_of_routers_used_in_traffic_flows();
-
-    /**
-     * @brief Gets the routed path of traffic flow. This cannot be
-     * modified externally.
-     * 
-     * @param traffic_flow_id A unique identifier that represents a 
-     * traffic flow.
-     * @return std::vector<NocLinkId>& A reference to the provided
-     * traffic flow's routed path.
-     */
-//    const std::vector<NocLinkId>& get_traffic_flow_route(NocTrafficFlowId traffic_flow_id) const;
-
-    /**
-     * @brief Gets the routed path of a traffic flow. The path
-     * returned can and is expected to be  modified externally.
-     * 
-     * @param traffic_flow_id A unique identifier that represents a 
-     * traffic flow.
-     * @return std::vector<NocLinkId>& A reference to the provided
-     * traffic flow's vector of links used from the src to dst.
-     */
-//    std::vector<NocLinkId>& get_mutable_traffic_flow_route(NocTrafficFlowId traffic_flow_id);
-
-    /**
-     * @brief Gets all routed paths for all traffic flows. This cannot be
-     * modified externally.
-     *
-     * @return vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>>& A reference
-     * to the provided container that includes all traffic flow routes.
-     */
-//    const vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>>& get_all_traffic_flow_routes() const;
 
     /**
      * @return a vector ([0..num_logical_router-1]) where each entry gives the clusterBlockId
@@ -304,7 +263,6 @@ class NocTrafficFlows {
     /**
      * @brief Resets the class by clearing internal
      * datastructures.
-     * 
      */
     void clear_traffic_flows();
 

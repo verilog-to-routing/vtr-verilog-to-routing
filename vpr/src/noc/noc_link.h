@@ -78,19 +78,6 @@ class NocLink {
      */
     double get_bandwidth() const;
 
-//    /**
-//     * @brief Calculates the extent to which the current bandwidth utilization
-//     * exceeds the link capacity. Any positive value means the link is congested.
-//     * @return A numeric value of the bandwidth over-utilization in the link
-//     */
-//    double get_congested_bandwidth() const;
-//
-//    /**
-//     * @brief Computes the congested bandwidth to bandwidth capacity ratio.
-//     * @return The congested bandwidth to bandwidth capacity of the link.
-//     */
-//    double get_congested_bandwidth_ratio() const;
-
     /**
      * @brief Returns the zero-load latency of the link.
      * @return double Zero-load latency of the link.
