@@ -3,6 +3,8 @@
 
 class NocCostHandler;
 
+#include <optional>
+
 #include "place_macro.h"
 #include "partition_region.h"
 

@@ -418,8 +418,6 @@ class NocCostHandler {
      */
     double calculate_link_congestion_cost(const NocLink& link) const;
 
-
-
   private:
     /**
      * @brief Represents the maximum values of the NoC cost normalization factors
