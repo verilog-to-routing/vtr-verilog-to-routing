@@ -163,10 +163,10 @@ static int get_longest_segment_length(std::vector<t_segment_inf>& segment_inf);
 static void fix_empty_coordinates(vtr::NdMatrix<float, 4>& delta_delays);
 static void fix_uninitialized_coordinates(vtr::NdMatrix<float, 4>& delta_delays);
 
-static float find_neightboring_average(vtr::NdMatrix<float, 4>& matrix,
-                                       int from_layer,
-                                       t_physical_tile_loc to_tile_loc,
-                                       int max_distance);
+static float find_neighboring_average(vtr::NdMatrix<float, 4>& matrix,
+                                      int from_layer,
+                                      t_physical_tile_loc to_tile_loc,
+                                      int max_distance);
 
 /******* Globally Accessible Functions **********/
 
@@ -920,15 +920,13 @@ static float find_neighboring_average(
     int endx = matrix.end_index(2);
     int endy = matrix.end_index(3);
 
-    int delx, dely;
-
     int x = to_tile_loc.x;
     int y = to_tile_loc.y;
     int to_layer = to_tile_loc.layer_num;
 
     for (int distance = 1; distance <= max_distance; ++distance) {
-        for (delx = x - distance; delx <= x + distance; delx++) {
-            for (dely = y - distance; dely <= y + distance; dely++) {
+        for (int delx = x - distance; delx <= x + distance; delx++) {
+            for (int dely = y - distance; dely <= y + distance; dely++) {
                 // Check distance constraint
                 if (abs(delx - x) + abs(dely - y) > distance) {
                     continue;
