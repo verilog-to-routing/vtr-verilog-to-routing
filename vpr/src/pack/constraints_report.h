@@ -5,9 +5,7 @@
 #ifndef VPR_SRC_PACK_CONSTRAINTS_REPORT_H_
 #define VPR_SRC_PACK_CONSTRAINTS_REPORT_H_
 
-#include "globals.h"
-#include "grid_tile_lookup.h"
-#include "place_constraints.h"
+class ClusterLegalizer;
 
 /**
  * @brief Check if any constraint partition regions are overfull,
@@ -27,6 +25,6 @@
  *
  * @return True if there is at least one overfull partition.
  */
-bool floorplan_constraints_regions_overfull();
+bool floorplan_constraints_regions_overfull(const ClusterLegalizer& cluster_legalizer);
 
 #endif /* VPR_SRC_PACK_CONSTRAINTS_REPORT_H_ */

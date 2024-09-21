@@ -176,10 +176,17 @@ enum e_side : unsigned char {
     RIGHT = 1,
     BOTTOM = 2,
     LEFT = 3,
-    NUM_SIDES
+    NUM_2D_SIDES = 4,
+    ABOVE = 5,
+    UNDER = 7,
+    NUM_3D_SIDES = 6,
 };
-constexpr std::array<e_side, NUM_SIDES> SIDES = {{TOP, RIGHT, BOTTOM, LEFT}};                    //Set of all side orientations
-constexpr std::array<const char*, NUM_SIDES> SIDE_STRING = {{"TOP", "RIGHT", "BOTTOM", "LEFT"}}; //String versions of side orientations
+
+constexpr std::array<e_side, NUM_2D_SIDES> TOTAL_2D_SIDES = {{TOP, RIGHT, BOTTOM, LEFT}};                     //Set of all side orientations
+constexpr std::array<const char*, NUM_2D_SIDES> TOTAL_2D_SIDE_STRINGS = {{"TOP", "RIGHT", "BOTTOM", "LEFT"}}; //String versions of side orientations
+
+constexpr std::array<e_side, NUM_3D_SIDES> TOTAL_3D_SIDES = {{TOP, RIGHT, BOTTOM, LEFT, ABOVE, UNDER}};                         //Set of all side orientations including different layers
+constexpr std::array<const char*, NUM_3D_SIDES> TOTAL_3D_SIDE_STRINGS = {{"TOP", "RIGHT", "BOTTOM", "LEFT", "ABOVE", "UNDER"}}; //String versions of side orientations including different layers
 
 /* pin location distributions */
 enum class e_pin_location_distr {
@@ -1286,7 +1293,6 @@ class t_pb_graph_node {
     int total_pb_pins; /* only valid for top-level */
 
     void* temp_scratch_pad;                                     /* temporary data, useful for keeping track of things when traversing data structure */
-    t_cluster_placement_primitive* cluster_placement_primitive; /* pointer to indexing structure useful during packing stage */
 
     int* input_pin_class_size;  /* Stores the number of pins that belong to a particular input pin class */
     int num_input_pin_class;    /* number of input pin classes that this pb_graph_node has */
