@@ -180,12 +180,10 @@ void NetCostHandler::alloc_and_load_chan_w_factors_for_place_cost_(float place_c
 
     // First compute the number of tracks between channel high and channel low, inclusive.
     chanx_place_cost_fac_(-1, -1) = 0;
-    chanx_place_cost_fac_( 0, -1) = device_ctx.chan_width.x_list[0];;
-    chanx_place_cost_fac_( 0,  0) = device_ctx.chan_width.x_list[0];
 
-    for (int high = 1; high < (int)grid_height; high++) {
+    for (int high = 0; high < (int)grid_height; high++) {
         chanx_place_cost_fac_(high, high) = (float)device_ctx.chan_width.x_list[high];
-        for (int low = 0; low < high; low++) {
+        for (int low = -1; low < high; low++) {
             chanx_place_cost_fac_(high, low) = chanx_place_cost_fac_(high - 1, low) + (float)device_ctx.chan_width.x_list[high];
         }
     }
@@ -217,12 +215,10 @@ void NetCostHandler::alloc_and_load_chan_w_factors_for_place_cost_(float place_c
     /* Now do the same thing for the y-directed channels.  First get the
      * number of tracks between channel high and channel low, inclusive. */
     chany_place_cost_fac_(-1, -1) = 0;
-    chany_place_cost_fac_( 0, -1) = device_ctx.chan_width.y_list[0];
-    chany_place_cost_fac_( 0,  0) = device_ctx.chan_width.y_list[0];
 
-    for (int high = 1; high < (int)grid_width; high++) {
+    for (int high = 0; high < (int)grid_width; high++) {
         chany_place_cost_fac_(high, high) = device_ctx.chan_width.y_list[high];
-        for (int low = 0; low < high; low++) {
+        for (int low = -1; low < high; low++) {
             chany_place_cost_fac_(high, low) = chany_place_cost_fac_(high - 1, low) + device_ctx.chan_width.y_list[high];
         }
     }
