@@ -190,6 +190,18 @@ class NetCostHandler {
     vtr::vector<ClusterNetId, double> proposed_net_cost_;
     vtr::vector<ClusterNetId, NetUpdateState> bb_update_status_;
 
+    class ChanPlaceCostFacContainer : public vtr::NdMatrix<float, 2> {
+      public:
+        float& operator()(int i, int j) {
+            size_t ipp = i + 1;
+            size_t jpp = j + 1;
+            return this->operator[](ipp).operator[](jpp);
+        }
+
+      private:
+        using vtr::NdMatrix<float, 2>::operator[];
+    };
+
     /**
      * @brief Matrices below are used to precompute the inverse of the average
      * number of tracks per channel between [subhigh] and [sublow].  Access
@@ -199,8 +211,8 @@ class NetCostHandler {
      * number of tracks in that direction; for other cost functions they
      * will never be used.
      */
-    vtr::NdMatrix<float, 2> chanx_place_cost_fac_; // [0...device_ctx.grid.width()-2]
-    vtr::NdMatrix<float, 2> chany_place_cost_fac_; // [0...device_ctx.grid.height()-2]
+    ChanPlaceCostFacContainer chanx_place_cost_fac_; // [0...device_ctx.grid.width()-2]
+    ChanPlaceCostFacContainer chany_place_cost_fac_; // [0...device_ctx.grid.height()-2]
 
 
   private:
@@ -383,7 +395,6 @@ class NetCostHandler {
      * @param old_edge_coord The current known bounding box of the net
      * @param new_num_block_on_edge The new bb calculated by this function
      * @param new_edge_coord The new bb edge calculated by this function
-     *
      */
     inline void update_bb_edge_(ClusterNetId net_id,
                                 std::vector<t_2D_bb>& bb_edge_new,
