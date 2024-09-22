@@ -36,9 +36,6 @@
 
 #include <array>
 
-using std::min;
-
-
 static constexpr int MAX_FANOUT_CROSSING_COUNT = 50;
 
 /**
@@ -570,12 +567,11 @@ void NetCostHandler::get_non_updatable_cube_bb_(ClusterNetId net_id, bool use_ts
      * channel immediately to the left of the bounding box, I want to    *
      * clip to 1 in both directions as well (since minimum channel index *
      * is 0).  See route_common.cpp for a channel diagram.               */
-
-    bb_coord_new.xmin = min<int>(xmin, device_ctx.grid.width() - 2);  //-2 for no perim channels
-    bb_coord_new.ymin = min<int>(ymin, device_ctx.grid.height() - 2); //-2 for no perim channels
+    bb_coord_new.xmin = xmin;
+    bb_coord_new.ymin = ymin;
     bb_coord_new.layer_min = layer_min;
-    bb_coord_new.xmax = min<int>(xmax, device_ctx.grid.width() - 2);  //-2 for no perim channels
-    bb_coord_new.ymax = min<int>(ymax, device_ctx.grid.height() - 2); //-2 for no perim channels
+    bb_coord_new.xmax = xmax;
+    bb_coord_new.ymax = ymax;
     bb_coord_new.layer_max = layer_max;
 }
 
@@ -634,13 +630,13 @@ void NetCostHandler::get_non_updatable_per_layer_bb_(ClusterNetId net_id, bool u
      * channel immediately to the left of the bounding box, I want to    *
      * clip to 1 in both directions as well (since minimum channel index *
      * is 0).  See route_common.cpp for a channel diagram.               */
-    for (int layer_num = 0; layer_num < num_layers; layer_num++) {
-        bb_coord_new[layer_num].layer_num = layer_num;
-        bb_coord_new[layer_num].xmin = min<int>(bb_coord_new[layer_num].xmin, device_ctx.grid.width() - 2);  //-2 for no perim channels
-        bb_coord_new[layer_num].ymin = min<int>(bb_coord_new[layer_num].ymin, device_ctx.grid.height() - 2); //-2 for no perim channels
-        bb_coord_new[layer_num].xmax = min<int>(bb_coord_new[layer_num].xmax, device_ctx.grid.width() - 2);  //-2 for no perim channels
-        bb_coord_new[layer_num].ymax = min<int>(bb_coord_new[layer_num].ymax, device_ctx.grid.height() - 2); //-2 for no perim channels
-    }
+//    for (int layer_num = 0; layer_num < num_layers; layer_num++) {
+//        bb_coord_new[layer_num].layer_num = layer_num;
+//        bb_coord_new[layer_num].xmin = bb_coord_new[layer_num].xmin;
+//        bb_coord_new[layer_num].ymin = bb_coord_new[layer_num].ymin;
+//        bb_coord_new[layer_num].xmax = bb_coord_new[layer_num].xmax;
+//        bb_coord_new[layer_num].ymax = bb_coord_new[layer_num].ymax;
+//    }
 }
 
 void NetCostHandler::update_bb_(ClusterNetId net_id,
@@ -662,12 +658,12 @@ void NetCostHandler::update_bb_(ClusterNetId net_id,
     // Number of sinks of the given net on each layer
     vtr::NdMatrixProxy<int, 1> num_sink_pin_layer_new = ts_layer_sink_pin_count_[size_t(net_id)];
 
-    pin_new_loc.x = min<int>(pin_new_loc.x, device_ctx.grid.width() - 2);  //-2 for no perim channels
-    pin_new_loc.y = min<int>(pin_new_loc.y, device_ctx.grid.height() - 2); //-2 for no perim channels
-    pin_new_loc.layer_num = pin_new_loc.layer_num;
-    pin_old_loc.x = min<int>(pin_old_loc.x, device_ctx.grid.width() - 2);  //-2 for no perim channels
-    pin_old_loc.y = min<int>(pin_old_loc.y, device_ctx.grid.height() - 2); //-2 for no perim channels
-    pin_old_loc.layer_num = pin_old_loc.layer_num;
+//    pin_new_loc.x = pin_new_loc.x;
+//    pin_new_loc.y = pin_new_loc.y;
+//    pin_new_loc.layer_num = pin_new_loc.layer_num;
+//    pin_old_loc.x = pin_old_loc.x;
+//    pin_old_loc.y = pin_old_loc.y;
+//    pin_old_loc.layer_num = pin_old_loc.layer_num;
 
     /* Check if the net had been updated before. */
     if (bb_update_status_[net_id] == NetUpdateState::GOT_FROM_SCRATCH) {
@@ -923,13 +919,12 @@ void NetCostHandler::update_layer_bb_(ClusterNetId net_id,
                                       t_physical_tile_loc pin_old_loc,
                                       t_physical_tile_loc pin_new_loc,
                                       bool is_output_pin) {
-    auto& device_ctx = g_vpr_ctx.device();
     auto& place_move_ctx = placer_state_.move();
 
-    pin_new_loc.x = min<int>(pin_new_loc.x, device_ctx.grid.width() - 2);  //-2 for no perim channels
-    pin_new_loc.y = min<int>(pin_new_loc.y, device_ctx.grid.height() - 2); //-2 for no perim channels
-    pin_old_loc.x = min<int>(pin_old_loc.x, device_ctx.grid.width() - 2);  //-2 for no perim channels
-    pin_old_loc.y = min<int>(pin_old_loc.y, device_ctx.grid.height() - 2); //-2 for no perim channels
+    pin_new_loc.x = pin_new_loc.x;
+    pin_new_loc.y = pin_new_loc.y;
+    pin_old_loc.x = pin_old_loc.x;
+    pin_old_loc.y = pin_old_loc.y;
 
     std::vector<t_2D_bb>& bb_edge_new = layer_ts_bb_edge_new_[net_id];
     std::vector<t_2D_bb>& bb_coord_new = layer_ts_bb_coord_new_[net_id];
@@ -1284,10 +1279,6 @@ void NetCostHandler::get_bb_from_scratch_(ClusterNetId net_id,
     int y = block_loc.y + physical_tile_type(block_loc)->pin_height_offset[pnum];
     int pin_layer = block_loc.layer;
 
-    x = min<int>(x, grid.width() - 2);
-    y = min<int>(y, grid.height() - 2);
-    pin_layer = min<int>(pin_layer, grid.get_num_layers() - 1);
-
     int xmin = x;
     int ymin = y;
     int layer_min = pin_layer;
@@ -1320,10 +1311,6 @@ void NetCostHandler::get_bb_from_scratch_(ClusterNetId net_id,
          * that bounding box.  Hence, this "movement" of IO blocks does not affect *
          * the which channels are included within the bounding box, and it         *
          * simplifies the code a lot.                                              */
-
-        x = min<int>(x, grid.width() - 2);  //-2 for no perim channels
-        y = min<int>(y, grid.height() - 2); //-2 for no perim channels
-        pin_layer = min<int>(pin_layer, grid.get_num_layers() - 1);
 
         if (x == xmin) {
             xmin_edge++;
@@ -1391,7 +1378,6 @@ void NetCostHandler::get_layer_bb_from_scratch_(ClusterNetId net_id,
                                                 vtr::NdMatrixProxy<int, 1> layer_pin_sink_count) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& grid = device_ctx.grid;
     auto& block_locs = placer_state_.block_locs();
 
     const int num_layers = device_ctx.grid.get_num_layers();
@@ -1404,9 +1390,6 @@ void NetCostHandler::get_layer_bb_from_scratch_(ClusterNetId net_id,
     VTR_ASSERT_SAFE(pnum_src >= 0);
     int x_src = block_loc.x + physical_tile_type(block_loc)->pin_width_offset[pnum_src];
     int y_src = block_loc.y + physical_tile_type(block_loc)->pin_height_offset[pnum_src];
-
-    x_src = min<int>(x_src, grid.width() - 2);
-    y_src = min<int>(y_src, grid.height() - 2);
 
     // TODO: Currently we are assuming that crossing can only happen from OPIN. Because of that,
     // when per-layer bounding box is used, we want the bounding box on each layer to also include
@@ -1433,9 +1416,6 @@ void NetCostHandler::get_layer_bb_from_scratch_(ClusterNetId net_id,
          * that bounding box.  Hence, this "movement" of IO blocks does not affect *
          * the which channels are included within the bounding box, and it         *
          * simplifies the code a lot.                                              */
-
-        x = min<int>(x, grid.width() - 2);  //-2 for no perim channels
-        y = min<int>(y, grid.height() - 2); //-2 for no perim channels
 
         if (x == coords[layer].xmin) {
             num_on_edges[layer].xmin++;
