@@ -520,12 +520,12 @@ void NetCostHandler::get_non_updatable_cube_bb_(ClusterNetId net_id, bool use_ts
     int y = block_loc.y + physical_tile_type(block_loc)->pin_height_offset[pnum];
     int layer = block_loc.layer;
 
-    int xmin = x;
-    int ymin = y;
-    int layer_min = layer;
-    int xmax = x;
-    int ymax = y;
-    int layer_max = layer;
+    bb_coord_new.xmin = x;
+    bb_coord_new.ymin = y;
+    bb_coord_new.layer_min = layer;
+    bb_coord_new.xmax = x;
+    bb_coord_new.ymax = y;
+    bb_coord_new.layer_max = layer;
 
     for (int layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); layer_num++) {
         num_sink_pin_layer[layer_num] = 0;
@@ -539,40 +539,26 @@ void NetCostHandler::get_non_updatable_cube_bb_(ClusterNetId net_id, bool use_ts
         y = block_loc.y + physical_tile_type(block_loc)->pin_height_offset[pnum];
         layer = block_loc.layer;
 
-        if (x < xmin) {
-            xmin = x;
-        } else if (x > xmax) {
-            xmax = x;
+        if (x < bb_coord_new.xmin) {
+            bb_coord_new.xmin = x;
+        } else if (x > bb_coord_new.xmax) {
+            bb_coord_new.xmax = x;
         }
 
-        if (y < ymin) {
-            ymin = y;
-        } else if (y > ymax) {
-            ymax = y;
+        if (y < bb_coord_new.ymin) {
+            bb_coord_new.ymin = y;
+        } else if (y > bb_coord_new.ymax) {
+            bb_coord_new.ymax = y;
         }
 
-        if (layer < layer_min) {
-            layer_min = layer;
-        } else if (layer > layer_max) {
-            layer_max = layer;
+        if (layer < bb_coord_new.layer_min) {
+            bb_coord_new.layer_min = layer;
+        } else if (layer > bb_coord_new.layer_max) {
+            bb_coord_new.layer_max = layer;
         }
 
         num_sink_pin_layer[layer]++;
     }
-
-    /* Now I've found the coordinates of the bounding box.  There are no *
-     * channels beyond device_ctx.grid.width()-2 and                     *
-     * device_ctx.grid.height() - 2, so I want to clip to that.  As well,*
-     * since I'll always include the channel immediately below and the   *
-     * channel immediately to the left of the bounding box, I want to    *
-     * clip to 1 in both directions as well (since minimum channel index *
-     * is 0).  See route_common.cpp for a channel diagram.               */
-    bb_coord_new.xmin = xmin;
-    bb_coord_new.ymin = ymin;
-    bb_coord_new.layer_min = layer_min;
-    bb_coord_new.xmax = xmax;
-    bb_coord_new.ymax = ymax;
-    bb_coord_new.layer_max = layer_max;
 }
 
 void NetCostHandler::get_non_updatable_per_layer_bb_(ClusterNetId net_id, bool use_ts) {
@@ -622,21 +608,6 @@ void NetCostHandler::get_non_updatable_per_layer_bb_(ClusterNetId net_id, bool u
             bb_coord_new[layer_num].ymax = y;
         }
     }
-
-    /* Now I've found the coordinates of the bounding box.  There are no *
-     * channels beyond device_ctx.grid.width()-2 and                     *
-     * device_ctx.grid.height() - 2, so I want to clip to that.  As well,*
-     * since I'll always include the channel immediately below and the   *
-     * channel immediately to the left of the bounding box, I want to    *
-     * clip to 1 in both directions as well (since minimum channel index *
-     * is 0).  See route_common.cpp for a channel diagram.               */
-//    for (int layer_num = 0; layer_num < num_layers; layer_num++) {
-//        bb_coord_new[layer_num].layer_num = layer_num;
-//        bb_coord_new[layer_num].xmin = bb_coord_new[layer_num].xmin;
-//        bb_coord_new[layer_num].ymin = bb_coord_new[layer_num].ymin;
-//        bb_coord_new[layer_num].xmax = bb_coord_new[layer_num].xmax;
-//        bb_coord_new[layer_num].ymax = bb_coord_new[layer_num].ymax;
-//    }
 }
 
 void NetCostHandler::update_bb_(ClusterNetId net_id,
@@ -657,13 +628,6 @@ void NetCostHandler::update_bb_(ClusterNetId net_id,
     t_bb& bb_coord_new = ts_bb_coord_new_[net_id];
     // Number of sinks of the given net on each layer
     vtr::NdMatrixProxy<int, 1> num_sink_pin_layer_new = ts_layer_sink_pin_count_[size_t(net_id)];
-
-//    pin_new_loc.x = pin_new_loc.x;
-//    pin_new_loc.y = pin_new_loc.y;
-//    pin_new_loc.layer_num = pin_new_loc.layer_num;
-//    pin_old_loc.x = pin_old_loc.x;
-//    pin_old_loc.y = pin_old_loc.y;
-//    pin_old_loc.layer_num = pin_old_loc.layer_num;
 
     /* Check if the net had been updated before. */
     if (bb_update_status_[net_id] == NetUpdateState::GOT_FROM_SCRATCH) {
@@ -920,11 +884,6 @@ void NetCostHandler::update_layer_bb_(ClusterNetId net_id,
                                       t_physical_tile_loc pin_new_loc,
                                       bool is_output_pin) {
     auto& place_move_ctx = placer_state_.move();
-
-    pin_new_loc.x = pin_new_loc.x;
-    pin_new_loc.y = pin_new_loc.y;
-    pin_old_loc.x = pin_old_loc.x;
-    pin_old_loc.y = pin_old_loc.y;
 
     std::vector<t_2D_bb>& bb_edge_new = layer_ts_bb_edge_new_[net_id];
     std::vector<t_2D_bb>& bb_coord_new = layer_ts_bb_coord_new_[net_id];
