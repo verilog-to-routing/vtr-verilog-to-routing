@@ -195,8 +195,8 @@ void NetCostHandler::alloc_and_load_chan_w_factors_for_place_cost_(float place_c
      * place_cost_exp power -- numbers other than one mean this is no      *
      * longer a simple "average number of tracks"; it is some power of     *
      * that, allowing greater penalization of narrow channels.             */
-    for (int high = 0; high < (int)grid_height; high++) {
-        for (int low = 0; low <= high; low++) {
+    for (int high = -1; high < (int)grid_height; high++) {
+        for (int low = -1; low <= high; low++) {
             /* Since we will divide the wiring cost by the average channel *
              * capacity between high and low, having only 0 width channels *
              * will result in infinite wiring capacity normalization       *
@@ -225,8 +225,8 @@ void NetCostHandler::alloc_and_load_chan_w_factors_for_place_cost_(float place_c
 
     /* Now compute the inverse of the average number of tracks per channel
      * between high and low.  Take to specified power. */
-    for (int high = 0; high < (int)grid_width; high++) {
-        for (int low = 0; low <= high; low++) {
+    for (int high = -1; high < (int)grid_width; high++) {
+        for (int low = -1; low <= high; low++) {
             /* Since we will divide the wiring cost by the average channel *
              * capacity between high and low, having only 0 width channels *
              * will result in infinite wiring capacity normalization       *
