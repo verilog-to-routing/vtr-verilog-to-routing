@@ -19,10 +19,10 @@
  * @brief Check that placement of each block is within the floorplan constraint region
  * of that block (if the block has any constraints).
  *
+ * @param block_locs Contains the location where each clustered block is placed.
  * @return int The number of errors (inconsistencies in adherence to floorplanning constraints).
  */
-int check_placement_floorplanning();
-
+int check_placement_floorplanning(const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
 
 /**
  * @brief Check if the block has floorplanning constraints.
@@ -100,16 +100,16 @@ void print_macro_constraint_error(const t_pl_macro& pl_macro);
 inline bool floorplan_legal(const t_pl_blocks_to_be_moved& blocks_affected) {
     bool floorplan_legal;
 
-    for (int i = 0; i < blocks_affected.num_moved_blocks; i++) {
-        floorplan_legal = cluster_floorplanning_legal(blocks_affected.moved_blocks[i].block_num,
-                                                      blocks_affected.moved_blocks[i].new_loc);
+    for (const t_pl_moved_block& moved_block : blocks_affected.moved_blocks) {
+        floorplan_legal = cluster_floorplanning_legal(moved_block.block_num,
+                                                      moved_block.new_loc);
         if (!floorplan_legal) {
             VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug,
                            "\tMove aborted for block %zu, location tried was x: %d, y: %d, subtile: %d \n",
-                           size_t(blocks_affected.moved_blocks[i].block_num),
-                           blocks_affected.moved_blocks[i].new_loc.x,
-                           blocks_affected.moved_blocks[i].new_loc.y,
-                           blocks_affected.moved_blocks[i].new_loc.sub_tile);
+                           size_t(moved_block.block_num),
+                           moved_block.new_loc.x,
+                           moved_block.new_loc.y,
+                           moved_block.new_loc.sub_tile);
             return false;
         }
     }
@@ -134,10 +134,14 @@ void load_cluster_constraints();
  * @brief Marks blocks as fixed if they have a constraint region that
  * specifies exactly one x, y, subtile location as legal.
  *
- * Marking them as fixed indicates that they cannot be moved
+ * @param blk_loc_registry Placement block location information. Used to set
+ * the location of clustered block constrained to a single location and mark them
+ * as fixed.
+ *
+ * @note Marking such constrained blocks as fixed indicates that they cannot be moved
  * during initial placement and simulated annealing.
  */
-void mark_fixed_blocks();
+void mark_fixed_blocks(BlkLocRegistry& blk_loc_registry);
 
 /**
  * @brief Converts the floorplanning constraints from grid location to

@@ -2,9 +2,7 @@ VPR Constraints
 =========================
 .. _vpr_constraints:
 
-VPR allows users to run the flow with placement constraints that enable primitives to be locked down to a specific region on the chip and global routing constraints that facilitate the routing of global nets through clock networks.
-
-Users can specify these constraints through a constraints file in XML format, as shown in the format below.
+Users can specify placement and/or global routing constraints on all or part of a design through a constraints file in XML format, as shown in the format below. These constraints are optional and allow detailed control of the region on the chip in which parts of the design are placed, and of the routing of global nets through dedicated (usually clock) networks. 
 
 .. code-block:: xml
    :caption: The overall format of a VPR constraints file

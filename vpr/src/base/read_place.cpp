@@ -1,9 +1,7 @@
 #include <cstdio>
 #include <cstring>
 #include <fstream>
-#include <algorithm>
 
-#include "vtr_assert.h"
 #include "vtr_util.h"
 #include "vtr_log.h"
 #include "vtr_digest.h"
@@ -17,23 +15,22 @@
 #include "read_xml_arch_file.h"
 #include "place_util.h"
 
-void read_place_header(
-    std::ifstream& placement_file,
-    const char* net_file,
-    const char* place_file,
-    bool verify_file_hashes,
-    const DeviceGrid& grid);
+static void read_place_header(std::ifstream& placement_file,
+                              const char* net_file,
+                              const char* place_file,
+                              bool verify_file_digests,
+                              const DeviceGrid& grid);
 
-void read_place_body(
-    std::ifstream& placement_file,
-    const char* place_file,
-    bool is_place_file);
+static std::string read_place_body(std::ifstream& placement_file,
+                                   BlkLocRegistry& blk_loc_registry,
+                                   const char* place_file,
+                                   bool is_place_file);
 
-void read_place(
-    const char* net_file,
-    const char* place_file,
-    bool verify_file_digests,
-    const DeviceGrid& grid) {
+std::string read_place(const char* net_file,
+                       const char* place_file,
+                       BlkLocRegistry& blk_loc_registry,
+                       bool verify_file_digests,
+                       const DeviceGrid& grid) {
     std::ifstream fstream(place_file);
     if (!fstream) {
         VPR_FATAL_ERROR(VPR_ERROR_PLACE_F,
@@ -47,13 +44,16 @@ void read_place(
     VTR_LOG("\n");
 
     read_place_header(fstream, net_file, place_file, verify_file_digests, grid);
-    read_place_body(fstream, place_file, is_place_file);
+    std::string placement_id = read_place_body(fstream, blk_loc_registry, place_file, is_place_file);
 
     VTR_LOG("Successfully read %s.\n", place_file);
     VTR_LOG("\n");
+
+    return placement_id;
 }
 
-void read_constraints(const char* constraints_file) {
+void read_constraints(const char* constraints_file,
+                      BlkLocRegistry& blk_loc_registry) {
     std::ifstream fstream(constraints_file);
     if (!fstream) {
         VPR_FATAL_ERROR(VPR_ERROR_PLACE_F,
@@ -66,7 +66,7 @@ void read_constraints(const char* constraints_file) {
     VTR_LOG("Reading %s.\n", constraints_file);
     VTR_LOG("\n");
 
-    read_place_body(fstream, constraints_file, is_place_file);
+    read_place_body(fstream, blk_loc_registry, constraints_file, is_place_file);
 
     VTR_LOG("Successfully read constraints file %s.\n", constraints_file);
     VTR_LOG("\n");
@@ -80,11 +80,11 @@ void read_constraints(const char* constraints_file) {
  * The verify_file_digests bool is used to decide whether to give a warning or an error if the netlist files do not match.
  * An error is given if the grid size has changed.
  */
-void read_place_header(std::ifstream& placement_file,
-                       const char* net_file,
-                       const char* place_file,
-                       bool verify_file_digests,
-                       const DeviceGrid& grid) {
+static void read_place_header(std::ifstream& placement_file,
+                              const char* net_file,
+                              const char* place_file,
+                              bool verify_file_digests,
+                              const DeviceGrid& grid) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     std::string line;
@@ -205,12 +205,13 @@ void read_place_header(std::ifstream& placement_file,
  * The bool is_place_file indicates if the file should be read as a place file (is_place_file = true)
  * or a constraints file (is_place_file = false).
  */
-void read_place_body(std::ifstream& placement_file,
-                     const char* place_file,
-                     bool is_place_file) {
+static std::string read_place_body(std::ifstream& placement_file,
+                                   BlkLocRegistry& blk_loc_registry,
+                                   const char* place_file,
+                                   bool is_place_file) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_ctx = g_vpr_ctx.mutable_placement();
     auto& atom_ctx = g_vpr_ctx.atom();
+    auto& block_locs = blk_loc_registry.mutable_block_locs();
 
     std::string line;
     int lineno = 0;
@@ -219,7 +220,7 @@ void read_place_body(std::ifstream& placement_file,
     vtr::vector_map<ClusterBlockId, int> seen_blocks;
 
     //initialize seen_blocks
-    for (auto block_id : cluster_ctx.clb_nlist.blocks()) {
+    for (ClusterBlockId block_id : cluster_ctx.clb_nlist.blocks()) {
         int seen_count = 0;
         seen_blocks.insert(block_id, seen_count);
     }
@@ -286,10 +287,10 @@ void read_place_body(std::ifstream& placement_file,
 
             //Check if block is listed multiple times with conflicting locations in constraints file
             if (seen_blocks[blk_id] > 0) {
-                if (block_x != place_ctx.block_locs[blk_id].loc.x ||
-                    block_y != place_ctx.block_locs[blk_id].loc.y ||
-                    sub_tile_index != place_ctx.block_locs[blk_id].loc.sub_tile ||
-                    block_layer != place_ctx.block_locs[blk_id].loc.layer) {
+                if (block_x != block_locs[blk_id].loc.x ||
+                    block_y != block_locs[blk_id].loc.y ||
+                    sub_tile_index != block_locs[blk_id].loc.sub_tile ||
+                    block_layer != block_locs[blk_id].loc.layer) {
                     std::string cluster_name = cluster_ctx.clb_nlist.block_name(blk_id);
                     VPR_THROW(VPR_ERROR_PLACE,
                               "The location of cluster %s (#%d) is specified %d times in the constraints file with conflicting locations. \n"
@@ -305,12 +306,20 @@ void read_place_body(std::ifstream& placement_file,
             loc.layer = block_layer;
 
             if (seen_blocks[blk_id] == 0) {
-                set_block_location(blk_id, loc);
+                if (is_place_file && block_locs[blk_id].is_fixed) {
+                    const t_pl_loc& constraint_loc = block_locs[blk_id].loc;
+                    if (loc != constraint_loc) {
+                        VPR_THROW(VPR_ERROR_PLACE,
+                        "The new location assigned to cluster #%d is (%d,%d,%d,%d), which is inconsistent with the location specified in the constraint file (%d,%d,%d,%d).",
+                        blk_id, loc.x, loc.y, loc.layer, loc.sub_tile, constraint_loc.x, constraint_loc.y, constraint_loc.layer, constraint_loc.sub_tile);
+                    }
+                }
+                blk_loc_registry.set_block_location(blk_id, loc);
             }
 
             //need to lock down blocks if it is a constraints file
             if (!is_place_file) {
-                place_ctx.block_locs[blk_id].is_fixed = true;
+                block_locs[blk_id].is_fixed = true;
             }
 
             //mark the block as seen
@@ -327,7 +336,7 @@ void read_place_body(std::ifstream& placement_file,
     //For place files, check that all blocks have been read
     //For constraints files, not all blocks need to be read
     if (is_place_file) {
-        for (auto block_id : cluster_ctx.clb_nlist.blocks()) {
+        for (ClusterBlockId block_id : cluster_ctx.clb_nlist.blocks()) {
             if (seen_blocks[block_id] == 0) {
                 VPR_THROW(VPR_ERROR_PLACE, "Block %d has not been read from the place file. \n", block_id);
             }
@@ -336,7 +345,9 @@ void read_place_body(std::ifstream& placement_file,
 
     //Want to make a hash for place file to be used during routing for error checking
     if (is_place_file) {
-        place_ctx.placement_id = vtr::secure_digest_file(place_file);
+        return vtr::secure_digest_file(place_file);
+    } else {
+        return {};
     }
 }
 
@@ -346,15 +357,15 @@ void read_place_body(std::ifstream& placement_file,
  * The architecture and netlist files used to generate this placement are recorded
  * in the file to avoid loading a placement with the wrong support file later.
  */
-void print_place(const char* net_file,
-                 const char* net_id,
-                 const char* place_file,
-                 bool is_place_file) {
+std::string print_place(const char* net_file,
+                        const char* net_id,
+                        const char* place_file,
+                        const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs,
+                        bool is_place_file) {
     FILE* fp;
 
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_ctx = g_vpr_ctx.mutable_placement();
 
     fp = fopen(place_file, "w");
 
@@ -367,10 +378,10 @@ void print_place(const char* net_file,
         fprintf(fp, "#----------\t--\t--\t------\t-----\t------------\n");
     }
 
-    if (!place_ctx.block_locs.empty()) { //Only if placement exists
-        for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+    if (!block_locs.empty()) { //Only if placement exists
+        for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks()) {
             // if block is not placed, skip (useful for printing legalizer output)
-            if (!is_place_file && (place_ctx.block_locs[blk_id].loc.x == INVALID_X)) {
+            if (!is_place_file && (block_locs[blk_id].loc.x == INVALID_X)) {
                 continue;
             }
             fprintf(fp, "%s\t", cluster_ctx.clb_nlist.block_pb(blk_id)->name);
@@ -378,15 +389,15 @@ void print_place(const char* net_file,
                 fprintf(fp, "\t");
 
             fprintf(fp, "%d\t%d\t%d\t%d",
-                    place_ctx.block_locs[blk_id].loc.x,
-                    place_ctx.block_locs[blk_id].loc.y,
-                    place_ctx.block_locs[blk_id].loc.sub_tile,
-                    place_ctx.block_locs[blk_id].loc.layer);
+                    block_locs[blk_id].loc.x,
+                    block_locs[blk_id].loc.y,
+                    block_locs[blk_id].loc.sub_tile,
+                    block_locs[blk_id].loc.layer);
             fprintf(fp, "\t#%zu\n", size_t(blk_id));
         }
     }
     fclose(fp);
 
     //Calculate the ID of the placement
-    place_ctx.placement_id = vtr::secure_digest_file(place_file);
+    return vtr::secure_digest_file(place_file);
 }

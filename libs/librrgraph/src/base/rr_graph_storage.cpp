@@ -618,13 +618,13 @@ const std::string& t_rr_graph_storage::node_direction_string(RRNodeId id) const 
 }
 
 const char* t_rr_graph_storage::node_side_string(RRNodeId id) const {
-    for (const e_side& side : SIDES) {
+    for (const e_side& side : TOTAL_2D_SIDES) {
         if (is_node_on_specific_side(id, side)) {
-            return SIDE_STRING[side];
+            return TOTAL_2D_SIDE_STRINGS[side];
         }
     }
     /* Not found, return an invalid string*/
-    return SIDE_STRING[NUM_SIDES];
+    return TOTAL_2D_SIDE_STRINGS[NUM_2D_SIDES];
 }
 
 void t_rr_graph_storage::set_node_layer(RRNodeId id, short layer) {
@@ -771,10 +771,10 @@ void t_rr_graph_storage::add_node_side(RRNodeId id, e_side new_side) {
     if (node_type(id) != IPIN && node_type(id) != OPIN) {
         VTR_LOG_ERROR("Attempted to set RR node 'side' for non-channel type '%s'", node_type_string(id));
     }
-    std::bitset<NUM_SIDES> side_bits = node_storage_[id].dir_side_.sides;
+    std::bitset<NUM_2D_SIDES> side_bits = node_storage_[id].dir_side_.sides;
     side_bits[size_t(new_side)] = true;
     if (side_bits.to_ulong() > CHAR_MAX) {
-        VTR_LOG_ERROR("Invalid side '%s' to be added to rr node %u", SIDE_STRING[new_side], size_t(id));
+        VTR_LOG_ERROR("Invalid side '%s' to be added to rr node %u", TOTAL_2D_SIDE_STRINGS[new_side], size_t(id));
     }
     node_storage_[id].dir_side_.sides = static_cast<unsigned char>(side_bits.to_ulong());
 }

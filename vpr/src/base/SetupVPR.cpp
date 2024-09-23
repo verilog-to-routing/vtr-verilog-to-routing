@@ -426,6 +426,7 @@ static void SetupRoutingArch(const t_arch& Arch,
 static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts) {
     RouterOpts->do_check_rr_graph = Options.check_rr_graph;
     RouterOpts->astar_fac = Options.astar_fac;
+    RouterOpts->astar_offset = Options.astar_offset;
     RouterOpts->router_profiler_astar_fac = Options.router_profiler_astar_fac;
     RouterOpts->bb_factor = Options.bb_factor;
     RouterOpts->criticality_exp = Options.criticality_exp;
@@ -437,6 +438,7 @@ static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts)
     RouterOpts->pres_fac_mult = Options.pres_fac_mult;
     RouterOpts->max_pres_fac = Options.max_pres_fac;
     RouterOpts->route_type = Options.RouteType;
+    RouterOpts->route_verbosity = Options.route_verbosity;
 
     RouterOpts->full_stats = Options.full_stats;
 
@@ -498,6 +500,7 @@ static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts)
     RouterOpts->generate_rr_node_overuse_report = Options.generate_rr_node_overuse_report;
     RouterOpts->flat_routing = Options.flat_routing;
     RouterOpts->has_choking_spot = Options.has_choking_spot;
+    RouterOpts->custom_3d_sb_fanin_fanout = Options.custom_3d_sb_fanin_fanout;
     RouterOpts->with_timing_analysis = Options.timing_analysis;
 }
 
@@ -641,6 +644,8 @@ static void SetupPlacerOpts(const t_options& Options, t_placer_opts* PlacerOpts)
     PlacerOpts->constraints_file = Options.constraints_file;
 
     PlacerOpts->write_initial_place_file = Options.write_initial_place_file;
+
+    PlacerOpts->read_initial_place_file = Options.read_initial_place_file;
 
     PlacerOpts->pad_loc_type = Options.pad_loc_type;
 

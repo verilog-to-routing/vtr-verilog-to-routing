@@ -11,12 +11,11 @@
 #include "rr_graph2.h"
 
 #include "timing_place_lookup.h"
+#include "placer_state.h"
 
 #include "vtr_log.h"
 #include "vtr_math.h"
 #include "vpr_error.h"
-
-#include "placer_globals.h"
 
 #ifdef VTR_ENABLE_CAPNPROTO
 #    include "capnp/serialize.h"
@@ -31,34 +30,27 @@ float DeltaDelayModel::delay(const t_physical_tile_loc& from_loc, int /*from_pin
     int delta_x = std::abs(from_loc.x - to_loc.x);
     int delta_y = std::abs(from_loc.y - to_loc.y);
 
-    // TODO: This is compatible with the case that only OPINs are connected to other layers.
-    // Ideally, I should check whether OPINs are conneced or IPINs and use the correct layer.
-    // If both are connected, minimum should be taken. In the case that channels are also connected,
-    // I haven't thought about what to do.
-    float cross_layer_td = 0;
-    if (from_loc.layer_num != to_loc.layer_num) {
-        VTR_ASSERT(std::isfinite(cross_layer_delay_));
-        cross_layer_td = cross_layer_delay_;
-    }
-    return delays_[to_loc.layer_num][delta_x][delta_y] + cross_layer_td;
+    return delays_[from_loc.layer_num][to_loc.layer_num][delta_x][delta_y];
 }
 
 void DeltaDelayModel::dump_echo(std::string filepath) const {
     FILE* f = vtr::fopen(filepath.c_str(), "w");
     fprintf(f, "         ");
-    for (size_t layer_num = 0; layer_num < delays_.dim_size(0); ++layer_num) {
-        fprintf(f, " %9zu", layer_num);
-        fprintf(f, "\n");
-        for (size_t dx = 0; dx < delays_.dim_size(1); ++dx) {
-            fprintf(f, " %9zu", dx);
-        }
-        fprintf(f, "\n");
-        for (size_t dy = 0; dy < delays_.dim_size(2); ++dy) {
-            fprintf(f, "%9zu", dy);
-            for (size_t dx = 0; dx < delays_.dim_size(1); ++dx) {
-                fprintf(f, " %9.2e", delays_[layer_num][dx][dy]);
+    for (size_t from_layer_num = 0; from_layer_num < delays_.dim_size(0); ++from_layer_num) {
+        for (size_t to_layer_num = 0; to_layer_num < delays_.dim_size(1); ++to_layer_num) {
+            fprintf(f, " %9zu", from_layer_num);
+            fprintf(f, "\n");
+            for (size_t dx = 0; dx < delays_.dim_size(2); ++dx) {
+                fprintf(f, " %9zu", dx);
             }
             fprintf(f, "\n");
+            for (size_t dy = 0; dy < delays_.dim_size(3); ++dy) {
+                fprintf(f, "%9zu", dy);
+                for (size_t dx = 0; dx < delays_.dim_size(2); ++dx) {
+                    fprintf(f, " %9.2e", delays_[from_layer_num][to_layer_num][dx][dy]);
+                }
+                fprintf(f, "\n");
+            }
         }
     }
     vtr::fclose(f);
@@ -242,7 +234,7 @@ void DeltaDelayModel::read(const std::string& file) {
     //
     // The second argument should be of type Matrix<X>::Reader where X is the
     // capnproto element type.
-    ToNdMatrix<3, VprFloatEntry, float>(&delays_, model.getDelays(), ToFloat);
+    ToNdMatrix<4, VprFloatEntry, float>(&delays_, model.getDelays(), ToFloat);
 }
 
 void DeltaDelayModel::write(const std::string& file) const {
@@ -258,7 +250,7 @@ void DeltaDelayModel::write(const std::string& file) const {
     // Matrix message.  It is the mirror function of ToNdMatrix described in
     // read above.
     auto delay_values = model.getDelays();
-    FromNdMatrix<3, VprFloatEntry, float>(&delay_values, delays_, FromFloat);
+    FromNdMatrix<4, VprFloatEntry, float>(&delay_values, delays_, FromFloat);
 
     // writeMessageToFile writes message to the specified file.
     writeMessageToFile(file, &builder);
@@ -271,9 +263,9 @@ void OverrideDelayModel::read(const std::string& file) {
     ::capnp::ReaderOptions opts = default_large_capnp_opts();
     ::capnp::FlatArrayMessageReader reader(f.getData(), opts);
 
-    vtr::NdMatrix<float, 3> delays;
+    vtr::NdMatrix<float, 4> delays;
     auto model = reader.getRoot<VprOverrideDelayModel>();
-    ToNdMatrix<3, VprFloatEntry, float>(&delays, model.getDelays(), ToFloat);
+    ToNdMatrix<4, VprFloatEntry, float>(&delays, model.getDelays(), ToFloat);
 
     base_delay_model_ = std::make_unique<DeltaDelayModel>(cross_layer_delay_, delays, is_flat_);
 
@@ -301,7 +293,7 @@ void OverrideDelayModel::write(const std::string& file) const {
     auto model = builder.initRoot<VprOverrideDelayModel>();
 
     auto delays = model.getDelays();
-    FromNdMatrix<3, VprFloatEntry, float>(&delays, base_delay_model_->delays(), FromFloat);
+    FromNdMatrix<4, VprFloatEntry, float>(&delays, base_delay_model_->delays(), FromFloat);
 
     // Non-scalar capnproto fields should be first initialized with
     // init<field  name>(count), and then accessed from the returned
@@ -352,9 +344,11 @@ std::unique_ptr<PlaceDelayModel> alloc_lookups_and_delay_model(const Netlist<>& 
  * Only estimate delay for signals routed through the inter-block routing network.
  * TODO: Do how should we compute the delay for globals. "Global signals are assumed to have zero delay."
  */
-float comp_td_single_connection_delay(const PlaceDelayModel* delay_model, ClusterNetId net_id, int ipin) {
+float comp_td_single_connection_delay(const PlaceDelayModel* delay_model,
+                                      const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs,
+                                      ClusterNetId net_id,
+                                      int ipin) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_ctx = g_vpr_ctx.placement();
 
     float delay_source_to_sink = 0.;
 
@@ -368,12 +362,8 @@ float comp_td_single_connection_delay(const PlaceDelayModel* delay_model, Cluste
         int source_block_ipin = cluster_ctx.clb_nlist.pin_logical_index(source_pin);
         int sink_block_ipin = cluster_ctx.clb_nlist.pin_logical_index(sink_pin);
 
-        int source_x = place_ctx.block_locs[source_block].loc.x;
-        int source_y = place_ctx.block_locs[source_block].loc.y;
-        int source_layer = place_ctx.block_locs[source_block].loc.layer;
-        int sink_x = place_ctx.block_locs[sink_block].loc.x;
-        int sink_y = place_ctx.block_locs[sink_block].loc.y;
-        int sink_layer = place_ctx.block_locs[sink_block].loc.layer;
+        t_pl_loc source_block_loc = block_locs[source_block].loc;
+        t_pl_loc sink_block_loc = block_locs[sink_block].loc;
 
         /**
          * This heuristic only considers delta_x and delta_y, a much better
@@ -382,18 +372,16 @@ float comp_td_single_connection_delay(const PlaceDelayModel* delay_model, Cluste
          * In particular this approach does not accurately capture the effect
          * of fast carry-chain connections.
          */
-        delay_source_to_sink = delay_model->delay({source_x, source_y, source_layer},
-                                                  source_block_ipin,
-                                                  {sink_x, sink_y, sink_layer},
-                                                  sink_block_ipin);
+        delay_source_to_sink = delay_model->delay({source_block_loc.x, source_block_loc.y, source_block_loc.layer}, source_block_ipin,
+                                                  {sink_block_loc.x, sink_block_loc.y, sink_block_loc.layer}, sink_block_ipin);
         if (delay_source_to_sink < 0) {
             VPR_ERROR(VPR_ERROR_PLACE,
-                      "in comp_td_single_connection_delay: Bad delay_source_to_sink value %g from %s (at %d,%d) to %s (at %d,%d)\n"
+                      "in comp_td_single_connection_delay: Bad delay_source_to_sink value %g from %s (at %d,%d,%d) to %s (at %d,%d,%d)\n"
                       "in comp_td_single_connection_delay: Delay is less than 0\n",
-                      block_type_pin_index_to_name(physical_tile_type(source_block), source_block_ipin, false).c_str(),
-                      source_x, source_y,
-                      block_type_pin_index_to_name(physical_tile_type(sink_block), sink_block_ipin, false).c_str(),
-                      sink_x, sink_y,
+                      block_type_pin_index_to_name(physical_tile_type(source_block_loc), source_block_ipin, false).c_str(),
+                      source_block_loc.x, source_block_loc.y, source_block_loc.layer,
+                      block_type_pin_index_to_name(physical_tile_type(sink_block_loc), sink_block_ipin, false).c_str(),
+                      sink_block_loc.x, sink_block_loc.y, sink_block_loc.layer,
                       delay_source_to_sink);
         }
     }
@@ -402,14 +390,16 @@ float comp_td_single_connection_delay(const PlaceDelayModel* delay_model, Cluste
 }
 
 ///@brief Recompute all point to point delays, updating `connection_delay` matrix.
-void comp_td_connection_delays(const PlaceDelayModel* delay_model) {
+void comp_td_connection_delays(const PlaceDelayModel* delay_model,
+                               PlacerState& placer_state) {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& p_timing_ctx = g_placer_ctx.mutable_timing();
+    auto& p_timing_ctx = placer_state.mutable_timing();
+    auto& block_locs = placer_state.block_locs();
     auto& connection_delay = p_timing_ctx.connection_delay;
 
-    for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+    for (ClusterNetId net_id : cluster_ctx.clb_nlist.nets()) {
         for (size_t ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ++ipin) {
-            connection_delay[net_id][ipin] = comp_td_single_connection_delay(delay_model, net_id, ipin);
+            connection_delay[net_id][ipin] = comp_td_single_connection_delay(delay_model, block_locs, net_id, ipin);
         }
     }
 }

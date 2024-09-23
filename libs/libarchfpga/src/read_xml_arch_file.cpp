@@ -580,7 +580,7 @@ static void LoadPinLoc(pugi::xml_node Locations,
         int num_sides = 4 * (type->width * type->height);
         int side_index = 0;
         int count = 0;
-        for (e_side side : {TOP, RIGHT, BOTTOM, LEFT}) {
+        for (e_side side : TOTAL_2D_SIDES) {
             for (int width = 0; width < type->width; ++width) {
                 for (int height = 0; height < type->height; ++height) {
                     for (int pin_offset = 0; pin_offset < (type->num_pins / num_sides) + 1; ++pin_offset) {
@@ -605,7 +605,7 @@ static void LoadPinLoc(pugi::xml_node Locations,
         while (ipin < type->num_pins) {
             for (int width = 0; width < type->width; ++width) {
                 for (int height = 0; height < type->height; ++height) {
-                    for (e_side side : {TOP, RIGHT, BOTTOM, LEFT}) {
+                    for (e_side side : TOTAL_2D_SIDES) {
                         if (((width == 0 && side == LEFT)
                              || (height == type->height - 1 && side == TOP)
                              || (width == type->width - 1 && side == RIGHT)
@@ -646,7 +646,7 @@ static void LoadPinLoc(pugi::xml_node Locations,
         while (ipin < input_pins.size()) {
             for (int width = 0; width < type->width; ++width) {
                 for (int height = 0; height < type->height; ++height) {
-                    for (e_side side : {TOP, RIGHT, BOTTOM, LEFT}) {
+                    for (e_side side : TOTAL_2D_SIDES) {
                         if (ipin < input_pins.size()) {
                             //Pins still to allocate
 
@@ -669,7 +669,7 @@ static void LoadPinLoc(pugi::xml_node Locations,
         while (ipin < output_pins.size()) {
             for (int width = 0; width < type->width; ++width) {
                 for (int height = 0; height < type->height; ++height) {
-                    for (e_side side : {TOP, RIGHT, BOTTOM, LEFT}) {
+                    for (e_side side : TOTAL_2D_SIDES) {
                         if (((width == 0 && side == LEFT)
                              || (height == type->height - 1 && side == TOP)
                              || (width == type->width - 1 && side == RIGHT)
@@ -700,8 +700,8 @@ static void LoadPinLoc(pugi::xml_node Locations,
             for (int layer = 0; layer < num_of_avail_layer; ++layer) {
                 for (int width = 0; width < type->width; ++width) {
                     for (int height = 0; height < type->height; ++height) {
-                        for (e_side side : {TOP, RIGHT, BOTTOM, LEFT}) {
-                            for (const auto& token : pin_locs->assignments[sub_tile_index][width][height][layer][side]) {
+                        for (e_side side : TOTAL_2D_SIDES) {
+                            for (auto token : pin_locs->assignments[sub_tile_index][width][height][layer][side]) {
                                 auto pin_range = ProcessPinString<t_sub_tile*>(Locations,
                                                                                &sub_tile,
                                                                                token.c_str(),
@@ -3394,9 +3394,9 @@ static void ProcessPinLocations(pugi::xml_node Locations,
         for (int l = 0; l < num_of_avail_layer; ++l) {
             for (int w = 0; w < PhysicalTileType->width; ++w) {
                 for (int h = 0; h < PhysicalTileType->height; ++h) {
-                    for (e_side side : {TOP, RIGHT, BOTTOM, LEFT}) {
-                        for (const auto& token : pin_locs->assignments[sub_tile_index][w][h][l][side]) {
-                            InstPort inst_port(token);
+                    for (e_side side : TOTAL_2D_SIDES) {
+                        for (auto token : pin_locs->assignments[sub_tile_index][w][h][l][side]) {
+                            InstPort inst_port(token.c_str());
 
                             //A pin specification should contain only the block name, and not any instance count information
                             if (inst_port.instance_low_index() != InstPort::UNSPECIFIED || inst_port.instance_high_index() != InstPort::UNSPECIFIED) {
@@ -3767,6 +3767,10 @@ static void ProcessSegments(pugi::xml_node Parent,
             //Unidir requires the following tags
             expected_subtags.emplace_back("mux");
             expected_subtags.emplace_back("mux_inter_die");
+            //with the following two tags, we can allow the architecture file to define
+            //different muxes with different delays for wires with different directions
+            expected_subtags.emplace_back("mux_inc");
+            expected_subtags.emplace_back("mux_dec");
         }
 
         else {
@@ -3797,28 +3801,78 @@ static void ProcessSegments(pugi::xml_node Parent,
         /* Get the wire and opin switches, or mux switch if unidir */
         if (UNI_DIRECTIONAL == Segs[i].directionality) {
             //Get the switch name for same die wire and track connections
-            SubElem = get_single_child(Node, "mux", loc_data);
-            tmp = get_attribute(SubElem, "name", loc_data).value();
+            SubElem = get_single_child(Node, "mux", loc_data, ReqOpt::OPTIONAL);
+            tmp = get_attribute(SubElem, "name", loc_data, ReqOpt::OPTIONAL).as_string(nullptr);
 
-            /* Match names */
-            for (j = 0; j < NumSwitches; ++j) {
-                if (0 == strcmp(tmp, Switches[j].name.c_str())) {
-                    break; /* End loop so j is where we want it */
+            //check if <mux> tag is defined in the architecture, otherwise we should look for <mux_inc> and <mux_dec>
+            if(tmp){
+                /* Match names */
+                for (j = 0; j < NumSwitches; ++j) {
+                    if (0 == strcmp(tmp, Switches[j].name.c_str())) {
+                        break; /* End loop so j is where we want it */
+                    }
+                }
+                if (j >= NumSwitches) {
+                    archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem),
+                                "'%s' is not a valid mux name.\n", tmp);
+                }
+
+                /* Unidir muxes must have the same switch
+                * for wire and opin fanin since there is
+                * really only the mux in unidir. */
+                Segs[i].arch_wire_switch = j;
+                Segs[i].arch_opin_switch = j;
+            }
+            else { //if a general mux is not defined, we should look for specific mux for each direction in the architecture file
+                SubElem = get_single_child(Node, "mux_inc", loc_data, ReqOpt::OPTIONAL);
+                tmp = get_attribute(SubElem, "name", loc_data, ReqOpt::OPTIONAL).as_string(nullptr);
+                if(!tmp){
+                    archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem),
+                                "if mux is not specified in a wire segment, both mux_inc and mux_dec should be specified");
+                } else{
+                    /* Match names */
+                    for (j = 0; j < NumSwitches; ++j) {
+                        if (0 == strcmp(tmp, Switches[j].name.c_str())) {
+                            break; /* End loop so j is where we want it */
+                        }
+                    }
+                    if (j >= NumSwitches) {
+                        archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem),
+                                    "'%s' is not a valid mux name.\n", tmp);
+                    }
+
+                    /* Unidir muxes must have the same switch
+                    * for wire and opin fanin since there is
+                    * really only the mux in unidir. */
+                    Segs[i].arch_wire_switch = j;
+                    Segs[i].arch_opin_switch = j;
+                }
+
+                SubElem = get_single_child(Node, "mux_dec", loc_data, ReqOpt::OPTIONAL);
+                tmp = get_attribute(SubElem, "name", loc_data, ReqOpt::OPTIONAL).as_string(nullptr);
+                if(!tmp){
+                    archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem),
+                                "if mux is not specified in a wire segment, both mux_inc and mux_dec should be specified");
+                } else{
+                    /* Match names */
+                    for (j = 0; j < NumSwitches; ++j) {
+                        if (0 == strcmp(tmp, Switches[j].name.c_str())) {
+                            break; /* End loop so j is where we want it */
+                        }
+                    }
+                    if (j >= NumSwitches) {
+                        archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem),
+                                    "'%s' is not a valid mux name.\n", tmp);
+                    }
+
+                    /* Unidir muxes must have the same switch
+                    * for wire and opin fanin since there is
+                    * really only the mux in unidir. */
+                    Segs[i].arch_wire_switch_dec = j;
+                    Segs[i].arch_opin_switch_dec = j;
                 }
             }
-            if (j >= NumSwitches) {
-                archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem),
-                               "'%s' is not a valid mux name.\n", tmp);
-            }
-
-            /* Unidir muxes must have the same switch
-             * for wire and opin fanin since there is
-             * really only the mux in unidir. */
-            Segs[i].arch_wire_switch = j;
-            Segs[i].arch_opin_switch = j;
-
         }
-
         else {
             VTR_ASSERT(BI_DIRECTIONAL == Segs[i].directionality);
             SubElem = get_single_child(Node, "wire_switch", loc_data);
@@ -4784,9 +4838,9 @@ static int find_switch_by_name(const t_arch& arch, const std::string& switch_nam
 }
 
 static e_side string_to_side(const std::string& side_str) {
-    e_side side = NUM_SIDES;
+    e_side side = NUM_2D_SIDES;
     if (side_str.empty()) {
-        side = NUM_SIDES;
+        side = NUM_2D_SIDES;
     } else if (side_str == "left") {
         side = LEFT;
     } else if (side_str == "right") {

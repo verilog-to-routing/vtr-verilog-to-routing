@@ -5,17 +5,19 @@
 #include <string>
 
 #include "vpr_types.h"
+#include "vtr_vector.h"
+
 #include "atom_netlist.h"
 #include "clustered_netlist.h"
 #include "netlist.h"
-#include "vtr_vector.h"
-
 #include "arch_util.h"
 #include "physical_types_util.h"
 #include "rr_graph_utils.h"
 #include "vpr_constraints.h"
 
 class DeviceGrid;
+class PlacerState;
+class Prepacker;
 
 const t_model* find_model(const t_model* models, const std::string& name, bool required = true);
 const t_model_ports* find_model_port(const t_model* model, const std::string& name, bool required = true);
@@ -27,14 +29,21 @@ bool is_clb_external_pin(ClusterBlockId blk_id, int pb_pin_id);
 bool is_empty_type(t_physical_tile_type_ptr type);
 bool is_empty_type(t_logical_block_type_ptr type);
 
-//Returns the corresponding physical type given the logical type as parameter
-t_physical_tile_type_ptr physical_tile_type(ClusterBlockId blk);
+/**
+ * @brief Returns the corresponding physical type given the location in the grid.
+ * @param loc The block location in the grid.
+ * @return The physical tile type of the given location.
+ */
+t_physical_tile_type_ptr physical_tile_type(t_pl_loc loc);
 
 t_physical_tile_type_ptr physical_tile_type(AtomBlockId atom_blk);
 
 t_physical_tile_type_ptr physical_tile_type(ParentBlockId blk_id, bool is_flat);
 
 //Returns the sub tile corresponding to the logical block location within a physical type
+int get_sub_tile_index(ClusterBlockId blk,
+                       const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
+
 int get_sub_tile_index(ClusterBlockId blk);
 
 int get_unique_pb_graph_node_id(const t_pb_graph_node* pb_graph_node);
@@ -47,17 +56,21 @@ t_class_range get_class_range_for_block(const AtomBlockId atom_blk);
 
 t_class_range get_class_range_for_block(const ParentBlockId blk_id, bool is_flat);
 
-//Returns the physical pin range relative to a block id. This must be called after placement
-//as the block id is used to retrieve the information of the used physical tile.
-void get_pin_range_for_block(const ClusterBlockId blk_id,
-                             int* pin_low,
-                             int* pin_high);
+//
+/**
+ * @brief Returns the physical pin range relative to a block id. This must be called after placement
+ * as the block id is used to retrieve the information of the used physical tile.
+ *
+ * @param blk_id The unique ID of a clustered block whose pin range is desired.
+ * @return std::pair<int, int> --> (pin_low, pin_high)
+ */
+std::pair<int, int> get_pin_range_for_block(const ClusterBlockId blk_id);
 
 t_block_loc get_block_loc(const ParentBlockId& block_id, bool is_flat);
 
 int get_block_num_class(const ParentBlockId& block_id, bool is_flat);
 
-int get_block_pin_class_num(const ParentBlockId& block_id, const ParentPinId& pin_id, bool is_flat);
+int get_block_pin_class_num(const ParentBlockId block_id, const ParentPinId pin_id, bool is_flat);
 
 template<typename T>
 inline ClusterNetId convert_to_cluster_net_id(T id) {
@@ -180,6 +193,9 @@ int get_max_nets_in_pb_type(const t_pb_type* pb_type);
 bool primitive_type_feasible(AtomBlockId blk_id, const t_pb_type* cur_pb_type);
 t_pb_graph_pin* get_pb_graph_node_pin_from_model_port_pin(const t_model_ports* model_port, const int model_pin, const t_pb_graph_node* pb_graph_node);
 const t_pb_graph_pin* find_pb_graph_pin(const AtomNetlist& netlist, const AtomLookup& netlist_lookup, const AtomPinId pin_id);
+/// @brief Gets the pb_graph_node pin at the given pin index for the given
+///        pb_graph_node.
+t_pb_graph_pin* get_pb_graph_node_pin_from_pb_graph_node(t_pb_graph_node* pb_graph_node, int ipin);
 t_pb_graph_pin* get_pb_graph_node_pin_from_block_pin(ClusterBlockId iblock, int ipin);
 vtr::vector<ClusterBlockId, t_pb**> alloc_and_load_pin_id_to_pb_mapping();
 void free_pin_id_to_pb_mapping(vtr::vector<ClusterBlockId, t_pb**>& pin_id_to_pb_mapping);
@@ -206,39 +222,12 @@ void parse_direct_pin_name(char* src_string, int line, int* start_pin_index, int
 
 void free_pb_stats(t_pb* pb);
 void free_pb(t_pb* pb);
-void revalid_molecules(const t_pb* pb);
+void revalid_molecules(const t_pb* pb, const Prepacker& prepacker);
 
 void print_switch_usage();
 void print_usage_by_wire_length();
 
 AtomBlockId find_memory_sibling(const t_pb* pb);
-
-/**
- * @brief Syncs the logical block pins corresponding to the input iblk with the corresponding chosen physical tile
- * @param iblk cluster block ID to sync within the assigned physical tile
- *
- * This routine updates the physical pins vector of the place context after the placement step
- * to syncronize the pins related to the logical block with the actual connection interface of
- * the belonging physical tile with the RR graph.
- *
- * This step is required as the logical block can be placed at any compatible sub tile locations
- * within a physical tile.
- * Given that it is possible to have equivalent logical blocks within a specific sub tile, with
- * a different subset of IO pins, the various pins offsets must be correctly computed and assigned
- * to the physical pins vector, so that, when the net RR terminals are computed, the correct physical
- * tile IO pins are selected.
- *
- * This routine uses the x,y and sub_tile coordinates of the clb netlist, and expects those to place each netlist block
- * at a legal location that can accomodate it.
- * It does not check for overuse of locations, therefore it can be used with placements that have resource overuse.
- */
-void place_sync_external_block_connections(ClusterBlockId iblk);
-
-//Returns the physical pin of the tile, related to the given ClusterNedId, and the net pin index
-int net_pin_to_tile_pin_index(const ClusterNetId net_id, int net_pin_index);
-
-//Returns the physical pin of the tile, related to the given ClusterPinId
-int tile_pin_index(const ClusterPinId pin);
 
 int get_atom_pin_class_num(const AtomPinId atom_pin_id);
 

@@ -39,13 +39,13 @@ CritPathsResultPtr calc_critical_path(const std::string& report_type, int crit_p
 
     auto& timing_ctx = g_vpr_ctx.timing();
     auto& atom_ctx = g_vpr_ctx.atom();
-    //
+    const auto& blk_loc_registry = g_vpr_ctx.placement().blk_loc_registry();
 
     t_analysis_opts analysis_opts;
     analysis_opts.timing_report_detail = details_level;
     analysis_opts.timing_report_npaths = crit_path_num;
 
-    VprTimingGraphResolver resolver(atom_ctx.nlist, atom_ctx.lookup, *timing_ctx.graph, *routing_delay_calc, is_flat_routing);
+    VprTimingGraphResolver resolver(atom_ctx.nlist, atom_ctx.lookup, *timing_ctx.graph, *routing_delay_calc, is_flat_routing, blk_loc_registry);
     resolver.set_detail_level(analysis_opts.timing_report_detail);
 
     tatum::TimingReporter timing_reporter(resolver, *timing_ctx.graph, *timing_ctx.constraints);

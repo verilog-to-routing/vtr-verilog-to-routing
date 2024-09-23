@@ -107,7 +107,7 @@ static void update_cluster_pin_with_post_routing_results(const Netlist<>& net_li
      * Deposit all the sides
      */
     if (wanted_sides.empty()) {
-        for (e_side side : {TOP, BOTTOM, LEFT, RIGHT}) {
+        for (e_side side : TOTAL_2D_SIDES) {
             wanted_sides.push_back(side);
         }
     }
@@ -1090,7 +1090,7 @@ void sync_netlists_to_routing(const Netlist<>& net_list,
                                                          device_ctx,
                                                          clustering_ctx,
                                                          rr_node_nets,
-                                                         placement_ctx.block_locs[clb_blk_id].loc,
+                                                         placement_ctx.block_locs()[clb_blk_id].loc,
                                                          clb_blk_id,
                                                          num_mismatches,
                                                          verbose,

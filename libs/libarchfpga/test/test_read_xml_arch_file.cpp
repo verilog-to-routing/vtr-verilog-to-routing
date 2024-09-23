@@ -148,19 +148,21 @@ TEST_CASE("Verifying mesh topology creation", "[NoC Arch Tests]") {
     t_noc_inf test_noc;
 
     // mesh parameters
-    double mesh_start_x = 10;
-    double mesh_start_y = 10;
-    double mesh_end_x = 5;
-    double mesh_end_y = 56;
-    double mesh_size = 0;
+    float mesh_start_x = 10;
+    float mesh_start_y = 10;
+    float mesh_end_x = 5;
+    float mesh_end_y = 56;
+    float mesh_size = 0;
+    int mesh_start_layer = 0;
+    int mesh_end_layer = 0;
 
     SECTION("Check the error where a mesh size was illegal.") {
-        REQUIRE_THROWS_WITH(generate_noc_mesh(test, test_location, &test_noc, mesh_start_x, mesh_end_x, mesh_start_y, mesh_end_y, mesh_size), "The NoC mesh size cannot be 0.");
+        REQUIRE_THROWS_WITH(generate_noc_mesh(test, test_location, &test_noc, mesh_start_x, mesh_end_x, mesh_start_y, mesh_end_y, mesh_start_layer, mesh_end_layer, mesh_size), "The NoC mesh size cannot be 0.");
     }
     SECTION("Check the error where a mesh region size was invalid.") {
         mesh_size = 3;
 
-        REQUIRE_THROWS_WITH(generate_noc_mesh(test, test_location, &test_noc, mesh_start_x, mesh_end_x, mesh_start_y, mesh_end_y, mesh_size), "The NoC region is invalid.");
+        REQUIRE_THROWS_WITH(generate_noc_mesh(test, test_location, &test_noc, mesh_start_x, mesh_end_x, mesh_start_y, mesh_end_y, mesh_start_layer, mesh_end_layer, mesh_size), "The NoC region is invalid.");
     }
     SECTION("Check the mesh creation for integer precision coordinates.") {
         // define test parameters
@@ -173,8 +175,8 @@ TEST_CASE("Verifying mesh topology creation", "[NoC Arch Tests]") {
         mesh_end_y = 4;
 
         // create the golden results
-        double golden_results_x[9];
-        double golden_results_y[9];
+        float golden_results_x[9];
+        float golden_results_y[9];
 
         // first row of the mesh
         golden_results_x[0] = 0;
@@ -200,7 +202,7 @@ TEST_CASE("Verifying mesh topology creation", "[NoC Arch Tests]") {
         golden_results_x[8] = 4;
         golden_results_y[8] = 4;
 
-        generate_noc_mesh(test, test_location, &test_noc, mesh_start_x, mesh_end_x, mesh_start_y, mesh_end_y, mesh_size);
+        generate_noc_mesh(test, test_location, &test_noc, mesh_start_x, mesh_end_x, mesh_start_y, mesh_end_y, mesh_start_layer, mesh_end_layer, mesh_size);
 
         // go through all the expected routers
         for (int expected_router_id = 0; expected_router_id < (mesh_size * mesh_size); expected_router_id++) {
@@ -224,9 +226,9 @@ TEST_CASE("Verifying mesh topology creation", "[NoC Arch Tests]") {
         mesh_end_x = 10.8;
         mesh_end_y = 6.4;
 
-        // create the golden golden results
-        double golden_results_x[9];
-        double golden_results_y[9];
+        // create the golden results
+        float golden_results_x[9];
+        float golden_results_y[9];
 
         // first row of the mesh
         golden_results_x[0] = 3.5;
@@ -252,7 +254,7 @@ TEST_CASE("Verifying mesh topology creation", "[NoC Arch Tests]") {
         golden_results_x[8] = 10.8;
         golden_results_y[8] = 6.4;
 
-        generate_noc_mesh(test, test_location, &test_noc, mesh_start_x, mesh_end_x, mesh_start_y, mesh_end_y, mesh_size);
+        generate_noc_mesh(test, test_location, &test_noc, mesh_start_x, mesh_end_x, mesh_start_y, mesh_end_y, mesh_start_layer, mesh_end_layer, mesh_size);
 
         // go through all the expected routers
         for (int expected_router_id = 0; expected_router_id < (mesh_size * mesh_size); expected_router_id++) {

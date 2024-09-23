@@ -5,10 +5,12 @@
 #include <vector>
 #include <mutex>
 
+#include "prepack.h"
 #include "vpr_types.h"
 #include "vtr_ndmatrix.h"
 #include "vtr_optional.h"
 #include "vtr_vector.h"
+#include "vtr_vector_map.h"
 #include "atom_netlist.h"
 #include "clustered_netlist.h"
 #include "rr_graph_view.h"
@@ -33,6 +35,7 @@
 #include "noc_traffic_flows.h"
 #include "noc_routing.h"
 #include "tatum/report/TimingPath.hpp"
+#include "blk_loc_registry.h"
 
 #ifndef NO_SERVER
 
@@ -71,34 +74,11 @@ struct AtomContext : public Context {
     /********************************************************************
      * Atom Netlist
      ********************************************************************/
-    /**
-     * @brief constructor
-     *
-     * In the constructor initialize the list of pack molecules to nullptr and defines a custom deletor for it
-     */
-    AtomContext()
-        : list_of_pack_molecules(nullptr, free_pack_molecules) {}
-
-    ///@brief Atom netlist
+    /// @brief Atom netlist
     AtomNetlist nlist;
 
-    ///@brief Mappings to/from the Atom Netlist to physically described .blif models
+    /// @brief Mappings to/from the Atom Netlist to physically described .blif models
     AtomLookup lookup;
-
-    /**
-     * @brief The molecules associated with each atom block.
-     *
-     * This map is loaded in the pre-packing stage and freed at the very end of vpr flow run.
-     * The pointers in this multimap is shared with list_of_pack_molecules.
-     */
-    std::multimap<AtomBlockId, t_pack_molecule*> atom_molecules;
-
-    /**
-     * @brief A linked list of all the packing molecules that are loaded in pre-packing stage.
-     *
-     * Is is useful in freeing the pack molecules at the destructor of the Atom context using free_pack_molecules.
-     */
-    std::unique_ptr<t_pack_molecule, decltype(&free_pack_molecules)> list_of_pack_molecules;
 };
 
 /**
@@ -157,7 +137,9 @@ struct DeviceContext : public Context {
     /**
      * @brief The device grid
      *
-     * This represents the physical layout of the device. To get the physical tile at each location (layer_num, x, y) the helper functions in this data structure should be used.
+     * This represents the physical layout of the device.
+     * To get the physical tile at each location (layer_num, x, y) the helper functions
+     * in this data structure should be used.
      */
     DeviceGrid grid;
     /*
@@ -301,69 +283,23 @@ struct ClusteringContext : public Context {
      * CLB Netlist
      ********************************************************************/
 
-    ///@brief New netlist class derived from Netlist
+    /// @brief New netlist class derived from Netlist
     ClusteredNetlist clb_nlist;
 
-    /* Database for nets of each clb block pin after routing stage
-     * - post_routing_clb_pin_nets:
-     *     mapping of pb_type pins to clustered net ids
-     * - pre_routing_net_pin_mapping:
-     *     a copy of mapping for current pb_route index to previous pb_route index
-     *     Record the previous pin mapping for finding the correct pin index during timing analysis
-     */
+    /// @brief Database for nets of each clb block pin after routing stage.
+    ///  - post_routing_clb_pin_nets:
+    ///     mapping of pb_type pins to clustered net ids.
+    ///  - pre_routing_net_pin_mapping:
+    ///     a copy of mapping for current pb_route index to previous pb_route index
+    ///     Record the previous pin mapping for finding the correct pin index during
+    ///     timing analysis.
     std::map<ClusterBlockId, std::map<int, ClusterNetId>> post_routing_clb_pin_nets;
     std::map<ClusterBlockId, std::map<int, int>> pre_routing_net_pin_mapping;
-};
 
-/**
- * @brief State relating to helper data structure using in the clustering stage
- *
- * This should contain helper data structures that are useful in the clustering/packing stage.
- * They are encapsulated here as they are useful in clustering and reclustering algorithms that may be used
- * in packing or placement stages.
- */
-struct ClusteringHelperContext : public Context {
-    // A map used to save the number of used instances from each logical block type.
-    std::map<t_logical_block_type_ptr, size_t> num_used_type_instances;
-
-    // Stats keeper for placement information during packing/clustering
-    t_cluster_placement_stats* cluster_placement_stats;
-
-    // total number of models in the architecture
-    int num_models;
-
-    int max_cluster_size;
-    t_pb_graph_node** primitives_list;
-
-    bool enable_pin_feasibility_filter;
-    int feasible_block_array_size;
-
-    // total number of CLBs
-    int total_clb_num;
-
-    // A vector of routing resource nodes within each of logic cluster_ctx.blocks types [0 .. num_logical_block_type-1]
-    std::vector<t_lb_type_rr_node>* lb_type_rr_graphs;
-
-    // the utilization of external input/output pins during packing (between 0 and 1)
-    t_ext_pin_util_targets target_external_pin_util;
-
-    // During clustering, a block is related to un-clustered primitives with nets.
-    // This relation has three types: low fanout, high fanout, and transitive
-    // high_fanout_thresholds stores the threshold for nets to a block type to be considered high fanout
-    t_pack_high_fanout_thresholds high_fanout_thresholds;
-
-    // A vector of unordered_sets of AtomBlockIds that are inside each clustered block [0 .. num_clustered_blocks-1]
-    // unordered_set for faster insertion/deletion during the iterative improvement process of packing
+    /// @brief A vector of unordered_sets of AtomBlockIds that are inside each
+    ///        clustered block [0 .. num_clustered_blocks-1]
+    /// This is populated when the packing is loaded.
     vtr::vector<ClusterBlockId, std::unordered_set<AtomBlockId>> atoms_lookup;
-
-    /** Stores the NoC group ID of each atom block. Atom blocks that belong
-     * to different NoC groups can't be clustered with each other into the
-     * same clustered block.*/
-    vtr::vector<AtomBlockId, NocGroupId> atom_noc_grp_id;
-
-    ~ClusteringHelperContext() {
-        delete[] primitives_list;
-    }
 };
 
 /**
@@ -383,14 +319,48 @@ struct PackingMultithreadingContext : public Context {
  * or related placer algorithm state.
  */
 struct PlacementContext : public Context {
-    ///@brief Clustered block placement locations
-    vtr::vector_map<ClusterBlockId, t_block_loc> block_locs;
+  private:
+    /**
+     * Determines if blk_loc_registry_ can be accessed by calling getter methods.
+     * This flag should be set to false at the beginning of the placement stage,
+     * and set to true at the end of placement. This ensures that variables that
+     * are subject to change during placement are kept local to the placement stage.
+     */
+    bool loc_vars_are_accessible_ = true;
 
-    ///@brief Clustered pin placement mapping with physical pin
-    vtr::vector_map<ClusterPinId, int> physical_pins;
+    /**
+     * @brief Stores block location information, which is subject to change during the
+     * placement stage.
+     */
+    BlkLocRegistry blk_loc_registry_;
 
-    ///@brief Clustered block associated with each grid location (i.e. inverse of block_locs)
-    GridBlock grid_blocks;
+  public:
+
+    const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs() const { VTR_ASSERT_SAFE(loc_vars_are_accessible_); return blk_loc_registry_.block_locs(); }
+    vtr::vector_map<ClusterBlockId, t_block_loc>& mutable_block_locs() { VTR_ASSERT_SAFE(loc_vars_are_accessible_); return blk_loc_registry_.mutable_block_locs(); }
+    const GridBlock& grid_blocks() const { VTR_ASSERT_SAFE(loc_vars_are_accessible_); return blk_loc_registry_.grid_blocks(); }
+    GridBlock& mutable_grid_blocks() { VTR_ASSERT_SAFE(loc_vars_are_accessible_); return blk_loc_registry_.mutable_grid_blocks(); }
+    vtr::vector_map<ClusterPinId, int>& mutable_physical_pins() { VTR_ASSERT_SAFE(loc_vars_are_accessible_); return blk_loc_registry_.mutable_physical_pins(); }
+    const vtr::vector_map<ClusterPinId, int>& physical_pins() const { VTR_ASSERT_SAFE(loc_vars_are_accessible_); return blk_loc_registry_.physical_pins(); }
+    BlkLocRegistry& mutable_blk_loc_registry() { VTR_ASSERT_SAFE(loc_vars_are_accessible_); return blk_loc_registry_; }
+    const BlkLocRegistry& blk_loc_registry() const { VTR_ASSERT_SAFE(loc_vars_are_accessible_); return blk_loc_registry_; }
+
+    /**
+     * @brief Makes blk_loc_registry_ inaccessible through the getter methods.
+     *
+     * This method should be called at the beginning of the placement stage to
+     * guarantee that the placement stage code does not access block location variables
+     * stored in the global state.
+     */
+    void lock_loc_vars() { VTR_ASSERT_SAFE(loc_vars_are_accessible_); loc_vars_are_accessible_ = false; }
+
+    /**
+     * @brief Makes blk_loc_registry_ accessible through the getter methods.
+     *
+     * This method should be called at the end of the placement stage to
+     * make the block location information accessible for subsequent stages.
+     */
+    void unlock_loc_vars() { VTR_ASSERT_SAFE(!loc_vars_are_accessible_); loc_vars_are_accessible_ = true; }
 
     ///@brief The pl_macros array stores all the placement macros (usually carry chains).
     std::vector<t_pl_macro> pl_macros;
@@ -572,7 +542,8 @@ struct NocContext : public Context {
     /**
      * @brief Stores all the communication happening between routers in the NoC
      *
-     * Contains all of the traffic flows that describe which pairs of logical routers are communicating and also some metrics and constraints on the data transfer between the two routers.
+     * Contains all of the traffic flows that describe which pairs of logical routers are
+     * communicating and also some metrics and constraints on the data transfer between the two routers.
      * 
      *
      * This is created from a user supplied .flows file.
@@ -709,9 +680,6 @@ class VprContext : public Context {
     const ClusteringContext& clustering() const { return clustering_; }
     ClusteringContext& mutable_clustering() { return clustering_; }
 
-    const ClusteringHelperContext& cl_helper() const { return helper_; }
-    ClusteringHelperContext& mutable_cl_helper() { return helper_; }
-
     const PlacementContext& placement() const { return placement_; }
     PlacementContext& mutable_placement() { return placement_; }
 
@@ -741,8 +709,6 @@ class VprContext : public Context {
     PowerContext power_;
 
     ClusteringContext clustering_;
-    ClusteringHelperContext helper_;
-
     PlacementContext placement_;
     RoutingContext routing_;
     FloorplanningContext constraints_;
