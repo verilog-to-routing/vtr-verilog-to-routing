@@ -192,10 +192,8 @@ class NetCostHandler {
 
     class ChanPlaceCostFacContainer : public vtr::NdMatrix<float, 2> {
       public:
-        float& operator()(int i, int j) {
-            size_t ipp = i + 1;
-            size_t jpp = j + 1;
-            return this->operator[](ipp).operator[](jpp);
+        inline float& operator()(int i, int j) {
+            return this->operator[]((size_t)(i+1)).operator[]((size_t)(j+1));
         }
 
       private:
