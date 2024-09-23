@@ -1324,6 +1324,11 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .action(argparse::Action::STORE_TRUE)
         .default_value("off");
 
+    stage_grp.add_argument<bool, ParseOnOff>(args.do_analytical_placement, "--analytical_place")
+        .help("Run analytical placement")
+        .action(argparse::Action::STORE_TRUE)
+        .default_value("off");
+
     stage_grp.add_argument<bool, ParseOnOff>(args.do_routing, "--route")
         .help("Run routing")
         .action(argparse::Action::STORE_TRUE)

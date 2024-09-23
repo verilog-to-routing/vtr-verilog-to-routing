@@ -7,6 +7,7 @@ const int DYNAMIC_PORT_RANGE_MAX = 65535;
 
 void CheckSetup(const t_packer_opts& PackerOpts,
                 const t_placer_opts& PlacerOpts,
+                const t_ap_opts& APOpts,
                 const t_router_opts& RouterOpts,
                 const t_server_opts& ServerOpts,
                 const t_det_routing_arch& RoutingArch,
