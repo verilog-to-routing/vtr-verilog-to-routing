@@ -57,11 +57,11 @@ TEST_CASE("test_ap_netlist_data_storage", "[vpr_ap_netlist]") {
     test_netlist.set_block_loc(fixed_block_id, fixed_block_loc);
 
     SECTION("Test block_type returns the correct block type") {
-        // Make sure the default block type is moveable.
-        REQUIRE(test_netlist.block_type(block_id_a) == APBlockType::MOVEABLE);
-        REQUIRE(test_netlist.block_type(block_id_c) == APBlockType::MOVEABLE);
-        // Make sure the fixed block is labelled as fixed.
-        REQUIRE(test_netlist.block_type(fixed_block_id) == APBlockType::FIXED);
+        // Make sure the default block mobility is moveable.
+        REQUIRE(test_netlist.block_mobility(block_id_a) == APBlockMobility::MOVEABLE);
+        REQUIRE(test_netlist.block_mobility(block_id_c) == APBlockMobility::MOVEABLE);
+        // Make sure the fixed block has a fixed mobility.
+        REQUIRE(test_netlist.block_mobility(fixed_block_id) == APBlockMobility::FIXED);
     }
 
     SECTION("Test block_loc returns the correct location") {

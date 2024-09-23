@@ -21,15 +21,15 @@ const t_pack_molecule* APNetlist::block_molecule(const APBlockId id) const {
     return block_molecules_[id];
 }
 
-APBlockType APNetlist::block_type(const APBlockId id) const {
+APBlockMobility APNetlist::block_mobility(const APBlockId id) const {
     VTR_ASSERT_SAFE(valid_block_id(id));
 
-    return block_types_[id];
+    return block_mobilities_[id];
 }
 
 const APFixedBlockLoc& APNetlist::block_loc(const APBlockId id) const {
     VTR_ASSERT_SAFE(valid_block_id(id));
-    VTR_ASSERT(block_type(id) == APBlockType::FIXED);
+    VTR_ASSERT(block_mobility(id) == APBlockMobility::FIXED);
 
     return block_locs_[id];
 }
@@ -42,7 +42,7 @@ APBlockId APNetlist::create_block(const std::string& name, const t_pack_molecule
 
     // Initialize the data
     block_molecules_.insert(blk_id, mol);
-    block_types_.insert(blk_id, APBlockType::MOVEABLE);
+    block_mobilities_.insert(blk_id, APBlockMobility::MOVEABLE);
     block_locs_.insert(blk_id, APFixedBlockLoc());
 
     // Check post-conditions: size
@@ -50,7 +50,7 @@ APBlockId APNetlist::create_block(const std::string& name, const t_pack_molecule
 
     // Check post-conditions: values
     VTR_ASSERT(block_molecule(blk_id) == mol);
-    VTR_ASSERT(block_type(blk_id) == APBlockType::MOVEABLE);
+    VTR_ASSERT(block_mobility(blk_id) == APBlockMobility::MOVEABLE);
 
     return blk_id;
 }
@@ -63,7 +63,7 @@ void APNetlist::set_block_loc(const APBlockId id, const APFixedBlockLoc& loc) {
         return;
 
     block_locs_[id] = loc;
-    block_types_[id] = APBlockType::FIXED;
+    block_mobilities_[id] = APBlockMobility::FIXED;
 }
 
 APPortId APNetlist::create_port(const APBlockId blk_id, const std::string& name, BitIndex width, PortType type) {
@@ -112,8 +112,8 @@ APNetId APNetlist::create_net(const std::string& name) {
 void APNetlist::clean_blocks_impl(const vtr::vector_map<APBlockId, APBlockId>& block_id_map) {
     // Update all the block molecules
     block_molecules_ = clean_and_reorder_values(block_molecules_, block_id_map);
-    // Update all the block types
-    block_types_ = clean_and_reorder_values(block_types_, block_id_map);
+    // Update all the block mobilities
+    block_mobilities_ = clean_and_reorder_values(block_mobilities_, block_id_map);
     // Update the fixed block locations
     block_locs_ = clean_and_reorder_values(block_locs_, block_id_map);
 }
@@ -150,7 +150,7 @@ void APNetlist::rebuild_net_refs_impl(const vtr::vector_map<APPinId, APPinId>& /
 void APNetlist::shrink_to_fit_impl() {
     // Block data
     block_molecules_.shrink_to_fit();
-    block_types_.shrink_to_fit();
+    block_mobilities_.shrink_to_fit();
     block_locs_.shrink_to_fit();
 }
 
@@ -176,7 +176,7 @@ void APNetlist::remove_net_impl(const APNetId /*net_id*/) {
 bool APNetlist::validate_block_sizes_impl(size_t num_blocks) const {
     if (block_molecules_.size() != num_blocks)
         return false;
-    if (block_types_.size() != num_blocks)
+    if (block_mobilities_.size() != num_blocks)
         return false;
     if (block_locs_.size() != num_blocks)
         return false;

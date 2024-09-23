@@ -13,8 +13,9 @@
  * An example of a block is pack molecules, which are atoms which were prepacked
  * together.
  *
- * The nets in the netlist represent the logical connections between atom
- * blocks, where nets which are unused by Analytical Placement are ignored.
+ * The nets in the netlist represent the logical connections between AP
+ * blocks (inferred from the atom block connectivity), where nets which are
+ * unused by Analytical Placement are ignored.
  */
 
 #pragma once
@@ -42,11 +43,11 @@ struct APFixedBlockLoc {
 };
 
 /**
- * @brief The type of a block in the APNetlist
+ * @brief The mobility of a block in the APNetlist
  * TODO: It would be nice if the netlist contained lists of moveable and fixed
  *       block ids.
  */
-enum class APBlockType : bool {
+enum class APBlockMobility : bool {
     MOVEABLE,   // The block is not constrained in any dimension.
     FIXED       // The block is fixed.
 };
@@ -81,8 +82,8 @@ public: // Public Accessors
     /// @brief Returns the molecule that this block represents.
     const t_pack_molecule* block_molecule(const APBlockId id) const;
 
-    /// @brief Returns the type of this block.
-    APBlockType block_type(const APBlockId id) const;
+    /// @brief Returns the mobility of this block.
+    APBlockMobility block_mobility(const APBlockId id) const;
 
     /// @brief Returns the location of this block, if the block is fixed.
     ///        This method should not be used if the block is moveable.
@@ -180,7 +181,7 @@ private: // Private Data
     /// @brief Molecule of each block
     vtr::vector_map<APBlockId, const t_pack_molecule*> block_molecules_;
     /// @brief Type of each block
-    vtr::vector_map<APBlockId, APBlockType> block_types_;
+    vtr::vector_map<APBlockId, APBlockMobility> block_mobilities_;
     /// @brief Location of each block (if fixed).
     ///        NOTE: This vector will likely be quite sparse.
     vtr::vector_map<APBlockId, APFixedBlockLoc> block_locs_;
