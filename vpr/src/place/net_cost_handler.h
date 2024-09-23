@@ -190,10 +190,28 @@ class NetCostHandler {
     vtr::vector<ClusterNetId, double> proposed_net_cost_;
     vtr::vector<ClusterNetId, NetUpdateState> bb_update_status_;
 
+    /**
+     * @brief This class is used to store the inverse of average channel
+     * width between two channels inclusive. The difference of this class
+     * with vtr::NdMatrix<float, 2> is that its index spaces starts from -1.
+     * When the inverse average channel width is factored in, the channel
+     * immediately below and the channel immediately to the left of the
+     * bounding box are also considered. This class makes sure that when
+     * the left and bottom edges of the bounding boxes are moved by one unit,
+     * the indices used to access inverse average channel width are still valid.
+     */
     class ChanPlaceCostFacContainer : public vtr::NdMatrix<float, 2> {
       public:
-        inline float& operator()(int i, int j) {
-            return this->operator[]((size_t)(i+1)).operator[]((size_t)(j+1));
+        /**
+         * @brief Returns the inverse average channel width between channels low
+         * and high inclusive.
+         * @param high The high channel number.
+         * @param low The low channel number.
+         * @return The inverse average channel width between the given channel
+         * numbers.
+         */
+        inline float& operator()(int high, int low) {
+            return this->operator[]((size_t)(high + 1)).operator[]((size_t)(low + 1));
         }
 
       private:
@@ -203,14 +221,14 @@ class NetCostHandler {
     /**
      * @brief Matrices below are used to precompute the inverse of the average
      * number of tracks per channel between [subhigh] and [sublow].  Access
-     * them as chan?_place_cost_fac[subhigh][sublow].  They are used to
+     * them as chan?_place_cost_fac(subhigh, sublow).  They are used to
      * speed up the computation of the cost function that takes the length
      * of the net bounding box in each dimension, divided by the average
      * number of tracks in that direction; for other cost functions they
      * will never be used.
      */
-    ChanPlaceCostFacContainer chanx_place_cost_fac_; // [0...device_ctx.grid.width()-2]
-    ChanPlaceCostFacContainer chany_place_cost_fac_; // [0...device_ctx.grid.height()-2]
+    ChanPlaceCostFacContainer chanx_place_cost_fac_; // [-1...device_ctx.grid.width()-1]
+    ChanPlaceCostFacContainer chany_place_cost_fac_; // [-1...device_ctx.grid.height()-1]
 
 
   private:
@@ -253,6 +271,13 @@ class NetCostHandler {
     /**
      * @brief Allocates and loads the chanx_place_cost_fac and chany_place_cost_fac arrays with the inverse of
      * the average number of tracks per channel between [subhigh] and [sublow].
+     *
+     * @details This is only useful for the cost function that takes the length of the net bounding box in each
+     * dimension divided by the average number of tracks in that direction. For other cost functions, you don't
+     * have to bother calling this routine; when using the cost function described above, however, you must always
+     * call this routine before you do any placement cost determination. The place_cost_exp factor specifies to
+     * what power the width of the channel should be taken -- larger numbers make narrower channels more expensive.
+     *
      * @param place_cost_exp It is an exponent to which you take the average inverse channel capacity;
      * a higher value would favour wider channels more over narrower channels during placement (usually we use 1).
      */

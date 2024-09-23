@@ -155,24 +155,12 @@ NetCostHandler::NetCostHandler(const t_placer_opts& placer_opts,
 }
 
 void NetCostHandler::alloc_and_load_chan_w_factors_for_place_cost_(float place_cost_exp) {
-    /* Allocates and loads the chanx_place_cost_fac and chany_place_cost_fac *
-     * arrays with the inverse of the average number of tracks per channel   *
-     * between [subhigh] and [sublow].  This is only useful for the cost     *
-     * function that takes the length of the net bounding box in each        *
-     * dimension divided by the average number of tracks in that direction.  *
-     * For other cost functions, you don't have to bother calling this       *
-     * routine; when using the cost function described above, however, you   *
-     * must always call this routine after you call init_chan and before     *
-     * you do any placement cost determination. The place_cost_exp factor    *
-     * specifies to what power the width of the channel should be taken --   *
-     * larger numbers make narrower channels more expensive.                 */
-
     auto& device_ctx = g_vpr_ctx.device();
 
     const size_t grid_height = device_ctx.grid.height();
     const size_t grid_width = device_ctx.grid.width();
 
-    /* Access arrays below as chan?_place_cost_fac[subhigh][sublow]. Since subhigh must be greater than or
+    /* Access arrays below as chan?_place_cost_fac_(subhigh, sublow). Since subhigh must be greater than or
      * equal to sublow, we will only access the lower half of a matrix, but we allocate the whole matrix anyway
      * for simplicity, so we can use the vtr utility matrix functions. */
     chanx_place_cost_fac_.resize({grid_height + 1, grid_height + 1});
@@ -189,7 +177,7 @@ void NetCostHandler::alloc_and_load_chan_w_factors_for_place_cost_(float place_c
     }
 
     /* Now compute the inverse of the average number of tracks per channel *
-     * between high and low.  The cost function divides by the average     *
+     * between high and low. The cost function divides by the average      *
      * number of tracks per channel, so by storing the inverse I convert   *
      * this to a faster multiplication.  Take this final number to the     *
      * place_cost_exp power -- numbers other than one mean this is no      *
@@ -1400,6 +1388,7 @@ void NetCostHandler::get_layer_bb_from_scratch_(ClusterNetId net_id,
     }
 }
 
+
 double NetCostHandler::get_net_cube_bb_cost_(ClusterNetId net_id, bool use_ts) {
     // Finds the cost due to one net by looking at its coordinate bounding box.
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -1414,6 +1403,12 @@ double NetCostHandler::get_net_cube_bb_cost_(ClusterNetId net_id, bool use_ts) {
 
     /* Cost = wire length along channel * cross_count / average      *
      * channel capacity.   Do this for x, then y direction and add.  */
+
+    /* For average channel width factor, I'll always include the channel immediately
+     * below and the channel immediately to the left of the bounding box, so both bb.ymin
+     * and bb.xmin are subtracted by 1 before being used as indices of chan?_place_cost_fac_.
+     * chan?_place_cost_fac_ objects can handle -1 indices internally.
+     */
 
     double ncost;
     ncost = (bb.xmax - bb.xmin + 1) * crossing * chanx_place_cost_fac_(bb.ymax, bb.ymin - 1);
@@ -1451,6 +1446,12 @@ double NetCostHandler::get_net_per_layer_bb_cost_(ClusterNetId net_id , bool use
 
         /* Cost = wire length along channel * cross_count / average      *
          * channel capacity.   Do this for x, then y direction and add.  */
+
+        /* For average channel width factor, I'll always include the channel immediately
+         * below and the channel immediately to the left of the bounding box, so both bb.ymin
+         * and bb.xmin are subtracted by 1 before being used as indices of chan?_place_cost_fac_.
+         * chan?_place_cost_fac_ objects can handle -1 indices internally.
+         */
 
         ncost += (bb[layer_num].xmax - bb[layer_num].xmin + 1) * crossing
                  * chanx_place_cost_fac_(bb[layer_num].ymax, bb[layer_num].ymin - 1);
