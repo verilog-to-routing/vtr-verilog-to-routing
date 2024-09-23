@@ -3933,17 +3933,17 @@ static void ProcessSwitchblocks(pugi::xml_node Parent, t_arch* arch, const pugiu
         tmp = get_attribute(SubElem, "type", loc_data).as_string(nullptr);
         if (tmp) {
             if (strcmp(tmp, "EVERYWHERE") == 0) {
-                sb.location = E_EVERYWHERE;
+                sb.location = e_sb_location::E_EVERYWHERE;
             } else if (strcmp(tmp, "PERIMETER") == 0) {
-                sb.location = E_PERIMETER;
+                sb.location = e_sb_location::E_PERIMETER;
             } else if (strcmp(tmp, "CORE") == 0) {
-                sb.location = E_CORE;
+                sb.location = e_sb_location::E_CORE;
             } else if (strcmp(tmp, "CORNER") == 0) {
-                sb.location = E_CORNER;
+                sb.location = e_sb_location::E_CORNER;
             } else if (strcmp(tmp, "FRINGE") == 0) {
-                sb.location = E_FRINGE;
-            } else if (strcmp(tmp,"XY_SPECIFIED") == 0){
-                sb.location = E_XY_SPECIFIED;
+                sb.location = e_sb_location::E_FRINGE;
+            } else if (strcmp(tmp, "XY_SPECIFIED") == 0) {
+                sb.location = e_sb_location::E_XY_SPECIFIED;
             } else {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem), "unrecognized switchblock location: %s\n", tmp);
             }
@@ -3965,13 +3965,14 @@ static void ProcessSwitchblocks(pugi::xml_node Parent, t_arch* arch, const pugiu
             sb.y = get_attribute(SubElem, "y", loc_data, ReqOpt::OPTIONAL).as_int(-1);
 
             //check if the absolute value is within the device grid width and height
-            if(sb.x > grid_width || sb.y > grid_height){
-                archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem), "Location (%d,%d) is not valid within the grid! grid dimensions are: (%d,%d)\n", sb.x, sb.y, grid_width, grid_height);
+            if(sb.x >= grid_width || sb.y >= grid_height) {
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem), \
+                "Location (%d,%d) is not valid within the grid! grid dimensions are: (%d,%d)\n", sb.x, sb.y, grid_width, grid_height);
             }
             
 
-            /* Location also might be speicified with regular expression, get the region that this SB should be applied to*/
-            if (sb.x == -1 && sb.y == -1){
+            /* Location also might be specified with regular expression, get the region that this SB should be applied to*/
+            if (sb.x == -1 && sb.y == -1) {
                 auto startx_attr = get_attribute(SubElem, "startx", loc_data, ReqOpt::OPTIONAL);
                 auto endx_attr   = get_attribute(SubElem, "endx", loc_data, ReqOpt::OPTIONAL);
 

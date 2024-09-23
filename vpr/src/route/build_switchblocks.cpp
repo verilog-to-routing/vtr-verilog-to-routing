@@ -268,7 +268,7 @@ int get_wire_segment_length(const DeviceGrid& grid, e_rr_type chan_type, const t
 static int get_switchpoint_of_wire(const DeviceGrid& grid, e_rr_type chan_type, const t_chan_seg_details& wire_details, int seg_coord, e_side sb_side);
 
 /* returns true if the coordinates x/y do not correspond to the location specified by 'location' */
-static bool sb_not_here(const DeviceGrid& grid, int x, int y, e_sb_location location, int sb_x, int sb_y, const e_sb_loc_spec& sb_reg_x, const e_sb_loc_spec& sb_reg_y);
+static bool sb_not_here(const DeviceGrid& grid, int x, int y, const t_switchblock_inf& sb);
 
 /* checks if the specified coordinates represent a corner of the FPGA */
 static bool is_corner(const DeviceGrid& grid, int x, int y);
@@ -280,7 +280,7 @@ static bool is_perimeter(const DeviceGrid& grid, int x, int y);
 static bool is_core(const DeviceGrid& grid, int x, int y);
 
 /*checks if the specified coordinates matches the exact one specified in the SB architecture description*/
-static bool match_sb_xy(const DeviceGrid& grid, int x, int y, int sb_x, int sb_y, const e_sb_loc_spec& sb_reg_x, const e_sb_loc_spec& sb_reg_y);
+static bool match_sb_xy(const DeviceGrid& grid, int x, int y, const t_switchblock_inf& sb);
 
 /* adjusts a negative destination wire index calculated from a permutation formula */
 static int adjust_formula_result(int dest_wire, int src_W, int dest_W, int connection_ind);
@@ -320,9 +320,8 @@ t_sb_connection_map* alloc_and_load_switchblock_permutations(const t_chan_detail
 
     /******** slow switch block computation method; computes switchblocks at each coordinate ********/
     /* iterate over all the switchblocks specified in the architecture */
-    for (int i_sb = 0; i_sb < (int)switchblocks.size(); i_sb++) {
-        t_switchblock_inf sb = switchblocks[i_sb];
-
+    for (auto sb: switchblocks) {
+        
         /* verify that switchblock type matches specified directionality -- currently we have to stay consistent */
         if (directionality != sb.directionality) {
             VPR_FATAL_ERROR(VPR_ERROR_ARCH, "alloc_and_load_switchblock_connections: Switchblock %s does not match directionality of architecture\n", sb.name.c_str());
@@ -331,7 +330,7 @@ t_sb_connection_map* alloc_and_load_switchblock_permutations(const t_chan_detail
         /* Iterate over the x,y coordinates spanning the FPGA. */
         for (size_t x_coord = 0; x_coord < grid.width(); x_coord++) {
             for (size_t y_coord = 0; y_coord <= grid.height(); y_coord++) {
-                if (sb_not_here(grid, x_coord, y_coord, sb.location, sb.x, sb.y, sb.reg_x, sb.reg_y)) {
+                if (sb_not_here(grid, x_coord, y_coord, sb)) {
                     continue;
                 }
                 /* now we iterate over all the potential side1->side2 connections */
@@ -366,41 +365,41 @@ void free_switchblock_permutations(t_sb_connection_map* sb_conns) {
 }
 
 /* returns true if the coordinates x/y do not correspond to the location specified by 'location' */
-static bool sb_not_here(const DeviceGrid& grid, int x, int y, e_sb_location location, int sb_x, int sb_y, const e_sb_loc_spec& sb_reg_x, const e_sb_loc_spec& sb_reg_y) {
+static bool sb_not_here(const DeviceGrid& grid, int x, int y, const t_switchblock_inf& sb) {
     bool sb_not_here = true;
 
-    switch (location) {
-        case E_EVERYWHERE:
+    switch (sb.location) {
+        case e_sb_location::E_EVERYWHERE:
             sb_not_here = false;
             break;
-        case E_PERIMETER:
+        case e_sb_location::E_PERIMETER:
             if (is_perimeter(grid, x, y)) {
                 sb_not_here = false;
             }
             break;
-        case E_CORNER:
+        case e_sb_location::E_CORNER:
             if (is_corner(grid, x, y)) {
                 sb_not_here = false;
             }
             break;
-        case E_CORE:
+        case e_sb_location::E_CORE:
             if (is_core(grid, x, y)) {
                 sb_not_here = false;
             }
             break;
-        case E_FRINGE:
+        case e_sb_location::E_FRINGE:
             if (is_perimeter(grid, x, y) && !is_corner(grid, x, y)) {
                 sb_not_here = false;
             }
             break;
-        case E_XY_SPECIFIED:
-            if(match_sb_xy(grid, x, y, sb_x, sb_y, sb_reg_x, sb_reg_y)){
+        case e_sb_location::E_XY_SPECIFIED:
+            if(match_sb_xy(grid, x, y, sb)) {
                 sb_not_here = false;
             }
             
             break;
         default:
-            VPR_FATAL_ERROR(VPR_ERROR_ARCH, "sb_not_here: unrecognized location enum: %d\n", location);
+            VPR_FATAL_ERROR(VPR_ERROR_ARCH, "sb_not_here: unrecognized location enum: %d\n", sb.location);
             break;
     }
     return sb_not_here;
@@ -432,67 +431,65 @@ static bool is_core(const DeviceGrid& grid, int x, int y) {
     return is_core;
 }
 
-static bool match_sb_xy(const DeviceGrid& grid, int x, int y, int sb_x, int sb_y, const e_sb_loc_spec& sb_reg_x, const e_sb_loc_spec& sb_reg_y){
+static bool match_sb_xy(const DeviceGrid& grid, int x, int y, const t_switchblock_inf& sb){
     
-    //if one of sb_x and sb_y is defined, we either know the exact location (x,y) or the exact x location (will apply it to all columns) 
-    //or the exact y location (will apply it to all rows)   
-    if(sb_x != -1 || sb_y != -1){
-        if(x == sb_x && y == sb_y){
+    //if one of sb_x and sb_y is defined, we either know the exact location (x,y) or the exact x location (will apply it to all rows) 
+    //or the exact y location (will apply it to all columns)   
+    if(sb.x != -1 || sb.y != -1){
+        if(x == sb.x && y == sb.y){
             return true;
         } 
 
-        if(x == sb_x && sb_y == -1){
+        if(x == sb.x && sb.y == -1){
             return true;
         }
         
-        if(sb_x == -1 && y == sb_y){
+        if(sb.x == -1 && y == sb.y){
             return true;
         }
     }
 
     //if both sb_x and sb_y is not defined, we have a region that we should apply this SB pattern to, we just need to check
     //whether the location passed into this function falls within this region or not
-    if(sb_x == -1 && sb_y == -1){
-        //calculate the appropiate region based on the repeatx/repeaty and current location.
-        //This is to determine whether the given location is part of the current SB specified region with regular expression or not
-        //After region calculation, the current SB will apply to this location if:
-        // 1) the given (x,y) location falls into the calculated region 
-        // *AND*
-        // 2) incrx/incry are respected within the region, this means all locations within the calculated region is
-        //    is not necessary crossponds to the current SB. If incrx/incry is equal to 1, then all locations within the 
-        //    calculated region is valid. 
-        
-        //calculate the region
-        int x_reg_step = (sb_reg_x.repeat != 0) ? (x - sb_reg_x.start) / sb_reg_x.repeat : sb_reg_x.start;
-        int y_reg_step = (sb_reg_y.repeat != 0) ? (y - sb_reg_y.start) / sb_reg_y.repeat : sb_reg_y.start;
+    //calculate the appropriate region based on the repeatx/repeaty and current location.
+    //This is to determine whether the given location is part of the current SB specified region with regular expression or not
+    //After region calculation, the current SB will apply to this location if:
+    // 1) the given (x,y) location falls into the calculated region 
+    // *AND*
+    // 2) incrx/incry are respected within the region, this means all locations within the calculated region do
+    //    not necessarily crosspond to the current SB. If incrx/incry is equal to 1, then all locations within the 
+    //    calculated region are valid. 
+    
+    //calculate the region
+    int x_reg_step = (sb.reg_x.repeat != 0) ? (x - sb.reg_x.start) / sb.reg_x.repeat : sb.reg_x.start;
+    int y_reg_step = (sb.reg_y.repeat != 0) ? (y - sb.reg_y.start) / sb.reg_y.repeat : sb.reg_y.start;
 
-        //step must be non-negative
-        x_reg_step = (x_reg_step < 0) ? 0 : x_reg_step;
-        y_reg_step = (y_reg_step < 0) ? 0 : y_reg_step;
+    //step must be non-negative
+    x_reg_step = std::max(0, x_reg_step);
+    y_reg_step = std::max(0, y_reg_step);
 
-        int reg_startx = sb_reg_x.start + (x_reg_step * sb_reg_x.repeat);
-        int reg_endx = sb_reg_x.end + (x_reg_step * sb_reg_x.repeat);
-        reg_endx = std::min(reg_endx, int(grid.width() - 1));
+    int reg_startx = sb.reg_x.start + (x_reg_step * sb.reg_x.repeat);
+    int reg_endx = sb.reg_x.end + (x_reg_step * sb.reg_x.repeat);
+    reg_endx = std::min(reg_endx, int(grid.width() - 1));
 
-        int reg_starty = sb_reg_y.start + (y_reg_step * sb_reg_y.repeat);
-        int reg_endy = sb_reg_y.end + (y_reg_step * sb_reg_y.repeat);
-        reg_endy = std::min(reg_endy, int(grid.height() - 1));
-  
-        //check x coordinate
-        if (x >= reg_startx && x <= reg_endx){ //should fall into the region
-            //we also should respect the incrx
-            //if incrx is not equal to 1, all locations within this region is *NOT* valid
-            if((y + reg_startx) % sb_reg_x.incr == 0){
-                //valid x coordinate, check for y value
-                if(y >= reg_starty && y <= reg_endy){
-                    //check for incry, similar as incrx
-                    if((y + reg_starty) % sb_reg_y.incr == 0){
-                        //both x and y are valid
-                        return true;
-                    }
+    int reg_starty = sb.reg_y.start + (y_reg_step * sb.reg_y.repeat);
+    int reg_endy = sb.reg_y.end + (y_reg_step * sb.reg_y.repeat);
+    reg_endy = std::min(reg_endy, int(grid.height() - 1));
+
+    //check x coordinate
+    if (x >= reg_startx && x <= reg_endx){ //should fall into the region
+        //we also should respect the incrx
+        //if incrx is not equal to 1, all locations within this region are *NOT* valid
+        if((x + reg_startx) % sb.reg_x.incr == 0){
+            //valid x coordinate, check for y value
+            if(y >= reg_starty && y <= reg_endy){
+                //check for incry, similar as incrx
+                if((y + reg_starty) % sb.reg_y.incr == 0){
+                    //both x and y are valid
+                    return true;
                 }
-            } 
-        }
+            }
+        } 
     }
 
     //if reach here, we don't have sb in this location

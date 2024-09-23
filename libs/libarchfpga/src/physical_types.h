@@ -246,7 +246,7 @@ typedef enum e_power_estimation_method_ e_power_estimation_method;
 typedef enum e_power_estimation_method_ t_power_estimation_method;
 
 /* Specifies what part of the FPGA a custom switchblock should be built in (i.e. perimeter, core, everywhere) */
-enum e_sb_location {
+enum class e_sb_location {
     E_PERIMETER = 0,
     E_CORNER,
     E_FRINGE, /* perimeter minus corners */
@@ -255,7 +255,10 @@ enum e_sb_location {
     E_XY_SPECIFIED
 };
 
-struct e_sb_loc_spec{
+/**
+ * @brief Describes regions that a specific switch block specifications should be applied to
+ */
+struct t_sb_loc_spec {
     int start = -1;
     int repeat = -1;
     int incr = -1;
@@ -1927,8 +1930,8 @@ struct t_switchblock_inf {
     int y = -1; /* The exact y-axis location that this SB is used, meanignful when type is set to E_XY_specified */
 
     /* We can also define a region to apply this SB to all locations falls into this region using regular expression in the architecture file*/
-    e_sb_loc_spec reg_x;
-    e_sb_loc_spec reg_y;
+    t_sb_loc_spec reg_x;
+    t_sb_loc_spec reg_y;
     
     t_permutation_map permutation_map; /* map holding the permutation functions attributed to this switchblock */
 
@@ -2081,7 +2084,7 @@ struct t_arch {
     std::vector<std::string> ipin_cblock_switch_name;
 
     std::vector<t_grid_def> grid_layouts; //Set of potential device layouts
-    std::string device_layout; //the layout that is choosen to be used with command line options
+    std::string device_layout; //the layout that is chosen to be used with command line options
 
     t_clock_arch_spec clock_arch; // Clock related data types
 
