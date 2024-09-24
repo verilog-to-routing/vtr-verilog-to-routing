@@ -23,7 +23,7 @@ class ParsePattern:
     def __init__(self, name, filename, regex_str, default_value=None):
         self._name = name
         self._filename = filename
-        self._regex = re.compile(regex_str)
+        self._regex = re.compile(f'^.*{regex_str}.*$')
         self._default_value = default_value
 
     def name(self):
