@@ -10,6 +10,7 @@
 #include "timing_place.h"
 #include "move_transactions.h"
 #include "place_util.h"
+#include "vtr_ndoffsetmatrix.h"
 
 #include <functional>
 
@@ -191,34 +192,6 @@ class NetCostHandler {
     vtr::vector<ClusterNetId, NetUpdateState> bb_update_status_;
 
     /**
-     * @brief This class is used to store the inverse of average channel
-     * width between two channels inclusive. The difference of this class
-     * with vtr::NdMatrix<float, 2> is that its index spaces starts from -1.
-     * When the inverse average channel width is factored in, the channel
-     * immediately below and the channel immediately to the left of the
-     * bounding box are also considered. This class makes sure that when
-     * the left and bottom edges of the bounding boxes are moved by one unit,
-     * the indices used to access inverse average channel width are still valid.
-     */
-    class ChanPlaceCostFacContainer : public vtr::NdMatrix<float, 2> {
-      public:
-        /**
-         * @brief Returns the inverse average channel width between channels low
-         * and high inclusive.
-         * @param high The high channel number.
-         * @param low The low channel number.
-         * @return The inverse average channel width between the given channel
-         * numbers.
-         */
-        inline float& operator()(int high, int low) {
-            return this->operator[]((size_t)(high + 1)).operator[]((size_t)(low + 1));
-        }
-
-      private:
-        using vtr::NdMatrix<float, 2>::operator[];
-    };
-
-    /**
      * @brief Matrices below are used to precompute the inverse of the average
      * number of tracks per channel between [subhigh] and [sublow].  Access
      * them as chan?_place_cost_fac(subhigh, sublow).  They are used to
@@ -227,8 +200,8 @@ class NetCostHandler {
      * number of tracks in that direction; for other cost functions they
      * will never be used.
      */
-    ChanPlaceCostFacContainer chanx_place_cost_fac_; // [-1...device_ctx.grid.width()-1]
-    ChanPlaceCostFacContainer chany_place_cost_fac_; // [-1...device_ctx.grid.height()-1]
+    vtr::NdOffsetMatrix<float, 2> chanx_place_cost_fac_; // [-1...device_ctx.grid.width()-1]
+    vtr::NdOffsetMatrix<float, 2> chany_place_cost_fac_; // [-1...device_ctx.grid.height()-1]
 
 
   private:

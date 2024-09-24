@@ -157,22 +157,22 @@ NetCostHandler::NetCostHandler(const t_placer_opts& placer_opts,
 void NetCostHandler::alloc_and_load_chan_w_factors_for_place_cost_(float place_cost_exp) {
     auto& device_ctx = g_vpr_ctx.device();
 
-    const size_t grid_height = device_ctx.grid.height();
-    const size_t grid_width = device_ctx.grid.width();
+    const int grid_height = device_ctx.grid.height();
+    const int grid_width = device_ctx.grid.width();
 
     /* Access arrays below as chan?_place_cost_fac_(subhigh, sublow). Since subhigh must be greater than or
      * equal to sublow, we will only access the lower half of a matrix, but we allocate the whole matrix anyway
      * for simplicity, so we can use the vtr utility matrix functions. */
-    chanx_place_cost_fac_.resize({grid_height + 1, grid_height + 1});
-    chany_place_cost_fac_.resize({grid_width + 1, grid_width + 1});
+    chanx_place_cost_fac_ = vtr::NdOffsetMatrix<float, 2>({{{-1, grid_height - 1}, {-1, grid_height - 1}}});
+    chanx_place_cost_fac_ = vtr::NdOffsetMatrix<float, 2>({{{-1, grid_width - 1}, {-1, grid_width - 1}}});
 
     // First compute the number of tracks between channel high and channel low, inclusive.
-    chanx_place_cost_fac_(-1, -1) = 0;
+    chanx_place_cost_fac_[-1][-1] = 0;
 
-    for (int high = 0; high < (int)grid_height; high++) {
-        chanx_place_cost_fac_(high, high) = (float)device_ctx.chan_width.x_list[high];
+    for (int high = 0; high < grid_height; high++) {
+        chanx_place_cost_fac_[high][high] = (float)device_ctx.chan_width.x_list[high];
         for (int low = -1; low < high; low++) {
-            chanx_place_cost_fac_(high, low) = chanx_place_cost_fac_(high - 1, low) + (float)device_ctx.chan_width.x_list[high];
+            chanx_place_cost_fac_[high][low] = chanx_place_cost_fac_[high - 1][low] + (float)device_ctx.chan_width.x_list[high];
         }
     }
 
@@ -183,50 +183,50 @@ void NetCostHandler::alloc_and_load_chan_w_factors_for_place_cost_(float place_c
      * place_cost_exp power -- numbers other than one mean this is no      *
      * longer a simple "average number of tracks"; it is some power of     *
      * that, allowing greater penalization of narrow channels.             */
-    for (int high = -1; high < (int)grid_height; high++) {
+    for (int high = -1; high < grid_height; high++) {
         for (int low = -1; low <= high; low++) {
             /* Since we will divide the wiring cost by the average channel *
              * capacity between high and low, having only 0 width channels *
              * will result in infinite wiring capacity normalization       *
              * factor, and extremely bad placer behaviour. Hence we change *
              * this to a small (1 track) channel capacity instead.         */
-            if (chanx_place_cost_fac_(high, low) == 0.0f) {
+            if (chanx_place_cost_fac_[high][low] == 0.0f) {
                 VTR_LOG_WARN("CHANX place cost fac is 0 at %d %d\n", high, low);
-                chanx_place_cost_fac_(high, low) = 1.0f;
+                chanx_place_cost_fac_[high][low] = 1.0f;
             }
 
-            chanx_place_cost_fac_(high, low) = (high - low + 1.) / chanx_place_cost_fac_(high, low);
-            chanx_place_cost_fac_(high, low) = pow((double)chanx_place_cost_fac_(high, low), (double)place_cost_exp);
+            chanx_place_cost_fac_[high][low] = (high - low + 1.) / chanx_place_cost_fac_[high][low];
+            chanx_place_cost_fac_[high][low] = pow((double)chanx_place_cost_fac_[high][low], (double)place_cost_exp);
         }
     }
 
     /* Now do the same thing for the y-directed channels.  First get the
      * number of tracks between channel high and channel low, inclusive. */
-    chany_place_cost_fac_(-1, -1) = 0;
+    chany_place_cost_fac_[-1][-1] = 0;
 
-    for (int high = 0; high < (int)grid_width; high++) {
-        chany_place_cost_fac_(high, high) = device_ctx.chan_width.y_list[high];
+    for (int high = 0; high < grid_width; high++) {
+        chany_place_cost_fac_[high][high] = device_ctx.chan_width.y_list[high];
         for (int low = -1; low < high; low++) {
-            chany_place_cost_fac_(high, low) = chany_place_cost_fac_(high - 1, low) + device_ctx.chan_width.y_list[high];
+            chany_place_cost_fac_[high][low] = chany_place_cost_fac_[high - 1][low] + device_ctx.chan_width.y_list[high];
         }
     }
 
     /* Now compute the inverse of the average number of tracks per channel
      * between high and low.  Take to specified power. */
-    for (int high = -1; high < (int)grid_width; high++) {
+    for (int high = -1; high < grid_width; high++) {
         for (int low = -1; low <= high; low++) {
             /* Since we will divide the wiring cost by the average channel *
              * capacity between high and low, having only 0 width channels *
              * will result in infinite wiring capacity normalization       *
              * factor, and extremely bad placer behaviour. Hence we change *
              * this to a small (1 track) channel capacity instead.         */
-            if (chany_place_cost_fac_(high, low) == 0.0f) {
+            if (chany_place_cost_fac_[high][low] == 0.0f) {
                 VTR_LOG_WARN("CHANY place cost fac is 0 at %d %d\n", high, low);
-                chany_place_cost_fac_(high, low) = 1.0f;
+                chany_place_cost_fac_[high][low] = 1.0f;
             }
 
-            chany_place_cost_fac_(high, low) = (high - low + 1.) / chany_place_cost_fac_(high, low);
-            chany_place_cost_fac_(high, low) = pow((double)chany_place_cost_fac_(high, low), (double)place_cost_exp);
+            chany_place_cost_fac_[high][low] = (high - low + 1.) / chany_place_cost_fac_[high][low];
+            chany_place_cost_fac_[high][low] = pow((double)chany_place_cost_fac_[high][low], (double)place_cost_exp);
         }
     }
 }
@@ -1411,8 +1411,8 @@ double NetCostHandler::get_net_cube_bb_cost_(ClusterNetId net_id, bool use_ts) {
      */
 
     double ncost;
-    ncost = (bb.xmax - bb.xmin + 1) * crossing * chanx_place_cost_fac_(bb.ymax, bb.ymin - 1);
-    ncost += (bb.ymax - bb.ymin + 1) * crossing * chany_place_cost_fac_(bb.xmax, bb.xmin - 1);
+    ncost = (bb.xmax - bb.xmin + 1) * crossing * chanx_place_cost_fac_[bb.ymax][bb.ymin - 1];
+    ncost += (bb.ymax - bb.ymin + 1) * crossing * chany_place_cost_fac_[bb.xmax][bb.xmin - 1];
 
     return ncost;
 }
@@ -1454,10 +1454,10 @@ double NetCostHandler::get_net_per_layer_bb_cost_(ClusterNetId net_id , bool use
          */
 
         ncost += (bb[layer_num].xmax - bb[layer_num].xmin + 1) * crossing
-                 * chanx_place_cost_fac_(bb[layer_num].ymax, bb[layer_num].ymin - 1);
+                 * chanx_place_cost_fac_[bb[layer_num].ymax][bb[layer_num].ymin - 1];
 
         ncost += (bb[layer_num].ymax - bb[layer_num].ymin + 1) * crossing
-                 * chany_place_cost_fac_(bb[layer_num].xmax, bb[layer_num].xmin - 1);
+                 * chany_place_cost_fac_[bb[layer_num].xmax][bb[layer_num].xmin - 1];
     }
 
     return ncost;
