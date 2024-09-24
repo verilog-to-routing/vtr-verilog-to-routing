@@ -163,8 +163,8 @@ void NetCostHandler::alloc_and_load_chan_w_factors_for_place_cost_(float place_c
     /* Access arrays below as chan?_place_cost_fac_(subhigh, sublow). Since subhigh must be greater than or
      * equal to sublow, we will only access the lower half of a matrix, but we allocate the whole matrix anyway
      * for simplicity, so we can use the vtr utility matrix functions. */
-    chanx_place_cost_fac_ = vtr::NdOffsetMatrix<float, 2>({{{-1, grid_height - 1}, {-1, grid_height - 1}}});
-    chanx_place_cost_fac_ = vtr::NdOffsetMatrix<float, 2>({{{-1, grid_width - 1}, {-1, grid_width - 1}}});
+    chanx_place_cost_fac_ = vtr::NdOffsetMatrix<float, 2>({{{-1, grid_height}, {-1, grid_height}}});
+    chanx_place_cost_fac_ = vtr::NdOffsetMatrix<float, 2>({{{-1, grid_width}, {-1, grid_width}}});
 
     // First compute the number of tracks between channel high and channel low, inclusive.
     chanx_place_cost_fac_[-1][-1] = 0;
