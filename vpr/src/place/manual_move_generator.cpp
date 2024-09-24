@@ -19,7 +19,7 @@
 #endif //NO_GRAPHICS
 
 ManualMoveGenerator::ManualMoveGenerator(PlacerState& placer_state)
-    : MoveGenerator(placer_state) {}
+    : MoveGenerator(placer_state, e_reward_function::UNDEFINED_REWARD) {}
 
 //Manual Move Generator function
 e_create_move ManualMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected,
