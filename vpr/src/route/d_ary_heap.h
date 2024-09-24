@@ -23,35 +23,29 @@ class DAryHeap : public HeapInterface {
   public:
     using priority_queue = customized_d_ary_priority_queue<D, HeapNode, std::vector<HeapNode>, HeapNodeComparator>;
 
-    DAryHeap() {
-        pq_ = new priority_queue();
-    }
-
-    ~DAryHeap() {
-        delete pq_;
-    }
+    DAryHeap() {}
 
     void init_heap(const DeviceGrid& grid) {
         size_t target_heap_size = (grid.width() - 1) * (grid.height() - 1);
-        pq_->reserve(target_heap_size); // reserve the memory for the heap structure
+        pq_.reserve(target_heap_size); // reserve the memory for the heap structure
     }
 
     bool try_pop(HeapNode& heap_node) {
-        if (pq_->empty()) {
+        if (pq_.empty()) {
             return false;
         } else {
-            heap_node = pq_->top();
-            pq_->pop();
+            heap_node = pq_.top();
+            pq_.pop();
             return true;
         }
     }
 
     void add_to_heap(const HeapNode& heap_node) {
-        pq_->push(heap_node);
+        pq_.push(heap_node);
     }
 
     void push_back(const HeapNode& heap_node) {
-        pq_->push(heap_node); // FIXME: add to heap without maintaining the heap property
+        pq_.push(heap_node); // FIXME: add to heap without maintaining the heap property
     }
 
     void build_heap() {
@@ -63,15 +57,15 @@ class DAryHeap : public HeapInterface {
     }
 
     void empty_heap() {
-        pq_->clear();
+        pq_.clear();
     }
 
     bool is_empty_heap() const {
-        return (bool)(pq_->empty());
+        return (bool)(pq_.empty());
     }
 
   private:
-    priority_queue* pq_;
+    priority_queue pq_;
 };
 
 using BinaryHeap = DAryHeap<2>;
