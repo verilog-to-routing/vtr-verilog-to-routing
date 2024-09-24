@@ -51,7 +51,7 @@ class ConnectionRouter : public ConnectionRouterInterface {
     }
 
     ~ConnectionRouter() {
-        VTR_LOG("Serial Connection Router is being destroyed. Time spent computing SSSP: %.3f seconds\n.", this->sssp_total_time.count() / 1000000.0);
+        VTR_LOG("Serial Connection Router is being destroyed. Time spent computing SSSP: %.3f seconds.\n", this->sssp_total_time.count() / 1000000.0);
     }
 
     // Clear's the modified list.  Should be called after reset_path_costs
