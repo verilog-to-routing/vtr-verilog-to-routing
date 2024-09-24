@@ -1,11 +1,15 @@
 #ifndef PACK_H
 #define PACK_H
 
-#include <vector>
 #include <unordered_set>
-#include "vpr_types.h"
+#include <vector>
 
 class AtomNetId;
+struct t_analysis_opts;
+struct t_arch;
+struct t_lb_type_rr_node;
+struct t_model;
+struct t_packer_opts;
 
 bool try_pack(t_packer_opts* packer_opts,
               const t_analysis_opts* analysis_opts,

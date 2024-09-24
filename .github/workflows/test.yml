@@ -142,6 +142,11 @@ jobs:
             suite: 'vtr_reg_basic'
           },
           {
+            name: 'Basic with highest assertion level',
+            params: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_ASSERT_LEVEL=4 -DWITH_BLIFEXPLORER=on',
+            suite: 'vtr_reg_basic'
+          },
+          {
             name: 'Basic_odin',
             params: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DWITH_PARMYS=OFF -DWITH_ODIN=on',
             suite: 'vtr_reg_basic_odin'

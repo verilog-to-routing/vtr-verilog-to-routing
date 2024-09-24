@@ -9,11 +9,11 @@
 #include "vtr_assert.h"
 #include "vtr_memory.h"
 #include "vtr_util.h"
+#include "vpr_utils.h"
 #include "vpr_types.h"
 #include "vpr_error.h"
 #include "physical_types.h"
 #include "globals.h"
-#include "vpr_utils.h"
 #include "echo_files.h"
 
 /******************** File-scope variables declarations **********************/

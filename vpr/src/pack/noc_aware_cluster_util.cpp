@@ -1,12 +1,12 @@
 
 #include "noc_aware_cluster_util.h"
+#include "atom_netlist.h"
 #include "globals.h"
+#include "vpr_types.h"
 
 #include <queue>
 
-std::vector<AtomBlockId> find_noc_router_atoms() {
-    const auto& atom_ctx = g_vpr_ctx.atom();
-
+std::vector<AtomBlockId> find_noc_router_atoms(const AtomNetlist& atom_netlist) {
     // NoC router atoms are expected to have a specific blif model
     const std::string noc_router_blif_model_name = "noc_router_adapter_block";
 
@@ -14,8 +14,8 @@ std::vector<AtomBlockId> find_noc_router_atoms() {
     std::vector<AtomBlockId> noc_router_atoms;
 
     // iterate over all atoms and find those whose blif model matches
-    for (auto atom_id : atom_ctx.nlist.blocks()) {
-        const t_model* model = atom_ctx.nlist.block_model(atom_id);
+    for (auto atom_id : atom_netlist.blocks()) {
+        const t_model* model = atom_netlist.block_model(atom_id);
         if (noc_router_blif_model_name == model->name) {
             noc_router_atoms.push_back(atom_id);
         }
@@ -24,10 +24,10 @@ std::vector<AtomBlockId> find_noc_router_atoms() {
     return noc_router_atoms;
 }
 
-void update_noc_reachability_partitions(const std::vector<AtomBlockId>& noc_atoms) {
-    const auto& atom_ctx = g_vpr_ctx.atom();
-    auto& cl_helper_ctx = g_vpr_ctx.mutable_cl_helper();
-    const auto& high_fanout_thresholds = g_vpr_ctx.cl_helper().high_fanout_thresholds;
+void update_noc_reachability_partitions(const std::vector<AtomBlockId>& noc_atoms,
+                                        const AtomNetlist& atom_netlist,
+                                        const t_pack_high_fanout_thresholds& high_fanout_thresholds,
+                                        vtr::vector<AtomBlockId, NocGroupId>& atom_noc_grp_id) {
     const auto& grid = g_vpr_ctx.device().grid;
 
     t_logical_block_type_ptr logic_block_type = infer_logic_block_type(grid);
@@ -35,11 +35,11 @@ void update_noc_reachability_partitions(const std::vector<AtomBlockId>& noc_atom
     const size_t high_fanout_threshold = high_fanout_thresholds.get_threshold(logical_block_name);
 
     // get the total number of atoms
-    const size_t n_atoms = atom_ctx.nlist.blocks().size();
+    const size_t n_atoms = atom_netlist.blocks().size();
 
     vtr::vector<AtomBlockId, bool> atom_visited(n_atoms, false);
 
-    cl_helper_ctx.atom_noc_grp_id.resize(n_atoms, NocGroupId::INVALID());
+    atom_noc_grp_id.resize(n_atoms, NocGroupId::INVALID());
 
     int noc_grp_id_cnt = 0;
 
@@ -68,24 +68,24 @@ void update_noc_reachability_partitions(const std::vector<AtomBlockId>& noc_atom
             AtomBlockId current_atom = q.front();
             q.pop();
 
-            cl_helper_ctx.atom_noc_grp_id[current_atom] = noc_grp_id;
+            atom_noc_grp_id[current_atom] = noc_grp_id;
 
-            for(auto pin : atom_ctx.nlist.block_pins(current_atom)) {
-                AtomNetId net_id = atom_ctx.nlist.pin_net(pin);
-                size_t net_fanout = atom_ctx.nlist.net_sinks(net_id).size();
+            for(auto pin : atom_netlist.block_pins(current_atom)) {
+                AtomNetId net_id = atom_netlist.pin_net(pin);
+                size_t net_fanout = atom_netlist.net_sinks(net_id).size();
 
                 if (net_fanout >= high_fanout_threshold) {
                     continue;
                 }
 
-                AtomBlockId driver_atom_id = atom_ctx.nlist.net_driver_block(net_id);
+                AtomBlockId driver_atom_id = atom_netlist.net_driver_block(net_id);
                 if (!atom_visited[driver_atom_id]) {
                     q.push(driver_atom_id);
                     atom_visited[driver_atom_id] = true;
                 }
 
-                for (auto sink_pin : atom_ctx.nlist.net_sinks(net_id)) {
-                    AtomBlockId sink_atom_id = atom_ctx.nlist.pin_block(sink_pin);
+                for (auto sink_pin : atom_netlist.net_sinks(net_id)) {
+                    AtomBlockId sink_atom_id = atom_netlist.pin_block(sink_pin);
                     if (!atom_visited[sink_atom_id]) {
                         q.push(sink_atom_id);
                         atom_visited[sink_atom_id] = true;

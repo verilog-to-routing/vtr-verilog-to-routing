@@ -48,16 +48,25 @@ struct t_pl_blocks_to_be_moved {
     t_pl_blocks_to_be_moved(const t_pl_blocks_to_be_moved&) = delete;
     t_pl_blocks_to_be_moved(t_pl_blocks_to_be_moved&&) = delete;
 
-/**
- * @brief This function increments the size of the moved_blocks vector and return the index
- * of the newly added last elements. 
- */
+    /**
+    * @brief This function increments the size of the moved_blocks vector and return the index
+    * of the newly added last elements.
+    */
     size_t get_size_and_increment();
 
-/**
- * @brief This function clears all data structures of this struct.
- */
+    /**
+    * @brief This function clears all data structures of this struct.
+    */
     void clear_move_blocks();
+
+    /**
+     * @brief Determines if the given net is driven by at least of the
+     * moved blocks.
+     *
+     * @param net The unique identifier of the net of interest.
+     * @return True if the driver block of the net is among the moving blocks.
+     */
+    bool driven_by_moved_block(const ClusterNetId net) const;
 
 
     e_block_move_result record_block_move(ClusterBlockId blk,
@@ -72,15 +81,5 @@ struct t_pl_blocks_to_be_moved {
 
     std::vector<ClusterPinId> affected_pins;
 };
-
-
-void apply_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected,
-                       BlkLocRegistry& blk_loc_registry);
-
-void commit_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected,
-                        GridBlock& grid_blocks);
-
-void revert_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected,
-                        BlkLocRegistry& blk_loc_registry);
 
 #endif

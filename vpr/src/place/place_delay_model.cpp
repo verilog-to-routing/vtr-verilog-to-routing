@@ -30,34 +30,27 @@ float DeltaDelayModel::delay(const t_physical_tile_loc& from_loc, int /*from_pin
     int delta_x = std::abs(from_loc.x - to_loc.x);
     int delta_y = std::abs(from_loc.y - to_loc.y);
 
-    // TODO: This is compatible with the case that only OPINs are connected to other layers.
-    // Ideally, I should check whether OPINs are conneced or IPINs and use the correct layer.
-    // If both are connected, minimum should be taken. In the case that channels are also connected,
-    // I haven't thought about what to do.
-    float cross_layer_td = 0;
-    if (from_loc.layer_num != to_loc.layer_num) {
-        VTR_ASSERT(std::isfinite(cross_layer_delay_));
-        cross_layer_td = cross_layer_delay_;
-    }
-    return delays_[to_loc.layer_num][delta_x][delta_y] + cross_layer_td;
+    return delays_[from_loc.layer_num][to_loc.layer_num][delta_x][delta_y];
 }
 
 void DeltaDelayModel::dump_echo(std::string filepath) const {
     FILE* f = vtr::fopen(filepath.c_str(), "w");
     fprintf(f, "         ");
-    for (size_t layer_num = 0; layer_num < delays_.dim_size(0); ++layer_num) {
-        fprintf(f, " %9zu", layer_num);
-        fprintf(f, "\n");
-        for (size_t dx = 0; dx < delays_.dim_size(1); ++dx) {
-            fprintf(f, " %9zu", dx);
-        }
-        fprintf(f, "\n");
-        for (size_t dy = 0; dy < delays_.dim_size(2); ++dy) {
-            fprintf(f, "%9zu", dy);
-            for (size_t dx = 0; dx < delays_.dim_size(1); ++dx) {
-                fprintf(f, " %9.2e", delays_[layer_num][dx][dy]);
+    for (size_t from_layer_num = 0; from_layer_num < delays_.dim_size(0); ++from_layer_num) {
+        for (size_t to_layer_num = 0; to_layer_num < delays_.dim_size(1); ++to_layer_num) {
+            fprintf(f, " %9zu", from_layer_num);
+            fprintf(f, "\n");
+            for (size_t dx = 0; dx < delays_.dim_size(2); ++dx) {
+                fprintf(f, " %9zu", dx);
             }
             fprintf(f, "\n");
+            for (size_t dy = 0; dy < delays_.dim_size(3); ++dy) {
+                fprintf(f, "%9zu", dy);
+                for (size_t dx = 0; dx < delays_.dim_size(2); ++dx) {
+                    fprintf(f, " %9.2e", delays_[from_layer_num][to_layer_num][dx][dy]);
+                }
+                fprintf(f, "\n");
+            }
         }
     }
     vtr::fclose(f);
@@ -241,7 +234,7 @@ void DeltaDelayModel::read(const std::string& file) {
     //
     // The second argument should be of type Matrix<X>::Reader where X is the
     // capnproto element type.
-    ToNdMatrix<3, VprFloatEntry, float>(&delays_, model.getDelays(), ToFloat);
+    ToNdMatrix<4, VprFloatEntry, float>(&delays_, model.getDelays(), ToFloat);
 }
 
 void DeltaDelayModel::write(const std::string& file) const {
@@ -257,7 +250,7 @@ void DeltaDelayModel::write(const std::string& file) const {
     // Matrix message.  It is the mirror function of ToNdMatrix described in
     // read above.
     auto delay_values = model.getDelays();
-    FromNdMatrix<3, VprFloatEntry, float>(&delay_values, delays_, FromFloat);
+    FromNdMatrix<4, VprFloatEntry, float>(&delay_values, delays_, FromFloat);
 
     // writeMessageToFile writes message to the specified file.
     writeMessageToFile(file, &builder);
@@ -270,9 +263,9 @@ void OverrideDelayModel::read(const std::string& file) {
     ::capnp::ReaderOptions opts = default_large_capnp_opts();
     ::capnp::FlatArrayMessageReader reader(f.getData(), opts);
 
-    vtr::NdMatrix<float, 3> delays;
+    vtr::NdMatrix<float, 4> delays;
     auto model = reader.getRoot<VprOverrideDelayModel>();
-    ToNdMatrix<3, VprFloatEntry, float>(&delays, model.getDelays(), ToFloat);
+    ToNdMatrix<4, VprFloatEntry, float>(&delays, model.getDelays(), ToFloat);
 
     base_delay_model_ = std::make_unique<DeltaDelayModel>(cross_layer_delay_, delays, is_flat_);
 
@@ -300,7 +293,7 @@ void OverrideDelayModel::write(const std::string& file) const {
     auto model = builder.initRoot<VprOverrideDelayModel>();
 
     auto delays = model.getDelays();
-    FromNdMatrix<3, VprFloatEntry, float>(&delays, base_delay_model_->delays(), FromFloat);
+    FromNdMatrix<4, VprFloatEntry, float>(&delays, base_delay_model_->delays(), FromFloat);
 
     // Non-scalar capnproto fields should be first initialized with
     // init<field  name>(count), and then accessed from the returned
