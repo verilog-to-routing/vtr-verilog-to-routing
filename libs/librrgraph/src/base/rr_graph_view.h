@@ -138,7 +138,7 @@ class RRGraphView {
         return node_storage_.node_direction(node);
     }
 
-    /** @brief Return the direction string of a specified node.
+    /** @brief Return a string representing the direction of the specified node.
     */
     inline const std::string& node_direction_string(RRNodeId node) const {
         return node_storage_.node_direction_string(node);
@@ -281,7 +281,7 @@ class RRGraphView {
         return !(y < node_ylow(node) || y > node_yhigh(node));
     }
 
-    /** @brief Return string of information about a specified node. 
+    /** @brief Return a string containing information about the specified node.
      * @note The returned string can contain the following information:
      * type, side, x_low, x_high, y_low, y_high, length, direction, segment_name, layer num
      */
@@ -360,7 +360,7 @@ class RRGraphView {
         return node_storage_.is_node_on_specific_side(node, side);
     }
 
-    /** @brief Return the side string of a routing resource node. 
+    /** @brief Return a string representing the side of a routing resource node. 
      */
     inline const char* node_side_string(RRNodeId node) const {
         return node_storage_.node_side_string(node);
@@ -407,7 +407,7 @@ class RRGraphView {
         return node_storage_.edge_sink_node(id, iedge);
     }
 
-    /** @brief Detect if the edge is a configurable edge 
+    /** @brief Check if the edge is a configurable edge 
      * @note A configurable edge represents a programmable switch between routing resources, which could be 
      *  - a multiplexer
      *  - a tri-state buffer

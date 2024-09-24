@@ -84,7 +84,11 @@ class RRGraphBuilder {
 
         return segment_id;
     }
-    /** TODO @brief Return a writable list of all the rr_segments
+    /** 
+     * \internal
+     * TODO
+     * \endinternal
+     *  @brief Return a writable list of all the rr_segments
      * @warning It is not recommended to use this API unless you have to. The API may be deprecated later, and future APIs will designed to return a specific data from the rr_segments.
      */
     inline vtr::vector<RRSegmentId, t_segment_inf>& rr_segments() {
@@ -103,7 +107,11 @@ class RRGraphBuilder {
 
         return switch_id;
     }
-    /** TODO @brief Return a writable list of all the rr_switches
+    /**
+     * \internal 
+     * TODO 
+     * \endinternal
+     * @brief Return a writable list of all the rr_switches
      * @warning It is not recommended to use this API unless you have to. The API may be deprecated later, and future APIs will designed to return a specific data from the rr_switches.
      */
     inline vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch() {
