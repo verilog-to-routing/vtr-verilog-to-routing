@@ -14,21 +14,6 @@
  * treated as a unit and regular routing would not be used to connect the carry_in's and
  * carry_out's. Floorplanning constraints may also be an example of placement macros.
  *
- * The function alloc_and_load_placement_macros allocates and loads the placement
- * macros in the following steps:
- * (1) First, go through all the block types and mark down the pins that could possibly
- * be part of a placement macros.
- * (2) Then, go through the netlist of all the pins marked in (1) to find out all the
- * heads of the placement macros using criteria depending on the type of placement
- * macros. For carry chains, the heads of the placement macros are blocks with
- * carry_in's not connected to any nets (OPEN) while the carry_out's connected to the
- * netlist with only 1 SINK.
- * (3) Traverse from the heads to the tails of the placement macros and load the
- * information in the t_pl_macro data structure. Similar to (2), tails are identified
- * with criteria depending on the type of placement macros. For carry chains, the
- * tails are blocks with carry_out's not connected to any nets (OPEN) while the
- * carry_in's is connected to the netlist which has only 1 SINK.
- *
  * The only placement macros supported at the moment are the carry chains with limited
  * functionality.
  *
@@ -162,13 +147,70 @@ struct t_pl_macro {
     std::vector<t_pl_macro_member> members;
 };
 
+class PlaceMacros {
+  public:
+    /**
+     * @brief Allocates and loads the placement macros.
+     * @details The following steps are taken in this methodL
+     * (1) First, go through all the block types and mark down the pins that could possibly
+     * be part of a placement macros.
+     * (2) Then, go through the netlist of all the pins marked in (1) to find out all the
+     * heads of the placement macros using criteria depending on the type of placement
+     * macros. For carry chains, the heads of the placement macros are blocks with
+     * carry_in's not connected to any nets (OPEN) while the carry_out's connected to the
+     * netlist with only 1 SINK.
+     * (3) Traverse from the heads to the tails of the placement macros and load the
+     * information in the t_pl_macro data structure. Similar to (2), tails are identified
+     * with criteria depending on the type of placement macros. For carry chains, the
+     * tails are blocks with carry_out's not connected to any nets (OPEN) while the
+     * carry_in's is connected to the netlist which has only 1 SINK.
+     * @param directs
+     * @return
+     */
+    std::vector<t_pl_macro> alloc_and_load_placement_macros(const std::vector<t_direct_inf>& directs);
 
-std::vector<t_pl_macro> alloc_and_load_placement_macros(const std::vector<t_direct_inf>& directs);
+    int get_imacro_from_iblk(ClusterBlockId iblk, const std::vector<t_pl_macro>& macros);
 
-int get_imacro_from_iblk(ClusterBlockId iblk, const std::vector<t_pl_macro>& macros);
+    void set_imacro_for_iblk(int imacro, ClusterBlockId blk_id);
 
-void set_imacro_for_iblk(int imacro, ClusterBlockId iblk);
+  private:
 
-void free_placement_macros_structs();
+    /**
+     * @brief This array allow us to quickly find pins that could be in a direct connection.
+     * @details Values stored is the index of the possible direct connection as specified in the arch file,
+     * OPEN (-1) is stored for pins that could not be part of a direct chain connection.
+     * [0...device_ctx.num_block_types-1][0...num_pins-1]
+     */
+    std::vector<std::vector<int>> idirect_from_blk_pin_;
+
+    /**
+     * @brief This array stores the value SOURCE if the pin is the from_pin,
+     * SINK if the pin is the to_pin in the direct connection as specified in the arch file,
+     * OPEN (-1) is stored for pins that could not be part of a direct chain connection.
+     * [0...device_ctx.num_block_types-1][0...num_pins-1]
+     */
+    std::vector<std::vector<int>> direct_type_from_blk_pin_;
+
+    /**
+     * @brief Maps a blk_num to the corresponding macro index.
+     * @details If the block is not part of a macro, the value OPEN (-1) is stored.
+     * [0...cluster_ctx.clb_nlist.blocks().size()-1]
+     */
+    vtr::vector_map<ClusterBlockId, int> imacro_from_iblk_;
+
+  private:
+    int find_all_the_macro_(std::vector<ClusterBlockId>& pl_macro_member_blk_num_of_this_blk,
+                            std::vector<int>& pl_macro_idirect,
+                            std::vector<int>& pl_macro_num_members,
+                            std::vector<std::vector<ClusterBlockId>>& pl_macro_member_blk_num);
+
+    void alloc_and_load_imacro_from_iblk_(const std::vector<t_pl_macro>& macros);
+
+    void write_place_macros_(std::string filename, const std::vector<t_pl_macro>& macros);
+
+    bool net_is_driven_by_direct_(ClusterNetId clb_net);
+
+    void alloc_and_load_idirect_from_blk_pin_(const std::vector<t_direct_inf>& directs);
+};
 
 #endif
