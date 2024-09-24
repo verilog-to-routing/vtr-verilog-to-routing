@@ -5,8 +5,9 @@
 #include "placer_state.h"
 #include "move_utils.h"
 
-UniformMoveGenerator::UniformMoveGenerator(PlacerState& placer_state)
-    : MoveGenerator(placer_state) {}
+UniformMoveGenerator::UniformMoveGenerator(PlacerState& placer_state,
+                                           e_reward_function reward_function)
+    : MoveGenerator(placer_state, reward_function) {}
 
 e_create_move UniformMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected,
                                                  t_propose_action& proposed_action,

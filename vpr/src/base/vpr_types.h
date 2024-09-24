@@ -535,6 +535,7 @@ struct t_2D_bb {
         VTR_ASSERT(ymax_ >= ymin_);
         VTR_ASSERT(layer_num_ >= 0);
     }
+
     int xmin = OPEN;
     int xmax = OPEN;
     int ymin = OPEN;

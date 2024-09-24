@@ -3,18 +3,13 @@
  * @brief Stores the method definitions of classes defined in timing_place.h.
  */
 
-#include <cstdio>
 #include <cmath>
 
 #include "vtr_util.h"
-#include "vtr_memory.h"
-#include "vtr_log.h"
 
 #include "vpr_types.h"
 #include "vpr_utils.h"
-#include "globals.h"
 #include "net_delay.h"
-#include "timing_place_lookup.h"
 #include "timing_place.h"
 #include "placer_state.h"
 
