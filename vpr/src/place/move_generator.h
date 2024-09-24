@@ -48,6 +48,16 @@ struct MoveTypeStat {
  */
 class MoveGenerator {
   public:
+
+    /**
+     * @brief Initializes some protected member variables that are used
+     * by inheriting classes.
+     *
+     * @param placer_state A mutable reference to the placement state which will
+     * be stored in this object.
+     * @param reward_function Specifies the reward function to update q-tables
+     * of the RL agent.
+     */
     MoveGenerator(PlacerState& placer_state, e_reward_function reward_function)
         : placer_state_(placer_state)
         , reward_func_(reward_function) {}

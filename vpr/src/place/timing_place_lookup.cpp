@@ -872,7 +872,7 @@ static vtr::NdMatrix<float, 4> compute_delta_delays(
 }
 
 float delay_reduce(std::vector<float>& delays, e_reducer reducer) {
-    if (delays.size() == 0) {
+    if (delays.empty()) {
         return IMPOSSIBLE_DELTA;
     } else if (delays.size() == 1) {
         return delays[0];
@@ -994,7 +994,7 @@ static void fix_uninitialized_coordinates(vtr::NdMatrix<float, 4>& delta_delays)
 }
 
 static void fill_impossible_coordinates(vtr::NdMatrix<float, 4>& delta_delays) {
-    // Set any impossible delta's to the average of it's neighbours
+    // Set any impossible delta's to the average of its neighbours
     //
     // Impossible coordinates may occur if an IPIN cannot be reached from the
     // sampling OPIN.  This might occur if the IPIN or OPIN used for sampling
@@ -1004,7 +1004,7 @@ static void fill_impossible_coordinates(vtr::NdMatrix<float, 4>& delta_delays) {
     //
     // A max average distance of 5 is used to provide increased effort in
     // filling these gaps.  It is more important to have a poor predication,
-    // than a invalid value and causing a slack assertion.
+    // than an invalid value and causing a slack assertion.
     constexpr int kMaxAverageDistance = 5;
     for (int from_layer_num = 0; from_layer_num < (int)delta_delays.dim_size(0); ++from_layer_num) {
         for (int to_layer_num = 0; to_layer_num < (int)delta_delays.dim_size(1); ++to_layer_num) {

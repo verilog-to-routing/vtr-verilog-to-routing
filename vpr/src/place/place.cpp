@@ -41,13 +41,10 @@
 #include "place_timing_update.h"
 #include "move_transactions.h"
 #include "move_utils.h"
-#include "read_place.h"
 #include "place_constraints.h"
 #include "manual_moves.h"
 #include "buttons.h"
 
-#include "static_move_generator.h"
-#include "simpleRL_move_generator.h"
 #include "manual_move_generator.h"
 
 #include "PlacementDelayCalculator.h"
@@ -772,6 +769,7 @@ void try_place(const Netlist<>& net_list,
                                  timing_bb_factor,
                                  swap_stats, placer_state, net_cost_handler, noc_cost_handler);
 
+
             //move the update used move_generator to its original variable
             update_move_generator(move_generator, move_generator2, agent_state,
                                   placer_opts, false, current_move_generator);
@@ -1284,6 +1282,7 @@ static e_move_result try_swap(const t_annealing_state* state,
      * rlim is the range limiter.                                        *
      * Returns whether the swap is accepted, rejected or aborted.        *
      * Passes back the new value of the cost functions.                  */
+    auto& blk_loc_registry = placer_state.mutable_blk_loc_registry();
 
     float rlim_escape_fraction = placer_opts.rlim_escape_fraction;
     float timing_tradeoff = placer_opts.timing_tradeoff;
@@ -1367,17 +1366,17 @@ static e_move_result try_swap(const t_annealing_state* state,
         /*
          * To make evaluating the move simpler (e.g. calculating changed bounding box),
          * we first move the blocks to their new locations (apply the move to
-         * place_ctx.block_locs) and then compute the change in cost. If the move
+         * blk_loc_registry.block_locs) and then compute the change in cost. If the move
          * is accepted, the inverse look-up in place_ctx.grid_blocks is updated
          * (committing the move). If the move is rejected, the blocks are returned to
-         * their original positions (reverting place_ctx.block_locs to its original state).
+         * their original positions (reverting blk_loc_registry.block_locs to its original state).
          *
          * Note that the inverse look-up place_ctx.grid_blocks is only updated after
          * move acceptance is determined, so it should not be used when evaluating a move.
          */
 
         /* Update the block positions */
-        apply_move_blocks(blocks_affected, placer_state.mutable_blk_loc_registry());
+        blk_loc_registry.apply_move_blocks(blocks_affected);
 
         //Find all the nets affected by this swap and update the wiring costs.
         //This cost value doesn't depend on the timing info.
@@ -1489,7 +1488,7 @@ static e_move_result try_swap(const t_annealing_state* state,
             net_cost_handler.update_move_nets();
 
             /* Update clb data structures since we kept the move. */
-            commit_move_blocks(blocks_affected, placer_state.mutable_grid_blocks());
+            blk_loc_registry.commit_move_blocks(blocks_affected);
 
             if (proposed_action.logical_blk_type_index != -1) { //if the agent proposed the block type, then collect the block type stat
                 ++move_type_stat.accepted_moves[proposed_action.logical_blk_type_index][(int)proposed_action.move_type];
@@ -1512,8 +1511,8 @@ static e_move_result try_swap(const t_annealing_state* state,
             /* Reset the net cost function flags first. */
             net_cost_handler.reset_move_nets();
 
-            /* Restore the place_ctx.block_locs data structures to their state before the move. */
-            revert_move_blocks(blocks_affected, placer_state.mutable_blk_loc_registry());
+            /* Restore the blk_loc_registry.block_locs data structures to their state before the move. */
+            blk_loc_registry.revert_move_blocks(blocks_affected);
 
             if (place_algorithm == SLACK_TIMING_PLACE) {
                 /* Revert the timing delays and costs to pre-update values.       */
@@ -2103,7 +2102,7 @@ int check_macro_placement_consistency(const BlkLocRegistry& blk_loc_registry) {
             // Compute the supposed member's x,y,z location
             t_pl_loc member_pos = block_locs[head_iblk].loc + pl_macros[imacro].members[imember].offset;
 
-            // Check the place_ctx.block_locs data structure first
+            // Check the blk_loc_registry.block_locs data structure first
             if (block_locs[member_iblk].loc != member_pos) {
                 VTR_LOG_ERROR(
                     "Block %zu in pl_macro #%zu is not placed in the proper orientation.\n",
@@ -2111,7 +2110,7 @@ int check_macro_placement_consistency(const BlkLocRegistry& blk_loc_registry) {
                 error++;
             }
 
-            // Then check the place_ctx.grid data structure
+            // Then check the blk_loc_registry.grid data structure
             if (grid_blocks.block_at_location(member_pos) != member_iblk) {
                 VTR_LOG_ERROR(
                     "Block %zu in pl_macro #%zu is not placed in the proper orientation.\n",

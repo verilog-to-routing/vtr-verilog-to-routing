@@ -268,7 +268,7 @@ static void noc_routers_anneal(const t_noc_opts& noc_opts,
         e_create_move create_move_outcome = propose_router_swap(blocks_affected, r_lim_decayed, blk_loc_registry);
 
         if (create_move_outcome != e_create_move::ABORT) {
-            apply_move_blocks(blocks_affected, blk_loc_registry);
+            blk_loc_registry.apply_move_blocks(blocks_affected);
 
             NocCostTerms noc_delta_c;
             noc_cost_handler.find_affected_noc_routers_and_update_noc_costs(blocks_affected, noc_delta_c);
@@ -279,7 +279,7 @@ static void noc_routers_anneal(const t_noc_opts& noc_opts,
 
             if (move_accepted) {
                 costs.cost += delta_cost;
-                commit_move_blocks(blocks_affected, blk_loc_registry.mutable_grid_blocks());
+                blk_loc_registry.commit_move_blocks(blocks_affected);
                 noc_cost_handler.commit_noc_costs();
                 costs += noc_delta_c;
                 // check if the current placement is better than the stored checkpoint
@@ -287,7 +287,7 @@ static void noc_routers_anneal(const t_noc_opts& noc_opts,
                     checkpoint.save_checkpoint(costs.cost, block_locs);
                 }
             } else { // The proposed move is rejected
-                revert_move_blocks(blocks_affected, blk_loc_registry);
+                blk_loc_registry.revert_move_blocks(blocks_affected);
                 noc_cost_handler.revert_noc_traffic_flow_routes(blocks_affected);
             }
         }

@@ -6,6 +6,16 @@
 void MoveGenerator::calculate_reward_and_process_outcome(const MoveOutcomeStats& move_outcome_stats,
                                                          double delta_c,
                                                          float timing_bb_factor) {
+    /*
+     * To learn about different reward functions refer to the following paper:
+     * Elgammal MA, Murray KE, Betz V. RLPlace: Using reinforcement learning and
+     * smart perturbations to optimize FPGA placement.
+     * IEEE Transactions on Computer-Aided Design of Integrated Circuits and Systems.
+     * 2021 Sep 3;41(8):2532-45.
+     *
+     * For runtime-aware reward function, the reward value is divided by a normalized
+     * runtime in the implementation of process_outcome()
+     */
     switch (reward_func_) {
         case e_reward_function::WL_BIASED_RUNTIME_AWARE:
             if (delta_c < 0) {
@@ -24,6 +34,7 @@ void MoveGenerator::calculate_reward_and_process_outcome(const MoveOutcomeStats&
         case e_reward_function::BASIC:
             process_outcome(-1 * delta_c, reward_func_);
             break;
+
 
         case e_reward_function::NON_PENALIZING_BASIC:
         case e_reward_function::RUNTIME_AWARE:
