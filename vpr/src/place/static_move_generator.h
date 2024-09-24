@@ -19,6 +19,7 @@ class StaticMoveGenerator : public MoveGenerator {
   public:
     StaticMoveGenerator() = delete;
     StaticMoveGenerator(PlacerState& placer_state,
+                        e_reward_function reward_function,
                         const vtr::vector<e_move_type, float>& move_probs);
 
     e_create_move propose_move(t_pl_blocks_to_be_moved& blocks_affected,
