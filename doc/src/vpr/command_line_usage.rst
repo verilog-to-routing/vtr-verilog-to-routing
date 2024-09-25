@@ -85,7 +85,7 @@ VPR runs all stages of (pack, place, route, and analysis) if none of :option:`--
 .. option:: --route
 
     Run routing stage
-    This also implies --analysis if routing was successful.
+    This also implies --analysis if routing was successful.  TEST
 
     **Default:** ``off``
 
