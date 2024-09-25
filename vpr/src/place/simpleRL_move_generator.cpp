@@ -1,11 +1,15 @@
+
 #include "simpleRL_move_generator.h"
+
 #include "globals.h"
+#include "vtr_random.h"
+#include "vtr_time.h"
+
 #include <algorithm>
 #include <numeric>
 #include <utility>
 
-#include "vtr_random.h"
-#include "vtr_time.h"
+
 /* File-scope routines */
 //a scaled and clipped exponential function
 static float scaled_clipped_exp(float x) { return std::exp(std::min(1000 * x, float(3.0))); }
@@ -50,7 +54,7 @@ KArmedBanditAgent::KArmedBanditAgent(std::vector<e_move_type> available_moves, e
 }
 
 /*
- * If the agent selects both move type and block type, the would lool like this:
+ * If the agent selects both move type and block type, the action table would look like this:
  *
  *    +---------------+---------------+---------------+---------------+
  *    | (blk0, move0) | (blk0, move1) | ............. | (blk0, moveN) |

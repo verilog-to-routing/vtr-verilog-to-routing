@@ -6,6 +6,7 @@
  *
  * Cmdline: uxsdcxx/uxsdcap.py /home/mohagh18/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
  * Input file: /home/mohagh18/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
+
  * md5sum of input file: 65eddcc840064bbb91d7f4cf0b8bf821
  */
 
@@ -265,6 +266,8 @@ inline enum_node_direction conv_enum_node_direction(ucap::NodeDirection e, const
 		return enum_node_direction::DEC_DIR;
 	case ucap::NodeDirection::BI_DIR:
 		return enum_node_direction::BI_DIR;
+	case ucap::NodeDirection::NONE:
+		return enum_node_direction::NONE;
 	default:
 		(*report_error)("Unknown enum_node_direction");
 		throw std::runtime_error("Unreachable!");
@@ -281,6 +284,8 @@ inline ucap::NodeDirection conv_to_enum_node_direction(enum_node_direction e) {
 		return ucap::NodeDirection::DEC_DIR;
 	case enum_node_direction::BI_DIR:
 		return ucap::NodeDirection::BI_DIR;
+	case enum_node_direction::NONE:
+		return ucap::NodeDirection::NONE;
 	default:
 		throw std::runtime_error("Unknown enum_node_direction");
 	}

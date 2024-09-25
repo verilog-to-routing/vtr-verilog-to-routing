@@ -73,7 +73,7 @@ class RRSpatialLookup {
                        int y,
                        t_rr_type type,
                        int ptc,
-                       e_side side = NUM_SIDES) const;
+                       e_side side = NUM_2D_SIDES) const;
 
     /**
      * @brief Returns unique indices of the routing resource nodes in the bounds (xlow, ylow) to (xhigh, yhigh).
@@ -96,7 +96,7 @@ class RRSpatialLookup {
                                               int yhigh,
                                               t_rr_type type,
                                               int ptc,
-                                              e_side side = NUM_SIDES) const;
+                                              e_side side = e_side::NUM_2D_SIDES) const;
 
     /**
      * @brief Returns the indices of the specified routing resource nodes, representing routing tracks in a channel.  
@@ -148,7 +148,7 @@ class RRSpatialLookup {
                        int y,
                        t_rr_type type,
                        int num_nodes,
-                       e_side side = SIDES[0]);
+                       e_side side = TOTAL_2D_SIDES[0]);
 
     /**
      * @brief Register a node in the fast spatial lookup
@@ -181,7 +181,7 @@ class RRSpatialLookup {
                   int y,
                   t_rr_type type,
                   int ptc,
-                  e_side side = SIDES[0]);
+                  e_side side = TOTAL_2D_SIDES[0]);
 
     /**
      * @brief Remove a node in the fast spatial lookup.
@@ -205,7 +205,7 @@ class RRSpatialLookup {
                      int y,
                      t_rr_type type,
                      int ptc,
-                     e_side side = SIDES[0]);
+                     e_side side = TOTAL_2D_SIDES[0]);
 
     /**
      * @brief Mirror the last dimension of a look-up, i.e., a list of nodes, from a source coordinate to
@@ -286,7 +286,7 @@ class RRSpatialLookup {
                                      int x,
                                      int y,
                                      t_rr_type type,
-                                     e_side side = SIDES[0]) const;
+                                     e_side side = TOTAL_2D_SIDES[0]) const;
 
     /* -- Internal data storage -- */
   private:

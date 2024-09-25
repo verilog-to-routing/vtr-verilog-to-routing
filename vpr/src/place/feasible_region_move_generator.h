@@ -21,7 +21,8 @@
 class FeasibleRegionMoveGenerator : public MoveGenerator {
   public:
     FeasibleRegionMoveGenerator() = delete;
-    explicit FeasibleRegionMoveGenerator(PlacerState& placer_state);
+    FeasibleRegionMoveGenerator(PlacerState& placer_state,
+                                e_reward_function reward_function);
 
   private:
     e_create_move propose_move(t_pl_blocks_to_be_moved& blocks_affected,

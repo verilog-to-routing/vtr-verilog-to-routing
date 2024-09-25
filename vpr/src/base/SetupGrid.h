@@ -12,6 +12,8 @@
 #include <vector>
 #include "physical_types.h"
 
+class DeviceGrid;
+
 ///@brief Find the device satisfying the specified minimum resources
 /// minimum_instance_counts and target_device_utilization are not required when specifying a fixed layout
 DeviceGrid create_device_grid(const std::string& layout_name,

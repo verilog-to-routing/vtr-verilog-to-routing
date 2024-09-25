@@ -979,15 +979,16 @@ The following options are only valid when the placement engine is in timing-driv
 
     **Default:** ``8.0``
 
-.. option:: --place_delay_model {delta, delta_override}
+.. option:: --place_delay_model {simple, delta, delta_override}
 
     Controls how the timing-driven placer estimates delays.
 
-     * ``delta`` The router is used to profile delay from various locations in the grid for various differences in position
+     * ``simple`` The placement delay estimator is built from the router lookahead. This takes less CPU time to build and it and still as accurate as the ``delta` model.
+     * ``delta`` The router is used to profile delay from various locations in the grid for various differences in position.
      * ``delta_override`` Like ``delta`` but also includes special overrides to ensure effects of direct connects between blocks are accounted for.
        This is potentially more accurate but is more complex and depending on the architecture (e.g. number of direct connects) may increase place run-time.
 
-    **Default:** ``delta``
+    **Default:** ``simple``
 
 .. option:: --place_delay_model_reducer {min, max, median, arithmean, geomean}
 
@@ -1291,6 +1292,13 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
     * `fmax` - Maximal frequency of the implemented circuit [MHz]
     * `swns` - setup Worst Negative Slack (sWNS) [ns]
     * `stns` - Setup Total Negative Slack (sTNS) [ns]
+
+.. option:: --route_verbosity <int>
+
+    Controls the verbosity of routing output.
+    High values produce more detailed output, which can be useful for debugging or understanding the routing process.
+
+    **Default**: ``1``
 
 .. _timing_driven_router_options:
 

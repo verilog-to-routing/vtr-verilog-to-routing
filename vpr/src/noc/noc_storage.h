@@ -140,6 +140,13 @@ class NocStorage {
     bool detailed_link_latency_;
 
     /**
+     * @brief Indicates whether the NoC is 3D or 2D.
+     * A 3D NoC has routers in at least two different layers.
+     * In a 3D FPGA architecture, the NoC is not necessarily 3D.
+     */
+    bool multi_layer_noc_;
+
+    /**
      * @brief A constant reference to this vector is returned by get_noc_links(...).
      * This is used to avoid memory allocation whenever get_noc_links(...) is called.
      * The vector is mutable so that get_noc_links(...), which is a const method, can
@@ -350,6 +357,12 @@ class NocStorage {
      * located at the given grid location. 
      */
     NocRouterId get_router_at_grid_location(const t_pl_loc& hard_router_location) const;
+
+    /**
+     * @brief Indicates whether the NoC is 3D.
+     * @return True if there are NoC routers in different layers.
+     */
+    bool is_noc_3d() const;
 
     // setters for the NoC
 

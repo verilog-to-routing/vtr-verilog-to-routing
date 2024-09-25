@@ -168,7 +168,7 @@ void update_timing_cost(const PlaceDelayModel* delay_model,
                         PlacerState& placer_state,
                         double* timing_cost) {
 #ifdef INCR_COMP_TD_COSTS
-    update_td_costs(delay_model, *criticalities, block_locs, timing_cost);
+    update_td_costs(delay_model, *criticalities, placer_state, timing_cost);
 #else
     comp_td_costs(delay_model, *criticalities, placer_state, timing_cost);
 #endif
@@ -298,7 +298,7 @@ void update_td_costs(const PlaceDelayModel* delay_model,
 
 #ifdef VTR_ASSERT_DEBUG_ENABLED
     double check_timing_cost = 0.;
-    comp_td_costs(delay_model, place_crit, &check_timing_cost);
+    comp_td_costs(delay_model, place_crit, placer_state, &check_timing_cost);
     VTR_ASSERT_DEBUG_MSG(check_timing_cost == *timing_cost,
                          "Total timing cost calculated incrementally in update_td_costs() is "
                          "not consistent with value calculated from scratch in comp_td_costs()");

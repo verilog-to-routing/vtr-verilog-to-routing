@@ -50,29 +50,33 @@ void TurnModelRouting::route_flow(NocRouterId src_router_id,
      */
     std::unordered_set<NocRouterId> visited_routers;
 
+    // indicates the last direction taken in the route which is being formed.
+    TurnModelRouting::Direction prev_dir = TurnModelRouting::Direction::INVALID;
+
     // The route is terminated when we reach at the destination router
     while (curr_router_id != dst_router_id) {
         // get the current router (the last one added to the route)
-        const auto& curr_router = noc_model.get_single_noc_router(curr_router_id);
+        const NocRouter& curr_router = noc_model.get_single_noc_router(curr_router_id);
 
         // get the physical location of the current router
-        auto curr_router_pos = curr_router.get_router_physical_location();
+        t_physical_tile_loc curr_router_pos = curr_router.get_router_physical_location();
 
         // get all directions that moves us closer to the destination router
-        const auto legal_directions = get_legal_directions(src_router_id, curr_router_id, dst_router_id, noc_model);
+        const auto& legal_directions = get_legal_directions(src_router_id, curr_router_id, dst_router_id, prev_dir, noc_model);
 
         // select the next direction from the available options
-        auto next_step_direction = select_next_direction(legal_directions,
-                                                         src_router_id,
-                                                         dst_router_id,
-                                                         curr_router_id,
-                                                         traffic_flow_id,
-                                                         noc_model);
+        TurnModelRouting::Direction next_step_direction = select_next_direction(legal_directions,
+                                                                                src_router_id,
+                                                                                dst_router_id,
+                                                                                curr_router_id,
+                                                                                traffic_flow_id,
+                                                                                noc_model);
 
-        auto next_link = move_to_next_router(curr_router_id, curr_router_pos, next_step_direction, visited_routers, noc_model);
+        NocLinkId next_link = move_to_next_router(curr_router_id, curr_router_pos, next_step_direction, visited_routers, noc_model);
 
         if (next_link) {
             flow_route.push_back(next_link);
+            prev_dir = next_step_direction;
         } else {
             VPR_FATAL_ERROR(VPR_ERROR_OTHER, "No route could be found from starting router with ID:'%d' "
                             "and the destination router with ID:'%d' using the XY-Routing algorithm.",
@@ -98,19 +102,19 @@ NocLinkId TurnModelRouting::move_to_next_router(NocRouterId& curr_router_id,
     bool visited_next_router = false;
 
     // get all the outgoing links for the current router
-    const auto& router_connections = noc_model.get_noc_router_outgoing_links(curr_router_id);
+    const std::vector<NocLinkId>& router_connections = noc_model.get_noc_router_outgoing_links(curr_router_id);
 
     // go through each outgoing link and determine whether the link leads towards the intended route direction
-    for (auto connecting_link : router_connections) {
+    for (NocLinkId connecting_link : router_connections) {
         // get the current outgoing link which is being processed
         const NocLink& curr_outgoing_link = noc_model.get_single_noc_link(connecting_link);
 
         // get the next router that we will visit if we travel across the current link
-        auto next_router_id = curr_outgoing_link.get_sink_router();
+        NocRouterId next_router_id = curr_outgoing_link.get_sink_router();
         const NocRouter& next_router = noc_model.get_single_noc_router(next_router_id);
 
         // get the coordinates of the next router
-        auto next_router_position = next_router.get_router_physical_location();
+        t_physical_tile_loc next_router_position = next_router.get_router_physical_location();
 
         /* Using the position of the next router we will visit if we take the current link,
          * determine if the travel direction through the link matches
@@ -118,23 +122,33 @@ NocLinkId TurnModelRouting::move_to_next_router(NocRouterId& curr_router_id,
          * If the directions do not match, then this link is not valid.
          */
         switch (next_step_direction) {
-            case TurnModelRouting::Direction::LEFT:
+            case TurnModelRouting::Direction::WEST:
                 if (next_router_position.x < curr_router_position.x) {
                     found_next_router = true;
                 }
                 break;
-            case TurnModelRouting::Direction::RIGHT:
+            case TurnModelRouting::Direction::EAST:
                 if (next_router_position.x > curr_router_position.x) {
                     found_next_router = true;
                 }
                 break;
-            case TurnModelRouting::Direction::UP:
+            case TurnModelRouting::Direction::NORTH:
                 if (next_router_position.y > curr_router_position.y) {
                     found_next_router = true;
                 }
                 break;
-            case TurnModelRouting::Direction::DOWN:
+            case TurnModelRouting::Direction::SOUTH:
                 if (next_router_position.y < curr_router_position.y) {
+                    found_next_router = true;
+                }
+                break;
+            case TurnModelRouting::Direction::UP:
+                if (next_router_position.layer_num > curr_router_position.layer_num) {
+                    found_next_router = true;
+                }
+                break;
+            case TurnModelRouting::Direction::DOWN:
+                if (next_router_position.layer_num < curr_router_position.layer_num) {
                     found_next_router = true;
                 }
                 break;
@@ -197,10 +211,10 @@ uint32_t TurnModelRouting::murmur3_32(const std::vector<uint32_t>& key, uint32_t
     return h;
 }
 
-TurnModelRouting::Direction TurnModelRouting::select_vertical_direction(const std::vector<TurnModelRouting::Direction>& directions) {
+TurnModelRouting::Direction TurnModelRouting::select_y_direction(const std::vector<TurnModelRouting::Direction>& directions) {
     // iterate over the given iterations and return the first vertical one
     for (const auto& direction : directions) {
-        if (direction == TurnModelRouting::Direction::DOWN || direction == TurnModelRouting::Direction::UP) {
+        if (direction == TurnModelRouting::Direction::SOUTH || direction == TurnModelRouting::Direction::NORTH) {
             return direction;
         }
     }
@@ -209,10 +223,22 @@ TurnModelRouting::Direction TurnModelRouting::select_vertical_direction(const st
     return TurnModelRouting::Direction::INVALID;
 }
 
-TurnModelRouting::Direction TurnModelRouting::select_horizontal_direction(const std::vector<TurnModelRouting::Direction>& directions) {
+TurnModelRouting::Direction TurnModelRouting::select_x_direction(const std::vector<TurnModelRouting::Direction>& directions) {
     // iterate over the given iterations and return the first horizontal one
     for (const auto& direction : directions) {
-        if (direction == TurnModelRouting::Direction::RIGHT || direction == TurnModelRouting::Direction::LEFT) {
+        if (direction == TurnModelRouting::Direction::EAST || direction == TurnModelRouting::Direction::WEST) {
+            return direction;
+        }
+    }
+
+    // if there was not any horizontal directions, return INVALID
+    return TurnModelRouting::Direction::INVALID;
+}
+
+TurnModelRouting::Direction TurnModelRouting::select_z_direction(const std::vector<TurnModelRouting::Direction>& directions) {
+    // iterate over the given iterations and return the first one along the z axis
+    for (const auto& direction : directions) {
+        if (direction == TurnModelRouting::Direction::UP || direction == TurnModelRouting::Direction::DOWN) {
             return direction;
         }
     }
@@ -259,7 +285,7 @@ std::vector<std::pair<NocLinkId, NocLinkId>> TurnModelRouting::get_all_illegal_t
                 const NocLink& second_noc_link = noc_model.get_single_noc_link(second_noc_link_id);
                 const NocRouterId third_noc_router_id = second_noc_link.get_sink_router();
                 const NocRouter& third_noc_router = noc_model.get_single_noc_router(third_noc_router_id);
-                if (!is_turn_legal({noc_router, second_noc_router, third_noc_router})) {
+                if (!is_turn_legal({noc_router, second_noc_router, third_noc_router}, noc_model)) {
                     illegal_turns.emplace_back(first_noc_link_id, second_noc_link_id);
                 }
             }
@@ -269,3 +295,46 @@ std::vector<std::pair<NocLinkId, NocLinkId>> TurnModelRouting::get_all_illegal_t
     return illegal_turns;
 }
 
+TurnModelRouting::Direction TurnModelRouting::select_next_direction(const std::vector<TurnModelRouting::Direction>& legal_directions,
+                                                                    NocRouterId src_router_id,
+                                                                    NocRouterId dst_router_id,
+                                                                    NocRouterId curr_router_id,
+                                                                    NocTrafficFlowId traffic_flow_id,
+                                                                    const NocStorage& noc_model) {
+    // get current and destination NoC routers
+    const auto& curr_router = noc_model.get_single_noc_router(curr_router_id);
+    const auto& dst_router = noc_model.get_single_noc_router(dst_router_id);
+
+    // get the position of current and destination NoC routers
+    const auto curr_router_pos = curr_router.get_router_physical_location();
+    const auto dst_router_pos = dst_router.get_router_physical_location();
+
+    // if there is only one legal direction, take it
+    if (legal_directions.size() == 1) {
+        return legal_directions[0];
+    }
+
+    // compute the hash value
+    uint32_t hash_val = get_hash_value(src_router_id, dst_router_id, curr_router_id, traffic_flow_id);
+
+    // get the distance from the current router to the destination in each coordination
+    const int delta_x = abs(dst_router_pos.x - curr_router_pos.x);
+    const int delta_y = abs(dst_router_pos.y - curr_router_pos.y);
+    const int delta_z = abs(dst_router_pos.layer_num - curr_router_pos.layer_num);
+    const int manhattan_dist = delta_x + delta_y + delta_z;
+
+    int hash_val_remainder = hash_val % manhattan_dist;
+
+
+    TurnModelRouting::Direction selected_direction = TurnModelRouting::Direction::INVALID;
+
+    if (hash_val_remainder < delta_x) {
+        selected_direction = select_x_direction(legal_directions);
+    } else if (hash_val_remainder < delta_x + delta_y) {
+        selected_direction = select_y_direction(legal_directions);
+    } else {
+        selected_direction = select_z_direction(legal_directions);
+    }
+
+    return selected_direction;
+}

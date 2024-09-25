@@ -409,7 +409,7 @@ t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat) {
 
                     if (sample_loc.x == OPEN && sample_loc.y == OPEN && sample_loc.layer_num == OPEN) {
                         //No untried instances of the current tile type left
-                        VTR_LOG_WARN("Found no %sample locations for %s in %s\n",
+                        VTR_LOG_WARN("Found no %ssample locations for %s in %s\n",
                                      (num_sampled_locs == 0) ? "" : "more ",
                                      rr_node_typename[rr_type],
                                      device_ctx.physical_tile_types[itile].name);
@@ -1475,12 +1475,11 @@ static std::pair<int, int> get_adjusted_rr_pin_position(const RRNodeId rr) {
      * However, current test show that the simple strategy provides
      * a good trade-off between runtime and quality of results
      */
-    auto it = std::find_if(SIDES.begin(), SIDES.end(), [&](const e_side candidate_side) {
+    auto it = std::find_if(TOTAL_2D_SIDES.begin(), TOTAL_2D_SIDES.end(), [&](const e_side candidate_side) {
         return rr_graph.is_node_on_specific_side(rr, candidate_side);
     });
-
-    e_side rr_side = (it != SIDES.end()) ? *it : NUM_SIDES;
-    VTR_ASSERT_SAFE(NUM_SIDES != rr_side);
+    e_side rr_side = (it != TOTAL_2D_SIDES.end()) ? *it : NUM_2D_SIDES;
+    VTR_ASSERT_SAFE(NUM_2D_SIDES != rr_side);
 
     if (rr_side == LEFT) {
         x -= 1;
