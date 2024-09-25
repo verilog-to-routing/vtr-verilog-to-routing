@@ -280,6 +280,8 @@ void SetupVPR(const t_options* Options,
         }
 
         if (Options->do_analytical_placement) {
+            // In the Analytical Placement flow, packing and placement are
+            // integrated. Thus, these stages are skipped.
             PackerOpts->doPacking = STAGE_SKIP;
             PlacerOpts->doPlacement = STAGE_SKIP;
             APOpts->doAP = STAGE_DO;

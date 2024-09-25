@@ -82,6 +82,23 @@ VPR runs all stages of (pack, place, route, and analysis) if none of :option:`--
 
     **Default:** ``off``
 
+.. option:: --analytical_place
+
+    Run the analytical placement flow.
+    This flows uses an integrated packing and placement algorithm which uses information from the primitive level to improve clustering and placement;
+    as such, the :option:`--pack` and :option:`--place` options should not be set when this option is set.
+    This flow requires that the device has a fixed size and some of the primitive blocks are fixed somewhere on the device grid.
+
+    .. seealso:: See :ref:`Fixed FPGA Grid Layout <fixed_arch_grid_layout>` and :option:`--device` for how to fix the device size.
+
+    .. seealso:: See :ref:`VPR Placement Constraints <placement_constraints>` for how to fix primitive blocks in a design to the device grid.
+
+    .. warning::
+
+        This analytical placement flow is experimental and under active development.
+
+    **Default:** ``off``
+
 .. option:: --route
 
     Run routing stage

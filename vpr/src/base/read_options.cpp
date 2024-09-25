@@ -1325,7 +1325,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("off");
 
     stage_grp.add_argument<bool, ParseOnOff>(args.do_analytical_placement, "--analytical_place")
-        .help("Run analytical placement")
+        .help("Run analytical placement. Analytical Placement uses an integrated packing and placement algorithm, using information from the primitive level to improve clustering and placement.")
         .action(argparse::Action::STORE_TRUE)
         .default_value("off");
 

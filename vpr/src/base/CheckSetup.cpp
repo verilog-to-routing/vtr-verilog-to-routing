@@ -91,8 +91,8 @@ void CheckSetup(const t_packer_opts& PackerOpts,
         //       some fixed blocks somewhere. Maybe we can live without fixed
         //       blocks.
 
-        // FIXME: Should we enforce that the size of the device is fixed? Or is
-        //        that defined in the constraints file?
+        // TODO: Should we enforce that the size of the device is fixed. This
+        //       goes with ensuring that some blocks are fixed.
     }
 
     if (RouterOpts.doRouting) {
