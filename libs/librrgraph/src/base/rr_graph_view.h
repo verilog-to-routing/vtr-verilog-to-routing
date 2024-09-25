@@ -3,14 +3,11 @@
 
 /**
  * @file
- * @brief The RRGraphView class provides a read-only interface to access the RRGraph.
+ * @brief The RRGraphView encapsulates a read-only routing resource graph as most clients (router, timing analyzer, etc.) only need to read a routing-resource graph.
  * 
- * The RRGraphView class provides a read-only interface for tools like the router, timing analyzer, 
- * and others that require access to the RRGraph without modifying it. The RRGraph models the 
+ * The RRGraph models the 
  * programmable routing fabric of the FPGA as a graph, consisting of nodes (representing routing resources) 
- * and outgoing edges (representing connections between these resources).
- * 
- * Each node and edge is supplemented with additional metadata, such as the physical location within 
+ * and outgoing edges (representing connections between these resources). Each node and edge is supplemented with additional metadata, such as the physical location within 
  * the chip and electrical properties, to optimize algorithm efficiency, aid in visualizing the chip layout, 
  * and estimate signal delays.
  * 
