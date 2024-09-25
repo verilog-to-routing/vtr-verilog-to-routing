@@ -3,20 +3,28 @@
 
 /**
  * @file
- * @brief The RRGraphView encapsulates a read-only routing resource graph, providing clients with tailored frame views of the object. 
+ * @brief The RRGraphView class provides a read-only interface to access the RRGraph.
  * 
- * The RRGraphView represents the full frame view of the routing resource graph, offering several advantages:
- * - Reduces the memory footprint for each client.
- * - Minimizes the need for extensive API changes, as each frame view delivers ad-hoc APIs suited to the specific needs of individual clients.
+ * The RRGraphView class offers tools like routing algorithms, graphics, and statistical analysis 
+ * a read-only interface to the underlying RRGraph, which models the programmable routing fabric 
+ * of the FPGA. The fundamental data structure of the RRGraph is a graph consisting of nodes 
+ * (representing routing resources) and outgoing edges (representing connections between routing resources). 
  * 
+ * Each node and edge is enhanced with additional metadata, such as the location of the node within 
+ * the chip and electrical parameters, to make algorithms more efficient, aid in drawing the chip, 
+ * and estimate signal delays. RRGraphView ensures that tools can access this data safely without 
+ * modifying the underlying structure.
+ * 
+ * 
+ * \internal
  * A unified object that includes pointers to:
  * - Node storage
- * \internal
  * - TODO: Edge storage
  * - TODO: Node PTC storage
  * - TODO: Node fan-in storage
- * \endinternal
  * - RR node indices
+ * \endinternal
+
  *
  * @note The RRGraphView does not own the storage. It provides a virtual 
  * read-only protocol for:
