@@ -3,13 +3,32 @@
 
 /**
  * @file
- * @brief The RRGraphView encapsulates a read-only routing resource graph as most clients (router, timing analyzer, etc.) only need to read a routing-resource graph.
+ * @brief The RRGraphView encapsulates a read-only routing resource graph as most 
+ * clients (router, timing analyzer, etc.) only need to read a routing-resource graph (RRGraph).
  * 
- * The RRGraph models the 
- * programmable routing fabric of the FPGA as a graph, consisting of nodes (representing routing resources) 
- * and outgoing edges (representing connections between these resources). Each node and edge is supplemented with additional metadata, such as the physical location within 
+ * 
+ * The RRGraph models the FPGA's programmable routing fabric as a graph consisting of nodes and edges. 
+ * Each node and edge is supplemented with additional metadata, such as the physical location within 
  * the chip and electrical properties, to optimize algorithm efficiency, aid in visualizing the chip layout, 
  * and estimate signal delays.
+ * 
+ * @par  RRGraph nodes
+ * Each node represents a routing resource, which can be:
+ * 1. A routing track (CHANX or CHANY).
+ * 2. An input/output of a logic block (IPIN or OPIN).
+ * 3. A virtual source or sink node (SOURCE or SINK).
+ * 
+ * @par  RRGraph edges
+ * Each edge represents a switch between resources, which can be:
+ * 1. A multiplexer.
+ * 2. A tri-state buffer.
+ * 3. A pass gate.
+ * 4. A non-configurable buffer.
+ * 5. A short (metal connection).
+ * 
+ * 
+ * @note All switch-related information (e.g., resistance R and capacitance C) is stored in 
+ * `rr_switch_inf`, not directly in the edge-related data of RRGraph.
  * 
  * 
  * \internal
@@ -591,7 +610,7 @@ class RRGraphView {
   private:
     /// node-level storage including edge storages
     const t_rr_graph_storage& node_storage_;
-    /// Fast look-up for rr nodes 
+    /// Fast look-up for rr nodes
     const RRSpatialLookup& node_lookup_;
 
     /**
@@ -617,15 +636,15 @@ class RRGraphView {
      *  - value:   map of <attribute_name, attribute_value>
      */
     const MetadataStorage<std::tuple<int, int, short>>& rr_edge_metadata_;
-    /// rr_indexed_data_ and rr_segments_ are needed to lookup the segment information in  node_coordinate_to_string() 
+    /// rr_indexed_data_ and rr_segments_ are needed to lookup the segment information in  node_coordinate_to_string()
     const vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data_;
 
-    /// RC data for nodes. This is a flyweight data 
+    /// RC data for nodes. This is a flyweight data
     const std::vector<t_rr_rc_data>& rr_rc_data_;
 
-    /// Segment info for rr nodes 
+    /// Segment info for rr nodes
     const vtr::vector<RRSegmentId, t_segment_inf>& rr_segments_;
-    /// switch info for rr nodes 
+    /// switch info for rr nodes
     const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf_;
 };
 
