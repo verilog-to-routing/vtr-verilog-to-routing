@@ -158,6 +158,8 @@ The valid tags within the ``<layout>`` tag are:
 
     .. note:: At most one ``<auto_layout>`` can be specified.
 
+.. _fixed_arch_grid_layout:
+
 .. arch:tag:: <fixed_layout name="string" width="int" height="int">
 
     :req_param name:

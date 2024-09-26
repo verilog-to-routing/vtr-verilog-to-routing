@@ -14,6 +14,7 @@ enum e_vpr_error {
     VPR_ERROR_ARCH,
     VPR_ERROR_PACK,
     VPR_ERROR_PLACE,
+    VPR_ERROR_AP,
     VPR_ERROR_ROUTE,
     VPR_ERROR_TIMING,
     VPR_ERROR_POWER,
@@ -21,7 +22,7 @@ enum e_vpr_error {
 
     // File parsing errors
     VPR_ERROR_NET_F,        // Error while parsing the packed netlist file
-    VPR_ERROR_PLACE_F,      // Error while parsning the placement file
+    VPR_ERROR_PLACE_F,      // Error while parsing the placement file
     VPR_ERROR_BLIF_F,       // Error while parsing the blif file
     VPR_ERROR_IC_NETLIST_F, // Error while parsing the interchange netlist file
 
