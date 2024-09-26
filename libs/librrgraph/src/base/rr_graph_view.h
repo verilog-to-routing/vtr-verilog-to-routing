@@ -27,8 +27,7 @@
  * 5. A short (metal connection).
  * 
  * 
- * @note All switch-related information (e.g., resistance R and capacitance C) is stored in 
- * `rr_switch_inf`, not directly in the edge-related data of RRGraph.
+ * @note Despite the RRGraph containing millions of edges, there are only a few switch types. Therefore, all switch details, including R and C, are stored using a flyweight pattern (rr_switch_inf) rather than being directly embedded in the edge-related data of the RRGraph. Each edge stores the ID of its associated switch for easy lookup.
  * 
  * 
  * \internal
