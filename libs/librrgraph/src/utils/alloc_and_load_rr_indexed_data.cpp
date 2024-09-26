@@ -550,10 +550,10 @@ static void load_rr_indexed_data_T_values(const RRGraphView& rr_graph,
         calculate_average_switch(rr_graph, (size_t)rr_id, avg_switch_R, avg_switch_T, avg_switch_Cinternal, num_switches, buffered, fan_in_list);
 
         if (num_switches == 0) {
-            VTR_LOG_WARN("Node: %d with RR_type: %s  at Location:%s, had no out-going switches\n", rr_id,
+            VTR_LOG_WARN("Node: %d with RR_type: %s  at Location:%s, had no incoming switches\n", rr_id,
                          rr_graph.node_type_string(rr_id), node_cords.c_str());
             continue;
-        }
+        }all    
         VTR_ASSERT(num_switches > 0);
 
         num_nodes_of_index[cost_index]++;
