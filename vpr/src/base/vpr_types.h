@@ -1143,6 +1143,26 @@ struct t_placer_opts {
     bool enable_analytic_placer;
 };
 
+
+/******************************************************************
+ * Analytical Placer data types
+ *******************************************************************/
+
+/**
+ * @brief Various options for the Analytical Placer.
+ *
+ *   @param doAnalyticalPlacement
+ *              True if analytical placement is supposed to be done in the CAD
+ *              flow. False if otherwise.
+ */
+struct t_ap_opts {
+    e_stage_action doAP;
+};
+
+/******************************************************************
+ * Router data types
+ *******************************************************************/
+
 /* All the parameters controlling the router's operation are in this        *
  * structure.                                                               *
  * first_iter_pres_fac:  Present sharing penalty factor used for the        *
@@ -1712,6 +1732,7 @@ struct t_vpr_setup {
     t_netlist_opts NetlistOpts;     ///<Options for packer
     t_packer_opts PackerOpts;       ///<Options for packer
     t_placer_opts PlacerOpts;       ///<Options for placer
+    t_ap_opts APOpts;               ///<Options for analytical placer
     t_annealing_sched AnnealSched;  ///<Placement option annealing schedule
     t_router_opts RouterOpts;       ///<router options
     t_analysis_opts AnalysisOpts;   ///<Analysis options

@@ -36,10 +36,13 @@ class t_pack_molecule;
  * -1 implies that the block is not fixed in that dimension.
  */
 struct APFixedBlockLoc {
-    int x = -1;
-    int y = -1;
-    int layer_num = -1;
-    int sub_tile = -1;
+    // Value that represents an unfixed dimension.
+    static constexpr int UNFIXED_DIM = -1;
+    // The dimensions to fix.
+    int x = UNFIXED_DIM;
+    int y = UNFIXED_DIM;
+    int layer_num = UNFIXED_DIM;
+    int sub_tile = UNFIXED_DIM;
 };
 
 /**
