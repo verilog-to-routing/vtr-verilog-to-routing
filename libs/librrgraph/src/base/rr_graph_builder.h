@@ -38,7 +38,7 @@ class RRGraphBuilder {
     t_rr_graph_storage& rr_nodes();
     /** @brief Return a writable object for update the fast look-up of rr_node */
     RRSpatialLookup& node_lookup();
-    /** .. warning:: The Metadata should stay as an independent data structure than rest of the internal data,
+    /** @warning The Metadata should stay as an independent data structure from the rest of the internal data,
      *  e.g., node_lookup! */
     /** @brief Return a writable object for the meta data on the nodes */
     MetadataStorage<int>& rr_node_metadata();
@@ -84,8 +84,12 @@ class RRGraphBuilder {
 
         return segment_id;
     }
-    /** TODO @brief Return a writable list of all the rr_segments
-     * .. warning:: It is not recommended to use this API unless you have to. The API may be deprecated later, and future APIs will designed to return a specific data from the rr_segments.
+    /** 
+     * \internal
+     * TODO
+     * \endinternal
+     *  @brief Return a writable list of all the rr_segments
+     * @warning It is not recommended to use this API unless you have to. The API may be deprecated later, and future APIs will designed to return a specific data from the rr_segments.
      */
     inline vtr::vector<RRSegmentId, t_segment_inf>& rr_segments() {
         return rr_segments_;
@@ -103,8 +107,12 @@ class RRGraphBuilder {
 
         return switch_id;
     }
-    /** TODO @brief Return a writable list of all the rr_switches
-     * .. warning:: It is not recommended to use this API unless you have to. The API may be deprecated later, and future APIs will designed to return a specific data from the rr_switches.
+    /**
+     * \internal 
+     * TODO 
+     * \endinternal
+     * @brief Return a writable list of all the rr_switches
+     * @warning It is not recommended to use this API unless you have to. The API may be deprecated later, and future APIs will designed to return a specific data from the rr_switches.
      */
     inline vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch() {
         return rr_switch_inf_;
@@ -388,7 +396,7 @@ class RRGraphBuilder {
     /* Detailed information about the switches, which are used in the RRGraph */
     vtr::vector<RRSwitchId, t_rr_switch_inf> rr_switch_inf_;
 
-    /** .. warning:: The Metadata should stay as an independent data structure than rest of the internal data,
+    /** @warning The Metadata should stay as an independent data structure from the rest of the internal data,
      *  e.g., node_lookup! */
     /* Metadata is an extra data on rr-nodes and edges, respectively, that is not used by vpr
      * but simply passed through the flow so that it can be used by downstream tools.
