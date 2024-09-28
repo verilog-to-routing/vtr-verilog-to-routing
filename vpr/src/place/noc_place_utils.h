@@ -170,7 +170,7 @@ class NocCostHandler {
      *
      * @param costs Contains the normalization factors which need to be updated
      */
-    void update_noc_normalization_factors(t_placer_costs& costs) const;
+    static void update_noc_normalization_factors(t_placer_costs& costs) ;
 
     /**
      * @brief Calculates the aggregate bandwidth of each traffic flow in the NoC
@@ -278,6 +278,19 @@ class NocCostHandler {
      * @return The total congestion ratio
      */
     double get_total_congestion_bandwidth_ratio() const;
+
+    double get_link_used_bandwidth(NocLinkId link_id) const;
+
+    /**
+     * @brief Determines the congestion cost a NoC link. The cost
+     * is calculating by measuring how much the current bandwidth
+     * going through the link exceeds the link's bandwidth capacity.
+     *
+     * @param link The NoC link for which the congestion cost is
+     * to be computed
+     * @return The computed congestion cost for the given NoC link.
+     */
+    double get_link_congestion_cost(const NocLink& link) const;
 
     /**
      * @brief This function checks whether the routing configuration for NoC traffic flows
@@ -407,18 +420,7 @@ class NocCostHandler {
                                const NocStorage& noc_model,
                                NocRouting& noc_flows_router);
 
-    /**
-     * @brief Determines the congestion cost a NoC link. The cost
-     * is calculating by measuring how much the current bandwidth
-     * going through the link exceeds the link's bandwidth capacity.
-     *
-     * @param link The NoC link for which the congestion cost is
-     * to be computed
-     * @return The computed congestion cost for the given NoC link.
-     */
-    double calculate_link_congestion_cost(const NocLink& link) const;
-
-  private:
+  public:
     /**
      * @brief Represents the maximum values of the NoC cost normalization factors
      * @details We need to handle the case where the aggregate bandwidth is 0,
@@ -461,6 +463,7 @@ class NocCostHandler {
      */
     static constexpr double INVALID_NOC_COST_TERM = -1.0;
 
+  private:
     /**
      * @brief Each traffic flow cost consists of two components:
      *        1) traffic flow aggregate bandwidth (sum over all used links of the traffic flow bandwidth)

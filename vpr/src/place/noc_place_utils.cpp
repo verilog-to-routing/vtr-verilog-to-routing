@@ -180,7 +180,7 @@ void NocCostHandler::find_affected_noc_routers_and_update_noc_costs(const t_pl_b
     // Iterate over all affected links and calculate their new congestion cost and store it
     for (const NocLink& link : noc_ctx.noc_model.get_noc_links(affected_noc_links)) {
         // calculate the new congestion cost for the link and store it
-        proposed_link_congestion_costs[link] = calculate_link_congestion_cost(link);
+        proposed_link_congestion_costs[link] = get_link_congestion_cost(link);
 
         // compute how much the congestion cost changes with this swap
         delta_c.congestion += proposed_link_congestion_costs[link] - link_congestion_costs[link];
@@ -409,7 +409,7 @@ void NocCostHandler::recompute_costs_from_scratch(const t_noc_opts& noc_opts, t_
     }
 }
 
-void NocCostHandler::update_noc_normalization_factors(t_placer_costs& costs) const {
+void NocCostHandler::update_noc_normalization_factors(t_placer_costs& costs) {
     //Prevent the norm factors from going to infinity
     costs.noc_cost_norm_factors.aggregate_bandwidth = std::min(1 / costs.noc_cost_terms.aggregate_bandwidth, MAX_INV_NOC_AGGREGATE_BANDWIDTH_COST);
     costs.noc_cost_norm_factors.latency = std::min(1 / costs.noc_cost_terms.latency, MAX_INV_NOC_LATENCY_COST);
@@ -493,7 +493,7 @@ double NocCostHandler::comp_noc_congestion_cost() {
 
     // Iterate over all NoC links
     for (const auto& link : noc_ctx.noc_model.get_noc_links()) {
-        double link_congestion_cost = calculate_link_congestion_cost(link);
+        double link_congestion_cost = get_link_congestion_cost(link);
 
         // store the congestion cost for this link in static data structures (this also initializes them)
         link_congestion_costs[link] = link_congestion_cost;
@@ -561,7 +561,7 @@ int NocCostHandler::check_noc_placement_costs(const t_placer_costs& costs,
 
     // Iterate over all NoC links and accumulate congestion cost
     for (const NocLink& link : noc_model.get_noc_links()) {
-        cost_check.congestion += calculate_link_congestion_cost(link);
+        cost_check.congestion += get_link_congestion_cost(link);
     }
 
     // check whether the aggregate bandwidth placement cost is within the error tolerance
@@ -668,7 +668,7 @@ std::pair<double, double> calculate_traffic_flow_latency_cost(const std::vector<
     return {latency, latency_overrun};
 }
 
-double NocCostHandler::calculate_link_congestion_cost(const NocLink& link) const {
+double NocCostHandler::get_link_congestion_cost(const NocLink& link) const {
     double bandwidth = link.get_bandwidth();
     double bandwidth_usage = link_bandwidth_usages[link];
 
@@ -765,7 +765,7 @@ int NocCostHandler::get_number_of_congested_noc_links() const {
 
     // Iterate over all NoC links and count the congested ones
     for (const auto& link : noc_links) {
-        double congested_bw_ratio = calculate_link_congestion_cost(link);
+        double congested_bw_ratio = get_link_congestion_cost(link);
 
         if (congested_bw_ratio > MIN_EXPECTED_NOC_CONGESTION_COST) {
             num_congested_links++;
@@ -783,7 +783,7 @@ double NocCostHandler::get_total_congestion_bandwidth_ratio() const {
 
     // Iterate over all NoC links and count the congested ones
     for (const auto& link : noc_links) {
-        double congested_bw_ratio = calculate_link_congestion_cost(link);
+        double congested_bw_ratio = get_link_congestion_cost(link);
         accum_congestion_ratio += congested_bw_ratio;
     }
 
