@@ -22,13 +22,6 @@ on:
   schedule:
   - cron: '0 0 * * *' # daily
 
-# We want to cancel previous runs for a given PR or branch / ref if another CI
-# run is requested.
-# See: https://docs.github.com/en/actions/using-jobs/using-concurrency
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
-
 env:
   # default compiler for all non-compatibility tests
   MATRIX_EVAL: "CC=gcc-11 && CXX=g++-11"
