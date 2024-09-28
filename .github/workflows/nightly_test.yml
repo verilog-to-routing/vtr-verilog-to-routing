@@ -33,7 +33,7 @@ jobs:
 
     timeout-minutes: 420
 
-    container: ubuntu:jammy
+    container: ubuntu:focal
 
     runs-on: [self-hosted, Linux, X64]
 
