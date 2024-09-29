@@ -286,6 +286,8 @@ class NocCostHandler {
      */
     double get_link_used_bandwidth(NocLinkId link_id) const;
 
+    const vtr::vector<NocLinkId, double>& get_link_bandwidth_usages() const;
+
     /**
      * @brief Determines the congestion cost a NoC link. The cost
      * is calculating by measuring how much the current bandwidth
@@ -510,9 +512,6 @@ class NocCostHandler {
 
     ///Represents the bandwidth of the data being transmitted on the link. Units in bits-per-second(bps)
     vtr::vector<NocLinkId, double> link_bandwidth_usages;
-
-
-    friend void test_revert_noc_traffic_flow_routes();
 };
 
 /**

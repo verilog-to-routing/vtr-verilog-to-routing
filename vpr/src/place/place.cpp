@@ -439,6 +439,10 @@ void try_place(const Netlist<>& net_list,
     NetCostHandler net_cost_handler = alloc_and_load_placement_structs(placer_opts, noc_opts, directs,
                                                                        num_directs, placer_state, noc_cost_handler);
 
+    if (noc_cost_handler.has_value()) {
+        set_noc_link_bandwidth_usages_ref(noc_cost_handler->get_link_bandwidth_usages());
+    }
+
     ManualMoveGenerator manual_move_generator(placer_state);
 
     vtr::ScopedStartFinishTimer timer("Placement");
@@ -769,8 +773,8 @@ void try_place(const Netlist<>& net_list,
                                  *current_move_generator, manual_move_generator,
                                  blocks_affected, timing_info.get(),
                                  placer_opts.place_algorithm, move_type_stat,
-                                 timing_bb_factor,
-                                 swap_stats, placer_state, net_cost_handler, noc_cost_handler);
+                                 timing_bb_factor, swap_stats, placer_state,
+                                 net_cost_handler, noc_cost_handler);
 
 
             //move the update used move_generator to its original variable
@@ -837,8 +841,8 @@ void try_place(const Netlist<>& net_list,
                              *current_move_generator, manual_move_generator,
                              blocks_affected, timing_info.get(),
                              placer_opts.place_quench_algorithm, move_type_stat,
-                             timing_bb_factor,
-                             swap_stats, placer_state, net_cost_handler, noc_cost_handler);
+                             timing_bb_factor, swap_stats, placer_state,
+                             net_cost_handler, noc_cost_handler);
 
 
         //move the update used move_generator to its original variable

@@ -45,6 +45,10 @@ void set_graphics_blk_loc_registry_ref(const BlkLocRegistry& blk_loc_registry);
  */
 const BlkLocRegistry& get_graphics_blk_loc_registry_ref();
 
+void set_noc_link_bandwidth_usages_ref(const vtr::vector<NocLinkId, double>& noc_link_bandwidth_usages);
+
+const vtr::vector<NocLinkId, double>& get_noc_link_bandwidth_usages_ref();
+
 #endif // NO_GRAPHICS
 
 #endif
