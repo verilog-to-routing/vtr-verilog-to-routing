@@ -516,7 +516,7 @@ int NocCostHandler::check_noc_placement_costs(const t_placer_costs& costs,
                                               double error_tolerance,
                                               const t_noc_opts& noc_opts) const {
     int error = 0;
-    NocCostTerms cost_check{0.0, 0.0, 0.0, 0.0};;
+    NocCostTerms cost_check{0.0, 0.0, 0.0, 0.0};
 
     auto& noc_ctx = g_vpr_ctx.noc();
     const NocStorage& noc_model = noc_ctx.noc_model;
@@ -528,9 +528,6 @@ int NocCostHandler::check_noc_placement_costs(const t_placer_costs& costs,
     // need to create a temporary noc routing algorithm
     std::unique_ptr<NocRouting> temp_noc_routing_algorithm = NocRoutingAlgorithmCreator::create_routing_algorithm(noc_opts.noc_routing_algorithm,
                                                                                                                   noc_model);
-
-    // stores a temporarily found route for a traffic flow
-    std::vector<NocLinkId> temp_found_noc_route;
 
     // go through all the traffic flows and find a route for them based on where the routers are placed within the NoC
     for (const auto& traffic_flow_id : noc_traffic_flows_storage.get_all_traffic_flow_id()) {
@@ -544,6 +541,9 @@ int NocCostHandler::check_noc_placement_costs(const t_placer_costs& costs,
         // get the ids of the hard router blocks where the logical router cluster blocks have been placed
         NocRouterId source_router_block_id = noc_model.get_router_at_grid_location(block_locs_ref[logical_source_router_block_id].loc);
         NocRouterId sink_router_block_id = noc_model.get_router_at_grid_location(block_locs_ref[logical_sink_router_block_id].loc);
+
+        // stores a temporarily found route for a traffic flow
+        std::vector<NocLinkId> temp_found_noc_route;
 
         // route the current traffic flow
         temp_noc_routing_algorithm->route_flow(source_router_block_id, sink_router_block_id, traffic_flow_id, temp_found_noc_route, noc_model);
@@ -561,14 +561,13 @@ int NocCostHandler::check_noc_placement_costs(const t_placer_costs& costs,
             temp_noc_link_bw_usage[link_id] += curr_traffic_flow.traffic_flow_bandwidth;
             VTR_ASSERT(temp_noc_link_bw_usage[link_id] >= 0.0);
         }
-
-        // clear the current traffic flow route, so we can route the next traffic flow
-        temp_found_noc_route.clear();
     }
 
     // Iterate over all NoC links and accumulate congestion cost
     for (const NocLink& link : noc_model.get_noc_links()) {
-        cost_check.congestion += get_link_congestion_cost(link);
+        double link_bw = link.get_bandwidth();
+        double used_link_bw = temp_noc_link_bw_usage[link.get_link_id()];
+        cost_check.congestion += std::max(used_link_bw - link_bw, 0.) / link_bw;
     }
 
     // check whether the aggregate bandwidth placement cost is within the error tolerance
