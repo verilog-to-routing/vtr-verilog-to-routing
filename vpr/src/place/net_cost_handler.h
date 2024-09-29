@@ -34,8 +34,8 @@ class NetCostHandler {
     NetCostHandler() = delete;
     NetCostHandler(const NetCostHandler&) = delete;
     NetCostHandler& operator=(const NetCostHandler&) = delete;
-    NetCostHandler(NetCostHandler&&) = default;
-    NetCostHandler& operator=(NetCostHandler&&) = default;
+    NetCostHandler(NetCostHandler&&) = delete;
+    NetCostHandler& operator=(NetCostHandler&&) = delete;
 
     /**
      * @brief Initializes a NetCostHandler object, which contains temporary swap data structures needed to determine which nets

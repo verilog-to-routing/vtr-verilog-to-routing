@@ -181,12 +181,12 @@ void print_clb_placement(const char* fname);
 static bool is_cube_bb(const e_place_bounding_box_mode place_bb_mode,
                        const RRGraphView& rr_graph);
 
-static std::pair<NetCostHandler, std::optional<NocCostHandler>>
-alloc_and_load_placement_structs(const t_placer_opts& placer_opts,
-                                 const t_noc_opts& noc_opts,
-                                 t_direct_inf* directs,
-                                 int num_directs,
-                                 PlacerState& placer_state);
+static NetCostHandler alloc_and_load_placement_structs(const t_placer_opts& placer_opts,
+                                                       const t_noc_opts& noc_opts,
+                                                       t_direct_inf* directs,
+                                                       int num_directs,
+                                                       PlacerState& placer_state,
+                                                       std::optional<NocCostHandler>& noc_cost_handler);
 
 static void free_placement_structs();
 
@@ -433,8 +433,11 @@ void try_place(const Netlist<>& net_list,
     const auto& p_timing_ctx = placer_state.timing();
     const auto& p_runtime_ctx = placer_state.runtime();
 
-    auto [net_cost_handler, noc_cost_handler] = alloc_and_load_placement_structs(placer_opts, noc_opts,
-                                                                                 directs, num_directs, placer_state);
+
+    std::optional<NocCostHandler> noc_cost_handler;
+    // create cost handler objects
+    NetCostHandler net_cost_handler = alloc_and_load_placement_structs(placer_opts, noc_opts, directs,
+                                                                       num_directs, placer_state, noc_cost_handler);
 
     ManualMoveGenerator manual_move_generator(placer_state);
 
@@ -1833,12 +1836,12 @@ static void invalidate_affected_connections(const t_pl_blocks_to_be_moved& block
 
 /* Allocates the major structures needed only by the placer, primarily for *
  * computing costs quickly and such.                                       */
-static std::pair<NetCostHandler, std::optional<NocCostHandler>>
-alloc_and_load_placement_structs(const t_placer_opts& placer_opts,
-                                 const t_noc_opts& noc_opts,
-                                 t_direct_inf* directs,
-                                 int num_directs,
-                                 PlacerState& placer_state) {
+static NetCostHandler alloc_and_load_placement_structs(const t_placer_opts& placer_opts,
+                                                       const t_noc_opts& noc_opts,
+                                                       t_direct_inf* directs,
+                                                       int num_directs,
+                                                       PlacerState& placer_state,
+                                                       std::optional<NocCostHandler>& noc_cost_handler) {
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
@@ -1909,12 +1912,11 @@ alloc_and_load_placement_structs(const t_placer_opts& placer_opts,
 
     place_ctx.compressed_block_grids = create_compressed_block_grids();
 
-    std::optional<NocCostHandler> noc_cost_handler;
     if (noc_opts.noc) {
         noc_cost_handler.emplace(placer_state.block_locs());
     }
 
-    return {NetCostHandler{placer_opts, placer_state, num_nets, place_ctx.cube_bb}, std::move(noc_cost_handler)};
+    return NetCostHandler{placer_opts, placer_state, num_nets, place_ctx.cube_bb};
 }
 
 /* Frees the major structures needed by the placer (and not needed       *
