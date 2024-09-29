@@ -439,9 +439,11 @@ void try_place(const Netlist<>& net_list,
     NetCostHandler net_cost_handler = alloc_and_load_placement_structs(placer_opts, noc_opts, directs,
                                                                        num_directs, placer_state, noc_cost_handler);
 
+#ifndef NO_GRAPHICS
     if (noc_cost_handler.has_value()) {
         set_noc_link_bandwidth_usages_ref(noc_cost_handler->get_link_bandwidth_usages());
     }
+#endif
 
     ManualMoveGenerator manual_move_generator(placer_state);
 
