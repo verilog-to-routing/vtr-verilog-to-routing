@@ -309,6 +309,13 @@ void NocCostHandler::revert_noc_traffic_flow_routes(const t_pl_blocks_to_be_move
             for (NocTrafficFlowId traffic_flow_id : assoc_traffic_flows) {
                 // first check to see whether we have already reverted the current traffic flow and only revert it if we haven't already.
                 if (reverted_traffic_flows.find(traffic_flow_id) == reverted_traffic_flows.end()) {
+                    const t_noc_traffic_flow& traffic_flow = noc_traffic_flows_storage.get_single_noc_traffic_flow(traffic_flow_id);
+
+                    // decrease the bandwidth utilization of the links in the current route
+                    update_traffic_flow_link_usage(traffic_flow_routes[traffic_flow_id], -1, traffic_flow.traffic_flow_bandwidth);
+                    // increase the bandwidth utilization of the links in the backup route
+                    update_traffic_flow_link_usage(traffic_flow_routes_backup[traffic_flow_id], +1, traffic_flow.traffic_flow_bandwidth);
+
                     // Revert the traffic flow route by restoring the backup
                     std::swap(traffic_flow_routes[traffic_flow_id], traffic_flow_routes_backup[traffic_flow_id]);
 
