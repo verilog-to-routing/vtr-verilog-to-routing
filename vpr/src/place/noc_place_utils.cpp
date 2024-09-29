@@ -790,6 +790,10 @@ double NocCostHandler::get_total_congestion_bandwidth_ratio() const {
     return accum_congestion_ratio;
 }
 
+double NocCostHandler::get_link_used_bandwidth(NocLinkId link_id) const {
+    return link_bandwidth_usages[link_id];
+}
+
 std::vector<NocLink> NocCostHandler::get_top_n_congested_links(int n) {
     // get NoC links
     vtr::vector<NocLinkId, NocLink> noc_links = g_vpr_ctx.noc().noc_model.get_noc_links();

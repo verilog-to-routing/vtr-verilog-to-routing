@@ -279,6 +279,11 @@ class NocCostHandler {
      */
     double get_total_congestion_bandwidth_ratio() const;
 
+    /**
+     * @brief Returns the utilized bandwidth of a NoC link.
+     * @param link_id The Id of the NoC link whose used bandwidth is desired.
+     * @return The used bandwidth of the given NoC link.
+     */
     double get_link_used_bandwidth(NocLinkId link_id) const;
 
     /**
@@ -505,6 +510,9 @@ class NocCostHandler {
 
     ///Represents the bandwidth of the data being transmitted on the link. Units in bits-per-second(bps)
     vtr::vector<NocLinkId, double> link_bandwidth_usages;
+
+
+    friend void test_revert_noc_traffic_flow_routes();
 };
 
 /**
