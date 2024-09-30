@@ -58,7 +58,7 @@ struct t_noc_router_tile_position {
  * @brief Based on the NoC information provided by the user in the architecture
  *        description file, a NoC model is created. The model defines the
  *        constraints of the NoC as well as its layout on the FPGA device. 
- *        The datastructure used to define the model is  "NocStorage" and that
+ *        The data structure used to define the model is  "NocStorage" and that
  *        is created here and stored within the noc_ctx. 
  * 
  * @param arch Contains the parsed information from the architecture

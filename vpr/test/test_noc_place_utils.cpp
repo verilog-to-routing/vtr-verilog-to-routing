@@ -26,12 +26,12 @@ TEST_CASE("test_initial_noc_placement", "[noc_place_utils]") {
     // this sets the range of possible bandwidths for a traffic flow
     std::uniform_int_distribution<std::mt19937::result_type> dist_2(0, 1000);
 
-    // get global datastructures
+    // get global data structures
     auto& noc_ctx = g_vpr_ctx.mutable_noc();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
     auto& block_locs = place_ctx.mutable_block_locs();
 
-    // start by deleting any global datastructures (this is so that we don't have corruption from previous tests)
+    // start by deleting any global data structures (this is so that we don't have corruption from previous tests)
     noc_ctx.noc_model.clear_noc();
     noc_ctx.noc_traffic_flows_storage.clear_traffic_flows();
     block_locs.clear();
@@ -112,7 +112,7 @@ TEST_CASE("test_initial_noc_placement", "[noc_place_utils]") {
                                                       -1,
                                                       hard_router_block.get_router_layer_position());
 
-        // now add the cluster and its placed location to the placement datastructures
+        // now add the cluster and its placed location to the placement data structures
         block_locs.insert(ClusterBlockId(cluster_block_number), current_cluster_block_location);
     }
 
@@ -227,12 +227,12 @@ TEST_CASE("test_initial_comp_cost_functions", "[noc_place_utils]") {
     std::uniform_real_distribution<double> dist_3(1, 25);
     std::default_random_engine double_engine;
 
-    // get global datastructures
+    // get global data structures
     auto& noc_ctx = g_vpr_ctx.mutable_noc();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
     auto& block_locs = place_ctx.mutable_block_locs();
 
-    // start by deleting any global datastructures (this is so that we don't have corruption from previous tests)
+    // start by deleting any global data structures (this is so that we don't have corruption from previous tests)
     noc_ctx.noc_model.clear_noc();
     noc_ctx.noc_traffic_flows_storage.clear_traffic_flows();
     block_locs.clear();
@@ -313,7 +313,7 @@ TEST_CASE("test_initial_comp_cost_functions", "[noc_place_utils]") {
                                                       -1,
                                                       hard_router_block.get_router_layer_position());
 
-        // now add the cluster and its placed location to the placement datastructures
+        // now add the cluster and its placed location to the placement data structures
         block_locs.insert(ClusterBlockId(cluster_block_number), current_cluster_block_location);
     }
 
@@ -358,7 +358,7 @@ TEST_CASE("test_initial_comp_cost_functions", "[noc_place_utils]") {
 
     noc_ctx.noc_traffic_flows_storage.finished_noc_traffic_flows_setup();
 
-    // need to route all the traffic flows so create a datastructure to store them here
+    // need to route all the traffic flows so create a data structure to store them here
     std::vector<int> golden_traffic_flow_route_sizes;
     golden_traffic_flow_route_sizes.resize(number_of_created_traffic_flows);
 
@@ -390,7 +390,7 @@ TEST_CASE("test_initial_comp_cost_functions", "[noc_place_utils]") {
     }
 
     SECTION("test_comp_noc_aggregate_bandwidth_cost") {
-        //initialize all the cost calculator datastructures
+        //initialize all the cost calculator data structures
         NocCostHandler noc_cost_handler(block_locs);
         noc_cost_handler.initial_noc_routing({});
 
@@ -417,7 +417,7 @@ TEST_CASE("test_initial_comp_cost_functions", "[noc_place_utils]") {
     }
 
     SECTION("test_comp_noc_latency_cost") {
-        //initialize all the cost calculator datastructures
+        //initialize all the cost calculator data structures
         NocCostHandler noc_cost_handler(block_locs);
         noc_cost_handler.initial_noc_routing({});
 
@@ -454,7 +454,7 @@ TEST_CASE("test_initial_comp_cost_functions", "[noc_place_utils]") {
     }
 
     SECTION("test_comp_noc_congestion_cost") {
-        //initialize all the cost calculator datastructures
+        //initialize all the cost calculator data structures
         NocCostHandler noc_cost_handler(block_locs);
         noc_cost_handler.initial_noc_routing({});
 
@@ -488,12 +488,12 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
     std::uniform_real_distribution<double> dist_3(1, 25);
     std::default_random_engine double_engine;
 
-    // get global datastructures
+    // get global data structures
     auto& noc_ctx = g_vpr_ctx.mutable_noc();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
     auto& block_locs = place_ctx.mutable_block_locs();
 
-    // start by deleting any global datastructures (this is so that we don't have corruption from previous tests)
+    // start by deleting any global data structures (this is so that we don't have corruption from previous tests)
     noc_ctx.noc_model.clear_noc();
     noc_ctx.noc_traffic_flows_storage.clear_traffic_flows();
     block_locs.clear();
@@ -583,7 +583,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
 
         router_where_cluster_is_placed.push_back((NocRouterId)cluster_block_number);
 
-        // now add the cluster and its placed location to the placement datastructures
+        // now add the cluster and its placed location to the placement data structures
         block_locs.insert(ClusterBlockId(cluster_block_number), current_cluster_block_location);
     }
 
@@ -668,12 +668,12 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
 
     NocCostHandler noc_cost_handler(block_locs);
     // assume this works
-    // this is needed to set up the global noc packet router and also global datastructures
+    // this is needed to set up the global noc packet router and also global data structures
     noc_cost_handler.initial_noc_routing({});
 
-    // datastructure below will store the bandwidth usages of all the links
+    // data structure below will store the bandwidth usages of all the links
     // and will be updated throughout this test.
-    // These link bandwidths will then be compared to link bandwidths in the NoC datastructure (these will be updated in the test function)
+    // These link bandwidths will then be compared to link bandwidths in the NoC data structure (these will be updated in the test function)
     vtr::vector<NocLinkId, double> golden_link_bandwidths;
     golden_link_bandwidths.resize(noc_ctx.noc_model.get_noc_links().size(), 0.0);
 
@@ -716,10 +716,10 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
     noc_cost_handler.comp_noc_latency_cost();
     noc_cost_handler.comp_noc_congestion_cost();
 
-    // datastructure that keeps track of moved blocks during placement
+    // data structure that keeps track of moved blocks during placement
     t_pl_blocks_to_be_moved blocks_affected(NUM_OF_LOGICAL_ROUTER_BLOCKS_NOC_PLACE_UTILS_TEST);
 
-    // datastructure that keeps track of all the traffic flows that have been re-routed
+    // data structure that keeps track of all the traffic flows that have been re-routed
     std::unordered_set<NocTrafficFlowId> routed_traffic_flows;
 
     /*  Now we imitate placement here by swapping two clusters block
@@ -737,7 +737,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
             swap_router_block_two = (ClusterBlockId)dist(rand_num_gen);
         } while (swap_router_block_one == swap_router_block_two);
 
-        //set up the moved blocks datastructure for the test function
+        //set up the moved blocks data structure for the test function
         blocks_affected.moved_blocks.resize(2);
 
         blocks_affected.moved_blocks[0].block_num = swap_router_block_one;
@@ -763,7 +763,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
         // swap the hard router blocks where the two cluster blocks are placed on
         std::swap(router_where_cluster_is_placed[swap_router_block_one], router_where_cluster_is_placed[swap_router_block_two]);
 
-        // now move the blocks in the placement datastructures
+        // now move the blocks in the placement data structures
         block_locs[swap_router_block_one].loc = blocks_affected.moved_blocks[0].new_loc;
         block_locs[swap_router_block_two].loc = blocks_affected.moved_blocks[1].new_loc;
 
@@ -862,7 +862,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
         test_noc_costs.latency_overrun += delta_cost.latency_overrun;
         test_noc_costs.congestion += delta_cost.congestion;
 
-        // need this function to update the local datastructures that store all the traffic flow costs
+        // need this function to update the local data structures that store all the traffic flow costs
         noc_cost_handler.commit_noc_costs();
 
         // clear the affected blocks
@@ -890,7 +890,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
     ClusterBlockId swap_router_block_two = chosen_traffic_flow.source_router_cluster_id;
 
     // now perform the swap
-    //set up the moved blocks datastructure for the test function
+    //set up the moved blocks data structure for the test function
     blocks_affected.moved_blocks.resize(2);
 
     blocks_affected.moved_blocks[0].block_num = swap_router_block_one;
@@ -919,7 +919,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
     router_where_cluster_is_placed[swap_router_block_one] = router_where_cluster_is_placed[swap_router_block_two];
     router_where_cluster_is_placed[swap_router_block_two] = router_first_swap_cluster_location;
 
-    // now move the blocks in the placement datastructures
+    // now move the blocks in the placement data structures
     block_locs[swap_router_block_one].loc = blocks_affected.moved_blocks[0].new_loc;
     block_locs[swap_router_block_two].loc = blocks_affected.moved_blocks[1].new_loc;
 
@@ -1010,7 +1010,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
     test_noc_costs.latency_overrun += delta_cost.latency_overrun;
     test_noc_costs.congestion += delta_cost.congestion;
 
-    // need this function to update the local datastructures that store all the traffic flow costs
+    // need this function to update the local data structures that store all the traffic flow costs
     noc_cost_handler.commit_noc_costs();
 
     // clear the affected blocks
@@ -1026,7 +1026,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
     swap_router_block_two = (ClusterBlockId)(NUM_OF_TRAFFIC_FLOWS_NOC_PLACE_UTILS_TEST - 4);
 
     // now perform the swap
-    //set up the moved blocks datastructure for the test function
+    //set up the moved blocks data structure for the test function
     blocks_affected.moved_blocks.resize(2);
 
     blocks_affected.moved_blocks[0].block_num = swap_router_block_one;
@@ -1055,7 +1055,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
     router_where_cluster_is_placed[swap_router_block_one] = router_where_cluster_is_placed[swap_router_block_two];
     router_where_cluster_is_placed[swap_router_block_two] = router_first_swap_cluster_location;
 
-    // now move the blocks in the placement datastructures
+    // now move the blocks in the placement data structures
     block_locs[swap_router_block_one].loc = blocks_affected.moved_blocks[0].new_loc;
     block_locs[swap_router_block_two].loc = blocks_affected.moved_blocks[1].new_loc;
 
@@ -1111,7 +1111,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
     test_noc_costs.latency_overrun += delta_cost.latency_overrun;
     test_noc_costs.congestion += delta_cost.congestion;
 
-    // need this function to update the local datastructures that store all the traffic flow costs
+    // need this function to update the local data structures that store all the traffic flow costs
     noc_cost_handler.commit_noc_costs();
 
     // clear the affected blocks
@@ -1129,7 +1129,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
     swap_router_block_two = (ClusterBlockId)(NUM_OF_TRAFFIC_FLOWS_NOC_PLACE_UTILS_TEST - 2);
 
     // now perform the swap
-    //set up the moved blocks datastructure for the test function
+    //set up the moved blocks data structure for the test function
     blocks_affected.moved_blocks.resize(2);
 
     blocks_affected.moved_blocks[0].block_num = swap_router_block_one;
@@ -1158,7 +1158,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
     router_where_cluster_is_placed[swap_router_block_one] = router_where_cluster_is_placed[swap_router_block_two];
     router_where_cluster_is_placed[swap_router_block_two] = router_first_swap_cluster_location;
 
-    // now move the blocks in the placement datastructures
+    // now move the blocks in the placement data structures
     block_locs[swap_router_block_one].loc = blocks_affected.moved_blocks[0].new_loc;
     block_locs[swap_router_block_two].loc = blocks_affected.moved_blocks[1].new_loc;
 
@@ -1176,7 +1176,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
     test_noc_costs.latency_overrun += delta_cost.latency_overrun;
     test_noc_costs.congestion += delta_cost.congestion;
 
-    // need this function to update the local datastructures that store all the traffic flow costs
+    // need this function to update the local data structures that store all the traffic flow costs
     noc_cost_handler.commit_noc_costs();
 
     // clear the affected blocks
@@ -1248,12 +1248,12 @@ TEST_CASE("test_revert_noc_traffic_flow_routes", "[noc_place_utils]") {
     std::uniform_real_distribution<double> dist_3(1, 25);
     std::default_random_engine double_engine;
 
-    // get global datastructures
+    // get global data structures
     auto& noc_ctx = g_vpr_ctx.mutable_noc();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
     auto& block_locs = place_ctx.mutable_block_locs();
 
-    // start by deleting any global datastructures (this is so that we don't have corruption from previous tests)
+    // start by deleting any global data structures (this is so that we don't have corruption from previous tests)
     noc_ctx.noc_model.clear_noc();
     noc_ctx.noc_traffic_flows_storage.clear_traffic_flows();
     block_locs.clear();
@@ -1343,7 +1343,7 @@ TEST_CASE("test_revert_noc_traffic_flow_routes", "[noc_place_utils]") {
 
         router_where_cluster_is_placed.push_back((NocRouterId)cluster_block_number);
 
-        // now add the cluster and its placed location to the placement datastructures
+        // now add the cluster and its placed location to the placement data structures
         block_locs.insert(ClusterBlockId(cluster_block_number), current_cluster_block_location);
     }
 
@@ -1428,12 +1428,12 @@ TEST_CASE("test_revert_noc_traffic_flow_routes", "[noc_place_utils]") {
 
     NocCostHandler noc_cost_handler(block_locs);
     // assume this works
-    // this is needed to set up the global noc packet router and also global datastructures
+    // this is needed to set up the global noc packet router and also global data structures
     noc_cost_handler.initial_noc_routing({});
 
-    // datastructure below will store the bandwidth usages of all the links
+    // data structure below will store the bandwidth usages of all the links
     // and will be updated throughout this test.
-    // These link bandwidths will then be compared to link bandwidths in the NoC datastructure (these will be updated in the test function)
+    // These link bandwidths will then be compared to link bandwidths in the NoC data structure (these will be updated in the test function)
     vtr::vector<NocLinkId, double> golden_link_bandwidths;
     golden_link_bandwidths.resize(noc_ctx.noc_model.get_noc_links().size(), 0.0);
 
@@ -1476,10 +1476,10 @@ TEST_CASE("test_revert_noc_traffic_flow_routes", "[noc_place_utils]") {
     noc_cost_handler.comp_noc_latency_cost();
     noc_cost_handler.comp_noc_congestion_cost();
 
-    // datastructure that keeps track of moved blocks during placement
+    // data structure that keeps track of moved blocks during placement
     t_pl_blocks_to_be_moved blocks_affected(NUM_OF_LOGICAL_ROUTER_BLOCKS_NOC_PLACE_UTILS_TEST);
 
-    // datastructure that keeps track of all the traffic flows that have been re-routed
+    // data structure that keeps track of all the traffic flows that have been re-routed
     std::unordered_set<NocTrafficFlowId> routed_traffic_flows;
 
     /*  Now we imitate placement here by swapping two clusters block
@@ -1497,7 +1497,7 @@ TEST_CASE("test_revert_noc_traffic_flow_routes", "[noc_place_utils]") {
             swap_router_block_two = (ClusterBlockId)dist(rand_num_gen);
         } while (swap_router_block_one == swap_router_block_two);
 
-        //set up the moved blocks datastructure for the test function
+        //set up the moved blocks data structure for the test function
         blocks_affected.moved_blocks.resize(2);
 
         blocks_affected.moved_blocks[0].block_num = swap_router_block_one;
@@ -1523,7 +1523,7 @@ TEST_CASE("test_revert_noc_traffic_flow_routes", "[noc_place_utils]") {
         // swap the hard router blocks where the two cluster blocks are placed on
         std::swap(router_where_cluster_is_placed[swap_router_block_one], router_where_cluster_is_placed[swap_router_block_two]);
 
-        // now move the blocks in the placement datastructures
+        // now move the blocks in the placement data structures
         block_locs[swap_router_block_one].loc = blocks_affected.moved_blocks[0].new_loc;
         block_locs[swap_router_block_two].loc = blocks_affected.moved_blocks[1].new_loc;
 
@@ -1535,11 +1535,11 @@ TEST_CASE("test_revert_noc_traffic_flow_routes", "[noc_place_utils]") {
         // swap the hard router blocks where the two cluster blocks are placed on
         std::swap(router_where_cluster_is_placed[swap_router_block_one], router_where_cluster_is_placed[swap_router_block_two]);
 
-        // now move the blocks in the placement datastructures
+        // now move the blocks in the placement data structures
         block_locs[swap_router_block_one].loc = blocks_affected.moved_blocks[0].old_loc;
         block_locs[swap_router_block_two].loc = blocks_affected.moved_blocks[1].old_loc;
 
-        // need this function to update the local datastructures that store all the traffic flow costs
+        // need this function to update the local data structures that store all the traffic flow costs
         noc_cost_handler.revert_noc_traffic_flow_routes(blocks_affected);
 
         // clear the affected blocks
@@ -1566,7 +1566,7 @@ TEST_CASE("test_revert_noc_traffic_flow_routes", "[noc_place_utils]") {
     ClusterBlockId swap_router_block_two = chosen_traffic_flow.source_router_cluster_id;
 
     // now perform the swap
-    //set up the moved blocks datastructure for the test function
+    //set up the moved blocks data structure for the test function
     blocks_affected.moved_blocks.resize(2);
 
     blocks_affected.moved_blocks[0].block_num = swap_router_block_one;
@@ -1593,7 +1593,7 @@ TEST_CASE("test_revert_noc_traffic_flow_routes", "[noc_place_utils]") {
     // swap the hard router blocks where the two cluster blocks are placed on
     std::swap(router_where_cluster_is_placed[swap_router_block_one], router_where_cluster_is_placed[swap_router_block_two]);
 
-    // now move the blocks in the placement datastructures
+    // now move the blocks in the placement data structures
     block_locs[swap_router_block_one].loc = blocks_affected.moved_blocks[0].new_loc;
     block_locs[swap_router_block_two].loc = blocks_affected.moved_blocks[1].new_loc;
 
@@ -1605,11 +1605,11 @@ TEST_CASE("test_revert_noc_traffic_flow_routes", "[noc_place_utils]") {
     // swap the hard router blocks where the two cluster blocks are placed on
     std::swap(router_where_cluster_is_placed[swap_router_block_one], router_where_cluster_is_placed[swap_router_block_two]);
 
-    // now move the blocks in the placement datastructures
+    // now move the blocks in the placement data structures
     block_locs[swap_router_block_one].loc = blocks_affected.moved_blocks[0].old_loc;
     block_locs[swap_router_block_two].loc = blocks_affected.moved_blocks[1].old_loc;
 
-    // need this function to update the local datastructures that store all the traffic flow costs
+    // need this function to update the local data structures that store all the traffic flow costs
     noc_cost_handler.revert_noc_traffic_flow_routes(blocks_affected);
 
     // clear the affected blocks
@@ -1624,7 +1624,7 @@ TEST_CASE("test_revert_noc_traffic_flow_routes", "[noc_place_utils]") {
     swap_router_block_two = (ClusterBlockId)(NUM_OF_TRAFFIC_FLOWS_NOC_PLACE_UTILS_TEST - 4);
 
     // now perform the swap
-    //set up the moved blocks datastructure for the test function
+    //set up the moved blocks data structure for the test function
     blocks_affected.moved_blocks.resize(2);
 
     blocks_affected.moved_blocks[0].block_num = swap_router_block_one;
@@ -1651,7 +1651,7 @@ TEST_CASE("test_revert_noc_traffic_flow_routes", "[noc_place_utils]") {
     // swap the hard router blocks where the two cluster blocks are placed on
     std::swap(router_where_cluster_is_placed[swap_router_block_one], router_where_cluster_is_placed[swap_router_block_two]);
 
-    // now move the blocks in the placement datastructures
+    // now move the blocks in the placement data structures
     block_locs[swap_router_block_one].loc = blocks_affected.moved_blocks[0].new_loc;
     block_locs[swap_router_block_two].loc = blocks_affected.moved_blocks[1].new_loc;
 
@@ -1664,11 +1664,11 @@ TEST_CASE("test_revert_noc_traffic_flow_routes", "[noc_place_utils]") {
     // swap the hard router blocks where the two cluster blocks are placed on
     std::swap(router_where_cluster_is_placed[swap_router_block_one], router_where_cluster_is_placed[swap_router_block_two]);
 
-    // now move the blocks in the placement datastructures
+    // now move the blocks in the placement data structures
     block_locs[swap_router_block_one].loc = blocks_affected.moved_blocks[0].old_loc;
     block_locs[swap_router_block_two].loc = blocks_affected.moved_blocks[1].old_loc;
 
-    // need this function to update the local datastructures that store all the traffic flow costs
+    // need this function to update the local data structures that store all the traffic flow costs
     noc_cost_handler.revert_noc_traffic_flow_routes(blocks_affected);
 
     // clear the affected blocks
@@ -1686,7 +1686,7 @@ TEST_CASE("test_revert_noc_traffic_flow_routes", "[noc_place_utils]") {
     swap_router_block_two = (ClusterBlockId)(NUM_OF_TRAFFIC_FLOWS_NOC_PLACE_UTILS_TEST - 2);
 
     // now perform the swap
-    //set up the moved blocks datastructure for the test function
+    //set up the moved blocks data structure for the test function
     blocks_affected.moved_blocks.resize(2);
 
     blocks_affected.moved_blocks[0].block_num = swap_router_block_one;
@@ -1713,7 +1713,7 @@ TEST_CASE("test_revert_noc_traffic_flow_routes", "[noc_place_utils]") {
     // swap the hard router blocks where the two cluster blocks are placed on
     std::swap(router_where_cluster_is_placed[swap_router_block_one], router_where_cluster_is_placed[swap_router_block_two]);
 
-    // now move the blocks in the placement datastructures
+    // now move the blocks in the placement data structures
     block_locs[swap_router_block_one].loc = blocks_affected.moved_blocks[0].new_loc;
     block_locs[swap_router_block_two].loc = blocks_affected.moved_blocks[1].new_loc;
 
@@ -1728,11 +1728,11 @@ TEST_CASE("test_revert_noc_traffic_flow_routes", "[noc_place_utils]") {
     // swap the hard router blocks where the two cluster blocks are placed on
     std::swap(router_where_cluster_is_placed[swap_router_block_one], router_where_cluster_is_placed[swap_router_block_two]);
 
-    // now move the blocks in the placement datastructures
+    // now move the blocks in the placement data structures
     block_locs[swap_router_block_one].loc = blocks_affected.moved_blocks[0].old_loc;
     block_locs[swap_router_block_two].loc = blocks_affected.moved_blocks[1].old_loc;
 
-    // need this function to update the local datastructures that store all the traffic flow costs
+    // need this function to update the local data structures that store all the traffic flow costs
     noc_cost_handler.revert_noc_traffic_flow_routes(blocks_affected);
 
     // clear the affected blocks
@@ -1914,12 +1914,12 @@ TEST_CASE("test_check_noc_placement_costs", "[noc_place_utils]") {
     std::uniform_real_distribution<double> dist_3(1, 25);
     std::default_random_engine double_engine;
 
-    // get global datastructures
+    // get global data structures
     auto& noc_ctx = g_vpr_ctx.mutable_noc();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
     auto& block_locs = place_ctx.mutable_block_locs();
 
-    // start by deleting any global datastructures (this is so that we don't have corruption from previous tests)
+    // start by deleting any global data structures (this is so that we don't have corruption from previous tests)
     noc_ctx.noc_model.clear_noc();
     noc_ctx.noc_traffic_flows_storage.clear_traffic_flows();
     block_locs.clear();
@@ -2007,7 +2007,7 @@ TEST_CASE("test_check_noc_placement_costs", "[noc_place_utils]") {
 
         router_where_cluster_is_placed.push_back((NocRouterId)cluster_block_number);
 
-        // now add the cluster and its placed location to the placement datastructures
+        // now add the cluster and its placed location to the placement data structures
         block_locs.insert(ClusterBlockId(cluster_block_number), current_cluster_block_location);
     }
 

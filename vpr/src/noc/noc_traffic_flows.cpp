@@ -95,7 +95,7 @@ void NocTrafficFlows::finished_noc_traffic_flows_setup() {
 }
 
 void NocTrafficFlows::clear_traffic_flows() {
-    // delete any information from internal datastructures
+    // delete any information from internal data structures
     noc_traffic_flows.clear();
     noc_traffic_flows_ids.clear();
     router_cluster_in_netlist.clear();

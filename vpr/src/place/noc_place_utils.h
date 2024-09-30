@@ -70,7 +70,7 @@ class NocCostHandler {
      * costs (latency and aggregate bandwidth) are also updated to
      * reflect the re-routed traffic flows. This update is done to the
      * 'proposed_traffic_flow_aggregate_bandwidth_cost' and
-     * 'proposed_traffic_flow_latency_cost' datastructures found in
+     * 'proposed_traffic_flow_latency_cost' data structures found in
      * 'noc_place_utils.cpp'.
      *
      * Finally the overall change in NoC costs for a given placement
@@ -95,17 +95,17 @@ class NocCostHandler {
                                                         NocCostTerms& delta_c);
 
     /**
-     * @brief Updates static datastructures found in 'noc_place_utils.cpp'
+     * @brief Updates static data structures found in 'noc_place_utils.cpp'
      * which keep track of the aggregate bandwidth and latency costs of all
      * traffic flows in the design.
      *
-     * Go through the 'affected_traffic_flows' datastructure which contains
+     * Go through the 'affected_traffic_flows' data structure which contains
      * the traffic flows which have been modified in a given placement
      * iteration. For each traffic flow update the aggregate bandwidth and
      * latency costs within the 'traffic_flow_aggregate_bandwidth_cost' and
-     * 'traffic_flow_latency_cost' datastructures with their proposed values
+     * 'traffic_flow_latency_cost' data structures with their proposed values
      * which can be found in the 'proposed_traffic_flow_aggregate_bandwidth_cost'
-     * and 'proposed_traffic_flow_latency_cost' datastructures.
+     * and 'proposed_traffic_flow_latency_cost' data structures.
      *
      * This function should be used after a proposed move which includes NoC
      * router blocks (logical) is accepted. The move needs to be accepted
@@ -385,8 +385,8 @@ class NocCostHandler {
      * to reflect the moved logical router cluster block.
      *
      * The associated traffic flows and their newly found costs are stored in static
-     * datastructures found in 'noc_place_utils.cpp'. The size of these
-     * datastructures represent the total number of affected traffic flows which is
+     * data structures found in 'noc_place_utils.cpp'. The size of these
+     * data structures represent the total number of affected traffic flows which is
      * also updated within here.
      *
      * @param moved_router_block_id The logical router cluster block that was moved
@@ -550,8 +550,6 @@ double calculate_traffic_flow_aggregate_bandwidth_cost(const std::vector<NocLink
 std::pair<double, double> calculate_traffic_flow_latency_cost(const std::vector<NocLinkId>& traffic_flow_route,
                                                               const NocStorage& noc_model,
                                                               const t_noc_traffic_flow& traffic_flow_info);
-
-
 
 /**
  * @brief The user passes weighting factors for aggregate latency

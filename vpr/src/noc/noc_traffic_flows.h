@@ -18,7 +18,7 @@
  * wants to find traffic flows based on just the source or sink logical router.
  * The routes for the traffic flows are expected to change throughout placement
  * as routers will be moved within the chip. Therefore this class provides
- * a datastructure to keep track of which flows have been updated (re-routed).
+ * a data structure to keep track of which flows have been updated (re-routed).
  * 
  * Finally, this class also stores all router blocks (logical routers) in the 
  * design.
@@ -94,7 +94,7 @@ class NocTrafficFlows {
      * router. If the source/destination routers are moved, then the traffic
      * flow needs tp be re-routed. 
      * 
-     * This datastructure stores a vector of traffic flows that are associated
+     * This data structure stores a vector of traffic flows that are associated
      * to each router cluster block. A traffic flow is associated to a router
      * cluster block if the router block is either the source or destination
      * router within the traffic flow.
@@ -127,7 +127,7 @@ class NocTrafficFlows {
      * @param traffic_flow_id A unique id that represents a traffic flow.
      * @param associated_router_id A ClusterBlockId that represents a
      *                             router block. 
-     * @param router_associated_traffic_flows A datastructure that stores
+     * @param router_associated_traffic_flows A data structure that stores
      * a vector of traffic flows for a given router block where the traffic
      * flows have the router as a source or sink within the flow.
      *                                        
@@ -209,7 +209,7 @@ class NocTrafficFlows {
      * flows in the design. 
      * 
      * Finally, the newly created traffic flow is
-     * also added to internal datastructures that can be used to quickly
+     * also added to internal data structures that can be used to quickly
      * look up which traffic flows contain a specific router cluster block.
      * 
      * @param source_router_module_name A string that represents the
@@ -262,7 +262,7 @@ class NocTrafficFlows {
 
     /**
      * @brief Resets the class by clearing internal
-     * datastructures.
+     * data structures.
      */
     void clear_traffic_flows();
 
@@ -288,7 +288,7 @@ class NocTrafficFlows {
 
     /**
      * @brief Writes out the NocTrafficFlows class information to a file.
-     * This includes printing out each internal datastructure information.
+     * This includes printing out each internal data structure information.
      * 
      * @param file_name The name of the file that contains the NoC
      * traffic flow information   
