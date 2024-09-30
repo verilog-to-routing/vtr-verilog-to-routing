@@ -129,21 +129,16 @@
  * It is in the form of array of structs instead of
  * structs of arrays for cache efficiency.
  * Could have more data members for other macro type.
- * blk_index: The cluster_ctx.blocks index of this block.
- * x_offset: The x_offset from the first macro member to this member
- * y_offset: The y_offset from the first macro member to this member
- * z_offset: The z_offset from the first macro member to this member
  */
 struct t_pl_macro_member {
+    ///@brief The cluster_ctx.blocks index of this block.
     ClusterBlockId blk_index;
+    ///@brief The offset from the first macro member to this member
     t_pl_offset offset;
 };
 
-/* num_blocks: The number of blocks this macro contains.
- * members: An array of blocks in this macro [0:num_macro-1].
- * idirect: The direct index as specified in the arch file
- */
 struct t_pl_macro {
+    ///@brief An array of blocks in this macro [0:num_macro-1].
     std::vector<t_pl_macro_member> members;
 };
 
@@ -211,6 +206,43 @@ class PlaceMacros {
     bool net_is_driven_by_direct_(ClusterNetId clb_net);
 
     void alloc_and_load_idirect_from_blk_pin_(const std::vector<t_direct_inf>& directs);
+};
+
+
+/**
+ * @class PortPinToBlockPinConverter
+ * @brief Maps the block pins indices for all block types to the corresponding port indices and port_pin indices.
+ *
+ * @details This is necessary since there are different netlist conventions - in the cluster level,
+ * ports and port pins are used while in the post-pack level, block pins are used.
+ */
+class PortPinToBlockPinConverter {
+  public:
+    /**
+     * @brief Allocates and loads blk_pin_from_port_pin_ array.
+     */
+    PortPinToBlockPinConverter();
+
+    /**
+     * @brief Converts port and port pin indices of a specific block type to block pin index.
+     *
+     * @details The reason block type is used instead of blocks is to save memory.
+     *
+     * @param blk_type_index The block type index.
+     * @param sub_tile The subtile index within the specified block type.
+     * @param port The port number whose block pin number is desired.
+     * @param port_pin The port pin number in the specified port whose block pin number is desired.
+     * @return int The block pin index corresponding to the given port and port pin numbers.
+     */
+    int get_blk_pin_from_port_pin(int blk_type_index, int sub_tile, int port, int port_pin);
+
+  private:
+    /**
+     * @brief This array allows us to quickly find what block pin a port pin corresponds to.
+     * @details A 4D array that should be indexed as following:
+     * [0...device_ctx.physical_tile_types.size()-1][0..num_sub_tiles][0...num_ports-1][0...num_port_pins-1]
+     */
+    std::vector<std::vector<std::vector<std::vector<int>>>> blk_pin_from_port_pin_;
 };
 
 #endif

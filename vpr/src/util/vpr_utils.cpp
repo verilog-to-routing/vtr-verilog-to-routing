@@ -31,29 +31,12 @@
 static constexpr size_t MAX_STRING_LEN = 512;
 
 /******************** File-scope variables declarations **********************/
-
-/* These three mappings are needed since there are two different netlist *
- * conventions - in the cluster level, ports and port pins are used      *
- * while in the post-pack level, block pins are used. The reason block   *
- * type is used instead of blocks is to save memories.                   */
-
-/* f_port_pin_to_block_pin array allows us to quickly find what block                   *
- * pin a port pin corresponds to.                                                       *
- * [0...device_ctx.physical_tile_types.size()-1][0..num_sub_tiles][0...num_ports-1][0...num_port_pins-1]  */
-static std::vector<std::vector<std::vector<std::vector<int>>>> f_blk_pin_from_port_pin;
-
 //Regular expressions used to determine register and logic primitives
 //TODO: Make this set-able from command-line?
 const std::regex REGISTER_MODEL_REGEX("(.subckt\\s+)?.*(latch|dff).*", std::regex::icase);
 const std::regex LOGIC_MODEL_REGEX("(.subckt\\s+)?.*(lut|names|lcell).*", std::regex::icase);
 
 /******************** Subroutine declarations ********************************/
-
-/* Allocates and loads blk_pin_from_port_pin array. */
-static void alloc_and_load_blk_pin_from_port_pin();
-
-static void get_blk_pin_from_port_pin(int blk_type_index, int sub_tile, int port, int port_pin, int* blk_pin);
-
 static void load_pb_graph_pin_lookup_from_index_rec(t_pb_graph_pin** pb_graph_pin_lookup_from_index, t_pb_graph_node* pb_graph_node);
 
 static void load_pin_id_to_pb_mapping_rec(t_pb* cur_pb, t_pb** pin_id_to_pb_mapping);
@@ -1601,64 +1584,6 @@ void free_pb_stats(t_pb* pb) {
         }
         delete pb->pb_stats;
         pb->pb_stats = nullptr;
-    }
-}
-
-/***************************************************************************************
- * Y.G.THIEN
- * 29 AUG 2012
- *
- * The following functions maps the block pins indices for all block types to the      *
- * corresponding port indices and port_pin indices. This is necessary since there are  *
- * different netlist conventions - in the cluster level, ports and port pins are used  *
- * while in the post-pack level, block pins are used.                                  *
- *                                                                                     *
- ***************************************************************************************/
-
-static void get_blk_pin_from_port_pin(int blk_type_index, int sub_tile, int port, int port_pin, int* blk_pin) {
-    /* This mapping is needed since there are two different netlist                         *
-     * conventions - in the cluster level, ports and port pins are used                     *
-     * while in the post-pack level, block pins are used. The reason block                  *
-     * type is used instead of blocks is to save memories.                                  *
-     *                                                                                      *
-     * f_port_pin_to_block_pin array allows us to quickly find what block                   *
-     * pin a port pin corresponds to.                                                       *
-     * [0...device_ctx.logical_block_types.size()-1][0...num_ports-1][0...num_port_pins-1]  */
-
-    /* If the array is not allocated and loaded, allocate it.                */
-    if (f_blk_pin_from_port_pin.empty()) {
-        alloc_and_load_blk_pin_from_port_pin();
-    }
-
-    /* Return the port and port_pin for the pin.                             */
-    *blk_pin = f_blk_pin_from_port_pin[blk_type_index][sub_tile][port][port_pin];
-}
-
-static void alloc_and_load_blk_pin_from_port_pin() {
-    /* Allocates and loads blk_pin_from_port_pin array. */
-
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& types = device_ctx.physical_tile_types;
-
-    /* Resize and initialize the values to OPEN (-1). */
-    int num_types = types.size();
-    f_blk_pin_from_port_pin.resize(num_types);
-    for (int itype = 1; itype < num_types; itype++) {
-        int blk_pin_count = 0;
-        auto& type = types[itype];
-        int num_sub_tiles = type.sub_tiles.size();
-        f_blk_pin_from_port_pin[itype].resize(num_sub_tiles);
-        for (int isub_tile = 0; isub_tile < num_sub_tiles; isub_tile++) {
-            int num_ports = type.sub_tiles[isub_tile].ports.size();
-            f_blk_pin_from_port_pin[itype][isub_tile].resize(num_ports);
-            for (int iport = 0; iport < num_ports; iport++) {
-                int num_pins = type.sub_tiles[isub_tile].ports[iport].num_pins;
-                for (int ipin = 0; ipin < num_pins; ipin++) {
-                    f_blk_pin_from_port_pin[itype][isub_tile][iport].push_back(blk_pin_count);
-                    blk_pin_count++;
-                }
-            }
-        }
     }
 }
 

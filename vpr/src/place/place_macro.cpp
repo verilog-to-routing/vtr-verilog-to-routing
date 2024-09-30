@@ -541,15 +541,15 @@ static void mark_direct_of_pins(int start_pin_index,
     /* Mark the pin entry in idirect_from_blk_pin with idirect and the pin entry in    *
      * direct_type_from_blk_pin with direct_type from start_pin_index to               *
      * end_pin_index.                                                                  */
-
-    int iport_pin, iblk_pin;
     auto& device_ctx = g_vpr_ctx.device();
 
-    // Mark pins with indices from start_pin_index to end_pin_index, inclusive
-    for (iport_pin = start_pin_index; iport_pin <= end_pin_index; iport_pin++) {
-        get_blk_pin_from_port_pin(itype, isub_tile, iport, iport_pin, &iblk_pin);
+    PortPinToBlockPinConverter port_pin_to_block_pin;
 
-        //iterate through all segment connections and check if all Fc's are 0
+    // Mark pins with indices from start_pin_index to end_pin_index, inclusive
+    for (int iport_pin = start_pin_index; iport_pin <= end_pin_index; iport_pin++) {
+        int iblk_pin = port_pin_to_block_pin.get_blk_pin_from_port_pin(itype, isub_tile, iport, iport_pin);
+
+        // iterate through all segment connections and check if all Fc's are 0
         bool all_fcs_0 = true;
         for (const auto& fc_spec : device_ctx.physical_tile_types[itype].fc_specs) {
             for (int ipin : fc_spec.pins) {
@@ -702,4 +702,37 @@ static void validate_macros(const std::vector<t_pl_macro>& macros) {
             VPR_FATAL_ERROR(VPR_ERROR_PLACE, msg.str().c_str());
         }
     }
+}
+
+PortPinToBlockPinConverter::PortPinToBlockPinConverter() {
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& types = device_ctx.physical_tile_types;
+
+    // Resize and initialize the values to OPEN (-1).
+    size_t num_types = types.size();
+    blk_pin_from_port_pin_.resize(num_types);
+
+    for (size_t itype = 1; itype < num_types; itype++) {
+        int blk_pin_count = 0;
+        auto& type = types[itype];
+        size_t num_sub_tiles = type.sub_tiles.size();
+        blk_pin_from_port_pin_[itype].resize(num_sub_tiles);
+        for (size_t isub_tile = 0; isub_tile < num_sub_tiles; isub_tile++) {
+            size_t num_ports = type.sub_tiles[isub_tile].ports.size();
+            blk_pin_from_port_pin_[itype][isub_tile].resize(num_ports);
+            for (size_t iport = 0; iport < num_ports; iport++) {
+                int num_pins = type.sub_tiles[isub_tile].ports[iport].num_pins;
+                for (int ipin = 0; ipin < num_pins; ipin++) {
+                    blk_pin_from_port_pin_[itype][isub_tile][iport].push_back(blk_pin_count);
+                    blk_pin_count++;
+                }
+            }
+        }
+    }
+}
+
+int PortPinToBlockPinConverter::get_blk_pin_from_port_pin(int blk_type_index, int sub_tile, int port, int port_pin) {
+    // Return the port and port_pin for the pin.
+    int blk_pin = blk_pin_from_port_pin_[blk_type_index][sub_tile][port][port_pin];
+    return blk_pin;
 }
