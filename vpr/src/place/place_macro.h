@@ -144,6 +144,8 @@ struct t_pl_macro {
 
 class PlaceMacros {
   public:
+    PlaceMacros() = default;
+
     /**
      * @brief Allocates and loads the placement macros.
      * @details The following steps are taken in this methodL
@@ -160,13 +162,23 @@ class PlaceMacros {
      * tails are blocks with carry_out's not connected to any nets (OPEN) while the
      * carry_in's is connected to the netlist which has only 1 SINK.
      * @param directs
-     * @return
      */
-    std::vector<t_pl_macro> alloc_and_load_placement_macros(const std::vector<t_direct_inf>& directs);
+    void alloc_and_load_placement_macros(const std::vector<t_direct_inf>& directs);
 
-    int get_imacro_from_iblk(ClusterBlockId iblk, const std::vector<t_pl_macro>& macros);
+    int get_imacro_from_iblk(ClusterBlockId iblk) const;
 
     void set_imacro_for_iblk(int imacro, ClusterBlockId blk_id);
+
+    /**
+     * @brief Finds the head block of the macro that contains a given clustered block
+     * @details Placement macro head is the base of the macro, where the locations of the other macro members can be
+     * calculated using base.loc + member.offset.
+     *
+     * @return The Id of a clustered block that is the head of a macro that the given clustered block is part of.
+     */
+    ClusterBlockId macro_head(ClusterBlockId blk) const;
+
+    const std::vector<t_pl_macro>& macros() const;
 
   private:
 
@@ -192,6 +204,9 @@ class PlaceMacros {
      * [0...cluster_ctx.clb_nlist.blocks().size()-1]
      */
     vtr::vector_map<ClusterBlockId, int> imacro_from_iblk_;
+
+    ///@brief Stores all the placement macros (usually carry chains).
+    std::vector<t_pl_macro> pl_macros_;
 
   private:
     int find_all_the_macro_(std::vector<ClusterBlockId>& pl_macro_member_blk_num_of_this_blk,

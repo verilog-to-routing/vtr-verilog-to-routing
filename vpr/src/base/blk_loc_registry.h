@@ -5,6 +5,7 @@
 #include "vtr_vector_map.h"
 #include "vpr_types.h"
 #include "grid_block.h"
+#include "place_macro.h"
 
 struct t_block_loc;
 struct t_pl_blocks_to_be_moved;
@@ -16,7 +17,6 @@ struct t_pl_blocks_to_be_moved;
  *      2) grid_blocks stores which blocks (if any) are placed at a given location.
  *      3) physical_pins stores the mapping between the pins of a clustered block and
  *      the pins of the physical tile where the clustered blocks is placed.
- *
  */
 class BlkLocRegistry {
   public:
@@ -37,6 +37,8 @@ class BlkLocRegistry {
     ///@brief Clustered pin placement mapping with physical pin
     vtr::vector_map<ClusterPinId, int> physical_pins_;
 
+    PlaceMacros place_macros_;
+
   public:
     const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs() const;
     vtr::vector_map<ClusterBlockId, t_block_loc>& mutable_block_locs();
@@ -52,6 +54,10 @@ class BlkLocRegistry {
 
     ///@brief Returns the physical pin of the tile, related to the given ClusterNedId, and the net pin index.
     int net_pin_to_tile_pin_index(const ClusterNetId net_id, int net_pin_index) const;
+
+    const PlaceMacros& place_macros() const;
+
+    PlaceMacros& mutable_place_macros();
 
     /**
      * @brief Performs error checking to see if location is legal for block type,

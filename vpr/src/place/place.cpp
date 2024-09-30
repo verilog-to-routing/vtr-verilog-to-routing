@@ -353,8 +353,7 @@ void try_place(const Netlist<>& net_list,
      * width should be taken to when calculating costs.  This allows a       *
      * greater bias for anisotropic architectures.                           */
 
-    /*
-     * Currently, the functions that require is_flat as their parameter and are called during placement should
+    /* Currently, the functions that require is_flat as their parameter and are called during placement should
      * receive is_flat as false. For example, if the RR graph of router lookahead is built here, it should be as
      * if is_flat is false, even if is_flat is set to true from the command line.
      */
@@ -606,13 +605,13 @@ void try_place(const Netlist<>& net_list,
     }
 
     size_t num_macro_members = 0;
-    for (auto& macro : g_vpr_ctx.placement().pl_macros) {
+    for (auto& macro : blk_loc_registry.place_macros().macros()) {
         num_macro_members += macro.members.size();
     }
     VTR_LOG(
         "Placement contains %zu placement macros involving %zu blocks (average macro size %f)\n",
-        g_vpr_ctx.placement().pl_macros.size(), num_macro_members,
-        float(num_macro_members) / g_vpr_ctx.placement().pl_macros.size());
+        blk_loc_registry.place_macros().macros().size(), num_macro_members,
+        float(num_macro_members) / blk_loc_registry.place_macros().macros().size());
     VTR_LOG("\n");
 
     sprintf(msg,
@@ -1818,9 +1817,7 @@ static NetCostHandler alloc_and_load_placement_structs(const t_placer_opts& plac
 
     const int num_layers = device_ctx.grid.get_num_layers();
 
-    auto& block_locs = placer_state.mutable_block_locs();
-    auto& grid_blocks = placer_state.mutable_grid_blocks();
-    init_placement_context(block_locs, grid_blocks);
+    init_placement_context(placer_state.mutable_blk_loc_registry(), directs);
 
     int max_pins_per_clb = 0;
     for (const t_physical_tile_type& type : device_ctx.physical_tile_types) {
@@ -1874,8 +1871,6 @@ static NetCostHandler alloc_and_load_placement_structs(const t_placer_opts& plac
         elem = OPEN;
     }
 
-    place_ctx.pl_macros = alloc_and_load_placement_macros(directs);
-
     if (noc_opts.noc) {
         allocate_and_load_noc_placement_structs();
     }
@@ -1889,8 +1884,6 @@ static NetCostHandler alloc_and_load_placement_structs(const t_placer_opts& plac
 /* Frees the major structures needed by the placer (and not needed       *
  * elsewhere).   */
 static void free_placement_structs(const t_noc_opts& noc_opts) {
-    free_placement_macros_structs();
-
     auto& place_ctx = g_vpr_ctx.mutable_placement();
     vtr::release_memory(place_ctx.compressed_block_grids);
 
@@ -2058,7 +2051,7 @@ static int check_block_placement_consistency(const BlkLocRegistry& blk_loc_regis
 }
 
 int check_macro_placement_consistency(const BlkLocRegistry& blk_loc_registry) {
-    const auto& pl_macros = g_vpr_ctx.placement().pl_macros;
+    const auto& pl_macros = blk_loc_registry.place_macros().macros();
     const auto& block_locs = blk_loc_registry.block_locs();
     const auto& grid_blocks = blk_loc_registry.grid_blocks();
 

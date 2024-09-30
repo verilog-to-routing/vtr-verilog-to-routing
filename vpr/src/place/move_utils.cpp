@@ -85,13 +85,13 @@ e_block_move_result find_affected_blocks(t_pl_blocks_to_be_moved& blocks_affecte
 
     const auto& block_locs = blk_loc_registry.block_locs();
     const GridBlock& grid_blocks = blk_loc_registry.grid_blocks();
-    const auto& pl_macros = g_vpr_ctx.placement().pl_macros;
+    const auto& place_macros = blk_loc_registry.place_macros();
 
     e_block_move_result outcome = e_block_move_result::VALID;
 
     t_pl_loc from = block_locs[b_from].loc;
 
-    int imacro_from = get_imacro_from_iblk(b_from, pl_macros);
+    int imacro_from = place_macros.get_imacro_from_iblk(b_from);
     if (imacro_from != -1) {
         // b_from is part of a macro, I need to swap the whole macro
 
@@ -101,11 +101,11 @@ e_block_move_result find_affected_blocks(t_pl_blocks_to_be_moved& blocks_affecte
         int imember_from = 0;
         outcome = record_macro_swaps(blocks_affected, imacro_from, imember_from, swap_offset, blk_loc_registry);
 
-        VTR_ASSERT_SAFE(outcome != e_block_move_result::VALID || imember_from == int(pl_macros[imacro_from].members.size()));
+        VTR_ASSERT_SAFE(outcome != e_block_move_result::VALID || imember_from == int(place_macros.macros()[imacro_from].members.size()));
 
     } else {
         ClusterBlockId b_to = grid_blocks.block_at_location(to);
-        int imacro_to = get_imacro_from_iblk(b_to, pl_macros);
+        int imacro_to = place_macros.get_imacro_from_iblk(b_to);
 
         if (imacro_to != -1) {
             //To block is a macro but from is a single block.
@@ -180,16 +180,16 @@ e_block_move_result record_macro_swaps(t_pl_blocks_to_be_moved& blocks_affected,
                                        int& imember_from,
                                        t_pl_offset swap_offset,
                                        const BlkLocRegistry& blk_loc_registry) {
-    const auto& pl_macros = g_vpr_ctx.placement().pl_macros;
+    const auto& place_macros = blk_loc_registry.place_macros();
     const auto& block_locs = blk_loc_registry.block_locs();
     const GridBlock& grid_blocks = blk_loc_registry.grid_blocks();
 
     e_block_move_result outcome = e_block_move_result::VALID;
 
-    for (; imember_from < int(pl_macros[imacro_from].members.size()) && outcome == e_block_move_result::VALID; imember_from++) {
+    for (; imember_from < int(place_macros.macros()[imacro_from].members.size()) && outcome == e_block_move_result::VALID; imember_from++) {
         // Gets the new from and to info for every block in the macro
         // cannot use the old from and to info
-        ClusterBlockId curr_b_from = pl_macros[imacro_from].members[imember_from].blk_index;
+        ClusterBlockId curr_b_from = place_macros.macros()[imacro_from].members[imember_from].blk_index;
 
         t_pl_loc curr_from = block_locs[curr_b_from].loc;
 
@@ -207,14 +207,14 @@ e_block_move_result record_macro_swaps(t_pl_blocks_to_be_moved& blocks_affected,
             outcome = e_block_move_result::ABORT;
         } else {
             ClusterBlockId b_to = grid_blocks.block_at_location(curr_to);
-            int imacro_to = get_imacro_from_iblk(b_to, pl_macros);
+            int imacro_to = place_macros.get_imacro_from_iblk(b_to);
 
             if (imacro_to != -1) {
                 //To block is a macro
 
                 if (imacro_from == imacro_to) {
                     outcome = record_macro_self_swaps(blocks_affected, imacro_from, swap_offset, blk_loc_registry);
-                    imember_from = pl_macros[imacro_from].members.size();
+                    imember_from = place_macros.macros()[imacro_from].members.size();
                     break; //record_macro_self_swaps() handles this case completely, so we don't need to continue the loop
                 } else {
                     outcome = record_macro_macro_swaps(blocks_affected, imacro_from, imember_from, imacro_to, b_to, swap_offset, blk_loc_registry);
@@ -249,7 +249,7 @@ e_block_move_result record_macro_macro_swaps(t_pl_blocks_to_be_moved& blocks_aff
     //The position in the from macro ('imacro_from') is specified by 'imember_from', and the relevant
     //macro fro the to block is 'imacro_to'.
 
-    const auto& pl_macros = g_vpr_ctx.placement().pl_macros;
+    const auto& pl_macros = blk_loc_registry.place_macros().macros();
     const auto& block_locs = blk_loc_registry.block_locs();
 
     //At the moment, we only support blk_to being the first element of the 'to' macro.
@@ -345,11 +345,11 @@ e_block_move_result record_macro_move(t_pl_blocks_to_be_moved& blocks_affected,
                                       const int imacro,
                                       t_pl_offset swap_offset,
                                       const BlkLocRegistry& blk_loc_registry) {
-    const auto& pl_macros = g_vpr_ctx.placement().pl_macros;
+    const auto& place_macros = blk_loc_registry.place_macros();
     const auto& block_locs = blk_loc_registry.block_locs();
     const GridBlock& grid_blocks = blk_loc_registry.grid_blocks();
 
-    for (const t_pl_macro_member& member : pl_macros[imacro].members) {
+    for (const t_pl_macro_member& member : place_macros.macros()[imacro].members) {
         t_pl_loc from = block_locs[member.blk_index].loc;
 
         t_pl_loc to = from + swap_offset;
@@ -363,7 +363,7 @@ e_block_move_result record_macro_move(t_pl_blocks_to_be_moved& blocks_affected,
 
         blocks_affected.record_block_move(member.blk_index, to, blk_loc_registry);
 
-        int imacro_to = get_imacro_from_iblk(blk_to, pl_macros);
+        int imacro_to = place_macros.get_imacro_from_iblk(blk_to);
         if (blk_to && imacro_to != imacro) { //Block displaced only if exists and not part of current macro
             displaced_blocks.push_back(blk_to);
         }
@@ -378,14 +378,14 @@ e_block_move_result identify_macro_self_swap_affected_macros(std::vector<int>& m
                                                              const int imacro,
                                                              t_pl_offset swap_offset,
                                                              const BlkLocRegistry& blk_loc_registry) {
-    const auto& pl_macros = g_vpr_ctx.placement().pl_macros;
+    const auto& place_macros = blk_loc_registry.place_macros();
     const auto& block_locs = blk_loc_registry.block_locs();
     const GridBlock& grid_blocks = blk_loc_registry.grid_blocks();
 
     e_block_move_result outcome = e_block_move_result::VALID;
 
-    for (size_t imember = 0; imember < pl_macros[imacro].members.size() && outcome == e_block_move_result::VALID; ++imember) {
-        ClusterBlockId blk = pl_macros[imacro].members[imember].blk_index;
+    for (size_t imember = 0; imember < place_macros.macros()[imacro].members.size() && outcome == e_block_move_result::VALID; ++imember) {
+        ClusterBlockId blk = place_macros.macros()[imacro].members[imember].blk_index;
 
         t_pl_loc from = block_locs[blk].loc;
         t_pl_loc to = from + swap_offset;
@@ -397,7 +397,7 @@ e_block_move_result identify_macro_self_swap_affected_macros(std::vector<int>& m
 
         ClusterBlockId blk_to = grid_blocks.block_at_location(to);
 
-        int imacro_to = get_imacro_from_iblk(blk_to, pl_macros);
+        int imacro_to = place_macros.get_imacro_from_iblk(blk_to);
 
         if (imacro_to != -1) {
             auto itr = std::find(macros.begin(), macros.end(), imacro_to);
@@ -414,7 +414,7 @@ e_block_move_result record_macro_self_swaps(t_pl_blocks_to_be_moved& blocks_affe
                                             const int imacro,
                                             t_pl_offset swap_offset,
                                             const BlkLocRegistry& blk_loc_registry) {
-    const auto& pl_macros = g_vpr_ctx.placement().pl_macros;
+    const auto& place_macros = blk_loc_registry.place_macros();
 
     //Reset any partial move
     blocks_affected.clear_move_blocks();
@@ -442,7 +442,7 @@ e_block_move_result record_macro_self_swaps(t_pl_blocks_to_be_moved& blocks_affe
     }
 
     auto is_non_macro_block = [&](ClusterBlockId blk) {
-        int imacro_blk = get_imacro_from_iblk(blk, pl_macros);
+        int imacro_blk = place_macros.get_imacro_from_iblk(blk);
 
         if (std::find(affected_macros.begin(), affected_macros.end(), imacro_blk) != affected_macros.end()) {
             return false;

@@ -52,6 +52,85 @@ static void mark_direct_of_pins(int start_pin_index,
                                 int line,
                                 const char* src_string);
 
+const std::vector<t_pl_macro>& PlaceMacros::macros() const {
+    return pl_macros_;
+}
+
+void PlaceMacros::alloc_and_load_placement_macros(const std::vector<t_direct_inf>& directs) {
+    /* Allocates allocates and loads placement macros and returns
+     * the total number of macros in 2 steps.
+     *   1) Allocate temporary data structure for maximum possible
+     *      size and loops through all the blocks storing the data
+     *      relevant to the carry chains. At the same time, also count
+     *      the amount of memory required for the actual variables.
+     *   2) Allocate the actual variables with the exact amount of
+     *      memory. Then loads the data from the temporary data
+     *       structures before freeing them.
+     *
+     * For pl_macro_member_blk_num, allocate for the first dimension
+     * only at first. Allocate for the second dimension when I know
+     * the size. Otherwise, the array is going to be of size
+     * cluster_ctx.clb_nlist.blocks().size()^2 (There are big
+     * benckmarks VPR that have cluster_ctx.clb_nlist.blocks().size()
+     * in the 100k's range).
+     *
+     * The placement macro array is freed by the caller(s).
+     */
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+
+    // Allocate maximum memory for temporary variables.
+    std::vector<int> pl_macro_idirect(cluster_ctx.clb_nlist.blocks().size());
+    std::vector<int> pl_macro_num_members(cluster_ctx.clb_nlist.blocks().size());
+    std::vector<std::vector<ClusterBlockId>> pl_macro_member_blk_num(cluster_ctx.clb_nlist.blocks().size());
+    std::vector<ClusterBlockId> pl_macro_member_blk_num_of_this_blk(cluster_ctx.clb_nlist.blocks().size());
+
+    alloc_and_load_idirect_from_blk_pin_(directs);
+
+    /* Compute required size:
+     * Go through all the pins with possible direct connections in
+     * idirect_from_blk_pin_. Count the number of heads (which is the same
+     * as the number macros) and also the length of each macro
+     * Head - blocks with to_pin OPEN and from_pin connected
+     * Tail - blocks with to_pin connected and from_pin OPEN
+     */
+    int num_macro = find_all_the_macro_(pl_macro_member_blk_num_of_this_blk,
+                                        pl_macro_idirect, pl_macro_num_members, pl_macro_member_blk_num);
+
+    // Allocate the memories for the macro.
+    pl_macros_.resize(num_macro);
+
+    /* Allocate the memories for the chain members.
+     * Load the values from the temporary data structures.
+     */
+    for (int imacro = 0; imacro < num_macro; imacro++) {
+        pl_macros_[imacro].members = std::vector<t_pl_macro_member>(pl_macro_num_members[imacro]);
+
+        // Load the values for each member of the macro
+        for (size_t imember = 0; imember < pl_macros_[imacro].members.size(); imember++) {
+            pl_macros_[imacro].members[imember].offset.x = imember * directs[pl_macro_idirect[imacro]].x_offset;
+            pl_macros_[imacro].members[imember].offset.y = imember * directs[pl_macro_idirect[imacro]].y_offset;
+            pl_macros_[imacro].members[imember].offset.sub_tile = directs[pl_macro_idirect[imacro]].sub_tile_offset;
+            pl_macros_[imacro].members[imember].blk_index = pl_macro_member_blk_num[imacro][imember];
+        }
+    }
+
+    if (isEchoFileEnabled(E_ECHO_PLACE_MACROS)) {
+        write_place_macros_(getEchoFileName(E_ECHO_PLACE_MACROS), pl_macros_);
+    }
+
+    validate_macros(pl_macros_);
+
+    alloc_and_load_imacro_from_iblk_(pl_macros_);
+}
+
+ClusterBlockId PlaceMacros::macro_head(ClusterBlockId blk) const {
+    int macro_index = get_imacro_from_iblk(blk);
+    if (macro_index == OPEN) {
+        return ClusterBlockId::INVALID();
+    } else {
+        return pl_macros_[macro_index].members[0].blk_index;
+    }
+}
 
 int PlaceMacros::find_all_the_macro_(std::vector<ClusterBlockId>& pl_macro_member_blk_num_of_this_blk,
                                      std::vector<int>& pl_macro_idirect,
@@ -299,83 +378,12 @@ static bool try_combine_macros(std::vector<std::vector<ClusterBlockId>>& pl_macr
     return true;
 }
 
-std::vector<t_pl_macro> PlaceMacros::alloc_and_load_placement_macros(const std::vector<t_direct_inf>& directs) {
-    /* This function allocates and loads placement macros              *
-     * and returns the total number of macros in 2 steps.              *
-     *   1) Allocate temporary data structure for maximum possible     *
-     *      size and loops through all the blocks storing the data     *
-     *      relevant to the carry chains. At the same time, also count *
-     *      the amount of memory required for the actual variables.    *
-     *   2) Allocate the actual variables with the exact amount of     *
-     *      memory. Then loads the data from the temporary data        *
-     *       structures before freeing them.                           *
-     *                                                                 *
-     * For pl_macro_member_blk_num, allocate for the first dimension   *
-     * only at first. Allocate for the second dimension when I know    *
-     * the size. Otherwise, the array is going to be of size           *
-     * cluster_ctx.clb_nlist.blocks().size()^2 (There are big		   *
-     * benckmarks VPR that have cluster_ctx.clb_nlist.blocks().size()  *
-     * in the 100k's range).										   *
-     *																   *
-     * The placement macro array is freed by the caller(s).            */
-
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-
-    /* Allocate maximum memory for temporary variables. */
-    std::vector<int> pl_macro_idirect(cluster_ctx.clb_nlist.blocks().size());
-    std::vector<int> pl_macro_num_members(cluster_ctx.clb_nlist.blocks().size());
-    std::vector<std::vector<ClusterBlockId>> pl_macro_member_blk_num(cluster_ctx.clb_nlist.blocks().size());
-    std::vector<ClusterBlockId> pl_macro_member_blk_num_of_this_blk(cluster_ctx.clb_nlist.blocks().size());
-
-    alloc_and_load_idirect_from_blk_pin_(directs);
-
-    /* Compute required size:                                                *
-     * Go through all the pins with possible direct connections in           *
-     * idirect_from_blk_pin_. Count the number of heads (which is the same  *
-     * as the number macros) and also the length of each macro               *
-     * Head - blocks with to_pin OPEN and from_pin connected                 *
-     * Tail - blocks with to_pin connected and from_pin OPEN                 */
-    int num_macro = find_all_the_macro_(pl_macro_member_blk_num_of_this_blk,
-                                        pl_macro_idirect, pl_macro_num_members, pl_macro_member_blk_num);
-
-    /* Allocate the memories for the macro. */
-    std::vector<t_pl_macro> macros(num_macro);
-
-    /* Allocate the memories for the chain members.             *
-     * Load the values from the temporary data structures.      */
-    for (int imacro = 0; imacro < num_macro; imacro++) {
-        macros[imacro].members = std::vector<t_pl_macro_member>(pl_macro_num_members[imacro]);
-
-        /* Load the values for each member of the macro */
-        for (size_t imember = 0; imember < macros[imacro].members.size(); imember++) {
-            macros[imacro].members[imember].offset.x = imember * directs[pl_macro_idirect[imacro]].x_offset;
-            macros[imacro].members[imember].offset.y = imember * directs[pl_macro_idirect[imacro]].y_offset;
-            macros[imacro].members[imember].offset.sub_tile = directs[pl_macro_idirect[imacro]].sub_tile_offset;
-            macros[imacro].members[imember].blk_index = pl_macro_member_blk_num[imacro][imember];
-        }
-    }
-
-    if (isEchoFileEnabled(E_ECHO_PLACE_MACROS)) {
-        write_place_macros_(getEchoFileName(E_ECHO_PLACE_MACROS), macros);
-    }
-
-    validate_macros(macros);
-
-    return macros;
-}
-
-
-int PlaceMacros::get_imacro_from_iblk(ClusterBlockId iblk, const std::vector<t_pl_macro>& macros) {
+int PlaceMacros::get_imacro_from_iblk(ClusterBlockId iblk) const{
     /* This mapping is needed for fast lookups whether the block with index *
      * iblk belongs to a placement macro or not.                             *
      *                                                                       *
      * The array imacro_from_iblk_ is used for the mapping for speed reason *
      * [0...cluster_ctx.clb_nlist.blocks().size()-1]                                                    */
-
-    /* If the array is not allocated and loaded, allocate it.                */
-    if (imacro_from_iblk_.empty()) {
-        alloc_and_load_imacro_from_iblk_(macros);
-    }
 
     int imacro;
     if (iblk) {
@@ -670,6 +678,8 @@ bool PlaceMacros::net_is_driven_by_direct_(ClusterNetId clb_net) {
 
     return direct != OPEN;
 }
+
+
 
 static void validate_macros(const std::vector<t_pl_macro>& macros) {
     //Perform sanity checks on macros

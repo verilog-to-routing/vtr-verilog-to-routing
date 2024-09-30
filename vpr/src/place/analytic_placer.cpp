@@ -104,21 +104,6 @@ struct EquationSystem {
     }
 };
 
-// helper function to find the index of macro that contains blk
-// returns index in placementCtx.pl_macros,
-// returns NO_MACRO if blk not in any macros
-int imacro(ClusterBlockId blk) {
-    int macro_index = get_imacro_from_iblk(blk, g_vpr_ctx.mutable_placement().pl_macros);
-    return macro_index;
-}
-
-// helper fucntion to find the head (first block) of macro containing blk
-// returns the ID of the head block
-ClusterBlockId macro_head(ClusterBlockId blk) {
-    int macro_index = imacro(blk);
-    return g_vpr_ctx.mutable_placement().pl_macros[macro_index].members[0].blk_index;
-}
-
 // Stop optimizing once this many iterations of solve-legalize lead to negligible wirelength improvement
 constexpr int HEAP_STALLED_ITERATIONS_STOP = 15;
 
@@ -303,6 +288,7 @@ void AnalyticPlacer::build_legal_locations() {
 void AnalyticPlacer::init() {
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
     auto& init_block_locs = blk_loc_registry_ref_.block_locs();
+    auto& place_macros = blk_loc_registry_ref_.place_macros();
 
     for (auto blk_id : clb_nlist.blocks()) {
         blk_locs.insert(blk_id, BlockLocation{});
@@ -324,7 +310,7 @@ void AnalyticPlacer::init() {
         if (!init_block_locs[blk_id].is_fixed && has_connections(blk_id))
             // not fixed and has connections
             // matrix equation is formulated based on connections, so requires at least one connection
-            if (imacro(blk_id) == NO_MACRO || macro_head(blk_id) == blk_id) {
+            if (place_macros.get_imacro_from_iblk(blk_id) == NO_MACRO || place_macros.macro_head(blk_id) == blk_id) {
                 // not in macro or head of macro
                 // for macro, only the head (base) block of the macro is a free variable, the location of other macro
                 // blocks can be calculated using offset of the head. They are not free variables in the equation system
@@ -385,6 +371,8 @@ int AnalyticPlacer::total_hpwl() {
 void AnalyticPlacer::setup_solve_blks(t_logical_block_type_ptr blkTypes) {
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
     PlacementContext& place_ctx = g_vpr_ctx.mutable_placement();
+    const auto& place_macros = blk_loc_registry_ref_.place_macros();
+
 
     int row = 0;
     solve_blks.clear();
@@ -400,9 +388,11 @@ void AnalyticPlacer::setup_solve_blks(t_logical_block_type_ptr blkTypes) {
         }
     }
     // update row_num of macro members
-    for (auto& macro : place_ctx.pl_macros)
-        for (auto& member : macro.members)
-            row_num[member.blk_index] = row_num[macro_head(member.blk_index)];
+    for (auto& macro : blk_loc_registry_ref_.place_macros().macros()) {
+        for (auto& member : macro.members) {
+            row_num[member.blk_index] = row_num[place_macros.macro_head(member.blk_index)];
+        }
+    }
 }
 
 /*
@@ -411,7 +401,7 @@ void AnalyticPlacer::setup_solve_blks(t_logical_block_type_ptr blkTypes) {
  * when formulating the matrix equations), an update for members is necessary
  */
 void AnalyticPlacer::update_macros() {
-    for (auto& macro : g_vpr_ctx.mutable_placement().pl_macros) {
+    for (auto& macro : blk_loc_registry_ref_.place_macros().macros()) {
         ClusterBlockId head_id = macro.members[0].blk_index;
         bool mac_can_be_placed = macro_can_be_placed(macro, blk_locs[head_id].loc, true, blk_loc_registry_ref_);
 
@@ -474,7 +464,7 @@ void AnalyticPlacer::stamp_weight_on_matrix(EquationSystem<double>& es,
                                             ClusterBlockId var,
                                             ClusterBlockId eqn,
                                             double weight) {
-    PlacementContext& place_ctx = g_vpr_ctx.mutable_placement();
+    const auto& place_macros = blk_loc_registry_ref_.place_macros();
 
     // Return the x or y position of a block
     auto blk_p = [&](ClusterBlockId blk_id) { return dir ? blk_locs[blk_id].loc.y : blk_locs[blk_id].loc.x; };
@@ -489,8 +479,8 @@ void AnalyticPlacer::stamp_weight_on_matrix(EquationSystem<double>& es,
     } else { // var is not movable, stamp weight on rhs vector
         es.add_rhs(eqn_row, -v_pos * weight);
     }
-    if (imacro(var) != NO_MACRO) { // var is part of a macro, stamp on rhs vector
-        auto& members = place_ctx.pl_macros[imacro(var)].members;
+    if (place_macros.get_imacro_from_iblk(var) != NO_MACRO) { // var is part of a macro, stamp on rhs vector
+        auto& members = place_macros.macros()[place_macros.get_imacro_from_iblk(var)].members;
         for (auto& member : members) { // go through macro members to find the right member block
             if (member.blk_index == var)
                 es.add_rhs(eqn_row, -(dir ? member.offset.y : member.offset.x) * weight);
