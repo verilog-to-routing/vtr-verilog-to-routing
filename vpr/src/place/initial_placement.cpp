@@ -1185,7 +1185,7 @@ bool place_one_block(const ClusterBlockId blk_id,
 
     if (imacro != -1) { //If the block belongs to a macro, pass that macro to the placement routines
         VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\tBelongs to a macro %d\n", imacro);
-        const t_pl_macro& pl_macro = place_macros.macros()[imacro];
+        const t_pl_macro& pl_macro = place_macros[imacro];
         placed_macro = place_macro(MAX_NUM_TRIES_TO_PLACE_MACROS_RANDOMLY, pl_macro, pad_loc_type, blk_types_empty_locs_in_grid, *block_scores, blk_loc_registry);
     } else {
         //If it does not belong to a macro, create a macro with the one block and then pass to the placement routines

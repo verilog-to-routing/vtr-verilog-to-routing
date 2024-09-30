@@ -180,6 +180,9 @@ class PlaceMacros {
 
     const std::vector<t_pl_macro>& macros() const;
 
+//    t_pl_macro& operator[](size_t idx);
+    const t_pl_macro&  operator[](int idx) const;
+
   private:
 
     /**

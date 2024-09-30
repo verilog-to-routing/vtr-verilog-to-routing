@@ -505,7 +505,7 @@ std::pair<int, int> CutSpreader::cut_region(SpreaderRegion& r, bool dir) {
     // while left subarea is over-utilized, move logic blocks to the right subarea one at a time
     while (pivot > 0 && rl.overused(ap->ap_cfg.beta)) {
         auto& move_blk = cut_blks.at(pivot);
-        int size = (place_macros.get_imacro_from_iblk(move_blk) != NO_MACRO) ? place_macros.macros()[place_macros.get_imacro_from_iblk(move_blk)].members.size() : 1;
+        int size = (place_macros.get_imacro_from_iblk(move_blk) != NO_MACRO) ? place_macros[place_macros.get_imacro_from_iblk(move_blk)].members.size() : 1;
         rl.n_blks -= size;
         rr.n_blks += size;
         pivot--;
@@ -513,7 +513,7 @@ std::pair<int, int> CutSpreader::cut_region(SpreaderRegion& r, bool dir) {
     // while right subarea is over-utilized, move logic blocks to the left subarea one at a time
     while (pivot < int(cut_blks.size()) - 1 && rr.overused(ap->ap_cfg.beta)) {
         auto& move_blk = cut_blks.at(pivot + 1);
-        int size = (place_macros.get_imacro_from_iblk(move_blk) != NO_MACRO) ? place_macros.macros()[place_macros.get_imacro_from_iblk(move_blk)].members.size() : 1;
+        int size = (place_macros.get_imacro_from_iblk(move_blk) != NO_MACRO) ? place_macros[place_macros.get_imacro_from_iblk(move_blk)].members.size() : 1;
         rl.n_blks += size;
         rr.n_blks -= size;
         pivot++;
@@ -627,7 +627,7 @@ int CutSpreader::initial_source_cut(SpreaderRegion& r,
     int pivot = 0;      // midpoint in terms of index of cut_blks
     for (auto& blk : cut_blks) {
         // if blk is part of macro (only macro heads in cut_blks, no macro members), add that macro's size
-        pivot_blks += (place_macros.get_imacro_from_iblk(blk) != NO_MACRO) ? place_macros.macros()[place_macros.get_imacro_from_iblk(blk)].members.size() : 1;
+        pivot_blks += (place_macros.get_imacro_from_iblk(blk) != NO_MACRO) ? place_macros[place_macros.get_imacro_from_iblk(blk)].members.size() : 1;
         if (pivot_blks >= r.n_blks / 2)
             break;
         pivot++;
@@ -679,9 +679,9 @@ int CutSpreader::initial_target_cut(SpreaderRegion& r,
     left_tiles_n = 0, right_tiles_n = r.n_tiles;
     // count number of blks in each partition, from initial source cut
     for (int i = 0; i <= init_source_cut; i++)
-        left_blks_n += (place_macros.get_imacro_from_iblk(cut_blks.at(i)) != NO_MACRO) ? place_macros.macros()[place_macros.get_imacro_from_iblk(cut_blks.at(i))].members.size() : 1;
+        left_blks_n += (place_macros.get_imacro_from_iblk(cut_blks.at(i)) != NO_MACRO) ? place_macros[place_macros.get_imacro_from_iblk(cut_blks.at(i))].members.size() : 1;
     for (int i = init_source_cut + 1; i < int(cut_blks.size()); i++)
-        right_blks_n += (place_macros.get_imacro_from_iblk(cut_blks.at(i)) != NO_MACRO) ? place_macros.macros()[place_macros.get_imacro_from_iblk(cut_blks.at(i))].members.size() : 1;
+        right_blks_n += (place_macros.get_imacro_from_iblk(cut_blks.at(i)) != NO_MACRO) ? place_macros[place_macros.get_imacro_from_iblk(cut_blks.at(i))].members.size() : 1;
 
     int best_tgt_cut = -1;
     double best_deltaU = std::numeric_limits<double>::max();
@@ -826,7 +826,7 @@ void CutSpreader::strict_legalize() {
     std::priority_queue<std::pair<int, ClusterBlockId>> remaining;
     for (ClusterBlockId blk : ap->solve_blks) {
         if (place_macros.get_imacro_from_iblk(blk) != NO_MACRO) { // blk is head block of a macro (only head blks are solved)
-            remaining.emplace(place_macros.macros()[place_macros.get_imacro_from_iblk(blk)].members.size(), blk);
+            remaining.emplace(place_macros[place_macros.get_imacro_from_iblk(blk)].members.size(), blk);
         } else {
             remaining.emplace(1, blk);
         }
@@ -1146,7 +1146,7 @@ bool CutSpreader::try_place_macro(ClusterBlockId blk,
             targets.emplace_back(visit_blk, target);
             if (place_macros.macro_head(visit_blk) == visit_blk) { // if visit_blk is the head block of the macro
                 // push all macro members to visit queue along with their calculated positions
-                const std::vector<t_pl_macro_member>& members = place_macros.macros()[place_macros.get_imacro_from_iblk(blk)].members;
+                const std::vector<t_pl_macro_member>& members = place_macros[place_macros.get_imacro_from_iblk(blk)].members;
                 for (auto member = members.begin() + 1; member != members.end(); ++member) {
                     t_pl_loc mloc = target + member->offset; // calculate member_loc using (head blk location + offset)
                     visit.emplace(member->blk_index, mloc);

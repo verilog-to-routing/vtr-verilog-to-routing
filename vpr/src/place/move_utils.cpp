@@ -101,7 +101,7 @@ e_block_move_result find_affected_blocks(t_pl_blocks_to_be_moved& blocks_affecte
         int imember_from = 0;
         outcome = record_macro_swaps(blocks_affected, imacro_from, imember_from, swap_offset, blk_loc_registry);
 
-        VTR_ASSERT_SAFE(outcome != e_block_move_result::VALID || imember_from == int(place_macros.macros()[imacro_from].members.size()));
+        VTR_ASSERT_SAFE(outcome != e_block_move_result::VALID || imember_from == int(place_macros[imacro_from].members.size()));
 
     } else {
         ClusterBlockId b_to = grid_blocks.block_at_location(to);
@@ -186,10 +186,10 @@ e_block_move_result record_macro_swaps(t_pl_blocks_to_be_moved& blocks_affected,
 
     e_block_move_result outcome = e_block_move_result::VALID;
 
-    for (; imember_from < int(place_macros.macros()[imacro_from].members.size()) && outcome == e_block_move_result::VALID; imember_from++) {
+    for (; imember_from < int(place_macros[imacro_from].members.size()) && outcome == e_block_move_result::VALID; imember_from++) {
         // Gets the new from and to info for every block in the macro
         // cannot use the old from and to info
-        ClusterBlockId curr_b_from = place_macros.macros()[imacro_from].members[imember_from].blk_index;
+        ClusterBlockId curr_b_from = place_macros[imacro_from].members[imember_from].blk_index;
 
         t_pl_loc curr_from = block_locs[curr_b_from].loc;
 
@@ -214,7 +214,7 @@ e_block_move_result record_macro_swaps(t_pl_blocks_to_be_moved& blocks_affected,
 
                 if (imacro_from == imacro_to) {
                     outcome = record_macro_self_swaps(blocks_affected, imacro_from, swap_offset, blk_loc_registry);
-                    imember_from = place_macros.macros()[imacro_from].members.size();
+                    imember_from = place_macros[imacro_from].members.size();
                     break; //record_macro_self_swaps() handles this case completely, so we don't need to continue the loop
                 } else {
                     outcome = record_macro_macro_swaps(blocks_affected, imacro_from, imember_from, imacro_to, b_to, swap_offset, blk_loc_registry);
@@ -349,7 +349,7 @@ e_block_move_result record_macro_move(t_pl_blocks_to_be_moved& blocks_affected,
     const auto& block_locs = blk_loc_registry.block_locs();
     const GridBlock& grid_blocks = blk_loc_registry.grid_blocks();
 
-    for (const t_pl_macro_member& member : place_macros.macros()[imacro].members) {
+    for (const t_pl_macro_member& member : place_macros[imacro].members) {
         t_pl_loc from = block_locs[member.blk_index].loc;
 
         t_pl_loc to = from + swap_offset;
@@ -384,8 +384,8 @@ e_block_move_result identify_macro_self_swap_affected_macros(std::vector<int>& m
 
     e_block_move_result outcome = e_block_move_result::VALID;
 
-    for (size_t imember = 0; imember < place_macros.macros()[imacro].members.size() && outcome == e_block_move_result::VALID; ++imember) {
-        ClusterBlockId blk = place_macros.macros()[imacro].members[imember].blk_index;
+    for (size_t imember = 0; imember < place_macros[imacro].members.size() && outcome == e_block_move_result::VALID; ++imember) {
+        ClusterBlockId blk = place_macros[imacro].members[imember].blk_index;
 
         t_pl_loc from = block_locs[blk].loc;
         t_pl_loc to = from + swap_offset;

@@ -480,7 +480,7 @@ void AnalyticPlacer::stamp_weight_on_matrix(EquationSystem<double>& es,
         es.add_rhs(eqn_row, -v_pos * weight);
     }
     if (place_macros.get_imacro_from_iblk(var) != NO_MACRO) { // var is part of a macro, stamp on rhs vector
-        auto& members = place_macros.macros()[place_macros.get_imacro_from_iblk(var)].members;
+        auto& members = place_macros[place_macros.get_imacro_from_iblk(var)].members;
         for (auto& member : members) { // go through macro members to find the right member block
             if (member.blk_index == var)
                 es.add_rhs(eqn_row, -(dir ? member.offset.y : member.offset.x) * weight);

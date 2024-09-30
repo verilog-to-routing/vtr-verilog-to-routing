@@ -679,6 +679,14 @@ bool PlaceMacros::net_is_driven_by_direct_(ClusterNetId clb_net) {
     return direct != OPEN;
 }
 
+//t_pl_macro& PlaceMacros::operator[](size_t idx) {
+//    return pl_macros_[idx];
+//}
+
+const t_pl_macro& PlaceMacros::operator[](int idx) const {
+    return pl_macros_[idx];
+}
+
 
 
 static void validate_macros(const std::vector<t_pl_macro>& macros) {
