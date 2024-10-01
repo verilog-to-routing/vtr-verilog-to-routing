@@ -370,9 +370,7 @@ int AnalyticPlacer::total_hpwl() {
  */
 void AnalyticPlacer::setup_solve_blks(t_logical_block_type_ptr blkTypes) {
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
-    PlacementContext& place_ctx = g_vpr_ctx.mutable_placement();
     const auto& place_macros = blk_loc_registry_ref_.place_macros();
-
 
     int row = 0;
     solve_blks.clear();

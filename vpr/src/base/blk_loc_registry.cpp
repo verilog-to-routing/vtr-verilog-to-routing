@@ -215,3 +215,18 @@ void BlkLocRegistry::revert_move_blocks(const t_pl_blocks_to_be_moved& blocks_af
 
     expected_transaction_ = e_expected_transaction::APPLY;
 }
+
+t_physical_tile_loc BlkLocRegistry::get_coordinate_of_pin(ClusterPinId pin) const {
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+
+    int pnum = tile_pin_index(pin);
+    ClusterBlockId block = cluster_ctx.clb_nlist.pin_block(pin);
+
+    t_physical_tile_loc tile_loc;
+    t_pl_loc block_loc = block_locs()[block].loc;
+    tile_loc.x = block_loc.x + physical_tile_type(block_loc)->pin_width_offset[pnum];
+    tile_loc.y = block_loc.y + physical_tile_type(block_loc)->pin_height_offset[pnum];
+    tile_loc.layer_num = block_loc.layer;
+
+    return tile_loc;
+}

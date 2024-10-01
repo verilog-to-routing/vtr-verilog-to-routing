@@ -448,7 +448,7 @@ static std::vector<ClusterBlockId> find_centroid_loc(const t_pl_macro& pl_macro,
                     continue;
                 }
 
-                t_physical_tile_loc tile_loc = get_coordinate_of_pin(sink_pin_id, blk_loc_registry);
+                t_physical_tile_loc tile_loc = blk_loc_registry.get_coordinate_of_pin(sink_pin_id);
                 if (find_layer) {
                     VTR_ASSERT(tile_loc.layer_num != OPEN);
                     layer_count[tile_loc.layer_num]++;
@@ -468,7 +468,7 @@ static std::vector<ClusterBlockId> find_centroid_loc(const t_pl_macro& pl_macro,
                 continue;
             }
 
-            t_physical_tile_loc tile_loc = get_coordinate_of_pin(source_pin, blk_loc_registry);
+            t_physical_tile_loc tile_loc = blk_loc_registry.get_coordinate_of_pin(source_pin);
             if (find_layer) {
                 VTR_ASSERT(tile_loc.layer_num != OPEN);
                 layer_count[tile_loc.layer_num]++;

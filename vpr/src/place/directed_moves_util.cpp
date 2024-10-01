@@ -2,27 +2,6 @@
 #include "directed_moves_util.h"
 #include "centroid_move_generator.h"
 
-t_physical_tile_loc get_coordinate_of_pin(ClusterPinId pin,
-                                          const BlkLocRegistry& blk_loc_registry) {
-    const auto& device_ctx = g_vpr_ctx.device();
-    const auto& grid = device_ctx.grid;
-    const auto& cluster_ctx = g_vpr_ctx.clustering();
-
-    int pnum = blk_loc_registry.tile_pin_index(pin);
-    ClusterBlockId block = cluster_ctx.clb_nlist.pin_block(pin);
-
-    t_physical_tile_loc tile_loc;
-    t_pl_loc block_loc = blk_loc_registry.block_locs()[block].loc;
-    tile_loc.x = block_loc.x + physical_tile_type(block_loc)->pin_width_offset[pnum];
-    tile_loc.y = block_loc.y + physical_tile_type(block_loc)->pin_height_offset[pnum];
-    tile_loc.layer_num = block_loc.layer;
-
-    tile_loc.x = std::max(std::min(tile_loc.x, (int)grid.width() - 2), 1);  //-2 for no perim channels
-    tile_loc.y = std::max(std::min(tile_loc.y, (int)grid.height() - 2), 1); //-2 for no perim channels
-
-    return tile_loc;
-}
-
 void calculate_centroid_loc(ClusterBlockId b_from,
                             bool timing_weights,
                             t_pl_loc& centroid,
@@ -78,7 +57,7 @@ void calculate_centroid_loc(ClusterBlockId b_from,
                     weight = 1;
                 }
 
-                t_physical_tile_loc tile_loc = get_coordinate_of_pin(sink_pin_id, blk_loc_registry);
+                t_physical_tile_loc tile_loc = blk_loc_registry.get_coordinate_of_pin(sink_pin_id);
 
                 acc_x += tile_loc.x * weight;
                 acc_y += tile_loc.y * weight;
@@ -98,7 +77,7 @@ void calculate_centroid_loc(ClusterBlockId b_from,
 
             ClusterPinId source_pin = cluster_ctx.clb_nlist.net_driver(net_id);
 
-            t_physical_tile_loc tile_loc = get_coordinate_of_pin(source_pin, blk_loc_registry);
+            t_physical_tile_loc tile_loc = blk_loc_registry.get_coordinate_of_pin(source_pin);
 
             acc_x += tile_loc.x * weight;
             acc_y += tile_loc.y * weight;
