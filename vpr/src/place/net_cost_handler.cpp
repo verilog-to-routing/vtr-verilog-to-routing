@@ -53,9 +53,6 @@ constexpr std::array<float, MAX_FANOUT_CROSSING_COUNT> cross_count = {1.0000, 1.
                                                                       2.5610, 2.5864, 2.6117, 2.6371, 2.6625, 2.6887, 2.7148, 2.7410,
                                                                       2.7671, 2.7933};
 
-
-
-
 /**
  * @brief If the moving pin is of type type SINK, update bb_pin_sink_count_new which stores the number of sink pins on each layer of "net_id"
  * @param pin_old_loc Old location of the moving pin
@@ -87,8 +84,6 @@ static void add_block_to_bb(const t_physical_tile_loc& new_pin_loc,
                             t_2D_bb& bb_edge_new,
                             t_2D_bb& bb_coord_new);
 
-
-
 /**
  * @brief Given the 3D BB, calculate the wire-length estimate of the net
  * @param net_id ID of the net which wirelength estimate is requested
@@ -103,8 +98,6 @@ static double get_net_wirelength_estimate(ClusterNetId net_id, const t_bb& bb);
  * @return Multiplicative wirelength correction factor
  */
 static double wirelength_crossing_count(size_t fanout);
-
-
 
 /******************************* End of Function definitions ************************************/
 
@@ -488,7 +481,7 @@ void NetCostHandler::get_non_updatable_cube_bb_(ClusterNetId net_id, bool use_ts
     //TODO: account for multiple physical pin instances per logical pin
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     const auto& device_ctx = g_vpr_ctx.device();
-    const auto& block_locs = placer_state_.block_locs();
+    const auto& blk_loc_registry = placer_state_.blk_loc_registry();
     auto& move_ctx = placer_state_.mutable_move();
 
     // the bounding box coordinates that is going to be updated by this function
@@ -496,60 +489,52 @@ void NetCostHandler::get_non_updatable_cube_bb_(ClusterNetId net_id, bool use_ts
     // the number of sink pins of "net_id" on each layer
     vtr::NdMatrixProxy<int, 1> num_sink_pin_layer = use_ts ? ts_layer_sink_pin_count_[size_t(net_id)] : move_ctx.num_sink_pin_layer[size_t(net_id)];
 
-    ClusterBlockId bnum = cluster_ctx.clb_nlist.net_driver_block(net_id);
-    int pnum = placer_state_.blk_loc_registry().net_pin_to_tile_pin_index(net_id, 0);
+    // get the source pin's location
+    ClusterPinId source_pin_id = cluster_ctx.clb_nlist.net_pin(net_id, 0);
+    t_physical_tile_loc source_pin_loc = blk_loc_registry.get_coordinate_of_pin(source_pin_id);
 
-    t_pl_loc block_loc = block_locs[bnum].loc;
-    int x = block_loc.x + physical_tile_type(block_loc)->pin_width_offset[pnum];
-    int y = block_loc.y + physical_tile_type(block_loc)->pin_height_offset[pnum];
-    int layer = block_loc.layer;
-
-    bb_coord_new.xmin = x;
-    bb_coord_new.ymin = y;
-    bb_coord_new.layer_min = layer;
-    bb_coord_new.xmax = x;
-    bb_coord_new.ymax = y;
-    bb_coord_new.layer_max = layer;
+    // initialize the bounding box coordinates with the source pin's coordinates
+    bb_coord_new.xmin = source_pin_loc.x;
+    bb_coord_new.ymin = source_pin_loc.y;
+    bb_coord_new.layer_min = source_pin_loc.layer_num;
+    bb_coord_new.xmax = source_pin_loc.x;
+    bb_coord_new.ymax = source_pin_loc.y;
+    bb_coord_new.layer_max = source_pin_loc.layer_num;
 
     for (int layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); layer_num++) {
         num_sink_pin_layer[layer_num] = 0;
     }
 
     for (ClusterPinId pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
-        bnum = cluster_ctx.clb_nlist.pin_block(pin_id);
-        block_loc = block_locs[bnum].loc;
-        pnum = placer_state_.blk_loc_registry().tile_pin_index(pin_id);
-        x = block_loc.x + physical_tile_type(block_loc)->pin_width_offset[pnum];
-        y = block_loc.y + physical_tile_type(block_loc)->pin_height_offset[pnum];
-        layer = block_loc.layer;
+        t_physical_tile_loc pin_loc = blk_loc_registry.get_coordinate_of_pin(pin_id);
 
-        if (x < bb_coord_new.xmin) {
-            bb_coord_new.xmin = x;
-        } else if (x > bb_coord_new.xmax) {
-            bb_coord_new.xmax = x;
+        if (pin_loc.x < bb_coord_new.xmin) {
+            bb_coord_new.xmin = pin_loc.x;
+        } else if (pin_loc.x > bb_coord_new.xmax) {
+            bb_coord_new.xmax = pin_loc.x;
         }
 
-        if (y < bb_coord_new.ymin) {
-            bb_coord_new.ymin = y;
-        } else if (y > bb_coord_new.ymax) {
-            bb_coord_new.ymax = y;
+        if (pin_loc.y < bb_coord_new.ymin) {
+            bb_coord_new.ymin = pin_loc.y;
+        } else if (pin_loc.y > bb_coord_new.ymax) {
+            bb_coord_new.ymax = pin_loc.y;
         }
 
-        if (layer < bb_coord_new.layer_min) {
-            bb_coord_new.layer_min = layer;
-        } else if (layer > bb_coord_new.layer_max) {
-            bb_coord_new.layer_max = layer;
+        if (pin_loc.layer_num < bb_coord_new.layer_min) {
+            bb_coord_new.layer_min = pin_loc.layer_num;
+        } else if (pin_loc.layer_num > bb_coord_new.layer_max) {
+            bb_coord_new.layer_max = pin_loc.layer_num;
         }
 
-        num_sink_pin_layer[layer]++;
+        num_sink_pin_layer[pin_loc.layer_num]++;
     }
 }
 
 void NetCostHandler::get_non_updatable_per_layer_bb_(ClusterNetId net_id, bool use_ts) {
     //TODO: account for multiple physical pin instances per logical pin
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& block_locs = placer_state_.block_locs();
+    const auto& device_ctx = g_vpr_ctx.device();
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& blk_loc_registry = placer_state_.blk_loc_registry();
     auto& move_ctx = placer_state_.mutable_move();
 
     std::vector<t_2D_bb>& bb_coord_new = use_ts ? layer_ts_bb_coord_new_[net_id] : move_ctx.layer_bb_coords[net_id];
@@ -558,38 +543,29 @@ void NetCostHandler::get_non_updatable_per_layer_bb_(ClusterNetId net_id, bool u
     const int num_layers = device_ctx.grid.get_num_layers();
     VTR_ASSERT_DEBUG(bb_coord_new.size() == (size_t)num_layers);
 
-    ClusterBlockId bnum = cluster_ctx.clb_nlist.net_driver_block(net_id);
-    t_pl_loc block_loc = block_locs[bnum].loc;
-    int pnum = placer_state_.blk_loc_registry().net_pin_to_tile_pin_index(net_id, 0);
-
-    int src_x = block_locs[bnum].loc.x + physical_tile_type(block_loc)->pin_width_offset[pnum];
-    int src_y = block_locs[bnum].loc.y + physical_tile_type(block_loc)->pin_height_offset[pnum];
+    // get the source pin's location
+    ClusterPinId source_pin_id = cluster_ctx.clb_nlist.net_pin(net_id, 0);
+    t_physical_tile_loc source_pin_loc = blk_loc_registry.get_coordinate_of_pin(source_pin_id);
 
     for (int layer_num = 0; layer_num < num_layers; layer_num++) {
-        bb_coord_new[layer_num] = t_2D_bb{src_x, src_x, src_y, src_y, layer_num};
+        bb_coord_new[layer_num] = t_2D_bb{source_pin_loc.x, source_pin_loc.x, source_pin_loc.y, source_pin_loc.y, source_pin_loc.layer_num};
         num_sink_layer[layer_num] = 0;
     }
 
     for (ClusterPinId pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
-        bnum = cluster_ctx.clb_nlist.pin_block(pin_id);
-        block_loc = block_locs[bnum].loc;
-        pnum = placer_state_.blk_loc_registry().tile_pin_index(pin_id);
-        int x = block_locs[bnum].loc.x + physical_tile_type(block_loc)->pin_width_offset[pnum];
-        int y = block_locs[bnum].loc.y + physical_tile_type(block_loc)->pin_height_offset[pnum];
+        t_physical_tile_loc pin_loc = blk_loc_registry.get_coordinate_of_pin(pin_id);
+        num_sink_layer[pin_loc.layer_num]++;
 
-        int layer_num = block_locs[bnum].loc.layer;
-        num_sink_layer[layer_num]++;
-
-        if (x < bb_coord_new[layer_num].xmin) {
-            bb_coord_new[layer_num].xmin = x;
-        } else if (x > bb_coord_new[layer_num].xmax) {
-            bb_coord_new[layer_num].xmax = x;
+        if (pin_loc.x < bb_coord_new[pin_loc.layer_num].xmin) {
+            bb_coord_new[pin_loc.layer_num].xmin = pin_loc.x;
+        } else if (pin_loc.x > bb_coord_new[pin_loc.layer_num].xmax) {
+            bb_coord_new[pin_loc.layer_num].xmax = pin_loc.x;
         }
 
-        if (y < bb_coord_new[layer_num].ymin) {
-            bb_coord_new[layer_num].ymin = y;
-        } else if (y > bb_coord_new[layer_num].ymax) {
-            bb_coord_new[layer_num].ymax = y;
+        if (pin_loc.y < bb_coord_new[pin_loc.layer_num].ymin) {
+            bb_coord_new[pin_loc.layer_num].ymin = pin_loc.y;
+        } else if (pin_loc.y > bb_coord_new[pin_loc.layer_num].ymax) {
+            bb_coord_new[pin_loc.layer_num].ymax = pin_loc.y;
         }
     }
 }
@@ -1208,26 +1184,22 @@ void NetCostHandler::get_bb_from_scratch_(ClusterNetId net_id,
                                           t_bb& coords,
                                           t_bb& num_on_edges,
                                           vtr::NdMatrixProxy<int, 1> num_sink_pin_layer) {
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& grid = device_ctx.grid;
-    auto& block_locs = placer_state_.block_locs();
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& device_ctx = g_vpr_ctx.device();
+    const auto& grid = device_ctx.grid;
+    const auto& block_locs = placer_state_.block_locs();
+    const auto& blk_loc_registry = placer_state_.blk_loc_registry();
 
-    ClusterBlockId bnum = cluster_ctx.clb_nlist.net_driver_block(net_id);
-    t_pl_loc block_loc = block_locs[bnum].loc;
-    int pnum = placer_state_.blk_loc_registry().net_pin_to_tile_pin_index(net_id, 0);
+    // get the source pin's location
+    ClusterPinId source_pin_id = cluster_ctx.clb_nlist.net_pin(net_id, 0);
+    t_physical_tile_loc source_pin_loc = blk_loc_registry.get_coordinate_of_pin(source_pin_id);
 
-    VTR_ASSERT_SAFE(pnum >= 0);
-    int x = block_loc.x + physical_tile_type(block_loc)->pin_width_offset[pnum];
-    int y = block_loc.y + physical_tile_type(block_loc)->pin_height_offset[pnum];
-    int pin_layer = block_loc.layer;
-
-    int xmin = x;
-    int ymin = y;
-    int layer_min = pin_layer;
-    int xmax = x;
-    int ymax = y;
-    int layer_max = pin_layer;
+    int xmin = source_pin_loc.x;
+    int ymin = source_pin_loc.y;
+    int layer_min = source_pin_loc.layer_num;
+    int xmax = source_pin_loc.x;
+    int ymax = source_pin_loc.y;
+    int layer_max = source_pin_loc.layer_num;
 
     int xmin_edge = 1;
     int ymin_edge = 1;
@@ -1241,60 +1213,48 @@ void NetCostHandler::get_bb_from_scratch_(ClusterNetId net_id,
     }
 
     for (ClusterPinId pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
-        bnum = cluster_ctx.clb_nlist.pin_block(pin_id);
-        block_loc = block_locs[bnum].loc;
-        pnum = placer_state_.blk_loc_registry().tile_pin_index(pin_id);
-        x = block_locs[bnum].loc.x + physical_tile_type(block_loc)->pin_width_offset[pnum];
-        y = block_locs[bnum].loc.y + physical_tile_type(block_loc)->pin_height_offset[pnum];
-        pin_layer = block_locs[bnum].loc.layer;
+        t_physical_tile_loc pin_loc = blk_loc_registry.get_coordinate_of_pin(pin_id);
 
-        /* Code below counts IO blocks as being within the 1..grid.width()-2, 1..grid.height()-2 clb array. *
-         * This is because channels do not go out of the 0..grid.width()-2, 0..grid.height()-2 range, and   *
-         * I always take all channels impinging on the bounding box to be within   *
-         * that bounding box.  Hence, this "movement" of IO blocks does not affect *
-         * the which channels are included within the bounding box, and it         *
-         * simplifies the code a lot.                                              */
-
-        if (x == xmin) {
+        if (pin_loc.x == xmin) {
             xmin_edge++;
         }
-        if (x == xmax) { /* Recall that xmin could equal xmax -- don't use else */
+        if (pin_loc.x == xmax) { /* Recall that xmin could equal xmax -- don't use else */
             xmax_edge++;
-        } else if (x < xmin) {
-            xmin = x;
+        } else if (pin_loc.x < xmin) {
+            xmin = pin_loc.x;
             xmin_edge = 1;
-        } else if (x > xmax) {
-            xmax = x;
+        } else if (pin_loc.x > xmax) {
+            xmax = pin_loc.x;
             xmax_edge = 1;
         }
 
-        if (y == ymin) {
+        if (pin_loc.y == ymin) {
             ymin_edge++;
         }
-        if (y == ymax) {
+        if (pin_loc.y == ymax) {
             ymax_edge++;
-        } else if (y < ymin) {
-            ymin = y;
+        } else if (pin_loc.y < ymin) {
+            ymin = pin_loc.y;
             ymin_edge = 1;
-        } else if (y > ymax) {
-            ymax = y;
+        } else if (pin_loc.y > ymax) {
+            ymax = pin_loc.y;
             ymax_edge = 1;
         }
 
-        if (pin_layer == layer_min) {
+        if (pin_loc.layer_num == layer_min) {
             layer_min_edge++;
         }
-        if (pin_layer == layer_max) {
+        if (pin_loc.layer_num == layer_max) {
             layer_max_edge++;
-        } else if (pin_layer < layer_min) {
-            layer_min = pin_layer;
+        } else if (pin_loc.layer_num < layer_min) {
+            layer_min = pin_loc.layer_num;
             layer_min_edge = 1;
-        } else if (pin_layer > layer_max) {
-            layer_max = pin_layer;
+        } else if (pin_loc.layer_num > layer_max) {
+            layer_max = pin_loc.layer_num;
             layer_max_edge = 1;
         }
 
-        num_sink_pin_layer[pin_layer]++;
+        num_sink_pin_layer[pin_loc.layer_num]++;
     }
 
     // Copy the coordinates and number on edges information into the proper structures.
@@ -1319,71 +1279,56 @@ void NetCostHandler::get_layer_bb_from_scratch_(ClusterNetId net_id,
                                                 std::vector<t_2D_bb>& num_on_edges,
                                                 std::vector<t_2D_bb>& coords,
                                                 vtr::NdMatrixProxy<int, 1> layer_pin_sink_count) {
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& block_locs = placer_state_.block_locs();
+    const auto& device_ctx = g_vpr_ctx.device();
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& blk_loc_registry = placer_state_.blk_loc_registry();
 
     const int num_layers = device_ctx.grid.get_num_layers();
     VTR_ASSERT_DEBUG(coords.size() == (size_t)num_layers);
     VTR_ASSERT_DEBUG(num_on_edges.size() == (size_t)num_layers);
 
-    ClusterBlockId bnum = cluster_ctx.clb_nlist.net_driver_block(net_id);
-    t_pl_loc block_loc = block_locs[bnum].loc;
-    int pnum_src = placer_state_.blk_loc_registry().net_pin_to_tile_pin_index(net_id, 0);
-    VTR_ASSERT_SAFE(pnum_src >= 0);
-    int x_src = block_loc.x + physical_tile_type(block_loc)->pin_width_offset[pnum_src];
-    int y_src = block_loc.y + physical_tile_type(block_loc)->pin_height_offset[pnum_src];
+    // get the source pin's location
+    ClusterPinId source_pin_id = cluster_ctx.clb_nlist.net_pin(net_id, 0);
+    t_physical_tile_loc source_pin_loc = blk_loc_registry.get_coordinate_of_pin(source_pin_id);
 
     // TODO: Currently we are assuming that crossing can only happen from OPIN. Because of that,
     // when per-layer bounding box is used, we want the bounding box on each layer to also include
     // the location of source since the connection on each layer starts from that location.
     for (int layer_num = 0; layer_num < num_layers; layer_num++) {
-        coords[layer_num] = t_2D_bb{x_src, x_src, y_src, y_src, layer_num};
+        coords[layer_num] = t_2D_bb{source_pin_loc.x, source_pin_loc.x, source_pin_loc.y, source_pin_loc.y, source_pin_loc.layer_num};
         num_on_edges[layer_num] = t_2D_bb{1, 1, 1, 1, layer_num};
         layer_pin_sink_count[layer_num] = 0;
     }
 
     for (ClusterPinId pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
-        bnum = cluster_ctx.clb_nlist.pin_block(pin_id);
-        block_loc = block_locs[bnum].loc;
-        int pnum = placer_state_.blk_loc_registry().tile_pin_index(pin_id);
-        int layer = block_locs[bnum].loc.layer;
-        VTR_ASSERT_SAFE(layer >= 0 && layer < num_layers);
-        layer_pin_sink_count[layer]++;
-        int x = block_loc.x + physical_tile_type(block_loc)->pin_width_offset[pnum];
-        int y = block_loc.y + physical_tile_type(block_loc)->pin_height_offset[pnum];
+        t_physical_tile_loc pin_loc = blk_loc_registry.get_coordinate_of_pin(pin_id);
+        VTR_ASSERT_SAFE(pin_loc.layer_num >= 0 && pin_loc.layer_num < num_layers);
+        layer_pin_sink_count[pin_loc.layer_num]++;
 
-        /* Code below counts IO blocks as being within the 1..grid.width()-2, 1..grid.height()-2 clb array. *
-         * This is because channels do not go out of the 0..grid.width()-2, 0..grid.height()-2 range, and   *
-         * I always take all channels impinging on the bounding box to be within   *
-         * that bounding box.  Hence, this "movement" of IO blocks does not affect *
-         * the which channels are included within the bounding box, and it         *
-         * simplifies the code a lot.                                              */
-
-        if (x == coords[layer].xmin) {
-            num_on_edges[layer].xmin++;
+        if (pin_loc.x == coords[pin_loc.layer_num].xmin) {
+            num_on_edges[pin_loc.layer_num].xmin++;
         }
-        if (x == coords[layer].xmax) { /* Recall that xmin could equal xmax -- don't use else */
-            num_on_edges[layer].xmax++;
-        } else if (x < coords[layer].xmin) {
-            coords[layer].xmin = x;
-            num_on_edges[layer].xmin = 1;
-        } else if (x > coords[layer].xmax) {
-            coords[layer].xmax = x;
-            num_on_edges[layer].xmax = 1;
+        if (pin_loc.x == coords[pin_loc.layer_num].xmax) { /* Recall that xmin could equal xmax -- don't use else */
+            num_on_edges[pin_loc.layer_num].xmax++;
+        } else if (pin_loc.x < coords[pin_loc.layer_num].xmin) {
+            coords[pin_loc.layer_num].xmin = pin_loc.x;
+            num_on_edges[pin_loc.layer_num].xmin = 1;
+        } else if (pin_loc.x > coords[pin_loc.layer_num].xmax) {
+            coords[pin_loc.layer_num].xmax = pin_loc.x;
+            num_on_edges[pin_loc.layer_num].xmax = 1;
         }
 
-        if (y == coords[layer].ymin) {
-            num_on_edges[layer].ymin++;
+        if (pin_loc.y == coords[pin_loc.layer_num].ymin) {
+            num_on_edges[pin_loc.layer_num].ymin++;
         }
-        if (y == coords[layer].ymax) {
-            num_on_edges[layer].ymax++;
-        } else if (y < coords[layer].ymin) {
-            coords[layer].ymin = y;
-            num_on_edges[layer].ymin = 1;
-        } else if (y > coords[layer].ymax) {
-            coords[layer].ymax = y;
-            num_on_edges[layer].ymax = 1;
+        if (pin_loc.y == coords[pin_loc.layer_num].ymax) {
+            num_on_edges[pin_loc.layer_num].ymax++;
+        } else if (pin_loc.y < coords[pin_loc.layer_num].ymin) {
+            coords[pin_loc.layer_num].ymin = pin_loc.y;
+            num_on_edges[pin_loc.layer_num].ymin = 1;
+        } else if (pin_loc.y > coords[pin_loc.layer_num].ymax) {
+            coords[pin_loc.layer_num].ymax = pin_loc.y;
+            num_on_edges[pin_loc.layer_num].ymax = 1;
         }
     }
 }
