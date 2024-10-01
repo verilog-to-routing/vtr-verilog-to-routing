@@ -36,9 +36,6 @@ def parse_file_and_update_results(filename, patterns, results):
 
         with open(filepaths[0], "r") as file:
             for line in file:
-                while line[0] == "#":
-                    line = line[1:]
-
                 for parse_pattern in patterns:
                     match = parse_pattern.regex().match(line)
                     if match and match.groups():
