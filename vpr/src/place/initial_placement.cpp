@@ -12,13 +12,9 @@
 #include "place_constraints.h"
 #include "move_utils.h"
 #include "region.h"
-#include "directed_moves_util.h"
 #include "echo_files.h"
 
-
-#include <ctime>
 #include <cmath>
-#include <iomanip>
 
 #ifdef VERBOSE
 void print_clb_placement(const char* fname);

@@ -29,7 +29,7 @@ class KArmedBanditAgent {
      * @brief Update the agent Q-table based on the reward received by the SA algorithm
      *
      *   @param reward A double value calculated in "place.cpp" file showing how placement cost was affected by the prior action taken
-     *   @param reward_func The reward function used by the agent, detail explanation can be found on "directed_moves_util.h" file
+     *   @param reward_func The reward function used by the agent, detail explanation can be found on "m.h" file
      */
     void process_outcome(double, e_reward_function);
 

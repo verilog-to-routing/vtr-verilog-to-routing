@@ -157,7 +157,6 @@ bool WeightedMedianMoveGenerator::get_bb_cost_for_net_excluding_block(ClusterNet
     const auto& blk_loc_registry = placer_state_.get().blk_loc_registry();
     const auto& block_locs = blk_loc_registry.block_locs();
     const auto& cluster_ctx = g_vpr_ctx.clustering();
-    const auto& device_ctx = g_vpr_ctx.device();
 
     bool skip_net = true;
 

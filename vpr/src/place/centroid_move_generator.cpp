@@ -1,7 +1,6 @@
 #include "centroid_move_generator.h"
 #include "vpr_types.h"
 #include "globals.h"
-#include "directed_moves_util.h"
 #include "place_constraints.h"
 #include "placer_state.h"
 #include "move_utils.h"
