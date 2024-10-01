@@ -16,29 +16,6 @@
 //Note: The flag is only effective if compiled with VTR_ENABLE_DEBUG_LOGGING
 bool f_placer_breakpoint_reached = false;
 
-//Records counts of reasons for aborted moves
-static std::map<std::string, size_t, std::less<>> f_move_abort_reasons;
-
-void log_move_abort(std::string_view reason) {
-    auto it = f_move_abort_reasons.find(reason);
-    if (it != f_move_abort_reasons.end()) {
-        it->second++;
-    } else {
-        f_move_abort_reasons.emplace(reason, 1);
-    }
-}
-
-void report_aborted_moves() {
-    VTR_LOG("\n");
-    VTR_LOG("Aborted Move Reasons:\n");
-    if (f_move_abort_reasons.empty()) {
-        VTR_LOG("  No moves aborted\n");
-    }
-    for (const auto& kv : f_move_abort_reasons) {
-        VTR_LOG("  %s: %zu\n", kv.first.c_str(), kv.second);
-    }
-}
-
 e_create_move create_move(t_pl_blocks_to_be_moved& blocks_affected,
                           ClusterBlockId b_from,
                           t_pl_loc to,
@@ -53,7 +30,7 @@ e_create_move create_move(t_pl_blocks_to_be_moved& blocks_affected,
         ClusterBlockId b_to = grid_blocks.block_at_location(to);
 
         if (!b_to) {
-            log_move_abort("inverted move no to block");
+            blocks_affected.move_abortion_logger.log_move_abort("inverted move no to block");
             outcome = e_block_move_result::ABORT;
         } else {
             t_pl_loc from = block_locs[b_from].loc;
@@ -61,7 +38,7 @@ e_create_move create_move(t_pl_blocks_to_be_moved& blocks_affected,
             outcome = find_affected_blocks(blocks_affected, b_to, from, blk_loc_registry);
 
             if (outcome == e_block_move_result::INVERT) {
-                log_move_abort("inverted move recursion");
+                blocks_affected.move_abortion_logger.log_move_abort("inverted move recursion");
                 outcome = e_block_move_result::ABORT;
             }
         }
@@ -203,7 +180,7 @@ e_block_move_result record_macro_swaps(t_pl_blocks_to_be_moved& blocks_affected,
         //Note that we need to explicitly check that the types match, since the device floorplan is not
         //(necessarily) translationally invariant for an arbitrary macro
         if (!is_legal_swap_to_location(curr_b_from, curr_to, blk_loc_registry)) {
-            log_move_abort("macro_from swap to location illegal");
+            blocks_affected.move_abortion_logger.log_move_abort("macro_from swap to location illegal");
             outcome = e_block_move_result::ABORT;
         } else {
             ClusterBlockId b_to = grid_blocks.block_at_location(curr_to);
@@ -261,7 +238,7 @@ e_block_move_result record_macro_macro_swaps(t_pl_blocks_to_be_moved& blocks_aff
         int imember_to = 0;
         auto outcome = record_macro_swaps(blocks_affected, imacro_to, imember_to, -swap_offset, blk_loc_registry);
         if (outcome == e_block_move_result::INVERT) {
-            log_move_abort("invert recursion2");
+            blocks_affected.move_abortion_logger.log_move_abort("invert recursion2");
             outcome = e_block_move_result::ABORT;
         } else if (outcome == e_block_move_result::VALID) {
             outcome = e_block_move_result::INVERT_VALID;
@@ -293,7 +270,7 @@ e_block_move_result record_macro_macro_swaps(t_pl_blocks_to_be_moved& blocks_aff
          ++imember_from, ++imember_to) {
         //Check that both macros have the same shape while they overlap
         if (pl_macros[imacro_from].members[imember_from].offset != pl_macros[imacro_to].members[imember_to].offset + from_to_macro_offset) {
-            log_move_abort("macro shapes disagree");
+            blocks_affected.move_abortion_logger.log_move_abort("macro shapes disagree");
             return e_block_move_result::ABORT;
         }
 
@@ -313,7 +290,7 @@ e_block_move_result record_macro_macro_swaps(t_pl_blocks_to_be_moved& blocks_aff
         }
 
         if (!is_legal_swap_to_location(b_from, curr_to, blk_loc_registry)) {
-            log_move_abort("macro_from swap to location illegal");
+            blocks_affected.move_abortion_logger.log_move_abort("macro_from swap to location illegal");
             return e_block_move_result::ABORT;
         }
 
@@ -355,7 +332,7 @@ e_block_move_result record_macro_move(t_pl_blocks_to_be_moved& blocks_affected,
         t_pl_loc to = from + swap_offset;
 
         if (!is_legal_swap_to_location(member.blk_index, to, blk_loc_registry)) {
-            log_move_abort("macro move to location illegal");
+            blocks_affected.move_abortion_logger.log_move_abort("macro move to location illegal");
             return e_block_move_result::ABORT;
         }
 
@@ -377,7 +354,8 @@ e_block_move_result record_macro_move(t_pl_blocks_to_be_moved& blocks_affected,
 e_block_move_result identify_macro_self_swap_affected_macros(std::vector<int>& macros,
                                                              const int imacro,
                                                              t_pl_offset swap_offset,
-                                                             const BlkLocRegistry& blk_loc_registry) {
+                                                             const BlkLocRegistry& blk_loc_registry,
+                                                             MoveAbortionLogger& move_abortion_logger) {
     const auto& place_macros = blk_loc_registry.place_macros();
     const auto& block_locs = blk_loc_registry.block_locs();
     const GridBlock& grid_blocks = blk_loc_registry.grid_blocks();
@@ -391,7 +369,7 @@ e_block_move_result identify_macro_self_swap_affected_macros(std::vector<int>& m
         t_pl_loc to = from + swap_offset;
 
         if (!is_legal_swap_to_location(blk, to, blk_loc_registry)) {
-            log_move_abort("macro move to location illegal");
+            move_abortion_logger.log_move_abort("macro move to location illegal");
             return e_block_move_result::ABORT;
         }
 
@@ -403,7 +381,7 @@ e_block_move_result identify_macro_self_swap_affected_macros(std::vector<int>& m
             auto itr = std::find(macros.begin(), macros.end(), imacro_to);
             if (itr == macros.end()) {
                 macros.push_back(imacro_to);
-                outcome = identify_macro_self_swap_affected_macros(macros, imacro_to, swap_offset, blk_loc_registry);
+                outcome = identify_macro_self_swap_affected_macros(macros, imacro_to, swap_offset, blk_loc_registry, move_abortion_logger);
             }
         }
     }
@@ -421,7 +399,7 @@ e_block_move_result record_macro_self_swaps(t_pl_blocks_to_be_moved& blocks_affe
 
     //Collect the macros affected
     std::vector<int> affected_macros;
-    auto outcome = identify_macro_self_swap_affected_macros(affected_macros, imacro, swap_offset, blk_loc_registry);
+    auto outcome = identify_macro_self_swap_affected_macros(affected_macros, imacro, swap_offset, blk_loc_registry, blocks_affected.move_abortion_logger);
 
     if (outcome != e_block_move_result::VALID) {
         return outcome;

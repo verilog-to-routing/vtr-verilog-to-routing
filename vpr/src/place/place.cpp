@@ -891,7 +891,7 @@ void try_place(const Netlist<>& net_list,
     //Some stats
     VTR_LOG("\n");
     VTR_LOG("Swaps called: %d\n", swap_stats.num_ts_called);
-    report_aborted_moves();
+    blocks_affected.move_abortion_logger.report_aborted_moves();
 
     if (placer_opts.place_algorithm.is_timing_driven()) {
         //Final timing estimate

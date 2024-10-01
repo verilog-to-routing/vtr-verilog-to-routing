@@ -30,6 +30,19 @@ struct t_pl_moved_block {
     t_pl_loc new_loc;
 };
 
+class MoveAbortionLogger {
+  public:
+    /// Records a reasons for an aborted move.
+    void log_move_abort(std::string_view reason);
+
+    /// Prints a brief report about aborted move reasons and counts.
+    void report_aborted_moves() const;
+
+  private:
+    /// Records counts of reasons for aborted moves
+    std::map<std::string, size_t, std::less<>> move_abort_reasons_;
+};
+
 /* Stores the list of cluster blocks to be moved in a swap during       *
  * placement.                                                   *
  * Store the information on the blocks to be moved in a swap during     *
@@ -80,6 +93,8 @@ struct t_pl_blocks_to_be_moved {
     std::unordered_set<t_pl_loc> moved_to;
 
     std::vector<ClusterPinId> affected_pins;
+
+    MoveAbortionLogger move_abortion_logger;
 };
 
 #endif

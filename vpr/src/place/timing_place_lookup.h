@@ -12,6 +12,7 @@ std::unique_ptr<PlaceDelayModel> compute_place_delay_model(const t_placer_opts& 
                                                            bool is_flat);
 
 std::vector<int> get_best_classes(enum e_pin_type pintype, t_physical_tile_type_ptr type);
+
 bool directconnect_exists(RRNodeId src_rr_node, RRNodeId sink_rr_node);
 
 #endif

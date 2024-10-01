@@ -40,10 +40,7 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
         return e_create_move::ABORT;
     }
 
-
-
     int num_layers = g_vpr_ctx.device().grid.get_num_layers();
-
 
     t_pl_loc from = block_locs[b_from].loc;
     auto cluster_from_type = cluster_ctx.clb_nlist.block_type(b_from);
@@ -159,6 +156,8 @@ bool WeightedMedianMoveGenerator::get_bb_cost_for_net_excluding_block(ClusterNet
                                          t_bb_cost* coords) {
     const auto& blk_loc_registry = placer_state_.get().blk_loc_registry();
     const auto& block_locs = blk_loc_registry.block_locs();
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& device_ctx = g_vpr_ctx.device();
 
     bool skip_net = true;
 
@@ -175,10 +174,6 @@ bool WeightedMedianMoveGenerator::get_bb_cost_for_net_excluding_block(ClusterNet
     float ymax_cost = 0.f;
     float layer_min_cost = 0.f;
     float layer_max_cost = 0.f;
-
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& grid = device_ctx.grid;
 
     bool is_first_block = true;
     for (ClusterPinId pin_id : cluster_ctx.clb_nlist.net_pins(net_id)) {
@@ -206,9 +201,6 @@ bool WeightedMedianMoveGenerator::get_bb_cost_for_net_excluding_block(ClusterNet
             int x = block_loc.x + physical_tile_type(block_loc)->pin_width_offset[pnum];
             int y = block_loc.y + physical_tile_type(block_loc)->pin_height_offset[pnum];
             int layer = block_loc.layer;
-
-            x = std::max(std::min(x, (int)grid.width() - 2), 1);  //-2 for no perim channels
-            y = std::max(std::min(y, (int)grid.height() - 2), 1); //-2 for no perim channels
 
             if (is_first_block) {
                 xmin = x;
