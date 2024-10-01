@@ -97,6 +97,7 @@ void SetupVPR(const t_options* Options,
               t_netlist_opts* NetlistOpts,
               t_packer_opts* PackerOpts,
               t_placer_opts* PlacerOpts,
+              t_ap_opts* APOpts,
               t_annealing_sched* AnnealSched,
               t_router_opts* RouterOpts,
               t_analysis_opts* AnalysisOpts,
@@ -247,11 +248,13 @@ void SetupVPR(const t_options* Options,
     if (!Options->do_packing
         && !Options->do_legalize
         && !Options->do_placement
+        && !Options->do_analytical_placement
         && !Options->do_routing
         && !Options->do_analysis) {
         //run all stages if none specified
         PackerOpts->doPacking = STAGE_DO;
         PlacerOpts->doPlacement = STAGE_DO;
+        APOpts->doAP = STAGE_SKIP; // AP not default.
         RouterOpts->doRouting = STAGE_DO;
         AnalysisOpts->doAnalysis = STAGE_AUTO; //Deferred until implementation status known
     } else {
@@ -277,6 +280,14 @@ void SetupVPR(const t_options* Options,
         if (Options->do_placement) {
             PackerOpts->doPacking = STAGE_LOAD;
             PlacerOpts->doPlacement = STAGE_DO;
+        }
+
+        if (Options->do_analytical_placement) {
+            // In the Analytical Placement flow, packing and placement are
+            // integrated. Thus, these stages are skipped.
+            PackerOpts->doPacking = STAGE_SKIP;
+            PlacerOpts->doPlacement = STAGE_SKIP;
+            APOpts->doAP = STAGE_DO;
         }
 
         if (Options->do_packing) {
