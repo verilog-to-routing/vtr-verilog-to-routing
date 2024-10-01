@@ -75,10 +75,38 @@ class CentroidMoveGenerator : public MoveGenerator {
                                const t_placer_opts& placer_opts,
                                const PlacerCriticalities* /*criticalities*/) override;
 
+    /**
+     * @brief Calculates the exact centroid location
+     *
+     * This function is very useful in centroid and weightedCentroid moves as it calculates
+     * the centroid location. It returns the calculated location in centroid.
+     *
+     * When NoC attraction is enabled, the computed centroid is slightly adjusted towards the location
+     * of NoC routers that are in the same NoC group b_from.
+     *
+     * @param b_from The block Id of the moving block
+     * @param timing_weights Determines whether to calculate centroid or
+     * weighted centroid location. If true, use the timing weights (weighted centroid).
+     * @param criticalities A pointer to the placer criticalities which is used when
+     * calculating weighted centroid (send a NULL pointer in case of centroid)
+     * @param noc_attraction_enabled Indicates whether the computed centroid location
+     * should be adjusted towards NoC routers in the NoC group of the given block.
+     * @param noc_attraction_weight When NoC attraction is enabled, this weight
+     * specifies to which extent the computed centroid should be adjusted. A value
+     * in range [0, 1] is expected.
+     *
+     * @return The calculated location is returned in centroid parameter that is sent by reference
+     */
+    t_pl_loc calculate_centroid_loc_(ClusterBlockId b_from,
+                                     const PlacerCriticalities* criticalities);
+
+  protected:
+    bool weighted_;
+
   private:
     /** A value in range [0, 1] that specifies how much the centroid location
      * computation is biased towards the associated NoC routers*/
-    float noc_attraction_w_;
+    float noc_attraction_weight_;
 
     /** Indicates whether the centroid calculation is NoC-biased.*/
     bool noc_attraction_enabled_;

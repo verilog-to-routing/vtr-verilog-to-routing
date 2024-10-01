@@ -229,7 +229,7 @@ double NetCostHandler::comp_bb_cost(e_cost_methods method) {
 }
 
 double NetCostHandler::comp_cube_bb_cost_(e_cost_methods method) {
-    auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_move_ctx = placer_state_.mutable_move();
 
     double cost = 0;
@@ -266,7 +266,7 @@ double NetCostHandler::comp_cube_bb_cost_(e_cost_methods method) {
 }
 
 double NetCostHandler::comp_per_layer_bb_cost_(e_cost_methods method) {
-    auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_move_ctx = placer_state_.mutable_move();
 
     double cost = 0;
@@ -369,8 +369,8 @@ void NetCostHandler::update_td_delta_costs_(const PlaceDelayModel* delay_model,
      * This is also done to minimize the number of timing node/edge invalidations
      * for incremental static timing analysis (incremental STA).
      */
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& block_locs = placer_state_.block_locs();
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& block_locs = placer_state_.block_locs();
 
     const auto& connection_delay = placer_state_.timing().connection_delay;
     auto& connection_timing_cost = placer_state_.mutable_timing().connection_timing_cost;
@@ -380,8 +380,7 @@ void NetCostHandler::update_td_delta_costs_(const PlaceDelayModel* delay_model,
     if (cluster_ctx.clb_nlist.pin_type(pin) == PinType::DRIVER) {
         /* This pin is a net driver on a moved block. */
         /* Recompute all point to point connection delays for the net sinks. */
-        for (size_t ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net).size();
-             ipin++) {
+        for (size_t ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net).size(); ipin++) {
             float temp_delay = comp_td_single_connection_delay(delay_model, block_locs, net, ipin);
             /* If the delay hasn't changed, do not mark this pin as affected */
             if (temp_delay == connection_delay[net][ipin]) {
@@ -392,8 +391,7 @@ void NetCostHandler::update_td_delta_costs_(const PlaceDelayModel* delay_model,
             proposed_connection_delay[net][ipin] = temp_delay;
 
             proposed_connection_timing_cost[net][ipin] = criticalities.criticality(net, ipin) * temp_delay;
-            delta_timing_cost += proposed_connection_timing_cost[net][ipin]
-                                 - connection_timing_cost[net][ipin];
+            delta_timing_cost += proposed_connection_timing_cost[net][ipin] - connection_timing_cost[net][ipin];
 
             /* Record this connection in blocks_affected.affected_pins */
             ClusterPinId sink_pin = cluster_ctx.clb_nlist.net_pin(net, ipin);
@@ -886,22 +884,22 @@ void NetCostHandler::update_layer_bb_(ClusterNetId net_id,
 
     if (layer_changed) {
         update_bb_layer_changed_(net_id,
-                                pin_old_loc,
-                                pin_new_loc,
-                                *curr_bb_edge,
-                                *curr_bb_coord,
-                                bb_pin_sink_count_new,
-                                bb_edge_new,
-                                bb_coord_new);
+                                 pin_old_loc,
+                                 pin_new_loc,
+                                 *curr_bb_edge,
+                                 *curr_bb_coord,
+                                 bb_pin_sink_count_new,
+                                 bb_edge_new,
+                                 bb_coord_new);
     } else {
         update_bb_same_layer_(net_id,
-                             pin_old_loc,
-                             pin_new_loc,
-                             *curr_bb_edge,
-                             *curr_bb_coord,
-                             bb_pin_sink_count_new,
-                             bb_edge_new,
-                             bb_coord_new);
+                              pin_old_loc,
+                              pin_new_loc,
+                              *curr_bb_edge,
+                              *curr_bb_coord,
+                              bb_pin_sink_count_new,
+                              bb_edge_new,
+                              bb_coord_new);
     }
 
     if (bb_update_status_[net_id] == NetUpdateState::NOT_UPDATED_YET) {
@@ -1187,7 +1185,6 @@ void NetCostHandler::get_bb_from_scratch_(ClusterNetId net_id,
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& grid = device_ctx.grid;
-    const auto& block_locs = placer_state_.block_locs();
     const auto& blk_loc_registry = placer_state_.blk_loc_registry();
 
     // get the source pin's location
