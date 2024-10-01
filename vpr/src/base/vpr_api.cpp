@@ -69,6 +69,7 @@
 #include "place_constraints.h"
 #include "place_util.h"
 #include "timing_fail_error.h"
+#include "analytical_placement_flow.h"
 
 #include "vpr_constraints_writer.h"
 
@@ -285,6 +286,7 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
              &vpr_setup->NetlistOpts,
              &vpr_setup->PackerOpts,
              &vpr_setup->PlacerOpts,
+             &vpr_setup->APOpts,
              &vpr_setup->AnnealSched,
              &vpr_setup->RouterOpts,
              &vpr_setup->AnalysisOpts,
@@ -307,6 +309,7 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
     /* Verify settings don't conflict or otherwise not make sense */
     CheckSetup(vpr_setup->PackerOpts,
                vpr_setup->PlacerOpts,
+               vpr_setup->APOpts,
                vpr_setup->RouterOpts,
                vpr_setup->ServerOpts,
                vpr_setup->RoutingArch, vpr_setup->Segments, vpr_setup->Timing, arch->Chans);
@@ -402,6 +405,14 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
             return false; //Unimplementable
         }
     }
+
+    { // Analytical Place
+        if (vpr_setup.APOpts.doAP == STAGE_DO) {
+            // TODO: Make this return a bool if the placement was successful or not.
+            run_analytical_placement_flow(vpr_setup);
+        }
+    }
+
     bool is_flat = vpr_setup.RouterOpts.flat_routing;
     const Netlist<>& router_net_list = is_flat ? (const Netlist<>&)g_vpr_ctx.atom().nlist : (const Netlist<>&)g_vpr_ctx.clustering().clb_nlist;
     RouteStatus route_status;
@@ -1348,6 +1359,7 @@ void vpr_setup_vpr(t_options* Options,
                    t_netlist_opts* NetlistOpts,
                    t_packer_opts* PackerOpts,
                    t_placer_opts* PlacerOpts,
+                   t_ap_opts* APOpts,
                    t_annealing_sched* AnnealSched,
                    t_router_opts* RouterOpts,
                    t_analysis_opts* AnalysisOpts,
@@ -1373,6 +1385,7 @@ void vpr_setup_vpr(t_options* Options,
              NetlistOpts,
              PackerOpts,
              PlacerOpts,
+             APOpts,
              AnnealSched,
              RouterOpts,
              AnalysisOpts,
@@ -1397,14 +1410,22 @@ void vpr_check_arch(const t_arch& Arch) {
 ///@brief Verify settings don't conflict or otherwise not make sense
 void vpr_check_setup(const t_packer_opts& PackerOpts,
                      const t_placer_opts& PlacerOpts,
+                     const t_ap_opts& APOpts,
                      const t_router_opts& RouterOpts,
                      const t_server_opts& ServerOpts,
                      const t_det_routing_arch& RoutingArch,
                      const std::vector<t_segment_inf>& Segments,
                      const t_timing_inf& Timing,
                      const t_chan_width_dist& Chans) {
-    CheckSetup(PackerOpts, PlacerOpts, RouterOpts, ServerOpts, RoutingArch,
-               Segments, Timing, Chans);
+    CheckSetup(PackerOpts,
+               PlacerOpts,
+               APOpts,
+               RouterOpts,
+               ServerOpts,
+               RoutingArch,
+               Segments,
+               Timing,
+               Chans);
 }
 
 ///@brief Show current setup
@@ -1627,6 +1648,9 @@ void vpr_print_error(const VprError& vpr_error) {
                 break;
             case VPR_ERROR_PLACE:
                 error_type = "Placement";
+                break;
+            case VPR_ERROR_AP:
+                error_type = "Analytical Placement";
                 break;
             case VPR_ERROR_ROUTE:
                 error_type = "Routing";
