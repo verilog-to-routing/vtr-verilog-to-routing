@@ -1956,7 +1956,7 @@ static void check_place(const t_placer_costs& costs,
 
     if (noc_opts.noc) {
         // check the NoC costs during placement if the user is using the NoC supported flow
-        error += noc_cost_handler->check_noc_placement_costs(costs, ERROR_TOL, noc_opts);
+        error += noc_cost_handler->check_noc_placement_costs(costs, PL_INCREMENTAL_COST_TOLERANCE, noc_opts);
         // make sure NoC routing configuration does not create any cycles in CDG
         error += (int)noc_cost_handler->noc_routing_has_cycle();
     }
@@ -1984,7 +1984,7 @@ static int check_placement_costs(const t_placer_costs& costs,
 
     double bb_cost_check = net_cost_handler.comp_bb_cost(e_cost_methods::CHECK);
 
-    if (fabs(bb_cost_check - costs.bb_cost) > costs.bb_cost * ERROR_TOL) {
+    if (fabs(bb_cost_check - costs.bb_cost) > costs.bb_cost * PL_INCREMENTAL_COST_TOLERANCE) {
         VTR_LOG_ERROR(
             "bb_cost_check: %g and bb_cost: %g differ in check_place.\n",
             bb_cost_check, costs.bb_cost);
@@ -1994,7 +1994,7 @@ static int check_placement_costs(const t_placer_costs& costs,
     if (place_algorithm.is_timing_driven()) {
         comp_td_costs(delay_model, *criticalities, placer_state, &timing_cost_check);
         //VTR_LOG("timing_cost recomputed from scratch: %g\n", timing_cost_check);
-        if (fabs(timing_cost_check - costs.timing_cost) > costs.timing_cost * ERROR_TOL) {
+        if (fabs(timing_cost_check - costs.timing_cost) > costs.timing_cost * PL_INCREMENTAL_COST_TOLERANCE) {
             VTR_LOG_ERROR(
                 "timing_cost_check: %g and timing_cost: %g differ in check_place.\n",
                 timing_cost_check, costs.timing_cost);

@@ -1688,10 +1688,10 @@ void NetCostHandler::recompute_costs_from_scratch(const PlaceDelayModel* delay_m
     auto check_and_print_cost = [](double new_cost,
                                    double old_cost,
                                    const std::string& cost_name) -> void {
-        if (!vtr::isclose(new_cost, old_cost, ERROR_TOL, 0.)) {
+        if (!vtr::isclose(new_cost, old_cost, PL_INCREMENTAL_COST_TOLERANCE, 0.)) {
             std::string msg = vtr::string_fmt(
                 "in recompute_costs_from_scratch: new_%s = %g, old %s = %g, ERROR_TOL = %g\n",
-                cost_name.c_str(), new_cost, cost_name.c_str(), old_cost, ERROR_TOL);
+                cost_name.c_str(), new_cost, cost_name.c_str(), old_cost, PL_INCREMENTAL_COST_TOLERANCE);
             VPR_ERROR(VPR_ERROR_PLACE, msg.c_str());
         }
     };
