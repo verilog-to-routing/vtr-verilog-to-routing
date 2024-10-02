@@ -441,7 +441,7 @@ void try_place(const Netlist<>& net_list,
 
 #ifndef NO_GRAPHICS
     if (noc_cost_handler.has_value()) {
-        set_noc_link_bandwidth_usages_ref(noc_cost_handler->get_link_bandwidth_usages());
+        get_draw_state_vars()->set_noc_link_bandwidth_usages_ref(noc_cost_handler->get_link_bandwidth_usages());
     }
 #endif
 
@@ -2307,6 +2307,6 @@ static void copy_locs_to_global_state(const BlkLocRegistry& blk_loc_registry) {
 
 #ifndef NO_GRAPHICS
     // update the graphics' reference to placement location variables
-    set_graphics_blk_loc_registry_ref(global_blk_loc_registry);
+    get_draw_state_vars()->set_graphics_blk_loc_registry_ref(global_blk_loc_registry);
 #endif
 }

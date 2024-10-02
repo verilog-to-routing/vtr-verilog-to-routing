@@ -5,6 +5,20 @@
 #include "move_utils.h"
 #include "place_util.h"
 
+/**
+ * @class NocCostHandler is responsible for computing NoC-related costs terms.
+ *
+ * @details Once all NoC routers are placed for the first time, traffic flows between
+ * them can be routed by calling initial_noc_routing(). Internal data structures used
+ * to enable incremental cost computation can be initialized by calling
+ * comp_noc_aggregate_bandwidth_cost(), comp_noc_latency_cost(),
+ * and comp_noc_congestion_cost(). For incremental cost calculation,
+ * find_affected_noc_routers_and_update_noc_costs() should be called to compute
+ * how much NoC-related cost term would change if a few NoC routers are moved around.
+ * commit_noc_costs() or revert_noc_traffic_flow_routes() should be called to decide whether
+ * the NoC router swaps are committed or proposed moved needs to be reverted.
+ *
+ */
 class NocCostHandler {
   public:
     /**
@@ -18,6 +32,14 @@ class NocCostHandler {
     NocCostHandler(NocCostHandler&&) = default;
     NocCostHandler& operator=(NocCostHandler&&) = default;
 
+    /**
+     * @brief Check if the internal reference to block_locs is pointing to the same
+     * block_locs provided as an argument.
+     * @param block_locs The provided block_locs whose address is compared with the internal
+     * reference to block_locs.
+     * @return True if both the internal reference and the provided argument point to the same
+     * block_locs object.
+     */
     bool points_to_same_block_locs(const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) const;
 
     /**
@@ -199,6 +221,16 @@ class NocCostHandler {
      */
     std::pair<double, double> comp_noc_latency_cost();
 
+    /**
+     * @brief Calculates the congestion cost of each link in the NoC and initializes
+     * member variables that keep track of link congestion costs. Then, the total congestion
+     * cost is computed by summing up all the individual NoC link congestion costs.
+     *
+     * This should be used after initial placement to determine the starting
+     * congestion cost of the NoC.
+     *
+     * @returndouble The congestion cost of the NoC
+     */
     double comp_noc_congestion_cost();
 
     /**
@@ -286,6 +318,10 @@ class NocCostHandler {
      */
     double get_link_used_bandwidth(NocLinkId link_id) const;
 
+    /**
+     * Returns the utilized bandwidth of all NoC links.
+     * @return A const reference to link bandwidth utilization of all links.
+     */
     const vtr::vector<NocLinkId, double>& get_link_bandwidth_usages() const;
 
     /**
@@ -488,16 +524,16 @@ class NocCostHandler {
 
     const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs_ref;
 
-    /* Proposed and actual cost of a noc traffic flow used for each move assessment */
+    /// Proposed and actual cost of a noc traffic flow used for each move assessment */
     vtr::vector<NocTrafficFlowId, TrafficFlowPlaceCost> traffic_flow_costs, proposed_traffic_flow_costs;
 
-    /* Keeps track of traffic flows that have been updated at each attempted placement move*/
+    /// Keeps track of traffic flows that have been updated at each attempted placement move*/
     std::vector<NocTrafficFlowId> affected_traffic_flows;
 
-    /* Proposed and actual congestion cost of a NoC link used for each move assessment */
+    /// Proposed and actual congestion cost of a NoC link used for each move assessment
     vtr::vector<NocLinkId, double> link_congestion_costs, proposed_link_congestion_costs;
 
-    /* Keeps track of NoC links whose bandwidth usage have been updated at each attempted placement move*/
+    /// Keeps track of NoC links whose bandwidth usage have been updated at each attempted placement move*/
     std::unordered_set<NocLinkId> affected_noc_links;
 
     /**
@@ -508,9 +544,19 @@ class NocCostHandler {
      * path of a traffic flow.
      */
     vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> traffic_flow_routes;
+
+    /**
+     * @brief Stores previous routes for NoC routers involved in a swap that is still
+     * to be committed.
+     * @details When a NoC router is swapped, its associated traffic flows are re-routed
+     * to compute the new NoC-related cost terms required to evaluate the swap. If the swap
+     * is rejected, the swapped NoC routers is moved back to its location. This data structure
+     * stores the old routes before a swap is applied so that we can easily revert traffic flow
+     * routes without re-routing them from scratch.
+     */
     vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> traffic_flow_routes_backup;
 
-    ///Represents the bandwidth of the data being transmitted on the link. Units in bits-per-second(bps)
+    ///Represents the bandwidth of the data being transmitted on each link in the NoC. Units in bits-per-second(bps)
     vtr::vector<NocLinkId, double> link_bandwidth_usages;
 };
 

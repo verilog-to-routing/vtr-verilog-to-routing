@@ -498,7 +498,7 @@ double NocCostHandler::comp_noc_congestion_cost() {
     double congestion_cost = 0.;
 
     // Iterate over all NoC links
-    for (const auto& link : noc_ctx.noc_model.get_noc_links()) {
+    for (const NocLink& link : noc_ctx.noc_model.get_noc_links()) {
         double link_congestion_cost = get_link_congestion_cost(link);
 
         // store the congestion cost for this link in static data structures (this also initializes them)

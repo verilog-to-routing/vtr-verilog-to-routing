@@ -74,8 +74,8 @@ void draw_noc(ezgl::renderer* g) {
  */
 void draw_noc_usage(vtr::vector<NocLinkId, ezgl::color>& noc_link_colors) {
     t_draw_state* draw_state = get_draw_state_vars();
-    auto& noc_ctx = g_vpr_ctx.noc();
-    const auto& noc_link_bandwidth_usages = get_noc_link_bandwidth_usages_ref();
+    const auto& noc_ctx = g_vpr_ctx.noc();
+    const auto& noc_link_bandwidth_usages = draw_state->get_noc_link_bandwidth_usages_ref();
 
     // check to see if a color map was already created previously
     if (draw_state->noc_usage_color_map == nullptr) {
