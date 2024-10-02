@@ -48,7 +48,7 @@ class MedianMoveGenerator : public MoveGenerator {
     /**
      * @brief Finds the bounding box of a net and stores its coordinates in the bb_coord_new data structure.
      *
-     * @details It excludes the moving block sent in function arguments in block_id.
+     * @details It excludes the moving block sent in function arguments in moving_block_id.
      * It also returns whether this net should be excluded from median calculation or not.
      * This routine should only be called for small nets, since it does not determine
      * enough information for the bounding box to be updated incrementally later.
@@ -57,7 +57,7 @@ class MedianMoveGenerator : public MoveGenerator {
      */
     void get_bb_from_scratch_excluding_block(ClusterNetId net_id,
                                              t_bb& bb_coord_new,
-                                             ClusterBlockId block_id,
+                                             ClusterBlockId moving_block_id,
                                              bool& skip_net);
 };
 

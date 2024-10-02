@@ -98,10 +98,6 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
             int yold = block_loc.y + block_physical_type->pin_height_offset[pnum];
             int layer_old = block_loc.layer;
 
-            xold = std::max(std::min(xold, (int)device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
-            yold = std::max(std::min(yold, (int)device_ctx.grid.height() - 2), 1); //-2 for no perim channels
-            layer_old = std::max(std::min(layer_old, (int)device_ctx.grid.get_num_layers() - 1), 0);
-
             //To calculate the bb incrementally while excluding the moving block
             //assume that the moving block is moved to a non-critical coord of the bb
             int xnew;
@@ -189,100 +185,91 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
 
 void MedianMoveGenerator::get_bb_from_scratch_excluding_block(ClusterNetId net_id,
                                                               t_bb& bb_coord_new,
-                                                              ClusterBlockId block_id,
+                                                              ClusterBlockId moving_block_id,
                                                               bool& skip_net) {
     //TODO: account for multiple physical pin instances per logical pin
-    const auto& placer_state = placer_state_.get();
-    const auto& block_locs = placer_state.block_locs();
+    const auto& blk_loc_registry = placer_state_.get().blk_loc_registry();
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
 
+    /* If the net is only connected to the moving block, it should be skipped.
+     * Let's initially assume that the net is only connected to the moving block.
+     * When going through the driver and sink blocks, we check if they are the same
+     * as the moving block. If not, we set this flag to false. */
     skip_net = true;
 
     int xmin = OPEN;
     int xmax = OPEN;
     int ymin = OPEN;
     int ymax = OPEN;
-
     int layer_min = OPEN;
     int layer_max = OPEN;
 
-    int pnum;
-
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& device_ctx = g_vpr_ctx.device();
-
-    ClusterBlockId bnum = cluster_ctx.clb_nlist.net_driver_block(net_id);
+    ClusterBlockId driver_block_id = cluster_ctx.clb_nlist.net_driver_block(net_id);
     bool first_block = false;
 
-    if (bnum != block_id) {
+    if (driver_block_id != moving_block_id) {
         skip_net = false;
-        pnum = placer_state.blk_loc_registry().net_pin_to_tile_pin_index(net_id, 0);
-        const t_pl_loc& block_loc = block_locs[bnum].loc;
-        int src_x = block_loc.x + physical_tile_type(block_loc)->pin_width_offset[pnum];
-        int src_y = block_loc.y + physical_tile_type(block_loc)->pin_height_offset[pnum];
-        int src_layer = block_loc.layer;
 
-        xmin = src_x;
-        ymin = src_y;
-        xmax = src_x;
-        ymax = src_y;
-        layer_min = src_layer;
-        layer_max = src_layer;
+        // get the source pin's location
+        ClusterPinId source_pin_id = cluster_ctx.clb_nlist.net_pin(net_id, 0);
+        t_physical_tile_loc source_pin_loc = blk_loc_registry.get_coordinate_of_pin(source_pin_id);
+
+        xmin = source_pin_loc.x;
+        ymin = source_pin_loc.y;
+        xmax = source_pin_loc.x;
+        ymax = source_pin_loc.y;
+        layer_min = source_pin_loc.layer_num;
+        layer_max = source_pin_loc.layer_num;
         first_block = true;
     }
 
     for (ClusterPinId pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
-        bnum = cluster_ctx.clb_nlist.pin_block(pin_id);
-        pnum = placer_state.blk_loc_registry().tile_pin_index(pin_id);
-        if (bnum == block_id)
+        ClusterBlockId sink_block_id = cluster_ctx.clb_nlist.pin_block(pin_id);
+
+        if (sink_block_id == moving_block_id) {
             continue;
+        }
+
         skip_net = false;
-        const auto& block_loc = block_locs[bnum].loc;
-        int x = block_loc.x + physical_tile_type(block_loc)->pin_width_offset[pnum];
-        int y = block_loc.y + physical_tile_type(block_loc)->pin_height_offset[pnum];
-        int layer = block_loc.layer;
+
+        t_physical_tile_loc pin_loc = blk_loc_registry.get_coordinate_of_pin(pin_id);
 
         if (!first_block) {
-            xmin = x;
-            ymin = y;
-            xmax = x;
-            ymax = y;
-            layer_max = layer;
-            layer_min = layer;
+            xmin = pin_loc.x;
+            ymin = pin_loc.y;
+            xmax = pin_loc.x;
+            ymax = pin_loc.y;
+            layer_max = pin_loc.layer_num;
+            layer_min = pin_loc.layer_num;
             first_block = true;
             continue;
         }
-        if (x < xmin) {
-            xmin = x;
-        } else if (x > xmax) {
-            xmax = x;
+
+        if (pin_loc.x < xmin) {
+            xmin = pin_loc.x;
+        } else if (pin_loc.x > xmax) {
+            xmax = pin_loc.x;
         }
 
-        if (y < ymin) {
-            ymin = y;
-        } else if (y > ymax) {
-            ymax = y;
+        if (pin_loc.y < ymin) {
+            ymin = pin_loc.y;
+        } else if (pin_loc.y > ymax) {
+            ymax = pin_loc.y;
         }
 
-        if (layer < layer_min) {
-            layer_min = layer;
-        } else if (layer > layer_max) {
-            layer_max = layer;
+        if (pin_loc.layer_num < layer_min) {
+            layer_min = pin_loc.layer_num;
+        } else if (pin_loc.layer_num > layer_max) {
+            layer_max = pin_loc.layer_num;
         }
     }
 
-    /* Now I've found the coordinates of the bounding box.  There are no *
-     * channels beyond device_ctx.grid.width()-2 and                     *
-     * device_ctx.grid.height() - 2, so I want to clip to that.  As well,*
-     * since I'll always include the channel immediately below and the   *
-     * channel immediately to the left of the bounding box, I want to    *
-     * clip to 1 in both directions as well (since minimum channel index *
-     * is 0).  See route_common.cpp for a channel diagram.               */
-    bb_coord_new.xmin = std::max(std::min<int>(xmin, device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
-    bb_coord_new.ymin = std::max(std::min<int>(ymin, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
-    bb_coord_new.layer_min = std::max(std::min<int>(layer_min, device_ctx.grid.get_num_layers() - 1), 0);
-    bb_coord_new.xmax = std::max(std::min<int>(xmax, device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
-    bb_coord_new.ymax = std::max(std::min<int>(ymax, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
-    bb_coord_new.layer_max = std::max(std::min<int>(layer_max, device_ctx.grid.get_num_layers() - 1), 0);
+    bb_coord_new.xmin = xmin;
+    bb_coord_new.ymin = ymin;
+    bb_coord_new.layer_min = layer_min;
+    bb_coord_new.xmax = xmax;
+    bb_coord_new.ymax = ymax;
+    bb_coord_new.layer_max = layer_max;
 }
 
 bool MedianMoveGenerator::get_bb_incrementally(ClusterNetId net_id,
@@ -294,17 +281,8 @@ bool MedianMoveGenerator::get_bb_incrementally(ClusterNetId net_id,
                                                int ynew,
                                                int layer_new) {
     //TODO: account for multiple physical pin instances per logical pin
-
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& place_move_ctx = placer_state_.get().move();
-
-    xnew = std::max(std::min<int>(xnew, device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
-    ynew = std::max(std::min<int>(ynew, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
-    layer_new = std::max(std::min<int>(layer_new, device_ctx.grid.get_num_layers() - 1), 0);
-
-    xold = std::max(std::min<int>(xold, device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
-    yold = std::max(std::min<int>(yold, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
-    layer_old = std::max(std::min<int>(layer_old, device_ctx.grid.get_num_layers() - 1), 0);
+    const auto& device_ctx = g_vpr_ctx.device();
+    const auto& place_move_ctx = placer_state_.get().move();
 
     t_bb union_bb_edge;
     t_bb union_bb;
