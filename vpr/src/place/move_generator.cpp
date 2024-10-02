@@ -6,8 +6,7 @@
 void MoveGenerator::calculate_reward_and_process_outcome(const MoveOutcomeStats& move_outcome_stats,
                                                          double delta_c,
                                                          float timing_bb_factor) {
-    /*
-     * To learn about different reward functions refer to the following paper:
+    /* To learn about different reward functions refer to the following paper:
      * Elgammal MA, Murray KE, Betz V. RLPlace: Using reinforcement learning and
      * smart perturbations to optimize FPGA placement.
      * IEEE Transactions on Computer-Aided Design of Integrated Circuits and Systems.

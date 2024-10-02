@@ -12,7 +12,7 @@
 
 bool PartialPlacement::verify_locs(const APNetlist& netlist,
                                    size_t grid_width,
-                                   size_t grid_height) {
+                                   size_t grid_height) const {
     // Make sure all of the loc values are there.
     if (block_x_locs.size() != netlist.blocks().size())
         return false;
@@ -43,7 +43,7 @@ bool PartialPlacement::verify_locs(const APNetlist& netlist,
 }
 
 bool PartialPlacement::verify_layer_nums(const APNetlist& netlist,
-                                         size_t grid_num_layers) {
+                                         size_t grid_num_layers) const {
     // Make sure all of the layer nums are there
     if (block_layer_nums.size() != netlist.blocks().size())
         return false;
@@ -62,7 +62,7 @@ bool PartialPlacement::verify_layer_nums(const APNetlist& netlist,
     return true;
 }
 
-bool PartialPlacement::verify_sub_tiles(const APNetlist& netlist) {
+bool PartialPlacement::verify_sub_tiles(const APNetlist& netlist) const {
     // Make sure all of the sub tiles are there
     if (block_sub_tiles.size() != netlist.blocks().size())
         return false;
@@ -88,7 +88,7 @@ bool PartialPlacement::verify_sub_tiles(const APNetlist& netlist) {
 bool PartialPlacement::verify(const APNetlist& netlist,
                               size_t grid_width,
                               size_t grid_height,
-                              size_t grid_num_layers) {
+                              size_t grid_num_layers) const {
     // Check that all the other verify methods passed.
     if (!verify_locs(netlist, grid_width, grid_height))
         return false;

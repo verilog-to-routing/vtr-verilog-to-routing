@@ -38,6 +38,27 @@
 #include "vtr_vector.h"
 #include "vtr_vector_map.h"
 
+/**
+ * @brief Counts the total number of logic models that the architecture can
+ *        implement.
+ *
+ * @param user_models A linked list of logic models.
+ * @return The total number of models in the linked list
+ */
+static size_t count_models(const t_model* user_models) {
+    if (user_models == nullptr)
+        return 0;
+
+    size_t n_models = 0;
+    const t_model* cur_model = user_models;
+    while (cur_model != nullptr) {
+        n_models++;
+        cur_model = cur_model->next;
+    }
+
+    return n_models;
+}
+
 /*
  * @brief Gets the max cluster size that any logical block can have.
  *
@@ -1636,7 +1657,8 @@ ClusterLegalizer::ClusterLegalizer(const AtomNetlist& atom_netlist,
                                    const Prepacker& prepacker,
                                    const std::vector<t_logical_block_type>& logical_block_types,
                                    std::vector<t_lb_type_rr_node>* lb_type_rr_graphs,
-                                   size_t num_models,
+                                   const t_model* user_models,
+                                   const t_model* library_models,
                                    const std::vector<std::string>& target_external_pin_util_str,
                                    const t_pack_high_fanout_thresholds& high_fanout_thresholds,
                                    ClusterLegalizationStrategy cluster_legalization_strategy,
@@ -1661,7 +1683,7 @@ ClusterLegalizer::ClusterLegalizer(const AtomNetlist& atom_netlist,
     // Get a reference to the rr graphs.
     lb_type_rr_graphs_ = lb_type_rr_graphs;
     // Get the number of models in the architecture.
-    num_models_ = num_models;
+    num_models_ = count_models(user_models) + count_models(library_models);
     // Find all NoC router atoms.
     std::vector<AtomBlockId> noc_atoms = find_noc_router_atoms(atom_netlist);
     update_noc_reachability_partitions(noc_atoms,

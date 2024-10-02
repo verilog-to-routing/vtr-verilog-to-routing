@@ -121,8 +121,8 @@
 
 #include <vector>
 
-#include "physical_types.h"
 #include "clustered_netlist_fwd.h"
+#include "physical_types.h"
 #include "vpr_types.h"
 
 /* These are the placement macro structure.
