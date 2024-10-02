@@ -159,13 +159,6 @@ bool place_one_block(const ClusterBlockId blk_id,
                      vtr::vector<ClusterBlockId, t_block_score>* block_scores,
                      BlkLocRegistry& blk_loc_registry);
 
-/**
- * @brief Initializes the grid to empty. It also initializes the location for
- * all blocks to unplaced.
- *
- * @param blk_loc_registry Placement block location information. To be filled with the location
- * where pl_macro is placed.
- */
-void clear_all_grid_locs(BlkLocRegistry& blk_loc_registry);
+
 
 #endif
