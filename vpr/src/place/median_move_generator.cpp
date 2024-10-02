@@ -267,7 +267,6 @@ bool MedianMoveGenerator::get_bb_incrementally(ClusterNetId net_id,
                                                t_physical_tile_loc old_pin_loc,
                                                t_physical_tile_loc new_pin_loc) {
     //TODO: account for multiple physical pin instances per logical pin
-    const auto& device_ctx = g_vpr_ctx.device();
     const auto& place_move_ctx = placer_state_.get().move();
 
     t_bb union_bb_edge;
