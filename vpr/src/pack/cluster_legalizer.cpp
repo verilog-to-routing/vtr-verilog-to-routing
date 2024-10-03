@@ -509,7 +509,7 @@ try_place_atom_block_rec(const t_pb_graph_node* pb_graph_node,
                          const int max_cluster_size,
                          const LegalizationClusterId cluster_id,
                          vtr::vector_map<AtomBlockId, LegalizationClusterId>& atom_cluster,
-                         const t_cluster_placement_stats* cluster_placement_stats_ptr,
+                         const t_intra_cluster_placement_stats* cluster_placement_stats_ptr,
                          const t_pack_molecule* molecule,
                          t_lb_router_data* router_data,
                          int verbosity,
@@ -1475,7 +1475,7 @@ ClusterLegalizer::start_new_cluster(t_pack_molecule* molecule,
                                                                cluster_type);
 
     // Allocate and load the cluster's placement stats
-    t_cluster_placement_stats* cluster_placement_stats = alloc_and_load_cluster_placement_stats(cluster_type, cluster_mode);
+    t_intra_cluster_placement_stats* cluster_placement_stats = alloc_and_load_cluster_placement_stats(cluster_type, cluster_mode);
 
     // Create the new cluster
     LegalizationCluster new_cluster;
