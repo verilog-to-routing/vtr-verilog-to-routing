@@ -16,7 +16,7 @@
  *
  * Contains data structure of placement locations based on status of primitive
  */
-class t_cluster_placement_stats {
+class t_intra_cluster_placement_stats {
   public:
     int num_pb_types;                     ///<num primitive pb_types inside complex block
     bool has_long_chain;                  ///<specifies if this cluster has a molecule placed in it that belongs to a long chain (a chain that spans more than one cluster)
@@ -131,13 +131,13 @@ class t_cluster_placement_stats {
  *
  * The pointer returned by this method must be freed.
  */
-t_cluster_placement_stats* alloc_and_load_cluster_placement_stats(t_logical_block_type_ptr cluster_type,
+t_intra_cluster_placement_stats* alloc_and_load_cluster_placement_stats(t_logical_block_type_ptr cluster_type,
                                                                   int cluster_mode);
 
 /**
  * @brief Frees the cluster placement stats of a cluster.
  */
-void free_cluster_placement_stats(t_cluster_placement_stats* cluster_placement_stats);
+void free_cluster_placement_stats(t_intra_cluster_placement_stats* cluster_placement_stats);
 
 /**
  * get next list of primitives for list of atom blocks
@@ -158,7 +158,7 @@ void free_cluster_placement_stats(t_cluster_placement_stats* cluster_placement_s
  *              If the force_site argument is set to its default value (-1), vpr selects an available site.
  */
 bool get_next_primitive_list(
-    t_cluster_placement_stats* cluster_placement_stats,
+    t_intra_cluster_placement_stats* cluster_placement_stats,
     const t_pack_molecule* molecule,
     t_pb_graph_node** primitives_list,
     int force_site = -1);
@@ -170,7 +170,7 @@ bool get_next_primitive_list(
  * Side effects: All cluster_placement_primitives may be invalidated/costed in this algorithm
  *               Al intermediate queues are requeued
  */
-void commit_primitive(t_cluster_placement_stats* cluster_placement_stats,
+void commit_primitive(t_intra_cluster_placement_stats* cluster_placement_stats,
                       const t_pb_graph_node* primitive);
 
 /**
@@ -182,10 +182,10 @@ int get_array_size_of_molecule(const t_pack_molecule* molecule);
  * @brief Given atom block, determines if a free primitive exists for it,
  */
 bool exists_free_primitive_for_atom_block(
-    t_cluster_placement_stats* cluster_placement_stats,
+    t_intra_cluster_placement_stats* cluster_placement_stats,
     const AtomBlockId blk_id);
 
 void reset_tried_but_unused_cluster_placements(
-    t_cluster_placement_stats* cluster_placement_stats);
+    t_intra_cluster_placement_stats* cluster_placement_stats);
 
 #endif
