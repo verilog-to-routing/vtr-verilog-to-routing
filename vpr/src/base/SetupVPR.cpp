@@ -230,7 +230,7 @@ void SetupVPR(const t_options* options,
                   "Architecture contains no top-level block type containing '.output' models");
     }
 
-    segments = arch->segments;
+    segments = arch->Segments;
 
     SetupSwitches(*arch, routingArch, arch->Switches, arch->num_switches);
     SetupRoutingArch(*arch, routingArch);
@@ -334,7 +334,7 @@ void SetupVPR(const t_options* options,
         echo_pb_graph(getEchoFileName(E_ECHO_PB_GRAPH));
     }
 
-    *graphPause = options->graphPause;
+    *graphPause = options->GraphPause;
 
     *showGraphics = options->show_graphics;
 
