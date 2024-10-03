@@ -7,6 +7,7 @@ total_wirelength;vpr.out;\s*Total wirelength:\s*(\d+)
 total_runtime;vpr.out;The entire flow of VPR took (.*) seconds
 #pack_time;vpr.out;Packing took (.*) seconds
 #place_time;vpr.out;Placement took (.*) seconds
+#ap_time;vpr.out;Analytical Placement took (.*) seconds
 #route_time;vpr.out;Routing took (.*) seconds
 #num_pre_packed_nets;vpr.out;Total Nets: (\d+)
 #num_pre_packed_blocks;vpr.out;Total Blocks: (\d+)

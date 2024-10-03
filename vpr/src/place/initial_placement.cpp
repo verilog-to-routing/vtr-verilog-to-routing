@@ -44,15 +44,6 @@ static void clear_block_type_grid_locs(const std::unordered_set<int>& unplaced_b
                                        BlkLocRegistry& blk_loc_registry);
 
 /**
- * @brief Initializes the grid to empty. It also initialized the location for
- * all blocks to unplaced.
- *
- * @param blk_loc_registry Placement block location information. To be filled with the location
- * where pl_macro is placed.
- */
-static void clear_all_grid_locs(BlkLocRegistry& blk_loc_registry);
-
-/**
  * @brief Control routine for placing a macro.
  * First iteration of place_marco performs the following steps to place a macro:
  *  1) try_centroid_placement : tries to find a location based on the macro's logical connections.
@@ -1150,7 +1141,7 @@ static void clear_block_type_grid_locs(const std::unordered_set<int>& unplaced_b
     }
 }
 
-static void clear_all_grid_locs(BlkLocRegistry& blk_loc_registry) {
+void clear_all_grid_locs(BlkLocRegistry& blk_loc_registry) {
     auto& device_ctx = g_vpr_ctx.device();
 
     std::unordered_set<int> blk_types_to_be_cleared;

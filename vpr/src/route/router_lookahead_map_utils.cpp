@@ -893,30 +893,30 @@ void dump_readable_router_lookahead_map(const std::string& file_name, const std:
     }
 
     VTR_ASSERT(dim_sizes[0] == num_layers);
-    VTR_ASSERT(dim_sizes[1] == 2);
-    VTR_ASSERT(dim_sizes[3] == num_layers);
+    VTR_ASSERT(dim_sizes[1] == num_layers);
+    VTR_ASSERT(dim_sizes[2] == 2);
     VTR_ASSERT(dim_sizes.size() == 5 || (dim_sizes.size() == 6 && dim_sizes[4] == grid_width && dim_sizes[5] == grid_height));
 
     ofs << "from_layer,"
+           "to_layer,"
            "chan_type,"
            "seg_type,"
-           "to_layer,"
            "delta_x,"
            "delta_y,"
            "cong_cost,"
            "delay_cost\n";
 
     for (int from_layer_num = 0; from_layer_num < num_layers; from_layer_num++) {
-        for (e_rr_type chan_type : {CHANX, CHANY}) {
-            for (int seg_index = 0; seg_index < dim_sizes[2]; seg_index++) {
-                for (int to_layer_num = 0; to_layer_num < num_layers; to_layer_num++) {
+        for (int to_layer_num = 0; to_layer_num < num_layers; to_layer_num++) {
+            for (e_rr_type chan_type : {CHANX, CHANY}) {
+                for (int seg_index = 0; seg_index < dim_sizes[3]; seg_index++) {
                     for (int dx = 0; dx < grid_width; dx++) {
                         for (int dy = 0; dy < grid_height; dy++) {
                             auto cost = wire_cost_func(chan_type, seg_index, from_layer_num, dx, dy, to_layer_num);
                             ofs << from_layer_num << ","
+                                << to_layer_num << ","
                                 << rr_node_typename[chan_type] << ","
                                 << seg_index << ","
-                                << to_layer_num << ","
                                 << dx << ","
                                 << dy << ","
                                 << cost.congestion << ","

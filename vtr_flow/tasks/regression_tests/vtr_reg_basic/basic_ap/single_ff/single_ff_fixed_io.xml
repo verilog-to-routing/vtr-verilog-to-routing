@@ -1,0 +1,13 @@
+<vpr_constraints tool_name="vpr">
+<partition_list>
+<partition name="out:out"><add_atom name_pattern="out:out" />
+<add_region subtile="-1" x_high="9" x_low="9" y_high="0" y_low="0" />
+</partition>
+<partition name="clock"><add_atom name_pattern="clock" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="13" y_low="13" />
+</partition>
+<partition name="in"><add_atom name_pattern="in" />
+<add_region subtile="-1" x_high="9" x_low="9" y_high="16" y_low="16" />
+</partition>
+</partition_list>
+</vpr_constraints>

@@ -215,10 +215,10 @@ public:
      *                           different cluster types. A reference is stored
      *                           in the class to be used to allocate and load
      *                           the router data.
-     *  @param num_models       The total number of models in the architecture.
-     *                          This is the sum of the number of the user and
-     *                          library models. Used internally to allocate data
-     *                          structures.
+     *  @param user_models  A linked list of the user models. Used to allocate
+     *                      an internal structure.
+     *  @param library_models   A linked list of the library models. Used to
+     *                          allocate an internal structure.
      *  @param target_external_pin_util_str A string used to initialize the
      *                                      target external pin utilization of
      *                                      each cluster type.
@@ -246,7 +246,8 @@ public:
                      const Prepacker& prepacker,
                      const std::vector<t_logical_block_type>& logical_block_types,
                      std::vector<t_lb_type_rr_node>* lb_type_rr_graphs,
-                     size_t num_models,
+                     const t_model* user_models,
+                     const t_model* library_models,
                      const std::vector<std::string>& target_external_pin_util_str,
                      const t_pack_high_fanout_thresholds& high_fanout_thresholds,
                      ClusterLegalizationStrategy cluster_legalization_strategy,
