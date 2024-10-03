@@ -8,6 +8,8 @@
 #include "vpr_types.h"
 #include "vtr_vector_map.h"
 
+class BlkLocRegistry;
+
 /* The maximum number of tries when trying to place a macro at a    *
  * random location before trying exhaustive placement - find the first     *
  * legal position and place it during initial placement.                  */
@@ -152,4 +154,14 @@ bool place_one_block(const ClusterBlockId blk_id,
                      std::vector<t_grid_empty_locs_block_type>* blk_types_empty_locs_in_grid,
                      vtr::vector<ClusterBlockId, t_block_score>* block_scores,
                      BlkLocRegistry& blk_loc_registry);
+
+/**
+ * @brief Initializes the grid to empty. It also initializes the location for
+ * all blocks to unplaced.
+ *
+ * @param blk_loc_registry Placement block location information. To be filled with the location
+ * where pl_macro is placed.
+ */
+void clear_all_grid_locs(BlkLocRegistry& blk_loc_registry);
+
 #endif
