@@ -3937,6 +3937,43 @@ static void ProcessSegments(pugi::xml_node Parent,
                        "Atleast one segment per-axis needs to get specified if no segments with non-specified (default) axis attribute exist.");
     }
 }
+
+
+static void calculate_custom_SB_locations(const pugiutil::loc_data& loc_data, const pugi::xml_node& SubElem, const int grid_width, const int grid_height, t_switchblock_inf& sb){
+    auto startx_attr = get_attribute(SubElem, "startx", loc_data, ReqOpt::OPTIONAL);
+    auto endx_attr   = get_attribute(SubElem, "endx", loc_data, ReqOpt::OPTIONAL);
+
+    auto starty_attr = get_attribute(SubElem, "starty", loc_data, ReqOpt::OPTIONAL);
+    auto endy_attr   = get_attribute(SubElem, "endy", loc_data, ReqOpt::OPTIONAL);
+
+    auto repeatx_attr = get_attribute(SubElem, "repeatx", loc_data, ReqOpt::OPTIONAL);
+    auto repeaty_attr = get_attribute(SubElem, "repeaty", loc_data, ReqOpt::OPTIONAL);
+
+    auto incrx_attr = get_attribute(SubElem, "incrx", loc_data, ReqOpt::OPTIONAL);
+    auto incry_attr = get_attribute(SubElem, "incry", loc_data, ReqOpt::OPTIONAL);
+
+    //parse the values from the architecture file and fill out SB region information
+    vtr::FormulaParser p;
+
+    vtr::t_formula_data vars;
+    vars.set_var_value("W", grid_width);
+    vars.set_var_value("H", grid_height);
+
+    
+    sb.reg_x.start = startx_attr.empty() ? 0 : p.parse_formula(startx_attr.value(), vars);
+    sb.reg_y.start = starty_attr.empty() ? 0 : p.parse_formula(starty_attr.value(), vars);
+
+    sb.reg_x.end = endx_attr.empty() ? (grid_width - 1) : p.parse_formula(endx_attr.value(), vars);
+    sb.reg_y.end = endy_attr.empty() ? (grid_height -1) : p.parse_formula(endy_attr.value(), vars);
+
+    sb.reg_x.repeat = repeatx_attr.empty() ? 0 : p.parse_formula(repeatx_attr.value(), vars);
+    sb.reg_y.repeat = repeaty_attr.empty() ? 0 : p.parse_formula(repeaty_attr.value(), vars);
+
+    sb.reg_x.incr = incrx_attr.empty() ? 1 : p.parse_formula(incrx_attr.value(), vars);
+    sb.reg_y.incr = incry_attr.empty() ? 1 : p.parse_formula(incry_attr.value(), vars);
+
+}
+
 /* Processes the switchblocklist section from the xml architecture file.
  * See vpr/SRC/route/build_switchblocks.c for a detailed description of this
  * switch block format */
@@ -3948,8 +3985,7 @@ static void ProcessSwitchblocks(pugi::xml_node Parent, t_arch* arch, const pugiu
     /* get the number of switchblocks */
     int num_switchblocks = count_children(Parent, "switchblock", loc_data);
     arch->switchblocks.reserve(num_switchblocks);
-
-    // get the device layout width and height
+    
     int layout_index = -1;
     for(layout_index = 0; layout_index < (int) arch->grid_layouts.size(); layout_index++){
         if(arch->grid_layouts.at(layout_index).name == arch->device_layout){
@@ -4005,6 +4041,9 @@ static void ProcessSwitchblocks(pugi::xml_node Parent, t_arch* arch, const pugiu
 
         /* get the switchblock coordinate only if sb.location is set to E_XY_SPECIFIED*/
         if(sb.location == e_sb_location::E_XY_SPECIFIED){
+            if (arch->device_layout == "auto"){
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem), "Specifying SB locations for auto layout devices are not supported yet!\n");
+            }
             expect_only_attributes(SubElem,
                                    {"x", "y", "type",
                                     "startx", "endx", "repeatx", "incrx",
@@ -4024,41 +4063,12 @@ static void ProcessSwitchblocks(pugi::xml_node Parent, t_arch* arch, const pugiu
                 "Location (%d,%d) is not valid within the grid! grid dimensions are: (%d,%d)\n", sb.x, sb.y, grid_width, grid_height);
             }
             
-
-            /* Location also might be specified with regular expression, get the region that this SB should be applied to*/
+            /* if the the switchblock exact location is not specified and a region is specified within the architecture file,
+             * we have to parse the region specification and apply the SB pattern to all the locations fall into the specified 
+             * region based on device width and height.
+             */
             if (sb.x == -1 && sb.y == -1) {
-                auto startx_attr = get_attribute(SubElem, "startx", loc_data, ReqOpt::OPTIONAL);
-                auto endx_attr   = get_attribute(SubElem, "endx", loc_data, ReqOpt::OPTIONAL);
-
-                auto starty_attr = get_attribute(SubElem, "starty", loc_data, ReqOpt::OPTIONAL);
-                auto endy_attr   = get_attribute(SubElem, "endy", loc_data, ReqOpt::OPTIONAL);
-
-                auto repeatx_attr = get_attribute(SubElem, "repeatx", loc_data, ReqOpt::OPTIONAL);
-                auto repeaty_attr = get_attribute(SubElem, "repeaty", loc_data, ReqOpt::OPTIONAL);
-
-                auto incrx_attr = get_attribute(SubElem, "incrx", loc_data, ReqOpt::OPTIONAL);
-                auto incry_attr = get_attribute(SubElem, "incry", loc_data, ReqOpt::OPTIONAL);
-
-                //parse the values from the architecture file and fill out SB region information
-                vtr::FormulaParser p;
-
-                vtr::t_formula_data vars;
-                vars.set_var_value("W", grid_width);
-                vars.set_var_value("H", grid_height);
-
-                
-                sb.reg_x.start = startx_attr.empty() ? 0 : p.parse_formula(startx_attr.value(), vars);
-                sb.reg_y.start = starty_attr.empty() ? 0 : p.parse_formula(starty_attr.value(), vars);
-
-                sb.reg_x.end = endx_attr.empty() ? (grid_width - 1) : p.parse_formula(endx_attr.value(), vars);
-                sb.reg_y.end = endy_attr.empty() ? (grid_height -1) : p.parse_formula(endy_attr.value(), vars);
-
-                sb.reg_x.repeat = repeatx_attr.empty() ? 0 : p.parse_formula(repeatx_attr.value(), vars);
-                sb.reg_y.repeat = repeaty_attr.empty() ? 0 : p.parse_formula(repeaty_attr.value(), vars);
-
-                sb.reg_x.incr = incrx_attr.empty() ? 1 : p.parse_formula(incrx_attr.value(), vars);
-                sb.reg_y.incr = incry_attr.empty() ? 1 : p.parse_formula(incry_attr.value(), vars);
-
+                calculate_custom_SB_locations(loc_data, SubElem, grid_width, grid_height, sb);
             }
 
         }
