@@ -82,6 +82,23 @@ VPR runs all stages of (pack, place, route, and analysis) if none of :option:`--
 
     **Default:** ``off``
 
+.. option:: --analytical_place
+
+    Run the analytical placement flow.
+    This flows uses an integrated packing and placement algorithm which uses information from the primitive level to improve clustering and placement;
+    as such, the :option:`--pack` and :option:`--place` options should not be set when this option is set.
+    This flow requires that the device has a fixed size and some of the primitive blocks are fixed somewhere on the device grid.
+
+    .. seealso:: See :ref:`Fixed FPGA Grid Layout <fixed_arch_grid_layout>` and :option:`--device` for how to fix the device size.
+
+    .. seealso:: See :ref:`VPR Placement Constraints <placement_constraints>` for how to fix primitive blocks in a design to the device grid.
+
+    .. warning::
+
+        This analytical placement flow is experimental and under active development.
+
+    **Default:** ``off``
+
 .. option:: --route
 
     Run routing stage
@@ -360,11 +377,11 @@ Use the options below to override this default naming behaviour.
 
 .. option:: --read_vpr_constraints <file>
 
-    Reads the :ref:`floorplanning constraints <vpr_constraints_file>` that packing and placement must respect from the specified XML file.
+    Reads the :ref:`VPR constraints <vpr_constraints>` that the flow must respect from the specified XML file.
 
 .. option:: --write_vpr_constraints <file>
 
-    Writes out new :ref:`floorplanning constraints <vpr_constraints_file>` based on current placement to the specified XML file.
+    Writes out new :ref:`floorplanning constraints <placement_constraints>` based on the current placement to the specified XML file.
 
 .. option:: --read_router_lookahead <file>
 
@@ -979,15 +996,16 @@ The following options are only valid when the placement engine is in timing-driv
 
     **Default:** ``8.0``
 
-.. option:: --place_delay_model {delta, delta_override}
+.. option:: --place_delay_model {simple, delta, delta_override}
 
     Controls how the timing-driven placer estimates delays.
 
-     * ``delta`` The router is used to profile delay from various locations in the grid for various differences in position
+     * ``simple`` The placement delay estimator is built from the router lookahead. This takes less CPU time to build and it and still as accurate as the ``delta` model.
+     * ``delta`` The router is used to profile delay from various locations in the grid for various differences in position.
      * ``delta_override`` Like ``delta`` but also includes special overrides to ensure effects of direct connects between blocks are accounted for.
        This is potentially more accurate but is more complex and depending on the architecture (e.g. number of direct connects) may increase place run-time.
 
-    **Default:** ``delta``
+    **Default:** ``simple``
 
 .. option:: --place_delay_model_reducer {min, max, median, arithmean, geomean}
 
@@ -1163,6 +1181,14 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
 
     **Default:** ``1.3``
 
+.. option:: --max_pres_fac <float>
+
+    Sets the maximum present overuse penalty factor that can ever result during routing. Should always be less than 1e25 or so to prevent overflow. 
+    Smaller values may help prevent circuitous routing in difficult routing problems, but may increase 
+    the number of routing iterations needed and hence runtime.
+
+    **Default:** ``1000.0``
+
 .. option:: --acc_fac <float>
 
     Specifies the accumulated overuse factor (historical congestion cost factor).
@@ -1284,6 +1310,13 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
     * `swns` - setup Worst Negative Slack (sWNS) [ns]
     * `stns` - Setup Total Negative Slack (sTNS) [ns]
 
+.. option:: --route_verbosity <int>
+
+    Controls the verbosity of routing output.
+    High values produce more detailed output, which can be useful for debugging or understanding the routing process.
+
+    **Default**: ``1``
+
 .. _timing_driven_router_options:
 
 Timing-Driven Router Options
@@ -1297,6 +1330,15 @@ The following options are only valid when the router is in timing-driven mode (t
     Values between 1 and 2 are reasonable, with higher values trading some quality for reduced CPU time.
 
     **Default:** ``1.2``
+
+.. option:: --astar_offset <float>
+
+    Sets how aggressive the directed search used by the timing-driven router is.
+    It is a subtractive adjustment to the lookahead heuristic.
+
+    Values between 0 and 1e-9 are resonable; higher values may increase quality at the expense of run-time.
+
+    **Default:** ``0.0``
 
 .. option:: --router_profiler_astar_fac <float>
     
@@ -1815,6 +1857,27 @@ The following options are used to enable power estimation in VPR.
         ...
 
     Instructions on generating this file are provided in :ref:`power_estimation`.
+
+Server Mode Options
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+If VPR is in server mode, it listens on a socket for commands from a client. Currently, this is used to enable interactive timing analysis and visualization of timing paths in the VPR UI under the control of a separate client.
+
+The following options are used to enable server mode in VPR.
+
+.. seealso:: :ref:`server_mode` for more details.
+
+.. option:: --server
+
+    Run in server mode. Accept single client application connection and respond to client requests
+
+    **Default:** ``off``
+
+.. option:: --port PORT
+
+    Server port number.
+
+    **Default:** ``60555``
 
 Command-line Auto Completion
 ----------------------------

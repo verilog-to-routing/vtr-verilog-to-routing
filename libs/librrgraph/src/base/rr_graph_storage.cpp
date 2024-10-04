@@ -1,6 +1,8 @@
 #include <climits>
 #include "arch_types.h"
 #include "rr_graph_storage.h"
+#include "vtr_expr_eval.h"
+#include "vtr_error.h"
 
 #include <algorithm>
 
@@ -616,13 +618,13 @@ const std::string& t_rr_graph_storage::node_direction_string(RRNodeId id) const 
 }
 
 const char* t_rr_graph_storage::node_side_string(RRNodeId id) const {
-    for (const e_side& side : SIDES) {
+    for (const e_side& side : TOTAL_2D_SIDES) {
         if (is_node_on_specific_side(id, side)) {
-            return SIDE_STRING[side];
+            return TOTAL_2D_SIDE_STRINGS[side];
         }
     }
     /* Not found, return an invalid string*/
-    return SIDE_STRING[NUM_SIDES];
+    return TOTAL_2D_SIDE_STRINGS[NUM_2D_SIDES];
 }
 
 void t_rr_graph_storage::set_node_layer(RRNodeId id, short layer) {
@@ -718,6 +720,9 @@ void t_rr_graph_storage::set_node_type(RRNodeId id, t_rr_type new_type) {
     node_storage_[id].type_ = new_type;
 }
 
+void t_rr_graph_storage::set_node_name(RRNodeId id, std::string new_name) {
+    node_name_.insert(std::make_pair(id, new_name));
+}
 void t_rr_graph_storage::set_node_coordinates(RRNodeId id, short x1, short y1, short x2, short y2) {
     auto& node = node_storage_[id];
     if (x1 < x2) {
@@ -766,12 +771,26 @@ void t_rr_graph_storage::add_node_side(RRNodeId id, e_side new_side) {
     if (node_type(id) != IPIN && node_type(id) != OPIN) {
         VTR_LOG_ERROR("Attempted to set RR node 'side' for non-channel type '%s'", node_type_string(id));
     }
-    std::bitset<NUM_SIDES> side_bits = node_storage_[id].dir_side_.sides;
+    std::bitset<NUM_2D_SIDES> side_bits = node_storage_[id].dir_side_.sides;
     side_bits[size_t(new_side)] = true;
     if (side_bits.to_ulong() > CHAR_MAX) {
-        VTR_LOG_ERROR("Invalid side '%s' to be added to rr node %u", SIDE_STRING[new_side], size_t(id));
+        VTR_LOG_ERROR("Invalid side '%s' to be added to rr node %u", TOTAL_2D_SIDE_STRINGS[new_side], size_t(id));
     }
     node_storage_[id].dir_side_.sides = static_cast<unsigned char>(side_bits.to_ulong());
+}
+
+void t_rr_graph_storage::set_virtual_clock_network_root_idx(RRNodeId virtual_clock_network_root_idx) {
+    // Retrieve the name string for the specified RRNodeId.
+    auto clock_network_name_str = node_name(virtual_clock_network_root_idx);
+
+    // If the name is available, associate it with the given node id for the clock network virtual sink.
+    if(clock_network_name_str) {
+        virtual_clock_network_root_idx_.insert(std::make_pair(*(clock_network_name_str.value()), virtual_clock_network_root_idx));
+    }
+    else {
+        // If no name is available, throw a VtrError indicating the absence of the attribute name for the virtual sink node.
+        throw vtr::VtrError(vtr::string_fmt("Attribute name is not specified for virtual sink node '%u'\n", size_t(virtual_clock_network_root_idx)), __FILE__, __LINE__);
+    }
 }
 
 int t_rr_graph_view::node_ptc_num(RRNodeId id) const {
@@ -797,10 +816,12 @@ t_rr_graph_view t_rr_graph_storage::view() const {
         vtr::make_const_array_view_id(node_first_edge_),
         vtr::make_const_array_view_id(node_fan_in_),
         vtr::make_const_array_view_id(node_layer_),
+        node_name_,
         vtr::make_const_array_view_id(node_ptc_twist_incr_),
         vtr::make_const_array_view_id(edge_src_node_),
         vtr::make_const_array_view_id(edge_dest_node_),
-        vtr::make_const_array_view_id(edge_switch_));
+        vtr::make_const_array_view_id(edge_switch_),
+        virtual_clock_network_root_idx_);
 }
 
 // Given `order`, a vector mapping each RRNodeId to a new one (old -> new),

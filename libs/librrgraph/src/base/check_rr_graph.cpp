@@ -9,6 +9,7 @@
 #include "physical_types_util.h"
 
 #include "describe_rr_node.h"
+#include "rr_graph_utils.h"
 
 /*********************** Subroutines local to this module *******************/
 
@@ -53,7 +54,6 @@ void check_rr_graph(const RRGraphView& rr_graph,
                     const DeviceGrid& grid,
                     const t_chan_width& chan_width,
                     const t_graph_type graph_type,
-                    const int virtual_clock_network_root_idx,
                     bool is_flat) {
     e_route_type route_type = DETAILED;
     if (graph_type == GRAPH_GLOBAL) {
@@ -76,7 +76,7 @@ void check_rr_graph(const RRGraphView& rr_graph,
         }
 
         // Virtual clock network sink is special, ignore.
-        if (virtual_clock_network_root_idx == int(inode)) {
+        if (rr_graph.is_virtual_clock_network_root(rr_node)) {
             continue;
         }
 
@@ -280,12 +280,12 @@ void check_rr_graph(const RRGraphView& rr_graph,
                                                                       rr_graph.node_layer(rr_node)});
                             std::string pin_name = block_type_pin_index_to_name(block_type, rr_graph.node_pin_num(rr_node), is_flat);
                             /* Print error messages for all the sides that a node may appear */
-                            for (const e_side& node_side : SIDES) {
+                            for (const e_side& node_side : TOTAL_2D_SIDES) {
                                 if (!rr_graph.is_node_on_specific_side(rr_node, node_side)) {
                                     continue;
                                 }
                                 VTR_LOG_ERROR("in check_rr_graph: node %d (%s) at (%d,%d) block=%s side=%s pin=%s has no fanin.\n",
-                                              inode, rr_graph.node_type_string(rr_node), rr_graph.node_xlow(rr_node), rr_graph.node_ylow(rr_node), block_type->name, SIDE_STRING[node_side], pin_name.c_str());
+                                              inode, rr_graph.node_type_string(rr_node), rr_graph.node_xlow(rr_node), rr_graph.node_ylow(rr_node), block_type->name, TOTAL_2D_SIDE_STRINGS[node_side], pin_name.c_str());
                             }
                         }
                     } else {
@@ -390,16 +390,29 @@ void check_rr_node(const RRGraphView& rr_graph,
 
     switch (rr_type) {
         case SOURCE:
-        case SINK:
             if (type == nullptr) {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                                 "in check_rr_node: node %d (type %d) is at an illegal clb location (%d, %d).\n", inode, rr_type, xlow, ylow);
             }
+
             if (xlow != (xhigh - type->width + 1) || ylow != (yhigh - type->height + 1)) {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                                 "in check_rr_node: node %d (type %d) has endpoints (%d,%d) and (%d,%d)\n", inode, rr_type, xlow, ylow, xhigh, yhigh);
             }
             break;
+        case SINK: {
+            if (type == nullptr) {
+                VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                                "in check_rr_node: node %d (type %d) is at an illegal clb location (%d, %d).\n", inode, rr_type, xlow, ylow);
+            }
+
+            vtr::Rect<int> tile_bb = grid.get_tile_bb({xlow, ylow, layer_num});
+            if (xlow < tile_bb.xmin() || ylow < tile_bb.ymin() || xhigh > tile_bb.xmax() || yhigh > tile_bb.ymax()) {
+                VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                                "in check_rr_node: node %d (type %d) has endpoints (%d,%d) and (%d,%d), which is outside the bounds of the grid tile containing it.\n", inode, rr_type, xlow, ylow, xhigh, yhigh);
+            }
+            break;
+        }
         case IPIN:
         case OPIN:
             if (type == nullptr) {
@@ -485,9 +498,13 @@ void check_rr_node(const RRGraphView& rr_graph,
                 tracks_per_node = ((rr_type == CHANX) ? chan_width.x_list[ylow] : chan_width.y_list[xlow]);
             }
 
-            if (ptc_num >= nodes_per_chan) {
-                VPR_ERROR(VPR_ERROR_ROUTE,
-                          "in check_rr_node: inode %d (type %d) has a ptc_num of %d.\n", inode, rr_type, ptc_num);
+            //if a chanx/chany has length 0, it means it is used to connect different dice together
+            //hence, the ptc number can be larger than nodes_per_chan
+            if(xlow != xhigh || ylow != yhigh) {
+                if (ptc_num >= nodes_per_chan) {
+                    VPR_ERROR(VPR_ERROR_ROUTE,
+                              "in check_rr_node: inode %d (type %d) has a ptc_num of %d.\n", inode, rr_type, ptc_num);
+                }
             }
 
             if (capacity != tracks_per_node) {

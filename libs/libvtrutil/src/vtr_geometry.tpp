@@ -58,6 +58,30 @@ void Point<T>::swap() {
     std::swap(x_, y_);
 }
 
+template<class T>
+Point<T> Point<T>::operator+(const Point<T>& rhs) {
+    return {x_ + rhs.x_, y_ + rhs.y_};
+}
+
+template<class T>
+Point<T> Point<T>::operator-(const Point<T>& rhs) {
+    return {x_ - rhs.x_, y_ - rhs.y_};
+}
+
+template<class T>
+Point<T>& Point<T>::operator+=(const Point<T>& rhs) {
+    x_ += rhs.x_;
+    y_ += rhs.y_;
+    return *this;
+}
+
+template<class T>
+Point<T>& Point<T>::operator-=(const Point<T>& rhs) {
+    x_ -= rhs.x_;
+    y_ -= rhs.y_;
+    return *this;
+}
+
 /*
  * Rect
  */
@@ -118,6 +142,11 @@ Point<T> Rect<T>::bottom_left() const {
 template<class T>
 Point<T> Rect<T>::top_right() const {
     return top_right_;
+}
+
+template<class T>
+std::tuple<T, T, T, T> Rect<T>::coordinates() const {
+    return {xmin(), ymin(), xmax(), ymax()};
 }
 
 template<class T>
@@ -222,6 +251,20 @@ void Rect<T>::set_xmax(T xmax_val) {
 template<class T>
 void Rect<T>::set_ymax(T ymax_val) {
     top_right_.set_y(ymax_val);
+}
+
+template<class T>
+Rect<T>& Rect<T>::operator+=(const Point<T>& rhs) {
+    bottom_left_ += rhs;
+    top_right_ += rhs;
+    return *this;
+}
+
+template<class T>
+Rect<T>& Rect<T>::operator-=(const Point<T>& rhs) {
+    bottom_left_ -= rhs;
+    top_right_ -= rhs;
+    return *this;
 }
 
 template<class T>

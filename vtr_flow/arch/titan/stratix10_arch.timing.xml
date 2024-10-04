@@ -6425,13 +6425,21 @@
     <connection_block input_switch_name="ipin_cblock"/>
   </device>
   <switchlist>
-      <!-- AA: July 19, 2020
-         We define three types of drivers, one for each of the segment types (see comment in <segmentlist> section)
-         In the model for Stratix 10 we put all the delay on switch and connection blocks in the form of Tdel; Meaning that we assume the resistance and capticance of the switches are set to 0. 
-         Stratix 10 is modelled here to have 3 different segment wire types per horizational/vertical channel.           
-       -->
+
+    <!--
+      NOTE: In the model for Stratix 10 we put all the delay on switch and connection blocks in the form of Tdel; Meaning that we assume the resistance and capticance of the switches are set to 0. 
+
+      The average delays of the actual wires using Quartus PrimePro came to be the following: 
+      Wire delays:
+
+        V2: 95 ps     H2: 89  ps
+        V3: 194 ps    H4: 133 ps
+        V4: 146 ps    H10: 203  ps
+        V16: 213 ps   H24: 188  ps 
+    -->
 
     <!-- AA: The mux_tran_size and buf_size parameters for switches are kept the same as ones in Startix IV since modelling area in Stratix 10 is of little intrest and difficult.-->
+
     <switch Cin="0" Cout="0" R="0" Tdel="89e-12" buf_size="27.647901" mux_trans_size="2.630740" name="seg_h2_driver" type="mux"/>
     <switch Cin="0" Cout="0" R="0" Tdel="133e-12" buf_size="27.647901" mux_trans_size="2.630740" name="seg_h4_driver" type="mux"/>
     <switch Cin="0" Cout="0" R="0" Tdel="203e-12" buf_size="27.647901" mux_trans_size="2.630740" name="seg_h10_driver" type="mux"/>
@@ -6446,85 +6454,23 @@
     <switch Cin="1.47e-15" Cout="0." R="2231.5" Tdel="0e0" buf_size="auto" mux_trans_size="1.222260" name="ipin_cblock" type="mux"/>
   </switchlist>
   <segmentlist>
-    <!-- AA: July 19, 2021
-
+    <!--
            Wire distribution:
-             In stratix 10 there are eight types of wires: R2,R4,R10,R20,C2,C3,C4,C12
-             R wires are row wires running horizontally accross the chip
-             C wires are column wires running vertically accross the chip
+             In stratix 10 there are eight types of wires: H2,H4,H10,H24,V2,V3,V4,V16
+             H wires are row wires running horizontally accross the chip
+             V wires are column wires running vertically accross the chip
 
-             The wire counts for Stratix IV channels are:
-                R2 : 152
-                C2 : 160
-                R4 : 152
-                C3 : 160
-                R10: 210
-                C4 : 160
-                R24:  48
-                C16:  32
-                Total horizontal tracks: 562
-                Total vertical tracks: 512
-
-                6.5% of vertical & 8.5% of horizontal wires are long. (7.5% in average)
-
-                92.5% of horizontal wires &  93.5% of veritcal wires are intermediate wires. 
-
-                We will divide the wires into L2, L4, and L20 wires keeping in mind that VPR doesn't support non-uniform horizontal and vertical channels: 
-
-                 The combination of R2,C2, and C3 wires gives the channel width for L2 wires:
-                 
-                 (152+160+160)/2=236 
-
-                 The combination of R4,C4,and R10 wires gives the channel width for L4:
-
-                 (210+152+152)/3=257
-                
-                 The average of C16 and R24 wires gives the channel width for L20 wires: 
-
-                 (32+48)/2=40
-
-                 The average channel width for the horizontal and vertical channels is: (562+512)/2=537 ~540 
-
-                 The difference between the target channel width and total of wires thus far will be added to L4 wires since the total of R4,C4, and R10 
-                 wires is larger than R2,C2, and C3 wires:  
-
-                 540-257-236-40=6 -> 6 additional L4 wires 
-
-                 Finally we have: 
-                
-                 L2:236
-                 L4:264
-                 L20:40
-
-                 We get the following ratios with this distribution: 
-                
-                 7.4% are long wires.  
-                 92.6% are short wires. 
-
-                 which is reasonable.
-
-              Thus to model the routing we have the following: 
-                - A channel width of 540 wires (provided on the command line)
-                - 7.4% of wires are L20 wires
-                - 42.4% of wires are L4 wires
-                - 50.2% of wires are L2 wires
-
-           NOTE: In Startix10 we do not model metal data since all the delay is put on the driving muxes. 
-        
-           Wire delays:
-
-             The average delays of the actual wires using Quartus PrimePro came to be the following: 
-
-              C2: 95 ps     R2: 89  ps
-              C3: 194 ps    R4: 133 ps
-              C4: 146 ps    R10: 203  ps
-              C16: 213 ps   R24: 188  ps
-
-
-             Averaging accross wires of the same type we attempt to make the wires total delays correlate to the following values:
-              L2: 92 ps
-              L4: 140 ps
-              L20: 201 ps  
+             The wire counts for Stratix 10 channels are:
+                H2 : 40
+                V2 : 24
+                H4 : 112
+                V3 : 72
+                H10: 200
+                V4 : 64
+                H24:  48
+                V16:  32
+                Total horizontal tracks: 400
+                Total vertical tracks: 192
 
           NOTE: We don't model minimum capacitances for Stratix10. 
     -->

@@ -26,6 +26,7 @@
 
 ///@brief Forward declarations.
 class PlaceDelayModel;
+class PlacerState;
 
 ///@brief Initialize the placer delay model.
 std::unique_ptr<PlaceDelayModel> alloc_lookups_and_delay_model(const Netlist<>& net_list,
@@ -39,10 +40,14 @@ std::unique_ptr<PlaceDelayModel> alloc_lookups_and_delay_model(const Netlist<>& 
                                                                bool is_flat);
 
 ///@brief Returns the delay of one point to point connection.
-float comp_td_single_connection_delay(const PlaceDelayModel* delay_model, ClusterNetId net_id, int ipin);
+float comp_td_single_connection_delay(const PlaceDelayModel* delay_model,
+                                      const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs,
+                                      ClusterNetId net_id,
+                                      int ipin);
 
 ///@brief Recompute all point to point delays, updating `connection_delay` matrix.
-void comp_td_connection_delays(const PlaceDelayModel* delay_model);
+void comp_td_connection_delays(const PlaceDelayModel* delay_model,
+                               PlacerState& placer_state);
 
 ///@brief Abstract interface to a placement delay model.
 class PlaceDelayModel {
@@ -90,7 +95,7 @@ class DeltaDelayModel : public PlaceDelayModel {
         : cross_layer_delay_(min_cross_layer_delay)
         , is_flat_(is_flat) {}
     DeltaDelayModel(float min_cross_layer_delay,
-                    vtr::NdMatrix<float, 3> delta_delays,
+                    vtr::NdMatrix<float, 4> delta_delays,
                     bool is_flat)
         : delays_(std::move(delta_delays))
         , cross_layer_delay_(min_cross_layer_delay)
@@ -106,15 +111,12 @@ class DeltaDelayModel : public PlaceDelayModel {
 
     void read(const std::string& file) override;
     void write(const std::string& file) const override;
-    const vtr::NdMatrix<float, 3>& delays() const {
+    const vtr::NdMatrix<float, 4>& delays() const {
         return delays_;
     }
 
   private:
-    vtr::NdMatrix<float, 3> delays_; // [0..num_layers-1][0..max_dx][0..max_dy]
-    /**
-     * @brief The minimum delay of inter-layer connections
-     */
+    vtr::NdMatrix<float, 4> delays_; // [0..num_layers-1][0..max_dx][0..max_dy]
     float cross_layer_delay_;
     /**
      * @brief Indicates whether the router is a two-stage or run-flat

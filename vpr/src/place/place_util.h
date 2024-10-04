@@ -6,15 +6,20 @@
 
 #ifndef PLACE_UTIL_H
 #define PLACE_UTIL_H
+
 #include <string>
+
 #include "vpr_types.h"
 #include "vtr_util.h"
 #include "vtr_vector_map.h"
 #include "globals.h"
 
+
+
 // forward declaration of t_placer_costs so that it can be used an argument
 // in NocCostTerms constructor
 class t_placer_costs;
+class BlkLocRegistry;
 
 /**
  * @brief Data structure that stores different cost terms for NoC placement.
@@ -98,18 +103,18 @@ class t_placer_costs {
 
   public: //Mutator
     /**
-    * @brief Mutator: updates the norm factors in the outer loop iteration.
-    *
-    * At each temperature change we update these values to be used
-    * for normalizing the trade-off between timing and wirelength (bb)
-    */
+     * @brief Mutator: updates the norm factors in the outer loop iteration.
+     *
+     * At each temperature change we update these values to be used
+     * for normalizing the trade-off between timing and wirelength (bb)
+     */
     void update_norm_factors();
 
     /**
-    * @brief Accumulates NoC cost difference terms
-    *
-    * @param noc_delta_cost Cost difference for NoC-related costs terms
-    */
+     * @brief Accumulates NoC cost difference terms
+     *
+     * @param noc_delta_cost Cost difference for NoC-related costs terms
+     */
     t_placer_costs& operator+=(const NocCostTerms& noc_delta_cost);
 
   private:
@@ -193,15 +198,15 @@ class t_annealing_state {
 
   public: //Mutator
     /**
-    * @brief Update the annealing state according to the annealing schedule selected.
-    *
-    *   USER_SCHED:  A manual fixed schedule with fixed alpha and exit criteria.
-    *   AUTO_SCHED:  A more sophisticated schedule where alpha varies based on success ratio.
-    *   DUSTY_SCHED: This schedule jumps backward and slows down in response to success ratio.
-    *                See doc/src/vpr/dusty_sa.rst for more details.
-    *
-    * @return True->continues the annealing. False->exits the annealing.
-    */
+     * @brief Update the annealing state according to the annealing schedule selected.
+     *
+     *   USER_SCHED:  A manual fixed schedule with fixed alpha and exit criteria.
+     *   AUTO_SCHED:  A more sophisticated schedule where alpha varies based on success ratio.
+     *   DUSTY_SCHED: This schedule jumps backward and slows down in response to success ratio.
+     *                See doc/src/vpr/dusty_sa.rst for more details.
+     *
+     * @return True->continues the annealing. False->exits the annealing.
+     */
     bool outer_loop_update(float success_rate,
                            const t_placer_costs& costs,
                            const t_placer_opts& placer_opts,
@@ -209,35 +214,35 @@ class t_annealing_state {
 
   private: //Mutator
     /**
-    * @brief Update the range limiter to keep acceptance prob. near 0.44.
-    *
-    * Use a floating point rlim to allow gradual transitions at low temps.
-    * The range is bounded by 1 (FINAL_RLIM) and the grid size (UPPER_RLIM).
-    */
+     * @brief Update the range limiter to keep acceptance prob. near 0.44.
+     *
+     * Use a floating point rlim to allow gradual transitions at low temps.
+     * The range is bounded by 1 (FINAL_RLIM) and the grid size (UPPER_RLIM).
+     */
     inline void update_rlim(float success_rate);
 
     /**
-    * @brief Update the criticality exponent.
-    *
-    * When rlim shrinks towards the FINAL_RLIM value (indicating
-    * that we are fine-tuning a more optimized placement), we can
-    * focus more on a smaller number of critical connections.
-    * To achieve this, we make the crit_exponent sharper, so that
-    * critical connections would become more critical than before.
-    *
-    * We calculate how close rlim is to its final value comparing
-    * to its initial value. Then, we apply the same scaling factor
-    * on the crit_exponent so that it lands on the suitable value
-    * between td_place_exp_first and td_place_exp_last. The scaling
-    * factor is calculated and applied linearly.
-    */
+     * @brief Update the criticality exponent.
+     *
+     * When rlim shrinks towards the FINAL_RLIM value (indicating
+     * that we are fine-tuning a more optimized placement), we can
+     * focus more on a smaller number of critical connections.
+     * To achieve this, we make the crit_exponent sharper, so that
+     * critical connections would become more critical than before.
+     *
+     * We calculate how close rlim is to its final value comparing
+     * to its initial value. Then, we apply the same scaling factor
+     * on the crit_exponent so that it lands on the suitable value
+     * between td_place_exp_first and td_place_exp_last. The scaling
+     * factor is calculated and applied linearly.
+     */
     inline void update_crit_exponent(const t_placer_opts& placer_opts);
 
     /**
-    * @brief Update the move limit based on the success rate.
-    *
-    * The value is bounded between 1 and move_lim_max.
-    */
+     * @brief Update the move limit based on the success rate.
+     *
+     * The value is bounded between 1 and move_lim_max.
+     */
     inline void update_move_lim(float success_target, float success_rate);
 };
 
@@ -303,7 +308,8 @@ class t_placer_statistics {
  *
  * Initialize both of them to empty states.
  */
-void init_placement_context();
+void init_placement_context(vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs,
+                            GridBlock& grid_blocks);
 
 /**
  * @brief Get the initial limit for inner loop block move attempt limit.
@@ -330,25 +336,14 @@ int get_initial_move_lim(const t_placer_opts& placer_opts, const t_annealing_sch
  */
 double get_std_dev(int n, double sum_x_squared, double av_x);
 
-///@brief Initialize usage to 0 and blockID to EMPTY_BLOCK_ID for all place_ctx.grid_block locations
-void zero_initialize_grid_blocks();
-
-///@brief a utility to calculate grid_blocks given the updated block_locs (used in restore_checkpoint)
-void load_grid_blocks_from_block_locs();
-
 /**
  * @brief Builds (alloc and load) legal_pos that holds all the legal locations for placement
  *
- *   @param legal_pos
- *              a lookup of all subtiles by sub_tile type
- *              legal_pos[0..device_ctx.num_block_types-1][0..num_sub_tiles - 1] = std::vector<t_pl_loc> of all the legal locations
- *              of the proper tile type and sub_tile type
- *
+ * @param legal_pos a lookup of all subtiles by sub_tile type
+ * legal_pos[0..device_ctx.num_block_types-1][0..num_sub_tiles - 1] = std::vector<t_pl_loc> of all the legal locations
+ * of the proper tile type and sub_tile type
  */
 void alloc_and_load_legal_placement_locations(std::vector<std::vector<std::vector<t_pl_loc>>>& legal_pos);
-
-///@brief Performs error checking to see if location is legal for block type, and sets the location and grid usage of the block if it is legal.
-void set_block_location(ClusterBlockId blk_id, const t_pl_loc& location);
 
 /// @brief check if a specified location is within the device grid
 inline bool is_loc_on_chip(t_physical_tile_loc loc) {
@@ -381,7 +376,11 @@ inline bool is_loc_on_chip(t_physical_tile_loc loc) {
  *        Analytic placer does not require to check block's capacity or
  *        floorplanning constraints. However, initial placement or SA-based approach
  *        require to check for all legality constraints.
+ * @param blk_loc_registry Placement block location information.
+ *
  */
-bool macro_can_be_placed(t_pl_macro pl_macro, t_pl_loc head_pos, bool check_all_legality);
-
+bool macro_can_be_placed(const t_pl_macro& pl_macro,
+                         const t_pl_loc& head_pos,
+                         bool check_all_legality,
+                         const BlkLocRegistry& blk_loc_registry);
 #endif

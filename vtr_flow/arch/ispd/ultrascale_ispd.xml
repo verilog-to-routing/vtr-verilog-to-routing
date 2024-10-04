@@ -652,7 +652,7 @@
         <mux name="FMUX" input="LUT6_2[5].O6 LUT6_2[5].O5 CARRY8.O[5] CARRY8.CO[5]" output="CLB.MUX[5]"/>
         <mux name="GMUX" input="LUT6_2[6].O6 LUT6_2[6].O5 CARRY8.O[6] CARRY8.CO[6]" output="CLB.MUX[6]"/>
         <mux name="HMUX" input="LUT6_2[7].O6 LUT6_2[7].O5 CARRY8.O[7] CARRY8.CO[7]" output="CLB.MUX[7]"/>
-        <direct name="Q1" input="{FF[0].Q FF[2].Q FF[4].Q FF[6].Q FF[8].Q FF[10].Q FF[12].Q FF[13].Q}" output="CLB.Q1"/>
+        <direct name="Q1" input="{FF[0].Q FF[2].Q FF[4].Q FF[6].Q FF[8].Q FF[10].Q FF[12].Q FF[14].Q}" output="CLB.Q1"/>
         <direct name="Q2" input="{FF[1].Q FF[3].Q FF[5].Q FF[7].Q FF[9].Q FF[11].Q FF[13].Q FF[15].Q}" output="CLB.Q2"/>
       </interconnect>
       <!-- TODO: use better pin locations (think Xilinx uses 2-sided routing architecture) -->

@@ -24,8 +24,28 @@
 
 #pragma once
 
-#include "exception.h"
-#include "tuple.h"
+#include <kj/exception.h>
+#include <kj/tuple.h>
+#include <kj/source-location.h>
+
+// Detect whether or not we should enable kj::Promise<T> coroutine integration.
+//
+// TODO(someday): Support coroutines with -fno-exceptions.
+#if !KJ_NO_EXCEPTIONS
+#ifdef __has_include
+#if (__cpp_impl_coroutine >= 201902L) && __has_include(<coroutine>)
+// C++20 Coroutines detected.
+#include <coroutine>
+#define KJ_HAS_COROUTINE 1
+#define KJ_COROUTINE_STD_NAMESPACE std
+#elif (__cpp_coroutines >= 201703L) && __has_include(<experimental/coroutine>)
+// Coroutines TS detected.
+#include <experimental/coroutine>
+#define KJ_HAS_COROUTINE 1
+#define KJ_COROUTINE_STD_NAMESPACE std::experimental
+#endif
+#endif
+#endif
 
 KJ_BEGIN_HEADER
 
@@ -37,9 +57,9 @@ class Promise;
 class WaitScope;
 class TaskSet;
 
-template <typename T>
-Promise<Array<T>> joinPromises(Array<Promise<T>>&& promises);
-Promise<void> joinPromises(Array<Promise<void>>&& promises);
+Promise<void> joinPromises(Array<Promise<void>>&& promises, SourceLocation location = {});
+Promise<void> joinPromisesFailFast(Array<Promise<void>>&& promises, SourceLocation location = {});
+// Out-of-line <void> specialization of template function defined in async.h.
 
 namespace _ {  // private
 
@@ -195,16 +215,20 @@ class Event;
 class XThreadEvent;
 class XThreadPaf;
 
+class PromiseDisposer;
+using OwnPromiseNode = Own<PromiseNode, PromiseDisposer>;
+// PromiseNode uses a static disposer.
+
 class PromiseBase {
 public:
   kj::String trace();
   // Dump debug info about this promise.
 
 private:
-  Own<PromiseNode> node;
+  OwnPromiseNode node;
 
   PromiseBase() = default;
-  PromiseBase(Own<PromiseNode>&& node): node(kj::mv(node)) {}
+  PromiseBase(OwnPromiseNode&& node): node(kj::mv(node)) {}
 
   template <typename>
   friend class kj::Promise;
@@ -212,18 +236,25 @@ private:
 };
 
 void detach(kj::Promise<void>&& promise);
-void waitImpl(Own<_::PromiseNode>&& node, _::ExceptionOrValue& result, WaitScope& waitScope);
-bool pollImpl(_::PromiseNode& node, WaitScope& waitScope);
+void waitImpl(_::OwnPromiseNode&& node, _::ExceptionOrValue& result, WaitScope& waitScope,
+              SourceLocation location);
+bool pollImpl(_::PromiseNode& node, WaitScope& waitScope, SourceLocation location);
 Promise<void> yield();
 Promise<void> yieldHarder();
-Own<PromiseNode> neverDone();
+OwnPromiseNode readyNow();
+OwnPromiseNode neverDone();
+
+class ReadyNow {
+public:
+  operator Promise<void>() const;
+};
 
 class NeverDone {
 public:
   template <typename T>
   operator Promise<T>() const;
 
-  KJ_NORETURN(void wait(WaitScope& waitScope) const);
+  KJ_NORETURN(void wait(WaitScope& waitScope, SourceLocation location = {}) const);
 };
 
 }  // namespace _ (private)

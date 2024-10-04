@@ -22,7 +22,7 @@
 #pragma once
 
 #include "rpc.h"
-#include "message.h"
+#include <capnp/message.h>
 #include <kj/async-io.h>
 #include <capnp/serialize-async.h>
 #include <capnp/rpc-twoparty.capnp.h>
@@ -79,7 +79,8 @@ public:
   // clock is used for calculating the oldest queued message age, which is a useful metric for
   // detecting queue overload
 
-  KJ_DISALLOW_COPY(TwoPartyVatNetwork);
+  ~TwoPartyVatNetwork() noexcept(false);
+  KJ_DISALLOW_COPY_AND_MOVE(TwoPartyVatNetwork);
 
   kj::Promise<void> onDisconnect() { return disconnectPromise.addBranch(); }
   // Returns a promise that resolves when the peer disconnects.
@@ -90,7 +91,7 @@ public:
   // Get the number of bytes worth of outgoing messages that are currently queued in memory waiting
   // to be sent on this connection. This may be useful for backpressure.
 
-  size_t getCurrentQueueCount() { return currentQueueCount; }
+  size_t getCurrentQueueCount() { return queuedMessages.size(); }
   // Get the count of outgoing messages that are currently queued in memory waiting
   // to be sent on this connection. This may be useful for backpressure.
 
@@ -135,8 +136,8 @@ private:
 
   kj::ForkedPromise<void> disconnectPromise = nullptr;
 
+  kj::Vector<kj::Own<OutgoingMessageImpl>> queuedMessages;
   size_t currentQueueSize = 0;
-  size_t currentQueueCount = 0;
   const kj::MonotonicClock& clock;
   kj::TimePoint currentOutgoingMessageSendTime;
 
@@ -183,10 +184,12 @@ private:
 
 class TwoPartyServer: private kj::TaskSet::ErrorHandler {
   // Convenience class which implements a simple server which accepts connections on a listener
-  // socket and serices them as two-party connections.
+  // socket and services them as two-party connections.
 
 public:
-  explicit TwoPartyServer(Capability::Client bootstrapInterface);
+  explicit TwoPartyServer(Capability::Client bootstrapInterface,
+      kj::Maybe<kj::Function<kj::String(const kj::Exception&)>> traceEncoder = nullptr);
+  // `traceEncoder`, if provided, will be passed on to `rpcSystem.setTraceEncoder()`.
 
   void accept(kj::Own<kj::AsyncIoStream>&& connection);
   void accept(kj::Own<kj::AsyncCapabilityStream>&& connection, uint maxFdsPerMessage);
@@ -220,6 +223,7 @@ public:
 
 private:
   Capability::Client bootstrapInterface;
+  kj::Maybe<kj::Function<kj::String(const kj::Exception&)>> traceEncoder;
   kj::TaskSet tasks;
 
   struct AcceptedConnection;

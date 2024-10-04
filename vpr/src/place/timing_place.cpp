@@ -3,20 +3,15 @@
  * @brief Stores the method definitions of classes defined in timing_place.h.
  */
 
-#include <cstdio>
 #include <cmath>
 
 #include "vtr_util.h"
-#include "vtr_memory.h"
-#include "vtr_log.h"
 
 #include "vpr_types.h"
 #include "vpr_utils.h"
-#include "globals.h"
-#include "placer_globals.h"
 #include "net_delay.h"
-#include "timing_place_lookup.h"
 #include "timing_place.h"
+#include "placer_state.h"
 
 #include "timing_info.h"
 
@@ -37,7 +32,9 @@ PlacerCriticalities::PlacerCriticalities(const ClusteredNetlist& clb_nlist, cons
  *
  * If the criticality exponent has changed, we also need to update from scratch.
  */
-void PlacerCriticalities::update_criticalities(const SetupTimingInfo* timing_info, const PlaceCritParams& crit_params) {
+void PlacerCriticalities::update_criticalities(const SetupTimingInfo* timing_info,
+                                               const PlaceCritParams& crit_params,
+                                               PlacerState& placer_state) {
     /* If update is not enabled, exit the routine. */
     if (!update_enabled) {
         /* re-computation is required on the next iteration */
@@ -55,7 +52,7 @@ void PlacerCriticalities::update_criticalities(const SetupTimingInfo* timing_inf
         last_crit_exponent_ = crit_params.crit_exponent;
     }
 
-    auto& place_move_ctx = g_placer_ctx.mutable_move();
+    auto& place_move_ctx = placer_state.mutable_move();
 
     /* Performs a 1-to-1 mapping from criticality to timing_place_crit_.
      * For every pin on every net (or, equivalently, for every tedge ending

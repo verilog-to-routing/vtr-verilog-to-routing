@@ -25,9 +25,6 @@
 #include "rr_node.h"
 #include "rr_graph_view.h"
 
-/* we will profile delay/congestion using this many tracks for each wire type */
-#define MAX_TRACK_OFFSET 16
-
 namespace util {
 
 class Cost_Entry;
@@ -89,11 +86,10 @@ class Cost_Entry {
     bool fill;        ///<Boolean specifying whether this Entry was created as a result of the cost map
                       ///<holes filling procedure
 
-    Cost_Entry() {
-        delay = std::numeric_limits<float>::quiet_NaN();
-        congestion = std::numeric_limits<float>::quiet_NaN();
-        fill = false;
-    }
+    Cost_Entry()
+        : delay(std::numeric_limits<float>::quiet_NaN())
+        , congestion(std::numeric_limits<float>::quiet_NaN())
+        , fill(false) {}
     Cost_Entry(float set_delay, float set_congestion)
         : delay(set_delay)
         , congestion(set_congestion)
@@ -138,7 +134,7 @@ class Expansion_Cost_Entry {
                         float add_congestion) {
         Cost_Entry cost_entry(add_delay, add_congestion);
         if (method == SMALLEST) {
-            /* taking the smallest-delay entry anyway, so no need to push back multple entries */
+            /* taking the smallest-delay entry anyway, so no need to push back multiple entries */
             if (this->cost_vector.empty()) {
                 this->cost_vector.push_back(cost_entry);
             } else {
@@ -331,7 +327,15 @@ t_ipin_primitive_sink_delays compute_intra_tile_dijkstra(const RRGraphView& rr_g
 /* returns index of a node from which to start routing */
 RRNodeId get_start_node(int layer, int start_x, int start_y, int target_x, int target_y, t_rr_type rr_type, int seg_index, int track_offset);
 
-void get_xy_deltas(const RRNodeId from_node, const RRNodeId to_node, int* delta_x, int* delta_y);
+/**
+ * @brief Computes the absolute delta_x and delta_y offset
+ * required to reach to_node from from_node
+ * @param from_node The starting node
+ * @param to_node The destination node
+ * @return (delta_x, delta_y) offset required to reach to
+ * to_node from from_node.
+ */
+std::pair<int, int> get_xy_deltas(RRNodeId from_node, RRNodeId to_node);
 
 t_routing_cost_map get_routing_cost_map(int longest_seg_length,
                                         int from_layer_num,

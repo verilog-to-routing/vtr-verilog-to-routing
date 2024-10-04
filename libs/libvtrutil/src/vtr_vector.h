@@ -56,6 +56,9 @@ class vector : private std::vector<V, Allocator> {
     class key_iterator;
     typedef vtr::Range<key_iterator> key_range;
 
+    class pair_iterator;
+    typedef vtr::Range<pair_iterator> pair_range;
+
   public:
     //Pass through std::vector's types
     using typename storage::allocator_type;
@@ -153,6 +156,19 @@ class vector : private std::vector<V, Allocator> {
         return vtr::make_range(key_begin(), key_end());
     }
 
+    /**
+     * @brief Returns a range containing the key-value pairs.
+     *
+     * This function returns a range object that represents the sequence of key-value
+     * pairs within the vector. The range can be used to iterate over the pairs using
+     * standard range-based loops or algorithms.
+     *
+     * @return A `pair_range` object representing the range of key-value pairs.
+     */
+    pair_range pairs() const {
+        return vtr::make_range(pair_begin(), pair_end());
+    }
+
   public:
     /**
      * @brief Iterator class which is convertable to the key_type
@@ -160,17 +176,16 @@ class vector : private std::vector<V, Allocator> {
      * This allows end-users to call the parent class's keys() member
      * to iterate through the keys with a range-based for loop
      */
-    class key_iterator : public std::iterator<std::bidirectional_iterator_tag, key_type> {
+    class key_iterator {
       public:
-        ///@brief We use the intermediate type my_iter to avoid a potential ambiguity for which clang generates errors and warnings
-        using my_iter = typename std::iterator<std::bidirectional_iterator_tag, K>;
-        using typename my_iter::iterator;
-        using typename my_iter::pointer;
-        using typename my_iter::reference;
-        using typename my_iter::value_type;
+        using iterator_category = std::bidirectional_iterator_tag;
+        using difference_type = std::ptrdiff_t;
+        using value_type = key_type;
+        using pointer = key_type*;
+        using reference = key_type&;
 
         ///@brief constructor
-        key_iterator(key_iterator::value_type init)
+        key_iterator(value_type init)
             : value_(init) {}
 
         /*
@@ -180,32 +195,81 @@ class vector : private std::vector<V, Allocator> {
          * we can just increment the underlying Id to build the next key.
          */
         ///@brief ++ operator
-        key_iterator operator++() {
+        key_iterator& operator++() {
             value_ = value_type(size_t(value_) + 1);
             return *this;
         }
         ///@brief decrement operator
-        key_iterator operator--() {
+        key_iterator& operator--() {
             value_ = value_type(size_t(value_) - 1);
             return *this;
         }
-        ///@brief dereference oeprator
+        ///@brief dereference operator
         reference operator*() { return value_; }
         ///@brief -> operator
         pointer operator->() { return &value_; }
 
         ///@brief == operator
-        friend bool operator==(const key_iterator lhs, const key_iterator rhs) { return lhs.value_ == rhs.value_; }
+        friend bool operator==(const key_iterator& lhs, const key_iterator& rhs) { return lhs.value_ == rhs.value_; }
         ///@brief != operator
-        friend bool operator!=(const key_iterator lhs, const key_iterator rhs) { return !(lhs == rhs); }
+        friend bool operator!=(const key_iterator& lhs, const key_iterator& rhs) { return !(lhs == rhs); }
 
       private:
         value_type value_;
     };
 
+        /**
+         * @brief A bidirectional iterator for a vtr:vector object.
+         *
+         * The `pair_iterator` class provides a way to iterate over key-value pairs
+         * within a vtr::vector container. It supports bidirectional iteration,
+         * allowing the user to traverse the container both forwards and backwards.
+         */
+        class pair_iterator {
+          public:
+            using iterator_category = std::bidirectional_iterator_tag;
+            using difference_type = std::ptrdiff_t;
+            using value_type = std::pair<key_type, V>;
+            using pointer = value_type*;
+            using reference = value_type&;
+
+            /// @brief constructor
+            pair_iterator(vector<K, V, Allocator>& vec, key_type init)
+                : vec_(vec), value_(init, vec[init]) {}
+
+            /// @brief ++ operator
+            pair_iterator& operator++() {
+                value_ = std::make_pair(key_type(size_t(value_.first) + 1), vec_[key_type(size_t(value_.first) + 1)]);
+                return *this;
+            }
+            /// @brief -- operator
+            pair_iterator& operator--() {
+                value_ = std::make_pair(key_type(size_t(value_.first) - 1), vec_[key_type(size_t(value_.first) - 1)]);
+                return *this;
+            }
+            /// @brief dereference operator
+            reference operator*() { return value_; }
+            /// @brief -> operator
+            pointer operator->() { return &value_; }
+
+            /// @brief == operator
+            friend bool operator==(const pair_iterator& lhs, const pair_iterator& rhs) { return lhs.value_.first == rhs.value_.first; }
+            /// @brief != operator
+            friend bool operator!=(const pair_iterator& lhs, const pair_iterator& rhs) { return !(lhs == rhs); }
+
+          private:
+            /// @brief Reference to the vector of key-value pairs.
+            vector<K, V, Allocator>& vec_;
+            // @brief The current key-value pair being pointed to by the iterator.
+            value_type value_;
+        };
+
   private:
     key_iterator key_begin() const { return key_iterator(key_type(0)); }
     key_iterator key_end() const { return key_iterator(key_type(size())); }
+
+    pair_iterator pair_begin() const { return pair_iterator(*const_cast<vector<K, V, Allocator>*>(this), key_type(0)); }
+    pair_iterator pair_end() const { return pair_iterator(*const_cast<vector<K, V, Allocator>*>(this), key_type(size())); }
 };
 
 } // namespace vtr

@@ -1,21 +1,36 @@
 #include "median_move_generator.h"
+
 #include "globals.h"
-#include <algorithm>
 #include "place_constraints.h"
-#include "placer_globals.h"
+#include "placer_state.h"
 #include "move_utils.h"
 
-static bool get_bb_incrementally(ClusterNetId net_id, t_bb& bb_coord_new, int xold, int yold, int xnew, int ynew);
+#include <algorithm>
 
-static void get_bb_from_scratch_excluding_block(ClusterNetId net_id, t_bb& bb_coord_new, ClusterBlockId block_id, bool& skip_net);
+MedianMoveGenerator::MedianMoveGenerator(PlacerState& placer_state,
+                                         e_reward_function reward_function)
+    : MoveGenerator(placer_state, reward_function) {}
 
-e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, t_propose_action& proposed_action, float rlim, const t_placer_opts& placer_opts, const PlacerCriticalities* /*criticalities*/) {
+e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected,
+                                                t_propose_action& proposed_action,
+                                                float rlim,
+                                                const t_placer_opts& placer_opts,
+                                                const PlacerCriticalities* /*criticalities*/) {
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& device_ctx = g_vpr_ctx.device();
+    auto& placer_state = placer_state_.get();
+    auto& place_move_ctx = placer_state.mutable_move();
+    const auto& block_locs = placer_state.block_locs();
+    const auto& blk_loc_registry = placer_state.blk_loc_registry();
+
     //Find a movable block based on blk_type
     ClusterBlockId b_from = propose_block_to_move(placer_opts,
                                                   proposed_action.logical_blk_type_index,
-                                                  false,
-                                                  nullptr,
-                                                  nullptr);
+                                                  /*highly_crit_block=*/false,
+                                                  /*net_from=*/nullptr,
+                                                  /*pin_from=*/nullptr,
+                                                  placer_state);
+
     VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "Median Move Choose Block %d - rlim %f\n", size_t(b_from), rlim);
 
     if (!b_from) { //No movable block found
@@ -23,15 +38,10 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
         return e_create_move::ABORT;
     }
 
-    auto& place_ctx = g_vpr_ctx.placement();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& place_move_ctx = g_placer_ctx.mutable_move();
-
     const int num_layers = device_ctx.grid.get_num_layers();
-    bool is_multi_layer = (num_layers > 1);
 
-    t_pl_loc from = place_ctx.block_locs[b_from].loc;
+
+    t_pl_loc from = block_locs[b_from].loc;
     int from_layer = from.layer;
     auto cluster_from_type = cluster_ctx.clb_nlist.block_type(b_from);
     auto grid_from_type = g_vpr_ctx.device().grid.get_physical_type({from.x, from.y, from_layer});
@@ -42,13 +52,12 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
 
     t_bb coords(OPEN, OPEN, OPEN, OPEN, OPEN, OPEN);
     t_bb limit_coords;
-    ClusterBlockId bnum;
-    int pnum, xnew, xold, ynew, yold;
 
     //clear the vectors that saves X & Y coords
     //reused to save allocation time
     place_move_ctx.X_coord.clear();
     place_move_ctx.Y_coord.clear();
+    place_move_ctx.layer_coord.clear();
     std::vector<int> layer_blk_cnt(num_layers, 0);
 
     //true if the net is a feedback from the block to itself
@@ -61,47 +70,65 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
             continue;
         /* To speed up the calculation, we found it is useful to ignore high fanout nets.
          * Especially that in most cases, these high fanout nets are scattered in many locations of
-         * the device and don't guide to a specific location. We also assuered these assumpitions experimentally.
+         * the device and don't guide to a specific location. We also assured these assumptions experimentally.
          */
         if (int(cluster_ctx.clb_nlist.net_pins(net_id).size()) > placer_opts.place_high_fanout_net)
             continue;
         if (cluster_ctx.clb_nlist.net_sinks(net_id).size() < SMALL_NET) {
             //calculate the bb from scratch
             get_bb_from_scratch_excluding_block(net_id, coords, b_from, skip_net);
-            if (skip_net)
+            if (skip_net) {
                 continue;
+            }
         } else {
             t_bb union_bb;
-            const bool& cube_bb = g_vpr_ctx.placement().cube_bb;
+            const bool cube_bb = g_vpr_ctx.placement().cube_bb;
             if (!cube_bb) {
                 union_bb = union_2d_bb(place_move_ctx.layer_bb_coords[net_id]);
             }
 
             const auto& net_bb_coords = cube_bb ? place_move_ctx.bb_coords[net_id] : union_bb;
             //use the incremental update of the bb
-            bnum = cluster_ctx.clb_nlist.pin_block(pin_id);
-            pnum = tile_pin_index(pin_id);
+            ClusterBlockId bnum = cluster_ctx.clb_nlist.pin_block(pin_id);
+            int pnum = blk_loc_registry.tile_pin_index(pin_id);
             VTR_ASSERT(pnum >= 0);
-            xold = place_ctx.block_locs[bnum].loc.x + physical_tile_type(bnum)->pin_width_offset[pnum];
-            yold = place_ctx.block_locs[bnum].loc.y + physical_tile_type(bnum)->pin_height_offset[pnum];
+            t_pl_loc block_loc = block_locs[bnum].loc;
+            t_physical_tile_type_ptr block_physical_type = physical_tile_type(block_loc);
+            int xold = block_loc.x + block_physical_type->pin_width_offset[pnum];
+            int yold = block_loc.y + block_physical_type->pin_height_offset[pnum];
+            int layer_old = block_loc.layer;
+
             xold = std::max(std::min(xold, (int)device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
             yold = std::max(std::min(yold, (int)device_ctx.grid.height() - 2), 1); //-2 for no perim channels
+            layer_old = std::max(std::min(layer_old, (int)device_ctx.grid.get_num_layers() - 1), 0);
 
-            //To calulate the bb incrementally while excluding the moving block
+            //To calculate the bb incrementally while excluding the moving block
             //assume that the moving block is moved to a non-critical coord of the bb
+            int xnew;
             if (net_bb_coords.xmin == xold) {
                 xnew = net_bb_coords.xmax;
             } else {
                 xnew = net_bb_coords.xmin;
             }
 
+            int ynew;
             if (net_bb_coords.ymin == yold) {
                 ynew = net_bb_coords.ymax;
             } else {
                 ynew = net_bb_coords.ymin;
             }
 
-            if (!get_bb_incrementally(net_id, coords, xold, yold, xnew, ynew)) {
+            int layer_new;
+            if (net_bb_coords.layer_min == layer_old) {
+                layer_new = net_bb_coords.layer_max;
+            } else {
+                layer_new = net_bb_coords.layer_min;
+            }
+            
+            // If the moving block is on the border of the bounding box, we cannot get
+            // the bounding box incrementally. In that case, bounding box should be calculated
+            // from scratch.
+            if (!get_bb_incrementally(net_id, coords, xold, yold, layer_old, xnew, ynew, layer_new)) {
                 get_bb_from_scratch_excluding_block(net_id, coords, b_from, skip_net);
                 if (skip_net)
                     continue;
@@ -112,33 +139,28 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
         place_move_ctx.X_coord.push_back(coords.xmax);
         place_move_ctx.Y_coord.push_back(coords.ymin);
         place_move_ctx.Y_coord.push_back(coords.ymax);
-        if (is_multi_layer) {
-            for (int layer_num = 0; layer_num < num_layers; layer_num++) {
-                layer_blk_cnt[layer_num] += place_move_ctx.num_sink_pin_layer[size_t(net_id)][layer_num];
-            }
-            // If the pin under consideration is of type sink, it shouldn't be added to layer_blk_cnt since the block
-            // is moving
-            if (cluster_ctx.clb_nlist.pin_type(pin_id) == PinType::SINK) {
-                VTR_ASSERT_SAFE(layer_blk_cnt[from_layer] > 0);
-                layer_blk_cnt[from_layer]--;
-            }
-        }
+        place_move_ctx.layer_coord.push_back(coords.layer_min);
+        place_move_ctx.layer_coord.push_back(coords.layer_max);
     }
 
-    if ((place_move_ctx.X_coord.empty()) || (place_move_ctx.Y_coord.empty())) {
-        VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\tMove aborted - X_coord and y_coord are empty\n");
+    if ((place_move_ctx.X_coord.empty()) || (place_move_ctx.Y_coord.empty()) || (place_move_ctx.layer_coord.empty())) {
+        VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\tMove aborted - X_coord or y_coord or layer_coord are empty\n");
         return e_create_move::ABORT;
     }
 
     //calculate the median region
-    std::sort(place_move_ctx.X_coord.begin(), place_move_ctx.X_coord.end());
-    std::sort(place_move_ctx.Y_coord.begin(), place_move_ctx.Y_coord.end());
+    std::stable_sort(place_move_ctx.X_coord.begin(), place_move_ctx.X_coord.end());
+    std::stable_sort(place_move_ctx.Y_coord.begin(), place_move_ctx.Y_coord.end());
+    std::stable_sort(place_move_ctx.layer_coord.begin(), place_move_ctx.layer_coord.end());
 
     limit_coords.xmin = place_move_ctx.X_coord[floor((place_move_ctx.X_coord.size() - 1) / 2)];
     limit_coords.xmax = place_move_ctx.X_coord[floor((place_move_ctx.X_coord.size() - 1) / 2) + 1];
 
     limit_coords.ymin = place_move_ctx.Y_coord[floor((place_move_ctx.Y_coord.size() - 1) / 2)];
     limit_coords.ymax = place_move_ctx.Y_coord[floor((place_move_ctx.Y_coord.size() - 1) / 2) + 1];
+
+    limit_coords.layer_min = place_move_ctx.layer_coord[floor((place_move_ctx.layer_coord.size() - 1) / 2)];
+    limit_coords.layer_max = place_move_ctx.layer_coord[floor((place_move_ctx.layer_coord.size() - 1) / 2) + 1];
 
     //arrange the different range limiters
     t_range_limiters range_limiters{rlim,
@@ -149,22 +171,13 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
     t_pl_loc median_point;
     median_point.x = (limit_coords.xmin + limit_coords.xmax) / 2;
     median_point.y = (limit_coords.ymin + limit_coords.ymax) / 2;
+    median_point.layer = (limit_coords.layer_min + limit_coords.layer_max) / 2;
 
-    // Before calling find_to_loc_centroid a valid layer should be assigned to "to" location. If there are multiple layers, the layer
-    // with highest number of sinks will be used. Otherwise, the same layer as "from" loc is assigned.
-    if (is_multi_layer) {
-        int layer_num = std::distance(layer_blk_cnt.begin(), std::max_element(layer_blk_cnt.begin(), layer_blk_cnt.end()));
-        median_point.layer = layer_num;
-        to.layer = layer_num;
-    } else {
-        median_point.layer = from.layer;
-        to.layer = from.layer;
-    }
-    if (!find_to_loc_centroid(cluster_from_type, from, median_point, range_limiters, to, b_from)) {
+    if (!find_to_loc_centroid(cluster_from_type, from, median_point, range_limiters, to, b_from, blk_loc_registry)) {
         return e_create_move::ABORT;
     }
 
-    e_create_move create_move = ::create_move(blocks_affected, b_from, to);
+    e_create_move create_move = ::create_move(blocks_affected, b_from, to, blk_loc_registry);
 
     //Check that all the blocks affected by the move would still be in a legal floorplan region after the swap
     if (!floorplan_legal(blocks_affected)) {
@@ -174,18 +187,13 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
     return create_move;
 }
 
-/* Finds the bounding box of a net and stores its coordinates in the  *
- * bb_coord_new data structure. It excludes the moving block sent in  *
- * function arguments in block_id. It also returns whether this net   *
- * should be excluded from median calculation or not.                 *
- * This routine should only be called for small nets, since it does   *
- * not determine enough information for the bounding box to be        *
- * updated incrementally later.                                       *
- * Currently assumes channels on both sides of the CLBs forming the   *
- * edges of the bounding box can be used.  Essentially, I am assuming *
- * the pins always lie on the outside of the bounding box.            */
-static void get_bb_from_scratch_excluding_block(ClusterNetId net_id, t_bb& bb_coord_new, ClusterBlockId block_id, bool& skip_net) {
+void MedianMoveGenerator::get_bb_from_scratch_excluding_block(ClusterNetId net_id,
+                                                              t_bb& bb_coord_new,
+                                                              ClusterBlockId block_id,
+                                                              bool& skip_net) {
     //TODO: account for multiple physical pin instances per logical pin
+    const auto& placer_state = placer_state_.get();
+    const auto& block_locs = placer_state.block_locs();
 
     skip_net = true;
 
@@ -194,10 +202,12 @@ static void get_bb_from_scratch_excluding_block(ClusterNetId net_id, t_bb& bb_co
     int ymin = OPEN;
     int ymax = OPEN;
 
+    int layer_min = OPEN;
+    int layer_max = OPEN;
+
     int pnum;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_ctx = g_vpr_ctx.placement();
     auto& device_ctx = g_vpr_ctx.device();
 
     ClusterBlockId bnum = cluster_ctx.clb_nlist.net_driver_block(net_id);
@@ -205,32 +215,39 @@ static void get_bb_from_scratch_excluding_block(ClusterNetId net_id, t_bb& bb_co
 
     if (bnum != block_id) {
         skip_net = false;
-        pnum = net_pin_to_tile_pin_index(net_id, 0);
-        int src_x = place_ctx.block_locs[bnum].loc.x + physical_tile_type(bnum)->pin_width_offset[pnum];
-        int src_y = place_ctx.block_locs[bnum].loc.y + physical_tile_type(bnum)->pin_height_offset[pnum];
+        pnum = placer_state.blk_loc_registry().net_pin_to_tile_pin_index(net_id, 0);
+        const t_pl_loc& block_loc = block_locs[bnum].loc;
+        int src_x = block_loc.x + physical_tile_type(block_loc)->pin_width_offset[pnum];
+        int src_y = block_loc.y + physical_tile_type(block_loc)->pin_height_offset[pnum];
+        int src_layer = block_loc.layer;
 
         xmin = src_x;
         ymin = src_y;
         xmax = src_x;
         ymax = src_y;
+        layer_min = src_layer;
+        layer_max = src_layer;
         first_block = true;
     }
 
-    for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
+    for (ClusterPinId pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
         bnum = cluster_ctx.clb_nlist.pin_block(pin_id);
-        pnum = tile_pin_index(pin_id);
+        pnum = placer_state.blk_loc_registry().tile_pin_index(pin_id);
         if (bnum == block_id)
             continue;
         skip_net = false;
-        const auto& block_loc = place_ctx.block_locs[bnum].loc;
-        int x = block_loc.x + physical_tile_type(bnum)->pin_width_offset[pnum];
-        int y = block_loc.y + physical_tile_type(bnum)->pin_height_offset[pnum];
+        const auto& block_loc = block_locs[bnum].loc;
+        int x = block_loc.x + physical_tile_type(block_loc)->pin_width_offset[pnum];
+        int y = block_loc.y + physical_tile_type(block_loc)->pin_height_offset[pnum];
+        int layer = block_loc.layer;
 
         if (!first_block) {
             xmin = x;
             ymin = y;
             xmax = x;
             ymax = y;
+            layer_max = layer;
+            layer_min = layer;
             first_block = true;
             continue;
         }
@@ -245,6 +262,12 @@ static void get_bb_from_scratch_excluding_block(ClusterNetId net_id, t_bb& bb_co
         } else if (y > ymax) {
             ymax = y;
         }
+
+        if (layer < layer_min) {
+            layer_min = layer;
+        } else if (layer > layer_max) {
+            layer_max = layer;
+        }
     }
 
     /* Now I've found the coordinates of the bounding box.  There are no *
@@ -256,37 +279,42 @@ static void get_bb_from_scratch_excluding_block(ClusterNetId net_id, t_bb& bb_co
      * is 0).  See route_common.cpp for a channel diagram.               */
     bb_coord_new.xmin = std::max(std::min<int>(xmin, device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
     bb_coord_new.ymin = std::max(std::min<int>(ymin, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
+    bb_coord_new.layer_min = std::max(std::min<int>(layer_min, device_ctx.grid.get_num_layers() - 1), 0);
     bb_coord_new.xmax = std::max(std::min<int>(xmax, device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
     bb_coord_new.ymax = std::max(std::min<int>(ymax, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
+    bb_coord_new.layer_max = std::max(std::min<int>(layer_max, device_ctx.grid.get_num_layers() - 1), 0);
 }
 
-/*
- * Calculates the bounding box of a net by storing its coordinates    *
- * in the bb_coord_new data structure. It uses information from       *
- * PlaceMoveContext to calculate the bb incrementally. This routine   *
- * should only be called for large nets, since it has some overhead   *
- * relative to just doing a brute force bounding box calculation.     *
- * The bounding box coordinate and edge information for inet must be  *
- * valid before this routine is called.                               *
- * Currently assumes channels on both sides of the CLBs forming the   *
- * edges of the bounding box can be used. Essentially, I am assuming *
- * the pins always lie on the outside of the bounding box.            *
- * The x and y coordinates are the pin's x and y coordinates.         */
-/* IO blocks are considered to be one cell in for simplicity.         */
-static bool get_bb_incrementally(ClusterNetId net_id, t_bb& bb_coord_new, int xold, int yold, int xnew, int ynew) {
+bool MedianMoveGenerator::get_bb_incrementally(ClusterNetId net_id,
+                                               t_bb& bb_coord_new,
+                                               int xold,
+                                               int yold,
+                                               int layer_old,
+                                               int xnew,
+                                               int ynew,
+                                               int layer_new) {
     //TODO: account for multiple physical pin instances per logical pin
 
     auto& device_ctx = g_vpr_ctx.device();
-    auto& place_move_ctx = g_placer_ctx.move();
+    auto& place_move_ctx = placer_state_.get().move();
 
     xnew = std::max(std::min<int>(xnew, device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
     ynew = std::max(std::min<int>(ynew, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
+    layer_new = std::max(std::min<int>(layer_new, device_ctx.grid.get_num_layers() - 1), 0);
+
     xold = std::max(std::min<int>(xold, device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
     yold = std::max(std::min<int>(yold, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
+    layer_old = std::max(std::min<int>(layer_old, device_ctx.grid.get_num_layers() - 1), 0);
 
     t_bb union_bb_edge;
     t_bb union_bb;
-    const bool& cube_bb = g_vpr_ctx.placement().cube_bb;
+    const bool cube_bb = g_vpr_ctx.placement().cube_bb;
+    /* Calculating per-layer bounding box is more time consuming compared to cube bounding box. To speed up
+    * this move, the bounding box used for this move is of the type cube bounding box even if the per-layer
+    * bounding box is used by placement SA engine. 
+    * If per-layer bounding box is used, we take a union of boundinx boxes on each layer to make a cube bounding box.
+    * For example, the xmax of this cube boundix box is determined by the maximim x coordinate across all blocks on all layers.
+    */
     if (!cube_bb) {
         std::tie(union_bb_edge, union_bb) = union_2d_bb_incr(place_move_ctx.layer_bb_num_on_edges[net_id],
                                                              place_move_ctx.layer_bb_coords[net_id]);
@@ -409,6 +437,48 @@ static bool get_bb_incrementally(ClusterNetId net_id, t_bb& bb_coord_new, int xo
     } else { /* ynew == yold -- no y motion. */
         bb_coord_new.ymin = curr_bb_coord.ymin;
         bb_coord_new.ymax = curr_bb_coord.ymax;
+    }
+
+    if (layer_new < layer_old) {
+        if (layer_old == curr_bb_coord.layer_max) {
+            if (curr_bb_edge.layer_max == 1) {
+                return false;
+            } else {
+                bb_coord_new.layer_max = curr_bb_coord.layer_max;
+            }
+        } else {
+            bb_coord_new.layer_max = curr_bb_coord.layer_max;
+        }
+
+        if (layer_new < curr_bb_coord.layer_min) {
+            bb_coord_new.layer_min = layer_new;
+        } else if (layer_new == curr_bb_coord.layer_min) {
+            bb_coord_new.layer_min = layer_new;
+        } else {
+            bb_coord_new.layer_min = curr_bb_coord.layer_min;
+        }
+
+    } else if (layer_new > layer_old) {
+        if (layer_old == curr_bb_coord.layer_min) {
+            if (curr_bb_edge.layer_min == 1) {
+                return false;
+            } else {
+                bb_coord_new.layer_min = curr_bb_coord.layer_min;
+            }
+        } else {
+            bb_coord_new.layer_min = curr_bb_coord.layer_min;
+        }
+
+        if (layer_new > curr_bb_coord.layer_max) {
+            bb_coord_new.layer_max = layer_new;
+        } else if (layer_new == curr_bb_coord.layer_max) {
+            bb_coord_new.layer_max = layer_new;
+        } else {
+            bb_coord_new.layer_max = curr_bb_coord.layer_max;
+        }
+    } else {
+        bb_coord_new.layer_min = curr_bb_coord.layer_min;
+        bb_coord_new.layer_max = curr_bb_coord.layer_max;
     }
     return true;
 }

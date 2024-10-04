@@ -46,7 +46,7 @@
 #include "route_common.h"
 #include "route_tree.h"
 #include "read_route.h"
-#include "binary_heap.h"
+#include "four_ary_heap.h"
 
 #include "old_traceback.h"
 
@@ -129,7 +129,7 @@ bool read_route(const char* route_file, const t_router_opts& router_opts, bool v
     fp.close();
 
     /*Correctly set up the clb opins*/
-    BinaryHeap small_heap;
+    FourAryHeap small_heap;
     small_heap.init_heap(device_ctx.grid);
     if (!flat_router) {
         reserve_locally_used_opins(&small_heap, router_opts.initial_pres_fac,
@@ -222,7 +222,7 @@ static void process_nodes(const Netlist<>& net_list, std::ifstream& fp, ClusterN
     auto& device_ctx = g_vpr_ctx.mutable_device();
     const auto& rr_graph = device_ctx.rr_graph;
     auto& route_ctx = g_vpr_ctx.mutable_routing();
-    auto& place_ctx = g_vpr_ctx.placement();
+    const auto& grid_blocks = g_vpr_ctx.placement().grid_blocks();
 
     t_trace* head_ptr = nullptr;
     t_trace* tptr = nullptr;
@@ -323,7 +323,9 @@ static void process_nodes(const Netlist<>& net_list, std::ifstream& fp, ClusterN
             ptc = atoi(tokens[5 + offset].c_str());
             if (rr_graph.node_ptc_num(RRNodeId(inode)) != ptc) {
                 vpr_throw(VPR_ERROR_ROUTE, filename, lineno,
-                          "The ptc num of node %d does not match the rr graph, Running without flat routing; if this file was created with flat routing, re-run vpr with the --flat_routing option", inode);
+                          "The ptc num of node %d does not match the rr graph, Running without flat routing; "
+                          "if this file was created with flat routing, re-run vpr with the --flat_routing option",
+                          inode);
             }
 
             /*Process switches and pb pin info if it is ipin or opin type*/
@@ -335,12 +337,10 @@ static void process_nodes(const Netlist<>& net_list, std::ifstream& fp, ClusterN
                     int width_offset = device_ctx.grid.get_width_offset({x, y, layer_num});
                     int height_offset = device_ctx.grid.get_height_offset({x, y, layer_num});
                     auto physical_tile = device_ctx.grid.get_physical_type({x, y, layer_num});
-                    const t_sub_tile* sub_tile;
-                    int sub_tile_rel_cap;
-                    std::tie(sub_tile, sub_tile_rel_cap) = get_sub_tile_from_pin_physical_num(physical_tile, pin_num);
+                    auto [sub_tile, sub_tile_rel_cap] = get_sub_tile_from_pin_physical_num(physical_tile, pin_num);
                     int sub_tile_offset = sub_tile->capacity.low + sub_tile_rel_cap;
 
-                    ClusterBlockId iblock = place_ctx.grid_blocks.block_at_location({x - width_offset, y - height_offset, sub_tile_offset, layer_num});
+                    ClusterBlockId iblock = grid_blocks.block_at_location({x - width_offset, y - height_offset, sub_tile_offset, layer_num});
                     VTR_ASSERT(iblock);
 
                     const t_pb_graph_pin* pb_pin;
@@ -459,8 +459,9 @@ static void process_global_blocks(const Netlist<>& net_list, std::ifstream& fp, 
 
             if (block_loc.loc.x != x || block_loc.loc.y != y) {
                 vpr_throw(VPR_ERROR_ROUTE, filename, lineno,
-                          "The placement coordinates (%d, %d) of %d block does not match given (%d, %d)",
-                          x, y, block_loc.loc.x, block_loc.loc.y);
+                          "The placement coordinates (%d,%d,%d) of %zu block does not match given (%d,%d,%d)",
+                          x, y, layer_num, size_t(bnum),
+                          block_loc.loc.x, block_loc.loc.y, block_loc.loc.layer);
             }
 
             auto pin_class = get_class_range_for_block(bnum, is_flat);
@@ -496,9 +497,9 @@ static void format_coordinates(int& layer_num, int& x, int& y, std::string coord
         y = coords[1];
     } else {
         VTR_ASSERT(coords.size() == 3);
-        layer_num = coords[0];
-        x = coords[1];
-        y = coords[2];
+        x = coords[0];
+        y = coords[1];
+        layer_num = coords[2];
     }
 }
 
@@ -569,7 +570,7 @@ static bool check_rr_graph_connectivity(RRNodeId prev_node, RRNodeId node) {
 void print_route(const Netlist<>& net_list,
                  FILE* fp,
                  bool is_flat) {
-    auto& place_ctx = g_vpr_ctx.placement();
+    const auto& grid_blocks = g_vpr_ctx.placement().grid_blocks();
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     auto& route_ctx = g_vpr_ctx.mutable_routing();
@@ -597,12 +598,12 @@ void print_route(const Netlist<>& net_list,
                     int layer_num = rr_graph.node_layer(inode);
 
                     fprintf(fp, "Node:\t%zu\t%6s (%d,%d,%d) ", size_t(inode),
-                            rr_graph.node_type_string(inode), layer_num, ilow, jlow);
+                            rr_graph.node_type_string(inode), ilow, jlow, layer_num);
 
                     if ((ilow != rr_graph.node_xhigh(inode))
                         || (jlow != rr_graph.node_yhigh(inode)))
-                        fprintf(fp, "to (%d,%d) ", rr_graph.node_xhigh(inode),
-                                rr_graph.node_yhigh(inode));
+                        fprintf(fp, "to (%d,%d,%d) ", rr_graph.node_xhigh(inode),
+                                rr_graph.node_yhigh(inode), layer_num);
 
                     switch (rr_type) {
                         case IPIN:
@@ -642,13 +643,11 @@ void print_route(const Netlist<>& net_list,
                         int pin_num = rr_graph.node_pin_num(inode);
                         int xoffset = device_ctx.grid.get_width_offset({ilow, jlow, layer_num});
                         int yoffset = device_ctx.grid.get_height_offset({ilow, jlow, layer_num});
-                        const t_sub_tile* sub_tile;
-                        int sub_tile_rel_cap;
-                        std::tie(sub_tile, sub_tile_rel_cap) = get_sub_tile_from_pin_physical_num(physical_tile, pin_num);
+                        auto [sub_tile, sub_tile_rel_cap] = get_sub_tile_from_pin_physical_num(physical_tile, pin_num);
                         int sub_tile_offset = sub_tile->capacity.low + sub_tile_rel_cap;
 
-                        ClusterBlockId iblock = place_ctx.grid_blocks.block_at_location({ilow - xoffset, jlow - yoffset,
-                                                                                         sub_tile_offset, layer_num});
+                        ClusterBlockId iblock = grid_blocks.block_at_location({ilow - xoffset, jlow - yoffset,
+                                                                               sub_tile_offset, layer_num});
                         VTR_ASSERT(iblock);
                         const t_pb_graph_pin* pb_pin;
                         if (is_pin_on_tile(physical_tile, pin_num)) {
@@ -685,11 +684,12 @@ void print_route(const Netlist<>& net_list,
                 int iclass = get_block_pin_class_num(block_id, pin_id, is_flat);
                 t_block_loc blk_loc;
                 blk_loc = get_block_loc(block_id, is_flat);
-                fprintf(fp, "Block %s (#%zu) at (%d,%d), Pin class %d.\n",
+                fprintf(fp, "Block %s (#%zu) at (%d,%d,%d), Pin class %d.\n",
                         net_list.block_name(block_id).c_str(),
                         size_t(block_id),
                         blk_loc.loc.x,
                         blk_loc.loc.y,
+                        blk_loc.loc.layer,
                         iclass);
             }
         }

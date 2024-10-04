@@ -157,7 +157,7 @@ class AtomNetlist : public Netlist<AtomBlockId, AtomPortId, AtomPinId, AtomNetId
      *
      *   @param net_name   name of the net from which the aliases are extracted
      */
-    std::unordered_set<std::string> net_aliases(const std::string net_name) const;
+    std::unordered_set<std::string> net_aliases(const std::string& net_name) const;
 
   public: //Public Mutators
     /*
@@ -165,7 +165,9 @@ class AtomNetlist : public Netlist<AtomBlockId, AtomPortId, AtomPinId, AtomNetId
      */
 
     /**
-     * @brief Create or return an existing block in the netlist
+     * @brief Create a new block in the netlist.
+     * 
+     * @note If a block with the specified name already exists, the function will crash.
      *
      *   @param name          The unique name of the block
      *   @param model         The primitive type of the block
@@ -173,10 +175,12 @@ class AtomNetlist : public Netlist<AtomBlockId, AtomPortId, AtomPinId, AtomNetId
      *                        The truth_table is optional and only relevant for LUTs (where it describes the logic function)
      *                        and Flip-Flops/latches (where it consists of a single entry defining the initial state).
      */
-    AtomBlockId create_block(const std::string name, const t_model* model, const TruthTable truth_table = TruthTable());
+    AtomBlockId create_block(const std::string& name, const t_model* model, const TruthTable& truth_table = TruthTable());
 
     /**
-     * @brief Create or return an existing port in the netlist
+     * @brief Create a new port in the netlist.
+     *        
+     * @note If a port with the specified name already exists for the given block, the function will crash.
      *
      *   @param blk_id      The block the port is associated with
      *   @param model_port  The model port the port is associated with
@@ -184,7 +188,7 @@ class AtomNetlist : public Netlist<AtomBlockId, AtomPortId, AtomPinId, AtomNetId
     AtomPortId create_port(const AtomBlockId blk_id, const t_model_ports* model_port);
 
     /**
-     * @brief Create or return an existing pin in the netlist
+     * @brief Create a new pin in the netlist.
      *
      *   @param port_id    The port this pin is associated with
      *   @param port_bit   The bit index of the pin in the port
@@ -195,11 +199,11 @@ class AtomNetlist : public Netlist<AtomBlockId, AtomPortId, AtomPinId, AtomNetId
     AtomPinId create_pin(const AtomPortId port_id, BitIndex port_bit, const AtomNetId net_id, const PinType pin_type, bool is_const = false);
 
     /**
-     * @brief Create an empty, or return an existing net in the netlist
+     * @brief Create a net in the netlist
      *
      *   @param name   The unique name of the net
      */
-    AtomNetId create_net(const std::string name); //An empty or existing net
+    AtomNetId create_net(const std::string& name); //An empty or existing net
 
     /**
      * @brief Create a completely specified net from specified driver and sinks
@@ -208,7 +212,7 @@ class AtomNetlist : public Netlist<AtomBlockId, AtomPortId, AtomPinId, AtomNetId
      *   @param driver     The net's driver pin
      *   @param sinks      The net's sink pins
      */
-    AtomNetId add_net(const std::string name, AtomPinId driver, std::vector<AtomPinId> sinks);
+    AtomNetId add_net(const std::string& name, AtomPinId driver, std::vector<AtomPinId> sinks);
 
     /**
      * @brief Adds a value to the net aliases set for a given net name in the net_aliases_map.
@@ -218,7 +222,7 @@ class AtomNetlist : public Netlist<AtomBlockId, AtomPortId, AtomPinId, AtomNetId
      *   @param net_name        The net to be added to the map
      *   @param alias_net_name  The alias of the assigned clock net id
      */
-    void add_net_alias(const std::string net_name, std::string alias_net_name);
+    void add_net_alias(const std::string& net_name, const std::string& alias_net_name);
 
   private: //Private members
     /*

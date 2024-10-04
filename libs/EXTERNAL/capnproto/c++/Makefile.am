@@ -27,6 +27,7 @@ EXTRA_DIST =                                                                 \
   src/capnp/testdata/segmented-packed                                        \
   src/capnp/testdata/errors.capnp.nobuild                                    \
   src/capnp/testdata/errors2.capnp.nobuild                                   \
+  src/capnp/testdata/no-file-id.capnp.nobuild                                \
   src/capnp/testdata/short.txt                                               \
   src/capnp/testdata/flat                                                    \
   src/capnp/testdata/binary                                                  \
@@ -174,9 +175,11 @@ includekj_HEADERS =                                            \
   src/kj/async-unix.h                                          \
   src/kj/async-win32.h                                         \
   src/kj/async-io.h                                            \
+  src/kj/cidr.h                                                \
   src/kj/async-queue.h                                         \
   src/kj/main.h                                                \
   src/kj/test.h                                                \
+  src/kj/win32-api-version.h                                   \
   src/kj/windows-sanity.h
 
 includekjparse_HEADERS =                                       \
@@ -263,6 +266,7 @@ endif
 libkj_la_LIBADD = $(PTHREAD_LIBS)
 libkj_la_LDFLAGS = -release $(SO_VERSION) -no-undefined
 libkj_la_SOURCES=                                              \
+  src/kj/cidr.c++                                              \
   src/kj/common.c++                                            \
   src/kj/units.c++                                             \
   src/kj/memory.c++                                            \
@@ -305,11 +309,19 @@ libkj_async_la_SOURCES=                                        \
   src/kj/async-io-win32.c++                                    \
   src/kj/timer.c++
 
+if BUILD_KJ_GZIP
+libkj_http_la_LIBADD = libkj-async.la libkj.la -lz $(ASYNC_LIBS) $(PTHREAD_LIBS)
+libkj_http_la_LDFLAGS = -release $(SO_VERSION) -no-undefined
+libkj_http_la_SOURCES=                                         \
+  src/kj/compat/url.c++                                        \
+  src/kj/compat/http.c++
+else
 libkj_http_la_LIBADD = libkj-async.la libkj.la $(ASYNC_LIBS) $(PTHREAD_LIBS)
 libkj_http_la_LDFLAGS = -release $(SO_VERSION) -no-undefined
 libkj_http_la_SOURCES=                                         \
   src/kj/compat/url.c++                                        \
   src/kj/compat/http.c++
+endif
 
 libkj_tls_la_LIBADD = libkj-async.la libkj.la -lssl -lcrypto $(ASYNC_LIBS) $(PTHREAD_LIBS)
 libkj_tls_la_LDFLAGS = -release $(SO_VERSION) -no-undefined
@@ -504,6 +516,7 @@ endif
 heavy_tests =                                                  \
   src/kj/async-test.c++                                        \
   src/kj/async-xthread-test.c++                                \
+  src/kj/async-coroutine-test.c++                              \
   src/kj/async-unix-test.c++                                   \
   src/kj/async-unix-xthread-test.c++                           \
   src/kj/async-win32-test.c++                                  \

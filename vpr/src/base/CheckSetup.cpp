@@ -9,10 +9,12 @@
 
 void CheckSetup(const t_packer_opts& PackerOpts,
                 const t_placer_opts& PlacerOpts,
+                const t_ap_opts& APOpts,
                 const t_router_opts& RouterOpts,
+                const t_server_opts& ServerOpts,
                 const t_det_routing_arch& RoutingArch,
                 const std::vector<t_segment_inf>& Segments,
-                const t_timing_inf Timing,
+                const t_timing_inf& Timing,
                 const t_chan_width_dist Chans) {
     int i;
     int Tmp;
@@ -21,6 +23,18 @@ void CheckSetup(const t_packer_opts& PackerOpts,
         VPR_FATAL_ERROR(VPR_ERROR_OTHER,
                         "Packing cannot be timing driven without timing analysis enabled\n");
     }
+
+    if (PackerOpts.load_flat_placement) {
+        if (PackerOpts.device_layout == "auto") {
+            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                            "Legalization requires a fixed device layout.\n");
+        }
+        if (!PlacerOpts.constraints_file.empty()) {
+            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                            "Cannot specify a fixed clusters file when running legalization.\n");
+        }
+    }
+
 
     if ((GLOBAL == RouterOpts.route_type)
         && (PlacerOpts.place_algorithm.is_timing_driven())) {
@@ -59,6 +73,28 @@ void CheckSetup(const t_packer_opts& PackerOpts,
                         NUM_PL_MOVE_TYPES);
     }
 
+    // Rules for doing Analytical Placement
+    if (APOpts.doAP) {
+        // Make sure that the --place option was not set.
+        if (PlacerOpts.doPlacement) {
+            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                            "Cannot perform both analytical and non-analytical placement.\n");
+        }
+        // Make sure that the --pack option was not set.
+        if (PackerOpts.doPacking) {
+            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                            "Analytical placement should skip packing.\n");
+        }
+
+        // TODO: Should check that read_vpr_constraint_file is non-empty or
+        //       check within analytical placement that the floorplanning has
+        //       some fixed blocks somewhere. Maybe we can live without fixed
+        //       blocks.
+
+        // TODO: Should we enforce that the size of the device is fixed. This
+        //       goes with ensuring that some blocks are fixed.
+    }
+
     if (RouterOpts.doRouting) {
         if (!Timing.timing_analysis_enabled
             && (DEMAND_ONLY != RouterOpts.base_cost_type && DEMAND_ONLY_NORMALIZED_LENGTH != RouterOpts.base_cost_type)) {
@@ -78,7 +114,7 @@ void CheckSetup(const t_packer_opts& PackerOpts,
     for (i = 0; i < (int)Segments.size(); ++i) {
         Tmp = Segments[i].arch_opin_switch;
         auto& device_ctx = g_vpr_ctx.device();
-        if (false == device_ctx.arch_switch_inf[Tmp].buffered()) {
+        if (!device_ctx.arch_switch_inf[Tmp].buffered()) {
             VPR_FATAL_ERROR(VPR_ERROR_OTHER,
                             "arch_opin_switch (#%d) of segment type #%d is not buffered.\n", Tmp, i);
         }
@@ -103,6 +139,14 @@ void CheckSetup(const t_packer_opts& PackerOpts,
             && (PlacerOpts.place_chan_width % 2 > 0)) {
             VPR_FATAL_ERROR(VPR_ERROR_OTHER,
                             "Place channel width must be even for unidirectional.\n");
+        }
+    }
+
+    if (ServerOpts.is_server_mode_enabled) {
+        if (ServerOpts.port_num < DYMANIC_PORT_RANGE_MIN || ServerOpts.port_num > DYNAMIC_PORT_RANGE_MAX) {
+                VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                                "Specified server port number `--port %d` is out of range [%d-%d]. Please specify a port number within that range.\n",
+                                ServerOpts.port_num, DYMANIC_PORT_RANGE_MIN, DYNAMIC_PORT_RANGE_MAX);
         }
     }
 }

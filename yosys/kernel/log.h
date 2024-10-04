@@ -17,10 +17,10 @@
  *
  */
 
-#include "kernel/yosys.h"
-
 #ifndef LOG_H
 #define LOG_H
+
+#include "kernel/yosys_common.h"
 
 #include <time.h>
 
@@ -131,8 +131,8 @@ void log_header(RTLIL::Design *design, const char *format, ...) YS_ATTRIBUTE(for
 void log_warning(const char *format, ...) YS_ATTRIBUTE(format(printf, 1, 2));
 void log_experimental(const char *format, ...) YS_ATTRIBUTE(format(printf, 1, 2));
 
-void set_verific_logging(void (*cb)(int msg_type, const char *message_id, const char* file_path, unsigned int line_no, const char *msg));
-extern void (*log_verific_callback)(int msg_type, const char *message_id, const char* file_path, unsigned int line_no, const char *msg);
+void set_verific_logging(void (*cb)(int msg_type, const char *message_id, const char* file_path, unsigned int left_line, unsigned int left_col, unsigned int right_line, unsigned int right_col, const char *msg));
+extern void (*log_verific_callback)(int msg_type, const char *message_id, const char* file_path, unsigned int left_line, unsigned int left_col, unsigned int right_line, unsigned int right_col, const char *msg);
 
 // Log with filename to report a problem in a source file.
 void log_file_warning(const std::string &filename, int lineno, const char *format, ...) YS_ATTRIBUTE(format(printf, 3, 4));
@@ -448,5 +448,7 @@ void log_dump_args_worker(const char *p, T first, Args ... args)
 } while (0)
 
 YOSYS_NAMESPACE_END
+
+#include "kernel/yosys.h"
 
 #endif

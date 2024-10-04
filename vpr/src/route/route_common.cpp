@@ -39,6 +39,7 @@
 
 /******************** Subroutines local to route_common.cpp *******************/
 static vtr::vector<ParentNetId, std::vector<RRNodeId>> load_net_rr_terminals(const RRGraphView& rr_graph,
+                                                                             const DeviceGrid& grid,
                                                                              const Netlist<>& net_list,
                                                                              bool is_flat);
 
@@ -258,6 +259,7 @@ void init_route_structs(const Netlist<>& net_list,
 
     //Various look-ups
     route_ctx.net_rr_terminals = load_net_rr_terminals(device_ctx.rr_graph,
+                                                       device_ctx.grid,
                                                        net_list,
                                                        is_flat);
 
@@ -334,11 +336,13 @@ static t_clb_opins_used alloc_and_load_clb_opins_used_locally() {
     int clb_pin, iclass;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& block_locs = g_vpr_ctx.placement().block_locs();
 
     clb_opins_used_locally.resize(cluster_ctx.clb_nlist.blocks().size());
 
-    for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-        auto type = physical_tile_type(blk_id);
+    for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks()) {
+        t_pl_loc block_loc = block_locs[blk_id].loc;
+        auto type = physical_tile_type(block_loc);
         auto sub_tile = type->sub_tiles[get_sub_tile_index(blk_id)];
 
         auto class_range = get_class_range_for_block(blk_id);
@@ -347,12 +351,10 @@ static t_clb_opins_used alloc_and_load_clb_opins_used_locally() {
 
         if (is_io_type(type)) continue;
 
-        int pin_low = 0;
-        int pin_high = 0;
-        get_pin_range_for_block(blk_id, &pin_low, &pin_high);
+        const auto [pin_low, pin_high] = get_pin_range_for_block(blk_id);
 
         for (clb_pin = pin_low; clb_pin <= pin_high; clb_pin++) {
-            auto net = cluster_ctx.clb_nlist.block_net(blk_id, clb_pin);
+            ClusterNetId net = cluster_ctx.clb_nlist.block_net(blk_id, clb_pin);
 
             if (!net || (net && cluster_ctx.clb_nlist.net_sinks(net).size() == 0)) {
                 //There is no external net connected to this pin
@@ -431,6 +433,7 @@ void reset_rr_node_route_structs() {
  * index of the SOURCE of the net and all the SINKs of the net [clb_nlist.nets()][clb_nlist.net_pins()].    *
  * Entry [inet][pnum] stores the rr index corresponding to the SOURCE (opin) or SINK (ipin) of the pin.     */
 static vtr::vector<ParentNetId, std::vector<RRNodeId>> load_net_rr_terminals(const RRGraphView& rr_graph,
+                                                                             const DeviceGrid& grid,
                                                                              const Netlist<>& net_list,
                                                                              bool is_flat) {
     vtr::vector<ParentNetId, std::vector<RRNodeId>> net_rr_terminals;
@@ -447,12 +450,30 @@ static vtr::vector<ParentNetId, std::vector<RRNodeId>> load_net_rr_terminals(con
             t_block_loc blk_loc;
             blk_loc = get_block_loc(block_id, is_flat);
             int iclass = get_block_pin_class_num(block_id, pin_id, is_flat);
-            RRNodeId inode = rr_graph.node_lookup().find_node(blk_loc.loc.layer,
-                                                              blk_loc.loc.x,
-                                                              blk_loc.loc.y,
-                                                              (pin_count == 0 ? SOURCE : SINK), /* First pin is driver */
-                                                              iclass);
+            RRNodeId inode;
+            if (pin_count == 0) { /* First pin is driver */
+                inode = rr_graph.node_lookup().find_node(blk_loc.loc.layer,
+                                                         blk_loc.loc.x,
+                                                         blk_loc.loc.y,
+                                                         SOURCE,
+                                                         iclass);
+            } else {
+                vtr::Rect<int> tile_bb = grid.get_tile_bb({blk_loc.loc.x,
+                                                           blk_loc.loc.y,
+                                                           blk_loc.loc.layer});
+                std::vector<RRNodeId> sink_nodes = rr_graph.node_lookup().find_nodes_in_range(blk_loc.loc.layer,
+                                                                                              tile_bb.xmin(),
+                                                                                              tile_bb.ymin(),
+                                                                                              tile_bb.xmax(),
+                                                                                              tile_bb.ymax(),
+                                                                                              SINK,
+                                                                                              iclass);
+                VTR_ASSERT_SAFE(sink_nodes.size() == 1);
+                inode = sink_nodes[0];
+            }
+
             VTR_ASSERT(inode != RRNodeId::INVALID());
+
             net_rr_terminals[net_id][pin_count] = inode;
             pin_count++;
         }
@@ -510,7 +531,7 @@ load_net_terminal_groups(const RRGraphView& rr_graph,
                 /* TODO: net_terminal_groups cannot be fully RRNodeId - ified, because this code calls libarchfpga which 
                  * I think should not be aware of RRNodeIds. Fixing this requires some refactoring to lift the offending functions 
                  * into VPR. */
-                std::vector<int> new_group = {int(size_t(rr_node_num))};
+                std::vector<int> new_group = {int(rr_node_num)};
                 int new_group_num = net_terminal_groups[net_id].size();
                 net_terminal_groups[net_id].push_back(new_group);
                 net_terminal_group_num[net_id][pin_count] = new_group_num;
@@ -699,15 +720,19 @@ t_bb load_net_route_bb(const Netlist<>& net_list,
         VTR_ASSERT(rr_graph.node_layer(sink_rr) >= 0);
         VTR_ASSERT(rr_graph.node_layer(sink_rr) <= device_ctx.grid.get_num_layers() - 1);
 
-        xmin = std::min<int>(xmin, rr_graph.node_xlow(sink_rr));
-        xmax = std::max<int>(xmax, rr_graph.node_xhigh(sink_rr));
-        ymin = std::min<int>(ymin, rr_graph.node_ylow(sink_rr));
-        ymax = std::max<int>(ymax, rr_graph.node_yhigh(sink_rr));
+        vtr::Rect<int> tile_bb = device_ctx.grid.get_tile_bb({rr_graph.node_xlow(sink_rr),
+                                                              rr_graph.node_ylow(sink_rr),
+                                                              rr_graph.node_layer(sink_rr)});
+
+        xmin = std::min<int>(xmin, tile_bb.xmin());
+        xmax = std::max<int>(xmax, tile_bb.xmax());
+        ymin = std::min<int>(ymin, tile_bb.ymin());
+        ymax = std::max<int>(ymax, tile_bb.ymax());
         layer_min = std::min<int>(layer_min, rr_graph.node_layer(sink_rr));
         layer_max = std::max<int>(layer_max, rr_graph.node_layer(sink_rr));
     }
 
-    /* Want the channels on all 4 sides to be usuable, even if bb_factor = 0. */
+    /* Want the channels on all 4 sides to be usable, even if bb_factor = 0. */
     xmin -= 1;
     ymin -= 1;
 
@@ -761,10 +786,12 @@ void reserve_locally_used_opins(HeapInterface* heap, float pres_fac, float acc_f
     auto& route_ctx = g_vpr_ctx.mutable_routing();
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
+    auto& block_locs = g_vpr_ctx.placement().block_locs();
 
     if (rip_up_local_opins) {
-        for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-            type = physical_tile_type(blk_id);
+        for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks()) {
+            t_pl_loc block_loc = block_locs[blk_id].loc;
+            type = physical_tile_type(block_loc);
             for (iclass = 0; iclass < (int)type->class_inf.size(); iclass++) {
                 num_local_opin = route_ctx.clb_opins_used_locally[blk_id][iclass].size();
 
@@ -785,8 +812,9 @@ void reserve_locally_used_opins(HeapInterface* heap, float pres_fac, float acc_f
     // Make sure heap is empty before we add nodes to the heap.
     heap->empty_heap();
 
-    for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-        type = physical_tile_type(blk_id);
+    for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks()) {
+        t_pl_loc block_loc = block_locs[blk_id].loc;
+        type = physical_tile_type(block_loc);
         for (iclass = 0; iclass < (int)type->class_inf.size(); iclass++) {
             num_local_opin = route_ctx.clb_opins_used_locally[blk_id][iclass].size();
 

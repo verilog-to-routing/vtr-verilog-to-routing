@@ -1,11 +1,15 @@
+
 #include "simpleRL_move_generator.h"
+
 #include "globals.h"
+#include "vtr_random.h"
+#include "vtr_time.h"
+
 #include <algorithm>
 #include <numeric>
 #include <utility>
 
-#include "vtr_random.h"
-#include "vtr_time.h"
+
 /* File-scope routines */
 //a scaled and clipped exponential function
 static float scaled_clipped_exp(float x) { return std::exp(std::min(1000 * x, float(3.0))); }
@@ -50,7 +54,7 @@ KArmedBanditAgent::KArmedBanditAgent(std::vector<e_move_type> available_moves, e
 }
 
 /*
- * If the agent selects both move type and block type, the would lool like this:
+ * If the agent selects both move type and block type, the action table would look like this:
  *
  *    +---------------+---------------+---------------+---------------+
  *    | (blk0, move0) | (blk0, move1) | ............. | (blk0, moveN) |
@@ -85,8 +89,7 @@ int KArmedBanditAgent::action_to_blk_type_(const size_t action_idx) {
 }
 
 std::vector<int> KArmedBanditAgent::get_available_logical_blk_types_() {
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& device_ctx = g_vpr_ctx.device();
 
     std::vector<int> available_blk_types;
 
@@ -95,11 +98,17 @@ std::vector<int> KArmedBanditAgent::get_available_logical_blk_types_() {
             continue;
         }
 
-        const auto& blk_per_type = cluster_ctx.clb_nlist.blocks_per_type(logical_blk_type);
+        const auto& blk_per_type = movable_blocks_per_type(logical_blk_type);
 
         if (!blk_per_type.empty()) {
             available_blk_types.push_back(logical_blk_type.index);
         }
+    }
+
+    // when there is no movable blocks, RL agent always selects the empty logical block
+    // since there are no empty blocks in the netlist, the move is always aborted
+    if (available_blk_types.empty()) {
+        available_blk_types.push_back(device_ctx.EMPTY_LOGICAL_BLOCK_TYPE->index);
     }
 
     return available_blk_types;
@@ -107,7 +116,7 @@ std::vector<int> KArmedBanditAgent::get_available_logical_blk_types_() {
 
 void KArmedBanditAgent::process_outcome(double reward, e_reward_function reward_fun) {
     ++num_action_chosen_[last_action_];
-    if (reward_fun == RUNTIME_AWARE || reward_fun == WL_BIASED_RUNTIME_AWARE) {
+    if (reward_fun == e_reward_function::RUNTIME_AWARE || reward_fun == e_reward_function::WL_BIASED_RUNTIME_AWARE) {
         e_move_type move_type = action_to_move_type_(last_action_);
         reward /= time_elapsed_[move_type];
     }
@@ -311,8 +320,10 @@ t_propose_action SoftmaxAgent::propose_action() {
 }
 
 void SoftmaxAgent::set_block_ratio_() {
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    size_t num_total_blocks = cluster_ctx.clb_nlist.blocks().size();
+    const auto& place_ctx = g_vpr_ctx.placement();
+    size_t num_movable_total_blocks = place_ctx.movable_blocks.size();
+
+    num_movable_total_blocks = std::max<size_t>(num_movable_total_blocks, 1);
 
     // allocate enough space for available block types in the netlist
     block_type_ratio_.resize(num_available_types_);
@@ -324,8 +335,8 @@ void SoftmaxAgent::set_block_ratio_() {
     for (size_t itype = 0; itype < num_available_types_; itype++) {
         t_logical_block_type blk_type;
         blk_type.index = agent_to_phy_blk_type(itype);
-        auto num_blocks = cluster_ctx.clb_nlist.blocks_per_type(blk_type).size();
-        block_type_ratio_[itype] = (float)num_blocks / num_total_blocks;
+        auto num_blocks = movable_blocks_per_type(blk_type).size();
+        block_type_ratio_[itype] = (float)num_blocks / num_movable_total_blocks;
         block_type_ratio_[itype] /= available_moves_.size();
     }
 }

@@ -9,7 +9,7 @@ NocTrafficFlows::NocTrafficFlows() {
 
 // getters for the traffic flows
 
-int NocTrafficFlows::get_number_of_traffic_flows(void) const {
+int NocTrafficFlows::get_number_of_traffic_flows() const {
     return noc_traffic_flows.size();
 }
 
@@ -33,7 +33,7 @@ const std::vector<NocTrafficFlowId>& NocTrafficFlows::get_traffic_flows_associat
     }
 }
 
-int NocTrafficFlows::get_number_of_routers_used_in_traffic_flows(void) {
+int NocTrafficFlows::get_number_of_routers_used_in_traffic_flows() {
     return traffic_flows_associated_to_router_blocks.size();
 }
 
@@ -49,13 +49,18 @@ const vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>>& NocTrafficFlows::ge
     return traffic_flow_routes;
 }
 
-const std::vector<ClusterBlockId>& NocTrafficFlows::get_router_clusters_in_netlist(void) const {
+const std::vector<ClusterBlockId>& NocTrafficFlows::get_router_clusters_in_netlist() const {
     return router_cluster_in_netlist;
 }
 
-const std::vector<NocTrafficFlowId>& NocTrafficFlows::get_all_traffic_flow_id(void) const {
+const std::vector<NocTrafficFlowId>& NocTrafficFlows::get_all_traffic_flow_id() const {
     return noc_traffic_flows_ids;
 }
+
+const vtr::vector<NocTrafficFlowId, t_noc_traffic_flow>& NocTrafficFlows::get_all_traffic_flows() const {
+    return noc_traffic_flows;
+}
+
 
 // setters for the traffic flows
 
@@ -84,8 +89,6 @@ void NocTrafficFlows::create_noc_traffic_flow(const std::string& source_router_m
     // now add the new traffic flow to flows associated with the current source and sink router
     add_traffic_flow_to_associated_routers(curr_traffic_flow_id, source_router_cluster_id);
     add_traffic_flow_to_associated_routers(curr_traffic_flow_id, sink_router_cluster_id);
-
-    return;
 }
 
 void NocTrafficFlows::set_router_cluster_in_netlist(const std::vector<ClusterBlockId>& routers_cluster_id_in_netlist) {
@@ -98,18 +101,16 @@ void NocTrafficFlows::set_router_cluster_in_netlist(const std::vector<ClusterBlo
 
 // utility functions for the noc traffic flows
 
-void NocTrafficFlows::finished_noc_traffic_flows_setup(void) {
+void NocTrafficFlows::finished_noc_traffic_flows_setup() {
     // all the traffic flows have been added, so indicate that the class has been constructed and cannot be modified anymore
     built_traffic_flows = true;
 
     // create the storage space for all the traffic flow routes
     int number_of_traffic_flows = noc_traffic_flows.size();
     traffic_flow_routes.resize(number_of_traffic_flows);
-
-    return;
 }
 
-void NocTrafficFlows::clear_traffic_flows(void) {
+void NocTrafficFlows::clear_traffic_flows() {
     // delete any information from internal datastructures
     noc_traffic_flows.clear();
     noc_traffic_flows_ids.clear();
@@ -119,8 +120,6 @@ void NocTrafficFlows::clear_traffic_flows(void) {
 
     // indicate that traffic flows need to be added again after clear
     built_traffic_flows = false;
-
-    return;
 }
 
 bool NocTrafficFlows::check_if_cluster_block_has_traffic_flows(ClusterBlockId block_id) const {
@@ -144,8 +143,6 @@ void NocTrafficFlows::add_traffic_flow_to_associated_routers(NocTrafficFlowId tr
         // there already is a vector associated of traffic flows for the current router, so add it
         router_traffic_flows->second.emplace_back(traffic_flow_id);
     }
-
-    return;
 }
 
 void NocTrafficFlows::echo_noc_traffic_flows(char* file_name) {
@@ -208,6 +205,5 @@ void NocTrafficFlows::echo_noc_traffic_flows(char* file_name) {
     }
 
     vtr::fclose(fp);
-
-    return;
 }
+

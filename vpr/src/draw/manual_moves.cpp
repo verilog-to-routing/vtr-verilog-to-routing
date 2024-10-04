@@ -5,7 +5,11 @@
  * @brief 	Contains the function definitions needed for manual moves feature.
  *
  * Includes the graphics/gtk function for manual moves. The Manual Move Generator class is defined  manual_move_generator.h/cpp.
- * The manual move feature allows the user to select a move by choosing the block to move, x position, y position, subtile position. If the placer accepts the move, the user can accept or reject the move with respect to the delta cost, delta timing and delta bounding box cost displayed on the UI. The manual move feature interacts with placement through the ManualMoveGenerator class in the manual_move_generator.cpp/h files and in the place.cpp file by checking if the manual move toggle button in the UI is active or not, and calls the function needed. 
+ * The manual move feature allows the user to select a move by choosing the block to move, x position, y position, subtile position.
+ * If the placer accepts the move, the user can accept or reject the move with respect to the delta cost,
+ * delta timing and delta bounding box cost displayed on the UI. The manual move feature interacts with placement through
+ * the ManualMoveGenerator class in the manual_move_generator.cpp/h files and in the place.cpp file by checking
+ * if the manual move toggle button in the UI is active or not, and calls the function needed.
  */
 
 #include "manual_moves.h"
@@ -144,8 +148,8 @@ void calculate_cost_callback(GtkWidget* /*widget*/, GtkWidget* grid) {
 
 bool is_manual_move_legal(ClusterBlockId block_id, t_pl_loc to) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_ctx = g_vpr_ctx.placement();
     auto& device_ctx = g_vpr_ctx.device();
+    const auto& grid_blocks = get_graphics_blk_loc_registry_ref().grid_blocks();
 
     //if the block is not found
     if ((!cluster_ctx.clb_nlist.valid_block_id(ClusterBlockId(block_id)))) {
@@ -169,16 +173,16 @@ bool is_manual_move_legal(ClusterBlockId block_id, t_pl_loc to) {
     }
 
     //If the destination block is user constrained, abort this swap
-    auto b_to = place_ctx.grid_blocks.block_at_location(to);
-    if (b_to != INVALID_BLOCK_ID && b_to != EMPTY_BLOCK_ID) {
-        if (place_ctx.block_locs[b_to].is_fixed) {
+    ClusterBlockId b_to = grid_blocks.block_at_location(to);
+    if (b_to) {
+        if (get_graphics_blk_loc_registry_ref().block_locs()[b_to].is_fixed) {
             invalid_breakpoint_entry_window("Block is fixed");
             return false;
         }
     }
 
     //If the block requested is already in that location.
-    t_pl_loc current_block_loc = place_ctx.block_locs[block_id].loc;
+    t_pl_loc current_block_loc = get_graphics_blk_loc_registry_ref().block_locs()[block_id].loc;
     if (to.x == current_block_loc.x && to.y == current_block_loc.y && to.sub_tile == current_block_loc.sub_tile) {
         invalid_breakpoint_entry_window("The block is currently in this location");
         return false;
@@ -212,7 +216,7 @@ void manual_move_cost_summary_dialog() {
     gtk_window_set_transient_for((GtkWindow*)dialog, (GtkWindow*)draw_state->manual_moves_state.manual_move_window);
 
     //Create elements for the dialog and printing costs to the user.
-    GtkWidget* title_label = gtk_label_new(NULL);
+    GtkWidget* title_label = gtk_label_new(nullptr);
     gtk_label_set_markup((GtkLabel*)title_label, "<b>Move Costs and Outcomes</b>");
     std::string delta_cost = "Delta Cost: " + std::to_string(draw_state->manual_moves_state.manual_move_info.delta_cost) + "   ";
     GtkWidget* delta_cost_label = gtk_label_new(delta_cost.c_str());
@@ -301,7 +305,12 @@ e_move_result pl_do_manual_move(double d_cost, double d_timing, double d_boundin
     return move_outcome;
 }
 
-e_create_move manual_move_display_and_propose(ManualMoveGenerator& manual_move_generator, t_pl_blocks_to_be_moved& blocks_affected, e_move_type& move_type, float rlim, const t_placer_opts& placer_opts, const PlacerCriticalities* criticalities) {
+e_create_move manual_move_display_and_propose(ManualMoveGenerator& manual_move_generator,
+                                              t_pl_blocks_to_be_moved& blocks_affected,
+                                              e_move_type& move_type,
+                                              float rlim,
+                                              const t_placer_opts& placer_opts,
+                                              const PlacerCriticalities* criticalities) {
     draw_manual_moves_window("");
     update_screen(ScreenUpdatePriority::MAJOR, " ", PLACEMENT, nullptr);
     move_type = e_move_type::MANUAL_MOVE;

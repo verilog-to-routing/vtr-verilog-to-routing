@@ -4,9 +4,10 @@
  * https://github.com/duck2/uxsdcxx
  * Modify only if your build process doesn't involve regenerating this file.
  *
- * Cmdline: uxsdcxx/uxsdcxx.py /home/smahmoudi/Desktop/vtr/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
- * Input file: /home/smahmoudi/Desktop/vtr/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
- * md5sum of input file: bf49388f038e0d0e4a12403ebb964b42
+ * Cmdline: uxsdcxx/uxsdcxx.py /home/mohagh18/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
+ * Input file: /home/mohagh18/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
+
+ * md5sum of input file: 65eddcc840064bbb91d7f4cf0b8bf821
  */
 
 #include <functional>
@@ -201,10 +202,15 @@ inline void write_rr_graph_xml(T &in, Context &context, std::ostream &os){
 }
 
 
+#if defined(_MSC_VER)
+typedef const uint32_t __declspec(align(1)) triehash_uu32;
+typedef const uint64_t __declspec(align(1)) triehash_uu64;
+#else
 typedef const uint32_t __attribute__((aligned(1))) triehash_uu32;
 typedef const uint64_t __attribute__((aligned(1))) triehash_uu64;
 static_assert(alignof(triehash_uu32) == 1, "Unaligned 32-bit access not found.");
 static_assert(alignof(triehash_uu64) == 1, "Unaligned 64-bit access not found.");
+#endif
 #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
 #define onechar(c, s, l) (((uint64_t)(c)) << (s))
 #else
@@ -247,8 +253,8 @@ constexpr const char *atok_lookup_t_segment_timing[] = {"C_per_meter", "R_per_me
 
 enum class gtok_t_segment {TIMING};
 constexpr const char *gtok_lookup_t_segment[] = {"timing"};
-enum class atok_t_segment {ID, NAME};
-constexpr const char *atok_lookup_t_segment[] = {"id", "name"};
+enum class atok_t_segment {ID, LENGTH, NAME, RES_TYPE};
+constexpr const char *atok_lookup_t_segment[] = {"id", "length", "name", "res_type"};
 
 enum class gtok_t_segments {SEGMENT};
 constexpr const char *gtok_lookup_t_segments[] = {"segment"};
@@ -294,8 +300,8 @@ enum class gtok_t_metadata {META};
 constexpr const char *gtok_lookup_t_metadata[] = {"meta"};
 enum class gtok_t_node {LOC, TIMING, SEGMENT, METADATA};
 constexpr const char *gtok_lookup_t_node[] = {"loc", "timing", "segment", "metadata"};
-enum class atok_t_node {CAPACITY, DIRECTION, ID, TYPE};
-constexpr const char *atok_lookup_t_node[] = {"capacity", "direction", "id", "type"};
+enum class atok_t_node {CAPACITY, CLK_RES_TYPE, DIRECTION, ID, NAME, TYPE};
+constexpr const char *atok_lookup_t_node[] = {"capacity", "clk_res_type", "direction", "id", "name", "type"};
 
 enum class gtok_t_rr_nodes {NODE};
 constexpr const char *gtok_lookup_t_rr_nodes[] = {"node"};
@@ -788,6 +794,32 @@ inline atok_t_segment lex_attr_t_segment(const char *in, const std::function<voi
 		switch(*((triehash_uu32*)&in[0])){
 		case onechar('n', 0, 32) | onechar('a', 8, 32) | onechar('m', 16, 32) | onechar('e', 24, 32):
 			return atok_t_segment::NAME;
+		break;
+		default: break;
+		}
+		break;
+	case 6:
+		switch(*((triehash_uu32*)&in[0])){
+		case onechar('l', 0, 32) | onechar('e', 8, 32) | onechar('n', 16, 32) | onechar('g', 24, 32):
+			switch(in[4]){
+			case onechar('t', 0, 8):
+				switch(in[5]){
+				case onechar('h', 0, 8):
+					return atok_t_segment::LENGTH;
+				break;
+				default: break;
+				}
+			break;
+			default: break;
+			}
+		break;
+		default: break;
+		}
+		break;
+	case 8:
+		switch(*((triehash_uu64*)&in[0])){
+		case onechar('r', 0, 64) | onechar('e', 8, 64) | onechar('s', 16, 64) | onechar('_', 24, 64) | onechar('t', 32, 64) | onechar('y', 40, 64) | onechar('p', 48, 64) | onechar('e', 56, 64):
+			return atok_t_segment::RES_TYPE;
 		break;
 		default: break;
 		}
@@ -1339,6 +1371,9 @@ inline atok_t_node lex_attr_t_node(const char *in, const std::function<void(cons
 		break;
 	case 4:
 		switch(*((triehash_uu32*)&in[0])){
+		case onechar('n', 0, 32) | onechar('a', 8, 32) | onechar('m', 16, 32) | onechar('e', 24, 32):
+			return atok_t_node::NAME;
+		break;
 		case onechar('t', 0, 32) | onechar('y', 8, 32) | onechar('p', 16, 32) | onechar('e', 24, 32):
 			return atok_t_node::TYPE;
 		break;
@@ -1359,6 +1394,19 @@ inline atok_t_node lex_attr_t_node(const char *in, const std::function<void(cons
 			switch(in[8]){
 			case onechar('n', 0, 8):
 				return atok_t_node::DIRECTION;
+			break;
+			default: break;
+			}
+		break;
+		default: break;
+		}
+		break;
+	case 12:
+		switch(*((triehash_uu64*)&in[0])){
+		case onechar('c', 0, 64) | onechar('l', 8, 64) | onechar('k', 16, 64) | onechar('_', 24, 64) | onechar('r', 32, 64) | onechar('e', 40, 64) | onechar('s', 48, 64) | onechar('_', 56, 64):
+			switch(*((triehash_uu32*)&in[8])){
+			case onechar('t', 0, 32) | onechar('y', 8, 32) | onechar('p', 16, 32) | onechar('e', 24, 32):
+				return atok_t_node::CLK_RES_TYPE;
 			break;
 			default: break;
 			}
@@ -1575,9 +1623,11 @@ template<std::size_t N>
 
 /* Lookup tables for enums. */
 constexpr const char *lookup_switch_type[] = {"UXSD_INVALID", "mux", "tristate", "pass_gate", "short", "buffer"};
+constexpr const char *lookup_segment_res_type[] = {"UXSD_INVALID", "GENERAL", "GCLK"};
 constexpr const char *lookup_pin_type[] = {"UXSD_INVALID", "OPEN", "OUTPUT", "INPUT"};
 constexpr const char *lookup_node_type[] = {"UXSD_INVALID", "CHANX", "CHANY", "SOURCE", "SINK", "OPIN", "IPIN"};
-constexpr const char *lookup_node_direction[] = {"UXSD_INVALID", "INC_DIR", "DEC_DIR", "BI_DIR"};
+constexpr const char *lookup_node_direction[] = {"UXSD_INVALID", "INC_DIR", "DEC_DIR", "BI_DIR", "NONE"};
+constexpr const char *lookup_node_clk_res_type[] = {"UXSD_INVALID", "VIRTUAL_SINK"};
 constexpr const char *lookup_loc_side[] = {"UXSD_INVALID", "LEFT", "RIGHT", "TOP", "BOTTOM", "RIGHT_LEFT", "RIGHT_BOTTOM", "RIGHT_BOTTOM_LEFT", "TOP_RIGHT", "TOP_BOTTOM", "TOP_LEFT", "TOP_RIGHT_BOTTOM", "TOP_RIGHT_LEFT", "TOP_BOTTOM_LEFT", "TOP_RIGHT_BOTTOM_LEFT", "BOTTOM_LEFT"};
 
 /* Lexers(string->token functions) for enums. */
@@ -1659,6 +1709,47 @@ inline enum_switch_type lex_enum_switch_type(const char *in, bool throw_on_inval
 	if(throw_on_invalid)
 		noreturn_report(report_error, ("Found unrecognized enum value " + std::string(in) + " of enum_switch_type.").c_str());
 	return enum_switch_type::UXSD_INVALID;
+}
+
+inline enum_segment_res_type lex_enum_segment_res_type(const char *in, bool throw_on_invalid, const std::function<void(const char *)> * report_error){
+	unsigned int len = strlen(in);
+	switch(len){
+	case 4:
+		switch(*((triehash_uu32*)&in[0])){
+		case onechar('G', 0, 32) | onechar('C', 8, 32) | onechar('L', 16, 32) | onechar('K', 24, 32):
+			return enum_segment_res_type::GCLK;
+		break;
+		default: break;
+		}
+		break;
+	case 7:
+		switch(*((triehash_uu32*)&in[0])){
+		case onechar('G', 0, 32) | onechar('E', 8, 32) | onechar('N', 16, 32) | onechar('E', 24, 32):
+			switch(in[4]){
+			case onechar('R', 0, 8):
+				switch(in[5]){
+				case onechar('A', 0, 8):
+					switch(in[6]){
+					case onechar('L', 0, 8):
+						return enum_segment_res_type::GENERAL;
+					break;
+					default: break;
+					}
+				break;
+				default: break;
+				}
+			break;
+			default: break;
+			}
+		break;
+		default: break;
+		}
+		break;
+	default: break;
+	}
+	if(throw_on_invalid)
+		noreturn_report(report_error, ("Found unrecognized enum value " + std::string(in) + " of enum_segment_res_type.").c_str());
+	return enum_segment_res_type::UXSD_INVALID;
 }
 
 inline enum_pin_type lex_enum_pin_type(const char *in, bool throw_on_invalid, const std::function<void(const char *)> * report_error){
@@ -1771,6 +1862,14 @@ inline enum_node_type lex_enum_node_type(const char *in, bool throw_on_invalid, 
 inline enum_node_direction lex_enum_node_direction(const char *in, bool throw_on_invalid, const std::function<void(const char *)> * report_error){
 	unsigned int len = strlen(in);
 	switch(len){
+	case 4:
+		switch(*((triehash_uu32*)&in[0])){
+		case onechar('N', 0, 32) | onechar('O', 8, 32) | onechar('N', 16, 32) | onechar('E', 24, 32):
+			return enum_node_direction::NONE;
+		break;
+		default: break;
+		}
+		break;
 	case 6:
 		switch(*((triehash_uu32*)&in[0])){
 		case onechar('B', 0, 32) | onechar('I', 8, 32) | onechar('_', 16, 32) | onechar('D', 24, 32):
@@ -1835,6 +1934,29 @@ inline enum_node_direction lex_enum_node_direction(const char *in, bool throw_on
 	if(throw_on_invalid)
 		noreturn_report(report_error, ("Found unrecognized enum value " + std::string(in) + " of enum_node_direction.").c_str());
 	return enum_node_direction::UXSD_INVALID;
+}
+
+inline enum_node_clk_res_type lex_enum_node_clk_res_type(const char *in, bool throw_on_invalid, const std::function<void(const char *)> * report_error){
+	unsigned int len = strlen(in);
+	switch(len){
+	case 12:
+		switch(*((triehash_uu64*)&in[0])){
+		case onechar('V', 0, 64) | onechar('I', 8, 64) | onechar('R', 16, 64) | onechar('T', 24, 64) | onechar('U', 32, 64) | onechar('A', 40, 64) | onechar('L', 48, 64) | onechar('_', 56, 64):
+			switch(*((triehash_uu32*)&in[8])){
+			case onechar('S', 0, 32) | onechar('I', 8, 32) | onechar('N', 16, 32) | onechar('K', 24, 32):
+				return enum_node_clk_res_type::VIRTUAL_SINK;
+			break;
+			default: break;
+			}
+		break;
+		default: break;
+		}
+		break;
+	default: break;
+	}
+	if(throw_on_invalid)
+		noreturn_report(report_error, ("Found unrecognized enum value " + std::string(in) + " of enum_node_clk_res_type.").c_str());
+	return enum_node_clk_res_type::UXSD_INVALID;
 }
 
 inline enum_loc_side lex_enum_loc_side(const char *in, bool throw_on_invalid, const std::function<void(const char *)> * report_error){
@@ -2235,7 +2357,7 @@ inline void load_switch_required_attributes(const pugi::xml_node &root, int * id
 }
 
 inline void load_segment_required_attributes(const pugi::xml_node &root, int * id, const std::function<void(const char *)> * report_error){
-	std::bitset<2> astate = 0;
+	std::bitset<4> astate = 0;
 	for(pugi::xml_attribute attr = root.first_attribute(); attr; attr = attr.next_attribute()){
 		atok_t_segment in = lex_attr_t_segment(attr.name(), report_error);
 		if(astate[(int)in] == 0) astate[(int)in] = 1;
@@ -2244,13 +2366,19 @@ inline void load_segment_required_attributes(const pugi::xml_node &root, int * i
 		case atok_t_segment::ID:
 			*id = load_int(attr.value(), report_error);
 			break;
+		case atok_t_segment::LENGTH:
+			/* Attribute length set after element init */
+			break;
 		case atok_t_segment::NAME:
 			/* Attribute name set after element init */
+			break;
+		case atok_t_segment::RES_TYPE:
+			/* Attribute res_type set after element init */
 			break;
 		default: break; /* Not possible. */
 		}
 	}
-	std::bitset<2> test_astate = astate | std::bitset<2>(0b00);
+	std::bitset<4> test_astate = astate | std::bitset<4>(0b1010);
 	if(!test_astate.all()) attr_error(test_astate, atok_lookup_t_segment, report_error);
 }
 
@@ -2422,7 +2550,7 @@ inline void load_node_segment_required_attributes(const pugi::xml_node &root, in
 }
 
 inline void load_node_required_attributes(const pugi::xml_node &root, unsigned int * capacity, unsigned int * id, enum_node_type * type, const std::function<void(const char *)> * report_error){
-	std::bitset<4> astate = 0;
+	std::bitset<6> astate = 0;
 	for(pugi::xml_attribute attr = root.first_attribute(); attr; attr = attr.next_attribute()){
 		atok_t_node in = lex_attr_t_node(attr.name(), report_error);
 		if(astate[(int)in] == 0) astate[(int)in] = 1;
@@ -2431,11 +2559,17 @@ inline void load_node_required_attributes(const pugi::xml_node &root, unsigned i
 		case atok_t_node::CAPACITY:
 			*capacity = load_unsigned_int(attr.value(), report_error);
 			break;
+		case atok_t_node::CLK_RES_TYPE:
+			/* Attribute clk_res_type set after element init */
+			break;
 		case atok_t_node::DIRECTION:
 			/* Attribute direction set after element init */
 			break;
 		case atok_t_node::ID:
 			*id = load_unsigned_int(attr.value(), report_error);
+			break;
+		case atok_t_node::NAME:
+			/* Attribute name set after element init */
 			break;
 		case atok_t_node::TYPE:
 			*type = lex_enum_node_type(attr.value(), true, report_error);
@@ -2443,7 +2577,7 @@ inline void load_node_required_attributes(const pugi::xml_node &root, unsigned i
 		default: break; /* Not possible. */
 		}
 	}
-	std::bitset<4> test_astate = astate | std::bitset<4>(0b0010);
+	std::bitset<6> test_astate = astate | std::bitset<6>(0b010110);
 	if(!test_astate.all()) attr_error(test_astate, atok_lookup_t_node, report_error);
 }
 
@@ -2837,8 +2971,14 @@ inline void load_segment(const pugi::xml_node &root, T &out, Context &context, c
 		case atok_t_segment::ID:
 			/* Attribute id is already set */
 			break;
+		case atok_t_segment::LENGTH:
+			out.set_segment_length(load_int(attr.value(), report_error), context);
+			break;
 		case atok_t_segment::NAME:
 			out.set_segment_name(attr.value(), context);
+			break;
+		case atok_t_segment::RES_TYPE:
+			out.set_segment_res_type(lex_enum_segment_res_type(attr.value(), true, report_error), context);
 			break;
 		default: break; /* Not possible. */
 		}
@@ -3448,11 +3588,17 @@ inline void load_node(const pugi::xml_node &root, T &out, Context &context, cons
 		case atok_t_node::CAPACITY:
 			/* Attribute capacity is already set */
 			break;
+		case atok_t_node::CLK_RES_TYPE:
+			out.set_node_clk_res_type(lex_enum_node_clk_res_type(attr.value(), true, report_error), context);
+			break;
 		case atok_t_node::DIRECTION:
 			out.set_node_direction(lex_enum_node_direction(attr.value(), true, report_error), context);
 			break;
 		case atok_t_node::ID:
 			/* Attribute id is already set */
+			break;
+		case atok_t_node::NAME:
+			out.set_node_name(attr.value(), context);
 			break;
 		case atok_t_node::TYPE:
 			/* Attribute type is already set */
@@ -3898,7 +4044,11 @@ inline void write_segments(T &in, std::ostream &os, Context &context){
 			auto child_context = in.get_segments_segment(i, context);
 			os << "<segment";
 			os << " id=\"" << in.get_segment_id(child_context) << "\"";
+			if((bool)in.get_segment_length(child_context))
+				os << " length=\"" << in.get_segment_length(child_context) << "\"";
 			os << " name=\"" << in.get_segment_name(child_context) << "\"";
+			if((bool)in.get_segment_res_type(child_context))
+				os << " res_type=\"" << lookup_segment_res_type[(int)in.get_segment_res_type(child_context)] << "\"";
 			os << ">";
 			write_segment(in, os, child_context);
 			os << "</segment>\n";
@@ -4070,9 +4220,13 @@ inline void write_rr_nodes(T &in, std::ostream &os, Context &context){
 			auto child_context = in.get_rr_nodes_node(i, context);
 			os << "<node";
 			os << " capacity=\"" << in.get_node_capacity(child_context) << "\"";
+			if((bool)in.get_node_clk_res_type(child_context))
+				os << " clk_res_type=\"" << lookup_node_clk_res_type[(int)in.get_node_clk_res_type(child_context)] << "\"";
 			if((bool)in.get_node_direction(child_context))
 				os << " direction=\"" << lookup_node_direction[(int)in.get_node_direction(child_context)] << "\"";
 			os << " id=\"" << in.get_node_id(child_context) << "\"";
+			if((bool)in.get_node_name(child_context))
+				os << " name=\"" << in.get_node_name(child_context) << "\"";
 			os << " type=\"" << lookup_node_type[(int)in.get_node_type(child_context)] << "\"";
 			os << ">";
 			write_node(in, os, child_context);

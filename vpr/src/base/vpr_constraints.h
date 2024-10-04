@@ -1,105 +1,53 @@
 #ifndef VPR_CONSTRAINTS_H
 #define VPR_CONSTRAINTS_H
 
-#include "vtr_vector.h"
-#include "vpr_utils.h"
-#include "partition.h"
-#include "partition_region.h"
+#include "user_place_constraints.h"
+#include "user_route_constraints.h"
 
 /**
- * @file
- * @brief This file defines the VprConstraints class used to store and read out data related to user-specified
- * 		  block and region constraints for the packing and placement stages.
+ * @brief This file defines the VprConstraints class, which encapsulates user-specified placement and routing constraints
+ *      
  *
  * Overview
  * ========
- * This class contains functions that read in and store information from a constraints XML file.
- * The XML file provides a partition list, with the names of the partitions, and each atom in the partition.
- * It also specifies which regions the partitions should be placed in. Atoms cannot be placed in more than one partition.
- * If an atom is assigned to more than one partition, the last partition is was assigned to will be the partition it is placed in.
+ * The VprConstraints class is used to load and manage user-specified constraints from an XML file.
+ * It includes instances of the UserRouteConstraints and UserPlaceConstraints classes, which hold routing and placement
+ * constraints, respectively.
  *
  * Related Classes
  * ===============
- * The following definitions are useful to understanding this class:
+ * 
+ * UserRouteConstraints: Stores routing constraints for global nets, specifying routing method and routing network name.
+ * See vpr/src/base/user_route_constraints.h for more detail.
  *
- * Partition: a grouping of atoms that are constrained to a portion of an FPGA
- * See vpr/src/base/partition.h for more detail
- *
- * Region: the x and y bounds of a rectangular region, optionally including a subtile value,
- * that atoms in a partition are constrained to
- * See vpr/src/base/region.h for more detail
- *
- * PartitionRegion: the union of regions that a partition can be placed in
- * See vpr/src/base/partition_region.h for more detail
- *
- *
+ * UserPlaceConstraints: Stores block and region constraints for packing and placement stages.
+ * See vpr/src/base/user_place_constraints.h for more detail.
  */
-
 class VprConstraints {
   public:
     /**
-     * @brief Store the id of a constrained atom with the id of the partition it belongs to
-     *
-     *   @param blk_id      The atom being stored
-     *   @param part_id     The partition the atom is being constrained to
+     * @brief Get a mutable reference to the UserPlaceConstraints instance.
      */
-    void add_constrained_atom(const AtomBlockId blk_id, const PartitionId part_id);
+    UserPlaceConstraints& mutable_place_constraints();
 
     /**
-     * @brief Return id of the partition the atom belongs to
-     *
-     * If an atom is not in a partition (unconstrained), PartitionId::INVALID() is returned.
-     *
-     *   @param blk_id      The atom for which the partition id is needed
+     * @brief Get a mutable reference to the UserRouteConstraints instance.
      */
-    PartitionId get_atom_partition(AtomBlockId blk_id);
+    UserRouteConstraints& mutable_route_constraints();
 
     /**
-     * @brief Store a partition
-     *
-     *   @param part     The partition being stored
+     * @brief Get a const reference to the UserPlaceConstraints instance.
      */
-    void add_partition(Partition part);
+    const UserPlaceConstraints& place_constraints() const;
 
     /**
-     * @brief Return a partition
-     *
-     *   @param part_id    The id of the partition that is wanted
+     * @brief Get a const reference to the UserRouteConstraints instance.
      */
-    Partition get_partition(PartitionId part_id);
-
-    /**
-     * @brief Return all the atoms that belong to a partition
-     *
-     *   @param part_id   The id of the partition whose atoms are needed
-     */
-    std::vector<AtomBlockId> get_part_atoms(PartitionId part_id);
-
-    /**
-     * @brief Returns the number of partitions in the object
-     */
-    int get_num_partitions();
-
-    /**
-     * @brief Returns the PartitionRegion belonging to the specified Partition
-     *
-     *   @param part_id The id of the partition whose PartitionRegion is needed
-     */
-    PartitionRegion get_partition_pr(PartitionId part_id);
+    const UserRouteConstraints& route_constraints() const;
 
   private:
-    /**
-     * Store all constrained atoms
-     */
-    std::unordered_map<AtomBlockId, PartitionId> constrained_atoms;
-
-    /**
-     * Store all partitions
-     */
-    vtr::vector<PartitionId, Partition> partitions;
+    UserRouteConstraints route_constraints_;
+    UserPlaceConstraints placement_constraints_;
 };
-
-///@brief used to print floorplanning constraints data from a VprConstraints object
-void print_constraints(FILE* fp, VprConstraints constraints);
 
 #endif /* VPR_CONSTRAINTS_H */

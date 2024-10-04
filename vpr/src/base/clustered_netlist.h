@@ -134,9 +134,6 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
     ///@brief Returns the type of CLB (Logic block, RAM, DSP, etc.)
     t_logical_block_type_ptr block_type(const ClusterBlockId id) const;
 
-    ///@brief Returns the blocks with the specific block types in the netlist
-    const std::vector<ClusterBlockId>& blocks_per_type(const t_logical_block_type& blk_type) const;
-
     ///@brief Returns the net of the block attached to the specific pin index
     ClusterNetId block_net(const ClusterBlockId blk_id, const int pin_index) const;
 
@@ -178,7 +175,7 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
 
   public: //Public Mutators
     /**
-     * @brief Create or return an existing block in the netlist
+     * @brief Create a new block in the netlist.
      *
      *   @param name   The unique name of the block
      *   @param pb     The physical representation of the block
@@ -187,7 +184,7 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
     ClusterBlockId create_block(const char* name, t_pb* pb, t_logical_block_type_ptr type);
 
     /**
-     * @brief Create or return an existing port in the netlist
+     * @brief Create a new port in the netlist.
      *
      *   @param blk_id   The block the port is associated with
      *   @param name     The name of the port (must match the name of a port in the block's model)
@@ -196,7 +193,8 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
      */
     ClusterPortId create_port(const ClusterBlockId blk_id, const std::string& name, BitIndex width, PortType type);
     /**
-     * @brief Create or return an existing pin in the netlist
+     * @brief Create a new pin in the netlist.
+     * @note If a pin with the specified ID already exists, the function will crash.
      *
      *   @param port_id    The port this pin is associated with
      *   @param port_bit   The bit index of the pin in the port
@@ -208,7 +206,7 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
     ClusterPinId create_pin(const ClusterPortId port_id, BitIndex port_bit, const ClusterNetId net_id, const PinType pin_type, int pin_index, bool is_const = false);
 
     /**
-     * @brief Create an empty, or return an existing net in the netlist
+     * @brief Create a net in the netlist
      *
      *   @param name  The unique name of the net
      */

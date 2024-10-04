@@ -1,14 +1,15 @@
-#include <cstring>
 #include <unordered_set>
 #include <regex>
 #include <algorithm>
 #include <sstream>
-#include <string.h>
+#include <cstring>
 
+#include "pack_types.h"
+#include "prepack.h"
+#include "vpr_context.h"
 #include "vtr_assert.h"
 #include "vtr_log.h"
 #include "vtr_memory.h"
-#include "vtr_random.h"
 
 #include "vpr_types.h"
 #include "vpr_error.h"
@@ -17,18 +18,17 @@
 #include "globals.h"
 #include "vpr_utils.h"
 #include "cluster_placement.h"
-#include "place_macro.h"
-#include "pack_types.h"
 #include "device_grid.h"
-#include "timing_fail_error.h"
-#include "re_cluster_util.h"
+#include "user_route_constraints.h"
+#include "placer_state.h"
+#include "grid_block.h"
 
 /* This module contains subroutines that are used in several unrelated parts *
  * of VPR.  They are VPR-specific utility routines.                          */
 
 /* This defines the maximum string length that could be parsed by functions  *
  * in vpr_utils.                                                             */
-#define MAX_STRING_LEN 128
+static constexpr size_t MAX_STRING_LEN = 512;
 
 /******************** File-scope variables declarations **********************/
 
@@ -106,7 +106,7 @@ const t_model_ports* find_model_port(const t_model* model, const std::string& na
     }
 
     if (required) {
-        VPR_FATAL_ERROR(VPR_ERROR_ARCH, "Failed to find port '%s; on architecture modedl '%s'\n", name.c_str(), model->name);
+        VPR_FATAL_ERROR(VPR_ERROR_ARCH, "Failed to find port '%s; on architecture model '%s'\n", name.c_str(), model->name);
     }
 
     return nullptr;
@@ -128,18 +128,19 @@ void sync_grid_to_blocks() {
     auto& device_ctx = g_vpr_ctx.device();
     auto& device_grid = device_ctx.grid;
 
-    int num_layers = device_ctx.grid.get_num_layers();
+    const int num_layers = device_ctx.grid.get_num_layers();
+
+    auto& grid_blocks = place_ctx.mutable_grid_blocks();
+    auto& block_locs = place_ctx.block_locs();
 
     /* Reset usage and allocate blocks list if needed */
-    place_ctx.grid_blocks = GridBlock(device_grid.width(),
-                                      device_grid.height(),
-                                      device_ctx.grid.get_num_layers());
-    auto& grid_blocks = place_ctx.grid_blocks;
+    grid_blocks = GridBlock(device_grid.width(), device_grid.height(), device_ctx.grid.get_num_layers());
+
 
     for (int layer_num = 0; layer_num < num_layers; layer_num++) {
         for (int x = 0; x < (int)device_grid.width(); ++x) {
             for (int y = 0; y < (int)device_grid.height(); ++y) {
-                const auto& type = device_ctx.grid.get_physical_type({x, y, layer_num});
+                const t_physical_tile_type_ptr type = device_ctx.grid.get_physical_type({x, y, layer_num});
                 grid_blocks.initialized_grid_block_at_location({x, y, layer_num}, type->capacity);
             }
         }
@@ -147,14 +148,14 @@ void sync_grid_to_blocks() {
 
     /* Go through each block */
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-        const auto& blk_loc = place_ctx.block_locs[blk_id].loc;
-        int blk_x = place_ctx.block_locs[blk_id].loc.x;
-        int blk_y = place_ctx.block_locs[blk_id].loc.y;
-        int blk_z = place_ctx.block_locs[blk_id].loc.sub_tile;
-        int blk_layer = place_ctx.block_locs[blk_id].loc.layer;
+    for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks()) {
+        const auto& blk_loc = block_locs[blk_id].loc;
+        int blk_x = block_locs[blk_id].loc.x;
+        int blk_y = block_locs[blk_id].loc.y;
+        int blk_z = block_locs[blk_id].loc.sub_tile;
+        int blk_layer = block_locs[blk_id].loc.layer;
 
-        auto type = physical_tile_type(blk_id);
+        auto type = physical_tile_type(blk_loc);
 
         /* Check range of block coords */
         if (blk_x < 0 || blk_y < 0
@@ -174,8 +175,7 @@ void sync_grid_to_blocks() {
         }
 
         /* Check already in use */
-        if ((EMPTY_BLOCK_ID != place_ctx.grid_blocks.block_at_location(blk_loc))
-            && (INVALID_BLOCK_ID != place_ctx.grid_blocks.block_at_location(blk_loc))) {
+        if (grid_blocks.block_at_location(blk_loc)) {
             VPR_FATAL_ERROR(VPR_ERROR_PLACE, "Location (%d, %d, %d, %d) is used more than once.\n",
                             blk_x, blk_y, blk_z, blk_layer);
         }
@@ -188,18 +188,9 @@ void sync_grid_to_blocks() {
         /* Set the block */
         for (int width = 0; width < type->width; ++width) {
             for (int height = 0; height < type->height; ++height) {
-                place_ctx.grid_blocks.set_block_at_location({blk_x + width,
-                                                             blk_y + height,
-                                                             blk_z,
-                                                             blk_layer},
-                                                            blk_id);
-                place_ctx.grid_blocks.set_usage({blk_x + width,
-                                                 blk_y + height,
-                                                 blk_layer},
-                                                place_ctx.grid_blocks.get_usage({blk_x + width,
-                                                                                 blk_y + height,
-                                                                                 blk_layer})
-                                                    + 1);
+                grid_blocks.set_block_at_location({blk_x + width, blk_y + height, blk_z, blk_layer}, blk_id);
+                grid_blocks.increment_usage({blk_x + width, blk_y + height, blk_layer});
+
                 VTR_ASSERT(device_ctx.grid.get_width_offset({blk_x + width, blk_y + height, blk_layer}) == width);
                 VTR_ASSERT(device_ctx.grid.get_height_offset({blk_x + width, blk_y + height, blk_layer}) == height);
             }
@@ -438,8 +429,8 @@ static AtomPinId find_atom_pin_for_pb_route_id(ClusterBlockId clb, int pb_route_
     return AtomPinId::INVALID();
 }
 
-/* Return the net pin which drive the CLB input connected to sink_pb_pin_id, or nullptr if none (i.e. driven internally)
- *   clb: Block in which the the sink pin is located on
+/* Return the net pin which drives the CLB input connected to sink_pb_pin_id, or nullptr if none (i.e. driven internally)
+ *   clb: Block on which the sink pin is located
  *   sink_pb_pin_id: The physical pin index of the sink pin on the block
  *
  *  Returns a tuple containing
@@ -527,40 +518,41 @@ bool is_empty_type(t_logical_block_type_ptr type) {
     return type == device_ctx.EMPTY_LOGICAL_BLOCK_TYPE;
 }
 
-t_physical_tile_type_ptr physical_tile_type(ClusterBlockId blk) {
-    auto& place_ctx = g_vpr_ctx.placement();
+t_physical_tile_type_ptr physical_tile_type(t_pl_loc loc) {
     auto& device_ctx = g_vpr_ctx.device();
-
-    auto block_loc = place_ctx.block_locs[blk];
-    auto loc = block_loc.loc;
 
     return device_ctx.grid.get_physical_type({loc.x, loc.y, loc.layer});
 }
 
 t_physical_tile_type_ptr physical_tile_type(AtomBlockId atom_blk) {
     auto& atom_look_up = g_vpr_ctx.atom().lookup;
+    auto& block_locs = g_vpr_ctx.placement().block_locs();
 
-    auto cluster_blk = atom_look_up.atom_clb(atom_blk);
+    ClusterBlockId cluster_blk = atom_look_up.atom_clb(atom_blk);
     VTR_ASSERT(cluster_blk != ClusterBlockId::INVALID());
 
-    return physical_tile_type(cluster_blk);
+    return physical_tile_type(block_locs[cluster_blk].loc);
 }
 
 t_physical_tile_type_ptr physical_tile_type(ParentBlockId blk_id, bool is_flat) {
+    auto& block_locs = g_vpr_ctx.placement().block_locs();
+
     if (is_flat) {
         return physical_tile_type(convert_to_atom_block_id(blk_id));
     } else {
-        return physical_tile_type(convert_to_cluster_block_id(blk_id));
+        ClusterBlockId cluster_blk_id = convert_to_cluster_block_id(blk_id);
+        t_pl_loc block_loc = block_locs[cluster_blk_id].loc;
+        return physical_tile_type(block_loc);
     }
 }
 
-int get_sub_tile_index(ClusterBlockId blk) {
-    auto& place_ctx = g_vpr_ctx.placement();
+int get_sub_tile_index(ClusterBlockId blk,
+                       const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     auto logical_block = cluster_ctx.clb_nlist.block_type(blk);
-    auto block_loc = place_ctx.block_locs[blk];
+    auto block_loc = block_locs[blk];
     auto loc = block_loc.loc;
     int sub_tile_coordinate = loc.sub_tile;
 
@@ -578,6 +570,11 @@ int get_sub_tile_index(ClusterBlockId blk) {
     }
 
     VPR_THROW(VPR_ERROR_PLACE, "The Block Id %d has been placed in an impossible sub tile location.\n", blk);
+}
+
+int get_sub_tile_index(ClusterBlockId blk) {
+    auto& block_locs = g_vpr_ctx.placement().block_locs();
+    return get_sub_tile_index(blk, block_locs);
 }
 
 /* Each node in the pb_graph for a top-level pb_type can be uniquely identified
@@ -611,16 +608,17 @@ int get_unique_pb_graph_node_id(const t_pb_graph_node* pb_graph_node) {
 
 t_class_range get_class_range_for_block(const ClusterBlockId blk_id) {
     /* Assumes that the placement has been done so each block has a set of pins allocated to it */
-    auto& place_ctx = g_vpr_ctx.placement();
+    auto& block_locs = g_vpr_ctx.placement().block_locs();
 
-    auto type = physical_tile_type(blk_id);
+    t_pl_loc block_loc = block_locs[blk_id].loc;
+    auto type = physical_tile_type(block_loc);
     auto sub_tile = type->sub_tiles[get_sub_tile_index(blk_id)];
     int sub_tile_capacity = sub_tile.capacity.total();
     auto class_range = sub_tile.class_range;
     int class_range_total = class_range.high - class_range.low + 1;
 
     VTR_ASSERT((class_range_total) % sub_tile_capacity == 0);
-    int rel_capacity = place_ctx.block_locs[blk_id].loc.sub_tile - sub_tile.capacity.low;
+    int rel_capacity = block_locs[blk_id].loc.sub_tile - sub_tile.capacity.low;
 
     t_class_range abs_class_range;
     abs_class_range.low = rel_capacity * (class_range_total / sub_tile_capacity) + class_range.low;
@@ -632,13 +630,9 @@ t_class_range get_class_range_for_block(const ClusterBlockId blk_id) {
 t_class_range get_class_range_for_block(const AtomBlockId atom_blk) {
     auto& atom_look_up = g_vpr_ctx.atom().lookup;
 
-    auto cluster_blk = atom_look_up.atom_clb(atom_blk);
+    ClusterBlockId cluster_blk = atom_look_up.atom_clb(atom_blk);
 
-    t_physical_tile_type_ptr physical_tile;
-    const t_sub_tile* sub_tile;
-    int sub_tile_cap;
-    t_logical_block_type_ptr logical_block;
-    std::tie(physical_tile, sub_tile, sub_tile_cap, logical_block) = get_cluster_blk_physical_spec(cluster_blk);
+    auto [physical_tile, sub_tile, sub_tile_cap, logical_block] = get_cluster_blk_physical_spec(cluster_blk);
     const t_pb_graph_node* pb_graph_node = atom_look_up.atom_pb_graph_node(atom_blk);
     VTR_ASSERT(pb_graph_node != nullptr);
     return get_pb_graph_node_class_physical_range(physical_tile,
@@ -656,23 +650,24 @@ t_class_range get_class_range_for_block(const ParentBlockId blk_id, bool is_flat
     }
 }
 
-void get_pin_range_for_block(const ClusterBlockId blk_id,
-                             int* pin_low,
-                             int* pin_high) {
+std::pair<int, int> get_pin_range_for_block(const ClusterBlockId blk_id) {
     /* Assumes that the placement has been done so each block has a set of pins allocated to it */
-    auto& place_ctx = g_vpr_ctx.placement();
+    auto& block_locs = g_vpr_ctx.placement().block_locs();
 
-    auto type = physical_tile_type(blk_id);
+    t_pl_loc block_loc = block_locs[blk_id].loc;
+    auto type = physical_tile_type(block_loc);
     auto sub_tile = type->sub_tiles[get_sub_tile_index(blk_id)];
     int sub_tile_capacity = sub_tile.capacity.total();
 
     VTR_ASSERT(sub_tile.num_phy_pins % sub_tile_capacity == 0);
-    int rel_capacity = place_ctx.block_locs[blk_id].loc.sub_tile - sub_tile.capacity.low;
+    int rel_capacity = block_loc.sub_tile - sub_tile.capacity.low;
     int rel_pin_low = rel_capacity * (sub_tile.num_phy_pins / sub_tile_capacity);
     int rel_pin_high = (rel_capacity + 1) * (sub_tile.num_phy_pins / sub_tile_capacity) - 1;
 
-    *pin_low = sub_tile.sub_tile_to_tile_pin_indices[rel_pin_low];
-    *pin_high = sub_tile.sub_tile_to_tile_pin_indices[rel_pin_high];
+    int pin_low = sub_tile.sub_tile_to_tile_pin_indices[rel_pin_low];
+    int pin_high = sub_tile.sub_tile_to_tile_pin_indices[rel_pin_high];
+
+    return {pin_low, pin_high};
 }
 
 t_physical_tile_type_ptr find_tile_type_by_name(const std::string& name, const std::vector<t_physical_tile_type>& types) {
@@ -697,7 +692,7 @@ t_block_loc get_block_loc(const ParentBlockId& block_id, bool is_flat) {
     }
 
     VTR_ASSERT(cluster_block_id != ClusterBlockId::INVALID());
-    auto blk_loc = place_ctx.block_locs[cluster_block_id];
+    auto blk_loc = place_ctx.block_locs()[cluster_block_id];
 
     return blk_loc;
 }
@@ -707,7 +702,10 @@ int get_block_num_class(const ParentBlockId& block_id, bool is_flat) {
     return get_tile_class_max_ptc(type, is_flat);
 }
 
-int get_block_pin_class_num(const ParentBlockId& block_id, const ParentPinId& pin_id, bool is_flat) {
+int get_block_pin_class_num(const ParentBlockId block_id, const ParentPinId pin_id, bool is_flat) {
+    const auto& blk_loc_registry = g_vpr_ctx.placement().blk_loc_registry();
+    auto& block_locs = blk_loc_registry.block_locs();
+
     int class_num;
 
     if (is_flat) {
@@ -715,9 +713,10 @@ int get_block_pin_class_num(const ParentBlockId& block_id, const ParentPinId& pi
         class_num = get_atom_pin_class_num(atom_pin_id);
     } else {
         ClusterBlockId cluster_block_id = convert_to_cluster_block_id(block_id);
+        t_pl_loc block_loc = block_locs[cluster_block_id].loc;
         ClusterPinId cluster_pin_id = convert_to_cluster_pin_id(pin_id);
-        auto type = physical_tile_type(cluster_block_id);
-        int phys_pin = tile_pin_index(cluster_pin_id);
+        auto type = physical_tile_type(block_loc);
+        int phys_pin = blk_loc_registry.tile_pin_index(cluster_pin_id);
         class_num = get_class_num_from_pin_physical_num(type, phys_pin);
     }
 
@@ -1127,14 +1126,11 @@ const t_pb_graph_pin* find_pb_graph_pin(const AtomNetlist& netlist, const AtomLo
     return get_pb_graph_node_pin_from_model_port_pin(model_port, ipin, pb_gnode);
 }
 
-t_pb_graph_pin* get_pb_graph_node_pin_from_block_pin(ClusterBlockId iblock, int ipin) {
+t_pb_graph_pin* get_pb_graph_node_pin_from_pb_graph_node(t_pb_graph_node* pb_graph_node,
+                                                         int ipin) {
     int i, count;
-    const t_pb_type* pb_type;
-    t_pb_graph_node* pb_graph_node;
-    auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    pb_graph_node = cluster_ctx.clb_nlist.block_pb(iblock)->pb_graph_node;
-    pb_type = pb_graph_node->pb_type;
+    const t_pb_type* pb_type = pb_graph_node->pb_type;
 
     /* If this is post-placed, then the ipin may have been shuffled up by the z * num_pins,
      * bring it back down to 0..num_pins-1 range for easier analysis */
@@ -1170,6 +1166,13 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_block_pin(ClusterBlockId iblock, int 
     }
     VTR_ASSERT(0);
     return nullptr;
+}
+
+t_pb_graph_pin* get_pb_graph_node_pin_from_block_pin(ClusterBlockId iblock, int ipin) {
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+
+    t_pb_graph_node* pb_graph_node = cluster_ctx.clb_nlist.block_pb(iblock)->pb_graph_node;
+    return get_pb_graph_node_pin_from_pb_graph_node(pb_graph_node, ipin);
 }
 
 const t_port* find_pb_graph_port(const t_pb_graph_node* pb_gnode, const std::string& port_name) {
@@ -1340,7 +1343,7 @@ static void load_pin_id_to_pb_mapping_rec(t_pb* cur_pb, t_pb** pin_id_to_pb_mapp
  */
 void free_pin_id_to_pb_mapping(vtr::vector<ClusterBlockId, t_pb**>& pin_id_to_pb_mapping) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+    for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks()) {
         delete[] pin_id_to_pb_mapping[blk_id];
     }
     pin_id_to_pb_mapping.clear();
@@ -1348,8 +1351,8 @@ void free_pin_id_to_pb_mapping(vtr::vector<ClusterBlockId, t_pb**>& pin_id_to_pb
 
 std::tuple<t_physical_tile_type_ptr, const t_sub_tile*, int, t_logical_block_type_ptr> get_cluster_blk_physical_spec(ClusterBlockId cluster_blk_id) {
     auto& grid = g_vpr_ctx.device().grid;
-    auto& place_ctx = g_vpr_ctx.placement();
-    auto& loc = place_ctx.block_locs[cluster_blk_id].loc;
+    auto& block_locs = g_vpr_ctx.placement().block_locs();
+    auto& loc = block_locs[cluster_blk_id].loc;
     int cap = loc.sub_tile;
     const auto& physical_type = grid.get_physical_type({loc.x, loc.y, loc.layer});
     VTR_ASSERT(grid.get_width_offset({loc.x, loc.y, loc.layer}) == 0 && grid.get_height_offset(t_physical_tile_loc(loc.x, loc.y, loc.layer)) == 0);
@@ -1366,18 +1369,14 @@ std::tuple<t_physical_tile_type_ptr, const t_sub_tile*, int, t_logical_block_typ
 
 std::vector<int> get_cluster_internal_class_pairs(const AtomLookup& atom_lookup,
                                                   ClusterBlockId cluster_block_id) {
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
     std::vector<int> class_num_vec;
 
-    t_physical_tile_type_ptr physical_tile;
-    const t_sub_tile* sub_tile;
-    int rel_cap;
-    t_logical_block_type_ptr logical_block;
-
-    std::tie(physical_tile, sub_tile, rel_cap, logical_block) = get_cluster_blk_physical_spec(cluster_block_id);
+    auto [physical_tile, sub_tile, rel_cap, logical_block] = get_cluster_blk_physical_spec(cluster_block_id);
     class_num_vec.reserve(physical_tile->primitive_class_inf.size());
 
-    const auto& cluster_atoms = *cluster_to_atoms(cluster_block_id);
-    for (auto atom_blk_id : cluster_atoms) {
+    const auto& cluster_atoms = cluster_ctx.atoms_lookup[cluster_block_id];
+    for (AtomBlockId atom_blk_id : cluster_atoms) {
         auto atom_pb_graph_node = atom_lookup.atom_pb_graph_node(atom_blk_id);
         auto class_range = get_pb_graph_node_class_physical_range(physical_tile,
                                                                   sub_tile,
@@ -1397,12 +1396,7 @@ std::vector<int> get_cluster_internal_pins(ClusterBlockId cluster_blk_id) {
 
     auto& cluster_net_list = g_vpr_ctx.clustering().clb_nlist;
 
-    t_physical_tile_type_ptr physical_tile;
-    const t_sub_tile* sub_tile;
-    int rel_cap;
-    t_logical_block_type_ptr logical_block;
-
-    std::tie(physical_tile, sub_tile, rel_cap, logical_block) = get_cluster_blk_physical_spec(cluster_blk_id);
+    auto [physical_tile, sub_tile, rel_cap, logical_block] = get_cluster_blk_physical_spec(cluster_blk_id);
     internal_pins.reserve(logical_block->pin_logical_num_to_pb_pin_mapping.size());
 
     std::list<const t_pb*> internal_pbs;
@@ -1545,7 +1539,7 @@ void free_pb(t_pb* pb) {
     free_pb_stats(pb);
 }
 
-void revalid_molecules(const t_pb* pb) {
+void revalid_molecules(const t_pb* pb, const Prepacker& prepacker) {
     const t_pb_type* pb_type = pb->pb_graph_node->pb_type;
 
     if (pb_type->blif_model == nullptr) {
@@ -1553,7 +1547,7 @@ void revalid_molecules(const t_pb* pb) {
         for (int i = 0; i < pb_type->modes[mode].num_pb_type_children && pb->child_pbs != nullptr; i++) {
             for (int j = 0; j < pb_type->modes[mode].pb_type_children[i].num_pb && pb->child_pbs[i] != nullptr; j++) {
                 if (pb->child_pbs[i][j].name != nullptr || pb->child_pbs[i][j].child_pbs != nullptr) {
-                    revalid_molecules(&pb->child_pbs[i][j]);
+                    revalid_molecules(&pb->child_pbs[i][j], prepacker);
                 }
             }
         }
@@ -1569,30 +1563,27 @@ void revalid_molecules(const t_pb* pb) {
             atom_ctx.lookup.set_atom_clb(blk_id, ClusterBlockId::INVALID());
             atom_ctx.lookup.set_atom_pb(blk_id, nullptr);
 
-            auto rng = atom_ctx.atom_molecules.equal_range(blk_id);
-            for (const auto& kv : vtr::make_range(rng.first, rng.second)) {
-                t_pack_molecule* cur_molecule = kv.second;
-                if (cur_molecule->valid == false) {
-                    int i;
-                    for (i = 0; i < get_array_size_of_molecule(cur_molecule); i++) {
-                        if (cur_molecule->atom_block_ids[i]) {
-                            if (atom_ctx.lookup.atom_clb(cur_molecule->atom_block_ids[i]) != ClusterBlockId::INVALID()) {
-                                break;
-                            }
+            t_pack_molecule* cur_molecule = prepacker.get_atom_molecule(blk_id);
+            if (cur_molecule->valid == false) {
+                int i;
+                for (i = 0; i < get_array_size_of_molecule(cur_molecule); i++) {
+                    if (cur_molecule->atom_block_ids[i]) {
+                        if (atom_ctx.lookup.atom_clb(cur_molecule->atom_block_ids[i]) != ClusterBlockId::INVALID()) {
+                            break;
                         }
                     }
-                    /* All atom blocks are open for this molecule, place back in queue */
-                    if (i == get_array_size_of_molecule(cur_molecule)) {
-                        cur_molecule->valid = true;
-                        // when invalidating a molecule check if it's a chain molecule
-                        // that is part of a long chain. If so, check if this molecule
-                        // have modified the chain_id value based on the stale packing
-                        // then reset the chain id and the first packed molecule pointer
-                        // this is packing is being reset
-                        if (cur_molecule->is_chain() && cur_molecule->chain_info->is_long_chain && cur_molecule->chain_info->first_packed_molecule == cur_molecule) {
-                            cur_molecule->chain_info->first_packed_molecule = nullptr;
-                            cur_molecule->chain_info->chain_id = -1;
-                        }
+                }
+                /* All atom blocks are open for this molecule, place back in queue */
+                if (i == get_array_size_of_molecule(cur_molecule)) {
+                    cur_molecule->valid = true;
+                    // when invalidating a molecule check if it's a chain molecule
+                    // that is part of a long chain. If so, check if this molecule
+                    // have modified the chain_id value based on the stale packing
+                    // then reset the chain id and the first packed molecule pointer
+                    // this is packing is being reset
+                    if (cur_molecule->is_chain() && cur_molecule->chain_info->is_long_chain && cur_molecule->chain_info->first_packed_molecule == cur_molecule) {
+                        cur_molecule->chain_info->first_packed_molecule = nullptr;
+                        cur_molecule->chain_info->chain_id = -1;
                     }
                 }
             }
@@ -2066,83 +2057,6 @@ void print_switch_usage() {
     delete[] inward_switch_inf;
 }
 
-/*
- * Motivation:
- *     to see what portion of long wires are utilized
- *     potentially a good measure for router look ahead quality
- */
-/*
- * void print_usage_by_wire_length() {
- * map<int, int> used_wire_count;
- * map<int, int> total_wire_count;
- * auto& device_ctx = g_vpr_ctx.device();
- * for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes()){
- * if (rr_graph.node_type(rr_id) == CHANX || rr_graph.node_type(rr_id) == CHANY) {
- * //int length = abs(rr_graph.node_xhigh(rr_id) + rr_graph.node_yhigh(rr_id)
- * //             - rr_graph.node_xlow(rr_id) - rr_graph.node_ylow(rr_id));
- * int length = device_ctx.rr_nodes[(size_t)rr_id].get_length();
- * if (rr_node_route_inf[(size_t)rr_id].occ() > 0) {
- * if (used_wire_count.count(length) == 0)
- * used_wire_count[length] = 0;
- * used_wire_count[length] ++;
- * }
- * if (total_wire_count.count(length) == 0)
- * total_wire_count[length] = 0;
- * total_wire_count[length] ++;
- * }
- * }
- * int total_wires = 0;
- * map<int, int>::iterator itr;
- * for (itr = total_wire_count.begin(); itr != total_wire_count.end(); itr++) {
- * total_wires += itr->second;
- * }
- * VTR_LOG("\n\t-=-=-=-=-=-=-=-=-=-=- wire usage stats -=-=-=-=-=-=-=-=-=-=-\n");
- * for (itr = total_wire_count.begin(); itr != total_wire_count.end(); itr++)
- * VTR_LOG("\ttotal number: wire of length %d, ratio to all length of wires: %g\n", itr->first, ((float)itr->second) / total_wires);
- * for (itr = used_wire_count.begin(); itr != used_wire_count.end(); itr++) {
- * float ratio_to_same_type_total = ((float)itr->second) / total_wire_count[itr->first];
- * float ratio_to_all_type_total = ((float)itr->second) / total_wires;
- * VTR_LOG("\t\tratio to same type of wire: %g\tratio to all types of wire: %g\n", ratio_to_same_type_total, ratio_to_all_type_total);
- * }
- * VTR_LOG("\n\t-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n\n");
- * used_wire_count.clear();
- * total_wire_count.clear();
- * }
- */
-
-void place_sync_external_block_connections(ClusterBlockId iblk) {
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& clb_nlist = cluster_ctx.clb_nlist;
-    auto& place_ctx = g_vpr_ctx.mutable_placement();
-
-    auto physical_tile = physical_tile_type(iblk);
-    auto logical_block = clb_nlist.block_type(iblk);
-
-    int sub_tile_index = get_sub_tile_index(iblk);
-    auto sub_tile = physical_tile->sub_tiles[sub_tile_index];
-
-    VTR_ASSERT(sub_tile.num_phy_pins % sub_tile.capacity.total() == 0);
-
-    int max_num_block_pins = sub_tile.num_phy_pins / sub_tile.capacity.total();
-    /* Logical location and physical location is offset by z * max_num_block_pins */
-
-    int rel_capacity = place_ctx.block_locs[iblk].loc.sub_tile - sub_tile.capacity.low;
-
-    for (auto pin : clb_nlist.block_pins(iblk)) {
-        int logical_pin_index = clb_nlist.pin_logical_index(pin);
-        int sub_tile_pin_index = get_sub_tile_physical_pin(sub_tile_index, physical_tile, logical_block, logical_pin_index);
-
-        int new_physical_pin_index = sub_tile.sub_tile_to_tile_pin_indices[sub_tile_pin_index + rel_capacity * max_num_block_pins];
-
-        auto result = place_ctx.physical_pins.find(pin);
-        if (result != place_ctx.physical_pins.end()) {
-            place_ctx.physical_pins[pin] = new_physical_pin_index;
-        } else {
-            place_ctx.physical_pins.insert(pin, new_physical_pin_index);
-        }
-    }
-}
-
 int max_pins_per_grid_tile() {
     auto& device_ctx = g_vpr_ctx.device();
     int max_pins = 0;
@@ -2154,35 +2068,6 @@ int max_pins_per_grid_tile() {
     return max_pins;
 }
 
-t_physical_tile_type_ptr get_physical_tile_type(const ClusterBlockId blk) {
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_ctx = g_vpr_ctx.placement();
-    if (place_ctx.block_locs.empty()) { //No placement, pick best match
-        return pick_physical_type(cluster_ctx.clb_nlist.block_type(blk));
-    } else { //Have placement, select physical tile implementing blk
-        auto& device_ctx = g_vpr_ctx.device();
-
-        t_pl_loc loc = place_ctx.block_locs[blk].loc;
-
-        return device_ctx.grid.get_physical_type({loc.x, loc.y, loc.layer});
-    }
-}
-
-int net_pin_to_tile_pin_index(const ClusterNetId net_id, int net_pin_index) {
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-
-    // Get the logical pin index of pin within it's logical block type
-    auto pin_id = cluster_ctx.clb_nlist.net_pin(net_id, net_pin_index);
-
-    return tile_pin_index(pin_id);
-}
-
-int tile_pin_index(const ClusterPinId pin) {
-    auto& place_ctx = g_vpr_ctx.placement();
-
-    return place_ctx.physical_pins[pin];
-}
-
 int get_atom_pin_class_num(const AtomPinId atom_pin_id) {
     auto& atom_look_up = g_vpr_ctx.atom().lookup;
     auto& atom_net_list = g_vpr_ctx.atom().nlist;
@@ -2190,11 +2075,7 @@ int get_atom_pin_class_num(const AtomPinId atom_pin_id) {
     auto atom_blk_id = atom_net_list.pin_block(atom_pin_id);
     auto cluster_block_id = atom_look_up.atom_clb(atom_blk_id);
 
-    t_physical_tile_type_ptr physical_type;
-    const t_sub_tile* sub_tile;
-    int sub_tile_rel_cap;
-    t_logical_block_type_ptr logical_block;
-    std::tie(physical_type, sub_tile, sub_tile_rel_cap, logical_block) = get_cluster_blk_physical_spec(cluster_block_id);
+    auto [physical_type, sub_tile, sub_tile_rel_cap, logical_block] = get_cluster_blk_physical_spec(cluster_block_id);
     auto pb_graph_pin = atom_look_up.atom_pin_pb_graph_pin(atom_pin_id);
     int pin_physical_num = -1;
     pin_physical_num = get_pb_pin_physical_num(physical_type, sub_tile, logical_block, sub_tile_rel_cap, pb_graph_pin);
@@ -2216,7 +2097,7 @@ t_physical_tile_port find_tile_port_by_name(t_physical_tile_type_ptr type, const
 }
 
 void pretty_print_uint(const char* prefix, size_t value, int num_digits, int scientific_precision) {
-    //Print as integer if it will fit in the width, other wise scientific
+    //Print as integer if it will fit in the width, otherwise scientific
     if (value <= std::pow(10, num_digits) - 1) {
         //Direct
         VTR_LOG("%s%*zu", prefix, num_digits, value);
@@ -2275,17 +2156,21 @@ std::vector<const t_pb_graph_node*> get_all_pb_graph_node_primitives(const t_pb_
     return primitives;
 }
 
-bool is_inter_cluster_node(t_physical_tile_type_ptr physical_tile,
-                           t_rr_type node_type,
-                           int node_ptc) {
+bool is_inter_cluster_node(const RRGraphView& rr_graph_view,
+                           RRNodeId node_id) {
+    auto node_type = rr_graph_view.node_type(node_id);
     if (node_type == CHANX || node_type == CHANY) {
         return true;
     } else {
-        VTR_ASSERT(node_type == IPIN || node_type == SINK || node_type == OPIN || node_type == SOURCE);
+        int x_low = rr_graph_view.node_xlow(node_id);
+        int y_low = rr_graph_view.node_ylow(node_id);
+        int layer = rr_graph_view.node_layer(node_id);
+        int node_ptc = rr_graph_view.node_ptc_num(node_id);
+        const t_physical_tile_type_ptr physical_tile = g_vpr_ctx.device().grid.get_physical_type({x_low, y_low, layer});
         if (node_type == IPIN || node_type == OPIN) {
             return is_pin_on_tile(physical_tile, node_ptc);
         } else {
-            VTR_ASSERT(node_type == SINK || node_type == SOURCE);
+            VTR_ASSERT_DEBUG(node_type == SINK || node_type == SOURCE);
             return is_class_on_tile(physical_tile, node_ptc);
         }
     }
@@ -2321,7 +2206,7 @@ RRNodeId get_pin_rr_node_id(const RRSpatialLookup& rr_spatial_lookup,
     std::vector<int> x_offset;
     std::vector<int> y_offset;
     std::vector<e_side> pin_sides;
-    std::tie(x_offset, y_offset, pin_sides) = get_pin_coordinates(physical_tile, pin_physical_num, std::vector<e_side>(SIDES.begin(), SIDES.end()));
+    std::tie(x_offset, y_offset, pin_sides) = get_pin_coordinates(physical_tile, pin_physical_num, std::vector<e_side>(TOTAL_2D_SIDES.begin(), TOTAL_2D_SIDES.end()));
     VTR_ASSERT(!x_offset.empty());
     RRNodeId node_id = RRNodeId::INVALID();
     for (int coord_idx = 0; coord_idx < (int)pin_sides.size(); coord_idx++) {
@@ -2391,7 +2276,7 @@ std::vector<int> get_cluster_netlist_intra_tile_classes_at_loc(int layer,
 
     const auto& place_ctx = g_vpr_ctx.placement();
     const auto& atom_lookup = g_vpr_ctx.atom().lookup;
-    const auto& grid_block = place_ctx.grid_blocks;
+    const auto& grid_block = place_ctx.grid_blocks();
 
     class_num_vec.reserve(physical_type->primitive_class_inf.size());
 
@@ -2401,7 +2286,7 @@ std::vector<int> get_cluster_netlist_intra_tile_classes_at_loc(int layer,
             continue;
         }
         auto cluster_blk_id = grid_block.block_at_location({i, j, abs_cap, layer});
-        VTR_ASSERT(cluster_blk_id != ClusterBlockId::INVALID() || cluster_blk_id != EMPTY_BLOCK_ID);
+        VTR_ASSERT(cluster_blk_id != ClusterBlockId::INVALID());
 
         auto primitive_classes = get_cluster_internal_class_pairs(atom_lookup,
                                                                   cluster_blk_id);
@@ -2421,8 +2306,8 @@ std::vector<int> get_cluster_netlist_intra_tile_pins_at_loc(const int layer,
                                                             const vtr::vector<ClusterBlockId, t_cluster_pin_chain>& pin_chains,
                                                             const vtr::vector<ClusterBlockId, std::unordered_set<int>>& pin_chains_num,
                                                             t_physical_tile_type_ptr physical_type) {
-    auto& place_ctx = g_vpr_ctx.placement();
-    auto grid_block = place_ctx.grid_blocks;
+    const auto& place_ctx = g_vpr_ctx.placement();
+    const auto& grid_block = place_ctx.grid_blocks();
 
     std::vector<int> pin_num_vec;
     pin_num_vec.reserve(get_tile_num_internal_pin(physical_type));
@@ -2434,7 +2319,7 @@ std::vector<int> get_cluster_netlist_intra_tile_pins_at_loc(const int layer,
             continue;
         }
         auto cluster_blk_id = grid_block.block_at_location({i, j, abs_cap, layer});
-        VTR_ASSERT(cluster_blk_id != ClusterBlockId::INVALID() && cluster_blk_id != EMPTY_BLOCK_ID);
+        VTR_ASSERT(cluster_blk_id != ClusterBlockId::INVALID());
 
         cluster_internal_pins = get_cluster_internal_pins(cluster_blk_id);
         const auto& cluster_pin_chains = pin_chains_num[cluster_blk_id];
@@ -2504,6 +2389,32 @@ void add_pb_child_to_list(std::list<const t_pb*>& pb_list, const t_pb* parent_pb
             // any atom block
             if (child_pb->parent_pb != nullptr) {
                 pb_list.push_back(child_pb);
+            }
+        }
+    }
+}
+
+void apply_route_constraints(const UserRouteConstraints& route_constraints) {
+    ClusteringContext& mutable_cluster_ctx = g_vpr_ctx.mutable_clustering();
+
+    // Iterate through all the nets 
+    for (auto net_id : mutable_cluster_ctx.clb_nlist.nets()) {
+        // Get the name of the current net
+        std::string net_name = mutable_cluster_ctx.clb_nlist.net_name(net_id);
+
+        // Check if a routing constraint is specified for the current net
+        if (route_constraints.has_routing_constraint(net_name)) {
+            // Mark the net as 'global' if there is a routing constraint for this net
+            // as the routing constraints are used to set the net as global
+            // and specify the routing model for it
+            mutable_cluster_ctx.clb_nlist.set_net_is_global(net_id, true);
+
+            // Mark the net as 'ignored' if the route model is 'ideal'
+            if (route_constraints.get_route_model_by_net_name(net_name) == e_clock_modeling::IDEAL_CLOCK) {
+                mutable_cluster_ctx.clb_nlist.set_net_is_ignored(net_id, true);
+            } else {
+                // Set the 'ignored' flag to false otherwise
+                mutable_cluster_ctx.clb_nlist.set_net_is_ignored(net_id, false);
             }
         }
     }

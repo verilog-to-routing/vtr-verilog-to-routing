@@ -103,9 +103,9 @@ static void do_one_route(const Netlist<>& net_list,
                                                   segment_inf,
                                                   is_flat);
 
-    ConnectionRouter<BinaryHeap> router(
-            device_ctx.grid,
-            *router_lookahead,
+    ConnectionRouter<FourAryHeap> router(
+        device_ctx.grid,
+        *router_lookahead,
             device_ctx.rr_graph.rr_nodes(),
             &device_ctx.rr_graph,
             device_ctx.rr_rc_data,
@@ -208,8 +208,7 @@ static void profile_source(const Netlist<>& net_list,
                     successfully_routed = profiler.calculate_delay(RRNodeId(source_rr_node),
                                                                    RRNodeId(sink_rr_node),
                                                                    router_opts,
-                                                                   &delays[sink_x][sink_y],
-                                                                   layer_num);
+                                                                   &delays[sink_x][sink_y]);
                 }
 
                 if (successfully_routed) {

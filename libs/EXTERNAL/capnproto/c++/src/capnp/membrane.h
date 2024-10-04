@@ -48,6 +48,9 @@
 // Mark Miller on membranes: http://www.eros-os.org/pipermail/e-lang/2003-January/008434.html
 
 #include "capability.h"
+#include <kj/map.h>
+
+CAPNP_BEGIN_HEADER
 
 namespace capnp {
 
@@ -114,7 +117,7 @@ public:
   // invoked for new calls, but the `target` passed to them will be a capability that always
   // rethrows the revocation exception.
 
-  virtual bool shouldResolveBeforeRedirecting() { return true; }
+  virtual bool shouldResolveBeforeRedirecting() { return false; }
   // If this returns true, then when inboundCall() or outboundCall() returns a redirect, but the
   // original target is a promise, then the membrane will discard the redirect and instead wait
   // for the promise to become more resolved and try again.
@@ -126,11 +129,19 @@ public:
   // capability without applying the policy at all.
   //
   // However, some membranes don't need this behavior, and may be negatively impacted by the
-  // unnecessary waiting. Such membranes should override this to return false.
+  // unnecessary waiting. Such membranes can keep this disabled.
   //
   // TODO(cleanup): Consider a backwards-incompatible revamp of the MembranePolicy API with a
   //   better design here. Maybe we should more carefully distinguish between MembranePolicies
   //   which are reversible vs. those which are one-way?
+
+  virtual bool allowFdPassthrough() { return false; }
+  // Should file descriptors be allowed to pass through this membrane?
+  //
+  // A MembranePolicy obviously cannot mediate nor revoke access to a file descriptor once it has
+  // passed through, so this must be used with caution. If you only want to allow file descriptors
+  // on certain methods, you could do so by implementing inboundCall()/outboundCall() to
+  // special-case those methods.
 
   // ---------------------------------------------------------------------------
   // Control over importing and exporting.
@@ -181,6 +192,15 @@ public:
   // capability passed into the membrane and then back out.
   //
   // The default implementation simply returns `external`.
+
+private:
+  kj::HashMap<ClientHook*, ClientHook*> wrappers;
+  kj::HashMap<ClientHook*, ClientHook*> reverseWrappers;
+  // Tracks capabilities that already have wrappers instantiated. The maps map from pointer to
+  // inner capability to pointer to wrapper. When a wrapper is destroyed it removes itself from
+  // the map.
+
+  friend class MembraneHook;
 };
 
 Capability::Client membrane(Capability::Client inner, kj::Own<MembranePolicy> policy);
@@ -275,3 +295,5 @@ Orphan<typename kj::Decay<Reader>::Reads> copyOutOfMembrane(
 }
 
 } // namespace capnp
+
+CAPNP_END_HEADER

@@ -154,7 +154,7 @@ class NocTrafficFlows {
      * @return int An integer that represents the number of unique traffic
      * flows within the NoC. 
      */
-    int get_number_of_traffic_flows(void) const;
+    int get_number_of_traffic_flows() const;
 
     /**
      * @brief Given a unique id of a traffic flow (t_noc_traffic_flow)
@@ -192,7 +192,7 @@ class NocTrafficFlows {
      * @return int The total number of unique routers used in
      * the traffic flows provided by the user.
      */
-    int get_number_of_routers_used_in_traffic_flows(void);
+    int get_number_of_routers_used_in_traffic_flows();
 
     /**
      * @brief Gets the routed path of traffic flow. This cannot be
@@ -229,13 +229,19 @@ class NocTrafficFlows {
      * @return a vector ([0..num_logical_router-1]) where each entry gives the clusterBlockId
      * of a logical NoC router. Used for fast lookups in the placer.
      */
-    const std::vector<ClusterBlockId>& get_router_clusters_in_netlist(void) const;
+    const std::vector<ClusterBlockId>& get_router_clusters_in_netlist() const;
 
     /**
      * @return provides access to all traffic flows' ids to allow a range-based
      * loop through all traffic flows, used in noc_place_utils.cpp functions.
      */
-    const std::vector<NocTrafficFlowId>& get_all_traffic_flow_id(void) const;
+    const std::vector<NocTrafficFlowId>& get_all_traffic_flow_id() const;
+
+    /**
+     * @brief Returns all NoC traffic flow objects.
+     * @return Reference to a vtd::vector that contains all NoC traffic flow objects.
+     */
+    const vtr::vector<NocTrafficFlowId, t_noc_traffic_flow>& get_all_traffic_flows() const;
 
     // setters
 
@@ -294,14 +300,14 @@ class NocTrafficFlows {
      * 
      */
 
-    void finished_noc_traffic_flows_setup(void);
+    void finished_noc_traffic_flows_setup();
 
     /**
      * @brief Resets the class by clearing internal
      * datastructures.
      * 
      */
-    void clear_traffic_flows(void);
+    void clear_traffic_flows();
 
     /**
      * @brief Given a block from the clustered netlist, determine
@@ -331,6 +337,20 @@ class NocTrafficFlows {
      * traffic flow information   
      */
     void echo_noc_traffic_flows(char* file_name);
+
+
+    /**
+     * @brief Defines the latency constraint of a traffic flow
+     * when not provided by the user.
+     *
+     * This value has to be significantly larger than latencies
+     * seen within the NoC so that the net effect in the placement
+     * cost is 0 (the latency constraint has no effect since there is none).
+     * Since the traffic flow latencies will be in nanoseconds,
+     * setting this value to 1 second which is significantly larger
+     * than what will be seen in the NoC.
+     */
+    static constexpr double DEFAULT_MAX_TRAFFIC_FLOW_LATENCY = 1.;
 };
 
 #endif

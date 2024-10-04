@@ -293,7 +293,6 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
                        device_ctx.arch,
                        &device_ctx.chan_width,
                        kRrGraphFile,
-                       device_ctx.virtual_clock_network_root_idx,
                        echo_enabled,
                        echo_file_name,
                        is_flat);
@@ -316,11 +315,12 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
     vpr_init(sizeof(argv)/sizeof(argv[0]), argv,
               &options, &vpr_setup, &arch);
 
-    vpr_setup.PackerOpts.doPacking    = STAGE_LOAD;
-    vpr_setup.PlacerOpts.doPlacement  = STAGE_LOAD;
-    vpr_setup.RouterOpts.doRouting    = STAGE_LOAD;
+    vpr_setup.PackerOpts.doPacking             = STAGE_LOAD;
+    vpr_setup.PlacerOpts.doPlacement           = STAGE_LOAD;
+    vpr_setup.APOpts.doAP                      = STAGE_SKIP;
+    vpr_setup.RouterOpts.doRouting             = STAGE_LOAD;
     vpr_setup.RouterOpts.read_rr_edge_metadata = true;
-    vpr_setup.AnalysisOpts.doAnalysis = STAGE_SKIP;
+    vpr_setup.AnalysisOpts.doAnalysis          = STAGE_SKIP;
 
     bool flow_succeeded = vpr_flow(vpr_setup, arch);
     REQUIRE(flow_succeeded == true);
@@ -570,7 +570,7 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
 
     // Verify occupied grid LOCs
     const auto & place_ctx = g_vpr_ctx.placement();
-    for (const auto& loc: place_ctx.block_locs) {
+    for (const auto& loc: place_ctx.block_locs()) {
 
         // Do not consider "IOB" tiles. They do not have fasm features
         // defined in the arch.

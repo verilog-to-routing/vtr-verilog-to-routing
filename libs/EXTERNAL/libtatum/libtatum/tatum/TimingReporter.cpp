@@ -99,6 +99,15 @@ void TimingReporter::report_timing_setup(std::ostream& os,
     report_timing(os, paths);
 }
 
+void TimingReporter::report_timing_setup(std::vector<tatum::TimingPath>& paths,
+                                         std::ostream& os,
+                                         const SetupTimingAnalyzer& setup_analyzer,
+                                         size_t npaths) const {
+    paths = path_collector_.collect_worst_setup_timing_paths(timing_graph_, setup_analyzer, npaths);
+
+    report_timing(os, paths);
+}
+
 void TimingReporter::report_timing_hold(std::string filename, 
                                          const HoldTimingAnalyzer& hold_analyzer,
                                          size_t npaths) const {
@@ -110,6 +119,15 @@ void TimingReporter::report_timing_hold(std::ostream& os,
                                          const HoldTimingAnalyzer& hold_analyzer,
                                          size_t npaths) const {
     auto paths = path_collector_.collect_worst_hold_timing_paths(timing_graph_, hold_analyzer, npaths);
+
+    report_timing(os, paths);
+}
+
+void TimingReporter::report_timing_hold(std::vector<tatum::TimingPath>& paths,
+                                         std::ostream& os,
+                                         const HoldTimingAnalyzer& hold_analyzer,
+                                         size_t npaths) const {
+    paths = path_collector_.collect_worst_hold_timing_paths(timing_graph_, hold_analyzer, npaths);
 
     report_timing(os, paths);
 }
@@ -588,7 +606,7 @@ Time TimingReporter::report_timing_data_arrival_subpath(std::ostream& os,
 
     {
         //Input constraint
-        TATUM_ASSERT(subpath.elements().size() > 0);
+        TATUM_ASSERT(!subpath.elements().empty());
         const TimingPathElem& path_elem = *(subpath.elements().begin());
 
         Time input_constraint;
@@ -694,7 +712,7 @@ bool TimingReporter::nearly_equal(const Time& lhs, const Time& rhs) const {
 
 size_t TimingReporter::estimate_point_print_width(const TimingPath& path) const {
     size_t width = 60; //default
-    for(auto subpath : {path.clock_launch_path(), path.data_arrival_path(), path.clock_capture_path()}) {
+    for(const auto& subpath : {path.clock_launch_path(), path.data_arrival_path(), path.clock_capture_path()}) {
         for(auto elem : subpath.elements()) {
             //Take the longest typical point name
             std::string point = name_resolver_.node_name(elem.node()) + " (" + name_resolver_.node_type_name(elem.node()) + ")";

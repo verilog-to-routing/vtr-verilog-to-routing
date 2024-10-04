@@ -7,7 +7,16 @@
 #include "vpr_error.h"
 #include "globals.h"
 
-static int get_expected_segs_to_target(RRNodeId inode, RRNodeId target_node, int* num_segs_ortho_dir_ptr);
+/**
+ * Assuming inode is CHANX or CHANY, this function calculates the number of required wires of the same type as inode
+ * to arrive at target_noe.
+ * @param inode The source node from which the cost to the target node is obtained.
+ * @param target_node The target node to which the cost is obtained.
+ * @return std::pait<int, int> The first element is the number of required wires in the same direction as inode,
+ * while the second element determines the number of wires in the direction orthogonal to inode.
+ */
+static std::pair<int, int> get_expected_segs_to_target(RRNodeId inode, RRNodeId target_node);
+
 static int round_up(float x);
 
 static std::unique_ptr<RouterLookahead> make_router_lookahead_object(const t_det_routing_arch& det_routing_arch,
@@ -31,8 +40,8 @@ static std::unique_ptr<RouterLookahead> make_router_lookahead_object(const t_det
 
 std::unique_ptr<RouterLookahead> make_router_lookahead(const t_det_routing_arch& det_routing_arch,
                                                        e_router_lookahead router_lookahead_type,
-                                                       std::string write_lookahead,
-                                                       std::string read_lookahead,
+                                                       const std::string& write_lookahead,
+                                                       const std::string& read_lookahead,
                                                        const std::vector<t_segment_inf>& segment_inf,
                                                        bool is_flat) {
     std::unique_ptr<RouterLookahead> router_lookahead = make_router_lookahead_object(det_routing_arch,
@@ -53,8 +62,7 @@ std::unique_ptr<RouterLookahead> make_router_lookahead(const t_det_routing_arch&
 }
 
 float ClassicLookahead::get_expected_cost(RRNodeId current_node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const {
-    float delay_cost, cong_cost;
-    std::tie(delay_cost, cong_cost) = get_expected_delay_and_cong(current_node, target_node, params, R_upstream);
+    auto [delay_cost, cong_cost] = get_expected_delay_and_cong(current_node, target_node, params, R_upstream);
 
     return delay_cost + cong_cost;
 }
@@ -66,8 +74,7 @@ std::pair<float, float> ClassicLookahead::get_expected_delay_and_cong(RRNodeId n
     t_rr_type rr_type = rr_graph.node_type(node);
 
     if (rr_type == CHANX || rr_type == CHANY) {
-        int num_segs_ortho_dir = 0;
-        int num_segs_same_dir = get_expected_segs_to_target(node, target_node, &num_segs_ortho_dir);
+        auto [num_segs_same_dir, num_segs_ortho_dir] = get_expected_segs_to_target(node, target_node);
 
         auto cost_index = rr_graph.node_cost_index(node);
         int ortho_cost_index = device_ctx.rr_indexed_data[cost_index].ortho_cost_index;
@@ -112,28 +119,27 @@ static int round_up(float x) {
     return std::ceil(x - 0.001);
 }
 
-static int get_expected_segs_to_target(RRNodeId inode, RRNodeId target_node, int* num_segs_ortho_dir_ptr) {
+static std::pair<int, int> get_expected_segs_to_target(RRNodeId inode, RRNodeId target_node) {
     /* Returns the number of segments the same type as inode that will be needed *
      * to reach target_node (not including inode) in each direction (the same    *
      * direction (horizontal or vertical) as inode and the orthogonal direction).*/
-
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
-    t_rr_type rr_type;
-    int target_x, target_y, num_segs_same_dir, ortho_cost_index;
-    RRIndexedDataId cost_index;
+    int num_segs_ortho_dir;
+    int num_segs_same_dir;
+
     int no_need_to_pass_by_clb;
-    float inv_length, ortho_inv_length, ylow, yhigh, xlow, xhigh;
+    float ylow, yhigh, xlow, xhigh;
 
-    target_x = rr_graph.node_xlow(target_node);
-    target_y = rr_graph.node_ylow(target_node);
+    int target_x = rr_graph.node_xlow(target_node);
+    int target_y = rr_graph.node_ylow(target_node);
 
-    cost_index = rr_graph.node_cost_index(inode);
-    inv_length = device_ctx.rr_indexed_data[cost_index].inv_length;
-    ortho_cost_index = device_ctx.rr_indexed_data[cost_index].ortho_cost_index;
-    ortho_inv_length = device_ctx.rr_indexed_data[RRIndexedDataId(ortho_cost_index)].inv_length;
-    rr_type = rr_graph.node_type(inode);
+    RRIndexedDataId cost_index = rr_graph.node_cost_index(inode);
+    float inv_length = device_ctx.rr_indexed_data[cost_index].inv_length;
+    int ortho_cost_index = device_ctx.rr_indexed_data[cost_index].ortho_cost_index;
+    float ortho_inv_length = device_ctx.rr_indexed_data[RRIndexedDataId(ortho_cost_index)].inv_length;
+    t_rr_type rr_type = rr_graph.node_type(inode);
 
     if (rr_type == CHANX) {
         ylow = rr_graph.node_ylow(inode);
@@ -143,13 +149,13 @@ static int get_expected_segs_to_target(RRNodeId inode, RRNodeId target_node, int
         /* Count vertical (orthogonal to inode) segs first. */
 
         if (ylow > target_y) { /* Coming from a row above target? */
-            *num_segs_ortho_dir_ptr = round_up((ylow - target_y + 1.) * ortho_inv_length);
+            num_segs_ortho_dir = round_up((ylow - target_y + 1.) * ortho_inv_length);
             no_need_to_pass_by_clb = 1;
         } else if (ylow < target_y - 1) { /* Below the CLB bottom? */
-            *num_segs_ortho_dir_ptr = round_up((target_y - ylow) * ortho_inv_length);
+            num_segs_ortho_dir = round_up((target_y - ylow) * ortho_inv_length);
             no_need_to_pass_by_clb = 1;
         } else { /* In a row that passes by target CLB */
-            *num_segs_ortho_dir_ptr = 0;
+            num_segs_ortho_dir = 0;
             no_need_to_pass_by_clb = 0;
         }
 
@@ -170,13 +176,13 @@ static int get_expected_segs_to_target(RRNodeId inode, RRNodeId target_node, int
         /* Count horizontal (orthogonal to inode) segs first. */
 
         if (xlow > target_x) { /* Coming from a column right of target? */
-            *num_segs_ortho_dir_ptr = round_up((xlow - target_x + 1.) * ortho_inv_length);
+            num_segs_ortho_dir = round_up((xlow - target_x + 1.) * ortho_inv_length);
             no_need_to_pass_by_clb = 1;
         } else if (xlow < target_x - 1) { /* Left of and not adjacent to the CLB? */
-            *num_segs_ortho_dir_ptr = round_up((target_x - xlow) * ortho_inv_length);
+            num_segs_ortho_dir = round_up((target_x - xlow) * ortho_inv_length);
             no_need_to_pass_by_clb = 1;
         } else { /* In a column that passes by target CLB */
-            *num_segs_ortho_dir_ptr = 0;
+            num_segs_ortho_dir = 0;
             no_need_to_pass_by_clb = 0;
         }
 
@@ -191,7 +197,7 @@ static int get_expected_segs_to_target(RRNodeId inode, RRNodeId target_node, int
         }
     }
 
-    return (num_segs_same_dir);
+    return {num_segs_same_dir, num_segs_ortho_dir};
 }
 
 void invalidate_router_lookahead_cache() {
@@ -201,8 +207,8 @@ void invalidate_router_lookahead_cache() {
 
 const RouterLookahead* get_cached_router_lookahead(const t_det_routing_arch& det_routing_arch,
                                                    e_router_lookahead router_lookahead_type,
-                                                   std::string write_lookahead,
-                                                   std::string read_lookahead,
+                                                   const std::string& write_lookahead,
+                                                   const std::string& read_lookahead,
                                                    const std::vector<t_segment_inf>& segment_inf,
                                                    bool is_flat) {
     auto& router_ctx = g_vpr_ctx.routing();

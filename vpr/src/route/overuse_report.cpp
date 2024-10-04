@@ -219,10 +219,8 @@ static void report_overused_ipin_opin(std::ostream& os,
         grid_x == rr_graph.node_xhigh(node_id) && grid_y == rr_graph.node_yhigh(node_id),
         "Non-track RR node should not span across multiple grid blocks.");
 
-    t_physical_tile_type_ptr physical_tile = device_ctx.grid.get_physical_type({grid_x, grid_y, grid_layer});
-
     os << "Pin physical number = " << rr_graph.node_pin_num(node_id) << '\n';
-    if (is_inter_cluster_node(physical_tile, rr_graph.node_type(node_id), rr_graph.node_ptc_num(node_id))) {
+    if (is_inter_cluster_node(rr_graph, node_id)) {
         os << "On Tile Pin"
            << "\n";
     } else {
@@ -244,7 +242,7 @@ static void report_overused_ipin_opin(std::ostream& os,
 
     //Add block type for IPINs/OPINs in overused rr-node report
     const auto& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
-    const auto& grid_info = place_ctx.grid_blocks;
+    const auto& grid_info = place_ctx.grid_blocks();
 
     os << "Grid location: X = " << grid_x << ", Y = " << grid_y << '\n';
     os << "Number of blocks currently occupying this grid location = " << grid_info.get_usage({grid_x, grid_y, grid_layer}) << '\n';
@@ -338,7 +336,7 @@ static void report_congested_nets(const Netlist<>& net_list,
                 } else {
                     cluster_block_id = convert_to_cluster_block_id(net_list.pin_block(sink_id));
                 }
-                auto cluster_loc = g_vpr_ctx.placement().block_locs[cluster_block_id];
+                auto cluster_loc = g_vpr_ctx.placement().block_locs()[cluster_block_id];
                 auto physical_type = g_vpr_ctx.device().grid.get_physical_type({x, y, layer_num});
                 int cluster_layer_num = cluster_loc.loc.layer;
                 int cluster_x = cluster_loc.loc.x - g_vpr_ctx.device().grid.get_physical_type({cluster_loc.loc.x, cluster_loc.loc.y, cluster_layer_num})->width;
@@ -355,7 +353,7 @@ static void report_congested_nets(const Netlist<>& net_list,
                         os << "  "
                            << "Hierarchical Type Name : " << pb_pin->parent_node->hierarchical_type_name() << "\n";
                     } else {
-                        os << "  " << g_vpr_ctx.placement().physical_pins[convert_to_cluster_pin_id(sink_id)] << "\n";
+                        os << "  " << g_vpr_ctx.placement().physical_pins()[convert_to_cluster_pin_id(sink_id)] << "\n";
                     }
                 }
             }

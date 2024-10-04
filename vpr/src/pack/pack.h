@@ -1,9 +1,15 @@
 #ifndef PACK_H
 #define PACK_H
-#include <vector>
+
 #include <unordered_set>
-#include "vpr_types.h"
-#include "atom_netlist_fwd.h"
+#include <vector>
+
+class AtomNetId;
+struct t_analysis_opts;
+struct t_arch;
+struct t_lb_type_rr_node;
+struct t_model;
+struct t_packer_opts;
 
 bool try_pack(t_packer_opts* packer_opts,
               const t_analysis_opts* analysis_opts,
@@ -15,6 +21,6 @@ bool try_pack(t_packer_opts* packer_opts,
 
 float get_arch_switch_info(short switch_index, int switch_fanin, float& Tdel_switch, float& R_switch, float& Cout_switch);
 
-std::unordered_set<AtomNetId> alloc_and_load_is_clock(bool global_clocks);
+std::unordered_set<AtomNetId> alloc_and_load_is_clock();
 
 #endif
