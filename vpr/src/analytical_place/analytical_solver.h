@@ -9,10 +9,13 @@
 #pragma once
 
 #include <memory>
-#include "Eigen/Sparse"
 #include "ap_netlist_fwd.h"
 #include "vtr_strong_id.h"
 #include "vtr_vector.h"
+
+#ifdef EIGEN_INSTALLED
+#include "Eigen/Sparse"
+#endif  // EIGEN_INSTALLED
 
 // Forward declarations
 class PartialPlacement;
@@ -104,6 +107,10 @@ protected:
  */
 std::unique_ptr<AnalyticalSolver> make_analytical_solver(e_analytical_solver solver_type,
                                                          const APNetlist &netlist);
+
+// The Eigen library is used to solve matrix equations in the following solvers.
+// The solver cannot be built if Eigen is not installed.
+#ifdef EIGEN_INSTALLED
 
 /**
  * @brief An Analytical Solver which tries to minimize the quadratic HPWL
@@ -202,4 +209,6 @@ public:
      */
     void solve(unsigned iteration, PartialPlacement &p_placement) final;
 };
+
+#endif // EIGEN_INSTALLED
 

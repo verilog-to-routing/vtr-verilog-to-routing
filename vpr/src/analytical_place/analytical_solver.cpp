@@ -7,11 +7,6 @@
  */
 
 #include "analytical_solver.h"
-#include <Eigen/src/SparseCore/SparseMatrix.h>
-#include <Eigen/SVD>
-#include <Eigen/Sparse>
-#include <Eigen/Eigenvalues>
-#include <Eigen/IterativeLinearSolvers>
 #include <cstddef>
 #include <cstdio>
 #include <memory>
@@ -23,12 +18,27 @@
 #include "vtr_assert.h"
 #include "vtr_vector.h"
 
+#ifdef EIGEN_INSTALLED
+#include <Eigen/src/SparseCore/SparseMatrix.h>
+#include <Eigen/SVD>
+#include <Eigen/Sparse>
+#include <Eigen/Eigenvalues>
+#include <Eigen/IterativeLinearSolvers>
+#endif // EIGEN_INSTALLED
+
 std::unique_ptr<AnalyticalSolver> make_analytical_solver(e_analytical_solver solver_type,
                                                          const APNetlist& netlist) {
     // Based on the solver type passed in, build the solver.
     switch (solver_type) {
         case e_analytical_solver::QP_HYBRID:
+#ifdef EIGEN_INSTALLED
             return std::make_unique<QPHybridSolver>(netlist);
+#else
+            (void)netlist;
+            VPR_FATAL_ERROR(VPR_ERROR_AP,
+                            "QP Hybrid Solver requires the Eigen library");
+            break;
+#endif // EIGEN_INSTALLED
         default:
             VPR_FATAL_ERROR(VPR_ERROR_AP,
                             "Unrecognized analytical solver type");
@@ -56,6 +66,8 @@ AnalyticalSolver::AnalyticalSolver(const APNetlist& netlist)
         num_moveable_blocks_++;
     }
 }
+
+#ifdef EIGEN_INSTALLED
 
 void QPHybridSolver::init_linear_system() {
     // Count the number of star nodes that the netlist will have.
@@ -247,4 +259,6 @@ void QPHybridSolver::solve(unsigned iteration, PartialPlacement &p_placement) {
         p_placement.block_y_locs[blk_id] = y[row_id_idx];
     }
 }
+
+#endif // EIGEN_INSTALLED
 
