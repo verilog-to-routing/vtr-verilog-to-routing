@@ -9,7 +9,7 @@ $(dirname "$0")/build.sh
 $SPACER
 
 start_section "vtr.test.0" "${GREEN}Testing..${NC} ${CYAN}C++ unit tests${NC}"
-make test
+make test -j${NUM_PROC}
 end_section "vtr.test.0"
 
 $SPACER
