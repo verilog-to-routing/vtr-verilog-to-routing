@@ -69,6 +69,74 @@ AnalyticalSolver::AnalyticalSolver(const APNetlist& netlist)
 
 #ifdef EIGEN_INSTALLED
 
+/**
+ * @brief Helper method to add a connection between a src moveable node and a
+ *        target APBlock with the given weight. This updates the tripleList and
+ *        the constant vectors with the values necessary to solve the quadratic
+ *        objective function.
+ *
+ * The A_sparse matrix is square and symmetric, so the use of the "row_id" as
+ * input is arbitrary; it could easily have been "src_col_id".
+ *
+ * The src_row_id always represents a moveable node in the linear system. It can
+ * represent a moveable APBlock or a star node.
+ *
+ * The target_blk_id may be either a moveable or fixed block.
+ *
+ * If the target block (t) is moveable, with source row s:
+ *      A[s][s] = A[s][s] + weight
+ *      A[t][t] = A[t][t] + weight
+ *      A[s][t] = A[s][t] - weight
+ *      A[t][s] = A[t][s] - weight
+ * If the target block is fixed:
+ *      A[s][s] = A[s][s] + weight
+ *      b[s] = b[s] + pos[block(t)] * weight
+ *
+ * These update equations come from taking the partial derivatives of the
+ * quadratic objective function w.r.t the moveable block locations. This is
+ * explained in detail in the FastPlace paper.
+ */
+static inline void add_connection_to_system(size_t src_row_id,
+                                            APBlockId target_blk_id,
+                                            double weight,
+                                            std::vector<Eigen::Triplet<double>>& tripletList,
+                                            Eigen::VectorXd& b_x,
+                                            Eigen::VectorXd& b_y,
+                                            Eigen::SparseMatrix<double>& A_sparse,
+                                            vtr::vector<APBlockId, APRowId>& blk_id_to_row_id,
+                                            const APNetlist& netlist) {
+    // Verify that this is a valid row.
+    VTR_ASSERT_DEBUG(src_row_id < (size_t)A_sparse.rows());
+    VTR_ASSERT_DEBUG(A_sparse.rows() == A_sparse.cols());
+    // Verify that this is a valid block id.
+    VTR_ASSERT_DEBUG(target_blk_id.is_valid());
+    // The src_row_id is always a moveable block (rows in the matrix always
+    // coorespond to a moveable APBlock or a star node.
+    if (netlist.block_mobility(target_blk_id) == APBlockMobility::MOVEABLE) {
+        // If the target is also moveable, update the coefficient matrix.
+        size_t target_row_id = (size_t)blk_id_to_row_id[target_blk_id];
+        VTR_ASSERT_DEBUG(target_row_id < (size_t)A_sparse.rows());
+        tripletList.emplace_back(src_row_id, src_row_id, weight);
+        tripletList.emplace_back(target_row_id, target_row_id, weight);
+        tripletList.emplace_back(src_row_id, target_row_id, -weight);
+        tripletList.emplace_back(target_row_id, src_row_id, -weight);
+    } else {
+        // If the target is fixed, update the coefficient matrix and the
+        // constant vectors.
+        tripletList.emplace_back(src_row_id, src_row_id, weight);
+        VTR_ASSERT_DEBUG(netlist.block_loc(target_blk_id).x >= 0);
+        VTR_ASSERT_DEBUG(netlist.block_loc(target_blk_id).y >= 0);
+        // FIXME: These fixed block locations are aligned to the anchor of
+        //        the tiles they are in. This is not correct. A method
+        //        should be added to the netlist class or to a util file
+        //        which can get a more accurate position.
+        double blk_loc_x = netlist.block_loc(target_blk_id).x;
+        double blk_loc_y = netlist.block_loc(target_blk_id).y;
+        b_x(src_row_id) += weight * blk_loc_x;
+        b_y(src_row_id) += weight * blk_loc_y;
+    }
+}
+
 void QPHybridSolver::init_linear_system() {
     // Count the number of star nodes that the netlist will have.
     size_t num_star_nodes = 0;
@@ -86,49 +154,19 @@ void QPHybridSolver::init_linear_system() {
     // Create a list of triplets that will be used to create the sparse
     // coefficient matrix. This is the method recommended by Eigen to initialize
     // this matrix.
+    // A triplet represents a non-zero entry in a sparse matrix:
+    //      (row index, col index, value)
+    // Where triplets at the same (row index, col index) are summed together.
     std::vector<Eigen::Triplet<double>> tripletList;
     // Reserve enough space for the triplets. This is just to help with
     // performance.
+    // This is an over-estimate that assumes that each net connnects to all
+    // moveable blocks using a star node.
+    // TODO: This can be made more space-efficient by getting the average fanout
+    //       of all nets in the APNetlist. Ideally this should be not enough
+    //       space, but be within a constant factor.
     size_t num_nets = netlist_.nets().size();
     tripletList.reserve(num_moveable_blocks_ * num_nets);
-
-    // Lambda expression to add a connection to the linear system from the src
-    // to the target with the given weight. The src_row_id may represent a star
-    // node (so it does not represent an APBlock) or a moveable APBlock. The
-    // target_blk_id may be a fixed or moveable block.
-    auto add_connection_to_system = [&](size_t src_row_id,
-                                        APBlockId target_blk_id,
-                                        double weight) {
-        // Verify that this is a valid row.
-        VTR_ASSERT_DEBUG(src_row_id < A_sparse.rows());
-        // Verify that this is a valid block id.
-        VTR_ASSERT_DEBUG(target_blk_id.is_valid());
-        // The src_row_id is always a moveable block (rows in the matrix always
-        // coorespond to a moveable APBlock or a star node.
-        if (netlist_.block_mobility(target_blk_id) == APBlockMobility::MOVEABLE) {
-            // If the target is also moveable, update the coefficient matrix.
-            size_t target_row_id = (size_t)blk_id_to_row_id_[target_blk_id];
-            VTR_ASSERT_DEBUG(target_row_id < A_sparse.rows());
-            tripletList.emplace_back(src_row_id, src_row_id, weight);
-            tripletList.emplace_back(target_row_id, target_row_id, weight);
-            tripletList.emplace_back(src_row_id, target_row_id, -weight);
-            tripletList.emplace_back(target_row_id, src_row_id, -weight);
-        } else {
-            // If the target is fixed, update the coefficient matrix and the
-            // constant vectors.
-            tripletList.emplace_back(src_row_id, src_row_id, weight);
-            VTR_ASSERT_DEBUG(netlist_.block_loc(target_blk_id).x >= 0);
-            VTR_ASSERT_DEBUG(netlist_.block_loc(target_blk_id).y >= 0);
-            // FIXME: These fixed block locations are aligned to the anchor of
-            //        the tiles they are in. This is not correct. A method
-            //        should be added to the netlist class or to a util file
-            //        which can get a more accurate position.
-            double blk_loc_x = netlist_.block_loc(target_blk_id).x;
-            double blk_loc_y = netlist_.block_loc(target_blk_id).y;
-            b_x(src_row_id) += weight * blk_loc_x;
-            b_y(src_row_id) += weight * blk_loc_y;
-        }
-    };
 
     // Create the connections using a hybrid connection model of the star and
     // clique connnection models.
@@ -140,17 +178,21 @@ void QPHybridSolver::init_linear_system() {
             // Create a star node and connect each block in the net to the star
             // node.
             // Using the weight from FastPlace
+            // TODO: Investigate other weight terms.
             double w = static_cast<double>(num_pins) / static_cast<double>(num_pins - 1);
             size_t star_node_id = num_moveable_blocks_ + star_node_offset;
             for (APPinId pin_id : netlist_.net_pins(net_id)) {
                 APBlockId blk_id = netlist_.pin_block(pin_id);
-                add_connection_to_system(star_node_id, blk_id, w);
+                add_connection_to_system(star_node_id, blk_id, w, tripletList,
+                                         b_x, b_y, A_sparse, blk_id_to_row_id_,
+                                         netlist_);
             }
             star_node_offset++;
         } else {
             // Create a clique connection where every block in a net connects
             // exactly once to every other block in the net.
             // Using the weight from FastPlace
+            // TODO: Investigate other weight terms.
             double w = 1.0 / static_cast<double>(num_pins - 1);
             for (size_t ipin_idx = 0; ipin_idx < num_pins; ipin_idx++) {
                 APPinId first_pin_id = netlist_.net_pin(net_id, ipin_idx);
@@ -171,7 +213,9 @@ void QPHybridSolver::init_linear_system() {
                         std::swap(first_blk_id, second_blk_id);
                     }
                     size_t first_row_id = (size_t)blk_id_to_row_id_[first_blk_id];
-                    add_connection_to_system(first_row_id, second_blk_id, w);
+                    add_connection_to_system(first_row_id, second_blk_id, w, tripletList,
+                                             b_x, b_y, A_sparse, blk_id_to_row_id_,
+                                             netlist_);
                 }
             }
         }
@@ -194,8 +238,19 @@ void QPHybridSolver::init_linear_system() {
  *      b[i] = b[i] + pos[block(i)] * coeff_pseudo_anchor;
  * Where coeff_pseudo_anchor grows with each iteration.
  *
- * This is basically a fast way of adding a connection between a moveable block
- * and a fixed block.
+ * This is basically a fast way of adding a connection between all moveable
+ * blocks in the netlist and their target fixed placement location.
+ *
+ * See add_connection_to_system.
+ *
+ *  @param A_sparse_diff    The ceofficient matrix to update.
+ *  @param b_x_diff         The x-dimension constant vector to update.
+ *  @param b_y_diff         The y-dimension constant vector to update.
+ *  @param p_placement      The location the moveable blocks should be anchored
+ *                          to.
+ *  @param num_moveable_blocks  The number of moveable blocks in the netlist.
+ *  @param row_id_to_blk_id     Lookup for the row id from the APBlock Id.
+ *  @param iteration        The current iteration of the Global Placer.
  */
 static inline void update_linear_system_with_anchors(
                                Eigen::SparseMatrix<double> &A_sparse_diff,
@@ -252,9 +307,14 @@ void QPHybridSolver::solve(unsigned iteration, PartialPlacement &p_placement) {
     VTR_ASSERT(cg.info() == Eigen::Success && "Conjugate Gradient failed at solving b_y!");
 
     // Write the results back into the partial placement object.
+    // NOTE: The first [0, num_moveable_blocks_) rows always represent the
+    //       moveable APBlocks. The star nodes always come after and are ignored
+    //       in the solution.
     for (size_t row_id_idx = 0; row_id_idx < num_moveable_blocks_; row_id_idx++) {
         APRowId row_id = APRowId(row_id_idx);
         APBlockId blk_id = row_id_to_blk_id_[row_id];
+        VTR_ASSERT_DEBUG(blk_id.is_valid());
+        VTR_ASSERT_DEBUG(netlist_.block_mobility(blk_id) == APBlockMobility::MOVEABLE);
         p_placement.block_x_locs[blk_id] = x[row_id_idx];
         p_placement.block_y_locs[blk_id] = y[row_id_idx];
     }

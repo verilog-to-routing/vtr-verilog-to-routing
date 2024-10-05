@@ -55,7 +55,7 @@ public:
     /**
      * @brief Constructor of the base AnalyticalSolver class
      *
-     * Initializes the internal data members of the base class which are usefull
+     * Initializes the internal data members of the base class which are useful
      * for all solvers.
      */
     AnalyticalSolver(const APNetlist &netlist);
@@ -148,7 +148,7 @@ private:
     static constexpr size_t star_num_pins_threshold = 3;
 
     /**
-     * @brief Initializes the linear system of Ax = b_x and Ax = b_y based on
+     * @brief Initializes the linear system of Ax = b_x and Ay = b_y based on
      *        the APNetlist and the fixed APBlock locations.
      *
      * This is the "ideal" quadratic linear system where no anchor-points are
@@ -180,7 +180,7 @@ public:
      *
      * Initializes internal data and constructs the initial linear system.
      */
-    QPHybridSolver(const APNetlist& inetlist) : AnalyticalSolver(inetlist) {
+    QPHybridSolver(const APNetlist& netlist) : AnalyticalSolver(netlist) {
         // Initializing the linear system only depends on the netlist and fixed
         // block locations. Both are provided by the netlist, allowing this to
         // be initialized in the constructor.
