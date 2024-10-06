@@ -11,6 +11,7 @@
 
 #include "globals.h"
 #include "pugixml.hpp"
+#include "noc_aware_cluster_util.h"
 
 #include <fstream>
 #include <unordered_set>
@@ -26,13 +27,96 @@
  */
 static Partition create_partition(const std::string& part_name, const Region& region);
 
-void write_vpr_floorplan_constraints(const char* file_name, int expand, bool subtile, int horizontal_partitions, int vertical_partitions) {
-    VprConstraints constraints;
-    if (horizontal_partitions != 0 && vertical_partitions != 0) {
-        setup_vpr_floorplan_constraints_cutpoints(constraints, horizontal_partitions, vertical_partitions);
-    } else {
-        setup_vpr_floorplan_constraints_one_loc(constraints, expand, subtile);
+static std::vector<AtomBlockId> find_noc_atoms_in_noc_grp(const vtr::vector<AtomBlockId, NocGroupId>& atom_noc_grp_id,
+                                                          const std::vector<AtomBlockId>& noc_atoms,
+                                                          NocGroupId noc_grp_id) {
+
+    std::vector<AtomBlockId> noc_atoms_in_grp;
+
+    for (AtomBlockId noc_atom_id : noc_atoms) {
+        if (noc_grp_id == atom_noc_grp_id[noc_atom_id]) {
+            noc_atoms_in_grp.push_back(noc_atom_id);
+        }
     }
+
+    return noc_atoms_in_grp;
+}
+
+void setup_vpr_floorplan_constraints_noc(VprConstraints& constraints, int expand, const t_packer_opts& packer_opts) {
+    const auto& block_locs = g_vpr_ctx.placement().block_locs();
+    const auto& atom_ctx = g_vpr_ctx.atom();
+    const auto& atom_netlist = atom_ctx.nlist;
+
+    std::vector<AtomBlockId> noc_atoms = find_noc_router_atoms(atom_netlist);
+
+    t_pack_high_fanout_thresholds high_fanout_thresholds(packer_opts.high_fanout_threshold);;
+    vtr::vector<AtomBlockId, NocGroupId> atom_noc_grp_id;
+
+    update_noc_reachability_partitions(noc_atoms,
+                                       atom_netlist,
+                                       high_fanout_thresholds,
+                                       atom_noc_grp_id);
+
+    int part_id = 0;
+
+    for (AtomBlockId noc_router_atom_id : noc_atoms) {
+        NocGroupId noc_group_id = atom_noc_grp_id[noc_router_atom_id];
+
+        if (constraints.place_constraints().get_atom_partition(noc_router_atom_id).is_valid()) {
+            continue;
+        }
+
+        std::vector<AtomBlockId> noc_atoms_in_grp = find_noc_atoms_in_noc_grp(atom_noc_grp_id, noc_atoms, noc_group_id);
+
+        t_pl_loc min_loc {5000, 5000, 0, 5000};
+        t_pl_loc max_loc {-1, -1, 0, -1};
+
+        for (AtomBlockId noc_atom_id : noc_atoms_in_grp) {
+            ClusterBlockId noc_cluster_id = atom_ctx.lookup.atom_clb(noc_atom_id);
+            const t_pl_loc& loc = block_locs[noc_cluster_id].loc;
+
+            min_loc.x = std::min(min_loc.x, loc.x);
+            min_loc.y = std::min(min_loc.y, loc.y);
+            min_loc.layer = std::min(min_loc.layer, loc.layer);
+
+            max_loc.x = std::max(max_loc.x, loc.x);
+            max_loc.y = std::max(max_loc.y, loc.y);
+            max_loc.layer = std::max(max_loc.layer, loc.layer);
+        }
+
+        const std::string& part_name = "partition_" + std::to_string(part_id);
+        PartitionId partid(part_id);
+
+        Partition part;
+        part.set_name(part_name);
+
+        PartitionRegion pr;
+        Region reg(min_loc.x - expand, min_loc.x - expand, min_loc.layer,
+                   max_loc.x + expand, max_loc.x + expand, max_loc.layer);
+
+        pr.add_to_part_region(reg);
+        part.set_part_region(pr);
+        constraints.mutable_place_constraints().add_partition(part);
+
+        for (auto [atom_id, noc_grp_id] : atom_noc_grp_id.pairs()) {
+            if (noc_grp_id == noc_group_id) {
+                constraints.mutable_place_constraints().add_constrained_atom(atom_id, partid);
+            }
+        }
+
+        part_id++;
+    }
+}
+
+void write_vpr_floorplan_constraints(const char* file_name, int expand, bool subtile, int horizontal_partitions, int vertical_partitions, const t_packer_opts& packer_opts) {
+    VprConstraints constraints;
+//    if (horizontal_partitions != 0 && vertical_partitions != 0) {
+//        setup_vpr_floorplan_constraints_cutpoints(constraints, horizontal_partitions, vertical_partitions);
+//    } else {
+//        setup_vpr_floorplan_constraints_one_loc(constraints, expand, subtile);
+//    }
+
+    setup_vpr_floorplan_constraints_noc(constraints, expand, packer_opts);
 
     VprConstraintsSerializer writer(constraints);
 

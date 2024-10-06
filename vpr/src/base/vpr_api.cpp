@@ -800,7 +800,8 @@ bool vpr_place_flow(const Netlist<>& net_list, t_vpr_setup& vpr_setup, const t_a
     //Write out a vpr floorplanning constraints file if the option is specified
     if (!filename_opts.write_vpr_constraints_file.empty()) {
         write_vpr_floorplan_constraints(filename_opts.write_vpr_constraints_file.c_str(), placer_opts.place_constraint_expand, placer_opts.place_constraint_subtile,
-                                        placer_opts.floorplan_num_horizontal_partitions, placer_opts.floorplan_num_vertical_partitions);
+                                        placer_opts.floorplan_num_horizontal_partitions, placer_opts.floorplan_num_vertical_partitions,
+                                        vpr_setup.PackerOpts);
     }
 
     // Write out a flat placement file if the option is specified

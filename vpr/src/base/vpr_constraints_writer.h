@@ -41,7 +41,8 @@ void write_vpr_floorplan_constraints(const char* file_name,
                                      int expand,
                                      bool subtile,
                                      int horizontal_partitions,
-                                     int vertical_partitions);
+                                     int vertical_partitions,
+                                     const t_packer_opts& packet_opts);
 
 /**
  * @brief Populates VprConstraints by creating a partition for each clustered block.
