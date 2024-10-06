@@ -74,7 +74,8 @@ void draw_noc(ezgl::renderer* g) {
  */
 void draw_noc_usage(vtr::vector<NocLinkId, ezgl::color>& noc_link_colors) {
     t_draw_state* draw_state = get_draw_state_vars();
-    auto& noc_ctx = g_vpr_ctx.noc();
+    const auto& noc_ctx = g_vpr_ctx.noc();
+    const auto& noc_link_bandwidth_usages = draw_state->get_noc_link_bandwidth_usages_ref();
 
     // check to see if a color map was already created previously
     if (draw_state->noc_usage_color_map == nullptr) {
@@ -90,15 +91,15 @@ void draw_noc_usage(vtr::vector<NocLinkId, ezgl::color>& noc_link_colors) {
     // represents the color to draw each noc link
     ezgl::color current_noc_link_color;
 
-    for (const auto& noc_link : noc_ctx.noc_model.get_noc_links()) {
-        NocLinkId link_id = noc_link.get_link_id();
+    for (const auto& [link_id, bandwidth_usage] : noc_link_bandwidth_usages.pairs()) {
 
         // only update the color of the link if it wasn't updated previously
         if (noc_link_colors[link_id] == ezgl::BLACK) {
             // if we are here then the link was not updated previously, so assign the color here
 
+            double link_bandwidth = noc_ctx.noc_model.get_single_noc_link(link_id).get_bandwidth();
             //get the current link bandwidth usage (ratio calculation)
-            double link_bandwidth_usage_ratio = (noc_link.get_bandwidth_usage()) / noc_link.get_bandwidth();
+            double link_bandwidth_usage_ratio = bandwidth_usage / link_bandwidth;
 
             // check if the link is being overused and if it is then cap it at 1.0
             if (link_bandwidth_usage_ratio > 1.0) {

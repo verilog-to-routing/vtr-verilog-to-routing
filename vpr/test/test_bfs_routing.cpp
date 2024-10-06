@@ -22,7 +22,7 @@ TEST_CASE("test_route_flow", "[vpr_noc_bfs_routing]") {
      *
      */
 
-    // Create the NoC datastructure
+    // Create the NoC data structure
     NocStorage noc_model;
 
     // store the reference to device grid with

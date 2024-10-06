@@ -55,7 +55,7 @@ void t_placer_costs::update_norm_factors() {
         timing_cost_norm = std::min(1 / timing_cost, MAX_INV_TIMING_COST);
     } else {
         VTR_ASSERT_SAFE(place_algorithm == BOUNDING_BOX_PLACE);
-        bb_cost_norm = 1 / bb_cost; //Upading the normalization factor in bounding box mode since the cost in this mode is determined after normalizing the wirelength cost
+        bb_cost_norm = 1 / bb_cost; //Updating the normalization factor in bounding box mode since the cost in this mode is determined after normalizing the wirelength cost
     }
 }
 
