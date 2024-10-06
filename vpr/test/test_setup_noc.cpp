@@ -397,7 +397,7 @@ TEST_CASE("test_identify_and_store_noc_router_tile_positions", "[vpr_setup_noc]"
     }
 }
 TEST_CASE("test_create_noc_routers", "[vpr_setup_noc]") {
-    // datastructure to hold the list of physical tiles
+    // data structure to hold the list of physical tiles
     vtr::vector<int, t_noc_router_tile_position> list_of_routers;
 
     /*
@@ -583,7 +583,7 @@ TEST_CASE("test_create_noc_routers", "[vpr_setup_noc]") {
     }
 }
 TEST_CASE("test_create_noc_links", "[vpr_setup_noc]") {
-    // datastructure to hold the list of physical tiles
+    // data structure to hold the list of physical tiles
     std::vector<t_noc_router_tile_position> list_of_routers;
 
     /*
@@ -725,7 +725,7 @@ TEST_CASE("test_setup_noc", "[vpr_setup_noc]") {
     // this is similar to the user provided a config file
     temp_router = new t_router;
 
-    // datastructure to hold the list of physical tiles
+    // data structure to hold the list of physical tiles
     std::vector<t_noc_router_tile_position> list_of_routers;
 
     // get a mutable to the device context

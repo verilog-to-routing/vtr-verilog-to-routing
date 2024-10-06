@@ -9,7 +9,7 @@
 namespace {
 
 TEST_CASE("test_adding_traffic_flows", "[vpr_noc_traffic_flows]") {
-    // the traffic flows datastructure and reset it
+    // the traffic flows data structure and reset it
     NocTrafficFlows traffic_flow_storage;
     traffic_flow_storage.clear_traffic_flows();
 
@@ -61,7 +61,7 @@ TEST_CASE("test_adding_traffic_flows", "[vpr_noc_traffic_flows]") {
 
     // finished setting up all the golden information, so now perform the tests
     SECTION("Verifying that all created traffic flows and their related information are stored correctly.") {
-        // add all the traffic flows to the datastructure
+        // add all the traffic flows to the data structure
         for (int router = 0; router < NUM_OF_ROUTERS; router++) {
             for (int second_router = 0; second_router < NUM_OF_ROUTERS; second_router++) {
                 // don't want the case where the source and destination routers are the same
@@ -81,7 +81,7 @@ TEST_CASE("test_adding_traffic_flows", "[vpr_noc_traffic_flows]") {
 
         // check the set of routers first to see that they were all added properly
         for (int router = 0; router < size_of_router_block_list; router++) {
-            // every router in the golden list needs to exist in the traffic flow datastructure (this also tests cases where a router was added multiple times, this shouldn't affect it)
+            // every router in the golden list needs to exist in the traffic flow data structure (this also tests cases where a router was added multiple times, this shouldn't affect it)
             REQUIRE(traffic_flow_storage.check_if_cluster_block_has_traffic_flows(golden_router_blocks_list[router]) == true);
         }
 
@@ -103,7 +103,7 @@ TEST_CASE("test_adding_traffic_flows", "[vpr_noc_traffic_flows]") {
 
             int number_of_traffic_flows_associated_with_current_router = golden_list_of_associated_traffic_flows_to_routers[router_id].size();
 
-            // get the traffic flows associated to the current router from the test datastructure
+            // get the traffic flows associated to the current router from the test data structure
             const std::vector<NocTrafficFlowId>& associated_traffic_flows_to_router = traffic_flow_storage.get_traffic_flows_associated_to_router_block(router_id);
 
             // make sure that the number of traffic flows associated to each router within the NocTrafficFlows data structure matches the golden set
@@ -122,7 +122,7 @@ TEST_CASE("test_adding_traffic_flows", "[vpr_noc_traffic_flows]") {
         // create an invalid block id
         ClusterBlockId invalid_block = (ClusterBlockId)(NUM_OF_ROUTERS + 1);
 
-        // check that this block doesn't exist in the traffic flow datastructure
+        // check that this block doesn't exist in the traffic flow data structure
         REQUIRE(traffic_flow_storage.check_if_cluster_block_has_traffic_flows(invalid_block) == false);
     }
     SECTION("Checking that when a router has no traffic flows associated to it, then the associated traffic flows vector retrieved from the NocTrafficFlows class for this router should be null.") {
