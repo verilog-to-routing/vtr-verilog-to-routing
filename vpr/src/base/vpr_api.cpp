@@ -554,7 +554,7 @@ void vpr_setup_clock_networks(t_vpr_setup& vpr_setup, const t_arch& Arch) {
  *        constraints. Additionally, the graphics state is updated
  *        to include a NoC button to display it.
  *
- * @param vpr_setup A datastructure that stores all the user provided option
+ * @param vpr_setup A data structure that stores all the user provided option
  *                  to vpr.
  * @param arch Contains the parsed information from the architecture
  *             description file.
@@ -1327,7 +1327,7 @@ static void free_routing() {
 }
 
 /**
- * @brief handles the deletion of NoC related datastructures.
+ * @brief handles the deletion of NoC related data structures.
  */
 static void free_noc() {}
 

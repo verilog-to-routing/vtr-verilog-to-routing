@@ -26,13 +26,6 @@ static t_draw_state draw_state;
  */
 static t_draw_coords draw_coords;
 
-/**
- * @brief Stores a reference to a PlaceLocVars to be used in the graphics code.
- * @details This reference let us pass in a currently-being-optimized placement state,
- * rather than using the global placement state in placement context that is valid only once placement is done
- */
-static std::optional<std::reference_wrapper<const BlkLocRegistry>> blk_loc_registry_ref;
-
 /*********************** Accessor Subroutines Definition ********************/
 
 /* This accessor function returns pointer to the global variable
@@ -45,14 +38,6 @@ t_draw_coords* get_draw_coords_vars() {
 /* Use this function to access draw_state. */
 t_draw_state* get_draw_state_vars() {
     return &draw_state;
-}
-
-void set_graphics_blk_loc_registry_ref(const BlkLocRegistry& blk_loc_registry) {
-    blk_loc_registry_ref = std::ref(blk_loc_registry);
-}
-
-const BlkLocRegistry& get_graphics_blk_loc_registry_ref() {
-    return blk_loc_registry_ref->get();
 }
 
 #endif // NO_GRAPHICS

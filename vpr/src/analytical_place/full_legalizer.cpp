@@ -104,7 +104,7 @@ public:
         //       to share the code.
 
         // Clear the grid locations (stolen from initial_placement)
-        clear_all_grid_locs(blk_loc_registry);
+        blk_loc_registry.clear_all_grid_locs();
 
         // Deal with the placement constraints.
         propagate_place_constraints();

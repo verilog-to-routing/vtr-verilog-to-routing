@@ -5,6 +5,7 @@
 struct t_noc_opts;
 struct t_placer_opts;
 class BlkLocRegistry;
+class NocCostHandler;
 
 /**
  * @brief Randomly places NoC routers, then runs a quick simulated annealing
@@ -17,6 +18,7 @@ class BlkLocRegistry;
  */
 void initial_noc_placement(const t_noc_opts& noc_opts,
                            const t_placer_opts& placer_opts,
-                           BlkLocRegistry& blk_loc_registry);
+                           BlkLocRegistry& blk_loc_registry,
+                           NocCostHandler& noc_cost_handler);
 
 #endif //VTR_INITIAL_NOC_PLACEMENT_H
