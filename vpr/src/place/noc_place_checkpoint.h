@@ -1,6 +1,8 @@
 #ifndef VTR_ROUTERPLACEMENTCHECKPOINT_H
 #define VTR_ROUTERPLACEMENTCHECKPOINT_H
 
+class NocCostHandler;
+
 /**
  * @brief NoC router placement checkpoint
  *
@@ -29,7 +31,7 @@ class NoCPlacementCheckpoint {
     /**
      * @brief Default constructor initializes private member variables.
      */
-    NoCPlacementCheckpoint();
+    explicit NoCPlacementCheckpoint(NocCostHandler& noc_cost_handler);
     NoCPlacementCheckpoint(const NoCPlacementCheckpoint& other) = delete;
     NoCPlacementCheckpoint& operator=(const NoCPlacementCheckpoint& other) = delete;
 
@@ -67,6 +69,7 @@ class NoCPlacementCheckpoint {
 
   private:
     std::unordered_map<ClusterBlockId, t_pl_loc> router_locations_;
+    NocCostHandler& noc_cost_handler_;
     bool valid_ = false;
     double cost_;
 };

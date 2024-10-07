@@ -106,11 +106,11 @@ bool NocStorage::is_noc_3d() const {
 // setters for the NoC
 
 void NocStorage::add_router(int id,
-                            int grid_position_x, int grid_posistion_y, int layer_position,
+                            int grid_position_x, int grid_position_y, int layer_position,
                             double latency) {
     VTR_ASSERT_MSG(!built_noc, "NoC already built, cannot modify further.");
 
-    router_storage.emplace_back(id, grid_position_x, grid_posistion_y, layer_position, latency);
+    router_storage.emplace_back(id, grid_position_x, grid_position_y, layer_position, latency);
 
     /* Get the corresponding NocRouterId for the newly added router and
      * add it to the conversion table.
@@ -123,7 +123,7 @@ void NocStorage::add_router(int id,
 
     /* need to associate the current router with its grid position */
     // get the key to identify the current router
-    int router_key = generate_router_key_from_grid_location(grid_position_x, grid_posistion_y, layer_position);
+    int router_key = generate_router_key_from_grid_location(grid_position_x, grid_position_y, layer_position);
     grid_location_to_router_id.insert(std::pair<int, NocRouterId>(router_key, converted_id));
 }
 
@@ -205,8 +205,6 @@ bool NocStorage::remove_link(NocRouterId src_router_id, NocRouterId sink_router_
 
         link_storage[link_to_be_removed_id].set_source_router(NocRouterId::INVALID());
         link_storage[link_to_be_removed_id].set_sink_router(NocRouterId::INVALID());
-        link_storage[link_to_be_removed_id].set_bandwidth_usage(-1);
-
     }
 
     // if a link was not removed then throw warning message

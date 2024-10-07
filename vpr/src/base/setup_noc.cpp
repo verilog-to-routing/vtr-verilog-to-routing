@@ -133,7 +133,7 @@ void create_noc_routers(const t_noc_inf& noc_info,
                         const vtr::vector<int, t_noc_router_tile_position>& noc_router_tiles) {
     // keep track of the router assignments (store the user router id that was assigned to each physical router tile)
     // this is used in error checking, after determining the closest physical router for a user described router in the arch file,
-    // the datastructure below can be used to check if that physical router was already assigned previously
+    // the data structure below can be used to check if that physical router was already assigned previously
     std::vector<int> router_assignments;
     router_assignments.resize(noc_router_tiles.size(), PHYSICAL_ROUTER_NOT_ASSIGNED);
 
