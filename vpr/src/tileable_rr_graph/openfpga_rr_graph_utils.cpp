@@ -188,14 +188,14 @@ bool is_ipin_direct_connected_opin(const RRGraphView& rr_graph,
  * Note that this function expect one valid side to be got. Otherwise, it will fail! */
 e_side get_rr_graph_single_node_side(const RRGraphView& rr_graph,
                                      const RRNodeId& node) {
-    e_side node_side = NUM_SIDES;
+    e_side node_side = NUM_2D_SIDES;
     int num_sides = 0;
-    for (e_side candidate_side : SIDES) {
+    for (e_side candidate_side : TOTAL_2D_SIDES) {
         if (rr_graph.is_node_on_specific_side(node, candidate_side)) {
             node_side = candidate_side;
             num_sides++;
         }
     }
-    VTR_ASSERT(1 == num_sides && node_side != NUM_SIDES);
+    VTR_ASSERT(1 == num_sides && node_side != NUM_2D_SIDES);
     return node_side;
 }

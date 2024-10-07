@@ -730,12 +730,12 @@ static void load_grid_nodes_basic_info(RRGraphBuilder& rr_graph_builder,
                                                             vtr::Point<int>(root_x, root_y),
                                                             vtr::Point<int>(x, y),
                                                             SOURCE,
-                                                            SIDES[0]);
+                                                            TOTAL_2D_SIDES[0]);
                 rr_graph_builder.node_lookup().mirror_nodes(0,
                                                             vtr::Point<int>(root_x, root_y),
                                                             vtr::Point<int>(x, y),
                                                             SINK,
-                                                            SIDES[0]);
+                                                            TOTAL_2D_SIDES[0]);
             }
         }
     }
@@ -1195,9 +1195,9 @@ void create_tileable_rr_graph_nodes(const RRGraphView& rr_graph,
      *             When comment the following block out, you will see errors */
     for (t_rr_type rr_type : RR_TYPES) {
         if (rr_type == CHANX) {
-            rr_graph_builder.node_lookup().resize_nodes(layer, grids.height(), grids.width(), rr_type, NUM_SIDES);
+            rr_graph_builder.node_lookup().resize_nodes(layer, grids.height(), grids.width(), rr_type, NUM_2D_SIDES);
         } else {
-            rr_graph_builder.node_lookup().resize_nodes(layer, grids.width(), grids.height(), rr_type, NUM_SIDES);
+            rr_graph_builder.node_lookup().resize_nodes(layer, grids.width(), grids.height(), rr_type, NUM_2D_SIDES);
         }
     }
 

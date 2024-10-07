@@ -28,7 +28,7 @@ RRGSB::RRGSB() {
 
     opin_node_.clear();
     for (size_t icb_type = 0; icb_type < 2; icb_type++) {
-        for (size_t iside = 0; iside < NUM_SIDES; iside++) { 
+        for (size_t iside = 0; iside < NUM_2D_SIDES; iside++) { 
             cb_opin_node_[icb_type][iside].clear();
         }
     }
@@ -401,7 +401,7 @@ void RRGSB::get_node_side_and_index(const RRGraphView& rr_graph,
 
     if (side == get_num_sides()) {
         /* we find nothing, return NUM_SIDES, and a OPEN node (-1) */
-        node_side = NUM_SIDES;
+        node_side = NUM_2D_SIDES;
         VTR_ASSERT(-1 == node_index);
         return;
     }
@@ -517,7 +517,7 @@ bool RRGSB::is_sb_node_passing_wire(const RRGraphView& rr_graph,
      */
     if (true != is_sb_node_exist_opposite_side(rr_graph, track_node, node_side)) {
         VTR_LOG("Cannot find a node on the opposite side to GSB[%lu][%lu] track node[%lu] at %s!\nDetailed node information:\n",
-                get_x(), get_y(), track_id, SIDE_STRING[node_side]);
+                get_x(), get_y(), track_id, TOTAL_2D_SIDE_STRINGS[node_side]);
         VTR_LOG("Node type: %s\n", rr_graph.node_type_string(track_node));
         VTR_LOG("Node coordinate: %s\n", rr_graph.node_coordinate_to_string(track_node).c_str());
         VTR_LOG("Node ptc: %d\n", rr_graph.node_ptc_num(track_node));
@@ -790,12 +790,12 @@ void RRGSB::sort_chan_node_in_edges(const RRGraphView& rr_graph,
     for (const RREdgeId& edge : rr_graph.node_in_edges(chan_node)) {
         /* We care the source node of this edge, and it should be an input of the GSB!!! */
         const RRNodeId& src_node = rr_graph.edge_src_node(edge);
-        e_side side = NUM_SIDES;
+        e_side side = NUM_2D_SIDES;
         int index = 0;
         get_node_side_and_index(rr_graph, src_node, IN_PORT, side, index);
 
         /* Must have valid side and index */
-        if (NUM_SIDES == side) {
+        if (NUM_2D_SIDES == side) {
             VTR_LOG("GSB[%lu][%lu]:\n", get_x(), get_y());
             VTR_LOG("----------------------------------\n");
             VTR_LOG("SRC node:\n");
@@ -815,7 +815,7 @@ void RRGSB::sort_chan_node_in_edges(const RRGraphView& rr_graph,
             }
         }
 
-        VTR_ASSERT(NUM_SIDES != side);
+        VTR_ASSERT(NUM_2D_SIDES != side);
         VTR_ASSERT(OPEN != index);
 
         if (OPIN == rr_graph.node_type(src_node)) {
@@ -873,7 +873,7 @@ void RRGSB::sort_ipin_node_in_edges(const RRGraphView& rr_graph,
                                     const e_side& ipin_side,
                                     const size_t& ipin_id) {
     std::map<size_t, RREdgeId> from_track_edge_map;
-    std::array<std::map<size_t, RREdgeId>, NUM_SIDES> from_opin_edge_map;
+    std::array<std::map<size_t, RREdgeId>, NUM_2D_SIDES> from_opin_edge_map;
 
     e_side chan_side = get_cb_chan_side(ipin_side);
 
@@ -944,13 +944,13 @@ void RRGSB::sort_ipin_node_in_edges(const RRGraphView& rr_graph,
         if (OPIN != rr_graph.node_type(src_node)) {
           continue;
         }
-        enum e_side cb_opin_side = NUM_SIDES;
+        enum e_side cb_opin_side = NUM_2D_SIDES;
         int cb_opin_index = -1;
         get_node_side_and_index(rr_graph, src_node, IN_PORT, cb_opin_side,
                                 cb_opin_index);
-        VTR_ASSERT((-1 != cb_opin_index) && (NUM_SIDES != cb_opin_side));
+        VTR_ASSERT((-1 != cb_opin_index) && (NUM_2D_SIDES != cb_opin_side));
         /* Must have valid side and index */
-        if (OPEN == cb_opin_index || NUM_SIDES == cb_opin_side) {
+        if (OPEN == cb_opin_index || NUM_2D_SIDES == cb_opin_side) {
             VTR_LOG("GSB[%lu][%lu]:\n", get_x(), get_y());
             VTR_LOG("----------------------------------\n");
             VTR_LOG("SRC node:\n");
@@ -1021,11 +1021,11 @@ void RRGSB::build_cb_opin_nodes(const RRGraphView& rr_graph) {
           if (OPIN != rr_graph.node_type(cand_node)) {
             continue;
           }
-          enum e_side cb_opin_side = NUM_SIDES;
+          enum e_side cb_opin_side = NUM_2D_SIDES;
           int cb_opin_index = -1;
           get_node_side_and_index(rr_graph, cand_node, IN_PORT, cb_opin_side,
                                   cb_opin_index);
-          if ((-1 == cb_opin_index) || (NUM_SIDES == cb_opin_side)) {
+          if ((-1 == cb_opin_index) || (NUM_2D_SIDES == cb_opin_side)) {
               VTR_LOG("GSB[%lu][%lu]:\n", get_x(), get_y());
               VTR_LOG("----------------------------------\n");
               VTR_LOG("SRC node:\n");
@@ -1036,7 +1036,7 @@ void RRGSB::build_cb_opin_nodes(const RRGraphView& rr_graph) {
                   VTR_LOG("\t%s\n", rr_graph.node_coordinate_to_string(rr_graph.edge_sink_node(temp_edge)).c_str());
               }
           }
-          VTR_ASSERT((-1 != cb_opin_index) && (NUM_SIDES != cb_opin_side));
+          VTR_ASSERT((-1 != cb_opin_index) && (NUM_2D_SIDES != cb_opin_side));
 
           if (cb_opin_node_[icb_type][size_t(cb_opin_side)].end() ==
               std::find(cb_opin_node_[icb_type][size_t(cb_opin_side)].begin(), cb_opin_node_[icb_type][size_t(cb_opin_side)].end(), cand_node)) {

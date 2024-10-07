@@ -646,7 +646,7 @@ RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
         vtr::Point<size_t> coordinate = rr_gsb.get_side_block_coordinate(side_manager.get_side());
         RRChan rr_chan;
         std::vector<std::vector<RRNodeId>> temp_opin_rr_nodes(2);
-        enum e_side opin_grid_side[2] = {NUM_SIDES, NUM_SIDES};
+        enum e_side opin_grid_side[2] = {NUM_2D_SIDES, NUM_2D_SIDES};
         enum PORTS chan_dir_to_port_dir_mapping[2] = {OUT_PORT, IN_PORT}; /* 0: INC_DIRECTION => ?; 1: DEC_DIRECTION => ? */
 
         /* Build a segment details, where we need the segment ids for building rr_chan
@@ -817,8 +817,8 @@ RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
         /* Clear the temp data */
         temp_opin_rr_nodes[0].clear();
         temp_opin_rr_nodes[1].clear();
-        opin_grid_side[0] = NUM_SIDES;
-        opin_grid_side[1] = NUM_SIDES;
+        opin_grid_side[0] = NUM_2D_SIDES;
+        opin_grid_side[1] = NUM_2D_SIDES;
     }
 
     /* Add IPIN nodes from adjacent grids: the 4 grids sitting on the 4 corners of the Switch Block

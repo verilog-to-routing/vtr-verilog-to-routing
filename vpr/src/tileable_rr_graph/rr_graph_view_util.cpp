@@ -45,7 +45,7 @@ std::vector<RRNodeId> find_rr_graph_nodes(const RRGraphView& rr_graph,
     if (rr_type == IPIN || rr_type == OPIN) {
         //For pins we need to look at all the sides of the current grid tile
 
-        for (e_side side : SIDES) {
+        for (e_side side : TOTAL_2D_SIDES) {
             RRNodeId rr_node_index = rr_graph.node_lookup().find_node(layer, x, y, rr_type, ptc, side);
 
             if (rr_node_index != RRNodeId::INVALID()) {
@@ -106,7 +106,7 @@ std::vector<RRNodeId> find_rr_graph_grid_nodes(const RRGraphView& rr_graph,
     }
 
     /* Ensure we have a valid side */
-    VTR_ASSERT(side != NUM_SIDES);
+    VTR_ASSERT(side != NUM_2D_SIDES);
 
     /* Find all the pins on the side of the grid */
     t_physical_tile_loc tile_loc(x, y, layer);

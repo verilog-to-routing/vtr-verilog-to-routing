@@ -78,7 +78,7 @@ void RRGraphBuilder::add_node_to_all_locs(RRNodeId node) {
 }
 
 RRNodeId RRGraphBuilder::create_node(int layer, int x, int y, t_rr_type type, int ptc, e_side side) {
-    e_side node_side = SIDES[0];
+    e_side node_side = TOTAL_2D_SIDES[0];
     /* Only OPIN and IPIN nodes have sides, otherwise force to use a default side */
     if (OPIN == type || IPIN == type) {
         node_side = side;
