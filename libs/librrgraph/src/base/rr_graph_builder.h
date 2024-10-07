@@ -135,7 +135,8 @@ class RRGraphBuilder {
     /** @brief Create a new rr_node in the node storage and register it to the node look-up.
      *  Return a valid node id if succeed. Otherwise, return an invalid id.
      */
-    RRNodeId create_node(int layer, int x, int y, t_rr_type type, int ptc, e_side side = NUM_SIDES); 
+    RRNodeId create_node(int layer, int x, int y, t_rr_type type, int ptc, e_side side = NUM_2D_SIDES);
+
     /**
      * @brief Add an existing rr_node in the node storage to the node look-up
      *

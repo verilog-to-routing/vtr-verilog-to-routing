@@ -79,7 +79,7 @@ void build_rr_graph_edges_for_sink_nodes(const RRGraphView& rr_graph,
         const RRNodeId& sink_node = rr_graph.node_lookup().find_node(layer,
                                                                      xlow - grids.get_width_offset(tile_loc),
                                                                      ylow - grids.get_height_offset(tile_loc),
-                                                                     SINK, sink_node_class_num, SIDES[0]);
+                                                                     SINK, sink_node_class_num, TOTAL_2D_SIDES[0]);
         VTR_ASSERT(true == rr_graph.valid_node(sink_node));
 
         /* add edges to connect the IPIN node to SINK nodes */
