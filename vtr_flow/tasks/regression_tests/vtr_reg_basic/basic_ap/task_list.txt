@@ -1,5 +1,0 @@
-# This extra task list is for running just the basic_ap tasks in isolation.
-regression_tests/vtr_reg_basic/basic_ap/single_wire
-regression_tests/vtr_reg_basic/basic_ap/single_ff
-#regression_tests/vtr_reg_basic/basic_ap/ch_intrinsics
-regression_tests/vtr_reg_basic/basic_ap/diffeq1

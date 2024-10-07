@@ -135,6 +135,18 @@ struct PartialPlacement {
     }
 
     /**
+     * @brief Computes the HPWL of the current partial placement solution.
+     *
+     * NOTE: This gets the HPWL of the netlist and partial placement as it
+     *       currently appears. The user should be aware that fractional
+     *       positions of blocks are not realistic and the netlist is ignoring
+     *       some nets to make the analytical placment problem easier.
+     *       The user should use an atom or cluster level HPWL for an accurate
+     *       result. This is used for the Global Placer.
+     */
+    double get_hpwl(const APNetlist& netlist) const;
+
+    /**
      * @brief Verify the block_x_locs and block_y_locs vectors
      *
      * Currently ensures:
