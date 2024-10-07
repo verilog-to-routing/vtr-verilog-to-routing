@@ -114,7 +114,7 @@ static void do_one_route(const Netlist<>& net_list,
             is_flat);
     enable_router_debug(router_opts, ParentNetId(), sink_node, 1, &router);
     bool found_path;
-    t_heap cheapest;
+    RTExploredNode cheapest;
     ConnectionParameters conn_params(ParentNetId::INVALID(),
                                      -1,
                                      false,
