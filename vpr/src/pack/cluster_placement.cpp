@@ -17,30 +17,42 @@
  * November 17, 2022
  */
 
-#include "vtr_assert.h"
-#include "vtr_memory.h"
-
-#include "vpr_types.h"
-#include "globals.h"
-#include "vpr_utils.h"
-#include "hash.h"
 #include "cluster_placement.h"
+#include "hash.h"
+#include "physical_types.h"
+#include "vpr_types.h"
+#include "vpr_utils.h"
+#include "vtr_assert.h"
 
 /****************************************/
 /*Local Function Declaration			*/
 /****************************************/
-static void load_cluster_placement_stats_for_pb_graph_node(t_cluster_placement_stats* cluster_placement_stats,
+
+static void load_cluster_placement_stats_for_pb_graph_node(t_intra_cluster_placement_stats* cluster_placement_stats,
                                                            t_pb_graph_node* pb_graph_node);
-static void update_primitive_cost_or_status(const t_pb_graph_node* pb_graph_node,
+
+static void reset_cluster_placement_stats(t_intra_cluster_placement_stats* cluster_placement_stats);
+
+static void set_mode_cluster_placement_stats(t_intra_cluster_placement_stats* cluster_placement_stats,
+                                             const t_pb_graph_node* pb_graph_node,
+                                             int mode);
+
+static void update_primitive_cost_or_status(t_intra_cluster_placement_stats* cluster_placement_stats,
+                                            const t_pb_graph_node* pb_graph_node,
                                             float incremental_cost,
                                             bool valid);
-static float try_place_molecule(const t_pack_molecule* molecule,
+
+static float try_place_molecule(t_intra_cluster_placement_stats* cluster_placement_stats,
+                                const t_pack_molecule* molecule,
                                 t_pb_graph_node* root,
                                 t_pb_graph_node** primitives_list);
-static bool expand_forced_pack_molecule_placement(const t_pack_molecule* molecule,
+
+static bool expand_forced_pack_molecule_placement(t_intra_cluster_placement_stats* cluster_placement_stats,
+                                                  const t_pack_molecule* molecule,
                                                   const t_pack_pattern_block* pack_pattern_block,
                                                   t_pb_graph_node** primitives_list,
                                                   float* cost);
+
 static t_pb_graph_pin* expand_pack_molecule_pin_edge(int pattern_id,
                                                      const t_pb_graph_pin* cur_pin,
                                                      bool forward);
@@ -49,48 +61,118 @@ static t_pb_graph_pin* expand_pack_molecule_pin_edge(int pattern_id,
 /*Function Definitions					*/
 /****************************************/
 
-/**
- * [0..num_pb_types-1] array of cluster placement stats, one for each device_ctx.block_types
- */
-t_cluster_placement_stats* alloc_and_load_cluster_placement_stats() {
-    t_cluster_placement_stats* cluster_placement_stats_list;
+void t_intra_cluster_placement_stats::move_inflight_to_tried() {
+    tried.insert(*in_flight.begin());
+    in_flight.clear();
+}
 
-    auto& device_ctx = g_vpr_ctx.device();
+void t_intra_cluster_placement_stats::invalidate_primitive_and_increment_iterator(int pb_type_index, std::unordered_multimap<int, t_cluster_placement_primitive*>::iterator& it) {
+    invalid.insert(*it);
+    valid_primitives[pb_type_index].erase(it++);
+}
 
-    // Allocate array of cluster placement stats, one for each device_ctx.block_types
-    cluster_placement_stats_list = new t_cluster_placement_stats[device_ctx.logical_block_types.size()];
-
-    // For each block type, initialize the cluster_placement_stats and load it with the primitives in this type
-    for (const auto& type : device_ctx.logical_block_types) {
-        cluster_placement_stats_list[type.index] = t_cluster_placement_stats();
-        if (!is_empty_type(&type)) {
-            cluster_placement_stats_list[type.index].curr_molecule = nullptr;
-            load_cluster_placement_stats_for_pb_graph_node(&cluster_placement_stats_list[type.index],
-                                                           type.pb_graph_head);
-        }
-    }
-    return cluster_placement_stats_list;
+void t_intra_cluster_placement_stats::move_primitive_to_inflight(int pb_type_index, std::unordered_multimap<int, t_cluster_placement_primitive*>::iterator& it) {
+    in_flight.insert(*it);
+    valid_primitives[pb_type_index].erase(it);
 }
 
 /**
- * get next list of primitives for list of atom blocks
+ * @brief Put primitive back on the correct location of valid primitives vector based on the primitive pb type
  *
- * primitives is the list of ptrs to primitives that matches with the list of atom block, assumes memory is preallocated
- *   - if this is a new block, requeue tried primitives and return a in-flight primitive list to try
- *   - if this is an old block, put root primitive to tried queue, requeue rest of primitives. try another set of primitives
- *
- * return true if can find next primitive, false otherwise
- *
- * cluster_placement_stats - ptr to the current cluster_placement_stats of open complex block
- * molecule - molecule to pack into open complex block
- * primitives_list - a list of primitives indexed to match atom_block_ids of molecule.
- *                   Expects an allocated array of primitives ptrs as inputs.
- *                   This function loads the array with the lowest cost primitives that implement molecule
- * force_site - optional user-specified primitive site on which to place the molecule; if a force_site
- *              argument is provided, the function either selects the specified site or reports failure.
- *              If the force_site argument is set to its default value (-1), vpr selects an available site.
+ * @note that valid status is not changed because if the primitive is not valid, it will get properly collected later
  */
-bool get_next_primitive_list(t_cluster_placement_stats* cluster_placement_stats,
+void t_intra_cluster_placement_stats::insert_primitive_in_valid_primitives(std::pair<int, t_cluster_placement_primitive*> cluster_placement_primitive) {
+    int i;
+    bool success = false;
+    int null_index = OPEN;
+    t_cluster_placement_primitive* input_cluster_placement_primitive = cluster_placement_primitive.second;
+
+    for (i = 0; i < num_pb_types && !success; i++) {
+        if (valid_primitives[i].empty()) {
+            null_index = i;
+            continue;
+        }
+        t_cluster_placement_primitive* cur_cluster_placement_primitive = valid_primitives[i].begin()->second;
+        if (input_cluster_placement_primitive->pb_graph_node->pb_type
+            == cur_cluster_placement_primitive->pb_graph_node->pb_type) {
+            success = true;
+            valid_primitives[i].insert(cluster_placement_primitive);
+        }
+    }
+    if (!success) {
+        VTR_ASSERT(null_index != OPEN);
+        valid_primitives[null_index].insert(cluster_placement_primitive);
+    }
+}
+
+void t_intra_cluster_placement_stats::flush_queue(std::unordered_multimap<int, t_cluster_placement_primitive*>& queue) {
+    for (auto& it : queue) {
+        insert_primitive_in_valid_primitives(it);
+    }
+    queue.clear();
+}
+
+void t_intra_cluster_placement_stats::flush_intermediate_queues() {
+    flush_queue(in_flight);
+    flush_queue(tried);
+}
+
+void t_intra_cluster_placement_stats::flush_invalid_queue() {
+    flush_queue(invalid);
+}
+
+bool t_intra_cluster_placement_stats::in_flight_empty() {
+    return in_flight.empty();
+}
+
+t_pb_type* t_intra_cluster_placement_stats::in_flight_type() {
+    return in_flight.begin()->second->pb_graph_node->pb_type;
+}
+
+void t_intra_cluster_placement_stats::free_primitives() {
+    for (auto& primitive : tried)
+        delete primitive.second;
+
+    for (auto& primitive : in_flight)
+        delete primitive.second;
+
+    for (auto& primitive : invalid)
+        delete primitive.second;
+
+    for (int j = 0; j < num_pb_types; j++) {
+        for (auto& primitive : valid_primitives[j]) {
+            delete primitive.second;
+        }
+    }
+}
+
+t_intra_cluster_placement_stats* alloc_and_load_cluster_placement_stats(t_logical_block_type_ptr cluster_type,
+                                                                  int cluster_mode) {
+    t_intra_cluster_placement_stats* cluster_placement_stats = new t_intra_cluster_placement_stats;
+    *cluster_placement_stats = t_intra_cluster_placement_stats();
+    // TODO: This initialization may be able to be made more efficient.
+    //       The reset and setting the mode can be done while loading the placement
+    //       stats.
+    if (!is_empty_type(cluster_type)) {
+        cluster_placement_stats->curr_molecule = nullptr;
+        load_cluster_placement_stats_for_pb_graph_node(cluster_placement_stats,
+                                                       cluster_type->pb_graph_head);
+    }
+    reset_cluster_placement_stats(cluster_placement_stats);
+    set_mode_cluster_placement_stats(cluster_placement_stats,
+                                     cluster_type->pb_graph_head,
+                                     cluster_mode);
+    return cluster_placement_stats;
+}
+
+void free_cluster_placement_stats(t_intra_cluster_placement_stats* cluster_placement_stats) {
+    if (cluster_placement_stats != nullptr) {
+        cluster_placement_stats->free_primitives();
+        delete cluster_placement_stats;
+    }
+}
+
+bool get_next_primitive_list(t_intra_cluster_placement_stats* cluster_placement_stats,
                              const t_pack_molecule* molecule,
                              t_pb_graph_node** primitives_list,
                              int force_site) {
@@ -150,7 +232,10 @@ bool get_next_primitive_list(t_cluster_placement_stats* cluster_placement_stats,
                             break;
                         }
                         if (force_site == it->second->pb_graph_node->flat_site_index) {
-                            cost = try_place_molecule(molecule, it->second->pb_graph_node, primitives_list);
+                            cost = try_place_molecule(cluster_placement_stats,
+                                                      molecule,
+                                                      it->second->pb_graph_node,
+                                                      primitives_list);
                             if (cost < HUGE_POSITIVE_FLOAT) {
                                 cluster_placement_stats->move_primitive_to_inflight(i, it);
                                 return true;
@@ -164,7 +249,10 @@ bool get_next_primitive_list(t_cluster_placement_stats* cluster_placement_stats,
                     }
 
                     /* try place molecule at root location cur */
-                    cost = try_place_molecule(molecule, it->second->pb_graph_node, primitives_list);
+                    cost = try_place_molecule(cluster_placement_stats,
+                                              molecule,
+                                              it->second->pb_graph_node,
+                                              primitives_list);
 
                     // if the cost is lower than the best, or is equal to the best but this
                     // primitive is more available in the cluster mark it as the best primitive
@@ -192,7 +280,10 @@ bool get_next_primitive_list(t_cluster_placement_stats* cluster_placement_stats,
         }
     } else {
         /* populate primitive list with best */
-        cost = try_place_molecule(molecule, best->second->pb_graph_node, primitives_list);
+        cost = try_place_molecule(cluster_placement_stats,
+                                  molecule,
+                                  best->second->pb_graph_node,
+                                  primitives_list);
         VTR_ASSERT(cost == lowest_cost);
 
         /* take out best node and put it in flight */
@@ -208,7 +299,7 @@ bool get_next_primitive_list(t_cluster_placement_stats* cluster_placement_stats,
 /**
  * Resets one cluster placement stats by clearing incremental costs and returning all primitives to valid queue
  */
-void reset_cluster_placement_stats(t_cluster_placement_stats* cluster_placement_stats) {
+static void reset_cluster_placement_stats(t_intra_cluster_placement_stats* cluster_placement_stats) {
     int i;
 
     /* Requeue primitives */
@@ -230,7 +321,7 @@ void reset_cluster_placement_stats(t_cluster_placement_stats* cluster_placement_
  * Add any primitives found in pb_graph_nodes to cluster_placement_stats
  * Adds backward link from pb_graph_node to cluster_placement_primitive
  */
-static void load_cluster_placement_stats_for_pb_graph_node(t_cluster_placement_stats* cluster_placement_stats,
+static void load_cluster_placement_stats_for_pb_graph_node(t_intra_cluster_placement_stats* cluster_placement_stats,
                                                            t_pb_graph_node* pb_graph_node) {
     int i, j, k;
     t_cluster_placement_primitive* placement_primitive;
@@ -240,7 +331,7 @@ static void load_cluster_placement_stats_for_pb_graph_node(t_cluster_placement_s
         placement_primitive = new t_cluster_placement_primitive();
         placement_primitive->pb_graph_node = pb_graph_node;
         placement_primitive->valid = true;
-        pb_graph_node->cluster_placement_primitive = placement_primitive;
+        cluster_placement_stats->set_pb_graph_node_placement_primitive(pb_graph_node, placement_primitive);
         placement_primitive->base_cost = compute_primitive_base_cost(pb_graph_node);
 
         bool success = false;
@@ -284,14 +375,7 @@ static void load_cluster_placement_stats_for_pb_graph_node(t_cluster_placement_s
     }
 }
 
-/**
- * Commit primitive, invalidate primitives blocked by mode assignment and update costs for primitives in same cluster as current
- * Costing is done to try to pack blocks closer to existing primitives
- *  actual value based on closest common ancestor to committed placement, the farther the ancestor, the less reduction in cost there is
- * Side effects: All cluster_placement_primitives may be invalidated/costed in this algorithm
- *               Al intermediate queues are requeued
- */
-void commit_primitive(t_cluster_placement_stats* cluster_placement_stats,
+void commit_primitive(t_intra_cluster_placement_stats* cluster_placement_stats,
                       const t_pb_graph_node* primitive) {
     t_pb_graph_node *pb_graph_node, *skip;
     float incr_cost;
@@ -303,7 +387,7 @@ void commit_primitive(t_cluster_placement_stats* cluster_placement_stats,
     cluster_placement_stats->flush_intermediate_queues();
 
     /* commit primitive as used, invalidate it */
-    cur = primitive->cluster_placement_primitive;
+    cur = cluster_placement_stats->get_pb_graph_node_placement_primitive(primitive);
     VTR_ASSERT(cur->valid == true);
 
     cur->valid = false;
@@ -319,7 +403,8 @@ void commit_primitive(t_cluster_placement_stats* cluster_placement_stats,
             for (j = 0; j < pb_graph_node->pb_type->modes[i].num_pb_type_children; j++) {
                 for (k = 0; k < pb_graph_node->pb_type->modes[i].pb_type_children[j].num_pb; k++) {
                     if (&pb_graph_node->child_pb_graph_nodes[i][j][k] != skip) {
-                        update_primitive_cost_or_status(&pb_graph_node->child_pb_graph_nodes[i][j][k],
+                        update_primitive_cost_or_status(cluster_placement_stats,
+                                                        &pb_graph_node->child_pb_graph_nodes[i][j][k],
                                                         incr_cost, (bool)(i == valid_mode));
                     }
                 }
@@ -332,13 +417,18 @@ void commit_primitive(t_cluster_placement_stats* cluster_placement_stats,
 /**
  * Set mode of cluster
  */
-void set_mode_cluster_placement_stats(const t_pb_graph_node* pb_graph_node, int mode) {
+static void set_mode_cluster_placement_stats(t_intra_cluster_placement_stats* cluster_placement_stats,
+                                             const t_pb_graph_node* pb_graph_node,
+                                             int mode) {
     int i, j, k;
     for (i = 0; i < pb_graph_node->pb_type->num_modes; i++) {
         if (i != mode) {
             for (j = 0; j < pb_graph_node->pb_type->modes[i].num_pb_type_children; j++) {
                 for (k = 0; k < pb_graph_node->pb_type->modes[i].pb_type_children[j].num_pb; k++) {
-                    update_primitive_cost_or_status(&pb_graph_node->child_pb_graph_nodes[i][j][k], 0, false);
+                    update_primitive_cost_or_status(cluster_placement_stats,
+                                                    &pb_graph_node->child_pb_graph_nodes[i][j][k],
+                                                    0,
+                                                    false);
                 }
             }
         }
@@ -350,14 +440,15 @@ void set_mode_cluster_placement_stats(const t_pb_graph_node* pb_graph_node, int 
  * For modes invalidated by pb_graph_node, invalidate primitive
  * int distance is the distance of current pb_graph_node from original
  */
-static void update_primitive_cost_or_status(const t_pb_graph_node* pb_graph_node,
+static void update_primitive_cost_or_status(t_intra_cluster_placement_stats* cluster_placement_stats,
+                                            const t_pb_graph_node* pb_graph_node,
                                             const float incremental_cost,
                                             const bool valid) {
     int i, j, k;
     t_cluster_placement_primitive* placement_primitive;
     if (pb_graph_node->is_primitive()) {
         /* is primitive */
-        placement_primitive = (t_cluster_placement_primitive*)pb_graph_node->cluster_placement_primitive;
+        placement_primitive = cluster_placement_stats->get_pb_graph_node_placement_primitive(pb_graph_node);
         if (valid) {
             placement_primitive->incremental_cost += incremental_cost;
         } else {
@@ -367,7 +458,8 @@ static void update_primitive_cost_or_status(const t_pb_graph_node* pb_graph_node
         for (i = 0; i < pb_graph_node->pb_type->num_modes; i++) {
             for (j = 0; j < pb_graph_node->pb_type->modes[i].num_pb_type_children; j++) {
                 for (k = 0; k < pb_graph_node->pb_type->modes[i].pb_type_children[j].num_pb; k++) {
-                    update_primitive_cost_or_status(&pb_graph_node->child_pb_graph_nodes[i][j][k],
+                    update_primitive_cost_or_status(cluster_placement_stats,
+                                                    &pb_graph_node->child_pb_graph_nodes[i][j][k],
                                                     incremental_cost, valid);
                 }
             }
@@ -378,7 +470,8 @@ static void update_primitive_cost_or_status(const t_pb_graph_node* pb_graph_node
 /**
  * Try place molecule at root location, populate primitives list with locations of placement if successful
  */
-static float try_place_molecule(const t_pack_molecule* molecule,
+static float try_place_molecule(t_intra_cluster_placement_stats* cluster_placement_stats,
+                                const t_pack_molecule* molecule,
                                 t_pb_graph_node* root,
                                 t_pb_graph_node** primitives_list) {
     int list_size, i;
@@ -387,16 +480,19 @@ static float try_place_molecule(const t_pack_molecule* molecule,
 
     if (primitive_type_feasible(molecule->atom_block_ids[molecule->root],
                                 root->pb_type)) {
-        if (root->cluster_placement_primitive->valid) {
+        t_cluster_placement_primitive* root_placement_primitive = cluster_placement_stats->get_pb_graph_node_placement_primitive(root);
+        if (root_placement_primitive->valid) {
             for (i = 0; i < list_size; i++) {
                 primitives_list[i] = nullptr;
             }
-            cost = root->cluster_placement_primitive->base_cost
-                   + root->cluster_placement_primitive->incremental_cost;
+            cost = root_placement_primitive->base_cost
+                   + root_placement_primitive->incremental_cost;
             primitives_list[molecule->root] = root;
             if (molecule->type == MOLECULE_FORCED_PACK) {
-                if (!expand_forced_pack_molecule_placement(molecule,
-                                                           molecule->pack_pattern->root_block, primitives_list,
+                if (!expand_forced_pack_molecule_placement(cluster_placement_stats,
+                                                           molecule,
+                                                           molecule->pack_pattern->root_block,
+                                                           primitives_list,
                                                            &cost)) {
                     return HUGE_POSITIVE_FLOAT;
                 }
@@ -420,7 +516,8 @@ static float try_place_molecule(const t_pack_molecule* molecule,
  * Expand molecule at pb_graph_node
  * Assumes molecule and pack pattern connections have fan-out 1
  */
-static bool expand_forced_pack_molecule_placement(const t_pack_molecule* molecule,
+static bool expand_forced_pack_molecule_placement(t_intra_cluster_placement_stats* cluster_placement_stats,
+                                                  const t_pack_molecule* molecule,
                                                   const t_pack_pattern_block* pack_pattern_block,
                                                   t_pb_graph_node** primitives_list,
                                                   float* cost) {
@@ -467,10 +564,11 @@ static bool expand_forced_pack_molecule_placement(const t_pack_molecule* molecul
                 next_primitive = next_pin->parent_node;
                 /* Check for legality of placement, if legal, expand from legal placement, if not, return false */
                 if (molecule->atom_block_ids[next_block->block_id] && primitives_list[next_block->block_id] == nullptr) {
-                    if (next_primitive->cluster_placement_primitive->valid && primitive_type_feasible(molecule->atom_block_ids[next_block->block_id], next_primitive->pb_type)) {
+                    t_cluster_placement_primitive* next_placement_primitive = cluster_placement_stats->get_pb_graph_node_placement_primitive(next_primitive);
+                    if (next_placement_primitive->valid && primitive_type_feasible(molecule->atom_block_ids[next_block->block_id], next_primitive->pb_type)) {
                         primitives_list[next_block->block_id] = next_primitive;
-                        *cost += next_primitive->cluster_placement_primitive->base_cost + next_primitive->cluster_placement_primitive->incremental_cost;
-                        if (!expand_forced_pack_molecule_placement(molecule, next_block, primitives_list, cost)) {
+                        *cost += next_placement_primitive->base_cost + next_placement_primitive->incremental_cost;
+                        if (!expand_forced_pack_molecule_placement(cluster_placement_stats, molecule, next_block, primitives_list, cost)) {
                             return false;
                         }
                     } else {
@@ -597,7 +695,7 @@ int get_array_size_of_molecule(const t_pack_molecule* molecule) {
 }
 
 /* Given atom block, determines if a free primitive exists for it */
-bool exists_free_primitive_for_atom_block(t_cluster_placement_stats* cluster_placement_stats,
+bool exists_free_primitive_for_atom_block(t_intra_cluster_placement_stats* cluster_placement_stats,
                                           const AtomBlockId blk_id) {
     int i;
 
@@ -626,6 +724,6 @@ bool exists_free_primitive_for_atom_block(t_cluster_placement_stats* cluster_pla
     return false;
 }
 
-void reset_tried_but_unused_cluster_placements(t_cluster_placement_stats* cluster_placement_stats) {
+void reset_tried_but_unused_cluster_placements(t_intra_cluster_placement_stats* cluster_placement_stats) {
     cluster_placement_stats->flush_intermediate_queues();
 }

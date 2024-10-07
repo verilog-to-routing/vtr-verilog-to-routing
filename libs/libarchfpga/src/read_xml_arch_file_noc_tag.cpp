@@ -68,8 +68,9 @@ static void process_mesh_topology(pugi::xml_node mesh_topology_tag,
 static void generate_noc_mesh(pugi::xml_node mesh_topology_tag,
                               const pugiutil::loc_data& loc_data,
                               t_noc_inf* noc_ref,
-                              double mesh_region_start_x, double mesh_region_end_x,
-                              double mesh_region_start_y, double mesh_region_end_y,
+                              float mesh_region_start_x, float mesh_region_end_x,
+                              float mesh_region_start_y, float mesh_region_end_y,
+                              int mesh_region_start_layer, int mesh_region_end_layer,
                               int mesh_size);
 
 /**
@@ -227,17 +228,19 @@ static void process_mesh_topology(pugi::xml_node mesh_topology_tag,
     constexpr int ATTRIBUTE_CONVERSION_FAILURE = -1;
 
     // a list of attributes that should be found for the mesh tag
-    std::vector<std::string> expected_router_attributes = {"startx", "endx", "starty", "endy", "size"};
+    std::vector<std::string> expected_router_attributes = {"startx", "endx", "starty", "endy", "startlayer", "endlayer", "size"};
 
     // verify that only the acceptable attributes were supplied
     pugiutil::expect_only_attributes(mesh_topology_tag, expected_router_attributes, loc_data);
 
     // go through the attributes and store their values
-    double mesh_region_start_x = pugiutil::get_attribute(mesh_topology_tag, "startx", loc_data, pugiutil::REQUIRED).as_double(ATTRIBUTE_CONVERSION_FAILURE);
-    double mesh_region_end_x = pugiutil::get_attribute(mesh_topology_tag, "endx", loc_data, pugiutil::REQUIRED).as_double(ATTRIBUTE_CONVERSION_FAILURE);
-    double mesh_region_start_y = pugiutil::get_attribute(mesh_topology_tag, "starty", loc_data, pugiutil::REQUIRED).as_double(ATTRIBUTE_CONVERSION_FAILURE);
-    double mesh_region_end_y = pugiutil::get_attribute(mesh_topology_tag, "endy", loc_data, pugiutil::REQUIRED).as_double(ATTRIBUTE_CONVERSION_FAILURE);
+    float mesh_region_start_x = pugiutil::get_attribute(mesh_topology_tag, "startx", loc_data, pugiutil::REQUIRED).as_float(ATTRIBUTE_CONVERSION_FAILURE);
+    float mesh_region_end_x = pugiutil::get_attribute(mesh_topology_tag, "endx", loc_data, pugiutil::REQUIRED).as_float(ATTRIBUTE_CONVERSION_FAILURE);
+    float mesh_region_start_y = pugiutil::get_attribute(mesh_topology_tag, "starty", loc_data, pugiutil::REQUIRED).as_float(ATTRIBUTE_CONVERSION_FAILURE);
+    float mesh_region_end_y = pugiutil::get_attribute(mesh_topology_tag, "endy", loc_data, pugiutil::REQUIRED).as_float(ATTRIBUTE_CONVERSION_FAILURE);
 
+    int mesh_region_start_layer = pugiutil::get_attribute(mesh_topology_tag, "startlayer", loc_data, pugiutil::OPTIONAL).as_int(ATTRIBUTE_CONVERSION_FAILURE);
+    int mesh_region_end_layer = pugiutil::get_attribute(mesh_topology_tag, "endlayer", loc_data, pugiutil::OPTIONAL).as_int(ATTRIBUTE_CONVERSION_FAILURE);
     int mesh_size = pugiutil::get_attribute(mesh_topology_tag, "size", loc_data, pugiutil::REQUIRED).as_int(ATTRIBUTE_CONVERSION_FAILURE);
 
     // verify that the attributes provided were legal
@@ -246,16 +249,29 @@ static void process_mesh_topology(pugi::xml_node mesh_topology_tag,
                        "The parameters for the mesh topology have to be positive values.");
     }
 
+    if (mesh_region_start_layer == ATTRIBUTE_CONVERSION_FAILURE || mesh_region_end_layer == ATTRIBUTE_CONVERSION_FAILURE) {
+        VTR_LOGF_WARN(loc_data.filename_c_str(), loc_data.line(mesh_topology_tag),
+                      "Optional 'startlayer' and 'endlayer' attributes were not set for the <mesh> tag. "
+                      "The default value of zero is used for both of them.\n");
+        mesh_region_start_layer = 0;
+        mesh_region_end_layer = 0;
+    }
+
     // now create the mesh topology for the noc
     // create routers, make connections and determine positions
-    generate_noc_mesh(mesh_topology_tag, loc_data, noc_ref, mesh_region_start_x, mesh_region_end_x, mesh_region_start_y, mesh_region_end_y, mesh_size);
+    generate_noc_mesh(mesh_topology_tag, loc_data, noc_ref,
+                      mesh_region_start_x, mesh_region_end_x,
+                      mesh_region_start_y, mesh_region_end_y,
+                      mesh_region_start_layer, mesh_region_end_layer,
+                      mesh_size);
 }
 
 static void generate_noc_mesh(pugi::xml_node mesh_topology_tag,
                               const pugiutil::loc_data& loc_data,
                               t_noc_inf* noc_ref,
-                              double mesh_region_start_x, double mesh_region_end_x,
-                              double mesh_region_start_y, double mesh_region_end_y,
+                              float mesh_region_start_x, float mesh_region_end_x,
+                              float mesh_region_start_y, float mesh_region_end_y,
+                              int mesh_region_start_layer, int mesh_region_end_layer,
                               int mesh_size) {
     // check that the mesh size of the router is not 0
     if (mesh_size == 0) {
@@ -285,62 +301,74 @@ static void generate_noc_mesh(pugi::xml_node mesh_topology_tag,
      *
      * THe reasoning for this is to reduce the number of calculated router positions.
      */
-    double vertical_router_separation = (mesh_region_end_y - mesh_region_start_y) / (mesh_size - 1);
-    double horizontal_router_separation = (mesh_region_end_x - mesh_region_start_x) / (mesh_size - 1);
-
-    t_router temp_router;
+    float vertical_router_separation = (mesh_region_end_y - mesh_region_start_y) / (mesh_size - 1);
+    float horizontal_router_separation = (mesh_region_end_x - mesh_region_start_x) / (mesh_size - 1);
 
     // improper region check
-    if ((vertical_router_separation <= 0) || (horizontal_router_separation <= 0)) {
+    if (vertical_router_separation <= 0 || horizontal_router_separation <= 0 ||
+        mesh_region_end_layer < mesh_region_start_layer) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(mesh_topology_tag),
                        "The NoC region is invalid.");
     }
 
     // create routers and their connections
     // start with router id 0 (bottom left of the chip) to the maximum router id (top right of the chip)
-    for (int j = 0; j < mesh_size; j++) {
-        for (int i = 0; i < mesh_size; i++) {
-            // assign router id
-            temp_router.id = (mesh_size * j) + i;
+    for (int l = mesh_region_start_layer; l <= mesh_region_end_layer; l++) {
+        for (int j = 0; j < mesh_size; j++) {
+            for (int i = 0; i < mesh_size; i++) {
+                t_router temp_router;
 
-            // calculate router position
-            /* The first and last router of each column or row will be located on the mesh region boundary,
-             * the remaining routers will be placed within the region and seperated from other routers
-             * using the distance calculated previously.
-             */
-            temp_router.device_x_position = (i * horizontal_router_separation) + mesh_region_start_x;
-            temp_router.device_y_position = (j * vertical_router_separation) + mesh_region_start_y;
+                // assign router id
+                temp_router.id = (mesh_size * mesh_size * (l - mesh_region_start_layer)) + (mesh_size * j) + i;
 
-            // assign connections
-            // check if there is a router to the left
-            if ((i - 1) >= 0) {
-                // add the left router as a connection
-                temp_router.connection_list.push_back((mesh_size * j) + i - 1);
+                // calculate router position
+                /* The first and last router of each column or row will be located on the mesh region boundary,
+                 * the remaining routers will be placed within the region and seperated from other routers
+                 * using the distance calculated previously.
+                 */
+                temp_router.device_x_position = (i * horizontal_router_separation) + mesh_region_start_x;
+                temp_router.device_y_position = (j * vertical_router_separation) + mesh_region_start_y;
+                temp_router.device_layer_position = l;
+
+                // assign connections
+
+                // check if there is a router to the left
+                if (i >= 1) {
+                    // add the left router as a connection
+                    temp_router.connection_list.push_back(temp_router.id - 1);
+                }
+
+                // check if there is a router to the top
+                if (j <= mesh_size - 2) {
+                    // add the top router as a connection
+                    temp_router.connection_list.push_back(temp_router.id + mesh_size);
+                }
+
+                // check if there is a router to the right
+                if (i <= mesh_size - 2) {
+                    // add the router located to the right
+                    temp_router.connection_list.push_back(temp_router.id + 1);
+                }
+
+                // check if there is a router below
+                if (j >= 1) {
+                    // add the bottom router as a connection
+                    temp_router.connection_list.push_back(temp_router.id - mesh_size);
+                }
+
+                // check if there is a router on the layer above
+                if (l < mesh_region_end_layer) {
+                    temp_router.connection_list.push_back(temp_router.id + (mesh_size * mesh_size));
+                }
+
+                // check if there is a router on the layer below
+                if (l > mesh_region_start_layer) {
+                    temp_router.connection_list.push_back(temp_router.id - (mesh_size * mesh_size));
+                }
+
+                // add the router to the list
+                noc_ref->router_list.push_back(temp_router);
             }
-
-            // check if there is a router to the top
-            if ((j + 1) <= (mesh_size - 1)) {
-                // add the top router as a connection
-                temp_router.connection_list.push_back((mesh_size * (j + 1)) + i);
-            }
-
-            // check if there is a router to the right
-            if ((i + 1) <= (mesh_size - 1)) {
-                // add the router located to the right
-                temp_router.connection_list.push_back((mesh_size * j) + i + 1);
-            }
-
-            // check of there is a router below
-            if ((j - 1) >= (0)) {
-                // add the bottom router as a connection
-                temp_router.connection_list.push_back((mesh_size * (j - 1)) + i);
-            }
-
-            // add the router to the list
-            noc_ref->router_list.push_back(temp_router);
-
-            // clear the current router information for the next router
-            temp_router.connection_list.clear();
         }
     }
 }

@@ -237,6 +237,12 @@ class NocTrafficFlows {
      */
     const std::vector<NocTrafficFlowId>& get_all_traffic_flow_id() const;
 
+    /**
+     * @brief Returns all NoC traffic flow objects.
+     * @return Reference to a vtd::vector that contains all NoC traffic flow objects.
+     */
+    const vtr::vector<NocTrafficFlowId, t_noc_traffic_flow>& get_all_traffic_flows() const;
+
     // setters
 
     /**

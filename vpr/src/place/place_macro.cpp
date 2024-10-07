@@ -1,5 +1,4 @@
 #include <cstdio>
-#include <ctime>
 #include <cmath>
 #include <sstream>
 #include <map>
@@ -12,8 +11,6 @@
 #include "vpr_error.h"
 #include "physical_types.h"
 #include "globals.h"
-#include "place.h"
-#include "read_xml_arch_file.h"
 #include "place_macro.h"
 #include "vpr_utils.h"
 #include "echo_files.h"

@@ -251,7 +251,7 @@ void auto_zoom_rr_node(RRNodeId rr_node_id) {
             int ipin = rr_graph.node_ptc_num(rr_node_id);
             float xcen, ycen;
 
-            for (const e_side& iside : SIDES) {
+            for (const e_side& iside : TOTAL_2D_SIDES) {
                 if (type->pinloc[width_offset][height_offset][size_t(iside)][ipin]) {
                     draw_get_rr_pin_coords(rr_node_id, &xcen, &ycen, iside);
                     rr_node = {{xcen - draw_coords->pin_size, ycen - draw_coords->pin_size},

@@ -1,0 +1,2 @@
+#Common metrics for VPR analytical placement with timing
+%include "../common/pass_requirements.vpr_ap.txt"
