@@ -316,7 +316,7 @@ void RRSpatialLookup::mirror_nodes(const int layer,
                                    const vtr::Point<int>& des_coord,
                                    t_rr_type type,
                                    e_side side) {
-    VTR_ASSERT(SOURCE == type);
+    VTR_ASSERT(SOURCE == type || SINK == type);
     resize_nodes(layer, des_coord.x(), des_coord.y(), type, side);
     rr_node_indices_[type][layer][des_coord.x()][des_coord.y()][side] = rr_node_indices_[type][layer][src_coord.x()][src_coord.y()][side];
 }
