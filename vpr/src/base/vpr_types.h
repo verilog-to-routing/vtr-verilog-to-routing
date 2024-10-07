@@ -168,15 +168,6 @@ enum class e_cluster_seed {
     BLEND2
 };
 
-enum class e_block_pack_status {
-    BLK_PASSED,
-    BLK_FAILED_FEASIBLE,
-    BLK_FAILED_ROUTE,
-    BLK_FAILED_FLOORPLANNING,
-    BLK_FAILED_NOC_GROUP,
-    BLK_STATUS_UNDEFINED
-};
-
 struct t_ext_pin_util {
     t_ext_pin_util() = default;
     t_ext_pin_util(float in, float out)
@@ -439,90 +430,6 @@ struct t_chain_info {
     t_pack_molecule* first_packed_molecule = nullptr;
 };
 
-/**
- * @brief Stats keeper for placement information during packing
- *
- * Contains data structure of placement locations based on status of primitive
- */
-class t_cluster_placement_stats {
-  public:
-    int num_pb_types;                     ///<num primitive pb_types inside complex block
-    bool has_long_chain;                  ///<specifies if this cluster has a molecule placed in it that belongs to a long chain (a chain that spans more than one cluster)
-    const t_pack_molecule* curr_molecule; ///<current molecule being considered for packing
-
-    // Vector of size num_pb_types [0.. num_pb_types-1]. Each element is an unordered_map of the cluster_placement_primitives that are of this pb_type
-    // Each cluster_placement_primitive is associated with and index (key of the map) for easier lookup, insertion and deletion.
-    std::vector<std::unordered_map<int, t_cluster_placement_primitive*>> valid_primitives;
-
-  public:
-    // Moves primitives that are inflight to the tried map
-    void move_inflight_to_tried();
-
-    /**
-     * @brief Move the primitive at (it) to inflight and increment the current iterator.
-     *
-     * Because the element at (it) is deleted from valid_primitives, (it) is incremented to keep it valid and pointing at the next element.
-     *
-     * @param pb_type_index: is the index of this pb_type in valid_primitives vector
-     * @param it: is the iterator pointing at the element that needs to be moved to inflight
-     */
-    void move_primitive_to_inflight(int pb_type_index, std::unordered_multimap<int, t_cluster_placement_primitive*>::iterator& it);
-
-    /**
-     * @brief Move the primitive at (it) to invalid and increment the current iterator
-     *
-     * Because the element at (it) is deleted from valid_primitives, (it) is incremented to keep it valid and pointing at the next element.
-     *
-     * @param  pb_type_index: is the index of this pb_type in valid_primitives vector
-     * @param it: is the iterator pointing at the element that needs to be moved to invalid
-     */
-    void invalidate_primitive_and_increment_iterator(int pb_type_index, std::unordered_multimap<int, t_cluster_placement_primitive*>::iterator& it);
-
-    /**
-     * @brief Add a primitive in its correct location in valid_primitives vector based on its pb_type
-     *
-     * @param cluster_placement_primitive: a pair of the cluster_placement_primtive and its corresponding index(for reference in pb_graph_node)
-     */
-    void insert_primitive_in_valid_primitives(std::pair<int, t_cluster_placement_primitive*> cluster_placement_primitive);
-
-    /**
-     * @brief Move all the primitives from (in_flight and tried) maps to valid primitives and clear (in_flight and tried)
-     */
-    void flush_intermediate_queues();
-
-    /**
-     * @brief Move all the primitives from invalid to valid_primitives and clear the invalid map
-     */
-    void flush_invalid_queue();
-
-    /**
-     * @brief Return true if the in_flight map is empty (no primitive is in_flight currently)
-     */
-    bool in_flight_empty();
-
-    /**
-     * @brief Return the type of the first element of the primitives currently being considered
-     */
-    t_pb_type* in_flight_type();
-
-    /**
-     * @brief free the dynamically allocated memory for primitives
-     */
-    void free_primitives();
-
-  private:
-    std::unordered_multimap<int, t_cluster_placement_primitive*> in_flight; ///<ptrs to primitives currently being considered to pack into
-    std::unordered_multimap<int, t_cluster_placement_primitive*> tried;     ///<ptrs to primitives that are already tried but current logic block unable to pack to
-    std::unordered_multimap<int, t_cluster_placement_primitive*> invalid;   ///<ptrs to primitives that are invalid (already occupied by another primitive in this cluster)
-
-    /**
-     * @brief iterate over elements of a queue and move its elements to valid_primitives
-     *
-     * @param queue the unordered_multimap to work on (e.g. in_flight, tried, or invalid)
-     */
-    void flush_queue(std::unordered_multimap<int, t_cluster_placement_primitive*>& queue);
-};
-
 /******************************************************************
  * Timing data types
  *******************************************************************/
@@ -628,6 +535,7 @@ struct t_2D_bb {
         VTR_ASSERT(ymax_ >= ymin_);
         VTR_ASSERT(layer_num_ >= 0);
     }
+
     int xmin = OPEN;
     int xmax = OPEN;
     int ymin = OPEN;
@@ -1235,6 +1143,26 @@ struct t_placer_opts {
     bool enable_analytic_placer;
 };
 
+
+/******************************************************************
+ * Analytical Placer data types
+ *******************************************************************/
+
+/**
+ * @brief Various options for the Analytical Placer.
+ *
+ *   @param doAnalyticalPlacement
+ *              True if analytical placement is supposed to be done in the CAD
+ *              flow. False if otherwise.
+ */
+struct t_ap_opts {
+    e_stage_action doAP;
+};
+
+/******************************************************************
+ * Router data types
+ *******************************************************************/
+
 /* All the parameters controlling the router's operation are in this        *
  * structure.                                                               *
  * first_iter_pres_fac:  Present sharing penalty factor used for the        *
@@ -1389,6 +1317,7 @@ struct t_router_opts {
     int router_debug_iteration;
     e_router_lookahead lookahead_type;
     int max_convergence_count;
+    int route_verbosity;
     float reconvergence_cpd_threshold;
     e_router_initial_timing initial_timing;
     bool update_lower_bound_delays;
@@ -1413,6 +1342,8 @@ struct t_router_opts {
 
     bool flat_routing;
     bool has_choking_spot;
+
+    int custom_3d_sb_fanin_fanout = 1;
 
     bool with_timing_analysis;
 
@@ -1819,6 +1750,7 @@ struct t_vpr_setup {
     t_netlist_opts NetlistOpts;     ///<Options for packer
     t_packer_opts PackerOpts;       ///<Options for packer
     t_placer_opts PlacerOpts;       ///<Options for placer
+    t_ap_opts APOpts;               ///<Options for analytical placer
     t_annealing_sched AnnealSched;  ///<Placement option annealing schedule
     t_router_opts RouterOpts;       ///<router options
     t_analysis_opts AnalysisOpts;   ///<Analysis options
@@ -1864,11 +1796,6 @@ class RouteStatus {
 typedef vtr::vector<ClusterBlockId, std::vector<std::vector<RRNodeId>>> t_clb_opins_used; //[0..num_blocks-1][0..class-1][0..used_pins-1]
 
 typedef std::vector<std::map<int, int>> t_arch_switch_fanin;
-
-/**
- * @brief Free the linked lists to placement locations based on status of primitive inside placement stats data structure.
- */
-void free_cluster_placement_stats(t_cluster_placement_stats* cluster_placement_stats);
 
 struct pair_hash {
     std::size_t operator()(const std::pair<ClusterBlockId, ClusterBlockId>& p) const noexcept {

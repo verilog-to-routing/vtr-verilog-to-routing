@@ -16,15 +16,17 @@ vtr::vector<ClusterBlockId, NocGroupId> CentroidMoveGenerator::cluster_to_noc_gr
 std::map<ClusterBlockId, NocGroupId> CentroidMoveGenerator::noc_router_to_noc_group_;
 
 
-CentroidMoveGenerator::CentroidMoveGenerator(PlacerState& placer_state)
-    : MoveGenerator(placer_state)
+CentroidMoveGenerator::CentroidMoveGenerator(PlacerState& placer_state,
+                                             e_reward_function reward_function)
+    : MoveGenerator(placer_state, reward_function)
     , noc_attraction_w_(0.0f)
     , noc_attraction_enabled_(false) {}
 
 CentroidMoveGenerator::CentroidMoveGenerator(PlacerState& placer_state,
+                                             e_reward_function reward_function,
                                              float noc_attraction_weight,
                                              size_t high_fanout_net)
-    : MoveGenerator(placer_state)
+    : MoveGenerator(placer_state, reward_function)
     , noc_attraction_w_(noc_attraction_weight)
     , noc_attraction_enabled_(true) {
     VTR_ASSERT(noc_attraction_weight > 0.0 && noc_attraction_weight <= 1.0);

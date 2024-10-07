@@ -409,7 +409,7 @@ t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat) {
 
                     if (sample_loc.x == OPEN && sample_loc.y == OPEN && sample_loc.layer_num == OPEN) {
                         //No untried instances of the current tile type left
-                        VTR_LOG_WARN("Found no %sample locations for %s in %s\n",
+                        VTR_LOG_WARN("Found no %ssample locations for %s in %s\n",
                                      (num_sampled_locs == 0) ? "" : "more ",
                                      rr_node_typename[rr_type],
                                      device_ctx.physical_tile_types[itile].name);
@@ -893,30 +893,30 @@ void dump_readable_router_lookahead_map(const std::string& file_name, const std:
     }
 
     VTR_ASSERT(dim_sizes[0] == num_layers);
-    VTR_ASSERT(dim_sizes[1] == 2);
-    VTR_ASSERT(dim_sizes[3] == num_layers);
+    VTR_ASSERT(dim_sizes[1] == num_layers);
+    VTR_ASSERT(dim_sizes[2] == 2);
     VTR_ASSERT(dim_sizes.size() == 5 || (dim_sizes.size() == 6 && dim_sizes[4] == grid_width && dim_sizes[5] == grid_height));
 
     ofs << "from_layer,"
+           "to_layer,"
            "chan_type,"
            "seg_type,"
-           "to_layer,"
            "delta_x,"
            "delta_y,"
            "cong_cost,"
            "delay_cost\n";
 
     for (int from_layer_num = 0; from_layer_num < num_layers; from_layer_num++) {
-        for (e_rr_type chan_type : {CHANX, CHANY}) {
-            for (int seg_index = 0; seg_index < dim_sizes[2]; seg_index++) {
-                for (int to_layer_num = 0; to_layer_num < num_layers; to_layer_num++) {
+        for (int to_layer_num = 0; to_layer_num < num_layers; to_layer_num++) {
+            for (e_rr_type chan_type : {CHANX, CHANY}) {
+                for (int seg_index = 0; seg_index < dim_sizes[3]; seg_index++) {
                     for (int dx = 0; dx < grid_width; dx++) {
                         for (int dy = 0; dy < grid_height; dy++) {
                             auto cost = wire_cost_func(chan_type, seg_index, from_layer_num, dx, dy, to_layer_num);
                             ofs << from_layer_num << ","
+                                << to_layer_num << ","
                                 << rr_node_typename[chan_type] << ","
                                 << seg_index << ","
-                                << to_layer_num << ","
                                 << dx << ","
                                 << dy << ","
                                 << cost.congestion << ","
@@ -1475,12 +1475,11 @@ static std::pair<int, int> get_adjusted_rr_pin_position(const RRNodeId rr) {
      * However, current test show that the simple strategy provides
      * a good trade-off between runtime and quality of results
      */
-    auto it = std::find_if(SIDES.begin(), SIDES.end(), [&](const e_side candidate_side) {
+    auto it = std::find_if(TOTAL_2D_SIDES.begin(), TOTAL_2D_SIDES.end(), [&](const e_side candidate_side) {
         return rr_graph.is_node_on_specific_side(rr, candidate_side);
     });
-
-    e_side rr_side = (it != SIDES.end()) ? *it : NUM_SIDES;
-    VTR_ASSERT_SAFE(NUM_SIDES != rr_side);
+    e_side rr_side = (it != TOTAL_2D_SIDES.end()) ? *it : NUM_2D_SIDES;
+    VTR_ASSERT_SAFE(NUM_2D_SIDES != rr_side);
 
     if (rr_side == LEFT) {
         x -= 1;

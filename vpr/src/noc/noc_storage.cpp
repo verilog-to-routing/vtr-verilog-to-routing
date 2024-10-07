@@ -64,7 +64,7 @@ NocRouter& NocStorage::get_single_mutable_noc_router(NocRouterId id) {
 }
 
 // get link properties
-    const NocLink& NocStorage::get_single_noc_link(NocLinkId id) const {
+const NocLink& NocStorage::get_single_noc_link(NocLinkId id) const {
     return link_storage[id];
 }
 
@@ -99,14 +99,18 @@ NocRouterId NocStorage::get_router_at_grid_location(const t_pl_loc& hard_router_
     return hard_router_block->second;
 }
 
+bool NocStorage::is_noc_3d() const {
+    return multi_layer_noc_;
+}
+
 // setters for the NoC
 
 void NocStorage::add_router(int id,
-                            int grid_position_x, int grid_posistion_y, int layer_position,
+                            int grid_position_x, int grid_position_y, int layer_position,
                             double latency) {
     VTR_ASSERT_MSG(!built_noc, "NoC already built, cannot modify further.");
 
-    router_storage.emplace_back(id, grid_position_x, grid_posistion_y, layer_position, latency);
+    router_storage.emplace_back(id, grid_position_x, grid_position_y, layer_position, latency);
 
     /* Get the corresponding NocRouterId for the newly added router and
      * add it to the conversion table.
@@ -119,7 +123,7 @@ void NocStorage::add_router(int id,
 
     /* need to associate the current router with its grid position */
     // get the key to identify the current router
-    int router_key = generate_router_key_from_grid_location(grid_position_x, grid_posistion_y, layer_position);
+    int router_key = generate_router_key_from_grid_location(grid_position_x, grid_position_y, layer_position);
     grid_location_to_router_id.insert(std::pair<int, NocRouterId>(router_key, converted_id));
 }
 
@@ -201,8 +205,6 @@ bool NocStorage::remove_link(NocRouterId src_router_id, NocRouterId sink_router_
 
         link_storage[link_to_be_removed_id].set_source_router(NocRouterId::INVALID());
         link_storage[link_to_be_removed_id].set_sink_router(NocRouterId::INVALID());
-        link_storage[link_to_be_removed_id].set_bandwidth_usage(-1);
-
     }
 
     // if a link was not removed then throw warning message
@@ -230,16 +232,23 @@ void NocStorage::finished_building_noc() {
      */
 
     auto router_latency_it = std::adjacent_find(router_storage.begin(), router_storage.end(),
-                                                [](const NocRouter& a, const NocRouter& b) {
+                                                [](const NocRouter& a, const NocRouter& b) -> bool {
                                                     return a.get_latency() != b.get_latency();
                                                 });
     detailed_router_latency_ = (router_latency_it != router_storage.end());
 
     auto link_latency_it = std::adjacent_find(link_storage.begin(), link_storage.end(),
-                                              [](const NocLink& a, const NocLink& b) {
+                                              [](const NocLink& a, const NocLink& b) -> bool {
                                                   return a.get_latency() != b.get_latency();
                                               });
     detailed_link_latency_ = (link_latency_it != link_storage.end());
+
+    auto router_layer_it = std::adjacent_find(router_storage.begin(), router_storage.end(),
+                                              [](const NocRouter& a, const NocRouter& b) -> bool {
+                                                  return a.get_router_layer_position() != b.get_router_layer_position();
+                                              });
+
+    multi_layer_noc_ = (router_layer_it != router_storage.end());
 }
 
 void NocStorage::clear_noc() {

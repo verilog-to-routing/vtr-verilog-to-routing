@@ -46,7 +46,7 @@ TEST_CASE("test_route_flow", "[vpr_noc_xy_routing]") {
      *
      */
 
-    // Create the NoC datastructure
+    // Create the NoC data structure
     NocStorage noc_model;
 
     // store the reference to device grid with
@@ -83,6 +83,8 @@ TEST_CASE("test_route_flow", "[vpr_noc_xy_routing]") {
             }
         }
     }
+
+    noc_model.finished_building_noc();
 
     // creating the XY routing object
     XYRouting routing_algorithm;
@@ -236,7 +238,7 @@ TEST_CASE("test_route_flow when it fails in a mesh topology.", "[vpr_noc_xy_rout
      *
      */
 
-    // Create the NoC datastructure
+    // Create the NoC data structure
     NocStorage noc_model;
 
     // store the reference to device grid with
@@ -273,6 +275,8 @@ TEST_CASE("test_route_flow when it fails in a mesh topology.", "[vpr_noc_xy_rout
             }
         }
     }
+
+    noc_model.finished_building_noc();
 
     // creating the XY routing object
     XYRouting routing_algorithm;
@@ -338,7 +342,7 @@ TEST_CASE("test_route_flow when it fails in a non mesh topology.", "[vpr_noc_xy_
      * For example, looking at the example below, suppose we are trying to route between routers 3 and 1. The XY routing algorithm will first traverse to router 0 as it is towards the direction of router 1.
      * But then at router 0 the algorithm will go towards router 3 as its now
      * in the direction of router 1. But then the algorithm will infinitely
-     * just pinpong between routers 0 and 3.
+     * just ping-pong between routers 0 and 3.
      *
      * The purpose of this test case is to make sure that this situation is
      * appropriately handled through an error.
@@ -349,7 +353,7 @@ TEST_CASE("test_route_flow when it fails in a non mesh topology.", "[vpr_noc_xy_
      * 0------------3
      */
 
-    // Create the NoC datastructure
+    // Create the NoC data structure
     NocStorage noc_model;
 
     // store the reference to device grid with
@@ -367,6 +371,8 @@ TEST_CASE("test_route_flow when it fails in a non mesh topology.", "[vpr_noc_xy_
     noc_model.add_link((NocRouterId)0, (NocRouterId)3, DUMMY_BANDWIDTH, DUMMY_LATENCY);
     noc_model.add_link((NocRouterId)3, (NocRouterId)0, DUMMY_BANDWIDTH, DUMMY_LATENCY);
     noc_model.add_link((NocRouterId)2, (NocRouterId)1, DUMMY_BANDWIDTH, DUMMY_LATENCY);
+
+    noc_model.finished_building_noc();
 
     // now create the start and the destination routers of the route we want to test
     auto start_router_id = NocRouterId(3);

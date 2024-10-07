@@ -251,7 +251,7 @@ void auto_zoom_rr_node(RRNodeId rr_node_id) {
             int ipin = rr_graph.node_ptc_num(rr_node_id);
             float xcen, ycen;
 
-            for (const e_side& iside : SIDES) {
+            for (const e_side& iside : TOTAL_2D_SIDES) {
                 if (type->pinloc[width_offset][height_offset][size_t(iside)][ipin]) {
                     draw_get_rr_pin_coords(rr_node_id, &xcen, &ycen, iside);
                     rr_node = {{xcen - draw_coords->pin_size, ycen - draw_coords->pin_size},
@@ -282,8 +282,9 @@ void auto_zoom_rr_node(RRNodeId rr_node_id) {
  */
 void highlight_cluster_block(ClusterBlockId clb_index) {
     char msg[vtr::bufsize];
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    const auto& block_locs = get_graphics_blk_loc_registry_ref().block_locs();
+    t_draw_state* draw_state = get_draw_state_vars();
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& block_locs = draw_state->get_graphics_blk_loc_registry_ref().block_locs();
 
     /// determine block ///
     ezgl::rectangle clb_bbox;
@@ -320,8 +321,8 @@ void highlight_cluster_block(ClusterBlockId clb_index) {
  * @return false | If sub-block not found (impossible in search case) or not shown at current zoom lvl
  */
 bool highlight_atom_block(AtomBlockId atom_blk, ClusterBlockId cl_blk, ezgl::application* app) {
-    auto& atom_ctx = g_vpr_ctx.atom();
-    auto& cl_ctx = g_vpr_ctx.clustering();
+    const auto& atom_ctx = g_vpr_ctx.atom();
+    const auto& cl_ctx = g_vpr_ctx.clustering();
     t_pb* pb = cl_ctx.clb_nlist.block_pb(cl_blk);
 
     //Getting the pb* for the atom block

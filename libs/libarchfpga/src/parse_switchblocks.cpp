@@ -65,6 +65,9 @@ static void parse_comma_separated_wire_points(const char* ch, std::vector<t_wire
 /* Parses the number of connections type */
 static void parse_num_conns(std::string num_conns, t_wireconn_inf& wireconn);
 
+/* Set connection from_side and to_side for custom switch block pattern*/
+static void set_switch_func_type(SB_Side_Connection& conn, const char* func_type);
+
 /* parse switch_override in wireconn */
 static void parse_switch_override(const char* switch_override, t_wireconn_inf& wireconn, const t_arch_switch_inf* switches, int num_switches);
 
@@ -269,6 +272,70 @@ static void parse_num_conns(std::string num_conns, t_wireconn_inf& wireconn) {
     wireconn.num_conns_formula = num_conns;
 }
 
+//set sides for a specific conn for custom switch block pattern
+static void set_switch_func_type(SB_Side_Connection& conn, const char* func_type) {
+    if (0 == strcmp(func_type, "lt")) {
+        conn.set_sides(LEFT, TOP);
+    } else if (0 == strcmp(func_type, "lr")) {
+        conn.set_sides(LEFT, RIGHT);
+    } else if (0 == strcmp(func_type, "lb")) {
+        conn.set_sides(LEFT, BOTTOM);
+    } else if (0 == strcmp(func_type, "la")) {
+        conn.set_sides(LEFT, ABOVE);
+    } else if (0 == strcmp(func_type, "lu")) {
+        conn.set_sides(LEFT, UNDER);
+    } else if (0 == strcmp(func_type, "tl")) {
+        conn.set_sides(TOP, LEFT);
+    } else if (0 == strcmp(func_type, "tb")) {
+        conn.set_sides(TOP, BOTTOM);
+    } else if (0 == strcmp(func_type, "tr")) {
+        conn.set_sides(TOP, RIGHT);
+    } else if (0 == strcmp(func_type, "ta")) {
+        conn.set_sides(TOP, ABOVE);
+    } else if (0 == strcmp(func_type, "tu")) {
+        conn.set_sides(TOP, UNDER);
+    } else if (0 == strcmp(func_type, "rt")) {
+        conn.set_sides(RIGHT, TOP);
+    } else if (0 == strcmp(func_type, "rl")) {
+        conn.set_sides(RIGHT, LEFT);
+    } else if (0 == strcmp(func_type, "rb")) {
+        conn.set_sides(RIGHT, BOTTOM);
+    } else if (0 == strcmp(func_type, "ra")) {
+        conn.set_sides(RIGHT, ABOVE);
+    } else if (0 == strcmp(func_type, "ru")) {
+        conn.set_sides(RIGHT, UNDER);
+    } else if (0 == strcmp(func_type, "bl")) {
+        conn.set_sides(BOTTOM, LEFT);
+    } else if (0 == strcmp(func_type, "bt")) {
+        conn.set_sides(BOTTOM, TOP);
+    } else if (0 == strcmp(func_type, "br")) {
+        conn.set_sides(BOTTOM, RIGHT);
+    } else if (0 == strcmp(func_type, "ba")) {
+        conn.set_sides(BOTTOM, ABOVE);
+    } else if (0 == strcmp(func_type, "bu")) {
+        conn.set_sides(BOTTOM, UNDER);
+    } else if (0 == strcmp(func_type, "al")) {
+        conn.set_sides(ABOVE, LEFT);
+    } else if (0 == strcmp(func_type, "at")) {
+        conn.set_sides(ABOVE, TOP);
+    } else if (0 == strcmp(func_type, "ar")) {
+        conn.set_sides(ABOVE, RIGHT);
+    } else if (0 == strcmp(func_type, "ab")) {
+        conn.set_sides(ABOVE, BOTTOM);
+    } else if (0 == strcmp(func_type, "ul")) {
+        conn.set_sides(UNDER, LEFT);
+    } else if (0 == strcmp(func_type, "ut")) {
+        conn.set_sides(UNDER, TOP);
+    } else if (0 == strcmp(func_type, "ur")) {
+        conn.set_sides(UNDER, RIGHT);
+    } else if (0 == strcmp(func_type, "ub")) {
+        conn.set_sides(UNDER, BOTTOM);
+    } else {
+        /* unknown permutation function */
+        archfpga_throw(__FILE__, __LINE__, "Unknown permutation function specified: %s\n", func_type);
+    }
+}
+
 /* Loads permutation funcs specified under Node into t_switchblock_inf. Node should be
  * <switchfuncs> */
 void read_sb_switchfuncs(pugi::xml_node Node, t_switchblock_inf* sb, const pugiutil::loc_data& loc_data) {
@@ -300,34 +367,8 @@ void read_sb_switchfuncs(pugi::xml_node Node, t_switchblock_inf* sb, const pugiu
         func_formula = get_attribute(SubElem, "formula", loc_data).as_string(nullptr);
 
         /* go through all the possible cases of func_type */
-        if (0 == strcmp(func_type, "lt")) {
-            conn.set_sides(LEFT, TOP);
-        } else if (0 == strcmp(func_type, "lr")) {
-            conn.set_sides(LEFT, RIGHT);
-        } else if (0 == strcmp(func_type, "lb")) {
-            conn.set_sides(LEFT, BOTTOM);
-        } else if (0 == strcmp(func_type, "tl")) {
-            conn.set_sides(TOP, LEFT);
-        } else if (0 == strcmp(func_type, "tb")) {
-            conn.set_sides(TOP, BOTTOM);
-        } else if (0 == strcmp(func_type, "tr")) {
-            conn.set_sides(TOP, RIGHT);
-        } else if (0 == strcmp(func_type, "rt")) {
-            conn.set_sides(RIGHT, TOP);
-        } else if (0 == strcmp(func_type, "rl")) {
-            conn.set_sides(RIGHT, LEFT);
-        } else if (0 == strcmp(func_type, "rb")) {
-            conn.set_sides(RIGHT, BOTTOM);
-        } else if (0 == strcmp(func_type, "bl")) {
-            conn.set_sides(BOTTOM, LEFT);
-        } else if (0 == strcmp(func_type, "bt")) {
-            conn.set_sides(BOTTOM, TOP);
-        } else if (0 == strcmp(func_type, "br")) {
-            conn.set_sides(BOTTOM, RIGHT);
-        } else {
-            /* unknown permutation function */
-            archfpga_throw(__FILE__, __LINE__, "Unknown permutation function specified: %s\n", func_type);
-        }
+        set_switch_func_type(conn, func_type);
+
         func_ptr = &(sb->permutation_map[conn]);
 
         /* Here we load the specified switch function(s) */
@@ -404,8 +445,8 @@ static void check_bidir_switchblock(const t_permutation_map* permutation_map) {
     SB_Side_Connection conn;
 
     /* iterate over all combinations of from_side -> to side */
-    for (e_side from_side : {TOP, RIGHT, BOTTOM, LEFT}) {
-        for (e_side to_side : {TOP, RIGHT, BOTTOM, LEFT}) {
+    for (e_side from_side : TOTAL_2D_SIDES) {
+        for (e_side to_side : TOTAL_2D_SIDES) {
             /* can't connect a switchblock side to itself */
             if (from_side == to_side) {
                 continue;

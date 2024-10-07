@@ -1,0 +1,4 @@
+#Common metrics for VPR analytical placement
+
+#Run-time
+ap_time;RangeAbs(0.10,10.0,3)

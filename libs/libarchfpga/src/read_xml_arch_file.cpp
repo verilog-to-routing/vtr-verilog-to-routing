@@ -584,7 +584,7 @@ static void LoadPinLoc(pugi::xml_node Locations,
         int num_sides = 4 * (type->width * type->height);
         int side_index = 0;
         int count = 0;
-        for (e_side side : {TOP, RIGHT, BOTTOM, LEFT}) {
+        for (e_side side : TOTAL_2D_SIDES) {
             for (int width = 0; width < type->width; ++width) {
                 for (int height = 0; height < type->height; ++height) {
                     for (int pin_offset = 0; pin_offset < (type->num_pins / num_sides) + 1; ++pin_offset) {
@@ -609,7 +609,7 @@ static void LoadPinLoc(pugi::xml_node Locations,
         while (ipin < type->num_pins) {
             for (int width = 0; width < type->width; ++width) {
                 for (int height = 0; height < type->height; ++height) {
-                    for (e_side side : {TOP, RIGHT, BOTTOM, LEFT}) {
+                    for (e_side side : TOTAL_2D_SIDES) {
                         if (((width == 0 && side == LEFT)
                              || (height == type->height - 1 && side == TOP)
                              || (width == type->width - 1 && side == RIGHT)
@@ -650,7 +650,7 @@ static void LoadPinLoc(pugi::xml_node Locations,
         while (ipin < input_pins.size()) {
             for (int width = 0; width < type->width; ++width) {
                 for (int height = 0; height < type->height; ++height) {
-                    for (e_side side : {TOP, RIGHT, BOTTOM, LEFT}) {
+                    for (e_side side : TOTAL_2D_SIDES) {
                         if (ipin < input_pins.size()) {
                             //Pins still to allocate
 
@@ -673,7 +673,7 @@ static void LoadPinLoc(pugi::xml_node Locations,
         while (ipin < output_pins.size()) {
             for (int width = 0; width < type->width; ++width) {
                 for (int height = 0; height < type->height; ++height) {
-                    for (e_side side : {TOP, RIGHT, BOTTOM, LEFT}) {
+                    for (e_side side : TOTAL_2D_SIDES) {
                         if (((width == 0 && side == LEFT)
                              || (height == type->height - 1 && side == TOP)
                              || (width == type->width - 1 && side == RIGHT)
@@ -704,8 +704,8 @@ static void LoadPinLoc(pugi::xml_node Locations,
             for (int layer = 0; layer < num_of_avail_layer; ++layer) {
                 for (int width = 0; width < type->width; ++width) {
                     for (int height = 0; height < type->height; ++height) {
-                        for (e_side side : {TOP, RIGHT, BOTTOM, LEFT}) {
-                            for (const auto& token : pin_locs->assignments[sub_tile_index][width][height][layer][side]) {
+                        for (e_side side : TOTAL_2D_SIDES) {
+                            for (auto token : pin_locs->assignments[sub_tile_index][width][height][layer][side]) {
                                 auto pin_range = ProcessPinString<t_sub_tile*>(Locations,
                                                                                &sub_tile,
                                                                                token.c_str(),
@@ -3541,9 +3541,9 @@ static void ProcessPinLocations(pugi::xml_node Locations,
         for (int l = 0; l < num_of_avail_layer; ++l) {
             for (int w = 0; w < PhysicalTileType->width; ++w) {
                 for (int h = 0; h < PhysicalTileType->height; ++h) {
-                    for (e_side side : {TOP, RIGHT, BOTTOM, LEFT}) {
-                        for (const auto& token : pin_locs->assignments[sub_tile_index][w][h][l][side]) {
-                            InstPort inst_port(token);
+                    for (e_side side : TOTAL_2D_SIDES) {
+                        for (auto token : pin_locs->assignments[sub_tile_index][w][h][l][side]) {
+                            InstPort inst_port(token.c_str());
 
                             //A pin specification should contain only the block name, and not any instance count information
                             //A pin specification may contain instance count, but should be in the range of capacity
@@ -4930,9 +4930,9 @@ static int find_switch_by_name(const t_arch& arch, const std::string& switch_nam
 }
 
 static e_side string_to_side(const std::string& side_str) {
-    e_side side = NUM_SIDES;
+    e_side side = NUM_2D_SIDES;
     if (side_str.empty()) {
-        side = NUM_SIDES;
+        side = NUM_2D_SIDES;
     } else if (side_str == "left") {
         side = LEFT;
     } else if (side_str == "right") {

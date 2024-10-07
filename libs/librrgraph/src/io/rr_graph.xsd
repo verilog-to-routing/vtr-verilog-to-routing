@@ -241,6 +241,7 @@
       <xs:enumeration value="INC_DIR"/>
       <xs:enumeration value="DEC_DIR"/>
       <xs:enumeration value="BI_DIR"/>
+      <xs:enumeration value="NONE"/>
     </xs:restriction>
   </xs:simpleType>
 

@@ -1,6 +1,9 @@
 #ifndef VPR_INITIAL_PLACEMENT_H
 #define VPR_INITIAL_PLACEMENT_H
 
+class NocCostHandler;
+
+#include <optional>
 
 #include "place_macro.h"
 #include "partition_region.h"
@@ -8,9 +11,11 @@
 #include "vpr_types.h"
 #include "vtr_vector_map.h"
 
-/* The maximum number of tries when trying to place a macro at a    *
- * random location before trying exhaustive placement - find the first     *
- * legal position and place it during initial placement.                  */
+class BlkLocRegistry;
+
+/* The maximum number of tries when trying to place a macro at a
+ * random location before trying exhaustive placement - find the first
+ * legal position and place it during initial placement. */
 constexpr int MAX_NUM_TRIES_TO_PLACE_MACROS_RANDOMLY = 8;
 
 /**
@@ -133,7 +138,8 @@ bool is_block_placed(ClusterBlockId blk_id,
 void initial_placement(const t_placer_opts& placer_opts,
                        const char* constraints_file,
                        const t_noc_opts& noc_opts,
-                       BlkLocRegistry& blk_loc_registry);
+                       BlkLocRegistry& blk_loc_registry,
+                       std::optional<NocCostHandler>& noc_cost_handler);
 
 /**
  * @brief Looks for a valid placement location for block.
@@ -152,4 +158,7 @@ bool place_one_block(const ClusterBlockId blk_id,
                      std::vector<t_grid_empty_locs_block_type>* blk_types_empty_locs_in_grid,
                      vtr::vector<ClusterBlockId, t_block_score>* block_scores,
                      BlkLocRegistry& blk_loc_registry);
+
+
+
 #endif

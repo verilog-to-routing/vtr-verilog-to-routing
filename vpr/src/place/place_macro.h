@@ -135,7 +135,9 @@
 #define PLACE_MACRO_H
 #include <vector>
 
+#include "clustered_netlist_fwd.h"
 #include "physical_types.h"
+#include "vpr_types.h"
 
 /* These are the placement macro structure.
  * It is in the form of array of structs instead of
