@@ -87,87 +87,90 @@ static void do_reachability_analysis(t_physical_tile_type* physical_tile,
  * Does not do any error checking as this should have been done by
  * the various input checkers
  */
-void SetupVPR(const t_options* Options,
-              const bool TimingEnabled,
+void SetupVPR(const t_options* options,
+              const bool timingenabled,
               const bool readArchFile,
-              t_file_name_opts* FileNameOpts,
-              t_arch* Arch,
+              t_file_name_opts* fileNameOpts,
+              t_arch* arch,
               t_model** user_models,
               t_model** library_models,
-              t_netlist_opts* NetlistOpts,
-              t_packer_opts* PackerOpts,
-              t_placer_opts* PlacerOpts,
-              t_ap_opts* APOpts,
-              t_annealing_sched* AnnealSched,
-              t_router_opts* RouterOpts,
-              t_analysis_opts* AnalysisOpts,
-              t_noc_opts* NocOpts,
-              t_server_opts* ServerOpts,
-              t_det_routing_arch* RoutingArch,
-              std::vector<t_lb_type_rr_node>** PackerRRGraphs,
-              std::vector<t_segment_inf>& Segments,
-              t_timing_inf* Timing,
-              bool* ShowGraphics,
-              int* GraphPause,
-              bool* SaveGraphics,
-              std::string* GraphicsCommands,
-              t_power_opts* PowerOpts,
+              t_netlist_opts* netlistOpts,
+              t_packer_opts* packerOpts,
+              t_placer_opts* placerOpts,
+              t_ap_opts* apOpts,
+              t_annealing_sched* annealSched,
+              t_router_opts* routerOpts,
+              t_analysis_opts* analysisOpts,
+              t_noc_opts* nocOpts,
+              t_server_opts* serverOpts,
+              t_det_routing_arch* routingArch,
+              std::vector<t_lb_type_rr_node>** packerRRGraphs,
+              std::vector<t_segment_inf>& segments,
+              t_timing_inf* timing,
+              bool* showGraphics,
+              int* graphPause,
+              bool* saveGraphics,
+              std::string* graphicsCommands,
+              t_power_opts* powerOpts,
               t_vpr_setup* vpr_setup) {
     using argparse::Provenance;
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
-    if (Options->CircuitName.value() == "") {
+    if (options->CircuitName.value() == "") {
         VPR_FATAL_ERROR(VPR_ERROR_BLIF_F,
                         "No blif file found in arguments (did you specify an architecture file?)\n");
     }
 
-    alloc_and_load_output_file_names(Options->CircuitName);
+    alloc_and_load_output_file_names(options->CircuitName);
 
-    //TODO: Move FileNameOpts setup into separate function
-    FileNameOpts->CircuitName = Options->CircuitName;
-    FileNameOpts->ArchFile = Options->ArchFile;
-    FileNameOpts->CircuitFile = Options->CircuitFile;
-    FileNameOpts->NetFile = Options->NetFile;
-    FileNameOpts->FlatPlaceFile = Options->FlatPlaceFile;
-    FileNameOpts->PlaceFile = Options->PlaceFile;
-    FileNameOpts->RouteFile = Options->RouteFile;
-    FileNameOpts->ActFile = Options->ActFile;
-    FileNameOpts->PowerFile = Options->PowerFile;
-    FileNameOpts->CmosTechFile = Options->CmosTechFile;
-    FileNameOpts->out_file_prefix = Options->out_file_prefix;
-    FileNameOpts->read_vpr_constraints_file = Options->read_vpr_constraints_file;
-    FileNameOpts->write_vpr_constraints_file = Options->write_vpr_constraints_file;
-    FileNameOpts->write_constraints_file = Options->write_constraints_file;
-    FileNameOpts->write_flat_place_file = Options->write_flat_place_file;
-    FileNameOpts->write_block_usage = Options->write_block_usage;
+    //TODO: Move fileNameOpts setup into separate function
+    fileNameOpts->CircuitName = options->CircuitName;
+    fileNameOpts->ArchFile = options->ArchFile;
+    fileNameOpts->CircuitFile = options->CircuitFile;
+    fileNameOpts->NetFile = options->NetFile;
+    fileNameOpts->FlatPlaceFile = options->FlatPlaceFile;
+    fileNameOpts->PlaceFile = options->PlaceFile;
+    fileNameOpts->RouteFile = options->RouteFile;
+    fileNameOpts->ActFile = options->ActFile;
+    fileNameOpts->PowerFile = options->PowerFile;
+    fileNameOpts->CmosTechFile = options->CmosTechFile;
+    fileNameOpts->out_file_prefix = options->out_file_prefix;
+    fileNameOpts->read_vpr_constraints_file = options->read_vpr_constraints_file;
+    fileNameOpts->write_vpr_constraints_file = options->write_vpr_constraints_file;
+    fileNameOpts->write_constraints_file = options->write_constraints_file;
+    fileNameOpts->write_flat_place_file = options->write_flat_place_file;
+    fileNameOpts->write_block_usage = options->write_block_usage;
 
-    FileNameOpts->verify_file_digests = Options->verify_file_digests;
+    fileNameOpts->verify_file_digests = options->verify_file_digests;
 
-    SetupNetlistOpts(*Options, *NetlistOpts);
-    SetupPlacerOpts(*Options, PlacerOpts);
-    SetupAnnealSched(*Options, AnnealSched);
-    SetupRouterOpts(*Options, RouterOpts);
-    SetupAnalysisOpts(*Options, *AnalysisOpts);
-    SetupPowerOpts(*Options, PowerOpts, Arch);
-    SetupNocOpts(*Options, NocOpts);
-    SetupServerOpts(*Options, ServerOpts);
+    SetupNetlistOpts(*options, *netlistOpts);
+    SetupPlacerOpts(*options, placerOpts);
+    SetupAnnealSched(*options, annealSched);
+    SetupRouterOpts(*options, routerOpts);
+    SetupAnalysisOpts(*options, *analysisOpts);
+    SetupPowerOpts(*options, powerOpts, arch);
+    SetupNocOpts(*options, nocOpts);
+    SetupServerOpts(*options, serverOpts);
+
+    //save the device layout, which is required to parse the architecture file
+    arch->device_layout = options->device_layout;
 
     if (readArchFile == true) {
         vtr::ScopedStartFinishTimer t("Loading Architecture Description");
-        switch (Options->arch_format) {
+        switch (options->arch_format) {
             case e_arch_format::VTR:
-                XmlReadArch(Options->ArchFile.value().c_str(),
-                            TimingEnabled,
-                            Arch,
+                XmlReadArch(options->ArchFile.value().c_str(),
+                            timingenabled,
+                            arch,
                             device_ctx.physical_tile_types,
                             device_ctx.logical_block_types);
                 break;
             case e_arch_format::FPGAInterchange:
                 VTR_LOG("Use FPGA Interchange device\n");
-                FPGAInterchangeReadArch(Options->ArchFile.value().c_str(),
-                                        TimingEnabled,
-                                        Arch,
+                FPGAInterchangeReadArch(options->ArchFile.value().c_str(),
+                                        timingenabled,
+                                        arch,
                                         device_ctx.physical_tile_types,
                                         device_ctx.logical_block_types);
                 break;
@@ -177,8 +180,8 @@ void SetupVPR(const t_options* Options,
     }
     VTR_LOG("\n");
 
-    *user_models = Arch->models;
-    *library_models = Arch->model_library;
+    *user_models = arch->models;
+    *library_models = arch->model_library;
 
     device_ctx.EMPTY_PHYSICAL_TILE_TYPE = nullptr;
     int num_inputs = 0;
@@ -227,119 +230,119 @@ void SetupVPR(const t_options* Options,
                   "Architecture contains no top-level block type containing '.output' models");
     }
 
-    Segments = Arch->Segments;
+    segments = arch->Segments;
 
-    SetupSwitches(*Arch, RoutingArch, Arch->Switches, Arch->num_switches);
-    SetupRoutingArch(*Arch, RoutingArch);
-    SetupTiming(*Options, TimingEnabled, Timing);
-    SetupPackerOpts(*Options, PackerOpts);
-    RoutingArch->write_rr_graph_filename = Options->write_rr_graph_file;
-    RoutingArch->read_rr_graph_filename = Options->read_rr_graph_file;
+    SetupSwitches(*arch, routingArch, arch->Switches, arch->num_switches);
+    SetupRoutingArch(*arch, routingArch);
+    SetupTiming(*options, timingenabled, timing);
+    SetupPackerOpts(*options, packerOpts);
+    routingArch->write_rr_graph_filename = options->write_rr_graph_file;
+    routingArch->read_rr_graph_filename = options->read_rr_graph_file;
 
-    for (auto has_global_routing : Arch->layer_global_routing) {
+    for (auto has_global_routing : arch->layer_global_routing) {
         device_ctx.inter_cluster_prog_routing_resources.emplace_back(has_global_routing);
     }
 
     //Setup the default flow, if no specific stages specified
     //do all
-    if (!Options->do_packing
-        && !Options->do_legalize
-        && !Options->do_placement
-        && !Options->do_analytical_placement
-        && !Options->do_routing
-        && !Options->do_analysis) {
+    if (!options->do_packing
+        && !options->do_legalize
+        && !options->do_placement
+        && !options->do_analytical_placement
+        && !options->do_routing
+        && !options->do_analysis) {
         //run all stages if none specified
-        PackerOpts->doPacking = STAGE_DO;
-        PlacerOpts->doPlacement = STAGE_DO;
-        APOpts->doAP = STAGE_SKIP; // AP not default.
-        RouterOpts->doRouting = STAGE_DO;
-        AnalysisOpts->doAnalysis = STAGE_AUTO; //Deferred until implementation status known
+        packerOpts->doPacking = STAGE_DO;
+        placerOpts->doPlacement = STAGE_DO;
+        apOpts->doAP = STAGE_SKIP; // AP not default.
+        routerOpts->doRouting = STAGE_DO;
+        analysisOpts->doAnalysis = STAGE_AUTO; //Deferred until implementation status known
     } else {
         //We run all stages up to the specified stage
         //Note that by checking in reverse order (i.e. analysis to packing)
         //we ensure that earlier stages override the default 'LOAD' action
         //set by later stages
 
-        if (Options->do_analysis) {
-            PackerOpts->doPacking = STAGE_LOAD;
-            PlacerOpts->doPlacement = STAGE_LOAD;
-            RouterOpts->doRouting = STAGE_LOAD;
-            AnalysisOpts->doAnalysis = STAGE_DO;
+        if (options->do_analysis) {
+            packerOpts->doPacking = STAGE_LOAD;
+            placerOpts->doPlacement = STAGE_LOAD;
+            routerOpts->doRouting = STAGE_LOAD;
+            analysisOpts->doAnalysis = STAGE_DO;
         }
 
-        if (Options->do_routing) {
-            PackerOpts->doPacking = STAGE_LOAD;
-            PlacerOpts->doPlacement = STAGE_LOAD;
-            RouterOpts->doRouting = STAGE_DO;
-            AnalysisOpts->doAnalysis = ((Options->do_analysis) ? STAGE_DO : STAGE_AUTO); //Always run analysis after routing
+        if (options->do_routing) {
+            packerOpts->doPacking = STAGE_LOAD;
+            placerOpts->doPlacement = STAGE_LOAD;
+            routerOpts->doRouting = STAGE_DO;
+            analysisOpts->doAnalysis = ((options->do_analysis) ? STAGE_DO : STAGE_AUTO); //Always run analysis after routing
         }
 
-        if (Options->do_placement) {
-            PackerOpts->doPacking = STAGE_LOAD;
-            PlacerOpts->doPlacement = STAGE_DO;
+        if (options->do_placement) {
+            packerOpts->doPacking = STAGE_LOAD;
+            placerOpts->doPlacement = STAGE_DO;
         }
 
-        if (Options->do_analytical_placement) {
+        if (options->do_analytical_placement) {
             // In the Analytical Placement flow, packing and placement are
             // integrated. Thus, these stages are skipped.
-            PackerOpts->doPacking = STAGE_SKIP;
-            PlacerOpts->doPlacement = STAGE_SKIP;
-            APOpts->doAP = STAGE_DO;
+            packerOpts->doPacking = STAGE_SKIP;
+            placerOpts->doPlacement = STAGE_SKIP;
+            apOpts->doAP = STAGE_DO;
         }
 
-        if (Options->do_packing) {
-            PackerOpts->doPacking = STAGE_DO;
+        if (options->do_packing) {
+            packerOpts->doPacking = STAGE_DO;
         }
 
-        if (Options->do_legalize) {
-            PackerOpts->doPacking = STAGE_LOAD;
-            PackerOpts->load_flat_placement = true;
+        if (options->do_legalize) {
+            packerOpts->doPacking = STAGE_LOAD;
+            packerOpts->load_flat_placement = true;
         }
     }
 
     ShowSetup(*vpr_setup);
 
     /* init global variables */
-    vtr::out_file_prefix = Options->out_file_prefix;
+    vtr::out_file_prefix = options->out_file_prefix;
 
     /* Set seed for pseudo-random placement, default seed to 1 */
-    vtr::srandom(PlacerOpts->seed);
+    vtr::srandom(placerOpts->seed);
 
     {
         vtr::ScopedStartFinishTimer t("Building complex block graph");
-        alloc_and_load_all_pb_graphs(PowerOpts->do_power, RouterOpts->flat_routing);
-        *PackerRRGraphs = alloc_and_load_all_lb_type_rr_graph();
+        alloc_and_load_all_pb_graphs(powerOpts->do_power, routerOpts->flat_routing);
+        *packerRRGraphs = alloc_and_load_all_lb_type_rr_graph();
     }
 
-    if (RouterOpts->flat_routing) {
+    if (routerOpts->flat_routing) {
         vtr::ScopedStartFinishTimer timer("Allocate intra-cluster resources");
         // The following two functions should be called when the data structured related to t_pb_graph_node, t_pb_type,
         // and t_pb_graph_edge are initialized
-        alloc_and_load_intra_cluster_resources(RouterOpts->has_choking_spot);
+        alloc_and_load_intra_cluster_resources(routerOpts->has_choking_spot);
         add_intra_tile_switches();
     }
 
-    if ((Options->clock_modeling == ROUTED_CLOCK) || (Options->clock_modeling == DEDICATED_NETWORK)) {
+    if ((options->clock_modeling == ROUTED_CLOCK) || (options->clock_modeling == DEDICATED_NETWORK)) {
         ClockModeling::treat_clock_pins_as_non_globals();
     }
 
     if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_LB_TYPE_RR_GRAPH)) {
-        echo_lb_type_rr_graphs(getEchoFileName(E_ECHO_LB_TYPE_RR_GRAPH), *PackerRRGraphs);
+        echo_lb_type_rr_graphs(getEchoFileName(E_ECHO_LB_TYPE_RR_GRAPH), *packerRRGraphs);
     }
 
     if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_PB_GRAPH)) {
         echo_pb_graph(getEchoFileName(E_ECHO_PB_GRAPH));
     }
 
-    *GraphPause = Options->GraphPause;
+    *graphPause = options->GraphPause;
 
-    *ShowGraphics = Options->show_graphics;
+    *showGraphics = options->show_graphics;
 
-    *SaveGraphics = Options->save_graphics;
-    *GraphicsCommands = Options->graphics_commands;
+    *saveGraphics = options->save_graphics;
+    *graphicsCommands = options->graphics_commands;
 
     if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_ARCH)) {
-        EchoArch(getEchoFileName(E_ECHO_ARCH), device_ctx.physical_tile_types, device_ctx.logical_block_types, Arch);
+        EchoArch(getEchoFileName(E_ECHO_ARCH), device_ctx.physical_tile_types, device_ctx.logical_block_types, arch);
     }
 }
 
