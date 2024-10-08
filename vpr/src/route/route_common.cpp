@@ -289,6 +289,9 @@ void reset_path_costs(const std::vector<RRNodeId>& visited_rr_nodes) {
         route_ctx.rr_node_route_inf[node].path_cost = std::numeric_limits<float>::infinity();
         route_ctx.rr_node_route_inf[node].backward_path_cost = std::numeric_limits<float>::infinity();
         route_ctx.rr_node_route_inf[node].prev_edge = RREdgeId::INVALID();
+        // Note: R_upstream of each node is intentionally not reset here.
+        // For the reasons and details, please refer to the `Update R_upstream`
+        // in `evaluate_timing_driven_node_costs` in `connection_router.cpp`.
     }
 }
 

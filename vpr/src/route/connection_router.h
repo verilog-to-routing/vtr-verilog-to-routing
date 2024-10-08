@@ -43,15 +43,15 @@ class ConnectionRouter : public ConnectionRouterInterface {
         , rr_node_route_inf_(rr_node_route_inf)
         , is_flat_(is_flat)
         , router_stats_(nullptr)
-        , router_debug_(false) {
+        , router_debug_(false)
+        , path_search_cumulative_time(0) {
         heap_.init_heap(grid);
         only_opin_inter_layer = (grid.get_num_layers() > 1) && inter_layer_connections_limited_to_opin(*rr_graph);
-        rr_node_R_upstream.resize(rr_node_route_inf.size());
-        rcv_path_data.resize(rr_node_route_inf.size());
     }
 
     ~ConnectionRouter() {
-        VTR_LOG("Serial Connection Router is being destroyed. Time spent computing SSSP: %.3f seconds.\n", this->sssp_total_time.count() / 1000000.0);
+        VTR_LOG("Serial Connection Router is being destroyed. Time spent on path search: %.3f seconds.\n",
+                std::chrono::duration<float/*convert to seconds by default*/>(path_search_cumulative_time).count());
     }
 
     // Clear's the modified list.  Should be called after reset_path_costs
@@ -65,12 +65,11 @@ class ConnectionRouter : public ConnectionRouterInterface {
         // Reset the node info stored in rr_node_route_inf variable
         ::reset_path_costs(modified_rr_node_inf_);
         // Reset the node info stored inside the connection router
-        for (const auto& node : modified_rr_node_inf_) {
-            rcv_path_data[node] = nullptr;
+        if (rcv_path_manager.is_enabled()) {
+            for (const auto& node : modified_rr_node_inf_) {
+                rcv_path_data[node] = nullptr;
+            }
         }
-        // Note: R_upstream of each node is intentionally not reset here.
-        // For the reasons and details, please refer to the `Update R_upstream`
-        // in `evaluate_timing_driven_node_costs` in `connection_router.cpp`.
     }
 
     /** Finds a path from the route tree rooted at rt_root to sink_node.
@@ -80,7 +79,7 @@ class ConnectionRouter : public ConnectionRouterInterface {
      * Returns a tuple of:
      * bool: path exists? (hard failure, rr graph disconnected)
      * bool: should retry with full bounding box? (only used in parallel routing)
-     * RTExploredNode: the explored sink node with the cheapest path */
+     * RTExploredNode: the explored sink node, from which the cheapest path can be found via back-tracing */
     std::tuple<bool, bool, RTExploredNode> timing_driven_route_connection_from_route_tree(
         const RouteTreeNode& rt_root,
         RRNodeId sink_node,
@@ -98,7 +97,7 @@ class ConnectionRouter : public ConnectionRouterInterface {
      * Returns a tuple of:
      * bool: path exists? (hard failure, rr graph disconnected)
      * bool: should retry with full bounding box? (only used in parallel routing)
-     * RTExploredNode: the explored sink node with the cheapest path */
+     * RTExploredNode: the explored sink node, from which the cheapest path can be found via back-tracing */
     std::tuple<bool, bool, RTExploredNode> timing_driven_route_connection_from_route_tree_high_fanout(
         const RouteTreeNode& rt_root,
         RRNodeId sink_node,
@@ -117,6 +116,9 @@ class ConnectionRouter : public ConnectionRouterInterface {
     // Dijkstra's algorithm with a modified exit condition (runs until heap is
     // empty).  When using cost_params.astar_fac = 0, for efficiency the
     // RouterLookahead used should be the NoOpLookahead.
+    //
+    // Note: This routine is currently used only to generate information that
+    // may be helpful in debugging an architecture.
     vtr::vector<RRNodeId, RTExploredNode> timing_driven_find_all_shortest_paths_from_route_tree(
         const RouteTreeNode& rt_root,
         const t_conn_cost_params& cost_params,
@@ -148,18 +150,24 @@ class ConnectionRouter : public ConnectionRouterInterface {
         }
     }
 
-    // Update the route path to the node pointed to by cheapest.
-    inline void update_cheapest(const RTExploredNode& cheapest, RRNodeId inode) {
-        update_cheapest(cheapest, inode, &rr_node_route_inf_[inode]);
-    }
-
-    inline void update_cheapest(const RTExploredNode& cheapest, RRNodeId inode, t_rr_node_route_inf* route_inf) {
-        //Record final link to target
+    // Update the route path to the node `cheapest.index` via the path from
+    // `from_node` via `cheapest.prev_edge`.
+    inline void update_cheapest(RTExploredNode& cheapest, const RRNodeId& from_node) {
+        const RRNodeId& inode = cheapest.index;
         add_to_mod_list(inode);
+        rr_node_route_inf_[inode].prev_edge = cheapest.prev_edge;
+        rr_node_route_inf_[inode].path_cost = cheapest.total_cost;
+        rr_node_route_inf_[inode].backward_path_cost = cheapest.backward_path_cost;
 
-        route_inf->prev_edge = cheapest.prev_edge;
-        route_inf->path_cost = cheapest.total_cost;
-        route_inf->backward_path_cost = cheapest.backward_path_cost;
+        // Use the already created next path structure pointer when RCV is enabled
+        if (rcv_path_manager.is_enabled()) {
+            rcv_path_manager.move(rcv_path_data[inode], cheapest.path_data);
+
+            rcv_path_data[inode]->path_rr = rcv_path_data[from_node]->path_rr;
+            rcv_path_data[inode]->edge = rcv_path_data[from_node]->edge;
+            rcv_path_data[inode]->path_rr.push_back(from_node);
+            rcv_path_data[inode]->edge.push_back(cheapest.prev_edge);
+        }
     }
 
     /** Common logic from timing_driven_route_connection_from_route_tree and
@@ -178,6 +186,11 @@ class ConnectionRouter : public ConnectionRouterInterface {
 
     // Finds a path to sink_node, starting from the elements currently in the
     // heap.
+    //
+    // If the path is not found, which means that the path_cost of sink_node in
+    // RR node route info has never been updated, `rr_node_route_inf_[sink_node]
+    // .path_cost` will be the initial value (i.e., float infinity). This case
+    // can be detected by `std::isinf(rr_node_route_inf_[sink_node].path_cost)`.
     //
     // This is the core maze routing routine.
     //
@@ -232,8 +245,6 @@ class ConnectionRouter : public ConnectionRouterInterface {
         RTExploredNode* to,
         const t_conn_cost_params& cost_params,
         RRNodeId from_node,
-        RRNodeId to_node,
-        RREdgeId from_edge,
         RRNodeId target_node);
 
     // Find paths from current heap to all nodes in the RR graph
@@ -291,14 +302,11 @@ class ConnectionRouter : public ConnectionRouterInterface {
 
     bool only_opin_inter_layer;
 
-    // Timing
-    std::chrono::microseconds sssp_total_time{0};
+    // Cumulative time spent in the path search part of the connection router.
+    std::chrono::microseconds path_search_cumulative_time;
 
-    // Used only by the timing-driven router. Stores the upstream resistance to ground from each RR node, including the
-    // resistance of the node itself (device_ctx.rr_nodes[index].R).
-    vtr::vector<RRNodeId, float> rr_node_R_upstream;
-
-    // The path manager for RCV, keeps track of the route tree as a set, also manages the allocation of `rcv_path_data`
+    // The path manager for RCV, keeps track of the route tree as a set, also
+    // manages the allocation of `rcv_path_data`.
     PathManager rcv_path_manager;
     vtr::vector<RRNodeId, t_heap_path*> rcv_path_data;
 };

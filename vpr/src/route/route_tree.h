@@ -332,22 +332,26 @@ class RTExploredNode {
   public:
     /* Used inside the connection router */
 
-    ///@brief The cost used to sort heap. For the timing-driven router this is the backward_path_cost + expected cost to the target.
-    float total_cost = 0.;
-    ///@brief The "known" cost of the path up to and including this node. Used only by the timing-driven router. In this case, the
-    ///.cost member contains not only the known backward cost but also an expected cost to the target.
-    float backward_path_cost;
-    ///@brief Used only by the timing-driven router. Stores the upstream resistance to ground from this node, including the resistance
-    /// of the node itself (device_ctx.rr_nodes[index].R).
-    float R_upstream;
+    ///@brief The cost used to sort heap. For the timing-driven router this is the backward_path_cost
+    /// plus the expected cost to the target.
+    float total_cost = std::numeric_limits<float>::infinity();
+    ///@brief The "known" cost of the path up to and including this node.
+    float backward_path_cost = std::numeric_limits<float>::infinity();
+    ///@brief Stores the upstream resistance to ground from this node in the path search (connection
+    /// routing), including the resistance of the node itself (device_ctx.rr_nodes[index].R).
+    float R_upstream = std::numeric_limits<float>::infinity();
     ///@brief Structure to handle extra RCV structures. Managed by PathManager class.
-    t_heap_path* path_data;
+    t_heap_path* path_data = nullptr;
 
     /* Used outside the connection router as the return values (`index` and `prev_edge` are also used inside the router). */
 
-    ///@brief The RR node index associated with the costs/R_upstream values.
+    ///@brief The RR node index associated with the costs/R_upstream values. Outside the
+    /// connection router, this field is mainly used in `RouteTree::update_from_heap` and
+    /// `RouteTree::add_subtree_from_heap`. Inside the connection router, this is used as
+    /// part of the node info passed as a parameter of some member functions.
     RRNodeId index = RRNodeId::INVALID();
-    ///@brief The edge from the previous node used to reach the current.
+    ///@brief The edge from the previous node used to reach the current. Same usage as the
+    /// `index` field described above.
     RREdgeId prev_edge = RREdgeId::INVALID();
     ///@brief The delay of the partial path plus the path from route tree to source.
     /// Needed by RCV. Set to infinity if RCV is disabled. This field is used as part
