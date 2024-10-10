@@ -288,10 +288,14 @@ jobs:
         include: [
           {
             name: 'Basic',
-            params: '-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=on -DVTR_IPO_BUILD=off -DWITH_BLIFEXPLORER=on -DWITH_PARMYS=OFF -DWITH_ODIN=on',
-            suite: 'vtr_reg_basic_odin'
+            params: '-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=on -DWITH_BLIFEXPLORER=on',
+            suite: 'vtr_reg_basic'
+          },
+          {
+            name: 'Strong',
+            params: '-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=on -DWITH_BLIFEXPLORER=on',
+            suite: 'vtr_reg_strong'
           }
-          #- { name: 'Strong', suite: 'vtr_reg_strong' } # SKIP Too long to run on GitHub Actions (max 6h)
         ]
 
 
