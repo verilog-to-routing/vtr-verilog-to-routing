@@ -82,6 +82,23 @@ VPR runs all stages of (pack, place, route, and analysis) if none of :option:`--
 
     **Default:** ``off``
 
+.. option:: --analytical_place
+
+    Run the analytical placement flow.
+    This flows uses an integrated packing and placement algorithm which uses information from the primitive level to improve clustering and placement;
+    as such, the :option:`--pack` and :option:`--place` options should not be set when this option is set.
+    This flow requires that the device has a fixed size and some of the primitive blocks are fixed somewhere on the device grid.
+
+    .. seealso:: See :ref:`Fixed FPGA Grid Layout <fixed_arch_grid_layout>` and :option:`--device` for how to fix the device size.
+
+    .. seealso:: See :ref:`VPR Placement Constraints <placement_constraints>` for how to fix primitive blocks in a design to the device grid.
+
+    .. warning::
+
+        This analytical placement flow is experimental and under active development.
+
+    **Default:** ``off``
+
 .. option:: --route
 
     Run routing stage
@@ -979,15 +996,16 @@ The following options are only valid when the placement engine is in timing-driv
 
     **Default:** ``8.0``
 
-.. option:: --place_delay_model {delta, delta_override}
+.. option:: --place_delay_model {simple, delta, delta_override}
 
     Controls how the timing-driven placer estimates delays.
 
-     * ``delta`` The router is used to profile delay from various locations in the grid for various differences in position
+     * ``simple`` The placement delay estimator is built from the router lookahead. This takes less CPU time to build and it and still as accurate as the ``delta` model.
+     * ``delta`` The router is used to profile delay from various locations in the grid for various differences in position.
      * ``delta_override`` Like ``delta`` but also includes special overrides to ensure effects of direct connects between blocks are accounted for.
        This is potentially more accurate but is more complex and depending on the architecture (e.g. number of direct connects) may increase place run-time.
 
-    **Default:** ``delta``
+    **Default:** ``simple``
 
 .. option:: --place_delay_model_reducer {min, max, median, arithmean, geomean}
 

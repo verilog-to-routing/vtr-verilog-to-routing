@@ -49,7 +49,6 @@ class NocLink {
     NocRouterId source_router; /*!< The router which uses this link as an outgoing edge*/
     NocRouterId sink_router;   /*!< The router which uses this link as an incoming edge*/
 
-    double bandwidth_usage; /*!< Represents the bandwidth of the data being transmitted on the link. Units in bits-per-second(bps)*/
     double bandwidth; /*!< Represents the maximum bits per second that can be transmitted over the link without causing congestion*/
     double latency; /*!< The zero-load latency of this link in seconds.*/
 
@@ -74,29 +73,10 @@ class NocLink {
     NocRouterId get_sink_router() const;
 
     /**
-     * @brief Provides the size of the data (bandwidth) being currently transmitted using the link.
-     * @return A numeric value of the bandwidth usage of the link
-     */
-    double get_bandwidth_usage() const;
-
-    /**
      * @brief Returns the maximum bandwidth that the link can carry without congestion.
      * @return A numeric value of the bandwidth capacity of the link
      */
     double get_bandwidth() const;
-
-    /**
-     * @brief Calculates the extent to which the current bandwidth utilization
-     * exceeds the link capacity. Any positive value means the link is congested.
-     * @return A numeric value of the bandwidth over-utilization in the link
-     */
-    double get_congested_bandwidth() const;
-
-    /**
-     * @brief Computes the congested bandwidth to bandwidth capacity ratio.
-     * @return The congested bandwidth to bandwidth capacity of the link.
-     */
-    double get_congested_bandwidth_ratio() const;
 
     /**
      * @brief Returns the zero-load latency of the link.
@@ -125,15 +105,6 @@ class NocLink {
      * this link
      */
     void set_sink_router(NocRouterId sink);
-
-    /**
-     * @brief Can modify the bandwidth usage of the link. It is expected that when the NoC is being placed
-     * the traffic flows will be re-routed multiple times. So the links will end up being used and un-used
-     * by different traffic flows and the bandwidths of the links will correspondingly change. This function
-     * can be used to make those changes
-     * @param new_bandwidth_usage The new value of the bandwidth usage of the link
-     */
-    void set_bandwidth_usage(double new_bandwidth_usage);
 
     /**
      * @brief Sets the bandwidth capacity of the link. This function should be used when

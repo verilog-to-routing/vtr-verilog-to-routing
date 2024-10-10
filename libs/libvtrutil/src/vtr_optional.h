@@ -1,6 +1,8 @@
 #pragma once
 
-/** std::optional-like interface with optional references.
+/** 
+ * @file
+ * @brief std::optional-like interface with optional references.
  * currently: import TartanLlama's optional into the vtr namespace
  * documentation at https://tl.tartanllama.xyz/en/latest/api/optional.html
  * there are three main uses of this:

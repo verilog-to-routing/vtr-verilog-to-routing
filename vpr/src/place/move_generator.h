@@ -34,20 +34,37 @@ struct MoveTypeStat {
     vtr::NdMatrix<int, 2> blk_type_moves;
     vtr::NdMatrix<int, 2> accepted_moves;
     vtr::NdMatrix<int, 2> rejected_moves;
+
+    /**
+     * @brief Prints placement perturbation distribution by block and move type.
+     */
+    void print_placement_move_types_stats();
 };
 
 /**
  * @brief a base class for move generators
  *
  * This class represents the base class for all move generators.
- * All its functions are virtual functions.
  */
 class MoveGenerator {
   public:
-    MoveGenerator(PlacerState& placer_state)
-        : placer_state_(placer_state) {}
+
+    /**
+     * @brief Initializes some protected member variables that are used
+     * by inheriting classes.
+     *
+     * @param placer_state A mutable reference to the placement state which will
+     * be stored in this object.
+     * @param reward_function Specifies the reward function to update q-tables
+     * of the RL agent.
+     */
+    MoveGenerator(PlacerState& placer_state, e_reward_function reward_function)
+        : placer_state_(placer_state)
+        , reward_func_(reward_function) {}
 
     MoveGenerator() = delete;
+    MoveGenerator(const MoveGenerator&) = delete;
+    MoveGenerator& operator=(const MoveGenerator&) = delete;
     virtual ~MoveGenerator() = default;
 
     /**
@@ -81,8 +98,22 @@ class MoveGenerator {
      */
     virtual void process_outcome(double /*reward*/, e_reward_function /*reward_fun*/) {}
 
+    /**
+     * @brief Calculates the agent's reward and the total process outcome
+     *
+     * @param move_outcome_stats Contains information about how much each cost term
+     * changes by this move and whether the move is accepted.
+     * @param delta_c The total change in cost by this move.
+     * @param timing_bb_factor This factor controls the weight of bb cost
+     *  compared to the timing cost in the agent's reward function.
+     */
+    void calculate_reward_and_process_outcome(const MoveOutcomeStats& move_outcome_stats,
+                                              double delta_c,
+                                              float timing_bb_factor);
+
   protected:
     std::reference_wrapper<PlacerState> placer_state_;
+    e_reward_function reward_func_;
 };
 
 #endif

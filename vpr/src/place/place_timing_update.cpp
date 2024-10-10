@@ -168,7 +168,7 @@ void update_timing_cost(const PlaceDelayModel* delay_model,
                         PlacerState& placer_state,
                         double* timing_cost) {
 #ifdef INCR_COMP_TD_COSTS
-    update_td_costs(delay_model, *criticalities, block_locs, timing_cost);
+    update_td_costs(delay_model, *criticalities, placer_state, timing_cost);
 #else
     comp_td_costs(delay_model, *criticalities, placer_state, timing_cost);
 #endif

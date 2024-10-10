@@ -139,7 +139,8 @@ vtr::vector<RRNodeId, std::vector<RREdgeId>> get_fan_in_list(const RRGraphView& 
 
     //Walk the graph and increment fanin on all dwnstream nodes
     rr_graph.rr_nodes().for_each_edge(
-        [&](RREdgeId edge, __attribute__((unused)) RRNodeId src, RRNodeId sink) {
+        [&](RREdgeId edge, RRNodeId src, RRNodeId sink) -> void {
+            (void) src;
             node_fan_in_list[sink].push_back(edge);
         });
 

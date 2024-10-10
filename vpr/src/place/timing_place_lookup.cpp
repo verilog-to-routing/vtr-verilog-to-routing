@@ -1,7 +1,5 @@
-#include <cstdio>
-#include <cstring>
+
 #include <cmath>
-#include <time.h>
 #include <limits>
 
 #include "rr_graph_fwd.h"
@@ -15,20 +13,14 @@
 #include "vtr_geometry.h"
 
 #include "arch_util.h"
-
 #include "vpr_types.h"
 #include "globals.h"
 #include "place_and_route.h"
-#include "route_common.h"
 #include "route_net.h"
-#include "route_export.h"
-#include "rr_graph.h"
 #include "timing_place_lookup.h"
 #include "read_xml_arch_file.h"
-#include "echo_files.h"
 #include "atom_netlist.h"
-#include "rr_graph2.h"
-#include "place_util.h"
+
 // all functions in profiling:: namespace, which are only activated if PROFILE is defined
 #include "route_profiling.h"
 #include "router_delay_profiling.h"
@@ -171,10 +163,10 @@ static int get_longest_segment_length(std::vector<t_segment_inf>& segment_inf);
 static void fix_empty_coordinates(vtr::NdMatrix<float, 4>& delta_delays);
 static void fix_uninitialized_coordinates(vtr::NdMatrix<float, 4>& delta_delays);
 
-static float find_neightboring_average(vtr::NdMatrix<float, 4>& matrix,
-                                       int from_layer,
-                                       t_physical_tile_loc to_tile_loc,
-                                       int max_distance);
+static float find_neighboring_average(vtr::NdMatrix<float, 4>& matrix,
+                                      int from_layer,
+                                      t_physical_tile_loc to_tile_loc,
+                                      int max_distance);
 
 /******* Globally Accessible Functions **********/
 
@@ -880,7 +872,7 @@ static vtr::NdMatrix<float, 4> compute_delta_delays(
 }
 
 float delay_reduce(std::vector<float>& delays, e_reducer reducer) {
-    if (delays.size() == 0) {
+    if (delays.empty()) {
         return IMPOSSIBLE_DELTA;
     } else if (delays.size() == 1) {
         return delays[0];
@@ -918,7 +910,7 @@ float delay_reduce(std::vector<float>& delays, e_reducer reducer) {
  * If no legal values are found to average over with a range of max_distance,
  * we return IMPOSSIBLE_DELTA.
  */
-static float find_neightboring_average(
+static float find_neighboring_average(
     vtr::NdMatrix<float, 4>& matrix,
     int from_layer,
     t_physical_tile_loc to_tile_loc,
@@ -928,15 +920,13 @@ static float find_neightboring_average(
     int endx = matrix.end_index(2);
     int endy = matrix.end_index(3);
 
-    int delx, dely;
-
     int x = to_tile_loc.x;
     int y = to_tile_loc.y;
     int to_layer = to_tile_loc.layer_num;
 
     for (int distance = 1; distance <= max_distance; ++distance) {
-        for (delx = x - distance; delx <= x + distance; delx++) {
-            for (dely = y - distance; dely <= y + distance; dely++) {
+        for (int delx = x - distance; delx <= x + distance; delx++) {
+            for (int dely = y - distance; dely <= y + distance; dely++) {
                 // Check distance constraint
                 if (abs(delx - x) + abs(dely - y) > distance) {
                     continue;
@@ -976,10 +966,10 @@ static void fix_empty_coordinates(vtr::NdMatrix<float, 4>& delta_delays) {
                 for (int delta_y = 0; delta_y < (int)delta_delays.dim_size(3); ++delta_y) {
                     if (delta_delays[from_layer][to_layer][delta_x][delta_y] == EMPTY_DELTA) {
                         delta_delays[from_layer][to_layer][delta_x][delta_y] =
-                            find_neightboring_average(delta_delays,
-                                                      from_layer,
-                                                      {delta_x, delta_y, to_layer},
-                                                      kMaxAverageDistance);
+                            find_neighboring_average(delta_delays,
+                                                     from_layer,
+                                                     {delta_x, delta_y, to_layer},
+                                                     kMaxAverageDistance);
                     }
                 }
             }
@@ -1004,7 +994,7 @@ static void fix_uninitialized_coordinates(vtr::NdMatrix<float, 4>& delta_delays)
 }
 
 static void fill_impossible_coordinates(vtr::NdMatrix<float, 4>& delta_delays) {
-    // Set any impossible delta's to the average of it's neighbours
+    // Set any impossible delta's to the average of its neighbours
     //
     // Impossible coordinates may occur if an IPIN cannot be reached from the
     // sampling OPIN.  This might occur if the IPIN or OPIN used for sampling
@@ -1014,14 +1004,14 @@ static void fill_impossible_coordinates(vtr::NdMatrix<float, 4>& delta_delays) {
     //
     // A max average distance of 5 is used to provide increased effort in
     // filling these gaps.  It is more important to have a poor predication,
-    // than a invalid value and causing a slack assertion.
+    // than an invalid value and causing a slack assertion.
     constexpr int kMaxAverageDistance = 5;
     for (int from_layer_num = 0; from_layer_num < (int)delta_delays.dim_size(0); ++from_layer_num) {
         for (int to_layer_num = 0; to_layer_num < (int)delta_delays.dim_size(1); ++to_layer_num) {
             for (int delta_x = 0; delta_x < (int)delta_delays.dim_size(2); ++delta_x) {
                 for (int delta_y = 0; delta_y < (int)delta_delays.dim_size(3); ++delta_y) {
                     if (delta_delays[from_layer_num][to_layer_num][delta_x][delta_y] == IMPOSSIBLE_DELTA) {
-                        delta_delays[from_layer_num][to_layer_num][delta_x][delta_y] = find_neightboring_average(
+                        delta_delays[from_layer_num][to_layer_num][delta_x][delta_y] = find_neighboring_average(
                             delta_delays, from_layer_num, {delta_x, delta_y, to_layer_num}, kMaxAverageDistance);
                     }
                 }

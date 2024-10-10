@@ -7,6 +7,7 @@
 #include "grid_block.h"
 
 struct t_block_loc;
+struct t_pl_blocks_to_be_moved;
 
 /**
  * @class BlkLocRegistry contains information about the placement of clustered blocks.
@@ -19,7 +20,7 @@ struct t_block_loc;
  */
 class BlkLocRegistry {
   public:
-    BlkLocRegistry() = default;
+    BlkLocRegistry();
     ~BlkLocRegistry() = default;
     BlkLocRegistry(const BlkLocRegistry&) = delete;
     BlkLocRegistry& operator=(const BlkLocRegistry&) = default;
@@ -61,6 +62,19 @@ class BlkLocRegistry {
     void set_block_location(ClusterBlockId blk_id, const t_pl_loc& location);
 
     /**
+     * @brief Initializes the grid to empty. It also initializes the location for
+     * all blocks to unplaced.
+     */
+    void clear_all_grid_locs();
+
+    /**
+     * @brief Set chosen grid locations to EMPTY block id before each placement iteration
+     *
+     * @param unplaced_blk_types_index Block types that their grid locations must be cleared.
+     */
+    void clear_block_type_grid_locs(const std::unordered_set<int>& unplaced_blk_types_index);
+
+    /**
      * @brief Syncs the logical block pins corresponding to the input iblk with the corresponding chosen physical tile
      * @param iblk cluster block ID to sync within the assigned physical tile
      *
@@ -80,6 +94,40 @@ class BlkLocRegistry {
      * It does not check for overuse of locations, therefore it can be used with placements that have resource overuse.
      */
     void place_sync_external_block_connections(ClusterBlockId iblk);
+
+    /**
+     * @brief Moves the blocks in blocks_affected to their new locations.
+     * This method only updates `grid_blocks_` member variable and not `grid_blocks_`.
+     * After this method is called, either commit_move_blocks() or revert_move_blocks()
+     * must be called to either revert the new locations or commit them to `grid_block_`
+     * @param blocks_affected Clustered blocks affected by a swap and their old and new locations.
+     */
+    void apply_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected);
+
+    /**
+     * @brief Commits the blocks in blocks_affected to their new locations (updates inverse lookups in grid_blocks)
+     * This method can only be called after a call to apply_move_blocks() to commit the block location changes
+     * to `grid_block_`. If this method is called after apply_move_blocks(), revert_move_blocks() must not be called
+     * until the next call to apply_move_blocks() is made.
+     * @param blocks_affected Clustered blocks affected by a swap and their old and new locations.
+     */
+    void commit_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected);
+
+    /**
+     * @brief Moves the blocks in blocks_affected to their old locations by updating `block_locs_` member variable.
+     * This method can only be called after a call to apply_move_blocks() to revert the block location changes
+     * applied to `block_locs_`. If this method is called after apply_move_blocks(), commit_move_blocks() must not be called
+     * until the next call to apply_move_blocks() is made.
+     * @param blocks_affected Clustered blocks affected by a swap and their old and new locations.
+     */
+    void revert_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected);
+
+    enum class e_expected_transaction {
+        APPLY,
+        COMMIT_REVERT
+    };
+
+    e_expected_transaction expected_transaction_;
 };
 
 #endif //VTR_BLK_LOC_REGISTRY_H

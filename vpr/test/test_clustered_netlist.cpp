@@ -23,7 +23,7 @@ TEST_CASE("test_find_block_with_matching_name", "[vpr_clustered_netlist]") {
     t_pb router_pb;
     t_pb i_o_pb;
 
-    // datastructure to keep track of blocks name to its id
+    // data structure to keep track of blocks name to its id
     std::map<std::string, ClusterBlockId> block_id_from_name;
 
     // need to create the cluster netlist object that will hold the blocks
@@ -37,7 +37,7 @@ TEST_CASE("test_find_block_with_matching_name", "[vpr_clustered_netlist]") {
     char io_port_three[] = "io_port_three";
     char io_port_four[] = "io_port_four";
 
-    // datastructure to store all the cluster block IDs of the noc router logical block type clusters
+    // data structure to store all the cluster block IDs of the noc router logical block type clusters
     std::vector<ClusterBlockId> noc_router_logical_type_clusters;
 
     // add the io blocks to the netlist

@@ -71,7 +71,7 @@ class NocStorage {
      * in the architecture file. This ID system will be different than the
      * NocRouterIds assigned to each router. The user ID system will be 
      * arbitrary but the internal ID system used here will start at 0 and
-     * are dense since it is used to index the routers. The datastructure
+     * are dense since it is used to index the routers. The data structure
      * below is a conversiont able that maps the user router IDs to the
      * corresponding internal ones.
      */
@@ -82,12 +82,12 @@ class NocStorage {
      * location. During placement, when logical routers are moved to
      * different hard routers, only the grid location of where the
      * logical router was moved is known.
-     * Using this datastructure, the grid location can be used to
+     * Using this data structure, the grid location can be used to
      * identify the corresponding hard router block positioned at that grid 
      * location. The NocROuterId uniquely identifies hard router blocks and
      * can be used to retrieve the hard router block information using
      * the router_storage data structure above. This can also be used to
-     * access the connectivity graph datastructure above.
+     * access the connectivity graph data structure above.
      * 
      * It is important to know the specific hard router block because 
      * without it we cannot determine the starting/end points of the traffic
@@ -97,7 +97,7 @@ class NocStorage {
      * 
      * The intended use is when trying to re-route a traffic flow. The current
      * location of a logical router block can be used in conjunction with this
-     * datastructure to identify the corresponding hard router block.
+     * data structure to identify the corresponding hard router block.
      * 
      */
     std::unordered_map<int, NocRouterId> grid_location_to_router_id;
@@ -170,13 +170,13 @@ class NocStorage {
      */
     int layer_num_grid_locs;
 
-    // prevent "copying" of this object
-    NocStorage(const NocStorage&) = delete;
-    void operator=(const NocStorage&) = delete;
-
   public:
     // default constructor (clear all the elements in the vectors)
     NocStorage();
+
+    // prevent "copying" of this object
+    NocStorage(const NocStorage&) = delete;
+    void operator=(const NocStorage&) = delete;
 
     // getters for the NoC
 
@@ -379,6 +379,10 @@ class NocStorage {
      * tile that this router represents.
      * @param grid_position_y The vertical position on the FPGA of the physical
      * tile that this router represents.
+     * @param layer_position The layer where the physical tile that this router
+     * represents is located.
+     * @param latency The zero-load latency that a traffic flow will experience
+     * when it is routed through this router.
      */
     void add_router(int id,
                     int grid_position_x, int grid_position_y, int layer_position,
@@ -464,7 +468,7 @@ class NocStorage {
     void finished_building_noc();
 
     /**
-     * @brief Resets the NoC by clearing all internal datastructures.
+     * @brief Resets the NoC by clearing all internal data structures.
      * This includes deleting all routers and links. Also all internal
      * IDs are removed (the is conversion table is cleared). It is
      * recommended to run this function before building the NoC.
@@ -489,7 +493,7 @@ class NocStorage {
     int convert_router_id(NocRouterId id) const;
 
     /**
-     * @brief The datastructure that stores the outgoing links to each
+     * @brief The data structure that stores the outgoing links to each
      * router is an 2-D Vector. When processing the links, they can be
      * outgoing from any router in the NoC. Therefore the column size
      * of the 2-D vector needs to be the size of the number of routers
@@ -527,7 +531,7 @@ class NocStorage {
      * @brief Generates a unique integer using the x and y coordinates of a 
      * hard router block that can be used to identify it. This should be
      * used to generate the keys for the 'grid_location_to_router_id'
-     * datastructure.
+     * data structure.
      * 
      * The key will be generated as follows:
      * key = y * device_grid.width() + x
