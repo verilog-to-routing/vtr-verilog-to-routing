@@ -203,6 +203,7 @@ Draw selected critical path elements example
   .. note:: If status is not 1, the field ***DATA*** contains error string.
 
 The interactive path analysis (IPA) client is useful for viewing timing paths, and to test VPR's server mode functionality.
+
 .. _interactive_path_analysis_client:
 
 Interactive Path Analysis Client (IPA)
