@@ -17,7 +17,8 @@ target_include_directories(libpugiutil PUBLIC ${LIB_INCLUDE_DIRS})
 set_target_properties(libpugiutil PROPERTIES PREFIX "") #Avoid extra 'lib' prefix
 
 target_link_libraries(libpugiutil
-                        libpugixml)
+                        libpugixml
+                        libdecrypt)
 
 install(TARGETS libpugiutil DESTINATION bin)
 install(FILES ${LIB_HEADERS} DESTINATION include/libpugiutil)

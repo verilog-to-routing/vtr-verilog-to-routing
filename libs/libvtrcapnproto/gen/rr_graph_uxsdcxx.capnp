@@ -178,7 +178,7 @@ struct GridLocs {
 
 struct NodeLoc {
 	layer @0 :Int32 = 0;
-	ptc @1 :Int32;
+	ptc @1 :Text;
 	side @2 :LocSide;
 	twist @3 :Int32;
 	xhigh @4 :Int32;
