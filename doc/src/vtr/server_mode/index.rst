@@ -204,7 +204,7 @@ Draw selected critical path elements example
 
 .. _ipa_client_for_testing_vpr_server_mode_functionality:
 
-IPA Client for Testing VPR Server Mode Functionality
+Interactive Path Analysis Client (IPA)
 ====================================================
 
 To test VPR server functionality, you can use a special client application called **IPAClient**, which is available in a public Git repository:  
