@@ -526,7 +526,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         bool found_arch_name = false;
         std::string string_name = std::string(name);
         // The string name has the format of "Internal Switch/delay". So, I have to use compare to specify the portion I want to be compared.
-        bool is_internal_sw = string_name.compare(0, 15, "Internal Switch") == 0;
+        bool is_internal_sw = string_name.compare(0, strlen(VPR_INTERNAL_SWITCH_NAME), VPR_INTERNAL_SWITCH_NAME) == 0;
         for (const auto& arch_sw_inf: arch_switch_inf_) {
             if (string_name == arch_sw_inf.name || is_internal_sw) {
                 found_arch_name = true;

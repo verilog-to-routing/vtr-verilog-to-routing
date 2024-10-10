@@ -1692,6 +1692,9 @@ constexpr std::array<const char*, size_t(SwitchType::NUM_SWITCH_TYPES)> SWITCH_T
  */
 constexpr const char* VPR_DELAYLESS_SWITCH_NAME = "__vpr_delayless_switch__";
 
+/* An intracluster switch automatically added to the RRG by the flat router. */
+constexpr const char* VPR_INTERNAL_SWITCH_NAME = "__vpr_intra_cluster_switch__";
+
 enum class BufferSize {
     AUTO,
     ABSOLUTE

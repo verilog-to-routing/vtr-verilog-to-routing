@@ -472,6 +472,9 @@ struct RoutingContext : public Context {
      * @brief User specified routing constraints
      */
     UserRouteConstraints constraints;
+    
+    /** Is flat routing enabled? */
+    bool is_flat;
 };
 
 /**
