@@ -48,15 +48,13 @@ static std::vector<e_side> find_physical_tile_pin_side(t_physical_tile_type_ptr 
  *    - if the net id does not match, we update the clustering context
  *******************************************************************/
 static void update_cluster_pin_with_post_routing_results(const Netlist<>& net_list,
-                                                         const AtomContext& atom_ctx,
                                                          const DeviceContext& device_ctx,
                                                          ClusteringContext& clustering_ctx,
-                                                         const vtr::vector<RRNodeId, ParentNetId>& rr_node_nets,
+                                                         const vtr::vector<RRNodeId, ClusterNetId>& rr_node_nets,
                                                          const t_pl_loc& grid_coord,
                                                          const ClusterBlockId& blk_id,
                                                          size_t& num_mismatches,
-                                                         const bool& verbose,
-                                                         bool is_flat) {
+                                                         const bool& verbose) {
     const int sub_tile_z = grid_coord.sub_tile;
     const int coord_x = grid_coord.x;
     const int coord_y = grid_coord.y;
@@ -210,15 +208,7 @@ static void update_cluster_pin_with_post_routing_results(const Netlist<>& net_li
             continue;
         }
 
-        ClusterNetId cluster_equivalent_net_id = ClusterNetId::INVALID();
-        if (is_flat) {
-            cluster_equivalent_net_id = atom_ctx.lookup.clb_net(convert_to_atom_net_id(routing_net_id));
-            if (routing_net_id != ParentNetId::INVALID()) {
-                VTR_ASSERT(cluster_equivalent_net_id != ClusterNetId::INVALID());
-            }
-        } else {
-            cluster_equivalent_net_id = convert_to_cluster_net_id(routing_net_id);
-        }
+        ClusterNetId cluster_equivalent_net_id = convert_to_cluster_net_id(routing_net_id);
 
         /* If the net from the routing results matches the net from the packing results,
          * nothing to be changed. Move on to the next net.
@@ -1029,29 +1019,12 @@ static void update_cluster_routing_traces_with_post_routing_results(AtomContext&
     pb->pb_route = new_pb_routes;
 }
 
-/********************************************************************
- * Top-level function to synchronize a packed netlist to routing results
- * The problem comes from a mismatch between the packing and routing results
- * When there are equivalent input/output for any grids, router will try
- * to swap the net mapping among these pins so as to achieve best 
- * routing optimization.
- * However, it will cause the packing results out-of-date as the net mapping 
- * of each grid remain untouched once packing is done.
- * This function aims to fix the mess after routing so that the net mapping
- * can be synchronized
- *
- * Note:
- *   - This function SHOULD be run ONLY when routing is finished!!!
- *******************************************************************/
 void sync_netlists_to_routing(const Netlist<>& net_list,
                               const DeviceContext& device_ctx,
                               AtomContext& atom_ctx,
-                              const AtomLookup& atom_look_up,
                               ClusteringContext& clustering_ctx,
                               const PlacementContext& placement_ctx,
-                              const RoutingContext& routing_ctx,
-                              const bool& verbose,
-                              bool is_flat) {
+                              const bool& verbose) {
     vtr::ScopedStartFinishTimer timer("Synchronize the packed netlist to routing optimization");
 
     /* Reset the database for post-routing clb net mapping */
@@ -1059,11 +1032,9 @@ void sync_netlists_to_routing(const Netlist<>& net_list,
     clustering_ctx.pre_routing_net_pin_mapping.clear();
 
     /* Create net-to-rr_node mapping */
-    vtr::vector<RRNodeId, ParentNetId> rr_node_nets = annotate_rr_node_nets(net_list,
+    vtr::vector<RRNodeId, ClusterNetId> rr_node_nets = annotate_rr_node_nets(clustering_ctx,
                                                                             device_ctx,
-                                                                            routing_ctx,
-                                                                            verbose,
-                                                                            is_flat);
+                                                                            verbose);
 
     IntraLbPbPinLookup intra_lb_pb_pin_lookup(device_ctx.logical_block_types);
 
@@ -1076,25 +1047,18 @@ void sync_netlists_to_routing(const Netlist<>& net_list,
     /* Update the core logic (center blocks of the FPGA) */
     for (const ParentBlockId& blk_id : net_list.blocks()) {
         /* We know the entrance to grid info and mapping results, do the fix-up for this block */
-        ClusterBlockId clb_blk_id;
-        if (is_flat) {
-            clb_blk_id = atom_look_up.atom_clb(convert_to_atom_block_id(blk_id));
-        } else {
-            clb_blk_id = convert_to_cluster_block_id(blk_id);
-        }
+        ClusterBlockId clb_blk_id = convert_to_cluster_block_id(blk_id);
         VTR_ASSERT(clb_blk_id != ClusterBlockId::INVALID());
 
         if (seen_block_ids.insert(clb_blk_id).second) {
             update_cluster_pin_with_post_routing_results(net_list,
-                                                         atom_ctx,
                                                          device_ctx,
                                                          clustering_ctx,
                                                          rr_node_nets,
                                                          placement_ctx.block_locs()[clb_blk_id].loc,
                                                          clb_blk_id,
                                                          num_mismatches,
-                                                         verbose,
-                                                         is_flat);
+                                                         verbose);
 
             update_cluster_routing_traces_with_post_routing_results(atom_ctx,
                                                                     intra_lb_pb_pin_lookup,

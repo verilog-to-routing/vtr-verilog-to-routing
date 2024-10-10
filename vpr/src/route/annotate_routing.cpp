@@ -1,46 +1,44 @@
 /********************************************************************
  * This file includes functions that are used to annotate routing results
- * from VPR to OpenFPGA
+ * from VPR to OpenFPGA. (i.e. create a mapping from RRNodeIds to ClusterNetIds)
  *******************************************************************/
-/* Headers from vtrutil library */
+
+#include "vpr_error.h"
 #include "vtr_assert.h"
 #include "vtr_time.h"
 #include "vtr_log.h"
 
-#include "vpr_error.h"
+#include "route_utils.h"
 #include "rr_graph.h"
+
 #include "annotate_routing.h"
 
-/********************************************************************
- * Create a mapping between each rr_node and its mapped nets
- * based on VPR routing results
- * - Store the net ids mapped to each routing resource nodes
- * - Mapped nodes should have valid net ids (except SOURCE and SINK nodes)
- * - Unmapped rr_node will use invalid ids
- *******************************************************************/
-vtr::vector<RRNodeId, ParentNetId> annotate_rr_node_nets(const Netlist<>& net_list,
+vtr::vector<RRNodeId, ClusterNetId> annotate_rr_node_nets(const ClusteringContext& cluster_ctx,
                                                          const DeviceContext& device_ctx,
-                                                         const RoutingContext& routing_ctx,
-                                                         const bool& verbose,
-                                                         bool is_flat) {
+                                                         const bool& verbose) {
     size_t counter = 0;
     vtr::ScopedStartFinishTimer timer("Annotating rr_node with routed nets");
 
     const auto& rr_graph = device_ctx.rr_graph;
 
-    vtr::vector<RRNodeId, ParentNetId> rr_node_nets;
-    rr_node_nets.resize(rr_graph.num_nodes(), ParentNetId::INVALID());
+    auto& netlist = cluster_ctx.clb_nlist;
+    vtr::vector<RRNodeId, ClusterNetId> rr_node_nets;
+    rr_node_nets.resize(rr_graph.num_nodes(), ClusterNetId::INVALID());
 
-    for (auto net_id : net_list.nets()) {
-        if (net_list.net_is_ignored(net_id)) {
+    for (auto net_id : netlist.nets()) {
+        if (netlist.net_is_ignored(net_id)) {
             continue;
         }
         /* Ignore used in local cluster only, reserved one CLB pin */
-        if (net_list.net_sinks(net_id).empty()) {
+        if (netlist.net_sinks(net_id).empty()) {
             continue;
         }
 
-        for (auto& rt_node : routing_ctx.route_trees[net_id].value().all_nodes()) {
+        auto& tree = get_route_tree_from_cluster_net_id(net_id);
+        if(!tree)
+            continue;
+
+        for (auto& rt_node : tree->all_nodes()) {
             const RRNodeId rr_node = rt_node.inode;
             /* Ignore source and sink nodes, they are the common node multiple starting and ending points */
             if ((SOURCE != rr_graph.node_type(rr_node))
@@ -56,14 +54,14 @@ vtr::vector<RRNodeId, ParentNetId> annotate_rr_node_nets(const Netlist<>& net_li
                     && (net_id != rr_node_nets[rr_node])) {
                     VPR_FATAL_ERROR(VPR_ERROR_ANALYSIS,
                                     "Detect two nets '%s' and '%s' that are mapped to the same rr_node '%ld'!\n%s\n",
-                                    net_list.net_name(net_id).c_str(),
-                                    net_list.net_name(rr_node_nets[rr_node]).c_str(),
+                                    netlist.net_name(net_id).c_str(),
+                                    netlist.net_name(rr_node_nets[rr_node]).c_str(),
                                     size_t(rr_node),
                                     describe_rr_node(rr_graph,
                                                      device_ctx.grid,
                                                      device_ctx.rr_indexed_data,
                                                      rr_node,
-                                                     is_flat)
+                                                     false)
                                         .c_str());
                 } else {
                     rr_node_nets[rr_node] = net_id;
