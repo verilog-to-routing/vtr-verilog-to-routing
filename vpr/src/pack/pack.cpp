@@ -232,7 +232,7 @@ bool try_pack(t_packer_opts* packer_opts,
             g_vpr_ctx.mutable_atom().lookup.set_atom_pb(blk, nullptr);
         }
         for (auto net : g_vpr_ctx.atom().nlist.nets()) {
-            g_vpr_ctx.mutable_atom().lookup.set_atom_clb_net(net, ClusterNetId::INVALID());
+            g_vpr_ctx.mutable_atom().lookup.remove_atom_net(net);
         }
         g_vpr_ctx.mutable_floorplanning().cluster_constraints.clear();
         //attraction_groups.reset_attraction_groups();
