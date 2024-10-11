@@ -554,7 +554,7 @@ def get_next_run_number(base_dir):
     if latest_run_number is None:
         next_run_number = 1
     else:
-        next_run_number = latest_run_number + 1
+        next_run_number = latest_run_number
 
     return next_run_number
 
