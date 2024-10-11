@@ -42,7 +42,10 @@ static std::vector<AtomBlockId> find_noc_atoms_in_noc_grp(const vtr::vector<Atom
     return noc_atoms_in_grp;
 }
 
-void setup_vpr_floorplan_constraints_noc(VprConstraints& constraints, int expand, const t_packer_opts& packer_opts) {
+void setup_vpr_floorplan_constraints_noc(VprConstraints& constraints,
+                                         const t_packer_opts& packer_opts,
+                                         int horizontal_expand,
+                                         int vertical_expand) {
     const auto& block_locs = g_vpr_ctx.placement().block_locs();
     const auto& atom_ctx = g_vpr_ctx.atom();
     const auto& atom_netlist = atom_ctx.nlist;
@@ -91,8 +94,8 @@ void setup_vpr_floorplan_constraints_noc(VprConstraints& constraints, int expand
         part.set_name(part_name);
 
         PartitionRegion pr;
-        Region reg(min_loc.x - expand, min_loc.x - expand, min_loc.layer,
-                   max_loc.x + expand, max_loc.x + expand, max_loc.layer);
+        Region reg(min_loc.x - horizontal_expand, min_loc.y - vertical_expand, min_loc.layer,
+                   max_loc.x + horizontal_expand, max_loc.y + vertical_expand, max_loc.layer);
 
         pr.add_to_part_region(reg);
         part.set_part_region(pr);
@@ -110,13 +113,8 @@ void setup_vpr_floorplan_constraints_noc(VprConstraints& constraints, int expand
 
 void write_vpr_floorplan_constraints(const char* file_name, int expand, bool subtile, int horizontal_partitions, int vertical_partitions, const t_packer_opts& packer_opts) {
     VprConstraints constraints;
-//    if (horizontal_partitions != 0 && vertical_partitions != 0) {
-//        setup_vpr_floorplan_constraints_cutpoints(constraints, horizontal_partitions, vertical_partitions);
-//    } else {
-//        setup_vpr_floorplan_constraints_one_loc(constraints, expand, subtile);
-//    }
 
-    setup_vpr_floorplan_constraints_noc(constraints, expand, packer_opts);
+    setup_vpr_floorplan_constraints_noc(constraints, packer_opts, horizontal_partitions, vertical_partitions);
 
     VprConstraintsSerializer writer(constraints);
 
