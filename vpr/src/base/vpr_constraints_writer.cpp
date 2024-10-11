@@ -52,7 +52,7 @@ void setup_vpr_floorplan_constraints_noc(VprConstraints& constraints,
 
     std::vector<AtomBlockId> noc_atoms = find_noc_router_atoms(atom_netlist);
 
-    t_pack_high_fanout_thresholds high_fanout_thresholds(packer_opts.high_fanout_threshold);;
+    t_pack_high_fanout_thresholds high_fanout_thresholds(packer_opts.high_fanout_threshold);
     vtr::vector<AtomBlockId, NocGroupId> atom_noc_grp_id;
 
     update_noc_reachability_partitions(noc_atoms,
@@ -94,8 +94,9 @@ void setup_vpr_floorplan_constraints_noc(VprConstraints& constraints,
         part.set_name(part_name);
 
         PartitionRegion pr;
-        Region reg(min_loc.x - horizontal_expand, min_loc.y - vertical_expand, min_loc.layer,
-                   max_loc.x + horizontal_expand, max_loc.y + vertical_expand, max_loc.layer);
+        Region reg(min_loc.x - horizontal_expand, min_loc.y - vertical_expand,
+                   max_loc.x + horizontal_expand, max_loc.y + vertical_expand,
+                   min_loc.layer, max_loc.layer);
 
         pr.add_to_part_region(reg);
         part.set_part_region(pr);
