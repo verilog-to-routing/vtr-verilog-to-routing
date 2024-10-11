@@ -1,7 +1,3 @@
-regression_tests/vtr_reg_basic/basic_ap/single_wire
-regression_tests/vtr_reg_basic/basic_ap/single_ff
-#regression_tests/vtr_reg_basic/basic_ap/ch_intrinsics
-regression_tests/vtr_reg_basic/basic_ap/diffeq1
 regression_tests/vtr_reg_basic/basic_no_timing
 regression_tests/vtr_reg_basic/basic_timing
 regression_tests/vtr_reg_basic/basic_timing_no_sdc

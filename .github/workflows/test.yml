@@ -52,13 +52,20 @@ jobs:
     - uses: actions/checkout@v4
       with:
         submodules: 'true'
-    - run: ./.github/scripts/install_dependencies.sh
+
+    - name: Get number of CPU cores
+      uses: SimenB/github-actions-cpu-cores@v2
+      id: cpu-cores
+
+    - name: Install dependencies
+      run: ./.github/scripts/install_dependencies.sh
 
     - uses: hendrikmuhs/ccache-action@v1.2
 
     - name: Test
       env:
         BUILD_TYPE: ${{ matrix.build_type }}
+        NUM_PROC: ${{ steps.cpu-cores.outputs.count }}
       run: |
         export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
         ./.github/scripts/build.sh VERBOSE=${{ matrix.verbose }}
@@ -80,7 +87,9 @@ jobs:
       with:
         python-version: 3.10.10
     - uses: actions/checkout@v4
-    - run: ./.github/scripts/install_dependencies.sh
+
+    - name: Install dependencies
+      run: ./.github/scripts/install_dependencies.sh
 
     - name: Test
       run: ./dev/${{ matrix.script }}
@@ -97,11 +106,18 @@ jobs:
     - uses: actions/checkout@v4
       with:
         submodules: 'true'
-    - run: ./.github/scripts/install_dependencies.sh
+
+    - name: Get number of CPU cores
+      uses: SimenB/github-actions-cpu-cores@v2
+      id: cpu-cores
+
+    - name: Install dependencies
+      run: ./.github/scripts/install_dependencies.sh
 
     - name: Test
       env:
         CMAKE_PARAMS: "-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on"
+        NUM_PROC: ${{ steps.cpu-cores.outputs.count }}
       run: ./.github/scripts/unittest.sh
 
 
@@ -116,7 +132,13 @@ jobs:
     - uses: actions/checkout@v4
       with:
         submodules: 'true'
-    - run: ./.github/scripts/install_dependencies.sh
+
+    - name: Get number of CPU cores
+      uses: SimenB/github-actions-cpu-cores@v2
+      id: cpu-cores
+
+    - name: Install dependencies
+      run: ./.github/scripts/install_dependencies.sh
 
     - uses: hendrikmuhs/ccache-action@v1.2
 
@@ -125,6 +147,7 @@ jobs:
         #In order to get compilation warnings produced per source file, we must do a non-IPO build
         #We also turn warnings into errors for this target by doing a strict compile
         CMAKE_PARAMS: "-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVTR_ENABLE_STRICT_COMPILE=on -DVTR_IPO_BUILD=off"
+        NUM_PROC: ${{ steps.cpu-cores.outputs.count }}
       run: |
         export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
         ./.github/scripts/build.sh
@@ -139,57 +162,68 @@ jobs:
           {
             name: 'Basic',
             params: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on',
-            suite: 'vtr_reg_basic'
+            suite: 'vtr_reg_basic',
+            extra_pkgs: ""
           },
           {
             name: 'Basic with highest assertion level',
             params: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_ASSERT_LEVEL=4 -DWITH_BLIFEXPLORER=on',
-            suite: 'vtr_reg_basic'
+            suite: 'vtr_reg_basic',
+            extra_pkgs: ""
           },
           {
             name: 'Basic_odin',
             params: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DWITH_PARMYS=OFF -DWITH_ODIN=on',
-            suite: 'vtr_reg_basic_odin'
+            suite: 'vtr_reg_basic_odin',
+            extra_pkgs: ""
           },
           {
             name: 'Basic with NO_GRAPHICS',
             params: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVPR_USE_EZGL=off',
-            suite: 'vtr_reg_basic'
+            suite: 'vtr_reg_basic',
+            extra_pkgs: ""
           },
           {
             name: 'Basic with NO_SERVER',
             params: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVPR_USE_EZGL=on -DVPR_USE_SERVER=off',
-            suite: 'vtr_reg_basic'
+            suite: 'vtr_reg_basic',
+            extra_pkgs: ""
           },
           {
             name: 'Basic with CAPNPROTO disabled',
             params: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVTR_ENABLE_CAPNPROTO=off',
-            suite: 'vtr_reg_basic'
+            suite: 'vtr_reg_basic',
+            extra_pkgs: ""
           },
           {
             name: 'Basic with VTR_ENABLE_DEBUG_LOGGING',
             params: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVTR_ENABLE_DEBUG_LOGGING=on',
-            suite: 'vtr_reg_basic'
+            suite: 'vtr_reg_basic',
+            extra_pkgs: ""
           },
           {
             name: 'Basic_odin with VTR_ENABLE_DEBUG_LOGGING',
             params: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVTR_ENABLE_DEBUG_LOGGING=on -DWITH_PARMYS=OFF -DWITH_ODIN=on',
-            suite: 'vtr_reg_basic_odin'
+            suite: 'vtr_reg_basic_odin',
+            extra_pkgs: ""
           },
           {
             name: 'Strong',
             params: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on',
-            suite: 'vtr_reg_strong'
+            suite: 'vtr_reg_strong',
+            extra_pkgs: "libeigen3-dev"
           },
           {
             name: 'Strong_odin',
             params: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DWITH_PARMYS=OFF -DWITH_ODIN=on',
-            suite: 'vtr_reg_strong_odin'
+            suite: 'vtr_reg_strong_odin',
+            extra_pkgs: ""
           },
           {
             name: 'Valgrind Memory',
             params: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DWITH_ODIN=on',
-            suite: 'vtr_reg_valgrind_small'
+            suite: 'vtr_reg_valgrind_small',
+            extra_pkgs: ""
           }
         ]
     name: 'R: ${{ matrix.name }}'
@@ -198,20 +232,32 @@ jobs:
     - uses: actions/setup-python@v5
       with:
         python-version: 3.10.10
+
     - uses: actions/checkout@v4
       with:
         submodules: 'true'
-    - run: ./.github/scripts/install_dependencies.sh
+
+    - name: Get number of CPU cores
+      uses: SimenB/github-actions-cpu-cores@v2
+      id: cpu-cores
+
+    - name: Install dependencies
+      run: ./.github/scripts/install_dependencies.sh
+
+    - name: Install external libraries
+      run: sudo apt install -y ${{ matrix.extra_pkgs }}
+      if: ${{ matrix.extra_pkgs }}
 
     - uses: hendrikmuhs/ccache-action@v1.2
 
     - name: Test
       env:
         CMAKE_PARAMS: ${{ matrix.params }}
+        NUM_PROC: ${{ steps.cpu-cores.outputs.count }}
       run: |
         export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
         ./.github/scripts/build.sh
-        ./run_reg_test.py ${{ matrix.suite }} -show_failures -j2
+        ./run_reg_test.py ${{ matrix.suite }} -show_failures -j${{ steps.cpu-cores.outputs.count}}
 
     - name: Upload regression run files
       if: ${{ !cancelled() }}
@@ -259,7 +305,12 @@ jobs:
       with:
         submodules: 'true'
 
-    - run: ./.github/scripts/install_dependencies.sh
+    - name: Get number of CPU cores
+      uses: SimenB/github-actions-cpu-cores@v2
+      id: cpu-cores
+
+    - name: Install dependencies
+      run: ./.github/scripts/install_dependencies.sh
 
     - uses: hendrikmuhs/ccache-action@v1.2
 
@@ -273,12 +324,13 @@ jobs:
         # depends on LLVM and all CI tests where VTR_ENABLE_SANITIZE is enabled fail. For a temporary
         # fix, we manually reduce the entropy. This quick fix should be removed in the future
         # when github deploys a more stable Ubuntu image.
+        NUM_PROC: ${{ steps.cpu-cores.outputs.count }}
       run: |
         sudo sysctl -w vm.mmap_rnd_bits=28
         export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
         ./.github/scripts/build.sh
         # We skip QoR since we are only checking for errors in sanitizer runs
-        ./run_reg_test.py ${{ matrix.suite }} -show_failures -j2 -skip_qor
+        ./run_reg_test.py ${{ matrix.suite }} -show_failures -j${{ steps.cpu-cores.outputs.count }} -skip_qor
 
 
   Parmys:
@@ -292,7 +344,13 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: 'true'
-      - run: ./.github/scripts/install_dependencies.sh
+
+      - name: Get number of CPU cores
+        uses: SimenB/github-actions-cpu-cores@v2
+        id: cpu-cores
+
+      - name: Install dependencies
+        run: ./.github/scripts/install_dependencies.sh
 
       - uses: hendrikmuhs/ccache-action@v1.2
 
@@ -300,10 +358,11 @@ jobs:
         env:
           CMAKE_PARAMS: '-DVTR_IPO_BUILD=off'
           BUILD_TYPE: debug
+          NUM_PROC: ${{ steps.cpu-cores.outputs.count }}
         run: |
           export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
           ./.github/scripts/build.sh
-          ./run_reg_test.py parmys_reg_basic -show_failures -j2
+          ./run_reg_test.py parmys_reg_basic -show_failures -j${{ steps.cpu-cores.outputs.count }}
 
 
   ODINII:
@@ -317,7 +376,13 @@ jobs:
     - uses: actions/checkout@v4
       with:
         submodules: 'true'
-    - run: ./.github/scripts/install_dependencies.sh
+
+    - name: Get number of CPU cores
+      uses: SimenB/github-actions-cpu-cores@v2
+      id: cpu-cores
+
+    - name: Install dependencies
+      run: ./.github/scripts/install_dependencies.sh
 
     - uses: hendrikmuhs/ccache-action@v1.2
 
@@ -325,11 +390,12 @@ jobs:
       env:
         CMAKE_PARAMS: '-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=on -DVTR_IPO_BUILD=off -DWITH_BLIFEXPLORER=on -DWITH_PARMYS=OFF -DWITH_ODIN=on'
         BUILD_TYPE: debug
+        NUM_PROC: ${{ steps.cpu-cores.outputs.count }}
       run: |
         sudo sysctl -w vm.mmap_rnd_bits=28
         export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
         ./.github/scripts/build.sh
-        ./run_reg_test.py odin_reg_basic -show_failures -j2
+        ./run_reg_test.py odin_reg_basic -show_failures -j${{ steps.cpu-cores.outputs.count }}
 
 
   VQM2BLIF:
@@ -343,13 +409,20 @@ jobs:
     - uses: actions/checkout@v4
       with:
         submodules: 'true'
-    - run: ./.github/scripts/install_dependencies.sh
+
+    - name: Get number of CPU cores
+      uses: SimenB/github-actions-cpu-cores@v2
+      id: cpu-cores
+
+    - name: Install dependencies
+      run: ./.github/scripts/install_dependencies.sh
 
     - uses: hendrikmuhs/ccache-action@v1.2
 
     - name: Test
       env:
         BUILD_TYPE: release
+        NUM_PROC: ${{ steps.cpu-cores.outputs.count }}
       run: |
         export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
         ./.github/scripts/build.sh
@@ -378,7 +451,13 @@ jobs:
     - uses: actions/checkout@v4
       with:
         submodules: 'true'
-    - run: ./.github/scripts/install_dependencies.sh
+
+    - name: Get number of CPU cores
+      uses: SimenB/github-actions-cpu-cores@v2
+      id: cpu-cores
+
+    - name: Install dependencies
+      run: ./.github/scripts/install_dependencies.sh
 
     - uses: hendrikmuhs/ccache-action@v1.2
 
@@ -387,6 +466,7 @@ jobs:
         CMAKE_PARAMS: "-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DWITH_ODIN=on"
         MATRIX_EVAL: ${{ matrix.eval }}
         BUILD_TYPE: release
+        NUM_PROC: ${{ steps.cpu-cores.outputs.count }}
       run: |
         export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
         ./.github/scripts/build.sh
@@ -413,13 +493,20 @@ jobs:
     - uses: actions/checkout@v4
       with:
         submodules: 'true'
-    - run: ./.github/scripts/install_dependencies.sh
+
+    - name: Get number of CPU cores
+      uses: SimenB/github-actions-cpu-cores@v2
+      id: cpu-cores
+
+    - name: Install dependencies
+      run: ./.github/scripts/install_dependencies.sh
 
     - uses: hendrikmuhs/ccache-action@v1.2
 
     - name: Test
       env:
         CMAKE_PARAMS: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on'
+        NUM_PROC: ${{ steps.cpu-cores.outputs.count }}
         _COVERITY_URL: 'https://scan.coverity.com/download/linux64'
         _COVERITY_MD5: 'd0d7d7df9d6609e578f85096a755fb8f'
       run: |
