@@ -1072,7 +1072,7 @@ The following options are only used when FPGA device and netlist contain a NoC r
 
     .. note:: noc_flows_file are required to specify if NoC optimization is turned on (--noc on).
 
-.. option:: --noc_routing_algorithm {xy_routing | bfs_routing}
+.. option:: --noc_routing_algorithm {xy_routing | bfs_routing | west_first_routing | north_last_routing | negative_first_routing | odd_even_routing}
 
     Controls the algorithm used by the NoC to route packets.
     
