@@ -1077,7 +1077,11 @@ The following options are only used when FPGA device and netlist contain a NoC r
     Controls the algorithm used by the NoC to route packets.
     
     * ``xy_routing`` Uses the direction oriented routing algorithm. This is recommended to be used with mesh NoC topologies.
-    * ``bfs_routing`` Uses the breadth first search algorithm. The objective is to find a route that uses a minimum number of links. This can be used with any NoC topology.
+    * ``bfs_routing`` Uses the breadth first search algorithm. The objective is to find a route that uses a minimum number of links. This algorithm is not guaranteed to generate deadlock-free traffic flow routes, but can be used with any NoC topology.
+    * ``west_first_routing`` Uses the west-first routing algorithm. This is recommended to be used with mesh NoC topologies.
+    * ``north_last_routing`` Uses the north-last routing algorithm. This is recommended to be used with mesh NoC topologies.
+    * ``negative_first_routing`` Uses the negative-first routing algorithm. This is recommended to be used with mesh NoC topologies.
+    * ``odd_even_routing`` Uses the odd-even routing algorithm. This is recommended to be used with mesh NoC topologies.
 
     **Default:** ``bfs_routing``
 
@@ -1089,28 +1093,45 @@ The following options are only used when FPGA device and netlist contain a NoC r
     * ``noc_placement_weighting = 1`` means noc placement is considered equal to timing and wirelength.
     * ``noc_placement_weighting > 1`` means the placement is increasingly dominated by NoC parameters.
     
-    **Default:** ``0.6``
+    **Default:** ``5.0``
+
+.. option:: --noc_aggregate_bandwidth_weighting <float>
+
+    Controls the importance of minimizing the NoC aggregate bandwidth. This value can be >=0, where 0 would mean the aggregate bandwidth has no relevance to placement.
+    Other positive numbers specify the importance of minimizing the NoC aggregate bandwidth to other NoC-related cost terms.
+    Weighting factors for NoC-related cost terms are normalized internally. Therefore, their absolute values are not important, and
+    only their relative ratios determine the importance of each cost term.
+
+    **Default:** ``0.38``
 
 .. option:: --noc_latency_constraints_weighting <float>
 
-    Controls the importance of meeting all the NoC traffic flow latency constraints.
+    Controls the importance of meeting all the NoC traffic flow latency constraints. This value can be >=0, where 0 would mean latency constraints have no relevance to placement.
+    Other positive numbers specify the importance of meeting latency constraints to other NoC-related cost terms.
+    Weighting factors for NoC-related cost terms are normalized internally. Therefore, their absolute values are not important, and
+    only their relative ratios determine the importance of each cost term.
     
-    * ``latency_constraints = 0`` means the latency constraints have no relevance to placement.
-    * ``0 < latency_constraints < 1`` means the latency constraints are weighted equally to the sum of other placement cost components. 
-    * ``latency_constraints > 1`` means the placement is increasingly dominated by reducing the latency constraints of the traffic flows.
-    
-    **Default:** ``1``
+    **Default:** ``0.6``
 
 .. option:: --noc_latency_weighting <float>
 
     Controls the importance of reducing the latencies of the NoC traffic flows.
-    This value can be >=0, 
+    This value can be >=0, where 0 would mean the latencies have no relevance to placement
+    Other positive numbers specify the importance of minimizing aggregate latency to other NoC-related cost terms.
+    Weighting factors for NoC-related cost terms are normalized internally. Therefore, their absolute values are not important, and
+    only their relative ratios determine the importance of each cost term.
     
-    * ``latency = 0`` means the latencies have no relevance to placement.
-    * ``0 < latency < 1`` means the latencies are weighted equally to the sum of other placement cost components. 
-    * ``latency > 1`` means the placement is increasingly dominated by reducing the latencies of the traffic flows.
-    
-    **Default:** ``0.05``
+    **Default:** ``0.02``
+
+.. option:: --noc_congestion_weighting <float>
+
+    Controls the importance of reducing the congestion of the NoC links.
+    This value can be >=0, where 0 would mean the congestion has no relevance to placement.
+    Other positive numbers specify the importance of minimizing congestion to other NoC-related cost terms.
+    Weighting factors for NoC-related cost terms are normalized internally. Therefore, their absolute values are not important, and
+    only their relative ratios determine the importance of each cost term.
+
+    **Default:** ``0.25``
 
 .. option:: --noc_swap_percentage <float>
 
@@ -1120,7 +1141,7 @@ The following options are only used when FPGA device and netlist contain a NoC r
     * ``0`` means NoC blocks will be moved at the same rate as other blocks. 
     * ``100`` means all swaps attempted by the placer are NoC router blocks.
     
-    **Default:** ``40``    
+    **Default:** ``0``
 
 .. option:: --noc_placement_file_name <file>
 
