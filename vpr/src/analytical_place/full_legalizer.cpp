@@ -6,10 +6,12 @@
  */
 
 #include "full_legalizer.h"
+
 #include <cmath>
 #include <list>
 #include <unordered_set>
 #include <vector>
+
 #include "partial_placement.h"
 #include "ShowSetup.h"
 #include "ap_netlist_fwd.h"
@@ -24,6 +26,7 @@
 #include "pack.h"
 #include "physical_types.h"
 #include "place_constraints.h"
+#include "place_macro.h"
 #include "vpr_api.h"
 #include "vpr_context.h"
 #include "vpr_error.h"
@@ -56,13 +59,15 @@ class APClusterPlacer {
 private:
     // Get the macro for the given cluster block.
     t_pl_macro get_macro(ClusterBlockId clb_blk_id) {
+        const auto& place_macros = g_vpr_ctx.placement().blk_loc_registry().place_macros();
         // Basically stolen from initial_placement.cpp:place_one_block
         // TODO: Make this a cleaner interface and share the code.
-        int imacro;
-        get_imacro_from_iblk(&imacro, clb_blk_id, g_vpr_ctx.placement().pl_macros);
+        int imacro = place_macros.get_imacro_from_iblk(clb_blk_id);
+
         // If this block is part of a macro, return it.
-        if (imacro != -1)
-            return g_vpr_ctx.placement().pl_macros[imacro];
+        if (imacro != -1) {
+            return place_macros[imacro];
+        }
         // If not, create a "fake" macro with a single element.
         t_pl_macro_member macro_member;
         t_pl_offset block_offset(0, 0, 0, 0);
@@ -84,11 +89,10 @@ public:
     APClusterPlacer() {
         // FIXME: This was stolen from place/place.cpp
         //        it used a static method, just taking what I think I will need.
-
-        auto& block_locs = g_vpr_ctx.mutable_placement().mutable_block_locs();
-        auto& grid_blocks = g_vpr_ctx.mutable_placement().mutable_grid_blocks();
         auto& blk_loc_registry = g_vpr_ctx.mutable_placement().mutable_blk_loc_registry();
-        init_placement_context(block_locs, grid_blocks);
+        const auto& directs = g_vpr_ctx.device().arch->Directs;
+
+        init_placement_context(blk_loc_registry, directs);
 
         // stolen from place/place.cpp:alloc_and_load_try_swap_structs
         // FIXME: set cube_bb to false by hand, should be passed in.
@@ -96,18 +100,17 @@ public:
         g_vpr_ctx.mutable_placement().compressed_block_grids = create_compressed_block_grids();
 
         // Initialize the macros
-        const t_arch* arch = g_vpr_ctx.device().arch;
-        g_vpr_ctx.mutable_placement().pl_macros = alloc_and_load_placement_macros(arch->Directs, arch->num_directs);
+        blk_loc_registry.mutable_place_macros().alloc_and_load_placement_macros(directs);
 
         // TODO: The next few steps will be basically a direct copy of the initial
         //       placement code since it does everything we need! It would be nice
         //       to share the code.
 
         // Clear the grid locations (stolen from initial_placement)
-        clear_all_grid_locs(blk_loc_registry);
+        blk_loc_registry.clear_all_grid_locs();
 
         // Deal with the placement constraints.
-        propagate_place_constraints();
+        propagate_place_constraints(blk_loc_registry.place_macros());
 
         mark_fixed_blocks(blk_loc_registry);
 

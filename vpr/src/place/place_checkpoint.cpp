@@ -45,7 +45,7 @@ void restore_best_placement(PlacerState& placer_state,
                             std::unique_ptr<PlaceDelayModel>& place_delay_model,
                             std::unique_ptr<NetPinTimingInvalidator>& pin_timing_invalidator,
                             PlaceCritParams crit_params,
-                            const t_noc_opts& noc_opts) {
+                            std::optional<NocCostHandler>& noc_cost_handler) {
     /* The (valid) checkpoint is restored if the following conditions are met:
      * 1) The checkpoint has a lower critical path delay.
      * 2) The checkpoint's wire-length cost is either better than the current solution,
@@ -74,8 +74,9 @@ void restore_best_placement(PlacerState& placer_state,
          * internal data structures that are used to keep track of each flow's cost are no longer valid,
          * and need to be re-computed from scratch.
          */
-        if (noc_opts.noc) {
-            reinitialize_noc_routing(costs, {}, placer_state.block_locs());
+        if (noc_cost_handler.has_value()) {
+            VTR_ASSERT(noc_cost_handler->points_to_same_block_locs(placer_state.block_locs()));
+            noc_cost_handler->reinitialize_noc_routing(costs, {});
         }
 
         VTR_LOG("\nCheckpoint restored\n");

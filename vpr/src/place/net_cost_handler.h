@@ -17,12 +17,6 @@
 class PlacerState;
 
 /**
- * @brief The error tolerance due to round off for the total cost computation.
- * When we check it from scratch vs. incrementally. 0.01 means that there is a 1% error tolerance.
- */
-constexpr double ERROR_TOL = .01;
-
-/**
  * @brief The method used to calculate placement cost
  * @details For comp_cost. NORMAL means use the method that generates updatable bounding boxes for speed.
  * CHECK means compute all bounding boxes from scratch using a very simple routine to allow checks
@@ -40,8 +34,8 @@ class NetCostHandler {
   public:
     NetCostHandler() = delete;
     NetCostHandler(const NetCostHandler&) = delete;
-    NetCostHandler(NetCostHandler&&) = delete;
     NetCostHandler& operator=(const NetCostHandler&) = delete;
+    NetCostHandler(NetCostHandler&&) = delete;
     NetCostHandler& operator=(NetCostHandler&&) = delete;
 
     /**
@@ -122,10 +116,9 @@ class NetCostHandler {
      * Used to computed timing cost .
      * @param costs passed by reference and computed by this routine (i.e. returned by reference)
      */
-    void recompute_costs_from_scratch(const t_noc_opts& noc_opts,
-                                      const PlaceDelayModel* delay_model,
+    void recompute_costs_from_scratch(const PlaceDelayModel* delay_model,
                                       const PlacerCriticalities* criticalities,
-                                      t_placer_costs* costs);
+                                      t_placer_costs& costs);
 
   private:
     ///@brief Specifies whether the bounding box is computed using cube method or per-layer method.

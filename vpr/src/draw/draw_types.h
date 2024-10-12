@@ -310,10 +310,61 @@ struct t_draw_state {
 
     std::vector<std::pair<t_pl_loc, ezgl::color>> colored_locations;
 
+    /**
+     * @brief Set the reference to placement location variable.
+     *
+     * @details During the placement stage, this reference should point to a
+     * local object in the placement stage because the placement stage does not change
+     * the global stage in place_ctx until the end of placement. After the placement
+     * is done, the reference should point to the global state stored in place_ctx.
+     *
+     * @param blk_loc_registry The PlaceLocVars that the reference will point to.
+     */
+    void set_graphics_blk_loc_registry_ref(const BlkLocRegistry& blk_loc_registry) {
+        blk_loc_registry_ref_ = std::ref(blk_loc_registry);
+    }
+
+    /**
+     * @brief Returns the reference to placement block location variables.
+     * @return A const reference to placement block location variables.
+     */
+    const BlkLocRegistry& get_graphics_blk_loc_registry_ref() const {
+        return blk_loc_registry_ref_->get();
+    }
+
+    /**
+     * @brief Set the internal reference to NoC link bandwidth utilization array.
+     * @param noc_link_bandwidth_usages The array that the internal reference will
+     * be pointing to.
+     */
+    void set_noc_link_bandwidth_usages_ref(const vtr::vector<NocLinkId, double>& noc_link_bandwidth_usages) {
+        noc_link_bandwidth_usages_ref_ = noc_link_bandwidth_usages;
+    }
+
+    /**
+     * @brief Returns the reference to NoC link bandwidth utilization array.
+     * @return A const reference to NoC link bandwidth utilization array.
+     */
+    const vtr::vector<NocLinkId, double>& get_noc_link_bandwidth_usages_ref() const {
+        return noc_link_bandwidth_usages_ref_->get();
+    }
+
   private:
     friend void alloc_draw_structs(const t_arch* arch);
     vtr::vector<ClusterBlockId, ezgl::color> block_color_;
     vtr::vector<ClusterBlockId, bool> use_default_block_color_;
+
+    /**
+     * @brief Stores a reference to a BlkLocRegistry to be used in the graphics code.
+     * @details This reference let us pass in a currently-being-optimized placement state,
+     * rather than using the global placement state in placement context that is valid only once placement is done
+     */
+    std::optional<std::reference_wrapper<const BlkLocRegistry>> blk_loc_registry_ref_;
+
+    /**
+     * @brief Stores a reference to NoC link bandwidth utilization to be used in the graphics codes.
+     */
+    std::optional<std::reference_wrapper<const vtr::vector<NocLinkId, double>>> noc_link_bandwidth_usages_ref_;
 };
 
 /* For each cluster type, this structure stores drawing

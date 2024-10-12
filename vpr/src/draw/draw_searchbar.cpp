@@ -68,7 +68,7 @@
 ezgl::rectangle draw_get_rr_chan_bbox(RRNodeId inode) {
     double left = 0, right = 0, top = 0, bottom = 0;
     t_draw_coords* draw_coords = get_draw_coords_vars();
-    auto& device_ctx = g_vpr_ctx.device();
+    const auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
     switch (rr_graph.node_type(inode)) {
@@ -105,14 +105,11 @@ ezgl::rectangle draw_get_rr_chan_bbox(RRNodeId inode) {
 
 void draw_highlight_blocks_color(t_logical_block_type_ptr type,
                                  ClusterBlockId blk_id) {
-    int k;
-    ClusterBlockId fanblk;
-
     t_draw_state* draw_state = get_draw_state_vars();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& block_locs = get_graphics_blk_loc_registry_ref().block_locs();
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& block_locs = draw_state->get_graphics_blk_loc_registry_ref().block_locs();
 
-    for (k = 0; k < type->pb_type->num_pins; k++) { /* Each pin on a CLB */
+    for (int k = 0; k < type->pb_type->num_pins; k++) { /* Each pin on a CLB */
         ClusterNetId net_id = cluster_ctx.clb_nlist.block_net(blk_id, k);
 
         if (net_id == ClusterNetId::INVALID()) {
@@ -130,14 +127,14 @@ void draw_highlight_blocks_color(t_logical_block_type_ptr type,
                 /* If block already highlighted, de-highlight the fanout. (the deselect case)*/
                 draw_state->net_color[net_id] = ezgl::BLACK;
                 for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
-                    fanblk = cluster_ctx.clb_nlist.pin_block(pin_id);
+                    ClusterBlockId fanblk = cluster_ctx.clb_nlist.pin_block(pin_id);
                     draw_reset_blk_color(fanblk);
                 }
             } else {
                 /* Highlight the fanout */
                 draw_state->net_color[net_id] = DRIVES_IT_COLOR;
                 for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
-                    fanblk = cluster_ctx.clb_nlist.pin_block(pin_id);
+                    ClusterBlockId fanblk = cluster_ctx.clb_nlist.pin_block(pin_id);
                     draw_state->set_block_color(fanblk, DRIVES_IT_COLOR);
                 }
             }
@@ -145,12 +142,12 @@ void draw_highlight_blocks_color(t_logical_block_type_ptr type,
             if (draw_state->block_color(blk_id) == SELECTED_COLOR) {
                 /* If block already highlighted, de-highlight the fanin. (the deselect case)*/
                 draw_state->net_color[net_id] = ezgl::BLACK;
-                fanblk = cluster_ctx.clb_nlist.net_driver_block(net_id); /* DRIVER to net */
+                ClusterBlockId fanblk = cluster_ctx.clb_nlist.net_driver_block(net_id); /* DRIVER to net */
                 draw_reset_blk_color(fanblk);
             } else {
                 /* Highlight the fanin */
                 draw_state->net_color[net_id] = DRIVEN_BY_IT_COLOR;
-                fanblk = cluster_ctx.clb_nlist.net_driver_block(net_id); /* DRIVER to net */
+                ClusterBlockId fanblk = cluster_ctx.clb_nlist.net_driver_block(net_id); /* DRIVER to net */
                 draw_state->set_block_color(fanblk, DRIVEN_BY_IT_COLOR);
             }
         }
@@ -211,7 +208,7 @@ void highlight_nets(char* message, RRNodeId hit_node, bool is_flat) {
  */
 void draw_highlight_fan_in_fan_out(const std::set<RRNodeId>& nodes) {
     t_draw_state* draw_state = get_draw_state_vars();
-    auto& device_ctx = g_vpr_ctx.device();
+    const auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
     for (auto node : nodes) {
@@ -267,8 +264,8 @@ void deselect_all() {
     // as well as clearing the highlighed sub-block
 
     t_draw_state* draw_state = get_draw_state_vars();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& device_ctx = g_vpr_ctx.device();
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& device_ctx = g_vpr_ctx.device();
 
     /* Create some colour highlighting */
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {

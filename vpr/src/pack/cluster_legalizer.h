@@ -24,7 +24,7 @@
 #include "vtr_vector_map.h"
 
 class Prepacker;
-class t_cluster_placement_stats;
+class t_intra_cluster_placement_stats;
 class t_pb_graph_node;
 struct t_lb_router_data;
 
@@ -96,7 +96,7 @@ struct LegalizationCluster {
     /// @brief The stats on where the different atoms in the cluster are currently
     ///        placed in the cluster. This is used when the legalizer decides
     ///        what sites it should try to put a new molecule into.
-    t_cluster_placement_stats* placement_stats;
+    t_intra_cluster_placement_stats* placement_stats;
 };
 
 /*

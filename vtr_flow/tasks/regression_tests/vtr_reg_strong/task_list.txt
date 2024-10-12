@@ -1,3 +1,7 @@
+regression_tests/vtr_reg_strong/basic_ap/single_wire
+regression_tests/vtr_reg_strong/basic_ap/single_ff
+regression_tests/vtr_reg_strong/basic_ap/ch_intrinsics
+regression_tests/vtr_reg_strong/basic_ap/diffeq1
 regression_tests/vtr_reg_strong/strong_absorb_buffers
 regression_tests/vtr_reg_strong/strong_analysis_only
 regression_tests/vtr_reg_strong/strong_analytic_placer
@@ -17,6 +21,7 @@ regression_tests/vtr_reg_strong/strong_constant_outputs
 regression_tests/vtr_reg_strong/strong_custom_grid
 regression_tests/vtr_reg_strong/strong_custom_pin_locs
 regression_tests/vtr_reg_strong/strong_custom_switch_block
+regression_tests/vtr_reg_strong/strong_custom_sb_loc
 regression_tests/vtr_reg_strong/strong_dedicated_clock
 regression_tests/vtr_reg_strong/strong_default_fc_pinlocs
 regression_tests/vtr_reg_strong/strong_depop
