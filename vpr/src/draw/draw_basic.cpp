@@ -628,8 +628,8 @@ void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::ren
     static vtr::OffsetMatrix<int> chany_track; /* [0..device_ctx.grid.width() - 2][1..device_ctx.grid.height() - 2] */
     if (draw_state->draw_route_type == GLOBAL) {
         /* Allocate some temporary storage if it's not already available. */
-        size_t width = device_ctx.grid.width();
-        size_t height = device_ctx.grid.height();
+        int width = (int)device_ctx.grid.width();
+        int height = (int)device_ctx.grid.height();
         if (chanx_track.empty()) {
             chanx_track = vtr::OffsetMatrix<int>({{{1, width - 1}, {0, height - 1}}});
         }
@@ -638,12 +638,12 @@ void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::ren
             chany_track = vtr::OffsetMatrix<int>({{{0, width - 1}, {1, height - 1}}});
         }
 
-        for (size_t i = 1; i < width - 1; i++)
-            for (size_t j = 0; j < height - 1; j++)
+        for (int i = 1; i < width - 1; i++)
+            for (int j = 0; j < height - 1; j++)
                 chanx_track[i][j] = (-1);
 
-        for (size_t i = 0; i < width - 1; i++)
-            for (size_t j = 1; j < height - 1; j++)
+        for (int i = 0; i < width - 1; i++)
+            for (int j = 1; j < height - 1; j++)
                 chany_track[i][j] = (-1);
     }
 
