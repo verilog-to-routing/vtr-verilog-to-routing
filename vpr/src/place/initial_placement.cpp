@@ -990,7 +990,7 @@ static void place_all_blocks(const t_placer_opts& placer_opts,
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& place_macros = blk_loc_registry.place_macros();
 
-    auto blocks = cluster_ctx.clb_nlist.blocks();
+    const auto& blocks = cluster_ctx.clb_nlist.blocks();
 
     int number_of_unplaced_blks_in_curr_itr;
 
@@ -1129,7 +1129,7 @@ static void alloc_and_load_movable_blocks(const vtr::vector_map<ClusterBlockId, 
 
     size_t n_logical_blocks = device_ctx.logical_block_types.size();
     place_ctx.movable_blocks_per_type.resize(n_logical_blocks);
-    
+
     // iterate over all clustered blocks and store block ids of movable ones
     for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks()) {
         const auto& loc = block_locs[blk_id];
