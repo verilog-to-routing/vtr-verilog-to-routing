@@ -239,52 +239,32 @@ Let's start by making a fresh directory for us to work in:
 
 Next we need to run the three main sets of tools:
 
-* :ref:`odin_ii` performs 'synthesis' which converts our behavioural Verilog (``.v`` file) into a circuit netlist (``.blif`` file) consisting of logic equations and FPGA architecture primitives (Flip-Flops, adders etc.),
+* :ref:`Parmys` performs 'synthesis' which converts our behavioural Verilog (``.v`` file) into a circuit netlist (``.blif`` file) consisting of logic equations and FPGA architecture primitives (Flip-Flops, adders etc.),
 * :ref:`ABC` performs 'logic optimization' which simplifies the circuit logic, and 'technology mapping' which converts logic equations into the Look-Up-Tables (LUTs) available on an FPGA, and
 * :ref:`VPR` which performs packing, placement and routing of the circuit to implement it on the targeted FPGA architecture.
 
-.. _synthesizing_with_odin_ii:
-Synthesizing with ODIN II
+.. _synthesizing_with_parmys:
+Synthesizing with Parmys
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-First we'll run ODIN II on our Verilog file to synthesize it into a circuit netlist, providing the options:
+To synthesize our Verilog file into a circuit netlist, we will utilize the `run_vtr_flow.py` script, which streamlines the process. This command synthesizes the provided Verilog file (`blink.v`) while targeting the specified FPGA architecture (`EArch.xml`).
 
- * ``-a $VTR_ROOT/vtr_flow/arch/timing/EArch.xml`` which specifies what FPGA architecture we are targeting,
- * ``-V $VTR_ROOT/doc/src/quickstart/blink.v`` which specifies the verilog file we want to synthesize, and
- * ``-o blink.odin.blif`` which specifies the name of the generated ``.blif`` circuit netlist.
-
-The resulting command is:
+The command is as follows:
 
 .. code-block:: bash
 
-    > $VTR_ROOT/odin_ii/odin_ii \
-        -a $VTR_ROOT/vtr_flow/arch/timing/EArch.xml \
-        -V $VTR_ROOT/doc/src/quickstart/blink.v \
-        -o blink.odin.blif
+    > $VTR_ROOT/vtr_flow/scripts/run_vtr_flow.py \
+        $VTR_ROOT/doc/src/quickstart/blink.v \
+        $VTR_ROOT/vtr_flow/arch/timing/EArch.xml \
+        -start parmys -end parmys
 
-which when run should end with something like::
+When executed, the output should indicate successful synthesis, similar to:
 
-    Total time: 14.7ms
-    Odin ran with exit status: 0
-    Odin II took 0.01 seconds (max_rss 5.1 MiB)
+    EArch/blink        OK (took 0.16 seconds, overall memory peak 20.00 MiB consumed by parmys run)
 
-where ``Odin ran with exit status: 0`` indicates Odin successfully synthesized our verilog.
+This output confirms that the synthesis was successful and provides information on the duration and memory usage during the process.
 
-We can now take a look at the circuit which ODIN produced (``blink.odin.blif``).
-The file is long and likely harder to follow than our code in ``blink.v``; however it implements the same functionality.
-Some interesting highlights are shown below:
-
-.. literalinclude:: blink.odin.blif
-    :lines: 14,40
-    :caption: Instantiations of rising-edge triggered Latches (i.e. Flip-Flops) in ``blink.odin.blif`` (implements part of ``r_counter`` in blink.v)
-
-.. literalinclude:: blink.odin.blif
-    :lines: 17-19,21-22
-    :caption: Adder primitive instantiations in ``blink.odin.blif``, used to perform addition (implements part of the ``+`` operator in blink.v)
-
-.. literalinclude:: blink.odin.blif
-    :lines: 45-50
-    :caption: Logic equation (.names truth-table) in ``blink.odin.blif``, implementing logical OR (implements part of the ``<`` operator in blink.v)
+We can now take a look at the circuit which Parmys produced (``blink.parmys.blif``).
 
 .. seealso:: For more information on the BLIF file format see :ref:`blif_format`.
 
@@ -297,9 +277,9 @@ Next, we'll optimize and technology map our circuit using ABC, providing the opt
 
 We'll use the following, simple ABC commands::
 
-    read blink.odin.blif;                               #Read the circuit synthesized by ODIN
+    read blink.parmys.blif;                               #Read the circuit synthesized by Parmys
     if -K 6;                                            #Technology map to 6 input LUTs (6-LUTs)
-    write_hie blink.odin.blif blink.abc_no_clock.blif   #Write new circuit to blink.abc_no_clock.blif
+    write_hie blink.parmys.blif blink.abc_no_clock.blif   #Write new circuit to blink.abc_no_clock.blif
 
 .. note:: Usually you should use a more complicated script (such as that used by :ref:`run_vtr_flow`) to ensure ABC optitmizes your circuit well.
 
@@ -308,17 +288,18 @@ The corresponding command to run is:
 .. code-block:: bash
 
     > $VTR_ROOT/abc/abc \
-        -c 'read blink.odin.blif; if -K 6; write_hie blink.odin.blif blink.abc_no_clock.blif'
+        -c 'read ~/vtr_work/quickstart/blink_manual/temp/blink.parmys.blif; if -K 6; write_hie ~/vtr_work/quickstart/blink_manual/temp/blink.parmys.blif ~/vtr_work/quickstart/blink_manual/temp/blink.abc_no_clock.blif'
+
 
 When run, ABC's output should look similar to::
 
-    ABC command line: "read blink.odin.blif; if -K 6; write_hie blink.odin.blif blink.abc_no_clock.blif".
+    ABC command line: "read blink.parmys.blif; if -K 6; write_hie blink.parmys.blif blink.abc_no_clock.blif".
 
     Hierarchy reader converted 6 instances of blackboxes.
     The network was strashed and balanced before FPGA mapping.
     Hierarchy writer reintroduced 6 instances of blackboxes.
 
-If we now inspect the produced BLIF file (``blink.abc_no_clock.blif``) we see that ABC was able to significantly simplify and optimize the circuit's logic (compared to ``blink.odin.blif``):
+If we now inspect the produced BLIF file (``blink.abc_no_clock.blif``) we see that ABC was able to significantly simplify and optimize the circuit's logic (compared to ``blink.parmys.blif``):
 
 .. literalinclude:: blink.abc_no_clock.blif
     :linenos:
@@ -332,14 +313,14 @@ However, there is an issue with the above BLIF produced by ABC: the latches (ris
 
 Re-inserting clocks
 ^^^^^^^^^^^^^^^^^^^
-We will restore the clock information by running a script which will transfer that information from the original ODIN BLIF file (writing it to the new file ``blink.pre-vpr.blif``):
+We will restore the clock information by running a script which will transfer that information from the original Parmys BLIF file (writing it to the new file ``blink.pre-vpr.blif``):
 
 .. code-block:: bash
 
     > $VTR_ROOT/vtr_flow/scripts/restore_multiclock_latch.pl \
-        blink.odin.blif \
-        blink.abc_no_clock.blif \
-        blink.pre-vpr.blif
+        ~/vtr_work/quickstart/blink_manual/temp/blink.parmys.blif \
+        ~/vtr_work/quickstart/blink_manual/temp/blink.abc_no_clock.blif \
+        ~/vtr_work/quickstart/blink_manual/temp/blink.pre-vpr.blif
 
 If we inspect ``blink.pre-vpr.blif`` we now see that the clock (``blink^clk``) has been restored to the Flip-Flops:
 
@@ -370,7 +351,7 @@ The resulting command is:
 
     > $VTR_ROOT/vpr/vpr \
         $VTR_ROOT/vtr_flow/arch/timing/EArch.xml \
-        blink --circuit_file blink.pre-vpr.blif \
+        ~/vtr_work/quickstart/blink_manual/temp/blink.pre-vpr.blif \
         --route_chan_width 100
 
 and after VPR finishes we should see the resulting implementation files:
@@ -387,7 +368,7 @@ We can then view the implementation as usual by appending ``--analysis --disp on
 
     > $VTR_ROOT/vpr/vpr \
         $VTR_ROOT/vtr_flow/arch/timing/EArch.xml \
-        blink --circuit_file blink.pre-vpr.blif \
+        ~/vtr_work/quickstart/blink_manual/temp/blink.pre-vpr.blif \
         --route_chan_width 100 \
         --analysis --disp on
 
