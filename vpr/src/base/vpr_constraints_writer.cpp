@@ -103,6 +103,11 @@ void setup_vpr_floorplan_constraints_noc(VprConstraints& constraints,
         constraints.mutable_place_constraints().add_partition(part);
 
         for (auto [atom_id, noc_grp_id] : atom_noc_grp_id.pairs()) {
+
+            if (atom_netlist.block_type(atom_id) == AtomBlockType::INPAD || atom_netlist.block_type(atom_id) == AtomBlockType::OUTPAD) {
+                continue;
+            }
+
             if (noc_grp_id == noc_group_id) {
                 constraints.mutable_place_constraints().add_constrained_atom(atom_id, partid);
             }

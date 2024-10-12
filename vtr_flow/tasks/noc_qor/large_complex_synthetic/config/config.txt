@@ -95,11 +95,11 @@ qor_parse_file=qor_noc_spec.txt
 #pass_requirements_file=
 
 # Script parameters
-script_params_common =-starting_stage vpr --noc on --pack --place --route_chan_width 300 --noc_routing_algorithm odd_even_routing --device "EP4SE820" --floorplan_num_horizontal_partitions 24 --floorplan_num_vertical_partitions 18 --write_vpr_constraints place_constraint.xml
+script_params_common =-starting_stage vpr --noc on --pack --place --route_chan_width 300 --noc_routing_algorithm odd_even_routing --device "EP4SE820" --floorplan_num_horizontal_partitions 25 --floorplan_num_vertical_partitions 20 --write_vpr_constraints place_constraint.xml
 script_params_list_add=--seed 1
 script_params_list_add=--seed 2
 script_params_list_add=--seed 3
 
 ##--read_vpr_constraints place_constraint.xml
 
-##--floorplan_num_horizontal_partitions 24 --floorplan_num_vertical_partitions 18 --write_vpr_constraints place_constraint.xml
+##--floorplan_num_horizontal_partitions 25 --floorplan_num_vertical_partitions 20 --write_vpr_constraints place_constraint.xml
