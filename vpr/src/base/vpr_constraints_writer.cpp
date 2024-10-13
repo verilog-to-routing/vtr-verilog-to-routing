@@ -85,6 +85,23 @@ void setup_vpr_floorplan_constraints_noc(VprConstraints& constraints,
             max_loc.x = std::max(max_loc.x, loc.x);
             max_loc.y = std::max(max_loc.y, loc.y);
             max_loc.layer = std::max(max_loc.layer, loc.layer);
+
+            const std::string& part_name = "partition_" + std::to_string(part_id);
+            PartitionId partid(part_id);
+
+            Partition part;
+            part.set_name(part_name);
+
+            PartitionRegion pr;
+            Region reg(loc.x - 10, loc.y - 10, loc.x + 10, loc.y + 10, loc.layer, loc.layer);
+
+            pr.add_to_part_region(reg);
+            part.set_part_region(pr);
+            constraints.mutable_place_constraints().add_partition(part);
+
+            constraints.mutable_place_constraints().add_constrained_atom(noc_atom_id, partid);
+
+            part_id++;
         }
 
         const std::string& part_name = "partition_" + std::to_string(part_id);
@@ -103,6 +120,10 @@ void setup_vpr_floorplan_constraints_noc(VprConstraints& constraints,
         constraints.mutable_place_constraints().add_partition(part);
 
         for (auto [atom_id, noc_grp_id] : atom_noc_grp_id.pairs()) {
+
+            if (constraints.mutable_place_constraints().get_atom_partition(atom_id) != PartitionId::INVALID()) {
+                continue;
+            }
 
             if (atom_netlist.block_type(atom_id) == AtomBlockType::INPAD || atom_netlist.block_type(atom_id) == AtomBlockType::OUTPAD) {
                 continue;
