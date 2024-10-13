@@ -44,8 +44,7 @@ static void SetupRoutingArch(const t_arch& Arch, t_det_routing_arch* RoutingArch
 static void SetupTiming(const t_options& Options, const bool TimingEnabled, t_timing_inf* Timing);
 static void SetupSwitches(const t_arch& Arch,
                           t_det_routing_arch* RoutingArch,
-                          const t_arch_switch_inf* ArchSwitches,
-                          int NumArchSwitches);
+                          const std::vector<t_arch_switch_inf>& arch_switches);
 static void SetupAnalysisOpts(const t_options& Options, t_analysis_opts& analysis_opts);
 static void SetupPowerOpts(const t_options& Options, t_power_opts* power_opts, t_arch* Arch);
 
@@ -232,7 +231,7 @@ void SetupVPR(const t_options* options,
 
     segments = arch->Segments;
 
-    SetupSwitches(*arch, routingArch, arch->Switches, arch->num_switches);
+    SetupSwitches(*arch, routingArch, arch->switches);
     SetupRoutingArch(*arch, routingArch);
     SetupTiming(*options, timingenabled, timing);
     SetupPackerOpts(*options, packerOpts);
@@ -363,12 +362,11 @@ static void SetupTiming(const t_options& Options, const bool TimingEnabled, t_ti
  */
 static void SetupSwitches(const t_arch& Arch,
                           t_det_routing_arch* RoutingArch,
-                          const t_arch_switch_inf* ArchSwitches,
-                          int NumArchSwitches) {
+                          const std::vector<t_arch_switch_inf>& arch_switches) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
-    int switches_to_copy = NumArchSwitches;
-    int num_arch_switches = NumArchSwitches;
+    int switches_to_copy = (int)arch_switches.size();
+    int num_arch_switches = (int)arch_switches.size();;
 
     find_ipin_cblock_switch_index(Arch, RoutingArch->wire_to_arch_ipin_switch, RoutingArch->wire_to_arch_ipin_switch_between_dice);
 
@@ -378,10 +376,10 @@ static void SetupSwitches(const t_arch& Arch,
     /* Alloc the list now that we know the final num_arch_switches value */
     device_ctx.arch_switch_inf.resize(num_arch_switches);
     for (int iswitch = 0; iswitch < switches_to_copy; iswitch++) {
-        device_ctx.arch_switch_inf[iswitch] = ArchSwitches[iswitch];
+        device_ctx.arch_switch_inf[iswitch] = arch_switches[iswitch];
         // TODO: AM: Since I am not sure whether replacing arch_switch_in with all_sw_inf, which contains the
         //  information about intra-tile switched, would not break anything, for the time being, I decided to not remove it
-        device_ctx.all_sw_inf[iswitch] = ArchSwitches[iswitch];
+        device_ctx.all_sw_inf[iswitch] = arch_switches[iswitch];
     }
 
     /* Delayless switch for connecting sinks and sources with their pins. */
@@ -796,8 +794,8 @@ static void SetupServerOpts(const t_options& Options, t_server_opts* ServerOpts)
 static void find_ipin_cblock_switch_index(const t_arch& Arch, int& wire_to_arch_ipin_switch, int& wire_to_arch_ipin_switch_between_dice) {
     for (auto cb_switch_name_index = 0; cb_switch_name_index < (int)Arch.ipin_cblock_switch_name.size(); cb_switch_name_index++) {
         int ipin_cblock_switch_index = UNDEFINED;
-        for (int iswitch = 0; iswitch < Arch.num_switches; ++iswitch) {
-            if (Arch.Switches[iswitch].name == Arch.ipin_cblock_switch_name[cb_switch_name_index]) {
+        for (int iswitch = 0; iswitch < (int)Arch.switches.size(); ++iswitch) {
+            if (Arch.switches[iswitch].name == Arch.ipin_cblock_switch_name[cb_switch_name_index]) {
                 if (ipin_cblock_switch_index != UNDEFINED) {
                     VPR_FATAL_ERROR(VPR_ERROR_ARCH, "Found duplicate switches named '%s'\n",
                                     Arch.ipin_cblock_switch_name[cb_switch_name_index].c_str());

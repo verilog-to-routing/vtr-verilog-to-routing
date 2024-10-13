@@ -2059,8 +2059,8 @@ struct t_arch {
     int Fs;
     float grid_logic_tile_area;
     std::vector<t_segment_inf> Segments;
-    t_arch_switch_inf* Switches = nullptr;
-    int num_switches;
+
+    std::vector<t_arch_switch_inf> switches;
     std::vector<t_direct_inf> Directs;
 
     t_model* models = nullptr;

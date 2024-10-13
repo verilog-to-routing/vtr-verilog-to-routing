@@ -152,10 +152,9 @@ void free_arch(t_arch* arch) {
         return;
     }
 
-    delete[] arch->Switches;
-    arch->Switches = nullptr;
-
     free_arch_models(arch->models);
+
+    vtr::release_memory(arch->switches);
 
     vtr::release_memory(arch->Directs);
 
@@ -230,7 +229,7 @@ t_model* free_arch_model(t_model* model) {
     return next_model;
 }
 
-//Frees all the model portss in a linked list
+//Frees all the model ports in a linked list
 void free_arch_model_ports(t_model_ports* model_ports) {
     t_model_ports* model_port = model_ports;
     while (model_port) {
