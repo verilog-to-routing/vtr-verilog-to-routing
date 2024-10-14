@@ -368,7 +368,14 @@ static bool attribute_to_bool(const pugi::xml_node node,
                               const pugi::xml_attribute attr,
                               const pugiutil::loc_data& loc_data);
 
-static int find_switch_by_name(const std::vector<t_arch_switch_inf>& switches, const std::string& switch_name);
+/**
+ * @brief Searches for a switch whose matches with the given name.
+ * @param switches Contains all the architecture switches.
+ * @param switch_name The name with which switch names are compared.
+ * @return A negative integer if no switch was found with the given name; otherwise
+ * the index of the matching switch is returned.
+ */
+static int find_switch_by_name(const std::vector<t_arch_switch_inf>& switches, std::string_view switch_name);
 
 static e_side string_to_side(const std::string& side_str);
 
@@ -4722,10 +4729,9 @@ static void ProcessPower(pugi::xml_node parent,
     }
 }
 
-/* Get the clock architcture */
+/* Get the clock architecture */
 static void ProcessClocks(pugi::xml_node Parent, t_clock_arch* clocks, const pugiutil::loc_data& loc_data) {
     pugi::xml_node Node;
-    int i;
     const char* tmp;
 
     clocks->num_global_clocks = count_children(Parent, "clock", loc_data, ReqOpt::OPTIONAL);
@@ -4740,7 +4746,7 @@ static void ProcessClocks(pugi::xml_node Parent, t_clock_arch* clocks, const pug
 
     /* Load the clock info. */
     Node = get_first_child(Parent, "clock", loc_data);
-    for (i = 0; i < clocks->num_global_clocks; ++i) {
+    for (int i = 0; i < clocks->num_global_clocks; ++i) {
         tmp = get_attribute(Node, "buffer_size", loc_data).value();
         if (strcmp(tmp, "auto") == 0) {
             clocks->clock_inf[i].autosize_buffer = true;
@@ -4778,7 +4784,7 @@ static bool attribute_to_bool(const pugi::xml_node node,
     return false;
 }
 
-static int find_switch_by_name(const std::vector<t_arch_switch_inf>& switches, const std::string& switch_name) {
+static int find_switch_by_name(const std::vector<t_arch_switch_inf>& switches, std::string_view switch_name) {
     for (int iswitch = 0; iswitch < (int)switches.size(); ++iswitch) {
         const t_arch_switch_inf& arch_switch = switches[iswitch];
         if (arch_switch.name == switch_name) {

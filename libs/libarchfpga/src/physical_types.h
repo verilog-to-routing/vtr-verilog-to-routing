@@ -1380,11 +1380,11 @@ class t_pb_graph_pin {
     float thld = std::numeric_limits<float>::quiet_NaN();    /* For sequential logic elements the hold time */
     float tco_min = std::numeric_limits<float>::quiet_NaN(); /* For sequential logic elements the minimum clock to output time */
     float tco_max = std::numeric_limits<float>::quiet_NaN(); /* For sequential logic elements the maximum clock to output time */
-    t_pb_graph_pin* associated_clock_pin = nullptr;          /* For sequentail elements, the associated clock */
+    t_pb_graph_pin* associated_clock_pin = nullptr;          /* For sequential elements, the associated clock */
 
     /* This member is used when flat-routing and has_choking_spot are enabled.
      * It is used to identify choke points.
-     * This is only valid for IPINs, and it only contain the pins that are reachable to the pin by a forwarding path.
+     * This is only valid for IPINs, and it only contains the pins that are reachable to the pin by a forwarding path.
      * It doesn't take into account feed-back connection.
      * */
     std::unordered_set<int> connected_sinks_ptc; /* ptc numbers of sinks which are directly or indirectly connected to this pin */
@@ -1708,7 +1708,7 @@ enum class BufferSize {
  *            parallel stream of pass transistors feeding into a buffer,     *
  *            we would expect an additional "internal capacitance"           *
  *            to arise when the pass transistor is enabled and the signal    *
- *            must propogate to the buffer. See diagram of one stream below: *
+ *            must propagate to the buffer. See diagram of one stream below: *
  *                                                                           *
  *                  Pass Transistor                                          *
  *                       |                                                   *
@@ -1823,7 +1823,7 @@ struct t_rr_switch_inf {
     SwitchType type() const;
 
     //Returns true if this switch type isolates its input and output into
-    //seperate DC-connected subcircuits
+    //separate DC-connected subcircuits
     bool buffered() const;
 
     //Returns true if this switch type is configurable
@@ -1894,7 +1894,7 @@ struct t_wireconn_inf {
                                     *          elements (if 'from' is larger than 'to'), or in some elements of 'to' having
                                     *          no driving connections (if 'to' is larger than 'from').
                                     * 'to':    The number of generated connections is set equal to the size of the 'to' set.
-                                    *          This ensures that each element of the 'to' set has precisely one incomming connection.
+                                    *          This ensures that each element of the 'to' set has precisely one incoming connection.
                                     *          Note: this may result in 'from' elements driving multiple 'to' elements (if 'to' is
                                     *          larger than 'from'), or some 'from' elements driving to 'to' elements (if 'from' is
                                     *          larger than 'to')
@@ -1948,7 +1948,7 @@ struct t_switchblock_inf {
     e_directionality directionality; /* the directionality of this switchblock (unidir/bidir) */
 
     int x = -1; /* The exact x-axis location that this SB is used, meaningful when type is set to E_XY_specified */
-    int y = -1; /* The exact y-axis location that this SB is used, meanignful when type is set to E_XY_specified */
+    int y = -1; /* The exact y-axis location that this SB is used, meaningful when type is set to E_XY_specified */
 
     /* We can also define a region to apply this SB to all locations falls into this region using regular expression in the architecture file*/
     t_sb_loc_spec reg_x;
