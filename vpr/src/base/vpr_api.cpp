@@ -70,6 +70,7 @@
 #include "place_util.h"
 #include "timing_fail_error.h"
 #include "analytical_placement_flow.h"
+#include "verify_clustering.h"
 
 #include "vpr_constraints_writer.h"
 
@@ -643,6 +644,22 @@ bool vpr_pack_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
 
         /* Sanity check the resulting netlist */
         check_netlist(packer_opts.pack_verbosity);
+
+        // Independently verify the clusterings to ensure the clustering can be
+        // used for the rest of the VPR flow.
+        // NOTE: This is done here since it must be done after vpr_load_packing
+        //       and load_cluster_constraints.
+        // TODO: If load_cluster_constraints was in vpr_load_packing, this could
+        //       also be in vpr_load_packing which would make more sense.
+        unsigned num_errors = verify_clustering(g_vpr_ctx);
+        if (num_errors == 0) {
+            VTR_LOG("Completed clustering consistency check successfully.\n");
+        } else {
+            VPR_ERROR(VPR_ERROR_PACK,
+                      "%u errors found while performing clustering consistency "
+                      "check. Aborting program.\n",
+                      num_errors);
+        }
 
         /* Output the netlist stats to console and optionally to file. */
         writeClusteredNetlistStats(vpr_setup.FileNameOpts.write_block_usage);

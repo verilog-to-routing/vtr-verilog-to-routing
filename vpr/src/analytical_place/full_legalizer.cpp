@@ -27,6 +27,7 @@
 #include "physical_types.h"
 #include "place_constraints.h"
 #include "place_macro.h"
+#include "verify_clustering.h"
 #include "vpr_api.h"
 #include "vpr_context.h"
 #include "vpr_error.h"
@@ -392,6 +393,18 @@ void FullLegalizer::legalize(const PartialPlacement& p_placement) {
 
     // Pack the atoms into clusters based on the partial placement.
     create_clusters(p_placement);
+    // Verify that the clustering created by the full legalizer is valid.
+    unsigned num_clustering_errors = verify_clustering(g_vpr_ctx);
+    if (num_clustering_errors == 0) {
+        VTR_LOG("Completed clustering consistency check successfully.\n");
+    } else {
+        VPR_ERROR(VPR_ERROR_AP,
+                  "Completed placement consistency check, %u errors found.\n"
+                  "Aborting program.\n",
+                  num_clustering_errors);
+    }
+    // Get the clustering from the global context.
+    // TODO: Eventually should be returned from the create_clusters method.
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
 
     // Place the clusters based on where the atoms want to be placed.
