@@ -58,7 +58,7 @@ class CentroidMoveGenerator : public MoveGenerator {
      * @param noc_grp_id The NoC group ID whose NoC routers are requested.
      * @return The clustered block ID of all NoC routers in the given NoC group.
      */
-    static const std::vector<ClusterBlockId>& get_noc_group_routers(NocGroupId noc_grp_id);
+    const std::vector<ClusterBlockId>& get_noc_group_routers(NocGroupId noc_grp_id);
 
     /**
      * Returns the NoC group ID of clustered block.
@@ -66,7 +66,7 @@ class CentroidMoveGenerator : public MoveGenerator {
      * @return The NoC group ID of the given clustered block or INVALID if
      * the given clustered block does not belong to any NoC groups.
      */
-    static NocGroupId get_cluster_noc_group(ClusterBlockId blk_id);
+    NocGroupId get_cluster_noc_group(ClusterBlockId blk_id);
 
   private:
     e_create_move propose_move(t_pl_blocks_to_be_moved& blocks_affected,
@@ -112,20 +112,20 @@ class CentroidMoveGenerator : public MoveGenerator {
     bool noc_attraction_enabled_;
 
     /** Stores the ids of all non-router clustered blocks for each NoC group*/
-    static vtr::vector<NocGroupId, std::vector<ClusterBlockId>> noc_group_clusters_;
+    vtr::vector<NocGroupId, std::vector<ClusterBlockId>> noc_group_clusters_;
 
     /** Stores NoC routers in each NoC group*/
-    static vtr::vector<NocGroupId, std::vector<ClusterBlockId>> noc_group_routers_;
+    vtr::vector<NocGroupId, std::vector<ClusterBlockId>> noc_group_routers_;
 
     /** Specifies the NoC group that each block belongs to. A block cannot belong to more
      * than one NoC because this means those NoC groups can reach each other and form
      * a single NoC group. We use NocGroupId::INVALID to show that a block does not belong
      * to any NoC groups. This happens when a block is not reachable from any NoC router.
      * */
-    static vtr::vector<ClusterBlockId, NocGroupId> cluster_to_noc_grp_;
+    vtr::vector<ClusterBlockId, NocGroupId> cluster_to_noc_grp_;
 
     /** Specifies the NoC group for each NoC router*/
-    static std::map<ClusterBlockId, NocGroupId> noc_router_to_noc_group_;
+    std::map<ClusterBlockId, NocGroupId> noc_router_to_noc_group_;
 
     /**
      * @brief This function forms NoC groups by finding connected components
@@ -135,7 +135,7 @@ class CentroidMoveGenerator : public MoveGenerator {
      * @param high_fanout_net All nets with a fanout larger than this number are
      * ignored when forming NoC groups.
      */
-    static void initialize_noc_groups(size_t high_fanout_net);
+    void initialize_noc_groups(size_t high_fanout_net);
 };
 
 #endif

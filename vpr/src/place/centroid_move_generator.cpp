@@ -7,14 +7,6 @@
 
 #include <queue>
 
-
-// Static member variable definitions
-vtr::vector<NocGroupId, std::vector<ClusterBlockId>> CentroidMoveGenerator::noc_group_clusters_;
-vtr::vector<NocGroupId, std::vector<ClusterBlockId>> CentroidMoveGenerator::noc_group_routers_;
-vtr::vector<ClusterBlockId, NocGroupId> CentroidMoveGenerator::cluster_to_noc_grp_;
-std::map<ClusterBlockId, NocGroupId> CentroidMoveGenerator::noc_router_to_noc_group_;
-
-
 CentroidMoveGenerator::CentroidMoveGenerator(PlacerState& placer_state,
                                              e_reward_function reward_function)
     : MoveGenerator(placer_state, reward_function)
@@ -31,14 +23,7 @@ CentroidMoveGenerator::CentroidMoveGenerator(PlacerState& placer_state,
     , noc_attraction_enabled_(true) {
     VTR_ASSERT(noc_attraction_weight > 0.0 && noc_attraction_weight <= 1.0);
 
-
-    // check if static member variables are already initialized
-    if (!noc_group_clusters_.empty() && !noc_group_routers_.empty() &&
-        !cluster_to_noc_grp_.empty() && !noc_router_to_noc_group_.empty()) {
-        return;
-    } else {
-        initialize_noc_groups(high_fanout_net);
-    }
+    initialize_noc_groups(high_fanout_net);
 }
 
 e_create_move CentroidMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected,
@@ -105,11 +90,11 @@ e_create_move CentroidMoveGenerator::propose_move(t_pl_blocks_to_be_moved& block
 }
 
 const std::vector<ClusterBlockId>& CentroidMoveGenerator::get_noc_group_routers(NocGroupId noc_grp_id) {
-    return CentroidMoveGenerator::noc_group_routers_[noc_grp_id];
+    return noc_group_routers_[noc_grp_id];
 }
 
 NocGroupId CentroidMoveGenerator::get_cluster_noc_group(ClusterBlockId blk_id) {
-    return CentroidMoveGenerator::cluster_to_noc_grp_[blk_id];
+    return cluster_to_noc_grp_[blk_id];
 }
 
 void CentroidMoveGenerator::initialize_noc_groups(size_t high_fanout_net) {
