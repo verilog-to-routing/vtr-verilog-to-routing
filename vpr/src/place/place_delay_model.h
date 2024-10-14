@@ -35,8 +35,7 @@ std::unique_ptr<PlaceDelayModel> alloc_lookups_and_delay_model(const Netlist<>& 
                                                                const t_router_opts& router_opts,
                                                                t_det_routing_arch* det_routing_arch,
                                                                std::vector<t_segment_inf>& segment_inf,
-                                                               const t_direct_inf* directs,
-                                                               const int num_directs,
+                                                               const std::vector<t_direct_inf>& directs,
                                                                bool is_flat);
 
 ///@brief Returns the delay of one point to point connection.

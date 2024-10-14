@@ -14,21 +14,6 @@
  * treated as a unit and regular routing would not be used to connect the carry_in's and
  * carry_out's. Floorplanning constraints may also be an example of placement macros.
  *
- * The function alloc_and_load_placement_macros allocates and loads the placement
- * macros in the following steps:
- * (1) First, go through all the block types and mark down the pins that could possibly
- * be part of a placement macros.
- * (2) Then, go through the netlist of all the pins marked in (1) to find out all the
- * heads of the placement macros using criteria depending on the type of placement
- * macros. For carry chains, the heads of the placement macros are blocks with
- * carry_in's not connected to any nets (OPEN) while the carry_out's connected to the
- * netlist with only 1 SINK.
- * (3) Traverse from the heads to the tails of the placement macros and load the
- * information in the t_pl_macro data structure. Similar to (2), tails are identified
- * with criteria depending on the type of placement macros. For carry chains, the
- * tails are blocks with carry_out's not connected to any nets (OPEN) while the
- * carry_in's is connected to the netlist which has only 1 SINK.
- *
  * The only placement macros supported at the moment are the carry chains with limited
  * functionality.
  *
@@ -133,6 +118,7 @@
 
 #ifndef PLACE_MACRO_H
 #define PLACE_MACRO_H
+
 #include <vector>
 
 #include "clustered_netlist_fwd.h"
@@ -143,28 +129,138 @@
  * It is in the form of array of structs instead of
  * structs of arrays for cache efficiency.
  * Could have more data members for other macro type.
- * blk_index: The cluster_ctx.blocks index of this block.
- * x_offset: The x_offset from the first macro member to this member
- * y_offset: The y_offset from the first macro member to this member
- * z_offset: The z_offset from the first macro member to this member
  */
 struct t_pl_macro_member {
+    ///@brief The cluster_ctx.blocks index of this block.
     ClusterBlockId blk_index;
+    ///@brief The offset from the first macro member to this member
     t_pl_offset offset;
 };
 
-/* num_blocks: The number of blocks this macro contains.
- * members: An array of blocks in this macro [0:num_macro-1].
- * idirect: The direct index as specified in the arch file
- */
 struct t_pl_macro {
+    ///@brief An array of blocks in this macro [0:num_macro-1].
     std::vector<t_pl_macro_member> members;
 };
 
-/* These are the function declarations. */
-std::vector<t_pl_macro> alloc_and_load_placement_macros(t_direct_inf* directs, int num_directs);
-void get_imacro_from_iblk(int* imacro, ClusterBlockId iblk, const std::vector<t_pl_macro>& macros);
-void set_imacro_for_iblk(int* imacro, ClusterBlockId iblk);
-void free_placement_macros_structs();
+class PlaceMacros {
+  public:
+    PlaceMacros() = default;
+
+    /**
+     * @brief Allocates and loads the placement macros.
+     * @details The following steps are taken in this methodL
+     * (1) First, go through all the block types and mark down the pins that could possibly
+     * be part of a placement macros.
+     * (2) Then, go through the netlist of all the pins marked in (1) to find out all the
+     * heads of the placement macros using criteria depending on the type of placement
+     * macros. For carry chains, the heads of the placement macros are blocks with
+     * carry_in's not connected to any nets (OPEN) while the carry_out's connected to the
+     * netlist with only 1 SINK.
+     * (3) Traverse from the heads to the tails of the placement macros and load the
+     * information in the t_pl_macro data structure. Similar to (2), tails are identified
+     * with criteria depending on the type of placement macros. For carry chains, the
+     * tails are blocks with carry_out's not connected to any nets (OPEN) while the
+     * carry_in's is connected to the netlist which has only 1 SINK.
+     * @param directs
+     */
+    void alloc_and_load_placement_macros(const std::vector<t_direct_inf>& directs);
+
+    int get_imacro_from_iblk(ClusterBlockId iblk) const;
+
+    void set_imacro_for_iblk(int imacro, ClusterBlockId blk_id);
+
+    /**
+     * @brief Finds the head block of the macro that contains a given clustered block
+     * @details Placement macro head is the base of the macro, where the locations of the other macro members can be
+     * calculated using base.loc + member.offset.
+     *
+     * @return The Id of a clustered block that is the head of a macro that the given clustered block is part of.
+     */
+    ClusterBlockId macro_head(ClusterBlockId blk) const;
+
+    const std::vector<t_pl_macro>& macros() const;
+
+//    t_pl_macro& operator[](size_t idx);
+    const t_pl_macro&  operator[](int idx) const;
+
+  private:
+
+    /**
+     * @brief This array allow us to quickly find pins that could be in a direct connection.
+     * @details Values stored is the index of the possible direct connection as specified in the arch file,
+     * OPEN (-1) is stored for pins that could not be part of a direct chain connection.
+     * [0...device_ctx.num_block_types-1][0...num_pins-1]
+     */
+    std::vector<std::vector<int>> idirect_from_blk_pin_;
+
+    /**
+     * @brief This array stores the value SOURCE if the pin is the from_pin,
+     * SINK if the pin is the to_pin in the direct connection as specified in the arch file,
+     * OPEN (-1) is stored for pins that could not be part of a direct chain connection.
+     * [0...device_ctx.num_block_types-1][0...num_pins-1]
+     */
+    std::vector<std::vector<int>> direct_type_from_blk_pin_;
+
+    /**
+     * @brief Maps a blk_num to the corresponding macro index.
+     * @details If the block is not part of a macro, the value OPEN (-1) is stored.
+     * [0...cluster_ctx.clb_nlist.blocks().size()-1]
+     */
+    vtr::vector_map<ClusterBlockId, int> imacro_from_iblk_;
+
+    ///@brief Stores all the placement macros (usually carry chains).
+    std::vector<t_pl_macro> pl_macros_;
+
+  private:
+    int find_all_the_macro_(std::vector<ClusterBlockId>& pl_macro_member_blk_num_of_this_blk,
+                            std::vector<int>& pl_macro_idirect,
+                            std::vector<int>& pl_macro_num_members,
+                            std::vector<std::vector<ClusterBlockId>>& pl_macro_member_blk_num);
+
+    void alloc_and_load_imacro_from_iblk_(const std::vector<t_pl_macro>& macros);
+
+    void write_place_macros_(std::string filename, const std::vector<t_pl_macro>& macros);
+
+    bool net_is_driven_by_direct_(ClusterNetId clb_net);
+
+    void alloc_and_load_idirect_from_blk_pin_(const std::vector<t_direct_inf>& directs);
+};
+
+
+/**
+ * @class PortPinToBlockPinConverter
+ * @brief Maps the block pins indices for all block types to the corresponding port indices and port_pin indices.
+ *
+ * @details This is necessary since there are different netlist conventions - in the cluster level,
+ * ports and port pins are used while in the post-pack level, block pins are used.
+ */
+class PortPinToBlockPinConverter {
+  public:
+    /**
+     * @brief Allocates and loads blk_pin_from_port_pin_ array.
+     */
+    PortPinToBlockPinConverter();
+
+    /**
+     * @brief Converts port and port pin indices of a specific block type to block pin index.
+     *
+     * @details The reason block type is used instead of blocks is to save memory.
+     *
+     * @param blk_type_index The block type index.
+     * @param sub_tile The subtile index within the specified block type.
+     * @param port The port number whose block pin number is desired.
+     * @param port_pin The port pin number in the specified port whose block pin number is desired.
+     * @return int The block pin index corresponding to the given port and port pin numbers.
+     */
+    int get_blk_pin_from_port_pin(int blk_type_index, int sub_tile, int port, int port_pin);
+
+  private:
+    /**
+     * @brief This array allows us to quickly find what block pin a port pin corresponds to.
+     * @details A 4D array that should be indexed as following:
+     * [0...device_ctx.physical_tile_types.size()-1][0..num_sub_tiles][0...num_ports-1][0...num_port_pins-1]
+     */
+    std::vector<std::vector<std::vector<std::vector<int>>>> blk_pin_from_port_pin_;
+};
 
 #endif

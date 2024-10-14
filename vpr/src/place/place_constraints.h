@@ -93,7 +93,7 @@ PartitionRegion update_macro_member_pr(const PartitionRegion& head_pr,
  * initial placement to ease floorplan legality checking while placing macros during
  * initial placement.
  */
-void propagate_place_constraints();
+void propagate_place_constraints(const PlaceMacros& place_macros);
 
 void print_macro_constraint_error(const t_pl_macro& pl_macro);
 

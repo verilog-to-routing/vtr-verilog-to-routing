@@ -145,8 +145,7 @@ void try_graph(int width_fac,
                t_det_routing_arch* det_routing_arch,
                std::vector<t_segment_inf>& segment_inf,
                t_chan_width_dist chan_width_dist,
-               t_direct_inf* directs,
-               int num_directs,
+               const std::vector<t_direct_inf>& directs,
                bool is_flat);
 
 /* This routine updates the pres_fac used by the drawing functions */
