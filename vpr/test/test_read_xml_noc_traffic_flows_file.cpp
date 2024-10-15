@@ -114,7 +114,7 @@ TEST_CASE("test_get_router_module_cluster_id", "[vpr_noc_traffic_flows_parser]")
     pugi::xml_node test;
     pugiutil::loc_data test_location;
 
-    // datastructure to keep track of blocks name to its id
+    // data structure to keep track of blocks name to its id
     std::map<std::string, ClusterBlockId> block_id_from_name;
 
     // get the global netlist
@@ -173,7 +173,7 @@ TEST_CASE("test_get_router_module_cluster_id", "[vpr_noc_traffic_flows_parser]")
     block_id_from_name.emplace(io_port_three, test_netlist->create_block(io_port_three, nullptr, i_o_ref));
     block_id_from_name.emplace(io_port_four, test_netlist->create_block(io_port_four, nullptr, i_o_ref));
 
-    // datastructure to store all the cluster block IDs of the noc router logical block type clusters
+    // data structure to store all the cluster block IDs of the noc router logical block type clusters
     std::vector<ClusterBlockId> noc_router_logical_type_clusters;
 
     SECTION("Test case where the block is found in the clustered netlist") {
@@ -215,7 +215,7 @@ TEST_CASE("test_get_router_module_cluster_id", "[vpr_noc_traffic_flows_parser]")
 
         REQUIRE((size_t)(block_id_from_name.find("router:noc_router_five|flit_out_two[0]~reg0")->second) == (size_t)test_router_block_id);
 
-        // clear the global netlist datastructure so other unit tests that rely on dont use a corrupted netlist
+        // clear the global netlist data structure so other unit tests that rely on dont use a corrupted netlist
         free_clustered_netlist();
     }
     SECTION("Test case where the block is not found in the clustered netlist") {
@@ -255,7 +255,7 @@ TEST_CASE("test_get_router_module_cluster_id", "[vpr_noc_traffic_flows_parser]")
         // This should fail, so check that it does
         REQUIRE_THROWS_WITH(get_router_module_cluster_id(test_router_module_name, cluster_ctx, test, test_location, noc_router_logical_type_clusters), "The router module '^router:noc_router_seven|flit_out_two[0]~reg0$' does not exist in the design.");
 
-        // clear the global netlist datastructure so other unit tests that rely on dont use a corrupted netlist
+        // clear the global netlist data structure so other unit tests that rely on dont use a corrupted netlist
         free_clustered_netlist();
     }
 }
@@ -316,7 +316,7 @@ TEST_CASE("test_check_traffic_flow_router_module_type", "[vpr_noc_traffic_flows_
         // the function should not fail since the module is a router
         REQUIRE_NOTHROW(check_traffic_flow_router_module_type(router_one, router_module_id, test, test_location, cluster_ctx, noc_router_ref));
 
-        // clear the global netlist datastructure so other unit tests that rely on dont use a corrupted netlist
+        // clear the global netlist data structure so other unit tests that rely on dont use a corrupted netlist
         free_clustered_netlist();
     }
     SECTION("Test case where the traffic flow module is not of type router") {
@@ -330,7 +330,7 @@ TEST_CASE("test_check_traffic_flow_router_module_type", "[vpr_noc_traffic_flows_
         // the function should faile since the module is of type IO
         REQUIRE_THROWS_WITH(check_traffic_flow_router_module_type(io_block_one, io_module_id, test, test_location, cluster_ctx, noc_router_ref), "The supplied module name 'io_block_one' is not a NoC router.");
 
-        // clear the global netlist datastructure so other unit tests that rely on dont use a corrupted netlist
+        // clear the global netlist data structure so other unit tests that rely on dont use a corrupted netlist
         free_clustered_netlist();
     }
 }
@@ -414,7 +414,7 @@ TEST_CASE("test_check_that_all_router_blocks_have_an_associated_traffic_flow", "
         // we expect this to pass
         CHECK(check_that_all_router_blocks_have_an_associated_traffic_flow(noc_ctx, noc_router_ref, test_noc_traffic_flows_file_name) == true);
 
-        // clear the global netlist datastructure so other unit tests that rely on dont use a corrupted netlist
+        // clear the global netlist data structure so other unit tests that rely on dont use a corrupted netlist
         free_clustered_netlist();
 
         // clear the global device
@@ -430,7 +430,7 @@ TEST_CASE("test_check_that_all_router_blocks_have_an_associated_traffic_flow", "
         // we expect this fail
         CHECK(check_that_all_router_blocks_have_an_associated_traffic_flow(noc_ctx, noc_router_ref, test_noc_traffic_flows_file_name) == false);
 
-        // clear the global netlist datastructure so other unit tests that rely on dont use a corrupted netlist
+        // clear the global netlist data structure so other unit tests that rely on dont use a corrupted netlist
         free_clustered_netlist();
 
         // clear the global device
@@ -523,7 +523,7 @@ TEST_CASE("test_get_cluster_blocks_compatible_with_noc_router_tiles", "[vpr_noc_
             REQUIRE(std::find(found_cluster_blocks_that_are_noc_router_compatible.begin(), found_cluster_blocks_that_are_noc_router_compatible.end(), *golden_set_router_block_id) != found_cluster_blocks_that_are_noc_router_compatible.end());
         }
 
-        // clear the global netlist datastructure so other unit tests that rely on dont use a corrupted netlist
+        // clear the global netlist data structure so other unit tests that rely on dont use a corrupted netlist
         free_clustered_netlist();
     }
     SECTION("Test case where non router blocks are correctly identified within the netlist and ignored.") {
@@ -549,7 +549,7 @@ TEST_CASE("test_get_cluster_blocks_compatible_with_noc_router_tiles", "[vpr_noc_
         // since there were no router blocks in this netlist, check that the test found function 0 blocks that were compatible with a noc router tile
         REQUIRE(found_cluster_blocks_that_are_noc_router_compatible.size() == 0);
 
-        // clear the global netlist datastructure so other unit tests that rely on dont use a corrupted netlist
+        // clear the global netlist data structure so other unit tests that rely on dont use a corrupted netlist
         free_clustered_netlist();
     }
 }

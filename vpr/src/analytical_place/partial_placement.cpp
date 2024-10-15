@@ -8,7 +8,28 @@
 #include "partial_placement.h"
 #include <cmath>
 #include <cstddef>
+#include <limits>
 #include "ap_netlist.h"
+
+double PartialPlacement::get_hpwl(const APNetlist& netlist) const {
+    double hpwl = 0.0;
+    for (APNetId net_id : netlist.nets()) {
+        double min_x = std::numeric_limits<double>::max();
+        double max_x = std::numeric_limits<double>::lowest();
+        double min_y = std::numeric_limits<double>::max();
+        double max_y = std::numeric_limits<double>::lowest();
+        for (APPinId pin_id : netlist.net_pins(net_id)) {
+            APBlockId blk_id = netlist.pin_block(pin_id);
+            min_x = std::min(min_x, block_x_locs[blk_id]);
+            max_x = std::max(max_x, block_x_locs[blk_id]);
+            min_y = std::min(min_y, block_y_locs[blk_id]);
+            max_y = std::max(max_y, block_y_locs[blk_id]);
+        }
+        VTR_ASSERT_SAFE(max_x >= min_x && max_y >= min_y);
+        hpwl += max_x - min_x + max_y - min_y;
+    }
+    return hpwl;
+}
 
 bool PartialPlacement::verify_locs(const APNetlist& netlist,
                                    size_t grid_width,

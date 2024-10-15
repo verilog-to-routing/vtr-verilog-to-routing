@@ -13,12 +13,11 @@
 #include "move_utils.h"
 #include "region.h"
 #include "directed_moves_util.h"
+#include "noc_place_utils.h"
 #include "echo_files.h"
 
-
-#include <ctime>
 #include <cmath>
-#include <iomanip>
+#include <optional>
 
 #ifdef VERBOSE
 void print_clb_placement(const char* fname);
@@ -32,16 +31,6 @@ static constexpr int SORT_WEIGHT_PER_FAILED_BLOCK = 10;
 
 // The amount of weight that will be added to each tile which is outside the floorplanning constraints
 static constexpr int SORT_WEIGHT_PER_TILES_OUTSIDE_OF_PR = 100;
-
-/**
- * @brief Set chosen grid locations to EMPTY block id before each placement iteration
- *   
- *   @param unplaced_blk_types_index Block types that their grid locations must be cleared.
- *   @param blk_loc_registry Placement block location information. To be filled with the location
- *   where pl_macro is placed.
- */
-static void clear_block_type_grid_locs(const std::unordered_set<int>& unplaced_blk_types_index,
-                                       BlkLocRegistry& blk_loc_registry);
 
 /**
  * @brief Control routine for placing a macro.
@@ -1023,7 +1012,7 @@ static void place_all_blocks(const t_placer_opts& placer_opts,
 
     for (auto iter_no = 0; iter_no < MAX_INIT_PLACE_ATTEMPTS; iter_no++) {
         //clear grid for a new placement iteration
-        clear_block_type_grid_locs(unplaced_blk_type_in_curr_itr, blk_loc_registry);
+        blk_loc_registry.clear_block_type_grid_locs(unplaced_blk_type_in_curr_itr);
         unplaced_blk_type_in_curr_itr.clear();
 
         // read the constraint file if the user has provided one and this is not the first attempt
@@ -1097,67 +1086,6 @@ static void place_all_blocks(const t_placer_opts& placer_opts,
     }
 }
 
-static void clear_block_type_grid_locs(const std::unordered_set<int>& unplaced_blk_types_index,
-                                       BlkLocRegistry& blk_loc_registry) {
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& grid_blocks = blk_loc_registry.mutable_grid_blocks();
-    auto& block_locs = blk_loc_registry.mutable_block_locs();
-
-    bool clear_all_block_types = false;
-
-    /* check if all types should be cleared
-     * logical_block_types contain empty type, needs to be ignored.
-     * Not having any type in unplaced_blk_types_index means that it is the first iteration, hence all grids needs to be cleared
-     */
-    if (unplaced_blk_types_index.size() == device_ctx.logical_block_types.size() - 1) {
-        clear_all_block_types = true;
-    }
-
-    /* We'll use the grid to record where everything goes. Initialize to the grid has no
-     * blocks placed anywhere.
-     */
-    for (int layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); layer_num++) {
-        for (int i = 0; i < (int)device_ctx.grid.width(); i++) {
-            for (int j = 0; j < (int)device_ctx.grid.height(); j++) {
-                const t_physical_tile_type_ptr type = device_ctx.grid.get_physical_type({i, j, layer_num});
-                int itype = type->index;
-                if (clear_all_block_types || unplaced_blk_types_index.count(itype)) {
-                    grid_blocks.set_usage({i, j, layer_num}, 0);
-                    for (int k = 0; k < device_ctx.physical_tile_types[itype].capacity; k++) {
-                        grid_blocks.set_block_at_location({i, j, k, layer_num}, ClusterBlockId::INVALID());
-                    }
-                }
-            }
-        }
-    }
-
-    /* Similarly, mark all blocks as not being placed yet. */
-    for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks()) {
-        int blk_type = cluster_ctx.clb_nlist.block_type(blk_id)->index;
-        if (clear_all_block_types || unplaced_blk_types_index.count(blk_type)) {
-            block_locs[blk_id].loc = t_pl_loc();
-        }
-    }
-}
-
-void clear_all_grid_locs(BlkLocRegistry& blk_loc_registry) {
-    auto& device_ctx = g_vpr_ctx.device();
-
-    std::unordered_set<int> blk_types_to_be_cleared;
-    const auto& logical_block_types = device_ctx.logical_block_types;
-
-    // Insert all the logical block types into the set except the empty type
-    // clear_block_type_grid_locs does not expect empty type to be among given types
-    for (const t_logical_block_type& logical_type : logical_block_types) {
-        if (!is_empty_type(&logical_type)) {
-            blk_types_to_be_cleared.insert(logical_type.index);
-        }
-    }
-
-    clear_block_type_grid_locs(blk_types_to_be_cleared, blk_loc_registry);
-}
-
 bool place_one_block(const ClusterBlockId blk_id,
                      enum e_pad_loc_type pad_loc_type,
                      std::vector<t_grid_empty_locs_block_type>* blk_types_empty_locs_in_grid,
@@ -1222,14 +1150,15 @@ static void alloc_and_load_movable_blocks(const vtr::vector_map<ClusterBlockId, 
 void initial_placement(const t_placer_opts& placer_opts,
                        const char* constraints_file,
                        const t_noc_opts& noc_opts,
-                       BlkLocRegistry& blk_loc_registry) {
+                       BlkLocRegistry& blk_loc_registry,
+                       std::optional<NocCostHandler>& noc_cost_handler) {
     vtr::ScopedStartFinishTimer timer("Initial Placement");
     auto& block_locs = blk_loc_registry.mutable_block_locs();
 
     /* Initialize the grid blocks to empty.
      * Initialize all the blocks to unplaced.
      */
-    clear_all_grid_locs(blk_loc_registry);
+    blk_loc_registry.clear_all_grid_locs();
 
     /* Go through cluster blocks to calculate the tightest placement
      * floorplan constraint for each constrained block
@@ -1257,7 +1186,7 @@ void initial_placement(const t_placer_opts& placer_opts,
     } else {
         if (noc_opts.noc) {
             // NoC routers are placed before other blocks
-            initial_noc_placement(noc_opts, placer_opts, blk_loc_registry);
+            initial_noc_placement(noc_opts, placer_opts, blk_loc_registry, noc_cost_handler.value());
             propagate_place_constraints();
         }
 

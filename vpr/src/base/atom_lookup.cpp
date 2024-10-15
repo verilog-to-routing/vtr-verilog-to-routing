@@ -1,5 +1,7 @@
+#include "clustered_netlist_fwd.h"
 #include "vtr_assert.h"
 #include "vtr_log.h"
+#include "vtr_optional.h"
 
 #include "atom_lookup.h"
 /*
@@ -85,36 +87,51 @@ void AtomLookup::set_atom_clb(const AtomBlockId blk_id, const ClusterBlockId clb
  * Nets
  */
 AtomNetId AtomLookup::atom_net(const ClusterNetId clb_net_index) const {
-    auto iter = atom_net_to_clb_net_.find(clb_net_index);
-    if (iter == atom_net_to_clb_net_.inverse_end()) {
+    auto iter = clb_net_to_atom_net_.find(clb_net_index);
+    if (iter == clb_net_to_atom_net_.end()) {
         //Not found
         return AtomNetId::INVALID();
     }
     return iter->second;
 }
 
-ClusterNetId AtomLookup::clb_net(const AtomNetId net_id) const {
-    auto iter = atom_net_to_clb_net_.find(net_id);
-    if (iter == atom_net_to_clb_net_.end()) {
+vtr::optional<const std::vector<ClusterNetId>&> AtomLookup::clb_nets(const AtomNetId atom_net) const {
+    auto iter = atom_net_to_clb_nets_.find(atom_net);
+    if (iter == atom_net_to_clb_nets_.end()) {
         //Not found
-        return ClusterNetId::INVALID();
+        return vtr::nullopt;
     }
     return iter->second;
 }
 
-void AtomLookup::set_atom_clb_net(const AtomNetId net_id, const ClusterNetId clb_net_index) {
-    VTR_ASSERT(net_id);
-    //If either are invalid remove any mapping
-    if (!net_id && clb_net_index != ClusterNetId::INVALID()) {
-        //Remove
-        atom_net_to_clb_net_.erase(clb_net_index);
-    } else if (net_id && clb_net_index == ClusterNetId::INVALID()) {
-        //Remove
-        atom_net_to_clb_net_.erase(net_id);
-    } else if (net_id && clb_net_index != ClusterNetId::INVALID()) {
-        //Store
-        atom_net_to_clb_net_.update(net_id, clb_net_index);
+void AtomLookup::add_atom_clb_net(const AtomNetId atom_net, const ClusterNetId clb_net) {
+    VTR_ASSERT(atom_net && clb_net);
+
+    /* Use the default behavior of [] operator */
+    atom_net_to_clb_nets_[atom_net].push_back(clb_net);
+    clb_net_to_atom_net_[clb_net] = atom_net;
+}
+
+void AtomLookup::remove_clb_net(const ClusterNetId clb_net){
+    if(!clb_net_to_atom_net_.count(clb_net))
+        return;
+
+    auto atom_net = clb_net_to_atom_net_[clb_net];
+    auto& all_clb_nets = atom_net_to_clb_nets_[atom_net];
+    /* This is o(n), but an AtomNetId rarely has >5 ClusterNetIds */
+    all_clb_nets.erase(std::remove(all_clb_nets.begin(), all_clb_nets.end(), clb_net), all_clb_nets.end());
+}
+
+/* Remove mapping for given atom net */
+void AtomLookup::remove_atom_net(const AtomNetId atom_net) {
+    if(!atom_net_to_clb_nets_.count(atom_net))
+        return;
+
+    auto cluster_nets = atom_net_to_clb_nets_[atom_net];
+    for(auto c: cluster_nets){
+        clb_net_to_atom_net_.erase(c);
     }
+    atom_net_to_clb_nets_.erase(atom_net);
 }
 
 /*

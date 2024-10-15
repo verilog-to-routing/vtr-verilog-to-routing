@@ -13,6 +13,8 @@
 #include "vpr_types.h"
 #include "tatum/TimingGraphFwd.hpp"
 
+#include "vtr_optional.h"
+
 /**
  * @brief The AtomLookup class describes the mapping between components in the AtomNetlist
  *        and other netlists/entities (i.e. atom block <-> t_pb, atom block <-> clb)
@@ -76,17 +78,21 @@ class AtomLookup {
      */
 
     ///@brief Returns the atom net id associated with the clb_net_index
-    AtomNetId atom_net(const ClusterNetId clb_net_index) const;
+    AtomNetId atom_net(const ClusterNetId cluster_net_id) const;
 
-    ///@brief Returns the clb net index associated with net_id
-    ClusterNetId clb_net(const AtomNetId net_id) const;
+    ///@brief Returns the clb net indices associated with atom_net_id
+    vtr::optional<const std::vector<ClusterNetId>&> clb_nets(const AtomNetId atom_net_id) const;
 
     /**
      * @brief Sets the bidirectional mapping between an atom net and a clb net
-     *
-     * If either net_id or clb_net_index are not valid any existing mapping is removed
      */
-    void set_atom_clb_net(const AtomNetId net_id, const ClusterNetId clb_net_index);
+    void add_atom_clb_net(const AtomNetId atom_net, const ClusterNetId clb_net);
+
+    /** Remove given clb net from the mapping */
+    void remove_clb_net(const ClusterNetId clb_net);
+
+    /** Remove given atom net from the mapping */
+    void remove_atom_net(const AtomNetId atom_net);
 
     /*
      * Timing Nodes
@@ -112,7 +118,8 @@ class AtomLookup {
 
     vtr::vector_map<AtomBlockId, ClusterBlockId> atom_to_clb_;
 
-    vtr::bimap<AtomNetId, ClusterNetId, vtr::linear_map, vtr::linear_map> atom_net_to_clb_net_;
+    vtr::linear_map<AtomNetId, std::vector<ClusterNetId>> atom_net_to_clb_nets_;
+    vtr::linear_map<ClusterNetId, AtomNetId> clb_net_to_atom_net_;
 
     vtr::linear_map<AtomPinId, tatum::NodeId> atom_pin_tnode_external_;
     vtr::linear_map<AtomPinId, tatum::NodeId> atom_pin_tnode_internal_;
