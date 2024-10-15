@@ -207,13 +207,13 @@ void writeClusteredNetlistStats(const std::string& block_usage_filename) {
 static void ShowAnnealSched(const t_annealing_sched& AnnealSched) {
     VTR_LOG("AnnealSched.type: ");
     switch (AnnealSched.type) {
-        case AUTO_SCHED:
+        case e_sched_type::AUTO_SCHED:
             VTR_LOG("AUTO_SCHED\n");
             break;
-        case USER_SCHED:
+        case e_sched_type::USER_SCHED:
             VTR_LOG("USER_SCHED\n");
             break;
-        case DUSTY_SCHED:
+        case e_sched_type::DUSTY_SCHED:
             VTR_LOG("DUSTY_SCHED\n");
             break;
         default:
@@ -222,11 +222,11 @@ static void ShowAnnealSched(const t_annealing_sched& AnnealSched) {
 
     VTR_LOG("AnnealSched.inner_num: %f\n", AnnealSched.inner_num);
 
-    if (USER_SCHED == AnnealSched.type) {
+    if (e_sched_type::USER_SCHED == AnnealSched.type) {
         VTR_LOG("AnnealSched.init_t: %f\n", AnnealSched.init_t);
         VTR_LOG("AnnealSched.alpha_t: %f\n", AnnealSched.alpha_t);
         VTR_LOG("AnnealSched.exit_t: %f\n", AnnealSched.exit_t);
-    } else if (DUSTY_SCHED == AnnealSched.type) {
+    } else if (e_sched_type::DUSTY_SCHED == AnnealSched.type) {
         VTR_LOG("AnnealSched.alpha_min: %f\n", AnnealSched.alpha_min);
         VTR_LOG("AnnealSched.alpha_max: %f\n", AnnealSched.alpha_max);
         VTR_LOG("AnnealSched.alpha_decay: %f\n", AnnealSched.alpha_decay);

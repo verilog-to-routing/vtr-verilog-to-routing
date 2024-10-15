@@ -24,6 +24,7 @@
 
 #include "globals.h"
 #include "place.h"
+#include "annealer.h"
 #include "read_place.h"
 #include "draw.h"
 #include "place_and_route.h"
@@ -688,8 +689,7 @@ void try_place(const Netlist<>& net_list,
                             EPSILON,    // Set the temperature low to ensure that initial placement quality will be preserved
                             first_rlim,
                             first_move_lim,
-                            first_crit_exponent,
-                            device_ctx.grid.get_num_layers());
+                            first_crit_exponent);
 
     /* Update the starting temperature for placement annealing to a more appropriate value */
     state.t = starting_t(&state, &costs, annealing_sched,
@@ -1173,7 +1173,7 @@ static float starting_t(const t_annealing_state* state,
                         PlacerState& placer_state,
                         NetCostHandler& net_cost_handler,
                         std::optional<NocCostHandler>& noc_cost_handler) {
-    if (annealing_sched.type == USER_SCHED) {
+    if (annealing_sched.type == e_sched_type::USER_SCHED) {
         return (annealing_sched.init_t);
     }
 

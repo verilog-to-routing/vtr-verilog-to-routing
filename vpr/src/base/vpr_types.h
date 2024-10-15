@@ -460,7 +460,7 @@ constexpr int NUM_PL_MOVE_TYPES = 7;
 constexpr int NUM_PL_NONTIMING_MOVE_TYPES = 3;
 
 /* Timing data structures end */
-enum sched_type {
+enum class e_sched_type {
     AUTO_SCHED,
     DUSTY_SCHED,
     USER_SCHED
@@ -836,7 +836,7 @@ struct t_packer_opts {
  * the obvious meanings.
  */
 struct t_annealing_sched {
-    enum sched_type type;
+    e_sched_type type;
     float inner_num;
     float init_t;
     float alpha_t;
