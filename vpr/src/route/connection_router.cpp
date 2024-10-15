@@ -685,7 +685,7 @@ void ConnectionRouter<Heap>::set_rcv_enabled(bool enable) {
     }
 }
 
-//Calculates the cost of reaching to_node
+//Calculates the cost of reaching to_node (i.e., to->index)
 template<typename Heap>
 void ConnectionRouter<Heap>::evaluate_timing_driven_node_costs(RTExploredNode* to,
                                                                const t_conn_cost_params& cost_params,
@@ -700,7 +700,7 @@ void ConnectionRouter<Heap>::evaluate_timing_driven_node_costs(RTExploredNode* t
      * new_costs.R_upstream: is the upstream resistance at the end of this node
      */
 
-    //Info for the switch connecting from_node to_node
+    //Info for the switch connecting from_node to_node (i.e., to->index)
     int iswitch = rr_nodes_.edge_switch(to->prev_edge);
     bool switch_buffered = rr_switch_inf_[iswitch].buffered();
     bool reached_configurably = rr_switch_inf_[iswitch].configurable();
@@ -753,7 +753,7 @@ void ConnectionRouter<Heap>::evaluate_timing_driven_node_costs(RTExploredNode* t
         //Reached by a non-configurable edge.
         //Therefore the from_node and to_node are part of the same non-configurable node set.
 #ifdef VTR_ASSERT_SAFE_ENABLED
-        VTR_ASSERT_SAFE_MSG(same_non_config_node_set(from_node, to_node),
+        VTR_ASSERT_SAFE_MSG(same_non_config_node_set(from_node, to->index),
                             "Non-configurably connected edges should be part of the same node set");
 #endif
 
