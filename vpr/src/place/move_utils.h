@@ -91,18 +91,6 @@ struct t_range_limiters {
     float dm_rlim;
 };
 
-/**
- * These variables keep track of the number of swaps
- * rejected, accepted or aborted. The total number of swap attempts
- * is the sum of the three number.
- */
-struct t_swap_stats {
-    int num_swap_rejected = 0;
-    int num_swap_accepted = 0;
-    int num_swap_aborted = 0;
-    int num_ts_called = 0;
-};
-
 e_create_move create_move(t_pl_blocks_to_be_moved& blocks_affected,
                           ClusterBlockId b_from,
                           t_pl_loc to,

@@ -1066,6 +1066,7 @@ enum class e_move_type;
 struct t_placer_opts {
     t_place_algorithm place_algorithm;
     t_place_algorithm place_quench_algorithm;
+    t_annealing_sched anneal_sched;  ///<Placement option annealing schedule
     float timing_tradeoff;
     float place_cost_exp;
     int place_chan_width;
@@ -1733,7 +1734,6 @@ struct t_vpr_setup {
     t_packer_opts PackerOpts;       ///<Options for packer
     t_placer_opts PlacerOpts;       ///<Options for placer
     t_ap_opts APOpts;               ///<Options for analytical placer
-    t_annealing_sched AnnealSched;  ///<Placement option annealing schedule
     t_router_opts RouterOpts;       ///<router options
     t_analysis_opts AnalysisOpts;   ///<Analysis options
     t_noc_opts NocOpts;             ///<Options for the NoC

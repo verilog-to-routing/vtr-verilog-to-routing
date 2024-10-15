@@ -1,9 +1,32 @@
 
 #pragma once
 
+#include "vpr_types.h"
+
+#include "move_generator.h" // movestats
+#include "net_cost_handler.h"
+
+#include <optional>
+
+class PlacerState;
 class t_placer_costs;
 struct t_placer_opts;
-struct t_annealing_sched;
+
+class NocCostHandler;
+class ManualMoveGenerator;
+class NetPinTimingInvalidator;
+
+/**
+ * These variables keep track of the number of swaps
+ * rejected, accepted or aborted. The total number of swap attempts
+ * is the sum of the three number.
+ */
+struct t_swap_stats {
+    int num_swap_rejected = 0;
+    int num_swap_accepted = 0;
+    int num_swap_aborted = 0;
+    int num_ts_called = 0;
+};
 
 /**
  * @brief Stores variables that are used by the annealing process.
@@ -71,7 +94,7 @@ class t_annealing_state {
     float INVERSE_DELTA_RLIM;
 
   public: //Constructor
-    t_annealing_state() = delete;
+    t_annealing_state() = default;
     t_annealing_state(const t_annealing_sched& annealing_sched,
                       float first_t,
                       float first_rlim,
@@ -128,8 +151,83 @@ class t_annealing_state {
     inline void update_move_lim(float success_target, float success_rate);
 };
 
+
 class PlacementAnnealer {
+  public:
+    PlacementAnnealer(const t_placer_opts& placer_opts,
+                      PlacerState& placer_state,
+                      t_placer_costs& costs,
+                      NetCostHandler& net_cost_handler,
+                      std::optional<NocCostHandler>& noc_cost_handler,
+                      const t_noc_opts& noc_opts,
+                      MoveGenerator& move_generator_1,
+                      MoveGenerator& move_generator_2,
+                      ManualMoveGenerator& manual_move_generator,
+                      const PlaceDelayModel* delay_model,
+                      PlacerCriticalities* criticalities,
+                      PlacerSetupSlacks* setup_slacks,
+                      SetupTimingInfo* timing_info,
+                      NetPinTimingInvalidator* pin_timing_invalidator,
+                      int move_lim);
+
+    void placement_inner_loop(const t_annealing_state* state,
+                              const t_placer_opts& placer_opts,
+                              const t_noc_opts& noc_opts,
+                              int inner_recompute_limit,
+                              t_placer_statistics* stats,
+                              t_placer_costs* costs,
+                              int* moves_since_cost_recompute,
+                              NetPinTimingInvalidator* pin_timing_invalidator,
+                              const PlaceDelayModel* delay_model,
+                              PlacerCriticalities* criticalities,
+                              PlacerSetupSlacks* setup_slacks,
+                              MoveGenerator& move_generator,
+                              ManualMoveGenerator& manual_move_generator,
+                              t_pl_blocks_to_be_moved& blocks_affected,
+                              SetupTimingInfo* timing_info,
+                              const t_place_algorithm& place_algorithm,
+                              MoveTypeStat& move_type_stat,
+                              float timing_bb_factor,
+                              t_swap_stats& swap_stats,
+                              PlacerState& placer_state,
+                              NetCostHandler& net_cost_handler,
+                              std::optional<NocCostHandler>& noc_cost_handler);
+
+    void outer_loop_update_timing_info(int num_connections);
+
+    e_move_result try_swap(MoveGenerator& move_generator,
+                           const t_place_algorithm& place_algorithm,
+                           float timing_bb_factor,
+                           bool manual_move_enabled);
+
+  public:
+    const t_placer_opts& placer_opts_;
+    PlacerState& placer_state_;
+    t_placer_costs& costs_;
+    NetCostHandler& net_cost_handler_;
+    std::optional<NocCostHandler>& noc_cost_handler_;
+    const t_noc_opts& noc_opts_;
+
+    MoveGenerator& move_generator_1_;
+    MoveGenerator& move_generator_2_;
+    ManualMoveGenerator& manual_move_generator_;
+
+    const PlaceDelayModel* delay_model_;
+    PlacerCriticalities* criticalities_;
+    PlacerSetupSlacks* setup_slacks_;
+    SetupTimingInfo* timing_info_;
+    NetPinTimingInvalidator* pin_timing_invalidator_;
+    std::unique_ptr<FILE, decltype(&vtr::fclose)> move_stats_file_;
+    int outer_crit_iter_count_;
+
+    t_annealing_state annealing_state_;
+    /// Swap statistics keep record of the number accepted/rejected/aborted swaps.
+    t_swap_stats swap_stats_;
+    MoveTypeStat move_type_stats_;
+
+    t_pl_blocks_to_be_moved blocks_affected_;
+
 
   private:
-    t_annealing_state annealing_state_;
+    float estimate_starting_temperature();
 };
