@@ -9,12 +9,14 @@
 #include "fasm_utils.h"
 #include "arch_util.h"
 #include "rr_graph_writer.h"
-#include "post_routing_pb_pin_fixup.h"
 #include <sstream>
 #include <fstream>
 #include <regex>
 #include <cmath>
 #include <algorithm>
+
+#include "post_routing_pb_pin_fixup.h"
+#include "sync_netlists_to_routing_flat.h"
 
 static constexpr const char kArchFile[] = "test_fasm_arch.xml";
 static constexpr const char kRrGraphFile[] = "test_fasm_rrgraph.xml";
@@ -328,15 +330,16 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
     /* Sync netlist to the actual routing (necessary if there are block
        ports with equivalent pins) */
     if (flow_succeeded) {
-        sync_netlists_to_routing((const Netlist<>&) g_vpr_ctx.clustering().clb_nlist,
-                                 g_vpr_ctx.device(),
-                                 g_vpr_ctx.mutable_atom(),
-                                 g_vpr_ctx.atom().lookup,
-                                 g_vpr_ctx.mutable_clustering(),
-                                 g_vpr_ctx.placement(),
-                                 g_vpr_ctx.routing(),
-                                 vpr_setup.PackerOpts.pack_verbosity > 2,
-                                 is_flat);
+        if (is_flat) {
+            sync_netlists_to_routing_flat();
+        } else {
+            sync_netlists_to_routing((const Netlist<>&) g_vpr_ctx.clustering().clb_nlist,
+                                     g_vpr_ctx.device(),
+                                     g_vpr_ctx.mutable_atom(),
+                                     g_vpr_ctx.mutable_clustering(),
+                                     g_vpr_ctx.placement(),
+                                     vpr_setup.PackerOpts.pack_verbosity > 2);
+        }
     }
 
     std::stringstream fasm_string;

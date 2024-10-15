@@ -1,0 +1,7 @@
+# VPR Run-time Metrics
+## Entire AP Flow
+ap_mem;vpr.out;.*Analytical Placement took.*\(max_rss (.*), .*\)
+ap_time;vpr.out;\s*Analytical Placement took (.*) seconds
+## Full Legalizer
+ap_full_legalizer_mem;vpr.out;.*AP Full Legalizer took.*\(max_rss (.*), .*\)
+ap_full_legalizer_time;vpr.out;\s*AP Full Legalizer took (.*) seconds

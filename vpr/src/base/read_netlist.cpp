@@ -218,14 +218,14 @@ ClusteredNetlist read_netlist(const char* net_file,
 
     /* load mapping between external nets and all nets */
     for (auto net_id : atom_ctx.nlist.nets()) {
-        atom_ctx.lookup.set_atom_clb_net(net_id, ClusterNetId::INVALID());
+        atom_ctx.lookup.remove_atom_net(net_id);
     }
 
     //Save the mapping between clb and atom nets
     for (auto clb_net_id : clb_nlist.nets()) {
         AtomNetId net_id = atom_ctx.nlist.find_net(clb_nlist.net_name(clb_net_id));
         VTR_ASSERT(net_id);
-        atom_ctx.lookup.set_atom_clb_net(net_id, clb_net_id);
+        atom_ctx.lookup.add_atom_clb_net(net_id, clb_net_id);
     }
 
     // Mark ignored and global atom nets

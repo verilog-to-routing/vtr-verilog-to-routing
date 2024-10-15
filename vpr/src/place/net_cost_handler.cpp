@@ -36,10 +36,6 @@
 
 #include <array>
 
-using std::max;
-using std::min;
-
-
 static constexpr int MAX_FANOUT_CROSSING_COUNT = 50;
 
 /**
@@ -159,48 +155,36 @@ NetCostHandler::NetCostHandler(const t_placer_opts& placer_opts,
 }
 
 void NetCostHandler::alloc_and_load_chan_w_factors_for_place_cost_(float place_cost_exp) {
-    /* Allocates and loads the chanx_place_cost_fac and chany_place_cost_fac *
-     * arrays with the inverse of the average number of tracks per channel   *
-     * between [subhigh] and [sublow].  This is only useful for the cost     *
-     * function that takes the length of the net bounding box in each        *
-     * dimension divided by the average number of tracks in that direction.  *
-     * For other cost functions, you don't have to bother calling this       *
-     * routine; when using the cost function described above, however, you   *
-     * must always call this routine after you call init_chan and before     *
-     * you do any placement cost determination. The place_cost_exp factor    *
-     * specifies to what power the width of the channel should be taken --   *
-     * larger numbers make narrower channels more expensive.                 */
-
     auto& device_ctx = g_vpr_ctx.device();
 
-    const size_t grid_height = device_ctx.grid.height();
-    const size_t grid_width = device_ctx.grid.width();
+    const int grid_height = device_ctx.grid.height();
+    const int grid_width = device_ctx.grid.width();
 
-    /* Access arrays below as chan?_place_cost_fac[subhigh][sublow]. Since subhigh must be greater than or
+    /* Access arrays below as chan?_place_cost_fac_(subhigh, sublow). Since subhigh must be greater than or
      * equal to sublow, we will only access the lower half of a matrix, but we allocate the whole matrix anyway
      * for simplicity, so we can use the vtr utility matrix functions. */
-    chanx_place_cost_fac_.resize({grid_height, grid_height + 1});
-    chany_place_cost_fac_.resize({grid_width, grid_width + 1});
+    chanx_place_cost_fac_ = vtr::NdOffsetMatrix<float, 2>({{{-1, grid_height}, {-1, grid_height}}});
+    chany_place_cost_fac_ = vtr::NdOffsetMatrix<float, 2>({{{-1, grid_width}, {-1, grid_width}}});
 
     // First compute the number of tracks between channel high and channel low, inclusive.
-    chanx_place_cost_fac_[0][0] = device_ctx.chan_width.x_list[0];
+    chanx_place_cost_fac_[-1][-1] = 0;
 
-    for (size_t high = 1; high < grid_height; high++) {
-        chanx_place_cost_fac_[high][high] = device_ctx.chan_width.x_list[high];
-        for (size_t low = 0; low < high; low++) {
-            chanx_place_cost_fac_[high][low] = chanx_place_cost_fac_[high - 1][low] + device_ctx.chan_width.x_list[high];
+    for (int high = 0; high < grid_height; high++) {
+        chanx_place_cost_fac_[high][high] = (float)device_ctx.chan_width.x_list[high];
+        for (int low = -1; low < high; low++) {
+            chanx_place_cost_fac_[high][low] = chanx_place_cost_fac_[high - 1][low] + (float)device_ctx.chan_width.x_list[high];
         }
     }
 
     /* Now compute the inverse of the average number of tracks per channel *
-     * between high and low.  The cost function divides by the average     *
+     * between high and low. The cost function divides by the average      *
      * number of tracks per channel, so by storing the inverse I convert   *
      * this to a faster multiplication.  Take this final number to the     *
      * place_cost_exp power -- numbers other than one mean this is no      *
      * longer a simple "average number of tracks"; it is some power of     *
      * that, allowing greater penalization of narrow channels.             */
-    for (size_t high = 0; high < grid_height; high++)
-        for (size_t low = 0; low <= high; low++) {
+    for (int high = -1; high < grid_height; high++) {
+        for (int low = -1; low <= high; low++) {
             /* Since we will divide the wiring cost by the average channel *
              * capacity between high and low, having only 0 width channels *
              * will result in infinite wiring capacity normalization       *
@@ -214,22 +198,23 @@ void NetCostHandler::alloc_and_load_chan_w_factors_for_place_cost_(float place_c
             chanx_place_cost_fac_[high][low] = (high - low + 1.) / chanx_place_cost_fac_[high][low];
             chanx_place_cost_fac_[high][low] = pow((double)chanx_place_cost_fac_[high][low], (double)place_cost_exp);
         }
+    }
 
     /* Now do the same thing for the y-directed channels.  First get the
      * number of tracks between channel high and channel low, inclusive. */
-    chany_place_cost_fac_[0][0] = device_ctx.chan_width.y_list[0];
+    chany_place_cost_fac_[-1][-1] = 0;
 
-    for (size_t high = 1; high < grid_width; high++) {
+    for (int high = 0; high < grid_width; high++) {
         chany_place_cost_fac_[high][high] = device_ctx.chan_width.y_list[high];
-        for (size_t low = 0; low < high; low++) {
+        for (int low = -1; low < high; low++) {
             chany_place_cost_fac_[high][low] = chany_place_cost_fac_[high - 1][low] + device_ctx.chan_width.y_list[high];
         }
     }
 
     /* Now compute the inverse of the average number of tracks per channel
      * between high and low.  Take to specified power. */
-    for (size_t high = 0; high < grid_width; high++)
-        for (size_t low = 0; low <= high; low++) {
+    for (int high = -1; high < grid_width; high++) {
+        for (int low = -1; low <= high; low++) {
             /* Since we will divide the wiring cost by the average channel *
              * capacity between high and low, having only 0 width channels *
              * will result in infinite wiring capacity normalization       *
@@ -243,6 +228,7 @@ void NetCostHandler::alloc_and_load_chan_w_factors_for_place_cost_(float place_c
             chany_place_cost_fac_[high][low] = (high - low + 1.) / chany_place_cost_fac_[high][low];
             chany_place_cost_fac_[high][low] = pow((double)chany_place_cost_fac_[high][low], (double)place_cost_exp);
         }
+    }
 }
 
 double NetCostHandler::comp_bb_cost(e_cost_methods method) {
@@ -518,12 +504,12 @@ void NetCostHandler::get_non_updatable_cube_bb_(ClusterNetId net_id, bool use_ts
     int y = block_loc.y + physical_tile_type(block_loc)->pin_height_offset[pnum];
     int layer = block_loc.layer;
 
-    int xmin = x;
-    int ymin = y;
-    int layer_min = layer;
-    int xmax = x;
-    int ymax = y;
-    int layer_max = layer;
+    bb_coord_new.xmin = x;
+    bb_coord_new.ymin = y;
+    bb_coord_new.layer_min = layer;
+    bb_coord_new.xmax = x;
+    bb_coord_new.ymax = y;
+    bb_coord_new.layer_max = layer;
 
     for (int layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); layer_num++) {
         num_sink_pin_layer[layer_num] = 0;
@@ -537,41 +523,26 @@ void NetCostHandler::get_non_updatable_cube_bb_(ClusterNetId net_id, bool use_ts
         y = block_loc.y + physical_tile_type(block_loc)->pin_height_offset[pnum];
         layer = block_loc.layer;
 
-        if (x < xmin) {
-            xmin = x;
-        } else if (x > xmax) {
-            xmax = x;
+        if (x < bb_coord_new.xmin) {
+            bb_coord_new.xmin = x;
+        } else if (x > bb_coord_new.xmax) {
+            bb_coord_new.xmax = x;
         }
 
-        if (y < ymin) {
-            ymin = y;
-        } else if (y > ymax) {
-            ymax = y;
+        if (y < bb_coord_new.ymin) {
+            bb_coord_new.ymin = y;
+        } else if (y > bb_coord_new.ymax) {
+            bb_coord_new.ymax = y;
         }
 
-        if (layer < layer_min) {
-            layer_min = layer;
-        } else if (layer > layer_max) {
-            layer_max = layer;
+        if (layer < bb_coord_new.layer_min) {
+            bb_coord_new.layer_min = layer;
+        } else if (layer > bb_coord_new.layer_max) {
+            bb_coord_new.layer_max = layer;
         }
 
         num_sink_pin_layer[layer]++;
     }
-
-    /* Now I've found the coordinates of the bounding box.  There are no *
-     * channels beyond device_ctx.grid.width()-2 and                     *
-     * device_ctx.grid.height() - 2, so I want to clip to that.  As well,*
-     * since I'll always include the channel immediately below and the   *
-     * channel immediately to the left of the bounding box, I want to    *
-     * clip to 1 in both directions as well (since minimum channel index *
-     * is 0).  See route_common.cpp for a channel diagram.               */
-
-    bb_coord_new.xmin = max(min<int>(xmin, device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
-    bb_coord_new.ymin = max(min<int>(ymin, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
-    bb_coord_new.layer_min = max(min<int>(layer_min, device_ctx.grid.get_num_layers() - 1), 0);
-    bb_coord_new.xmax = max(min<int>(xmax, device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
-    bb_coord_new.ymax = max(min<int>(ymax, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
-    bb_coord_new.layer_max = max(min<int>(layer_max, device_ctx.grid.get_num_layers() - 1), 0);
 }
 
 void NetCostHandler::get_non_updatable_per_layer_bb_(ClusterNetId net_id, bool use_ts) {
@@ -621,21 +592,6 @@ void NetCostHandler::get_non_updatable_per_layer_bb_(ClusterNetId net_id, bool u
             bb_coord_new[layer_num].ymax = y;
         }
     }
-
-    /* Now I've found the coordinates of the bounding box.  There are no *
-     * channels beyond device_ctx.grid.width()-2 and                     *
-     * device_ctx.grid.height() - 2, so I want to clip to that.  As well,*
-     * since I'll always include the channel immediately below and the   *
-     * channel immediately to the left of the bounding box, I want to    *
-     * clip to 1 in both directions as well (since minimum channel index *
-     * is 0).  See route_common.cpp for a channel diagram.               */
-    for (int layer_num = 0; layer_num < num_layers; layer_num++) {
-        bb_coord_new[layer_num].layer_num = layer_num;
-        bb_coord_new[layer_num].xmin = max(min<int>(bb_coord_new[layer_num].xmin, device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
-        bb_coord_new[layer_num].ymin = max(min<int>(bb_coord_new[layer_num].ymin, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
-        bb_coord_new[layer_num].xmax = max(min<int>(bb_coord_new[layer_num].xmax, device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
-        bb_coord_new[layer_num].ymax = max(min<int>(bb_coord_new[layer_num].ymax, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
-    }
 }
 
 void NetCostHandler::update_bb_(ClusterNetId net_id,
@@ -656,13 +612,6 @@ void NetCostHandler::update_bb_(ClusterNetId net_id,
     t_bb& bb_coord_new = ts_bb_coord_new_[net_id];
     // Number of sinks of the given net on each layer
     vtr::NdMatrixProxy<int, 1> num_sink_pin_layer_new = ts_layer_sink_pin_count_[size_t(net_id)];
-
-    pin_new_loc.x = max(min<int>(pin_new_loc.x, device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
-    pin_new_loc.y = max(min<int>(pin_new_loc.y, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
-    pin_new_loc.layer_num = max(min<int>(pin_new_loc.layer_num, device_ctx.grid.get_num_layers() - 1), 0);
-    pin_old_loc.x = max(min<int>(pin_old_loc.x, device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
-    pin_old_loc.y = max(min<int>(pin_old_loc.y, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
-    pin_old_loc.layer_num = max(min<int>(pin_old_loc.layer_num, device_ctx.grid.get_num_layers() - 1), 0);
 
     /* Check if the net had been updated before. */
     if (bb_update_status_[net_id] == NetUpdateState::GOT_FROM_SCRATCH) {
@@ -918,13 +867,7 @@ void NetCostHandler::update_layer_bb_(ClusterNetId net_id,
                                       t_physical_tile_loc pin_old_loc,
                                       t_physical_tile_loc pin_new_loc,
                                       bool is_output_pin) {
-    auto& device_ctx = g_vpr_ctx.device();
     auto& place_move_ctx = placer_state_.move();
-
-    pin_new_loc.x = max(min<int>(pin_new_loc.x, device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
-    pin_new_loc.y = max(min<int>(pin_new_loc.y, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
-    pin_old_loc.x = max(min<int>(pin_old_loc.x, device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
-    pin_old_loc.y = max(min<int>(pin_old_loc.y, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
 
     std::vector<t_2D_bb>& bb_edge_new = layer_ts_bb_edge_new_[net_id];
     std::vector<t_2D_bb>& bb_coord_new = layer_ts_bb_coord_new_[net_id];
@@ -1279,10 +1222,6 @@ void NetCostHandler::get_bb_from_scratch_(ClusterNetId net_id,
     int y = block_loc.y + physical_tile_type(block_loc)->pin_height_offset[pnum];
     int pin_layer = block_loc.layer;
 
-    x = max(min<int>(x, grid.width() - 2), 1);
-    y = max(min<int>(y, grid.height() - 2), 1);
-    pin_layer = max(min<int>(pin_layer, grid.get_num_layers() - 1), 0);
-
     int xmin = x;
     int ymin = y;
     int layer_min = pin_layer;
@@ -1315,10 +1254,6 @@ void NetCostHandler::get_bb_from_scratch_(ClusterNetId net_id,
          * that bounding box.  Hence, this "movement" of IO blocks does not affect *
          * the which channels are included within the bounding box, and it         *
          * simplifies the code a lot.                                              */
-
-        x = max(min<int>(x, grid.width() - 2), 1);  //-2 for no perim channels
-        y = max(min<int>(y, grid.height() - 2), 1); //-2 for no perim channels
-        pin_layer = max(min<int>(pin_layer, grid.get_num_layers() - 1), 0);
 
         if (x == xmin) {
             xmin_edge++;
@@ -1386,7 +1321,6 @@ void NetCostHandler::get_layer_bb_from_scratch_(ClusterNetId net_id,
                                                 vtr::NdMatrixProxy<int, 1> layer_pin_sink_count) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& grid = device_ctx.grid;
     auto& block_locs = placer_state_.block_locs();
 
     const int num_layers = device_ctx.grid.get_num_layers();
@@ -1399,9 +1333,6 @@ void NetCostHandler::get_layer_bb_from_scratch_(ClusterNetId net_id,
     VTR_ASSERT_SAFE(pnum_src >= 0);
     int x_src = block_loc.x + physical_tile_type(block_loc)->pin_width_offset[pnum_src];
     int y_src = block_loc.y + physical_tile_type(block_loc)->pin_height_offset[pnum_src];
-
-    x_src = max(min<int>(x_src, grid.width() - 2), 1);
-    y_src = max(min<int>(y_src, grid.height() - 2), 1);
 
     // TODO: Currently we are assuming that crossing can only happen from OPIN. Because of that,
     // when per-layer bounding box is used, we want the bounding box on each layer to also include
@@ -1428,9 +1359,6 @@ void NetCostHandler::get_layer_bb_from_scratch_(ClusterNetId net_id,
          * that bounding box.  Hence, this "movement" of IO blocks does not affect *
          * the which channels are included within the bounding box, and it         *
          * simplifies the code a lot.                                              */
-
-        x = max(min<int>(x, grid.width() - 2), 1);  //-2 for no perim channels
-        y = max(min<int>(y, grid.height() - 2), 1); //-2 for no perim channels
 
         if (x == coords[layer].xmin) {
             num_on_edges[layer].xmin++;
@@ -1460,6 +1388,7 @@ void NetCostHandler::get_layer_bb_from_scratch_(ClusterNetId net_id,
     }
 }
 
+
 double NetCostHandler::get_net_cube_bb_cost_(ClusterNetId net_id, bool use_ts) {
     // Finds the cost due to one net by looking at its coordinate bounding box.
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -1474,6 +1403,12 @@ double NetCostHandler::get_net_cube_bb_cost_(ClusterNetId net_id, bool use_ts) {
 
     /* Cost = wire length along channel * cross_count / average      *
      * channel capacity.   Do this for x, then y direction and add.  */
+
+    /* For average channel width factor, I'll always include the channel immediately
+     * below and the channel immediately to the left of the bounding box, so both bb.ymin
+     * and bb.xmin are subtracted by 1 before being used as indices of chan?_place_cost_fac_.
+     * chan?_place_cost_fac_ objects can handle -1 indices internally.
+     */
 
     double ncost;
     ncost = (bb.xmax - bb.xmin + 1) * crossing * chanx_place_cost_fac_[bb.ymax][bb.ymin - 1];
@@ -1511,6 +1446,12 @@ double NetCostHandler::get_net_per_layer_bb_cost_(ClusterNetId net_id , bool use
 
         /* Cost = wire length along channel * cross_count / average      *
          * channel capacity.   Do this for x, then y direction and add.  */
+
+        /* For average channel width factor, I'll always include the channel immediately
+         * below and the channel immediately to the left of the bounding box, so both bb.ymin
+         * and bb.xmin are subtracted by 1 before being used as indices of chan?_place_cost_fac_.
+         * chan?_place_cost_fac_ objects can handle -1 indices internally.
+         */
 
         ncost += (bb[layer_num].xmax - bb[layer_num].xmin + 1) * crossing
                  * chanx_place_cost_fac_[bb[layer_num].ymax][bb[layer_num].ymin - 1];
@@ -1682,66 +1623,32 @@ void NetCostHandler::reset_move_nets() {
     }
 }
 
-void NetCostHandler::recompute_costs_from_scratch(const t_noc_opts& noc_opts,
-                                                  const PlaceDelayModel* delay_model,
+void NetCostHandler::recompute_costs_from_scratch(const PlaceDelayModel* delay_model,
                                                   const PlacerCriticalities* criticalities,
-                                                  t_placer_costs* costs) {
+                                                  t_placer_costs& costs) {
     auto check_and_print_cost = [](double new_cost,
                                    double old_cost,
                                    const std::string& cost_name) -> void {
-        if (!vtr::isclose(new_cost, old_cost, ERROR_TOL, 0.)) {
+        if (!vtr::isclose(new_cost, old_cost, PL_INCREMENTAL_COST_TOLERANCE, 0.)) {
             std::string msg = vtr::string_fmt(
                 "in recompute_costs_from_scratch: new_%s = %g, old %s = %g, ERROR_TOL = %g\n",
-                cost_name.c_str(), new_cost, cost_name.c_str(), old_cost, ERROR_TOL);
+                cost_name.c_str(), new_cost, cost_name.c_str(), old_cost, PL_INCREMENTAL_COST_TOLERANCE);
             VPR_ERROR(VPR_ERROR_PLACE, msg.c_str());
         }
     };
 
     double new_bb_cost = recompute_bb_cost_();
-    check_and_print_cost(new_bb_cost, costs->bb_cost, "bb_cost");
-    costs->bb_cost = new_bb_cost;
+    check_and_print_cost(new_bb_cost, costs.bb_cost, "bb_cost");
+    costs.bb_cost = new_bb_cost;
 
     if (placer_opts_.place_algorithm.is_timing_driven()) {
         double new_timing_cost = 0.;
         comp_td_costs(delay_model, *criticalities, placer_state_, &new_timing_cost);
-        check_and_print_cost(new_timing_cost, costs->timing_cost, "timing_cost");
-        costs->timing_cost = new_timing_cost;
+        check_and_print_cost(new_timing_cost, costs.timing_cost, "timing_cost");
+        costs.timing_cost = new_timing_cost;
     } else {
         VTR_ASSERT(placer_opts_.place_algorithm == BOUNDING_BOX_PLACE);
-        costs->cost = new_bb_cost * costs->bb_cost_norm;
-    }
-
-    if (noc_opts.noc) {
-        NocCostTerms new_noc_cost;
-        recompute_noc_costs(new_noc_cost);
-
-        check_and_print_cost(new_noc_cost.aggregate_bandwidth,
-                             costs->noc_cost_terms.aggregate_bandwidth,
-                             "noc_aggregate_bandwidth");
-        costs->noc_cost_terms.aggregate_bandwidth = new_noc_cost.aggregate_bandwidth;
-
-        // only check if the recomputed cost and the current noc latency cost are within the error tolerance if the cost is above 1 picosecond.
-        // Otherwise, there is no need to check (we expect the latency cost to be above the threshold of 1 picosecond)
-        if (new_noc_cost.latency > MIN_EXPECTED_NOC_LATENCY_COST) {
-            check_and_print_cost(new_noc_cost.latency,
-                                 costs->noc_cost_terms.latency,
-                                 "noc_latency_cost");
-        }
-        costs->noc_cost_terms.latency = new_noc_cost.latency;
-
-        if (new_noc_cost.latency_overrun > MIN_EXPECTED_NOC_LATENCY_COST) {
-            check_and_print_cost(new_noc_cost.latency_overrun,
-                                 costs->noc_cost_terms.latency_overrun,
-                                 "noc_latency_overrun_cost");
-        }
-        costs->noc_cost_terms.latency_overrun = new_noc_cost.latency_overrun;
-
-        if (new_noc_cost.congestion > MIN_EXPECTED_NOC_CONGESTION_COST) {
-            check_and_print_cost(new_noc_cost.congestion,
-                                 costs->noc_cost_terms.congestion,
-                                 "noc_congestion_cost");
-        }
-        costs->noc_cost_terms.congestion = new_noc_cost.congestion;
+        costs.cost = new_bb_cost * costs.bb_cost_norm;
     }
 }
 

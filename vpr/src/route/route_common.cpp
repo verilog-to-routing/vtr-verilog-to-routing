@@ -272,6 +272,8 @@ void init_route_structs(const Netlist<>& net_list,
     route_ctx.clb_opins_used_locally = alloc_and_load_clb_opins_used_locally();
     route_ctx.net_status.resize(net_list.nets().size());
 
+    route_ctx.is_flat = is_flat;
+
     if (has_choking_point && is_flat) {
         std::tie(route_ctx.net_terminal_groups, route_ctx.net_terminal_group_num) = load_net_terminal_groups(device_ctx.rr_graph,
                                                                                                              net_list,

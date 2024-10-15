@@ -8,11 +8,32 @@
 #include "partial_placement.h"
 #include <cmath>
 #include <cstddef>
+#include <limits>
 #include "ap_netlist.h"
+
+double PartialPlacement::get_hpwl(const APNetlist& netlist) const {
+    double hpwl = 0.0;
+    for (APNetId net_id : netlist.nets()) {
+        double min_x = std::numeric_limits<double>::max();
+        double max_x = std::numeric_limits<double>::lowest();
+        double min_y = std::numeric_limits<double>::max();
+        double max_y = std::numeric_limits<double>::lowest();
+        for (APPinId pin_id : netlist.net_pins(net_id)) {
+            APBlockId blk_id = netlist.pin_block(pin_id);
+            min_x = std::min(min_x, block_x_locs[blk_id]);
+            max_x = std::max(max_x, block_x_locs[blk_id]);
+            min_y = std::min(min_y, block_y_locs[blk_id]);
+            max_y = std::max(max_y, block_y_locs[blk_id]);
+        }
+        VTR_ASSERT_SAFE(max_x >= min_x && max_y >= min_y);
+        hpwl += max_x - min_x + max_y - min_y;
+    }
+    return hpwl;
+}
 
 bool PartialPlacement::verify_locs(const APNetlist& netlist,
                                    size_t grid_width,
-                                   size_t grid_height) {
+                                   size_t grid_height) const {
     // Make sure all of the loc values are there.
     if (block_x_locs.size() != netlist.blocks().size())
         return false;
@@ -43,7 +64,7 @@ bool PartialPlacement::verify_locs(const APNetlist& netlist,
 }
 
 bool PartialPlacement::verify_layer_nums(const APNetlist& netlist,
-                                         size_t grid_num_layers) {
+                                         size_t grid_num_layers) const {
     // Make sure all of the layer nums are there
     if (block_layer_nums.size() != netlist.blocks().size())
         return false;
@@ -62,7 +83,7 @@ bool PartialPlacement::verify_layer_nums(const APNetlist& netlist,
     return true;
 }
 
-bool PartialPlacement::verify_sub_tiles(const APNetlist& netlist) {
+bool PartialPlacement::verify_sub_tiles(const APNetlist& netlist) const {
     // Make sure all of the sub tiles are there
     if (block_sub_tiles.size() != netlist.blocks().size())
         return false;
@@ -88,7 +109,7 @@ bool PartialPlacement::verify_sub_tiles(const APNetlist& netlist) {
 bool PartialPlacement::verify(const APNetlist& netlist,
                               size_t grid_width,
                               size_t grid_height,
-                              size_t grid_num_layers) {
+                              size_t grid_num_layers) const {
     // Check that all the other verify methods passed.
     if (!verify_locs(netlist, grid_width, grid_height))
         return false;

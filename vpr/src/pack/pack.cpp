@@ -18,14 +18,6 @@ static bool try_size_device_grid(const t_arch& arch,
                                  float target_device_utilization,
                                  const std::string& device_layout_name);
 
-/**
- * @brief Counts the total number of logic models that the architecture can implement.
- *
- * @param user_models A linked list of logic models.
- * @return int The total number of models in the linked list
- */
-static int count_models(const t_model* user_models);
-
 bool try_pack(t_packer_opts* packer_opts,
               const t_analysis_opts* analysis_opts,
               const t_arch* arch,
@@ -39,9 +31,6 @@ bool try_pack(t_packer_opts* packer_opts,
     std::unordered_set<AtomNetId> is_clock, is_global;
     t_clustering_data clustering_data;
     VTR_LOG("Begin packing '%s'.\n", packer_opts->circuit_file_name.c_str());
-
-    /* determine number of models in the architecture */
-    size_t num_models = count_models(user_models) + count_models(library_models);
 
     is_clock = alloc_and_load_is_clock();
     is_global.insert(is_clock.begin(), is_clock.end());
@@ -109,7 +98,8 @@ bool try_pack(t_packer_opts* packer_opts,
                                        prepacker,
                                        device_ctx.logical_block_types,
                                        lb_type_rr_graphs,
-                                       num_models,
+                                       user_models,
+                                       library_models,
                                        packer_opts->target_external_pin_util,
                                        high_fanout_thresholds,
                                        ClusterLegalizationStrategy::SKIP_INTRA_LB_ROUTE,
@@ -242,7 +232,7 @@ bool try_pack(t_packer_opts* packer_opts,
             g_vpr_ctx.mutable_atom().lookup.set_atom_pb(blk, nullptr);
         }
         for (auto net : g_vpr_ctx.atom().nlist.nets()) {
-            g_vpr_ctx.mutable_atom().lookup.set_atom_clb_net(net, ClusterNetId::INVALID());
+            g_vpr_ctx.mutable_atom().lookup.remove_atom_net(net);
         }
         g_vpr_ctx.mutable_floorplanning().cluster_constraints.clear();
         //attraction_groups.reset_attraction_groups();
@@ -369,18 +359,3 @@ static bool try_size_device_grid(const t_arch& arch,
     return fits_on_device;
 }
 
-static int count_models(const t_model* user_models) {
-    if (user_models == nullptr) {
-        return 0;
-    }
-
-    const t_model* cur_model = user_models;
-    int n_models = 0;
-
-    while (cur_model) {
-        n_models++;
-        cur_model = cur_model->next;
-    }
-
-    return n_models;
-}

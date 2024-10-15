@@ -12,7 +12,9 @@
 
 #pragma once
 
+#include <cmath>
 #include "ap_netlist.h"
+#include "physical_types.h"
 #include "vtr_vector.h"
 
 /**
@@ -95,6 +97,56 @@ struct PartialPlacement {
     }
 
     /**
+     * @brief Get the location of the physical tile that contains the given
+     *        AP block.
+     *
+     * VTR uses an integer grid. In AP, we consider a tile at (1,1) to be
+     * centered at (1.5,1.5). When converting from doubles back to integer
+     * tiles, we simply take the floor, so the tile above would receive all
+     * points from [(1,1) to (2,2)). When converting fixed blocks from the
+     * integral VPR grid to the AP locations, we should therefore add (0.5,0.5)
+     * to them so they are centered in their grid tiles (assuming the tiles are
+     * 1x1).
+     *
+     * FIXME: Ideally this should return an ID to the tile, not a location.
+     *        This is important since there is a distinction between the two.
+     *        We know a block will be at that tile, but it would not be at the
+     *        corner of the block (likely it would be at the center).
+     */
+    inline t_physical_tile_loc get_containing_tile_loc(APBlockId blk_id) const {
+        // We take the floor here since we want to know which tile contains this
+        // block. On a grid, if the block is located at x=0.99999, it would still
+        // be in the first tile. This is because we assume that the blocks will
+        // ultimately end up in the center of the tile, not at the top left
+        // corner of it. The physical tile loc is just a way of identifying that
+        // tile.
+        // TODO: This may be a bit more complicated than this. This assumes that
+        //       all tiles are 1x1, but it could be the case that this is on
+        //       the edge of a much larger block. In reality this should try
+        //       to go into the tile where it is closest to the center. What
+        //       is written here is not necessarily wrong, but it may put blocks
+        //       which on are the edge of large blocks into the large blocks.
+        //       However, this may not even matter if the partial legalizer is
+        //       doing its job!
+        int tile_x_loc = std::floor(block_x_locs[blk_id]);
+        int tile_y_loc = std::floor(block_y_locs[blk_id]);
+        int tile_layer = std::floor(block_layer_nums[blk_id]);
+        return t_physical_tile_loc(tile_x_loc, tile_y_loc, tile_layer);
+    }
+
+    /**
+     * @brief Computes the HPWL of the current partial placement solution.
+     *
+     * NOTE: This gets the HPWL of the netlist and partial placement as it
+     *       currently appears. The user should be aware that fractional
+     *       positions of blocks are not realistic and the netlist is ignoring
+     *       some nets to make the analytical placment problem easier.
+     *       The user should use an atom or cluster level HPWL for an accurate
+     *       result. This is used for the Global Placer.
+     */
+    double get_hpwl(const APNetlist& netlist) const;
+
+    /**
      * @brief Verify the block_x_locs and block_y_locs vectors
      *
      * Currently ensures:
@@ -108,7 +160,7 @@ struct PartialPlacement {
      */
     bool verify_locs(const APNetlist& netlist,
                      size_t grid_width,
-                     size_t grid_height);
+                     size_t grid_height) const;
 
     /**
      * @brief Verify the block_layer_nums vector
@@ -121,7 +173,8 @@ struct PartialPlacement {
      *  @param netlist          The APNetlist used to generate this placement
      *  @param grid_num_layers  The number of layers in the device grid
      */
-    bool verify_layer_nums(const APNetlist& netlist, size_t grid_num_layers);
+    bool verify_layer_nums(const APNetlist& netlist,
+                           size_t grid_num_layers) const;
 
     /**
      * @brief Verify the sub_tiles
@@ -131,7 +184,7 @@ struct PartialPlacement {
      *
      *  @param netlist  The APNetlist used to generate this placement
      */
-    bool verify_sub_tiles(const APNetlist& netlist);
+    bool verify_sub_tiles(const APNetlist& netlist) const;
 
     /**
      * @brief Verify the entire partial placement object
@@ -146,6 +199,6 @@ struct PartialPlacement {
     bool verify(const APNetlist& netlist,
                 size_t grid_width,
                 size_t grid_height,
-                size_t grid_num_layers);
+                size_t grid_num_layers) const;
 };
 
