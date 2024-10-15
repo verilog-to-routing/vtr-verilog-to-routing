@@ -361,6 +361,15 @@ void ConnectionRouter<Heap>::timing_driven_expand_cheapest(RRNodeId from_node,
         // `new_total_cost` is used here as an identifier to detect if the pair
         // (from_node or inode, new_total_cost) was the most recently pushed
         // element for the corresponding node.
+        //
+        // Note: For RCV, it often isn't searching for a shortest path; it is
+        // searching for a path in the target delay range. So it might find a
+        // path to node n that has a higher `backward_path_cost` but the `total_cost`
+        // (including expected delay to sink, going through a cost function that
+        // checks that against the target delay) might be lower than the previously
+        // stored value. In that case we want to re-expand the node so long as
+        // it doesn't create a loop. That `rcv_path_manager` should store enough
+        // info for us to avoid loops.
         RTExploredNode current;
         current.index = from_node;
         current.backward_path_cost = rr_node_route_inf_[from_node].backward_path_cost;
