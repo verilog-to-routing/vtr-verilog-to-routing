@@ -240,6 +240,16 @@ static void alloc_and_load_for_fast_vertical_cost_update(float place_cost_exp, v
     const auto& rr_graph = device_ctx.rr_graph;
     vtr::NdMatrix<float, 2> tile_num_inter_die_conn({device_ctx.grid.width(),
                                                      device_ctx.grid.height()}, 0);
+    
+    const int grid_height = device_ctx.grid.height();
+    const int grid_width = device_ctx.grid.width();
+
+
+    chanz_place_cost_fac = vtr::NdOffsetMatrix<float, 4>({{{0, grid_width-1}, 
+                                                         {0, grid_height-1}, 
+                                                         {0, grid_width-1}, 
+                                                         {0, grid_height-1}}}
+                                                        );                                    
 
     for (const auto& src_rr_node : rr_graph.nodes()) {
         for (const auto& rr_edge_idx : rr_graph.configurable_edges(src_rr_node)) {
@@ -265,10 +275,10 @@ static void alloc_and_load_for_fast_vertical_cost_update(float place_cost_exp, v
         }
     }
 
-    for (int x_high = 1; x_high < (int)device_ctx.grid.width(); x_high++) {
-        for (int y_high = 1; y_high < (int)device_ctx.grid.height(); y_high++) {
-                for (int x_low = 0; x_low < x_high; x_low++) {
-                    for (int y_low = 0; y_low < y_high; y_low++) {
+    for (int x_high = 0; x_high < (int)device_ctx.grid.width(); x_high++) {
+        for (int y_high = 0; y_high < (int)device_ctx.grid.height(); y_high++) {
+                for (int x_low = 0; x_low <= x_high; x_low++) {
+                    for (int y_low = 0; y_low <= y_high; y_low++) {
                         int num_inter_die_conn = 0;
                         for (int x = x_low; x <= x_high; x++) {
                             for (int y = y_low; y <= y_high; y++) {
