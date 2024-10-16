@@ -2,7 +2,7 @@
 VTR Quick Start
 ###############
 
-This is a quick introduction to VTR which covers how to run VTR and some of its associated tools (:ref:`VPR`, :ref:`odin_ii`, :ref:`ABC`).
+This is a quick introduction to VTR which covers how to run VTR and some of its associated tools (:ref:`VPR`, :ref:`Parmys`, :ref:`ABC`).
 
 Setting Up VTR
 ==============
@@ -47,14 +47,6 @@ On most unix-like systems you can run:
 .. code-block:: bash
 
     > make
-
-The default front-end for VTR is :ref:`Parmys<parmys>`, but you can build with ODIN II instead using the command below. This is required to run :ref:`Synthesizing with ODIN II<synthesizing_with_odin_ii>`.
-
-.. code-block:: bash
-
-    > make CMAKE_PARAMS="-DWITH_ODIN=on"
-
-from the VTR root directory (hereafter referred to as :term:`$VTR_ROOT`) to build VTR.
 
 .. note:: 
 
@@ -198,7 +190,7 @@ As an exercise try the following:
 
 .. figure:: tseng_blk1.png
 
-    Input (blue)/output (red) nets of block ``n_n3199`` (highlighted green).
+    Input (blue)/output (red) nets of block ``n_n3226`` (highlighted green).
 
 .. note:: 
     If you do not provide :option:`--analysis <vpr --analysis>`, VPR will re-implement the circuit from scratch.
@@ -465,6 +457,68 @@ which we can visualize with:
         blink --circuit_file blink.pre-vpr.blif \
         --route_chan_width 100 \
         --analysis --disp on
+
+Manually Running VTR with ODIN II
+----------------------------------
+Let's start by making a new directory for us to work in:
+
+.. code-block:: bash
+
+    > mkdir -p ~/vtr_work/quickstart/blink_manual
+    > cd ~/vtr_work/quickstart/blink_manual
+
+To synthesize your Verilog design with ODIN II, you need to build VTR with the following command:
+
+.. code-block:: bash
+
+    > make CMAKE_PARAMS="-DWITH_ODIN=on"
+
+This step enables ODIN II support in the VTR build process, which is essential for the subsequent synthesis operations.
+
+
+Next, run ODIN II on your Verilog file to synthesize it into a circuit netlist. Use the command below, specifying the required options:
+
+ * ``-a $VTR_ROOT/vtr_flow/arch/timing/EArch.xml`` which specifies what FPGA architecture we are targeting,
+ * ``-V $VTR_ROOT/doc/src/quickstart/blink.v`` which specifies the verilog file we want to synthesize, and
+ * ``-o blink.odin.blif`` which specifies the name of the generated ``.blif`` circuit netlist.
+
+The resulting command is:
+
+.. code-block:: bash
+
+    > $VTR_ROOT/odin_ii/odin_ii \
+        -a $VTR_ROOT/vtr_flow/arch/timing/EArch.xml \
+        -V $VTR_ROOT/doc/src/quickstart/blink.v \
+        -o blink.odin.blif
+
+After running the command, you should see an output similar to the following::
+
+    Total time: 14.7ms
+    Odin ran with exit status: 0
+    Odin II took 0.01 seconds (max_rss 5.1 MiB)
+
+where ``Odin ran with exit status: 0`` indicates Odin successfully synthesized our verilog.
+
+We can now take a look at the circuit which ODIN produced (``blink.odin.blif``).
+The file is long and likely harder to follow than our code in ``blink.v``; however it implements the same functionality.
+Some interesting highlights are shown below:
+
+.. literalinclude:: blink.odin.blif
+    :lines: 14,40
+    :caption: Instantiations of rising-edge triggered Latches (i.e. Flip-Flops) in ``blink.odin.blif`` (implements part of ``r_counter`` in blink.v)
+
+.. literalinclude:: blink.odin.blif
+    :lines: 17-19,21-22
+    :caption: Adder primitive instantiations in ``blink.odin.blif``, used to perform addition (implements part of the ``+`` operator in blink.v)
+
+.. literalinclude:: blink.odin.blif
+    :lines: 45-50
+    :caption: Logic equation (.names truth-table) in ``blink.odin.blif``, implementing logical OR (implements part of the ``<`` operator in blink.v)
+
+.. seealso:: For more information on the BLIF file format see :ref:`blif_format`.
+
+
+After synthesizing the netlist, you can proceed to follow the steps outlined in the section titled :ref:'Optimizing and Technology Mapping with ABC' using the generated `blink.odin.blif` file instead of `blink.parmys.blif`.
 
 Next Steps
 ==========
