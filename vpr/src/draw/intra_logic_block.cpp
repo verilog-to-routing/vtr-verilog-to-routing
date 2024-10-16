@@ -55,16 +55,13 @@ void draw_one_logical_connection(const AtomPinId src_pin, const AtomPinId sink_p
 /************************* Subroutine definitions begin *********************************/
 
 void draw_internal_alloc_blk() {
-    t_draw_coords* draw_coords;
+    t_draw_coords* draw_coords = get_draw_coords_vars();
+    const auto& device_ctx = g_vpr_ctx.device();
     t_pb_graph_node* pb_graph_head;
-
-    /* Call accessor function to retrieve global variables. */
-    draw_coords = get_draw_coords_vars();
 
     /* Create a vector holding coordinate information for each type of physical logic
      * block.
      */
-    auto& device_ctx = g_vpr_ctx.device();
     draw_coords->blk_info.resize(device_ctx.logical_block_types.size());
 
     for (const auto& type : device_ctx.logical_block_types) {
@@ -150,9 +147,9 @@ void draw_internal_draw_subblk(ezgl::renderer* g) {
     if (!draw_state->show_blk_internal) {
         return;
     }
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    const auto& grid_blocks = get_graphics_blk_loc_registry_ref().grid_blocks();
+    const auto& device_ctx = g_vpr_ctx.device();
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& grid_blocks = draw_state->get_graphics_blk_loc_registry_ref().grid_blocks();
 
     int total_layer_num = device_ctx.grid.get_num_layers();
 
@@ -269,11 +266,9 @@ static void draw_internal_load_coords(int type_descrip_index, t_pb_graph_node* p
  */
 static void
 draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node* pb_graph_node, int num_pb_types, int type_index, int num_pb, int pb_index, float parent_width, float parent_height, float* blk_width, float* blk_height) {
-    float parent_drawing_width, parent_drawing_height;
-    float sub_tile_x, sub_tile_y;
-    float child_width, child_height;
-    auto& device_ctx = g_vpr_ctx.device();
-    const auto& grid_blocks = get_graphics_blk_loc_registry_ref().grid_blocks();
+    t_draw_state* draw_state = get_draw_state_vars();
+    const auto& device_ctx = g_vpr_ctx.device();
+    const auto& grid_blocks = draw_state->get_graphics_blk_loc_registry_ref().grid_blocks();
 
     // get the bbox for this pb type
     ezgl::rectangle& pb_bbox = get_draw_coords_vars()->blk_info.at(type_descrip_index).get_pb_bbox_ref(*pb_graph_node);
@@ -286,7 +281,6 @@ draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node* pb_graph_node
 
     const float FRACTION_CHILD_MARGIN_X = 0.025;
     const float FRACTION_CHILD_MARGIN_Y = 0.04;
-    double left, bot, right, top;
 
     int capacity = device_ctx.physical_tile_types[type_descrip_index].capacity;
     // TODO: this is a hack - should be fixed for the layer_num
@@ -299,23 +293,23 @@ draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node* pb_graph_node
     }
 
     /* Draw all child-level blocks in just most of the space inside their parent block. */
-    parent_drawing_width = parent_width * (1 - FRACTION_PARENT_PADDING_X * 2);
-    parent_drawing_height = parent_height * (NORMAL_FRACTION_PARENT_HEIGHT / capacity_divisor);
+    float parent_drawing_width = parent_width * (1 - FRACTION_PARENT_PADDING_X * 2);
+    float parent_drawing_height = parent_height * (NORMAL_FRACTION_PARENT_HEIGHT / capacity_divisor);
 
     /* The left and bottom corner (inside the parent block) of the space to draw
      * child blocks.
      */
-    sub_tile_x = parent_width * FRACTION_PARENT_PADDING_X;
-    sub_tile_y = parent_height * FRACTION_PARENT_PADDING_BOTTOM;
+    float sub_tile_x = parent_width * FRACTION_PARENT_PADDING_X;
+    float sub_tile_y = parent_height * FRACTION_PARENT_PADDING_BOTTOM;
 
     /* Divide parent_drawing_width by the number of child types. */
-    child_width = parent_drawing_width / num_pb_types;
+    float child_width = parent_drawing_width / num_pb_types;
     /* Divide parent_drawing_height by the number of instances of the pb_type. */
-    child_height = parent_drawing_height / num_pb;
+    float child_height = parent_drawing_height / num_pb;
 
     /* The starting point to draw the physical block. */
-    left = child_width * type_index + sub_tile_x + FRACTION_CHILD_MARGIN_X * child_width;
-    bot = child_height * pb_index + sub_tile_y + FRACTION_CHILD_MARGIN_Y * child_height;
+    double left = child_width * type_index + sub_tile_x + FRACTION_CHILD_MARGIN_X * child_width;
+    double bot = child_height * pb_index + sub_tile_y + FRACTION_CHILD_MARGIN_Y * child_height;
 
     /* Leave some space between different pb_types. */
     child_width *= 1 - FRACTION_CHILD_MARGIN_X * 2;
@@ -323,8 +317,8 @@ draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node* pb_graph_node
     child_height *= 1 - FRACTION_CHILD_MARGIN_Y * 2;
 
     /* Endpoint for drawing the pb_type */
-    right = left + child_width;
-    top = bot + child_height;
+    double right = left + child_width;
+    double top = bot + child_height;
 
     pb_bbox = ezgl::rectangle({right, top}, {left, bot});
 
@@ -340,8 +334,7 @@ draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node* pb_graph_node
 static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezgl::rectangle& parent_bbox, const t_logical_block_type_ptr type, ezgl::renderer* g) {
     t_draw_coords* draw_coords = get_draw_coords_vars();
     t_draw_state* draw_state = get_draw_state_vars();
-
-    auto& block_locs = get_graphics_blk_loc_registry_ref().block_locs();
+    const auto& block_locs = draw_state->get_graphics_blk_loc_registry_ref().block_locs();
 
     t_selected_sub_block_info& sel_sub_info = get_selected_sub_block_info();
 
@@ -557,9 +550,8 @@ void collect_pb_atoms_recurr(const t_pb* pb, std::vector<AtomBlockId>& atoms) {
 void draw_logical_connections(ezgl::renderer* g) {
     const t_selected_sub_block_info& sel_subblk_info = get_selected_sub_block_info();
     t_draw_state* draw_state = get_draw_state_vars();
-
-    auto& atom_ctx = g_vpr_ctx.atom();
-    auto& block_locs = get_graphics_blk_loc_registry_ref().block_locs();
+    const auto& atom_ctx = g_vpr_ctx.atom();
+    const auto& block_locs = draw_state->get_graphics_blk_loc_registry_ref().block_locs();
 
     g->set_line_dash(ezgl::line_dash::none);
 
@@ -671,8 +663,8 @@ void find_pin_index_at_model_scope(const AtomPinId pin_id, const AtomBlockId blk
 #    ifndef NO_GRAPHICS
 /**
  * Draws ONE logical connection from src_pin in src_lblk to sink_pin in sink_lblk.
- * The *_abs_bbox parameters are for mild optmization, as the absolute bbox can be calculated
- * more effeciently elsewhere.
+ * The *_abs_bbox parameters are for mild optimization, as the absolute bbox can be calculated
+ * more efficiently elsewhere.
  */
 void draw_one_logical_connection(const AtomPinId src_pin, const AtomPinId sink_pin, ezgl::renderer* g) {
     ezgl::point2d src_point = atom_pin_draw_coord(src_pin);
@@ -681,7 +673,7 @@ void draw_one_logical_connection(const AtomPinId src_pin, const AtomPinId sink_p
     // draw a link connecting the pins.
     g->draw_line(src_point, sink_point);
 
-    auto& atom_ctx = g_vpr_ctx.atom();
+    const auto& atom_ctx = g_vpr_ctx.atom();
     if (atom_ctx.lookup.atom_clb(atom_ctx.nlist.pin_block(src_pin)) == atom_ctx.lookup.atom_clb(atom_ctx.nlist.pin_block(sink_pin))) {
         // if they are in the same clb, put one arrow in the center
         float center_x = (src_point.x + sink_point.x) / 2;

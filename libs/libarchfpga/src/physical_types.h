@@ -253,12 +253,23 @@ typedef enum e_power_estimation_method_ e_power_estimation_method;
 typedef enum e_power_estimation_method_ t_power_estimation_method;
 
 /* Specifies what part of the FPGA a custom switchblock should be built in (i.e. perimeter, core, everywhere) */
-enum e_sb_location {
+enum class e_sb_location {
     E_PERIMETER = 0,
     E_CORNER,
     E_FRINGE, /* perimeter minus corners */
     E_CORE,
-    E_EVERYWHERE
+    E_EVERYWHERE,
+    E_XY_SPECIFIED
+};
+
+/**
+ * @brief Describes regions that a specific switch block specifications should be applied to
+ */
+struct t_sb_loc_spec {
+    int start = -1;
+    int repeat = -1;
+    int incr = -1;
+    int end = -1;
 };
 
 /*************************************************************************************************/
@@ -1678,6 +1689,9 @@ constexpr std::array<const char*, size_t(SwitchType::NUM_SWITCH_TYPES)> SWITCH_T
  */
 constexpr const char* VPR_DELAYLESS_SWITCH_NAME = "__vpr_delayless_switch__";
 
+/* An intracluster switch automatically added to the RRG by the flat router. */
+constexpr const char* VPR_INTERNAL_SWITCH_NAME = "__vpr_intra_cluster_switch__";
+
 enum class BufferSize {
     AUTO,
     ABSOLUTE
@@ -1933,6 +1947,13 @@ struct t_switchblock_inf {
     e_sb_location location;          /* where on the FPGA this switchblock should be built (i.e. perimeter, core, everywhere) */
     e_directionality directionality; /* the directionality of this switchblock (unidir/bidir) */
 
+    int x = -1; /* The exact x-axis location that this SB is used, meaningful when type is set to E_XY_specified */
+    int y = -1; /* The exact y-axis location that this SB is used, meanignful when type is set to E_XY_specified */
+
+    /* We can also define a region to apply this SB to all locations falls into this region using regular expression in the architecture file*/
+    t_sb_loc_spec reg_x;
+    t_sb_loc_spec reg_y;
+    
     t_permutation_map permutation_map; /* map holding the permutation functions attributed to this switchblock */
 
     std::vector<t_wireconn_inf> wireconns; /* list of wire types/groups this SB will connect */
@@ -2086,6 +2107,11 @@ struct t_arch {
     std::vector<std::string> ipin_cblock_switch_name;
 
     std::vector<t_grid_def> grid_layouts; //Set of potential device layouts
+    
+    //the layout that is chosen to be used with command line options
+    //It is used to generate custom SB for a specific locations within the device
+    //If the layout is not specified in the command line options, this variable will be set to "auto"
+    std::string device_layout; 
 
     t_clock_arch_spec clock_arch; // Clock related data types
 
