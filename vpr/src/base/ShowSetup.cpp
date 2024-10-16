@@ -255,7 +255,7 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
         VTR_LOG("false\n");
     }
 
-    VTR_LOG("RouterOpts.has_choking_spot: ");
+    VTR_LOG("RouterOpts.router_opt_choke_points: ");
     if (RouterOpts.has_choke_point) {
         VTR_LOG("true\n");
     } else {

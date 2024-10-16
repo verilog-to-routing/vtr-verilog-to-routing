@@ -391,7 +391,7 @@ vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>> set_net
                                                                                                                   std::vector<std::vector<int>>>& net_terminal_groups,
                                                                                                 const vtr::vector<ParentNetId,
                                                                                                                   std::vector<int>>& net_terminal_group_num,
-                                                                                                bool has_choking_spot,
+                                                                                                bool router_opt_choke_points,
                                                                                                 bool is_flat) {
     vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>> choking_spots(net_list.nets().size());
     for (const auto& net_id : net_list.nets()) {
@@ -399,7 +399,7 @@ vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>> set_net
     }
 
     // Return if the architecture doesn't have any potential choke points
-    if (!has_choking_spot) {
+    if (!router_opt_choke_points) {
         return choking_spots;
     }
 

@@ -436,8 +436,8 @@ inline NetResultFlags route_sink(ConnectionRouter& router,
     bool sink_critical = (cost_params.criticality > HIGH_FANOUT_CRITICALITY_THRESHOLD);
     bool net_is_clock = route_ctx.is_clock_net[net_id] != 0;
 
-    bool has_choking_spot = ((int)choking_spots[target_pin].size() != 0) && router_opts.has_choke_point;
-    ConnectionParameters conn_params(net_id, target_pin, has_choking_spot, choking_spots[target_pin]);
+    bool router_opt_choke_points = ((int)choking_spots[target_pin].size() != 0) && router_opts.has_choke_point;
+    ConnectionParameters conn_params(net_id, target_pin, router_opt_choke_points, choking_spots[target_pin]);
 
     //We normally route high fanout nets by only adding spatially close-by routing to the heap (reduces run-time).
     //However, if the current sink is 'critical' from a timing perspective, we put the entire route tree back onto
