@@ -55,6 +55,8 @@ constexpr std::array<float, MAX_FANOUT_CROSSING_COUNT> cross_count = {1.0000, 1.
 
 
 
+static void alloc_and_load_for_fast_vertical_cost_update(float place_cost_exp, 
+                                                         vtr::NdOffsetMatrix<float, 4>& chanz_place_cost_fac);
 
 /**
  * @brief If the moving pin is of type type SINK, update bb_pin_sink_count_new which stores the number of sink pins on each layer of "net_id"
@@ -227,6 +229,60 @@ void NetCostHandler::alloc_and_load_chan_w_factors_for_place_cost_(float place_c
 
             chany_place_cost_fac_[high][low] = (high - low + 1.) / chany_place_cost_fac_[high][low];
             chany_place_cost_fac_[high][low] = pow((double)chany_place_cost_fac_[high][low], (double)place_cost_exp);
+        }
+    }
+    
+    alloc_and_load_for_fast_vertical_cost_update(place_cost_exp, chanz_place_cost_fac_);
+}
+
+static void alloc_and_load_for_fast_vertical_cost_update(float place_cost_exp, vtr::NdOffsetMatrix<float, 4>& chanz_place_cost_fac) {
+    const auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
+    vtr::NdMatrix<float, 2> tile_num_inter_die_conn({device_ctx.grid.width(),
+                                                     device_ctx.grid.height()}, 0);
+
+    for (const auto& src_rr_node : rr_graph.nodes()) {
+        for (const auto& rr_edge_idx : rr_graph.configurable_edges(src_rr_node)) {
+            const auto& sink_rr_node = rr_graph.edge_sink_node(src_rr_node, rr_edge_idx);
+            if (rr_graph.node_layer(src_rr_node) != rr_graph.node_layer(sink_rr_node)) {
+                int src_x = rr_graph.node_xhigh(src_rr_node);
+                int src_y = rr_graph.node_yhigh(src_rr_node);
+                VTR_ASSERT(rr_graph.node_xlow(src_rr_node) == src_x && rr_graph.node_ylow(src_rr_node) == src_y);
+
+                tile_num_inter_die_conn[src_x][src_y]++;
+            }
+        }
+
+        for (const auto& rr_edge_idx : rr_graph.non_configurable_edges(src_rr_node)) {
+            const auto& sink_rr_node = rr_graph.edge_sink_node(src_rr_node, rr_edge_idx);
+            if (rr_graph.node_layer(src_rr_node) != rr_graph.node_layer(sink_rr_node)) {
+                int src_x = rr_graph.node_xhigh(src_rr_node);
+                VTR_ASSERT(rr_graph.node_xlow(src_rr_node) == src_x && rr_graph.node_xlow(src_rr_node) == src_x);
+                int src_y = rr_graph.node_yhigh(src_rr_node);
+                VTR_ASSERT(rr_graph.node_ylow(src_rr_node) == src_y && rr_graph.node_ylow(src_rr_node) == src_y);
+                tile_num_inter_die_conn[src_x][src_y]++;
+            }
+        }
+    }
+
+    for (int x_high = 1; x_high < (int)device_ctx.grid.width(); x_high++) {
+        for (int y_high = 1; y_high < (int)device_ctx.grid.height(); y_high++) {
+                for (int x_low = 0; x_low < x_high; x_low++) {
+                    for (int y_low = 0; y_low < y_high; y_low++) {
+                        int num_inter_die_conn = 0;
+                        for (int x = x_low; x <= x_high; x++) {
+                            for (int y = y_low; y <= y_high; y++) {
+                                num_inter_die_conn += tile_num_inter_die_conn[x][y];
+                            }
+                        }
+                        int seen_num_tiles = (x_high - x_low + 1) * (y_high - y_low + 1);
+                        chanz_place_cost_fac[x_high][y_high][x_low][y_low] = seen_num_tiles / static_cast<float>(num_inter_die_conn);
+
+                        chanz_place_cost_fac[x_high][y_high][x_low][y_low] = pow(
+                            (double)chanz_place_cost_fac[x_high][y_high][x_low][y_low],
+                            (double)place_cost_exp);
+                    }
+                }
         }
     }
 }
