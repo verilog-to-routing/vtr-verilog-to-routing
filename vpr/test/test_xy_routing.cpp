@@ -46,7 +46,7 @@ TEST_CASE("test_route_flow", "[vpr_noc_xy_routing]") {
      *
      */
 
-    // Create the NoC datastructure
+    // Create the NoC data structure
     NocStorage noc_model;
 
     // store the reference to device grid with
@@ -238,7 +238,7 @@ TEST_CASE("test_route_flow when it fails in a mesh topology.", "[vpr_noc_xy_rout
      *
      */
 
-    // Create the NoC datastructure
+    // Create the NoC data structure
     NocStorage noc_model;
 
     // store the reference to device grid with
@@ -353,7 +353,7 @@ TEST_CASE("test_route_flow when it fails in a non mesh topology.", "[vpr_noc_xy_
      * 0------------3
      */
 
-    // Create the NoC datastructure
+    // Create the NoC data structure
     NocStorage noc_model;
 
     // store the reference to device grid with

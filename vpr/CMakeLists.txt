@@ -76,15 +76,27 @@ add_library(libvpr STATIC
 
 target_include_directories(libvpr PUBLIC ${LIB_INCLUDE_DIRS})
 
+
+# Find if Eigen is installed. Eigen is used within the Analytical Solver of the
+# Analytical Placement flow. If Eigen is not installed, certain solvers cannot
+# be used.
+find_package(Eigen3 3.3 NO_MODULE)
+if (TARGET Eigen3::Eigen)
+    target_link_libraries (libvpr Eigen3::Eigen)
+    target_compile_definitions(libvpr PUBLIC -DEIGEN_INSTALLED)
+    message(STATUS "Eigen3: Found")
+else ()
+    message(STATUS "Eigen3: Not Found. Some features may be disabled.")
+endif (TARGET Eigen3::Eigen)
+
 #VPR_ANALYTIC_PLACE is initialized in the root CMakeLists
-#Check Eigen dependency
+# NOTE: This is the cluster-level Analytical Placement which existed before the
+#       flat Analytical Placement flow.
 if(${VPR_ANALYTIC_PLACE})
 	message(STATUS "VPR Analytic Placement: Requested")
-	find_package(Eigen3 3.3 NO_MODULE)
 	if (TARGET Eigen3::Eigen)
 		message(STATUS "VPR Analytic Placement dependency (Eigen3): Found")
 		message(STATUS "VPR Analytic Placement: Enabled")
-		target_link_libraries (libvpr Eigen3::Eigen)
 		target_compile_definitions(libvpr PUBLIC -DENABLE_ANALYTIC_PLACE)
 	else ()
 		message(STATUS "VPR Analytic Placement dependency (Eigen3): Not Found (Download manually with sudo apt install libeigen3-dev, and rebuild)")

@@ -62,6 +62,19 @@ class BlkLocRegistry {
     void set_block_location(ClusterBlockId blk_id, const t_pl_loc& location);
 
     /**
+     * @brief Initializes the grid to empty. It also initializes the location for
+     * all blocks to unplaced.
+     */
+    void clear_all_grid_locs();
+
+    /**
+     * @brief Set chosen grid locations to EMPTY block id before each placement iteration
+     *
+     * @param unplaced_blk_types_index Block types that their grid locations must be cleared.
+     */
+    void clear_block_type_grid_locs(const std::unordered_set<int>& unplaced_blk_types_index);
+
+    /**
      * @brief Syncs the logical block pins corresponding to the input iblk with the corresponding chosen physical tile
      * @param iblk cluster block ID to sync within the assigned physical tile
      *

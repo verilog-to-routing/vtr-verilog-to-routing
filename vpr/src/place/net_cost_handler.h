@@ -10,16 +10,11 @@
 #include "timing_place.h"
 #include "move_transactions.h"
 #include "place_util.h"
+#include "vtr_ndoffsetmatrix.h"
 
 #include <functional>
 
 class PlacerState;
-
-/**
- * @brief The error tolerance due to round off for the total cost computation.
- * When we check it from scratch vs. incrementally. 0.01 means that there is a 1% error tolerance.
- */
-constexpr double ERROR_TOL = .01;
 
 /**
  * @brief The method used to calculate placement cost
@@ -39,8 +34,8 @@ class NetCostHandler {
   public:
     NetCostHandler() = delete;
     NetCostHandler(const NetCostHandler&) = delete;
-    NetCostHandler(NetCostHandler&&) = delete;
     NetCostHandler& operator=(const NetCostHandler&) = delete;
+    NetCostHandler(NetCostHandler&&) = delete;
     NetCostHandler& operator=(NetCostHandler&&) = delete;
 
     /**
@@ -121,10 +116,9 @@ class NetCostHandler {
      * Used to computed timing cost .
      * @param costs passed by reference and computed by this routine (i.e. returned by reference)
      */
-    void recompute_costs_from_scratch(const t_noc_opts& noc_opts,
-                                      const PlaceDelayModel* delay_model,
+    void recompute_costs_from_scratch(const PlaceDelayModel* delay_model,
                                       const PlacerCriticalities* criticalities,
-                                      t_placer_costs* costs);
+                                      t_placer_costs& costs);
 
   private:
     ///@brief Specifies whether the bounding box is computed using cube method or per-layer method.
@@ -193,14 +187,14 @@ class NetCostHandler {
     /**
      * @brief Matrices below are used to precompute the inverse of the average
      * number of tracks per channel between [subhigh] and [sublow].  Access
-     * them as chan?_place_cost_fac[subhigh][sublow].  They are used to
+     * them as chan?_place_cost_fac(subhigh, sublow).  They are used to
      * speed up the computation of the cost function that takes the length
      * of the net bounding box in each dimension, divided by the average
      * number of tracks in that direction; for other cost functions they
      * will never be used.
      */
-    vtr::NdMatrix<float, 2> chanx_place_cost_fac_; // [0...device_ctx.grid.width()-2]
-    vtr::NdMatrix<float, 2> chany_place_cost_fac_; // [0...device_ctx.grid.height()-2]
+    vtr::NdOffsetMatrix<float, 2> chanx_place_cost_fac_; // [-1...device_ctx.grid.width()-1]
+    vtr::NdOffsetMatrix<float, 2> chany_place_cost_fac_; // [-1...device_ctx.grid.height()-1]
 
 
   private:
@@ -243,6 +237,13 @@ class NetCostHandler {
     /**
      * @brief Allocates and loads the chanx_place_cost_fac and chany_place_cost_fac arrays with the inverse of
      * the average number of tracks per channel between [subhigh] and [sublow].
+     *
+     * @details This is only useful for the cost function that takes the length of the net bounding box in each
+     * dimension divided by the average number of tracks in that direction. For other cost functions, you don't
+     * have to bother calling this routine; when using the cost function described above, however, you must always
+     * call this routine before you do any placement cost determination. The place_cost_exp factor specifies to
+     * what power the width of the channel should be taken -- larger numbers make narrower channels more expensive.
+     *
      * @param place_cost_exp It is an exponent to which you take the average inverse channel capacity;
      * a higher value would favour wider channels more over narrower channels during placement (usually we use 1).
      */
@@ -383,7 +384,6 @@ class NetCostHandler {
      * @param old_edge_coord The current known bounding box of the net
      * @param new_num_block_on_edge The new bb calculated by this function
      * @param new_edge_coord The new bb edge calculated by this function
-     *
      */
     inline void update_bb_edge_(ClusterNetId net_id,
                                 std::vector<t_2D_bb>& bb_edge_new,

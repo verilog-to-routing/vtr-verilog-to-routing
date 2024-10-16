@@ -3,7 +3,7 @@
 
 /** 
  * @file 
- * @brief This file contains datatype definitions which are used by the NoC datastructures.
+ * @brief This file contains datatype definitions which are used by the NoC data structures.
  *  
  */
 

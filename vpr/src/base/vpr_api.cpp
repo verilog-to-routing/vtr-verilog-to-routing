@@ -86,7 +86,7 @@
 #include "arch_util.h"
 
 #include "post_routing_pb_pin_fixup.h"
-
+#include "sync_netlists_to_routing_flat.h"
 
 #include "load_flat_place.h"
 
@@ -554,7 +554,7 @@ void vpr_setup_clock_networks(t_vpr_setup& vpr_setup, const t_arch& Arch) {
  *        constraints. Additionally, the graphics state is updated
  *        to include a NoC button to display it.
  *
- * @param vpr_setup A datastructure that stores all the user provided option
+ * @param vpr_setup A data structure that stores all the user provided option
  *                  to vpr.
  * @param arch Contains the parsed information from the architecture
  *             description file.
@@ -1327,7 +1327,7 @@ static void free_routing() {
 }
 
 /**
- * @brief handles the deletion of NoC related datastructures.
+ * @brief handles the deletion of NoC related data structures.
  */
 static void free_noc() {}
 
@@ -1477,27 +1477,26 @@ bool vpr_analysis_flow(const Netlist<>& net_list,
      *   - Turn on verbose output when users require verbose output
      *     for packer (default verbosity is set to 2 for compact logs)
      */
-    if (!is_flat) {
-        if (route_status.success()) {
+    if (route_status.success()) {
+        if (is_flat) {
+            sync_netlists_to_routing_flat();
+        } else {
             sync_netlists_to_routing(net_list,
                                      g_vpr_ctx.device(),
                                      g_vpr_ctx.mutable_atom(),
-                                     g_vpr_ctx.atom().lookup,
                                      g_vpr_ctx.mutable_clustering(),
                                      g_vpr_ctx.placement(),
-                                     g_vpr_ctx.routing(),
-                                     vpr_setup.PackerOpts.pack_verbosity > 2,
-                                     is_flat);
-
-            std::string post_routing_packing_output_file_name = vpr_setup.PackerOpts.output_file + ".post_routing";
-            write_packing_results_to_xml(vpr_setup.PackerOpts.global_clocks,
-                                         Arch.architecture_id,
-                                         post_routing_packing_output_file_name.c_str());
-        } else {
-            VTR_LOG_WARN("Synchronization between packing and routing results is not applied due to illegal circuit implementation\n");
+                                     vpr_setup.PackerOpts.pack_verbosity > 2);
         }
-        VTR_LOG("\n");
+
+        std::string post_routing_packing_output_file_name = vpr_setup.PackerOpts.output_file + ".post_routing";
+        write_packing_results_to_xml(vpr_setup.PackerOpts.global_clocks,
+                                        Arch.architecture_id,
+                                        post_routing_packing_output_file_name.c_str());
+    } else {
+        VTR_LOG_WARN("Synchronization between packing and routing results is not applied due to illegal circuit implementation\n");
     }
+    VTR_LOG("\n");
 
     vpr_analysis(net_list,
                  vpr_setup,
