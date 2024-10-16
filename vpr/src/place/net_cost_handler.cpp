@@ -1395,6 +1395,8 @@ double NetCostHandler::get_net_cube_bb_cost_(ClusterNetId net_id, bool use_ts) {
 
     const t_bb& bb = use_ts ? ts_bb_coord_new_[net_id] : placer_state_.move().bb_coords[net_id];
 
+    const bool is_multi_layer = (g_vpr_ctx.device().grid.get_num_layers() > 1);
+
     double crossing = wirelength_crossing_count(cluster_ctx.clb_nlist.net_pins(net_id).size());
 
     /* Could insert a check for xmin == xmax.  In that case, assume  *
@@ -1413,6 +1415,9 @@ double NetCostHandler::get_net_cube_bb_cost_(ClusterNetId net_id, bool use_ts) {
     double ncost;
     ncost = (bb.xmax - bb.xmin + 1) * crossing * chanx_place_cost_fac_[bb.ymax][bb.ymin - 1];
     ncost += (bb.ymax - bb.ymin + 1) * crossing * chany_place_cost_fac_[bb.xmax][bb.xmin - 1];
+    if (is_multi_layer) {
+        ncost += (bb.layer_max - bb.layer_min) * crossing * chanz_place_cost_fac_[bb.xmax][bb.ymax][bb.xmin][bb.ymin];
+    }
 
     return ncost;
 }
