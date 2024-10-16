@@ -1,0 +1,61 @@
+############################################
+# Configuration file for running experiments
+##############################################
+
+# Path to directory of circuits to use
+circuits_dir=benchmarks/titan_blif/titan_new/stratix10
+
+# Path to directory of SDCs to use
+sdc_dir=benchmarks/titan_blif/titan_new/stratix10
+
+# Path to directory of architectures to use
+archs_dir=arch/titan
+
+# Add circuits to list to sweep
+
+circuit_list_add=pricing_stratix10_arch_timing.blif
+circuit_list_add=jpeg_deco_stratix10_arch_timing.blif
+circuit_list_add=ASU_LRN_stratix10_arch_timing.blif
+circuit_list_add=mem_tester_max_stratix10_arch_timing.blif
+circuit_list_add=rocket17_stratix10_arch_timing.blif
+circuit_list_add=channelizer_stratix10_arch_timing.blif
+circuit_list_add=ASU_BSC_stratix10_arch_timing.blif
+circuit_list_add=fft2d_stratix10_arch_timing.blif
+circuit_list_add=sobel_stratix10_arch_timing.blif
+circuit_list_add=ChainNN_LRN_LG_stratix10_arch_timing.blif
+circuit_list_add=nyuzi_stratix10_arch_timing.blif
+circuit_list_add=mem_tester_stratix10_arch_timing.blif
+circuit_list_add=DLA_ELT_stratix10_arch_timing.blif
+circuit_list_add=rocket31_stratix10_arch_timing.blif
+circuit_list_add=fft1d_offchip_stratix10_arch_timing.blif
+circuit_list_add=dot_product_unit_test_small_stratix10_arch_timing.blif
+circuit_list_add=ASU_ELT_stratix10_arch_timing.blif
+circuit_list_add=tdfir_stratix10_arch_timing.blif
+circuit_list_add=mandelbrot_stratix10_arch_timing.blif
+circuit_list_add=DLA_LRN_stratix10_arch_timing.blif
+circuit_list_add=dot_product_unit_test_stratix10_arch_timing.blif
+circuit_list_add=ChainNN_BSC_LG_stratix10_arch_timing.blif
+circuit_list_add=DLA_BSC_stratix10_arch_timing.blif
+circuit_list_add=neko_stratix10_arch_timing.blif
+circuit_list_add=ChainNN_ELT_LG_stratix10_arch_timing.blif
+circuit_list_add=compute_score_stratix10_arch_timing.blif
+circuit_list_add=fft1d_stratix10_arch_timing.blif
+
+# Add architectures to list to sweep
+arch_list_add=stratix10_arch.timing.xml
+
+# Parse info and how to parse
+parse_file=vpr_titan_s10.txt
+
+# How to parse QoR info
+qor_parse_file=qor_vpr_titan.txt
+#qor_parse_file=qor_large.txt
+
+# Pass requirements
+pass_requirements_file=pass_requirements_vpr_titan_s10.txt
+
+#The Titan benchmarks are run at a fixed channel width of 400 to simulate a Stratix 10-like routing architecture
+#A large number of routing iterations is set to ensure the router doesn't give up to easily on the larger benchmarks
+#To be more run-time comparable to commercial tools like Quartus, we run with higher placer effort (inner_num=2) and lower astar_fac (1.0)
+#Set a 24hr timeout so they don't run forever
+script_params=-starting_stage vpr --route_chan_width 400 --max_router_iterations 400 --router_lookahead map -timeout 86400 --initial_pres_fac 1.0 --router_profiler_astar_fac 1.5 --seed 3
