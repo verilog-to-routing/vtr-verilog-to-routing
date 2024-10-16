@@ -195,6 +195,7 @@ class NetCostHandler {
      */
     vtr::NdOffsetMatrix<float, 2> chanx_place_cost_fac_; // [-1...device_ctx.grid.width()-1]
     vtr::NdOffsetMatrix<float, 2> chany_place_cost_fac_; // [-1...device_ctx.grid.height()-1]
+    vtr::NdOffsetMatrix<float, 2> chanz_place_cost_fac_; // [-1...device_ctx.grid.get_num_layers()-1]
 
 
   private:
