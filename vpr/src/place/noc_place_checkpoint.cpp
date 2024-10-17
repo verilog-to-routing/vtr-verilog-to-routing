@@ -2,8 +2,9 @@
 #include "noc_place_checkpoint.h"
 #include "noc_place_utils.h"
 
-NoCPlacementCheckpoint::NoCPlacementCheckpoint()
-    : valid_(false)
+NoCPlacementCheckpoint::NoCPlacementCheckpoint(NocCostHandler& noc_cost_handler)
+    : noc_cost_handler_(noc_cost_handler)
+    , valid_(false)
     , cost_(std::numeric_limits<double>::infinity()) {
     const auto& noc_ctx = g_vpr_ctx.noc();
 
@@ -36,7 +37,6 @@ void NoCPlacementCheckpoint::restore_checkpoint(t_placer_costs& costs,
     const auto& noc_ctx = g_vpr_ctx.noc();
     const auto& device_ctx = g_vpr_ctx.device();
     GridBlock& grid_blocks = blk_loc_registry.mutable_grid_blocks();
-    const auto& block_locs = blk_loc_registry.block_locs();
 
     // Get all physical routers
     const auto& noc_phy_routers = noc_ctx.noc_model.get_noc_routers();
@@ -64,7 +64,8 @@ void NoCPlacementCheckpoint::restore_checkpoint(t_placer_costs& costs,
     }
 
     // Re-initialize routes and static variables that keep track of NoC-related costs
-    reinitialize_noc_routing(costs, {}, block_locs);
+    VTR_ASSERT(noc_cost_handler_.points_to_same_block_locs(blk_loc_registry.block_locs()));
+    noc_cost_handler_.reinitialize_noc_routing(costs, {});
 }
 
 bool NoCPlacementCheckpoint::is_valid() const {

@@ -30,7 +30,7 @@ TEST_CASE("test_adding_routers_to_noc_storage", "[vpr_noc]") {
     int router_grid_position_x;
     int router_grid_position_y;
 
-    // testing datastructure
+    // testing data structure
     NocStorage test_noc;
 
     // store the reference to device grid with
@@ -82,7 +82,7 @@ TEST_CASE("test_router_id_conversion", "[vpr_noc]") {
     int router_grid_position_x;
     int router_grid_position_y;
 
-    // testing datastructure
+    // testing data structure
     NocStorage test_noc;
 
     // store the reference to device grid with
@@ -129,7 +129,7 @@ TEST_CASE("test_add_link", "[vpr_noc]") {
 
     NocLinkId link_id;
 
-    // testing datastructure
+    // testing data structure
     NocStorage test_noc;
 
     // store the reference to device grid with
@@ -215,7 +215,7 @@ TEST_CASE("test_router_link_list", "[vpr_noc]") {
     NocRouterId source;
     NocRouterId sink;
 
-    // testing datastructure
+    // testing data structure
     NocStorage test_noc;
 
     // store the reference to device grid with
@@ -414,7 +414,7 @@ TEST_CASE("test_generate_router_key_from_grid_location", "[vpr_noc]") {
     int router_grid_position_x;
     int router_grid_position_y;
 
-    // testing datastructure
+    // testing data structure
     NocStorage test_noc;
 
     // store the reference to device grid with

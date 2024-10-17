@@ -163,7 +163,6 @@ static int get_longest_segment_length(std::vector<t_segment_inf>& segment_inf);
 static void fix_empty_coordinates(vtr::NdMatrix<float, 4>& delta_delays);
 static void fix_uninitialized_coordinates(vtr::NdMatrix<float, 4>& delta_delays);
 
-
 static float find_neighboring_average(vtr::NdMatrix<float, 4>& matrix,
                                       int from_layer,
                                       t_physical_tile_loc to_tile_loc,
@@ -873,7 +872,7 @@ static vtr::NdMatrix<float, 4> compute_delta_delays(
 }
 
 float delay_reduce(std::vector<float>& delays, e_reducer reducer) {
-    if (delays.size() == 0) {
+    if (delays.empty()) {
         return IMPOSSIBLE_DELTA;
     } else if (delays.size() == 1) {
         return delays[0];
@@ -921,15 +920,13 @@ static float find_neighboring_average(
     int endx = matrix.end_index(2);
     int endy = matrix.end_index(3);
 
-    int delx, dely;
-
     int x = to_tile_loc.x;
     int y = to_tile_loc.y;
     int to_layer = to_tile_loc.layer_num;
 
     for (int distance = 1; distance <= max_distance; ++distance) {
-        for (delx = x - distance; delx <= x + distance; delx++) {
-            for (dely = y - distance; dely <= y + distance; dely++) {
+        for (int delx = x - distance; delx <= x + distance; delx++) {
+            for (int dely = y - distance; dely <= y + distance; dely++) {
                 // Check distance constraint
                 if (abs(delx - x) + abs(dely - y) > distance) {
                     continue;
@@ -963,7 +960,6 @@ static void fix_empty_coordinates(vtr::NdMatrix<float, 4>& delta_delays) {
     // would return a result, so we fill in the empty holes with a small
     // neighbour average.
     constexpr int kMaxAverageDistance = 2;
-
     for (int from_layer = 0; from_layer < (int)delta_delays.dim_size(0); ++from_layer) {
         for (int to_layer = 0; to_layer < (int)delta_delays.dim_size(1); ++to_layer) {
             for (int delta_x = 0; delta_x < (int)delta_delays.dim_size(2); ++delta_x) {
@@ -998,7 +994,7 @@ static void fix_uninitialized_coordinates(vtr::NdMatrix<float, 4>& delta_delays)
 }
 
 static void fill_impossible_coordinates(vtr::NdMatrix<float, 4>& delta_delays) {
-    // Set any impossible delta's to the average of it's neighbours
+    // Set any impossible delta's to the average of its neighbours
     //
     // Impossible coordinates may occur if an IPIN cannot be reached from the
     // sampling OPIN.  This might occur if the IPIN or OPIN used for sampling
@@ -1008,9 +1004,8 @@ static void fill_impossible_coordinates(vtr::NdMatrix<float, 4>& delta_delays) {
     //
     // A max average distance of 5 is used to provide increased effort in
     // filling these gaps.  It is more important to have a poor predication,
-    // than a invalid value and causing a slack assertion.
+    // than an invalid value and causing a slack assertion.
     constexpr int kMaxAverageDistance = 5;
-
     for (int from_layer_num = 0; from_layer_num < (int)delta_delays.dim_size(0); ++from_layer_num) {
         for (int to_layer_num = 0; to_layer_num < (int)delta_delays.dim_size(1); ++to_layer_num) {
             for (int delta_x = 0; delta_x < (int)delta_delays.dim_size(2); ++delta_x) {

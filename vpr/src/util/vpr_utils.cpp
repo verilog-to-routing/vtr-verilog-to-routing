@@ -2365,7 +2365,7 @@ t_arch_switch_inf create_internal_arch_sw(float delay) {
     arch_switch_inf.set_type(SwitchType::MUX);
     std::ostringstream stream_obj;
     stream_obj << delay << std::scientific;
-    arch_switch_inf.name = ("Internal Switch/" + stream_obj.str());
+    arch_switch_inf.name = (std::string(VPR_INTERNAL_SWITCH_NAME) + "/" + stream_obj.str());
     arch_switch_inf.R = 0.;
     arch_switch_inf.Cin = 0.;
     arch_switch_inf.Cout = 0;

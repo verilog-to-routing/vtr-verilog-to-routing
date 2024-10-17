@@ -6,6 +6,8 @@
  */
 
 #include "analytical_placement_flow.h"
+#include <memory>
+#include "analytical_solver.h"
 #include "ap_netlist.h"
 #include "atom_netlist.h"
 #include "full_legalizer.h"
@@ -18,6 +20,40 @@
 #include "vpr_types.h"
 #include "vtr_assert.h"
 #include "vtr_time.h"
+
+/**
+ * @brief A helper method to log statistics on the APNetlist.
+ */
+static void print_ap_netlist_stats(const APNetlist& netlist) {
+    // Get the number of moveable and fixed blocks
+    size_t num_moveable_blocks = 0;
+    size_t num_fixed_blocks = 0;
+    for (APBlockId blk_id : netlist.blocks()) {
+        if (netlist.block_mobility(blk_id) == APBlockMobility::MOVEABLE)
+            num_moveable_blocks++;
+        else
+            num_fixed_blocks++;
+    }
+    // Get the fanout information of nets
+    size_t highest_fanout = 0;
+    float average_fanout = 0.f;
+    for (APNetId net_id : netlist.nets()) {
+        size_t net_fanout = netlist.net_pins(net_id).size();
+        if (net_fanout > highest_fanout)
+            highest_fanout = net_fanout;
+        average_fanout += static_cast<float>(net_fanout);
+    }
+    average_fanout /= static_cast<float>(netlist.nets().size());
+    // Print the statistics
+    VTR_LOG("Analytical Placement Netlist Statistics:\n");
+    VTR_LOG("\tBlocks: %zu\n", netlist.blocks().size());
+    VTR_LOG("\t\tMoveable Blocks: %zu\n", num_moveable_blocks);
+    VTR_LOG("\t\tFixed Blocks: %zu\n", num_fixed_blocks);
+    VTR_LOG("\tNets: %zu\n", netlist.nets().size());
+    VTR_LOG("\t\tAverage Fanout: %.2f\n", average_fanout);
+    VTR_LOG("\t\tHighest Fanout: %zu\n", highest_fanout);
+    VTR_LOG("\tPins: %zu\n", netlist.pins().size());
+}
 
 void run_analytical_placement_flow(t_vpr_setup& vpr_setup) {
     (void)vpr_setup;
@@ -38,22 +74,19 @@ void run_analytical_placement_flow(t_vpr_setup& vpr_setup) {
     APNetlist ap_netlist = gen_ap_netlist_from_atoms(atom_nlist,
                                                      prepacker,
                                                      constraints);
+    print_ap_netlist_stats(ap_netlist);
 
     // Run the Global Placer
-    //  For now, just put all the moveable blocks at the center of the device
-    //  grid. This will be replaced later. This is just for testing.
+    //  For now, just runs the solver.
     PartialPlacement p_placement(ap_netlist);
+    std::unique_ptr<AnalyticalSolver> solver = make_analytical_solver(e_analytical_solver::QP_HYBRID,
+                                                                      ap_netlist);
+    solver->solve(0, p_placement);
+
+    // Verify that the partial placement is valid before running the full
+    // legalizer.
     const size_t device_width = device_ctx.grid.width();
     const size_t device_height = device_ctx.grid.height();
-    double device_center_x = static_cast<double>(device_width) / 2.0;
-    double device_center_y = static_cast<double>(device_height) / 2.0;
-    for (APBlockId ap_blk_id : ap_netlist.blocks()) {
-        if (ap_netlist.block_mobility(ap_blk_id) != APBlockMobility::MOVEABLE)
-            continue;
-        // If the APBlock is moveable, put it on the center for the device.
-        p_placement.block_x_locs[ap_blk_id] = device_center_x;
-        p_placement.block_y_locs[ap_blk_id] = device_center_y;
-    }
     VTR_ASSERT(p_placement.verify(ap_netlist,
                                   device_width,
                                   device_height,

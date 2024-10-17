@@ -164,7 +164,7 @@ void verify_traffic_flow_properties(double traffic_flow_bandwidth, double max_tr
  * @param router_module_name The name of the router module in the design for
  *                           which the corresponding block id needs to be found.
  * @param cluster_ctx Global variable that contains clustering information.
- *                    Contains a datastructure to convert a module name to
+ *                    Contains a data structure to convert a module name to
  *                    a cluster block id.
  * @param single_flow_tag A xml tag that contains the traffic flow information. 
  *                        Passed in for error logging.
@@ -197,7 +197,7 @@ ClusterBlockId get_router_module_cluster_id(const std::string& router_module_nam
  * @param loc_data Contains location data about the current line in the xml
  *                 file. Passed in for error logging.
  * @param cluster_ctx Global variable that contains clustering information.
- *                    Contains a datastructure to get the logical type of a 
+ *                    Contains a data structure to get the logical type of a
  *                    router cluster block.
  * @param noc_router_tile_type The physical type of a Noc router tile in the
  *                             FPGA. Used to check if the router block is
@@ -208,7 +208,7 @@ void check_traffic_flow_router_module_type(const std::string& router_module_name
 /**
  * @brief Retrieves the physical type of a noc router tile.
  * 
- * @param device_ctx Contains the device information. Has a datastructure that
+ * @param device_ctx Contains the device information. Has a data structure that
  *                   can determine a tile type based on grid position on the 
  *                   FPGA. 
  * @param noc_ctx Contains the NoC information. Used to get the grid position
