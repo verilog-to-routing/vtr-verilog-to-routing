@@ -775,7 +775,7 @@ void ConnectionRouter<Heap>::evaluate_timing_driven_node_costs(t_heap* to,
         //cost.
         cong_cost = 0.;
     }
-    if (conn_params_->has_choking_spot_ && is_flat_ && rr_graph_->node_type(to_node) == IPIN) {
+    if (conn_params_->router_opt_choke_points_ && is_flat_ && rr_graph_->node_type(to_node) == IPIN) {
         auto find_res = conn_params_->connection_choking_spots_.find(to_node);
         if (find_res != conn_params_->connection_choking_spots_.end()) {
             cong_cost = cong_cost / pow(2, (float)find_res->second);
