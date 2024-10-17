@@ -867,14 +867,8 @@ RouteStatus vpr_route_flow(const Netlist<>& net_list,
         route_status = RouteStatus(true, -1);
     } else { //Do or load
 
-<<<<<<< HEAD
         // set the net_is_ignored flag for nets that have route_model set to ideal in route constraints
         apply_route_constraints(g_vpr_ctx.routing().constraints);
-=======
-        // apply route constraints
-        // use mutable routing context here to apply change on the constraints when binding the constraint to real net
-        apply_route_constraints(g_vpr_ctx.mutable_routing().constraints);
->>>>>>> Route constraint for local clock and reset.
 
         int chan_width = router_opts.fixed_channel_width;
 
@@ -1367,15 +1361,19 @@ bool vpr_analysis_flow(const Netlist<>& net_list,
      *     for packer (default verbosity is set to 2 for compact logs)
      */
     if (route_status.success()) {
-        if (is_flat) {
-            sync_netlists_to_routing_flat();
+        if (!analysis_opts.skip_sync_clustering_and_routing_results) {
+            if (is_flat) {
+                sync_netlists_to_routing_flat();
+            } else {
+                    sync_netlists_to_routing(net_list,
+                                             g_vpr_ctx.device(),
+                                             g_vpr_ctx.mutable_atom(),
+                                             g_vpr_ctx.mutable_clustering(),
+                                             g_vpr_ctx.placement(),
+                                             vpr_setup.PackerOpts.pack_verbosity > 2);
+            }
         } else {
-            sync_netlists_to_routing(net_list,
-                                     g_vpr_ctx.device(),
-                                     g_vpr_ctx.mutable_atom(),
-                                     g_vpr_ctx.mutable_clustering(),
-                                     g_vpr_ctx.placement(),
-                                     vpr_setup.PackerOpts.pack_verbosity > 2);
+            VTR_LOG_WARN("Sychronization between packing and routing results is not applied due to users select to skip it\n");
         }
 
         std::string post_routing_packing_output_file_name = vpr_setup.PackerOpts.output_file + ".post_routing";
