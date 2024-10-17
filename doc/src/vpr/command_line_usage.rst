@@ -200,12 +200,19 @@ General Options
 
 .. option:: --device <string>
 
-    Specifies which device layout/floorplan to use from the architecture file.
+    Specifies which device layout/floorplan to use from the architecture file.  Valid values are:
 
-    ``auto`` uses the smallest device satisfying the circuit's resource requirements.
-    Other values are assumed to be the names of device layouts defined in the :ref:`arch_grid_layout` section of the architecture file.
+    * ``auto`` VPR uses the smallest device satisfying the circuit's resource requirements, with device layout specified using the ``auto_layout`` section of the architecture file.
+    * Any string matching ``name`` attribute of a device layout defined with a ``fixed_layout`` tag in the :ref:`arch_grid_layout` section of the architecture file.
 
-    .. note:: If the architecture contains both ``<auto_layout>`` and ``<fixed_layout>`` specifications, specifying an ``auto`` device will use the ``<auto_layout>``.
+    If the value specified is neither ``auto`` nor matches the ``name`` attribute value of a ``<fixed_layout>`` tag, VPR issues an error.
+
+    In the event that no ``<auto_layout>`` tag is present in the architecture file, this option has the following behaviour:
+
+    * ``auto`` VPR uses the smallest device amongst all ``fixed_layout`` specifications into which the design can be packed.
+    * Otherwise, the value of the ``fixed_layout`` attribute ``name`` is matched as when an ``<auto_layout>`` tag is present.
+    
+   .. note:: If the only layout in the architecture file is a single device specified using ``<fixed_layout>``, it is recommended to always specify the ``--device`` option; this prevents the value ``--device auto`` from interfering with operations supported only for ``<fixed_layout>`` grids.
 
     **Default:** ``auto``
 
