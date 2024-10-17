@@ -1879,6 +1879,8 @@ The following options are used to enable server mode in VPR.
 
     **Default:** ``60555``
 
+.. seealso:: :ref:`interactive_path_analysis_client`
+
 Command-line Auto Completion
 ----------------------------
 
