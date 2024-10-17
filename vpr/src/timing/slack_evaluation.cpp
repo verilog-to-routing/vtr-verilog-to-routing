@@ -436,31 +436,26 @@ bool SetupSlackCrit::verify_pin_criticalities(const tatum::TimingGraph& timing_g
 
 bool SetupSlackCrit::verify_max_req_worst_slack(const tatum::TimingGraph& timing_graph, const tatum::SetupTimingAnalyzer& analyzer) {
     auto calc_max_req = max_req_;
-    auto calc_max_req_node = max_req_node_;
-
     auto calc_worst_slack = worst_slack_;
-    auto calc_worst_slack_node = worst_slack_node_;
 
     recompute_max_req_and_worst_slack(timing_graph, analyzer);
 
+    // NOTE: We only check if the required time and the worst slack matches, we
+    //       do not check if the max required nodes or the worst slack nodes
+    //       match. This is because the incremental timing analysis and the non-
+    //       incremental timing analysis do not break ties deterministically,
+    //       so they may get different nodes; but they should always get the same
+    //       required time and worst slack. If the incremental timing analysis
+    //       gets different nodes, this will not change the results of the
+    //       timing analysis.
     if (calc_max_req != max_req_) {
         VPR_ERROR(VPR_ERROR_TIMING,
                   "Calculated max required times does not match value calculated from scratch");
         return false;
     }
-    if (calc_max_req_node != max_req_node_) {
-        VPR_ERROR(VPR_ERROR_TIMING,
-                  "Calculated max required nodes does not match value calculated from scratch");
-        return false;
-    }
     if (calc_worst_slack != worst_slack_) {
         VPR_ERROR(VPR_ERROR_TIMING,
                   "Calculated worst slack does not match value calculated from scratch");
-        return false;
-    }
-    if (calc_worst_slack_node != worst_slack_node_) {
-        VPR_ERROR(VPR_ERROR_TIMING,
-                  "Calculated worst slack nodes does not match value calculated from scratch");
         return false;
     }
 
