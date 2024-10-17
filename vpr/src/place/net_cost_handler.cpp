@@ -31,8 +31,9 @@
 #include "placer_state.h"
 #include "move_utils.h"
 #include "place_timing_update.h"
-#include "noc_place_utils.h"
 #include "vtr_math.h"
+#include "vtr_ndmatrix.h"
+#include "vtr_ndoffsetmatrix.h"
 
 #include <array>
 
@@ -52,11 +53,6 @@ constexpr std::array<float, MAX_FANOUT_CROSSING_COUNT> cross_count = {1.0000, 1.
                                                                       2.3271, 2.3583, 2.3895, 2.4187, 2.4479, 2.4772, 2.5064, 2.5356,
                                                                       2.5610, 2.5864, 2.6117, 2.6371, 2.6625, 2.6887, 2.7148, 2.7410,
                                                                       2.7671, 2.7933};
-
-
-
-static void alloc_and_load_for_fast_vertical_cost_update(float place_cost_exp, 
-                                                         vtr::NdOffsetMatrix<float, 4>& chanz_place_cost_fac);
 
 /**
  * @brief If the moving pin is of type type SINK, update bb_pin_sink_count_new which stores the number of sink pins on each layer of "net_id"
@@ -232,29 +228,29 @@ void NetCostHandler::alloc_and_load_chan_w_factors_for_place_cost_(float place_c
         }
     }
     
-    alloc_and_load_for_fast_vertical_cost_update(place_cost_exp, chanz_place_cost_fac_);
+    if (device_ctx.grid.get_num_layers() > 1) {
+        alloc_and_load_for_fast_vertical_cost_update_(place_cost_exp);
+    }
 }
 
-static void alloc_and_load_for_fast_vertical_cost_update(float place_cost_exp, vtr::NdOffsetMatrix<float, 4>& chanz_place_cost_fac) {
+void NetCostHandler::alloc_and_load_for_fast_vertical_cost_update_(float place_cost_exp) {
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
-    vtr::NdMatrix<float, 2> tile_num_inter_die_conn({device_ctx.grid.width(),
-                                                     device_ctx.grid.height()}, 0);
     
     const int grid_height = device_ctx.grid.height();
     const int grid_width = device_ctx.grid.width();
 
 
-    chanz_place_cost_fac = vtr::NdOffsetMatrix<float, 4>({{{0, grid_width-1}, 
-                                                         {0, grid_height-1}, 
-                                                         {0, grid_width-1}, 
-                                                         {0, grid_height-1}}}
-                                                        );                                    
+    chanz_place_cost_fac_ = vtr::NdMatrix<float, 4>({grid_width, grid_height, grid_width, grid_height}, 0.);
+
+    vtr::NdMatrix<float, 2> tile_num_inter_die_conn({grid_width, grid_height}, 0.);                           
 
     for (const auto& src_rr_node : rr_graph.nodes()) {
         for (const auto& rr_edge_idx : rr_graph.configurable_edges(src_rr_node)) {
             const auto& sink_rr_node = rr_graph.edge_sink_node(src_rr_node, rr_edge_idx);
             if (rr_graph.node_layer(src_rr_node) != rr_graph.node_layer(sink_rr_node)) {
+                // We assume that the nodes driving the inter-layer connection or being driven by it
+                // are not streched across multiple tiles
                 int src_x = rr_graph.node_xhigh(src_rr_node);
                 int src_y = rr_graph.node_yhigh(src_rr_node);
                 VTR_ASSERT(rr_graph.node_xlow(src_rr_node) == src_x && rr_graph.node_ylow(src_rr_node) == src_y);
@@ -277,22 +273,22 @@ static void alloc_and_load_for_fast_vertical_cost_update(float place_cost_exp, v
 
     for (int x_high = 0; x_high < (int)device_ctx.grid.width(); x_high++) {
         for (int y_high = 0; y_high < (int)device_ctx.grid.height(); y_high++) {
-                for (int x_low = 0; x_low <= x_high; x_low++) {
-                    for (int y_low = 0; y_low <= y_high; y_low++) {
-                        int num_inter_die_conn = 0;
-                        for (int x = x_low; x <= x_high; x++) {
-                            for (int y = y_low; y <= y_high; y++) {
-                                num_inter_die_conn += tile_num_inter_die_conn[x][y];
-                            }
+            for (int x_low = 0; x_low <= x_high; x_low++) {
+                for (int y_low = 0; y_low <= y_high; y_low++) {
+                    int num_inter_die_conn = 0;
+                    for (int x = x_low; x <= x_high; x++) {
+                        for (int y = y_low; y <= y_high; y++) {
+                            num_inter_die_conn += tile_num_inter_die_conn[x][y];
                         }
-                        int seen_num_tiles = (x_high - x_low + 1) * (y_high - y_low + 1);
-                        chanz_place_cost_fac[x_high][y_high][x_low][y_low] = seen_num_tiles / static_cast<float>(num_inter_die_conn);
-
-                        chanz_place_cost_fac[x_high][y_high][x_low][y_low] = pow(
-                            (double)chanz_place_cost_fac[x_high][y_high][x_low][y_low],
-                            (double)place_cost_exp);
                     }
+                    int seen_num_tiles = (x_high - x_low + 1) * (y_high - y_low + 1);
+                    chanz_place_cost_fac_[x_high][y_high][x_low][y_low] = seen_num_tiles / static_cast<float>(num_inter_die_conn);
+
+                    chanz_place_cost_fac_[x_high][y_high][x_low][y_low] = pow(
+                        (double)chanz_place_cost_fac_[x_high][y_high][x_low][y_low],
+                        (double)place_cost_exp);
                 }
+            }
         }
     }
 }
