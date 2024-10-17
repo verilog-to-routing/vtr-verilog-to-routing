@@ -197,7 +197,9 @@ const t_pb_graph_pin* find_pb_graph_pin(const AtomNetlist& netlist, const AtomLo
 ///        pb_graph_node.
 t_pb_graph_pin* get_pb_graph_node_pin_from_pb_graph_node(t_pb_graph_node* pb_graph_node, int ipin);
 t_pb_graph_pin* get_pb_graph_node_pin_from_block_pin(ClusterBlockId iblock, int ipin);
+t_pb_graph_pin** alloc_and_load_pb_graph_pin_lookup_from_index(t_logical_block_type_ptr type);
 vtr::vector<ClusterBlockId, t_pb**> alloc_and_load_pin_id_to_pb_mapping();
+void free_pb_graph_pin_lookup_from_index(t_pb_graph_pin** pb_graph_pin_lookup_from_type);
 void free_pin_id_to_pb_mapping(vtr::vector<ClusterBlockId, t_pb**>& pin_id_to_pb_mapping);
 
 std::tuple<t_physical_tile_type_ptr, const t_sub_tile*, int, t_logical_block_type_ptr> get_cluster_blk_physical_spec(ClusterBlockId cluster_blk_id);
@@ -295,6 +297,10 @@ std::vector<int> get_cluster_block_pins(t_physical_tile_type_ptr physical_tile,
 t_arch_switch_inf create_internal_arch_sw(float delay);
 
 void add_pb_child_to_list(std::list<const t_pb*>& pb_list, const t_pb* parent_pb);
+
+// apply route constraints for route flow
+class VprConstraints;
+void apply_route_constraints(VprConstraints& constraint);
 
 /**
  * @brief Apply user-defined route constraints to set the 'net_is_ignored_' and 'net_is_global_' flags.
