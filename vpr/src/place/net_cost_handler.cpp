@@ -237,8 +237,8 @@ void NetCostHandler::alloc_and_load_for_fast_vertical_cost_update_(float place_c
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     
-    const int grid_height = device_ctx.grid.height();
-    const int grid_width = device_ctx.grid.width();
+    const size_t grid_height = device_ctx.grid.height();
+    const size_t grid_width = device_ctx.grid.width();
 
 
     chanz_place_cost_fac_ = vtr::NdMatrix<float, 4>({grid_width, grid_height, grid_width, grid_height}, 0.);
