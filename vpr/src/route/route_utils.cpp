@@ -398,13 +398,10 @@ vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>> set_net
         choking_spots[net_id].resize(net_list.net_pins(net_id).size());
     }
 
-    // Return if the architecture doesn't have any potential choke points
-    if (!router_opt_choke_points) {
+    // Return if the architecture doesn't have any potential choke points or flat router is not enabled
+    if (!router_opt_choke_points || !is_flat) {
         return choking_spots;
     }
-
-    // We only identify choke points if flat_routing is enabled.
-    VTR_ASSERT(is_flat);
 
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
