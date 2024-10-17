@@ -260,76 +260,9 @@ We can now take a look at the circuit which Parmys produced (``blink.parmys.blif
 
 .. seealso:: For more information on the BLIF file format see :ref:`blif_format`.
 
-Optimizing and Technology Mapping with ABC
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Next, we'll optimize and technology map our circuit using ABC, providing the option:
-
- * ``-c <script>``, where ``<script>`` is a set of commands telling ABC how to synthesize our circuit.
-
-We'll use the following, simple ABC commands::
-
-    read blink.parmys.blif;                               #Read the circuit synthesized by Parmys
-    if -K 6;                                            #Technology map to 6 input LUTs (6-LUTs)
-    write_hie blink.parmys.blif blink.abc_no_clock.blif   #Write new circuit to blink.abc_no_clock.blif
-
-.. note:: Usually you should use a more complicated script (such as that used by :ref:`run_vtr_flow`) to ensure ABC optitmizes your circuit well.
-
-The corresponding command to run is:
-
-.. code-block:: bash
-
-    > $VTR_ROOT/abc/abc \
-        -c 'read ~/vtr_work/quickstart/blink_manual/temp/blink.parmys.blif; if -K 6; write_hie ~/vtr_work/quickstart/blink_manual/temp/blink.parmys.blif ~/vtr_work/quickstart/blink_manual/temp/blink.abc_no_clock.blif'
-
-
-When run, ABC's output should look similar to::
-
-    ABC command line: "read blink.parmys.blif; if -K 6; write_hie blink.parmys.blif blink.abc_no_clock.blif".
-
-    Hierarchy reader converted 6 instances of blackboxes.
-    The network was strashed and balanced before FPGA mapping.
-    Hierarchy writer reintroduced 6 instances of blackboxes.
-
-If we now inspect the produced BLIF file (``blink.abc_no_clock.blif``) we see that ABC was able to significantly simplify and optimize the circuit's logic (compared to ``blink.parmys.blif``):
-
-.. literalinclude:: blink.abc_no_clock.blif
-    :linenos:
-    :emphasize-lines: 6-10,13-18,21-38
-    :caption: blink.abc_no_clock.blif
-
-ABC has kept the ``.latch`` and ``.subckt adder`` primitives, but has significantly simplified the other logic (``.names``).
-
-
-However, there is an issue with the above BLIF produced by ABC: the latches (rising edge Flip-Flops) do not have any clocks or edge sensitivity specified, which is information required by VPR.
-
-Re-inserting clocks
-^^^^^^^^^^^^^^^^^^^
-We will restore the clock information by running a script which will transfer that information from the original Parmys BLIF file (writing it to the new file ``blink.pre-vpr.blif``):
-
-.. code-block:: bash
-
-    > $VTR_ROOT/vtr_flow/scripts/restore_multiclock_latch.pl \
-        ~/vtr_work/quickstart/blink_manual/temp/blink.parmys.blif \
-        ~/vtr_work/quickstart/blink_manual/temp/blink.abc_no_clock.blif \
-        ~/vtr_work/quickstart/blink_manual/temp/blink.pre-vpr.blif
-
-If we inspect ``blink.pre-vpr.blif`` we now see that the clock (``blink^clk``) has been restored to the Flip-Flops:
-
-.. code-block:: bash
-
-    > grep 'latch' blink.pre-vpr.blif
-
-    .latch n19 blink^r_counter~0_FF re blink^clk 3
-    .latch n24 blink^r_counter~4_FF re blink^clk 3
-    .latch n29 blink^r_counter~3_FF re blink^clk 3
-    .latch n34 blink^r_counter~2_FF re blink^clk 3
-    .latch n39 blink^r_counter~1_FF re blink^clk 3
-
-
 Implementing the circuit with VPR
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Now that we have the optimized and technology mapped netlist (``blink.pre-vpr.blif``), we can invoke VPR to implement it onto the ``EArch`` FPGA architecture (in the same way we did with the ``tseng`` design earlier).
+Now that we have the optimized and technology mapped netlist (``blink.parmys.blif``), we can invoke VPR to implement it onto the ``EArch`` FPGA architecture (in the same way we did with the ``tseng`` design earlier).
 However, since our BLIF file doesn't match the design name we explicitly specify:
 
  * ``blink`` as the circuit name, and
@@ -343,7 +276,7 @@ The resulting command is:
 
     > $VTR_ROOT/vpr/vpr \
         $VTR_ROOT/vtr_flow/arch/timing/EArch.xml \
-        ~/vtr_work/quickstart/blink_manual/temp/blink.pre-vpr.blif \
+        ~/vtr_work/quickstart/blink_manual/temp/blink.parmys.blif \
         --route_chan_width 100
 
 and after VPR finishes we should see the resulting implementation files:
@@ -352,7 +285,7 @@ and after VPR finishes we should see the resulting implementation files:
 
     > ls *.net *.place *.route
 
-    blink.net  blink.place  blink.route
+    blink.parmys.net  blink.parmys.place  blink.parmys.route
 
 We can then view the implementation as usual by appending ``--analysis --disp on`` to the command:
 
@@ -360,7 +293,7 @@ We can then view the implementation as usual by appending ``--analysis --disp on
 
     > $VTR_ROOT/vpr/vpr \
         $VTR_ROOT/vtr_flow/arch/timing/EArch.xml \
-        ~/vtr_work/quickstart/blink_manual/temp/blink.pre-vpr.blif \
+        ~/vtr_work/quickstart/blink_manual/temp/blink.parmys.blif \
         --route_chan_width 100 \
         --analysis --disp on
 
@@ -460,6 +393,8 @@ which we can visualize with:
 
 Manually Running VTR with ODIN II
 ----------------------------------
+VTR includes a second synthesis tool, ODIN II. Below we explain how to run this alternative synthesis flow.
+
 Let's start by making a new directory for us to work in:
 
 .. code-block:: bash
@@ -517,8 +452,73 @@ Some interesting highlights are shown below:
 
 .. seealso:: For more information on the BLIF file format see :ref:`blif_format`.
 
+Optimizing and Technology Mapping with ABC
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-After synthesizing the netlist, you can proceed to follow the steps outlined in the section titled :ref:'Optimizing and Technology Mapping with ABC' using the generated `blink.odin.blif` file instead of `blink.parmys.blif`.
+Next, we'll optimize and technology map our circuit using ABC, providing the option:
+
+ * ``-c <script>``, where ``<script>`` is a set of commands telling ABC how to synthesize our circuit.
+
+We'll use the following, simple ABC commands::
+
+    read blink.odin.blif;                               #Read the circuit synthesized by ODIN
+    if -K 6;                                            #Technology map to 6 input LUTs (6-LUTs)
+    write_hie blink.odin.blif blink.abc_no_clock.blif   #Write new circuit to blink.abc_no_clock.blif
+
+.. note:: Usually you should use a more complicated script (such as that used by :ref:`run_vtr_flow`) to ensure ABC optitmizes your circuit well.
+
+The corresponding command to run is:
+
+.. code-block:: bash
+
+    > $VTR_ROOT/abc/abc \
+        -c 'read blink.odin.blif; if -K 6; write_hie blink.odin.blif blink.abc_no_clock.blif'
+
+When run, ABC's output should look similar to::
+
+    ABC command line: "read blink.odin.blif; if -K 6; write_hie blink.odin.blif blink.abc_no_clock.blif".
+
+    Hierarchy reader converted 6 instances of blackboxes.
+    The network was strashed and balanced before FPGA mapping.
+    Hierarchy writer reintroduced 6 instances of blackboxes.
+
+If we now inspect the produced BLIF file (``blink.abc_no_clock.blif``) we see that ABC was able to significantly simplify and optimize the circuit's logic (compared to ``blink.odin.blif``):
+
+.. literalinclude:: blink.abc_no_clock.blif
+    :linenos:
+    :emphasize-lines: 6-10,13-18,21-38
+    :caption: blink.abc_no_clock.blif
+
+ABC has kept the ``.latch`` and ``.subckt adder`` primitives, but has significantly simplified the other logic (``.names``).
+
+
+However, there is an issue with the above BLIF produced by ABC: the latches (rising edge Flip-Flops) do not have any clocks or edge sensitivity specified, which is information required by VPR.
+
+Re-inserting clocks
+^^^^^^^^^^^^^^^^^^^
+We will restore the clock information by running a script which will transfer that information from the original ODIN BLIF file (writing it to the new file ``blink.pre-vpr.blif``):
+
+.. code-block:: bash
+
+    > $VTR_ROOT/vtr_flow/scripts/restore_multiclock_latch.pl \
+        blink.odin.blif \
+        blink.abc_no_clock.blif \
+        blink.pre-vpr.blif
+
+If we inspect ``blink.pre-vpr.blif`` we now see that the clock (``blink^clk``) has been restored to the Flip-Flops:
+
+.. code-block:: bash
+
+    > grep 'latch' blink.pre-vpr.blif
+
+    .latch n19 blink^r_counter~0_FF re blink^clk 3
+    .latch n24 blink^r_counter~4_FF re blink^clk 3
+    .latch n29 blink^r_counter~3_FF re blink^clk 3
+    .latch n34 blink^r_counter~2_FF re blink^clk 3
+    .latch n39 blink^r_counter~1_FF re blink^clk 3
+
+
+After optimizing the netlist, we can proceed to follow the steps outlined in the section titled :ref:'Implementing the circuit with VPR' using the genrated `blink.pre-vpr.blif` instead of `blink.parmys.blif`.
 
 Next Steps
 ==========
