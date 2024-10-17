@@ -1482,19 +1482,19 @@ bool vpr_analysis_flow(const Netlist<>& net_list,
      *     for packer (default verbosity is set to 2 for compact logs)
      */
     if (route_status.success()) {
-        if (is_flat) {
-            sync_netlists_to_routing_flat();
-        } else {
-            if (!analysis_opts.skip_sync_clustering_and_routing_results) {
-                sync_netlists_to_routing(net_list,
-                                         g_vpr_ctx.device(),
-                                         g_vpr_ctx.mutable_atom(),
-                                         g_vpr_ctx.mutable_clustering(),
-                                         g_vpr_ctx.placement(),
-                                         vpr_setup.PackerOpts.pack_verbosity > 2);
+        if (!analysis_opts.skip_sync_clustering_and_routing_results) {
+            if (is_flat) {
+                sync_netlists_to_routing_flat();
             } else {
-                VTR_LOG_WARN("Sychronization between packing and routing results is not applied due to users select to skip it\n");
+                    sync_netlists_to_routing(net_list,
+                                             g_vpr_ctx.device(),
+                                             g_vpr_ctx.mutable_atom(),
+                                             g_vpr_ctx.mutable_clustering(),
+                                             g_vpr_ctx.placement(),
+                                             vpr_setup.PackerOpts.pack_verbosity > 2);
             }
+        } else {
+            VTR_LOG_WARN("Sychronization between packing and routing results is not applied due to users select to skip it\n");
         }
 
         std::string post_routing_packing_output_file_name = vpr_setup.PackerOpts.output_file + ".post_routing";
