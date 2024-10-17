@@ -255,11 +255,11 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
         VTR_LOG("false\n");
     }
 
-    VTR_LOG("RouterOpts.router_opt_choke_points: ");
+    VTR_LOG("RouterOpts.choke_points: ");
     if (RouterOpts.has_choke_point) {
-        VTR_LOG("true\n");
+        VTR_LOG("on\n");
     } else {
-        VTR_LOG("false\n");
+        VTR_LOG("off\n");
     }
 
     VTR_ASSERT(GLOBAL == RouterOpts.route_type || DETAILED == RouterOpts.route_type);
