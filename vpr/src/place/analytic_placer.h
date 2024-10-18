@@ -99,22 +99,6 @@ extern int DONT_SOLVE;
 // sentinel for blks not part of a placement macro
 extern int NO_MACRO;
 
-/*
- * @brief helper function to find the index of macro that contains blk
- * returns index in placementCtx.pl_macros, NO_MACRO if blk not in any macros
- */
-int imacro(ClusterBlockId blk);
-
-/*
- * @brief helper function to find the head block of the macro that contains blk
- * placement macro head is the base of the macro, where the locations of the other macro members can be
- * calculated using base.loc + member.offset.
- * Only the placement of macro head is calculated directly from AP, the position of other macro members need
- * to be calculated later using above formula.
- *
- * returns the ID of the head block
- */
-ClusterBlockId macro_head(ClusterBlockId blk);
 
 class AnalyticPlacer {
   public:

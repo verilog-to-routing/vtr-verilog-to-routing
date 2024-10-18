@@ -12,12 +12,11 @@
 #include "place_constraints.h"
 #include "move_utils.h"
 #include "region.h"
-#include "directed_moves_util.h"
 #include "noc_place_utils.h"
-#include "echo_files.h"
 
 #include <cmath>
 #include <optional>
+
 
 #ifdef VERBOSE
 void print_clb_placement(const char* fname);
@@ -64,7 +63,7 @@ static bool place_macro(int macros_max_num_tries,
  * Used for relative placement, so that the blocks that are more difficult to place can be placed first during initial placement.
  * A higher score indicates that the block is more difficult to place.
  */
-static vtr::vector<ClusterBlockId, t_block_score> assign_block_scores();
+static vtr::vector<ClusterBlockId, t_block_score> assign_block_scores(const PlaceMacros& place_macros);
 
 /**
  * @brief Tries to find y coordinate for macro head location based on macro direction
@@ -428,7 +427,7 @@ static std::vector<ClusterBlockId> find_centroid_loc(const t_pl_macro& pl_macro,
                     continue;
                 }
 
-                t_physical_tile_loc tile_loc = get_coordinate_of_pin(sink_pin_id, blk_loc_registry);
+                t_physical_tile_loc tile_loc = blk_loc_registry.get_coordinate_of_pin(sink_pin_id);
                 if (find_layer) {
                     VTR_ASSERT(tile_loc.layer_num != OPEN);
                     layer_count[tile_loc.layer_num]++;
@@ -448,7 +447,7 @@ static std::vector<ClusterBlockId> find_centroid_loc(const t_pl_macro& pl_macro,
                 continue;
             }
 
-            t_physical_tile_loc tile_loc = get_coordinate_of_pin(source_pin, blk_loc_registry);
+            t_physical_tile_loc tile_loc = blk_loc_registry.get_coordinate_of_pin(source_pin);
             if (find_layer) {
                 VTR_ASSERT(tile_loc.layer_num != OPEN);
                 layer_count[tile_loc.layer_num]++;
@@ -939,12 +938,9 @@ static bool place_macro(int macros_max_num_tries,
     return macro_placed;
 }
 
-static vtr::vector<ClusterBlockId, t_block_score> assign_block_scores() {
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_ctx = g_vpr_ctx.placement();
-    auto& floorplan_ctx = g_vpr_ctx.floorplanning();
-
-    auto& pl_macros = place_ctx.pl_macros;
+static vtr::vector<ClusterBlockId, t_block_score> assign_block_scores(const PlaceMacros& place_macros) {
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& floorplan_ctx = g_vpr_ctx.floorplanning();;
 
     t_block_score score;
 
@@ -974,7 +970,7 @@ static vtr::vector<ClusterBlockId, t_block_score> assign_block_scores() {
     }
 
     //go through placement macros and store size of macro for each block
-    for (const auto& pl_macro : pl_macros) {
+    for (const auto& pl_macro : place_macros.macros()) {
         int size = pl_macro.members.size();
         for (const auto& pl_macro_member : pl_macro.members) {
             block_scores[pl_macro_member.blk_index].macro_size = size;
@@ -990,10 +986,12 @@ static void place_all_blocks(const t_placer_opts& placer_opts,
                              enum e_pad_loc_type pad_loc_type,
                              const char* constraints_file,
                              BlkLocRegistry& blk_loc_registry) {
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_ctx = g_vpr_ctx.placement();
-    auto& device_ctx = g_vpr_ctx.device();
-    auto blocks = cluster_ctx.clb_nlist.blocks();
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& device_ctx = g_vpr_ctx.device();
+    const auto& place_macros = blk_loc_registry.place_macros();
+
+    const auto& blocks = cluster_ctx.clb_nlist.blocks();
+
     int number_of_unplaced_blks_in_curr_itr;
 
     //keep tracks of which block types can not be placed in each iteration
@@ -1062,8 +1060,7 @@ static void place_all_blocks(const t_placer_opts& placer_opts,
                 //add current block to list to ensure it will be placed sooner in the next iteration in initial placement
                 number_of_unplaced_blks_in_curr_itr++;
                 block_scores[blk_id].failed_to_place_in_prev_attempts++;
-                int imacro;
-                get_imacro_from_iblk(&imacro, blk_id, place_ctx.pl_macros);
+                int imacro = place_macros.get_imacro_from_iblk(blk_id);
                 if (imacro != -1) { //the block belongs to macro that contain a chain, we need to turn on dense placement in next iteration for that type of block
                     unplaced_blk_type_in_curr_itr.insert(blk_id_type->index);
                 }
@@ -1091,8 +1088,8 @@ bool place_one_block(const ClusterBlockId blk_id,
                      std::vector<t_grid_empty_locs_block_type>* blk_types_empty_locs_in_grid,
                      vtr::vector<ClusterBlockId, t_block_score>* block_scores,
                      BlkLocRegistry& blk_loc_registry) {
-    const std::vector<t_pl_macro>& pl_macros = g_vpr_ctx.placement().pl_macros;
     const auto& block_locs = blk_loc_registry.block_locs();
+    const auto& place_macros = blk_loc_registry.place_macros();
 
     //Check if block has already been placed
     if (is_block_placed(blk_id, block_locs)) {
@@ -1102,12 +1099,11 @@ bool place_one_block(const ClusterBlockId blk_id,
     bool placed_macro = false;
 
     //Lookup to see if the block is part of a macro
-    int imacro;
-    get_imacro_from_iblk(&imacro, blk_id, pl_macros);
+    int imacro = place_macros.get_imacro_from_iblk(blk_id);
 
     if (imacro != -1) { //If the block belongs to a macro, pass that macro to the placement routines
         VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\tBelongs to a macro %d\n", imacro);
-        const t_pl_macro& pl_macro = pl_macros[imacro];
+        const t_pl_macro& pl_macro = place_macros[imacro];
         placed_macro = place_macro(MAX_NUM_TRIES_TO_PLACE_MACROS_RANDOMLY, pl_macro, pad_loc_type, blk_types_empty_locs_in_grid, *block_scores, blk_loc_registry);
     } else {
         //If it does not belong to a macro, create a macro with the one block and then pass to the placement routines
@@ -1134,7 +1130,6 @@ static void alloc_and_load_movable_blocks(const vtr::vector_map<ClusterBlockId, 
     size_t n_logical_blocks = device_ctx.logical_block_types.size();
     place_ctx.movable_blocks_per_type.resize(n_logical_blocks);
 
-
     // iterate over all clustered blocks and store block ids of movable ones
     for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks()) {
         const auto& loc = block_locs[blk_id];
@@ -1154,6 +1149,7 @@ void initial_placement(const t_placer_opts& placer_opts,
                        std::optional<NocCostHandler>& noc_cost_handler) {
     vtr::ScopedStartFinishTimer timer("Initial Placement");
     auto& block_locs = blk_loc_registry.mutable_block_locs();
+    const auto& place_macros = blk_loc_registry.place_macros();
 
     /* Initialize the grid blocks to empty.
      * Initialize all the blocks to unplaced.
@@ -1163,7 +1159,7 @@ void initial_placement(const t_placer_opts& placer_opts,
     /* Go through cluster blocks to calculate the tightest placement
      * floorplan constraint for each constrained block
      */
-    propagate_place_constraints();
+    propagate_place_constraints(place_macros);
 
     /*Mark the blocks that have already been locked to one spot via floorplan constraints
      * as fixed, so they do not get moved during initial placement or later during the simulated annealing stage of placement*/
@@ -1172,13 +1168,10 @@ void initial_placement(const t_placer_opts& placer_opts,
     // Compute and store compressed floorplanning constraints
     alloc_and_load_compressed_cluster_constraints();
 
-
     // read the constraint file and place fixed blocks
     if (strlen(constraints_file) != 0) {
         read_constraints(constraints_file, blk_loc_registry);
     }
-
-
 
     if(!placer_opts.read_initial_place_file.empty()) {
         const auto& grid = g_vpr_ctx.device().grid;
@@ -1187,11 +1180,12 @@ void initial_placement(const t_placer_opts& placer_opts,
         if (noc_opts.noc) {
             // NoC routers are placed before other blocks
             initial_noc_placement(noc_opts, placer_opts, blk_loc_registry, noc_cost_handler.value());
-            propagate_place_constraints();
+            propagate_place_constraints(place_macros);
+
         }
 
         //Assign scores to blocks and placement macros according to how difficult they are to place
-        vtr::vector<ClusterBlockId, t_block_score> block_scores = assign_block_scores();
+        vtr::vector<ClusterBlockId, t_block_score> block_scores = assign_block_scores(place_macros);
 
         //Place all blocks
         place_all_blocks(placer_opts, block_scores, placer_opts.pad_loc_type, constraints_file, blk_loc_registry);
@@ -1201,11 +1195,4 @@ void initial_placement(const t_placer_opts& placer_opts,
 
     // ensure all blocks are placed and that NoC routing has no cycles
     check_initial_placement_legality(block_locs);
-
-    //#ifdef VERBOSE
-    //    VTR_LOG("At end of initial_placement.\n");
-    //    if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_INITIAL_CLB_PLACEMENT)) {
-    //        print_clb_placement(getEchoFileName(E_ECHO_INITIAL_CLB_PLACEMENT));
-    //    }
-    //#endif
 }

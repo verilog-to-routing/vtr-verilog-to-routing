@@ -309,11 +309,12 @@ class t_placer_statistics {
  *
  * Forward direction - block to grid: place_ctx.block_locs.
  * Reverse direction - grid to block: place_ctx.grid_blocks.
+ * Allocates and load placement macros.
  *
  * Initialize both of them to empty states.
  */
-void init_placement_context(vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs,
-                            GridBlock& grid_blocks);
+void init_placement_context(BlkLocRegistry& blk_loc_registry,
+                            const std::vector<t_direct_inf>& directs);
 
 /**
  * @brief Get the initial limit for inner loop block move attempt limit.

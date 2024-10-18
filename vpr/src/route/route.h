@@ -27,7 +27,6 @@ bool route(const Netlist<>& net_list,
            std::shared_ptr<SetupHoldTimingInfo> timing_info,
            std::shared_ptr<RoutingDelayCalculator> delay_calc,
            t_chan_width_dist chan_width_dist,
-           t_direct_inf* directs,
-           int num_directs,
+           const std::vector<t_direct_inf>& directs,
            ScreenUpdatePriority first_iteration_priority,
            bool is_flat);
