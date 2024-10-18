@@ -324,6 +324,44 @@ class RouteTreeNode {
 class TracebackCompat;
 
 /**
+ * @brief Each RTExploredNode element stores the node states for the connection router and represents a partial route.
+ *
+ * @note Only `index`, `prev_edge`, and `rcv_path_backward_delay` fields are used as the return value outside the connection router.
+ */
+class RTExploredNode {
+  public:
+    /* Used inside the connection router */
+
+    ///@brief The cost used to sort heap. For the timing-driven router this is the backward_path_cost
+    /// plus the expected cost to the target.
+    float total_cost = std::numeric_limits<float>::infinity();
+    ///@brief The "known" cost of the path up to and including this node.
+    float backward_path_cost = std::numeric_limits<float>::infinity();
+    ///@brief Stores the upstream resistance to ground from this node in the path search (connection
+    /// routing), including the resistance of the node itself (device_ctx.rr_nodes[index].R).
+    float R_upstream = std::numeric_limits<float>::infinity();
+    ///@brief Structure to handle extra RCV structures. Managed by PathManager class.
+    t_heap_path* path_data = nullptr;
+
+    /* Used outside the connection router as the return values (`index` and `prev_edge` are also used inside the router). */
+
+    ///@brief The RR node index associated with the costs/R_upstream values. Outside the
+    /// connection router, this field is mainly used in `RouteTree::update_from_heap` and
+    /// `RouteTree::add_subtree_from_heap`. Inside the connection router, this is used as
+    /// part of the node info passed as a parameter of some member functions.
+    RRNodeId index = RRNodeId::INVALID();
+    ///@brief The edge from the previous node used to reach the current. Same usage as the
+    /// `index` field described above.
+    RREdgeId prev_edge = RREdgeId::INVALID();
+    ///@brief The delay of the partial path plus the path from route tree to source.
+    /// Needed by RCV. Set to infinity if RCV is disabled. This field is used as part
+    /// of the return value of the route routine, derived from the `path_data` pointer
+    /// (but not using `path_data` for returning to avoid issues with dynamic memory
+    /// management).
+    float rcv_path_backward_delay = std::numeric_limits<float>::infinity();
+};
+
+/**
  * @brief Top level route tree used in timing analysis and keeping routing state.
  *
  * Contains the root node and a lookup from RRNodeIds to RouteTreeNode&s in the tree. */
@@ -357,7 +395,7 @@ class RouteTree {
      * RouteTreeNode of the SINK it adds to the routing.
      * Locking operation: only one thread can update_from_heap() a RouteTree at a time. */
     std::tuple<vtr::optional<const RouteTreeNode&>, vtr::optional<const RouteTreeNode&>>
-    update_from_heap(t_heap* hptr, int target_net_pin_index, SpatialRouteTreeLookup* spatial_rt_lookup, bool is_flat);
+    update_from_heap(RTExploredNode* hptr, int target_net_pin_index, SpatialRouteTreeLookup* spatial_rt_lookup, bool is_flat);
 
     /** Reload timing values (R_upstream, C_downstream, Tdel).
      * Can take a RouteTreeNode& to do an incremental update.
@@ -491,7 +529,7 @@ class RouteTree {
 
   private:
     std::tuple<vtr::optional<RouteTreeNode&>, vtr::optional<RouteTreeNode&>>
-    add_subtree_from_heap(t_heap* hptr, int target_net_pin_index, bool is_flat);
+    add_subtree_from_heap(RTExploredNode* hptr, int target_net_pin_index, bool is_flat);
 
     void add_non_configurable_nodes(RouteTreeNode* rt_node,
                                     bool reached_by_non_configurable_edge,

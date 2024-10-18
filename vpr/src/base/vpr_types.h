@@ -1607,7 +1607,10 @@ constexpr bool is_src_sink(e_rr_type type) { return (type == SOURCE || type == S
  *                     is being used.
  *   @param backward_path_cost  Total cost of the path up to and including this
  *                     node.
- *   @param occ        The current occupancy of the associated rr node
+ *   @param R_upstream Upstream resistance to ground from this node in the current
+ *                     path search (connection routing), including the resistance
+ *                     of the node itself (device_ctx.rr_nodes[index].R).
+ *   @param occ        The current occupancy of the associated rr node.
  */
 struct t_rr_node_route_inf {
     RREdgeId prev_edge;
@@ -1615,6 +1618,7 @@ struct t_rr_node_route_inf {
     float acc_cost;
     float path_cost;
     float backward_path_cost;
+    float R_upstream;
 
   public: //Accessors
     short occ() const { return occ_; }
