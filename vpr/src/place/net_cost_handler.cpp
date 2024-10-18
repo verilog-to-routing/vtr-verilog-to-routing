@@ -271,8 +271,21 @@ void NetCostHandler::alloc_and_load_for_fast_vertical_cost_update_(float place_c
         }
     }
 
-    for (int x_high = 0; x_high < (int)device_ctx.grid.width(); x_high++) {
-        for (int y_high = 0; y_high < (int)device_ctx.grid.height(); y_high++) {
+    vtr::NdMatrix<float, 2> acc_tile_num_inter_die_conn({grid_width, grid_height}, 0.); 
+    acc_tile_num_inter_die_conn[0][0] = tile_num_inter_die_conn[0][0];
+    // Initialize the first row and column
+    for (size_t x = 1; x < device_ctx.grid.width(); x++) {
+        acc_tile_num_inter_die_conn[x][0] = acc_tile_num_inter_die_conn[x-1][0] + \
+                                            tile_num_inter_die_conn[x][0];
+    }
+
+    for (size_t y = 1; y < device_ctx.grid.height(); y++) {
+        acc_tile_num_inter_die_conn[0][y] = acc_tile_num_inter_die_conn[0][y-1] + \
+                                            tile_num_inter_die_conn[0][y];
+    }
+
+    for (size_t x_high = 0; x_high < device_ctx.grid.width(); x_high++) {
+        for (size_t y_high = 0; y_high < device_ctx.grid.height(); y_high++) {
             for (int x_low = 0; x_low <= x_high; x_low++) {
                 for (int y_low = 0; y_low <= y_high; y_low++) {
                     int num_inter_die_conn = 0;
