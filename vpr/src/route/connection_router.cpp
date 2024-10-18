@@ -159,7 +159,9 @@ std::tuple<bool, bool, RTExploredNode> ConnectionRouter<Heap>::timing_driven_rou
                                                                          sink_node,
                                                                          cost_params,
                                                                          net_bounding_box);
+    }
 
+    if (std::isinf(rr_node_route_inf_[sink_node].path_cost)) {
         VTR_LOG("%s\n", describe_unrouteable_connection(source_node, sink_node, is_flat_).c_str());
 
         heap_.empty_heap();
