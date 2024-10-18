@@ -1339,7 +1339,7 @@ struct t_router_opts {
     bool generate_rr_node_overuse_report;
 
     bool flat_routing;
-    bool has_choking_spot;
+    bool has_choke_point;
 
     int custom_3d_sb_fanin_fanout = 1;
 

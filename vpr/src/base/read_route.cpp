@@ -107,7 +107,7 @@ bool read_route(const char* route_file, const t_router_opts& router_opts, bool v
     const Netlist<>& router_net_list = (flat_router) ? (const Netlist<>&)g_vpr_ctx.atom().nlist : (const Netlist<>&)g_vpr_ctx.clustering().clb_nlist;
     init_route_structs(router_net_list,
                        router_opts.bb_factor,
-                       router_opts.has_choking_spot,
+                       router_opts.has_choke_point,
                        flat_router);
 
     /*Check dimensions*/
