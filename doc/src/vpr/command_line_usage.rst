@@ -1396,7 +1396,7 @@ The following options are only valid when the router is in timing-driven mode (t
 
     **Default:** ``safe``
 
-.. option:: --routing_budgets_algorithm { disable | minimax | scale_delay }
+.. option:: --routing_budgets_algorithm { disable | minimax | yoyo | scale_delay }
 
     .. warning:: Experimental
 
@@ -1404,7 +1404,9 @@ The following options are only valid when the router is in timing-driven mode (t
 
     ``disable`` is used to disable the budget feature. This uses the default VPR and ignores hold time constraints.
 
-    ``minimax`` sets the minimum and maximum budgets by distributing the long path and short path slacks depending on the the current delay values. This uses the routing cost valleys and Minimax-PERT algorithm :cite:`minimax_pert,RCV_algorithm`.
+    ``minimax`` sets the minimum and maximum budgets by distributing the long path and short path slacks depending on the the current delay values. This uses the Minimax-PERT algorithm :cite:`minimax_pert`.
+
+    ``yoyo`` allocates budgets using minimax algorithm (as above), and enables hold slack resolution in the router using the Routing Cost Valleys (RCV) algorithm :cite:`RCV_algorithm`.
 
     ``scale_delay`` has the minimum budgets set to 0 and the maximum budgets is set to the delay of a net scaled by the pin criticality (net delay/pin criticality).
 

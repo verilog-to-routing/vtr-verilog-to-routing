@@ -20,7 +20,6 @@
 #include <ctime>
 #include <sstream>
 #include <string>
-#include <unordered_set>
 
 #include "atom_netlist.h"
 #include "atom_netlist_utils.h"
@@ -46,7 +45,6 @@
 #include "route_common.h"
 #include "route_tree.h"
 #include "read_route.h"
-#include "four_ary_heap.h"
 
 #include "old_traceback.h"
 

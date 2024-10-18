@@ -67,7 +67,7 @@ static float do_one_route(RRNodeId source_node,
 
     // Find the cheapest route if possible.
     bool found_path;
-    t_heap cheapest;
+    RTExploredNode cheapest;
     ConnectionParameters conn_params(ParentNetId::INVALID(),
                                      -1,
                                      false,
