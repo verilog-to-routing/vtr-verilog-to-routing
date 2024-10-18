@@ -12,4 +12,5 @@
 %include "common/vpr.common.txt"
 %include "timing/vpr.pack.txt"
 %include "timing/vpr.place.txt"
+%include "timing/vpr.ap.txt"
 %include "timing/vpr.route_fixed_chan_width.txt"
