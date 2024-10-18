@@ -7,6 +7,7 @@
 #include "net_cost_handler.h"
 
 #include <optional>
+#include <tuple>
 
 class PlacerState;
 class t_placer_costs;
@@ -114,8 +115,7 @@ class t_annealing_state {
      */
     bool outer_loop_update(float success_rate,
                            const t_placer_costs& costs,
-                           const t_placer_opts& placer_opts,
-                           const t_annealing_sched& annealing_sched);
+                           const t_placer_opts& placer_opts);
 
   private: //Mutator
     /**
@@ -170,35 +170,42 @@ class PlacementAnnealer {
                       NetPinTimingInvalidator* pin_timing_invalidator,
                       int move_lim);
 
-    void placement_inner_loop(const t_annealing_state* state,
-                              const t_placer_opts& placer_opts,
-                              const t_noc_opts& noc_opts,
-                              int inner_recompute_limit,
-                              t_placer_statistics* stats,
-                              t_placer_costs* costs,
-                              int* moves_since_cost_recompute,
-                              NetPinTimingInvalidator* pin_timing_invalidator,
-                              const PlaceDelayModel* delay_model,
-                              PlacerCriticalities* criticalities,
-                              PlacerSetupSlacks* setup_slacks,
-                              MoveGenerator& move_generator,
-                              ManualMoveGenerator& manual_move_generator,
-                              t_pl_blocks_to_be_moved& blocks_affected,
-                              SetupTimingInfo* timing_info,
-                              const t_place_algorithm& place_algorithm,
-                              MoveTypeStat& move_type_stat,
-                              float timing_bb_factor,
-                              t_swap_stats& swap_stats,
-                              PlacerState& placer_state,
-                              NetCostHandler& net_cost_handler,
-                              std::optional<NocCostHandler>& noc_cost_handler);
+    /* Function which contains the inner loop of the simulated annealing */
+    void placement_inner_loop(MoveGenerator& move_generator,
+                              float timing_bb_factor);
 
     void outer_loop_update_timing_info(int num_connections);
 
+    bool outer_loop_update_state();
+
+    /**
+     * @brief Pick some block and moves it to another spot.
+     *
+     * If the new location is empty, directly move the block. If the new location
+     * is occupied, switch the blocks. Due to the different sizes of the blocks,
+     * this block switching may occur for multiple times. It might also cause the
+     * current swap attempt to abort due to inability to find suitable locations
+     * for moved blocks.
+     *
+     * The move generator will record all the switched blocks in the variable
+     * `blocks_affected`. Afterwards, the move will be assessed by the chosen
+     * cost formulation. Currently, there are three ways to assess move cost,
+     * which are stored in the enum type `t_place_algorithm`.
+     *
+     * @return Whether the block swap is accepted, rejected or aborted.
+     */
     e_move_result try_swap(MoveGenerator& move_generator,
                            const t_place_algorithm& place_algorithm,
                            float timing_bb_factor,
                            bool manual_move_enabled);
+
+    int get_total_iteration() const;
+
+    const t_annealing_state& get_annealing_state() const;
+
+    std::tuple<const t_swap_stats&, const MoveTypeStat&, const t_placer_statistics&> get_stats() const;
+
+    void start_quench();
 
   public:
     const t_placer_opts& placer_opts_;
@@ -224,10 +231,24 @@ class PlacementAnnealer {
     /// Swap statistics keep record of the number accepted/rejected/aborted swaps.
     t_swap_stats swap_stats_;
     MoveTypeStat move_type_stats_;
+    t_placer_statistics placer_stats_;
 
     t_pl_blocks_to_be_moved blocks_affected_;
 
+  private:
+
+    /**
+     * @brief The maximum number of swap attempts before invoking the
+     * once-in-a-while placement legality check as well as floating point
+     * variables round-offs check.
+     */
+    static constexpr int MAX_MOVES_BEFORE_RECOMPUTE = 500000;
+
+    int inner_recompute_limit_;
+    int moves_since_cost_recompute_;
+    int tot_iter_;
 
   private:
+    ///@brief Find the starting temperature for the annealing loop.
     float estimate_starting_temperature();
 };

@@ -37,7 +37,7 @@ struct MoveTypeStat {
     /**
      * @brief Prints placement perturbation distribution by block and move type.
      */
-    void print_placement_move_types_stats();
+    void print_placement_move_types_stats() const;
 };
 
 /**

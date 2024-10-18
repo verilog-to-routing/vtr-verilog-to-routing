@@ -115,6 +115,18 @@ class t_placer_costs {
     void update_norm_factors();
 
     /**
+     * @brief Compute the total normalized cost for a given placement. This
+     * computation will vary depending on the placement modes.
+     *
+     * @param costs The current placement cost components and their normalization
+     * factors
+     * @param placer_opts Determines the placement mode
+     * @param noc_opts Determines if placement includes the NoC
+     * @return double The computed total cost of the current placement
+     */
+    double get_total_cost(const t_placer_opts& placer_opts, const t_noc_opts& noc_opts);
+
+    /**
      * @brief Accumulates NoC cost difference terms
      *
      * @param noc_delta_cost Cost difference for NoC-related costs terms

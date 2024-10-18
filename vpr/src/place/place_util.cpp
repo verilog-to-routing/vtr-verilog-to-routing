@@ -8,6 +8,7 @@
 #include "globals.h"
 #include "draw_global.h"
 #include "place_constraints.h"
+#include "noc_place_utils.h"
 
 /**
  * @brief Initialize `grid_blocks`, the inverse structure of `block_locs`.
@@ -63,6 +64,25 @@ void t_placer_costs::update_norm_factors() {
         VTR_ASSERT_SAFE(place_algorithm == BOUNDING_BOX_PLACE);
         bb_cost_norm = 1 / bb_cost; //Updating the normalization factor in bounding box mode since the cost in this mode is determined after normalizing the wirelength cost
     }
+}
+
+double t_placer_costs::get_total_cost(const t_placer_opts& placer_opts, const t_noc_opts& noc_opts) {
+    double total_cost = 0.0;
+
+    if (placer_opts.place_algorithm == BOUNDING_BOX_PLACE) {
+        // in bounding box mode we only care about wirelength
+        total_cost = bb_cost * bb_cost_norm;
+    } else if (placer_opts.place_algorithm.is_timing_driven()) {
+        // in timing mode we include both wirelength and timing costs
+        total_cost = (1 - placer_opts.timing_tradeoff) * (bb_cost * bb_cost_norm) + (placer_opts.timing_tradeoff) * (timing_cost * timing_cost_norm);
+    }
+
+    if (noc_opts.noc) {
+        // in noc mode we include noc aggregate bandwidth, noc latency, and noc congestion
+        total_cost += calculate_noc_cost(noc_cost_terms, noc_cost_norm_factors, noc_opts);
+    }
+
+    return total_cost;
 }
 
 t_placer_costs& t_placer_costs::operator+=(const NocCostTerms& noc_delta_cost) {

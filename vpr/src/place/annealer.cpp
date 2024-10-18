@@ -14,6 +14,7 @@
 #include "noc_place_utils.h"
 #include "NetPinTimingInvalidator.h"
 #include "place_timing_update.h"
+#include "read_place.h"
 
 #ifdef VTR_ENABLE_DEBUG_LOGGIING
 #    define LOG_MOVE_STATS_HEADER()                               \
@@ -260,35 +261,6 @@ static void revert_td_cost(const t_pl_blocks_to_be_moved& blocks_affected,
 }
 
 /**
- * @brief Compute the total normalized cost for a given placement. This
- * computation will vary depending on the placement modes.
- *
- * @param costs The current placement cost components and their normalization
- * factors
- * @param placer_opts Determines the placement mode
- * @param noc_opts Determines if placement includes the NoC
- * @return double The computed total cost of the current placement
- */
-static double get_total_cost(t_placer_costs* costs, const t_placer_opts& placer_opts, const t_noc_opts& noc_opts) {
-    double total_cost = 0.0;
-
-    if (placer_opts.place_algorithm == BOUNDING_BOX_PLACE) {
-        // in bounding box mode we only care about wirelength
-        total_cost = costs->bb_cost * costs->bb_cost_norm;
-    } else if (placer_opts.place_algorithm.is_timing_driven()) {
-        // in timing mode we include both wirelength and timing costs
-        total_cost = (1 - placer_opts.timing_tradeoff) * (costs->bb_cost * costs->bb_cost_norm) + (placer_opts.timing_tradeoff) * (costs->timing_cost * costs->timing_cost_norm);
-    }
-
-    if (noc_opts.noc) {
-        // in noc mode we include noc aggregate bandwidth and noc latency
-        total_cost += calculate_noc_cost(costs->noc_cost_terms, costs->noc_cost_norm_factors, noc_opts);
-    }
-
-    return total_cost;
-}
-
-/**
  * @brief Updates all the cost normalization factors during the outer
  * loop iteration of the placement. At each temperature change, these
  * values are updated so that we can balance the tradeoff between the
@@ -314,7 +286,7 @@ static void update_placement_cost_normalization_factors(t_placer_costs* costs,
     }
 
     // update the current total placement cost
-    costs->cost = get_total_cost(costs, placer_opts, noc_opts);
+    costs->cost = costs->get_total_cost(placer_opts, noc_opts);
 }
 
 ///@brief Constructor: Initialize all annealing state variables and macros.
@@ -348,60 +320,60 @@ t_annealing_state::t_annealing_state(const t_annealing_sched& annealing_sched,
 
 bool t_annealing_state::outer_loop_update(float success_rate,
                                           const t_placer_costs& costs,
-                                          const t_placer_opts& placer_opts,
-                                          const t_annealing_sched& annealing_sched) {
+                                          const t_placer_opts& placer_opts) {
 #ifndef NO_GRAPHICS
     t_draw_state* draw_state = get_draw_state_vars();
     if (!draw_state->list_of_breakpoints.empty()) {
-        /* Update temperature in the current information variable. */
+        // Update temperature in the current information variable.
         get_bp_state_globals()->get_glob_breakpoint_state()->temp_count++;
     }
 #endif
 
-    if (annealing_sched.type == e_sched_type::USER_SCHED) {
-        /* Update t with user specified alpha. */
-        t *= annealing_sched.alpha_t;
+    if (placer_opts.anneal_sched.type == e_sched_type::USER_SCHED) {
+        // Update t with user specified alpha.
+        t *= placer_opts.anneal_sched.alpha_t;
 
-        /* Check if the exit criterion is met. */
-        bool exit_anneal = t >= annealing_sched.exit_t;
+        // Check if the exit criterion is met.
+        bool exit_anneal = t >= placer_opts.anneal_sched.exit_t;
 
         return exit_anneal;
     }
 
-    /* Automatically determine exit temperature. */
+    // Automatically determine exit temperature.
     auto& cluster_ctx = g_vpr_ctx.clustering();
     float t_exit = 0.005 * costs.cost / cluster_ctx.clb_nlist.nets().size();
 
-    if (annealing_sched.type == e_sched_type::DUSTY_SCHED) {
-        /* May get nan if there are no nets */
+    if (placer_opts.anneal_sched.type == e_sched_type::DUSTY_SCHED) {
+        // May get nan if there are no nets
         bool restart_temp = t < t_exit || std::isnan(t_exit);
 
         /* If the success rate or the temperature is *
          * too low, reset the temperature and alpha. */
-        if (success_rate < annealing_sched.success_min || restart_temp) {
-            /* Only exit anneal when alpha gets too large. */
-            if (alpha > annealing_sched.alpha_max) {
+        if (success_rate < placer_opts.anneal_sched.success_min || restart_temp) {
+            // Only exit anneal when alpha gets too large.
+            if (alpha > placer_opts.anneal_sched.alpha_max) {
                 return false;
             }
-            /* Take a half step from the restart temperature. */
+
+            // Take a half step from the restart temperature.
             t = restart_t / sqrt(alpha);
-            /* Update alpha. */
-            alpha = 1.0 - ((1.0 - alpha) * annealing_sched.alpha_decay);
+            // Update alpha.
+            alpha = 1.0 - ((1.0 - alpha) * placer_opts.anneal_sched.alpha_decay);
         } else {
             /* If the success rate is promising, next time   *
              * reset t to the current annealing temperature. */
-            if (success_rate > annealing_sched.success_target) {
+            if (success_rate > placer_opts.anneal_sched.success_target) {
                 restart_t = t;
             }
-            /* Update t. */
+            // Update t.
             t *= alpha;
         }
 
-        /* Update move lim. */
-        update_move_lim(annealing_sched.success_target, success_rate);
+        // Update move lim.
+        update_move_lim(placer_opts.anneal_sched.success_target, success_rate);
     } else {
-        VTR_ASSERT_SAFE(annealing_sched.type == e_sched_type::AUTO_SCHED);
-        /* Automatically adjust alpha according to success rate. */
+        VTR_ASSERT_SAFE(placer_opts.anneal_sched.type == e_sched_type::AUTO_SCHED);
+        // Automatically adjust alpha according to success rate.
         if (success_rate > 0.96) {
             alpha = 0.5;
         } else if (success_rate > 0.8) {
@@ -411,23 +383,23 @@ bool t_annealing_state::outer_loop_update(float success_rate,
         } else {
             alpha = 0.8;
         }
-        /* Update temp. */
+        // Update temp.
         t *= alpha;
-        /* Must be duplicated to retain previous behavior. */
+        // Must be duplicated to retain previous behavior.
         if (t < t_exit || std::isnan(t_exit)) {
             return false;
         }
     }
 
-    /* Update the range limiter. */
+    // Update the range limiter.
     update_rlim(success_rate);
 
-    /* If using timing driven algorithm, update the crit_exponent. */
+    // If using timing driven algorithm, update the crit_exponent.
     if (placer_opts.place_algorithm.is_timing_driven()) {
         update_crit_exponent(placer_opts);
     }
 
-    /* Continues the annealing. */
+    // Continues the annealing.
     return true;
 }
 
@@ -496,13 +468,15 @@ PlacementAnnealer::PlacementAnnealer(const t_placer_opts& placer_opts,
 
     int first_move_lim = get_initial_move_lim(placer_opts, placer_opts_.anneal_sched);
 
-    int inner_recompute_limit;
+
     if (placer_opts.inner_loop_recompute_divider != 0) {
-        inner_recompute_limit = static_cast<int>(0.5 + (float)first_move_lim / (float)placer_opts.inner_loop_recompute_divider);
+        inner_recompute_limit_ = static_cast<int>(0.5 + (float)first_move_lim / (float)placer_opts.inner_loop_recompute_divider);
     } else {
         // don't do an inner recompute
-        inner_recompute_limit = first_move_lim + 1;
+        inner_recompute_limit_ = first_move_lim + 1;
     }
+    moves_since_cost_recompute_ = 0;
+    tot_iter_ = 0;
 
     /* calculate the number of moves in the quench that we should recompute timing after based on the value of *
      * the commandline option quench_recompute_divider                                                         */
@@ -510,7 +484,7 @@ PlacementAnnealer::PlacementAnnealer(const t_placer_opts& placer_opts,
     if (placer_opts.quench_recompute_divider != 0) {
         quench_recompute_limit = static_cast<int>(0.5 + (float)move_lim / (float)placer_opts.quench_recompute_divider);
     } else {
-        /*don't do an quench recompute */
+        // don't do an quench recompute
         quench_recompute_limit = first_move_lim + 1;
     }
 
@@ -609,23 +583,6 @@ float PlacementAnnealer::estimate_starting_temperature() {
     return init_temp;
 }
 
-
-/**
- * @brief Pick some block and moves it to another spot.
- *
- * If the new location is empty, directly move the block. If the new location
- * is occupied, switch the blocks. Due to the different sizes of the blocks,
- * this block switching may occur for multiple times. It might also cause the
- * current swap attempt to abort due to inability to find suitable locations
- * for moved blocks.
- *
- * The move generator will record all the switched blocks in the variable
- * `blocks_affected`. Afterwards, the move will be assessed by the chosen
- * cost formulation. Currently, there are three ways to assess move cost,
- * which are stored in the enum type `t_place_algorithm`.
- *
- * @return Whether the block swap is accepted, rejected or aborted.
- */
 e_move_result PlacementAnnealer::try_swap(MoveGenerator& move_generator,
                                           const t_place_algorithm& place_algorithm,
                                           float timing_bb_factor,
@@ -969,43 +926,37 @@ void PlacementAnnealer::outer_loop_update_timing_info(int num_connections) {
 }
 
 /* Function which contains the inner loop of the simulated annealing */
-void placement_inner_loop(int inner_recompute_limit,
-                         t_placer_statistics* stats,
-
-                                 int* moves_since_cost_recompute,
-                                 PlacerSetupSlacks* setup_slacks,
-                                 MoveGenerator& move_generator,
-                                 float timing_bb_factor
-                                 ) {
+void PlacementAnnealer::placement_inner_loop(MoveGenerator& move_generator,
+                                             float timing_bb_factor) {
     // How many times have we dumped placement to a file this temperature?
     int inner_placement_save_count = 0;
 
-    stats->reset();
+    placer_stats_.reset();
 
     bool manual_move_enabled = false;
 
     // Inner loop begins
-    for (int inner_iter = 0, inner_crit_iter_count = 1; inner_iter < state->move_lim; inner_iter++) {
-        e_move_result swap_result = try_swap(move_generator,
-                                             placer_opts, noc_opts, move_type_stat, place_algorithm,
+    for (int inner_iter = 0, inner_crit_iter_count = 1; inner_iter < annealing_state_.move_lim; inner_iter++) {
+        e_move_result swap_result = try_swap(move_generator, placer_opts_.place_algorithm,
                                              timing_bb_factor, manual_move_enabled);
 
         if (swap_result == ACCEPTED) {
-            /* Move was accepted.  Update statistics that are useful for the annealing schedule. */
-            stats->single_swap_update(*costs);
-            swap_stats.num_swap_accepted++;
+            // Move was accepted.  Update statistics that are useful for the annealing schedule.
+            placer_stats_.single_swap_update(costs_);
+            swap_stats_.num_swap_accepted++;
         } else if (swap_result == ABORTED) {
-            swap_stats.num_swap_aborted++;
+            swap_stats_.num_swap_aborted++;
         } else { // swap_result == REJECTED
-            swap_stats.num_swap_rejected++;
+            swap_stats_.num_swap_rejected++;
         }
 
-        if (place_algorithm.is_timing_driven()) {
+        if (placer_opts_.place_algorithm.is_timing_driven()) {
             /* Do we want to re-timing analyze the circuit to get updated slack and criticality values?
              * We do this only once in a while, since it is expensive.
              */
-            if (inner_crit_iter_count >= inner_recompute_limit
-                && inner_iter != state->move_lim - 1) { /*on last iteration don't recompute */
+
+            // on last iteration don't recompute
+            if (inner_crit_iter_count >= inner_recompute_limit_ && inner_iter != annealing_state_.move_lim - 1) {
 
                 inner_crit_iter_count = 0;
 #ifdef VERBOSE
@@ -1013,13 +964,13 @@ void placement_inner_loop(int inner_recompute_limit,
 #endif
 
                 PlaceCritParams crit_params;
-                crit_params.crit_exponent = state->crit_exponent;
-                crit_params.crit_limit = placer_opts.place_crit_limit;
+                crit_params.crit_exponent = annealing_state_.crit_exponent;
+                crit_params.crit_limit = placer_opts_.place_crit_limit;
 
-                //Update all timing related classes
-                perform_full_timing_update(crit_params, delay_model, criticalities,
-                                           setup_slacks, pin_timing_invalidator,
-                                           timing_info, costs, placer_state);
+                // Update all timing related classes
+                perform_full_timing_update(crit_params, delay_model_, criticalities_,
+                                           setup_slacks_, pin_timing_invalidator_,
+                                           timing_info_, &costs_, placer_state_);
             }
             inner_crit_iter_count++;
         }
@@ -1029,28 +980,55 @@ void placement_inner_loop(int inner_recompute_limit,
          * This round-off can lead to error checks failing because the cost
          * is different from what you get when you recompute from scratch.
          */
-        ++(*moves_since_cost_recompute);
-        if (*moves_since_cost_recompute > MAX_MOVES_BEFORE_RECOMPUTE) {
-            net_cost_handler.recompute_costs_from_scratch(delay_model, criticalities, *costs);
+        moves_since_cost_recompute_++;
+        if (moves_since_cost_recompute_ > MAX_MOVES_BEFORE_RECOMPUTE) {
+            net_cost_handler_.recompute_costs_from_scratch(delay_model_, criticalities_, costs_);
 
-            if (noc_cost_handler.has_value()) {
-                noc_cost_handler->recompute_costs_from_scratch(noc_opts, *costs);
+            if (noc_cost_handler_.has_value()) {
+                noc_cost_handler_->recompute_costs_from_scratch(noc_opts_, costs_);
             }
 
-            *moves_since_cost_recompute = 0;
+            moves_since_cost_recompute_ = 0;
         }
 
-        if (placer_opts.placement_saves_per_temperature >= 1 && inner_iter > 0
-            && (inner_iter + 1) % (state->move_lim / placer_opts.placement_saves_per_temperature) == 0) {
+        if (placer_opts_.placement_saves_per_temperature >= 1 && inner_iter > 0
+            && (inner_iter + 1) % (annealing_state_.move_lim / placer_opts_.placement_saves_per_temperature) == 0) {
             std::string filename = vtr::string_fmt("placement_%03d_%03d.place",
-                                                   state->num_temps + 1, inner_placement_save_count);
+                                                   annealing_state_.num_temps + 1, inner_placement_save_count);
             VTR_LOG("Saving placement to file at temperature move %d / %d: %s\n",
-                    inner_iter, state->move_lim, filename.c_str());
-            print_place(nullptr, nullptr, filename.c_str(), placer_state.block_locs());
+                    inner_iter, annealing_state_.move_lim, filename.c_str());
+            print_place(nullptr, nullptr, filename.c_str(), placer_state_.block_locs());
             ++inner_placement_save_count;
         }
     }
 
-    /* Calculate the success_rate and std_dev of the costs. */
-    stats->calc_iteration_stats(*costs, state->move_lim);
+    // Calculate the success_rate and std_dev of the costs.
+    placer_stats_.calc_iteration_stats(costs_, annealing_state_.move_lim);
+
+    tot_iter_ += annealing_state_.move_lim;
+    ++annealing_state_.num_temps;
+}
+
+int PlacementAnnealer::get_total_iteration() const {
+    return tot_iter_;
+}
+
+const t_annealing_state& PlacementAnnealer::get_annealing_state() const {
+    return annealing_state_;
+}
+
+bool PlacementAnnealer::outer_loop_update_state() {
+    return annealing_state_.outer_loop_update(placer_stats_.success_rate, costs_, placer_opts_);
+}
+
+void PlacementAnnealer::start_quench() {
+    // Freeze out: only accept solutions that improve placement.
+    annealing_state_.t = 0;
+
+    //Revert the move limit to initial value.
+    annealing_state_.move_lim = annealing_state_.move_lim_max;
+}
+
+std::tuple<const t_swap_stats&, const MoveTypeStat&, const t_placer_statistics&> PlacementAnnealer::get_stats() const {
+    return {swap_stats_, move_type_stats_, placer_stats_};
 }
