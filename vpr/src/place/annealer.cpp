@@ -88,19 +88,6 @@
 
 #endif
 
-
-/**
- * @brief Invalidates the connections affected by the specified block moves.
- *
- * All the connections recorded in blocks_affected.affected_pins have different
- * values for `proposed_connection_delay` and `connection_delay`.
- *
- * Invalidate all the timing graph edges associated with these connections via
- * the NetPinTimingInvalidator class.
- */
-static void invalidate_affected_connections(const t_pl_blocks_to_be_moved& blocks_affected,
-                                            NetPinTimingInvalidator* pin_tedges_invalidator,
-                                            TimingInfo* timing_info);
 /**
  * @brief Check if the setup slack has gotten better or worse due to block swap.
  *
@@ -123,18 +110,6 @@ static float analyze_setup_slack_cost(const PlacerSetupSlacks* setup_slacks,
                                       const PlacerState& placer_state);
 
 static e_move_result assess_swap(double delta_c, double t);
-
-static void invalidate_affected_connections(const t_pl_blocks_to_be_moved& blocks_affected,
-                                            NetPinTimingInvalidator* pin_tedges_invalidator,
-                                            TimingInfo* timing_info) {
-    VTR_ASSERT_SAFE(timing_info);
-    VTR_ASSERT_SAFE(pin_tedges_invalidator);
-
-    // Invalidate timing graph edges affected by the move
-    for (ClusterPinId pin : blocks_affected.affected_pins) {
-        pin_tedges_invalidator->invalidate_connection(pin, timing_info);
-    }
-}
 
 static float analyze_setup_slack_cost(const PlacerSetupSlacks* setup_slacks,
                                       const PlacerState& placer_state) {
@@ -662,7 +637,7 @@ e_move_result PlacementAnnealer::try_swap(MoveGenerator& move_generator,
         //If rejected, we reject the proposed block moves and revert this timing analysis.
         if (place_algorithm == SLACK_TIMING_PLACE) {
             // Invalidates timing of modified connections for incremental timing updates.
-            invalidate_affected_connections(blocks_affected_, pin_timing_invalidator_, timing_info_);
+            pin_timing_invalidator_->invalidate_affected_connections(blocks_affected_, timing_info_);
 
             /* Update the connection_timing_cost and connection_delay *
              * values from the temporary values.                      */
@@ -745,7 +720,7 @@ e_move_result PlacementAnnealer::try_swap(MoveGenerator& move_generator,
                 /* Invalidates timing of modified connections for incremental *
                  * timing updates. These invalidations are accumulated for a  *
                  * big timing update in the outer loop.                       */
-                invalidate_affected_connections(blocks_affected_, pin_timing_invalidator_, timing_info_);
+                pin_timing_invalidator_->invalidate_affected_connections(blocks_affected_, timing_info_);
 
                 /* Update the connection_timing_cost and connection_delay *
                  * values from the temporary values.                      */
@@ -792,7 +767,7 @@ e_move_result PlacementAnnealer::try_swap(MoveGenerator& move_generator,
                 /* Re-invalidate the affected sink pins since the proposed
                  * move is rejected, and the same blocks are reverted to
                  * their original positions. */
-                invalidate_affected_connections(blocks_affected_, pin_timing_invalidator_, timing_info_);
+                pin_timing_invalidator_->invalidate_affected_connections(blocks_affected_, timing_info_);
 
                 // Revert the timing update
                 update_timing_classes(crit_params, timing_info_, criticalities_,
