@@ -516,13 +516,13 @@ static void ShowPlacerOpts(const t_placer_opts& PlacerOpts) {
         || (PLACE_ALWAYS == PlacerOpts.place_freq)) {
         VTR_LOG("PlacerOpts.place_algorithm: ");
         switch (PlacerOpts.place_algorithm.get()) {
-            case BOUNDING_BOX_PLACE:
+            case e_place_algorithm::BOUNDING_BOX_PLACE:
                 VTR_LOG("BOUNDING_BOX_PLACE\n");
                 break;
-            case CRITICALITY_TIMING_PLACE:
+            case e_place_algorithm::CRITICALITY_TIMING_PLACE:
                 VTR_LOG("CRITICALITY_TIMING_PLACE\n");
                 break;
-            case SLACK_TIMING_PLACE:
+            case e_place_algorithm::SLACK_TIMING_PLACE:
                 VTR_LOG("SLACK_TIMING_PLACE\n");
                 break;
             default:

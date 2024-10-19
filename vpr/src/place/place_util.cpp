@@ -61,7 +61,7 @@ void t_placer_costs::update_norm_factors() {
         //Prevent the norm factor from going to infinity
         timing_cost_norm = std::min(1 / timing_cost, MAX_INV_TIMING_COST);
     } else {
-        VTR_ASSERT_SAFE(place_algorithm == BOUNDING_BOX_PLACE);
+        VTR_ASSERT_SAFE(place_algorithm == e_place_algorithm::BOUNDING_BOX_PLACE);
         bb_cost_norm = 1 / bb_cost; //Updating the normalization factor in bounding box mode since the cost in this mode is determined after normalizing the wirelength cost
     }
 
@@ -73,7 +73,7 @@ void t_placer_costs::update_norm_factors() {
 double t_placer_costs::get_total_cost(const t_placer_opts& placer_opts, const t_noc_opts& noc_opts) {
     double total_cost = 0.0;
 
-    if (placer_opts.place_algorithm == BOUNDING_BOX_PLACE) {
+    if (placer_opts.place_algorithm == e_place_algorithm::BOUNDING_BOX_PLACE) {
         // in bounding box mode we only care about wirelength
         total_cost = bb_cost * bb_cost_norm;
     } else if (placer_opts.place_algorithm.is_timing_driven()) {

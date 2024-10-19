@@ -583,7 +583,7 @@ e_move_result PlacementAnnealer::try_swap(MoveGenerator& move_generator,
         //slack values resulted from the proposed block moves. If the move turns out
         //to be accepted, we keep the updated slack values and commit the block moves.
         //If rejected, we reject the proposed block moves and revert this timing analysis.
-        if (place_algorithm == SLACK_TIMING_PLACE) {
+        if (place_algorithm == e_place_algorithm::SLACK_TIMING_PLACE) {
             // Invalidates timing of modified connections for incremental timing updates.
             pin_timing_invalidator_->invalidate_affected_connections(blocks_affected_, timing_info_);
 
@@ -607,7 +607,7 @@ e_move_result PlacementAnnealer::try_swap(MoveGenerator& move_generator,
             /* Get the setup slack analysis cost */
             //TODO: calculate a weighted average of the slack cost and wiring cost
             delta_c = analyze_setup_slack_cost(setup_slacks_, placer_state_) * costs_.timing_cost_norm;
-        } else if (place_algorithm == CRITICALITY_TIMING_PLACE) {
+        } else if (place_algorithm == e_place_algorithm::CRITICALITY_TIMING_PLACE) {
             /* Take delta_c as a combination of timing and wiring cost. In
              * addition to `timing_tradeoff`, we normalize the cost values */
             VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug,
@@ -621,7 +621,7 @@ e_move_result PlacementAnnealer::try_swap(MoveGenerator& move_generator,
             delta_c = (1 - timing_tradeoff) * bb_delta_c * costs_.bb_cost_norm
                       + timing_tradeoff * timing_delta_c * costs_.timing_cost_norm;
         } else {
-            VTR_ASSERT_SAFE(place_algorithm == BOUNDING_BOX_PLACE);
+            VTR_ASSERT_SAFE(place_algorithm == e_place_algorithm::BOUNDING_BOX_PLACE);
             VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug,
                            "\t\tMove bb_delta_c %e, bb_cost_norm %e\n",
                            bb_delta_c,
@@ -653,7 +653,7 @@ e_move_result PlacementAnnealer::try_swap(MoveGenerator& move_generator,
             costs_.cost += delta_c;
             costs_.bb_cost += bb_delta_c;
 
-            if (place_algorithm == SLACK_TIMING_PLACE) {
+            if (place_algorithm == e_place_algorithm::SLACK_TIMING_PLACE) {
                 // Update the timing driven cost as usual
                 costs_.timing_cost += timing_delta_c;
 
@@ -662,7 +662,7 @@ e_move_result PlacementAnnealer::try_swap(MoveGenerator& move_generator,
                 commit_setup_slacks(setup_slacks_, placer_state_);
             }
 
-            if (place_algorithm == CRITICALITY_TIMING_PLACE) {
+            if (place_algorithm == e_place_algorithm::CRITICALITY_TIMING_PLACE) {
                 costs_.timing_cost += timing_delta_c;
 
                 /* Invalidates timing of modified connections for incremental *
@@ -705,7 +705,7 @@ e_move_result PlacementAnnealer::try_swap(MoveGenerator& move_generator,
             // Restore the blk_loc_registry.block_locs data structures to their state before the move.
             blk_loc_registry.revert_move_blocks(blocks_affected_);
 
-            if (place_algorithm == SLACK_TIMING_PLACE) {
+            if (place_algorithm == e_place_algorithm::SLACK_TIMING_PLACE) {
                 /* Revert the timing delays and costs to pre-update values.       */
                 /* These routines must be called after reverting the block moves. */
                 //TODO: make this process incremental
@@ -726,7 +726,7 @@ e_move_result PlacementAnnealer::try_swap(MoveGenerator& move_generator,
                     "The current setup slacks should be identical to the values before the try swap timing info update.");
             }
 
-            if (place_algorithm == CRITICALITY_TIMING_PLACE) {
+            if (place_algorithm == e_place_algorithm::CRITICALITY_TIMING_PLACE) {
                 // Un-stage the values stored in proposed_* data structures
                 placer_state_.mutable_timing().revert_td_cost(blocks_affected_);
             }

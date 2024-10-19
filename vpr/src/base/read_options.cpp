@@ -393,11 +393,11 @@ struct ParsePlaceAlgorithm {
     ConvertedValue<e_place_algorithm> from_str(const std::string& str) {
         ConvertedValue<e_place_algorithm> conv_value;
         if (str == "bounding_box") {
-            conv_value.set_value(BOUNDING_BOX_PLACE);
+            conv_value.set_value(e_place_algorithm::BOUNDING_BOX_PLACE);
         } else if (str == "criticality_timing") {
-            conv_value.set_value(CRITICALITY_TIMING_PLACE);
+            conv_value.set_value(e_place_algorithm::CRITICALITY_TIMING_PLACE);
         } else if (str == "slack_timing") {
-            conv_value.set_value(SLACK_TIMING_PLACE);
+            conv_value.set_value(e_place_algorithm::SLACK_TIMING_PLACE);
         } else {
             std::stringstream msg;
             msg << "Invalid conversion from '" << str << "' to e_place_algorithm (expected one of: " << argparse::join(default_choices(), ", ") << ")";
@@ -415,12 +415,12 @@ struct ParsePlaceAlgorithm {
 
     ConvertedValue<std::string> to_str(e_place_algorithm val) {
         ConvertedValue<std::string> conv_value;
-        if (val == BOUNDING_BOX_PLACE) {
+        if (val == e_place_algorithm::BOUNDING_BOX_PLACE) {
             conv_value.set_value("bounding_box");
-        } else if (val == CRITICALITY_TIMING_PLACE) {
+        } else if (val == e_place_algorithm::CRITICALITY_TIMING_PLACE) {
             conv_value.set_value("criticality_timing");
         } else {
-            VTR_ASSERT(val == SLACK_TIMING_PLACE);
+            VTR_ASSERT(val == e_place_algorithm::SLACK_TIMING_PLACE);
             conv_value.set_value("slack_timing");
         }
         return conv_value;
@@ -435,11 +435,11 @@ struct ParsePlaceBoundingBox {
     ConvertedValue<e_place_bounding_box_mode> from_str(const std::string& str) {
         ConvertedValue<e_place_bounding_box_mode> conv_value;
         if (str == "auto_bb") {
-            conv_value.set_value(AUTO_BB);
+            conv_value.set_value(e_place_bounding_box_mode::AUTO_BB);
         } else if (str == "cube_bb") {
-            conv_value.set_value(CUBE_BB);
+            conv_value.set_value(e_place_bounding_box_mode::CUBE_BB);
         } else if (str == "per_layer_bb") {
-            conv_value.set_value(PER_LAYER_BB);
+            conv_value.set_value(e_place_bounding_box_mode::PER_LAYER_BB);
         } else {
             std::stringstream msg;
             msg << "Invalid conversion from '" << str << "' to e_place_algorithm (expected one of: " << argparse::join(default_choices(), ", ") << ")";
@@ -450,12 +450,12 @@ struct ParsePlaceBoundingBox {
 
     ConvertedValue<std::string> to_str(e_place_bounding_box_mode val) {
         ConvertedValue<std::string> conv_value;
-        if (val == AUTO_BB) {
+        if (val == e_place_bounding_box_mode::AUTO_BB) {
             conv_value.set_value("auto_bb");
-        } else if (val == CUBE_BB) {
+        } else if (val == e_place_bounding_box_mode::CUBE_BB) {
             conv_value.set_value("cube_bb");
         } else {
-            VTR_ASSERT(val == PER_LAYER_BB);
+            VTR_ASSERT(val == e_place_bounding_box_mode::PER_LAYER_BB);
             conv_value.set_value("per_layer_bb");
         }
         return conv_value;
@@ -3089,9 +3089,9 @@ void set_conditional_defaults(t_options& args) {
     //Which placement algorithm to use?
     if (args.PlaceAlgorithm.provenance() != Provenance::SPECIFIED) {
         if (args.timing_analysis) {
-            args.PlaceAlgorithm.set(CRITICALITY_TIMING_PLACE, Provenance::INFERRED);
+            args.PlaceAlgorithm.set(e_place_algorithm::CRITICALITY_TIMING_PLACE, Provenance::INFERRED);
         } else {
-            args.PlaceAlgorithm.set(BOUNDING_BOX_PLACE, Provenance::INFERRED);
+            args.PlaceAlgorithm.set(e_place_algorithm::BOUNDING_BOX_PLACE, Provenance::INFERRED);
         }
     }
 
@@ -3105,7 +3105,7 @@ void set_conditional_defaults(t_options& args) {
     // Check for correct options combinations
     // If you are running WLdriven placement, the RL reward function should be
     // either basic or nonPenalizing basic
-    if (args.RL_agent_placement && (args.PlaceAlgorithm == BOUNDING_BOX_PLACE || !args.timing_analysis)) {
+    if (args.RL_agent_placement && (args.PlaceAlgorithm == e_place_algorithm::BOUNDING_BOX_PLACE || !args.timing_analysis)) {
         if (args.place_reward_fun.value() != "basic" && args.place_reward_fun.value() != "nonPenalizing_basic") {
             VTR_LOG_WARN(
                 "To use RLPlace for WLdriven placements, the reward function should be basic or nonPenalizing_basic.\n"

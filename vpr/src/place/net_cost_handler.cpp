@@ -1589,7 +1589,7 @@ void NetCostHandler::recompute_costs_from_scratch(const PlaceDelayModel* delay_m
         check_and_print_cost(new_timing_cost, costs.timing_cost, "timing_cost");
         costs.timing_cost = new_timing_cost;
     } else {
-        VTR_ASSERT(placer_opts_.place_algorithm == BOUNDING_BOX_PLACE);
+        VTR_ASSERT(placer_opts_.place_algorithm == e_place_algorithm::BOUNDING_BOX_PLACE);
         costs.cost = new_bb_cost * costs.bb_cost_norm;
     }
 }

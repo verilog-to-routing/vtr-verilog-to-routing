@@ -363,7 +363,7 @@ void try_place(const Netlist<>& net_list,
         costs.timing_cost_norm = 1 / costs.timing_cost;
         costs.bb_cost_norm = 1 / costs.bb_cost;
     } else {
-        VTR_ASSERT(placer_opts.place_algorithm == BOUNDING_BOX_PLACE);
+        VTR_ASSERT(placer_opts.place_algorithm == e_place_algorithm::BOUNDING_BOX_PLACE);
 
         /* Total cost is the same as wirelength cost normalized*/
         costs.bb_cost = net_cost_handler.comp_bb_cost(e_cost_methods::NORMAL);
@@ -710,7 +710,7 @@ static bool is_cube_bb(const e_place_bounding_box_mode place_bb_mode,
     bool cube_bb;
     const int number_layers = g_vpr_ctx.device().grid.get_num_layers();
 
-    if (place_bb_mode == AUTO_BB) {
+    if (place_bb_mode == e_place_bounding_box_mode::AUTO_BB) {
         // If the auto_bb is used, we analyze the RR graph to see whether is there any inter-layer connection that is not
         // originated from OPIN. If there is any, cube BB is chosen, otherwise, per-layer bb is chosen.
         if (number_layers > 1 && inter_layer_connections_limited_to_opin(rr_graph)) {
@@ -718,12 +718,12 @@ static bool is_cube_bb(const e_place_bounding_box_mode place_bb_mode,
         } else {
             cube_bb = true;
         }
-    } else if (place_bb_mode == CUBE_BB) {
+    } else if (place_bb_mode == e_place_bounding_box_mode::CUBE_BB) {
         // The user has specifically asked for CUBE_BB
         cube_bb = true;
     } else {
         // The user has specifically asked for PER_LAYER_BB
-        VTR_ASSERT_SAFE(place_bb_mode == PER_LAYER_BB);
+        VTR_ASSERT_SAFE(place_bb_mode == e_place_bounding_box_mode::PER_LAYER_BB);
         cube_bb = false;
     }
 

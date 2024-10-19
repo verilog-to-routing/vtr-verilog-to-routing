@@ -876,13 +876,13 @@ struct t_annealing_sched {
  * is used when there is no timing information available (wiring only).
  * SLACK_TIMING_PLACE is mainly feasible during placement quench.
  */
-enum e_place_algorithm {
+enum class e_place_algorithm {
     BOUNDING_BOX_PLACE,
     CRITICALITY_TIMING_PLACE,
     SLACK_TIMING_PLACE
 };
 
-enum e_place_bounding_box_mode {
+enum class e_place_bounding_box_mode {
     AUTO_BB,
     CUBE_BB,
     PER_LAYER_BB
@@ -929,7 +929,7 @@ class t_place_algorithm {
 
     ///@brief Check if the algorithm belongs to the timing driven category.
     inline bool is_timing_driven() const {
-        return algo == CRITICALITY_TIMING_PLACE || algo == SLACK_TIMING_PLACE;
+        return algo == e_place_algorithm::CRITICALITY_TIMING_PLACE || algo == e_place_algorithm::SLACK_TIMING_PLACE;
     }
 
     ///@brief Accessor: returns the underlying e_place_algorithm enum value.
