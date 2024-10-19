@@ -607,7 +607,6 @@ void SetupPackerOpts(const t_options& Options,
     //TODO: document?
     PackerOpts->inter_cluster_net_delay = 1.0; /* DEFAULT */
     PackerOpts->auto_compute_inter_cluster_net_delay = true;
-    PackerOpts->packer_algorithm = PACK_GREEDY; /* DEFAULT */
 
     PackerOpts->device_layout = Options.device_layout;
 

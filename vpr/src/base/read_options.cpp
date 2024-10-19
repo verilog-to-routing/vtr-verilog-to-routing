@@ -470,9 +470,9 @@ struct ParsePlaceAgentAlgorithm {
     ConvertedValue<e_agent_algorithm> from_str(const std::string& str) {
         ConvertedValue<e_agent_algorithm> conv_value;
         if (str == "e_greedy")
-            conv_value.set_value(E_GREEDY);
+            conv_value.set_value(e_agent_algorithm::E_GREEDY);
         else if (str == "softmax")
-            conv_value.set_value(SOFTMAX);
+            conv_value.set_value(e_agent_algorithm::SOFTMAX);
         else {
             std::stringstream msg;
             msg << "Invalid conversion from '" << str << "' to e_agent_algorithm (expected one of: " << argparse::join(default_choices(), ", ") << ")";
@@ -483,10 +483,10 @@ struct ParsePlaceAgentAlgorithm {
 
     ConvertedValue<std::string> to_str(e_agent_algorithm val) {
         ConvertedValue<std::string> conv_value;
-        if (val == E_GREEDY)
+        if (val == e_agent_algorithm::E_GREEDY)
             conv_value.set_value("e_greedy");
         else {
-            VTR_ASSERT(val == SOFTMAX);
+            VTR_ASSERT(val == e_agent_algorithm::SOFTMAX);
             conv_value.set_value("softmax");
         }
         return conv_value;

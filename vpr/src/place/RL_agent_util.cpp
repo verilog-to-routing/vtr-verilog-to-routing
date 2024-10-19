@@ -59,7 +59,7 @@ std::pair<std::unique_ptr<MoveGenerator>, std::unique_ptr<MoveGenerator>> create
             second_state_avail_moves.push_back(e_move_type::NOC_ATTRACTION_CENTROID);
         }
 
-        if (placer_opts.place_agent_algorithm == E_GREEDY) {
+        if (placer_opts.place_agent_algorithm == e_agent_algorithm::E_GREEDY) {
             std::unique_ptr<EpsilonGreedyAgent> karmed_bandit_agent1, karmed_bandit_agent2;
             //agent's 1st state
             if (placer_opts.place_agent_space == e_agent_space::MOVE_BLOCK_TYPE) {

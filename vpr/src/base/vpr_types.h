@@ -789,11 +789,6 @@ enum e_stage_action {
  *
  * TODO: document each packing parameter
  */
-enum e_packer_algorithm {
-    PACK_GREEDY,
-    PACK_BRUTE_FORCE
-};
-
 struct t_packer_opts {
     std::string circuit_file_name;
     std::string sdc_file_name;
@@ -818,7 +813,6 @@ struct t_packer_opts {
     int transitive_fanout_threshold;
     int feasible_block_array_size;
     e_stage_action doPacking;
-    enum e_packer_algorithm packer_algorithm;
     std::string device_layout;
     e_timing_update_type timing_update_type;
     bool use_attraction_groups;
@@ -952,7 +946,7 @@ enum class e_pad_loc_type {
  * Currently, the supported algorithms are: epsilon greedy and softmax
  * For more details, check simpleRL_move_generator.cpp
  */
-enum e_agent_algorithm {
+enum class e_agent_algorithm {
     E_GREEDY,
     SOFTMAX
 };
