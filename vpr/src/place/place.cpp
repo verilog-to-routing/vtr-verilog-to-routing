@@ -82,8 +82,7 @@ static constexpr float REWARD_BB_TIMING_RELATIVE_WEIGHT = 0.4;
 #endif
 
 /************** Types and defines local to place.c ***************************/
-constexpr float INVALID_DELAY = std::numeric_limits<float>::quiet_NaN();
-constexpr float INVALID_COST = std::numeric_limits<double>::quiet_NaN();
+constexpr double INVALID_COST = std::numeric_limits<double>::quiet_NaN();
 
 /********************* Static subroutines local to place.c *******************/
 #ifdef VERBOSE
@@ -129,9 +128,6 @@ static int check_block_placement_consistency(const BlkLocRegistry& blk_loc_regis
 static int check_macro_placement_consistency(const BlkLocRegistry& blk_loc_registry);
 
 static int count_connections();
-
-static float analyze_setup_slack_cost(const PlacerSetupSlacks* setup_slacks,
-                                      const PlacerState& placer_state);
 
 static void generate_post_place_timing_reports(const t_placer_opts& placer_opts,
                                                const t_analysis_opts& analysis_opts,
@@ -236,8 +232,7 @@ void try_place(const Netlist<>& net_list,
 
     int move_lim = (int)(placer_opts.anneal_sched.inner_num * pow(net_list.blocks().size(), 1.3333));
 
-    PlacerState placer_state;
-    auto& place_move_ctx = placer_state.mutable_move();
+    PlacerState placer_state(placer_opts.place_algorithm.is_timing_driven());
     auto& blk_loc_registry = placer_state.mutable_blk_loc_registry();
     const auto& p_timing_ctx = placer_state.timing();
     const auto& p_runtime_ctx = placer_state.runtime();
@@ -775,36 +770,6 @@ static NetCostHandler alloc_and_load_placement_structs(const t_placer_opts& plac
     int max_pins_per_clb = 0;
     for (const t_physical_tile_type& type : device_ctx.physical_tile_types) {
         max_pins_per_clb = std::max(max_pins_per_clb, type.num_pins);
-    }
-
-    if (placer_opts.place_algorithm.is_timing_driven()) {
-        /* Allocate structures associated with timing driven placement */
-        /* [0..cluster_ctx.clb_nlist.nets().size()-1][1..num_pins-1]  */
-
-        auto& p_timing_ctx = placer_state.mutable_timing();
-
-        p_timing_ctx.connection_delay = make_net_pins_matrix<float>((const Netlist<>&)cluster_ctx.clb_nlist, 0.f);
-        p_timing_ctx.proposed_connection_delay = make_net_pins_matrix<float>(cluster_ctx.clb_nlist, 0.f);
-
-        p_timing_ctx.connection_setup_slack = make_net_pins_matrix<float>(cluster_ctx.clb_nlist, std::numeric_limits<float>::infinity());
-
-        p_timing_ctx.connection_timing_cost = PlacerTimingCosts(cluster_ctx.clb_nlist);
-        p_timing_ctx.proposed_connection_timing_cost = make_net_pins_matrix<double>(cluster_ctx.clb_nlist, 0.);
-        p_timing_ctx.net_timing_cost.resize(num_nets, 0.);
-
-        for (ClusterNetId net_id : cluster_ctx.clb_nlist.nets()) {
-            for (size_t ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ipin++) {
-                p_timing_ctx.connection_delay[net_id][ipin] = 0;
-                p_timing_ctx.proposed_connection_delay[net_id][ipin] = INVALID_DELAY;
-
-                p_timing_ctx.proposed_connection_timing_cost[net_id][ipin] = INVALID_DELAY;
-
-                if (cluster_ctx.clb_nlist.net_is_ignored(net_id))
-                    continue;
-
-                p_timing_ctx.connection_timing_cost[net_id][ipin] = INVALID_DELAY;
-            }
-        }
     }
 
     auto& place_move_ctx = placer_state.mutable_move();

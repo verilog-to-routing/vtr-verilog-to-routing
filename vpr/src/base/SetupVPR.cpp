@@ -97,7 +97,6 @@ void SetupVPR(const t_options* options,
               t_packer_opts* packerOpts,
               t_placer_opts* placerOpts,
               t_ap_opts* apOpts,
-              t_annealing_sched* annealSched,
               t_router_opts* routerOpts,
               t_analysis_opts* analysisOpts,
               t_noc_opts* nocOpts,
@@ -145,7 +144,7 @@ void SetupVPR(const t_options* options,
 
     SetupNetlistOpts(*options, *netlistOpts);
     SetupPlacerOpts(*options, placerOpts);
-    SetupAnnealSched(*options, annealSched);
+    SetupAnnealSched(*options, &placerOpts->anneal_sched);
     SetupRouterOpts(*options, routerOpts);
     SetupAnalysisOpts(*options, *analysisOpts);
     SetupPowerOpts(*options, powerOpts, arch);
@@ -155,7 +154,7 @@ void SetupVPR(const t_options* options,
     //save the device layout, which is required to parse the architecture file
     arch->device_layout = options->device_layout;
 
-    if (readArchFile == true) {
+    if (readArchFile) {
         vtr::ScopedStartFinishTimer t("Loading Architecture Description");
         switch (options->arch_format) {
             case e_arch_format::VTR:

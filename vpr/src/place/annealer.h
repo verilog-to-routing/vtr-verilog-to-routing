@@ -245,6 +245,7 @@ class PlacementAnnealer {
     static constexpr int MAX_MOVES_BEFORE_RECOMPUTE = 500000;
 
     int inner_recompute_limit_;
+    int quench_recompute_limit_;
     int moves_since_cost_recompute_;
     int tot_iter_;
 

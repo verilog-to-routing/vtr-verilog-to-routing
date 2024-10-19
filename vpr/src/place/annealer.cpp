@@ -101,17 +101,6 @@
 static void invalidate_affected_connections(const t_pl_blocks_to_be_moved& blocks_affected,
                                             NetPinTimingInvalidator* pin_tedges_invalidator,
                                             TimingInfo* timing_info);
-
-/**
- * @brief Update the connection_timing_cost values from the temporary
- *        values for all connections that have/haven't changed.
- *
- * All the connections have already been gathered by blocks_affected.affected_pins
- * after running the routine find_affected_nets_and_update_costs() in try_swap().
- */
-static void commit_td_cost(const t_pl_blocks_to_be_moved& blocks_affected,
-                           PlacerState& placer_state);
-
 /**
  * @brief Check if the setup slack has gotten better or worse due to block swap.
  *
@@ -147,30 +136,6 @@ static void invalidate_affected_connections(const t_pl_blocks_to_be_moved& block
     }
 }
 
-static void commit_td_cost(const t_pl_blocks_to_be_moved& blocks_affected,
-                           PlacerState& placer_state) {
-    const auto& cluster_ctx = g_vpr_ctx.clustering();
-    const auto& clb_nlist = cluster_ctx.clb_nlist;
-
-    auto& p_timing_ctx = placer_state.mutable_timing();
-    auto& connection_delay = p_timing_ctx.connection_delay;
-    auto& proposed_connection_delay = p_timing_ctx.proposed_connection_delay;
-    auto& connection_timing_cost = p_timing_ctx.connection_timing_cost;
-    auto& proposed_connection_timing_cost = p_timing_ctx.proposed_connection_timing_cost;
-
-    //Go through all the sink pins affected
-    for (ClusterPinId pin_id : blocks_affected.affected_pins) {
-        ClusterNetId net_id = clb_nlist.pin_net(pin_id);
-        int ipin = clb_nlist.pin_net_index(pin_id);
-
-        //Commit the timing delay and cost values
-        connection_delay[net_id][ipin] = proposed_connection_delay[net_id][ipin];
-        proposed_connection_delay[net_id][ipin] = INVALID_DELAY;
-        connection_timing_cost[net_id][ipin] = proposed_connection_timing_cost[net_id][ipin];
-        proposed_connection_timing_cost[net_id][ipin] = INVALID_DELAY;
-    }
-}
-
 static float analyze_setup_slack_cost(const PlacerSetupSlacks* setup_slacks,
                                       const PlacerState& placer_state) {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -188,8 +153,7 @@ static float analyze_setup_slack_cost(const PlacerSetupSlacks* setup_slacks,
         size_t ipin = clb_nlist.pin_net_index(clb_pin);
 
         original_setup_slacks.push_back(connection_setup_slack[net_id][ipin]);
-        proposed_setup_slacks.push_back(
-            setup_slacks->setup_slack(net_id, ipin));
+        proposed_setup_slacks.push_back(setup_slacks->setup_slack(net_id, ipin));
     }
 
     //Sort in ascending order, from the worse slack value to the best
@@ -199,8 +163,7 @@ static float analyze_setup_slack_cost(const PlacerSetupSlacks* setup_slacks,
     //Check the first pair of slack values that are different
     //If found, return their difference
     for (size_t idiff = 0; idiff < original_setup_slacks.size(); ++idiff) {
-        float slack_diff = original_setup_slacks[idiff]
-                           - proposed_setup_slacks[idiff];
+        float slack_diff = original_setup_slacks[idiff] - proposed_setup_slacks[idiff];
 
         if (slack_diff != 0) {
             return slack_diff;
@@ -480,12 +443,11 @@ PlacementAnnealer::PlacementAnnealer(const t_placer_opts& placer_opts,
 
     /* calculate the number of moves in the quench that we should recompute timing after based on the value of *
      * the commandline option quench_recompute_divider                                                         */
-    int quench_recompute_limit;
     if (placer_opts.quench_recompute_divider != 0) {
-        quench_recompute_limit = static_cast<int>(0.5 + (float)move_lim / (float)placer_opts.quench_recompute_divider);
+        quench_recompute_limit_ = static_cast<int>(0.5 + (float)move_lim / (float)placer_opts.quench_recompute_divider);
     } else {
         // don't do an quench recompute
-        quench_recompute_limit = first_move_lim + 1;
+        quench_recompute_limit_ = first_move_lim + 1;
     }
 
     // Get the first range limiter
@@ -623,7 +585,7 @@ e_move_result PlacementAnnealer::try_swap(MoveGenerator& move_generator,
     }
 
     /* Allow some fraction of moves to not be restricted by rlim,
-    /* in the hopes of better escaping local minima. */
+     * in the hopes of better escaping local minima. */
     float rlim;
     if (rlim_escape_fraction > 0. && vtr::frand() < rlim_escape_fraction) {
         rlim = std::numeric_limits<float>::infinity();
@@ -704,7 +666,7 @@ e_move_result PlacementAnnealer::try_swap(MoveGenerator& move_generator,
 
             /* Update the connection_timing_cost and connection_delay *
              * values from the temporary values.                      */
-            commit_td_cost(blocks_affected_, placer_state_);
+            placer_state_.mutable_timing().commit_td_cost(blocks_affected_);
 
             /* Update timing information. Since we are analyzing setup slacks,   *
              * we only update those values and keep the criticalities stale      *
@@ -787,7 +749,7 @@ e_move_result PlacementAnnealer::try_swap(MoveGenerator& move_generator,
 
                 /* Update the connection_timing_cost and connection_delay *
                  * values from the temporary values.                      */
-                commit_td_cost(blocks_affected_, placer_state_);
+                placer_state_.mutable_timing().commit_td_cost(blocks_affected_);
             }
 
             /* Update net cost functions and reset flags. */

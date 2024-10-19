@@ -24,6 +24,23 @@
  * use mutable_timing() to access it. For more, see PlacerTimingCosts.
  */
 struct PlacerTimingContext : public Context {
+    PlacerTimingContext() = delete;
+
+    /**
+     * @brief Allocate structures associated with timing driven placement
+     * @param placement_is_timing_driven Specifies whether the placement is timing driven.
+     */
+    PlacerTimingContext(bool placement_is_timing_driven);
+
+    /**
+     * @brief Update the connection_timing_cost values from the temporary
+     *        values for all connections that have/haven't changed.
+     *
+     * All the connections have already been gathered by blocks_affected.affected_pins
+     * after running the routine find_affected_nets_and_update_costs() in try_swap().
+     */
+    void commit_td_cost(const t_pl_blocks_to_be_moved& blocks_affected);
+
     /**
      * @brief Net connection delays based on the committed block positions.
      *
@@ -74,6 +91,8 @@ struct PlacerTimingContext : public Context {
      * Index range: [0..cluster_ctx.clb_nlist.nets().size()-1]
      */
     vtr::vector<ClusterNetId, double> net_timing_cost;
+
+    static constexpr float INVALID_DELAY = std::numeric_limits<float>::quiet_NaN();
 };
 
 /**
@@ -143,6 +162,9 @@ struct PlacerMoveContext : public Context {
  * how to use this class due to similar implementation style.
  */
 class PlacerState : public Context {
+  public:
+    PlacerState(bool placement_is_timing_driven);
+
   public:
     inline const PlacerTimingContext& timing() const { return timing_; }
     inline PlacerTimingContext& mutable_timing() { return timing_; }
