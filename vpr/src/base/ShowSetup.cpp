@@ -17,8 +17,7 @@
 /******** Function Prototypes ********/
 static void ShowPackerOpts(const t_packer_opts& PackerOpts);
 static void ShowNetlistOpts(const t_netlist_opts& NetlistOpts);
-static void ShowPlacerOpts(const t_placer_opts& PlacerOpts,
-                           const t_annealing_sched& AnnealSched);
+static void ShowPlacerOpts(const t_placer_opts& PlacerOpts);
 static void ShowAnalyticalPlacerOpts(const t_ap_opts& APOpts);
 static void ShowRouterOpts(const t_router_opts& RouterOpts);
 static void ShowAnalysisOpts(const t_analysis_opts& AnalysisOpts);
@@ -56,7 +55,7 @@ void ShowSetup(const t_vpr_setup& vpr_setup) {
         ShowPackerOpts(vpr_setup.PackerOpts);
     }
     if (vpr_setup.PlacerOpts.doPlacement) {
-        ShowPlacerOpts(vpr_setup.PlacerOpts, vpr_setup.AnnealSched);
+        ShowPlacerOpts(vpr_setup.PlacerOpts);
     }
     if (vpr_setup.APOpts.doAP) {
         ShowAnalyticalPlacerOpts(vpr_setup.APOpts);
@@ -498,8 +497,7 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
     VTR_LOG("\n");
 }
 
-static void ShowPlacerOpts(const t_placer_opts& PlacerOpts,
-                           const t_annealing_sched& AnnealSched) {
+static void ShowPlacerOpts(const t_placer_opts& PlacerOpts) {
     VTR_LOG("PlacerOpts.place_freq: ");
     switch (PlacerOpts.place_freq) {
         case PLACE_ONCE:
@@ -609,7 +607,7 @@ static void ShowPlacerOpts(const t_placer_opts& PlacerOpts,
 
         VTR_LOG("PlaceOpts.seed: %d\n", PlacerOpts.seed);
 
-        ShowAnnealSched(AnnealSched);
+        ShowAnnealSched(PlacerOpts.anneal_sched);
     }
     VTR_LOG("\n");
 }
