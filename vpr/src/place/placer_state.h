@@ -42,6 +42,12 @@ struct PlacerTimingContext : public Context {
     void commit_td_cost(const t_pl_blocks_to_be_moved& blocks_affected);
 
     /**
+     * @brief Reverts modifications to proposed_connection_delay and proposed_connection_timing_cost
+     * based on the move proposed in blocks_affected
+     */
+    void revert_td_cost(const t_pl_blocks_to_be_moved& blocks_affected);
+
+    /**
      * @brief Net connection delays based on the committed block positions.
      *
      * Index ranges: [0..cluster_ctx.clb_nlist.nets().size()-1][1..num_pins-1]

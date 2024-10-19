@@ -173,31 +173,6 @@ static e_move_result assess_swap(double delta_c, double t) {
     return REJECTED;
 }
 
-//Reverts modifications to proposed_connection_delay and proposed_connection_timing_cost based on
-//the move proposed in blocks_affected
-static void revert_td_cost(const t_pl_blocks_to_be_moved& blocks_affected,
-                           PlacerTimingContext& p_timing_ctx) {
-#ifndef VTR_ASSERT_SAFE_ENABLED
-    (void)blocks_affected;
-    (void)p_timing_ctx;
-#else
-    //Invalidate temp delay & timing cost values to match sanity checks in
-    //comp_td_connection_cost()
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& clb_nlist = cluster_ctx.clb_nlist;
-
-    auto& proposed_connection_delay = p_timing_ctx.proposed_connection_delay;
-    auto& proposed_connection_timing_cost = p_timing_ctx.proposed_connection_timing_cost;
-
-    for (ClusterPinId pin : blocks_affected.affected_pins) {
-        ClusterNetId net = clb_nlist.pin_net(pin);
-        int ipin = clb_nlist.pin_net_index(pin);
-        proposed_connection_delay[net][ipin] = INVALID_DELAY;
-        proposed_connection_timing_cost[net][ipin] = INVALID_DELAY;
-    }
-#endif
-}
-
 /**
  * @brief Updates all the cost normalization factors during the outer
  * loop iteration of the placement. At each temperature change, these
@@ -780,7 +755,7 @@ e_move_result PlacementAnnealer::try_swap(MoveGenerator& move_generator,
 
             if (place_algorithm == CRITICALITY_TIMING_PLACE) {
                 // Un-stage the values stored in proposed_* data structures
-                revert_td_cost(blocks_affected_, placer_state_.mutable_timing());
+                placer_state_.mutable_timing().revert_td_cost(blocks_affected_);
             }
 
             if (proposed_action.logical_blk_type_index != -1) { //if the agent proposed the block type, then collect the block type stat
