@@ -64,6 +64,10 @@ void t_placer_costs::update_norm_factors() {
         VTR_ASSERT_SAFE(place_algorithm == BOUNDING_BOX_PLACE);
         bb_cost_norm = 1 / bb_cost; //Updating the normalization factor in bounding box mode since the cost in this mode is determined after normalizing the wirelength cost
     }
+
+    if (noc_enabled) {
+        NocCostHandler::update_noc_normalization_factors(*this);
+    }
 }
 
 double t_placer_costs::get_total_cost(const t_placer_opts& placer_opts, const t_noc_opts& noc_opts) {

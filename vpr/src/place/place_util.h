@@ -101,8 +101,9 @@ class t_placer_costs {
     NocCostTerms noc_cost_norm_factors;
 
   public: //Constructor
-    explicit t_placer_costs(t_place_algorithm algo)
-        : place_algorithm(algo) {}
+    explicit t_placer_costs(t_place_algorithm algo, bool noc)
+        : place_algorithm(algo)
+        , noc_enabled(noc) {}
     t_placer_costs() = default;
 
   public: //Mutator
@@ -134,8 +135,9 @@ class t_placer_costs {
     t_placer_costs& operator+=(const NocCostTerms& noc_delta_cost);
 
   private:
-    double MAX_INV_TIMING_COST = 1.e12;
+    static constexpr double MAX_INV_TIMING_COST = 1.e12;
     t_place_algorithm place_algorithm;
+    bool noc_enabled;
 };
 
 /**

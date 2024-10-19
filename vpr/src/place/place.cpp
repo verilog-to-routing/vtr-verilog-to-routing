@@ -185,9 +185,8 @@ void try_place(const Netlist<>& net_list,
 
     auto& timing_ctx = g_vpr_ctx.timing();
     auto pre_place_timing_stats = timing_ctx.stats;
-    int num_connections, outer_crit_iter_count;
 
-    t_placer_costs costs(placer_opts.place_algorithm);
+    t_placer_costs costs(placer_opts.place_algorithm, noc_opts.noc);
 
     tatum::TimingPathInfo critical_path;
     float sTNS = NAN;
@@ -297,7 +296,7 @@ void try_place(const Netlist<>& net_list,
     if (placer_opts.place_algorithm.is_timing_driven()) {
         costs.bb_cost = net_cost_handler.comp_bb_cost(e_cost_methods::NORMAL);
 
-        num_connections = count_connections();
+        int num_connections = count_connections();
         VTR_LOG("\n");
         VTR_LOG("There are %d point to point connections in this circuit.\n",
                 num_connections);
@@ -359,8 +358,6 @@ void try_place(const Netlist<>& net_list,
                 *timing_info, debug_tnode);
         }
 
-        outer_crit_iter_count = 1;
-
         /* Initialize the normalization factors. Calling costs.update_norm_factors() *
          * here would fail the golden results of strong_sdc benchmark                */
         costs.timing_cost_norm = 1 / costs.timing_cost;
@@ -375,10 +372,6 @@ void try_place(const Netlist<>& net_list,
         /* Timing cost and normalization factors are not used */
         costs.timing_cost = INVALID_COST;
         costs.timing_cost_norm = INVALID_COST;
-
-        /* Other initializations */
-        outer_crit_iter_count = 0;
-        num_connections = 0;
     }
 
     if (noc_opts.noc) {
@@ -467,8 +460,6 @@ void try_place(const Netlist<>& net_list,
     //RL agent state definition
     e_agent_state agent_state = e_agent_state::EARLY_IN_THE_ANNEAL;
 
-    std::unique_ptr<MoveGenerator> current_move_generator;
-
     //Define the timing bb weight factor for the agent's reward function
     float timing_bb_factor = REWARD_BB_TIMING_RELATIVE_WEIGHT;
 
@@ -488,7 +479,7 @@ void try_place(const Netlist<>& net_list,
         do {
             vtr::Timer temperature_timer;
 
-            annealer.outer_loop_update_timing_info(num_connections);
+            annealer.outer_loop_update_timing_info();
 
             if (placer_opts.place_algorithm.is_timing_driven()) {
                 critical_path = timing_info->least_slack_critical_path();
@@ -503,17 +494,13 @@ void try_place(const Netlist<>& net_list,
                 }
             }
 
-            //move the appropriate move_generator to be the current used move generator
-            assign_current_move_generator(move_generator, move_generator2,
-                                          agent_state, placer_opts, false, current_move_generator);
+            // select the appropriate move generator
+            MoveGenerator& current_move_generator = select_move_generator(move_generator, move_generator2,
+                                                                          agent_state, placer_opts, false);
 
             // do a complete inner loop iteration
-            annealer.placement_inner_loop(*current_move_generator,
+            annealer.placement_inner_loop(current_move_generator,
                                           timing_bb_factor);
-
-            //move the update used move_generator to its original variable
-            update_move_generator(move_generator, move_generator2, agent_state,
-                                  placer_opts, false, current_move_generator);
 
             print_place_status(annealing_state, placer_stats, temperature_timer.elapsed_sec(),
                                critical_path.delay(), sTNS, sWNS, annealer.get_total_iteration(),
@@ -530,8 +517,7 @@ void try_place(const Netlist<>& net_list,
 
             sprintf(msg, "Cost: %g  BB Cost %g  TD Cost %g  Temperature: %g",
                     costs.cost, costs.bb_cost, costs.timing_cost, annealing_state.t);
-            update_screen(ScreenUpdatePriority::MINOR, msg, PLACEMENT,
-                          timing_info);
+            update_screen(ScreenUpdatePriority::MINOR, msg, PLACEMENT, timing_info);
 
             //#ifdef VERBOSE
             //            if (getEchoEnabled()) {
@@ -550,19 +536,15 @@ void try_place(const Netlist<>& net_list,
 
         vtr::ScopedFinishTimer temperature_timer("Placement Quench");
 
-        annealer.outer_loop_update_timing_info(num_connections);
+        annealer.outer_loop_update_timing_info();
 
-        //move the appropriate move_generator to be the current used move generator
-        assign_current_move_generator(move_generator, move_generator2,
-                                      agent_state, placer_opts, true, current_move_generator);
+        // select the appropriate move generator
+        MoveGenerator& current_move_generator = select_move_generator(move_generator, move_generator2,
+                                                                      agent_state, placer_opts, true);
 
         /* Run inner loop again with temperature = 0 so as to accept only swaps
          * which reduce the cost of the placement */
-        annealer.placement_inner_loop(*current_move_generator, timing_bb_factor);
-
-        // move the update used move_generator to its original variable
-        update_move_generator(move_generator, move_generator2, agent_state,
-                              placer_opts, true, current_move_generator);
+        annealer.placement_inner_loop(current_move_generator, timing_bb_factor);
 
         if (placer_opts.place_quench_algorithm.is_timing_driven()) {
             critical_path = timing_info->least_slack_critical_path();

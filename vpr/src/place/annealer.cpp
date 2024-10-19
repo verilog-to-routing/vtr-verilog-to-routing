@@ -173,35 +173,6 @@ static e_move_result assess_swap(double delta_c, double t) {
     return REJECTED;
 }
 
-/**
- * @brief Updates all the cost normalization factors during the outer
- * loop iteration of the placement. At each temperature change, these
- * values are updated so that we can balance the tradeoff between the
- * different placement cost components (timing, wirelength and NoC).
- * Depending on the placement mode the corresponding normalization factors are
- * updated.
- *
- * @param costs Contains the normalization factors which need to be updated
- * @param placer_opts Determines the placement mode
- * @param noc_opts Determines if placement includes the NoC
- * @param noc_cost_handler Computes normalization factors for NoC-related cost terms
- */
-static void update_placement_cost_normalization_factors(t_placer_costs* costs,
-                                                        const t_placer_opts& placer_opts,
-                                                        const t_noc_opts& noc_opts,
-                                                        const std::optional<NocCostHandler>& noc_cost_handler) {
-    /* Update the cost normalization factors */
-    costs->update_norm_factors();
-
-    // update the noc normalization factors if the placement includes the NoC
-    if (noc_opts.noc) {
-        noc_cost_handler->update_noc_normalization_factors(*costs);
-    }
-
-    // update the current total placement cost
-    costs->cost = costs->get_total_cost(placer_opts, noc_opts);
-}
-
 ///@brief Constructor: Initialize all annealing state variables and macros.
 t_annealing_state::t_annealing_state(const t_annealing_sched& annealing_sched,
                                      float first_t,
@@ -369,6 +340,7 @@ PlacementAnnealer::PlacementAnnealer(const t_placer_opts& placer_opts,
     , move_stats_file_(nullptr, vtr::fclose)
     , outer_crit_iter_count_(1)
     , blocks_affected_(placer_state.block_locs().size())
+    , quench_started_(false)
 {
     const auto& device_ctx = g_vpr_ctx.device();
 
@@ -388,8 +360,6 @@ PlacementAnnealer::PlacementAnnealer(const t_placer_opts& placer_opts,
         // don't do an inner recompute
         inner_recompute_limit_ = first_move_lim + 1;
     }
-    moves_since_cost_recompute_ = 0;
-    tot_iter_ = 0;
 
     /* calculate the number of moves in the quench that we should recompute timing after based on the value of *
      * the commandline option quench_recompute_divider                                                         */
@@ -399,6 +369,9 @@ PlacementAnnealer::PlacementAnnealer(const t_placer_opts& placer_opts,
         // don't do an quench recompute
         quench_recompute_limit_ = first_move_lim + 1;
     }
+
+    moves_since_cost_recompute_ = 0;
+    tot_iter_ = 0;
 
     // Get the first range limiter
     placer_state_.mutable_move().first_rlim = (float)std::max(device_ctx.grid.width() - 1, device_ctx.grid.height() - 1);
@@ -807,19 +780,15 @@ e_move_result PlacementAnnealer::try_swap(MoveGenerator& move_generator,
 }
 
 /* Function to update the setup slacks and criticalities before the inner loop of the annealing/quench */
-void PlacementAnnealer::outer_loop_update_timing_info(int num_connections) {
+void PlacementAnnealer::outer_loop_update_timing_info() {
     if (placer_opts_.place_algorithm.is_timing_driven()) {
         /* At each temperature change we update these values to be used
          * for normalizing the tradeoff between timing and wirelength (bb) */
-        if (outer_crit_iter_count_ >= placer_opts_.recompute_crit_iter
-            || placer_opts_.inner_loop_recompute_divider != 0) {
+        if (outer_crit_iter_count_ >= placer_opts_.recompute_crit_iter ||
+            placer_opts_.inner_loop_recompute_divider != 0) {
 #ifdef VERBOSE
             VTR_LOG("Outer loop recompute criticalities\n");
 #endif
-            // Avoid division by zero
-            num_connections = std::max(num_connections, 1);
-            VTR_ASSERT(num_connections > 0);
-
             PlaceCritParams crit_params;
             crit_params.crit_exponent = annealing_state_.crit_exponent;
             crit_params.crit_limit = placer_opts_.place_crit_limit;
@@ -834,7 +803,10 @@ void PlacementAnnealer::outer_loop_update_timing_info(int num_connections) {
     }
 
     // Update the cost normalization factors
-    update_placement_cost_normalization_factors(&costs_, placer_opts_, noc_opts_, noc_cost_handler_);
+    costs_.update_norm_factors();
+
+    // update the current total placement cost
+    costs_.cost = costs_.get_total_cost(placer_opts_, noc_opts_);
 }
 
 /* Function which contains the inner loop of the simulated annealing */
@@ -867,8 +839,9 @@ void PlacementAnnealer::placement_inner_loop(MoveGenerator& move_generator,
              * We do this only once in a while, since it is expensive.
              */
 
+            const int recompute_limit = quench_started_ ? quench_recompute_limit_ : inner_recompute_limit_;
             // on last iteration don't recompute
-            if (inner_crit_iter_count >= inner_recompute_limit_ && inner_iter != annealing_state_.move_lim - 1) {
+            if (inner_crit_iter_count >= recompute_limit && inner_iter != annealing_state_.move_lim - 1) {
 
                 inner_crit_iter_count = 0;
 #ifdef VERBOSE
@@ -934,6 +907,8 @@ bool PlacementAnnealer::outer_loop_update_state() {
 }
 
 void PlacementAnnealer::start_quench() {
+    quench_started_ = true;
+
     // Freeze out: only accept solutions that improve placement.
     annealing_state_.t = 0;
 

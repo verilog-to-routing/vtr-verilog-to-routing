@@ -31,22 +31,13 @@ std::pair<std::unique_ptr<MoveGenerator>, std::unique_ptr<MoveGenerator>> create
                                                                                                  double noc_attraction_weight);
 
 /**
- * @brief copy one of the available move_generators to be the current move_generator that would be used in the placement based on the placer_options and the agent state
+ * @brief Returns to one of the available move generators to be the current move generator
+ * that would be used in the placement based on the placer_options and the agent state
  */
-void assign_current_move_generator(std::unique_ptr<MoveGenerator>& move_generator,
-                                   std::unique_ptr<MoveGenerator>& move_generator2,
-                                   e_agent_state agent_state,
-                                   const t_placer_opts& placer_opts,
-                                   bool in_quench,
-                                   std::unique_ptr<MoveGenerator>& current_move_generator);
+MoveGenerator& select_move_generator(std::unique_ptr<MoveGenerator>& move_generator,
+                                     std::unique_ptr<MoveGenerator>& move_generator2,
+                                     e_agent_state agent_state,
+                                     const t_placer_opts& placer_opts,
+                                     bool in_quench);
 
-/**
- * @brief move the updated current_move_generator to its original move_Generator structure based on the placer_options and the agent state
- */
-void update_move_generator(std::unique_ptr<MoveGenerator>& move_generator,
-                           std::unique_ptr<MoveGenerator>& move_generator2,
-                           e_agent_state agent_state,
-                           const t_placer_opts& placer_opts,
-                           bool in_quench,
-                           std::unique_ptr<MoveGenerator>& current_move_generator);
 #endif

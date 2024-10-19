@@ -174,7 +174,7 @@ class PlacementAnnealer {
     void placement_inner_loop(MoveGenerator& move_generator,
                               float timing_bb_factor);
 
-    void outer_loop_update_timing_info(int num_connections);
+    void outer_loop_update_timing_info();
 
     bool outer_loop_update_state();
 
@@ -248,6 +248,7 @@ class PlacementAnnealer {
     int quench_recompute_limit_;
     int moves_since_cost_recompute_;
     int tot_iter_;
+    bool quench_started_;
 
   private:
     ///@brief Find the starting temperature for the annealing loop.
