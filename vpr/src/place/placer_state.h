@@ -110,6 +110,10 @@ struct PlacerRuntimeContext : public Context {
  */
 struct PlacerMoveContext : public Context {
   public:
+    PlacerMoveContext() = delete;
+    explicit PlacerMoveContext(bool cube_bb);
+
+  public:
     // [0..cluster_ctx.clb_nlist.nets().size()-1]. Store the number of blocks on each of a net's bounding box (to allow efficient updates)
     vtr::vector<ClusterNetId, t_bb> bb_num_on_edges;
 
@@ -138,15 +142,9 @@ struct PlacerMoveContext : public Context {
 
     // Container to save the highly critical pins (higher than a timing criticality limit set by commandline option)
     std::vector<std::pair<ClusterNetId, int>> highly_crit_pins;
-
-  public:
-    PlacerMoveContext() {
-        // allocate helper vectors that are used by many move generators
-        X_coord.resize(10, 0);
-        Y_coord.resize(10, 0);
-        layer_coord.resize(10, 0);
-    }
 };
+
+
 
 /**
  * @brief This object encapsulates VPR placer's state.
@@ -163,7 +161,7 @@ struct PlacerMoveContext : public Context {
  */
 class PlacerState : public Context {
   public:
-    PlacerState(bool placement_is_timing_driven);
+    PlacerState(bool placement_is_timing_driven, bool cube_bb);
 
   public:
     inline const PlacerTimingContext& timing() const { return timing_; }

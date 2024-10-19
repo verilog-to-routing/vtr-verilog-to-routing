@@ -232,7 +232,7 @@ void try_place(const Netlist<>& net_list,
 
     int move_lim = (int)(placer_opts.anneal_sched.inner_num * pow(net_list.blocks().size(), 1.3333));
 
-    PlacerState placer_state(placer_opts.place_algorithm.is_timing_driven());
+    PlacerState placer_state(placer_opts.place_algorithm.is_timing_driven(), cube_bb);
     auto& blk_loc_registry = placer_state.mutable_blk_loc_registry();
     const auto& p_timing_ctx = placer_state.timing();
     const auto& p_runtime_ctx = placer_state.runtime();
@@ -763,30 +763,11 @@ static NetCostHandler alloc_and_load_placement_structs(const t_placer_opts& plac
 
     size_t num_nets = cluster_ctx.clb_nlist.nets().size();
 
-    const int num_layers = device_ctx.grid.get_num_layers();
-
     init_placement_context(placer_state.mutable_blk_loc_registry(), directs);
 
     int max_pins_per_clb = 0;
     for (const t_physical_tile_type& type : device_ctx.physical_tile_types) {
         max_pins_per_clb = std::max(max_pins_per_clb, type.num_pins);
-    }
-
-    auto& place_move_ctx = placer_state.mutable_move();
-
-    if (place_ctx.cube_bb) {
-        place_move_ctx.bb_coords.resize(num_nets, t_bb());
-        place_move_ctx.bb_num_on_edges.resize(num_nets, t_bb());
-    } else {
-        VTR_ASSERT_SAFE(!place_ctx.cube_bb);
-        place_move_ctx.layer_bb_num_on_edges.resize(num_nets, std::vector<t_2D_bb>(num_layers, t_2D_bb()));
-        place_move_ctx.layer_bb_coords.resize(num_nets, std::vector<t_2D_bb>(num_layers, t_2D_bb()));
-    }
-
-    place_move_ctx.num_sink_pin_layer.resize({num_nets, size_t(num_layers)});
-    for (size_t flat_idx = 0; flat_idx < place_move_ctx.num_sink_pin_layer.size(); flat_idx++) {
-        auto& elem = place_move_ctx.num_sink_pin_layer.get(flat_idx);
-        elem = OPEN;
     }
 
     place_ctx.compressed_block_grids = create_compressed_block_grids();

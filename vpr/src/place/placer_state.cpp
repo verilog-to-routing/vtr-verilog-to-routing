@@ -4,6 +4,33 @@
 #include "globals.h"
 #include "move_transactions.h"
 
+PlacerMoveContext::PlacerMoveContext(bool cube_bb) {
+    const auto& device_ctx = g_vpr_ctx.device();
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+
+    // allocate helper vectors that are used by many move generators
+    X_coord.resize(10, 0);
+    Y_coord.resize(10, 0);
+    layer_coord.resize(10, 0);
+
+    const size_t num_nets = cluster_ctx.clb_nlist.nets().size();
+
+    const int num_layers = device_ctx.grid.get_num_layers();
+
+    if (cube_bb) {
+        bb_coords.resize(num_nets, t_bb());
+        bb_num_on_edges.resize(num_nets, t_bb());
+    } else {
+        layer_bb_num_on_edges.resize(num_nets, std::vector<t_2D_bb>(num_layers, t_2D_bb()));
+        layer_bb_coords.resize(num_nets, std::vector<t_2D_bb>(num_layers, t_2D_bb()));
+    }
+
+    num_sink_pin_layer.resize({num_nets, size_t(num_layers)});
+    for (size_t flat_idx = 0; flat_idx < num_sink_pin_layer.size(); flat_idx++) {
+        auto& elem = num_sink_pin_layer.get(flat_idx);
+        elem = OPEN;
+    }
+}
 
 PlacerTimingContext::PlacerTimingContext(bool placement_is_timing_driven) {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -54,5 +81,6 @@ void PlacerTimingContext::commit_td_cost(const t_pl_blocks_to_be_moved& blocks_a
     }
 }
 
-PlacerState::PlacerState(bool placement_is_timing_driven)
-    : timing_(placement_is_timing_driven) {}
+PlacerState::PlacerState(bool placement_is_timing_driven, bool cube_bb)
+    : timing_(placement_is_timing_driven)
+    , move_(cube_bb) {}
