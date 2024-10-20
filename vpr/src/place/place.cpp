@@ -316,8 +316,7 @@ void try_place(const Netlist<>& net_list,
         placement_delay_calc->set_tsu_margin_relative(placer_opts.tsu_rel_margin);
         placement_delay_calc->set_tsu_margin_absolute(placer_opts.tsu_abs_margin);
 
-        timing_info = make_setup_timing_info(placement_delay_calc,
-                                             placer_opts.timing_update_type);
+        timing_info = make_setup_timing_info(placement_delay_calc, placer_opts.timing_update_type);
 
         placer_setup_slacks = std::make_unique<PlacerSetupSlacks>(cluster_ctx.clb_nlist, netlist_pin_lookup);
 

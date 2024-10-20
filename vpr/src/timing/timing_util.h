@@ -89,7 +89,7 @@ std::map<tatum::DomainId, size_t> count_clock_fanouts(const tatum::TimingGraph& 
 //Return the criticality of a net's pin in the CLB netlist
 float calculate_clb_net_pin_criticality(const SetupTimingInfo& timing_info,
                                         const ClusteredPinAtomPinsLookup& pin_lookup,
-                                        const ParentPinId& clb_pin,
+                                        const ParentPinId clb_pin,
                                         bool is_flat);
 
 //Return the setup slack of a net's pin in the CLB netlist

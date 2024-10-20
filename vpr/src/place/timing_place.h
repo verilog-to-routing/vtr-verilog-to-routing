@@ -102,8 +102,8 @@ class PlacerCriticalities {
 
   public: //Lifetime
     PlacerCriticalities(const ClusteredNetlist& clb_nlist, const ClusteredPinAtomPinsLookup& netlist_pin_lookup);
-    PlacerCriticalities(const PlacerCriticalities& clb_nlist) = delete;
-    PlacerCriticalities& operator=(const PlacerCriticalities& clb_nlist) = delete;
+    PlacerCriticalities(const PlacerCriticalities&) = delete;
+    PlacerCriticalities& operator=(const PlacerCriticalities&) = delete;
 
   public: //Accessors
     ///@brief Returns the criticality of the specified connection.

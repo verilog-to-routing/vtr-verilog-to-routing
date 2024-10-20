@@ -126,7 +126,7 @@ enum class e_router_lookahead {
 
 enum class e_route_bb_update {
     STATIC, ///<Router net bounding boxes are not updated
-    DYNAMIC ///<Rotuer net bounding boxes are updated
+    DYNAMIC ///<Router net bounding boxes are updated
 };
 
 enum class e_router_initial_timing {
@@ -487,7 +487,7 @@ struct t_net_power {
     float probability;
 
     /**
-     * @brief Transistion density - average # of transitions per clock cycle
+     * @brief Transition density - average # of transitions per clock cycle
      *
      * For example, a clock would have density = 2
      */
@@ -720,13 +720,6 @@ struct hash<t_pl_loc> {
     }
 };
 } // namespace std
-
-struct t_place_region {
-    float capacity; ///<Capacity of this region, in tracks.
-    float inv_capacity;
-    float occupancy; ///<Expected number of tracks that will be occupied.
-    float cost;      ///<Current cost of this usage.
-};
 
 /**
  * @brief  Represents the placement location of a clustered block
@@ -1491,7 +1484,7 @@ struct t_det_routing_arch {
 struct t_seg_details {
     int length = 0;
     int start = 0;
-    bool longline = 0;
+    bool longline = false;
     std::unique_ptr<bool[]> sb;
     std::unique_ptr<bool[]> cb;
     short arch_wire_switch = 0;
@@ -1574,16 +1567,6 @@ class t_chan_seg_details {
  * once allocated in rr_graph2.cpp, is can be accessed like: [0..grid.width()][0..grid.height()][0..num_tracks-1]
  */
 typedef vtr::NdMatrix<t_chan_seg_details, 3> t_chan_details;
-
-/**
- * @brief A linked list of float pointers.
- *
- * Used for keeping track of which pathcosts in the router have been changed.
- */
-struct t_linked_f_pointer {
-    t_linked_f_pointer* next;
-    float* fptr;
-};
 
 constexpr bool is_pin(e_rr_type type) { return (type == IPIN || type == OPIN); }
 constexpr bool is_chan(e_rr_type type) { return (type == CHANX || type == CHANY); }
@@ -1685,8 +1668,6 @@ struct t_non_configurable_rr_sets {
     std::set<std::set<t_node_edge>> edge_sets;
 };
 
-#define NO_PREVIOUS -1
-
 ///@brief Power estimation options
 struct t_power_opts {
     bool do_power; ///<Perform power estimation?
@@ -1703,12 +1684,6 @@ struct t_power_opts {
  * @param y_list= Stores the channel width of all verical channels and thus goes from [0..grid.width()]
  * (imagine a 2D Cartesian grid with vertical lines starting at every grid point on a line parallel to the x-axis)
  */
-
-///@brief Type to store our list of token to enum pairings
-struct t_TokenPair {
-    const char* Str;
-    int Enum;
-};
 
 struct t_lb_type_rr_node; /* Defined in pack_types.h */
 
