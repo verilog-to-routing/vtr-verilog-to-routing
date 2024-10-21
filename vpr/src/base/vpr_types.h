@@ -86,6 +86,12 @@ enum class ScreenUpdatePriority {
     MAJOR = 1
 };
 
+#ifdef VTR_ENABLE_DEBUG_LOGGING
+constexpr bool VTR_ENABLE_DEBUG_LOGGING_CONST_EXPR = true;
+#else
+constexpr bool VTR_ENABLE_DEBUG_LOGGING_CONST_EXPR = false;
+#endif
+
 #define MAX_SHORT 32767
 
 /* Values large enough to be way out of range for any data, but small enough
@@ -1101,7 +1107,6 @@ struct t_placer_opts {
     float place_agent_gamma;
     float place_dm_rlim;
     e_agent_space place_agent_space;
-    //int place_timing_cost_func;
     std::string place_reward_fun;
     float place_crit_limit;
     int place_constraint_expand;
@@ -1492,7 +1497,7 @@ struct t_seg_details {
     short arch_opin_between_dice_switch = 0;
     float Rmetal = 0;
     float Cmetal = 0;
-    bool twisted = 0;
+    bool twisted = false;
     enum Direction direction = Direction::NONE;
     int group_start = 0;
     int group_size = 0;

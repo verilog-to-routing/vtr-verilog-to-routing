@@ -439,7 +439,6 @@ t_bb union_2d_bb(const std::vector<t_2D_bb>& tbb_vec);
 std::pair<t_bb, t_bb> union_2d_bb_incr(const std::vector<t_2D_bb>& num_edge_vec,
                                        const std::vector<t_2D_bb>& bb_vec);
 
-#ifdef VTR_ENABLE_DEBUG_LOGGING
 /**
  * @brief If the block ID passed to the placer_debug_net parameter of the command line is equal to blk_id, or if any of the nets
  * connected to the block share the same ID as the net ID passed to the placer_debug_net parameter of the command line,
@@ -450,6 +449,5 @@ std::pair<t_bb, t_bb> union_2d_bb_incr(const std::vector<t_2D_bb>& num_edge_vec,
  */
 void enable_placer_debug(const t_placer_opts& placer_opts,
                          ClusterBlockId blk_id);
-#endif
 
 #endif

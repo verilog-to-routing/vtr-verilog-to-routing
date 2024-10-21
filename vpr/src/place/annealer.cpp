@@ -15,78 +15,7 @@
 #include "NetPinTimingInvalidator.h"
 #include "place_timing_update.h"
 #include "read_place.h"
-
-#ifdef VTR_ENABLE_DEBUG_LOGGIING
-#    define LOG_MOVE_STATS_HEADER()                               \
-        do {                                                      \
-            if (f_move_stats_file) {                              \
-                fprintf(f_move_stats_file.get(),                  \
-                        "temp,from_blk,to_blk,from_type,to_type," \
-                        "blk_count,"                              \
-                        "delta_cost,delta_bb_cost,delta_td_cost," \
-                        "outcome,reason\n");                      \
-            }                                                     \
-        } while (false)
-
-#    define LOG_MOVE_STATS_PROPOSED(t, affected_blocks)                                        \
-        do {                                                                                   \
-            if (f_move_stats_file) {                                                           \
-                auto& place_ctx = g_vpr_ctx.placement();                                       \
-                auto& cluster_ctx = g_vpr_ctx.clustering();                                    \
-                ClusterBlockId b_from = affected_blocks.moved_blocks[0].block_num;             \
-                                                                                               \
-                t_pl_loc to = affected_blocks.moved_blocks[0].new_loc;                         \
-                ClusterBlockId b_to = place_ctx.grid_blocks[to.x][to.y].blocks[to.sub_tile];   \
-                                                                                               \
-                t_logical_block_type_ptr from_type = cluster_ctx.clb_nlist.block_type(b_from); \
-                t_logical_block_type_ptr to_type = nullptr;                                    \
-                if (b_to) {                                                                    \
-                    to_type = cluster_ctx.clb_nlist.block_type(b_to);                          \
-                }                                                                              \
-                                                                                               \
-                fprintf(f_move_stats_file.get(),                                               \
-                        "%g,"                                                                  \
-                        "%d,%d,"                                                               \
-                        "%s,%s,"                                                               \
-                        "%d,",                                                                 \
-                        t,                                                                     \
-                        int(b_from), int(b_to),                                                \
-                        from_type->name, (to_type ? to_type->name : "EMPTY"),                  \
-                        affected_blocks.moved_blocks.size());                                  \
-            }                                                                                  \
-        } while (false)
-
-#    define LOG_MOVE_STATS_OUTCOME(delta_cost, delta_bb_cost, delta_td_cost, \
-                                   outcome, reason)                          \
-        do {                                                                 \
-            if (f_move_stats_file) {                                         \
-                fprintf(f_move_stats_file.get(),                             \
-                        "%g,%g,%g,"                                          \
-                        "%s,%s\n",                                           \
-                        delta_cost, delta_bb_cost, delta_td_cost,            \
-                        outcome, reason);                                    \
-            }                                                                \
-        } while (false)
-
-#else
-
-#    define LOG_MOVE_STATS_HEADER()                      \
-        do {                                             \
-            fprintf(move_stats_file_.get(),             \
-                    "VTR_ENABLE_DEBUG_LOGGING disabled " \
-                    "-- No move stats recorded\n");      \
-        } while (false)
-
-#    define LOG_MOVE_STATS_PROPOSED(t, blocks_affected) \
-        do {                                            \
-        } while (false)
-
-#    define LOG_MOVE_STATS_OUTCOME(delta_cost, delta_bb_cost, delta_td_cost, \
-                                   outcome, reason)                          \
-        do {                                                                 \
-        } while (false)
-
-#endif
+#include "placer_breakpoint.h"
 
 /**
  * @brief Check if the setup slack has gotten better or worse due to block swap.
@@ -456,11 +385,6 @@ float PlacementAnnealer::estimate_starting_temperature() {
                      num_accepted, move_lim);
     }
 
-#ifdef VERBOSE
-    /* Print stats related to finding the initital temp. */
-    VTR_LOG("std_dev: %g, average cost: %g, starting temp: %g\n", std_dev, av, 20. * std_dev);
-#endif
-
     // Improved initial placement uses a fast SA for NoC routers and centroid placement
     // for other blocks. The temperature is reduced to prevent SA from destroying the initial placement
     float init_temp = std_dev / 64;
@@ -483,9 +407,8 @@ e_move_result PlacementAnnealer::try_swap(MoveGenerator& move_generator,
     float rlim_escape_fraction = placer_opts_.rlim_escape_fraction;
     float timing_tradeoff = placer_opts_.timing_tradeoff;
 
-    PlaceCritParams crit_params;
-    crit_params.crit_exponent = annealing_state_.crit_exponent;
-    crit_params.crit_limit = placer_opts_.place_crit_limit;
+    PlaceCritParams crit_params{annealing_state_.crit_exponent,
+                                placer_opts_.place_crit_limit};
 
     // move type and block type chosen by the agent
     t_propose_action proposed_action{e_move_type::UNIFORM, -1};
@@ -537,7 +460,8 @@ e_move_result PlacementAnnealer::try_swap(MoveGenerator& move_generator,
     if (proposed_action.logical_blk_type_index != -1) { //if the agent proposed the block type, then collect the block type stat
         ++move_type_stats_.blk_type_moves[proposed_action.logical_blk_type_index][(int)proposed_action.move_type];
     }
-    LOG_MOVE_STATS_PROPOSED(t, blocks_affected_);
+
+    if constexpr (VTR_ENABLE_DEBUG_LOGGING_CONST_EXPR) LOG_MOVE_STATS_PROPOSED();
 
     VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug,
                    "\t\tBefore move Place cost %e, bb_cost %e, timing cost %e\n",
@@ -546,10 +470,12 @@ e_move_result PlacementAnnealer::try_swap(MoveGenerator& move_generator,
     e_move_result move_outcome = e_move_result::ABORTED;
 
     if (create_move_outcome == e_create_move::ABORT) {
-        LOG_MOVE_STATS_OUTCOME(std::numeric_limits<float>::quiet_NaN(),
-                               std::numeric_limits<float>::quiet_NaN(),
-                               std::numeric_limits<float>::quiet_NaN(), "ABORTED",
-                               "illegal move");
+        if constexpr (VTR_ENABLE_DEBUG_LOGGING_CONST_EXPR) {
+            LOG_MOVE_STATS_OUTCOME(std::numeric_limits<double>::quiet_NaN(),
+                                   std::numeric_limits<double>::quiet_NaN(),
+                                   std::numeric_limits<double>::quiet_NaN(), "ABORTED",
+                                   "illegal move");
+        }
 
         move_outcome = ABORTED;
 
@@ -747,7 +673,9 @@ e_move_result PlacementAnnealer::try_swap(MoveGenerator& move_generator,
         move_outcome_stats.delta_bb_cost_abs = bb_delta_c;
         move_outcome_stats.delta_timing_cost_abs = timing_delta_c;
 
-        LOG_MOVE_STATS_OUTCOME(delta_c, bb_delta_c, timing_delta_c, (move_outcome ? "ACCEPTED" : "REJECTED"), "");
+        if constexpr (VTR_ENABLE_DEBUG_LOGGING_CONST_EXPR) {
+            LOG_MOVE_STATS_OUTCOME(delta_c, bb_delta_c, timing_delta_c, (move_outcome ? "ACCEPTED" : "REJECTED"), "");
+        }
     }
     move_outcome_stats.outcome = move_outcome;
 
@@ -759,20 +687,14 @@ e_move_result PlacementAnnealer::try_swap(MoveGenerator& move_generator,
         move_generator.calculate_reward_and_process_outcome(move_outcome_stats, delta_c, timing_bb_factor);
     }
 
-#ifdef VTR_ENABLE_DEBUG_LOGGING
-#    ifndef NO_GRAPHICS
-    stop_placement_and_check_breakpoints(blocks_affected, move_outcome, delta_c, bb_delta_c, timing_delta_c);
-#    endif
+#ifndef NO_GRAPHICS
+    stop_placement_and_check_breakpoints(blocks_affected_, move_outcome, delta_c, bb_delta_c, timing_delta_c);
 #endif
+
 
     // Clear the data structure containing block move info
     blocks_affected_.clear_move_blocks();
 
-#if 0
-    // Check that each accepted swap yields a valid placement. This will
-    // greatly slow the placer, but can debug some issues.
-    check_place(*costs, delay_model, criticalities, place_algorithm, noc_opts);
-#endif
     VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug,
                    "\t\tAfter move Place cost %e, bb_cost %e, timing cost %e\n",
                    costs_.cost, costs_.bb_cost, costs_.timing_cost);
@@ -786,12 +708,9 @@ void PlacementAnnealer::outer_loop_update_timing_info() {
          * for normalizing the tradeoff between timing and wirelength (bb) */
         if (outer_crit_iter_count_ >= placer_opts_.recompute_crit_iter ||
             placer_opts_.inner_loop_recompute_divider != 0) {
-#ifdef VERBOSE
-            VTR_LOG("Outer loop recompute criticalities\n");
-#endif
-            PlaceCritParams crit_params;
-            crit_params.crit_exponent = annealing_state_.crit_exponent;
-            crit_params.crit_limit = placer_opts_.place_crit_limit;
+
+            PlaceCritParams crit_params{annealing_state_.crit_exponent,
+                                        placer_opts_.place_crit_limit};
 
             //Update all timing related classes
             perform_full_timing_update(crit_params, delay_model_, criticalities_, setup_slacks_,
@@ -844,13 +763,9 @@ void PlacementAnnealer::placement_inner_loop(MoveGenerator& move_generator,
             if (inner_crit_iter_count >= recompute_limit && inner_iter != annealing_state_.move_lim - 1) {
 
                 inner_crit_iter_count = 0;
-#ifdef VERBOSE
-                VTR_LOG("Inner loop recompute criticalities\n");
-#endif
 
-                PlaceCritParams crit_params;
-                crit_params.crit_exponent = annealing_state_.crit_exponent;
-                crit_params.crit_limit = placer_opts_.place_crit_limit;
+                PlaceCritParams crit_params{annealing_state_.crit_exponent,
+                                            placer_opts_.place_crit_limit};
 
                 // Update all timing related classes
                 perform_full_timing_update(crit_params, delay_model_, criticalities_,
@@ -918,4 +833,64 @@ void PlacementAnnealer::start_quench() {
 
 std::tuple<const t_swap_stats&, const MoveTypeStat&, const t_placer_statistics&> PlacementAnnealer::get_stats() const {
     return {swap_stats_, move_type_stats_, placer_stats_};
+}
+
+void PlacementAnnealer::LOG_MOVE_STATS_HEADER() {
+
+    if constexpr (VTR_ENABLE_DEBUG_LOGGING_CONST_EXPR) {
+        if (move_stats_file_) {
+            fprintf(move_stats_file_.get(),
+                    "temp,from_blk,to_blk,from_type,to_type,"
+                    "blk_count,"
+                    "delta_cost,delta_bb_cost,delta_td_cost,"
+                    "outcome,reason\n");
+        }
+    } else {
+        if (move_stats_file_) {
+            fprintf(move_stats_file_.get(),
+                    "VTR_ENABLE_DEBUG_LOGGING disabled "
+                    "-- No move stats recorded\n");
+        }
+    }
+}
+
+void PlacementAnnealer::LOG_MOVE_STATS_PROPOSED() {
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& grid_blocks = placer_state_.grid_blocks();
+
+    if (move_stats_file_) {
+
+        ClusterBlockId b_from = blocks_affected_.moved_blocks[0].block_num;
+
+
+        t_pl_loc to = blocks_affected_.moved_blocks[0].new_loc;
+        ClusterBlockId b_to = grid_blocks.block_at_location(to);
+
+        t_logical_block_type_ptr from_type = cluster_ctx.clb_nlist.block_type(b_from);
+        t_logical_block_type_ptr to_type = nullptr;
+        if (b_to) {
+            to_type = cluster_ctx.clb_nlist.block_type(b_to);
+        }
+
+        fprintf(move_stats_file_.get(),
+                "%g,"
+                "%d,%d,"
+                "%s,%s,"
+                "%d,",
+                annealing_state_.t,
+                int(b_from), int(b_to),
+                from_type->name, (to_type ? to_type->name : "EMPTY"),
+                blocks_affected_.moved_blocks.size());
+    }
+}
+
+void PlacementAnnealer::LOG_MOVE_STATS_OUTCOME(double delta_cost, double delta_bb_cost, double delta_td_cost,
+                                               const char* outcome, const char* reason) {
+    if (move_stats_file_) {
+        fprintf(move_stats_file_.get(),
+                "%g,%g,%g,"
+                "%s,%s\n",
+                delta_cost, delta_bb_cost, delta_td_cost,
+                outcome, reason);
+    }
 }

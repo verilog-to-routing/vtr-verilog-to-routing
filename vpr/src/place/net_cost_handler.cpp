@@ -104,12 +104,12 @@ static double wirelength_crossing_count(size_t fanout);
 
 NetCostHandler::NetCostHandler(const t_placer_opts& placer_opts,
                                PlacerState& placer_state,
-                               size_t num_nets,
                                bool cube_bb)
     : cube_bb_(cube_bb)
     , placer_state_(placer_state)
     , placer_opts_(placer_opts) {
     const int num_layers = g_vpr_ctx.device().grid.get_num_layers();
+    const size_t num_nets = g_vpr_ctx.clustering().clb_nlist.nets().size();
 
     // Either 3D BB or per layer BB data structure are used, not both.
     if (cube_bb_) {

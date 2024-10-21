@@ -1,9 +1,6 @@
 #include <cstdio>
 #include <cmath>
 #include <memory>
-#include <fstream>
-#include <iostream>
-#include <numeric>
 #include <chrono>
 #include <optional>
 
@@ -11,29 +8,21 @@
 #include "vtr_assert.h"
 #include "vtr_log.h"
 #include "vtr_util.h"
-#include "vtr_random.h"
-#include "vtr_geometry.h"
 #include "vtr_time.h"
 #include "vtr_math.h"
-#include "vtr_ndmatrix.h"
 
 #include "vpr_types.h"
 #include "vpr_error.h"
 #include "vpr_utils.h"
-#include "vpr_net_pins_matrix.h"
 
 #include "globals.h"
 #include "place.h"
 #include "annealer.h"
 #include "read_place.h"
 #include "draw.h"
-#include "place_and_route.h"
-#include "net_delay.h"
-#include "timing_place_lookup.h"
 #include "timing_place.h"
 #include "read_xml_arch_file.h"
 #include "echo_files.h"
-#include "place_macro.h"
 #include "histogram.h"
 #include "place_util.h"
 #include "analytic_placer.h"
@@ -43,7 +32,6 @@
 #include "move_transactions.h"
 #include "move_utils.h"
 #include "place_constraints.h"
-#include "manual_moves.h"
 #include "buttons.h"
 
 #include "manual_move_generator.h"
@@ -56,13 +44,10 @@
 #include "tatum/echo_writer.hpp"
 #include "tatum/TimingReporter.hpp"
 
-#include "placer_breakpoint.h"
 #include "RL_agent_util.h"
 #include "place_checkpoint.h"
 
 #include "clustered_netlist_utils.h"
-
-#include "cluster_placement.h"
 
 #include "noc_place_utils.h"
 
@@ -74,15 +59,6 @@
  * -1*(1.5-REWARD_BB_TIMING_RELATIVE_WEIGHT)*timing_cost + (1+REWARD_BB_TIMING_RELATIVE_WEIGHT)*bb_cost)
  */
 static constexpr float REWARD_BB_TIMING_RELATIVE_WEIGHT = 0.4;
-
-#ifdef VTR_ENABLE_DEBUG_LOGGING
-#    include "draw_types.h"
-#    include "draw_global.h"
-#    include "draw_color.h"
-#endif
-
-/************** Types and defines local to place.c ***************************/
-constexpr double INVALID_COST = std::numeric_limits<double>::quiet_NaN();
 
 /********************* Static subroutines local to place.c *******************/
 #ifdef VERBOSE
@@ -369,6 +345,7 @@ void try_place(const Netlist<>& net_list,
         costs.bb_cost_norm = 1 / costs.bb_cost;
 
         /* Timing cost and normalization factors are not used */
+        constexpr double INVALID_COST = std::numeric_limits<double>::quiet_NaN();
         costs.timing_cost = INVALID_COST;
         costs.timing_cost_norm = INVALID_COST;
     }
@@ -673,10 +650,8 @@ void try_place(const Netlist<>& net_list,
 
     free_placement_structs();
 
-    print_timing_stats("Placement Quench", post_quench_timing_stats,
-                       pre_quench_timing_stats);
-    print_timing_stats("Placement Total ", timing_ctx.stats,
-                       pre_place_timing_stats);
+    print_timing_stats("Placement Quench", post_quench_timing_stats, pre_quench_timing_stats);
+    print_timing_stats("Placement Total ", timing_ctx.stats, pre_place_timing_stats);
 
     VTR_LOG("update_td_costs: connections %g nets %g sum_nets %g total %g\n",
             p_runtime_ctx.f_update_td_costs_connections_elapsed_sec,
@@ -736,20 +711,11 @@ static NetCostHandler alloc_and_load_placement_structs(const t_placer_opts& plac
                                                        const std::vector<t_direct_inf>& directs,
                                                        PlacerState& placer_state,
                                                        std::optional<NocCostHandler>& noc_cost_handler) {
-    const auto& device_ctx = g_vpr_ctx.device();
-    const auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
 
     place_ctx.lock_loc_vars();
 
-    size_t num_nets = cluster_ctx.clb_nlist.nets().size();
-
     init_placement_context(placer_state.mutable_blk_loc_registry(), directs);
-
-    int max_pins_per_clb = 0;
-    for (const t_physical_tile_type& type : device_ctx.physical_tile_types) {
-        max_pins_per_clb = std::max(max_pins_per_clb, type.num_pins);
-    }
 
     place_ctx.compressed_block_grids = create_compressed_block_grids();
 
@@ -757,7 +723,7 @@ static NetCostHandler alloc_and_load_placement_structs(const t_placer_opts& plac
         noc_cost_handler.emplace(placer_state.block_locs());
     }
 
-    return NetCostHandler{placer_opts, placer_state, num_nets, place_ctx.cube_bb};
+    return NetCostHandler{placer_opts, placer_state, place_ctx.cube_bb};
 }
 
 /* Frees the major structures needed by the placer (and not needed       *

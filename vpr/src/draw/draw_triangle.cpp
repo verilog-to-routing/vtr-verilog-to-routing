@@ -1,40 +1,12 @@
-#include <cstdio>
-#include <cfloat>
-#include <cstring>
+
 #include <cmath>
-#include <algorithm>
-#include <sstream>
-#include <array>
-#include <iostream>
 
 #include "vtr_assert.h"
-#include "vtr_ndoffsetmatrix.h"
-#include "vtr_memory.h"
-#include "vtr_log.h"
 #include "vtr_color_map.h"
-#include "vtr_path.h"
-
-#include "vpr_utils.h"
-#include "vpr_error.h"
-
-#include "globals.h"
 #include "draw_color.h"
-#include "draw.h"
-#include "draw_rr.h"
-#include "draw_rr_edges.h"
-#include "draw_toggle_functions.h"
 #include "draw_triangle.h"
-#include "draw_searchbar.h"
-#include "draw_mux.h"
-#include "read_xml_arch_file.h"
 #include "draw_global.h"
-#include "draw_basic.h"
 
-#include "move_utils.h"
-
-#ifdef VTR_ENABLE_DEBUG_LOGGING
-#    include "move_utils.h"
-#endif
 
 #ifdef WIN32 /* For runtime tracking in WIN32. The clock() function defined in time.h will *
               * track CPU runtime.														   */

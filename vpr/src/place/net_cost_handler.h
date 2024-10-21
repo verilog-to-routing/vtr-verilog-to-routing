@@ -43,11 +43,11 @@ class NetCostHandler {
      * are affected by a move and data needed per net about where their terminals are in order to quickly (incrementally) update
      * their wirelength costs. These data structures are (layer_)ts_bb_edge_new, (layer_)ts_bb_coord_new, ts_layer_sink_pin_count,
      * and ts_nets_to_update.
-     * @param num_nets Number of nets in the netlist used by the placement engine (currently clustered netlist)
+     * @param placer_opts Contains some parameters that determine how the bounding box is computed.
+     * @param placer_state Contains information about block locations and net bounding boxes.
      * @param cube_bb True if the 3D bounding box should be used, false otherwise.
-     * @param place_cost_exp It is an exponent to which you take the average inverse channel
      */
-    NetCostHandler(const t_placer_opts& placer_opts, PlacerState& placer_state, size_t num_nets, bool cube_bb);
+    NetCostHandler(const t_placer_opts& placer_opts, PlacerState& placer_state, bool cube_bb);
 
     /**
      * @brief Finds the bb cost from scratch.
