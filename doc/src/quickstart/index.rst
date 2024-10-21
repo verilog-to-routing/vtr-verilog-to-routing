@@ -2,7 +2,7 @@
 VTR Quick Start
 ###############
 
-This is a quick introduction to VTR which covers how to run VTR and some of its associated tools (:ref:`VPR`, :ref:`odin_ii`, :ref:`ABC`).
+This is a quick introduction to VTR which covers how to run VTR and some of its associated tools (:ref:`VPR`, :ref:`Parmys`, :ref:`ABC`).
 
 Setting Up VTR
 ==============
@@ -47,14 +47,6 @@ On most unix-like systems you can run:
 .. code-block:: bash
 
     > make
-
-The default front-end for VTR is :ref:`Parmys<parmys>`, but you can build with ODIN II instead using the command below. This is required to run :ref:`Synthesizing with ODIN II<synthesizing_with_odin_ii>`.
-
-.. code-block:: bash
-
-    > make CMAKE_PARAMS="-DWITH_ODIN=on"
-
-from the VTR root directory (hereafter referred to as :term:`$VTR_ROOT`) to build VTR.
 
 .. note:: 
 
@@ -198,7 +190,7 @@ As an exercise try the following:
 
 .. figure:: tseng_blk1.png
 
-    Input (blue)/output (red) nets of block ``n_n3199`` (highlighted green).
+    Input (blue)/output (red) nets of block ``n_n3226`` (highlighted green).
 
 .. note:: 
     If you do not provide :option:`--analysis <vpr --analysis>`, VPR will re-implement the circuit from scratch.
@@ -239,15 +231,187 @@ Let's start by making a fresh directory for us to work in:
 
 Next we need to run the three main sets of tools:
 
-* :ref:`odin_ii` performs 'synthesis' which converts our behavioural Verilog (``.v`` file) into a circuit netlist (``.blif`` file) consisting of logic equations and FPGA architecture primitives (Flip-Flops, adders etc.),
+* :ref:`Parmys` performs 'synthesis' which converts our behavioural Verilog (``.v`` file) into a circuit netlist (``.blif`` file) consisting of logic equations and FPGA architecture primitives (Flip-Flops, adders etc.),
 * :ref:`ABC` performs 'logic optimization' which simplifies the circuit logic, and 'technology mapping' which converts logic equations into the Look-Up-Tables (LUTs) available on an FPGA, and
 * :ref:`VPR` which performs packing, placement and routing of the circuit to implement it on the targeted FPGA architecture.
 
-.. _synthesizing_with_odin_ii:
-Synthesizing with ODIN II
+.. _synthesizing_with_parmys:
+Synthesizing with Parmys
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-First we'll run ODIN II on our Verilog file to synthesize it into a circuit netlist, providing the options:
+To synthesize our Verilog file into a circuit netlist, we will utilize the `run_vtr_flow.py` script, which streamlines the process. This command synthesizes the provided Verilog file (`blink.v`) while targeting the specified FPGA architecture (`EArch.xml`).
+
+The command is as follows:
+
+.. code-block:: bash
+
+    > $VTR_ROOT/vtr_flow/scripts/run_vtr_flow.py \
+        $VTR_ROOT/doc/src/quickstart/blink.v \
+        $VTR_ROOT/vtr_flow/arch/timing/EArch.xml \
+        -start parmys -end parmys
+
+When executed, the output should indicate successful synthesis, similar to:
+
+    EArch/blink        OK (took 0.16 seconds, overall memory peak 20.00 MiB consumed by parmys run)
+
+This output confirms that the synthesis was successful and provides information on the duration and memory usage during the process.
+
+We can now take a look at the circuit which Parmys produced (``blink.parmys.blif``).
+
+.. seealso:: For more information on the BLIF file format see :ref:`blif_format`.
+
+Implementing the circuit with VPR
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Now that we have the optimized and technology mapped netlist (``blink.parmys.blif``), we can invoke VPR to implement it onto the ``EArch`` FPGA architecture (in the same way we did with the ``tseng`` design earlier).
+However, since our BLIF file doesn't match the design name we explicitly specify:
+
+ * ``blink`` as the circuit name, and
+ * the input circuit file with :option:`--circuit_file <vpr --circuit_file>`.
+
+to ensure the resulting ``.net``, ``.place`` and ``.route`` files will have the correct names.
+
+The resulting command is:
+
+.. code-block:: bash
+
+    > $VTR_ROOT/vpr/vpr \
+        $VTR_ROOT/vtr_flow/arch/timing/EArch.xml \
+        ~/vtr_work/quickstart/blink_manual/temp/blink.parmys.blif \
+        --route_chan_width 100
+
+and after VPR finishes we should see the resulting implementation files:
+
+.. code-block:: bash
+
+    > ls *.net *.place *.route
+
+    blink.parmys.net  blink.parmys.place  blink.parmys.route
+
+We can then view the implementation as usual by appending ``--analysis --disp on`` to the command:
+
+.. code-block:: bash
+
+    > $VTR_ROOT/vpr/vpr \
+        $VTR_ROOT/vtr_flow/arch/timing/EArch.xml \
+        ~/vtr_work/quickstart/blink_manual/temp/blink.parmys.blif \
+        --route_chan_width 100 \
+        --analysis --disp on
+
+.. figure:: blink_implementation.png
+
+    ``blink.v`` circuit implementation on the ``EArch`` FPGA architecture as viewed in the VPR GUI
+
+Automatically Running the VTR Flow
+----------------------------------
+Running each stage of the flow manually is time consuming (and potentially error prone).
+For convenience, VTR provides a script (:ref:`run_vtr_flow`) which automates this process.
+
+First, make sure you have activated the Python virtual environment created at the beginning of this tutorial:
+
+.. code-block:: bash
+
+    > source $VTR_ROOT/.venv/bin/activate
+
+Next, make a new directory to work in named ``blink_run_flow``:
+
+.. code-block:: bash
+
+    > mkdir -p ~/vtr_work/quickstart/blink_run_flow
+    > cd ~/vtr_work/quickstart/blink_run_flow
+
+Now lets run the script (``$VTR_ROOT/vtr_flow/scripts/run_vtr_flow.py``) passing in:
+
+* The circuit verilog file (``$VTR_ROOT/doc/src/quickstart/blink.v``)
+* The FPGA architecture file (``$VTR_ROOT/vtr_flow/arch/timing/EArch.xml``)
+
+and also specifying the options:
+
+* ``-temp_dir .`` to run in the current directory (``.`` on unix-like systems)
+* ``--route_chan_width 100`` a fixed FPGA routing architecture channel width.
+
+
+The resulting command is:
+
+.. code-block:: bash
+
+    > $VTR_ROOT/vtr_flow/scripts/run_vtr_flow.py \
+        $VTR_ROOT/doc/src/quickstart/blink.v \
+        $VTR_ROOT/vtr_flow/arch/timing/EArch.xml \
+        -temp_dir . \
+        --route_chan_width 100
+
+.. note:: Options unrecognized by run_vtr_flow (like ``--route_chan_width``) are passed on to VPR.
+
+which should produce output similar to::
+
+    EArch/blink             OK     (took 0.26 seconds)
+
+There are also multiple log files (including for ABC, Parmys and VPR), which by convention the script names with the ``.out`` suffix:
+
+.. code-block:: bash
+
+    > ls *.out
+
+    0_blackboxing_latch.out  parmys.out        report_clocks.abc.out  vanilla_restore_clocks.out
+    abc0.out                 report_clk.out  restore_latch0.out     vpr.out
+
+With the main log files of interest including the Parmys log file (``parmys.out``), log files produced by ABC (e.g. ``abc0.out``), and the VPR log file (``vpr.out``).
+
+.. note::
+
+    ABC may be invoked multiple times if a circuit has multiple clock domains, producing multiple log files (``abc0.out``, ``abc1.out``, ...)
+    
+
+You will also see there are several BLIF files produced:
+
+.. code-block:: bash
+
+    > ls *.blif
+
+    0_blink.abc.blif   0_blink.raw.abc.blif  blink.parmys.blif
+    0_blink.parmys.blif  blink.abc.blif        blink.pre-vpr.blif
+
+With the main files of interest being ``blink.parmys.blif`` (netlist produced by Parmys), ``blink.abc.blif`` (final netlist produced by ABC after clock restoration), ``blink.pre-vpr.blif`` netlist used by VPR (usually identical to ``blink.abc.blif``).
+
+Like before, we can also see the implementation files generated by VPR:
+
+.. code-block:: bash
+
+    > ls *.net *.place *.route
+
+    blink.net  blink.place  blink.route
+
+which we can visualize with:
+
+.. code-block:: bash
+
+    > $VTR_ROOT/vpr/vpr \
+        $VTR_ROOT/vtr_flow/arch/timing/EArch.xml \
+        blink --circuit_file blink.pre-vpr.blif \
+        --route_chan_width 100 \
+        --analysis --disp on
+
+Manually Running VTR with ODIN II
+----------------------------------
+VTR includes a second synthesis tool, ODIN II. Below we explain how to run this alternative synthesis flow.
+
+Let's start by making a new directory for us to work in:
+
+.. code-block:: bash
+
+    > mkdir -p ~/vtr_work/quickstart/blink_manual
+    > cd ~/vtr_work/quickstart/blink_manual
+
+To synthesize your Verilog design with ODIN II, you need to build VTR with the following command:
+
+.. code-block:: bash
+
+    > make CMAKE_PARAMS="-DWITH_ODIN=on"
+
+This step enables ODIN II support in the VTR build process, which is essential for the subsequent synthesis operations.
+
+
+Next, run ODIN II on your Verilog file to synthesize it into a circuit netlist. Use the command below, specifying the required options:
 
  * ``-a $VTR_ROOT/vtr_flow/arch/timing/EArch.xml`` which specifies what FPGA architecture we are targeting,
  * ``-V $VTR_ROOT/doc/src/quickstart/blink.v`` which specifies the verilog file we want to synthesize, and
@@ -262,7 +426,7 @@ The resulting command is:
         -V $VTR_ROOT/doc/src/quickstart/blink.v \
         -o blink.odin.blif
 
-which when run should end with something like::
+After running the command, you should see an output similar to the following::
 
     Total time: 14.7ms
     Odin ran with exit status: 0
@@ -354,136 +518,7 @@ If we inspect ``blink.pre-vpr.blif`` we now see that the clock (``blink^clk``) h
     .latch n39 blink^r_counter~1_FF re blink^clk 3
 
 
-Implementing the circuit with VPR
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Now that we have the optimized and technology mapped netlist (``blink.pre-vpr.blif``), we can invoke VPR to implement it onto the ``EArch`` FPGA architecture (in the same way we did with the ``tseng`` design earlier).
-However, since our BLIF file doesn't match the design name we explicitly specify:
-
- * ``blink`` as the circuit name, and
- * the input circuit file with :option:`--circuit_file <vpr --circuit_file>`.
-
-to ensure the resulting ``.net``, ``.place`` and ``.route`` files will have the correct names.
-
-The resulting command is:
-
-.. code-block:: bash
-
-    > $VTR_ROOT/vpr/vpr \
-        $VTR_ROOT/vtr_flow/arch/timing/EArch.xml \
-        blink --circuit_file blink.pre-vpr.blif \
-        --route_chan_width 100
-
-and after VPR finishes we should see the resulting implementation files:
-
-.. code-block:: bash
-
-    > ls *.net *.place *.route
-
-    blink.net  blink.place  blink.route
-
-We can then view the implementation as usual by appending ``--analysis --disp on`` to the command:
-
-.. code-block:: bash
-
-    > $VTR_ROOT/vpr/vpr \
-        $VTR_ROOT/vtr_flow/arch/timing/EArch.xml \
-        blink --circuit_file blink.pre-vpr.blif \
-        --route_chan_width 100 \
-        --analysis --disp on
-
-.. figure:: blink_implementation.png
-
-    ``blink.v`` circuit implementation on the ``EArch`` FPGA architecture as viewed in the VPR GUI
-
-Automatically Running the VTR Flow
-----------------------------------
-Running each stage of the flow manually is time consuming (and potentially error prone).
-For convenience, VTR provides a script (:ref:`run_vtr_flow`) which automates this process.
-
-First, make sure you have activated the Python virtual environment created at the beginning of this tutorial:
-
-.. code-block:: bash
-
-    > source $VTR_ROOT/.venv/bin/activate
-
-Next, make a new directory to work in named ``blink_run_flow``:
-
-.. code-block:: bash
-
-    > mkdir -p ~/vtr_work/quickstart/blink_run_flow
-    > cd ~/vtr_work/quickstart/blink_run_flow
-
-Now lets run the script (``$VTR_ROOT/vtr_flow/scripts/run_vtr_flow.py``) passing in:
-
-* The circuit verilog file (``$VTR_ROOT/doc/src/quickstart/blink.v``)
-* The FPGA architecture file (``$VTR_ROOT/vtr_flow/arch/timing/EArch.xml``)
-
-and also specifying the options:
-
-* ``-temp_dir .`` to run in the current directory (``.`` on unix-like systems)
-* ``--route_chan_width 100`` a fixed FPGA routing architecture channel width.
-
-
-The resulting command is:
-
-.. code-block:: bash
-
-    > $VTR_ROOT/vtr_flow/scripts/run_vtr_flow.py \
-        $VTR_ROOT/doc/src/quickstart/blink.v \
-        $VTR_ROOT/vtr_flow/arch/timing/EArch.xml \
-        -temp_dir . \
-        --route_chan_width 100
-
-.. note:: Options unrecognized by run_vtr_flow (like ``--route_chan_width``) are passed on to VPR.
-
-which should produce output similar to::
-
-    EArch/blink             OK     (took 0.26 seconds)
-
-There are also multiple log files (including for ABC, ODIN and VPR), which by convention the script names with the ``.out`` suffix:
-
-.. code-block:: bash
-
-    > ls *.out
-
-    0_blackboxing_latch.out  odin.out        report_clocks.abc.out  vanilla_restore_clocks.out
-    abc0.out                 report_clk.out  restore_latch0.out     vpr.out
-
-With the main log files of interest including the ODIN log file (``odin.out``), log files produced by ABC (e.g. ``abc0.out``), and the VPR log file (``vpr.out``).
-
-.. note::
-
-    ABC may be invoked multiple times if a circuit has multiple clock domains, producing multiple log files (``abc0.out``, ``abc1.out``, ...)
-    
-
-You will also see there are several BLIF files produced:
-
-.. code-block:: bash
-
-    > ls *.blif
-
-    0_blink.abc.blif   0_blink.raw.abc.blif  blink.odin.blif
-    0_blink.odin.blif  blink.abc.blif        blink.pre-vpr.blif
-
-With the main files of interest being ``blink.odin.blif`` (netlist produced by ODIN), ``blink.abc.blif`` (final netlist produced by ABC after clock restoration), ``blink.pre-vpr.blif`` netlist used by VPR (usually identical to ``blink.abc.blif``).
-
-Like before, we can also see the implementation files generated by VPR:
-
-.. code-block:: bash
-
-    > ls *.net *.place *.route
-
-    blink.net  blink.place  blink.route
-
-which we can visualize with:
-
-.. code-block:: bash
-
-    > $VTR_ROOT/vpr/vpr \
-        $VTR_ROOT/vtr_flow/arch/timing/EArch.xml \
-        blink --circuit_file blink.pre-vpr.blif \
-        --route_chan_width 100 \
-        --analysis --disp on
+After optimizing the netlist, we can proceed to follow the steps outlined in the section titled :ref:'Implementing the circuit with VPR' using the genrated `blink.pre-vpr.blif` instead of `blink.parmys.blif`.
 
 Next Steps
 ==========
