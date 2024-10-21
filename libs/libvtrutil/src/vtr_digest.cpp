@@ -21,7 +21,7 @@ std::string secure_digest_stream(std::istream& is) {
     //Read the stream in chunks and calculate the SHA256 digest
     picosha2::hash256_one_by_one hasher;
 
-    std::array<char, 1024> buf;
+    std::array<char, 1048576> buf;
     while (!is.eof()) {
         //Process a chunk
         is.read(buf.data(), buf.size());
