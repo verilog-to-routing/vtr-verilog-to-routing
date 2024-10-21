@@ -30,7 +30,7 @@ void loc_data::build_loc_data() {
 
     std::ptrdiff_t offset = 0;
 
-    char buffer[1024];
+    char buffer[1048576];
     std::size_t size;
 
     while ((size = fread(buffer, 1, sizeof(buffer), f)) > 0) {
