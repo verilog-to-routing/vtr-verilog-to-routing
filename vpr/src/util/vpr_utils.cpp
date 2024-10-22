@@ -2171,3 +2171,36 @@ float get_min_cross_layer_delay() {
 
     return min_delay;
 }
+
+PortPinToBlockPinConverter::PortPinToBlockPinConverter() {
+    const auto& device_ctx = g_vpr_ctx.device();
+    const auto& types = device_ctx.physical_tile_types;
+
+    // Resize and initialize the values to OPEN (-1).
+    size_t num_types = types.size();
+    blk_pin_from_port_pin_.resize(num_types);
+
+    for (size_t itype = 1; itype < num_types; itype++) {
+        int blk_pin_count = 0;
+        auto& type = types[itype];
+        size_t num_sub_tiles = type.sub_tiles.size();
+        blk_pin_from_port_pin_[itype].resize(num_sub_tiles);
+        for (size_t isub_tile = 0; isub_tile < num_sub_tiles; isub_tile++) {
+            size_t num_ports = type.sub_tiles[isub_tile].ports.size();
+            blk_pin_from_port_pin_[itype][isub_tile].resize(num_ports);
+            for (size_t iport = 0; iport < num_ports; iport++) {
+                int num_pins = type.sub_tiles[isub_tile].ports[iport].num_pins;
+                for (int ipin = 0; ipin < num_pins; ipin++) {
+                    blk_pin_from_port_pin_[itype][isub_tile][iport].push_back(blk_pin_count);
+                    blk_pin_count++;
+                }
+            }
+        }
+    }
+}
+
+int PortPinToBlockPinConverter::get_blk_pin_from_port_pin(int blk_type_index, int sub_tile, int port, int port_pin) const {
+    // Return the port and port_pin for the pin.
+    int blk_pin = blk_pin_from_port_pin_[blk_type_index][sub_tile][port][port_pin];
+    return blk_pin;
+}

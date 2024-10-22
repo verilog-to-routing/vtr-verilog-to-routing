@@ -251,41 +251,4 @@ class PlaceMacros {
     void alloc_and_load_idirect_from_blk_pin_(const std::vector<t_direct_inf>& directs);
 };
 
-
-/**
- * @class PortPinToBlockPinConverter
- * @brief Maps the block pins indices for all block types to the corresponding port indices and port_pin indices.
- *
- * @details This is necessary since there are different netlist conventions - in the cluster level,
- * ports and port pins are used while in the post-pack level, block pins are used.
- */
-class PortPinToBlockPinConverter {
-  public:
-    /**
-     * @brief Allocates and loads blk_pin_from_port_pin_ array.
-     */
-    PortPinToBlockPinConverter();
-
-    /**
-     * @brief Converts port and port pin indices of a specific block type to block pin index.
-     *
-     * @details The reason block type is used instead of blocks is to save memory.
-     *
-     * @param blk_type_index The block type index.
-     * @param sub_tile The subtile index within the specified block type.
-     * @param port The port number whose block pin number is desired.
-     * @param port_pin The port pin number in the specified port whose block pin number is desired.
-     * @return int The block pin index corresponding to the given port and port pin numbers.
-     */
-    int get_blk_pin_from_port_pin(int blk_type_index, int sub_tile, int port, int port_pin);
-
-  private:
-    /**
-     * @brief This array allows us to quickly find what block pin a port pin corresponds to.
-     * @details A 4D array that should be indexed as following:
-     * [0...device_ctx.physical_tile_types.size()-1][0..num_sub_tiles][0...num_ports-1][0...num_port_pins-1]
-     */
-    std::vector<std::vector<std::vector<std::vector<int>>>> blk_pin_from_port_pin_;
-};
-
 #endif

@@ -36,7 +36,8 @@ static void mark_direct_of_ports(int idirect,
                                  std::string_view src_string,
                                  int line,
                                  std::vector<std::vector<int>>& idirect_from_blk_pin,
-                                 std::vector<std::vector<int>>& direct_type_from_blk_pin);
+                                 std::vector<std::vector<int>>& direct_type_from_blk_pin,
+                                 const PortPinToBlockPinConverter& port_pin_to_block_pin);
 
 /* Mark the pin entry in idirect_from_blk_pin with idirect and the pin entry in    *
  * direct_type_from_blk_pin with direct_type from start_pin_index to               *
@@ -51,7 +52,8 @@ static void mark_direct_of_pins(int start_pin_index,
                                 std::vector<std::vector<int>>& direct_type_from_blk_pin,
                                 int direct_type,
                                 int line,
-                                std::string_view src_string);
+                                std::string_view src_string,
+                                const PortPinToBlockPinConverter& port_pin_to_block_pin);
 
 const std::vector<t_pl_macro>& PlaceMacros::macros() const {
     return pl_macros_;
@@ -390,6 +392,8 @@ void PlaceMacros::alloc_and_load_idirect_from_blk_pin_(const std::vector<t_direc
         direct_type_from_blk_pin_[type.index].resize(type.num_pins, OPEN);
     }
 
+    const PortPinToBlockPinConverter port_pin_to_block_pin;
+
     /* Load the values */
     // Go through directs and find pins with possible direct connections
     for (size_t idirect = 0; idirect < directs.size(); idirect++) {
@@ -410,13 +414,15 @@ void PlaceMacros::alloc_and_load_idirect_from_blk_pin_(const std::vector<t_direc
         mark_direct_of_ports(idirect, SOURCE, from_pb_type_name, from_port_name,
                              from_end_pin_index, from_start_pin_index, directs[idirect].from_pin,
                              directs[idirect].line,
-                             idirect_from_blk_pin_, direct_type_from_blk_pin_);
+                             idirect_from_blk_pin_, direct_type_from_blk_pin_,
+                             port_pin_to_block_pin);
 
         // Then, find blocks with the same name as to_pb_type_name and from_port_name
         mark_direct_of_ports(idirect, SINK, to_pb_type_name, to_port_name,
                              to_end_pin_index, to_start_pin_index, directs[idirect].to_pin,
                              directs[idirect].line,
-                             idirect_from_blk_pin_, direct_type_from_blk_pin_);
+                             idirect_from_blk_pin_, direct_type_from_blk_pin_,
+                             port_pin_to_block_pin);
 
     } // Finish going through all the directs
 }
@@ -430,7 +436,8 @@ static void mark_direct_of_ports(int idirect,
                                  std::string_view src_string,
                                  int line,
                                  std::vector<std::vector<int>>& idirect_from_blk_pin,
-                                 std::vector<std::vector<int>>& direct_type_from_blk_pin) {
+                                 std::vector<std::vector<int>>& direct_type_from_blk_pin,
+                                 const PortPinToBlockPinConverter& port_pin_to_block_pin) {
     /* Go through all the ports in all the blocks to find the port that has the same   *
      * name as port_name and belongs to the block type that has the name pb_type_name. *
      * Then, check that whether start_pin_index and end_pin_index are specified. If    *
@@ -467,11 +474,13 @@ static void mark_direct_of_ports(int idirect,
                         if (start_pin_index >= 0 || end_pin_index >= 0) {
                             mark_direct_of_pins(start_pin_index, end_pin_index, itype,
                                                 isub_tile, iport, idirect_from_blk_pin, idirect,
-                                                direct_type_from_blk_pin, direct_type, line, src_string);
+                                                direct_type_from_blk_pin, direct_type, line, src_string,
+                                                port_pin_to_block_pin);
                         } else {
                             mark_direct_of_pins(0, num_port_pins - 1, itype,
                                                 isub_tile, iport, idirect_from_blk_pin, idirect,
-                                                direct_type_from_blk_pin, direct_type, line, src_string);
+                                                direct_type_from_blk_pin, direct_type, line, src_string,
+                                                port_pin_to_block_pin);
                         }
                     } // Do nothing if port_name does not match
                 }     // Finish going through all the ports
@@ -490,13 +499,12 @@ static void mark_direct_of_pins(int start_pin_index,
                                 std::vector<std::vector<int>>& direct_type_from_blk_pin,
                                 int direct_type,
                                 int line,
-                                std::string_view src_string) {
+                                std::string_view src_string,
+                                const PortPinToBlockPinConverter& port_pin_to_block_pin) {
     /* Mark the pin entry in idirect_from_blk_pin with idirect and the pin entry in    *
      * direct_type_from_blk_pin with direct_type from start_pin_index to               *
      * end_pin_index.                                                                  */
     auto& device_ctx = g_vpr_ctx.device();
-
-    PortPinToBlockPinConverter port_pin_to_block_pin;
 
     // Mark pins with indices from start_pin_index to end_pin_index, inclusive
     for (int iport_pin = start_pin_index; iport_pin <= end_pin_index; iport_pin++) {
@@ -663,35 +671,3 @@ static void validate_macros(const std::vector<t_pl_macro>& macros) {
     }
 }
 
-PortPinToBlockPinConverter::PortPinToBlockPinConverter() {
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& types = device_ctx.physical_tile_types;
-
-    // Resize and initialize the values to OPEN (-1).
-    size_t num_types = types.size();
-    blk_pin_from_port_pin_.resize(num_types);
-
-    for (size_t itype = 1; itype < num_types; itype++) {
-        int blk_pin_count = 0;
-        auto& type = types[itype];
-        size_t num_sub_tiles = type.sub_tiles.size();
-        blk_pin_from_port_pin_[itype].resize(num_sub_tiles);
-        for (size_t isub_tile = 0; isub_tile < num_sub_tiles; isub_tile++) {
-            size_t num_ports = type.sub_tiles[isub_tile].ports.size();
-            blk_pin_from_port_pin_[itype][isub_tile].resize(num_ports);
-            for (size_t iport = 0; iport < num_ports; iport++) {
-                int num_pins = type.sub_tiles[isub_tile].ports[iport].num_pins;
-                for (int ipin = 0; ipin < num_pins; ipin++) {
-                    blk_pin_from_port_pin_[itype][isub_tile][iport].push_back(blk_pin_count);
-                    blk_pin_count++;
-                }
-            }
-        }
-    }
-}
-
-int PortPinToBlockPinConverter::get_blk_pin_from_port_pin(int blk_type_index, int sub_tile, int port, int port_pin) {
-    // Return the port and port_pin for the pin.
-    int blk_pin = blk_pin_from_port_pin_[blk_type_index][sub_tile][port][port_pin];
-    return blk_pin;
-}
