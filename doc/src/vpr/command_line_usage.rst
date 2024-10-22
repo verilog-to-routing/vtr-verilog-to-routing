@@ -1098,7 +1098,7 @@ The following options are only used when FPGA device and netlist contain a NoC r
 .. option:: --noc_aggregate_bandwidth_weighting <float>
 
     Controls the importance of minimizing the NoC aggregate bandwidth. This value can be >=0, where 0 would mean the aggregate bandwidth has no relevance to placement.
-    Other positive numbers specify the importance of minimizing the NoC aggregate bandwidth to other NoC-related cost terms.
+    Other positive numbers specify the importance of minimizing the NoC aggregate bandwidth compared to other NoC-related cost terms.
     Weighting factors for NoC-related cost terms are normalized internally. Therefore, their absolute values are not important, and
     only their relative ratios determine the importance of each cost term.
 
@@ -1107,7 +1107,7 @@ The following options are only used when FPGA device and netlist contain a NoC r
 .. option:: --noc_latency_constraints_weighting <float>
 
     Controls the importance of meeting all the NoC traffic flow latency constraints. This value can be >=0, where 0 would mean latency constraints have no relevance to placement.
-    Other positive numbers specify the importance of meeting latency constraints to other NoC-related cost terms.
+    Other positive numbers specify the importance of meeting latency constraints compared to other NoC-related cost terms.
     Weighting factors for NoC-related cost terms are normalized internally. Therefore, their absolute values are not important, and
     only their relative ratios determine the importance of each cost term.
     
@@ -1117,7 +1117,7 @@ The following options are only used when FPGA device and netlist contain a NoC r
 
     Controls the importance of reducing the latencies of the NoC traffic flows.
     This value can be >=0, where 0 would mean the latencies have no relevance to placement
-    Other positive numbers specify the importance of minimizing aggregate latency to other NoC-related cost terms.
+    Other positive numbers specify the importance of minimizing aggregate latency compared to other NoC-related cost terms.
     Weighting factors for NoC-related cost terms are normalized internally. Therefore, their absolute values are not important, and
     only their relative ratios determine the importance of each cost term.
     
@@ -1127,7 +1127,7 @@ The following options are only used when FPGA device and netlist contain a NoC r
 
     Controls the importance of reducing the congestion of the NoC links.
     This value can be >=0, where 0 would mean the congestion has no relevance to placement.
-    Other positive numbers specify the importance of minimizing congestion to other NoC-related cost terms.
+    Other positive numbers specify the importance of minimizing congestion compared to other NoC-related cost terms.
     Weighting factors for NoC-related cost terms are normalized internally. Therefore, their absolute values are not important, and
     only their relative ratios determine the importance of each cost term.
 
