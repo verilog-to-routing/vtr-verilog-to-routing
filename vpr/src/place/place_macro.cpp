@@ -5,6 +5,7 @@
 #include <cmath>
 #include <sstream>
 #include <map>
+#include <string_view>
 
 #include "vtr_assert.h"
 #include "vtr_util.h"
@@ -28,11 +29,11 @@ static bool try_combine_macros(std::vector<std::vector<ClusterBlockId>>& pl_macr
  * Otherwise, mark down all the pins in that port.                                 */
 static void mark_direct_of_ports(int idirect,
                                  int direct_type,
-                                 char* pb_type_name,
-                                 char* port_name,
+                                 std::string_view pb_type_name,
+                                 std::string_view port_name,
                                  int end_pin_index,
                                  int start_pin_index,
-                                 const char* src_string,
+                                 std::string_view src_string,
                                  int line,
                                  std::vector<std::vector<int>>& idirect_from_blk_pin,
                                  std::vector<std::vector<int>>& direct_type_from_blk_pin);
@@ -50,7 +51,7 @@ static void mark_direct_of_pins(int start_pin_index,
                                 std::vector<std::vector<int>>& direct_type_from_blk_pin,
                                 int direct_type,
                                 int line,
-                                const char* src_string);
+                                std::string_view src_string);
 
 const std::vector<t_pl_macro>& PlaceMacros::macros() const {
     return pl_macros_;
@@ -393,18 +394,6 @@ int PlaceMacros::get_imacro_from_iblk(ClusterBlockId iblk) const {
 void PlaceMacros::alloc_and_load_idirect_from_blk_pin_(const std::vector<t_direct_inf>& directs) {
     const auto& device_ctx = g_vpr_ctx.device();
 
-    constexpr size_t MAX_STRING_LEN = 512;
-
-    char to_pb_type_name[MAX_STRING_LEN + 1];
-    char to_port_name[MAX_STRING_LEN + 1];
-    char from_pb_type_name[MAX_STRING_LEN + 1];
-    char from_port_name[MAX_STRING_LEN + 1];
-
-    int to_start_pin_index = -1;
-    int to_end_pin_index = -1;
-    int from_start_pin_index = -1;
-    int from_end_pin_index = -1;
-
     // Allocate and initialize the values to OPEN (-1).
     idirect_from_blk_pin_.resize(device_ctx.physical_tile_types.size());
     direct_type_from_blk_pin_.resize(device_ctx.physical_tile_types.size());
@@ -421,27 +410,27 @@ void PlaceMacros::alloc_and_load_idirect_from_blk_pin_(const std::vector<t_direc
     // Go through directs and find pins with possible direct connections
     for (size_t idirect = 0; idirect < directs.size(); idirect++) {
         // Parse out the pb_type and port name, possibly pin_indices from from_pin
-        parse_direct_pin_name(directs[idirect].from_pin.c_str(), directs[idirect].line,
-                              &from_end_pin_index, &from_start_pin_index, from_pb_type_name, from_port_name);
+        auto [from_end_pin_index, from_start_pin_index, from_pb_type_name, from_port_name] = parse_direct_pin_name(directs[idirect].from_pin,
+                                                                                                                   directs[idirect].line);
 
         // Parse out the pb_type and port name, possibly pin_indices from to_pin
-        parse_direct_pin_name(directs[idirect].to_pin.c_str(), directs[idirect].line,
-                              &to_end_pin_index, &to_start_pin_index, to_pb_type_name, to_port_name);
+        auto [to_end_pin_index, to_start_pin_index, to_pb_type_name, to_port_name] = parse_direct_pin_name(directs[idirect].to_pin,
+                                                                                                           directs[idirect].line);
 
-        /* Now I have all the data that I need, I could go through all the block pins   *
-         * in all the blocks to find all the pins that could have possible direct       *
-         * connections. Mark all down all those pins with the idirect the pins belong   *
-         * to and whether it is a source or a sink of the direct connection.            */
+        /* Now I have all the data that I need, I could go through all the block pins
+         * in all the blocks to find all the pins that could have possible direct
+         * connections. Mark all down all those pins with the idirect the pins belong
+         * to and whether it is a source or a sink of the direct connection. */
 
         // Find blocks with the same name as from_pb_type_name and from_port_name
         mark_direct_of_ports(idirect, SOURCE, from_pb_type_name, from_port_name,
-                             from_end_pin_index, from_start_pin_index, directs[idirect].from_pin.c_str(),
+                             from_end_pin_index, from_start_pin_index, directs[idirect].from_pin,
                              directs[idirect].line,
                              idirect_from_blk_pin_, direct_type_from_blk_pin_);
 
         // Then, find blocks with the same name as to_pb_type_name and from_port_name
         mark_direct_of_ports(idirect, SINK, to_pb_type_name, to_port_name,
-                             to_end_pin_index, to_start_pin_index, directs[idirect].to_pin.c_str(),
+                             to_end_pin_index, to_start_pin_index, directs[idirect].to_pin,
                              directs[idirect].line,
                              idirect_from_blk_pin_, direct_type_from_blk_pin_);
 
@@ -450,11 +439,11 @@ void PlaceMacros::alloc_and_load_idirect_from_blk_pin_(const std::vector<t_direc
 
 static void mark_direct_of_ports(int idirect,
                                  int direct_type,
-                                 char* pb_type_name,
-                                 char* port_name,
+                                 std::string_view pb_type_name,
+                                 std::string_view port_name,
                                  int end_pin_index,
                                  int start_pin_index,
-                                 const char* src_string,
+                                 std::string_view src_string,
                                  int line,
                                  std::vector<std::vector<int>>& idirect_from_blk_pin,
                                  std::vector<std::vector<int>>& direct_type_from_blk_pin) {
@@ -470,14 +459,14 @@ static void mark_direct_of_ports(int idirect,
     for (int itype = 1; itype < (int)device_ctx.physical_tile_types.size(); itype++) {
         auto& physical_tile = device_ctx.physical_tile_types[itype];
         // Find blocks with the same pb_type_name
-        if (strcmp(physical_tile.name, pb_type_name) == 0) {
+        if (pb_type_name == physical_tile.name ) {
             int num_sub_tiles = physical_tile.sub_tiles.size();
             for (int isub_tile = 0; isub_tile < num_sub_tiles; isub_tile++) {
                 auto& ports = physical_tile.sub_tiles[isub_tile].ports;
                 int num_ports = ports.size();
                 for (int iport = 0; iport < num_ports; iport++) {
                     // Find ports with the same port_name
-                    if (strcmp(ports[iport].name, port_name) == 0) {
+                    if (port_name == ports[iport].name ) {
                         int num_port_pins = ports[iport].num_pins;
 
                         // Check whether the end_pin_index is valid
@@ -517,7 +506,7 @@ static void mark_direct_of_pins(int start_pin_index,
                                 std::vector<std::vector<int>>& direct_type_from_blk_pin,
                                 int direct_type,
                                 int line,
-                                const char* src_string) {
+                                std::string_view src_string) {
     /* Mark the pin entry in idirect_from_blk_pin with idirect and the pin entry in    *
      * direct_type_from_blk_pin with direct_type from start_pin_index to               *
      * end_pin_index.                                                                  */

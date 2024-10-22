@@ -1602,14 +1602,7 @@ void free_pb_stats(t_pb* pb) {
  * load placement macros in place_macro.c                                              *
  *                                                                                     *
  ***************************************************************************************/
-
-void parse_direct_pin_name(const char* src_string, int line, int* start_pin_index, int* end_pin_index, char* pb_type_name, char* port_name) {
-    /* Parses out the pb_type_name and port_name from the direct passed in.   *
-     * If the start_pin_index and end_pin_index is specified, parse them too. *
-     * Return the values parsed by reference.                                 */
-
-    char source_string[MAX_STRING_LEN + 1];
-    int ichar, match_count;
+std::tuple<int, int, std::string, std::string> parse_direct_pin_name(std::string_view src_string, int line) {
 
     if (vtr::split(src_string).size() > 1) {
         VPR_THROW(VPR_ERROR_ARCH,
@@ -1617,24 +1610,21 @@ void parse_direct_pin_name(const char* src_string, int line, int* start_pin_inde
     }
 
     // parse out the pb_type and port name, possibly pin_indices
-    const char* find_format = strstr(src_string, "[");
-    if (find_format == nullptr) {
+    if (src_string.find('[') == std::string_view::npos) {
         /* Format "pb_type_name.port_name" */
-        *start_pin_index = *end_pin_index = -1;
+        const int start_pin_index = -1;
+        const int end_pin_index = -1;
 
-        if (strlen(src_string) + 1 <= MAX_STRING_LEN + 1) {
-            strcpy(source_string, src_string);
+        std::string source_string{src_string};
+        // replace '.' characters with space
+        std::replace(source_string.begin(), source_string.end(), '.', ' ');
+
+        std::istringstream source_iss(source_string);
+        std::string pb_type_name, port_name;
+
+        if (source_iss >> pb_type_name >> port_name) {
+            return {start_pin_index, end_pin_index, pb_type_name, port_name};
         } else {
-            VPR_FATAL_ERROR(VPR_ERROR_ARCH,
-                            "Pin name exceeded buffer size of %zu characters", MAX_STRING_LEN + 1);
-        }
-        for (ichar = 0; ichar < (int)(strlen(source_string)); ichar++) {
-            if (source_string[ichar] == '.')
-                source_string[ichar] = ' ';
-        }
-
-        match_count = sscanf(source_string, "%s %s", pb_type_name, port_name);
-        if (match_count != 2) {
             VTR_LOG_ERROR(
                 "[LINE %d] Invalid pin - %s, name should be in the format "
                 "\"pb_type_name\".\"port_name\" or \"pb_type_name\".\"port_name[end_pin_index:start_pin_index]\". "
@@ -1644,38 +1634,41 @@ void parse_direct_pin_name(const char* src_string, int line, int* start_pin_inde
         }
     } else {
         /* Format "pb_type_name.port_name[end_pin_index:start_pin_index]" */
-        strcpy(source_string, src_string);
-        for (ichar = 0; ichar < (int)(strlen(source_string)); ichar++) {
-            //Need white space between the components when using %s with
-            //sscanf
-            if (source_string[ichar] == '.')
-                source_string[ichar] = ' ';
-            if (source_string[ichar] == '[')
-                source_string[ichar] = ' ';
-        }
+        std::string source_string{src_string};
 
-        match_count = sscanf(source_string, "%s %s %d:%d]",
-                             pb_type_name, port_name,
-                             end_pin_index, start_pin_index);
-        if (match_count != 4) {
+        // Replace '.' and '[' characters with ' '
+        std::replace_if(source_string.begin(), source_string.end(),
+            [](char c) { return c == '.' || c == '['; },
+            ' ');
+
+        std::istringstream source_iss(source_string);
+        int start_pin_index, end_pin_index;
+        std::string pb_type_name, port_name;
+
+        if (source_iss >> pb_type_name >> port_name >> end_pin_index >> start_pin_index) {
+
+            if (end_pin_index < 0 || start_pin_index < 0) {
+                VTR_LOG_ERROR(
+                    "[LINE %d] Invalid pin - %s, the pin_index in "
+                    "[end_pin_index:start_pin_index] should not be a negative value.\n",
+                    line, src_string);
+                exit(1);
+            }
+
+            if (end_pin_index < start_pin_index) {
+                VTR_LOG_ERROR(
+                    "[LINE %d] Invalid from_pin - %s, the end_pin_index in "
+                    "[end_pin_index:start_pin_index] should not be less than start_pin_index.\n",
+                    line, src_string);
+                exit(1);
+            }
+
+            return {start_pin_index, end_pin_index, pb_type_name, port_name};
+        } else {
             VTR_LOG_ERROR(
                 "[LINE %d] Invalid pin - %s, name should be in the format "
                 "\"pb_type_name\".\"port_name\" or \"pb_type_name\".\"port_name[end_pin_index:start_pin_index]\". "
                 "The end_pin_index and start_pin_index can be the same.\n",
-                line, src_string);
-            exit(1);
-        }
-        if (*end_pin_index < 0 || *start_pin_index < 0) {
-            VTR_LOG_ERROR(
-                "[LINE %d] Invalid pin - %s, the pin_index in "
-                "[end_pin_index:start_pin_index] should not be a negative value.\n",
-                line, src_string);
-            exit(1);
-        }
-        if (*end_pin_index < *start_pin_index) {
-            VTR_LOG_ERROR(
-                "[LINE %d] Invalid from_pin - %s, the end_pin_index in "
-                "[end_pin_index:start_pin_index] should not be less than start_pin_index.\n",
                 line, src_string);
             exit(1);
         }
@@ -1824,10 +1817,10 @@ int get_atom_pin_class_num(const AtomPinId atom_pin_id) {
     return get_class_num_from_pin_physical_num(physical_type, pin_physical_num);
 }
 
-t_physical_tile_port find_tile_port_by_name(t_physical_tile_type_ptr type, const char* port_name) {
-    for (const auto& sub_tile : type->sub_tiles) {
-        for (const auto& port : sub_tile.ports) {
-            if (0 == strcmp(port.name, port_name)) {
+t_physical_tile_port find_tile_port_by_name(t_physical_tile_type_ptr type, std::string_view port_name) {
+    for (const t_sub_tile& sub_tile : type->sub_tiles) {
+        for (const t_physical_tile_port& port : sub_tile.ports) {
+            if (port_name == port.name) {
                 return port;
             }
         }
