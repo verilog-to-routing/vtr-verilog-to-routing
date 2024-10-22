@@ -47,6 +47,8 @@
 #include "logic_types.h"
 #include "clock_types.h"
 
+#include "vib_inf.h"
+
 //Forward declarations
 struct t_clock_arch;
 struct t_clock_network;
@@ -373,6 +375,31 @@ struct t_grid_loc_def {
                                      // that come from a common definition.
 };
 
+enum GridDefType {
+    AUTO,
+    FIXED
+};
+
+struct t_layer_def {
+    std::vector<t_grid_loc_def> loc_defs; //The list of block location definitions for this layer specification
+};
+
+struct t_grid_def {
+    GridDefType grid_type = GridDefType::AUTO; //The type of this grid specification
+
+    std::string name = ""; //The name of this device
+
+    int width = -1;  //Fixed device width (only valid for grid_type == FIXED)
+    int height = -1; //Fixed device height (only valid for grid_type == FIXED)
+
+    float aspect_ratio = 1.; //Aspect ratio for auto-sized devices (only valid for
+                             //grid_type == AUTO)
+    std::vector<t_layer_def> layers;
+};
+
+/************************* VIB_GRID ***********************************/
+/* Describe different VIB type on different locations by immitating t_grid_loc_def. */
+
 struct t_vib_grid_loc_def {
     t_vib_grid_loc_def(std::string block_type_val, int priority_val)
         : block_type(block_type_val)
@@ -399,30 +426,8 @@ struct t_vib_grid_loc_def {
                                      // that come from a common definition.
 };
 
-enum GridDefType {
-    AUTO,
-    FIXED
-};
-
-struct t_layer_def {
-    std::vector<t_grid_loc_def> loc_defs; //The list of block location definitions for this layer specification
-};
-
 struct t_vib_layer_def {
     std::vector<t_vib_grid_loc_def> loc_defs; //The list of block location definitions for this layer specification
-};
-
-struct t_grid_def {
-    GridDefType grid_type = GridDefType::AUTO; //The type of this grid specification
-
-    std::string name = ""; //The name of this device
-
-    int width = -1;  //Fixed device width (only valid for grid_type == FIXED)
-    int height = -1; //Fixed device height (only valid for grid_type == FIXED)
-
-    float aspect_ratio = 1.; //Aspect ratio for auto-sized devices (only valid for
-                             //grid_type == AUTO)
-    std::vector<t_layer_def> layers;
 };
 
 struct t_vib_grid_def {
@@ -437,6 +442,7 @@ struct t_vib_grid_def {
                              //grid_type == AUTO)
     std::vector<t_vib_layer_def> layers;
 };
+
 
 /************************* POWER ***********************************/
 
@@ -1639,7 +1645,16 @@ enum e_Fc_type {
  *           For backward compatibility, this attribute is optional. If not  *
  *           specified, the resource type for the segment is considered to   *
  *           be GENERAL.                                                     *
- * meta: Table storing extra arbitrary metadata attributes.                  */
+ * meta: Table storing extra arbitrary metadata attributes.                  *
+ * 
+ * 
+ * New added parameters for bend wires:                                      *
+ * isbend: This segment is bend or not                                       *
+ * bend: The bend type of the segment, "-"-0, "U"-1, "D"-2                   *
+ *       For example: bend pattern <- - U ->; corresponding bend: [0,0,1,0]  *
+ * part_len: Divide the segment into several parts based on bend position.   *
+ *           For example: length-5 bend segment: <- - U ->;                  *
+ *           Corresponding part_len: [3,2]                                   */
 struct t_segment_inf {
     std::string name;
     int frequency;
@@ -1656,7 +1671,7 @@ struct t_segment_inf {
     enum e_parallel_axis parallel_axis;
     std::vector<bool> cb;
     std::vector<bool> sb;
-    bool isbend;
+    bool isbend;                                 
     std::vector<int> bend;
     std::vector<int> part_len;
     int seg_index;
@@ -2044,48 +2059,9 @@ struct t_noc_inf {
     std::string noc_router_tile_name;
 };
 
-/* for vib tag */
-struct t_seg_group {
-    std::string name; 
-    int seg_index;
-    int track_num;
-};
 
-enum e_multistage_mux_from_or_to_type {
-    PB = 0,
-    SEGMENT,
-    MUX
-};
 
-struct t_from_or_to_inf {
-    std::string type_name;
-    e_multistage_mux_from_or_to_type from_type;  //from_or_to_type
-    int type_index = -1;
-    int phy_pin_index = -1;
-    char seg_dir = ' ';
-    int seg_index = -1;
-};
-
-struct t_first_stage_mux_inf {
-    std::string mux_name; 
-    std::vector<t_from_or_to_inf> froms;
-};
-
-struct t_second_stage_mux_inf : t_first_stage_mux_inf {
-    std::vector<t_from_or_to_inf> to;    // for io type, port[pin] may map to several sinks
-};
-
-struct t_vib_inf {
-    std::string name;           /* vib name */
-    std::string pbtype_name;    /* pbtype name of vib */
-    int seg_group_num;          /* seg group number of vib */
-    int switch_idx;             /* vib switch index */
-    std::vector<t_seg_group> seg_groups;
-    std::vector<t_first_stage_mux_inf> first_stages;
-    std::vector<t_second_stage_mux_inf> second_stages;
-};
-
-/*   Detailed routing architecture */
+/* Detailed routing architecture */
 struct t_arch {
     /** Stores unique strings used as key and values in <metadata> tags,
      * i.e. implements a flyweight pattern to save memory.*/
@@ -2170,8 +2146,8 @@ struct t_arch {
     t_noc_inf* noc = nullptr;
 
     // added for vib
-    bool is_vib_arch = false;
-    std::vector<t_vib_inf> vib_infs;
+    //bool is_vib_arch = false;
+    std::vector<VibInf> vib_infs;
 };
 
 #endif
