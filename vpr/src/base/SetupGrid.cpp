@@ -34,7 +34,7 @@ static DeviceGrid auto_size_device_grid(const std::vector<t_grid_def>& grid_layo
 static std::vector<t_logical_block_type_ptr> grid_overused_resources(const DeviceGrid& grid, std::map<t_logical_block_type_ptr, size_t> instance_counts);
 static bool grid_satisfies_instance_counts(const DeviceGrid& grid, const std::map<t_logical_block_type_ptr, size_t>& instance_counts, float maximum_utilization);
 static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t width, size_t height, bool warn_out_of_range = true, const std::vector<t_logical_block_type_ptr>& limiting_resources = std::vector<t_logical_block_type_ptr>());
-static vtr::NdMatrix<const t_vib_inf*, 3> build_vib_device_grid(const t_vib_grid_def& grid_def, size_t grid_width, size_t grid_height, bool warn_out_of_range = true);
+static vtr::NdMatrix<const VibInf*, 3> build_vib_device_grid(const t_vib_grid_def& grid_def, size_t grid_width, size_t grid_height, bool warn_out_of_range = true);
 
 static void CheckGrid(const DeviceGrid& grid);
 
@@ -48,11 +48,11 @@ static void set_grid_block_type(int priority,
                                 const t_metadata_dict* meta);
 
 static void set_vib_grid_block_type(int priority,
-                                    const t_vib_inf* type,
+                                    const VibInf* type,
                                     int layer_num,
                                     size_t x_root,
                                     size_t y_root,
-                                    vtr::NdMatrix<const t_vib_inf*, 3>& vib_grid,
+                                    vtr::NdMatrix<const VibInf*, 3>& vib_grid,
                                     vtr::NdMatrix<int, 3>& grid_priorities,
                                     const t_metadata_dict* meta);
 
@@ -149,7 +149,7 @@ DeviceGrid create_device_grid(const std::string& layout_name, const std::vector<
     }
 }
 
-vtr::NdMatrix<const t_vib_inf*, 3> create_vib_device_grid(std::string layout_name, const std::vector<t_vib_grid_def>& vib_grid_layouts) {
+vtr::NdMatrix<const VibInf*, 3> create_vib_device_grid(std::string layout_name, const std::vector<t_vib_grid_def>& vib_grid_layouts) {
     if (layout_name == "auto") {
         //We do not support auto layout now
         //
@@ -592,7 +592,7 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t grid_widt
 }
 
 ///@brief Build the specified device grid
-static vtr::NdMatrix<const t_vib_inf*, 3> build_vib_device_grid(const t_vib_grid_def& grid_def, size_t grid_width, size_t grid_height, bool warn_out_of_range) {
+static vtr::NdMatrix<const VibInf*, 3> build_vib_device_grid(const t_vib_grid_def& grid_def, size_t grid_width, size_t grid_height, bool warn_out_of_range) {
     if (grid_def.grid_type == GridDefType::FIXED) {
         if (grid_def.width != int(grid_width) || grid_def.height != int(grid_height)) {
             VPR_FATAL_ERROR(VPR_ERROR_OTHER,
@@ -604,7 +604,7 @@ static vtr::NdMatrix<const t_vib_inf*, 3> build_vib_device_grid(const t_vib_grid
     auto& device_ctx = g_vpr_ctx.device();
 
     //Initialize the grid and each location priority based on available dies in the architecture file
-    vtr::NdMatrix<const t_vib_inf*, 3> vib_grid;
+    vtr::NdMatrix<const VibInf*, 3> vib_grid;
     vtr::NdMatrix<int, 3> grid_priorities;
     int num_layers = (int)grid_def.layers.size();
     vib_grid.resize(std::array<size_t, 3>{(size_t)num_layers, grid_width, grid_height});
@@ -614,7 +614,7 @@ static vtr::NdMatrix<const t_vib_inf*, 3> build_vib_device_grid(const t_vib_grid
     grid_priorities.resize(std::array<size_t, 3>{(size_t)num_layers, grid_width, grid_height}, std::numeric_limits<int>::lowest());
 
     //Initialize the device to all empty blocks
-    const t_vib_inf* empty_type = nullptr;
+    const VibInf* empty_type = nullptr;
     //VTR_ASSERT(empty_type != nullptr);
     for (int layer = 0; layer < num_layers; ++layer) {
         for (size_t x = 0; x < grid_width; ++x) {
@@ -629,14 +629,14 @@ static vtr::NdMatrix<const t_vib_inf*, 3> build_vib_device_grid(const t_vib_grid
     }
 
     FormulaParser p;
-    std::set<const t_vib_inf*> seen_types;
+    std::set<const VibInf*> seen_types;
     for (int layer = 0; layer < num_layers; layer++) {
         for (const auto& grid_loc_def : grid_def.layers.at(layer).loc_defs) {
             //Fill in the block types according to the specification
             //auto type = find_tile_type_by_name(grid_loc_def.block_type, device_ctx.physical_tile_types);
-            const t_vib_inf* type = nullptr;
+            const VibInf* type = nullptr;
             for (size_t vib_type = 0; vib_type < device_ctx.arch->vib_infs.size(); vib_type++) {
-                if (grid_loc_def.block_type == device_ctx.arch->vib_infs[vib_type].name) {
+                if (grid_loc_def.block_type == device_ctx.arch->vib_infs[vib_type].get_name()) {
                     type = &device_ctx.arch->vib_infs[vib_type];
                     break;
                 }
@@ -687,7 +687,7 @@ static vtr::NdMatrix<const t_vib_inf*, 3> build_vib_device_grid(const t_vib_grid
             if (startx > grid_width - 1) {
                 if (warn_out_of_range) {
                     VTR_LOG_WARN("Block type '%s' grid location specification startx (%s = %d) falls outside device horizontal range [%d,%d]\n",
-                                 type->name, xspec.start_expr.c_str(), startx, 0, grid_width - 1);
+                                 type->get_name(), xspec.start_expr.c_str(), startx, 0, grid_width - 1);
                 }
                 continue; //No instances will be created
             }
@@ -695,7 +695,7 @@ static vtr::NdMatrix<const t_vib_inf*, 3> build_vib_device_grid(const t_vib_grid
             if (starty > grid_height - 1) {
                 if (warn_out_of_range) {
                     VTR_LOG_WARN("Block type '%s' grid location specification starty (%s = %d) falls outside device vertical range [%d,%d]\n",
-                                 type->name, yspec.start_expr.c_str(), starty, 0, grid_height - 1);
+                                 type->get_name(), yspec.start_expr.c_str(), starty, 0, grid_height - 1);
                 }
                 continue; //No instances will be created
             }
@@ -704,14 +704,14 @@ static vtr::NdMatrix<const t_vib_inf*, 3> build_vib_device_grid(const t_vib_grid
             if (endx > grid_width - 1) {
                 if (warn_out_of_range) {
                     VTR_LOG_WARN("Block type '%s' grid location specification endx (%s = %d) falls outside device horizontal range [%d,%d]\n",
-                                 type->name, xspec.end_expr.c_str(), endx, 0, grid_width - 1);
+                                 type->get_name(), xspec.end_expr.c_str(), endx, 0, grid_width - 1);
                 }
             }
 
             if (endy > grid_height - 1) {
                 if (warn_out_of_range) {
                     VTR_LOG_WARN("Block type '%s' grid location specification endy (%s = %d) falls outside device vertical range [%d,%d]\n",
-                                 type->name, yspec.end_expr.c_str(), endy, 0, grid_height - 1);
+                                 type->get_name(), yspec.end_expr.c_str(), endy, 0, grid_height - 1);
                 }
             }
 
@@ -719,13 +719,13 @@ static vtr::NdMatrix<const t_vib_inf*, 3> build_vib_device_grid(const t_vib_grid
             if (endx < startx) {
                 VPR_FATAL_ERROR(VPR_ERROR_ARCH,
                                 "Grid location specification endx (%s = %d) can not come before startx (%s = %d) for block type '%s'",
-                                xspec.end_expr.c_str(), endx, xspec.start_expr.c_str(), startx, type->name);
+                                xspec.end_expr.c_str(), endx, xspec.start_expr.c_str(), startx, type->get_name());
             }
 
             if (endy < starty) {
                 VPR_FATAL_ERROR(VPR_ERROR_ARCH,
                                 "Grid location specification endy (%s = %d) can not come before starty (%s = %d) for block type '%s'",
-                                yspec.end_expr.c_str(), endy, yspec.start_expr.c_str(), starty, type->name);
+                                yspec.end_expr.c_str(), endy, yspec.start_expr.c_str(), starty, type->get_name());
             }
 
             //The minimum increment is the block dimension
@@ -734,7 +734,7 @@ static vtr::NdMatrix<const t_vib_inf*, 3> build_vib_device_grid(const t_vib_grid
                 VPR_FATAL_ERROR(VPR_ERROR_ARCH,
                                 "Grid location specification incrx for block type '%s' must be at least"
                                 " block width (%d) to avoid overlapping instances (was %s = %d)",
-                                type->name, 1, xspec.incr_expr.c_str(), incrx);
+                                type->get_name(), 1, xspec.incr_expr.c_str(), incrx);
             }
 
             //VTR_ASSERT(type->height > 0);
@@ -742,7 +742,7 @@ static vtr::NdMatrix<const t_vib_inf*, 3> build_vib_device_grid(const t_vib_grid
                 VPR_FATAL_ERROR(VPR_ERROR_ARCH,
                                 "Grid location specification incry for block type '%s' must be at least"
                                 " block height (%d) to avoid overlapping instances (was %s = %d)",
-                                type->name, 1, yspec.incr_expr.c_str(), incry);
+                                type->get_name(), 1, yspec.incr_expr.c_str(), incry);
             }
 
             //The minimum repeat is the region dimension
@@ -751,7 +751,7 @@ static vtr::NdMatrix<const t_vib_inf*, 3> build_vib_device_grid(const t_vib_grid
                 VPR_FATAL_ERROR(VPR_ERROR_ARCH,
                                 "Grid location specification repeatx for block type '%s' must be at least"
                                 " the region width (%d) to avoid overlapping instances (was %s = %d)",
-                                type->name, region_width, xspec.repeat_expr.c_str(), repeatx);
+                                type->get_name(), region_width, xspec.repeat_expr.c_str(), repeatx);
             }
 
             size_t region_height = endy - starty + 1; //+1 since start/end are both inclusive
@@ -759,7 +759,7 @@ static vtr::NdMatrix<const t_vib_inf*, 3> build_vib_device_grid(const t_vib_grid
                 VPR_FATAL_ERROR(VPR_ERROR_ARCH,
                                 "Grid location specification repeaty for block type '%s' must be at least"
                                 " the region height (%d) to avoid overlapping instances (was %s = %d)",
-                                type->name, region_height, xspec.repeat_expr.c_str(), repeaty);
+                                type->get_name(), region_height, xspec.repeat_expr.c_str(), repeaty);
             }
 
             //VTR_LOG("Applying grid_loc_def for '%s' priority %d startx=%s=%zu, endx=%s=%zu, starty=%s=%zu, endx=%s=%zu,\n",
@@ -953,22 +953,22 @@ static void set_grid_block_type(int priority,
 }
 
 static void set_vib_grid_block_type(int priority,
-                                    const t_vib_inf* type,
+                                    const VibInf* type,
                                     int layer_num,
                                     size_t x_root,
                                     size_t y_root,
-                                    vtr::NdMatrix<const t_vib_inf*, 3>& vib_grid,
+                                    vtr::NdMatrix<const VibInf*, 3>& vib_grid,
                                     vtr::NdMatrix<int, 3>& grid_priorities,
                                     const t_metadata_dict* meta) {
     struct TypeLocation {
-        TypeLocation(size_t x_val, size_t y_val, const t_vib_inf* type_val, int priority_val)
+        TypeLocation(size_t x_val, size_t y_val, const VibInf* type_val, int priority_val)
             : x(x_val)
             , y(y_val)
             , type(type_val)
             , priority(priority_val) {}
         size_t x;
         size_t y;
-        const t_vib_inf* type;
+        const VibInf* type;
         int priority;
 
         bool operator<(const TypeLocation& rhs) const {
@@ -1013,8 +1013,8 @@ static void set_vib_grid_block_type(int priority,
             " Existing block type '%s' at (%zu,%zu) has the same priority (%d) as new overlapping type '%s'."
             " The last specification will apply.\n",
             x_root, y_root,
-            max_priority_type_loc.type->name, max_priority_type_loc.x, max_priority_type_loc.y,
-            priority, type->name);
+            max_priority_type_loc.type->get_name(), max_priority_type_loc.x, max_priority_type_loc.y,
+            priority, type->get_name());
     }
 
     //Mark all the grid tiles 'covered' by this block with the appropriate type
