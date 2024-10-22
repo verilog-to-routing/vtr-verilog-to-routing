@@ -51,7 +51,7 @@ void check_rr_graph(const RRGraphView& rr_graph,
                     const std::vector<t_physical_tile_type>& types,
                     const vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data,
                     const DeviceGrid& grid,
-                    const vtr::NdMatrix<const t_vib_inf*, 3>& vib_grid,
+                    const vtr::NdMatrix<const VibInf*, 3>& vib_grid,
                     const t_chan_width& chan_width,
                     const t_graph_type graph_type,
                     bool is_flat) {
@@ -332,7 +332,7 @@ static bool rr_node_is_global_clb_ipin(const RRGraphView& rr_graph, const Device
 void check_rr_node(const RRGraphView& rr_graph,
                    const vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data,
                    const DeviceGrid& grid,
-                   const vtr::NdMatrix<const t_vib_inf*, 3>& vib_grid,
+                   const vtr::NdMatrix<const VibInf*, 3>& vib_grid,
                    const t_chan_width& chan_width,
                    const enum e_route_type route_type, 
                    const int inode,
@@ -389,7 +389,7 @@ void check_rr_node(const RRGraphView& rr_graph,
 
     /* Check that the segment is within the array and such. */
     type = grid.get_physical_type({xlow, ylow, layer_num});
-    const t_vib_inf* vib_type;
+    const VibInf* vib_type;
     if (vib_grid.dim_size(0) > 0) {
         vib_type = vib_grid[layer_num][xlow][ylow];
     }
@@ -455,7 +455,7 @@ void check_rr_node(const RRGraphView& rr_graph,
     int pin_max_ptc = get_tile_pin_max_ptc(type, is_flat);
     int medium_max_ptc = -1;
     if (vib_type) {
-        medium_max_ptc = (int)vib_type->first_stages.size();
+        medium_max_ptc = (int)vib_type->get_first_stages().size();
     }
     e_pin_type class_type = OPEN;
     int class_num_pins = -1;
