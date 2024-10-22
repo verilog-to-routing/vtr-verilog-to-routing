@@ -1721,7 +1721,7 @@ void build_direct_connections_for_one_gsb(const RRGraphView& rr_graph,
 /* Vib edge builder */
 t_vib_map build_vib_map(const RRGraphView& rr_graph,
                         const DeviceGrid& grids,
-                        const vtr::NdMatrix<const t_vib_inf*, 3>& vib_grid,
+                        const vtr::NdMatrix<const VibInf*, 3>& vib_grid,
                         const RRGSB& rr_gsb,
                         const std::vector<t_segment_inf>& segment_inf,
                         const size_t& layer,
@@ -1732,10 +1732,10 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
     
     t_vib_map vib_map;
 
-    const t_vib_inf* vib = vib_grid[layer][actual_coordinate.x()][actual_coordinate.y()];
+    const VibInf* vib = vib_grid[layer][actual_coordinate.x()][actual_coordinate.y()];
     auto phy_type = grids.get_physical_type({(int)actual_coordinate.x(), (int)actual_coordinate.y(), (int)layer});
-    VTR_ASSERT(!strcmp(vib->pbtype_name.c_str(), phy_type->name));
-    const std::vector<t_first_stage_mux_inf> first_stages = vib->first_stages;
+    VTR_ASSERT(!strcmp(vib->get_pbtype_name().c_str(), phy_type->name));
+    const std::vector<t_first_stage_mux_inf> first_stages = vib->get_first_stages();
     for (size_t i_first_stage = 0; i_first_stage < first_stages.size(); i_first_stage++) {
         std::vector<t_from_or_to_inf> froms = first_stages[i_first_stage].froms;
         RRNodeId to_node = rr_graph.node_lookup().find_node(layer, actual_coordinate.x(), actual_coordinate.y(), MEDIUM, i_first_stage);
@@ -1744,7 +1744,7 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
             RRNodeId from_node;
             if (from.from_type == PB) {
                 
-                if (from.type_name != vib->pbtype_name) {
+                if (from.type_name != vib->get_pbtype_name()) {
                     VTR_LOGF_ERROR(__FILE__, __LINE__,
                                    "Wrong from type name!\n");
                     exit(1);
@@ -1767,7 +1767,7 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
                 t_segment_inf segment = segment_inf[from.type_index];
                 VTR_ASSERT(segment.name == from.type_name);
                 t_seg_group seg_group;
-                for (auto seg : vib->seg_groups) {
+                for (auto seg : vib->get_seg_groups()) {
                     if (seg.name == segment.name) {
                         seg_group = seg;
                         break;
@@ -1829,7 +1829,7 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
         }
     }
     /* Second stages*/
-    const std::vector<t_second_stage_mux_inf> second_stages = vib->second_stages;
+    const std::vector<t_second_stage_mux_inf> second_stages = vib->get_second_stages();
     for (size_t i_second_stage = 0; i_second_stage < second_stages.size(); i_second_stage++) {
         std::vector<t_from_or_to_inf> froms = second_stages[i_second_stage].froms;
         std::vector<t_from_or_to_inf> tos = second_stages[i_second_stage].to;
@@ -1839,7 +1839,7 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
             RRNodeId to_node;
             if (to.from_type == PB) {
                 
-                if (to.type_name != vib->pbtype_name) {
+                if (to.type_name != vib->get_pbtype_name()) {
                     VTR_LOGF_ERROR(__FILE__, __LINE__,
                                    "Wrong to type name!\n");
                     exit(1);
@@ -1862,7 +1862,7 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
                 t_segment_inf segment = segment_inf[to.type_index];
                 VTR_ASSERT(segment.name == to.type_name);
                 t_seg_group seg_group;
-                for (auto seg : vib->seg_groups) {
+                for (auto seg : vib->get_seg_groups()) {
                     if (seg.name == segment.name) {
                         seg_group = seg;
                         break;
@@ -1917,7 +1917,7 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
             RRNodeId from_node;
             if (from.from_type == PB) {
                 
-                if (from.type_name != vib->pbtype_name) {
+                if (from.type_name != vib->get_pbtype_name()) {
                     VTR_LOGF_ERROR(__FILE__, __LINE__,
                                    "Wrong from type name!\n");
                     exit(1);
@@ -1940,7 +1940,7 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
                 t_segment_inf segment = segment_inf[from.type_index];
                 VTR_ASSERT(segment.name == from.type_name);
                 t_seg_group seg_group;
-                for (auto seg : vib->seg_groups) {
+                for (auto seg : vib->get_seg_groups()) {
                     if (seg.name == segment.name) {
                         seg_group = seg;
                         break;
