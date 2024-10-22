@@ -82,7 +82,7 @@ static size_t estimate_num_grid_rr_nodes_by_type(const DeviceGrid& grids,
 }
 
 static size_t estimate_num_medium_rr_nodes(const DeviceGrid& grids,
-                                           const vtr::NdMatrix<const t_vib_inf*, 3>& vib_grid,
+                                           const vtr::NdMatrix<const VibInf*, 3>& vib_grid,
                                            const size_t& layer) {
     size_t num_grid_rr_nodes = 0;
 
@@ -90,7 +90,7 @@ static size_t estimate_num_medium_rr_nodes(const DeviceGrid& grids,
     for (size_t ix = 0; ix < grids.width(); ++ix) {
         for (size_t iy = 0; iy < grids.height(); ++iy) {
             
-            const t_vib_inf* vib = vib_grid[layer][ix][iy];
+            const VibInf* vib = vib_grid[layer][ix][iy];
             if (vib == nullptr) {
                 VTR_LOGF_ERROR(__FILE__, __LINE__,
                                "VIB at (%d, %d) is EMPTY!\n", ix, iy);
@@ -99,8 +99,8 @@ static size_t estimate_num_medium_rr_nodes(const DeviceGrid& grids,
             }
 
             size_t count = 0;
-            for (size_t i_first_stage = 0; i_first_stage < vib->first_stages.size(); i_first_stage++) {
-                auto first_stage = vib->first_stages[i_first_stage];
+            for (size_t i_first_stage = 0; i_first_stage < vib->get_first_stages().size(); i_first_stage++) {
+                auto first_stage = vib->get_first_stages()[i_first_stage];
                 if (first_stage.froms.size() == 0) {
                     VTR_LOGF_ERROR(__FILE__, __LINE__,
                                    "VIB first stage '%s' at (%d, %d) has no from!\n", first_stage.mux_name, ix, iy);
@@ -109,7 +109,7 @@ static size_t estimate_num_medium_rr_nodes(const DeviceGrid& grids,
                 count++;
             }
 
-            VTR_ASSERT(count == vib->first_stages.size());
+            VTR_ASSERT(count == vib->get_first_stages().size());
             num_grid_rr_nodes += count;
         }
     }
@@ -363,7 +363,7 @@ static size_t estimate_num_chany_rr_nodes(const DeviceGrid& grids,
  * Estimate the number of nodes by each type in a routing resource graph
  ***********************************************************************/
 static std::vector<size_t> estimate_num_rr_nodes(const DeviceGrid& grids,
-                                                 const vtr::NdMatrix<const t_vib_inf*, 3>& vib_grid,
+                                                 const vtr::NdMatrix<const VibInf*, 3>& vib_grid,
                                                  const size_t& layer,
                                                  const vtr::Point<size_t>& chan_width,
                                                  const std::vector<t_segment_inf>& segment_inf_x,
@@ -426,7 +426,7 @@ static std::vector<size_t> estimate_num_rr_nodes(const DeviceGrid& grids,
 void alloc_tileable_rr_graph_nodes(RRGraphBuilder& rr_graph_builder,
                                    vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
                                    const DeviceGrid& grids,
-                                   const vtr::NdMatrix<const t_vib_inf*, 3>& vib_grid,
+                                   const vtr::NdMatrix<const VibInf*, 3>& vib_grid,
                                    const size_t& layer,
                                    const vtr::Point<size_t>& chan_width,
                                    const std::vector<t_segment_inf>& segment_inf_x,
@@ -679,10 +679,10 @@ static void load_one_grid_medium_nodes_basic_info(RRGraphBuilder& rr_graph_build
                                                   std::vector<t_rr_rc_data>& rr_rc_data,
                                                   const size_t& layer,
                                                   const vtr::Point<size_t>& grid_coordinate,
-                                                  const vtr::NdMatrix<const t_vib_inf*, 3>& vib_grid) {
+                                                  const vtr::NdMatrix<const VibInf*, 3>& vib_grid) {
 
-    const t_vib_inf* vib = vib_grid[layer][grid_coordinate.x()][grid_coordinate.y()];
-    size_t num_medium_nodes = vib->first_stages.size();
+    const VibInf* vib = vib_grid[layer][grid_coordinate.x()][grid_coordinate.y()];
+    size_t num_medium_nodes = vib->get_first_stages().size();
     for (size_t i_medium = 0; i_medium < num_medium_nodes; i_medium++) {
         /* Create a new node and fill information */
         RRNodeId node = rr_graph_builder.create_node(layer, grid_coordinate.x(), grid_coordinate.y(), MEDIUM, i_medium, SIDES[0]);
@@ -701,7 +701,7 @@ static void load_one_grid_medium_nodes_basic_info(RRGraphBuilder& rr_graph_build
         rr_graph_builder.set_node_cost_index(node, RRIndexedDataId(MEDIUM_COST_INDEX));
 
         /* Switch info */
-        rr_node_driver_switches[node] = RRSwitchId(vib->switch_idx);
+        rr_node_driver_switches[node] = RRSwitchId(vib->get_switch_idx());
 
         /* RC data */
         rr_graph_builder.set_node_rc_index(node, NodeRCIndex(find_create_rr_rc_data(0., 0., rr_rc_data)));
@@ -716,15 +716,11 @@ static void load_grid_nodes_basic_info(RRGraphBuilder& rr_graph_builder,
                                        vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
                                        std::vector<t_rr_rc_data>& rr_rc_data,
                                        const DeviceGrid& grids,
-                                       const vtr::NdMatrix<const t_vib_inf*, 3>& vib_grid,
+                                       const vtr::NdMatrix<const VibInf*, 3>& vib_grid,
                                        const size_t& layer,
                                        const RRSwitchId& wire_to_ipin_switch,
                                        const RRSwitchId& delayless_switch,
-<<<<<<< HEAD
-                                       const bool& is_vib_arch) {
-=======
                                        const bool& perimeter_cb) {
->>>>>>> [vpr] now when cb on perimeter, I/O pins can access three sides
     for (size_t iy = 0; iy < grids.height(); ++iy) {
         for (size_t ix = 0; ix < grids.width(); ++ix) {
             t_physical_tile_loc tile_loc(ix, iy, layer);
@@ -802,10 +798,10 @@ static void load_grid_nodes_basic_info(RRGraphBuilder& rr_graph_builder,
             for (size_t ix = 0; ix < grids.width(); ++ix) {
             
                 t_physical_tile_loc tile_loc(ix, iy, layer);
-                VTR_ASSERT(vib_grid[layer][ix][iy]->pbtype_name == grids.get_physical_type(tile_loc)->name);
+                VTR_ASSERT(vib_grid[layer][ix][iy]->get_pbtype_name() == grids.get_physical_type(tile_loc)->name);
                 vtr::Point<size_t> grid_coordinate(ix, iy);
 
-                rr_graph_builder.node_lookup().reserve_nodes(layer, ix, iy, MEDIUM, vib_grid[layer][ix][iy]->first_stages.size(), SIDES[0]);
+                rr_graph_builder.node_lookup().reserve_nodes(layer, ix, iy, MEDIUM, vib_grid[layer][ix][iy]->get_first_stages().size(), SIDES[0]);
 
                 load_one_grid_medium_nodes_basic_info(rr_graph_builder,
                                                       rr_node_driver_switches,
@@ -1292,7 +1288,7 @@ void create_tileable_rr_graph_nodes(const RRGraphView& rr_graph,
                                     std::map<RRNodeId, std::vector<size_t>>& rr_node_track_ids,
                                     std::vector<t_rr_rc_data>& rr_rc_data,
                                     const DeviceGrid& grids,
-                                    const vtr::NdMatrix<const t_vib_inf*, 3>& vib_grid,
+                                    const vtr::NdMatrix<const VibInf*, 3>& vib_grid,
                                     const size_t& layer,
                                     const vtr::Point<size_t>& chan_width,
                                     const std::vector<t_segment_inf>& segment_inf_x,
@@ -1324,12 +1320,7 @@ void create_tileable_rr_graph_nodes(const RRGraphView& rr_graph,
                                rr_rc_data,
                                grids, vib_grid, layer,
                                wire_to_ipin_switch,
-<<<<<<< HEAD
-                               delayless_switch,
-                               is_vib_arch);
-=======
                                delayless_switch, perimeter_cb);
->>>>>>> [vpr] now when cb on perimeter, I/O pins can access three sides
 
     load_chanx_rr_nodes_basic_info(rr_graph,
                                    rr_graph_builder,
