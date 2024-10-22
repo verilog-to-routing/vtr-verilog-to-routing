@@ -179,7 +179,7 @@ ChanNodeDetails build_unidir_chan_node_details(const size_t& chan_width,
 
     /* Add node to ChanNodeDetails */
     size_t cur_track = 0;
-    size_t bend_num = 0;
+    size_t bend_num = 0;   // The index for bend segments
     for (size_t iseg = 0; iseg < segment_inf.size(); ++iseg) {
         if (!segment_inf[iseg].isbend){
             /* segment length will be set to maxium segment length if this is a longwire */
@@ -209,14 +209,17 @@ ChanNodeDetails build_unidir_chan_node_details(const size_t& chan_width,
                 cur_track++;
             }
         }
-        else{
+        else{  // bend segment
             bend_num++;
             VTR_ASSERT(segment_inf[iseg].isbend);
             std::vector<int> seg_len = segment_inf[iseg].part_len;
             std::vector<int> bend = segment_inf[iseg].bend;
-            VTR_ASSERT(seg_len.size() == 2);
+            VTR_ASSERT(seg_len.size() == 2);   // Only support one bend position for a segment.
             
             std::vector<size_t> num_tracks_bend;
+            /* Each bend part tracks number                                               *
+            * For example, a length-5 segment with bend pattern: <- - U -> has 20 tracks. *
+            * Its num_tracks_bend is [20 * 3/5, 20 * 2/5] = [12, 8]                       */
             for(size_t i = 0; i < seg_len.size(); i++)
             	num_tracks_bend.push_back(num_tracks[iseg] * seg_len[i] / segment_inf[iseg].length);
             	
@@ -225,23 +228,26 @@ ChanNodeDetails build_unidir_chan_node_details(const size_t& chan_width,
             for (size_t itrack = 0; itrack < num_tracks[iseg]; ++itrack) {
                 bool seg_start = false;
                 bool seg_end = false;
-                size_t seg_bend_start = 0;
-                size_t seg_bend_end = 0;
-
+                size_t seg_bend_start = 0; // seg_bend_start = 0 means not a bend start. 
+                                           // seg_bend_start = i (i > 0) means a bend start for bend segment i.
+                size_t seg_bend_end = 0;   // The same as seg_bend_start.
+                                           // Tracks has same seg_bend_start and seg_bend_end values will be 
+                                           // connected by a delayless switch.
+                /* Every first track of a group of Length-N wires, we set a starting point */
                 if (0 == itrack % segment_inf[iseg].length) {
                     seg_start = true;  
                 }
-
+                /* Number seg_len[0] track of a group of Length-N wires, we set a bend start point */
                 if (seg_len[0] == int(itrack) % segment_inf[iseg].length) {
                     seg_start = true;
                     seg_bend_start = bend_num;
                 }
-
+                /* Number seg_len[0] - 1 track of a group of Length-N wires, we set a bend end point */
                 if (seg_len[0] - 1 == int(itrack) % segment_inf[iseg].length) {
                     seg_end = true;
                     seg_bend_end = bend_num;
                 }
-
+                /* Every last track of a group of Length-N wires or this is the last track in this group, we set an ending point */
                 if ((segment_inf[iseg].length - 1 == int(itrack) % segment_inf[iseg].length)
                     || (itrack == num_tracks[iseg] - 1)) {
                     seg_end = true;
