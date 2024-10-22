@@ -242,8 +242,15 @@ void print_timing_stats(const std::string& name,
 
 std::vector<const t_pb_graph_node*> get_all_pb_graph_node_primitives(const t_pb_graph_node* pb_graph_node);
 
+<<<<<<< HEAD
 bool is_inter_cluster_node(const RRGraphView& rr_graph_view,
                            RRNodeId node_id);
+=======
+bool is_inter_cluster_node(t_physical_tile_type_ptr physical_tile,
+                           const VibInf* vib,
+                           t_rr_type node_type,
+                           int node_ptc);
+>>>>>>> Update vpr_utils.h
 
 bool is_inter_cluster_node(const RRGraphView& rr_graph_view,
                            RRNodeId node_id);
