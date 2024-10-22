@@ -54,7 +54,7 @@
  * side: The side of a grid location where an IPIN or OPIN is located.       *
  *       This field is valid only for IPINs and OPINs and should be ignored  *
  *       otherwise.                                                          */
-struct alignas(64) t_rr_node_data {
+struct alignas(32) t_rr_node_data {
     int16_t cost_index_ = -1;
     int16_t rc_index_ = -1;
 
@@ -63,8 +63,8 @@ struct alignas(64) t_rr_node_data {
     int16_t xhigh_ = -1;
     int16_t yhigh_ = -1;
     
-    size_t node_bend_start_ = 0;
-    size_t node_bend_end_ = 0;
+    int16_t node_bend_start_ = 0;
+    int16_t node_bend_end_ = 0;
 
     t_rr_type type_ = NUM_RR_TYPES;
 
@@ -89,8 +89,8 @@ struct alignas(64) t_rr_node_data {
 // t_rr_node_data is a key data structure, so fail at compile time if the
 // structure gets bigger than expected (16 bytes right now). Developers
 // should only expand it after careful consideration and measurement.
-static_assert(sizeof(t_rr_node_data) == 64, "Check t_rr_node_data size");
-static_assert(alignof(t_rr_node_data) == 64, "Check t_rr_node_data size");
+static_assert(sizeof(t_rr_node_data) == 32, "Check t_rr_node_data size");
+static_assert(alignof(t_rr_node_data) == 32, "Check t_rr_node_data size");
 
 /* t_rr_node_ptc_data is cold data is therefore kept seperate from
  * t_rr_node_data.
