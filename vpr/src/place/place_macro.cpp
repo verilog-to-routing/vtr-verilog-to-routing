@@ -66,24 +66,16 @@ void PlaceMacros::alloc_and_load_placement_macros(const std::vector<t_direct_inf
      *      the amount of memory required for the actual variables.
      *   2) Allocate the actual variables with the exact amount of
      *      memory. Then loads the data from the temporary data
-     *       structures before freeing them.
-     *
-     * For pl_macro_member_blk_num, allocate for the first dimension
-     * only at first. Allocate for the second dimension when I know
-     * the size. Otherwise, the array is going to be of size
-     * cluster_ctx.clb_nlist.blocks().size()^2 (There are big
-     * benchmarks VPR that have cluster_ctx.clb_nlist.blocks().size()
-     * in the 100k's range).
-     *
-     * The placement macro array is freed by the caller(s).
+     *      structures before freeing them.
      */
-    auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
 
     // Allocate maximum memory for temporary variables.
     std::vector<int> pl_macro_idirect(cluster_ctx.clb_nlist.blocks().size());
     std::vector<int> pl_macro_num_members(cluster_ctx.clb_nlist.blocks().size());
+    /* For pl_macro_member_blk_num, Allocate for the first dimension only at first. Allocate for the second dimension
+     * when I know the size. Otherwise, the array is going to be of size cluster_ctx.clb_nlist.blocks().size()^2 */
     std::vector<std::vector<ClusterBlockId>> pl_macro_member_blk_num(cluster_ctx.clb_nlist.blocks().size());
-    std::vector<ClusterBlockId> pl_macro_member_blk_num_of_this_blk(cluster_ctx.clb_nlist.blocks().size());
 
     alloc_and_load_idirect_from_blk_pin_(directs);
 
@@ -94,8 +86,7 @@ void PlaceMacros::alloc_and_load_placement_macros(const std::vector<t_direct_inf
      * Head - blocks with to_pin OPEN and from_pin connected
      * Tail - blocks with to_pin connected and from_pin OPEN
      */
-    int num_macro = find_all_the_macro_(pl_macro_member_blk_num_of_this_blk,
-                                        pl_macro_idirect, pl_macro_num_members, pl_macro_member_blk_num);
+    const int num_macro = find_all_the_macro_(pl_macro_idirect, pl_macro_num_members, pl_macro_member_blk_num);
 
     // Allocate the memories for the macro.
     pl_macros_.resize(num_macro);
@@ -133,8 +124,7 @@ ClusterBlockId PlaceMacros::macro_head(ClusterBlockId blk) const {
     }
 }
 
-int PlaceMacros::find_all_the_macro_(std::vector<ClusterBlockId>& pl_macro_member_blk_num_of_this_blk,
-                                     std::vector<int>& pl_macro_idirect,
+int PlaceMacros::find_all_the_macro_(std::vector<int>& pl_macro_idirect,
                                      std::vector<int>& pl_macro_num_members,
                                      std::vector<std::vector<ClusterBlockId>>& pl_macro_member_blk_num) {
     /* Compute required size:                                                *
@@ -143,30 +133,26 @@ int PlaceMacros::find_all_the_macro_(std::vector<ClusterBlockId>& pl_macro_membe
      * as the number macros) and also the length of each macro               *
      * Head - blocks with to_pin OPEN and from_pin connected                 *
      * Tail - blocks with to_pin connected and from_pin OPEN                 */
-
-    int from_iblk_pin, to_iblk_pin, from_idirect, to_idirect,
-        from_src_or_sink, to_src_or_sink;
-    ClusterNetId to_net_id, from_net_id, next_net_id, curr_net_id;
-    ClusterBlockId next_blk_id;
-    int num_blk_pins, num_macro;
-    int imember;
-    auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    std::vector<ClusterBlockId> pl_macro_member_blk_num_of_this_blk(cluster_ctx.clb_nlist.blocks().size());
 
     // Hash table holding the unique cluster ids and the macro id it belongs to
     std::unordered_map<ClusterBlockId, int> clusters_macro;
 
-    num_macro = 0;
-    for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-        auto logical_block = cluster_ctx.clb_nlist.block_type(blk_id);
-        auto physical_tile = pick_physical_type(logical_block);
+    // counts the total number of macros
+    int num_macro = 0;
 
-        num_blk_pins = cluster_ctx.clb_nlist.block_type(blk_id)->pb_type->num_pins;
-        for (to_iblk_pin = 0; to_iblk_pin < num_blk_pins; to_iblk_pin++) {
+    for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks()) {
+        t_logical_block_type_ptr logical_block = cluster_ctx.clb_nlist.block_type(blk_id);
+        t_physical_tile_type_ptr physical_tile = pick_physical_type(logical_block);
+
+        int num_blk_pins = cluster_ctx.clb_nlist.block_type(blk_id)->pb_type->num_pins;
+        for (int to_iblk_pin = 0; to_iblk_pin < num_blk_pins; to_iblk_pin++) {
             int to_physical_pin = get_physical_pin(physical_tile, logical_block, to_iblk_pin);
 
-            to_net_id = cluster_ctx.clb_nlist.block_net(blk_id, to_iblk_pin);
-            to_idirect = idirect_from_blk_pin_[physical_tile->index][to_physical_pin];
-            to_src_or_sink = direct_type_from_blk_pin_[physical_tile->index][to_physical_pin];
+            ClusterNetId to_net_id = cluster_ctx.clb_nlist.block_net(blk_id, to_iblk_pin);
+            int to_idirect = idirect_from_blk_pin_[physical_tile->index][to_physical_pin];
+            int to_src_or_sink = direct_type_from_blk_pin_[physical_tile->index][to_physical_pin];
 
             // Identify potential macro head blocks (i.e. start of a macro)
             //
@@ -177,16 +163,14 @@ int PlaceMacros::find_all_the_macro_(std::vector<ClusterBlockId>& pl_macro_membe
             // Note that the restriction that constant nets are not driven from another direct ensures that
             // blocks in the middle of a chain with internal constant signals are not detected as potential
             // head blocks.
-            if (to_src_or_sink == SINK && to_idirect != OPEN
-                && (to_net_id == ClusterNetId::INVALID()
-                    || (is_constant_clb_net(to_net_id)
-                        && !net_is_driven_by_direct_(to_net_id)))) {
-                for (from_iblk_pin = 0; from_iblk_pin < num_blk_pins; from_iblk_pin++) {
+            if (to_src_or_sink == SINK && to_idirect != OPEN &&
+                (to_net_id == ClusterNetId::INVALID() || (is_constant_clb_net(to_net_id) && !net_is_driven_by_direct_(to_net_id)))) {
+                for (int from_iblk_pin = 0; from_iblk_pin < num_blk_pins; from_iblk_pin++) {
                     int from_physical_pin = get_physical_pin(physical_tile, logical_block, from_iblk_pin);
 
-                    from_net_id = cluster_ctx.clb_nlist.block_net(blk_id, from_iblk_pin);
-                    from_idirect = idirect_from_blk_pin_[physical_tile->index][from_physical_pin];
-                    from_src_or_sink = direct_type_from_blk_pin_[physical_tile->index][from_physical_pin];
+                    ClusterNetId from_net_id = cluster_ctx.clb_nlist.block_net(blk_id, from_iblk_pin);
+                    int from_idirect = idirect_from_blk_pin_[physical_tile->index][from_physical_pin];
+                    int from_src_or_sink = direct_type_from_blk_pin_[physical_tile->index][from_physical_pin];
 
                     // Confirm whether this is a head macro
                     //
@@ -204,12 +188,12 @@ int PlaceMacros::find_all_the_macro_(std::vector<ClusterBlockId>& pl_macro_membe
                         // there are at least 2 members - 1 head and 1 tail.
 
                         // Initialize the variables
-                        next_net_id = from_net_id;
-                        next_blk_id = blk_id;
+                        ClusterNetId next_net_id = from_net_id;
+                        ClusterBlockId next_blk_id = blk_id;
 
                         // Start finding the other members
                         while (next_net_id != ClusterNetId::INVALID()) {
-                            curr_net_id = next_net_id;
+                            ClusterNetId curr_net_id = next_net_id;
 
                             // Assume that carry chains only has 1 sink - direct connection
                             VTR_ASSERT(cluster_ctx.clb_nlist.net_sinks(curr_net_id).size() == 1);
@@ -221,7 +205,7 @@ int PlaceMacros::find_all_the_macro_(std::vector<ClusterBlockId>& pl_macro_membe
                             next_net_id = cluster_ctx.clb_nlist.block_net(next_blk_id, from_iblk_pin);
 
                             // Mark down this block as a member of the macro
-                            imember = pl_macro_num_members[num_macro];
+                            int imember = pl_macro_num_members[num_macro];
                             pl_macro_member_blk_num_of_this_blk[imember] = next_blk_id;
 
                             // Increment the num_member count.
@@ -233,7 +217,7 @@ int PlaceMacros::find_all_the_macro_(std::vector<ClusterBlockId>& pl_macro_membe
                         pl_macro_member_blk_num[num_macro].resize(pl_macro_num_members[num_macro]);
                         int matching_macro = -1;
                         // Copy the data from the temporary array to the newly allocated array.
-                        for (imember = 0; imember < pl_macro_num_members[num_macro]; imember++) {
+                        for (int imember = 0; imember < pl_macro_num_members[num_macro]; imember++) {
                             auto cluster_id = pl_macro_member_blk_num_of_this_blk[imember];
                             pl_macro_member_blk_num[num_macro][imember] = cluster_id;
                             // check if this cluster block was in a previous macro
@@ -382,7 +366,7 @@ static bool try_combine_macros(std::vector<std::vector<ClusterBlockId>>& pl_macr
 int PlaceMacros::get_imacro_from_iblk(ClusterBlockId iblk) const {
     int imacro;
     if (iblk != ClusterBlockId::INVALID()) {
-        /* Return the imacro for the block. */
+        // Return the imacro for the block.
         imacro = imacro_from_iblk_[iblk];
     } else {
         imacro = OPEN; //No valid block, so no valid macro
@@ -619,7 +603,7 @@ void PlaceMacros::write_place_macros_(std::string filename, const std::vector<t_
 }
 
 static bool is_constant_clb_net(ClusterNetId clb_net) {
-    auto& atom_ctx = g_vpr_ctx.atom();
+    const auto& atom_ctx = g_vpr_ctx.atom();
     AtomNetId atom_net = atom_ctx.lookup.atom_net(clb_net);
 
     return atom_ctx.nlist.net_is_constant(atom_net);

@@ -223,8 +223,7 @@ class PlaceMacros {
     std::vector<t_pl_macro> pl_macros_;
 
   private:
-    int find_all_the_macro_(std::vector<ClusterBlockId>& pl_macro_member_blk_num_of_this_blk,
-                            std::vector<int>& pl_macro_idirect,
+    int find_all_the_macro_(std::vector<int>& pl_macro_idirect,
                             std::vector<int>& pl_macro_num_members,
                             std::vector<std::vector<ClusterBlockId>>& pl_macro_member_blk_num);
 

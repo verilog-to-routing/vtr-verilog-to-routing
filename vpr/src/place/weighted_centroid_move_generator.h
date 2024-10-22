@@ -7,7 +7,9 @@
  * @brief Weighted Centroid move generator
  *
  * This move generator is inspired by analytical placers: model net connections as springs and 
- * calculate the force equilibrium location. 
+ * calculate the force equilibrium location.
+ *
+ * @details This class inherits from CentroidMoveGenerator to avoid code duplication.
  *
  * For more details, please refer to:
  * "Learn to Place: FPGA Placement using Reinforcement Learning and Directed Moves", ICFPT2020
