@@ -156,7 +156,7 @@ void free_arch(t_arch* arch) {
 
     vtr::release_memory(arch->switches);
 
-    vtr::release_memory(arch->Directs);
+    vtr::release_memory(arch->directs);
 
     vtr::free(arch->architecture_id);
 

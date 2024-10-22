@@ -90,7 +90,7 @@ public:
         // FIXME: This was stolen from place/place.cpp
         //        it used a static method, just taking what I think I will need.
         auto& blk_loc_registry = g_vpr_ctx.mutable_placement().mutable_blk_loc_registry();
-        const auto& directs = g_vpr_ctx.device().arch->Directs;
+        const auto& directs = g_vpr_ctx.device().arch->directs;
 
         init_placement_context(blk_loc_registry, directs);
 

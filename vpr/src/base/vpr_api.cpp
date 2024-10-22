@@ -837,7 +837,7 @@ void vpr_place(const Netlist<>& net_list, t_vpr_setup& vpr_setup, const t_arch& 
               arch.Chans,
               &vpr_setup.RoutingArch,
               vpr_setup.Segments,
-              arch.Directs,
+              arch.directs,
               is_flat);
 
     auto& filename_opts = vpr_setup.FileNameOpts;
@@ -860,7 +860,7 @@ void vpr_load_placement(t_vpr_setup& vpr_setup, const t_arch& arch) {
     const auto& filename_opts = vpr_setup.FileNameOpts;
 
     //Initialize placement data structures, which will be filled when loading placement
-    init_placement_context(blk_loc_registry, arch.Directs);
+    init_placement_context(blk_loc_registry, arch.directs);
 
     //Load an existing placement from a file
     place_ctx.placement_id = read_place(filename_opts.NetFile.c_str(), filename_opts.PlaceFile.c_str(),
@@ -1034,7 +1034,7 @@ RouteStatus vpr_route_fixed_W(const Netlist<>& net_list,
                    timing_info,
                    delay_calc,
                    arch.Chans,
-                   arch.Directs,
+                   arch.directs,
                    ScreenUpdatePriority::MAJOR,
                    is_flat);
 
@@ -1134,7 +1134,7 @@ void vpr_create_rr_graph(t_vpr_setup& vpr_setup, const t_arch& arch, int chan_wi
                     det_routing_arch,
                     vpr_setup.Segments,
                     router_opts,
-                    arch.Directs,
+                    arch.directs,
                     &warnings,
                     is_flat);
     //Initialize drawing, now that we have an RR graph

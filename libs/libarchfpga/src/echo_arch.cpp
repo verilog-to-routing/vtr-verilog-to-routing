@@ -332,13 +332,13 @@ void PrintArchInfo(FILE* Echo, const t_arch* arch) {
     //Direct List
     fprintf(Echo, "*************************************************\n");
     fprintf(Echo, "Direct List:\n");
-    for (i = 0; i < (int)arch->Directs.size(); i++) {
+    for (i = 0; i < (int)arch->directs.size(); i++) {
         fprintf(Echo, "\tDirect[%d]: name %s from_pin %s to_pin %s\n", i + 1,
-                arch->Directs[i].name.c_str(), arch->Directs[i].from_pin.c_str(),
-                arch->Directs[i].to_pin.c_str());
+                arch->directs[i].name.c_str(), arch->directs[i].from_pin.c_str(),
+                arch->directs[i].to_pin.c_str());
         fprintf(Echo, "\t\t\t\t x_offset %d y_offset %d z_offset %d\n",
-                arch->Directs[i].x_offset, arch->Directs[i].y_offset,
-                arch->Directs[i].sub_tile_offset);
+                arch->directs[i].x_offset, arch->directs[i].y_offset,
+                arch->directs[i].sub_tile_offset);
     }
     fprintf(Echo, "*************************************************\n\n");
 

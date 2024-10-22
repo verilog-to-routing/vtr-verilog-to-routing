@@ -477,7 +477,7 @@ void XmlReadArch(const char* ArchFile,
         /* Process directs */
         Next = get_single_child(architecture, "directlist", loc_data, ReqOpt::OPTIONAL);
         if (Next) {
-            arch->Directs = ProcessDirects(Next, arch->switches, loc_data);
+            arch->directs = ProcessDirects(Next, arch->switches, loc_data);
         }
 
         /* Process Clock Networks */

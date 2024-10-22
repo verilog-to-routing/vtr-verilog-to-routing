@@ -1836,31 +1836,30 @@ struct t_rr_switch_inf {
     SwitchType type_ = SwitchType::INVALID;
 };
 
-/* Lists all the important information about a direct chain connection.     *
- * [0 .. det_routing_arch.num_direct]                                       *
- * name:  Name of this direct chain connection                              *
- * from_pin:  The type of the pin that drives this chain connection         *
- * In the format of <block_name>.<pin_name>                      *
- * to_pin:  The type of pin that is driven by this chain connection         *
- * In the format of <block_name>.<pin_name>                        *
- * x_offset:  The x offset from the source to the sink of this connection   *
- * y_offset:  The y offset from the source to the sink of this connection   *
- * z_offset:  The z offset from the source to the sink of this connection   *
- * switch_type: The index into the switch list for the switch used by this  *
- *              direct                                                      *
- * line: The line number in the .arch file that specifies this              *
- *       particular placement macro.                                        *
+/**
+ * @struct t_direct_inf
+ * @brief Lists all the important information about a direct chain connection.
  */
 struct t_direct_inf {
+    /// Name of this direct chain connection
     std::string name;
+    /// The type of the pin that drives this chain connection in the format of <block_name>.<pin_name>
     std::string from_pin;
+    /// The type of pin that is driven by this chain connection in the format of <block_name>.<pin_name>
     std::string to_pin;
+    /// The x offset from the source to the sink of this connection
     int x_offset;
+    /// The y offset from the source to the sink of this connection
     int y_offset;
+    /// The subtile offset from the source to the sink of this connection
     int sub_tile_offset;
+    /// The index into the switch list for the switch used by this direct
     int switch_type;
+    /// The associated from_pin’s block side
     e_side from_side;
+    /// The associated to_pin’s block side
     e_side to_side;
+    /// The line number in the architecture file that specifies this particular placement macro.
     int line;
 };
 
@@ -2061,7 +2060,9 @@ struct t_arch {
     std::vector<t_segment_inf> Segments;
 
     std::vector<t_arch_switch_inf> switches;
-    std::vector<t_direct_inf> Directs;
+
+    /// Contains information about all direct chain connections in the architecture
+    std::vector<t_direct_inf> directs;
 
     t_model* models = nullptr;
     t_model* model_library = nullptr;

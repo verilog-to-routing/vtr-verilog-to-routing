@@ -190,7 +190,7 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
                       arch->Chans,
                       det_routing_arch,
                       segment_inf,
-                      arch->Directs,
+                      arch->directs,
                       false);
         }
         success = route(router_net_list,
@@ -202,7 +202,7 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
                         timing_info,
                         delay_calc,
                         arch->Chans,
-                        arch->Directs,
+                        arch->directs,
                         (attempt_count == 0) ? ScreenUpdatePriority::MAJOR : ScreenUpdatePriority::MINOR,
                         is_flat);
 
@@ -328,7 +328,7 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
                 placer_opts.place_chan_width = current;
                 try_place(placement_net_list, placer_opts, annealing_sched, router_opts, analysis_opts, noc_opts,
                           arch->Chans, det_routing_arch, segment_inf,
-                          arch->Directs,
+                          arch->directs,
                           false);
             }
 
@@ -342,7 +342,7 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
                             timing_info,
                             delay_calc,
                             arch->Chans,
-                            arch->Directs,
+                            arch->directs,
                             ScreenUpdatePriority::MINOR,
                             is_flat);
 
@@ -384,7 +384,7 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
                     det_routing_arch,
                     segment_inf,
                     router_opts,
-                    arch->Directs,
+                    arch->directs,
                     &warnings,
                     is_flat);
 
