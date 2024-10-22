@@ -220,8 +220,8 @@ static void report_overused_ipin_opin(std::ostream& os,
         "Non-track RR node should not span across multiple grid blocks.");
 
     t_physical_tile_type_ptr physical_tile = device_ctx.grid.get_physical_type({grid_x, grid_y, grid_layer});
-    const t_vib_inf* vib;
-    if (device_ctx.arch->is_vib_arch) {
+    const VibInf* vib;
+    if (!device_ctx.arch->vib_infs.empty()) {
         vib = device_ctx.vib_grid[grid_layer][grid_x][grid_y];
     }
     else {
