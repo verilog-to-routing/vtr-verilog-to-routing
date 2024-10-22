@@ -9,11 +9,11 @@
 struct ConnectionParameters {
     ConnectionParameters(ParentNetId net_id,
                          int target_pin_num,
-                         bool has_choking_spot,
+                         bool router_opt_choke_points,
                          const std::unordered_map<RRNodeId, int>& connection_choking_spots)
         : net_id_(net_id)
         , target_pin_num_(target_pin_num)
-        , has_choking_spot_(has_choking_spot)
+        , router_opt_choke_points_(router_opt_choke_points)
         , connection_choking_spots_(connection_choking_spots) {}
 
     // Net id of the connection
@@ -24,7 +24,7 @@ struct ConnectionParameters {
     // Show whether for the given connection, router should expect a choking point
     // If this is true, it would increase the routing time since the router has to
     // take some measures to solve the congestion
-    bool has_choking_spot_;
+    bool router_opt_choke_points_;
 
     const std::unordered_map<RRNodeId, int>& connection_choking_spots_;
 };

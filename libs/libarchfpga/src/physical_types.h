@@ -1382,7 +1382,7 @@ class t_pb_graph_pin {
     float tco_max = std::numeric_limits<float>::quiet_NaN(); /* For sequential logic elements the maximum clock to output time */
     t_pb_graph_pin* associated_clock_pin = nullptr;          /* For sequential elements, the associated clock */
 
-    /* This member is used when flat-routing and has_choking_spot are enabled.
+    /* This member is used when flat-routing and router_opt_choke_points are enabled.
      * It is used to identify choke points.
      * This is only valid for IPINs, and it only contains the pins that are reachable to the pin by a forwarding path.
      * It doesn't take into account feed-back connection.

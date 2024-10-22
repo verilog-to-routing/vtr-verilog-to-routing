@@ -317,7 +317,7 @@ void SetupVPR(const t_options* options,
         vtr::ScopedStartFinishTimer timer("Allocate intra-cluster resources");
         // The following two functions should be called when the data structured related to t_pb_graph_node, t_pb_type,
         // and t_pb_graph_edge are initialized
-        alloc_and_load_intra_cluster_resources(routerOpts->has_choking_spot);
+        alloc_and_load_intra_cluster_resources(routerOpts->has_choke_point);
         add_intra_tile_switches();
     }
 
@@ -508,7 +508,7 @@ static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts)
     RouterOpts->max_logged_overused_rr_nodes = Options.max_logged_overused_rr_nodes;
     RouterOpts->generate_rr_node_overuse_report = Options.generate_rr_node_overuse_report;
     RouterOpts->flat_routing = Options.flat_routing;
-    RouterOpts->has_choking_spot = Options.has_choking_spot;
+    RouterOpts->has_choke_point = Options.router_opt_choke_points;
     RouterOpts->custom_3d_sb_fanin_fanout = Options.custom_3d_sb_fanin_fanout;
     RouterOpts->with_timing_analysis = Options.timing_analysis;
 }

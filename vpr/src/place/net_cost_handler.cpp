@@ -31,8 +31,9 @@
 #include "placer_state.h"
 #include "move_utils.h"
 #include "place_timing_update.h"
-#include "noc_place_utils.h"
 #include "vtr_math.h"
+#include "vtr_ndmatrix.h"
+#include "vtr_ndoffsetmatrix.h"
 
 #include <array>
 
@@ -220,6 +221,70 @@ void NetCostHandler::alloc_and_load_chan_w_factors_for_place_cost_(float place_c
 
             chany_place_cost_fac_[high][low] = (high - low + 1.) / chany_place_cost_fac_[high][low];
             chany_place_cost_fac_[high][low] = pow((double)chany_place_cost_fac_[high][low], (double)place_cost_exp);
+        }
+    }
+    
+    if (device_ctx.grid.get_num_layers() > 1) {
+        alloc_and_load_for_fast_vertical_cost_update_(place_cost_exp);
+    }
+}
+
+void NetCostHandler::alloc_and_load_for_fast_vertical_cost_update_(float place_cost_exp) {
+    const auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
+    
+    const size_t grid_height = device_ctx.grid.height();
+    const size_t grid_width = device_ctx.grid.width();
+
+
+    chanz_place_cost_fac_ = vtr::NdMatrix<float, 4>({grid_width, grid_height, grid_width, grid_height}, 0.);
+
+    vtr::NdMatrix<float, 2> tile_num_inter_die_conn({grid_width, grid_height}, 0.);                           
+
+    for (const auto& src_rr_node : rr_graph.nodes()) {
+        for (const auto& rr_edge_idx : rr_graph.configurable_edges(src_rr_node)) {
+            const auto& sink_rr_node = rr_graph.edge_sink_node(src_rr_node, rr_edge_idx);
+            if (rr_graph.node_layer(src_rr_node) != rr_graph.node_layer(sink_rr_node)) {
+                // We assume that the nodes driving the inter-layer connection or being driven by it
+                // are not streched across multiple tiles
+                int src_x = rr_graph.node_xhigh(src_rr_node);
+                int src_y = rr_graph.node_yhigh(src_rr_node);
+                VTR_ASSERT(rr_graph.node_xlow(src_rr_node) == src_x && rr_graph.node_ylow(src_rr_node) == src_y);
+
+                tile_num_inter_die_conn[src_x][src_y]++;
+            }
+        }
+
+        for (const auto& rr_edge_idx : rr_graph.non_configurable_edges(src_rr_node)) {
+            const auto& sink_rr_node = rr_graph.edge_sink_node(src_rr_node, rr_edge_idx);
+            if (rr_graph.node_layer(src_rr_node) != rr_graph.node_layer(sink_rr_node)) {
+                int src_x = rr_graph.node_xhigh(src_rr_node);
+                VTR_ASSERT(rr_graph.node_xlow(src_rr_node) == src_x && rr_graph.node_xlow(src_rr_node) == src_x);
+                int src_y = rr_graph.node_yhigh(src_rr_node);
+                VTR_ASSERT(rr_graph.node_ylow(src_rr_node) == src_y && rr_graph.node_ylow(src_rr_node) == src_y);
+                tile_num_inter_die_conn[src_x][src_y]++;
+            }
+        }
+    }
+
+    for (int x_high = 0; x_high < (int)device_ctx.grid.width(); x_high++) {
+        for (int y_high = 0; y_high < (int)device_ctx.grid.height(); y_high++) {
+            for (int x_low = 0; x_low <= x_high; x_low++) {
+                for (int y_low = 0; y_low <= y_high; y_low++) {
+                    int num_inter_die_conn = 0;
+                    for (int x = x_low; x <= x_high; x++) {
+                        for (int y = y_low; y <= y_high; y++) {
+                            num_inter_die_conn += tile_num_inter_die_conn[x][y];
+                        }
+                    }
+                    int seen_num_tiles = (x_high - x_low + 1) * (y_high - y_low + 1);
+                    chanz_place_cost_fac_[x_high][y_high][x_low][y_low] = seen_num_tiles / static_cast<float>(num_inter_die_conn);
+
+                    chanz_place_cost_fac_[x_high][y_high][x_low][y_low] = pow(
+                        (double)chanz_place_cost_fac_[x_high][y_high][x_low][y_low],
+                        (double)place_cost_exp);
+                }
+            }
         }
     }
 }
@@ -1337,6 +1402,8 @@ double NetCostHandler::get_net_cube_bb_cost_(ClusterNetId net_id, bool use_ts) {
 
     const t_bb& bb = use_ts ? ts_bb_coord_new_[net_id] : placer_state_.move().bb_coords[net_id];
 
+    const bool is_multi_layer = (g_vpr_ctx.device().grid.get_num_layers() > 1);
+
     double crossing = wirelength_crossing_count(cluster_ctx.clb_nlist.net_pins(net_id).size());
 
     /* Could insert a check for xmin == xmax.  In that case, assume  *
@@ -1355,6 +1422,9 @@ double NetCostHandler::get_net_cube_bb_cost_(ClusterNetId net_id, bool use_ts) {
     double ncost;
     ncost = (bb.xmax - bb.xmin + 1) * crossing * chanx_place_cost_fac_[bb.ymax][bb.ymin - 1];
     ncost += (bb.ymax - bb.ymin + 1) * crossing * chany_place_cost_fac_[bb.xmax][bb.xmin - 1];
+    if (is_multi_layer) {
+        ncost += (bb.layer_max - bb.layer_min) * crossing * chanz_place_cost_fac_[bb.xmax][bb.ymax][bb.xmin][bb.ymin];
+    }
 
     return ncost;
 }
