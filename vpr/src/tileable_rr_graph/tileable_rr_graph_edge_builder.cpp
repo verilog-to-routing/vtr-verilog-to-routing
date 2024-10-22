@@ -105,7 +105,7 @@ void build_rr_graph_edges(const RRGraphView& rr_graph,
                           RRGraphBuilder& rr_graph_builder,
                           vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
                           const DeviceGrid& grids,
-                          const vtr::NdMatrix<const t_vib_inf*, 3>& vib_grid,
+                          const vtr::NdMatrix<const VibInf*, 3>& vib_grid,
                           const size_t& layer,
                           const vtr::Point<size_t>& device_chan_width,
                           const std::vector<t_segment_inf>& segment_inf,
@@ -137,8 +137,8 @@ void build_rr_graph_edges(const RRGraphView& rr_graph,
                 for (size_t iy = 0; iy < vib_grid.dim_size(2); iy++) {
                     std::map<std::string, size_t> mux_name_map;
                     
-                    for (size_t i_mux = 0; i_mux < vib_grid[i_layer][ix][iy]->first_stages.size(); i_mux++) {
-                        mux_name_map.emplace(vib_grid[i_layer][ix][iy]->first_stages[i_mux].mux_name, i_mux);
+                    for (size_t i_mux = 0; i_mux < vib_grid[i_layer][ix][iy]->get_first_stages().size(); i_mux++) {
+                        mux_name_map.emplace(vib_grid[i_layer][ix][iy]->get_first_stages()[i_mux].mux_name, i_mux);
                     }
                     medium_mux_name2medium_index[i_layer][ix][iy] = mux_name_map;
                 }
@@ -153,7 +153,7 @@ void build_rr_graph_edges(const RRGraphView& rr_graph,
     build_rr_graph_edges_for_source_nodes(rr_graph, rr_graph_builder, rr_node_driver_switches, grids, layer, num_edges_to_create);
     build_rr_graph_edges_for_sink_nodes(rr_graph, rr_graph_builder, rr_node_driver_switches, grids, layer, num_edges_to_create);
 
-    vtr::Point<size_t> gsb_range(grids.width() - 1, grids.height() - 1);
+    vtr::Point<size_t> gsb_range(grids.width() - 2, grids.height() - 2);
 
     /* Go Switch Block by Switch Block */
     for (size_t ix = 0; ix <= gsb_range.x(); ++ix) {
@@ -209,8 +209,8 @@ void build_rr_graph_edges(const RRGraphView& rr_graph,
     if (is_vib_arch) {
         size_t ix, iy;
         // process top boundary
-        iy = grids.height() - 1;
-        for (ix = 0; ix < grids.width() - 1; ++ix) {
+        iy = gsb_range.y() + 1;  // == grids.height() - 1
+        for (ix = 0; ix < gsb_range.x() + 1; ++ix) {
             vtr::Point<size_t> actual_coord(ix, iy);
             vtr::Point<size_t> gsb_coord(ix, iy - 1);
 
