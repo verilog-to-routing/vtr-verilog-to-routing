@@ -5248,7 +5248,7 @@ static void ProcessVibArch(pugi::xml_node Parent, std::vector<t_physical_tile_ty
     pugi::xml_node Node;
     //pugi::xml_node SubElem;
 
-    arch->is_vib_arch = true;
+    //arch->is_vib_arch = true;
     int num_vibs = count_children(Parent, "vib", loc_data);
     arch->vib_infs.reserve(num_vibs);
     Node = get_first_child(Parent, "vib", loc_data);
@@ -5265,13 +5265,13 @@ static void ProcessVib(pugi::xml_node Vib_node, std::vector<t_physical_tile_type
     const char* tmp;
     int itmp;
 
-    t_vib_inf vib;
+    VibInf vib;
     std::vector<t_segment_inf> segments = arch->Segments;
     t_arch_switch_inf* switches = arch->Switches;
 
     tmp = get_attribute(Vib_node, "name", loc_data).as_string(nullptr);
     if (tmp) {
-        vib.name = tmp;
+        vib.set_name(tmp);
     }
     else {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Vib_node),
@@ -5280,21 +5280,21 @@ static void ProcessVib(pugi::xml_node Vib_node, std::vector<t_physical_tile_type
 
     tmp = get_attribute(Vib_node, "pbtype_name", loc_data).as_string(nullptr);
     if (tmp) {
-        vib.pbtype_name = tmp;
+        vib.set_pbtype_name(tmp);
     }
     else {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Vib_node),
                        "No pbtype_name specified for the vib!\n");
     }
 
-    vib.seg_group_num = get_attribute(Vib_node, "vib_seg_group", loc_data).as_int(1);
+    vib.set_seg_group_num(get_attribute(Vib_node, "vib_seg_group", loc_data).as_int(1));
 
     tmp = get_attribute(Vib_node, "arch_vib_switch", loc_data).as_string(nullptr);
     
     if (tmp) {
         for (int i_switch = 0; i_switch < arch->num_switches; i_switch++) {
             if (!strcmp(tmp, switches[i_switch].name.c_str())) {
-                vib.switch_idx = i_switch;
+                vib.set_switch_idx(i_switch);
                 break;
             }
         }      
@@ -5307,8 +5307,8 @@ static void ProcessVib(pugi::xml_node Vib_node, std::vector<t_physical_tile_type
     expect_only_children(Vib_node, {"seg_group", "multistage_muxs"}, loc_data);
 
     int group_num = count_children(Vib_node, "seg_group", loc_data);
-    VTR_ASSERT(vib.seg_group_num == group_num);
-    vib.seg_groups.reserve(group_num);
+    VTR_ASSERT(vib.get_seg_group_num() == group_num);
+    //vib.seg_groups.reserve(group_num);
     Node = get_first_child(Vib_node, "seg_group", loc_data);
     for (int i_group = 0; i_group < group_num; i_group++) {
         t_seg_group seg_group;
@@ -5338,7 +5338,7 @@ static void ProcessVib(pugi::xml_node Vib_node, std::vector<t_physical_tile_type
                            "No track_num specified for the vib seg group!\n");
         }
 
-        vib.seg_groups.push_back(seg_group);
+        vib.push_seg_group(seg_group);
 
         Node = Node.next_sibling(Node.name());
     }
@@ -5352,7 +5352,7 @@ static void ProcessVib(pugi::xml_node Vib_node, std::vector<t_physical_tile_type
         ProcessFirstStage(SubElem, PhysicalTileTypes, segments, first_stages, loc_data);
 
         for (auto first_stage : first_stages) {
-            vib.first_stages.push_back(first_stage);
+            vib.push_first_stage(first_stage);
         }
 
     }
@@ -5363,7 +5363,7 @@ static void ProcessVib(pugi::xml_node Vib_node, std::vector<t_physical_tile_type
         ProcessSecondStage(SubElem, PhysicalTileTypes, segments, second_stages, loc_data);
 
         for (auto second_stage : second_stages) {
-            vib.second_stages.push_back(second_stage);
+            vib.push_second_stage(second_stage);
         }
 
     }
