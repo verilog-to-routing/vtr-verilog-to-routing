@@ -128,7 +128,6 @@ class BlkLocRegistry {
      */
     void revert_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected);
 
-    ///@brief Helper function that returns the x, y coordinates of a pin
     /**
      * @brief Returns the coordinates of a cluster pin
      * @param pin The unique Id of the cluster pin whose coordinates is desired.

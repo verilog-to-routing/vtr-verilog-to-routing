@@ -71,7 +71,7 @@ void PlaceMacros::alloc_and_load_placement_macros(const std::vector<t_direct_inf
      * only at first. Allocate for the second dimension when I know
      * the size. Otherwise, the array is going to be of size
      * cluster_ctx.clb_nlist.blocks().size()^2 (There are big
-     * benckmarks VPR that have cluster_ctx.clb_nlist.blocks().size()
+     * benchmarks VPR that have cluster_ctx.clb_nlist.blocks().size()
      * in the 100k's range).
      *
      * The placement macro array is freed by the caller(s).
@@ -378,15 +378,9 @@ static bool try_combine_macros(std::vector<std::vector<ClusterBlockId>>& pl_macr
     return true;
 }
 
-int PlaceMacros::get_imacro_from_iblk(ClusterBlockId iblk) const{
-    /* This mapping is needed for fast lookups whether the block with index *
-     * iblk belongs to a placement macro or not.                             *
-     *                                                                       *
-     * The array imacro_from_iblk_ is used for the mapping for speed reason *
-     * [0...cluster_ctx.clb_nlist.blocks().size()-1]                                                    */
-
+int PlaceMacros::get_imacro_from_iblk(ClusterBlockId iblk) const {
     int imacro;
-    if (iblk) {
+    if (iblk != ClusterBlockId::INVALID()) {
         /* Return the imacro for the block. */
         imacro = imacro_from_iblk_[iblk];
     } else {
@@ -396,53 +390,31 @@ int PlaceMacros::get_imacro_from_iblk(ClusterBlockId iblk) const{
     return imacro;
 }
 
-void PlaceMacros::set_imacro_for_iblk(int imacro, ClusterBlockId blk_id) {
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-
-    imacro_from_iblk_.resize(cluster_ctx.clb_nlist.blocks().size());
-    imacro_from_iblk_.insert(blk_id, imacro);
-}
-
 void PlaceMacros::alloc_and_load_idirect_from_blk_pin_(const std::vector<t_direct_inf>& directs) {
-    /* Allocates and loads idirect_from_blk_pin and direct_type_from_blk_pin arrays.    *
-     *                                                                                  *
-     * For a bus (multiple bits) direct connection, all the pins in the bus are marked. *
-     *                                                                                  *
-     * idirect_from_blk_pin array allow us to quickly find pins that could be in a      *
-     * direct connection. Values stored is the index of the possible direct connection  *
-     * as specified in the arch file, OPEN (-1) is stored for pins that could not be    *
-     * part of a direct chain connection.                                               *
-     *                                                                                  *
-     * direct_type_from_blk_pin array stores the value SOURCE if the pin is the         *
-     * from_pin, SINK if the pin is the to_pin in the direct connection as specified in *
-     * the arch file, OPEN (-1) is stored for pins that could not be part of a direct   *
-     * chain connection.                                                                *
-     *                                                                                  *
-     * Stores the pointers to the two 2D arrays in the addresses passed in.             *
-     *                                                                                  *
-     * The two arrays are freed by the caller(s).                                       */
+    const auto& device_ctx = g_vpr_ctx.device();
+
     constexpr size_t MAX_STRING_LEN = 512;
 
-    char to_pb_type_name[MAX_STRING_LEN + 1], to_port_name[MAX_STRING_LEN + 1],
-        from_pb_type_name[MAX_STRING_LEN + 1], from_port_name[MAX_STRING_LEN + 1];
+    char to_pb_type_name[MAX_STRING_LEN + 1];
+    char to_port_name[MAX_STRING_LEN + 1];
+    char from_pb_type_name[MAX_STRING_LEN + 1];
+    char from_port_name[MAX_STRING_LEN + 1];
 
-    int to_start_pin_index = -1, to_end_pin_index = -1;
-    int from_start_pin_index = -1, from_end_pin_index = -1;
-    auto& device_ctx = g_vpr_ctx.device();
+    int to_start_pin_index = -1;
+    int to_end_pin_index = -1;
+    int from_start_pin_index = -1;
+    int from_end_pin_index = -1;
 
-    /* Allocate and initialize the values to OPEN (-1). */
+    // Allocate and initialize the values to OPEN (-1).
     idirect_from_blk_pin_.resize(device_ctx.physical_tile_types.size());
     direct_type_from_blk_pin_.resize(device_ctx.physical_tile_types.size());
-    for (const auto& type : device_ctx.physical_tile_types) {
+    for (const t_physical_tile_type& type : device_ctx.physical_tile_types) {
         if (is_empty_type(&type)) {
             continue;
         }
 
-        int itype = type.index;
-        int num_type_pins = type.num_pins;
-
-        idirect_from_blk_pin_[itype].resize(num_type_pins, OPEN);
-        direct_type_from_blk_pin_[itype].resize(num_type_pins, OPEN);
+        idirect_from_blk_pin_[type.index].resize(type.num_pins, OPEN);
+        direct_type_from_blk_pin_[type.index].resize(type.num_pins, OPEN);
     }
 
     /* Load the values */
@@ -678,10 +650,6 @@ bool PlaceMacros::net_is_driven_by_direct_(ClusterNetId clb_net) {
 
     return direct != OPEN;
 }
-
-//t_pl_macro& PlaceMacros::operator[](size_t idx) {
-//    return pl_macros_[idx];
-//}
 
 const t_pl_macro& PlaceMacros::operator[](int idx) const {
     return pl_macros_[idx];

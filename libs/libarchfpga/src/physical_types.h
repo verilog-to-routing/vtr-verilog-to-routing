@@ -1697,51 +1697,46 @@ enum class BufferSize {
     ABSOLUTE
 };
 
-/* Lists all the important information about a switch type read from the     *
- * architecture file.                                                        *
- * [0 .. Arch.num_switch]                                                    *
- * buffered:  Does this switch include a buffer?                             *
- * R:  Equivalent resistance of the buffer/switch.                           *
- * Cin:  Input capacitance.                                                  *
- * Cout:  Output capacitance.                                                *
- * Cinternal: Since multiplexers and tristate buffers are modeled as a       *
- *            parallel stream of pass transistors feeding into a buffer,     *
- *            we would expect an additional "internal capacitance"           *
- *            to arise when the pass transistor is enabled and the signal    *
- *            must propagate to the buffer. See diagram of one stream below: *
- *                                                                           *
- *                  Pass Transistor                                          *
- *                       |                                                   *
- *                     -----                                                 *
- *                     -----      Buffer                                     *
- *                    |     |       |\                                       *
- *              ------       -------| \--------                              *
- *                |             |   | /    |                                 *
- *              =====         ===== |/   =====                               *
- *              =====         =====      =====                               *
- *                |             |          |                                 *
- *             Input C    Internal C    Output C                             *
- *                                                                           *
- * Tdel_map: A map where the key is the number of inputs and the entry       *
- *           is the corresponding delay. If there is only one entry at key   *
- *           UNDEFINED, then delay is a constant (doesn't vary with fan-in). *
- *	         A map saves us the trouble of sorting, and has lower access     *
- *           time for interpolation/extrapolation purposes                   *
- * mux_trans_size:  The area of each transistor in the segment's driving mux *
- *                  measured in minimum width transistor units               *
- * buf_size:  The area of the buffer. If set to zero, area should be         *
- *            calculated from R                                              */
+/**
+ * @struct t_arch_switch_inf
+ * @brief Lists all the important information about a switch type read from the architecture file.
+ */
 struct t_arch_switch_inf {
   public:
     static constexpr int UNDEFINED_FANIN = -1;
 
     std::string name;
+    /// Equivalent resistance of the buffer/switch
     float R = 0.;
+    /// Input capacitance
     float Cin = 0.;
+    /// Output capacitance
     float Cout = 0.;
+    /**
+     * @brief   The internal capacitance.
+     * @details Since multiplexers and tristate buffers are modeled as a
+     *          parallel stream of pass transistors feeding into a buffer,
+     *          we would expect an additional "internal capacitance
+     *          to arise when the pass transistor is enabled and the signal
+     *          must propagate to the buffer. See diagram of one stream below:
+     *
+     *              Pass Transistor
+     *                   |
+     *                 -----
+     *                 -----      Buffer
+     *                |     |       |\
+     *          ------       -------| \ -----
+     *            |             |   | /    |
+     *          =====         ===== |/   =====
+     *          =====         =====      =====
+     *            |             |          |
+     *          Input C    Internal C    Output C
+     */
     float Cinternal = 0.;
+    /// The area of each transistor in the segment's driving mux measured in minimum width transistor units
     float mux_trans_size = 1.;
     BufferSize buf_size_type = BufferSize::AUTO;
+    /// The area of the buffer. If set to zero, area should be calculated from R
     float buf_size = 0.;
     e_power_buffer_type power_buffer_type = POWER_BUFFER_TYPE_AUTO;
     float power_buffer_size = 0.;
@@ -1774,6 +1769,15 @@ struct t_arch_switch_inf {
 
   private:
     SwitchType type_ = SwitchType::INVALID;
+
+    /**
+     * @brief   Maps the number of inputs to a delay.
+     * @details A map where the key is the number of inputs and the entry
+     *          is the corresponding delay. If there is only one entry at key
+     *          UNDEFINED, then delay is a constant (doesn't vary with fan-in).
+     *          A map saves us the trouble of sorting, and has lower access
+     *          time for interpolation/extrapolation purposes
+     */
     std::map<int, double> Tdel_map_;
 
     friend void PrintArchInfo(FILE*, const t_arch*);
@@ -2048,7 +2052,8 @@ struct t_arch {
     mutable vtr::string_internment strings;
     std::vector<vtr::interned_string> interned_strings;
 
-    char* architecture_id; //Secure hash digest of the architecture file to uniquely identify this architecture
+    /// Secure hash digest of the architecture file to uniquely identify this architecture
+    char* architecture_id;
 
     t_chan_width_dist Chans;
     enum e_switch_block_type SBType;
@@ -2059,6 +2064,7 @@ struct t_arch {
     float grid_logic_tile_area;
     std::vector<t_segment_inf> Segments;
 
+    /// Contains information from all switch types defined in the architecture file.
     std::vector<t_arch_switch_inf> switches;
 
     /// Contains information about all direct chain connections in the architecture
@@ -2115,7 +2121,7 @@ struct t_arch {
 
     t_clock_arch_spec clock_arch; // Clock related data types
 
-    // if we have an embedded NoC in the architecture, then we store it here
+    /// Stores NoC-related architectural information when there is an embedded NoC
     t_noc_inf* noc = nullptr;
 };
 

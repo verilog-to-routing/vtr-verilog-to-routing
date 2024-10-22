@@ -133,12 +133,12 @@
 struct t_pl_macro_member {
     ///@brief The cluster_ctx.blocks index of this block.
     ClusterBlockId blk_index;
-    ///@brief The offset from the first macro member to this member
+    ///@brief The location offset from the first macro member to this member
     t_pl_offset offset;
 };
 
 struct t_pl_macro {
-    ///@brief An array of blocks in this macro [0:num_macro-1].
+    ///@brief A vector of blocks in this macro [0:num_macro-1].
     std::vector<t_pl_macro_member> members;
 };
 
@@ -165,9 +165,13 @@ class PlaceMacros {
      */
     void alloc_and_load_placement_macros(const std::vector<t_direct_inf>& directs);
 
+    /**
+     * @brief Returns the placement macro index to which the given block belongs.
+     * @param iblk The unique ID of a clustered block whose placement macro is of interest.
+     * @return The placement macro index that the given block is part of. A negative integer
+     * in returned if the block is not part of a macro.
+     */
     int get_imacro_from_iblk(ClusterBlockId iblk) const;
-
-    void set_imacro_for_iblk(int imacro, ClusterBlockId blk_id);
 
     /**
      * @brief Finds the head block of the macro that contains a given clustered block
@@ -178,10 +182,17 @@ class PlaceMacros {
      */
     ClusterBlockId macro_head(ClusterBlockId blk) const;
 
+    /// @brief Returns a constant reference to all placement macros.
     const std::vector<t_pl_macro>& macros() const;
 
-//    t_pl_macro& operator[](size_t idx);
-    const t_pl_macro&  operator[](int idx) const;
+    /**
+     * @brief Returns the placement macro associated with a macro index.
+     * @param idx An index specifying a macro. get_imacro_from_iblk() can
+     * be called to find out a the macro index of the placement macro a
+     * clustered block is part of.
+     * @return A placement macro associated with the given index.
+     */
+    const t_pl_macro& operator[](int idx) const;
 
   private:
 
@@ -223,6 +234,21 @@ class PlaceMacros {
 
     bool net_is_driven_by_direct_(ClusterNetId clb_net);
 
+    /**
+     * @brief Allocates and loads idirect_from_blk_pin and direct_type_from_blk_pin arrays.
+     *
+     * @details For a bus (multiple bits) direct connection, all the pins in the bus are marked.
+     * idirect_from_blk_pin vector allow us to quickly find pins that could be in a
+     * direct connection. Values stored is the index of the possible direct connection
+     * as specified in the arch file, OPEN (-1) is stored for pins that could not be
+     * part of a direct chain connection.
+     *
+     * direct_type_from_blk_pin vector stores the value SOURCE if the pin is the
+     * from_pin, SINK if the pin is the to_pin in the direct connection as specified in
+     * the arch file, OPEN (-1) is stored for pins that could not be part of a direct
+     * chain connection.
+     * @param directs Contains information about all direct connections in the architecture.
+     */
     void alloc_and_load_idirect_from_blk_pin_(const std::vector<t_direct_inf>& directs);
 };
 
