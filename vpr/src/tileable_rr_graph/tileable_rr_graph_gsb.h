@@ -94,7 +94,7 @@ void build_direct_connections_for_one_gsb(const RRGraphView& rr_graph,
 
 t_vib_map build_vib_map(const RRGraphView& rr_graph,
                         const DeviceGrid& grids,
-                        const vtr::NdMatrix<const t_vib_inf*, 3>& vib_grid,
+                        const vtr::NdMatrix<const VibInf*, 3>& vib_grid,
                         const RRGSB& rr_gsb,
                         const std::vector<t_segment_inf>& segment_inf,
                         const size_t& layer,
