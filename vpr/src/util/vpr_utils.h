@@ -256,7 +256,7 @@ void print_timing_stats(const std::string& name,
 std::vector<const t_pb_graph_node*> get_all_pb_graph_node_primitives(const t_pb_graph_node* pb_graph_node);
 
 bool is_inter_cluster_node(t_physical_tile_type_ptr physical_tile,
-                           const t_vib_inf* vib,
+                           const VibInf* vib,
                            t_rr_type node_type,
                            int node_ptc);
 
