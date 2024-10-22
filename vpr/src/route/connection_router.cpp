@@ -1064,6 +1064,14 @@ static inline void update_router_stats(RouterStats* router_stats,
         auto node_type = rr_graph->node_type(rr_node_id);
         VTR_ASSERT(node_type != NUM_RR_TYPES);
 
+        const VibInf* vib;
+        if (!device_ctx.arch->vib_infs.empty()) {
+            vib = device_ctx.vib_grid[rr_graph->node_layer(rr_node_id)][rr_graph->node_xlow(rr_node_id)][rr_graph->node_ylow(rr_node_id)];
+        }
+        else {
+            vib = nullptr;
+        }
+
         if (is_inter_cluster_node(*rr_graph, rr_node_id)) {
             if (is_push) {
                 router_stats->inter_cluster_node_pushes++;
