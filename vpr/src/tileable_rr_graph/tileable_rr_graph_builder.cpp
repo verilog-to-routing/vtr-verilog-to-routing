@@ -158,7 +158,7 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
 
     /* Get vib grid */
     const auto& vib_grid = device_ctx.vib_grid;
-    const bool is_vib_arch = device_ctx.arch->is_vib_arch;
+    const bool is_vib_arch = !device_ctx.arch->vib_infs.empty();
 
     /************************
      * Allocate the rr_nodes
