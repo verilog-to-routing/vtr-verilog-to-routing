@@ -1737,9 +1737,9 @@ bool is_inter_cluster_node(const RRGraphView& rr_graph_view,
     auto node_type = rr_graph_view.node_type(node_id);
     if (node_type == CHANX || node_type == CHANY) {
         return true;
-    } else if (node_type == MEDIUM) {
+    } else if (node_type == MEDIUM) { // This function will check all types of nodes. MEDIUM is added for avoiding errors.
         VTR_ASSERT(vib != nullptr);
-        return (node_ptc < (int)vib->first_stages.size());
+        return (node_ptc < (int)vib->get_first_stages().size());
     } else {
         VTR_ASSERT(node_type == IPIN || node_type == OPIN || node_type == SINK || node_type == SOURCE);
         if (node_type == IPIN || node_type == OPIN) {
