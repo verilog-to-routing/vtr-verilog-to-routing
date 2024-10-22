@@ -420,8 +420,8 @@ t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat) {
                     const std::vector<RRNodeId>& rr_nodes_at_loc = device_ctx.rr_graph.node_lookup().find_grid_nodes_at_all_sides(sample_loc.layer_num, sample_loc.x, sample_loc.y, rr_type);
                     for (RRNodeId node_id : rr_nodes_at_loc) {
                         int ptc = rr_graph.node_ptc_num(node_id);
-                        const t_vib_inf* vib;
-                        if (device_ctx.arch->is_vib_arch) {
+                        const VibInf* vib;
+                        if (!device_ctx.arch->vib_infs.empty()) {
                             vib = device_ctx.vib_grid[sample_loc.layer_num][sample_loc.x][sample_loc.y];
                         }
                         else {
@@ -1040,8 +1040,8 @@ static void dijkstra_flood_to_wires(int itile,
                 t_physical_tile_type_ptr physical_type = device_ctx.grid.get_physical_type({rr_graph.node_xlow(next_node),
                                                                                             rr_graph.node_ylow(next_node),
                                                                                             rr_graph.node_layer(next_node)});
-                const t_vib_inf* vib;
-                if (device_ctx.arch->is_vib_arch) {
+                const VibInf* vib;
+                if (!device_ctx.arch->vib_infs.empty()) {
                     vib = device_ctx.vib_grid[rr_graph.node_layer(next_node)][rr_graph.node_xlow(next_node)][rr_graph.node_ylow(next_node)];
                 }
                 else {
@@ -1412,8 +1412,8 @@ static void expand_dijkstra_neighbours(util::PQ_Entry parent_entry,
         t_physical_tile_type_ptr physical_type = device_ctx.grid.get_physical_type({rr_graph.node_xlow(child_node),
                                                                                     rr_graph.node_ylow(child_node),
                                                                                     rr_graph.node_layer(child_node)});
-        const t_vib_inf* vib;
-        if (device_ctx.arch->is_vib_arch) {
+        const VibInf* vib;
+        if (!device_ctx.arch->vib_infs.empty()) {
             vib = device_ctx.vib_grid[rr_graph.node_layer(child_node)][rr_graph.node_xlow(child_node)][rr_graph.node_ylow(child_node)];
         }
         else {
