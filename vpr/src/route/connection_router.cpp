@@ -1073,8 +1073,8 @@ static inline void update_router_stats(RouterStats* router_stats,
     VTR_ASSERT(node_type != NUM_RR_TYPES);
 
 
-    const t_vib_inf* vib;
-    if (device_ctx.arch->is_vib_arch) {
+    const VibInf* vib;
+    if (!device_ctx.arch->vib_infs.empty()) {
         vib = device_ctx.vib_grid[rr_graph->node_layer(rr_node_id)][rr_graph->node_xlow(rr_node_id)][rr_graph->node_ylow(rr_node_id)];
     }
     else {
