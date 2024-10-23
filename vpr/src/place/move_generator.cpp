@@ -6,8 +6,7 @@
 void MoveGenerator::calculate_reward_and_process_outcome(const MoveOutcomeStats& move_outcome_stats,
                                                          double delta_c,
                                                          float timing_bb_factor) {
-    /*
-     * To learn about different reward functions refer to the following paper:
+    /* To learn about different reward functions refer to the following paper:
      * Elgammal MA, Murray KE, Betz V. RLPlace: Using reinforcement learning and
      * smart perturbations to optimize FPGA placement.
      * IEEE Transactions on Computer-Aided Design of Integrated Circuits and Systems.
@@ -102,4 +101,14 @@ void MoveTypeStat::print_placement_move_types_stats() {
         VTR_LOG("\n");
     }
     VTR_LOG("\n");
+}
+
+static std::map<std::string, e_reward_function> available_reward_function = {
+    {"basic", e_reward_function::BASIC},
+    {"nonPenalizing_basic", e_reward_function::NON_PENALIZING_BASIC},
+    {"runtime_aware", e_reward_function::RUNTIME_AWARE},
+    {"WLbiased_runtime_aware", e_reward_function::WL_BIASED_RUNTIME_AWARE}};
+
+e_reward_function string_to_reward(const std::string& st) {
+    return available_reward_function[st];
 }

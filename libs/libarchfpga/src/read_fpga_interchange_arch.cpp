@@ -2374,15 +2374,13 @@ struct ArchReader {
         size_t num_switches = pip_timing_models.size() + 2;
         std::string switch_name;
 
-        arch_->num_switches = num_switches;
-
         if (num_switches > 0) {
-            arch_->Switches = new t_arch_switch_inf[num_switches];
+            arch_->switches.resize(num_switches);
         }
 
         float R, Cin, Cint, Cout, Tdel;
         for (size_t i = 0; i < num_switches; ++i) {
-            t_arch_switch_inf* as = &arch_->Switches[i];
+            t_arch_switch_inf* as = &arch_->switches[i];
 
             R = Cin = Cint = Cout = Tdel = 0.0;
             SwitchType type;

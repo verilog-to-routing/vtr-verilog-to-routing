@@ -31,7 +31,7 @@ std::pair<std::unique_ptr<MoveGenerator>, std::unique_ptr<MoveGenerator>> create
          *     - 1st state: includes 4 moves (Uniform / Median / Centroid /    *
          *                  WeightedCentroid)                                  *
          *      If agent should propose block type as well as the mentioned    *
-         *      move types, 1st state Q-table size is:                          *
+         *      move types, 1st state Q-table size is:                         *
          *                 4 move types * number of block types in the netlist *
          *      if not, the Q-table size is : 4                                *
          *                                                                     *

@@ -253,29 +253,29 @@ void PrintArchInfo(FILE* Echo, const t_arch* arch) {
     //13 is hard coded because format of %e is always 1.123456e+12
     //It always consists of 10 alphanumeric digits, a decimal
     //and a sign
-    for (i = 0; i < arch->num_switches; i++) {
-        if (arch->Switches[i].type() == SwitchType::MUX) {
-            fprintf(Echo, "\tSwitch[%d]: name %s type mux\n", i + 1, arch->Switches[i].name.c_str());
-        } else if (arch->Switches[i].type() == SwitchType::TRISTATE) {
-            fprintf(Echo, "\tSwitch[%d]: name %s type tristate\n", i + 1, arch->Switches[i].name.c_str());
-        } else if (arch->Switches[i].type() == SwitchType::SHORT) {
-            fprintf(Echo, "\tSwitch[%d]: name %s type short\n", i + 1, arch->Switches[i].name.c_str());
-        } else if (arch->Switches[i].type() == SwitchType::BUFFER) {
-            fprintf(Echo, "\tSwitch[%d]: name %s type buffer\n", i + 1, arch->Switches[i].name.c_str());
+    for (i = 0; i < (int)arch->switches.size(); i++) {
+        if (arch->switches[i].type() == SwitchType::MUX) {
+            fprintf(Echo, "\tSwitch[%d]: name %s type mux\n", i + 1, arch->switches[i].name.c_str());
+        } else if (arch->switches[i].type() == SwitchType::TRISTATE) {
+            fprintf(Echo, "\tSwitch[%d]: name %s type tristate\n", i + 1, arch->switches[i].name.c_str());
+        } else if (arch->switches[i].type() == SwitchType::SHORT) {
+            fprintf(Echo, "\tSwitch[%d]: name %s type short\n", i + 1, arch->switches[i].name.c_str());
+        } else if (arch->switches[i].type() == SwitchType::BUFFER) {
+            fprintf(Echo, "\tSwitch[%d]: name %s type buffer\n", i + 1, arch->switches[i].name.c_str());
         } else {
-            VTR_ASSERT(arch->Switches[i].type() == SwitchType::PASS_GATE);
-            fprintf(Echo, "\tSwitch[%d]: name %s type pass_gate\n", i + 1, arch->Switches[i].name.c_str());
+            VTR_ASSERT(arch->switches[i].type() == SwitchType::PASS_GATE);
+            fprintf(Echo, "\tSwitch[%d]: name %s type pass_gate\n", i + 1, arch->switches[i].name.c_str());
         }
-        fprintf(Echo, "\t\t\t\tR %e Cin %e Cout %e\n", arch->Switches[i].R,
-                arch->Switches[i].Cin, arch->Switches[i].Cout);
+        fprintf(Echo, "\t\t\t\tR %e Cin %e Cout %e\n", arch->switches[i].R,
+                arch->switches[i].Cin, arch->switches[i].Cout);
         fprintf(Echo, "\t\t\t\t#Tdel values %d buf_size %e mux_trans_size %e\n",
-                (int)arch->Switches[i].Tdel_map_.size(), arch->Switches[i].buf_size,
-                arch->Switches[i].mux_trans_size);
-        if (arch->Switches[i].power_buffer_type == POWER_BUFFER_TYPE_AUTO) {
+                (int)arch->switches[i].Tdel_map_.size(), arch->switches[i].buf_size,
+                arch->switches[i].mux_trans_size);
+        if (arch->switches[i].power_buffer_type == POWER_BUFFER_TYPE_AUTO) {
             fprintf(Echo, "\t\t\t\tpower_buffer_size auto\n");
         } else {
             fprintf(Echo, "\t\t\t\tpower_buffer_size %e\n",
-                    arch->Switches[i].power_buffer_size);
+                    arch->switches[i].power_buffer_size);
         }
     }
 
@@ -293,19 +293,19 @@ void PrintArchInfo(FILE* Echo, const t_arch* arch) {
         if (seg.directionality == UNI_DIRECTIONAL) {
             //wire_switch == arch_opin_switch
             fprintf(Echo, "\t\t\t\ttype unidir mux_name for within die connections: %s\n",
-                    arch->Switches[seg.arch_wire_switch].name.c_str());
+                    arch->switches[seg.arch_wire_switch].name.c_str());
             //if there is more than one layer available, print the segment switch name that is used for connection between two dice
             for (const auto& layout : arch->grid_layouts) {
                 int num_layers = (int)layout.layers.size();
                 if (num_layers > 1) {
                     fprintf(Echo, "\t\t\t\ttype unidir mux_name for between two dice connections: %s\n",
-                            arch->Switches[seg.arch_opin_between_dice_switch].name.c_str());
+                            arch->switches[seg.arch_opin_between_dice_switch].name.c_str());
                 }
             }
         } else { //Should be bidir
             fprintf(Echo, "\t\t\t\ttype bidir wire_switch %s arch_opin_switch %s\n",
-                    arch->Switches[seg.arch_wire_switch].name.c_str(),
-                    arch->Switches[seg.arch_opin_switch].name.c_str());
+                    arch->switches[seg.arch_wire_switch].name.c_str(),
+                    arch->switches[seg.arch_opin_switch].name.c_str());
         }
 
         fprintf(Echo, "\t\t\t\tcb ");
@@ -332,13 +332,13 @@ void PrintArchInfo(FILE* Echo, const t_arch* arch) {
     //Direct List
     fprintf(Echo, "*************************************************\n");
     fprintf(Echo, "Direct List:\n");
-    for (i = 0; i < arch->num_directs; i++) {
+    for (i = 0; i < (int)arch->directs.size(); i++) {
         fprintf(Echo, "\tDirect[%d]: name %s from_pin %s to_pin %s\n", i + 1,
-                arch->Directs[i].name, arch->Directs[i].from_pin,
-                arch->Directs[i].to_pin);
+                arch->directs[i].name.c_str(), arch->directs[i].from_pin.c_str(),
+                arch->directs[i].to_pin.c_str());
         fprintf(Echo, "\t\t\t\t x_offset %d y_offset %d z_offset %d\n",
-                arch->Directs[i].x_offset, arch->Directs[i].y_offset,
-                arch->Directs[i].sub_tile_offset);
+                arch->directs[i].x_offset, arch->directs[i].y_offset,
+                arch->directs[i].sub_tile_offset);
     }
     fprintf(Echo, "*************************************************\n\n");
 
@@ -347,7 +347,7 @@ void PrintArchInfo(FILE* Echo, const t_arch* arch) {
         fprintf(Echo, "*************************************************\n");
         fprintf(Echo, "NoC Router Connection List:\n");
 
-        for (auto noc_router : arch->noc->router_list) {
+        for (const auto& noc_router : arch->noc->router_list) {
             fprintf(Echo, "NoC router %d is connected to:\t", noc_router.id);
             for (auto noc_conn_id : noc_router.connection_list) {
                 fprintf(Echo, "%d\t", noc_conn_id);
