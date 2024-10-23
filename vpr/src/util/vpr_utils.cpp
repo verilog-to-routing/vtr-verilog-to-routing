@@ -2,7 +2,6 @@
 #include <regex>
 #include <algorithm>
 #include <sstream>
-#include <cstring>
 
 #include "pack_types.h"
 #include "prepack.h"
@@ -25,10 +24,6 @@
 
 /* This module contains subroutines that are used in several unrelated parts *
  * of VPR.  They are VPR-specific utility routines.                          */
-
-/* This defines the maximum string length that could be parsed by functions  *
- * in vpr_utils.                                                             */
-static constexpr size_t MAX_STRING_LEN = 512;
 
 /******************** File-scope variables declarations **********************/
 //Regular expressions used to determine register and logic primitives
@@ -88,8 +83,7 @@ const t_model_ports* find_model_port(const t_model* model, const std::string& na
  * print tabs given number of tabs to file
  */
 void print_tabs(FILE* fpout, int num_tab) {
-    int i;
-    for (i = 0; i < num_tab; i++) {
+    for (int i = 0; i < num_tab; i++) {
         fprintf(fpout, "\t");
     }
 }
@@ -1638,7 +1632,7 @@ std::tuple<int, int, std::string, std::string> parse_direct_pin_name(std::string
 
         // Replace '.' and '[' characters with ' '
         std::replace_if(source_string.begin(), source_string.end(),
-            [](char c) { return c == '.' || c == '['; },
+            [](char c) { return c == '.' || c == '[' || c == ':' || c == ']'; },
             ' ');
 
         std::istringstream source_iss(source_string);
@@ -2059,7 +2053,7 @@ std::vector<int> get_cluster_netlist_intra_tile_pins_at_loc(const int layer,
         const auto& cluster_pin_chains = pin_chains_num[cluster_blk_id];
         const auto& cluster_chain_sinks = pin_chains[cluster_blk_id].chain_sink;
         const auto& cluster_pin_chain_idx = pin_chains[cluster_blk_id].pin_chain_idx;
-        // remove common elements betweeen cluster_pin_chains.
+        // remove common elements between cluster_pin_chains.
         for (auto pin : cluster_internal_pins) {
             auto it = cluster_pin_chains.find(pin);
             if (it == cluster_pin_chains.end()) {

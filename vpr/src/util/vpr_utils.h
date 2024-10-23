@@ -135,7 +135,7 @@ std::string rr_node_arch_name(RRNodeId inode, bool is_flat);
  * Intra-Logic Block Utility Functions
  **************************************************************/
 
-//Class for looking up pb graph pins from block pin indicies
+//Class for looking up pb graph pins from block pin indices
 class IntraLbPbPinLookup {
   public:
     IntraLbPbPinLookup(const std::vector<t_logical_block_type>& block_types);
