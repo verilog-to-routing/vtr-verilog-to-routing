@@ -272,7 +272,7 @@ struct RouteBudgetsAlgorithm {
     }
 
     std::vector<std::string> default_choices() {
-        return {"minimax", "scale_delay", "disable"};
+        return {"minimax", "yoyo", "scale_delay", "disable"};
     }
 };
 
@@ -1063,8 +1063,6 @@ struct ParseRouterHeap {
             conv_value.set_value(e_heap_type::BINARY_HEAP);
         else if (str == "four_ary")
             conv_value.set_value(e_heap_type::FOUR_ARY_HEAP);
-        else if (str == "bucket")
-            conv_value.set_value(e_heap_type::BUCKET_HEAP_APPROXIMATION);
         else {
             std::stringstream msg;
             msg << "Invalid conversion from '" << str << "' to e_heap_type (expected one of: " << argparse::join(default_choices(), ", ") << ")";
@@ -1077,11 +1075,9 @@ struct ParseRouterHeap {
         ConvertedValue<std::string> conv_value;
         if (val == e_heap_type::BINARY_HEAP)
             conv_value.set_value("binary");
-        else if (val == e_heap_type::FOUR_ARY_HEAP)
-            conv_value.set_value("four_ary");
         else {
-            VTR_ASSERT(val == e_heap_type::BUCKET_HEAP_APPROXIMATION);
-            conv_value.set_value("bucket");
+            VTR_ASSERT(val == e_heap_type::FOUR_ARY_HEAP);
+            conv_value.set_value("four_ary");
         }
         return conv_value;
     }
@@ -2491,13 +2487,13 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("off")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
-    route_grp.add_argument(args.has_choking_spot, "--has_choking_spot")
+    route_grp.add_argument<bool, ParseOnOff>(args.router_opt_choke_points, "--router_opt_choke_points")
         .help(
             ""
-            "Some FPGA architectures, due to the lack of full connectivity inside the cluster, may have"
-            " a choking spot inside the cluster. Thus, if routing doesn't converge, enabling this option may"
-            " help it.")
-        .default_value("false")
+            "Some FPGA architectures with limited fan-out options within a cluster (e.g. fracturable LUTs with shared pins) do" 
+            " not converge well in routing unless these fan-out choke points are discovered and optimized for during net routing." 
+            " This option helps router convergence for such architectures.")
+        .default_value("on")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
 

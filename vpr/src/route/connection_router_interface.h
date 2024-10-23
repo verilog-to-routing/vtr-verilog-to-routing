@@ -52,8 +52,8 @@ class ConnectionRouterInterface {
      * Returns a tuple of:
      * bool: path exists? (hard failure, rr graph disconnected)
      * bool: should retry with full bounding box?
-     * t_heap: heap element of cheapest path */
-    virtual std::tuple<bool, bool, t_heap> timing_driven_route_connection_from_route_tree(
+     * RTExploredNode: the explored sink node, from which the cheapest path can be found via back-tracing */
+    virtual std::tuple<bool, bool, RTExploredNode> timing_driven_route_connection_from_route_tree(
         const RouteTreeNode& rt_root,
         RRNodeId sink_node,
         const t_conn_cost_params& cost_params,
@@ -71,8 +71,8 @@ class ConnectionRouterInterface {
      * Returns a tuple of:
      * bool: path exists? (hard failure, rr graph disconnected)
      * bool: should retry with full bounding box?
-     * t_heap: heap element of cheapest path */
-    virtual std::tuple<bool, bool, t_heap> timing_driven_route_connection_from_route_tree_high_fanout(
+     * RTExploredNode: the explored sink node, from which the cheapest path can be found via back-tracing */
+    virtual std::tuple<bool, bool, RTExploredNode> timing_driven_route_connection_from_route_tree_high_fanout(
         const RouteTreeNode& rt_root,
         RRNodeId sink_node,
         const t_conn_cost_params& cost_params,
@@ -91,7 +91,10 @@ class ConnectionRouterInterface {
     // Dijkstra's algorithm with a modified exit condition (runs until heap is
     // empty).  When using cost_params.astar_fac = 0, for efficiency the
     // RouterLookahead used should be the NoOpLookahead.
-    virtual vtr::vector<RRNodeId, t_heap> timing_driven_find_all_shortest_paths_from_route_tree(
+    //
+    // Note: This routine is currently used only to generate information that
+    // may be helpful in debugging an architecture.
+    virtual vtr::vector<RRNodeId, RTExploredNode> timing_driven_find_all_shortest_paths_from_route_tree(
         const RouteTreeNode& rt_root,
         const t_conn_cost_params& cost_params,
         const t_bb& bounding_box,

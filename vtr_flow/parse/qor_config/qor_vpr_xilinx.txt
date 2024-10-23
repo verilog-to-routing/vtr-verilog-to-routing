@@ -1,0 +1,12 @@
+vpr_status;output.txt;vpr_status=(.*)
+total_wirelength;vpr.out;\s*Total wirelength: (\d+)
+#total_wirelength_(mcw);vpr.out;Total wirelength:\s*(\d+)
+#total_wirelength_(1.3mcw);vpr.crit_path.out;Total wirelength:\s*(\d+)
+total_runtime;vpr.out;The entire flow of VPR took (.*) seconds
+#pack_time;vpr.out;Packing took (.*) seconds
+#place_time;vpr.out;Placement took (.*) seconds
+#route_time;vpr.out;Routing took (.*) seconds
+#num_pre_packed_nets;vpr.out;Total Nets: (\d+)
+#num_post_packed_nets;vpr.out;Netlist num_nets:\s*(\d+)
+crit_path_delay;vpr.crit_path.out;Final critical path: (.*) ns
+
