@@ -378,13 +378,14 @@ public:
 	 *   <xs:attribute name="xhigh" type="xs:int" use="required" />
 	 *   <xs:attribute name="yhigh" type="xs:int" use="required" />
 	 *   <xs:attribute name="side" type="loc_side" />
-	 *   <xs:attribute name="ptc" type="xs:int" use="required" />
+	 *   <xs:attribute name="ptc" type="xs:string" use="required" />
 	 *   <xs:attribute name="twist" type="xs:int" />
 	 * </xs:complexType>
 	*/
 	virtual inline int get_node_loc_layer(typename ContextTypes::NodeLocReadContext &ctx) = 0;
 	virtual inline void set_node_loc_layer(int layer, typename ContextTypes::NodeLocWriteContext &ctx) = 0;
-	virtual inline int get_node_loc_ptc(typename ContextTypes::NodeLocReadContext &ctx) = 0;
+	virtual inline const char * get_node_loc_ptc(typename ContextTypes::NodeLocReadContext &ctx) = 0;
+	virtual inline void set_node_loc_ptc(const char * ptc, typename ContextTypes::NodeLocWriteContext &ctx) = 0;
 	virtual inline enum_loc_side get_node_loc_side(typename ContextTypes::NodeLocReadContext &ctx) = 0;
 	virtual inline void set_node_loc_side(enum_loc_side side, typename ContextTypes::NodeLocWriteContext &ctx) = 0;
 	virtual inline int get_node_loc_twist(typename ContextTypes::NodeLocReadContext &ctx) = 0;
@@ -462,7 +463,7 @@ public:
 	virtual inline const char * get_node_name(typename ContextTypes::NodeReadContext &ctx) = 0;
 	virtual inline void set_node_name(const char * name, typename ContextTypes::NodeWriteContext &ctx) = 0;
 	virtual inline enum_node_type get_node_type(typename ContextTypes::NodeReadContext &ctx) = 0;
-	virtual inline typename ContextTypes::NodeLocWriteContext init_node_loc(typename ContextTypes::NodeWriteContext &ctx, int ptc, int xhigh, int xlow, int yhigh, int ylow) = 0;
+	virtual inline typename ContextTypes::NodeLocWriteContext init_node_loc(typename ContextTypes::NodeWriteContext &ctx, int xhigh, int xlow, int yhigh, int ylow) = 0;
 	virtual inline void finish_node_loc(typename ContextTypes::NodeLocWriteContext &ctx) = 0;
 	virtual inline typename ContextTypes::NodeLocReadContext get_node_loc(typename ContextTypes::NodeReadContext &ctx) = 0;
 	virtual inline typename ContextTypes::NodeTimingWriteContext init_node_timing(typename ContextTypes::NodeWriteContext &ctx, float C, float R) = 0;
