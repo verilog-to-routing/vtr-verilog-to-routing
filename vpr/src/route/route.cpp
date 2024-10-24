@@ -68,14 +68,14 @@ bool route(const Netlist<>& net_list,
                     is_flat);
 
     //Initialize drawing, now that we have an RR graph
-    init_draw_coords(width_fac);
+    init_draw_coords(width_fac, g_vpr_ctx.placement().blk_loc_registry());
 
     /* Allocate and load additional rr_graph information needed only by the router. */
     alloc_and_load_rr_node_route_structs();
 
     init_route_structs(net_list,
                        router_opts.bb_factor,
-                       router_opts.has_choking_spot,
+                       router_opts.has_choke_point,
                        is_flat);
 
     IntraLbPbPinLookup intra_lb_pb_pin_lookup(device_ctx.logical_block_types);
@@ -84,7 +84,7 @@ bool route(const Netlist<>& net_list,
     auto choking_spots = set_nets_choking_spots(net_list,
                                                 route_ctx.net_terminal_groups,
                                                 route_ctx.net_terminal_group_num,
-                                                router_opts.has_choking_spot,
+                                                router_opts.has_choke_point,
                                                 is_flat);
 
     //Initially, the router runs normally trying to reduce congestion while

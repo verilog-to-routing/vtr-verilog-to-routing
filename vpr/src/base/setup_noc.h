@@ -39,7 +39,7 @@
 
 // a data structure to store the position information of a noc router in the FPGA device
 struct t_noc_router_tile_position {
-    t_noc_router_tile_position(int x, int y, int layer_num, double centroid_x, double centroid_y)
+    t_noc_router_tile_position(int x, int y, int layer_num, float centroid_x, float centroid_y)
         : grid_width_position(x)
         , grid_height_position(y)
         , layer_position(layer_num)
@@ -50,15 +50,15 @@ struct t_noc_router_tile_position {
     int grid_height_position;
     int layer_position;
 
-    double tile_centroid_x;
-    double tile_centroid_y;
+    float tile_centroid_x;
+    float tile_centroid_y;
 };
 
 /**
  * @brief Based on the NoC information provided by the user in the architecture
  *        description file, a NoC model is created. The model defines the
  *        constraints of the NoC as well as its layout on the FPGA device. 
- *        The datastructure used to define the model is  "NocStorage" and that
+ *        The data structure used to define the model is  "NocStorage" and that
  *        is created here and stored within the noc_ctx. 
  * 
  * @param arch Contains the parsed information from the architecture
@@ -79,8 +79,8 @@ void setup_noc(const t_arch& arch);
  *
  * @return The grid position information for all NoC router tiles in the FPGA.
  */
-std::vector<t_noc_router_tile_position> identify_and_store_noc_router_tile_positions(const DeviceGrid& device_grid,
-                                                                                     std::string_view noc_router_tile_name);
+vtr::vector<int, t_noc_router_tile_position> identify_and_store_noc_router_tile_positions(const DeviceGrid& device_grid,
+                                                                                          std::string_view noc_router_tile_name);
 
 /**
  * @brief Creates NoC routers and adds them to the NoC model based
@@ -97,7 +97,7 @@ std::vector<t_noc_router_tile_position> identify_and_store_noc_router_tile_posit
  */
 void generate_noc(const t_arch& arch,
                   NocContext& noc_ctx,
-                  const std::vector<t_noc_router_tile_position>& list_of_noc_router_tiles);
+                  const vtr::vector<int, t_noc_router_tile_position>& list_of_noc_router_tiles);
 
 /**
  * @brief Go through the routers described by the user
@@ -116,7 +116,7 @@ void generate_noc(const t_arch& arch,
  */
 void create_noc_routers(const t_noc_inf& noc_info,
                         NocStorage* noc_model,
-                        const std::vector<t_noc_router_tile_position>& list_of_noc_router_tiles);
+                        const vtr::vector<int, t_noc_router_tile_position>& list_of_noc_router_tiles);
 
 /**
  * @brief Goes through the topology information as described in the FPGA

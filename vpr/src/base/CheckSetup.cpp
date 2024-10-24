@@ -9,6 +9,7 @@
 
 void CheckSetup(const t_packer_opts& PackerOpts,
                 const t_placer_opts& PlacerOpts,
+                const t_ap_opts& APOpts,
                 const t_router_opts& RouterOpts,
                 const t_server_opts& ServerOpts,
                 const t_det_routing_arch& RoutingArch,
@@ -70,6 +71,28 @@ void CheckSetup(const t_packer_opts& PackerOpts,
                         "The number of placer non timing move probabilities (%d) should equal to or less than the total number of supported moves (%d).\n",
                         PlacerOpts.place_static_move_prob.size(),
                         NUM_PL_MOVE_TYPES);
+    }
+
+    // Rules for doing Analytical Placement
+    if (APOpts.doAP) {
+        // Make sure that the --place option was not set.
+        if (PlacerOpts.doPlacement) {
+            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                            "Cannot perform both analytical and non-analytical placement.\n");
+        }
+        // Make sure that the --pack option was not set.
+        if (PackerOpts.doPacking) {
+            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                            "Analytical placement should skip packing.\n");
+        }
+
+        // TODO: Should check that read_vpr_constraint_file is non-empty or
+        //       check within analytical placement that the floorplanning has
+        //       some fixed blocks somewhere. Maybe we can live without fixed
+        //       blocks.
+
+        // TODO: Should we enforce that the size of the device is fixed. This
+        //       goes with ensuring that some blocks are fixed.
     }
 
     if (RouterOpts.doRouting) {

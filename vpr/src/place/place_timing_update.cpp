@@ -5,16 +5,20 @@
 
 #include "vtr_time.h"
 
-#include "placer_globals.h"
 #include "place_timing_update.h"
+#include "placer_state.h"
 
 /* Routines local to place_timing_update.cpp */
 static double comp_td_connection_cost(const PlaceDelayModel* delay_model,
                                       const PlacerCriticalities& place_crit,
+                                      PlacerState& placer_state,
                                       ClusterNetId net,
                                       int ipin);
-static double sum_td_net_cost(ClusterNetId net);
-static double sum_td_costs();
+
+static double sum_td_net_cost(ClusterNetId net,
+                              PlacerState& placer_state);
+
+static double sum_td_costs(const PlacerState& placer_state);
 
 ///@brief Use an incremental approach to updating timing costs after re-computing criticalities
 static constexpr bool INCR_COMP_TD_COSTS = true;
@@ -31,7 +35,8 @@ void initialize_timing_info(const PlaceCritParams& crit_params,
                             PlacerSetupSlacks* setup_slacks,
                             NetPinTimingInvalidator* pin_timing_invalidator,
                             SetupTimingInfo* timing_info,
-                            t_placer_costs* costs) {
+                            t_placer_costs* costs,
+                            PlacerState& placer_state) {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     const auto& clb_nlist = cluster_ctx.clb_nlist;
 
@@ -51,13 +56,14 @@ void initialize_timing_info(const PlaceCritParams& crit_params,
                                setup_slacks,
                                pin_timing_invalidator,
                                timing_info,
-                               costs);
+                               costs,
+                               placer_state);
 
     //Don't warn again about unconstrained nodes again during placement
     timing_info->set_warn_unconstrained(false);
 
     //Clear all update_td_costs() runtime stat variables
-    auto& p_runtime_ctx = g_placer_ctx.mutable_runtime();
+    auto& p_runtime_ctx = placer_state.mutable_runtime();
     p_runtime_ctx.f_update_td_costs_connections_elapsed_sec = 0.f;
     p_runtime_ctx.f_update_td_costs_nets_elapsed_sec = 0.f;
     p_runtime_ctx.f_update_td_costs_sum_nets_elapsed_sec = 0.f;
@@ -79,7 +85,8 @@ void perform_full_timing_update(const PlaceCritParams& crit_params,
                                 PlacerSetupSlacks* setup_slacks,
                                 NetPinTimingInvalidator* pin_timing_invalidator,
                                 SetupTimingInfo* timing_info,
-                                t_placer_costs* costs) {
+                                t_placer_costs* costs,
+                                PlacerState& placer_state) {
     /* Update all timing related classes. */
     criticalities->enable_update();
     setup_slacks->enable_update();
@@ -87,15 +94,17 @@ void perform_full_timing_update(const PlaceCritParams& crit_params,
                           timing_info,
                           criticalities,
                           setup_slacks,
-                          pin_timing_invalidator);
+                          pin_timing_invalidator,
+                          placer_state);
 
     /* Update the timing cost with new connection criticalities. */
     update_timing_cost(delay_model,
                        criticalities,
+                       placer_state,
                        &costs->timing_cost);
 
     /* Commit the setup slacks since they are updated. */
-    commit_setup_slacks(setup_slacks);
+    commit_setup_slacks(setup_slacks, placer_state);
 }
 
 /**
@@ -127,12 +136,13 @@ void update_timing_classes(const PlaceCritParams& crit_params,
                            SetupTimingInfo* timing_info,
                            PlacerCriticalities* criticalities,
                            PlacerSetupSlacks* setup_slacks,
-                           NetPinTimingInvalidator* pin_timing_invalidator) {
+                           NetPinTimingInvalidator* pin_timing_invalidator,
+                           PlacerState& placer_state) {
     /* Run STA to update slacks and adjusted/relaxed criticalities. */
     timing_info->update();
 
     /* Update the placer's criticalities (e.g. sharpen with crit_exponent). */
-    criticalities->update_criticalities(timing_info, crit_params);
+    criticalities->update_criticalities(timing_info, crit_params, placer_state);
 
     /* Update the placer's raw setup slacks. */
     setup_slacks->update_setup_slacks(timing_info);
@@ -155,11 +165,12 @@ void update_timing_classes(const PlaceCritParams& crit_params,
  */
 void update_timing_cost(const PlaceDelayModel* delay_model,
                         const PlacerCriticalities* criticalities,
+                        PlacerState& placer_state,
                         double* timing_cost) {
 #ifdef INCR_COMP_TD_COSTS
-    update_td_costs(delay_model, *criticalities, timing_cost);
+    update_td_costs(delay_model, *criticalities, placer_state, timing_cost);
 #else
-    comp_td_costs(delay_model, *criticalities, timing_cost);
+    comp_td_costs(delay_model, *criticalities, placer_state, timing_cost);
 #endif
 }
 
@@ -180,9 +191,10 @@ void update_timing_cost(const PlaceDelayModel* delay_model,
  * rejected, so for efficiency reasons, this routine is not called if the slacks are
  * rejected in the end. For more detailed info, see the try_swap() routine.
  */
-void commit_setup_slacks(const PlacerSetupSlacks* setup_slacks) {
+void commit_setup_slacks(const PlacerSetupSlacks* setup_slacks,
+                         PlacerState& placer_state) {
     const auto& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
-    auto& connection_setup_slack = g_placer_ctx.mutable_timing().connection_setup_slack;
+    auto& connection_setup_slack = placer_state.mutable_timing().connection_setup_slack;
 
     /* Incremental: only go through sink pins with modified setup slack */
     auto clb_pins_modified = setup_slacks->pins_with_modified_setup_slack();
@@ -205,9 +217,10 @@ void commit_setup_slacks(const PlacerSetupSlacks* setup_slacks) {
  * the same as the values in `connection_setup_slack` without running commit_setup_slacks().
  * For more detailed info, see the try_swap() routine.
  */
-bool verify_connection_setup_slacks(const PlacerSetupSlacks* setup_slacks) {
+bool verify_connection_setup_slacks(const PlacerSetupSlacks* setup_slacks,
+                                    const PlacerState& placer_state) {
     const auto& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
-    const auto& connection_setup_slack = g_placer_ctx.timing().connection_setup_slack;
+    const auto& connection_setup_slack = placer_state.timing().connection_setup_slack;
 
     /* Go through every single sink pin to check that the slack values are the same */
     for (ClusterNetId net_id : clb_nlist.nets()) {
@@ -240,13 +253,16 @@ bool verify_connection_setup_slacks(const PlacerSetupSlacks* setup_slacks) {
  *
  * See PlacerTimingCosts object used to represent connection_timing_costs for details.
  */
-void update_td_costs(const PlaceDelayModel* delay_model, const PlacerCriticalities& place_crit, double* timing_cost) {
+void update_td_costs(const PlaceDelayModel* delay_model,
+                     const PlacerCriticalities& place_crit,
+                     PlacerState& placer_state,
+                     double* timing_cost) {
     vtr::Timer t;
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& clb_nlist = cluster_ctx.clb_nlist;
 
-    auto& p_timing_ctx = g_placer_ctx.mutable_timing();
-    auto& p_runtime_ctx = g_placer_ctx.mutable_runtime();
+    auto& p_timing_ctx = placer_state.mutable_timing();
+    auto& p_runtime_ctx = placer_state.mutable_runtime();
     auto& connection_timing_cost = p_timing_ctx.connection_timing_cost;
 
     //Update the modified pin timing costs
@@ -264,7 +280,7 @@ void update_td_costs(const PlaceDelayModel* delay_model, const PlacerCriticaliti
             int ipin = clb_nlist.pin_net_index(clb_pin);
             VTR_ASSERT_SAFE(ipin >= 1 && ipin < int(clb_nlist.net_pins(clb_net).size()));
 
-            double new_timing_cost = comp_td_connection_cost(delay_model, place_crit, clb_net, ipin);
+            double new_timing_cost = comp_td_connection_cost(delay_model, place_crit, placer_state, clb_net, ipin);
 
             //Record new value
             connection_timing_cost[clb_net][ipin] = new_timing_cost;
@@ -282,7 +298,7 @@ void update_td_costs(const PlaceDelayModel* delay_model, const PlacerCriticaliti
 
 #ifdef VTR_ASSERT_DEBUG_ENABLED
     double check_timing_cost = 0.;
-    comp_td_costs(delay_model, place_crit, &check_timing_cost);
+    comp_td_costs(delay_model, place_crit, placer_state, &check_timing_cost);
     VTR_ASSERT_DEBUG_MSG(check_timing_cost == *timing_cost,
                          "Total timing cost calculated incrementally in update_td_costs() is "
                          "not consistent with value calculated from scratch in comp_td_costs()");
@@ -301,27 +317,30 @@ void update_td_costs(const PlaceDelayModel* delay_model, const PlacerCriticaliti
  *
  * For a more efficient incremental update, see update_td_costs().
  */
-void comp_td_costs(const PlaceDelayModel* delay_model, const PlacerCriticalities& place_crit, double* timing_cost) {
+void comp_td_costs(const PlaceDelayModel* delay_model,
+                   const PlacerCriticalities& place_crit,
+                   PlacerState& placer_state,
+                   double* timing_cost) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& p_timing_ctx = g_placer_ctx.mutable_timing();
+    auto& p_timing_ctx = placer_state.mutable_timing();
 
     auto& connection_timing_cost = p_timing_ctx.connection_timing_cost;
     auto& net_timing_cost = p_timing_ctx.net_timing_cost;
 
-    for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+    for (ClusterNetId net_id : cluster_ctx.clb_nlist.nets()) {
         if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) continue;
 
         for (size_t ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ipin++) {
-            float conn_timing_cost = comp_td_connection_cost(delay_model, place_crit, net_id, ipin);
+            float conn_timing_cost = comp_td_connection_cost(delay_model, place_crit, placer_state, net_id, ipin);
 
             /* Record new value */
             connection_timing_cost[net_id][ipin] = conn_timing_cost;
         }
         /* Store net timing cost for more efficient incremental updating */
-        net_timing_cost[net_id] = sum_td_net_cost(net_id);
+        net_timing_cost[net_id] = sum_td_net_cost(net_id, placer_state);
     }
     /* Make sure timing cost does not go above MIN_TIMING_COST. */
-    *timing_cost = sum_td_costs();
+    *timing_cost = sum_td_costs(placer_state);
 }
 
 /**
@@ -332,19 +351,21 @@ void comp_td_costs(const PlaceDelayModel* delay_model, const PlacerCriticalities
  */
 static double comp_td_connection_cost(const PlaceDelayModel* delay_model,
                                       const PlacerCriticalities& place_crit,
+                                      PlacerState& placer_state,
                                       ClusterNetId net,
                                       int ipin) {
-    const auto& p_timing_ctx = g_placer_ctx.timing();
+    const auto& p_timing_ctx = placer_state.timing();
+    const auto& block_locs = placer_state.block_locs();
 
     VTR_ASSERT_SAFE_MSG(ipin > 0, "Shouldn't be calculating connection timing cost for driver pins");
 
-    VTR_ASSERT_SAFE_MSG(p_timing_ctx.connection_delay[net][ipin] == comp_td_single_connection_delay(delay_model, net, ipin),
+    VTR_ASSERT_SAFE_MSG(p_timing_ctx.connection_delay[net][ipin] == comp_td_single_connection_delay(delay_model, block_locs, net, ipin),
                         "Connection delays should already be updated");
 
     double conn_timing_cost = place_crit.criticality(net, ipin) * p_timing_ctx.connection_delay[net][ipin];
 
     VTR_ASSERT_SAFE_MSG(std::isnan(p_timing_ctx.proposed_connection_delay[net][ipin]),
-                        "Propsoed connection delay should already be invalidated");
+                        "Proposed connection delay should already be invalidated");
 
     VTR_ASSERT_SAFE_MSG(std::isnan(p_timing_ctx.proposed_connection_timing_cost[net][ipin]),
                         "Proposed connection timing cost should already be invalidated");
@@ -353,9 +374,10 @@ static double comp_td_connection_cost(const PlaceDelayModel* delay_model,
 }
 
 ///@brief Returns the timing cost of the specified 'net' based on the values in connection_timing_cost.
-static double sum_td_net_cost(ClusterNetId net) {
+static double sum_td_net_cost(ClusterNetId net,
+                              PlacerState& placer_state) {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& p_timing_ctx = g_placer_ctx.mutable_timing();
+    auto& p_timing_ctx = placer_state.timing();
     auto& connection_timing_cost = p_timing_ctx.connection_timing_cost;
 
     double net_td_cost = 0;
@@ -366,14 +388,14 @@ static double sum_td_net_cost(ClusterNetId net) {
     return net_td_cost;
 }
 
-///@brief Returns the total timing cost accross all nets based on the values in net_timing_cost.
-static double sum_td_costs() {
+///@brief Returns the total timing cost across all nets based on the values in net_timing_cost.
+static double sum_td_costs(const PlacerState& placer_state) {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
-    const auto& p_timing_ctx = g_placer_ctx.timing();
+    const auto& p_timing_ctx = placer_state.timing();
     const auto& net_timing_cost = p_timing_ctx.net_timing_cost;
 
     double td_cost = 0;
-    for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+    for (ClusterNetId net_id : cluster_ctx.clb_nlist.nets()) {
         if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
             continue;
         }

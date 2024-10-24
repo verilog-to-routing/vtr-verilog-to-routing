@@ -268,7 +268,7 @@ class RRGSB {
      * CBX -> array[0], CBY -> array[1]
      * Each CB may have OPINs from all sides
      */
-    std::array<std::array<std::vector<RRNodeId>, NUM_SIDES>, 2> cb_opin_node_;
+    std::array<std::array<std::vector<RRNodeId>, NUM_2D_SIDES>, 2> cb_opin_node_;
 };
 
 #endif

@@ -139,6 +139,7 @@ inline NetResultFlags route_net(ConnectionRouter& router,
     t_conn_delay_budget conn_delay_budget;
     t_conn_cost_params cost_params;
     cost_params.astar_fac = router_opts.astar_fac;
+    cost_params.astar_offset = router_opts.astar_offset;
     cost_params.bend_cost = router_opts.bend_cost;
     cost_params.pres_fac = pres_fac;
     cost_params.delay_budget = ((budgeting_inf.if_set()) ? &conn_delay_budget : nullptr);
@@ -149,20 +150,18 @@ inline NetResultFlags route_net(ConnectionRouter& router,
         std::string net_name = net_list.net_name(net_id);
 
         // If there is no routing constraint for the current global net
-        // and the clock modelling is set to dedicated network or 
+        // and the clock modelling is set to dedicated network or
         //there is a routing constraint for the current net setting routing model
         // to the dedicated network run the first stage router.
-        if((!route_constraints.has_routing_constraint(net_name) && router_opts.clock_modeling == e_clock_modeling::DEDICATED_NETWORK)
-            || route_constraints.get_route_model_by_net_name(net_name) == e_clock_modeling::DEDICATED_NETWORK){
-
+        if ((!route_constraints.has_routing_constraint(net_name) && router_opts.clock_modeling == e_clock_modeling::DEDICATED_NETWORK)
+            || route_constraints.get_route_model_by_net_name(net_name) == e_clock_modeling::DEDICATED_NETWORK) {
             std::string clock_network_name = "";
 
             // If a user-specified routing constratins exists for the curret net get the clock network name
             // from the constraints file, otherwise use the default clock network name
-            if(route_constraints.has_routing_constraint(net_name)){
+            if (route_constraints.has_routing_constraint(net_name)) {
                 clock_network_name = route_constraints.get_routing_network_name_by_net_name(net_name);
-            }
-            else {
+            } else {
                 auto& arch = device_ctx.arch;
                 clock_network_name = arch->default_clock_network_name;
             }
@@ -177,7 +176,7 @@ inline NetResultFlags route_net(ConnectionRouter& router,
             // delay by selecting a direct route from the clock source to the virtual sink
             cost_params.criticality = router_opts.max_criticality;
 
-            if (sink_node == RRNodeId::INVALID()){
+            if (sink_node == RRNodeId::INVALID()) {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Cannot route net \"%s\" through given clock network. Unknown clock network name \"%s\"", net_name.c_str(), clock_network_name.c_str());
             }
 
@@ -314,7 +313,7 @@ inline NetResultFlags pre_route_to_clock_root(ConnectionRouter& router,
     router.clear_modified_rr_node_info();
 
     bool found_path, retry_with_full_bb;
-    t_heap cheapest;
+    RTExploredNode cheapest;
     ConnectionParameters conn_params(net_id,
                                      -1,
                                      false,
@@ -429,7 +428,7 @@ inline NetResultFlags route_sink(ConnectionRouter& router,
     router.clear_modified_rr_node_info();
 
     bool found_path;
-    t_heap cheapest;
+    RTExploredNode cheapest;
 
     bool net_is_global = net_list.net_is_global(net_id);
     bool high_fanout = is_high_fanout(net_list.net_sinks(net_id).size(), router_opts.high_fanout_threshold);
@@ -437,8 +436,8 @@ inline NetResultFlags route_sink(ConnectionRouter& router,
     bool sink_critical = (cost_params.criticality > HIGH_FANOUT_CRITICALITY_THRESHOLD);
     bool net_is_clock = route_ctx.is_clock_net[net_id] != 0;
 
-    bool has_choking_spot = ((int)choking_spots[target_pin].size() != 0) && router_opts.has_choking_spot;
-    ConnectionParameters conn_params(net_id, target_pin, has_choking_spot, choking_spots[target_pin]);
+    bool router_opt_choke_points = ((int)choking_spots[target_pin].size() != 0) && router_opts.has_choke_point;
+    ConnectionParameters conn_params(net_id, target_pin, router_opt_choke_points, choking_spots[target_pin]);
 
     //We normally route high fanout nets by only adding spatially close-by routing to the heap (reduces run-time).
     //However, if the current sink is 'critical' from a timing perspective, we put the entire route tree back onto
@@ -488,8 +487,8 @@ inline NetResultFlags route_sink(ConnectionRouter& router,
         update_screen(ScreenUpdatePriority::MAJOR, msg.c_str(), ROUTING, nullptr);
     }
 
-    if (budgeting_inf.if_set() && cheapest.path_data != nullptr && cost_params.delay_budget) {
-        if (cheapest.path_data->backward_delay < cost_params.delay_budget->min_delay) {
+    if (budgeting_inf.if_set() && cheapest.rcv_path_backward_delay != std::numeric_limits<float>::infinity() && cost_params.delay_budget) {
+        if (cheapest.rcv_path_backward_delay < cost_params.delay_budget->min_delay) {
             budgeting_inf.set_should_reroute(net_id, true);
         }
     }

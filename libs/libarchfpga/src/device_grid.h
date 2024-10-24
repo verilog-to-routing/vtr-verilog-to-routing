@@ -6,6 +6,7 @@
 #include <cmath>
 #include "vtr_ndmatrix.h"
 #include "physical_types.h"
+#include "vtr_geometry.h"
 
 /**
  * @brief s_grid_tile is the minimum tile of the fpga
@@ -71,6 +72,18 @@ class DeviceGrid {
     ///@brief Return the height offset of the tile at the specified location. The root location of the tile is where width_offset and height_offset are 0
     inline int get_height_offset(const t_physical_tile_loc& tile_loc) const {
         return grid_[tile_loc.layer_num][tile_loc.x][tile_loc.y].height_offset;
+    }
+
+    ///@brief Returns a rectangle which represents the bounding box of the tile at the given location.
+    inline vtr::Rect<int> get_tile_bb(const t_physical_tile_loc& tile_loc) const {
+        t_physical_tile_type_ptr tile_type = get_physical_type(tile_loc);
+
+        int tile_xlow = tile_loc.x - get_width_offset(tile_loc);
+        int tile_ylow = tile_loc.y - get_height_offset(tile_loc);
+        int tile_xhigh = tile_xlow + tile_type->width - 1;
+        int tile_yhigh = tile_ylow + tile_type->height - 1;
+
+        return {{tile_xlow, tile_ylow}, {tile_xhigh, tile_yhigh}};
     }
 
     ///@brief Return the metadata of the tile at the specified location

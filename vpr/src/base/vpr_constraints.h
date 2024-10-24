@@ -25,7 +25,6 @@
  */
 class VprConstraints {
   public:
-
     /**
      * @brief Get a mutable reference to the UserPlaceConstraints instance.
      */
@@ -75,10 +74,8 @@ class VprConstraints {
     int get_route_constraint_num(void) const;
 
   private:
-   
     UserRouteConstraints route_constraints_;
     UserPlaceConstraints placement_constraints_;
-
 };
 
 #endif /* VPR_CONSTRAINTS_H */

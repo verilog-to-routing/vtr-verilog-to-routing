@@ -1,4 +1,5 @@
 #include <fstream>
+#include <tuple>
 
 #include "vtr_assert.h"
 #include "vtr_log.h"
@@ -18,6 +19,7 @@ static void ShowPackerOpts(const t_packer_opts& PackerOpts);
 static void ShowNetlistOpts(const t_netlist_opts& NetlistOpts);
 static void ShowPlacerOpts(const t_placer_opts& PlacerOpts,
                            const t_annealing_sched& AnnealSched);
+static void ShowAnalyticalPlacerOpts(const t_ap_opts& APOpts);
 static void ShowRouterOpts(const t_router_opts& RouterOpts);
 static void ShowAnalysisOpts(const t_analysis_opts& AnalysisOpts);
 static void ShowNocOpts(const t_noc_opts& NocOpts);
@@ -41,6 +43,7 @@ void ShowSetup(const t_vpr_setup& vpr_setup) {
 
     VTR_LOG("Packer: %s\n", (vpr_setup.PackerOpts.doPacking ? "ENABLED" : "DISABLED"));
     VTR_LOG("Placer: %s\n", (vpr_setup.PlacerOpts.doPlacement ? "ENABLED" : "DISABLED"));
+    VTR_LOG("Analytical Placer: %s\n", (vpr_setup.APOpts.doAP ? "ENABLED" : "DISABLED"));
     VTR_LOG("Router: %s\n", (vpr_setup.RouterOpts.doRouting ? "ENABLED" : "DISABLED"));
     VTR_LOG("Analysis: %s\n", (vpr_setup.AnalysisOpts.doAnalysis ? "ENABLED" : "DISABLED"));
     VTR_LOG("\n");
@@ -54,6 +57,9 @@ void ShowSetup(const t_vpr_setup& vpr_setup) {
     }
     if (vpr_setup.PlacerOpts.doPlacement) {
         ShowPlacerOpts(vpr_setup.PlacerOpts, vpr_setup.AnnealSched);
+    }
+    if (vpr_setup.APOpts.doAP) {
+        ShowAnalyticalPlacerOpts(vpr_setup.APOpts);
     }
     if (vpr_setup.RouterOpts.doRouting) {
         ShowRouterOpts(vpr_setup.RouterOpts);
@@ -249,11 +255,11 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
         VTR_LOG("false\n");
     }
 
-    VTR_LOG("RouterOpts.has_choking_spot: ");
-    if (RouterOpts.has_choking_spot) {
-        VTR_LOG("true\n");
+    VTR_LOG("RouterOpts.choke_points: ");
+    if (RouterOpts.has_choke_point) {
+        VTR_LOG("on\n");
     } else {
-        VTR_LOG("false\n");
+        VTR_LOG("off\n");
     }
 
     VTR_ASSERT(GLOBAL == RouterOpts.route_type || DETAILED == RouterOpts.route_type);
@@ -382,6 +388,7 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
 
     if (TIMING_DRIVEN == RouterOpts.router_algorithm) {
         VTR_LOG("RouterOpts.astar_fac: %f\n", RouterOpts.astar_fac);
+        VTR_LOG("RouterOpts.astar_offset: %f\n", RouterOpts.astar_offset);
         VTR_LOG("RouterOpts.router_profiler_astar_fac: %f\n", RouterOpts.router_profiler_astar_fac);
         VTR_LOG("RouterOpts.criticality_exp: %f\n", RouterOpts.criticality_exp);
         VTR_LOG("RouterOpts.max_criticality: %f\n", RouterOpts.max_criticality);
@@ -461,9 +468,6 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
             case e_heap_type::FOUR_ARY_HEAP:
                 VTR_LOG("FOUR_ARY_HEAP\n");
                 break;
-            case e_heap_type::BUCKET_HEAP_APPROXIMATION:
-                VTR_LOG("BUCKET_HEAP_APPROXIMATION\n");
-                break;
             default:
                 VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown router_heap\n");
         }
@@ -526,10 +530,10 @@ static void ShowPlacerOpts(const t_placer_opts& PlacerOpts,
 
         VTR_LOG("PlacerOpts.pad_loc_type: ");
         switch (PlacerOpts.pad_loc_type) {
-            case FREE:
+            case e_pad_loc_type::FREE:
                 VTR_LOG("FREE\n");
                 break;
-            case RANDOM:
+            case e_pad_loc_type::RANDOM:
                 VTR_LOG("RANDOM\n");
                 break;
             default:
@@ -607,8 +611,13 @@ static void ShowPlacerOpts(const t_placer_opts& PlacerOpts,
     VTR_LOG("\n");
 }
 
+static void ShowAnalyticalPlacerOpts(const t_ap_opts& APOpts) {
+    (void)APOpts;
+    // Currently nothing to show, but will happen eventually.
+}
+
 static void ShowNetlistOpts(const t_netlist_opts& NetlistOpts) {
-    VTR_LOG("NetlistOpts.abosrb_buffer_luts            : %s\n", (NetlistOpts.absorb_buffer_luts) ? "true" : "false");
+    VTR_LOG("NetlistOpts.absorb_buffer_luts            : %s\n", (NetlistOpts.absorb_buffer_luts) ? "true" : "false");
     VTR_LOG("NetlistOpts.sweep_dangling_primary_ios    : %s\n", (NetlistOpts.sweep_dangling_primary_ios) ? "true" : "false");
     VTR_LOG("NetlistOpts.sweep_dangling_nets           : %s\n", (NetlistOpts.sweep_dangling_nets) ? "true" : "false");
     VTR_LOG("NetlistOpts.sweep_dangling_blocks         : %s\n", (NetlistOpts.sweep_dangling_blocks) ? "true" : "false");

@@ -39,7 +39,7 @@ class RRGraphBuilder {
     t_rr_graph_storage& rr_nodes();
     /** @brief Return a writable object for update the fast look-up of rr_node */
     RRSpatialLookup& node_lookup();
-    /** .. warning:: The Metadata should stay as an independent data structure than rest of the internal data,
+    /** @warning The Metadata should stay as an independent data structure from the rest of the internal data,
      *  e.g., node_lookup! */
     /** @brief Return a writable object for the meta data on the nodes */
     MetadataStorage<int>& rr_node_metadata();
@@ -89,8 +89,12 @@ class RRGraphBuilder {
 
         return segment_id;
     }
-    /** TODO @brief Return a writable list of all the rr_segments
-     * .. warning:: It is not recommended to use this API unless you have to. The API may be deprecated later, and future APIs will designed to return a specific data from the rr_segments.
+    /** 
+     * \internal
+     * TODO
+     * \endinternal
+     *  @brief Return a writable list of all the rr_segments
+     * @warning It is not recommended to use this API unless you have to. The API may be deprecated later, and future APIs will designed to return a specific data from the rr_segments.
      */
     inline vtr::vector<RRSegmentId, t_segment_inf>& rr_segments() {
         return rr_segments_;
@@ -108,8 +112,12 @@ class RRGraphBuilder {
 
         return switch_id;
     }
-    /** TODO @brief Return a writable list of all the rr_switches
-     * .. warning:: It is not recommended to use this API unless you have to. The API may be deprecated later, and future APIs will designed to return a specific data from the rr_switches.
+    /**
+     * \internal 
+     * TODO 
+     * \endinternal
+     * @brief Return a writable list of all the rr_switches
+     * @warning It is not recommended to use this API unless you have to. The API may be deprecated later, and future APIs will designed to return a specific data from the rr_switches.
      */
     inline vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch() {
         return rr_switch_inf_;
@@ -123,7 +131,7 @@ class RRGraphBuilder {
     /** @brief Create a new rr_node in the node storage and register it to the node look-up.
      *  Return a valid node id if succeed. Otherwise, return an invalid id.
      */
-    RRNodeId create_node(int layer, int x, int y, t_rr_type type, int ptc, e_side side = NUM_SIDES); 
+    RRNodeId create_node(int layer, int x, int y, t_rr_type type, int ptc, e_side side = NUM_2D_SIDES); 
 
     /** @brief Set the node name with a given valid id */
     inline void set_node_name(RRNodeId id, std::string name) {
@@ -481,7 +489,7 @@ class RRGraphBuilder {
      */
     vtr::vector<RRNodeId, std::vector<short>> node_ptc_nums_;
 
-    /** .. warning:: The Metadata should stay as an independent data structure than rest of the internal data,
+    /** @warning The Metadata should stay as an independent data structure from the rest of the internal data,
      *  e.g., node_lookup! */
     /* Metadata is an extra data on rr-nodes and edges, respectively, that is not used by vpr
      * but simply passed through the flow so that it can be used by downstream tools.

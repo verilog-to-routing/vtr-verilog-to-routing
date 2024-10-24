@@ -114,7 +114,7 @@ static void do_one_route(const Netlist<>& net_list,
             is_flat);
     enable_router_debug(router_opts, ParentNetId(), sink_node, 1, &router);
     bool found_path;
-    t_heap cheapest;
+    RTExploredNode cheapest;
     ConnectionParameters conn_params(ParentNetId::INVALID(),
                                      -1,
                                      false,
@@ -208,8 +208,7 @@ static void profile_source(const Netlist<>& net_list,
                     successfully_routed = profiler.calculate_delay(RRNodeId(source_rr_node),
                                                                    RRNodeId(sink_rr_node),
                                                                    router_opts,
-                                                                   &delays[sink_x][sink_y],
-                                                                   layer_num);
+                                                                   &delays[sink_x][sink_y]);
                 }
 
                 if (successfully_routed) {

@@ -64,6 +64,7 @@
 #include "parse_switchblocks.h"
 
 #include "physical_types_util.h"
+#include "vtr_expr_eval.h"
 
 #include "read_xml_arch_file_noc_tag.h"
 
@@ -629,7 +630,7 @@ static void LoadPinLoc(pugi::xml_node Locations,
         int num_sides = 4 * (type->width * type->height);
         int side_index = 0;
         int count = 0;
-        for (e_side side : {TOP, RIGHT, BOTTOM, LEFT}) {
+        for (e_side side : TOTAL_2D_SIDES) {
             for (int width = 0; width < type->width; ++width) {
                 for (int height = 0; height < type->height; ++height) {
                     for (int pin_offset = 0; pin_offset < (type->num_pins / num_sides) + 1; ++pin_offset) {
@@ -654,7 +655,7 @@ static void LoadPinLoc(pugi::xml_node Locations,
         while (ipin < type->num_pins) {
             for (int width = 0; width < type->width; ++width) {
                 for (int height = 0; height < type->height; ++height) {
-                    for (e_side side : {TOP, RIGHT, BOTTOM, LEFT}) {
+                    for (e_side side : TOTAL_2D_SIDES) {
                         if (((width == 0 && side == LEFT)
                              || (height == type->height - 1 && side == TOP)
                              || (width == type->width - 1 && side == RIGHT)
@@ -695,7 +696,7 @@ static void LoadPinLoc(pugi::xml_node Locations,
         while (ipin < input_pins.size()) {
             for (int width = 0; width < type->width; ++width) {
                 for (int height = 0; height < type->height; ++height) {
-                    for (e_side side : {TOP, RIGHT, BOTTOM, LEFT}) {
+                    for (e_side side : TOTAL_2D_SIDES) {
                         if (ipin < input_pins.size()) {
                             //Pins still to allocate
 
@@ -718,7 +719,7 @@ static void LoadPinLoc(pugi::xml_node Locations,
         while (ipin < output_pins.size()) {
             for (int width = 0; width < type->width; ++width) {
                 for (int height = 0; height < type->height; ++height) {
-                    for (e_side side : {TOP, RIGHT, BOTTOM, LEFT}) {
+                    for (e_side side : TOTAL_2D_SIDES) {
                         if (((width == 0 && side == LEFT)
                              || (height == type->height - 1 && side == TOP)
                              || (width == type->width - 1 && side == RIGHT)
@@ -749,8 +750,8 @@ static void LoadPinLoc(pugi::xml_node Locations,
             for (int layer = 0; layer < num_of_avail_layer; ++layer) {
                 for (int width = 0; width < type->width; ++width) {
                     for (int height = 0; height < type->height; ++height) {
-                        for (e_side side : {TOP, RIGHT, BOTTOM, LEFT}) {
-                            for (const auto& token : pin_locs->assignments[sub_tile_index][width][height][layer][side]) {
+                        for (e_side side : TOTAL_2D_SIDES) {
+                            for (auto token : pin_locs->assignments[sub_tile_index][width][height][layer][side]) {
                                 auto pin_range = ProcessPinString<t_sub_tile*>(Locations,
                                                                                &sub_tile,
                                                                                token.c_str(),
@@ -3586,9 +3587,9 @@ static void ProcessPinLocations(pugi::xml_node Locations,
         for (int l = 0; l < num_of_avail_layer; ++l) {
             for (int w = 0; w < PhysicalTileType->width; ++w) {
                 for (int h = 0; h < PhysicalTileType->height; ++h) {
-                    for (e_side side : {TOP, RIGHT, BOTTOM, LEFT}) {
-                        for (const auto& token : pin_locs->assignments[sub_tile_index][w][h][l][side]) {
-                            InstPort inst_port(token);
+                    for (e_side side : TOTAL_2D_SIDES) {
+                        for (auto token : pin_locs->assignments[sub_tile_index][w][h][l][side]) {
+                            InstPort inst_port(token.c_str());
 
                             //A pin specification should contain only the block name, and not any instance count information
                             //A pin specification may contain instance count, but should be in the range of capacity
@@ -3977,6 +3978,10 @@ static void ProcessSegments(pugi::xml_node Parent,
             expected_subtags.emplace_back("bend");
             expected_subtags.emplace_back("mux_inter_die");
 
+            //with the following two tags, we can allow the architecture file to define
+            //different muxes with different delays for wires with different directions
+            expected_subtags.emplace_back("mux_inc");
+            expected_subtags.emplace_back("mux_dec");
         }
 
         else {
@@ -4007,28 +4012,78 @@ static void ProcessSegments(pugi::xml_node Parent,
         /* Get the wire and opin switches, or mux switch if unidir */
         if (UNI_DIRECTIONAL == Segs[i].directionality) {
             //Get the switch name for same die wire and track connections
-            SubElem = get_single_child(Node, "mux", loc_data);
-            tmp = get_attribute(SubElem, "name", loc_data).value();
+            SubElem = get_single_child(Node, "mux", loc_data, ReqOpt::OPTIONAL);
+            tmp = get_attribute(SubElem, "name", loc_data, ReqOpt::OPTIONAL).as_string(nullptr);
 
-            /* Match names */
-            for (j = 0; j < NumSwitches; ++j) {
-                if (0 == strcmp(tmp, Switches[j].name.c_str())) {
-                    break; /* End loop so j is where we want it */
+            //check if <mux> tag is defined in the architecture, otherwise we should look for <mux_inc> and <mux_dec>
+            if(tmp){
+                /* Match names */
+                for (j = 0; j < NumSwitches; ++j) {
+                    if (0 == strcmp(tmp, Switches[j].name.c_str())) {
+                        break; /* End loop so j is where we want it */
+                    }
+                }
+                if (j >= NumSwitches) {
+                    archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem),
+                                "'%s' is not a valid mux name.\n", tmp);
+                }
+
+                /* Unidir muxes must have the same switch
+                * for wire and opin fanin since there is
+                * really only the mux in unidir. */
+                Segs[i].arch_wire_switch = j;
+                Segs[i].arch_opin_switch = j;
+            }
+            else { //if a general mux is not defined, we should look for specific mux for each direction in the architecture file
+                SubElem = get_single_child(Node, "mux_inc", loc_data, ReqOpt::OPTIONAL);
+                tmp = get_attribute(SubElem, "name", loc_data, ReqOpt::OPTIONAL).as_string(nullptr);
+                if(!tmp){
+                    archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem),
+                                "if mux is not specified in a wire segment, both mux_inc and mux_dec should be specified");
+                } else{
+                    /* Match names */
+                    for (j = 0; j < NumSwitches; ++j) {
+                        if (0 == strcmp(tmp, Switches[j].name.c_str())) {
+                            break; /* End loop so j is where we want it */
+                        }
+                    }
+                    if (j >= NumSwitches) {
+                        archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem),
+                                    "'%s' is not a valid mux name.\n", tmp);
+                    }
+
+                    /* Unidir muxes must have the same switch
+                    * for wire and opin fanin since there is
+                    * really only the mux in unidir. */
+                    Segs[i].arch_wire_switch = j;
+                    Segs[i].arch_opin_switch = j;
+                }
+
+                SubElem = get_single_child(Node, "mux_dec", loc_data, ReqOpt::OPTIONAL);
+                tmp = get_attribute(SubElem, "name", loc_data, ReqOpt::OPTIONAL).as_string(nullptr);
+                if(!tmp){
+                    archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem),
+                                "if mux is not specified in a wire segment, both mux_inc and mux_dec should be specified");
+                } else{
+                    /* Match names */
+                    for (j = 0; j < NumSwitches; ++j) {
+                        if (0 == strcmp(tmp, Switches[j].name.c_str())) {
+                            break; /* End loop so j is where we want it */
+                        }
+                    }
+                    if (j >= NumSwitches) {
+                        archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem),
+                                    "'%s' is not a valid mux name.\n", tmp);
+                    }
+
+                    /* Unidir muxes must have the same switch
+                    * for wire and opin fanin since there is
+                    * really only the mux in unidir. */
+                    Segs[i].arch_wire_switch_dec = j;
+                    Segs[i].arch_opin_switch_dec = j;
                 }
             }
-            if (j >= NumSwitches) {
-                archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem),
-                               "'%s' is not a valid mux name.\n", tmp);
-            }
-
-            /* Unidir muxes must have the same switch
-             * for wire and opin fanin since there is
-             * really only the mux in unidir. */
-            Segs[i].arch_wire_switch = j;
-            Segs[i].arch_opin_switch = j;
-
         }
-
         else {
             VTR_ASSERT(BI_DIRECTIONAL == Segs[i].directionality);
             SubElem = get_single_child(Node, "wire_switch", loc_data);
@@ -4176,6 +4231,41 @@ static void ProcessBend(pugi::xml_node Node, std::vector<int>& list, std::vector
         part_len.push_back(list.size() + 1 - sum_len);
 }
 
+static void calculate_custom_SB_locations(const pugiutil::loc_data& loc_data, const pugi::xml_node& SubElem, const int grid_width, const int grid_height, t_switchblock_inf& sb){
+    auto startx_attr = get_attribute(SubElem, "startx", loc_data, ReqOpt::OPTIONAL);
+    auto endx_attr   = get_attribute(SubElem, "endx", loc_data, ReqOpt::OPTIONAL);
+
+    auto starty_attr = get_attribute(SubElem, "starty", loc_data, ReqOpt::OPTIONAL);
+    auto endy_attr   = get_attribute(SubElem, "endy", loc_data, ReqOpt::OPTIONAL);
+
+    auto repeatx_attr = get_attribute(SubElem, "repeatx", loc_data, ReqOpt::OPTIONAL);
+    auto repeaty_attr = get_attribute(SubElem, "repeaty", loc_data, ReqOpt::OPTIONAL);
+
+    auto incrx_attr = get_attribute(SubElem, "incrx", loc_data, ReqOpt::OPTIONAL);
+    auto incry_attr = get_attribute(SubElem, "incry", loc_data, ReqOpt::OPTIONAL);
+
+    //parse the values from the architecture file and fill out SB region information
+    vtr::FormulaParser p;
+
+    vtr::t_formula_data vars;
+    vars.set_var_value("W", grid_width);
+    vars.set_var_value("H", grid_height);
+
+    
+    sb.reg_x.start = startx_attr.empty() ? 0 : p.parse_formula(startx_attr.value(), vars);
+    sb.reg_y.start = starty_attr.empty() ? 0 : p.parse_formula(starty_attr.value(), vars);
+
+    sb.reg_x.end = endx_attr.empty() ? (grid_width - 1) : p.parse_formula(endx_attr.value(), vars);
+    sb.reg_y.end = endy_attr.empty() ? (grid_height -1) : p.parse_formula(endy_attr.value(), vars);
+
+    sb.reg_x.repeat = repeatx_attr.empty() ? 0 : p.parse_formula(repeatx_attr.value(), vars);
+    sb.reg_y.repeat = repeaty_attr.empty() ? 0 : p.parse_formula(repeaty_attr.value(), vars);
+
+    sb.reg_x.incr = incrx_attr.empty() ? 1 : p.parse_formula(incrx_attr.value(), vars);
+    sb.reg_y.incr = incry_attr.empty() ? 1 : p.parse_formula(incry_attr.value(), vars);
+
+}
+
 /* Processes the switchblocklist section from the xml architecture file.
  * See vpr/SRC/route/build_switchblocks.c for a detailed description of this
  * switch block format */
@@ -4187,6 +4277,14 @@ static void ProcessSwitchblocks(pugi::xml_node Parent, t_arch* arch, const pugiu
     /* get the number of switchblocks */
     int num_switchblocks = count_children(Parent, "switchblock", loc_data);
     arch->switchblocks.reserve(num_switchblocks);
+    
+    int layout_index = -1;
+    for(layout_index = 0; layout_index < (int) arch->grid_layouts.size(); layout_index++){
+        if(arch->grid_layouts.at(layout_index).name == arch->device_layout){
+            //found the used layout
+            break;
+        }
+    }
 
     /* read-in all switchblock data */
     Node = get_first_child(Parent, "switchblock", loc_data);
@@ -4217,18 +4315,54 @@ static void ProcessSwitchblocks(pugi::xml_node Parent, t_arch* arch, const pugiu
         tmp = get_attribute(SubElem, "type", loc_data).as_string(nullptr);
         if (tmp) {
             if (strcmp(tmp, "EVERYWHERE") == 0) {
-                sb.location = E_EVERYWHERE;
+                sb.location = e_sb_location::E_EVERYWHERE;
             } else if (strcmp(tmp, "PERIMETER") == 0) {
-                sb.location = E_PERIMETER;
+                sb.location = e_sb_location::E_PERIMETER;
             } else if (strcmp(tmp, "CORE") == 0) {
-                sb.location = E_CORE;
+                sb.location = e_sb_location::E_CORE;
             } else if (strcmp(tmp, "CORNER") == 0) {
-                sb.location = E_CORNER;
+                sb.location = e_sb_location::E_CORNER;
             } else if (strcmp(tmp, "FRINGE") == 0) {
-                sb.location = E_FRINGE;
+                sb.location = e_sb_location::E_FRINGE;
+            } else if (strcmp(tmp, "XY_SPECIFIED") == 0) {
+                sb.location = e_sb_location::E_XY_SPECIFIED;
             } else {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem), "unrecognized switchblock location: %s\n", tmp);
             }
+        }
+
+        /* get the switchblock coordinate only if sb.location is set to E_XY_SPECIFIED*/
+        if(sb.location == e_sb_location::E_XY_SPECIFIED){
+            if (arch->device_layout == "auto"){
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem), "Specifying SB locations for auto layout devices are not supported yet!\n");
+            }
+            expect_only_attributes(SubElem,
+                                   {"x", "y", "type",
+                                    "startx", "endx", "repeatx", "incrx",
+                                    "starty", "endy", "repeaty", "incry"},
+                                   loc_data);
+
+            int grid_width = arch->grid_layouts.at(layout_index).width;
+            int grid_height = arch->grid_layouts.at(layout_index).height;
+            
+            /* Absolute location that this SB must be applied to, -1 if not specified*/
+            sb.x = get_attribute(SubElem, "x", loc_data, ReqOpt::OPTIONAL).as_int(-1);
+            sb.y = get_attribute(SubElem, "y", loc_data, ReqOpt::OPTIONAL).as_int(-1);
+
+            //check if the absolute value is within the device grid width and height
+            if(sb.x >= grid_width || sb.y >= grid_height) {
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem), \
+                "Location (%d,%d) is not valid within the grid! grid dimensions are: (%d,%d)\n", sb.x, sb.y, grid_width, grid_height);
+            }
+            
+            /* if the the switchblock exact location is not specified and a region is specified within the architecture file,
+             * we have to parse the region specification and apply the SB pattern to all the locations fall into the specified 
+             * region based on device width and height.
+             */
+            if (sb.x == -1 && sb.y == -1) {
+                calculate_custom_SB_locations(loc_data, SubElem, grid_width, grid_height, sb);
+            }
+
         }
 
         /* get switchblock permutation functions */
@@ -5006,9 +5140,9 @@ static int find_switch_by_name(const t_arch& arch, const std::string& switch_nam
 }
 
 static e_side string_to_side(const std::string& side_str) {
-    e_side side = NUM_SIDES;
+    e_side side = NUM_2D_SIDES;
     if (side_str.empty()) {
-        side = NUM_SIDES;
+        side = NUM_2D_SIDES;
     } else if (side_str == "left") {
         side = LEFT;
     } else if (side_str == "right") {

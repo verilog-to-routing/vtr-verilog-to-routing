@@ -101,9 +101,9 @@ const std::vector<ezgl::color> kelly_max_contrast_colors = {
 void drawplace(ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
     t_draw_coords* draw_coords = get_draw_coords_vars();
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_ctx = g_vpr_ctx.placement();
+    const auto& device_ctx = g_vpr_ctx.device();
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& grid_blocks = draw_state->get_graphics_blk_loc_registry_ref().grid_blocks();
 
     ClusterBlockId bnum;
     int num_sub_tiles;
@@ -136,12 +136,10 @@ void drawplace(ezgl::renderer* g) {
 
                     for (int k = 0; k < num_sub_tiles; ++k) {
                         /* Look at the tile at start of large block */
-                        bnum = place_ctx.grid_blocks.block_at_location({i, j, k, layer_num});
+                        bnum = grid_blocks.block_at_location({i, j, k, layer_num});
                         /* Fill background for the clb. Do not fill if "show_blk_internal"
                          * is toggled.
                          */
-                        if (bnum == INVALID_BLOCK_ID)
-                            continue;
 
                         //Determine the block color and logical type
                         ezgl::color block_color;
@@ -159,8 +157,8 @@ void drawplace(ezgl::renderer* g) {
                                                                                            block_color);
                         }
                         // No color specified at this location; use the block color.
-                        if (current_loc_is_highlighted == false) {
-                            if (bnum != EMPTY_BLOCK_ID) {
+                        if (!current_loc_is_highlighted) {
+                            if (bnum) {
                                 block_color = draw_state->block_color(bnum);
                             } else {
                                 block_color = get_block_type_color(type);
@@ -184,15 +182,14 @@ void drawplace(ezgl::renderer* g) {
 
                         g->set_color(ezgl::BLACK, transparency_factor);
 
-                        g->set_line_dash(
-                            (EMPTY_BLOCK_ID == bnum) ? ezgl::line_dash::asymmetric_5_3 : ezgl::line_dash::none);
+                        g->set_line_dash((bnum == ClusterBlockId::INVALID()) ? ezgl::line_dash::asymmetric_5_3 : ezgl::line_dash::none);
                         if (draw_state->draw_block_outlines) {
                             g->draw_rectangle(abs_clb_bbox);
                         }
 
                         if (draw_state->draw_block_text) {
                             /* Draw text if the space has parts of the netlist */
-                            if (bnum != EMPTY_BLOCK_ID && bnum != INVALID_BLOCK_ID) {
+                            if (bnum) {
                                 std::string name = cluster_ctx.clb_nlist.block_name(
                                                        bnum)
                                                    + vtr::string_fmt(" (#%zu)", size_t(bnum));
@@ -227,12 +224,9 @@ void drawplace(ezgl::renderer* g) {
 void drawnets(ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
     t_draw_coords* draw_coords = get_draw_coords_vars();
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& block_locs = draw_state->get_graphics_blk_loc_registry_ref().block_locs();
 
-    ClusterBlockId b1, b2;
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_ctx = g_vpr_ctx.placement();
-
-    float transparency_factor;
     float NET_ALPHA = draw_state->net_alpha;
 
     g->set_line_dash(ezgl::line_dash::none);
@@ -244,7 +238,7 @@ void drawnets(ezgl::renderer* g) {
     /* Draw the net as a star from the source to each sink. Draw from centers of *
      * blocks (or sub blocks in the case of IOs).                                */
 
-    for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+    for (ClusterNetId net_id : cluster_ctx.clb_nlist.nets()) {
         if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
             continue; /* Don't draw */
         }
@@ -253,10 +247,10 @@ void drawnets(ezgl::renderer* g) {
             continue;
         }
 
-        b1 = cluster_ctx.clb_nlist.net_driver_block(net_id);
+        ClusterBlockId b1 = cluster_ctx.clb_nlist.net_driver_block(net_id);
 
         //The layer of the net driver block
-        driver_block_layer_num = place_ctx.block_locs[b1].loc.layer;
+        driver_block_layer_num = block_locs[b1].loc.layer;
 
         //To only show nets that are connected to currently active layers on the screen
         if (!draw_state->draw_layer_display[driver_block_layer_num].visible) {
@@ -264,20 +258,20 @@ void drawnets(ezgl::renderer* g) {
         }
 
         ezgl::point2d driver_center = draw_coords->get_absolute_clb_bbox(b1, cluster_ctx.clb_nlist.block_type(b1)).center();
-        for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
-            b2 = cluster_ctx.clb_nlist.pin_block(pin_id);
+        for (ClusterPinId pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
+            ClusterBlockId b2 = cluster_ctx.clb_nlist.pin_block(pin_id);
 
             //the layer of the pin block (net sinks)
-            sink_block_layer_num = place_ctx.block_locs[b2].loc.layer;
+            sink_block_layer_num =block_locs[b2].loc.layer;
 
             t_draw_layer_display element_visibility = get_element_visibility_and_transparency(driver_block_layer_num, sink_block_layer_num);
 
             if (!element_visibility.visible) {
                 continue; /* Don't Draw */
             }
-            transparency_factor = element_visibility.alpha;
+            float transparency_factor = element_visibility.alpha;
 
-            //Take the higher of the 2 transparency values that the user can select from the UI
+            //Take the highest of the 2 transparency values that the user can select from the UI
             // Compare the current cross layer transparency to the overall Net transparency set by the user.
             g->set_color(draw_state->net_color[net_id], fmin(transparency_factor, draw_state->net_color[net_id].alpha * NET_ALPHA));
 
@@ -634,8 +628,8 @@ void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::ren
     static vtr::OffsetMatrix<int> chany_track; /* [0..device_ctx.grid.width() - 2][1..device_ctx.grid.height() - 2] */
     if (draw_state->draw_route_type == GLOBAL) {
         /* Allocate some temporary storage if it's not already available. */
-        size_t width = device_ctx.grid.width();
-        size_t height = device_ctx.grid.height();
+        int width = (int)device_ctx.grid.width();
+        int height = (int)device_ctx.grid.height();
         if (chanx_track.empty()) {
             chanx_track = vtr::OffsetMatrix<int>({{{1, width - 1}, {0, height - 1}}});
         }
@@ -644,12 +638,12 @@ void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::ren
             chany_track = vtr::OffsetMatrix<int>({{{0, width - 1}, {1, height - 1}}});
         }
 
-        for (size_t i = 1; i < width - 1; i++)
-            for (size_t j = 0; j < height - 1; j++)
+        for (int i = 1; i < width - 1; i++)
+            for (int j = 0; j < height - 1; j++)
                 chanx_track[i][j] = (-1);
 
-        for (size_t i = 0; i < width - 1; i++)
-            for (size_t j = 1; j < height - 1; j++)
+        for (int i = 0; i < width - 1; i++)
+            for (int j = 1; j < height - 1; j++)
                 chany_track[i][j] = (-1);
     }
 
@@ -793,7 +787,7 @@ bool is_edge_valid_to_draw(RRNodeId current_node, RRNodeId prev_node) {
 }
 
 /* Draws any placement macros (e.g. carry chains, which require specific relative placements
- * between some blocks) if the Placement Macros (in the GUI) is seelected.
+ * between some blocks) if the Placement Macros (in the GUI) is selected.
  */
 void draw_placement_macros(ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
@@ -803,9 +797,10 @@ void draw_placement_macros(ezgl::renderer* g) {
     }
     t_draw_coords* draw_coords = get_draw_coords_vars();
 
-    auto& place_ctx = g_vpr_ctx.placement();
-    for (size_t imacro = 0; imacro < place_ctx.pl_macros.size(); ++imacro) {
-        const t_pl_macro* pl_macro = &place_ctx.pl_macros[imacro];
+    const auto& place_ctx = g_vpr_ctx.placement();
+    const auto& block_locs = draw_state->get_graphics_blk_loc_registry_ref().block_locs();
+
+    for (const t_pl_macro& pl_macro : place_ctx.pl_macros) {
 
         //TODO: for now we just draw the bounding box of the macro, which is incorrect for non-rectangular macros...
         int xlow = std::numeric_limits<int>::max();
@@ -815,24 +810,23 @@ void draw_placement_macros(ezgl::renderer* g) {
 
         int x_root = OPEN;
         int y_root = OPEN;
-        for (size_t imember = 0; imember < pl_macro->members.size();
-             ++imember) {
-            const t_pl_macro_member* member = &pl_macro->members[imember];
+        for (size_t imember = 0; imember < pl_macro.members.size(); ++imember) {
+            const t_pl_macro_member& member = pl_macro.members[imember];
 
-            ClusterBlockId blk = member->blk_index;
+            ClusterBlockId blk = member.blk_index;
 
             if (imember == 0) {
-                x_root = place_ctx.block_locs[blk].loc.x;
-                y_root = place_ctx.block_locs[blk].loc.y;
+                x_root = block_locs[blk].loc.x;
+                y_root = block_locs[blk].loc.y;
             }
 
-            int x = x_root + member->offset.x;
-            int y = y_root + member->offset.y;
+            int x = x_root + member.offset.x;
+            int y = y_root + member.offset.y;
 
             xlow = std::min(xlow, x);
             ylow = std::min(ylow, y);
-            xhigh = std::max(xhigh, x + physical_tile_type(blk)->width);
-            yhigh = std::max(yhigh, y + physical_tile_type(blk)->height);
+            xhigh = std::max(xhigh, x + physical_tile_type(block_locs[blk].loc)->width);
+            yhigh = std::max(yhigh, y + physical_tile_type(block_locs[blk].loc)->height);
         }
 
         double draw_xlow = draw_coords->tile_x[xlow];
@@ -1187,13 +1181,14 @@ void draw_crit_path_elements(const std::vector<tatum::TimingPath>& paths, const 
 }
 
 int get_timing_path_node_layer_num(tatum::NodeId node) {
-    auto& place_ctx = g_vpr_ctx.placement();
-    auto& atom_ctx = g_vpr_ctx.atom();
+    t_draw_state* draw_state = get_draw_state_vars();
+    const auto& block_locs = draw_state->get_graphics_blk_loc_registry_ref().block_locs();
+    const auto& atom_ctx = g_vpr_ctx.atom();
 
     AtomPinId atom_pin = atom_ctx.lookup.tnode_atom_pin(node);
     AtomBlockId atom_block = atom_ctx.nlist.pin_block(atom_pin);
     ClusterBlockId clb_block = atom_ctx.lookup.atom_clb(atom_block);
-    return place_ctx.block_locs[clb_block].loc.layer;
+    return block_locs[clb_block].loc.layer;
 }
 
 bool is_flyline_valid_to_draw(int src_layer, int sink_layer) {
@@ -1418,8 +1413,9 @@ void draw_block_pin_util() {
     if (draw_state->show_blk_pin_util == DRAW_NO_BLOCK_PIN_UTIL)
         return;
 
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& device_ctx = g_vpr_ctx.device();
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& block_locs = draw_state->get_graphics_blk_loc_registry_ref().block_locs();
 
     std::map<t_physical_tile_type_ptr, size_t> total_input_pins;
     std::map<t_physical_tile_type_ptr, size_t> total_output_pins;
@@ -1434,9 +1430,9 @@ void draw_block_pin_util() {
 
     auto blks = cluster_ctx.clb_nlist.blocks();
     vtr::vector<ClusterBlockId, float> pin_util(blks.size());
-    for (auto blk : blks) {
-        auto type = physical_tile_type(blk);
-
+    for (ClusterBlockId blk : blks) {
+        t_pl_loc block_loc = block_locs[blk].loc;
+        auto type = physical_tile_type(block_loc);
         if (draw_state->show_blk_pin_util == DRAW_BLOCK_PIN_UTIL_TOTAL) {
             pin_util[blk] = cluster_ctx.clb_nlist.block_pins(blk).size()
                             / float(total_input_pins[type] + total_output_pins[type]);
@@ -1477,9 +1473,8 @@ void draw_block_pin_util() {
 }
 
 void draw_reset_blk_colors() {
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto blks = cluster_ctx.clb_nlist.blocks();
-    for (auto blk : blks) {
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    for (auto blk : cluster_ctx.clb_nlist.blocks()) {
         draw_reset_blk_color(blk);
     }
 }

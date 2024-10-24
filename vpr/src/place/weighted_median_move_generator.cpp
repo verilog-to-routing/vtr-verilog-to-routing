@@ -1,21 +1,38 @@
 #include "weighted_median_move_generator.h"
+
 #include "globals.h"
-#include <algorithm>
-#include "math.h"
 #include "place_constraints.h"
+#include "placer_state.h"
 #include "move_utils.h"
+
+#include <algorithm>
+#include <cmath>
 
 #define CRIT_MULT_FOR_W_MEDIAN 10
 
-static void get_bb_cost_for_net_excluding_block(ClusterNetId net_id, ClusterBlockId block_id, ClusterPinId moving_pin_id, const PlacerCriticalities* criticalities, t_bb_cost* coords, bool& skip_net);
+WeightedMedianMoveGenerator::WeightedMedianMoveGenerator(PlacerState& placer_state,
+                                                         e_reward_function reward_function)
+    : MoveGenerator(placer_state, reward_function) {}
 
-e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, t_propose_action& proposed_action, float rlim, const t_placer_opts& placer_opts, const PlacerCriticalities* criticalities) {
+e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected,
+                                                        t_propose_action& proposed_action,
+                                                        float rlim,
+                                                        const t_placer_opts& placer_opts,
+                                                        const PlacerCriticalities* criticalities) {
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& placer_state = placer_state_.get();
+    const auto& block_locs = placer_state.block_locs();
+    auto& place_move_ctx = placer_state.mutable_move();
+    const auto& blk_loc_registry = placer_state.blk_loc_registry();
+
     //Find a movable block based on blk_type
     ClusterBlockId b_from = propose_block_to_move(placer_opts,
                                                   proposed_action.logical_blk_type_index,
-                                                  false,
-                                                  nullptr,
-                                                  nullptr);
+                                                  /*highly_crit_block=*/false,
+                                                  /*net_from=*/nullptr,
+                                                  /*pin_from=*/nullptr,
+                                                  placer_state);
+
     VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "Weighted Median Move Choose Block %d - rlim %f\n", size_t(b_from), rlim);
 
     if (!b_from) { //No movable block found
@@ -23,14 +40,12 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
         return e_create_move::ABORT;
     }
 
-    auto& place_ctx = g_vpr_ctx.placement();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_move_ctx = g_placer_ctx.mutable_move();
+
 
     int num_layers = g_vpr_ctx.device().grid.get_num_layers();
 
 
-    t_pl_loc from = place_ctx.block_locs[b_from].loc;
+    t_pl_loc from = block_locs[b_from].loc;
     auto cluster_from_type = cluster_ctx.clb_nlist.block_type(b_from);
     auto grid_from_type = g_vpr_ctx.device().grid.get_physical_type({from.x, from.y, from.layer});
     VTR_ASSERT(is_tile_compatible(grid_from_type, cluster_from_type));
@@ -48,9 +63,6 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
     place_move_ctx.layer_coord.clear();
     std::vector<int> layer_blk_cnt(num_layers, 0);
 
-    //true if the net is a feedback from the block to itself (all the net terminals are connected to the same block)
-    bool skip_net;
-
     //iterate over block pins
     for (ClusterPinId pin_id : cluster_ctx.clb_nlist.block_pins(b_from)) {
         ClusterNetId net_id = cluster_ctx.clb_nlist.pin_net(pin_id);
@@ -63,12 +75,15 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
          *
          * Note: skip_net returns true if this net should be skipped. Currently, the only case to skip a net is the feedback nets
          *       (a net that all its terminals connected to the same block). Logically, this net should be neglected as it is only connected 
-         *       to the moving block. Experimentally, we found that including these nets into calculations badly affect the averall placement
+         *       to the moving block. Experimentally, we found that including these nets into calculations badly affect the overall placement
          *       solution especillay for some large designs.
+         *
+         * Note: skip_net true if the net is a feedback from the block to itself (all the net terminals are connected to the same block)
          */
-        get_bb_cost_for_net_excluding_block(net_id, b_from, pin_id, criticalities, &coords, skip_net);
-        if (skip_net)
+        bool skip_net = get_bb_cost_for_net_excluding_block(net_id, pin_id, criticalities, &coords);
+        if (skip_net) {
             continue;
+        }
 
         // We need to insert the calculated edges in the X,Y vectors multiple times based on the criticality of the pin that caused each of them.
         // As all the criticalities are [0,1], we map it to [0,CRIT_MULT_FOR_W_MEDIAN] inserts in the vectors for each edge
@@ -124,11 +139,11 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
     w_median_point.y = (limit_coords.ymin + limit_coords.ymax) / 2;
     w_median_point.layer = ((limit_coords.layer_min + limit_coords.layer_max) / 2);
 
-    if (!find_to_loc_centroid(cluster_from_type, from, w_median_point, range_limiters, to, b_from)) {
+    if (!find_to_loc_centroid(cluster_from_type, from, w_median_point, range_limiters, to, b_from, blk_loc_registry)) {
         return e_create_move::ABORT;
     }
 
-    e_create_move create_move = ::create_move(blocks_affected, b_from, to);
+    e_create_move create_move = ::create_move(blocks_affected, b_from, to, blk_loc_registry);
 
     //Check that all the blocks affected by the move would still be in a legal floorplan region after the swap
     if (!floorplan_legal(blocks_affected)) {
@@ -138,73 +153,59 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
     return create_move;
 }
 
-/**
- * This routine finds the bounding box and the cost of each side of the bounding box,
- * which is defined as the criticality of the connection that led to the bounding box extending 
- * that far. If more than one terminal leads to a bounding box edge, w pick the cost using the criticality of the first one. 
- * This is helpful in computing weighted median moves. 
- *
- * Outputs:
- *      - coords: the bounding box and the edge costs
- *      - skip_net: returns whether this net should be skipped in calculation or not
- *
- * Inputs:
- *      - net_id: The net we are considering
- *      - moving_pin_id: pin (which should be on this net) on a block that is being moved.
- *      - criticalities: the timing criticalities of all connections
- */
-static void get_bb_cost_for_net_excluding_block(ClusterNetId net_id, ClusterBlockId, ClusterPinId moving_pin_id, const PlacerCriticalities* criticalities, t_bb_cost* coords, bool& skip_net) {
-    int pnum, x, y, layer, xmin, xmax, ymin, ymax, layer_min, layer_max;
-    float xmin_cost, xmax_cost, ymin_cost, ymax_cost, layer_min_cost, layer_max_cost, cost;
+bool WeightedMedianMoveGenerator::get_bb_cost_for_net_excluding_block(ClusterNetId net_id,
+                                         ClusterPinId moving_pin_id,
+                                         const PlacerCriticalities* criticalities,
+                                         t_bb_cost* coords) {
+    const auto& blk_loc_registry = placer_state_.get().blk_loc_registry();
+    const auto& block_locs = blk_loc_registry.block_locs();
 
-    skip_net = true;
+    bool skip_net = true;
 
-    xmin = 0;
-    xmax = 0;
-    ymin = 0;
-    ymax = 0;
-    layer_min = 0;
-    layer_max = 0;
+    int xmin = 0;
+    int xmax = 0;
+    int ymin = 0;
+    int ymax = 0;
+    int layer_min = 0;
+    int layer_max = 0;
 
-    cost = 0.0;
-    xmin_cost = 0.0;
-    xmax_cost = 0.0;
-    ymin_cost = 0.0;
-    ymax_cost = 0.0;
-    layer_min_cost = 0.;
-    layer_max_cost = 0.;
+    float xmin_cost = 0.f;
+    float xmax_cost = 0.f;
+    float ymin_cost = 0.f;
+    float ymax_cost = 0.f;
+    float layer_min_cost = 0.f;
+    float layer_max_cost = 0.f;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_ctx = g_vpr_ctx.placement();
     auto& device_ctx = g_vpr_ctx.device();
     auto& grid = device_ctx.grid;
 
-    ClusterBlockId bnum;
     bool is_first_block = true;
-    int ipin;
-    for (auto pin_id : cluster_ctx.clb_nlist.net_pins(net_id)) {
-        bnum = cluster_ctx.clb_nlist.pin_block(pin_id);
-        layer = place_ctx.block_locs[bnum].loc.layer;
+    for (ClusterPinId pin_id : cluster_ctx.clb_nlist.net_pins(net_id)) {
+        ClusterBlockId bnum = cluster_ctx.clb_nlist.pin_block(pin_id);
 
         if (pin_id != moving_pin_id) {
             skip_net = false;
-            pnum = tile_pin_index(pin_id);
+            int pnum = blk_loc_registry.tile_pin_index(pin_id);
             /**
              * Calculates the pin index of the correct pin to calculate the required connection
              *
              * if the current pin is the driver, we only care about one sink (the moving pin)
              * else if the current pin is a sink, calculate the criticality of itself
              */
+            int ipin;
             if (cluster_ctx.clb_nlist.pin_type(pin_id) == PinType::DRIVER) {
                 ipin = cluster_ctx.clb_nlist.pin_net_index(moving_pin_id);
             } else {
                 ipin = cluster_ctx.clb_nlist.pin_net_index(pin_id);
             }
-            cost = criticalities->criticality(net_id, ipin);
+            float cost = criticalities->criticality(net_id, ipin);
 
             VTR_ASSERT(pnum >= 0);
-            x = place_ctx.block_locs[bnum].loc.x + physical_tile_type(bnum)->pin_width_offset[pnum];
-            y = place_ctx.block_locs[bnum].loc.y + physical_tile_type(bnum)->pin_height_offset[pnum];
+            const t_pl_loc block_loc = block_locs[bnum].loc;
+            int x = block_loc.x + physical_tile_type(block_loc)->pin_width_offset[pnum];
+            int y = block_loc.y + physical_tile_type(block_loc)->pin_height_offset[pnum];
+            int layer = block_loc.layer;
 
             x = std::max(std::min(x, (int)grid.width() - 2), 1);  //-2 for no perim channels
             y = std::max(std::min(y, (int)grid.height() - 2), 1); //-2 for no perim channels
@@ -264,4 +265,7 @@ static void get_bb_cost_for_net_excluding_block(ClusterNetId net_id, ClusterBloc
     coords->ymax = {ymax, ymax_cost};
     coords->layer_min = {layer_min, layer_min_cost};
     coords->layer_max = {layer_max, layer_max_cost};
+
+    return skip_net;
 }
+

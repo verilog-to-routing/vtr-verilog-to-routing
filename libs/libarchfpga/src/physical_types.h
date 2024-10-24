@@ -181,10 +181,17 @@ enum e_side : unsigned char {
     RIGHT = 1,
     BOTTOM = 2,
     LEFT = 3,
-    NUM_SIDES
+    NUM_2D_SIDES = 4,
+    ABOVE = 5,
+    UNDER = 7,
+    NUM_3D_SIDES = 6,
 };
-constexpr std::array<e_side, NUM_SIDES> SIDES = {{TOP, RIGHT, BOTTOM, LEFT}};                    //Set of all side orientations
-constexpr std::array<const char*, NUM_SIDES> SIDE_STRING = {{"TOP", "RIGHT", "BOTTOM", "LEFT"}}; //String versions of side orientations
+
+constexpr std::array<e_side, NUM_2D_SIDES> TOTAL_2D_SIDES = {{TOP, RIGHT, BOTTOM, LEFT}};                     //Set of all side orientations
+constexpr std::array<const char*, NUM_2D_SIDES> TOTAL_2D_SIDE_STRINGS = {{"TOP", "RIGHT", "BOTTOM", "LEFT"}}; //String versions of side orientations
+
+constexpr std::array<e_side, NUM_3D_SIDES> TOTAL_3D_SIDES = {{TOP, RIGHT, BOTTOM, LEFT, ABOVE, UNDER}};                         //Set of all side orientations including different layers
+constexpr std::array<const char*, NUM_3D_SIDES> TOTAL_3D_SIDE_STRINGS = {{"TOP", "RIGHT", "BOTTOM", "LEFT", "ABOVE", "UNDER"}}; //String versions of side orientations including different layers
 
 /* pin location distributions */
 enum class e_pin_location_distr {
@@ -251,12 +258,23 @@ typedef enum e_power_estimation_method_ e_power_estimation_method;
 typedef enum e_power_estimation_method_ t_power_estimation_method;
 
 /* Specifies what part of the FPGA a custom switchblock should be built in (i.e. perimeter, core, everywhere) */
-enum e_sb_location {
+enum class e_sb_location {
     E_PERIMETER = 0,
     E_CORNER,
     E_FRINGE, /* perimeter minus corners */
     E_CORE,
-    E_EVERYWHERE
+    E_EVERYWHERE,
+    E_XY_SPECIFIED
+};
+
+/**
+ * @brief Describes regions that a specific switch block specifications should be applied to
+ */
+struct t_sb_loc_spec {
+    int start = -1;
+    int repeat = -1;
+    int incr = -1;
+    int end = -1;
 };
 
 /*************************************************************************************************/
@@ -874,10 +892,11 @@ struct t_physical_pin {
 
 /**
  * @brief Describes The location of a physical tile
- * @param layer_num The die number of the physical tile. If the FPGA only has one die, or the physical tile is located
- *                  on the base die, layer_num is equal to zero. If it is one the die above base die, it is one, etc.
  * @param x The x location of the physical tile on the given die
  * @param y The y location of the physical tile on the given die
+ * @param layer_num The die number of the physical tile. If the FPGA only has one die, or the physical tile is located
+ *                  on the base die, layer_num is equal to zero. If the physical tile is location on the die immediately
+ *                  above the base die, the layer_num is 1 and so on.
  */
 struct t_physical_tile_loc {
     int x = OPEN;
@@ -976,10 +995,10 @@ struct t_logical_block_type {
     std::vector<t_physical_tile_type_ptr> equivalent_tiles; ///>List of physical tiles at which one could
                                                             ///>place this type of netlist block.
 
-    std::unordered_map<int, t_pb_graph_pin*> pin_logical_num_to_pb_pin_mapping;                   /* pin_logical_num_to_pb_pin_mapping[pin logical number] -> pb_graph_pin ptr} */
-    std::unordered_map<const t_pb_graph_pin*, int> primitive_pb_pin_to_logical_class_num_mapping; /* primitive_pb_pin_to_logical_class_num_mapping[pb_graph_pin ptr] -> class logical number */
-    std::vector<t_class> primitive_logical_class_inf;                                             /* primitive_logical_class_inf[class_logical_number] -> class */
-    std::unordered_map<const t_pb_graph_node*, t_class_range> pb_graph_node_class_range;
+    std::unordered_map<int, t_pb_graph_pin*> pin_logical_num_to_pb_pin_mapping;                    /* pin_logical_num_to_pb_pin_mapping[pin logical number] -> pb_graph_pin ptr} */
+    std::unordered_map<const t_pb_graph_pin*, int> primitive_pb_pin_to_logical_class_num_mapping;  /* primitive_pb_pin_to_logical_class_num_mapping[pb_graph_pin ptr] -> class logical number */
+    std::vector<t_class> primitive_logical_class_inf;                                              /* primitive_logical_class_inf[class_logical_number] -> class */
+    std::unordered_map<const t_pb_graph_node*, t_class_range> primitive_pb_graph_node_class_range; /* primitive_pb_graph_node_class_range[primitive_pb_graph_node ptr] -> class range for that primitive*/
 
     // Is this t_logical_block_type empty?
     bool is_empty() const;
@@ -1291,6 +1310,12 @@ class t_pb_graph_node {
 
     int placement_index;
 
+    /*
+     * There is a root-level pb_graph_node assigned to each logical type. Each logical type can contain multiple primitives.
+     * If this pb_graph_node is associated with a primitive, a unique number is assigned to it within the logical block level.
+     */
+    int primitive_num = OPEN;
+
     /* Contains a collection of mode indices that cannot be used as they produce conflicts during VPR packing stage
      *
      * Illegal modes do arise when children of a graph_node do have inconsistent `edge_modes` with respect to
@@ -1331,7 +1356,6 @@ class t_pb_graph_node {
     int total_pb_pins; /* only valid for top-level */
 
     void* temp_scratch_pad;                                     /* temporary data, useful for keeping track of things when traversing data structure */
-    t_cluster_placement_primitive* cluster_placement_primitive; /* pointer to indexing structure useful during packing stage */
 
     int* input_pin_class_size;  /* Stores the number of pins that belong to a particular input pin class */
     int num_input_pin_class;    /* number of input pin classes that this pb_graph_node has */
@@ -1410,7 +1434,7 @@ class t_pb_graph_pin {
     float tco_max = std::numeric_limits<float>::quiet_NaN(); /* For sequential logic elements the maximum clock to output time */
     t_pb_graph_pin* associated_clock_pin = nullptr;          /* For sequentail elements, the associated clock */
 
-    /* This member is used when flat-routing and has_choking_spot are enabled.
+    /* This member is used when flat-routing and router_opt_choke_points are enabled.
      * It is used to identify choke points.
      * This is only valid for IPINs, and it only contain the pins that are reachable to the pin by a forwarding path.
      * It doesn't take into account feed-back connection.
@@ -1613,7 +1637,16 @@ enum e_Fc_type {
  *                   relation to the switches from the architecture file,    *
  *                   not the expanded list of switches that is built         *
  *                   at the end of build_rr_graph                            *
- *                                                                           *
+ * @param arch_wire_switch_dec: Same as arch_wire_switch but used only for   *
+ *                   decremental tracks if it is specified in the            *
+ *                   architecture file. If -1, this value was not set in     *
+ *                   the architecture file and arch_wire_switch should be    *
+ *                   used for "DEC_DIR" wire segments.                       *
+ * @param arch_opin_switch_dec: Same as arch_opin_switch but used only for   *
+ *                   decremental tracks if it is specified in the            *
+ *                   architecture file. If -1, this value was not set in     * 
+ *                   the architecture file and arch_opin_switch should be    *
+ *                   used for "DEC_DIR" wire segments.                       * 
  * @param arch_opin_between_dice_switch: Index of the switch type that       *
  *                   connects output pins (OPINs) *to* this segment from     *
  *                   *another die (layer)*. Note that this index is in       *
@@ -1631,14 +1664,14 @@ enum e_Fc_type {
  * Cmetal: Capacitance of a routing track, per unit logic block length.      *
  * Rmetal: Resistance of a routing track, per unit logic block length.       *
  * (UDSD by AY) drivers: How do signals driving a routing track connect to   *
- *                       the track?
+ *                       the track?                                          *
  * seg_index: The index of the segment as stored in the appropriate Segs list*
  *            Upon loading the architecture, we use this field to keep track *
  *            the segment's index in the unified segment_inf vector. This is *
  *            useful when building the rr_graph for different Y & X channels *
- *            in terms of track distribution and segment type.                *
+ *            in terms of track distribution and segment type.               *
  * res_type: Determines the routing network to which the segment belongs.    *
- *           Possible values are:
+ *           Possible values are:                                            *
  *              - GENERAL: The segment is part of the general routing        *
  *                         resources.                                        *
  *              - GCLK: The segment is part of the global routing network.   *
@@ -1661,6 +1694,8 @@ struct t_segment_inf {
     int length;
     short arch_wire_switch;
     short arch_opin_switch;
+    short arch_wire_switch_dec = -1;
+    short arch_opin_switch_dec = -1;
     short arch_opin_between_dice_switch = -1;
     float frac_cb;
     float frac_sb;
@@ -1717,6 +1752,9 @@ constexpr std::array<const char*, size_t(SwitchType::NUM_SWITCH_TYPES)> SWITCH_T
  *
  */
 constexpr const char* VPR_DELAYLESS_SWITCH_NAME = "__vpr_delayless_switch__";
+
+/* An intracluster switch automatically added to the RRG by the flat router. */
+constexpr const char* VPR_INTERNAL_SWITCH_NAME = "__vpr_intra_cluster_switch__";
 
 enum class BufferSize {
     AUTO,
@@ -1973,6 +2011,13 @@ struct t_switchblock_inf {
     e_sb_location location;          /* where on the FPGA this switchblock should be built (i.e. perimeter, core, everywhere) */
     e_directionality directionality; /* the directionality of this switchblock (unidir/bidir) */
 
+    int x = -1; /* The exact x-axis location that this SB is used, meaningful when type is set to E_XY_specified */
+    int y = -1; /* The exact y-axis location that this SB is used, meanignful when type is set to E_XY_specified */
+
+    /* We can also define a region to apply this SB to all locations falls into this region using regular expression in the architecture file*/
+    t_sb_loc_spec reg_x;
+    t_sb_loc_spec reg_y;
+    
     t_permutation_map permutation_map; /* map holding the permutation functions attributed to this switchblock */
 
     std::vector<t_wireconn_inf> wireconns; /* list of wire types/groups this SB will connect */
@@ -2022,10 +2067,12 @@ struct t_router {
 
     /** A value representing the approximate horizontal position on the FPGA device where the router
      * tile is located*/
-    double device_x_position = -1;
+    float device_x_position = -1;
     /** A value representing the approximate vertical position on the FPGA device where the router
      * tile is located*/
-    double device_y_position = -1;
+    float device_y_position = -1;
+    /** A value representing the exact layer in the FPGA device where the router tile is located.*/
+    int device_layer_position = -1;
 
     /** A list of router ids that are connected to the current router*/
     std::vector<int> connection_list;
@@ -2137,6 +2184,11 @@ struct t_arch {
     std::vector<std::string> ipin_cblock_switch_name;
 
     std::vector<t_grid_def> grid_layouts; //Set of potential device layouts
+    
+    //the layout that is chosen to be used with command line options
+    //It is used to generate custom SB for a specific locations within the device
+    //If the layout is not specified in the command line options, this variable will be set to "auto"
+    std::string device_layout; 
 
     std::vector<t_vib_grid_def> vib_grid_layouts;
 

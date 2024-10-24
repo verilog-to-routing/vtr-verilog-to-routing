@@ -1,6 +1,8 @@
 #ifndef VTR_ROUTERPLACEMENTCHECKPOINT_H
 #define VTR_ROUTERPLACEMENTCHECKPOINT_H
 
+class NocCostHandler;
+
 /**
  * @brief NoC router placement checkpoint
  *
@@ -29,23 +31,26 @@ class NoCPlacementCheckpoint {
     /**
      * @brief Default constructor initializes private member variables.
      */
-    NoCPlacementCheckpoint();
+    explicit NoCPlacementCheckpoint(NocCostHandler& noc_cost_handler);
     NoCPlacementCheckpoint(const NoCPlacementCheckpoint& other) = delete;
     NoCPlacementCheckpoint& operator=(const NoCPlacementCheckpoint& other) = delete;
 
     /**
      * @brief Saves the current NoC router placement as a checkpoint
      *
-     *  @param cost: The placement cost associated with the current placement
+     *  @param cost The placement cost associated with the current placement
+     *  @param block_locs Stores where each clustered block (including NoC routers) is placed at.
      */
-    void save_checkpoint(double cost);
+    void save_checkpoint(double cost, const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
 
     /**
      * @brief Loads the save checkpoint into global placement data structues.
      *
-     *  @param costs: Used to load NoC related costs for the checkpoint
+     *  @param costs Used to load NoC related costs for the checkpoint
+     *  @param blk_loc_registry To be updated with the save checkpoint for NoC router locations.
      */
-    void restore_checkpoint(t_placer_costs& costs);
+    void restore_checkpoint(t_placer_costs& costs,
+                            BlkLocRegistry& blk_loc_registry);
 
     /**
      * @brief Indicates whether the object is empty or it has already stored a
@@ -64,6 +69,7 @@ class NoCPlacementCheckpoint {
 
   private:
     std::unordered_map<ClusterBlockId, t_pl_loc> router_locations_;
+    NocCostHandler& noc_cost_handler_;
     bool valid_ = false;
     double cost_;
 };

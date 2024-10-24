@@ -18,13 +18,12 @@
 bool check_net_delays(const Netlist<>& net_list, NetPinsMatrix<float>& net_delay) {
     constexpr float ERROR_TOL = 0.0001;
 
-    unsigned int ipin;
     auto net_delay_check = make_net_pins_matrix<float>(net_list);
 
     load_net_delay_from_routing(net_list, net_delay_check);
 
     for (auto net_id : net_list.nets()) {
-        for (ipin = 1; ipin < net_list.net_pins(net_id).size(); ipin++) {
+        for (size_t ipin = 1; ipin < net_list.net_pins(net_id).size(); ipin++) {
             if (net_delay_check[net_id][ipin] == 0.) { /* Should be only GLOBAL nets */
                 if (fabs(net_delay[net_id][ipin]) > ERROR_TOL) {
                     VPR_ERROR(VPR_ERROR_ROUTE,
@@ -220,8 +219,9 @@ void generate_route_timing_reports(const t_router_opts& router_opts,
                                    bool is_flat) {
     auto& timing_ctx = g_vpr_ctx.timing();
     auto& atom_ctx = g_vpr_ctx.atom();
+    const auto& blk_loc_registry = g_vpr_ctx.placement().blk_loc_registry();
 
-    VprTimingGraphResolver resolver(atom_ctx.nlist, atom_ctx.lookup, *timing_ctx.graph, delay_calc, is_flat);
+    VprTimingGraphResolver resolver(atom_ctx.nlist, atom_ctx.lookup, *timing_ctx.graph, delay_calc, is_flat, blk_loc_registry);
     resolver.set_detail_level(analysis_opts.timing_report_detail);
 
     tatum::TimingReporter timing_reporter(resolver, *timing_ctx.graph, *timing_ctx.constraints);
@@ -391,20 +391,17 @@ vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>> set_net
                                                                                                                   std::vector<std::vector<int>>>& net_terminal_groups,
                                                                                                 const vtr::vector<ParentNetId,
                                                                                                                   std::vector<int>>& net_terminal_group_num,
-                                                                                                bool has_choking_spot,
+                                                                                                bool router_opt_choke_points,
                                                                                                 bool is_flat) {
     vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>> choking_spots(net_list.nets().size());
     for (const auto& net_id : net_list.nets()) {
         choking_spots[net_id].resize(net_list.net_pins(net_id).size());
     }
 
-    // Return if the architecture doesn't have any potential choke points
-    if (!has_choking_spot) {
+    // Return if the architecture doesn't have any potential choke points or flat router is not enabled
+    if (!router_opt_choke_points || !is_flat) {
         return choking_spots;
     }
-
-    // We only identify choke points if flat_routing is enabled.
-    VTR_ASSERT(is_flat);
 
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;

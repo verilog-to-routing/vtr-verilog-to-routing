@@ -272,7 +272,7 @@ struct RouteBudgetsAlgorithm {
     }
 
     std::vector<std::string> default_choices() {
-        return {"minimax", "scale_delay", "disable"};
+        return {"minimax", "yoyo", "scale_delay", "disable"};
     }
 };
 
@@ -532,9 +532,9 @@ struct ParseFixPins {
     ConvertedValue<e_pad_loc_type> from_str(const std::string& str) {
         ConvertedValue<e_pad_loc_type> conv_value;
         if (str == "free")
-            conv_value.set_value(FREE);
+            conv_value.set_value(e_pad_loc_type::FREE);
         else if (str == "random")
-            conv_value.set_value(RANDOM);
+            conv_value.set_value(e_pad_loc_type::RANDOM);
         else {
             std::stringstream msg;
             msg << "Invalid conversion from '" << str << "' to e_router_algorithm (expected one of: " << argparse::join(default_choices(), ", ") << ")";
@@ -545,10 +545,10 @@ struct ParseFixPins {
 
     ConvertedValue<std::string> to_str(e_pad_loc_type val) {
         ConvertedValue<std::string> conv_value;
-        if (val == FREE)
+        if (val == e_pad_loc_type::FREE)
             conv_value.set_value("free");
         else {
-            VTR_ASSERT(val == RANDOM);
+            VTR_ASSERT(val == e_pad_loc_type::RANDOM);
             conv_value.set_value("random");
         }
         return conv_value;
@@ -1063,8 +1063,6 @@ struct ParseRouterHeap {
             conv_value.set_value(e_heap_type::BINARY_HEAP);
         else if (str == "four_ary")
             conv_value.set_value(e_heap_type::FOUR_ARY_HEAP);
-        else if (str == "bucket")
-            conv_value.set_value(e_heap_type::BUCKET_HEAP_APPROXIMATION);
         else {
             std::stringstream msg;
             msg << "Invalid conversion from '" << str << "' to e_heap_type (expected one of: " << argparse::join(default_choices(), ", ") << ")";
@@ -1077,11 +1075,9 @@ struct ParseRouterHeap {
         ConvertedValue<std::string> conv_value;
         if (val == e_heap_type::BINARY_HEAP)
             conv_value.set_value("binary");
-        else if (val == e_heap_type::FOUR_ARY_HEAP)
-            conv_value.set_value("four_ary");
         else {
-            VTR_ASSERT(val == e_heap_type::BUCKET_HEAP_APPROXIMATION);
-            conv_value.set_value("bucket");
+            VTR_ASSERT(val == e_heap_type::FOUR_ARY_HEAP);
+            conv_value.set_value("four_ary");
         }
         return conv_value;
     }
@@ -1321,6 +1317,11 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
 
     stage_grp.add_argument<bool, ParseOnOff>(args.do_placement, "--place")
         .help("Run placement")
+        .action(argparse::Action::STORE_TRUE)
+        .default_value("off");
+
+    stage_grp.add_argument<bool, ParseOnOff>(args.do_analytical_placement, "--analytical_place")
+        .help("Run analytical placement. Analytical Placement uses an integrated packing and placement algorithm, using information from the primitive level to improve clustering and placement.")
         .action(argparse::Action::STORE_TRUE)
         .default_value("off");
 
@@ -1629,6 +1630,11 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
 
     file_grp.add_argument(args.write_initial_place_file, "--write_initial_place_file")
         .help("Writes out the the placement chosen by the initial placement algorithm to the specified file")
+        .metavar("INITIAL_PLACE_FILE")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    file_grp.add_argument(args.read_initial_place_file, "--read_initial_place_file")
+        .help("Reads the initial placement and continues the rest of the placement process from there.")
         .metavar("INITIAL_PLACE_FILE")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
@@ -2150,20 +2156,20 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
 
     place_grp.add_argument(args.place_constraint_expand, "--place_constraint_expand")
         .help(
-            "The value used to decide how much to expand the floorplan constraint region when writing"
-            "a floorplan constraint XML file. Takes in an integer value from zero to infinity."
-            "If the value is zero, the block stays at the same x, y location. If it is"
-            "greater than zero the constraint region expands by the specified value in each direction."
-            "For example, if 1 was specified, a block at the x, y location (1, 1) would have a constraint region"
+            "The value used to decide how much to expand the floorplan constraint region when writing "
+            "a floorplan constraint XML file. Takes in an integer value from zero to infinity. "
+            "If the value is zero, the block stays at the same x, y location. If it is "
+            "greater than zero the constraint region expands by the specified value in each direction. "
+            "For example, if 1 was specified, a block at the x, y location (1, 1) would have a constraint region "
             "of 2x2 centered around (1, 1), from (0, 0) to (2, 2).")
         .default_value("0")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument<bool, ParseOnOff>(args.place_constraint_subtile, "--place_constraint_subtile")
         .help(
-            "The bool used to say whether to print subtile constraints when printing a floorplan constraints XML file."
-            "If it is off, no subtile locations are specified when printing the floorplan constraints."
-            "If it is on, the floorplan constraints are printed with the subtiles from current placement.")
+            "The bool used to say whether to print subtile constraints when printing a floorplan constraints XML file. "
+            "If it is off, no subtile locations are specified when printing the floorplan constraints. "
+            "If it is on, the floorplan constraints are printed with the subtiles from current placement. ")
         .default_value("off")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
@@ -2276,7 +2282,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             " * 'simple' uses map router lookahead\n"
             " * 'delta' uses differences in position only\n"
             " * 'delta_override' uses differences in position with overrides for direct connects\n")
-        .default_value("delta")
+        .default_value("simple")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_timing_grp.add_argument<e_reducer, ParseReducer>(args.place_delay_model_reducer, "--place_delay_model_reducer")
@@ -2481,14 +2487,26 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("off")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
-    route_grp.add_argument(args.has_choking_spot, "--has_choking_spot")
+    route_grp.add_argument<bool, ParseOnOff>(args.router_opt_choke_points, "--router_opt_choke_points")
         .help(
             ""
-            "Some FPGA architectures, due to the lack of full connectivity inside the cluster, may have"
-            " a choking spot inside the cluster. Thus, if routing doesn't converge, enabling this option may"
-            " help it.")
-        .default_value("false")
+            "Some FPGA architectures with limited fan-out options within a cluster (e.g. fracturable LUTs with shared pins) do" 
+            " not converge well in routing unless these fan-out choke points are discovered and optimized for during net routing." 
+            " This option helps router convergence for such architectures.")
+        .default_value("on")
         .show_in(argparse::ShowIn::HELP_ONLY);
+
+
+    route_grp.add_argument<int>(args.route_verbosity, "--route_verbosity")
+        .help("Controls the verbosity of routing's output. Higher values produce more output (useful for debugging routing problems)")
+        .default_value("1")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+    route_grp.add_argument(args.custom_3d_sb_fanin_fanout, "--custom_3d_sb_fanin_fanout")
+            .help(
+                    "Specifies the number of tracks that can drive a 3D switch block connection"
+                    "and the number of tracks that can be driven by a 3D switch block connection")
+            .default_value("1")
+            .show_in(argparse::ShowIn::HELP_ONLY);
 
     auto& route_timing_grp = parser.add_argument_group("timing-driven routing options");
 
@@ -2497,6 +2515,14 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             "Controls the directedness of the timing-driven router's exploration."
             " Values between 1 and 2 are resonable; higher values trade some quality for reduced run-time")
         .default_value("1.2")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    route_timing_grp.add_argument(args.astar_offset, "--astar_offset")
+        .help(
+            "Controls the directedness of the timing-driven router's exploration."
+            " It is a subtractive adjustment to the lookahead heuristic."
+            " Values between 0 and 1e-9 are resonable; higher values may increase quality at the expense of run-time.")
+        .default_value("0.0")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_timing_grp.add_argument(args.router_profiler_astar_fac, "--router_profiler_astar_fac")
@@ -2661,7 +2687,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_timing_grp.add_argument(args.router_first_iteration_timing_report_file, "--router_first_iter_timing_report")
-        .help("Name of the post first routing iteration timing report file (not generated if unspecfied)")
+        .help("Name of the post first routing iteration timing report file (not generated if unspecified)")
         .default_value("")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
@@ -3069,6 +3095,13 @@ void set_conditional_defaults(t_options& args) {
             args.PlaceAlgorithm.set(CRITICALITY_TIMING_PLACE, Provenance::INFERRED);
         } else {
             args.PlaceAlgorithm.set(BOUNDING_BOX_PLACE, Provenance::INFERRED);
+        }
+    }
+
+    // If MAP Router lookahead is not used, we cannot use simple place delay lookup
+    if (args.place_delay_model.provenance() != Provenance::SPECIFIED) {
+        if (args.router_lookahead_type != e_router_lookahead::MAP) {
+            args.place_delay_model.set(PlaceDelayModelType::DELTA, Provenance::INFERRED);
         }
     }
 

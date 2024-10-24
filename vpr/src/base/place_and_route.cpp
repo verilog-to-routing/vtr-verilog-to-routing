@@ -34,6 +34,7 @@
 #include "route_common.h"
 #include "place_macro.h"
 #include "power.h"
+#include "place_util.h"
 
 #include "RoutingDelayCalculator.h"
 #include "timing_info.h"
@@ -352,7 +353,7 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
                             ScreenUpdatePriority::MINOR,
                             is_flat);
 
-            if (success && Fc_clipped == false) {
+            if (success && !Fc_clipped) {
                 final = current;
                 save_routing(best_routing,
                              route_ctx.clb_opins_used_locally,
@@ -361,8 +362,9 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
                 if (placer_opts.place_freq == PLACE_ALWAYS) {
                     auto& cluster_ctx = g_vpr_ctx.clustering();
                     // Cluster-based net_list is used for placement
-                    print_place(filename_opts.NetFile.c_str(), cluster_ctx.clb_nlist.netlist_id().c_str(),
-                                filename_opts.PlaceFile.c_str());
+                    std::string placement_id = print_place(filename_opts.NetFile.c_str(), cluster_ctx.clb_nlist.netlist_id().c_str(),
+                                                           filename_opts.PlaceFile.c_str(), g_vpr_ctx.placement().block_locs());
+                    g_vpr_ctx.mutable_placement().placement_id = placement_id;
                 }
             }
 
@@ -393,14 +395,14 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
                     &warnings,
                     is_flat);
 
-    init_draw_coords(final);
+    init_draw_coords(final, g_vpr_ctx.placement().blk_loc_registry());
 
     /* Allocate and load additional rr_graph information needed only by the router. */
     alloc_and_load_rr_node_route_structs();
 
     init_route_structs(router_net_list,
                        router_opts.bb_factor,
-                       router_opts.has_choking_spot,
+                       router_opts.has_choke_point,
                        is_flat);
 
     restore_routing(best_routing,
@@ -560,26 +562,28 @@ static float comp_width(t_chan* chan, float x, float separation) {
             break;
     }
 
-    return (val);
+    return val;
 }
 
 /**
  * @brief After placement, logical pins for blocks, and nets must be updated to correspond with physical pins of type.
  *
- * This is required by blocks with capacity > 1 (e.g. typically IOs with multiple instaces in each placement
- * gride location). Since they may be swapped around during placement, we need to update which pins the various
+ * This is required by blocks with capacity > 1 (e.g. typically IOs with multiple instances in each placement
+ * grid location). Since they may be swapped around during placement, we need to update which pins the various
  * nets use.
  *
- * This updates both the external inter-block net connecitivity (i.e. the clustered netlist), and the intra-block
+ * This updates both the external inter-block net connectivity (i.e. the clustered netlist), and the intra-block
  * connectivity (since the internal pins used also change).
  *
  * This function should only be called once
  */
 void post_place_sync() {
     /* Go through each block */
-    auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& blk_loc_registry = g_vpr_ctx.mutable_placement().mutable_blk_loc_registry();
+
     // Cluster-based netlist is used for placement
-    for (auto block_id : cluster_ctx.clb_nlist.blocks()) {
-        place_sync_external_block_connections(block_id);
+    for (const ClusterBlockId block_id : cluster_ctx.clb_nlist.blocks()) {
+        blk_loc_registry.place_sync_external_block_connections(block_id);
     }
 }

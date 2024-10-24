@@ -2,8 +2,6 @@
 #define ROUTER_DELAY_PROFILING_H_
 
 #include "vpr_types.h"
-#include "binary_heap.h"
-#include "four_ary_heap.h"
 #include "connection_router.h"
 
 #include <vector>
@@ -29,8 +27,7 @@ class RouterDelayProfiler {
     bool calculate_delay(RRNodeId source_node,
                          RRNodeId sink_node,
                          const t_router_opts& router_opts,
-                         float* net_delay,
-                         int layer_num);
+                         float* net_delay);
 
     /**
      * @param physical_tile_type_idx

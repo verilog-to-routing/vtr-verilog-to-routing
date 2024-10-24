@@ -14,7 +14,7 @@ namespace vtr {
 /**
  * @brief This function will force the container to be cleared
  *
- * It release it's held memory.
+ * It releases its held memory.
  * For efficiency, STL containers usually don't
  * release their actual heap-allocated memory until
  * destruction (even if Container::clear() is called).
