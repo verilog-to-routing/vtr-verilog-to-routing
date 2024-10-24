@@ -54,7 +54,7 @@
  * side: The side of a grid location where an IPIN or OPIN is located.       *
  *       This field is valid only for IPINs and OPINs and should be ignored  *
  *       otherwise.                                                          */
-struct alignas(16) t_rr_node_data {
+struct alignas(32) t_rr_node_data {
     int16_t cost_index_ = -1;
     int16_t rc_index_ = -1;
 
@@ -62,6 +62,9 @@ struct alignas(16) t_rr_node_data {
     int16_t ylow_ = -1;
     int16_t xhigh_ = -1;
     int16_t yhigh_ = -1;
+    
+    int16_t node_bend_start_ = 0;
+    int16_t node_bend_end_ = 0;
 
     t_rr_type type_ = NUM_RR_TYPES;
 
@@ -86,8 +89,8 @@ struct alignas(16) t_rr_node_data {
 // t_rr_node_data is a key data structure, so fail at compile time if the
 // structure gets bigger than expected (16 bytes right now). Developers
 // should only expand it after careful consideration and measurement.
-static_assert(sizeof(t_rr_node_data) == 16, "Check t_rr_node_data size");
-static_assert(alignof(t_rr_node_data) == 16, "Check t_rr_node_data size");
+static_assert(sizeof(t_rr_node_data) == 32, "Check t_rr_node_data size");
+static_assert(alignof(t_rr_node_data) == 32, "Check t_rr_node_data size");
 
 /* t_rr_node_ptc_data is cold data is therefore kept seperate from
  * t_rr_node_data.
@@ -99,6 +102,7 @@ struct t_rr_node_ptc_data {
         int pin_num;
         int track_num;
         int class_num;
+        int medium_num;
     } ptc_;
 };
 
@@ -185,6 +189,13 @@ class t_rr_graph_storage {
     short node_yhigh(RRNodeId id) const {
         return node_storage_[id].yhigh_;
     }
+    
+    short node_bend_start(RRNodeId id) const {
+        return node_storage_[id].node_bend_start_;
+    }
+    short node_bend_end(RRNodeId id) const {
+        return node_storage_[id].node_bend_end_;
+    }
 
     short node_capacity(RRNodeId id) const {
         return node_storage_[id].capacity_;
@@ -223,6 +234,7 @@ class t_rr_graph_storage {
     int node_pin_num(RRNodeId id) const;   //Same as ptc_num() but checks that type() is consistent
     int node_track_num(RRNodeId id) const; //Same as ptc_num() but checks that type() is consistent
     int node_class_num(RRNodeId id) const; //Same as ptc_num() but checks that type() is consistent
+    int node_medium_num(RRNodeId id) const; //Same as ptc_num() but checks that type() is consistent
 
     /** @brief Retrieve fan_in for RRNodeId, init_fan_in must have been called first. */
     t_edge_size fan_in(RRNodeId id) const {
@@ -616,6 +628,7 @@ class t_rr_graph_storage {
     void set_node_pin_num(RRNodeId id, int);   //Same as set_ptc_num() by checks type() is consistent
     void set_node_track_num(RRNodeId id, int); //Same as set_ptc_num() by checks type() is consistent
     void set_node_class_num(RRNodeId id, int); //Same as set_ptc_num() by checks type() is consistent
+    void set_node_medium_num(RRNodeId id, int); //Same as set_ptc_num() by checks type() is consistent
 
     void set_node_type(RRNodeId id, t_rr_type new_type);
     void set_node_name(RRNodeId id, std::string new_name);
@@ -623,6 +636,8 @@ class t_rr_graph_storage {
     void set_node_layer(RRNodeId id, short layer);
     void set_node_ptc_twist_incr(RRNodeId id, short twist);
     void set_node_cost_index(RRNodeId, RRIndexedDataId new_cost_index);
+    void set_node_bend_start(RRNodeId id, size_t bend_start);
+    void set_node_bend_end(RRNodeId id, size_t bend_end);
     void set_node_rc_index(RRNodeId, NodeRCIndex new_rc_index);
     void set_node_capacity(RRNodeId, short new_capacity);
     void set_node_direction(RRNodeId, Direction new_direction);
@@ -1016,6 +1031,7 @@ class t_rr_graph_view {
     int node_pin_num(RRNodeId id) const;   //Same as ptc_num() but checks that type() is consistent
     int node_track_num(RRNodeId id) const; //Same as ptc_num() but checks that type() is consistent
     int node_class_num(RRNodeId id) const; //Same as ptc_num() but checks that type() is consistent
+    int node_medium_num(RRNodeId id) const; //Same as ptc_num() but checks that type() is consistent
 
     /**
     * @brief Retrieve the fan-in for a given RRNodeId.

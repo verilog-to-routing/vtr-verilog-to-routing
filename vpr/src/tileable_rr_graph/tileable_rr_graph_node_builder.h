@@ -25,6 +25,7 @@
 void alloc_tileable_rr_graph_nodes(RRGraphBuilder& rr_graph_builder,
                                    vtr::vector<RRNodeId, RRSwitchId>& driver_switches,
                                    const DeviceGrid& grids,
+                                   const vtr::NdMatrix<const VibInf*, 3>& vib_grid,
                                    const size_t& layer,
                                    const vtr::Point<size_t>& chan_width,
                                    const std::vector<t_segment_inf>& segment_inf_x,
@@ -32,7 +33,8 @@ void alloc_tileable_rr_graph_nodes(RRGraphBuilder& rr_graph_builder,
                                    const DeviceGridAnnotation& device_grid_annotation,
                                    const bool& shrink_boundary,
                                    const bool& perimeter_cb,
-                                   const bool& through_channel);
+                                   const bool& through_channel,
+                                   const bool& is_vib_arch);
 
 void create_tileable_rr_graph_nodes(const RRGraphView& rr_graph,
                                     RRGraphBuilder& rr_graph_builder,
@@ -40,6 +42,7 @@ void create_tileable_rr_graph_nodes(const RRGraphView& rr_graph,
                                     std::map<RRNodeId, std::vector<size_t>>& rr_node_track_ids,
                                     std::vector<t_rr_rc_data>& rr_rc_data,
                                     const DeviceGrid& grids,
+                                    const vtr::NdMatrix<const VibInf*, 3>& vib_grid,
                                     const size_t& layer,
                                     const vtr::Point<size_t>& chan_width,
                                     const std::vector<t_segment_inf>& segment_inf_x,
@@ -50,6 +53,7 @@ void create_tileable_rr_graph_nodes(const RRGraphView& rr_graph,
                                     const DeviceGridAnnotation& device_grid_annotation,
                                     const bool& shrink_boundary,
                                     const bool& perimeter_cb,
-                                    const bool& through_channel);
+                                    const bool& through_channel,
+                                    const bool& is_vib_arch);
 
 #endif

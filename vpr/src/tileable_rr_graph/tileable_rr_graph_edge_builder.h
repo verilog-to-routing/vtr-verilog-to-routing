@@ -23,8 +23,9 @@
 
 void build_rr_graph_edges(const RRGraphView& rr_graph,
                           RRGraphBuilder& rr_graph_builder,
-                          const vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
+                          vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
                           const DeviceGrid& grids,
+                          const vtr::NdMatrix<const VibInf*, 3>& vib_grid,
                           const size_t& layer,
                           const vtr::Point<size_t>& device_chan_width,
                           const std::vector<t_segment_inf>& segment_inf,
@@ -39,7 +40,9 @@ void build_rr_graph_edges(const RRGraphView& rr_graph,
                           const bool& perimeter_cb,
                           const bool& opin2all_sides,
                           const bool& concat_wire,
-                          const bool& wire_opposite_side);
+                          const bool& wire_opposite_side,
+                          const RRSwitchId& delayless_switch,
+                          const bool& is_vib_arch);
 
 void build_rr_graph_direct_connections(const RRGraphView& rr_graph,
                                        RRGraphBuilder& rr_graph_builder,
