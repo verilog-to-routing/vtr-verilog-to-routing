@@ -125,10 +125,9 @@
 #include "physical_types.h"
 #include "vpr_types.h"
 
-/* These are the placement macro structure.
- * It is in the form of array of structs instead of
- * structs of arrays for cache efficiency.
- * Could have more data members for other macro type.
+/**
+ * @struct t_pl_macro_member
+ * @brief The placement macro structure.
  */
 struct t_pl_macro_member {
     ///@brief The cluster_ctx.blocks index of this block.

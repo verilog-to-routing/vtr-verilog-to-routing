@@ -16,11 +16,36 @@
 #include "globals.h"
 #include "echo_files.h"
 
+/**
+ * @brief Determines whether a cluster net is constant.
+ * @param clb_net The unique id of a cluster net.
+ * @return True if the net is constant; otherwise false.
+ */
 static bool is_constant_clb_net(ClusterNetId clb_net);
 
+/**
+ * @brief Performs a sanity check on macros by making sure that
+ * each block appears in at most one macro.
+ * @param macros All placement macros in the netlist.
+ */
 static void validate_macros(const std::vector<t_pl_macro>& macros);
 
-static bool try_combine_macros(std::vector<std::vector<ClusterBlockId>>& pl_macro_member_blk_num, int matching_macro, int latest_macro);
+/**
+ * @brief   Tries to combine two placement macros.
+ * @details This function takes two placement macro ids which have a common cluster block
+ * or more in between. The function then tries to find if the two macros could be combined
+ * to form a larger macro. If it's impossible to combine the two macros together then
+ * this design will never place and route.
+ *
+ * @param pl_macro_member_blk_num   [0..num_macros-1][0..num_cluster_blocks-1]
+ *                                  2D array of macros created so far.
+ * @param matching_macro first macro id, which is a previous macro that is found to have the same block
+ * @param latest_macro second macro id, which is the macro being created at this iteration
+ * @return True if combining two macros was successful; otherwise false.
+ */
+static bool try_combine_macros(std::vector<std::vector<ClusterBlockId>>& pl_macro_member_blk_num,
+                               int matching_macro,
+                               int latest_macro);
 
 /* Go through all the ports in all the blocks to find the port that has the same   *
  * name as port_name and belongs to the block type that has the name pb_type_name. *
@@ -39,9 +64,10 @@ static void mark_direct_of_ports(int idirect,
                                  std::vector<std::vector<int>>& direct_type_from_blk_pin,
                                  const PortPinToBlockPinConverter& port_pin_to_block_pin);
 
-/* Mark the pin entry in idirect_from_blk_pin with idirect and the pin entry in    *
- * direct_type_from_blk_pin with direct_type from start_pin_index to               *
- * end_pin_index.                                                                  */
+/**
+ * @brief Mark the pin entry in idirect_from_blk_pin with idirect and the pin entry in
+ * direct_type_from_blk_pin with direct_type from start_pin_index to end_pin_index.
+ */
 static void mark_direct_of_pins(int start_pin_index,
                                 int end_pin_index,
                                 int itype,
@@ -257,17 +283,9 @@ int PlaceMacros::find_all_the_macro_(std::vector<int>& pl_macro_idirect,
     return num_macro;
 }
 
-static bool try_combine_macros(std::vector<std::vector<ClusterBlockId>>& pl_macro_member_blk_num, int matching_macro, int latest_macro) {
-    /* This function takes two placement macro ids which have a common cluster block
-     * or more in between. The function then tries to find if the two macros could
-     * be combined together to form a larger macro. If it's impossible to combine
-     * the two macros together then this design will never place and route.
-     * Arguments:
-     *  pl_macro_member_blk_num : [0..num_macros-1][0..num_cluster_blocks-1] 2D array
-     *                            of macros created so far.
-     *  matching_macro          : first macro id, which is a previous macro that is found to have the same block
-     *  latest_macro            : second macro id, which is the macro being created at this iteration */
-
+static bool try_combine_macros(std::vector<std::vector<ClusterBlockId>>& pl_macro_member_blk_num,
+                               int matching_macro,
+                               int latest_macro) {
     auto& old_macro_blocks = pl_macro_member_blk_num[matching_macro];
     auto& new_macro_blocks = pl_macro_member_blk_num[latest_macro];
 
@@ -501,10 +519,7 @@ static void mark_direct_of_pins(int start_pin_index,
                                 int line,
                                 std::string_view src_string,
                                 const PortPinToBlockPinConverter& port_pin_to_block_pin) {
-    /* Mark the pin entry in idirect_from_blk_pin with idirect and the pin entry in    *
-     * direct_type_from_blk_pin with direct_type from start_pin_index to               *
-     * end_pin_index.                                                                  */
-    auto& device_ctx = g_vpr_ctx.device();
+    const auto& device_ctx = g_vpr_ctx.device();
 
     // Mark pins with indices from start_pin_index to end_pin_index, inclusive
     for (int iport_pin = start_pin_index; iport_pin <= end_pin_index; iport_pin++) {
