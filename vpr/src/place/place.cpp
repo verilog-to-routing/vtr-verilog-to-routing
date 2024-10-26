@@ -2032,7 +2032,7 @@ static int check_block_placement_consistency(const BlkLocRegistry& blk_loc_regis
                     if (physical_tile_type(block_loc) != physical_tile) {
                         VTR_LOG_ERROR(
                             "Block %zu type (%s) does not match grid location (%zu,%zu, %d) type (%s).\n",
-                            size_t(bnum), logical_block->name, i, j, layer_num, physical_tile->name);
+                            size_t(bnum), logical_block->name.c_str(), i, j, layer_num, physical_tile->name.c_str());
                         error++;
                     }
 
@@ -2232,8 +2232,8 @@ static void print_resources_utilization(const BlkLocRegistry& blk_loc_registry) 
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& block_locs = blk_loc_registry.block_locs();
 
-    int max_block_name = 0;
-    int max_tile_name = 0;
+    size_t max_block_name = 0;
+    size_t max_tile_name = 0;
 
     //Record the resource requirement
     std::map<t_logical_block_type_ptr, size_t> num_type_instances;
@@ -2242,14 +2242,14 @@ static void print_resources_utilization(const BlkLocRegistry& blk_loc_registry) 
     for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks()) {
         const t_pl_loc& loc = block_locs[blk_id].loc;
 
-        auto physical_tile = device_ctx.grid.get_physical_type({loc.x, loc.y, loc.layer});
-        auto logical_block = cluster_ctx.clb_nlist.block_type(blk_id);
+        t_physical_tile_type_ptr physical_tile = device_ctx.grid.get_physical_type({loc.x, loc.y, loc.layer});
+        t_logical_block_type_ptr logical_block = cluster_ctx.clb_nlist.block_type(blk_id);
 
         num_type_instances[logical_block]++;
         num_placed_instances[logical_block][physical_tile]++;
 
-        max_block_name = std::max<int>(max_block_name, strlen(logical_block->name));
-        max_tile_name = std::max<int>(max_tile_name, strlen(physical_tile->name));
+        max_block_name = std::max(max_block_name, logical_block->name.length());
+        max_tile_name = std::max(max_tile_name, physical_tile->name.length());
     }
 
     VTR_LOG("\n");
@@ -2257,8 +2257,8 @@ static void print_resources_utilization(const BlkLocRegistry& blk_loc_registry) 
     for (const auto [logical_block_type_ptr, _] : num_type_instances) {
         for (const auto [physical_tile_type_ptr, num_instances] : num_placed_instances[logical_block_type_ptr]) {
             VTR_LOG("  %-*s implemented as %-*s: %d\n", max_block_name,
-                    logical_block_type_ptr->name, max_tile_name,
-                    physical_tile_type_ptr->name, num_instances);
+                    logical_block_type_ptr->name.c_str(), max_tile_name,
+                    physical_tile_type_ptr->name.c_str(), num_instances);
         }
     }
     VTR_LOG("\n");

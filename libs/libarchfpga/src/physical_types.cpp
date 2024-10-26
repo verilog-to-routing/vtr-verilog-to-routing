@@ -7,7 +7,7 @@
 
 static bool switch_type_is_buffered(SwitchType type);
 static bool switch_type_is_configurable(SwitchType type);
-static e_directionality switch_type_directionaity(SwitchType type);
+static e_directionality switch_type_directionality(SwitchType type);
 
 //Ensure the constant has external linkage to avoid linking errors
 constexpr int t_arch_switch_inf::UNDEFINED_FANIN;
@@ -29,7 +29,7 @@ bool t_arch_switch_inf::configurable() const {
 }
 
 e_directionality t_arch_switch_inf::directionality() const {
-    return switch_type_directionaity(type());
+    return switch_type_directionality(type());
 }
 
 float t_arch_switch_inf::Tdel(int fanin) const {
@@ -89,7 +89,7 @@ static bool switch_type_is_configurable(SwitchType type) {
              || type == SwitchType::BUFFER);
 }
 
-static e_directionality switch_type_directionaity(SwitchType type) {
+static e_directionality switch_type_directionality(SwitchType type) {
     if (type == SwitchType::SHORT
         || type == SwitchType::PASS_GATE) {
         //Shorts and pass gates can conduct in either direction

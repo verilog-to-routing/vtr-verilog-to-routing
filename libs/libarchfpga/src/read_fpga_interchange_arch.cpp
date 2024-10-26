@@ -194,9 +194,9 @@ static t_model* get_model(t_arch* arch, std::string model) {
 
 /** @brief Returns the physical or logical type by its name */
 template<typename T>
-static T* get_type_by_name(const char* type_name, std::vector<T>& types) {
+static T* get_type_by_name(std::string_view type_name, std::vector<T>& types) {
     for (auto& type : types) {
-        if (0 == strcmp(type.name, type_name)) {
+        if (type.name == type_name) {
             return &type;
         }
     }

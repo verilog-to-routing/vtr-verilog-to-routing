@@ -550,24 +550,20 @@ int get_sub_tile_index(ClusterBlockId blk) {
  * for the node.
  */
 int get_unique_pb_graph_node_id(const t_pb_graph_node* pb_graph_node) {
-    t_pb_graph_pin first_input_pin;
-    t_pb_graph_pin first_output_pin;
-    int node_id;
-
     if (pb_graph_node->num_input_pins != nullptr) {
         /* If input port exists on this node, return the index of the first
          * input pin as node_id.
          */
-        first_input_pin = pb_graph_node->input_pins[0][0];
-        node_id = first_input_pin.pin_count_in_cluster;
+        t_pb_graph_pin first_input_pin = pb_graph_node->input_pins[0][0];
+        int node_id = first_input_pin.pin_count_in_cluster;
         return node_id;
     } else {
         /* If no input port exists on node, then return the index of the first
          * output pin. Every pb_node is guaranteed to have at least an input or
          * output pin.
          */
-        first_output_pin = pb_graph_node->output_pins[0][0];
-        node_id = first_output_pin.pin_count_in_cluster;
+        t_pb_graph_pin first_output_pin = pb_graph_node->output_pins[0][0];
+        int node_id = first_output_pin.pin_count_in_cluster;
         return node_id;
     }
 }
@@ -844,15 +840,14 @@ static bool pb_type_contains_blif_model(const t_pb_type* pb_type, const std::reg
 }
 
 int get_max_primitives_in_pb_type(t_pb_type* pb_type) {
-    int i, j;
-    int max_size, temp_size;
+    int max_size;
     if (pb_type->modes == nullptr) {
         max_size = 1;
     } else {
         max_size = 0;
-        temp_size = 0;
-        for (i = 0; i < pb_type->num_modes; i++) {
-            for (j = 0; j < pb_type->modes[i].num_pb_type_children; j++) {
+        int temp_size = 0;
+        for (int i = 0; i < pb_type->num_modes; i++) {
+            for (int j = 0; j < pb_type->modes[i].num_pb_type_children; j++) {
                 temp_size += pb_type->modes[i].pb_type_children[j].num_pb
                              * get_max_primitives_in_pb_type(
                                  &pb_type->modes[i].pb_type_children[j]);
@@ -867,15 +862,14 @@ int get_max_primitives_in_pb_type(t_pb_type* pb_type) {
 
 /* finds maximum number of nets that can be contained in pb_type, this is bounded by the number of driving pins */
 int get_max_nets_in_pb_type(const t_pb_type* pb_type) {
-    int i, j;
-    int max_nets, temp_nets;
+    int max_nets;
     if (pb_type->modes == nullptr) {
         max_nets = pb_type->num_output_pins;
     } else {
         max_nets = 0;
-        for (i = 0; i < pb_type->num_modes; i++) {
-            temp_nets = 0;
-            for (j = 0; j < pb_type->modes[i].num_pb_type_children; j++) {
+        for (int i = 0; i < pb_type->num_modes; i++) {
+            int temp_nets = 0;
+            for (int j = 0; j < pb_type->modes[i].num_pb_type_children; j++) {
                 temp_nets += pb_type->modes[i].pb_type_children[j].num_pb
                              * get_max_nets_in_pb_type(
                                  &pb_type->modes[i].pb_type_children[j]);
@@ -893,13 +887,10 @@ int get_max_nets_in_pb_type(const t_pb_type* pb_type) {
 }
 
 int get_max_depth_of_pb_type(t_pb_type* pb_type) {
-    int i, j;
-    int max_depth, temp_depth;
-    max_depth = pb_type->depth;
-    for (i = 0; i < pb_type->num_modes; i++) {
-        for (j = 0; j < pb_type->modes[i].num_pb_type_children; j++) {
-            temp_depth = get_max_depth_of_pb_type(
-                &pb_type->modes[i].pb_type_children[j]);
+    int max_depth = pb_type->depth;
+    for (int i = 0; i < pb_type->num_modes; i++) {
+        for (int j = 0; j < pb_type->modes[i].num_pb_type_children; j++) {
+            int temp_depth = get_max_depth_of_pb_type(&pb_type->modes[i].pb_type_children[j]);
             if (temp_depth > max_depth) {
                 max_depth = temp_depth;
             }
@@ -1000,11 +991,9 @@ AtomBlockId find_memory_sibling(const t_pb* pb) {
  *  NULL if not found
  */
 t_pb_graph_pin* get_pb_graph_node_pin_from_model_port_pin(const t_model_ports* model_port, const int model_pin, const t_pb_graph_node* pb_graph_node) {
-    int i;
-
     if (model_port->dir == IN_PORT) {
-        if (model_port->is_clock == false) {
-            for (i = 0; i < pb_graph_node->num_input_ports; i++) {
+        if (!model_port->is_clock) {
+            for (int i = 0; i < pb_graph_node->num_input_ports; i++) {
                 if (pb_graph_node->input_pins[i][0].port->model_port == model_port) {
                     if (pb_graph_node->num_input_pins[i] > model_pin) {
                         return &pb_graph_node->input_pins[i][model_pin];
@@ -1014,7 +1003,7 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_model_port_pin(const t_model_ports* m
                 }
             }
         } else {
-            for (i = 0; i < pb_graph_node->num_clock_ports; i++) {
+            for (int i = 0; i < pb_graph_node->num_clock_ports; i++) {
                 if (pb_graph_node->clock_pins[i][0].port->model_port == model_port) {
                     if (pb_graph_node->num_clock_pins[i] > model_pin) {
                         return &pb_graph_node->clock_pins[i][model_pin];
@@ -1026,7 +1015,7 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_model_port_pin(const t_model_ports* m
         }
     } else {
         VTR_ASSERT(model_port->dir == OUT_PORT);
-        for (i = 0; i < pb_graph_node->num_output_ports; i++) {
+        for (int i = 0; i < pb_graph_node->num_output_ports; i++) {
             if (pb_graph_node->output_pins[i][0].port->model_port == model_port) {
                 if (pb_graph_node->num_output_pins[i] > model_pin) {
                     return &pb_graph_node->output_pins[i][model_pin];

@@ -611,10 +611,10 @@ void PlaceMacros::write_place_macros_(std::string filename, const std::vector<t_
         for (int ipin = 0; ipin < type.num_pins; ++ipin) {
             if (idirect_from_blk_pin_[itype][ipin] != OPEN) {
                 if (direct_type_from_blk_pin_[itype][ipin] == SOURCE) {
-                    fprintf(f, "%-9s %-9d true      SOURCE    \n", type.name, ipin);
+                    fprintf(f, "%-9s %-9d true      SOURCE    \n", type.name.c_str(), ipin);
                 } else {
                     VTR_ASSERT(direct_type_from_blk_pin_[itype][ipin] == SINK);
-                    fprintf(f, "%-9s %-9d true      SINK      \n", type.name, ipin);
+                    fprintf(f, "%-9s %-9d true      SINK      \n", type.name.c_str(), ipin);
                 }
             } else {
                 VTR_ASSERT(direct_type_from_blk_pin_[itype][ipin] == OPEN);
@@ -655,7 +655,7 @@ const t_pl_macro& PlaceMacros::operator[](int idx) const {
 
 static void validate_macros(const std::vector<t_pl_macro>& macros) {
     //Perform sanity checks on macros
-    auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
 
     //Verify that blocks only appear in a single macro
     std::multimap<ClusterBlockId, int> block_to_macro;
@@ -667,7 +667,7 @@ static void validate_macros(const std::vector<t_pl_macro>& macros) {
         }
     }
 
-    for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+    for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks()) {
         auto range = block_to_macro.equal_range(blk_id);
 
         int blk_macro_cnt = std::distance(range.first, range.second);

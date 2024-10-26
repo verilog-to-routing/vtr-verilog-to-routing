@@ -649,7 +649,7 @@ constexpr int DEFAULT_SWITCH = -2;
  *
  */
 struct t_physical_tile_type {
-    char* name = nullptr;
+    std::string name;
     int num_pins = 0;
     int num_inst_pins = 0;
     int num_input_pins = 0;
@@ -772,7 +772,7 @@ struct t_capacity_range {
  * These two blocks can be identified as equivalent, hence they can belong to the same sub tile.
  */
 struct t_sub_tile {
-    char* name = nullptr;
+    std::string name;
 
     // Mapping between the subtile's pins and the physical pins corresponding
     // to the physical tile type.
@@ -932,7 +932,7 @@ struct t_physical_tile_port {
  * A logical block must correspond to at least one physical tile.
  */
 struct t_logical_block_type {
-    char* name = nullptr;
+    std::string name;
 
     /* Clustering info */
     t_pb_type* pb_type = nullptr;
