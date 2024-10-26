@@ -129,7 +129,9 @@ void setup_vpr_floorplan_constraints_noc(VprConstraints& constraints,
                 continue;
             }
 
-            if (noc_grp_id == noc_group_id) {
+            bool is_noc_atom = std::find(noc_atoms.begin(), noc_atoms.end(), atom_id) != noc_atoms.end();
+
+            if (noc_grp_id == noc_group_id && is_noc_atom) {
                 constraints.mutable_place_constraints().add_constrained_atom(atom_id, partid);
             }
         }
