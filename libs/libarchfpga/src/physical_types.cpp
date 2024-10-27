@@ -76,8 +76,8 @@ void t_rr_switch_inf::set_type(SwitchType type_val) {
 }
 
 static bool switch_type_is_buffered(SwitchType type) {
-    //Muxes and Tristates isolate thier input and output into
-    //seperate DC connected sub-circuits
+    //Muxes and Tristates isolate their input and output into
+    //separate DC connected sub-circuits
     return type == SwitchType::MUX
            || type == SwitchType::TRISTATE
            || type == SwitchType::BUFFER;

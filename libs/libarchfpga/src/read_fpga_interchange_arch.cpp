@@ -2089,7 +2089,7 @@ struct ArchReader {
         // Create constant complex block
         t_logical_block_type block;
 
-        block.name = (const_block_;
+        block.name = const_block_;
         block.index = ltypes_.size();
 
         auto pb_type = new t_pb_type;
