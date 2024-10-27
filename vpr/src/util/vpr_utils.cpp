@@ -136,8 +136,8 @@ void sync_grid_to_blocks() {
         if (type != device_ctx.grid.get_physical_type({blk_x, blk_y, blk_layer})) {
             VPR_FATAL_ERROR(VPR_ERROR_PLACE, "A block is in a grid location (%d x %d) layer (%d) with a conflicting types '%s' and '%s' .\n",
                             blk_x, blk_y, blk_layer,
-                            type->name,
-                            device_ctx.grid.get_physical_type({blk_x, blk_y, blk_layer})->name);
+                            type->name.c_str(),
+                            device_ctx.grid.get_physical_type({blk_x, blk_y, blk_layer})->name.c_str());
         }
 
         /* Check already in use */
@@ -1810,7 +1810,7 @@ t_physical_tile_port find_tile_port_by_name(t_physical_tile_type_ptr type, std::
     }
 
     // Port has not been found, throw an error.
-    VPR_THROW(VPR_ERROR_ARCH, "Unable to find port %s (on block %s).\n", port_name, type->name);
+    VPR_THROW(VPR_ERROR_ARCH, "Unable to find port %s (on block %s).\n", port_name, type->name.c_str());
 }
 
 void pretty_print_uint(const char* prefix, size_t value, int num_digits, int scientific_precision) {

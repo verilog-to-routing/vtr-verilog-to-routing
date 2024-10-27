@@ -228,7 +228,7 @@ static std::string get_pin_feature (size_t inode) {
 
         if (sub_tile_pin >= pin_lo && sub_tile_pin < pin_hi) {
             int port_pin = sub_tile_pin - pin_lo;
-            return vtr::string_fmt("PIN_%d_%d_%s_%s_%d", ilow, jlow, sub_tile_type->name, port.name, port_pin);
+            return vtr::string_fmt("PIN_%d_%d_%s_%s_%d", ilow, jlow, sub_tile_type->name.c_str(), port.name, port_pin);
         }
     }
 

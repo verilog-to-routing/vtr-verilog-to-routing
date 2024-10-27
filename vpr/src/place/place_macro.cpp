@@ -468,7 +468,7 @@ static void mark_direct_of_ports(int idirect,
     for (int itype = 1; itype < (int)device_ctx.physical_tile_types.size(); itype++) {
         auto& physical_tile = device_ctx.physical_tile_types[itype];
         // Find blocks with the same pb_type_name
-        if (pb_type_name == physical_tile.name ) {
+        if (pb_type_name == physical_tile.name) {
             int num_sub_tiles = physical_tile.sub_tiles.size();
             for (int isub_tile = 0; isub_tile < num_sub_tiles; isub_tile++) {
                 auto& ports = physical_tile.sub_tiles[isub_tile].ports;

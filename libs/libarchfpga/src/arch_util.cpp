@@ -517,7 +517,7 @@ t_port* findPortByName(const char* name, t_pb_type* pb_type, int* high_index, in
 
 t_physical_tile_type get_empty_physical_type(const char* name /*= EMPTY_BLOCK_NAME*/) {
     t_physical_tile_type type;
-    type.name = vtr::strdup(name);
+    type.name = name;
     type.num_pins = 0;
     type.width = 1;
     type.height = 1;

@@ -1969,7 +1969,7 @@ struct ArchReader {
             if (!has_valid_sites)
                 continue;
 
-            ptype.name = vtr::strdup(name.c_str());
+            ptype.name = name;
             ptype.index = ++index;
             ptype.width = ptype.height = ptype.area = 1;
             ptype.capacity = 0;
@@ -2199,7 +2199,7 @@ struct ArchReader {
         std::vector<std::pair<std::string, std::string>> const_cells{arch_->gnd_cell, arch_->vcc_cell};
         // Create constant tile
         t_physical_tile_type constant;
-        constant.name = vtr::strdup(const_block_.c_str());
+        constant.name = const_block_;
         constant.index = ptypes_.size();
         constant.width = constant.height = constant.area = 1;
         constant.capacity = 1;

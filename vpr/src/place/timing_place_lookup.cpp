@@ -735,7 +735,7 @@ static vtr::NdMatrix<float, 4> compute_delta_delays(
                     auto type = grid.get_physical_type({x, y, from_layer_num});
 
                     if (type != device_ctx.EMPTY_PHYSICAL_TILE_TYPE) {
-                        if (!allowed_types.empty() && allowed_types.find(std::string(type->name)) == allowed_types.end()) {
+                        if (!allowed_types.empty() && allowed_types.find(type->name) == allowed_types.end()) {
                             continue;
                         }
                         src_type = type;
@@ -779,7 +779,7 @@ static vtr::NdMatrix<float, 4> compute_delta_delays(
                     auto type = grid.get_physical_type({x, y, from_layer_num});
 
                     if (type != device_ctx.EMPTY_PHYSICAL_TILE_TYPE) {
-                        if (!allowed_types.empty() && allowed_types.find(std::string(type->name)) == allowed_types.end()) {
+                        if (!allowed_types.empty() && allowed_types.find(type->name) == allowed_types.end()) {
                             continue;
                         }
                         src_type = type;

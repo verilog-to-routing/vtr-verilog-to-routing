@@ -2999,7 +2999,7 @@ static void ProcessTileProps(pugi::xml_node Node,
 
     /* Load type name */
     auto Prop = get_attribute(Node, "name", loc_data).value();
-    PhysicalTileType->name = vtr::strdup(Prop);
+    PhysicalTileType->name = Prop;
 
     /* Load properties */
     PhysicalTileType->width = get_attribute(Node, "width", loc_data, ReqOpt::OPTIONAL).as_uint(1);

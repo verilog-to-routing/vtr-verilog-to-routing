@@ -133,7 +133,7 @@ int t_physical_tile_type::get_sub_tile_loc_from_pin(int pin_num) const {
 }
 
 bool t_physical_tile_type::is_empty() const {
-    return std::string(name) == std::string(EMPTY_BLOCK_NAME);
+    return name == std::string(EMPTY_BLOCK_NAME);
 }
 
 /*

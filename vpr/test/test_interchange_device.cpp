@@ -113,8 +113,8 @@ TEST_CASE("read_interchange_tiles", "[vpr]") {
     std::unordered_set<std::string> ptypes = {"EMPTY", "IOB", "IB", "OB", "CLB", "constant_block"};
 
     // Check that there are exactly the expected models
-    for (auto ptype : physical_tile_types) {
-        std::string name = ptype.name;
+    for (const t_physical_tile_type& ptype : physical_tile_types) {
+        const std::string& name = ptype.name;
         REQUIRE(ptypes.find(name) != ptypes.end());
         ptypes.erase(name);
 

@@ -494,7 +494,7 @@ void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
         if (is_empty_type(&type)) continue;
 
         VTR_LOG("\tNetlist\n\t\t%d\tblocks of type: %s\n",
-                num_type_instances[&type], type.name);
+                num_type_instances[&type], type.name.c_str());
 
         VTR_LOG("\tArchitecture\n");
         for (const auto equivalent_tile : type.equivalent_tiles) {
@@ -503,7 +503,7 @@ void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
             num_instances = (int)device_ctx.grid.num_instances(equivalent_tile, -1);
 
             VTR_LOG("\t\t%d\tblocks of type: %s\n",
-                    num_instances, equivalent_tile->name);
+                    num_instances, equivalent_tile->name.c_str());
         }
     }
     VTR_LOG("\n");
@@ -516,7 +516,7 @@ void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
         }
 
         if (device_ctx.grid.num_instances(&type, -1) != 0) {
-            VTR_LOG("\tPhysical Tile %s:\n", type.name);
+            VTR_LOG("\tPhysical Tile %s:\n", type.name.c_str());
 
             auto equivalent_sites = get_equivalent_sites_set(&type);
 
@@ -526,7 +526,7 @@ void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
                 if (num_inst != 0) {
                     util = float(num_type_instances[logical_block]) / num_inst;
                 }
-                VTR_LOG("\tBlock Utilization: %.2f Logical Block: %s\n", util, logical_block->name);
+                VTR_LOG("\tBlock Utilization: %.2f Logical Block: %s\n", util, logical_block->name.c_str());
             }
         }
     }
