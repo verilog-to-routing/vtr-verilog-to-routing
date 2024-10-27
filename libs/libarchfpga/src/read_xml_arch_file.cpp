@@ -3512,7 +3512,7 @@ static void ProcessSubTiles(pugi::xml_node Node,
         expect_only_attributes(CurSubTile, {"name", "capacity"}, loc_data);
 
         /* Load type name */
-        auto name = vtr::strdup(get_attribute(CurSubTile, "name", loc_data).value());
+        const char* name = get_attribute(CurSubTile, "name", loc_data).value();
 
         //Check Sub Tile name duplicates
         auto [_, success] = sub_tile_names.insert(name);
