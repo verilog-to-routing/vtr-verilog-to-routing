@@ -86,7 +86,7 @@ void MoveTypeStat::print_placement_move_types_stats() {
                 int rejected = rejected_moves[itype.index][imove];
                 int aborted = moves - (accepted + rejected);
                 if (count == 0) {
-                    VTR_LOG("%-18.20s", itype.name);
+                    VTR_LOG("%-18.20s", itype.name.c_str());
                 } else {
                     VTR_LOG("                  ");
                 }

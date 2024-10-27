@@ -94,10 +94,10 @@ TEST_CASE("read_interchange_luts", "[vpr]") {
             REQUIRE(lut_element.lut_bels.size() == 1);
 
             for (auto lut_bel : lut_element.lut_bels) {
-                CHECK(std::find(lut_bels.begin(), lut_bels.end(), lut_bel.name) != lut_bels.end());
+                CHECK(lut_bels.find(lut_bel.name) != lut_bels.end());
                 REQUIRE(lut_bel.output_pin == std::string("O"));
-                for (auto lut_pin : lut_bel.input_pins)
-                    CHECK(std::find(lut_bel_pins.begin(), lut_bel_pins.end(), lut_pin) != lut_bel_pins.end());
+                for (const std::string &lut_pin : lut_bel.input_pins)
+                    CHECK(lut_bel_pins.find(lut_pin) != lut_bel_pins.end());
             }
         }
     }

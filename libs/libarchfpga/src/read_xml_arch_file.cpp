@@ -3613,7 +3613,7 @@ static void ProcessComplexBlocks(pugi::xml_node Node,
 
         /* Load type name */
         auto Prop = get_attribute(CurBlockType, "name", loc_data).value();
-        LogicalBlockType.name = vtr::strdup(Prop);
+        LogicalBlockType.name = Prop;
 
         auto [_, success] = pb_type_descriptors.insert(LogicalBlockType.name);
         if (!success) {

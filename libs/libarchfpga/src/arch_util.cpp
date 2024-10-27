@@ -535,7 +535,7 @@ t_physical_tile_type get_empty_physical_type(const char* name /*= EMPTY_BLOCK_NA
 
 t_logical_block_type get_empty_logical_type(const char* name /*=EMPTY_BLOCK_NAME*/) {
     t_logical_block_type type;
-    type.name = vtr::strdup(name);
+    type.name = name;
     type.pb_type = nullptr;
 
     return type;

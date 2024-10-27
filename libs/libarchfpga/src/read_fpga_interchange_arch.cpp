@@ -1076,10 +1076,10 @@ struct ArchReader {
                 continue;
 
             // Check for duplicates
-            auto is_duplicate = [name](t_logical_block_type l) { return std::string(l.name) == name; };
+            auto is_duplicate = [name](const t_logical_block_type& l)-> bool { return l.name == name; };
             VTR_ASSERT(std::find_if(ltypes_.begin(), ltypes_.end(), is_duplicate) == ltypes_.end());
 
-            ltype.name = vtr::strdup(name.c_str());
+            ltype.name = name;
             ltype.index = ++index;
 
             auto pb_type = new t_pb_type;
@@ -2089,7 +2089,7 @@ struct ArchReader {
         // Create constant complex block
         t_logical_block_type block;
 
-        block.name = vtr::strdup(const_block_.c_str());
+        block.name = (const_block_;
         block.index = ltypes_.size();
 
         auto pb_type = new t_pb_type;

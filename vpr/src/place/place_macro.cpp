@@ -475,7 +475,7 @@ static void mark_direct_of_ports(int idirect,
                 int num_ports = ports.size();
                 for (int iport = 0; iport < num_ports; iport++) {
                     // Find ports with the same port_name
-                    if (port_name == ports[iport].name ) {
+                    if (port_name == ports[iport].name) {
                         int num_port_pins = ports[iport].num_pins;
 
                         // Check whether the end_pin_index is valid

@@ -251,7 +251,7 @@ static void check_initial_placement_legality(const vtr::vector_map<ClusterBlockI
             VTR_LOG("Block %s (# %d) of type %s could not be placed during initial placement iteration %d\n",
                     cluster_ctx.clb_nlist.block_name(blk_id).c_str(),
                     blk_id,
-                    cluster_ctx.clb_nlist.block_type(blk_id)->name,
+                    cluster_ctx.clb_nlist.block_type(blk_id)->name.c_str(),
                     MAX_INIT_PLACE_ATTEMPTS - 1);
             unplaced_blocks++;
         }
@@ -275,13 +275,13 @@ static void check_initial_placement_legality(const vtr::vector_map<ClusterBlockI
         for (const auto& movable_blk_id : movable_blocks_of_type) {
             if (block_locs[movable_blk_id].is_fixed) {
                 VPR_FATAL_ERROR(VPR_ERROR_PLACE, "Fixed block %d of logical type %s was mistakenly marked as movable during initial placement.\n",
-                                (size_t)movable_blk_id, logical_block_type.name);
+                                (size_t)movable_blk_id, logical_block_type.name.c_str());
             }
             if (cluster_ctx.clb_nlist.block_type(movable_blk_id)->index != logical_block_type.index) {
                 VPR_FATAL_ERROR(VPR_ERROR_PLACE, "Clustered block %d of logical type %s was mistakenly marked as logical type %s.\n",
                                 (size_t)movable_blk_id,
-                                cluster_ctx.clb_nlist.block_type(movable_blk_id)->name,
-                                logical_block_type.name);
+                                cluster_ctx.clb_nlist.block_type(movable_blk_id)->name.c_str(),
+                                logical_block_type.name.c_str());
             }
         }
     }

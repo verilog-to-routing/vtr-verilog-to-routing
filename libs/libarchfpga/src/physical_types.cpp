@@ -141,7 +141,7 @@ bool t_physical_tile_type::is_empty() const {
  */
 
 bool t_logical_block_type::is_empty() const {
-    return std::string(name) == std::string(EMPTY_BLOCK_NAME);
+    return name == std::string(EMPTY_BLOCK_NAME);
 }
 
 /**
