@@ -94,52 +94,38 @@ bool try_pack(t_packer_opts* packer_opts,
     bool floorplan_regions_overfull = false;
 
     // Initialize the cluster legalizer.
-    ClusterLegalizer cluster_legalizer(atom_ctx.nlist,
-                                       prepacker,
-                                       device_ctx.logical_block_types,
-                                       lb_type_rr_graphs,
-                                       user_models,
-                                       library_models,
-                                       packer_opts->target_external_pin_util,
-                                       high_fanout_thresholds,
-                                       ClusterLegalizationStrategy::SKIP_INTRA_LB_ROUTE,
+    ClusterLegalizer cluster_legalizer(atom_ctx.nlist, prepacker, device_ctx.logical_block_types, lb_type_rr_graphs,
+                                       user_models, library_models, packer_opts->target_external_pin_util,
+                                       high_fanout_thresholds, ClusterLegalizationStrategy::SKIP_INTRA_LB_ROUTE,
                                        packer_opts->enable_pin_feasibility_filter,
-                                       packer_opts->feasible_block_array_size,
-                                       packer_opts->pack_verbosity);
+                                       packer_opts->feasible_block_array_size, packer_opts->pack_verbosity);
 
-    VTR_LOG("Packing with pin utilization targets: %s\n", cluster_legalizer.get_target_external_pin_util().to_string().c_str());
+    VTR_LOG("Packing with pin utilization targets: %s\n",
+            cluster_legalizer.get_target_external_pin_util().to_string().c_str());
     VTR_LOG("Packing with high fanout thresholds: %s\n", high_fanout_thresholds.to_string().c_str());
 
     while (true) {
         free_clustering_data(*packer_opts, clustering_data);
 
-
         //Cluster the netlist
         //  num_used_type_instances: A map used to save the number of used
         //                           instances from each logical block type.
         std::map<t_logical_block_type_ptr, size_t> num_used_type_instances;
-        num_used_type_instances = do_clustering(*packer_opts,
-                                                *analysis_opts,
-                                                arch,
-                                                prepacker,
-                                                cluster_legalizer,
-                                                is_clock,
-                                                is_global,
-                                                allow_unrelated_clustering,
-                                                balance_block_type_util,
-                                                attraction_groups,
-                                                floorplan_regions_overfull,
-                                                high_fanout_thresholds,
-                                                clustering_data);
+        num_used_type_instances
+            = do_clustering(*packer_opts, *analysis_opts, arch, prepacker, cluster_legalizer, is_clock, is_global,
+                            allow_unrelated_clustering, balance_block_type_util, attraction_groups,
+                            floorplan_regions_overfull, high_fanout_thresholds, clustering_data);
 
         //Try to size/find a device
-        bool fits_on_device = try_size_device_grid(*arch, num_used_type_instances, packer_opts->target_device_utilization, packer_opts->device_layout);
+        bool fits_on_device = try_size_device_grid(*arch, num_used_type_instances,
+                                                   packer_opts->target_device_utilization, packer_opts->device_layout);
 
         /* We use this bool to determine the cause for the clustering not being dense enough. If the clustering
          * is not dense enough and there are floorplan constraints, it is presumed that the constraints are the cause
          * of the floorplan not fitting, so attraction groups are turned on for later iterations.
          */
-        bool floorplan_not_fitting = (floorplan_regions_overfull || g_vpr_ctx.floorplanning().constraints.get_num_partitions() > 0);
+        bool floorplan_not_fitting
+            = (floorplan_regions_overfull || g_vpr_ctx.floorplanning().constraints.get_num_partitions() > 0);
 
         if (fits_on_device && !floorplan_regions_overfull) {
             break; //Done
@@ -155,9 +141,10 @@ bool try_pack(t_packer_opts* packer_opts,
                 VTR_ASSERT(balance_block_type_util == false);
                 balance_block_type_util = true;
             }
-            VTR_LOG("Packing failed to fit on device. Re-packing with: unrelated_logic_clustering=%s balance_block_type_util=%s\n",
-                    (allow_unrelated_clustering ? "true" : "false"),
-                    (balance_block_type_util ? "true" : "false"));
+            VTR_LOG(
+                "Packing failed to fit on device. Re-packing with: unrelated_logic_clustering=%s "
+                "balance_block_type_util=%s\n",
+                (allow_unrelated_clustering ? "true" : "false"), (balance_block_type_util ? "true" : "false"));
             /*
              * When running with tight floorplan constraints, some regions may become overfull with clusters (i.e.
              * the number of blocks assigned to the region exceeds the number of blocks available). When this occurs, we
@@ -175,16 +162,20 @@ bool try_pack(t_packer_opts* packer_opts,
 
         } else if (pack_iteration >= 2 && pack_iteration < 5 && floorplan_not_fitting) {
             if (pack_iteration == 2) {
-                VTR_LOG("Floorplan regions are overfull: trying to pack again with more attraction groups exploration. \n");
+                VTR_LOG(
+                    "Floorplan regions are overfull: trying to pack again with more attraction groups exploration. \n");
                 attraction_groups.create_att_groups_for_overfull_regions();
                 VTR_LOG("Pack iteration is %d\n", pack_iteration);
             } else if (pack_iteration == 3) {
                 attraction_groups.create_att_groups_for_all_regions();
-                VTR_LOG("Floorplan regions are overfull: trying to pack again with more attraction groups exploration. \n");
+                VTR_LOG(
+                    "Floorplan regions are overfull: trying to pack again with more attraction groups exploration. \n");
                 VTR_LOG("Pack iteration is %d\n", pack_iteration);
             } else if (pack_iteration == 4) {
                 attraction_groups.create_att_groups_for_all_regions();
-                VTR_LOG("Floorplan regions are overfull: trying to pack again with more attraction groups exploration and higher target pin utilization. \n");
+                VTR_LOG(
+                    "Floorplan regions are overfull: trying to pack again with more attraction groups exploration and "
+                    "higher target pin utilization. \n");
                 VTR_LOG("Pack iteration is %d\n", pack_iteration);
                 attraction_groups.set_att_group_pulls(4);
                 t_ext_pin_util pin_util(1.0, 1.0);
@@ -199,9 +190,10 @@ bool try_pack(t_packer_opts* packer_opts,
 
         } else { //Unable to pack densely enough: Give Up
             if (floorplan_regions_overfull) {
-                VPR_FATAL_ERROR(VPR_ERROR_OTHER,
-                                "Failed to find pack clusters densely enough to fit in the designated floorplan regions.\n"
-                                "The floorplan regions may need to be expanded to run successfully. \n");
+                VPR_FATAL_ERROR(
+                    VPR_ERROR_OTHER,
+                    "Failed to find pack clusters densely enough to fit in the designated floorplan regions.\n"
+                    "The floorplan regions may need to be expanded to run successfully. \n");
             }
 
             //No suitable device found
@@ -223,7 +215,9 @@ bool try_pack(t_packer_opts* packer_opts,
                 resource_avail += std::string(iter->first->name) + ": " + std::to_string(num_instances);
             }
 
-            VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Failed to find device which satisfies resource requirements required: %s (available %s)", resource_reqs.c_str(), resource_avail.c_str());
+            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                            "Failed to find device which satisfies resource requirements required: %s (available %s)",
+                            resource_reqs.c_str(), resource_avail.c_str());
         }
 
         //Reset clustering for re-packing
@@ -271,7 +265,11 @@ bool try_pack(t_packer_opts* packer_opts,
     return true;
 }
 
-float get_arch_switch_info(short switch_index, int switch_fanin, float& Tdel_switch, float& R_switch, float& Cout_switch) {
+float get_arch_switch_info(short switch_index,
+                           int switch_fanin,
+                           float& Tdel_switch,
+                           float& R_switch,
+                           float& Cout_switch) {
     /* Fetches delay, resistance and output capacitance of the architecture switch at switch_index.
      * Returns the total delay through the switch. Used to calculate inter-cluster net delay. */
 
@@ -318,7 +316,8 @@ static bool try_size_device_grid(const t_arch& arch,
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
     //Build the device
-    auto grid = create_device_grid(device_layout_name, arch.grid_layouts, num_type_instances, target_device_utilization);
+    auto grid
+        = create_device_grid(device_layout_name, arch.grid_layouts, num_type_instances, target_device_utilization);
 
     /*
      *Report on the device
@@ -331,10 +330,12 @@ static bool try_size_device_grid(const t_arch& arch,
     VTR_LOG("Device Utilization: %.2f (target %.2f)\n", device_utilization, target_device_utilization);
     std::map<t_logical_block_type_ptr, float> type_util;
     for (const auto& type : device_ctx.logical_block_types) {
-        if (is_empty_type(&type)) continue;
+        if (is_empty_type(&type))
+            continue;
 
         auto itr = num_type_instances.find(&type);
-        if (itr == num_type_instances.end()) continue;
+        if (itr == num_type_instances.end())
+            continue;
 
         float num_instances = itr->second;
         float util = 0.;
@@ -358,4 +359,3 @@ static bool try_size_device_grid(const t_arch& arch,
 
     return fits_on_device;
 }
-

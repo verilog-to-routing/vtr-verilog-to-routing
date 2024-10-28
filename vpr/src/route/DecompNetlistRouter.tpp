@@ -141,13 +141,7 @@ void DecompNetlistRouter<HeapType>::route_partition_tree_node(tbb::task_group& g
             if (!should_route_net(_net_list, net_id, _connections_inf, _budgeting_inf, _worst_neg_slack, true))
                 continue;
             /* Setup the net (reset or prune) only once here in the flow. Then all calls to route_net turn off auto-setup */
-            setup_net(
-                _itry,
-                net_id,
-                _net_list,
-                _connections_inf,
-                _router_opts,
-                _worst_neg_slack);
+            setup_net(_itry, net_id, _net_list, _connections_inf, _router_opts, _worst_neg_slack);
             /* Try decomposing the net. */
             if (should_decompose_net(net_id, node)) {
                 VirtualNet left_vnet, right_vnet;
@@ -160,26 +154,11 @@ void DecompNetlistRouter<HeapType>::route_partition_tree_node(tbb::task_group& g
                 }
             }
             /* decompose_and_route fails when we get bad flags, so we only need to handle them here */
-            auto flags = route_net(
-                _routers_th.local(),
-                _net_list,
-                net_id,
-                _itry,
-                _pres_fac,
-                _router_opts,
-                _connections_inf,
-                _results_th.local().stats,
-                _net_delay,
-                _netlist_pin_lookup,
-                _timing_info.get(),
-                _pin_timing_invalidator,
-                _budgeting_inf,
-                _worst_neg_slack,
-                _routing_predictor,
-                _choking_spots[net_id],
-                _is_flat,
-                route_ctx.route_bb[net_id],
-                false);
+            auto flags
+                = route_net(_routers_th.local(), _net_list, net_id, _itry, _pres_fac, _router_opts, _connections_inf,
+                            _results_th.local().stats, _net_delay, _netlist_pin_lookup, _timing_info.get(),
+                            _pin_timing_invalidator, _budgeting_inf, _worst_neg_slack, _routing_predictor,
+                            _choking_spots[net_id], _is_flat, route_ctx.route_bb[net_id], false);
             if (!flags.success && !flags.retry_with_full_bb) {
                 /* Disconnected RRG and ConnectionRouter doesn't think growing the BB will work */
                 _results_th.local().is_routable = false;
@@ -208,43 +187,21 @@ void DecompNetlistRouter<HeapType>::route_partition_tree_node(tbb::task_group& g
             }
             /* Route the full vnet. Again we don't care about the flags, they should be handled by the regular path */
             auto sink_mask = get_vnet_sink_mask(vnet);
-            route_net(
-                _routers_th.local(),
-                _net_list,
-                vnet.net_id,
-                _itry,
-                _pres_fac,
-                _router_opts,
-                _connections_inf,
-                _results_th.local().stats,
-                _net_delay,
-                _netlist_pin_lookup,
-                _timing_info.get(),
-                _pin_timing_invalidator,
-                _budgeting_inf,
-                _worst_neg_slack,
-                _routing_predictor,
-                _choking_spots[vnet.net_id],
-                _is_flat,
-                vnet.clipped_bb,
-                false,
-                sink_mask);
+            route_net(_routers_th.local(), _net_list, vnet.net_id, _itry, _pres_fac, _router_opts, _connections_inf,
+                      _results_th.local().stats, _net_delay, _netlist_pin_lookup, _timing_info.get(),
+                      _pin_timing_invalidator, _budgeting_inf, _worst_neg_slack, _routing_predictor,
+                      _choking_spots[vnet.net_id], _is_flat, vnet.clipped_bb, false, sink_mask);
         }
     }
 
-    PartitionTreeDebug::log("Node with " + std::to_string(node.nets.size())
-                            + " nets and " + std::to_string(node.vnets.size())
-                            + " virtual nets routed in " + std::to_string(t.elapsed_sec())
-                            + " s");
+    PartitionTreeDebug::log("Node with " + std::to_string(node.nets.size()) + " nets and "
+                            + std::to_string(node.vnets.size()) + " virtual nets routed in "
+                            + std::to_string(t.elapsed_sec()) + " s");
 
     /* This node is finished: add left & right branches to the task queue */
     if (node.left && node.right) {
-        g.run([&]() {
-            route_partition_tree_node(g, *node.left);
-        });
-        g.run([&]() {
-            route_partition_tree_node(g, *node.right);
-        });
+        g.run([&]() { route_partition_tree_node(g, *node.left); });
+        g.run([&]() { route_partition_tree_node(g, *node.right); });
     } else {
         VTR_ASSERT(!node.left && !node.right); // there shouldn't be a node with a single branch
     }
@@ -268,7 +225,12 @@ inline t_bb clip_to_side(const t_bb& bb, Axis axis, int cutline_pos, Side side) 
 }
 
 /** Break a net/vnet into two. Output into references */
-inline void make_vnet_pair(ParentNetId net_id, const t_bb& bb, Axis cutline_axis, int cutline_pos, VirtualNet& left, VirtualNet& right) {
+inline void make_vnet_pair(ParentNetId net_id,
+                           const t_bb& bb,
+                           Axis cutline_axis,
+                           int cutline_pos,
+                           VirtualNet& left,
+                           VirtualNet& right) {
     left.net_id = net_id;
     left.clipped_bb = clip_to_side(bb, cutline_axis, cutline_pos, Side::LEFT);
     right.net_id = net_id;
@@ -276,7 +238,10 @@ inline void make_vnet_pair(ParentNetId net_id, const t_bb& bb, Axis cutline_axis
 }
 
 template<typename HeapType>
-bool DecompNetlistRouter<HeapType>::decompose_and_route_net(ParentNetId net_id, const PartitionTreeNode& node, VirtualNet& left, VirtualNet& right) {
+bool DecompNetlistRouter<HeapType>::decompose_and_route_net(ParentNetId net_id,
+                                                            const PartitionTreeNode& node,
+                                                            VirtualNet& left,
+                                                            VirtualNet& right) {
     auto& route_ctx = g_vpr_ctx.routing();
     auto& net_bb = route_ctx.route_bb[net_id];
 
@@ -284,27 +249,10 @@ bool DecompNetlistRouter<HeapType>::decompose_and_route_net(ParentNetId net_id, 
     auto sink_mask = get_decomposition_mask(net_id, node);
 
     /* Route the net with the given mask: only the sinks we ask for will be routed */
-    auto flags = route_net(
-        _routers_th.local(),
-        _net_list,
-        net_id,
-        _itry,
-        _pres_fac,
-        _router_opts,
-        _connections_inf,
-        _results_th.local().stats,
-        _net_delay,
-        _netlist_pin_lookup,
-        _timing_info.get(),
-        _pin_timing_invalidator,
-        _budgeting_inf,
-        _worst_neg_slack,
-        _routing_predictor,
-        _choking_spots[net_id],
-        _is_flat,
-        net_bb,
-        false,
-        sink_mask);
+    auto flags = route_net(_routers_th.local(), _net_list, net_id, _itry, _pres_fac, _router_opts, _connections_inf,
+                           _results_th.local().stats, _net_delay, _netlist_pin_lookup, _timing_info.get(),
+                           _pin_timing_invalidator, _budgeting_inf, _worst_neg_slack, _routing_predictor,
+                           _choking_spots[net_id], _is_flat, net_bb, false, sink_mask);
 
     if (!flags.success) { /* Even if flags.retry_with_full_bb is set, better to bail out here */
         return false;
@@ -320,18 +268,16 @@ bool DecompNetlistRouter<HeapType>::decompose_and_route_net(ParentNetId net_id, 
 /* Debug code for PartitionTreeDebug (describes existing routing) */
 
 inline std::string describe_bbox(const t_bb& bb) {
-    return std::to_string(bb.xmin) + "," + std::to_string(bb.ymin)
-           + "x" + std::to_string(bb.xmax) + "," + std::to_string(bb.ymax);
+    return std::to_string(bb.xmin) + "," + std::to_string(bb.ymin) + "x" + std::to_string(bb.xmax) + ","
+           + std::to_string(bb.ymax);
 }
 
 inline std::string describe_rr_coords(RRNodeId inode) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
-    return std::to_string(rr_graph.node_xlow(inode))
-           + "," + std::to_string(rr_graph.node_ylow(inode))
-           + " -> " + std::to_string(rr_graph.node_xhigh(inode))
-           + "," + std::to_string(rr_graph.node_yhigh(inode));
+    return std::to_string(rr_graph.node_xlow(inode)) + "," + std::to_string(rr_graph.node_ylow(inode)) + " -> "
+           + std::to_string(rr_graph.node_xhigh(inode)) + "," + std::to_string(rr_graph.node_yhigh(inode));
 }
 
 /** Build a string describing \p vnet and its existing routing */
@@ -380,32 +326,19 @@ inline std::string describe_vnet(const VirtualNet& vnet) {
 /* Debug code for PartitionTreeDebug ends */
 
 template<typename HeapType>
-bool DecompNetlistRouter<HeapType>::decompose_and_route_vnet(VirtualNet& vnet, const PartitionTreeNode& node, VirtualNet& left, VirtualNet& right) {
+bool DecompNetlistRouter<HeapType>::decompose_and_route_vnet(VirtualNet& vnet,
+                                                             const PartitionTreeNode& node,
+                                                             VirtualNet& left,
+                                                             VirtualNet& right) {
     /* Sample enough sinks to provide branch-off points to the virtual nets we create */
     auto sink_mask = get_vnet_decomposition_mask(vnet, node);
 
     /* Route the *parent* net with the given mask: only the sinks we ask for will be routed */
-    auto flags = route_net(
-        _routers_th.local(),
-        _net_list,
-        vnet.net_id,
-        _itry,
-        _pres_fac,
-        _router_opts,
-        _connections_inf,
-        _results_th.local().stats,
-        _net_delay,
-        _netlist_pin_lookup,
-        _timing_info.get(),
-        _pin_timing_invalidator,
-        _budgeting_inf,
-        _worst_neg_slack,
-        _routing_predictor,
-        _choking_spots[vnet.net_id],
-        _is_flat,
-        vnet.clipped_bb,
-        false,
-        sink_mask);
+    auto flags
+        = route_net(_routers_th.local(), _net_list, vnet.net_id, _itry, _pres_fac, _router_opts, _connections_inf,
+                    _results_th.local().stats, _net_delay, _netlist_pin_lookup, _timing_info.get(),
+                    _pin_timing_invalidator, _budgeting_inf, _worst_neg_slack, _routing_predictor,
+                    _choking_spots[vnet.net_id], _is_flat, vnet.clipped_bb, false, sink_mask);
 
     if (!flags.success) { /* Even if flags.retry_with_full_bb is set, better to bail out here */
         PartitionTreeDebug::log("Failed to route decomposed net:\n" + describe_vnet(vnet));
@@ -426,9 +359,11 @@ inline bool is_close_to_cutline(RRNodeId inode, Axis cutline_axis, int cutline_p
 
     /* Cutlines are considered to be at x + 0.5, set a thickness of +1 here by checking for equality */
     if (cutline_axis == Axis::X) {
-        return rr_graph.node_xlow(inode) - thickness <= cutline_pos && rr_graph.node_xhigh(inode) + thickness >= cutline_pos;
+        return rr_graph.node_xlow(inode) - thickness <= cutline_pos
+               && rr_graph.node_xhigh(inode) + thickness >= cutline_pos;
     } else {
-        return rr_graph.node_ylow(inode) - thickness <= cutline_pos && rr_graph.node_yhigh(inode) + thickness >= cutline_pos;
+        return rr_graph.node_ylow(inode) - thickness <= cutline_pos
+               && rr_graph.node_yhigh(inode) + thickness >= cutline_pos;
     }
 }
 
@@ -442,10 +377,8 @@ inline bool is_close_to_bb(RRNodeId inode, const t_bb& bb, int thickness) {
     int xhigh = rr_graph.node_xhigh(inode) + thickness;
     int yhigh = rr_graph.node_yhigh(inode) + thickness;
 
-    return (xlow <= bb.xmin && xhigh >= bb.xmin)
-           || (ylow <= bb.ymin && yhigh >= bb.ymin)
-           || (xlow <= bb.xmax && xhigh >= bb.xmax)
-           || (ylow <= bb.ymax && yhigh >= bb.ymax);
+    return (xlow <= bb.xmin && xhigh >= bb.xmin) || (ylow <= bb.ymin && yhigh >= bb.ymin)
+           || (xlow <= bb.xmax && xhigh >= bb.xmax) || (ylow <= bb.ymax && yhigh >= bb.ymax);
 }
 
 /** Does this net either:
@@ -497,7 +430,8 @@ inline bool get_reduction_mask(ParentNetId net_id, Axis cutline_axis, int cutlin
 }
 
 template<typename HeapType>
-vtr::dynamic_bitset<> DecompNetlistRouter<HeapType>::get_decomposition_mask(ParentNetId net_id, const PartitionTreeNode& node) {
+vtr::dynamic_bitset<> DecompNetlistRouter<HeapType>::get_decomposition_mask(ParentNetId net_id,
+                                                                            const PartitionTreeNode& node) {
     const auto& route_ctx = g_vpr_ctx.routing();
     const RouteTree& tree = route_ctx.route_trees[net_id].value();
     size_t num_sinks = tree.num_sinks();
@@ -538,7 +472,10 @@ vtr::dynamic_bitset<> DecompNetlistRouter<HeapType>::get_decomposition_mask(Pare
  * * have a very narrow side or
  * * have less than MIN_SINKS sinks in at least one side?
  * If so, put all sinks in the sides matching the above condition into \p out and return true */
-inline int get_reduction_mask_vnet_no_source(const VirtualNet& vnet, Axis cutline_axis, int cutline_pos, vtr::dynamic_bitset<>& out) {
+inline int get_reduction_mask_vnet_no_source(const VirtualNet& vnet,
+                                             Axis cutline_axis,
+                                             int cutline_pos,
+                                             vtr::dynamic_bitset<>& out) {
     const auto& route_ctx = g_vpr_ctx.routing();
 
     const RouteTree& tree = route_ctx.route_trees[vnet.net_id].value();
@@ -593,7 +530,10 @@ inline int get_reduction_mask_vnet_no_source(const VirtualNet& vnet, Axis cutlin
 
 /** Similar fn to \see get_reduction_mask, but works with virtual nets
  * and checks against the clipped bounding box instead of the cutline when counting sink-side sinks. */
-inline bool get_reduction_mask_vnet_with_source(const VirtualNet& vnet, Axis cutline_axis, int cutline_pos, vtr::dynamic_bitset<>& out) {
+inline bool get_reduction_mask_vnet_with_source(const VirtualNet& vnet,
+                                                Axis cutline_axis,
+                                                int cutline_pos,
+                                                vtr::dynamic_bitset<>& out) {
     const auto& route_ctx = g_vpr_ctx.routing();
 
     const RouteTree& tree = route_ctx.route_trees[vnet.net_id].value();
@@ -638,7 +578,8 @@ inline bool get_reduction_mask_vnet_with_source(const VirtualNet& vnet, Axis cut
 }
 
 template<typename HeapType>
-vtr::dynamic_bitset<> DecompNetlistRouter<HeapType>::get_vnet_decomposition_mask(const VirtualNet& vnet, const PartitionTreeNode& node) {
+vtr::dynamic_bitset<> DecompNetlistRouter<HeapType>::get_vnet_decomposition_mask(const VirtualNet& vnet,
+                                                                                 const PartitionTreeNode& node) {
     const auto& route_ctx = g_vpr_ctx.routing();
     const RouteTree& tree = route_ctx.route_trees[vnet.net_id].value();
     int num_sinks = tree.num_sinks();
@@ -649,7 +590,8 @@ vtr::dynamic_bitset<> DecompNetlistRouter<HeapType>::get_vnet_decomposition_mask
     /* Sometimes cutlines divide a net very unevenly. In that case, just route to all
      * sinks in the small side and unblock. Add convex hull since we are in a vnet which
      * may not have a source at all */
-    if (inside_bb(tree.root().inode, vnet.clipped_bb)) { /* We have source, no need to sample after reduction in most cases */
+    if (inside_bb(tree.root().inode,
+                  vnet.clipped_bb)) { /* We have source, no need to sample after reduction in most cases */
         bool is_reduced = get_reduction_mask_vnet_with_source(vnet, node.cutline_axis, node.cutline_pos, out);
         bool source_on_cutline = is_close_to_cutline(tree.root().inode, node.cutline_axis, node.cutline_pos, 1);
         if (!is_reduced || source_on_cutline)

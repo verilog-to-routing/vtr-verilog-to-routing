@@ -35,9 +35,9 @@
 #include "odin_error.h"
 
 #ifndef __GLIBC__
-#    include <stdlib.h>
+#include <stdlib.h>
 #else
-#    include <malloc.h>
+#include <malloc.h>
 #endif
 
 namespace odin {
@@ -48,15 +48,12 @@ char* strdup(const char* in);
 
 template<typename T>
 void free(T** ptr_ref) {
-    oassert(ptr_ref != NULL
-            && "did not pass in a valid ref");
+    oassert(ptr_ref != NULL && "did not pass in a valid ref");
 
     T* ptr = (*ptr_ref);
     (*ptr_ref) = NULL;
 
-    if (ptr != NULL
-        && (uintptr_t)ptr >= min_address
-        && (uintptr_t)ptr <= max_address) {
+    if (ptr != NULL && (uintptr_t)ptr >= min_address && (uintptr_t)ptr <= max_address) {
         std::free(ptr);
     }
 }
@@ -80,8 +77,7 @@ void* calloc(T _n_element, S _element_size) {
     if (n_bytes > 0) {
         ret = std::calloc(n_bytes, 1);
 
-        oassert(ret != NULL
-                && "odin::calloc failed, OOM?");
+        oassert(ret != NULL && "odin::calloc failed, OOM?");
     }
 
     if (ret != NULL) {
@@ -100,8 +96,7 @@ void* malloc(T _n_bytes) {
 
 template<typename T, typename S>
 void realloc(T** ptr_ref, S _n_bytes) {
-    oassert(ptr_ref != NULL
-            && "did not pass in a valid ref");
+    oassert(ptr_ref != NULL && "did not pass in a valid ref");
 
     T* ptr = (*ptr_ref);
     (*ptr_ref) = NULL;
@@ -111,13 +106,10 @@ void realloc(T** ptr_ref, S _n_bytes) {
         n_bytes = static_cast<size_t>(_n_bytes);
     }
 
-    if (ptr != NULL
-        && (uintptr_t)ptr >= min_address
-        && (uintptr_t)ptr <= max_address) {
+    if (ptr != NULL && (uintptr_t)ptr >= min_address && (uintptr_t)ptr <= max_address) {
         if (n_bytes > 0) {
             ptr = (T*)std::realloc(ptr, n_bytes);
-            oassert(ptr != NULL
-                    && "odin::realloc failed, OOM?");
+            oassert(ptr != NULL && "odin::realloc failed, OOM?");
         } else {
             free(&ptr);
         }

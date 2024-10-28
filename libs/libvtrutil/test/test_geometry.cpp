@@ -34,9 +34,7 @@ TEST_CASE("Rect", "[vtr_geometry/Rect]") {
         vtr::Rect<int> r3(pi_1, pi_3);
         vtr::Rect<int> r4(pi_3, pi_2);
 
-        SECTION("equality") {
-            REQUIRE(r1 == r2);
-        }
+        SECTION("equality") { REQUIRE(r1 == r2); }
 
         SECTION("location") {
             REQUIRE(r1.xmin() == pi_1.x());
@@ -81,13 +79,9 @@ TEST_CASE("Rect", "[vtr_geometry/Rect]") {
             REQUIRE(r2.coincident(pi_2));
         }
 
-        SECTION("bounds_int") {
-            REQUIRE(r1 == bounding_box(r3, r4));
-        }
+        SECTION("bounds_int") { REQUIRE(r1 == bounding_box(r3, r4)); }
 
-        SECTION("empty_int") {
-            REQUIRE(vtr::Rect<int>().empty());
-        }
+        SECTION("empty_int") { REQUIRE(vtr::Rect<int>().empty()); }
 
         SECTION("sample_int") {
             auto r = vtr::Rect<int>(pi_1, pi_2);
@@ -110,9 +104,7 @@ TEST_CASE("Rect", "[vtr_geometry/Rect]") {
         vtr::Rect<float> r6(pf_3, pf_2);
         // vtr::Rect<float> r7(pf_1); // <-- will fail to compile
 
-        SECTION("equality_float") {
-            REQUIRE(r3 == r4);
-        }
+        SECTION("equality_float") { REQUIRE(r3 == r4); }
 
         SECTION("location_float") {
             REQUIRE(r3.xmin() == pf_1.x());
@@ -156,21 +148,14 @@ TEST_CASE("Rect", "[vtr_geometry/Rect]") {
             REQUIRE(r4.coincident(pf_2));
         }
 
-        SECTION("bounds_float") {
-            REQUIRE(r3 == bounding_box(r5, r6));
-        }
+        SECTION("bounds_float") { REQUIRE(r3 == bounding_box(r5, r6)); }
 
-        SECTION("empty_float") {
-            REQUIRE(vtr::Rect<float>().empty());
-        }
+        SECTION("empty_float") { REQUIRE(vtr::Rect<float>().empty()); }
     }
 }
 
 TEST_CASE("Line", "[vtr_geometry/Line]") {
-    std::vector<vtr::Point<int>> points = {{0, 0},
-                                           {0, 2},
-                                           {1, 0},
-                                           {1, -2}};
+    std::vector<vtr::Point<int>> points = {{0, 0}, {0, 2}, {1, 0}, {1, -2}};
 
     vtr::Line<int> line(points);
 
@@ -197,8 +182,7 @@ TEST_CASE("Line", "[vtr_geometry/Line]") {
 }
 
 TEST_CASE("RectUnion", "[vtr_geometry/RectUnion]") {
-    std::vector<vtr::Rect<int>> rects = {{0, 0, 2, 2},
-                                         {1, 1, 3, 3}};
+    std::vector<vtr::Rect<int>> rects = {{0, 0, 2, 2}, {1, 1, 3, 3}};
 
     vtr::RectUnion<int> rect_union(rects);
 

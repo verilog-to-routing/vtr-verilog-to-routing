@@ -4,10 +4,11 @@
 
 #include <stack>
 
-ChannelDependencyGraph::ChannelDependencyGraph(const NocStorage& noc_model,
-                                               const NocTrafficFlows& traffic_flow_storage,
-                                               const vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>>& traffic_flow_routes,
-                                               const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
+ChannelDependencyGraph::ChannelDependencyGraph(
+    const NocStorage& noc_model,
+    const NocTrafficFlows& traffic_flow_storage,
+    const vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>>& traffic_flow_routes,
+    const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
     VTR_ASSERT((size_t)traffic_flow_storage.get_number_of_traffic_flows() == traffic_flow_routes.size());
 
     for (auto traffic_flow_id : traffic_flow_storage.get_all_traffic_flow_id()) {
@@ -19,7 +20,8 @@ ChannelDependencyGraph::ChannelDependencyGraph(const NocStorage& noc_model,
         ClusterBlockId logical_sink_router_block_id = traffic_flow.sink_router_cluster_id;
 
         // get the ids of the hard router blocks where the logical router cluster blocks have been placed
-        NocRouterId src_router_id = noc_model.get_router_at_grid_location(block_locs[logical_source_router_block_id].loc);
+        NocRouterId src_router_id
+            = noc_model.get_router_at_grid_location(block_locs[logical_source_router_block_id].loc);
         NocRouterId dst_router_id = noc_model.get_router_at_grid_location(block_locs[logical_sink_router_block_id].loc);
 
         const NocLink& first_link = noc_model.get_single_noc_link(traffic_flow_route.front());

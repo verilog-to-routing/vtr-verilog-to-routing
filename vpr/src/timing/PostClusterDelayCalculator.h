@@ -40,7 +40,9 @@ class PostClusterDelayCalculator : public tatum::DelayCalculator {
     //Returns the generic edge delay
     tatum::Time calc_edge_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id, DelayType delay_type) const;
 
-    tatum::Time atom_combinational_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id, DelayType delay_type) const;
+    tatum::Time atom_combinational_delay(const tatum::TimingGraph& tg,
+                                         tatum::EdgeId edge_id,
+                                         DelayType delay_type) const;
     tatum::Time atom_clock_to_q_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id, DelayType delay_type) const;
     tatum::Time atom_net_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id, DelayType delay_type) const;
 

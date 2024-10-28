@@ -19,12 +19,13 @@ gboolean update(gpointer data) {
         std::vector<TaskPtr> tasks_buff;
 
         gate_io.take_received_tasks(tasks_buff);
-        for (TaskPtr& task: tasks_buff) {
+        for (TaskPtr& task : tasks_buff) {
             task_resolver.own_task(std::move(task));
         }
         tasks_buff.clear();
 
-        const bool is_server_context_initialized = g_vpr_ctx.server().timing_info && g_vpr_ctx.server().routing_delay_calc;
+        const bool is_server_context_initialized
+            = g_vpr_ctx.server().timing_info && g_vpr_ctx.server().routing_delay_calc;
         if (is_server_context_initialized) {
             bool has_finished_tasks = task_resolver.update(app);
 
@@ -39,7 +40,7 @@ gboolean update(gpointer data) {
         }
         gate_io.print_logs();
     }
-    
+
     // Return TRUE to keep the timer running, or FALSE to stop it
     return is_running;
 }

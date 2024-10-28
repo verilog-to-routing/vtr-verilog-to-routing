@@ -24,7 +24,8 @@ constexpr int MAX_NUM_TRIES_TO_PLACE_MACROS_RANDOMLY = 8;
  * Hence, initial placement tries to place blocks with higher scores earlier.
  */
 struct t_block_score {
-    int macro_size = 0; //How many members does the macro have, if the block is part of one - this value is zero if the block is not in a macro
+    int macro_size
+        = 0; //How many members does the macro have, if the block is part of one - this value is zero if the block is not in a macro
 
     //The number of tiles NOT covered by the block's floorplan constraints.
     double tiles_outside_of_floorplan_constraints = 0;
@@ -72,7 +73,6 @@ bool try_place_macro_randomly(const t_pl_macro& pl_macro,
                               e_pad_loc_type pad_loc_type,
                               BlkLocRegistry& blk_loc_registry);
 
-
 /**
  * @brief Looks for a valid placement location for macro exhaustively once the maximum number of random locations have been tried.
  *
@@ -103,9 +103,7 @@ bool try_place_macro_exhaustively(const t_pl_macro& pl_macro,
  *
  * @return true if macro was placed, false if not.
  */
-bool try_place_macro(const t_pl_macro& pl_macro,
-                     t_pl_loc head_pos,
-                     BlkLocRegistry& blk_loc_registry);
+bool try_place_macro(const t_pl_macro& pl_macro, t_pl_loc head_pos, BlkLocRegistry& blk_loc_registry);
 
 /**
  * @brief Checks whether the block is already placed
@@ -116,8 +114,7 @@ bool try_place_macro(const t_pl_macro& pl_macro,
  *
  * @return true if the block was placed, false if not.
  */
-bool is_block_placed(ClusterBlockId blk_id,
-                     const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
+bool is_block_placed(ClusterBlockId blk_id, const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
 
 /**
  * @brief Tries to find an initial placement location for each block considering floorplanning constraints
@@ -158,7 +155,5 @@ bool place_one_block(const ClusterBlockId blk_id,
                      std::vector<t_grid_empty_locs_block_type>* blk_types_empty_locs_in_grid,
                      vtr::vector<ClusterBlockId, t_block_score>* block_scores,
                      BlkLocRegistry& blk_loc_registry);
-
-
 
 #endif

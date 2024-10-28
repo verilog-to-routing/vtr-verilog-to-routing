@@ -122,14 +122,14 @@ class TurnModelRouting : public NocRouting {
      * choose to travel.
      */
     enum class Direction {
-        WEST,        /*!< Moving towards the negative X-axis*/
-        EAST,        /*!< Moving towards the positive X-axis*/
-        NORTH,       /*!< Moving towards the positive Y-axis*/
-        SOUTH,       /*!< Moving towards the negative Y-axis*/
-        UP,          /*!< Moving towards the positive Z-axis*/
-        DOWN,        /*!< Moving towards the negative Z-axis*/
+        WEST,  /*!< Moving towards the negative X-axis*/
+        EAST,  /*!< Moving towards the positive X-axis*/
+        NORTH, /*!< Moving towards the positive Y-axis*/
+        SOUTH, /*!< Moving towards the negative Y-axis*/
+        UP,    /*!< Moving towards the positive Z-axis*/
+        DOWN,  /*!< Moving towards the negative Z-axis*/
         N_DIRECTIONS,
-        INVALID      /*!< Invalid direction*/
+        INVALID /*!< Invalid direction*/
     };
 
     /**
@@ -209,7 +209,6 @@ class TurnModelRouting : public NocRouting {
                                   std::unordered_set<NocRouterId>& visited_routers,
                                   const NocStorage& noc_model);
 
-
     /**
      * @brief Computes MurmurHash3 for an array of 32-bit words initialized
      * with seed. As discussed in the comment at the top of this file,
@@ -243,7 +242,8 @@ class TurnModelRouting : public NocRouting {
                                                                                  NocRouterId curr_router_id,
                                                                                  NocRouterId dst_router_id,
                                                                                  TurnModelRouting::Direction prev_dir,
-                                                                                 const NocStorage& noc_model) = 0;
+                                                                                 const NocStorage& noc_model)
+        = 0;
 
     /**
      * @brief Selects a direction from legal directions. The traffic flow
@@ -260,12 +260,13 @@ class TurnModelRouting : public NocRouting {
      *
      * @return Direction The direction to travel next
      */
-    virtual TurnModelRouting::Direction select_next_direction(const std::vector<TurnModelRouting::Direction>& legal_directions,
-                                                              NocRouterId src_router_id,
-                                                              NocRouterId dst_router_id,
-                                                              NocRouterId curr_router_id,
-                                                              NocTrafficFlowId traffic_flow_id,
-                                                              const NocStorage& noc_model);
+    virtual TurnModelRouting::Direction select_next_direction(
+        const std::vector<TurnModelRouting::Direction>& legal_directions,
+        NocRouterId src_router_id,
+        NocRouterId dst_router_id,
+        NocRouterId curr_router_id,
+        NocTrafficFlowId traffic_flow_id,
+        const NocStorage& noc_model);
 
   protected:
     // get_legal_directions() return a reference to this vector to avoid allocating a new vector
@@ -274,7 +275,6 @@ class TurnModelRouting : public NocRouting {
 
   private:
     std::vector<uint32_t> inputs_to_murmur3_hasher{4};
-
 };
 
 #endif //VTR_TURN_MODEL_ROUTING_H

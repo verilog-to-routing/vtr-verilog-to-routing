@@ -7,14 +7,12 @@ PathManager::PathManager() {
     is_enabled_ = false;
 }
 
-PathManager::~PathManager() {
-    free_all_memory();
-}
+PathManager::~PathManager() { free_all_memory(); }
 
-bool PathManager::node_exists_in_tree(t_heap_path* path_data,
-                                      RRNodeId to_node) {
+bool PathManager::node_exists_in_tree(t_heap_path* path_data, RRNodeId to_node) {
     // Prevent seg faults for searching path data structures that haven't been created yet
-    if (!path_data || !is_enabled_) return false;
+    if (!path_data || !is_enabled_)
+        return false;
 
     // First check the smaller current path, the ordering of these checks might effect runtime slightly
     for (auto& node : path_data->path_rr) {
@@ -39,8 +37,12 @@ void PathManager::mark_node_visited(RRNodeId node) {
     }
 }
 
-void PathManager::insert_backwards_path_into_traceback(t_heap_path* path_data, float cost, float backward_path_cost, RoutingContext& route_ctx) {
-    if (!is_enabled_) return;
+void PathManager::insert_backwards_path_into_traceback(t_heap_path* path_data,
+                                                       float cost,
+                                                       float backward_path_cost,
+                                                       RoutingContext& route_ctx) {
+    if (!is_enabled_)
+        return;
 
     for (unsigned i = 1; i < path_data->edge.size() - 1; i++) {
         RRNodeId node_2 = path_data->path_rr[i];
@@ -51,13 +53,9 @@ void PathManager::insert_backwards_path_into_traceback(t_heap_path* path_data, f
     }
 }
 
-bool PathManager::is_enabled() {
-    return is_enabled_;
-}
+bool PathManager::is_enabled() { return is_enabled_; }
 
-void PathManager::set_enabled(bool enable) {
-    is_enabled_ = enable;
-}
+void PathManager::set_enabled(bool enable) { is_enabled_ = enable; }
 
 void PathManager::alloc_path_struct(t_heap_path*& tptr) {
     // TODO: Use arena allocation for this part
@@ -102,7 +100,8 @@ void PathManager::free_all_memory() {
 }
 
 void PathManager::empty_heap() {
-    if (!is_enabled_) return;
+    if (!is_enabled_)
+        return;
 
     freed_nodes_.resize(alloc_list_.size());
 
@@ -111,14 +110,16 @@ void PathManager::empty_heap() {
 }
 
 void PathManager::update_route_tree_set(t_heap_path* cheapest_path_struct) {
-    if (!is_enabled_) return;
+    if (!is_enabled_)
+        return;
 
     // Add all values in path struct to the route tree nodes set
     route_tree_nodes_.insert(cheapest_path_struct->path_rr.begin(), cheapest_path_struct->path_rr.end());
 }
 
 void PathManager::empty_route_tree_nodes() {
-    if (!is_enabled_) return;
+    if (!is_enabled_)
+        return;
 
     route_tree_nodes_.clear();
 }

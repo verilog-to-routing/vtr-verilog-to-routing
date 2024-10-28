@@ -56,7 +56,9 @@ void warn_model_missing_timing(const t_model* model, const char* file, uint32_t 
  * @param sub_tile sub tile to check
  * @param logical_block logical block type
  */
-void check_port_direct_mappings(t_physical_tile_type_ptr physical_tile, t_sub_tile* sub_tile, t_logical_block_type_ptr logical_block);
+void check_port_direct_mappings(t_physical_tile_type_ptr physical_tile,
+                                t_sub_tile* sub_tile,
+                                t_logical_block_type_ptr logical_block);
 
 /**
  * @brief Checks the timing consistency between tha pb_type and the corresponding model.

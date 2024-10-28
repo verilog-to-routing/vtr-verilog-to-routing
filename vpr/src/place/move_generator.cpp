@@ -21,10 +21,8 @@ void MoveGenerator::calculate_reward_and_process_outcome(const MoveOutcomeStats&
             if (delta_c < 0) {
                 float reward = -1
                                * (move_outcome_stats.delta_cost_norm
-                                  + (0.5 - timing_bb_factor)
-                                        * move_outcome_stats.delta_timing_cost_norm
-                                  + timing_bb_factor
-                                        * move_outcome_stats.delta_bb_cost_norm);
+                                  + (0.5 - timing_bb_factor) * move_outcome_stats.delta_timing_cost_norm
+                                  + timing_bb_factor * move_outcome_stats.delta_bb_cost_norm);
                 process_outcome(reward, reward_func_);
             } else {
                 process_outcome(0, reward_func_);
@@ -34,7 +32,6 @@ void MoveGenerator::calculate_reward_and_process_outcome(const MoveOutcomeStats&
         case e_reward_function::BASIC:
             process_outcome(-1 * delta_c, reward_func_);
             break;
-
 
         case e_reward_function::NON_PENALIZING_BASIC:
         case e_reward_function::RUNTIME_AWARE:
@@ -55,12 +52,9 @@ void MoveGenerator::calculate_reward_and_process_outcome(const MoveOutcomeStats&
 void MoveTypeStat::print_placement_move_types_stats() {
     VTR_LOG("\n\nPlacement perturbation distribution by block and move type: \n");
 
-    VTR_LOG(
-        "------------------ ----------------- ---------------- ---------------- --------------- ------------ \n");
-    VTR_LOG(
-        "    Block Type         Move Type       (%%) of Total      Accepted(%%)     Rejected(%%)    Aborted(%%)\n");
-    VTR_LOG(
-        "------------------ ----------------- ---------------- ---------------- --------------- ------------ \n");
+    VTR_LOG("------------------ ----------------- ---------------- ---------------- --------------- ------------ \n");
+    VTR_LOG("    Block Type         Move Type       (%%) of Total      Accepted(%%)     Rejected(%%)    Aborted(%%)\n");
+    VTR_LOG("------------------ ----------------- ---------------- ---------------- --------------- ------------ \n");
 
     int total_moves = 0;
     for (size_t i = 0; i < blk_type_moves.size(); ++i) {
@@ -91,11 +85,9 @@ void MoveTypeStat::print_placement_move_types_stats() {
                 } else {
                     VTR_LOG("                  ");
                 }
-                VTR_LOG(
-                    " %-22.20s %-16.2f %-15.2f %-14.2f %-13.2f\n",
-                    move_name.c_str(), 100.0f * (float)moves / (float)total_moves,
-                    100.0f * (float)accepted / (float)moves, 100.0f * (float)rejected / (float)moves,
-                    100.0f * (float)aborted / (float)moves);
+                VTR_LOG(" %-22.20s %-16.2f %-15.2f %-14.2f %-13.2f\n", move_name.c_str(),
+                        100.0f * (float)moves / (float)total_moves, 100.0f * (float)accepted / (float)moves,
+                        100.0f * (float)rejected / (float)moves, 100.0f * (float)aborted / (float)moves);
             }
             count++;
         }

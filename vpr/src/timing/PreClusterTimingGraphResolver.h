@@ -8,11 +8,10 @@
 
 class PreClusterTimingGraphResolver : public tatum::TimingGraphNameResolver {
   public:
-    PreClusterTimingGraphResolver(
-        const AtomNetlist& netlist,
-        const AtomLookup& netlist_lookup,
-        const tatum::TimingGraph& timing_graph,
-        const tatum::DelayCalculator& delay_calc);
+    PreClusterTimingGraphResolver(const AtomNetlist& netlist,
+                                  const AtomLookup& netlist_lookup,
+                                  const tatum::TimingGraph& timing_graph,
+                                  const tatum::DelayCalculator& delay_calc);
 
     std::string node_name(tatum::NodeId node) const override;
     std::string node_type_name(tatum::NodeId node) const override;

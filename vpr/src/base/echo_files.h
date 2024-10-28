@@ -73,12 +73,7 @@ enum e_echo_files {
     E_ECHO_END_TOKEN
 };
 
-enum e_output_files {
-    E_CRIT_PATH_FILE,
-    E_SLACK_FILE,
-    E_CRITICALITY_FILE,
-    E_FILE_END_TOKEN
-};
+enum e_output_files { E_CRIT_PATH_FILE, E_SLACK_FILE, E_CRITICALITY_FILE, E_FILE_END_TOKEN };
 
 bool getEchoEnabled();
 void setEchoEnabled(bool echo_enabled);

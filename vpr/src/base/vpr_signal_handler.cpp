@@ -21,7 +21,7 @@
 #include <atomic>
 
 #ifdef VPR_USE_SIGACTION
-#    include <csignal>
+#include <csignal>
 #endif
 
 void vpr_signal_handler(int signal);

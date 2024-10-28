@@ -5,28 +5,28 @@
 
 #ifdef VTR_ENABLE_CAPNPROTO
 
-#    include <algorithm>
-#    include <kj/std/iostream.h>
-#    include <limits>
-#    include <map>
-#    include <regex>
-#    include <set>
-#    include <stdlib.h>
-#    include <string>
-#    include <string.h>
-#    include <zlib.h>
-#    include <sstream>
+#include <algorithm>
+#include <kj/std/iostream.h>
+#include <limits>
+#include <map>
+#include <regex>
+#include <set>
+#include <stdlib.h>
+#include <string>
+#include <string.h>
+#include <zlib.h>
+#include <sstream>
 
-#    include "vtr_assert.h"
-#    include "vtr_digest.h"
-#    include "vtr_log.h"
-#    include "vtr_memory.h"
-#    include "vtr_util.h"
+#include "vtr_assert.h"
+#include "vtr_digest.h"
+#include "vtr_log.h"
+#include "vtr_memory.h"
+#include "vtr_util.h"
 
-#    include "arch_check.h"
-#    include "arch_error.h"
-#    include "arch_util.h"
-#    include "arch_types.h"
+#include "arch_check.h"
+#include "arch_error.h"
+#include "arch_util.h"
+#include "arch_types.h"
 
 /*
  * FPGA Interchange Device frontend
@@ -52,10 +52,7 @@ static const auto ROUTING = Device::BELCategory::ROUTING;
 static const auto SITE_PORT = Device::BELCategory::SITE_PORT;
 
 // Enum for pack pattern expansion direction
-enum e_pp_dir {
-    FORWARD = 0,
-    BACKWARD = 1
-};
+enum e_pp_dir { FORWARD = 0, BACKWARD = 1 };
 
 struct t_package_pin {
     std::string name;
@@ -103,13 +100,11 @@ static float get_corner_value(Device::CornerModel::Reader model, const char* spe
     bool max_corner = std::string(value) == std::string("max");
 
     if (!slow_model && !fast_model) {
-        archfpga_throw("", __LINE__,
-                       "Wrong speed model `%s`. Expected `slow` or `fast`\n", speed_model);
+        archfpga_throw("", __LINE__, "Wrong speed model `%s`. Expected `slow` or `fast`\n", speed_model);
     }
 
     if (!min_corner && !typ_corner && !max_corner) {
-        archfpga_throw("", __LINE__,
-                       "Wrong corner model `%s`. Expected `min`, `typ` or `max`\n", value);
+        archfpga_throw("", __LINE__, "Wrong corner model `%s`. Expected `min`, `typ` or `max`\n", value);
     }
 
     bool has_fast = model.getFast().hasFast();
@@ -131,8 +126,7 @@ static float get_corner_value(Device::CornerModel::Reader model, const char* spe
             } else if (half.getMax().isMax()) {
                 return half.getMax().getMax();
             } else {
-                archfpga_throw("", __LINE__,
-                               "Invalid speed model %s. No value found!\n", speed_model);
+                archfpga_throw("", __LINE__, "Invalid speed model %s. No value found!\n", speed_model);
             }
         }
     } else if (fast_model && has_fast) {
@@ -151,8 +145,7 @@ static float get_corner_value(Device::CornerModel::Reader model, const char* spe
             } else if (half.getMax().isMax()) {
                 return half.getMax().getMax();
             } else {
-                archfpga_throw("", __LINE__,
-                               "Invalid speed model %s. No value found!\n", speed_model);
+                archfpga_throw("", __LINE__, "Invalid speed model %s. No value found!\n", speed_model);
             }
         }
     }
@@ -175,8 +168,7 @@ static t_model_ports* get_model_port(t_arch* arch, std::string model, std::strin
     }
 
     if (fail)
-        archfpga_throw(__FILE__, __LINE__,
-                       "Could not find model port: %s (%s)\n", port.c_str(), model.c_str());
+        archfpga_throw(__FILE__, __LINE__, "Could not find model port: %s (%s)\n", port.c_str(), model.c_str());
 
     return nullptr;
 }
@@ -188,8 +180,7 @@ static t_model* get_model(t_arch* arch, std::string model) {
             if (std::string(m->name) == model)
                 return m;
 
-    archfpga_throw(__FILE__, __LINE__,
-                   "Could not find model: %s\n", model.c_str());
+    archfpga_throw(__FILE__, __LINE__, "Could not find model: %s\n", model.c_str());
 }
 
 /** @brief Returns the physical or logical type by its name */
@@ -201,8 +192,7 @@ static T* get_type_by_name(const char* type_name, std::vector<T>& types) {
         }
     }
 
-    archfpga_throw(__FILE__, __LINE__,
-                   "Could not find type: %s\n", type_name);
+    archfpga_throw(__FILE__, __LINE__, "Could not find type: %s\n", type_name);
 }
 
 /** @brief Returns a generic port instantiation for a complex block */
@@ -345,9 +335,7 @@ struct ArchReader {
     // Utils
 
     /** @brief Returns the string corresponding to the given index */
-    std::string str(size_t idx) {
-        return arch_->interned_strings[idx].get(&arch_->strings);
-    }
+    std::string str(size_t idx) { return arch_->interned_strings[idx].get(&arch_->strings); }
 
     /** @brief Get the BEL count of a site depending on its category (e.g. logic or routing BELs) */
     int get_bel_type_count(Device::SiteType::Reader& site, Device::BELCategory category, bool skip_lut = false) {
@@ -377,7 +365,9 @@ struct ArchReader {
     }
 
     /** @brief Get the BEL pin reader given its name, site and corresponding BEL */
-    Device::BELPin::Reader get_bel_pin_reader(Device::SiteType::Reader& site, Device::BEL::Reader& bel, std::string pin_name) {
+    Device::BELPin::Reader get_bel_pin_reader(Device::SiteType::Reader& site,
+                                              Device::BEL::Reader& bel,
+                                              std::string pin_name) {
         auto bel_pins = site.getBelPins();
 
         for (auto bel_pin : bel.getPins()) {
@@ -450,9 +440,7 @@ struct ArchReader {
     }
 
     /** @brief Returns true in case the input argument corresponds to a PAD BEL */
-    bool is_pad(std::string name) {
-        return pad_bels_.count(name) != 0;
-    }
+    bool is_pad(std::string name) { return pad_bels_.count(name) != 0; }
 
     /** @brief Utility function to fill in all the necessary information for the sub_tile
      *
@@ -466,7 +454,11 @@ struct ArchReader {
      *      - equivalent_sites
      *      - tile_block_pin_directs_map
      **/
-    void fill_sub_tile(t_physical_tile_type& type, t_sub_tile& sub_tile, int num_pins, int input_count, int output_count) {
+    void fill_sub_tile(t_physical_tile_type& type,
+                       t_sub_tile& sub_tile,
+                       int num_pins,
+                       int input_count,
+                       int output_count) {
         sub_tile.num_phy_pins += num_pins;
         type.num_pins += num_pins;
         type.num_inst_pins += num_pins;
@@ -710,10 +702,7 @@ struct ArchReader {
                 }
 
                 std::set<std::string> ostrs{ostr};
-                t_ic_data ic_data = {
-                    istr,
-                    ostrs,
-                    requires_pack_pattern};
+                t_ic_data ic_data = {istr, ostrs, requires_pack_pattern};
 
                 ics_data.push_back(std::make_pair(ic_name, ic_data));
 
@@ -959,8 +948,7 @@ struct ArchReader {
 
                     ret_map_name = model_name_map.insert(std::pair<std::string, int>(temp->name, 0));
                     if (!ret_map_name.second) {
-                        archfpga_throw(arch_file_, __LINE__,
-                                       "Duplicate model name: '%s'.\n", temp->name);
+                        archfpga_throw(arch_file_, __LINE__, "Duplicate model name: '%s'.\n", temp->name);
                     }
 
                     if (!process_model_ports(temp, primitive)) {
@@ -1014,19 +1002,17 @@ struct ArchReader {
             //Sanity checks
             if (model_port->is_clock == true && model_port->is_non_clock_global == true) {
                 archfpga_throw(arch_file_, __LINE__,
-                               "Model port '%s' cannot be both a clock and a non-clock signal simultaneously", model_port->name);
+                               "Model port '%s' cannot be both a clock and a non-clock signal simultaneously",
+                               model_port->name);
             }
             if (model_port->name == nullptr) {
-                archfpga_throw(arch_file_, __LINE__,
-                               "Model port is missing a name");
+                archfpga_throw(arch_file_, __LINE__, "Model port is missing a name");
             }
             if (port_names.count(std::pair<std::string, enum PORTS>(model_port->name, dir)) && dir != INOUT_PORT) {
-                archfpga_throw(arch_file_, __LINE__,
-                               "Duplicate model port named '%s'", model_port->name);
+                archfpga_throw(arch_file_, __LINE__, "Duplicate model port named '%s'", model_port->name);
             }
             if (dir == OUT_PORT && !model_port->combinational_sink_ports.empty()) {
-                archfpga_throw(arch_file_, __LINE__,
-                               "Model output ports can not have combinational sink ports");
+                archfpga_throw(arch_file_, __LINE__, "Model output ports can not have combinational sink ports");
             }
 
             model_port->min_size = 1;
@@ -1105,7 +1091,8 @@ struct ArchReader {
                 lut_elements = arch_->lut_elements.at(name);
 
             // Count non-LUT BELs plus LUT elements
-            int block_count = get_bel_type_count(site, LOGIC, true) + get_bel_type_count(site, ROUTING, true) + lut_elements.size();
+            int block_count
+                = get_bel_type_count(site, LOGIC, true) + get_bel_type_count(site, ROUTING, true) + lut_elements.size();
 
             mode->num_pb_type_children = block_count;
             mode->pb_type_children = new t_pb_type[mode->num_pb_type_children];
@@ -1779,9 +1766,7 @@ struct ArchReader {
             auto input = ic_data.input;
             auto outputs = ic_data.outputs;
 
-            auto merge_string = [](std::string ss, std::string s) {
-                return ss.empty() ? s : ss + " " + s;
-            };
+            auto merge_string = [](std::string ss, std::string s) { return ss.empty() ? s : ss + " " + s; };
 
             std::string outputs_str = std::accumulate(outputs.begin(), outputs.end(), std::string(), merge_string);
 
@@ -1844,7 +1829,8 @@ struct ArchReader {
 
                     int idx = 0;
                     for (auto pp_name : pair.second)
-                        pp_ic->annotations[idx++] = get_pack_pattern(pp_name, pp_ic->input_string, pp_ic->output_string);
+                        pp_ic->annotations[idx++]
+                            = get_pack_pattern(pp_name, pp_ic->input_string, pp_ic->output_string);
                 }
             }
         }
@@ -1853,7 +1839,9 @@ struct ArchReader {
     /** @brief Propagates and generates all pack_patterns required for the given ic.
      *         This is necessary to find all root blocks that generate the pack pattern.
      */
-    std::unordered_map<t_interconnect*, std::set<std::string>> propagate_pack_patterns(t_interconnect* ic, Device::SiteType::Reader& site, e_pp_dir direction) {
+    std::unordered_map<t_interconnect*, std::set<std::string>> propagate_pack_patterns(t_interconnect* ic,
+                                                                                       Device::SiteType::Reader& site,
+                                                                                       e_pp_dir direction) {
         auto site_pins = site.getBelPins();
 
         std::string endpoint = direction == BACKWARD ? ic->input_string : ic->output_string;
@@ -1923,7 +1911,8 @@ struct ArchReader {
                         t_interconnect* other_ic = &mode->interconnect[iic];
 
                         bool found = false;
-                        for (auto other_ep : vtr::split(is_backward ? other_ic->output_string : other_ic->input_string, " ")) {
+                        for (auto other_ep :
+                             vtr::split(is_backward ? other_ic->output_string : other_ic->input_string, " ")) {
                             found |= other_ep == ep;
                         }
 
@@ -2142,8 +2131,10 @@ struct ArchReader {
             leaf_pb_type->blif_model = vtr::strdup(const_cell.first.c_str());
             leaf_pb_type->model = get_model(arch_, const_cell.first);
 
-            leaf_pb_type->ports[0] = get_generic_port(arch_, leaf_pb_type, OUT_PORT, const_cell.second, const_cell.first);
-            pb_type->ports[count] = get_generic_port(arch_, leaf_pb_type, OUT_PORT, const_cell.first + "_" + const_cell.second);
+            leaf_pb_type->ports[0]
+                = get_generic_port(arch_, leaf_pb_type, OUT_PORT, const_cell.second, const_cell.first);
+            pb_type->ports[count]
+                = get_generic_port(arch_, leaf_pb_type, OUT_PORT, const_cell.first + "_" + const_cell.second);
 
             std::string istr = leaf_name + "." + const_cell.second;
             std::string ostr = const_block_ + "." + const_cell.first + "_" + const_cell.second;
@@ -2426,8 +2417,8 @@ struct ArchReader {
 
             /* Should never happen */
             if (switch_name == std::string(VPR_DELAYLESS_SWITCH_NAME)) {
-                archfpga_throw(arch_file_, __LINE__,
-                               "Switch name '%s' is a reserved name for VPR internal usage!", switch_name.c_str());
+                archfpga_throw(arch_file_, __LINE__, "Switch name '%s' is a reserved name for VPR internal usage!",
+                               switch_name.c_str());
             }
 
             as->name = switch_name;
@@ -2474,7 +2465,8 @@ struct ArchReader {
         arch_->Segments.resize(num_seg);
         size_t index = 0;
         for (auto i : wire_names) {
-            if (index >= num_seg) break;
+            if (index >= num_seg)
+                break;
 
             // Use default values as we will populate rr_graph with correct values
             // This segments are just declaration of future use

@@ -26,8 +26,7 @@
 #include <Eigen/IterativeLinearSolvers>
 #endif // EIGEN_INSTALLED
 
-std::unique_ptr<AnalyticalSolver> make_analytical_solver(e_analytical_solver solver_type,
-                                                         const APNetlist& netlist) {
+std::unique_ptr<AnalyticalSolver> make_analytical_solver(e_analytical_solver solver_type, const APNetlist& netlist) {
     // Based on the solver type passed in, build the solver.
     switch (solver_type) {
         case e_analytical_solver::QP_HYBRID:
@@ -35,22 +34,20 @@ std::unique_ptr<AnalyticalSolver> make_analytical_solver(e_analytical_solver sol
             return std::make_unique<QPHybridSolver>(netlist);
 #else
             (void)netlist;
-            VPR_FATAL_ERROR(VPR_ERROR_AP,
-                            "QP Hybrid Solver requires the Eigen library");
+            VPR_FATAL_ERROR(VPR_ERROR_AP, "QP Hybrid Solver requires the Eigen library");
             break;
 #endif // EIGEN_INSTALLED
         default:
-            VPR_FATAL_ERROR(VPR_ERROR_AP,
-                            "Unrecognized analytical solver type");
+            VPR_FATAL_ERROR(VPR_ERROR_AP, "Unrecognized analytical solver type");
             break;
     }
     return nullptr;
 }
 
 AnalyticalSolver::AnalyticalSolver(const APNetlist& netlist)
-    : netlist_(netlist),
-      blk_id_to_row_id_(netlist.blocks().size(), APRowId::INVALID()),
-      row_id_to_blk_id_(netlist.blocks().size(), APBlockId::INVALID()) {
+    : netlist_(netlist)
+    , blk_id_to_row_id_(netlist.blocks().size(), APRowId::INVALID())
+    , row_id_to_blk_id_(netlist.blocks().size(), APBlockId::INVALID()) {
     // Get the number of moveable blocks in the netlist and create a unique
     // row ID from [0, num_moveable_blocks) for each moveable block in the
     // netlist.
@@ -183,8 +180,7 @@ void QPHybridSolver::init_linear_system() {
             size_t star_node_id = num_moveable_blocks_ + star_node_offset;
             for (APPinId pin_id : netlist_.net_pins(net_id)) {
                 APBlockId blk_id = netlist_.pin_block(pin_id);
-                add_connection_to_system(star_node_id, blk_id, w, tripletList,
-                                         b_x, b_y, A_sparse, blk_id_to_row_id_,
+                add_connection_to_system(star_node_id, blk_id, w, tripletList, b_x, b_y, A_sparse, blk_id_to_row_id_,
                                          netlist_);
             }
             star_node_offset++;
@@ -213,9 +209,8 @@ void QPHybridSolver::init_linear_system() {
                         std::swap(first_blk_id, second_blk_id);
                     }
                     size_t first_row_id = (size_t)blk_id_to_row_id_[first_blk_id];
-                    add_connection_to_system(first_row_id, second_blk_id, w, tripletList,
-                                             b_x, b_y, A_sparse, blk_id_to_row_id_,
-                                             netlist_);
+                    add_connection_to_system(first_row_id, second_blk_id, w, tripletList, b_x, b_y, A_sparse,
+                                             blk_id_to_row_id_, netlist_);
                 }
             }
         }
@@ -252,16 +247,15 @@ void QPHybridSolver::init_linear_system() {
  *  @param row_id_to_blk_id     Lookup for the row id from the APBlock Id.
  *  @param iteration        The current iteration of the Global Placer.
  */
-static inline void update_linear_system_with_anchors(
-                               Eigen::SparseMatrix<double> &A_sparse_diff,
-                               Eigen::VectorXd &b_x_diff,
-                               Eigen::VectorXd &b_y_diff,
-                               PartialPlacement& p_placement,
-                               size_t num_moveable_blocks,
-                               vtr::vector<APRowId, APBlockId> row_id_to_blk_id,
-                               unsigned iteration) {
+static inline void update_linear_system_with_anchors(Eigen::SparseMatrix<double>& A_sparse_diff,
+                                                     Eigen::VectorXd& b_x_diff,
+                                                     Eigen::VectorXd& b_y_diff,
+                                                     PartialPlacement& p_placement,
+                                                     size_t num_moveable_blocks,
+                                                     vtr::vector<APRowId, APBlockId> row_id_to_blk_id,
+                                                     unsigned iteration) {
     // Anchor weights grow exponentially with iteration.
-    double coeff_pseudo_anchor = 0.01 * std::exp((double)iteration/5);
+    double coeff_pseudo_anchor = 0.01 * std::exp((double)iteration / 5);
     for (size_t row_id_idx = 0; row_id_idx < num_moveable_blocks; row_id_idx++) {
         APRowId row_id = APRowId(row_id_idx);
         APBlockId blk_id = row_id_to_blk_id[row_id];
@@ -272,7 +266,7 @@ static inline void update_linear_system_with_anchors(
     }
 }
 
-void QPHybridSolver::solve(unsigned iteration, PartialPlacement &p_placement) {
+void QPHybridSolver::solve(unsigned iteration, PartialPlacement& p_placement) {
     // Create a temporary linear system which will contain the original linear
     // system which may be updated to include the anchor points.
     Eigen::SparseMatrix<double> A_sparse_diff = Eigen::SparseMatrix<double>(A_sparse);
@@ -282,8 +276,7 @@ void QPHybridSolver::solve(unsigned iteration, PartialPlacement &p_placement) {
     // In any other iteration, use the moveable APBlocks current placement as
     //                         anchor-points (fixed block positions).
     if (iteration != 0) {
-        update_linear_system_with_anchors(A_sparse_diff, b_x_diff, b_y_diff,
-                                          p_placement, num_moveable_blocks_,
+        update_linear_system_with_anchors(A_sparse_diff, b_x_diff, b_y_diff, p_placement, num_moveable_blocks_,
                                           row_id_to_blk_id_, iteration);
     }
     // Verify that the constant vectors are valid.
@@ -295,7 +288,7 @@ void QPHybridSolver::solve(unsigned iteration, PartialPlacement &p_placement) {
     //  - This tolerance may need to be a function of the number of nets.
     //  - Instead of normalizing the fixed blocks, the tolerance can be scaled
     //    by the size of the device.
-    Eigen::ConjugateGradient<Eigen::SparseMatrix<double>, Eigen::Lower|Eigen::Upper> cg;
+    Eigen::ConjugateGradient<Eigen::SparseMatrix<double>, Eigen::Lower | Eigen::Upper> cg;
     cg.compute(A_sparse_diff);
     VTR_ASSERT(cg.info() == Eigen::Success && "Conjugate Gradient failed at compute!");
     // Use the solver to solve for x and y using the constant vectors
@@ -321,4 +314,3 @@ void QPHybridSolver::solve(unsigned iteration, PartialPlacement &p_placement) {
 }
 
 #endif // EIGEN_INSTALLED
-

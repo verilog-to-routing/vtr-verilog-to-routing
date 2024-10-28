@@ -79,8 +79,9 @@ void setup_noc(const t_arch& arch);
  *
  * @return The grid position information for all NoC router tiles in the FPGA.
  */
-vtr::vector<int, t_noc_router_tile_position> identify_and_store_noc_router_tile_positions(const DeviceGrid& device_grid,
-                                                                                          std::string_view noc_router_tile_name);
+vtr::vector<int, t_noc_router_tile_position> identify_and_store_noc_router_tile_positions(
+    const DeviceGrid& device_grid,
+    std::string_view noc_router_tile_name);
 
 /**
  * @brief Creates NoC routers and adds them to the NoC model based

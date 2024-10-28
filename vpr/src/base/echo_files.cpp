@@ -18,9 +18,7 @@ static char** echoFileNames = nullptr;
 
 static char** outputFileNames = nullptr;
 
-bool getEchoEnabled() {
-    return EchoEnabled;
-}
+bool getEchoEnabled() { return EchoEnabled; }
 
 void setEchoEnabled(bool echo_enabled) {
     /* enable echo outputs */
@@ -37,9 +35,7 @@ void setAllEchoFileEnabled(bool value) {
     }
 }
 
-void setEchoFileEnabled(enum e_echo_files echo_option, bool value) {
-    echoFileEnabled[(int)echo_option] = value;
-}
+void setEchoFileEnabled(enum e_echo_files echo_option, bool value) { echoFileEnabled[(int)echo_option] = value; }
 
 void setEchoFileName(enum e_echo_files echo_option, const char* name) {
     if (echoFileNames[(int)echo_option] != nullptr) {
@@ -57,9 +53,7 @@ bool isEchoFileEnabled(enum e_echo_files echo_option) {
     }
 }
 
-char* getEchoFileName(enum e_echo_files echo_option) {
-    return echoFileNames[(int)echo_option];
-}
+char* getEchoFileName(enum e_echo_files echo_option) { return echoFileNames[(int)echo_option]; }
 
 void alloc_and_load_echo_file_info() {
     echoFileEnabled = new bool[(int)E_ECHO_END_TOKEN];
@@ -162,9 +156,7 @@ void setOutputFileName(enum e_output_files ename, const char* name, const char* 
     strcpy(outputFileNames[(int)ename], name);
 }
 
-char* getOutputFileName(enum e_output_files ename) {
-    return outputFileNames[(int)ename];
-}
+char* getOutputFileName(enum e_output_files ename) { return outputFileNames[(int)ename]; }
 
 void alloc_and_load_output_file_names(const std::string& default_name) {
     std::string name;

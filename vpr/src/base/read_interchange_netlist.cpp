@@ -13,33 +13,33 @@
 
 #ifdef VTR_ENABLE_CAPNPROTO
 
-#    include <cmath>
-#    include <limits>
-#    include <kj/std/iostream.h>
-#    include <regex>
-#    include <string>
-#    include <unordered_map>
-#    include <unordered_set>
-#    include <zlib.h>
-#    include <iostream>
-#    include <sstream>
+#include <cmath>
+#include <limits>
+#include <kj/std/iostream.h>
+#include <regex>
+#include <string>
+#include <unordered_map>
+#include <unordered_set>
+#include <zlib.h>
+#include <iostream>
+#include <sstream>
 
-#    include "LogicalNetlist.capnp.h"
-#    include "capnp/serialize.h"
-#    include "capnp/serialize-packed.h"
+#include "LogicalNetlist.capnp.h"
+#include "capnp/serialize.h"
+#include "capnp/serialize-packed.h"
 
-#    include "vtr_assert.h"
-#    include "vtr_hash.h"
-#    include "vtr_util.h"
-#    include "vtr_log.h"
-#    include "vtr_logic.h"
-#    include "vtr_time.h"
-#    include "vtr_digest.h"
+#include "vtr_assert.h"
+#include "vtr_hash.h"
+#include "vtr_util.h"
+#include "vtr_log.h"
+#include "vtr_logic.h"
+#include "vtr_time.h"
+#include "vtr_digest.h"
 
-#    include "vpr_types.h"
-#    include "vpr_error.h"
-#    include "globals.h"
-#    include "arch_types.h"
+#include "vpr_types.h"
+#include "vpr_error.h"
+#include "globals.h"
+#include "arch_types.h"
 
 struct NetlistReader {
   public:
@@ -85,7 +85,8 @@ struct NetlistReader {
 
     LogicalNetlist::Netlist::CellInstance::Reader top_cell_instance_;
 
-    std::unordered_map<size_t, std::unordered_map<std::pair<size_t, size_t>, std::string, vtr::hash_pair>> port_net_maps_;
+    std::unordered_map<size_t, std::unordered_map<std::pair<size_t, size_t>, std::string, vtr::hash_pair>>
+        port_net_maps_;
 
     /** @brief Preprocesses the port net maps, populating the port_net_maps_ hash map to be later accessed for faster lookups */
     void prepare_port_net_maps() {
@@ -337,7 +338,8 @@ struct NetlistReader {
                 auto dir = port_list[port].getDir();
                 switch (dir) {
                     case LogicalNetlist::Netlist::Direction::INPUT:
-                        if (!output_is_const) main_netlist_.create_pin(iport_id, inum++, net_id, PinType::SINK);
+                        if (!output_is_const)
+                            main_netlist_.create_pin(iport_id, inum++, net_id, PinType::SINK);
                         break;
                     case LogicalNetlist::Netlist::Direction::OUTPUT:
                         main_netlist_.create_pin(oport_id, 0, net_id, PinType::DRIVER, output_is_const);
@@ -471,7 +473,8 @@ struct NetlistReader {
                 if (name == model->name)
                     return model;
 
-        vpr_throw(VPR_ERROR_IC_NETLIST_F, netlist_file_, -1, "Failed to find matching architecture model for '%s'\n", name.c_str());
+        vpr_throw(VPR_ERROR_IC_NETLIST_F, netlist_file_, -1, "Failed to find matching architecture model for '%s'\n",
+                  name.c_str());
     }
 
     const t_model_ports* find_model_port(const t_model* blk_model, std::string name) {
@@ -482,8 +485,7 @@ struct NetlistReader {
                     return port;
 
         //No match
-        vpr_throw(VPR_ERROR_IC_NETLIST_F, netlist_file_, -1,
-                  "Found no matching port '%s' on architecture model '%s'\n",
+        vpr_throw(VPR_ERROR_IC_NETLIST_F, netlist_file_, -1, "Found no matching port '%s' on architecture model '%s'\n",
                   name.c_str(), blk_model->name);
         return nullptr;
     }
@@ -526,8 +528,7 @@ struct NetlistReader {
 
 #endif // VTR_ENABLE_CAPNPROTO
 
-AtomNetlist read_interchange_netlist(const char* ic_netlist_file,
-                                     t_arch& arch) {
+AtomNetlist read_interchange_netlist(const char* ic_netlist_file, t_arch& arch) {
 #ifdef VTR_ENABLE_CAPNPROTO
     AtomNetlist netlist;
     std::string netlist_id = vtr::secure_digest_file(ic_netlist_file);

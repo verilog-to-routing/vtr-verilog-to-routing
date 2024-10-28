@@ -6,11 +6,11 @@
 
 #ifndef NO_GRAPHICS
 
-#    include "draw_global.h"
+#include "draw_global.h"
 
-#    include "ezgl/point.hpp"
-#    include "ezgl/application.hpp"
-#    include "ezgl/graphics.hpp"
+#include "ezgl/point.hpp"
+#include "ezgl/application.hpp"
+#include "ezgl/graphics.hpp"
 
 ///@brief Iterates through all partitions described in the constraints file and highlights their respective partitions
 void highlight_all_regions(ezgl::renderer* g);

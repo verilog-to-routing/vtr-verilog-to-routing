@@ -25,17 +25,11 @@ PartitionId UserPlaceConstraints::get_atom_partition(AtomBlockId blk_id) const {
     }
 }
 
-void UserPlaceConstraints::add_partition(const Partition& part) {
-    partitions.push_back(part);
-}
+void UserPlaceConstraints::add_partition(const Partition& part) { partitions.push_back(part); }
 
-const Partition& UserPlaceConstraints::get_partition(PartitionId part_id) const {
-    return partitions[part_id];
-}
+const Partition& UserPlaceConstraints::get_partition(PartitionId part_id) const { return partitions[part_id]; }
 
-Partition& UserPlaceConstraints::get_mutable_partition(PartitionId part_id) {
-    return partitions[part_id];
-}
+Partition& UserPlaceConstraints::get_mutable_partition(PartitionId part_id) { return partitions[part_id]; }
 
 std::vector<AtomBlockId> UserPlaceConstraints::get_part_atoms(PartitionId part_id) const {
     std::vector<AtomBlockId> part_atoms;
@@ -49,9 +43,7 @@ std::vector<AtomBlockId> UserPlaceConstraints::get_part_atoms(PartitionId part_i
     return part_atoms;
 }
 
-int UserPlaceConstraints::get_num_partitions() const {
-    return partitions.size();
-}
+int UserPlaceConstraints::get_num_partitions() const { return partitions.size(); }
 
 const PartitionRegion& UserPlaceConstraints::get_partition_pr(PartitionId part_id) const {
     return partitions[part_id].get_part_region();

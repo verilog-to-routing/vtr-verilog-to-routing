@@ -30,7 +30,11 @@ class ExtendedMapLookahead : public RouterLookahead {
      * @param criticality_fac criticality of the current connection between 0 (all congestion) and 1 (all timing)
      * @return expected cost to get to the destination
      */
-    std::pair<float, float> get_src_opin_cost(RRNodeId from_node, int delta_x, int delta_y, int to_layer_num, const t_conn_cost_params& params) const;
+    std::pair<float, float> get_src_opin_cost(RRNodeId from_node,
+                                              int delta_x,
+                                              int delta_y,
+                                              int to_layer_num,
+                                              const t_conn_cost_params& params) const;
 
     /**
      * @brief Returns the CHAN -> IPIN delay that gets added to the final expected delay
@@ -64,12 +68,18 @@ class ExtendedMapLookahead : public RouterLookahead {
     /**
      * @brief Returns the expected cost to get to a destination node
      */
-    float get_expected_cost(RRNodeId node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const override;
+    float get_expected_cost(RRNodeId node,
+                            RRNodeId target_node,
+                            const t_conn_cost_params& params,
+                            float R_upstream) const override;
 
     /**
      * @brief Returns a pair of expected delay and congestion
      */
-    std::pair<float, float> get_expected_delay_and_cong(RRNodeId inode, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const override;
+    std::pair<float, float> get_expected_delay_and_cong(RRNodeId inode,
+                                                        RRNodeId target_node,
+                                                        const t_conn_cost_params& params,
+                                                        float R_upstream) const override;
 
     /**
      * @brief Computes the extended lookahead map
@@ -104,7 +114,11 @@ class ExtendedMapLookahead : public RouterLookahead {
         VPR_THROW(VPR_ERROR_ROUTE, "ExtendedMapLookahead::write_intra_cluster unimplemented");
     }
 
-    float get_opin_distance_min_delay(int /*physical_tile_idx*/, int /*from_layer*/, int /*to_layer*/, int /*dx*/, int /*dy*/) const override {
+    float get_opin_distance_min_delay(int /*physical_tile_idx*/,
+                                      int /*from_layer*/,
+                                      int /*to_layer*/,
+                                      int /*dx*/,
+                                      int /*dy*/) const override {
         return -1.;
     }
 };

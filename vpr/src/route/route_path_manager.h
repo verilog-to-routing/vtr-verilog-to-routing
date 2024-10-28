@@ -60,8 +60,7 @@ class PathManager {
     // Checks if the target node exists in the route tree, or current backwards path variable
     // This is needed for RCV as the non minimum distance pathfinding can lead to illegal loops
     // By keeping a set of the current route tree for a net, as well as checking the current path we can prevent this
-    bool node_exists_in_tree(t_heap_path* path_data,
-                             RRNodeId to_node);
+    bool node_exists_in_tree(t_heap_path* path_data, RRNodeId to_node);
 
     // Insert a node into the current route tree set indicating that it's currently in routing
     // Use this whenever updating the route tree
@@ -74,7 +73,10 @@ class PathManager {
     void set_enabled(bool enable);
 
     // Insert the partial path data into the main route context traceback
-    void insert_backwards_path_into_traceback(t_heap_path* path_data, float cost, float backward_path_cost, RoutingContext& route_ctx);
+    void insert_backwards_path_into_traceback(t_heap_path* path_data,
+                                              float cost,
+                                              float backward_path_cost,
+                                              RoutingContext& route_ctx);
 
     // Dynamically create a t_heap_path structure to be used in the heap
     // Will return unless RCV is enabled

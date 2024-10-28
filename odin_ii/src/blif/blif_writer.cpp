@@ -39,22 +39,19 @@
 #include "vtr_memory.h"
 
 blif::writer::writer()
-    : generic_writer() {
-}
+    : generic_writer() {}
 
 blif::writer::~writer() = default;
 
-inline void blif::writer::_write(const netlist_t* netlist) {
-    output_blif(this->output_file, netlist);
-}
+inline void blif::writer::_write(const netlist_t* netlist) { output_blif(this->output_file, netlist); }
 
 inline void blif::writer::_create_file(const char* file_name, const file_type_e file_type) {
     // validate the file_name pionter
     oassert(file_name);
     // validate the file type
     if (file_type != BLIF)
-        error_message(UTIL, unknown_location,
-                      "blif back-end entity cannot create file types(%d) other than blif", file_type);
+        error_message(UTIL, unknown_location, "blif back-end entity cannot create file types(%d) other than blif",
+                      file_type);
     // create the blif file and set it as the output file
     this->output_file = create_blif(file_name);
 }
@@ -71,9 +68,7 @@ inline void blif::writer::_create_file(const char* file_name, const file_type_e 
 bool blif::writer::warn_undriven(nnode_t* node, nnet_t* net) {
     if (!net->num_driver_pins) {
         // Add a warning for an undriven net.
-        warning_message(NETLIST, node->loc,
-                        "Net %s driving node %s is itself undriven.",
-                        net->name, node->name);
+        warning_message(NETLIST, node->loc, "Net %s driving node %s is itself undriven.", net->name, node->name);
 
         return true;
     }
@@ -118,19 +113,17 @@ void blif::writer::print_net_driver(FILE* out, nnode_t* node, nnet_t* net, long 
     npin_t* driver = net->driver_pins[driver_idx];
     if (!driver->node) {
         // Add a warning for an undriven net.
-        warning_message(NETLIST, node->loc,
-                        "Net %s driving node %s is itself undriven.",
-                        net->name, node->name);
+        warning_message(NETLIST, node->loc, "Net %s driving node %s is itself undriven.", net->name, node->name);
 
         fprintf(out, " %s", "unconn");
     } else if (global_args.high_level_block.provenance() == argparse::Provenance::SPECIFIED
                && driver->node->related_ast_node != NULL) {
-        fprintf(out, " %s^^%i-%i",
-                driver->node->name,
-                driver->node->related_ast_node->far_tag,
+        fprintf(out, " %s^^%i-%i", driver->node->name, driver->node->related_ast_node->far_tag,
                 driver->node->related_ast_node->high_number);
     } else {
-        if (driver->name != NULL && ((driver->node->type == MULTIPLY) || (driver->node->type == HARD_IP) || (driver->node->type == MEMORY) || (driver->node->type == ADD) || (driver->node->type == MINUS))) {
+        if (driver->name != NULL
+            && ((driver->node->type == MULTIPLY) || (driver->node->type == HARD_IP) || (driver->node->type == MEMORY)
+                || (driver->node->type == ADD) || (driver->node->type == MINUS))) {
             fprintf(out, " %s", driver->name);
         } else {
             fprintf(out, " %s", driver->node->name);
@@ -170,12 +163,8 @@ void blif::writer::print_input_single_driver(FILE* out, nnode_t* node, long pin_
  */
 void blif::writer::print_output_pin(FILE* out, nnode_t* node) {
     /* now print the output */
-    if (node->related_ast_node != NULL
-        && global_args.high_level_block.provenance() == argparse::Provenance::SPECIFIED)
-        fprintf(out, " %s^^%i-%i",
-                node->name,
-                node->related_ast_node->far_tag,
-                node->related_ast_node->high_number);
+    if (node->related_ast_node != NULL && global_args.high_level_block.provenance() == argparse::Provenance::SPECIFIED)
+        fprintf(out, " %s^^%i-%i", node->name, node->related_ast_node->far_tag, node->related_ast_node->high_number);
     else
         fprintf(out, " %s", node->name);
 }
@@ -277,9 +266,7 @@ void blif::writer::output_blif(FILE* out, const netlist_t* netlist) {
     for (long i = 0; i < netlist->num_top_output_nodes; i++) {
         nnode_t* top_output_node = netlist->top_output_nodes[i];
         if (!top_output_node->input_pins[0]->net->num_driver_pins) {
-            warning_message(NETLIST,
-                            top_output_node->loc,
-                            "This output is undriven (%s) and will be removed\n",
+            warning_message(NETLIST, top_output_node->loc, "This output is undriven (%s) and will be removed\n",
                             top_output_node->name);
         } else {
             print_output_pin(out, top_output_node);

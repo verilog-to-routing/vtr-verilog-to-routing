@@ -82,10 +82,7 @@ void vpr_load_placement(t_vpr_setup& vpr_setup, const t_arch& arch);
 /* Routing */
 
 ///@brief Perform, load or skip the routing stage
-RouteStatus vpr_route_flow(const Netlist<>& net_list,
-                           t_vpr_setup& vpr_setup,
-                           const t_arch& arch,
-                           bool is_flat);
+RouteStatus vpr_route_flow(const Netlist<>& net_list, t_vpr_setup& vpr_setup, const t_arch& arch, bool is_flat);
 
 ///@brief Perform routing at a fixed channel width)
 RouteStatus vpr_route_fixed_W(const Netlist<>& net_list,
@@ -152,8 +149,7 @@ void vpr_setup_noc(const t_vpr_setup& vpr_setup, const t_arch& arch);
 void vpr_setup_noc_routing_algorithm(const std::string& noc_routing_algorithm_name);
 
 void vpr_free_vpr_data_structures(t_arch& Arch, t_vpr_setup& vpr_setup);
-void vpr_free_all(t_arch& Arch,
-                  t_vpr_setup& vpr_setup);
+void vpr_free_all(t_arch& Arch, t_vpr_setup& vpr_setup);
 
 /* Display general info to user */
 void vpr_print_title();

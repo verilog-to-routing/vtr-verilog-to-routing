@@ -4,11 +4,7 @@
 #include <string>
 #include <vector>
 
-enum class e_clock_type {
-    SPINE,
-    RIB,
-    H_TREE
-};
+enum class e_clock_type { SPINE, RIB, H_TREE };
 
 struct t_metal_layer {
     float r_metal;

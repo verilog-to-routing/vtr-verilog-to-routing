@@ -64,7 +64,8 @@ vtr::vector_map<Id, Id> compress_ids(const vtr::vector_map<Id, Id>& ids) {
  * Otherwise the element is moved to the new ID location.
  */
 template<typename Id, typename T>
-vtr::vector_map<Id, T> clean_and_reorder_values(const vtr::vector_map<Id, T>& values, const vtr::vector_map<Id, Id>& id_map) {
+vtr::vector_map<Id, T> clean_and_reorder_values(const vtr::vector_map<Id, T>& values,
+                                                const vtr::vector_map<Id, Id>& id_map) {
     VTR_ASSERT(values.size() == id_map.size());
 
     //Allocate space for the values that will not be dropped

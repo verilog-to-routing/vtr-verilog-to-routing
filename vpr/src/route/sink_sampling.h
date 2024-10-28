@@ -26,9 +26,7 @@ struct SinkPoint {
     int isink;
 
     /** Operators to make this work with std::set */
-    bool operator==(const SinkPoint& rhs) const {
-        return x == rhs.x && y == rhs.y;
-    }
+    bool operator==(const SinkPoint& rhs) const { return x == rhs.x && y == rhs.y; }
     bool operator<(const SinkPoint& rhs) const {
         if (x < rhs.x)
             return true;
@@ -60,12 +58,14 @@ constexpr int side_of(const SinkPoint& p, const SinkPoint& v0, const SinkPoint& 
 
 /** Perpendicular distance of p to v0v1 assuming |v0v1| = 1
  * (it's not, so only use to compare when v0 and v1 is the same for different p's) */
-inline int dist(const SinkPoint& p, const SinkPoint& v0, const SinkPoint& v1) {
-    return abs(det(p, v0, v1));
-}
+inline int dist(const SinkPoint& p, const SinkPoint& v0, const SinkPoint& v1) { return abs(det(p, v0, v1)); }
 
 /** Helper for quickhull() */
-inline void find_hull(std::set<SinkPoint>& out, const std::vector<SinkPoint>& points, const SinkPoint& v0, const SinkPoint& v1, int side) {
+inline void find_hull(std::set<SinkPoint>& out,
+                      const std::vector<SinkPoint>& points,
+                      const SinkPoint& v0,
+                      const SinkPoint& v1,
+                      int side) {
     int max_dist = 0;
     const SinkPoint* max_p = nullptr;
     for (auto& point : points) {

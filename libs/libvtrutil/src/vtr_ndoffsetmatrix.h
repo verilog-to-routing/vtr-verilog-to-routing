@@ -85,10 +85,11 @@ class NdOffsetMatrixProxy {
         int next_dim_stride = dim_stride_ / dim_ranges_[idim_ + 1].size();
 
         //Strip off one dimension
-        return NdOffsetMatrixProxy<T, N - 1>(dim_ranges_,                             //Pass the dimension information
-                                             idim_ + 1,                               //Pass the next dimension
-                                             next_dim_stride,                         //Pass the stride for the next dimension
-                                             start_ + dim_stride_ * effective_index); //Advance to index in this dimension
+        return NdOffsetMatrixProxy<T, N - 1>(
+            dim_ranges_,                             //Pass the dimension information
+            idim_ + 1,                               //Pass the next dimension
+            next_dim_stride,                         //Pass the stride for the next dimension
+            start_ + dim_stride_ * effective_index); //Advance to index in this dimension
     }
 
     ///@brief [] operator
@@ -173,9 +174,7 @@ class NdOffsetMatrixBase {
     static_assert(N >= 1, "Minimum dimension 1");
 
     ///@brief An empty matrix (all dimensions size zero)
-    NdOffsetMatrixBase() {
-        clear();
-    }
+    NdOffsetMatrixBase() { clear(); }
 
     /** 
      * @brief Specified dimension sizes:
@@ -185,9 +184,7 @@ class NdOffsetMatrixBase {
      *      ...
      * with optional fill value
      */
-    NdOffsetMatrixBase(std::array<size_t, N> dim_sizes, T value = T()) {
-        resize(dim_sizes, value);
-    }
+    NdOffsetMatrixBase(std::array<size_t, N> dim_sizes, T value = T()) { resize(dim_sizes, value); }
 
     /**
      * @brief Specified dimension index ranges:
@@ -197,9 +194,7 @@ class NdOffsetMatrixBase {
      *      ...
      * with optional fill value
      */
-    NdOffsetMatrixBase(std::array<DimRange, N> dim_ranges, T value = T()) {
-        resize(dim_ranges, value);
-    }
+    NdOffsetMatrixBase(std::array<DimRange, N> dim_ranges, T value = T()) { resize(dim_ranges, value); }
 
   public: //Accessors
     ///@brief Returns the size of the matrix (number of elements)
@@ -213,14 +208,10 @@ class NdOffsetMatrixBase {
     }
 
     ///@brief Returns true if there are no elements in the matrix
-    bool empty() const {
-        return size() == 0;
-    }
+    bool empty() const { return size() == 0; }
 
     ///@brief Returns the number of dimensions (i.e. N)
-    size_t ndims() const {
-        return dim_ranges_.size();
-    }
+    size_t ndims() const { return dim_ranges_.size(); }
 
     ///@brief Returns the size of the ith dimension
     size_t dim_size(size_t i) const {
@@ -245,9 +236,7 @@ class NdOffsetMatrixBase {
 
   public: //Mutators
     ///@brief Set all elements to 'value'
-    void fill(T value) {
-        std::fill(data_.get(), data_.get() + size(), value);
-    }
+    void fill(T value) { std::fill(data_.get(), data_.get() + size(), value); }
 
     /**
      * @brief Resize the matrix to the specified dimensions
@@ -316,9 +305,7 @@ class NdOffsetMatrixBase {
 
   private:
     // Allocate space for all the elements
-    void alloc() {
-        data_ = std::make_unique<T[]>(size());
-    }
+    void alloc() { data_ = std::make_unique<T[]>(size()); }
 
   protected:
     std::array<DimRange, N> dim_ranges_;
@@ -388,7 +375,8 @@ class NdOffsetMatrix : public NdOffsetMatrixBase<T, N> {
     const NdOffsetMatrixProxy<T, N - 1> operator[](int index) const {
         VTR_ASSERT_SAFE_MSG(this->dim_size(0) > 0, "Can not index into size zero dimension");
         VTR_ASSERT_SAFE_MSG(this->dim_size(1) > 0, "Can not index into size zero dimension");
-        VTR_ASSERT_SAFE_MSG(index >= this->dim_ranges_[0].begin_index(), "Index out of range (below dimension minimum)");
+        VTR_ASSERT_SAFE_MSG(index >= this->dim_ranges_[0].begin_index(),
+                            "Index out of range (below dimension minimum)");
         VTR_ASSERT_SAFE_MSG(index < this->dim_ranges_[0].end_index(), "Index out of range (above dimension maximum)");
 
         /*
@@ -406,10 +394,11 @@ class NdOffsetMatrix : public NdOffsetMatrixBase<T, N> {
         int next_dim_stride = dim_stride / this->dim_size(1);
 
         //Peel off the first dimension
-        return NdOffsetMatrixProxy<T, N - 1>(this->dim_ranges_.data(),                          //Pass the dimension information
-                                             1,                                                 //Pass the next dimension
-                                             next_dim_stride,                                   //Pass the stride for the next dimension
-                                             this->data_.get() + dim_stride * effective_index); //Advance to index in this dimension
+        return NdOffsetMatrixProxy<T, N - 1>(
+            this->dim_ranges_.data(),                          //Pass the dimension information
+            1,                                                 //Pass the next dimension
+            next_dim_stride,                                   //Pass the stride for the next dimension
+            this->data_.get() + dim_stride * effective_index); //Advance to index in this dimension
     }
 
     /**
@@ -438,7 +427,8 @@ class NdOffsetMatrix<T, 1> : public NdOffsetMatrixBase<T, 1> {
     ///@brief Access an element (immutable)
     const T& operator[](int index) const {
         VTR_ASSERT_SAFE_MSG(this->dim_size(0) > 0, "Can not index into size zero dimension");
-        VTR_ASSERT_SAFE_MSG(index >= this->dim_ranges_[0].begin_index(), "Index out of range (below dimension minimum)");
+        VTR_ASSERT_SAFE_MSG(index >= this->dim_ranges_[0].begin_index(),
+                            "Index out of range (below dimension minimum)");
         VTR_ASSERT_SAFE_MSG(index < this->dim_ranges_[0].end_index(), "Index out of range (above dimension maximum)");
 
         return this->data_[index];

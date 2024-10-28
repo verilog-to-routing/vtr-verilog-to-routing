@@ -32,7 +32,6 @@ class t_pack_high_fanout_thresholds;
  */
 std::vector<AtomBlockId> find_noc_router_atoms(const AtomNetlist& atom_netlist);
 
-
 /**
  * @brief Runs BFS starting from NoC routers to find all connected
  * components that include a NoC router. Each connected component

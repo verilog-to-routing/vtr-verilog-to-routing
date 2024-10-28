@@ -29,9 +29,7 @@ void srandom(int seed) {
 }
 
 /* returns the random_state value */
-RandState get_random_state() {
-    return random_state;
-}
+RandState get_random_state() { return random_state; }
 
 int irand(int imax, RandState& state) {
 #ifdef SPEC_CPU
@@ -46,7 +44,7 @@ int irand(int imax, RandState& state) {
     ival = state & (IM - 1); /* Modulus */
     ival = (int)((float)ival * (float)(imax + 0.999) / (float)IM);
 
-#    ifdef CHECK_RAND
+#ifdef CHECK_RAND
     if ((ival < 0) || (ival > imax)) {
         if (ival == imax + 1) {
             /* Due to random floating point rounding, sometimes above calculation gives number greater than ival by 1 */
@@ -55,15 +53,13 @@ int irand(int imax, RandState& state) {
             throw VtrError(string_fmt("Bad value in my_irand, imax = %d  ival = %d", imax, ival), __FILE__, __LINE__);
         }
     }
-#    endif
+#endif
 
     return ival;
 #endif
 }
 
-int irand(int imax) {
-    return irand(imax, random_state);
-}
+int irand(int imax) { return irand(imax, random_state); }
 
 float frand() {
     /* Creates a random float between 0 and 1.  i.e. [0..1).        */
@@ -78,11 +74,11 @@ float frand() {
     ival = random_state & (IM - 1);        /* Modulus */
     fval = (float)ival / (float)IM;
 
-#    ifdef CHECK_RAND
+#ifdef CHECK_RAND
     if ((fval < 0) || (fval > 1.)) {
         throw VtrError(string_fmt("Bad value in my_frand, fval = %g", fval), __FILE__, __LINE__);
     }
-#    endif
+#endif
 
     return (fval);
 #endif

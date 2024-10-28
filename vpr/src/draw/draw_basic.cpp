@@ -38,36 +38,36 @@
 #include "tatum/report/TimingPathCollector.hpp"
 
 #ifdef VTR_ENABLE_DEBUG_LOGGING
-#    include "move_utils.h"
+#include "move_utils.h"
 #endif
 
 #ifdef WIN32 /* For runtime tracking in WIN32. The clock() function defined in time.h will *
               * track CPU runtime.														   */
-#    include <time.h>
+#include <time.h>
 #else /* For X11. The clock() function in time.h will not output correct time difference   *
        * for X11, because the graphics is processed by the Xserver rather than local CPU,  *
        * which means tracking CPU time will not be the same as the actual wall clock time. *
        * Thus, so use gettimeofday() in sys/time.h to track actual calendar time.          */
-#    include <sys/time.h>
+#include <sys/time.h>
 #endif
 
 #ifndef NO_GRAPHICS
 
 //To process key presses we need the X11 keysym definitions,
 //which are unavailable when building with MINGW
-#    if defined(X11) && !defined(__MINGW32__)
-#        include <X11/keysym.h>
-#    endif
+#if defined(X11) && !defined(__MINGW32__)
+#include <X11/keysym.h>
+#endif
 
-#    include "rr_graph.h"
-#    include "route_utilization.h"
-#    include "place_macro.h"
-#    include "buttons.h"
+#include "rr_graph.h"
+#include "route_utilization.h"
+#include "place_macro.h"
+#include "buttons.h"
 
 /****************************** Define Macros *******************************/
-#    define DEFAULT_RR_NODE_COLOR ezgl::BLACK
-#    define OLD_BLK_LOC_COLOR blk_GOLD
-#    define NEW_BLK_LOC_COLOR blk_GREEN
+#define DEFAULT_RR_NODE_COLOR ezgl::BLACK
+#define OLD_BLK_LOC_COLOR blk_GOLD
+#define NEW_BLK_LOC_COLOR blk_GREEN
 
 constexpr float EMPTY_BLOCK_LIGHTEN_FACTOR = 0.20;
 
@@ -124,8 +124,7 @@ void drawplace(ezgl::renderer* g) {
                     // 0 - opaque, 255 - transparent
                     int transparency_factor = draw_state->draw_layer_display[layer_num].alpha;
 
-                    if (width_offset > 0
-                        || height_offset > 0)
+                    if (width_offset > 0 || height_offset > 0)
                         continue;
 
                     num_sub_tiles = type->capacity;
@@ -153,8 +152,7 @@ void drawplace(ezgl::renderer* g) {
                             curr_loc.x = i;
                             curr_loc.y = j;
                             curr_loc.layer = layer_num;
-                            current_loc_is_highlighted = highlight_loc_with_specific_color(curr_loc,
-                                                                                           block_color);
+                            current_loc_is_highlighted = highlight_loc_with_specific_color(curr_loc, block_color);
                         }
                         // No color specified at this location; use the block color.
                         if (!current_loc_is_highlighted) {
@@ -162,8 +160,7 @@ void drawplace(ezgl::renderer* g) {
                                 block_color = draw_state->block_color(bnum);
                             } else {
                                 block_color = get_block_type_color(type);
-                                block_color = lighten_color(block_color,
-                                                            EMPTY_BLOCK_LIGHTEN_FACTOR);
+                                block_color = lighten_color(block_color, EMPTY_BLOCK_LIGHTEN_FACTOR);
                             }
                         }
 
@@ -171,18 +168,16 @@ void drawplace(ezgl::renderer* g) {
                         g->set_color(block_color, transparency_factor);
 
                         /* Get coords of current sub_tile */
-                        ezgl::rectangle abs_clb_bbox = draw_coords->get_absolute_clb_bbox(layer_num,
-                                                                                          i,
-                                                                                          j,
-                                                                                          k,
-                                                                                          logical_block_type);
+                        ezgl::rectangle abs_clb_bbox
+                            = draw_coords->get_absolute_clb_bbox(layer_num, i, j, k, logical_block_type);
                         ezgl::point2d center = abs_clb_bbox.center();
 
                         g->fill_rectangle(abs_clb_bbox);
 
                         g->set_color(ezgl::BLACK, transparency_factor);
 
-                        g->set_line_dash((bnum == ClusterBlockId::INVALID()) ? ezgl::line_dash::asymmetric_5_3 : ezgl::line_dash::none);
+                        g->set_line_dash((bnum == ClusterBlockId::INVALID()) ? ezgl::line_dash::asymmetric_5_3
+                                                                             : ezgl::line_dash::none);
                         if (draw_state->draw_block_outlines) {
                             g->draw_rectangle(abs_clb_bbox);
                         }
@@ -190,25 +185,18 @@ void drawplace(ezgl::renderer* g) {
                         if (draw_state->draw_block_text) {
                             /* Draw text if the space has parts of the netlist */
                             if (bnum) {
-                                std::string name = cluster_ctx.clb_nlist.block_name(
-                                                       bnum)
-                                                   + vtr::string_fmt(" (#%zu)", size_t(bnum));
+                                std::string name
+                                    = cluster_ctx.clb_nlist.block_name(bnum) + vtr::string_fmt(" (#%zu)", size_t(bnum));
 
-                                g->draw_text(center, name.c_str(), abs_clb_bbox.width(),
-                                             abs_clb_bbox.height());
+                                g->draw_text(center, name.c_str(), abs_clb_bbox.width(), abs_clb_bbox.height());
                             }
                             /* Draw text for block type so that user knows what block */
-                            if (width_offset == 0
-                                && height_offset == 0) {
+                            if (width_offset == 0 && height_offset == 0) {
                                 std::string block_type_loc = type->name;
                                 block_type_loc += vtr::string_fmt(" (%d,%d)", i, j);
 
-                                g->draw_text(
-                                    center
-                                        - ezgl::point2d(0,
-                                                        abs_clb_bbox.height() / 4),
-                                    block_type_loc.c_str(), abs_clb_bbox.width(),
-                                    abs_clb_bbox.height());
+                                g->draw_text(center - ezgl::point2d(0, abs_clb_bbox.height() / 4),
+                                             block_type_loc.c_str(), abs_clb_bbox.width(), abs_clb_bbox.height());
                             }
                         }
                     }
@@ -257,14 +245,16 @@ void drawnets(ezgl::renderer* g) {
             continue; /* Don't draw */
         }
 
-        ezgl::point2d driver_center = draw_coords->get_absolute_clb_bbox(b1, cluster_ctx.clb_nlist.block_type(b1)).center();
+        ezgl::point2d driver_center
+            = draw_coords->get_absolute_clb_bbox(b1, cluster_ctx.clb_nlist.block_type(b1)).center();
         for (ClusterPinId pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
             ClusterBlockId b2 = cluster_ctx.clb_nlist.pin_block(pin_id);
 
             //the layer of the pin block (net sinks)
-            sink_block_layer_num =block_locs[b2].loc.layer;
+            sink_block_layer_num = block_locs[b2].loc.layer;
 
-            t_draw_layer_display element_visibility = get_element_visibility_and_transparency(driver_block_layer_num, sink_block_layer_num);
+            t_draw_layer_display element_visibility
+                = get_element_visibility_and_transparency(driver_block_layer_num, sink_block_layer_num);
 
             if (!element_visibility.visible) {
                 continue; /* Don't Draw */
@@ -273,9 +263,11 @@ void drawnets(ezgl::renderer* g) {
 
             //Take the highest of the 2 transparency values that the user can select from the UI
             // Compare the current cross layer transparency to the overall Net transparency set by the user.
-            g->set_color(draw_state->net_color[net_id], fmin(transparency_factor, draw_state->net_color[net_id].alpha * NET_ALPHA));
+            g->set_color(draw_state->net_color[net_id],
+                         fmin(transparency_factor, draw_state->net_color[net_id].alpha * NET_ALPHA));
 
-            ezgl::point2d sink_center = draw_coords->get_absolute_clb_bbox(b2, cluster_ctx.clb_nlist.block_type(b2)).center();
+            ezgl::point2d sink_center
+                = draw_coords->get_absolute_clb_bbox(b2, cluster_ctx.clb_nlist.block_type(b2)).center();
             g->draw_line(driver_center, sink_center);
             /* Uncomment to draw a chain instead of a star. */
             /* driver_center = sink_center;  */
@@ -313,11 +305,13 @@ void draw_congestion(ezgl::renderer* g) {
         sprintf(msg, "RR Node Overuse ratio range (%.2f, %.2f]", min_congestion_ratio, max_congestion_ratio);
     } else {
         VTR_ASSERT(draw_state->show_congestion == DRAW_CONGESTED_WITH_NETS);
-        sprintf(msg, "RR Node Overuse ratio range (%.2f, %.2f] (and congested nets)", min_congestion_ratio, max_congestion_ratio);
+        sprintf(msg, "RR Node Overuse ratio range (%.2f, %.2f] (and congested nets)", min_congestion_ratio,
+                max_congestion_ratio);
     }
     application.update_message(msg);
 
-    std::shared_ptr<vtr::ColorMap> cmap = std::make_shared<vtr::PlasmaColorMap>(min_congestion_ratio, max_congestion_ratio);
+    std::shared_ptr<vtr::ColorMap> cmap
+        = std::make_shared<vtr::PlasmaColorMap>(min_congestion_ratio, max_congestion_ratio);
 
     //Sort the nodes in ascending order of value for drawing, this ensures high
     //valued nodes are not overdrawn by lower value ones (e.g-> when zoomed-out far)
@@ -417,32 +411,25 @@ void draw_routing_costs(ezgl::renderer* g) {
     for (const RRNodeId inode : device_ctx.rr_graph.nodes()) {
         float cost = 0.;
         if (draw_state->show_routing_costs == DRAW_TOTAL_ROUTING_COSTS
-            || draw_state->show_routing_costs
-                   == DRAW_LOG_TOTAL_ROUTING_COSTS) {
-            cost = get_single_rr_cong_cost(inode,
-                                           get_draw_state_vars()->pres_fac);
+            || draw_state->show_routing_costs == DRAW_LOG_TOTAL_ROUTING_COSTS) {
+            cost = get_single_rr_cong_cost(inode, get_draw_state_vars()->pres_fac);
 
         } else if (draw_state->show_routing_costs == DRAW_BASE_ROUTING_COSTS) {
             cost = get_single_rr_cong_base_cost(inode);
 
         } else if (draw_state->show_routing_costs == DRAW_ACC_ROUTING_COSTS
-                   || draw_state->show_routing_costs
-                          == DRAW_LOG_ACC_ROUTING_COSTS) {
+                   || draw_state->show_routing_costs == DRAW_LOG_ACC_ROUTING_COSTS) {
             cost = get_single_rr_cong_acc_cost(inode);
 
         } else {
-            VTR_ASSERT(
-                draw_state->show_routing_costs == DRAW_PRES_ROUTING_COSTS
-                || draw_state->show_routing_costs
-                       == DRAW_LOG_PRES_ROUTING_COSTS);
-            cost = get_single_rr_cong_pres_cost(inode,
-                                                get_draw_state_vars()->pres_fac);
+            VTR_ASSERT(draw_state->show_routing_costs == DRAW_PRES_ROUTING_COSTS
+                       || draw_state->show_routing_costs == DRAW_LOG_PRES_ROUTING_COSTS);
+            cost = get_single_rr_cong_pres_cost(inode, get_draw_state_vars()->pres_fac);
         }
 
         if (draw_state->show_routing_costs == DRAW_LOG_TOTAL_ROUTING_COSTS
             || draw_state->show_routing_costs == DRAW_LOG_ACC_ROUTING_COSTS
-            || draw_state->show_routing_costs
-                   == DRAW_LOG_PRES_ROUTING_COSTS) {
+            || draw_state->show_routing_costs == DRAW_LOG_PRES_ROUTING_COSTS) {
             cost = std::log(cost);
         }
         rr_node_costs[inode] = cost;
@@ -459,26 +446,19 @@ void draw_routing_costs(ezgl::renderer* g) {
 
     char msg[vtr::bufsize];
     if (draw_state->show_routing_costs == DRAW_TOTAL_ROUTING_COSTS) {
-        sprintf(msg, "Total Congestion Cost Range [%g, %g]", min_cost,
-                max_cost);
+        sprintf(msg, "Total Congestion Cost Range [%g, %g]", min_cost, max_cost);
     } else if (draw_state->show_routing_costs == DRAW_LOG_TOTAL_ROUTING_COSTS) {
-        sprintf(msg, "Log Total Congestion Cost Range [%g, %g]", min_cost,
-                max_cost);
+        sprintf(msg, "Log Total Congestion Cost Range [%g, %g]", min_cost, max_cost);
     } else if (draw_state->show_routing_costs == DRAW_BASE_ROUTING_COSTS) {
         sprintf(msg, "Base Congestion Cost Range [%g, %g]", min_cost, max_cost);
     } else if (draw_state->show_routing_costs == DRAW_ACC_ROUTING_COSTS) {
-        sprintf(msg, "Accumulated (Historical) Congestion Cost Range [%g, %g]",
-                min_cost, max_cost);
+        sprintf(msg, "Accumulated (Historical) Congestion Cost Range [%g, %g]", min_cost, max_cost);
     } else if (draw_state->show_routing_costs == DRAW_LOG_ACC_ROUTING_COSTS) {
-        sprintf(msg,
-                "Log Accumulated (Historical) Congestion Cost Range [%g, %g]",
-                min_cost, max_cost);
+        sprintf(msg, "Log Accumulated (Historical) Congestion Cost Range [%g, %g]", min_cost, max_cost);
     } else if (draw_state->show_routing_costs == DRAW_PRES_ROUTING_COSTS) {
-        sprintf(msg, "Present Congestion Cost Range [%g, %g]", min_cost,
-                max_cost);
+        sprintf(msg, "Present Congestion Cost Range [%g, %g]", min_cost, max_cost);
     } else if (draw_state->show_routing_costs == DRAW_LOG_PRES_ROUTING_COSTS) {
-        sprintf(msg, "Log Present Congestion Cost Range [%g, %g]", min_cost,
-                max_cost);
+        sprintf(msg, "Log Present Congestion Cost Range [%g, %g]", min_cost, max_cost);
     } else {
         sprintf(msg, "Cost Range [%g, %g]", min_cost, max_cost);
     }
@@ -522,10 +502,8 @@ void draw_routing_bb(ezgl::renderer* g) {
     //the drawn box contains the top/right channels
     double draw_xlow = draw_coords->tile_x[bb->xmin];
     double draw_ylow = draw_coords->tile_y[bb->ymin];
-    double draw_xhigh = draw_coords->tile_x[bb->xmax]
-                        + 2 * draw_coords->get_tile_width();
-    double draw_yhigh = draw_coords->tile_y[bb->ymax]
-                        + 2 * draw_coords->get_tile_height();
+    double draw_xhigh = draw_coords->tile_x[bb->xmax] + 2 * draw_coords->get_tile_width();
+    double draw_yhigh = draw_coords->tile_y[bb->ymax] + 2 * draw_coords->get_tile_height();
 
     g->set_color(blk_RED);
     g->draw_rectangle({draw_xlow, draw_ylow}, {draw_xhigh, draw_yhigh});
@@ -539,11 +517,9 @@ void draw_routing_bb(ezgl::renderer* g) {
 
     std::string msg;
     msg += "Showing BB";
-    msg += " (" + std::to_string(bb->xmin) + ", " + std::to_string(bb->ymin)
-           + ", " + std::to_string(bb->xmax) + ", " + std::to_string(bb->ymax)
-           + ")";
-    msg += " and routing for net '" + cluster_ctx.clb_nlist.net_name(convert_to_cluster_net_id(net_id))
-           + "'";
+    msg += " (" + std::to_string(bb->xmin) + ", " + std::to_string(bb->ymin) + ", " + std::to_string(bb->xmax) + ", "
+           + std::to_string(bb->ymax) + ")";
+    msg += " and routing for net '" + cluster_ctx.clb_nlist.net_name(convert_to_cluster_net_id(net_id)) + "'";
     msg += " (#" + std::to_string(size_t(net_id)) + ")";
     application.update_message(msg.c_str());
 }
@@ -572,8 +548,7 @@ void drawroute(enum e_draw_net_type draw_net_type, ezgl::renderer* g) {
     /* Now draw each net, one by one.      */
 
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-        if (draw_net_type == HIGHLIGHTED
-            && draw_state->net_color[net_id] == ezgl::BLACK)
+        if (draw_net_type == HIGHLIGHTED && draw_state->net_color[net_id] == ezgl::BLACK)
             continue;
 
         draw_routed_net((ParentNetId&)net_id, g);
@@ -663,7 +638,8 @@ void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::ren
 
         int current_node_layer = rr_graph.node_layer(inode);
         int prev_node_layer = rr_graph.node_layer(prev_node);
-        t_draw_layer_display edge_visibility = get_element_visibility_and_transparency(prev_node_layer, current_node_layer);
+        t_draw_layer_display edge_visibility
+            = get_element_visibility_and_transparency(prev_node_layer, current_node_layer);
 
         //Don't draw node if the layer of the node is not set to visible on screen
         if (!draw_state->draw_layer_display[current_node_layer].visible) {
@@ -729,13 +705,11 @@ void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::ren
                     g->set_color(color, edge_visibility.alpha);
                     switch (prev_type) {
                         case CHANX: {
-                            draw_chanx_to_chany_edge(prev_node, inode,
-                                                     FROM_X_TO_Y, switch_type, g);
+                            draw_chanx_to_chany_edge(prev_node, inode, FROM_X_TO_Y, switch_type, g);
                             break;
                         }
                         case CHANY: {
-                            draw_chany_to_chany_edge(RRNodeId(prev_node), RRNodeId(inode),
-                                                     switch_type, g);
+                            draw_chany_to_chany_edge(RRNodeId(prev_node), RRNodeId(inode), switch_type, g);
                             break;
                         }
                         case OPIN: {
@@ -776,7 +750,8 @@ bool is_edge_valid_to_draw(RRNodeId current_node, RRNodeId prev_node) {
     }
 
     if (current_node_layer != prev_node_layer) {
-        if (draw_state->cross_layer_display.visible && draw_state->draw_layer_display[current_node_layer].visible && draw_state->draw_layer_display[prev_node_layer].visible) {
+        if (draw_state->cross_layer_display.visible && draw_state->draw_layer_display[current_node_layer].visible
+            && draw_state->draw_layer_display[prev_node_layer].visible) {
             return true; //if both layers are enabled and cross layer connections are enabled
         } else {
             return false; //if cross layer connections are disabled or if either the current or prev node's layers are disabled
@@ -801,7 +776,6 @@ void draw_placement_macros(ezgl::renderer* g) {
     const auto& block_locs = draw_state->get_graphics_blk_loc_registry_ref().block_locs();
 
     for (const t_pl_macro& pl_macro : place_ctx.pl_macros) {
-
         //TODO: for now we just draw the bounding box of the macro, which is incorrect for non-rectangular macros...
         int xlow = std::numeric_limits<int>::max();
         int ylow = std::numeric_limits<int>::max();
@@ -835,14 +809,12 @@ void draw_placement_macros(ezgl::renderer* g) {
         double draw_yhigh = draw_coords->tile_y[yhigh];
 
         g->set_color(blk_RED);
-        g->draw_rectangle({draw_xlow, draw_ylow},
-                          {draw_xhigh, draw_yhigh});
+        g->draw_rectangle({draw_xlow, draw_ylow}, {draw_xhigh, draw_yhigh});
 
         ezgl::color fill = blk_SKYBLUE;
         fill.alpha *= 0.3;
         g->set_color(fill);
-        g->fill_rectangle({draw_xlow, draw_ylow},
-                          {draw_xhigh, draw_yhigh});
+        g->fill_rectangle({draw_xlow, draw_ylow}, {draw_xhigh, draw_yhigh});
     }
 }
 
@@ -869,10 +841,8 @@ void draw_routing_util(ezgl::renderer* g) {
     float max_util = -std::numeric_limits<float>::infinity();
     for (size_t x = 0; x < device_ctx.grid.width() - 1; ++x) {
         for (size_t y = 0; y < device_ctx.grid.height() - 1; ++y) {
-            max_util = std::max(max_util,
-                                routing_util(chanx_usage[x][y], chanx_avail[x][y]));
-            max_util = std::max(max_util,
-                                routing_util(chany_usage[x][y], chany_avail[x][y]));
+            max_util = std::max(max_util, routing_util(chanx_usage[x][y], chanx_avail[x][y]));
+            max_util = std::max(max_util, routing_util(chany_usage[x][y], chany_avail[x][y]));
         }
     }
     max_util = std::max(max_util, 1.f);
@@ -904,30 +874,21 @@ void draw_routing_util(ezgl::renderer* g) {
                 if (draw_state->clip_routing_util) {
                     chanx_util = std::min(chanx_util, 1.f);
                 }
-                ezgl::color chanx_color = to_ezgl_color(
-                    cmap->color(chanx_util));
+                ezgl::color chanx_color = to_ezgl_color(cmap->color(chanx_util));
                 chanx_color.alpha *= ALPHA;
                 g->set_color(chanx_color);
-                ezgl::rectangle bb(
-                    {draw_coords->tile_x[x], draw_coords->tile_y[y]
-                                                 + 1 * tile_height},
-                    {draw_coords->tile_x[x] + 1 * tile_width,
-                     draw_coords->tile_y[y + 1]});
+                ezgl::rectangle bb({draw_coords->tile_x[x], draw_coords->tile_y[y] + 1 * tile_height},
+                                   {draw_coords->tile_x[x] + 1 * tile_width, draw_coords->tile_y[y + 1]});
                 g->fill_rectangle(bb);
 
                 g->set_color(ezgl::BLACK);
-                if (draw_state->show_routing_util
-                    == DRAW_ROUTING_UTIL_WITH_VALUE) {
-                    g->draw_text(bb.center(),
-                                 vtr::string_fmt("%.2f", chanx_util).c_str(),
-                                 bb.width(), bb.height());
-                } else if (draw_state->show_routing_util
-                           == DRAW_ROUTING_UTIL_WITH_FORMULA) {
-                    g->draw_text(bb.center(),
-                                 vtr::string_fmt("%.2f = %.0f / %.0f", chanx_util,
-                                                 chanx_usage[x][y], chanx_avail[x][y])
-                                     .c_str(),
-                                 bb.width(), bb.height());
+                if (draw_state->show_routing_util == DRAW_ROUTING_UTIL_WITH_VALUE) {
+                    g->draw_text(bb.center(), vtr::string_fmt("%.2f", chanx_util).c_str(), bb.width(), bb.height());
+                } else if (draw_state->show_routing_util == DRAW_ROUTING_UTIL_WITH_FORMULA) {
+                    g->draw_text(
+                        bb.center(),
+                        vtr::string_fmt("%.2f = %.0f / %.0f", chanx_util, chanx_usage[x][y], chanx_avail[x][y]).c_str(),
+                        bb.width(), bb.height());
                 }
 
                 sb_util += chanx_util;
@@ -939,29 +900,21 @@ void draw_routing_util(ezgl::renderer* g) {
                 if (draw_state->clip_routing_util) {
                     chany_util = std::min(chany_util, 1.f);
                 }
-                ezgl::color chany_color = to_ezgl_color(
-                    cmap->color(chany_util));
+                ezgl::color chany_color = to_ezgl_color(cmap->color(chany_util));
                 chany_color.alpha *= ALPHA;
                 g->set_color(chany_color);
-                ezgl::rectangle bb({draw_coords->tile_x[x] + 1 * tile_width,
-                                    draw_coords->tile_y[y]},
-                                   {draw_coords->tile_x[x + 1], draw_coords->tile_y[y]
-                                                                    + 1 * tile_height});
+                ezgl::rectangle bb({draw_coords->tile_x[x] + 1 * tile_width, draw_coords->tile_y[y]},
+                                   {draw_coords->tile_x[x + 1], draw_coords->tile_y[y] + 1 * tile_height});
                 g->fill_rectangle(bb);
 
                 g->set_color(ezgl::BLACK);
-                if (draw_state->show_routing_util
-                    == DRAW_ROUTING_UTIL_WITH_VALUE) {
-                    g->draw_text(bb.center(),
-                                 vtr::string_fmt("%.2f", chany_util).c_str(),
-                                 bb.width(), bb.height());
-                } else if (draw_state->show_routing_util
-                           == DRAW_ROUTING_UTIL_WITH_FORMULA) {
-                    g->draw_text(bb.center(),
-                                 vtr::string_fmt("%.2f = %.0f / %.0f", chany_util,
-                                                 chany_usage[x][y], chany_avail[x][y])
-                                     .c_str(),
-                                 bb.width(), bb.height());
+                if (draw_state->show_routing_util == DRAW_ROUTING_UTIL_WITH_VALUE) {
+                    g->draw_text(bb.center(), vtr::string_fmt("%.2f", chany_util).c_str(), bb.width(), bb.height());
+                } else if (draw_state->show_routing_util == DRAW_ROUTING_UTIL_WITH_FORMULA) {
+                    g->draw_text(
+                        bb.center(),
+                        vtr::string_fmt("%.2f = %.0f / %.0f", chany_util, chany_usage[x][y], chany_avail[x][y]).c_str(),
+                        bb.width(), bb.height());
                 }
 
                 sb_util += chany_util;
@@ -970,11 +923,9 @@ void draw_routing_util(ezgl::renderer* g) {
 
             //For now SB util is just average of surrounding channels
             //TODO: calculate actual usage
-            sb_util += routing_util(chanx_usage[x + 1][y],
-                                    chanx_avail[x + 1][y]);
+            sb_util += routing_util(chanx_usage[x + 1][y], chanx_avail[x + 1][y]);
             chan_count += 1;
-            sb_util += routing_util(chany_usage[x][y + 1],
-                                    chany_avail[x][y + 1]);
+            sb_util += routing_util(chany_usage[x][y + 1], chany_avail[x][y + 1]);
             chan_count += 1;
 
             VTR_ASSERT(chan_count > 0);
@@ -985,31 +936,23 @@ void draw_routing_util(ezgl::renderer* g) {
             ezgl::color sb_color = to_ezgl_color(cmap->color(sb_util));
             sb_color.alpha *= ALPHA;
             g->set_color(sb_color);
-            ezgl::rectangle bb(
-                {draw_coords->tile_x[x] + 1 * tile_width,
-                 draw_coords->tile_y[y] + 1 * tile_height},
-                {draw_coords->tile_x[x + 1], draw_coords->tile_y[y + 1]});
+            ezgl::rectangle bb({draw_coords->tile_x[x] + 1 * tile_width, draw_coords->tile_y[y] + 1 * tile_height},
+                               {draw_coords->tile_x[x + 1], draw_coords->tile_y[y + 1]});
             g->fill_rectangle(bb);
 
             //Draw over blocks
-            if (draw_state->show_routing_util
-                == DRAW_ROUTING_UTIL_OVER_BLOCKS) {
-                if (x < device_ctx.grid.width() - 2
-                    && y < device_ctx.grid.height() - 2) {
-                    ezgl::rectangle bb2({draw_coords->tile_x[x + 1],
-                                         draw_coords->tile_y[y + 1]},
-                                        {draw_coords->tile_x[x + 1] + 1 * tile_width,
-                                         draw_coords->tile_y[y + 1] + 1 * tile_width});
+            if (draw_state->show_routing_util == DRAW_ROUTING_UTIL_OVER_BLOCKS) {
+                if (x < device_ctx.grid.width() - 2 && y < device_ctx.grid.height() - 2) {
+                    ezgl::rectangle bb2(
+                        {draw_coords->tile_x[x + 1], draw_coords->tile_y[y + 1]},
+                        {draw_coords->tile_x[x + 1] + 1 * tile_width, draw_coords->tile_y[y + 1] + 1 * tile_width});
                     g->fill_rectangle(bb2);
                 }
             }
             g->set_color(ezgl::BLACK);
             if (draw_state->show_routing_util == DRAW_ROUTING_UTIL_WITH_VALUE
-                || draw_state->show_routing_util
-                       == DRAW_ROUTING_UTIL_WITH_FORMULA) {
-                g->draw_text(bb.center(),
-                             vtr::string_fmt("%.2f", sb_util).c_str(), bb.width(),
-                             bb.height());
+                || draw_state->show_routing_util == DRAW_ROUTING_UTIL_WITH_FORMULA) {
+                g->draw_text(bb.center(), vtr::string_fmt("%.2f", sb_util).c_str(), bb.width(), bb.height());
             }
         }
     }
@@ -1038,9 +981,8 @@ void draw_crit_path(ezgl::renderer* g) {
     }
 
     //Get the worst timing path
-    auto paths = path_collector.collect_worst_setup_timing_paths(
-        *timing_ctx.graph,
-        *(draw_state->setup_timing_info->setup_analyzer()), 1);
+    auto paths = path_collector.collect_worst_setup_timing_paths(*timing_ctx.graph,
+                                                                 *(draw_state->setup_timing_info->setup_analyzer()), 1);
     tatum::TimingPath path = paths[0];
 
     //Walk through the timing path drawing each edge
@@ -1056,26 +998,24 @@ void draw_crit_path(ezgl::renderer* g) {
             //any routing which corresponds to the edge
             //
             //We pick colors from the kelly max-contrast list, for long paths there may be repeats
-            ezgl::color color = kelly_max_contrast_colors[i++
-                                                          % kelly_max_contrast_colors.size()];
+            ezgl::color color = kelly_max_contrast_colors[i++ % kelly_max_contrast_colors.size()];
 
             float delay = arr_time - prev_arr_time;
 
             int src_block_layer = get_timing_path_node_layer_num(node);
             int sink_block_layer = get_timing_path_node_layer_num(prev_node);
 
-            t_draw_layer_display flyline_visibility = get_element_visibility_and_transparency(src_block_layer, sink_block_layer);
+            t_draw_layer_display flyline_visibility
+                = get_element_visibility_and_transparency(src_block_layer, sink_block_layer);
 
             if (draw_state->show_crit_path == DRAW_CRIT_PATH_FLYLINES
-                || draw_state->show_crit_path
-                       == DRAW_CRIT_PATH_FLYLINES_DELAYS) {
+                || draw_state->show_crit_path == DRAW_CRIT_PATH_FLYLINES_DELAYS) {
                 // FLylines for critical path are drawn based on the layer visibility of the source and sink
                 if (flyline_visibility.visible) {
                     g->set_color(color, flyline_visibility.alpha);
                     g->set_line_dash(ezgl::line_dash::none);
                     g->set_line_width(4);
-                    draw_flyline_timing_edge(tnode_draw_coord(prev_node),
-                                             tnode_draw_coord(node), delay, g);
+                    draw_flyline_timing_edge(tnode_draw_coord(prev_node), tnode_draw_coord(node), delay, g);
                     g->set_line_width(0);
                 }
             } else {
@@ -1093,8 +1033,7 @@ void draw_crit_path(ezgl::renderer* g) {
                     g->set_color(color, flyline_visibility.alpha);
 
                     draw_flyline_timing_edge((ezgl::point2d)tnode_draw_coord(prev_node),
-                                             (ezgl::point2d)tnode_draw_coord(node), (float)delay,
-                                             (ezgl::renderer*)g);
+                                             (ezgl::point2d)tnode_draw_coord(node), (float)delay, (ezgl::renderer*)g);
                     g->set_line_dash(ezgl::line_dash::none);
                     g->set_line_width(0);
                 }
@@ -1111,23 +1050,27 @@ void draw_crit_path(ezgl::renderer* g) {
  * This function draws critical path elements based on the provided timing paths
  * and indexes map. It is primarily used in server mode, where items are drawn upon request.
  */
-void draw_crit_path_elements(const std::vector<tatum::TimingPath>& paths, const std::map<std::size_t, std::set<std::size_t>>& indexes, bool draw_crit_path_contour, ezgl::renderer* g) {
+void draw_crit_path_elements(const std::vector<tatum::TimingPath>& paths,
+                             const std::map<std::size_t, std::set<std::size_t>>& indexes,
+                             bool draw_crit_path_contour,
+                             ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
     const ezgl::color contour_color{0, 0, 0, 40};
 
-    auto draw_flyline_timing_edge_helper_fn = [](ezgl::renderer* renderer, const ezgl::color& color, ezgl::line_dash line_style, int line_width, float delay, 
-                                            const tatum::NodeId& prev_node, const tatum::NodeId& node, bool skip_draw_delays=false) {
-        renderer->set_color(color);
-        renderer->set_line_dash(line_style);
-        renderer->set_line_width(line_width);
-        draw_flyline_timing_edge(tnode_draw_coord(prev_node),
-                                tnode_draw_coord(node), delay, renderer, skip_draw_delays);
+    auto draw_flyline_timing_edge_helper_fn
+        = [](ezgl::renderer* renderer, const ezgl::color& color, ezgl::line_dash line_style, int line_width,
+             float delay, const tatum::NodeId& prev_node, const tatum::NodeId& node, bool skip_draw_delays = false) {
+              renderer->set_color(color);
+              renderer->set_line_dash(line_style);
+              renderer->set_line_width(line_width);
+              draw_flyline_timing_edge(tnode_draw_coord(prev_node), tnode_draw_coord(node), delay, renderer,
+                                       skip_draw_delays);
 
-        renderer->set_line_dash(ezgl::line_dash::none);
-        renderer->set_line_width(0);                        
-    };
+              renderer->set_line_dash(ezgl::line_dash::none);
+              renderer->set_line_width(0);
+          };
 
-    for (const auto& [path_index, element_indexes]: indexes) {
+    for (const auto& [path_index, element_indexes] : indexes) {
         if (path_index < paths.size()) {
             const tatum::TimingPath& path = paths[path_index];
 
@@ -1136,8 +1079,9 @@ void draw_crit_path_elements(const std::vector<tatum::TimingPath>& paths, const 
             float prev_arr_time = std::numeric_limits<float>::quiet_NaN();
             int element_counter = 0;
             for (const tatum::TimingPathElem& elem : path.data_arrival_path().elements()) {
-                bool draw_current_element = element_indexes.empty() || element_indexes.find(element_counter) != element_indexes.end();
-   
+                bool draw_current_element
+                    = element_indexes.empty() || element_indexes.find(element_counter) != element_indexes.end();
+
                 // draw element
                 tatum::NodeId node = elem.node();
                 float arr_time = elem.tag().time();
@@ -1150,11 +1094,15 @@ void draw_crit_path_elements(const std::vector<tatum::TimingPath>& paths, const 
 
                 if (prev_node) {
                     float delay = arr_time - prev_arr_time;
-                    if ((draw_state->show_crit_path == DRAW_CRIT_PATH_FLYLINES) || (draw_state->show_crit_path == DRAW_CRIT_PATH_FLYLINES_DELAYS)) {
+                    if ((draw_state->show_crit_path == DRAW_CRIT_PATH_FLYLINES)
+                        || (draw_state->show_crit_path == DRAW_CRIT_PATH_FLYLINES_DELAYS)) {
                         if (draw_current_element) {
-                            draw_flyline_timing_edge_helper_fn(g, color, ezgl::line_dash::none, /*line_width*/4, delay, prev_node, node);
+                            draw_flyline_timing_edge_helper_fn(g, color, ezgl::line_dash::none, /*line_width*/ 4, delay,
+                                                               prev_node, node);
                         } else if (draw_crit_path_contour) {
-                            draw_flyline_timing_edge_helper_fn(g, contour_color, ezgl::line_dash::none, /*line_width*/1, delay, prev_node, node, /*skip_draw_delays*/true);
+                            draw_flyline_timing_edge_helper_fn(g, contour_color, ezgl::line_dash::none,
+                                                               /*line_width*/ 1, delay, prev_node, node,
+                                                               /*skip_draw_delays*/ true);
                         }
                     } else {
                         VTR_ASSERT(draw_state->show_crit_path != DRAW_NO_CRIT_PATH);
@@ -1163,13 +1111,16 @@ void draw_crit_path_elements(const std::vector<tatum::TimingPath>& paths, const 
                             //Draw the routed version of the timing edge
                             draw_routed_timing_edge_connection(prev_node, node, color, g);
 
-                            draw_flyline_timing_edge_helper_fn(g, color, ezgl::line_dash::asymmetric_5_3, /*line_width*/3, delay, prev_node, node);
+                            draw_flyline_timing_edge_helper_fn(g, color, ezgl::line_dash::asymmetric_5_3,
+                                                               /*line_width*/ 3, delay, prev_node, node);
                         } else if (draw_crit_path_contour) {
-                            draw_flyline_timing_edge_helper_fn(g, color, ezgl::line_dash::asymmetric_5_3, /*line_width*/3, delay, prev_node, node, /*skip_draw_delays*/true);
+                            draw_flyline_timing_edge_helper_fn(g, color, ezgl::line_dash::asymmetric_5_3,
+                                                               /*line_width*/ 3, delay, prev_node, node,
+                                                               /*skip_draw_delays*/ true);
                         }
                     }
                 }
-                
+
                 prev_node = node;
                 prev_arr_time = arr_time;
                 // end draw element
@@ -1205,16 +1156,18 @@ bool is_flyline_valid_to_draw(int src_layer, int sink_layer) {
 }
 
 //Draws critical path shown as flylines.
-void draw_flyline_timing_edge(ezgl::point2d start, ezgl::point2d end, float incr_delay, ezgl::renderer* g, bool skip_draw_delays/*=false*/) {
+void draw_flyline_timing_edge(ezgl::point2d start,
+                              ezgl::point2d end,
+                              float incr_delay,
+                              ezgl::renderer* g,
+                              bool skip_draw_delays /*=false*/) {
     g->draw_line(start, end);
     draw_triangle_along_line(g, start, end, 0.95, 40 * DEFAULT_ARROW_SIZE);
     draw_triangle_along_line(g, start, end, 0.05, 40 * DEFAULT_ARROW_SIZE);
 
-    bool draw_delays = (get_draw_state_vars()->show_crit_path
-                            == DRAW_CRIT_PATH_FLYLINES_DELAYS
-                        || get_draw_state_vars()->show_crit_path
-                               == DRAW_CRIT_PATH_ROUTING_DELAYS)
-                               && !skip_draw_delays;
+    bool draw_delays = (get_draw_state_vars()->show_crit_path == DRAW_CRIT_PATH_FLYLINES_DELAYS
+                        || get_draw_state_vars()->show_crit_path == DRAW_CRIT_PATH_ROUTING_DELAYS)
+                       && !skip_draw_delays;
     if (draw_delays) {
         //Determine the strict bounding box based on the lines start/end
         float min_x = std::min(start.x, end.x);
@@ -1246,8 +1199,7 @@ void draw_flyline_timing_edge(ezgl::point2d start, ezgl::point2d end, float incr
         std::string incr_delay_str = ss.str();
 
         // Get the angle of line, to rotate the text
-        float text_angle = (180 / M_PI)
-                           * atan((end.y - start.y) / (end.x - start.x));
+        float text_angle = (180 / M_PI) * atan((end.y - start.y) / (end.x - start.x));
 
         // Get the screen coordinates for text drawing
         ezgl::rectangle screen_coords = g->world_to_screen(text_bbox);
@@ -1260,14 +1212,11 @@ void draw_flyline_timing_edge(ezgl::point2d start, ezgl::point2d end, float incr
         g->set_coordinate_system(ezgl::SCREEN);
 
         // Find an offset so it is sitting on top/below of the line
-        float x_offset = screen_coords.center().x
-                         - 8 * sin(text_angle * (M_PI / 180));
-        float y_offset = screen_coords.center().y
-                         - 8 * cos(text_angle * (M_PI / 180));
+        float x_offset = screen_coords.center().x - 8 * sin(text_angle * (M_PI / 180));
+        float y_offset = screen_coords.center().y - 8 * cos(text_angle * (M_PI / 180));
 
         ezgl::point2d offset_text_bbox(x_offset, y_offset);
-        g->draw_text(offset_text_bbox, incr_delay_str.c_str(),
-                     text_bbox.width(), text_bbox.height());
+        g->draw_text(offset_text_bbox, incr_delay_str.c_str(), text_bbox.width(), text_bbox.height());
 
         g->set_font_size(14);
 
@@ -1309,12 +1258,10 @@ void draw_routed_timing_edge_connection(tatum::NodeId src_tnode,
 
         ClusterBlockId clb_src_block = atom_ctx.lookup.atom_clb(atom_src_block);
         VTR_ASSERT(clb_src_block != ClusterBlockId::INVALID());
-        ClusterBlockId clb_sink_block = atom_ctx.lookup.atom_clb(
-            atom_sink_block);
+        ClusterBlockId clb_sink_block = atom_ctx.lookup.atom_clb(atom_sink_block);
         VTR_ASSERT(clb_sink_block != ClusterBlockId::INVALID());
 
-        const t_pb_graph_pin* sink_gpin = atom_ctx.lookup.atom_pin_pb_graph_pin(
-            atom_sink_pin);
+        const t_pb_graph_pin* sink_gpin = atom_ctx.lookup.atom_pin_pb_graph_pin(atom_sink_pin);
         VTR_ASSERT(sink_gpin);
 
         int sink_pb_route_id = sink_gpin->pin_count_in_cluster;
@@ -1322,15 +1269,12 @@ void draw_routed_timing_edge_connection(tatum::NodeId src_tnode,
         int sink_block_pin_index = -1;
         int sink_net_pin_index = -1;
 
-        std::tie(net_id, sink_block_pin_index, sink_net_pin_index) = find_pb_route_clb_input_net_pin(clb_sink_block,
-                                                                                                     sink_pb_route_id);
-        if (net_id != ClusterNetId::INVALID() && sink_block_pin_index != -1
-            && sink_net_pin_index != -1) {
+        std::tie(net_id, sink_block_pin_index, sink_net_pin_index)
+            = find_pb_route_clb_input_net_pin(clb_sink_block, sink_pb_route_id);
+        if (net_id != ClusterNetId::INVALID() && sink_block_pin_index != -1 && sink_net_pin_index != -1) {
             //Connection leaves the CLB
             //Now that we have the CLB source and sink pins, we need to grab all the points on the routing connecting the pins
-            VTR_ASSERT(
-                cluster_ctx.clb_nlist.net_driver_block(net_id)
-                == clb_src_block);
+            VTR_ASSERT(cluster_ctx.clb_nlist.net_driver_block(net_id) == clb_src_block);
 
             t_draw_state* draw_state = get_draw_state_vars();
 
@@ -1353,8 +1297,7 @@ void draw_routed_timing_edge_connection(tatum::NodeId src_tnode,
     points.push_back(atom_pin_draw_coord(atom_sink_pin));
 }
 
-void draw_color_map_legend(const vtr::ColorMap& cmap,
-                           ezgl::renderer* g) {
+void draw_color_map_legend(const vtr::ColorMap& cmap, ezgl::renderer* g) {
     constexpr float LEGEND_WIDTH_FAC = 0.075;
     constexpr float LEGEND_VERT_OFFSET_FAC = 0.05;
     constexpr float TEXT_OFFSET = 10;
@@ -1362,18 +1305,13 @@ void draw_color_map_legend(const vtr::ColorMap& cmap,
 
     g->set_coordinate_system(ezgl::SCREEN);
 
-    float screen_width = application.get_canvas(
-                                        application.get_main_canvas_id())
-                             ->width();
-    float screen_height = application.get_canvas(
-                                         application.get_main_canvas_id())
-                              ->height();
+    float screen_width = application.get_canvas(application.get_main_canvas_id())->width();
+    float screen_height = application.get_canvas(application.get_main_canvas_id())->height();
     float vert_offset = screen_height * LEGEND_VERT_OFFSET_FAC;
     float legend_width = std::min<int>(LEGEND_WIDTH_FAC * screen_width, 100);
 
     // In SCREEN coordinate: bottom_left is (0,0), right_top is (screen_width, screen_height)
-    ezgl::rectangle legend({0, vert_offset},
-                           {legend_width, screen_height - vert_offset});
+    ezgl::rectangle legend({0, vert_offset}, {legend_width, screen_height - vert_offset});
 
     float range = cmap.max() - cmap.min();
     float height_incr = legend.height() / float(NUM_COLOR_POINTS);
@@ -1382,14 +1320,14 @@ void draw_color_map_legend(const vtr::ColorMap& cmap,
         ezgl::color color = to_ezgl_color(cmap.color(val));
 
         g->set_color(color);
-        g->fill_rectangle({legend.left(), legend.top() - i * height_incr}, {legend.right(), legend.top() - (i + 1) * height_incr});
+        g->fill_rectangle({legend.left(), legend.top() - i * height_incr},
+                          {legend.right(), legend.top() - (i + 1) * height_incr});
     }
 
     //Min mark
     g->set_color(blk_SKYBLUE); // set to skyblue so its easier to see
     std::string str = vtr::string_fmt("%.3g", cmap.min());
-    g->draw_text({legend.center_x(), legend.top() - TEXT_OFFSET},
-                 str.c_str());
+    g->draw_text({legend.center_x(), legend.top() - TEXT_OFFSET}, str.c_str());
 
     //Mid marker
     g->set_color(ezgl::BLACK);
@@ -1399,8 +1337,7 @@ void draw_color_map_legend(const vtr::ColorMap& cmap,
     //Max marker
     g->set_color(ezgl::BLACK);
     str = vtr::string_fmt("%.3g", cmap.max());
-    g->draw_text({legend.center_x(), legend.bottom() + TEXT_OFFSET},
-                 str.c_str());
+    g->draw_text({legend.center_x(), legend.bottom() + TEXT_OFFSET}, str.c_str());
 
     g->set_color(ezgl::BLACK);
     g->draw_rectangle(legend);
@@ -1436,22 +1373,18 @@ void draw_block_pin_util() {
         if (draw_state->show_blk_pin_util == DRAW_BLOCK_PIN_UTIL_TOTAL) {
             pin_util[blk] = cluster_ctx.clb_nlist.block_pins(blk).size()
                             / float(total_input_pins[type] + total_output_pins[type]);
-        } else if (draw_state->show_blk_pin_util
-                   == DRAW_BLOCK_PIN_UTIL_INPUTS) {
+        } else if (draw_state->show_blk_pin_util == DRAW_BLOCK_PIN_UTIL_INPUTS) {
             pin_util[blk] = (cluster_ctx.clb_nlist.block_input_pins(blk).size()
                              + cluster_ctx.clb_nlist.block_clock_pins(blk).size())
                             / float(total_input_pins[type]);
-        } else if (draw_state->show_blk_pin_util
-                   == DRAW_BLOCK_PIN_UTIL_OUTPUTS) {
-            pin_util[blk] = (cluster_ctx.clb_nlist.block_output_pins(blk).size())
-                            / float(total_output_pins[type]);
+        } else if (draw_state->show_blk_pin_util == DRAW_BLOCK_PIN_UTIL_OUTPUTS) {
+            pin_util[blk] = (cluster_ctx.clb_nlist.block_output_pins(blk).size()) / float(total_output_pins[type]);
         } else {
             VTR_ASSERT(false);
         }
     }
 
-    std::unique_ptr<vtr::ColorMap> cmap = std::make_unique<vtr::PlasmaColorMap>(
-        0., 1.);
+    std::unique_ptr<vtr::ColorMap> cmap = std::make_unique<vtr::PlasmaColorMap>(0., 1.);
 
     for (auto blk : blks) {
         ezgl::color color = to_ezgl_color(cmap->color(pin_util[blk]));

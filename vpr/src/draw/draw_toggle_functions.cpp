@@ -36,26 +36,26 @@
 #include "intra_logic_block.h"
 
 #ifdef VTR_ENABLE_DEBUG_LOGGING
-#    include "move_utils.h"
+#include "move_utils.h"
 #endif
 
 #ifdef WIN32 /* For runtime tracking in WIN32. The clock() function defined in time.h will *
               * track CPU runtime.														   */
-#    include <time.h>
+#include <time.h>
 #else /* For X11. The clock() function in time.h will not output correct time difference   *
        * for X11, because the graphics is processed by the Xserver rather than local CPU,  *
        * which means tracking CPU time will not be the same as the actual wall clock time. *
        * Thus, so use gettimeofday() in sys/time.h to track actual calendar time.          */
-#    include <sys/time.h>
+#include <sys/time.h>
 #endif
 
 #ifndef NO_GRAPHICS
 
 //To process key presses we need the X11 keysym definitions,
 //which are unavailable when building with MINGW
-#    if defined(X11) && !defined(__MINGW32__)
-#        include <X11/keysym.h>
-#    endif
+#if defined(X11) && !defined(__MINGW32__)
+#include <X11/keysym.h>
+#endif
 
 //The arrow head position for turning/straight-thru connections in a switch box
 constexpr float SB_EDGE_TURN_ARROW_POSITION = 0.2;
@@ -74,8 +74,7 @@ void toggle_nets_cbk(GtkComboBox* self, ezgl::application* app) {
     enum e_draw_nets new_state;
     t_draw_state* draw_state = get_draw_state_vars();
     std::cout << draw_state << std::endl;
-    gchar* setting = gtk_combo_box_text_get_active_text(
-        GTK_COMBO_BOX_TEXT(self));
+    gchar* setting = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(self));
     std::cout << setting << std::endl;
     // assign corresponding enum value to draw_state->show_nets
     if (strcmp(setting, "None") == 0)
@@ -228,8 +227,7 @@ void toggle_routing_bbox_cbk(GtkSpinButton* self, ezgl::application* app) {
         draw_state->show_routing_bb = new_value;
 
     //redraw
-    if ((int)(draw_state->show_routing_bb)
-        == (int)((int)(route_ctx.route_bb.size()) - 1)) {
+    if ((int)(draw_state->show_routing_bb) == (int)((int)(route_ctx.route_bb.size()) - 1)) {
         app->update_message(draw_state->default_message);
     }
     app->refresh_drawing();
@@ -390,8 +388,7 @@ void toggle_expansion_cost_cbk(GtkComboBoxText* self, ezgl::application* app) {
     g_free(combo_box_content);
     draw_state->show_router_expansion_cost = new_state;
 
-    if (draw_state->show_router_expansion_cost
-        == DRAW_NO_ROUTER_EXPANSION_COST) {
+    if (draw_state->show_router_expansion_cost == DRAW_NO_ROUTER_EXPANSION_COST) {
         app->update_message(draw_state->default_message);
     }
     app->refresh_drawing();

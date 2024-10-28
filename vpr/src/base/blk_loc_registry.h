@@ -122,10 +122,7 @@ class BlkLocRegistry {
      */
     void revert_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected);
 
-    enum class e_expected_transaction {
-        APPLY,
-        COMMIT_REVERT
-    };
+    enum class e_expected_transaction { APPLY, COMMIT_REVERT };
 
     e_expected_transaction expected_transaction_;
 };

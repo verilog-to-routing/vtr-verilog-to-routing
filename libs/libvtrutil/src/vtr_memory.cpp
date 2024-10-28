@@ -10,21 +10,17 @@
 #include "vtr_log.h"
 
 #ifndef __GLIBC__
-#    include <stdlib.h>
+#include <stdlib.h>
 #else
-#    include <malloc.h>
+#include <malloc.h>
 #endif
 
 namespace vtr {
 
 #ifndef __GLIBC__
-int malloc_trim(size_t /*pad*/) {
-    return 0;
-}
+int malloc_trim(size_t /*pad*/) { return 0; }
 #else
-int malloc_trim(size_t pad) {
-    return ::malloc_trim(pad);
-}
+int malloc_trim(size_t pad) { return ::malloc_trim(pad); }
 #endif
 
 void* free(void* some) {
@@ -64,8 +60,7 @@ void* realloc(void* ptr, size_t size) {
 
     ret = std::realloc(ptr, size);
     if (nullptr == ret && size != 0) {
-        throw VtrError(string_fmt("Unable to realloc memory (ptr=%p, size=%d).", ptr, size),
-                       __FILE__, __LINE__);
+        throw VtrError(string_fmt("Unable to realloc memory (ptr=%p, size=%d).", ptr, size), __FILE__, __LINE__);
     }
     return ret;
 }

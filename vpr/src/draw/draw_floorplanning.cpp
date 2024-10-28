@@ -24,30 +24,33 @@
 #include "tatum/report/TimingPathCollector.hpp"
 
 #ifdef VTR_ENABLE_DEBUG_LOGGING
-#    include "move_utils.h"
+#include "move_utils.h"
 #endif
 
 #ifdef WIN32 /* For runtime tracking in WIN32. The clock() function defined in time.h will *
               * track CPU runtime.														   */
-#    include <time.h>
+#include <time.h>
 #else /* For X11. The clock() function in time.h will not output correct time difference   *
        * for X11, because the graphics is processed by the Xserver rather than local CPU,  *
        * which means tracking CPU time will not be the same as the actual wall clock time. *
        * Thus, so use gettimeofday() in sys/time.h to track actual calendar time.          */
-#    include <sys/time.h>
+#include <sys/time.h>
 #endif
 
 #ifndef NO_GRAPHICS
 
 //To process key presses we need the X11 keysym definitions,
 //which are unavailable when building with MINGW
-#    if defined(X11) && !defined(__MINGW32__)
-#        include <X11/keysym.h>
-#    endif
+#if defined(X11) && !defined(__MINGW32__)
+#include <X11/keysym.h>
+#endif
 
-static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* current_pb,
-                             const t_pb* pb_to_draw, const ezgl::rectangle& parent_bbox,
-                             const t_logical_block_type_ptr type, ezgl::color color,
+static void draw_internal_pb(const ClusterBlockId clb_index,
+                             t_pb* current_pb,
+                             const t_pb* pb_to_draw,
+                             const ezgl::rectangle& parent_bbox,
+                             const t_logical_block_type_ptr type,
+                             ezgl::color color,
                              ezgl::renderer* g);
 
 const std::vector<ezgl::color> kelly_max_contrast_colors_no_black = {
@@ -75,8 +78,8 @@ const std::vector<ezgl::color> kelly_max_contrast_colors_no_black = {
     ezgl::color(43, 61, 38)     //olive green
 };
 
-#    define DEFAULT_HIGHLIGHT_ALPHA 30
-#    define CLICKED_HIGHLIGHT_ALPHA 100
+#define DEFAULT_HIGHLIGHT_ALPHA 30
+#define CLICKED_HIGHLIGHT_ALPHA 100
 
 //Keeps track of how translucent each partition should be drawn on screen.
 static std::vector<int> highlight_alpha;
@@ -93,7 +96,8 @@ static void highlight_partition(ezgl::renderer* g, int partitionID, int alpha) {
     const auto& regions = partition_region.get_regions();
 
     bool name_drawn = false;
-    ezgl::color partition_color = kelly_max_contrast_colors_no_black[partitionID % (kelly_max_contrast_colors_no_black.size())];
+    ezgl::color partition_color
+        = kelly_max_contrast_colors_no_black[partitionID % (kelly_max_contrast_colors_no_black.size())];
 
     // The units of space in the constraints xml file will be referred to as "tile units"
     // The units of space that'll be used by ezgl to draw will be referred to as "on screen units"
@@ -114,8 +118,10 @@ static void highlight_partition(ezgl::renderer* g, int partitionID, int alpha) {
             int alpha_layer_part = alpha * draw_state->draw_layer_display[layer].alpha / 255;
             g->set_color(partition_color, alpha_layer_part);
 
-            ezgl::rectangle top_right = draw_coords->get_absolute_clb_bbox(layer, reg_coord.xmax(), reg_coord.ymax(), 0);
-            ezgl::rectangle bottom_left = draw_coords->get_absolute_clb_bbox(layer, reg_coord.xmin(), reg_coord.ymin(), 0);
+            ezgl::rectangle top_right
+                = draw_coords->get_absolute_clb_bbox(layer, reg_coord.xmax(), reg_coord.ymax(), 0);
+            ezgl::rectangle bottom_left
+                = draw_coords->get_absolute_clb_bbox(layer, reg_coord.xmin(), reg_coord.ymin(), 0);
 
             ezgl::rectangle on_screen_rect(bottom_left.bottom_left(), top_right.top_right());
 
@@ -125,11 +131,8 @@ static void highlight_partition(ezgl::renderer* g, int partitionID, int alpha) {
 
                 g->set_color(partition_color, 230);
 
-                g->draw_text(
-                    on_screen_rect.center(),
-                    partition_name,
-                    on_screen_rect.width() - 10,
-                    on_screen_rect.height() - 10);
+                g->draw_text(on_screen_rect.center(), partition_name, on_screen_rect.width() - 10,
+                             on_screen_rect.height() - 10);
 
                 name_drawn = true;
 
@@ -150,8 +153,7 @@ void highlight_all_regions(ezgl::renderer* g) {
     //keeps track of what alpha level each partition is
     if (highlight_alpha.empty()) {
         highlight_alpha.resize(num_partitions);
-        std::fill(highlight_alpha.begin(), highlight_alpha.end(),
-                  DEFAULT_HIGHLIGHT_ALPHA);
+        std::fill(highlight_alpha.begin(), highlight_alpha.end(), DEFAULT_HIGHLIGHT_ALPHA);
     }
 
     //draws the partitions
@@ -174,11 +176,13 @@ void draw_constrained_atoms(ezgl::renderer* g) {
         for (const AtomBlockId atom_id : atoms) {
             if (atom_ctx.lookup.atom_pb(atom_id) != nullptr) {
                 const t_pb* pb = atom_ctx.lookup.atom_pb(atom_id);
-                auto color = kelly_max_contrast_colors_no_black[partitionID % (kelly_max_contrast_colors_no_black.size())];
+                auto color
+                    = kelly_max_contrast_colors_no_black[partitionID % (kelly_max_contrast_colors_no_black.size())];
                 ClusterBlockId clb_index = atom_ctx.lookup.atom_clb(atom_id);
                 auto type = cluster_ctx.clb_nlist.block_type(clb_index);
 
-                draw_internal_pb(clb_index, cluster_ctx.clb_nlist.block_pb(clb_index), pb, ezgl::rectangle({0, 0}, 0, 0), type, color, g);
+                draw_internal_pb(clb_index, cluster_ctx.clb_nlist.block_pb(clb_index), pb,
+                                 ezgl::rectangle({0, 0}, 0, 0), type, color, g);
             }
         }
     }
@@ -190,7 +194,8 @@ static void draw_internal_pb(const ClusterBlockId clb_index,
                              const t_pb* pb_to_draw,
                              const ezgl::rectangle& parent_bbox,
                              const t_logical_block_type_ptr type,
-                             ezgl::color color, ezgl::renderer* g) {
+                             ezgl::color color,
+                             ezgl::renderer* g) {
     t_draw_coords* draw_coords = get_draw_coords_vars();
     t_draw_state* draw_state = get_draw_state_vars();
 
@@ -240,26 +245,15 @@ static void draw_internal_pb(const ClusterBlockId clb_index,
 
             std::string blk_tag = pb_name + " (" + pb_type_name + ")";
 
-            g->draw_text(
-                abs_bbox.center(),
-                blk_tag,
-                abs_bbox.width() + 10,
-                abs_bbox.height() + 10);
+            g->draw_text(abs_bbox.center(), blk_tag, abs_bbox.width() + 10, abs_bbox.height() + 10);
 
         } else {
-            g->draw_text(
-                abs_bbox.center(),
-                pb_type->name,
-                abs_bbox.width() + 10,
-                abs_bbox.height() + 10);
+            g->draw_text(abs_bbox.center(), pb_type->name, abs_bbox.width() + 10, abs_bbox.height() + 10);
         }
     }
 }
 
-enum {
-    COL_NAME = 0,
-    NUM_COLS
-};
+enum { COL_NAME = 0, NUM_COLS };
 
 //Highlights partition clicked on in the legend.
 void highlight_selected_partition(GtkWidget* widget) {
@@ -319,21 +313,16 @@ static GtkTreeModel* create_and_fill_model() {
         auto atoms = constraints.get_part_atoms((PartitionId)partitionID);
         const auto& partition = constraints.get_partition((PartitionId)partitionID);
 
-        std::string partition_name(partition.get_name()
-                                   + " (" + std::to_string(atoms.size()) + " primitives)");
+        std::string partition_name(partition.get_name() + " (" + std::to_string(atoms.size()) + " primitives)");
 
         GtkTreeIter iter, child_iter;
         gtk_tree_store_append(store, &iter, nullptr);
-        gtk_tree_store_set(store, &iter,
-                           COL_NAME, partition_name.c_str(),
-                           -1);
+        gtk_tree_store_set(store, &iter, COL_NAME, partition_name.c_str(), -1);
 
         for (AtomBlockId const_atom : atoms) {
             std::string atom_name = (atom_ctx.lookup.atom_pb(const_atom))->name;
             gtk_tree_store_append(store, &child_iter, &iter);
-            gtk_tree_store_set(store, &child_iter,
-                               COL_NAME, atom_name.c_str(),
-                               -1);
+            gtk_tree_store_set(store, &child_iter, COL_NAME, atom_name.c_str(), -1);
         }
     }
 
@@ -344,12 +333,8 @@ GtkWidget* setup_floorplanning_legend(GtkWidget* content_tree) {
     GtkCellRenderer* renderer;
 
     renderer = gtk_cell_renderer_text_new();
-    gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW(content_tree),
-                                                -1,
-                                                "Partition",
-                                                renderer,
-                                                "text", COL_NAME,
-                                                NULL);
+    gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW(content_tree), -1, "Partition", renderer, "text",
+                                                COL_NAME, NULL);
 
     GtkTreeModel* model = create_and_fill_model();
 

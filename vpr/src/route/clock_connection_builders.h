@@ -10,12 +10,7 @@
 
 class ClockRRGraphBuilder;
 
-enum class ClockConnectionType {
-    ROUTING_TO_CLOCK,
-    CLOCK_TO_CLOCK,
-    CLOCK_TO_PINS,
-    ROUTING_TO_PINS
-};
+enum class ClockConnectionType { ROUTING_TO_CLOCK, CLOCK_TO_CLOCK, CLOCK_TO_PINS, ROUTING_TO_PINS };
 
 class ClockConnection {
   public:

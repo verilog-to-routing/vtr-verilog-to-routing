@@ -10,7 +10,8 @@ const std::pair<std::string, RoutingScheme> UserRouteConstraints::get_route_cons
     // throw an error if the index is out of range
     if ((route_constraints_.size() == 0) || (idx > route_constraints_.size() - 1)) {
         VPR_FATAL_ERROR(VPR_ERROR_OTHER,
-                        "in get_route_constraint_by_idx: index %u is out of range. The unordered map for route constraints has a size of %u\n",
+                        "in get_route_constraint_by_idx: index %u is out of range. The unordered map for route "
+                        "constraints has a size of %u\n",
                         idx, route_constraints_.size());
     }
 
@@ -70,6 +71,4 @@ const std::string UserRouteConstraints::get_routing_network_name_by_net_name(std
     return route_scheme.network_name();
 }
 
-int UserRouteConstraints::get_num_route_constraints(void) const {
-    return route_constraints_.size();
-}
+int UserRouteConstraints::get_num_route_constraints(void) const { return route_constraints_.size(); }

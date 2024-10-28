@@ -11,9 +11,7 @@ size_t TurnModelRouting::get_hash_value(NocRouterId src_router_id,
     inputs_to_murmur3_hasher.clear();
 
     // used to cast vtr::StrongId types to uint32_t
-    auto cast_to_uint32 = [](const auto& input) {
-        return static_cast<uint32_t>(static_cast<size_t>(input));
-    };
+    auto cast_to_uint32 = [](const auto& input) { return static_cast<uint32_t>(static_cast<size_t>(input)); };
 
     // insert IDs into the vector
     inputs_to_murmur3_hasher.push_back(cast_to_uint32(src_router_id));
@@ -62,28 +60,25 @@ void TurnModelRouting::route_flow(NocRouterId src_router_id,
         t_physical_tile_loc curr_router_pos = curr_router.get_router_physical_location();
 
         // get all directions that moves us closer to the destination router
-        const auto& legal_directions = get_legal_directions(src_router_id, curr_router_id, dst_router_id, prev_dir, noc_model);
+        const auto& legal_directions
+            = get_legal_directions(src_router_id, curr_router_id, dst_router_id, prev_dir, noc_model);
 
         // select the next direction from the available options
-        TurnModelRouting::Direction next_step_direction = select_next_direction(legal_directions,
-                                                                                src_router_id,
-                                                                                dst_router_id,
-                                                                                curr_router_id,
-                                                                                traffic_flow_id,
-                                                                                noc_model);
+        TurnModelRouting::Direction next_step_direction = select_next_direction(
+            legal_directions, src_router_id, dst_router_id, curr_router_id, traffic_flow_id, noc_model);
 
-        NocLinkId next_link = move_to_next_router(curr_router_id, curr_router_pos, next_step_direction, visited_routers, noc_model);
+        NocLinkId next_link
+            = move_to_next_router(curr_router_id, curr_router_pos, next_step_direction, visited_routers, noc_model);
 
         if (next_link) {
             flow_route.push_back(next_link);
             prev_dir = next_step_direction;
         } else {
-            VPR_FATAL_ERROR(VPR_ERROR_OTHER, "No route could be found from starting router with ID:'%d' "
+            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                            "No route could be found from starting router with ID:'%d' "
                             "and the destination router with ID:'%d' using the XY-Routing algorithm.",
-                            src_router.get_router_user_id(),
-                            dst_router.get_router_user_id());
+                            src_router.get_router_user_id(), dst_router.get_router_user_id());
         }
-
     }
 }
 
@@ -200,7 +195,7 @@ uint32_t TurnModelRouting::murmur3_32(const std::vector<uint32_t>& key, uint32_t
     // A swap is *not* necessary here because the preceding loop already
     // places the low bytes in the low places according to whatever endianness
     // we use. Swaps only apply when the memory is copied in a chunk.
-//    h ^= murmur_32_scramble(0);
+    //    h ^= murmur_32_scramble(0);
     /* Finalize. */
     h ^= key.size() * 4;
     h ^= h >> 16;
@@ -211,7 +206,8 @@ uint32_t TurnModelRouting::murmur3_32(const std::vector<uint32_t>& key, uint32_t
     return h;
 }
 
-TurnModelRouting::Direction TurnModelRouting::select_y_direction(const std::vector<TurnModelRouting::Direction>& directions) {
+TurnModelRouting::Direction TurnModelRouting::select_y_direction(
+    const std::vector<TurnModelRouting::Direction>& directions) {
     // iterate over the given iterations and return the first vertical one
     for (const auto& direction : directions) {
         if (direction == TurnModelRouting::Direction::SOUTH || direction == TurnModelRouting::Direction::NORTH) {
@@ -223,7 +219,8 @@ TurnModelRouting::Direction TurnModelRouting::select_y_direction(const std::vect
     return TurnModelRouting::Direction::INVALID;
 }
 
-TurnModelRouting::Direction TurnModelRouting::select_x_direction(const std::vector<TurnModelRouting::Direction>& directions) {
+TurnModelRouting::Direction TurnModelRouting::select_x_direction(
+    const std::vector<TurnModelRouting::Direction>& directions) {
     // iterate over the given iterations and return the first horizontal one
     for (const auto& direction : directions) {
         if (direction == TurnModelRouting::Direction::EAST || direction == TurnModelRouting::Direction::WEST) {
@@ -235,7 +232,8 @@ TurnModelRouting::Direction TurnModelRouting::select_x_direction(const std::vect
     return TurnModelRouting::Direction::INVALID;
 }
 
-TurnModelRouting::Direction TurnModelRouting::select_z_direction(const std::vector<TurnModelRouting::Direction>& directions) {
+TurnModelRouting::Direction TurnModelRouting::select_z_direction(
+    const std::vector<TurnModelRouting::Direction>& directions) {
     // iterate over the given iterations and return the first one along the z axis
     for (const auto& direction : directions) {
         if (direction == TurnModelRouting::Direction::UP || direction == TurnModelRouting::Direction::DOWN) {
@@ -247,8 +245,9 @@ TurnModelRouting::Direction TurnModelRouting::select_z_direction(const std::vect
     return TurnModelRouting::Direction::INVALID;
 }
 
-TurnModelRouting::Direction TurnModelRouting::select_direction_other_than(const std::vector<TurnModelRouting::Direction>& directions,
-                                                                          TurnModelRouting::Direction other_than) {
+TurnModelRouting::Direction TurnModelRouting::select_direction_other_than(
+    const std::vector<TurnModelRouting::Direction>& directions,
+    TurnModelRouting::Direction other_than) {
     // Iterate over all given directions and return the first one which is not "other_than"
     for (const auto& direction : directions) {
         if (direction != other_than) {
@@ -260,7 +259,8 @@ TurnModelRouting::Direction TurnModelRouting::select_direction_other_than(const 
     return TurnModelRouting::Direction::INVALID;
 }
 
-std::vector<std::pair<NocLinkId, NocLinkId>> TurnModelRouting::get_all_illegal_turns(const NocStorage& noc_model) const {
+std::vector<std::pair<NocLinkId, NocLinkId>> TurnModelRouting::get_all_illegal_turns(
+    const NocStorage& noc_model) const {
     std::vector<std::pair<NocLinkId, NocLinkId>> illegal_turns;
 
     /* Iterate over all sets of three routers that can be traversed in sequence.
@@ -295,12 +295,13 @@ std::vector<std::pair<NocLinkId, NocLinkId>> TurnModelRouting::get_all_illegal_t
     return illegal_turns;
 }
 
-TurnModelRouting::Direction TurnModelRouting::select_next_direction(const std::vector<TurnModelRouting::Direction>& legal_directions,
-                                                                    NocRouterId src_router_id,
-                                                                    NocRouterId dst_router_id,
-                                                                    NocRouterId curr_router_id,
-                                                                    NocTrafficFlowId traffic_flow_id,
-                                                                    const NocStorage& noc_model) {
+TurnModelRouting::Direction TurnModelRouting::select_next_direction(
+    const std::vector<TurnModelRouting::Direction>& legal_directions,
+    NocRouterId src_router_id,
+    NocRouterId dst_router_id,
+    NocRouterId curr_router_id,
+    NocTrafficFlowId traffic_flow_id,
+    const NocStorage& noc_model) {
     // get current and destination NoC routers
     const auto& curr_router = noc_model.get_single_noc_router(curr_router_id);
     const auto& dst_router = noc_model.get_single_noc_router(dst_router_id);
@@ -324,7 +325,6 @@ TurnModelRouting::Direction TurnModelRouting::select_next_direction(const std::v
     const int manhattan_dist = delta_x + delta_y + delta_z;
 
     int hash_val_remainder = hash_val % manhattan_dist;
-
 
     TurnModelRouting::Direction selected_direction = TurnModelRouting::Direction::INVALID;
 

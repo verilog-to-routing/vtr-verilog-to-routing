@@ -33,7 +33,8 @@ DeviceGrid create_device_grid(const std::string& layout_name,
  * Calculate the device utilization (i.e. fraction of used grid tiles)
  * foor the specified grid and resource requirements
  */
-float calculate_device_utilization(const DeviceGrid& grid, const std::map<t_logical_block_type_ptr, size_t>& instance_counts);
+float calculate_device_utilization(const DeviceGrid& grid,
+                                   const std::map<t_logical_block_type_ptr, size_t>& instance_counts);
 
 /**
  * @brief Returns the effective size of the device

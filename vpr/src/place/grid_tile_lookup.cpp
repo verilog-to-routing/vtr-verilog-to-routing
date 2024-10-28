@@ -8,7 +8,8 @@ GridTileLookup::GridTileLookup() {
     max_placement_locations.resize(device_ctx.logical_block_types.size());
 
     for (const auto& type : device_ctx.logical_block_types) {
-        vtr::NdMatrix<int, 3> type_count({static_cast<unsigned long>(num_layers), device_ctx.grid.width(), device_ctx.grid.height()});
+        vtr::NdMatrix<int, 3> type_count(
+            {static_cast<unsigned long>(num_layers), device_ctx.grid.width(), device_ctx.grid.height()});
         fill_type_matrix(&type, type_count);
         block_type_matrices.push_back(type_count);
     }
@@ -80,12 +81,10 @@ int GridTileLookup::region_tile_count(const Region& reg, t_logical_block_type_pt
     /*Intersect the region with the grid, in case the region passed in goes out of bounds
      * By intersecting with the grid, we ensure that we are only counting tiles for the part of the
      * region that fits on the grid.*/
-    Region grid_reg(0, 0,
-                    (int)device_ctx.grid.width() - 1, (int)device_ctx.grid.height() - 1,
-                    0, n_layers - 1);
+    Region grid_reg(0, 0, (int)device_ctx.grid.width() - 1, (int)device_ctx.grid.height() - 1, 0, n_layers - 1);
     Region intersect_reg = intersection(reg, grid_reg);
 
-//    VTR_ASSERT(intersect_coord.layer_num == layer_num);
+    //    VTR_ASSERT(intersect_coord.layer_num == layer_num);
 
     const auto [xmin, ymin, xmax, ymax] = intersect_reg.get_rect().coordinates();
     const auto [layer_low, layer_high] = intersect_reg.get_layer_range();

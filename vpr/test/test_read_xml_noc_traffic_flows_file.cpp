@@ -40,19 +40,22 @@ TEST_CASE("test_verify_traffic_flow_router_modules", "[vpr_noc_traffic_flows_par
         std::string src_router_name = "";
         std::string dst_router_name = "test";
 
-        REQUIRE_THROWS_WITH(verify_traffic_flow_router_modules(src_router_name, dst_router_name, test, test_location), "Invalid name for the source NoC router module.");
+        REQUIRE_THROWS_WITH(verify_traffic_flow_router_modules(src_router_name, dst_router_name, test, test_location),
+                            "Invalid name for the source NoC router module.");
     }
     SECTION("Test case where input string for the sink router module name is empty") {
         std::string src_router_name = "test";
         std::string dst_router_name = "";
 
-        REQUIRE_THROWS_WITH(verify_traffic_flow_router_modules(src_router_name, dst_router_name, test, test_location), "Invalid name for the sink NoC router module.");
+        REQUIRE_THROWS_WITH(verify_traffic_flow_router_modules(src_router_name, dst_router_name, test, test_location),
+                            "Invalid name for the sink NoC router module.");
     }
     SECTION("Test case where the router module names for both the source and destination routers are the same") {
         std::string src_router_name = "same_router";
         std::string dst_router_name = "same_router";
 
-        REQUIRE_THROWS_WITH(verify_traffic_flow_router_modules(src_router_name, dst_router_name, test, test_location), "Source and sink NoC routers cannot be the same modules.");
+        REQUIRE_THROWS_WITH(verify_traffic_flow_router_modules(src_router_name, dst_router_name, test, test_location),
+                            "Source and sink NoC routers cannot be the same modules.");
     }
     SECTION("Test case where the source and destination router module names are legeal") {
         std::string src_router_name = "source_router";
@@ -74,7 +77,10 @@ TEST_CASE("test_verify_traffic_flow_properties", "[vpr_noc_traffic_flows_parser]
         double test_max_traffic_flow_latency = 0.000000000006;
         int test_traffic_flow_priority = 19;
 
-        REQUIRE_THROWS_WITH(verify_traffic_flow_properties(test_traffic_flow_bandwidth, test_max_traffic_flow_latency, test_traffic_flow_priority, test, test_location), "The traffic flow bandwidths are expected to be a non-zero positive floating point or integer values.");
+        REQUIRE_THROWS_WITH(
+            verify_traffic_flow_properties(test_traffic_flow_bandwidth, test_max_traffic_flow_latency,
+                                           test_traffic_flow_priority, test, test_location),
+            "The traffic flow bandwidths are expected to be a non-zero positive floating point or integer values.");
     }
     SECTION("Test case where the noc traffic flow latency constraint is illegal") {
         // illegal value
@@ -83,7 +89,9 @@ TEST_CASE("test_verify_traffic_flow_properties", "[vpr_noc_traffic_flows_parser]
         double test_traffic_flow_bandwidth = 1.5;
         int test_traffic_flow_priority = 2;
 
-        REQUIRE_THROWS_WITH(verify_traffic_flow_properties(test_traffic_flow_bandwidth, test_max_traffic_flow_latency, test_traffic_flow_priority, test, test_location), "The latency constraints need to be a non-zero positive floating point or integer values.");
+        REQUIRE_THROWS_WITH(verify_traffic_flow_properties(test_traffic_flow_bandwidth, test_max_traffic_flow_latency,
+                                                           test_traffic_flow_priority, test, test_location),
+                            "The latency constraints need to be a non-zero positive floating point or integer values.");
     }
     SECTION("Test case where the noc traffic flow priority is illegal") {
         // illegal value
@@ -92,12 +100,16 @@ TEST_CASE("test_verify_traffic_flow_properties", "[vpr_noc_traffic_flows_parser]
         double test_max_traffic_flow_latency = 1.5;
         int test_traffic_flow_bandwidth = 45;
 
-        REQUIRE_THROWS_WITH(verify_traffic_flow_properties(test_traffic_flow_bandwidth, test_max_traffic_flow_latency, test_traffic_flow_priority, test, test_location), "The traffic flow priorities expected to be positive, non-zero integer values.");
+        REQUIRE_THROWS_WITH(verify_traffic_flow_properties(test_traffic_flow_bandwidth, test_max_traffic_flow_latency,
+                                                           test_traffic_flow_priority, test, test_location),
+                            "The traffic flow priorities expected to be positive, non-zero integer values.");
 
         // now check the case where the traffic flow priority is negative
         // illegal value
         test_traffic_flow_priority = -5;
-        REQUIRE_THROWS_WITH(verify_traffic_flow_properties(test_traffic_flow_bandwidth, test_max_traffic_flow_latency, test_traffic_flow_priority, test, test_location), "The traffic flow priorities expected to be positive, non-zero integer values.");
+        REQUIRE_THROWS_WITH(verify_traffic_flow_properties(test_traffic_flow_bandwidth, test_max_traffic_flow_latency,
+                                                           test_traffic_flow_priority, test, test_location),
+                            "The traffic flow priorities expected to be positive, non-zero integer values.");
     }
     SECTION("Test case where the traffic flow parameters are legal") {
         // legal values
@@ -105,7 +117,8 @@ TEST_CASE("test_verify_traffic_flow_properties", "[vpr_noc_traffic_flows_parser]
         double test_max_traffic_flow_latency = 100;
         int test_traffic_flow_priority = 100;
 
-        REQUIRE_NOTHROW(verify_traffic_flow_properties(test_traffic_flow_bandwidth, test_max_traffic_flow_latency, test_traffic_flow_priority, test, test_location));
+        REQUIRE_NOTHROW(verify_traffic_flow_properties(test_traffic_flow_bandwidth, test_max_traffic_flow_latency,
+                                                       test_traffic_flow_priority, test, test_location));
     }
 }
 TEST_CASE("test_get_router_module_cluster_id", "[vpr_noc_traffic_flows_parser]") {
@@ -211,9 +224,12 @@ TEST_CASE("test_get_router_module_cluster_id", "[vpr_noc_traffic_flows_parser]")
 
         // now get the cluster id of the block with the test router name using the function we are testing
         ClusterBlockId test_router_block_id;
-        REQUIRE_NOTHROW(test_router_block_id = get_router_module_cluster_id(test_router_module_name, cluster_ctx, test, test_location, noc_router_logical_type_clusters));
+        REQUIRE_NOTHROW(test_router_block_id
+                        = get_router_module_cluster_id(test_router_module_name, cluster_ctx, test, test_location,
+                                                       noc_router_logical_type_clusters));
 
-        REQUIRE((size_t)(block_id_from_name.find("router:noc_router_five|flit_out_two[0]~reg0")->second) == (size_t)test_router_block_id);
+        REQUIRE((size_t)(block_id_from_name.find("router:noc_router_five|flit_out_two[0]~reg0")->second)
+                == (size_t)test_router_block_id);
 
         // clear the global netlist data structure so other unit tests that rely on dont use a corrupted netlist
         free_clustered_netlist();
@@ -253,7 +269,10 @@ TEST_CASE("test_get_router_module_cluster_id", "[vpr_noc_traffic_flows_parser]")
 
         // now get the cluster id of the block with the test router name using the function we are testing
         // This should fail, so check that it does
-        REQUIRE_THROWS_WITH(get_router_module_cluster_id(test_router_module_name, cluster_ctx, test, test_location, noc_router_logical_type_clusters), "The router module '^router:noc_router_seven|flit_out_two[0]~reg0$' does not exist in the design.");
+        REQUIRE_THROWS_WITH(
+            get_router_module_cluster_id(test_router_module_name, cluster_ctx, test, test_location,
+                                         noc_router_logical_type_clusters),
+            "The router module '^router:noc_router_seven|flit_out_two[0]~reg0$' does not exist in the design.");
 
         // clear the global netlist data structure so other unit tests that rely on dont use a corrupted netlist
         free_clustered_netlist();
@@ -314,7 +333,8 @@ TEST_CASE("test_check_traffic_flow_router_module_type", "[vpr_noc_traffic_flows_
 
         // now run the test function to verify that the current router module has a logical type of a router
         // the function should not fail since the module is a router
-        REQUIRE_NOTHROW(check_traffic_flow_router_module_type(router_one, router_module_id, test, test_location, cluster_ctx, noc_router_ref));
+        REQUIRE_NOTHROW(check_traffic_flow_router_module_type(router_one, router_module_id, test, test_location,
+                                                              cluster_ctx, noc_router_ref));
 
         // clear the global netlist data structure so other unit tests that rely on dont use a corrupted netlist
         free_clustered_netlist();
@@ -328,7 +348,9 @@ TEST_CASE("test_check_traffic_flow_router_module_type", "[vpr_noc_traffic_flows_
 
         // now run the test function to verify that the current IO module doesnt have a logical type of a router
         // the function should faile since the module is of type IO
-        REQUIRE_THROWS_WITH(check_traffic_flow_router_module_type(io_block_one, io_module_id, test, test_location, cluster_ctx, noc_router_ref), "The supplied module name 'io_block_one' is not a NoC router.");
+        REQUIRE_THROWS_WITH(check_traffic_flow_router_module_type(io_block_one, io_module_id, test, test_location,
+                                                                  cluster_ctx, noc_router_ref),
+                            "The supplied module name 'io_block_one' is not a NoC router.");
 
         // clear the global netlist data structure so other unit tests that rely on dont use a corrupted netlist
         free_clustered_netlist();
@@ -404,15 +426,23 @@ TEST_CASE("test_check_that_all_router_blocks_have_an_associated_traffic_flow", "
 
     SECTION("Test case when all router blocks in the design have an associated traffic flow") {
         // create a number of traffic flows that include all router blocks in the design
-        noc_ctx.noc_traffic_flows_storage.create_noc_traffic_flow(router_one, router_two, router_block_one_id, router_block_two_id, traffic_flow_bandwidth, traffic_flow_latency, traffic_flow_priority);
+        noc_ctx.noc_traffic_flows_storage.create_noc_traffic_flow(router_one, router_two, router_block_one_id,
+                                                                  router_block_two_id, traffic_flow_bandwidth,
+                                                                  traffic_flow_latency, traffic_flow_priority);
 
-        noc_ctx.noc_traffic_flows_storage.create_noc_traffic_flow(router_two, router_three, router_block_two_id, router_block_three_id, traffic_flow_bandwidth, traffic_flow_latency, traffic_flow_priority);
+        noc_ctx.noc_traffic_flows_storage.create_noc_traffic_flow(router_two, router_three, router_block_two_id,
+                                                                  router_block_three_id, traffic_flow_bandwidth,
+                                                                  traffic_flow_latency, traffic_flow_priority);
 
-        noc_ctx.noc_traffic_flows_storage.create_noc_traffic_flow(router_three, router_one, router_block_three_id, router_block_one_id, traffic_flow_bandwidth, traffic_flow_latency, traffic_flow_priority);
+        noc_ctx.noc_traffic_flows_storage.create_noc_traffic_flow(router_three, router_one, router_block_three_id,
+                                                                  router_block_one_id, traffic_flow_bandwidth,
+                                                                  traffic_flow_latency, traffic_flow_priority);
 
         // now check to see whether all router blocks in the design have an associated traffic flow (this is the function tested here)
         // we expect this to pass
-        CHECK(check_that_all_router_blocks_have_an_associated_traffic_flow(noc_ctx, noc_router_ref, test_noc_traffic_flows_file_name) == true);
+        CHECK(check_that_all_router_blocks_have_an_associated_traffic_flow(noc_ctx, noc_router_ref,
+                                                                           test_noc_traffic_flows_file_name)
+              == true);
 
         // clear the global netlist data structure so other unit tests that rely on dont use a corrupted netlist
         free_clustered_netlist();
@@ -422,13 +452,19 @@ TEST_CASE("test_check_that_all_router_blocks_have_an_associated_traffic_flow", "
     }
     SECTION("Test case where some router blocks in the design do not have an associated traffic flow") {
         // create a number of traffic flows that includes router_one and router_twp but does not include router_three
-        noc_ctx.noc_traffic_flows_storage.create_noc_traffic_flow(router_one, router_two, router_block_one_id, router_block_two_id, traffic_flow_bandwidth, traffic_flow_latency, traffic_flow_priority);
+        noc_ctx.noc_traffic_flows_storage.create_noc_traffic_flow(router_one, router_two, router_block_one_id,
+                                                                  router_block_two_id, traffic_flow_bandwidth,
+                                                                  traffic_flow_latency, traffic_flow_priority);
 
-        noc_ctx.noc_traffic_flows_storage.create_noc_traffic_flow(router_two, router_one, router_block_two_id, router_block_one_id, traffic_flow_bandwidth, traffic_flow_latency, traffic_flow_priority);
+        noc_ctx.noc_traffic_flows_storage.create_noc_traffic_flow(router_two, router_one, router_block_two_id,
+                                                                  router_block_one_id, traffic_flow_bandwidth,
+                                                                  traffic_flow_latency, traffic_flow_priority);
 
         // now check to see whether all router blocks in the design have an associated traffic flow (this is the function tested here)
         // we expect this fail
-        CHECK(check_that_all_router_blocks_have_an_associated_traffic_flow(noc_ctx, noc_router_ref, test_noc_traffic_flows_file_name) == false);
+        CHECK(check_that_all_router_blocks_have_an_associated_traffic_flow(noc_ctx, noc_router_ref,
+                                                                           test_noc_traffic_flows_file_name)
+              == false);
 
         // clear the global netlist data structure so other unit tests that rely on dont use a corrupted netlist
         free_clustered_netlist();
@@ -505,22 +541,32 @@ TEST_CASE("test_get_cluster_blocks_compatible_with_noc_router_tiles", "[vpr_noc_
         char router_four[] = "noc_router_four";
 
         // add the router blocks
-        golden_set_of_router_cluster_blocks_in_netlist.emplace_back(test_netlist->create_block(router_one, nullptr, router_ref));
-        golden_set_of_router_cluster_blocks_in_netlist.emplace_back(test_netlist->create_block(router_two, nullptr, router_ref));
-        golden_set_of_router_cluster_blocks_in_netlist.emplace_back(test_netlist->create_block(router_three, nullptr, router_ref_two));
-        golden_set_of_router_cluster_blocks_in_netlist.emplace_back(test_netlist->create_block(router_four, nullptr, router_ref_two));
+        golden_set_of_router_cluster_blocks_in_netlist.emplace_back(
+            test_netlist->create_block(router_one, nullptr, router_ref));
+        golden_set_of_router_cluster_blocks_in_netlist.emplace_back(
+            test_netlist->create_block(router_two, nullptr, router_ref));
+        golden_set_of_router_cluster_blocks_in_netlist.emplace_back(
+            test_netlist->create_block(router_three, nullptr, router_ref_two));
+        golden_set_of_router_cluster_blocks_in_netlist.emplace_back(
+            test_netlist->create_block(router_four, nullptr, router_ref_two));
 
         // stores the found cluster blocks in the netlist that are router blocks which are compatible with a NoC router tile
         // executing the test function here
-        std::vector<ClusterBlockId> found_cluster_blocks_that_are_noc_router_compatible = get_cluster_blocks_compatible_with_noc_router_tiles(cluster_ctx, noc_router_ref);
+        std::vector<ClusterBlockId> found_cluster_blocks_that_are_noc_router_compatible
+            = get_cluster_blocks_compatible_with_noc_router_tiles(cluster_ctx, noc_router_ref);
 
         // check that the correct number of router blocks were found
-        REQUIRE(golden_set_of_router_cluster_blocks_in_netlist.size() == found_cluster_blocks_that_are_noc_router_compatible.size());
+        REQUIRE(golden_set_of_router_cluster_blocks_in_netlist.size()
+                == found_cluster_blocks_that_are_noc_router_compatible.size());
 
         // now go through the golden set and check that the router blocks in the golden set were correctly found by the test function
-        for (auto golden_set_router_block_id = golden_set_of_router_cluster_blocks_in_netlist.begin(); golden_set_router_block_id != golden_set_of_router_cluster_blocks_in_netlist.end(); golden_set_router_block_id++) {
+        for (auto golden_set_router_block_id = golden_set_of_router_cluster_blocks_in_netlist.begin();
+             golden_set_router_block_id != golden_set_of_router_cluster_blocks_in_netlist.end();
+             golden_set_router_block_id++) {
             // no check that the current router block in the golden set was also found by the test and recognized as being a router logical block
-            REQUIRE(std::find(found_cluster_blocks_that_are_noc_router_compatible.begin(), found_cluster_blocks_that_are_noc_router_compatible.end(), *golden_set_router_block_id) != found_cluster_blocks_that_are_noc_router_compatible.end());
+            REQUIRE(std::find(found_cluster_blocks_that_are_noc_router_compatible.begin(),
+                              found_cluster_blocks_that_are_noc_router_compatible.end(), *golden_set_router_block_id)
+                    != found_cluster_blocks_that_are_noc_router_compatible.end());
         }
 
         // clear the global netlist data structure so other unit tests that rely on dont use a corrupted netlist
@@ -544,7 +590,8 @@ TEST_CASE("test_get_cluster_blocks_compatible_with_noc_router_tiles", "[vpr_noc_
 
         // stores the found cluster blocks in the netlist that are router blocks which are compatible with a NoC router tile
         // execute the test function
-        std::vector<ClusterBlockId> found_cluster_blocks_that_are_noc_router_compatible = get_cluster_blocks_compatible_with_noc_router_tiles(cluster_ctx, noc_router_ref);
+        std::vector<ClusterBlockId> found_cluster_blocks_that_are_noc_router_compatible
+            = get_cluster_blocks_compatible_with_noc_router_tiles(cluster_ctx, noc_router_ref);
 
         // since there were no router blocks in this netlist, check that the test found function 0 blocks that were compatible with a noc router tile
         REQUIRE(found_cluster_blocks_that_are_noc_router_compatible.size() == 0);

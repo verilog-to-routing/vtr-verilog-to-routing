@@ -8,7 +8,8 @@
 
 namespace comm {
 
-std::optional<std::string> TelegramParser::try_extract_json_value_str(const std::string& json_string, const std::string& key) {
+std::optional<std::string> TelegramParser::try_extract_json_value_str(const std::string& json_string,
+                                                                      const std::string& key) {
     constexpr const char end_key_pattern[] = {"\":\""};
 
     // Find the position of the key

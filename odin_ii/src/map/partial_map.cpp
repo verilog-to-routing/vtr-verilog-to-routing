@@ -113,7 +113,8 @@ void depth_first_traverse_partial_map(nnode_t* node, uintptr_t traverse_mark_num
                         if (next_net->fanout_pins[j]) {
                             if (next_net->fanout_pins[j]->node) {
                                 /* recursive call point */
-                                depth_first_traverse_partial_map(next_net->fanout_pins[j]->node, traverse_mark_number, netlist);
+                                depth_first_traverse_partial_map(next_net->fanout_pins[j]->node, traverse_mark_number,
+                                                                 netlist);
                             }
                         }
                     }
@@ -172,7 +173,8 @@ void partial_map_node(nnode_t* node, short traverse_number, netlist_t* netlist) 
         case MINUS:
             if (hard_adders) {
                 if (node->num_input_port_sizes == 3) {
-                    int max_num = (node->input_port_sizes[0] >= node->input_port_sizes[1]) ? node->input_port_sizes[0] : node->input_port_sizes[1];
+                    int max_num = (node->input_port_sizes[0] >= node->input_port_sizes[1]) ? node->input_port_sizes[0]
+                                                                                           : node->input_port_sizes[1];
                     if (max_num >= min_add)
                         instantiate_hard_adder_subtraction(node, traverse_number, netlist);
                     else
@@ -231,7 +233,8 @@ void partial_map_node(nnode_t* node, short traverse_number, netlist_t* netlist) 
                 long width = is_sp_ram(node) ? get_sp_ram_width(node) : get_dp_ram_width(node);
 
                 // If the memory satisfies the threshold for the use of a hard logic block, use one.
-                if (depth > configuration.soft_logic_memory_depth_threshold || width > configuration.soft_logic_memory_width_threshold) {
+                if (depth > configuration.soft_logic_memory_depth_threshold
+                    || width > configuration.soft_logic_memory_width_threshold) {
                     instantiate_hard_block(node, traverse_number, netlist);
                 } else {
                     printf("\tInferring soft logic ram: %zux%zu\n", width, depth);
@@ -432,7 +435,8 @@ void instantiate_multi_port_n_bits_mux(nnode_t* node, short mark, netlist_t* net
             /* creating multiple stages to decode single bit mux into 2-mux */
             for (i = 0; i < selector_width; i++) {
                 /* num of muxes in each stage */
-                int num_of_muxes = shift_left_value_with_overflow_check(0x1, selector_width - (i + 1), single_bit_mux->loc);
+                int num_of_muxes
+                    = shift_left_value_with_overflow_check(0x1, selector_width - (i + 1), single_bit_mux->loc);
                 muxes[i] = (nnode_t**)vtr::calloc(num_of_muxes, sizeof(nnode_t*));
                 output_signals[i] = init_signal_list();
 
@@ -463,23 +467,16 @@ void instantiate_multi_port_n_bits_mux(nnode_t* node, short mark, netlist_t* net
 
                     /* connecting the single bit mux input pins into decoded 2-Muxes */
                     if (i == 0) {
-                        remap_pin_to_new_node(single_bit_mux->input_pins[port_offset + j],
-                                              muxes[i][j],
-                                              1);
+                        remap_pin_to_new_node(single_bit_mux->input_pins[port_offset + j], muxes[i][j], 1);
 
                         remap_pin_to_new_node(single_bit_mux->input_pins[port_offset + j + (num_expressions / 2)],
-                                              muxes[i][j],
-                                              2);
+                                              muxes[i][j], 2);
                     }
                     /* connecting the outputs of internal 2-muxes to next level 2-muxes as input */
                     else {
-                        add_input_pin_to_node(muxes[i][j],
-                                              output_signals[i - 1]->pins[j],
-                                              1);
+                        add_input_pin_to_node(muxes[i][j], output_signals[i - 1]->pins[j], 1);
 
-                        add_input_pin_to_node(muxes[i][j],
-                                              output_signals[i - 1]->pins[j + num_of_muxes],
-                                              2);
+                        add_input_pin_to_node(muxes[i][j], output_signals[i - 1]->pins[j + num_of_muxes], 2);
                     }
 
                     // Connect output pin to related input pin
@@ -696,7 +693,8 @@ void instantiate_bitwise_logic(nnode_t* node, operation_list op, short mark, net
     int i, j;
 
     operation_list cell_op;
-    if (!node) return;
+    if (!node)
+        return;
     oassert(node->num_input_pins > 0);
     oassert(node->num_input_port_sizes >= 2);
 
@@ -951,8 +949,7 @@ void instantiate_GT(nnode_t* node, operation_list type, short mark, netlist_t* n
         port_B_offset = 0;
         port_A_index = 0;
         port_B_index = 0;
-        error_message(NETLIST, node->loc, "Invalid node type %s in instantiate_GT\n",
-                      node_name_based_on_op(node));
+        error_message(NETLIST, node->loc, "Invalid node type %s in instantiate_GT\n", node_name_based_on_op(node));
     }
 
     if (width_max > 1) {
@@ -1248,8 +1245,7 @@ static void instantiate_constant_shift(nnode_t* node, operation_list type, short
             /* Extend pad_bit to outputs that don't have inputs connected */
             for (i = output_width - 1; i >= operand_width - shift_size; i--) {
                 npin_t* extension_pin = NULL;
-                if (node->related_ast_node
-                    && node->attributes->port_a_signed == SIGNED && node->type == ASR) {
+                if (node->related_ast_node && node->attributes->port_a_signed == SIGNED && node->type == ASR) {
                     /* for signed values padding will be with last pin */
                     extension_pin = copy_input_npin(operand_signal->pins[pad_bit]);
                 } else {
@@ -1358,20 +1354,15 @@ static void instantiate_variable_shift(nnode_t* node, operation_list type, short
 
             // shift by pow(2,i) and connect the output of the previous stage mux as the second input to the next stage mux
             for (int j = shift_size; j < input_port_width; j++)
-                add_input_pin_to_node(muxes[i][j - shift_size],
-                                      copy_input_npin(input_pins->pins[j]),
-                                      2);
+                add_input_pin_to_node(muxes[i][j - shift_size], copy_input_npin(input_pins->pins[j]), 2);
             // connect the sign bit of the previous output as extension bits
             int pad_bit = input_port_width - 1;
             for (int j = 0; j < shift_size; j++) {
                 if (node->attributes->port_a_signed == SIGNED && type == ASR) {
                     add_input_pin_to_node(muxes[i][j + input_port_width - shift_size],
-                                          copy_input_npin(input_pins->pins[pad_bit]),
-                                          2);
+                                          copy_input_npin(input_pins->pins[pad_bit]), 2);
                 } else {
-                    add_input_pin_to_node(muxes[i][j + input_port_width - shift_size],
-                                          get_zero_pin(netlist),
-                                          2);
+                    add_input_pin_to_node(muxes[i][j + input_port_width - shift_size], get_zero_pin(netlist), 2);
                 }
             }
 
@@ -1384,15 +1375,11 @@ static void instantiate_variable_shift(nnode_t* node, operation_list type, short
 
             // shift by pow(2,i) and connect the output of the previous stage mux as the second input to the next stage mux
             for (int j = 0; j < input_port_width - shift_size; j++)
-                add_input_pin_to_node(muxes[i][j + shift_size],
-                                      copy_input_npin(input_pins->pins[j]),
-                                      2);
+                add_input_pin_to_node(muxes[i][j + shift_size], copy_input_npin(input_pins->pins[j]), 2);
 
             // connect the zero as extension bits
             for (int j = 0; j < shift_size; j++)
-                add_input_pin_to_node(muxes[i][j],
-                                      get_zero_pin(netlist),
-                                      2);
+                add_input_pin_to_node(muxes[i][j], get_zero_pin(netlist), 2);
         }
 
         for (int j = 0; j < input_port_width; j++) {

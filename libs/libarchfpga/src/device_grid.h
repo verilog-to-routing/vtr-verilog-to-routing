@@ -25,14 +25,14 @@ class DeviceGrid {
   public:
     DeviceGrid() = default;
     DeviceGrid(std::string grid_name, vtr::NdMatrix<t_grid_tile, 3> grid);
-    DeviceGrid(std::string grid_name, vtr::NdMatrix<t_grid_tile, 3> grid, std::vector<t_logical_block_type_ptr> limiting_res);
+    DeviceGrid(std::string grid_name,
+               vtr::NdMatrix<t_grid_tile, 3> grid,
+               std::vector<t_logical_block_type_ptr> limiting_res);
 
     const std::string& name() const { return name_; }
 
     ///@brief Return the number of layers(number of dies)
-    inline int get_num_layers() const {
-        return (int)grid_.dim_size(0);
-    }
+    inline int get_num_layers() const { return (int)grid_.dim_size(0); }
 
     ///@brief Return the width of the grid at the specified layer
     size_t width() const { return grid_.dim_size(1); }
@@ -40,9 +40,7 @@ class DeviceGrid {
     size_t height() const { return grid_.dim_size(2); }
 
     ///@brief Return the size of the flattened grid on the given layer
-    inline size_t grid_size() const {
-        return grid_.size();
-    }
+    inline size_t grid_size() const { return grid_.size(); }
 
     ///@brief deallocate members of DeviceGrid
     void clear();
@@ -114,9 +112,7 @@ class DeviceGrid {
     }
 
     ///@brief Return the nth t_grid_tile on the given layer of the flattened grid - Used by serializer functions
-    inline const t_grid_tile* get_grid_locs_grid_loc(int n) const {
-        return &grid_.get(n);
-    }
+    inline const t_grid_tile* get_grid_locs_grid_loc(int n) const { return &grid_.get(n); }
 
   private:
     ///@brief count_instances() counts the number of each tile type on each layer and store it in instance_counts_. It is called in the constructor.
@@ -131,7 +127,8 @@ class DeviceGrid {
      * @note which can be used for indexing in the second dimension, allowing
      * @note traditional 2-d indexing to be used
      */
-    vtr::NdMatrix<t_grid_tile, 3> grid_; //This stores the grid of complex blocks. It is a 3D matrix: [0..num_layers-1][0..grid.width()-1][0..grid_height()-1]
+    vtr::NdMatrix<t_grid_tile, 3>
+        grid_; //This stores the grid of complex blocks. It is a 3D matrix: [0..num_layers-1][0..grid.width()-1][0..grid_height()-1]
 
     ///@brief instance_counts_ stores the number of each tile type on each layer. It is initialized in count_instances().
     std::vector<std::map<t_physical_tile_type_ptr, size_t>> instance_counts_; /* [layer_num][physical_tile_type_ptr] */

@@ -111,24 +111,16 @@ class small_vector {
 
   public: //Accessors
     ///@brief Return a const_iterator to the first element
-    const_iterator begin() const {
-        return cbegin();
-    }
+    const_iterator begin() const { return cbegin(); }
 
     ///@brief Return a const_iterator pointing to the past-the-end element in the container.
-    const_iterator end() const {
-        return cend();
-    }
+    const_iterator end() const { return cend(); }
 
     ///@brief Return a const_reverse_iterator pointing to the last element in the container (i.e., its reverse beginning).
-    const_reverse_iterator rbegin() const {
-        return crbegin();
-    }
+    const_reverse_iterator rbegin() const { return crbegin(); }
 
     ///@brief Return a const_reverse_iterator pointing to the theoretical element preceding the first element in the container (which is considered its reverse end).
-    const_reverse_iterator rend() const {
-        return crend();
-    }
+    const_reverse_iterator rend() const { return crend(); }
 
     ///@brief Return a const_iterator pointing to the first element in the container.
     const_iterator cbegin() const {
@@ -147,24 +139,16 @@ class small_vector {
     }
 
     ///@brief Return a const_reverse_iterator pointing to the last element in the container (i.e., its reverse beginning).
-    const_reverse_iterator crbegin() const {
-        return const_reverse_iterator(cend());
-    }
+    const_reverse_iterator crbegin() const { return const_reverse_iterator(cend()); }
 
     ///@brief Return a const_reverse_iterator pointing to the theoretical element preceding the first element in the container (which is considered its reverse end).
-    const_reverse_iterator crend() const {
-        return const_reverse_iterator(cbegin());
-    }
+    const_reverse_iterator crend() const { return const_reverse_iterator(cbegin()); }
 
     ///@brief return the vector size (Padding ensures long/short format sizes are always aligned)
-    size_type size() const {
-        return long_.size_;
-    }
+    size_type size() const { return long_.size_; }
 
     ///@brief Return the maximum size
-    size_t max_size() const {
-        return std::numeric_limits<S>::max();
-    }
+    size_t max_size() const { return std::numeric_limits<S>::max(); }
 
     ///@brief Return the vector capacity
     size_type capacity() const {
@@ -194,14 +178,10 @@ class small_vector {
     }
 
     ///@brief Return a constant reference to the first element
-    const_reference front() const {
-        return *begin();
-    }
+    const_reference front() const { return *begin(); }
 
     ///@brief Return a constant reference to the last element
-    const_reference back() const {
-        return *(end() - 1);
-    }
+    const_reference back() const { return *(end() - 1); }
 
     ///@brief Return a constant pointer to the vector data
     const_pointer data() const {
@@ -219,9 +199,7 @@ class small_vector {
     }
 
     ///@brief Return an iterator referring to the past-the-end element in the vector container.
-    iterator end() {
-        return const_cast<iterator>(const_cast<const small_vector<T, S>*>(this)->end());
-    }
+    iterator end() { return const_cast<iterator>(const_cast<const small_vector<T, S>*>(this)->end()); }
 
     ///@brief Return a reverse iterator pointing to the last element in the vector (i.e., its reverse beginning).
     reverse_iterator rbegin() {
@@ -230,14 +208,10 @@ class small_vector {
     }
 
     ///@brief Return  a reverse iterator pointing to the theoretical element preceding the first element in the vector (which is considered its reverse end).
-    reverse_iterator rend() {
-        return reverse_iterator(const_cast<small_vector<T, S>*>(this)->begin());
-    }
+    reverse_iterator rend() { return reverse_iterator(const_cast<small_vector<T, S>*>(this)->begin()); }
 
     ///@brief Resizes the container so that it contains n elements
-    void resize(size_type n) {
-        resize(n, value_type());
-    }
+    void resize(size_type n) { resize(n, value_type()); }
 
     ///@brief Resizes the container so that it contains n elements and fills it with val
     void resize(size_type n, value_type val) {
@@ -276,23 +250,15 @@ class small_vector {
     }
 
     ///@brief at() operator
-    reference at(size_t i) {
-        return const_cast<reference>(const_cast<const small_vector<T, S>*>(this)->at(i));
-    }
+    reference at(size_t i) { return const_cast<reference>(const_cast<const small_vector<T, S>*>(this)->at(i)); }
 
     ///@brief Returns a reference to the first element in the vector.
-    reference front() {
-        return const_cast<reference>(const_cast<const small_vector<T, S>*>(this)->front());
-    }
+    reference front() { return const_cast<reference>(const_cast<const small_vector<T, S>*>(this)->front()); }
 
     ///@brief Returns a reference to the last element in the vector.
-    reference back() {
-        return const_cast<reference>(const_cast<const small_vector<T, S>*>(this)->back());
-    }
+    reference back() { return const_cast<reference>(const_cast<const small_vector<T, S>*>(this)->back()); }
 
-    pointer data() {
-        return const_cast<pointer>(const_cast<const small_vector<T, S>*>(this)->data());
-    }
+    pointer data() { return const_cast<pointer>(const_cast<const small_vector<T, S>*>(this)->data()); }
 
     /**
      * @brief Assigns new contents to the vector, replacing its current contents, and modifying its size accordingly.
@@ -311,18 +277,14 @@ class small_vector {
      *
      * Resize the vector to n and fill it with val
      */
-    void assign(size_type n, const value_type& val) {
-        insert(begin(), n, val);
-    }
+    void assign(size_type n, const value_type& val) { insert(begin(), n, val); }
 
     /**
      * @brief Assigns new contents to the vector, replacing its current contents, and modifying its size accordingly.
      *
      * The compiler will automatically construct such objects from initializer list declarators (il)
      */
-    void assign(std::initializer_list<value_type> il) {
-        assign(il.begin(), il.end());
-    }
+    void assign(std::initializer_list<value_type> il) { assign(il.begin(), il.end()); }
 
     ///@brief Construct default value_type at new location
     void push_back(value_type value) {
@@ -343,9 +305,7 @@ class small_vector {
     }
 
     ///@brief The vector is extended by inserting new elements before the element at the specified position, effectively increasing the container size by the number of elements inserted.
-    iterator insert(const_iterator position, const value_type& val) {
-        return insert(position, 1, val);
-    }
+    iterator insert(const_iterator position, const value_type& val) { return insert(position, 1, val); }
 
     /** 
      * @brief Insert a new value
@@ -412,9 +372,7 @@ class small_vector {
     //}
 
     ///@brief Removes from the vector a single element (position).
-    iterator erase(const_iterator position) {
-        return erase(position, position + 1);
-    }
+    iterator erase(const_iterator position) { return erase(position, position + 1); }
 
     ///@brief Removes from the vector either a range of elements ([first,last)).
     iterator erase(const_iterator first, const_iterator last) {
@@ -491,9 +449,7 @@ class small_vector {
     }
 
     ///@brief Exchanges the content of the container by the content of x, which is another vector object of the same type. Sizes may differ.
-    void swap(small_vector<T, S>& other) {
-        swap(*this, other);
-    }
+    void swap(small_vector<T, S>& other) { swap(*this, other); }
 
     ///@brief swaps two vectors
     friend void swap(small_vector<T, S>& lhs, small_vector<T, S>& rhs) {
@@ -574,35 +530,25 @@ class small_vector {
         if (lhs.size() != rhs.size()) {
             return false;
         }
-        return std::equal(lhs.begin(), lhs.end(),
-                          rhs.begin());
+        return std::equal(lhs.begin(), lhs.end(), rhs.begin());
     }
 
     ///@brief < operator
     friend bool operator<(const small_vector<T, S>& lhs, const small_vector<T, S>& rhs) {
-        return std::lexicographical_compare(lhs.begin(), lhs.end(),
-                                            rhs.begin(), rhs.end());
+        return std::lexicographical_compare(lhs.begin(), lhs.end(), rhs.begin(), rhs.end());
     }
 
     ///@brief != operator
-    friend bool operator!=(const small_vector<T, S>& lhs, const small_vector<T, S>& rhs) {
-        return !(lhs == rhs);
-    }
+    friend bool operator!=(const small_vector<T, S>& lhs, const small_vector<T, S>& rhs) { return !(lhs == rhs); }
 
     ///@brief > operator
-    friend bool operator>(const small_vector<T, S>& lhs, const small_vector<T, S>& rhs) {
-        return rhs < lhs;
-    }
+    friend bool operator>(const small_vector<T, S>& lhs, const small_vector<T, S>& rhs) { return rhs < lhs; }
 
     ///@brief <= operator
-    friend bool operator<=(const small_vector<T, S>& lhs, const small_vector<T, S>& rhs) {
-        return !(rhs < lhs);
-    }
+    friend bool operator<=(const small_vector<T, S>& lhs, const small_vector<T, S>& rhs) { return !(rhs < lhs); }
 
     ///@brief >= operator
-    friend bool operator>=(const small_vector<T, S>& lhs, const small_vector<T, S>& rhs) {
-        return !(lhs < rhs);
-    }
+    friend bool operator>=(const small_vector<T, S>& lhs, const small_vector<T, S>& rhs) { return !(lhs < rhs); }
 
   public: //Lifetime management
     ///@brief destructor
@@ -666,8 +612,10 @@ class small_vector {
      */
     static constexpr size_t SHORT_PAD = LONG_FMT_SIZE - (sizeof(value_type) * SHORT_CAPACITY + sizeof(size_type));
 
-    static constexpr size_t SHORT_FMT_SIZE = sizeof(small_vector_impl::short_format<value_type, size_type, SHORT_CAPACITY, SHORT_PAD>);
-    static constexpr size_t SHORT_FMT_ALIGN = alignof(small_vector_impl::short_format<value_type, size_type, SHORT_CAPACITY, SHORT_PAD>);
+    static constexpr size_t SHORT_FMT_SIZE
+        = sizeof(small_vector_impl::short_format<value_type, size_type, SHORT_CAPACITY, SHORT_PAD>);
+    static constexpr size_t SHORT_FMT_ALIGN
+        = alignof(small_vector_impl::short_format<value_type, size_type, SHORT_CAPACITY, SHORT_PAD>);
 
     static_assert(LONG_FMT_SIZE == SHORT_FMT_SIZE, "Short and long data formats must have same size");
     static_assert(LONG_FMT_ALIGN % SHORT_FMT_ALIGN == 0, "Short and long data formats must have compatible alignment");
@@ -766,14 +714,10 @@ class small_vector {
      * aligned, allowing is to set the size directly
      * for both formats
      */
-    void set_size(size_type new_size) {
-        short_.size_ = new_size;
-    }
+    void set_size(size_type new_size) { short_.size_ = new_size; }
 
     ///@brief Allocates raw (un-initialzied) memory for nelem objects of type T
-    static T* alloc(size_type nelem) {
-        return static_cast<T*>(::operator new(sizeof(T) * nelem));
-    }
+    static T* alloc(size_type nelem) { return static_cast<T*>(::operator new(sizeof(T) * nelem)); }
 
     /**
      * @brief Deallocates a block of memory
@@ -781,9 +725,7 @@ class small_vector {
      * Caller must ensure any object's associated with this block have already had
      * their destructors called
      */
-    static void dealloc(T* data) {
-        ::operator delete(data);
-    }
+    static void dealloc(T* data) { ::operator delete(data); }
 
     /**
      * @brief Swaps the elements in [src_first, src_last) to positions starting at dst_first
@@ -818,9 +760,7 @@ class small_vector {
     }
 
     ///@brief Calls the destructors of all elements currently held
-    void destruct_elements() {
-        destruct_elements(begin(), end());
-    }
+    void destruct_elements() { destruct_elements(begin(), end()); }
 
     ///@brief Calls the destructors of elements in [first, last] range
     void destruct_elements(iterator first, iterator last) {
@@ -830,9 +770,7 @@ class small_vector {
     }
 
     ///@brief Calls the destructors of elements in one position (position)
-    void destruct_element(iterator position) {
-        destruct_elements(position, position + 1);
-    }
+    void destruct_element(iterator position) { destruct_elements(position, position + 1); }
 
   private: //Data
     /*

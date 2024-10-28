@@ -82,7 +82,8 @@ APNetlist gen_ap_netlist_from_atoms(const AtomNetlist& atom_netlist,
             const PartitionRegion& partition_pr = constraints.get_partition_pr(part_id);
             // TODO: Either handle the union of legal locations or turn into a
             //       proper error.
-            VTR_ASSERT(partition_pr.get_regions().size() == 1 && "AP: Each partition should contain only one region for AP right now.");
+            VTR_ASSERT(partition_pr.get_regions().size() == 1
+                       && "AP: Each partition should contain only one region for AP right now.");
             const Region& region = partition_pr.get_regions()[0];
             // Get the x and y.
             const vtr::Rect<int>& region_rect = region.get_rect();
@@ -91,7 +92,8 @@ APNetlist gen_ap_netlist_from_atoms(const AtomNetlist& atom_netlist,
             int blk_x_loc = region_rect.xmin();
             int blk_y_loc = region_rect.ymin();
             // Get the layer.
-            VTR_ASSERT(region.get_layer_range().first == region.get_layer_range().second && "AP: Expect each region to be a single point in layer!");
+            VTR_ASSERT(region.get_layer_range().first == region.get_layer_range().second
+                       && "AP: Expect each region to be a single point in layer!");
             int blk_layer_num = region.get_layer_range().first;
             // Get the sub_tile (if fixed).
             int blk_sub_tile = APFixedBlockLoc::UNFIXED_DIM;
@@ -172,4 +174,3 @@ APNetlist gen_ap_netlist_from_atoms(const AtomNetlist& atom_netlist,
 
     return ap_netlist;
 }
-

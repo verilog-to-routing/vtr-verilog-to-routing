@@ -150,7 +150,8 @@ static void optimization() {
         //END ################# NETLIST OPTIMIZATION ############################
 
         if (configuration.output_netlist_graphs)
-            graphVizOutputNetlist(configuration.debug_output_path, "optimized", 2, syn_netlist); /* Path is where we are */
+            graphVizOutputNetlist(configuration.debug_output_path, "optimized", 2,
+                                  syn_netlist); /* Path is where we are */
     }
 
     optimization_time = wall_time() - optimization_time;
@@ -218,7 +219,8 @@ static ODIN_ERROR_CODE synthesize() {
         elaborate();
         printf("Successful Elaboration of the design by Odin-II\n");
     } catch (vtr::VtrError& vtr_error) {
-        printf("Odin-II Failed to parse Verilog / load BLIF file: %s with exit code:%d \n", vtr_error.what(), ERROR_ELABORATION);
+        printf("Odin-II Failed to parse Verilog / load BLIF file: %s with exit code:%d \n", vtr_error.what(),
+               ERROR_ELABORATION);
         exit(ERROR_ELABORATION);
     }
 
@@ -227,7 +229,8 @@ static ODIN_ERROR_CODE synthesize() {
         optimization();
         printf("Successful Optimization of netlist by Odin-II\n");
     } catch (vtr::VtrError& vtr_error) {
-        printf("Odin-II Failed to perform netlist optimization %s with exit code:%d \n", vtr_error.what(), ERROR_OPTIMIZATION);
+        printf("Odin-II Failed to perform netlist optimization %s with exit code:%d \n", vtr_error.what(),
+               ERROR_OPTIMIZATION);
         exit(ERROR_OPTIMIZATION);
     }
 
@@ -236,7 +239,8 @@ static ODIN_ERROR_CODE synthesize() {
         techmap();
         printf("Successful Partial Technology Mapping by Odin-II\n");
     } catch (vtr::VtrError& vtr_error) {
-        printf("Odin-II Failed to perform partial mapping to target device %s with exit code:%d \n", vtr_error.what(), ERROR_TECHMAP);
+        printf("Odin-II Failed to perform partial mapping to target device %s with exit code:%d \n", vtr_error.what(),
+               ERROR_TECHMAP);
         exit(ERROR_TECHMAP);
     }
     /*take the synthsis time before outputting netlist */
@@ -286,10 +290,12 @@ netlist_t* start_odin_ii(int argc, char** argv) {
         create_directory(configuration.debug_output_path);
 
     } catch (vtr::VtrError& vtr_error) {
-        printf("Odin Failed Reading The command line arguments  %s with exit code%d\n", vtr_error.what(), ERROR_PARSE_ARGS);
+        printf("Odin Failed Reading The command line arguments  %s with exit code%d\n", vtr_error.what(),
+               ERROR_PARSE_ARGS);
         exit(ERROR_PARSE_ARGS);
     } catch (argparse::ArgParseError& arg_error) {
-        printf("Odin Failed Reading The command line arguments  %s with exit code%d\n", arg_error.what(), ERROR_PARSE_ARGS);
+        printf("Odin Failed Reading The command line arguments  %s with exit code%d\n", arg_error.what(),
+               ERROR_PARSE_ARGS);
         exit(ERROR_PARSE_ARGS);
     }
 
@@ -299,7 +305,8 @@ netlist_t* start_odin_ii(int argc, char** argv) {
         try {
             read_config_file(global_args.config_file.value().c_str());
         } catch (vtr::VtrError& vtr_error) {
-            printf("Odin Failed Reading Configuration file %s with exit code%d\n", vtr_error.what(), ERROR_PARSE_CONFIG);
+            printf("Odin Failed Reading Configuration file %s with exit code%d\n", vtr_error.what(),
+                   ERROR_PARSE_CONFIG);
             exit(ERROR_PARSE_CONFIG);
         }
     }
@@ -332,7 +339,8 @@ netlist_t* start_odin_ii(int argc, char** argv) {
                 error_code = synthesize();
                 printf("odin_ii synthesis has finished with code: %d\n", error_code);
             } catch (vtr::VtrError& vtr_error) {
-                printf("Odin Failed to Synthesis for the file: %s with exit code:%d \n", vtr_error.what(), ERROR_SYNTHESIS);
+                printf("Odin Failed to Synthesis for the file: %s with exit code:%d \n", vtr_error.what(),
+                       ERROR_SYNTHESIS);
                 exit(ERROR_SYNTHESIS);
             }
         }
@@ -345,8 +353,7 @@ netlist_t* start_odin_ii(int argc, char** argv) {
      */
     netlist_t* sim_netlist = NULL;
     if ((global_args.blif_file.provenance() == argparse::Provenance::SPECIFIED && !coarsen_cleanup)
-        || global_args.interactive_simulation
-        || global_args.sim_num_test_vectors
+        || global_args.interactive_simulation || global_args.sim_num_test_vectors
         || global_args.sim_vector_input_file.provenance() == argparse::Provenance::SPECIFIED) {
         configuration.input_file_type = file_type_e::BLIF;
 
@@ -373,7 +380,8 @@ netlist_t* start_odin_ii(int argc, char** argv) {
 
     /* Simulate netlist */
     if (sim_netlist && !global_args.interactive_simulation
-        && (global_args.sim_num_test_vectors || (global_args.sim_vector_input_file.provenance() == argparse::Provenance::SPECIFIED))) {
+        && (global_args.sim_num_test_vectors
+            || (global_args.sim_vector_input_file.provenance() == argparse::Provenance::SPECIFIED))) {
         printf("Netlist Simulation Begin\n");
         create_directory(global_args.sim_directory);
 
@@ -415,7 +423,8 @@ struct ParseInitRegState {
         else if (str == "X")
             return -1;
         std::stringstream msg;
-        msg << "Invalid conversion from '" << str << "' (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+        msg << "Invalid conversion from '" << str << "' (expected one of: " << argparse::join(default_choices(), ", ")
+            << ")";
         throw argparse::ArgParseConversionError(msg.str());
     }
 
@@ -431,9 +440,7 @@ struct ParseInitRegState {
         throw argparse::ArgParseConversionError(msg.str());
     }
 
-    std::vector<std::string> default_choices() {
-        return {"0", "1", "X"};
-    }
+    std::vector<std::string> default_choices() { return {"0", "1", "X"}; }
 };
 
 /*---------------------------------------------------------------------------------------------
@@ -451,23 +458,16 @@ void get_options(int argc, char** argv) {
 
     auto& input_grp = parser.add_argument_group("input files");
 
-    input_grp.add_argument(global_args.config_file, "-c")
-        .help("Configuration file")
-        .metavar("XML_CONFIGURATION_FILE");
+    input_grp.add_argument(global_args.config_file, "-c").help("Configuration file").metavar("XML_CONFIGURATION_FILE");
 
     input_grp.add_argument(global_args.input_files, "-v")
         .help("List of Verilog HDL file")
         .nargs('+')
         .metavar("VERILOG_FILE");
 
-    input_grp.add_argument(global_args.blif_file, "-b")
-        .help("BLIF file")
-        .metavar("BLIF_FILE");
+    input_grp.add_argument(global_args.blif_file, "-b").help("BLIF file").metavar("BLIF_FILE");
 
-    input_grp.add_argument(global_args.input_files, "-V")
-        .help("DEPRECATED")
-        .nargs('+')
-        .metavar("N/A");
+    input_grp.add_argument(global_args.input_files, "-V").help("DEPRECATED").nargs('+').metavar("N/A");
 
     auto& output_grp = parser.add_argument_group("output files");
 
@@ -518,7 +518,9 @@ void get_options(int argc, char** argv) {
         .metavar("N/A");
 
     other_grp.add_argument(global_args.adder_cin_global, "--adder_cin_global")
-        .help("Defines if the first cin of an adder/subtractor is connected to a global gnd/vdd instead of a dummy adder generating a gnd/vdd.")
+        .help(
+            "Defines if the first cin of an adder/subtractor is connected to a global gnd/vdd instead of a dummy adder "
+            "generating a gnd/vdd.")
         .default_value("false")
         .action(argparse::Action::STORE_TRUE);
 
@@ -541,10 +543,7 @@ void get_options(int argc, char** argv) {
         .default_value("false")
         .action(argparse::Action::STORE_TRUE);
 
-    rand_sim_grp.add_argument(global_args.sim_random_seed, "-r")
-        .help("Random seed")
-        .default_value("0")
-        .metavar("SEED");
+    rand_sim_grp.add_argument(global_args.sim_random_seed, "-r").help("Random seed").default_value("0").metavar("SEED");
 
     rand_sim_grp.add_argument(global_args.sim_hold_low, "-L")
         .help("list of primary inputs to hold high at cycle 0, and low for all subsequent cycles")
@@ -671,7 +670,8 @@ void get_options(int argc, char** argv) {
     int max_thread = std::thread::hardware_concurrency();
 
     global_args.parralelized_simulation.set(
-        std::max(1, std::min(thread_requested, std::min((CONCURENCY_LIMIT - 1), max_thread))), argparse::Provenance::SPECIFIED);
+        std::max(1, std::min(thread_requested, std::min((CONCURENCY_LIMIT - 1), max_thread))),
+        argparse::Provenance::SPECIFIED);
 
     //Allow some config values to be overriden from command line
     if (!global_args.input_files.value().empty()) {

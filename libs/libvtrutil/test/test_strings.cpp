@@ -125,7 +125,9 @@ TEST_CASE("Basic string internment", "[vtr_string_interning/string_internment]")
     REQUIRE(f == b);
 }
 
-static void test_internment_retreval(const vtr::string_internment* internment, vtr::interned_string str, const char* expect) {
+static void test_internment_retreval(const vtr::string_internment* internment,
+                                     vtr::interned_string str,
+                                     const char* expect) {
     std::string copy;
     str.get(internment, &copy);
     REQUIRE(copy == expect);

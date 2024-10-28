@@ -20,32 +20,23 @@ Region::Region(int x_min, int y_min, int x_max, int y_max, int layer_num_min, in
 Region::Region(int x_min, int y_min, int x_max, int y_max, int layer_num)
     : Region(x_min, y_min, x_max, y_max, layer_num, layer_num) {}
 
-void Region::set_layer_range(std::pair<int, int> layer_range) {
-    layer_range_ = layer_range;
-}
+void Region::set_layer_range(std::pair<int, int> layer_range) { layer_range_ = layer_range; }
 
-void Region::set_rect(const vtr::Rect<int>& rect) {
-    rect_ = rect;
-}
+void Region::set_rect(const vtr::Rect<int>& rect) { rect_ = rect; }
 
 Region::Region()
-    : rect_({std::numeric_limits<int>::max(), std::numeric_limits<int>::max(),
-             std::numeric_limits<int>::min(), std::numeric_limits<int>::min()})
+    : rect_({std::numeric_limits<int>::max(), std::numeric_limits<int>::max(), std::numeric_limits<int>::min(),
+             std::numeric_limits<int>::min()})
     , layer_range_(0, 0)
     , sub_tile_(NO_SUBTILE) {}
 
-int Region::get_sub_tile() const {
-    return sub_tile_;
-}
+int Region::get_sub_tile() const { return sub_tile_; }
 
-void Region::set_sub_tile(int sub_tile) {
-    sub_tile_ = sub_tile;
-}
+void Region::set_sub_tile(int sub_tile) { sub_tile_ = sub_tile; }
 
 bool Region::empty() const {
     const auto [layer_low, layer_high] = layer_range_;
-    return (rect_.xmax() < rect_.xmin() || rect_.ymax() < rect_.ymin() ||
-            layer_high < layer_low);
+    return (rect_.xmax() < rect_.xmin() || rect_.ymax() < rect_.ymin() || layer_high < layer_low);
 }
 
 bool Region::is_loc_in_reg(t_pl_loc loc) const {
@@ -82,8 +73,8 @@ Region intersection(const Region& r1, const Region& r2) {
     auto [r1_layer_low, r1_layer_high] = r1.get_layer_range();
     auto [r2_layer_low, r2_layer_high] = r2.get_layer_range();
 
-    auto [intersect_layer_begin, intersect_layer_end] = std::make_pair(std::max(r1_layer_low, r2_layer_low),
-                                                                                std::min(r1_layer_high, r2_layer_high));
+    auto [intersect_layer_begin, intersect_layer_end]
+        = std::make_pair(std::max(r1_layer_low, r2_layer_low), std::min(r1_layer_high, r2_layer_high));
 
     // check that the give layer range start from a lower layer and end at a higher or the same layer
     // negative layer means that the given Region object is an empty region

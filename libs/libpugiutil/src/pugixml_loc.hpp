@@ -25,14 +25,10 @@ class loc_data {
     const char* filename_c_str() const { return filename_.c_str(); }
 
     //Convenience wrapper which takes xml_nodes
-    std::size_t line(pugi::xml_node node) const {
-        return line(node.offset_debug());
-    }
+    std::size_t line(pugi::xml_node node) const { return line(node.offset_debug()); }
 
     //Convenience wrapper which takes xml_nodes
-    std::size_t col(pugi::xml_node node) const {
-        return col(node.offset_debug());
-    }
+    std::size_t col(pugi::xml_node node) const { return col(node.offset_debug()); }
 
     //Return the line number from the given offset
     std::size_t line(std::ptrdiff_t offset) const;

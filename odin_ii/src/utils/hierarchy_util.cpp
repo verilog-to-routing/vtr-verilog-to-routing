@@ -269,25 +269,29 @@ ast_node_t* resolve_hierarchical_name_reference_by_path_search(sc_hierarchy* loc
 
             for (int i = 0; !var_declare && i < local_ref->num_module_children; i++) {
                 if (local_ref->module_children[i]->scope_id == scope_id) {
-                    var_declare = resolve_hierarchical_name_reference_by_path_search(local_ref->module_children[i], identifier);
+                    var_declare
+                        = resolve_hierarchical_name_reference_by_path_search(local_ref->module_children[i], identifier);
                 }
             }
 
             for (int i = 0; !var_declare && i < local_ref->num_function_children; i++) {
                 if (local_ref->function_children[i]->scope_id == scope_id) {
-                    var_declare = resolve_hierarchical_name_reference_by_path_search(local_ref->function_children[i], identifier);
+                    var_declare = resolve_hierarchical_name_reference_by_path_search(local_ref->function_children[i],
+                                                                                     identifier);
                 }
             }
 
             for (int i = 0; !var_declare && i < local_ref->num_task_children; i++) {
                 if (local_ref->task_children[i]->scope_id == scope_id) {
-                    var_declare = resolve_hierarchical_name_reference_by_path_search(local_ref->task_children[i], identifier);
+                    var_declare
+                        = resolve_hierarchical_name_reference_by_path_search(local_ref->task_children[i], identifier);
                 }
             }
 
             for (int i = 0; !var_declare && i < local_ref->num_block_children; i++) {
                 if (local_ref->block_children[i]->scope_id == scope_id) {
-                    var_declare = resolve_hierarchical_name_reference_by_path_search(local_ref->block_children[i], identifier);
+                    var_declare
+                        = resolve_hierarchical_name_reference_by_path_search(local_ref->block_children[i], identifier);
                 }
             }
         }

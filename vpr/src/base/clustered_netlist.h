@@ -203,7 +203,12 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
      *   @param pin_index  The index of the pin relative to its block, excluding OPEN pins)
      *   @param is_const   Indicates whether the pin holds a constant value (e. g. vcc/gnd)
      */
-    ClusterPinId create_pin(const ClusterPortId port_id, BitIndex port_bit, const ClusterNetId net_id, const PinType pin_type, int pin_index, bool is_const = false);
+    ClusterPinId create_pin(const ClusterPortId port_id,
+                            BitIndex port_bit,
+                            const ClusterNetId net_id,
+                            const PinType pin_type,
+                            int pin_index,
+                            bool is_const = false);
 
     /**
      * @brief Create a net in the netlist
@@ -281,7 +286,8 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
      *         matched to the input string pattern.
      *         
      */
-    ClusterBlockId find_block_by_name_fragment(const std::string& name_pattern, const std::vector<ClusterBlockId>& cluster_block_candidates) const;
+    ClusterBlockId find_block_by_name_fragment(const std::string& name_pattern,
+                                               const std::vector<ClusterBlockId>& cluster_block_candidates) const;
 
   private: //Private Members
     /*
@@ -312,9 +318,12 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
     void remove_pin_impl(const ClusterPinId pin_id) override;
     void remove_net_impl(const ClusterNetId net_id) override;
 
-    void rebuild_block_refs_impl(const vtr::vector_map<ClusterPinId, ClusterPinId>& pin_id_map, const vtr::vector_map<ClusterPortId, ClusterPortId>& port_id_map) override;
-    void rebuild_port_refs_impl(const vtr::vector_map<ClusterBlockId, ClusterBlockId>& block_id_map, const vtr::vector_map<ClusterPinId, ClusterPinId>& pin_id_map) override;
-    void rebuild_pin_refs_impl(const vtr::vector_map<ClusterPortId, ClusterPortId>& port_id_map, const vtr::vector_map<ClusterNetId, ClusterNetId>& net_id_map) override;
+    void rebuild_block_refs_impl(const vtr::vector_map<ClusterPinId, ClusterPinId>& pin_id_map,
+                                 const vtr::vector_map<ClusterPortId, ClusterPortId>& port_id_map) override;
+    void rebuild_port_refs_impl(const vtr::vector_map<ClusterBlockId, ClusterBlockId>& block_id_map,
+                                const vtr::vector_map<ClusterPinId, ClusterPinId>& pin_id_map) override;
+    void rebuild_pin_refs_impl(const vtr::vector_map<ClusterPortId, ClusterPortId>& port_id_map,
+                               const vtr::vector_map<ClusterNetId, ClusterNetId>& net_id_map) override;
     void rebuild_net_refs_impl(const vtr::vector_map<ClusterPinId, ClusterPinId>& pin_id_map) override;
 
     /*
@@ -329,10 +338,14 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
 
   private: //Private Data
     //Blocks
-    vtr::vector_map<ClusterBlockId, t_pb*> block_pbs_;                              ///<Physical block representing the clustering & internal hierarchy of each CLB
-    vtr::vector_map<ClusterBlockId, t_logical_block_type_ptr> block_types_;         ///<The type of logical block this user circuit block is mapped to
-    vtr::vector_map<ClusterBlockId, std::vector<ClusterPinId>> block_logical_pins_; ///<The logical pin associated with each physical tile pin
-    std::unordered_map<int, std::vector<ClusterBlockId>> blocks_per_type_;          ///<Block IDs associated with each physical block type, Used in placement to move specific block type
+    vtr::vector_map<ClusterBlockId, t_pb*>
+        block_pbs_; ///<Physical block representing the clustering & internal hierarchy of each CLB
+    vtr::vector_map<ClusterBlockId, t_logical_block_type_ptr>
+        block_types_; ///<The type of logical block this user circuit block is mapped to
+    vtr::vector_map<ClusterBlockId, std::vector<ClusterPinId>>
+        block_logical_pins_; ///<The logical pin associated with each physical tile pin
+    std::unordered_map<int, std::vector<ClusterBlockId>>
+        blocks_per_type_; ///<Block IDs associated with each physical block type, Used in placement to move specific block type
 
     //Pins
     /**

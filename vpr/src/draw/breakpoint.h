@@ -38,9 +38,10 @@ typedef enum breakpoint_types {
 class Breakpoint {
   public:
     bp_type type;
-    int bt_moves = 0;          ///breaks after proceeding the indicated number of moves in placement
-    int bt_temps = 0;          ///breaks after proceeding the indicated number of temperature changes in placement
-    int bt_from_block = -1;    ///breaks after the first block moved in a placement perturbation matches the block id indicated by user
+    int bt_moves = 0; ///breaks after proceeding the indicated number of moves in placement
+    int bt_temps = 0; ///breaks after proceeding the indicated number of temperature changes in placement
+    int bt_from_block
+        = -1; ///breaks after the first block moved in a placement perturbation matches the block id indicated by user
     int bt_router_iter = 0;    ///breaks when reaching the indicated router iteration
     int bt_route_net_id = -1;  ///breaks after the indicated net is routed
     std::string bt_expression; ///breaks when expression returns true after parsing

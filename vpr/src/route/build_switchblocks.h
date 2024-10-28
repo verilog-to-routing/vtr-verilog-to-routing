@@ -50,8 +50,7 @@ class Switchblock_Lookup {
     /* Overload == operator which is used by std::unordered_map */
     bool operator==(const Switchblock_Lookup& obj) const {
         bool result;
-        if (x_coord == obj.x_coord && y_coord == obj.y_coord
-            && from_side == obj.from_side && to_side == obj.to_side
+        if (x_coord == obj.x_coord && y_coord == obj.y_coord && from_side == obj.from_side && to_side == obj.to_side
             && layer_coord == obj.layer_coord) {
             result = true;
         } else {
@@ -98,7 +97,8 @@ struct t_switchblock_edge {
  * of the map is a vector of destination wires.
  * A matrix specifying connections for all switchblocks in an FPGA would be sparse and possibly very large
  * so we use an unordered map to take advantage of the sparsity. */
-typedef std::unordered_map<Switchblock_Lookup, std::vector<t_switchblock_edge>, t_hash_Switchblock_Lookup> t_sb_connection_map;
+typedef std::unordered_map<Switchblock_Lookup, std::vector<t_switchblock_edge>, t_hash_Switchblock_Lookup>
+    t_sb_connection_map;
 
 /************ Functions ************/
 
@@ -116,7 +116,14 @@ typedef std::unordered_map<Switchblock_Lookup, std::vector<t_switchblock_edge>, 
  *
  *   @return creates a map between switch blocks (key) and their corresponding edges (value).
  */
-t_sb_connection_map* alloc_and_load_switchblock_permutations(const t_chan_details& chan_details_x, const t_chan_details& chan_details_y, const DeviceGrid& grid, const std::vector<bool>& inter_cluster_rr, const std::vector<t_switchblock_inf>& switchblocks, t_chan_width* nodes_per_chan, enum e_directionality directionality, vtr::RandState& rand_state);
+t_sb_connection_map* alloc_and_load_switchblock_permutations(const t_chan_details& chan_details_x,
+                                                             const t_chan_details& chan_details_y,
+                                                             const DeviceGrid& grid,
+                                                             const std::vector<bool>& inter_cluster_rr,
+                                                             const std::vector<t_switchblock_inf>& switchblocks,
+                                                             t_chan_width* nodes_per_chan,
+                                                             enum e_directionality directionality,
+                                                             vtr::RandState& rand_state);
 
 /**
  * @brief deallocates switch block connections sparse array

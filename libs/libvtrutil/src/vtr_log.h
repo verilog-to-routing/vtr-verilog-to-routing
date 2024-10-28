@@ -77,25 +77,29 @@
 #define VTR_LOGFF_WARN(file, line, func, ...) VTR_LOGVFF_WARN(true, file, line, func, __VA_ARGS__)
 
 // Conditional logging and custom file-line location macros
-#define VTR_LOGVF(expr, file, line, ...)    \
-    do {                                    \
-        if (expr) vtr::printf(__VA_ARGS__); \
+#define VTR_LOGVF(expr, file, line, ...) \
+    do {                                 \
+        if (expr)                        \
+            vtr::printf(__VA_ARGS__);    \
     } while (false)
 
-#define VTR_LOGVF_WARN(expr, file, line, ...)                                   \
-    do {                                                                        \
-        if (expr) print_or_suppress_warning(file, line, __func__, __VA_ARGS__); \
+#define VTR_LOGVF_WARN(expr, file, line, ...)                             \
+    do {                                                                  \
+        if (expr)                                                         \
+            print_or_suppress_warning(file, line, __func__, __VA_ARGS__); \
     } while (false)
 
-#define VTR_LOGVF_ERROR(expr, file, line, ...)                \
-    do {                                                      \
-        if (expr) vtr::printf_error(file, line, __VA_ARGS__); \
+#define VTR_LOGVF_ERROR(expr, file, line, ...)          \
+    do {                                                \
+        if (expr)                                       \
+            vtr::printf_error(file, line, __VA_ARGS__); \
     } while (false)
 
 // Conditional logging and custom file-line-func location macros
-#define VTR_LOGVFF_WARN(expr, file, line, func, ...)                        \
-    do {                                                                    \
-        if (expr) print_or_suppress_warning(file, line, func, __VA_ARGS__); \
+#define VTR_LOGVFF_WARN(expr, file, line, func, ...)                  \
+    do {                                                              \
+        if (expr)                                                     \
+            print_or_suppress_warning(file, line, func, __VA_ARGS__); \
     } while (false)
 
 /*
@@ -118,11 +122,11 @@
 
 // Debug logging macros
 #ifdef VTR_ENABLE_DEBUG_LOGGING //Enable
-#    define VTR_LOG_DEBUG(...) VTR_LOG(__VA_ARGS__)
-#    define VTR_LOGV_DEBUG(expr, ...) VTR_LOGV(expr, __VA_ARGS__)
+#define VTR_LOG_DEBUG(...) VTR_LOG(__VA_ARGS__)
+#define VTR_LOGV_DEBUG(expr, ...) VTR_LOGV(expr, __VA_ARGS__)
 #else //Disable
-#    define VTR_LOG_DEBUG(...) VTR_LOG_NOP(__VA_ARGS__)
-#    define VTR_LOGV_DEBUG(expr, ...) VTR_LOGV_NOP(expr, __VA_ARGS__)
+#define VTR_LOG_DEBUG(...) VTR_LOG_NOP(__VA_ARGS__)
+#define VTR_LOGV_DEBUG(expr, ...) VTR_LOGV_NOP(expr, __VA_ARGS__)
 #endif
 
 namespace vtr {
@@ -162,6 +166,10 @@ void set_noisy_warn_log_file(std::string log_file_name);
  *  is in the set of warnings_to_suppress. If so, the warning is printed on the
  * noisy_warn_log_file, otherwise it is printed on stdout (or the regular log file)
  */
-void print_or_suppress_warning(const char* pszFileName, unsigned int lineNum, const char* pszFuncName, const char* pszMessage, ...);
+void print_or_suppress_warning(const char* pszFileName,
+                               unsigned int lineNum,
+                               const char* pszFuncName,
+                               const char* pszMessage,
+                               ...);
 
 #endif

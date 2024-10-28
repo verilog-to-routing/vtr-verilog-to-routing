@@ -33,26 +33,26 @@
 #include "move_utils.h"
 
 #ifdef VTR_ENABLE_DEBUG_LOGGING
-#    include "move_utils.h"
+#include "move_utils.h"
 #endif
 
 #ifdef WIN32 /* For runtime tracking in WIN32. The clock() function defined in time.h will *
               * track CPU runtime.														   */
-#    include <time.h>
+#include <time.h>
 #else /* For X11. The clock() function in time.h will not output correct time difference   *
        * for X11, because the graphics is processed by the Xserver rather than local CPU,  *
        * which means tracking CPU time will not be the same as the actual wall clock time. *
        * Thus, so use gettimeofday() in sys/time.h to track actual calendar time.          */
-#    include <sys/time.h>
+#include <sys/time.h>
 #endif
 
 #ifndef NO_GRAPHICS
 
 //To process key presses we need the X11 keysym definitions,
 //which are unavailable when building with MINGW
-#    if defined(X11) && !defined(__MINGW32__)
-#        include <X11/keysym.h>
-#    endif
+#if defined(X11) && !defined(__MINGW32__)
+#include <X11/keysym.h>
+#endif
 
 /**
  * Retrieves the current zoom level based on the visible world and screen dimensions.
@@ -88,7 +88,11 @@ double get_scaling_factor_from_zoom(ezgl::renderer* g) {
  * 'relative_position' is the position of the triangle along the line,
  * and 'arrow_size' is the size of the triangle.
  */
-void draw_triangle_along_line(ezgl::renderer* g, ezgl::point2d start, ezgl::point2d end, float relative_position, float arrow_size) {
+void draw_triangle_along_line(ezgl::renderer* g,
+                              ezgl::point2d start,
+                              ezgl::point2d end,
+                              float relative_position,
+                              float arrow_size) {
     VTR_ASSERT(relative_position >= 0. && relative_position <= 1.);
     float xdelta = end.x - start.x;
     float ydelta = end.y - start.y;
@@ -110,7 +114,11 @@ void draw_triangle_along_line(ezgl::renderer* g, ezgl::point2d start, ezgl::poin
  * 'g' is the renderer object, 'loc' is the center of the triangle,
  * 'start' and 'end' are the line segment points, and 'arrow_size' is the size of the triangle.
  */
-void draw_triangle_along_line(ezgl::renderer* g, ezgl::point2d loc, ezgl::point2d start, ezgl::point2d end, float arrow_size) {
+void draw_triangle_along_line(ezgl::renderer* g,
+                              ezgl::point2d loc,
+                              ezgl::point2d start,
+                              ezgl::point2d end,
+                              float arrow_size) {
     double scaling_factor = get_scaling_factor_from_zoom(g); // Get the current zoom level
     float scaled_arrow_size = arrow_size / scaling_factor;   // Scale arrow size based on zoom level
     draw_triangle_along_line(g, loc.x, loc.y, start.x, end.x, start.y, end.y, scaled_arrow_size);
@@ -128,7 +136,14 @@ void draw_triangle_along_line(ezgl::renderer* g, ezgl::point2d loc, ezgl::point2
  * 'y1' and 'y2' are the y-coordinates of the line segment points,
  * 'arrow_size' is the size of the triangle.
  */
-void draw_triangle_along_line(ezgl::renderer* g, float xend, float yend, float x1, float x2, float y1, float y2, float arrow_size) {
+void draw_triangle_along_line(ezgl::renderer* g,
+                              float xend,
+                              float yend,
+                              float x1,
+                              float x2,
+                              float y1,
+                              float y2,
+                              float arrow_size) {
     double scaling_factor = get_scaling_factor_from_zoom(g); // Get the current zoom level
 
     float switch_rad = arrow_size / 2 / scaling_factor; // Scale switch_rad based on zoom level

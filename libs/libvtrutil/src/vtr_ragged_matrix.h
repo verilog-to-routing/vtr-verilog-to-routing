@@ -83,9 +83,7 @@ class FlatRaggedMatrix {
 
   public: //Accessors
     ///@brief Iterators to *all* elements
-    auto begin() {
-        return data_.begin();
-    }
+    auto begin() { return data_.begin(); }
 
     ///@brief Iterator to the last element of the matrix
     auto end() {
@@ -96,9 +94,7 @@ class FlatRaggedMatrix {
     }
 
     ///@brief Iterator to the first element of the matrix (immutable)
-    auto begin() const {
-        return data_.begin();
-    }
+    auto begin() const { return data_.begin(); }
 
     ///@brief Iterator to the last element of the matrix (immutable)
     auto end() const {
@@ -117,17 +113,14 @@ class FlatRaggedMatrix {
     }
 
     ///@brief Return true if empty
-    bool empty() const {
-        return size() == 0;
-    }
+    bool empty() const { return size() == 0; }
 
     ///@brief Indexing operators for the first dimension
     vtr::array_view<T> operator[](Index0 i) {
         int idx = size_t(i);
         T* first = &data_[first_elem_[idx]];
         T* last = &data_[first_elem_[idx + 1]];
-        return vtr::array_view<T>(first,
-                                  last - first);
+        return vtr::array_view<T>(first, last - first);
     }
 
     ///@brief Indexing operators for the first dimension (immutable)
@@ -135,8 +128,7 @@ class FlatRaggedMatrix {
         int idx = size_t(i);
         const T* first = &data_[first_elem_[idx]];
         const T* last = &data_[first_elem_[idx + 1]];
-        return vtr::array_view<const T>(first,
-                                        last - first);
+        return vtr::array_view<const T>(first, last - first);
     }
 
     ///@brief Clears the matrix
@@ -192,14 +184,10 @@ class FlatRaggedMatrix {
         }
 
         ///@brief Return iterator to the first element
-        U* data() {
-            return first_;
-        }
+        U* data() { return first_; }
 
         ///@brief Return iterator to the first element (immutable)
-        U* data() const {
-            return first_;
-        }
+        U* data() const { return first_; }
 
       private:
         U* first_;
@@ -230,17 +218,11 @@ class FlatRaggedMatrix {
             return *this;
         }
 
-        bool operator==(const RowLengthIterator& other) {
-            return irow_ == other.irow_;
-        }
+        bool operator==(const RowLengthIterator& other) { return irow_ == other.irow_; }
 
-        bool operator!=(const RowLengthIterator& other) {
-            return !(*this == other);
-        }
+        bool operator!=(const RowLengthIterator& other) { return !(*this == other); }
 
-        difference_type operator-(const RowLengthIterator& other) {
-            return irow_ - other.irow_;
-        }
+        difference_type operator-(const RowLengthIterator& other) { return irow_ - other.irow_; }
 
         value_type operator*() {
             //Call the callback to get the row length

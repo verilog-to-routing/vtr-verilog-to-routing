@@ -113,8 +113,18 @@ typedef std::pair<double, std::string> sequential_port_delay_pair;
 std::string indent(size_t depth);
 double get_delay_ps(double delay_sec);
 
-void print_blif_port(std::ostream& os, size_t& unconn_count, const std::string& port_name, const std::vector<std::string>& nets, int depth);
-void print_verilog_port(std::ostream& os, size_t& unconn_count, const std::string& port_name, const std::vector<std::string>& nets, PortType type, int depth, struct t_analysis_opts& opts);
+void print_blif_port(std::ostream& os,
+                     size_t& unconn_count,
+                     const std::string& port_name,
+                     const std::vector<std::string>& nets,
+                     int depth);
+void print_verilog_port(std::ostream& os,
+                        size_t& unconn_count,
+                        const std::string& port_name,
+                        const std::vector<std::string>& nets,
+                        PortType type,
+                        int depth,
+                        struct t_analysis_opts& opts);
 
 std::string create_unconn_net(size_t& unconn_count);
 std::string escape_verilog_identifier(const std::string id);
@@ -202,12 +212,13 @@ class Instance {
 
 ///@brief An instance representing a Look-Up Table
 class LutInst : public Instance {
-  public:                                                               ///<Public methods
-    LutInst(size_t lut_size,                                            ///<The LUT size
-            LogicVec lut_mask,                                          ///<The LUT mask representing the logic function
-            std::string inst_name,                                      ///<The name of this instance
-            std::map<std::string, std::vector<std::string>> port_conns, ///<The port connections of this instance. Key: port name, Value: connected nets
-            std::vector<Arc> timing_arc_values,                         ///<The timing arcs of this instance
+  public:                          ///<Public methods
+    LutInst(size_t lut_size,       ///<The LUT size
+            LogicVec lut_mask,     ///<The LUT mask representing the logic function
+            std::string inst_name, ///<The name of this instance
+            std::map<std::string, std::vector<std::string>>
+                port_conns, ///<The port connections of this instance. Key: port name, Value: connected nets
+            std::vector<Arc> timing_arc_values, ///<The timing arcs of this instance
             struct t_analysis_opts opts)
         : type_("LUT_K")
         , lut_size_(lut_size)
@@ -215,8 +226,7 @@ class LutInst : public Instance {
         , inst_name_(inst_name)
         , port_conns_(port_conns)
         , timing_arcs_(timing_arc_values)
-        , opts_(opts) {
-    }
+        , opts_(opts) {}
 
     //Accessors
     const std::vector<Arc>& timing_arcs() { return timing_arcs_; }
@@ -561,16 +571,18 @@ class LatchInst : public Instance {
 
 class BlackBoxInst : public Instance {
   public:
-    BlackBoxInst(std::string type_name,                                             ///<Instance type
-                 std::string inst_name,                                             ///<Instance name
-                 std::map<std::string, std::string> params,                         ///<Verilog parameters: Dictonary of <param_name,value>
-                 std::map<std::string, std::string> attrs,                          ///<Instance attributes: Dictonary of <attr_name,value>
-                 std::map<std::string, std::vector<std::string>> input_port_conns,  ///<Port connections: Dictionary of <port,nets>
-                 std::map<std::string, std::vector<std::string>> output_port_conns, ///<Port connections: Dictionary of <port,nets>
-                 std::vector<Arc> timing_arcs,                                      ///<Combinational timing arcs
-                 std::map<std::string, sequential_port_delay_pair> ports_tsu,       ///<Port setup checks
-                 std::map<std::string, sequential_port_delay_pair> ports_thld,      ///<Port hold checks
-                 std::map<std::string, sequential_port_delay_pair> ports_tcq,       ///<Port clock-to-q delays
+    BlackBoxInst(std::string type_name,                     ///<Instance type
+                 std::string inst_name,                     ///<Instance name
+                 std::map<std::string, std::string> params, ///<Verilog parameters: Dictonary of <param_name,value>
+                 std::map<std::string, std::string> attrs,  ///<Instance attributes: Dictonary of <attr_name,value>
+                 std::map<std::string, std::vector<std::string>>
+                     input_port_conns, ///<Port connections: Dictionary of <port,nets>
+                 std::map<std::string, std::vector<std::string>>
+                     output_port_conns,        ///<Port connections: Dictionary of <port,nets>
+                 std::vector<Arc> timing_arcs, ///<Combinational timing arcs
+                 std::map<std::string, sequential_port_delay_pair> ports_tsu,  ///<Port setup checks
+                 std::map<std::string, sequential_port_delay_pair> ports_thld, ///<Port hold checks
+                 std::map<std::string, sequential_port_delay_pair> ports_tcq,  ///<Port clock-to-q delays
                  struct t_analysis_opts opts)
         : type_name_(type_name)
         , inst_name_(inst_name)
@@ -715,7 +727,9 @@ class BlackBoxInst : public Instance {
                     std::stringstream delay_triple;
                     delay_triple << "(" << clock_to_q_ps << ":" << clock_to_q_ps << ":" << clock_to_q_ps << ")";
 
-                    os << indent(depth + 3) << "(IOPATH (posedge " << escape_sdf_identifier(kv.second.second) << ") " << escape_sdf_identifier(kv.first) << " " << delay_triple.str() << " " << delay_triple.str() << ")\n";
+                    os << indent(depth + 3) << "(IOPATH (posedge " << escape_sdf_identifier(kv.second.second) << ") "
+                       << escape_sdf_identifier(kv.first) << " " << delay_triple.str() << " " << delay_triple.str()
+                       << ")\n";
                 }
                 os << indent(depth + 2) << ")\n"; //ABSOLUTE
             }
@@ -730,7 +744,8 @@ class BlackBoxInst : public Instance {
                     std::stringstream delay_triple;
                     delay_triple << "(" << setup_ps << ":" << setup_ps << ":" << setup_ps << ")";
 
-                    os << indent(depth + 2) << "(SETUP " << escape_sdf_identifier(kv.first) << " (posedge  " << escape_sdf_identifier(kv.second.second) << ") " << delay_triple.str() << ")\n";
+                    os << indent(depth + 2) << "(SETUP " << escape_sdf_identifier(kv.first) << " (posedge  "
+                       << escape_sdf_identifier(kv.second.second) << ") " << delay_triple.str() << ")\n";
                 }
                 for (auto kv : ports_thld_) {
                     double hold_ps = get_delay_ps(kv.second.first);
@@ -738,7 +753,8 @@ class BlackBoxInst : public Instance {
                     std::stringstream delay_triple;
                     delay_triple << "(" << hold_ps << ":" << hold_ps << ":" << hold_ps << ")";
 
-                    os << indent(depth + 2) << "(HOLD " << escape_sdf_identifier(kv.first) << " (posedge " << escape_sdf_identifier(kv.second.second) << ") " << delay_triple.str() << ")\n";
+                    os << indent(depth + 2) << "(HOLD " << escape_sdf_identifier(kv.first) << " (posedge "
+                       << escape_sdf_identifier(kv.second.second) << ") " << delay_triple.str() << ")\n";
                 }
                 os << indent(depth + 1) << ")\n"; //TIMINGCHECK
             }
@@ -756,8 +772,8 @@ class BlackBoxInst : public Instance {
         if (iter != output_port_conns_.end()) {
             return iter->second.size();
         }
-        VPR_FATAL_ERROR(VPR_ERROR_IMPL_NETLIST_WRITER,
-                        "Could not find port %s on %s of type %s\n", port_name.c_str(), inst_name_.c_str(), type_name_.c_str());
+        VPR_FATAL_ERROR(VPR_ERROR_IMPL_NETLIST_WRITER, "Could not find port %s on %s of type %s\n", port_name.c_str(),
+                        inst_name_.c_str(), type_name_.c_str());
 
         return -1; //Suppress warning
     }
@@ -790,7 +806,8 @@ class Assignment {
         , rval_(rval) {}
 
     void print_verilog(std::ostream& os, std::string indent) {
-        os << indent << "assign " << escape_verilog_identifier(lval_) << " = " << escape_verilog_identifier(rval_) << ";\n";
+        os << indent << "assign " << escape_verilog_identifier(lval_) << " = " << escape_verilog_identifier(rval_)
+           << ";\n";
     }
 
     void print_merged_verilog(std::ostream& os, std::string indent) {
@@ -852,9 +869,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
   private: //Internal types
   private: //NetlistVisitor interface functions
-    void visit_top_impl(const char* top_level_name) override {
-        top_module_name_ = top_level_name;
-    }
+    void visit_top_impl(const char* top_level_name) override { top_module_name_ = top_level_name; }
 
     void visit_atom_impl(const t_pb* atom) override {
         auto& atom_ctx = g_vpr_ctx.atom();
@@ -922,7 +937,8 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
     ///@brief Writes out the verilog netlist
     void print_verilog(int depth = 0) {
-        verilog_os_ << indent(depth) << "//Verilog generated by VPR " << vtr::VERSION << " from post-place-and-route implementation\n";
+        verilog_os_ << indent(depth) << "//Verilog generated by VPR " << vtr::VERSION
+                    << " from post-place-and-route implementation\n";
         verilog_os_ << indent(depth) << "module " << top_module_name_ << " (\n";
 
         print_primary_io(depth);
@@ -936,7 +952,8 @@ class NetlistWriterVisitor : public NetlistVisitor {
         }
         for (auto& kv : logical_net_sinks_) {
             for (auto& wire_tnode_pair : kv.second) {
-                verilog_os_ << indent(depth + 1) << "wire " << escape_verilog_identifier(wire_tnode_pair.first) << ";\n";
+                verilog_os_ << indent(depth + 1) << "wire " << escape_verilog_identifier(wire_tnode_pair.first)
+                            << ";\n";
             }
         }
 
@@ -954,9 +971,11 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
             for (auto& sink_wire_tnode_pair : kv.second) {
                 std::string inst_name = interconnect_name(driver_wire, sink_wire_tnode_pair.first);
-                verilog_os_ << indent(depth + 1) << "fpga_interconnect " << escape_verilog_identifier(inst_name) << " (\n";
+                verilog_os_ << indent(depth + 1) << "fpga_interconnect " << escape_verilog_identifier(inst_name)
+                            << " (\n";
                 verilog_os_ << indent(depth + 2) << ".datain(" << escape_verilog_identifier(driver_wire) << "),\n";
-                verilog_os_ << indent(depth + 2) << ".dataout(" << escape_verilog_identifier(sink_wire_tnode_pair.first) << ")\n";
+                verilog_os_ << indent(depth + 2) << ".dataout(" << escape_verilog_identifier(sink_wire_tnode_pair.first)
+                            << ")\n";
                 verilog_os_ << indent(depth + 1) << ");\n\n";
             }
         }
@@ -991,7 +1010,8 @@ class NetlistWriterVisitor : public NetlistVisitor {
   private: //Internal Helper functions
     ///@brief Writes out the blif netlist
     void print_blif(int depth = 0) {
-        blif_os_ << indent(depth) << "#BLIF generated by VPR " << vtr::VERSION << " from post-place-and-route implementation\n";
+        blif_os_ << indent(depth) << "#BLIF generated by VPR " << vtr::VERSION
+                 << " from post-place-and-route implementation\n";
         blif_os_ << indent(depth) << ".model " << top_module_name_ << "\n";
 
         //Primary inputs
@@ -1068,7 +1088,8 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
                 sdf_os_ << indent(depth + 1) << "(CELL\n";
                 sdf_os_ << indent(depth + 2) << "(CELLTYPE \"fpga_interconnect\")\n";
-                sdf_os_ << indent(depth + 2) << "(INSTANCE " << escape_sdf_identifier(interconnect_name(driver_wire, sink_wire)) << ")\n";
+                sdf_os_ << indent(depth + 2) << "(INSTANCE "
+                        << escape_sdf_identifier(interconnect_name(driver_wire, sink_wire)) << ")\n";
                 sdf_os_ << indent(depth + 2) << "(DELAY\n";
                 sdf_os_ << indent(depth + 3) << "(ABSOLUTE\n";
 
@@ -1077,7 +1098,8 @@ class NetlistWriterVisitor : public NetlistVisitor {
                 std::stringstream delay_triple;
                 delay_triple << "(" << delay << ":" << delay << ":" << delay << ")";
 
-                sdf_os_ << indent(depth + 4) << "(IOPATH datain dataout " << delay_triple.str() << " " << delay_triple.str() << ")\n";
+                sdf_os_ << indent(depth + 4) << "(IOPATH datain dataout " << delay_triple.str() << " "
+                        << delay_triple.str() << ")\n";
                 sdf_os_ << indent(depth + 3) << ")\n";
                 sdf_os_ << indent(depth + 2) << ")\n";
                 sdf_os_ << indent(depth + 1) << ")\n";
@@ -1100,8 +1122,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
      *   @param atom  The implementation primitive representing the I/O
      *   @param dir   The IO direction
      */
-    std::string make_io(const t_pb* atom,
-                        PortType dir) {
+    std::string make_io(const t_pb* atom, PortType dir) {
         const t_pb_graph_node* pb_graph_node = atom->pb_graph_node;
 
         std::string io_name;
@@ -1216,7 +1237,8 @@ class NetlistWriterVisitor : public NetlistVisitor {
         //Add inputs connections
         std::vector<Arc> timing_arcs;
         for (int pin_idx = 0; pin_idx < pb_graph_node->num_input_pins[0]; pin_idx++) {
-            int cluster_pin_idx = pb_graph_node->input_pins[0][pin_idx].pin_count_in_cluster; //Unique pin index in cluster
+            int cluster_pin_idx
+                = pb_graph_node->input_pins[0][pin_idx].pin_count_in_cluster; //Unique pin index in cluster
 
             std::string net;
             if (!top_pb_route.count(cluster_pin_idx)) {
@@ -1289,25 +1311,30 @@ class NetlistWriterVisitor : public NetlistVisitor {
         int input_cluster_pin_idx = pb_graph_node->input_pins[0][0].pin_count_in_cluster; //Unique pin index in cluster
         VTR_ASSERT(top_pb_route.count(input_cluster_pin_idx));
         auto input_atom_net_id = top_pb_route[input_cluster_pin_idx].atom_net_id; //Connected net in atom netlist
-        std::string input_net = make_inst_wire(input_atom_net_id, find_tnode(atom, input_cluster_pin_idx), inst_name, PortType::INPUT, 0, 0);
+        std::string input_net = make_inst_wire(input_atom_net_id, find_tnode(atom, input_cluster_pin_idx), inst_name,
+                                               PortType::INPUT, 0, 0);
         port_conns["D"] = input_net;
 
         double tsu = pb_graph_node->input_pins[0][0].tsu;
 
         //Output (Q)
-        int output_cluster_pin_idx = pb_graph_node->output_pins[0][0].pin_count_in_cluster; //Unique pin index in cluster
+        int output_cluster_pin_idx
+            = pb_graph_node->output_pins[0][0].pin_count_in_cluster; //Unique pin index in cluster
         VTR_ASSERT(top_pb_route.count(output_cluster_pin_idx));
         auto output_atom_net_id = top_pb_route[output_cluster_pin_idx].atom_net_id; //Connected net in atom netlist
-        std::string output_net = make_inst_wire(output_atom_net_id, find_tnode(atom, output_cluster_pin_idx), inst_name, PortType::OUTPUT, 0, 0);
+        std::string output_net = make_inst_wire(output_atom_net_id, find_tnode(atom, output_cluster_pin_idx), inst_name,
+                                                PortType::OUTPUT, 0, 0);
         port_conns["Q"] = output_net;
 
         double tcq = pb_graph_node->output_pins[0][0].tco_max;
 
         //Clock (control)
-        int control_cluster_pin_idx = pb_graph_node->clock_pins[0][0].pin_count_in_cluster; //Unique pin index in cluster
+        int control_cluster_pin_idx
+            = pb_graph_node->clock_pins[0][0].pin_count_in_cluster; //Unique pin index in cluster
         VTR_ASSERT(top_pb_route.count(control_cluster_pin_idx));
         auto control_atom_net_id = top_pb_route[control_cluster_pin_idx].atom_net_id; //Connected net in atom netlist
-        std::string control_net = make_inst_wire(control_atom_net_id, find_tnode(atom, control_cluster_pin_idx), inst_name, PortType::CLOCK, 0, 0);
+        std::string control_net = make_inst_wire(control_atom_net_id, find_tnode(atom, control_cluster_pin_idx),
+                                                 inst_name, PortType::CLOCK, 0, 0);
         port_conns["clock"] = control_net;
 
         //VPR currently doesn't store enough information to determine these attributes,
@@ -1360,7 +1387,8 @@ class NetlistWriterVisitor : public NetlistVisitor {
                     //Connected
                     auto atom_net_id = top_pb_route[cluster_pin_idx].atom_net_id;
                     VTR_ASSERT(atom_net_id);
-                    net = make_inst_wire(atom_net_id, find_tnode(atom, cluster_pin_idx), inst_name, PortType::INPUT, iport, ipin);
+                    net = make_inst_wire(atom_net_id, find_tnode(atom, cluster_pin_idx), inst_name, PortType::INPUT,
+                                         iport, ipin);
                 }
 
                 //RAMs use a port class specification to identify the purpose of each port
@@ -1391,7 +1419,8 @@ class NetlistWriterVisitor : public NetlistVisitor {
                     port_name = "we2";
                 } else {
                     VPR_FATAL_ERROR(VPR_ERROR_IMPL_NETLIST_WRITER,
-                                    "Unrecognized input port class '%s' for primitive '%s' (%s)\n", port_class.c_str(), atom->name, pb_type->name);
+                                    "Unrecognized input port class '%s' for primitive '%s' (%s)\n", port_class.c_str(),
+                                    atom->name, pb_type->name);
                 }
 
                 input_port_conns[port_name].push_back(net);
@@ -1416,7 +1445,8 @@ class NetlistWriterVisitor : public NetlistVisitor {
                     //Connected
                     auto atom_net_id = top_pb_route[cluster_pin_idx].atom_net_id;
                     VTR_ASSERT(atom_net_id);
-                    net = make_inst_wire(atom_net_id, find_tnode(atom, cluster_pin_idx), inst_name, PortType::OUTPUT, iport, ipin);
+                    net = make_inst_wire(atom_net_id, find_tnode(atom, cluster_pin_idx), inst_name, PortType::OUTPUT,
+                                         iport, ipin);
                 }
 
                 std::string port_name;
@@ -1428,7 +1458,8 @@ class NetlistWriterVisitor : public NetlistVisitor {
                     port_name = "out2";
                 } else {
                     VPR_FATAL_ERROR(VPR_ERROR_IMPL_NETLIST_WRITER,
-                                    "Unrecognized input port class '%s' for primitive '%s' (%s)\n", port_class.c_str(), atom->name, pb_type->name);
+                                    "Unrecognized input port class '%s' for primitive '%s' (%s)\n", port_class.c_str(),
+                                    atom->name, pb_type->name);
                 }
                 output_port_conns[port_name].push_back(net);
                 ports_tcq[port_name] = std::make_pair(pin->tco_max, pin->associated_clock_pin->port->name);
@@ -1450,19 +1481,22 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
                 VTR_ASSERT(atom_net_id); //Must have a clock
 
-                std::string net = make_inst_wire(atom_net_id, find_tnode(atom, cluster_pin_idx), inst_name, PortType::CLOCK, iport, ipin);
+                std::string net = make_inst_wire(atom_net_id, find_tnode(atom, cluster_pin_idx), inst_name,
+                                                 PortType::CLOCK, iport, ipin);
 
                 if (port_class == "clock") {
                     VTR_ASSERT(pb_graph_node->num_clock_pins[iport] == 1); //Expect a single clock pin
                     input_port_conns["clock"].push_back(net);
                 } else {
                     VPR_FATAL_ERROR(VPR_ERROR_IMPL_NETLIST_WRITER,
-                                    "Unrecognized input port class '%s' for primitive '%s' (%s)\n", port_class.c_str(), atom->name, pb_type->name);
+                                    "Unrecognized input port class '%s' for primitive '%s' (%s)\n", port_class.c_str(),
+                                    atom->name, pb_type->name);
                 }
             }
         }
 
-        return std::make_shared<BlackBoxInst>(type, inst_name, params, attrs, input_port_conns, output_port_conns, timing_arcs, ports_tsu, ports_thld, ports_tcq, opts_);
+        return std::make_shared<BlackBoxInst>(type, inst_name, params, attrs, input_port_conns, output_port_conns,
+                                              timing_arcs, ports_tsu, ports_thld, ports_tcq, opts_);
     }
 
     ///@brief Returns an Instance object representing a Multiplier
@@ -1558,7 +1592,8 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
         VTR_ASSERT(pb_graph_node->num_clock_ports == 0); //No clocks
 
-        return std::make_shared<BlackBoxInst>(type_name, inst_name, params, attrs, input_port_conns, output_port_conns, timing_arcs, ports_tsu, ports_thld, ports_tcq, opts_);
+        return std::make_shared<BlackBoxInst>(type_name, inst_name, params, attrs, input_port_conns, output_port_conns,
+                                              timing_arcs, ports_tsu, ports_thld, ports_tcq, opts_);
     }
 
     ///@brief Returns an Instance object representing an Adder
@@ -1658,7 +1693,8 @@ class NetlistWriterVisitor : public NetlistVisitor {
             }
         }
 
-        return std::make_shared<BlackBoxInst>(type_name, inst_name, params, attrs, input_port_conns, output_port_conns, timing_arcs, ports_tsu, ports_thld, ports_tcq, opts_);
+        return std::make_shared<BlackBoxInst>(type_name, inst_name, params, attrs, input_port_conns, output_port_conns,
+                                              timing_arcs, ports_tsu, ports_thld, ports_tcq, opts_);
     }
 
     std::shared_ptr<Instance> make_blackbox_instance(const t_pb* atom) {
@@ -1722,8 +1758,10 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
                 input_port_conns[port->name].push_back(net);
                 if (pin->type == PB_PIN_SEQUENTIAL) {
-                    if (!std::isnan(pin->tsu)) ports_tsu[port->name] = std::make_pair(pin->tsu, pin->associated_clock_pin->port->name);
-                    if (!std::isnan(pin->thld)) ports_thld[port->name] = std::make_pair(pin->thld, pin->associated_clock_pin->port->name);
+                    if (!std::isnan(pin->tsu))
+                        ports_tsu[port->name] = std::make_pair(pin->tsu, pin->associated_clock_pin->port->name);
+                    if (!std::isnan(pin->thld))
+                        ports_thld[port->name] = std::make_pair(pin->thld, pin->associated_clock_pin->port->name);
                 }
             }
         }
@@ -1757,7 +1795,8 @@ class NetlistWriterVisitor : public NetlistVisitor {
                 }
 
                 output_port_conns[port->name].push_back(net);
-                if (pin->type == PB_PIN_SEQUENTIAL && !std::isnan(pin->tco_max)) ports_tcq[port->name] = std::make_pair(pin->tco_max, pin->associated_clock_pin->port->name);
+                if (pin->type == PB_PIN_SEQUENTIAL && !std::isnan(pin->tco_max))
+                    ports_tcq[port->name] = std::make_pair(pin->tco_max, pin->associated_clock_pin->port->name);
             }
         }
 
@@ -1796,7 +1835,8 @@ class NetlistWriterVisitor : public NetlistVisitor {
             attrs[attr.first] = attr.second;
         }
 
-        return std::make_shared<BlackBoxInst>(type_name, inst_name, params, attrs, input_port_conns, output_port_conns, timing_arcs, ports_tsu, ports_thld, ports_tcq, opts_);
+        return std::make_shared<BlackBoxInst>(type_name, inst_name, params, attrs, input_port_conns, output_port_conns,
+                                              timing_arcs, ports_tsu, ports_thld, ports_tcq, opts_);
     }
 
     ///@brief Returns the top level pb_route associated with the given pb
@@ -1905,7 +1945,8 @@ class NetlistWriterVisitor : public NetlistVisitor {
             AtomPortId port_id = *ports.begin();
 
             for (size_t ipin = 0; ipin < num_inputs; ++ipin) {
-                AtomNetId impl_input_net_id = find_atom_input_logical_net(atom_pb, ipin); //The net currently connected to input j
+                AtomNetId impl_input_net_id
+                    = find_atom_input_logical_net(atom_pb, ipin); //The net currently connected to input j
 
                 //Find the original pin index
                 const t_pb_graph_pin* gpin = &gnode->input_pins[0][ipin];
@@ -1918,12 +1959,11 @@ class NetlistWriterVisitor : public NetlistVisitor {
                     // Fatal error should be flagged when the net marked in implementation
                     // does not match the net marked in input netlist
                     if (impl_input_net_id != logical_net_id) {
-                        VPR_FATAL_ERROR(VPR_ERROR_IMPL_NETLIST_WRITER,
-                                        "Unmatch:\n\tlogical net is '%s' at pin '%lu'\n\timplmented net is '%s' at pin '%s'\n",
-                                        atom_ctx.nlist.net_name(logical_net_id).c_str(),
-                                        size_t(orig_index),
-                                        atom_ctx.nlist.net_name(impl_input_net_id).c_str(),
-                                        gpin->to_string().c_str());
+                        VPR_FATAL_ERROR(
+                            VPR_ERROR_IMPL_NETLIST_WRITER,
+                            "Unmatch:\n\tlogical net is '%s' at pin '%lu'\n\timplmented net is '%s' at pin '%s'\n",
+                            atom_ctx.nlist.net_name(logical_net_id).c_str(), size_t(orig_index),
+                            atom_ctx.nlist.net_name(impl_input_net_id).c_str(), gpin->to_string().c_str());
                     }
 
                     //Mark the permutation.
@@ -1997,7 +2037,8 @@ class NetlistWriterVisitor : public NetlistVisitor {
                 encoding_on_set = false;
             } else {
                 VPR_FATAL_ERROR(VPR_ERROR_IMPL_NETLIST_WRITER,
-                                "Invalid .names truth-table character '%c'. Must be one of '1', '0' or '-'. \n", *names_first_row_output_iter);
+                                "Invalid .names truth-table character '%c'. Must be one of '1', '0' or '-'. \n",
+                                *names_first_row_output_iter);
             }
         }
 
@@ -2023,8 +2064,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
         } else if (*output_val_iter == '0') {
             VTR_ASSERT(!encoding_on_set);
         } else {
-            VPR_FATAL_ERROR(VPR_ERROR_IMPL_NETLIST_WRITER,
-                            "Invalid .names encoding both ON and OFF set\n");
+            VPR_FATAL_ERROR(VPR_ERROR_IMPL_NETLIST_WRITER, "Invalid .names encoding both ON and OFF set\n");
         }
 
         //Extract the input values for this row
@@ -2041,7 +2081,8 @@ class NetlistWriterVisitor : public NetlistVisitor {
                 input_val = vtr::LogicValue::DONT_CARE;
             } else {
                 VPR_FATAL_ERROR(VPR_ERROR_IMPL_NETLIST_WRITER,
-                                "Invalid .names truth-table character '%c'. Must be one of '1', '0' or '-'. \n", names_row[i]);
+                                "Invalid .names truth-table character '%c'. Must be one of '1', '0' or '-'. \n",
+                                names_row[i]);
             }
 
             input_values[i] = input_val;
@@ -2184,8 +2225,7 @@ class MergedNetlistWriterVisitor : public NetlistWriterVisitor {
      *   @param dir     The IO direction
      *   @param portmap Map for keeping port names and width
      */
-    std::string make_io(const t_pb* atom,
-                        PortType dir) {
+    std::string make_io(const t_pb* atom, PortType dir) {
         const t_pb_graph_node* pb_graph_node = atom->pb_graph_node;
 
         std::string io_name;
@@ -2209,7 +2249,8 @@ class MergedNetlistWriterVisitor : public NetlistWriterVisitor {
             indexed_io_name = atom->name;
 
             if (std::regex_match(name, matches, regex)) {
-                if (std::find(inputs_.begin(), inputs_.end(), matches[2]) == inputs_.end()) { //Skip already existing multi-bit port names
+                if (std::find(inputs_.begin(), inputs_.end(), matches[2])
+                    == inputs_.end()) { //Skip already existing multi-bit port names
                     io_name = matches[2];
                     portmap[matches[2]] = 0;
                 } else {
@@ -2229,7 +2270,8 @@ class MergedNetlistWriterVisitor : public NetlistWriterVisitor {
             indexed_io_name = atom->name + 4;
 
             if (std::regex_search(name, matches, regex)) {
-                if (std::find(outputs_.begin(), outputs_.end(), matches[2]) == outputs_.end()) { //Skip already existing multi-bit port names
+                if (std::find(outputs_.begin(), outputs_.end(), matches[2])
+                    == outputs_.end()) { //Skip already existing multi-bit port names
                     portmap[matches[2]] = 0;
                     io_name = matches[2];
                 } else {
@@ -2311,7 +2353,9 @@ class MergedNetlistWriterVisitor : public NetlistWriterVisitor {
 //
 
 ///@brief Main routine for this file. See netlist_writer.h for details.
-void netlist_writer(const std::string basename, std::shared_ptr<const AnalysisDelayCalculator> delay_calc, struct t_analysis_opts opts) {
+void netlist_writer(const std::string basename,
+                    std::shared_ptr<const AnalysisDelayCalculator> delay_calc,
+                    struct t_analysis_opts opts) {
     std::string verilog_filename = basename + "_post_synthesis.v";
     std::string blif_filename = basename + "_post_synthesis.blif";
     std::string sdf_filename = basename + "_post_synthesis.sdf";
@@ -2332,7 +2376,9 @@ void netlist_writer(const std::string basename, std::shared_ptr<const AnalysisDe
 }
 
 ///@brief Main routine for this file. See netlist_writer.h for details.
-void merged_netlist_writer(const std::string basename, std::shared_ptr<const AnalysisDelayCalculator> delay_calc, struct t_analysis_opts opts) {
+void merged_netlist_writer(const std::string basename,
+                           std::shared_ptr<const AnalysisDelayCalculator> delay_calc,
+                           struct t_analysis_opts opts) {
     std::string verilog_filename = basename + "_merged_post_implementation.v";
 
     VTR_LOG("Writing Implementation Netlist: %s\n", verilog_filename.c_str());
@@ -2379,7 +2425,11 @@ std::string create_unconn_net(size_t& unconn_count) {
  *
  * Handles special cases like multi-bit and disconnected ports
  */
-void print_blif_port(std::ostream& os, size_t& unconn_count, const std::string& port_name, const std::vector<std::string>& nets, int depth) {
+void print_blif_port(std::ostream& os,
+                     size_t& unconn_count,
+                     const std::string& port_name,
+                     const std::vector<std::string>& nets,
+                     int depth) {
     if (nets.size() == 1) {
         //If only a single bit port, don't include port indexing
         os << indent(depth) << port_name << "=";
@@ -2413,7 +2463,13 @@ void print_blif_port(std::ostream& os, size_t& unconn_count, const std::string& 
  *
  * Handles special cases like multi-bit and disconnected ports
  */
-void print_verilog_port(std::ostream& os, size_t& unconn_count, const std::string& port_name, const std::vector<std::string>& nets, PortType type, int depth, struct t_analysis_opts& opts) {
+void print_verilog_port(std::ostream& os,
+                        size_t& unconn_count,
+                        const std::string& port_name,
+                        const std::vector<std::string>& nets,
+                        PortType type,
+                        int depth,
+                        struct t_analysis_opts& opts) {
     auto unconn_inp_name = [&]() {
         switch (opts.post_synth_netlist_unconn_input_handling) {
             case e_post_synth_netlist_unconn_handling::GND:
@@ -2468,7 +2524,8 @@ void print_verilog_port(std::ostream& os, size_t& unconn_count, const std::strin
 
         //A multi-bit port, we explicitly concat the single-bit nets to build the port,
         //taking care to print MSB on left and LSB on right
-        if (all_unconnected && type == PortType::OUTPUT && opts.post_synth_netlist_unconn_output_handling == e_post_synth_netlist_unconn_handling::UNCONNECTED) {
+        if (all_unconnected && type == PortType::OUTPUT
+            && opts.post_synth_netlist_unconn_output_handling == e_post_synth_netlist_unconn_handling::UNCONNECTED) {
             // Empty connection
         } else {
             // Individual bits
@@ -2569,6 +2626,4 @@ std::string escape_sdf_identifier(const std::string identifier) {
 }
 
 ///@brief Joins two identifier strings
-std::string join_identifier(std::string lhs, std::string rhs) {
-    return lhs + '_' + rhs;
-}
+std::string join_identifier(std::string lhs, std::string rhs) { return lhs + '_' + rhs; }

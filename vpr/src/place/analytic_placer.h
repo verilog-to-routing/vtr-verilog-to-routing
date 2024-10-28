@@ -82,9 +82,9 @@
  * https://github.com/YosysHQ/nextpnr
  */
 
-#    include "vpr_context.h"
-#    include "timing_place.h"
-#    include "PlacementDelayCalculator.h"
+#include "vpr_context.h"
+#include "timing_place.h"
+#include "PlacementDelayCalculator.h"
 
 /*
  * @brief Templated struct for constructing and solving matrix equations in analytic placer
@@ -327,11 +327,7 @@ class AnalyticPlacer {
                          const int spreadHPWL,
                          const int legalHPWL);
 
-    void print_iter_stats(const int iter,
-                          const float iterTime,
-                          const float time,
-                          const int bestHPWL,
-                          const int stall);
+    void print_iter_stats(const int iter, const float iterTime, const float time, const int bestHPWL, const int stall);
 };
 
 #endif /* ENABLE_ANALYTIC_PLACE */

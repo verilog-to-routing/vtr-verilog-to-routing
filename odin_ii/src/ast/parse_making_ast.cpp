@@ -186,7 +186,8 @@ void next_parsed_verilog_file(ast_node_t* file_items_list) {
     }
 
     /* store the root of this files ast */
-    all_file_items_list = (ast_node_t**)vtr::realloc(all_file_items_list, sizeof(ast_node_t*) * (size_all_file_items_list + 1));
+    all_file_items_list
+        = (ast_node_t**)vtr::realloc(all_file_items_list, sizeof(ast_node_t*) * (size_all_file_items_list + 1));
     all_file_items_list[size_all_file_items_list] = file_items_list;
     size_all_file_items_list++;
 }
@@ -194,9 +195,7 @@ void next_parsed_verilog_file(ast_node_t* file_items_list) {
 /*---------------------------------------------------------------------------------------------
  * (function: newSymbolNode)
  *-------------------------------------------------------------------------------------------*/
-ast_node_t* newSymbolNode(char* id, loc_t loc) {
-    return create_tree_node_id(id, loc);
-}
+ast_node_t* newSymbolNode(char* id, loc_t loc) { return create_tree_node_id(id, loc); }
 
 /*---------------------------------------------------------------------------------------------
  * (function: newNumberNode)
@@ -223,7 +222,8 @@ ast_node_t* newList(ids node_type, ast_node_t* child, loc_t loc) {
     /* create a node for this array reference */
     ast_node_t* new_node = create_node_w_type(node_type, loc);
     /* allocate child nodes to this node */
-    if (child) allocate_children_to_node(new_node, {child});
+    if (child)
+        allocate_children_to_node(new_node, {child});
 
     return new_node;
 }
@@ -244,7 +244,8 @@ ast_node_t* newfunctionList(ids node_type, ast_node_t* child, loc_t loc) {
  *-------------------------------------------------------------------------------------------*/
 ast_node_t* newList_entry(ast_node_t* list, ast_node_t* child) {
     /* allocate child nodes to this node */
-    if (child) add_child_to_node(list, child);
+    if (child)
+        add_child_to_node(list, child);
 
     return list;
 }
@@ -289,13 +290,10 @@ static ast_node_t* resolve_symbol_node(ast_node_t* symbol_node) {
                 newNode = (ast_node_t*)current_scope->param_sc->data[sc_spot];
             }
 
-            if (newNode
-                && (newNode->types.variable.is_localparam
-                    || newNode->types.variable.is_parameter)) {
+            if (newNode && (newNode->types.variable.is_localparam || newNode->types.variable.is_parameter)) {
                 to_return = symbol_node;
             } else {
-                error_message(AST, symbol_node->loc,
-                              "no match for parameter %s\n", symbol_node->types.identifier);
+                error_message(AST, symbol_node->loc, "no match for parameter %s\n", symbol_node->types.identifier);
             }
             break;
         }
@@ -329,7 +327,8 @@ ast_node_t* resolve_ports(ids top_type, ast_node_t* symbol_list) {
 
                 /* grab and update all typeless ports immediately following this one */
                 long j = 0;
-                for (j = i + 1; j < symbol_list->num_children && !(symbol_list->children[j]->types.variable.is_port); j++) {
+                for (j = i + 1; j < symbol_list->num_children && !(symbol_list->children[j]->types.variable.is_port);
+                     j++) {
                     /* port type */
                     symbol_list->children[j]->types.variable.is_input = this_port->types.variable.is_input;
                     symbol_list->children[j]->types.variable.is_output = this_port->types.variable.is_output;
@@ -350,7 +349,8 @@ ast_node_t* resolve_ports(ids top_type, ast_node_t* symbol_list) {
                         symbol_list->children[j]->children[3] = ast_node_deep_copy(this_port->children[3]);
 
                         if (this_port->num_children == 7) {
-                            symbol_list->children[j]->children = (ast_node_t**)realloc(symbol_list->children[j]->children, sizeof(ast_node_t*) * 7);
+                            symbol_list->children[j]->children
+                                = (ast_node_t**)realloc(symbol_list->children[j]->children, sizeof(ast_node_t*) * 7);
                             symbol_list->children[j]->children[6] = symbol_list->children[j]->children[4];
                             symbol_list->children[j]->children[4] = ast_node_deep_copy(this_port->children[4]);
                             symbol_list->children[j]->children[5] = ast_node_deep_copy(this_port->children[5]);
@@ -359,55 +359,71 @@ ast_node_t* resolve_ports(ids top_type, ast_node_t* symbol_list) {
 
                     /* error checking */
 
-                    symbol_list->children[j] = markAndProcessPortWith(MODULE, NO_ID, NO_ID, symbol_list->children[j], this_port->types.variable.signedness);
+                    symbol_list->children[j] = markAndProcessPortWith(MODULE, NO_ID, NO_ID, symbol_list->children[j],
+                                                                      this_port->types.variable.signedness);
                 }
             } else {
                 long sc_spot = -1;
 
                 if (top_type == MODULE) {
                     /* find the related INPUT or OUTPUT definition and store that instead */
-                    if ((sc_spot = sc_lookup_string(modules_inputs_sc, symbol_list->children[i]->identifier_node->types.identifier)) != -1) {
+                    if ((sc_spot = sc_lookup_string(modules_inputs_sc,
+                                                    symbol_list->children[i]->identifier_node->types.identifier))
+                        != -1) {
                         oassert(((ast_node_t*)modules_inputs_sc->data[sc_spot])->type == VAR_DECLARE);
                         free_whole_tree(symbol_list->children[i]);
                         symbol_list->children[i] = (ast_node_t*)modules_inputs_sc->data[sc_spot];
                         oassert(symbol_list->children[i]->types.variable.is_input);
-                    } else if ((sc_spot = sc_lookup_string(modules_outputs_sc, symbol_list->children[i]->identifier_node->types.identifier)) != -1) {
+                    } else if ((sc_spot = sc_lookup_string(modules_outputs_sc,
+                                                           symbol_list->children[i]->identifier_node->types.identifier))
+                               != -1) {
                         oassert(((ast_node_t*)modules_outputs_sc->data[sc_spot])->type == VAR_DECLARE);
                         free_whole_tree(symbol_list->children[i]);
                         symbol_list->children[i] = (ast_node_t*)modules_outputs_sc->data[sc_spot];
                         oassert(symbol_list->children[i]->types.variable.is_output);
                     } else {
-                        error_message(AST, symbol_list->children[i]->loc, "No matching declaration for port %s\n", symbol_list->children[i]->identifier_node->types.identifier);
+                        error_message(AST, symbol_list->children[i]->loc, "No matching declaration for port %s\n",
+                                      symbol_list->children[i]->identifier_node->types.identifier);
                     }
                 } else if (top_type == FUNCTION) {
                     /* find the related INPUT or OUTPUT definition and store that instead */
-                    if ((sc_spot = sc_lookup_string(functions_inputs_sc, symbol_list->children[i]->identifier_node->types.identifier)) != -1) {
+                    if ((sc_spot = sc_lookup_string(functions_inputs_sc,
+                                                    symbol_list->children[i]->identifier_node->types.identifier))
+                        != -1) {
                         oassert(((ast_node_t*)functions_inputs_sc->data[sc_spot])->type == VAR_DECLARE);
                         free_whole_tree(symbol_list->children[i]);
                         symbol_list->children[i] = (ast_node_t*)functions_inputs_sc->data[sc_spot];
                         oassert(symbol_list->children[i]->types.variable.is_input);
-                    } else if ((sc_spot = sc_lookup_string(functions_outputs_sc, symbol_list->children[i]->identifier_node->types.identifier)) != -1) {
+                    } else if ((sc_spot = sc_lookup_string(functions_outputs_sc,
+                                                           symbol_list->children[i]->identifier_node->types.identifier))
+                               != -1) {
                         oassert(((ast_node_t*)functions_outputs_sc->data[sc_spot])->type == VAR_DECLARE);
                         free_whole_tree(symbol_list->children[i]);
                         symbol_list->children[i] = (ast_node_t*)functions_outputs_sc->data[sc_spot];
                         oassert(symbol_list->children[i]->types.variable.is_output);
                     } else {
-                        error_message(AST, symbol_list->children[i]->loc, "No matching declaration for port %s\n", symbol_list->children[i]->identifier_node->types.identifier);
+                        error_message(AST, symbol_list->children[i]->loc, "No matching declaration for port %s\n",
+                                      symbol_list->children[i]->identifier_node->types.identifier);
                     }
                 } else if (top_type == TASK) {
                     /* find the related INPUT or OUTPUT definition and store that instead */
-                    if ((sc_spot = sc_lookup_string(tasks_inputs_sc, symbol_list->children[i]->identifier_node->types.identifier)) != -1) {
+                    if ((sc_spot = sc_lookup_string(tasks_inputs_sc,
+                                                    symbol_list->children[i]->identifier_node->types.identifier))
+                        != -1) {
                         oassert(((ast_node_t*)tasks_inputs_sc->data[sc_spot])->type == VAR_DECLARE);
                         free_whole_tree(symbol_list->children[i]);
                         symbol_list->children[i] = (ast_node_t*)tasks_inputs_sc->data[sc_spot];
                         oassert(symbol_list->children[i]->types.variable.is_input);
-                    } else if ((sc_spot = sc_lookup_string(tasks_outputs_sc, symbol_list->children[i]->identifier_node->types.identifier)) != -1) {
+                    } else if ((sc_spot = sc_lookup_string(tasks_outputs_sc,
+                                                           symbol_list->children[i]->identifier_node->types.identifier))
+                               != -1) {
                         oassert(((ast_node_t*)tasks_outputs_sc->data[sc_spot])->type == VAR_DECLARE);
                         free_whole_tree(symbol_list->children[i]);
                         symbol_list->children[i] = (ast_node_t*)tasks_outputs_sc->data[sc_spot];
                         oassert(symbol_list->children[i]->types.variable.is_output);
                     } else {
-                        error_message(AST, symbol_list->children[i]->loc, "No matching declaration for port %s\n", symbol_list->children[i]->identifier_node->types.identifier);
+                        error_message(AST, symbol_list->children[i]->loc, "No matching declaration for port %s\n",
+                                      symbol_list->children[i]->identifier_node->types.identifier);
                     }
                 }
             }
@@ -458,26 +474,24 @@ ast_node_t* markAndProcessPortWith(ids top_type, ids port_id, ids net_id, ast_no
     /* look for processed inputs with this name */
     sc_spot = sc_lookup_string(this_inputs_sc, port->identifier_node->types.identifier);
     if (sc_spot > -1 && ((ast_node_t*)this_inputs_sc->data[sc_spot])->types.variable.is_port) {
-        error_message(AST, port->loc, "%s already has input with this name %s\n",
-                      top_type_name, ((ast_node_t*)this_inputs_sc->data[sc_spot])->identifier_node->types.identifier);
+        error_message(AST, port->loc, "%s already has input with this name %s\n", top_type_name,
+                      ((ast_node_t*)this_inputs_sc->data[sc_spot])->identifier_node->types.identifier);
     }
 
     /* look for processed outputs with this name */
     sc_spot = sc_lookup_string(this_outputs_sc, port->identifier_node->types.identifier);
     if (sc_spot > -1 && ((ast_node_t*)this_outputs_sc->data[sc_spot])->types.variable.is_port) {
-        error_message(AST, port->loc, "%s already has output with this name %s\n",
-                      top_type_name, ((ast_node_t*)this_outputs_sc->data[sc_spot])->identifier_node->types.identifier);
+        error_message(AST, port->loc, "%s already has output with this name %s\n", top_type_name,
+                      ((ast_node_t*)this_outputs_sc->data[sc_spot])->identifier_node->types.identifier);
     }
 
     switch (net_id) {
         case REG:
             if (port_id == INPUT) {
-                error_message(AST, port->loc, "%s",
-                              "Input cannot be defined as a reg\n");
+                error_message(AST, port->loc, "%s", "Input cannot be defined as a reg\n");
             }
             if (port_id == INOUT) {
-                error_message(AST, port->loc, "%s",
-                              "Inout cannot be defined as a reg\n");
+                error_message(AST, port->loc, "%s", "Inout cannot be defined as a reg\n");
             }
             port->types.variable.is_reg = true;
             port->types.variable.is_wire = false;
@@ -486,8 +500,7 @@ ast_node_t* markAndProcessPortWith(ids top_type, ids port_id, ids net_id, ast_no
         case WIRE:
             if ((port->num_children == 5 && port->children[4] != NULL)
                 || (port->num_children == 7 && port->children[6] != NULL)) {
-                error_message(AST, port->loc, "%s",
-                              "Ports of type net cannot be initialized\n");
+                error_message(AST, port->loc, "%s", "Ports of type net cannot be initialized\n");
             }
             port->types.variable.is_wire = true;
             port->types.variable.is_reg = false;
@@ -496,20 +509,16 @@ ast_node_t* markAndProcessPortWith(ids top_type, ids port_id, ids net_id, ast_no
         default:
             if ((port->num_children == 5 && port->children[4] != NULL)
                 || (port->num_children == 7 && port->children[6] != NULL)) {
-                error_message(AST, port->loc, "%s",
-                              "Ports with undefined type cannot be initialized\n");
+                error_message(AST, port->loc, "%s", "Ports with undefined type cannot be initialized\n");
             }
 
-            if (port->types.variable.is_reg
-                && !(port->types.variable.is_wire)) {
+            if (port->types.variable.is_reg && !(port->types.variable.is_wire)) {
                 temp_net_id = REG;
-            } else if (port->types.variable.is_wire
-                       && !(port->types.variable.is_reg)) {
+            } else if (port->types.variable.is_wire && !(port->types.variable.is_reg)) {
                 temp_net_id = WIRE;
             } else {
                 /* port cannot have more than one type */
-                oassert(!(port->types.variable.is_wire)
-                        && !(port->types.variable.is_reg));
+                oassert(!(port->types.variable.is_wire) && !(port->types.variable.is_reg));
             }
 
             if (net_id == NO_ID) {
@@ -551,27 +560,25 @@ ast_node_t* markAndProcessPortWith(ids top_type, ids port_id, ids net_id, ast_no
             port->types.variable.is_inout = true;
             port->types.variable.is_input = false;
             port->types.variable.is_output = false;
-            error_message(AST, port->loc, "Odin does not handle inouts (%s)\n", port->identifier_node->types.identifier);
+            error_message(AST, port->loc, "Odin does not handle inouts (%s)\n",
+                          port->identifier_node->types.identifier);
             break;
 
         default:
-            if (port->types.variable.is_input
-                && !(port->types.variable.is_output)
+            if (port->types.variable.is_input && !(port->types.variable.is_output)
                 && !(port->types.variable.is_inout)) {
                 port = markAndProcessPortWith(top_type, INPUT, net_id, port, signedness);
-            } else if (port->types.variable.is_output
-                       && !(port->types.variable.is_input)
+            } else if (port->types.variable.is_output && !(port->types.variable.is_input)
                        && !(port->types.variable.is_inout)) {
                 port = markAndProcessPortWith(top_type, OUTPUT, net_id, port, signedness);
-            } else if (port->types.variable.is_inout
-                       && !(port->types.variable.is_input)
+            } else if (port->types.variable.is_inout && !(port->types.variable.is_input)
                        && !(port->types.variable.is_output)) {
-                error_message(AST, port->loc, "Odin does not handle inouts (%s)\n", port->identifier_node->types.identifier);
+                error_message(AST, port->loc, "Odin does not handle inouts (%s)\n",
+                              port->identifier_node->types.identifier);
                 port = markAndProcessPortWith(top_type, INOUT, net_id, port, signedness);
             } else {
                 // shouldn't ever get here...
-                oassert(port->types.variable.is_input
-                        || port->types.variable.is_output
+                oassert(port->types.variable.is_input || port->types.variable.is_output
                         || port->types.variable.is_inout);
             }
 
@@ -580,8 +587,8 @@ ast_node_t* markAndProcessPortWith(ids top_type, ids port_id, ids net_id, ast_no
 
     if (signedness == SIGNED) {
         /* cannot support signed ports right now */
-        warning_message(AST, port->loc,
-                        "Odin does not handle signed ports (%s)\n", port->identifier_node->types.identifier);
+        warning_message(AST, port->loc, "Odin does not handle signed ports (%s)\n",
+                        port->identifier_node->types.identifier);
     }
     port->types.variable.signedness = signedness;
 
@@ -602,8 +609,8 @@ ast_node_t* markAndProcessParameterWith(ids id, ast_node_t* parameter, operation
     oassert(signedness == SIGNED || signedness == UNSIGNED);
     if (signedness == SIGNED) {
         /* cannot support signed parameters right now */
-        warning_message(AST, parameter->loc,
-                        "Odin does not handle signed parameters (%s)\n", parameter->identifier_node->types.identifier);
+        warning_message(AST, parameter->loc, "Odin does not handle signed parameters (%s)\n",
+                        parameter->identifier_node->types.identifier);
     }
 
     parameter->children[4]->types.variable.signedness = signedness;
@@ -615,8 +622,8 @@ ast_node_t* markAndProcessParameterWith(ids id, ast_node_t* parameter, operation
 
     /* create an entry in the symbol table for this parameter */
     if ((sc_spot = sc_lookup_string(current_scope->param_sc, parameter->identifier_node->types.identifier)) > -1) {
-        error_message(AST, parameter->children[4]->loc,
-                      "Module already has parameter with this name (%s)\n", parameter->identifier_node->types.identifier);
+        error_message(AST, parameter->children[4]->loc, "Module already has parameter with this name (%s)\n",
+                      parameter->identifier_node->types.identifier);
     }
     sc_spot = sc_add_string(current_scope->param_sc, parameter->identifier_node->types.identifier);
 
@@ -646,8 +653,8 @@ ast_node_t* markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t* symbo
 
             if (signedness == SIGNED) {
                 /* cannot support signed ports right now */
-                warning_message(AST, symbol_list->children[i]->loc,
-                                "Odin does not handle signed %s (%s)\n", ids_STR[id], symbol_list->children[i]->identifier_node->types.identifier);
+                warning_message(AST, symbol_list->children[i]->loc, "Odin does not handle signed %s (%s)\n",
+                                ids_STR[id], symbol_list->children[i]->identifier_node->types.identifier);
             }
             symbol_list->children[i]->types.variable.signedness = signedness;
 
@@ -668,7 +675,8 @@ ast_node_t* markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t* symbo
                         error_message(AST, symbol_list->children[i]->loc, "%s",
                                       "ports can only appear in modules functions or task\n");
                     }
-                    symbol_list->children[i] = markAndProcessPortWith(top_type, id, NO_ID, symbol_list->children[i], signedness);
+                    symbol_list->children[i]
+                        = markAndProcessPortWith(top_type, id, NO_ID, symbol_list->children[i], signedness);
                     break;
                 case WIRE:
                     /**
@@ -676,10 +684,11 @@ ast_node_t* markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t* symbo
                      * TODO: should'nt this apply to all? 
                      */
                     if (top_type == FUNCTION) {
-                        if ((symbol_list->children[i]->num_children == 5 && symbol_list->children[i]->children[4] != NULL)
-                            || (symbol_list->children[i]->num_children == 7 && symbol_list->children[i]->children[6] != NULL)) {
-                            error_message(AST, symbol_list->children[i]->loc, "%s",
-                                          "Nets cannot be initialized\n");
+                        if ((symbol_list->children[i]->num_children == 5
+                             && symbol_list->children[i]->children[4] != NULL)
+                            || (symbol_list->children[i]->num_children == 7
+                                && symbol_list->children[i]->children[6] != NULL)) {
+                            error_message(AST, symbol_list->children[i]->loc, "%s", "Nets cannot be initialized\n");
                         }
                     }
                     symbol_list->children[i]->types.variable.is_wire = true;
@@ -757,11 +766,9 @@ ast_node_t* newMinusColonRangeRef(char* id, ast_node_t* expression1, ast_node_t*
     ast_node_t* lsb = NULL;
 
     if (expression1 == NULL) {
-        error_message(AST, loc,
-                      "first expression for range ref is NULL %s", id);
+        error_message(AST, loc, "first expression for range ref is NULL %s", id);
     } else if (expression2 == NULL) {
-        error_message(AST, loc,
-                      "first expression for range ref is NULL  %s", id);
+        error_message(AST, loc, "first expression for range ref is NULL  %s", id);
     }
 
     // expression 1 is the msb here since we subtract expression 2 from it
@@ -785,11 +792,9 @@ ast_node_t* newPlusColonRangeRef(char* id, ast_node_t* expression1, ast_node_t* 
     ast_node_t* lsb = NULL;
 
     if (expression1 == NULL) {
-        error_message(AST, loc,
-                      "first expression for range ref is NULL %s", id);
+        error_message(AST, loc, "first expression for range ref is NULL %s", id);
     } else if (expression2 == NULL) {
-        error_message(AST, loc,
-                      "first expression for range ref is NULL  %s", id);
+        error_message(AST, loc, "first expression for range ref is NULL  %s", id);
     }
 
     // expression 1 is the lsb here since we add expression 2 to it
@@ -946,7 +951,11 @@ ast_node_t* newFunctionAssigning(ast_node_t* expression1, ast_node_t* expression
 /*---------------------------------------------------------------------------------------------
  * (function: newFor)
  *-------------------------------------------------------------------------------------------*/
-ast_node_t* newFor(ast_node_t* initial, ast_node_t* compare_expression, ast_node_t* terminal, ast_node_t* statement, loc_t loc) {
+ast_node_t* newFor(ast_node_t* initial,
+                   ast_node_t* compare_expression,
+                   ast_node_t* terminal,
+                   ast_node_t* statement,
+                   loc_t loc) {
     /* create a node for this for reference */
     ast_node_t* new_node = create_node_w_type(FOR, loc);
     /* allocate child nodes to this node */
@@ -972,7 +981,10 @@ ast_node_t* newWhile(ast_node_t* compare_expression, ast_node_t* statement, loc_
 /*---------------------------------------------------------------------------------------------
  * (function: newIf)
  *-------------------------------------------------------------------------------------------*/
-ast_node_t* newIf(ast_node_t* compare_expression, ast_node_t* true_expression, ast_node_t* false_expression, loc_t loc) {
+ast_node_t* newIf(ast_node_t* compare_expression,
+                  ast_node_t* true_expression,
+                  ast_node_t* false_expression,
+                  loc_t loc) {
     /* create a node for this array reference */
     ast_node_t* new_node = create_node_w_type(IF, loc);
     /* allocate child nodes to this node */
@@ -984,7 +996,10 @@ ast_node_t* newIf(ast_node_t* compare_expression, ast_node_t* true_expression, a
 /*---------------------------------------------------------------------------------------------
  * (function: newIfQuestion) for f = a ? b : c;
  *-------------------------------------------------------------------------------------------*/
-ast_node_t* newIfQuestion(ast_node_t* compare_expression, ast_node_t* true_expression, ast_node_t* false_expression, loc_t loc) {
+ast_node_t* newIfQuestion(ast_node_t* compare_expression,
+                          ast_node_t* true_expression,
+                          ast_node_t* false_expression,
+                          loc_t loc) {
     /* create a node for this array reference */
     ast_node_t* new_node = create_node_w_type(TERNARY_OPERATION, loc);
     /* allocate child nodes to this node */
@@ -1048,7 +1063,12 @@ ast_node_t* newCFunction(ids node_type, ast_node_t* arg1, ast_node_t* arg2, ast_
 /*---------------------------------------------------------------------------------------------
  * (function: newCFunction)
  *-------------------------------------------------------------------------------------------*/
-ast_node_t* newCFunction(ids node_type, ast_node_t* arg1, ast_node_t* arg2, ast_node_t* arg3, ast_node_t* va_args_child, loc_t loc) {
+ast_node_t* newCFunction(ids node_type,
+                         ast_node_t* arg1,
+                         ast_node_t* arg2,
+                         ast_node_t* arg3,
+                         ast_node_t* va_args_child,
+                         loc_t loc) {
     ast_node_t* new_node = create_node_w_type(node_type, loc);
     allocate_children_to_node(new_node, {arg1, arg2, arg3, va_args_child});
 
@@ -1112,7 +1132,10 @@ ast_node_t* newModuleParameter(char* id, ast_node_t* expression, loc_t loc) {
 /*---------------------------------------------------------------------------------------------
  * (function: newModuleNamedInstance)
  *-------------------------------------------------------------------------------------------*/
-ast_node_t* newModuleNamedInstance(char* unique_name, ast_node_t* module_connect_list, ast_node_t* module_parameter_list, loc_t loc) {
+ast_node_t* newModuleNamedInstance(char* unique_name,
+                                   ast_node_t* module_connect_list,
+                                   ast_node_t* module_parameter_list,
+                                   loc_t loc) {
     if (!is_valid_identifier(unique_name)) {
         error_message(AST, loc, "Invalid character in identifier (%s)\n", unique_name);
     }
@@ -1174,7 +1197,10 @@ ast_node_t* newTaskNamedInstance(ast_node_t* module_connect_list, loc_t loc) {
 /*---------------------------------------------------------------------------------------------
  * (function: newTaskInstance)
  *-------------------------------------------------------------------------------------------*/
-ast_node_t* newTaskInstance(char* task_name, ast_node_t* task_named_instace, ast_node_t* task_parameter_list, loc_t loc) {
+ast_node_t* newTaskInstance(char* task_name,
+                            ast_node_t* task_named_instace,
+                            ast_node_t* task_parameter_list,
+                            loc_t loc) {
     ast_node_t* symbol_node = newSymbolNode(task_name, loc);
 
     /* create a node for this array reference */
@@ -1186,7 +1212,8 @@ ast_node_t* newTaskInstance(char* task_name, ast_node_t* task_named_instace, ast
     allocate_children_to_node(new_node, {task_named_instace});
 
     /* store the module symbol name that this calls in a list that will at the end be asociated with the module node */
-    task_instantiations_instance_by_module = (ast_node_t**)vtr::realloc(task_instantiations_instance_by_module, sizeof(ast_node_t*) * (size_task_instantiations_by_module + 1));
+    task_instantiations_instance_by_module = (ast_node_t**)vtr::realloc(
+        task_instantiations_instance_by_module, sizeof(ast_node_t*) * (size_task_instantiations_by_module + 1));
     task_instantiations_instance_by_module[size_task_instantiations_by_module] = new_node;
     size_task_instantiations_by_module++;
 
@@ -1236,10 +1263,10 @@ ast_node_t* newModuleInstance(char* module_ref_name, ast_node_t* module_named_in
     ast_node_t* new_master_node = create_node_w_type(MODULE_INSTANCE, loc);
     for (i = 0; i < module_named_instance->num_children; i++) {
         /* check if this name was already used */
-        long sc_spot = sc_add_string(module_instances_sc, module_named_instance->children[i]->identifier_node->types.identifier);
+        long sc_spot
+            = sc_add_string(module_instances_sc, module_named_instance->children[i]->identifier_node->types.identifier);
         if (module_instances_sc->data[sc_spot] != NULL) {
-            error_message(AST, loc,
-                          "Module already has an instance with this name (%s)\n",
+            error_message(AST, loc, "Module already has an instance with this name (%s)\n",
                           module_named_instance->children[i]->identifier_node->types.identifier);
         }
         module_instances_sc->data[sc_spot] = module_named_instance->children[i];
@@ -1262,7 +1289,8 @@ ast_node_t* newModuleInstance(char* module_ref_name, ast_node_t* module_named_in
 
         /* if this module has already been parsed, update */
         for (int j = 0; j < verilog_ast->top_modules_count; j++) {
-            if (sc_lookup_string(instantiated_modules, verilog_ast->top_modules[j]->identifier_node->types.identifier) != -1) {
+            if (sc_lookup_string(instantiated_modules, verilog_ast->top_modules[j]->identifier_node->types.identifier)
+                != -1) {
                 verilog_ast->top_modules[j]->types.module.is_instantiated = true;
             }
         }
@@ -1287,7 +1315,8 @@ ast_node_t* newFunctionInstance(char* function_ref_name, ast_node_t* function_na
     allocate_children_to_node(new_node, {function_named_instance});
 
     /* store the module symbol name that this calls in a list that will at the end be asociated with the module node */
-    function_instantiations_instance_by_module = (ast_node_t**)vtr::realloc(function_instantiations_instance_by_module, sizeof(ast_node_t*) * (size_function_instantiations_by_module + 1));
+    function_instantiations_instance_by_module = (ast_node_t**)vtr::realloc(
+        function_instantiations_instance_by_module, sizeof(ast_node_t*) * (size_function_instantiations_by_module + 1));
     function_instantiations_instance_by_module[size_function_instantiations_by_module] = new_node;
     size_function_instantiations_by_module++;
 
@@ -1297,7 +1326,11 @@ ast_node_t* newFunctionInstance(char* function_ref_name, ast_node_t* function_na
 /*---------------------------------------------------------------------------------------------
  * (function: newGateInstance)
  *-------------------------------------------------------------------------------------------*/
-ast_node_t* newGateInstance(char* gate_instance_name, ast_node_t* expression1, ast_node_t* expression2, ast_node_t* expression3, loc_t loc) {
+ast_node_t* newGateInstance(char* gate_instance_name,
+                            ast_node_t* expression1,
+                            ast_node_t* expression2,
+                            ast_node_t* expression3,
+                            loc_t loc) {
     if (!is_valid_identifier(gate_instance_name)) {
         error_message(AST, loc, "Invalid character in identifier (%s)\n", gate_instance_name);
     }
@@ -1317,7 +1350,8 @@ ast_node_t* newGateInstance(char* gate_instance_name, ast_node_t* expression1, a
     if (size_module_variables_not_defined == 0) {
         module_variables_not_defined = (ast_node_t**)vtr::calloc(1, sizeof(ast_node_t*));
     } else {
-        module_variables_not_defined = (ast_node_t**)vtr::realloc(module_variables_not_defined, sizeof(ast_node_t*) * (size_module_variables_not_defined + 1));
+        module_variables_not_defined = (ast_node_t**)vtr::realloc(
+            module_variables_not_defined, sizeof(ast_node_t*) * (size_module_variables_not_defined + 1));
     }
     module_variables_not_defined[size_module_variables_not_defined] = newVarMaked;
     size_module_variables_not_defined++;
@@ -1329,7 +1363,11 @@ ast_node_t* newGateInstance(char* gate_instance_name, ast_node_t* expression1, a
     return new_node;
 }
 
-ast_node_t* newMultipleInputsGateInstance(char* gate_instance_name, ast_node_t* expression1, ast_node_t* expression2, ast_node_t* expression3, loc_t loc) {
+ast_node_t* newMultipleInputsGateInstance(char* gate_instance_name,
+                                          ast_node_t* expression1,
+                                          ast_node_t* expression2,
+                                          ast_node_t* expression3,
+                                          loc_t loc) {
     if (!is_valid_identifier(gate_instance_name)) {
         error_message(AST, loc, "Invalid character in identifier (%s)\n", gate_instance_name);
     }
@@ -1357,7 +1395,8 @@ ast_node_t* newMultipleInputsGateInstance(char* gate_instance_name, ast_node_t* 
     if (size_module_variables_not_defined == 0) {
         module_variables_not_defined = (ast_node_t**)vtr::calloc(1, sizeof(ast_node_t*));
     } else {
-        module_variables_not_defined = (ast_node_t**)vtr::realloc(module_variables_not_defined, sizeof(ast_node_t*) * (size_module_variables_not_defined + 1));
+        module_variables_not_defined = (ast_node_t**)vtr::realloc(
+            module_variables_not_defined, sizeof(ast_node_t*) * (size_module_variables_not_defined + 1));
     }
 
     module_variables_not_defined[size_module_variables_not_defined] = newVarMarked;
@@ -1371,7 +1410,8 @@ ast_node_t* newMultipleInputsGateInstance(char* gate_instance_name, ast_node_t* 
         add_child_to_node(new_node, expression3->children[i]);
 
     /* clean up */
-    if (expression3->type == MODULE_CONNECT) expression3 = free_single_node(expression3);
+    if (expression3->type == MODULE_CONNECT)
+        expression3 = free_single_node(expression3);
 
     return new_node;
 }
@@ -1392,7 +1432,13 @@ ast_node_t* newGate(operation_list op_id, ast_node_t* gate_instance, loc_t loc) 
 /*---------------------------------------------------------------------------------------------
  * (function: newDefparamVarDeclare)
  *-------------------------------------------------------------------------------------------*/
-ast_node_t* newDefparamVarDeclare(char* symbol, ast_node_t* expression1, ast_node_t* expression2, ast_node_t* expression3, ast_node_t* expression4, ast_node_t* value, loc_t loc) {
+ast_node_t* newDefparamVarDeclare(char* symbol,
+                                  ast_node_t* expression1,
+                                  ast_node_t* expression2,
+                                  ast_node_t* expression3,
+                                  ast_node_t* expression4,
+                                  ast_node_t* value,
+                                  loc_t loc) {
     ast_node_t* symbol_node = newSymbolNode(symbol, loc);
 
     /* create a node for this array reference */
@@ -1409,7 +1455,13 @@ ast_node_t* newDefparamVarDeclare(char* symbol, ast_node_t* expression1, ast_nod
 /*---------------------------------------------------------------------------------------------
  * (function: newVarDeclare)
  *-------------------------------------------------------------------------------------------*/
-ast_node_t* newVarDeclare(char* symbol, ast_node_t* expression1, ast_node_t* expression2, ast_node_t* expression3, ast_node_t* expression4, ast_node_t* value, loc_t loc) {
+ast_node_t* newVarDeclare(char* symbol,
+                          ast_node_t* expression1,
+                          ast_node_t* expression2,
+                          ast_node_t* expression3,
+                          ast_node_t* expression4,
+                          ast_node_t* value,
+                          loc_t loc) {
     if (!is_valid_identifier(symbol)) {
         error_message(AST, loc, "Invalid character in identifier (%s)\n", symbol);
     }
@@ -1430,7 +1482,13 @@ ast_node_t* newVarDeclare(char* symbol, ast_node_t* expression1, ast_node_t* exp
 /*---------------------------------------------------------------------------------------------
  * (function: newIntegerTypeVarDeclare)
  *-------------------------------------------------------------------------------------------*/
-ast_node_t* newIntegerTypeVarDeclare(char* symbol, ast_node_t* /*expression1*/, ast_node_t* /*expression2*/, ast_node_t* expression3, ast_node_t* expression4, ast_node_t* value, loc_t loc) {
+ast_node_t* newIntegerTypeVarDeclare(char* symbol,
+                                     ast_node_t* /*expression1*/,
+                                     ast_node_t* /*expression2*/,
+                                     ast_node_t* expression3,
+                                     ast_node_t* expression4,
+                                     ast_node_t* value,
+                                     loc_t loc) {
     if (!is_valid_identifier(symbol)) {
         error_message(AST, loc, "Invalid character in identifier (%s)\n", symbol);
     }
@@ -1447,7 +1505,8 @@ ast_node_t* newIntegerTypeVarDeclare(char* symbol, ast_node_t* /*expression1*/, 
     /* allocate identifier to identifier_node */
     new_node->identifier_node = symbol_node;
     /* allocate child nodes to this node */
-    allocate_children_to_node(new_node, {number_node_with_value_31, number_node_with_value_0, expression3, expression4, value});
+    allocate_children_to_node(new_node,
+                              {number_node_with_value_31, number_node_with_value_0, expression3, expression4, value});
 
     return new_node;
 }
@@ -1456,25 +1515,25 @@ ast_node_t* newIntegerTypeVarDeclare(char* symbol, ast_node_t* /*expression1*/, 
  * ----------------------------------------------------
  * (function: newModule)
  *-------------------------------------------------------------------------------------------*/
-ast_node_t* newModule(char* module_name, ast_node_t* list_of_parameters, ast_node_t* list_of_ports, ast_node_t* list_of_module_items, loc_t loc) {
+ast_node_t* newModule(char* module_name,
+                      ast_node_t* list_of_parameters,
+                      ast_node_t* list_of_ports,
+                      ast_node_t* list_of_module_items,
+                      loc_t loc) {
     ast_node_t* new_node = NULL;
     long sc_spot = sc_lookup_string(hard_block_names, module_name);
 
     if (!is_valid_identifier(module_name)) {
-        error_message(AST, loc,
-                      "Invalid character in identifier (%s)\n",
-                      module_name);
-    } else if (sc_spot != -1
-               || !strcmp(module_name, SINGLE_PORT_RAM_string)
+        error_message(AST, loc, "Invalid character in identifier (%s)\n", module_name);
+    } else if (sc_spot != -1 || !strcmp(module_name, SINGLE_PORT_RAM_string)
                || !strcmp(module_name, DUAL_PORT_RAM_string)) {
-        error_message(AST, loc,
-                      "Module name collides with hard block of the same name (%s)\n", module_name);
-    } else if (list_of_ports == NULL
-               || list_of_ports->num_children == 0) {
+        error_message(AST, loc, "Module name collides with hard block of the same name (%s)\n", module_name);
+    } else if (list_of_ports == NULL || list_of_ports->num_children == 0) {
         // this may change with hierarchy but for now we simply delete it
-        warning_message(AST, loc,
-                        "there are no ports for the module (%s)\n\tall logic will be dropped since it is not driving an output\n",
-                        module_name);
+        warning_message(
+            AST, loc,
+            "there are no ports for the module (%s)\n\tall logic will be dropped since it is not driving an output\n",
+            module_name);
         vtr::free(module_name);
         free_whole_tree(list_of_parameters);
         free_whole_tree(list_of_ports);
@@ -1524,7 +1583,9 @@ ast_node_t* newModule(char* module_name, ast_node_t* list_of_parameters, ast_nod
             for (long j = 0; j < list_of_module_items->num_children && variable_found == false; j++) {
                 if (list_of_module_items->children[j]->type == VAR_DECLARE_LIST) {
                     for (long k = 0; k < list_of_module_items->children[j]->num_children; k++) {
-                        if (strcmp(list_of_module_items->children[j]->children[k]->identifier_node->types.identifier, module_variables_not_defined[i]->children[0]->identifier_node->types.identifier) == 0)
+                        if (strcmp(list_of_module_items->children[j]->children[k]->identifier_node->types.identifier,
+                                   module_variables_not_defined[i]->children[0]->identifier_node->types.identifier)
+                            == 0)
                             variable_found = true;
                     }
                 }
@@ -1555,7 +1616,11 @@ ast_node_t* newModule(char* module_name, ast_node_t* list_of_parameters, ast_nod
  * (function: newFunction)
  *-------------------------------------------------------------------------------------------*/
 
-ast_node_t* newFunction(ast_node_t* function_return, ast_node_t* list_of_ports, ast_node_t* list_of_module_items, loc_t loc, bool automatic) {
+ast_node_t* newFunction(ast_node_t* function_return,
+                        ast_node_t* list_of_ports,
+                        ast_node_t* list_of_module_items,
+                        loc_t loc,
+                        bool automatic) {
     long i, j;
     long sc_spot;
     char* label = NULL;
@@ -1563,7 +1628,9 @@ ast_node_t* newFunction(ast_node_t* function_return, ast_node_t* list_of_ports, 
     ast_node_t* symbol_node = NULL;
 
     if (automatic) {
-        warning_message(AST, loc, "%s", "ODIN II does not (yet) differentiate between automatic and static tasks & functions.IGNORING ");
+        warning_message(
+            AST, loc, "%s",
+            "ODIN II does not (yet) differentiate between automatic and static tasks & functions.IGNORING ");
     }
 
     if (list_of_ports == NULL) {
@@ -1588,7 +1655,8 @@ ast_node_t* newFunction(ast_node_t* function_return, ast_node_t* list_of_ports, 
         if (list_of_module_items->children[i]->type == VAR_DECLARE_LIST) {
             for (j = 0; j < list_of_module_items->children[i]->num_children; j++) {
                 if (list_of_module_items->children[i]->children[j]->types.variable.is_input) {
-                    label = vtr::strdup(list_of_module_items->children[i]->children[j]->identifier_node->types.identifier);
+                    label = vtr::strdup(
+                        list_of_module_items->children[i]->children[j]->identifier_node->types.identifier);
                     var_node = newVarDeclare(label, NULL, NULL, NULL, NULL, NULL, loc);
                     newList_entry(list_of_ports, var_node);
                 }
@@ -1634,14 +1702,20 @@ ast_node_t* newFunction(ast_node_t* function_return, ast_node_t* list_of_ports, 
     return new_node;
 }
 
-ast_node_t* newTask(char* task_name, ast_node_t* list_of_ports, ast_node_t* list_of_task_items, loc_t loc, bool automatic) {
+ast_node_t* newTask(char* task_name,
+                    ast_node_t* list_of_ports,
+                    ast_node_t* list_of_task_items,
+                    loc_t loc,
+                    bool automatic) {
     long sc_spot;
     ast_node_t* symbol_node = newSymbolNode(task_name, loc);
     ast_node_t* var_node = NULL;
     char* label = NULL;
 
     if (automatic) {
-        warning_message(AST, loc, "%s", "ODIN II does not (yet) differentiate between automatic and static tasks & functions. IGNORING");
+        warning_message(
+            AST, loc, "%s",
+            "ODIN II does not (yet) differentiate between automatic and static tasks & functions. IGNORING");
     }
 
     /* create a node for this array reference */
@@ -1651,7 +1725,8 @@ ast_node_t* newTask(char* task_name, ast_node_t* list_of_ports, ast_node_t* list
         if (list_of_task_items->children[i]->type == VAR_DECLARE_LIST) {
             for (int j = 0; j < list_of_task_items->children[i]->num_children; j++) {
                 if (list_of_task_items->children[i]->children[j]->types.variable.is_input) {
-                    label = vtr::strdup(list_of_task_items->children[i]->children[j]->identifier_node->types.identifier);
+                    label
+                        = vtr::strdup(list_of_task_items->children[i]->children[j]->identifier_node->types.identifier);
                     var_node = newVarDeclare(label, NULL, NULL, NULL, NULL, NULL, loc);
                     var_node->types.variable.is_input = true;
                     if (list_of_ports) {
@@ -1660,7 +1735,8 @@ ast_node_t* newTask(char* task_name, ast_node_t* list_of_ports, ast_node_t* list
                         list_of_ports = newList(VAR_DECLARE_LIST, var_node, loc);
                     }
                 } else if (list_of_task_items->children[i]->children[j]->types.variable.is_output) {
-                    label = vtr::strdup(list_of_task_items->children[i]->children[j]->identifier_node->types.identifier);
+                    label
+                        = vtr::strdup(list_of_task_items->children[i]->children[j]->identifier_node->types.identifier);
                     var_node = newVarDeclare(label, NULL, NULL, NULL, NULL, NULL, loc);
                     var_node->types.variable.is_output = true;
                     if (list_of_ports) {
@@ -1669,7 +1745,8 @@ ast_node_t* newTask(char* task_name, ast_node_t* list_of_ports, ast_node_t* list
                         list_of_ports = newList(VAR_DECLARE_LIST, var_node, loc);
                     }
                 } else if (list_of_task_items->children[i]->children[j]->types.variable.is_inout) {
-                    label = vtr::strdup(list_of_task_items->children[i]->children[j]->identifier_node->types.identifier);
+                    label
+                        = vtr::strdup(list_of_task_items->children[i]->children[j]->identifier_node->types.identifier);
                     var_node = newVarDeclare(label, NULL, NULL, NULL, NULL, NULL, loc);
                     var_node->types.variable.is_inout = true;
                     if (list_of_ports) {
@@ -1870,8 +1947,7 @@ void graphVizOutputAst_traverse_node(FILE* fp, ast_node_t* node, ast_node_t* fro
             break;
         }
         case NUMBERS:
-            fprintf(fp, " %s<br/>%s",
-                    node->types.vnumber->to_vstring('h').c_str(),
+            fprintf(fp, " %s<br/>%s", node->types.vnumber->to_vstring('h').c_str(),
                     node->types.vnumber->to_vstring('b').c_str());
             break;
 
@@ -1932,7 +2008,15 @@ void graphVizOutputAst_Var_Declare(FILE* fp, ast_node_t* node, int from_num) {
 /*---------------------------------------------------------------------------------------------
  * (function: newVarDeclare) for 2D Array
  *-------------------------------------------------------------------------------------------*/
-ast_node_t* newVarDeclare2D(char* symbol, ast_node_t* expression1, ast_node_t* expression2, ast_node_t* expression3, ast_node_t* expression4, ast_node_t* expression5, ast_node_t* expression6, ast_node_t* value, loc_t loc) {
+ast_node_t* newVarDeclare2D(char* symbol,
+                            ast_node_t* expression1,
+                            ast_node_t* expression2,
+                            ast_node_t* expression3,
+                            ast_node_t* expression4,
+                            ast_node_t* expression5,
+                            ast_node_t* expression6,
+                            ast_node_t* value,
+                            loc_t loc) {
     if (!is_valid_identifier(symbol)) {
         error_message(AST, loc, "Invalid character in identifier (%s)\n", symbol);
     }
@@ -1944,7 +2028,8 @@ ast_node_t* newVarDeclare2D(char* symbol, ast_node_t* expression1, ast_node_t* e
     /* allocate identifier to identifier_node */
     new_node->identifier_node = symbol_node;
     /* allocate child nodes to this node */
-    allocate_children_to_node(new_node, {expression1, expression2, expression3, expression4, expression5, expression6, value});
+    allocate_children_to_node(new_node,
+                              {expression1, expression2, expression3, expression4, expression5, expression6, value});
     return new_node;
 }
 /*---------------------------------------------------------------------------------------------
@@ -1964,7 +2049,12 @@ ast_node_t* newArrayRef2D(char* id, ast_node_t* expression1, ast_node_t* express
 /*---------------------------------------------------------------------------------------------
  * (function: newRangeRef) for 2D Array
  *-------------------------------------------------------------------------------------------*/
-ast_node_t* newRangeRef2D(char* id, ast_node_t* expression1, ast_node_t* expression2, ast_node_t* expression3, ast_node_t* expression4, loc_t loc) {
+ast_node_t* newRangeRef2D(char* id,
+                          ast_node_t* expression1,
+                          ast_node_t* expression2,
+                          ast_node_t* expression3,
+                          ast_node_t* expression4,
+                          loc_t loc) {
     /* allocate or check if there's a node for this */
     ast_node_t* symbol_node = newSymbolNode(id, loc);
     /* create a node for this array reference */

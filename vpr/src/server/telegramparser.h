@@ -15,7 +15,7 @@ namespace comm {
  * from a JSON schema structured as follows: {JOB_ID:num, CMD:enum, OPTIONS:string, DATA:string, STATUS:num}.
  */
 class TelegramParser {
-public:
+  public:
     /**
      * @brief Attempts to extract the JOB_ID field from a given message.
      *
@@ -76,8 +76,9 @@ public:
      */
     static std::optional<int> try_extract_field_status(const std::string& message);
 
-private:
-    static std::optional<std::string> try_extract_json_value_str(const std::string& json_string, const std::string& key);
+  private:
+    static std::optional<std::string> try_extract_json_value_str(const std::string& json_string,
+                                                                 const std::string& key);
 };
 
 } // namespace comm

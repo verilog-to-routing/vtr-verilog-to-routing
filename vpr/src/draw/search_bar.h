@@ -12,12 +12,12 @@
 
 #ifndef NO_GRAPHICS
 
-#    include "draw_global.h"
+#include "draw_global.h"
 
-#    include "ezgl/point.hpp"
-#    include "ezgl/application.hpp"
-#    include "ezgl/graphics.hpp"
-#    include "draw_color.h"
+#include "ezgl/point.hpp"
+#include "ezgl/application.hpp"
+#include "ezgl/graphics.hpp"
+#include "draw_color.h"
 
 void search_and_highlight(GtkWidget* /*widget*/, ezgl::application* app);
 bool highlight_rr_nodes(RRNodeId hit_node);
@@ -28,11 +28,7 @@ void highlight_nets(std::string net_name);
 
 void highlight_atom_block(AtomBlockId block_id);
 
-gboolean customMatchingFunction(
-    GtkEntryCompletion* completer,
-    const gchar* key,
-    GtkTreeIter* iter,
-    gpointer user_data);
+gboolean customMatchingFunction(GtkEntryCompletion* completer, const gchar* key, GtkTreeIter* iter, gpointer user_data);
 
 //Function to manage entry completions when search type is changed
 void search_type_changed(GtkComboBox* /*self*/, ezgl::application* app);

@@ -26,23 +26,26 @@
 
 #ifndef NO_GRAPHICS
 
-#    include "draw_global.h"
+#include "draw_global.h"
 
-#    include "ezgl/point.hpp"
-#    include "ezgl/application.hpp"
-#    include "ezgl/graphics.hpp"
-#    include "draw_color.h"
-#    include "search_bar.h"
-#    include "draw_debug.h"
-#    include "manual_moves.h"
-#    include "vtr_ndoffsetmatrix.h"
+#include "ezgl/point.hpp"
+#include "ezgl/application.hpp"
+#include "ezgl/graphics.hpp"
+#include "draw_color.h"
+#include "search_bar.h"
+#include "draw_debug.h"
+#include "manual_moves.h"
+#include "vtr_ndoffsetmatrix.h"
 
 extern ezgl::application::settings settings;
 extern ezgl::application application;
 
 #endif /* NO_GRAPHICS */
 
-void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type pic_on_screen_val, std::shared_ptr<SetupTimingInfo> timing_info);
+void update_screen(ScreenUpdatePriority priority,
+                   const char* msg,
+                   enum pic_type pic_on_screen_val,
+                   std::shared_ptr<SetupTimingInfo> timing_info);
 
 //FIXME: Currently broken if no rr-graph is loaded
 /**
@@ -97,10 +100,7 @@ ezgl::color to_ezgl_color(vtr::Color<float> color);
  * could be caused by the user clicking on a routing resource, toggled, or
  * fan-in/fan-out of a highlighted node. */
 bool draw_if_net_highlighted(ClusterNetId inet);
-std::vector<RRNodeId> trace_routed_connection_rr_nodes(
-    ClusterNetId net_id,
-    int driver_pin,
-    int sink_pin);
+std::vector<RRNodeId> trace_routed_connection_rr_nodes(ClusterNetId net_id, int driver_pin, int sink_pin);
 
 /* Helper function for trace_routed_connection_rr_nodes
  * Adds the rr nodes linking rt_node to sink_rr_node to rr_nodes_on_path

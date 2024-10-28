@@ -46,16 +46,15 @@ inline void verilog::writer::_create_file(const char* file_name, const file_type
     oassert(file_name);
     // validate the file type
     if (file_type != VERILOG)
-        error_message(UTIL, unknown_location,
-                      "verilog back-end entity cannot create file types(%d) other than verilog", file_type);
+        error_message(UTIL, unknown_location, "verilog back-end entity cannot create file types(%d) other than verilog",
+                      file_type);
     // create the verilog file and set it as the output file
     this->output_file = create_verilog(file_name);
 }
 
 void verilog::writer::_write(const netlist_t* netlist) {
     // to write the top module and netlist components
-    if (netlist) {
-        /* [TODO] */
+    if (netlist) { /* [TODO] */
     }
 
     // print out the rest od models, including DSPs in the target architecture

@@ -9,7 +9,7 @@
 
 #ifndef NO_GRAPHICS
 
-#    include "ezgl/color.hpp"
+#include "ezgl/color.hpp"
 
 struct hsl {
     double h; // hue            a fraction between 0 and 1

@@ -9,9 +9,17 @@
 
 #include "atom_netlist.h"
 
-static bool add_activity_to_net(const AtomNetlist& netlist, std::unordered_map<AtomNetId, t_net_power>& atom_net_power, char* net_name, float probability, float density);
+static bool add_activity_to_net(const AtomNetlist& netlist,
+                                std::unordered_map<AtomNetId, t_net_power>& atom_net_power,
+                                char* net_name,
+                                float probability,
+                                float density);
 
-static bool add_activity_to_net(const AtomNetlist& netlist, std::unordered_map<AtomNetId, t_net_power>& atom_net_power, char* net_name, float probability, float density) {
+static bool add_activity_to_net(const AtomNetlist& netlist,
+                                std::unordered_map<AtomNetId, t_net_power>& atom_net_power,
+                                char* net_name,
+                                float probability,
+                                float density) {
     AtomNetId net_id = netlist.find_net(net_name);
     if (net_id) {
         atom_net_power[net_id].probability = probability;
@@ -19,9 +27,7 @@ static bool add_activity_to_net(const AtomNetlist& netlist, std::unordered_map<A
         return false;
     }
 
-    VTR_LOG_WARN(
-        "Net %s found in activity file, but it does not exist in the .blif file.\n",
-        net_name);
+    VTR_LOG_WARN("Net %s found in activity file, but it does not exist in the .blif file.\n", net_name);
     return true;
 }
 
@@ -43,8 +49,7 @@ std::unordered_map<AtomNetId, t_net_power> read_activity(const AtomNetlist& netl
 
     act_file_hdl = vtr::fopen(activity_file, "r");
     if (act_file_hdl == nullptr) {
-        VPR_FATAL_ERROR(VPR_ERROR_BLIF_F,
-                        "Error: could not open activity file: %s\n", activity_file);
+        VPR_FATAL_ERROR(VPR_ERROR_BLIF_F, "Error: could not open activity file: %s\n", activity_file);
     }
 
     ptr = vtr::fgets(buf, vtr::bufsize, act_file_hdl);
@@ -60,10 +65,8 @@ std::unordered_map<AtomNetId, t_net_power> read_activity(const AtomNetlist& netl
 
     /* Make sure all nets have an activity value */
     for (auto net_id : netlist.nets()) {
-        if (atom_net_power[net_id].probability < 0.0
-            || atom_net_power[net_id].density < 0.0) {
-            VPR_FATAL_ERROR(VPR_ERROR_BLIF_F,
-                            "Error: Activity file does not contain signal %s\n",
+        if (atom_net_power[net_id].probability < 0.0 || atom_net_power[net_id].density < 0.0) {
+            VPR_FATAL_ERROR(VPR_ERROR_BLIF_F, "Error: Activity file does not contain signal %s\n",
                             netlist.net_name(net_id).c_str());
         }
     }

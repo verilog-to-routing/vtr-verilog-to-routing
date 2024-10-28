@@ -7,8 +7,7 @@
 
 #include <algorithm>
 
-MedianMoveGenerator::MedianMoveGenerator(PlacerState& placer_state,
-                                         e_reward_function reward_function)
+MedianMoveGenerator::MedianMoveGenerator(PlacerState& placer_state, e_reward_function reward_function)
     : MoveGenerator(placer_state, reward_function) {}
 
 e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected,
@@ -24,14 +23,13 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
     const auto& blk_loc_registry = placer_state.blk_loc_registry();
 
     //Find a movable block based on blk_type
-    ClusterBlockId b_from = propose_block_to_move(placer_opts,
-                                                  proposed_action.logical_blk_type_index,
+    ClusterBlockId b_from = propose_block_to_move(placer_opts, proposed_action.logical_blk_type_index,
                                                   /*highly_crit_block=*/false,
                                                   /*net_from=*/nullptr,
-                                                  /*pin_from=*/nullptr,
-                                                  placer_state);
+                                                  /*pin_from=*/nullptr, placer_state);
 
-    VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "Median Move Choose Block %d - rlim %f\n", size_t(b_from), rlim);
+    VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "Median Move Choose Block %d - rlim %f\n", size_t(b_from),
+                   rlim);
 
     if (!b_from) { //No movable block found
         VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\tNo movable block found\n");
@@ -39,7 +37,6 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
     }
 
     const int num_layers = device_ctx.grid.get_num_layers();
-
 
     t_pl_loc from = block_locs[b_from].loc;
     int from_layer = from.layer;
@@ -124,7 +121,7 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
             } else {
                 layer_new = net_bb_coords.layer_min;
             }
-            
+
             // If the moving block is on the border of the bounding box, we cannot get
             // the bounding box incrementally. In that case, bounding box should be calculated
             // from scratch.
@@ -144,7 +141,8 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
     }
 
     if ((place_move_ctx.X_coord.empty()) || (place_move_ctx.Y_coord.empty()) || (place_move_ctx.layer_coord.empty())) {
-        VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\tMove aborted - X_coord or y_coord or layer_coord are empty\n");
+        VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug,
+                       "\tMove aborted - X_coord or y_coord or layer_coord are empty\n");
         return e_create_move::ABORT;
     }
 
@@ -163,9 +161,7 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
     limit_coords.layer_max = place_move_ctx.layer_coord[floor((place_move_ctx.layer_coord.size() - 1) / 2) + 1];
 
     //arrange the different range limiters
-    t_range_limiters range_limiters{rlim,
-                                    place_move_ctx.first_rlim,
-                                    placer_opts.place_dm_rlim};
+    t_range_limiters range_limiters{rlim, place_move_ctx.first_rlim, placer_opts.place_dm_rlim};
 
     //find a location in a range around the center of median region
     t_pl_loc median_point;
@@ -310,14 +306,14 @@ bool MedianMoveGenerator::get_bb_incrementally(ClusterNetId net_id,
     t_bb union_bb;
     const bool cube_bb = g_vpr_ctx.placement().cube_bb;
     /* Calculating per-layer bounding box is more time consuming compared to cube bounding box. To speed up
-    * this move, the bounding box used for this move is of the type cube bounding box even if the per-layer
-    * bounding box is used by placement SA engine. 
-    * If per-layer bounding box is used, we take a union of boundinx boxes on each layer to make a cube bounding box.
-    * For example, the xmax of this cube boundix box is determined by the maximim x coordinate across all blocks on all layers.
-    */
+     * this move, the bounding box used for this move is of the type cube bounding box even if the per-layer
+     * bounding box is used by placement SA engine. 
+     * If per-layer bounding box is used, we take a union of boundinx boxes on each layer to make a cube bounding box.
+     * For example, the xmax of this cube boundix box is determined by the maximim x coordinate across all blocks on all layers.
+     */
     if (!cube_bb) {
-        std::tie(union_bb_edge, union_bb) = union_2d_bb_incr(place_move_ctx.layer_bb_num_on_edges[net_id],
-                                                             place_move_ctx.layer_bb_coords[net_id]);
+        std::tie(union_bb_edge, union_bb)
+            = union_2d_bb_incr(place_move_ctx.layer_bb_num_on_edges[net_id], place_move_ctx.layer_bb_coords[net_id]);
     }
 
     /* In this move, we use a 3D bounding box. Thus, if per-layer BB is used by placer, we need to take a union of BBs and use that for the rest of

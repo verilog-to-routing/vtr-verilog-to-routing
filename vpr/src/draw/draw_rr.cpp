@@ -35,29 +35,29 @@
 #include "move_utils.h"
 
 #ifdef VTR_ENABLE_DEBUG_LOGGING
-#    include "move_utils.h"
+#include "move_utils.h"
 #endif
 
 #ifdef WIN32 /* For runtime tracking in WIN32. The clock() function defined in time.h will *
               * track CPU runtime.														   */
-#    include <time.h>
+#include <time.h>
 #else /* For X11. The clock() function in time.h will not output correct time difference   *
        * for X11, because the graphics is processed by the Xserver rather than local CPU,  *
        * which means tracking CPU time will not be the same as the actual wall clock time. *
        * Thus, so use gettimeofday() in sys/time.h to track actual calendar time.          */
-#    include <sys/time.h>
+#include <sys/time.h>
 #endif
 
 #ifndef NO_GRAPHICS
 
 //To process key presses we need the X11 keysym definitions,
 //which are unavailable when building with MINGW
-#    if defined(X11) && !defined(__MINGW32__)
-#        include <X11/keysym.h>
-#    endif
+#if defined(X11) && !defined(__MINGW32__)
+#include <X11/keysym.h>
+#endif
 
 /****************************** Define Macros *******************************/
-#    define DEFAULT_RR_NODE_COLOR ezgl::BLACK
+#define DEFAULT_RR_NODE_COLOR ezgl::BLACK
 
 //The arrow head position for turning/straight-thru connections in a switch box
 constexpr float SB_EDGE_TURN_ARROW_POSITION = 0.2;
@@ -143,8 +143,8 @@ void draw_rr(ezgl::renderer* g) {
                 break;
 
             default:
-                vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                          "in draw_rr: Unexpected rr_node type: %d.\n", rr_graph.node_type(inode));
+                vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "in draw_rr: Unexpected rr_node type: %d.\n",
+                          rr_graph.node_type(inode));
         }
     }
 
@@ -243,7 +243,8 @@ void draw_rr_chan(RRNodeId inode, const ezgl::color color, ezgl::renderer* g) {
         if (switchpoint_min == 0) {
             if (dir != Direction::BIDIR) {
                 //Draw a mux at the start of each wire, labelled with it's size (#inputs)
-                draw_mux_with_size(start, mux_dir, WIRE_DRAWING_WIDTH, rr_graph.node_fan_in(inode), transparency_factor, g);
+                draw_mux_with_size(start, mux_dir, WIRE_DRAWING_WIDTH, rr_graph.node_fan_in(inode), transparency_factor,
+                                   g);
             }
         } else {
             //Draw arrows and label with switch point
@@ -255,8 +256,9 @@ void draw_rr_chan(RRNodeId inode, const ezgl::color color, ezgl::renderer* g) {
             draw_triangle_along_line(g, arrow_loc_min, start, end);
 
             g->set_color(text_color, transparency_factor);
-            ezgl::rectangle bbox(ezgl::point2d(arrow_loc_min.x - DEFAULT_ARROW_SIZE / 2, arrow_loc_min.y - DEFAULT_ARROW_SIZE / 4),
-                                 ezgl::point2d(arrow_loc_min.x + DEFAULT_ARROW_SIZE / 2, arrow_loc_min.y + DEFAULT_ARROW_SIZE / 4));
+            ezgl::rectangle bbox(
+                ezgl::point2d(arrow_loc_min.x - DEFAULT_ARROW_SIZE / 2, arrow_loc_min.y - DEFAULT_ARROW_SIZE / 4),
+                ezgl::point2d(arrow_loc_min.x + DEFAULT_ARROW_SIZE / 2, arrow_loc_min.y + DEFAULT_ARROW_SIZE / 4));
             ezgl::point2d center = bbox.center();
             g->draw_text(center, std::to_string(switchpoint_min), bbox.width(), bbox.height());
 
@@ -269,7 +271,8 @@ void draw_rr_chan(RRNodeId inode, const ezgl::color color, ezgl::renderer* g) {
         if (switchpoint_max == 0) {
             if (dir != Direction::BIDIR) {
                 //Draw a mux at the start of each wire, labelled with it's size (#inputs)
-                draw_mux_with_size(start, mux_dir, WIRE_DRAWING_WIDTH, rr_graph.node_fan_in(inode), transparency_factor, g);
+                draw_mux_with_size(start, mux_dir, WIRE_DRAWING_WIDTH, rr_graph.node_fan_in(inode), transparency_factor,
+                                   g);
             }
         } else {
             //Draw arrows and label with switch point
@@ -281,8 +284,9 @@ void draw_rr_chan(RRNodeId inode, const ezgl::color color, ezgl::renderer* g) {
             draw_triangle_along_line(g, arrow_loc_max, start, end);
 
             g->set_color(text_color, transparency_factor);
-            ezgl::rectangle bbox(ezgl::point2d(arrow_loc_max.x - DEFAULT_ARROW_SIZE / 2, arrow_loc_max.y - DEFAULT_ARROW_SIZE / 4),
-                                 ezgl::point2d(arrow_loc_max.x + DEFAULT_ARROW_SIZE / 2, arrow_loc_max.y + DEFAULT_ARROW_SIZE / 4));
+            ezgl::rectangle bbox(
+                ezgl::point2d(arrow_loc_max.x - DEFAULT_ARROW_SIZE / 2, arrow_loc_max.y - DEFAULT_ARROW_SIZE / 4),
+                ezgl::point2d(arrow_loc_max.x + DEFAULT_ARROW_SIZE / 2, arrow_loc_max.y + DEFAULT_ARROW_SIZE / 4));
             ezgl::point2d center = bbox.center();
             g->draw_text(center, std::to_string(switchpoint_max), bbox.width(), bbox.height());
 
@@ -311,7 +315,8 @@ void draw_rr_edges(RRNodeId inode, ezgl::renderer* g) {
     from_type = rr_graph.node_type(rr_node);
 
     if ((draw_state->draw_rr_toggle == DRAW_NODES_RR)
-        || (draw_state->draw_rr_toggle == DRAW_NODES_SBOX_RR && (from_type == OPIN || from_type == SOURCE || from_type == IPIN))
+        || (draw_state->draw_rr_toggle == DRAW_NODES_SBOX_RR
+            && (from_type == OPIN || from_type == SOURCE || from_type == IPIN))
         || (draw_state->draw_rr_toggle == DRAW_NODES_SBOX_CBOX_RR && (from_type == SOURCE || from_type == IPIN))) {
         return; /* Nothing to draw. */
     }
@@ -356,8 +361,8 @@ void draw_rr_edges(RRNodeId inode, ezgl::renderer* g) {
                         break;
                     default:
                         vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                                  "in draw_rr_edges: node %d (type: %d) connects to node %d (type: %d).\n",
-                                  inode, from_type, to_node, to_type);
+                                  "in draw_rr_edges: node %d (type: %d) connects to node %d (type: %d).\n", inode,
+                                  from_type, to_node, to_type);
                         break;
                 }
                 break;
@@ -369,7 +374,8 @@ void draw_rr_edges(RRNodeId inode, ezgl::renderer* g) {
                             break;
                         }
 
-                        if (draw_state->draw_rr_node[to_node].node_highlighted && draw_state->draw_rr_node[inode].color == DEFAULT_RR_NODE_COLOR) {
+                        if (draw_state->draw_rr_node[to_node].node_highlighted
+                            && draw_state->draw_rr_node[inode].color == DEFAULT_RR_NODE_COLOR) {
                             // If the IPIN is clicked on, draw connection to all the CHANX
                             // wire segments fanning into the pin. If a CHANX wire is clicked
                             // on, draw only the connection between that wire and the IPIN, with
@@ -403,8 +409,7 @@ void draw_rr_edges(RRNodeId inode, ezgl::renderer* g) {
                             g->set_color(blk_DARKGREEN, transparency_factor);
                         }
                         switch_type = rr_graph.edge_switch(rr_node, iedge);
-                        draw_chanx_to_chanx_edge(rr_node, RRNodeId(to_node),
-                                                 switch_type, g);
+                        draw_chanx_to_chanx_edge(rr_node, RRNodeId(to_node), switch_type, g);
                         break;
 
                     case CHANY:
@@ -420,14 +425,13 @@ void draw_rr_edges(RRNodeId inode, ezgl::renderer* g) {
                             g->set_color(blk_DARKGREEN, transparency_factor);
                         }
                         switch_type = rr_graph.edge_switch(rr_node, iedge);
-                        draw_chanx_to_chany_edge(inode, to_node,
-                                                 FROM_X_TO_Y, switch_type, g);
+                        draw_chanx_to_chany_edge(inode, to_node, FROM_X_TO_Y, switch_type, g);
                         break;
 
                     default:
                         vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                                  "in draw_rr_edges: node %d (type: %d) connects to node %d (type: %d).\n",
-                                  inode, from_type, to_node, to_type);
+                                  "in draw_rr_edges: node %d (type: %d) connects to node %d (type: %d).\n", inode,
+                                  from_type, to_node, to_type);
                         break;
                 }
                 break;
@@ -439,7 +443,8 @@ void draw_rr_edges(RRNodeId inode, ezgl::renderer* g) {
                             break;
                         }
 
-                        if (draw_state->draw_rr_node[to_node].node_highlighted && draw_state->draw_rr_node[inode].color == DEFAULT_RR_NODE_COLOR) {
+                        if (draw_state->draw_rr_node[to_node].node_highlighted
+                            && draw_state->draw_rr_node[inode].color == DEFAULT_RR_NODE_COLOR) {
                             // If the IPIN is clicked on, draw connection to all the CHANY
                             // wire segments fanning into the pin. If a CHANY wire is clicked
                             // on, draw only the connection between that wire and the IPIN, with
@@ -473,8 +478,7 @@ void draw_rr_edges(RRNodeId inode, ezgl::renderer* g) {
                             g->set_color(blk_DARKGREEN, transparency_factor);
                         }
                         switch_type = rr_graph.edge_switch(rr_node, iedge);
-                        draw_chanx_to_chany_edge(to_node, inode,
-                                                 FROM_Y_TO_X, switch_type, g);
+                        draw_chanx_to_chany_edge(to_node, inode, FROM_Y_TO_X, switch_type, g);
                         break;
 
                     case CHANY:
@@ -491,14 +495,13 @@ void draw_rr_edges(RRNodeId inode, ezgl::renderer* g) {
                             g->set_color(blk_DARKGREEN, transparency_factor);
                         }
                         switch_type = rr_graph.edge_switch(rr_node, iedge);
-                        draw_chany_to_chany_edge(rr_node, RRNodeId(to_node),
-                                                 switch_type, g);
+                        draw_chany_to_chany_edge(rr_node, RRNodeId(to_node), switch_type, g);
                         break;
 
                     default:
                         vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                                  "in draw_rr_edges: node %d (type: %d) connects to node %d (type: %d).\n",
-                                  inode, from_type, to_node, to_type);
+                                  "in draw_rr_edges: node %d (type: %d) connects to node %d (type: %d).\n", inode,
+                                  from_type, to_node, to_type);
                         break;
                 }
                 break;
@@ -511,8 +514,8 @@ void draw_rr_edges(RRNodeId inode, ezgl::renderer* g) {
 
                     default:
                         vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                                  "in draw_rr_edges: node %d (type: %d) connects to node %d (type: %d).\n",
-                                  inode, from_type, to_node, to_type);
+                                  "in draw_rr_edges: node %d (type: %d) connects to node %d (type: %d).\n", inode,
+                                  from_type, to_node, to_type);
                         break;
                 }
                 break;
@@ -525,15 +528,14 @@ void draw_rr_edges(RRNodeId inode, ezgl::renderer* g) {
 
                     default:
                         vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                                  "in draw_rr_edges: node %d (type: %d) connects to node %d (type: %d).\n",
-                                  inode, from_type, to_node, to_type);
+                                  "in draw_rr_edges: node %d (type: %d) connects to node %d (type: %d).\n", inode,
+                                  from_type, to_node, to_type);
                         break;
                 }
                 break;
             default: /* from_type */
-                vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                          "draw_rr_edges called with node %d of type %d.\n",
-                          inode, from_type);
+                vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "draw_rr_edges called with node %d of type %d.\n", inode,
+                          from_type);
                 break;
         }
     } /* End of for each edge loop */
@@ -568,13 +570,11 @@ void draw_rr_pin(RRNodeId inode, const ezgl::color& color, ezgl::renderer* g) {
             continue;
         }
         draw_get_rr_pin_coords(inode, &xcen, &ycen, pin_side);
-        g->fill_rectangle(
-            {xcen - draw_coords->pin_size, ycen - draw_coords->pin_size},
-            {xcen + draw_coords->pin_size, ycen + draw_coords->pin_size});
+        g->fill_rectangle({xcen - draw_coords->pin_size, ycen - draw_coords->pin_size},
+                          {xcen + draw_coords->pin_size, ycen + draw_coords->pin_size});
         sprintf(str, "%d", ipin);
         g->set_color(ezgl::BLACK, transparency_factor);
-        g->draw_text({xcen, ycen}, str, 2 * draw_coords->pin_size,
-                     2 * draw_coords->pin_size);
+        g->draw_text({xcen, ycen}, str, 2 * draw_coords->pin_size, 2 * draw_coords->pin_size);
         g->set_color(color, transparency_factor);
     }
 }
@@ -595,15 +595,12 @@ void draw_rr_src_sink(RRNodeId inode, ezgl::color color, ezgl::renderer* g) {
 
     g->set_color(color, transparency_factor);
 
-    g->fill_rectangle(
-        {xcen - draw_coords->pin_size, ycen - draw_coords->pin_size},
-        {xcen + draw_coords->pin_size, ycen + draw_coords->pin_size});
+    g->fill_rectangle({xcen - draw_coords->pin_size, ycen - draw_coords->pin_size},
+                      {xcen + draw_coords->pin_size, ycen + draw_coords->pin_size});
 
-    std::string str = vtr::string_fmt("%d",
-                                      rr_graph.node_class_num(inode));
+    std::string str = vtr::string_fmt("%d", rr_graph.node_class_num(inode));
     g->set_color(ezgl::BLACK, transparency_factor);
-    g->draw_text({xcen, ycen}, str.c_str(), 2 * draw_coords->pin_size,
-                 2 * draw_coords->pin_size);
+    g->draw_text({xcen, ycen}, str.c_str(), 2 * draw_coords->pin_size, 2 * draw_coords->pin_size);
     g->set_color(color, transparency_factor);
 }
 
@@ -613,9 +610,8 @@ void draw_get_rr_src_sink_coords(const t_rr_node& node, float* xcen, float* ycen
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     RRNodeId rr_node = node.id();
-    t_physical_tile_type_ptr tile_type = device_ctx.grid.get_physical_type({rr_graph.node_xlow(rr_node),
-                                                                            rr_graph.node_ylow(rr_node),
-                                                                            rr_graph.node_layer(rr_node)});
+    t_physical_tile_type_ptr tile_type = device_ctx.grid.get_physical_type(
+        {rr_graph.node_xlow(rr_node), rr_graph.node_ylow(rr_node), rr_graph.node_layer(rr_node)});
 
     //Number of classes (i.e. src/sinks) we need to draw
     float num_class = tile_type->class_inf.size();
@@ -642,7 +638,13 @@ void draw_get_rr_src_sink_coords(const t_rr_node& node, float* xcen, float* ycen
     *ycen = yc + ypos * draw_coords->get_tile_height();
 }
 
-void draw_rr_switch(float from_x, float from_y, float to_x, float to_y, bool buffered, bool configurable, ezgl::renderer* g) {
+void draw_rr_switch(float from_x,
+                    float from_y,
+                    float to_x,
+                    float to_y,
+                    bool buffered,
+                    bool configurable,
+                    ezgl::renderer* g) {
     /* Draws a buffer (triangle) or pass transistor (circle) on the edge        *
      * connecting from to to, depending on the status of buffered.  The drawing *
      * is closest to the from_node, since it reflects the switch type of from.  */
@@ -659,18 +661,15 @@ void draw_rr_switch(float from_x, float from_y, float to_x, float to_y, bool buf
     } else { /* Buffer */
         if (from_x == to_x || from_y == to_y) {
             //Straight connection
-            draw_triangle_along_line(g, {from_x, from_y}, {to_x, to_y},
-                                     SB_EDGE_STRAIGHT_ARROW_POSITION);
+            draw_triangle_along_line(g, {from_x, from_y}, {to_x, to_y}, SB_EDGE_STRAIGHT_ARROW_POSITION);
         } else {
             //Turn connection
-            draw_triangle_along_line(g, {from_x, from_y}, {to_x, to_y},
-                                     SB_EDGE_TURN_ARROW_POSITION);
+            draw_triangle_along_line(g, {from_x, from_y}, {to_x, to_y}, SB_EDGE_TURN_ARROW_POSITION);
         }
     }
 }
 
-void draw_expand_non_configurable_rr_nodes_recurr(RRNodeId from_node,
-                                                  std::set<RRNodeId>& expanded_nodes) {
+void draw_expand_non_configurable_rr_nodes_recurr(RRNodeId from_node, std::set<RRNodeId>& expanded_nodes) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     expanded_nodes.insert(from_node);
@@ -680,8 +679,7 @@ void draw_expand_non_configurable_rr_nodes_recurr(RRNodeId from_node,
         RRNodeId to_node = rr_graph.edge_sink_node(from_node, iedge);
 
         if (!edge_configurable && !expanded_nodes.count(to_node)) {
-            draw_expand_non_configurable_rr_nodes_recurr(to_node,
-                                                         expanded_nodes);
+            draw_expand_non_configurable_rr_nodes_recurr(to_node, expanded_nodes);
         }
     }
 }
@@ -725,7 +723,8 @@ RRNodeId draw_check_rr_node_hit(float click_x, float click_y) {
                         draw_get_rr_pin_coords(inode, &xcen, &ycen, iside);
 
                         // Now check if we clicked on this pin
-                        if (click_x >= xcen - draw_coords->pin_size && click_x <= xcen + draw_coords->pin_size && click_y >= ycen - draw_coords->pin_size && click_y <= ycen + draw_coords->pin_size) {
+                        if (click_x >= xcen - draw_coords->pin_size && click_x <= xcen + draw_coords->pin_size
+                            && click_y >= ycen - draw_coords->pin_size && click_y <= ycen + draw_coords->pin_size) {
                             hit_node = inode;
                             return hit_node;
                         }
@@ -739,7 +738,8 @@ RRNodeId draw_check_rr_node_hit(float click_x, float click_y) {
                 draw_get_rr_src_sink_coords(rr_graph.rr_nodes()[size_t(inode)], &xcen, &ycen);
 
                 // Now check if we clicked on this pin
-                if (click_x >= xcen - draw_coords->pin_size && click_x <= xcen + draw_coords->pin_size && click_y >= ycen - draw_coords->pin_size && click_y <= ycen + draw_coords->pin_size) {
+                if (click_x >= xcen - draw_coords->pin_size && click_x <= xcen + draw_coords->pin_size
+                    && click_y >= ycen - draw_coords->pin_size && click_y <= ycen + draw_coords->pin_size) {
                     hit_node = inode;
                     return hit_node;
                 }
@@ -752,7 +752,8 @@ RRNodeId draw_check_rr_node_hit(float click_x, float click_y) {
                 // Check if we clicked on this wire, with 30%
                 // tolerance outside its boundary
                 const float tolerance = 0.3;
-                if (click_x >= bound_box.left() - tolerance && click_x <= bound_box.right() + tolerance && click_y >= bound_box.bottom() - tolerance && click_y <= bound_box.top() + tolerance) {
+                if (click_x >= bound_box.left() - tolerance && click_x <= bound_box.right() + tolerance
+                    && click_y >= bound_box.bottom() - tolerance && click_y <= bound_box.top() + tolerance) {
                     hit_node = inode;
                     return hit_node;
                 }
@@ -804,13 +805,16 @@ void draw_rr_costs(ezgl::renderer* g, const vtr::vector<RRNodeId, float>& rr_cos
     float min_cost = std::numeric_limits<float>::infinity();
     float max_cost = -min_cost;
     for (RRNodeId inode : rr_graph.nodes()) {
-        if (std::isnan(rr_costs[inode])) continue;
+        if (std::isnan(rr_costs[inode]))
+            continue;
 
         min_cost = std::min(min_cost, rr_costs[inode]);
         max_cost = std::max(max_cost, rr_costs[inode]);
     }
-    if (min_cost == std::numeric_limits<float>::infinity()) min_cost = 0;
-    if (max_cost == -std::numeric_limits<float>::infinity()) max_cost = 0;
+    if (min_cost == std::numeric_limits<float>::infinity())
+        min_cost = 0;
+    if (max_cost == -std::numeric_limits<float>::infinity())
+        max_cost = 0;
     std::unique_ptr<vtr::ColorMap> cmap = std::make_unique<vtr::PlasmaColorMap>(min_cost, max_cost);
 
     //Draw the nodes in ascending order of value, this ensures high valued nodes
@@ -826,7 +830,8 @@ void draw_rr_costs(ezgl::renderer* g, const vtr::vector<RRNodeId, float>& rr_cos
 
     for (RRNodeId inode : nodes) {
         float cost = rr_costs[inode];
-        if (std::isnan(cost)) continue;
+        if (std::isnan(cost))
+            continue;
 
         int transparency_factor = get_rr_node_transparency(inode);
 
@@ -842,22 +847,26 @@ void draw_rr_costs(ezgl::renderer* g, const vtr::vector<RRNodeId, float>& rr_cos
             case CHANX: //fallthrough
             case CHANY:
                 draw_rr_chan(inode, color, g);
-                if (with_edges) draw_rr_edges(inode, g);
+                if (with_edges)
+                    draw_rr_edges(inode, g);
                 break;
 
             case IPIN: //fallthrough
                 draw_rr_pin(inode, color, g);
-                if (with_edges) draw_rr_edges(inode, g);
+                if (with_edges)
+                    draw_rr_edges(inode, g);
                 break;
             case OPIN:
                 draw_rr_pin(inode, color, g);
-                if (with_edges) draw_rr_edges(inode, g);
+                if (with_edges)
+                    draw_rr_edges(inode, g);
                 break;
             case SOURCE:
             case SINK:
                 color.alpha *= 0.8;
                 draw_rr_src_sink(inode, color, g);
-                if (with_edges) draw_rr_edges(inode, g);
+                if (with_edges)
+                    draw_rr_edges(inode, g);
                 break;
             default:
                 break;
@@ -901,8 +910,7 @@ void draw_get_rr_pin_coords(const t_rr_node& node, float* xcen, float* ycen, con
      * we can treat as a block box for this step */
 
     /* For each sub_tile we need and extra padding space */
-    step = (float)(draw_coords->get_tile_width())
-           / (float)(type->num_pins + type->capacity);
+    step = (float)(draw_coords->get_tile_width()) / (float)(type->num_pins + type->capacity);
     offset = (ipin + k + 1) * step;
 
     switch (pin_side) {
@@ -925,8 +933,7 @@ void draw_get_rr_pin_coords(const t_rr_node& node, float* xcen, float* ycen, con
             break;
 
         default:
-            vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                      "in draw_get_rr_pin_coords: Unexpected side %s.\n",
+            vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "in draw_get_rr_pin_coords: Unexpected side %s.\n",
                       TOTAL_2D_SIDE_STRINGS[pin_side]);
             break;
     }

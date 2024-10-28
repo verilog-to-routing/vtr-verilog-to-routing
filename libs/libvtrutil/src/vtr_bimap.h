@@ -52,14 +52,10 @@ class bimap {
     inverse_iterator inverse_end() const { return inverse_map_.end(); }
 
     ///@brief Return an iterator to the key-value pair matching key, or end() if not found
-    iterator find(const K key) const {
-        return map_.find(key);
-    }
+    iterator find(const K key) const { return map_.find(key); }
 
     ///@brief Return an iterator to the value-key pair matching value, or inverse_end() if not found
-    inverse_iterator find(const V value) const {
-        return inverse_map_.find(value);
-    }
+    inverse_iterator find(const V value) const { return inverse_map_.find(value); }
 
     ///@brief Return an immutable reference to the value matching key (throw an exception if key is not found)
     const V& operator[](const K key) const {

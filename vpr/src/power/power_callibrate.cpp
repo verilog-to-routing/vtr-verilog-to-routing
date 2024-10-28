@@ -175,20 +175,18 @@ void power_print_spice_comparison() {
             dens[j] = 1.0 / (float)LUT_sizes[i];
             prob[j] = 0.5;
         }
-        power_usage_lut(&sub_power_usage, LUT_sizes[i], 1.0, SRAM_bits_chars, prob,
-                        dens, power_callib_period);
+        power_usage_lut(&sub_power_usage, LUT_sizes[i], 1.0, SRAM_bits_chars, prob, dens, power_callib_period);
 
         t_power_usage power_usage_mux;
 
         float p[6] = {0.5, 0.5, 0.5, 0.5, 0.5, 0.5};
         float d[6] = {1, 1, 1, 1, 1, 1};
-        power_usage_mux_multilevel(&power_usage_mux, power_get_mux_arch(6, 1.0),
-                                   p, d, 0, true, power_ctx.solution_inf.T_crit);
+        power_usage_mux_multilevel(&power_usage_mux, power_get_mux_arch(6, 1.0), p, d, 0, true,
+                                   power_ctx.solution_inf.T_crit);
 
         power_add_usage(&sub_power_usage, &power_usage_mux);
 
-        fprintf(power_ctx.output->out, "%d\t%g\n", LUT_sizes[i],
-                power_sum_usage(&sub_power_usage));
+        fprintf(power_ctx.output->out, "%d\t%g\n", LUT_sizes[i], power_sum_usage(&sub_power_usage));
     }
     //
     //	 fprintf(power_ctx.output->out, "Energy of LUT (No Activity)\n");
@@ -222,10 +220,8 @@ void power_print_spice_comparison() {
     //	 }
     //
     fprintf(power_ctx.output->out, "Energy of FF (High Activity)\n");
-    power_usage_ff(&sub_power_usage, 1.0, 0.5, 3, 0.5, 1, 0.5, 2,
-                   power_callib_period);
-    fprintf(power_ctx.output->out, "%g\n",
-            (sub_power_usage.dynamic + sub_power_usage.leakage));
+    power_usage_ff(&sub_power_usage, 1.0, 0.5, 3, 0.5, 1, 0.5, 2, power_callib_period);
+    fprintf(power_ctx.output->out, "%g\n", (sub_power_usage.dynamic + sub_power_usage.leakage));
     //
     //	 fprintf(power_ctx.output->out, "Energy of FF (No Activity)\n");
     //	 power_usage_ff(&sub_power_usage, 1, 0, 1, 0, 1, 0, power_callib_period);
@@ -312,20 +308,17 @@ float power_usage_buf_for_callibration(int num_inputs, float transistor_size) {
 
     VTR_ASSERT(num_inputs == 1);
 
-    power_usage_buffer(&power_usage, transistor_size, 0.5, 2.0, false,
-                       power_callib_period);
+    power_usage_buffer(&power_usage, transistor_size, 0.5, 2.0, false, power_callib_period);
 
     return power_sum_usage(&power_usage);
 }
 
-float power_usage_buf_levr_for_callibration(int num_inputs,
-                                            float transistor_size) {
+float power_usage_buf_levr_for_callibration(int num_inputs, float transistor_size) {
     t_power_usage power_usage;
 
     VTR_ASSERT(num_inputs == 1);
 
-    power_usage_buffer(&power_usage, transistor_size, 0.5, 2.0, true,
-                       power_callib_period);
+    power_usage_buffer(&power_usage, transistor_size, 0.5, 2.0, true, power_callib_period);
 
     return power_sum_usage(&power_usage);
 }
@@ -342,9 +335,8 @@ float power_usage_mux_for_callibration(int num_inputs, float transistor_size) {
         prob[i] = 0.5;
     }
 
-    power_usage_mux_multilevel(&power_usage,
-                               power_get_mux_arch(num_inputs, transistor_size), prob, dens, 0,
-                               false, power_callib_period);
+    power_usage_mux_multilevel(&power_usage, power_get_mux_arch(num_inputs, transistor_size), prob, dens, 0, false,
+                               power_callib_period);
 
     delete[] dens;
     delete[] prob;
@@ -381,8 +373,7 @@ float power_usage_lut_for_callibration(int num_inputs, float transistor_size) {
         dens[i] = 1;
         prob[i] = 0.5;
     }
-    power_usage_lut(&power_usage, lut_size, transistor_size, SRAM_bits, prob,
-                    dens, power_callib_period);
+    power_usage_lut(&power_usage, lut_size, transistor_size, SRAM_bits, prob, dens, power_callib_period);
 
     delete[] SRAM_bits;
     delete[] dens;
@@ -396,8 +387,7 @@ float power_usage_ff_for_callibration(int num_inputs, float transistor_size) {
 
     VTR_ASSERT(num_inputs == 1);
 
-    power_usage_ff(&power_usage, transistor_size, 0.5, 3, 0.5, 1, 0.5, 2,
-                   power_callib_period);
+    power_usage_ff(&power_usage, transistor_size, 0.5, 3, 0.5, 1, 0.5, 2, power_callib_period);
 
     return power_sum_usage(&power_usage);
 }

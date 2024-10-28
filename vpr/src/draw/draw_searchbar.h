@@ -33,20 +33,20 @@
 
 #ifndef NO_GRAPHICS
 
-#    include "draw_global.h"
+#include "draw_global.h"
 
-#    include "ezgl/point.hpp"
-#    include "ezgl/application.hpp"
-#    include "ezgl/graphics.hpp"
-#    include "draw_color.h"
-#    include "search_bar.h"
-#    include "draw_debug.h"
-#    include "manual_moves.h"
+#include "ezgl/point.hpp"
+#include "ezgl/application.hpp"
+#include "ezgl/graphics.hpp"
+#include "draw_color.h"
+#include "search_bar.h"
+#include "draw_debug.h"
+#include "manual_moves.h"
 
-#    include "rr_graph.h"
-#    include "route_utilization.h"
-#    include "place_macro.h"
-#    include "buttons.h"
+#include "rr_graph.h"
+#include "route_utilization.h"
+#include "place_macro.h"
+#include "buttons.h"
 
 /* This function computes and returns the boundary coordinates of a channel
  * wire segment. This can be used for drawing a wire or determining if a

@@ -32,7 +32,10 @@ static void collect_crit_path_metadata(std::stringstream& ss, const std::vector<
 /** 
  * @brief Helper function to calculate critical path timing report with specified parameters.
  */
-CritPathsResultPtr calc_critical_path(const std::string& report_type, int crit_path_num, e_timing_report_detail details_level, bool is_flat_routing) {
+CritPathsResultPtr calc_critical_path(const std::string& report_type,
+                                      int crit_path_num,
+                                      e_timing_report_detail details_level,
+                                      bool is_flat_routing) {
     // shortcuts
     const std::shared_ptr<SetupHoldTimingInfo>& timing_info = g_vpr_ctx.server().timing_info;
     const std::shared_ptr<RoutingDelayCalculator>& routing_delay_calc = g_vpr_ctx.server().routing_delay_calc;
@@ -45,7 +48,8 @@ CritPathsResultPtr calc_critical_path(const std::string& report_type, int crit_p
     analysis_opts.timing_report_detail = details_level;
     analysis_opts.timing_report_npaths = crit_path_num;
 
-    VprTimingGraphResolver resolver(atom_ctx.nlist, atom_ctx.lookup, *timing_ctx.graph, *routing_delay_calc, is_flat_routing, blk_loc_registry);
+    VprTimingGraphResolver resolver(atom_ctx.nlist, atom_ctx.lookup, *timing_ctx.graph, *routing_delay_calc,
+                                    is_flat_routing, blk_loc_registry);
     resolver.set_detail_level(analysis_opts.timing_report_detail);
 
     tatum::TimingReporter timing_reporter(resolver, *timing_ctx.graph, *timing_ctx.constraints);
@@ -54,9 +58,11 @@ CritPathsResultPtr calc_critical_path(const std::string& report_type, int crit_p
 
     std::stringstream ss;
     if (report_type == comm::KEY_SETUP_PATH_LIST) {
-        timing_reporter.report_timing_setup(result->paths, ss, *timing_info->setup_analyzer(), analysis_opts.timing_report_npaths);
+        timing_reporter.report_timing_setup(result->paths, ss, *timing_info->setup_analyzer(),
+                                            analysis_opts.timing_report_npaths);
     } else if (report_type == comm::KEY_HOLD_PATH_LIST) {
-        timing_reporter.report_timing_hold(result->paths, ss, *timing_info->hold_analyzer(), analysis_opts.timing_report_npaths);
+        timing_reporter.report_timing_hold(result->paths, ss, *timing_info->hold_analyzer(),
+                                           analysis_opts.timing_report_npaths);
     }
 
     if (!result->paths.empty()) {

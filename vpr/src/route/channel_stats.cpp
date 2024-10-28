@@ -26,9 +26,7 @@ void print_channel_stats(bool is_flat) {
     auto chanx_avail = calculate_routing_avail(CHANX);
     auto chany_avail = calculate_routing_avail(CHANY);
 
-    auto comp = [](const HistogramBucket& bucket, float value) {
-        return bucket.max_value < value;
-    };
+    auto comp = [](const HistogramBucket& bucket, float value) { return bucket.max_value < value; };
 
     float max_util = 0.;
     size_t peak_x = 0.;

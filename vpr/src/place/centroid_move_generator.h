@@ -29,8 +29,7 @@ class CentroidMoveGenerator : public MoveGenerator {
      * @param reward_function Specifies the reward function to update q-tables
      * of the RL agent.
      */
-    CentroidMoveGenerator(PlacerState& placer_state,
-                          e_reward_function reward_function);
+    CentroidMoveGenerator(PlacerState& placer_state, e_reward_function reward_function);
 
     /**
      * The move generator created by calling this constructor considers both
@@ -51,7 +50,6 @@ class CentroidMoveGenerator : public MoveGenerator {
                           e_reward_function reward_function,
                           float noc_attraction_weight,
                           size_t high_fanout_net);
-
 
     /**
      * Returns all NoC routers that are in the NoC group with a given ID.

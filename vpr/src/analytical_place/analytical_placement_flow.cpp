@@ -71,39 +71,24 @@ void run_analytical_placement_flow(t_vpr_setup& vpr_setup) {
 
     // Create the ap netlist from the atom netlist using the result from the
     // prepacker.
-    APNetlist ap_netlist = gen_ap_netlist_from_atoms(atom_nlist,
-                                                     prepacker,
-                                                     constraints);
+    APNetlist ap_netlist = gen_ap_netlist_from_atoms(atom_nlist, prepacker, constraints);
     print_ap_netlist_stats(ap_netlist);
 
     // Run the Global Placer
     //  For now, just runs the solver.
     PartialPlacement p_placement(ap_netlist);
-    std::unique_ptr<AnalyticalSolver> solver = make_analytical_solver(e_analytical_solver::QP_HYBRID,
-                                                                      ap_netlist);
+    std::unique_ptr<AnalyticalSolver> solver = make_analytical_solver(e_analytical_solver::QP_HYBRID, ap_netlist);
     solver->solve(0, p_placement);
 
     // Verify that the partial placement is valid before running the full
     // legalizer.
     const size_t device_width = device_ctx.grid.width();
     const size_t device_height = device_ctx.grid.height();
-    VTR_ASSERT(p_placement.verify(ap_netlist,
-                                  device_width,
-                                  device_height,
-                                  device_ctx.grid.get_num_layers()));
+    VTR_ASSERT(p_placement.verify(ap_netlist, device_width, device_height, device_ctx.grid.get_num_layers()));
 
     // Run the Full Legalizer.
-    FullLegalizer full_legalizer(ap_netlist,
-                                 vpr_setup,
-                                 device_ctx.grid,
-                                 device_ctx.arch,
-                                 atom_nlist,
-                                 prepacker,
-                                 device_ctx.logical_block_types,
-                                 vpr_setup.PackerRRGraph,
-                                 device_ctx.arch->models,
-                                 device_ctx.arch->model_library,
-                                 vpr_setup.PackerOpts);
+    FullLegalizer full_legalizer(ap_netlist, vpr_setup, device_ctx.grid, device_ctx.arch, atom_nlist, prepacker,
+                                 device_ctx.logical_block_types, vpr_setup.PackerRRGraph, device_ctx.arch->models,
+                                 device_ctx.arch->model_library, vpr_setup.PackerOpts);
     full_legalizer.legalize(p_placement);
 }
-

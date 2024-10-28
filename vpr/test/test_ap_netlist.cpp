@@ -74,4 +74,3 @@ TEST_CASE("test_ap_netlist_data_storage", "[vpr_ap_netlist]") {
 }
 
 } // namespace
-

@@ -175,7 +175,8 @@ void allocate_more_output_pins(nnode_t* node, int width) {
  * (function: add_output_port_information)
  *-------------------------------------------------------------------------------------------*/
 void add_output_port_information(nnode_t* node, int port_width) {
-    node->output_port_sizes = (int*)vtr::realloc(node->output_port_sizes, sizeof(int) * (node->num_output_port_sizes + 1));
+    node->output_port_sizes
+        = (int*)vtr::realloc(node->output_port_sizes, sizeof(int) * (node->num_output_port_sizes + 1));
     node->output_port_sizes[node->num_output_port_sizes] = port_width;
     node->num_output_port_sizes++;
 }
@@ -439,7 +440,8 @@ void combine_nets(nnet_t* output_net, nnet_t* input_net, netlist_t* netlist) {
     input_net->combined = true;
 
     /* Need to keep the initial value data when we combine the nets */
-    oassert(input_net->initial_value == init_value_e::undefined || input_net->initial_value == output_net->initial_value);
+    oassert(input_net->initial_value == init_value_e::undefined
+            || input_net->initial_value == output_net->initial_value);
     input_net->initial_value = output_initial_value;
 
     /* special cases for global nets */
@@ -498,14 +500,16 @@ void join_nets(nnet_t* join_to_net, nnet_t* other_net) {
         for (int i = 0; i < join_to_net->num_driver_pins; i++) {
             const char* pin_name = join_to_net->driver_pins[i]->name ? join_to_net->driver_pins[i]->name : "unknown";
             if ((join_to_net->driver_pins[i]->node != NULL))
-                warning_message(NETLIST, join_to_net->driver_pins[i]->node->loc, "%s %s\n", "Combinational loop with driver pin", pin_name);
+                warning_message(NETLIST, join_to_net->driver_pins[i]->node->loc, "%s %s\n",
+                                "Combinational loop with driver pin", pin_name);
             else
                 warning_message(NETLIST, unknown_location, "%s %s\n", "Combinational loop with driver pin", pin_name);
         }
         for (int i = 0; i < join_to_net->num_fanout_pins; i++) {
             const char* pin_name = join_to_net->fanout_pins[i]->name ? join_to_net->fanout_pins[i]->name : "unknown";
             if ((join_to_net->fanout_pins[i] != NULL) && (join_to_net->fanout_pins[i]->node != NULL))
-                warning_message(NETLIST, join_to_net->fanout_pins[i]->node->loc, "%s %s\n", "Combinational loop with fanout pin", pin_name);
+                warning_message(NETLIST, join_to_net->fanout_pins[i]->node->loc, "%s %s\n",
+                                "Combinational loop with fanout pin", pin_name);
             else
                 warning_message(NETLIST, unknown_location, "%s %s\n", "Combinational loop with fanout pin", pin_name);
         }
@@ -513,9 +517,12 @@ void join_nets(nnet_t* join_to_net, nnet_t* other_net) {
         error_message(NETLIST, unknown_location, "%s", "Found a combinational loop");
     } else if (other_net->num_driver_pins > 1) {
         if (other_net->name && join_to_net->name)
-            error_message(NETLIST, unknown_location, "Tried to join net %s to %s but this would lose %d drivers for net %s", other_net->name, join_to_net->name, other_net->num_driver_pins - 1, other_net->name);
+            error_message(NETLIST, unknown_location,
+                          "Tried to join net %s to %s but this would lose %d drivers for net %s", other_net->name,
+                          join_to_net->name, other_net->num_driver_pins - 1, other_net->name);
         else
-            error_message(NETLIST, unknown_location, "Tried to join nets but this would lose %d drivers", other_net->num_driver_pins - 1);
+            error_message(NETLIST, unknown_location, "Tried to join nets but this would lose %d drivers",
+                          other_net->num_driver_pins - 1);
     }
 
     /* copy the driver over to the new_net */
@@ -574,7 +581,8 @@ void integrate_nets(char* alias_name, char* full_name, nnet_t* driver_net) {
             }
         } else {
             /* already exists so we'll join the nets */
-            combine_nets((nnet_t*)input_nets_sc->data[sc_spot_input_old], (nnet_t*)input_nets_sc->data[sc_spot_input_new], syn_netlist);
+            combine_nets((nnet_t*)input_nets_sc->data[sc_spot_input_old],
+                         (nnet_t*)input_nets_sc->data[sc_spot_input_new], syn_netlist);
             input_nets_sc->data[sc_spot_input_old] = NULL;
         }
     } else {
@@ -985,7 +993,12 @@ void free_attribute(attr_t* attribute) {
  * (function: hookup_input_pins_from_signal_list)
  * 	For each pin in this list hook it up to the inputs according to indexes and width
  *--------------------------------------------------------------------------*/
-void hookup_input_pins_from_signal_list(nnode_t* node, int n_start_idx, signal_list_t* input_list, int il_start_idx, int width, netlist_t* netlist) {
+void hookup_input_pins_from_signal_list(nnode_t* node,
+                                        int n_start_idx,
+                                        signal_list_t* input_list,
+                                        int il_start_idx,
+                                        int width,
+                                        netlist_t* netlist) {
     int i;
 
     for (i = 0; i < width; i++) {
@@ -1009,7 +1022,12 @@ void hookup_input_pins_from_signal_list(nnode_t* node, int n_start_idx, signal_l
  *   For each pin in this list hook it up to the inputs according to
  *   indexes and width. Extra pins are tied to PAD for later resolution.
  *--------------------------------------------------------------------------*/
-void hookup_hb_input_pins_from_signal_list(nnode_t* node, int n_start_idx, signal_list_t* input_list, int il_start_idx, int width, netlist_t* netlist) {
+void hookup_hb_input_pins_from_signal_list(nnode_t* node,
+                                           int n_start_idx,
+                                           signal_list_t* input_list,
+                                           int il_start_idx,
+                                           int width,
+                                           netlist_t* netlist) {
     int i;
 
     for (i = 0; i < width; i++) {
@@ -1030,7 +1048,11 @@ void hookup_hb_input_pins_from_signal_list(nnode_t* node, int n_start_idx, signa
  * (function: hookup_output_pouts_from_signal_list)
  * 	hooks the pin into the output net, by checking for a driving net
  *-------------------------------------------------------------------------------------------*/
-void hookup_output_pins_from_signal_list(nnode_t* node, int n_start_idx, signal_list_t* output_list, int ol_start_idx, int width) {
+void hookup_output_pins_from_signal_list(nnode_t* node,
+                                         int n_start_idx,
+                                         signal_list_t* output_list,
+                                         int ol_start_idx,
+                                         int width) {
     int i;
     long sc_spot_output;
 
@@ -1042,7 +1064,8 @@ void hookup_output_pins_from_signal_list(nnode_t* node, int n_start_idx, signal_
 
         if ((sc_spot_output = sc_lookup_string(output_nets_sc, output_list->pins[ol_start_idx + i]->name)) == -1) {
             /* this output pin does not have a net OR we couldn't find it */
-            error_message(NETLIST, node->loc, "Net for driver (%s) doesn't exist for node %s\n", output_list->pins[ol_start_idx + i]->name, node->name);
+            error_message(NETLIST, node->loc, "Net for driver (%s) doesn't exist for node %s\n",
+                          output_list->pins[ol_start_idx + i]->name, node->name);
         }
 
         /* hook the outpin into the net */

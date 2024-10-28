@@ -55,7 +55,7 @@ class TaskConfig:
         pad_file=None,
         additional_files=None,
         additional_files_list_add=None,
-        circuit_constraint_list_add=None
+        circuit_constraint_list_add=None,
     ):
         self.task_name = task_name
         self.config_dir = config_dir
@@ -82,9 +82,9 @@ class TaskConfig:
         self.pad_file = pad_file
         self.additional_files = additional_files
         self.additional_files_list_add = additional_files_list_add
-        self.circuit_constraints = parse_circuit_constraint_list(circuit_constraint_list_add,
-                                                                 self.circuits,
-                                                                 self.archs)
+        self.circuit_constraints = parse_circuit_constraint_list(
+            circuit_constraint_list_add, self.circuits, self.archs
+        )
 
 
 # pylint: enable=too-few-public-methods
@@ -306,9 +306,8 @@ def check_include_fields(config_file, key_values):
                 )
             )
 
-def parse_circuit_constraint_list(
-    circuit_constraint_list, circuits_list, arch_list
-) -> dict:
+
+def parse_circuit_constraint_list(circuit_constraint_list, circuits_list, arch_list) -> dict:
     """
     Parse the circuit constraints passed in via the config file.
     Circuit constraints are expected to have the following syntax:
@@ -342,37 +341,38 @@ def parse_circuit_constraint_list(
     # Parse the circuit constraint list
     for circuit_constraint in circuit_constraint_list:
         # Remove the round brackets.
-        if circuit_constraint[0] != '(' or circuit_constraint[-1] != ')':
-            raise VtrError(f"Circuit constraint syntax error: \"{circuit_constraint}\"")
+        if circuit_constraint[0] != "(" or circuit_constraint[-1] != ")":
+            raise VtrError(f'Circuit constraint syntax error: "{circuit_constraint}"')
         circuit_constraint = circuit_constraint[1:-1]
         # Split the circuit and the constraint
-        split_constraint_line = circuit_constraint.split(',')
+        split_constraint_line = circuit_constraint.split(",")
         if len(split_constraint_line) != 2:
-            raise VtrError(f"Circuit constraint has too many arguments: \"{circuit_constraint}\"")
+            raise VtrError(f'Circuit constraint has too many arguments: "{circuit_constraint}"')
         circuit = split_constraint_line[0].strip()
         constraint = split_constraint_line[1].strip()
         # Check that the circuit actually exists.
         if circuit not in circuits_list:
-            raise VtrError(f"Cannot constrain circuit \"{circuit}\", circuit has not been added")
+            raise VtrError(f'Cannot constrain circuit "{circuit}", circuit has not been added')
         # Parse the constraint
         split_constraint = constraint.split("=")
         if len(split_constraint) != 2:
-            raise VtrError(f"Circuit constraint syntax error: \"{circuit_constraint}\"")
+            raise VtrError(f'Circuit constraint syntax error: "{circuit_constraint}"')
         constr_key = split_constraint[0].strip()
         constr_val = split_constraint[1].strip()
         # Check that the constr_key is valid.
         if constr_key not in circuit_constraint_keys:
-            raise VtrError(f"Invalid constraint \"{constr_key}\" used on circuit \"{circuit}\"")
+            raise VtrError(f'Invalid constraint "{constr_key}" used on circuit "{circuit}"')
         # In the case of arch constraints, make sure this arch exists.
         if constr_key == "arch" and constr_val not in arch_list:
-            raise VtrError(f"Cannot constrain arch \"{constr_key}\", arch has not been added")
+            raise VtrError(f'Cannot constrain arch "{constr_key}", arch has not been added')
         # Make sure this circuit is not already constrained with this constr_arg
         if res_circuit_constraints[circuit][constr_key] is not None:
-            raise VtrError(f"Circuit \"{circuit}\" cannot be constrained more than once")
+            raise VtrError(f'Circuit "{circuit}" cannot be constrained more than once')
         # Add the constraint for this circuit
         res_circuit_constraints[circuit][constr_key] = constr_val
 
     return res_circuit_constraints
+
 
 def shorten_task_names(configs, common_task_prefix):
     """
@@ -582,10 +582,7 @@ def create_jobs(args, configs, after_run=False) -> List[Job]:
             work_dir = get_work_dir_addr(arch, circuit, noc_traffic)
 
             run_dir = (
-                str(
-                    Path(get_latest_run_dir(find_task_dir(config, args.alt_tasks_dir)))
-                    / work_dir
-                )
+                str(Path(get_latest_run_dir(find_task_dir(config, args.alt_tasks_dir))) / work_dir)
                 if after_run
                 else str(
                     Path(get_next_run_dir(find_task_dir(config, args.alt_tasks_dir))) / work_dir
@@ -779,6 +776,7 @@ def ret_expected_vpr_status(arch, circuit, golden_results, script_params=None):
 
     return golden_metrics["vpr_status"]
 
+
 def apply_cmd_line_circuit_constraints(cmd, circuit, config):
     """
     Apply the circuit constraints to the command line. If the circuit is not
@@ -792,6 +790,7 @@ def apply_cmd_line_circuit_constraints(cmd, circuit, config):
     circuit_vpr_constraints = config.circuit_constraints[circuit]["constraints"]
     if circuit_vpr_constraints is not None:
         cmd += ["--read_vpr_constraints", circuit_vpr_constraints]
+
 
 def resolve_vtr_source_file(config, filename, base_dir=""):
     """

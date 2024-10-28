@@ -42,7 +42,8 @@ AtomNetlist read_and_process_circuit(e_circuit_format circuit_format, t_vpr_setu
         } else if (name_ext[1] == ".eblif") {
             circuit_format = e_circuit_format::EBLIF;
         } else {
-            VPR_FATAL_ERROR(VPR_ERROR_ATOM_NETLIST, "Failed to determine file format for '%s' expected .blif or .eblif extension",
+            VPR_FATAL_ERROR(VPR_ERROR_ATOM_NETLIST,
+                            "Failed to determine file format for '%s' expected .blif or .eblif extension",
                             circuit_file);
         }
     }
@@ -60,9 +61,10 @@ AtomNetlist read_and_process_circuit(e_circuit_format circuit_format, t_vpr_setu
                 netlist = read_interchange_netlist(circuit_file, arch);
                 break;
             default:
-                VPR_FATAL_ERROR(VPR_ERROR_ATOM_NETLIST,
-                                "Unable to identify circuit file format for '%s'. Expect [blif|eblif|fpga-interchange]!\n",
-                                circuit_file);
+                VPR_FATAL_ERROR(
+                    VPR_ERROR_ATOM_NETLIST,
+                    "Unable to identify circuit file format for '%s'. Expect [blif|eblif|fpga-interchange]!\n",
+                    circuit_file);
                 break;
         }
     }
@@ -71,13 +73,8 @@ AtomNetlist read_and_process_circuit(e_circuit_format circuit_format, t_vpr_setu
         print_netlist_as_blif(getEchoFileName(E_ECHO_ATOM_NETLIST_ORIG), netlist);
     }
 
-    process_circuit(netlist,
-                    const_gen_inference,
-                    should_absorb_buffers,
-                    should_sweep_dangling_primary_ios,
-                    should_sweep_dangling_nets,
-                    should_sweep_dangling_blocks,
-                    should_sweep_constant_primary_outputs,
+    process_circuit(netlist, const_gen_inference, should_absorb_buffers, should_sweep_dangling_primary_ios,
+                    should_sweep_dangling_nets, should_sweep_dangling_blocks, should_sweep_constant_primary_outputs,
                     verbosity);
 
     if (isEchoFileEnabled(E_ECHO_ATOM_NETLIST_CLEANED)) {
@@ -108,24 +105,22 @@ static void process_circuit(AtomNetlist& netlist,
         //Remove the special 'unconn' net
         AtomNetId unconn_net_id = netlist.find_net("unconn");
         if (unconn_net_id) {
-            VTR_LOGV_WARN(verbosity > 1, "Removing special net 'unconn' (assumed it represented explicitly unconnected pins)\n");
+            VTR_LOGV_WARN(verbosity > 1,
+                          "Removing special net 'unconn' (assumed it represented explicitly unconnected pins)\n");
             netlist.remove_net(unconn_net_id);
         }
 
         //Also remove the 'unconn' block driver, if it exists
         AtomBlockId unconn_blk_id = netlist.find_block("unconn");
         if (unconn_blk_id) {
-            VTR_LOGV_WARN(verbosity > 1, "Removing special block 'unconn' (assumed it represented explicitly unconnected pins)\n");
+            VTR_LOGV_WARN(verbosity > 1,
+                          "Removing special block 'unconn' (assumed it represented explicitly unconnected pins)\n");
             netlist.remove_block(unconn_blk_id);
         }
 
         //Sweep unused logic/nets/inputs/outputs
-        sweep_iterative(netlist,
-                        should_sweep_dangling_primary_ios,
-                        should_sweep_dangling_nets,
-                        should_sweep_dangling_blocks,
-                        should_sweep_constant_primary_outputs,
-                        const_gen_inference_method,
+        sweep_iterative(netlist, should_sweep_dangling_primary_ios, should_sweep_dangling_nets,
+                        should_sweep_dangling_blocks, should_sweep_constant_primary_outputs, const_gen_inference_method,
                         verbosity);
     }
 

@@ -45,13 +45,7 @@ static inline BitSpace::bit_value_t init_value(nnode_t* node) {
     return (BitSpace::bit_value_t)((node) ? node->initial_value : init_value_e::undefined);
 }
 
-enum edge_eval_e {
-    FALLING,
-    RISING,
-    HIGH,
-    LOW,
-    UNK
-};
+enum edge_eval_e { FALLING, RISING, HIGH, LOW, UNK };
 
 inline static edge_eval_e get_edge_type(npin_t* clk, int cycle) {
     if (!clk)
@@ -84,23 +78,20 @@ inline static edge_eval_e get_edge_type(npin_t* clk, int cycle) {
 inline static bool ff_trigger(edge_type_e type, npin_t* clk, int cycle) {
     edge_eval_e clk_e = get_edge_type(clk, cycle);
     // update the flip-flop from the input value of the previous cycle.
-    return (
-        (type == FALLING_EDGE_SENSITIVITY && clk_e == FALLING)
-        || (type == RISING_EDGE_SENSITIVITY && clk_e == RISING)
-        || (type == ACTIVE_HIGH_SENSITIVITY && clk_e == HIGH)
-        || (type == ACTIVE_LOW_SENSITIVITY && clk_e == LOW)
-        || (type == ASYNCHRONOUS_SENSITIVITY && (clk_e == RISING || clk_e == FALLING)));
+    return ((type == FALLING_EDGE_SENSITIVITY && clk_e == FALLING)
+            || (type == RISING_EDGE_SENSITIVITY && clk_e == RISING)
+            || (type == ACTIVE_HIGH_SENSITIVITY && clk_e == HIGH) || (type == ACTIVE_LOW_SENSITIVITY && clk_e == LOW)
+            || (type == ASYNCHRONOUS_SENSITIVITY && (clk_e == RISING || clk_e == FALLING)));
 }
 
-inline static BitSpace::bit_value_t get_D(npin_t* D, int cycle) {
-    return get_pin_value(D, cycle - 1);
-}
+inline static BitSpace::bit_value_t get_D(npin_t* D, int cycle) { return get_pin_value(D, cycle - 1); }
 
-inline static BitSpace::bit_value_t get_Q(npin_t* Q, int cycle) {
-    return get_pin_value(Q, cycle - 1);
-}
+inline static BitSpace::bit_value_t get_Q(npin_t* Q, int cycle) { return get_pin_value(Q, cycle - 1); }
 
-inline static BitSpace::bit_value_t compute_ff(bool trigger, BitSpace::bit_value_t D_val, BitSpace::bit_value_t Q_val, int /*cycle*/) {
+inline static BitSpace::bit_value_t compute_ff(bool trigger,
+                                               BitSpace::bit_value_t D_val,
+                                               BitSpace::bit_value_t Q_val,
+                                               int /*cycle*/) {
     return (trigger) ? D_val : Q_val;
 }
 
@@ -109,8 +100,9 @@ inline static BitSpace::bit_value_t compute_ff(bool trigger, npin_t* D, npin_t* 
 }
 
 static inline bool is_clock_node(nnode_t* node) {
-    return node && ((node->type == CLOCK_NODE) || (std::string(node->name) == "top^clk") // Strictly for memories.
-                    || (std::string(node->name) == DEFAULT_CLOCK_NAME));
+    return node
+           && ((node->type == CLOCK_NODE) || (std::string(node->name) == "top^clk") // Strictly for memories.
+               || (std::string(node->name) == DEFAULT_CLOCK_NAME));
 }
 
 static void simulate_cycle(int cycle, stages_t* s);
@@ -293,7 +285,8 @@ sim_data_t* init_simulation(netlist_t* netlist) {
     if (global_args.sim_vector_input_file.provenance() == argparse::Provenance::SPECIFIED) {
         sim_data->in = fopen(global_args.sim_vector_input_file.value().c_str(), "r");
         if (!sim_data->in)
-            error_message(SIMULATION, unknown_location, "Could not open vector input file: %s", global_args.sim_vector_input_file.value().c_str());
+            error_message(SIMULATION, unknown_location, "Could not open vector input file: %s",
+                          global_args.sim_vector_input_file.value().c_str());
     }
 
     if (sim_data->in && sim_data->input_lines->count != 0) {
@@ -301,9 +294,11 @@ sim_data_t* init_simulation(netlist_t* netlist) {
 
         // Read the vector headers and check to make sure they match the lines.
         if (!verify_test_vector_headers(sim_data->in, sim_data->input_lines))
-            error_message(SIMULATION, unknown_location, "Invalid vector header format in %s.", global_args.sim_vector_input_file.value().c_str());
+            error_message(SIMULATION, unknown_location, "Invalid vector header format in %s.",
+                          global_args.sim_vector_input_file.value().c_str());
 
-        printf("Simulating %ld existing vectors from \"%s\".\n", sim_data->num_vectors, global_args.sim_vector_input_file.value().c_str());
+        printf("Simulating %ld existing vectors from \"%s\".\n", sim_data->num_vectors,
+               global_args.sim_vector_input_file.value().c_str());
         fflush(stdout);
     }
     // or be randomly generated. Passed via the -g option. it also serve as a fallback when we have an empty input
@@ -368,7 +363,8 @@ void simulate_steps(sim_data_t* sim_data, double min_coverage) {
         // if we target a minimum coverage keep generating
         if (min_coverage > 0.0) {
             if (cycle + 1 == sim_data->num_vectors) {
-                current_coverage = (((double)get_num_covered_nodes(sim_data->stages) / (double)sim_data->stages->num_nodes));
+                current_coverage
+                    = (((double)get_num_covered_nodes(sim_data->stages) / (double)sim_data->stages->num_nodes));
                 if (global_args.sim_achieve_best) {
                     if (current_coverage > min_coverage) {
                         increment_vector_by = global_args.sim_num_test_vectors;
@@ -402,8 +398,9 @@ void simulate_steps(sim_data_t* sim_data, double min_coverage) {
 
         // Delay drawing of the progress bar until the second wave to improve the accuracy of the ETA.
         if ((sim_data->num_vectors == 1) || cycle) {
-            progress_bar_position = print_progress_bar(
-                (cycle + 1) / (double)(sim_data->num_vectors), progress_bar_position, progress_bar_length, sim_data->total_time);
+            progress_bar_position
+                = print_progress_bar((cycle + 1) / (double)(sim_data->num_vectors), progress_bar_position,
+                                     progress_bar_length, sim_data->total_time);
         }
 
         cycle++;
@@ -564,7 +561,8 @@ static int is_node_ready(nnode_t* node, int cycle) {
                 }
 
                 if (!already_flagged) {
-                    node->undriven_pins = (npin_t**)vtr::realloc(node->undriven_pins, sizeof(npin_t*) * (node->num_undriven_pins + 1));
+                    node->undriven_pins
+                        = (npin_t**)vtr::realloc(node->undriven_pins, sizeof(npin_t*) * (node->num_undriven_pins + 1));
                     node->undriven_pins[node->num_undriven_pins++] = pin;
 
                     warning_message(SIMULATION, node->loc, "A node (%s) has an undriven input pin.", node->name);
@@ -994,7 +992,8 @@ static bool compute_and_store_value(nnode_t* node, int cycle) {
                 if (pin_cycle != cycle) {
                     if (!node->internal_clk_warn) {
                         node->internal_clk_warn = true;
-                        warning_message(SIMULATION, node->loc, "clock(%s) is internally driven, verify your circuit", node->name);
+                        warning_message(SIMULATION, node->loc, "clock(%s) is internally driven, verify your circuit",
+                                        node->name);
                     }
                     //toggle according to ratio
                     BitSpace::bit_value_t prev_value = BitSpace::l_not[CLOCK_INITIAL_VALUE];
@@ -1022,7 +1021,9 @@ static bool compute_and_store_value(nnode_t* node, int cycle) {
                 } else {
                     if (!node->internal_clk_warn) {
                         node->internal_clk_warn = true;
-                        warning_message(SIMULATION, node->loc, "node used as clock (%s) is itself driven by a clock, verify your circuit", node->name);
+                        warning_message(SIMULATION, node->loc,
+                                        "node used as clock (%s) is itself driven by a clock, verify your circuit",
+                                        node->name);
                     }
                     update_pin_value(node->output_pins[0], get_pin_value(node->input_pins[0], cycle - 1), cycle);
                 }
@@ -1083,7 +1084,8 @@ static bool compute_and_store_value(nnode_t* node, int cycle) {
 
     // Count number of ones and toggles for coverage estimation
     bool covered = true;
-    bool skip_node_from_coverage = (type == INPUT_NODE || type == CLOCK_NODE || type == GND_NODE || type == VCC_NODE || type == PAD_NODE);
+    bool skip_node_from_coverage
+        = (type == INPUT_NODE || type == CLOCK_NODE || type == GND_NODE || type == VCC_NODE || type == PAD_NODE);
 
     if (!skip_node_from_coverage) {
         for (int i = 0; i < node->num_output_pins && covered; i++) {
@@ -1184,20 +1186,15 @@ nnode_t** get_children_of(nnode_t* node, int* num_children) {
                 char* node_name = get_pin_name(node->name);
                 char* net_name = get_pin_name(net->name);
 
-                std::string format_message =
-                    "Found output pin \"%s\" (%ld) on node \"%s\" (%ld)\n"
-                    "             which is mapped to a net \"%s\" (%ld) whose driver pins are:\n";
+                std::string format_message
+                    = "Found output pin \"%s\" (%ld) on node \"%s\" (%ld)\n"
+                      "             which is mapped to a net \"%s\" (%ld) whose driver pins are:\n";
                 for (int j = 0; j < net->num_driver_pins; j++)
-                    format_message += "             " + std::string(net->driver_pins[j]->name) + " (" + std::to_string(net->driver_pins[j]->unique_id) + ")\n";
+                    format_message += "             " + std::string(net->driver_pins[j]->name) + " ("
+                                      + std::to_string(net->driver_pins[j]->unique_id) + ")\n";
 
-                warning_message(SIMULATION, node->loc,
-                                format_message.c_str(),
-                                pin_name,
-                                pin->unique_id,
-                                node_name,
-                                node->unique_id,
-                                net_name,
-                                net->unique_id);
+                warning_message(SIMULATION, node->loc, format_message.c_str(), pin_name, pin->unique_id, node_name,
+                                node->unique_id, net_name, net->unique_id);
 
                 vtr::free(net_name);
                 vtr::free(pin_name);
@@ -1274,20 +1271,15 @@ nnode_t** get_children_of_nodepin(nnode_t* node, int* num_children, int output_p
             char* node_name = get_pin_name(node->name);
             char* net_name = get_pin_name(net->name);
 
-            std::string format_message =
-                "Found output pin \"%s\" (%ld) on node \"%s\" (%ld)\n"
-                "             which is mapped to a net \"%s\" (%ld) whose driver pins are:\n";
+            std::string format_message
+                = "Found output pin \"%s\" (%ld) on node \"%s\" (%ld)\n"
+                  "             which is mapped to a net \"%s\" (%ld) whose driver pins are:\n";
             for (int j = 0; j < net->num_driver_pins; j++)
-                format_message += "             " + std::string(net->driver_pins[j]->name) + " (" + std::to_string(net->driver_pins[j]->unique_id) + ")\n";
+                format_message += "             " + std::string(net->driver_pins[j]->name) + " ("
+                                  + std::to_string(net->driver_pins[j]->unique_id) + ")\n";
 
-            warning_message(SIMULATION, node->loc,
-                            format_message.c_str(),
-                            pin_name,
-                            pin->unique_id,
-                            node_name,
-                            node->unique_id,
-                            net_name,
-                            net->unique_id);
+            warning_message(SIMULATION, node->loc, format_message.c_str(), pin_name, pin->unique_id, node_name,
+                            node->unique_id, net_name, net->unique_id);
 
             vtr::free(net_name);
             vtr::free(pin_name);
@@ -1573,12 +1565,13 @@ static void compute_hard_ip_node(nnode_t* node, int cycle) {
         void* handle = dlopen(filename, RTLD_LAZY);
 
         if (!handle)
-            error_message(SIMULATION, unknown_location,
-                          "Couldn't open a shared library for hard-block simulation: %s", dlerror());
+            error_message(SIMULATION, unknown_location, "Couldn't open a shared library for hard-block simulation: %s",
+                          dlerror());
 
         dlerror();
 
-        void (*func_pointer)(int, int, int*, int, int*) = (void (*)(int, int, int*, int, int*))dlsym(handle, "simulate_block_cycle");
+        void (*func_pointer)(int, int, int*, int, int*)
+            = (void (*)(int, int, int*, int, int*))dlsym(handle, "simulate_block_cycle");
 
         char* error = dlerror();
         if (error)
@@ -1634,7 +1627,8 @@ static void compute_generic_node(nnode_t* node, int cycle) {
                 break;
         }
 
-        if (j == lut_size) found = true;
+        if (j == lut_size)
+            found = true;
     }
 
     if (node->generic_output == BitSpace::_1) {
@@ -1664,7 +1658,8 @@ static void compute_add_node(nnode_t* node, int cycle) {
     oassert(node->output_port_sizes[0] == node->input_port_sizes[0]);
     oassert(node->output_port_sizes[1] == 1);
 
-    BitSpace::bit_value_t carry = get_pin_value(node->input_pins[node->input_port_sizes[0] + node->input_port_sizes[1]], cycle);
+    BitSpace::bit_value_t carry
+        = get_pin_value(node->input_pins[node->input_port_sizes[0] + node->input_port_sizes[1]], cycle);
 
     /**
      * TODO: this must be a bug, unconn is 'z' and pushing '1' is just a "patch"
@@ -1750,8 +1745,7 @@ static void compute_memory_node(nnode_t* node, int cycle) {
     else if (is_dp_ram(node))
         compute_dual_port_memory(node, cycle);
     else
-        error_message(SIMULATION, node->loc,
-                      "Could not resolve memory hard block %s to a valid type.", node->name);
+        error_message(SIMULATION, node->loc, "Could not resolve memory hard block %s to a valid type.", node->name);
 }
 
 /**
@@ -1770,7 +1764,13 @@ static long compute_address(nnode_t* node, signal_list_t* input_address, int cyc
     return address;
 }
 
-static void read_write_to_memory(nnode_t* node, signal_list_t* input_address, signal_list_t* data_out, signal_list_t* data_in, bool trigger, npin_t* write_enabled, int cycle) {
+static void read_write_to_memory(nnode_t* node,
+                                 signal_list_t* input_address,
+                                 signal_list_t* data_out,
+                                 signal_list_t* data_in,
+                                 bool trigger,
+                                 npin_t* write_enabled,
+                                 int cycle) {
     long address = compute_address(node, input_address, cycle);
 
     //make a single trigger out of write_enable pin and if it was a positive edge
@@ -1825,8 +1825,7 @@ static void compute_dual_port_memory(nnode_t* node, int cycle) {
     bool trigger = ff_trigger(RISING_EDGE_SENSITIVITY, signals->clk, cycle);
 
     if (node->memory_data.empty())
-        instantiate_memory(node,
-                           std::max(signals->data1->count, signals->data2->count),
+        instantiate_memory(node, std::max(signals->data1->count, signals->data2->count),
                            std::max(signals->addr1->count, signals->addr2->count));
 
     read_write_to_memory(node, signals->addr1, signals->out1, signals->data1, trigger, signals->we1, cycle);
@@ -1841,7 +1840,8 @@ static void compute_dual_port_memory(nnode_t* node, int cycle) {
  */
 static void instantiate_memory(nnode_t* node, long data_width, long addr_width) {
     long max_address = shift_left_value_with_overflow_check(0x1, addr_width, node->loc);
-    node->memory_data = std::vector<std::vector<BitSpace::bit_value_t>>(max_address, std::vector<BitSpace::bit_value_t>(data_width, init_value(node)));
+    node->memory_data = std::vector<std::vector<BitSpace::bit_value_t>>(
+        max_address, std::vector<BitSpace::bit_value_t>(data_width, init_value(node)));
     if (global_args.read_mif_input) {
         char* filename = get_mif_filename(node);
         assign_memory_from_mif_file(node, filename, data_width, addr_width);
@@ -1850,10 +1850,7 @@ static void instantiate_memory(nnode_t* node, long data_width, long addr_width) 
 }
 
 static int parse_mif_radix(std::string radix) {
-    return (radix == "HEX") ? 16 : (radix == "DEC") ? 10
-                               : (radix == "OCT")   ? 8
-                               : (radix == "BIN")   ? 2
-                                                    : 0;
+    return (radix == "HEX") ? 16 : (radix == "DEC") ? 10 : (radix == "OCT") ? 8 : (radix == "BIN") ? 2 : 0;
 }
 
 static void assign_memory_from_mif_file(nnode_t* node, const char* filename, int width, long address_width) {
@@ -1904,23 +1901,25 @@ static void assign_memory_from_mif_file(nnode_t* node, const char* filename, int
                     if (token) {
                         // Make sure the address and value are valid strings of the specified radix.
                         if (!is_string_of_radix(address_string, addr_radix))
-                            error_message(SIMULATION, temp_loc, "%s: address %s is not a base %d string.", filename, address_string, addr_radix);
+                            error_message(SIMULATION, temp_loc, "%s: address %s is not a base %d string.", filename,
+                                          address_string, addr_radix);
 
                         if (!is_string_of_radix(data_string, data_radix))
-                            error_message(SIMULATION, temp_loc, "%s: data string %s is not a base %d string.", filename, data_string, data_radix);
+                            error_message(SIMULATION, temp_loc, "%s: data string %s is not a base %d string.", filename,
+                                          data_string, data_radix);
 
                         char* binary_data = convert_string_of_radix_to_bit_string(data_string, data_radix, width);
                         long address = convert_string_of_radix_to_long(address_string, addr_radix);
 
                         if (address > address_width)
-                            error_message(SIMULATION, temp_loc, "%s: address %s is out of range.", filename, address_string);
+                            error_message(SIMULATION, temp_loc, "%s: address %s is out of range.", filename,
+                                          address_string);
 
                         // Write the parsed value string to the memory location.
                         for (int i = 0; i < width; i++)
                             node->memory_data[address][i] = binary_data[i] - '0';
                     } else {
-                        error_message(SIMULATION, temp_loc,
-                                      "%s: MIF syntax error.", filename);
+                        error_message(SIMULATION, temp_loc, "%s: MIF syntax error.", filename);
                     }
                 }
 
@@ -1951,7 +1950,8 @@ static void assign_memory_from_mif_file(nnode_t* node, const char* filename, int
 
                         long mif_width = std::strtol(item_in->second.c_str(), NULL, 10);
                         if (mif_width != width)
-                            error_message(SIMULATION, temp_loc, "%s: MIF width mismatch: must be %d but %ld was given", filename, width, mif_width);
+                            error_message(SIMULATION, temp_loc, "%s: MIF width mismatch: must be %d but %ld was given",
+                                          filename, width, mif_width);
 
                         // Verify the depth parameter.
                         item_in = symbols.find("DEPTH");
@@ -1961,8 +1961,8 @@ static void assign_memory_from_mif_file(nnode_t* node, const char* filename, int
                         long mif_depth = std::strtol(item_in->second.c_str(), NULL, 10);
                         long expected_depth = shift_left_value_with_overflow_check(0x1, address_width, temp_loc);
                         if (mif_depth != expected_depth)
-                            error_message(SIMULATION, temp_loc,
-                                          "%s: MIF depth mismatch: must be %ld but %ld was given", filename, expected_depth, mif_depth);
+                            error_message(SIMULATION, temp_loc, "%s: MIF depth mismatch: must be %ld but %ld was given",
+                                          filename, expected_depth, mif_depth);
 
                         // Parse the radix specifications and make sure they're OK.
                         item_in = symbols.find("ADDRESS_RADIX");
@@ -1971,7 +1971,8 @@ static void assign_memory_from_mif_file(nnode_t* node, const char* filename, int
                         addr_radix = parse_mif_radix(item_in->second);
                         if (!addr_radix)
                             error_message(SIMULATION, temp_loc,
-                                          "%s: invalid or missing ADDRESS_RADIX: must specify DEC, HEX, OCT, or BIN", filename);
+                                          "%s: invalid or missing ADDRESS_RADIX: must specify DEC, HEX, OCT, or BIN",
+                                          filename);
 
                         item_in = symbols.find("DATA_RADIX");
                         if (item_in == symbols.end())
@@ -1979,7 +1980,8 @@ static void assign_memory_from_mif_file(nnode_t* node, const char* filename, int
                         data_radix = parse_mif_radix(item_in->second);
                         if (!data_radix)
                             error_message(SIMULATION, temp_loc,
-                                          "%s: invalid or missing DATA_RADIX: must specify DEC, HEX, OCT, or BIN", filename);
+                                          "%s: invalid or missing DATA_RADIX: must specify DEC, HEX, OCT, or BIN",
+                                          filename);
 
                         // If everything checks out, start reading the values.
                         in_content = true;
@@ -2026,8 +2028,7 @@ static void assign_node_to_line(nnode_t* node, lines_t* l, int type, int single_
 
     if (single_pin) {
         if (j == -1) {
-            warning_message(SIMULATION, node->loc,
-                            "Could not map single-bit node '%s' line", node->name);
+            warning_message(SIMULATION, node->loc, "Could not map single-bit node '%s' line", node->name);
         } else {
             pin_number = (pin_number == -1) ? 0 : pin_number;
             int already_added = l->lines[j]->number_of_pins >= 1;
@@ -2036,8 +2037,7 @@ static void assign_node_to_line(nnode_t* node, lines_t* l, int type, int single_
         }
     } else {
         if (j == -1)
-            warning_message(SIMULATION, node->loc,
-                            "Could not map multi-bit node '%s' to line", node->name);
+            warning_message(SIMULATION, node->loc, "Could not map multi-bit node '%s' to line", node->name);
         else
             insert_pin_into_line(node->output_pins[0], pin_number, l->lines[j], type);
     }
@@ -2148,9 +2148,9 @@ static int verify_test_vector_headers(FILE* in, lines_t* l) {
         } else if (next == ' ' || next == '\t' || next == '\n') {
             if (buffer_length) {
                 if (current_line > l->count) {
-                    warning_message(SIMULATION, unknown_location,
-                                    "%s\n",
-                                    "Vector header mismatch: the number of header is shorter than in your vector file!\n");
+                    warning_message(
+                        SIMULATION, unknown_location, "%s\n",
+                        "Vector header mismatch: the number of header is shorter than in your vector file!\n");
                 } else if (strcmp(l->lines[current_line]->name, buffer)) {
                     char* expected_header = generate_vector_header(l);
                     warning_message(SIMULATION, unknown_location,
@@ -2233,7 +2233,8 @@ static char* generate_vector_header(lines_t* l) {
         for (j = 0; j < l->count; j++) {
             // "+ 2" for null and newline/space.
             if ((strlen(header) + strlen(l->lines[j]->name) + 2) > BUFFER_MAX_SIZE)
-                error_message(SIMULATION, unknown_location, "%s", "Buffer overflow anticipated while generating vector header.");
+                error_message(SIMULATION, unknown_location, "%s",
+                              "Buffer overflow anticipated while generating vector header.");
 
             strcat(header, l->lines[j]->name);
             strcat(header, " ");
@@ -2349,7 +2350,8 @@ static test_vector* parse_test_vector(char* buffer) {
                         bit = value % 2;
                         value /= 2;
                     }
-                    v->values[v->count] = (BitSpace::bit_value_t*)vtr::realloc(v->values[v->count], sizeof(BitSpace::bit_value_t) * (v->counts[v->count] + 1));
+                    v->values[v->count] = (BitSpace::bit_value_t*)vtr::realloc(
+                        v->values[v->count], sizeof(BitSpace::bit_value_t) * (v->counts[v->count] + 1));
                     v->values[v->count][v->counts[v->count]++] = bit;
                 }
             }
@@ -2362,7 +2364,8 @@ static test_vector* parse_test_vector(char* buffer) {
                 else if (token[i] == '1')
                     value = 1;
 
-                v->values[v->count] = (BitSpace::bit_value_t*)vtr::realloc(v->values[v->count], sizeof(BitSpace::bit_value_t) * (v->counts[v->count] + 1));
+                v->values[v->count] = (BitSpace::bit_value_t*)vtr::realloc(
+                    v->values[v->count], sizeof(BitSpace::bit_value_t) * (v->counts[v->count] + 1));
                 v->values[v->count][v->counts[v->count]++] = value;
             }
         }
@@ -2461,7 +2464,8 @@ static test_vector* generate_random_test_vector(int cycle, sim_data_t* sim_data)
                 value = (rand() % 3) - 1;
             }
 
-            v->values[v->count] = (BitSpace::bit_value_t*)vtr::realloc(v->values[v->count], sizeof(BitSpace::bit_value_t) * (v->counts[v->count] + 1));
+            v->values[v->count] = (BitSpace::bit_value_t*)vtr::realloc(
+                v->values[v->count], sizeof(BitSpace::bit_value_t) * (v->counts[v->count] + 1));
             v->values[v->count][v->counts[v->count]++] = value;
         }
         v->count++;
@@ -2619,7 +2623,8 @@ static int verify_output_vectors(const char* output_vector_file, int num_vectors
     } else {
         // The file being verified against.
         FILE* existing_out = fopen(output_vector_file, "r");
-        if (!existing_out) error_message(SIMULATION, unknown_location, "Could not open vector output file: %s", output_vector_file);
+        if (!existing_out)
+            error_message(SIMULATION, unknown_location, "Could not open vector output file: %s", output_vector_file);
 
         // Our current output vectors. (Just produced.)
         char out_vec_file[BUFFER_MAX_SIZE] = {0};
@@ -2639,7 +2644,8 @@ static int verify_output_vectors(const char* output_vector_file, int num_vectors
                 break;
             } else if (!get_next_vector(current_out, buffer2)) {
                 error = true;
-                warning_message(SIMULATION, unknown_location, "Simulation produced fewer than %d vectors. \n", num_vectors);
+                warning_message(SIMULATION, unknown_location, "Simulation produced fewer than %d vectors. \n",
+                                num_vectors);
                 break;
             }
             // The headers differ.
@@ -2688,7 +2694,8 @@ static int verify_output_vectors(const char* output_vector_file, int num_vectors
         // If the file we're checking against is longer than the current output, print an appropriate warning.
         if (!error && get_next_vector(existing_out, buffer1)) {
             error = true;
-            warning_message(SIMULATION, unknown_location, "%s contains more than %d vectors.\n", output_vector_file, num_vectors);
+            warning_message(SIMULATION, unknown_location, "%s contains more than %d vectors.\n", output_vector_file,
+                            num_vectors);
         }
 
         fclose(existing_out);
@@ -2719,7 +2726,8 @@ static void add_additional_items_to_lines(nnode_t* node, lines_t* l) {
                         break;
                     }
                 }
-                if (add) break;
+                if (add)
+                    break;
             }
 
             if (pin->net && pin->net->name) {
@@ -2729,7 +2737,8 @@ static void add_additional_items_to_lines(nnode_t* node, lines_t* l) {
                         break;
                     }
                 }
-                if (add) break;
+                if (add)
+                    break;
             }
         }
 
@@ -2875,10 +2884,8 @@ static int is_vector(char* buffer) {
  * and false if no vector was found.
  */
 static int get_next_vector(FILE* file, char* buffer) {
-    oassert(file != NULL
-            && "unable to retrieve file for next test vector");
-    oassert(buffer != NULL
-            && "unable to use buffer for next test vector as it is not initialized");
+    oassert(file != NULL && "unable to retrieve file for next test vector");
+    oassert(buffer != NULL && "unable to use buffer for next test vector as it is not initialized");
 
     while (fgets(buffer, BUFFER_MAX_SIZE, file))
         if (is_vector(buffer))
@@ -2964,7 +2971,8 @@ static void print_netlist_stats(stages_t* stages, int /*num_vectors*/) {
     printf("  Threads:         %d\n", number_of_workers);
     printf("  Degree:          %3.2f\n", stages->num_connections / (float)stages->num_nodes);
     printf("  Stages:          %d\n", stages->count);
-    printf("  Nodes/thread:    %d(%4.2f%%)\n", (stages->num_nodes / number_of_workers), 100.0 / (double)number_of_workers);
+    printf("  Nodes/thread:    %d(%4.2f%%)\n", (stages->num_nodes / number_of_workers),
+           100.0 / (double)number_of_workers);
     printf("\n");
 }
 
@@ -2990,7 +2998,8 @@ static void print_simulation_stats(stages_t* stages, int /*num_vectors*/, double
  * with their parents, ids, etc.
  */
 static void print_ancestry(nnode_t* bottom_node, int n) {
-    if (!n) n = 10;
+    if (!n)
+        n = 10;
 
     std::queue<nnode_t*> queue = std::queue<nnode_t*>();
     queue.push(bottom_node);
@@ -3133,7 +3142,8 @@ static nnode_t* print_update_trace(nnode_t* bottom_node, int cycle) {
                         is_undriven = true;
                     }
                     char* name2 = get_pin_name(node2->name);
-                    printf("\t(%s) %s (%ld) %ld %ld %s \n", pin->mapping, name2, node2->unique_id, node2->num_input_pins, node2->num_output_pins, is_undriven ? "*" : "");
+                    printf("\t(%s) %s (%ld) %ld %ld %s \n", pin->mapping, name2, node2->unique_id,
+                           node2->num_input_pins, node2->num_output_pins, is_undriven ? "*" : "");
                     vtr::free(name2);
                 }
             }

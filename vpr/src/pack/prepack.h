@@ -48,7 +48,7 @@ struct t_logical_block_type;
  *
  */
 class Prepacker {
-public:
+  public:
     // The constructor is default, the init method performs prepacking.
     Prepacker() = default;
 
@@ -66,7 +66,7 @@ public:
      *  @param atom_nlist           The atom netlist to prepack.
      *  @param logical_block_types  A list of the logical block types on the device.
      */
-    void init(const AtomNetlist& atom_nlist, const std::vector<t_logical_block_type> &logical_block_types);
+    void init(const AtomNetlist& atom_nlist, const std::vector<t_logical_block_type>& logical_block_types);
 
     /**
      * @brief Get the cluster molecule containing the given atom block.
@@ -164,7 +164,7 @@ public:
     /// @brief Destructor of the prepacker class. Calls the reset method.
     ~Prepacker() { reset(); }
 
-private:
+  private:
     /**
      * @brief A linked list of all the packing molecules that are loaded in
      *        prepacking stage.

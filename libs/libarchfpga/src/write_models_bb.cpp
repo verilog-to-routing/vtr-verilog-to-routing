@@ -7,6 +7,7 @@
 
 using vtr::t_linked_vptr;
 
+// clang-format off
 /* the output file description */
 #define OUTPUT_HEADER_COMMENT(Echo, ArchFile)                                                                                       \
     {                                                                                                                               \
@@ -23,20 +24,15 @@ using vtr::t_linked_vptr;
         fprintf(Echo,                                                                                                               \
                 "/*********************************************************************************************************/\n\n"); \
     }
+// clang-format on
 
 /* a comment for the body of black box modules */
-const char* HARD_BLOCK_COMMENT = "/* the body of the complex block module is empty since it should be seen as a black box */";
+const char* HARD_BLOCK_COMMENT
+    = "/* the body of the complex block module is empty since it should be seen as a black box */";
 /* list of vtr primitives blocks */
 static constexpr short num_vtr_primitives = 8;
-static constexpr const char* vtr_primitives[num_vtr_primitives] = {
-    "LUT_K",
-    "DFF",
-    "fpga_interconnect",
-    "mux",
-    "adder",
-    "multiply",
-    "single_port_ram",
-    "dual_port_ram"};
+static constexpr const char* vtr_primitives[num_vtr_primitives]
+    = {"LUT_K", "DFF", "fpga_interconnect", "mux", "adder", "multiply", "single_port_ram", "dual_port_ram"};
 
 /* declarations */
 void DeclareModel_bb(FILE* Echo, const t_model* model);
@@ -51,9 +47,7 @@ void DeclareModel_bb(FILE* Echo, const t_model* model);
  * @param VEchoFile path to the architecture file
  * @param arch pointer to the arch data structure
  */
-void WriteModels_bb(const char* ArchFile,
-                    const char* VEchoFile,
-                    const t_arch* arch) {
+void WriteModels_bb(const char* ArchFile, const char* VEchoFile, const t_arch* arch) {
     // validate the arch
     VTR_ASSERT(arch);
 
@@ -66,8 +60,7 @@ void WriteModels_bb(const char* ArchFile,
     // iterate over models
     while (cur_model) {
         // avoid printing vtr primitives
-        if (std::all_of(vtr_primitives,
-                        vtr_primitives + num_vtr_primitives,
+        if (std::all_of(vtr_primitives, vtr_primitives + num_vtr_primitives,
                         [&](const auto& e) { return strcmp(e, cur_model->name); }))
             DeclareModel_bb(Echo, cur_model);
 

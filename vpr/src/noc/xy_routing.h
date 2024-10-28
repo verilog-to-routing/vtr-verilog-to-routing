@@ -87,7 +87,6 @@
 
 #include "turn_model_routing.h"
 
-
 class XYRouting : public TurnModelRouting {
   public:
     ~XYRouting() override;
@@ -111,13 +110,12 @@ class XYRouting : public TurnModelRouting {
 
   private:
     const std::vector<TurnModelRouting::Direction> east_direction{TurnModelRouting::Direction::EAST};
-    const std::vector<TurnModelRouting::Direction> west_direction {TurnModelRouting::Direction::WEST};
-    const std::vector<TurnModelRouting::Direction> north_direction {TurnModelRouting::Direction::NORTH};
-    const std::vector<TurnModelRouting::Direction> south_direction {TurnModelRouting::Direction::SOUTH};
-    const std::vector<TurnModelRouting::Direction> up_direction {TurnModelRouting::Direction::UP};
-    const std::vector<TurnModelRouting::Direction> down_direction {TurnModelRouting::Direction::DOWN};
-    const std::vector<TurnModelRouting::Direction> no_direction {};
-
+    const std::vector<TurnModelRouting::Direction> west_direction{TurnModelRouting::Direction::WEST};
+    const std::vector<TurnModelRouting::Direction> north_direction{TurnModelRouting::Direction::NORTH};
+    const std::vector<TurnModelRouting::Direction> south_direction{TurnModelRouting::Direction::SOUTH};
+    const std::vector<TurnModelRouting::Direction> up_direction{TurnModelRouting::Direction::UP};
+    const std::vector<TurnModelRouting::Direction> down_direction{TurnModelRouting::Direction::DOWN};
+    const std::vector<TurnModelRouting::Direction> no_direction{};
 };
 
 #endif

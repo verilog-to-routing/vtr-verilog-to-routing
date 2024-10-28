@@ -8,8 +8,7 @@
 #include <algorithm>
 #include <cmath>
 
-FeasibleRegionMoveGenerator::FeasibleRegionMoveGenerator(PlacerState& placer_state,
-                                                         e_reward_function reward_function)
+FeasibleRegionMoveGenerator::FeasibleRegionMoveGenerator(PlacerState& placer_state, e_reward_function reward_function)
     : MoveGenerator(placer_state, reward_function) {}
 
 e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected,
@@ -26,14 +25,11 @@ e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
     ClusterNetId net_from;
     int pin_from;
     //Find a movable block based on blk_type
-    ClusterBlockId b_from = propose_block_to_move(placer_opts,
-                                                  proposed_action.logical_blk_type_index,
-                                                  /*highly_crit_block=*/true,
-                                                  &net_from,
-                                                  &pin_from,
-                                                  placer_state);
+    ClusterBlockId b_from = propose_block_to_move(placer_opts, proposed_action.logical_blk_type_index,
+                                                  /*highly_crit_block=*/true, &net_from, &pin_from, placer_state);
 
-    VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "Feasible Region Move Choose Block %di - rlim %f\n", size_t(b_from), rlim);
+    VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "Feasible Region Move Choose Block %di - rlim %f\n",
+                   size_t(b_from), rlim);
 
     if (!b_from) { //No movable block found
         VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\tNo movable block found\n");
@@ -121,9 +117,7 @@ e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
     FR_coords.layer_max = from.layer;
     VTR_ASSERT(FR_coords.ymin <= FR_coords.ymax);
 
-    t_range_limiters range_limiters{rlim,
-                                    place_move_ctx.first_rlim,
-                                    placer_opts.place_dm_rlim};
+    t_range_limiters range_limiters{rlim, place_move_ctx.first_rlim, placer_opts.place_dm_rlim};
 
     // Try to find a legal location inside the feasible region
     if (!find_to_loc_median(cluster_from_type, from, &FR_coords, to, b_from, blk_loc_registry)) {

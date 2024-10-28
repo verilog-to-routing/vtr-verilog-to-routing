@@ -44,21 +44,13 @@ HardSoftLogicMixer::~HardSoftLogicMixer() {
         delete this->_opts[i];
     }
 }
-void HardSoftLogicMixer::note_candidate_node(nnode_t* opNode) {
-    _nodes_by_opt[opNode->type].push_back(opNode);
-}
+void HardSoftLogicMixer::note_candidate_node(nnode_t* opNode) { _nodes_by_opt[opNode->type].push_back(opNode); }
 
-bool HardSoftLogicMixer::hardenable(nnode_t* node) {
-    return this->_opts[node->type]->hardenable(node);
-}
+bool HardSoftLogicMixer::hardenable(nnode_t* node) { return this->_opts[node->type]->hardenable(node); }
 
-bool HardSoftLogicMixer::enabled(nnode_t* node) {
-    return this->_opts[node->type]->enabled();
-}
+bool HardSoftLogicMixer::enabled(nnode_t* node) { return this->_opts[node->type]->enabled(); }
 
-int HardSoftLogicMixer::hard_blocks_needed(operation_list opt) {
-    return _nodes_by_opt[opt].size();
-}
+int HardSoftLogicMixer::hard_blocks_needed(operation_list opt) { return _nodes_by_opt[opt].size(); }
 
 void HardSoftLogicMixer::partial_map_node(nnode_t* node, short traverse_number, netlist_t* netlist) {
     _opts[node->type]->partial_map_node(node, traverse_number, netlist, this);

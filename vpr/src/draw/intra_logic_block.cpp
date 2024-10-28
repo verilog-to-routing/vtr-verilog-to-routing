@@ -20,37 +20,56 @@
 
 #ifndef NO_GRAPHICS
 
-#    include <cstdio>
-#    include <algorithm>
-#    include <string.h>
+#include <cstdio>
+#include <algorithm>
+#include <string.h>
 
-#    include "vtr_assert.h"
-#    include "vtr_memory.h"
+#include "vtr_assert.h"
+#include "vtr_memory.h"
 
-#    include "intra_logic_block.h"
-#    include "globals.h"
-#    include "atom_netlist.h"
-#    include "vpr_utils.h"
-#    include "draw_global.h"
-#    include "draw.h"
-#    include "draw_triangle.h"
-#    include "draw_color.h"
+#include "intra_logic_block.h"
+#include "globals.h"
+#include "atom_netlist.h"
+#include "vpr_utils.h"
+#include "draw_global.h"
+#include "draw.h"
+#include "draw_triangle.h"
+#include "draw_color.h"
 
 /************************* Subroutines local to this file. *******************************/
 
-static void draw_internal_load_coords(int type_descrip_index, t_pb_graph_node* pb_graph_node, float parent_width, float parent_height);
+static void draw_internal_load_coords(int type_descrip_index,
+                                      t_pb_graph_node* pb_graph_node,
+                                      float parent_width,
+                                      float parent_height);
 static int draw_internal_find_max_lvl(const t_pb_type& pb_type);
-static void draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node* pb_graph_node, int num_pb_types, int type_index, int num_pb, int pb_index, float parent_width, float parent_height, float* blk_width, float* blk_height);
+static void draw_internal_calc_coords(int type_descrip_index,
+                                      t_pb_graph_node* pb_graph_node,
+                                      int num_pb_types,
+                                      int type_index,
+                                      int num_pb,
+                                      int pb_index,
+                                      float parent_width,
+                                      float parent_height,
+                                      float* blk_width,
+                                      float* blk_height);
 std::vector<AtomBlockId> collect_pb_atoms(const t_pb* pb);
 void collect_pb_atoms_recurr(const t_pb* pb, std::vector<AtomBlockId>& atoms);
-t_pb* highlight_sub_block_helper(const ClusterBlockId clb_index, t_pb* pb, const ezgl::point2d& local_pt, int max_depth);
+t_pb* highlight_sub_block_helper(const ClusterBlockId clb_index,
+                                 t_pb* pb,
+                                 const ezgl::point2d& local_pt,
+                                 int max_depth);
 
-#    ifndef NO_GRAPHICS
-static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezgl::rectangle& parent_bbox, const t_logical_block_type_ptr type, ezgl::renderer* g);
+#ifndef NO_GRAPHICS
+static void draw_internal_pb(const ClusterBlockId clb_index,
+                             t_pb* pb,
+                             const ezgl::rectangle& parent_bbox,
+                             const t_logical_block_type_ptr type,
+                             ezgl::renderer* g);
 void draw_atoms_fanin_fanout_flylines(const std::vector<AtomBlockId>& atoms, ezgl::renderer* g);
 void draw_selected_pb_flylines(ezgl::renderer* g);
 void draw_one_logical_connection(const AtomPinId src_pin, const AtomPinId sink_pin, ezgl::renderer* g);
-#    endif /* NO_GRAPHICS */
+#endif /* NO_GRAPHICS */
 
 /************************* Subroutine definitions begin *********************************/
 
@@ -118,30 +137,23 @@ void draw_internal_init_blk() {
             // in this case, the clb certainly wont't fit, but this prevents
             // an out-of-bounds access, and provides some sort of (probably right)
             // value
-            top_right = ezgl::point2d(
-                (draw_coords->tile_x[1] - draw_coords->tile_x[0]) * (width - 1),
-                (draw_coords->tile_y[1] - draw_coords->tile_y[0]) * (height - 1));
+            top_right = ezgl::point2d((draw_coords->tile_x[1] - draw_coords->tile_x[0]) * (width - 1),
+                                      (draw_coords->tile_y[1] - draw_coords->tile_y[0]) * (height - 1));
         } else {
-            top_right = ezgl::point2d(
-                draw_coords->tile_x[width - 1],
-                draw_coords->tile_y[height - 1]);
+            top_right = ezgl::point2d(draw_coords->tile_x[width - 1], draw_coords->tile_y[height - 1]);
         }
-        top_right += ezgl::point2d(
-            draw_coords->get_tile_width() / num_sub_tiles,
-            draw_coords->get_tile_width());
+        top_right += ezgl::point2d(draw_coords->get_tile_width() / num_sub_tiles, draw_coords->get_tile_width());
 
         clb_bbox = ezgl::rectangle(bot_left, top_right);
-        draw_internal_load_coords(type_descriptor_index, pb_graph_head_node,
-                                  clb_bbox.width(), clb_bbox.height());
+        draw_internal_load_coords(type_descriptor_index, pb_graph_head_node, clb_bbox.width(), clb_bbox.height());
 
         /* Determine the max number of sub_block levels in the FPGA */
-        draw_state->max_sub_blk_lvl = std::max(draw_internal_find_max_lvl(*type.pb_type),
-                                               draw_state->max_sub_blk_lvl);
+        draw_state->max_sub_blk_lvl = std::max(draw_internal_find_max_lvl(*type.pb_type), draw_state->max_sub_blk_lvl);
     }
     //draw_state->max_sub_blk_lvl -= 1;
 }
 
-#    ifndef NO_GRAPHICS
+#ifndef NO_GRAPHICS
 void draw_internal_draw_subblk(ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
     if (!draw_state->show_blk_internal) {
@@ -182,7 +194,8 @@ void draw_internal_draw_subblk(ezgl::renderer* g) {
                         if (cluster_ctx.clb_nlist.block_pb(bnum) == nullptr) {
                             continue;
                         }
-                        draw_internal_pb(bnum, cluster_ctx.clb_nlist.block_pb(bnum), ezgl::rectangle({0, 0}, 0, 0), cluster_ctx.clb_nlist.block_type(bnum), g);
+                        draw_internal_pb(bnum, cluster_ctx.clb_nlist.block_pb(bnum), ezgl::rectangle({0, 0}, 0, 0),
+                                         cluster_ctx.clb_nlist.block_type(bnum), g);
                     }
                 }
             }
@@ -192,7 +205,7 @@ void draw_internal_draw_subblk(ezgl::renderer* g) {
     //(inputs: blue, outputs: red, internal: orange)
     draw_selected_pb_flylines(g);
 }
-#    endif /* NO_GRAPHICS */
+#endif /* NO_GRAPHICS */
 
 /* This function traverses through the pb_graph of a certain physical block type and
  * finds the maximum sub-block levels for that type.
@@ -220,7 +233,10 @@ static int draw_internal_find_max_lvl(const t_pb_type& pb_type) {
  * traverses through the pb_graph for a descriptor_type (given by type_descrip_index), and
  * calls helper function to compute bounding box values.
  */
-static void draw_internal_load_coords(int type_descrip_index, t_pb_graph_node* pb_graph_node, float parent_width, float parent_height) {
+static void draw_internal_load_coords(int type_descrip_index,
+                                      t_pb_graph_node* pb_graph_node,
+                                      float parent_width,
+                                      float parent_height) {
     int i, j, k;
     t_pb_type* pb_type;
     int num_modes, num_children, num_pb;
@@ -246,16 +262,13 @@ static void draw_internal_load_coords(int type_descrip_index, t_pb_graph_node* p
 
             for (k = 0; k < num_pb; ++k) {
                 /* Compute bound box for block. Don't call if pb_type is root-level pb. */
-                draw_internal_calc_coords(type_descrip_index,
-                                          &pb_graph_node->child_pb_graph_nodes[i][j][k],
-                                          num_children, j, num_pb, k,
-                                          parent_width, parent_height,
-                                          &blk_width, &blk_height);
+                draw_internal_calc_coords(type_descrip_index, &pb_graph_node->child_pb_graph_nodes[i][j][k],
+                                          num_children, j, num_pb, k, parent_width, parent_height, &blk_width,
+                                          &blk_height);
 
                 /* Traverse to next level in the pb_graph */
-                draw_internal_load_coords(type_descrip_index,
-                                          &pb_graph_node->child_pb_graph_nodes[i][j][k],
-                                          blk_width, blk_height);
+                draw_internal_load_coords(type_descrip_index, &pb_graph_node->child_pb_graph_nodes[i][j][k], blk_width,
+                                          blk_height);
             }
         }
     }
@@ -264,8 +277,16 @@ static void draw_internal_load_coords(int type_descrip_index, t_pb_graph_node* p
 /* Helper function which computes bounding box values for a sub-block. The coordinates
  * are relative to the left and bottom corner of the parent block.
  */
-static void
-draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node* pb_graph_node, int num_pb_types, int type_index, int num_pb, int pb_index, float parent_width, float parent_height, float* blk_width, float* blk_height) {
+static void draw_internal_calc_coords(int type_descrip_index,
+                                      t_pb_graph_node* pb_graph_node,
+                                      int num_pb_types,
+                                      int type_index,
+                                      int num_pb,
+                                      int pb_index,
+                                      float parent_width,
+                                      float parent_height,
+                                      float* blk_width,
+                                      float* blk_height) {
     t_draw_state* draw_state = get_draw_state_vars();
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& grid_blocks = draw_state->get_graphics_blk_loc_registry_ref().grid_blocks();
@@ -285,8 +306,8 @@ draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node* pb_graph_node
     int capacity = device_ctx.physical_tile_types[type_descrip_index].capacity;
     // TODO: this is a hack - should be fixed for the layer_num
     const auto& type = device_ctx.grid.get_physical_type({1, 0, 0});
-    if (capacity > 1 && device_ctx.grid.width() > 0 && device_ctx.grid.height() > 0 && grid_blocks.get_usage({1, 0, 0}) != 0
-        && type_descrip_index == type->index) {
+    if (capacity > 1 && device_ctx.grid.width() > 0 && device_ctx.grid.height() > 0
+        && grid_blocks.get_usage({1, 0, 0}) != 0 && type_descrip_index == type->index) {
         // that should test for io blocks, and setting capacity_divisor > 1
         // will squish every thing down
         capacity_divisor = capacity - 1;
@@ -326,12 +347,16 @@ draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node* pb_graph_node
     *blk_height = child_height;
 }
 
-#    ifndef NO_GRAPHICS
+#ifndef NO_GRAPHICS
 /* Helper subroutine to draw all sub-blocks. This function traverses through the pb_graph
  * which a netlist block can map to, and draws each sub-block inside its parent block. With
  * each click on the "Blk Internal" button, a new level is shown.
  */
-static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezgl::rectangle& parent_bbox, const t_logical_block_type_ptr type, ezgl::renderer* g) {
+static void draw_internal_pb(const ClusterBlockId clb_index,
+                             t_pb* pb,
+                             const ezgl::rectangle& parent_bbox,
+                             const t_logical_block_type_ptr type,
+                             ezgl::renderer* g) {
     t_draw_coords* draw_coords = get_draw_coords_vars();
     t_draw_state* draw_state = get_draw_state_vars();
     const auto& block_locs = draw_state->get_graphics_blk_loc_registry_ref().block_locs();
@@ -394,33 +419,21 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
             std::string blk_tag = pb_type_name + pb_name;
 
             if (draw_state->draw_block_text) {
-                g->draw_text(
-                    abs_bbox.center(),
-                    blk_tag.c_str(),
-                    abs_bbox.width(),
-                    abs_bbox.height());
+                g->draw_text(abs_bbox.center(), blk_tag.c_str(), abs_bbox.width(), abs_bbox.height());
             }
 
         } else {
             // else (ie. has chilren, and isn't at the lowest displayed level)
             // just label its type, and put it up at the top so we can see it
             if (draw_state->draw_block_text) {
-                g->draw_text(
-                    ezgl::point2d(abs_bbox.center_x(),
-                                  abs_bbox.top() - (abs_bbox.height()) / 15.0),
-                    pb_type->name,
-                    abs_bbox.width(),
-                    abs_bbox.height());
+                g->draw_text(ezgl::point2d(abs_bbox.center_x(), abs_bbox.top() - (abs_bbox.height()) / 15.0),
+                             pb_type->name, abs_bbox.width(), abs_bbox.height());
             }
         }
     } else {
         // If child block is not used, label it only by its type
         if (draw_state->draw_block_text) {
-            g->draw_text(
-                abs_bbox.center(),
-                pb_type->name,
-                abs_bbox.width(),
-                abs_bbox.height());
+            g->draw_text(abs_bbox.center(), pb_type->name, abs_bbox.width(), abs_bbox.height());
         }
     }
 
@@ -428,8 +441,7 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
 
     // return if no children, or this is an unusused pb,
     // or if going down will be too far down (this one is redundant, but for optimazition)
-    if (pb->child_pbs == nullptr || pb->name == nullptr
-        || pb_type->depth == draw_state->show_blk_internal) {
+    if (pb->child_pbs == nullptr || pb->name == nullptr || pb_type->depth == draw_state->show_blk_internal) {
         return;
     }
 
@@ -517,7 +529,7 @@ void draw_atoms_fanin_fanout_flylines(const std::vector<AtomBlockId>& atoms, ezg
         }
     }
 }
-#    endif /* NO_GRAPHICS */
+#endif /* NO_GRAPHICS */
 
 std::vector<AtomBlockId> collect_pb_atoms(const t_pb* pb) {
     std::vector<AtomBlockId> atoms;
@@ -546,7 +558,7 @@ void collect_pb_atoms_recurr(const t_pb* pb, std::vector<AtomBlockId>& atoms) {
     }
 }
 
-#    ifndef NO_GRAPHICS
+#ifndef NO_GRAPHICS
 void draw_logical_connections(ezgl::renderer* g) {
     const t_selected_sub_block_info& sel_subblk_info = get_selected_sub_block_info();
     t_draw_state* draw_state = get_draw_state_vars();
@@ -586,7 +598,8 @@ void draw_logical_connections(ezgl::renderer* g) {
             ClusterBlockId sink_clb = atom_ctx.lookup.atom_clb(sink_blk_id);
             int sink_layer_num = block_locs[sink_clb].loc.layer;
 
-            t_draw_layer_display element_visibility = get_element_visibility_and_transparency(src_layer_num, sink_layer_num);
+            t_draw_layer_display element_visibility
+                = get_element_visibility_and_transparency(src_layer_num, sink_layer_num);
 
             if (!element_visibility.visible) {
                 continue; /* Don't Draw */
@@ -600,8 +613,11 @@ void draw_logical_connections(ezgl::renderer* g) {
                 g->set_color(DRIVES_IT_COLOR, fmin(transparency_factor, DRIVES_IT_COLOR.alpha * NET_ALPHA));
             } else if (src_is_src_of_selected && sel_subblk_info.is_in_selected_subtree(sink_pb_gnode, sink_clb)) {
                 g->set_color(DRIVEN_BY_IT_COLOR, fmin(transparency_factor, DRIVEN_BY_IT_COLOR.alpha * NET_ALPHA));
-            } else if (draw_state->show_nets == DRAW_PRIMITIVE_NETS && (draw_state->showing_sub_blocks() || src_clb != sink_clb)) {
-                g->set_color(ezgl::BLACK, fmin(transparency_factor, ezgl::BLACK.alpha * NET_ALPHA)); // if showing all, draw the other ones in black
+            } else if (draw_state->show_nets == DRAW_PRIMITIVE_NETS
+                       && (draw_state->showing_sub_blocks() || src_clb != sink_clb)) {
+                g->set_color(ezgl::BLACK,
+                             fmin(transparency_factor,
+                                  ezgl::BLACK.alpha * NET_ALPHA)); // if showing all, draw the other ones in black
             } else {
                 continue; // not showing all, and not the specified block, so skip
             }
@@ -610,7 +626,7 @@ void draw_logical_connections(ezgl::renderer* g) {
         }
     }
 }
-#    endif /* NO_GRAPHICS */
+#endif /* NO_GRAPHICS */
 
 /**
  * Helper function for draw_one_logical_connection(...).
@@ -660,7 +676,7 @@ void find_pin_index_at_model_scope(const AtomPinId pin_id, const AtomBlockId blk
     *total_pins = pin_cnt;
 }
 
-#    ifndef NO_GRAPHICS
+#ifndef NO_GRAPHICS
 /**
  * Draws ONE logical connection from src_pin in src_lblk to sink_pin in sink_lblk.
  * The *_abs_bbox parameters are for mild optimization, as the absolute bbox can be calculated
@@ -674,22 +690,20 @@ void draw_one_logical_connection(const AtomPinId src_pin, const AtomPinId sink_p
     g->draw_line(src_point, sink_point);
 
     const auto& atom_ctx = g_vpr_ctx.atom();
-    if (atom_ctx.lookup.atom_clb(atom_ctx.nlist.pin_block(src_pin)) == atom_ctx.lookup.atom_clb(atom_ctx.nlist.pin_block(sink_pin))) {
+    if (atom_ctx.lookup.atom_clb(atom_ctx.nlist.pin_block(src_pin))
+        == atom_ctx.lookup.atom_clb(atom_ctx.nlist.pin_block(sink_pin))) {
         // if they are in the same clb, put one arrow in the center
         float center_x = (src_point.x + sink_point.x) / 2;
         float center_y = (src_point.y + sink_point.y) / 2;
 
-        draw_triangle_along_line(g,
-                                 center_x, center_y,
-                                 src_point.x, sink_point.x,
-                                 src_point.y, sink_point.y);
+        draw_triangle_along_line(g, center_x, center_y, src_point.x, sink_point.x, src_point.y, sink_point.y);
     } else {
         // if they are not, put 2 near each end
         draw_triangle_along_line(g, src_point, sink_point, 0.05);
         draw_triangle_along_line(g, src_point, sink_point, 0.95);
     }
 }
-#    endif /* NO_GRAPHICS */
+#endif /* NO_GRAPHICS */
 
 int highlight_sub_block(const ezgl::point2d& point_in_clb, ClusterBlockId clb_index, t_pb* pb) {
     t_draw_state* draw_state = get_draw_state_vars();
@@ -711,16 +725,17 @@ int highlight_sub_block(const ezgl::point2d& point_in_clb, ClusterBlockId clb_in
  * the given location. local_pt is relative to the given pb, and pb should
  * be in clb.
  */
-t_pb* highlight_sub_block_helper(const ClusterBlockId clb_index, t_pb* pb, const ezgl::point2d& local_pt, int max_depth) {
+t_pb* highlight_sub_block_helper(const ClusterBlockId clb_index,
+                                 t_pb* pb,
+                                 const ezgl::point2d& local_pt,
+                                 int max_depth) {
     t_draw_coords* draw_coords = get_draw_coords_vars();
     t_pb_type* pb_type = pb->pb_graph_node->pb_type;
 
     // check to see if we are past the displayed level,
     // if pb has children,
     // and if pb is dud
-    if (pb_type->depth + 1 > max_depth
-        || pb->child_pbs == nullptr
-        || pb_type->num_modes == 0) {
+    if (pb_type->depth + 1 > max_depth || pb->child_pbs == nullptr || pb_type->num_modes == 0) {
         return nullptr;
     }
 
@@ -745,8 +760,8 @@ t_pb* highlight_sub_block_helper(const ClusterBlockId clb_index, t_pb* pb, const
             if (child_pb->name != nullptr && bbox.contains(local_pt)) {
                 // check farther down the graph, see if we can find
                 // something more specific.
-                t_pb* subtree_result = highlight_sub_block_helper(
-                    clb_index, child_pb, local_pt - bbox.bottom_left(), max_depth);
+                t_pb* subtree_result
+                    = highlight_sub_block_helper(clb_index, child_pb, local_pt - bbox.bottom_left(), max_depth);
                 if (subtree_result != nullptr) {
                     // we found something more specific.
                     return subtree_result;
@@ -770,13 +785,13 @@ t_selected_sub_block_info& get_selected_sub_block_info() {
  * Begin definition of t_selected_sub_block_info functions.
  */
 
-t_selected_sub_block_info::t_selected_sub_block_info() {
-    clear();
-}
+t_selected_sub_block_info::t_selected_sub_block_info() { clear(); }
 
 template<typename HashType>
 
-void add_all_children(const t_pb* pb, const ClusterBlockId clb_index, std::unordered_set<t_selected_sub_block_info::gnode_clb_pair, HashType>& set) {
+void add_all_children(const t_pb* pb,
+                      const ClusterBlockId clb_index,
+                      std::unordered_set<t_selected_sub_block_info::gnode_clb_pair, HashType>& set) {
     if (pb == nullptr) {
         return;
     }
@@ -840,9 +855,7 @@ void t_selected_sub_block_info::set(t_pb* new_selected_sub_block, const ClusterB
     }
 }
 
-void t_selected_sub_block_info::clear() {
-    set(nullptr, ClusterBlockId::INVALID());
-}
+void t_selected_sub_block_info::clear() { set(nullptr, ClusterBlockId::INVALID()); }
 
 t_pb* t_selected_sub_block_info::get_selected_pb() const { return selected_pb; }
 
@@ -862,11 +875,13 @@ bool t_selected_sub_block_info::is_sink_of_selected(const t_pb_graph_node* test,
     return sinks.find(gnode_clb_pair(test, clb_index)) != sinks.end();
 }
 
-bool t_selected_sub_block_info::is_source_of_selected(const t_pb_graph_node* test, const ClusterBlockId clb_index) const {
+bool t_selected_sub_block_info::is_source_of_selected(const t_pb_graph_node* test,
+                                                      const ClusterBlockId clb_index) const {
     return sources.find(gnode_clb_pair(test, clb_index)) != sources.end();
 }
 
-bool t_selected_sub_block_info::is_in_selected_subtree(const t_pb_graph_node* test, const ClusterBlockId clb_index) const {
+bool t_selected_sub_block_info::is_in_selected_subtree(const t_pb_graph_node* test,
+                                                       const ClusterBlockId clb_index) const {
     return in_selected_subtree.find(gnode_clb_pair(test, clb_index)) != in_selected_subtree.end();
 }
 
@@ -876,8 +891,7 @@ bool t_selected_sub_block_info::is_in_selected_subtree(const t_pb_graph_node* te
 
 t_selected_sub_block_info::clb_pin_tuple::clb_pin_tuple(ClusterBlockId clb_index_, const t_pb_graph_node* pb_gnode_)
     : clb_index(clb_index_)
-    , pb_gnode(pb_gnode_) {
-}
+    , pb_gnode(pb_gnode_) {}
 
 t_selected_sub_block_info::clb_pin_tuple::clb_pin_tuple(const AtomPinId atom_pin) {
     auto& atom_ctx = g_vpr_ctx.atom();
@@ -893,14 +907,13 @@ bool t_selected_sub_block_info::clb_pin_tuple::operator==(const clb_pin_tuple& r
  * Begin definition of t_selected_sub_block_info::gnode_clb_pair functions
  */
 
-t_selected_sub_block_info::gnode_clb_pair::gnode_clb_pair(const t_pb_graph_node* pb_gnode_, const ClusterBlockId clb_index_)
+t_selected_sub_block_info::gnode_clb_pair::gnode_clb_pair(const t_pb_graph_node* pb_gnode_,
+                                                          const ClusterBlockId clb_index_)
     : pb_gnode(pb_gnode_)
-    , clb_index(clb_index_) {
-}
+    , clb_index(clb_index_) {}
 
 bool t_selected_sub_block_info::gnode_clb_pair::operator==(const gnode_clb_pair& rhs) const {
-    return clb_index == rhs.clb_index
-           && pb_gnode == rhs.pb_gnode;
+    return clb_index == rhs.clb_index && pb_gnode == rhs.pb_gnode;
 }
 
 /**
@@ -921,7 +934,8 @@ t_pb* find_atom_block_in_pb(const std::string& name, t_pb* pb) {
     int num_child_types = pb->get_num_child_types();
     //Iterating through all child types
     for (int i = 0; i < num_child_types; ++i) {
-        if (pb->child_pbs[i] == nullptr) continue;
+        if (pb->child_pbs[i] == nullptr)
+            continue;
         int num_children_of_type = pb->get_num_children_of_type(i);
         //Iterating through all of pb's children of given type
         for (int j = 0; j < num_children_of_type; ++j) {

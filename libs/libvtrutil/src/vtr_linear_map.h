@@ -225,9 +225,7 @@ class linear_map {
     }
 
     ///@brief Returns the number of elements in the range [first,last) that compare equal to val.
-    size_type count(const key_type& key) const {
-        return (find(key) == end()) ? 0 : 1;
-    }
+    size_type count(const key_type& key) const { return (find(key) == end()) ? 0 : 1; }
 
     ///@brief Returns an iterator pointing to the first element in the range [first,last) which does not compare less than val.
     iterator lower_bound(const key_type& key) {
@@ -236,9 +234,7 @@ class linear_map {
     }
 
     ///@brief Returns a constant iterator pointing to the first element in the range [first,last) which does not compare less than val.
-    const_iterator lower_bound(const key_type& key) const {
-        return find(key);
-    }
+    const_iterator lower_bound(const key_type& key) const { return find(key); }
 
     ///@brief Returns an iterator pointing to the first element in the range [first,last) which compares greater than val.
     iterator upper_bound(const key_type& key) {
@@ -277,9 +273,7 @@ class linear_map {
     }
 
   public:
-    friend void swap(linear_map& lhs, linear_map& rhs) {
-        std::swap(lhs.vec_, rhs.vec_);
-    }
+    friend void swap(linear_map& lhs, linear_map& rhs) { std::swap(lhs.vec_, rhs.vec_); }
 
   private:
     iterator convert_to_iterator(const_iterator const_iter) {

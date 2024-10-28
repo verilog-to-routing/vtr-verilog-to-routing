@@ -12,8 +12,7 @@
 #include "vtr_memory.h"
 #include "vtr_token.h"
 
-enum e_token_type GetTokenTypeFromChar(const enum e_token_type cur_token_type,
-                                       const char cur);
+enum e_token_type GetTokenTypeFromChar(const enum e_token_type cur_token_type, const char cur);
 
 bool IsWhitespace(char c);
 
@@ -114,8 +113,7 @@ void freeTokens(t_token* tokens, const int num_tokens) {
 }
 
 ///@brief Returns a token type of the given char
-enum e_token_type GetTokenTypeFromChar(const enum e_token_type cur_token_type,
-                                       const char cur) {
+enum e_token_type GetTokenTypeFromChar(const enum e_token_type cur_token_type, const char cur) {
     if (IsWhitespace(cur)) {
         return TOKEN_NULL;
     } else {
@@ -213,6 +211,7 @@ bool check_my_atof_2D(const int max_i, const int max_j, const char* instring, in
     }
     *num_entries = entry_count;
 
-    if (max_i * max_j != entry_count) return false;
+    if (max_i * max_j != entry_count)
+        return false;
     return true;
 }

@@ -63,7 +63,8 @@ void init_implicit_memory_index() {
 implicit_memory* lookup_implicit_memory(char* instance_name_prefix, char* identifier) {
     char* memory_string = make_full_ref_name(instance_name_prefix, NULL, NULL, identifier, -1);
 
-    std::unordered_map<std::string, implicit_memory*>::const_iterator mem_out = implicit_memories.find(std::string(memory_string));
+    std::unordered_map<std::string, implicit_memory*>::const_iterator mem_out
+        = implicit_memories.find(std::string(memory_string));
 
     vtr::free(memory_string);
 
@@ -145,11 +146,14 @@ bool is_signal_list_connected_to_memory(implicit_memory* memory, signal_list_t* 
 /*
  * Creates an implicit memory block with the given depth and data width, and the given name and prefix.
  */
-implicit_memory* create_implicit_memory_block(int data_width, long memory_depth, char* name, char* instance_name_prefix, loc_t loc) {
+implicit_memory* create_implicit_memory_block(int data_width,
+                                              long memory_depth,
+                                              char* name,
+                                              char* instance_name_prefix,
+                                              loc_t loc) {
     char implicit_string[] = "implicit_ram";
 
-    oassert(memory_depth > 0
-            && "implicit memory depth must be greater than 0");
+    oassert(memory_depth > 0 && "implicit memory depth must be greater than 0");
 
     //find closest power of 2 from memory depth.
     long addr_width = 0;
@@ -161,7 +165,8 @@ implicit_memory* create_implicit_memory_block(int data_width, long memory_depth,
 
     //verify if it is a power of two (only one bit set)
     if ((memory_depth != real_memory_depth)) {
-        warning_message(NETLIST, loc, "Rounding memory <%s> of size <%ld> to closest power of two: %ld.", name, memory_depth, real_memory_depth);
+        warning_message(NETLIST, loc, "Rounding memory <%s> of size <%ld> to closest power of two: %ld.", name,
+                        memory_depth, real_memory_depth);
         memory_depth = real_memory_depth;
     }
 
@@ -212,7 +217,8 @@ void add_output_port_to_implicit_memory(implicit_memory* memory, signal_list_t* 
  * Looks up an implicit memory based on the given name.
  */
 implicit_memory* lookup_implicit_memory_input(char* name) {
-    std::unordered_map<std::string, implicit_memory*>::const_iterator mem_out = implicit_memory_inputs.find(std::string(name));
+    std::unordered_map<std::string, implicit_memory*>::const_iterator mem_out
+        = implicit_memory_inputs.find(std::string(name));
 
     if (mem_out == implicit_memory_inputs.end())
         return NULL;
@@ -333,24 +339,33 @@ void finalize_implicit_memory(implicit_memory* memory) {
 
     if (!has_clk) {
         add_dummy_input_port_to_implicit_memory(memory, 1, "clk");
-        warning_message(NETLIST, memory->node->loc, "Implicit memory %s is not clocked. Padding clock pin.", memory->name);
+        warning_message(NETLIST, memory->node->loc, "Implicit memory %s is not clocked. Padding clock pin.",
+                        memory->name);
     }
 
     char has_port1 = has_addr1 || has_data1 || has_we1 || has_out1;
     char has_port2 = has_addr2 || has_data2 || has_we2 || has_out2;
 
     if (has_port1) {
-        if (!has_addr1) add_dummy_input_port_to_implicit_memory(memory, memory->addr_width, "addr1");
-        if (!has_data1) add_dummy_input_port_to_implicit_memory(memory, memory->data_width, "data1");
-        if (!has_we1) add_dummy_input_port_to_implicit_memory(memory, 1, "we1");
-        if (!has_out1) add_dummy_output_port_to_implicit_memory(memory, memory->data_width, "out1");
+        if (!has_addr1)
+            add_dummy_input_port_to_implicit_memory(memory, memory->addr_width, "addr1");
+        if (!has_data1)
+            add_dummy_input_port_to_implicit_memory(memory, memory->data_width, "data1");
+        if (!has_we1)
+            add_dummy_input_port_to_implicit_memory(memory, 1, "we1");
+        if (!has_out1)
+            add_dummy_output_port_to_implicit_memory(memory, memory->data_width, "out1");
     }
 
     if (has_port2) {
-        if (!has_addr2) add_dummy_input_port_to_implicit_memory(memory, memory->addr_width, "addr2");
-        if (!has_data2) add_dummy_input_port_to_implicit_memory(memory, memory->data_width, "data2");
-        if (!has_we2) add_dummy_input_port_to_implicit_memory(memory, 1, "we2");
-        if (!has_out2) add_dummy_output_port_to_implicit_memory(memory, memory->data_width, "out2");
+        if (!has_addr2)
+            add_dummy_input_port_to_implicit_memory(memory, memory->addr_width, "addr2");
+        if (!has_data2)
+            add_dummy_input_port_to_implicit_memory(memory, memory->data_width, "data2");
+        if (!has_we2)
+            add_dummy_input_port_to_implicit_memory(memory, 1, "we2");
+        if (!has_out2)
+            add_dummy_output_port_to_implicit_memory(memory, memory->data_width, "out2");
     }
 
     if (!has_port1 || !has_port2)

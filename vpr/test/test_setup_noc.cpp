@@ -438,7 +438,9 @@ TEST_CASE("test_create_noc_routers", "[vpr_setup_noc]") {
 
     const vtr::vector<NocRouterId, NocRouter>* noc_routers = nullptr;
 
-    SECTION("Test create routers when logical routers match to exactly one physical router. The number of routers is less than whats on the FPGA.") {
+    SECTION(
+        "Test create routers when logical routers match to exactly one physical router. The number of routers is less "
+        "than whats on the FPGA.") {
         // start by creating all the logical routers
         // this is similar to the user provided a config file
         temp_router = new t_router;
@@ -480,7 +482,9 @@ TEST_CASE("test_create_noc_routers", "[vpr_setup_noc]") {
             REQUIRE(test_router.get_router_layer_position() == list_of_routers[router_id - 1].layer_position);
         }
     }
-    SECTION("Test create routers when logical routers match to exactly one physical router. The number of routers is exactly the same as on the FPGA.") {
+    SECTION(
+        "Test create routers when logical routers match to exactly one physical router. The number of routers is "
+        "exactly the same as on the FPGA.") {
         // start by creating all the logical routers
         // this is similar to the user provided a config file
         temp_router = new t_router;
@@ -523,7 +527,9 @@ TEST_CASE("test_create_noc_routers", "[vpr_setup_noc]") {
             REQUIRE(test_router.get_router_layer_position() == list_of_routers[router_id - 1].layer_position);
         }
     }
-    SECTION("Test create routers when a logical router can be matched to two physical routers. The number of routers is exactly the same as on the FPGA.") {
+    SECTION(
+        "Test create routers when a logical router can be matched to two physical routers. The number of routers is "
+        "exactly the same as on the FPGA.") {
         // start by creating all the logical routers
         // this is similar to the user provided a config file
         temp_router = new t_router;
@@ -550,9 +556,12 @@ TEST_CASE("test_create_noc_routers", "[vpr_setup_noc]") {
 
         // call the router creation
         REQUIRE_THROWS_WITH(create_noc_routers(noc_info, &noc_model, list_of_routers),
-                            "Router with ID:'9' has the same distance to physical router tiles located at position (4,8) and (8,8). Therefore, no router assignment could be made.");
+                            "Router with ID:'9' has the same distance to physical router tiles located at position "
+                            "(4,8) and (8,8). Therefore, no router assignment could be made.");
     }
-    SECTION("Test create routers when a physical router can be matched to two logical routers. The number of routers is exactly the same as on the FPGA.") {
+    SECTION(
+        "Test create routers when a physical router can be matched to two logical routers. The number of routers is "
+        "exactly the same as on the FPGA.") {
         // start by creating all the logical routers
         // this is similar to the user provided a config file
         temp_router = new t_router;
@@ -579,7 +588,8 @@ TEST_CASE("test_create_noc_routers", "[vpr_setup_noc]") {
 
         // call the router creation
         REQUIRE_THROWS_WITH(create_noc_routers(noc_info, &noc_model, list_of_routers),
-                            "Routers with IDs:'9' and '5' are both closest to physical router tile located at (4,4) and the physical router could not be assigned multiple times.");
+                            "Routers with IDs:'9' and '5' are both closest to physical router tile located at (4,4) "
+                            "and the physical router could not be assigned multiple times.");
     }
 }
 TEST_CASE("test_create_noc_links", "[vpr_setup_noc]") {
@@ -639,11 +649,9 @@ TEST_CASE("test_create_noc_links", "[vpr_setup_noc]") {
         noc_info.router_list.push_back(*temp_router);
 
         // add the router to the NoC
-        noc_model.add_router(router_id,
-                             list_of_routers[router_id - 1].grid_width_position,
+        noc_model.add_router(router_id, list_of_routers[router_id - 1].grid_width_position,
                              list_of_routers[router_id - 1].grid_height_position,
-                             list_of_routers[router_id - 1].layer_position,
-                             1.0);
+                             list_of_routers[router_id - 1].layer_position, 1.0);
     }
 
     delete temp_router;
@@ -697,13 +705,15 @@ TEST_CASE("test_create_noc_links", "[vpr_setup_noc]") {
 
         router_connection = noc_info.router_list[router_id - 1].connection_list.begin();
 
-        for (auto noc_link = noc_model.get_noc_router_outgoing_links(current_source_router_id).begin(); noc_link != noc_model.get_noc_router_outgoing_links(current_source_router_id).end(); noc_link++) {
+        for (auto noc_link = noc_model.get_noc_router_outgoing_links(current_source_router_id).begin();
+             noc_link != noc_model.get_noc_router_outgoing_links(current_source_router_id).end(); noc_link++) {
             // get the connecting link
             const NocLink& connecting_link = noc_model.get_single_noc_link(*noc_link);
 
             // get the destination router
             current_destination_router_id = connecting_link.get_sink_router();
-            const NocRouter& current_destination_router = noc_model.get_single_noc_router(current_destination_router_id);
+            const NocRouter& current_destination_router
+                = noc_model.get_single_noc_router(current_destination_router_id);
 
             REQUIRE((current_destination_router.get_router_user_id()) == (*router_connection));
 
@@ -815,7 +825,8 @@ TEST_CASE("test_setup_noc", "[vpr_setup_noc]") {
     noc_info.link_latency = 56.7;
     noc_info.router_latency = 2.3;
 
-    SECTION("Test setup_noc when the number of logical routers is more than the number of physical routers in the FPGA.") {
+    SECTION(
+        "Test setup_noc when the number of logical routers is more than the number of physical routers in the FPGA.") {
         // test device grid name
         std::string device_grid_name = "test";
 
@@ -930,7 +941,9 @@ TEST_CASE("test_setup_noc", "[vpr_setup_noc]") {
 
         device_ctx.grid = DeviceGrid(device_grid_name, test_grid);
 
-        REQUIRE_THROWS_WITH(setup_noc(arch), "The Provided NoC topology information in the architecture file has more number of routers than what is available in the FPGA device.");
+        REQUIRE_THROWS_WITH(setup_noc(arch),
+                            "The Provided NoC topology information in the architecture file has more number of routers "
+                            "than what is available in the FPGA device.");
     }
     SECTION("Test setup_noc when there are no physical NoC routers on the FPGA.") {
         // test device grid name
@@ -981,7 +994,9 @@ TEST_CASE("test_setup_noc", "[vpr_setup_noc]") {
 
         device_ctx.grid = DeviceGrid(device_grid_name, test_grid);
 
-        REQUIRE_THROWS_WITH(setup_noc(arch), "No physical NoC routers were found on the FPGA device. Either the provided name for the physical router tile was incorrect or the FPGA device has no routers.");
+        REQUIRE_THROWS_WITH(setup_noc(arch),
+                            "No physical NoC routers were found on the FPGA device. Either the provided name for the "
+                            "physical router tile was incorrect or the FPGA device has no routers.");
     }
     SECTION("Test setup_noc when there are overrides for NoC-wide latency and bandwidth values.") {
         // test device grid name
@@ -1201,8 +1216,10 @@ TEST_CASE("test_setup_noc", "[vpr_setup_noc]") {
             int noc_router_user_id = dist(rand_num_gen);
             size_t n_connections = noc_info.router_list[noc_router_user_id - 1].connection_list.size();
             int selected_connection = dist(rand_num_gen) % n_connections;
-            int neighbor_router_user_id = noc_info.router_list[noc_router_user_id - 1].connection_list[selected_connection];
-            noc_info.link_latency_overrides.insert({{noc_router_user_id, neighbor_router_user_id}, LINK_LATENCY_OVERRIDE});
+            int neighbor_router_user_id
+                = noc_info.router_list[noc_router_user_id - 1].connection_list[selected_connection];
+            noc_info.link_latency_overrides.insert(
+                {{noc_router_user_id, neighbor_router_user_id}, LINK_LATENCY_OVERRIDE});
         }
 
         // add link bandwidth overrides
@@ -1210,8 +1227,10 @@ TEST_CASE("test_setup_noc", "[vpr_setup_noc]") {
             int noc_router_user_id = dist(rand_num_gen);
             size_t n_connections = noc_info.router_list[noc_router_user_id - 1].connection_list.size();
             int selected_connection = dist(rand_num_gen) % n_connections;
-            int neighbor_router_user_id = noc_info.router_list[noc_router_user_id - 1].connection_list[selected_connection];
-            noc_info.link_bandwidth_overrides.insert({{noc_router_user_id, neighbor_router_user_id}, LINK_BANDWIDTH_OVERRIDE});
+            int neighbor_router_user_id
+                = noc_info.router_list[noc_router_user_id - 1].connection_list[selected_connection];
+            noc_info.link_bandwidth_overrides.insert(
+                {{noc_router_user_id, neighbor_router_user_id}, LINK_BANDWIDTH_OVERRIDE});
         }
 
         device_ctx.grid = DeviceGrid(device_grid_name, test_grid);
@@ -1224,7 +1243,8 @@ TEST_CASE("test_setup_noc", "[vpr_setup_noc]") {
         for (const auto& noc_router : noc_model.get_noc_routers()) {
             int router_user_id = noc_router.get_router_user_id();
             auto it = noc_info.router_latency_overrides.find(router_user_id);
-            double expected_latency = (it != noc_info.router_latency_overrides.end()) ? it->second : noc_info.router_latency;
+            double expected_latency
+                = (it != noc_info.router_latency_overrides.end()) ? it->second : noc_info.router_latency;
             REQUIRE(expected_latency == noc_router.get_latency());
         }
 
@@ -1236,11 +1256,13 @@ TEST_CASE("test_setup_noc", "[vpr_setup_noc]") {
             int dst_user_id = noc_model.convert_router_id(dst_router_id);
 
             auto lat_it = noc_info.link_latency_overrides.find({src_user_id, dst_user_id});
-            double expected_latency = (lat_it != noc_info.link_latency_overrides.end()) ? lat_it->second : noc_info.link_latency;
+            double expected_latency
+                = (lat_it != noc_info.link_latency_overrides.end()) ? lat_it->second : noc_info.link_latency;
             REQUIRE(expected_latency == noc_link.get_latency());
 
             auto bw_it = noc_info.link_bandwidth_overrides.find({src_user_id, dst_user_id});
-            double expected_bandwidth = (bw_it != noc_info.link_bandwidth_overrides.end()) ? bw_it->second : noc_info.link_bandwidth;
+            double expected_bandwidth
+                = (bw_it != noc_info.link_bandwidth_overrides.end()) ? bw_it->second : noc_info.link_bandwidth;
             REQUIRE(expected_bandwidth == noc_link.get_bandwidth());
         }
 

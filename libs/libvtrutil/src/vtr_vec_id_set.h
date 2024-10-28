@@ -82,14 +82,10 @@ class vec_id_set {
     }
 
     ///@brief Returns the size of the container
-    size_t size() const {
-        return vec_.size();
-    }
+    size_t size() const { return vec_.size(); }
 
     ///@brief Sort elements in the container
-    void sort() {
-        std::sort(vec_.begin(), vec_.end());
-    }
+    void sort() { std::sort(vec_.begin(), vec_.end()); }
 
     ///@bried Clears the container
     void clear() {

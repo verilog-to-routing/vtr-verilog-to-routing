@@ -4,12 +4,12 @@
 #define VTR_LOGIC_H
 
 #ifdef FALSE
-#    undef FALSE
+#undef FALSE
 #endif
 #define FALSE FALSE
 
 #ifdef TRUE
-#    undef TRUE
+#undef TRUE
 #endif
 #define TRUE TRUE
 
@@ -21,12 +21,7 @@ namespace vtr {
 /**
  * @brief This class represents the different supported logic values
  */
-enum class LogicValue {
-    FALSE = 0,
-    TRUE = 1,
-    DONT_CARE = 2,
-    UNKOWN = 3
-};
+enum class LogicValue { FALSE = 0, TRUE = 1, DONT_CARE = 2, UNKOWN = 3 };
 
 } // namespace vtr
 

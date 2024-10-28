@@ -71,10 +71,10 @@ struct PartialPlacement {
      *  @param netlist  The APNetlist which contains the blocks to be placed.
      */
     PartialPlacement(const APNetlist& netlist)
-            : block_x_locs(netlist.blocks().size(), -1.0),
-              block_y_locs(netlist.blocks().size(), -1.0),
-              block_layer_nums(netlist.blocks().size(), 0.0),
-              block_sub_tiles(netlist.blocks().size(), 0) {
+        : block_x_locs(netlist.blocks().size(), -1.0)
+        , block_y_locs(netlist.blocks().size(), -1.0)
+        , block_layer_nums(netlist.blocks().size(), 0.0)
+        , block_sub_tiles(netlist.blocks().size(), 0) {
         // Note: All blocks are initialized to:
         //      x_loc = -1.0
         //      y_loc = -1.0
@@ -84,7 +84,7 @@ struct PartialPlacement {
         for (APBlockId blk_id : netlist.blocks()) {
             if (netlist.block_mobility(blk_id) != APBlockMobility::FIXED)
                 continue;
-            const APFixedBlockLoc &loc = netlist.block_loc(blk_id);
+            const APFixedBlockLoc& loc = netlist.block_loc(blk_id);
             if (loc.x != -1)
                 block_x_locs[blk_id] = loc.x;
             if (loc.y != -1)
@@ -158,9 +158,7 @@ struct PartialPlacement {
      *  @param grid_width   The width of the device grid
      *  @param grid_height  The height of the device grid
      */
-    bool verify_locs(const APNetlist& netlist,
-                     size_t grid_width,
-                     size_t grid_height) const;
+    bool verify_locs(const APNetlist& netlist, size_t grid_width, size_t grid_height) const;
 
     /**
      * @brief Verify the block_layer_nums vector
@@ -173,8 +171,7 @@ struct PartialPlacement {
      *  @param netlist          The APNetlist used to generate this placement
      *  @param grid_num_layers  The number of layers in the device grid
      */
-    bool verify_layer_nums(const APNetlist& netlist,
-                           size_t grid_num_layers) const;
+    bool verify_layer_nums(const APNetlist& netlist, size_t grid_num_layers) const;
 
     /**
      * @brief Verify the sub_tiles
@@ -196,9 +193,5 @@ struct PartialPlacement {
      *  @param grid_height      The height of the device grid
      *  @param grid_num_layers  The number of layers in the device grid
      */
-    bool verify(const APNetlist& netlist,
-                size_t grid_width,
-                size_t grid_height,
-                size_t grid_num_layers) const;
+    bool verify(const APNetlist& netlist, size_t grid_width, size_t grid_height, size_t grid_num_layers) const;
 };
-

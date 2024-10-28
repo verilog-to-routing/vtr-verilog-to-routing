@@ -100,9 +100,7 @@ class interned_string_iterator {
   public:
     interned_string_iterator(const string_internment* internment, std::array<StringId, kMaxParts> intern_ids, size_t n);
 
-    interned_string_iterator() {
-        clear();
-    }
+    interned_string_iterator() { clear(); }
 
     using value_type = char;
     using difference_type = void;
@@ -147,7 +145,8 @@ class interned_string_iterator {
 
 ///@brief == operator
 inline bool operator==(const interned_string_iterator& lhs, const interned_string_iterator& rhs) {
-    return lhs.internment_ == rhs.internment_ && lhs.num_parts_ == rhs.num_parts_ && lhs.parts_ == rhs.parts_ && lhs.part_idx_ == rhs.part_idx_ && lhs.str_idx_ == rhs.str_idx_ && lhs.view_ == rhs.view_;
+    return lhs.internment_ == rhs.internment_ && lhs.num_parts_ == rhs.num_parts_ && lhs.parts_ == rhs.parts_
+           && lhs.part_idx_ == rhs.part_idx_ && lhs.str_idx_ == rhs.str_idx_ && lhs.view_ == rhs.view_;
 }
 
 ///@brief != operator
@@ -240,16 +239,12 @@ class interned_string {
     }
 
     ///@brief end() function
-    interned_string_iterator end() const {
-        return interned_string_iterator();
-    }
+    interned_string_iterator end() const { return interned_string_iterator(); }
 
     ///@brief == operator
-    friend bool operator==(interned_string lhs,
-                           interned_string rhs) noexcept;
+    friend bool operator==(interned_string lhs, interned_string rhs) noexcept;
     ///@brief != operator
-    friend bool operator!=(interned_string lhs,
-                           interned_string rhs) noexcept;
+    friend bool operator!=(interned_string lhs, interned_string rhs) noexcept;
     ///@brief hash function
     friend std::hash<interned_string>;
     friend interned_string_less;
@@ -302,40 +297,26 @@ class interned_string {
 };
 
 ///@brief == operator
-inline bool operator==(interned_string lhs,
-                       interned_string rhs) noexcept {
-    return lhs.storage_ == rhs.storage_;
-}
+inline bool operator==(interned_string lhs, interned_string rhs) noexcept { return lhs.storage_ == rhs.storage_; }
 
 ///@brief != operator
-inline bool operator!=(interned_string lhs,
-                       interned_string rhs) noexcept {
-    return lhs.storage_ != rhs.storage_;
-}
+inline bool operator!=(interned_string lhs, interned_string rhs) noexcept { return lhs.storage_ != rhs.storage_; }
 
 ///@brief < operator
-inline bool operator<(bound_interned_string lhs,
-                      bound_interned_string rhs) noexcept {
+inline bool operator<(bound_interned_string lhs, bound_interned_string rhs) noexcept {
     return std::lexicographical_compare(lhs.begin(), lhs.end(), rhs.begin(), rhs.end());
 }
 
 ///@brief >= operator
-inline bool operator>=(bound_interned_string lhs,
-                       bound_interned_string rhs) noexcept {
+inline bool operator>=(bound_interned_string lhs, bound_interned_string rhs) noexcept {
     return !std::lexicographical_compare(lhs.begin(), lhs.end(), rhs.begin(), rhs.end());
 }
 
 ///@brief > operator
-inline bool operator>(bound_interned_string lhs,
-                      bound_interned_string rhs) noexcept {
-    return rhs < lhs;
-}
+inline bool operator>(bound_interned_string lhs, bound_interned_string rhs) noexcept { return rhs < lhs; }
 
 ///@brief <= operator
-inline bool operator<=(bound_interned_string lhs,
-                       bound_interned_string rhs) noexcept {
-    return rhs >= lhs;
-}
+inline bool operator<=(bound_interned_string lhs, bound_interned_string rhs) noexcept { return rhs >= lhs; }
 
 /**
  * @brief  Storage of interned string, and object capable of generating new interned_string objects.
@@ -392,9 +373,7 @@ class string_internment {
     }
 
     ///@brief Number of unique string parts stored.
-    size_t unique_strings() const {
-        return strings_.size();
-    }
+    size_t unique_strings() const { return strings_.size(); }
 
   private:
     StringId intern_one_string(vtr::string_view view) {
@@ -451,7 +430,9 @@ inline void interned_string::get(const string_internment* internment, std::strin
  * Do no construct this iterator directly.  Use either
  * bound_interned_string::begin/end or interned_string;:begin/end.
  */
-inline interned_string_iterator::interned_string_iterator(const string_internment* internment, std::array<StringId, kMaxParts> intern_ids, size_t n)
+inline interned_string_iterator::interned_string_iterator(const string_internment* internment,
+                                                          std::array<StringId, kMaxParts> intern_ids,
+                                                          size_t n)
     : internment_(internment)
     , num_parts_(n)
     , parts_(intern_ids)
@@ -508,14 +489,10 @@ inline interned_string_iterator interned_string_iterator::operator++(int) {
 }
 
 ///@brief return an iterator to the first part of the interned_string
-inline interned_string_iterator bound_interned_string::begin() const {
-    return str_->begin(internment_);
-}
+inline interned_string_iterator bound_interned_string::begin() const { return str_->begin(internment_); }
 
 ///@brief return an iterator to the last part of the interned_string
-inline interned_string_iterator bound_interned_string::end() const {
-    return interned_string_iterator();
-}
+inline interned_string_iterator bound_interned_string::end() const { return interned_string_iterator(); }
 
 inline std::ostream& operator<<(std::ostream& os, bound_interned_string const& value) {
     for (const auto& c : value) {

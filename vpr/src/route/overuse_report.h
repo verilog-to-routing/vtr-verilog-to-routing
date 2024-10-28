@@ -24,9 +24,7 @@
 void log_overused_nodes_status(int max_logged_overused_rr_nodes);
 
 ///@brief Print out RR node overuse info in a post-VPR report file.
-void report_overused_nodes(const Netlist<>& net_list,
-                           const RRGraphView& rr_graph,
-                           bool is_flat);
+void report_overused_nodes(const Netlist<>& net_list, const RRGraphView& rr_graph, bool is_flat);
 
 ///@brief Generate a overused RR nodes to congested nets lookup table.
 void generate_overused_nodes_to_congested_net_lookup(const Netlist<>& net_list,

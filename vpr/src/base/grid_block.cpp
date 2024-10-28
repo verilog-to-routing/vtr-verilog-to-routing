@@ -55,5 +55,3 @@ int GridBlock::decrement_usage(const t_physical_tile_loc& loc) {
 
     return updated_usage;
 }
-
-

@@ -1,8 +1,8 @@
 #include "vtr_rusage.h"
 
 #ifdef __unix__
-#    include <sys/time.h>
-#    include <sys/resource.h>
+#include <sys/time.h>
+#include <sys/resource.h>
 #endif
 
 namespace vtr {

@@ -33,9 +33,7 @@ static std::unordered_map<int, float> ipin_to_Tdel_map;
 
 /*********************** Subroutines local to this module ********************/
 
-static void load_one_net_delay(const Netlist<>& net_list,
-                               NetPinsMatrix<float>& net_delay,
-                               ParentNetId net_id);
+static void load_one_net_delay(const Netlist<>& net_list, NetPinsMatrix<float>& net_delay, ParentNetId net_id);
 
 static void load_one_net_delay_recurr(const RouteTreeNode& node, ParentNetId net_id);
 
@@ -61,9 +59,7 @@ void load_net_delay_from_routing(const Netlist<>& net_list, NetPinsMatrix<float>
     }
 }
 
-static void load_one_net_delay(const Netlist<>& net_list,
-                               NetPinsMatrix<float>& net_delay,
-                               ParentNetId net_id) {
+static void load_one_net_delay(const Netlist<>& net_list, NetPinsMatrix<float>& net_delay, ParentNetId net_id) {
     /* This routine loads delay values for one net in                            *
      * net_delay[net_id][1..num_pins-1]. First, from the traceback, it           *
      * constructs the route tree and computes its values for R, C, and Tdel.     *
@@ -76,12 +72,13 @@ static void load_one_net_delay(const Netlist<>& net_list,
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
     if (!route_ctx.route_trees[net_id]) {
-        VPR_FATAL_ERROR(VPR_ERROR_TIMING,
-                        "in load_one_net_delay: Route tree for net %lu does not exist.\n", size_t(net_id));
+        VPR_FATAL_ERROR(VPR_ERROR_TIMING, "in load_one_net_delay: Route tree for net %lu does not exist.\n",
+                        size_t(net_id));
     }
 
     RouteTree& tree = route_ctx.route_trees[net_id].value();
-    load_one_net_delay_recurr(tree.root(), net_id); // recursively traverse the tree and load entries into the ipin_to_Tdel map
+    load_one_net_delay_recurr(tree.root(),
+                              net_id); // recursively traverse the tree and load entries into the ipin_to_Tdel map
 
     for (unsigned int ipin = 1; ipin < net_list.net_pins(net_id).size(); ipin++) {
         auto itr = ipin_to_Tdel_map.find(ipin);

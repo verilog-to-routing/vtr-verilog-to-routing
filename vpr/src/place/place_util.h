@@ -312,8 +312,7 @@ class t_placer_statistics {
  *
  * Initialize both of them to empty states.
  */
-void init_placement_context(vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs,
-                            GridBlock& grid_blocks);
+void init_placement_context(vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs, GridBlock& grid_blocks);
 
 /**
  * @brief Get the initial limit for inner loop block move attempt limit.
@@ -356,7 +355,8 @@ inline bool is_loc_on_chip(t_physical_tile_loc loc) {
     int y = loc.y;
     int layer_num = loc.layer_num;
     //return false if the location is not within the chip
-    return (layer_num >= 0 && layer_num < int(grid.get_num_layers()) && x >= 0 && x < int(grid.width()) && y >= 0 && y < int(grid.height()));
+    return (layer_num >= 0 && layer_num < int(grid.get_num_layers()) && x >= 0 && x < int(grid.width()) && y >= 0
+            && y < int(grid.height()));
 }
 
 /**

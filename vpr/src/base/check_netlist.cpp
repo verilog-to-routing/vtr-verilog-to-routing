@@ -48,10 +48,10 @@ void check_netlist(int verbosity) {
     /* Check that nets fanout and have a driver. */
     int global_to_non_global_connection_count = 0;
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-        h_net_ptr = insert_in_hash_table(net_hash_table, cluster_ctx.clb_nlist.net_name(net_id).c_str(), size_t(net_id));
+        h_net_ptr
+            = insert_in_hash_table(net_hash_table, cluster_ctx.clb_nlist.net_name(net_id).c_str(), size_t(net_id));
         if (h_net_ptr->count != 1) {
-            VTR_LOG_ERROR("Net %s has multiple drivers.\n",
-                          cluster_ctx.clb_nlist.net_name(net_id).c_str());
+            VTR_LOG_ERROR("Net %s has multiple drivers.\n", cluster_ctx.clb_nlist.net_name(net_id).c_str());
             error++;
         }
         // This function is called during packing - For the time being, we only use a flat netlist during routing
@@ -61,7 +61,8 @@ void check_netlist(int verbosity) {
         }
     }
     free_hash_table(net_hash_table);
-    VTR_LOG_WARN("Netlist contains %d global net to non-global architecture pin connections\n", global_to_non_global_connection_count);
+    VTR_LOG_WARN("Netlist contains %d global net to non-global architecture pin connections\n",
+                 global_to_non_global_connection_count);
 
     auto& device_ctx = g_vpr_ctx.device();
     IntraLbPbPinLookup intra_lb_pb_pin_lookup(device_ctx.logical_block_types);
@@ -72,16 +73,14 @@ void check_netlist(int verbosity) {
         error += check_clb_conn(blk_id, num_conn);
         error += check_clb_internal_nets(blk_id, intra_lb_pb_pin_lookup);
         if (error >= ERROR_THRESHOLD) {
-            VPR_ERROR(VPR_ERROR_OTHER,
-                      "Too many errors in netlist, exiting.\n");
+            VPR_ERROR(VPR_ERROR_OTHER, "Too many errors in netlist, exiting.\n");
         }
     }
 
     error += check_for_duplicated_names();
 
     if (error != 0) {
-        VPR_ERROR(VPR_ERROR_OTHER,
-                  "Found %d fatal Errors in the input netlist.\n", error);
+        VPR_ERROR(VPR_ERROR_OTHER, "Found %d fatal Errors in the input netlist.\n", error);
     }
 }
 
@@ -109,8 +108,7 @@ static int check_connections_to_global_clb_pins(ClusterNetId net_id, int verbosi
         int log_index = cluster_ctx.clb_nlist.pin_logical_index(pin_id);
         int pin_index = get_physical_pin(physical_type, logical_type, log_index);
 
-        if (physical_type->is_ignored_pin[pin_index] != net_is_ignored
-            && !is_io_type(physical_type)) {
+        if (physical_type->is_ignored_pin[pin_index] != net_is_ignored && !is_io_type(physical_type)) {
             VTR_LOGV_WARN(verbosity > 2,
                           "Global net '%s' connects to non-global architecture pin '%s' (netlist pin '%s')\n",
                           cluster_ctx.clb_nlist.net_name(net_id).c_str(),
@@ -141,16 +139,14 @@ static int check_clb_conn(ClusterBlockId iblk, int num_conn) {
                 VTR_LOG_WARN(
                     "Logic block #%d (%s) has only 1 input pin '%s'"
                     " -- the whole block is hanging logic that should be swept.\n",
-                    iblk, clb_nlist.block_name(iblk).c_str(),
-                    clb_nlist.pin_name(pin_id).c_str());
+                    iblk, clb_nlist.block_name(iblk).c_str(), clb_nlist.pin_name(pin_id).c_str());
             }
             if (pin_type == PinType::DRIVER && !clb_nlist.block_contains_primary_input(iblk)) {
                 //Output only and not a Primary-Input block
                 VTR_LOG_WARN(
                     "Logic block #%d (%s) has only 1 output pin '%s'."
                     " It may be a constant generator.\n",
-                    iblk, clb_nlist.block_name(iblk).c_str(),
-                    clb_nlist.pin_name(pin_id).c_str());
+                    iblk, clb_nlist.block_name(iblk).c_str(), clb_nlist.pin_name(pin_id).c_str());
             }
 
             break;
@@ -161,8 +157,8 @@ static int check_clb_conn(ClusterBlockId iblk, int num_conn) {
      * just a redundant double check.                                    */
 
     if (num_conn > type->pb_type->num_pins) {
-        VTR_LOG_ERROR("logic block #%d with output %s has %d pins.\n",
-                      iblk, cluster_ctx.clb_nlist.block_name(iblk).c_str(), num_conn);
+        VTR_LOG_ERROR("logic block #%d with output %s has %d pins.\n", iblk,
+                      cluster_ctx.clb_nlist.block_name(iblk).c_str(), num_conn);
         error++;
     }
 
@@ -180,7 +176,8 @@ static int check_clb_internal_nets(ClusterBlockId iblk, const IntraLbPbPinLookup
     t_logical_block_type_ptr type = cluster_ctx.clb_nlist.block_type(iblk);
 
     for (int i = 0; i < num_pins_in_block; i++) {
-        if (!pb_route.count(i)) continue;
+        if (!pb_route.count(i))
+            continue;
 
         VTR_ASSERT(pb_route.count(i));
 
@@ -231,8 +228,7 @@ static int check_for_duplicated_names() {
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
         clb_h_ptr = insert_in_hash_table(clb_hash_table, cluster_ctx.clb_nlist.block_name(blk_id).c_str(), clb_count);
         if (clb_h_ptr->count > 1) {
-            VTR_LOG_ERROR("Block %s has duplicated name.\n",
-                          cluster_ctx.clb_nlist.block_name(blk_id).c_str());
+            VTR_LOG_ERROR("Block %s has duplicated name.\n", cluster_ctx.clb_nlist.block_name(blk_id).c_str());
             error++;
         } else {
             clb_count++;

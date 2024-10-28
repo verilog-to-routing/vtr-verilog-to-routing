@@ -12,7 +12,7 @@
 #include "vtr_error.h"
 
 #if defined(__unix__)
-#    include <unistd.h> //For getpid()
+#include <unistd.h> //For getpid()
 #endif
 
 namespace vtr {
@@ -102,9 +102,7 @@ std::string replace_all(std::string_view input, std::string_view search, std::st
 }
 
 ///@brief Returns true if str starts with prefix
-bool starts_with(const std::string& str, std::string_view prefix) {
-    return str.find(prefix) == 0;
-}
+bool starts_with(const std::string& str, std::string_view prefix) { return str.find(prefix) == 0; }
 
 ///@brief Returns a std::string formatted using a printf-style format string
 std::string string_fmt(const char* fmt, ...) {
@@ -220,9 +218,7 @@ T atoT(const std::string& value, std::string_view type_name) {
  * Typically these add extra error checking
  * and/or correct 'unexpected' behaviour of the standard c-functions
  */
-int atoi(const std::string& value) {
-    return atoT<int>(value, "int");
-}
+int atoi(const std::string& value) { return atoT<int>(value, "int"); }
 
 /**
  * @brief Legacy c-style function replacements.
@@ -230,9 +226,7 @@ int atoi(const std::string& value) {
  * Typically these add extra error checking
  * and/or correct 'unexpected' behaviour of the standard c-functions
  */
-double atod(const std::string& value) {
-    return atoT<double>(value, "double");
-}
+double atod(const std::string& value) { return atoT<double>(value, "double"); }
 
 /**
  * @brief Legacy c-style function replacements.
@@ -240,9 +234,7 @@ double atod(const std::string& value) {
  * Typically these add extra error checking
  * and/or correct 'unexpected' behaviour of the standard c-functions
  */
-float atof(const std::string& value) {
-    return atoT<float>(value, "float");
-}
+float atof(const std::string& value) { return atoT<float>(value, "float"); }
 
 /**
  * @brief Legacy c-style function replacements.
@@ -250,9 +242,7 @@ float atof(const std::string& value) {
  * Typically these add extra error checking
  * and/or correct 'unexpected' behaviour of the standard c-functions
  */
-unsigned atou(const std::string& value) {
-    return atoT<unsigned>(value, "unsigned int");
-}
+unsigned atou(const std::string& value) { return atoT<unsigned>(value, "unsigned int"); }
 
 /**
  * @brief Get next token, and wrap to next line if \ at end of line.    
@@ -302,7 +292,8 @@ FILE* fopen(const char* fname, const char* flag) {
     }
 
     if (nullptr == (fp = std::fopen(fname, flag))) {
-        throw VtrError(string_fmt("Error opening file %s for %s access: %s.\n", fname, flag, strerror(errno)), __FILE__, __LINE__);
+        throw VtrError(string_fmt("Error opening file %s for %s access: %s.\n", fname, flag, strerror(errno)), __FILE__,
+                       __LINE__);
     }
 
     if (new_fname)
@@ -312,9 +303,7 @@ FILE* fopen(const char* fname, const char* flag) {
 }
 
 ///@brief The legacy fclose function
-int fclose(FILE* f) {
-    return std::fclose(f);
-}
+int fclose(FILE* f) { return std::fclose(f); }
 
 /**
  * @brief Get an input line, update the line number and cut off any comment part.
@@ -396,7 +385,7 @@ char* getline(char*& _lineptr, FILE* _stream) {
 #if defined(__unix__)
     nread = getdelim(&_lineptr, &_n, '\n', _stream);
 #elif defined(_WIN32)
-#    define __WIN_NLTK "\r\n"
+#define __WIN_NLTK "\r\n"
     nread = getdelim(&_lineptr, &_n, __WIN_NLTK, _stream);
 #endif
 
@@ -413,9 +402,7 @@ char* getline(char*& _lineptr, FILE* _stream) {
             return nullptr;
 
         /* getline was unsuccessful, so error */
-        throw VtrError(string_fmt("Error -- %s\n",
-                                  error_msg.c_str()),
-                       __FILE__, __LINE__);
+        throw VtrError(string_fmt("Error -- %s\n", error_msg.c_str()), __FILE__, __LINE__);
         return nullptr;
     }
 
@@ -437,9 +424,7 @@ char* getline(char*& _lineptr, FILE* _stream) {
 }
 
 ///@brief Returns line number of last opened and read file
-int get_file_line_number_of_last_opened_file() {
-    return file_line_number;
-}
+int get_file_line_number_of_last_opened_file() { return file_line_number; }
 
 bool file_exists(const char* filename) {
     FILE* file;
@@ -461,8 +446,7 @@ bool file_exists(const char* filename) {
  *
  * Returns true if the extension is correct, and false otherwise.
  */
-bool check_file_name_extension(std::string_view file_name,
-                               std::string_view file_extension) {
+bool check_file_name_extension(std::string_view file_name, std::string_view file_extension) {
     auto ext = std::filesystem::path(file_name).extension();
     return ext == file_extension;
 }

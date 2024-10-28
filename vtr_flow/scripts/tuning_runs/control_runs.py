@@ -46,9 +46,7 @@ def parse_results(input_path):
     Parse the output results
     """
     # Find the runXXX directory with the largest XXX
-    run_dirs = [
-        d for d in os.listdir(input_path) if d.startswith("run") and d[3:].isdigit()
-    ]
+    run_dirs = [d for d in os.listdir(input_path) if d.startswith("run") and d[3:].isdigit()]
     if not run_dirs:
         print("No runXXX directories found in the specified input path.")
         sys.exit(1)
@@ -63,9 +61,9 @@ def parse_results(input_path):
         sys.exit(1)
 
     # Read the parse_results.txt file and write to full_res.csv
-    with open(
-        os.path.join(largest_run_path, "parse_results.txt"), "r"
-    ) as txt_file, open(full_res_csv_path, "w", newline="") as csv_file:
+    with open(os.path.join(largest_run_path, "parse_results.txt"), "r") as txt_file, open(
+        full_res_csv_path, "w", newline=""
+    ) as csv_file:
         reader = csv.reader(txt_file, delimiter="\t")
         writer = csv.writer(csv_file)
 
@@ -97,9 +95,7 @@ def parse_results(input_path):
     print("Generated average seed results")
 
     # Generate gmean_res.csv
-    generate_geomean_res_csv(
-        os.path.join(largest_run_path, "avg_seed.csv"), largest_run_path
-    )
+    generate_geomean_res_csv(os.path.join(largest_run_path, "avg_seed.csv"), largest_run_path)
     print("Generated geometric average results over all the circuits")
 
     generate_xlsx(largest_run_path)
@@ -147,8 +143,7 @@ def parse_script_params(script_params):
                 j = i + key_length
 
                 while j < len(parts) and not any(
-                    parts[j : j + len(k.split("_"))] == k.split("_")
-                    for k in PARAMS_DICT
+                    parts[j : j + len(k.split("_"))] == k.split("_") for k in PARAMS_DICT
                 ):
                     value_parts.append(parts[j])
                     j += 1

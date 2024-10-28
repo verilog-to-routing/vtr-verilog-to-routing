@@ -51,8 +51,8 @@ struct APFixedBlockLoc {
  *       block ids.
  */
 enum class APBlockMobility : bool {
-    MOVEABLE,   // The block is not constrained in any dimension.
-    FIXED       // The block is fixed.
+    MOVEABLE, // The block is not constrained in any dimension.
+    FIXED     // The block is fixed.
 };
 
 /**
@@ -64,7 +64,7 @@ enum class APBlockMobility : bool {
  * APBlocks. These need not have physical meaning.
  */
 class APNetlist : public Netlist<APBlockId, APPortId, APPinId, APNetId> {
-public:
+  public:
     /**
      * @brief Constructs a netlist
      *
@@ -72,12 +72,13 @@ public:
      *  @param id   A unique identifier for the netlist (e.g. a secure digest of
      *              the input file)
      */
-    APNetlist(std::string name = "", std::string id = "") : Netlist(name, id) {}
+    APNetlist(std::string name = "", std::string id = "")
+        : Netlist(name, id) {}
 
     APNetlist(const APNetlist& rhs) = default;
     APNetlist& operator=(const APNetlist& rhs) = default;
 
-public: // Public Accessors
+  public: // Public Accessors
     /*
      * Blocks
      */
@@ -92,7 +93,7 @@ public: // Public Accessors
     ///        This method should not be used if the block is moveable.
     const APFixedBlockLoc& block_loc(const APBlockId id) const;
 
-public: // Public Mutators
+  public: // Public Mutators
     /*
      * Note: all create_*() functions will silently return the appropriate ID
      * if it has already been created.
@@ -134,7 +135,11 @@ public: // Public Mutators
      *  @param is_const Indicates whether the pin holds a constant value (e.g.
      *                  vcc/gnd)
      */
-    APPinId create_pin(const APPortId port_id, BitIndex port_bit, const APNetId net_id, const PinType pin_type, bool is_const = false);
+    APPinId create_pin(const APPortId port_id,
+                       BitIndex port_bit,
+                       const APNetId net_id,
+                       const PinType pin_type,
+                       bool is_const = false);
 
     /**
      * @brief Create an empty, or return an existing net in the netlist
@@ -143,7 +148,7 @@ public: // Public Mutators
      */
     APNetId create_net(const std::string& name);
 
-private: // Private Members
+  private: // Private Members
     /*
      * Netlist compression / optimization
      */
@@ -154,9 +159,12 @@ private: // Private Members
     void clean_pins_impl(const vtr::vector_map<APPinId, APPinId>& pin_id_map) override;
     void clean_nets_impl(const vtr::vector_map<APNetId, APNetId>& net_id_map) override;
 
-    void rebuild_block_refs_impl(const vtr::vector_map<APPinId, APPinId>& pin_id_map, const vtr::vector_map<APPortId, APPortId>& port_id_map) override;
-    void rebuild_port_refs_impl(const vtr::vector_map<APBlockId, APBlockId>& block_id_map, const vtr::vector_map<APPinId, APPinId>& pin_id_map) override;
-    void rebuild_pin_refs_impl(const vtr::vector_map<APPortId, APPortId>& port_id_map, const vtr::vector_map<APNetId, APNetId>& net_id_map) override;
+    void rebuild_block_refs_impl(const vtr::vector_map<APPinId, APPinId>& pin_id_map,
+                                 const vtr::vector_map<APPortId, APPortId>& port_id_map) override;
+    void rebuild_port_refs_impl(const vtr::vector_map<APBlockId, APBlockId>& block_id_map,
+                                const vtr::vector_map<APPinId, APPinId>& pin_id_map) override;
+    void rebuild_pin_refs_impl(const vtr::vector_map<APPortId, APPortId>& port_id_map,
+                               const vtr::vector_map<APNetId, APNetId>& net_id_map) override;
     void rebuild_net_refs_impl(const vtr::vector_map<APPinId, APPinId>& pin_id_map) override;
 
     /// @brief Shrinks internal data structures to required size to reduce
@@ -180,7 +188,7 @@ private: // Private Members
     bool validate_pin_sizes_impl(size_t num_pins) const override;
     bool validate_net_sizes_impl(size_t num_nets) const override;
 
-private: // Private Data
+  private: // Private Data
     /// @brief Molecule of each block
     vtr::vector_map<APBlockId, const t_pack_molecule*> block_molecules_;
     /// @brief Type of each block
@@ -189,4 +197,3 @@ private: // Private Data
     ///        NOTE: This vector will likely be quite sparse.
     vtr::vector_map<APBlockId, APFixedBlockLoc> block_locs_;
 };
-

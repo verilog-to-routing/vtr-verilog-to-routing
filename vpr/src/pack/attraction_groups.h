@@ -101,13 +101,9 @@ class AttractionInfo {
     int att_group_pulls = 1;
 };
 
-inline int AttractionInfo::get_att_group_pulls() const {
-    return att_group_pulls;
-}
+inline int AttractionInfo::get_att_group_pulls() const { return att_group_pulls; }
 
-inline void AttractionInfo::set_att_group_pulls(int num_pulls) {
-    att_group_pulls = num_pulls;
-}
+inline void AttractionInfo::set_att_group_pulls(int num_pulls) { att_group_pulls = num_pulls; }
 
 inline AttractGroupId AttractionInfo::get_atom_attraction_group(const AtomBlockId atom_id) {
     return atom_attraction_group[atom_id];
@@ -118,9 +114,7 @@ inline void AttractionInfo::set_atom_attraction_group(const AtomBlockId atom_id,
     attraction_groups[group_id].group_atoms.push_back(atom_id);
 }
 
-inline int AttractionInfo::num_attraction_groups() {
-    return attraction_groups.size();
-}
+inline int AttractionInfo::num_attraction_groups() { return attraction_groups.size(); }
 
 inline float AttractionInfo::get_attraction_group_gain(const AttractGroupId group_id) {
     return attraction_groups[group_id].gain;

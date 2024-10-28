@@ -125,8 +125,8 @@ void remap_input_port_to_memory(nnode_t* node, signal_list_t* signals, const cha
     for (i = 0; i < j; i++) {
         npin_t* pin = node->input_pins[i];
         if (!strcmp(pin->mapping, port_name)) {
-            error_message(NETLIST, node->loc,
-                          "Attempted to reassign output port %s to memory %s.", port_name, node->name);
+            error_message(NETLIST, node->loc, "Attempted to reassign output port %s to memory %s.", port_name,
+                          node->name);
         }
     }
 
@@ -159,8 +159,8 @@ void add_input_port_to_memory(nnode_t* node, signal_list_t* signalsvar, const ch
     for (i = 0; i < j; i++) {
         npin_t* pin = node->input_pins[i];
         if (!strcmp(pin->mapping, port_name)) {
-            error_message(NETLIST, node->loc,
-                          "Attempted to reassign input port %s to memory %s.", port_name, node->name);
+            error_message(NETLIST, node->loc, "Attempted to reassign input port %s to memory %s.", port_name,
+                          node->name);
         }
     }
 
@@ -193,8 +193,8 @@ void add_output_port_to_memory(nnode_t* node, signal_list_t* signals, const char
     for (i = 0; i < j; i++) {
         npin_t* pin = node->output_pins[i];
         if (!strcmp(pin->mapping, port_name)) {
-            error_message(NETLIST, node->loc,
-                          "Attempted to reassign output port %s to node %s.", port_name, node->name);
+            error_message(NETLIST, node->loc, "Attempted to reassign output port %s to node %s.", port_name,
+                          node->name);
             return;
         }
     }
@@ -239,7 +239,8 @@ void check_memories_and_report_distribution() {
         long depth = get_sp_ram_depth(node);
 
         if (depth > shift_left_value_with_overflow_check(0x1, HARD_RAM_ADDR_LIMIT, node->loc))
-            error_message(NETLIST, node->loc, "Memory %s of depth %zu exceeds ODIN depth bound of 2^%d.", node->name, depth, HARD_RAM_ADDR_LIMIT);
+            error_message(NETLIST, node->loc, "Memory %s of depth %zu exceeds ODIN depth bound of 2^%d.", node->name,
+                          depth, HARD_RAM_ADDR_LIMIT);
 
         printf("SPRAM: %zu width %zu depth\n", width, depth);
 
@@ -264,7 +265,8 @@ void check_memories_and_report_distribution() {
         long width = get_dp_ram_width(node);
         long depth = get_dp_ram_depth(node);
         if (depth > shift_left_value_with_overflow_check(0x1, HARD_RAM_ADDR_LIMIT, node->loc))
-            error_message(NETLIST, node->loc, "Memory %s of depth %zu exceeds ODIN depth bound of 2^%d.", node->name, depth, HARD_RAM_ADDR_LIMIT);
+            error_message(NETLIST, node->loc, "Memory %s of depth %zu exceeds ODIN depth bound of 2^%d.", node->name,
+                          depth, HARD_RAM_ADDR_LIMIT);
 
         printf("DPRAM: %zu width %zu depth\n", width, depth);
         total_memory_bits += width * depth;
@@ -352,7 +354,8 @@ void split_sp_memory_depth(nnode_t* node, int split_size) {
         add_input_port_to_memory(new_mem_node1, we, "we");
         free_signal_list(we);
 
-        nnode_t* not_g = make_not_gate_with_input(copy_input_npin(signals->addr->pins[0]), new_mem_node2, new_mem_node2->traverse_visited);
+        nnode_t* not_g = make_not_gate_with_input(copy_input_npin(signals->addr->pins[0]), new_mem_node2,
+                                                  new_mem_node2->traverse_visited);
         and_g = make_2port_gate(LOGICAL_AND, 1, 1, 1, new_mem_node2, new_mem_node2->traverse_visited);
         connect_nodes(not_g, 0, and_g, 0);
 
@@ -494,7 +497,8 @@ void split_dp_memory_depth(nnode_t* node, int split_size) {
         add_input_port_to_memory(new_mem_node1, we, "we2");
         free_signal_list(we);
 
-        nnode_t* not_g = make_not_gate_with_input(copy_input_npin(signals->addr1->pins[0]), new_mem_node2, new_mem_node2->traverse_visited);
+        nnode_t* not_g = make_not_gate_with_input(copy_input_npin(signals->addr1->pins[0]), new_mem_node2,
+                                                  new_mem_node2->traverse_visited);
         and_node = make_2port_gate(LOGICAL_AND, 1, 1, 1, new_mem_node2, new_mem_node2->traverse_visited);
         connect_nodes(not_g, 0, and_node, 0);
         add_input_pin_to_node(and_node, copy_input_npin(signals->we1), 1);
@@ -503,7 +507,8 @@ void split_dp_memory_depth(nnode_t* node, int split_size) {
         add_input_port_to_memory(new_mem_node2, we, "we1");
         free_signal_list(we);
 
-        not_g = make_not_gate_with_input(copy_input_npin(signals->addr2->pins[0]), new_mem_node2, new_mem_node2->traverse_visited);
+        not_g = make_not_gate_with_input(copy_input_npin(signals->addr2->pins[0]), new_mem_node2,
+                                         new_mem_node2->traverse_visited);
         and_node = make_2port_gate(LOGICAL_AND, 1, 1, 1, new_mem_node2, new_mem_node2->traverse_visited);
         connect_nodes(not_g, 0, and_node, 0);
 
@@ -939,7 +944,8 @@ void filter_memories_by_soft_logic_cutoff() {
 
             long depth = get_sp_ram_depth(node);
             long width = get_sp_ram_width(node);
-            if (depth > configuration.soft_logic_memory_depth_threshold || width > configuration.soft_logic_memory_width_threshold)
+            if (depth > configuration.soft_logic_memory_depth_threshold
+                || width > configuration.soft_logic_memory_width_threshold)
                 sp_memory_list = insert_in_vptr_list(sp_memory_list, node);
         }
     }
@@ -955,7 +961,8 @@ void filter_memories_by_soft_logic_cutoff() {
 
             long depth = get_dp_ram_depth(node);
             long width = get_dp_ram_width(node);
-            if (depth > configuration.soft_logic_memory_depth_threshold || width > configuration.soft_logic_memory_width_threshold)
+            if (depth > configuration.soft_logic_memory_depth_threshold
+                || width > configuration.soft_logic_memory_width_threshold)
                 dp_memory_list = insert_in_vptr_list(dp_memory_list, node);
         }
     }
@@ -1210,7 +1217,8 @@ bool is_ast_sp_ram(ast_node_t* node) {
         for (int i = 0; i < connect_list->num_children && is_ram; i++) {
             char* id = connect_list->children[i]->identifier_node->types.identifier;
 
-            if ((strcmp(id, "we") != 0) && (strcmp(id, "clk") != 0) && (strcmp(id, "addr") != 0) && (strcmp(id, "data") != 0) && (strcmp(id, "out") != 0)) {
+            if ((strcmp(id, "we") != 0) && (strcmp(id, "clk") != 0) && (strcmp(id, "addr") != 0)
+                && (strcmp(id, "data") != 0) && (strcmp(id, "out") != 0)) {
                 is_ram = false;
                 break;
             }
@@ -1232,7 +1240,9 @@ bool is_ast_dp_ram(ast_node_t* node) {
         for (int i = 0; i < connect_list->num_children && is_ram; i++) {
             char* id = connect_list->children[i]->identifier_node->types.identifier;
 
-            if ((strcmp(id, "clk") != 0) && (strcmp(id, "we1") != 0) && (strcmp(id, "we2") != 0) && (strcmp(id, "addr1") != 0) && (strcmp(id, "addr2") != 0) && (strcmp(id, "data1") != 0) && (strcmp(id, "data2") != 0) && (strcmp(id, "out1") != 0) && (strcmp(id, "out2") != 0)) {
+            if ((strcmp(id, "clk") != 0) && (strcmp(id, "we1") != 0) && (strcmp(id, "we2") != 0)
+                && (strcmp(id, "addr1") != 0) && (strcmp(id, "addr2") != 0) && (strcmp(id, "data1") != 0)
+                && (strcmp(id, "data2") != 0) && (strcmp(id, "out1") != 0) && (strcmp(id, "out2") != 0)) {
                 is_ram = false;
                 break;
             }
@@ -1267,8 +1277,7 @@ sp_ram_signals* get_sp_ram_signals(nnode_t* node) {
         else if (!strcmp(pin->mapping, "clk"))
             signals->clk = pin;
         else
-            error_message(NETLIST, ast_node->loc,
-                          "Unexpected input pin mapping \"%s\" on memory node: %s\n",
+            error_message(NETLIST, ast_node->loc, "Unexpected input pin mapping \"%s\" on memory node: %s\n",
                           pin->mapping, node->name);
     }
 
@@ -1283,8 +1292,7 @@ sp_ram_signals* get_sp_ram_signals(nnode_t* node) {
         if (!strcmp(pin->mapping, "out"))
             add_pin_to_signal_list(signals->out, pin);
         else
-            error_message(NETLIST, ast_node->loc,
-                          "Unexpected output pin mapping \"%s\" on memory node: %s\n",
+            error_message(NETLIST, ast_node->loc, "Unexpected output pin mapping \"%s\" on memory node: %s\n",
                           pin->mapping, node->name);
     }
 
@@ -1336,8 +1344,7 @@ dp_ram_signals* get_dp_ram_signals(nnode_t* node) {
         else if (!strcmp(pin->mapping, "clk"))
             signals->clk = pin;
         else
-            error_message(NETLIST, ast_node->loc,
-                          "Unexpected input pin mapping \"%s\" on memory node: %s\n",
+            error_message(NETLIST, ast_node->loc, "Unexpected input pin mapping \"%s\" on memory node: %s\n",
                           pin->mapping, node->name);
     }
 
@@ -1358,8 +1365,7 @@ dp_ram_signals* get_dp_ram_signals(nnode_t* node) {
         else if (!strcmp(pin->mapping, "out2"))
             add_pin_to_signal_list(signals->out2, pin);
         else
-            error_message(NETLIST, ast_node->loc,
-                          "Unexpected output pin mapping \"%s\" on memory node: %s\n",
+            error_message(NETLIST, ast_node->loc, "Unexpected output pin mapping \"%s\" on memory node: %s\n",
                           pin->mapping, node->name);
     }
 
@@ -1399,11 +1405,8 @@ void instantiate_soft_single_port_ram(nnode_t* node, short mark, netlist_t* netl
     for (long i = 0; i < num_addr; i++) {
         npin_t* address_pin = decoder->pins[i];
         /* Check that the input pin is driven */
-        oassert(
-            address_pin->net->num_driver_pins
-            || address_pin->net == syn_netlist->zero_net
-            || address_pin->net == syn_netlist->one_net
-            || address_pin->net == syn_netlist->pad_net);
+        oassert(address_pin->net->num_driver_pins || address_pin->net == syn_netlist->zero_net
+                || address_pin->net == syn_netlist->one_net || address_pin->net == syn_netlist->pad_net);
 
         // An AND gate to enable and disable writing.
         nnode_t* and_g = make_1port_logic_gate(LOGICAL_AND, 2, node, mark);
@@ -1427,11 +1430,8 @@ void instantiate_soft_single_port_ram(nnode_t* node, short mark, netlist_t* netl
         for (j = 0; j < num_addr; j++) {
             npin_t* address_pin = decoder->pins[j];
             /* Check that the input pin is driven */
-            oassert(
-                address_pin->net->num_driver_pins
-                || address_pin->net == syn_netlist->zero_net
-                || address_pin->net == syn_netlist->one_net
-                || address_pin->net == syn_netlist->pad_net);
+            oassert(address_pin->net->num_driver_pins || address_pin->net == syn_netlist->zero_net
+                    || address_pin->net == syn_netlist->one_net || address_pin->net == syn_netlist->pad_net);
 
             // A multiplexer switches between accepting incoming data and keeping existing data.
             nnode_t* mux = make_2port_gate(MUX_2, 2, 2, 1, node, mark);
@@ -1512,16 +1512,10 @@ void instantiate_soft_dual_port_ram(nnode_t* node, short mark, netlist_t* netlis
         npin_t* addr1_pin = decoder1->pins[i];
         npin_t* addr2_pin = decoder2->pins[i];
 
-        oassert(
-            addr1_pin->net->num_driver_pins
-            || addr1_pin->net == syn_netlist->zero_net
-            || addr1_pin->net == syn_netlist->one_net
-            || addr1_pin->net == syn_netlist->pad_net);
-        oassert(
-            addr2_pin->net->num_driver_pins
-            || addr2_pin->net == syn_netlist->zero_net
-            || addr2_pin->net == syn_netlist->one_net
-            || addr2_pin->net == syn_netlist->pad_net);
+        oassert(addr1_pin->net->num_driver_pins || addr1_pin->net == syn_netlist->zero_net
+                || addr1_pin->net == syn_netlist->one_net || addr1_pin->net == syn_netlist->pad_net);
+        oassert(addr2_pin->net->num_driver_pins || addr2_pin->net == syn_netlist->zero_net
+                || addr2_pin->net == syn_netlist->one_net || addr2_pin->net == syn_netlist->pad_net);
 
         // Write enable and gate for address 1.
         nnode_t* and1 = make_1port_logic_gate(LOGICAL_AND, 2, node, mark);
@@ -1565,16 +1559,10 @@ void instantiate_soft_dual_port_ram(nnode_t* node, short mark, netlist_t* netlis
             npin_t* addr1_pin = decoder1->pins[j];
             npin_t* addr2_pin = decoder2->pins[j];
 
-            oassert(
-                addr1_pin->net->num_driver_pins
-                || addr1_pin->net == syn_netlist->zero_net
-                || addr1_pin->net == syn_netlist->one_net
-                || addr1_pin->net == syn_netlist->pad_net);
-            oassert(
-                addr2_pin->net->num_driver_pins
-                || addr2_pin->net == syn_netlist->zero_net
-                || addr2_pin->net == syn_netlist->one_net
-                || addr2_pin->net == syn_netlist->pad_net);
+            oassert(addr1_pin->net->num_driver_pins || addr1_pin->net == syn_netlist->zero_net
+                    || addr1_pin->net == syn_netlist->one_net || addr1_pin->net == syn_netlist->pad_net);
+            oassert(addr2_pin->net->num_driver_pins || addr2_pin->net == syn_netlist->zero_net
+                    || addr2_pin->net == syn_netlist->one_net || addr2_pin->net == syn_netlist->pad_net);
 
             // The data mux selects between the two data lines for this address.
             nnode_t* data_mux = make_2port_gate(MUX_2, 2, 2, 1, node, mark);
@@ -1659,7 +1647,10 @@ void instantiate_soft_dual_port_ram(nnode_t* node, short mark, netlist_t* netlis
 signal_list_t* create_decoder(nnode_t* node, short mark, signal_list_t* input_list) {
     long num_inputs = input_list->count;
     if (num_inputs > SOFT_RAM_ADDR_LIMIT)
-        error_message(NETLIST, node->loc, "Memory %s of depth 2^%ld exceeds ODIN bound of 2^%d.\nMust use an FPGA architecture that contains embedded hard block memories", node->name, num_inputs, SOFT_RAM_ADDR_LIMIT);
+        error_message(NETLIST, node->loc,
+                      "Memory %s of depth 2^%ld exceeds ODIN bound of 2^%d.\nMust use an FPGA architecture that "
+                      "contains embedded hard block memories",
+                      node->name, num_inputs, SOFT_RAM_ADDR_LIMIT);
 
     // Number of outputs is 2^num_inputs
     long num_outputs = shift_left_value_with_overflow_check(0x1, num_inputs, node->loc);
@@ -1667,11 +1658,10 @@ signal_list_t* create_decoder(nnode_t* node, short mark, signal_list_t* input_li
     // Create NOT gates for all inputs and put the outputs in their own signal list.
     signal_list_t* not_gates = init_signal_list();
     for (long i = 0; i < num_inputs; i++) {
-        if (!input_list->pins[i]->net->num_driver_pins
-            && input_list->pins[i]->net != syn_netlist->zero_net
-            && input_list->pins[i]->net != syn_netlist->one_net
-            && input_list->pins[i]->net != syn_netlist->pad_net) {
-            warning_message(NETLIST, node->loc, "Signal %s is not driven. padding with ground\n", input_list->pins[i]->name);
+        if (!input_list->pins[i]->net->num_driver_pins && input_list->pins[i]->net != syn_netlist->zero_net
+            && input_list->pins[i]->net != syn_netlist->one_net && input_list->pins[i]->net != syn_netlist->pad_net) {
+            warning_message(NETLIST, node->loc, "Signal %s is not driven. padding with ground\n",
+                            input_list->pins[i]->name);
             add_fanout_pin_to_net(syn_netlist->zero_net, input_list->pins[i]);
         }
 

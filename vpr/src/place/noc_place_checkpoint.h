@@ -49,8 +49,7 @@ class NoCPlacementCheckpoint {
      *  @param costs Used to load NoC related costs for the checkpoint
      *  @param blk_loc_registry To be updated with the save checkpoint for NoC router locations.
      */
-    void restore_checkpoint(t_placer_costs& costs,
-                            BlkLocRegistry& blk_loc_registry);
+    void restore_checkpoint(t_placer_costs& costs, BlkLocRegistry& blk_loc_registry);
 
     /**
      * @brief Indicates whether the object is empty or it has already stored a

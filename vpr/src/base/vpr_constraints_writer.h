@@ -56,9 +56,7 @@ void write_vpr_floorplan_constraints(const char* file_name,
  *   @param subtile     Specifies whether to write out the constraint regions with or without
  *                      subtile values.
  */
-void setup_vpr_floorplan_constraints_one_loc(VprConstraints& constraints,
-                                             int expand,
-                                             bool subtile);
+void setup_vpr_floorplan_constraints_one_loc(VprConstraints& constraints, int expand, bool subtile);
 
 /**
  * @brief Populates VprConstraints by dividing the grid into multiple partitions.

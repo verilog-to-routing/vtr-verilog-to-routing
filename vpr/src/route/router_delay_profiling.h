@@ -8,9 +8,7 @@
 
 class RouterDelayProfiler {
   public:
-    RouterDelayProfiler(const Netlist<>& net_list,
-                        const RouterLookahead* lookahead,
-                        bool is_flat);
+    RouterDelayProfiler(const Netlist<>& net_list, const RouterLookahead* lookahead, bool is_flat);
 
     /**
      * @brief Returns true as long as found some way to hook up this net, even if that
@@ -24,10 +22,7 @@ class RouterDelayProfiler {
      * @param layer_num
      * @return
      */
-    bool calculate_delay(RRNodeId source_node,
-                         RRNodeId sink_node,
-                         const t_router_opts& router_opts,
-                         float* net_delay);
+    bool calculate_delay(RRNodeId source_node, RRNodeId sink_node, const t_router_opts& router_opts, float* net_delay);
 
     /**
      * @param physical_tile_type_idx

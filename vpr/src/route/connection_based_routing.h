@@ -70,7 +70,9 @@ class Connection_based_routing_resources {
     }
 
     // for updating the last stable path delay
-    void set_stable_critical_path_delay(float stable_critical_path_delay) { last_stable_critical_path_delay = stable_critical_path_delay; }
+    void set_stable_critical_path_delay(float stable_critical_path_delay) {
+        last_stable_critical_path_delay = stable_critical_path_delay;
+    }
 
     // get whether the connection to rr_sink_node of net_id should be forcibly rerouted (can either assign or just read)
     bool should_force_reroute_connection(ParentNetId net_id, RRNodeId rr_sink_node) const {

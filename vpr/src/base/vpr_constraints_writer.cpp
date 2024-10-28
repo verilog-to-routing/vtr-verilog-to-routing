@@ -26,7 +26,11 @@
  */
 static Partition create_partition(const std::string& part_name, const Region& region);
 
-void write_vpr_floorplan_constraints(const char* file_name, int expand, bool subtile, int horizontal_partitions, int vertical_partitions) {
+void write_vpr_floorplan_constraints(const char* file_name,
+                                     int expand,
+                                     bool subtile,
+                                     int horizontal_partitions,
+                                     int vertical_partitions) {
     VprConstraints constraints;
     if (horizontal_partitions != 0 && vertical_partitions != 0) {
         setup_vpr_floorplan_constraints_cutpoints(constraints, horizontal_partitions, vertical_partitions);
@@ -43,9 +47,7 @@ void write_vpr_floorplan_constraints(const char* file_name, int expand, bool sub
         void* context;
         uxsd::write_vpr_constraints_xml(writer, context, fp);
     } else {
-        VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                        "Unknown extension on output %s",
-                        file_name);
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Unknown extension on output %s", file_name);
     }
 }
 
@@ -69,8 +71,7 @@ void setup_vpr_floorplan_constraints_one_loc(VprConstraints& constraints, int ex
         const auto& loc = block_locs[blk_id].loc;
 
         PartitionRegion pr;
-        Region reg(loc.x - expand, loc.y - expand,
-                   loc.x + expand, loc.y + expand, loc.layer);
+        Region reg(loc.x - expand, loc.y - expand, loc.x + expand, loc.y + expand, loc.layer);
 
         if (subtile) {
             reg.set_sub_tile(loc.sub_tile);
@@ -181,7 +182,7 @@ void setup_vpr_floorplan_constraints_cutpoints(VprConstraints& constraints,
             }
         }
 
-        Region current_reg(xminimum, yminimum, xmaximum, ymaximum, 0, n_layers-1);
+        Region current_reg(xminimum, yminimum, xmaximum, ymaximum, 0, n_layers - 1);
         // This function has not been tested for multi-layer grids. An assertion is used earlier to make sure that the grid has only one layer
 
         auto got = region_atoms.find(current_reg);

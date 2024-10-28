@@ -60,7 +60,8 @@ class NocRouting {
                             NocRouterId sink_router_id,
                             NocTrafficFlowId traffic_flow_id,
                             std::vector<NocLinkId>& flow_route,
-                            const NocStorage& noc_model) = 0;
+                            const NocStorage& noc_model)
+        = 0;
 };
 
 #endif

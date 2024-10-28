@@ -12,9 +12,9 @@ namespace comm {
 
 /**
  * @brief ByteArray is a simple wrapper over std::vector<char> that provides a user-friendly interface for manipulating array data..
-*/
+ */
 class ByteArray : public std::vector<char> {
-public:
+  public:
     static const std::size_t DEFAULT_SIZE_HINT = 1024;
 
     /**
@@ -27,8 +27,7 @@ public:
      * @param data A pointer to the null-terminated C string from which to construct the ByteArray.
      */
     explicit ByteArray(const char* data)
-        : std::vector<char>(data, data + std::strlen(data))
-    {}
+        : std::vector<char>(data, data + std::strlen(data)) {}
 
     /**
      * @brief Constructs a ByteArray from a raw character array.
@@ -41,8 +40,7 @@ public:
      * @param size The size of the raw character array, in bytes.
      */
     ByteArray(const char* data, std::size_t size)
-        : std::vector<char>(data, data + size)
-    {}
+        : std::vector<char>(data, data + size) {}
 
     /**
      * @brief Constructs a byte array with the specified size hint.
@@ -51,9 +49,7 @@ public:
      *
      * @param size_hint The initial capacity hint for the byte array.
      */
-    explicit ByteArray(std::size_t size_hint = DEFAULT_SIZE_HINT) {
-        reserve(size_hint);
-    }
+    explicit ByteArray(std::size_t size_hint = DEFAULT_SIZE_HINT) { reserve(size_hint); }
 
     /**
      * @brief Constructs a byte array from the elements in the range [first, last).
@@ -66,7 +62,8 @@ public:
      * @param last An iterator to the last element in the range.
      */
     template<typename Iterator>
-    ByteArray(Iterator first, Iterator last): std::vector<char>(first, last) {}
+    ByteArray(Iterator first, Iterator last)
+        : std::vector<char>(first, last) {}
 
     /**
      * @brief Appends the content of another byte array to the end of this byte array.
@@ -76,9 +73,7 @@ public:
      *
      * @param appendix The byte array whose content is to be appended.
      */
-    void append(const ByteArray& appendix) {
-        insert(end(), appendix.begin(), appendix.end());
-    }
+    void append(const ByteArray& appendix) { insert(end(), appendix.begin(), appendix.end()); }
 
     /**
      * @brief Appends a byte to the end of the byte array.
@@ -87,9 +82,7 @@ public:
      *
      * @param b The byte to append to the byte array.
      */
-    void append(char b) {
-        push_back(b);
-    }
+    void append(char b) { push_back(b); }
 
     /**
      * @brief Finds the position of the specified sequence in the byte array.
@@ -131,9 +124,7 @@ public:
      *
      * @return A `std::string_view` representing the container's data.
      */
-    operator std::string_view() const {
-        return std::string_view(this->data(), this->size());
-    }
+    operator std::string_view() const { return std::string_view(this->data(), this->size()); }
 
     /**
      * @brief Calculates the checksum of the elements in the container.
@@ -143,9 +134,7 @@ public:
      *
      * @return The checksum of the elements in the container.
      */
-    uint32_t calc_check_sum() {
-        return calc_check_sum<ByteArray>(*this);
-    }
+    uint32_t calc_check_sum() { return calc_check_sum<ByteArray>(*this); }
 
     /**
      * @brief Calculates the checksum of the elements in the given iterable container.

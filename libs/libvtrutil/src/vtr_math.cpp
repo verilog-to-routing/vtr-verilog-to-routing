@@ -50,7 +50,9 @@ Y linear_interpolate_or_extrapolate(const std::map<X, Y>* xy_map, X requested_x)
 
     /* the intention of this function is to interpolate/extrapolate. we can't do so with less than 2 values in the xy_map */
     if (xy_map->size() < 2) {
-        throw VtrError("linear_interpolate_or_extrapolate: cannot interpolate/extrapolate based on less than 2 (x,y) pairs", __FILE__, __LINE__);
+        throw VtrError(
+            "linear_interpolate_or_extrapolate: cannot interpolate/extrapolate based on less than 2 (x,y) pairs",
+            __FILE__, __LINE__);
     }
 
     auto itr = xy_map->find(requested_x);
@@ -100,7 +102,9 @@ Y linear_interpolate_or_extrapolate(const std::map<X, Y>* xy_map, X requested_x)
 
     return result;
 }
-template double linear_interpolate_or_extrapolate(const std::map<int, double>* xy_map, int requested_x);       /* (int,double) */
-template double linear_interpolate_or_extrapolate(const std::map<double, double>* xy_map, double requested_x); /* (double,double) */
+template double linear_interpolate_or_extrapolate(const std::map<int, double>* xy_map,
+                                                  int requested_x); /* (int,double) */
+template double linear_interpolate_or_extrapolate(const std::map<double, double>* xy_map,
+                                                  double requested_x); /* (double,double) */
 
 } // namespace vtr

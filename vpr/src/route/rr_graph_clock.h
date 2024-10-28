@@ -52,9 +52,7 @@ class SwitchPoints {
     /* Example: x,y = middle of the chip, switch_point_name == name of main drive
      * of global clock spine, returns the rr_nodes of all the clock spines that
      * start the newtork there*/
-    std::vector<int> get_rr_node_indices_at_location(std::string switch_point_name,
-                                                     int x,
-                                                     int y) const;
+    std::vector<int> get_rr_node_indices_at_location(std::string switch_point_name, int x, int y) const;
 
     std::set<std::pair<int, int>> get_switch_locations(std::string switch_point_name) const;
 
@@ -75,29 +73,21 @@ class ClockRRGraphBuilder {
     std::unordered_map<std::string, SwitchPoints> clock_name_to_switch_points;
 
   public:
-    ClockRRGraphBuilder(
-        const t_chan_width& chan_width,
-        const DeviceGrid& grid,
-        t_rr_graph_storage* rr_nodes,
-        RRGraphBuilder* rr_graph_builder)
+    ClockRRGraphBuilder(const t_chan_width& chan_width,
+                        const DeviceGrid& grid,
+                        t_rr_graph_storage* rr_nodes,
+                        RRGraphBuilder* rr_graph_builder)
         : chan_width_(chan_width)
         , grid_(grid)
         , rr_nodes_(rr_nodes)
         , rr_graph_builder_(rr_graph_builder)
         , chanx_ptc_idx_(0)
-        , chany_ptc_idx_(0) {
-    }
+        , chany_ptc_idx_(0) {}
 
-    const DeviceGrid& grid() const {
-        return grid_;
-    }
+    const DeviceGrid& grid() const { return grid_; }
 
     /* Saves a map from switch rr_node idx -> {x, y} location */
-    void add_switch_location(std::string clock_name,
-                             std::string switch_point_name,
-                             int x,
-                             int y,
-                             int node_index);
+    void add_switch_location(std::string clock_name, std::string switch_point_name, int x, int y, int node_index);
 
     /* Returns the rr_node idx of the switch at location {x, y} */
     std::vector<int> get_rr_node_indices_at_switch_location(std::string clock_name,
@@ -106,8 +96,7 @@ class ClockRRGraphBuilder {
                                                             int y) const;
 
     /* Returns all the switch locations for the a certain clock network switch */
-    std::set<std::pair<int, int>> get_switch_locations(std::string clock_name,
-                                                       std::string switch_point_name) const;
+    std::set<std::pair<int, int>> get_switch_locations(std::string clock_name, std::string switch_point_name) const;
 
     void update_chan_width(t_chan_width* chan_width) const;
 
@@ -135,8 +124,7 @@ class ClockRRGraphBuilder {
   public:
     /* Creates the routing resourse (rr) graph of the clock network and appends it to the
      * existing rr graph created in build_rr_graph for inter-block and intra-block routing. */
-    void create_and_append_clock_rr_graph(int num_segments_x,
-                                          t_rr_edge_info_set* rr_edges_to_create);
+    void create_and_append_clock_rr_graph(int num_segments_x, t_rr_edge_info_set* rr_edges_to_create);
 
   private:
     /* loop over all of the clock networks and create their wires */

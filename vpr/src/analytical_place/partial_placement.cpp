@@ -31,9 +31,7 @@ double PartialPlacement::get_hpwl(const APNetlist& netlist) const {
     return hpwl;
 }
 
-bool PartialPlacement::verify_locs(const APNetlist& netlist,
-                                   size_t grid_width,
-                                   size_t grid_height) const {
+bool PartialPlacement::verify_locs(const APNetlist& netlist, size_t grid_width, size_t grid_height) const {
     // Make sure all of the loc values are there.
     if (block_x_locs.size() != netlist.blocks().size())
         return false;
@@ -43,13 +41,9 @@ bool PartialPlacement::verify_locs(const APNetlist& netlist,
     for (APBlockId blk_id : netlist.blocks()) {
         double x_pos = block_x_locs[blk_id];
         double y_pos = block_y_locs[blk_id];
-        if (std::isnan(x_pos) ||
-            x_pos < 0.0 ||
-            x_pos >= grid_width)
+        if (std::isnan(x_pos) || x_pos < 0.0 || x_pos >= grid_width)
             return false;
-        if (std::isnan(y_pos) ||
-            y_pos < 0.0 ||
-            y_pos >= grid_height)
+        if (std::isnan(y_pos) || y_pos < 0.0 || y_pos >= grid_height)
             return false;
         if (netlist.block_mobility(blk_id) == APBlockMobility::FIXED) {
             const APFixedBlockLoc& fixed_loc = netlist.block_loc(blk_id);
@@ -63,8 +57,7 @@ bool PartialPlacement::verify_locs(const APNetlist& netlist,
     return true;
 }
 
-bool PartialPlacement::verify_layer_nums(const APNetlist& netlist,
-                                         size_t grid_num_layers) const {
+bool PartialPlacement::verify_layer_nums(const APNetlist& netlist, size_t grid_num_layers) const {
     // Make sure all of the layer nums are there
     if (block_layer_nums.size() != netlist.blocks().size())
         return false;
@@ -120,4 +113,3 @@ bool PartialPlacement::verify(const APNetlist& netlist,
     // If all other verify methods passed, then the placement is valid.
     return true;
 }
-

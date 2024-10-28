@@ -41,8 +41,9 @@ def parse_args():
                     does nothing (unless --force is specified).
                   """
     )
-    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-                                     description=description)
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter, description=description
+    )
 
     parser.add_argument(
         "--titan_version", default="2.0.0", help="Titan release version to download"

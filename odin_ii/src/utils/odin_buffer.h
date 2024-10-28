@@ -77,17 +77,11 @@ class buffered_reader_t {
 
     size_t buffer_size = 2;
 
-    static bool is_eof(int in) {
-        return (EOF == in);
-    }
+    static bool is_eof(int in) { return (EOF == in); }
 
-    static bool is_nl(int in) {
-        return is_eof(in) || ('\n' == (char)in || '\r' == (char)in);
-    }
+    static bool is_nl(int in) { return is_eof(in) || ('\n' == (char)in || '\r' == (char)in); }
 
-    static bool is_whitespace(int in) {
-        return is_nl(in) || (' ' == (char)in || '\t' == (char)in);
-    }
+    static bool is_whitespace(int in) { return is_nl(in) || (' ' == (char)in || '\t' == (char)in); }
 
     bool is_one_line_comment(const char* in) {
         return (one_line_comment_len && strncmp(in, one_line_comment, one_line_comment_len) == 0);
@@ -104,7 +98,10 @@ class buffered_reader_t {
     buffered_reader_t() {}
 
   public:
-    buffered_reader_t(FILE* _source, const char* _one_line_comment, const char* _n_line_comment_ST, const char* _n_line_comment_END) {
+    buffered_reader_t(FILE* _source,
+                      const char* _one_line_comment,
+                      const char* _n_line_comment_ST,
+                      const char* _n_line_comment_END) {
         this->source = _source;
 
         if (_one_line_comment) {
@@ -120,10 +117,9 @@ class buffered_reader_t {
             this->n_line_comment_END_len = strlen(_n_line_comment_END);
         }
 
-        this->buffer_size = (std::max((size_t)2, // for whitespace duplicate
-                                      std::max(one_line_comment_len,
-                                               std::max(n_line_comment_ST_len,
-                                                        n_line_comment_END_len))));
+        this->buffer_size
+            = (std::max((size_t)2, // for whitespace duplicate
+                        std::max(one_line_comment_len, std::max(n_line_comment_ST_len, n_line_comment_END_len))));
     }
 
     /*

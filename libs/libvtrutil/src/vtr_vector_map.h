@@ -107,15 +107,21 @@ class vector_map {
     // Delegate potentially overloaded functions to the underlying vector with perfect forwarding
     ///@brief push_back function
     template<typename... Args>
-    void push_back(Args&&... args) { vec_.push_back(std::forward<Args>(args)...); }
+    void push_back(Args&&... args) {
+        vec_.push_back(std::forward<Args>(args)...);
+    }
 
     ///@brief emplace_back function
     template<typename... Args>
-    void emplace_back(Args&&... args) { vec_.emplace_back(std::forward<Args>(args)...); }
+    void emplace_back(Args&&... args) {
+        vec_.emplace_back(std::forward<Args>(args)...);
+    }
 
     ///@brief resize function
     template<typename... Args>
-    void resize(Args&&... args) { vec_.resize(std::forward<Args>(args)...); }
+    void resize(Args&&... args) {
+        vec_.resize(std::forward<Args>(args)...);
+    }
 
     ///@brief clears the container
     void clear() { vec_.clear(); }
@@ -160,9 +166,7 @@ class vector_map {
     void update(const K key, const V value) { insert(key, value); }
 
     ///@brief Swap (this enables std::swap via ADL)
-    friend void swap(vector_map<K, V>& x, vector_map<K, V>& y) {
-        std::swap(x.vec_, y.vec_);
-    }
+    friend void swap(vector_map<K, V>& x, vector_map<K, V>& y) { std::swap(x.vec_, y.vec_); }
 
   private:
     std::vector<V> vec_;

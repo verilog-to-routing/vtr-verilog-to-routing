@@ -59,9 +59,7 @@ void comp_td_costs(const PlaceDelayModel* delay_model,
  * @brief Commit all the setup slack values from the PlacerSetupSlacks
  *        class to `connection_setup_slack`.
  */
-void commit_setup_slacks(const PlacerSetupSlacks* setup_slacks,
-                         PlacerState& placer_state);
+void commit_setup_slacks(const PlacerSetupSlacks* setup_slacks, PlacerState& placer_state);
 
 ///@brief Verify that the values in `connection_setup_slack` matches PlacerSetupSlacks.
-bool verify_connection_setup_slacks(const PlacerSetupSlacks* setup_slacks,
-                                    const PlacerState& placer_state);
+bool verify_connection_setup_slacks(const PlacerSetupSlacks* setup_slacks, const PlacerState& placer_state);

@@ -7,33 +7,19 @@
 BlkLocRegistry::BlkLocRegistry()
     : expected_transaction_(e_expected_transaction::APPLY) {}
 
-const vtr::vector_map<ClusterBlockId, t_block_loc>& BlkLocRegistry::block_locs() const {
-    return  block_locs_;
-}
+const vtr::vector_map<ClusterBlockId, t_block_loc>& BlkLocRegistry::block_locs() const { return block_locs_; }
 
-vtr::vector_map<ClusterBlockId, t_block_loc>& BlkLocRegistry::mutable_block_locs() {
-    return  block_locs_;
-}
+vtr::vector_map<ClusterBlockId, t_block_loc>& BlkLocRegistry::mutable_block_locs() { return block_locs_; }
 
-const GridBlock& BlkLocRegistry::grid_blocks() const {
-    return grid_blocks_;
-}
+const GridBlock& BlkLocRegistry::grid_blocks() const { return grid_blocks_; }
 
-GridBlock& BlkLocRegistry::mutable_grid_blocks() {
-    return grid_blocks_;
-}
+GridBlock& BlkLocRegistry::mutable_grid_blocks() { return grid_blocks_; }
 
-const vtr::vector_map<ClusterPinId, int>& BlkLocRegistry::physical_pins() const {
-    return physical_pins_;
-}
+const vtr::vector_map<ClusterPinId, int>& BlkLocRegistry::physical_pins() const { return physical_pins_; }
 
-vtr::vector_map<ClusterPinId, int>& BlkLocRegistry::mutable_physical_pins() {
-    return physical_pins_;
-}
+vtr::vector_map<ClusterPinId, int>& BlkLocRegistry::mutable_physical_pins() { return physical_pins_; }
 
-int BlkLocRegistry::tile_pin_index(const ClusterPinId pin) const {
-    return physical_pins_[pin];
-}
+int BlkLocRegistry::tile_pin_index(const ClusterPinId pin) const { return physical_pins_[pin]; }
 
 int BlkLocRegistry::net_pin_to_tile_pin_index(const ClusterNetId net_id, int net_pin_index) const {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -51,10 +37,10 @@ void BlkLocRegistry::set_block_location(ClusterBlockId blk_id, const t_pl_loc& l
     const std::string& block_name = cluster_ctx.clb_nlist.block_name(blk_id);
 
     // Check if block location is out of range of grid dimensions
-    if (location.x < 0 || location.x > int(device_ctx.grid.width() - 1)
-        || location.y < 0 || location.y > int(device_ctx.grid.height() - 1)) {
-        VPR_THROW(VPR_ERROR_PLACE, "Block %s with ID %d is out of range at location (%d, %d). \n",
-                  block_name.c_str(), blk_id, location.x, location.y);
+    if (location.x < 0 || location.x > int(device_ctx.grid.width() - 1) || location.y < 0
+        || location.y > int(device_ctx.grid.height() - 1)) {
+        VPR_THROW(VPR_ERROR_PLACE, "Block %s with ID %d is out of range at location (%d, %d). \n", block_name.c_str(),
+                  blk_id, location.x, location.y);
     }
 
     // Set the location of the block
@@ -65,16 +51,13 @@ void BlkLocRegistry::set_block_location(ClusterBlockId blk_id, const t_pl_loc& l
     auto logical_block = cluster_ctx.clb_nlist.block_type(blk_id);
 
     if (location.sub_tile >= physical_tile->capacity || location.sub_tile < 0) {
-        VPR_THROW(VPR_ERROR_PLACE, "Block %s subtile number (%d) is out of range. \n", block_name.c_str(), location.sub_tile);
+        VPR_THROW(VPR_ERROR_PLACE, "Block %s subtile number (%d) is out of range. \n", block_name.c_str(),
+                  location.sub_tile);
     }
 
     if (!is_sub_tile_compatible(physical_tile, logical_block, block_locs_[blk_id].loc.sub_tile)) {
         VPR_THROW(VPR_ERROR_PLACE, "Attempt to place block %s with ID %d at illegal location (%d,%d,%d). \n",
-                  block_name.c_str(),
-                  blk_id,
-                  location.x,
-                  location.y,
-                  location.layer);
+                  block_name.c_str(), blk_id, location.x, location.y, location.layer);
     }
 
     // Mark the grid location and usage of the block
@@ -163,9 +146,11 @@ void BlkLocRegistry::place_sync_external_block_connections(ClusterBlockId iblk) 
 
     for (ClusterPinId pin : clb_nlist.block_pins(iblk)) {
         int logical_pin_index = clb_nlist.pin_logical_index(pin);
-        int sub_tile_pin_index = get_sub_tile_physical_pin(sub_tile_index, physical_tile, logical_block, logical_pin_index);
+        int sub_tile_pin_index
+            = get_sub_tile_physical_pin(sub_tile_index, physical_tile, logical_block, logical_pin_index);
 
-        int new_physical_pin_index = sub_tile.sub_tile_to_tile_pin_indices[sub_tile_pin_index + rel_capacity * max_num_block_pins];
+        int new_physical_pin_index
+            = sub_tile.sub_tile_to_tile_pin_indices[sub_tile_pin_index + rel_capacity * max_num_block_pins];
 
         auto result = physical_pins_.find(pin);
         if (result != physical_pins_.end()) {
@@ -193,9 +178,9 @@ void BlkLocRegistry::apply_move_blocks(const t_pl_blocks_to_be_moved& blocks_aff
         block_locs_[blk].loc = new_loc;
 
         // get physical tile type of the old location
-        t_physical_tile_type_ptr old_type = device_ctx.grid.get_physical_type({old_loc.x,old_loc.y,old_loc.layer});
+        t_physical_tile_type_ptr old_type = device_ctx.grid.get_physical_type({old_loc.x, old_loc.y, old_loc.layer});
         // get physical tile type of the new location
-        t_physical_tile_type_ptr new_type = device_ctx.grid.get_physical_type({new_loc.x,new_loc.y, new_loc.layer});
+        t_physical_tile_type_ptr new_type = device_ctx.grid.get_physical_type({new_loc.x, new_loc.y, new_loc.layer});
 
         // if physical tile type of old location does not equal physical tile type of new location, sync the new physical pins
         if (old_type != new_type) {

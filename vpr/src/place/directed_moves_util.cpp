@@ -2,8 +2,7 @@
 #include "directed_moves_util.h"
 #include "centroid_move_generator.h"
 
-t_physical_tile_loc get_coordinate_of_pin(ClusterPinId pin,
-                                          const BlkLocRegistry& blk_loc_registry) {
+t_physical_tile_loc get_coordinate_of_pin(ClusterPinId pin, const BlkLocRegistry& blk_loc_registry) {
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& grid = device_ctx.grid;
     const auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -135,12 +134,10 @@ void calculate_centroid_loc(ClusterBlockId b_from,
     centroid.layer = (int)std::round(acc_layer / acc_weight);
 }
 
-static std::map<std::string, e_reward_function> available_reward_function = {
-    {"basic", e_reward_function::BASIC},
-    {"nonPenalizing_basic", e_reward_function::NON_PENALIZING_BASIC},
-    {"runtime_aware", e_reward_function::RUNTIME_AWARE},
-    {"WLbiased_runtime_aware", e_reward_function::WL_BIASED_RUNTIME_AWARE}};
+static std::map<std::string, e_reward_function> available_reward_function
+    = {{"basic", e_reward_function::BASIC},
+       {"nonPenalizing_basic", e_reward_function::NON_PENALIZING_BASIC},
+       {"runtime_aware", e_reward_function::RUNTIME_AWARE},
+       {"WLbiased_runtime_aware", e_reward_function::WL_BIASED_RUNTIME_AWARE}};
 
-e_reward_function string_to_reward(const std::string& st) {
-    return available_reward_function[st];
-}
+e_reward_function string_to_reward(const std::string& st) { return available_reward_function[st]; }

@@ -32,20 +32,20 @@
 
 #ifndef NO_GRAPHICS
 
-#    include "draw_global.h"
+#include "draw_global.h"
 
-#    include "ezgl/point.hpp"
-#    include "ezgl/application.hpp"
-#    include "ezgl/graphics.hpp"
-#    include "draw_color.h"
-#    include "search_bar.h"
-#    include "draw_debug.h"
-#    include "manual_moves.h"
+#include "ezgl/point.hpp"
+#include "ezgl/application.hpp"
+#include "ezgl/graphics.hpp"
+#include "draw_color.h"
+#include "search_bar.h"
+#include "draw_debug.h"
+#include "manual_moves.h"
 
-#    include "rr_graph.h"
-#    include "route_utilization.h"
-#    include "place_macro.h"
-#    include "buttons.h"
+#include "rr_graph.h"
+#include "route_utilization.h"
+#include "place_macro.h"
+#include "buttons.h"
 
 /* Draws the routing resources that exist in the FPGA, if the user wants *
  * them drawn. */
@@ -68,9 +68,14 @@ void draw_get_rr_src_sink_coords(const t_rr_node& node, float* xcen, float* ycen
 /* Draws a buffer (triangle) or pass transistor (circle) on the edge
  * connecting from to to, depending on the status of buffered.  The drawing
  * is closest to the from_node, since it reflects the switch type of from.  */
-void draw_rr_switch(float from_x, float from_y, float to_x, float to_y, bool buffered, bool switch_configurable, ezgl::renderer* g);
-void draw_expand_non_configurable_rr_nodes_recurr(RRNodeId from_node,
-                                                  std::set<RRNodeId>& expanded_nodes);
+void draw_rr_switch(float from_x,
+                    float from_y,
+                    float to_x,
+                    float to_y,
+                    bool buffered,
+                    bool switch_configurable,
+                    ezgl::renderer* g);
+void draw_expand_non_configurable_rr_nodes_recurr(RRNodeId from_node, std::set<RRNodeId>& expanded_nodes);
 
 /* This is a helper function for highlight_rr_nodes(). It determines whether
  * a routing resource has been clicked on by computing a bounding box for that

@@ -82,10 +82,13 @@ AtomNetlist::TruthTable expand_truth_table(const AtomNetlist::TruthTable& truth_
  *   @param permutation   A vector indicies to permute, permutation[i] is the input pin where
  *                        the signal currently connected to input i should be placed
  */
-AtomNetlist::TruthTable permute_truth_table(const AtomNetlist::TruthTable& truth_table, const size_t num_inputs, const std::vector<int>& permutation);
+AtomNetlist::TruthTable permute_truth_table(const AtomNetlist::TruthTable& truth_table,
+                                            const size_t num_inputs,
+                                            const std::vector<int>& permutation);
 
 ///@brief Convers a truth table to a lut mask (sequence of binary values representing minterms)
-std::vector<vtr::LogicValue> truth_table_to_lut_mask(const AtomNetlist::TruthTable& truth_table, const size_t num_inputs);
+std::vector<vtr::LogicValue> truth_table_to_lut_mask(const AtomNetlist::TruthTable& truth_table,
+                                                     const size_t num_inputs);
 
 /**
  * @brief Convers a logic cube (potnetially including don't cares) into

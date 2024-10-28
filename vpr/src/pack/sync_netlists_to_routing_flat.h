@@ -1,6 +1,6 @@
 #include "netlist.h"
 
- /********************************************************************
+/********************************************************************
  * Top-level function to synchronize packing results to routing results.
  * Flat routing invalidates the ClusteredNetlist since nets may be routed
  * inside or outside a block and changes virtually all intrablock routing.

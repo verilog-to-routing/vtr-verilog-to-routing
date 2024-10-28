@@ -112,11 +112,12 @@ void AtomLookup::add_atom_clb_net(const AtomNetId atom_net, const ClusterNetId c
     clb_net_to_atom_net_[clb_net] = atom_net;
 }
 
-void AtomLookup::remove_clb_net(const ClusterNetId clb_net){
-    if(!clb_net_to_atom_net_.count(clb_net))
+void AtomLookup::remove_clb_net(const ClusterNetId clb_net) {
+    if (!clb_net_to_atom_net_.count(clb_net)) {
         return;
+    }
 
-    auto atom_net = clb_net_to_atom_net_[clb_net];
+    AtomNetId atom_net = clb_net_to_atom_net_[clb_net];
     auto& all_clb_nets = atom_net_to_clb_nets_[atom_net];
     /* This is o(n), but an AtomNetId rarely has >5 ClusterNetIds */
     all_clb_nets.erase(std::remove(all_clb_nets.begin(), all_clb_nets.end(), clb_net), all_clb_nets.end());
@@ -124,11 +125,12 @@ void AtomLookup::remove_clb_net(const ClusterNetId clb_net){
 
 /* Remove mapping for given atom net */
 void AtomLookup::remove_atom_net(const AtomNetId atom_net) {
-    if(!atom_net_to_clb_nets_.count(atom_net))
+    if (!atom_net_to_clb_nets_.count(atom_net)) {
         return;
+    }
 
-    auto cluster_nets = atom_net_to_clb_nets_[atom_net];
-    for(auto c: cluster_nets){
+    const auto& cluster_nets = atom_net_to_clb_nets_[atom_net];
+    for (const ClusterNetId c : cluster_nets) {
         clb_net_to_atom_net_.erase(c);
     }
     atom_net_to_clb_nets_.erase(atom_net);
@@ -173,7 +175,7 @@ AtomLookup::pin_tnode_range AtomLookup::atom_pin_tnodes(BlockTnode block_tnode_t
 }
 
 void AtomLookup::set_atom_pin_tnode(const AtomPinId pin, const tatum::NodeId node, BlockTnode block_tnode_type) {
-    //A pin always expands to an external tnode (i.e. it's external connectivity in the netlist)
+    //A pin always expands to an external tnode (i.e. its external connectivity in the netlist)
     //but some pins may expand to an additional tnode (i.e. to SOURCE/SINK to cover internal sequential paths within a block)
     if (block_tnode_type == BlockTnode::EXTERNAL) {
         atom_pin_tnode_external_[pin] = node;

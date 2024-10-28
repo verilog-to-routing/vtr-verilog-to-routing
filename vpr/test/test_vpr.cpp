@@ -22,8 +22,7 @@ TEST_CASE("read_arch_metadata", "[vpr]") {
     std::vector<t_physical_tile_type> physical_tile_types;
     std::vector<t_logical_block_type> logical_block_types;
 
-    XmlReadArch(kArchFile, /*timing_enabled=*/false,
-                &arch, physical_tile_types, logical_block_types);
+    XmlReadArch(kArchFile, /*timing_enabled=*/false, &arch, physical_tile_types, logical_block_types);
 
     auto type_str = arch.strings.intern_string(vtr::string_view("type"));
     auto pb_type_type = arch.strings.intern_string(vtr::string_view("pb_type_type"));
@@ -123,14 +122,8 @@ TEST_CASE("read_rr_graph_metadata", "[vpr]") {
         t_vpr_setup vpr_setup;
         t_arch arch;
         t_options options;
-        const char* argv[] = {
-            "test_vpr",
-            kArchFile,
-            "wire.eblif",
-            "--route_chan_width",
-            "100"};
-        vpr_init(sizeof(argv) / sizeof(argv[0]), argv,
-                 &options, &vpr_setup, &arch);
+        const char* argv[] = {"test_vpr", kArchFile, "wire.eblif", "--route_chan_width", "100"};
+        vpr_init(sizeof(argv) / sizeof(argv[0]), argv, &options, &vpr_setup, &arch);
         vpr_setup.RouterOpts.read_rr_edge_metadata = true;
         vpr_create_device(vpr_setup, arch, false);
 
@@ -142,7 +135,8 @@ TEST_CASE("read_rr_graph_metadata", "[vpr]") {
         const char* echo_file_name = getEchoFileName(E_ECHO_RR_GRAPH_INDEXED_DATA);
 
         for (const RRNodeId& inode : device_ctx.rr_graph.nodes()) {
-            if ((rr_graph.node_type(inode) == CHANX || rr_graph.node_type(inode) == CHANY) && rr_graph.num_edges(inode) > 0) {
+            if ((rr_graph.node_type(inode) == CHANX || rr_graph.node_type(inode) == CHANY)
+                && rr_graph.num_edges(inode) > 0) {
                 src_inode = size_t(inode);
                 break;
             }
@@ -152,22 +146,15 @@ TEST_CASE("read_rr_graph_metadata", "[vpr]") {
         sink_inode = size_t(rr_graph.edge_sink_node(RRNodeId(src_inode), 0));
         switch_id = rr_graph.edge_switch(RRNodeId(src_inode), 0);
 
-        vpr::add_rr_node_metadata(rr_graph_builder.rr_node_metadata(), src_inode, vtr::string_view("node"), vtr::string_view("test node"), device_ctx.arch);
-        vpr::add_rr_edge_metadata(rr_graph_builder.rr_edge_metadata(), src_inode, sink_inode, switch_id, vtr::string_view("edge"), vtr::string_view("test edge"), device_ctx.arch);
+        vpr::add_rr_node_metadata(rr_graph_builder.rr_node_metadata(), src_inode, vtr::string_view("node"),
+                                  vtr::string_view("test node"), device_ctx.arch);
+        vpr::add_rr_edge_metadata(rr_graph_builder.rr_edge_metadata(), src_inode, sink_inode, switch_id,
+                                  vtr::string_view("edge"), vtr::string_view("test edge"), device_ctx.arch);
 
-        write_rr_graph(&mutable_device_ctx.rr_graph_builder,
-                       &mutable_device_ctx.rr_graph,
-                       device_ctx.physical_tile_types,
-                       &mutable_device_ctx.rr_indexed_data,
-                       &mutable_device_ctx.rr_rc_data,
-                       device_ctx.grid,
-                       device_ctx.arch_switch_inf,
-                       device_ctx.arch,
-                       &mutable_device_ctx.chan_width,
-                       kRrGraphFile,
-                       echo_enabled,
-                       echo_file_name,
-                       false);
+        write_rr_graph(&mutable_device_ctx.rr_graph_builder, &mutable_device_ctx.rr_graph,
+                       device_ctx.physical_tile_types, &mutable_device_ctx.rr_indexed_data,
+                       &mutable_device_ctx.rr_rc_data, device_ctx.grid, device_ctx.arch_switch_inf, device_ctx.arch,
+                       &mutable_device_ctx.chan_width, kRrGraphFile, echo_enabled, echo_file_name, false);
         vpr_free_all(arch, vpr_setup);
     }
 
@@ -192,8 +179,7 @@ TEST_CASE("read_rr_graph_metadata", "[vpr]") {
         kRrGraphFile,
     };
 
-    vpr_init(sizeof(argv) / sizeof(argv[0]), argv,
-             &options, &vpr_setup, &arch);
+    vpr_init(sizeof(argv) / sizeof(argv[0]), argv, &options, &vpr_setup, &arch);
     vpr_setup.RouterOpts.read_rr_edge_metadata = true;
     vpr_create_device(vpr_setup, arch, false);
 

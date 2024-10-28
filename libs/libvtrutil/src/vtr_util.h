@@ -131,8 +131,7 @@ std::string join(std::initializer_list<T> list, std::string_view delim) {
 template<typename Container>
 void uniquify(Container container) {
     std::sort(container.begin(), container.end());
-    container.erase(std::unique(container.begin(), container.end()),
-                    container.end());
+    container.erase(std::unique(container.begin(), container.end()), container.end());
 }
 
 template<typename... Conditions>

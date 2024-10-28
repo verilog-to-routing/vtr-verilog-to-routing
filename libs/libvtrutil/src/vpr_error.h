@@ -42,10 +42,7 @@ typedef enum e_vpr_error t_vpr_error_type;
 
 class VprError : public vtr::VtrError {
   public:
-    VprError(t_vpr_error_type err_type,
-             std::string msg = "",
-             std::string file = "",
-             size_t linenum = -1)
+    VprError(t_vpr_error_type err_type, std::string msg = "", std::string file = "", size_t linenum = -1)
         : VtrError(msg, file, linenum)
         , type_(err_type) {}
 
@@ -65,11 +62,28 @@ void map_error_activation_status(std::string function_name);
 //Note that we mark these functions with the C++11 attribute 'noreturn'
 //as they will throw exceptions and not return normally. This can help
 //reduce false-positive compiler warnings
-[[noreturn]] void vpr_throw(enum e_vpr_error type, const char* psz_file_name, unsigned int line_num, const char* psz_message, ...);
-[[noreturn]] void vvpr_throw(enum e_vpr_error type, const char* psz_file_name, unsigned int line_num, const char* psz_message, va_list args);
-[[noreturn]] void vpr_throw_msg(enum e_vpr_error type, const char* psz_file_name, unsigned int line_num, std::string msg);
+[[noreturn]] void vpr_throw(enum e_vpr_error type,
+                            const char* psz_file_name,
+                            unsigned int line_num,
+                            const char* psz_message,
+                            ...);
+[[noreturn]] void vvpr_throw(enum e_vpr_error type,
+                             const char* psz_file_name,
+                             unsigned int line_num,
+                             const char* psz_message,
+                             va_list args);
+[[noreturn]] void vpr_throw_msg(enum e_vpr_error type,
+                                const char* psz_file_name,
+                                unsigned int line_num,
+                                std::string msg);
 
-void vpr_throw_opt(enum e_vpr_error type, const char* psz_func_pretty_name, const char* psz_func_name, const char* psz_file_name, unsigned int line_num, const char* psz_message, ...);
+void vpr_throw_opt(enum e_vpr_error type,
+                   const char* psz_func_pretty_name,
+                   const char* psz_func_name,
+                   const char* psz_file_name,
+                   unsigned int line_num,
+                   const char* psz_message,
+                   ...);
 
 //Figure out what macro to use to get the name of the current function
 // We default to __func__ which is defined in C99
@@ -78,12 +92,12 @@ void vpr_throw_opt(enum e_vpr_error type, const char* psz_func_pretty_name, cons
 // information, so we prefer to use it if possible
 #define VPR_THROW_FUNCTION __func__
 #ifdef __GNUC__
-#    ifdef __GNUC_MINOR__
-#        if __GNUC__ >= 2 && __GNUC_MINOR__ > 6
-#            undef VPR_THROW_FUNCTION
-#            define VPR_THROW_FUNCTION __PRETTY_FUNCTION__
-#        endif
-#    endif
+#ifdef __GNUC_MINOR__
+#if __GNUC__ >= 2 && __GNUC_MINOR__ > 6
+#undef VPR_THROW_FUNCTION
+#define VPR_THROW_FUNCTION __PRETTY_FUNCTION__
+#endif
+#endif
 #endif
 
 /*

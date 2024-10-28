@@ -22,8 +22,14 @@ class RouterLookahead {
      * @param R_upstream Upstream resistance to get to the "node".
      * @return
      */
-    virtual float get_expected_cost(RRNodeId node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const = 0;
-    virtual std::pair<float, float> get_expected_delay_and_cong(RRNodeId node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const = 0;
+    virtual float get_expected_cost(RRNodeId node,
+                                    RRNodeId target_node,
+                                    const t_conn_cost_params& params,
+                                    float R_upstream) const = 0;
+    virtual std::pair<float, float> get_expected_delay_and_cong(RRNodeId node,
+                                                                RRNodeId target_node,
+                                                                const t_conn_cost_params& params,
+                                                                float R_upstream) const = 0;
 
     /**
      * @brief Compute router lookahead (if needed)
@@ -74,7 +80,11 @@ class RouterLookahead {
      * @param dy Vertical distance to the destination
      * @return Minimum delay to a point which is dx and dy away from a point on the die number "from_layer" to a point on the die number "to_layer".
      */
-    virtual float get_opin_distance_min_delay(int physical_tile_idx, int from_layer, int to_layer, int dx, int dy) const = 0;
+    virtual float get_opin_distance_min_delay(int physical_tile_idx,
+                                              int from_layer,
+                                              int to_layer,
+                                              int dx,
+                                              int dy) const = 0;
 
     virtual ~RouterLookahead() {}
 };
@@ -122,11 +132,16 @@ const RouterLookahead* get_cached_router_lookahead(const t_det_routing_arch& det
 
 class ClassicLookahead : public RouterLookahead {
   public:
-    float get_expected_cost(RRNodeId node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const override;
-    std::pair<float, float> get_expected_delay_and_cong(RRNodeId node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const override;
+    float get_expected_cost(RRNodeId node,
+                            RRNodeId target_node,
+                            const t_conn_cost_params& params,
+                            float R_upstream) const override;
+    std::pair<float, float> get_expected_delay_and_cong(RRNodeId node,
+                                                        RRNodeId target_node,
+                                                        const t_conn_cost_params& params,
+                                                        float R_upstream) const override;
 
-    void compute(const std::vector<t_segment_inf>& /*segment_inf*/) override {
-    }
+    void compute(const std::vector<t_segment_inf>& /*segment_inf*/) override {}
 
     void compute_intra_tile() override {
         VPR_THROW(VPR_ERROR_ROUTE, "ClassicLookahead::compute_intra_time unimplemented");
@@ -148,7 +163,11 @@ class ClassicLookahead : public RouterLookahead {
         VPR_THROW(VPR_ERROR_ROUTE, "ClassicLookahead::write_intra_cluster unimplemented");
     }
 
-    float get_opin_distance_min_delay(int /*physical_tile_idx*/, int /*from_layer*/, int /*to_layer*/, int /*dx*/, int /*dy*/) const override {
+    float get_opin_distance_min_delay(int /*physical_tile_idx*/,
+                                      int /*from_layer*/,
+                                      int /*to_layer*/,
+                                      int /*dx*/,
+                                      int /*dy*/) const override {
         return -1.;
     }
 
@@ -158,11 +177,16 @@ class ClassicLookahead : public RouterLookahead {
 
 class NoOpLookahead : public RouterLookahead {
   protected:
-    float get_expected_cost(RRNodeId node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const override;
-    std::pair<float, float> get_expected_delay_and_cong(RRNodeId node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const override;
+    float get_expected_cost(RRNodeId node,
+                            RRNodeId target_node,
+                            const t_conn_cost_params& params,
+                            float R_upstream) const override;
+    std::pair<float, float> get_expected_delay_and_cong(RRNodeId node,
+                                                        RRNodeId target_node,
+                                                        const t_conn_cost_params& params,
+                                                        float R_upstream) const override;
 
-    void compute(const std::vector<t_segment_inf>& /*segment_inf*/) override {
-    }
+    void compute(const std::vector<t_segment_inf>& /*segment_inf*/) override {}
 
     void compute_intra_tile() override {
         VPR_THROW(VPR_ERROR_ROUTE, "ClassicLookahead::compute_intra_time unimplemented");
@@ -184,7 +208,11 @@ class NoOpLookahead : public RouterLookahead {
         VPR_THROW(VPR_ERROR_ROUTE, "write_intra_cluster not supported for NoOpLookahead");
     }
 
-    float get_opin_distance_min_delay(int /*physical_tile_idx*/, int /*from_layer*/, int /*to_layer*/, int /*dx*/, int /*dy*/) const override {
+    float get_opin_distance_min_delay(int /*physical_tile_idx*/,
+                                      int /*from_layer*/,
+                                      int /*to_layer*/,
+                                      int /*dx*/,
+                                      int /*dy*/) const override {
         return -1.;
     }
 };

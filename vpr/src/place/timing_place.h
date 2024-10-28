@@ -410,7 +410,8 @@ class PlacerTimingCosts {
         //Shift the start indicies after the intermediate nodes
         size_t num_intermediate_nodes = num_nodes_up_to_level(ilevel - 1);
         for (ClusterNetId net : nets) {
-            if (nlist.net_is_ignored(net)) continue;
+            if (nlist.net_is_ignored(net))
+                continue;
 
             net_start_indicies_[net] = net_start_indicies_[net] + num_intermediate_nodes;
         }
@@ -444,9 +445,7 @@ class PlacerTimingCosts {
          *
          * Useful for client code operating on the cost values (e.g. difference between costs).
          */
-        operator double() const {
-            return connection_cost_;
-        }
+        operator double() const { return connection_cost_; }
 
       private:
         PlacerTimingCosts* timing_costs_;
@@ -465,9 +464,7 @@ class PlacerTimingCosts {
             , net_sink_costs_(net_sink_costs) {}
 
         ///@brief Indexes into the specific net pin/connection.
-        ConnectionProxy operator[](size_t ipin) {
-            return ConnectionProxy(timing_costs_, net_sink_costs_[ipin]);
-        }
+        ConnectionProxy operator[](size_t ipin) { return ConnectionProxy(timing_costs_, net_sink_costs_[ipin]); }
 
         const ConnectionProxy operator[](size_t ipin) const {
             return ConnectionProxy(timing_costs_, net_sink_costs_[ipin]);
@@ -531,8 +528,7 @@ class PlacerTimingCosts {
         }
 
         //Recompute recursively
-        double node_cost = total_cost_recurr(left_child(inode))
-                           + total_cost_recurr(right_child(inode));
+        double node_cost = total_cost_recurr(left_child(inode)) + total_cost_recurr(right_child(inode));
 
         //Save intermedate cost at this node
         connection_costs_[inode] = node_cost;
@@ -547,8 +543,7 @@ class PlacerTimingCosts {
         }
 
         //Recompute recursively
-        double node_cost = total_cost_from_scratch(left_child(inode))
-                           + total_cost_from_scratch(right_child(inode));
+        double node_cost = total_cost_from_scratch(left_child(inode)) + total_cost_from_scratch(right_child(inode));
 
         return node_cost;
     }
@@ -558,13 +553,11 @@ class PlacerTimingCosts {
 
     void invalidate(double* invalidated_cost) {
         //Check pointer within range of internal storage
-        VTR_ASSERT_SAFE_MSG(
-            invalidated_cost >= &connection_costs_[0],
-            "Connection cost pointer should be after start of internal storage");
+        VTR_ASSERT_SAFE_MSG(invalidated_cost >= &connection_costs_[0],
+                            "Connection cost pointer should be after start of internal storage");
 
-        VTR_ASSERT_SAFE_MSG(
-            invalidated_cost <= &connection_costs_[connection_costs_.size() - 1],
-            "Connection cost pointer should be before end of internal storage");
+        VTR_ASSERT_SAFE_MSG(invalidated_cost <= &connection_costs_[connection_costs_.size() - 1],
+                            "Connection cost pointer should be before end of internal storage");
 
         size_t icost = invalidated_cost - &connection_costs_[0];
 
@@ -586,20 +579,15 @@ class PlacerTimingCosts {
             }
         }
 
-        VTR_ASSERT_SAFE_MSG(std::isnan(connection_costs_[0]), "Invalidating any connection should have invalidated the root");
+        VTR_ASSERT_SAFE_MSG(std::isnan(connection_costs_[0]),
+                            "Invalidating any connection should have invalidated the root");
     }
 
-    size_t left_child(size_t i) const {
-        return 2 * i + 1;
-    }
+    size_t left_child(size_t i) const { return 2 * i + 1; }
 
-    size_t right_child(size_t i) const {
-        return 2 * i + 2;
-    }
+    size_t right_child(size_t i) const { return 2 * i + 2; }
 
-    size_t parent(size_t i) const {
-        return (i - 1) / 2;
-    }
+    size_t parent(size_t i) const { return (i - 1) / 2; }
 
     /**
      * @brief Returns the number of nodes in ilevel'th level.
@@ -607,14 +595,10 @@ class PlacerTimingCosts {
      * If ilevel is negative, return 0, since the root shouldn't
      * be counted as a leaf node candidate.
      */
-    size_t num_nodes_in_level(int ilevel) const {
-        return ilevel < 0 ? 0 : (2 << (ilevel));
-    }
+    size_t num_nodes_in_level(int ilevel) const { return ilevel < 0 ? 0 : (2 << (ilevel)); }
 
     ///@brief Returns the total number of nodes in levels [0..ilevel] (inclusive).
-    size_t num_nodes_up_to_level(int ilevel) const {
-        return (2 << (ilevel + 1)) - 1;
-    }
+    size_t num_nodes_up_to_level(int ilevel) const { return (2 << (ilevel + 1)) - 1; }
 
   private:
     /**

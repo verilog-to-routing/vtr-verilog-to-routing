@@ -1,12 +1,12 @@
 
 #ifndef NO_GRAPHICS
 
-#    include "draw_noc.h"
-#    include "globals.h"
-#    include "noc_storage.h"
-#    include "vpr_error.h"
-#    include "vtr_math.h"
-#    include "draw_basic.h"
+#include "draw_noc.h"
+#include "globals.h"
+#include "noc_storage.h"
+#include "vpr_error.h"
+#include "vtr_math.h"
+#include "draw_basic.h"
 
 void draw_noc(ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
@@ -64,7 +64,8 @@ void draw_noc(ezgl::renderer* g) {
     // One link will shift in one direction (knows as TOP) and the other link will shift in the opposite direction (known as BOTTOM)
     determine_direction_to_shift_noc_links(list_of_noc_link_shift_directions);
 
-    draw_noc_links(g, noc_router_logical_type, noc_link_colors, noc_connection_marker_bbox, list_of_noc_link_shift_directions);
+    draw_noc_links(g, noc_router_logical_type, noc_link_colors, noc_connection_marker_bbox,
+                   list_of_noc_link_shift_directions);
 
     draw_noc_connection_marker(g, router_list, noc_connection_marker_bbox);
 }
@@ -92,7 +93,6 @@ void draw_noc_usage(vtr::vector<NocLinkId, ezgl::color>& noc_link_colors) {
     ezgl::color current_noc_link_color;
 
     for (const auto& [link_id, bandwidth_usage] : noc_link_bandwidth_usages.pairs()) {
-
         // only update the color of the link if it wasn't updated previously
         if (noc_link_colors[link_id] == ezgl::BLACK) {
             // if we are here then the link was not updated previously, so assign the color here
@@ -158,9 +158,11 @@ ezgl::rectangle get_noc_connection_marker_bbox(const t_logical_block_type_ptr no
     double half_of_connection_marker_bbox_side_length = connection_marker_bbox_side_length / 2;
 
     // calculate bottom left corner coordinate of marker
-    ezgl::point2d connection_marker_origin_pt(noc_router_bbox_center.x - half_of_connection_marker_bbox_side_length, noc_router_bbox_center.y - half_of_connection_marker_bbox_side_length);
+    ezgl::point2d connection_marker_origin_pt(noc_router_bbox_center.x - half_of_connection_marker_bbox_side_length,
+                                              noc_router_bbox_center.y - half_of_connection_marker_bbox_side_length);
     // calculate upper right corner coordinate of marker
-    ezgl::point2d connection_marker_top_right_pt(noc_router_bbox_center.x + half_of_connection_marker_bbox_side_length, noc_router_bbox_center.y + half_of_connection_marker_bbox_side_length);
+    ezgl::point2d connection_marker_top_right_pt(noc_router_bbox_center.x + half_of_connection_marker_bbox_side_length,
+                                                 noc_router_bbox_center.y + half_of_connection_marker_bbox_side_length);
 
     ezgl::rectangle connection_marker_bbox(connection_marker_origin_pt, connection_marker_top_right_pt);
 
@@ -170,7 +172,9 @@ ezgl::rectangle get_noc_connection_marker_bbox(const t_logical_block_type_ptr no
 /*
  * This function draws the markers inside the noc router tiles. This marker represents a connection that is an intersection points between multiple links.
  */
-void draw_noc_connection_marker(ezgl::renderer* g, const vtr::vector<NocRouterId, NocRouter>& router_list, ezgl::rectangle connection_marker_bbox) {
+void draw_noc_connection_marker(ezgl::renderer* g,
+                                const vtr::vector<NocRouterId, NocRouter>& router_list,
+                                ezgl::rectangle connection_marker_bbox) {
     t_draw_coords* draw_coords = get_draw_coords_vars();
     t_draw_state* draw_state = get_draw_state_vars();
 
@@ -192,7 +196,9 @@ void draw_noc_connection_marker(ezgl::renderer* g, const vtr::vector<NocRouterId
         int router_grid_position_y = router.get_router_grid_position_y();
 
         // get the coordinates to draw the marker given the current routers tile position
-        updated_connection_marker_bbox = connection_marker_bbox + ezgl::point2d(draw_coords->tile_x[router_grid_position_x], draw_coords->tile_y[router_grid_position_y]);
+        updated_connection_marker_bbox
+            = connection_marker_bbox
+              + ezgl::point2d(draw_coords->tile_x[router_grid_position_x], draw_coords->tile_y[router_grid_position_y]);
 
         // draw the marker
         g->fill_rectangle(updated_connection_marker_bbox);
@@ -245,8 +251,10 @@ void draw_noc_links(ezgl::renderer* g,
 
     // get half the width and height of the noc connection marker
     // we will shift the links based on these parameters since the links will be drawn at the boundaries of connection marker instead of the center
-    double noc_connection_marker_quarter_width = (noc_connection_marker_bbox.center().x - noc_connection_marker_bbox.bottom_left().x) / 2;
-    double noc_connection_marker_quarter_height = (noc_connection_marker_bbox.center().y - noc_connection_marker_bbox.bottom_left().y) / 2;
+    double noc_connection_marker_quarter_width
+        = (noc_connection_marker_bbox.center().x - noc_connection_marker_bbox.bottom_left().x) / 2;
+    double noc_connection_marker_quarter_height
+        = (noc_connection_marker_bbox.center().y - noc_connection_marker_bbox.bottom_left().y) / 2;
 
     // loop through the links and draw them
     for (int link = 0; link < (int)noc_link_list.size(); link++) {
@@ -262,7 +270,8 @@ void draw_noc_links(ezgl::renderer* g,
         sink_router_layer_position = router_list[sink_router].get_router_layer_position();
 
         //Get visibility settings of the current NoC link based on the layer visibility settings set by the user
-        t_draw_layer_display noc_link_visibility = get_element_visibility_and_transparency(source_router_layer_position, sink_router_layer_position);
+        t_draw_layer_display noc_link_visibility
+            = get_element_visibility_and_transparency(source_router_layer_position, sink_router_layer_position);
 
         if (!noc_link_visibility.visible) {
             continue; /* Don't Draw link */
@@ -277,13 +286,20 @@ void draw_noc_links(ezgl::renderer* g,
 
         // get the initial drawing coordinates of the noc link
         // it will be drawn from the center of two routers it connects
-        link_coords.start = draw_coords->get_absolute_clb_bbox(source_router_layer_position, source_router_x_position, source_router_y_position, 0, noc_router_logical_block_type).center();
-        link_coords.end = draw_coords->get_absolute_clb_bbox(sink_router_layer_position, sink_router_x_position, sink_router_y_position, 0, noc_router_logical_block_type).center();
+        link_coords.start = draw_coords
+                                ->get_absolute_clb_bbox(source_router_layer_position, source_router_x_position,
+                                                        source_router_y_position, 0, noc_router_logical_block_type)
+                                .center();
+        link_coords.end = draw_coords
+                              ->get_absolute_clb_bbox(sink_router_layer_position, sink_router_x_position,
+                                                      sink_router_y_position, 0, noc_router_logical_block_type)
+                              .center();
 
         // determine the current noc link type
         link_type = determine_noc_link_type(link_coords.start, link_coords.end);
 
-        shift_noc_link(link_coords, list_of_noc_link_shift_directions[link_id], link_type, noc_connection_marker_quarter_width, noc_connection_marker_quarter_height);
+        shift_noc_link(link_coords, list_of_noc_link_shift_directions[link_id], link_type,
+                       noc_connection_marker_quarter_width, noc_connection_marker_quarter_height);
 
         // set the color to draw the current link
         g->set_color(noc_link_colors[link_id], noc_link_visibility.alpha);
@@ -366,7 +382,9 @@ NocLinkType determine_noc_link_type(ezgl::point2d link_start_point, ezgl::point2
     // get the magnitude of the link
     double link_magnitude = sqrt(pow(x_coord_end - x_coord_start, 2.0) + pow(y_coord_end - y_coord_start, 2.0));
     // get the dot product of the two connecting line
-    double dot_product_of_link_and_horizontal_line = (x_coord_end - x_coord_start) * (x_coord_horizontal_end - x_coord_horizontal_start) + (y_coord_end - y_coord_start) * (y_coord_horizontal_end - y_coord_horizontal_start);
+    double dot_product_of_link_and_horizontal_line
+        = (x_coord_end - x_coord_start) * (x_coord_horizontal_end - x_coord_horizontal_start)
+          + (y_coord_end - y_coord_start) * (y_coord_horizontal_end - y_coord_horizontal_start);
     // calculate the angle
     double angle = acos(dot_product_of_link_and_horizontal_line / (link_magnitude * HORIZONTAL_LINE_LENGTH));
 
@@ -394,7 +412,11 @@ NocLinkType determine_noc_link_type(ezgl::point2d link_start_point, ezgl::point2
     return result;
 }
 
-void shift_noc_link(noc_link_draw_coords& link_coords, NocLinkShift link_shift_direction, NocLinkType link_type, double noc_connection_marker_quarter_width, double noc_connection_marker_quarter_height) {
+void shift_noc_link(noc_link_draw_coords& link_coords,
+                    NocLinkShift link_shift_direction,
+                    NocLinkType link_type,
+                    double noc_connection_marker_quarter_width,
+                    double noc_connection_marker_quarter_height) {
     // determine the type of link and based on that shift the link accordingly
     /*
      * Vertical line: shift the link left and right and the distance is equal to half the width of the connection marker

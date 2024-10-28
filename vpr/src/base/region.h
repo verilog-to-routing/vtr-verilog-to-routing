@@ -31,25 +31,17 @@ class Region {
 
     Region(int x_min, int y_min, int x_max, int y_max, int layer_num);
 
-    const vtr::Rect<int>& get_rect() const {
-        return rect_;
-    }
+    const vtr::Rect<int>& get_rect() const { return rect_; }
 
     void set_rect(const vtr::Rect<int>& rect);
 
-    vtr::Rect<int>& get_mutable_rect() {
-        return rect_;
-    }
+    vtr::Rect<int>& get_mutable_rect() { return rect_; }
 
     void set_layer_range(std::pair<int, int> layer_range);
 
-    std::pair<int, int> get_layer_range() const {
-        return layer_range_;
-    }
+    std::pair<int, int> get_layer_range() const { return layer_range_; }
 
-    std::pair<int, int>& get_mutable_layer_range() {
-        return layer_range_;
-    }
+    std::pair<int, int>& get_mutable_layer_range() { return layer_range_; }
 
     /**
      * @brief Accessor for the region's subtile
@@ -77,9 +69,7 @@ class Region {
     bool is_loc_in_reg(t_pl_loc loc) const;
 
     bool operator==(const Region& reg) const {
-        return (reg.rect_ == rect_ &&
-                reg.layer_range_ == layer_range_ &&
-                reg.get_sub_tile() == sub_tile_);
+        return (reg.rect_ == rect_ && reg.layer_range_ == layer_range_ && reg.get_sub_tile() == sub_tile_);
     }
 
   private:
@@ -99,7 +89,7 @@ class Region {
      */
     std::pair<int, int> layer_range_;
 
-    int sub_tile_;                 ///< users will optionally select a subtile
+    int sub_tile_; ///< users will optionally select a subtile
 };
 
 /**

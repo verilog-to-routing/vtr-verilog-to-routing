@@ -39,11 +39,14 @@ t_ext_pin_util_targets::t_ext_pin_util_targets(const std::vector<std::string>& s
             constexpr float LOGIC_BLOCK_TYPE_AUTO_INPUT_UTIL = 0.8;
             constexpr float LOGIC_BLOCK_TYPE_AUTO_OUTPUT_UTIL = 1.0;
 
-            t_ext_pin_util logic_block_ext_pin_util(LOGIC_BLOCK_TYPE_AUTO_INPUT_UTIL, LOGIC_BLOCK_TYPE_AUTO_OUTPUT_UTIL);
+            t_ext_pin_util logic_block_ext_pin_util(LOGIC_BLOCK_TYPE_AUTO_INPUT_UTIL,
+                                                    LOGIC_BLOCK_TYPE_AUTO_OUTPUT_UTIL);
 
             set_block_pin_util(logic_block_type->name, logic_block_ext_pin_util);
         } else {
-            VTR_LOG_WARN("Unable to identify logic block type to apply default pin utilization targets to; this may result in denser packing than desired\n");
+            VTR_LOG_WARN(
+                "Unable to identify logic block type to apply default pin utilization targets to; this may result in "
+                "denser packing than desired\n");
         }
 
     } else {
@@ -65,7 +68,8 @@ t_ext_pin_util_targets::t_ext_pin_util_targets(const std::vector<std::string>& s
                 values = block_values[0];
             } else {
                 std::stringstream msg;
-                msg << "In valid block pin utilization specification '" << spec << "' (expected at most one ':' between block name and values";
+                msg << "In valid block pin utilization specification '" << spec
+                    << "' (expected at most one ':' between block name and values";
                 VPR_FATAL_ERROR(VPR_ERROR_PACK, msg.str().c_str());
             }
 
@@ -77,18 +81,22 @@ t_ext_pin_util_targets::t_ext_pin_util_targets(const std::vector<std::string>& s
                 target_ext_pin_util.output_pin_util = vtr::atof(elements[1]);
             } else {
                 std::stringstream msg;
-                msg << "Invalid conversion from '" << spec << "' to external pin util (expected either a single float value, or two float values separted by a comma)";
+                msg << "Invalid conversion from '" << spec
+                    << "' to external pin util (expected either a single float value, or two float values separted by "
+                       "a comma)";
                 VPR_FATAL_ERROR(VPR_ERROR_PACK, msg.str().c_str());
             }
 
             if (target_ext_pin_util.input_pin_util < 0. || target_ext_pin_util.input_pin_util > 1.) {
                 std::stringstream msg;
-                msg << "Out of range target input pin utilization '" << target_ext_pin_util.input_pin_util << "' (expected within range [0.0, 1.0])";
+                msg << "Out of range target input pin utilization '" << target_ext_pin_util.input_pin_util
+                    << "' (expected within range [0.0, 1.0])";
                 VPR_FATAL_ERROR(VPR_ERROR_PACK, msg.str().c_str());
             }
             if (target_ext_pin_util.output_pin_util < 0. || target_ext_pin_util.output_pin_util > 1.) {
                 std::stringstream msg;
-                msg << "Out of range target output pin utilization '" << target_ext_pin_util.output_pin_util << "' (expected within range [0.0, 1.0])";
+                msg << "Out of range target output pin utilization '" << target_ext_pin_util.output_pin_util
+                    << "' (expected within range [0.0, 1.0])";
                 VPR_FATAL_ERROR(VPR_ERROR_PACK, msg.str().c_str());
             }
 
@@ -137,7 +145,8 @@ std::string t_ext_pin_util_targets::to_string() const {
     auto& device_ctx = g_vpr_ctx.device();
 
     for (unsigned int itype = 0; itype < device_ctx.physical_tile_types.size(); ++itype) {
-        if (is_empty_type(&device_ctx.physical_tile_types[itype])) continue;
+        if (is_empty_type(&device_ctx.physical_tile_types[itype]))
+            continue;
 
         auto blk_name = device_ctx.physical_tile_types[itype].name;
 
@@ -158,9 +167,7 @@ void t_ext_pin_util_targets::set_block_pin_util(const std::string& block_type_na
     overrides_[block_type_name] = target;
 }
 
-void t_ext_pin_util_targets::set_default_pin_util(t_ext_pin_util default_target) {
-    defaults_ = default_target;
-}
+void t_ext_pin_util_targets::set_default_pin_util(t_ext_pin_util default_target) { defaults_ = default_target; }
 
 t_pack_high_fanout_thresholds::t_pack_high_fanout_thresholds(int threshold)
     : default_(threshold) {}
@@ -184,7 +191,9 @@ t_pack_high_fanout_thresholds::t_pack_high_fanout_thresholds(const std::vector<s
 
             set(logic_block_type->name, LOGIC_BLOCK_TYPE_HIGH_FANOUT_THRESHOLD);
         } else {
-            VTR_LOG_WARN("Unable to identify logic block type to apply default packer high fanout thresholds; this may result in denser packing than desired\n");
+            VTR_LOG_WARN(
+                "Unable to identify logic block type to apply default packer high fanout thresholds; this may result "
+                "in denser packing than desired\n");
         }
     } else {
         //Process user specified overrides
@@ -203,7 +212,8 @@ t_pack_high_fanout_thresholds::t_pack_high_fanout_thresholds(const std::vector<s
                 value = block_values[1];
             } else {
                 std::stringstream msg;
-                msg << "In valid block high fanout threshold specification '" << spec << "' (expected at most one ':' between block name and value";
+                msg << "In valid block high fanout threshold specification '" << spec
+                    << "' (expected at most one ':' between block name and value";
                 VPR_FATAL_ERROR(VPR_ERROR_PACK, msg.str().c_str());
             }
 
@@ -232,7 +242,8 @@ t_pack_high_fanout_thresholds::t_pack_high_fanout_thresholds(const std::vector<s
     }
 }
 
-t_pack_high_fanout_thresholds& t_pack_high_fanout_thresholds::operator=(t_pack_high_fanout_thresholds&& other) noexcept {
+t_pack_high_fanout_thresholds& t_pack_high_fanout_thresholds::operator=(
+    t_pack_high_fanout_thresholds&& other) noexcept {
     if (this != &other) {
         default_ = std::move(other.default_);
         overrides_ = std::move(other.overrides_);
@@ -240,9 +251,7 @@ t_pack_high_fanout_thresholds& t_pack_high_fanout_thresholds::operator=(t_pack_h
     return *this;
 }
 
-void t_pack_high_fanout_thresholds::set_default(int threshold) {
-    default_ = threshold;
-}
+void t_pack_high_fanout_thresholds::set_default(int threshold) { default_ = threshold; }
 
 void t_pack_high_fanout_thresholds::set(const std::string& block_type_name, int threshold) {
     overrides_[block_type_name] = threshold;
@@ -262,7 +271,8 @@ std::string t_pack_high_fanout_thresholds::to_string() const {
     auto& device_ctx = g_vpr_ctx.device();
 
     for (unsigned int itype = 0; itype < device_ctx.physical_tile_types.size(); ++itype) {
-        if (is_empty_type(&device_ctx.physical_tile_types[itype])) continue;
+        if (is_empty_type(&device_ctx.physical_tile_types[itype]))
+            continue;
 
         auto blk_name = device_ctx.physical_tile_types[itype].name;
 
@@ -319,7 +329,8 @@ const t_pb* t_pb::find_pb(const t_pb_graph_node* gnode) const {
 
     //Search recursively
     for (int ichild_type = 0; ichild_type < get_num_child_types(); ++ichild_type) {
-        if (child_pbs[ichild_type] == nullptr) continue;
+        if (child_pbs[ichild_type] == nullptr)
+            continue;
 
         for (int ipb = 0; ipb < get_num_children_of_type(ichild_type); ++ipb) {
             const t_pb* child_pb = &child_pbs[ichild_type][ipb];
@@ -346,7 +357,8 @@ t_pb* t_pb::find_mutable_pb(const t_pb_graph_node* gnode) {
 
     //Search recursively
     for (int ichild_type = 0; ichild_type < get_num_child_types(); ++ichild_type) {
-        if (child_pbs[ichild_type] == nullptr) continue;
+        if (child_pbs[ichild_type] == nullptr)
+            continue;
 
         for (int ipb = 0; ipb < get_num_children_of_type(ichild_type); ++ipb) {
             t_pb* child_pb = &child_pbs[ichild_type][ipb];
@@ -370,7 +382,8 @@ const t_pb* t_pb::find_pb_for_model(const std::string& blif_model) const {
 
     //Search recursively
     for (int ichild_type = 0; ichild_type < get_num_child_types(); ++ichild_type) {
-        if (child_pbs[ichild_type] == nullptr) continue;
+        if (child_pbs[ichild_type] == nullptr)
+            continue;
 
         for (int ipb = 0; ipb < get_num_children_of_type(ichild_type); ++ipb) {
             const t_pb* child_pb = &child_pbs[ichild_type][ipb];
@@ -451,4 +464,3 @@ BitIndex t_pb::atom_pin_bit_index(const t_pb_graph_pin* gpin) const {
 void t_pb::set_atom_pin_bit_index(const t_pb_graph_pin* gpin, BitIndex atom_pin_bit_idx) {
     pin_rotations_[gpin] = atom_pin_bit_idx;
 }
-

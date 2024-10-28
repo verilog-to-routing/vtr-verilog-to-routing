@@ -9,10 +9,10 @@
 
 class LinearModel {
   public:
-    LinearModel(float slope = std::numeric_limits<float>::quiet_NaN(), float y_intercept = std::numeric_limits<float>::quiet_NaN())
+    LinearModel(float slope = std::numeric_limits<float>::quiet_NaN(),
+                float y_intercept = std::numeric_limits<float>::quiet_NaN())
         : slope_(slope)
-        , y_intercept_(y_intercept) {
-    }
+        , y_intercept_(y_intercept) {}
 
     float find_x_for_y_value(float y_value) const {
         //y = m*x + b
@@ -21,9 +21,7 @@ class LinearModel {
         return (y_value - y_intercept_) / slope_;
     }
 
-    float get_slope() {
-        return slope_;
-    }
+    float get_slope() { return slope_; }
 
     float find_y_for_x_value(float x_value) const {
         //y = m*x + b

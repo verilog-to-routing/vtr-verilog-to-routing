@@ -12,8 +12,7 @@
 
 namespace {
 
-void set_type_tile_to_empty(const int x, const int y,
-                            vtr::NdMatrix<t_grid_tile, 3>& grid) {
+void set_type_tile_to_empty(const int x, const int y, vtr::NdMatrix<t_grid_tile, 3>& grid) {
     t_physical_tile_type_ptr type = grid[0][x][y].type;
     const int width_offset = grid[0][x][y].width_offset;
     const int height_offset = grid[0][x][y].height_offset;
@@ -22,20 +21,20 @@ void set_type_tile_to_empty(const int x, const int y,
 
     for (int i = x_anchor; i < x_anchor + type->width; i++) {
         for (int j = y_anchor; j < y_anchor + type->height; j++) {
-            if (grid[0][i][j].type == type && grid[0][i][j].width_offset == i - x_anchor && grid[0][i][j].height_offset == j - y_anchor) {
+            if (grid[0][i][j].type == type && grid[0][i][j].width_offset == i - x_anchor
+                && grid[0][i][j].height_offset == j - y_anchor) {
                 grid[0][i][j].type = g_vpr_ctx.device().EMPTY_PHYSICAL_TILE_TYPE;
                 grid[0][i][j].width_offset = 0;
                 grid[0][i][j].height_offset = 0;
             }
         }
     }
-
 }
 
-void set_tile_type_at_loc(const int x_anchor, const int y_anchor,
+void set_tile_type_at_loc(const int x_anchor,
+                          const int y_anchor,
                           vtr::NdMatrix<t_grid_tile, 3>& grid,
                           const t_physical_tile_type& tile_type) {
-
     for (int i = x_anchor; i < x_anchor + tile_type.width; i++) {
         for (int j = y_anchor; j < y_anchor + tile_type.height; j++) {
             if (grid[0][i][j].type != g_vpr_ctx.device().EMPTY_PHYSICAL_TILE_TYPE) {
@@ -47,7 +46,6 @@ void set_tile_type_at_loc(const int x_anchor, const int y_anchor,
         }
     }
 }
-
 
 TEST_CASE("test_compressed_grid", "[vpr_compressed_grid]") {
     // test device grid name
@@ -70,7 +68,6 @@ TEST_CASE("test_compressed_grid", "[vpr_compressed_grid]") {
     auto& logical_block_types = g_vpr_ctx.mutable_device().logical_block_types;
     logical_block_types.clear();
 
-
     t_physical_tile_type empty_tile;
     empty_tile.name = empty_tile_name;
     empty_tile.height = 1;
@@ -86,7 +83,6 @@ TEST_CASE("test_compressed_grid", "[vpr_compressed_grid]") {
 
     empty_tile.sub_tiles.back().index = 0;
     empty_tile.sub_tiles.back().equivalent_sites.push_back(&EMPTY_LOGICAL_BLOCK_TYPE);
-
 
     // create an io physical tile and assign its parameters
     t_physical_tile_type io_tile;
@@ -130,7 +126,6 @@ TEST_CASE("test_compressed_grid", "[vpr_compressed_grid]") {
     tall_logical_type.equivalent_tiles.push_back(&tall_tile);
     logical_block_types.push_back(tall_logical_type);
 
-
     tall_tile.sub_tiles.back().index = 0;
     tall_tile.sub_tiles.back().equivalent_sites.push_back(&tall_logical_type);
 
@@ -147,7 +142,6 @@ TEST_CASE("test_compressed_grid", "[vpr_compressed_grid]") {
 
     large_tile.sub_tiles.back().index = 0;
     large_tile.sub_tiles.back().equivalent_sites.push_back(&large_logical_type);
-
 
     for (int x = 0; x < test_grid_width; x++) {
         for (int y = 0; y < test_grid_height; y++) {
@@ -195,7 +189,8 @@ TEST_CASE("test_compressed_grid", "[vpr_compressed_grid]") {
     }
 
     SECTION("Exact mapped locations in the compressed grids") {
-        t_physical_tile_loc comp_loc = compressed_grids[large_logical_type.index].grid_loc_to_compressed_loc_approx({25, 33, 0});
+        t_physical_tile_loc comp_loc
+            = compressed_grids[large_logical_type.index].grid_loc_to_compressed_loc_approx({25, 33, 0});
         t_physical_tile_loc grid_loc = compressed_grids[large_logical_type.index].compressed_loc_to_grid_loc(comp_loc);
         REQUIRE(grid_loc == t_physical_tile_loc{25, 33, 0});
 
@@ -229,7 +224,8 @@ TEST_CASE("test_compressed_grid", "[vpr_compressed_grid]") {
     }
 
     SECTION("Round to the nearest mapped location in the compressed grid") {
-        t_physical_tile_loc comp_loc = compressed_grids[large_logical_type.index].grid_loc_to_compressed_loc_approx({25, 33, 0});
+        t_physical_tile_loc comp_loc
+            = compressed_grids[large_logical_type.index].grid_loc_to_compressed_loc_approx({25, 33, 0});
         t_physical_tile_loc grid_loc = compressed_grids[large_logical_type.index].compressed_loc_to_grid_loc(comp_loc);
         REQUIRE(grid_loc == t_physical_tile_loc{25, 33, 0});
 
@@ -263,7 +259,8 @@ TEST_CASE("test_compressed_grid", "[vpr_compressed_grid]") {
     }
 
     SECTION("Round down to the closest mapped location in the compressed grid") {
-        t_physical_tile_loc comp_loc = compressed_grids[large_logical_type.index].grid_loc_to_compressed_loc_approx_round_down({25, 33, 0});
+        t_physical_tile_loc comp_loc
+            = compressed_grids[large_logical_type.index].grid_loc_to_compressed_loc_approx_round_down({25, 33, 0});
         t_physical_tile_loc grid_loc = compressed_grids[large_logical_type.index].compressed_loc_to_grid_loc(comp_loc);
         REQUIRE(grid_loc == t_physical_tile_loc{25, 33, 0});
 
@@ -297,7 +294,8 @@ TEST_CASE("test_compressed_grid", "[vpr_compressed_grid]") {
     }
 
     SECTION("Round up to the closest mapped location in the compressed grid") {
-        t_physical_tile_loc comp_loc = compressed_grids[large_logical_type.index].grid_loc_to_compressed_loc_approx_round_up({25, 33, 0});
+        t_physical_tile_loc comp_loc
+            = compressed_grids[large_logical_type.index].grid_loc_to_compressed_loc_approx_round_up({25, 33, 0});
         t_physical_tile_loc grid_loc = compressed_grids[large_logical_type.index].compressed_loc_to_grid_loc(comp_loc);
         REQUIRE(grid_loc == t_physical_tile_loc{25, 33, 0});
 
@@ -329,7 +327,6 @@ TEST_CASE("test_compressed_grid", "[vpr_compressed_grid]") {
         grid_loc = compressed_grids[small_logical_type.index].compressed_loc_to_grid_loc(comp_loc);
         REQUIRE(grid_loc == t_physical_tile_loc{98, 98, 0});
     }
-
 }
 
 } // namespace

@@ -42,9 +42,7 @@ class string_view {
     }
 
     ///@brief indexing [] operator (immutable)
-    constexpr char operator[](size_t pos) const {
-        return data_[pos];
-    }
+    constexpr char operator[](size_t pos) const { return data_[pos]; }
 
     ///@brief aT() operator (immutable)
     const char& at(size_t pos) const {
@@ -56,54 +54,34 @@ class string_view {
     }
 
     ///@brief Returns the first character of the string
-    constexpr const char& front() const {
-        return data_[0];
-    }
+    constexpr const char& front() const { return data_[0]; }
 
     ///@brief Returns the last character of the string
-    constexpr const char& back() const {
-        return data_[size() - 1];
-    }
+    constexpr const char& back() const { return data_[size() - 1]; }
 
     ///@brief Returns a pointer to the string data
-    constexpr const char* data() const {
-        return data_;
-    }
+    constexpr const char* data() const { return data_; }
 
     ///@brief Returns the string size
-    constexpr size_t size() const noexcept {
-        return size_;
-    }
+    constexpr size_t size() const noexcept { return size_; }
 
     ///@brief Returns the string size
-    constexpr size_t length() const noexcept {
-        return size_;
-    }
+    constexpr size_t length() const noexcept { return size_; }
 
     ///@brief Returns true if empty
-    constexpr bool empty() const noexcept {
-        return size_ == 0;
-    }
+    constexpr bool empty() const noexcept { return size_ == 0; }
 
     ///@brief Returns a pointer to the begin of the string
-    constexpr const char* begin() const noexcept {
-        return data_;
-    }
+    constexpr const char* begin() const noexcept { return data_; }
 
     ///@brief Same as begin()
-    constexpr const char* cbegin() const noexcept {
-        return data_;
-    }
+    constexpr const char* cbegin() const noexcept { return data_; }
 
     ///@brief Returns a pointer to the end of the string
-    constexpr const char* end() const noexcept {
-        return data_ + size_;
-    }
+    constexpr const char* end() const noexcept { return data_ + size_; }
 
     ///@brief Same as end()
-    constexpr const char* cend() const noexcept {
-        return data_ + size_;
-    }
+    constexpr const char* cend() const noexcept { return data_ + size_; }
 
     ///@brief Swaps two string views
     void swap(string_view& v) noexcept {
@@ -131,40 +109,31 @@ class string_view {
 };
 
 ///@brief == operator
-inline bool operator==(string_view lhs,
-                       string_view rhs) noexcept {
-    return lhs.size() == rhs.size() && (lhs.empty() || rhs.empty() || (strncmp(lhs.data(), rhs.data(), std::min(lhs.size(), rhs.size())) == 0));
+inline bool operator==(string_view lhs, string_view rhs) noexcept {
+    return lhs.size() == rhs.size()
+           && (lhs.empty() || rhs.empty() || (strncmp(lhs.data(), rhs.data(), std::min(lhs.size(), rhs.size())) == 0));
 }
 
 ///@brief != operator
-inline bool operator!=(string_view lhs,
-                       string_view rhs) noexcept {
+inline bool operator!=(string_view lhs, string_view rhs) noexcept {
     return lhs.size() != rhs.size() || strncmp(lhs.data(), rhs.data(), std::min(lhs.size(), rhs.size())) != 0;
 }
 
 ///@brief < operator
-inline bool operator<(string_view lhs,
-                      string_view rhs) noexcept {
+inline bool operator<(string_view lhs, string_view rhs) noexcept {
     return std::lexicographical_compare(lhs.begin(), lhs.end(), rhs.begin(), rhs.end());
 }
 
 ///brief >= operator
-inline bool operator>=(string_view lhs,
-                       string_view rhs) noexcept {
+inline bool operator>=(string_view lhs, string_view rhs) noexcept {
     return !std::lexicographical_compare(lhs.begin(), lhs.end(), rhs.begin(), rhs.end());
 }
 
 ///@brief > operator
-inline bool operator>(string_view lhs,
-                      string_view rhs) noexcept {
-    return rhs < lhs;
-}
+inline bool operator>(string_view lhs, string_view rhs) noexcept { return rhs < lhs; }
 
 ///@brief <= operator
-inline bool operator<=(string_view lhs,
-                       string_view rhs) noexcept {
-    return rhs >= lhs;
-}
+inline bool operator<=(string_view lhs, string_view rhs) noexcept { return rhs >= lhs; }
 
 ///@brief << operator for ostream
 inline std::ostream& operator<<(std::ostream& os, string_view const& value) {

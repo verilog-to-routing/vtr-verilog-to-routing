@@ -17,6 +17,7 @@ import tempfile
 import shutil
 import errno
 
+
 class ExtractionError(Exception):
     """
     Raised when extracting the downlaoded file fails
@@ -39,8 +40,9 @@ def parse_args():
                     does nothing (unless --force is specified).
                   """
     )
-    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-                                     description=description)
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter, description=description
+    )
 
     parser.add_argument(
         "--vtr_flow_dir",
@@ -132,7 +134,7 @@ def extract_to_vtr_flow_dir(args, tar_gz_filename):
                 raise ExtractionError("{} should be a directory".format(directory))
 
     # Create a temporary working directory
-    tmpdir = tempfile.mkdtemp(suffix="download_NoC_MLP", dir= os.path.abspath("."))
+    tmpdir = tempfile.mkdtemp(suffix="download_NoC_MLP", dir=os.path.abspath("."))
     try:
         # Extract the contents of the .tar.gz archive directly into the destination directory
         with tarfile.open(tar_gz_filename, "r:gz") as tar:

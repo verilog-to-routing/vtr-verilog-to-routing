@@ -24,8 +24,6 @@ void output_clustering(ClusterLegalizer* cluster_legalizer_ptr,
                        bool skip_clustering,
                        bool from_legalizer);
 
-void write_packing_results_to_xml(const bool& global_clocks,
-                                  const std::string& architecture_id,
-                                  const char* out_fname);
+void write_packing_results_to_xml(const bool& global_clocks, const std::string& architecture_id, const char* out_fname);
 
 #endif

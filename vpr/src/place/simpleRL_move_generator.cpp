@@ -9,7 +9,6 @@
 #include <numeric>
 #include <utility>
 
-
 /* File-scope routines */
 //a scaled and clipped exponential function
 static float scaled_clipped_exp(float x) { return std::exp(std::min(1000 * x, float(3.0))); }
@@ -25,7 +24,8 @@ e_create_move SimpleRLMoveGenerator::propose_move(t_pl_blocks_to_be_moved& block
                                                   const t_placer_opts& placer_opts,
                                                   const PlacerCriticalities* criticalities) {
     proposed_action = karmed_bandit_agent->propose_action();
-    return all_moves[proposed_action.move_type]->propose_move(blocks_affected, proposed_action, rlim, placer_opts, criticalities);
+    return all_moves[proposed_action.move_type]->propose_move(blocks_affected, proposed_action, rlim, placer_opts,
+                                                              criticalities);
 }
 
 void SimpleRLMoveGenerator::process_outcome(double reward, e_reward_function reward_fun) {
@@ -183,22 +183,23 @@ void KArmedBanditAgent::set_step(float gamma, int move_lim) {
     }
 }
 
-int KArmedBanditAgent::agent_to_phy_blk_type(const int idx) {
-    return action_logical_blk_type_.at(idx);
-}
+int KArmedBanditAgent::agent_to_phy_blk_type(const int idx) { return action_logical_blk_type_.at(idx); }
 /*                                  *
  *                                  *
  *  E-greedy agent implementation   *
  *                                  *
  *                                  */
-EpsilonGreedyAgent::EpsilonGreedyAgent(std::vector<e_move_type> available_moves, e_agent_space agent_space, float epsilon)
+EpsilonGreedyAgent::EpsilonGreedyAgent(std::vector<e_move_type> available_moves,
+                                       e_agent_space agent_space,
+                                       float epsilon)
     : KArmedBanditAgent(std::move(available_moves), agent_space) {
     set_epsilon(epsilon);
     init_q_scores_();
 }
 
 EpsilonGreedyAgent::~EpsilonGreedyAgent() {
-    if (agent_info_file_) vtr::fclose(agent_info_file_);
+    if (agent_info_file_)
+        vtr::fclose(agent_info_file_);
 }
 
 void EpsilonGreedyAgent::init_q_scores_() {
@@ -236,11 +237,11 @@ t_propose_action EpsilonGreedyAgent::propose_action() {
         last_action_ = action_type_q_pos;
     }
 
-    t_propose_action proposed_action{action_to_move_type_(last_action_),
-                                     action_to_blk_type_(last_action_)};
+    t_propose_action proposed_action{action_to_move_type_(last_action_), action_to_blk_type_(last_action_)};
 
     //Check the move type to be a valid move
-    VTR_ASSERT_SAFE(std::find(available_moves_.begin(), available_moves_.end(), proposed_action.move_type) != available_moves_.end());
+    VTR_ASSERT_SAFE(std::find(available_moves_.begin(), available_moves_.end(), proposed_action.move_type)
+                    != available_moves_.end());
 
     return proposed_action;
 }
@@ -272,7 +273,8 @@ SoftmaxAgent::SoftmaxAgent(std::vector<e_move_type> available_moves, e_agent_spa
 }
 
 SoftmaxAgent::~SoftmaxAgent() {
-    if (agent_info_file_) vtr::fclose(agent_info_file_);
+    if (agent_info_file_)
+        vtr::fclose(agent_info_file_);
 }
 
 void SoftmaxAgent::init_q_scores_() {
@@ -310,11 +312,11 @@ t_propose_action SoftmaxAgent::propose_action() {
     //To take care that the last element in cumm_action_prob_ might be less than 1 by a small value
     last_action_ = std::min((size_t)action_type_q_pos, num_available_actions_ - 1);
 
-    t_propose_action proposed_action{action_to_move_type_(last_action_),
-                                     action_to_blk_type_(last_action_)};
+    t_propose_action proposed_action{action_to_move_type_(last_action_), action_to_blk_type_(last_action_)};
 
     //Check the move type to be a valid move
-    VTR_ASSERT_SAFE(std::find(available_moves_.begin(), available_moves_.end(), proposed_action.move_type) != available_moves_.end());
+    VTR_ASSERT_SAFE(std::find(available_moves_.begin(), available_moves_.end(), proposed_action.move_type)
+                    != available_moves_.end());
 
     return proposed_action;
 }

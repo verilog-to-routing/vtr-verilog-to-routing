@@ -40,11 +40,9 @@ class compare_bit {
 #define LT_EVAL compare_bit(0x4)
 
 static compare_bit eval_op(VNumber& a_in, VNumber& b_in) {
-    assert_Werr(a_in.size(),
-                "empty 1st bit string");
+    assert_Werr(a_in.size(), "empty 1st bit string");
 
-    assert_Werr(b_in.size(),
-                "empty 2nd bit string");
+    assert_Werr(b_in.size(), "empty 2nd bit string");
 
 #ifndef RTL_ALLOW_UNKNOWN_COMPARE
     if (a_in.has_unknown() || b_in.has_unknown())
@@ -126,11 +124,9 @@ static bool is_signed_operation(VNumber& a, VNumber& b) {
  * Addition operations
  */
 static VNumber sum_op(VNumber& a, VNumber& b, const bit_value_t& initial_carry, bool is_twos_complement_subtraction) {
-    assert_Werr(a.size(),
-                "empty 1st bit string");
+    assert_Werr(a.size(), "empty 1st bit string");
 
-    assert_Werr(b.size(),
-                "empty 2nd bit string");
+    assert_Werr(b.size(), "empty 2nd bit string");
 
     size_t std_length = std::max(a.size(), b.size());
     size_t new_length = ((true == is_twos_complement_subtraction) ? (std_length) : (std_length + 1));
@@ -186,37 +182,21 @@ static VNumber shift_op(VNumber& a, int64_t b, bool sign_shift) {
     return to_return;
 }
 
-bool V_TRUE(VNumber& a) {
-    return a.is_true();
-}
+bool V_TRUE(VNumber& a) { return a.is_true(); }
 
-bool V_FALSE(VNumber& a) {
-    return a.is_false();
-}
+bool V_FALSE(VNumber& a) { return a.is_false(); }
 
-bool V_UNK(VNumber& a) {
-    return a.has_unknown();
-}
+bool V_UNK(VNumber& a) { return a.has_unknown(); }
 
-bool V_IS_X(VNumber& a) {
-    return a.is_x();
-}
+bool V_IS_X(VNumber& a) { return a.is_x(); }
 
-bool V_IS_Z(VNumber& a) {
-    return a.is_z();
-}
+bool V_IS_Z(VNumber& a) { return a.is_z(); }
 
-bool V_IS_SIGNED(VNumber& a) {
-    return a.is_signed();
-}
+bool V_IS_SIGNED(VNumber& a) { return a.is_signed(); }
 
-bool V_IS_UNSIGNED(VNumber& a) {
-    return !a.is_signed();
-}
+bool V_IS_UNSIGNED(VNumber& a) { return !a.is_signed(); }
 
-std::string V_STRING(VNumber& a, const char base) {
-    return a.to_vstring(base);
-}
+std::string V_STRING(VNumber& a, const char base) { return a.to_vstring(base); }
 
 /***
  *                    __          __   __   ___  __       ___    __       
@@ -225,9 +205,7 @@ std::string V_STRING(VNumber& a, const char base) {
  *                                                                        
  */
 
-VNumber V_BITWISE_NOT(VNumber& a) {
-    return a.bitwise(l_not);
-}
+VNumber V_BITWISE_NOT(VNumber& a) { return a.bitwise(l_not); }
 
 VNumber V_LOGICAL_NOT(VNumber& a) {
     if (a.has_unknown())
@@ -243,21 +221,13 @@ VNumber V_ADD(VNumber& a) {
     return result;
 }
 
-VNumber V_MINUS(VNumber& a) {
-    return a.twos_complement();
-}
+VNumber V_MINUS(VNumber& a) { return a.twos_complement(); }
 
-VNumber V_MINUS(VNumber& a, BitSpace::bit_value_t carry) {
-    return a.twos_complement(carry);
-}
+VNumber V_MINUS(VNumber& a, BitSpace::bit_value_t carry) { return a.twos_complement(carry); }
 
-VNumber V_UNSIGNED(VNumber& a) {
-    return a.to_unsigned();
-}
+VNumber V_UNSIGNED(VNumber& a) { return a.to_unsigned(); }
 
-VNumber V_SIGNED(VNumber& a) {
-    return a.to_signed();
-}
+VNumber V_SIGNED(VNumber& a) { return a.to_signed(); }
 
 VNumber V_BITWISE_AND(VNumber& a) {
     VNumber to_return = a.bitwise_reduce(l_and);
@@ -297,15 +267,13 @@ VNumber V_BITWISE_XNOR(VNumber& a) {
  */
 
 VNumber V_REPLICATE(VNumber& a, VNumber& n_times) {
-    assert_Werr(!n_times.has_unknown(),
-                "Cannot use undefined number for the replication count");
+    assert_Werr(!n_times.has_unknown(), "Cannot use undefined number for the replication count");
 
     return a.replicate(n_times.get_value());
 }
 
 VNumber V_CONCAT(std::vector<VNumber> concat_list) {
-    assert_Werr(!concat_list.empty(),
-                "Concat List cannot be empty");
+    assert_Werr(!concat_list.empty(), "Concat List cannot be empty");
 
     VNumber init = concat_list[0];
     for (size_t i = 1; i < concat_list.size(); i++) {
@@ -314,9 +282,7 @@ VNumber V_CONCAT(std::vector<VNumber> concat_list) {
     return init;
 }
 
-VNumber V_BITWISE_BUF(VNumber& a) {
-    return a.bitwise(l_buf);
-}
+VNumber V_BITWISE_BUF(VNumber& a) { return a.bitwise(l_buf); }
 
 VNumber V_BITWISE_BUFIF0(VNumber& input, VNumber& trigger) {
     if (trigger.size() == 1 && input.size() > 1) {
@@ -354,29 +320,17 @@ VNumber V_BITWISE_NOTIF1(VNumber& input, VNumber& trigger) {
     return input.bitwise(trigger, l_notif1);
 }
 
-VNumber V_BITWISE_AND(VNumber& a, VNumber& b) {
-    return a.bitwise(b, l_and);
-}
+VNumber V_BITWISE_AND(VNumber& a, VNumber& b) { return a.bitwise(b, l_and); }
 
-VNumber V_BITWISE_OR(VNumber& a, VNumber& b) {
-    return a.bitwise(b, l_or);
-}
+VNumber V_BITWISE_OR(VNumber& a, VNumber& b) { return a.bitwise(b, l_or); }
 
-VNumber V_BITWISE_XOR(VNumber& a, VNumber& b) {
-    return a.bitwise(b, l_xor);
-}
+VNumber V_BITWISE_XOR(VNumber& a, VNumber& b) { return a.bitwise(b, l_xor); }
 
-VNumber V_BITWISE_NAND(VNumber& a, VNumber& b) {
-    return a.bitwise(b, l_nand);
-}
+VNumber V_BITWISE_NAND(VNumber& a, VNumber& b) { return a.bitwise(b, l_nand); }
 
-VNumber V_BITWISE_NOR(VNumber& a, VNumber& b) {
-    return a.bitwise(b, l_nor);
-}
+VNumber V_BITWISE_NOR(VNumber& a, VNumber& b) { return a.bitwise(b, l_nor); }
 
-VNumber V_BITWISE_XNOR(VNumber& a, VNumber& b) {
-    return a.bitwise(b, l_xnor);
-}
+VNumber V_BITWISE_XNOR(VNumber& a, VNumber& b) { return a.bitwise(b, l_xnor); }
 
 /**
  * Logical Operations
@@ -418,48 +372,42 @@ VNumber V_LOGICAL_OR(VNumber& a, VNumber& b) {
 
 VNumber V_LT(VNumber& a, VNumber& b) {
     compare_bit cmp = eval_op(a, b);
-    BitSpace::bit_value_t result = cmp.is_unk() ? BitSpace::_x : cmp.is_lt() ? BitSpace::_1
-                                                                             : BitSpace::_0;
+    BitSpace::bit_value_t result = cmp.is_unk() ? BitSpace::_x : cmp.is_lt() ? BitSpace::_1 : BitSpace::_0;
     VNumber to_return(1, result, false, true);
     return to_return;
 }
 
 VNumber V_GT(VNumber& a, VNumber& b) {
     compare_bit cmp = eval_op(a, b);
-    BitSpace::bit_value_t result = cmp.is_unk() ? BitSpace::_x : cmp.is_gt() ? BitSpace::_1
-                                                                             : BitSpace::_0;
+    BitSpace::bit_value_t result = cmp.is_unk() ? BitSpace::_x : cmp.is_gt() ? BitSpace::_1 : BitSpace::_0;
     VNumber to_return(1, result, false, true);
     return to_return;
 }
 
 VNumber V_EQUAL(VNumber& a, VNumber& b) {
     compare_bit cmp = eval_op(a, b);
-    BitSpace::bit_value_t result = cmp.is_unk() ? BitSpace::_x : cmp.is_eq() ? BitSpace::_1
-                                                                             : BitSpace::_0;
+    BitSpace::bit_value_t result = cmp.is_unk() ? BitSpace::_x : cmp.is_eq() ? BitSpace::_1 : BitSpace::_0;
     VNumber to_return(1, result, false, true);
     return to_return;
 }
 
 VNumber V_GE(VNumber& a, VNumber& b) {
     compare_bit cmp = eval_op(a, b);
-    BitSpace::bit_value_t result = cmp.is_unk() ? BitSpace::_x : cmp.is_ge() ? BitSpace::_1
-                                                                             : BitSpace::_0;
+    BitSpace::bit_value_t result = cmp.is_unk() ? BitSpace::_x : cmp.is_ge() ? BitSpace::_1 : BitSpace::_0;
     VNumber to_return(1, result, false, true);
     return to_return;
 }
 
 VNumber V_LE(VNumber& a, VNumber& b) {
     compare_bit cmp = eval_op(a, b);
-    BitSpace::bit_value_t result = cmp.is_unk() ? BitSpace::_x : cmp.is_le() ? BitSpace::_1
-                                                                             : BitSpace::_0;
+    BitSpace::bit_value_t result = cmp.is_unk() ? BitSpace::_x : cmp.is_le() ? BitSpace::_1 : BitSpace::_0;
     VNumber to_return(1, result, false, true);
     return to_return;
 }
 
 VNumber V_NOT_EQUAL(VNumber& a, VNumber& b) {
     compare_bit cmp = eval_op(a, b);
-    BitSpace::bit_value_t result = cmp.is_unk() ? BitSpace::_x : cmp.is_ne() ? BitSpace::_1
-                                                                             : BitSpace::_0;
+    BitSpace::bit_value_t result = cmp.is_unk() ? BitSpace::_x : cmp.is_ne() ? BitSpace::_1 : BitSpace::_0;
     VNumber to_return(1, result, false, true);
     return to_return;
 }
@@ -511,13 +459,9 @@ VNumber V_MINUS(VNumber& a, VNumber& b, BitSpace::bit_value_t carry_in) {
     return sum_op(padded_a, complement, carry_in, /* is_twos_complement_subtraction */ true);
 }
 
-VNumber V_ADD(VNumber& a, VNumber& b) {
-    return V_ADD(a, b, _0);
-}
+VNumber V_ADD(VNumber& a, VNumber& b) { return V_ADD(a, b, _0); }
 
-VNumber V_MINUS(VNumber& a, VNumber& b) {
-    return V_MINUS(a, b, _0);
-}
+VNumber V_MINUS(VNumber& a, VNumber& b) { return V_MINUS(a, b, _0); }
 
 VNumber V_MULTIPLY(VNumber& a_in, VNumber& b_in) {
     if (a_in.has_unknown() || b_in.has_unknown()) {
@@ -609,15 +553,17 @@ VNumber V_POWER(VNumber& a, VNumber& b) {
     }
 
     compare_bit res_a = eval_op(a, 0);
-    short val_a = (res_a.is_eq()) ? 0 : (res_a.is_lt()) ? (eval_op(a, -1).is_lt()) ? -2 : -1
-                                    :
-                                    /* GREATHER_THAN */ (eval_op(a, 1).is_gt()) ? 2
-                                                                                : 1;
+    short val_a = (res_a.is_eq())   ? 0
+                  : (res_a.is_lt()) ? (eval_op(a, -1).is_lt()) ? -2 : -1
+                  :
+                  /* GREATHER_THAN */ (eval_op(a, 1).is_gt()) ? 2
+                                                              : 1;
 
     compare_bit res_b = eval_op(b, 0);
-    short val_b = (res_b.is_eq()) ? 0 : (res_b.is_lt()) ? -1
-                                                        :
-                                                        /* GREATHER_THAN */ 1;
+    short val_b = (res_b.is_eq())   ? 0
+                  : (res_b.is_lt()) ? -1
+                                    :
+                                    /* GREATHER_THAN */ 1;
 
     // Compute: Case Where 'val_a <= -2' or 'val_a >= 2'; As-Per the Spec:
     if (val_b > 0 && (val_a < -1 || val_a > 1)) {
@@ -751,6 +697,5 @@ VNumber V_TERNARY(VNumber& a_in, VNumber& b_in, VNumber& c_in) {
     /*	if a evaluates properly	*/
     compare_bit eval = eval_op(V_LOGICAL_NOT(a_in), 0);
 
-    return (eval.is_unk()) ? b_in.bitwise(c_in, l_ternary) : (eval.is_eq()) ? VNumber(b_in)
-                                                                            : VNumber(c_in);
+    return (eval.is_unk()) ? b_in.bitwise(c_in, l_ternary) : (eval.is_eq()) ? VNumber(b_in) : VNumber(c_in);
 }

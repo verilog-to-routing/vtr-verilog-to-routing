@@ -3,11 +3,12 @@
 
 NegativeFirstRouting::~NegativeFirstRouting() = default;
 
-const std::vector<TurnModelRouting::Direction>& NegativeFirstRouting::get_legal_directions(NocRouterId /*src_router_id*/,
-                                                                                           NocRouterId curr_router_id,
-                                                                                           NocRouterId dst_router_id,
-                                                                                           TurnModelRouting::Direction /*prev_dir*/,
-                                                                                           const NocStorage& noc_model) {
+const std::vector<TurnModelRouting::Direction>& NegativeFirstRouting::get_legal_directions(
+    NocRouterId /*src_router_id*/,
+    NocRouterId curr_router_id,
+    NocRouterId dst_router_id,
+    TurnModelRouting::Direction /*prev_dir*/,
+    const NocStorage& noc_model) {
     // get current and destination NoC routers
     const auto& curr_router = noc_model.get_single_noc_router(curr_router_id);
     const auto& dst_router = noc_model.get_single_noc_router(dst_router_id);
@@ -74,9 +75,9 @@ const std::vector<TurnModelRouting::Direction>& NegativeFirstRouting::get_legal_
 
 bool NegativeFirstRouting::is_turn_legal(const std::array<std::reference_wrapper<const NocRouter>, 3>& noc_routers,
                                          const NocStorage& noc_model) const {
-    const auto[x1, y1, z1] = noc_routers[0].get().get_router_physical_location();
-    const auto[x2, y2, z2] = noc_routers[1].get().get_router_physical_location();
-    const auto[x3, y3, z3] = noc_routers[2].get().get_router_physical_location();
+    const auto [x1, y1, z1] = noc_routers[0].get().get_router_physical_location();
+    const auto [x2, y2, z2] = noc_routers[1].get().get_router_physical_location();
+    const auto [x3, y3, z3] = noc_routers[2].get().get_router_physical_location();
 
     // check if the given routers can be traversed one after another
     VTR_ASSERT(vtr::exactly_k_conditions(2, x1 == x2, y1 == y2, z1 == z2));
@@ -89,8 +90,8 @@ bool NegativeFirstRouting::is_turn_legal(const std::array<std::reference_wrapper
 
     // In negative-first routing algorithm, these 6 90-degree turns are prohibited.
     if (noc_model.is_noc_3d()) {
-        if ((x2 > x1 && y3 < y2) || (y2 > y1 && x3 < x2) || (z2 > z1 && x3 < x2) ||
-            (x2 > x1 && z3 < z2) || (z2 > z1 && y3 < y2) || (y2 > y1 && z3 < z2)) {
+        if ((x2 > x1 && y3 < y2) || (y2 > y1 && x3 < x2) || (z2 > z1 && x3 < x2) || (x2 > x1 && z3 < z2)
+            || (z2 > z1 && y3 < y2) || (y2 > y1 && z3 < z2)) {
             return false;
         }
     } else {

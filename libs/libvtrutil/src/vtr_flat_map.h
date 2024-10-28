@@ -94,9 +94,7 @@ class flat_map {
     }
 
     ///@brief direct vector constructor
-    explicit flat_map(Storage&& values) {
-        assign(std::move(values));
-    }
+    explicit flat_map(Storage&& values) { assign(std::move(values)); }
 
     /**
      * @brief Move the values
@@ -243,7 +241,8 @@ class flat_map {
     iterator insert(const_iterator position, const value_type& value) {
         //In a legal position
         VTR_ASSERT(position == begin() || value_comp()(*(position - 1), value));
-        VTR_ASSERT((size() > 0 && (position + 1) == end()) || position == end() || !value_comp()(*(position + 1), value));
+        VTR_ASSERT((size() > 0 && (position + 1) == end()) || position == end()
+                   || !value_comp()(*(position + 1), value));
 
         iterator iter = vec_.insert(position, value);
 
@@ -254,7 +253,8 @@ class flat_map {
     iterator emplace(const_iterator position, const value_type& value) {
         //In a legal position
         VTR_ASSERT(position == begin() || value_comp()(*(position - 1), value));
-        VTR_ASSERT((size() > 0 && (position + 1) == end()) || position == end() || !value_comp()(*(position + 1), value));
+        VTR_ASSERT((size() > 0 && (position + 1) == end()) || position == end()
+                   || !value_comp()(*(position + 1), value));
 
         iterator iter = vec_.emplace(position, value);
 
@@ -280,14 +280,10 @@ class flat_map {
     }
 
     ///@brief Erase at iterator
-    void erase(const_iterator position) {
-        vec_.erase(position);
-    }
+    void erase(const_iterator position) { vec_.erase(position); }
 
     ///@brief Erase range
-    void erase(const_iterator first, const_iterator last) {
-        vec_.erase(first, last);
-    }
+    void erase(const_iterator first, const_iterator last) { vec_.erase(first, last); }
 
     ///@brief swap two flat maps
     void swap(flat_map& other) { std::swap(*this, other); }
@@ -344,9 +340,7 @@ class flat_map {
     }
 
     ///@brief Return the count of occurances of a key
-    size_type count(const key_type& key) const {
-        return (find(key) == end()) ? 0 : 1;
-    }
+    size_type count(const key_type& key) const { return (find(key) == end()) ? 0 : 1; }
 
     ///@brief lower bound function
     iterator lower_bound(const key_type& key) {
@@ -390,9 +384,7 @@ class flat_map {
         return !key_comp()(lhs, rhs) && !key_comp()(rhs, lhs);
     }
 
-    void sort() {
-        std::sort(vec_.begin(), vec_.end(), value_comp());
-    }
+    void sort() { std::sort(vec_.begin(), vec_.end(), value_comp()); }
 
     void uniquify() {
         //Uniquify
@@ -449,9 +441,7 @@ class flat_map2 : public flat_map<K, T, Compare, Storage> {
     }
 
     ///@brief [] operator
-    T& operator[](const K& key) {
-        return const_cast<T&>(const_cast<const flat_map2*>(this)->operator[](key));
-    }
+    T& operator[](const K& key) { return const_cast<T&>(const_cast<const flat_map2*>(this)->operator[](key)); }
 };
 
 ///@brief A class to perform the comparison operation for the flat map
@@ -460,17 +450,11 @@ class flat_map<K, T, Compare, Storage>::value_compare {
     friend class flat_map;
 
   public:
-    bool operator()(const value_type& x, const value_type& y) const {
-        return comp(x.first, y.first);
-    }
+    bool operator()(const value_type& x, const value_type& y) const { return comp(x.first, y.first); }
 
     //For std::lower_bound, std::upper_bound
-    bool operator()(const value_type& x, const key_type& y) const {
-        return comp(x.first, y);
-    }
-    bool operator()(const key_type& x, const value_type& y) const {
-        return comp(x, y.first);
-    }
+    bool operator()(const value_type& x, const key_type& y) const { return comp(x.first, y); }
+    bool operator()(const key_type& x, const value_type& y) const { return comp(x, y.first); }
 
   private:
     value_compare(Compare c)

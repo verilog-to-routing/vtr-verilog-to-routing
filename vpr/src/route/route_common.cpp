@@ -43,8 +43,7 @@ static vtr::vector<ParentNetId, std::vector<RRNodeId>> load_net_rr_terminals(con
                                                                              const Netlist<>& net_list,
                                                                              bool is_flat);
 
-static std::tuple<vtr::vector<ParentNetId, std::vector<std::vector<int>>>,
-                  vtr::vector<ParentNetId, std::vector<int>>>
+static std::tuple<vtr::vector<ParentNetId, std::vector<std::vector<int>>>, vtr::vector<ParentNetId, std::vector<int>>>
 load_net_terminal_groups(const RRGraphView& rr_graph,
                          const Netlist<>& net_list,
                          const vtr::vector<ParentNetId, std::vector<RRNodeId>>& net_rr_terminals,
@@ -58,10 +57,12 @@ static t_clb_opins_used alloc_and_load_clb_opins_used_locally();
 
 static void adjust_one_rr_occ_and_acc_cost(RRNodeId inode, int add_or_sub, float acc_fac);
 
-static vtr::vector<ParentNetId, uint8_t> load_is_clock_net(const Netlist<>& net_list,
-                                                           bool is_flat);
+static vtr::vector<ParentNetId, uint8_t> load_is_clock_net(const Netlist<>& net_list, bool is_flat);
 
-static bool classes_in_same_block(ParentBlockId blk_id, int first_class_ptc_num, int second_class_ptc_num, bool is_flat);
+static bool classes_in_same_block(ParentBlockId blk_id,
+                                  int first_class_ptc_num,
+                                  int second_class_ptc_num,
+                                  bool is_flat);
 
 /************************** Subroutine definitions ***************************/
 
@@ -246,10 +247,7 @@ void pathfinder_update_cost_from_route_tree(const RouteTreeNode& root, int add_o
 
 /* Call this before you route any nets. It frees any old route trees and
  * sets the list of rr_nodes touched to empty. */
-void init_route_structs(const Netlist<>& net_list,
-                        int bb_factor,
-                        bool has_choking_point,
-                        bool is_flat) {
+void init_route_structs(const Netlist<>& net_list, int bb_factor, bool has_choking_point, bool is_flat) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
@@ -258,27 +256,19 @@ void init_route_structs(const Netlist<>& net_list,
     std::fill(route_ctx.route_trees.begin(), route_ctx.route_trees.end(), vtr::nullopt);
 
     //Various look-ups
-    route_ctx.net_rr_terminals = load_net_rr_terminals(device_ctx.rr_graph,
-                                                       device_ctx.grid,
-                                                       net_list,
-                                                       is_flat);
+    route_ctx.net_rr_terminals = load_net_rr_terminals(device_ctx.rr_graph, device_ctx.grid, net_list, is_flat);
 
     route_ctx.is_clock_net = load_is_clock_net(net_list, is_flat);
-    route_ctx.route_bb = load_route_bb(net_list,
-                                       bb_factor);
-    route_ctx.rr_blk_source = load_rr_clb_sources(device_ctx.rr_graph,
-                                                  net_list,
-                                                  is_flat);
+    route_ctx.route_bb = load_route_bb(net_list, bb_factor);
+    route_ctx.rr_blk_source = load_rr_clb_sources(device_ctx.rr_graph, net_list, is_flat);
     route_ctx.clb_opins_used_locally = alloc_and_load_clb_opins_used_locally();
     route_ctx.net_status.resize(net_list.nets().size());
 
     route_ctx.is_flat = is_flat;
 
     if (has_choking_point && is_flat) {
-        std::tie(route_ctx.net_terminal_groups, route_ctx.net_terminal_group_num) = load_net_terminal_groups(device_ctx.rr_graph,
-                                                                                                             net_list,
-                                                                                                             route_ctx.net_rr_terminals,
-                                                                                                             is_flat);
+        std::tie(route_ctx.net_terminal_groups, route_ctx.net_terminal_group_num)
+            = load_net_terminal_groups(device_ctx.rr_graph, net_list, route_ctx.net_rr_terminals, is_flat);
     }
 }
 
@@ -354,7 +344,8 @@ static t_clb_opins_used alloc_and_load_clb_opins_used_locally() {
 
         clb_opins_used_locally[blk_id].resize((int)type->class_inf.size());
 
-        if (is_io_type(type)) continue;
+        if (is_io_type(type))
+            continue;
 
         const auto [pin_low, pin_high] = get_pin_range_for_block(blk_id);
 
@@ -457,22 +448,12 @@ static vtr::vector<ParentNetId, std::vector<RRNodeId>> load_net_rr_terminals(con
             int iclass = get_block_pin_class_num(block_id, pin_id, is_flat);
             RRNodeId inode;
             if (pin_count == 0) { /* First pin is driver */
-                inode = rr_graph.node_lookup().find_node(blk_loc.loc.layer,
-                                                         blk_loc.loc.x,
-                                                         blk_loc.loc.y,
-                                                         SOURCE,
-                                                         iclass);
+                inode
+                    = rr_graph.node_lookup().find_node(blk_loc.loc.layer, blk_loc.loc.x, blk_loc.loc.y, SOURCE, iclass);
             } else {
-                vtr::Rect<int> tile_bb = grid.get_tile_bb({blk_loc.loc.x,
-                                                           blk_loc.loc.y,
-                                                           blk_loc.loc.layer});
-                std::vector<RRNodeId> sink_nodes = rr_graph.node_lookup().find_nodes_in_range(blk_loc.loc.layer,
-                                                                                              tile_bb.xmin(),
-                                                                                              tile_bb.ymin(),
-                                                                                              tile_bb.xmax(),
-                                                                                              tile_bb.ymax(),
-                                                                                              SINK,
-                                                                                              iclass);
+                vtr::Rect<int> tile_bb = grid.get_tile_bb({blk_loc.loc.x, blk_loc.loc.y, blk_loc.loc.layer});
+                std::vector<RRNodeId> sink_nodes = rr_graph.node_lookup().find_nodes_in_range(
+                    blk_loc.loc.layer, tile_bb.xmin(), tile_bb.ymin(), tile_bb.xmax(), tile_bb.ymax(), SINK, iclass);
                 VTR_ASSERT_SAFE(sink_nodes.size() == 1);
                 inode = sink_nodes[0];
             }
@@ -487,8 +468,7 @@ static vtr::vector<ParentNetId, std::vector<RRNodeId>> load_net_rr_terminals(con
     return net_rr_terminals;
 }
 
-static std::tuple<vtr::vector<ParentNetId, std::vector<std::vector<int>>>,
-                  vtr::vector<ParentNetId, std::vector<int>>>
+static std::tuple<vtr::vector<ParentNetId, std::vector<std::vector<int>>>, vtr::vector<ParentNetId, std::vector<int>>>
 load_net_terminal_groups(const RRGraphView& rr_graph,
                          const Netlist<>& net_list,
                          const vtr::vector<ParentNetId, std::vector<RRNodeId>>& net_rr_terminals,
@@ -522,10 +502,8 @@ load_net_terminal_groups(const RRGraphView& rr_graph,
                 const auto& curr_grp = net_terminal_groups[net_id][curr_grp_num];
                 auto group_loc = get_block_loc(net_pin_blk_id[rr_node_pin_num.at(RRNodeId(curr_grp[0]))], is_flat);
                 if (blk_loc.loc == group_loc.loc) {
-                    if (classes_in_same_block(block_id,
-                                              rr_graph.node_ptc_num(RRNodeId(curr_grp[0])),
-                                              rr_graph.node_ptc_num(net_rr_terminals[net_id][pin_count]),
-                                              is_flat)) {
+                    if (classes_in_same_block(block_id, rr_graph.node_ptc_num(RRNodeId(curr_grp[0])),
+                                              rr_graph.node_ptc_num(net_rr_terminals[net_id][pin_count]), is_flat)) {
                         group_num = curr_grp_num;
                         break;
                     }
@@ -584,11 +562,8 @@ static vtr::vector<ParentBlockId, std::vector<RRNodeId>> load_rr_clb_sources(con
                     rr_type = SINK;
                 }
 
-                RRNodeId inode = rr_graph.node_lookup().find_node(blk_loc.loc.layer,
-                                                                  blk_loc.loc.x,
-                                                                  blk_loc.loc.y,
-                                                                  rr_type,
-                                                                  iclass);
+                RRNodeId inode = rr_graph.node_lookup().find_node(blk_loc.loc.layer, blk_loc.loc.x, blk_loc.loc.y,
+                                                                  rr_type, iclass);
                 rr_blk_source[blk_id][iclass] = inode;
             } else {
                 rr_blk_source[blk_id][iclass] = RRNodeId::INVALID();
@@ -599,8 +574,7 @@ static vtr::vector<ParentBlockId, std::vector<RRNodeId>> load_rr_clb_sources(con
     return rr_blk_source;
 }
 
-static vtr::vector<ParentNetId, uint8_t> load_is_clock_net(const Netlist<>& net_list,
-                                                           bool is_flat) {
+static vtr::vector<ParentNetId, uint8_t> load_is_clock_net(const Netlist<>& net_list, bool is_flat) {
     vtr::vector<ParentNetId, uint8_t> is_clock_net;
 
     auto& atom_ctx = g_vpr_ctx.atom();
@@ -621,13 +595,15 @@ static vtr::vector<ParentNetId, uint8_t> load_is_clock_net(const Netlist<>& net_
     return is_clock_net;
 }
 
-static bool classes_in_same_block(ParentBlockId blk_id, int first_class_ptc_num, int second_class_ptc_num, bool is_flat) {
+static bool classes_in_same_block(ParentBlockId blk_id,
+                                  int first_class_ptc_num,
+                                  int second_class_ptc_num,
+                                  bool is_flat) {
     t_physical_tile_type_ptr physical_tile = physical_tile_type(blk_id, is_flat);
     return classes_in_same_block(physical_tile, first_class_ptc_num, second_class_ptc_num, is_flat);
 }
 
-vtr::vector<ParentNetId, t_bb> load_route_bb(const Netlist<>& net_list,
-                                             int bb_factor) {
+vtr::vector<ParentNetId, t_bb> load_route_bb(const Netlist<>& net_list, int bb_factor) {
     vtr::vector<ParentNetId, t_bb> route_bb;
 
     auto& route_ctx = g_vpr_ctx.routing();
@@ -647,9 +623,7 @@ vtr::vector<ParentNetId, t_bb> load_route_bb(const Netlist<>& net_list,
     route_bb.resize(nets.size());
     for (auto net_id : nets) {
         if (!route_ctx.is_clock_net[net_id]) {
-            route_bb[net_id] = load_net_route_bb(net_list,
-                                                 net_id,
-                                                 bb_factor);
+            route_bb[net_id] = load_net_route_bb(net_list, net_id, bb_factor);
         } else {
             // Clocks should use a bounding box that includes the entire
             // fabric. This is because when a clock spine extends from a global
@@ -674,9 +648,7 @@ vtr::vector<ParentNetId, t_bb> load_route_bb(const Netlist<>& net_list,
     return route_bb;
 }
 
-t_bb load_net_route_bb(const Netlist<>& net_list,
-                       ParentNetId net_id,
-                       int bb_factor) {
+t_bb load_net_route_bb(const Netlist<>& net_list, ParentNetId net_id, int bb_factor) {
     /*
      * This routine loads the bounding box used to limit the space
      * searched by the maze router when routing a specific net. The search is
@@ -725,9 +697,8 @@ t_bb load_net_route_bb(const Netlist<>& net_list,
         VTR_ASSERT(rr_graph.node_layer(sink_rr) >= 0);
         VTR_ASSERT(rr_graph.node_layer(sink_rr) <= device_ctx.grid.get_num_layers() - 1);
 
-        vtr::Rect<int> tile_bb = device_ctx.grid.get_tile_bb({rr_graph.node_xlow(sink_rr),
-                                                              rr_graph.node_ylow(sink_rr),
-                                                              rr_graph.node_layer(sink_rr)});
+        vtr::Rect<int> tile_bb = device_ctx.grid.get_tile_bb(
+            {rr_graph.node_xlow(sink_rr), rr_graph.node_ylow(sink_rr), rr_graph.node_layer(sink_rr)});
 
         xmin = std::min<int>(xmin, tile_bb.xmin());
         xmax = std::max<int>(xmax, tile_bb.xmax());
@@ -779,7 +750,11 @@ void add_to_mod_list(RRNodeId inode, std::vector<RRNodeId>& modified_rr_node_inf
 //
 // To model this we 'reserve' these locally used outputs, ensuring that the router will not use them (as if it did
 // this would equate to duplicating a BLE into an already in-use BLE instance, which is clearly incorrect).
-void reserve_locally_used_opins(HeapInterface* heap, float pres_fac, float acc_fac, bool rip_up_local_opins, bool is_flat) {
+void reserve_locally_used_opins(HeapInterface* heap,
+                                float pres_fac,
+                                float acc_fac,
+                                bool rip_up_local_opins,
+                                bool is_flat) {
     VTR_ASSERT(is_flat == false);
     int num_local_opin, iconn, num_edges;
     int iclass, ipin;
@@ -800,7 +775,8 @@ void reserve_locally_used_opins(HeapInterface* heap, float pres_fac, float acc_f
             for (iclass = 0; iclass < (int)type->class_inf.size(); iclass++) {
                 num_local_opin = route_ctx.clb_opins_used_locally[blk_id][iclass].size();
 
-                if (num_local_opin == 0) continue;
+                if (num_local_opin == 0)
+                    continue;
                 auto port_eq = get_port_equivalency_from_class_physical_num(type, iclass);
                 VTR_ASSERT(port_eq == PortEquivalence::INSTANCE);
 
@@ -823,7 +799,8 @@ void reserve_locally_used_opins(HeapInterface* heap, float pres_fac, float acc_f
         for (iclass = 0; iclass < (int)type->class_inf.size(); iclass++) {
             num_local_opin = route_ctx.clb_opins_used_locally[blk_id][iclass].size();
 
-            if (num_local_opin == 0) continue;
+            if (num_local_opin == 0)
+                continue;
 
             auto class_eq = get_port_equivalency_from_class_physical_num(type, iclass);
             VTR_ASSERT(class_eq == PortEquivalence::INSTANCE);
@@ -910,7 +887,9 @@ void print_invalid_routing_info(const Netlist<>& net_list, bool is_flat) {
         int occ = route_ctx.rr_node_route_inf[inode].occ();
         int cap = rr_graph.node_capacity(inode);
         if (occ > cap) {
-            VTR_LOG("  %s is overused (occ=%d capacity=%d)\n", describe_rr_node(rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, inode, is_flat).c_str(), occ, cap);
+            VTR_LOG("  %s is overused (occ=%d capacity=%d)\n",
+                    describe_rr_node(rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, inode, is_flat).c_str(),
+                    occ, cap);
 
             auto range = rr_node_nets.equal_range(inode);
             for (auto itr = range.first; itr != range.second; ++itr) {
@@ -921,9 +900,10 @@ void print_invalid_routing_info(const Netlist<>& net_list, bool is_flat) {
                     auto blk = net_list.pin_block(pin);
                     blk_loc = get_block_loc(blk, is_flat);
                     if (blk_loc.loc.x == node_x && blk_loc.loc.y == node_y) {
-                        VTR_LOG("      Is in the same cluster: %s \n", describe_rr_node(rr_graph, device_ctx.grid,
-                                                                                        device_ctx.rr_indexed_data, itr->first, is_flat)
-                                                                           .c_str());
+                        VTR_LOG(
+                            "      Is in the same cluster: %s \n",
+                            describe_rr_node(rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, itr->first, is_flat)
+                                .c_str());
                     }
                 }
             }
@@ -941,15 +921,14 @@ void print_rr_node_route_inf() {
             RREdgeId prev_edge = inf.prev_edge;
             RRNodeId prev_node = rr_graph.edge_src_node(prev_edge);
             auto switch_id = rr_graph.rr_nodes().edge_switch(prev_edge);
-            VTR_LOG("rr_node: %d prev_node: %d prev_edge: %zu",
-                    inode, prev_node, (size_t)prev_edge);
+            VTR_LOG("rr_node: %d prev_node: %d prev_edge: %zu", inode, prev_node, (size_t)prev_edge);
 
-            if (prev_node.is_valid() && bool(prev_edge) && !rr_graph.rr_switch_inf(RRSwitchId(switch_id)).configurable()) {
+            if (prev_node.is_valid() && bool(prev_edge)
+                && !rr_graph.rr_switch_inf(RRSwitchId(switch_id)).configurable()) {
                 VTR_LOG("*");
             }
 
-            VTR_LOG(" pcost: %g back_pcost: %g\n",
-                    inf.path_cost, inf.backward_path_cost);
+            VTR_LOG(" pcost: %g back_pcost: %g\n", inf.path_cost, inf.backward_path_cost);
         }
     }
 }
@@ -998,7 +977,8 @@ std::string describe_unrouteable_connection(RRNodeId source_node, RRNodeId sink_
         "Cannot route from %s (%s) to "
         "%s (%s) -- no possible path",
         rr_node_arch_name(source_node, is_flat).c_str(),
-        describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, source_node, is_flat).c_str(),
+        describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, source_node, is_flat)
+            .c_str(),
         rr_node_arch_name(sink_node, is_flat).c_str(),
         describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, sink_node, is_flat).c_str());
 

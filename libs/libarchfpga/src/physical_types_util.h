@@ -118,7 +118,11 @@
 bool is_opin(int ipin, t_physical_tile_type_ptr type);
 
 ///@brief Returns true if the specified pin is located at "from_layer" and it is connected to "to_layer"
-bool is_pin_conencted_to_layer(t_physical_tile_type_ptr type, int ipin, int from_layer, int to_layer, int num_of_avail_layer);
+bool is_pin_conencted_to_layer(t_physical_tile_type_ptr type,
+                               int ipin,
+                               int from_layer,
+                               int to_layer,
+                               int num_of_avail_layer);
 
 ///@brief Returns true if the given physical tile type can implement a .input block type
 bool is_input_type(t_physical_tile_type_ptr type);
@@ -144,7 +148,9 @@ bool is_io_type(t_physical_tile_type_ptr type);
  *   The value returned in this case is 3.
  *   Note: capacity and pin indices start from zero.
  */
-int get_physical_pin_from_capacity_location(t_physical_tile_type_ptr physical_tile, int relative_pin, int capacity_location);
+int get_physical_pin_from_capacity_location(t_physical_tile_type_ptr physical_tile,
+                                            int relative_pin,
+                                            int capacity_location);
 
 /**
  * @brief Returns a pair consisting of the absolute capacity location relative to the pin parameter
@@ -171,7 +177,8 @@ std::vector<std::string> block_type_class_index_to_pin_names(t_physical_tile_typ
                                                              bool is_flat);
 
 ///@brief Returns the physical tile type matching a given physical tile type name, or nullptr (if not found)
-t_physical_tile_type_ptr find_tile_type_by_name(const std::string& name, const std::vector<t_physical_tile_type>& types);
+t_physical_tile_type_ptr find_tile_type_by_name(const std::string& name,
+                                                const std::vector<t_physical_tile_type>& types);
 
 int find_pin_class(t_physical_tile_type_ptr type, std::string port_name, int pin_index_in_port, e_pin_type pin_type);
 
@@ -185,7 +192,9 @@ int get_max_num_pins(t_logical_block_type_ptr logical_block);
 bool is_tile_compatible(t_physical_tile_type_ptr physical_tile, t_logical_block_type_ptr logical_block);
 
 ///@brief Verifies whether a logical block and a relative placement location is compatible with a given physical tile
-bool is_sub_tile_compatible(t_physical_tile_type_ptr physical_tile, t_logical_block_type_ptr logical_block, int sub_tile_loc);
+bool is_sub_tile_compatible(t_physical_tile_type_ptr physical_tile,
+                            t_logical_block_type_ptr logical_block,
+                            int sub_tile_loc);
 
 /**
  * @brief Returns the first physical tile type that matches the logical block
@@ -223,9 +232,7 @@ int get_logical_block_physical_sub_tile_index(t_physical_tile_type_ptr physical_
  *
  * Throws an exception if the corresponding physical pin can't be found.
  */
-int get_physical_pin(t_physical_tile_type_ptr physical_tile,
-                     t_logical_block_type_ptr logical_block,
-                     int pin);
+int get_physical_pin(t_physical_tile_type_ptr physical_tile, t_logical_block_type_ptr logical_block, int pin);
 /**
  * @brief Returns the physical pin index (within 'physical_tile') corresponding to the
  * logical index ('pin' of the first instance of 'logical_block' within the physcial tile.
@@ -311,9 +318,11 @@ const t_port* get_port_by_pin(t_logical_block_type_ptr type, int pin);
 /* Access information related to pin classes */
 
 /** get information given class physical num **/
-std::tuple<const t_sub_tile*, int> get_sub_tile_from_class_physical_num(t_physical_tile_type_ptr physical_tile, int physical_class_num);
+std::tuple<const t_sub_tile*, int> get_sub_tile_from_class_physical_num(t_physical_tile_type_ptr physical_tile,
+                                                                        int physical_class_num);
 
-t_logical_block_type_ptr get_logical_block_from_class_physical_num(t_physical_tile_type_ptr physical_tile, int class_physical_num);
+t_logical_block_type_ptr get_logical_block_from_class_physical_num(t_physical_tile_type_ptr physical_tile,
+                                                                   int class_physical_num);
 
 /**
  *
@@ -321,9 +330,11 @@ t_logical_block_type_ptr get_logical_block_from_class_physical_num(t_physical_ti
  * @param class_physical_num physical number of the class
  * @return return the pins' physical number of the pins connected to the given class
  */
-const std::vector<int>& get_pin_list_from_class_physical_num(t_physical_tile_type_ptr physical_tile, int class_physical_num);
+const std::vector<int>& get_pin_list_from_class_physical_num(t_physical_tile_type_ptr physical_tile,
+                                                             int class_physical_num);
 
-PortEquivalence get_port_equivalency_from_class_physical_num(t_physical_tile_type_ptr physical_tile, int class_physical_num);
+PortEquivalence get_port_equivalency_from_class_physical_num(t_physical_tile_type_ptr physical_tile,
+                                                             int class_physical_num);
 
 e_pin_type get_class_type_from_class_physical_num(t_physical_tile_type_ptr physical_tile, int class_physical_num);
 
@@ -370,9 +381,11 @@ int get_tile_class_max_ptc(t_physical_tile_type_ptr tile, bool is_flat);
 /* Access information related to pins */
 
 /** get information given pin physical number **/
-std::tuple<const t_sub_tile*, int> get_sub_tile_from_pin_physical_num(t_physical_tile_type_ptr physical_tile, int physical_num);
+std::tuple<const t_sub_tile*, int> get_sub_tile_from_pin_physical_num(t_physical_tile_type_ptr physical_tile,
+                                                                      int physical_num);
 
-t_logical_block_type_ptr get_logical_block_from_pin_physical_num(t_physical_tile_type_ptr physical_tile, int physical_num);
+t_logical_block_type_ptr get_logical_block_from_pin_physical_num(t_physical_tile_type_ptr physical_tile,
+                                                                 int physical_num);
 
 const t_pb_graph_pin* get_pb_pin_from_pin_physical_num(t_physical_tile_type_ptr physical_tile, int physical_num);
 
@@ -380,15 +393,17 @@ const t_pb_graph_pin* get_pb_pin_from_pin_physical_num(t_physical_tile_type_ptr 
                                                        t_logical_block_type_ptr logical_block,
                                                        int pin_physical_num);
 
-t_pb_graph_pin* get_mutable_pb_pin_from_pin_physical_num(t_physical_tile_type* physical_tile, t_logical_block_type* logical_block, int physical_num);
+t_pb_graph_pin* get_mutable_pb_pin_from_pin_physical_num(t_physical_tile_type* physical_tile,
+                                                         t_logical_block_type* logical_block,
+                                                         int physical_num);
 
-PortEquivalence get_port_equivalency_from_pin_physical_num(t_physical_tile_type_ptr physical_tile, int pin_physical_num);
+PortEquivalence get_port_equivalency_from_pin_physical_num(t_physical_tile_type_ptr physical_tile,
+                                                           int pin_physical_num);
 
 e_pin_type get_pin_type_from_pin_physical_num(t_physical_tile_type_ptr physical_tile, int physical_num);
 
-std::tuple<std::vector<int>, std::vector<int>, std::vector<e_side>> get_pin_coordinates(t_physical_tile_type_ptr physical_type,
-                                                                                        int pin_physical_num,
-                                                                                        const std::vector<e_side>& sides);
+std::tuple<std::vector<int>, std::vector<int>, std::vector<e_side>>
+get_pin_coordinates(t_physical_tile_type_ptr physical_type, int pin_physical_num, const std::vector<e_side>& sides);
 
 int get_class_num_from_pin_physical_num(t_physical_tile_type_ptr physical_tile, int pin_physical_num);
 
@@ -443,9 +458,7 @@ int get_tile_num_internal_pin(t_physical_tile_type_ptr tile);
 int get_tile_total_num_pin(t_physical_tile_type_ptr tile);
 
 // Check whether the pin corresponding to pin_physical_num is directly or indirectly connected to the sink corresponding to sink_physical_num
-bool intra_tile_nodes_connected(t_physical_tile_type_ptr physical_type,
-                                int pin_physical_num,
-                                int sink_physical_num);
+bool intra_tile_nodes_connected(t_physical_tile_type_ptr physical_type, int pin_physical_num, int sink_physical_num);
 
 float get_edge_delay(t_physical_tile_type_ptr physical_type,
                      t_logical_block_type_ptr logical_block,

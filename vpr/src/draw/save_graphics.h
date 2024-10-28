@@ -9,11 +9,11 @@
 
 #ifndef NO_GRAPHICS
 
-#    include "draw_global.h"
+#include "draw_global.h"
 
-#    include "ezgl/point.hpp"
-#    include "ezgl/application.hpp"
-#    include "ezgl/graphics.hpp"
+#include "ezgl/point.hpp"
+#include "ezgl/application.hpp"
+#include "ezgl/graphics.hpp"
 
 void save_graphics(std::string extension, std::string file_name);
 void save_graphics_dialog_box(GtkWidget* /*widget*/, ezgl::application* /*app*/);

@@ -15,7 +15,7 @@
 #include "placer_state.h"
 
 #ifndef NO_GRAPHICS
-#    include "draw.h"
+#include "draw.h"
 #endif //NO_GRAPHICS
 
 ManualMoveGenerator::ManualMoveGenerator(PlacerState& placer_state)
@@ -68,4 +68,3 @@ e_create_move ManualMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
     e_create_move create_move = ::create_move(blocks_affected, b_from, to, place_ctx.blk_loc_registry());
     return create_move;
 }
-

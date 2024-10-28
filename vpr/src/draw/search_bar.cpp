@@ -15,52 +15,52 @@
 
 #include "physical_types.h"
 #ifndef NO_GRAPHICS
-#    include <cstdio>
-#    include <sstream>
+#include <cstdio>
+#include <sstream>
 
-#    include "vtr_assert.h"
-#    include "vtr_ndoffsetmatrix.h"
-#    include "vtr_memory.h"
-#    include "vtr_log.h"
-#    include "vtr_color_map.h"
+#include "vtr_assert.h"
+#include "vtr_ndoffsetmatrix.h"
+#include "vtr_memory.h"
+#include "vtr_log.h"
+#include "vtr_color_map.h"
 
-#    include "vpr_utils.h"
-#    include "vpr_error.h"
+#include "vpr_utils.h"
+#include "vpr_error.h"
 
-#    include "globals.h"
-#    include "draw_color.h"
-#    include "draw.h"
-#    include "draw_basic.h"
-#    include "draw_rr.h"
-#    include "draw_searchbar.h"
-#    include "read_xml_arch_file.h"
-#    include "draw_global.h"
-#    include "intra_logic_block.h"
-#    include "atom_netlist.h"
-#    include "tatum/report/TimingPathCollector.hpp"
-#    include "hsl.h"
-#    include "route_export.h"
-#    include "search_bar.h"
+#include "globals.h"
+#include "draw_color.h"
+#include "draw.h"
+#include "draw_basic.h"
+#include "draw_rr.h"
+#include "draw_searchbar.h"
+#include "read_xml_arch_file.h"
+#include "draw_global.h"
+#include "intra_logic_block.h"
+#include "atom_netlist.h"
+#include "tatum/report/TimingPathCollector.hpp"
+#include "hsl.h"
+#include "route_export.h"
+#include "search_bar.h"
 
-#    ifdef WIN32 /* For runtime tracking in WIN32. The clock() function defined in time.h will *
-                  * track CPU runtime.														   */
-#        include <time.h>
-#    else /* For X11. The clock() function in time.h will not output correct time difference   *
-           * for X11, because the graphics is processed by the Xserver rather than local CPU,  *
-           * which means tracking CPU time will not be the same as the actual wall clock time. *
-           * Thus, so use gettimeofday() in sys/time.h to track actual calendar time.          */
-#        include <sys/time.h>
-#    endif
+#ifdef WIN32 /* For runtime tracking in WIN32. The clock() function defined in time.h will *
+              * track CPU runtime.														   */
+#include <time.h>
+#else /* For X11. The clock() function in time.h will not output correct time difference   *
+       * for X11, because the graphics is processed by the Xserver rather than local CPU,  *
+       * which means tracking CPU time will not be the same as the actual wall clock time. *
+       * Thus, so use gettimeofday() in sys/time.h to track actual calendar time.          */
+#include <sys/time.h>
+#endif
 
 //To process key presses we need the X11 keysym definitions,
 //which are unavailable when building with MINGW
-#    if defined(X11) && !defined(__MINGW32__)
-#        include <X11/keysym.h>
-#    endif
+#if defined(X11) && !defined(__MINGW32__)
+#include <X11/keysym.h>
+#endif
 
-#    include "rr_graph.h"
-#    include "route_utilization.h"
-#    include "place_macro.h"
+#include "rr_graph.h"
+#include "route_utilization.h"
+#include "place_macro.h"
 
 extern std::string rr_highlight_message;
 
@@ -167,7 +167,7 @@ void search_and_highlight(GtkWidget* /*widget*/, ezgl::application* app) {
             warning_dialog_box("Invalid Net Name");
             return; //name not exist
         }
-        for(auto clb_net_id: atom_ctx.lookup.clb_nets(atom_net_id).value()){
+        for (auto clb_net_id : atom_ctx.lookup.clb_nets(atom_net_id).value()) {
             highlight_nets(clb_net_id);
         }
     }
@@ -201,11 +201,14 @@ bool highlight_rr_nodes(RRNodeId hit_node) {
                 draw_state->draw_rr_node[node].node_highlighted = false;
             }
             //Print info about all nodes to terminal
-            VTR_LOG("%s\n", describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, node, draw_state->is_flat).c_str());
+            VTR_LOG("%s\n", describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, node,
+                                             draw_state->is_flat)
+                                .c_str());
         }
 
         //Show info about *only* hit node to graphics
-        std::string info = describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, hit_node, draw_state->is_flat);
+        std::string info = describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, hit_node,
+                                            draw_state->is_flat);
 
         sprintf(message, "Selected %s", info.c_str());
         rr_highlight_message = message;
@@ -241,10 +244,8 @@ void auto_zoom_rr_node(RRNodeId rr_node_id) {
     switch (rr_graph.node_type(rr_node_id)) {
         case IPIN:
         case OPIN: {
-            t_physical_tile_loc tile_loc = {
-                rr_graph.node_xlow(rr_node_id),
-                rr_graph.node_ylow(rr_node_id),
-                rr_graph.node_layer(rr_node_id)};
+            t_physical_tile_loc tile_loc
+                = {rr_graph.node_xlow(rr_node_id), rr_graph.node_ylow(rr_node_id), rr_graph.node_layer(rr_node_id)};
             t_physical_tile_type_ptr type = device_ctx.grid.get_physical_type(tile_loc);
             int width_offset = device_ctx.grid.get_width_offset(tile_loc);
             int height_offset = device_ctx.grid.get_height_offset(tile_loc);
@@ -297,14 +298,14 @@ void highlight_cluster_block(ClusterBlockId clb_index) {
 
     if (get_selected_sub_block_info().has_selection()) {
         t_pb* selected_subblock = get_selected_sub_block_info().get_selected_pb();
-        sprintf(msg, "sub-block %s (a \"%s\") selected",
-                selected_subblock->name, selected_subblock->pb_graph_node->pb_type->name);
+        sprintf(msg, "sub-block %s (a \"%s\") selected", selected_subblock->name,
+                selected_subblock->pb_graph_node->pb_type->name);
     } else {
         /* Highlight block and fan-in/fan-outs. */
         draw_highlight_blocks_color(cluster_ctx.clb_nlist.block_type(clb_index), clb_index);
-        sprintf(msg, "Block #%zu (%s) at (%d, %d) selected.",
-                size_t(clb_index), cluster_ctx.clb_nlist.block_name(clb_index).c_str(),
-                block_locs[clb_index].loc.x, block_locs[clb_index].loc.y);
+        sprintf(msg, "Block #%zu (%s) at (%d, %d) selected.", size_t(clb_index),
+                cluster_ctx.clb_nlist.block_name(clb_index).c_str(), block_locs[clb_index].loc.x,
+                block_locs[clb_index].loc.y);
     }
 
     application.update_message(msg);
@@ -328,13 +329,15 @@ bool highlight_atom_block(AtomBlockId atom_blk, ClusterBlockId cl_blk, ezgl::app
 
     //Getting the pb* for the atom block
     auto atom_block_pb = find_atom_block_in_pb(atom_ctx.nlist.block_name(atom_blk), pb);
-    if (!atom_block_pb) return false; //If no block found, returning false
+    if (!atom_block_pb)
+        return false; //If no block found, returning false
 
     //Ensuring that block is drawn at current zoom lvl, returning false if not
     auto atom_block_depth = atom_block_pb->pb_graph_node->pb_type->depth;
     t_draw_state* draw_state = get_draw_state_vars();
     int max_depth = draw_state->show_blk_internal;
-    if (atom_block_depth > max_depth) return false;
+    if (atom_block_depth > max_depth)
+        return false;
 
     //Highlighting block
     get_selected_sub_block_info().set(atom_block_pb, cl_blk);
@@ -348,7 +351,8 @@ void highlight_nets(ClusterNetId net_id) {
     t_draw_state* draw_state = get_draw_state_vars();
 
     //If routing does not exist return
-    if (route_ctx.route_trees.empty()) return;
+    if (route_ctx.route_trees.empty())
+        return;
     draw_state->net_color[net_id] = ezgl::MAGENTA;
 }
 
@@ -360,11 +364,8 @@ void warning_dialog_box(const char* message) {
     // get a pointer to the main window
     main_window = application.get_object(application.get_main_window_id().c_str());
     // create a dialog window modal with no button
-    dialog = gtk_message_dialog_new(GTK_WINDOW(main_window),
-                                    GTK_DIALOG_DESTROY_WITH_PARENT,
-                                    GTK_MESSAGE_INFO,
-                                    GTK_BUTTONS_NONE,
-                                    "Error");
+    dialog = gtk_message_dialog_new(GTK_WINDOW(main_window), GTK_DIALOG_DESTROY_WITH_PARENT, GTK_MESSAGE_INFO,
+                                    GTK_BUTTONS_NONE, "Error");
     // create a label and attach it to content area of the dialog
     content_area = gtk_message_dialog_get_message_area(GTK_MESSAGE_DIALOG(dialog));
     label = gtk_label_new(message);
@@ -372,10 +373,7 @@ void warning_dialog_box(const char* message) {
     // show the label & child widget of the dialog
     gtk_widget_show_all(dialog);
 
-    g_signal_connect_swapped(dialog,
-                             "response",
-                             G_CALLBACK(gtk_widget_destroy),
-                             dialog);
+    g_signal_connect_swapped(dialog, "response", G_CALLBACK(gtk_widget_destroy), dialog);
 
     return;
 }
@@ -397,8 +395,10 @@ void search_type_changed(GtkComboBox* self, ezgl::application* app) {
     GtkTreeModel* netNames = GTK_TREE_MODEL(app->get_object("NetNames"));
     GtkTreeModel* blockNames = GTK_TREE_MODEL(app->get_object("BlockNames"));
     //Ensuring a valid type was selected
-    if (!type) return;
-    if (type[0] == '\0') return;
+    if (!type)
+        return;
+    if (type[0] == '\0')
+        return;
     std::string searchType(type);
 
     /*
@@ -427,11 +427,10 @@ void search_type_changed(GtkComboBox* self, ezgl::application* app) {
  * @return true | if the string pointed to by iter contains key (case-insensitive)
  * @return false | if the string pointed to does not contain key
  */
-gboolean customMatchingFunction(
-    GtkEntryCompletion* completer,
-    const gchar* key,
-    GtkTreeIter* iter,
-    gpointer /*user data*/
+gboolean customMatchingFunction(GtkEntryCompletion* completer,
+                                const gchar* key,
+                                GtkTreeIter* iter,
+                                gpointer /*user data*/
 ) {
     GtkTreeModel* model = gtk_entry_completion_get_model(completer);
     const gchar* text;
@@ -527,7 +526,8 @@ void enable_autocomplete(ezgl::application* app) {
     draw_state->justEnabled = true;
 
     //If string len is 0, reutrning
-    if (oldText.length() == 0) return;
+    if (oldText.length() == 0)
+        return;
 
     gtk_widget_grab_focus(GTK_WIDGET(searchBar));
     std::string newText = (oldText.length() > 1) ? oldText.substr(0, oldText.length() - 1) : "";

@@ -31,14 +31,10 @@
 #include "vtr_util.h"
 #include "vtr_memory.h"
 
-unsigned long
-string_hash(STRING_CACHE* sc,
-            const char* string);
+unsigned long string_hash(STRING_CACHE* sc, const char* string);
 void generate_sc_hash(STRING_CACHE* sc);
 
-unsigned long
-string_hash(STRING_CACHE* sc,
-            const char* string) {
+unsigned long string_hash(STRING_CACHE* sc, const char* string) {
     long a, i, mod, mul;
 
     a = 0;
@@ -69,8 +65,7 @@ void generate_sc_hash(STRING_CACHE* sc) {
     }
 }
 
-STRING_CACHE*
-sc_new_string_cache(void) {
+STRING_CACHE* sc_new_string_cache(void) {
     STRING_CACHE* sc;
 
     sc = (STRING_CACHE*)sc_do_alloc(1, sizeof(STRING_CACHE));
@@ -87,8 +82,7 @@ sc_new_string_cache(void) {
     return sc;
 }
 
-long sc_lookup_string(STRING_CACHE* sc,
-                      const char* string) {
+long sc_lookup_string(STRING_CACHE* sc, const char* string) {
     long i, hash;
 
     if (sc == NULL) {
@@ -105,8 +99,7 @@ long sc_lookup_string(STRING_CACHE* sc,
     }
 }
 
-long sc_add_string(STRING_CACHE* sc,
-                   const char* string) {
+long sc_add_string(STRING_CACHE* sc, const char* string) {
     long i;
     long hash;
     void* a;
@@ -141,8 +134,7 @@ long sc_add_string(STRING_CACHE* sc,
     return i;
 }
 
-void* sc_do_alloc(long a,
-                  long b) {
+void* sc_do_alloc(long a, long b) {
     void* r;
 
     if (a < 1)
@@ -151,9 +143,7 @@ void* sc_do_alloc(long a,
         b = 1;
     r = vtr::calloc(a, b);
     while (r == NULL) {
-        fprintf(stderr,
-                "Failed to allocated %ld chunks of %ld bytes (%ld bytes total)\n",
-                a, b, a * b);
+        fprintf(stderr, "Failed to allocated %ld chunks of %ld bytes (%ld bytes total)\n", a, b, a * b);
         r = vtr::calloc(a, b);
     }
     return r;

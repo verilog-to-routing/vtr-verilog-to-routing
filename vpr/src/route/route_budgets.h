@@ -9,16 +9,9 @@
 #include <queue>
 #include "RoutingDelayCalculator.h"
 
-enum analysis_type {
-    SETUP,
-    HOLD
-};
+enum analysis_type { SETUP, HOLD };
 
-enum slack_allocated_type {
-    POSITIVE,
-    NEGATIVE,
-    BOTH
-};
+enum slack_allocated_type { POSITIVE, NEGATIVE, BOTH };
 
 #define UNINITIALIZED_PATH_DELAY -2.
 class route_budgets {
@@ -47,7 +40,10 @@ class route_budgets {
 
     /*lower budgets during congestion*/
     void update_congestion_times(ParentNetId net_id);
-    bool increase_min_budgets_if_struggling(float delay_decrement, std::shared_ptr<SetupHoldTimingInfo> timing_info, float worst_neg_slack, const ClusteredPinAtomPinsLookup& netlist_pin_lookup);
+    bool increase_min_budgets_if_struggling(float delay_decrement,
+                                            std::shared_ptr<SetupHoldTimingInfo> timing_info,
+                                            float worst_neg_slack,
+                                            const ClusteredPinAtomPinsLookup& netlist_pin_lookup);
     void increase_short_crit(ParentNetId net_id, float delay_decs);
     void not_congested_this_iteration(ParentNetId net_id);
 
@@ -67,7 +63,9 @@ class route_budgets {
                                                        std::shared_ptr<SetupTimingInfo> timing_info,
                                                        const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
                                                        const t_router_opts& router_opts);
-    void allocate_slack_using_weights(NetPinsMatrix<float>& net_delay, const ClusteredPinAtomPinsLookup& netlist_pin_lookup, bool negative_hold_slack);
+    void allocate_slack_using_weights(NetPinsMatrix<float>& net_delay,
+                                      const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
+                                      bool negative_hold_slack);
     /*Sometimes want to allocate only positive or negative slack.
      * By default, allocate both*/
     float minimax_PERT(std::shared_ptr<SetupHoldTimingInfo> orig_timing_info,
@@ -79,7 +77,8 @@ class route_budgets {
                        bool keep_in_bounds,
                        slack_allocated_type slack_type = BOTH);
 
-    void process_negative_slack_using_minimax(NetPinsMatrix<float>& net_delay, const ClusteredPinAtomPinsLookup& netlist_pin_lookup);
+    void process_negative_slack_using_minimax(NetPinsMatrix<float>& net_delay,
+                                              const ClusteredPinAtomPinsLookup& netlist_pin_lookup);
 
     /*Perform static timing analysis*/
     std::shared_ptr<SetupHoldTimingInfo> perform_sta(NetPinsMatrix<float>& temp_budgets);

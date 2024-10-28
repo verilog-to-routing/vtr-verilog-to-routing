@@ -41,9 +41,7 @@ namespace vtr {
 class t_formula_data {
   public:
     ///@brief clears all the formula data
-    void clear() {
-        vars_.clear();
-    }
+    void clear() { vars_.clear(); }
 
     ///@brief set the value of a specific part of the formula
     void set_var_value(vtr::string_view var, int value) { vars_[var] = value; }
@@ -52,16 +50,15 @@ class t_formula_data {
     void set_var_value(const char* var, int value) { vars_[vtr::string_view(var)] = value; }
 
     ///@brief get the value of a specific part of the formula
-    int get_var_value(const std::string& var) const {
-        return get_var_value(vtr::string_view(var.data(), var.size()));
-    }
+    int get_var_value(const std::string& var) const { return get_var_value(vtr::string_view(var.data(), var.size())); }
 
     ///@brief get the value of a specific part of the formula (the var can be c-style string)
     int get_var_value(vtr::string_view var) const {
         auto iter = vars_.find(var);
         if (iter == vars_.end()) {
             std::string copy(var.data(), var.size());
-            throw vtr::VtrError(vtr::string_fmt("No value found for variable '%s' from expression\n", copy.c_str()), __FILE__, __LINE__);
+            throw vtr::VtrError(vtr::string_fmt("No value found for variable '%s' from expression\n", copy.c_str()),
+                                __FILE__, __LINE__);
         }
 
         return iter->second;
@@ -146,9 +143,7 @@ class Formula_Object {
     } data;
 
     ///@brief constructor
-    Formula_Object() {
-        this->type = E_FML_UNDEFINED;
-    }
+    Formula_Object() { this->type = E_FML_UNDEFINED; }
 
     ///@brief convert enum to string
     std::string to_string() const {

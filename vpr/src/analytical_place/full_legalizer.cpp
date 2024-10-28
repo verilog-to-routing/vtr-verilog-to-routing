@@ -53,7 +53,7 @@ typedef vtr::StrongId<device_tile_id_tag, size_t> DeviceTileId;
  *       unify the two flows and make it more stable!
  */
 class APClusterPlacer {
-private:
+  private:
     // Get the macro for the given cluster block.
     t_pl_macro get_macro(ClusterBlockId clb_blk_id) {
         // Basically stolen from initial_placement.cpp:place_one_block
@@ -74,7 +74,7 @@ private:
         return pl_macro;
     }
 
-public:
+  public:
     /**
      * @brief Constructor for the APClusterPlacer
      *
@@ -118,9 +118,7 @@ public:
      * @brief Given a cluster and tile it wants to go into, try to place the
      *        cluster at this tile's postion.
      */
-    bool place_cluster(ClusterBlockId clb_blk_id,
-                       const t_physical_tile_loc& tile_loc,
-                       int sub_tile) {
+    bool place_cluster(ClusterBlockId clb_blk_id, const t_physical_tile_loc& tile_loc, int sub_tile) {
         const DeviceContext& device_ctx = g_vpr_ctx.device();
         // FIXME: THIS MUST TAKE INTO ACCOUNT THE CONSTRAINTS AS WELL!!!
         //  - Right now it is just implied.
@@ -153,7 +151,9 @@ public:
         auto& blk_loc_registry = g_vpr_ctx.mutable_placement().mutable_blk_loc_registry();
         VTR_ASSERT(!is_block_placed(clb_blk_id, block_locs) && "Block already placed. Is this intentional?");
         t_pl_macro pl_macro = get_macro(clb_blk_id);
-        const PartitionRegion& pr = is_cluster_constrained(clb_blk_id) ? g_vpr_ctx.floorplanning().cluster_constraints[clb_blk_id] : get_device_partition_region();
+        const PartitionRegion& pr = is_cluster_constrained(clb_blk_id)
+                                        ? g_vpr_ctx.floorplanning().cluster_constraints[clb_blk_id]
+                                        : get_device_partition_region();
         t_logical_block_type_ptr block_type = g_vpr_ctx.clustering().clb_nlist.block_type(clb_blk_id);
         // FIXME: We really should get this from the place context, not the device context.
         //      - Stealing it for now to get this to work.
@@ -175,9 +175,10 @@ public:
  *  @param primitive_candidate_block_types  A list of candidate block types for
  *                                          the given molecule.
  */
-static LegalizationClusterId create_new_cluster(t_pack_molecule* seed_molecule,
-                                                ClusterLegalizer& cluster_legalizer,
-                                                const std::map<const t_model*, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types) {
+static LegalizationClusterId create_new_cluster(
+    t_pack_molecule* seed_molecule,
+    ClusterLegalizer& cluster_legalizer,
+    const std::map<const t_model*, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types) {
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
     // This was stolen from pack/cluster_util.cpp:start_new_cluster
     // It tries to find a block type and mode for the given molecule.
@@ -203,8 +204,7 @@ static LegalizationClusterId create_new_cluster(t_pack_molecule* seed_molecule,
         }
     }
     // This should never happen.
-    VPR_FATAL_ERROR(VPR_ERROR_AP,
-                    "Unable to create a cluster for the given seed molecule");
+    VPR_FATAL_ERROR(VPR_ERROR_AP, "Unable to create a cluster for the given seed molecule");
     return LegalizationClusterId();
 }
 
@@ -214,18 +214,11 @@ void FullLegalizer::create_clusters(const PartialPlacement& p_placement) {
     // FIXME: The legalization strategy is currently set to full. Should handle
     //        this better to make it faster.
     t_pack_high_fanout_thresholds high_fanout_thresholds(packer_opts_.high_fanout_threshold);
-    ClusterLegalizer cluster_legalizer(atom_netlist_,
-                                       prepacker_,
-                                       logical_block_types_,
-                                       lb_type_rr_graphs_,
-                                       user_models_,
-                                       library_models_,
-                                       packer_opts_.target_external_pin_util,
-                                       high_fanout_thresholds,
-                                       ClusterLegalizationStrategy::FULL,
+    ClusterLegalizer cluster_legalizer(atom_netlist_, prepacker_, logical_block_types_, lb_type_rr_graphs_,
+                                       user_models_, library_models_, packer_opts_.target_external_pin_util,
+                                       high_fanout_thresholds, ClusterLegalizationStrategy::FULL,
                                        packer_opts_.enable_pin_feasibility_filter,
-                                       packer_opts_.feasible_block_array_size,
-                                       packer_opts_.pack_verbosity);
+                                       packer_opts_.feasible_block_array_size, packer_opts_.pack_verbosity);
     // Create clusters for each tile.
     //  Start by giving each root tile a unique ID.
     size_t grid_width = device_grid_.width();
@@ -258,8 +251,8 @@ void FullLegalizer::create_clusters(const PartialPlacement& p_placement) {
         blocks_in_tiles[tile_id].push_back(ap_blk_id);
     }
     //  Create the legalized clusters per tile.
-    std::map<const t_model*, std::vector<t_logical_block_type_ptr>>
-        primitive_candidate_block_types = identify_primitive_candidate_block_types();
+    std::map<const t_model*, std::vector<t_logical_block_type_ptr>> primitive_candidate_block_types
+        = identify_primitive_candidate_block_types();
     for (size_t tile_id_idx = 0; tile_id_idx < num_device_tiles; tile_id_idx++) {
         DeviceTileId tile_id = DeviceTileId(tile_id_idx);
         // Create the molecule list
@@ -277,7 +270,8 @@ void FullLegalizer::create_clusters(const PartialPlacement& p_placement) {
             t_pack_molecule* seed_mol = mol_list.front();
             mol_list.pop_front();
             // Use the seed molecule to create a cluster for this tile.
-            LegalizationClusterId new_cluster_id = create_new_cluster(seed_mol, cluster_legalizer, primitive_candidate_block_types);
+            LegalizationClusterId new_cluster_id
+                = create_new_cluster(seed_mol, cluster_legalizer, primitive_candidate_block_types);
             // Insert all molecules that you can into the cluster.
             // NOTE: If the mol_list was somehow sorted, we can just stop at
             //       first failure!
@@ -319,8 +313,7 @@ void FullLegalizer::create_clusters(const PartialPlacement& p_placement) {
     print_pb_type_count(clb_nlist);
 }
 
-void FullLegalizer::place_clusters(const ClusteredNetlist& clb_nlist,
-                                   const PartialPlacement& p_placement) {
+void FullLegalizer::place_clusters(const ClusteredNetlist& clb_nlist, const PartialPlacement& p_placement) {
     // PLACING:
     // Create a lookup from the AtomBlockId to the APBlockId
     vtr::vector<AtomBlockId, APBlockId> atom_to_ap_block(atom_netlist_.blocks().size());
@@ -365,8 +358,7 @@ void FullLegalizer::place_clusters(const ClusteredNetlist& clb_nlist,
     for (ClusterBlockId clb_blk_id : unplaced_clusters) {
         bool success = ap_cluster_placer.exhaustively_place_cluster(clb_blk_id);
         if (!success) {
-            VPR_FATAL_ERROR(VPR_ERROR_AP,
-                            "Unable to find valid place for cluster in AP placement!");
+            VPR_FATAL_ERROR(VPR_ERROR_AP, "Unable to find valid place for cluster in AP placement!");
         }
     }
 
@@ -394,4 +386,3 @@ void FullLegalizer::legalize(const PartialPlacement& p_placement) {
     // Place the clusters based on where the atoms want to be placed.
     place_clusters(clb_nlist, p_placement);
 }
-

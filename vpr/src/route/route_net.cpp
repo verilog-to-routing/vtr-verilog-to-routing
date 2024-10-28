@@ -105,9 +105,11 @@ void update_rr_base_costs(int fanout) {
 
     for (index = CHANX_COST_INDEX_START; index < device_ctx.rr_indexed_data.size(); index++) {
         if (device_ctx.rr_indexed_data[RRIndexedDataId(index)].T_quadratic > 0.) { /* pass transistor */
-            device_ctx.rr_indexed_data[RRIndexedDataId(index)].base_cost = device_ctx.rr_indexed_data[RRIndexedDataId(index)].saved_base_cost * factor;
+            device_ctx.rr_indexed_data[RRIndexedDataId(index)].base_cost
+                = device_ctx.rr_indexed_data[RRIndexedDataId(index)].saved_base_cost * factor;
         } else {
-            device_ctx.rr_indexed_data[RRIndexedDataId(index)].base_cost = device_ctx.rr_indexed_data[RRIndexedDataId(index)].saved_base_cost;
+            device_ctx.rr_indexed_data[RRIndexedDataId(index)].base_cost
+                = device_ctx.rr_indexed_data[RRIndexedDataId(index)].saved_base_cost;
         }
     }
 }
@@ -142,7 +144,8 @@ bool should_route_net(const Netlist<>& net_list,
 
     if (!route_ctx.route_trees[net_id]) /* No routing yet */
         return true;
-    if (worst_negative_slack != 0 && budgeting_inf.if_set() && budgeting_inf.get_should_reroute(net_id)) /* Reroute for hold */
+    if (worst_negative_slack != 0 && budgeting_inf.if_set()
+        && budgeting_inf.get_should_reroute(net_id)) /* Reroute for hold */
         return true;
 
     const RouteTree& tree = route_ctx.route_trees[net_id].value();
@@ -177,8 +180,7 @@ bool should_route_net(const Netlist<>& net_list,
 bool early_exit_heuristic(const t_router_opts& router_opts, const WirelengthInfo& wirelength_info) {
     if (wirelength_info.used_wirelength_ratio() > router_opts.init_wirelength_abort_threshold) {
         VTR_LOG("Wire length usage ratio %g exceeds limit of %g, fail routing.\n",
-                wirelength_info.used_wirelength_ratio(),
-                router_opts.init_wirelength_abort_threshold);
+                wirelength_info.used_wirelength_ratio(), router_opts.init_wirelength_abort_threshold);
         return true;
     }
     return false;
@@ -197,10 +199,7 @@ float get_net_pin_criticality(const SetupHoldTimingInfo* timing_info,
     if (route_ctx.is_clock_net[net_id]) {
         pin_criticality = max_criticality;
     } else {
-        pin_criticality = calculate_clb_net_pin_criticality(*timing_info,
-                                                            netlist_pin_lookup,
-                                                            pin_id,
-                                                            is_flat);
+        pin_criticality = calculate_clb_net_pin_criticality(*timing_info, netlist_pin_lookup, pin_id, is_flat);
     }
 
     /* Pin criticality is between 0 and 1.
@@ -246,8 +245,7 @@ WirelengthInfo calculate_wirelength_info(const Netlist<>& net_list, size_t avail
     tbb::combinable<size_t> thread_used_wirelength(0);
 
     tbb::parallel_for_each(net_list.nets().begin(), net_list.nets().end(), [&](ParentNetId net_id) {
-        if (!net_list.net_is_ignored(net_id)
-            && net_list.net_sinks(net_id).size() != 0 /* Globals don't count. */
+        if (!net_list.net_is_ignored(net_id) && net_list.net_sinks(net_id).size() != 0 /* Globals don't count. */
             && route_ctx.route_trees[net_id]) {
             int bends, wirelength, segments;
             bool is_absorbed;
@@ -260,8 +258,7 @@ WirelengthInfo calculate_wirelength_info(const Netlist<>& net_list, size_t avail
     used_wirelength = thread_used_wirelength.combine(std::plus<size_t>());
 #else
     for (auto net_id : net_list.nets()) {
-        if (!net_list.net_is_ignored(net_id)
-            && net_list.net_sinks(net_id).size() != 0 /* Globals don't count. */
+        if (!net_list.net_is_ignored(net_id) && net_list.net_sinks(net_id).size() != 0 /* Globals don't count. */
             && route_ctx.route_trees[net_id]) {
             int bends = 0, wirelength = 0, segments = 0;
             bool is_absorbed;
@@ -318,20 +315,16 @@ void init_net_delay_from_lookahead(const RouterLookahead& router_lookahead,
     cost_params.criticality = 1.; // Ensures lookahead returns delay value
 
     for (auto net_id : net_list.nets()) {
-        if (net_list.net_is_ignored(net_id)) continue;
+        if (net_list.net_is_ignored(net_id))
+            continue;
 
         RRNodeId source_rr = net_rr_terminals[net_id][0];
 
         for (size_t ipin = 1; ipin < net_list.net_pins(net_id).size(); ++ipin) {
             RRNodeId sink_rr = net_rr_terminals[net_id][ipin];
 
-            float est_delay = get_cost_from_lookahead(router_lookahead,
-                                                      rr_graph,
-                                                      source_rr,
-                                                      sink_rr,
-                                                      0.,
-                                                      cost_params,
-                                                      is_flat);
+            float est_delay
+                = get_cost_from_lookahead(router_lookahead, rr_graph, source_rr, sink_rr, 0., cost_params, is_flat);
             VTR_ASSERT(std::isfinite(est_delay) && est_delay < std::numeric_limits<float>::max());
 
             net_delay[net_id][ipin] = est_delay;
