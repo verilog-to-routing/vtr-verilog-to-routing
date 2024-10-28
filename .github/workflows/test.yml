@@ -87,6 +87,8 @@ jobs:
       with:
         python-version: 3.10.10
     - uses: actions/checkout@v4
+      with:
+        submodules: 'true'
 
     - name: Install dependencies
       run: ./.github/scripts/install_dependencies.sh
