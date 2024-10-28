@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -x
 
 clean=$(git status -s -uno | wc -l) #Short ignore untracked
 
@@ -8,7 +9,8 @@ if [ $clean -ne 0 ]; then
 else
     echo "Code Formatting Check"
     echo "====================="
-    make format"$1" > /dev/null 2>&1
+    make format"$1"
+    git status -s -uno
 
     valid_format=$(git diff | wc -l)
 

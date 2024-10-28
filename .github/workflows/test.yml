@@ -91,6 +91,9 @@ jobs:
     - name: Install dependencies
       run: ./.github/scripts/install_dependencies.sh
 
+    - name: Print Git Config
+      run: git config --list
+
     - name: Test
       run: ./dev/${{ matrix.script }}
 
