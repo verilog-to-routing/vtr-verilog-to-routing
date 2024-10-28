@@ -7,23 +7,24 @@
 
 using vtr::t_linked_vptr;
 
+// clang-format off
 /* the output file description */
-#define OUTPUT_HEADER_COMMENT(Echo, ArchFile)                                                                          \
-    {                                                                                                                  \
-        fprintf(Echo,                                                                                                  \
-                "/***************************************************************************************************" \
-                  * "******/\n");                                                                                          \
-        fprintf(Echo, "/*   %-100s*/\n", "");                                                                          \
-        fprintf(Echo, "/*   %-100s*/\n",                                                                               \
-                "This is a machine-generated Verilog code, including the black box declaration of");                   \
-        fprintf(Echo, "/*   %-100s*/\n", "complex blocks defined in the following architecture file:");                \
-        fprintf(Echo, "/*   %-100s*/\n", "");                                                                          \
-        fprintf(Echo, "/*             %-90s*/\n", strrchr(ArchFile, '/') + 1);                                         \
-        fprintf(Echo, "/*   %-100s*/\n", "");                                                                          \
-        fprintf(Echo,                                                                                                  \
-                "/***************************************************************************************************" \
-                  * "******/\n\n");                                                                                        \
+#define OUTPUT_HEADER_COMMENT(Echo, ArchFile)                                                                                       \
+    {                                                                                                                               \
+        fprintf(Echo,                                                                                                               \
+                "/*********************************************************************************************************/\n");   \
+        fprintf(Echo, "/*   %-100s*/\n", "");                                                                                       \
+        fprintf(Echo, "/*   %-100s*/\n",                                                                                            \
+                "This is a machine-generated Verilog code, including the black box declaration of");                                \
+        fprintf(Echo, "/*   %-100s*/\n",                                                                                            \
+                "complex blocks defined in the following architecture file:");                                                      \
+        fprintf(Echo, "/*   %-100s*/\n", "");                                                                                       \
+        fprintf(Echo, "/*             %-90s*/\n", strrchr(ArchFile, '/') + 1);                                                      \
+        fprintf(Echo, "/*   %-100s*/\n", "");                                                                                       \
+        fprintf(Echo,                                                                                                               \
+                "/*********************************************************************************************************/\n\n"); \
     }
+// clang-format on
 
 /* a comment for the body of black box modules */
 const char* HARD_BLOCK_COMMENT
